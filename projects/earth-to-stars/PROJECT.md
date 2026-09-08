@@ -3,20 +3,20 @@
 - Slug: `earth-to-stars`
 - Mod ID: `earth_to_stars`
 - Namespace: `earth_to_stars`
-- Mod version: `0.1.0-alpha.9`
+- Mod version: `0.1.0-alpha.10`
 - Minecraft: `26.2`
 - Java: `25`
 - Loader: `NeoForge`
 - Loader version: `26.2.0.38-beta`
 - Gradle: `9.2.1`
 - Build plugin: `ModDevGradle 2.0.143`
-- Final JAR: `earth_to_stars-0.1.0-alpha.9.jar`
+- Final JAR: `earth_to_stars-0.1.0-alpha.10.jar`
 - Existing-world compatibility: before first playable alpha, save schema may change deliberately; from first playable alpha onward registry IDs, save roots, module IDs and migration rules become compatibility contracts.
 - Required dependencies: Minecraft, NeoForge
 - Optional external mods/libraries: none approved as a hard runtime dependency. Any addition requires current 26.2 compatibility, maintenance, license, multiplayer and performance review.
 - Forbidden bundled dependencies: Minecraft original files, NeoForge distribution files, external mod JARs, and models/textures/audio/UI assets without redistribution permission.
 - Datagen task: `runData` (`NOT RUN` at current gate)
-- Server lifecycle: P0-G dedicated-server two-boot restore verified in run `34188840459`; not repeated on unrelated pushes.
+- Server lifecycle: latest two-boot disk restore verification run `34192830690`, including Power/Ammo/Propellant/Oxygen.
 - Client smoke: `NOT RUN`
 - Live multiplayer: `NOT TESTED`
 
@@ -39,7 +39,7 @@ The project is not a generic tech mod, a planet menu, a collection of colored or
 7. Manual and automatic weapon control share one server-owned weapon/system truth.
 8. Multiplayer is first-class from the beginning. Important state is server-authoritative.
 9. Solo play stays viable through automation/assistance; multiplayer roles are opportunities, not jobs.
-10. Ship power, ammo and sensors use centralized/batched simulation; modules do not each broad-scan the world every tick.
+10. Ship power, ammo, sensors, propellant and oxygen use centralized/batched simulation; modules do not each broad-scan or independently duplicate resources.
 11. Repeat-adjusted values are data-driven. Code owns rules; data owns content.
 12. Final UI/ship/module/weapon/planet/VFX/sound design is reference-gated; generic AI sci-fi styling is not production art.
 13. External references/assets are actively used where licensing permits and recorded in `THIRD_PARTY_ASSETS.md`.
@@ -50,6 +50,7 @@ The project is not a generic tech mod, a planet menu, a collection of colored or
 ```text
 Earth survival/resource acquisition
 → practical industry and launch capability
+→ fuel/oxygen readiness
 → atmosphere/orbit breakthrough
 → orbital salvage/science/combat
 → ship/module upgrade
@@ -70,7 +71,9 @@ Server authority includes at minimum:
 - ship transform accepted by movement backend
 - installed modules/hardpoints
 - module damage/repair
-- energy/fuel/oxygen/ammunition
+- power / propellant / oxygen / ammunition
+- fuel/oxygen supply transactions
+- atmosphere/launch readiness
 - weapon cooldown/target/hit/damage
 - pilot/turret control leases
 - mining/resource transfer
@@ -79,38 +82,45 @@ Server authority includes at minimum:
 - interior assignment
 - save data/migrations
 
-Clients provide input/rendering/animation/UI/safe prediction only. A client never reports that damage, resources, crafting or travel already succeeded.
+Clients provide input/rendering/animation/UI/safe prediction only. A client never reports that damage, resources, crafting, refueling or travel already succeeded.
 
 ---
 
 # Current implementation baseline
 
-## 0.1.0-alpha.9 — M1-A/B Earth Preparation + First Launch Craft
+## 0.1.0-alpha.10 — M1-C Launch Readiness + Atmosphere Backend
 
-Latest verified implementation/CI commit: `bc8e51ba30d2e3eec07dfd868b0f79dc9460e73f`
+Latest verified implementation/CI commit: `34da5747f400d5815e751085afae1fd2fb7a066e`
 
-GitHub Actions `Build earth-to-stars` run `34191142069` verified:
+GitHub Actions `Build earth-to-stars` run `34192830690` verified:
 
-- P0-H progression validator self-tests
-- canonical main progression graph
-- M1 launch recipe dependency closure
+- P0-H progression validator
+- M1 actual launch recipe dependency closure
 - M1 launch recipe Nether/End independence
-- starter craft blueprint JUnit
+- M1 starter blueprint regression
+- LaunchReadinessPolicy atmosphere bands/readiness rules
+- Power + Propellant atomic propulsion transaction
+- Oxygen continuous drain
+- fuel/oxygen supply tank/capacity logic
+- Fuel/Oxygen snapshot restore and capacity rejection
 - P0-A through P0-G regression JUnit
 - Minecraft 26.2 / NeoForge 26.2.0.38-beta compile
 - `clean test build`
 - production JAR structure
-- M1 recipes/client item definitions packaged
+- dedicated server first boot/save/shutdown
+- same-world second boot
+- Propellant `51.25` disk restore
+- Oxygen `66.5` disk restore
 
 Verified JAR SHA-256:
 
-`c2f033c73de080c90cff7ed77ae0b3d2d07d6ec5d14aa22cc0f173766e223264`
+`aa3c01597544dae55ec1e2309c3c4538b61185bb6022a266cb93374d5db5a8f3`
 
-The P0-G dedicated two-boot lifecycle was not rerun because alpha.9 did not change persistence/custom-dimension lifecycle. The retained verified run is `34188840459`.
+Because alpha.10 changed the persisted ship-systems schema, the expensive dedicated two-boot lifecycle was intentionally rerun once. After it passed, ordinary pushes returned to the cheaper gate; lifecycle is explicitly rerun only when risk justifies it.
 
 ## M1 Earth launch crafting contract
 
-Alpha.9 introduces the first survival-facing production chain without adding new Earth ores.
+The first survival-facing production chain does not add new Earth ores.
 
 Vanilla resources are reinterpreted as early spaceflight materials:
 
@@ -134,9 +144,7 @@ life_support_unit
 launch_craft_kit
 ```
 
-Detailed recipes and rationale are canonical in `docs/05_M1_EARTH_ORBIT_GAMEPLAY_SLICE.md`.
-
-`tools/validate_m1_launch.py` recursively follows the actual `launch_craft_kit` recipe closure. This prevents the practical crafting chain from drifting away from the P0-H abstract progression graph and becoming Nether/End mandatory by accident.
+`tools/validate_m1_launch.py` recursively follows the actual launch-craft recipe closure so practical recipes cannot silently drift into mandatory Nether/End progression.
 
 ## Launch craft construction contract
 
@@ -150,7 +158,7 @@ Server deployment rules:
 4. authoritative starter `ShipState` can be created
 5. exterior proxy can be placed
 6. `ShipSavedData` is updated
-7. ship systems runtime is initialized
+7. `ShipSystemsRuntime` is initialized and persisted
 8. server pilot control lease is granted
 9. survival package is consumed only on success
 
@@ -175,7 +183,79 @@ Installed at construction:
 - `cargo_mk1`
 - `life_support_mk1`
 
-The `turret` hardpoint is intentionally empty. First orbital salvage/combat should create a meaningful capability upgrade instead of giving the starter craft every system immediately.
+The `turret` hardpoint is intentionally empty so the first orbital trip can unlock a real new capability.
+
+Initial central resources:
+
+- Power `80 / 100`
+- Propellant `80 / 240`
+- Oxygen `80 / 240`
+
+## Launch readiness / atmosphere contract
+
+Current Earth gameplay bands:
+
+```text
+Dense Atmosphere : Y < 256
+Thin Atmosphere  : 256 ≤ Y < 384
+Upper Atmosphere : 384 ≤ Y < 512
+Earth→Orbit      : Y = 512
+Earth re-entry   : Y = 504
+```
+
+Propellant draw scales with control activity and current band:
+
+- Dense `0.020/tick`
+- Thin `0.040/tick`
+- Upper `0.070/tick`
+- Orbit `0.015/tick`
+- idle `0`
+
+Oxygen draw scales with actual active crew:
+
+- Dense `0`
+- Thin `0.0025/tick/crew`
+- Upper `0.010/tick/crew`
+- Orbit `0.015/tick/crew`
+
+Active crew currently means the pilot lease holder plus logged-in players in the linked interior, deduplicated by UUID.
+
+Earth→Orbit requires all of:
+
+- `life_support_mk1`
+- Propellant ≥ `8`
+- Oxygen ≥ `20`
+
+If readiness is insufficient, the transition is denied, the craft is held below the boundary, upward velocity is removed, and the pilot receives throttled readiness feedback.
+
+## Supply contract
+
+Player-facing M1 supply behavior:
+
+- propellant cell → up to `+40` Propellant
+- oxygen cartridge → up to `+40` Oxygen
+- supply is applied to the authoritative accessible `ShipId`
+- full tank / no accessible ship does not consume the item
+- successful supply persists immediately
+
+The current use-on-block supply interaction is temporary M1 UX. Production refueling/oxygen ports and feedback require the visual/UX reference gate.
+
+## Persistence / migration
+
+Persisted:
+
+- ShipId/owner/modules/slots
+- ShipId→interior assignment
+- central Power / Ammo / Propellant / Oxygen quantities
+
+Not persisted:
+
+- sensor contacts
+- control leases
+- logical projectiles
+- temporary exterior entity IDs
+
+Alpha.10 adds optional `propellant_stored` and `oxygen_stored` fields. Saves created before these fields existed receive starter defaults `80 / 80`, preventing old craft from loading stranded at zero resources.
 
 ---
 
@@ -202,33 +282,16 @@ ShipId
  └─ ShipSystemsRuntime
      ├─ ShipPowerGrid
      ├─ ShipAmmoPool
-     └─ ShipSensorGrid
-          ↑
-   propulsion / sensors / weapon(s)
+     ├─ ShipSensorGrid
+     ├─ PropellantTank
+     └─ OxygenTank
 ```
 
-Power/ammo are server-owned and persisted. Sensors are reconstructed after restart. Per-turret broad scans remain forbidden.
+Sensors are reconstructed after restart. Per-turret broad scans remain forbidden.
 
 ## Weapon control
 
 Manual and AUTO_DEFENSE use the same authoritative cooldown/arc/power/ammo state. Pilot/turret control leases use server-issued session IDs and replay/stale-input rejection.
-
-## Persistence
-
-Persisted:
-
-- ShipId/owner/modules/slots
-- ShipId→interior assignment
-- central power/ammo quantities
-
-Not persisted:
-
-- sensor contacts
-- control leases
-- logical projectiles
-- temporary exterior entity IDs
-
-P0-G actual save→shutdown→same-world restart→restore was verified in run `34188840459`.
 
 ---
 
@@ -237,45 +300,40 @@ P0-G actual save→shutdown→same-world restart→restore was verified in run `
 The following are temporary technical/client registration proxies, not production design:
 
 - ArmorStand exterior
-- vanilla-texture M1 item icons
+- vanilla-texture item icons
 - generated technical interior room
 - empty orbital space
 - command-driven technical controls
+- use-on-block supply UX
 - logical projectile presentation
 
-They must not become final art by inertia. Production ship/item/cockpit/interior/turret/VFX/sound/space presentation follows `docs/03_UI_ART_REFERENCE_GATE.md` and `THIRD_PARTY_ASSETS.md`.
+They must not become final art by inertia. Production ship/item/cockpit/interior/turret/fuel-port/VFX/sound/space presentation follows `docs/03_UI_ART_REFERENCE_GATE.md` and `THIRD_PARTY_ASSETS.md`.
 
 ---
 
 # Verification boundary
 
-`TESTED / BUILD VERIFIED` for alpha.9:
+`TESTED / BUILD VERIFIED` for alpha.10:
 
-- pure/game-rule JUnit including starter blueprint
+- pure/game-rule JUnit including fuel/O2/readiness rules
 - P0 progression and M1 recipe dependency validators
 - source/API compilation
 - build/JAR packaging
-
-Retained earlier dedicated lifecycle verification:
-
-- two server boots on same world
-- custom dimensions loaded
-- ship/interior/power/ammo disk restore
+- actual dedicated server save→shutdown→restart→restore for Power/Ammo/Propellant/Oxygen
 
 Still `NOT RUN / NOT TESTED`:
 
 - live client crafting/recipe book
 - in-world launch package deployment
-- actual item model appearance
-- fuel/oxygen runtime consumption
-- atmosphere gameplay
+- fuel/oxygen supply feel
+- actual atmosphere ascent/readiness boundary
 - live Earth→orbit→Earth flight
 - camera/interpolation/control feel
 - orbital salvage/hostile encounter
 - first return/upgrade loop
-- live interior multi-crew
+- live interior multi-crew oxygen behavior
 - actual manual/auto weapon feel
-- live two-player pilot+gunner
+- live two-player pilot+gunner / pilot+crew
 - live multiplayer session
 - production visuals/audio
 
@@ -285,24 +343,23 @@ No automated result is treated as proof of these live-play items.
 
 # Current phase
 
-`P0 AUTOMATED TECHNICAL GATES COMPLETE / M1-A/B EARTH PREPARATION + FIRST LAUNCH CRAFT BACKEND BUILD VERIFIED / LIVE ACCEPTANCE DEFERRED / LIVE MULTIPLAYER NOT TESTED / M1-C LAUNCH READINESS + ATMOSPHERE NEXT`
+`P0 AUTOMATED TECHNICAL GATES COMPLETE / M1-C LAUNCH READINESS + ATMOSPHERE BACKEND VERIFIED / FUEL-OXYGEN DISK LIFECYCLE VERIFIED / LIVE ACCEPTANCE DEFERRED / LIVE MULTIPLAYER NOT TESTED / M1-D ORBITAL SALVAGE + CONTACT NEXT`
 
-## Next production unit — M1-C
+## Next production unit — M1-D
 
-Connect the alpha.9 preparation items to actual gameplay:
+Connect the first actual orbit gameplay:
 
 ```text
-propellant_cell
-→ authoritative fuel/launch reserve
-
-oxygen_cartridge + life_support_mk1
-→ authoritative oxygen reserve
-
-readiness state
-→ atmosphere ascent
-→ Earth Orbit transition permission
+Earth preparation
+→ direct atmosphere ascent
+→ Earth Orbit
+→ salvage contact
+→ first hostile contact
+→ authoritative recovery reward
+→ Earth return
+→ first meaningful ship upgrade
 ```
 
-The goal is not to add many gauges. The player should understand whether the craft is ready and how long it can survive without becoming a maintenance worker.
+The goal is not random loot boxes in a black dimension. The first orbit trip must unlock a new action/capability and prove why going to space changes the game.
 
-After M1-C, M1-D connects first orbital salvage/contact → Earth return → first ship upgrade. M1 is only complete when that whole cycle is actually playable in Minecraft.
+M1 is only complete when the entire Earth→Orbit→recovery→return→upgrade cycle is actually playable in Minecraft.
