@@ -92,10 +92,51 @@ class M5LanguageContractsTest {
         assertEquals("", BattleHudPresentation.statusNameKey("turnbound_re:future_status"));
     }
 
+    @Test
+    void partyFormationCopyCoversInteractionStatesRolesAndAffinityGrades() {
+        JsonObject en = read(EN);
+        requireNonBlank(en, Set.of(
+                "key.category.turnbound_re.menu",
+                "key.turnbound_re.open_party_formation",
+                "screen.turnbound_re.party_formation",
+                "screen.turnbound_re.party.loading",
+                "screen.turnbound_re.party.roster",
+                "screen.turnbound_re.party.active_party",
+                "screen.turnbound_re.party.selected",
+                "screen.turnbound_re.party.squad_cost",
+                "screen.turnbound_re.party.remove_slot",
+                "screen.turnbound_re.party.reset",
+                "screen.turnbound_re.party.apply",
+                "screen.turnbound_re.party.locked_short",
+                "screen.turnbound_re.party.empty_slot",
+                "screen.turnbound_re.party.locked_cannot_assign",
+                "screen.turnbound_re.party.cost_over",
+                "screen.turnbound_re.party.cost_ok",
+                "screen.turnbound_re.party.saving",
+                "screen.turnbound_re.party.saved",
+                "screen.turnbound_re.party.stale",
+                "screen.turnbound_re.party.server_cost_rejected",
+                "screen.turnbound_re.party.server_not_owned",
+                "screen.turnbound_re.party.server_invalid",
+                "screen.turnbound_re.party.server_rejected",
+                "screen.turnbound_re.party.canvas_too_small",
+                "screen.turnbound_re.party.locked_detail",
+                "screen.turnbound_re.party.basic",
+                "screen.turnbound_re.party.skills",
+                "screen.turnbound_re.party.burst"));
+
+        for (String role : List.of("vanguard", "breaker", "striker", "controller", "support")) {
+            assertTrue(en.has("screen.turnbound_re.party.role." + role), "missing party role: " + role);
+        }
+        for (String affinity : List.of("normal", "weak", "resist", "immune")) {
+            assertTrue(en.has("screen.turnbound_re.party.affinity." + affinity), "missing affinity grade: " + affinity);
+        }
+    }
+
     private static void requireNonBlank(JsonObject language, Set<String> keys) {
         for (String key : keys) {
-            assertTrue(language.has(key), "missing battle UI translation: " + key);
-            assertTrue(!language.get(key).getAsString().isBlank(), "blank battle UI translation: " + key);
+            assertTrue(language.has(key), "missing UI translation: " + key);
+            assertTrue(!language.get(key).getAsString().isBlank(), "blank UI translation: " + key);
         }
     }
 
