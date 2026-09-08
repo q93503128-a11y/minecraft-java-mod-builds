@@ -32,6 +32,9 @@ jobs:
         run: |
           java -version
           gradle --version
+          python3 --version
+      - name: Asset intake tool tests
+        run: python3 -m unittest discover -s tools/tests -p 'test_*.py'
       - name: Tests and clean build
         run: gradle --no-daemon clean test build --stacktrace
       - name: Riftfrontier GameTest gate
