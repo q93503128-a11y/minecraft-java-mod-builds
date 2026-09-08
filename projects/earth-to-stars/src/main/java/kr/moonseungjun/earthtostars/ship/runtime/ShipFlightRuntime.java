@@ -30,6 +30,10 @@ public final class ShipFlightRuntime {
         return transform;
     }
 
+    public ShipControlInput currentInput() {
+        return input;
+    }
+
     public Optional<ShipControlLease> lease() {
         return Optional.ofNullable(lease);
     }
@@ -82,8 +86,13 @@ public final class ShipFlightRuntime {
     }
 
     public Optional<UUID> tick(long tick) {
+        return tick(tick, true);
+    }
+
+    public Optional<UUID> tick(long tick, boolean propulsionPowered) {
         Optional<UUID> expiredController = expireIfNeeded(tick);
-        transform = ShipMovementSimulator.step(transform, input, tuning);
+        ShipControlInput appliedInput = propulsionPowered ? input : ShipControlInput.ZERO;
+        transform = ShipMovementSimulator.step(transform, appliedInput, tuning);
         return expiredController;
     }
 
