@@ -1,0 +1,27 @@
+{
+  "kind": "riftfrontier:boss_source_contract",
+  "schema_version": 1,
+  "source": {
+    "id": "quaternius_ultimate_monsters:dragon_evolved",
+    "filename": "Dragon_Evolved.gltf",
+    "sha256": "39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c",
+    "license_record": "docs/THIRD_PARTY_ASSETS.md#dragon-evolved"
+  },
+  "expect": {
+    "gltf_version": "2.0",
+    "mesh_count": 1,
+    "skin_count": 1,
+    "joint_count": 46,
+    "animation_count": 8,
+    "required_animations": [
+      "Death",
+      "Fast_Flying",
+      "Flying_Idle",
+      "Headbutt",
+      "HitReact",
+      "No",
+      "Punch",
+      "Yes"
+    ]
+  }
+}
