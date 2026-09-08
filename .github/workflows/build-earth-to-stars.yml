@@ -52,13 +52,26 @@ jobs:
           ./gradlew --no-daemon clean test build --stacktrace 2>&1 | tee build/logs/build.log
       - name: Verify production JAR
         run: python3 tools/verify_jar.py
+      - name: Dedicated server save restart lifecycle
+        shell: bash
+        run: |
+          rm -rf run
+          mkdir -p run build/logs
+          printf 'eula=true\n' > run/eula.txt
+
+          set -o pipefail
+          EARTH_TO_STARS_LIFECYCLE_PROBE=seed timeout --kill-after=15s 180s ./gradlew --no-daemon runServer --stacktrace 2>&1 | tee build/logs/p0g-server-seed.log
+          grep -q 'EARTH_TO_STARS_P0G_SEED_PASS' build/logs/p0g-server-seed.log
+
+          EARTH_TO_STARS_LIFECYCLE_PROBE=verify timeout --kill-after=15s 180s ./gradlew --no-daemon runServer --stacktrace 2>&1 | tee build/logs/p0g-server-verify.log
+          grep -q 'EARTH_TO_STARS_P0G_VERIFY_PASS' build/logs/p0g-server-verify.log
       - name: Write build report
         shell: bash
         run: |
           JAR=$(ls build/libs/earth_to_stars-*.jar | head -n1)
           SHA=$(cat "$JAR.sha256")
           cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # EARTH TO STARS — P0-F Build Report
+          # EARTH TO STARS — P0-G Lifecycle Build Report
 
           - Commit: $GITHUB_SHA
           - Mod version: $MOD_VERSION
@@ -72,21 +85,23 @@ jobs:
           - P0-A/P0-B/P0-C regression JUnit: PASS
           - P0-D linked interior JUnit: PASS
           - P0-E representative turret JUnit: PASS
-          - P0-F central PowerGrid / AmmoPool / SensorGrid JUnit: PASS
-          - priority reserve / generation monotonicity: PASS
-          - two turret runtimes share one ammo pool: PASS
-          - failed weapon transaction consumes no ammo or power: PASS
-          - propulsion draw uses central power: PASS
-          - stale sensor contact expiry: PASS
-          - interior-linked crew system lookup adapter compile: PASS
-          - Minecraft 26.2 central systems coordinator compile: PASS
-          - systems persistence across restart: NOT IMPLEMENTED / NOT TESTED
-          - P0 projectile simulation: BUILD VERIFIED / LIVE HIT FEEL NOT TESTED
-          - datagen: NOT RUN
-          - GameTest: NOT REGISTERED / NOT RUN
-          - dedicated server smoke: NOT RUN
-          - client smoke: NOT RUN
-          - multiplayer live session: NOT TESTED
+          - P0-F central systems JUnit: PASS
+          - P0-G systems snapshot restore JUnit: PASS
+          - dedicated server first boot: PASS
+          - orbital_space dedicated-server registration: PASS
+          - ship_interiors dedicated-server registration: PASS
+          - clean server shutdown after seed: PASS
+          - second dedicated-server boot on same world: PASS
+          - ShipId / owner / module slots disk restore: PASS
+          - interior assignment disk restore: PASS
+          - central power / ammo disk restore: PASS
+          - restored systems runtime initialization: PASS
+          - sensors intentionally rebuilt rather than persisted: PASS
+          - live Earth↔orbit player flight: NOT TESTED
+          - actual two-player pilot + gunner session: NOT TESTED
+          - actual multi-player linked-interior session: NOT TESTED
+          - client smoke / visual quality: NOT RUN
+          - production ship/interior/turret visuals: NOT IMPLEMENTED
           EOF
       - name: Upload deliverables
         if: success()
