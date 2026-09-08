@@ -40,7 +40,6 @@ public final class Riftfrontier {
         RiftfrontierGameTests.register(modEventBus);
         CombatGameTests.register(modEventBus);
         modEventBus.addListener(RiftfrontierNetworking::registerPayloads);
-        modEventBus.addListener(RiftfrontierNetworking::registerClientPayloadHandlers);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::addServerReloadListeners);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::registerCommands);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::serverStarted);
