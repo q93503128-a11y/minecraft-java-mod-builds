@@ -1,7 +1,6 @@
 package kr.moonseungjun.earthtostars.ship;
 
 import kr.moonseungjun.earthtostars.ship.combat.SensorContact;
-import kr.moonseungjun.earthtostars.ship.combat.ShipSensorGrid;
 import kr.moonseungjun.earthtostars.ship.combat.TurretControlMode;
 import kr.moonseungjun.earthtostars.ship.combat.TurretProfile;
 import kr.moonseungjun.earthtostars.ship.combat.TurretRuntime;
@@ -10,6 +9,7 @@ import kr.moonseungjun.earthtostars.ship.domain.ModuleSlotType;
 import kr.moonseungjun.earthtostars.ship.domain.ShipId;
 import kr.moonseungjun.earthtostars.ship.domain.ShipState;
 import kr.moonseungjun.earthtostars.ship.runtime.ShipVec3;
+import kr.moonseungjun.earthtostars.ship.systems.ShipSystemsRuntime;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -35,39 +35,44 @@ final class ShipTurretTest {
     }
 
     @Test
-    void manualFireConsumesAmmoHonorsCooldownAndArc() {
+    void manualFireConsumesSharedAmmoAndPowerWhileHonoringCooldownAndArc() {
         UUID owner = UUID.randomUUID();
-        TurretRuntime turret = new TurretRuntime(ship(owner), TurretProfile.P0_AUTOCANNON);
+        ShipState ship = ship(owner);
+        TurretRuntime turret = new TurretRuntime(ship, TurretProfile.P0_AUTOCANNON);
+        ShipSystemsRuntime systems = ShipSystemsRuntime.p0(ship.shipId());
         turret.setMode(owner, TurretControlMode.MANUAL);
         UUID session = turret.requestManualControl(owner, 0L).orElseThrow();
         assertTrue(turret.acceptManualAim(owner, session, 1L, new ShipVec3(0, 0, 1), 0L));
 
-        int before = turret.ammo();
-        assertTrue(turret.fireManual(owner, session, ShipVec3.ZERO, new ShipVec3(0, 0, 1), 0L).isPresent());
-        assertEquals(before - 1, turret.ammo());
-        assertTrue(turret.fireManual(owner, session, ShipVec3.ZERO, new ShipVec3(0, 0, 1), 1L).isEmpty());
+        int beforeAmmo = systems.ammoAmount(TurretProfile.P0_AUTOCANNON.ammoType());
+        double beforePower = systems.powerStored();
+        assertTrue(turret.fireManual(owner, session, systems, ShipVec3.ZERO, new ShipVec3(0, 0, 1), 0L).isPresent());
+        assertEquals(beforeAmmo - 1, systems.ammoAmount(TurretProfile.P0_AUTOCANNON.ammoType()));
+        assertEquals(beforePower - TurretProfile.P0_AUTOCANNON.powerPerShot(), systems.powerStored(), 1.0E-9D);
+        assertTrue(turret.fireManual(owner, session, systems, ShipVec3.ZERO, new ShipVec3(0, 0, 1), 1L).isEmpty());
 
         assertTrue(turret.acceptManualAim(owner, session, 2L, new ShipVec3(0, 0, -1), 5L));
-        assertTrue(turret.fireManual(owner, session, ShipVec3.ZERO, new ShipVec3(0, 0, 1), 5L).isEmpty());
+        assertTrue(turret.fireManual(owner, session, systems, ShipVec3.ZERO, new ShipVec3(0, 0, 1), 5L).isEmpty());
     }
 
     @Test
-    void autoDefenseUsesSharedContactsAndIgnoresNeutralTargets() {
+    void autoDefenseUsesCentralContactsAndIgnoresNeutralTargets() {
         UUID owner = UUID.randomUUID();
-        TurretRuntime turret = new TurretRuntime(ship(owner), TurretProfile.P0_AUTOCANNON);
+        ShipState ship = ship(owner);
+        TurretRuntime turret = new TurretRuntime(ship, TurretProfile.P0_AUTOCANNON);
+        ShipSystemsRuntime systems = ShipSystemsRuntime.p0(ship.shipId());
         turret.setMode(owner, TurretControlMode.AUTO_DEFENSE);
-        ShipSensorGrid grid = new ShipSensorGrid();
         UUID neutral = UUID.randomUUID();
         UUID hostile = UUID.randomUUID();
-        grid.update(List.of(
+        systems.sensorGrid().update(List.of(
                 new SensorContact(neutral, new ShipVec3(0, 0, 6), false, 100),
                 new SensorContact(hostile, new ShipVec3(0, 0, 12), true, 10)
         ), 20L);
 
-        var shot = turret.tickAuto(grid, ShipVec3.ZERO, new ShipVec3(0, 0, 1), 20L).orElseThrow();
+        var shot = turret.tickAuto(systems, ShipVec3.ZERO, new ShipVec3(0, 0, 1), 20L).orElseThrow();
         assertEquals(Optional.of(hostile), shot.targetId());
-        assertEquals(2, grid.contactCount());
-        assertEquals(20L, grid.lastScanTick());
+        assertEquals(2, systems.sensorGrid().contactCount());
+        assertEquals(20L, systems.sensorGrid().lastScanTick());
     }
 
     @Test
@@ -78,6 +83,20 @@ final class ShipTurretTest {
         assertTrue(turret.requestManualControl(owner, 0L).isPresent());
         turret.setMode(owner, TurretControlMode.AUTO_DEFENSE);
         assertTrue(turret.lease().isEmpty());
+    }
+
+    @Test
+    void turretRejectsSystemsFromAnotherShip() {
+        UUID owner = UUID.randomUUID();
+        ShipState ship = ship(owner);
+        TurretRuntime turret = new TurretRuntime(ship, TurretProfile.P0_AUTOCANNON);
+        turret.setMode(owner, TurretControlMode.MANUAL);
+        UUID session = turret.requestManualControl(owner, 0L).orElseThrow();
+        assertTrue(turret.acceptManualAim(owner, session, 1L, new ShipVec3(0, 0, 1), 0L));
+        ShipSystemsRuntime foreign = ShipSystemsRuntime.p0(ShipId.random());
+        assertThrows(IllegalArgumentException.class, () ->
+                turret.fireManual(owner, session, foreign, ShipVec3.ZERO, new ShipVec3(0, 0, 1), 0L)
+        );
     }
 
     private static ShipState ship(UUID owner) {
