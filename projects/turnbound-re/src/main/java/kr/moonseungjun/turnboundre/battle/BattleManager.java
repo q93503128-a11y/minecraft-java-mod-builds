@@ -1,5 +1,6 @@
 package kr.moonseungjun.turnboundre.battle;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -136,6 +137,15 @@ public final class BattleManager {
         return bindings == null ? Optional.empty() : Optional.ofNullable(bindings.get(participantId));
     }
 
+    /** Stable read-only snapshot used by server presentation ownership resolution. */
+    public List<EntityParticipantBinding> bindings(UUID battleId) {
+        Map<String, EntityParticipantBinding> bindings = bindingsByBattle.get(battleId);
+        if (bindings == null) return List.of();
+        return bindings.values().stream()
+                .sorted(Comparator.comparing(EntityParticipantBinding::participantId))
+                .toList();
+    }
+
     public Optional<BattleCommandService> commandService(UUID battleId) {
         return Optional.ofNullable(commandServices.get(battleId));
     }
@@ -155,6 +165,16 @@ public final class BattleManager {
 
     public boolean rewardClaimed(UUID battleId) {
         return claimedRewards.contains(battleId);
+    }
+
+    /** Snapshot of every terminal battle waiting for player-facing result acknowledgement. */
+    public List<UUID> terminalRewardStateBattleIds() {
+        return activeBattles.entrySet().stream()
+                .filter(entry -> entry.getValue().state() == BattleState.REWARD)
+                .filter(entry -> entry.getValue().outcome() != BattleInstance.Outcome.ONGOING)
+                .map(Map.Entry::getKey)
+                .sorted()
+                .toList();
     }
 
     /** Snapshot of unclaimed authored victories currently waiting for persistence. */
