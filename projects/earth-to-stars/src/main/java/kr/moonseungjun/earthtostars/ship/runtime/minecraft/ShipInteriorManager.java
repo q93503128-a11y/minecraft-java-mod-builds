@@ -87,7 +87,7 @@ public final class ShipInteriorManager {
         if (earth == null) {
             return false;
         }
-        BlockPos spawn = earth.getSharedSpawnPos();
+        BlockPos spawn = earth.getRespawnData().pos();
         Vec3 destination = new Vec3(spawn.getX() + 0.5D, spawn.getY() + 1.0D, spawn.getZ() + 0.5D);
         return teleport(player, earth, destination);
     }
