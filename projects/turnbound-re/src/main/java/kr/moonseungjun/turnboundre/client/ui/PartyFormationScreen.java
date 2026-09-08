@@ -16,33 +16,37 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * First production Party Formation screen. It owns only a temporary draft; the server owns persistence,
- * roster ownership, squad cost validation and stale-write rejection.
- */
+/** Production Party Formation + Character detail shell. Persistence and growth truth stay server-owned. */
 public final class PartyFormationScreen extends Screen {
+    private enum DetailTab { OVERVIEW, SKILLS, GROWTH }
+
     private static final Identifier TITLE_BOX = Identifier.withDefaultNamespace("advancements/title_box");
     private static final Identifier FRAME_IDLE = Identifier.withDefaultNamespace("advancements/task_frame_unobtained");
     private static final Identifier FRAME_ACTIVE = Identifier.withDefaultNamespace("advancements/task_frame_obtained");
     private static final int TEXT_PRIMARY = 0xFFFFFFFF;
     private static final int TEXT_SECONDARY = 0xFFAAAAAA;
     private static final int TEXT_WARNING = 0xFFFFCC66;
+    private static final int TEXT_SUCCESS = 0xFFAAFFAA;
 
     private final List<Button> rosterButtons = new ArrayList<>();
     private final List<Button> partyButtons = new ArrayList<>();
     private ProgressionNetworkPayloads.Snapshot snapshot;
     private List<String> draftParty = List.of();
     private String selectedCharacterId = "";
+    private DetailTab detailTab = DetailTab.OVERVIEW;
     private int selectedSlot;
     private int rosterPage;
     private int rosterPageSize = 1;
     private long seenGeneration = -1L;
     private String feedback = "";
+    private boolean feedbackSuccess;
     private Button applyButton;
     private Button resetButton;
     private Button removeButton;
     private Button prevRosterButton;
     private Button nextRosterButton;
+    private Button levelUpButton;
+    private Button ascendButton;
 
     public PartyFormationScreen() {
         super(Minecraft.getInstance(), Minecraft.getInstance().font,
@@ -53,6 +57,8 @@ public final class PartyFormationScreen extends Screen {
     protected void init() {
         rosterButtons.clear();
         partyButtons.clear();
+        levelUpButton = null;
+        ascendButton = null;
         if (!UiLayoutMetrics.supportsPartyScreen(this.width, this.height)) {
             this.addRenderableWidget(Button.builder(Component.translatable("gui.done"), ignored -> closeScreen())
                     .bounds(Math.max(0, this.width / 2 - 40), Math.max(0, this.height - 28), 80, 20)
@@ -62,8 +68,10 @@ public final class PartyFormationScreen extends Screen {
 
         if (ProgressionClientState.generation() != seenGeneration) syncFromClient();
         UiLayoutMetrics.PartyFormationLayout layout = UiLayoutMetrics.partyFormation(this.width, this.height);
+        buildTabs(layout);
         buildRoster(layout);
         buildActiveParty(layout);
+        buildGrowthActions(layout);
         buildFooter(layout);
         refreshButtons();
     }
@@ -84,6 +92,7 @@ public final class PartyFormationScreen extends Screen {
             draftParty = List.of();
             selectedCharacterId = "";
             feedback = Component.translatable("screen.turnbound_re.party.loading").getString();
+            feedbackSuccess = false;
             return;
         }
 
@@ -99,6 +108,19 @@ public final class PartyFormationScreen extends Screen {
         selectedSlot = Math.max(0, Math.min(selectedSlot, 3));
         rosterPage = 0;
         feedback = resultFeedback(snapshot.resultCode(), snapshot.resultDetail());
+        feedbackSuccess = "ACCEPTED".equals(snapshot.resultCode()) || "GROWTH_ACCEPTED".equals(snapshot.resultCode());
+    }
+
+    private void buildTabs(UiLayoutMetrics.PartyFormationLayout layout) {
+        UiLayoutMetrics.Rect tabs = layout.tabs();
+        int gap = UiLayoutMetrics.SPACE_4;
+        int width = Math.min(82, Math.max(64, (tabs.width() - gap * 2) / 5));
+        int x = tabs.x();
+        for (DetailTab tab : DetailTab.values()) {
+            this.addRenderableWidget(Button.builder(tabLabel(tab), ignored -> selectTab(tab))
+                    .bounds(x, tabs.y(), width, tabs.height()).build());
+            x += width + gap;
+        }
     }
 
     private void buildRoster(UiLayoutMetrics.PartyFormationLayout layout) {
@@ -113,8 +135,7 @@ public final class PartyFormationScreen extends Screen {
         for (int i = 0; i < rosterPageSize; i++) {
             final int row = i;
             Button button = Button.builder(Component.empty(), ignored -> selectRosterRow(row))
-                    .bounds(region.x(), y, region.width(), rowHeight)
-                    .build();
+                    .bounds(region.x(), y, region.width(), rowHeight).build();
             rosterButtons.add(button);
             this.addRenderableWidget(button);
             y += rowHeight + gap;
@@ -123,30 +144,38 @@ public final class PartyFormationScreen extends Screen {
         int navY = region.bottom() - navHeight;
         int navWidth = Math.max(24, (region.width() - gap) / 2);
         prevRosterButton = Button.builder(Component.literal("<"), ignored -> changeRosterPage(-1))
-                .bounds(region.x(), navY, navWidth, navHeight)
-                .build();
+                .bounds(region.x(), navY, navWidth, navHeight).build();
         nextRosterButton = Button.builder(Component.literal(">"), ignored -> changeRosterPage(1))
-                .bounds(region.x() + navWidth + gap, navY, region.width() - navWidth - gap, navHeight)
-                .build();
+                .bounds(region.x() + navWidth + gap, navY, region.width() - navWidth - gap, navHeight).build();
         this.addRenderableWidget(prevRosterButton);
         this.addRenderableWidget(nextRosterButton);
     }
 
     private void buildActiveParty(UiLayoutMetrics.PartyFormationLayout layout) {
         UiLayoutMetrics.Rect region = layout.activeParty();
-        int titleHeight = 18;
-        int rowHeight = 24;
-        int gap = UiLayoutMetrics.SPACE_4;
-        int y = region.y() + titleHeight;
+        int y = region.y() + 18;
         for (int slot = 0; slot < 4; slot++) {
             final int index = slot;
             Button button = Button.builder(Component.empty(), ignored -> choosePartySlot(index))
-                    .bounds(region.x(), y, region.width(), rowHeight)
-                    .build();
+                    .bounds(region.x(), y, region.width(), 24).build();
             partyButtons.add(button);
             this.addRenderableWidget(button);
-            y += rowHeight + gap;
+            y += 28;
         }
+    }
+
+    private void buildGrowthActions(UiLayoutMetrics.PartyFormationLayout layout) {
+        if (detailTab != DetailTab.GROWTH) return;
+        UiLayoutMetrics.Rect region = layout.selectedDetail();
+        int gap = UiLayoutMetrics.SPACE_4;
+        int buttonWidth = Math.max(56, (region.width() - gap) / 2);
+        int y = region.bottom() - 20;
+        levelUpButton = Button.builder(Component.translatable("screen.turnbound_re.growth.level_up"), ignored -> submitGrowth("LEVEL_UP"))
+                .bounds(region.x(), y, buttonWidth, 20).build();
+        ascendButton = Button.builder(Component.translatable("screen.turnbound_re.growth.ascend"), ignored -> submitGrowth("ASCEND"))
+                .bounds(region.x() + buttonWidth + gap, y, region.width() - buttonWidth - gap, 20).build();
+        this.addRenderableWidget(levelUpButton);
+        this.addRenderableWidget(ascendButton);
     }
 
     private void buildFooter(UiLayoutMetrics.PartyFormationLayout layout) {
@@ -156,21 +185,25 @@ public final class PartyFormationScreen extends Screen {
         int y = footer.y() + Math.max(0, (footer.height() - 20) / 2);
 
         removeButton = Button.builder(Component.translatable("screen.turnbound_re.party.remove_slot"), ignored -> removeSelectedSlot())
-                .bounds(footer.x(), y, buttonWidth, 20)
-                .build();
+                .bounds(footer.x(), y, buttonWidth, 20).build();
         resetButton = Button.builder(Component.translatable("screen.turnbound_re.party.reset"), ignored -> resetDraft())
-                .bounds(removeButton.getRight() + gap, y, buttonWidth, 20)
-                .build();
+                .bounds(removeButton.getRight() + gap, y, buttonWidth, 20).build();
         applyButton = Button.builder(Component.translatable("screen.turnbound_re.party.apply"), ignored -> submitDraft())
-                .bounds(resetButton.getRight() + gap, y, buttonWidth, 20)
-                .build();
+                .bounds(resetButton.getRight() + gap, y, buttonWidth, 20).build();
         int doneX = footer.right() - buttonWidth;
         this.addRenderableWidget(Button.builder(Component.translatable("gui.done"), ignored -> closeScreen())
-                .bounds(doneX, y, buttonWidth, 20)
-                .build());
+                .bounds(doneX, y, buttonWidth, 20).build());
         this.addRenderableWidget(removeButton);
         this.addRenderableWidget(resetButton);
         this.addRenderableWidget(applyButton);
+    }
+
+    private void selectTab(DetailTab tab) {
+        if (detailTab == tab) return;
+        detailTab = tab;
+        feedback = "";
+        feedbackSuccess = false;
+        this.rebuildWidgets();
     }
 
     private void selectRosterRow(int row) {
@@ -179,6 +212,7 @@ public final class PartyFormationScreen extends Screen {
         if (index < 0 || index >= snapshot.characters().size()) return;
         selectedCharacterId = snapshot.characters().get(index).id();
         feedback = "";
+        feedbackSuccess = false;
         refreshButtons();
     }
 
@@ -191,17 +225,20 @@ public final class PartyFormationScreen extends Screen {
         ProgressionNetworkPayloads.CharacterView selected = snapshot.character(selectedCharacterId).orElse(null);
         if (selected == null || !selected.owned()) {
             feedback = Component.translatable("screen.turnbound_re.party.locked_cannot_assign").getString();
+            feedbackSuccess = false;
             refreshButtons();
             return;
         }
         draftParty = PartyFormationDraft.assign(draftParty, slot, selectedCharacterId);
         feedback = previewFeedback();
+        feedbackSuccess = PartyFormationDraft.cost(draftParty, snapshot) <= snapshot.partyCapacity();
         refreshButtons();
     }
 
     private void removeSelectedSlot() {
         draftParty = PartyFormationDraft.remove(draftParty, selectedSlot);
         feedback = previewFeedback();
+        feedbackSuccess = true;
         refreshButtons();
     }
 
@@ -209,14 +246,28 @@ public final class PartyFormationScreen extends Screen {
         if (snapshot == null) return;
         draftParty = snapshot.party();
         feedback = "";
+        feedbackSuccess = false;
         refreshButtons();
     }
 
     private void submitDraft() {
-        if (snapshot == null || !PartyFormationDraft.isSubmittable(draftParty, snapshot)) return;
-        if (draftParty.equals(snapshot.party())) return;
+        if (snapshot == null || !PartyFormationDraft.isSubmittable(draftParty, snapshot) || draftParty.equals(snapshot.party())) return;
         feedback = Component.translatable("screen.turnbound_re.party.saving").getString();
+        feedbackSuccess = false;
         ClientPacketDistributor.sendToServer(ProgressionNetworkPayloads.SetPartyC2S.of(snapshot.party(), draftParty));
+        refreshButtons();
+    }
+
+    private void submitGrowth(String operation) {
+        if (snapshot == null) return;
+        ProgressionNetworkPayloads.CharacterView character = snapshot.character(selectedCharacterId).orElse(null);
+        if (character == null || !character.owned()) return;
+        boolean allowed = "LEVEL_UP".equals(operation) ? character.growth().canLevelUp() : character.growth().canAscend();
+        if (!allowed) return;
+        feedback = Component.translatable("screen.turnbound_re.growth.saving").getString();
+        feedbackSuccess = false;
+        ClientPacketDistributor.sendToServer(ProgressionNetworkPayloads.GrowthC2S.of(
+                operation, character.id(), character.currentStar(), character.level()));
         refreshButtons();
     }
 
@@ -236,6 +287,8 @@ public final class PartyFormationScreen extends Screen {
             if (removeButton != null) removeButton.active = false;
             if (prevRosterButton != null) prevRosterButton.active = false;
             if (nextRosterButton != null) nextRosterButton.active = false;
+            if (levelUpButton != null) levelUpButton.active = false;
+            if (ascendButton != null) ascendButton.active = false;
             return;
         }
 
@@ -280,15 +333,17 @@ public final class PartyFormationScreen extends Screen {
         removeButton.active = selectedSlot < draftParty.size();
         resetButton.active = !draftParty.equals(snapshot.party());
         applyButton.active = !draftParty.equals(snapshot.party()) && PartyFormationDraft.isSubmittable(draftParty, snapshot);
+
+        ProgressionNetworkPayloads.CharacterView selected = snapshot.character(selectedCharacterId).orElse(null);
+        if (levelUpButton != null) levelUpButton.active = selected != null && selected.growth().canLevelUp();
+        if (ascendButton != null) ascendButton.active = selected != null && selected.growth().canAscend();
     }
 
     private String previewFeedback() {
         if (snapshot == null) return "";
         int cost = PartyFormationDraft.cost(draftParty, snapshot);
-        if (cost > snapshot.partyCapacity()) {
-            return Component.translatable("screen.turnbound_re.party.cost_over", cost, snapshot.partyCapacity()).getString();
-        }
-        return Component.translatable("screen.turnbound_re.party.cost_ok", cost, snapshot.partyCapacity()).getString();
+        return Component.translatable(cost > snapshot.partyCapacity()
+                ? "screen.turnbound_re.party.cost_over" : "screen.turnbound_re.party.cost_ok", cost, snapshot.partyCapacity()).getString();
     }
 
     private String resultFeedback(String resultCode, String detail) {
@@ -299,7 +354,17 @@ public final class PartyFormationScreen extends Screen {
             case "PARTY_COST_EXCEEDED" -> Component.translatable("screen.turnbound_re.party.server_cost_rejected", detail).getString();
             case "NOT_OWNED" -> Component.translatable("screen.turnbound_re.party.server_not_owned").getString();
             case "INVALID_PARTY" -> Component.translatable("screen.turnbound_re.party.server_invalid").getString();
-            default -> Component.translatable("screen.turnbound_re.party.server_rejected").getString();
+            case "GROWTH_ACCEPTED" -> Component.translatable("screen.turnbound_re.growth.saved").getString();
+            case "GROWTH_STALE" -> Component.translatable("screen.turnbound_re.growth.stale").getString();
+            case "GROWTH_INSUFFICIENT_COIN" -> Component.translatable("screen.turnbound_re.growth.insufficient_coin").getString();
+            case "GROWTH_INSUFFICIENT_ESSENCE" -> Component.translatable("screen.turnbound_re.growth.insufficient_essence").getString();
+            case "GROWTH_INSUFFICIENT_SHARDS" -> Component.translatable("screen.turnbound_re.growth.insufficient_shards").getString();
+            case "GROWTH_LEVEL_CAP" -> Component.translatable("screen.turnbound_re.growth.level_cap").getString();
+            case "GROWTH_NOT_AT_LEVEL_CAP" -> Component.translatable("screen.turnbound_re.growth.not_at_level_cap").getString();
+            case "GROWTH_MAX_STAR" -> Component.translatable("screen.turnbound_re.growth.max_star").getString();
+            case "GROWTH_NOT_OWNED" -> Component.translatable("screen.turnbound_re.growth.not_owned").getString();
+            default -> Component.translatable(resultCode.startsWith("GROWTH_")
+                    ? "screen.turnbound_re.growth.server_rejected" : "screen.turnbound_re.party.server_rejected").getString();
         };
     }
 
@@ -320,27 +385,27 @@ public final class PartyFormationScreen extends Screen {
 
         if (snapshot == null) {
             graphics.text(this.font, Component.translatable("screen.turnbound_re.party.loading"),
-                    layout.root().x() + UiLayoutMetrics.SPACE_8, layout.tabs().y() + 5, TEXT_SECONDARY, true);
+                    layout.root().x() + UiLayoutMetrics.SPACE_8, layout.roster().y(), TEXT_SECONDARY, true);
         } else {
             int draftCost = PartyFormationDraft.cost(draftParty, snapshot);
             String cost = Component.translatable("screen.turnbound_re.party.squad_cost", draftCost, snapshot.partyCapacity()).getString();
             graphics.text(this.font, Component.literal(cost),
                     layout.header().right() - UiLayoutMetrics.SPACE_8 - this.font.width(cost),
-                    layout.header().y() + 7,
-                    draftCost > snapshot.partyCapacity() ? TEXT_WARNING : TEXT_PRIMARY, true);
+                    layout.header().y() + 7, draftCost > snapshot.partyCapacity() ? TEXT_WARNING : TEXT_PRIMARY, true);
 
             graphics.text(this.font, Component.translatable("screen.turnbound_re.party.roster"),
                     layout.roster().x(), layout.roster().y() + 4, TEXT_PRIMARY, true);
             graphics.text(this.font, Component.translatable("screen.turnbound_re.party.active_party"),
                     layout.activeParty().x(), layout.activeParty().y() + 4, TEXT_PRIMARY, true);
-            graphics.text(this.font, Component.translatable("screen.turnbound_re.party.selected"),
+            graphics.text(this.font, tabLabel(detailTab),
                     layout.selectedDetail().x(), layout.selectedDetail().y() + 4, TEXT_PRIMARY, true);
             renderSelectedDetail(graphics, layout.selectedDetail());
         }
 
         if (!feedback.isBlank()) {
-            graphics.text(this.font, Component.literal(fit(feedback, layout.tabs().width())),
-                    layout.tabs().x(), layout.tabs().y() + 5, TEXT_WARNING, true);
+            int feedbackX = layout.tabs().x() + Math.min(270, layout.tabs().width() / 2);
+            graphics.text(this.font, Component.literal(fit(feedback, layout.tabs().right() - feedbackX)),
+                    feedbackX, layout.tabs().y() + 6, feedbackSuccess ? TEXT_SUCCESS : TEXT_WARNING, true);
         }
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
@@ -349,80 +414,168 @@ public final class PartyFormationScreen extends Screen {
         if (snapshot == null || selectedCharacterId.isBlank()) return;
         ProgressionNetworkPayloads.CharacterView character = snapshot.character(selectedCharacterId).orElse(null);
         if (character == null) return;
+        int y = renderCharacterHeader(graphics, region, character);
+        if (!character.owned()) {
+            graphics.text(this.font, Component.translatable("screen.turnbound_re.party.locked_detail"),
+                    region.x(), y, TEXT_SECONDARY, true);
+            return;
+        }
+        switch (detailTab) {
+            case OVERVIEW -> renderOverview(graphics, region, character, y);
+            case SKILLS -> renderSkills(graphics, region, character, y);
+            case GROWTH -> renderGrowth(graphics, region, character, y);
+        }
+    }
 
+    private int renderCharacterHeader(GuiGraphicsExtractor graphics, UiLayoutMetrics.Rect region,
+                                      ProgressionNetworkPayloads.CharacterView character) {
         int x = region.x();
         int y = region.y() + 18;
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED,
-                character.owned() ? FRAME_ACTIVE : FRAME_IDLE, x, y, 20, 20);
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, character.owned() ? FRAME_ACTIVE : FRAME_IDLE, x, y, 20, 20);
         graphics.text(this.font, Component.literal(displayName(character.id())), x + 26, y + 2,
                 character.owned() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
         String progression = character.owned()
                 ? stars(character.currentStar()) + "  Lv" + character.level() + "/" + character.levelCap()
                 : stars(character.originStar()) + "  " + Component.translatable("screen.turnbound_re.party.locked_short").getString();
-        graphics.text(this.font, Component.literal(fit(progression, region.width() - 26)), x + 26, y + 12,
-                TEXT_SECONDARY, true);
+        graphics.text(this.font, Component.literal(fit(progression, region.width() - 26)), x + 26, y + 12, TEXT_SECONDARY, true);
+        return y + 30;
+    }
 
-        y += 30;
+    private void renderOverview(GuiGraphicsExtractor graphics, UiLayoutMetrics.Rect region,
+                                ProgressionNetworkPayloads.CharacterView character, int y) {
+        int x = region.x();
         String roles = character.roles().stream().map(PartyFormationScreen::roleName).reduce((a, b) -> a + " · " + b).orElse("-");
-        graphics.text(this.font, Component.literal(fit(roles + "  C" + character.squadCost(), region.width())),
-                x, y, TEXT_PRIMARY, true);
-        y += 12;
-
-        if (!character.owned()) {
-            graphics.text(this.font, Component.translatable("screen.turnbound_re.party.locked_detail"),
-                    x, y, TEXT_SECONDARY, true);
-            return;
-        }
-
-        graphics.text(this.font, Component.literal("HP " + character.hp() + "   ATK " + character.atk()), x, y, TEXT_PRIMARY, true);
-        y += 11;
-        graphics.text(this.font, Component.literal("DEF " + character.def() + "   SPD " + character.spd() + "   P " + character.poise()),
-                x, y, TEXT_PRIMARY, true);
-        y += 13;
-
+        line(graphics, x, y, roles + "  C" + character.squadCost(), TEXT_PRIMARY, region.width()); y += 12;
+        line(graphics, x, y, "HP " + character.hp() + "   ATK " + character.atk(), TEXT_PRIMARY, region.width()); y += 11;
+        line(graphics, x, y, "DEF " + character.def() + "   SPD " + character.spd() + "   P " + character.poise(), TEXT_PRIMARY, region.width()); y += 13;
         if (!character.affinities().isEmpty()) {
-            String affinity = character.affinities().stream().limit(3)
-                    .map(PartyFormationScreen::affinityName)
+            String affinity = character.affinities().stream().limit(3).map(PartyFormationScreen::affinityName)
                     .reduce((a, b) -> a + " · " + b).orElse("");
-            graphics.text(this.font, Component.literal(fit(affinity, region.width())), x, y, TEXT_SECONDARY, true);
-            y += 12;
+            line(graphics, x, y, affinity, TEXT_SECONDARY, region.width()); y += 12;
         }
+        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.basic").getString() + "  " + displayName(character.basicAction()), TEXT_PRIMARY, region.width()); y += 11;
+        String skills = character.skills().stream().map(PartyFormationScreen::displayName).reduce((a, b) -> a + " / " + b).orElse("-");
+        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.skills").getString() + "  " + skills, TEXT_PRIMARY, region.width()); y += 11;
+        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.burst").getString() + "  " + displayName(character.burst()), TEXT_PRIMARY, region.width()); y += 11;
+        String passives = character.passives().stream().map(PartyFormationScreen::displayName).reduce((a, b) -> a + " / " + b).orElse("-");
+        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.passive").getString() + "  " + passives, TEXT_SECONDARY, region.width());
+    }
 
-        graphics.text(this.font, Component.literal(fit(
-                Component.translatable("screen.turnbound_re.party.basic").getString() + "  " + displayName(character.basicAction()),
-                region.width())), x, y, TEXT_PRIMARY, true);
-        y += 11;
-        if (!character.skills().isEmpty()) {
-            String skills = character.skills().stream().map(PartyFormationScreen::displayName)
-                    .reduce((a, b) -> a + " / " + b).orElse("");
-            graphics.text(this.font, Component.literal(fit(
-                    Component.translatable("screen.turnbound_re.party.skills").getString() + "  " + skills,
-                    region.width())), x, y, TEXT_PRIMARY, true);
-            y += 11;
+    private void renderSkills(GuiGraphicsExtractor graphics, UiLayoutMetrics.Rect region,
+                              ProgressionNetworkPayloads.CharacterView character, int y) {
+        int x = region.x();
+        int maxY = region.bottom() - 2;
+        for (ProgressionNetworkPayloads.ActionView action : character.actions()) {
+            if (y + 18 > maxY) break;
+            String energy = action.energyDelta() > 0 ? "+" + action.energyDelta() : Integer.toString(action.energyDelta());
+            line(graphics, x, y, actionKind(action.kind()) + " · " + displayName(action.id()) + " · E " + energy,
+                    TEXT_PRIMARY, region.width());
+            y += 10;
+            String facts = "HP " + action.hpPower() + " · P " + action.poisePower() + " · "
+                    + damageTagName(action.damageTag()) + " · " + targetName(action);
+            String special = firstSpecialEffect(action.effects());
+            if (!special.isBlank()) facts += " · " + special;
+            line(graphics, x, y, facts, TEXT_SECONDARY, region.width());
+            y += 9;
         }
-        graphics.text(this.font, Component.literal(fit(
-                Component.translatable("screen.turnbound_re.party.burst").getString() + "  " + displayName(character.burst()),
-                region.width())), x, y, TEXT_PRIMARY, true);
+    }
+
+    private void renderGrowth(GuiGraphicsExtractor graphics, UiLayoutMetrics.Rect region,
+                              ProgressionNetworkPayloads.CharacterView character, int y) {
+        int x = region.x();
+        ProgressionNetworkPayloads.GrowthView growth = character.growth();
+        line(graphics, x, y, Component.translatable("screen.turnbound_re.growth.wallet",
+                snapshot.coin(), snapshot.essence(), growth.shardBalance()).getString(), TEXT_SECONDARY, region.width()); y += 12;
+
+        line(graphics, x, y, Component.translatable("screen.turnbound_re.growth.level_preview",
+                character.level(), growth.nextLevel()).getString(), TEXT_PRIMARY, region.width()); y += 10;
+        line(graphics, x, y, statDelta(character, growth.nextLevelStats()), TEXT_SECONDARY, region.width()); y += 10;
+        line(graphics, x, y, costText(growth.levelCost()), TEXT_SECONDARY, region.width()); y += 10;
+        if (!growth.levelBlockCode().isBlank()) {
+            line(graphics, x, y, growthBlock(growth.levelBlockCode()), TEXT_WARNING, region.width()); y += 12;
+        } else y += 2;
+
+        line(graphics, x, y, Component.translatable("screen.turnbound_re.growth.ascend_preview",
+                character.currentStar(), growth.nextStar(), growth.nextLevelCap()).getString(), TEXT_PRIMARY, region.width()); y += 10;
+        line(graphics, x, y, statDelta(character, growth.nextStarStats()), TEXT_SECONDARY, region.width()); y += 10;
+        line(graphics, x, y, costText(growth.ascendCost()), TEXT_SECONDARY, region.width()); y += 10;
+        if (!growth.ascendBlockCode().isBlank()) {
+            line(graphics, x, y, growthBlock(growth.ascendBlockCode()), TEXT_WARNING, region.width());
+        }
+    }
+
+    private String statDelta(ProgressionNetworkPayloads.CharacterView current, ProgressionNetworkPayloads.StatsView next) {
+        return "HP " + current.hp() + "→" + next.hp() + "  ATK " + current.atk() + "→" + next.atk()
+                + "  DEF " + current.def() + "→" + next.def() + "  SPD " + current.spd() + "→" + next.spd()
+                + "  P " + current.poise() + "→" + next.poise();
+    }
+
+    private String costText(ProgressionNetworkPayloads.CostView cost) {
+        return Component.translatable("screen.turnbound_re.growth.cost", cost.coin(), cost.essence(), cost.shards()).getString();
+    }
+
+    private static String growthBlock(String code) {
+        String key = switch (code) {
+            case "LEVEL_CAP" -> "screen.turnbound_re.growth.level_cap";
+            case "NOT_AT_LEVEL_CAP" -> "screen.turnbound_re.growth.not_at_level_cap";
+            case "MAX_STAR" -> "screen.turnbound_re.growth.max_star";
+            case "INSUFFICIENT_COIN" -> "screen.turnbound_re.growth.insufficient_coin";
+            case "INSUFFICIENT_ESSENCE" -> "screen.turnbound_re.growth.insufficient_essence";
+            case "INSUFFICIENT_SHARDS" -> "screen.turnbound_re.growth.insufficient_shards";
+            case "NOT_OWNED" -> "screen.turnbound_re.growth.not_owned";
+            default -> "screen.turnbound_re.growth.server_rejected";
+        };
+        return Component.translatable(key).getString();
+    }
+
+    private static Component tabLabel(DetailTab tab) {
+        return Component.translatable(switch (tab) {
+            case OVERVIEW -> "screen.turnbound_re.tab.overview";
+            case SKILLS -> "screen.turnbound_re.tab.skills";
+            case GROWTH -> "screen.turnbound_re.tab.growth";
+        });
+    }
+
+    private static String actionKind(String kind) {
+        return Component.translatable("screen.turnbound_re.skill.kind." + kind.toLowerCase(Locale.ROOT)).getString();
+    }
+
+    private static String targetName(ProgressionNetworkPayloads.ActionView action) {
+        String team = Component.translatable("screen.turnbound_re.target_team." + action.targetTeam().toLowerCase(Locale.ROOT)).getString();
+        String shape = Component.translatable("screen.turnbound_re.target_shape." + action.targetShape().toLowerCase(Locale.ROOT)).getString();
+        return team + " " + shape + " ×" + action.targetCount();
+    }
+
+    private static String firstSpecialEffect(List<ProgressionNetworkPayloads.EffectView> effects) {
+        for (ProgressionNetworkPayloads.EffectView effect : effects) {
+            if ("DAMAGE".equals(effect.type()) || "HEAL".equals(effect.type()) || "NONE".equals(effect.type())) continue;
+            String name = Component.translatable("screen.turnbound_re.skill.effect." + effect.type().toLowerCase(Locale.ROOT)).getString();
+            String status = effect.status().isBlank() ? "" : " " + displayName(effect.status());
+            String duration = effect.duration() > 0 ? " " + effect.duration() + "T" : "";
+            return name + status + duration;
+        }
+        return "";
     }
 
     private static String roleName(String role) {
         if (role == null || role.isBlank()) return "?";
-        String key = "screen.turnbound_re.party.role." + role.toLowerCase(Locale.ROOT);
-        return Component.translatable(key).getString();
+        return Component.translatable("screen.turnbound_re.party.role." + role.toLowerCase(Locale.ROOT)).getString();
     }
 
     private static String affinityName(String packed) {
         if (packed == null || packed.isBlank()) return "";
         String[] parts = packed.split("=", 2);
         if (parts.length != 2) return displayName(packed);
-        String tag = Component.translatable("screen.turnbound_re.damage_tag." + parts[0].toLowerCase(Locale.ROOT)).getString();
+        String tag = damageTagName(parts[0]);
         String grade = Component.translatable("screen.turnbound_re.party.affinity." + parts[1].toLowerCase(Locale.ROOT)).getString();
         return tag + " " + grade;
     }
 
-    private static String stars(int count) {
-        return "★".repeat(Math.max(0, count));
+    private static String damageTagName(String tag) {
+        return Component.translatable("screen.turnbound_re.damage_tag." + tag.toLowerCase(Locale.ROOT)).getString();
     }
+
+    private static String stars(int count) { return "★".repeat(Math.max(0, count)); }
 
     private static String displayName(String id) {
         if (id == null || id.isBlank()) return "?";
@@ -437,6 +590,10 @@ public final class PartyFormationScreen extends Screen {
             if (word.length() > 1) out.append(word.substring(1).toLowerCase(Locale.ROOT));
         }
         return out.isEmpty() ? "?" : out.toString();
+    }
+
+    private void line(GuiGraphicsExtractor graphics, int x, int y, String text, int color, int maxWidth) {
+        graphics.text(this.font, Component.literal(fit(text, maxWidth)), x, y, color, true);
     }
 
     private String fit(String text, int maxWidth) {
