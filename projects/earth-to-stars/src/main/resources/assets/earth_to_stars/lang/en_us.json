@@ -10,5 +10,12 @@
   "message.earth_to_stars.launch.deployed": "The launch craft comes online.",
   "message.earth_to_stars.launch.existing": "You already have a registered launch craft.",
   "message.earth_to_stars.launch.control_unavailable": "The craft assembled, but pilot control could not be linked.",
-  "message.earth_to_stars.launch.failed": "The craft cannot be assembled at this location."
+  "message.earth_to_stars.launch.failed": "The craft cannot be assembled at this location.",
+  "message.earth_to_stars.supply.propellant_loaded": "The propellant cell was loaded into the craft's fuel system.",
+  "message.earth_to_stars.supply.oxygen_loaded": "The oxygen cartridge was connected to life support.",
+  "message.earth_to_stars.supply.propellant_full": "The propellant tank is already full.",
+  "message.earth_to_stars.supply.oxygen_full": "The oxygen reserve is already full.",
+  "message.earth_to_stars.supply.no_ship": "There is no accessible launch craft nearby.",
+  "message.earth_to_stars.flight.orbit_entered": "Earth orbit achieved.",
+  "message.earth_to_stars.flight.earth_returned": "Atmospheric re-entry complete."
 }
