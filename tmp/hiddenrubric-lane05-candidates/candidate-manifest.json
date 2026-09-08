@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "router-stage05-parallel-v1-lane05-candidate-manifest-v1",
+  "sourceDataset": "lmarena-ai/arena-human-preference-140k",
+  "sourceRevision": "a9cb587ee0906192dc1fc5e51778282f36c6bf35",
+  "rawRowsRead": 135634,
+  "canonicalSessions": 41038,
+  "assistantOutputsIncluded": false,
+  "candidateSignalsAreGold": false,
+  "trainingEligible": false,
+  "rejections": {
+    "multiTurn": 10156,
+    "length": 2173,
+    "higherLaneHeuristic": 2353,
+    "privacy": 241,
+    "duplicate": 7
+  },
+  "pools": {
+    "audience": {
+      "rows": 117,
+      "files": [
+        {
+          "path": "tmp/hiddenrubric-lane05-candidates/audience-000.jsonl",
+          "rows": 15,
+          "sha256": "0bdb8238ca84d281b5235f41dc25abe2f0a49cd8320fe99e49f94d1109a093fb"
+        },
+        {
+          "path": "tmp/hiddenrubric-lane05-candidates/audience-001.jsonl",
+          "rows": 15,
+          "sha256": "4eb8af8a826b5965346ae905a59d227074094424a7c63d0e644427cde2ca5136"
+        },
+        {
+          "path": "tmp/hiddenrubric-lane05-candidates/audience-002.jsonl",
+          "rows": 15,
+          "sha256": "2fdbe60f38ba309bb68b6d8cf1cea4c905d21401feb9981e0821e66c624b2f3c"
+        },
+        {
+          "path": "tmp/hiddenrubric-lane05-candidates/audience-003.jsonl",
+          "rows": 15,
+          "sha256": "7d3b49675eec48594802da2c32efd06e1391709796a7306c4c1279a3320e0ec3"
+        },
+        {
+          "path": "tmp/hiddenrubric-lane05-candidates/audience-004.jsonl",
+          "rows": 15,
+          "sha256": "1f43c8f1c9b53450c85e02c8e79a676826b9bb48ca77ff1693f4ff6e9df716d0"
+        },
+        {
+          "path": "tmp/hiddenrubric-lane05-candidates/audience-005.jsonl",
+          "rows": 15,
+          "sha256": "90cbae8dc51d4a7427d7721c0404ace002a3d44378a6a1ce1d93e3522c77587f"
+        },
+        {
+          "path": "tmp/hiddenrubric-lane05-candidates/audience-006.jsonl",
+          "rows": 15,
+          "sha256": "377b17b0601895beb6f232417aabc6327623d550149347b3462e6f0e66027934"
+        },
+        {
+          "path": "tmp/hiddenrubric-lane05-candidates/audience-007.jsonl",
+          "rows": 12,
+          "sha256": "adc081d1f98e377fda009ff1b6dec38bf0960850944ee5751f4e7867bbde7738"
+        }
+      ]
+    },
+    "performer": {
+      "rows": 7,
+      "files": [
+        {
+          "path": "tmp/hiddenrubric-lane05-candidates/performer-000.jsonl",
+          "rows": 7,
+          "sha256": "54aed07e2db3bca488aa384806a34c3748d8e4e0b497d766ec0ca959c7d82922"
+        }
+      ]
+    }
+  }
+}
