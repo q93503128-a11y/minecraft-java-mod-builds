@@ -1,0 +1,39 @@
+name: Temporary Hidden Rubric Lane05 extraction
+
+on:
+  push:
+    branches: [tmp-hiddenrubric-lane05-extract]
+    paths:
+      - '.github/workflows/tmp-hiddenrubric-lane05-extract.yml'
+      - 'tools/tmp_hiddenrubric_lane05_extract.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      HF_HUB_DISABLE_XET: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tmp-hiddenrubric-lane05-extract
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check 'pyarrow>=17,<21' 'huggingface_hub>=0.27,<1'
+      - name: Extract human-user-only candidates
+        run: python tools/tmp_hiddenrubric_lane05_extract.py
+      - name: Commit candidate snapshot to temporary branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tmp/hiddenrubric-lane05-candidates
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'temp: materialize Hidden Rubric Lane05 candidates [skip ci]'
+          git push origin HEAD:tmp-hiddenrubric-lane05-extract
