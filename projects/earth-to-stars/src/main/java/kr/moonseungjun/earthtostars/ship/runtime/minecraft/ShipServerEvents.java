@@ -90,12 +90,17 @@ public final class ShipServerEvents {
                                             }
                                             String text = String.format(
                                                     Locale.ROOT,
-                                                    "함선 전력 %.1f / %.1f (틱당 +%.1f) | 기관포 탄약 %d / %d | 센서 접촉 %d",
+                                                    "전력 %.1f/%.1f (+%.1f/t) | 추진제 %.1f/%.1f | 산소 %.1f/%.1f | 기관포 %d/%d | 센서 %.0f블록 / 접촉 %d",
                                                     status.powerStored(),
                                                     status.powerCapacity(),
                                                     status.generationPerTick(),
+                                                    status.propellant(),
+                                                    status.propellantCapacity(),
+                                                    status.oxygen(),
+                                                    status.oxygenCapacity(),
                                                     status.ammo(),
                                                     status.ammoCapacity(),
+                                                    status.sensorRange(),
                                                     status.contacts()
                                             );
                                             context.getSource().sendSuccess(() -> Component.literal(text), false);
@@ -128,13 +133,13 @@ public final class ShipServerEvents {
                                                 context.getSource().sendSuccess(() -> Component.literal("함포 발사."), false);
                                                 return 1;
                                             }
-                                            context.getSource().sendFailure(Component.literal("발사할 수 없습니다. 전력, 탄약, 조종권, 재장전 시간 또는 사격각을 확인하세요."));
+                                            context.getSource().sendFailure(Component.literal("발사할 수 없습니다. 설치 함포, 전력, 탄약, 조종권, 재장전 시간 또는 사격각을 확인하세요."));
                                             return 0;
                                         }))
                                         .then(Commands.literal("status").executes(context -> {
                                             ShipTurretManager.TurretStatus status = ShipTurretManager.status(context.getSource().getPlayerOrException());
                                             if (!status.available()) {
-                                                context.getSource().sendFailure(Component.literal("사용 가능한 함포가 없습니다."));
+                                                context.getSource().sendFailure(Component.literal("설치된 함포가 없습니다."));
                                                 return 0;
                                             }
                                             context.getSource().sendSuccess(() -> Component.literal(
@@ -150,7 +155,7 @@ public final class ShipServerEvents {
             context.getSource().sendSuccess(() -> Component.literal("함포 모드: " + mode), false);
             return 1;
         }
-        context.getSource().sendFailure(Component.literal("무장 제어 권한이 있는 함선을 찾지 못했습니다."));
+        context.getSource().sendFailure(Component.literal("설치된 함포가 없거나 무장 제어 권한이 없습니다."));
         return 0;
     }
 
@@ -158,6 +163,7 @@ public final class ShipServerEvents {
     private static void onServerTick(ServerTickEvent.Post event) {
         ShipSystemsManager.tick(event.getServer());
         ShipRuntimeManager.tick(event.getServer());
+        OrbitalMissionManager.tick(event.getServer());
         ShipTurretManager.tick(event.getServer());
     }
 
@@ -166,6 +172,7 @@ public final class ShipServerEvents {
         ShipRuntimeManager.initialize(event.getServer());
         ShipSystemsManager.initialize(event.getServer());
         ShipTurretManager.clear();
+        OrbitalMissionManager.clear();
     }
 
     @SubscribeEvent
@@ -175,6 +182,7 @@ public final class ShipServerEvents {
 
     @SubscribeEvent
     private static void onServerStopping(ServerStoppingEvent event) {
+        OrbitalMissionManager.clear();
         ShipSystemsManager.flush(event.getServer());
     }
 
