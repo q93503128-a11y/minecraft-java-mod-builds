@@ -69,9 +69,9 @@ def validate_passenger_contract() -> None:
 
 def validate_supply_feedback() -> None:
     source = text(JAVA / "kr/moonseungjun/earthtostars/content/ShipSupplyItem.java")
-    if "sendSystemMessage" in source:
-        fail("supply feedback still writes repeatable lines into chat")
-    if source.count("displayClientMessage") < 3:
+    if "displayClientMessage" in source:
+        fail("obsolete pre-26.2 player feedback API remains in supply UX")
+    if source.count("sendSystemMessage") < 3 or source.count(", true);") < 3:
         fail("supply success/full/no-ship feedback is not consistently actionbar based")
 
 

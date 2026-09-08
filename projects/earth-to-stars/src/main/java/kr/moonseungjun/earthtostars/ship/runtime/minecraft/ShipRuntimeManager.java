@@ -127,15 +127,15 @@ public final class ShipRuntimeManager {
             return false;
         }
         if (exterior.level() != player.level() || exterior.distanceToSqr(player) > CONTROL_RANGE_SQUARED) {
-            player.displayClientMessage(Component.translatable("message.earth_to_stars.ship.too_far"), true);
+            player.sendSystemMessage(Component.translatable("message.earth_to_stars.ship.too_far"), true);
             return false;
         }
         if (!entry.runtime().ship().can(player.getUUID(), ShipPermission.PILOT)) {
-            player.displayClientMessage(Component.translatable("message.earth_to_stars.ship.no_pilot_permission"), true);
+            player.sendSystemMessage(Component.translatable("message.earth_to_stars.ship.no_pilot_permission"), true);
             return false;
         }
         if (!exterior.getPassengers().isEmpty() && exterior.getFirstPassenger() != player) {
-            player.displayClientMessage(Component.translatable("message.earth_to_stars.ship.seat_occupied"), true);
+            player.sendSystemMessage(Component.translatable("message.earth_to_stars.ship.seat_occupied"), true);
             return false;
         }
 
@@ -149,7 +149,7 @@ public final class ShipRuntimeManager {
             }
             return false;
         }
-        player.displayClientMessage(Component.translatable("message.earth_to_stars.ship.boarded"), true);
+        player.sendSystemMessage(Component.translatable("message.earth_to_stars.ship.boarded"), true);
         return true;
     }
 
@@ -329,25 +329,25 @@ public final class ShipRuntimeManager {
         }
         ShipState ship = entry.runtime().ship();
         if (!ship.ownerId().equals(player.getUUID())) {
-            player.displayClientMessage(Component.translatable("message.earth_to_stars.ship.retire_owner_only"), true);
+            player.sendSystemMessage(Component.translatable("message.earth_to_stars.ship.retire_owner_only"), true);
             return false;
         }
         if (!exterior.level().dimension().equals(Level.OVERWORLD)) {
-            player.displayClientMessage(Component.translatable("message.earth_to_stars.ship.retire_earth_only"), true);
+            player.sendSystemMessage(Component.translatable("message.earth_to_stars.ship.retire_earth_only"), true);
             return false;
         }
         if (entry.runtime().transform().velocity().lengthSquared() > RETIRE_MAX_SPEED_SQUARED) {
-            player.displayClientMessage(Component.translatable("message.earth_to_stars.ship.retire_moving"), true);
+            player.sendSystemMessage(Component.translatable("message.earth_to_stars.ship.retire_moving"), true);
             return false;
         }
         if (!exterior.getPassengers().isEmpty()) {
-            player.displayClientMessage(Component.translatable("message.earth_to_stars.ship.retire_occupied"), true);
+            player.sendSystemMessage(Component.translatable("message.earth_to_stars.ship.retire_occupied"), true);
             return false;
         }
         boolean otherCrewInside = activeCrewPlayers(player.level().getServer(), ship.shipId()).stream()
                 .anyMatch(crew -> !crew.getUUID().equals(player.getUUID()));
         if (otherCrewInside) {
-            player.displayClientMessage(Component.translatable("message.earth_to_stars.ship.retire_occupied"), true);
+            player.sendSystemMessage(Component.translatable("message.earth_to_stars.ship.retire_occupied"), true);
             return false;
         }
 
@@ -587,7 +587,7 @@ public final class ShipRuntimeManager {
         ShipSystemsManager.OrbitReadiness readiness = ShipSystemsManager.orbitReadiness(entry.runtime().ship());
         entry.runtime().lease().map(ShipControlLease::controllerId)
                 .map(server.getPlayerList()::getPlayer)
-                .ifPresent(player -> player.displayClientMessage(Component.literal(String.format(
+                .ifPresent(player -> player.sendSystemMessage(Component.literal(String.format(
                         Locale.ROOT,
                         "궤도 진입 준비 부족 — 추진제 %.0f/%.0f · 산소 %.0f/%.0f · 생명유지 %s",
                         readiness.propellant(),

@@ -49,7 +49,7 @@ public final class ShipExteriorEntity extends Entity {
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
         if (source.getEntity() instanceof ServerPlayer player) {
-            player.displayClientMessage(Component.translatable("message.earth_to_stars.ship.retire_hint"), true);
+            player.sendSystemMessage(Component.translatable("message.earth_to_stars.ship.retire_hint"), true);
             return true;
         }
         return false;
@@ -91,7 +91,7 @@ public final class ShipExteriorEntity extends Entity {
     }
 
     @Override
-    public boolean canBeCollidedWith() {
+    public boolean canBeCollidedWith(Entity other) {
         return false;
     }
 }

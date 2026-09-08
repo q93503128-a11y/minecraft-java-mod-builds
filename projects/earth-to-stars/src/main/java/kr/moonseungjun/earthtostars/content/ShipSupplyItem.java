@@ -27,7 +27,7 @@ public final class ShipSupplyItem extends Item {
                 if (!player.getAbilities().instabuild) {
                     context.getItemInHand().shrink(1);
                 }
-                player.displayClientMessage(Component.translatable(
+                player.sendSystemMessage(Component.translatable(
                         supplyType == ShipSystemsManager.SupplyType.PROPELLANT
                                 ? "message.earth_to_stars.supply.propellant_loaded"
                                 : "message.earth_to_stars.supply.oxygen_loaded"
@@ -35,7 +35,7 @@ public final class ShipSupplyItem extends Item {
                 yield InteractionResult.SUCCESS_SERVER;
             }
             case TANK_FULL -> {
-                player.displayClientMessage(Component.translatable(
+                player.sendSystemMessage(Component.translatable(
                         supplyType == ShipSystemsManager.SupplyType.PROPELLANT
                                 ? "message.earth_to_stars.supply.propellant_full"
                                 : "message.earth_to_stars.supply.oxygen_full"
@@ -43,7 +43,7 @@ public final class ShipSupplyItem extends Item {
                 yield InteractionResult.FAIL;
             }
             case NO_ACCESSIBLE_SHIP -> {
-                player.displayClientMessage(Component.translatable("message.earth_to_stars.supply.no_ship"), true);
+                player.sendSystemMessage(Component.translatable("message.earth_to_stars.supply.no_ship"), true);
                 yield InteractionResult.FAIL;
             }
         };
