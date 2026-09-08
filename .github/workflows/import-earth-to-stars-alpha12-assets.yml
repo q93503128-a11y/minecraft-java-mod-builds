@@ -1,0 +1,41 @@
+name: Import EARTH TO STARS alpha.12 CC0 assets
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/import-earth-to-stars-alpha12-assets.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vendor pinned Kenney Space Kit meshes
+        shell: bash
+        run: |
+          set -euo pipefail
+          dst='projects/earth-to-stars/src/main/resources/assets/earth_to_stars/models/kenney/space_kit'
+          base='https://raw.githubusercontent.com/melonjs/melonJS/5ab23f5a7be8fe4a1fc7abbe225428106e8a833c/packages/examples/public/assets/multiMaterialMesh'
+          mkdir -p "$dst"
+          for file in craft_speederA.obj craft_speederA.mtl craft_miner.obj craft_miner.mtl craft_racer.obj craft_racer.mtl; do
+            curl --fail --location --retry 3 --silent --show-error "$base/$file" --output "$dst/$file"
+            test -s "$dst/$file"
+            grep -q 'Created by Kenney' "$dst/$file"
+          done
+      - name: Commit vendored assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/earth-to-stars/src/main/resources/assets/earth_to_stars/models/kenney/space_kit
+          if git diff --cached --quiet; then
+            echo 'Assets already imported.'
+            exit 0
+          fi
+          git commit -m 'assets(earth-to-stars): import Kenney CC0 spacecraft meshes [skip ci]'
+          git push origin HEAD:main
