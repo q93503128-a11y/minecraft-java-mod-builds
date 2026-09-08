@@ -4,29 +4,73 @@ import kr.moonseungjun.earthtostars.ship.combat.SensorContact;
 import kr.moonseungjun.earthtostars.ship.domain.ShipId;
 import kr.moonseungjun.earthtostars.ship.domain.ShipPermission;
 import kr.moonseungjun.earthtostars.ship.domain.ShipState;
+import kr.moonseungjun.earthtostars.ship.persistence.minecraft.ShipSystemsSavedData;
 import kr.moonseungjun.earthtostars.ship.runtime.ShipControlInput;
 import kr.moonseungjun.earthtostars.ship.runtime.ShipVec3;
 import kr.moonseungjun.earthtostars.ship.systems.ShipSystemsRuntime;
+import kr.moonseungjun.earthtostars.ship.systems.ShipSystemsSnapshot;
 import kr.moonseungjun.earthtostars.ship.systems.ShipSystemsTuning;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 public final class ShipSystemsManager {
+    private static final long PERSIST_INTERVAL_TICKS = 100L;
     private static final Map<ShipId, ShipSystemsRuntime> SYSTEMS = new LinkedHashMap<>();
+    private static long lastPersistTick = Long.MIN_VALUE;
 
     private ShipSystemsManager() {
+    }
+
+    public static void initialize(MinecraftServer server, Collection<ShipState> ships) {
+        SYSTEMS.clear();
+        lastPersistTick = Long.MIN_VALUE;
+
+        ShipSystemsSavedData savedData = ShipSystemsSavedData.get(server);
+        Map<ShipId, ShipSystemsSnapshot> persisted = savedData.decodeAll();
+        Map<ShipId, ShipState> canonicalShips = new LinkedHashMap<>();
+        for (ShipState ship : ships) {
+            canonicalShips.put(ship.shipId(), ship);
+        }
+
+        for (ShipId persistedId : persisted.keySet()) {
+            if (!canonicalShips.containsKey(persistedId)) {
+                throw new IllegalStateException("orphan persisted systems state for unknown ship " + persistedId);
+            }
+        }
+
+        for (ShipState ship : canonicalShips.values()) {
+            ShipSystemsSnapshot snapshot = persisted.get(ship.shipId());
+            ShipSystemsRuntime runtime = snapshot == null
+                    ? ShipSystemsRuntime.p0(ship.shipId())
+                    : ShipSystemsRuntime.restore(snapshot, ShipSystemsTuning.P0);
+            SYSTEMS.put(ship.shipId(), runtime);
+            if (snapshot == null) {
+                savedData.put(runtime.snapshot());
+            }
+        }
+    }
+
+    public static void registerNewShip(MinecraftServer server, ShipState ship) {
+        ShipSystemsRuntime runtime = ShipSystemsRuntime.p0(ship.shipId());
+        if (SYSTEMS.putIfAbsent(ship.shipId(), runtime) != null) {
+            throw new IllegalStateException("systems runtime already exists for ship " + ship.shipId());
+        }
+        ShipSystemsSavedData.get(server).put(runtime.snapshot());
     }
 
     public static void tick(MinecraftServer server) {
@@ -43,6 +87,7 @@ public final class ShipSystemsManager {
                 systems.sensorGrid().update(scanContacts(anchor, systems.tuning().sensorRange()), tick);
             }
         }
+        checkpointIfDue(server);
     }
 
     static boolean allowPropulsion(ShipState ship, ShipControlInput input) {
@@ -51,6 +96,10 @@ public final class ShipSystemsManager {
 
     static ShipSystemsRuntime systems(ShipState ship) {
         return SYSTEMS.computeIfAbsent(ship.shipId(), ShipSystemsRuntime::p0);
+    }
+
+    static Optional<ShipSystemsRuntime> find(ShipId shipId) {
+        return Optional.ofNullable(SYSTEMS.get(shipId));
     }
 
     public static SystemStatus status(ServerPlayer player) {
@@ -71,12 +120,33 @@ public final class ShipSystemsManager {
         );
     }
 
+    public static void flush(MinecraftServer server) {
+        ShipSystemsSavedData savedData = ShipSystemsSavedData.get(server);
+        for (ShipSystemsRuntime runtime : SYSTEMS.values()) {
+            savedData.put(runtime.snapshot());
+        }
+    }
+
     public static void removeShip(ShipId shipId) {
         SYSTEMS.remove(shipId);
     }
 
     public static void clear() {
         SYSTEMS.clear();
+        lastPersistTick = Long.MIN_VALUE;
+    }
+
+    private static void checkpointIfDue(MinecraftServer server) {
+        ServerLevel overworld = server.getLevel(Level.OVERWORLD);
+        if (overworld == null) {
+            return;
+        }
+        long tick = overworld.getGameTime();
+        if (lastPersistTick != Long.MIN_VALUE && tick - lastPersistTick < PERSIST_INTERVAL_TICKS) {
+            return;
+        }
+        flush(server);
+        lastPersistTick = tick;
     }
 
     private static boolean shouldScan(ShipId shipId, long tick, ShipSystemsTuning tuning) {
