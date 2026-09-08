@@ -1,0 +1,147 @@
+name: Finalize EARTH TO STARS alpha.12 docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/finalize-earth-to-stars-alpha12-docs.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Sync alpha.12 canon docs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git pull --rebase origin main
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path('projects/earth-to-stars')
+
+          def read(rel):
+              p = Path(rel) if rel.startswith('projects/') else root / rel
+              return p, p.read_text(encoding='utf-8')
+
+          def write(p, body):
+              p.write_text(body, encoding='utf-8')
+
+          def once(body, old, new, label):
+              count = body.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, found {count}')
+              return body.replace(old, new, 1)
+
+          # PROJECT.md — preserve design content, replace only current implementation/verification claims.
+          p, body = read('PROJECT.md')
+          body = once(body, '- Mod version: `0.1.0-alpha.11`', '- Mod version: `0.1.0-alpha.12`', 'PROJECT version')
+          body = once(body, '- Final JAR: `earth_to_stars-0.1.0-alpha.11.jar`', '- Final JAR: `earth_to_stars-0.1.0-alpha.12.jar`', 'PROJECT jar')
+          body = once(body, '## 0.1.0-alpha.11 — M1-D Orbital Recovery + First Contact Backend', '## 0.1.0-alpha.12 — Live-Acceptance Rescue', 'PROJECT baseline heading')
+          body = once(body, '5. exterior proxy placement', '5. custom `ShipExteriorEntity` + model-backed spacecraft visual placement', 'PROJECT deploy contract')
+          body = body.replace('Current ArmorStand salvage/interceptor and technical cockpit tether are functional proxies only.', 'Current salvage/interceptor presentation uses distinct Kenney Space Kit OBJ-backed visuals, and the pilot uses the actual `ShipExteriorEntity` passenger relationship. These are now real runtime presentation/vehicle paths, while client visual feel still requires live review.')
+          old_visual = '''# Current visual boundary\n\nThe following are NOT production quality:\n\n- ArmorStand ship exterior\n- ArmorStand salvage/interceptor proxies\n- vanilla texture item proxies\n- technical cockpit tether\n- technical linked-interior room\n- current orbital-space presentation\n- command-based technical controls\n- logical projectile visual\n- temporary use-on-block supply/upgrade UX'''
+          new_visual = '''# Current visual boundary\n\nalpha.12 removed the live-acceptance blockers that used ArmorStand/fake tether presentation. The following still require later visual/UX production work or live review:\n\n- technical linked-interior room\n- current orbital-space environment presentation\n- command-based technical controls that remain outside the main survival loop\n- logical projectile visual\n- temporary use-on-block supply/upgrade UX\n- cockpit/camera/interpolation polish\n- live scale, seat-position, silhouette and readability review for the three imported spacecraft meshes'''
+          body = once(body, old_visual, new_visual, 'PROJECT visual boundary')
+          old_status = '`M1-D ORBITAL RECOVERY + FIRST CONTACT BACKEND VERIFIED / SHIPSTATE SCHEMA 1→2 LIFECYCLE VERIFIED / FULL EARTH→ORBIT→RETURN LIVE ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`'
+          new_status = '`ALPHA.12 LIVE-ACCEPTANCE RESCUE BUILD + DEDICATED RESOURCE LOAD VERIFIED / LIVE CLIENT ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`'
+          body = body.replace(old_status, new_status)
+          pattern = re.compile(r'''Latest verified implementation/CI commit:\n\n`afe0d181667582877e911ef279a869c7e31d0c23`\n\nGitHub Actions `Build earth-to-stars` run `34197931566`: \*\*PASS\*\*\n\nVerified JAR SHA-256:\n\n`f818686c7dde57e7a33e27967069c7e2074ce6b97febd0b13721e1165ac37fb0`\n\nVerified in this gate:\n\n(?:- .*\n)+\nBecause alpha\.11 changes ShipState schema, the expensive two-boot lifecycle was deliberately rerun once\. After success, ordinary pushes returned to the cheaper gate; lifecycle is explicit `workflow_dispatch` unless a future persistence risk justifies another rerun\.''')
+          replacement = '''Latest verified implementation/CI commit:\n\n`52dadef15fa0bb6faf5048c51ae67892db191653`\n\nGitHub Actions `Build earth-to-stars` run `34232842854`: **PASS**\n\nVerified JAR SHA-256:\n\n`b44f85ba2d05b885b1319822a0044e70535bff93696900b8ba5e191e04b51c15`\n\nVerified in this gate:\n\n- P0-H progression validator\n- actual M1 launch recipe dependency closure\n- actual launch recipe Nether/End independence\n- alpha.12 live-acceptance static contract\n- actual passenger/control source contract\n- safe authoritative ship retirement source contract\n- Minecraft 26.2 runtime API contract for actionbar feedback, ItemDisplay lookup and collision signature\n- three distinct Kenney Space Kit OBJ/MTL visuals packaged\n- existing M1-D starter/recovery/scanner/schema-migration JUnit regression\n- Minecraft 26.2 / NeoForge 26.2.0.38-beta compile\n- `clean test build`\n- production JAR verify\n\nDedicated resource-load smoke run `34233144671`: **PASS**\n\n- dedicated server reached normal `Done` startup\n- `RecipeManager` loaded 1591 recipes\n- no alpha.11-style recipe parsing error was detected\n- `earth_to_stars:ship_interiors` and `earth_to_stars:orbital_space` loaded on the server\n\nThe expensive two-boot save/restart lifecycle was **not rerun** because alpha.12 did not change the ShipState schema or persistence layout. The latest two-boot persistence verification remains run `34197931566`.'''
+          body2, n = pattern.subn(replacement, body, count=1)
+          if n != 1:
+              raise SystemExit(f'PROJECT verification block: expected one match, found {n}')
+          write(p, body2)
+
+          # README.md — current-facing summary only; historical detail remains in CHANGELOG.
+          p, body = read('README.md')
+          body = body.replace('> **상태: M1-D ORBITAL RECOVERY + FIRST CONTACT BACKEND VERIFIED / SHIPSTATE SCHEMA 1→2 LIFECYCLE VERIFIED / FULL EARTH→ORBIT→RETURN LIVE ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED**', '> **상태: ALPHA.12 LIVE-ACCEPTANCE RESCUE BUILD + DEDICATED RESOURCE LOAD VERIFIED / LIVE CLIENT ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED**')
+          body = once(body, '# 현재 구현 — 0.1.0-alpha.11', '# 현재 구현 — 0.1.0-alpha.12', 'README current version')
+          body = body.replace('- 현재 visible salvage는 ArmorStand 기술 proxy다.', '- 현재 visible salvage는 Kenney Space Kit `craft_miner` OBJ 기반 model-backed visual이다.')
+          old_tether = '''### technical cockpit tether\n\n현재 production cockpit이 없기 때문에 pilot이 움직이는 exterior에서 멀어져 server control range 밖으로 나가지 않도록 controlling player를 authoritative exterior와 함께 이동시키는 기술용 tether를 사용한다. 이건 final 탑승/카메라 시스템이 아니다.'''
+          new_tether = '''### actual pilot vehicle\n\nalpha.12부터 pilot은 `ShipExteriorEntity`에 실제 passenger로 탑승한다. 서버는 `player.getVehicle() == ship exterior`인 탑승자에게만 조종 입력을 허용한다. Shift는 Minecraft 기본 하차에 남기고 pitch-down은 Ctrl/sprint key 계열로 분리했다. Earth↔Orbit 전환도 하차 → player teleport → 같은 ShipId의 target exterior 생성 → 재탑승 → control session 재발급 순서로 처리한다.'''
+          body = once(body, old_tether, new_tether, 'README tether section')
+          old_boundary = '''# 기술 프록시 경계\n\n현재 다음은 final 품질이 아니다.\n\n- ArmorStand ship exterior\n- ArmorStand orbital salvage/interceptor\n- vanilla texture item proxy\n- technical cockpit tether\n- 기술용 `ship_interiors` room\n- 현재 `orbital_space` presentation\n- 임시 use-on-block 보급/upgrade UX\n- command 기반 일부 조작면\n- logical projectile visual'''
+          new_boundary = '''# 남은 production 품질 경계\n\nalpha.12에서 ArmorStand ship/salvage/interceptor와 fake cockpit tether는 제거했다. 현재 다음은 아직 final 품질 또는 live acceptance가 아니다.\n\n- 기술용 `ship_interiors` room\n- 현재 `orbital_space` environment presentation\n- 임시 use-on-block 보급/upgrade UX\n- command 기반 일부 기술 조작면\n- logical projectile visual\n- 실제 client에서의 cockpit/camera/interpolation\n- Kenney spacecraft mesh의 Minecraft 화면상 scale/seat/readability 최종 검수'''
+          body = once(body, old_boundary, new_boundary, 'README boundary')
+          old_verify_start = '검증 기준 source commit: `afe0d181667582877e911ef279a869c7e31d0c23`'
+          if old_verify_start not in body:
+              raise SystemExit('README verification start missing')
+          start = body.index(old_verify_start)
+          end_marker = 'ShipState schema 변경 위험 때문에 alpha.11에서는 dedicated two-boot lifecycle을 의도적으로 한 번 다시 실행했다. 성공 후 workflow는 다시 explicit `workflow_dispatch`에서만 비싼 lifecycle 검사를 수행한다.'
+          end = body.index(end_marker, start) + len(end_marker)
+          new_verify = '''검증 기준 source commit: `52dadef15fa0bb6faf5048c51ae67892db191653`\n\nGitHub Actions `Build earth-to-stars` run `34232842854`: **PASS**\n\n- progression / M1 launch closure / Nether-End independence: PASS\n- alpha.12 acceptance static gate: PASS\n- actual passenger + safe retirement source contracts: PASS\n- Minecraft 26.2 API regression gate: PASS\n- three distinct Kenney OBJ/MTL visual resources packaged: PASS\n- existing P0/M1 JUnit regressions: PASS\n- `clean test build`: PASS\n- production JAR verify: PASS\n- JAR: `earth_to_stars-0.1.0-alpha.12.jar`\n- SHA-256: `b44f85ba2d05b885b1319822a0044e70535bff93696900b8ba5e191e04b51c15`\n\nDedicated server resource-load smoke run `34233144671`: **PASS**\n\n- Minecraft 26.2 / NeoForge 26.2.0.38-beta startup complete\n- 1591 recipes loaded\n- alpha.11에서 관측된 recipe parsing error 재현 없음\n- custom space/interior dimensions loaded\n\nPersistence schema/layout은 alpha.12에서 바뀌지 않았으므로 expensive two-boot save/restart lifecycle은 재실행하지 않았다. 마지막 two-boot persistence PASS는 run `34197931566`이다.\n\n- live Earth→Orbit→salvage→combat→Earth return cycle: `NOT PLAYTESTED`\n- live multiplayer: `NOT TESTED`\n- client visual quality: `NOT PLAYTESTED`'''
+          body = body[:start] + new_verify + body[end:]
+          write(p, body)
+
+          # M1 slice — update current execution state without deleting gameplay design.
+          p, body = read('docs/05_M1_EARTH_ORBIT_GAMEPLAY_SLICE.md')
+          body = once(body, '현재 버전: `0.1.0-alpha.11`', '현재 버전: `0.1.0-alpha.12`', 'M1 version')
+          body = body.replace('`M1-D ORBITAL RECOVERY + FIRST CONTACT BACKEND VERIFIED / SHIPSTATE SCHEMA 1→2 LIFECYCLE VERIFIED / FULL EARTH→ORBIT→RETURN LIVE ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`', '`ALPHA.12 LIVE-ACCEPTANCE RESCUE BUILD + DEDICATED RESOURCE LOAD VERIFIED / LIVE CLIENT ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`')
+          body = body.replace('- technical cockpit tether로 pilot/exterior control-authority drift 방지', '- actual `ShipExteriorEntity` passenger 탑승 + 탑승자 전용 control authority')
+          body = body.replace('- item rendering/temporary icons in client', '- imported spacecraft OBJ의 실제 client scale/seat/readability')
+          body = body.replace('5. exterior proxy를 월드에 생성할 수 있는가.', '5. custom `ShipExteriorEntity`와 model-backed spacecraft visual을 월드에 생성할 수 있는가.')
+          body = body.replace('- 현재 ArmorStand exterior는 기술 프록시이며 production ship model이 아니다.', '- alpha.12부터 ArmorStand exterior는 사용하지 않는다. 실제 탑승용 `ShipExteriorEntity`와 Kenney Space Kit `craft_speederA` OBJ 기반 visual을 분리해 사용한다.')
+          if 'technical cockpit tether로' in body or '현재 ArmorStand exterior는' in body:
+              raise SystemExit('M1 current stale proxy statement remains')
+          alpha12_note = '''\n## 1.1 alpha.12 Live-Acceptance Rescue 검증\n\nalpha.11 실플레이 실패를 닫기 위해 alpha.12에서 다음을 현재 M1 계약으로 승격했다.\n\n- ArmorStand starter ship 제거 → custom `ShipExteriorEntity`\n- fake controller tether 제거 → actual passenger / `startRiding()`\n- 탑승자만 ship control packet 승인\n- Shift 기본 하차 보존, pitch-down은 Ctrl/sprint key 계열로 분리\n- Earth↔Orbit 전환에서 동일 ShipId 유지 + target exterior 재생성 + pilot 재탑승 + control session 재발급\n- punching은 비파괴; 정지한 지구 함선의 owner `Shift+우클릭`만 pack-up lifecycle 실행\n- pack-up transaction이 repository / ShipSavedData / ShipSystemsSavedData / interior / turret / mission / runtime control을 함께 정리\n- full/no-ship 보급 피드백은 chat 누적 대신 actionbar 사용\n- Minecraft 26.2 recipe ingredient string 형식 적용 및 validator 잠금\n- starter/salvage/interceptor에 각각 `craft_speederA` / `craft_miner` / `craft_racer` OBJ visual 사용\n\n자동 검증:\n\n- build run `34232842854`: `PASS`\n- dedicated resource-load smoke run `34233144671`: `PASS`\n- production JAR: `earth_to_stars-0.1.0-alpha.12.jar`\n- SHA-256: `b44f85ba2d05b885b1319822a0044e70535bff93696900b8ba5e191e04b51c15`\n\n이 검증은 실제 client 조종감/카메라/모델 스케일/전투 feel을 증명하지 않는다. 해당 축은 live client acceptance에서 판정한다.\n\n---\n'''
+          marker = '\n---\n\n# 2. Earth 자원 설계'
+          if marker not in body:
+              raise SystemExit('M1 section marker missing')
+          body = body.replace(marker, alpha12_note + '\n# 2. Earth 자원 설계', 1)
+          write(p, body)
+
+          # THIRD_PARTY_ASSETS.md — license ledger must match actual vendored files.
+          p, body = read('THIRD_PARTY_ASSETS.md')
+          body = once(body, '현재 EARTH TO STARS 저장소에는 아래 외부 자산 파일을 직접 복사해 넣지 않았다.', '현재 EARTH TO STARS 저장소에는 Kenney Space Kit의 CC0 spacecraft OBJ/MTL 3종을 `DIRECT_USE`로 vendoring했다. 라이선스 권위 출처는 Kenney 공식 페이지이며, repository에 들어온 원본 mesh 파일은 아래 ledger에서 추적한다.', 'asset current import statement')
+          space_anchor = '''## 5. Kenney — Space Kit\n\n- Type: `BASE CANDIDATE / DIRECT USE CANDIDATE`\n- Source: Kenney\n- URL: https://kenney.nl/assets/space-kit\n- License observed during research: CC0\n- Package size observed during research: about 150 3D models\n- Why useful:\n  - spacecraft/space props\n  - concept and silhouette base\n- Required adaptation:\n  - do not use as-is if visual language clashes with Minecraft or final ship system\n  - rework scale/material/texture language\n- Imported files: none'''
+          space_new = '''## 5. Kenney — Space Kit\n\n- Type: `DIRECT_USE / EDITABLE_BASE`\n- Source / license authority: Kenney\n- Official URL: https://kenney.nl/assets/space-kit\n- License verified: CC0 1.0\n- Package size observed during research: about 150 3D models\n- Current use:\n  - `craft_speederA` — starter launch craft\n  - `craft_miner` — orbital salvage\n  - `craft_racer` — first interceptor\n- Vendoring provenance:\n  - source bytes obtained from pinned public mirror `melonjs/melonJS@5ab23f5a7be8fe4a1fc7abbe225428106e8a833c`\n  - OBJ/MTL files identify `Created by Kenney (www.kenney.nl)`\n  - the mirror is a byte source, not the license authority; CC0 status is verified against Kenney's official asset page\n- Repository path: `src/main/resources/assets/earth_to_stars/models/kenney/space_kit/`\n- Modification policy:\n  - vendored OBJ/MTL source bytes are kept intact\n  - Minecraft-facing scale/orientation/presentation is adapted through NeoForge model/item resources and runtime transforms\n  - later replacement/rework is allowed if live client review finds scale/style/readability mismatch'''
+          body = once(body, space_anchor, space_new, 'Space Kit ledger section')
+          old_row = '| — | — | — | — | — | — | — | — | — |'
+          rows = '''| ETS-KENNEY-SPACE-001 | `craft_speederA.obj/.mtl` | Kenney | https://kenney.nl/assets/space-kit | CC0 1.0 | `DIRECT_USE` | source mesh bytes unchanged; Minecraft wrapper/transform | `src/main/resources/assets/earth_to_stars/models/kenney/space_kit/craft_speederA.*` | 2026-09-08 |\n| ETS-KENNEY-SPACE-002 | `craft_miner.obj/.mtl` | Kenney | https://kenney.nl/assets/space-kit | CC0 1.0 | `DIRECT_USE` | source mesh bytes unchanged; Minecraft wrapper/transform | `src/main/resources/assets/earth_to_stars/models/kenney/space_kit/craft_miner.*` | 2026-09-08 |\n| ETS-KENNEY-SPACE-003 | `craft_racer.obj/.mtl` | Kenney | https://kenney.nl/assets/space-kit | CC0 1.0 | `DIRECT_USE` | source mesh bytes unchanged; Minecraft wrapper/transform | `src/main/resources/assets/earth_to_stars/models/kenney/space_kit/craft_racer.*` | 2026-09-08 |'''
+          body = once(body, old_row, rows, 'asset ledger rows')
+          write(p, body)
+
+          # CHANGELOG — prepend an alpha.12 entry; alpha.11 below remains historical and accurate.
+          p, body = read('CHANGELOG.md')
+          insert = '''## 2026-09-08 — alpha.12 Live-Acceptance Rescue\n\n### Fixed / Changed\n\n- mod version `0.1.0-alpha.12`\n- ArmorStand starter ship runtime 제거, custom `ShipExteriorEntity` 도입\n- pilot을 실제 passenger / `startRiding()` 구조로 전환\n- 탑승 중인 실제 vehicle과 일치하는 player에게만 ship control packet 승인\n- fake `tetherController` 제거\n- Shift를 비행 pitch-down에서 제거해 vanilla 하차 동작 보존; pitch-down은 Ctrl/sprint-key 경로 사용\n- Earth↔Orbit transition을 하차 → player teleport → same-ShipId target exterior 생성 → 재탑승 → 새 control session 발급 구조로 연결\n- 함선을 때리는 동작은 비파괴로 변경; owner의 명시적 pack-up interaction만 authoritative retirement 수행\n- retirement transaction이 repository / ShipSavedData / ShipSystemsSavedData / interior / turret / mission / runtime control을 함께 정리해 orphan ShipState 방지\n- 보급 full/no-ship 반복 feedback을 chat 누적 대신 actionbar로 전환\n- Minecraft 26.2 actionbar / ItemDisplay / collision API에 맞게 runtime 교정\n- 6개 M1 recipe ingredient를 Minecraft 26.2 string syntax로 교정하고 validator로 회귀 차단\n- Kenney Space Kit CC0 OBJ/MTL 직접 패키징\n  - starter craft: `craft_speederA`\n  - orbital salvage: `craft_miner`\n  - first interceptor: `craft_racer`\n- `launch_craft_kit`도 vanilla placeholder 대신 spacecraft OBJ model 사용\n- alpha.12 acceptance validator에 ArmorStand/tether/obsolete recipe/obsolete 26.2 API/model packaging 회귀 gate 추가\n\n### Verification\n\nBuild source commit: `52dadef15fa0bb6faf5048c51ae67892db191653`\n\nGitHub Actions `Build earth-to-stars` run `34232842854`: `PASS`\n\n- progression/M1 launch/Nether-End independence validators: `PASS`\n- alpha.12 static acceptance: `PASS`\n- existing JUnit regression: `PASS`\n- `clean test build`: `PASS`\n- production JAR verify: `PASS`\n- JAR: `earth_to_stars-0.1.0-alpha.12.jar`\n- SHA-256: `b44f85ba2d05b885b1319822a0044e70535bff93696900b8ba5e191e04b51c15`\n\nDedicated resource-load smoke run `34233144671`: `PASS`\n\n- dedicated server reached normal startup completion\n- 1591 recipes loaded\n- alpha.11 recipe parsing error pattern not observed\n- `earth_to_stars:ship_interiors` / `earth_to_stars:orbital_space` present\n\nPersistence schema/layout did not change, so the expensive two-boot save/restart lifecycle was not rerun. Last verified two-boot run remains `34197931566`.\n\n- live Earth→Orbit→salvage→combat→Earth return: `NOT PLAYTESTED`\n- client visual quality/scale/camera: `NOT PLAYTESTED`\n- live multiplayer: `NOT TESTED`\n\n### Status\n\n`ALPHA.12 LIVE-ACCEPTANCE RESCUE BUILD + DEDICATED RESOURCE LOAD VERIFIED / LIVE CLIENT ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`\n\n---\n\n'''
+          marker = '# EARTH TO STARS — Changelog\n\n이 문서는 실제 정본 변경을 기록한다.\n\n'
+          body = once(body, marker, marker + insert, 'CHANGELOG insertion')
+          write(p, body)
+
+          # Global projects index — only EARTH TO STARS lines.
+          p, body = read('projects/README.md')
+          body = once(body, '  - 상태: `M1-D ORBITAL RECOVERY + FIRST CONTACT BACKEND VERIFIED / SHIPSTATE SCHEMA 1→2 LIFECYCLE VERIFIED / FULL EARTH→ORBIT→RETURN LIVE ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`', '  - 상태: `ALPHA.12 LIVE-ACCEPTANCE RESCUE BUILD + DEDICATED RESOURCE LOAD VERIFIED / LIVE CLIENT ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`', 'projects index status')
+          body = once(body, '  - 현재 버전: `0.1.0-alpha.11`', '  - 현재 버전: `0.1.0-alpha.12`', 'projects index version')
+          write(p, body)
+
+          # Safety check: current-facing docs must not claim the old live runtime still uses ArmorStand/tether.
+          checks = {
+              root / 'README.md': ['현재 visible salvage는 ArmorStand', 'technical cockpit tether', 'ArmorStand ship exterior'],
+              root / 'PROJECT.md': ['Current ArmorStand salvage/interceptor', '- ArmorStand ship exterior', '- technical cockpit tether'],
+              root / 'docs/05_M1_EARTH_ORBIT_GAMEPLAY_SLICE.md': ['현재 ArmorStand exterior는', 'technical cockpit tether로'],
+          }
+          for path, needles in checks.items():
+              text = path.read_text(encoding='utf-8')
+              for needle in needles:
+                  if needle in text:
+                      raise SystemExit(f'stale current-facing statement remains in {path}: {needle}')
+          PY
+
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -f .github/workflows/finalize-earth-to-stars-alpha12-docs.yml
+          if [[ -f .github/workflows/smoke-earth-to-stars-alpha12-server.yml ]]; then
+            git rm -f .github/workflows/smoke-earth-to-stars-alpha12-server.yml
+          fi
+          git add projects/earth-to-stars projects/README.md
+          git commit -m 'docs(earth-to-stars): canonize alpha12 rescue verification [skip ci]'
+          git push origin HEAD:main
