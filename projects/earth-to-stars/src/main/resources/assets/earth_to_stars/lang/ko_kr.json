@@ -5,6 +5,9 @@
   "item.earth_to_stars.oxygen_cartridge": "압축 산소 카트리지",
   "item.earth_to_stars.life_support_unit": "생명유지장치",
   "item.earth_to_stars.launch_craft_kit": "소형 개척선 조립 패키지",
+  "item.earth_to_stars.recovered_sensor_core": "회수 센서 코어",
+  "entity.earth_to_stars.orbital_salvage_proxy": "표류 잔해 신호",
+  "entity.earth_to_stars.interceptor_proxy": "미확인 무인 요격기",
   "message.earth_to_stars.launch.earth_only": "이 개척선은 지구 지표에서 조립해야 합니다.",
   "message.earth_to_stars.launch.blocked": "개척선을 펼칠 공간이 부족합니다. 3×3×3 공간을 확보하세요.",
   "message.earth_to_stars.launch.deployed": "소형 개척선의 시동이 걸렸습니다.",
@@ -17,5 +20,14 @@
   "message.earth_to_stars.supply.oxygen_full": "산소 저장고가 이미 가득 찼습니다.",
   "message.earth_to_stars.supply.no_ship": "보급할 수 있는 개척선이 가까이에 없습니다.",
   "message.earth_to_stars.flight.orbit_entered": "지구 궤도에 진입했습니다.",
-  "message.earth_to_stars.flight.earth_returned": "대기권으로 복귀했습니다."
+  "message.earth_to_stars.flight.earth_returned": "대기권으로 복귀했습니다.",
+  "message.earth_to_stars.orbit.salvage_detected": "센서가 가까운 표류 잔해를 포착했습니다. 함선을 신호 가까이 접근시키세요.",
+  "message.earth_to_stars.orbit.autocannon_recovered": "잔해에서 작동 가능한 기관포를 회수해 빈 무장 슬롯에 연결했습니다.",
+  "message.earth_to_stars.orbit.hostile_detected": "경고: 미확인 무인기가 접근 중입니다. 새 기관포를 사용할 수 있습니다.",
+  "message.earth_to_stars.orbit.hostile_destroyed": "미확인 무인기를 무력화했습니다. 회수 가능한 센서 코어가 함선 근처에 떠 있습니다.",
+  "message.earth_to_stars.upgrade.sensor_installed": "회수 센서 코어를 보조 센서 슬롯에 설치했습니다. 탐지 범위가 확장됐습니다.",
+  "message.earth_to_stars.upgrade.sensor_earth_only": "이 센서 코어는 지구에서 함선을 정비할 때 설치해야 합니다.",
+  "message.earth_to_stars.upgrade.sensor_no_ship": "정비할 수 있는 개척선이 가까이에 없습니다.",
+  "message.earth_to_stars.upgrade.sensor_already": "이미 회수형 궤도 센서가 설치되어 있습니다.",
+  "message.earth_to_stars.upgrade.sensor_slot_blocked": "보조 센서 슬롯을 사용할 수 없습니다."
 }
