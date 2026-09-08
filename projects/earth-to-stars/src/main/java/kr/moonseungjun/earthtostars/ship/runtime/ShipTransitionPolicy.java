@@ -1,12 +1,14 @@
 package kr.moonseungjun.earthtostars.ship.runtime;
 
+import kr.moonseungjun.earthtostars.ship.gameplay.LaunchReadinessPolicy;
+
 import java.util.Objects;
 
 public final class ShipTransitionPolicy {
-    public static final double EARTH_EXIT_ALTITUDE = 300.0D;
+    public static final double EARTH_EXIT_ALTITUDE = LaunchReadinessPolicy.EARTH_EXIT_ALTITUDE;
     public static final double ORBIT_RETURN_ALTITUDE = 16.0D;
     public static final double ORBIT_ENTRY_ALTITUDE = 128.0D;
-    public static final double EARTH_REENTRY_ALTITUDE = 296.0D;
+    public static final double EARTH_REENTRY_ALTITUDE = EARTH_EXIT_ALTITUDE - 8.0D;
     private static final double MIN_VERTICAL_TRANSITION_SPEED = 0.01D;
 
     private ShipTransitionPolicy() {
