@@ -38,6 +38,12 @@ public final class ShipTurretManager {
     private ShipTurretManager() {
     }
 
+    static void activateRecoveredAutocannon(ShipState ship) {
+        removeShip(ship.shipId());
+        TurretRuntime turret = turret(ship);
+        turret.setMode(ship.ownerId(), TurretControlMode.AUTO_DEFENSE);
+    }
+
     public static boolean setMode(ServerPlayer player, TurretControlMode mode) {
         ShipState ship = resolveAccessibleShip(player).orElse(null);
         if (ship == null) return false;
