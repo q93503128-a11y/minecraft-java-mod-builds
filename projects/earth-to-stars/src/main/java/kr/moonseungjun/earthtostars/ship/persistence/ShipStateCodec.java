@@ -22,7 +22,8 @@ import java.util.UUID;
 
 public final class ShipStateCodec {
     private static final int MAGIC = 0x45545331;
-    public static final int CURRENT_SCHEMA = 1;
+    private static final int SENSOR_SLOT_SCHEMA = 2;
+    public static final int CURRENT_SCHEMA = SENSOR_SLOT_SCHEMA;
     private static final int MAX_COLLECTION_SIZE = 10_000;
 
     private ShipStateCodec() {
@@ -79,18 +80,19 @@ public final class ShipStateCodec {
                 throw new IllegalArgumentException("invalid EARTH TO STARS ship payload magic");
             }
             int schema = in.readInt();
-            if (schema != CURRENT_SCHEMA) {
-                throw new IllegalArgumentException("unsupported ship schema " + schema + "; expected " + CURRENT_SCHEMA);
+            if (schema < 1 || schema > CURRENT_SCHEMA) {
+                throw new IllegalArgumentException("unsupported ship schema " + schema + "; supported 1.." + CURRENT_SCHEMA);
             }
 
             ShipId shipId = new ShipId(readUuid(in));
             UUID ownerId = readUuid(in);
 
             int slotCount = readCount(in, "slots");
-            List<ModuleSlot> slots = new ArrayList<>(slotCount);
+            List<ModuleSlot> slots = new ArrayList<>(slotCount + 1);
             for (int i = 0; i < slotCount; i++) {
                 slots.add(new ModuleSlot(in.readUTF(), ModuleSlotType.valueOf(in.readUTF()), in.readInt()));
             }
+            migrateSlots(schema, slots);
 
             int crewCount = readCount(in, "crew");
             Map<UUID, CrewRole> crew = new LinkedHashMap<>();
@@ -117,6 +119,16 @@ public final class ShipStateCodec {
                 throw illegalArgumentException;
             }
             throw new IllegalArgumentException("failed to decode ship state", exception);
+        }
+    }
+
+    private static void migrateSlots(int schema, List<ModuleSlot> slots) {
+        if (schema >= SENSOR_SLOT_SCHEMA) {
+            return;
+        }
+        boolean hasSensorSlot = slots.stream().anyMatch(slot -> slot.id().equals("sensor"));
+        if (!hasSensorSlot) {
+            slots.add(new ModuleSlot("sensor", ModuleSlotType.UTILITY, 1));
         }
     }
 
