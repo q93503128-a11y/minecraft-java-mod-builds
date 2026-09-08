@@ -20,11 +20,13 @@ public final class EarthToStarsItems {
     );
     public static final DeferredItem<ShipSupplyItem> PROPELLANT_CELL = ITEMS.registerItem(
             "propellant_cell",
-            props -> new ShipSupplyItem(props.stacksTo(16), ShipSystemsManager.SupplyType.PROPELLANT)
+            props -> new ShipSupplyItem(props, ShipSystemsManager.SupplyType.PROPELLANT),
+            props -> props.stacksTo(16)
     );
     public static final DeferredItem<ShipSupplyItem> OXYGEN_CARTRIDGE = ITEMS.registerItem(
             "oxygen_cartridge",
-            props -> new ShipSupplyItem(props.stacksTo(16), ShipSystemsManager.SupplyType.OXYGEN)
+            props -> new ShipSupplyItem(props, ShipSystemsManager.SupplyType.OXYGEN),
+            props -> props.stacksTo(16)
     );
     public static final DeferredItem<Item> LIFE_SUPPORT_UNIT = ITEMS.registerSimpleItem(
             "life_support_unit",
