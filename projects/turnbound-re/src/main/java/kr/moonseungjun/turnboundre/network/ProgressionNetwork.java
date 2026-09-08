@@ -2,6 +2,7 @@ package kr.moonseungjun.turnboundre.network;
 
 import kr.moonseungjun.turnboundre.TurnboundRe;
 import kr.moonseungjun.turnboundre.client.ProgressionClientState;
+import kr.moonseungjun.turnboundre.progression.CharacterProgress;
 import kr.moonseungjun.turnboundre.progression.PlayerProgress;
 import kr.moonseungjun.turnboundre.progression.ProgressionService;
 import net.minecraft.server.MinecraftServer;
@@ -22,6 +23,10 @@ public final class ProgressionNetwork {
                 ProgressionNetworkPayloads.SetPartyC2S.TYPE,
                 ProgressionNetworkPayloads.SetPartyC2S.STREAM_CODEC,
                 ProgressionNetwork::handleSetParty);
+        registrar.playToServer(
+                ProgressionNetworkPayloads.GrowthC2S.TYPE,
+                ProgressionNetworkPayloads.GrowthC2S.STREAM_CODEC,
+                ProgressionNetwork::handleGrowth);
         registrar.playToClient(
                 ProgressionNetworkPayloads.ProgressSnapshotS2C.TYPE,
                 ProgressionNetworkPayloads.ProgressSnapshotS2C.STREAM_CODEC,
@@ -54,6 +59,42 @@ public final class ProgressionNetwork {
 
         ProgressionService.Result result = TurnboundRe.PROGRESS.setParty(server, player.getUUID(), decoded.requestedParty());
         context.reply(snapshot(player, result.code().name(), result.detail()));
+    }
+
+    private static void handleGrowth(ProgressionNetworkPayloads.GrowthC2S payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player)) return;
+        final ProgressionNetworkPayloads.DecodedGrowth decoded;
+        try {
+            decoded = payload.decode();
+        } catch (RuntimeException invalidWire) {
+            TurnboundRe.LOGGER.warn("Rejected malformed TURNBOUND growth command from {}: {}",
+                    player.getUUID(), invalidWire.toString());
+            return;
+        }
+
+        MinecraftServer server = player.level().getServer();
+        if (server == null) return;
+        PlayerProgress current = TurnboundRe.PROGRESS.getOrCreate(server, player.getUUID());
+        CharacterProgress character = current.characters().get(decoded.characterId());
+        if (character == null) {
+            context.reply(snapshot(player, "GROWTH_NOT_OWNED", decoded.characterId()));
+            return;
+        }
+        if (character.currentStar() != decoded.expectedStar() || character.level() != decoded.expectedLevel()) {
+            context.reply(snapshot(player, "GROWTH_STALE", decoded.characterId()));
+            return;
+        }
+
+        ProgressionService.Result result = switch (decoded.operation()) {
+            case "LEVEL_UP" -> TurnboundRe.PROGRESS.levelUp(server, player.getUUID(), decoded.characterId());
+            case "ASCEND" -> TurnboundRe.PROGRESS.ascend(server, player.getUUID(), decoded.characterId());
+            default -> null;
+        };
+        if (result == null) {
+            context.reply(snapshot(player, "GROWTH_INVALID_OPERATION", decoded.operation()));
+            return;
+        }
+        context.reply(snapshot(player, "GROWTH_" + result.code().name(), result.detail()));
     }
 
     private static ProgressionNetworkPayloads.ProgressSnapshotS2C snapshot(
