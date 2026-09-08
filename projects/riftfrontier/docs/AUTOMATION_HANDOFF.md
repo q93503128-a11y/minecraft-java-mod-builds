@@ -15,24 +15,39 @@ M3 runtime mesh / skinning qualification gate:
 
 - Inspected current GeckoLib/Blockbench conversion options instead of assuming arbitrary glTF triangle meshes can become GeckoLib cubes losslessly.
 - Confirmed common glTF -> GeckoLib cube import routes are approximation paths for arbitrary polygon meshes and rejected them as production proof for the selected Dragon.
-- Inspected GeckoMesh 1.2.0 source. It is published for Minecraft 26.2 NeoForge and can feed arbitrary PolyMesh faces into GeckoLib `GeoBone`, but the inspected PolyMesh path carries positions/normals/UVs/polygons attached to a bone and does not carry glTF per-vertex `JOINTS_0`/`WEIGHTS_0` blend weights.
+- Inspected GeckoMesh's PolyMesh path: arbitrary faces are attached to a GeckoLib `GeoBone`, but the inspected path does not carry glTF per-vertex `JOINTS_0`/`WEIGHTS_0` linear-blend skinning data.
 - Added a deterministic fail-closed glTF audit that decides whether a skinned mesh is exactly eligible for a rigid-bone PolyMesh renderer: all vertices must be single-weight and all triangles must remain within one dominant joint.
 - Added regression coverage for eligible rigid geometry, blended skinning rejection, cross-bone triangle rejection, and missing skin attributes.
-- Added a decision record preventing GeckoMesh/GeckoLib dependency addition or production resource generation until the exact accepted Dragon derivation passes this gate.
+- Reacquired the exact creator-hosted `Dragon_Evolved.gltf`; 991,335 bytes and pinned SHA `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c` matched.
+- Ran the new gate on those exact source bytes: 3,086 / 4,437 vertices use multiple positive joint weights and 1,192 / 7,440 triangles span dominant-joint boundaries. Result: `BOSS_RUNTIME_MESH_RIGID_POLYMESH_LOSSY`.
+- Added an exact-source audit receipt and rejected the rigid GeckoMesh/GeoBone conversion path for this Dragon. GeckoMesh/GeckoLib were not added as dependencies.
 
 ## Changed systems/files
 
 - `tools/audit_region01_boss_runtime_mesh.py` — glTF 2.0 skin-weight/triangle rigid-bone eligibility audit with stable decision/error codes.
 - `tools/tests/test_audit_region01_boss_runtime_mesh.py` — four deterministic regression cases.
-- `docs/REGION_01_BOSS_RUNTIME_MESH_GATE.md` — renderer-format evidence, rejection/selection rules, exact next decision.
+- `assets/sources/region_01_boss_dragon_evolved.runtime_mesh_audit.json` — exact-source rigid-bone rejection receipt.
+- `docs/REGION_01_BOSS_RUNTIME_MESH_GATE.md` — renderer-format evidence, actual Dragon counts, rejection/selection rules.
 - `docs/AUTOMATION_HANDOFF.md` — this recovery record.
 
 ## Verification
 
-- Local Python unittest for new audit: 4/4 PASS.
-- Full repository CI after push: see current run status; do not infer SUCCESS from local tests.
-- Exact accepted Dragon derivation through new rigid-bone audit: NOT RUN; source/accepted derivation bytes are intentionally not committed to the public repository.
-- GeckoMesh runtime dependency: NOT ADDED / NOT TESTED.
+- Test-bearing implementation commit: `6f35a4abb901724309edf81e8091647a193919b7`.
+- Evidence follow-up commit: `94a9a8c38e34a0d9aacc49c0053bc7e46245d899` (`[skip ci]`).
+- `Build Riftfrontier` run `34289171362` for the test-bearing commit: full `SUCCESS`.
+- CI toolchain: SUCCESS.
+- CI asset intake tool tests: SUCCESS.
+- CI clean tests/build: SUCCESS.
+- CI required native GameTest: SUCCESS.
+- CI dedicated server smoke: SUCCESS.
+- CI Xvfb client smoke: SUCCESS.
+- CI executable JAR inspection: SUCCESS.
+- CI build report + deliverable/log artifact upload: SUCCESS.
+- Local Python unittest for the new audit: 4/4 PASS.
+- Exact creator-hosted Dragon source fingerprint: PASS.
+- Exact source rigid-bone audit: EXECUTED / REJECTED AS LOSSY (3,086 blended vertices; 1,192 cross-bone triangles).
+- Reproduction of the accepted sanitized derivation in this batch: NOT RUN; its previously pinned SHA remains `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`.
+- GeckoMesh runtime dependency for Dragon: REJECTED / NOT ADDED.
 - GeckoLib runtime dependency + boss entity/renderer: NOT IMPLEMENTED / NOT TESTED.
 - Real renderer-consumable Region 01 boss MODEL/ANIMATION resources: NOT IMPLEMENTED.
 - Real `presentation_assets` manifest: NOT IMPLEMENTED.
@@ -48,15 +63,16 @@ M3 runtime mesh / skinning qualification gate:
 - Do not restore legacy GeckoLib 4 `geo/` or unscoped `animations/` roots.
 - Do not silently approximate the selected Dragon triangle mesh into bounding-box/cube geometry.
 - Do not treat arbitrary-face PolyMesh support as proof that glTF linear-blend skinning is preserved.
-- Do not add GeckoMesh/GeckoLib until a concrete real renderer/resource path has passed the exact-source capability gate.
+- Treat rigid GeckoMesh/GeoBone conversion for this Dragon as closed/rejected unless verified per-vertex blend-skinning support appears later.
+- Do not add GeckoMesh/GeckoLib merely to force this source through a lossy path.
 - Do not create placeholder production resources or a fake `presentation_assets` manifest.
 - Do not tune M2 pressure/patrol values without field-play evidence.
 
 ## Exact next start point
 
 1. Re-check remote `main`, canonical docs and this handoff.
-2. Reacquire exact `Dragon_Evolved.gltf` with SHA `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c` and reproduce the accepted sanitized derivation SHA `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac` using existing gates.
-3. Run `tools/audit_region01_boss_runtime_mesh.py <accepted.gltf> --require-lossless-rigid-bone` and record the actual blended-vertex / cross-bone-triangle counts.
-4. If `BOSS_RUNTIME_MESH_RIGID_POLYMESH_LOSSY`, reject rigid GeckoMesh conversion for this source and implement/qualify a renderer path that preserves triangle geometry plus linear-blend skinning, or separately re-author the production model under the art/rig gate. Do not reduce weights or geometry merely to pass.
-5. If eligible, freshly verify GeckoMesh + GeckoLib 26.2 coordinates, add them only with the first concrete boss entity/renderer and real `geckolib/models/...` / `geckolib/animations/...` resources.
+2. If the exact accepted sanitized artifact is reacquired/reproduced, run the new audit against it once to confirm the source-level rejection survives the existing art-stripping conversion; do not repin the accepted hash to make it pass.
+3. Then investigate and qualify a Minecraft 26.2 renderer path that preserves arbitrary triangle geometry plus per-vertex linear-blend skinning and the existing 46-joint/8-clip contract. Prefer a bounded dependency or small project-owned renderer boundary over lossy conversion.
+4. If no maintainable 26.2 renderer exists, define a separate production re-authoring gate that preserves boss silhouette and attack-bearing rig intent rather than silently collapsing weights or geometry.
+5. Only with a concrete renderer + real physical model/animation resources: wire the boss entity/renderer through existing ResourceProbe, atomic reload and generation-match gates.
 6. Only after every referenced physical resource exists and client loadability passes, create the first real `presentation_assets` manifest and continue to attack presentation, scale/hitbox/deformation, VFX/sound and human field-play gates.
