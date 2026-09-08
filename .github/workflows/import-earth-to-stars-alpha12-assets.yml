@@ -1,5 +1,6 @@
 name: Import EARTH TO STARS alpha.12 CC0 assets
 
+# One-shot vendor gate; removed after the pinned CC0 meshes land on main.
 on:
   push:
     branches: [main]
