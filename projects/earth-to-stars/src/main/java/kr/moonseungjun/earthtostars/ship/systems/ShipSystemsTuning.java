@@ -11,7 +11,13 @@ public record ShipSystemsTuning(
         int initialPrimaryAmmo,
         double sensorRange,
         int sensorIntervalTicks,
-        int sensorStaleTicks
+        int sensorStaleTicks,
+        double propellantCapacity,
+        double initialPropellant,
+        double propellantPerCell,
+        double oxygenCapacity,
+        double initialOxygen,
+        double oxygenPerCartridge
 ) {
     public static final ShipSystemsTuning P0 = new ShipSystemsTuning(
             100.0D,
@@ -24,7 +30,13 @@ public record ShipSystemsTuning(
             120,
             64.0D,
             10,
-            30
+            30,
+            240.0D,
+            80.0D,
+            40.0D,
+            240.0D,
+            80.0D,
+            40.0D
     );
 
     public ShipSystemsTuning {
@@ -40,6 +52,14 @@ public record ShipSystemsTuning(
         requirePositive(sensorRange, "sensorRange");
         if (sensorIntervalTicks <= 0) throw new IllegalArgumentException("sensorIntervalTicks must be positive");
         if (sensorStaleTicks < sensorIntervalTicks) throw new IllegalArgumentException("sensorStaleTicks must be >= sensorIntervalTicks");
+        requirePositive(propellantCapacity, "propellantCapacity");
+        requireNonNegative(initialPropellant, "initialPropellant");
+        requirePositive(propellantPerCell, "propellantPerCell");
+        if (initialPropellant > propellantCapacity) throw new IllegalArgumentException("initialPropellant exceeds capacity");
+        requirePositive(oxygenCapacity, "oxygenCapacity");
+        requireNonNegative(initialOxygen, "initialOxygen");
+        requirePositive(oxygenPerCartridge, "oxygenPerCartridge");
+        if (initialOxygen > oxygenCapacity) throw new IllegalArgumentException("initialOxygen exceeds capacity");
     }
 
     private static void requirePositive(double value, String name) {
