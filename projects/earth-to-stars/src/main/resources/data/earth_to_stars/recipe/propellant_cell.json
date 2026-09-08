@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " I ",
+    "GPG",
+    " C "
+  ],
+  "key": {
+    "I": { "item": "minecraft:iron_ingot" },
+    "G": { "item": "minecraft:gunpowder" },
+    "P": { "item": "minecraft:paper" },
+    "C": { "item": "minecraft:copper_ingot" }
+  },
+  "result": {
+    "id": "earth_to_stars:propellant_cell",
+    "count": 2
+  }
+}
