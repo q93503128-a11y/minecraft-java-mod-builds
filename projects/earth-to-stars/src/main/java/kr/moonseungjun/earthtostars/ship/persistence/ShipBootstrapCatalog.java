@@ -15,6 +15,7 @@ public final class ShipBootstrapCatalog {
         catalog.register(new ModuleDefinition("engine_mk1", ModuleCategory.PROPULSION, ModuleSlotType.PROPULSION, 1, 4.0D, 3.0D, 0.0D, 0.0D));
         catalog.register(new ModuleDefinition("battery_mk1", ModuleCategory.POWER, ModuleSlotType.POWER, 1, 3.0D, 0.0D, 4.0D, 100.0D));
         catalog.register(new ModuleDefinition("cargo_mk1", ModuleCategory.CARGO, ModuleSlotType.CARGO, 1, 3.0D, 0.2D, 0.0D, 64.0D));
+        catalog.register(new ModuleDefinition("life_support_mk1", ModuleCategory.UTILITY, ModuleSlotType.UTILITY, 1, 2.0D, 0.4D, 0.0D, 0.0D));
         catalog.register(new ModuleDefinition("autocannon_mk1", ModuleCategory.WEAPON, ModuleSlotType.WEAPON_HARDPOINT, 1, 5.0D, 2.0D, 0.0D, 0.0D));
         return catalog;
     }
