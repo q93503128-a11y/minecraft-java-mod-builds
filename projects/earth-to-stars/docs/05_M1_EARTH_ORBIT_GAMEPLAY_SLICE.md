@@ -25,15 +25,15 @@ Earth 생존/채집
 
 # 1. M1 진행 상태
 
-현재 버전: `0.1.0-alpha.10`
+현재 버전: `0.1.0-alpha.11`
 
 현재 상태:
 
-`M1-C LAUNCH READINESS + ATMOSPHERE BACKEND VERIFIED / FUEL-OXYGEN DISK LIFECYCLE VERIFIED / LIVE FLIGHT NOT TESTED / M1-D ORBITAL SALVAGE + CONTACT NEXT`
+`M1-D ORBITAL RECOVERY + FIRST CONTACT BACKEND VERIFIED / SHIPSTATE SCHEMA 1→2 LIFECYCLE VERIFIED / FULL EARTH→ORBIT→RETURN LIVE ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`
 
 완료된 자동/서버 기술축:
 
-- 실제 Minecraft item registry 6종
+- 실제 Minecraft item registry 7종
 - Earth-only crafting chain
 - actual recipe dependency closure validator
 - Nether/End-independent launch recipe contract
@@ -48,8 +48,22 @@ Earth 생존/채집
 - active crew 기반 산소 소비
 - life-support + fuel + oxygen orbit-readiness gate
 - insufficient readiness 시 Earth→Orbit transition 차단
-- propellant / oxygen SavedData persistence 및 구 save 기본값 migration
-- dedicated server save → shutdown → restart → fuel/oxygen restore 검증
+- orbital salvage encounter backend
+- salvage 접근으로 실제 `autocannon_mk1` module 회수/설치
+- 무장 모듈 없이는 turret runtime을 생성하지 않는 capability gate
+- 회수 기관포 `AUTO_DEFENSE` 자동 기동 + 동일 runtime에서 manual 전환 가능
+- 첫 unmanned interceptor 논리 적대체 / 이동 / 거리 유지 / 전력 공격
+- 중앙 SensorGrid에 mission hostile contact 공유
+- turret logical projectile → first-contact hostile 서버 판정
+- first-contact 격파 시 `recovered_sensor_core` 보상
+- 지구 귀환 후 `orbital_scanner_mk1` 설치
+- scanner 설치 후 기본 센서 range `64 → 96`
+- 첫 hostile clear 이후 같은 원정에서 보상 무한 생성 방지
+- sensor core를 놓치고 귀환한 경우 다음 궤도 진입에서 first-contact를 다시 회수 가능하게 하는 anti-soft-lock reset
+- technical cockpit tether로 pilot/exterior control-authority drift 방지
+- ShipState schema 1→2 sensor-slot migration
+- Propellant/Oxygen SavedData persistence 및 구 save 기본값 migration
+- dedicated server save → shutdown → restart lifecycle 재검증
 - production JAR packaging
 
 아직 실제 플레이 검증되지 않은 축:
@@ -61,9 +75,12 @@ Earth 생존/채집
 - actual pilot controls/camera feel
 - 실제 atmosphere ascent feel
 - readiness warning readability
-- live Earth→orbit→Earth flight
-- live salvage/contact loop
-- multiplayer pilot + interior crew session
+- live Earth→orbit→salvage→combat→Earth return cycle
+- salvage 접근 거리/발견감
+- interceptor 전투 난이도/사격감
+- recovered sensor core pickup/install UX
+- scanner range 변화가 실제 플레이에서 체감되는지
+- multiplayer pilot + gunner + linked interior crew session
 
 ---
 
@@ -190,6 +207,22 @@ ID: `earth_to_stars:launch_craft_kit`
 
 이 아이템은 완성된 함선을 인벤토리에 보관하는 개념이 아니라, 지상에서 함선을 조립하기 위한 패키지다.
 
+## 3.7 회수 센서 코어
+
+ID: `earth_to_stars:recovered_sensor_core`
+
+역할:
+- 첫 orbital hostile을 격파해서 얻는 귀환 보상
+- 지구로 살아 돌아온 뒤 함선의 빈 sensor slot을 실제 `orbital_scanner_mk1`로 변환
+- 첫 원정이 단순 자원 획득이 아니라 **새 탐색 능력 해금**으로 끝나게 하는 progression object
+
+현재 규칙:
+- Orbit first-contact hostile 격파 시 생성
+- 지구에서 접근 가능한 함선에만 설치 가능
+- scanner가 이미 있거나 slot이 막혀 있으면 소비하지 않음
+- 성공 시에만 item 소비
+- 현재 spyglass 기반 item model은 임시 proxy이며 production icon이 아님
+
 ---
 
 # 4. Launch Craft 배치 계약
@@ -230,6 +263,7 @@ power
 cargo
 life_support
 turret
+sensor
 ```
 
 기본 설치 모듈:
@@ -243,6 +277,7 @@ turret
 의도적으로 비워 두는 슬롯:
 
 - `turret`
+- `sensor`
 
 초기 central resources:
 
@@ -250,9 +285,9 @@ turret
 - Propellant: `80 / 240`
 - Oxygen: `80 / 240`
 
-첫 함선에 자동포탑까지 모두 지급하지 않는다.
+첫 함선에 자동포탑이나 고급 센서를 처음부터 지급하지 않는다.
 
-Earth Orbit의 첫 salvage/combat reward가 무기 hardpoint를 채우거나 강화하는 식으로, **첫 우주 원정이 실제 함선 능력을 바꾸는 성장**으로 연결되어야 한다.
+Earth Orbit 첫 salvage/contact가 `turret → sensor` 순서로 실제 capability를 채우기 때문에 **첫 우주 원정이 함선의 플레이 방식을 두 단계로 바꾼다.**
 
 ---
 
@@ -408,7 +443,7 @@ Nether/End sidegrade는 이후 추가 가능하지만 첫 우주 진입의 유�
 
 # 8. 현재 visual boundary
 
-alpha.10의 아이템 모델, ArmorStand exterior, 기술 interior, 빈 orbital space, command 조작면은 **기술/게임플레이 연결용 placeholder**다.
+alpha.11의 아이템 모델, ArmorStand exterior/salvage/interceptor, 기술 interior, orbital space, cockpit tether, command 조작면은 **기술/게임플레이 연결용 placeholder**다.
 
 현재 vanilla texture proxy나 임시 텍스트를 production art/UX로 유지하지 않는다.
 
@@ -422,6 +457,10 @@ Production 전환 시 `03_UI_ART_REFERENCE_GATE.md`와 `THIRD_PARTY_ASSETS.md`�
 - thruster/engine
 - life-support module
 - fuel/oxygen ports/containers
+- recovered sensor core / module icons
+- orbital salvage visual
+- interceptor model/animation
+- turret model/muzzle/tracer/hit VFX
 - item icons
 - atmosphere/re-entry VFX
 - launch VFX/sound
@@ -431,64 +470,165 @@ Production 전환 시 `03_UI_ART_REFERENCE_GATE.md`와 `THIRD_PARTY_ASSETS.md`�
 
 ---
 
-# 9. M1-D — 다음 구현 단위
+# 9. M1-D — Orbital Salvage + First Contact + Return Reward
 
-다음 묶음은 **First Orbital Salvage + Contact + Return Reward**다.
+alpha.11에서 M1-D backend가 구현·자동 검증됐다.
 
-목표:
+## 9.1 첫 salvage
 
-- orbital_space에 첫 의미 있는 gameplay target 배치
-- first salvage contact
-- first hostile contact
-- starter craft의 빈 turret hardpoint를 채우거나 다음 능력을 여는 첫 회수 보상
-- salvage를 서버 권한 cargo/reward로 처리
-- Earth return이 단순 귀환이 아니라 첫 함선 개수조로 연결
-- 같은 자원을 반복 채굴하는 것이 아니라 `우주에 갔기 때문에 새 행동이 열린다`는 경험 확보
+첫 궤도 진입 후 scanner가 아직 없고 turret도 비어 있으면 함선 기준 전방/측면에 첫 salvage target을 생성한다.
 
-M1-D에서 하지 않는 것:
+현재 구조:
+- 함선별 encounter 하나
+- server-side authoritative encounter state
+- ArmorStand는 위치/이름을 보여주는 기술 proxy일 뿐 reward truth가 아님
+- 함선이 salvage recovery radius에 들어오면 서버가 실제 module install 가능성을 검증
+- 성공 시 `autocannon_mk1`을 기존 빈 `turret` hardpoint에 설치
+- ShipSavedData 즉시 갱신
 
-- 여러 행성 콘텐츠를 미리 벌리기
-- 우주 광물 10종 추가
-- production 우주선/UI를 placeholder 디자인으로 확정
-- 궤도에 의미 없는 랜덤 상자만 뿌리기
+## 9.2 첫 무장 해금
 
-M1-D가 붙으면 `Earth 준비 → 상승 → Orbit → 회수/위험 → Earth 귀환 → 함선 변화` 첫 폐쇄 루프가 형성된다.
+Starter craft는 autocannon을 소유하지 않으므로 M1-D 이전 기술 명령도 실제 module이 없으면 turret runtime을 만들 수 없다.
+
+Salvage로 `autocannon_mk1`을 회수한 뒤에만:
+- turret runtime 생성
+- central AmmoPool 사용
+- central PowerGrid 사용
+- central SensorGrid 사용
+- `AUTO_DEFENSE` 즉시 기동
+- 이후 동일 포탑을 `MANUAL`로 바꿀 수 있음
+
+수동/자동 무장을 서로 다른 총으로 분리하지 않는다.
+
+## 9.3 첫 hostile contact
+
+Autocannon 회수 후 `orbital_scanner_mk1`이 아직 없으면 미확인 무인 요격기 encounter가 열린다.
+
+현재 logical behavior:
+- 서버가 position / health / movement를 소유
+- 함선에 접근한 뒤 일정 standoff distance 유지
+- 너무 가까우면 후퇴
+- 적정 거리에서는 측면 이동
+- 공격 interval과 grace period 존재
+- 공격 성공 시 함선 중앙 PowerGrid를 직접 drain
+- client는 hit/damage 성공을 결정하지 않음
+
+현재 hostile visual은 ArmorStand proxy이며 production 적 모델이 아니다.
+
+## 9.4 SensorGrid / turret 연결
+
+첫 hostile은 vanilla `Enemy`가 아니므로 mission manager가 `SensorContact`를 중앙 SensorGrid에 주입한다.
+
+센서 스캔은 여전히 함선당 중앙 interval scan이며 turret마다 broad entity scan을 반복하지 않는다.
+
+Auto turret은 같은 SensorGrid의 hostile contact를 잡아 logical projectile을 발사한다.
+
+Projectile hit은 서버가 mission hostile position/health와 충돌 판정을 수행한다.
+
+## 9.5 첫 귀환 보상
+
+Hostile 격파 시 `earth_to_stars:recovered_sensor_core`가 회수 보상으로 생성된다.
+
+플레이어는 지구로 귀환한 뒤 이 core를 함선에 적용한다.
+
+성공 시:
+- 기존 빈 `sensor` slot에 `orbital_scanner_mk1` 설치
+- ShipSavedData 즉시 갱신
+- base sensor range `64`에 multiplier `1.5`
+- 결과 sensor range `96`
+
+즉 첫 원정의 성장:
+
+```text
+무장 없음
+→ Orbit salvage
+→ autocannon 획득
+→ first contact 생존/격파
+→ sensor core 회수
+→ Earth return
+→ orbital scanner 장착
+→ 탐색 반경 증가
+```
+
+첫 원정이 단순히 자원 수치 하나를 올리는 것이 아니라 실제 행동 범위를 바꾼다.
+
+## 9.6 anti-soft-lock / reward duplication
+
+같은 원정에서 첫 hostile을 격파한 뒤에는 `HOSTILE_CLEARED` session state로 즉시 재생성을 막는다.
+
+하지만 recovered sensor core를 놓치거나 잃어버렸는데 그 상태가 영구 progression lock이 되면 안 된다.
+
+따라서 scanner가 아직 설치되지 않은 함선이 Orbit을 떠나 Earth로 돌아오면 해당 session clear를 해제한다. 다음 Orbit 진입에서는 first-contact를 다시 수행해 core를 회수할 수 있다.
+
+Scanner가 설치된 뒤에는 M1-D encounter가 종료된다.
+
+## 9.7 technical cockpit tether
+
+P0 flight backend에서 함선 exterior만 이동하면 server input authority의 64-block range를 벗어나 pilot input이 끊기는 문제가 있다.
+
+alpha.11은 production cockpit이 생기기 전까지 controlling player를 authoritative exterior 위치에 유지하는 technical cockpit tether를 사용한다.
+
+이것은 최종 탑승/카메라 설계가 아니며 실제 client feel 검증 후 교체 대상이다.
+
+## 9.8 ShipState schema 1 → 2
+
+alpha.10 이하 starter craft에는 `sensor` slot 자체가 없다.
+
+alpha.11은 ShipState schema를 `2`로 올리고 schema 1 decode 시:
+- 기존 ShipId 유지
+- owner/crew 유지
+- 기존 slots/modules 유지
+- `sensor` UTILITY size-1 slot만 추가
+
+한다.
+
+future unknown schema는 여전히 거부하며 reset하지 않는다.
 
 ---
 
-# 10. Verification — alpha.10
+# 10. Verification — alpha.11
 
-검증 기준 source commit: `34da5747f400d5815e751085afae1fd2fb7a066e`
+검증 기준 source commit: `afe0d181667582877e911ef279a869c7e31d0c23`
 
-GitHub Actions `Build earth-to-stars` run `34192830690`:
+GitHub Actions `Build earth-to-stars` run `34197931566`:
 
-- P0-H progression guard: `PASS`
+- P0-H progression validator: `PASS`
 - M1 actual launch recipe closure: `PASS`
 - M1 Nether/End launch independence: `PASS`
-- launch readiness / atmosphere JUnit: `PASS`
-- Power + Propellant atomic propulsion JUnit: `PASS`
-- Oxygen continuous drain JUnit: `PASS`
-- Fuel/Oxygen snapshot restore JUnit: `PASS`
+- starter empty turret/sensor slots JUnit: `PASS`
+- recovered autocannon/scanner progression JUnit: `PASS`
+- sensor range `64 → 96` JUnit: `PASS`
+- ShipState schema 1→2 sensor-slot migration JUnit: `PASS`
+- existing P0/M1 regression JUnit: `PASS`
 - `clean test build`: `PASS`
+- Minecraft 26.2 / NeoForge 26.2.0.38-beta compile: `PASS`
 - production JAR verify: `PASS`
+- orbital mission/recovered sensor resources packaged: `PASS`
 - dedicated server first boot/save: `PASS`
-- dedicated server shutdown: `PASS`
-- same-world second boot: `PASS`
-- Propellant 51.25 restore: `PASS`
-- Oxygen 66.5 restore: `PASS`
+- dedicated server clean shutdown: `PASS`
+- same-world second boot/restore: `PASS`
 
 JAR SHA-256:
 
-`aa3c01597544dae55ec1e2309c3c4538b61185bb6022a266cb93374d5db5a8f3`
+`f818686c7dde57e7a33e27967069c7e2074ce6b97febd0b13721e1165ac37fb0`
 
 Still NOT TESTED:
 
-- live fuel/oxygen supply interaction
+- live survival crafting/use flow
 - actual atmosphere ascent feel
 - actual readiness boundary/player feedback
-- live Earth→Orbit→Earth flight
+- live Earth→Orbit transition
+- salvage discovery/approach feel
+- auto/manual turret actual game feel
+- interceptor combat difficulty/visual readability
+- recovered sensor core pickup/install UX
+- actual Earth return
+- full Earth→Orbit→salvage→combat→Earth→scanner upgrade acceptance
 - client camera/interpolation
-- multiplayer pilot + interior crew oxygen consumption
+- multiplayer pilot + gunner + linked interior crew
+- production visual/audio quality
+
+Because alpha.11 changes ShipState schema, dedicated two-boot lifecycle was intentionally rerun once. After run `34197931566` passed, ordinary pushes returned to explicit/manual lifecycle-only execution.
 
 ---
 
@@ -503,10 +643,15 @@ Earth 자원 준비
 → fuel/oxygen readiness
 → 직접 상승
 → Earth Orbit
-→ salvage/contact
+→ salvage 접근
+→ autocannon 회수
+→ first hostile contact
 → reward 회수
 → Earth 귀환
-→ 함선 upgrade 선택
+→ orbital scanner 장착
+→ 탐색 능력 증가 체감
 ```
 
 자동 build 성공만으로 M1 완료라고 표현하지 않는다.
+
+다음 작업은 새 행성 기능 추가가 아니라 **이 전체 사이클의 live acceptance와 feel 교정**이다.
