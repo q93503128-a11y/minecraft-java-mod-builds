@@ -14,5 +14,13 @@ next_block = text.find("worker = sub_once(worker,\n    r'    private static Bloc
 if next_block < 0:
     raise SystemExit('managed-quarry replacement marker not found')
 text = text[:start] + text[next_block:]
+needle = "test = replace_once(test, 'mod_version=0.1.0-alpha.128', 'mod_version=0.1.0-alpha.129', 'test version')\n"
+if needle not in text:
+    raise SystemExit('test-version marker not found')
+text = text.replace(
+    needle,
+    needle + "test = test.replace('\\\"광맥 고갈\\\" in worker', '\\\"광맥 탐색 중\\\" in worker')\n",
+    1,
+)
 path.write_text(text, encoding='utf-8')
-print('Alpha.129 patcher matching fixed')
+print('Alpha.129 patcher matching/audit fixed')
