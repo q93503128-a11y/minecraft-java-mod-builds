@@ -1,6 +1,6 @@
 package kr.moonseungjun.turnboundre.client.ui;
 
-/** Pure logical-coordinate layout contract for the M5 battle HUD. */
+/** Pure logical-coordinate layout contracts for TURNBOUND: RE production UI. */
 public final class UiLayoutMetrics {
     public static final int SPACE_2 = 2;
     public static final int SPACE_4 = 4;
@@ -11,6 +11,8 @@ public final class UiLayoutMetrics {
 
     public static final int MIN_BATTLE_HUD_WIDTH = 480;
     public static final int MIN_BATTLE_HUD_HEIGHT = 270;
+    public static final int MIN_PARTY_SCREEN_WIDTH = 480;
+    public static final int MIN_PARTY_SCREEN_HEIGHT = 270;
 
     private UiLayoutMetrics() {}
 
@@ -59,6 +61,20 @@ public final class UiLayoutMetrics {
     }
 
     /**
+     * Standalone Party Formation follows the canonical three-region structure:
+     * scan-friendly roster, four active slots, and a persistent selected-character detail pane.
+     */
+    public record PartyFormationLayout(
+            Rect root,
+            Rect header,
+            Rect tabs,
+            Rect roster,
+            Rect activeParty,
+            Rect selectedDetail,
+            Rect footer
+    ) {}
+
+    /**
      * Target selection reuses the battle command region rather than opening a center-screen modal.
      * The header owns back/confirm/page controls and the grid owns only compact target choices.
      */
@@ -80,6 +96,10 @@ public final class UiLayoutMetrics {
     /** Rendering quietly defers at extreme GUI scales instead of throwing every frame. */
     public static boolean supportsBattleHud(int screenWidth, int screenHeight) {
         return screenWidth >= MIN_BATTLE_HUD_WIDTH && screenHeight >= MIN_BATTLE_HUD_HEIGHT;
+    }
+
+    public static boolean supportsPartyScreen(int screenWidth, int screenHeight) {
+        return screenWidth >= MIN_PARTY_SCREEN_WIDTH && screenHeight >= MIN_PARTY_SCREEN_HEIGHT;
     }
 
     public static BattleHudLayout battleHud(int screenWidth, int screenHeight) {
@@ -114,6 +134,47 @@ public final class UiLayoutMetrics {
                 viewportBottom - viewportY);
 
         return new BattleHudLayout(turnRail, enemySummary, partyStatus, commandStrip, reservedWorldViewport);
+    }
+
+    public static PartyFormationLayout partyFormation(int screenWidth, int screenHeight) {
+        if (!supportsPartyScreen(screenWidth, screenHeight)) {
+            throw new IllegalArgumentException(
+                    "party screen requires at least " + MIN_PARTY_SCREEN_WIDTH + "x" + MIN_PARTY_SCREEN_HEIGHT
+                            + " logical pixels, got " + screenWidth + "x" + screenHeight);
+        }
+
+        int rootWidth = Math.min(screenWidth - SPACE_16, 960);
+        int rootX = (screenWidth - rootWidth) / 2;
+        int rootY = SPACE_8;
+        int rootHeight = screenHeight - SPACE_16;
+        Rect root = new Rect(rootX, rootY, rootWidth, rootHeight);
+
+        int headerHeight = 24;
+        int tabsHeight = 20;
+        int footerHeight = 24;
+        Rect header = new Rect(root.x(), root.y(), root.width(), headerHeight);
+        Rect tabs = new Rect(root.x(), header.bottom() + SPACE_4, root.width(), tabsHeight);
+        Rect footer = new Rect(root.x(), root.bottom() - footerHeight, root.width(), footerHeight);
+
+        int contentY = tabs.bottom() + SPACE_8;
+        int contentHeight = footer.y() - SPACE_8 - contentY;
+        int gap = SPACE_8;
+        int rosterWidth = clamp((root.width() * 35) / 100, 170, 300);
+        int activeWidth = clamp((root.width() * 25) / 100, 120, 220);
+        int detailWidth = root.width() - rosterWidth - activeWidth - gap * 2;
+        if (detailWidth < 150) {
+            int deficit = 150 - detailWidth;
+            int rosterShrink = Math.min(deficit, Math.max(0, rosterWidth - 160));
+            rosterWidth -= rosterShrink;
+            deficit -= rosterShrink;
+            activeWidth -= Math.min(deficit, Math.max(0, activeWidth - 110));
+            detailWidth = root.width() - rosterWidth - activeWidth - gap * 2;
+        }
+
+        Rect roster = new Rect(root.x(), contentY, rosterWidth, contentHeight);
+        Rect active = new Rect(roster.right() + gap, contentY, activeWidth, contentHeight);
+        Rect detail = new Rect(active.right() + gap, contentY, detailWidth, contentHeight);
+        return new PartyFormationLayout(root, header, tabs, roster, active, detail, footer);
     }
 
     public static PartyGridLayout partyGrid(Rect region, int partySize) {
