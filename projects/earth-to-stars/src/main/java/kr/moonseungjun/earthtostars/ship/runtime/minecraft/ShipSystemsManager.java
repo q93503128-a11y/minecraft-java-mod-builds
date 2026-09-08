@@ -4,6 +4,8 @@ import kr.moonseungjun.earthtostars.ship.combat.SensorContact;
 import kr.moonseungjun.earthtostars.ship.domain.ShipId;
 import kr.moonseungjun.earthtostars.ship.domain.ShipPermission;
 import kr.moonseungjun.earthtostars.ship.domain.ShipState;
+import kr.moonseungjun.earthtostars.ship.persistence.ShipBootstrapCatalog;
+import kr.moonseungjun.earthtostars.ship.persistence.minecraft.ShipSavedData;
 import kr.moonseungjun.earthtostars.ship.persistence.minecraft.ShipSystemsSavedData;
 import kr.moonseungjun.earthtostars.ship.runtime.ShipControlInput;
 import kr.moonseungjun.earthtostars.ship.runtime.ShipVec3;
@@ -22,7 +24,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,10 +37,11 @@ public final class ShipSystemsManager {
     private ShipSystemsManager() {
     }
 
-    public static void initialize(MinecraftServer server, Collection<ShipState> ships) {
+    public static void initialize(MinecraftServer server) {
         SYSTEMS.clear();
         lastPersistTick = Long.MIN_VALUE;
 
+        List<ShipState> ships = ShipSavedData.get(server).decodeAll(ShipBootstrapCatalog.create());
         ShipSystemsSavedData savedData = ShipSystemsSavedData.get(server);
         Map<ShipId, ShipSystemsSnapshot> persisted = savedData.decodeAll();
         Map<ShipId, ShipState> canonicalShips = new LinkedHashMap<>();
@@ -63,14 +65,6 @@ public final class ShipSystemsManager {
                 savedData.put(runtime.snapshot());
             }
         }
-    }
-
-    public static void registerNewShip(MinecraftServer server, ShipState ship) {
-        ShipSystemsRuntime runtime = ShipSystemsRuntime.p0(ship.shipId());
-        if (SYSTEMS.putIfAbsent(ship.shipId(), runtime) != null) {
-            throw new IllegalStateException("systems runtime already exists for ship " + ship.shipId());
-        }
-        ShipSystemsSavedData.get(server).put(runtime.snapshot());
     }
 
     public static void tick(MinecraftServer server) {
