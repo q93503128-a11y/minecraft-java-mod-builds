@@ -1,11 +1,10 @@
 package kr.moonseungjun.earthtostars.ship.runtime.minecraft;
 
 import kr.moonseungjun.earthtostars.ship.domain.ModuleCatalog;
-import kr.moonseungjun.earthtostars.ship.domain.ModuleSlot;
-import kr.moonseungjun.earthtostars.ship.domain.ModuleSlotType;
 import kr.moonseungjun.earthtostars.ship.domain.ShipId;
 import kr.moonseungjun.earthtostars.ship.domain.ShipPermission;
 import kr.moonseungjun.earthtostars.ship.domain.ShipState;
+import kr.moonseungjun.earthtostars.ship.gameplay.LaunchCraftBlueprint;
 import kr.moonseungjun.earthtostars.ship.networking.ShipControlInputPayload;
 import kr.moonseungjun.earthtostars.ship.networking.ShipControlSessionPayload;
 import kr.moonseungjun.earthtostars.ship.persistence.ShipBootstrapCatalog;
@@ -54,28 +53,39 @@ public final class ShipRuntimeManager {
         }
     }
 
+    /**
+     * P0 command-side spawn path. Kept for technical recovery, but it now uses the
+     * same M1 starter blueprint so command-created craft cannot diverge from the
+     * real survival construction contract.
+     */
     public static int spawnAndControl(ServerPlayer player, ServerLevel level, long tick) {
         removeOwnedCraft(player.getUUID());
-
         Vec3 spawn = player.position().add(player.getLookAngle().scale(4.0D)).add(0.0D, 1.0D, 0.0D);
-        ArmorStand exterior = createExterior(level, spawn, player.getYRot(), player.getXRot());
-        if (!level.addFreshEntity(exterior)) {
+        Entry entry = createStarterCraft(player, level, spawn);
+        if (entry == null) {
             throw new IllegalStateException("failed to add ship exterior proxy to level");
         }
-
-        ShipState ship = REPOSITORY.create(player.getUUID(), initialSlots());
-        ShipSavedData.get(level.getServer()).put(ship);
-        ShipTransform transform = new ShipTransform(
-                new ShipVec3(spawn.x, spawn.y, spawn.z),
-                ShipVec3.ZERO,
-                player.getYRot(),
-                0.0D
-        );
-        ShipFlightRuntime runtime = new ShipFlightRuntime(ship, transform, ShipFlightTuning.P0);
-        Entry entry = new Entry(runtime, exterior);
-        ENTRIES.put(exterior.getId(), entry);
         grantControl(player, entry, tick);
-        return exterior.getId();
+        return entry.exterior().getId();
+    }
+
+    /**
+     * Player-facing M1 construction path. A crafted launch package creates one
+     * authoritative starter craft, persists it immediately, and grants the owner
+     * the normal server-issued pilot lease. Existing ownership is never overwritten.
+     */
+    public static LaunchDeploymentResult deployLaunchCraft(ServerPlayer player, ServerLevel level, Vec3 spawn, long tick) {
+        if (REPOSITORY.findOwnedBy(player.getUUID()).isPresent()) {
+            return LaunchDeploymentResult.ALREADY_OWNS_CRAFT;
+        }
+        Entry entry = createStarterCraft(player, level, spawn);
+        if (entry == null) {
+            return LaunchDeploymentResult.DEPLOYMENT_FAILED;
+        }
+        if (!grantControl(player, entry, tick)) {
+            return LaunchDeploymentResult.CONTROL_UNAVAILABLE;
+        }
+        return LaunchDeploymentResult.DEPLOYED;
     }
 
     public static boolean restoreAndControl(ServerPlayer player, ServerLevel level, long tick) {
@@ -239,6 +249,36 @@ public final class ShipRuntimeManager {
         REPOSITORY.clear();
     }
 
+    private static Entry createStarterCraft(ServerPlayer player, ServerLevel level, Vec3 spawn) {
+        ShipState ship = ShipState.create(ShipId.random(), player.getUUID(), LaunchCraftBlueprint.slots());
+        LaunchCraftBlueprint.installStarterModules(ship, CATALOG);
+
+        ArmorStand exterior = createExterior(level, spawn, player.getYRot(), 0.0F);
+        if (!level.addFreshEntity(exterior)) {
+            return null;
+        }
+
+        try {
+            REPOSITORY.add(ship);
+            ShipSavedData.get(level.getServer()).put(ship);
+            ShipSystemsManager.systems(ship);
+        } catch (RuntimeException failure) {
+            exterior.discard();
+            throw failure;
+        }
+
+        ShipTransform transform = new ShipTransform(
+                new ShipVec3(spawn.x, spawn.y, spawn.z),
+                ShipVec3.ZERO,
+                player.getYRot(),
+                0.0D
+        );
+        ShipFlightRuntime runtime = new ShipFlightRuntime(ship, transform, ShipFlightTuning.P0);
+        Entry entry = new Entry(runtime, exterior);
+        ENTRIES.put(exterior.getId(), entry);
+        return entry;
+    }
+
     private static void executeTransition(MinecraftServer server, TransitionRequest request) {
         Entry entry = ENTRIES.get(request.entityId());
         if (entry == null || entry != request.entry() || entry.exterior().isRemoved()) {
@@ -363,14 +403,11 @@ public final class ShipRuntimeManager {
         removed.forEach(ENTRIES::remove);
     }
 
-    private static List<ModuleSlot> initialSlots() {
-        return List.of(
-                new ModuleSlot("core", ModuleSlotType.CORE, 1),
-                new ModuleSlot("engine", ModuleSlotType.PROPULSION, 1),
-                new ModuleSlot("power", ModuleSlotType.POWER, 1),
-                new ModuleSlot("cargo", ModuleSlotType.CARGO, 1),
-                new ModuleSlot("turret", ModuleSlotType.WEAPON_HARDPOINT, 1)
-        );
+    public enum LaunchDeploymentResult {
+        DEPLOYED,
+        ALREADY_OWNS_CRAFT,
+        CONTROL_UNAVAILABLE,
+        DEPLOYMENT_FAILED
     }
 
     record ExteriorAnchor(ServerLevel level, ShipTransform transform) {
