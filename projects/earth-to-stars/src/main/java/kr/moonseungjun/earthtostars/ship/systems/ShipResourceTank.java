@@ -30,6 +30,13 @@ public final class ShipResourceTank {
         return true;
     }
 
+    public synchronized double drain(double amount) {
+        validateAmount(amount);
+        double drained = Math.min(stored, amount);
+        stored -= drained;
+        return drained;
+    }
+
     public synchronized double fill(double amount) {
         validateAmount(amount);
         double accepted = Math.min(amount, capacity - stored);
