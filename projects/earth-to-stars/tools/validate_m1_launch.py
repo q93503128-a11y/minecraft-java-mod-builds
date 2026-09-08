@@ -36,23 +36,34 @@ def fail(message: str) -> None:
     raise LaunchValidationError(message)
 
 
-def ingredient_ids(recipe: dict) -> set[str]:
+def ingredient_ids(recipe: dict, path: Path) -> set[str]:
     values: list[object] = []
     if "key" in recipe:
-        values.extend(recipe["key"].values())
+        key = recipe["key"]
+        if not isinstance(key, dict):
+            fail(f"{path.name}: shaped recipe key must be an object")
+        values.extend(key.values())
     if "ingredients" in recipe:
-        values.extend(recipe["ingredients"])
+        ingredients = recipe["ingredients"]
+        if not isinstance(ingredients, list):
+            fail(f"{path.name}: ingredients must be a list")
+        values.extend(ingredients)
 
     result: set[str] = set()
     for value in values:
         entries = value if isinstance(value, list) else [value]
+        if not entries:
+            fail(f"{path.name}: empty ingredient alternative list")
         for entry in entries:
-            if isinstance(entry, str):
-                result.add(entry.removeprefix("#"))
-            elif isinstance(entry, dict):
-                item = entry.get("item") or entry.get("tag")
-                if isinstance(item, str):
-                    result.add(item.removeprefix("#"))
+            # Minecraft/NeoForge 26.2 vanilla item/tag ingredients are resource-id strings
+            # (tags are prefixed with '#'). The old {"item": "..."} wrapper no longer
+            # parses and previously slipped through this validator, so reject it here.
+            if not isinstance(entry, str):
+                fail(
+                    f"{path.name}: obsolete/unsupported ingredient syntax {entry!r}; "
+                    "use a resource-id string (or a list of strings) on Minecraft 26.2"
+                )
+            result.add(entry.removeprefix("#"))
     return result
 
 
@@ -66,7 +77,7 @@ def load_recipes(recipe_dir: Path) -> dict[str, tuple[Path, set[str]]]:
         output = result["id"]
         if output in outputs:
             fail(f"multiple recipes produce {output}: {outputs[output][0].name}, {path.name}")
-        outputs[output] = (path, ingredient_ids(raw))
+        outputs[output] = (path, ingredient_ids(raw, path))
     return outputs
 
 
@@ -113,7 +124,7 @@ def validate(recipe_dir: Path) -> None:
     if missing:
         fail("launch recipe closure is missing required M1 components: " + ", ".join(missing))
 
-    print(f"M1 LAUNCH VALIDATION OK: {len(visited)} reachable ingredients/components, Nether/End independent")
+    print(f"M1 LAUNCH VALIDATION OK: {len(visited)} reachable ingredients/components, Nether/End independent, 26.2 ingredient syntax valid")
 
 
 def main() -> None:
