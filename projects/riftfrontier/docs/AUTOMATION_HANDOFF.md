@@ -5,59 +5,60 @@ This file is a recovery aid for scheduled development sessions. Canonical design
 ## Last recovered baseline
 
 - Re-read current remote `main`, then `AGENTS.md` → `docs/BUILD_STANDARD.md` → `docs/QUALITY_STANDARD.md` → `PROJECT.md` → `CANONICAL.md` → `GAME_DESIGN_MASTER.md` → `CONTENT_ARCHITECTURE.md` → `ROADMAP.md`, current M3 reference/runtime files, then this handoff.
-- Recovered remote `main` before this batch: `1c201e66089db0b94dc59b0249078a40b5cedc16`.
-- Previous render-facing generation consistency run `34242151623` for code commit `a3b9d19b61689b847582223808978b3e1e18f05e` is confirmed full `SUCCESS`.
+- Recovered remote `main` before this batch: `be7eaab6ef27a6f44509ce971e6a58ca63a7cd0e`.
+- Previous Region 01 presentation-gate workflow run `34248910052` is confirmed full `SUCCESS`.
 - Repository still has no selected production Region 01 boss model/animation/VFX/sound assets and no fake production manifest.
 
 ## Completed in this batch
 
-M3 Region 01 boss presentation/reference and asset-selection gate:
+M3 real-candidate bounded audit + deterministic glTF technical intake gate:
 
-- Added `REGION_01_BOSS_PRESENTATION_GATE.md` to stop architecture-only presentation work and define the production acceptance matrix before any model/animation/VFX/sound is bundled.
-- Locked first boss combat communication requirements around position control / commitment punishment: readable committed strike, line/displacement pressure, arena-pressure telegraph, explicit recovery/counter window, and non-numeric phase change.
-- Locked model acceptance criteria: facing readability, attack-bearing silhouette, telegraph rig headroom, Minecraft scale/style fit, variant stability, and performance fit.
-- Locked animation/VFX/sound contract to the authoritative `AttackPattern` clock; presentation may emphasize timing but may not create a second hit clock.
-- Researched Quaternius `Ultimate Monsters`: 50 animated monster models, FBX/OBJ/Blend/glTF, source page declares CC0 and commercial use. Classified source family as license-eligible `CANDIDATE`, but selected no individual model because the visual/rig/Minecraft-fit gate has not been performed.
-- Inspected Poly Pizza public-domain/CC0 mirrors for individual Quaternius examples only as discovery/provenance cross-check; no model selected.
-- Re-verified GeckoLib current support table: Minecraft 26.2 → GeckoLib 5.5.1. Kept it as technology candidate only; dependency not added without a real accepted animated asset.
-- Created missing project `THIRD_PARTY_ASSETS.md` provenance registry referenced by canonical project guidance.
-- Updated `M3_COMBAT_REFERENCE_DOSSIER.md` to point to the new production presentation gate and exact next boundary.
+- Audited a bounded CC0 candidate set from Quaternius Ultimate Monsters against `REGION_01_BOSS_PRESENTATION_GATE.md`.
+- Rejected Blue Demon, Goleling Evolved and Mushroom King for the first Region 01 boss instead of lowering the combat/presentation gate.
+- Kept Dragon Evolved as the only conditional technical front-runner, **NOT SELECTED**. Public evidence shows a useful multi-channel silhouette and manageable reported geometry, but exact rig hierarchy, clip names, materials, deformation and Minecraft-scale presentation remain unverified.
+- Researched the newer 2026 Quaternius Bestiary kit and QAL v1.0. It is not approved for raw public source-repository bundling under current evidence because QAL permits completed-Product distribution while restricting redistribution of the assets themselves.
+- Added `tools/inspect_gltf.py`, a standard-library GLB/glTF 2.0 inspector that reports geometry, material, skin/bone, animation and bounds metadata and can fail requested technical budgets with stable issue codes.
+- Added deterministic unit tests using synthetic non-production GLB/glTF fixtures. The fixture exists only in a temporary test directory and is never bundled as a production resource.
+- Added `REGION_01_BOSS_CANDIDATE_AUDIT.md` as the bounded decision record.
+- Updated `THIRD_PARTY_ASSETS.md` with exact candidate decisions and the QAL repository-distribution boundary.
 
 ## Changed systems/files
 
-- `docs/REGION_01_BOSS_PRESENTATION_GATE.md` — new
-- `docs/THIRD_PARTY_ASSETS.md` — new
-- `docs/M3_COMBAT_REFERENCE_DOSSIER.md` — updated
+- `tools/inspect_gltf.py` — new
+- `tools/tests/test_inspect_gltf.py` — new
+- `docs/REGION_01_BOSS_CANDIDATE_AUDIT.md` — new
+- `docs/THIRD_PARTY_ASSETS.md` — updated
 - `docs/AUTOMATION_HANDOFF.md` — updated
 
 ## Verification
 
-- Previous render resolver run `34242151623`: full Riftfrontier workflow `SUCCESS`.
-- This batch is documentation/reference-only; no Java, Gradle, resource bytes, registry IDs, persistence schema, network payloads, combat timing, or production assets changed.
-- New workflow run triggered by this project-doc change must be checked after push; do not claim it green while pending.
-- Actual candidate model geometry/rig inspection in Blockbench: NOT RUN.
+- Previous Region 01 presentation-gate run `34248910052`: full Riftfrontier workflow `SUCCESS`.
+- `python3 -m unittest discover -s tools/tests -p 'test_*.py'`: 3 tests, `OK` in the automation working environment.
+- Tests cover valid GLB metadata/bounds, stable technical gate issue codes, and malformed GLB length rejection.
+- Current project workflow triggered by this batch must still be checked after push; do not claim it green while pending.
+- Original Dragon Evolved binary downloaded from original creator source: NOT RUN in this environment.
+- Exact Dragon Evolved skeleton hierarchy / clip names / material count / deformation: NOT TESTED.
 - Actual production resource existence: NOT TESTED because no production Region 01 boss asset is selected.
 - Actual renderer/animation/VFX/sound activation: NOT IMPLEMENTED / NOT TESTED.
-- Final production Region 01 boss entity integration: NOT IMPLEMENTED / NOT TESTED.
-- Human Minecraft field play: NOT TESTED.
+- Human Minecraft combat readability/field play: NOT TESTED.
 
 ## Do not repeat or revert
 
 - Preserve `AttackPattern` as the single authoritative combat timing source and ACTIVE-only damage semantics.
-- Preserve server-owned boss phase cancellation, deterministic attack selection, and `PresentationFrame` → semantic packet timing contract.
-- Preserve monotonic client ordering/clear watermark; do not revive stale ACTIVE presentation.
 - Preserve fail-closed logical resolver, whole-manifest physical promotion, atomic client resource reload, and exact content-generation matching before render resolution.
-- Preserve separation between server datapack `ResourceManager` and client physical resource existence.
 - Do not create placeholder production resources or a fake production manifest.
-- Do not add GeckoLib only because it is compatible; add it when a selected real animated asset requires it and re-verify coordinates at that moment.
-- Do not mark Quaternius or Poly Pizza candidates as selected without visual/rig/scale/performance inspection.
+- Do not add GeckoLib only because it is compatible.
+- Do not mark Dragon Evolved `SELECTED` from public previews/metadata alone.
+- Keep Blue Demon, Goleling Evolved and Mushroom King rejected for the first Region 01 boss unless the canonical boss contract itself is intentionally changed for a separately documented reason.
+- Do not raw-bundle QAL Bestiary assets into this public source repository without clearer redistribution permission.
+- `tools/inspect_gltf.py` is a technical metadata gate only; never treat its PASS as visual/license/production approval.
 - Do not tune M2 pressure/patrol values without field-play evidence or promote M2 technical proxies to production art/AI.
 
 ## Exact next start point
 
-1. Re-check current remote `main` and the CI run triggered by this batch. If any gate fails, fix the first real failure without weakening existing presentation/runtime semantics.
-2. If green, inspect a bounded real candidate set from license-eligible source families in Blockbench or an equivalent geometry/animation viewer.
-3. For each candidate record exact name/source/license/formats, skeleton and animation inventory, scale/bounds, geometry/material cost, attack-bearing silhouette and whether the required committed-strike / displacement / area-pressure semantic clips can be authored cleanly.
-4. Select exactly one only if it passes `REGION_01_BOSS_PRESENTATION_GATE.md`; otherwise record explicit rejection reasons and continue to a new bounded source set rather than lowering the gate.
-5. After selection, mark the exact entry `SELECTED` in `THIRD_PARTY_ASSETS.md`, add only permitted asset bytes, re-verify GeckoLib 5.5.1 coordinates if needed, author the first real `presentation_assets` manifest, then wire the existing render resolver to the chosen renderer.
-6. Validate actual telegraph/ACTIVE/recovery animation/VFX/sound against authoritative hit windows in Minecraft before declaring production presentation complete.
+1. Re-check current remote `main` and the `Build Riftfrontier` run triggered by this batch. Fix the first real failure if any.
+2. Obtain the original CC0 Dragon Evolved GLB in an environment that can inspect binary assets locally.
+3. Run `tools/inspect_gltf.py --json`, then inspect exact skeleton hierarchy, animation clip names, materials, axes/bounds and deformation in Blockbench/Blender or equivalent.
+4. Verify that distinct committed-strike telegraph/ACTIVE/recovery, line/displacement telegraph and arena-pressure telegraph poses can be authored cleanly from the rig.
+5. Only if those checks pass, mark Dragon Evolved `SELECTED`, add permitted resource bytes, re-verify the chosen animation runtime coordinates, author the first real `presentation_assets` manifest and connect the renderer.
+6. If it fails, start a new bounded redistribution-safe candidate set; do not lower the gate.
