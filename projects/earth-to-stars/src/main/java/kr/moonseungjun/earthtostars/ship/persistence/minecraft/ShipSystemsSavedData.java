@@ -70,6 +70,14 @@ public final class ShipSystemsSavedData extends SavedData {
         }
     }
 
+    public synchronized boolean remove(ShipId shipId) {
+        if (entries.remove(shipId.toString()) == null) {
+            return false;
+        }
+        setDirty();
+        return true;
+    }
+
     public synchronized Optional<ShipSystemsSnapshot> find(ShipId shipId) {
         PersistedSystems persisted = entries.get(shipId.toString());
         return persisted == null ? Optional.empty() : Optional.of(decode(shipId.toString(), persisted));
