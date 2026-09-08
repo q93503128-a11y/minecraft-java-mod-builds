@@ -45,18 +45,41 @@ A boss profile with no attack patterns, dangling attack references, or no arena 
 
 ## What is intentionally not locked yet
 
-- Region 01 boss name and visual theme
+- Region 01 boss final name and species/lore identity
 - model geometry / texture palette
-- GeckoLib adoption and exact animation set
+- final selected model/rig asset
 - sound library and VFX language
 - player weapon art
 - exact damage, range and cooldown balance
 
-Those require actual reference/asset work and Minecraft-screen validation. This dossier only locks the data/runtime contract needed to build them safely.
+Those require actual reference/asset work and Minecraft-screen validation.
+
+## Region 01 presentation gate — 2026-09-09
+
+The architecture-only phase is now closed. `REGION_01_BOSS_PRESENTATION_GATE.md` locks the next production criteria:
+
+- first boss combat communication is position-control / commitment-punish oriented rather than a high-HP proxy;
+- broad committed strike, line/displacement pressure and visible arena-pressure roles must each have readable telegraph/ACTIVE/recovery presentation;
+- model candidates must pass facing, attack-bearing silhouette, rig headroom, Minecraft scale/style, variant stability and performance checks;
+- VFX/sound reinforce the authoritative `AttackPattern` clock and may not invent a parallel hit clock;
+- production asset bundling is fail-closed until a real candidate passes the visual/rig/license gate.
+
+External research identified Quaternius `Ultimate Monsters` as a license-eligible CC0 animated source family, but no individual model is selected merely because it is free. GeckoLib 5.5.1 remains the current Minecraft 26.2 animation technology candidate and is not added as a dependency until an accepted real animated asset justifies it.
+
+`THIRD_PARTY_ASSETS.md` now exists as the project asset/provenance registry.
 
 ## Next implementation boundary
 
-After M2 field-play evidence is available, use the observed combat pacing to author the first Region 01 production `attack_pattern` definitions and boss phase/state runtime. Do not migrate M2 Zombie/Skeleton/Ravager technical proxies into production art by renaming them.
+Do not add more presentation plumbing. Inspect a bounded set of real license-eligible candidate models/rigs against `REGION_01_BOSS_PRESENTATION_GATE.md`. Only after one candidate is visually and technically accepted should the repository:
+
+1. mark the exact asset `SELECTED` in `THIRD_PARTY_ASSETS.md`;
+2. add permitted source/derived asset bytes;
+3. re-verify and, if justified, add the chosen animation technology;
+4. author the first real `presentation_assets` manifest;
+5. connect the existing render-facing resolver to the chosen renderer;
+6. verify telegraph/ACTIVE/recovery presentation against real hit windows in Minecraft.
+
+Do not migrate M2 Zombie/Skeleton/Ravager technical proxies into production art by renaming them.
 
 ## Sources consulted
 
@@ -64,3 +87,5 @@ After M2 field-play evidence is available, use the observed combat pacing to aut
 - Alex's Caves official repository: https://github.com/AlexModGuy/AlexsCaves
 - Advent of Ascension official repository: https://github.com/Tslat/Advent-Of-Ascension
 - Supergiant Games, Hades II updates: https://www.supergiantgames.com/blog/hades2-unseen-update/ and https://www.supergiantgames.com/blog/hades2-warsong-update/
+- Quaternius Ultimate Monsters: https://quaternius.com/packs/ultimatemonsters.html
+- GeckoLib 5 support table: https://wiki.geckolib.com/docs/geckolib5/
