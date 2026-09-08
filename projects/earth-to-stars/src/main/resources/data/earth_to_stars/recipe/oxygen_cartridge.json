@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " C ",
+    "IWI",
+    " R "
+  ],
+  "key": {
+    "C": { "item": "minecraft:copper_ingot" },
+    "I": { "item": "minecraft:iron_ingot" },
+    "W": { "item": "minecraft:water_bucket" },
+    "R": { "item": "minecraft:redstone" }
+  },
+  "result": {
+    "id": "earth_to_stars:oxygen_cartridge",
+    "count": 2
+  }
+}
