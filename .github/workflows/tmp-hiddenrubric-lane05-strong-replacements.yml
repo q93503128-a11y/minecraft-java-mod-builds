@@ -1,0 +1,28 @@
+name: Temporary Hidden Rubric Lane05 strong replacements
+on:
+  push:
+    branches: [tmp-hiddenrubric-lane05-replacements]
+    paths:
+      - '.github/workflows/tmp-hiddenrubric-lane05-strong-replacements.yml'
+      - 'tools/tmp_hiddenrubric_lane05_strong_replacements.py'
+permissions:
+  contents: write
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tmp-hiddenrubric-lane05-replacements
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python tools/tmp_hiddenrubric_lane05_strong_replacements.py
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tmp/hiddenrubric-lane05-strong-replacements
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'temp: materialize Lane05 strong replacements [skip ci]'
+          git push origin HEAD:tmp-hiddenrubric-lane05-replacements
