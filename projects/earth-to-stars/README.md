@@ -2,7 +2,7 @@
 
 Minecraft Java / NeoForge 26.2 기반의 SF 우주 개척·모듈식 함선 성장 프로젝트다.
 
-> **상태: M0 CANON LOCKED / BUILD BOOTSTRAP NEXT**
+> **상태: M0 BUILD BOOTSTRAP VERIFIED / P0-A PURE SHIP KERNEL VERIFIED / P0-B NEXT**
 
 ## 한 줄 설명
 
@@ -25,7 +25,7 @@ Minecraft Java / NeoForge 26.2 기반의 SF 우주 개척·모듈식 함선 성�
 
 ## 정본 문서
 
-- `PROJECT.md` — 환경, 범위, 절대 제품 결정, 멀티 권한 계약
+- `PROJECT.md` — 환경, 범위, 절대 제품 결정, 멀티 권한 계약, 현재 검증 기준
 - `AGENTS.md` — 이 프로젝트 전용 작업 계약
 - `docs/00_MASTER_GAME_DESIGN.md` — 게임 정체성, 핵심 루프, 함선 성장, 전투, 탐험, 경제, Nether/End 정책
 - `docs/01_TECHNICAL_ARCHITECTURE.md` — B형 모듈식 함선, 서버 권한, interior instance, 네트워크, 저장, 성능 구조
@@ -33,7 +33,7 @@ Minecraft Java / NeoForge 26.2 기반의 SF 우주 개척·모듈식 함선 성�
 - `docs/03_UI_ART_REFERENCE_GATE.md` — SF UI/모델/VFX/사운드의 외부 레퍼런스 기반 제작 게이트
 - `docs/04_P0_VERTICAL_SLICE.md` — 구현 전 기술 위험 제거와 첫 플레이어블 수직 구간
 - `THIRD_PARTY_ASSETS.md` — 외부 코드/자산/레퍼런스의 출처·라이선스 기록
-- `CHANGELOG.md` — 실제 변경 기록
+- `CHANGELOG.md` — 실제 변경·검증 기록
 
 ## 프로젝트의 네 가지 핵심 기둥
 
@@ -57,15 +57,30 @@ Minecraft 생존
 - 최종 SF UI를 검은 반투명 패널 + 네온 테두리 + 의미 없는 글로우로 즉흥 제작하지 않는다.
 - 바닐라 파티클과 임시 큐브 모델을 production 최종 비주얼로 남기지 않는다.
 
+## 현재 검증 기준
+
+구현 커밋: `d1c34db306680944c5696ecabd5f018943fef772`
+
+GitHub Actions `Build earth-to-stars` run `34175374292`에서 한 번의 의미 있는 M0/P0-A 게이트를 통과했다.
+
+- `clean test build`: PASS
+- P0-A JUnit: PASS
+- production JAR verify: PASS
+- JAR: `earth_to_stars-0.1.0-alpha.1.jar`
+- SHA-256: `baea44c12f5383781967c503c41363831312676643f1870fac82df9108c46848`
+
+GameTest, dedicated server, client, live multiplayer는 이번 순수 커널 게이트에서 실행하지 않았다. 특히 실제 멀티는 `NOT TESTED`이며 성공했다고 간주하지 않는다.
+
 ## 다음 작업
 
-M0 build bootstrap에서 26.2 공식 NeoForge 프로젝트 골격과 CI를 추가하고, 바로 P0 기술 게이트를 시작한다. 첫 구현 목표는 콘텐츠 대량 추가가 아니라 다음 위험을 빠르게 닫는 것이다.
+다음 의미 있는 작업 단위는 **P0-B Ship Exterior / Movement Backend + 첫 Minecraft persistence integration**이다.
 
-1. Overworld ↔ orbital-space 전환
-2. 서버 권한 ShipState + module install/remove
-3. 수동/자동 전환 가능한 대표 포탑 1기
-4. 중앙 power/ammo/sensor simulation
-5. ship exterior ↔ linked interior instance 이동
-6. dedicated-server에서 권한·저장·재접속 회귀 검증
+1. 최소 함선 exterior object/entity
+2. server-authoritative transform
+3. throttle / yaw / pitch / acceleration / deceleration
+4. 조종 권한과 control lease
+5. client interpolation 경계
+6. ShipState를 Minecraft 저장 경계에 연결
+7. create → save → reload → 동일 shipId/modules 복원 integration gate
 
-P0가 닫히기 전에는 행성·무기·광물·UI를 대량 생산하지 않는다.
+이 묶음이 끝나기 전에는 최종 함선 모델이나 cockpit UI를 즉흥 제작하지 않는다. P0-B 외형은 기술 프록시에 한정하고, 최종 시각 작업은 `docs/03_UI_ART_REFERENCE_GATE.md`를 통과한 뒤 진행한다.
