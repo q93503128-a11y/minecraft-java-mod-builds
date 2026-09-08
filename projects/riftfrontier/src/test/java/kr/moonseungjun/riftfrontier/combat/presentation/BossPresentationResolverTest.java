@@ -69,7 +69,12 @@ final class BossPresentationResolverTest {
         assertEquals(BOSS, decoded.bossProfile());
         assertTrue(decoded.bindings().containsKey(key("charge", "line_charge", "ACTIVE")));
 
-        String duplicate = oneBinding.replace("]}", ",{\"presentation_cue\":\"charge\",\"delivery\":\"line_charge\",\"phase\":\"ACTIVE\",\"animation_key\":\"riftfrontier:animations/charge_active\",\"vfx_key\":\"riftfrontier:vfx/charge_active\",\"sound_key\":\"riftfrontier:sounds/charge_active\"}]}");
+        String duplicate = """
+            {"kind":"boss_presentation_profile","id":"riftfrontier:boss_present","boss_profile":"riftfrontier:resolver_boss","variant":"base","model_key":"riftfrontier:models/resolver_boss","bindings":[
+              {"presentation_cue":"charge","delivery":"line_charge","phase":"ACTIVE","animation_key":"riftfrontier:animations/charge_active","vfx_key":"riftfrontier:vfx/charge_active","sound_key":"riftfrontier:sounds/charge_active"},
+              {"presentation_cue":"charge","delivery":"line_charge","phase":"ACTIVE","animation_key":"riftfrontier:animations/charge_active","vfx_key":"riftfrontier:vfx/charge_active","sound_key":"riftfrontier:sounds/charge_active"}
+            ]}
+            """;
         assertThrows(IllegalArgumentException.class, () -> new BossPresentationProfileCodec().decode(duplicate));
     }
 
