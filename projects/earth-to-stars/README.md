@@ -2,7 +2,7 @@
 
 Minecraft Java / NeoForge 26.2 기반의 SF 우주 개척·모듈식 함선 성장 프로젝트다.
 
-> **상태: M0 VERIFIED / P0-A SAVEDDATA ADAPTER BUILD VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / P0-D LINKED INTERIOR BACKEND BUILD VERIFIED / P0-E TURRET BACKEND BUILD VERIFIED / P0-F CENTRAL SYSTEMS BACKEND BUILD VERIFIED / P0-G LIFECYCLE GATE NEXT**
+> **상태: M0 VERIFIED / P0-A SAVEDDATA ADAPTER BUILD VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / P0-D LINKED INTERIOR BACKEND BUILD VERIFIED / P0-E TURRET BACKEND BUILD VERIFIED / P0-F CENTRAL SYSTEMS BACKEND BUILD VERIFIED / P0-G DEDICATED LIFECYCLE VERIFIED / LIVE MULTIPLAYER NOT TESTED / P0-H NEXT**
 
 ## 한 줄 설명
 
@@ -59,37 +59,42 @@ Minecraft 생존
 
 ## 현재 검증 기준
 
-최신 검증 기준 커밋: `8e65d142f2a4dc3edfd7ef30116ad0929d4bc622`
+최신 검증 기준 커밋: `557d273ecfa78c1ba9cc62956cd78f6eb7c55153`
 
-GitHub Actions `Build earth-to-stars` run `34187867167`:
+GitHub Actions `Build earth-to-stars` run `34188840459`:
 
 - `clean test build`: PASS
-- P0-A/P0-B/P0-C regression JUnit: PASS
-- P0-D linked interior JUnit: PASS
-- P0-E representative turret JUnit: PASS
-- P0-F central PowerGrid / AmmoPool / SensorGrid JUnit: PASS
-- power priority reserve / generation monotonicity: PASS
-- 두 turret runtime이 하나의 공용 ammo pool을 소비: PASS
-- 전력 부족 weapon transaction이 ammo/power를 부분 소비하지 않음: PASS
-- propulsion input이 중앙 PowerGrid를 소비: PASS
-- stale SensorGrid contact expiry: PASS
-- interior-linked crew의 동일 ShipId systems 조회 adapter compile: PASS
-- Minecraft 26.2 central systems coordinator compile: PASS
 - production JAR verify: PASS
-- JAR: `earth_to_stars-0.1.0-alpha.6.jar`
-- SHA-256: `527f02b6c3a70337c25a8aeebda3c0d2059818fc9e49efc77ab23bba016a07e6`
+- P0-A~F regression JUnit: PASS
+- P0-G systems snapshot restore JUnit: PASS
+- dedicated server 1회차 실제 boot: PASS
+- `earth_to_stars:orbital_space` dedicated-server registration: PASS
+- `earth_to_stars:ship_interiors` dedicated-server registration: PASS
+- seed world 정상 종료 및 모든 dimension save: PASS
+- 같은 `run/world`로 dedicated server 2회차 boot: PASS
+- `ShipId / owner / module slots` disk restore: PASS
+- `ShipId → interior slot` disk restore: PASS
+- central `PowerGrid / AmmoPool` disk restore: PASS
+- restored `ShipSystemsRuntime` 초기화: PASS
+- 센서는 저장하지 않고 재스캔하는 휘발 cache 정책: PASS
+- JAR: `earth_to_stars-0.1.0-alpha.7.jar`
+- SHA-256: `76bc15395500382f0acbc68826c7e6b95533b5ce9863de40e837c9a2856ac708`
 
-P0-F부터 함선의 핵심 운용 자원은 `ShipId` 단위 중앙 정본으로 묶인다. 대표 기관포는 더 이상 자체 탄약을 소유하지 않고 공용 `AmmoPool`에서 탄을 소비하며, 수동/자동 모드가 같은 탄약과 전력 상태를 공유한다. `SensorGrid` 역시 함선당 하나의 contact cache를 사용하고 스캔은 주기·phase offset으로 묶는다.
+P0-G lifecycle probe는 일반 플레이어에게 노출되는 명령/UI가 아니다. CI에서만 환경변수로 활성화되며, 첫 서버 부팅에서 고정 `ShipId`의 ship/interior/system state를 실제 SavedData에 기록하고 정상 종료한 뒤, 두 번째 서버 부팅이 같은 디스크 상태를 읽어 동일 값을 검증한다.
 
-전력은 `ESSENTIAL → PROPULSION → WEAPONS → UTILITY` 우선순위와 reserve 경계를 갖는다. 현재 P0 수치는 최종 밸런스가 아니라 `ShipSystemsTuning.P0` 한 곳에 모인 기술 검증값이며, 콘텐츠 생산 단계에서 data-driven 정의로 승격한다.
+검증값:
+
+- ship: `11111111-2222-3333-4444-555555555555`
+- interior slot: `0`
+- power: `37.5`
+- autocannon ammo: `73`
+
+전력/탄약은 이제 함선 단위 영속 정본이다. 센서 contact는 재시작 전 월드 엔티티 상태를 그대로 들고 있으면 유령 표적이 생길 수 있으므로 의도적으로 persistence 대상이 아니며 서버 기동 후 다시 획득한다.
 
 현재 projectile, ArmorStand exterior, 기술 interior room, command 조작면은 여전히 P0 프록시다. 최종 모델·트레이서·총구화염·사운드·조종석 UI·카메라·함선 내부 비주얼로 간주하지 않는다.
 
 ## 아직 실게임 검증/구현하지 않은 것
 
-- **중앙 전력/탄약 현재량의 서버 재시작 persistence: NOT IMPLEMENTED / NOT TESTED**
-- 실제 save→disk→server restart→same ship/interior restore
-- dedicated server custom-dimension boot/smoke
 - 실제 Earth↔orbit 비행과 조종감/camera/interpolation
 - 실제 exterior↔interior 출입과 다인 동시 체류
 - 외부 조종 중 내부 승무원 유지
@@ -97,20 +102,17 @@ P0-F부터 함선의 핵심 운용 자원은 `ShipId` 단위 중앙 정본으로
 - 실제 자동포탑 타격/피드백
 - 실제 2인 pilot+gunner control conflict / disconnect lifecycle
 - live multiplayer session
+- client smoke / production visual quality
 - production ship/interior/turret visual
 
-자동 빌드 성공을 위 항목의 실플레이 완료로 간주하지 않는다.
+자동 dedicated-server lifecycle 성공을 위 실플레이 항목까지 검증한 것으로 간주하지 않는다.
 
 ## 다음 작업
 
-다음 의미 있는 작업 단위는 **P0-G Lifecycle / Multiplayer Gate**다. 다만 실멀티를 바로 시키기 전에 다음 순서로 준비한다.
+다음 의미 있는 작업 단위는 **P0-H Nether/End Independence Validator**다.
 
-1. 중앙 PowerGrid / AmmoPool의 versioned persistence를 `ShipId`에 연결한다.
-2. save → disk → restart → same ship/interior/systems 복원 경계를 자동화한다.
-3. dedicated server에서 `orbital_space` / `ship_interiors` 실제 boot/smoke를 확인한다.
-4. 그 뒤에 Earth↔orbit + interior + pilot/gunner + 공용 ammo/power를 한 번의 실제 lifecycle 테스트로 묶는다.
-5. 실제 2인 환경이 없으면 멀티는 `NOT TESTED`로 남기며 성공했다고 꾸미지 않는다.
+메인 진행 그래프에서 Nether/End 전용 자원·구조물·advancement가 지구→우주 메인 루트의 필수 ancestor가 되는 순간 자동 실패시키는 검증기를 넣는다. Nether/End는 sidegrade, shortcut, specialist material, late-game variant로는 허용한다.
 
-작은 수정마다 사용자 테스트를 요구하지 않는다. P0-G에서 실제로 의미 있는 통합 상태가 됐을 때 한 번에 테스트한다.
+P0-H까지 닫은 뒤 실제 조종/전환/포탑/내부를 하나의 플레이 가능한 덩어리로 묶어 사용자 테스트를 요청한다. 작은 수정마다 테스트를 반복시키지 않는다.
 
 최종 함선 모델·cockpit UI·내부 디자인·포탑 모델/VFX/사운드는 기술 프록시 단계에서 즉흥 제작하지 않고 `docs/03_UI_ART_REFERENCE_GATE.md`를 통과한 뒤 production 품질로 진행한다.
