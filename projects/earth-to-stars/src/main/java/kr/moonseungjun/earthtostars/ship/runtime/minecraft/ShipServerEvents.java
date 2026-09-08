@@ -70,7 +70,26 @@ public final class ShipServerEvents {
                                     }
                                     context.getSource().sendFailure(Component.literal("현재 연결된 개척선 조종이 없습니다."));
                                     return 0;
-                                })))
+                                }))
+                                .then(Commands.literal("interior")
+                                        .then(Commands.literal("enter").executes(context -> {
+                                            ServerPlayer player = context.getSource().getPlayerOrException();
+                                            if (ShipInteriorManager.enterNearest(player)) {
+                                                context.getSource().sendSuccess(() -> Component.literal("함선 내부로 이동했습니다."), false);
+                                                return 1;
+                                            }
+                                            context.getSource().sendFailure(Component.literal("들어갈 수 있는 함선이 가까이에 없거나 내부 구역을 열 수 없습니다."));
+                                            return 0;
+                                        }))
+                                        .then(Commands.literal("exit").executes(context -> {
+                                            ServerPlayer player = context.getSource().getPlayerOrException();
+                                            if (ShipInteriorManager.exit(player)) {
+                                                context.getSource().sendSuccess(() -> Component.literal("함선 외부로 이동했습니다."), false);
+                                                return 1;
+                                            }
+                                            context.getSource().sendFailure(Component.literal("현재 함선 내부에 있지 않거나 외부로 이동할 수 없습니다."));
+                                            return 0;
+                                        }))))
         );
     }
 
@@ -82,6 +101,13 @@ public final class ShipServerEvents {
     @SubscribeEvent
     private static void onServerStarting(ServerStartingEvent event) {
         ShipRuntimeManager.initialize(event.getServer());
+    }
+
+    @SubscribeEvent
+    private static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            ShipInteriorManager.recoverUnlinkedInteriorPlayer(player);
+        }
     }
 
     @SubscribeEvent

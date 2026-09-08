@@ -52,7 +52,7 @@ jobs:
           JAR=$(ls build/libs/earth_to_stars-*.jar | head -n1)
           SHA=$(cat "$JAR.sha256")
           cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # EARTH TO STARS — M0/P0-A/P0-B/P0-C Build Report
+          # EARTH TO STARS — P0-D Build Report
 
           - Commit: $GITHUB_SHA
           - Java: 25
@@ -62,13 +62,12 @@ jobs:
           - clean/test/build: PASS
           - production JAR verify: PASS
           - SHA-256: $SHA
-          - P0-A/P0-B regression JUnit: PASS
-          - P0-C transition policy JUnit: PASS
-          - Minecraft SavedData adapter compile: PASS
-          - orbital dimension data packaged: PASS
-          - transition runtime adapter compile: PASS
+          - P0-A/P0-B/P0-C regression JUnit: PASS
+          - P0-D interior allocation/layout JUnit: PASS
+          - ship_interiors dimension packaging: PASS
+          - linked-interior Minecraft adapter compile: PASS
           - datagen: NOT RUN
-          - GameTest/save-reload disk integration: NOT RUN
+          - GameTest: NOT REGISTERED / NOT RUN
           - dedicated server smoke: NOT RUN
           - client smoke: NOT RUN
           - multiplayer live session: NOT TESTED
@@ -77,7 +76,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: earth-to-stars-0.1.0-alpha.3-deliverables
+          name: earth-to-stars-0.1.0-alpha.4-deliverables
           path: |
             projects/earth-to-stars/build/libs/earth_to_stars-*.jar
             projects/earth-to-stars/build/libs/earth_to_stars-*.jar.sha256
@@ -87,7 +86,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: earth-to-stars-0.1.0-alpha.3-logs
+          name: earth-to-stars-0.1.0-alpha.4-logs
           path: projects/earth-to-stars/build/logs/
           if-no-files-found: ignore
           retention-days: 7

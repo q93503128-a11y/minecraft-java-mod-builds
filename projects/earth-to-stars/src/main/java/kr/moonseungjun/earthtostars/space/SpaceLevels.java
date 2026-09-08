@@ -11,6 +11,10 @@ public final class SpaceLevels {
             Registries.DIMENSION,
             Identifier.fromNamespaceAndPath(EarthToStars.MOD_ID, "orbital_space")
     );
+    public static final ResourceKey<Level> SHIP_INTERIORS = ResourceKey.create(
+            Registries.DIMENSION,
+            Identifier.fromNamespaceAndPath(EarthToStars.MOD_ID, "ship_interiors")
+    );
 
     private SpaceLevels() {
     }

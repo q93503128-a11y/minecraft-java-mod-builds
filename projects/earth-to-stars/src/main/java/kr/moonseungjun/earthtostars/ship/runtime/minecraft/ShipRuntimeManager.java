@@ -3,6 +3,7 @@ package kr.moonseungjun.earthtostars.ship.runtime.minecraft;
 import kr.moonseungjun.earthtostars.ship.domain.ModuleCatalog;
 import kr.moonseungjun.earthtostars.ship.domain.ModuleSlot;
 import kr.moonseungjun.earthtostars.ship.domain.ModuleSlotType;
+import kr.moonseungjun.earthtostars.ship.domain.ShipId;
 import kr.moonseungjun.earthtostars.ship.domain.ShipPermission;
 import kr.moonseungjun.earthtostars.ship.domain.ShipState;
 import kr.moonseungjun.earthtostars.ship.networking.ShipControlInputPayload;
@@ -110,6 +111,27 @@ public final class ShipRuntimeManager {
                 ))
                 .orElse(null);
         return nearest != null && grantControl(player, nearest, tick);
+    }
+
+    static Optional<ShipState> nearestInteriorAccessible(ServerPlayer player) {
+        return ENTRIES.values().stream()
+                .filter(entry -> !entry.exterior().isRemoved())
+                .filter(entry -> entry.exterior().level() == player.level())
+                .filter(entry -> entry.runtime().ship().can(player.getUUID(), ShipPermission.INTERIOR_ACCESS))
+                .filter(entry -> entry.exterior().distanceToSqr(player) <= CONTROL_RANGE_SQUARED)
+                .min((left, right) -> Double.compare(
+                        left.exterior().distanceToSqr(player),
+                        right.exterior().distanceToSqr(player)
+                ))
+                .map(entry -> entry.runtime().ship());
+    }
+
+    static Optional<ExteriorAnchor> exteriorAnchor(ShipId shipId) {
+        return ENTRIES.values().stream()
+                .filter(entry -> !entry.exterior().isRemoved())
+                .filter(entry -> entry.runtime().ship().shipId().equals(shipId))
+                .findFirst()
+                .map(entry -> new ExteriorAnchor((ServerLevel) entry.exterior().level(), entry.runtime().transform()));
     }
 
     public static boolean releaseController(ServerPlayer player) {
@@ -328,6 +350,9 @@ public final class ShipRuntimeManager {
                 new ModuleSlot("cargo", ModuleSlotType.CARGO, 1),
                 new ModuleSlot("turret", ModuleSlotType.WEAPON_HARDPOINT, 1)
         );
+    }
+
+    record ExteriorAnchor(ServerLevel level, ShipTransform transform) {
     }
 
     private record Entry(ShipFlightRuntime runtime, ArmorStand exterior) {
