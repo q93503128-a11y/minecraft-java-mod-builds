@@ -44,7 +44,7 @@ public final class ProgressionNetwork {
             return;
         }
 
-        MinecraftServer server = player.getServer();
+        MinecraftServer server = player.level().getServer();
         if (server == null) return;
         PlayerProgress current = TurnboundRe.PROGRESS.getOrCreate(server, player.getUUID());
         if (!current.party().equals(decoded.expectedParty())) {
@@ -61,7 +61,7 @@ public final class ProgressionNetwork {
             String resultCode,
             String resultDetail
     ) {
-        MinecraftServer server = player.getServer();
+        MinecraftServer server = player.level().getServer();
         if (server == null) throw new IllegalStateException("server unavailable for progression snapshot");
         PlayerProgress progress = TurnboundRe.PROGRESS.getOrCreate(server, player.getUUID());
         return ProgressionNetworkPayloads.ProgressSnapshotS2C.from(
