@@ -2,6 +2,88 @@
 
 이 문서는 실제 정본 변경을 기록한다.
 
+## 2026-09-08 — M1-A/B Earth preparation + first launch craft
+
+### Added
+
+- mod version `0.1.0-alpha.9`
+- 실제 Minecraft item registry 기반 Earth launch 제작 아이템 6종
+  - `reinforced_frame`
+  - `avionics_unit`
+  - `propellant_cell`
+  - `oxygen_cartridge`
+  - `life_support_unit`
+  - `launch_craft_kit`
+- 신규 지구 광석 없이 Iron/Copper/Redstone/Gold/Amethyst/Gunpowder/Paper/Water/Leather를 우주 진입 제작 루프에 재연결
+- `launch_craft_kit` 실제 survival crafting chain
+- Overworld-only launch package deployment
+- 3×3×3 deployment clearance 검사
+- 기존 소유 함선을 새 패키지가 덮어쓰지 않는 ownership guard
+- 성공 시에만 package 소비
+- player-facing Korean/English item/message localization
+- current client item-definition + model resource packaging
+- `LaunchCraftBlueprint` canonical starter craft loadout
+- `life_support_mk1` utility module
+- starter craft slots: core / engine / power / cargo / life_support / turret
+- starter craft 기본 설치: command core / engine / battery / cargo / life support
+- turret hardpoint는 의도적으로 비워 첫 orbital reward가 capability upgrade가 되도록 구성
+- survival deployment가 authoritative `ShipState` 생성 → repository → `ShipSavedData` → systems runtime → server pilot lease로 연결
+- P0 command spawn도 같은 starter blueprint를 사용하여 기술용 spawn과 실제 survival craft의 구조 drift 방지
+- `tools/validate_m1_launch.py`: 실제 `launch_craft_kit` recipe closure를 재귀 검사하여 Nether/End mandatory regression 차단
+- `LaunchCraftBlueprintTest`
+- production JAR verifier에 M1 recipes/item definitions/launch classes 확인 추가
+- M1 정본 `docs/05_M1_EARTH_ORBIT_GAMEPLAY_SLICE.md`
+
+### Design
+
+M1 Earth preparation은 신규 광석과 중간 재화를 대량 추가하지 않는다. 첫 우주 진입은 기존 Minecraft 자원이 새로운 의미를 얻는 구조로 시작한다.
+
+```text
+vanilla Earth resources
+→ frame / avionics / propellant / oxygen
+→ life support
+→ launch craft assembly package
+→ Earth deployment
+→ authoritative modular ship
+```
+
+첫 함선은 이동/전력/화물/생명유지 능력을 갖지만 weapon hardpoint는 비어 있다. 따라서 첫 Earth Orbit salvage/combat가 실제 플레이 방식과 함선 능력을 바꾸는 성장으로 연결될 여지를 남긴다.
+
+현재 vanilla-texture item model과 ArmorStand exterior는 production art가 아니라 client/기술 proxy다.
+
+### Verification
+
+최종 검증 기준 구현 커밋: `bc8e51ba30d2e3eec07dfd868b0f79dc9460e73f`
+
+GitHub Actions `Build earth-to-stars` run `34191142069`:
+
+- P0-H progression validator self-tests: `PASS`
+- canonical main progression graph: `PASS`
+- M1 launch recipe dependency closure: `PASS`
+- M1 launch recipe Nether/End independence: `PASS`
+- starter craft blueprint JUnit: `PASS`
+- P0-A~G JUnit regression: `PASS`
+- `clean test build`: `PASS`
+- Minecraft 26.2 / NeoForge 26.2.0.38-beta compile: `PASS`
+- production JAR verifier: `PASS`
+- M1 recipes/client item definitions packaged: `PASS`
+- generated JAR: `earth_to_stars-0.1.0-alpha.9.jar`
+- JAR SHA-256: `c2f033c73de080c90cff7ed77ae0b3d2d07d6ec5d14aa22cc0f173766e223264`
+- P0-G dedicated lifecycle: `NOT RERUN`; last verified run `34188840459`
+- live survival recipe crafting: `NOT TESTED`
+- live in-world launch package deployment: `NOT TESTED`
+- live Earth↔orbit flight: `NOT TESTED`
+- live multiplayer: `NOT TESTED`
+- client visual quality: `NOT RUN`
+
+### Status
+
+`M1-A/B EARTH PREPARATION + FIRST LAUNCH CRAFT BACKEND BUILD VERIFIED / LIVE CLIENT PLAY NOT TESTED / M1-C LAUNCH READINESS + ATMOSPHERE NEXT`
+
+다음 작업은 propellant/oxygen을 실제 authoritative reserve와 연결하고 atmosphere ascent/Orbit transition readiness를 만드는 **M1-C**다.
+
+---
+
 ## 2026-09-08 — P0-H Nether/End independence validator
 
 ### Added
