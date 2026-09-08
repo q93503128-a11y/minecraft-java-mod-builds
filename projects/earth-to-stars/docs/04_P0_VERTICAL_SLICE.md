@@ -2,47 +2,47 @@
 
 이 문서는 “기획은 좋지만 Minecraft 26.2에서 핵심 기술이 안 된다”는 실패를 최대한 빨리 발견하기 위한 기술 검증 순서와 첫 플레이어블 수직 구간을 정의한다.
 
-P0는 콘텐츠를 많이 만드는 단계가 아니다. 핵심 위험을 작은 실제 구현으로 닫는 단계다. 빌드 성공과 실제 플레이 검증을 구분하며, 반복적인 수동 테스트를 매 작은 커밋마다 요구하지 않는다.
+P0는 콘텐츠를 많이 만드는 단계가 아니다. 핵심 위험을 작은 실제 구현으로 닫는 단계다. 빌드 성공, dedicated-server 생명주기 검증, 실제 플레이 검증을 구분하며 작은 커밋마다 사용자 테스트를 반복해서 요구하지 않는다.
 
 ---
 
 # 1. 현재 상태
 
-`M0 VERIFIED / P0-A SAVEDDATA ADAPTER BUILD VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / P0-D LINKED INTERIOR BACKEND BUILD VERIFIED / P0-E TURRET BACKEND BUILD VERIFIED / P0-F CENTRAL SYSTEMS BACKEND BUILD VERIFIED / LIVE INTEGRATION DEFERRED / P0-G LIFECYCLE GATE NEXT`
+`M0 VERIFIED / P0-A SAVEDDATA VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / P0-D LINKED INTERIOR + DISK RESTORE VERIFIED / P0-E TURRET BACKEND BUILD VERIFIED / P0-F CENTRAL SYSTEMS BACKEND BUILD VERIFIED / P0-G DEDICATED LIFECYCLE VERIFIED / LIVE MULTIPLAYER NOT TESTED / P0-H NEXT`
 
-## 자동 검증된 기술축
+## 자동/서버 검증된 기술축
 
 - Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25 build scaffold
 - authoritative `ShipState`, module/permission/persistence codec
 - server-authoritative movement/control lease backend
-- Earth↔orbital-space transition-policy/runtime adapter
-- server-global Ship SavedData adapter
-- stable linked interior allocation/persistence backend
+- Earth↔orbital-space transition policy/runtime adapter
+- server-global `ShipSavedData`
+- stable linked interior allocation + `InteriorSavedData`
 - representative autocannon manual/auto state machine
 - exclusive turret control lease + replay rejection
-- cooldown / legal firing arc rule
-- server-side P0 logical projectile/damage authority boundary
+- cooldown / legal firing arc / server damage boundary
 - central `ShipPowerGrid` / `ShipAmmoPool` / `ShipSensorGrid`
 - priority reserve / deterministic generation / shared ammo contention
 - propulsion / sensor / weapon central power consumption
 - interior-linked crew → same `ShipId` system authority lookup
-- `orbital_space` / `ship_interiors` 기술 차원 production-JAR packaging
-- P0-A/B/C/D/E/F 순수 JUnit 회귀
+- `ShipSystemsSavedData` power/ammo persistence
+- `orbital_space` / `ship_interiors` actual dedicated-server registration
+- clean dedicated server save/shutdown/restart on the same world
+- same ShipId / owner / module slots / interior slot / power / ammo disk restore
+- sensor cache rebuilt rather than persisted
+- P0-A~G regression JUnit/build/JAR gate
 
-최신 P0-F 자동 검증:
+최신 P0-G 검증:
 
-- implementation/final CI commit: `8e65d142f2a4dc3edfd7ef30116ad0929d4bc622`
-- Actions run: `34187867167`
-- alpha: `0.1.0-alpha.6`
-- SHA-256: `527f02b6c3a70337c25a8aeebda3c0d2059818fc9e49efc77ab23bba016a07e6`
+- implementation/final CI commit: `557d273ecfa78c1ba9cc62956cd78f6eb7c55153`
+- Actions run: `34188840459`
+- alpha: `0.1.0-alpha.7`
+- SHA-256: `76bc15395500382f0acbc68826c7e6b95533b5ce9863de40e837c9a2856ac708`
 
-## 아직 실게임 검증/구현되지 않은 것
+## 아직 실제 플레이/멀티에서 검증되지 않은 것
 
-- central power/ammo runtime quantity persistence across restart
-- 실제 custom-dimension server boot
-- save→disk→server restart→same ship/interior/systems restore
-- 실제 ship exterior 조종감 / camera / interpolation / reconnect
-- 실제 Earth→orbit→Earth flight
+- 실제 ship exterior 조종감 / camera / interpolation
+- 실제 Earth→orbit→Earth player flight
 - 실제 exterior↔interior entry/exit
 - 두 플레이어의 동일 interior 동시 체류
 - 한 명이 외부 조종 중 다른 승무원이 내부에 남는 lifecycle
@@ -52,11 +52,11 @@ P0는 콘텐츠를 많이 만드는 단계가 아니다. 핵심 위험을 작은
 - projectile visual / tracer / impact / sound
 - production visual quality
 
-위 항목은 자동 컴파일 성공만으로 완료라고 표현하지 않는다. P0-G에서 먼저 저장/서버 생명주기를 자동으로 닫고, 실제 멀티가 가능한 경우에만 여러 기술축을 한 번의 의미 있는 live gate로 묶는다.
+위 항목은 dedicated-server lifecycle 성공만으로 완료라고 표현하지 않는다.
 
 ---
 
-# 2. M0 — Build Bootstrap
+# 2. M0 — Build Bootstrap — VERIFIED
 
 ## 목표
 
@@ -68,26 +68,20 @@ P0는 콘텐츠를 많이 만드는 단계가 아니다. 핵심 위험을 작은
 - Java 25 toolchain
 - NeoForge 26.2.0.38-beta
 - ModDevGradle 2.0.143
-- mod metadata / minimal entrypoint / namespace
+- mod metadata / namespace
 - JUnit
 - server/client run configs
 - project-specific GitHub Actions
 - production JAR verifier / SHA report
-- `mod_version`에서 artifact/report 버전을 자동 파생하는 CI
+- `mod_version` 기반 version-aware artifact/report naming
 
 ## 현재 상태
 
-`BUILD VERIFIED`
-
-실제 dedicated server/client smoke는 아직 별도 `NOT RUN`이다.
+`BUILD VERIFIED / DEDICATED SERVER BOOT VERIFIED / CLIENT SMOKE NOT RUN`
 
 ---
 
-# 3. P0-A — Authoritative Ship Kernel
-
-## 목표
-
-Minecraft 렌더링 없이도 함선 게임의 서버 정본을 만든다.
+# 3. P0-A — Authoritative Ship Kernel — VERIFIED
 
 ## 구현
 
@@ -98,47 +92,40 @@ Minecraft 렌더링 없이도 함선 게임의 서버 정본을 만든다.
 - hardpoint/slot compatibility
 - owner/crew/guest permission
 - versioned persistence
-- ShipRepository
-- server-global Minecraft SavedData adapter
+- `ShipRepository`
+- server-global `ShipSavedData`
 
-## 자동 테스트
+## 검증
 
 - valid/invalid install
 - module removal
 - ownership permission
 - duplicate instance rejection
 - serialization round trip
-- schema version validation
-- P0-B/C/D/E/F에서 regression
+- schema validation
+- dedicated-server disk save → restart → same `ShipId / owner / slots` restore
 
 ## 현재 상태
 
-`PURE KERNEL VERIFIED / SAVEDDATA ADAPTER BUILD VERIFIED / LIVE RESTART RESTORE NOT TESTED`
-
-GameTest/dedicated-server create→save→restart→same shipId/modules restore는 P0-G integration gate에 묶는다.
+`SHIP KERNEL + REAL DISK RESTORE VERIFIED`
 
 ---
 
-# 4. P0-B — Ship Exterior / Movement Backend
-
-## 목표
-
-B형 함선을 실제 Minecraft에서 움직일 수 있는 최소 외부 표현을 만든다.
+# 4. P0-B — Ship Exterior / Movement Backend — BUILD VERIFIED
 
 ## 구현됨
 
 - temporary exterior object (`ArmorStand`, 기술 프록시)
 - `ShipTransform`
 - forward/right/up orientation
-- throttle
-- yaw/pitch
+- throttle / yaw / pitch
 - acceleration/deceleration
 - server-authoritative transform
 - server-issued control lease
 - session UUID / monotonic input sequence / expiry
 - client input-only payload boundary
 - logout/dimension lease release
-- P0-F central PowerGrid propulsion coupling
+- central PowerGrid propulsion coupling
 
 ## 비목표
 
@@ -149,9 +136,9 @@ B형 함선을 실제 Minecraft에서 움직일 수 있는 최소 외부 표현�
 
 ## 현재 상태
 
-`BACKEND BUILD VERIFIED / CENTRAL POWER COUPLING BUILD VERIFIED / LIVE CONTROL FEEL NOT TESTED`
+`BACKEND BUILD VERIFIED / LIVE CONTROL FEEL NOT TESTED`
 
-실게임 검사에서 확인할 것:
+실플레이에서 확인할 것:
 
 - 입력 지연
 - 멀미 유발 회전
@@ -161,15 +148,9 @@ B형 함선을 실제 Minecraft에서 움직일 수 있는 최소 외부 표현�
 - interpolation
 - reconnect lease cleanup
 
-기술 프록시 외형을 final visual로 간주하지 않는다.
-
 ---
 
-# 5. P0-C — Earth → Orbital Space Transition
-
-## 목표
-
-지상에서 올라가 우주 공간으로 이동하는 핵심 판타지가 기술적으로 성립하는지 검증한다.
+# 5. P0-C — Earth → Orbital Space Transition — BUILD VERIFIED
 
 ## 구현됨
 
@@ -184,24 +165,20 @@ Overworld craft ascent
 ```
 
 - Earth upward / orbit downward transition policy
-- destination x/z/yaw/pitch 유지 정책
-- vertical velocity 제한 정책
+- destination x/z/yaw/pitch 유지
+- vertical velocity 제한
 - target level absence rejection
 - destination exterior failure rollback
-- `earth_to_stars:orbital_space` technical dimension
-- server-global Ship SavedData integration
+- `earth_to_stars:orbital_space`
+- server-global persistence integration
 
-## 현재 multiplayer boundary
-
-현재 외부 transition은 **pilot-first proof**다. 외부 passenger seat의 다인 전환은 아직 구현/검증 완료가 아니다.
-
-P0-D linked interior의 승무원은 외부 함선 좌표를 따라 매 tick 이동하지 않는다. 내부 플레이어는 안정된 interior cell에 남고 동일 `ShipId`가 가리키는 외부 함선의 layer/transform이 바뀐다. 이 구조가 다인 함선에서 interior 승무원 누락/desync를 줄이는 정본 방향이다.
+P0-G에서 `orbital_space` 자체가 dedicated server에서 실제 등록·저장·재부팅되는 것은 확인했다. 그러나 플레이어가 실제 함선을 몰아 Earth↔orbit를 왕복하는 경험은 아직 `NOT TESTED`다.
 
 ## 현재 상태
 
-`TRANSITION BACKEND BUILD VERIFIED / LIVE EARTH↔ORBIT NOT TESTED`
+`TRANSITION BACKEND BUILD VERIFIED / ORBITAL DIMENSION SERVER LIFECYCLE VERIFIED / LIVE FLIGHT NOT TESTED`
 
-최종 연출 후속:
+후속 연출:
 
 - sky darkening
 - atmosphere thinning
@@ -212,11 +189,7 @@ P0-D linked interior의 승무원은 외부 함선 좌표를 따라 매 tick 이
 
 ---
 
-# 6. P0-D — Linked Ship Interior
-
-## 목표
-
-외부 함선이 움직여도 여러 플레이어가 안정적인 내부 공간을 사용할 수 있는 기반을 만든다.
+# 6. P0-D — Linked Ship Interior — SERVER LIFECYCLE VERIFIED
 
 ## 구현됨
 
@@ -227,14 +200,13 @@ P0-D linked interior의 승무원은 외부 함선 좌표를 따라 매 tick 이
 - server-global `InteriorSavedData`
 - 하나의 `earth_to_stars:ship_interiors` technical dimension
 - per-ship 2048-block isolated cell
-- persistent slot collision/corruption rejection
-- `INTERIOR_ACCESS` permission-gated exterior→interior entry adapter
-- interior→current exterior dimension/transform return adapter
-- exterior unavailable / invalid interior recovery path
+- persisted slot collision/corruption rejection
+- `INTERIOR_ACCESS` permission-gated entry adapter
+- interior→current exterior return adapter
+- unavailable exterior / invalid link recovery
 - login recovery path
 - P0 technical room generation
-- allocation/layout/collision JUnit
-- P0-F interior-linked player → same `ShipId` systems lookup boundary
+- interior-linked player → same `ShipId` systems authority
 
 ## 설계 원칙
 
@@ -248,144 +220,75 @@ InteriorRef(shipId, stable cell)
 ShipSystemsRuntime(shipId)
 ```
 
-내부 플레이어는 외부 함선 translation/rotation에 맞춰 좌표를 매 tick 변환하지 않는다. 외부가 Earth↔orbit으로 이동해도 내부 cell은 그대로 유지된다.
+외부가 움직이거나 Earth↔orbit를 전환해도 내부 플레이어는 안정된 interior cell 좌표계에 남는다.
 
-P0 기술 room의 smooth stone/barrier/lighting은 final interior 디자인이 아니다. Production interior는 `03_UI_ART_REFERENCE_GATE.md` 이후 별도 모델/재질/UI/연출 품질 게이트를 통과한다.
+P0-G dedicated-server two-boot gate에서 `ship_interiors` 등록과 동일 `ShipId → slot` 디스크 복원은 실제 검증했다.
 
 ## 현재 상태
 
-`LINKED INTERIOR BACKEND BUILD VERIFIED / SYSTEM LOOKUP BUILD VERIFIED / LIVE MULTIPLAYER INTERIOR NOT TESTED`
+`LINKED INTERIOR DISK LIFECYCLE VERIFIED / LIVE PLAYER ENTRY & MULTIPLAYER INTERIOR NOT TESTED`
 
-P0-G에서 확인:
-
-- owner/crew/guest 실제 entry/exit
-- 2인 이상 동시 체류
-- exterior movement 중 interior 유지
-- Earth↔orbit transition 중 interior crew 유지
-- restart 후 same interior link
-- same power/ammo truth after restart
-- unavailable exterior에서 orphan 방지
+P0 기술 room의 smooth stone/barrier/lighting은 final interior 디자인이 아니다.
 
 ---
 
 # 7. P0-E — Representative Turret — BUILD VERIFIED
 
-## 목표
+대표 P0 무기 `autocannon_mk1`은 기술 프록시다.
 
-한 무기 시스템에서 manual과 automatic control이 멀티 안전하게 공존하는지 검증한다.
-
-## 대표 무기
-
-P0 `autocannon_mk1` — 기술 프록시. 현재 이름/수치/조작면/논리 projectile을 production 콘텐츠로 고정하지 않는다.
-
-선정 이유:
-
-- projectile
-- ammo
-- rotation/arc
-- target
-- fire rate
-- manual / auto
-- multiplayer control lease
-
-를 한 번에 검증할 수 있기 때문.
-
-## 구현된 Control Modes
+## Modes
 
 - `OFF`
 - `MANUAL`
 - `AUTO_DEFENSE`
 
-`ASSISTED` / 공격적 자동 표적은 후속.
-
-## Manual Flow
+## Manual flow
 
 ```text
 WEAPON_CONTROL permission
-→ MANUAL mode
-→ exclusive server weapon lease
+→ MANUAL
+→ exclusive server lease
 → session UUID + sequence validation
-→ authoritative player aim request
+→ authoritative aim request
 → legal arc / shared power / shared ammo / cooldown validation
 → server logical shot
 ```
 
-현재 `/earthtostars ship turret ...` 명령은 P0 조작면일 뿐이다. 최종 게임에서는 명령어가 아니라 실제 gunner station / key / camera / HUD로 교체한다.
-
-## Auto Flow
+## Auto flow
 
 ```text
-central ShipSensorGrid contacts
+central ShipSensorGrid
+→ interval contact acquisition
 → hostile filter
-→ range / firing-arc eligibility
+→ range / arc eligibility
 → target priority
 → AUTO_DEFENSE fire
-→ same authoritative PowerGrid / AmmoPool / cooldown state
+→ same PowerGrid / AmmoPool / cooldown state
 ```
 
-Minecraft P0 adapter의 센서 검색은 P0-F에서 함선 중앙 `ShipSystemsManager`로 이동했다. 함선당 contact cache를 주기적으로 갱신하며 `ShipId` hash로 scan phase를 분산한다. **각 포탑이 매 tick 큰 반경 world scan을 독립 수행하지 않는다.**
+## 자동 검증
 
-현재 hostile 판정은 기술 검증용으로 Minecraft `Enemy` 계열만 사용한다. 장차 함선/세력/소유권/우호 관계를 포함한 target eligibility로 교체한다.
-
-## Projectile Authority
-
-현재 P0 projectile은 서버의 논리 moving point다.
-
-- server position
-- velocity
-- lifetime
-- collision envelope
-- authoritative damage
-
-을 가진다.
-
-아직 없는 production 요소:
-
-- 실제 projectile/tracer render
-- muzzle flash
-- turret model rotation
-- firing animation
-- impact VFX
-- sound
-- camera recoil/shake
-- 실제 함선 대 함선 damage model
-
-## 자동 Acceptance 결과
-
-- 두 플레이어가 같은 manual lease를 동시에 보유하지 못함: `PASS` (JUnit)
-- replay/stale sequence rejection: `PASS`
-- shared ammo consumption: `PASS`
-- shared power consumption: `PASS`
-- cooldown rejection: `PASS`
-- invalid rear arc rejection: `PASS`
-- neutral contact auto-fire rejection: `PASS`
-- central SensorGrid hostile selection: `PASS`
-- manual→auto mode switch lease cleanup: `PASS`
-- client가 hit/damage 결과를 authoritative하게 제출하지 않는 server boundary: 코드 구조 유지
-- Minecraft 26.2 adapter compile: `PASS`
-- production JAR verify: `PASS`
-
-## 현재 한계
-
-- power/ammo runtime quantity의 restart persistence는 아직 없다.
-- command control surface는 production UX가 아니다.
-- 실제 수동/자동 사격감과 실멀티 control conflict는 `NOT TESTED`다.
+- exclusive lease: PASS
+- replay/stale input rejection: PASS
+- shared ammo/power consumption: PASS
+- cooldown/rear arc rejection: PASS
+- neutral auto-fire rejection: PASS
+- central SensorGrid hostile selection: PASS
+- mode switch lease cleanup: PASS
+- server-authoritative damage boundary: 유지
+- Minecraft 26.2 compile/JAR: PASS
 
 ## 현재 상태
 
-`TURRET BACKEND BUILD VERIFIED / CENTRAL RESOURCE COUPLING BUILD VERIFIED / LIVE COMBAT & MULTIPLAYER NOT TESTED`
+`TURRET BACKEND + CENTRAL RESOURCE COUPLING VERIFIED / LIVE COMBAT & MULTIPLAYER NOT TESTED`
 
-첫 P0-E compile gate는 26.2 `getEntities` overload ambiguity로 실패했고, 기능 삭제 없이 source-entity 타입을 명시해 수정했다. 이후 전용 build가 성공했다. 성공 산출물의 workflow report가 옛 P0-D/alpha.4 라벨을 하드코딩한 것도 자체 검수에서 발견해, CI가 `gradle.properties`의 `mod_version`을 자동 읽게 고친 뒤 최종 run `34186350799`까지 다시 성공시켰다.
+명령어 조작면과 논리 projectile은 production UX/비주얼이 아니다.
 
 ---
 
 # 8. P0-F — Central Ship Systems — BUILD VERIFIED
 
-## 목표
-
-모듈/포탑 수가 커져도 계산 구조가 확장 가능하고, 함선 전체가 하나의 자원/센서 정본을 공유하는지 검증한다.
-
-## 구현됨
+## 구조
 
 ```text
 ShipId
@@ -397,205 +300,184 @@ ShipId
    propulsion / sensors / turret(s)
 ```
 
-### PowerGrid
+## PowerGrid
 
 - finite storage
 - deterministic once-per-tick generation
-- monotonic server tick contract
 - input-scaled propulsion consumption
-- sensor-scan consumption
-- weapon-shot consumption
+- sensor/weapon consumption
 - priority reserve
-  - ESSENTIAL: 0% reserve floor
+  - ESSENTIAL: 0%
   - PROPULSION: 10%
   - WEAPONS: 25%
   - UTILITY: 40%
 
-초기에는 플레이어가 priority를 미세 관리하게 만들지 않는다. 기본 priority가 대부분의 상황을 해결해야 한다. 수치는 P0 검증값이며 production balance 고정값이 아니다.
+## AmmoPool
 
-### AmmoPool / Logistics
+- turret-local ammo 제거
+- `autocannon_round` 중앙 탄약
+- multiple weapon runtime → one truth
+- failed fire → no partial power/ammo consumption
 
-- P0-E turret-local ammo 제거
-- `autocannon_round` 함선 중앙 compatible ammo pool
-- server-authoritative consumption
-- 여러 weapon runtime 동시 fire에서도 하나의 truth 사용
-- failed weapon transaction은 ammo/power를 부분 소비하지 않음
-- 추후 compartment/zone 물류가 재미를 증명할 때만 확장
+## SensorGrid
 
-블록 파이프 하나마다 item entity/tick을 돌리는 구조를 기본으로 하지 않는다.
-
-### SensorGrid
-
-- P0-E contact cache를 central systems service로 이동
+- one ship cache
 - interval acquisition
-- cached contacts
-- per-ShipId scan phase staggering
+- per-ShipId phase staggering
 - stale contact expiry
-- per-weapon eligibility
-- multi-turret가 같은 scan 결과를 공유
+- per-turret broad world scan 금지
 
-### Interior crew boundary
+## P0-G 이후 persistence 상태
 
-함선 내부 플레이어는 외부 entity와의 물리 거리 대신 linked `ShipId`를 통해 중앙 시스템에 접근한다. 따라서 이후 조종석·기관실·포수석이 모두 같은 PowerGrid / AmmoPool / SensorGrid를 보게 할 수 있다.
+P0-F 당시 미완료였던 current power/ammo restart persistence는 P0-G에서 닫았다.
 
-## 자동 검증 결과
+- `ShipSystemsSnapshot`
+- `ShipSystemsSavedData`
+- checkpoint + server-stopping flush
+- same-world two-boot restore
+- power `37.5` / ammo `73` 실제 disk round trip 검증
 
-- P0-A~E 회귀: `PASS`
-- priority reserve boundary: `PASS`
-- generation monotonicity / same-tick double generation 방지: `PASS`
-- two turret runtimes → one shared ammo pool: `PASS`
-- failed fire → no partial ammo/power consumption: `PASS`
-- propulsion draw scales with input / idle costs no propulsion power: `PASS`
-- stale sensor contact expiry: `PASS`
-- Minecraft central systems coordinator compile: `PASS`
-- production JAR verify: `PASS`
-
-최종 자동 검증:
-
-- commit: `8e65d142f2a4dc3edfd7ef30116ad0929d4bc622`
-- Actions run: `34187867167`
-- version: `0.1.0-alpha.6`
-- SHA-256: `527f02b6c3a70337c25a8aeebda3c0d2059818fc9e49efc77ab23bba016a07e6`
-
-첫 P0-F run `34187734949`은 production compile은 성공했지만 reserve test의 기대값이 계약을 잘못 해석해 실패했다. production PowerGrid는 수정하지 않고 테스트를 올바른 reserve 경계에 맞춘 뒤 run `34187867167`에서 전체 성공했다.
-
-## 아직 닫히지 않은 것
-
-- central power/ammo current quantity persistence
-- save/restart same systems state
-- module-definition 실제 설치 상태에서 generation/capacity 파생
-- production data-driven systems content
-- 실제 부하 profiler 측정
-- live brownout UX / feedback
+센서 contact는 월드 유도 캐시이므로 의도적으로 저장하지 않는다.
 
 ## 현재 상태
 
-`CENTRAL SYSTEMS BACKEND BUILD VERIFIED / RESTART PERSISTENCE & LIVE PERFORMANCE NOT TESTED`
+`CENTRAL SYSTEMS BACKEND VERIFIED / POWER+AMMO DISK RESTORE VERIFIED / LIVE BROWNOUT UX & PERFORMANCE PROFILING NOT TESTED`
 
 ---
 
-# 9. P0-G — Lifecycle / Multiplayer Gate — NEXT
+# 9. P0-G — Dedicated Lifecycle / Multiplayer Gate — SERVER PART VERIFIED
 
-구조만 멀티 친화적이라고 끝내지 않는다. 단, 바로 사용자에게 2인 테스트를 요구하지 않는다. 먼저 자동/서버 생명주기 준비를 끝낸다.
+P0-G는 자동/서버에서 검증 가능한 부분과 실제 2인 플레이가 필요한 부분을 분리한다.
 
-## Phase 1 — persistence contract
+## Phase 1 — persistence contract — VERIFIED
 
-- central PowerGrid stored value versioned save
-- AmmoPool type/count versioned save
-- `ShipId`와 시스템 저장 key 일치 검증
-- corrupted/unknown schema를 조용히 초기화하지 않음
+- central PowerGrid current value save/restore
+- AmmoPool type/count save/restore
+- `ShipId` keyed system persistence
+- persisted value validation against current capacity
+- orphan systems state rejection
 - runtime↔SavedData snapshot/restore
+- volatile sensor contacts are not persisted
 
-## Phase 2 — lifecycle automation / dedicated server
+## Phase 2 — dedicated-server lifecycle — VERIFIED
 
-- create ship
-- mutate modules/resources/interior assignment
-- save to disk
-- server restart/reload
-- same ShipId/module/interior/power/ammo restore
-- `orbital_space` / `ship_interiors` 실제 dedicated-server boot
-- orphan/reconnect recovery
+GitHub Actions run `34188840459`이 같은 `run/world`에 서버를 두 번 실제 기동했다.
 
-가능한 것은 GameTest/서버 자동검증으로 먼저 닫는다. 실제로 실행하지 않은 항목을 PASS라고 쓰지 않는다.
+### Boot 1
 
-## Phase 3 — Shared Ship live session
+- `orbital_space` load
+- `ship_interiors` load
+- fixed probe ShipId write
+- owner/module slots write
+- interior slot allocation
+- power `37.5`, ammo `73` write
+- clean server halt
+- all dimensions saved
 
-실제 멀티 환경이 가능한 경우:
+### Boot 2
+
+- same world reload
+- same custom dimensions load
+- same ShipId/owner/module slots restore
+- same interior slot `0` restore
+- same power `37.5` restore
+- same ammo `73` restore
+- restored `ShipSystemsRuntime` initialization
+- clean shutdown
+
+검증 마커:
+
+- `EARTH_TO_STARS_P0G_SEED_PASS`
+- `EARTH_TO_STARS_P0G_VERIFY_PASS`
+
+CI probe는 환경변수 `EARTH_TO_STARS_LIFECYCLE_PROBE`가 있을 때만 동작하며 일반 플레이어용 기능이 아니다.
+
+## Phase 3 — live multiplayer — NOT TESTED
+
+실제 멀티 환경이 가능한 경우 한 번의 의미 있는 세션으로 검사한다.
+
+### Shared Ship
 
 - P1 owner/pilot
 - P2 crew/gunner
 - P1 exterior control
 - P2 interior 또는 turret control
-
-검증:
-
-- authoritative transform sync
-- same ShipState observation
-- one authoritative PowerGrid / AmmoPool
+- same ShipState / PowerGrid / AmmoPool 확인
 - no duplicate projectile/damage
-- interior state remains linked while exterior moves
+- exterior movement 중 interior link 유지
 
-## Scenario B — Control Conflict
+### Control conflict
 
-- 두 플레이어가 같은 turret control 요청
+- 두 플레이어가 같은 turret lease 요청
+- 하나만 성공
+- loser는 fire authority 없음
 
-정상:
-- 하나만 lease 획득
-- 명확한 feedback
-- loser가 fire authority를 얻지 못함
+### Disconnect/reconnect
 
-## Scenario C — Disconnect / Restart
+- pilot/gunner/interior logout
+- lease cleanup
+- reconnect orphan 없음
 
-- pilot disconnect
-- gunner disconnect
-- interior logout
-- server save/restart
-
-정상:
-- leases cleaned
-- ShipState persists
-- interior assignment persists
-- central power/ammo persists
-- reconnect player not orphaned
-
-## Scenario D — Earth↔Orbit
+### Earth↔Orbit
 
 - pilot exterior transition
 - crew interior
-
-정상:
 - same ShipId
-- interior crew remains stable
-- exterior layer/transform updates
-- inventory/ammo/resources duplicate 없음
+- interior crew stable
+- shared resources duplicate 없음
 
-실제 검증 전 상태 표기:
+실제 2인 환경을 사용하기 전까지 상태는 반드시:
 
-`MULTIPLAYER ARCHITECTURE READY / NOT TESTED`
+`LIVE MULTIPLAYER NOT TESTED`
 
-실제 테스트 후에만:
-
-`MULTIPLAYER BASIC SESSION VERIFIED`
-
-실제 2인 환경을 사용할 수 없으면 이 항목은 계속 `NOT TESTED`로 남긴다.
+으로 남긴다.
 
 ---
 
-# 10. P0-H — Nether/End Independence Validator
+# 10. P0-H — Nether/End Independence Validator — NEXT
 
 ## 목표
 
-개발 중 실수로 Nether/End 필수 recipe가 들어가는 것을 자동 탐지한다.
+개발 중 실수로 Nether/End가 메인 우주 진행의 필수 게이트가 되는 것을 자동 탐지한다.
 
-메인 progression graph에서 다음이 필수 ancestor가 되면 실패:
+메인 progression graph에서 다음이 필수 ancestor가 되면 실패한다.
 
 - Nether-only resource
 - End-only resource
 - Nether/End structure drop
 - dimension-only advancement
 
-선택 sidegrade / shortcut graph는 허용한다.
+허용:
+
+- optional sidegrade
+- shortcut
+- specialist material
+- late-game variant
+- 선택형 위험/보상 루트
+
+검증기는 향후 recipe/resource/progression 데이터가 늘어날 때 CI에서 자동으로 main-path independence를 확인할 수 있어야 한다.
 
 ---
 
 # 11. P0 종료 조건
 
-P0 완료는 다음을 의미한다.
+P0 완료 조건:
 
-- 실제 26.2 프로젝트 build
-- authoritative ShipState + persistence boundary
-- B형 exterior movement
-- Earth↔space transition 최소 구현
-- stable linked interior
-- representative turret manual/auto
+- 실제 26.2 project build
+- authoritative ShipState + disk persistence
+- B형 exterior movement backend
+- Earth↔space transition backend
+- stable linked interior + disk persistence
+- representative manual/auto turret
 - central power/ammo/sensor simulation
-- Nether/End main-path independence
-- dedicated server / custom dimension lifecycle 검증
-- save/restart lifecycle 검증
-- multiplayer 구조 검증
-- 실제 멀티 테스트 가능 시 2인 기본 세션 검증
+- central power/ammo disk persistence
+- dedicated server custom-dimension lifecycle
+- save/shutdown/restart/restore lifecycle
+- Nether/End main-path independence validator
+- multiplayer-authoritative 구조
+- 실제 멀티 테스트 가능 시 2인 기본 세션
 
-실제 멀티 환경이 없다면 마지막 항목은 `NOT TESTED`로 남기며 성공했다고 꾸미지 않는다.
+실제 2인 환경이 없다면 마지막 항목은 `NOT TESTED`로 남기고 P0의 자동/서버 검증 범위와 구분한다.
 
 ---
 
@@ -618,9 +500,9 @@ P0가 닫히면 첫 실제 게임성을 만든다.
 
 종료 경험:
 
-> “내가 만든 작은 우주선으로 지구를 떠나 궤도에서 뭔가를 회수하고 살아 돌아왔다.”
+> “내가 만든 작은 우주선으로 지구를 떠나 궤도에서 무언가를 회수하고 살아 돌아왔다.”
 
-이 경험이 실제로 재미있어야 다음 천체를 늘린다.
+이 경험 자체가 재미있어야 Moon/Mars/소행성을 늘린다.
 
 ---
 
@@ -632,10 +514,8 @@ P0가 닫히면 첫 실제 게임성을 만든다.
 - vacuum survival
 - lunar resource
 - 대표 discovery
-- 작은 outpost 기능
+- 작은 outpost
 - meaningful ship upgrade
-
-전체 첫 사이클:
 
 ```text
 Earth preparation
@@ -646,8 +526,6 @@ Earth preparation
 → return
 → upgrade
 ```
-
-이 사이클이 재미없으면 Mars를 추가하지 않는다.
 
 ---
 
@@ -674,7 +552,7 @@ Earth preparation
 - cargo trade-offs
 - sensor signatures
 - heavy weapon candidate
-- first significant ship frame expansion
+- significant ship frame expansion
 - early automation
 
 ---
@@ -683,7 +561,7 @@ Earth preparation
 
 - Mars content pack
 - longer survival loop
-- thermal/environment system expansion
+- thermal/environment expansion
 - onboard refinery
 - medium expedition frame
 
@@ -696,7 +574,7 @@ Earth preparation
 - drone mining
 - multi-turret fire control
 - mobile-base gameplay
-- worst-case multiplayer/performance profiling 강화
+- worst-case multiplayer/performance profiling
 
 ---
 
@@ -718,22 +596,25 @@ Earth preparation
 - 정상 결과
 - 이상 증상 체크리스트
 
-단, 작은 기술 커밋마다 사용자 테스트를 요구하지 않는다. 관련 기능을 의미 있는 lifecycle 단위로 묶어 테스트한다.
+작은 기술 커밋마다 사용자 테스트를 요구하지 않는다. 관련 기능을 의미 있는 lifecycle/gameplay 단위로 묶어 검사한다.
 
 ---
 
 # 20. 바로 다음 구현 단위
 
-**P0-G Lifecycle / Multiplayer Gate — persistence + automated lifecycle first**
+**P0-H Nether/End Independence Validator**
 
-바로 사용자 멀티테스트를 요구하지 않는다. 다음 의미 있는 작업 묶음에 우선 포함한다.
+하나의 의미 있는 작업 묶음에 다음을 포함한다.
 
-- versioned central systems persistence
-- PowerGrid stored / AmmoPool amounts save-restore
-- corrupt/unknown systems schema rejection
-- ship/interior/systems save-restart integration boundary
-- dedicated server custom-dimension boot/smoke 준비 및 실행 가능한 자동검증
-- lease/reconnect lifecycle 강화
-- project build/JAR gate
+- canonical progression graph schema
+- node source-dimension/source-kind metadata
+- mandatory dependency edge와 optional edge 구분
+- Earth→launch→orbit 메인 목표 노드 정의
+- Nether/End-only node가 mandatory ancestor인지 탐색
+- sidegrade/shortcut는 허용
+- cycle/missing dependency 검증
+- pure unit test
+- CI validator gate
+- 현재 기획의 Nether/End 비필수 계약을 machine-checkable하게 고정
 
-그 다음 실제 2인 환경이 가능할 때만 pilot + gunner + interior + Earth↔orbit를 한 번의 live multiplayer gate로 묶는다.
+P0-H 뒤에는 작은 기술 기능을 계속 늘리기보다 현재 이동/우주전환/interior/포탑/중앙자원을 **실제 플레이 가능한 Earth→Orbit 첫 테스트 덩어리**로 묶는다.
