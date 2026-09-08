@@ -17,7 +17,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 
@@ -32,9 +32,8 @@ import java.util.Set;
 /**
  * M1-D first-orbit gameplay coordinator.
  *
- * The visible ArmorStands are temporary technical proxies only. Salvage ownership,
- * module installation, hostile health, hit validation and reward decisions remain
- * server-authoritative and independent from the proxy entity implementation.
+ * Encounters are authoritative logical state. Visible salvage/interceptor meshes are
+ * model-backed ItemDisplays and may be replaced without changing hit/mission rules.
  */
 public final class OrbitalMissionManager {
     private static final ModuleCatalog CATALOG = ShipBootstrapCatalog.create();
@@ -81,8 +80,7 @@ public final class OrbitalMissionManager {
                 ensureSalvage(ship, anchor);
                 tickSalvage(server, ship, anchor);
             } else if (HOSTILE_CLEARED.contains(shipId)) {
-                removeSalvage(shipId);
-                removeHostile(shipId);
+                removeEncounter(shipId);
             } else {
                 removeSalvage(shipId);
                 ensureHostile(ship, anchor);
@@ -90,15 +88,10 @@ public final class OrbitalMissionManager {
             }
         }
 
-        List<ShipId> staleSalvage = SALVAGE.keySet().stream()
-                .filter(shipId -> !live.contains(shipId))
-                .toList();
-        staleSalvage.forEach(OrbitalMissionManager::removeSalvage);
-
-        List<ShipId> staleHostiles = HOSTILES.keySet().stream()
-                .filter(shipId -> !live.contains(shipId))
-                .toList();
-        staleHostiles.forEach(OrbitalMissionManager::removeHostile);
+        SALVAGE.keySet().stream().filter(shipId -> !live.contains(shipId)).toList()
+                .forEach(OrbitalMissionManager::removeSalvage);
+        HOSTILES.keySet().stream().filter(shipId -> !live.contains(shipId)).toList()
+                .forEach(OrbitalMissionManager::removeHostile);
         HOSTILE_CLEARED.removeIf(shipId -> !live.contains(shipId));
     }
 
@@ -107,12 +100,7 @@ public final class OrbitalMissionManager {
         if (hostile == null) {
             return List.of();
         }
-        return List.of(new SensorContact(
-                hostile.targetId(),
-                hostile.position(),
-                true,
-                25.0D
-        ));
+        return List.of(new SensorContact(hostile.targetId(), hostile.position(), true, 25.0D));
     }
 
     static boolean tryHitHostile(
@@ -142,11 +130,8 @@ public final class OrbitalMissionManager {
             removeHostile(firingShip);
             if (ship != null && anchor != null) {
                 dropSensorCore(anchor);
-                notifyActiveCrew(
-                        level.getServer(),
-                        ship,
-                        Component.translatable("message.earth_to_stars.orbit.hostile_destroyed")
-                );
+                notifyActiveCrew(level.getServer(), ship,
+                        Component.translatable("message.earth_to_stars.orbit.hostile_destroyed"));
             }
         }
         return true;
@@ -172,12 +157,17 @@ public final class OrbitalMissionManager {
         return ScannerInstallResult.INSTALLED;
     }
 
+    public static void removeShip(ShipId shipId) {
+        HOSTILE_CLEARED.remove(shipId);
+        removeEncounter(shipId);
+    }
+
     public static void clear() {
         for (SalvageEncounter encounter : SALVAGE.values()) {
-            discard(encounter.proxy());
+            SpaceVisualFactory.discard(encounter.visual());
         }
         for (HostileEncounter encounter : HOSTILES.values()) {
-            discard(encounter.proxy());
+            SpaceVisualFactory.discard(encounter.visual());
         }
         SALVAGE.clear();
         HOSTILES.clear();
@@ -186,7 +176,7 @@ public final class OrbitalMissionManager {
 
     private static void ensureSalvage(ShipState ship, ShipRuntimeManager.ExteriorAnchor anchor) {
         SalvageEncounter existing = SALVAGE.get(ship.shipId());
-        if (existing != null && existing.level() == anchor.level() && !existing.proxy().isRemoved()) {
+        if (existing != null && existing.level() == anchor.level() && !existing.visual().isRemoved()) {
             return;
         }
         removeSalvage(ship.shipId());
@@ -196,14 +186,17 @@ public final class OrbitalMissionManager {
                 .add(transform.forward().scale(SALVAGE_FORWARD_DISTANCE))
                 .add(transform.right().scale(SALVAGE_SIDE_DISTANCE))
                 .add(transform.up().scale(2.0D));
-        ArmorStand proxy = createProxy(anchor.level(), position, Component.translatable("entity.earth_to_stars.orbital_salvage_proxy"));
-        if (anchor.level().addFreshEntity(proxy)) {
-            SALVAGE.put(ship.shipId(), new SalvageEncounter(anchor.level(), position, proxy));
-            notifyActiveCrew(
-                    anchor.level().getServer(),
-                    ship,
-                    Component.translatable("message.earth_to_stars.orbit.salvage_detected")
-            );
+        Display.ItemDisplay visual = SpaceVisualFactory.create(
+                anchor.level(),
+                EarthToStarsItems.ORBITAL_SALVAGE_VISUAL.get(),
+                position,
+                (float) transform.yawDegrees() + 35.0F,
+                20.0F
+        );
+        if (anchor.level().addFreshEntity(visual)) {
+            SALVAGE.put(ship.shipId(), new SalvageEncounter(anchor.level(), position, visual));
+            notifyActiveCrew(anchor.level().getServer(), ship,
+                    Component.translatable("message.earth_to_stars.orbit.salvage_detected"));
         }
     }
 
@@ -223,11 +216,8 @@ public final class OrbitalMissionManager {
         ShipSavedData.get(server).put(ship);
         removeSalvage(ship.shipId());
         ShipTurretManager.activateRecoveredAutocannon(ship);
-        notifyActiveCrew(
-                server,
-                ship,
-                Component.translatable("message.earth_to_stars.orbit.autocannon_recovered")
-        );
+        notifyActiveCrew(server, ship,
+                Component.translatable("message.earth_to_stars.orbit.autocannon_recovered"));
         ensureHostile(ship, anchor);
     }
 
@@ -236,7 +226,7 @@ public final class OrbitalMissionManager {
             return;
         }
         HostileEncounter existing = HOSTILES.get(ship.shipId());
-        if (existing != null && existing.level() == anchor.level() && !existing.proxy().isRemoved()) {
+        if (existing != null && existing.level() == anchor.level() && !existing.visual().isRemoved()) {
             return;
         }
         removeHostile(ship.shipId());
@@ -246,18 +236,20 @@ public final class OrbitalMissionManager {
                 .add(transform.right().scale(HOSTILE_SPAWN_DISTANCE))
                 .add(transform.forward().scale(8.0D))
                 .add(transform.up().scale(4.0D));
-        ArmorStand proxy = createProxy(anchor.level(), position, Component.translatable("entity.earth_to_stars.interceptor_proxy"));
-        if (anchor.level().addFreshEntity(proxy)) {
+        Display.ItemDisplay visual = SpaceVisualFactory.create(
+                anchor.level(),
+                EarthToStarsItems.ORBITAL_INTERCEPTOR_VISUAL.get(),
+                position,
+                (float) transform.yawDegrees() - 90.0F,
+                0.0F
+        );
+        if (anchor.level().addFreshEntity(visual)) {
             long tick = anchor.level().getGameTime();
-            HOSTILES.put(
-                    ship.shipId(),
-                    new HostileEncounter(anchor.level(), proxy.getUUID(), position, HOSTILE_MAX_HEALTH, tick, tick, proxy)
-            );
-            notifyActiveCrew(
-                    anchor.level().getServer(),
-                    ship,
-                    Component.translatable("message.earth_to_stars.orbit.hostile_detected")
-            );
+            HOSTILES.put(ship.shipId(),
+                    new HostileEncounter(anchor.level(), visual.getUUID(), position,
+                            HOSTILE_MAX_HEALTH, tick, tick, visual));
+            notifyActiveCrew(anchor.level().getServer(), ship,
+                    Component.translatable("message.earth_to_stars.orbit.hostile_detected"));
         }
     }
 
@@ -266,7 +258,7 @@ public final class OrbitalMissionManager {
         if (hostile == null || hostile.level() != anchor.level()) {
             return;
         }
-        if (hostile.proxy().isRemoved()) {
+        if (hostile.visual().isRemoved()) {
             HOSTILES.remove(ship.shipId());
             ensureHostile(ship, anchor);
             return;
@@ -284,7 +276,8 @@ public final class OrbitalMissionManager {
             movement = tangent.scale(HOSTILE_SPEED * 0.45D);
         }
         hostile.move(movement);
-        hostile.proxy().setPos(hostile.position().x(), hostile.position().y(), hostile.position().z());
+        float yaw = (float) Math.toDegrees(Math.atan2(-toShip.x(), toShip.z()));
+        SpaceVisualFactory.apply(hostile.visual(), hostile.position(), yaw, 0.0F);
 
         long tick = anchor.level().getGameTime();
         if (tick - hostile.spawnTick() < HOSTILE_GRACE_TICKS
@@ -305,22 +298,11 @@ public final class OrbitalMissionManager {
         ShipVec3 position = anchor.transform().position().add(anchor.transform().up().scale(1.5D));
         ItemEntity reward = new ItemEntity(
                 anchor.level(),
-                position.x(),
-                position.y(),
-                position.z(),
+                position.x(), position.y(), position.z(),
                 new ItemStack(EarthToStarsItems.RECOVERED_SENSOR_CORE.get())
         );
         reward.setNoGravity(true);
         anchor.level().addFreshEntity(reward);
-    }
-
-    private static ArmorStand createProxy(ServerLevel level, ShipVec3 position, Component name) {
-        ArmorStand proxy = new ArmorStand(level, position.x(), position.y(), position.z());
-        proxy.setNoGravity(true);
-        proxy.setInvulnerable(true);
-        proxy.setCustomName(name);
-        proxy.setCustomNameVisible(true);
-        return proxy;
     }
 
     private static void notifyActiveCrew(MinecraftServer server, ShipState ship, Component message) {
@@ -341,20 +323,14 @@ public final class OrbitalMissionManager {
     private static void removeSalvage(ShipId shipId) {
         SalvageEncounter removed = SALVAGE.remove(shipId);
         if (removed != null) {
-            discard(removed.proxy());
+            SpaceVisualFactory.discard(removed.visual());
         }
     }
 
     private static void removeHostile(ShipId shipId) {
         HostileEncounter removed = HOSTILES.remove(shipId);
         if (removed != null) {
-            discard(removed.proxy());
-        }
-    }
-
-    private static void discard(ArmorStand proxy) {
-        if (proxy != null && !proxy.isRemoved()) {
-            proxy.discard();
+            SpaceVisualFactory.discard(removed.visual());
         }
     }
 
@@ -370,7 +346,7 @@ public final class OrbitalMissionManager {
         SLOT_UNAVAILABLE
     }
 
-    private record SalvageEncounter(ServerLevel level, ShipVec3 position, ArmorStand proxy) {
+    private record SalvageEncounter(ServerLevel level, ShipVec3 position, Display.ItemDisplay visual) {
     }
 
     private static final class HostileEncounter {
@@ -380,7 +356,7 @@ public final class OrbitalMissionManager {
         private double health;
         private final long spawnTick;
         private long lastAttackTick;
-        private final ArmorStand proxy;
+        private final Display.ItemDisplay visual;
 
         private HostileEncounter(
                 ServerLevel level,
@@ -389,7 +365,7 @@ public final class OrbitalMissionManager {
                 double health,
                 long spawnTick,
                 long lastAttackTick,
-                ArmorStand proxy
+                Display.ItemDisplay visual
         ) {
             this.level = level;
             this.targetId = targetId;
@@ -397,7 +373,7 @@ public final class OrbitalMissionManager {
             this.health = health;
             this.spawnTick = spawnTick;
             this.lastAttackTick = lastAttackTick;
-            this.proxy = proxy;
+            this.visual = visual;
         }
 
         ServerLevel level() { return level; }
@@ -406,7 +382,7 @@ public final class OrbitalMissionManager {
         double health() { return health; }
         long spawnTick() { return spawnTick; }
         long lastAttackTick() { return lastAttackTick; }
-        ArmorStand proxy() { return proxy; }
+        Display.ItemDisplay visual() { return visual; }
         void move(ShipVec3 delta) { position = position.add(delta); }
         void damage(double amount) { health = Math.max(0.0D, health - amount); }
         void markAttack(long tick) { lastAttackTick = tick; }
