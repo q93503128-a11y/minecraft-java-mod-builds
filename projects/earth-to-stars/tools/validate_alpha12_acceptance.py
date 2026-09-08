@@ -31,6 +31,8 @@ def validate_no_runtime_proxies() -> None:
         "ArmorStand construction": r"new\s+ArmorStand\s*\(",
         "ArmorStand type check": r"instanceof\s+ArmorStand\b",
         "fake pilot tether": r"tetherController",
+        "obsolete pre-26.2 player feedback API": r"\bdisplayClientMessage\s*\(",
+        "removed 26.2 item-display constant": r"EntityType\.ITEM_DISPLAY\b",
     }
     for path in JAVA.rglob("*.java"):
         source = path.read_text(encoding="utf-8")
@@ -65,6 +67,19 @@ def validate_passenger_contract() -> None:
         fail("punching the ship can still retire authoritative state")
     if "player.isShiftKeyDown()" not in exterior or "retireCraft(serverPlayer, this)" not in exterior:
         fail("explicit Shift+right-click pack-up interaction is missing")
+    if "public boolean canBeCollidedWith(Entity other)" not in exterior:
+        fail("ship exterior does not implement the Minecraft 26.2 collision signature")
+
+
+def validate_26_2_runtime_api_contract() -> None:
+    visual = text(JAVA / "kr/moonseungjun/earthtostars/ship/runtime/minecraft/SpaceVisualFactory.java")
+    required = [
+        "BuiltInRegistries.ENTITY_TYPE.getValue(Identifier.withDefaultNamespace(\"item_display\"))",
+        "new Display.ItemDisplay(itemDisplayType, level)",
+    ]
+    for snippet in required:
+        if snippet not in visual:
+            fail(f"missing Minecraft 26.2 ItemDisplay API contract: {snippet}")
 
 
 def validate_supply_feedback() -> None:
@@ -154,12 +169,13 @@ def main() -> None:
     try:
         validate_no_runtime_proxies()
         validate_passenger_contract()
+        validate_26_2_runtime_api_contract()
         validate_supply_feedback()
         validate_recipe_syntax()
         validate_models()
     except (OSError, json.JSONDecodeError, AcceptanceError) as exc:
         raise SystemExit(f"ALPHA.12 ACCEPTANCE VALIDATION FAILED: {exc}") from exc
-    print("ALPHA.12 ACCEPTANCE VALIDATION OK: actual passenger contract, safe retirement, actionbar supply UX, 26.2 recipes, and three distinct Kenney OBJ visuals verified")
+    print("ALPHA.12 ACCEPTANCE VALIDATION OK: actual passenger contract, safe retirement, 26.2 runtime APIs, actionbar supply UX, 26.2 recipes, and three distinct Kenney OBJ visuals verified")
 
 
 if __name__ == "__main__":
