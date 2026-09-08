@@ -2,7 +2,11 @@
 
 Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
-## Current version: 0.1.0-alpha.129
+## Current version: 0.1.0-alpha.130
+
+## Alpha.130 construction-worker routing recovery
+
+Real-play feedback showed construction workers clustering in odd places or appearing to lose their route. The building service no longer treats any nearby highest collision surface as a valid work position: the broad protection envelope stays unchanged, while active workers must reach a much tighter ground/path staging envelope and perimeter candidates reject roofs, tree tops and other artificial perches. Idle and maintenance return routing now reserves distinct safe home cells instead of sending every builder to the same coordinate. Existing disconnected elevated workers still use the conservative Alpha.128 recovery rule; connected bridges/balconies are not teleported.
 
 ## Alpha.129 worker runtime recovery
 

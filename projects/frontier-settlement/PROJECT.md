@@ -2,7 +2,7 @@
 
 The complete repository-side design source of truth is `CANONICAL_PLAN.md`. Read that file, this current-direction summary and the current `main` source before continuing development. Where an older backlog still treats lifelike NPC simulation or rare-NPC breadth as a priority, the bounded-NPC direction below supersedes that priority without deleting the rest of the original design.
 
-Current implementation delta: **0.1.0-alpha.126**. The large historical canonical/gap documents remain the original scope ledger; this file records the current bounded-NPC, physical RTS-economy and exploration/outpost direction.
+Current implementation delta: **0.1.0-alpha.130**. The large historical canonical/gap documents remain the original scope ledger; this file records the current bounded-NPC, physical RTS-economy and exploration/outpost direction.
 
 Non-negotiable summary:
 
@@ -46,3 +46,7 @@ Late-game abundance is answered with explicit, repeatable physical investment ra
 ### Alpha.127 final implementation-status reconciliation
 
 Frontier's repository-side core is now in final hardening/acceptance phase rather than broad feature construction. The physical settlement, six-tier growth, construction, production, paid facility upgrades, logistics, roads/outposts, exploration feedback, supplied military, civil works, city investment and RTS operations loop all have concrete implementations. The remaining release blockers are dominated by real-client visual/play acceptance, long-session pacing, save/reload/unload edge cases, two-player shared-state acceptance and full companion-stack runtime acceptance. Optional true Xaero marker sync, rare-NPC-specific value and larger monumental engineering remain non-blocking unless stable APIs or real-play evidence justify them.
+
+### Alpha.130 construction-worker routing recovery
+
+Real-play worker-position feedback is handled as a physical navigation problem, not by widening teleport authority. Active ordinary-building workers only gain local work authority from a bounded four-block ground/path envelope; work and grading approach candidates no longer accept arbitrary heightmap tops such as roofs or log pillars. Idle and explicit maintenance return routes reserve separate safe cells for the bounded builder crew, preventing collision-prone pileups at one settlement-center coordinate. Disconnected elevated legacy workers retain conservative safe-ground recovery, while any structure with a real route remains physically traversed. No force loading, new save field, virtual cargo or new management layer is added.

@@ -36,6 +36,10 @@ public final class SettlementConstructionService {
     private static final int NORMAL_BLOCK_UPDATE = 3;
     private static final double WORK_POSITION_REACHED_SQR = 9.0D;
     private static final int SITE_WORK_MARGIN = 12;
+    // Protection may stay wide, but visible workers should only count as locally on-site when they
+    // are close to the real lot on ground. The old 12-block work shortcut made roofs and nearby
+    // structures look like valid construction positions.
+    private static final int ACTIVE_SITE_WORK_MARGIN = 4;
     // Direct hand reach is deliberately much smaller than scaffold coverage. Reusing the 14-block
     // scaffold coverage radius here let a builder stand on the ground and place an entire tower roof.
     private static final double SUPPLY_INTERACTION_RANGE_SQR = 9.0D;
@@ -421,9 +425,8 @@ public final class SettlementConstructionService {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
                     int x = target.getX() + dx;
                     int z = target.getZ() + dz;
-                    int y = terrainSurfaceHeight(level, x, z);
-                    BlockPos candidate = new BlockPos(x, y, z);
-                    if (isWalkableApproachCell(level, candidate)) unique.add(candidate);
+                    BlockPos candidate = safeGroundWorkCell(level, x, z);
+                    if (candidate != null) unique.add(candidate);
                 }
             }
         }
@@ -1044,15 +1047,15 @@ public final class SettlementConstructionService {
         BuildingRotation rotation = construction.buildingRotation();
         int width = rotation.rotatedWidth(type);
         int depth = rotation.rotatedDepth(type);
-        double minX = construction.originX() - SITE_WORK_MARGIN;
-        double maxX = construction.originX() + width - 1 + SITE_WORK_MARGIN + 1.0D;
-        double minZ = construction.originZ() - SITE_WORK_MARGIN;
-        double maxZ = construction.originZ() + depth - 1 + SITE_WORK_MARGIN + 1.0D;
+        double minX = construction.originX() - ACTIVE_SITE_WORK_MARGIN;
+        double maxX = construction.originX() + width - 1 + ACTIVE_SITE_WORK_MARGIN + 1.0D;
+        double minZ = construction.originZ() - ACTIVE_SITE_WORK_MARGIN;
+        double maxZ = construction.originZ() + depth - 1 + ACTIVE_SITE_WORK_MARGIN + 1.0D;
         if (builder.getX() < minX || builder.getX() > maxX || builder.getZ() < minZ || builder.getZ() > maxZ) return false;
         int x = (int) Math.floor(builder.getX());
         int z = (int) Math.floor(builder.getZ());
-        BlockPos surface = safeSurfaceCell(level, x, z);
-        return surface != null && Math.abs(builder.getY() - surface.getY()) <= 2.25D;
+        BlockPos ground = safeGroundWorkCell(level, x, z);
+        return ground != null && Math.abs(builder.getY() - ground.getY()) <= 1.25D;
     }
 
     private static boolean hasReachableGroundWorkPosition(ServerLevel level, ConstructionState construction,
@@ -1107,7 +1110,7 @@ public final class SettlementConstructionService {
     }
 
     private static void addGroundWorkCandidate(ServerLevel level, Set<BlockPos> result, int x, int z) {
-        BlockPos candidate = safeSurfaceCell(level, x, z);
+        BlockPos candidate = safeGroundWorkCell(level, x, z);
         if (candidate != null) result.add(candidate);
     }
 
@@ -1421,11 +1424,15 @@ public final class SettlementConstructionService {
             for (int i = desired; i < existing.size(); i++) removeDuplicateBuilderPreservingCargo(level, existing.get(i));
             existing = new ArrayList<>(existing.subList(0, desired));
         }
+        Set<BlockPos> recoveryOccupied = new HashSet<>();
+        for (FrontierWorkerEntity builder : existing) recoveryOccupied.add(builder.blockPosition());
         for (FrontierWorkerEntity builder : existing) {
             if (!builder.entityTags().contains(BUILDER_TAG)) builder.addTag(BUILDER_TAG);
             builder.setNoAi(false);
             builder.setInvulnerable(false);
-            recoverBuilderFromBlockedCell(level, data, builder);
+            recoveryOccupied.remove(builder.blockPosition());
+            recoverBuilderFromBlockedCell(level, data, builder, recoveryOccupied);
+            recoveryOccupied.add(builder.blockPosition());
         }
         if (existing.size() >= desired || !builderAssignmentEvidenceLoaded(level, data)) return List.copyOf(existing);
 
@@ -1460,31 +1467,37 @@ public final class SettlementConstructionService {
         return ensureProjectBuilder(level, data);
     }
 
-    private static void recoverBuilderFromBlockedCell(ServerLevel level, SettlementData data, FrontierWorkerEntity builder) {
+    private static void recoverBuilderFromBlockedCell(ServerLevel level, SettlementData data,
+                                                       FrontierWorkerEntity builder, Set<BlockPos> occupied) {
         BlockPos feet = builder.blockPosition();
         BlockPos head = feet.above();
         if (!level.hasChunkAt(feet) || !level.hasChunkAt(head)) return;
         boolean physicallyBlocked = blocksCurrentPathCell(level, feet, level.getBlockState(feet))
                 || blocksCurrentPathCell(level, head, level.getBlockState(head));
-        boolean elevatedStranded = !physicallyBlocked && builderStrandedOnArtificialElevation(level, data, builder);
-        if (!physicallyBlocked && !elevatedStranded) return;
-        BlockPos safe = findSafeBuilderHome(level, data);
+        boolean elevatedCandidate = !physicallyBlocked && builderOnArtificialElevation(level, builder);
+        if (!physicallyBlocked && !elevatedCandidate) return;
+
+        BlockPos safe = findSafeBuilderHome(level, data, occupied);
         if (safe == null) return;
-        if (elevatedStranded && createReachablePath(builder, safe) != null) return;
+        // A connected bridge/balcony is still physical world traversal. Only a genuinely disconnected
+        // elevated perch is recovered; ordinary accessible structures never become a teleport shortcut.
+        if (elevatedCandidate && !builderStrandedOnArtificialElevation(level, builder, safe)) return;
         builder.getNavigation().stop();
         builder.setPos(safe.getX() + 0.5D, safe.getY(), safe.getZ() + 0.5D);
     }
 
-    /** Accessible balconies/bridges stay physical; only a disconnected elevated perch is recovered. */
-    private static boolean builderStrandedOnArtificialElevation(ServerLevel level, SettlementData data,
-                                                                 FrontierWorkerEntity builder) {
+    private static boolean builderOnArtificialElevation(ServerLevel level, FrontierWorkerEntity builder) {
         BlockPos feet = builder.blockPosition();
         int naturalGroundY = nearestNaturalGroundBelow(level, feet, 16);
         if (naturalGroundY == Integer.MIN_VALUE) return false;
         int artificialRise = (feet.getY() - 1) - naturalGroundY;
-        if (artificialRise < 3) return false;
-        BlockPos safe = findSafeBuilderHome(level, data);
-        return safe != null && createReachablePath(builder, safe) == null;
+        return artificialRise >= 3;
+    }
+
+    /** Accessible balconies/bridges stay physical; only a disconnected elevated perch is recovered. */
+    private static boolean builderStrandedOnArtificialElevation(ServerLevel level, FrontierWorkerEntity builder,
+                                                                 BlockPos safe) {
+        return builderOnArtificialElevation(level, builder) && createReachablePath(builder, safe) == null;
     }
 
     private static int nearestNaturalGroundBelow(ServerLevel level, BlockPos feet, int maxDepth) {
@@ -1520,18 +1533,30 @@ public final class SettlementConstructionService {
 
     /** Never choose an arbitrary highest collision surface such as a roof or tall log pillar as home. */
     private static BlockPos safeBuilderHomeCell(ServerLevel level, int x, int z, int referenceY) {
-        BlockPos candidate = safeSurfaceCell(level, x, z);
-        if (candidate == null) return null;
-        BlockState support = level.getBlockState(candidate.below());
-        if (isNaturalGround(support) || support.is(Blocks.DIRT_PATH)) return candidate;
-        return null;
+        return safeGroundWorkCell(level, x, z);
     }
 
-    private static BlockPos safeSurfaceCell(ServerLevel level, int x, int z) {
-        if (!level.hasChunkAt(new BlockPos(x, 0, z))) return null;
-        int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-        BlockPos candidate = new BlockPos(x, y, z);
-        return isWalkableApproachCell(level, candidate) ? candidate : null;
+    private static boolean isBuilderGroundSupport(BlockState support) {
+        return isNaturalGround(support) || support.is(Blocks.DIRT_PATH);
+    }
+
+    /**
+     * Returns a real ground staging cell, never merely the highest collision surface. Normal terrain
+     * stays on the one-heightmap fast path; trees/structures fall back to the existing bounded
+     * terrain scan and are accepted only when the final support is ground/path material.
+     */
+    private static BlockPos safeGroundWorkCell(ServerLevel level, int x, int z) {
+        BlockPos chunkProbe = new BlockPos(x, 0, z);
+        if (!level.hasChunkAt(chunkProbe)) return null;
+        int topY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+        BlockPos top = new BlockPos(x, topY, z);
+        if (isWalkableApproachCell(level, top) && isBuilderGroundSupport(level.getBlockState(top.below()))) return top;
+
+        int groundY = terrainSurfaceHeight(level, x, z);
+        if (groundY == topY) return null;
+        BlockPos candidate = new BlockPos(x, groundY, z);
+        if (!isWalkableApproachCell(level, candidate)) return null;
+        return isBuilderGroundSupport(level.getBlockState(candidate.below())) ? candidate : null;
     }
 
     /**
@@ -1604,7 +1629,8 @@ public final class SettlementConstructionService {
             if (removeDuplicateBuilderPreservingCargo(level, builders.get(i))) removed++;
         }
         if (!SettlementProjectAuthority.anyActive(level.getServer(), data)) {
-            for (int i = 0; i < keep; i++) returnBuilderHome(level, data, builders.get(i));
+            Set<BlockPos> reservedHomes = new HashSet<>();
+            for (int i = 0; i < keep; i++) returnBuilderHome(level, data, builders.get(i), reservedHomes);
         }
         return removed;
     }
@@ -1612,6 +1638,7 @@ public final class SettlementConstructionService {
     public static void settleIdleBuilders(MinecraftServer server, SettlementData data) {
         if (SettlementProjectAuthority.anyActive(server, data)) return;
         ServerLevel level = server.overworld();
+        Set<BlockPos> reservedHomes = new HashSet<>();
         for (FrontierWorkerEntity builder : findBuilders(level, data)) {
             builder.setNoAi(false);
             builder.setInvulnerable(false);
@@ -1620,12 +1647,22 @@ public final class SettlementConstructionService {
                 returnCarriedToTownStorage(server, data, builder);
                 continue;
             }
-            returnBuilderHome(level, data, builder);
+            returnBuilderHome(level, data, builder, reservedHomes);
         }
     }
 
     static boolean returnBuilderHome(ServerLevel level, SettlementData data, FrontierWorkerEntity builder) {
-        BlockPos home = findSafeBuilderHome(level, data);
+        return moveBuilderHome(builder, findSafeBuilderHome(level, data));
+    }
+
+    private static boolean returnBuilderHome(ServerLevel level, SettlementData data, FrontierWorkerEntity builder,
+                                             Set<BlockPos> reservedHomes) {
+        BlockPos home = findSafeBuilderHome(level, data, reservedHomes);
+        if (home != null) reservedHomes.add(home);
+        return moveBuilderHome(builder, home);
+    }
+
+    private static boolean moveBuilderHome(FrontierWorkerEntity builder, BlockPos home) {
         if (home == null) {
             builder.getNavigation().stop();
             return false;

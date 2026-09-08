@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.129" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.130" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -67,13 +67,19 @@ require("List<GradeCell> result = new ArrayList<>(width * depth);" in constructi
 require("현장 자재통 위치가 막혀 있습니다" in construction and "실제 건물 부지 안의 정리 칸이 막혀 있습니다" in construction,
         "placement blocker diagnostics missing")
 require("gradeApproachPositions" in construction and "radius <= 3" in construction
-        and "terrainSurfaceHeight(level, x, z)" in construction,
-        "tree-aware bounded grading approach recovery missing")
+        and "safeGroundWorkCell(level, x, z)" in construction,
+        "ground-only bounded grading approach recovery missing")
 require("safeBuilderHomeCell" in construction and "radius <= 24" in construction
-        and "support.is(Blocks.DIRT_PATH)" in construction,
+        and "isBuilderGroundSupport" in construction and "support.is(Blocks.DIRT_PATH)" in construction,
         "builder home can regress to arbitrary roof-height surfaces")
-require("builderStrandedOnArtificialElevation" in construction and "nearestNaturalGroundBelow" in construction
-        and "artificialRise < 3" in construction,
+require("ACTIVE_SITE_WORK_MARGIN = 4" in construction and "safeGroundWorkCell" in construction
+        and "safeSurfaceCell(" not in construction,
+        "building workers can again treat arbitrary nearby roofs/heightmap tops as local work cells")
+require("Set<BlockPos> reservedHomes = new HashSet<>()" in construction
+        and "returnBuilderHome(level, data, builder, reservedHomes)" in construction,
+        "idle construction workers can again pile onto one shared home coordinate")
+require("builderStrandedOnArtificialElevation" in construction and "builderOnArtificialElevation" in construction
+        and "nearestNaturalGroundBelow" in construction and "return artificialRise >= 3;" in construction,
         "disconnected elevated builder recovery missing")
 context_service = text(SETTLEMENT / "SettlementContextService.java")
 require("constructionIssueSummary" in context_service and "부지 접근 불가" in context_service
