@@ -5,7 +5,7 @@ public final class BattleResultLayout {
     public static final int MIN_WIDTH = 480;
     public static final int MIN_HEIGHT = 270;
     private static final int MAX_ROOT_WIDTH = 520;
-    private static final int MAX_ROOT_HEIGHT = 220;
+    private static final int MAX_ROOT_HEIGHT = 230;
     private static final int MARGIN = 16;
 
     private BattleResultLayout() {}
