@@ -1,6 +1,6 @@
 package kr.moonseungjun.riftfrontier.client;
 
-import kr.moonseungjun.riftfrontier.network.BossPresentationPayload;
+import kr.moonseungjun.riftfrontier.combat.BossPresentationSemanticState;
 
 import java.util.Map;
 import java.util.Optional;
@@ -14,21 +14,21 @@ public final class BossPresentationClientState {
 
     /**
      * Accepts only monotonic server snapshots per entity so delayed packets cannot rewind presentation state.
-     * A clear retains its server-tick watermark, preventing an older active packet from resurrecting stale visuals.
+     * A clear retains its server-tick watermark, preventing an older active snapshot from resurrecting stale visuals.
      */
-    public static boolean accept(BossPresentationPayload payload) {
+    public static boolean accept(BossPresentationSemanticState state) {
         final boolean[] changed = {false};
-        ENTRIES.compute(payload.entityId(), (entityId, current) -> {
-            if (current != null && payload.serverGameTick() < current.latestServerGameTick()) return current;
+        ENTRIES.compute(state.entityId(), (entityId, current) -> {
+            if (current != null && state.serverGameTick() < current.latestServerGameTick()) return current;
             changed[0] = true;
-            return new Entry(payload.serverGameTick(), payload.active() ? payload : null);
+            return new Entry(state.serverGameTick(), state.active() ? state : null);
         });
         return changed[0];
     }
 
-    public static Optional<BossPresentationPayload> current(int entityId) {
+    public static Optional<BossPresentationSemanticState> current(int entityId) {
         Entry entry = ENTRIES.get(entityId);
-        return entry == null ? Optional.empty() : Optional.ofNullable(entry.activePayload());
+        return entry == null ? Optional.empty() : Optional.ofNullable(entry.activeState());
     }
 
     /** Clears both active semantics and ordering watermarks when the client leaves the current connection/world. */
@@ -36,7 +36,7 @@ public final class BossPresentationClientState {
         ENTRIES.clear();
     }
 
-    private record Entry(long latestServerGameTick, BossPresentationPayload activePayload) {
+    private record Entry(long latestServerGameTick, BossPresentationSemanticState activeState) {
         private Entry {
             if (latestServerGameTick < 0) throw new IllegalArgumentException("latestServerGameTick must be >= 0");
         }
