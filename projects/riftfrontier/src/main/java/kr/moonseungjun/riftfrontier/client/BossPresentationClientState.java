@@ -8,29 +8,37 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /** Client-side semantic presentation cache. Final render/animation systems resolve assets from this state. */
 public final class BossPresentationClientState {
-    private static final Map<Integer, BossPresentationPayload> CURRENT = new ConcurrentHashMap<>();
+    private static final Map<Integer, Entry> ENTRIES = new ConcurrentHashMap<>();
 
     private BossPresentationClientState() {}
 
     /**
      * Accepts only monotonic server snapshots per entity so delayed packets cannot rewind presentation state.
-     * An inactive payload clears an entity only when it is at least as new as the cached state.
+     * A clear retains its server-tick watermark, preventing an older active packet from resurrecting stale visuals.
      */
     public static boolean accept(BossPresentationPayload payload) {
         final boolean[] changed = {false};
-        CURRENT.compute(payload.entityId(), (entityId, current) -> {
-            if (current != null && payload.serverGameTick() < current.serverGameTick()) return current;
+        ENTRIES.compute(payload.entityId(), (entityId, current) -> {
+            if (current != null && payload.serverGameTick() < current.latestServerGameTick()) return current;
             changed[0] = true;
-            return payload.active() ? payload : null;
+            return new Entry(payload.serverGameTick(), payload.active() ? payload : null);
         });
         return changed[0];
     }
 
     public static Optional<BossPresentationPayload> current(int entityId) {
-        return Optional.ofNullable(CURRENT.get(entityId));
+        Entry entry = ENTRIES.get(entityId);
+        return entry == null ? Optional.empty() : Optional.ofNullable(entry.activePayload());
     }
 
+    /** Clears both active semantics and ordering watermarks when the client leaves the current connection/world. */
     public static void clearAll() {
-        CURRENT.clear();
+        ENTRIES.clear();
+    }
+
+    private record Entry(long latestServerGameTick, BossPresentationPayload activePayload) {
+        private Entry {
+            if (latestServerGameTick < 0) throw new IllegalArgumentException("latestServerGameTick must be >= 0");
+        }
     }
 }
