@@ -1,5 +1,6 @@
 package kr.moonseungjun.riftfrontier.network;
 
+import kr.moonseungjun.riftfrontier.combat.BossPresentationSemanticState;
 import kr.moonseungjun.riftfrontier.combat.MinecraftBossCombatAdapter;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -31,9 +32,9 @@ public final class RiftfrontierNetworking {
     ) {
         Objects.requireNonNull(boss, "boss");
         Objects.requireNonNull(result, "result");
-        BossPresentationPayload payload = result.presentation()
-            .map(frame -> BossPresentationPayload.fromFrame(boss.getId(), serverGameTick, frame))
-            .orElseGet(() -> BossPresentationPayload.clear(boss.getId(), serverGameTick));
-        PacketDistributor.sendToPlayersTrackingEntityAndSelf(boss, payload);
+        BossPresentationSemanticState state = result.presentation()
+            .map(frame -> BossPresentationSemanticState.fromFrame(boss.getId(), serverGameTick, frame))
+            .orElseGet(() -> BossPresentationSemanticState.clear(boss.getId(), serverGameTick));
+        PacketDistributor.sendToPlayersTrackingEntityAndSelf(boss, new BossPresentationPayload(state));
     }
 }
