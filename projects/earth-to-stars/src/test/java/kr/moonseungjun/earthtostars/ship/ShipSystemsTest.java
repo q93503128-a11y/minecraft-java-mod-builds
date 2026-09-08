@@ -12,10 +12,12 @@ import kr.moonseungjun.earthtostars.ship.runtime.ShipVec3;
 import kr.moonseungjun.earthtostars.ship.systems.PowerPriority;
 import kr.moonseungjun.earthtostars.ship.systems.ShipPowerGrid;
 import kr.moonseungjun.earthtostars.ship.systems.ShipSystemsRuntime;
+import kr.moonseungjun.earthtostars.ship.systems.ShipSystemsSnapshot;
 import kr.moonseungjun.earthtostars.ship.systems.ShipSystemsTuning;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -122,6 +124,43 @@ final class ShipSystemsTest {
         assertEquals(1, systems.sensorGrid().contactCount());
         systems.sensorGrid().expireOlderThan(41L, 30L);
         assertEquals(0, systems.sensorGrid().contactCount());
+    }
+
+    @Test
+    void systemsSnapshotRestoresPowerAndAmmoButNotSensorCache() {
+        ShipId shipId = ShipId.random();
+        String ammoType = ShipSystemsTuning.P0.primaryAmmoType();
+        ShipSystemsSnapshot snapshot = new ShipSystemsSnapshot(
+                shipId,
+                37.5D,
+                Map.of(ammoType, 73)
+        );
+
+        ShipSystemsRuntime restored = ShipSystemsRuntime.restore(snapshot, ShipSystemsTuning.P0);
+        assertEquals(shipId, restored.shipId());
+        assertEquals(37.5D, restored.powerStored(), 1.0E-9D);
+        assertEquals(73, restored.ammoAmount(ammoType));
+        assertEquals(0, restored.sensorGrid().contactCount());
+        assertEquals(snapshot, restored.snapshot());
+    }
+
+    @Test
+    void systemsSnapshotRejectsResourceStateOutsideCurrentCapacity() {
+        ShipId shipId = ShipId.random();
+        String ammoType = ShipSystemsTuning.P0.primaryAmmoType();
+        ShipSystemsSnapshot tooMuchPower = new ShipSystemsSnapshot(
+                shipId,
+                ShipSystemsTuning.P0.powerCapacity() + 1.0D,
+                Map.of(ammoType, 1)
+        );
+        ShipSystemsSnapshot tooMuchAmmo = new ShipSystemsSnapshot(
+                shipId,
+                1.0D,
+                Map.of(ammoType, ShipSystemsTuning.P0.primaryAmmoCapacity() + 1)
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> ShipSystemsRuntime.restore(tooMuchPower, ShipSystemsTuning.P0));
+        assertThrows(IllegalArgumentException.class, () -> ShipSystemsRuntime.restore(tooMuchAmmo, ShipSystemsTuning.P0));
     }
 
     private static ShipState ship(UUID owner) {
