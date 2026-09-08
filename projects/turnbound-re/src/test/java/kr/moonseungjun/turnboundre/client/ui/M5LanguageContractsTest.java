@@ -167,6 +167,24 @@ class M5LanguageContractsTest {
         }
     }
 
+    @Test
+    void battleResultCopyCoversOutcomeRewardAndServerCloseStates() {
+        JsonObject en = read(EN);
+        requireNonBlank(en, Set.of(
+                "screen.turnbound_re.battle_result",
+                "screen.turnbound_re.result.victory",
+                "screen.turnbound_re.result.defeat",
+                "screen.turnbound_re.result.rewards",
+                "screen.turnbound_re.result.coin",
+                "screen.turnbound_re.result.essence",
+                "screen.turnbound_re.result.shard",
+                "screen.turnbound_re.result.no_rewards",
+                "screen.turnbound_re.result.continue",
+                "screen.turnbound_re.result.returning",
+                "screen.turnbound_re.result.server_rejected",
+                "screen.turnbound_re.result.canvas_too_small"));
+    }
+
     private static void requireNonBlank(JsonObject language, Set<String> keys) {
         for (String key : keys) {
             assertTrue(language.has(key), "missing UI translation: " + key);
