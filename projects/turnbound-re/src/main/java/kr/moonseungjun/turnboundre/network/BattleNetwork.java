@@ -12,9 +12,9 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 import java.util.List;
 
-/** Play-phase network registration. Battle truth remains server-authoritative. */
+/** Play-phase network registration. Battle and progression truth remain server-authoritative. */
 public final class BattleNetwork {
-    private static final String PROTOCOL_VERSION = "5";
+    private static final String PROTOCOL_VERSION = "6";
     private static final BattleNetworkGateway GATEWAY = new BattleNetworkGateway(TurnboundRe.BATTLES);
 
     private BattleNetwork() {}
@@ -30,6 +30,7 @@ public final class BattleNetwork {
         registrar.playToClient(BattleNetworkPayloads.BattleEventsS2C.TYPE,
                 BattleNetworkPayloads.BattleEventsS2C.STREAM_CODEC,
                 (payload, context) -> BattleClientState.accept(payload));
+        ProgressionNetwork.register(registrar);
     }
 
     private static void handleCommand(BattleNetworkPayloads.BattleCommandC2S payload, IPayloadContext context) {
