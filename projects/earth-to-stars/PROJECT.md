@@ -3,21 +3,21 @@
 - Slug: `earth-to-stars`
 - Mod ID: `earth_to_stars`
 - Namespace: `earth_to_stars`
-- Mod version: `0.1.0-alpha.6`
+- Mod version: `0.1.0-alpha.7`
 - Minecraft: `26.2`
 - Java: `25`
 - Loader: `NeoForge`
 - Loader version: `26.2.0.38-beta`
 - Gradle: `9.2.1`
 - Build plugin: `ModDevGradle 2.0.143`
-- Final JAR: `earth_to_stars-0.1.0-alpha.6.jar`
+- Final JAR: `earth_to_stars-0.1.0-alpha.7.jar`
 - Existing-world compatibility: before first playable alpha, save schema may change deliberately; from first playable alpha onward registry IDs, save roots, module IDs and migration rules become compatibility contracts.
 - Required dependencies: Minecraft, NeoForge
 - Optional external mods/libraries: none approved as a hard runtime dependency. Any addition requires current 26.2 compatibility, maintenance, license, multiplayer and performance review.
 - Forbidden bundled dependencies: Minecraft original files, NeoForge distribution files, external mod JARs, and models/textures/audio/UI assets without redistribution permission.
 - Datagen task: `runData` (`NOT RUN` at current gate)
-- GameTest task: not yet registered; save/reload disk integration is the next batched lifecycle gate
-- Server smoke-test task: `runServer` (`NOT RUN` at current gate)
+- GameTest task: not yet registered; persistence restart is currently covered by the dedicated-server two-boot lifecycle gate
+- Server smoke-test task: `runServer` (`P0-G TWO-BOOT LIFECYCLE VERIFIED`)
 - Client smoke-test task: `runClient` (`NOT RUN` at current gate)
 
 ## Project identity
@@ -88,9 +88,9 @@ Clients provide input, rendering, animation, UI and safe prediction only. A clie
 
 ## Current implementation baseline
 
-Latest verified implementation/CI commit: `8e65d142f2a4dc3edfd7ef30116ad0929d4bc622`
+Latest verified implementation/CI commit: `557d273ecfa78c1ba9cc62956cd78f6eb7c55153`
 
-GitHub Actions `Build earth-to-stars` run `34187867167` verified:
+GitHub Actions `Build earth-to-stars` run `34188840459` verified:
 
 - M0 bootstrap regression
 - P0-A authoritative ship kernel / persistence-codec regression
@@ -99,18 +99,21 @@ GitHub Actions `Build earth-to-stars` run `34187867167` verified:
 - P0-D stable linked-interior allocation/layout regression
 - P0-E representative turret state-machine regression
 - P0-F central `ShipPowerGrid`, `ShipAmmoPool`, `ShipSensorGrid`
-- priority reserve across ESSENTIAL / PROPULSION / WEAPONS / UTILITY
-- monotonic once-per-tick power generation
-- multiple turret runtimes consuming one ship ammo pool
-- failed weapon resource transaction consuming neither power nor ammo
-- propulsion draw using central ship power
-- stale sensor-contact expiry
-- interior-linked crew resolving the same `ShipId` system authority
-- Minecraft 26.2 central systems coordinator compile
+- P0-G `ShipSystemsSnapshot` restore JUnit
+- dedicated server first boot on a clean run directory
+- `earth_to_stars:orbital_space` and `earth_to_stars:ship_interiors` registration on a dedicated server
+- deterministic ship/interior/system seed into real SavedData
+- clean server shutdown with all dimensions saved
+- second dedicated-server boot on the same world directory
+- disk restore of ShipId / owner / module slots
+- disk restore of ShipId → interior slot
+- disk restore of central power / ammo quantities
+- restored central systems runtime initialization
+- sensor cache rebuilt instead of persisted
 - `clean test build`
 - production JAR verifier
 
-Verified JAR SHA-256: `527f02b6c3a70337c25a8aeebda3c0d2059818fc9e49efc77ab23bba016a07e6`
+Verified JAR SHA-256: `76bc15395500382f0acbc68826c7e6b95533b5ce9863de40e837c9a2856ac708`
 
 The P0-B/P0-C exterior remains a temporary vanilla `ArmorStand` proxy. `orbital_space`, `ship_interiors`, the generated interior room, command-driven turret/system control surfaces, and logical projectile are technical P0 environments only. None is a final ship model, interior layout, cockpit/UI, weapon model, VFX, sound, projectile presentation, space presentation, or world-design decision.
 
@@ -155,9 +158,9 @@ P0 hostile classification currently recognizes Minecraft `Enemy` entities only; 
 
 P0 shots are server-side logical moving points with lifetime, velocity, collision envelope and authoritative damage. They intentionally do not yet provide production projectile entity rendering, tracer VFX, muzzle flash, impact effects, animation, sound or camera feedback.
 
-## P0-F central ship systems architecture
+## Central ship systems architecture
 
-P0-F removes the representative turret's private ammunition economy and introduces one central systems authority per live `ShipId`.
+The ship's operational truth is centralized per `ShipId`.
 
 ```text
 ShipId
@@ -199,31 +202,45 @@ One cache is shared by weapons. Contact acquisition is interval-based and stagge
 
 A player inside a linked interior resolves the authoritative ship through `InteriorSavedData → ShipId → ShipRepository`, so interior stations can later operate the same ship systems without depending on proximity to the exterior entity.
 
-### Current limitation
+## P0-G persistence and lifecycle architecture
 
-**Power and ammo runtime quantities are not persisted across a real server restart yet.** This is intentionally not called complete. P0-G must version and persist central system state before restart/multiplayer acceptance can pass.
+Persistent operational state is now separated from volatile world-derived state.
+
+Persisted:
+
+- `ShipId`, owner, module slots and installed modules via `ShipSavedData`
+- `ShipId → interior slot` via `InteriorSavedData`
+- central current power and ammo quantities via `ShipSystemsSavedData`
+
+Not persisted:
+
+- SensorGrid contacts
+- manual/pilot control leases
+- logical projectiles
+- temporary exterior entity IDs
+
+The non-persisted items are runtime state and must be rebuilt/reacquired after restart. Persisting stale contacts, leases or entity IDs would create ghost targets, unauthorized reconnect authority, or invalid entity references.
+
+The CI lifecycle probe is dormant during normal play and activates only through `EARTH_TO_STARS_LIFECYCLE_PROBE`. It exists to prove actual SavedData disk behavior without exposing development commands to players.
 
 ## Verification boundary
 
-Verified by the alpha.6 automated gate:
+Verified by the alpha.7 gate:
 
 - source/API compilation against Minecraft 26.2 / NeoForge 26.2.0.38-beta
-- P0-A/B/C/D/E regression JUnit
-- central power/ammo/sensor pure-Java tests
-- resource priority and transaction rules
-- central systems Minecraft coordinator compilation
+- P0-A~F regression JUnit
+- P0-G snapshot validation/restore JUnit
 - production JAR structure
+- two clean dedicated-server boots using the same world directory
+- real custom-dimension registration and save
+- real save → shutdown → restart → restore for ship/interior/power/ammo
 
 Still **NOT RUN / NOT TESTED**:
 
-- persistence of current PowerGrid / AmmoPool quantities across server restart
-- actual disk save → dedicated-server restart → same ship/interior/systems restore
-- GameTest create/save/reload/restore integration
-- dedicated server custom-dimension boot/smoke
 - client smoke
-- real in-game Earth→orbit→Earth flight transition
-- real ship control feel/camera/interpolation/reconnect lifecycle
-- actual exterior↔interior entry/exit in Minecraft
+- real in-game Earth→orbit→Earth player flight transition
+- real ship control feel/camera/interpolation/reconnect lifecycle with a player client
+- actual exterior↔interior entry/exit with players
 - two or more players coexisting in the same ship interior
 - one player piloting while another remains inside during exterior movement/layer transition
 - real manual turret aiming/control feel
@@ -233,10 +250,10 @@ Still **NOT RUN / NOT TESTED**:
 - live multiplayer session
 - production ship/interior/turret rendering and audio
 
-No item in the second list is called complete merely because its adapter compiles.
+No item in the second list is called complete merely because the dedicated-server lifecycle gate passed.
 
 ## Current phase
 
-`M0 VERIFIED / P0-A SAVEDDATA ADAPTER BUILD VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / P0-D LINKED INTERIOR BACKEND BUILD VERIFIED / P0-E TURRET BACKEND BUILD VERIFIED / P0-F CENTRAL SYSTEMS BACKEND BUILD VERIFIED / LIVE INTEGRATION DEFERRED / P0-G LIFECYCLE GATE NEXT`
+`M0 VERIFIED / P0-A SAVEDDATA ADAPTER BUILD VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / P0-D LINKED INTERIOR BACKEND BUILD VERIFIED / P0-E TURRET BACKEND BUILD VERIFIED / P0-F CENTRAL SYSTEMS BACKEND BUILD VERIFIED / P0-G DEDICATED LIFECYCLE VERIFIED / LIVE MULTIPLAYER NOT TESTED / P0-H NEXT`
 
-The next production unit is **P0-G Lifecycle / Multiplayer Gate**. Before asking for a live multiplayer test, it first closes central-system persistence and automated/dedicated-server lifecycle gaps, then validates Earth↔orbit, interior, pilot/gunner control, shared ammo/power and disconnect/restart behavior as one meaningful integration gate.
+The next production unit is **P0-H Nether/End Independence Validator**. It must make accidental Nether/End mandatory gates mechanically detectable before content production grows. After P0-H, the current technical systems are ready to be bundled into a meaningful player-facing test slice rather than tested one tiny feature at a time.
