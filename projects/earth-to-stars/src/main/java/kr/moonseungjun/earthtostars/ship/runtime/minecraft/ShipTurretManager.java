@@ -151,7 +151,7 @@ public final class ShipTurretManager {
         double range = TurretProfile.P0_AUTOCANNON.range();
         ShipVec3 position = anchor.transform().position();
         AABB box = new AABB(position.x() - range, position.y() - range, position.z() - range, position.x() + range, position.y() + range, position.z() + range);
-        List<Entity> entities = anchor.level().getEntities(null, box, entity -> entity instanceof LivingEntity && entity.isAlive());
+        List<Entity> entities = anchor.level().getEntities((Entity) null, box, entity -> entity instanceof LivingEntity && entity.isAlive());
         List<SensorContact> contacts = new ArrayList<>(entities.size());
         for (Entity entity : entities) {
             Vec3 pos = entity.position().add(0.0D, entity.getBbHeight() * 0.5D, 0.0D);
@@ -190,7 +190,7 @@ public final class ShipTurretManager {
 
     private static LivingEntity firstHostileCollision(ServerLevel level, ShipVec3 position) {
         AABB hitBox = new AABB(position.x() - PROJECTILE_COLLISION_RADIUS, position.y() - PROJECTILE_COLLISION_RADIUS, position.z() - PROJECTILE_COLLISION_RADIUS, position.x() + PROJECTILE_COLLISION_RADIUS, position.y() + PROJECTILE_COLLISION_RADIUS, position.z() + PROJECTILE_COLLISION_RADIUS);
-        return level.getEntities(null, hitBox, entity -> entity instanceof LivingEntity && entity instanceof Enemy && entity.isAlive()).stream().map(entity -> (LivingEntity) entity).findFirst().orElse(null);
+        return level.getEntities((Entity) null, hitBox, entity -> entity instanceof LivingEntity && entity instanceof Enemy && entity.isAlive()).stream().map(entity -> (LivingEntity) entity).findFirst().orElse(null);
     }
 
     public record TurretStatus(boolean available, TurretControlMode mode, int ammo, int contacts, boolean controlled) {
