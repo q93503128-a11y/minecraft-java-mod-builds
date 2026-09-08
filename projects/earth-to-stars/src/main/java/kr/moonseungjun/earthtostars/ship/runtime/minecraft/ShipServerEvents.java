@@ -9,7 +9,9 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.Locale;
@@ -162,8 +164,18 @@ public final class ShipServerEvents {
     @SubscribeEvent
     private static void onServerStarting(ServerStartingEvent event) {
         ShipRuntimeManager.initialize(event.getServer());
-        ShipSystemsManager.clear();
+        ShipSystemsManager.initialize(event.getServer());
         ShipTurretManager.clear();
+    }
+
+    @SubscribeEvent
+    private static void onServerStarted(ServerStartedEvent event) {
+        ShipLifecycleProbe.onServerStarted(event.getServer());
+    }
+
+    @SubscribeEvent
+    private static void onServerStopping(ServerStoppingEvent event) {
+        ShipSystemsManager.flush(event.getServer());
     }
 
     @SubscribeEvent
