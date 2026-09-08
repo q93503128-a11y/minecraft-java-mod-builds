@@ -16,13 +16,17 @@ public final class ShipSystemsRuntime {
     private final ShipPowerGrid powerGrid;
     private final ShipAmmoPool ammoPool;
     private final ShipSensorGrid sensorGrid = new ShipSensorGrid();
+    private final ShipResourceTank propellantTank;
+    private final ShipResourceTank oxygenTank;
 
     public ShipSystemsRuntime(ShipId shipId, ShipSystemsTuning tuning) {
         this(
                 shipId,
                 tuning,
                 tuning.initialPower(),
-                Map.of(tuning.primaryAmmoType(), tuning.initialPrimaryAmmo())
+                Map.of(tuning.primaryAmmoType(), tuning.initialPrimaryAmmo()),
+                tuning.initialPropellant(),
+                tuning.initialOxygen()
         );
     }
 
@@ -30,7 +34,9 @@ public final class ShipSystemsRuntime {
             ShipId shipId,
             ShipSystemsTuning tuning,
             double initialPower,
-            Map<String, Integer> initialAmmo
+            Map<String, Integer> initialAmmo,
+            double initialPropellant,
+            double initialOxygen
     ) {
         this.shipId = Objects.requireNonNull(shipId, "shipId");
         this.tuning = Objects.requireNonNull(tuning, "tuning");
@@ -39,6 +45,8 @@ public final class ShipSystemsRuntime {
                 Map.of(tuning.primaryAmmoType(), tuning.primaryAmmoCapacity()),
                 Objects.requireNonNull(initialAmmo, "initialAmmo")
         );
+        this.propellantTank = new ShipResourceTank(tuning.propellantCapacity(), initialPropellant);
+        this.oxygenTank = new ShipResourceTank(tuning.oxygenCapacity(), initialOxygen);
     }
 
     public static ShipSystemsRuntime p0(ShipId shipId) {
@@ -51,11 +59,19 @@ public final class ShipSystemsRuntime {
         if (snapshot.powerStored() > tuning.powerCapacity()) {
             throw new IllegalArgumentException("persisted power exceeds current capacity for ship " + snapshot.shipId());
         }
+        if (snapshot.propellantStored() > tuning.propellantCapacity()) {
+            throw new IllegalArgumentException("persisted propellant exceeds current capacity for ship " + snapshot.shipId());
+        }
+        if (snapshot.oxygenStored() > tuning.oxygenCapacity()) {
+            throw new IllegalArgumentException("persisted oxygen exceeds current capacity for ship " + snapshot.shipId());
+        }
         return new ShipSystemsRuntime(
                 snapshot.shipId(),
                 tuning,
                 snapshot.powerStored(),
-                snapshot.ammoAmounts()
+                snapshot.ammoAmounts(),
+                snapshot.propellantStored(),
+                snapshot.oxygenStored()
         );
     }
 
@@ -64,12 +80,29 @@ public final class ShipSystemsRuntime {
     }
 
     public boolean tryPowerPropulsion(ShipControlInput input) {
+        return tryPowerPropulsion(input, 0.0D);
+    }
+
+    public synchronized boolean tryPowerPropulsion(ShipControlInput input, double propellantCost) {
         Objects.requireNonNull(input, "input");
+        if (!Double.isFinite(propellantCost) || propellantCost < 0.0D) {
+            throw new IllegalArgumentException("propellantCost must be finite and >= 0");
+        }
         double activity = Math.max(Math.abs(input.throttle()), Math.max(Math.abs(input.yaw()), Math.abs(input.pitch())));
         if (activity <= AXIS_EPSILON) {
             return true;
         }
-        return powerGrid.tryConsume(tuning.propulsionMaxPowerPerTick() * activity, PowerPriority.PROPULSION);
+        double powerCost = tuning.propulsionMaxPowerPerTick() * activity;
+        if (!powerGrid.canConsume(powerCost, PowerPriority.PROPULSION) || !propellantTank.canConsume(propellantCost)) {
+            return false;
+        }
+        if (!powerGrid.tryConsume(powerCost, PowerPriority.PROPULSION)) {
+            throw new IllegalStateException("power availability changed during propulsion transaction");
+        }
+        if (!propellantTank.tryConsume(propellantCost)) {
+            throw new IllegalStateException("propellant availability changed during propulsion transaction");
+        }
+        return true;
     }
 
     public boolean tryPowerSensorScan() {
@@ -93,8 +126,26 @@ public final class ShipSystemsRuntime {
         return true;
     }
 
+    public synchronized boolean consumeOxygen(double amount) {
+        return oxygenTank.tryConsume(amount);
+    }
+
+    public synchronized double loadPropellantCell() {
+        return propellantTank.fill(tuning.propellantPerCell());
+    }
+
+    public synchronized double loadOxygenCartridge() {
+        return oxygenTank.fill(tuning.oxygenPerCartridge());
+    }
+
     public synchronized ShipSystemsSnapshot snapshot() {
-        return new ShipSystemsSnapshot(shipId, powerGrid.stored(), ammoPool.snapshotAmounts());
+        return new ShipSystemsSnapshot(
+                shipId,
+                powerGrid.stored(),
+                ammoPool.snapshotAmounts(),
+                propellantTank.stored(),
+                oxygenTank.stored()
+        );
     }
 
     public ShipSensorGrid sensorGrid() {
@@ -127,5 +178,21 @@ public final class ShipSystemsRuntime {
 
     public int ammoCapacity(String ammoType) {
         return ammoPool.capacity(ammoType);
+    }
+
+    public double propellantStored() {
+        return propellantTank.stored();
+    }
+
+    public double propellantCapacity() {
+        return propellantTank.capacity();
+    }
+
+    public double oxygenStored() {
+        return oxygenTank.stored();
+    }
+
+    public double oxygenCapacity() {
+        return oxygenTank.capacity();
     }
 }
