@@ -1,3 +1,14 @@
 {
-  "mod.earth_to_stars.name": "EARTH TO STARS"
+  "item.earth_to_stars.reinforced_frame": "Light Reinforced Frame",
+  "item.earth_to_stars.avionics_unit": "Avionics Unit",
+  "item.earth_to_stars.propellant_cell": "Solid Propellant Cell",
+  "item.earth_to_stars.oxygen_cartridge": "Compressed Oxygen Cartridge",
+  "item.earth_to_stars.life_support_unit": "Life Support Unit",
+  "item.earth_to_stars.launch_craft_kit": "Launch Craft Assembly Package",
+  "message.earth_to_stars.launch.earth_only": "This craft must be assembled on Earth's surface.",
+  "message.earth_to_stars.launch.blocked": "Clear a 3x3x3 area before assembling the craft.",
+  "message.earth_to_stars.launch.deployed": "The launch craft comes online.",
+  "message.earth_to_stars.launch.existing": "You already have a registered launch craft.",
+  "message.earth_to_stars.launch.control_unavailable": "The craft assembled, but pilot control could not be linked.",
+  "message.earth_to_stars.launch.failed": "The craft cannot be assembled at this location."
 }
