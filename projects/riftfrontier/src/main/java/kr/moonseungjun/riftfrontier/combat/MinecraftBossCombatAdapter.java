@@ -5,13 +5,17 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 /**
- * Server-owned Minecraft adapter that keeps boss lifecycle and real damage on the same authored attack timeline.
+ * Server-owned Minecraft adapter that keeps boss lifecycle, real damage and presentation sampling
+ * on the same authored attack timeline.
  *
  * <p>The {@link BossCombatController} remains authoritative for phase/selection/completion while
- * {@link MinecraftAttackAdapter} owns Minecraft hit-volume resolution. This adapter starts, advances and cancels
- * both halves together and fails closed if their sampled phases ever diverge.</p>
+ * {@link MinecraftAttackAdapter} owns Minecraft hit-volume resolution. Presentation consumers receive
+ * an immutable {@link PresentationFrame} derived from the exact same {@link AttackExecution.Snapshot}
+ * used to validate the damage phase. No animation/VFX cadence is authored in this adapter.</p>
  */
 public final class MinecraftBossCombatAdapter {
     private final CombatRuntimeCatalog catalog;
@@ -71,7 +75,7 @@ public final class MinecraftBossCombatAdapter {
             if (damageAdapter.isExecuting() || damageStep.hitWindowOpen() || damageStep.damagedCount() != 0) {
                 failClosed("damage adapter remained active while boss controller was idle");
             }
-            return new TickResult(controller.phase(), damageStep, false);
+            return new TickResult(controller.phase(), damageStep, false, Optional.empty());
         }
 
         AttackExecution.Snapshot bossSnapshot = bossStep.attackStep().snapshot().orElseThrow();
@@ -81,7 +85,17 @@ public final class MinecraftBossCombatAdapter {
             failClosed("boss lifecycle and Minecraft damage timeline diverged");
         }
 
-        return new TickResult(controller.phase(), damageStep, bossStep.attackStep().finished());
+        PresentationFrame presentation = PresentationFrame.from(controller.phase(), bossSnapshot);
+        if (presentation.hitWindowOpen() != damageStep.hitWindowOpen()) {
+            failClosed("boss presentation and Minecraft damage hit window diverged");
+        }
+
+        return new TickResult(
+            controller.phase(),
+            damageStep,
+            bossStep.attackStep().finished(),
+            Optional.of(presentation)
+        );
     }
 
     /**
@@ -120,14 +134,81 @@ public final class MinecraftBossCombatAdapter {
         throw new IllegalStateException(message);
     }
 
-    public record TickResult(int bossPhase, MinecraftAttackAdapter.TickResult attack, boolean attackFinished) {
+    /**
+     * Immutable client/presentation-facing view derived from the authoritative attack snapshot.
+     *
+     * <p>Animation, VFX, audio and telegraph adapters may map these semantic values to final assets,
+     * but must not invent independent timing constants. `phaseProgress` comes directly from the
+     * authored {@link AttackTimeline} sample.</p>
+     */
+    public record PresentationFrame(
+        int bossPhase,
+        ContentId patternId,
+        AttackTimeline.Phase attackPhase,
+        double phaseProgress,
+        String presentationCue,
+        String delivery,
+        Set<String> counterplay,
+        boolean hitWindowOpen
+    ) {
+        public PresentationFrame {
+            if (bossPhase <= 0) {
+                throw new IllegalArgumentException("bossPhase must be positive");
+            }
+            Objects.requireNonNull(patternId, "patternId");
+            Objects.requireNonNull(attackPhase, "attackPhase");
+            if (!Double.isFinite(phaseProgress) || phaseProgress < 0.0D || phaseProgress > 1.0D) {
+                throw new IllegalArgumentException("phaseProgress must be finite and between 0 and 1");
+            }
+            presentationCue = Objects.requireNonNull(presentationCue, "presentationCue");
+            delivery = Objects.requireNonNull(delivery, "delivery");
+            counterplay = Set.copyOf(Objects.requireNonNull(counterplay, "counterplay"));
+            if (hitWindowOpen != (attackPhase == AttackTimeline.Phase.ACTIVE)) {
+                throw new IllegalArgumentException("presentation hitWindowOpen must exactly match ACTIVE phase");
+            }
+        }
+
+        public static PresentationFrame from(int bossPhase, AttackExecution.Snapshot snapshot) {
+            Objects.requireNonNull(snapshot, "snapshot");
+            return new PresentationFrame(
+                bossPhase,
+                snapshot.patternId(),
+                snapshot.presentationPhase(),
+                snapshot.timeline().phaseProgress(),
+                snapshot.presentationCue(),
+                snapshot.delivery(),
+                snapshot.counterplay(),
+                snapshot.mayApplyHit()
+            );
+        }
+    }
+
+    public record TickResult(
+        int bossPhase,
+        MinecraftAttackAdapter.TickResult attack,
+        boolean attackFinished,
+        Optional<PresentationFrame> presentation
+    ) {
         public TickResult {
             if (bossPhase <= 0) {
                 throw new IllegalArgumentException("bossPhase must be positive");
             }
             Objects.requireNonNull(attack, "attack");
+            presentation = Objects.requireNonNull(presentation, "presentation");
             if (attackFinished != attack.finished()) {
                 throw new IllegalArgumentException("attackFinished must match Minecraft attack completion");
+            }
+            if (presentation.isEmpty()) {
+                if (attack.hitWindowOpen() || attack.damagedCount() != 0 || attack.candidateCount() != 0) {
+                    throw new IllegalArgumentException("idle presentation cannot accompany active damage state");
+                }
+            } else {
+                PresentationFrame frame = presentation.orElseThrow();
+                if (frame.bossPhase() != bossPhase
+                    || frame.attackPhase() != attack.phase()
+                    || frame.hitWindowOpen() != attack.hitWindowOpen()) {
+                    throw new IllegalArgumentException("presentation must match authoritative boss/damage state");
+                }
             }
         }
     }
