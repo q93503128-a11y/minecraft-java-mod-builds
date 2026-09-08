@@ -26,6 +26,8 @@ final class ShipLifecycleProbe {
     private static final UUID PROBE_OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
     private static final double PROBE_POWER = 37.5D;
     private static final int PROBE_AMMO = 73;
+    private static final double PROBE_PROPELLANT = 51.25D;
+    private static final double PROBE_OXYGEN = 66.5D;
 
     private ShipLifecycleProbe() {
     }
@@ -57,16 +59,20 @@ final class ShipLifecycleProbe {
         ShipSystemsSnapshot snapshot = new ShipSystemsSnapshot(
                 PROBE_SHIP_ID,
                 PROBE_POWER,
-                Map.of(ammoType, PROBE_AMMO)
+                Map.of(ammoType, PROBE_AMMO),
+                PROBE_PROPELLANT,
+                PROBE_OXYGEN
         );
         ShipSystemsSavedData.get(server).put(snapshot);
 
         EarthToStars.LOGGER.info(
-                "EARTH_TO_STARS_P0G_SEED_PASS ship={} slot={} power={} ammo={}",
+                "EARTH_TO_STARS_P0G_SEED_PASS ship={} slot={} power={} ammo={} propellant={} oxygen={}",
                 PROBE_SHIP_ID,
                 interior.slot(),
                 PROBE_POWER,
-                PROBE_AMMO
+                PROBE_AMMO,
+                PROBE_PROPELLANT,
+                PROBE_OXYGEN
         );
     }
 
@@ -100,11 +106,13 @@ final class ShipLifecycleProbe {
         assertProbeResources(liveSystems.snapshot());
 
         EarthToStars.LOGGER.info(
-                "EARTH_TO_STARS_P0G_VERIFY_PASS ship={} slot={} power={} ammo={}",
+                "EARTH_TO_STARS_P0G_VERIFY_PASS ship={} slot={} power={} ammo={} propellant={} oxygen={}",
                 PROBE_SHIP_ID,
                 interior.slot(),
                 persisted.powerStored(),
-                persisted.ammoAmounts().get(ShipSystemsTuning.P0.primaryAmmoType())
+                persisted.ammoAmounts().get(ShipSystemsTuning.P0.primaryAmmoType()),
+                persisted.propellantStored(),
+                persisted.oxygenStored()
         );
     }
 
@@ -115,6 +123,12 @@ final class ShipLifecycleProbe {
         int ammo = snapshot.ammoAmounts().getOrDefault(ShipSystemsTuning.P0.primaryAmmoType(), -1);
         if (ammo != PROBE_AMMO) {
             throw new IllegalStateException("probe ammo changed across restart: " + ammo);
+        }
+        if (Math.abs(snapshot.propellantStored() - PROBE_PROPELLANT) > 1.0E-9D) {
+            throw new IllegalStateException("probe propellant changed across restart: " + snapshot.propellantStored());
+        }
+        if (Math.abs(snapshot.oxygenStored() - PROBE_OXYGEN) > 1.0E-9D) {
+            throw new IllegalStateException("probe oxygen changed across restart: " + snapshot.oxygenStored());
         }
     }
 
