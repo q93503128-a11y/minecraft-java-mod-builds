@@ -1,3 +1,14 @@
 {
-  "mod.earth_to_stars.name": "EARTH TO STARS"
+  "item.earth_to_stars.reinforced_frame": "경량 강화 프레임",
+  "item.earth_to_stars.avionics_unit": "항법제어장치",
+  "item.earth_to_stars.propellant_cell": "고체 추진제 셀",
+  "item.earth_to_stars.oxygen_cartridge": "압축 산소 카트리지",
+  "item.earth_to_stars.life_support_unit": "생명유지장치",
+  "item.earth_to_stars.launch_craft_kit": "소형 개척선 조립 패키지",
+  "message.earth_to_stars.launch.earth_only": "이 개척선은 지구 지표에서 조립해야 합니다.",
+  "message.earth_to_stars.launch.blocked": "개척선을 펼칠 공간이 부족합니다. 3×3×3 공간을 확보하세요.",
+  "message.earth_to_stars.launch.deployed": "소형 개척선의 시동이 걸렸습니다.",
+  "message.earth_to_stars.launch.existing": "이미 등록된 개척선이 있습니다.",
+  "message.earth_to_stars.launch.control_unavailable": "개척선은 조립됐지만 조종권을 연결할 수 없습니다.",
+  "message.earth_to_stars.launch.failed": "이 위치에서는 개척선을 조립할 수 없습니다."
 }
