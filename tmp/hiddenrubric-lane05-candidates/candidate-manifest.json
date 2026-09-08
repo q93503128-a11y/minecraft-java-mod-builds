@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "router-stage05-parallel-v1-lane05-candidate-manifest-v1",
+  "schemaVersion": "router-stage05-parallel-v1-lane05-candidate-manifest-v2",
   "sourceDataset": "lmarena-ai/arena-human-preference-140k",
   "sourceRevision": "a9cb587ee0906192dc1fc5e51778282f36c6bf35",
   "rawRowsRead": 135634,
@@ -7,66 +7,110 @@
   "assistantOutputsIncluded": false,
   "candidateSignalsAreGold": false,
   "trainingEligible": false,
+  "familyOwnershipPolicy": "exclude family when StateOps, preference, crossDomain, or requester/evaluator heuristic fires anywhere in canonical user history",
   "rejections": {
-    "multiTurn": 10156,
-    "length": 2173,
-    "higherLaneHeuristic": 2353,
-    "privacy": 241,
-    "duplicate": 7
+    "privacyFamily": 405,
+    "lengthTurn": 4803,
+    "higherLaneFamily": 4280
   },
   "pools": {
     "audience": {
-      "rows": 117,
+      "rows": 79,
       "files": [
         {
           "path": "tmp/hiddenrubric-lane05-candidates/audience-000.jsonl",
-          "rows": 15,
-          "sha256": "0bdb8238ca84d281b5235f41dc25abe2f0a49cd8320fe99e49f94d1109a093fb"
+          "rows": 12,
+          "sha256": "2230f852ba5c8faed927e8e334de980eb7a303e085c7c26a3d979f1013285dec"
         },
         {
           "path": "tmp/hiddenrubric-lane05-candidates/audience-001.jsonl",
-          "rows": 15,
-          "sha256": "4eb8af8a826b5965346ae905a59d227074094424a7c63d0e644427cde2ca5136"
+          "rows": 12,
+          "sha256": "b598629f6619b95653a0b8c7cc7cbfb10246fccc4e122559fc7ca78e791ca995"
         },
         {
           "path": "tmp/hiddenrubric-lane05-candidates/audience-002.jsonl",
-          "rows": 15,
-          "sha256": "2fdbe60f38ba309bb68b6d8cf1cea4c905d21401feb9981e0821e66c624b2f3c"
+          "rows": 12,
+          "sha256": "52bb189e44c56551a79b31688d8366d7ab0352a48ddf77891e8dec3f276def69"
         },
         {
           "path": "tmp/hiddenrubric-lane05-candidates/audience-003.jsonl",
-          "rows": 15,
-          "sha256": "7d3b49675eec48594802da2c32efd06e1391709796a7306c4c1279a3320e0ec3"
+          "rows": 12,
+          "sha256": "4fa842f38201c615b93f9fd834150fa6da66fc99e2b489bb1f5b60ba25d320c8"
         },
         {
           "path": "tmp/hiddenrubric-lane05-candidates/audience-004.jsonl",
-          "rows": 15,
-          "sha256": "1f43c8f1c9b53450c85e02c8e79a676826b9bb48ca77ff1693f4ff6e9df716d0"
+          "rows": 12,
+          "sha256": "355adb6a2ee4ee7f7c2236cca6d485b854e7657178c5458929faf5c8c9c40734"
         },
         {
           "path": "tmp/hiddenrubric-lane05-candidates/audience-005.jsonl",
-          "rows": 15,
-          "sha256": "90cbae8dc51d4a7427d7721c0404ace002a3d44378a6a1ce1d93e3522c77587f"
+          "rows": 12,
+          "sha256": "474876850ec52b5cddec8fb8761e90a9673f45fd53902723164753bde6292758"
         },
         {
           "path": "tmp/hiddenrubric-lane05-candidates/audience-006.jsonl",
-          "rows": 15,
-          "sha256": "377b17b0601895beb6f232417aabc6327623d550149347b3462e6f0e66027934"
-        },
-        {
-          "path": "tmp/hiddenrubric-lane05-candidates/audience-007.jsonl",
-          "rows": 12,
-          "sha256": "adc081d1f98e377fda009ff1b6dec38bf0960850944ee5751f4e7867bbde7738"
+          "rows": 7,
+          "sha256": "9a75b2c2dc0b980ce6638a5a85fbdb857cf52a0ac93f919797a7a14657595ec0"
         }
       ]
     },
     "performer": {
-      "rows": 7,
+      "rows": 121,
       "files": [
         {
           "path": "tmp/hiddenrubric-lane05-candidates/performer-000.jsonl",
-          "rows": 7,
-          "sha256": "54aed07e2db3bca488aa384806a34c3748d8e4e0b497d766ec0ca959c7d82922"
+          "rows": 12,
+          "sha256": "22eb8228575c501ff503c139d8aa26e1cfa43f897766903dbe185a8f43dd13e3"
+        },
+        {
+          "path": "tmp/hiddenrubric-lane05-candidates/performer-001.jsonl",
+          "rows": 12,
+          "sha256": "61dd5de49e64fb1ce8b65eb8e86cd5d6cf318fedb76e96a1ac4f497a708b6979"
+        },
+        {
+          "path": "tmp/hiddenrubric-lane05-candidates/performer-002.jsonl",
+          "rows": 12,
+          "sha256": "a1599de9260606ed3b3d8f0facf830568a4a90861a927e5bc292ace40b5d69db"
+        },
+        {
+          "path": "tmp/hiddenrubric-lane05-candidates/performer-003.jsonl",
+          "rows": 12,
+          "sha256": "06aa01eaa79fd1eb1c74ccad13d594990fe6a4198472bcd078f6a12df869e021"
+        },
+        {
+          "path": "tmp/hiddenrubric-lane05-candidates/performer-004.jsonl",
+          "rows": 12,
+          "sha256": "0dcf37a14ad175614ff0b530d3c2ed8d4144f3f7db4abdf7f688dba1476a08fa"
+        },
+        {
+          "path": "tmp/hiddenrubric-lane05-candidates/performer-005.jsonl",
+          "rows": 12,
+          "sha256": "37cdf8c39fcf16ea0cff137ac5073c40c5a26266e8e49a873efd06243c897a9c"
+        },
+        {
+          "path": "tmp/hiddenrubric-lane05-candidates/performer-006.jsonl",
+          "rows": 12,
+          "sha256": "40918c57aa294fdd27e300251af093b577f7095dcf5c263557c21daaea9c11e5"
+        },
+        {
+          "path": "tmp/hiddenrubric-lane05-candidates/performer-007.jsonl",
+          "rows": 12,
+          "sha256": "a20aeb1eeb9e149834d505ac830e519ff52753967e211c7653340d93545273a1"
+        },
+        {
+          "path": "tmp/hiddenrubric-lane05-candidates/performer-008.jsonl",
+          "rows": 12,
+          "sha256": "4244e6a7c5bc16ee18984258981315b716a59335210a135b7045eda356e9f4c3"
+        },
+        {
+          "path": "tmp/hiddenrubric-lane05-candidates/performer-009.jsonl",
+          "rows": 12,
+          "sha256": "c7636f8908fae847ee6db62f7bc1d16d65ec138f97afec48b47fdc43998363a9"
+        },
+        {
+          "path": "tmp/hiddenrubric-lane05-candidates/performer-010.jsonl",
+          "rows": 1,
+          "sha256": "0b6d59441dacb55015ee960aa62cfad3286e6cb0466a2b4517435b3ffdc1c7be"
         }
       ]
     }
