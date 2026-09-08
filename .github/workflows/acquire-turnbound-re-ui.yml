@@ -33,7 +33,6 @@ jobs:
           DEST='projects/turnbound-re/src/main/resources/assets/turnbound_re/textures/gui/sprites/ui'
           LICENSE_DEST='projects/turnbound-re/src/main/resources/META-INF/licenses'
           mkdir -p "$DEST" "$LICENSE_DEST"
-
           cp "$SRC/tile_0009.png" "$DEST/frame_idle.png"
           cp "$SRC/tile_0022.png" "$DEST/frame_focus.png"
           cp "$SRC/tile_0008.png" "$DEST/frame_disabled.png"
@@ -76,21 +75,9 @@ jobs:
           import net.minecraft.network.chat.Component;
           import net.minecraft.resources.Identifier;
 
-          /**
-           * Shared M5 visual tokens for TURNBOUND: RE.
-           *
-           * <p>Screen code asks for semantic meaning rather than asset filenames. The backing sprites are the
-           * verified Kenney CC0 Pixel Adventure family selected for M5, adapted only through naming, nine-slice
-           * metadata and compact meter palette strips. Gameplay/server state never depends on this layer.</p>
-           */
+          /** Shared M5 semantic visual tokens backed by the verified TURNBOUND: RE UI sprite family. */
           public final class UiVisualLanguage {
-              public enum FrameState {
-                  IDLE,
-                  FOCUS,
-                  DISABLED,
-                  WARNING,
-                  SUCCESS
-              }
+              public enum FrameState { IDLE, FOCUS, DISABLED, WARNING, SUCCESS }
 
               public static final Identifier FRAME_IDLE = sprite("frame_idle");
               public static final Identifier FRAME_FOCUS = sprite("frame_focus");
@@ -117,15 +104,8 @@ jobs:
               }
 
               public static void titleBand(
-                      GuiGraphicsExtractor graphics,
-                      Font font,
-                      int x,
-                      int y,
-                      int width,
-                      int height,
-                      Component text,
-                      int color,
-                      boolean centered
+                      GuiGraphicsExtractor graphics, Font font, int x, int y, int width, int height,
+                      Component text, int color, boolean centered
               ) {
                   graphics.blitSprite(RenderPipelines.GUI_TEXTURED, TITLE_BOX, x, y, width, height);
                   int textX = centered ? x + (width - font.width(text)) / 2 : x + UiLayoutMetrics.SPACE_8;
@@ -134,12 +114,7 @@ jobs:
               }
 
               public static void frame(
-                      GuiGraphicsExtractor graphics,
-                      int x,
-                      int y,
-                      int width,
-                      int height,
-                      FrameState state
+                      GuiGraphicsExtractor graphics, int x, int y, int width, int height, FrameState state
               ) {
                   graphics.blitSprite(RenderPipelines.GUI_TEXTURED, frameSprite(state), x, y, width, height);
               }
@@ -165,14 +140,8 @@ jobs:
               }
 
               public static void meter(
-                      GuiGraphicsExtractor graphics,
-                      int x,
-                      int y,
-                      int width,
-                      int height,
-                      int value,
-                      int max,
-                      Identifier progressSprite
+                      GuiGraphicsExtractor graphics, int x, int y, int width, int height,
+                      int value, int max, Identifier progressSprite
               ) {
                   if (width <= 0 || height <= 0 || max <= 0) return;
                   graphics.blitSprite(RenderPipelines.GUI_TEXTURED, BAR_BACKGROUND, x, y, width, height);
@@ -253,23 +222,21 @@ jobs:
           new2 = '- 검증 원본 ZIP SHA-256: `6ebf462e7f209f5f348419b09be6601a559ef1e1d6b595f0e9f8aa4c00a84048`. 현재 M5 frame/title/meter는 `turnbound_re` namespace production resource를 사용하며 vanilla advancement/boss-bar bridge는 제거했다.'
           if old2 not in text:
               raise SystemExit('THIRD_PARTY_ASSETS pending note drifted')
-          text = text.replace(old2, new2)
-          third.write_text(text)
+          third.write_text(text.replace(old2, new2))
 
           doc = Path('projects/turnbound-re/docs/19_M5_UI_ASSET_SELECTION.md')
           text = doc.read_text()
-          status_old = '상태: **PRIMARY CANDIDATE SELECTED / BINARY IMPORT PENDING / SCREENSHOT GATE PENDING**'
-          status_new = '상태: **PRIMARY ASSET IMPORTED / VANILLA BRIDGE REMOVED / SCREENSHOT GATE PENDING**'
-          if status_old not in text:
+          old_status = '상태: **PRIMARY CANDIDATE SELECTED / BINARY IMPORT PENDING / SCREENSHOT GATE PENDING**'
+          if old_status not in text:
               raise SystemExit('asset selection status drifted')
-          text = text.replace(status_old, status_new)
+          text = text.replace(old_status, '상태: **PRIMARY ASSET IMPORTED / VANILLA BRIDGE REMOVED / SCREENSHOT GATE PENDING**')
           start = '## 6. Binary import가 아직 pending인 이유'
           end = '## 7. Screenshot acceptance'
           if start not in text or end not in text:
               raise SystemExit('asset selection section markers drifted')
           before, rest = text.split(start, 1)
           _, after = rest.split(end, 1)
-          imported = '''## 6. 실제 production 반입 결과\n\n검증 원본: `UI Pack - Pixel Adventure (2.0)`  \n원본 ZIP SHA-256: `6ebf462e7f209f5f348419b09be6601a559ef1e1d6b595f0e9f8aa4c00a84048`  \n라이선스: **CC0 1.0** (`META-INF/licenses/kenney-ui-pack-pixel-adventure-CC0.txt`에 원문 보존)\n\n직접 사용 mapping:\n- `tile_0009.png` → `ui/frame_idle.png`\n- `tile_0022.png` → `ui/frame_focus.png`\n- `tile_0008.png` → `ui/frame_disabled.png`\n- `tile_0020.png` → `ui/frame_warning.png`\n- `tile_0021.png` → `ui/frame_success.png`\n- `tile_0002.png` → `ui/title_surface.png`\n\n모든 frame/title은 `Large tiles / Thin outline` 한 family만 사용하며 32×32 원본 모서리를 보존하기 위해 4px `nine_slice` metadata를 사용한다. meter 4종은 별도 화풍을 만들지 않고 같은 pack에서 이미 쓰는 neutral/red/blue/gold palette를 5px strip으로 축약한 derivative다.\n\n`UiVisualLanguage`는 이제 `turnbound_re:ui/*`만 가리키며 vanilla advancement / boss-bar sprite bridge를 사용하지 않는다. 호출부 역시 IDLE / FOCUS / DISABLED / WARNING / SUCCESS를 명시적으로 요청한다.\n\n실제 Minecraft 화면에서의 크기·contrast·pixel crispness는 아직 검수 전이므로 **visual 완료 처리는 하지 않는다.**\n\n'''
+          imported = '''## 6. 실제 production 반입 결과\n\n검증 원본: `UI Pack - Pixel Adventure (2.0)`\n원본 ZIP SHA-256: `6ebf462e7f209f5f348419b09be6601a559ef1e1d6b595f0e9f8aa4c00a84048`\n라이선스: **CC0 1.0** (`META-INF/licenses/kenney-ui-pack-pixel-adventure-CC0.txt`에 원문 보존)\n\n직접 사용 mapping:\n- `tile_0009.png` → `ui/frame_idle.png`\n- `tile_0022.png` → `ui/frame_focus.png`\n- `tile_0008.png` → `ui/frame_disabled.png`\n- `tile_0020.png` → `ui/frame_warning.png`\n- `tile_0021.png` → `ui/frame_success.png`\n- `tile_0002.png` → `ui/title_surface.png`\n\n모든 frame/title은 `Large tiles / Thin outline` 한 family만 사용하며 32×32 원본 모서리를 보존하기 위해 4px `nine_slice` metadata를 사용한다. meter 4종은 별도 화풍을 만들지 않고 같은 pack에서 이미 쓰는 neutral/red/blue/gold palette를 5px strip으로 축약한 derivative다.\n\n`UiVisualLanguage`는 이제 `turnbound_re:ui/*`만 가리키며 vanilla advancement / boss-bar sprite bridge를 사용하지 않는다. 호출부 역시 IDLE / FOCUS / DISABLED / WARNING / SUCCESS를 명시적으로 요청한다.\n\n실제 Minecraft 화면에서의 크기·contrast·pixel crispness는 아직 검수 전이므로 **visual 완료 처리는 하지 않는다.**\n\n'''
           doc.write_text(before + imported + end + after)
           PY
 
@@ -295,7 +262,7 @@ jobs:
           test -s projects/turnbound-re/src/main/resources/META-INF/licenses/kenney-ui-pack-pixel-adventure-CC0.txt
           git diff --check
 
-      - name: Commit production skin and remove one-time acquisition workflow
+      - name: Commit production skin and remove one-time workflow
         run: |
           set -euo pipefail
           git config user.name 'coworkaccount'
