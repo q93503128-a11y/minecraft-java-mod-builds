@@ -7,16 +7,15 @@
 
 ## 1. 마지막 검증 기준
 
-- 마지막 TURNBOUND: RE 코드 검증 커밋: `08b4eba3f23ed70127ba9f72c665c0a8e06caf58`
-- GitHub Actions: `Build turnbound-re` run `34173238769`
+- 마지막 TURNBOUND: RE 코드 검증 커밋: `f2983305d753913883df95bc6eb1be1eadeb81d1`
+- GitHub Actions: `Build turnbound-re` run `34175475720`
 - 결과: **SUCCESS**
 - 포함 검증: Java 25 toolchain, dependency resolution, `clean build`, 전체 JUnit, production JAR verify, artifact upload.
 - 검증 JAR: `turnbound_re-0.1.0-alpha.1.jar`
-- SHA-256: `0c0f378c88c6c54998af7f5ce692305eb228635007882a07129c1cc9ec280dd6`
+- SHA-256: `0e55eded19facae7de7fe05ec4cd2f2c1754d1fd710e19e8b3f3cf6dd09ae806`
 
-위 검증에는 M0~M4 회귀와 현재 M5 Battle HUD 구조/interaction/readability, Party Formation skeleton + progression authority 자동 계약이 포함된다.
-현재 공용 play-phase presentation protocol은 `v6`이며, 기존 battle v5 기능에 progression request/set-party/snapshot 흐름이 추가되었다.
-server-published eligible targets와 participant→entity UUID binding, world marker, command-strip target chooser, overlay lifecycle, localized HUD, 최소 logical canvas compact party layout, persisted `PlayerProgress` 기반 Party Formation read/write까지 검증되었다.
+위 검증에는 M0~M4 회귀와 현재 M5 Battle HUD 구조/interaction/readability, Party Formation structure/authority, Character Overview/Skills/Growth presentation + server-authoritative growth write 계약이 포함된다.
+현재 공용 play-phase presentation protocol은 `v7`이며, 기존 battle target presentation, progression request/set-party/snapshot에 server-published action/effect/growth preview와 stale-safe growth C2S가 추가되었다.
 
 공용 모노레포의 `main`은 다른 프로젝트 작업으로 계속 전진할 수 있으므로 새 작업 세션에서는 위 SHA를 최신 HEAD로 가정하지 말고 반드시 현재 `main`을 다시 읽는다.
 
@@ -145,7 +144,7 @@ Witch healing의 `hpPower=0` 문제는 수정 완료.
 - 기능 교체 시 옛 호출부/테스트/리소스까지 제거.
 
 ## 8. M5 — Production UI / Presentation
-상태: **BATTLE UI AUTO GATE + PARTY FORMATION STRUCTURE/AUTHORITY AUTO GATE PASS / VISUAL SCREENSHOT AUDIT PENDING**
+상태: **BATTLE UI + PARTY FORMATION + CHARACTER DETAIL/GROWTH AUTO GATE PASS / VISUAL SCREENSHOT AUDIT PENDING**
 
 ### 8.1 Visual gate / 방향성
 완료:
@@ -186,9 +185,9 @@ Witch healing의 `hpPower=0` 문제는 수정 완료.
 - `ENERGY`, `TARGETS` disabled reason을 EN/KO player-facing copy로 표시.
 - submit은 `BattleCommandC2S`; 최종 legality는 server strict gate가 재검증.
 
-### 8.4 Protocol v6 / authoritative target + progression presentation
+### 8.4 Protocol v7 / authoritative target + progression + growth presentation
 완료:
-- play-phase presentation protocol `v6`.
+- play-phase presentation protocol `v7`.
 - 기존 battle target presentation v5 계약 유지.
 - `SnapshotAction.eligibleTargetIds`는 서버가 직접 계산.
 - 후보 순서는 `participantOrdinal` 기준 안정 순서.
@@ -199,9 +198,12 @@ Witch healing의 `hpPower=0` 문제는 수정 완료.
 - world marker와 target chooser slot의 동일 authoritative `#N` 번호.
 - marker state는 `battleId + revision`에 귀속되어 stale snapshot에서 무효화.
 - selected marker가 hovered marker보다 우선.
-- progression presentation용 `RequestProgressC2S`, `SetPartyC2S`, `ProgressSnapshotS2C` 추가.
+- progression presentation용 `RequestProgressC2S`, `SetPartyC2S`, `ProgressSnapshotS2C` 유지.
 - progression snapshot은 current `DefinitionRegistry` + persisted `PlayerProgress`에서 서버가 작성.
 - owned 캐릭터 표시 스탯은 canonical `ProgressionRules.stats()` 사용.
+- `ActionView`, `EffectView`, `StatsView`, `CostView`, `GrowthView`, `GrowthC2S` 추가.
+- Skills facts는 current `ActionDefinition`에서 서버가 publish.
+- Growth current→next stats/cost/disabled reason은 current persisted progress + canonical `ProgressionRules`로 서버가 publish.
 
 ### 8.5 World-first target chooser
 완료:
@@ -264,7 +266,25 @@ Witch healing의 `hpPower=0` 문제는 수정 완료.
 - EN/KO interaction/result/role/affinity localization + exact key parity.
 - 상세 정본: `17C_M5_PARTY_FORMATION_SKELETON_GATE.md`.
 
-### 8.9 현재 자동 검증 범위
+### 8.9 Character Overview / Skills / Growth + write path
+완료:
+- selected character context를 유지하는 `Overview / Skills / Growth` 실제 interactive tabs.
+- tab state는 client presentation-only state.
+- Overview: current star/origin star, level/cap, roles, cost, HP/ATK/DEF/SPD/Poise, affinity, Basic/Skills/Burst/Passive.
+- Skills: server-published action kind, Energy delta, HP/Poise power, damage tag, target team/shape/count, special effects.
+- client가 전투 damage 결과나 target legality를 새로 계산하지 않음.
+- Growth: current Coin/Essence/shard balance, Level current→next, next stats, level cost, Star current→next, next cap, post-ascension stats, ascension cost, disabled reason.
+- 비용/결과를 버튼과 같은 detail 영역에서 사전 표시하여 surprise cost 방지.
+- Level Up / Ascend 실제 버튼.
+- `GrowthC2S`는 operation + character id + expected star + expected level을 전송.
+- server가 ownership 및 expected star/level을 재확인하여 stale write 거부.
+- 실제 mutation은 기존 `PlayerProgressStore.levelUp/ascend` → `ProgressionService` 경로만 사용.
+- 비용/레벨캡/별캡/조각 조건은 서버가 최종 재검증.
+- 성공/실패 뒤 fresh progression snapshot으로 즉시 reconciliation.
+- EN/KO 탭/skill kind/effect/growth cost/disabled/result copy + exact key parity.
+- 상세 정본: `17D_M5_CHARACTER_DETAIL_GROWTH_GATE.md`.
+
+### 8.10 현재 자동 검증 범위
 Battle UI:
 - 480×270 minimum supported logical canvas.
 - 640×360 narrow layout.
@@ -276,13 +296,12 @@ Battle UI:
 - authoritative target order / world marker numbering.
 - stale marker rejection.
 - null entity binding marker rejection.
-- EN/KO key parity.
 - current Enemy Intent enum translation coverage.
 - current 12 core status translation coverage.
 - compact/normal party layout contracts.
 
-Party Formation:
-- 480×270 / 640×360 / 1280×720 / 1920×1080 bounds.
+Party / Character / Growth:
+- 480×270 / 640×360 / 1280×720 / 1920×1080 Party Formation bounds.
 - roster / active / selected region non-overlap.
 - minimum roster/active/detail readable widths.
 - wide root max width 960.
@@ -293,7 +312,13 @@ Party Formation:
 - swap/remove draft behavior.
 - over-capacity submit rejection.
 - unowned submit rejection.
-- EN/KO Party Formation key parity + required role/affinity copy.
+- `GrowthC2S` operation/id/expectedStar/expectedLevel round-trip.
+- nested `ActionView`/`EffectView` snapshot round-trip.
+- `GrowthView` stats/cost/block-state round-trip.
+- blocked growth enable-state contracts.
+- EN/KO exact key parity.
+- Party role/affinity required copy.
+- Character Detail/Skills/Growth required copy.
 
 첫 Party Formation CI에서 발견 후 수정된 API 적응 오류:
 - `CustomPacketPayload.type()` 3개 누락.
@@ -302,45 +327,45 @@ Party Formation:
 - 테스트를 완화하지 않고 실제 NeoForge 26.2 API에 맞게 수정.
 
 마지막 자동 검증:
-- commit `08b4eba3f23ed70127ba9f72c665c0a8e06caf58`
-- `Build turnbound-re` Run `34173238769`
+- commit `f2983305d753913883df95bc6eb1be1eadeb81d1`
+- `Build turnbound-re` Run `34175475720`
 - Java Temurin 25.0.4+1.
 - Gradle 9.2.1.
 - NeoForge 26.2.0.38-beta.
 - clean build/JUnit: **PASS**
 - production JAR verify: **PASS**
 - artifact upload: **PASS**
-- JAR SHA-256: `0c0f378c88c6c54998af7f5ce692305eb228635007882a07129c1cc9ec280dd6`
+- JAR SHA-256: `0e55eded19facae7de7fe05ec4cd2f2c1754d1fd710e19e8b3f3cf6dd09ae806`
 
-### 8.10 아직 PASS가 아닌 것
+### 8.11 아직 PASS가 아닌 것
 - 실제 Minecraft implementation screenshot quality.
 - 실제 GUI Scale 옵션별 clipping/가독성/시선 이동 체감.
+- 480×270에서 Skills/Growth 실제 정보밀도와 텍스트 clipping 체감.
 - final production sprite/icon/frame asset quality 및 source/license 기록.
 - animation/transition timing 체감.
-- Party Formation 실제 3D entity preview.
-- Character Overview / Skills / Growth 실제 interactive panes.
-- Growth level-up / ascend server write UI.
+- Party Formation selected character 실제 3D entity preview.
+- mob별 bounding box/rotation/scale/clipping 대응.
 - battle result/reward transition의 최종 presentation.
 - 캐릭터 외형 / skill VFX / world visual gate.
+- 실제 client Level Up / Ascend 이후 save/reconnect persistence 체감.
 
 중요:
-- Battle UI 및 Party Formation 자동 gate가 통과했다고 M5 전체 production visual PASS가 된 것은 아니다.
+- Battle UI, Party Formation, Character Detail/Growth 자동 gate가 통과했다고 M5 전체 production visual PASS가 된 것은 아니다.
 - 실제 Minecraft screenshot을 reference/mockup과 비교하기 전 **production visual PASS를 선언하지 않는다.**
 - 사용자 방침상 지금 중간 JAR 테스트를 요구하지 않고 전체적인 integrated test 시 함께 확인한다.
 
 ## 9. 다음 실제 개발 시작점
 
 1. 현재 GitHub `main` HEAD를 다시 조회한다. 위 검증 SHA를 최신 main이라고 가정하지 않는다.
-2. `16_CURRENT_IMPLEMENTATION_STATUS.md`, `17_M5_UI_VISUAL_GATE.md`, `17A_M5_COMMAND_OVERLAY_LIFECYCLE_GATE.md`, `17B_M5_HUD_READABILITY_GATE.md`, `17C_M5_PARTY_FORMATION_SKELETON_GATE.md`, `06_UI_UX_PRESENTATION.md`, `08_REFERENCE_CATALOG.md`를 확인한다.
-3. Battle HUD의 자동 구조/interaction/readability gate와 Party Formation structure/authority gate는 닫힌 것으로 취급한다. 실제 screenshot visual QA는 integrated client test까지 **pending**으로 남긴다.
-4. 다음 production UI 개발은 Party Formation의 **selected character context를 유지한 Character Overview → Skills → Growth detail panes**로 이동한다.
-   - tab state는 client presentation-only state로 관리.
-   - Overview는 현재 server snapshot의 별/레벨/역할/스탯/affinity를 더 읽기 좋은 정보계층으로 정리.
-   - Skills는 실제 action definition의 targeting / cost / power / effect facts를 표시하되 client가 battle 결과를 새로 계산하지 않게 한다.
-   - Growth는 현재 level/star/currency/cost/next-stat preview를 표시.
-   - 실제 level-up / ascend action은 기존 `PlayerProgressStore`를 호출하는 별도 C2S server write path로 연결하고 server가 비용/level cap/star 상태를 최종 재검증한다.
-5. Party Formation selected detail의 실제 3D entity preview는 renderer feasibility와 clipping/performance를 확인한 뒤 적용한다. 임시 저품질 placeholder를 최종 자산으로 굳히지 않는다.
-6. production sprite/icon asset은 reference/source/license gate 후 적용한다.
-7. 전체적으로 검토할 만한 상태가 되면 실제 Minecraft에서 Battle/Party/Growth GUI scale 및 screenshot audit, M2 20회 client gate, M4 save/reconnect gate를 한 번에 수행한다.
+2. `16_CURRENT_IMPLEMENTATION_STATUS.md`, `17_M5_UI_VISUAL_GATE.md`, `17A_M5_COMMAND_OVERLAY_LIFECYCLE_GATE.md`, `17B_M5_HUD_READABILITY_GATE.md`, `17C_M5_PARTY_FORMATION_SKELETON_GATE.md`, `17D_M5_CHARACTER_DETAIL_GROWTH_GATE.md`, `06_UI_UX_PRESENTATION.md`, `08_REFERENCE_CATALOG.md`를 확인한다.
+3. Battle HUD 자동 구조/interaction/readability, Party Formation structure/authority, Character Detail/Growth server-write gate는 닫힌 것으로 취급한다. 실제 screenshot visual QA는 integrated client test까지 **pending**으로 남긴다.
+4. 다음 production UI 작업은 selected-character의 **실제 3D entity preview**를 조사/구현한다.
+   - Minecraft/NeoForge 26.2에서 Screen 내 entity rendering 경로와 기존 vanilla inventory-style rendering 가능성을 우선 확인.
+   - mob마다 다른 bounding box/height/width를 고려해 scale을 정한다.
+   - clipping, rotation, off-screen render, mouse interaction, performance를 확인한다.
+   - 임시 저품질 placeholder나 AI식 장식을 최종 asset으로 굳히지 않는다.
+5. production sprite/icon/frame asset은 reference/source/license gate 후 적용한다.
+6. 이어서 battle result/reward transition presentation을 구현한다.
+7. Battle/Party/Growth가 함께 검토할 만한 상태가 되면 실제 Minecraft에서 screenshot/GUI scale audit, M2 20회 client gate, M4 save/reconnect gate를 한 번에 수행한다.
 
 구 TURNBOUND는 계속 ZERO AUTHORITY다. UI/코드/수치/디자인을 구 프로젝트에서 자동 계승하지 않는다.
