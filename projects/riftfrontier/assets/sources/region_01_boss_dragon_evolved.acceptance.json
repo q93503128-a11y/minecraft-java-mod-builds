@@ -1,0 +1,60 @@
+{
+  "converter": {
+    "generator": "Riftfrontier deterministic boss geometry sanitizer v1",
+    "path": "projects/riftfrontier/tools/convert_region01_boss_geometry.py"
+  },
+  "expect": {
+    "accessor_count": 737,
+    "animations": [
+      "Death",
+      "Fast_Flying",
+      "Flying_Idle",
+      "Headbutt",
+      "HitReact",
+      "No",
+      "Punch",
+      "Yes"
+    ],
+    "bounds_max": [
+      2.7376062870025635,
+      3.1581382751464844,
+      0.984516441822052
+    ],
+    "bounds_min": [
+      -2.7376062870025635,
+      0.30027779936790466,
+      -1.4310814142227173
+    ],
+    "buffer_view_count": 737,
+    "embedded_buffer_bytes": 381212,
+    "final_material_approved": false,
+    "forbidden_art_payload": [
+      "primitive material bindings",
+      "materials",
+      "textures",
+      "images",
+      "texture samplers"
+    ],
+    "joint_count": 46,
+    "mesh_count": 1,
+    "node_count": 48,
+    "skin_count": 1,
+    "triangle_count": 7440,
+    "vertex_count": 4437
+  },
+  "kind": "riftfrontier:boss_geometry_acceptance",
+  "output": {
+    "geometry_bytes": 681773,
+    "geometry_filename": "region_01_boss_dragon_evolved.sanitized.v1.gltf",
+    "geometry_sha256": "ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac",
+    "provenance_filename": "region_01_boss_dragon_evolved.sanitized.v1.provenance.json",
+    "provenance_sha256": "3e16877a0043cf980ac8de05bb518834c5e77bd72d96103b4984c65a2a5a4c6c"
+  },
+  "schema_version": 1,
+  "source": {
+    "filename": "Dragon_Evolved.gltf",
+    "id": "quaternius_ultimate_monsters:dragon_evolved",
+    "license_record": "projects/riftfrontier/docs/THIRD_PARTY_ASSETS.md",
+    "sha256": "39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c"
+  }
+}
