@@ -38,10 +38,12 @@ This file records external assets and source families considered or used by Rift
 - Exact source size: `991335` bytes
 - Exact source SHA-256: `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c`
 - Format: glTF 2.0
-- Direct source inspection: 1 mesh, 1 material (`Atlas`), 1 skin (`CharacterArmature`), 46 joints, 4,437 estimated vertices, 7,440 estimated triangles, bounds approximately 5.4752 × 2.8579 × 2.4156
+- Direct source inspection: 1 mesh, 1 material (`Atlas`), 1 skin (`CharacterArmature`), 46 joints, 4,437 vertices, 7,440 triangles, bounds 5.475212574 × 2.857860476 × 2.415597856 source units.
 - Source clips: `Death`, `Fast_Flying`, `Flying_Idle`, `Headbutt`, `HitReact`, `No`, `Punch`, `Yes`
 - Rig capability: independent head/neck, bilateral forelimb/finger chains, bilateral four-segment wing chains and four-segment body chain; source `Punch`/`Headbutt` demonstrate articulated non-rigid attack motion.
-- Modified: no repository bytes imported yet; exact original source was inspected locally during selection.
+- Verified conversion receipt: `assets/sources/region_01_boss_dragon_evolved.acceptance.json`.
+- Verified sanitizer output fingerprint: 681,773-byte canonical glTF, SHA-256 `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`; embedded geometry/skin/animation payload 381,212 bytes; 737 accessors and 737 bufferViews retained.
+- Verified art stripping: source image bufferView and primitive material binding plus top-level materials/textures/images/samplers are absent from the sanitized derivation. Source `Atlas` pixels are not accepted as production art.
 - Concrete production use: geometry/rig derivation source for the Region 01 first boss.
 - Explicit non-approval: original `Atlas` texture/style is **not** approved unchanged as Region 01 final art; final material/texture treatment, authored attack clips, renderer integration, hitbox alignment, VFX/sound and field-play remain separate production gates.
 - Decision record: `REGION_01_BOSS_CANDIDATE_AUDIT.md`.
@@ -116,4 +118,4 @@ Before adding external bytes to `src/main/resources` or any distributable packag
 6. verify that redistribution of the actual downloaded file is allowed, not merely use in screenshots or local projects;
 7. inspect the final JAR to ensure no unrelated source-pack files were accidentally bundled.
 
-For `Dragon Evolved`, step 1–3 are now satisfied for the geometry/rig derivation source. Physical repository import, derived resource paths and JAR inclusion are still pending and must be recorded when they actually occur.
+For `Dragon Evolved`, source selection and exact deterministic sanitizer acceptance are now recorded. The accepted sanitized bytes are still a pre-runtime derivation artifact, not a final renderable production MODEL resource; runtime-format conversion, final material/texture treatment, `Used in` runtime paths and JAR inclusion remain pending.
