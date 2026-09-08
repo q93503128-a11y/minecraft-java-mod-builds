@@ -16,27 +16,35 @@ This file records external assets and source families considered or used by Rift
 - Status: `CANDIDATE`
 - Author: Quaternius
 - Source: https://quaternius.com/packs/ultimatemonsters.html
+- Creator release post: https://www.patreon.com/posts/ultimate-50-73633148
 - Source date observed: 2026-09-09
-- License / usage note: source page declares CC0; personal and commercial use allowed.
+- License / usage note: source page declares CC0; creator release post states the pack is free to use in any project, including commercially.
 - Formats advertised: FBX, OBJ, Blend, glTF
 - Animated: yes
-- Modified: no repository asset imported yet
-- Intended/possible use: Region 01 boss/elite model and rig candidate source; animation/conversion study
-- Current decision: bounded candidate audit completed in `REGION_01_BOSS_CANDIDATE_AUDIT.md`. No production asset selected.
+- Modified: source family not bundled wholesale
+- Intended/possible use: Region 01 boss/elite model and rig source family; animation/conversion study
+- Current decision: one exact member, `Dragon Evolved`, is now selected as the Region 01 first-boss geometry/rig derivation source. The pack as a whole remains unselected.
 
 #### Dragon Evolved
 
-- Status: `CANDIDATE`
+- Status: `SELECTED`
 - Author: Quaternius
 - Original family source: https://quaternius.com/packs/ultimatemonsters.html
-- Individual discovery source: https://poly.pizza/m/LlwD0QNUPj
-- License: CC0 / public domain
-- Formats observed: FBX / GLTF within the published family
-- Technical evidence observed: 4,350 vertices, 7,438 triangles, 8 animations, 70 nodes, reported bounds 5.48 × 2.86 × 2.42 from a public GLB parser
-- Immutable cross-check: public mirror commit `371f69f03e295c509faa65f5a4bd20ad32834b8f`, GLB blob SHA `114c2311759fd037d01ffd74c1ca4a1199f874eb`, 436,000 bytes
-- Modified: no
-- Intended use: direct binary rig/animation inspection for Region 01 first boss
-- Current decision: conditional technical front-runner only. Exact rig, clip names, materials, deformation, Minecraft scale and style adaptation are not yet verified; **NOT SELECTED**.
+- Creator release/download source: https://www.patreon.com/posts/ultimate-50-73633148 → Quaternius Google Drive distribution
+- Original Drive file ID: `1Mcfuavq7F4itG9xhqc-20_IL257ZY2_3`
+- Individual discovery cross-check: https://poly.pizza/m/LlwD0QNUPj
+- License: CC0 1.0 / public domain dedication
+- Exact source file: `Dragon_Evolved.gltf`
+- Exact source size: `991335` bytes
+- Exact source SHA-256: `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c`
+- Format: glTF 2.0
+- Direct source inspection: 1 mesh, 1 material (`Atlas`), 1 skin (`CharacterArmature`), 46 joints, 4,437 estimated vertices, 7,440 estimated triangles, bounds approximately 5.4752 × 2.8579 × 2.4156
+- Source clips: `Death`, `Fast_Flying`, `Flying_Idle`, `Headbutt`, `HitReact`, `No`, `Punch`, `Yes`
+- Rig capability: independent head/neck, bilateral forelimb/finger chains, bilateral four-segment wing chains and four-segment body chain; source `Punch`/`Headbutt` demonstrate articulated non-rigid attack motion.
+- Modified: no repository bytes imported yet; exact original source was inspected locally during selection.
+- Concrete production use: geometry/rig derivation source for the Region 01 first boss.
+- Explicit non-approval: original `Atlas` texture/style is **not** approved unchanged as Region 01 final art; final material/texture treatment, authored attack clips, renderer integration, hitbox alignment, VFX/sound and field-play remain separate production gates.
+- Decision record: `REGION_01_BOSS_CANDIDATE_AUDIT.md`.
 
 #### Blue Demon
 
@@ -52,7 +60,7 @@ This file records external assets and source families considered or used by Rift
 - Source: https://poly.pizza/m/iHEuXiH6Aj
 - License: CC0 / public domain
 - Intended use considered: Region 01 first boss
-- Rejection: readable flying silhouette, but insufficient verified attack-bearing mass/rig vocabulary for the current grounded commitment/displacement presentation contract.
+- Rejection: readable flying silhouette, but insufficient verified attack-bearing vocabulary relative to the selected Dragon Evolved rig for the current boss contract.
 
 #### Mushroom King
 
@@ -88,7 +96,7 @@ This file records external assets and source families considered or used by Rift
 - License / usage note: inspected pages identify the entries as Public Domain / CC0.
 - Modified: no
 - Intended/possible use: discovery and provenance cross-check
-- Current decision: prefer the original creator/source record when a production asset is eventually bundled.
+- Current decision: original creator source is authoritative for the selected Dragon Evolved asset.
 
 ## Runtime/library note — not an asset
 
@@ -107,3 +115,5 @@ Before adding external bytes to `src/main/resources` or any distributable packag
 5. record exact `Used in` paths/content IDs;
 6. verify that redistribution of the actual downloaded file is allowed, not merely use in screenshots or local projects;
 7. inspect the final JAR to ensure no unrelated source-pack files were accidentally bundled.
+
+For `Dragon Evolved`, step 1–3 are now satisfied for the geometry/rig derivation source. Physical repository import, derived resource paths and JAR inclusion are still pending and must be recorded when they actually occur.
