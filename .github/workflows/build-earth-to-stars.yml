@@ -1,0 +1,88 @@
+name: Build earth-to-stars
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/earth-to-stars/src/**'
+      - 'projects/earth-to-stars/build.gradle'
+      - 'projects/earth-to-stars/gradle.properties'
+      - 'projects/earth-to-stars/settings.gradle'
+      - 'projects/earth-to-stars/gradle/**'
+      - 'projects/earth-to-stars/gradlew'
+      - 'projects/earth-to-stars/gradlew.bat'
+      - 'projects/earth-to-stars/tools/**'
+      - '.github/workflows/build-earth-to-stars.yml'
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: projects/earth-to-stars
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: gradle
+      - name: Verify toolchain
+        run: |
+          java -version
+          chmod +x gradlew
+          ./gradlew --version
+      - name: Clean test and build
+        shell: bash
+        run: |
+          mkdir -p build/logs
+          set -o pipefail
+          ./gradlew --no-daemon clean test build --stacktrace 2>&1 | tee build/logs/build.log
+      - name: Verify production JAR
+        run: python3 tools/verify_jar.py
+      - name: Write bootstrap report
+        shell: bash
+        run: |
+          JAR=$(ls build/libs/earth_to_stars-*.jar | head -n1)
+          SHA=$(cat "$JAR.sha256")
+          cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
+          # EARTH TO STARS — M0/P0-A Build Report
+
+          - Commit: $GITHUB_SHA
+          - Java: 25
+          - Gradle: 9.2.1 wrapper
+          - Minecraft: 26.2
+          - NeoForge: 26.2.0.38-beta
+          - clean/test/build: PASS
+          - production JAR verify: PASS
+          - SHA-256: $SHA
+          - datagen: NOT RUN
+          - GameTest: NOT REGISTERED / NOT RUN
+          - dedicated server smoke: NOT RUN
+          - client smoke: NOT RUN
+          - multiplayer live session: NOT TESTED
+          EOF
+      - name: Upload deliverables
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: earth-to-stars-0.1.0-alpha.1-deliverables
+          path: |
+            projects/earth-to-stars/build/libs/earth_to_stars-*.jar
+            projects/earth-to-stars/build/libs/earth_to_stars-*.jar.sha256
+            projects/earth-to-stars/build/BUILD_AND_RUNTIME_REPORT.md
+          retention-days: 7
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: earth-to-stars-0.1.0-alpha.1-logs
+          path: projects/earth-to-stars/build/logs/
+          if-no-files-found: ignore
+          retention-days: 7
