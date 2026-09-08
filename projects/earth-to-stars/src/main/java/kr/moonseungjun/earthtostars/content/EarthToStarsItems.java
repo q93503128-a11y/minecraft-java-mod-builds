@@ -43,6 +43,21 @@ public final class EarthToStarsItems {
             props -> props.stacksTo(1)
     );
 
+    // Render-only tokens. They are intentionally never added to a creative tab or recipe.
+    // ItemDisplay uses their baked OBJ models while gameplay remains on authoritative ship/mission state.
+    public static final DeferredItem<Item> STARTER_CRAFT_VISUAL = ITEMS.registerSimpleItem(
+            "starter_craft_visual",
+            props -> props.stacksTo(1)
+    );
+    public static final DeferredItem<Item> ORBITAL_SALVAGE_VISUAL = ITEMS.registerSimpleItem(
+            "orbital_salvage_visual",
+            props -> props.stacksTo(1)
+    );
+    public static final DeferredItem<Item> ORBITAL_INTERCEPTOR_VISUAL = ITEMS.registerSimpleItem(
+            "orbital_interceptor_visual",
+            props -> props.stacksTo(1)
+    );
+
     private EarthToStarsItems() {
     }
 
