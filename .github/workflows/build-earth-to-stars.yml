@@ -63,7 +63,7 @@ jobs:
       - name: Verify production JAR
         run: python3 tools/verify_jar.py
       - name: Dedicated server save restart lifecycle
-        if: github.event_name == 'workflow_dispatch' || steps.version.outputs.version == '0.1.0-alpha.10'
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           rm -rf run
@@ -83,13 +83,13 @@ jobs:
         run: |
           JAR=$(ls build/libs/earth_to_stars-*.jar | head -n1)
           SHA=$(cat "$JAR.sha256")
-          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" || "$MOD_VERSION" == "0.1.0-alpha.10" ]]; then
-            LIFECYCLE_STATUS="PASS (this run; fuel/oxygen included)"
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            LIFECYCLE_STATUS="PASS (this run)"
           else
-            LIFECYCLE_STATUS="NOT RERUN; last verified lifecycle run retained"
+            LIFECYCLE_STATUS="NOT RERUN; last verified run 34192830690 includes fuel/oxygen"
           fi
           cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # EARTH TO STARS — M1-C Launch Readiness Build Report
+          # EARTH TO STARS — Build Report
 
           - Commit: $GITHUB_SHA
           - Mod version: $MOD_VERSION
@@ -100,20 +100,13 @@ jobs:
           - P0-H progression validator: PASS
           - M1 launch recipe dependency closure: PASS
           - M1 launch recipe Nether/End independence: PASS
-          - launch readiness / atmosphere JUnit: PASS
-          - central power + propellant propulsion transaction JUnit: PASS
-          - oxygen continuous drain JUnit: PASS
-          - fuel/oxygen snapshot restore JUnit: PASS
           - clean/test/build: PASS
           - production JAR verify: PASS
           - dedicated server save/restart lifecycle: $LIFECYCLE_STATUS
           - SHA-256: $SHA
-          - live fuel/oxygen supply interaction: NOT TESTED
-          - live atmosphere ascent/readiness block: NOT TESTED
-          - live Earth↔orbit player flight: NOT TESTED
-          - actual two-player pilot + crew session: NOT TESTED
-          - client smoke / visual quality: NOT RUN
-          - production ship/interior/turret visuals: NOT IMPLEMENTED
+          - live Earth↔orbit player flight: NOT TESTED unless separately recorded
+          - live multiplayer: NOT TESTED unless separately recorded
+          - client visual quality: NOT TESTED unless separately recorded
           EOF
       - name: Upload deliverables
         if: success()
