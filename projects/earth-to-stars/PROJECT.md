@@ -3,14 +3,14 @@
 - Slug: `earth-to-stars`
 - Mod ID: `earth_to_stars`
 - Namespace: `earth_to_stars`
-- Mod version: `0.1.0-alpha.11`
+- Mod version: `0.1.0-alpha.12`
 - Minecraft: `26.2`
 - Java: `25`
 - Loader: `NeoForge`
 - Loader version: `26.2.0.38-beta`
 - Gradle: `9.2.1`
 - Build plugin: `ModDevGradle 2.0.143`
-- Final JAR: `earth_to_stars-0.1.0-alpha.11.jar`
+- Final JAR: `earth_to_stars-0.1.0-alpha.12.jar`
 - Existing-world compatibility: save roots / registry IDs / ShipId / module IDs are compatibility contracts. Current ShipState schema is 2; schema 1 migrates by adding the missing sensor slot without resetting the ship.
 - Required dependencies: Minecraft, NeoForge
 - Optional external mods/libraries: none approved as a hard runtime dependency. Any addition requires current 26.2 compatibility, maintenance, license, multiplayer and performance review.
@@ -89,36 +89,41 @@ Clients provide input/rendering/animation/UI/safe prediction only. A client neve
 
 # Current implementation baseline
 
-## 0.1.0-alpha.11 — M1-D Orbital Recovery + First Contact Backend
+## 0.1.0-alpha.12 — Live-Acceptance Rescue
 
 Latest verified implementation/CI commit:
 
-`afe0d181667582877e911ef279a869c7e31d0c23`
+`52dadef15fa0bb6faf5048c51ae67892db191653`
 
-GitHub Actions `Build earth-to-stars` run `34197931566`: **PASS**
+GitHub Actions `Build earth-to-stars` run `34232842854`: **PASS**
 
 Verified JAR SHA-256:
 
-`f818686c7dde57e7a33e27967069c7e2074ce6b97febd0b13721e1165ac37fb0`
+`b44f85ba2d05b885b1319822a0044e70535bff93696900b8ba5e191e04b51c15`
 
 Verified in this gate:
 
 - P0-H progression validator
 - actual M1 launch recipe dependency closure
 - actual launch recipe Nether/End independence
-- starter empty weapon/sensor-slot contract
-- recovered autocannon/scanner capability progression
-- sensor range `64 → 96`
-- ShipState schema 1→2 sensor-slot migration
-- existing P0/M1 regression JUnit
+- alpha.12 live-acceptance static contract
+- actual passenger/control source contract
+- safe authoritative ship retirement source contract
+- Minecraft 26.2 runtime API contract for actionbar feedback, ItemDisplay lookup and collision signature
+- three distinct Kenney Space Kit OBJ/MTL visuals packaged
+- existing M1-D starter/recovery/scanner/schema-migration JUnit regression
 - Minecraft 26.2 / NeoForge 26.2.0.38-beta compile
 - `clean test build`
 - production JAR verify
-- orbital mission / recovered sensor resources packaged
-- dedicated server first boot/save/shutdown
-- same-world second boot/restore
 
-Because alpha.11 changes ShipState schema, the expensive two-boot lifecycle was deliberately rerun once. After success, ordinary pushes returned to the cheaper gate; lifecycle is explicit `workflow_dispatch` unless a future persistence risk justifies another rerun.
+Dedicated resource-load smoke run `34233144671`: **PASS**
+
+- dedicated server reached normal `Done` startup
+- `RecipeManager` loaded 1591 recipes
+- no alpha.11-style recipe parsing error was detected
+- `earth_to_stars:ship_interiors` and `earth_to_stars:orbital_space` loaded on the server
+
+The expensive two-boot save/restart lifecycle was **not rerun** because alpha.12 did not change the ShipState schema or persistence layout. The latest two-boot persistence verification remains run `34197931566`.
 
 Not verified by this gate:
 
@@ -171,7 +176,7 @@ Server deployment verifies:
 2. 3×3×3 clearance
 3. no existing registered owned ship
 4. authoritative starter ShipState creation
-5. exterior proxy placement
+5. custom `ShipExteriorEntity` + model-backed spacecraft visual placement
 6. ShipSavedData persistence
 7. ShipSystemsRuntime initialization/persistence
 8. server-issued pilot control lease
@@ -274,7 +279,7 @@ Important rules:
 - if the player loses/misses the core and returns to Earth without installing the scanner, session-only clear resets so a later Orbit trip can recover the progression item again.
 - scanner install is Earth-only and consumes the core only on success.
 
-Current ArmorStand salvage/interceptor and technical cockpit tether are functional proxies only.
+Current salvage/interceptor presentation uses distinct Kenney Space Kit OBJ-backed visuals, and the pilot uses the actual `ShipExteriorEntity` passenger relationship. These are now real runtime presentation/vehicle paths, while client visual feel still requires live review.
 
 ---
 
@@ -300,17 +305,15 @@ ShipState schema 2 adds the `sensor` slot. Schema 1 decode preserves existing id
 
 # Current visual boundary
 
-The following are NOT production quality:
+alpha.12 removed the live-acceptance blockers that used ArmorStand/fake tether presentation. The following still require later visual/UX production work or live review:
 
-- ArmorStand ship exterior
-- ArmorStand salvage/interceptor proxies
-- vanilla texture item proxies
-- technical cockpit tether
 - technical linked-interior room
-- current orbital-space presentation
-- command-based technical controls
+- current orbital-space environment presentation
+- command-based technical controls that remain outside the main survival loop
 - logical projectile visual
 - temporary use-on-block supply/upgrade UX
+- cockpit/camera/interpolation polish
+- live scale, seat-position, silhouette and readability review for the three imported spacecraft meshes
 
 Production ship/cockpit/interior/turret/hostile/salvage/UI/VFX/sound/space visuals must pass `docs/03_UI_ART_REFERENCE_GATE.md` and use the license ledger where external assets are involved.
 
@@ -318,7 +321,7 @@ Production ship/cockpit/interior/turret/hostile/salvage/UI/VFX/sound/space visua
 
 # Current status / next work
 
-`M1-D ORBITAL RECOVERY + FIRST CONTACT BACKEND VERIFIED / SHIPSTATE SCHEMA 1→2 LIFECYCLE VERIFIED / FULL EARTH→ORBIT→RETURN LIVE ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`
+`ALPHA.12 LIVE-ACCEPTANCE RESCUE BUILD + DEDICATED RESOURCE LOAD VERIFIED / LIVE CLIENT ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`
 
 Do **not** expand to Moon/asteroid content merely because the backend builds.
 

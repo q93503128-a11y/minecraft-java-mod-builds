@@ -2,6 +2,62 @@
 
 이 문서는 실제 정본 변경을 기록한다.
 
+## 2026-09-08 — alpha.12 Live-Acceptance Rescue
+
+### Fixed / Changed
+
+- mod version `0.1.0-alpha.12`
+- ArmorStand starter ship runtime 제거, custom `ShipExteriorEntity` 도입
+- pilot을 실제 passenger / `startRiding()` 구조로 전환
+- 탑승 중인 실제 vehicle과 일치하는 player에게만 ship control packet 승인
+- fake `tetherController` 제거
+- Shift를 비행 pitch-down에서 제거해 vanilla 하차 동작 보존; pitch-down은 Ctrl/sprint-key 경로 사용
+- Earth↔Orbit transition을 하차 → player teleport → same-ShipId target exterior 생성 → 재탑승 → 새 control session 발급 구조로 연결
+- 함선을 때리는 동작은 비파괴로 변경; owner의 명시적 pack-up interaction만 authoritative retirement 수행
+- retirement transaction이 repository / ShipSavedData / ShipSystemsSavedData / interior / turret / mission / runtime control을 함께 정리해 orphan ShipState 방지
+- 보급 full/no-ship 반복 feedback을 chat 누적 대신 actionbar로 전환
+- Minecraft 26.2 actionbar / ItemDisplay / collision API에 맞게 runtime 교정
+- 6개 M1 recipe ingredient를 Minecraft 26.2 string syntax로 교정하고 validator로 회귀 차단
+- Kenney Space Kit CC0 OBJ/MTL 직접 패키징
+  - starter craft: `craft_speederA`
+  - orbital salvage: `craft_miner`
+  - first interceptor: `craft_racer`
+- `launch_craft_kit`도 vanilla placeholder 대신 spacecraft OBJ model 사용
+- alpha.12 acceptance validator에 ArmorStand/tether/obsolete recipe/obsolete 26.2 API/model packaging 회귀 gate 추가
+
+### Verification
+
+Build source commit: `52dadef15fa0bb6faf5048c51ae67892db191653`
+
+GitHub Actions `Build earth-to-stars` run `34232842854`: `PASS`
+
+- progression/M1 launch/Nether-End independence validators: `PASS`
+- alpha.12 static acceptance: `PASS`
+- existing JUnit regression: `PASS`
+- `clean test build`: `PASS`
+- production JAR verify: `PASS`
+- JAR: `earth_to_stars-0.1.0-alpha.12.jar`
+- SHA-256: `b44f85ba2d05b885b1319822a0044e70535bff93696900b8ba5e191e04b51c15`
+
+Dedicated resource-load smoke run `34233144671`: `PASS`
+
+- dedicated server reached normal startup completion
+- 1591 recipes loaded
+- alpha.11 recipe parsing error pattern not observed
+- `earth_to_stars:ship_interiors` / `earth_to_stars:orbital_space` present
+
+Persistence schema/layout did not change, so the expensive two-boot save/restart lifecycle was not rerun. Last verified two-boot run remains `34197931566`.
+
+- live Earth→Orbit→salvage→combat→Earth return: `NOT PLAYTESTED`
+- client visual quality/scale/camera: `NOT PLAYTESTED`
+- live multiplayer: `NOT TESTED`
+
+### Status
+
+`ALPHA.12 LIVE-ACCEPTANCE RESCUE BUILD + DEDICATED RESOURCE LOAD VERIFIED / LIVE CLIENT ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`
+
+---
+
 ## 2026-09-08 — M1-D Orbital salvage + first contact + return upgrade
 
 ### Added / Changed

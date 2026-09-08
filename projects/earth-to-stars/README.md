@@ -2,7 +2,7 @@
 
 Minecraft Java / NeoForge 26.2 기반의 SF 우주 개척·모듈식 함선 성장 프로젝트다.
 
-> **상태: M1-D ORBITAL RECOVERY + FIRST CONTACT BACKEND VERIFIED / SHIPSTATE SCHEMA 1→2 LIFECYCLE VERIFIED / FULL EARTH→ORBIT→RETURN LIVE ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED**
+> **상태: ALPHA.12 LIVE-ACCEPTANCE RESCUE BUILD + DEDICATED RESOURCE LOAD VERIFIED / LIVE CLIENT ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED**
 
 ## 한 줄 설명
 
@@ -61,7 +61,7 @@ Minecraft 생존
 
 ---
 
-# 현재 구현 — 0.1.0-alpha.11
+# 현재 구현 — 0.1.0-alpha.12
 
 ## M1-A/B — Earth Preparation + First Launch Craft
 
@@ -154,7 +154,7 @@ Orbit 진입
 ### 첫 salvage
 
 - 함선별 server-owned encounter 하나.
-- 현재 visible salvage는 ArmorStand 기술 proxy다.
+- 현재 visible salvage는 Kenney Space Kit `craft_miner` OBJ 기반 model-backed visual이다.
 - 접근 radius에 들어오면 server가 실제 `turret` slot을 검사한다.
 - 성공하면 `autocannon_mk1`을 ShipState에 설치하고 즉시 저장한다.
 - 실제 autocannon module이 없으면 turret command/runtime도 무장을 가짜 생성하지 않는다.
@@ -180,9 +180,9 @@ Orbit 진입
 
 같은 Orbit session에서 첫 적을 잡은 뒤에는 즉시 다시 생성되지 않는다. 다만 core를 놓치거나 잃었는데 scanner도 아직 없다면 progression이 영구 막혀서는 안 된다. 그래서 함선이 Earth로 돌아오면 session-only clear를 해제하고 다음 Orbit 진입에서 first-contact를 다시 수행할 수 있다.
 
-### technical cockpit tether
+### actual pilot vehicle
 
-현재 production cockpit이 없기 때문에 pilot이 움직이는 exterior에서 멀어져 server control range 밖으로 나가지 않도록 controlling player를 authoritative exterior와 함께 이동시키는 기술용 tether를 사용한다. 이건 final 탑승/카메라 시스템이 아니다.
+alpha.12부터 pilot은 `ShipExteriorEntity`에 실제 passenger로 탑승한다. 서버는 `player.getVehicle() == ship exterior`인 탑승자에게만 조종 입력을 허용한다. Shift는 Minecraft 기본 하차에 남기고 pitch-down은 Ctrl/sprint key 계열로 분리했다. Earth↔Orbit 전환도 하차 → player teleport → 같은 ShipId의 target exterior 생성 → 재탑승 → control session 재발급 순서로 처리한다.
 
 ---
 
@@ -217,44 +217,47 @@ alpha.11에서 ShipState schema가 `1 → 2`로 올라갔다. schema 1 함선은
 
 # 최신 검증 기준
 
-검증 기준 source commit: `afe0d181667582877e911ef279a869c7e31d0c23`
+검증 기준 source commit: `52dadef15fa0bb6faf5048c51ae67892db191653`
 
-GitHub Actions `Build earth-to-stars` run `34197931566`: **PASS**
+GitHub Actions `Build earth-to-stars` run `34232842854`: **PASS**
 
-- P0-H progression validator: PASS
-- M1 recipe dependency closure: PASS
-- M1 launch Nether/End independence: PASS
-- starter empty turret/sensor slots JUnit: PASS
-- recovered autocannon/scanner progression JUnit: PASS
-- sensor range 64→96 JUnit: PASS
-- ShipState schema 1→2 migration JUnit: PASS
-- existing regression JUnit: PASS
+- progression / M1 launch closure / Nether-End independence: PASS
+- alpha.12 acceptance static gate: PASS
+- actual passenger + safe retirement source contracts: PASS
+- Minecraft 26.2 API regression gate: PASS
+- three distinct Kenney OBJ/MTL visual resources packaged: PASS
+- existing P0/M1 JUnit regressions: PASS
 - `clean test build`: PASS
-- Minecraft 26.2 / NeoForge 26.2.0.38-beta compile: PASS
 - production JAR verify: PASS
-- orbital mission/recovered-sensor resources packaged: PASS
-- dedicated server first boot/save/shutdown: PASS
-- same-world second boot/restore: PASS
-- JAR: `earth_to_stars-0.1.0-alpha.11.jar`
-- SHA-256: `f818686c7dde57e7a33e27967069c7e2074ce6b97febd0b13721e1165ac37fb0`
+- JAR: `earth_to_stars-0.1.0-alpha.12.jar`
+- SHA-256: `b44f85ba2d05b885b1319822a0044e70535bff93696900b8ba5e191e04b51c15`
 
-ShipState schema 변경 위험 때문에 alpha.11에서는 dedicated two-boot lifecycle을 의도적으로 한 번 다시 실행했다. 성공 후 workflow는 다시 explicit `workflow_dispatch`에서만 비싼 lifecycle 검사를 수행한다.
+Dedicated server resource-load smoke run `34233144671`: **PASS**
+
+- Minecraft 26.2 / NeoForge 26.2.0.38-beta startup complete
+- 1591 recipes loaded
+- alpha.11에서 관측된 recipe parsing error 재현 없음
+- custom space/interior dimensions loaded
+
+Persistence schema/layout은 alpha.12에서 바뀌지 않았으므로 expensive two-boot save/restart lifecycle은 재실행하지 않았다. 마지막 two-boot persistence PASS는 run `34197931566`이다.
+
+- live Earth→Orbit→salvage→combat→Earth return cycle: `NOT PLAYTESTED`
+- live multiplayer: `NOT TESTED`
+- client visual quality: `NOT PLAYTESTED`
 
 ---
 
-# 기술 프록시 경계
+# 남은 production 품질 경계
 
-현재 다음은 final 품질이 아니다.
+alpha.12에서 ArmorStand ship/salvage/interceptor와 fake cockpit tether는 제거했다. 현재 다음은 아직 final 품질 또는 live acceptance가 아니다.
 
-- ArmorStand ship exterior
-- ArmorStand orbital salvage/interceptor
-- vanilla texture item proxy
-- technical cockpit tether
 - 기술용 `ship_interiors` room
-- 현재 `orbital_space` presentation
+- 현재 `orbital_space` environment presentation
 - 임시 use-on-block 보급/upgrade UX
-- command 기반 일부 조작면
+- command 기반 일부 기술 조작면
 - logical projectile visual
+- 실제 client에서의 cockpit/camera/interpolation
+- Kenney spacecraft mesh의 Minecraft 화면상 scale/seat/readability 최종 검수
 
 Production 함선/cockpit/interior/turret/hostile/salvage/UI/VFX/sound/space visual은 `docs/03_UI_ART_REFERENCE_GATE.md`를 통과한 뒤 제작한다.
 

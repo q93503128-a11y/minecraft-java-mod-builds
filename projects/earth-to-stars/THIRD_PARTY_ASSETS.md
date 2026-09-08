@@ -4,7 +4,7 @@
 
 **중요:** 이 목록에 있다고 해서 프로젝트에 직접 포함해도 된다는 뜻이 아니다. `REFERENCE`, `CODE RESEARCH`, `BASE CANDIDATE`, `DIRECT USE CANDIDATE`를 구분한다. 실제 파일을 repository에 넣기 전에는 라이선스와 현재 배포 조건을 다시 확인한다.
 
-현재 EARTH TO STARS 저장소에는 아래 외부 자산 파일을 직접 복사해 넣지 않았다.
+현재 EARTH TO STARS 저장소에는 Kenney Space Kit의 CC0 spacecraft OBJ/MTL 3종을 `DIRECT_USE`로 vendoring했다. 라이선스 권위 출처는 Kenney 공식 페이지이며, repository에 들어온 원본 mesh 파일은 아래 ledger에서 추적한다.
 
 검토 기준일: 2026-09-08
 
@@ -95,18 +95,24 @@
 
 ## 5. Kenney — Space Kit
 
-- Type: `BASE CANDIDATE / DIRECT USE CANDIDATE`
-- Source: Kenney
-- URL: https://kenney.nl/assets/space-kit
-- License observed during research: CC0
+- Type: `DIRECT_USE / EDITABLE_BASE`
+- Source / license authority: Kenney
+- Official URL: https://kenney.nl/assets/space-kit
+- License verified: CC0 1.0
 - Package size observed during research: about 150 3D models
-- Why useful:
-  - spacecraft/space props
-  - concept and silhouette base
-- Required adaptation:
-  - do not use as-is if visual language clashes with Minecraft or final ship system
-  - rework scale/material/texture language
-- Imported files: none
+- Current use:
+  - `craft_speederA` — starter launch craft
+  - `craft_miner` — orbital salvage
+  - `craft_racer` — first interceptor
+- Vendoring provenance:
+  - source bytes obtained from pinned public mirror `melonjs/melonJS@5ab23f5a7be8fe4a1fc7abbe225428106e8a833c`
+  - OBJ/MTL files identify `Created by Kenney (www.kenney.nl)`
+  - the mirror is a byte source, not the license authority; CC0 status is verified against Kenney's official asset page
+- Repository path: `src/main/resources/assets/earth_to_stars/models/kenney/space_kit/`
+- Modification policy:
+  - vendored OBJ/MTL source bytes are kept intact
+  - Minecraft-facing scale/orientation/presentation is adapted through NeoForge model/item resources and runtime transforms
+  - later replacement/rework is allowed if live client review finds scale/style/readability mismatch
 
 ---
 
@@ -207,7 +213,9 @@ Before any code or asset reuse:
 
 | ID | Asset | Author | Source URL | License | Use class | Modifications | Repository paths | Verified date |
 |---|---|---|---|---|---|---|---|---|
-| — | — | — | — | — | — | — | — | — |
+| ETS-KENNEY-SPACE-001 | `craft_speederA.obj/.mtl` | Kenney | https://kenney.nl/assets/space-kit | CC0 1.0 | `DIRECT_USE` | source mesh bytes unchanged; Minecraft wrapper/transform | `src/main/resources/assets/earth_to_stars/models/kenney/space_kit/craft_speederA.*` | 2026-09-08 |
+| ETS-KENNEY-SPACE-002 | `craft_miner.obj/.mtl` | Kenney | https://kenney.nl/assets/space-kit | CC0 1.0 | `DIRECT_USE` | source mesh bytes unchanged; Minecraft wrapper/transform | `src/main/resources/assets/earth_to_stars/models/kenney/space_kit/craft_miner.*` | 2026-09-08 |
+| ETS-KENNEY-SPACE-003 | `craft_racer.obj/.mtl` | Kenney | https://kenney.nl/assets/space-kit | CC0 1.0 | `DIRECT_USE` | source mesh bytes unchanged; Minecraft wrapper/transform | `src/main/resources/assets/earth_to_stars/models/kenney/space_kit/craft_racer.*` | 2026-09-08 |
 
 Use class values:
 

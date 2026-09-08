@@ -25,11 +25,11 @@ Earth 생존/채집
 
 # 1. M1 진행 상태
 
-현재 버전: `0.1.0-alpha.11`
+현재 버전: `0.1.0-alpha.12`
 
 현재 상태:
 
-`M1-D ORBITAL RECOVERY + FIRST CONTACT BACKEND VERIFIED / SHIPSTATE SCHEMA 1→2 LIFECYCLE VERIFIED / FULL EARTH→ORBIT→RETURN LIVE ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`
+`ALPHA.12 LIVE-ACCEPTANCE RESCUE BUILD + DEDICATED RESOURCE LOAD VERIFIED / LIVE CLIENT ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`
 
 완료된 자동/서버 기술축:
 
@@ -60,7 +60,7 @@ Earth 생존/채집
 - scanner 설치 후 기본 센서 range `64 → 96`
 - 첫 hostile clear 이후 같은 원정에서 보상 무한 생성 방지
 - sensor core를 놓치고 귀환한 경우 다음 궤도 진입에서 first-contact를 다시 회수 가능하게 하는 anti-soft-lock reset
-- technical cockpit tether로 pilot/exterior control-authority drift 방지
+- actual `ShipExteriorEntity` passenger 탑승 + 탑승자 전용 control authority
 - ShipState schema 1→2 sensor-slot migration
 - Propellant/Oxygen SavedData persistence 및 구 save 기본값 migration
 - dedicated server save → shutdown → restart lifecycle 재검증
@@ -69,7 +69,7 @@ Earth 생존/채집
 아직 실제 플레이 검증되지 않은 축:
 
 - crafting book/client recipe usability
-- item rendering/temporary icons in client
+- imported spacecraft OBJ의 실제 client scale/seat/readability
 - in-world launch package deployment
 - propellant / oxygen 실제 보급 조작감
 - actual pilot controls/camera feel
@@ -81,6 +81,30 @@ Earth 생존/채집
 - recovered sensor core pickup/install UX
 - scanner range 변화가 실제 플레이에서 체감되는지
 - multiplayer pilot + gunner + linked interior crew session
+
+## 1.1 alpha.12 Live-Acceptance Rescue 검증
+
+alpha.11 실플레이 실패를 닫기 위해 alpha.12에서 다음을 현재 M1 계약으로 승격했다.
+
+- ArmorStand starter ship 제거 → custom `ShipExteriorEntity`
+- fake controller tether 제거 → actual passenger / `startRiding()`
+- 탑승자만 ship control packet 승인
+- Shift 기본 하차 보존, pitch-down은 Ctrl/sprint key 계열로 분리
+- Earth↔Orbit 전환에서 동일 ShipId 유지 + target exterior 재생성 + pilot 재탑승 + control session 재발급
+- punching은 비파괴; 정지한 지구 함선의 owner `Shift+우클릭`만 pack-up lifecycle 실행
+- pack-up transaction이 repository / ShipSavedData / ShipSystemsSavedData / interior / turret / mission / runtime control을 함께 정리
+- full/no-ship 보급 피드백은 chat 누적 대신 actionbar 사용
+- Minecraft 26.2 recipe ingredient string 형식 적용 및 validator 잠금
+- starter/salvage/interceptor에 각각 `craft_speederA` / `craft_miner` / `craft_racer` OBJ visual 사용
+
+자동 검증:
+
+- build run `34232842854`: `PASS`
+- dedicated resource-load smoke run `34233144671`: `PASS`
+- production JAR: `earth_to_stars-0.1.0-alpha.12.jar`
+- SHA-256: `b44f85ba2d05b885b1319822a0044e70535bff93696900b8ba5e191e04b51c15`
+
+이 검증은 실제 client 조종감/카메라/모델 스케일/전투 feel을 증명하지 않는다. 해당 축은 live client acceptance에서 판정한다.
 
 ---
 
@@ -233,7 +257,7 @@ ID: `earth_to_stars:recovered_sensor_core`
 2. 클릭 위치 위에 3×3×3 조립 공간이 비어 있는가.
 3. 해당 플레이어에게 이미 등록된 함선이 없는가.
 4. authoritative ShipState를 만들 수 있는가.
-5. exterior proxy를 월드에 생성할 수 있는가.
+5. custom `ShipExteriorEntity`와 model-backed spacecraft visual을 월드에 생성할 수 있는가.
 6. ShipSavedData에 기록할 수 있는가.
 7. central ShipSystemsRuntime을 만들고 저장할 수 있는가.
 8. pilot control lease를 서버가 발급할 수 있는가.
@@ -246,7 +270,7 @@ ID: `earth_to_stars:recovered_sensor_core`
 
 - client가 ShipId나 성공 결과를 결정하지 않는다.
 - existing ship을 새 패키지가 덮어쓰지 않는다.
-- 현재 ArmorStand exterior는 기술 프록시이며 production ship model이 아니다.
+- alpha.12부터 ArmorStand exterior는 사용하지 않는다. 실제 탑승용 `ShipExteriorEntity`와 Kenney Space Kit `craft_speederA` OBJ 기반 visual을 분리해 사용한다.
 
 ---
 
