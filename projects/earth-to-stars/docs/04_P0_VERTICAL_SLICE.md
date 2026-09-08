@@ -8,7 +8,7 @@ P0는 콘텐츠를 많이 만드는 단계가 아니다. 핵심 위험을 작은
 
 # 1. 현재 상태
 
-`M0 VERIFIED / P0-A SAVEDDATA ADAPTER BUILD VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / P0-D LINKED INTERIOR BACKEND BUILD VERIFIED / LIVE INTEGRATION DEFERRED / P0-E NEXT`
+`M0 VERIFIED / P0-A SAVEDDATA ADAPTER BUILD VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / P0-D LINKED INTERIOR BACKEND BUILD VERIFIED / P0-E TURRET BACKEND BUILD VERIFIED / LIVE INTEGRATION DEFERRED / P0-F NEXT`
 
 ## 자동 검증된 기술축
 
@@ -18,15 +18,20 @@ P0는 콘텐츠를 많이 만드는 단계가 아니다. 핵심 위험을 작은
 - Earth↔orbital-space transition-policy/runtime adapter
 - server-global Ship SavedData adapter
 - stable linked interior allocation/persistence backend
+- representative autocannon manual/auto state machine
+- exclusive turret control lease + replay rejection
+- ammo / cooldown / legal firing arc rule
+- ship-level shared `SensorGrid` contact cache boundary
+- server-side P0 logical projectile/damage authority boundary
 - `orbital_space` / `ship_interiors` 기술 차원 production-JAR packaging
-- P0-A/B/C/D 순수 JUnit 회귀
+- P0-A/B/C/D/E 순수 JUnit 회귀
 
-최신 P0-D 자동 검증:
+최신 P0-E 자동 검증:
 
-- implementation commit: `492d8fa0536b23881591ad9a31b0501c7048b6e3`
-- Actions run: `34183711601`
-- alpha: `0.1.0-alpha.4`
-- SHA-256: `a5f3d8ffb24869c6085079af40106a3830b12ce7ea53e57775930b372fc03284`
+- implementation/final CI commit: `85e4003223839dd3fe24e87e8fd8382a1931e693`
+- Actions run: `34186350799`
+- alpha: `0.1.0-alpha.5`
+- SHA-256: `53499a1cf6f14bd21cfefc8cdd095b2e2999c322c20c1be8c660d005efd48835`
 
 ## 아직 실게임 검증되지 않은 것
 
@@ -38,10 +43,12 @@ P0는 콘텐츠를 많이 만드는 단계가 아니다. 핵심 위험을 작은
 - 두 플레이어의 동일 interior 동시 체류
 - 한 명이 외부 조종 중 다른 승무원이 내부에 남는 lifecycle
 - actual multiplayer 2+ player session
-- representative turret gameplay
+- 실제 manual turret 조준/사격감
+- 실제 AUTO_DEFENSE 전투/타격/피드백
+- projectile visual / tracer / impact / sound
 - production visual quality
 
-위 항목은 자동 컴파일 성공만으로 완료라고 표현하지 않는다. P0-E/F까지 기술축을 더 만든 뒤 P0-G에서 실제 Minecraft lifecycle/multiplayer 검증을 의미 있는 묶음으로 수행한다.
+위 항목은 자동 컴파일 성공만으로 완료라고 표현하지 않는다. P0-F까지 기술축을 더 만든 뒤 P0-G에서 실제 Minecraft lifecycle/multiplayer 검증을 의미 있는 묶음으로 수행한다.
 
 ---
 
@@ -62,6 +69,7 @@ P0는 콘텐츠를 많이 만드는 단계가 아니다. 핵심 위험을 작은
 - server/client run configs
 - project-specific GitHub Actions
 - production JAR verifier / SHA report
+- `mod_version`에서 artifact/report 버전을 자동 파생하는 CI
 
 ## 현재 상태
 
@@ -97,7 +105,7 @@ Minecraft 렌더링 없이도 함선 게임의 서버 정본을 만든다.
 - duplicate instance rejection
 - serialization round trip
 - schema version validation
-- P0-B/C/D에서 regression
+- P0-B/C/D/E에서 regression
 
 ## 현재 상태
 
@@ -147,7 +155,7 @@ B형 함선을 실제 Minecraft에서 움직일 수 있는 최소 외부 표현�
 - interpolation
 - reconnect lease cleanup
 
-DEBUG_ONLY 외형을 final visual로 간주하지 않는다.
+기술 프록시 외형을 final visual로 간주하지 않는다.
 
 ---
 
@@ -214,7 +222,7 @@ P0-D linked interior의 승무원은 외부 함선 좌표를 따라 매 tick 이
 - 하나의 `earth_to_stars:ship_interiors` technical dimension
 - per-ship 2048-block isolated cell
 - persistent slot collision/corruption rejection
-- permission-gated nearest exterior→interior entry adapter
+- `INTERIOR_ACCESS` permission-gated exterior→interior entry adapter
 - interior→current exterior dimension/transform return adapter
 - exterior unavailable / invalid interior recovery path
 - login recovery path
@@ -250,7 +258,7 @@ P0-G에서 확인:
 
 ---
 
-# 7. P0-E — Representative Turret — NEXT
+# 7. P0-E — Representative Turret — BUILD VERIFIED
 
 ## 목표
 
@@ -258,20 +266,21 @@ P0-G에서 확인:
 
 ## 대표 무기
 
-`Test Autocannon` — 기술 프록시. 이름/모델/VFX를 production 콘텐츠로 사용하지 않는다.
+P0 `autocannon_mk1` — 기술 프록시. 현재 이름/수치/조작면/논리 projectile을 production 콘텐츠로 고정하지 않는다.
 
 선정 이유:
 
 - projectile
 - ammo
-- rotation
+- rotation/arc
 - target
 - fire rate
 - manual / auto
+- multiplayer control lease
 
 를 한 번에 검증할 수 있기 때문.
 
-## Control Modes
+## 구현된 Control Modes
 
 - `OFF`
 - `MANUAL`
@@ -282,69 +291,140 @@ P0-G에서 확인:
 ## Manual Flow
 
 ```text
-player requests turret control
-→ server permission + availability
-→ server grants weapon lease
-→ client aim/fire request
-→ server clamps yaw/pitch/arc
-→ server checks ammo/cooldown
-→ authoritative shot
-→ resource consumption / replicated result
+WEAPON_CONTROL permission
+→ MANUAL mode
+→ exclusive server weapon lease
+→ session UUID + sequence validation
+→ authoritative player aim request
+→ legal arc / ammo / cooldown validation
+→ server logical shot
 ```
+
+현재 `/earthtostars ship turret ...` 명령은 P0 조작면일 뿐이다. 최종 게임에서는 명령어가 아니라 실제 gunner station / key / camera / HUD로 교체한다.
 
 ## Auto Flow
 
 ```text
-central SensorGrid contacts
-→ threat filter
-→ weapon eligibility
-→ target assignment
-→ aim/fire decision
+shared ShipSensorGrid contacts
+→ hostile filter
+→ range / firing-arc eligibility
+→ target priority
+→ AUTO_DEFENSE fire
+→ same authoritative ammo/cooldown state
 ```
 
-각 포탑이 독립적으로 매 tick 큰 반경 world scan을 하는 구현은 금지한다.
+Minecraft P0 adapter는 함선당 contact cache를 10 tick 간격으로 갱신하며 `ShipId` hash로 scan phase를 분산한다. **각 포탑이 매 tick 큰 반경 world scan을 독립 수행하지 않는다.**
 
-## Acceptance
+현재 hostile 판정은 기술 검증용으로 Minecraft `Enemy` 계열만 사용한다. 장차 함선/세력/소유권/우호 관계를 포함한 target eligibility로 교체한다.
 
-- 두 플레이어가 같은 turret lease를 동시에 보유하지 못함
-- disconnect / mode switch 시 lease cleanup
-- no ammo = no shot
-- cooldown not ready = no shot
-- invalid arc = no shot
-- friendly/unauthorized target = no auto fire
-- manual이 명시적 상태 전환으로 auto를 override
-- client가 hit/damage 결과를 authoritative하게 제출하지 않음
-- centralized contact cache를 weapon이 공유할 수 있는 구조
+## Projectile Authority
+
+현재 P0 projectile은 서버의 논리 moving point다.
+
+- server position
+- velocity
+- lifetime
+- collision envelope
+- authoritative damage
+
+을 가진다.
+
+아직 없는 production 요소:
+
+- 실제 projectile/tracer render
+- muzzle flash
+- turret model rotation
+- firing animation
+- impact VFX
+- sound
+- camera recoil/shake
+- 실제 함선 대 함선 damage model
+
+## 자동 Acceptance 결과
+
+- 두 플레이어가 같은 manual lease를 동시에 보유하지 못함: `PASS` (JUnit)
+- replay/stale sequence rejection: `PASS`
+- ammo consumption: `PASS`
+- cooldown rejection: `PASS`
+- invalid rear arc rejection: `PASS`
+- neutral contact auto-fire rejection: `PASS`
+- shared SensorGrid hostile selection: `PASS`
+- manual→auto mode switch lease cleanup: `PASS`
+- client가 hit/damage 결과를 authoritative하게 제출하지 않는 server boundary: 코드 구조 유지
+- Minecraft 26.2 adapter compile: `PASS`
+- production JAR verify: `PASS`
+
+## 현재 한계
+
+- ammo는 아직 turret-local이며 persistence/shared logistics가 아니다.
+- sensor cache는 P0-E adapter 수준이며 P0-F에서 중앙 ShipSimulation service로 승격한다.
+- power coupling은 아직 없다.
+- command control surface는 production UX가 아니다.
+- 실제 수동/자동 사격감과 실멀티 control conflict는 `NOT TESTED`다.
+
+## 현재 상태
+
+`TURRET BACKEND BUILD VERIFIED / LIVE COMBAT & MULTIPLAYER NOT TESTED`
+
+첫 P0-E compile gate는 26.2 `getEntities` overload ambiguity로 실패했고, 기능 삭제 없이 source-entity 타입을 명시해 수정했다. 이후 전용 build가 성공했다. 성공 산출물의 workflow report가 옛 P0-D/alpha.4 라벨을 하드코딩한 것도 자체 검수에서 발견해, CI가 `gradle.properties`의 `mod_version`을 자동 읽게 고친 뒤 최종 run `34186350799`까지 다시 성공시켰다.
 
 ---
 
-# 8. P0-F — Central Ship Systems
+# 8. P0-F — Central Ship Systems — NEXT
 
 ## 목표
 
-모듈 수가 커져도 계산 구조가 확장 가능한지 검증한다.
+모듈/포탑 수가 커져도 계산 구조가 확장 가능하고, 함선 전체가 하나의 자원/센서 정본을 공유하는지 검증한다.
 
-## Power
+## PowerGrid
 
 - generation
 - storage
 - demand
 - priority shortage
+- flight/life-support 등 critical consumer 우선
+- topology/state change 중심 재계산
 
-## Ammo
+초기에는 플레이어가 priority를 미세 관리하게 만들지 않는다. 기본 priority가 대부분의 상황을 해결해야 한다.
 
-- central compatible pool
-- server consumption
+## AmmoPool / Logistics
 
-## Sensor
+- P0-E turret-local ammo 제거
+- 함선 중앙 compatible ammo pool
+- server-authoritative consumption
+- 여러 weapon 동시 fire에서도 중복 소모/복제 없음
+- 추후 compartment/zone 물류가 재미를 증명할 때만 확장
 
-- cached contacts
+블록 파이프 하나마다 item entity/tick을 돌리는 구조를 기본으로 하지 않는다.
+
+## SensorGrid
+
+- P0-E contact cache를 ShipSimulation 소유 service로 이동
 - interval acquisition
+- cached contacts
 - per-weapon eligibility
+- missile/resource/navigation signature 확장 경계
+- multi-turret가 같은 scan 결과를 공유
 
-## Performance rule
+## Synthetic Scale Gate
 
-P0 수치는 최종 보장이 아니다. 다수 module/turret synthetic load를 만들고 이후 spark/JFR로 실제 worst-case를 측정한다.
+실제 최종 성능 보장은 아니지만 최소한 다음 구조 부하를 자동으로 만든다.
+
+- 다수 module definition
+- 다수 weapon consumer
+- power shortages
+- ammo contention
+- shared contacts
+- multi-weapon fire decision
+
+검증 항목:
+
+- module/turret 수 증가 시 불필요한 world scan 수가 함께 증가하지 않는가
+- 각 weapon이 별도 power/ammo truth를 만들지 않는가
+- 같은 tick 경쟁에서도 자원 음수/중복 소비가 없는가
+- state-change 기반 재계산으로 확장 가능한가
+
+실제 P0-G 이후 worst-case는 profiler(spark → 필요 시 JFR)로 측정한다.
 
 ---
 
@@ -355,7 +435,7 @@ P0 수치는 최종 보장이 아니다. 다수 module/turret synthetic load를 
 ## Scenario A — Shared Ship
 
 - P1 owner/pilot
-- P2 crew
+- P2 crew/gunner
 - P1 exterior control
 - P2 interior 또는 turret control
 
@@ -374,6 +454,7 @@ P0 수치는 최종 보장이 아니다. 다수 module/turret synthetic load를 
 정상:
 - 하나만 lease 획득
 - 명확한 feedback
+- loser가 fire authority를 얻지 못함
 
 ## Scenario C — Disconnect / Restart
 
@@ -572,19 +653,19 @@ Earth preparation
 
 # 20. 바로 다음 구현 단위
 
-**P0-E Representative Turret**
+**P0-F Central Ship Systems**
 
 하나의 의미 있는 작업 묶음에 다음을 포함한다.
 
-- weapon state / mode
-- turret control lease
-- authoritative aim/fire request
-- ammo/cooldown/arc policy
-- `AUTO_DEFENSE`
-- central contact/SensorGrid boundary
-- invalid/friendly target filtering
-- projectile/damage authority boundary
+- authoritative `PowerGrid`
+- shared `AmmoPool`
+- P0-E SensorGrid의 ship-level service 승격
+- power priority/shortage
+- compatible ammo consumption
+- multi-weapon resource contention
+- synthetic multi-module/multi-turret scale test
+- P0-E local ammo migration boundary
 - pure JUnit
 - project build/JAR gate 한 번
 
-그 다음 P0-F central systems로 넘어간다.
+그 다음 P0-G live Minecraft/multiplayer lifecycle gate로 넘어간다.
