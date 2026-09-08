@@ -4,7 +4,7 @@ import kr.moonseungjun.riftfrontier.content.ContentId;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.EnumSet;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,11 +21,14 @@ public final class BossPresentationAssetManifest {
     public enum Kind { MODEL, ANIMATION, VFX, SOUND }
 
     public enum Code {
-        DUPLICATE_LOGICAL_KEY,
         MISSING_LOGICAL_KEY,
         WRONG_ASSET_KIND,
-        MISSING_PROVENANCE,
-        MISSING_LICENSE_NOTE
+        MISSING_RESOURCE
+    }
+
+    @FunctionalInterface
+    public interface ResourceProbe {
+        boolean exists(Kind kind, ContentId resourceId);
     }
 
     public record Asset(
@@ -73,6 +76,7 @@ public final class BossPresentationAssetManifest {
         return assets;
     }
 
+    /** Validates that every logical key referenced by the authored snapshot has one correctly typed selection. */
     public Report validateProfiles(Collection<BossPresentationProfile> profiles) {
         Objects.requireNonNull(profiles, "profiles");
         List<Issue> issues = new ArrayList<>();
@@ -84,20 +88,24 @@ public final class BossPresentationAssetManifest {
                 require(binding.soundKey(), Kind.SOUND, issues);
             }
         }
-        return new Report(issues);
+        return sorted(issues);
     }
 
-    public Report validateCompleteness() {
+    /**
+     * Validates the physical resource boundary after assets have actually been selected.
+     * The caller owns loader-specific path semantics; this class only guarantees that the selected resource
+     * for each logical key exists according to the appropriate kind-aware probe.
+     */
+    public Report validateResources(ResourceProbe probe) {
+        Objects.requireNonNull(probe, "probe");
         List<Issue> issues = new ArrayList<>();
         for (Asset asset : assets.values()) {
-            if (asset.source().isBlank()) {
-                issues.add(new Issue(Code.MISSING_PROVENANCE, asset.logicalKey(), "asset source is blank"));
-            }
-            if (asset.licenseNote().isBlank()) {
-                issues.add(new Issue(Code.MISSING_LICENSE_NOTE, asset.logicalKey(), "asset license note is blank"));
+            if (!probe.exists(asset.kind(), asset.resourceId())) {
+                issues.add(new Issue(Code.MISSING_RESOURCE, asset.logicalKey(),
+                    "selected " + asset.kind() + " resource does not exist: " + asset.resourceId()));
             }
         }
-        return new Report(issues);
+        return sorted(issues);
     }
 
     private void require(ContentId logicalKey, Kind expected, List<Issue> issues) {
@@ -110,6 +118,13 @@ public final class BossPresentationAssetManifest {
             issues.add(new Issue(Code.WRONG_ASSET_KIND, logicalKey,
                 "expected " + expected + " but manifest declares " + asset.kind()));
         }
+    }
+
+    private static Report sorted(List<Issue> issues) {
+        issues.sort(Comparator.comparing((Issue issue) -> issue.logicalKey().toString())
+            .thenComparing(issue -> issue.code().name())
+            .thenComparing(Issue::message));
+        return new Report(issues);
     }
 
     private static String requireText(String value, String label) {
