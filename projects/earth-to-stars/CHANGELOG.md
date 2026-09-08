@@ -2,6 +2,67 @@
 
 이 문서는 실제 정본 변경을 기록한다.
 
+## 2026-09-08 — P0-D linked ship interior backend
+
+### Added
+
+- mod version `0.1.0-alpha.4`
+- stable `InteriorRef(shipId, slot)` / `InteriorSlotLayout`
+- 하나의 `earth_to_stars:ship_interiors` 기술 공간을 함선별 격리 cell로 나누는 구조
+- 2048-block cell spacing / 8192×8192 allocation grid
+- stable `ShipId → interior slot` assignment와 reverse lookup
+- persisted interior slot collision을 조용히 재할당하지 않고 거부하는 corruption boundary
+- server-global `InteriorSavedData`
+- `/earthtostars ship interior enter` / `exit` P0 entry/return adapter
+- 현재 live exterior의 dimension/transform으로 복귀하는 `ExteriorAnchor` boundary
+- exterior가 없거나 interior link가 손상된 경우 Earth recovery 경로
+- login 시 unlinked interior player recovery adapter
+- `INTERIOR_ACCESS` 권한 기반 entry 검색
+- 13×13 기술용 P0 room 생성기; 최종 interior 디자인이 아님
+- P0-D slot round-trip / stable allocation / collision rejection / out-of-grid JUnit
+
+### Architecture
+
+함선마다 동적 dimension을 새로 만들지 않는다. 하나의 안정된 interior 공간에서 각 `ShipId`가 영구적인 격리 cell을 가진다. 외부 함선이 이동하거나 Earth↔orbit transition을 해도 내부 플레이어는 이 안정된 좌표계에 남고, 같은 `ShipId`를 통해 외부 함선의 현재 위치/상태와 연결된다. 따라서 내부 승무원의 좌표를 외부 translation/rotation에 맞춰 매 tick 변환하지 않는다.
+
+현재 interior assignment는 별도 `InteriorSavedData`에 저장된다. 첫 playable-alpha compatibility freeze 전에는 필요 시 unified save schema로 migration할 수 있으며, 그 이후에는 명시적 migration 없이 save key/registry ID를 변경하지 않는다.
+
+### Verification
+
+최종 검증 기준 구현 커밋: `492d8fa0536b23881591ad9a31b0501c7048b6e3`
+
+GitHub Actions `Build earth-to-stars` run `34183711601`:
+
+- Java 25 / Gradle 9.2.1 / NeoForge 26.2.0.38-beta: `PASS`
+- `clean test build`: `PASS`
+- P0-A/P0-B/P0-C regression JUnit: `PASS`
+- P0-D interior allocation/layout JUnit: `PASS`
+- `ship_interiors` dimension data packaged: `PASS`
+- linked-interior Minecraft adapter compile: `PASS`
+- production JAR verifier: `PASS`
+- 생성 JAR: `earth_to_stars-0.1.0-alpha.4.jar`
+- JAR SHA-256: `a5f3d8ffb24869c6085079af40106a3830b12ce7ea53e57775930b372fc03284`
+- datagen: `NOT RUN`
+- GameTest/save→disk→restart→restore: `NOT RUN`
+- dedicated server custom-dimension boot: `NOT RUN`
+- client smoke: `NOT RUN`
+- 실제 exterior↔interior 출입: `NOT TESTED`
+- 두 플레이어 동시 interior: `NOT TESTED`
+- exterior 이동/transition 중 interior crew 유지: `NOT TESTED`
+- live multiplayer session: `NOT TESTED`
+
+첫 alpha.4 build run `34183610858`은 Minecraft 26.2에서 제거된 `ServerLevel#getSharedSpawnPos()` 호출 하나 때문에 `compileJava`에서 실패했다. 기능 삭제 없이 current 26.2 respawn-data API로 교체했고, 같은 게이트를 다시 실행해 최종 성공했다.
+
+### Status
+
+`P0-D LINKED INTERIOR BACKEND BUILD VERIFIED / LIVE INTEGRATION DEFERRED`
+
+자동 빌드 성공은 실제 내부 출입, custom dimension live boot, 2인 동시 체류, 서버 재시작 복원까지 검증했다는 뜻이 아니다. 반복적인 사용자 테스트를 피하기 위해 이 항목들은 P0-E/F 이후 P0-G multiplayer/lifecycle gate에서 의미 있게 묶어 검증한다.
+
+다음 의미 있는 작업 단위는 **P0-E Representative Turret**이다.
+
+---
+
 ## 2026-09-08 — P0-C orbital transition + Minecraft persistence adapter
 
 ### Added
@@ -24,7 +85,7 @@
 
 ### Multiplayer boundary
 
-P0-C의 실제 transition 구현은 현재 **pilot-first proof**다. 다인 승객과 interior crew의 원자적 이동은 P0-D Linked Ship Interior에서 같은 transaction 모델에 확장한다. 이 단계에서 multiplayer passenger transfer를 구현/검증 완료했다고 표현하지 않는다.
+P0-C의 실제 transition 구현은 현재 **pilot-first proof**다. 다인 승객과 interior crew의 원자적 이동은 linked interior/crew lifecycle 위에서 확장한다. 이 단계에서 multiplayer passenger transfer를 구현/검증 완료했다고 표현하지 않는다.
 
 ### Verification
 
@@ -53,9 +114,7 @@ GitHub Actions `Build earth-to-stars` run `34181251912`:
 
 `P0-C TRANSITION BACKEND BUILD VERIFIED / LIVE INTEGRATION DEFERRED`
 
-빌드 성공은 orbital dimension이 실제 서버에서 로드되고 플레이어가 자연스럽게 우주로 넘어가는 것을 의미하지 않는다. 현재 검증은 코드/API/리소스 패키징 및 순수 정책 수준이다. 반복적인 사용자 테스트를 피하기 위해 P0-A 저장 재시작, P0-B 실제 조종 lifecycle, P0-C 전환 실플레이는 P0-D까지 묶은 뒤 한 번의 큰 Minecraft 검증으로 진행한다.
-
-다음 의미 있는 작업 단위는 **P0-D Linked Ship Interior**다.
+빌드 성공은 orbital dimension이 실제 서버에서 로드되고 플레이어가 자연스럽게 우주로 넘어가는 것을 의미하지 않는다. 현재 검증은 코드/API/리소스 패키징 및 순수 정책 수준이다.
 
 ---
 
@@ -110,8 +169,6 @@ GitHub Actions `Build earth-to-stars` run `34176522000`:
 
 `P0-B BACKEND BUILD VERIFIED / LIVE MINECRAFT ACCEPTANCE DEFERRED`
 
-반복 테스트를 피하기 위해 P0-B의 실제 Minecraft 조종·재접속 검증은 즉시 별도 사용자 테스트로 요청하지 않는다. 다음 P0-C 및 persistence integration과 묶어 더 큰 의미의 플레이 검증 게이트에서 확인한다.
-
 ---
 
 ## 2026-09-08 — M0 bootstrap + P0-A authoritative ship kernel
@@ -151,7 +208,7 @@ GitHub Actions `Build earth-to-stars` run `34175374292`:
 
 `M0 BUILD BOOTSTRAP VERIFIED / P0-A PURE SHIP KERNEL VERIFIED / MINECRAFT INTEGRATION GATE PENDING`
 
-P0-A의 순수 서버 정본 커널은 구현·자동 검증되었다. Minecraft SavedData/GameTest를 통한 실제 서버 생성→저장→reload→동일 shipId/module 복원 검증은 아직 수행하지 않았으므로 P0-A 전체 통합 완료라고 표현하지 않는다.
+P0-A의 순수 서버 정본 커널은 구현·자동 검증되었다. Minecraft SavedData/GameTest를 통한 실제 서버 생성→저장→reload→동일 shipId/module 복원 검증은 아직 수행하지 않았다.
 
 ---
 
