@@ -27,7 +27,11 @@ jobs:
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v4
       - name: Apply Alpha.129 worker runtime patch
-        run: python3 .github/frontier_alpha129_worker_runtime_patch.py
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/fix_alpha129_patcher.py
+          python3 .github/frontier_alpha129_worker_runtime_patch.py
       - name: Targeted source audit and compile
         working-directory: projects/frontier-settlement
         shell: bash
