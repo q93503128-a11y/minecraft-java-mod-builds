@@ -62,6 +62,14 @@ public final class InteriorSavedData extends SavedData {
         return ref;
     }
 
+    public synchronized boolean release(ShipId shipId) {
+        if (assignments.release(shipId).isEmpty()) {
+            return false;
+        }
+        setDirty();
+        return true;
+    }
+
     public synchronized Optional<InteriorRef> find(ShipId shipId) {
         return assignments.find(shipId);
     }
