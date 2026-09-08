@@ -5,8 +5,8 @@
 ## 활성 프로젝트
 
 - [`earth-to-stars`](./earth-to-stars/) — EARTH TO STARS, SF 우주 개척 + 모듈식 함선 성장 + 협동 함선 운용
-  - 상태: `P0 AUTOMATED TECHNICAL GATES COMPLETE / P0-G DEDICATED LIFECYCLE VERIFIED / P0-H NETHER-END INDEPENDENCE VERIFIED / LIVE MULTIPLAYER NOT TESTED / M1 EARTH-ORBIT GAMEPLAY SLICE NEXT`
-  - 현재 버전: `0.1.0-alpha.8`
+  - 상태: `P0 AUTOMATED TECHNICAL GATES COMPLETE / M1-A/B EARTH PREPARATION + FIRST LAUNCH CRAFT BACKEND BUILD VERIFIED / LIVE CLIENT PLAY NOT TESTED / M1-C NEXT`
+  - 현재 버전: `0.1.0-alpha.9`
   - 정본 시작점: [`earth-to-stars/README.md`](./earth-to-stars/README.md)
   - 개발 순서: M0 Build Bootstrap → P0 Ship/Space/Multiplayer Technical Gate → M1 Earth/Orbit Gameplay Slice → M2 Moon Vertical Slice → M3 Production Visual Gate → M4 Asteroid/Ship Growth → M5 Mars/Expedition Ship → M6 Belt/Multi-System Scale → M7+ Outer System/Deep Space
   - 핵심 원칙: Overworld=Earth, Nether/End 비필수, B형 모듈식 함선, 서버 권한 멀티 구조, stable linked interior, 수동/자동 포탑, 중앙 power/ammo/sensor simulation, 외부 reference 기반 SF 디자인
