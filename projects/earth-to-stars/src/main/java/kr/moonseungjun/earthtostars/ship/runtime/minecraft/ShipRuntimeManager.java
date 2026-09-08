@@ -29,8 +29,10 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -38,7 +40,9 @@ import java.util.UUID;
 
 public final class ShipRuntimeManager {
     private static final double CONTROL_RANGE_SQUARED = 64.0D * 64.0D;
+    private static final long READINESS_WARNING_COOLDOWN_TICKS = 100L;
     private static final Map<Integer, Entry> ENTRIES = new LinkedHashMap<>();
+    private static final Map<ShipId, Long> LAST_READINESS_WARNING = new LinkedHashMap<>();
     private static final ShipRepository REPOSITORY = new ShipRepository();
     private static final ModuleCatalog CATALOG = ShipBootstrapCatalog.create();
 
@@ -47,6 +51,7 @@ public final class ShipRuntimeManager {
 
     public static void initialize(MinecraftServer server) {
         ENTRIES.clear();
+        LAST_READINESS_WARNING.clear();
         REPOSITORY.clear();
         for (ShipState ship : ShipSavedData.get(server).decodeAll(CATALOG)) {
             REPOSITORY.add(ship);
@@ -160,6 +165,21 @@ public final class ShipRuntimeManager {
                 .map(entry -> new ExteriorAnchor((ServerLevel) entry.exterior().level(), entry.runtime().transform()));
     }
 
+    static int activeCrewCount(MinecraftServer server, ShipId shipId) {
+        Set<UUID> active = new HashSet<>();
+        for (Entry entry : ENTRIES.values()) {
+            if (!entry.exterior().isRemoved() && entry.runtime().ship().shipId().equals(shipId)) {
+                entry.runtime().lease().map(ShipControlLease::controllerId).ifPresent(active::add);
+            }
+        }
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            ShipInteriorManager.linkedShip(player)
+                    .filter(shipId::equals)
+                    .ifPresent(ignored -> active.add(player.getUUID()));
+        }
+        return active.size();
+    }
+
     public static boolean releaseController(ServerPlayer player) {
         boolean released = false;
         for (Map.Entry<Integer, Entry> mapEntry : ENTRIES.entrySet()) {
@@ -213,9 +233,11 @@ public final class ShipRuntimeManager {
             }
 
             long gameTime = entry.exterior().level().getGameTime();
+            ExteriorAnchor anchorBeforeTick = new ExteriorAnchor((ServerLevel) entry.exterior().level(), entry.runtime().transform());
             boolean propulsionPowered = ShipSystemsManager.allowPropulsion(
                     entry.runtime().ship(),
-                    entry.runtime().currentInput()
+                    entry.runtime().currentInput(),
+                    anchorBeforeTick
             );
             Optional<UUID> expiredController = entry.runtime().tick(gameTime, propulsionPowered);
             expiredController.ifPresent(playerId -> {
@@ -231,6 +253,14 @@ public final class ShipRuntimeManager {
                     entry.exterior().level().dimension().equals(SpaceLevels.ORBITAL_SPACE),
                     transform
             );
+            if (transition == ShipTransitionPolicy.Transition.EARTH_TO_ORBIT
+                    && !ShipSystemsManager.canEnterOrbit(entry.runtime().ship())) {
+                ShipTransform held = holdBelowOrbitBoundary(transform);
+                entry.runtime().relocate(held);
+                applyTransform(entry.exterior(), held);
+                warnReadiness(server, entry, gameTime);
+                continue;
+            }
             if (transition != ShipTransitionPolicy.Transition.NONE && entry.runtime().lease().isPresent()) {
                 transitions.add(new TransitionRequest(entityId, entry, transition));
                 continue;
@@ -246,6 +276,7 @@ public final class ShipRuntimeManager {
 
     public static void clear() {
         ENTRIES.clear();
+        LAST_READINESS_WARNING.clear();
         REPOSITORY.clear();
     }
 
@@ -262,6 +293,7 @@ public final class ShipRuntimeManager {
             REPOSITORY.add(ship);
             ShipSavedData.get(level.getServer()).put(ship);
             ShipSystemsManager.systems(ship);
+            ShipSystemsManager.flush(level.getServer());
         } catch (RuntimeException failure) {
             exterior.discard();
             throw failure;
@@ -359,7 +391,47 @@ public final class ShipRuntimeManager {
         ENTRIES.put(nextExterior.getId(), nextEntry);
         applyTransform(nextExterior, destination);
         ShipSavedData.get(server).put(entry.runtime().ship());
+        ShipSystemsManager.flush(server);
         grantControl(teleported, nextEntry, target.getGameTime());
+        teleported.sendSystemMessage(Component.translatable(
+                request.transition() == ShipTransitionPolicy.Transition.EARTH_TO_ORBIT
+                        ? "message.earth_to_stars.flight.orbit_entered"
+                        : "message.earth_to_stars.flight.earth_returned"
+        ));
+    }
+
+    private static void warnReadiness(MinecraftServer server, Entry entry, long tick) {
+        ShipId shipId = entry.runtime().ship().shipId();
+        long last = LAST_READINESS_WARNING.getOrDefault(shipId, Long.MIN_VALUE / 2L);
+        if (tick - last < READINESS_WARNING_COOLDOWN_TICKS) {
+            return;
+        }
+        LAST_READINESS_WARNING.put(shipId, tick);
+        ShipSystemsManager.OrbitReadiness readiness = ShipSystemsManager.orbitReadiness(entry.runtime().ship());
+        entry.runtime().lease().map(ShipControlLease::controllerId)
+                .map(server.getPlayerList()::getPlayer)
+                .ifPresent(player -> player.sendSystemMessage(Component.literal(String.format(
+                        Locale.ROOT,
+                        "궤도 진입 준비 부족 — 추진제 %.0f / %.0f, 산소 %.0f / %.0f, 생명유지 %s",
+                        readiness.propellant(),
+                        readiness.requiredPropellant(),
+                        readiness.oxygen(),
+                        readiness.requiredOxygen(),
+                        readiness.lifeSupportInstalled() ? "정상" : "없음"
+                ))));
+    }
+
+    private static ShipTransform holdBelowOrbitBoundary(ShipTransform current) {
+        return new ShipTransform(
+                new ShipVec3(
+                        current.position().x(),
+                        Math.min(current.position().y(), ShipTransitionPolicy.EARTH_EXIT_ALTITUDE - 1.0D),
+                        current.position().z()
+                ),
+                new ShipVec3(current.velocity().x(), Math.min(0.0D, current.velocity().y()), current.velocity().z()),
+                current.yawDegrees(),
+                current.pitchDegrees()
+        );
     }
 
     private static void applyTransform(ArmorStand exterior, ShipTransform transform) {
