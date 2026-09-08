@@ -29,14 +29,27 @@ def main() -> None:
         required = [
             "META-INF/neoforge.mods.toml",
             "assets/earth_to_stars/lang/en_us.json",
+            "assets/earth_to_stars/lang/ko_kr.json",
+            "assets/earth_to_stars/items/launch_craft_kit.json",
+            "assets/earth_to_stars/models/item/launch_craft_kit.json",
             "data/earth_to_stars/bootstrap/kernel.json",
             "data/earth_to_stars/progression/main_path.json",
+            "data/earth_to_stars/recipe/reinforced_frame.json",
+            "data/earth_to_stars/recipe/avionics_unit.json",
+            "data/earth_to_stars/recipe/propellant_cell.json",
+            "data/earth_to_stars/recipe/oxygen_cartridge.json",
+            "data/earth_to_stars/recipe/life_support_unit.json",
+            "data/earth_to_stars/recipe/launch_craft_kit.json",
         ]
         for entry in required:
             if entry not in names:
                 fail(f"missing {entry}")
         if not any(name.startswith("kr/moonseungjun/earthtostars/") and name.endswith(".class") for name in names):
             fail("no compiled EARTH TO STARS classes")
+        if "kr/moonseungjun/earthtostars/content/LaunchCraftKitItem.class" not in names:
+            fail("M1 launch craft item class missing")
+        if "kr/moonseungjun/earthtostars/ship/gameplay/LaunchCraftBlueprint.class" not in names:
+            fail("M1 launch craft blueprint class missing")
         if any(name.endswith(".java") for name in names):
             fail("development Java source leaked into production jar")
         if len(names) != len(set(names)):
