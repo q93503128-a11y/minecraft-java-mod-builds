@@ -79,7 +79,7 @@ class NaturalExpeditionLoopTest {
 
         EnemyTurnService.resolveUntilPlayerOrTerminal(battles, launch.battle());
 
-        if (launch.battle().state() == BattleState.COMMAND) {
+        if (launch.battle().state() == BattleState.AWAIT_COMMAND) {
             assertEquals(BattleTeam.PLAYER, launch.battle().participant(launch.battle().currentActorId()).team());
         } else {
             assertTrue(launch.battle().state() == BattleState.REWARD,
