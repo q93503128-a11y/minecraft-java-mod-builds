@@ -3,22 +3,22 @@
 - Slug: `earth-to-stars`
 - Mod ID: `earth_to_stars`
 - Namespace: `earth_to_stars`
-- Mod version: `0.1.0-alpha.8`
+- Mod version: `0.1.0-alpha.9`
 - Minecraft: `26.2`
 - Java: `25`
 - Loader: `NeoForge`
 - Loader version: `26.2.0.38-beta`
 - Gradle: `9.2.1`
 - Build plugin: `ModDevGradle 2.0.143`
-- Final JAR: `earth_to_stars-0.1.0-alpha.8.jar`
+- Final JAR: `earth_to_stars-0.1.0-alpha.9.jar`
 - Existing-world compatibility: before first playable alpha, save schema may change deliberately; from first playable alpha onward registry IDs, save roots, module IDs and migration rules become compatibility contracts.
 - Required dependencies: Minecraft, NeoForge
 - Optional external mods/libraries: none approved as a hard runtime dependency. Any addition requires current 26.2 compatibility, maintenance, license, multiplayer and performance review.
 - Forbidden bundled dependencies: Minecraft original files, NeoForge distribution files, external mod JARs, and models/textures/audio/UI assets without redistribution permission.
 - Datagen task: `runData` (`NOT RUN` at current gate)
-- GameTest task: not yet registered; persistence restart was verified by the P0-G dedicated-server two-boot lifecycle gate.
-- Server smoke-test task: `runServer` (`P0-G TWO-BOOT LIFECYCLE VERIFIED`, not rerun on ordinary alpha.8 push)
-- Client smoke-test task: `runClient` (`NOT RUN` at current gate)
+- Server lifecycle: P0-G dedicated-server two-boot restore verified in run `34188840459`; not repeated on unrelated pushes.
+- Client smoke: `NOT RUN`
+- Live multiplayer: `NOT TESTED`
 
 ## Project identity
 
@@ -32,184 +32,170 @@ The project is not a generic tech mod, a planet menu, a collection of colored or
 
 1. `minecraft:overworld` is Earth and remains useful throughout the game.
 2. The primary progression route must be completable without mandatory Nether or End visits.
-3. Nether and End are optional side routes, shortcuts, specialist-material sources and late-game variants, never mandatory gates for the main space progression.
-4. Surface-to-space travel must feel continuous to the player. Internally, dimension/layer transitions may be used to protect performance and compatibility, but the presentation must hide abrupt menu-teleport behavior.
-5. Player ships use the **B-type modular ship architecture**. A ship is an authoritative ship object with modules, hardpoints, systems and an optional linked interior instance. It is not an arbitrary moving block contraption.
-6. Ship progression must change capabilities and play patterns, not only increase numbers.
-7. The same weapon hardpoint may support manual and automatic control when appropriate. Manual control should reward skill; automation should make solo play viable and reduce multiplayer role pressure.
-8. Multiplayer is a first-class requirement. Important game state is server-authoritative from the beginning.
-9. Solo play must remain viable. Missing crew roles are covered by automation, AI assistance or reduced management load rather than forced multi-boxing.
-10. Multiplayer roles are opportunities, not jobs. No player should be trapped in repetitive gauge-watching or maintenance clicks.
-11. Ship power, ammo, sensors and target acquisition use centralized/batched simulation where possible; individual modules must not independently perform expensive broad world scans every tick.
-12. Repeat-adjusted content values are data-driven. Code owns rules; data owns content.
-13. Visual direction is design-gated. Final UI, ship forms, modules, weapons, planets, VFX and sound are not invented from generic AI sci-fi styling.
-14. External references and assets are actively used when licensing permits; source, author, license and modifications are recorded in `THIRD_PARTY_ASSETS.md`.
-15. `docs/QUALITY_STANDARD.md`, `docs/QUALITY_STANDARD_GAME_DESIGN.md`, the repository `AGENTS.md`, and the project development playbook are production constraints, not optional inspiration.
-16. Technical success is not product completion. Real Minecraft play, multiplayer validation where available, visual review, performance measurement and build/JAR validation are required according to risk.
+3. Nether and End are optional side routes, shortcuts, specialist-material sources and late-game variants, never mandatory gates.
+4. Surface-to-space travel must feel continuous. Internal dimension/layer transitions may protect performance, but presentation must not feel like menu teleportation.
+5. Player ships use the **B-type modular ship architecture**: one authoritative ship object with modules, hardpoints, systems and linked interior; not an arbitrary moving-block contraption.
+6. Ship progression changes capabilities and play patterns, not only numbers.
+7. Manual and automatic weapon control share one server-owned weapon/system truth.
+8. Multiplayer is first-class from the beginning. Important state is server-authoritative.
+9. Solo play stays viable through automation/assistance; multiplayer roles are opportunities, not jobs.
+10. Ship power, ammo and sensors use centralized/batched simulation; modules do not each broad-scan the world every tick.
+11. Repeat-adjusted values are data-driven. Code owns rules; data owns content.
+12. Final UI/ship/module/weapon/planet/VFX/sound design is reference-gated; generic AI sci-fi styling is not production art.
+13. External references/assets are actively used where licensing permits and recorded in `THIRD_PARTY_ASSETS.md`.
+14. Technical success is not product completion. Real Minecraft play, visual review, performance and multiplayer verification are separately tracked.
 
 ## Core loop
 
 ```text
-Earth survival / resource acquisition
+Earth survival/resource acquisition
 → practical industry and launch capability
-→ atmosphere / orbit breakthrough
-→ orbital salvage, science and combat
+→ atmosphere/orbit breakthrough
+→ orbital salvage/science/combat
 → ship/module upgrade
-→ Moon / asteroid / planetary expedition
-→ unique resources and environmental constraints
-→ stronger mobility, automation, weapons and production
-→ larger-range expeditions
+→ Moon/asteroid/planetary expedition
+→ new environmental constraints/resources
+→ stronger mobility/automation/weapons/production
 → deeper space
-→ new discoveries feed back into Earth, bases and ship growth
+→ discoveries feed back into Earth, bases and ship growth
 ```
 
-Every major feature must attach to this loop. Independent feature creep is rejected by default.
+Every major feature must attach to this loop.
 
 ## Multiplayer authority
 
 Server authority includes at minimum:
 
-- ship ownership and membership
-- ship transform accepted by the current movement backend
-- installed modules and hardpoints
-- module damage and repair state
-- energy production/storage/consumption
-- fuel and propellant
-- ammunition and weapon cooldowns
-- target eligibility and hit results
-- turret control leases and mode transitions
+- ship ownership/membership
+- ship transform accepted by movement backend
+- installed modules/hardpoints
+- module damage/repair
+- energy/fuel/oxygen/ammunition
+- weapon cooldown/target/hit/damage
+- pilot/turret control leases
 - mining/resource transfer
-- recipes and production results
-- progression and celestial access
-- ship interior assignment
-- save data and migrations
+- recipes/production results
+- progression/celestial access
+- interior assignment
+- save data/migrations
 
-Clients provide input, rendering, animation, UI and safe prediction only. A client never tells the server that damage, resources, travel completion or crafting already succeeded.
+Clients provide input/rendering/animation/UI/safe prediction only. A client never reports that damage, resources, crafting or travel already succeeded.
 
-## Current implementation baseline
+---
 
-### Latest P0-H verification
+# Current implementation baseline
 
-Latest verified implementation/CI commit: `8b3b4edda64505d476418e0b08fbe85baea6b0ba`
+## 0.1.0-alpha.9 — M1-A/B Earth Preparation + First Launch Craft
 
-GitHub Actions `Build earth-to-stars` run `34189697283` verified:
+Latest verified implementation/CI commit: `bc8e51ba30d2e3eec07dfd868b0f79dc9460e73f`
+
+GitHub Actions `Build earth-to-stars` run `34191142069` verified:
 
 - P0-H progression validator self-tests
-- canonical main progression graph validation
-- Nether-only required main route rejection
-- End-only required main route rejection
-- clean alternative route acceptance
-- optional Nether/End side-route acceptance
-- dependency cycle rejection
-- unknown dependency rejection
-- P0-A through P0-G JUnit regression
+- canonical main progression graph
+- M1 launch recipe dependency closure
+- M1 launch recipe Nether/End independence
+- starter craft blueprint JUnit
+- P0-A through P0-G regression JUnit
+- Minecraft 26.2 / NeoForge 26.2.0.38-beta compile
 - `clean test build`
-- production JAR verifier
-- production JAR contains `data/earth_to_stars/progression/main_path.json`
+- production JAR structure
+- M1 recipes/client item definitions packaged
 
-Verified alpha.8 JAR SHA-256: `3af179b7cdb16236722507434a000f38dcc82fc59079aab584e1f79771f2e688`
+Verified JAR SHA-256:
 
-### P0-G lifecycle verification retained
+`c2f033c73de080c90cff7ed77ae0b3d2d07d6ec5d14aa22cc0f173766e223264`
 
-The expensive two-boot dedicated lifecycle gate was **not rerun** for alpha.8 because P0-H does not modify persistence or custom-dimension lifecycle behavior. The last dedicated lifecycle verification remains GitHub Actions run `34188840459`, commit `557d273ecfa78c1ba9cc62956cd78f6eb7c55153`.
+The P0-G dedicated two-boot lifecycle was not rerun because alpha.9 did not change persistence/custom-dimension lifecycle. The retained verified run is `34188840459`.
 
-That run verified:
+## M1 Earth launch crafting contract
 
-- dedicated server first boot on a clean run directory
-- `earth_to_stars:orbital_space` and `earth_to_stars:ship_interiors` registration
-- deterministic ship/interior/system seed into real SavedData
-- clean server shutdown with all dimensions saved
-- second dedicated-server boot on the same world directory
-- disk restore of ShipId / owner / module slots
-- disk restore of ShipId → interior slot
-- disk restore of central power / ammo quantities
-- restored central systems runtime initialization
-- sensor cache rebuilt instead of persisted
+Alpha.9 introduces the first survival-facing production chain without adding new Earth ores.
 
-This test is now run on explicit lifecycle verification rather than every ordinary code/data push, to avoid validation spam.
+Vanilla resources are reinterpreted as early spaceflight materials:
 
-## P0-H progression independence contract
+- Iron → structure/pressure vessel
+- Copper → conduction/plumbing/control hardware
+- Redstone → control/power electronics
+- Gold → precision electronics
+- Amethyst → early navigation/sensing component
+- Gunpowder + Paper → solid propellant abstraction
+- Water → oxygen production input
+- Leather → life-support sealing/packing
+
+Custom items:
+
+```text
+reinforced_frame
+avionics_unit
+propellant_cell
+oxygen_cartridge
+life_support_unit
+launch_craft_kit
+```
+
+Detailed recipes and rationale are canonical in `docs/05_M1_EARTH_ORBIT_GAMEPLAY_SLICE.md`.
+
+`tools/validate_m1_launch.py` recursively follows the actual `launch_craft_kit` recipe closure. This prevents the practical crafting chain from drifting away from the P0-H abstract progression graph and becoming Nether/End mandatory by accident.
+
+## Launch craft construction contract
+
+`launch_craft_kit` is a construction package, not a portable fully simulated ship.
+
+Server deployment rules:
+
+1. deployment occurs in `minecraft:overworld`
+2. 3×3×3 clearance exists
+3. player does not already own a registered ship
+4. authoritative starter `ShipState` can be created
+5. exterior proxy can be placed
+6. `ShipSavedData` is updated
+7. ship systems runtime is initialized
+8. server pilot control lease is granted
+9. survival package is consumed only on success
+
+Existing ownership is never silently overwritten.
+
+## Starter craft canonical loadout
+
+Slots:
+
+- `core`
+- `engine`
+- `power`
+- `cargo`
+- `life_support`
+- `turret`
+
+Installed at construction:
+
+- `command_core_mk1`
+- `engine_mk1`
+- `battery_mk1`
+- `cargo_mk1`
+- `life_support_mk1`
+
+The `turret` hardpoint is intentionally empty. First orbital salvage/combat should create a meaningful capability upgrade instead of giving the starter craft every system immediately.
+
+---
+
+# Retained P0 architecture contracts
+
+## Progression independence
 
 Canonical graph:
-
 `src/main/resources/data/earth_to_stars/progression/main_path.json`
 
 Validator:
-
 `tools/validate_progression.py`
 
-Self-tests:
+Each main milestone must retain at least one complete prerequisite derivation that does not require `minecraft:the_nether` or `minecraft:the_end`. Optional Nether/End shortcuts and sidegrades remain legal.
 
-`tools/test_progression_validator.py`
+## Linked interior
 
-The graph uses `requires_any` alternatives. A main milestone passes only when at least one complete prerequisite derivation exists that never requires a node located in:
+One stable `earth_to_stars:ship_interiors` server space is partitioned into persistent isolated cells by `ShipId`. Interior crew remain in stable coordinates while the exterior ship moves or changes Earth/orbit layer.
 
-- `minecraft:the_nether`
-- `minecraft:the_end`
-
-This means optional Nether/End shortcuts remain legal. A node merely mentioning or living in Nether/End is not automatically rejected. The failure condition is that a **main milestone loses every Nether/End-independent derivation**.
-
-Current main milestones:
-
-```text
-Earth Industry
-→ Launch Craft
-→ Earth Orbit Access
-→ Orbital Salvage
-→ Moon Access
-→ Near-Earth Asteroid Access
-→ Mars Access
-→ Main Belt Access
-→ Outer System Access
-→ Deep Space Access
-```
-
-The canonical graph deliberately contains optional `nether_heat_shortcut`, `nether_propellant_variant`, and `end_navigation_sidegrade` nodes so the validator itself proves that optional side routes remain allowed.
-
-## Linked interior architecture
-
-P0-D uses one stable `earth_to_stars:ship_interiors` server space rather than creating a dynamic dimension per ship. Each authoritative `ShipId` receives a persistent isolated interior cell. Current P0 allocation uses 2048-block spacing in an 8192×8192 grid and rejects persisted slot collisions instead of silently relinking ships.
-
-A player inside a ship interior remains in that stable interior coordinate space while the exterior ship moves or crosses Earth↔orbit. The interior is linked by `ShipId`; interior crew therefore do not need to inherit every exterior translation/rotation or be teleported during every exterior layer transition.
-
-## Weapon architecture
-
-The representative turret uses the same server-owned mode/cooldown/arc logic for manual and automatic operation.
-
-### Manual
-
-```text
-WEAPON_CONTROL permission
-→ mode MANUAL
-→ exclusive turret lease
-→ server reads authoritative player aim request
-→ session/sequence validation
-→ legal arc / shared power / shared ammo / cooldown validation
-→ server creates logical shot
-```
-
-The current command adapter is only a P0 control surface. Production manual control will use a real gunner station/key/UI/camera after the UI/art reference gate.
-
-### Automatic
-
-```text
-central ShipSensorGrid
-→ interval contact acquisition
-→ hostile filter
-→ firing-arc/range eligibility
-→ AUTO_DEFENSE fire decision
-→ same authoritative PowerGrid / AmmoPool / cooldown state
-```
-
-P0 hostile classification currently recognizes Minecraft `Enemy` entities only; faction/ship/friendly-fire policy is a later production system.
-
-### Projectile boundary
-
-P0 shots are server-side logical moving points with lifetime, velocity, collision envelope and authoritative damage. They intentionally do not yet provide production projectile entity rendering, tracer VFX, muzzle flash, impact effects, animation, sound or camera feedback.
-
-## Central ship systems architecture
-
-The ship's operational truth is centralized per `ShipId`.
+## Central ship systems
 
 ```text
 ShipId
@@ -218,101 +204,105 @@ ShipId
      ├─ ShipAmmoPool
      └─ ShipSensorGrid
           ↑
-   propulsion / sensors / turret(s)
+   propulsion / sensors / weapon(s)
 ```
 
-### PowerGrid
+Power/ammo are server-owned and persisted. Sensors are reconstructed after restart. Per-turret broad scans remain forbidden.
 
-Current P0 power policy:
+## Weapon control
 
-- finite storage
-- deterministic generation
-- server-tick monotonicity
-- input-scaled propulsion draw
-- sensor acquisition draw
-- weapon shot draw
-- priority reserves:
-  - `ESSENTIAL`: may use emergency reserve to zero
-  - `PROPULSION`: preserves 10% capacity
-  - `WEAPONS`: preserves 25%
-  - `UTILITY`: preserves 40%
+Manual and AUTO_DEFENSE use the same authoritative cooldown/arc/power/ammo state. Pilot/turret control leases use server-issued session IDs and replay/stale-input rejection.
 
-This policy prevents convenience or weapon systems from draining the last energy required by more important systems. The exact percentages are P0 tuning, not final balance.
-
-### AmmoPool
-
-Ammo is keyed by ammo type and owned once per ship system. Two weapon runtimes firing from one `ShipId` reduce the same authoritative ammo count. A rejected shot does not partially consume ammo or power.
-
-### SensorGrid
-
-One cache is shared by weapons. Contact acquisition is interval-based and staggered by `ShipId`, and stale contacts expire. Per-turret broad world scanning remains forbidden.
-
-### Interior crew access
-
-A player inside a linked interior resolves the authoritative ship through `InteriorSavedData → ShipId → ShipRepository`, so interior stations can later operate the same ship systems without depending on proximity to the exterior entity.
-
-## Persistence and lifecycle architecture
-
-Persistent operational state is separated from volatile world-derived state.
+## Persistence
 
 Persisted:
 
-- `ShipId`, owner, module slots and installed modules via `ShipSavedData`
-- `ShipId → interior slot` via `InteriorSavedData`
-- central current power and ammo quantities via `ShipSystemsSavedData`
+- ShipId/owner/modules/slots
+- ShipId→interior assignment
+- central power/ammo quantities
 
 Not persisted:
 
-- SensorGrid contacts
-- manual/pilot control leases
+- sensor contacts
+- control leases
 - logical projectiles
 - temporary exterior entity IDs
 
-The non-persisted items are runtime state and must be rebuilt/reacquired after restart. Persisting stale contacts, leases or entity IDs would create ghost targets, unauthorized reconnect authority, or invalid entity references.
+P0-G actual save→shutdown→same-world restart→restore was verified in run `34188840459`.
 
-The CI lifecycle probe is dormant during normal play and activates only through `EARTH_TO_STARS_LIFECYCLE_PROBE`. It exists to prove actual SavedData disk behavior without exposing development commands to players.
+---
 
-## Technical proxy boundary
+# Technical proxy boundary
 
-The P0-B/P0-C exterior remains a temporary vanilla `ArmorStand` proxy. `orbital_space`, `ship_interiors`, the generated interior room, command-driven turret/system control surfaces, and logical projectile are technical P0 environments only. None is a final ship model, interior layout, cockpit/UI, weapon model, VFX, sound, projectile presentation, space presentation, or world-design decision.
+The following are temporary technical/client registration proxies, not production design:
 
-## Verification boundary
+- ArmorStand exterior
+- vanilla-texture M1 item icons
+- generated technical interior room
+- empty orbital space
+- command-driven technical controls
+- logical projectile presentation
 
-Automated technical gates completed:
+They must not become final art by inertia. Production ship/item/cockpit/interior/turret/VFX/sound/space presentation follows `docs/03_UI_ART_REFERENCE_GATE.md` and `THIRD_PARTY_ASSETS.md`.
 
-- Minecraft 26.2 / NeoForge 26.2.0.38-beta compilation
-- authoritative ShipState/module/permission persistence contract
-- movement/control lease logic
-- Earth↔orbit transition backend
-- linked interior allocation/persistence
-- manual/auto turret server state machine
-- central power/ammo/sensor authority
-- real dedicated-server save/restart restore
-- custom dimension dedicated-server registration
-- Nether/End-independent main progression graph guard
-- production JAR structure
+---
 
-Still **NOT RUN / NOT TESTED**:
+# Verification boundary
 
-- client smoke
-- real in-game Earth→orbit→Earth player flight transition
-- real ship control feel/camera/interpolation/reconnect lifecycle with a player client
-- actual exterior↔interior entry/exit with players
-- two or more players coexisting in the same ship interior
-- one player piloting while another remains inside during exterior movement/layer transition
-- real manual turret aiming/control feel
-- real automatic turret combat/hit feedback
-- actual projectile visual/impact correctness
-- pilot + gunner two-player lease conflict/disconnect session
+`TESTED / BUILD VERIFIED` for alpha.9:
+
+- pure/game-rule JUnit including starter blueprint
+- P0 progression and M1 recipe dependency validators
+- source/API compilation
+- build/JAR packaging
+
+Retained earlier dedicated lifecycle verification:
+
+- two server boots on same world
+- custom dimensions loaded
+- ship/interior/power/ammo disk restore
+
+Still `NOT RUN / NOT TESTED`:
+
+- live client crafting/recipe book
+- in-world launch package deployment
+- actual item model appearance
+- fuel/oxygen runtime consumption
+- atmosphere gameplay
+- live Earth→orbit→Earth flight
+- camera/interpolation/control feel
+- orbital salvage/hostile encounter
+- first return/upgrade loop
+- live interior multi-crew
+- actual manual/auto weapon feel
+- live two-player pilot+gunner
 - live multiplayer session
-- production ship/interior/turret rendering and audio
+- production visuals/audio
 
-No item in the second list is called complete merely because the automated P0 technical gates passed.
+No automated result is treated as proof of these live-play items.
 
-## Current phase
+---
 
-`P0 AUTOMATED TECHNICAL GATES COMPLETE / P0-G DEDICATED LIFECYCLE VERIFIED / P0-H NETHER-END INDEPENDENCE VERIFIED / LIVE ACCEPTANCE DEFERRED / LIVE MULTIPLAYER NOT TESTED / M1 EARTH-ORBIT GAMEPLAY SLICE NEXT`
+# Current phase
 
-The next production unit is **M1 Earth/Orbit Gameplay Slice**. Development stops adding isolated technical proofs and begins connecting the existing systems into one player-facing loop: Earth preparation → launch craft → fuel/oxygen → atmospheric ascent → orbit → salvage/hostile contact → manual/auto weapon use → return → ship upgrade.
+`P0 AUTOMATED TECHNICAL GATES COMPLETE / M1-A/B EARTH PREPARATION + FIRST LAUNCH CRAFT BACKEND BUILD VERIFIED / LIVE ACCEPTANCE DEFERRED / LIVE MULTIPLAYER NOT TESTED / M1-C LAUNCH READINESS + ATMOSPHERE NEXT`
 
-The slice is not considered complete until it is actually playable and visually reviewed in Minecraft. User testing should happen once the slice is meaningful enough to evaluate as a whole, not after every small implementation change.
+## Next production unit — M1-C
+
+Connect the alpha.9 preparation items to actual gameplay:
+
+```text
+propellant_cell
+→ authoritative fuel/launch reserve
+
+oxygen_cartridge + life_support_mk1
+→ authoritative oxygen reserve
+
+readiness state
+→ atmosphere ascent
+→ Earth Orbit transition permission
+```
+
+The goal is not to add many gauges. The player should understand whether the craft is ready and how long it can survive without becoming a maintenance worker.
+
+After M1-C, M1-D connects first orbital salvage/contact → Earth return → first ship upgrade. M1 is only complete when that whole cycle is actually playable in Minecraft.
