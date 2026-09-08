@@ -42,7 +42,7 @@ public final class PartyInputHandler {
     public static void onClientTick(ClientTickEvent.Post event) {
         while (OPEN_PARTY.consumeClick()) {
             Minecraft minecraft = Minecraft.getInstance();
-            if (minecraft.player == null || minecraft.level == null || minecraft.gui.getScreen() != null) continue;
+            if (minecraft.player == null || minecraft.level == null) continue;
             ProgressionClientState.clear();
             minecraft.gui.setScreen(new PartyFormationScreen());
             ClientPacketDistributor.sendToServer(new ProgressionNetworkPayloads.RequestProgressC2S());
