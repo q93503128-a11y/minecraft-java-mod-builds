@@ -2,7 +2,7 @@
 
 Minecraft Java / NeoForge 26.2 기반의 SF 우주 개척·모듈식 함선 성장 프로젝트다.
 
-> **상태: P0 AUTOMATED TECHNICAL GATES COMPLETE / M1-A/B EARTH PREPARATION + FIRST LAUNCH CRAFT BACKEND BUILD VERIFIED / LIVE CLIENT PLAY NOT TESTED / LIVE MULTIPLAYER NOT TESTED / M1-C LAUNCH READINESS + ATMOSPHERE NEXT**
+> **상태: P0 AUTOMATED TECHNICAL GATES COMPLETE / M1-C LAUNCH READINESS + ATMOSPHERE BACKEND VERIFIED / FUEL-OXYGEN DISK LIFECYCLE VERIFIED / LIVE FLIGHT NOT TESTED / LIVE MULTIPLAYER NOT TESTED / M1-D ORBITAL SALVAGE + CONTACT NEXT**
 
 ## 한 줄 설명
 
@@ -26,14 +26,14 @@ Minecraft Java / NeoForge 26.2 기반의 SF 우주 개척·모듈식 함선 성�
 
 ## 정본 문서
 
-- `PROJECT.md` — 환경, 범위, 절대 제품 결정, 멀티 권한 계약, 현재 검증 기준
+- `PROJECT.md` — 환경, 제품 결정, 멀티 권한 계약, 현재 검증 기준
 - `AGENTS.md` — 이 프로젝트 전용 작업 계약
 - `docs/00_MASTER_GAME_DESIGN.md` — 게임 정체성, 핵심 루프, 함선 성장, 전투, 탐험, 경제, Nether/End 정책
 - `docs/01_TECHNICAL_ARCHITECTURE.md` — B형 모듈식 함선, 서버 권한, interior instance, 네트워크, 저장, 성능 구조
 - `docs/02_WORLD_PROGRESSION_CONTENT.md` — 지구→궤도→달→소행성→행성→심우주 진행과 자원 역할
 - `docs/03_UI_ART_REFERENCE_GATE.md` — SF UI/모델/VFX/사운드의 외부 레퍼런스 기반 제작 게이트
 - `docs/04_P0_VERTICAL_SLICE.md` — P0 기술 게이트와 첫 플레이어블 수직 구간
-- `docs/05_M1_EARTH_ORBIT_GAMEPLAY_SLICE.md` — 실제 Earth preparation / first craft / orbit gameplay slice 정본
+- `docs/05_M1_EARTH_ORBIT_GAMEPLAY_SLICE.md` — 실제 Earth preparation / launch readiness / first orbit gameplay 정본
 - `src/main/resources/data/earth_to_stars/progression/main_path.json` — CI가 검사하는 메인 진행 그래프
 - `THIRD_PARTY_ASSETS.md` — 외부 코드/자산/레퍼런스 출처·라이선스
 - `CHANGELOG.md` — 실제 변경·검증 기록
@@ -62,24 +62,11 @@ Minecraft 생존
 
 ---
 
-# 현재 구현 — 0.1.0-alpha.9
+# 현재 구현 — 0.1.0-alpha.10
 
 ## M1-A/B Earth Preparation + First Launch Craft
 
-P0 기술검증 이후 실제 survival progression을 처음 연결했다.
-
-신규 Earth 제작 아이템은 6개로 제한한다.
-
-- `reinforced_frame` — 경량 강화 프레임
-- `avionics_unit` — 항법제어장치
-- `propellant_cell` — 고체 추진제 셀
-- `oxygen_cartridge` — 압축 산소 카트리지
-- `life_support_unit` — 생명유지장치
-- `launch_craft_kit` — 소형 개척선 조립 패키지
-
-첫 단계에서는 신규 광석을 추가하지 않고 Minecraft의 Iron / Copper / Redstone / Gold / Amethyst / Gunpowder / Paper / Water / Leather를 우주 진입 제작 루프에 다시 연결한다.
-
-제작 흐름:
+현재 실제 survival 제작 루프:
 
 ```text
 vanilla Earth resources
@@ -90,29 +77,20 @@ vanilla Earth resources
 → authoritative ShipState
 ```
 
-`launch_craft_kit`은 Overworld 지면에서 사용한다.
+신규 제작 아이템은 6개로 제한한다.
 
-서버가 확인하는 것:
+- `reinforced_frame` — 경량 강화 프레임
+- `avionics_unit` — 항법제어장치
+- `propellant_cell` — 고체 추진제 셀
+- `oxygen_cartridge` — 압축 산소 카트리지
+- `life_support_unit` — 생명유지장치
+- `launch_craft_kit` — 소형 개척선 조립 패키지
 
-- Earth인가
-- 3×3×3 조립 공간이 확보됐는가
-- 플레이어가 이미 함선을 소유하고 있지 않은가
-- ShipState/exterior/persistence/control lease 생성이 가능한가
+첫 단계에서는 신규 광석 대신 Iron / Copper / Redstone / Gold / Amethyst / Gunpowder / Paper / Water / Leather를 우주 진입 제작 루프에 다시 연결한다.
 
-성공한 경우에만 survival item을 소비한다.
+`launch_craft_kit`은 Earth에서 서버가 배치 공간·기존 소유 함선·ShipState/exterior/persistence/control lease를 확인한 뒤 성공할 때만 소비한다.
 
-첫 함선의 canonical slots:
-
-```text
-core
-engine
-power
-cargo
-life_support
-turret
-```
-
-기본 설치:
+Starter craft 기본 설치:
 
 - `command_core_mk1`
 - `engine_mk1`
@@ -120,38 +98,83 @@ turret
 - `cargo_mk1`
 - `life_support_mk1`
 
-`turret` hardpoint는 의도적으로 비어 있다. 첫 orbital salvage/combat가 실제 함선 능력을 바꾸는 성장으로 이어지도록 무장을 처음부터 공짜로 주지 않는다.
+`turret` hardpoint는 첫 orbital salvage/combat 보상으로 함선 능력이 실제 변화하도록 의도적으로 비워 둔다.
 
-상세 제작/배치 계약은 `docs/05_M1_EARTH_ORBIT_GAMEPLAY_SLICE.md`를 따른다.
+## M1-C Launch Readiness + Atmosphere
 
-## 실제 recipe progression 보호
+alpha.10부터 Propellant/Oxygen은 아이템 설명용 수치가 아니라 `ShipId`에 연결된 서버 정본 자원이다.
 
-P0-H의 추상 progression graph뿐 아니라 alpha.9부터 실제 `launch_craft_kit` 제작식의 dependency closure도 `tools/validate_m1_launch.py`가 검사한다.
+Starter reserve:
 
-따라서 중간 제작물을 거쳐 Nether/End-only 재료가 첫 우주 진입의 필수 dependency로 들어오는 회귀를 자동으로 차단한다.
+- Power `80 / 100`
+- Propellant `80 / 240`
+- Oxygen `80 / 240`
+
+보급:
+
+- propellant cell 1개 → 최대 `+40` Propellant
+- oxygen cartridge 1개 → 최대 `+40` Oxygen
+- 성공한 보급만 아이템 소비
+
+추진은 Power + Propellant를 하나의 authoritative transaction으로 처리한다. 어느 한쪽이 부족하면 둘 중 하나만 부분 소비하지 않는다.
+
+현재 Earth atmosphere bands:
+
+```text
+Dense : Y < 256
+Thin  : 256 ≤ Y < 384
+Upper : 384 ≤ Y < 512
+Orbit transition : Y = 512
+```
+
+상층으로 갈수록 추진제 소비가 커지고, 산소는 실제 pilot + linked interior active crew 수에 따라 Thin/Upper/Orbit에서 소비된다. 빈 함선은 산소를 소비하지 않는다.
+
+Earth→Orbit 진입에는:
+
+- `life_support_mk1`
+- Propellant ≥ 8
+- Oxygen ≥ 20
+
+이 필요하다. 부족하면 Y=512 경계를 넘지 못하고 현재 준비 상태를 pilot에게 알려준다.
+
+Propellant/Oxygen은 `ShipSystemsSavedData`에 저장하며 alpha.10 이전 save에 필드가 없으면 starter reserve `80 / 80`을 migration default로 사용한다.
+
+상세 수치·규칙은 `docs/05_M1_EARTH_ORBIT_GAMEPLAY_SLICE.md`가 정본이다.
+
+## 실제 progression 보호
+
+- `tools/validate_progression.py` — 전체 main progression에서 Nether/End 비필수 경로 보장
+- `tools/validate_m1_launch.py` — 실제 `launch_craft_kit` recipe dependency closure에서 Nether/End 강제 회귀 차단
+
+즉 추상 기획 그래프와 실제 제작식이 따로 놀지 않도록 둘 다 검사한다.
 
 ---
 
 # 최신 검증 기준
 
-검증 기준 커밋: `bc8e51ba30d2e3eec07dfd868b0f79dc9460e73f`
+검증 기준 source commit: `34da5747f400d5815e751085afae1fd2fb7a066e`
 
-GitHub Actions `Build earth-to-stars` run `34191142069`:
+GitHub Actions `Build earth-to-stars` run `34192830690`:
 
-- P0-H progression validator self-tests: PASS
-- canonical main progression graph: PASS
-- M1 launch recipe dependency closure: PASS
-- M1 launch crafting Nether/End independence: PASS
-- starter craft blueprint JUnit: PASS
-- P0-A~G JUnit regression: PASS
+- P0-H progression guard: PASS
+- M1 actual launch recipe closure: PASS
+- M1 launch Nether/End independence: PASS
+- launch readiness / atmosphere JUnit: PASS
+- Power + Propellant atomic propulsion JUnit: PASS
+- Oxygen continuous drain JUnit: PASS
+- Fuel/Oxygen snapshot restore JUnit: PASS
+- P0-A~G regression: PASS
 - `clean test build`: PASS
 - Minecraft 26.2 / NeoForge 26.2.0.38-beta compile: PASS
 - production JAR verify: PASS
-- M1 recipes/client item definitions packaged: PASS
-- JAR: `earth_to_stars-0.1.0-alpha.9.jar`
-- SHA-256: `c2f033c73de080c90cff7ed77ae0b3d2d07d6ec5d14aa22cc0f173766e223264`
+- dedicated server first boot/save/shutdown: PASS
+- same-world second boot: PASS
+- Propellant `51.25` restore: PASS
+- Oxygen `66.5` restore: PASS
+- JAR: `earth_to_stars-0.1.0-alpha.10.jar`
+- SHA-256: `aa3c01597544dae55ec1e2309c3c4538b61185bb6022a266cb93374d5db5a8f3`
 
-P0-G의 실제 dedicated-server 두 번 부팅 / SavedData restore 검사는 run `34188840459`에서 이미 통과했고 alpha.9에서는 persistence/custom-dimension 구조를 바꾸지 않았기 때문에 의도적으로 다시 실행하지 않았다.
+저장 구조 변경 때문에 alpha.10에서는 dedicated-server 두 번 부팅 gate를 한 번 다시 실행했다. 성공 후 workflow는 다시 explicit lifecycle verification에서만 이 비싼 검사를 실행하도록 되돌렸다.
 
 ---
 
@@ -160,58 +183,55 @@ P0-G의 실제 dedicated-server 두 번 부팅 / SavedData restore 검사는 run
 현재 다음은 final 품질이 아니다.
 
 - ArmorStand ship exterior
-- vanilla texture 기반 M1 item icon proxy
+- vanilla texture 기반 item icon proxy
 - 기술용 `ship_interiors` room
 - 빈 `orbital_space`
+- 임시 use-on-block 보급 UX
 - command 기반 일부 조작면
 - 논리 projectile
 
-이들은 기능 연결을 위한 proxy다. Production 함선/아이콘/cockpit/interior/turret/VFX/sound/space visual은 `docs/03_UI_ART_REFERENCE_GATE.md`를 통과한 뒤 제작한다.
+Production 함선/아이콘/cockpit/interior/turret/fuel-port/VFX/sound/space visual은 `docs/03_UI_ART_REFERENCE_GATE.md`를 통과한 뒤 제작한다.
 
 ---
 
-# 아직 구현/실플레이 확인되지 않은 핵심
+# 아직 실플레이 확인되지 않은 핵심
 
-- propellant cell의 실제 fuel reserve 소비
-- oxygen cartridge / life support의 실제 oxygen reserve 소비
-- launch readiness gate
-- atmosphere gameplay / 고도별 환경 변화
-- 실제 Earth↔orbit 플레이 비행과 카메라/조종감
 - 실제 crafting book/recipe usability
 - 실제 launch package 월드 배치
+- propellant/oxygen 보급 조작감
+- 실제 atmosphere ascent feel
+- readiness warning readability
+- 실제 Earth↔Orbit→Earth 비행과 카메라/조종감
 - orbital salvage contact
 - hostile orbital contact
 - Earth return reward / first ship upgrade
 - 실제 exterior↔interior 다인 체류
 - 실제 manual/auto 포탑 사격감
-- 실제 2인 pilot+gunner
+- 실제 2인 pilot+gunner / pilot+interior crew
 - live multiplayer session
 - production visual/audio
 
-자동 build 성공을 이 항목의 실제 플레이 성공으로 취급하지 않는다.
+자동 build나 dedicated server restore 성공을 위 실플레이 항목까지 검증한 것으로 간주하지 않는다.
 
 ---
 
-# 다음 작업 — M1-C Launch Readiness + Atmosphere
+# 다음 작업 — M1-D Orbital Salvage + Contact
 
-다음 묶음에서는 현재 아이템을 실제 gameplay resource에 연결한다.
+이제 첫 폐쇄 gameplay loop의 우주 절반을 만든다.
 
 ```text
-propellant cell
-→ authoritative launch/fuel reserve
-
-oxygen cartridge + life_support_mk1
-→ authoritative oxygen reserve
-
-readiness
-→ atmosphere ascent
-→ Earth Orbit transition permission
+Earth 준비
+→ 직접 상승
+→ Orbit
+→ salvage contact
+→ first hostile contact
+→ 회수 보상
+→ Earth 귀환
+→ starter craft 첫 개수조
 ```
 
-관리 메뉴와 재화 종류를 늘리는 방식이 아니라, **출발 전에 준비했는가 / 우주에서 얼마나 버틸 수 있는가**라는 의미 있는 선택으로 만들고 초기에는 기본값과 명확한 피드백으로 관리 노동을 최소화한다.
+목표는 궤도에 상자를 뿌리는 것이 아니라, **우주에 갔기 때문에 함선의 새로운 행동/능력이 열린다**는 첫 성장 경험을 만드는 것이다.
 
-M1-C 후에는 M1-D에서 첫 orbital salvage/contact → Earth return → 첫 함선 개수조까지 연결한다.
-
-M1 전체 종료 경험은 다음이다.
+M1 전체 종료 경험:
 
 > **“내가 지구에서 준비한 작은 개척선으로 직접 우주에 올라가, 궤도에서 처음으로 자원과 위험을 만나고 살아 돌아왔다.”**
