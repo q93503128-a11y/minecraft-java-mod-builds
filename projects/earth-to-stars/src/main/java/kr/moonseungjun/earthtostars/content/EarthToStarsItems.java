@@ -11,28 +11,28 @@ public final class EarthToStarsItems {
 
     public static final DeferredItem<Item> REINFORCED_FRAME = ITEMS.registerSimpleItem(
             "reinforced_frame",
-            new Item.Properties().stacksTo(32)
+            props -> props.stacksTo(32)
     );
     public static final DeferredItem<Item> AVIONICS_UNIT = ITEMS.registerSimpleItem(
             "avionics_unit",
-            new Item.Properties().stacksTo(16)
+            props -> props.stacksTo(16)
     );
     public static final DeferredItem<Item> PROPELLANT_CELL = ITEMS.registerSimpleItem(
             "propellant_cell",
-            new Item.Properties().stacksTo(16)
+            props -> props.stacksTo(16)
     );
     public static final DeferredItem<Item> OXYGEN_CARTRIDGE = ITEMS.registerSimpleItem(
             "oxygen_cartridge",
-            new Item.Properties().stacksTo(16)
+            props -> props.stacksTo(16)
     );
     public static final DeferredItem<Item> LIFE_SUPPORT_UNIT = ITEMS.registerSimpleItem(
             "life_support_unit",
-            new Item.Properties().stacksTo(8)
+            props -> props.stacksTo(8)
     );
     public static final DeferredItem<LaunchCraftKitItem> LAUNCH_CRAFT_KIT = ITEMS.registerItem(
             "launch_craft_kit",
             LaunchCraftKitItem::new,
-            new Item.Properties().stacksTo(1)
+            props -> props.stacksTo(1)
     );
 
     private EarthToStarsItems() {
