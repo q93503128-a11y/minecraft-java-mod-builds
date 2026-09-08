@@ -68,6 +68,21 @@ public final class UiVisualLanguage {
     }
 
     /**
+     * Transitional source-compatible entry point for the already validated M5 screens.
+     * New/edited call sites should use {@link FrameState}; this overload is removed when the selected atlas lands.
+     */
+    public static void frame(
+            GuiGraphicsExtractor graphics,
+            int x,
+            int y,
+            int width,
+            int height,
+            boolean focused
+    ) {
+        frame(graphics, x, y, width, height, focused ? FrameState.FOCUS : FrameState.IDLE);
+    }
+
+    /**
      * Temporary mapping while M5 still uses Minecraft-native bridge sprites.
      * The selected external atlas will provide distinct sprites for these states; callers do not need to change.
      */
