@@ -1,67 +1,69 @@
 # Riftfrontier Automation Handoff
 
-This file is a recovery aid for scheduled development sessions. Canonical design documents and current GitHub `main` remain authoritative.
+This file is a recovery aid for scheduled development sessions. Current GitHub `main` and canonical design documents remain authoritative.
 
 ## Last recovered baseline
 
-- Re-read current remote `main`, then `AGENTS.md` → `docs/BUILD_STANDARD.md` → `docs/QUALITY_STANDARD.md` → `PROJECT.md` → `CANONICAL.md` → `GAME_DESIGN_MASTER.md` → `CONTENT_ARCHITECTURE.md` → `ROADMAP.md`, current M3 reference/runtime files, then this handoff.
-- Recovered remote `main` before this batch: `6217e52e4726229957f062faa9f041bc8afe325b`.
-- Previous asset-intake workflow run `34255526319` is confirmed full `SUCCESS`.
-- No placeholder production resources, fake production manifest, or speculative animation dependency were added.
+- Required docs were re-read from remote `main` in canonical order.
+- Remote `main` recovered at run start: `1209e9b4ffab2e63beabb6c2ae9e5d8670187c3c`.
+- Previous Region 01 source-selection workflow `34260793930`: full `SUCCESS`.
+- `Dragon Evolved` remains the selected Region 01 first-boss geometry/rig derivation source only; original `Atlas` art is not production-approved.
 
 ## Completed in this batch
 
-M3 original-source rig inspection + Region 01 first-boss source selection:
+M3 deterministic selected-source derivation boundary:
 
-- Obtained the original creator-hosted Quaternius `Dragon_Evolved.gltf` directly from the Ultimate Monsters Google Drive distribution rather than relying on mirror metadata.
-- Exact source file: 991,335 bytes; SHA-256 `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c`.
-- Direct glTF inspection: 1 mesh, 1 material (`Atlas`), 1 skin (`CharacterArmature`), 46 joints, about 4,437 vertices / 7,440 triangles, local extent about 5.4752 × 2.8579 × 2.4156.
-- Exact source clips: `Death`, `Fast_Flying`, `Flying_Idle`, `Headbutt`, `HitReact`, `No`, `Punch`, `Yes`.
-- Verified independent head/neck, bilateral forelimb/finger, bilateral wing and body-chain rig branches. Source `Punch` and `Headbutt` use articulated motion rather than only whole-body translation.
-- Sampled source skinning across `Punch` and `Headbutt`; poses stayed finite/bounded with no catastrophic exploded-vertex deformation in this technical inspection.
-- Promoted `Dragon Evolved` from `CANDIDATE` to `SELECTED` specifically as the Region 01 first-boss **geometry/rig derivation source**.
-- The original bright low-poly `Atlas` texture/style is explicitly not approved unchanged as final Region 01 art. Production material/texture treatment, authored attack clips, renderer, VFX/sound, hitbox alignment and field-play remain separate gates.
-- Blue Demon, Goleling Evolved and Mushroom King remain rejected for this boss role. QAL Bestiary raw source-repository bundling remains unapproved.
+- Added `assets/sources/region_01_boss_dragon_evolved.source.json` as the machine-readable exact source contract.
+- Contract pins `Dragon_Evolved.gltf` SHA-256 `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c`, glTF 2.0, 1 mesh, 1 skin, 46 joints, 8 exact source clips, and the third-party license record.
+- Added `tools/derive_region01_boss_source.py`.
+- Tool fail-closes on source hash/filename/version/mesh/skin/joint/clip drift and invalid node/accessor/channel references.
+- Tool emits deterministic canonical JSON containing only node hierarchy, transforms, skin joint order/binding, and animation channel/duration inventory.
+- Original materials, textures, images, buffers, mesh payloads, final-art approval, and hit timing are explicitly excluded from the derived binding-plan contract.
+- No GeckoLib dependency, production renderer, placeholder model, fake production manifest, or speculative final texture was added.
 
 ## Changed systems/files
 
-- `docs/REGION_01_BOSS_CANDIDATE_AUDIT.md` — source-rig selection decision and exact direct-source evidence.
-- `docs/THIRD_PARTY_ASSETS.md` — exact selected asset provenance/hash/use boundary.
+- `assets/sources/region_01_boss_dragon_evolved.source.json` — exact selected-source contract.
+- `tools/derive_region01_boss_source.py` — deterministic source verification + rig/animation binding-plan derivation.
+- `tools/tests/test_derive_region01_boss_source.py` — deterministic/fail-closed regression coverage.
 - `docs/AUTOMATION_HANDOFF.md` — this recovery update.
 
 ## Verification
 
-- Previous asset-intake run `34255526319`: full Riftfrontier workflow `SUCCESS`.
-- Original `Dragon_Evolved.gltf`: directly downloaded from creator distribution and parsed locally.
-- Direct source SHA-256: `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c`.
-- Structural glTF/rig/animation inspection: PASS for source-rig selection.
-- Bounded sampled deformation inspection of existing `Punch` / `Headbutt`: PASS for catastrophic-deformation rejection only; this is not a final animation-quality approval.
-- Current docs-selection CI run `34260793930` for `d3406d44ae6ae17bfe336d120e0fe38ab25cbe0d`: `IN PROGRESS` at last check. Do not claim its clean build/GameTest/server/client/JAR gates succeeded until the run is completed successfully.
-- Physical selected model/derived runtime resource committed to `src/main/resources`: NOT YET IMPLEMENTED.
-- GeckoLib conversion/runtime integration: NOT IMPLEMENTED / NOT TESTED.
-- Production Region 01 material/texture treatment: NOT IMPLEMENTED / NOT TESTED.
-- In-Minecraft boss scale/hitbox/animation alignment: NOT TESTED.
-- Production VFX/sound timing: NOT IMPLEMENTED / NOT TESTED.
-- Human Minecraft combat readability/field play: NOT TESTED.
+- Local new-tool unit tests: 5/5 PASS.
+- Test-bearing commit: `3fcbf01d0b30ff119e9ad9888f08a76dcddeeb26`.
+- `Build Riftfrontier` run `34267542813`: full `SUCCESS`.
+- CI asset-intake Python tests: SUCCESS.
+- CI clean test/build: SUCCESS.
+- Required native GameTest gate: SUCCESS.
+- Dedicated server smoke: SUCCESS.
+- Xvfb client smoke: SUCCESS.
+- Executable JAR inspection/SHA + deliverable/report upload: SUCCESS.
+- Exact selected creator-source file re-run through the new contract in this batch: NOT RUN; the prior inspected source bytes were not persisted in this execution environment.
+- Production derived Minecraft model/animation resources: NOT IMPLEMENTED / NOT TESTED.
+- GeckoLib runtime integration and renderer: NOT IMPLEMENTED / NOT TESTED.
+- Production material/texture treatment: NOT IMPLEMENTED / NOT TESTED.
+- In-Minecraft boss scale/hitbox/deformation alignment: NOT TESTED.
+- Production VFX/sound timing and human field-play: NOT IMPLEMENTED / NOT TESTED.
 
 ## Do not repeat or revert
 
-- Preserve `AttackPattern` as the single authoritative combat timing source and ACTIVE-only damage semantics.
-- Preserve fail-closed logical resolver, whole-manifest physical promotion, atomic client resource reload, and exact content-generation matching before render resolution.
-- `Dragon Evolved` is now the selected geometry/rig derivation source. Do not restart the previous candidate search unless a later deterministic conversion or actual Minecraft quality gate finds a non-fixable blocker.
-- Do not treat the original `Atlas` material/texture style as approved final art.
-- Do not create placeholder production resources or a fake production manifest.
-- Do not add GeckoLib merely because it is compatible; re-verify exact 26.2 coordinates and add it only as part of the concrete selected-rig integration.
-- Keep Blue Demon, Goleling Evolved and Mushroom King rejected for the Region 01 first boss unless the canonical boss contract is intentionally changed with a separate decision record.
-- Do not raw-bundle QAL Bestiary assets into this public source repository without clearer redistribution permission.
-- Do not tune M2 pressure/patrol values without field-play evidence or promote M2 technical proxies to production art/AI.
+- Preserve `AttackPattern` as the only authoritative hit-timing source and ACTIVE-only damage semantics.
+- Preserve fail-closed logical/physical asset resolution, atomic client resource reload, and exact content-generation matching.
+- Do not restart Region 01 boss candidate search unless the selected rig hits a non-fixable deterministic conversion/runtime blocker.
+- Do not treat source `Atlas` material/texture as approved final art.
+- Do not weaken or bypass the selected-source SHA/structure contract to accept a drifting download.
+- Do not copy material/texture/buffer payloads through the rig binding-plan intermediate.
+- Do not add GeckoLib merely because it is compatible; choose the currently verified 26.2-compatible coordinate only as part of a concrete renderer integration.
+- Do not create placeholder production resources or a fake `presentation_assets` manifest.
+- Do not tune M2 pressure/patrol values without field-play evidence.
 
 ## Exact next start point
 
-1. Re-check current remote `main` and finish CI run `34260793930`; if any gate fails, fix the first real failure without weakening the source-selection or presentation gates.
-2. Re-verify the exact GeckoLib 5.5.1 coordinates/support for Minecraft 26.2 + NeoForge at the moment of integration.
-3. Establish the smallest deterministic conversion/import path from the selected `Dragon_Evolved.gltf` skeleton into the chosen Minecraft/GeckoLib resource format. Preserve the selected rig semantics instead of inventing an unrelated replacement skeleton.
-4. Add only the exact CC0 selected source/derived runtime files that are actually needed, record their repository paths and hashes, and avoid bundling unrelated pack content.
-5. Author distinct committed-strike, line/displacement, arena-pressure and phase-transition presentation clips around authoritative `AttackPattern` telegraph/ACTIVE/recovery timing.
-6. Create the first real `presentation_assets` manifest only after physical derived resources exist, then connect `BossPresentationRenderResolver` to the renderer.
-7. Validate resource reload, model scale/hitbox alignment, deformation, VFX/sound timing and worst-case boss encounter behavior in Minecraft; human field-play remains mandatory before M3 presentation completion.
+1. Re-check remote `main`, canonical docs, and this handoff.
+2. Re-obtain the exact creator-hosted `Dragon_Evolved.gltf`; require SHA-256 `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c` and run `tools/derive_region01_boss_source.py` against `assets/sources/region_01_boss_dragon_evolved.source.json`.
+3. Inspect the real emitted binding plan and implement the deterministic production geometry/skeleton conversion that preserves the selected joint hierarchy; do not copy the unapproved `Atlas` look.
+4. At the moment renderer work begins, freshly verify the current GeckoLib 5.x coordinate for Minecraft 26.2 + NeoForge and add it only if the chosen production resource path needs it.
+5. Produce actual derived model/animation resources and validate them through the existing client `ResourceProbe`/reload generation gates.
+6. Only after physical resources exist, create the first real `presentation_assets` manifest and connect `BossPresentationRenderResolver` to the renderer.
+7. Then author distinct commitment/displacement/arena-pressure/phase-transition presentation clips around authoritative server timing and perform in-Minecraft scale, hitbox, deformation, VFX/sound, performance, and human readability gates.
