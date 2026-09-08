@@ -50,3 +50,5 @@ jobs:
           git add projects/frontier-settlement
           git commit -m 'frontier: fix worker production stalls and tick spikes in alpha.129'
           git push origin HEAD:main
+
+# retry: production-status audit aligned with the Alpha.129 mine search state
