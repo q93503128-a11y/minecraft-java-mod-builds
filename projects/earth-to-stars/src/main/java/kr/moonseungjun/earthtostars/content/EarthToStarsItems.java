@@ -1,6 +1,7 @@
 package kr.moonseungjun.earthtostars.content;
 
 import kr.moonseungjun.earthtostars.EarthToStars;
+import kr.moonseungjun.earthtostars.ship.runtime.minecraft.ShipSystemsManager;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -17,13 +18,13 @@ public final class EarthToStarsItems {
             "avionics_unit",
             props -> props.stacksTo(16)
     );
-    public static final DeferredItem<Item> PROPELLANT_CELL = ITEMS.registerSimpleItem(
+    public static final DeferredItem<ShipSupplyItem> PROPELLANT_CELL = ITEMS.registerItem(
             "propellant_cell",
-            props -> props.stacksTo(16)
+            props -> new ShipSupplyItem(props.stacksTo(16), ShipSystemsManager.SupplyType.PROPELLANT)
     );
-    public static final DeferredItem<Item> OXYGEN_CARTRIDGE = ITEMS.registerSimpleItem(
+    public static final DeferredItem<ShipSupplyItem> OXYGEN_CARTRIDGE = ITEMS.registerItem(
             "oxygen_cartridge",
-            props -> props.stacksTo(16)
+            props -> new ShipSupplyItem(props.stacksTo(16), ShipSystemsManager.SupplyType.OXYGEN)
     );
     public static final DeferredItem<Item> LIFE_SUPPORT_UNIT = ITEMS.registerSimpleItem(
             "life_support_unit",
