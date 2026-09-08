@@ -80,7 +80,7 @@ class ShipKernelTest {
         UUID owner = UUID.randomUUID();
         UUID crew = UUID.randomUUID();
         ModuleCatalog catalog = catalog();
-        ShipState ship = newShip(owner);
+        ShipState ship = newShipWithSensor(owner);
         ship.assignRole(owner, crew, CrewRole.CREW);
         ship.installModule(owner, catalog.require("command_core_mk1"), ModuleInstance.pristine("command_core_mk1", "core"));
         ship.installModule(owner, catalog.require("engine_mk1"), ModuleInstance.pristine("engine_mk1", "engine"));
@@ -96,13 +96,35 @@ class ShipKernelTest {
     }
 
     @Test
+    void schemaOneShipMigratesMissingSensorSlotWithoutChangingExistingSlots() {
+        UUID owner = UUID.randomUUID();
+        ModuleCatalog catalog = catalog();
+        ShipState oldShape = newShip(owner);
+        byte[] encoded = ShipStateCodec.encode(oldShape);
+        encoded[4] = 0;
+        encoded[5] = 0;
+        encoded[6] = 0;
+        encoded[7] = 1;
+
+        ShipState migrated = ShipStateCodec.decode(encoded, catalog);
+
+        assertEquals(oldShape.shipId(), migrated.shipId());
+        assertEquals(oldShape.ownerId(), migrated.ownerId());
+        assertEquals(oldShape.slots().size() + 1, migrated.slots().size());
+        assertEquals(ModuleSlotType.UTILITY, migrated.slots().get("sensor").type());
+        for (ModuleSlot slot : oldShape.slots().values()) {
+            assertEquals(slot, migrated.slots().get(slot.id()));
+        }
+    }
+
+    @Test
     void unknownPersistenceSchemaIsRejectedInsteadOfReset() {
         ModuleCatalog catalog = catalog();
         byte[] encoded = ShipStateCodec.encode(newShip(UUID.randomUUID()));
         encoded[4] = 0;
         encoded[5] = 0;
         encoded[6] = 0;
-        encoded[7] = 2;
+        encoded[7] = 99;
 
         assertThrows(IllegalArgumentException.class, () -> ShipStateCodec.decode(encoded, catalog));
     }
@@ -128,6 +150,17 @@ class ShipKernelTest {
         ));
     }
 
+    private static ShipState newShipWithSensor(UUID owner) {
+        return ShipState.create(new ShipId(UUID.randomUUID()), owner, List.of(
+                new ModuleSlot("core", ModuleSlotType.CORE, 1),
+                new ModuleSlot("engine", ModuleSlotType.PROPULSION, 1),
+                new ModuleSlot("power", ModuleSlotType.POWER, 1),
+                new ModuleSlot("cargo", ModuleSlotType.CARGO, 1),
+                new ModuleSlot("turret", ModuleSlotType.WEAPON_HARDPOINT, 1),
+                new ModuleSlot("sensor", ModuleSlotType.UTILITY, 1)
+        ));
+    }
+
     private static ModuleCatalog catalog() {
         ModuleCatalog catalog = new ModuleCatalog();
         catalog.register(new ModuleDefinition("command_core_mk1", ModuleCategory.COMMAND, ModuleSlotType.CORE, 1, 2.0, 1.0, 0.0, 0.0));
@@ -135,6 +168,7 @@ class ShipKernelTest {
         catalog.register(new ModuleDefinition("battery_mk1", ModuleCategory.POWER, ModuleSlotType.POWER, 1, 3.0, 0.0, 4.0, 100.0));
         catalog.register(new ModuleDefinition("cargo_mk1", ModuleCategory.CARGO, ModuleSlotType.CARGO, 1, 3.0, 0.2, 0.0, 64.0));
         catalog.register(new ModuleDefinition("autocannon_mk1", ModuleCategory.WEAPON, ModuleSlotType.WEAPON_HARDPOINT, 1, 5.0, 2.0, 0.0, 0.0));
+        catalog.register(new ModuleDefinition("orbital_scanner_mk1", ModuleCategory.UTILITY, ModuleSlotType.UTILITY, 1, 2.0, 0.6, 0.0, 0.0));
         return catalog;
     }
 }
