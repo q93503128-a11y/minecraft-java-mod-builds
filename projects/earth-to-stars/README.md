@@ -2,7 +2,7 @@
 
 Minecraft Java / NeoForge 26.2 기반의 SF 우주 개척·모듈식 함선 성장 프로젝트다.
 
-> **상태: M0 VERIFIED / P0-A SAVEDDATA ADAPTER BUILD VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / P0-D LINKED INTERIOR BACKEND BUILD VERIFIED / P0-E TURRET BACKEND BUILD VERIFIED / P0-F CENTRAL SYSTEMS BACKEND BUILD VERIFIED / P0-G DEDICATED LIFECYCLE VERIFIED / LIVE MULTIPLAYER NOT TESTED / P0-H NEXT**
+> **상태: P0 AUTOMATED TECHNICAL GATES COMPLETE / P0-G DEDICATED LIFECYCLE VERIFIED / P0-H NETHER-END INDEPENDENCE VERIFIED / LIVE MULTIPLAYER NOT TESTED / M1 EARTH-ORBIT GAMEPLAY SLICE NEXT**
 
 ## 한 줄 설명
 
@@ -31,7 +31,8 @@ Minecraft Java / NeoForge 26.2 기반의 SF 우주 개척·모듈식 함선 성�
 - `docs/01_TECHNICAL_ARCHITECTURE.md` — B형 모듈식 함선, 서버 권한, interior instance, 네트워크, 저장, 성능 구조
 - `docs/02_WORLD_PROGRESSION_CONTENT.md` — 지구→궤도→달→소행성→행성→심우주 진행과 자원 역할
 - `docs/03_UI_ART_REFERENCE_GATE.md` — SF UI/모델/VFX/사운드의 외부 레퍼런스 기반 제작 게이트
-- `docs/04_P0_VERTICAL_SLICE.md` — 구현 전 기술 위험 제거와 첫 플레이어블 수직 구간
+- `docs/04_P0_VERTICAL_SLICE.md` — 기술 위험 제거와 첫 플레이어블 수직 구간
+- `src/main/resources/data/earth_to_stars/progression/main_path.json` — 실제 CI가 검사하는 메인 진행 그래프 정본
 - `THIRD_PARTY_ASSETS.md` — 외부 코드/자산/레퍼런스의 출처·라이선스 기록
 - `CHANGELOG.md` — 실제 변경·검증 기록
 
@@ -59,39 +60,52 @@ Minecraft 생존
 
 ## 현재 검증 기준
 
-최신 검증 기준 커밋: `557d273ecfa78c1ba9cc62956cd78f6eb7c55153`
+### P0-H progression gate
 
-GitHub Actions `Build earth-to-stars` run `34188840459`:
+최신 검증 기준 커밋: `8b3b4edda64505d476418e0b08fbe85baea6b0ba`
 
+GitHub Actions `Build earth-to-stars` run `34189697283`:
+
+- progression validator self-tests: PASS
+- canonical main progression graph validation: PASS
+- Nether-only required main route rejection: PASS
+- End-only required main route rejection: PASS
+- clean alternative route acceptance: PASS
+- optional Nether/End side-route acceptance: PASS
+- dependency cycle / unknown node rejection: PASS
 - `clean test build`: PASS
+- P0-A~G JUnit regression: PASS
 - production JAR verify: PASS
-- P0-A~F regression JUnit: PASS
-- P0-G systems snapshot restore JUnit: PASS
-- dedicated server 1회차 실제 boot: PASS
-- `earth_to_stars:orbital_space` dedicated-server registration: PASS
-- `earth_to_stars:ship_interiors` dedicated-server registration: PASS
-- seed world 정상 종료 및 모든 dimension save: PASS
-- 같은 `run/world`로 dedicated server 2회차 boot: PASS
-- `ShipId / owner / module slots` disk restore: PASS
-- `ShipId → interior slot` disk restore: PASS
-- central `PowerGrid / AmmoPool` disk restore: PASS
-- restored `ShipSystemsRuntime` 초기화: PASS
-- 센서는 저장하지 않고 재스캔하는 휘발 cache 정책: PASS
-- JAR: `earth_to_stars-0.1.0-alpha.7.jar`
-- SHA-256: `76bc15395500382f0acbc68826c7e6b95533b5ce9863de40e837c9a2856ac708`
+- progression graph production JAR packaging: PASS
+- JAR: `earth_to_stars-0.1.0-alpha.8.jar`
+- SHA-256: `3af179b7cdb16236722507434a000f38dcc82fc59079aab584e1f79771f2e688`
 
-P0-G lifecycle probe는 일반 플레이어에게 노출되는 명령/UI가 아니다. CI에서만 환경변수로 활성화되며, 첫 서버 부팅에서 고정 `ShipId`의 ship/interior/system state를 실제 SavedData에 기록하고 정상 종료한 뒤, 두 번째 서버 부팅이 같은 디스크 상태를 읽어 동일 값을 검증한다.
+P0-H는 단순히 `nether`/`end` 문자열이 존재하면 실패하는 검사가 아니다. `requires_any` 대체 경로를 가진 진행 그래프를 분석해서 **각 메인 마일스톤까지 Nether/End를 거치지 않는 실제 선행 경로가 하나 이상 존재하는지** 확인한다. Nether/End shortcut이나 sidegrade 자체는 허용되지만 그것만이 유일한 필수 경로가 되면 CI가 실패한다.
 
-검증값:
+현재 정본 메인 마일스톤은 Earth Industry → Launch Craft → Earth Orbit → Orbital Salvage → Moon → Near-Earth Asteroids → Mars → Main Belt → Outer System → Deep Space까지 연결된다.
 
-- ship: `11111111-2222-3333-4444-555555555555`
-- interior slot: `0`
-- power: `37.5`
-- autocannon ammo: `73`
+### P0-G lifecycle gate
 
-전력/탄약은 이제 함선 단위 영속 정본이다. 센서 contact는 재시작 전 월드 엔티티 상태를 그대로 들고 있으면 유령 표적이 생길 수 있으므로 의도적으로 persistence 대상이 아니며 서버 기동 후 다시 획득한다.
+P0-G의 실제 디스크 생명주기 검증은 run `34188840459`에서 이미 완료했다. alpha.8에서는 공용 검증 예산 원칙에 따라 이 비싼 dedicated server 2회 부팅을 다시 돌리지 않았다.
 
-현재 projectile, ArmorStand exterior, 기술 interior room, command 조작면은 여전히 P0 프록시다. 최종 모델·트레이서·총구화염·사운드·조종석 UI·카메라·함선 내부 비주얼로 간주하지 않는다.
+P0-G에서 실제 검증된 항목:
+
+- dedicated server 1회차 boot
+- `earth_to_stars:orbital_space` registration
+- `earth_to_stars:ship_interiors` registration
+- real SavedData write
+- clean shutdown / all dimension save
+- same world directory 2회차 boot
+- same `ShipId / owner / module slots` restore
+- same `ShipId → interior slot` restore
+- central power `37.5` restore
+- autocannon ammo `73` restore
+
+센서 contact, pilot/turret lease, 논리 projectile, 임시 exterior entity ID는 restart 후 재구축해야 하는 휘발 상태이므로 persistence 대상이 아니다.
+
+## 현재 기술 프록시
+
+현재 projectile, ArmorStand exterior, 기술 interior room, command 조작면, 빈 orbital space는 P0 프록시다. 최종 모델·트레이서·총구화염·사운드·조종석 UI·카메라·함선 내부·지구/우주 비주얼로 간주하지 않는다.
 
 ## 아직 실게임 검증/구현하지 않은 것
 
@@ -105,14 +119,33 @@ P0-G lifecycle probe는 일반 플레이어에게 노출되는 명령/UI가 아�
 - client smoke / production visual quality
 - production ship/interior/turret visual
 
-자동 dedicated-server lifecycle 성공을 위 실플레이 항목까지 검증한 것으로 간주하지 않는다.
+자동 테스트나 dedicated-server lifecycle 성공을 위 실플레이 항목까지 검증한 것으로 간주하지 않는다.
 
-## 다음 작업
+## 다음 작업 — M1 Earth/Orbit Gameplay Slice
 
-다음 의미 있는 작업 단위는 **P0-H Nether/End Independence Validator**다.
+P0의 자동 기술 위험 제거는 완료했다. 이제 기술검증을 계속 옆으로 늘리지 않고 첫 실제 게임 루프 제작으로 넘어간다.
 
-메인 진행 그래프에서 Nether/End 전용 자원·구조물·advancement가 지구→우주 메인 루트의 필수 ancestor가 되는 순간 자동 실패시키는 검증기를 넣는다. Nether/End는 sidegrade, shortcut, specialist material, late-game variant로는 허용한다.
+범위:
 
-P0-H까지 닫은 뒤 실제 조종/전환/포탑/내부를 하나의 플레이 가능한 덩어리로 묶어 사용자 테스트를 요청한다. 작은 수정마다 테스트를 반복시키지 않는다.
+```text
+Earth 생존/초기 산업
+→ launch craft 제작
+→ fuel / oxygen 준비
+→ 직접 상승
+→ atmosphere progression
+→ Earth Orbit
+→ 첫 salvage contact
+→ 첫 hostile contact
+→ manual/auto autocannon 사용
+→ salvage 회수
+→ Earth 귀환
+→ 함선 개수조
+```
+
+다음 단계의 목표는 기능 목록이 아니라 다음 경험이다.
+
+> **“내가 지구에서 준비한 작은 함선으로 직접 우주에 올라가, 궤도에서 처음으로 자원과 위험을 만나고 살아 돌아왔다.”**
+
+이 덩어리가 실제로 플레이 가능해진 뒤에 사용자에게 한 번에 테스트를 요청한다. 작은 수정마다 테스트를 반복시키지 않는다.
 
 최종 함선 모델·cockpit UI·내부 디자인·포탑 모델/VFX/사운드는 기술 프록시 단계에서 즉흥 제작하지 않고 `docs/03_UI_ART_REFERENCE_GATE.md`를 통과한 뒤 production 품질로 진행한다.
