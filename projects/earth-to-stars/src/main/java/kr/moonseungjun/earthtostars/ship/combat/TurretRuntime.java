@@ -3,6 +3,7 @@ package kr.moonseungjun.earthtostars.ship.combat;
 import kr.moonseungjun.earthtostars.ship.domain.ShipPermission;
 import kr.moonseungjun.earthtostars.ship.domain.ShipState;
 import kr.moonseungjun.earthtostars.ship.runtime.ShipVec3;
+import kr.moonseungjun.earthtostars.ship.systems.ShipSystemsRuntime;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -14,7 +15,6 @@ public final class TurretRuntime {
     private final ShipState ship;
     private final TurretProfile profile;
     private TurretControlMode mode = TurretControlMode.OFF;
-    private int ammo;
     private long nextReadyTick;
     private TurretControlLease lease;
     private ShipVec3 manualAim = new ShipVec3(0.0D, 0.0D, 1.0D);
@@ -22,7 +22,6 @@ public final class TurretRuntime {
     public TurretRuntime(ShipState ship, TurretProfile profile) {
         this.ship = Objects.requireNonNull(ship, "ship");
         this.profile = Objects.requireNonNull(profile, "profile");
-        this.ammo = profile.ammoCapacity();
     }
 
     public void setMode(UUID actorId, TurretControlMode newMode) {
@@ -53,20 +52,32 @@ public final class TurretRuntime {
         return true;
     }
 
-    public Optional<TurretFireSolution> fireManual(UUID playerId, UUID sessionId, ShipVec3 origin, ShipVec3 shipForward, long tick) {
+    public Optional<TurretFireSolution> fireManual(
+            UUID playerId,
+            UUID sessionId,
+            ShipSystemsRuntime systems,
+            ShipVec3 origin,
+            ShipVec3 shipForward,
+            long tick
+    ) {
         expireLease(tick);
         if (lease == null || mode != TurretControlMode.MANUAL) return Optional.empty();
         if (!lease.controllerId().equals(playerId) || !lease.sessionId().equals(sessionId)) return Optional.empty();
-        return fire(origin, shipForward, manualAim, Optional.empty(), tick);
+        return fire(systems, origin, shipForward, manualAim, Optional.empty(), tick);
     }
 
-    public Optional<TurretFireSolution> tickAuto(ShipSensorGrid sensorGrid, ShipVec3 origin, ShipVec3 shipForward, long tick) {
-        if (mode != TurretControlMode.AUTO_DEFENSE || ammo <= 0 || tick < nextReadyTick) return Optional.empty();
-        Optional<SensorContact> target = sensorGrid.bestHostile(origin, shipForward, profile);
+    public Optional<TurretFireSolution> tickAuto(
+            ShipSystemsRuntime systems,
+            ShipVec3 origin,
+            ShipVec3 shipForward,
+            long tick
+    ) {
+        if (mode != TurretControlMode.AUTO_DEFENSE || tick < nextReadyTick) return Optional.empty();
+        Optional<SensorContact> target = systems.sensorGrid().bestHostile(origin, shipForward, profile);
         if (target.isEmpty()) return Optional.empty();
         SensorContact contact = target.orElseThrow();
         ShipVec3 direction = subtract(contact.position(), origin).normalized();
-        return fire(origin, shipForward, direction, Optional.of(contact.targetId()), tick);
+        return fire(systems, origin, shipForward, direction, Optional.of(contact.targetId()), tick);
     }
 
     public boolean releaseManualControl(UUID playerId) {
@@ -81,15 +92,32 @@ public final class TurretRuntime {
 
     public ShipState ship() { return ship; }
     public TurretControlMode mode() { return mode; }
-    public int ammo() { return ammo; }
     public Optional<TurretControlLease> lease() { return Optional.ofNullable(lease); }
     public TurretProfile profile() { return profile; }
 
-    private Optional<TurretFireSolution> fire(ShipVec3 origin, ShipVec3 shipForward, ShipVec3 direction, Optional<UUID> targetId, long tick) {
-        if (ammo <= 0 || tick < nextReadyTick || !insideArc(shipForward, direction)) return Optional.empty();
-        ammo--;
+    private Optional<TurretFireSolution> fire(
+            ShipSystemsRuntime systems,
+            ShipVec3 origin,
+            ShipVec3 shipForward,
+            ShipVec3 direction,
+            Optional<UUID> targetId,
+            long tick
+    ) {
+        Objects.requireNonNull(systems, "systems");
+        if (!systems.shipId().equals(ship.shipId())) {
+            throw new IllegalArgumentException("weapon cannot consume systems from another ship");
+        }
+        if (tick < nextReadyTick || !insideArc(shipForward, direction)) return Optional.empty();
+        if (!systems.tryFire(profile)) return Optional.empty();
         nextReadyTick = tick + profile.cooldownTicks();
-        return Optional.of(new TurretFireSolution(origin, direction.normalized(), targetId, profile.projectileSpeed(), profile.projectileLifetimeTicks(), profile.damage()));
+        return Optional.of(new TurretFireSolution(
+                origin,
+                direction.normalized(),
+                targetId,
+                profile.projectileSpeed(),
+                profile.projectileLifetimeTicks(),
+                profile.damage()
+        ));
     }
 
     private boolean insideArc(ShipVec3 forward, ShipVec3 direction) {
