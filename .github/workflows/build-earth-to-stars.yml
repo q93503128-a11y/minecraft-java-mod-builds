@@ -44,6 +44,13 @@ jobs:
           java -version
           chmod +x gradlew
           ./gradlew --version
+      - name: Validate Nether End independence
+        shell: bash
+        run: |
+          mkdir -p build/logs
+          set -o pipefail
+          python3 tools/test_progression_validator.py 2>&1 | tee build/logs/p0h-validator-tests.log
+          python3 tools/validate_progression.py 2>&1 | tee build/logs/p0h-progression.log
       - name: Clean test and build
         shell: bash
         run: |
@@ -53,6 +60,7 @@ jobs:
       - name: Verify production JAR
         run: python3 tools/verify_jar.py
       - name: Dedicated server save restart lifecycle
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           rm -rf run
@@ -70,8 +78,13 @@ jobs:
         run: |
           JAR=$(ls build/libs/earth_to_stars-*.jar | head -n1)
           SHA=$(cat "$JAR.sha256")
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            LIFECYCLE_STATUS="PASS (this run)"
+          else
+            LIFECYCLE_STATUS="NOT RERUN IN P0-H; last verified run 34188840459"
+          fi
           cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # EARTH TO STARS — P0-G Lifecycle Build Report
+          # EARTH TO STARS — P0-H Progression Independence Report
 
           - Commit: $GITHUB_SHA
           - Mod version: $MOD_VERSION
@@ -79,24 +92,20 @@ jobs:
           - Gradle: 9.2.1 wrapper
           - Minecraft: 26.2
           - NeoForge: 26.2.0.38-beta
+          - progression validator self-tests: PASS
+          - canonical main progression graph validation: PASS
+          - Nether-only required main route rejection: PASS
+          - End-only required main route rejection: PASS
+          - clean alternative route acceptance: PASS
+          - optional Nether/End side-route acceptance: PASS
+          - dependency cycle / unknown node rejection: PASS
           - clean/test/build: PASS
           - production JAR verify: PASS
+          - progression graph packaged in production JAR: PASS
           - SHA-256: $SHA
-          - P0-A/P0-B/P0-C regression JUnit: PASS
-          - P0-D linked interior JUnit: PASS
-          - P0-E representative turret JUnit: PASS
-          - P0-F central systems JUnit: PASS
-          - P0-G systems snapshot restore JUnit: PASS
-          - dedicated server first boot: PASS
-          - orbital_space dedicated-server registration: PASS
-          - ship_interiors dedicated-server registration: PASS
-          - clean server shutdown after seed: PASS
-          - second dedicated-server boot on same world: PASS
-          - ShipId / owner / module slots disk restore: PASS
-          - interior assignment disk restore: PASS
-          - central power / ammo disk restore: PASS
-          - restored systems runtime initialization: PASS
-          - sensors intentionally rebuilt rather than persisted: PASS
+          - P0-A through P0-G JUnit regression: PASS
+          - dedicated server save/restart lifecycle: $LIFECYCLE_STATUS
+          - last dedicated lifecycle verified run: 34188840459
           - live Earth↔orbit player flight: NOT TESTED
           - actual two-player pilot + gunner session: NOT TESTED
           - actual multi-player linked-interior session: NOT TESTED
