@@ -90,6 +90,36 @@ final class BossPresentationResolverTest {
             .byCode(BossPresentationProfileValidator.Code.DUPLICATE_PRESENTATION_CONTEXT).size());
     }
 
+    @Test
+    void assetManifestRequiresEveryProfileKeyWithTheCorrectProductionRole() {
+        BossPresentationProfile profile = completeProfile();
+        BossPresentationAssetManifest valid = completeManifest(profile);
+        assertFalse(valid.validateProfiles(List.of(profile)).hasErrors());
+
+        List<BossPresentationAssetManifest.Asset> missingSound = new ArrayList<>(valid.assets().values());
+        missingSound.removeIf(asset -> asset.logicalKey().equals(ContentId.parse("riftfrontier:sounds/charge_active")));
+        var missingReport = new BossPresentationAssetManifest(missingSound).validateProfiles(List.of(profile));
+        assertEquals(1, missingReport.byCode(BossPresentationAssetManifest.Code.MISSING_LOGICAL_KEY).size());
+
+        List<BossPresentationAssetManifest.Asset> wrongKind = new ArrayList<>(valid.assets().values());
+        wrongKind.removeIf(asset -> asset.logicalKey().equals(ContentId.parse("riftfrontier:animations/charge_active")));
+        wrongKind.add(new BossPresentationAssetManifest.Asset(
+            ContentId.parse("riftfrontier:animations/charge_active"), BossPresentationAssetManifest.Kind.VFX,
+            ContentId.parse("riftfrontier:actual/charge_active.animation.json"), "authored-test", "test-only"
+        ));
+        var wrongKindReport = new BossPresentationAssetManifest(wrongKind).validateProfiles(List.of(profile));
+        assertEquals(1, wrongKindReport.byCode(BossPresentationAssetManifest.Code.WRONG_ASSET_KIND).size());
+    }
+
+    @Test
+    void assetManifestPhysicalProbeFailsClosedWithoutInventingPlaceholderResources() {
+        BossPresentationAssetManifest manifest = completeManifest(completeProfile());
+        var report = manifest.validateResources((kind, resourceId) -> !resourceId.path().contains("charge_active.sound"));
+        assertEquals(1, report.byCode(BossPresentationAssetManifest.Code.MISSING_RESOURCE).size());
+        assertEquals(ContentId.parse("riftfrontier:sounds/charge_active"),
+            report.byCode(BossPresentationAssetManifest.Code.MISSING_RESOURCE).getFirst().logicalKey());
+    }
+
     private static ContentRegistry registry() {
         ContentRegistry registry = new ContentRegistry();
         registry.register(new CoreDefinition.AttackPattern(ATTACK, "line_charge", 4, 3, 5, Set.of("sidestep"), "charge"));
@@ -111,6 +141,32 @@ final class BossPresentationResolverTest {
             ContentId.parse("riftfrontier:boss_present"), BOSS, "base",
             ContentId.parse("riftfrontier:models/resolver_boss"), bindings
         );
+    }
+
+    private static BossPresentationAssetManifest completeManifest(BossPresentationProfile profile) {
+        List<BossPresentationAssetManifest.Asset> assets = new ArrayList<>();
+        assets.add(new BossPresentationAssetManifest.Asset(
+            profile.modelKey(), BossPresentationAssetManifest.Kind.MODEL,
+            ContentId.parse("riftfrontier:actual/resolver_boss.geo.json"), "authored-test", "test-only"
+        ));
+        for (BossPresentationProfile.AssetBinding binding : profile.bindings().values()) {
+            assets.add(new BossPresentationAssetManifest.Asset(
+                binding.animationKey(), BossPresentationAssetManifest.Kind.ANIMATION,
+                ContentId.parse("riftfrontier:actual/" + binding.animationKey().path().replace("animations/", "") + ".animation.json"),
+                "authored-test", "test-only"
+            ));
+            assets.add(new BossPresentationAssetManifest.Asset(
+                binding.vfxKey(), BossPresentationAssetManifest.Kind.VFX,
+                ContentId.parse("riftfrontier:actual/" + binding.vfxKey().path().replace("vfx/", "") + ".vfx.json"),
+                "authored-test", "test-only"
+            ));
+            assets.add(new BossPresentationAssetManifest.Asset(
+                binding.soundKey(), BossPresentationAssetManifest.Kind.SOUND,
+                ContentId.parse("riftfrontier:actual/" + binding.soundKey().path().replace("sounds/", "") + ".sound.json"),
+                "authored-test", "test-only"
+            ));
+        }
+        return new BossPresentationAssetManifest(assets);
     }
 
     private static BossPresentationProfile.BindingKey key(String cue, String delivery, String phase) {
