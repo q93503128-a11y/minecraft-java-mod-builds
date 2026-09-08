@@ -2,7 +2,7 @@
 
 Minecraft Java / NeoForge 26.2 기반의 SF 우주 개척·모듈식 함선 성장 프로젝트다.
 
-> **상태: M0 VERIFIED / P0-A PURE KERNEL VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C NEXT**
+> **상태: M0 VERIFIED / P0-A SAVEDDATA ADAPTER BUILD VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / P0-D NEXT**
 
 ## 한 줄 설명
 
@@ -59,34 +59,36 @@ Minecraft 생존
 
 ## 현재 검증 기준
 
-최신 검증 커밋: `cc89f0c1693fa063de5bb091ca355a35a5413b8f`
+최신 검증 구현 커밋: `a99f7b8470b09cfd509ec4f0aaf054c537db0f3f`
 
-GitHub Actions `Build earth-to-stars` run `34176522000`:
+GitHub Actions `Build earth-to-stars` run `34181251912`:
 
 - `clean test build`: PASS
-- P0-A kernel regression: PASS
-- P0-B movement/lease JUnit: PASS
-- Minecraft 26.2 control/network adapter compile: PASS
+- P0-A/P0-B regression JUnit: PASS
+- P0-C transition-policy JUnit: PASS
+- Minecraft 26.2 SavedData adapter compile: PASS
+- orbital dimension data packaging: PASS
+- transition runtime adapter compile: PASS
 - production JAR verify: PASS
-- JAR: `earth_to_stars-0.1.0-alpha.2.jar`
-- SHA-256: `a834a372008b1604d4591b595b88b10ba06446e1c149ce044a6842db0f3a2413`
+- JAR: `earth_to_stars-0.1.0-alpha.3.jar`
+- SHA-256: `d49b228ad0fee44ceb395d56b040f2a796e55f452b9b410117ed6f947c3d1fd8`
 
-현재 P0-B 구현에는 서버 권한 transform, forward/right/up 방향 basis, throttle, yaw/pitch, 가속/감속, 서버 발급 control lease, sequence replay 방어, logout/dimension lease 해제, client→server 입력 패킷과 Minecraft 임시 exterior proxy가 들어가 있다.
+P0-C에는 지구 상승 경계→궤도 레이어, 궤도 하강 경계→지구 귀환 정책과 서버 전환 transaction, 동일 `ShipState`/`ShipId` 유지 경계, lease 회수/재발급, target exterior 생성 실패 rollback, 서버 전역 SavedData 저장 어댑터, 저장된 소유 함선 restore 명령이 들어가 있다.
 
-GameTest, dedicated server smoke, client smoke, 실제 멀티플레이와 실제 조종감 검수는 아직 실행하지 않았다. 따라서 P0-B를 게임플레이 검증 완료라고 표현하지 않는다.
+다만 **실제 디스크 재시작 복원, dedicated server datapack boot, 실제 지구↔우주 비행, client 조종감, 다인 승객 이동, 실멀티는 아직 테스트하지 않았다.** 자동 빌드 성공을 실플레이 완료로 간주하지 않는다.
 
 ## 다음 작업
 
-다음 의미 있는 작업 단위는 **P0-C Earth → Orbital Space Transition + Minecraft persistence integration**이다.
+다음 의미 있는 작업 단위는 **P0-D Linked Ship Interior**다.
 
-1. Overworld test craft의 altitude transition envelope
-2. 서버 주도 orbital-space transfer
-3. 동일 `ShipId` 유지
-4. passenger/control recovery 정책
-5. transition 중 disconnect/failure recovery
-6. ShipState의 Minecraft 저장 경계 연결
-7. create → save → reload → 동일 shipId/modules 복원 integration 준비
+- 외부 함선이 이동해도 안정적인 interior instance 유지
+- `InteriorRef(shipId)` 서버 정본
+- exterior ↔ interior 출입
+- owner/crew/guest 접근 권한
+- 같은 함선의 power/alarm/damage 상태 projection 경계
+- 함선 전환 중 interior crew/passenger 처리 기반
+- 서버 재시작 뒤 exterior/interior link 복원 구조
 
-반복적인 사용자 테스트는 요구하지 않는다. P0-A 저장, P0-B 실제 조종 lifecycle, P0-C 전환을 충분히 묶은 뒤 한 번의 의미 있는 Minecraft 검증으로 확인한다.
+반복적인 사용자 테스트는 요구하지 않는다. P0-D까지 의미 있는 기술 묶음을 더 만든 뒤 P0-A/B/C/D의 실제 Minecraft lifecycle을 한 번의 큰 검증으로 확인한다.
 
 최종 함선 모델·cockpit UI·우주 전환 연출은 기술 프록시 단계에서 즉흥 제작하지 않고 `docs/03_UI_ART_REFERENCE_GATE.md`를 통과한 뒤 production 품질로 진행한다.

@@ -3,20 +3,20 @@
 - Slug: `earth-to-stars`
 - Mod ID: `earth_to_stars`
 - Namespace: `earth_to_stars`
-- Mod version: `0.1.0-alpha.2`
+- Mod version: `0.1.0-alpha.3`
 - Minecraft: `26.2`
 - Java: `25`
 - Loader: `NeoForge`
 - Loader version: `26.2.0.38-beta`
 - Gradle: `9.2.1`
 - Build plugin: `ModDevGradle 2.0.143`
-- Final JAR: `earth_to_stars-0.1.0-alpha.2.jar`
+- Final JAR: `earth_to_stars-0.1.0-alpha.3.jar`
 - Existing-world compatibility: before first playable alpha, save schema may change deliberately; from first playable alpha onward registry IDs, save roots, module IDs and migration rules become compatibility contracts.
 - Required dependencies: Minecraft, NeoForge
 - Optional external mods/libraries: none approved as a hard runtime dependency. Any addition requires current 26.2 compatibility, maintenance, license, multiplayer and performance review.
 - Forbidden bundled dependencies: Minecraft original files, NeoForge distribution files, external mod JARs, and models/textures/audio/UI assets without redistribution permission.
 - Datagen task: `runData` (`NOT RUN` at current gate)
-- GameTest task: not yet registered; first Minecraft ship persistence integration gate must add it
+- GameTest task: not yet registered; save/reload disk integration remains a later batched gate
 - Server smoke-test task: `runServer` (`NOT RUN` at current gate)
 - Client smoke-test task: `runClient` (`NOT RUN` at current gate)
 
@@ -87,45 +87,59 @@ Clients provide input, rendering, animation, UI and safe prediction only. A clie
 
 ## Current implementation baseline
 
-Latest verified implementation commit: `cc89f0c1693fa063de5bb091ca355a35a5413b8f`
+Latest verified implementation commit: `a99f7b8470b09cfd509ec4f0aaf054c537db0f3f`
 
-GitHub Actions `Build earth-to-stars` run `34176522000` verified:
+GitHub Actions `Build earth-to-stars` run `34181251912` verified:
 
 - M0 Gradle 9.2.1 / Java 25 / NeoForge 26.2.0.38-beta bootstrap regression
 - P0-A authoritative pure-Java ship kernel regression
-- P0-B pure movement transform and orientation math
-- throttle / yaw / pitch / acceleration / braking rules
-- server-issued control lease with session UUID, monotonically increasing input sequence and expiry
-- owner/crew pilot permission enforcement
-- client payload contains control input only; authoritative transform remains server-owned
-- logout/dimension-change lease revocation path
-- Minecraft-side temporary exterior proxy and control command/network adapter compile
+- P0-B movement transform/control lease regression
+- P0-C altitude/direction transition policy JUnit
+- server-global Minecraft `SavedData` adapter compile using versioned `ShipStateCodec` payloads
+- persisted ship key↔decoded `ShipId` consistency rejection path
+- persisted owner ship repository restore path and `/earthtostars ship restore` adapter compile
+- custom `earth_to_stars:orbital_space` dimension data packaged in production JAR
+- server-authoritative Earth↔orbit pilot transition transaction adapter compile
+- control lease revoke/reissue boundary across transition
+- target exterior spawn failure rollback path
 - `clean test build`
-- P0-A/P0-B JUnit
 - production JAR verifier
 
-Verified JAR SHA-256: `a834a372008b1604d4591b595b88b10ba06446e1c149ce044a6842db0f3a2413`
+Verified JAR SHA-256: `d49b228ad0fee44ceb395d56b040f2a796e55f452b9b410117ed6f947c3d1fd8`
 
-The P0-B exterior is currently a temporary vanilla `ArmorStand` proxy used only to prove the backend boundary. It is **not** a production ship model, visual target or content decision.
+The P0-B/P0-C exterior is still a temporary vanilla `ArmorStand` proxy. The orbital layer is also a technical P0 environment. Neither is a production ship model, final space presentation or final world-design decision.
 
-Not yet verified:
+## Verification boundary
 
-- Minecraft SavedData persistence adapter
+Verified by the alpha.3 automated gate:
+
+- source/API compilation against Minecraft 26.2 / NeoForge 26.2.0.38-beta
+- pure ship kernel/movement/transition policy tests
+- production JAR structure and packaged orbital dimension data
+- SavedData and TeleportTransition adapters compile as part of the mod
+
+Still **NOT RUN / NOT TESTED**:
+
+- actual disk save → dedicated-server restart → same ship restore
 - GameTest create/save/reload/restore integration
-- dedicated server smoke
+- dedicated server data-pack boot/smoke
 - client smoke
+- real in-game Earth→orbit→Earth flight transition
+- real P0-B control feel/camera/interpolation/reconnect lifecycle
+- multi-player passenger transfer during ship transition
 - live multiplayer session
-- real in-game P0-B control feel / camera / interpolation acceptance
-- reconnect lease behavior in a live Minecraft session
-- production ship exterior model/rendering
-- Earth → orbital-space transition
 - linked interior
+- production ship exterior/rendering
 - manual/automatic turret gameplay
+
+No item in the second list is called complete merely because its adapter compiles.
 
 ## Current phase
 
-`M0 VERIFIED / P0-A PURE KERNEL VERIFIED / P0-B BACKEND BUILD VERIFIED / MINECRAFT PLAY VALIDATION DEFERRED / P0-C NEXT`
+`M0 VERIFIED / P0-A SAVEDDATA ADAPTER BUILD VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / LIVE INTEGRATION DEFERRED / P0-D NEXT`
 
-P0-B's movement and multiplayer-authority backend is now real code and passes the project build/JUnit/JAR gate. It is **not** called fully gameplay-verified until an actual Minecraft client/server session checks control feel, interpolation, reconnect and lifecycle behavior. To avoid repetitive testing, that live validation is deliberately batched with the next meaningful integration slice instead of being requested after every code unit.
+P0-C now has a real server-authoritative transition boundary in code: an upward ship crossing the Earth envelope targets the orbital layer, and a descending orbital ship can target Earth re-entry while retaining the same in-memory `ShipState`/`ShipId`. The pilot lease is revoked before transfer and reissued only after a successful target exterior replacement; target-exterior failure attempts rollback instead of silently duplicating a craft.
 
-The next production unit is **P0-C Earth → Orbital Space Transition**, while also connecting ShipState to Minecraft persistence so the next larger integration gate can cover P0-A persistence + P0-B movement lifecycle + P0-C transition together.
+This is not yet a claim that the transition feels continuous or even that the custom orbital layer successfully boots in a live Minecraft server; those require the later batched live integration gate.
+
+The next production unit is **P0-D Linked Ship Interior**. It extends the same authoritative `ShipId` across a stable interior instance and is also the right place to expand transition handling from the current pilot-first proof to multiple crew/passengers without turning every small milestone into a separate manual test request.

@@ -2,6 +2,63 @@
 
 이 문서는 실제 정본 변경을 기록한다.
 
+## 2026-09-08 — P0-C orbital transition + Minecraft persistence adapter
+
+### Added
+
+- mod version `0.1.0-alpha.3`
+- `earth_to_stars:orbital_space` P0 기술용 orbital dimension data
+- Earth upward boundary / orbit downward boundary를 분리한 `ShipTransitionPolicy`
+- transition destination transform에서 x/z/yaw/pitch 보존 및 vertical velocity 제한
+- 서버 권한 Earth↔orbit pilot transfer transaction
+- transfer 전 control lease 회수, 성공 후 새 exterior에 새 session 재발급
+- target orbital/Earth level 미등록 시 상태를 건드리지 않는 실패 경계
+- target exterior 생성 실패 시 pilot을 origin으로 되돌리는 rollback 경로
+- 같은 `ShipFlightRuntime`/`ShipState`를 새 exterior에 연결하여 in-memory `ShipId` 유지
+- 서버 전역 `ShipSavedData` adapter와 versioned `ShipStateCodec` payload 저장
+- 저장 corruption/key↔shipId 불일치를 조용히 초기화하지 않고 거부
+- server start 시 저장된 ship repository 복원 구조
+- `/earthtostars ship restore` 저장 함선 재연결 명령
+- P0 bootstrap module catalog 중앙화
+- Earth→orbit / wrong-direction / orbit→Earth transition-policy JUnit
+
+### Multiplayer boundary
+
+P0-C의 실제 transition 구현은 현재 **pilot-first proof**다. 다인 승객과 interior crew의 원자적 이동은 P0-D Linked Ship Interior에서 같은 transaction 모델에 확장한다. 이 단계에서 multiplayer passenger transfer를 구현/검증 완료했다고 표현하지 않는다.
+
+### Verification
+
+검증 기준 구현 커밋: `a99f7b8470b09cfd509ec4f0aaf054c537db0f3f`
+
+GitHub Actions `Build earth-to-stars` run `34181251912`:
+
+- Java 25 / Gradle 9.2.1 / NeoForge 26.2.0.38-beta: `PASS`
+- `clean test build`: `PASS`
+- P0-A/P0-B regression JUnit: `PASS`
+- P0-C transition-policy JUnit: `PASS`
+- Minecraft SavedData adapter compile: `PASS`
+- orbital dimension data packaged: `PASS`
+- transition runtime adapter compile: `PASS`
+- production JAR verifier: `PASS`
+- 생성 JAR: `earth_to_stars-0.1.0-alpha.3.jar`
+- JAR SHA-256: `d49b228ad0fee44ceb395d56b040f2a796e55f452b9b410117ed6f947c3d1fd8`
+- datagen: `NOT RUN`
+- GameTest/save→disk→restart→restore: `NOT RUN`
+- dedicated server smoke/datapack boot: `NOT RUN`
+- client smoke: `NOT RUN`
+- 실제 Earth↔orbit 비행: `NOT TESTED`
+- live multiplayer session/passenger transfer: `NOT TESTED`
+
+### Status
+
+`P0-C TRANSITION BACKEND BUILD VERIFIED / LIVE INTEGRATION DEFERRED`
+
+빌드 성공은 orbital dimension이 실제 서버에서 로드되고 플레이어가 자연스럽게 우주로 넘어가는 것을 의미하지 않는다. 현재 검증은 코드/API/리소스 패키징 및 순수 정책 수준이다. 반복적인 사용자 테스트를 피하기 위해 P0-A 저장 재시작, P0-B 실제 조종 lifecycle, P0-C 전환 실플레이는 P0-D까지 묶은 뒤 한 번의 큰 Minecraft 검증으로 진행한다.
+
+다음 의미 있는 작업 단위는 **P0-D Linked Ship Interior**다.
+
+---
+
 ## 2026-09-08 — P0-B ship movement backend
 
 ### Added
@@ -55,8 +112,6 @@ GitHub Actions `Build earth-to-stars` run `34176522000`:
 
 반복 테스트를 피하기 위해 P0-B의 실제 Minecraft 조종·재접속 검증은 즉시 별도 사용자 테스트로 요청하지 않는다. 다음 P0-C 및 persistence integration과 묶어 더 큰 의미의 플레이 검증 게이트에서 확인한다.
 
-다음 의미 있는 작업 단위는 **P0-C Earth → Orbital Space Transition + Minecraft persistence integration**이다.
-
 ---
 
 ## 2026-09-08 — M0 bootstrap + P0-A authoritative ship kernel
@@ -98,8 +153,6 @@ GitHub Actions `Build earth-to-stars` run `34175374292`:
 
 P0-A의 순수 서버 정본 커널은 구현·자동 검증되었다. Minecraft SavedData/GameTest를 통한 실제 서버 생성→저장→reload→동일 shipId/module 복원 검증은 아직 수행하지 않았으므로 P0-A 전체 통합 완료라고 표현하지 않는다.
 
-다음 의미 있는 작업 단위는 **P0-B Ship Exterior / Movement Backend**를 시작하되, 첫 Minecraft 서버 통합 시점에 P0-A persistence integration gate를 함께 닫는 것이다.
-
 ---
 
 ## 2026-09-08 — Project registration / M0 canon lock
@@ -134,5 +187,3 @@ P0-A의 순수 서버 정본 커널은 구현·자동 검증되었다. Minecraft
 - Client: `NOT RUN`
 - Multiplayer session: `NOT RUN`
 - Playable JAR: `NOT AVAILABLE`
-
-다음 의미 있는 작업 단위는 **M0 Build Bootstrap + P0-A Authoritative Ship Kernel**이다.
