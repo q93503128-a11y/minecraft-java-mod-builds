@@ -54,6 +54,7 @@ jobs:
           python3 tools/test_progression_validator.py 2>&1 | tee build/logs/p0h-validator-tests.log
           python3 tools/validate_progression.py 2>&1 | tee build/logs/p0h-progression.log
           python3 tools/validate_m1_launch.py 2>&1 | tee build/logs/m1-launch-progression.log
+          python3 tools/validate_alpha12_acceptance.py 2>&1 | tee build/logs/alpha12-acceptance.log
       - name: Clean test and build
         shell: bash
         run: |
@@ -86,10 +87,10 @@ jobs:
           if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
             LIFECYCLE_STATUS="PASS (this run)"
           else
-            LIFECYCLE_STATUS="NOT RERUN; last verified run 34197931566 includes ShipState schema 2 plus fuel/oxygen"
+            LIFECYCLE_STATUS="NOT RERUN; last verified run 34197931566 covers alpha.11 ShipState schema 2 plus fuel/oxygen"
           fi
           cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # EARTH TO STARS — M1-D Orbital Recovery Build Report
+          # EARTH TO STARS — alpha.12 Live-Acceptance Rescue Build Report
 
           - Commit: $GITHUB_SHA
           - Mod version: $MOD_VERSION
@@ -100,12 +101,15 @@ jobs:
           - P0-H progression validator: PASS
           - M1 launch recipe dependency closure: PASS
           - M1 launch recipe Nether/End independence: PASS
+          - alpha.12 acceptance static gate: PASS
+          - actual passenger/control source contract: PASS
+          - safe ship retirement source contract: PASS
+          - three distinct Kenney OBJ/MTL visuals packaged: PASS
           - M1-D starter empty weapon/sensor slots JUnit: PASS
           - M1-D recovered autocannon/scanner capability progression JUnit: PASS
           - ShipState schema 1 -> 2 sensor-slot migration JUnit: PASS
           - clean/test/build: PASS
           - production JAR verify: PASS
-          - orbital mission/recovered sensor resources packaged: PASS
           - dedicated server save/restart lifecycle: $LIFECYCLE_STATUS
           - SHA-256: $SHA
           - live Earth→orbit→salvage→combat→return cycle: NOT TESTED unless separately recorded

@@ -20,8 +20,8 @@ import net.minecraft.network.syncher.SynchedEntityData;
  *
  * This entity deliberately owns no persistent ship state. ShipState/SavedData remain
  * the authority and this exterior is recreated when needed. Rendering is supplied by
- * a separately managed production visual so the vehicle hitbox and art can evolve
- * independently without bringing back ArmorStand collision hacks.
+ * a separately managed production visual so vehicle hitbox and art can evolve
+ * independently without bringing back temporary proxy collision hacks.
  */
 public final class ShipExteriorEntity extends Entity {
     public ShipExteriorEntity(EntityType<? extends ShipExteriorEntity> type, Level level) {
@@ -41,14 +41,16 @@ public final class ShipExteriorEntity extends Entity {
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
     }
 
+    /**
+     * Punching a ship is intentionally non-destructive. Pack-up is an explicit
+     * owner interaction so an accidental hit can never delete only the runtime
+     * shell while leaving authoritative save state behind.
+     */
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
         if (source.getEntity() instanceof ServerPlayer player) {
-            if (!player.isShiftKeyDown()) {
-                player.displayClientMessage(Component.translatable("message.earth_to_stars.ship.retire_hint"), true);
-                return true;
-            }
-            return ShipRuntimeManager.retireCraft(player, this);
+            player.displayClientMessage(Component.translatable("message.earth_to_stars.ship.retire_hint"), true);
+            return true;
         }
         return false;
     }

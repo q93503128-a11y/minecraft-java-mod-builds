@@ -34,6 +34,18 @@ def main() -> None:
             "assets/earth_to_stars/models/item/launch_craft_kit.json",
             "assets/earth_to_stars/items/recovered_sensor_core.json",
             "assets/earth_to_stars/models/item/recovered_sensor_core.json",
+            "assets/earth_to_stars/items/starter_craft_visual.json",
+            "assets/earth_to_stars/items/orbital_salvage_visual.json",
+            "assets/earth_to_stars/items/orbital_interceptor_visual.json",
+            "assets/earth_to_stars/models/item/starter_craft_visual.json",
+            "assets/earth_to_stars/models/item/orbital_salvage_visual.json",
+            "assets/earth_to_stars/models/item/orbital_interceptor_visual.json",
+            "assets/earth_to_stars/models/kenney/space_kit/craft_speederA.obj",
+            "assets/earth_to_stars/models/kenney/space_kit/craft_speederA.mtl",
+            "assets/earth_to_stars/models/kenney/space_kit/craft_miner.obj",
+            "assets/earth_to_stars/models/kenney/space_kit/craft_miner.mtl",
+            "assets/earth_to_stars/models/kenney/space_kit/craft_racer.obj",
+            "assets/earth_to_stars/models/kenney/space_kit/craft_racer.mtl",
             "data/earth_to_stars/bootstrap/kernel.json",
             "data/earth_to_stars/progression/main_path.json",
             "data/earth_to_stars/recipe/reinforced_frame.json",
@@ -53,11 +65,12 @@ def main() -> None:
             "kr/moonseungjun/earthtostars/content/RecoveredSensorCoreItem.class",
             "kr/moonseungjun/earthtostars/ship/gameplay/LaunchCraftBlueprint.class",
             "kr/moonseungjun/earthtostars/ship/gameplay/OrbitalRecoveryProgression.class",
+            "kr/moonseungjun/earthtostars/ship/runtime/minecraft/ShipExteriorEntity.class",
             "kr/moonseungjun/earthtostars/ship/runtime/minecraft/OrbitalMissionManager.class",
         ]
         for entry in required_classes:
             if entry not in names:
-                fail(f"missing M1 gameplay class {entry}")
+                fail(f"missing M1/alpha.12 gameplay class {entry}")
         if any(name.endswith(".java") for name in names):
             fail("development Java source leaked into production jar")
         if len(names) != len(set(names)):

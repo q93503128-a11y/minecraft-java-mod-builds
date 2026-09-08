@@ -27,23 +27,23 @@ public final class ShipSupplyItem extends Item {
                 if (!player.getAbilities().instabuild) {
                     context.getItemInHand().shrink(1);
                 }
-                player.sendSystemMessage(Component.translatable(
+                player.displayClientMessage(Component.translatable(
                         supplyType == ShipSystemsManager.SupplyType.PROPELLANT
                                 ? "message.earth_to_stars.supply.propellant_loaded"
                                 : "message.earth_to_stars.supply.oxygen_loaded"
-                ));
+                ), true);
                 yield InteractionResult.SUCCESS_SERVER;
             }
             case TANK_FULL -> {
-                player.sendSystemMessage(Component.translatable(
+                player.displayClientMessage(Component.translatable(
                         supplyType == ShipSystemsManager.SupplyType.PROPELLANT
                                 ? "message.earth_to_stars.supply.propellant_full"
                                 : "message.earth_to_stars.supply.oxygen_full"
-                ));
+                ), true);
                 yield InteractionResult.FAIL;
             }
             case NO_ACCESSIBLE_SHIP -> {
-                player.sendSystemMessage(Component.translatable("message.earth_to_stars.supply.no_ship"));
+                player.displayClientMessage(Component.translatable("message.earth_to_stars.supply.no_ship"), true);
                 yield InteractionResult.FAIL;
             }
         };
