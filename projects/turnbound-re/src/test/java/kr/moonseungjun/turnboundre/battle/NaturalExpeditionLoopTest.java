@@ -52,7 +52,7 @@ class NaturalExpeditionLoopTest {
         assertTrue(battles.bindings(battleId).isEmpty());
         assertEquals(List.of(owner), battles.controllers(battleId));
         for (int index = 0; index < party.size(); index++) {
-            assertEquals(owner, battles.controller(battleId, "player_" + index).orElseThrow());
+            assertEquals(owner, battles.controller(battleId, "party_" + index).orElseThrow());
         }
         assertEquals(party.size() + launch.encounter().enemies().size(), launch.battle().actorOrder().size());
     }
