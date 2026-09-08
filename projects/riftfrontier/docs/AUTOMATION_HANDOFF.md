@@ -19,6 +19,7 @@ M3 real-candidate bounded audit + deterministic glTF technical intake gate:
 - Researched the newer 2026 Quaternius Bestiary kit and QAL v1.0. It is not approved for raw public source-repository bundling under current evidence because QAL permits completed-Product distribution while restricting redistribution of the assets themselves.
 - Added `tools/inspect_gltf.py`, a standard-library GLB/glTF 2.0 inspector that reports geometry, material, skin/bone, animation and bounds metadata and can fail requested technical budgets with stable issue codes.
 - Added deterministic unit tests using synthetic non-production GLB/glTF fixtures. The fixture exists only in a temporary test directory and is never bundled as a production resource.
+- Added the tool suite to `Build Riftfrontier` so tool regressions fail before the Gradle build/GameTest/runtime gates.
 - Added `REGION_01_BOSS_CANDIDATE_AUDIT.md` as the bounded decision record.
 - Updated `THIRD_PARTY_ASSETS.md` with exact candidate decisions and the QAL repository-distribution boundary.
 
@@ -28,14 +29,15 @@ M3 real-candidate bounded audit + deterministic glTF technical intake gate:
 - `tools/tests/test_inspect_gltf.py` — new
 - `docs/REGION_01_BOSS_CANDIDATE_AUDIT.md` — new
 - `docs/THIRD_PARTY_ASSETS.md` — updated
+- `.github/workflows/build-riftfrontier.yml` — Python tool test gate added
 - `docs/AUTOMATION_HANDOFF.md` — updated
 
 ## Verification
 
 - Previous Region 01 presentation-gate run `34248910052`: full Riftfrontier workflow `SUCCESS`.
-- `python3 -m unittest discover -s tools/tests -p 'test_*.py'`: 3 tests, `OK` in the automation working environment.
-- Tests cover valid GLB metadata/bounds, stable technical gate issue codes, and malformed GLB length rejection.
-- Current project workflow triggered by this batch must still be checked after push; do not claim it green while pending.
+- Local automation check: `python3 -m unittest discover -s tools/tests -p 'test_*.py'` → 3 tests, `OK`.
+- Current CI run `34255526319` for `c214d83e87767d20ce121fa4d526f20c82dfcc77`: toolchain `SUCCESS`; asset intake tool tests `SUCCESS`; tests + clean build `SUCCESS`; required native GameTest `SUCCESS`; dedicated server smoke `IN PROGRESS` at last check.
+- Xvfb client smoke / executable JAR inspection / report+artifacts: NOT RUN yet in current CI at last check.
 - Original Dragon Evolved binary downloaded from original creator source: NOT RUN in this environment.
 - Exact Dragon Evolved skeleton hierarchy / clip names / material count / deformation: NOT TESTED.
 - Actual production resource existence: NOT TESTED because no production Region 01 boss asset is selected.
@@ -56,7 +58,7 @@ M3 real-candidate bounded audit + deterministic glTF technical intake gate:
 
 ## Exact next start point
 
-1. Re-check current remote `main` and the `Build Riftfrontier` run triggered by this batch. Fix the first real failure if any.
+1. Re-check current remote `main` and finish CI run `34255526319`; if any remaining gate fails, fix the first real failure without weakening the asset-intake or combat/presentation gates.
 2. Obtain the original CC0 Dragon Evolved GLB in an environment that can inspect binary assets locally.
 3. Run `tools/inspect_gltf.py --json`, then inspect exact skeleton hierarchy, animation clip names, materials, axes/bounds and deformation in Blockbench/Blender or equivalent.
 4. Verify that distinct committed-strike telegraph/ACTIVE/recovery, line/displacement telegraph and arena-pressure telegraph poses can be authored cleanly from the rig.
