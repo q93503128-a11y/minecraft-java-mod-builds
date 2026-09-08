@@ -56,6 +56,17 @@ public final class ShipPowerGrid {
         return true;
     }
 
+    /**
+     * Applies unavoidable external drain such as hostile damage. Priority reserves
+     * intentionally do not protect against damage; the amount is clamped at zero.
+     */
+    public synchronized double drain(double amount) {
+        requireFiniteNonNegative(amount, "amount");
+        double drained = Math.min(stored, amount);
+        stored -= drained;
+        return drained;
+    }
+
     public synchronized double stored() {
         return stored;
     }
