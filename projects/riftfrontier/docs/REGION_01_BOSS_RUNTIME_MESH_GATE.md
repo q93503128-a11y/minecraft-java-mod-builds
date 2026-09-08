@@ -27,7 +27,7 @@ GeckoMesh 1.2.0 is currently published for Minecraft 26.2 NeoForge and is MIT-li
 
 However, the inspected implementation attaches a `PolyMesh` to one GeckoLib bone and transforms that geometry with the bone. The `PolyMesh` schema consumed by GeckoMesh contains positions, normals, UVs and polygon indices, but no glTF `JOINTS_0`/`WEIGHTS_0` linear-blend skinning data. Therefore it must not be assumed to preserve a skinned glTF mesh exactly.
 
-Decision: `RESEARCHED / NOT SELECTED` until the exact accepted Dragon derivation passes the rigid-bone eligibility audit below. Do not add GeckoMesh or GeckoLib dependencies solely because the library can render arbitrary faces.
+Decision: `REJECTED FOR DRAGON RIGID-SKIN PATH`. The exact pinned Dragon source fails the rigid-bone eligibility audit below. GeckoMesh may remain a research reference for genuinely rigid-bone PolyMesh assets, but it must not be used to convert this selected Dragon by discarding or collapsing skin weights. Do not add GeckoMesh or GeckoLib for the Dragon path solely because the library can render arbitrary faces.
 
 ## Deterministic rigid-bone eligibility gate
 
@@ -50,18 +50,14 @@ Any multi-joint blended vertex or triangle spanning dominant joints produces `BO
 - synthetic linear-blend fixture: correctly REJECTED
 - synthetic cross-bone triangle fixture: correctly REJECTED
 - malformed/missing skin attributes: fail-closed PASS
-- exact accepted Dragon derivation through this new gate: `NOT RUN` in this batch because the accepted source/derivation bytes are not stored in the public repository
-- in-Minecraft PolyMesh rendering: `NOT RUN`
-- renderer dependency selection: `NOT SELECTED`
+- exact creator-hosted `Dragon_Evolved.gltf` reacquired: PASS, 991,335 bytes, pinned SHA-256 matched
+- exact Dragon rigid-bone audit: REJECTED as lossy — 3,086 / 4,437 vertices use multiple positive joint weights; 1,192 / 7,440 triangles span dominant-joint boundaries; 45 dominant joints are represented
+- deterministic receipt: `assets/sources/region_01_boss_dragon_evolved.runtime_mesh_audit.json`
+- in-Minecraft PolyMesh rendering: `NOT RUN` because the capability gate already rejects this renderer contract for Dragon
+- Dragon renderer dependency selection: `NOT SELECTED`; next path must preserve triangle geometry plus linear-blend skinning
 
 ## Next decision
 
-Reacquire the exact pinned source, reproduce the accepted sanitized derivation, then run:
+The exact pinned source already exits with `BOSS_RUNTIME_MESH_RIGID_POLYMESH_LOSSY`. Do not repeat the GeckoMesh rigid-bone experiment unless that library gains verified per-vertex blend-skinning support.
 
-```text
-python3 tools/audit_region01_boss_runtime_mesh.py <accepted.gltf> --require-lossless-rigid-bone
-```
-
-If it exits with `BOSS_RUNTIME_MESH_RIGID_POLYMESH_LOSSY`, do not simplify the Dragon into rigid cubes or discard skin weights. Move to a renderer path that supports the accepted triangle mesh plus linear-blend skinning, or deliberately re-author a production model under a separately reviewed art/rig gate.
-
-If it passes, GeckoMesh may proceed to a concrete resource/renderer proof, but still requires fresh 26.2 dependency verification, real model/animation resources, client loadability, Minecraft deformation/scale review, and the existing atomic presentation resource gates before production selection.
+The next renderer investigation must support the accepted triangle mesh plus glTF-style linear-blend skinning without collapsing weights or approximating geometry. A deliberately re-authored Minecraft-native production model remains a fallback only under a separate art/rig review; it is not permission to silently downgrade the selected source.

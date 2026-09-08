@@ -1,0 +1,20 @@
+{
+  "blended_vertex_count": 3086,
+  "cross_bone_triangle_count": 1192,
+  "decision": "REJECT_RIGID_BONE_POLYMESH",
+  "decision_code": "BOSS_RUNTIME_MESH_RIGID_POLYMESH_LOSSY",
+  "dominant_joint_count": 45,
+  "kind": "riftfrontier:boss_runtime_mesh_audit",
+  "lossless_rigid_bone_eligible": false,
+  "reasons": [
+    "linear-blend skinning is present",
+    "triangles span dominant joints"
+  ],
+  "renderer_contract": "rigid_bone_polymesh",
+  "schema_version": 1,
+  "skinned_primitive_count": 1,
+  "source_bytes": 991335,
+  "source_sha256": "39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c",
+  "triangle_count": 7440,
+  "vertex_count": 4437
+}
