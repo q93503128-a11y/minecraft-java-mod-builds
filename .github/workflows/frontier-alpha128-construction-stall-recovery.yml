@@ -26,251 +26,14 @@ jobs:
           distribution: temurin
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Apply Alpha.128 construction recovery
+      - name: Apply patch
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          import re, json
-
-          root = Path('projects/frontier-settlement')
-          construction_path = root / 'src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java'
-          context_path = root / 'src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementContextService.java'
-          test_path = root / 'tools/test_current_source.py'
-          gradle_path = root / 'gradle.properties'
-          readme_path = root / 'README.md'
-
-          def read(p): return p.read_text(encoding='utf-8')
-          def write(p, s): p.write_text(s, encoding='utf-8')
-          def sub_once(text, pattern, repl, label):
-              out, n = re.subn(pattern, repl, text, count=1, flags=re.S)
-              if n != 1:
-                  raise SystemExit(f'{label}: expected exactly one match, got {n}')
-              return out
-
-          construction = read(construction_path)
-
-          construction = sub_once(
-              construction,
-              r'''    private static boolean moveBuilderTowardGradeCell\(ServerLevel level, FrontierWorkerEntity builder, BlockPos target\) \{.*?    private static List<GradeCell> createGradePlan''',
-              '''    private static boolean moveBuilderTowardGradeCell(ServerLevel level, FrontierWorkerEntity builder, BlockPos target) {
-              for (BlockPos candidate : gradeApproachPositions(level, builder, target)) {
-                  double distance = builder.distanceToSqr(candidate.getX() + 0.5D, candidate.getY(), candidate.getZ() + 0.5D);
-                  if (distance <= 4.0D) {
-                      builder.getNavigation().stop();
-                      return true;
-                  }
-                  if (moveToReachable(builder, candidate, 1.05D)) return true;
-              }
-              builder.getNavigation().stop();
-              return false;
-          }
-
-          private static boolean hasReachableGradeWorkPosition(ServerLevel level, FrontierWorkerEntity builder, BlockPos target) {
-              for (BlockPos candidate : gradeApproachPositions(level, builder, target)) {
-                  if (builder.distanceToSqr(candidate.getX() + 0.5D, candidate.getY(), candidate.getZ() + 0.5D) <= 4.0D
-                          || createReachablePath(builder, candidate) != null) return true;
-              }
-              return false;
-          }
-
-          /**
-           * Grading deliberately accepts natural trees and soft vegetation inside the lot. Navigation must
-           * therefore approach the first pending cell from nearby real ground instead of treating a trunk or
-           * canopy height as the only legal destination. The bounded three-block ring is enough to keep the
-           * worker visibly local without turning one tree-covered corner into a permanent zero-percent stall.
-           */
-          private static List<BlockPos> gradeApproachPositions(ServerLevel level, FrontierWorkerEntity builder, BlockPos target) {
-              Set<BlockPos> unique = new HashSet<>();
-              for (int radius = 0; radius <= 3; radius++) {
-                  for (int dx = -radius; dx <= radius; dx++) {
-                      for (int dz = -radius; dz <= radius; dz++) {
-                          if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
-                          int x = target.getX() + dx;
-                          int z = target.getZ() + dz;
-                          int y = terrainSurfaceHeight(level, x, z);
-                          BlockPos candidate = new BlockPos(x, y, z);
-                          if (isWalkableApproachCell(level, candidate)) unique.add(candidate);
-                      }
-                  }
-              }
-              List<BlockPos> result = new ArrayList<>(unique);
-              result.sort(Comparator.comparingDouble(pos -> {
-                  double tx = pos.getX() - target.getX();
-                  double tz = pos.getZ() - target.getZ();
-                  return (tx * tx + tz * tz) * 4.0D + builder.distanceToSqr(
-                          pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D);
-              }));
-              return List.copyOf(result);
-          }
-
-          private static List<GradeCell> createGradePlan''',
-              'grading approach replacement')
-
-          construction = sub_once(
-              construction,
-              r'''    private static void recoverBuilderFromBlockedCell\(ServerLevel level, SettlementData data, FrontierWorkerEntity builder\) \{.*?    private static BlockPos findSafeBuilderHome\(ServerLevel level, SettlementData data\) \{''',
-              '''    private static void recoverBuilderFromBlockedCell(ServerLevel level, SettlementData data, FrontierWorkerEntity builder) {
-              BlockPos feet = builder.blockPosition();
-              BlockPos head = feet.above();
-              if (!level.hasChunkAt(feet) || !level.hasChunkAt(head)) return;
-              boolean physicallyBlocked = blocksCurrentPathCell(level, feet, level.getBlockState(feet))
-                      || blocksCurrentPathCell(level, head, level.getBlockState(head));
-              boolean elevatedStranded = !physicallyBlocked && builderStrandedOnArtificialElevation(level, data, builder);
-              if (!physicallyBlocked && !elevatedStranded) return;
-              BlockPos safe = findSafeBuilderHome(level, data);
-              if (safe == null) return;
-              if (elevatedStranded && createReachablePath(builder, safe) != null) return;
-              builder.getNavigation().stop();
-              builder.setPos(safe.getX() + 0.5D, safe.getY(), safe.getZ() + 0.5D);
-          }
-
-          /** A builder on an accessible bridge/balcony is fine; only a disconnected artificial perch is recovered. */
-          private static boolean builderStrandedOnArtificialElevation(ServerLevel level, SettlementData data,
-                                                                       FrontierWorkerEntity builder) {
-              BlockPos feet = builder.blockPosition();
-              int naturalGroundY = nearestNaturalGroundBelow(level, feet, 16);
-              if (naturalGroundY == Integer.MIN_VALUE) return false;
-              int artificialRise = (feet.getY() - 1) - naturalGroundY;
-              if (artificialRise < 3) return false;
-              BlockPos safe = findSafeBuilderHome(level, data);
-              return safe != null && createReachablePath(builder, safe) == null;
-          }
-
-          private static int nearestNaturalGroundBelow(ServerLevel level, BlockPos feet, int maxDepth) {
-              for (int depth = 1; depth <= maxDepth; depth++) {
-                  BlockPos probe = feet.below(depth);
-                  if (!level.hasChunkAt(probe)) return Integer.MIN_VALUE;
-                  if (isNaturalGround(level.getBlockState(probe))) return probe.getY();
-              }
-              return Integer.MIN_VALUE;
-          }
-
-          private static BlockPos findSafeBuilderHome(ServerLevel level, SettlementData data) {''',
-              'builder recovery replacement')
-
-          construction = sub_once(
-              construction,
-              r'''    private static BlockPos findSafeBuilderHome\(ServerLevel level, SettlementData data, Set<BlockPos> occupied\) \{.*?    private static BlockPos safeSurfaceCell\(ServerLevel level, int x, int z\) \{''',
-              '''    private static BlockPos findSafeBuilderHome(ServerLevel level, SettlementData data, Set<BlockPos> occupied) {
-              BlockPos center = data.centerPos();
-              int referenceY = center.getY();
-              BlockPos preferred = safeBuilderHomeCell(level, center.getX() + 1, center.getZ() + 1, referenceY);
-              if (preferred != null && !occupied.contains(preferred)) return preferred;
-              // Builder spawn/recovery is rare, so a wider bounded search is preferable to accepting a roof.
-              for (int radius = 1; radius <= 24; radius++) {
-                  for (int dx = -radius; dx <= radius; dx++) {
-                      for (int dz = -radius; dz <= radius; dz++) {
-                          if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
-                          BlockPos candidate = safeBuilderHomeCell(level, center.getX() + dx, center.getZ() + dz, referenceY);
-                          if (candidate != null && !occupied.contains(candidate)) return candidate;
-                      }
-                  }
-              }
-              return null;
-          }
-
-          /**
-           * Idle/spawn recovery must prefer actual ground, not merely the highest collision surface.
-           * The old safeSurfaceCell-only rule could choose a roof or tall log pillar and strand a builder
-           * above the settlement with no descending path before the first grading step.
-           */
-          private static BlockPos safeBuilderHomeCell(ServerLevel level, int x, int z, int referenceY) {
-              BlockPos candidate = safeSurfaceCell(level, x, z);
-              if (candidate == null) return null;
-              BlockState support = level.getBlockState(candidate.below());
-              if (isNaturalGround(support) || support.is(Blocks.DIRT_PATH)) return candidate;
-              return null;
-          }
-
-          private static BlockPos safeSurfaceCell(ServerLevel level, int x, int z) {''',
-              'safe builder home replacement')
-
-          write(construction_path, construction)
-
-          context = read(context_path)
-          old = 'projectLabel = type.displayName() + " 공사" + (constructionIssue.isBlank() ? "" : " · 막힘");'
-          new = 'projectLabel = type.displayName() + " 공사" + (constructionIssue.isBlank() ? "" : " · " + constructionIssueSummary(constructionIssue));'
-          if context.count(old) != 1:
-              raise SystemExit(f'context project label anchor count={context.count(old)}')
-          context = context.replace(old, new, 1)
-          insert_anchor = '''    private static int percent(int worked, int total) {
-'''
-          helper = '''    private static String constructionIssueSummary(String issue) {
-              if (issue == null || issue.isBlank()) return "";
-              if (issue.contains("접근 불가")) return issue.contains("부지 정리") ? "부지 접근 불가" : "자재·현장 접근 불가";
-              if (issue.contains("청크 미로드")) return "청크 미로드";
-              if (issue.contains("목재 대기")) return "목재 대기";
-              if (issue.contains("석재 대기")) return "석재 대기";
-              if (issue.contains("자재통")) return "자재통 문제";
-              if (issue.contains("위치 막힘") || issue.contains("정리 막힘")) return "부지 막힘";
-              if (issue.contains("건설 주민")) return "건설 주민 대기";
-              return "막힘";
-          }
-
-'''
-          if context.count(insert_anchor) != 1:
-              raise SystemExit('context helper anchor drift')
-          context = context.replace(insert_anchor, helper + insert_anchor, 1)
-          write(context_path, context)
-
-          gradle = read(gradle_path)
-          if gradle.count('mod_version=0.1.0-alpha.127') != 1:
-              raise SystemExit('gradle version drift')
-          write(gradle_path, gradle.replace('mod_version=0.1.0-alpha.127', 'mod_version=0.1.0-alpha.128', 1))
-
-          readme = read(readme_path)
-          if readme.count('## Current version: 0.1.0-alpha.127') != 1:
-              raise SystemExit('README version drift')
-          readme = readme.replace('## Current version: 0.1.0-alpha.127', '## Current version: 0.1.0-alpha.128', 1)
-          write(readme_path, readme)
-
-          test = read(test_path)
-          if test.count('mod_version=0.1.0-alpha.127') != 1:
-              raise SystemExit('current source verifier version drift')
-          test = test.replace('mod_version=0.1.0-alpha.127', 'mod_version=0.1.0-alpha.128', 1)
-          marker = '''require("현장 자재통 위치가 막혀 있습니다" in construction and "실제 건물 부지 안의 정리 칸이 막혀 있습니다" in construction,
-        "placement blocker diagnostics missing")
-'''
-          addition = marker + '''require("gradeApproachPositions" in construction and "radius <= 3" in construction
-        and "terrainSurfaceHeight(level, x, z)" in construction,
-        "tree-aware bounded grading approach recovery missing")
-require("safeBuilderHomeCell" in construction and "radius <= 24" in construction
-        and "support.is(Blocks.DIRT_PATH)" in construction,
-        "builder home can regress to arbitrary roof-height surfaces")
-require("builderStrandedOnArtificialElevation" in construction and "nearestNaturalGroundBelow" in construction
-        and "artificialRise < 3" in construction,
-        "disconnected elevated builder recovery missing")
-context_service = text(SETTLEMENT / "SettlementContextService.java")
-require("constructionIssueSummary" in context_service and "부지 접근 불가" in context_service
-        and "자재·현장 접근 불가" in context_service,
-        "construction HUD returned to generic blocked-only diagnosis")
-'''
-          if test.count(marker) != 1:
-              raise SystemExit('current source construction audit anchor drift')
-          test = test.replace(marker, addition, 1)
-          write(test_path, test)
-
-          for rel in ['COMPANION_LOCK.json', 'companion-testpack/resolved-lock.client.json', 'companion-testpack/resolved-lock.server.json']:
-              p = root / rel
-              data = json.loads(read(p))
-              current = data.get('target', {}).get('frontier_settlement')
-              if current != '0.1.0-alpha.127':
-                  raise SystemExit(f'{rel}: expected alpha.127 target, got {current}')
-              data['target']['frontier_settlement'] = '0.1.0-alpha.128'
-              if rel == 'COMPANION_LOCK.json':
-                  data.setdefault('notes', []).append(
-                      'Frontier Alpha.128 hardens real-play construction recovery: builders no longer choose arbitrary roofs/log pillars as home positions, grading uses bounded ground-aware approach candidates, and the HUD exposes the immediate stall category. Third-party companion pins/hashes remain unchanged.')
-              write(p, json.dumps(data, ensure_ascii=False, indent=2) + '\n')
-
-          doc = root / 'CONSTRUCTION_STALL_RECOVERY_ALPHA128.md'
-          doc.write_text('''# Alpha.128 — Construction stall recovery\n\nReal play showed a warehouse project remaining at 0% while resources were available. The visible construction worker was elevated on settlement architecture.\n\n## Root cause\n\nBuilder spawn/recovery selected the highest walkable collision surface around the settlement. In a dense settlement that can be a roof or log pillar rather than ground. A builder on a disconnected elevated surface can exist successfully, allowing construction to start, but have no descending navigation path to the first grading cell. Placement also deliberately accepts natural trees, while the old grading approach fallback only checked a very narrow neighboring ring.\n\n## Fix\n\n- builder home/spawn recovery now accepts natural ground or dirt-path support only and searches a bounded 24-block ring;\n- an existing builder stranded at least three blocks above natural ground is relocated only when no real path back to safe ground exists; carried ItemStacks are preserved;\n- grading uses a bounded three-block, terrain-ground-aware approach set so a tree-covered first footprint corner cannot permanently stall the project;\n- construction HUD status exposes the immediate stall class instead of only the generic `막힘`;\n- no new force loading, virtual material, project teleport loop, or save field was introduced.\n\n## Validation scope\n\nSource regression audit and Java 25 compile are required before commit. Canonical build/JAR and companion fresh-world validation run from the committed Alpha.128 tree. Real graphical play remains separately required.\n''', encoding='utf-8')
-          PY
-
+          python3 .github/patches/frontier-alpha128.py
+          rm -f .github/patches/frontier-alpha128.py
           rm -f .github/workflows/frontier-alpha128-construction-stall-recovery.yml
-
-      - name: Source/docs audit and compile
+      - name: Audit and compile
         working-directory: projects/frontier-settlement
         shell: bash
         run: |
@@ -279,14 +42,13 @@ require("constructionIssueSummary" in context_service and "부지 접근 불가"
           python3 tools/test_current_docs.py
           chmod +x gradlew
           ./gradlew --no-daemon --no-configuration-cache compileJava --stacktrace --console=plain
-
-      - name: Commit Alpha.128
+      - name: Commit
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A projects/frontier-settlement .github/workflows/frontier-alpha128-construction-stall-recovery.yml
+          git add -A projects/frontier-settlement .github/patches/frontier-alpha128.py .github/workflows/frontier-alpha128-construction-stall-recovery.yml
           git diff --cached --check
           git commit -m 'frontier: fix zero-percent construction stalls in alpha.128'
           for attempt in 1 2 3 4 5 6; do
