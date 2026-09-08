@@ -29,7 +29,6 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -165,19 +164,26 @@ public final class ShipRuntimeManager {
                 .map(entry -> new ExteriorAnchor((ServerLevel) entry.exterior().level(), entry.runtime().transform()));
     }
 
-    static int activeCrewCount(MinecraftServer server, ShipId shipId) {
-        Set<UUID> active = new HashSet<>();
+    static List<ServerPlayer> activeCrewPlayers(MinecraftServer server, ShipId shipId) {
+        Map<UUID, ServerPlayer> active = new LinkedHashMap<>();
         for (Entry entry : ENTRIES.values()) {
             if (!entry.exterior().isRemoved() && entry.runtime().ship().shipId().equals(shipId)) {
-                entry.runtime().lease().map(ShipControlLease::controllerId).ifPresent(active::add);
+                entry.runtime().lease()
+                        .map(ShipControlLease::controllerId)
+                        .map(server.getPlayerList()::getPlayer)
+                        .ifPresent(player -> active.put(player.getUUID(), player));
             }
         }
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             ShipInteriorManager.linkedShip(player)
                     .filter(shipId::equals)
-                    .ifPresent(ignored -> active.add(player.getUUID()));
+                    .ifPresent(ignored -> active.put(player.getUUID(), player));
         }
-        return active.size();
+        return List.copyOf(active.values());
+    }
+
+    static int activeCrewCount(MinecraftServer server, ShipId shipId) {
+        return activeCrewPlayers(server, shipId).size();
     }
 
     public static boolean releaseController(ServerPlayer player) {
@@ -258,6 +264,7 @@ public final class ShipRuntimeManager {
                 ShipTransform held = holdBelowOrbitBoundary(transform);
                 entry.runtime().relocate(held);
                 applyTransform(entry.exterior(), held);
+                tetherController(server, entry, held);
                 warnReadiness(server, entry, gameTime);
                 continue;
             }
@@ -267,6 +274,7 @@ public final class ShipRuntimeManager {
             }
 
             applyTransform(entry.exterior(), transform);
+            tetherController(server, entry, transform);
         }
         removed.forEach(ENTRIES::remove);
         for (TransitionRequest request : transitions) {
@@ -439,6 +447,27 @@ public final class ShipRuntimeManager {
         exterior.setPos(transform.position().x(), transform.position().y(), transform.position().z());
         exterior.setYRot((float) transform.yawDegrees());
         exterior.setXRot((float) transform.pitchDegrees());
+    }
+
+    /**
+     * M1 technical cockpit tether. Until the production cockpit/interior camera is
+     * implemented, the controlling player is kept with the authoritative exterior
+     * so a complete ascent and re-entry can actually be exercised without the ship
+     * flying outside the 64-block input authority range.
+     */
+    private static void tetherController(MinecraftServer server, Entry entry, ShipTransform transform) {
+        entry.runtime().lease()
+                .map(ShipControlLease::controllerId)
+                .map(server.getPlayerList()::getPlayer)
+                .filter(player -> player.level() == entry.exterior().level())
+                .ifPresent(player -> {
+                    player.setDeltaMovement(Vec3.ZERO);
+                    player.setPos(
+                            transform.position().x(),
+                            transform.position().y() + 1.5D,
+                            transform.position().z()
+                    );
+                });
     }
 
     private static ArmorStand createExterior(ServerLevel level, Vec3 position, float yaw, float pitch) {
