@@ -1,0 +1,174 @@
+{
+  "schema": 1,
+  "forbidden_required_dimensions": [
+    "minecraft:the_nether",
+    "minecraft:the_end"
+  ],
+  "main_milestones": [
+    "earth_industry",
+    "launch_craft",
+    "earth_orbit_access",
+    "orbital_salvage",
+    "moon_access",
+    "asteroid_access",
+    "mars_access",
+    "main_belt_access",
+    "outer_system_access",
+    "deep_space_access"
+  ],
+  "nodes": [
+    {
+      "id": "earth_survival",
+      "dimension": "minecraft:overworld",
+      "requires_any": [[]]
+    },
+    {
+      "id": "earth_metallurgy",
+      "dimension": "minecraft:overworld",
+      "requires_any": [["earth_survival"]]
+    },
+    {
+      "id": "earth_power",
+      "dimension": "minecraft:overworld",
+      "requires_any": [["earth_metallurgy"]]
+    },
+    {
+      "id": "earth_electronics",
+      "dimension": "minecraft:overworld",
+      "requires_any": [["earth_metallurgy", "earth_power"]]
+    },
+    {
+      "id": "earth_industry",
+      "dimension": "minecraft:overworld",
+      "requires_any": [["earth_metallurgy", "earth_power", "earth_electronics"]]
+    },
+    {
+      "id": "launch_propellant",
+      "dimension": "minecraft:overworld",
+      "requires_any": [["earth_industry"]]
+    },
+    {
+      "id": "launch_life_support",
+      "dimension": "minecraft:overworld",
+      "requires_any": [["earth_industry"]]
+    },
+    {
+      "id": "launch_craft",
+      "dimension": "minecraft:overworld",
+      "requires_any": [["earth_industry", "launch_propellant", "launch_life_support"]]
+    },
+    {
+      "id": "earth_orbit_access",
+      "dimension": "earth_to_stars:orbital_space",
+      "requires_any": [["launch_craft"]]
+    },
+    {
+      "id": "orbital_salvage",
+      "dimension": "earth_to_stars:orbital_space",
+      "requires_any": [["earth_orbit_access"]]
+    },
+    {
+      "id": "orbital_navigation",
+      "dimension": "earth_to_stars:orbital_space",
+      "requires_any": [["orbital_salvage"]]
+    },
+    {
+      "id": "orbital_life_support",
+      "dimension": "earth_to_stars:orbital_space",
+      "requires_any": [["orbital_salvage"]]
+    },
+    {
+      "id": "moon_access",
+      "dimension": "earth_to_stars:moon",
+      "requires_any": [["orbital_navigation", "orbital_life_support"]]
+    },
+    {
+      "id": "lunar_titanium",
+      "dimension": "earth_to_stars:moon",
+      "requires_any": [["moon_access"]]
+    },
+    {
+      "id": "lunar_range_upgrade",
+      "dimension": "earth_to_stars:moon",
+      "requires_any": [["lunar_titanium", "orbital_salvage"]]
+    },
+    {
+      "id": "asteroid_access",
+      "dimension": "earth_to_stars:near_earth_asteroids",
+      "requires_any": [["lunar_range_upgrade"]]
+    },
+    {
+      "id": "asteroid_alloys",
+      "dimension": "earth_to_stars:near_earth_asteroids",
+      "requires_any": [["asteroid_access"]]
+    },
+    {
+      "id": "asteroid_power_upgrade",
+      "dimension": "earth_to_stars:near_earth_asteroids",
+      "requires_any": [["asteroid_alloys"]]
+    },
+    {
+      "id": "mars_access",
+      "dimension": "earth_to_stars:mars",
+      "requires_any": [["asteroid_power_upgrade", "lunar_range_upgrade"]]
+    },
+    {
+      "id": "mars_thermal_management",
+      "dimension": "earth_to_stars:mars",
+      "requires_any": [["mars_access"]]
+    },
+    {
+      "id": "expedition_frame",
+      "dimension": "earth_to_stars:mars",
+      "requires_any": [["mars_thermal_management", "asteroid_alloys"]]
+    },
+    {
+      "id": "main_belt_access",
+      "dimension": "earth_to_stars:main_belt",
+      "requires_any": [["expedition_frame"]]
+    },
+    {
+      "id": "belt_industry",
+      "dimension": "earth_to_stars:main_belt",
+      "requires_any": [["main_belt_access"]]
+    },
+    {
+      "id": "long_range_drive",
+      "dimension": "earth_to_stars:main_belt",
+      "requires_any": [["belt_industry", "mars_thermal_management"]]
+    },
+    {
+      "id": "outer_system_access",
+      "dimension": "earth_to_stars:outer_system",
+      "requires_any": [["long_range_drive"]]
+    },
+    {
+      "id": "deep_space_drive",
+      "dimension": "earth_to_stars:outer_system",
+      "requires_any": [["outer_system_access", "belt_industry"]]
+    },
+    {
+      "id": "deep_space_access",
+      "dimension": "earth_to_stars:deep_space",
+      "requires_any": [["deep_space_drive"]]
+    },
+    {
+      "id": "nether_heat_shortcut",
+      "dimension": "minecraft:the_nether",
+      "requires_any": [["earth_industry"]],
+      "optional": true
+    },
+    {
+      "id": "nether_propellant_variant",
+      "dimension": "minecraft:the_nether",
+      "requires_any": [["nether_heat_shortcut", "launch_propellant"]],
+      "optional": true
+    },
+    {
+      "id": "end_navigation_sidegrade",
+      "dimension": "minecraft:the_end",
+      "requires_any": [["orbital_navigation"]],
+      "optional": true
+    }
+  ]
+}
