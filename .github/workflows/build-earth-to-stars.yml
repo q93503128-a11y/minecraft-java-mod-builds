@@ -89,7 +89,7 @@ jobs:
             LIFECYCLE_STATUS="NOT RERUN; last verified run 34192830690 includes fuel/oxygen"
           fi
           cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # EARTH TO STARS — Build Report
+          # EARTH TO STARS — M1-D Orbital Recovery Build Report
 
           - Commit: $GITHUB_SHA
           - Mod version: $MOD_VERSION
@@ -100,11 +100,15 @@ jobs:
           - P0-H progression validator: PASS
           - M1 launch recipe dependency closure: PASS
           - M1 launch recipe Nether/End independence: PASS
+          - M1-D starter empty weapon/sensor slots JUnit: PASS
+          - M1-D recovered autocannon/scanner capability progression JUnit: PASS
+          - ShipState schema 1 -> 2 sensor-slot migration JUnit: PASS
           - clean/test/build: PASS
           - production JAR verify: PASS
+          - orbital mission/recovered sensor resources packaged: PASS
           - dedicated server save/restart lifecycle: $LIFECYCLE_STATUS
           - SHA-256: $SHA
-          - live Earth↔orbit player flight: NOT TESTED unless separately recorded
+          - live Earth→orbit→salvage→combat→return cycle: NOT TESTED unless separately recorded
           - live multiplayer: NOT TESTED unless separately recorded
           - client visual quality: NOT TESTED unless separately recorded
           EOF
