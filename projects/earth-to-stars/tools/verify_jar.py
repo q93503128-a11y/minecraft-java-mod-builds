@@ -30,6 +30,7 @@ def main() -> None:
             "META-INF/neoforge.mods.toml",
             "assets/earth_to_stars/lang/en_us.json",
             "data/earth_to_stars/bootstrap/kernel.json",
+            "data/earth_to_stars/progression/main_path.json",
         ]
         for entry in required:
             if entry not in names:
