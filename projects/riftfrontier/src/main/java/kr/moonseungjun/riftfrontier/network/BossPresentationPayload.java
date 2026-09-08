@@ -1,9 +1,7 @@
 package kr.moonseungjun.riftfrontier.network;
 
 import kr.moonseungjun.riftfrontier.Riftfrontier;
-import kr.moonseungjun.riftfrontier.combat.AttackTimeline;
-import kr.moonseungjun.riftfrontier.combat.MinecraftBossCombatAdapter;
-import kr.moonseungjun.riftfrontier.content.ContentId;
+import kr.moonseungjun.riftfrontier.combat.BossPresentationSemanticState;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -13,87 +11,31 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/** Server-authoritative semantic snapshot for boss presentation. */
-public record BossPresentationPayload(
-    int entityId,
-    long serverGameTick,
-    boolean active,
-    int bossPhase,
-    String patternId,
-    String attackPhase,
-    double phaseProgress,
-    String presentationCue,
-    String delivery,
-    List<String> counterplay,
-    boolean hitWindowOpen
-) implements CustomPacketPayload {
+/** Wire transport for a server-authoritative boss presentation semantic state. */
+public record BossPresentationPayload(BossPresentationSemanticState state) implements CustomPacketPayload {
     public static final Type<BossPresentationPayload> TYPE = new Type<>(
         Identifier.fromNamespaceAndPath(Riftfrontier.MOD_ID, "boss_presentation")
     );
     public static final StreamCodec<RegistryFriendlyByteBuf, BossPresentationPayload> STREAM_CODEC =
         StreamCodec.ofMember(BossPresentationPayload::encode, BossPresentationPayload::decode);
 
-    private static final int MAX_COUNTERPLAY = 16;
-
     public BossPresentationPayload {
-        if (entityId < 0) throw new IllegalArgumentException("entityId must be >= 0");
-        if (serverGameTick < 0) throw new IllegalArgumentException("serverGameTick must be >= 0");
-        patternId = Objects.requireNonNull(patternId, "patternId");
-        attackPhase = Objects.requireNonNull(attackPhase, "attackPhase");
-        presentationCue = Objects.requireNonNull(presentationCue, "presentationCue");
-        delivery = Objects.requireNonNull(delivery, "delivery");
-        counterplay = List.copyOf(Objects.requireNonNull(counterplay, "counterplay"));
-        if (counterplay.size() > MAX_COUNTERPLAY) throw new IllegalArgumentException("too many counterplay semantics");
-        if (!Double.isFinite(phaseProgress) || phaseProgress < 0.0D || phaseProgress > 1.0D) {
-            throw new IllegalArgumentException("phaseProgress must be finite and between 0 and 1");
-        }
-        if (active) {
-            if (bossPhase <= 0) throw new IllegalArgumentException("active presentation requires a positive boss phase");
-            ContentId.parse(patternId);
-            AttackTimeline.Phase phase = AttackTimeline.Phase.valueOf(attackPhase);
-            if (phase == AttackTimeline.Phase.COMPLETE) throw new IllegalArgumentException("COMPLETE is not an active presentation phase");
-            if (hitWindowOpen != (phase == AttackTimeline.Phase.ACTIVE)) {
-                throw new IllegalArgumentException("hitWindowOpen must exactly match ACTIVE phase");
-            }
-        } else if (bossPhase != 0 || !patternId.isEmpty() || !attackPhase.isEmpty() || hitWindowOpen) {
-            throw new IllegalArgumentException("inactive presentation must use the canonical clear state");
-        }
-    }
-
-    public static BossPresentationPayload fromFrame(int entityId, long serverGameTick, MinecraftBossCombatAdapter.PresentationFrame frame) {
-        Objects.requireNonNull(frame, "frame");
-        return new BossPresentationPayload(
-            entityId,
-            serverGameTick,
-            true,
-            frame.bossPhase(),
-            frame.patternId().toString(),
-            frame.attackPhase().name(),
-            frame.phaseProgress(),
-            frame.presentationCue(),
-            frame.delivery(),
-            frame.counterplay().stream().sorted().toList(),
-            frame.hitWindowOpen()
-        );
-    }
-
-    public static BossPresentationPayload clear(int entityId, long serverGameTick) {
-        return new BossPresentationPayload(entityId, serverGameTick, false, 0, "", "", 0.0D, "", "", List.of(), false);
+        state = Objects.requireNonNull(state, "state");
     }
 
     private void encode(RegistryFriendlyByteBuf buf) {
-        buf.writeVarInt(entityId);
-        buf.writeVarLong(serverGameTick);
-        buf.writeBoolean(active);
-        buf.writeVarInt(bossPhase);
-        buf.writeUtf(patternId);
-        buf.writeUtf(attackPhase);
-        buf.writeDouble(phaseProgress);
-        buf.writeUtf(presentationCue);
-        buf.writeUtf(delivery);
-        buf.writeVarInt(counterplay.size());
-        counterplay.forEach(buf::writeUtf);
-        buf.writeBoolean(hitWindowOpen);
+        buf.writeVarInt(state.entityId());
+        buf.writeVarLong(state.serverGameTick());
+        buf.writeBoolean(state.active());
+        buf.writeVarInt(state.bossPhase());
+        buf.writeUtf(state.patternId());
+        buf.writeUtf(state.attackPhase());
+        buf.writeDouble(state.phaseProgress());
+        buf.writeUtf(state.presentationCue());
+        buf.writeUtf(state.delivery());
+        buf.writeVarInt(state.counterplay().size());
+        state.counterplay().forEach(buf::writeUtf);
+        buf.writeBoolean(state.hitWindowOpen());
     }
 
     private static BossPresentationPayload decode(RegistryFriendlyByteBuf buf) {
@@ -107,14 +49,25 @@ public record BossPresentationPayload(
         String presentationCue = buf.readUtf();
         String delivery = buf.readUtf();
         int count = buf.readVarInt();
-        if (count < 0 || count > MAX_COUNTERPLAY) throw new IllegalArgumentException("invalid counterplay count: " + count);
+        if (count < 0 || count > BossPresentationSemanticState.MAX_COUNTERPLAY) {
+            throw new IllegalArgumentException("invalid counterplay count: " + count);
+        }
         List<String> counterplay = new ArrayList<>(count);
         for (int i = 0; i < count; i++) counterplay.add(buf.readUtf());
         boolean hitWindowOpen = buf.readBoolean();
-        return new BossPresentationPayload(
-            entityId, serverGameTick, active, bossPhase, patternId, attackPhase,
-            phaseProgress, presentationCue, delivery, counterplay, hitWindowOpen
-        );
+        return new BossPresentationPayload(new BossPresentationSemanticState(
+            entityId,
+            serverGameTick,
+            active,
+            bossPhase,
+            patternId,
+            attackPhase,
+            phaseProgress,
+            presentationCue,
+            delivery,
+            counterplay,
+            hitWindowOpen
+        ));
     }
 
     @Override
