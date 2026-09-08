@@ -23,18 +23,20 @@ import static org.junit.jupiter.api.Assertions.*;
 final class ShipSystemsTest {
     @Test
     void priorityReservePreventsLowerPriorityBrownout() {
-        ShipPowerGrid grid = new ShipPowerGrid(100.0D, 40.0D, 0.0D);
+        ShipPowerGrid grid = new ShipPowerGrid(100.0D, 45.0D, 0.0D);
 
         assertTrue(grid.tryConsume(5.0D, PowerPriority.UTILITY));
-        assertEquals(35.0D, grid.stored(), 1.0E-9D);
+        assertEquals(40.0D, grid.stored(), 1.0E-9D);
         assertFalse(grid.tryConsume(0.1D, PowerPriority.UTILITY));
 
         assertTrue(grid.tryConsume(15.0D, PowerPriority.WEAPONS));
-        assertEquals(20.0D, grid.stored(), 1.0E-9D);
+        assertEquals(25.0D, grid.stored(), 1.0E-9D);
         assertFalse(grid.tryConsume(0.1D, PowerPriority.WEAPONS));
 
-        assertTrue(grid.tryConsume(10.0D, PowerPriority.PROPULSION));
+        assertTrue(grid.tryConsume(15.0D, PowerPriority.PROPULSION));
         assertEquals(10.0D, grid.stored(), 1.0E-9D);
+        assertFalse(grid.tryConsume(0.1D, PowerPriority.PROPULSION));
+
         assertTrue(grid.tryConsume(10.0D, PowerPriority.ESSENTIAL));
         assertEquals(0.0D, grid.stored(), 1.0E-9D);
     }
