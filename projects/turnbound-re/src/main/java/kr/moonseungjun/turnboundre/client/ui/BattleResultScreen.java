@@ -6,27 +6,23 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 import java.util.Locale;
 
 /** Compact non-pausing terminal presentation. World cleanup happens only after a server-accepted acknowledgement. */
 public final class BattleResultScreen extends Screen {
-    private static final Identifier TITLE_BOX = Identifier.withDefaultNamespace("advancements/title_box");
-    private static final Identifier FRAME = Identifier.withDefaultNamespace("advancements/task_frame_obtained");
-    private static final int TEXT_PRIMARY = 0xFFFFFFFF;
-    private static final int TEXT_SECONDARY = 0xFFBBBBBB;
-    private static final int TEXT_WARNING = 0xFFFFCC66;
-    private static final int TEXT_SUCCESS = 0xFFAAFFAA;
+    private static final int REWARD_REVEAL_START_TICKS = 6;
+    private static final int REWARD_ROW_INTERVAL_TICKS = 3;
+    private static final int CONTINUE_UNLOCK_TICKS = 12;
 
     private BattleResultNetworkPayloads.ResultView result;
     private Button continueButton;
     private boolean acknowledgementSent;
     private long seenGeneration = -1L;
     private String feedback = "";
+    private int presentationTicks;
 
     public BattleResultScreen() {
         super(Minecraft.getInstance(), Minecraft.getInstance().font,
@@ -43,13 +39,14 @@ public final class BattleResultScreen extends Screen {
                 .bounds(layout.footer().x() + (layout.footer().width() - buttonWidth) / 2,
                         layout.footer().y() + 2, buttonWidth, 20)
                 .build();
-        continueButton.active = result != null && !acknowledgementSent;
+        refreshContinueState();
         this.addRenderableWidget(continueButton);
     }
 
     @Override
     public void tick() {
         super.tick();
+        presentationTicks++;
         if (BattleResultClientState.generation() != seenGeneration) {
             syncState();
             if (result == null) {
@@ -57,14 +54,15 @@ public final class BattleResultScreen extends Screen {
                 return;
             }
             acknowledgementSent = false;
-            if (continueButton != null) continueButton.active = true;
+            presentationTicks = 0;
         }
+        refreshContinueState();
     }
 
     @Override
     public void onClose() {
-        acknowledge();
-        // Intentionally do not call super: ESC is equivalent to Continue and waits for server cleanup acknowledgement.
+        if (presentationTicks >= CONTINUE_UNLOCK_TICKS) acknowledge();
+        // Intentionally do not call super: ESC is equivalent to Continue only after the short reveal cadence.
     }
 
     @Override
@@ -76,21 +74,24 @@ public final class BattleResultScreen extends Screen {
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         if (!BattleResultLayout.supports(this.width, this.height)) {
             graphics.text(this.font, Component.translatable("screen.turnbound_re.result.canvas_too_small"),
-                    Math.max(8, this.width / 2 - 100), Math.max(8, this.height / 2 - 10), TEXT_WARNING, true);
+                    Math.max(8, this.width / 2 - 100), Math.max(8, this.height / 2 - 10), UiVisualLanguage.TEXT_WARNING, true);
             super.extractRenderState(graphics, mouseX, mouseY, partialTick);
             return;
         }
 
         BattleResultLayout.Layout layout = BattleResultLayout.calculate(this.width, this.height);
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, TITLE_BOX,
-                layout.header().x(), layout.header().y(), layout.header().width(), layout.header().height());
         if (result != null) {
             Component outcome = Component.translatable(result.victory()
                     ? "screen.turnbound_re.result.victory" : "screen.turnbound_re.result.defeat");
-            graphics.text(this.font, outcome,
-                    layout.header().x() + (layout.header().width() - this.font.width(outcome)) / 2,
-                    layout.header().y() + 10,
-                    result.victory() ? TEXT_SUCCESS : TEXT_WARNING,
+            UiVisualLanguage.titleBand(
+                    graphics,
+                    this.font,
+                    layout.header().x(),
+                    layout.header().y(),
+                    layout.header().width(),
+                    layout.header().height(),
+                    outcome,
+                    result.victory() ? UiVisualLanguage.TEXT_SUCCESS : UiVisualLanguage.TEXT_WARNING,
                     true);
             renderRewards(graphics, layout.rewards());
         }
@@ -103,48 +104,70 @@ public final class BattleResultScreen extends Screen {
         if (!feedback.isBlank()) {
             graphics.text(this.font, Component.literal(fit(feedback, layout.footer().width())),
                     layout.footer().x(), Math.max(layout.header().bottom(), layout.footer().y() - this.font.lineHeight - 2),
-                    acknowledgementSent ? TEXT_SECONDARY : TEXT_WARNING, true);
+                    acknowledgementSent ? UiVisualLanguage.TEXT_SECONDARY : UiVisualLanguage.TEXT_WARNING, true);
         }
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
     private void renderRewards(GuiGraphicsExtractor graphics, BattleResultLayout.Rect region) {
+        if (presentationTicks < REWARD_REVEAL_START_TICKS) return;
         int x = region.x() + 8;
         int y = region.y();
-        graphics.text(this.font, Component.translatable("screen.turnbound_re.result.rewards"), x, y, TEXT_PRIMARY, true);
+        graphics.text(this.font, Component.translatable("screen.turnbound_re.result.rewards"),
+                x, y, UiVisualLanguage.TEXT_FOCUS, true);
         y += 18;
 
         if (!result.hasRewards()) {
-            graphics.text(this.font, Component.translatable("screen.turnbound_re.result.no_rewards"), x, y, TEXT_SECONDARY, true);
+            graphics.text(this.font, Component.translatable("screen.turnbound_re.result.no_rewards"),
+                    x, y, UiVisualLanguage.TEXT_SECONDARY, true);
             return;
         }
-        if (result.coinDelta() > 0) {
+
+        int totalRows = rewardRowCount();
+        int visibleRows = UiVisualLanguage.revealedRows(
+                presentationTicks, totalRows, REWARD_REVEAL_START_TICKS, REWARD_ROW_INTERVAL_TICKS);
+        int row = 0;
+        if (result.coinDelta() > 0 && row++ < visibleRows) {
             y = rewardRow(graphics, region, y, Component.translatable(
                     "screen.turnbound_re.result.coin", result.coinDelta(), result.coinTotal()));
         }
-        if (result.essenceDelta() > 0) {
+        if (result.essenceDelta() > 0 && row++ < visibleRows) {
             y = rewardRow(graphics, region, y, Component.translatable(
                     "screen.turnbound_re.result.essence", result.essenceDelta(), result.essenceTotal()));
         }
         for (BattleResultNetworkPayloads.ShardView shard : result.shards()) {
-            rewardRow(graphics, region, y, Component.translatable(
+            if (row++ >= visibleRows) break;
+            y = rewardRow(graphics, region, y, Component.translatable(
                     "screen.turnbound_re.result.shard", displayName(shard.characterId()), shard.amount(), shard.total()));
-            y += 26;
         }
     }
 
+    private int rewardRowCount() {
+        if (result == null || !result.hasRewards()) return 0;
+        int rows = result.shards().size();
+        if (result.coinDelta() > 0) rows++;
+        if (result.essenceDelta() > 0) rows++;
+        return rows;
+    }
+
     private int rewardRow(GuiGraphicsExtractor graphics, BattleResultLayout.Rect region, int y, Component text) {
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, FRAME, region.x() + 8, y, 20, 20);
+        UiVisualLanguage.frame(graphics, region.x() + 8, y, 20, 20, true);
         graphics.text(this.font, Component.literal(fit(text.getString(), Math.max(1, region.width() - 42))),
-                region.x() + 34, y + 6, TEXT_PRIMARY, true);
+                region.x() + 34, y + 6, UiVisualLanguage.TEXT_PRIMARY, true);
         return y + 26;
     }
 
+    private void refreshContinueState() {
+        if (continueButton != null) {
+            continueButton.active = result != null && !acknowledgementSent && presentationTicks >= CONTINUE_UNLOCK_TICKS;
+        }
+    }
+
     private void acknowledge() {
-        if (acknowledgementSent || result == null) return;
+        if (acknowledgementSent || result == null || presentationTicks < CONTINUE_UNLOCK_TICKS) return;
         acknowledgementSent = true;
         feedback = Component.translatable("screen.turnbound_re.result.returning").getString();
-        if (continueButton != null) continueButton.active = false;
+        refreshContinueState();
         ClientPacketDistributor.sendToServer(BattleResultNetworkPayloads.AcknowledgeResultC2S.from(result));
     }
 
