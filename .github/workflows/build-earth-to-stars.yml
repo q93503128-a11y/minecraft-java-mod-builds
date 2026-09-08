@@ -33,6 +33,12 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: gradle
+      - name: Resolve mod version
+        shell: bash
+        run: |
+          VERSION=$(awk -F= '$1=="mod_version" { print $2 }' gradle.properties)
+          test -n "$VERSION"
+          echo "MOD_VERSION=$VERSION" >> "$GITHUB_ENV"
       - name: Verify toolchain
         run: |
           java -version
@@ -52,9 +58,10 @@ jobs:
           JAR=$(ls build/libs/earth_to_stars-*.jar | head -n1)
           SHA=$(cat "$JAR.sha256")
           cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # EARTH TO STARS — P0-D Build Report
+          # EARTH TO STARS — P0-E Build Report
 
           - Commit: $GITHUB_SHA
+          - Mod version: $MOD_VERSION
           - Java: 25
           - Gradle: 9.2.1 wrapper
           - Minecraft: 26.2
@@ -64,8 +71,13 @@ jobs:
           - SHA-256: $SHA
           - P0-A/P0-B/P0-C regression JUnit: PASS
           - P0-D interior allocation/layout JUnit: PASS
-          - ship_interiors dimension packaging: PASS
-          - linked-interior Minecraft adapter compile: PASS
+          - P0-E representative turret JUnit: PASS
+          - OFF / MANUAL / AUTO_DEFENSE state machine: PASS
+          - exclusive manual lease + replay rejection: PASS
+          - ammo / cooldown / firing-arc rules: PASS
+          - shared SensorGrid target selection: PASS
+          - Minecraft 26.2 turret adapter compile: PASS
+          - P0 projectile simulation: BUILD VERIFIED / LIVE HIT FEEL NOT TESTED
           - datagen: NOT RUN
           - GameTest: NOT REGISTERED / NOT RUN
           - dedicated server smoke: NOT RUN
@@ -76,7 +88,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: earth-to-stars-0.1.0-alpha.4-deliverables
+          name: earth-to-stars-${{ env.MOD_VERSION }}-deliverables
           path: |
             projects/earth-to-stars/build/libs/earth_to_stars-*.jar
             projects/earth-to-stars/build/libs/earth_to_stars-*.jar.sha256
@@ -86,7 +98,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: earth-to-stars-0.1.0-alpha.4-logs
+          name: earth-to-stars-${{ env.MOD_VERSION }}-logs
           path: projects/earth-to-stars/build/logs/
           if-no-files-found: ignore
           retention-days: 7
