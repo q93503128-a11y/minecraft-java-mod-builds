@@ -1,5 +1,6 @@
 package kr.moonseungjun.riftfrontier.content;
 
+import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationAssetManifest;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationProfile;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationProfileValidator;
 
@@ -36,14 +37,39 @@ public final class ContentRuntime {
         return installValidated(registry, packIds, List.of());
     }
 
-    public static synchronized ContentRuntimeSnapshot installValidated(
+    /** Architecture/test path before a production asset manifest exists. */
+    public static ContentRuntimeSnapshot installValidated(
         ContentRegistry registry,
         List<String> packIds,
         Collection<BossPresentationProfile> presentationProfiles
     ) {
+        return installValidatedInternal(registry, packIds, presentationProfiles, Optional.empty(), false);
+    }
+
+    /**
+     * Production publication path. Presentation profiles and their selected-asset manifest are one atomic candidate.
+     * A profile-bearing candidate without a manifest is rejected rather than publishing an unverifiable selection layer.
+     */
+    public static ContentRuntimeSnapshot installValidated(
+        ContentRegistry registry,
+        List<String> packIds,
+        Collection<BossPresentationProfile> presentationProfiles,
+        Optional<BossPresentationAssetManifest> assetManifest
+    ) {
+        return installValidatedInternal(registry, packIds, presentationProfiles, assetManifest, true);
+    }
+
+    private static synchronized ContentRuntimeSnapshot installValidatedInternal(
+        ContentRegistry registry,
+        List<String> packIds,
+        Collection<BossPresentationProfile> presentationProfiles,
+        Optional<BossPresentationAssetManifest> assetManifest,
+        boolean requireManifestForProfiles
+    ) {
         Objects.requireNonNull(registry, "registry");
         Objects.requireNonNull(packIds, "packIds");
         Objects.requireNonNull(presentationProfiles, "presentationProfiles");
+        Objects.requireNonNull(assetManifest, "assetManifest");
 
         ContentValidator.Report report = VALIDATOR.validate(registry);
         if (report.hasErrors()) {
@@ -59,8 +85,23 @@ public final class ContentRuntime {
             throw new IllegalStateException("Refusing to publish invalid boss presentation snapshot:\n" + formatted);
         }
 
+        if (requireManifestForProfiles && !presentations.isEmpty() && assetManifest.isEmpty()) {
+            throw new IllegalStateException("Refusing to publish boss presentation profiles without a selected-asset manifest");
+        }
+        if (assetManifest.isPresent()) {
+            BossPresentationAssetManifest.Report manifestReport = assetManifest.get().validateProfiles(presentations);
+            if (manifestReport.hasErrors()) {
+                String formatted = manifestReport.issues().stream()
+                    .map(issue -> issue.code() + " " + issue.logicalKey() + " - " + issue.message())
+                    .collect(java.util.stream.Collectors.joining("\n"));
+                throw new IllegalStateException("Refusing to publish invalid boss presentation asset manifest:\n" + formatted);
+            }
+        }
+
         long generation = GENERATION.incrementAndGet();
-        ContentRuntimeSnapshot snapshot = new ContentRuntimeSnapshot(generation, Instant.now(), packIds, registry, presentations);
+        ContentRuntimeSnapshot snapshot = new ContentRuntimeSnapshot(
+            generation, Instant.now(), packIds, registry, presentations, assetManifest
+        );
         CURRENT.set(snapshot);
         return snapshot;
     }

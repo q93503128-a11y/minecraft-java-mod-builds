@@ -1,5 +1,6 @@
 package kr.moonseungjun.riftfrontier.content;
 
+import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationAssetManifest;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationProfile;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationResolver;
 
@@ -9,7 +10,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/** Immutable publication boundary for validated content definitions and presentation profiles. */
+/** Immutable publication boundary for validated content definitions and presentation selections. */
 public final class ContentRuntimeSnapshot implements ContentLookup {
     private final long generation;
     private final Instant loadedAt;
@@ -18,13 +19,15 @@ public final class ContentRuntimeSnapshot implements ContentLookup {
     private final ContentCatalog catalog;
     private final List<BossPresentationProfile> bossPresentationProfiles;
     private final BossPresentationResolver bossPresentationResolver;
+    private final Optional<BossPresentationAssetManifest> bossPresentationAssetManifest;
 
     ContentRuntimeSnapshot(
         long generation,
         Instant loadedAt,
         List<String> packIds,
         ContentRegistry registry,
-        List<BossPresentationProfile> bossPresentationProfiles
+        List<BossPresentationProfile> bossPresentationProfiles,
+        Optional<BossPresentationAssetManifest> bossPresentationAssetManifest
     ) {
         if (generation < 0) throw new IllegalArgumentException("generation must be >= 0");
         this.generation = generation;
@@ -34,6 +37,7 @@ public final class ContentRuntimeSnapshot implements ContentLookup {
         this.catalog = ContentCatalog.from(registry);
         this.bossPresentationProfiles = List.copyOf(Objects.requireNonNull(bossPresentationProfiles, "bossPresentationProfiles"));
         this.bossPresentationResolver = new BossPresentationResolver(this.bossPresentationProfiles);
+        this.bossPresentationAssetManifest = Objects.requireNonNull(bossPresentationAssetManifest, "bossPresentationAssetManifest");
     }
 
     public long generation() { return generation; }
@@ -44,6 +48,7 @@ public final class ContentRuntimeSnapshot implements ContentLookup {
     public int bossPresentationProfileCount() { return bossPresentationProfiles.size(); }
     public List<BossPresentationProfile> bossPresentationProfiles() { return bossPresentationProfiles; }
     public BossPresentationResolver bossPresentationResolver() { return bossPresentationResolver; }
+    public Optional<BossPresentationAssetManifest> bossPresentationAssetManifest() { return bossPresentationAssetManifest; }
 
     @Override
     public Optional<CoreDefinition> find(CoreDefinition.Kind kind, ContentId id) {
