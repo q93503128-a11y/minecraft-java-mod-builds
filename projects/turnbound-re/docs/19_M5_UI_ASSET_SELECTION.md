@@ -1,7 +1,7 @@
 # 19 — M5 UI Asset Selection
 
 최종 갱신: 2026-09-08  
-상태: **PRIMARY CANDIDATE SELECTED / BINARY IMPORT PENDING / SCREENSHOT GATE PENDING**
+상태: **PRIMARY ASSET IMPORTED / VANILLA BRIDGE REMOVED / SCREENSHOT GATE PENDING**
 
 이 문서는 M5 구조 구현 이후 실제 시각 자산을 입히는 단계가 다시 AI 즉흥 디자인이나 화면별 임시 texture 조합으로 흐르지 않도록, 자산 선택 이유와 적용 범위를 고정한다.
 
@@ -129,16 +129,25 @@ TURNBOUND: RE sprite atlas
 7. HUD용 asset은 중앙 world viewport를 더 많이 가리지 않는지 확인한다.
 8. atlas/nine-slice 적용 후 1920×1080, 1280×720, minimum-supported logical canvas screenshot을 비교한다.
 
-## 6. Binary import가 아직 pending인 이유
+## 6. 실제 production 반입 결과
 
-이번 조사에서는 공식/배포 페이지에서 CC0와 구성까지 검증했지만, 현재 연결된 저장소 작업 경로에서 원본 ZIP을 신뢰 가능한 binary reference로 그대로 반입하는 단계까지 완료하지 않았다.
+검증 원본: `UI Pack - Pixel Adventure (2.0)`
+원본 ZIP SHA-256: `6ebf462e7f209f5f348419b09be6601a559ef1e1d6b595f0e9f8aa4c00a84048`
+라이선스: **CC0 1.0** (`META-INF/licenses/kenney-ui-pack-pixel-adventure-CC0.txt`에 원문 보존)
 
-따라서:
-- **자산을 사용했다고 주장하지 않는다.**
-- 지금 저장소의 vanilla advancement/boss-bar sprite는 여전히 구조 검증 bridge다.
-- 다음 binary pass에서 실제 원본을 확보하고 파일 단위 provenance를 기록한 뒤 교체한다.
+직접 사용 mapping:
+- `tile_0009.png` → `ui/frame_idle.png`
+- `tile_0022.png` → `ui/frame_focus.png`
+- `tile_0008.png` → `ui/frame_disabled.png`
+- `tile_0020.png` → `ui/frame_warning.png`
+- `tile_0021.png` → `ui/frame_success.png`
+- `tile_0002.png` → `ui/title_surface.png`
 
-이 상태를 건너뛰고 비슷하게 보이는 AI 제작 texture를 대신 만드는 것은 금지한다.
+모든 frame/title은 `Large tiles / Thin outline` 한 family만 사용하며 32×32 원본 모서리를 보존하기 위해 4px `nine_slice` metadata를 사용한다. meter 4종은 같은 pack의 neutral/red/blue/gold palette를 5px strip으로 축약한 derivative다.
+
+`UiVisualLanguage`는 이제 `turnbound_re:ui/*`만 가리키며 vanilla advancement / boss-bar sprite bridge를 사용하지 않는다. 호출부 역시 IDLE / FOCUS / DISABLED / WARNING / SUCCESS를 명시적으로 요청한다.
+
+실제 Minecraft 화면에서의 크기·contrast·pixel crispness는 아직 검수 전이므로 **visual 완료 처리는 하지 않는다.**
 
 ## 7. Screenshot acceptance
 

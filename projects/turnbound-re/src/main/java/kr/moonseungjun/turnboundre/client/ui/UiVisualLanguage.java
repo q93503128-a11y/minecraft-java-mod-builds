@@ -1,34 +1,26 @@
 package kr.moonseungjun.turnboundre.client.ui;
 
+import kr.moonseungjun.turnboundre.TurnboundRe;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
-/**
- * Shared M5 visual tokens for TURNBOUND: RE.
- *
- * <p>This is intentionally a semantic layer over the current bridge sprites. Screen code asks for presentation
- * meaning (focus, disabled, warning, success) rather than knowing atlas filenames. The backing sprites can therefore
- * move from vanilla bridge art to the selected TURNBOUND: RE atlas without leaking asset choices into gameplay UI.</p>
- */
+/** Shared M5 semantic visual tokens backed by the verified TURNBOUND: RE UI sprite family. */
 public final class UiVisualLanguage {
-    public enum FrameState {
-        IDLE,
-        FOCUS,
-        DISABLED,
-        WARNING,
-        SUCCESS
-    }
+    public enum FrameState { IDLE, FOCUS, DISABLED, WARNING, SUCCESS }
 
-    public static final Identifier FRAME_IDLE = Identifier.withDefaultNamespace("advancements/task_frame_unobtained");
-    public static final Identifier FRAME_ACTIVE = Identifier.withDefaultNamespace("advancements/task_frame_obtained");
-    public static final Identifier TITLE_BOX = Identifier.withDefaultNamespace("advancements/title_box");
-    public static final Identifier BAR_BACKGROUND = Identifier.withDefaultNamespace("boss_bar/white_background");
-    public static final Identifier HP_PROGRESS = Identifier.withDefaultNamespace("boss_bar/red_progress");
-    public static final Identifier POISE_PROGRESS = Identifier.withDefaultNamespace("boss_bar/yellow_progress");
-    public static final Identifier ENERGY_PROGRESS = Identifier.withDefaultNamespace("boss_bar/blue_progress");
+    public static final Identifier FRAME_IDLE = sprite("frame_idle");
+    public static final Identifier FRAME_FOCUS = sprite("frame_focus");
+    public static final Identifier FRAME_DISABLED = sprite("frame_disabled");
+    public static final Identifier FRAME_WARNING = sprite("frame_warning");
+    public static final Identifier FRAME_SUCCESS = sprite("frame_success");
+    public static final Identifier TITLE_BOX = sprite("title_surface");
+    public static final Identifier BAR_BACKGROUND = sprite("meter_track");
+    public static final Identifier HP_PROGRESS = sprite("meter_hp");
+    public static final Identifier POISE_PROGRESS = sprite("meter_poise");
+    public static final Identifier ENERGY_PROGRESS = sprite("meter_energy");
 
     public static final int TEXT_PRIMARY = 0xFFFFFFFF;
     public static final int TEXT_SECONDARY = 0xFFB7BAC4;
@@ -39,57 +31,30 @@ public final class UiVisualLanguage {
 
     private UiVisualLanguage() {}
 
-    public static void titleBand(
-            GuiGraphicsExtractor graphics,
-            Font font,
-            int x,
-            int y,
-            int width,
-            int height,
-            Component text,
-            int color,
-            boolean centered
-    ) {
+    private static Identifier sprite(String path) {
+        return Identifier.fromNamespaceAndPath(TurnboundRe.MOD_ID, "ui/" + path);
+    }
+
+    public static void titleBand(GuiGraphicsExtractor graphics, Font font, int x, int y, int width,
+                                 int height, Component text, int color, boolean centered) {
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, TITLE_BOX, x, y, width, height);
         int textX = centered ? x + (width - font.width(text)) / 2 : x + UiLayoutMetrics.SPACE_8;
         int textY = y + Math.max(1, (height - font.lineHeight) / 2);
         graphics.text(font, text, textX, textY, color, true);
     }
 
-    public static void frame(
-            GuiGraphicsExtractor graphics,
-            int x,
-            int y,
-            int width,
-            int height,
-            FrameState state
-    ) {
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, bridgeFrame(state), x, y, width, height);
+    public static void frame(GuiGraphicsExtractor graphics, int x, int y, int width, int height,
+                             FrameState state) {
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, frameSprite(state), x, y, width, height);
     }
 
-    /**
-     * Transitional source-compatible entry point for the already validated M5 screens.
-     * New/edited call sites should use {@link FrameState}; this overload is removed when the selected atlas lands.
-     */
-    public static void frame(
-            GuiGraphicsExtractor graphics,
-            int x,
-            int y,
-            int width,
-            int height,
-            boolean focused
-    ) {
-        frame(graphics, x, y, width, height, focused ? FrameState.FOCUS : FrameState.IDLE);
-    }
-
-    /**
-     * Temporary mapping while M5 still uses Minecraft-native bridge sprites.
-     * The selected external atlas will provide distinct sprites for these states; callers do not need to change.
-     */
-    private static Identifier bridgeFrame(FrameState state) {
+    private static Identifier frameSprite(FrameState state) {
         return switch (state) {
-            case FOCUS, WARNING, SUCCESS -> FRAME_ACTIVE;
-            case IDLE, DISABLED -> FRAME_IDLE;
+            case IDLE -> FRAME_IDLE;
+            case FOCUS -> FRAME_FOCUS;
+            case DISABLED -> FRAME_DISABLED;
+            case WARNING -> FRAME_WARNING;
+            case SUCCESS -> FRAME_SUCCESS;
         };
     }
 
@@ -103,16 +68,8 @@ public final class UiVisualLanguage {
         };
     }
 
-    public static void meter(
-            GuiGraphicsExtractor graphics,
-            int x,
-            int y,
-            int width,
-            int height,
-            int value,
-            int max,
-            Identifier progressSprite
-    ) {
+    public static void meter(GuiGraphicsExtractor graphics, int x, int y, int width, int height,
+                             int value, int max, Identifier progressSprite) {
         if (width <= 0 || height <= 0 || max <= 0) return;
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, BAR_BACKGROUND, x, y, width, height);
         int clampedValue = Math.max(0, Math.min(value, max));

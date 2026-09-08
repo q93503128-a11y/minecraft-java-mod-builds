@@ -444,7 +444,8 @@ public final class PartyFormationScreen extends Screen {
                                       ProgressionNetworkPayloads.CharacterView character, int textWidth) {
         int x = region.x();
         int y = region.y() + 18;
-        UiVisualLanguage.frame(graphics, x, y, 20, 20, character.owned());
+        UiVisualLanguage.frame(graphics, x, y, 20, 20,
+                character.owned() ? UiVisualLanguage.FrameState.FOCUS : UiVisualLanguage.FrameState.DISABLED);
         graphics.text(this.font, Component.literal(fit(displayName(character.id()), Math.max(1, textWidth - 26))), x + 26, y + 2,
                 character.owned() ? UiVisualLanguage.TEXT_FOCUS : UiVisualLanguage.TEXT_SECONDARY, true);
         String progression = character.owned()

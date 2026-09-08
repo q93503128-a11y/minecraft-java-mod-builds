@@ -151,7 +151,7 @@ public final class BattleResultScreen extends Screen {
     }
 
     private int rewardRow(GuiGraphicsExtractor graphics, BattleResultLayout.Rect region, int y, Component text) {
-        UiVisualLanguage.frame(graphics, region.x() + 8, y, 20, 20, true);
+        UiVisualLanguage.frame(graphics, region.x() + 8, y, 20, 20, UiVisualLanguage.FrameState.SUCCESS);
         graphics.text(this.font, Component.literal(fit(text.getString(), Math.max(1, region.width() - 42))),
                 region.x() + 34, y + 6, UiVisualLanguage.TEXT_PRIMARY, true);
         return y + 26;

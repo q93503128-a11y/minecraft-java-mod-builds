@@ -63,7 +63,9 @@ public final class BattleHud {
             BattleNetworkPayloads.SnapshotParticipant participant = order.get(i);
             int y = region.y() + i * rowHeight;
             boolean current = participant.id().equals(model.currentActorId());
-            UiVisualLanguage.frame(graphics, region.x(), y, 20, 20, current);
+            UiVisualLanguage.frame(graphics, region.x(), y, 20, 20,
+                    current ? UiVisualLanguage.FrameState.FOCUS
+                            : participant.alive() ? UiVisualLanguage.FrameState.IDLE : UiVisualLanguage.FrameState.DISABLED);
             String teamGlyph = "PLAYER".equals(participant.team()) ? "P" : "E";
             drawCentered(graphics, font, teamGlyph, region.x() + 10, y + 6,
                     participant.alive() ? (current ? UiVisualLanguage.TEXT_FOCUS : UiVisualLanguage.TEXT_PRIMARY)
@@ -162,7 +164,9 @@ public final class BattleHud {
     ) {
         int slotWidth = Math.min(180, cellWidth);
         boolean current = member.id().equals(model.currentActorId());
-        UiVisualLanguage.frame(graphics, x, y, 20, 20, current);
+        UiVisualLanguage.frame(graphics, x, y, 20, 20,
+                current ? UiVisualLanguage.FrameState.FOCUS
+                        : member.alive() ? UiVisualLanguage.FrameState.IDLE : UiVisualLanguage.FrameState.DISABLED);
         drawCentered(graphics, font, Integer.toString(index + 1), x + 10, y + 6,
                 member.alive() ? (current ? UiVisualLanguage.TEXT_FOCUS : UiVisualLanguage.TEXT_PRIMARY)
                         : UiVisualLanguage.TEXT_SECONDARY,
@@ -205,7 +209,9 @@ public final class BattleHud {
         int contentWidth = Math.max(24, cellWidth - 22 - UiLayoutMetrics.SPACE_4);
         int barWidth = Math.max(24, cellWidth - UiLayoutMetrics.SPACE_4);
         boolean current = member.id().equals(model.currentActorId());
-        UiVisualLanguage.frame(graphics, x, y, 18, 18, current);
+        UiVisualLanguage.frame(graphics, x, y, 18, 18,
+                current ? UiVisualLanguage.FrameState.FOCUS
+                        : member.alive() ? UiVisualLanguage.FrameState.IDLE : UiVisualLanguage.FrameState.DISABLED);
         drawCentered(graphics, font, Integer.toString(index + 1), x + 9, y + 5,
                 member.alive() ? (current ? UiVisualLanguage.TEXT_FOCUS : UiVisualLanguage.TEXT_PRIMARY)
                         : UiVisualLanguage.TEXT_SECONDARY,
@@ -271,7 +277,8 @@ public final class BattleHud {
             BattleNetworkPayloads.SnapshotAction action = actions.get(i);
             int x = region.x() + i * slotWidth;
             int centerX = x + slotWidth / 2;
-            UiVisualLanguage.frame(graphics, centerX - 9, region.y() + 18, 18, 18, action.usable());
+            UiVisualLanguage.frame(graphics, centerX - 9, region.y() + 18, 18, 18,
+                    action.usable() ? UiVisualLanguage.FrameState.IDLE : UiVisualLanguage.FrameState.DISABLED);
             drawCentered(graphics, font, slotGlyph(action.slot()), centerX, region.y() + 23,
                     action.usable() ? UiVisualLanguage.TEXT_FOCUS : UiVisualLanguage.TEXT_SECONDARY, true);
 
