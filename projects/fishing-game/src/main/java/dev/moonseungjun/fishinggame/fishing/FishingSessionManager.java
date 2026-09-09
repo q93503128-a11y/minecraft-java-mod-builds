@@ -52,7 +52,7 @@ public final class FishingSessionManager {
         long now = player.level().getGameTime();
         int biteDelay = 50 + player.getRandom().nextInt(71); // 2.5–6.0 s
         SESSIONS.put(player.getUUID(), new FishingSession(now, now + biteDelay));
-        player.displayClientMessage(Component.literal("낚싯줄을 던졌다."), true);
+        overlay(player, "낚싯줄을 던졌다.");
     }
 
     private static void tick(MinecraftServer server) {
@@ -73,14 +73,14 @@ public final class FishingSessionManager {
                 if (player.fishing != null) {
                     session.stage = FishingStage.WAITING_FOR_BITE;
                 } else if (now - session.castTick > 12) {
-                    player.displayClientMessage(Component.literal("낚싯줄이 물에 닿지 않았다."), true);
+                    overlay(player, "낚싯줄이 물에 닿지 않았다.");
                     iterator.remove();
                 }
                 continue;
             }
 
             if (player.fishing == null) {
-                player.displayClientMessage(Component.literal("낚싯줄이 풀렸다."), true);
+                overlay(player, "낚싯줄이 풀렸다.");
                 iterator.remove();
                 continue;
             }
@@ -91,7 +91,7 @@ public final class FishingSessionManager {
                     session.stage = FishingStage.HOOKED;
                     session.tension = 0.42f;
                     session.progress = 0.0f;
-                    player.displayClientMessage(Component.literal("입질! 우클릭 리듬으로 줄 장력을 유지해라."), true);
+                    overlay(player, "입질! 우클릭 리듬으로 줄 장력을 유지해라.");
                 }
                 continue;
             }
@@ -110,7 +110,7 @@ public final class FishingSessionManager {
 
         if (ReelMath.isLineBroken(session.tension)) {
             removeHook(player);
-            player.displayClientMessage(Component.literal("줄이 끊어졌다! " + session.species.displayName() + "을(를) 놓쳤다."), true);
+            overlay(player, "줄이 끊어졌다! " + session.species.displayName() + "을(를) 놓쳤다.");
             iterator.remove();
             return;
         }
@@ -118,10 +118,7 @@ public final class FishingSessionManager {
         if (session.progress >= 1.0f) {
             double weight = session.species.rollWeight(player.getRandom().nextDouble());
             removeHook(player);
-            player.displayClientMessage(
-                    Component.literal(String.format("%s 포획! %.2f kg", session.species.displayName(), weight)),
-                    true
-            );
+            overlay(player, String.format("%s 포획! %.2f kg", session.species.displayName(), weight));
             iterator.remove();
             return;
         }
@@ -130,17 +127,18 @@ public final class FishingSessionManager {
             session.hudCooldown = 4;
             int tensionPct = Math.round(session.tension * 100.0f);
             int progressPct = Math.round(session.progress * 100.0f);
-            player.displayClientMessage(
-                    Component.literal("장력 " + tensionPct + "%  |  포획 " + progressPct + "%  |  " + session.species.displayName()),
-                    true
-            );
+            overlay(player, "장력 " + tensionPct + "%  |  포획 " + progressPct + "%  |  " + session.species.displayName());
         }
     }
 
     private static void cancel(ServerPlayer player, String message) {
         SESSIONS.remove(player.getUUID());
         removeHook(player);
-        player.displayClientMessage(Component.literal(message), true);
+        overlay(player, message);
+    }
+
+    private static void overlay(ServerPlayer player, String message) {
+        player.sendOverlayMessage(Component.literal(message));
     }
 
     private static void removeHook(ServerPlayer player) {
