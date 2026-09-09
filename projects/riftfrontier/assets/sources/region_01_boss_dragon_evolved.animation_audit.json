@@ -37,8 +37,22 @@
     {"name":"Yes","duration_seconds":1.1666666269302368,"channel_count":90,"sampler_count":90,"animated_node_count":45,"target_path_counts":{"rotation":45,"translation":45},"interpolation_counts":{"LINEAR":90}}
   ],
   "motion_semantics": {
-    "status": "NOT_TESTED",
-    "note": "Clip names and numerical channel metrics do not prove gameplay semantics. Logical attack binding remains blocked until visual motion inspection."
+    "status": "VISUALLY_REVIEWED_SOURCE_MOTION",
+    "reviewed_on": "2026-09-10",
+    "method": "sampled the accepted sanitized glTF at normalized times 0.00, 0.25, 0.50, 0.75 and 1.00; applied the actual joint hierarchy, animation TRS, inverse bind matrices and four-influence skinning; visually compared both skinned-mesh and skeleton poses; used channel-value comparison only to distinguish visually subtle No/Yes neck-head rotational paths",
+    "sampled_normalized_times": [0.0, 0.25, 0.5, 0.75, 1.0],
+    "reviewed_clips": {
+      "Death": "large whole-body orientation and silhouette transition away from the starting airborne pose; the final sample remains markedly displaced instead of cycling back to the start",
+      "Fast_Flying": "rapid bilateral wing and body oscillation across the clip with a cyclic return close to the starting pose",
+      "Flying_Idle": "slower bilateral wing and body hover-like oscillation with a cyclic return close to the starting pose",
+      "Headbutt": "pronounced early forward/downward head-and-torso drive followed by recovery toward the starting airborne pose; the forelimbs are not the dominant moving silhouette",
+      "HitReact": "short whole-body recoil/offset that peaks early-to-mid clip and recovers toward the starting pose",
+      "No": "repeating neck/head orientation swing over an otherwise shared airborne body cycle; the motion returns near the starting orientation",
+      "Punch": "one forelimb raises and extends prominently through the early/middle samples while the torso follows, then the limb retracts toward the starting pose",
+      "Yes": "repeating neck/head orientation change on a different rotational path from No over the shared airborne body cycle, returning near the starting orientation"
+    },
+    "logical_binding_status": "NOT_AUTHORED",
+    "logical_binding_note": "Visual source-motion review is complete, but the current production Region 01 content does not yet define authored boss presentation logical animation keys. Do not derive gameplay mappings from source clip names; bind only after server-authoritative presentation selectors and logical keys are authored."
   },
   "verification_run": {
     "github_actions_run_id": 34362397167,
