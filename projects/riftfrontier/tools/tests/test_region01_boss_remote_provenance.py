@@ -59,8 +59,6 @@ class Region01BossRemoteProvenanceTest(unittest.TestCase):
         project_root = Path(__file__).resolve().parents[2]
         contract = project_root / "assets/sources/region_01_boss_dragon_evolved.source.json"
         acceptance = project_root / "assets/sources/region_01_boss_dragon_evolved.acceptance.json"
-        report_dir = project_root / "build/reports/riftfrontier"
-        report_dir.mkdir(parents=True, exist_ok=True)
 
         observed: dict[str, str] = {}
         accepted_source: bytes | None = None
@@ -91,7 +89,7 @@ class Region01BossRemoteProvenanceTest(unittest.TestCase):
             source = temp / "Dragon_Evolved.gltf"
             sanitized = temp / "region_01_boss_dragon_evolved.sanitized.v1.gltf"
             provenance = temp / "region_01_boss_dragon_evolved.sanitized.v1.provenance.json"
-            receipt = report_dir / "region_01_boss_dragon_evolved.animation_audit.json"
+            receipt = temp / "region_01_boss_dragon_evolved.animation_audit.json"
             source.write_bytes(accepted_source)
 
             subprocess.run(
@@ -128,7 +126,7 @@ class Region01BossRemoteProvenanceTest(unittest.TestCase):
                 "expected_source_sha256": EXPECTED_SOURCE_SHA256,
                 "observed_candidates": observed,
             }
-            receipt.write_text(json.dumps(audit, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            print("REGION01_BOSS_SOURCE_RECEIPT=" + json.dumps(audit, sort_keys=True))
 
 
 if __name__ == "__main__":
