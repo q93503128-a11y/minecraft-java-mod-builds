@@ -37,14 +37,17 @@ class M5BattleStageSignatureFxTest {
     @Test
     void signatureAccentExistsOnlyDuringEarlyImpact() {
         BattleActionTimelineState.Cue impact = cue(
+                BattleActionTimelineState.ImpactStyle.BLAST,
                 BattleActionTimelineState.PresentationStyle.AREA,
                 BattleActionTimelineState.Phase.IMPACT,
                 0.3D);
         BattleActionTimelineState.Cue lateImpact = cue(
+                BattleActionTimelineState.ImpactStyle.BLAST,
                 BattleActionTimelineState.PresentationStyle.AREA,
                 BattleActionTimelineState.Phase.IMPACT,
                 0.8D);
         BattleActionTimelineState.Cue recovery = cue(
+                BattleActionTimelineState.ImpactStyle.BLAST,
                 BattleActionTimelineState.PresentationStyle.AREA,
                 BattleActionTimelineState.Phase.RECOVERY,
                 0.1D);
@@ -55,6 +58,51 @@ class M5BattleStageSignatureFxTest {
     }
 
     @Test
+    void representativeCharacterSignaturesStayNarrowAndIntentional() {
+        assertEquals(BattleStageSignatureFx.CharacterSignature.SKELETON_MARKSMAN,
+                BattleStageSignatureFx.characterSignature("turnbound_re:skeleton"));
+        assertEquals(BattleStageSignatureFx.CharacterSignature.ENDER_RIFT,
+                BattleStageSignatureFx.characterSignature("turnbound_re:enderman"));
+        assertEquals(BattleStageSignatureFx.CharacterSignature.STANDARD,
+                BattleStageSignatureFx.characterSignature("turnbound_re:zombie"));
+        assertEquals(BattleStageSignatureFx.CharacterSignature.STANDARD,
+                BattleStageSignatureFx.characterSignature(""));
+
+        BattleActionTimelineState.Cue volley = cue(
+                BattleActionTimelineState.ImpactStyle.PROJECTILE,
+                BattleActionTimelineState.PresentationStyle.VOLLEY,
+                BattleActionTimelineState.Phase.WINDUP,
+                0.5D);
+        BattleActionTimelineState.Cue rift = cue(
+                BattleActionTimelineState.ImpactStyle.VOID,
+                BattleActionTimelineState.PresentationStyle.RIFT,
+                BattleActionTimelineState.Phase.WINDUP,
+                0.5D);
+
+        assertTrue(BattleStageSignatureFx.actorSignatureVisible(
+                BattleStageSignatureFx.CharacterSignature.SKELETON_MARKSMAN, volley));
+        assertFalse(BattleStageSignatureFx.actorSignatureVisible(
+                BattleStageSignatureFx.CharacterSignature.SKELETON_MARKSMAN, rift));
+        assertTrue(BattleStageSignatureFx.actorSignatureVisible(
+                BattleStageSignatureFx.CharacterSignature.ENDER_RIFT, rift));
+        assertFalse(BattleStageSignatureFx.actorSignatureVisible(
+                BattleStageSignatureFx.CharacterSignature.STANDARD, volley));
+    }
+
+    @Test
+    void enderSignatureExpandsTowardImpactWithoutLeavingModelBounds() {
+        int start = BattleStageSignatureFx.signatureInset(0.0D, 42, 64);
+        int middle = BattleStageSignatureFx.signatureInset(0.5D, 42, 64);
+        int end = BattleStageSignatureFx.signatureInset(1.0D, 42, 64);
+
+        assertTrue(start > middle);
+        assertTrue(middle >= end);
+        assertEquals(0, end);
+        assertTrue(start * 2 < 42);
+        assertTrue(start * 2 < 64);
+    }
+
+    @Test
     void riftOffsetPeaksMidFlightAndReturnsAtBothEnds() {
         assertEquals(0, BattleStageSignatureFx.riftSideOffset(0.0D));
         assertTrue(BattleStageSignatureFx.riftSideOffset(0.5D) > 0);
@@ -62,6 +110,7 @@ class M5BattleStageSignatureFxTest {
     }
 
     private static BattleActionTimelineState.Cue cue(
+            BattleActionTimelineState.ImpactStyle impactStyle,
             BattleActionTimelineState.PresentationStyle style,
             BattleActionTimelineState.Phase phase,
             double progress
@@ -69,7 +118,7 @@ class M5BattleStageSignatureFxTest {
         return new BattleActionTimelineState.Cue(
                 "p1", "action", List.of("e1"),
                 BattleActionTimelineState.MotionStyle.CAST,
-                BattleActionTimelineState.ImpactStyle.BLAST,
+                impactStyle,
                 style,
                 phase, progress, 0, 1);
     }

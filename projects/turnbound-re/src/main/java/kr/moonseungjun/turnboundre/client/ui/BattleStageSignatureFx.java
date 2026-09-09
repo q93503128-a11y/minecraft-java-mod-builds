@@ -22,11 +22,16 @@ import java.util.List;
 /**
  * Adds short, semantic accents for authored action shapes without inventing target legality or damage.
  * The base projectile/impact layer remains in BattleStageHud; this layer only differentiates strong action families.
+ * Representative character accents are intentionally narrow vertical-slice work, not a substitute for final models.
  */
 @EventBusSubscriber(modid = TurnboundRe.MOD_ID, value = Dist.CLIENT)
 public final class BattleStageSignatureFx {
     private static final Identifier LAYER_ID =
             Identifier.fromNamespaceAndPath(TurnboundRe.MOD_ID, "battle_signature_fx");
+    private static final String SKELETON = "turnbound_re:skeleton";
+    private static final String ENDERMAN = "turnbound_re:enderman";
+
+    enum CharacterSignature { STANDARD, SKELETON_MARKSMAN, ENDER_RIFT }
 
     private BattleStageSignatureFx() {}
 
@@ -56,6 +61,12 @@ public final class BattleStageSignatureFx {
         if (actorModel == null) return;
 
         graphics.enableScissor(viewport.x(), viewport.y(), viewport.right(), viewport.bottom());
+        renderActorSignature(
+                graphics,
+                actorModel,
+                characterSignature(actor.participant().characterId()),
+                cue);
+
         if (cue.presentationStyle() == BattleActionTimelineState.PresentationStyle.VOLLEY
                 && cue.phase() == BattleActionTimelineState.Phase.WINDUP) {
             renderVolley(graphics, model, layout, actorModel, cue, lineHeight);
@@ -77,6 +88,66 @@ public final class BattleStageSignatureFx {
             }
         }
         graphics.disableScissor();
+    }
+
+    private static void renderActorSignature(
+            GuiGraphicsExtractor graphics,
+            UiLayoutMetrics.Rect actorModel,
+            CharacterSignature signature,
+            BattleActionTimelineState.Cue cue
+    ) {
+        if (!actorSignatureVisible(signature, cue)) return;
+
+        switch (signature) {
+            case SKELETON_MARKSMAN -> {
+                UiVisualLanguage.frame(
+                        graphics,
+                        actorModel.x(), actorModel.y(), actorModel.width(), actorModel.height(),
+                        UiVisualLanguage.FrameState.FOCUS);
+                if (actorModel.width() >= 16 && actorModel.height() >= 16) {
+                    int bowX = Math.max(actorModel.x(), actorModel.right() - 16);
+                    int bowY = Math.max(actorModel.y(), actorModel.y() + actorModel.height() / 2 - 8);
+                    graphics.item(new ItemStack(Items.BOW), bowX, bowY);
+                    if (cue.phaseProgress() >= 0.32D) {
+                        graphics.item(
+                                new ItemStack(Items.ARROW),
+                                Math.max(actorModel.x(), bowX - 7),
+                                Math.max(actorModel.y(), bowY - 5));
+                    }
+                }
+            }
+            case ENDER_RIFT -> {
+                int inset = signatureInset(cue.phaseProgress(), actorModel.width(), actorModel.height());
+                int width = actorModel.width() - inset * 2;
+                int height = actorModel.height() - inset * 2;
+                if (width > 4 && height > 4) {
+                    UiVisualLanguage.frame(
+                            graphics,
+                            actorModel.x() + inset,
+                            actorModel.y() + inset,
+                            width,
+                            height,
+                            UiVisualLanguage.FrameState.FOCUS);
+                    if (width > 10 && height > 10) {
+                        UiVisualLanguage.frame(
+                                graphics,
+                                actorModel.x() + inset + 3,
+                                actorModel.y() + inset + 3,
+                                width - 6,
+                                height - 6,
+                                UiVisualLanguage.FrameState.WARNING);
+                    }
+                }
+                BattleStageActionFx.Point center = BattleStageActionFx.center(actorModel);
+                graphics.item(
+                        new ItemStack(Items.ENDER_PEARL),
+                        center.x() - 8 + riftSideOffset(cue.phaseProgress()),
+                        Math.max(actorModel.y(), center.y() - 18));
+            }
+            case STANDARD -> {
+                // No character-specific overlay.
+            }
+        }
     }
 
     private static void renderVolley(
@@ -156,6 +227,30 @@ public final class BattleStageSignatureFx {
                     bounds.width() - 6, bounds.height() - 6,
                     UiVisualLanguage.FrameState.FOCUS);
         }
+    }
+
+    static CharacterSignature characterSignature(String characterId) {
+        if (SKELETON.equals(characterId)) return CharacterSignature.SKELETON_MARKSMAN;
+        if (ENDERMAN.equals(characterId)) return CharacterSignature.ENDER_RIFT;
+        return CharacterSignature.STANDARD;
+    }
+
+    static boolean actorSignatureVisible(CharacterSignature signature, BattleActionTimelineState.Cue cue) {
+        if (signature == null || cue == null || cue.phase() != BattleActionTimelineState.Phase.WINDUP) return false;
+        return switch (signature) {
+            case SKELETON_MARKSMAN -> cue.presentationStyle() == BattleActionTimelineState.PresentationStyle.VOLLEY
+                    && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.PROJECTILE;
+            case ENDER_RIFT -> cue.presentationStyle() == BattleActionTimelineState.PresentationStyle.RIFT
+                    && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.VOID;
+            case STANDARD -> false;
+        };
+    }
+
+    static int signatureInset(double progress, int width, int height) {
+        double p = Double.isFinite(progress) ? Math.max(0.0D, Math.min(1.0D, progress)) : 0.0D;
+        int shortSide = Math.max(0, Math.min(width, height));
+        int maxInset = Math.max(0, Math.min(8, (shortSide - 4) / 4));
+        return (int) Math.round((1.0D - p) * maxInset);
     }
 
     static double extraProjectileProgress(double baseProgress, int ordinal) {
