@@ -27,9 +27,6 @@ import java.util.List;
 public final class BattleStageSignatureFx {
     private static final Identifier LAYER_ID =
             Identifier.fromNamespaceAndPath(TurnboundRe.MOD_ID, "battle_signature_fx");
-    private static final ItemStack ARROW = new ItemStack(Items.ARROW);
-    private static final ItemStack FIRE_CHARGE = new ItemStack(Items.FIRE_CHARGE);
-    private static final ItemStack ENDER_PEARL = new ItemStack(Items.ENDER_PEARL);
 
     private BattleStageSignatureFx() {}
 
@@ -90,11 +87,7 @@ public final class BattleStageSignatureFx {
             BattleActionTimelineState.Cue cue,
             int lineHeight
     ) {
-        ItemStack projectile = switch (cue.impactStyle()) {
-            case FIRE -> FIRE_CHARGE;
-            case PROJECTILE -> ARROW;
-            default -> ItemStack.EMPTY;
-        };
+        ItemStack projectile = projectileItem(cue.impactStyle());
         if (projectile.isEmpty()) return;
 
         BattleStageActionFx.Point from = BattleStageActionFx.center(actorModel);
@@ -117,6 +110,14 @@ public final class BattleStageSignatureFx {
         }
     }
 
+    private static ItemStack projectileItem(BattleActionTimelineState.ImpactStyle style) {
+        return switch (style) {
+            case FIRE -> new ItemStack(Items.FIRE_CHARGE);
+            case PROJECTILE -> new ItemStack(Items.ARROW);
+            default -> ItemStack.EMPTY;
+        };
+    }
+
     private static void renderRiftTravel(
             GuiGraphicsExtractor graphics,
             BattlePresentationModel model,
@@ -125,6 +126,7 @@ public final class BattleStageSignatureFx {
             BattleActionTimelineState.Cue cue,
             int lineHeight
     ) {
+        ItemStack riftProjectile = new ItemStack(Items.ENDER_PEARL);
         BattleStageActionFx.Point from = BattleStageActionFx.center(actorModel);
         for (String targetId : cue.targetIds()) {
             StageParticipant target = participant(layout, model, targetId);
@@ -135,7 +137,7 @@ public final class BattleStageSignatureFx {
             if (targetModel == null) continue;
             BattleStageActionFx.Point to = BattleStageActionFx.center(targetModel);
             BattleStageActionFx.Point point = BattleStageActionFx.travel(from, to, cue.phaseProgress());
-            graphics.item(ENDER_PEARL,
+            graphics.item(riftProjectile,
                     point.x() - 8 + riftSideOffset(cue.phaseProgress()),
                     point.y() - 8);
         }
