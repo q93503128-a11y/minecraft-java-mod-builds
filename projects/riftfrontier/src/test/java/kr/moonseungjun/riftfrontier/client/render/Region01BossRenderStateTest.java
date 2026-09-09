@@ -8,11 +8,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class Region01BossRenderStateTest {
     @Test
     void entityIdentityMustBeExtractedAsNonNegativeMinecraftId() {
-        Region01BossRenderState state = new Region01BossRenderState();
-        assertEquals(-1, state.entityId());
-        assertThrows(IllegalArgumentException.class, () -> state.setEntityId(-1));
+        Region01BossRenderIdentity identity = new Region01BossRenderIdentity();
+        assertEquals(-1, identity.entityId());
+        assertThrows(IllegalArgumentException.class, () -> identity.setEntityId(-1));
 
-        state.setEntityId(42);
-        assertEquals(42, state.entityId());
+        identity.setEntityId(42);
+        assertEquals(42, identity.entityId());
     }
 }
