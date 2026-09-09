@@ -23,6 +23,7 @@ public final class RiftfrontierNetworking {
 
     /**
      * Sends the exact semantic presentation state sampled by the authoritative boss tick to tracking clients.
+     * Numeric entity id and stable Minecraft UUID travel together so id reuse cannot resurrect another actor's pose.
      * No client-facing cadence constants are introduced here.
      */
     public static void syncBossPresentation(
@@ -33,8 +34,8 @@ public final class RiftfrontierNetworking {
         Objects.requireNonNull(boss, "boss");
         Objects.requireNonNull(result, "result");
         BossPresentationSemanticState state = result.presentation()
-            .map(frame -> BossPresentationSemanticState.fromFrame(boss.getId(), serverGameTick, frame))
-            .orElseGet(() -> BossPresentationSemanticState.clear(boss.getId(), serverGameTick));
+            .map(frame -> BossPresentationSemanticState.fromFrame(boss.getId(), boss.getUUID(), serverGameTick, frame))
+            .orElseGet(() -> BossPresentationSemanticState.clear(boss.getId(), boss.getUUID(), serverGameTick));
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(boss, new BossPresentationPayload(state));
     }
 }

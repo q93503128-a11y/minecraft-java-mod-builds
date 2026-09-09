@@ -10,6 +10,7 @@ import net.minecraft.resources.Identifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 /** Wire transport for a server-authoritative boss presentation semantic state. */
 public record BossPresentationPayload(BossPresentationSemanticState state) implements CustomPacketPayload {
@@ -25,6 +26,8 @@ public record BossPresentationPayload(BossPresentationSemanticState state) imple
 
     private void encode(RegistryFriendlyByteBuf buf) {
         buf.writeVarInt(state.entityId());
+        buf.writeLong(state.entityUuid().getMostSignificantBits());
+        buf.writeLong(state.entityUuid().getLeastSignificantBits());
         buf.writeVarLong(state.serverGameTick());
         buf.writeBoolean(state.active());
         buf.writeVarInt(state.bossPhase());
@@ -40,6 +43,7 @@ public record BossPresentationPayload(BossPresentationSemanticState state) imple
 
     private static BossPresentationPayload decode(RegistryFriendlyByteBuf buf) {
         int entityId = buf.readVarInt();
+        UUID entityUuid = new UUID(buf.readLong(), buf.readLong());
         long serverGameTick = buf.readVarLong();
         boolean active = buf.readBoolean();
         int bossPhase = buf.readVarInt();
@@ -57,6 +61,7 @@ public record BossPresentationPayload(BossPresentationSemanticState state) imple
         boolean hitWindowOpen = buf.readBoolean();
         return new BossPresentationPayload(new BossPresentationSemanticState(
             entityId,
+            entityUuid,
             serverGameTick,
             active,
             bossPhase,

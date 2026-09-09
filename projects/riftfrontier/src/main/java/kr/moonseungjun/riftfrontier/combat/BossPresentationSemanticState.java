@@ -4,6 +4,7 @@ import kr.moonseungjun.riftfrontier.content.ContentId;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Minecraft-API-free semantic state shared by the server presentation frame, network transport and client resolver.
@@ -11,6 +12,7 @@ import java.util.Objects;
  */
 public record BossPresentationSemanticState(
     int entityId,
+    UUID entityUuid,
     long serverGameTick,
     boolean active,
     int bossPhase,
@@ -26,6 +28,7 @@ public record BossPresentationSemanticState(
 
     public BossPresentationSemanticState {
         if (entityId < 0) throw new IllegalArgumentException("entityId must be >= 0");
+        entityUuid = Objects.requireNonNull(entityUuid, "entityUuid");
         if (serverGameTick < 0) throw new IllegalArgumentException("serverGameTick must be >= 0");
         patternId = Objects.requireNonNull(patternId, "patternId");
         attackPhase = Objects.requireNonNull(attackPhase, "attackPhase");
@@ -49,14 +52,34 @@ public record BossPresentationSemanticState(
         }
     }
 
+    /** Compatibility constructor for pure-Java fixtures that do not model a Minecraft UUID. */
+    public BossPresentationSemanticState(
+        int entityId,
+        long serverGameTick,
+        boolean active,
+        int bossPhase,
+        String patternId,
+        String attackPhase,
+        double phaseProgress,
+        String presentationCue,
+        String delivery,
+        List<String> counterplay,
+        boolean hitWindowOpen
+    ) {
+        this(entityId, fixtureUuid(entityId), serverGameTick, active, bossPhase, patternId, attackPhase, phaseProgress,
+            presentationCue, delivery, counterplay, hitWindowOpen);
+    }
+
     public static BossPresentationSemanticState fromFrame(
         int entityId,
+        UUID entityUuid,
         long serverGameTick,
         MinecraftBossCombatAdapter.PresentationFrame frame
     ) {
         Objects.requireNonNull(frame, "frame");
         return new BossPresentationSemanticState(
             entityId,
+            entityUuid,
             serverGameTick,
             true,
             frame.bossPhase(),
@@ -70,7 +93,19 @@ public record BossPresentationSemanticState(
         );
     }
 
+    public static BossPresentationSemanticState clear(int entityId, UUID entityUuid, long serverGameTick) {
+        return new BossPresentationSemanticState(
+            entityId, entityUuid, serverGameTick, false, 0, "", "", 0.0D, "", "", List.of(), false
+        );
+    }
+
+    /** Compatibility clear for pure-Java fixtures. Production networking always supplies the Minecraft UUID. */
     public static BossPresentationSemanticState clear(int entityId, long serverGameTick) {
-        return new BossPresentationSemanticState(entityId, serverGameTick, false, 0, "", "", 0.0D, "", "", List.of(), false);
+        return clear(entityId, fixtureUuid(entityId), serverGameTick);
+    }
+
+    private static UUID fixtureUuid(int entityId) {
+        if (entityId < 0) throw new IllegalArgumentException("entityId must be >= 0");
+        return new UUID(0L, Integer.toUnsignedLong(entityId) + 1L);
     }
 }

@@ -12,6 +12,7 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Production-facing client render pipeline from one server-authoritative boss semantic snapshot to immutable custom geometry.
@@ -19,8 +20,7 @@ import java.util.Optional;
  * <p>The pipeline deliberately owns no animation clock, hit timing, material lookup, texture fallback, or source-asset
  * substitution. It resolves the authored presentation binding, derives animation time from the authoritative semantic
  * progress, skins the accepted mesh, and prepares the exact triangle stream consumed by Minecraft's custom-geometry
- * submission path. A future entity renderer only needs to supply entity id, transforms, lighting and an explicitly
- * approved RenderType.</p>
+ * submission path.</p>
  */
 public final class BossCustomGeometryRenderPipeline {
     private final ContentId bossProfile;
@@ -53,6 +53,7 @@ public final class BossCustomGeometryRenderPipeline {
                 BossSkinnedMeshFrameSampler.FrameSample frameSample = frameSampler.sample(sample);
                 return new PreparedFrame(
                     state.entityId(),
+                    state.entityUuid(),
                     resolved,
                     frameSample,
                     SkinnedMeshCustomGeometryAdapter.prepare(frameSample)
@@ -61,18 +62,26 @@ public final class BossCustomGeometryRenderPipeline {
         );
     }
 
-    /** Uses the monotonic client semantic cache populated by server snapshots. */
+    /** Compatibility lookup for pure-Java tests. Production render submission must use the UUID-checked overload. */
     public Optional<PreparedFrame> prepareCurrent(int entityId) {
         if (entityId < 0) throw new IllegalArgumentException("entityId must be >= 0");
         return BossPresentationClientState.current(entityId).flatMap(this::prepare);
     }
 
+    /** Uses the monotonic client cache only when both the current numeric id and Minecraft UUID match. */
+    public Optional<PreparedFrame> prepareCurrent(int entityId, UUID entityUuid) {
+        if (entityId < 0) throw new IllegalArgumentException("entityId must be >= 0");
+        Objects.requireNonNull(entityUuid, "entityUuid");
+        return BossPresentationClientState.current(entityId, entityUuid).flatMap(this::prepare);
+    }
+
     /**
-     * Minimal entity-renderer call boundary. Material/texture choice remains an explicit caller responsibility.
-     * Returns false when no active, fully resolvable authoritative presentation exists for the entity.
+     * Entity-renderer call boundary. Material/texture choice remains an explicit caller responsibility.
+     * Returns false when no active, fully resolvable authoritative presentation exists for this exact actor identity.
      */
     public boolean submitCurrent(
         int entityId,
+        UUID entityUuid,
         PoseStack poseStack,
         SubmitNodeCollector collector,
         RenderType renderType,
@@ -80,7 +89,7 @@ public final class BossCustomGeometryRenderPipeline {
         int packedOverlay,
         int packedColor
     ) {
-        Optional<PreparedFrame> prepared = prepareCurrent(entityId);
+        Optional<PreparedFrame> prepared = prepareCurrent(entityId, entityUuid);
         if (prepared.isEmpty()) return false;
         SkinnedMeshCustomGeometryAdapter.submit(
             prepared.get().frameSample(),
@@ -104,12 +113,14 @@ public final class BossCustomGeometryRenderPipeline {
 
     public record PreparedFrame(
         int entityId,
+        UUID entityUuid,
         BossPresentationResolver.ResolvedPresentation resolvedPresentation,
         BossSkinnedMeshFrameSampler.FrameSample frameSample,
         SkinnedMeshCustomGeometryAdapter.PreparedGeometry geometry
     ) {
         public PreparedFrame {
             if (entityId < 0) throw new IllegalArgumentException("entityId must be >= 0");
+            Objects.requireNonNull(entityUuid, "entityUuid");
             Objects.requireNonNull(resolvedPresentation, "resolvedPresentation");
             Objects.requireNonNull(frameSample, "frameSample");
             Objects.requireNonNull(geometry, "geometry");

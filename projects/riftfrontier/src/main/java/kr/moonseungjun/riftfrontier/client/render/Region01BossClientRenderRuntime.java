@@ -6,6 +6,7 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -42,11 +43,13 @@ public final class Region01BossClientRenderRuntime {
 
     public static boolean submit(
         int entityId,
+        UUID entityUuid,
         PoseStack poseStack,
         SubmitNodeCollector collector,
         int packedLight
     ) {
         if (entityId < 0) throw new IllegalArgumentException("entityId must be >= 0");
+        Objects.requireNonNull(entityUuid, "entityUuid");
         Objects.requireNonNull(poseStack, "poseStack");
         Objects.requireNonNull(collector, "collector");
         Optional<SubmissionBinding> binding = CURRENT.get();
@@ -54,6 +57,7 @@ public final class Region01BossClientRenderRuntime {
         SubmissionBinding active = binding.orElseThrow();
         return active.pipeline().submitCurrent(
             entityId,
+            entityUuid,
             poseStack,
             collector,
             active.renderType(),

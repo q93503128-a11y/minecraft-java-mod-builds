@@ -21,7 +21,7 @@ public final class Region01BossRenderer extends EntityRenderer<Region01BossEntit
     @Override
     public void extractRenderState(Region01BossEntity entity, Region01BossRenderState state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
-        state.setEntityId(entity.getId());
+        state.setIdentity(entity.getId(), entity.getUUID());
     }
 
     @Override
@@ -32,9 +32,11 @@ public final class Region01BossRenderer extends EntityRenderer<Region01BossEntit
         CameraRenderState cameraState
     ) {
         super.submit(state, poseStack, collector, cameraState);
-        if (state.entityId() < 0) {
+        if (!state.identityExtracted()) {
             throw new IllegalStateException("Region 01 boss render state was submitted before entity extraction");
         }
-        Region01BossClientRenderRuntime.submit(state.entityId(), poseStack, collector, state.lightCoords);
+        Region01BossClientRenderRuntime.submit(
+            state.entityId(), state.entityUuid(), poseStack, collector, state.lightCoords
+        );
     }
 }
