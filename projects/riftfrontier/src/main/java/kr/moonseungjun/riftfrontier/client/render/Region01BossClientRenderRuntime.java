@@ -3,6 +3,7 @@ package kr.moonseungjun.riftfrontier.client.render;
 import com.mojang.blaze3d.vertex.PoseStack;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationAssetSelection;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationClientAssetRuntime;
+import kr.moonseungjun.riftfrontier.combat.presentation.mesh.Region01BossRuntimeAsset;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -35,9 +36,7 @@ public final class Region01BossClientRenderRuntime {
         return CURRENT.current();
     }
 
-    /**
-     * Starts a new complete-resource preparation cycle and immediately removes any previous staged/published state.
-     */
+    /** Starts a new complete-resource preparation cycle and immediately removes previous staged/published state. */
     public static ReloadTicket beginReload(ResourceManager resourceManager) {
         Objects.requireNonNull(resourceManager, "resourceManager");
         GenerationPublicationSlot.Ticket delegate = CURRENT.beginUpdate();
@@ -59,14 +58,10 @@ public final class Region01BossClientRenderRuntime {
         if (!assetSnapshot.ready()) {
             throw new IllegalArgumentException("boss render staging requires a ready validated asset snapshot");
         }
-        if (!CURRENT.isCurrent(ticket.delegate)) {
-            return Optional.empty();
-        }
+        if (!CURRENT.isCurrent(ticket.delegate)) return Optional.empty();
 
         ValidatedReload candidate = new ValidatedReload(ticket.delegate, ticket.resourceManager, assetSnapshot);
         STAGED.set(candidate);
-
-        // Close the race where a newer reload begins between the first generation check and STAGED.set(candidate).
         if (!CURRENT.isCurrent(ticket.delegate)) {
             STAGED.compareAndSet(candidate, null);
             return Optional.empty();
@@ -74,34 +69,49 @@ public final class Region01BossClientRenderRuntime {
         return Optional.of(candidate);
     }
 
-    /**
-     * Returns the currently staged validated reload, if any. Future preparation code must derive all runtime bytes,
-     * approved animation bindings and material state through this capability's exact resource-manager snapshot.
-     */
+    /** Returns the currently staged validated reload, if any. */
     public static Optional<ValidatedReload> staged() {
         return Optional.ofNullable(STAGED.get());
     }
 
     /**
-     * Publishes one complete accepted binding only if {@code reload} is still the currently staged reload.
+     * Publishes one complete accepted binding only if the exact geometry prepared from the current staged reload is
+     * also the mesh/rig consumed by {@code pipeline}.
      *
-     * <p>No caller can provide a replacement asset snapshot at publication time: the validated selection is carried
-     * by the non-forgeable staged capability itself.</p>
+     * <p>This closes the last free-standing geometry seam: a caller can no longer validate one accepted Dragon
+     * derivation and then publish a pipeline assembled from another imported mesh. Animation meaning and material
+     * approval remain independent prerequisites and are not inferred here.</p>
      *
-     * @return {@code false} when a newer reload/clear already invalidated the staged capability
+     * @return {@code false} when a newer reload/clear already invalidated the prepared geometry capability
      */
     public static boolean publish(
-        ValidatedReload reload,
+        Region01BossGeometryPreparation.PreparedGeometry preparedGeometry,
         BossCustomGeometryRenderPipeline pipeline,
         RenderType renderType,
         int packedOverlay,
         int packedColor
     ) {
-        Objects.requireNonNull(reload, "reload");
+        Objects.requireNonNull(preparedGeometry, "preparedGeometry");
         Objects.requireNonNull(pipeline, "pipeline");
         Objects.requireNonNull(renderType, "renderType");
-        if (STAGED.get() != reload) {
+
+        final ValidatedReload reload;
+        final Region01BossRuntimeAsset runtimeAsset;
+        try {
+            reload = preparedGeometry.validatedReload();
+            runtimeAsset = preparedGeometry.runtimeAsset();
+        } catch (Region01BossGeometryPreparation.StaleReloadException stale) {
             return false;
+        }
+        if (STAGED.get() != reload) return false;
+        if (preparedGeometry.publicationGeneration() != reload.publicationGeneration()
+            || preparedGeometry.contentGeneration() != reload.contentGeneration()) {
+            throw new IllegalArgumentException("prepared boss geometry generation no longer matches its validated reload");
+        }
+        if (pipeline.skinnedMeshAsset() != runtimeAsset.skinnedMesh()) {
+            throw new IllegalArgumentException(
+                "boss render pipeline must consume the exact skinned mesh prepared from the current accepted derivation"
+            );
         }
 
         BossPresentationClientAssetRuntime.Snapshot assetSnapshot = reload.assetSnapshot;
@@ -114,15 +124,11 @@ public final class Region01BossClientRenderRuntime {
             packedColor
         );
         boolean published = CURRENT.publish(reload.delegate, binding);
-        if (published) {
-            STAGED.compareAndSet(reload, null);
-        }
+        if (published) STAGED.compareAndSet(reload, null);
         return published;
     }
 
-    /**
-     * Fail-closed lifecycle invalidation. Any staged or in-flight completion from before this call becomes stale.
-     */
+    /** Fail-closed lifecycle invalidation. Any staged or in-flight completion from before this call becomes stale. */
     public static void clear() {
         CURRENT.invalidate();
         STAGED.set(null);
@@ -169,9 +175,7 @@ public final class Region01BossClientRenderRuntime {
         }
     }
 
-    /**
-     * Non-forgeable proof that one exact resource-manager snapshot produced a ready validated asset selection.
-     */
+    /** Non-forgeable proof that one exact resource-manager snapshot produced a ready validated asset selection. */
     public static final class ValidatedReload {
         private final GenerationPublicationSlot.Ticket delegate;
         private final ResourceManager resourceManager;
