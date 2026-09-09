@@ -5,7 +5,7 @@ This file is a recovery aid for scheduled development sessions. Current GitHub `
 ## Last recovered baseline
 
 - Remote `main` at this run start: `e61b70108789e9ad9de03bb5f783fe7b4ec2ca6a`.
-- Remote advanced concurrently through unrelated project work to `34d53e75422917c75318fd3fd598e1ed05aab12e` before Riftfrontier writes; those changes were preserved and the Riftfrontier commits were appended without force push.
+- Remote advanced concurrently through unrelated project work before and after Riftfrontier writes; latest observed concurrent main before this handoff update was `37a928e3b35fb90ee0cb29cfe726e11f61ece675`. All unrelated changes were preserved; no force push was used.
 - Previous deterministic animation-audit implementation `4053119fb9a607053b321de0cb050a3b252a3a59`, run `34327050109`, was re-checked this session and is FULL SUCCESS.
 - `Dragon Evolved` remains selected only as Region 01 first-boss geometry/rig derivation source. Source `Atlas` art remains unapproved.
 
@@ -29,7 +29,7 @@ M3 composed accepted boss runtime-asset gate:
 
 - Runtime-asset implementation commit: `10fafe0dd1d8b05a5f27f6b93eb6cb83a8a01425`.
 - Regression-test commit: `d761313aabd20d676a44851da8f8921fe961e04c`.
-- `Build Riftfrontier` run `34332734136`: IN PROGRESS at handoff update. Confirmed SUCCESS so far: toolchain, asset-intake tests, JUnit + clean build, required native GameTest. Dedicated-server smoke was still running; client smoke, executable JAR inspection, report/artifact upload were NOT YET COMPLETE. Do not promote this run to FULL SUCCESS until GitHub reports completion.
+- `Build Riftfrontier` run `34332734136`: FULL SUCCESS. Toolchain, asset-intake tests, JUnit + clean build, required native GameTest, dedicated-server smoke, Xvfb client smoke, executable JAR inspection, report generation, deliverables upload, and logs/reports upload all completed successfully.
 - Prior run `34327050109`: FULL SUCCESS after fresh re-check this session.
 - Exact accepted sanitized Dragon derivation SHA `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac` was NOT reacquired in this execution environment. Recorded Quaternius/Drive provenance remains authoritative; no substitute mirror/file was treated as equivalent.
 - Real eight-clip duration/channel/path/interpolation receipt: NOT PRODUCED because the exact accepted binary remains unavailable here.
@@ -55,7 +55,7 @@ M3 composed accepted boss runtime-asset gate:
 
 ## Exact next start point
 
-1. Re-check remote `main`, canonical docs and this handoff. First close the final status of `Build Riftfrontier` run `34332734136`; if it failed, fix the first real failure without reducing scope.
+1. Re-check remote `main`, canonical docs and this handoff.
 2. Reacquire the exact accepted sanitized derivation SHA `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac` from the recorded original Quaternius/Drive provenance; reject substitutes whose bytes do not match.
 3. Run `python tools/audit_region01_boss_animation_clips.py <accepted.gltf> assets/sources/region_01_boss_dragon_evolved.acceptance.json --output <receipt.json>` and also load the same bytes through `Region01BossRuntimeAsset.importAccepted(...)`; commit real metrics only if both exact gates pass.
 4. Inspect actual clip motion and author explicit logical source bindings only where motion semantics match; never infer from names alone.
