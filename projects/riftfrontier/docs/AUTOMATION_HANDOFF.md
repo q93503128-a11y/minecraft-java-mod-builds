@@ -4,53 +4,53 @@ This file is a recovery aid for scheduled development sessions. Current GitHub `
 
 ## Last recovered baseline
 
-- Remote `main` at this run start: `39c416434ed32e5cc8d59723c002d467f122c086`.
-- Latest verified Riftfrontier implementation/test HEAD before this handoff update: `fd10ad377d2dce0ad3c5bcc02258c9d1920a95c2`.
+- Remote `main` at this run start: `4cd02762c3ea77f63325b38037e42c43c51392bc`.
+- Latest verified Riftfrontier implementation/test HEAD in this run: `793901a6f813703966cc365a305fcdbc1d8ba40a`.
 - `Dragon Evolved` remains selected only as Region 01 first-boss geometry/rig derivation source. Source `Atlas` art remains unapproved.
 
 ## Completed in this batch
 
-M3 production boss actor/render bridge:
+M3 boss presentation actor-identity hardening:
 
-- Registered Riftfrontier-owned `region_01_boss` `EntityType` and base living attributes without inventing final health, dimensions, hitbox, AI or encounter tuning.
-- Added `Region01BossEntity` as the stable Minecraft actor identity. It is deliberately not inserted into natural spawning or Region 01 encounter content yet.
-- Added a dedicated `Region01BossRenderState` that carries the exact Minecraft entity id used to resolve the server-authoritative presentation cache.
-- Added `Region01BossRenderer` and client-only `EntityRenderersEvent.RegisterRenderers` registration using the actual Minecraft 26.2 entity-render submission API.
-- Added `Region01BossClientRenderRuntime`, an atomic fail-closed publication seam. Until an approved runtime asset + inspected animation binding + approved `RenderType` are published together, the renderer submits no fallback model/material/texture. Once published it calls the existing `BossCustomGeometryRenderPipeline.submitCurrent(...)` directly.
-- Added a pure `Region01BossRenderIdentity` invariant so the ordinary JVM test source set can verify non-negative entity ids without crossing the isolated client-only Minecraft superclass boundary.
-- First CI exposed an incorrect 26.2 `CameraRenderState` package; corrected to `net.minecraft.client.renderer.state.level.CameraRenderState` without reducing functionality. Second CI showed the ordinary test source set cannot load client-only `EntityRenderState`; the test was preserved by extracting the shared pure identity invariant rather than deleting or weakening it.
+- Bound each server-authoritative boss presentation semantic snapshot to both the Minecraft numeric entity id and stable entity UUID.
+- Extended `BossPresentationPayload` to carry the UUID over the wire and changed production sync to source it directly from `LivingEntity.getUUID()`.
+- Hardened `BossPresentationClientState` so monotonic server-tick ordering is scoped to one UUID. Reuse of the same numeric entity id by a new UUID starts a fresh watermark instead of inheriting the old actor state.
+- Added UUID-checked client lookup. A renderer querying the right numeric id with the wrong UUID receives no presentation state, preventing a newly spawned/reused id from briefly displaying stale pose state before its first packet.
+- Propagated UUID through `Region01BossRenderIdentity`, `Region01BossRenderState`, `Region01BossRenderer`, `Region01BossClientRenderRuntime`, and `BossCustomGeometryRenderPipeline` so production custom-geometry submission is actor-identity checked end-to-end.
+- Added regression tests for stale same-actor ticks, numeric-id reuse across two UUIDs, actor-scoped clear watermarks, and render identity requiring id + UUID.
+- First CI exposed one existing API-free test fixture still calling the old `fromFrame(int,long,frame)` helper. Preserved that test contract with a deterministic fixture-only compatibility factory; production networking remains UUID-mandatory.
 
 ## Changed systems/files
 
-- `src/main/java/kr/moonseungjun/riftfrontier/Riftfrontier.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/entity/RiftfrontierEntityTypes.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/entity/Region01BossEntity.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/combat/BossPresentationSemanticState.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/network/BossPresentationPayload.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/network/RiftfrontierNetworking.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/client/BossPresentationClientState.java`
 - `src/main/java/kr/moonseungjun/riftfrontier/client/render/Region01BossRenderIdentity.java`
 - `src/main/java/kr/moonseungjun/riftfrontier/client/render/Region01BossRenderState.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/client/render/Region01BossClientRenderRuntime.java`
 - `src/main/java/kr/moonseungjun/riftfrontier/client/render/Region01BossRenderer.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/client/render/RiftfrontierClientRenderers.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/client/render/Region01BossClientRenderRuntime.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/client/render/BossCustomGeometryRenderPipeline.java`
+- `src/test/java/kr/moonseungjun/riftfrontier/client/BossPresentationClientStateTest.java`
 - `src/test/java/kr/moonseungjun/riftfrontier/client/render/Region01BossRenderStateTest.java`
 - `docs/AUTOMATION_HANDOFF.md`
 
 ## Verification
 
-- Initial actor/render implementation commit: `5f9c77a7faba9b2cb6507e9f0915e935bd204b14`.
-- Minecraft 26.2 camera-state package correction: `f3844f49d3a5b37c4e018da954a1c3573d741f66`.
-- Final identity/source-set regression-test HEAD: `fd10ad377d2dce0ad3c5bcc02258c9d1920a95c2`.
-- `Build Riftfrontier` run `34339273157`: FULL SUCCESS. Toolchain, 25 asset-intake tests, JUnit + clean build, required native GameTest, dedicated-server smoke, Xvfb client smoke, executable JAR inspection, report generation, deliverables upload, and logs/reports upload all succeeded.
-- Earlier run `34338815434`: FAILED at `compileJava` only because `CameraRenderState` was imported from the pre-26.2 package; fixed.
-- Earlier run `34339046839`: production `compileJava` succeeded but `compileTestJava` failed because default tests cannot load client-only `EntityRenderState`; fixed by a shared pure identity invariant while retaining regression coverage.
-- Prior runtime-asset run `34332734136` remains FULL SUCCESS.
-- Previous CI artifacts were inspected in this run to try to reacquire the accepted Dragon source bytes. Logs and deliverable JAR artifacts contain no accepted glTF source binary.
+- Main implementation commit: `9ce0152a6507d7d02369db57b1b0b30fe0af2157`.
+- Fixture-compatibility correction: `793901a6f813703966cc365a305fcdbc1d8ba40a`.
+- `Build Riftfrontier` run `34344045811`: FULL SUCCESS. Toolchain, 25 asset-intake tests, JUnit + clean build, required native GameTest, dedicated-server smoke, Xvfb client smoke, executable JAR inspection, report generation, deliverables upload, and logs/reports upload all succeeded.
+- Earlier run `34343872241`: FAILED only at `compileTestJava` because `BossPresentationSyncContractTest` still used the API-free legacy `fromFrame(int,long,frame)` fixture signature; fixed without deleting or weakening the test.
 - Exact accepted sanitized Dragon derivation SHA `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`: NOT reacquired in this execution environment.
 - Real eight-clip duration/channel/path/interpolation receipt: NOT PRODUCED.
 - Explicit logical production mapping from attack animation keys to real source clips: NOT IMPLEMENTED pending direct accepted-source motion inspection.
-- Approved material/texture/`RenderType` publication into `Region01BossClientRenderRuntime`: NOT IMPLEMENTED; the runtime therefore remains intentionally inactive/fail-closed.
+- Approved material/texture/`RenderType` publication into `Region01BossClientRenderRuntime`: NOT IMPLEMENTED; runtime remains intentionally inactive/fail-closed.
 - Region 01 encounter spawn/combat attachment, final dimensions/hitbox/scale, actual spawned/deformed Dragon graphical capture, VFX/sound and human field-play: NOT IMPLEMENTED / NOT TESTED.
 
 ## Do not repeat or revert
 
+- Preserve the UUID-bound presentation identity from server semantic state through wire payload, client cache, render state and custom-geometry submission. Production render lookup must never regress to numeric entity id alone.
+- Preserve same-UUID monotonic server-tick rejection and allow a different UUID reusing the numeric id to establish a fresh watermark.
 - Preserve source SHA `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c` and accepted derivation SHA `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac` unless converter schema/version intentionally changes.
 - Preserve exact source clip inventory names unless direct accepted-source inspection proves a source revision changed.
 - Do not hard-code guessed clip durations/channel metrics or infer logical mappings from clip names.
@@ -58,7 +58,7 @@ M3 production boss actor/render bridge:
 - Preserve `Region01BossRuntimeAsset` as the composed production import seam.
 - Preserve `AttackPattern`/server semantic state as authoritative timing and ACTIVE-only damage semantics. No presentation layer may become a free-running combat clock.
 - Preserve monotonic client semantic snapshot ordering and fail-closed presentation resolution.
-- Preserve the newly registered `region_01_boss` actor/render-state/renderer bridge and `Region01BossClientRenderRuntime`; do not replace it with fallback art or a parallel renderer clock.
+- Preserve the registered `region_01_boss` actor/render-state/renderer bridge and `Region01BossClientRenderRuntime`; do not replace it with fallback art or a parallel renderer clock.
 - Do not add the boss to natural spawning/encounter composition or invent final dimensions/hitbox/combat tuning before visual/source evidence and authored content exist.
 - Do not permit source `Atlas` material/texture/image bytes into production resources.
 - Do not restore legacy GeckoLib 4 paths or rigid GeoBone/cube approximation for this asset.
