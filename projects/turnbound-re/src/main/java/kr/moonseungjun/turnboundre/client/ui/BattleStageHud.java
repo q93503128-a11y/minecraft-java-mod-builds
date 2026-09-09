@@ -22,7 +22,9 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.api.distmarker.Dist;
@@ -159,15 +161,22 @@ public final class BattleStageHud {
         if (participant.alive()) {
             LivingEntity visual = ENTITY_CACHE.resolve(minecraft, participant);
             if (visual != null) {
+                BattleStageCharacterPresentation.Pose characterPose = BattleStageCharacterPresentation.pose(
+                        participant.characterId(), participant.id(), actionCue);
+                applyCharacterPose(visual, characterPose);
+
                 int shakeX = feedbackShakeX(feedback);
                 int recoilY = feedbackRecoilY(feedback, enemy);
                 BattleStageMotion.Offset motion = participant.id().equals(presentationActorId)
                         ? BattleStageMotion.actorOffset(actionCue, enemy)
                         : BattleStageMotion.Offset.ZERO;
                 renderEntity(graphics,
-                        slot.x() + shakeX + motion.x(),
-                        modelTop + recoilY + motion.y(),
-                        slot.width(), modelBottom - modelTop, visual);
+                        slot.x() + shakeX + motion.x() + characterPose.offsetX(),
+                        modelTop + recoilY + motion.y() + characterPose.offsetY(),
+                        slot.width(), modelBottom - modelTop,
+                        visual,
+                        characterPose.xAngle(),
+                        characterPose.yAngle());
             }
         }
         renderHpFeedback(graphics, font, slot, modelTop, feedback);
@@ -177,6 +186,15 @@ public final class BattleStageHud {
             int stateColor = markerColor(targetMarker, current, participant.exposed(), participant.alive());
             graphics.text(font, Component.literal(fit(font, stateLine, slot.width())),
                     slot.x(), slot.bottom() - font.lineHeight, stateColor, true);
+        }
+    }
+
+    private static void applyCharacterPose(
+            LivingEntity visual,
+            BattleStageCharacterPresentation.Pose pose
+    ) {
+        if (pose.controlsAggressive() && visual instanceof Mob mob) {
+            mob.setAggressive(pose.aggressive());
         }
     }
 
@@ -351,7 +369,9 @@ public final class BattleStageHud {
             int y,
             int width,
             int height,
-            LivingEntity entity
+            LivingEntity entity,
+            float xAngle,
+            float yAngle
     ) {
         if (width < 8 || height < 8) return;
         float entityWidth = entity.getBbWidth();
@@ -369,7 +389,7 @@ public final class BattleStageHud {
         int x1 = x + width - UiLayoutMetrics.SPACE_2;
         int y1 = y + height;
         InventoryScreen.renderEntityInInventoryFollowsAngle(
-                graphics, x0, y0, x1, y1, scale, 0.0F, 0.0F, 0.35F, entity);
+                graphics, x0, y0, x1, y1, scale, 0.0F, xAngle, yAngle, entity);
     }
 
     private static String compactIntent(BattleNetworkPayloads.SnapshotParticipant participant) {
@@ -473,6 +493,9 @@ public final class BattleStageHud {
             Entity created = type.create(minecraft.level, EntitySpawnReason.COMMAND);
             if (!(created instanceof LivingEntity living)) return null;
 
+            if (BattleStageCharacterPresentation.usesBow(participant.characterId())) {
+                living.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
+            }
             visuals.put(participant.id(), new CachedVisual(sourceEntity, living));
             return living;
         }
