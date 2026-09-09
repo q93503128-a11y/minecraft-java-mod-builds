@@ -143,7 +143,7 @@ class BossCustomGeometryRenderPipelineTest {
             new float[]{0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f},
             new int[]{0, 1, 2},
             new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            new float[]{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f}
+            new float[]{1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f}
         );
         JointRig rig = new JointRig(
             new int[]{0},
