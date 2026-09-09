@@ -67,6 +67,7 @@ final class CharacterEntityPreview {
 
         Entity created = type.create(level, EntitySpawnReason.COMMAND);
         if (!(created instanceof LivingEntity living)) return null;
+        VirtualEntityRenderIdentity.assign(living);
 
         cachedLevel = level;
         cachedSourceEntity = sourceEntity;
