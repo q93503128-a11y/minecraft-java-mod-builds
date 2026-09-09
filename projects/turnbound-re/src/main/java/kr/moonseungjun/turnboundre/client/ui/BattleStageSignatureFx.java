@@ -15,6 +15,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import java.util.List;
 
@@ -24,8 +25,6 @@ import java.util.List;
  */
 @EventBusSubscriber(modid = TurnboundRe.MOD_ID, value = Dist.CLIENT)
 public final class BattleStageSignatureFx {
-    private static final Identifier BASE_STAGE_LAYER =
-            Identifier.fromNamespaceAndPath(TurnboundRe.MOD_ID, "battle_stage");
     private static final Identifier LAYER_ID =
             Identifier.fromNamespaceAndPath(TurnboundRe.MOD_ID, "battle_signature_fx");
     private static final ItemStack ARROW = new ItemStack(Items.ARROW);
@@ -36,7 +35,7 @@ public final class BattleStageSignatureFx {
 
     @SubscribeEvent
     public static void registerLayers(RegisterGuiLayersEvent event) {
-        event.registerAbove(BASE_STAGE_LAYER, LAYER_ID, BattleStageSignatureFx::render);
+        event.registerAbove(VanillaGuiLayers.HOTBAR, LAYER_ID, BattleStageSignatureFx::render);
     }
 
     private static void render(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
