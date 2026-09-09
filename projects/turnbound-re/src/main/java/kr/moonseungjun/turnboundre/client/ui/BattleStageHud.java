@@ -14,13 +14,17 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -41,6 +45,13 @@ import java.util.UUID;
 public final class BattleStageHud {
     private static final Identifier LAYER_ID = Identifier.fromNamespaceAndPath(TurnboundRe.MOD_ID, "battle_stage");
     private static final EntityCache ENTITY_CACHE = new EntityCache();
+    private static final ItemStack PROJECTILE_ARROW = new ItemStack(Items.ARROW);
+    private static final ItemStack PROJECTILE_FIRE = new ItemStack(Items.FIRE_CHARGE);
+    private static final ItemStack PROJECTILE_ARCANE = new ItemStack(Items.AMETHYST_SHARD);
+    private static final ItemStack PROJECTILE_VOID = new ItemStack(Items.ENDER_PEARL);
+
+    private static UUID audioBattleId;
+    private static String audioCueKey = "";
 
     private BattleStageHud() {}
 
@@ -53,6 +64,7 @@ public final class BattleStageHud {
         BattlePresentationModel model = BattleClientState.presentation().orElse(null);
         if (model == null) {
             ENTITY_CACHE.clear();
+            resetAudioLatch();
             return;
         }
         if (!UiLayoutMetrics.supportsBattleHud(graphics.guiWidth(), graphics.guiHeight())) return;
@@ -60,6 +72,7 @@ public final class BattleStageHud {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) {
             ENTITY_CACHE.clear();
+            resetAudioLatch();
             return;
         }
 
@@ -75,6 +88,7 @@ public final class BattleStageHud {
         graphics.enableScissor(viewport.x(), viewport.y(), viewport.right(), viewport.bottom());
         renderSide(graphics, font, minecraft, model, stage.enemies(), model.enemies(), true, actionCue);
         renderSide(graphics, font, minecraft, model, stage.players(), model.playerParty(), false, actionCue);
+        renderActionFx(graphics, font, minecraft, model, stage, actionCue);
         graphics.disableScissor();
     }
 
@@ -164,6 +178,141 @@ public final class BattleStageHud {
             graphics.text(font, Component.literal(fit(font, stateLine, slot.width())),
                     slot.x(), slot.bottom() - font.lineHeight, stateColor, true);
         }
+    }
+
+    private static void renderActionFx(
+            GuiGraphicsExtractor graphics,
+            Font font,
+            Minecraft minecraft,
+            BattlePresentationModel model,
+            BattleStageLayout.Layout stage,
+            BattleActionTimelineState.Cue cue
+    ) {
+        if (cue == null || cue.impactStyle() == BattleActionTimelineState.ImpactStyle.NONE) return;
+        maybePlayActionSound(minecraft, model.battleId(), cue);
+
+        StageParticipant actor = stageParticipant(stage, model, cue.actorId());
+        if (actor == null || actor.participant().entityId() != null) return;
+        UiLayoutMetrics.Rect actorModel = BattleStageActionFx
+                .modelBounds(actor.slot().bounds(), actor.enemy(), font.lineHeight)
+                .orElse(null);
+        if (actorModel == null) return;
+
+        boolean travelling = cue.phase() == BattleActionTimelineState.Phase.WINDUP
+                && BattleStageActionFx.hasTravel(cue.impactStyle());
+        ItemStack projectile = travelling ? projectileItem(cue.impactStyle()) : ItemStack.EMPTY;
+
+        for (String targetId : cue.targetIds()) {
+            StageParticipant target = stageParticipant(stage, model, targetId);
+            if (target == null || target.participant().entityId() != null) continue;
+            UiLayoutMetrics.Rect targetModel = BattleStageActionFx
+                    .modelBounds(target.slot().bounds(), target.enemy(), font.lineHeight)
+                    .orElse(null);
+            if (targetModel == null) continue;
+
+            if (travelling && !projectile.isEmpty()) {
+                BattleStageActionFx.Point point = BattleStageActionFx.travel(
+                        BattleStageActionFx.center(actorModel),
+                        BattleStageActionFx.center(targetModel),
+                        cue.phaseProgress());
+                graphics.item(projectile, point.x() - 8, point.y() - 8);
+            }
+
+            if (BattleStageActionFx.impactFlashVisible(cue)) {
+                int inset = BattleStageActionFx.impactInset(cue.phaseProgress());
+                int width = targetModel.width() - inset * 2;
+                int height = targetModel.height() - inset * 2;
+                if (width > 2 && height > 2) {
+                    UiVisualLanguage.frame(
+                            graphics,
+                            targetModel.x() + inset,
+                            targetModel.y() + inset,
+                            width,
+                            height,
+                            UiVisualLanguage.FrameState.FOCUS);
+                }
+            }
+        }
+    }
+
+    private static ItemStack projectileItem(BattleActionTimelineState.ImpactStyle style) {
+        return switch (style) {
+            case PROJECTILE -> PROJECTILE_ARROW;
+            case FIRE -> PROJECTILE_FIRE;
+            case ARCANE -> PROJECTILE_ARCANE;
+            case VOID -> PROJECTILE_VOID;
+            case NONE, MELEE, BLAST -> ItemStack.EMPTY;
+        };
+    }
+
+    private static void maybePlayActionSound(
+            Minecraft minecraft,
+            UUID battleId,
+            BattleActionTimelineState.Cue cue
+    ) {
+        BattleActionTimelineState.Phase trigger = BattleStageActionFx.soundTriggerPhase(cue.impactStyle());
+        if (cue.phase().ordinal() < trigger.ordinal()) return;
+
+        long revision = BattleActionTimelineState.timelineRevision(battleId);
+        String key = revision + "|" + cue.beatIndex() + "|" + cue.actorId() + "|"
+                + cue.actionId() + "|" + String.join(",", cue.targetIds());
+        if (!battleId.equals(audioBattleId)) {
+            audioBattleId = battleId;
+            audioCueKey = "";
+        }
+        if (key.equals(audioCueKey)) return;
+
+        switch (cue.impactStyle()) {
+            case MELEE -> minecraft.getSoundManager().play(
+                    SimpleSoundInstance.forUI(SoundEvents.PLAYER_ATTACK_SWEEP, 1.05F, 0.65F));
+            case PROJECTILE -> minecraft.getSoundManager().play(
+                    SimpleSoundInstance.forUI(SoundEvents.ARROW_SHOOT, 1.0F, 0.65F));
+            case FIRE -> minecraft.getSoundManager().play(
+                    SimpleSoundInstance.forUI(SoundEvents.BLAZE_SHOOT, 1.0F, 0.65F));
+            case BLAST -> minecraft.getSoundManager().play(
+                    SimpleSoundInstance.forUI(SoundEvents.GENERIC_EXPLODE, 1.15F));
+            case ARCANE -> minecraft.getSoundManager().play(
+                    SimpleSoundInstance.forUI(SoundEvents.EVOKER_CAST_SPELL, 1.15F, 0.6F));
+            case VOID -> minecraft.getSoundManager().play(
+                    SimpleSoundInstance.forUI(SoundEvents.ENDERMAN_TELEPORT, 1.2F, 0.55F));
+            case NONE -> {
+                return;
+            }
+        }
+        audioCueKey = key;
+    }
+
+    private static StageParticipant stageParticipant(
+            BattleStageLayout.Layout stage,
+            BattlePresentationModel model,
+            String participantId
+    ) {
+        if (participantId == null || participantId.isBlank()) return null;
+        StageParticipant enemy = findStageParticipant(
+                stage.enemies(), model.enemies(), participantId, true);
+        if (enemy != null) return enemy;
+        return findStageParticipant(stage.players(), model.playerParty(), participantId, false);
+    }
+
+    private static StageParticipant findStageParticipant(
+            List<BattleStageLayout.Slot> slots,
+            List<BattleNetworkPayloads.SnapshotParticipant> participants,
+            String participantId,
+            boolean enemy
+    ) {
+        for (BattleStageLayout.Slot slot : slots) {
+            if (slot.participantIndex() >= participants.size()) continue;
+            BattleNetworkPayloads.SnapshotParticipant participant = participants.get(slot.participantIndex());
+            if (participant.id().equals(participantId)) {
+                return new StageParticipant(slot, participant, enemy);
+            }
+        }
+        return null;
+    }
+
+    private static void resetAudioLatch() {
+        audioBattleId = null;
+        audioCueKey = "";
     }
 
     private static int feedbackShakeX(BattleStageFeedbackState.Cue feedback) {
@@ -336,4 +485,10 @@ public final class BattleStageHud {
     }
 
     private record CachedVisual(String sourceEntity, LivingEntity entity) {}
+
+    private record StageParticipant(
+            BattleStageLayout.Slot slot,
+            BattleNetworkPayloads.SnapshotParticipant participant,
+            boolean enemy
+    ) {}
 }

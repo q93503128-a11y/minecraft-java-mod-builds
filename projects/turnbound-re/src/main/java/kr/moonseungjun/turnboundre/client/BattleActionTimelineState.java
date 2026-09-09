@@ -23,12 +23,14 @@ public final class BattleActionTimelineState {
 
     public enum Phase { WINDUP, IMPACT, RECOVERY }
     public enum MotionStyle { CLOSE, RANGED, CAST, UTILITY }
+    public enum ImpactStyle { NONE, MELEE, PROJECTILE, FIRE, BLAST, ARCANE, VOID }
 
     public record Cue(
             String actorId,
             String actionId,
             List<String> targetIds,
             MotionStyle motionStyle,
+            ImpactStyle impactStyle,
             Phase phase,
             double phaseProgress,
             int beatIndex,
@@ -39,6 +41,7 @@ public final class BattleActionTimelineState {
             if (actionId == null || actionId.isBlank()) throw new IllegalArgumentException("actionId required");
             targetIds = targetIds == null ? List.of() : List.copyOf(targetIds);
             if (motionStyle == null) motionStyle = MotionStyle.UTILITY;
+            if (impactStyle == null) impactStyle = ImpactStyle.NONE;
             if (phase == null) throw new IllegalArgumentException("phase required");
             if (!Double.isFinite(phaseProgress)) phaseProgress = 0.0D;
             phaseProgress = Math.max(0.0D, Math.min(1.0D, phaseProgress));
@@ -46,9 +49,30 @@ public final class BattleActionTimelineState {
                 throw new IllegalArgumentException("invalid beat index/count");
             }
         }
+
+        /** Compatibility constructor for presentation callers that only care about motion. */
+        public Cue(
+                String actorId,
+                String actionId,
+                List<String> targetIds,
+                MotionStyle motionStyle,
+                Phase phase,
+                double phaseProgress,
+                int beatIndex,
+                int beatCount
+        ) {
+            this(actorId, actionId, targetIds, motionStyle, ImpactStyle.NONE,
+                    phase, phaseProgress, beatIndex, beatCount);
+        }
     }
 
-    private record Beat(String actorId, String actionId, List<String> targetIds, MotionStyle motionStyle) {}
+    private record Beat(
+            String actorId,
+            String actionId,
+            List<String> targetIds,
+            MotionStyle motionStyle,
+            ImpactStyle impactStyle
+    ) {}
 
     private static final Object LOCK = new Object();
     private static UUID battleId;
@@ -112,7 +136,7 @@ public final class BattleActionTimelineState {
                 progress = (within - WINDUP_NANOS - IMPACT_NANOS) / (double) RECOVERY_NANOS;
             }
             return Optional.of(new Cue(
-                    beat.actorId(), beat.actionId(), beat.targetIds(), beat.motionStyle(),
+                    beat.actorId(), beat.actionId(), beat.targetIds(), beat.motionStyle(), beat.impactStyle(),
                     phase, progress, beatIndex, beats.size()));
         }
     }
@@ -123,6 +147,14 @@ public final class BattleActionTimelineState {
 
     static boolean isPlaying(UUID expectedBattleId, long nowNanos) {
         return cue(expectedBattleId, nowNanos).isPresent();
+    }
+
+    /** Current authoritative event revision backing the active timeline, or Long.MIN_VALUE when unavailable. */
+    public static long timelineRevision(UUID expectedBattleId) {
+        if (expectedBattleId == null) return Long.MIN_VALUE;
+        synchronized (LOCK) {
+            return expectedBattleId.equals(battleId) ? resultingRevision : Long.MIN_VALUE;
+        }
     }
 
     /** Remaining delay before this participant's first authoritative impact beat; zero if no direct target event names it. */
@@ -178,9 +210,9 @@ public final class BattleActionTimelineState {
             if ("ACTION_PRESENTATION".equals(event.type()) && current.actorId.equals(event.actorId())) {
                 String action = detailValue(event.detail(), "action");
                 if (action.isBlank() || current.actionId.equals(action)) {
-                    current.motionStyle = motionStyle(
-                            detailValue(event.detail(), "kind"),
-                            detailValue(event.detail(), "tag"));
+                    String tag = detailValue(event.detail(), "tag");
+                    current.motionStyle = motionStyle(detailValue(event.detail(), "kind"), tag);
+                    current.impactStyle = impactStyle(tag);
                     for (String target : splitTargets(detailValue(event.detail(), "targets"))) {
                         current.targetIds.add(target);
                     }
@@ -196,7 +228,12 @@ public final class BattleActionTimelineState {
 
     private static void addBeat(List<Beat> out, MutableBeat source) {
         if (out.size() >= MAX_BEATS) return;
-        out.add(new Beat(source.actorId, source.actionId, List.copyOf(source.targetIds), source.motionStyle));
+        out.add(new Beat(
+                source.actorId,
+                source.actionId,
+                List.copyOf(source.targetIds),
+                source.motionStyle,
+                source.impactStyle));
     }
 
     private static MotionStyle motionStyle(String kind, String tag) {
@@ -205,6 +242,18 @@ public final class BattleActionTimelineState {
             case "PROJECTILE" -> MotionStyle.RANGED;
             case "FIRE", "BLAST", "ARCANE", "VOID" -> MotionStyle.CAST;
             default -> "GUARD".equals(kind) ? MotionStyle.UTILITY : MotionStyle.UTILITY;
+        };
+    }
+
+    private static ImpactStyle impactStyle(String tag) {
+        return switch (tag) {
+            case "MELEE" -> ImpactStyle.MELEE;
+            case "PROJECTILE" -> ImpactStyle.PROJECTILE;
+            case "FIRE" -> ImpactStyle.FIRE;
+            case "BLAST" -> ImpactStyle.BLAST;
+            case "ARCANE" -> ImpactStyle.ARCANE;
+            case "VOID" -> ImpactStyle.VOID;
+            default -> ImpactStyle.NONE;
         };
     }
 
@@ -248,6 +297,7 @@ public final class BattleActionTimelineState {
         private final String actionId;
         private final Set<String> targetIds = new LinkedHashSet<>();
         private MotionStyle motionStyle = MotionStyle.UTILITY;
+        private ImpactStyle impactStyle = ImpactStyle.NONE;
 
         private MutableBeat(String actorId, String actionId) {
             this.actorId = actorId;
