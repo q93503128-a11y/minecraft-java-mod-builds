@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "fishinggame",
+  "version": "${version}",
+  "name": "Fishing Game",
+  "description": "Catch, collect and master increasingly challenging fish across Minecraft waters.",
+  "authors": ["MoonSeungJun"],
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.moonseungjun.fishinggame.FishingGameMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~26.2",
+    "java": ">=25",
+    "fabric-api": ">=0.159.0"
+  }
+}
