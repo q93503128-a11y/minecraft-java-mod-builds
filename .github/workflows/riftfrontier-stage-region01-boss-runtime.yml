@@ -31,7 +31,7 @@ jobs:
         working-directory: projects/riftfrontier
         run: |
           python3 tools/convert_region01_boss_geometry.py \
-            --contract assets/sources/region_01_boss_dragon_evolved.acceptance.json \
+            --contract assets/sources/region_01_boss_dragon_evolved.source.json \
             --source build/region01-boss-runtime/Dragon_Evolved.gltf \
             --output build/region01-boss-runtime/region_01_boss_dragon_evolved.sanitized.v1.gltf \
             --provenance build/region01-boss-runtime/region_01_boss_dragon_evolved.sanitized.v1.provenance.json
