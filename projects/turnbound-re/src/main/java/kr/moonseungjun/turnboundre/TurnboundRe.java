@@ -7,6 +7,7 @@ import kr.moonseungjun.turnboundre.battle.BattleWorldEventHooks;
 import kr.moonseungjun.turnboundre.data.DefinitionRepository;
 import kr.moonseungjun.turnboundre.data.DefinitionResourceLoader;
 import kr.moonseungjun.turnboundre.debug.TurnboundDebugCommands;
+import kr.moonseungjun.turnboundre.debug.TurnboundVisualShowcaseCommands;
 import kr.moonseungjun.turnboundre.network.BattleNetwork;
 import kr.moonseungjun.turnboundre.network.BattleResultPresentationService;
 import kr.moonseungjun.turnboundre.progression.BattleRewardLifecycleHooks;
@@ -46,6 +47,7 @@ public final class TurnboundRe {
 
     private void registerCommands(RegisterCommandsEvent event) {
         TurnboundDebugCommands.register(event.getDispatcher(), BATTLES, DEFINITIONS);
+        TurnboundVisualShowcaseCommands.register(event.getDispatcher(), BATTLES, DEFINITIONS);
     }
 
     private void addServerReloadListeners(AddServerReloadListenersEvent event) {

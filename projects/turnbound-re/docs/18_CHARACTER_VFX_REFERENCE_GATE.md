@@ -107,7 +107,40 @@ Burst `turnbound_re:enderman_horizon_break` 및 VOID action 기준:
 3. 대표 2명 방향이 통과하면 Blaze/Witch/Iron Golem 등 다음 3명을 같은 방식으로 reference gate 후 확장한다.
 4. 외부 자산을 실제 repository에 포함할 경우 `THIRD_PARTY_ASSETS.md`에 원본 URL/제작자/라이선스/수정 여부를 기록한다.
 
-## 6. 완료 판정
+## 6. 실제 화면 검수용 showcase
+
+기존 `debug_encounter`는 플레이어 캐릭터를 실제 Minecraft player entity에 바인딩하므로 virtual 3D actor 검수에 적합하지 않다. 또한 Skeleton의 Arrow Storm은 3-target Burst라 기존 1v1 `debug_burst` 경로에서 거부된다.
+
+그래서 대표 2명 전용 operator showcase를 별도로 둔다.
+
+명령:
+
+`/turnbound_re_showcase`
+
+동작:
+1. 실제 world entity binding 없이 Enderman + Skeleton을 virtual PLAYER actor로 생성한다.
+2. 동일 플레이어가 두 actor의 controller가 된다.
+3. 시각 검수 중 적이 먼저 죽지 않도록 고내구 virtual Iron Golem 3체를 배치한다.
+4. production definition / strict target gate / `BattleNetworkGateway` / `BattleActionExecutor`를 그대로 사용한다.
+5. Enderman `Horizon Break`를 먼저 실행한다.
+6. 이어서 Skeleton `Arrow Storm`을 3 target에 실행한다.
+7. 두 action event를 한 번에 client로 보내 기존 action timeline이 순서대로 재생하게 한다.
+
+정리:
+
+`/turnbound_re_showcase cleanup`
+
+스크린샷/플레이 검수 포인트:
+- Enderman: 실제 3D model의 phase 이동이 단순 좌우 떨림처럼 보이지 않는가.
+- Enderman: curved Rift path가 actor motion과 한 동작처럼 이어지는가.
+- Skeleton: Bow와 팔의 조준 silhouette가 작은 GUI Scale에서도 읽히는가.
+- Skeleton: Arrow Storm의 추가 2발이 한 덩어리 아이콘이 아니라 연속 사격처럼 보이는가.
+- 두 캐릭터: 이름표/HP/Intent/target marker 가독성을 침범하지 않는가.
+- 480×270 및 일반 GUI Scale에서 모델/투사체가 reserved viewport 밖으로 잘리지 않는가.
+
+이 showcase는 시각 검수용 setup만 비생산 전투 수치(고내구 target, 고정 initiative)를 사용한다. action legality, target count, damage execution, event generation은 production 경로를 그대로 사용한다.
+
+## 7. 완료 판정
 
 자동 검증 통과만으로 production visual PASS를 선언하지 않는다.
 
