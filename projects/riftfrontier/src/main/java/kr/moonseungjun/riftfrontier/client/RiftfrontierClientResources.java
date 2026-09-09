@@ -30,10 +30,9 @@ public final class RiftfrontierClientResources {
     }
 
     private static void reloadBossPresentationAssets(ResourceManager clientResources) {
-        // A resource-pack transition invalidates every geometry/material binding produced from the previous pack
-        // before the new pack is inspected. The ticket is intentionally not retained until the approved Region 01
-        // runtime-asset/material loader is wired here; no old or partial custom-geometry binding may survive reload.
-        Region01BossClientRenderRuntime.beginReload();
+        // Bind the complete preparation transaction to this exact resource-manager snapshot before inspecting it.
+        // A newer pack reload invalidates both the old renderer binding and every unfinished preparation capability.
+        var reloadTicket = Region01BossClientRenderRuntime.beginReload(clientResources);
 
         var content = ContentRuntime.requireCurrent();
         try {
@@ -43,9 +42,14 @@ public final class RiftfrontierClientResources {
                 new MinecraftClientBossPresentationResourceProbe(clientResources)
             );
             if (published.ready()) {
+                var staged = Region01BossClientRenderRuntime.stageValidated(reloadTicket, published)
+                    .orElseThrow(() -> new IllegalStateException(
+                        "boss presentation resource reload was superseded before validated staging"
+                    ));
                 Riftfrontier.LOGGER.info(
-                    "Riftfrontier boss presentation client assets validated and published: contentGeneration={}",
-                    published.contentGeneration()
+                    "Riftfrontier boss presentation client assets validated and staged: contentGeneration={}, publicationGeneration={}",
+                    staged.contentGeneration(),
+                    staged.publicationGeneration()
                 );
             } else {
                 Riftfrontier.LOGGER.debug(

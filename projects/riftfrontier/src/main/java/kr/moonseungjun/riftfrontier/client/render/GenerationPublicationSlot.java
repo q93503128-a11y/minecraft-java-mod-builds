@@ -24,12 +24,14 @@ final class GenerationPublicationSlot<T> {
         }
     }
 
+    boolean isCurrent(Ticket ticket) {
+        requireOwner(ticket);
+        return state.get().generation() == ticket.generation;
+    }
+
     boolean publish(Ticket ticket, T value) {
-        Objects.requireNonNull(ticket, "ticket");
+        requireOwner(ticket);
         Objects.requireNonNull(value, "value");
-        if (ticket.owner != this) {
-            throw new IllegalArgumentException("publication ticket belongs to a different slot");
-        }
         while (true) {
             State<T> current = state.get();
             if (current.generation() != ticket.generation) {
@@ -58,6 +60,13 @@ final class GenerationPublicationSlot<T> {
 
     long generation() {
         return state.get().generation();
+    }
+
+    private void requireOwner(Ticket ticket) {
+        Objects.requireNonNull(ticket, "ticket");
+        if (ticket.owner != this) {
+            throw new IllegalArgumentException("publication ticket belongs to a different slot");
+        }
     }
 
     private static long nextGeneration(long generation) {
