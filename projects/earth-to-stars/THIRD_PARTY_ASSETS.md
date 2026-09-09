@@ -101,7 +101,7 @@
 - License verified: CC0 1.0
 - Package size observed during research: about 150 3D models
 - Current use:
-  - `craft_speederA` — starter launch craft
+  - upstream `craft_speederA` mesh → repository-safe `craft_speedera.obj` — starter launch craft
   - `craft_miner` — orbital salvage
   - `craft_racer` — first interceptor
 - Vendoring provenance:
@@ -110,7 +110,8 @@
   - the mirror is a byte source, not the license authority; CC0 status is verified against Kenney's official asset page
 - Repository path: `src/main/resources/assets/earth_to_stars/models/kenney/space_kit/`
 - Modification policy:
-  - vendored OBJ/MTL source bytes are kept intact
+  - Kenney OBJ mesh geometry bytes are preserved; the starter filename is normalized to lowercase for Minecraft resource identifiers
+  - MTL files are Minecraft/NeoForge adapters: original Kenney `Kd` colours are preserved and mapped through the project `#base` neutral texture slot required by the 26.2 OBJ baker
   - Minecraft-facing scale/orientation/presentation is adapted through NeoForge model/item resources and runtime transforms
   - later replacement/rework is allowed if live client review finds scale/style/readability mismatch
 

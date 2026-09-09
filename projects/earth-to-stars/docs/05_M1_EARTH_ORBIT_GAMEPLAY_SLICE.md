@@ -25,11 +25,11 @@ Earth 생존/채집
 
 # 1. M1 진행 상태
 
-현재 버전: `0.1.0-alpha.12`
+현재 버전: `0.1.0-alpha.13`
 
 현재 상태:
 
-`ALPHA.12 LIVE-ACCEPTANCE RESCUE BUILD + DEDICATED RESOURCE LOAD VERIFIED / LIVE CLIENT ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`
+`ALPHA.13 CLIENT MODEL/RESOURCE RESCUE BUILD + ACTUAL CLIENT RESOURCE LOAD VERIFIED / LIVE VISUAL ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`
 
 완료된 자동/서버 기술축:
 
@@ -82,7 +82,29 @@ Earth 생존/채집
 - scanner range 변화가 실제 플레이에서 체감되는지
 - multiplayer pilot + gunner + linked interior crew session
 
-## 1.1 alpha.12 Live-Acceptance Rescue 검증
+## 1.1 alpha.13 Client Model/Resource Rescue 검증
+
+alpha.12는 build/JAR/dedicated resource load까지 통과했지만 실제 26.2.0.76 클라이언트에서 spacecraft model이 black/magenta missing-model cube로 표시되어 live acceptance에 실패했다. alpha.13은 이 실패를 숨기지 않고 client asset pipeline 자체를 수정한 rescue다.
+
+- 실제 플레이 로그의 NeoForge `26.2.0.76`을 build/client 검증 target으로 승격
+- Minecraft resource identifier 규칙을 어긴 `craft_speederA` mixed-case path 제거; 동일 Kenney mesh bytes를 lowercase `craft_speedera.obj`로 패키징
+- Kenney 원본 `Kd` 색상은 유지하면서 NeoForge OBJ baker가 요구하는 diffuse texture slot을 제공하는 neutral material adapter 추가
+- MTL `map_Kd #base` + model JSON `textures.base` 방식으로 NeoForge 26.2 공식 OBJ test contract에 정렬
+- starter craft / launch kit / salvage / interceptor 모두 explicit `mtl_override` 사용
+- alpha.13 validator가 uppercase resource path, missing adapter texture, 잘못된 MTL slot mapping을 거부
+- permanent path-scoped client resource smoke를 추가해 앞으로 model/item/texture 변경 시 실제 `runClient` resource reload를 검사
+
+자동 검증:
+
+- Build run `34328083026`: `PASS` — alpha.13 static gate / tests / clean build / production JAR verify
+- Client resource smoke run `34328160894`: `PASS` — Minecraft 26.2 + NeoForge 26.2.0.76 actual client ResourceManager reload / model bake / item atlas creation
+- alpha.12에서 관측된 mixed-case `IdentifierException`: 재현되지 않음
+- OBJ diffuse texture null NPE: 재현되지 않음
+- intermediate alpha.13 smoke에서 잡힌 `Missing texture references in model earth_to_stars`: 최종 smoke에서 재현되지 않음
+- 실제 화면에서 모델 크기/좌석 위치/조종감/transition feel: `NOT PLAYTESTED`
+- live multiplayer: `NOT TESTED`
+
+## 1.2 alpha.12 Live-Acceptance Rescue 검증
 
 alpha.11 실플레이 실패를 닫기 위해 alpha.12에서 다음을 현재 M1 계약으로 승격했다.
 

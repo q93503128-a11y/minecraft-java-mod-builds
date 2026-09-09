@@ -2,6 +2,60 @@
 
 이 문서는 실제 정본 변경을 기록한다.
 
+## 2026-09-09 — alpha.13 Client Model/Resource Rescue
+
+### Why alpha.13 exists
+
+alpha.12 passed static/build/JAR/dedicated-server resource gates, but the first real client acceptance exposed a black/magenta missing-model cube. The client log showed two production asset failures: illegal mixed-case `craft_speederA.obj` resource identifiers and NeoForge OBJ materials without a resolvable diffuse texture slot. alpha.12 is therefore a live-client acceptance failure, not a production-ready visual build.
+
+### Fixed / Changed
+
+- mod version `0.1.0-alpha.13`
+- validation/runtime target aligned to the observed live environment: Minecraft `26.2`, NeoForge `26.2.0.76`
+- starter mesh resource renamed to legal lowercase `craft_speedera.obj` while preserving the original Kenney OBJ mesh bytes
+- illegal mixed-case starter OBJ/MTL resource paths removed
+- Kenney `Kd` material colours retained; neutral white adapter texture added only to satisfy NeoForge's required diffuse map slot
+- MTLs use `map_Kd #base`; model JSONs resolve `textures.base` to `earth_to_stars:item/kenney_material_base`
+- starter craft / launch kit / salvage / interceptor all use explicit `mtl_override`
+- alpha.13 static validator and production JAR verifier reject mixed-case asset paths and broken material-slot mappings
+- path-scoped actual-client resource smoke added for future model/item/texture changes
+
+### Verification
+
+Build source commit: `abacc358e4547b56e593a02552eccb9ac77d0d7c`
+
+GitHub Actions `Build earth-to-stars` run `34328083026`: `PASS`
+
+- alpha.13 acceptance validator: `PASS`
+- existing regression tests: `PASS`
+- `clean test build`: `PASS`
+- production JAR verify: `PASS`
+- JAR: `earth_to_stars-0.1.0-alpha.13.jar`
+- SHA-256: `540d4ba1cd0c2c74f06fc38013c7503820cb433ff8b4abd1615c480db1ad6a65`
+
+GitHub Actions `Smoke earth-to-stars client resources` run `34328160894`: `PASS`
+
+- actual `runClient` under Xvfb
+- Minecraft `26.2` / NeoForge `26.2.0.76` confirmed
+- client ResourceManager reload reached texture atlas creation
+- no EARTH TO STARS model load failure
+- no illegal mixed-case resource IdentifierException
+- no OBJ diffuse texture null NPE
+- no `Missing texture references in model earth_to_stars`
+
+Headless runner narrator/audio-device errors are environment-only and not treated as EARTH TO STARS asset failures.
+
+- client resource/model load: `TESTED`
+- visual quality/scale/seat alignment in a real gameplay viewport: `NOT PLAYTESTED`
+- live Earth→Orbit gameplay cycle: `NOT PLAYTESTED`
+- live multiplayer: `NOT TESTED`
+
+### Status
+
+`ALPHA.13 CLIENT MODEL/RESOURCE RESCUE BUILD + ACTUAL CLIENT RESOURCE LOAD VERIFIED / LIVE VISUAL ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`
+
+---
+
 ## 2026-09-08 — alpha.12 Live-Acceptance Rescue
 
 ### Fixed / Changed

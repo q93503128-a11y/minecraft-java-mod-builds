@@ -3,21 +3,21 @@
 - Slug: `earth-to-stars`
 - Mod ID: `earth_to_stars`
 - Namespace: `earth_to_stars`
-- Mod version: `0.1.0-alpha.12`
+- Mod version: `0.1.0-alpha.13`
 - Minecraft: `26.2`
 - Java: `25`
 - Loader: `NeoForge`
-- Loader version: `26.2.0.38-beta`
+- Loader version: `26.2.0.76`
 - Gradle: `9.2.1`
 - Build plugin: `ModDevGradle 2.0.143`
-- Final JAR: `earth_to_stars-0.1.0-alpha.12.jar`
+- Final JAR: `earth_to_stars-0.1.0-alpha.13.jar`
 - Existing-world compatibility: save roots / registry IDs / ShipId / module IDs are compatibility contracts. Current ShipState schema is 2; schema 1 migrates by adding the missing sensor slot without resetting the ship.
 - Required dependencies: Minecraft, NeoForge
 - Optional external mods/libraries: none approved as a hard runtime dependency. Any addition requires current 26.2 compatibility, maintenance, license, multiplayer and performance review.
 - Forbidden bundled dependencies: Minecraft original files, NeoForge distribution files, external mod JARs, and models/textures/audio/UI assets without redistribution permission.
 - Datagen task: `runData` (`NOT RUN` at current gate)
 - Server lifecycle: latest two-boot disk restore verification run `34197931566`; ShipState schema 2 and Power/Ammo/Propellant/Oxygen runtime restoration loaded successfully.
-- Client smoke: `NOT RUN`
+- Client resource/model smoke: `PASS` — Xvfb `runClient` on Minecraft 26.2 / NeoForge 26.2.0.76, run `34328160894`; live visual quality remains `NOT PLAYTESTED`
 - Live multiplayer: `NOT TESTED`
 
 ## Project identity
