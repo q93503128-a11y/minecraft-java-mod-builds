@@ -21,10 +21,30 @@ public final class SkinnedMeshFrame {
         if (indices.length == 0 || indices.length % 3 != 0) {
             throw new IllegalArgumentException("frame indices must contain complete triangles");
         }
+        for (float value : positions) {
+            requireFinite(value, "position");
+        }
+        for (float value : normals) {
+            requireFinite(value, "normal");
+        }
+        for (float value : uvs) {
+            requireFinite(value, "uv");
+        }
+        for (int index : indices) {
+            if (index < 0 || index >= vertexCount) {
+                throw new IllegalArgumentException("frame index outside vertex stream: " + index);
+            }
+        }
         this.positions = positions.clone();
         this.normals = normals.clone();
         this.uvs = uvs.clone();
         this.indices = indices.clone();
+    }
+
+    private static void requireFinite(float value, String stream) {
+        if (!Float.isFinite(value)) {
+            throw new IllegalArgumentException("frame contains non-finite " + stream + " data");
+        }
     }
 
     public int vertexCount() {
