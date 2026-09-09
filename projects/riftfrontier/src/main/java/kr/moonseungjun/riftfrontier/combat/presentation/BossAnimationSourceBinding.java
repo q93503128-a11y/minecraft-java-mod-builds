@@ -20,32 +20,60 @@ public final class BossAnimationSourceBinding {
     private static final ClipWindow FULL_CLIP = new ClipWindow(0.0D, 1.0D);
 
     private final BossAnimationMotionReview motionReview;
+    private final BossAnimationPhaseWindowReview phaseWindowReview;
     private final Map<ContentId, String> sourceClipByLogicalKey;
     private final Map<ContentId, ClipWindow> sourceWindowByLogicalKey;
 
     /**
-     * Backwards-compatible full-clip binding. Production attack phases should prefer the explicit-window constructor
-     * once visual review has authored phase boundaries.
+     * Backwards-compatible full-clip binding for general/non-partitioned clips.
      */
     public BossAnimationSourceBinding(
         BossAnimationMotionReview motionReview,
         Map<ContentId, String> sourceClipByLogicalKey
     ) {
-        this(motionReview, sourceClipByLogicalKey, fullWindows(sourceClipByLogicalKey));
+        this(motionReview, null, sourceClipByLogicalKey, fullWindows(sourceClipByLogicalKey));
     }
 
     /**
-     * Explicit source binding with a normalized [start, end] window for every logical key.
+     * Explicit source windows without fine window evidence. Kept for API-free fixtures/general experimentation.
      *
-     * <p>The window map must exactly cover the logical keys in {@code sourceClipByLogicalKey}. Missing or extra
-     * windows are rejected rather than silently falling back to whole-clip playback.</p>
+     * <p>Production phase-partitioned bindings must use {@link #reviewed} so arbitrary cut points cannot be published
+     * as if they had been visually reviewed.</p>
      */
     public BossAnimationSourceBinding(
         BossAnimationMotionReview motionReview,
         Map<ContentId, String> sourceClipByLogicalKey,
         Map<ContentId, ClipWindow> sourceWindowByLogicalKey
     ) {
+        this(motionReview, null, sourceClipByLogicalKey, sourceWindowByLogicalKey);
+    }
+
+    /**
+     * Creates a production-eligible phase-partitioned binding only when every exact source window has fine review
+     * evidence in addition to whole-clip motion review.
+     */
+    public static BossAnimationSourceBinding reviewed(
+        BossAnimationMotionReview motionReview,
+        BossAnimationPhaseWindowReview phaseWindowReview,
+        Map<ContentId, String> sourceClipByLogicalKey,
+        Map<ContentId, ClipWindow> sourceWindowByLogicalKey
+    ) {
+        return new BossAnimationSourceBinding(
+            motionReview,
+            Objects.requireNonNull(phaseWindowReview, "phaseWindowReview"),
+            sourceClipByLogicalKey,
+            sourceWindowByLogicalKey
+        );
+    }
+
+    private BossAnimationSourceBinding(
+        BossAnimationMotionReview motionReview,
+        BossAnimationPhaseWindowReview phaseWindowReview,
+        Map<ContentId, String> sourceClipByLogicalKey,
+        Map<ContentId, ClipWindow> sourceWindowByLogicalKey
+    ) {
         this.motionReview = Objects.requireNonNull(motionReview, "motionReview");
+        this.phaseWindowReview = phaseWindowReview;
         Objects.requireNonNull(sourceClipByLogicalKey, "sourceClipByLogicalKey");
         Objects.requireNonNull(sourceWindowByLogicalKey, "sourceWindowByLogicalKey");
         if (sourceClipByLogicalKey.isEmpty()) {
@@ -70,6 +98,9 @@ public final class BossAnimationSourceBinding {
                 sourceWindowByLogicalKey.get(logicalKey),
                 "source clip window for " + logicalKey
             );
+            if (phaseWindowReview != null) {
+                phaseWindowReview.requireApproved(sourceClipName, window);
+            }
             clipCopy.put(logicalKey, sourceClipName);
             windowCopy.put(logicalKey, window);
         });
@@ -89,12 +120,31 @@ public final class BossAnimationSourceBinding {
         Map<ContentId, ResolvedSource> resolved = new LinkedHashMap<>();
         sourceClipByLogicalKey.forEach((logicalKey, sourceClipName) -> {
             motionReview.requireApproved(sourceClipName);
+            ClipWindow window = sourceWindowByLogicalKey.get(logicalKey);
+            if (phaseWindowReview != null) {
+                phaseWindowReview.requireApproved(sourceClipName, window);
+            }
             resolved.put(logicalKey, new ResolvedSource(
                 verifiedInventory.requireClip(sourceClipName),
-                sourceWindowByLogicalKey.get(logicalKey)
+                window
             ));
         });
         return Map.copyOf(resolved);
+    }
+
+    /**
+     * Fails closed when a caller is about to use an explicit phase-partitioned binding in production without
+     * fine window evidence.
+     */
+    public BossAnimationSourceBinding requireReviewedPhaseWindows() {
+        if (phaseWindowReview == null) {
+            throw new IllegalStateException("boss animation source binding has no reviewed phase-window evidence");
+        }
+        return this;
+    }
+
+    public boolean hasReviewedPhaseWindows() {
+        return phaseWindowReview != null;
     }
 
     public BossAnimationMotionReview motionReview() {

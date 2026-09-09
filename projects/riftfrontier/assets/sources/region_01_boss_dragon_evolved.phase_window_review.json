@@ -1,0 +1,95 @@
+{
+  "kind": "riftfrontier:region_01_boss_animation_phase_window_review",
+  "schema_version": 1,
+  "reviewed_on": "2026-09-10",
+  "accepted_derivation": {
+    "resource": "riftfrontier:boss_presentation/region_01/dragon_evolved.sanitized.v1.gltf",
+    "sha256": "ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac",
+    "source_motion_review": "assets/sources/region_01_boss_dragon_evolved.motion_review.json"
+  },
+  "method": {
+    "source": "exact accepted runtime glTF extracted from verified Build Riftfrontier deliverable",
+    "sampling": "native animation-key cadence with skinned-mesh plus articulated-skeleton visual comparison; boundaries are selected only at source keyframes",
+    "scope": "source-motion segmentation only; ACTION is not a Minecraft damage/hit-window authorization and does not define attack_pattern tick balance"
+  },
+  "reviewed_clips": {
+    "Headbutt": {
+      "duration_seconds": 1.5,
+      "native_intervals": 45,
+      "observations": {
+        "commit_transition_frame": 7,
+        "peak_displacement_frame": 8,
+        "recovery_onset_frame": 9,
+        "near_start_pose_frame": 22,
+        "metric_note": "Head relative to Torso changes abruptly across frames 7-8; peak reviewed relative displacement is at frame 8, then decreases from frame 9 until the near-start pose at frame 22."
+      },
+      "windows": [
+        {
+          "segment": "ANTICIPATION",
+          "start_frame": 0,
+          "end_frame": 7,
+          "normalized_start": 0.0,
+          "normalized_end": 0.15555555555555556,
+          "observed_motion": "pre-commit head/torso preparation ending immediately before the abrupt forward/downward drive"
+        },
+        {
+          "segment": "ACTION",
+          "start_frame": 7,
+          "end_frame": 9,
+          "normalized_start": 0.15555555555555556,
+          "normalized_end": 0.2,
+          "observed_motion": "abrupt committed forward/downward head-and-torso drive through the maximum-displacement pose and into the first recovery key"
+        },
+        {
+          "segment": "RECOVERY",
+          "start_frame": 9,
+          "end_frame": 22,
+          "normalized_start": 0.2,
+          "normalized_end": 0.4888888888888889,
+          "observed_motion": "continuous return from the committed headbutt pose toward the starting airborne silhouette"
+        }
+      ]
+    },
+    "Punch": {
+      "duration_seconds": 1.3333333730697632,
+      "native_intervals": 40,
+      "observations": {
+        "commit_transition_frame": 8,
+        "peak_extension_frame": 10,
+        "recovery_onset_frame": 11,
+        "near_start_pose_frame": 40,
+        "metric_note": "Right distal forelimb extension accelerates into frame 8, peaks visually/kinematically around frame 10, and begins sustained retraction after frame 11."
+      },
+      "windows": [
+        {
+          "segment": "ANTICIPATION",
+          "start_frame": 0,
+          "end_frame": 8,
+          "normalized_start": 0.0,
+          "normalized_end": 0.2,
+          "observed_motion": "forelimb and torso preparation before the committed outward extension"
+        },
+        {
+          "segment": "ACTION",
+          "start_frame": 8,
+          "end_frame": 11,
+          "normalized_start": 0.2,
+          "normalized_end": 0.275,
+          "observed_motion": "committed forelimb extension through the maximum reach and the first transition into retraction"
+        },
+        {
+          "segment": "RECOVERY",
+          "start_frame": 11,
+          "end_frame": 40,
+          "normalized_start": 0.275,
+          "normalized_end": 1.0,
+          "observed_motion": "sustained forelimb retraction and whole-body return toward the starting airborne pose"
+        }
+      ]
+    }
+  },
+  "gameplay_binding": {
+    "status": "NOT_AUTHORED",
+    "note": "These windows describe observed source motion only. Region 01 server-authoritative attack_pattern timing, hit volumes, logical animation keys and encounter binding must be authored separately; do not equate ACTION with an ACTIVE damage window without that contract."
+  }
+}
