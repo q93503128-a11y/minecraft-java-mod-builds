@@ -4,47 +4,48 @@ This file is a recovery aid for scheduled development sessions. Current GitHub `
 
 ## Last recovered baseline
 
-- Remote `main` verified at this run start: `485767e310ef472728dbb972cd7d68570d1ddb28`.
-- Current implementation HEAD for this batch: `d8d9b5b6717067227d6e62f6678250a5f50dba9f`.
+- Remote `main` verified at this run start: `f6ada6a1f9a55314b01cedeba7eef4ae89053149`.
+- Current implementation HEAD for this batch: `377979168c6f38763b9d3f1a6e63d188def004f8`.
 - `Dragon Evolved` remains the selected, sanitized and packaged Region 01 first-boss geometry/rig/unaltered-source-animation resource. Source `Atlas` art remains explicitly unapproved and excluded.
 - Exact accepted runtime derivation SHA-256 remains `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`.
 
 ## Completed in this batch
 
-M3 Region 01 server boss semantic authoring gate:
+M3 Region 01 boss material/publication provenance gate:
 
-- Added `BossCombatSemanticProfile`, a strict non-numeric authoring boundary that scopes already-authored `attack_pattern` IDs to explicit boss phases. It owns no damage, tick timing, hit volume, cooldown, weight or visual asset path.
-- Added strict JSON decoding for `boss_profile` + `phase_attack_patterns`; missing/empty/duplicate/malformed phase pools fail closed instead of receiving defaults.
-- Added `ValidatedBossCombatSemantics`, a non-forgeable runtime validation capability that requires exact `1..phaseCount` coverage, rejects attacks outside the existing `BossProfile`, resolves every referenced `AttackPattern`, and requires TELEGRAPH/ACTIVE/RECOVERY logical animation-key coverage from the existing `BossPresentationProfile`.
-- Added `BossAttackSelectionPolicy.authoredPhases(...)`. Only a validated semantic capability can phase-scope server attack selection; the existing controller candidate set remains a second fail-closed boundary.
-- Existing `BossProfile`, `AttackPattern`, their timing values, deterministic baseline selector, server authority, and presentation/source-binding gates were preserved unchanged.
-- No Region 01 production attack timing/damage, encounter attachment, final material, hitbox, VFX/sound, or field-balance value was invented.
+- Confirmed the previous boss-semantic implementation run `34410900884` completed with `success`; its previously pending client/JAR/report gates are closed.
+- Added `Region01BossMaterialPreparation`, a typed capability that accepts only an explicit reviewed material receipt plus reviewed `RenderType`, reads the reviewed texture from the exact `ResourceManager` retained by the current validated reload, verifies exact SHA-256, and remains invalid after any newer reload.
+- `MaterialReview` records nonblank review evidence ID, exact texture resource ID, exact 64-hex SHA-256 and separate render-treatment evidence ID. The type does not approve or invent art by itself.
+- Replaced the renderer's old free-standing `RenderType`/overlay/color publication seam. `Region01BossClientRenderRuntime.publish(...)` now accepts only a `PreparedMaterial` plus a pipeline and verifies exact material -> animation -> geometry -> reload provenance before atomic publication.
+- Renderer-visible `SubmissionBinding` now retains `MaterialReview` provenance alongside reviewed animation, validated asset selection and render state.
+- Extended `RiftfrontierClientResources` with material preparation/current-state lifecycle. Replacing animation, reloading resources, or any preparation failure clears stale material state.
+- Added API-free regression tests for stale-before-read, exact resource-owner/hash, hash mismatch fail-closed, and reload-during-I/O rejection.
+- No production texture, color treatment, `RenderType`, Dragon source `Atlas`, combat timing, hitbox, VFX or balance value was authored or inferred.
 
 ## Changed systems/files
 
-- `src/main/java/kr/moonseungjun/riftfrontier/combat/BossCombatSemanticProfile.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/combat/ValidatedBossCombatSemantics.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/combat/BossAttackSelectionPolicy.java`
-- `src/test/java/kr/moonseungjun/riftfrontier/combat/BossCombatSemanticProfileTest.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/client/render/Region01BossMaterialPreparation.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/client/render/Region01BossClientRenderRuntime.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/client/RiftfrontierClientResources.java`
+- `src/test/java/kr/moonseungjun/riftfrontier/client/render/Region01BossMaterialPreparationTest.java`
 - `docs/AUTOMATION_HANDOFF.md`
 
 ## Verification
 
-- Implementation HEAD `d8d9b5b6717067227d6e62f6678250a5f50dba9f`, `Build Riftfrontier` run `34410900884`.
-- PASS so far: Java 25 toolchain verification, asset-intake tests, JUnit + clean build, required native GameTest, dedicated-server smoke.
-- Xvfb graphical client smoke: IN PROGRESS at handoff update time. Executable-JAR inspection, report and artifact upload: PENDING. Do not call the run FULL SUCCESS unless a later session confirms completion.
-- Local clone/build: NOT RUN successfully in this session because the container could not resolve `github.com`; CI is the actual validation source.
-- Production Region 01 `attack_pattern` numeric cadence/damage values and final `boss_profile`: NOT AUTHORED; `region_01.json` currently contains no production boss/attack definitions.
-- Production `BossCombatSemanticProfile` data: NOT AUTHORED because there are no legitimate production attack IDs/timings to bind yet.
-- Production reviewed `BossAnimationSourceBinding.reviewed(...)`: NOT AUTHORED until legitimate server semantic keys are present.
-- Approved final material/texture/`RenderType`: NOT IMPLEMENTED / NOT APPROVED.
-- Actual encounter attachment, final dimensions/hitbox/scale, spawned/deformed Dragon graphical capture, VFX/sound and human field-play: NOT IMPLEMENTED / NOT TESTED.
+- Prior semantic implementation HEAD `d8d9b5b6717067227d6e62f6678250a5f50dba9f`, `Build Riftfrontier` run `34410900884`: FULL SUCCESS confirmed this run.
+- Material-provenance implementation HEAD `377979168c6f38763b9d3f1a6e63d188def004f8`, `Build Riftfrontier` run `34415043369`.
+- PASS at this handoff update: Java 25 toolchain verification, asset-intake tests, JUnit + clean build, required native GameTest.
+- Dedicated-server smoke: IN PROGRESS at handoff update time. Xvfb graphical client smoke, executable-JAR inspection, report and artifact upload: PENDING. Do not call run `34415043369` FULL SUCCESS unless a later session confirms completion.
+- Local clone/build: NOT RUN successfully in this session because the container could not resolve `github.com`; GitHub Actions is the actual validation source.
+- Production final boss texture/material/`RenderType`: NOT APPROVED / NOT AUTHORED. Source `Atlas` remains prohibited.
+- Production Region 01 `attack_pattern` numeric cadence/damage values and final `boss_profile`: NOT AUTHORED.
+- Production `BossCombatSemanticProfile`, final reviewed source bindings connected to legitimate server attack keys, actual encounter attachment, final dimensions/hitbox/scale, spawned/deformed Dragon graphical capture, VFX/sound and human field-play: NOT IMPLEMENTED / NOT TESTED.
 
 ## Do not repeat or revert
 
-- Exact Dragon source reacquisition, sanitizer acceptance, runtime packaging, eight-clip motion review, `Headbutt`/`Punch` source-window review, typed geometry preparation, typed reviewed-animation preparation and renderer publication provenance gates are DONE.
-- Preserve `BossCombatSemanticProfile` as a non-numeric phase-selection layer; do not smuggle damage/timing/weights/cooldowns into it or collapse it back into visual source-clip inference.
-- Preserve `ValidatedBossCombatSemantics` logical-key coverage against `BossPresentationProfile` and the controller's independent candidate-set check.
+- Exact Dragon source reacquisition, sanitizer acceptance, runtime packaging, eight-clip motion review, `Headbutt`/`Punch` source-window review, typed geometry preparation, typed reviewed-animation preparation, boss semantic schema/validator and the new typed material/publication provenance gate are DONE.
+- Do not restore the old `publish(preparedAnimation, pipeline, renderType, overlay, color)` seam. Renderer publication must require `PreparedMaterial` tied to the same exact reload as reviewed animation and geometry.
+- Do not treat `MaterialReview` construction as automatic approval. It must correspond to a recorded external/production art review with exact texture ID/hash and render-treatment evidence.
 - Preserve source SHA-256 `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c`, accepted derivation SHA-256 `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`, and provenance SHA-256 `3e16877a0043cf980ac8de05bb518834c5e77bd72d96103b4984c65a2a5a4c6c`.
 - Never infer gameplay semantics from Dragon clip names/durations/channel metrics; source `ACTION` is not Minecraft damage authorization.
 - Preserve exact `ResourceManager` staging, exact prepared mesh/animation identity, UUID actor identity, monotonic server ticks, ACTIVE-only authoritative damage, four-influence LBS and arbitrary triangle topology.
@@ -52,9 +53,9 @@ M3 Region 01 server boss semantic authoring gate:
 
 ## Exact next start point
 
-1. Re-check remote `main` and first resolve `Build Riftfrontier` run `34410900884`; if any remaining gate failed, fix the first real failure before new feature work.
-2. Re-read canonical docs and this handoff. Do not redo Dragon art/motion/preparation gates or the new boss semantic schema/validator.
-3. Inspect current production content authoring sources for a legitimately approved Region 01 `attack_pattern`/`boss_profile`. If none exist, do not copy fixture timing values or invent combat cadence.
-4. If legitimate production attack IDs/timings now exist, author the production `BossCombatSemanticProfile`, validate phase pools + logical animation keys through `ValidatedBossCombatSemantics`, wire the controller to `BossAttackSelectionPolicy.authoredPhases(...)`, then construct reviewed source bindings only through existing motion/window evidence gates.
-5. If production combat timing remains evidence-blocked, move to the next objective seam: approved material/texture/`RenderType` provenance. Source `Atlas` remains prohibited; do not improvise visual treatment.
-6. Only after legitimate server semantics + reviewed animation + approved material share one current reload should actual spawned-boss graphical capture precede encounter attachment, hitbox/telegraph tuning, VFX/sound or balance work.
+1. Re-check remote `main` and resolve `Build Riftfrontier` run `34415043369`; if any remaining gate failed, fix the first real failure before new feature work.
+2. Re-read canonical docs and this handoff. Do not redo Dragon geometry/animation, boss semantic, or material-provenance gates.
+3. Check whether an actually reviewed Region 01 boss final texture/material treatment has been added with immutable resource ID, SHA-256 and review evidence. Source `Atlas` is not a fallback.
+4. If an approved material exists, instantiate the production `MaterialReview`, prepare it only through `RiftfrontierClientResources.prepareBossMaterial(...)`, then atomically publish the exact prepared material + exact pipeline through `Region01BossClientRenderRuntime.publish(preparedMaterial, pipeline)`.
+5. If no approved material exists, do not invent one. Re-check production combat authoring; only if legitimate `attack_pattern`/`boss_profile` values now exist should the existing semantic/animation gates be connected. Never copy fixture timings.
+6. Only after legitimate server semantics + reviewed animation + approved material share one current reload should spawned-boss graphical capture precede encounter attachment, final hitbox/telegraph tuning, VFX/sound or balance work.
