@@ -4,69 +4,58 @@ This file is a recovery aid for scheduled development sessions. Current GitHub `
 
 ## Last recovered baseline
 
-- Remote `main` at this run start: `e52f3bc2887217cba501be792d3265440fc4b24b`.
-- Latest verified Riftfrontier implementation/test HEAD in this run: `5a6a43ce99a5cf0dfbdd180733d9f291dfeec5aa`.
-- `Dragon Evolved` remains selected only as Region 01 first-boss geometry/rig derivation source. Source `Atlas` art remains unapproved.
+- Remote `main` at this run start: `ae5aea754874b9eb0e8bdaeab0b6271e995dec9d`.
+- Latest verified Riftfrontier implementation/test HEAD now on `main`: `99cfd0c3a7fb73c699fcc62dacee72b5b3e6ffd7`.
+- Exact source reacquisition/test implementation in this run: `72eb6bbf9481e0b247685d6c9b3b76592d5b3421`.
+- `Dragon Evolved` remains selected only as Region 01 first-boss geometry/rig/animation derivation source. Source `Atlas` art remains unapproved.
 
 ## Completed in this batch
 
-M3 boss client resource-reload fail-closed hardening:
+M3 Region 01 boss exact-source recovery and animation evidence gate:
 
-- `BossPresentationClientAssetRuntime.reload(...)` is now synchronized and rejects content-generation rollback while still allowing same-generation resource-pack revalidation.
-- A selected production manifest that fails physical client-resource validation now publishes an explicit inactive snapshot for the attempted generation before throwing; a resource pack that removed required files can no longer leave the previous pack's `ready` presentation snapshot alive.
-- The real NeoForge client resource listener now starts a new `Region01BossClientRenderRuntime` reload generation before validating the incoming pack. This immediately invalidates any custom-geometry/material binding derived from the previous pack.
-- The generation ticket is intentionally not retained yet: until the accepted Dragon runtime bytes, explicit animation binding, and approved material/`RenderType` loader are all connected in this listener, a resource reload must remain renderer-fail-closed rather than republish partial state.
-- Added JUnit coverage for failed-candidate deactivation, same-generation resource-pack revalidation, stale content-generation rejection, successful publication, and explicit inactive publication.
-- Preserved UUID actor identity, server-authoritative animation timing, exact-source/structure/inventory gates, four-weight LBS, custom geometry, and generation-scoped render publication.
+- Reacquired a complete byte-identical `Dragon_Evolved.gltf` from immutable mirror `laoniutoushx/TD-demo-2024-04-03` commit `87051774343f2a0df215639e8674178437228b71`, path `Asserts/Models/ulimate monster/glTF/Dragon_Evolved.gltf`.
+- Complete bytes independently match the pre-existing selected-source SHA-256 `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c`.
+- Explicitly rejected another immutable mirror (`flawlesshappiness/EmotionCreatures@215ae451ba7690a3f765b01eea5295f37c120e5a`) because its complete bytes hash to `36bb52a2de81571389cfe9957346d43d25e75687b6f766b8e792a50df90ee2f3` rather than the selected source SHA.
+- Deterministically reproduced accepted sanitized derivation SHA `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`, 681773 bytes, and provenance SHA `3e16877a0043cf980ac8de05bb518834c5e77bd72d96103b4984c65a2a5a4c6c`.
+- Committed `assets/sources/region_01_boss_dragon_evolved.animation_audit.json` as the permanent receipt and replaced network-dependent proof with an offline regression gate cross-checking source/acceptance contracts.
+- Measured all eight accepted clips. Every clip has 90 channels, 90 samplers, 45 animated nodes, 45 rotation + 45 translation targets, and 90 LINEAR interpolations. Durations: Death 0.6666666865s; Fast_Flying 0.8333333135s; Flying_Idle 1.5s; Headbutt 1.5s; HitReact 0.6666666865s; No 1.1666666269s; Punch 1.3333333731s; Yes 1.1666666269s.
+- Preserved the distinction between numerical/source evidence and motion semantics: clip names/metrics alone still cannot authorize logical attack binding.
+- Concurrent follow-on commit `99cfd0c3a7fb73c699fcc62dacee72b5b3e6ffd7` adds `BossAnimationMotionReview` and makes `BossAnimationSourceBinding` require explicit approved visual-review evidence before a source clip can be bound. This is retained and verified; it does not fabricate any review approval.
 
 ## Changed systems/files
 
-- `src/main/java/kr/moonseungjun/riftfrontier/combat/presentation/BossPresentationClientAssetRuntime.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/client/RiftfrontierClientResources.java`
-- `src/test/java/kr/moonseungjun/riftfrontier/combat/presentation/BossPresentationClientAssetRuntimeTest.java`
+- `assets/sources/region_01_boss_dragon_evolved.animation_audit.json`
+- `tools/tests/test_region01_boss_remote_provenance.py`
+- `src/main/java/kr/moonseungjun/riftfrontier/combat/presentation/BossAnimationMotionReview.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/combat/presentation/BossAnimationSourceBinding.java`
+- corresponding boss animation binding tests
 - `docs/AUTOMATION_HANDOFF.md`
 
 ## Verification
 
-- Implementation commit: `5a6a43ce99a5cf0dfbdd180733d9f291dfeec5aa`.
-- `Build Riftfrontier` run `34356034991`: FULL SUCCESS.
-- Passed: toolchain, asset-intake tests, JUnit + clean build, required native GameTest, dedicated-server smoke, Xvfb client smoke, executable JAR inspection, report generation, deliverables upload, logs/reports upload.
-- A public GitHub mirror containing `Dragon_Evolved.gltf` was located, but the connector could not expose the complete ~991 KB file as hashable local bytes; the mirror was therefore NOT accepted as canonical evidence.
-- Exact source `Dragon_Evolved.gltf` SHA `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c`: NOT REACQUIRED / NOT REVERIFIED in this execution environment.
-- Exact accepted sanitized derivation SHA `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`: NOT REACQUIRED in this execution environment.
-- Real eight-clip duration/channel/path/interpolation receipt: NOT PRODUCED.
-- Direct visual motion inspection and explicit logical attack-to-source-clip mapping: NOT TESTED / NOT IMPLEMENTED.
+- Exact-source reacquisition/audit proof commit `14d1587ce85227e0a80983abe0dd65a6709769f2`, `Build Riftfrontier` run `34362397167`: FULL SUCCESS. Passed toolchain, source/sanitizer/audit tests, JUnit + clean build, required native GameTest, dedicated-server smoke, Xvfb client smoke, executable JAR inspection, report generation and artifact uploads.
+- Permanent offline receipt commit corrected at `72eb6bbf9481e0b247685d6c9b3b76592d5b3421`, `Build Riftfrontier` run `34363812956`: FULL SUCCESS with the same complete gate set.
+- Current implementation HEAD `99cfd0c3a7fb73c699fcc62dacee72b5b3e6ffd7`, `Build Riftfrontier` run `34364304659`: FULL SUCCESS with asset tests, JUnit/clean build, required GameTest, dedicated server, Xvfb client, executable JAR, report and artifact gates all successful.
+- Earlier run `34361908051` hit the existing `attack_hit_window` GameTest twice while the unchanged combat code passed subsequent runs `34362397167`, `34363812956`, and `34364304659`; no production combat behavior or test was weakened to address that transient failure.
+- Direct visual inspection of the actual eight clip motions: NOT TESTED.
+- Explicit approved logical attack-to-source-clip mappings: NOT AUTHORED.
 - Approved material/texture/`RenderType` publication, actual Region 01 encounter attachment, final dimensions/hitbox/scale, spawned/deformed Dragon graphical capture, VFX/sound and human field-play: NOT IMPLEMENTED / NOT TESTED.
 
 ## Do not repeat or revert
 
-- Preserve UUID-bound presentation identity end-to-end; production render lookup must never regress to numeric entity id alone.
-- Preserve same-UUID monotonic server-tick rejection and fresh watermark behavior when a new UUID reuses a numeric entity id.
-- Preserve generation-ticket publication: a stale reload completion must never publish after a newer `beginReload()` or `clear()`.
-- Every client resource-pack reload must invalidate the previous Region 01 custom-geometry binding before inspecting the candidate pack.
-- Physical presentation-resource validation failure must remain fail-closed/inactive for the attempted content generation; do not restore the old behavior that preserved a previous `ready` snapshot.
-- Content-generation publication must not move backwards; same-generation resource-pack revalidation remains allowed.
-- Do not reintroduce direct unscoped `Region01BossClientRenderRuntime.publish(...)` publication.
-- Preserve source SHA `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c` and accepted derivation SHA `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac` unless the converter schema/version intentionally changes.
-- Preserve exact source clip inventory names unless direct accepted-source inspection proves a source revision changed.
-- Do not hard-code guessed clip durations/channel metrics or infer logical mappings from clip names.
-- Do not bypass exact-SHA/exact-structure/exact-inventory gates or construct the production runtime asset from independently substituted bytes.
-- Preserve `Region01BossRuntimeAsset` as the composed production import seam.
-- Preserve `AttackPattern`/server semantic state as authoritative timing and ACTIVE-only damage semantics. No presentation layer may become a free-running combat clock.
-- Preserve monotonic client semantic snapshot ordering and fail-closed presentation resolution.
-- Preserve the registered `region_01_boss` actor/render-state/renderer bridge and `BossCustomGeometryRenderPipeline`; do not replace them with fallback art or a parallel renderer clock.
-- Do not add the boss to encounter/natural spawning or invent final dimensions/hitbox/combat tuning before visual/source evidence and authored content exist.
-- Do not permit source `Atlas` material/texture/image bytes into production resources.
-- Do not restore GeckoLib 4 paths or rigid GeoBone/cube approximation for this asset.
-- Preserve arbitrary triangle topology, four-influence LBS, imported rig/animations, pose sampler, semantic sample bridge, frame sampler, exact inventory gate and custom-geometry adapter.
-- Keep Minecraft 26.2 `net.minecraft.client.renderer.rendertype.RenderType` and `net.minecraft.client.renderer.state.level.CameraRenderState` boundaries.
+- Exact source reacquisition is DONE. Do not spend another session searching mirrors unless the selected source contract intentionally changes; the immutable byte-identical mirror and permanent receipt are now recorded.
+- Preserve selected source SHA `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c`, accepted derivation SHA `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`, provenance SHA `3e16877a0043cf980ac8de05bb518834c5e77bd72d96103b4984c65a2a5a4c6c`, and measured receipt unless converter/source contract intentionally changes.
+- Do not infer gameplay semantics from `Headbutt`, `Punch`, or any other source clip name or from duration/channel metrics. Preserve `BossAnimationMotionReview` as a fail-closed prerequisite for production binding.
+- Preserve UUID-bound presentation identity, monotonic server-tick handling, generation-ticket resource publication, fail-closed resource reload, server-authoritative `AttackPattern` timing and ACTIVE-only damage.
+- Preserve exact-source/structure/inventory gates, `Region01BossRuntimeAsset`, four-influence LBS, arbitrary triangle topology, custom-geometry renderer pipeline and registered boss actor/render bridge.
+- Do not permit source `Atlas` material/texture/image bytes into production resources; do not restore GeckoLib/rigid cube approximation.
+- Do not attach the boss to natural/encounter spawning or invent final dimensions/hitbox/combat tuning before visual/source evidence and authored content exist.
 - Do not tune M2 pressure/patrol values without field-play evidence.
 
 ## Exact next start point
 
 1. Re-check remote `main`, canonical docs and this handoff.
-2. Reacquire the exact original `Dragon_Evolved.gltf` SHA `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c` from recorded Quaternius provenance, then deterministically regenerate/verify accepted sanitized derivation SHA `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`; reject mirrors/substitutes unless their complete bytes independently match the recorded SHA.
-3. Run `python tools/audit_region01_boss_animation_clips.py <accepted.gltf> assets/sources/region_01_boss_dragon_evolved.acceptance.json --output <receipt.json>` and load the exact same accepted bytes through `Region01BossRuntimeAsset.importAccepted(...)`.
-4. Inspect actual clip motion and author explicit logical bindings only where semantics match; never infer mapping from clip names alone.
-5. Extend the existing `RiftfrontierClientResources` listener to retain its `Region01BossClientRenderRuntime.beginReload()` ticket through preparation and generation-bound `publish(...)`, but only after it can construct the verified runtime asset, explicit binding, and approved material/`RenderType` from the same `ResourceManager` snapshot.
-6. Attach the production boss encounter only after those gates, then perform spawned graphical capture before final hitbox/telegraph/VFX/sound tuning.
+2. Use the committed animation audit receipt as factual numerical evidence; reacquire the accepted source immediately from the now-pinned immutable byte-identical mirror when actual source bytes are needed.
+3. Perform direct visual motion inspection of all eight accepted clips and record concrete evidence/observed motion. Author `BossAnimationMotionReview` approvals only for clips actually inspected; then create logical bindings only where observed semantics match the intended server-authoritative states.
+4. If direct visual animation inspection is unavailable in the execution environment, do not guess. Move to the other objective M3 bundle: extend `RiftfrontierClientResources` so its existing `beginReload()` ticket survives preparation through exact `Region01BossRuntimeAsset` + approved binding + approved material/`RenderType` publication from the same `ResourceManager` snapshot.
+5. After those gates, attach the production boss encounter and perform spawned graphical capture before final hitbox/telegraph/VFX/sound tuning.
