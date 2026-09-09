@@ -13,13 +13,13 @@ Alpha 0.1.0 starts with the server-authoritative fishing session and a small tes
 ### Current interaction
 
 1. Hold a normal Minecraft fishing rod.
-2. Right click to cast.
-3. Wait for the bite cue.
-4. After the bite, right click in a controlled rhythm.
+2. Right click to cast into water.
+3. The bite timer starts only after the hook actually reaches water.
+4. When a fish bites, hold right click to increase line tension and release it to let tension fall.
 5. Keeping tension in the safe range advances catch progress.
 6. Excess tension breaks the line; too little tension loses progress.
 
-This click-pulse reel is the first technical slice. The intended final interaction is a one-button hold/release reel with a proper HUD and physical hooked-fish presentation.
+The held-use input is sent to the server as state, while the server owns tension, progress, fish selection and the final catch result. The current action-bar telemetry is still temporary; a proper fishing HUD and physical hooked-fish presentation are core follow-up work.
 
 ## Technical stack
 

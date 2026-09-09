@@ -8,8 +8,8 @@ public final class ReelMath {
     private ReelMath() {
     }
 
-    public static float updateTension(float tension, boolean reelImpulse, float resistance) {
-        float next = reelImpulse
+    public static float updateTension(float tension, boolean reelHeld, float resistance) {
+        float next = reelHeld
                 ? tension + (0.052f * resistance)
                 : tension - (0.022f + Math.max(0.0f, resistance - 1.0f) * 0.006f);
         return Math.max(0.0f, Math.min(1.2f, next));

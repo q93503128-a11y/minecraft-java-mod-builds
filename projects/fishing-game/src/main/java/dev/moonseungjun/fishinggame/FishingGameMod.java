@@ -1,6 +1,7 @@
 package dev.moonseungjun.fishinggame;
 
 import dev.moonseungjun.fishinggame.fishing.FishingSessionManager;
+import dev.moonseungjun.fishinggame.network.FishingNetworking;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
@@ -12,6 +13,7 @@ public final class FishingGameMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        FishingNetworking.initialize();
         FishingSessionManager.initialize();
         LOGGER.info("Fishing Game initialized");
     }

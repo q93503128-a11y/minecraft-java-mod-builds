@@ -2,16 +2,15 @@ package dev.moonseungjun.fishinggame.fishing;
 
 final class FishingSession {
     FishingStage stage = FishingStage.WAITING_FOR_HOOK;
-    long castTick;
-    long biteTick;
+    final long castTick;
+    long biteTick = Long.MAX_VALUE;
     FishSpecies species;
     float tension = 0.42f;
     float progress;
-    int reelImpulseTicks;
+    boolean reelHeld;
     int hudCooldown;
 
-    FishingSession(long castTick, long biteTick) {
+    FishingSession(long castTick) {
         this.castTick = castTick;
-        this.biteTick = biteTick;
     }
 }
