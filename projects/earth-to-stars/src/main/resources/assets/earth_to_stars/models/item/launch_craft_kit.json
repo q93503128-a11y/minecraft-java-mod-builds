@@ -8,7 +8,8 @@
   "flip_v": false,
   "emissive_ambient": false,
   "textures": {
-    "particle": "earth_to_stars:item/kenney_material_base"
+    "base": "earth_to_stars:item/kenney_material_base",
+    "particle": "#base"
   },
   "display": {
     "gui": {"rotation": [25, 225, 0], "scale": [0.55, 0.55, 0.55]},
