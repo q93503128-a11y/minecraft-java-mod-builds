@@ -45,10 +45,10 @@ class Region01BossRemoteProvenanceTest(unittest.TestCase):
         self.assertEqual(EXPECTED_SOURCE_SHA256, receipt["derivation"]["source_sha256"])
         self.assertEqual(EXPECTED_SOURCE_SHA256, receipt["source_reacquisition"]["accepted_mirror"]["sha256"])
 
-        self.assertEqual(EXPECTED_SANITIZED_SHA256, acceptance["output"]["sha256"])
+        self.assertEqual(EXPECTED_SANITIZED_SHA256, acceptance["output"]["geometry_sha256"])
         self.assertEqual(EXPECTED_SANITIZED_SHA256, receipt["derivation"]["sanitized_sha256"])
-        self.assertEqual(acceptance["output"]["byte_size"], receipt["derivation"]["sanitized_byte_size"])
-        self.assertEqual(EXPECTED_PROVENANCE_SHA256, acceptance["provenance"]["sha256"])
+        self.assertEqual(acceptance["output"]["geometry_bytes"], receipt["derivation"]["sanitized_byte_size"])
+        self.assertEqual(EXPECTED_PROVENANCE_SHA256, acceptance["output"]["provenance_sha256"])
         self.assertEqual(EXPECTED_PROVENANCE_SHA256, receipt["derivation"]["provenance_sha256"])
 
         clips = receipt["clips"]
