@@ -112,6 +112,11 @@ public final class BossCustomGeometryRenderPipeline {
         return variant;
     }
 
+    /** Exact reviewed animation bridge consumed by this pipeline; used only for publication provenance checks. */
+    public BossAnimationSampleBridge animationBridge() {
+        return animationBridge;
+    }
+
     /**
      * Exact mesh/rig source consumed by this pipeline's skinning stage.
      * Used by the Region 01 publication gate to reject a pipeline assembled from any asset other than the one that

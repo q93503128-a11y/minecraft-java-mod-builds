@@ -1,6 +1,7 @@
 package kr.moonseungjun.riftfrontier.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import kr.moonseungjun.riftfrontier.combat.presentation.BossAnimationSourceBinding;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationAssetSelection;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationClientAssetRuntime;
 import kr.moonseungjun.riftfrontier.combat.presentation.mesh.Region01BossRuntimeAsset;
@@ -18,11 +19,11 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * <p>A reload is a three-stage transaction: begin against one exact {@link ResourceManager}, stage the physically
  * validated presentation snapshot produced while inspecting that same resource manager, then publish the complete
- * geometry/material binding. Starting another reload or clearing the runtime invalidates both published and staged
- * state. Delayed work from an older resource pack therefore cannot resurrect stale resources.</p>
+ * geometry/reviewed-animation/material binding. Starting another reload or clearing the runtime invalidates both
+ * published and staged state. Delayed work from an older resource pack therefore cannot resurrect stale resources.</p>
  *
  * <p>The staged capability is intentionally non-forgeable and retains the exact resource-manager object together
- * with the validated asset selection and generation. Geometry, approved animation binding, and material preparation
+ * with the validated asset selection and generation. Geometry, reviewed animation binding, and material preparation
  * can therefore continue from one resource snapshot without passing a free-standing generation number or swapping
  * in a separately validated selection.</p>
  */
@@ -75,42 +76,57 @@ public final class Region01BossClientRenderRuntime {
     }
 
     /**
-     * Publishes one complete accepted binding only if the exact geometry prepared from the current staged reload is
-     * also the mesh/rig consumed by {@code pipeline}.
+     * Publishes one complete accepted binding only if both geometry and reviewed animation were prepared from the
+     * same current staged reload and {@code pipeline} consumes their exact mesh and animation bridge identities.
      *
-     * <p>This closes the last free-standing geometry seam: a caller can no longer validate one accepted Dragon
-     * derivation and then publish a pipeline assembled from another imported mesh. Animation meaning and material
-     * approval remain independent prerequisites and are not inferred here.</p>
+     * <p>This closes both free-standing provenance seams: a caller cannot validate one accepted Dragon derivation
+     * and publish a pipeline assembled from another mesh, nor can it prepare reviewed phase windows and substitute a
+     * separately constructed animation bridge before publication. Material approval remains an independent explicit
+     * prerequisite and is not inferred here.</p>
      *
-     * @return {@code false} when a newer reload/clear already invalidated the prepared geometry capability
+     * @return {@code false} when a newer reload/clear already invalidated the prepared animation capability
      */
     public static boolean publish(
-        Region01BossGeometryPreparation.PreparedGeometry preparedGeometry,
+        Region01BossAnimationPreparation.PreparedAnimation preparedAnimation,
         BossCustomGeometryRenderPipeline pipeline,
         RenderType renderType,
         int packedOverlay,
         int packedColor
     ) {
-        Objects.requireNonNull(preparedGeometry, "preparedGeometry");
+        Objects.requireNonNull(preparedAnimation, "preparedAnimation");
         Objects.requireNonNull(pipeline, "pipeline");
         Objects.requireNonNull(renderType, "renderType");
 
+        final Region01BossGeometryPreparation.PreparedGeometry preparedGeometry;
         final ValidatedReload reload;
         final Region01BossRuntimeAsset runtimeAsset;
+        final BossAnimationSourceBinding reviewedBinding;
         try {
-            reload = preparedGeometry.validatedReload();
-            runtimeAsset = preparedGeometry.runtimeAsset();
+            preparedGeometry = preparedAnimation.preparedGeometry();
+            reload = preparedAnimation.validatedReload();
+            runtimeAsset = preparedAnimation.runtimeAsset();
+            reviewedBinding = preparedAnimation.sourceBinding().requireReviewedPhaseWindows();
         } catch (Region01BossGeometryPreparation.StaleReloadException stale) {
             return false;
         }
         if (STAGED.get() != reload) return false;
-        if (preparedGeometry.publicationGeneration() != reload.publicationGeneration()
+        if (preparedAnimation.publicationGeneration() != reload.publicationGeneration()
+            || preparedAnimation.contentGeneration() != reload.contentGeneration()
+            || preparedGeometry.publicationGeneration() != reload.publicationGeneration()
             || preparedGeometry.contentGeneration() != reload.contentGeneration()) {
-            throw new IllegalArgumentException("prepared boss geometry generation no longer matches its validated reload");
+            throw new IllegalArgumentException("prepared boss presentation generation no longer matches its validated reload");
+        }
+        if (preparedAnimation.preparedGeometry() != preparedGeometry) {
+            throw new IllegalArgumentException("prepared boss animation must retain its exact prepared geometry capability");
         }
         if (pipeline.skinnedMeshAsset() != runtimeAsset.skinnedMesh()) {
             throw new IllegalArgumentException(
                 "boss render pipeline must consume the exact skinned mesh prepared from the current accepted derivation"
+            );
+        }
+        if (pipeline.animationBridge() != preparedAnimation.animationBridge()) {
+            throw new IllegalArgumentException(
+                "boss render pipeline must consume the exact reviewed animation bridge prepared from the current reload"
             );
         }
 
@@ -118,6 +134,7 @@ public final class Region01BossClientRenderRuntime {
         SubmissionBinding binding = new SubmissionBinding(
             assetSnapshot.contentGeneration(),
             assetSnapshot.selection().orElseThrow(),
+            reviewedBinding,
             pipeline,
             renderType,
             packedOverlay,
@@ -216,6 +233,7 @@ public final class Region01BossClientRenderRuntime {
     public record SubmissionBinding(
         long contentGeneration,
         BossPresentationAssetSelection assetSelection,
+        BossAnimationSourceBinding reviewedAnimationBinding,
         BossCustomGeometryRenderPipeline pipeline,
         RenderType renderType,
         int packedOverlay,
@@ -226,6 +244,7 @@ public final class Region01BossClientRenderRuntime {
                 throw new IllegalArgumentException("contentGeneration must be >= 0");
             }
             Objects.requireNonNull(assetSelection, "assetSelection");
+            Objects.requireNonNull(reviewedAnimationBinding, "reviewedAnimationBinding").requireReviewedPhaseWindows();
             Objects.requireNonNull(pipeline, "pipeline");
             Objects.requireNonNull(renderType, "renderType");
         }
