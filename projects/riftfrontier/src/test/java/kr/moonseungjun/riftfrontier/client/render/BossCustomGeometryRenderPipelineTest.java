@@ -21,6 +21,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BossCustomGeometryRenderPipelineTest {
@@ -76,7 +77,19 @@ class BossCustomGeometryRenderPipelineTest {
         assertTrue(pipeline.prepare(unresolved).isEmpty());
     }
 
+    @Test
+    void pipelineExposesTheExactMeshIdentityConsumedByItsSampler() {
+        SkinnedMeshAsset accepted = asset();
+        BossCustomGeometryRenderPipeline pipeline = pipeline(accepted);
+
+        assertSame(accepted, pipeline.skinnedMeshAsset());
+    }
+
     private static BossCustomGeometryRenderPipeline pipeline() {
+        return pipeline(asset());
+    }
+
+    private static BossCustomGeometryRenderPipeline pipeline(SkinnedMeshAsset meshAsset) {
         var key = new BossPresentationProfile.BindingKey("test_cue", "melee", AttackTimeline.Phase.TELEGRAPH);
         var profile = new BossPresentationProfile(
             PRESENTATION,
@@ -93,7 +106,7 @@ class BossCustomGeometryRenderPipelineTest {
             "default",
             resolver,
             bridge,
-            new BossSkinnedMeshFrameSampler(asset())
+            new BossSkinnedMeshFrameSampler(meshAsset)
         );
     }
 
@@ -130,7 +143,7 @@ class BossCustomGeometryRenderPipelineTest {
             new float[]{0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f},
             new int[]{0, 1, 2},
             new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            new float[]{1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f}
+            new float[]{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f}
         );
         JointRig rig = new JointRig(
             new int[]{0},
