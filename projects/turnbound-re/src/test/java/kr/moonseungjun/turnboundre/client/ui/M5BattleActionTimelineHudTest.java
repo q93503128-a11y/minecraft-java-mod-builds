@@ -3,6 +3,8 @@ package kr.moonseungjun.turnboundre.client.ui;
 import kr.moonseungjun.turnboundre.client.BattleActionTimelineState;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -36,6 +38,16 @@ class M5BattleActionTimelineHudTest {
         assertInside(slot, windup);
         assertInside(slot, impact);
         assertInside(slot, recovery);
+    }
+
+    @Test
+    void hudFocusStaysOnTheActionActorUntilTheTimelineBeatFinishes() {
+        BattleActionTimelineState.Cue action = new BattleActionTimelineState.Cue(
+                "e1", "bite", List.of("p1"), BattleActionTimelineState.Phase.IMPACT, 0.4D, 1, 2);
+
+        assertEquals("e1", BattleHud.presentationActorId("p2", action));
+        assertEquals("p2", BattleHud.presentationActorId("p2", null));
+        assertEquals("", BattleHud.presentationActorId(null, null));
     }
 
     private static void assertInside(UiLayoutMetrics.Rect parent, UiLayoutMetrics.Rect child) {

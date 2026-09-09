@@ -1,6 +1,7 @@
 package kr.moonseungjun.turnboundre.client.ui;
 
 import kr.moonseungjun.turnboundre.TurnboundRe;
+import kr.moonseungjun.turnboundre.client.BattleActionTimelineState;
 import kr.moonseungjun.turnboundre.client.BattleClientState;
 import kr.moonseungjun.turnboundre.client.BattleCommandOverlayState;
 import kr.moonseungjun.turnboundre.client.BattlePresentationModel;
@@ -39,21 +40,29 @@ public final class BattleHud {
         if (model == null) return;
         if (!UiLayoutMetrics.supportsBattleHud(graphics.guiWidth(), graphics.guiHeight())) return;
 
+        BattleActionTimelineState.Cue actionCue = BattleActionTimelineState.cue(model.battleId()).orElse(null);
+        String presentationActorId = presentationActorId(model.currentActorId(), actionCue);
         UiLayoutMetrics.BattleHudLayout layout = UiLayoutMetrics.battleHud(graphics.guiWidth(), graphics.guiHeight());
         Font font = Minecraft.getInstance().font;
-        renderTurnRail(graphics, font, layout.turnRail(), model);
+        renderTurnRail(graphics, font, layout.turnRail(), model, presentationActorId);
         renderEnemySummary(graphics, font, layout.enemySummary(), model);
-        renderPartyStatus(graphics, font, layout.partyStatus(), model);
-        if (!BattleCommandOverlayState.isOpen()) {
+        renderPartyStatus(graphics, font, layout.partyStatus(), model, presentationActorId);
+        if (actionCue == null && !BattleCommandOverlayState.isOpen()) {
             renderCommandStrip(graphics, font, layout.commandStrip(), model);
         }
+    }
+
+    static String presentationActorId(String authoritativeActorId, BattleActionTimelineState.Cue actionCue) {
+        if (actionCue != null) return actionCue.actorId();
+        return authoritativeActorId == null ? "" : authoritativeActorId;
     }
 
     private static void renderTurnRail(
             GuiGraphicsExtractor graphics,
             Font font,
             UiLayoutMetrics.Rect region,
-            BattlePresentationModel model
+            BattlePresentationModel model,
+            String presentationActorId
     ) {
         List<BattleNetworkPayloads.SnapshotParticipant> order = model.turnOrder();
         int rowHeight = 24;
@@ -62,7 +71,7 @@ public final class BattleHud {
         for (int i = 0; i < visible; i++) {
             BattleNetworkPayloads.SnapshotParticipant participant = order.get(i);
             int y = region.y() + i * rowHeight;
-            boolean current = participant.id().equals(model.currentActorId());
+            boolean current = participant.id().equals(presentationActorId);
             UiVisualLanguage.frame(graphics, region.x(), y, 20, 20,
                     current ? UiVisualLanguage.FrameState.FOCUS
                             : participant.alive() ? UiVisualLanguage.FrameState.IDLE : UiVisualLanguage.FrameState.DISABLED);
@@ -128,7 +137,8 @@ public final class BattleHud {
             GuiGraphicsExtractor graphics,
             Font font,
             UiLayoutMetrics.Rect region,
-            BattlePresentationModel model
+            BattlePresentationModel model,
+            String presentationActorId
     ) {
         List<BattleNetworkPayloads.SnapshotParticipant> party = model.playerParty();
         if (party.isEmpty()) return;
@@ -143,9 +153,9 @@ public final class BattleHud {
             int x = region.x() + col * grid.cellWidth();
             int y = region.y() + row * grid.cellHeight();
             if (grid.compact()) {
-                renderCompactPartyMember(graphics, font, x, y, grid.cellWidth(), grid.cellHeight(), i, member, model);
+                renderCompactPartyMember(graphics, font, x, y, grid.cellWidth(), grid.cellHeight(), i, member, presentationActorId);
             } else {
-                renderRegularPartyMember(graphics, font, x, y, grid.cellWidth(), grid.cellHeight(), i, member, model);
+                renderRegularPartyMember(graphics, font, x, y, grid.cellWidth(), grid.cellHeight(), i, member, presentationActorId);
             }
         }
         graphics.disableScissor();
@@ -160,10 +170,10 @@ public final class BattleHud {
             int cellHeight,
             int index,
             BattleNetworkPayloads.SnapshotParticipant member,
-            BattlePresentationModel model
+            String presentationActorId
     ) {
         int slotWidth = Math.min(180, cellWidth);
-        boolean current = member.id().equals(model.currentActorId());
+        boolean current = member.id().equals(presentationActorId);
         UiVisualLanguage.frame(graphics, x, y, 20, 20,
                 current ? UiVisualLanguage.FrameState.FOCUS
                         : member.alive() ? UiVisualLanguage.FrameState.IDLE : UiVisualLanguage.FrameState.DISABLED);
@@ -204,11 +214,11 @@ public final class BattleHud {
             int cellHeight,
             int index,
             BattleNetworkPayloads.SnapshotParticipant member,
-            BattlePresentationModel model
+            String presentationActorId
     ) {
         int contentWidth = Math.max(24, cellWidth - 22 - UiLayoutMetrics.SPACE_4);
         int barWidth = Math.max(24, cellWidth - UiLayoutMetrics.SPACE_4);
-        boolean current = member.id().equals(model.currentActorId());
+        boolean current = member.id().equals(presentationActorId);
         UiVisualLanguage.frame(graphics, x, y, 18, 18,
                 current ? UiVisualLanguage.FrameState.FOCUS
                         : member.alive() ? UiVisualLanguage.FrameState.IDLE : UiVisualLanguage.FrameState.DISABLED);
