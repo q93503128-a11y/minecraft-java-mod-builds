@@ -77,8 +77,11 @@ public final class BattleStageCharacterPresentation {
             }
             case RECOVERY -> {
                 offsetX = 0;
-                xAngle = -0.02F * (float) (1.0D - p);
-                yAngle = (float) (DEFAULT_Y_ANGLE + 0.06D * (1.0D - p));
+                float remaining = (float) (1.0D - p);
+                xAngle = remaining <= 0.0F ? DEFAULT_X_ANGLE : -0.02F * remaining;
+                yAngle = remaining <= 0.0F
+                        ? DEFAULT_Y_ANGLE
+                        : (float) (DEFAULT_Y_ANGLE + 0.06D * remaining);
             }
             default -> throw new IllegalStateException("Unexpected phase: " + cue.phase());
         }
