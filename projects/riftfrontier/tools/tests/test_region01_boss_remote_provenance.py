@@ -1,132 +1,75 @@
 from __future__ import annotations
 
-import hashlib
 import json
-import subprocess
-import sys
-import tempfile
 import unittest
-import urllib.error
-import urllib.request
 from pathlib import Path
 
 
-SOURCE_CANDIDATES = {
-    "flawlesshappiness/EmotionCreatures@215ae451": (
-        "https://raw.githubusercontent.com/flawlesshappiness/EmotionCreatures/"
-        "215ae451ba7690a3f765b01eea5295f37c120e5a/"
-        "Assets/Quaternius/Ultimate%20Monsters/Flying/glTF/Dragon_Evolved.gltf"
-    ),
-    "laoniutoushx/TD-demo-2024-04-03@87051774": (
-        "https://raw.githubusercontent.com/laoniutoushx/TD-demo-2024-04-03/"
-        "87051774343f2a0df215639e8674178437228b71/"
-        "Asserts/Models/ulimate%20monster/glTF/Dragon_Evolved.gltf"
-    ),
-    "mlflabs/brain@54b3258a": (
-        "https://raw.githubusercontent.com/mlflabs/brain/"
-        "54b3258a7ab6558fee969100aafb24ff285e0f0e/"
-        "assets/Ultimate%20Monsters/Flying/glTF/Dragon_Evolved.gltf"
-    ),
-    "320trankt/warcell@60080076": (
-        "https://raw.githubusercontent.com/320trankt/warcell/"
-        "600800760d91da4070520d83cd860ab07b2892d3/"
-        "assets/3d/Ultimate%20Monsters/Flying/glTF/Dragon_Evolved.gltf"
-    ),
-    "AlejandroMonteseirin/Godot_Monster_Ranger@13939757": (
-        "https://raw.githubusercontent.com/AlejandroMonteseirin/Godot_Monster_Ranger/"
-        "13939757cdfd59cbf0dbe5cce5dd32210b908f51/"
-        "monsters/dragon2/Dragon_Evolved.gltf"
-    ),
-    "Letanyan/Spell-Magic@446a6104": (
-        "https://raw.githubusercontent.com/Letanyan/Spell-Magic/"
-        "446a6104b4a7bf4df09708a84bae656b0e20ba2f/"
-        "Characters/Enemy/Flying/Dragoon/Dragon_Evolved.gltf"
-    ),
-}
 EXPECTED_SOURCE_SHA256 = "39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c"
 EXPECTED_SANITIZED_SHA256 = "ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac"
 EXPECTED_PROVENANCE_SHA256 = "3e16877a0043cf980ac8de05bb518834c5e77bd72d96103b4984c65a2a5a4c6c"
+EXPECTED_CLIPS = [
+    ("Death", 0.6666666865348816),
+    ("Fast_Flying", 0.8333333134651184),
+    ("Flying_Idle", 1.5),
+    ("Headbutt", 1.5),
+    ("HitReact", 0.6666666865348816),
+    ("No", 1.1666666269302368),
+    ("Punch", 1.3333333730697632),
+    ("Yes", 1.1666666269302368),
+]
 
 
 class Region01BossRemoteProvenanceTest(unittest.TestCase):
-    """One-shot immutable-mirror byte-equivalence proof for the pinned Quaternius source.
+    """Offline regression gate for the independently reproduced Dragon Evolved receipt.
 
-    Every candidate is accepted only if its complete bytes independently match the already-recorded source SHA-256.
-    Candidate names, paths, or apparent glTF structure are never enough to promote a substitute.
+    Network reacquisition was a one-shot evidence operation. CI now validates the committed receipt against the
+    canonical source/acceptance contracts so routine builds stay deterministic and do not trust mutable network state.
     """
 
-    def test_immutable_mirror_reproduces_accepted_derivation_and_animation_receipt(self) -> None:
+    def test_committed_reacquisition_receipt_matches_canonical_contracts(self) -> None:
         project_root = Path(__file__).resolve().parents[2]
-        contract = project_root / "assets/sources/region_01_boss_dragon_evolved.source.json"
-        acceptance = project_root / "assets/sources/region_01_boss_dragon_evolved.acceptance.json"
-
-        observed: dict[str, str] = {}
-        accepted_source: bytes | None = None
-        accepted_candidate: str | None = None
-        for candidate, url in SOURCE_CANDIDATES.items():
-            request = urllib.request.Request(url, headers={"User-Agent": "Riftfrontier-source-audit/1"})
-            try:
-                with urllib.request.urlopen(request, timeout=60) as response:
-                    source_bytes = response.read()
-            except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as exc:
-                observed[candidate] = f"UNAVAILABLE:{type(exc).__name__}"
-                continue
-            actual_sha = hashlib.sha256(source_bytes).hexdigest()
-            observed[candidate] = actual_sha
-            if actual_sha == EXPECTED_SOURCE_SHA256:
-                accepted_source = source_bytes
-                accepted_candidate = candidate
-                break
-
-        self.assertIsNotNone(
-            accepted_source,
-            "no immutable mirror matched the pinned source SHA-256; observed=" + json.dumps(observed, sort_keys=True),
+        source_contract = json.loads(
+            (project_root / "assets/sources/region_01_boss_dragon_evolved.source.json").read_text(encoding="utf-8")
         )
-        assert accepted_source is not None
+        acceptance = json.loads(
+            (project_root / "assets/sources/region_01_boss_dragon_evolved.acceptance.json").read_text(encoding="utf-8")
+        )
+        receipt = json.loads(
+            (project_root / "assets/sources/region_01_boss_dragon_evolved.animation_audit.json").read_text(encoding="utf-8")
+        )
 
-        with tempfile.TemporaryDirectory(prefix="riftfrontier-region01-source-") as temporary:
-            temp = Path(temporary)
-            source = temp / "Dragon_Evolved.gltf"
-            sanitized = temp / "region_01_boss_dragon_evolved.sanitized.v1.gltf"
-            provenance = temp / "region_01_boss_dragon_evolved.sanitized.v1.provenance.json"
-            receipt = temp / "region_01_boss_dragon_evolved.animation_audit.json"
-            source.write_bytes(accepted_source)
+        self.assertEqual("riftfrontier:region_01_boss_animation_audit_receipt", receipt["kind"])
+        self.assertEqual(1, receipt["schema_version"])
+        self.assertEqual(EXPECTED_SOURCE_SHA256, source_contract["source"]["sha256"])
+        self.assertEqual(EXPECTED_SOURCE_SHA256, receipt["derivation"]["source_sha256"])
+        self.assertEqual(EXPECTED_SOURCE_SHA256, receipt["source_reacquisition"]["accepted_mirror"]["sha256"])
 
-            subprocess.run(
-                [
-                    sys.executable,
-                    str(project_root / "tools/convert_region01_boss_geometry.py"),
-                    "--contract", str(contract),
-                    "--source", str(source),
-                    "--output", str(sanitized),
-                    "--provenance", str(provenance),
-                ],
-                cwd=project_root,
-                check=True,
-            )
-            self.assertEqual(EXPECTED_SANITIZED_SHA256, hashlib.sha256(sanitized.read_bytes()).hexdigest())
-            self.assertEqual(EXPECTED_PROVENANCE_SHA256, hashlib.sha256(provenance.read_bytes()).hexdigest())
+        self.assertEqual(EXPECTED_SANITIZED_SHA256, acceptance["output"]["sha256"])
+        self.assertEqual(EXPECTED_SANITIZED_SHA256, receipt["derivation"]["sanitized_sha256"])
+        self.assertEqual(acceptance["output"]["byte_size"], receipt["derivation"]["sanitized_byte_size"])
+        self.assertEqual(EXPECTED_PROVENANCE_SHA256, acceptance["provenance"]["sha256"])
+        self.assertEqual(EXPECTED_PROVENANCE_SHA256, receipt["derivation"]["provenance_sha256"])
 
-            subprocess.run(
-                [
-                    sys.executable,
-                    str(project_root / "tools/audit_region01_boss_animation_clips.py"),
-                    str(sanitized),
-                    str(acceptance),
-                    "--output", str(receipt),
-                ],
-                cwd=project_root,
-                check=True,
-            )
-            audit = json.loads(receipt.read_text(encoding="utf-8"))
-            self.assertEqual(8, audit["clip_count"])
-            self.assertEqual(EXPECTED_SANITIZED_SHA256, audit["source"]["sha256"])
-            audit["reacquisition"] = {
-                "candidate": accepted_candidate,
-                "expected_source_sha256": EXPECTED_SOURCE_SHA256,
-                "observed_candidates": observed,
-            }
-            print("REGION01_BOSS_SOURCE_RECEIPT=" + json.dumps(audit, sort_keys=True))
+        clips = receipt["clips"]
+        self.assertEqual(source_contract["expect"]["required_animations"], [clip["name"] for clip in clips])
+        self.assertEqual(EXPECTED_CLIPS, [(clip["name"], clip["duration_seconds"]) for clip in clips])
+        for clip in clips:
+            self.assertEqual(90, clip["channel_count"])
+            self.assertEqual(90, clip["sampler_count"])
+            self.assertEqual(45, clip["animated_node_count"])
+            self.assertEqual({"rotation": 45, "translation": 45}, clip["target_path_counts"])
+            self.assertEqual({"LINEAR": 90}, clip["interpolation_counts"])
+
+        accepted = receipt["source_reacquisition"]["accepted_mirror"]
+        self.assertEqual("laoniutoushx/TD-demo-2024-04-03", accepted["repository"])
+        self.assertEqual("87051774343f2a0df215639e8674178437228b71", accepted["commit"])
+        self.assertTrue(accepted["path"].endswith("Dragon_Evolved.gltf"))
+        rejected = receipt["source_reacquisition"]["rejected_mirrors"]
+        self.assertGreaterEqual(len(rejected), 1)
+        self.assertNotEqual(EXPECTED_SOURCE_SHA256, rejected[0]["observed_sha256"])
+
+        self.assertEqual("NOT_TESTED", receipt["motion_semantics"]["status"])
 
 
 if __name__ == "__main__":

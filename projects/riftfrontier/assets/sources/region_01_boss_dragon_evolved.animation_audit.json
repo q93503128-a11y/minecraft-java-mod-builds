@@ -1,0 +1,47 @@
+{
+  "kind": "riftfrontier:region_01_boss_animation_audit_receipt",
+  "schema_version": 1,
+  "source_reacquisition": {
+    "accepted_mirror": {
+      "repository": "laoniutoushx/TD-demo-2024-04-03",
+      "commit": "87051774343f2a0df215639e8674178437228b71",
+      "path": "Asserts/Models/ulimate monster/glTF/Dragon_Evolved.gltf",
+      "sha256": "39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c"
+    },
+    "rejected_mirrors": [
+      {
+        "repository": "flawlesshappiness/EmotionCreatures",
+        "commit": "215ae451ba7690a3f765b01eea5295f37c120e5a",
+        "path": "Assets/Quaternius/Ultimate Monsters/Flying/glTF/Dragon_Evolved.gltf",
+        "observed_sha256": "36bb52a2de81571389cfe9957346d43d25e75687b6f766b8e792a50df90ee2f3",
+        "reason": "complete bytes do not match the selected source contract"
+      }
+    ],
+    "verification": "complete-byte SHA-256 equality against the pre-existing selected source contract; names and structure alone are insufficient"
+  },
+  "derivation": {
+    "source_sha256": "39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c",
+    "sanitized_filename": "region_01_boss_dragon_evolved.sanitized.v1.gltf",
+    "sanitized_byte_size": 681773,
+    "sanitized_sha256": "ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac",
+    "provenance_sha256": "3e16877a0043cf980ac8de05bb518834c5e77bd72d96103b4984c65a2a5a4c6c"
+  },
+  "clips": [
+    {"name":"Death","duration_seconds":0.6666666865348816,"channel_count":90,"sampler_count":90,"animated_node_count":45,"target_path_counts":{"rotation":45,"translation":45},"interpolation_counts":{"LINEAR":90}},
+    {"name":"Fast_Flying","duration_seconds":0.8333333134651184,"channel_count":90,"sampler_count":90,"animated_node_count":45,"target_path_counts":{"rotation":45,"translation":45},"interpolation_counts":{"LINEAR":90}},
+    {"name":"Flying_Idle","duration_seconds":1.5,"channel_count":90,"sampler_count":90,"animated_node_count":45,"target_path_counts":{"rotation":45,"translation":45},"interpolation_counts":{"LINEAR":90}},
+    {"name":"Headbutt","duration_seconds":1.5,"channel_count":90,"sampler_count":90,"animated_node_count":45,"target_path_counts":{"rotation":45,"translation":45},"interpolation_counts":{"LINEAR":90}},
+    {"name":"HitReact","duration_seconds":0.6666666865348816,"channel_count":90,"sampler_count":90,"animated_node_count":45,"target_path_counts":{"rotation":45,"translation":45},"interpolation_counts":{"LINEAR":90}},
+    {"name":"No","duration_seconds":1.1666666269302368,"channel_count":90,"sampler_count":90,"animated_node_count":45,"target_path_counts":{"rotation":45,"translation":45},"interpolation_counts":{"LINEAR":90}},
+    {"name":"Punch","duration_seconds":1.3333333730697632,"channel_count":90,"sampler_count":90,"animated_node_count":45,"target_path_counts":{"rotation":45,"translation":45},"interpolation_counts":{"LINEAR":90}},
+    {"name":"Yes","duration_seconds":1.1666666269302368,"channel_count":90,"sampler_count":90,"animated_node_count":45,"target_path_counts":{"rotation":45,"translation":45},"interpolation_counts":{"LINEAR":90}}
+  ],
+  "motion_semantics": {
+    "status": "NOT_TESTED",
+    "note": "Clip names and numerical channel metrics do not prove gameplay semantics. Logical attack binding remains blocked until visual motion inspection."
+  },
+  "verification_run": {
+    "github_actions_run_id": 34362397167,
+    "commit": "14d1587ce85227e0a80983abe0dd65a6709769f2"
+  }
+}
