@@ -15,6 +15,7 @@ public final class FishingGameMod implements ModInitializer {
     public void onInitialize() {
         FishingNetworking.initialize();
         FishingSessionManager.initialize();
+        FishingGameRules.initialize();
         LOGGER.info("Fishing Game initialized");
     }
 

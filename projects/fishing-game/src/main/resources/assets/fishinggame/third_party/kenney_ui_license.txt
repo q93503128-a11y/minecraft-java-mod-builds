@@ -1,0 +1,17 @@
+UI pack by Kenney Vleugels (www.kenney.nl)
+
+License: Creative Commons CC0 1.0 Universal
+https://creativecommons.org/publicdomain/zero/1.0/
+
+You may use these graphics in personal and commercial projects.
+Credit is appreciated but not mandatory.
+
+Bundled files used by Fishing Game:
+- grey_panel.png
+- blue_button00.png
+- grey_sliderHorizontal.png (renamed grey_slider_horizontal.png)
+
+Source mirror used for reproducible retrieval:
+https://github.com/ereborstudios/kenney-ui-pack
+Original source:
+https://kenney.nl/assets/ui-pack

@@ -1,78 +1,71 @@
 # Fishing Game — Game Design
 
-## One-line game
+## One-line goal
 
-Catch fish, sell catches, improve fishing equipment, and hunt larger and rarer species across Minecraft waters while filling a collection.
+Catch increasingly large and rare fish, sell them, improve your fishing gear, and open better fishing locations while filling your collection.
 
-## Core pillars
+## Product shape
 
-1. Fishing feel — casting, bite, reel, tension and landing must feel good.
-2. Collection — species, size and rarity create repeat hunts.
-3. Progression — rods change what fish are controllable, not only a number.
-4. Exploration — water type, biome, depth, time and weather can alter species pools.
+This is a standalone arcade/progression fishing game. Survival systems are deliberately removed from the player's decision space.
 
 ## Core loop
 
-```text
-find water
--> cast
--> bite
--> reel
--> catch result
--> collection/value
--> sell
--> rod improvement
--> harder/rarer fish
--> repeat
-```
+1. Pick a fishing location.
+2. Cast.
+3. Wait for a bite.
+4. Reel with hold/release tension control.
+5. Catch a fish with species, rarity, weight, length and value.
+6. The fish goes into the persistent catch bag.
+7. Sell catches for one currency: coins.
+8. Buy the next rod tier.
+9. Better rods improve strength, control, luck and lure speed.
+10. Move into harder location pools and chase rarer fish.
 
-## Complexity budget
+## Content rules
 
-Initial economy uses one money currency. Do not add pets, eggs, gacha, rune systems, multiple upgrade materials, forced inventory-clearing chores or unrelated crafting until playtesting demonstrates a real need.
+- One main currency initially.
+- No pets, eggs, gacha, runes, crafting chains or unrelated management systems in the core release.
+- Common fish may share body families and animation rigs with texture/scale/part variation.
+- Legendary fish deserve unique visual treatment and stronger catch feedback.
+- Hundreds of fish must not imply hundreds of Java classes; species data belongs in a catalog/data layer.
 
-## Rod stats
+## Catch bag
 
-The planned maximum is four primary stats:
+The catch bag is separate from Minecraft's survival inventory. Each catch stores:
+- species
+- rarity (from species definition)
+- weight
+- length
+- sell value
 
-- Strength: tolerable fish resistance/weight
-- Control: safe tension width and stability
-- Luck: rare species/variant chance
-- Lure Speed: bite wait time
+Initial capacity: 40 catches. Selling is intentionally simple: Sell All converts the bag into coins.
 
-## Fish production
+## Rod progression
 
-Common fish should be mass-producible from a small number of body/rig families plus texture, scale, proportion and part variants. Rare and legendary fish receive the expensive unique silhouettes, animation, VFX and sound budget.
+Initial tiers:
+1. 갈대 낚싯대 — baseline
+2. 호수 전문가 — more strength/control, faster bites, better luck
+3. 블루워터 — substantially stronger, wider control margin, higher rare chance
 
-## World model
+Rod upgrades are profile progression, not crafting recipes.
 
-Use Minecraft water rather than building a separate linear map first. Initial environment groups are river/pond, swamp and ocean, later splitting warm/cold/deep water when the collection is large enough.
+## Location model
 
-## Multiplayer authority
+Dedicated fishing maps/locations replace generic survival exploration.
 
-Server finalizes:
+Pools prepared in data/code:
+- 청람 호수 — freshwater starter pool
+- 갈매기 항구 — coastal pool
+- 심해 수로 — high-tier pool
 
-- valid species pool
-- species/size/rarity roll
-- reel state and catch success
-- catch storage
-- money and purchases
-- bestiary records
+Bundling a community map requires explicit use/redistribution permission. Attractive maps with unclear terms remain reference-only until permission is resolved.
 
-Client owns input, HUD, animation and visual interpolation only.
+## UI language
 
-## Vertical slice
+Functional structure follows proven fishing-game patterns: persistent compact status HUD, catch bag/collection view, obvious Sell All action, rod card/progression information, and a focused reeling HUD only while hooked.
 
-A meaningful first playable slice must eventually include:
+Visual components use external UI assets rather than improvised black translucent panels. The initial asset family is Kenney UI Pack (CC0).
 
-- one complete cast/bite/reel/catch loop
-- 3 rods
-- 12–20 fish species
-- 3 body families
-- rarity, weight and length
-- a visible hooked fish
-- one currency and selling
-- simple bestiary
-- at least 3 environment pools
-- multiplayer-safe per-player sessions
+## Next quality gate
 
-The first technical unit in alpha.1 intentionally implements only the session loop and tiny species catalog so the input/tension model can be corrected before content multiplication.
+The next user-facing build is only worth testing after the entire cast -> catch -> bag -> sell -> rod upgrade loop is visible and at least one credible dedicated location plus fish-on-hook presentation exists.

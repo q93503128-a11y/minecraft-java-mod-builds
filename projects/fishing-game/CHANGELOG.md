@@ -1,14 +1,12 @@
 # Changelog
 
-## 0.1.0-alpha.1
+## 0.1.0-alpha.2
 
-- Created a Minecraft 26.2 Fabric project skeleton.
-- Added server-authoritative per-player fishing sessions.
-- Added cast -> water validation -> bite -> hold/release reel -> catch/line-break state flow.
-- Added a serverbound held-reel input payload; the client sends input state while the server owns tension/progress/result.
-- Separated hook flight time from bite wait time so long casts do not shorten the bite delay.
-- Added a tiny weighted fish catalog for technical testing.
-- Added pure reel-math unit tests.
-- Kept Essential optional and outside gameplay authority.
-
-Not yet claimed: polished HUD, hooked-fish model, selling, persistent collection/economy, real multiplayer playtest or client visual playtest.
+- Converted project direction from survival-adjacent mod to standalone fishing game.
+- Added persistent catch bag, coins and three-tier rod progression.
+- Expanded catalog to freshwater, coast and deep-sea species pools.
+- Added server-authoritative sell-all and rod purchase actions.
+- Added player-safe Adventure-mode rules and removed survival HUD layers.
+- Added dedicated fishing HUD and catch-bag/rod screen using Kenney CC0 UI assets.
+- Kept Essential optional and external to game-state authority.
+- User-test gate raised: no more tiny technical JARs before a meaningful fishing-game slice.

@@ -1,32 +1,30 @@
-# Third-Party Assets / References
+# Third-party assets and references
 
-No third-party binary asset is bundled in alpha.1.
+## Directly bundled
 
-## Fabric Example Mod
+### Kenney UI Pack
+- Type: directly usable UI asset
+- Source: https://kenney.nl/assets/ui-pack
+- Reproducible mirror: https://github.com/ereborstudios/kenney-ui-pack
+- License: CC0 1.0 Universal
+- Bundled: grey_panel.png, blue_button00.png, grey_sliderHorizontal.png
+- Purpose: HUD panel, catch-bag panel/button language, reel/progress track
 
-- Source: https://github.com/FabricMC/fabric-example-mod
-- License: CC0-1.0
-- Role: build/project structure reference
-- Used in: Fabric 26.2 Gradle and metadata structure
+## Code / behavior references
 
-## Simple Fishing Overhaul
+### Simple Fishing Overhaul
+- Type: code/behavior reference
+- Repository: https://github.com/pajicadvance/simple-fishing-overhaul
+- License: MIT for mod source
+- Useful reference: real fish lure/caught goals, hook interaction, fishing feel
+- Rule: preserve attribution/license notices for any copied code; prefer adapting concepts unless a file is intentionally reused.
 
-- Source: https://github.com/pajicadvance/simple-fishing-overhaul
-- License: MIT
-- Role: code/reference candidate for later fishing interaction research
-- Bundled now: no
+## Map candidates — not bundled yet
 
-## Better Fishing
+Community fishing maps on PlanetMinecraft, including downloadable fishing lakes/islands/harbors, are useful visual/world references. Download permission does not automatically equal redistribution permission. No community world is bundled until its author/license explicitly permits the intended reuse or permission is obtained.
 
-- Source: https://modrinth.com/mod/better-fishing-system
-- License: All Rights Reserved at time of review
-- Role: visual/game-feel reference only
-- Bundled now: no
-
-## Roblox fishing games
-
-Fisch / Fish It are gameplay-loop references only. No code, model, texture, audio or branded fish design from those games is bundled.
-
-## Gradle wrapper
-
-The wrapper launcher scripts/JAR blob are reused from another project in this same build repository; the distribution URL is project-local and points to Gradle 9.5.1.
+Current direction:
+- seek a redistributable freshwater starter lake
+- seek a redistributable harbor/coast location
+- seek a redistributable deep-sea/island location
+- otherwise use a locally edited base/reference without committing restricted world files
