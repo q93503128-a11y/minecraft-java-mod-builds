@@ -4,37 +4,35 @@ This file is a recovery aid for scheduled development sessions. Current GitHub `
 
 ## Last recovered baseline
 
-- Remote `main` recovered at this run start: `5bc78e58c6b58405faf7bacb49a1f8e110a33380`.
-- Previous test-bearing correctness commit `6f35a4abb901724309edf81e8091647a193919b7`, `Build Riftfrontier` run `34289171362`: full SUCCESS.
+- Remote `main` recovered at this run start: `030c2b022c8b3adb8ead54c5a0c444b8b3ae7b9a`.
+- Concurrent unrelated repository work was preserved. Immediately before the implementation push, remote `main` was `2ddb8ae5e0a6cc0eb5c41ef17f063d6d060f3194`; the Riftfrontier commit was fast-forwarded on top of that exact state.
+- Previous renderer-neutral LBS baseline: implementation `a4322c82b55c1c98b4525d5452f5b0a3a3f088e7`, `Build Riftfrontier` run `34293588299`: full SUCCESS.
 - `Dragon Evolved` remains selected only as Region 01 first-boss geometry/rig derivation source. Source `Atlas` art remains unapproved.
 
 ## Completed in this batch
 
-M3 project-owned linear-blend skinning runtime boundary:
+M3 accepted art-neutral glTF -> runtime skinned-mesh importer:
 
-- Re-read canonical/build/quality/project/roadmap/runtime-mesh handoff state from current remote `main`.
-- Re-checked current NeoForge rendering direction: feature submission supports arbitrary custom geometry through `SubmitNodeCollector.submitCustomGeometry` and a `VertexConsumer` callback, so triangle topology is not itself a blocker.
-- Kept the previous rigid GeckoMesh/GeoBone rejection closed; no weight collapse or cube approximation was restored.
-- Added a renderer-neutral immutable skinned-triangle format with four joint/weight lanes per vertex.
-- Added a deterministic CPU four-influence linear-blend skinning reference implementation preserving indexed triangle topology and UVs.
-- Added fail-closed validation for malformed streams, non-finite values, bad weight sums, out-of-range indices/joints and degenerate skinned normals.
-- Added JUnit regression coverage for two-joint blended deformation, identity pose preservation, invalid joint palette rejection and malformed weight rejection.
-- Added the explicit renderer qualification document and staged custom-geometry path.
+- Added a deterministic embedded-glTF importer that reads actual POSITION, NORMAL, TEXCOORD_0, JOINTS_0, WEIGHTS_0 and triangle index accessors into `SkinnedTriangleMesh` without collapsing blend weights or topology.
+- Added immutable `JointRig` / `SkinnedMeshAsset` runtime boundaries containing joint-node palette, nearest-joint hierarchy, rest-local transforms and inverse-bind matrices.
+- Added glTF column-major MAT4 -> project `Affine3x4` conversion and TRS rest-pose conversion with finite/quaternion/hierarchy validation.
+- Kept the accepted derivation fail-closed: Region 01 production import requires derivation SHA-256 `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac` plus 4437 vertices / 7440 triangles / 46 joints.
+- Explicitly reject non-empty materials/textures/images/samplers, primitive material bindings, external buffers, morph targets, sparse accessors and unsupported primitive/accessor forms.
+- Added JUnit coverage using a real embedded binary glTF fixture for accessor/bufferView decoding, weights/joints, inverse-bind matrix, rest pose, forbidden material rejection and unpinned derivation rejection.
 
 ## Changed systems/files
 
-- `src/main/java/kr/moonseungjun/riftfrontier/combat/presentation/mesh/Affine3x4.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/combat/presentation/mesh/SkinnedTriangleMesh.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/combat/presentation/mesh/LinearBlendSkinner.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/combat/presentation/mesh/SkinnedMeshFrame.java`
-- `src/test/java/kr/moonseungjun/riftfrontier/combat/presentation/mesh/LinearBlendSkinnerTest.java`
-- `docs/REGION_01_BOSS_SKINNED_RENDERER_GATE.md`
+- `src/main/java/kr/moonseungjun/riftfrontier/combat/presentation/mesh/GltfSkinnedMeshImporter.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/combat/presentation/mesh/JointRig.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/combat/presentation/mesh/SkinnedMeshAsset.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/combat/presentation/mesh/Region01BossDerivationContract.java`
+- `src/test/java/kr/moonseungjun/riftfrontier/combat/presentation/mesh/GltfSkinnedMeshImporterTest.java`
 - `docs/AUTOMATION_HANDOFF.md`
 
 ## Verification
 
-- Test-bearing implementation commit: `a4322c82b55c1c98b4525d5452f5b0a3a3f088e7`.
-- `Build Riftfrontier` run `34293588299`: full `SUCCESS`.
+- Test-bearing implementation commit: `934ec45c4a02fcd3c5267103c031cb1b8fb4eb65`.
+- `Build Riftfrontier` run `34297942339`: full `SUCCESS`.
 - CI toolchain: SUCCESS.
 - CI asset intake tool tests: SUCCESS.
 - CI JUnit + clean build: SUCCESS.
@@ -43,34 +41,32 @@ M3 project-owned linear-blend skinning runtime boundary:
 - CI Xvfb client smoke: SUCCESS.
 - CI executable JAR inspection: SUCCESS.
 - CI build report + deliverable/log artifact upload: SUCCESS.
-- Exact Dragon source was not reacquired in this batch: NOT RUN; pinned source SHA remains `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c`.
-- Accepted sanitized derivation reproduction: NOT RUN; pinned derivation SHA remains `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`.
-- Actual derivation -> `SkinnedTriangleMesh` importer: NOT IMPLEMENTED / NOT TESTED.
-- 46-joint inverse-bind/hierarchy animation sampler: NOT IMPLEMENTED / NOT TESTED.
+- Exact accepted 681773-byte sanitized Dragon derivation -> `Region01BossDerivationContract.importAccepted`: NOT RUN in this batch because the accepted glTF binary is not committed as a runtime resource and was not reacquired. The implementation is regression-tested against a synthetic embedded glTF fixture and pinned receipt metadata remains authoritative.
+- Source clip accessor decoding / animation pose sampler: NOT IMPLEMENTED / NOT TESTED.
+- Authoritative semantic/`AttackPattern` state -> animation sampling bridge: NOT IMPLEMENTED / NOT TESTED.
 - Minecraft 26.2 `submitCustomGeometry` entity renderer bridge: NOT IMPLEMENTED / NOT TESTED.
 - Real physical MODEL/ANIMATION resources and `presentation_assets` manifest: NOT IMPLEMENTED.
-- Production texture/material, VFX/sound, scale/hitbox/deformation and field-play: NOT IMPLEMENTED / NOT TESTED.
+- Production texture/material, VFX/sound, scale/hitbox/deformation and human field-play: NOT IMPLEMENTED / NOT TESTED.
 
 ## Do not repeat or revert
 
 - Do not repeat candidate selection/source fingerprint work unless the pinned immutable source check fails.
 - Preserve source SHA `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c` and accepted derivation SHA `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac` unless converter schema/version intentionally changes.
-- Preserve `AttackPattern` as authoritative hit timing and ACTIVE-only damage semantics.
+- Preserve `AttackPattern` as authoritative hit timing and ACTIVE-only damage semantics; do not create a second animation-owned combat clock.
 - Preserve fail-closed presentation resolution, atomic client reload and exact content-generation matching.
-- Do not permit source `Atlas` material/texture/image bytes into production resources.
-- Do not restore legacy GeckoLib 4 paths.
-- Do not silently approximate arbitrary Dragon triangles into cubes/bounding boxes or collapse multi-joint weights to a dominant bone.
-- Keep the rigid GeckoMesh/GeoBone path closed for this Dragon unless verified per-vertex blend-skinning support appears later.
-- Do not add GeckoLib/GeckoMesh just to force a lossy conversion.
-- Preserve the new project-owned four-influence LBS contract; optimize only after profiler evidence and without changing its deformation semantics.
+- Do not permit source `Atlas` material/texture/image bytes into production resources. The importer intentionally rejects them.
+- Do not restore legacy GeckoLib 4 paths or force GeckoMesh/GeoBone onto this asset.
+- Do not approximate arbitrary Dragon triangles into cubes/bounding boxes or collapse multi-joint weights to a dominant bone.
+- Preserve project-owned four-influence LBS deformation semantics; optimize only after profiler evidence.
+- Do not weaken exact derivation SHA/count validation to make a changed asset load.
 - Do not create placeholder production resources or a fake `presentation_assets` manifest.
 - Do not tune M2 pressure/patrol values without field-play evidence.
 
 ## Exact next start point
 
-1. Re-check remote `main`, canonical docs and this handoff. Treat run `34293588299` as the green validation baseline for the renderer-neutral LBS boundary.
-2. Implement a deterministic accepted-derivation importer that produces `SkinnedTriangleMesh` plus 46-joint hierarchy/inverse-bind data and validates the pinned source/derivation contract.
-3. Implement animation pose sampling for the existing source clips/joint hierarchy without creating a second combat clock; presentation sampling follows authoritative semantic/`AttackPattern` state.
-4. Wire immutable `SkinnedMeshFrame` output to a Minecraft 26.2 entity renderer through `SubmitNodeCollector.submitCustomGeometry` and validate actual client compile/smoke.
-5. Only after a real approved material/texture exists, perform scale/culling/UV/deformation/hitbox screen review.
-6. Only after every physical resource exists and the existing atomic/generation gates pass, create the first real `presentation_assets` manifest.
+1. Re-check remote `main`, canonical docs and this handoff. Treat run `34297942339` as the green validation baseline for the accepted glTF -> skinned-mesh/rig importer.
+2. Implement deterministic animation-channel import and pose sampling for the existing eight source clips over the same 46-joint hierarchy, preserving glTF interpolation semantics and normalized shortest-path quaternion interpolation where applicable.
+3. Drive presentation sample time from authoritative semantic/`AttackPattern` state; do not add a second combat clock or move damage timing into animation data.
+4. Feed sampled joint matrices through the existing `LinearBlendSkinner`, then wire immutable `SkinnedMeshFrame` output to Minecraft 26.2 `SubmitNodeCollector.submitCustomGeometry`; validate client compile and Xvfb smoke.
+5. Only after a real approved material/texture exists, perform actual scale/culling/UV/deformation/hitbox screen review and human field-play.
+6. Only after physical model/animation/material/VFX/sound resources exist and existing atomic/generation gates pass, create the first real `presentation_assets` manifest.
