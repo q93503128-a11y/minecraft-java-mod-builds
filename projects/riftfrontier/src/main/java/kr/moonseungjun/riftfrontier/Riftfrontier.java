@@ -5,6 +5,7 @@ import kr.moonseungjun.riftfrontier.content.ContentRuntime;
 import kr.moonseungjun.riftfrontier.content.ContentServerReloadListener;
 import kr.moonseungjun.riftfrontier.content.bootstrap.CoreContentBootstrap;
 import kr.moonseungjun.riftfrontier.diagnostics.RuntimeDiagnosticsCommand;
+import kr.moonseungjun.riftfrontier.entity.RiftfrontierEntityTypes;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionGameplayCommand;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionGameplayEvents;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionRestartReconciler;
@@ -37,6 +38,8 @@ public final class Riftfrontier {
             pack.packId(), pack.schemaVersion(), report.definitionCount(), snapshot.generation(), snapshot.fingerprint()
         );
 
+        RiftfrontierEntityTypes.register(modEventBus);
+        modEventBus.addListener(RiftfrontierEntityTypes::createAttributes);
         RiftfrontierGameTests.register(modEventBus);
         CombatGameTests.register(modEventBus);
         modEventBus.addListener(RiftfrontierNetworking::registerPayloads);
