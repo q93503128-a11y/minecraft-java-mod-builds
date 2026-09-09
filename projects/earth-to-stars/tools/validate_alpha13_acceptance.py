@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 import re
-import sys
 from pathlib import Path
 
 import validate_alpha12_acceptance as alpha12
@@ -43,6 +42,14 @@ def validate_target_runtime() -> None:
         fail("alpha.13 version bump is missing")
 
 
+def validate_texture_slots(model: dict, label: str) -> None:
+    textures = model.get("textures", {})
+    if textures.get("base") != "earth_to_stars:item/kenney_material_base":
+        fail(f"{label}: #base texture slot does not resolve to the packaged Kenney adapter")
+    if textures.get("particle") != "#base":
+        fail(f"{label}: particle texture must alias the validated #base slot")
+
+
 def validate_obj_material_adapter() -> None:
     model_dir = RES / "assets/earth_to_stars/models/item"
     mesh_dir = RES / "assets/earth_to_stars/models/kenney/space_kit"
@@ -74,8 +81,7 @@ def validate_obj_material_adapter() -> None:
             fail(f"{model_id}: expected lowercase OBJ path {expected_obj}")
         if model.get("mtl_override") != expected_mtl:
             fail(f"{model_id}: expected explicit material override {expected_mtl}")
-        if model.get("textures", {}).get("particle") != "earth_to_stars:item/kenney_material_base":
-            fail(f"{model_id}: material adapter particle texture missing")
+        validate_texture_slots(model, model_id)
         model_ids.add(model["model"])
 
         obj = mesh_dir / obj_name
@@ -87,8 +93,8 @@ def validate_obj_material_adapter() -> None:
         maps = re.findall(r"(?m)^map_Kd\s+(.+)$", body)
         if materials == 0 or len(maps) != materials:
             fail(f"{model_id}: every MTL material must have a diffuse texture slot")
-        if any(value.strip() != "earth_to_stars:item/kenney_material_base" for value in maps):
-            fail(f"{model_id}: MTL points outside the approved Kenney adapter texture")
+        if any(value.strip() != "#base" for value in maps):
+            fail(f"{model_id}: MTL must resolve diffuse colour through the model #base texture slot")
 
     if len(model_ids) != 3:
         fail("starter craft, salvage and interceptor must keep distinct spacecraft meshes")
@@ -98,8 +104,7 @@ def validate_obj_material_adapter() -> None:
         fail("launch craft kit still references the invalid mixed-case OBJ path")
     if launch.get("mtl_override") != "earth_to_stars:models/kenney/space_kit/craft_speedera.mtl":
         fail("launch craft kit material override is missing")
-    if launch.get("textures", {}).get("particle") != "earth_to_stars:item/kenney_material_base":
-        fail("launch craft kit adapter texture is missing")
+    validate_texture_slots(launch, "launch_craft_kit")
 
 
 def main() -> None:
@@ -109,7 +114,7 @@ def main() -> None:
         validate_obj_material_adapter()
     except (OSError, json.JSONDecodeError, AcceptanceError, alpha12.AcceptanceError) as exc:
         raise SystemExit(f"ALPHA.13 ACCEPTANCE VALIDATION FAILED: {exc}") from exc
-    print("ALPHA.13 ACCEPTANCE VALIDATION OK: authoritative ship rescue preserved; lowercase OBJ paths, explicit MTL texture slots, adapter texture and NeoForge 26.2.0.76 target verified")
+    print("ALPHA.13 ACCEPTANCE VALIDATION OK: authoritative ship rescue preserved; lowercase OBJ paths, #base MTL slots, packaged adapter texture and NeoForge 26.2.0.76 target verified")
 
 
 if __name__ == "__main__":
