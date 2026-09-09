@@ -49,8 +49,9 @@ jobs:
           fi
 
           grep -q 'EARTH TO STARS 0.1.0-alpha.13 live-acceptance rescue systems loaded' build/logs/client-resource-smoke.log
+          grep -q 'NeoForge mod loading, version 26.2.0.76, for MC 26.2' build/logs/client-resource-smoke.log
 
-          if grep -Eqi 'Failed to load model earth_to_stars|IdentifierException: Non \[a-z0-9/\._-\] character|Cannot invoke "String\.charAt\(int\)" because "texture" is null|ObjGeometry.*(ERROR|Exception)|Unable to load model.*earth_to_stars|Missing texture.*earth_to_stars' build/logs/client-resource-smoke.log; then
+          if grep -Eqi 'Failed to load model earth_to_stars|IdentifierException: Non \[a-z0-9/\._-\] character|Cannot invoke "String\.charAt\(int\)" because "texture" is null|ObjGeometry.*(ERROR|Exception)|Unable to load model.*earth_to_stars|Missing texture references in model earth_to_stars|Missing texture.*earth_to_stars' build/logs/client-resource-smoke.log; then
             echo 'EARTH TO STARS client model/resource error detected.'
             exit 1
           fi
