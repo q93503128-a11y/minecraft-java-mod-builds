@@ -33,6 +33,30 @@ class M5BattleStageLayoutTest {
     }
 
     @Test
+    void stageHitTestResolvesRenderedSlotsButNotGapsOrOutsidePoints() {
+        UiLayoutMetrics.Rect viewport = UiLayoutMetrics.battleHud(640, 360).reservedWorldViewport();
+        BattleStageLayout.Layout layout = BattleStageLayout.arrange(viewport, 4, 3);
+        BattleStageLayout.Slot enemy = layout.enemies().get(1);
+        BattleStageLayout.Slot player = layout.players().get(2);
+
+        assertEquals(enemy, BattleStageLayout.slotAt(
+                layout,
+                enemy.bounds().x() + enemy.bounds().width() / 2.0D,
+                enemy.bounds().y() + enemy.bounds().height() / 2.0D).orElseThrow());
+        assertEquals(player, BattleStageLayout.slotAt(
+                layout,
+                player.bounds().x() + player.bounds().width() / 2.0D,
+                player.bounds().y() + player.bounds().height() / 2.0D).orElseThrow());
+
+        BattleStageLayout.Slot firstEnemy = layout.enemies().getFirst();
+        BattleStageLayout.Slot secondEnemy = layout.enemies().get(1);
+        double gapX = (firstEnemy.bounds().right() + secondEnemy.bounds().x()) / 2.0D;
+        assertTrue(BattleStageLayout.slotAt(layout, gapX, firstEnemy.bounds().y() + 1.0D).isEmpty());
+        assertTrue(BattleStageLayout.slotAt(layout, viewport.x() - 1.0D, viewport.y()).isEmpty());
+        assertTrue(BattleStageLayout.slotAt(layout, Double.NaN, viewport.y()).isEmpty());
+    }
+
+    @Test
     void stageRejectsCountsOutsideCanonicalBattleLimits() {
         UiLayoutMetrics.Rect viewport = UiLayoutMetrics.battleHud(640, 360).reservedWorldViewport();
         assertThrows(IllegalArgumentException.class, () -> BattleStageLayout.arrange(viewport, 5, 1));

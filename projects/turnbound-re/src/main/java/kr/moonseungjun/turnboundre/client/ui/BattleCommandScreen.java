@@ -12,8 +12,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -261,6 +263,19 @@ public final class BattleCommandScreen extends Screen {
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {}
 
     @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        BattlePresentationModel model = BattleClientState.presentation().orElse(null);
+        if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT && model != null && selectedAction != null) {
+            String stageTargetId = virtualStageTargetAt(model, event.x(), event.y());
+            if (stageTargetId != null) {
+                toggleTarget(model, stageTargetId);
+                return true;
+            }
+        }
+        return super.mouseClicked(event, doubleClick);
+    }
+
+    @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         BattlePresentationModel model = BattleClientState.presentation().orElse(null);
         if (selectedAction == null && model != null && model.awaitingPlayerCommand()) {
@@ -320,10 +335,15 @@ public final class BattleCommandScreen extends Screen {
         }
 
         String hoveredTargetId = null;
-        for (TargetButtonBinding binding : targetButtons) {
-            if (binding.button().isMouseOver(mouseX, mouseY)) {
-                hoveredTargetId = binding.participantId();
-                break;
+        if (model != null && selectedAction != null) {
+            hoveredTargetId = virtualStageTargetAt(model, mouseX, mouseY);
+        }
+        if (hoveredTargetId == null) {
+            for (TargetButtonBinding binding : targetButtons) {
+                if (binding.button().isMouseOver(mouseX, mouseY)) {
+                    hoveredTargetId = binding.participantId();
+                    break;
+                }
             }
         }
         if (model != null && selectedAction != null) {
@@ -351,6 +371,36 @@ public final class BattleCommandScreen extends Screen {
                 BattleCommandSelection.eligibleTargets(model, selectedAction),
                 selectedTargetIds,
                 hoveredTargetId);
+    }
+
+    /**
+     * Maps a pointer position to a virtual participant only after intersecting with the current
+     * server-authored eligible target set. Live world entities stay on the world-marker path.
+     */
+    private String virtualStageTargetAt(BattlePresentationModel model, double mouseX, double mouseY) {
+        if (selectedAction == null || !UiLayoutMetrics.supportsBattleHud(this.width, this.height)) return null;
+        List<BattleNetworkPayloads.SnapshotParticipant> eligible =
+                BattleCommandSelection.eligibleTargets(model, selectedAction);
+        if (eligible.isEmpty()) return null;
+
+        Set<String> eligibleIds = new LinkedHashSet<>();
+        for (BattleNetworkPayloads.SnapshotParticipant participant : eligible) {
+            eligibleIds.add(participant.id());
+        }
+
+        UiLayoutMetrics.Rect viewport = UiLayoutMetrics.battleHud(this.width, this.height).reservedWorldViewport();
+        BattleStageLayout.Layout layout = BattleStageLayout.arrange(
+                viewport, model.playerParty().size(), model.enemies().size());
+        BattleStageLayout.Slot slot = BattleStageLayout.slotAt(layout, mouseX, mouseY).orElse(null);
+        if (slot == null) return null;
+
+        List<BattleNetworkPayloads.SnapshotParticipant> participants =
+                slot.side() == BattleStageLayout.Side.ENEMY ? model.enemies() : model.playerParty();
+        if (slot.participantIndex() >= participants.size()) return null;
+        BattleNetworkPayloads.SnapshotParticipant participant = participants.get(slot.participantIndex());
+
+        if (participant.entityId() != null || !eligibleIds.contains(participant.id())) return null;
+        return participant.id();
     }
 
     private UiLayoutMetrics.Rect commandRegion() {

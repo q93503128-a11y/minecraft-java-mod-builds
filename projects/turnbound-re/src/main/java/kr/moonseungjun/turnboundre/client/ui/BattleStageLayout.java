@@ -2,6 +2,7 @@ package kr.moonseungjun.turnboundre.client.ui;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /** Pure layout math for the virtual battle stage inside the reserved world viewport. */
 public final class BattleStageLayout {
@@ -58,6 +59,26 @@ public final class BattleStageLayout {
                 playerBand,
                 slots(enemyBand, Side.ENEMY, enemyCount),
                 slots(playerBand, Side.PLAYER, playerCount));
+    }
+
+    /**
+     * Resolves pointer input against the exact same participant slots used for stage rendering.
+     * Target legality is intentionally not decided here; callers must still intersect the hit with
+     * the server-authored eligible target set before treating it as interactive.
+     */
+    public static Optional<Slot> slotAt(Layout layout, double x, double y) {
+        if (layout == null || !Double.isFinite(x) || !Double.isFinite(y)) return Optional.empty();
+        for (Slot slot : layout.enemies()) {
+            if (contains(slot.bounds(), x, y)) return Optional.of(slot);
+        }
+        for (Slot slot : layout.players()) {
+            if (contains(slot.bounds(), x, y)) return Optional.of(slot);
+        }
+        return Optional.empty();
+    }
+
+    private static boolean contains(UiLayoutMetrics.Rect bounds, double x, double y) {
+        return x >= bounds.x() && x < bounds.right() && y >= bounds.y() && y < bounds.bottom();
     }
 
     private static List<Slot> slots(UiLayoutMetrics.Rect band, Side side, int count) {
