@@ -1,6 +1,7 @@
 package kr.moonseungjun.turnboundre.client.ui;
 
 import kr.moonseungjun.turnboundre.TurnboundRe;
+import kr.moonseungjun.turnboundre.client.BattleActionTimelineState;
 import kr.moonseungjun.turnboundre.client.BattleClientState;
 import kr.moonseungjun.turnboundre.client.BattlePresentationModel;
 import kr.moonseungjun.turnboundre.client.BattleStageFeedbackState;
@@ -67,12 +68,13 @@ public final class BattleStageHud {
                 .reservedWorldViewport();
         BattleStageLayout.Layout stage = BattleStageLayout.arrange(
                 viewport, model.playerParty().size(), model.enemies().size());
+        BattleActionTimelineState.Cue actionCue = BattleActionTimelineState.cue(model.battleId()).orElse(null);
         Font font = minecraft.font;
 
         ENTITY_CACHE.begin(minecraft.level, model.battleId());
         graphics.enableScissor(viewport.x(), viewport.y(), viewport.right(), viewport.bottom());
-        renderSide(graphics, font, minecraft, model, stage.enemies(), model.enemies(), true);
-        renderSide(graphics, font, minecraft, model, stage.players(), model.playerParty(), false);
+        renderSide(graphics, font, minecraft, model, stage.enemies(), model.enemies(), true, actionCue);
+        renderSide(graphics, font, minecraft, model, stage.players(), model.playerParty(), false, actionCue);
         graphics.disableScissor();
     }
 
@@ -83,13 +85,14 @@ public final class BattleStageHud {
             BattlePresentationModel model,
             List<BattleStageLayout.Slot> slots,
             List<BattleNetworkPayloads.SnapshotParticipant> participants,
-            boolean enemy
+            boolean enemy,
+            BattleActionTimelineState.Cue actionCue
     ) {
         for (BattleStageLayout.Slot slot : slots) {
             if (slot.participantIndex() >= participants.size()) continue;
             BattleNetworkPayloads.SnapshotParticipant participant = participants.get(slot.participantIndex());
             if (participant.entityId() != null) continue;
-            renderParticipant(graphics, font, minecraft, model, slot.bounds(), participant, enemy);
+            renderParticipant(graphics, font, minecraft, model, slot.bounds(), participant, enemy, actionCue);
         }
     }
 
@@ -100,9 +103,11 @@ public final class BattleStageHud {
             BattlePresentationModel model,
             UiLayoutMetrics.Rect slot,
             BattleNetworkPayloads.SnapshotParticipant participant,
-            boolean enemy
+            boolean enemy,
+            BattleActionTimelineState.Cue actionCue
     ) {
-        boolean current = participant.id().equals(model.currentActorId());
+        String presentationActorId = actionCue == null ? model.currentActorId() : actionCue.actorId();
+        boolean current = participant.id().equals(presentationActorId);
         BattleTargetMarkerState.MarkerKind targetMarker = BattleTargetMarkerState.markerForParticipant(
                 model.battleId(), model.revision(), participant.id()).orElse(null);
         int markerOrdinal = BattleTargetMarkerState.markerOrdinalForParticipant(
@@ -142,7 +147,12 @@ public final class BattleStageHud {
             if (visual != null) {
                 int shakeX = feedbackShakeX(feedback);
                 int recoilY = feedbackRecoilY(feedback, enemy);
-                renderEntity(graphics, slot.x() + shakeX, modelTop + recoilY,
+                BattleStageMotion.Offset motion = participant.id().equals(presentationActorId)
+                        ? BattleStageMotion.actorOffset(actionCue, enemy)
+                        : BattleStageMotion.Offset.ZERO;
+                renderEntity(graphics,
+                        slot.x() + shakeX + motion.x(),
+                        modelTop + recoilY + motion.y(),
                         slot.width(), modelBottom - modelTop, visual);
             }
         }

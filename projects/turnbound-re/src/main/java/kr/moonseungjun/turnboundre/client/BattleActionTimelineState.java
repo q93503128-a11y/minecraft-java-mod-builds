@@ -22,11 +22,13 @@ public final class BattleActionTimelineState {
     private static final int MAX_BEATS = 12;
 
     public enum Phase { WINDUP, IMPACT, RECOVERY }
+    public enum MotionStyle { CLOSE, RANGED, CAST, UTILITY }
 
     public record Cue(
             String actorId,
             String actionId,
             List<String> targetIds,
+            MotionStyle motionStyle,
             Phase phase,
             double phaseProgress,
             int beatIndex,
@@ -36,6 +38,7 @@ public final class BattleActionTimelineState {
             if (actorId == null || actorId.isBlank()) throw new IllegalArgumentException("actorId required");
             if (actionId == null || actionId.isBlank()) throw new IllegalArgumentException("actionId required");
             targetIds = targetIds == null ? List.of() : List.copyOf(targetIds);
+            if (motionStyle == null) motionStyle = MotionStyle.UTILITY;
             if (phase == null) throw new IllegalArgumentException("phase required");
             if (!Double.isFinite(phaseProgress)) phaseProgress = 0.0D;
             phaseProgress = Math.max(0.0D, Math.min(1.0D, phaseProgress));
@@ -45,7 +48,7 @@ public final class BattleActionTimelineState {
         }
     }
 
-    private record Beat(String actorId, String actionId, List<String> targetIds) {}
+    private record Beat(String actorId, String actionId, List<String> targetIds, MotionStyle motionStyle) {}
 
     private static final Object LOCK = new Object();
     private static UUID battleId;
@@ -109,7 +112,8 @@ public final class BattleActionTimelineState {
                 progress = (within - WINDUP_NANOS - IMPACT_NANOS) / (double) RECOVERY_NANOS;
             }
             return Optional.of(new Cue(
-                    beat.actorId(), beat.actionId(), beat.targetIds(), phase, progress, beatIndex, beats.size()));
+                    beat.actorId(), beat.actionId(), beat.targetIds(), beat.motionStyle(),
+                    phase, progress, beatIndex, beats.size()));
         }
     }
 
@@ -171,6 +175,18 @@ public final class BattleActionTimelineState {
                 continue;
             }
             if (current == null) continue;
+            if ("ACTION_PRESENTATION".equals(event.type()) && current.actorId.equals(event.actorId())) {
+                String action = detailValue(event.detail(), "action");
+                if (action.isBlank() || current.actionId.equals(action)) {
+                    current.motionStyle = motionStyle(
+                            detailValue(event.detail(), "kind"),
+                            detailValue(event.detail(), "tag"));
+                    for (String target : splitTargets(detailValue(event.detail(), "targets"))) {
+                        current.targetIds.add(target);
+                    }
+                }
+                continue;
+            }
             String target = targetId(event);
             if (!target.isBlank()) current.targetIds.add(target);
         }
@@ -180,18 +196,40 @@ public final class BattleActionTimelineState {
 
     private static void addBeat(List<Beat> out, MutableBeat source) {
         if (out.size() >= MAX_BEATS) return;
-        out.add(new Beat(source.actorId, source.actionId, List.copyOf(source.targetIds)));
+        out.add(new Beat(source.actorId, source.actionId, List.copyOf(source.targetIds), source.motionStyle));
+    }
+
+    private static MotionStyle motionStyle(String kind, String tag) {
+        return switch (tag) {
+            case "MELEE" -> MotionStyle.CLOSE;
+            case "PROJECTILE" -> MotionStyle.RANGED;
+            case "FIRE", "BLAST", "ARCANE", "VOID" -> MotionStyle.CAST;
+            default -> "GUARD".equals(kind) ? MotionStyle.UTILITY : MotionStyle.UTILITY;
+        };
     }
 
     private static String targetId(BattleEvent event) {
-        String detail = event.detail();
-        if (detail == null || detail.isBlank()) return "";
+        return detailValue(event.detail(), "target");
+    }
+
+    private static String detailValue(String detail, String key) {
+        if (detail == null || detail.isBlank() || key == null || key.isBlank()) return "";
+        String prefix = key + "=";
         for (String token : detail.split("\\s+")) {
-            if (token.startsWith("target=") && token.length() > "target=".length()) {
-                return token.substring("target=".length());
+            if (token.startsWith(prefix) && token.length() > prefix.length()) {
+                return token.substring(prefix.length());
             }
         }
         return "";
+    }
+
+    private static List<String> splitTargets(String packed) {
+        if (packed == null || packed.isBlank()) return List.of();
+        List<String> out = new ArrayList<>();
+        for (String value : packed.split(",")) {
+            if (value != null && !value.isBlank()) out.add(value);
+        }
+        return List.copyOf(out);
     }
 
     private static long safeAdd(long value, long delta) {
@@ -209,6 +247,7 @@ public final class BattleActionTimelineState {
         private final String actorId;
         private final String actionId;
         private final Set<String> targetIds = new LinkedHashSet<>();
+        private MotionStyle motionStyle = MotionStyle.UTILITY;
 
         private MutableBeat(String actorId, String actionId) {
             this.actorId = actorId;

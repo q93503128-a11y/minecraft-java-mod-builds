@@ -26,8 +26,12 @@ class M5BattleActionTimelineStateTest {
         UUID battleId = UUID.randomUUID();
         BattleActionTimelineState.acceptEvents(events(battleId, 12L, 4,
                 new BattleEvent(5L, "COMMAND_ACCEPTED", "p1", "turnbound_re:slash"),
+                new BattleEvent(5L, "ACTION_PRESENTATION", "p1",
+                        "action=turnbound_re:slash kind=BASIC tag=MELEE targets=e1"),
                 new BattleEvent(6L, "DAMAGE", "p1", "target=e1 hp=18"),
                 new BattleEvent(9L, "AI_COMMAND", "e1", "turnbound_re:bite"),
+                new BattleEvent(9L, "ACTION_PRESENTATION", "e1",
+                        "action=turnbound_re:bite kind=BASIC tag=MELEE targets=p1"),
                 new BattleEvent(10L, "DAMAGE", "e1", "target=p1 hp=11")), T0);
 
         BattleActionTimelineState.Cue windup = BattleActionTimelineState
@@ -35,6 +39,7 @@ class M5BattleActionTimelineStateTest {
         assertEquals("p1", windup.actorId());
         assertEquals("turnbound_re:slash", windup.actionId());
         assertEquals(List.of("e1"), windup.targetIds());
+        assertEquals(BattleActionTimelineState.MotionStyle.CLOSE, windup.motionStyle());
         assertEquals(BattleActionTimelineState.Phase.WINDUP, windup.phase());
         assertEquals(0, windup.beatIndex());
         assertEquals(2, windup.beatCount());
@@ -48,10 +53,41 @@ class M5BattleActionTimelineStateTest {
         assertEquals("e1", enemy.actorId());
         assertEquals("turnbound_re:bite", enemy.actionId());
         assertEquals(List.of("p1"), enemy.targetIds());
+        assertEquals(BattleActionTimelineState.MotionStyle.CLOSE, enemy.motionStyle());
         assertEquals(1, enemy.beatIndex());
 
         assertFalse(BattleActionTimelineState.isPlaying(
                 battleId, T0 + BattleActionTimelineState.BEAT_NANOS * 2L));
+    }
+
+    @Test
+    void presentationMetadataClassifiesMotionWithoutUsingActionNames() {
+        UUID battleId = UUID.randomUUID();
+        BattleActionTimelineState.acceptEvents(events(battleId, 40L, 20,
+                new BattleEvent(31L, "COMMAND_ACCEPTED", "p1", "anything"),
+                new BattleEvent(31L, "ACTION_PRESENTATION", "p1",
+                        "action=anything kind=SKILL tag=PROJECTILE targets=e1,e2")), T0);
+
+        BattleActionTimelineState.Cue cue = BattleActionTimelineState.cue(battleId, T0 + 1L).orElseThrow();
+        assertEquals(BattleActionTimelineState.MotionStyle.RANGED, cue.motionStyle());
+        assertEquals(List.of("e1", "e2"), cue.targetIds());
+    }
+
+    @Test
+    void castTagsUseCastMotionAndUnknownMetadataStaysUtility() {
+        UUID castBattle = UUID.randomUUID();
+        BattleActionTimelineState.acceptEvents(events(castBattle, 50L, 30,
+                new BattleEvent(41L, "COMMAND_ACCEPTED", "p1", "spell"),
+                new BattleEvent(41L, "ACTION_PRESENTATION", "p1",
+                        "action=spell kind=SKILL tag=ARCANE targets=e1")), T0);
+        assertEquals(BattleActionTimelineState.MotionStyle.CAST,
+                BattleActionTimelineState.cue(castBattle, T0 + 1L).orElseThrow().motionStyle());
+
+        UUID utilityBattle = UUID.randomUUID();
+        BattleActionTimelineState.acceptEvents(events(utilityBattle, 60L, 40,
+                new BattleEvent(51L, "COMMAND_ACCEPTED", "p1", "guard")), T0 + 100L);
+        assertEquals(BattleActionTimelineState.MotionStyle.UTILITY,
+                BattleActionTimelineState.cue(utilityBattle, T0 + 101L).orElseThrow().motionStyle());
     }
 
     @Test

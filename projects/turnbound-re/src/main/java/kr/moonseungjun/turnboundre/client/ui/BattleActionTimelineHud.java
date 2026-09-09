@@ -52,6 +52,9 @@ public final class BattleActionTimelineHud {
         UiLayoutMetrics.Rect bounds = actionBounds(actor.slot().bounds(), actor.enemy(), lineHeight, cue.phase())
                 .orElse(null);
         if (bounds == null) return;
+        BattleStageMotion.Offset motion = BattleStageMotion.actorOffset(cue, actor.enemy());
+        bounds = new UiLayoutMetrics.Rect(
+                bounds.x() + motion.x(), bounds.y() + motion.y(), bounds.width(), bounds.height());
 
         graphics.enableScissor(viewport.x(), viewport.y(), viewport.right(), viewport.bottom());
         UiVisualLanguage.frame(
