@@ -4,10 +4,12 @@ import kr.moonseungjun.riftfrontier.Riftfrontier;
 import kr.moonseungjun.riftfrontier.client.render.Region01BossAnimationPreparation;
 import kr.moonseungjun.riftfrontier.client.render.Region01BossClientRenderRuntime;
 import kr.moonseungjun.riftfrontier.client.render.Region01BossGeometryPreparation;
+import kr.moonseungjun.riftfrontier.client.render.Region01BossMaterialPreparation;
 import kr.moonseungjun.riftfrontier.client.render.Region01BossRuntimeResources;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossAnimationSourceBinding;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationClientAssetRuntime;
 import kr.moonseungjun.riftfrontier.content.ContentRuntime;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
@@ -29,6 +31,8 @@ public final class RiftfrontierClientResources {
         new AtomicReference<>();
     private static final AtomicReference<Region01BossAnimationPreparation.PreparedAnimation> PREPARED_BOSS_ANIMATION =
         new AtomicReference<>();
+    private static final AtomicReference<Region01BossMaterialPreparation.PreparedMaterial> PREPARED_BOSS_MATERIAL =
+        new AtomicReference<>();
 
     private RiftfrontierClientResources() {}
 
@@ -41,10 +45,6 @@ public final class RiftfrontierClientResources {
         return RiftfrontierClientResources::reloadBossPresentationAssets;
     }
 
-    /**
-     * Returns geometry prepared from the currently staged resource-manager snapshot only.
-     * A newer reload/clear turns an older capability stale and removes it on observation.
-     */
     public static Optional<Region01BossGeometryPreparation.PreparedGeometry> preparedBossGeometry() {
         Region01BossGeometryPreparation.PreparedGeometry prepared = PREPARED_BOSS_GEOMETRY.get();
         if (prepared == null) return Optional.empty();
@@ -54,14 +54,11 @@ public final class RiftfrontierClientResources {
         } catch (Region01BossGeometryPreparation.StaleReloadException stale) {
             PREPARED_BOSS_GEOMETRY.compareAndSet(prepared, null);
             PREPARED_BOSS_ANIMATION.set(null);
+            PREPARED_BOSS_MATERIAL.set(null);
             return Optional.empty();
         }
     }
 
-    /**
-     * Resolves one reviewed phase-window binding against the exact animation inventory imported with current geometry.
-     * This does not invent logical keys or timing; callers must supply an already reviewed binding.
-     */
     public static Optional<Region01BossAnimationPreparation.PreparedAnimation> prepareBossAnimation(
         BossAnimationSourceBinding sourceBinding
     ) {
@@ -69,6 +66,7 @@ public final class RiftfrontierClientResources {
         if (geometry.isEmpty()) return Optional.empty();
         try {
             var prepared = Region01BossAnimationPreparation.prepare(geometry.orElseThrow(), sourceBinding);
+            PREPARED_BOSS_MATERIAL.set(null);
             PREPARED_BOSS_ANIMATION.set(prepared);
             if (!prepared.isCurrent()) {
                 PREPARED_BOSS_ANIMATION.compareAndSet(prepared, null);
@@ -76,25 +74,64 @@ public final class RiftfrontierClientResources {
             }
             return Optional.of(prepared);
         } catch (Region01BossGeometryPreparation.StaleReloadException stale) {
+            PREPARED_BOSS_MATERIAL.set(null);
             PREPARED_BOSS_ANIMATION.set(null);
             return Optional.empty();
         }
     }
 
-    /** Returns the current reviewed-animation capability, removing it if its source reload is stale. */
     public static Optional<Region01BossAnimationPreparation.PreparedAnimation> preparedBossAnimation() {
         Region01BossAnimationPreparation.PreparedAnimation prepared = PREPARED_BOSS_ANIMATION.get();
         if (prepared == null) return Optional.empty();
         if (!prepared.isCurrent()) {
             PREPARED_BOSS_ANIMATION.compareAndSet(prepared, null);
+            PREPARED_BOSS_MATERIAL.set(null);
+            return Optional.empty();
+        }
+        return Optional.of(prepared);
+    }
+
+    /**
+     * Verifies a reviewed texture against the exact current reload and binds its reviewed render treatment to the
+     * already prepared animation capability. No production material is synthesized here; callers must supply a
+     * recorded review receipt and the RenderType that receipt approved.
+     */
+    public static Optional<Region01BossMaterialPreparation.PreparedMaterial> prepareBossMaterial(
+        Region01BossMaterialPreparation.MaterialReview review,
+        RenderType reviewedRenderType,
+        int packedOverlay,
+        int packedColor
+    ) throws IOException {
+        var animation = preparedBossAnimation();
+        if (animation.isEmpty()) return Optional.empty();
+        try {
+            var prepared = Region01BossMaterialPreparation.prepare(
+                animation.orElseThrow(), review, reviewedRenderType, packedOverlay, packedColor
+            );
+            PREPARED_BOSS_MATERIAL.set(prepared);
+            if (!prepared.isCurrent()) {
+                PREPARED_BOSS_MATERIAL.compareAndSet(prepared, null);
+                return Optional.empty();
+            }
+            return Optional.of(prepared);
+        } catch (Region01BossMaterialPreparation.StaleMaterialPreparationException stale) {
+            PREPARED_BOSS_MATERIAL.set(null);
+            return Optional.empty();
+        }
+    }
+
+    public static Optional<Region01BossMaterialPreparation.PreparedMaterial> preparedBossMaterial() {
+        Region01BossMaterialPreparation.PreparedMaterial prepared = PREPARED_BOSS_MATERIAL.get();
+        if (prepared == null) return Optional.empty();
+        if (!prepared.isCurrent()) {
+            PREPARED_BOSS_MATERIAL.compareAndSet(prepared, null);
             return Optional.empty();
         }
         return Optional.of(prepared);
     }
 
     private static void reloadBossPresentationAssets(ResourceManager clientResources) {
-        // Bind the complete preparation transaction to this exact resource-manager snapshot before inspecting it.
-        // A newer pack reload invalidates both the old renderer binding and every unfinished preparation capability.
+        PREPARED_BOSS_MATERIAL.set(null);
         PREPARED_BOSS_ANIMATION.set(null);
         PREPARED_BOSS_GEOMETRY.set(null);
         var reloadTicket = Region01BossClientRenderRuntime.beginReload(clientResources);
@@ -136,27 +173,28 @@ public final class RiftfrontierClientResources {
                 );
             }
         } catch (BossPresentationClientAssetRuntime.ResourceValidationException invalid) {
-            PREPARED_BOSS_ANIMATION.set(null);
-            PREPARED_BOSS_GEOMETRY.set(null);
-            Region01BossClientRenderRuntime.clear();
+            clearPreparedPresentation();
             invalid.report().issues().forEach(issue -> Riftfrontier.LOGGER.error(
                 "[boss-presentation-resource] {} {} - {}",
                 issue.code(), issue.logicalKey(), issue.message()
             ));
             throw invalid;
         } catch (IOException invalidGeometry) {
-            PREPARED_BOSS_ANIMATION.set(null);
-            PREPARED_BOSS_GEOMETRY.set(null);
-            Region01BossClientRenderRuntime.clear();
+            clearPreparedPresentation();
             throw new IllegalStateException(
                 "accepted Region 01 boss geometry could not be prepared from the current client resource snapshot",
                 invalidGeometry
             );
         } catch (RuntimeException invalidRuntime) {
-            PREPARED_BOSS_ANIMATION.set(null);
-            PREPARED_BOSS_GEOMETRY.set(null);
-            Region01BossClientRenderRuntime.clear();
+            clearPreparedPresentation();
             throw invalidRuntime;
         }
+    }
+
+    private static void clearPreparedPresentation() {
+        PREPARED_BOSS_MATERIAL.set(null);
+        PREPARED_BOSS_ANIMATION.set(null);
+        PREPARED_BOSS_GEOMETRY.set(null);
+        Region01BossClientRenderRuntime.clear();
     }
 }

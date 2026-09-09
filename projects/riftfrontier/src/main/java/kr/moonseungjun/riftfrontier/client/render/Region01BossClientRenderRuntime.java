@@ -17,15 +17,9 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Atomic client publication seam between an accepted boss runtime asset and the registered entity renderer.
  *
- * <p>A reload is a three-stage transaction: begin against one exact {@link ResourceManager}, stage the physically
- * validated presentation snapshot produced while inspecting that same resource manager, then publish the complete
- * geometry/reviewed-animation/material binding. Starting another reload or clearing the runtime invalidates both
- * published and staged state. Delayed work from an older resource pack therefore cannot resurrect stale resources.</p>
- *
- * <p>The staged capability is intentionally non-forgeable and retains the exact resource-manager object together
- * with the validated asset selection and generation. Geometry, reviewed animation binding, and material preparation
- * can therefore continue from one resource snapshot without passing a free-standing generation number or swapping
- * in a separately validated selection.</p>
+ * <p>A reload is a staged transaction bound to one exact {@link ResourceManager}. Geometry, reviewed animation and
+ * reviewed material must all be prepared from that same reload before renderer publication can succeed. Starting a
+ * newer reload or clearing the runtime invalidates every older capability.</p>
  */
 public final class Region01BossClientRenderRuntime {
     private static final GenerationPublicationSlot<SubmissionBinding> CURRENT = new GenerationPublicationSlot<>();
@@ -37,7 +31,6 @@ public final class Region01BossClientRenderRuntime {
         return CURRENT.current();
     }
 
-    /** Starts a new complete-resource preparation cycle and immediately removes previous staged/published state. */
     public static ReloadTicket beginReload(ResourceManager resourceManager) {
         Objects.requireNonNull(resourceManager, "resourceManager");
         GenerationPublicationSlot.Ticket delegate = CURRENT.beginUpdate();
@@ -45,11 +38,6 @@ public final class Region01BossClientRenderRuntime {
         return new ReloadTicket(delegate, resourceManager);
     }
 
-    /**
-     * Retains a ready physical-resource validation result as the only capability that can later publish this reload.
-     *
-     * @return empty when a newer reload/clear made {@code ticket} stale before staging completed
-     */
     public static Optional<ValidatedReload> stageValidated(
         ReloadTicket ticket,
         BossPresentationClientAssetRuntime.Snapshot assetSnapshot
@@ -70,51 +58,60 @@ public final class Region01BossClientRenderRuntime {
         return Optional.of(candidate);
     }
 
-    /** Returns the currently staged validated reload, if any. */
     public static Optional<ValidatedReload> staged() {
         return Optional.ofNullable(STAGED.get());
     }
 
     /**
-     * Publishes one complete accepted binding only if both geometry and reviewed animation were prepared from the
-     * same current staged reload and {@code pipeline} consumes their exact mesh and animation bridge identities.
+     * Publishes one complete accepted binding only from a reviewed material capability that already retains the exact
+     * prepared animation and geometry from this staged reload. The old free-standing RenderType/overlay/color
+     * publication seam intentionally does not exist: material bytes, render treatment and renderer-visible state must
+     * cross one provenance gate together.
      *
-     * <p>This closes both free-standing provenance seams: a caller cannot validate one accepted Dragon derivation
-     * and publish a pipeline assembled from another mesh, nor can it prepare reviewed phase windows and substitute a
-     * separately constructed animation bridge before publication. Material approval remains an independent explicit
-     * prerequisite and is not inferred here.</p>
-     *
-     * @return {@code false} when a newer reload/clear already invalidated the prepared animation capability
+     * @return {@code false} when a newer reload/clear already invalidated the prepared material capability
      */
     public static boolean publish(
-        Region01BossAnimationPreparation.PreparedAnimation preparedAnimation,
-        BossCustomGeometryRenderPipeline pipeline,
-        RenderType renderType,
-        int packedOverlay,
-        int packedColor
+        Region01BossMaterialPreparation.PreparedMaterial preparedMaterial,
+        BossCustomGeometryRenderPipeline pipeline
     ) {
-        Objects.requireNonNull(preparedAnimation, "preparedAnimation");
+        Objects.requireNonNull(preparedMaterial, "preparedMaterial");
         Objects.requireNonNull(pipeline, "pipeline");
-        Objects.requireNonNull(renderType, "renderType");
 
+        final Region01BossAnimationPreparation.PreparedAnimation preparedAnimation;
         final Region01BossGeometryPreparation.PreparedGeometry preparedGeometry;
         final ValidatedReload reload;
         final Region01BossRuntimeAsset runtimeAsset;
         final BossAnimationSourceBinding reviewedBinding;
+        final Region01BossMaterialPreparation.MaterialReview materialReview;
+        final RenderType renderType;
+        final int packedOverlay;
+        final int packedColor;
         try {
+            preparedAnimation = preparedMaterial.preparedAnimation();
             preparedGeometry = preparedAnimation.preparedGeometry();
-            reload = preparedAnimation.validatedReload();
+            reload = preparedMaterial.validatedReload();
             runtimeAsset = preparedAnimation.runtimeAsset();
             reviewedBinding = preparedAnimation.sourceBinding().requireReviewedPhaseWindows();
-        } catch (Region01BossGeometryPreparation.StaleReloadException stale) {
+            materialReview = preparedMaterial.review();
+            renderType = preparedMaterial.renderType();
+            packedOverlay = preparedMaterial.packedOverlay();
+            packedColor = preparedMaterial.packedColor();
+        } catch (Region01BossGeometryPreparation.StaleReloadException
+                 | Region01BossMaterialPreparation.StaleMaterialPreparationException stale) {
             return false;
         }
+
         if (STAGED.get() != reload) return false;
-        if (preparedAnimation.publicationGeneration() != reload.publicationGeneration()
+        if (preparedMaterial.publicationGeneration() != reload.publicationGeneration()
+            || preparedMaterial.contentGeneration() != reload.contentGeneration()
+            || preparedAnimation.publicationGeneration() != reload.publicationGeneration()
             || preparedAnimation.contentGeneration() != reload.contentGeneration()
             || preparedGeometry.publicationGeneration() != reload.publicationGeneration()
             || preparedGeometry.contentGeneration() != reload.contentGeneration()) {
             throw new IllegalArgumentException("prepared boss presentation generation no longer matches its validated reload");
+        }
+        if (preparedMaterial.preparedAnimation() != preparedAnimation) {
+            throw new IllegalArgumentException("prepared boss material must retain its exact prepared animation capability");
         }
         if (preparedAnimation.preparedGeometry() != preparedGeometry) {
             throw new IllegalArgumentException("prepared boss animation must retain its exact prepared geometry capability");
@@ -135,6 +132,7 @@ public final class Region01BossClientRenderRuntime {
             assetSnapshot.contentGeneration(),
             assetSnapshot.selection().orElseThrow(),
             reviewedBinding,
+            materialReview,
             pipeline,
             renderType,
             packedOverlay,
@@ -145,7 +143,6 @@ public final class Region01BossClientRenderRuntime {
         return published;
     }
 
-    /** Fail-closed lifecycle invalidation. Any staged or in-flight completion from before this call becomes stale. */
     public static void clear() {
         CURRENT.invalidate();
         STAGED.set(null);
@@ -177,7 +174,6 @@ public final class Region01BossClientRenderRuntime {
         );
     }
 
-    /** Opaque reload-generation capability bound to one exact client resource-manager snapshot. */
     public static final class ReloadTicket {
         private final GenerationPublicationSlot.Ticket delegate;
         private final ResourceManager resourceManager;
@@ -192,7 +188,6 @@ public final class Region01BossClientRenderRuntime {
         }
     }
 
-    /** Non-forgeable proof that one exact resource-manager snapshot produced a ready validated asset selection. */
     public static final class ValidatedReload {
         private final GenerationPublicationSlot.Ticket delegate;
         private final ResourceManager resourceManager;
@@ -234,6 +229,7 @@ public final class Region01BossClientRenderRuntime {
         long contentGeneration,
         BossPresentationAssetSelection assetSelection,
         BossAnimationSourceBinding reviewedAnimationBinding,
+        Region01BossMaterialPreparation.MaterialReview materialReview,
         BossCustomGeometryRenderPipeline pipeline,
         RenderType renderType,
         int packedOverlay,
@@ -245,6 +241,7 @@ public final class Region01BossClientRenderRuntime {
             }
             Objects.requireNonNull(assetSelection, "assetSelection");
             Objects.requireNonNull(reviewedAnimationBinding, "reviewedAnimationBinding").requireReviewedPhaseWindows();
+            Objects.requireNonNull(materialReview, "materialReview");
             Objects.requireNonNull(pipeline, "pipeline");
             Objects.requireNonNull(renderType, "renderType");
         }
