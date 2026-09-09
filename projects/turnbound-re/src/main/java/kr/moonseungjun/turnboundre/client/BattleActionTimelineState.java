@@ -24,6 +24,7 @@ public final class BattleActionTimelineState {
     public enum Phase { WINDUP, IMPACT, RECOVERY }
     public enum MotionStyle { CLOSE, RANGED, CAST, UTILITY }
     public enum ImpactStyle { NONE, MELEE, PROJECTILE, FIRE, BLAST, ARCANE, VOID }
+    public enum PresentationStyle { STANDARD, HEAVY, VOLLEY, AREA, RITUAL, RIFT, SLAM }
 
     public record Cue(
             String actorId,
@@ -31,6 +32,7 @@ public final class BattleActionTimelineState {
             List<String> targetIds,
             MotionStyle motionStyle,
             ImpactStyle impactStyle,
+            PresentationStyle presentationStyle,
             Phase phase,
             double phaseProgress,
             int beatIndex,
@@ -42,12 +44,29 @@ public final class BattleActionTimelineState {
             targetIds = targetIds == null ? List.of() : List.copyOf(targetIds);
             if (motionStyle == null) motionStyle = MotionStyle.UTILITY;
             if (impactStyle == null) impactStyle = ImpactStyle.NONE;
+            if (presentationStyle == null) presentationStyle = PresentationStyle.STANDARD;
             if (phase == null) throw new IllegalArgumentException("phase required");
             if (!Double.isFinite(phaseProgress)) phaseProgress = 0.0D;
             phaseProgress = Math.max(0.0D, Math.min(1.0D, phaseProgress));
             if (beatIndex < 0 || beatCount <= 0 || beatIndex >= beatCount) {
                 throw new IllegalArgumentException("invalid beat index/count");
             }
+        }
+
+        /** Compatibility constructor for callers that already provide an impact family. */
+        public Cue(
+                String actorId,
+                String actionId,
+                List<String> targetIds,
+                MotionStyle motionStyle,
+                ImpactStyle impactStyle,
+                Phase phase,
+                double phaseProgress,
+                int beatIndex,
+                int beatCount
+        ) {
+            this(actorId, actionId, targetIds, motionStyle, impactStyle, PresentationStyle.STANDARD,
+                    phase, phaseProgress, beatIndex, beatCount);
         }
 
         /** Compatibility constructor for presentation callers that only care about motion. */
@@ -61,7 +80,7 @@ public final class BattleActionTimelineState {
                 int beatIndex,
                 int beatCount
         ) {
-            this(actorId, actionId, targetIds, motionStyle, ImpactStyle.NONE,
+            this(actorId, actionId, targetIds, motionStyle, ImpactStyle.NONE, PresentationStyle.STANDARD,
                     phase, phaseProgress, beatIndex, beatCount);
         }
     }
@@ -71,7 +90,8 @@ public final class BattleActionTimelineState {
             String actionId,
             List<String> targetIds,
             MotionStyle motionStyle,
-            ImpactStyle impactStyle
+            ImpactStyle impactStyle,
+            PresentationStyle presentationStyle
     ) {}
 
     private static final Object LOCK = new Object();
@@ -137,7 +157,7 @@ public final class BattleActionTimelineState {
             }
             return Optional.of(new Cue(
                     beat.actorId(), beat.actionId(), beat.targetIds(), beat.motionStyle(), beat.impactStyle(),
-                    phase, progress, beatIndex, beats.size()));
+                    beat.presentationStyle(), phase, progress, beatIndex, beats.size()));
         }
     }
 
@@ -210,9 +230,14 @@ public final class BattleActionTimelineState {
             if ("ACTION_PRESENTATION".equals(event.type()) && current.actorId.equals(event.actorId())) {
                 String action = detailValue(event.detail(), "action");
                 if (action.isBlank() || current.actionId.equals(action)) {
+                    String kind = detailValue(event.detail(), "kind");
                     String tag = detailValue(event.detail(), "tag");
-                    current.motionStyle = motionStyle(detailValue(event.detail(), "kind"), tag);
+                    String team = detailValue(event.detail(), "team");
+                    String shape = detailValue(event.detail(), "shape");
+                    int count = positiveInt(detailValue(event.detail(), "count"));
+                    current.motionStyle = motionStyle(kind, tag);
                     current.impactStyle = impactStyle(tag);
+                    current.presentationStyle = presentationStyle(kind, tag, team, shape, count);
                     for (String target : splitTargets(detailValue(event.detail(), "targets"))) {
                         current.targetIds.add(target);
                     }
@@ -233,7 +258,8 @@ public final class BattleActionTimelineState {
                 source.actionId,
                 List.copyOf(source.targetIds),
                 source.motionStyle,
-                source.impactStyle));
+                source.impactStyle,
+                source.presentationStyle));
     }
 
     private static MotionStyle motionStyle(String kind, String tag) {
@@ -257,6 +283,28 @@ public final class BattleActionTimelineState {
         };
     }
 
+    private static PresentationStyle presentationStyle(
+            String kind,
+            String tag,
+            String team,
+            String shape,
+            int count
+    ) {
+        boolean multi = "MULTI".equals(shape) || count > 1;
+        if ("BURST".equals(kind)) {
+            if ("VOID".equals(tag)) return PresentationStyle.RIFT;
+            if ("ARCANE".equals(tag) && "ALLY".equals(team)) return PresentationStyle.RITUAL;
+            if (("PROJECTILE".equals(tag) || "FIRE".equals(tag)) && multi) return PresentationStyle.VOLLEY;
+            if ("BLAST".equals(tag)) return PresentationStyle.AREA;
+            if ("MELEE".equals(tag)) return multi ? PresentationStyle.SLAM : PresentationStyle.HEAVY;
+        }
+        if (("PROJECTILE".equals(tag) || "FIRE".equals(tag)) && multi) return PresentationStyle.VOLLEY;
+        if ("BLAST".equals(tag) && multi) return PresentationStyle.AREA;
+        if ("MELEE".equals(tag) && multi) return PresentationStyle.SLAM;
+        if ("ARCANE".equals(tag) && "ALLY".equals(team) && multi) return PresentationStyle.RITUAL;
+        return PresentationStyle.STANDARD;
+    }
+
     private static String targetId(BattleEvent event) {
         return detailValue(event.detail(), "target");
     }
@@ -270,6 +318,15 @@ public final class BattleActionTimelineState {
             }
         }
         return "";
+    }
+
+    private static int positiveInt(String value) {
+        if (value == null || value.isBlank()) return 0;
+        try {
+            return Math.max(0, Integer.parseInt(value));
+        } catch (NumberFormatException ignored) {
+            return 0;
+        }
     }
 
     private static List<String> splitTargets(String packed) {
@@ -298,6 +355,7 @@ public final class BattleActionTimelineState {
         private final Set<String> targetIds = new LinkedHashSet<>();
         private MotionStyle motionStyle = MotionStyle.UTILITY;
         private ImpactStyle impactStyle = ImpactStyle.NONE;
+        private PresentationStyle presentationStyle = PresentationStyle.STANDARD;
 
         private MutableBeat(String actorId, String actionId) {
             this.actorId = actorId;
