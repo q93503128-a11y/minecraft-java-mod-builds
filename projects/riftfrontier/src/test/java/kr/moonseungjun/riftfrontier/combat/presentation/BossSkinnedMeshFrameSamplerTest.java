@@ -23,7 +23,7 @@ class BossSkinnedMeshFrameSamplerTest {
     @Test
     void deformsAcceptedTopologyAtAuthoritativeSampleTime() {
         BossSkinnedMeshFrameSampler sampler = new BossSkinnedMeshFrameSampler(asset());
-        BossAnimationSampleBridge.Sample source = sample(clip(0, 2.0f), 0.5f, 11L);
+        BossAnimationSampleBridge.Sample source = sample(clip(0, 2.0f), 1.0f, 11L);
 
         BossSkinnedMeshFrameSampler.FrameSample result = sampler.sample(source);
 
@@ -43,8 +43,8 @@ class BossSkinnedMeshFrameSamplerTest {
     void differentAuthoritativeTimesProduceDifferentFramesWithoutInternalClock() {
         BossSkinnedMeshFrameSampler sampler = new BossSkinnedMeshFrameSampler(asset());
 
-        float[] early = sampler.sample(sample(clip(0, 2.0f), 0.25f, 20L)).frame().positions();
-        float[] late = sampler.sample(sample(clip(0, 2.0f), 0.75f, 21L)).frame().positions();
+        float[] early = sampler.sample(sample(clip(0, 2.0f), 0.5f, 20L)).frame().positions();
+        float[] late = sampler.sample(sample(clip(0, 2.0f), 1.5f, 21L)).frame().positions();
 
         assertEquals(0.5f, early[0], EPSILON);
         assertEquals(1.5f, late[0], EPSILON);
