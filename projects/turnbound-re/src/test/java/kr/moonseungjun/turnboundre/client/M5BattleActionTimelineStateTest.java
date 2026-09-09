@@ -27,11 +27,11 @@ class M5BattleActionTimelineStateTest {
         BattleActionTimelineState.acceptEvents(events(battleId, 12L, 4,
                 new BattleEvent(5L, "COMMAND_ACCEPTED", "p1", "turnbound_re:slash"),
                 new BattleEvent(5L, "ACTION_PRESENTATION", "p1",
-                        "action=turnbound_re:slash kind=BASIC tag=MELEE targets=e1"),
+                        "action=turnbound_re:slash kind=BASIC tag=MELEE team=ENEMY shape=SINGLE count=1 targets=e1"),
                 new BattleEvent(6L, "DAMAGE", "p1", "target=e1 hp=18"),
                 new BattleEvent(9L, "AI_COMMAND", "e1", "turnbound_re:bite"),
                 new BattleEvent(9L, "ACTION_PRESENTATION", "e1",
-                        "action=turnbound_re:bite kind=BASIC tag=MELEE targets=p1"),
+                        "action=turnbound_re:bite kind=BASIC tag=MELEE team=ENEMY shape=SINGLE count=1 targets=p1"),
                 new BattleEvent(10L, "DAMAGE", "e1", "target=p1 hp=11")), T0);
 
         BattleActionTimelineState.Cue windup = BattleActionTimelineState
@@ -41,6 +41,7 @@ class M5BattleActionTimelineStateTest {
         assertEquals(List.of("e1"), windup.targetIds());
         assertEquals(BattleActionTimelineState.MotionStyle.CLOSE, windup.motionStyle());
         assertEquals(BattleActionTimelineState.ImpactStyle.MELEE, windup.impactStyle());
+        assertEquals(BattleActionTimelineState.PresentationStyle.STANDARD, windup.presentationStyle());
         assertEquals(BattleActionTimelineState.Phase.WINDUP, windup.phase());
         assertEquals(0, windup.beatIndex());
         assertEquals(2, windup.beatCount());
@@ -69,12 +70,48 @@ class M5BattleActionTimelineStateTest {
         BattleActionTimelineState.acceptEvents(events(battleId, 40L, 20,
                 new BattleEvent(31L, "COMMAND_ACCEPTED", "p1", "anything"),
                 new BattleEvent(31L, "ACTION_PRESENTATION", "p1",
-                        "action=anything kind=SKILL tag=PROJECTILE targets=e1,e2")), T0);
+                        "action=anything kind=SKILL tag=PROJECTILE team=ENEMY shape=MULTI count=2 targets=e1,e2")), T0);
 
         BattleActionTimelineState.Cue cue = BattleActionTimelineState.cue(battleId, T0 + 1L).orElseThrow();
         assertEquals(BattleActionTimelineState.MotionStyle.RANGED, cue.motionStyle());
         assertEquals(BattleActionTimelineState.ImpactStyle.PROJECTILE, cue.impactStyle());
+        assertEquals(BattleActionTimelineState.PresentationStyle.VOLLEY, cue.presentationStyle());
         assertEquals(List.of("e1", "e2"), cue.targetIds());
+    }
+
+    @Test
+    void authoredShapeAndKindProduceDistinctBurstSignaturesWithoutActionIdRules() {
+        UUID heavyBattle = UUID.randomUUID();
+        BattleActionTimelineState.acceptEvents(events(heavyBattle, 41L, 21,
+                new BattleEvent(32L, "COMMAND_ACCEPTED", "p1", "arbitrary_a"),
+                new BattleEvent(32L, "ACTION_PRESENTATION", "p1",
+                        "action=arbitrary_a kind=BURST tag=MELEE team=ENEMY shape=SINGLE count=1 targets=e1")), T0);
+        assertEquals(BattleActionTimelineState.PresentationStyle.HEAVY,
+                BattleActionTimelineState.cue(heavyBattle, T0 + 1L).orElseThrow().presentationStyle());
+
+        UUID areaBattle = UUID.randomUUID();
+        BattleActionTimelineState.acceptEvents(events(areaBattle, 42L, 22,
+                new BattleEvent(33L, "COMMAND_ACCEPTED", "p1", "arbitrary_b"),
+                new BattleEvent(33L, "ACTION_PRESENTATION", "p1",
+                        "action=arbitrary_b kind=BURST tag=BLAST team=ENEMY shape=MULTI count=3 targets=e1,e2,e3")), T0 + 100L);
+        assertEquals(BattleActionTimelineState.PresentationStyle.AREA,
+                BattleActionTimelineState.cue(areaBattle, T0 + 101L).orElseThrow().presentationStyle());
+
+        UUID ritualBattle = UUID.randomUUID();
+        BattleActionTimelineState.acceptEvents(events(ritualBattle, 43L, 23,
+                new BattleEvent(34L, "COMMAND_ACCEPTED", "p1", "arbitrary_c"),
+                new BattleEvent(34L, "ACTION_PRESENTATION", "p1",
+                        "action=arbitrary_c kind=BURST tag=ARCANE team=ALLY shape=MULTI count=3 targets=p1,p2,p3")), T0 + 200L);
+        assertEquals(BattleActionTimelineState.PresentationStyle.RITUAL,
+                BattleActionTimelineState.cue(ritualBattle, T0 + 201L).orElseThrow().presentationStyle());
+
+        UUID riftBattle = UUID.randomUUID();
+        BattleActionTimelineState.acceptEvents(events(riftBattle, 44L, 24,
+                new BattleEvent(35L, "COMMAND_ACCEPTED", "p1", "arbitrary_d"),
+                new BattleEvent(35L, "ACTION_PRESENTATION", "p1",
+                        "action=arbitrary_d kind=BURST tag=VOID team=ENEMY shape=SINGLE count=1 targets=e1")), T0 + 300L);
+        assertEquals(BattleActionTimelineState.PresentationStyle.RIFT,
+                BattleActionTimelineState.cue(riftBattle, T0 + 301L).orElseThrow().presentationStyle());
     }
 
     @Test
@@ -88,6 +125,7 @@ class M5BattleActionTimelineStateTest {
                 .cue(castBattle, T0 + 1L).orElseThrow();
         assertEquals(BattleActionTimelineState.MotionStyle.CAST, cast.motionStyle());
         assertEquals(BattleActionTimelineState.ImpactStyle.ARCANE, cast.impactStyle());
+        assertEquals(BattleActionTimelineState.PresentationStyle.STANDARD, cast.presentationStyle());
 
         UUID utilityBattle = UUID.randomUUID();
         BattleActionTimelineState.acceptEvents(events(utilityBattle, 60L, 40,
@@ -96,6 +134,7 @@ class M5BattleActionTimelineStateTest {
                 .cue(utilityBattle, T0 + 101L).orElseThrow();
         assertEquals(BattleActionTimelineState.MotionStyle.UTILITY, utility.motionStyle());
         assertEquals(BattleActionTimelineState.ImpactStyle.NONE, utility.impactStyle());
+        assertEquals(BattleActionTimelineState.PresentationStyle.STANDARD, utility.presentationStyle());
     }
 
     @Test
