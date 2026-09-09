@@ -1,0 +1,50 @@
+package kr.moonseungjun.turnboundre.client.input;
+
+import com.mojang.blaze3d.platform.InputConstants;
+import kr.moonseungjun.turnboundre.TurnboundRe;
+import kr.moonseungjun.turnboundre.client.ui.TurnboundMenuScreen;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.Identifier;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import org.lwjgl.glfw.GLFW;
+
+/** Single player-facing entry point for TURNBOUND management screens. */
+@EventBusSubscriber(modid = TurnboundRe.MOD_ID, value = Dist.CLIENT)
+public final class TurnboundMenuInput {
+    private static KeyMapping openMenu;
+
+    private TurnboundMenuInput() {}
+
+    @SubscribeEvent
+    public static void onClientTick(ClientTickEvent.Post event) {
+        if (openMenu == null) return;
+        while (openMenu.consumeClick()) {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.player == null || minecraft.level == null || minecraft.gui.screen() != null) continue;
+            minecraft.gui.setScreen(new TurnboundMenuScreen());
+        }
+    }
+
+    @EventBusSubscriber(modid = TurnboundRe.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+    public static final class ModEvents {
+        private ModEvents() {}
+
+        @SubscribeEvent
+        public static void registerKeys(RegisterKeyMappingsEvent event) {
+            KeyMapping.Category category = new KeyMapping.Category(
+                    Identifier.fromNamespaceAndPath(TurnboundRe.MOD_ID, "menu"));
+            event.registerCategory(category);
+            openMenu = new KeyMapping(
+                    "key.turnbound_re.open_menu",
+                    InputConstants.Type.KEYSYM,
+                    GLFW.GLFW_KEY_M,
+                    category);
+            event.register(openMenu);
+        }
+    }
+}
