@@ -29,10 +29,14 @@ public final class BattleActionExecutor {
         if (targetIds == null || targetIds.isEmpty()) throw new IllegalArgumentException("targetIds must not be empty");
         if (battle.state() != BattleState.RESOLVING) throw new IllegalStateException("action execution requires RESOLVING");
 
+        ActionDefinition.Targeting targeting = action.targeting();
         battle.recordEffectEvent("ACTION_PRESENTATION", actorId,
                 "action=" + action.id()
                         + " kind=" + action.kind()
                         + " tag=" + (action.damageTag().isBlank() ? "NONE" : action.damageTag())
+                        + " team=" + targeting.team()
+                        + " shape=" + targeting.shape()
+                        + " count=" + targeting.count()
                         + " targets=" + String.join(",", targetIds));
 
         BattleParticipant actor = battle.participant(actorId);
