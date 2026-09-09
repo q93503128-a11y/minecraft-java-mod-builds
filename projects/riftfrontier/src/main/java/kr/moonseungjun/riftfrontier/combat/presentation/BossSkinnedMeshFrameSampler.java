@@ -24,6 +24,17 @@ public final class BossSkinnedMeshFrameSampler {
         this.asset = Objects.requireNonNull(asset, "asset");
     }
 
+    /**
+     * Exact immutable mesh/rig source consumed by this sampler.
+     *
+     * <p>This is intentionally exposed read-only so higher-level publication gates can prove that a renderer pipeline
+     * was assembled from the exact accepted geometry prepared from the current resource reload, instead of from a
+     * separately imported or stale mesh.</p>
+     */
+    public SkinnedMeshAsset asset() {
+        return asset;
+    }
+
     public FrameSample sample(BossAnimationSampleBridge.Sample authoritativeSample) {
         Objects.requireNonNull(authoritativeSample, "authoritativeSample");
 
