@@ -1,0 +1,47 @@
+name: Stage Riftfrontier Region 01 Boss Runtime
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/riftfrontier-stage-region01-boss-runtime.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SOURCE_URL: https://raw.githubusercontent.com/laoniutoushx/TD-demo-2024-04-03/87051774343f2a0df215639e8674178437228b71/Asserts/Models/ulimate%20monster/glTF/Dragon_Evolved.gltf
+  SOURCE_SHA256: 39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c
+  DERIVATION_SHA256: ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reacquire exact accepted source
+        working-directory: projects/riftfrontier
+        run: |
+          mkdir -p build/region01-boss-runtime
+          curl --fail --location --retry 3 --output build/region01-boss-runtime/Dragon_Evolved.gltf "$SOURCE_URL"
+          printf '%s  %s\n' "$SOURCE_SHA256" build/region01-boss-runtime/Dragon_Evolved.gltf | sha256sum --check --strict
+      - name: Rebuild deterministic art-neutral derivation
+        working-directory: projects/riftfrontier
+        run: |
+          python3 tools/convert_region01_boss_geometry.py \
+            --contract assets/sources/region_01_boss_dragon_evolved.acceptance.json \
+            --source build/region01-boss-runtime/Dragon_Evolved.gltf \
+            --output build/region01-boss-runtime/region_01_boss_dragon_evolved.sanitized.v1.gltf \
+            --provenance build/region01-boss-runtime/region_01_boss_dragon_evolved.sanitized.v1.provenance.json
+          printf '%s  %s\n' "$DERIVATION_SHA256" build/region01-boss-runtime/region_01_boss_dragon_evolved.sanitized.v1.gltf | sha256sum --check --strict
+      - name: Upload exact verified derivation
+        uses: actions/upload-artifact@v4
+        with:
+          name: riftfrontier-region01-boss-runtime-derivation
+          path: |
+            projects/riftfrontier/build/region01-boss-runtime/region_01_boss_dragon_evolved.sanitized.v1.gltf
+            projects/riftfrontier/build/region01-boss-runtime/region_01_boss_dragon_evolved.sanitized.v1.provenance.json
+          if-no-files-found: error
+          retention-days: 1
