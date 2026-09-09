@@ -13,20 +13,32 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class BossAnimationSourceBindingTest {
     @Test
-    void resolvesOnlyExplicitVerifiedSourceClipNames() {
+    void resolvesOnlyExplicitVisuallyReviewedVerifiedSourceClipNames() {
         AnimationClip punch = clip("Punch");
         AnimationClipInventory inventory = AnimationClipInventory.fromImported(List.of(punch));
         ContentId logical = ContentId.rift("boss/region_01/attack/active");
-        BossAnimationSourceBinding binding = new BossAnimationSourceBinding(Map.of(logical, "Punch"));
+        BossAnimationMotionReview review = approvedReview("Punch");
+        BossAnimationSourceBinding binding = new BossAnimationSourceBinding(review, Map.of(logical, "Punch"));
 
         assertSame(punch, binding.resolve(inventory).get(logical));
         new BossAnimationSampleBridge(binding, inventory);
     }
 
     @Test
-    void rejectsBindingToSourceClipThatWasNotImported() {
+    void rejectsBindingWithoutVisualMotionReviewEvenWhenClipExists() {
+        AnimationClipInventory inventory = AnimationClipInventory.fromImported(List.of(clip("Headbutt")));
+        BossAnimationMotionReview review = approvedReview("Punch");
+
+        assertThrows(IllegalArgumentException.class, () -> new BossAnimationSourceBinding(review, Map.of(
+            ContentId.rift("boss/region_01/attack/active"), "Headbutt"
+        )));
+    }
+
+    @Test
+    void rejectsBindingToReviewedSourceClipThatWasNotImported() {
         AnimationClipInventory inventory = AnimationClipInventory.fromImported(List.of(clip("Punch")));
-        BossAnimationSourceBinding binding = new BossAnimationSourceBinding(Map.of(
+        BossAnimationMotionReview review = approvedReview("Headbutt");
+        BossAnimationSourceBinding binding = new BossAnimationSourceBinding(review, Map.of(
             ContentId.rift("boss/region_01/attack/active"), "Headbutt"
         ));
 
@@ -36,9 +48,35 @@ class BossAnimationSourceBindingTest {
 
     @Test
     void rejectsBlankSourceClipName() {
-        assertThrows(IllegalArgumentException.class, () -> new BossAnimationSourceBinding(Map.of(
+        BossAnimationMotionReview review = approvedReview("Punch");
+        assertThrows(IllegalArgumentException.class, () -> new BossAnimationSourceBinding(review, Map.of(
             ContentId.rift("boss/region_01/attack/active"), " "
         )));
+    }
+
+    @Test
+    void rejectsMismatchedOrIncompleteReviewEvidence() {
+        assertThrows(IllegalArgumentException.class, () -> new BossAnimationMotionReview(Map.of(
+            "Punch",
+            new BossAnimationMotionReview.ApprovedClip("Headbutt", "capture-01", "forward head strike")
+        )));
+        assertThrows(IllegalArgumentException.class, () -> new BossAnimationMotionReview.ApprovedClip(
+            "Punch", " ", "forelimb strike with recovery"
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new BossAnimationMotionReview.ApprovedClip(
+            "Punch", "capture-01", " "
+        ));
+    }
+
+    private static BossAnimationMotionReview approvedReview(String sourceClipName) {
+        return new BossAnimationMotionReview(Map.of(
+            sourceClipName,
+            new BossAnimationMotionReview.ApprovedClip(
+                sourceClipName,
+                "fixture-motion-capture:" + sourceClipName,
+                "fixture-observed motion for " + sourceClipName
+            )
+        ));
     }
 
     private static AnimationClip clip(String name) {

@@ -9,15 +9,21 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Explicit logical-animation-key -> verified imported source-clip-name binding.
+ * Explicit logical-animation-key -> visually reviewed, verified imported source-clip-name binding.
  *
  * <p>This type intentionally does not infer mappings from similar names. A production binding is valid only when
- * every named source clip exists in the already-verified imported inventory.</p>
+ * every named source clip has explicit visual motion-review evidence and exists in the already-verified imported
+ * inventory.</p>
  */
 public final class BossAnimationSourceBinding {
+    private final BossAnimationMotionReview motionReview;
     private final Map<ContentId, String> sourceClipByLogicalKey;
 
-    public BossAnimationSourceBinding(Map<ContentId, String> sourceClipByLogicalKey) {
+    public BossAnimationSourceBinding(
+        BossAnimationMotionReview motionReview,
+        Map<ContentId, String> sourceClipByLogicalKey
+    ) {
+        this.motionReview = Objects.requireNonNull(motionReview, "motionReview");
         Objects.requireNonNull(sourceClipByLogicalKey, "sourceClipByLogicalKey");
         if (sourceClipByLogicalKey.isEmpty()) {
             throw new IllegalArgumentException("boss animation source binding must not be empty");
@@ -28,6 +34,7 @@ public final class BossAnimationSourceBinding {
             if (sourceClipName == null || sourceClipName.isBlank()) {
                 throw new IllegalArgumentException("source clip name must be non-blank for " + logicalKey);
             }
+            motionReview.requireApproved(sourceClipName);
             copy.put(logicalKey, sourceClipName);
         });
         this.sourceClipByLogicalKey = Map.copyOf(copy);
@@ -36,10 +43,15 @@ public final class BossAnimationSourceBinding {
     public Map<ContentId, AnimationClip> resolve(AnimationClipInventory verifiedInventory) {
         Objects.requireNonNull(verifiedInventory, "verifiedInventory");
         Map<ContentId, AnimationClip> resolved = new LinkedHashMap<>();
-        sourceClipByLogicalKey.forEach((logicalKey, sourceClipName) ->
-            resolved.put(logicalKey, verifiedInventory.requireClip(sourceClipName))
-        );
+        sourceClipByLogicalKey.forEach((logicalKey, sourceClipName) -> {
+            motionReview.requireApproved(sourceClipName);
+            resolved.put(logicalKey, verifiedInventory.requireClip(sourceClipName));
+        });
         return Map.copyOf(resolved);
+    }
+
+    public BossAnimationMotionReview motionReview() {
+        return motionReview;
     }
 
     public Map<ContentId, String> sourceClipByLogicalKey() {
