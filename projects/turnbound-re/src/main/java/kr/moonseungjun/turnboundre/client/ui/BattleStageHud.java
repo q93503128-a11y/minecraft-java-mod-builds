@@ -488,6 +488,7 @@ public final class BattleStageHud {
             if (type == null) return null;
             Entity created = type.create(minecraft.level, EntitySpawnReason.COMMAND);
             if (!(created instanceof LivingEntity living)) return null;
+            VirtualEntityRenderIdentity.assign(living);
 
             if (BattleStageCharacterPresentation.usesBow(participant.characterId())) {
                 living.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
