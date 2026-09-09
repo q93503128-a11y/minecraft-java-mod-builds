@@ -4,8 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossSkinnedMeshFrameSampler;
 import kr.moonseungjun.riftfrontier.combat.presentation.mesh.SkinnedMeshFrame;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderType;
 
 import java.util.Objects;
 
