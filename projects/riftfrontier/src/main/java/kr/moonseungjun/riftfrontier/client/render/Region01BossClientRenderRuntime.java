@@ -7,38 +7,53 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Atomic client publication seam between an accepted boss runtime asset and the registered entity renderer.
  *
- * <p>The runtime starts inactive and has no fallback model, texture or material. A future approved resource reload
- * publishes one complete submission binding only after the exact Dragon derivation, inspected logical animation
- * binding and approved RenderType are all available. This prevents a registered entity renderer from silently
- * substituting placeholder art or an independently timed animation path.</p>
+ * <p>The runtime starts inactive and has no fallback model, texture or material. Resource preparation must begin
+ * with {@link #beginReload()} and may only publish with the returned generation-bound ticket. Starting a newer
+ * reload or clearing the runtime invalidates every older ticket, so a delayed asynchronous completion cannot
+ * resurrect stale resources after a newer reload or client lifecycle transition.</p>
  */
 public final class Region01BossClientRenderRuntime {
-    private static final AtomicReference<Optional<SubmissionBinding>> CURRENT = new AtomicReference<>(Optional.empty());
+    private static final GenerationPublicationSlot<SubmissionBinding> CURRENT = new GenerationPublicationSlot<>();
 
     private Region01BossClientRenderRuntime() {}
 
     public static Optional<SubmissionBinding> current() {
-        return CURRENT.get();
+        return CURRENT.current();
     }
 
-    public static SubmissionBinding publish(
+    /**
+     * Starts a new complete-resource preparation cycle and immediately removes any previously published binding.
+     */
+    public static ReloadTicket beginReload() {
+        return new ReloadTicket(CURRENT.beginUpdate());
+    }
+
+    /**
+     * Publishes one complete accepted binding only if {@code ticket} still belongs to the newest reload generation.
+     *
+     * @return {@code false} when a newer reload/clear already invalidated the ticket
+     */
+    public static boolean publish(
+        ReloadTicket ticket,
         BossCustomGeometryRenderPipeline pipeline,
         RenderType renderType,
         int packedOverlay,
         int packedColor
     ) {
+        Objects.requireNonNull(ticket, "ticket");
         SubmissionBinding binding = new SubmissionBinding(pipeline, renderType, packedOverlay, packedColor);
-        CURRENT.set(Optional.of(binding));
-        return binding;
+        return CURRENT.publish(ticket.delegate, binding);
     }
 
+    /**
+     * Fail-closed lifecycle invalidation. Any in-flight reload completion from before this call becomes stale.
+     */
     public static void clear() {
-        CURRENT.set(Optional.empty());
+        CURRENT.invalidate();
     }
 
     public static boolean submit(
@@ -52,7 +67,7 @@ public final class Region01BossClientRenderRuntime {
         Objects.requireNonNull(entityUuid, "entityUuid");
         Objects.requireNonNull(poseStack, "poseStack");
         Objects.requireNonNull(collector, "collector");
-        Optional<SubmissionBinding> binding = CURRENT.get();
+        Optional<SubmissionBinding> binding = CURRENT.current();
         if (binding.isEmpty()) return false;
         SubmissionBinding active = binding.orElseThrow();
         return active.pipeline().submitCurrent(
@@ -65,6 +80,19 @@ public final class Region01BossClientRenderRuntime {
             active.packedOverlay(),
             active.packedColor()
         );
+    }
+
+    /** Opaque reload-generation capability. Tickets cannot be manufactured from generation numbers. */
+    public static final class ReloadTicket {
+        private final GenerationPublicationSlot.Ticket delegate;
+
+        private ReloadTicket(GenerationPublicationSlot.Ticket delegate) {
+            this.delegate = Objects.requireNonNull(delegate, "delegate");
+        }
+
+        public long generation() {
+            return delegate.generation();
+        }
     }
 
     public record SubmissionBinding(
