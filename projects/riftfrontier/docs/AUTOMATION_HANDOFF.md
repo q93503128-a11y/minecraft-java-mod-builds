@@ -33,13 +33,16 @@ M3 project-owned linear-blend skinning runtime boundary:
 
 ## Verification
 
-- Pre-push static contract review: COMPLETE.
-- New JUnit regression cases: committed; CI result must be checked before claiming SUCCESS.
-- Clean Gradle build: PENDING CI after push.
-- Required native GameTest: PENDING CI after push.
-- Dedicated server smoke: PENDING CI after push.
-- Xvfb client smoke: PENDING CI after push.
-- Executable JAR inspection/report/artifact: PENDING CI after push.
+- Test-bearing implementation commit: `a4322c82b55c1c98b4525d5452f5b0a3a3f088e7`.
+- `Build Riftfrontier` run `34293588299`: full `SUCCESS`.
+- CI toolchain: SUCCESS.
+- CI asset intake tool tests: SUCCESS.
+- CI JUnit + clean build: SUCCESS.
+- CI required native GameTest: SUCCESS.
+- CI dedicated server smoke: SUCCESS.
+- CI Xvfb client smoke: SUCCESS.
+- CI executable JAR inspection: SUCCESS.
+- CI build report + deliverable/log artifact upload: SUCCESS.
 - Exact Dragon source was not reacquired in this batch: NOT RUN; pinned source SHA remains `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c`.
 - Accepted sanitized derivation reproduction: NOT RUN; pinned derivation SHA remains `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`.
 - Actual derivation -> `SkinnedTriangleMesh` importer: NOT IMPLEMENTED / NOT TESTED.
@@ -59,12 +62,13 @@ M3 project-owned linear-blend skinning runtime boundary:
 - Do not silently approximate arbitrary Dragon triangles into cubes/bounding boxes or collapse multi-joint weights to a dominant bone.
 - Keep the rigid GeckoMesh/GeoBone path closed for this Dragon unless verified per-vertex blend-skinning support appears later.
 - Do not add GeckoLib/GeckoMesh just to force a lossy conversion.
+- Preserve the new project-owned four-influence LBS contract; optimize only after profiler evidence and without changing its deformation semantics.
 - Do not create placeholder production resources or a fake `presentation_assets` manifest.
 - Do not tune M2 pressure/patrol values without field-play evidence.
 
 ## Exact next start point
 
-1. Re-check remote `main`, canonical docs, this handoff and the CI run triggered by this batch; fix the first real failure if any.
+1. Re-check remote `main`, canonical docs and this handoff. Treat run `34293588299` as the green validation baseline for the renderer-neutral LBS boundary.
 2. Implement a deterministic accepted-derivation importer that produces `SkinnedTriangleMesh` plus 46-joint hierarchy/inverse-bind data and validates the pinned source/derivation contract.
 3. Implement animation pose sampling for the existing source clips/joint hierarchy without creating a second combat clock; presentation sampling follows authoritative semantic/`AttackPattern` state.
 4. Wire immutable `SkinnedMeshFrame` output to a Minecraft 26.2 entity renderer through `SubmitNodeCollector.submitCustomGeometry` and validate actual client compile/smoke.
