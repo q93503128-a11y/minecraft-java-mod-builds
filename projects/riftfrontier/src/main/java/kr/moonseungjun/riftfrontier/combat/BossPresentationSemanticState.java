@@ -93,6 +93,15 @@ public record BossPresentationSemanticState(
         );
     }
 
+    /** Compatibility factory for API-free contract tests. Production networking always supplies the Minecraft UUID. */
+    public static BossPresentationSemanticState fromFrame(
+        int entityId,
+        long serverGameTick,
+        MinecraftBossCombatAdapter.PresentationFrame frame
+    ) {
+        return fromFrame(entityId, fixtureUuid(entityId), serverGameTick, frame);
+    }
+
     public static BossPresentationSemanticState clear(int entityId, UUID entityUuid, long serverGameTick) {
         return new BossPresentationSemanticState(
             entityId, entityUuid, serverGameTick, false, 0, "", "", 0.0D, "", "", List.of(), false
