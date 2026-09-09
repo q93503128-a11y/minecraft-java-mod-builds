@@ -7,10 +7,11 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Atomic client-side publication boundary for physically validated boss presentation assets.
  *
- * <p>A resource-pack reload first validates the complete selected manifest against the candidate client
- * resource manager. Publication happens with one atomic swap only after every selected resource is present.
- * Failed validation leaves the previously published selection untouched so render code can never observe a
- * half-promoted manifest. A content snapshot with no selected production manifest is a valid inactive state.</p>
+ * <p>A resource-pack reload validates the complete selected manifest against the candidate client resource
+ * manager and publishes one complete snapshot only. A rejected resource pack fails closed by replacing any
+ * previously-ready snapshot with an inactive snapshot for the attempted content generation; render code must
+ * never keep presenting resources that the active pack no longer proves exist. Content generations may be
+ * revalidated at the same value for resource-pack reloads, but they may never move backwards.</p>
  */
 public final class BossPresentationClientAssetRuntime {
     private static final AtomicReference<Snapshot> CURRENT = new AtomicReference<>(Snapshot.inactive(0));
@@ -25,9 +26,10 @@ public final class BossPresentationClientAssetRuntime {
      * Revalidates and atomically publishes one complete client asset snapshot.
      *
      * @throws ResourceValidationException when a selected manifest references any missing physical resource;
-     *         the previously published snapshot is preserved.
+     *         the attempted generation is published inactive before the exception is raised.
+     * @throws StaleContentGenerationException when an older content generation attempts to replace a newer one.
      */
-    public static Snapshot reload(
+    public static synchronized Snapshot reload(
         long contentGeneration,
         Optional<BossPresentationAssetManifest> manifest,
         BossPresentationAssetManifest.ResourceProbe probe
@@ -36,12 +38,18 @@ public final class BossPresentationClientAssetRuntime {
         Objects.requireNonNull(manifest, "manifest");
         Objects.requireNonNull(probe, "probe");
 
+        Snapshot previous = CURRENT.get();
+        if (contentGeneration < previous.contentGeneration()) {
+            throw new StaleContentGenerationException(contentGeneration, previous.contentGeneration());
+        }
+
         Snapshot candidate;
         if (manifest.isEmpty()) {
             candidate = Snapshot.inactive(contentGeneration);
         } else {
             BossPresentationAssetSelection.Result result = BossPresentationAssetSelection.validate(manifest.get(), probe);
             if (!result.ready()) {
+                CURRENT.set(Snapshot.inactive(contentGeneration));
                 throw new ResourceValidationException(result.report());
             }
             candidate = new Snapshot(contentGeneration, result.selection());
@@ -51,7 +59,7 @@ public final class BossPresentationClientAssetRuntime {
         return candidate;
     }
 
-    static void resetForTests() {
+    static synchronized void resetForTests() {
         CURRENT.set(Snapshot.inactive(0));
     }
 
@@ -94,6 +102,26 @@ public final class BossPresentationClientAssetRuntime {
                 .map(issue -> issue.code() + "[" + issue.logicalKey() + "]: " + issue.message())
                 .reduce((left, right) -> left + "; " + right)
                 .orElse("unknown validation failure");
+        }
+    }
+
+    public static final class StaleContentGenerationException extends IllegalStateException {
+        private final long attemptedGeneration;
+        private final long currentGeneration;
+
+        private StaleContentGenerationException(long attemptedGeneration, long currentGeneration) {
+            super("stale boss presentation content generation " + attemptedGeneration
+                + " cannot replace current generation " + currentGeneration);
+            this.attemptedGeneration = attemptedGeneration;
+            this.currentGeneration = currentGeneration;
+        }
+
+        public long attemptedGeneration() {
+            return attemptedGeneration;
+        }
+
+        public long currentGeneration() {
+            return currentGeneration;
         }
     }
 }

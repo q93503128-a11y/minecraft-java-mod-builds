@@ -37,9 +37,9 @@ final class BossPresentationClientAssetRuntimeTest {
     }
 
     @Test
-    void failedCandidatePreservesPreviouslyPublishedSelectionAtomically() {
+    void failedCandidateFailsClosedForAttemptedGeneration() {
         var manifest = manifest();
-        var previous = BossPresentationClientAssetRuntime.reload(3, Optional.of(manifest), (kind, resource) -> true);
+        BossPresentationClientAssetRuntime.reload(3, Optional.of(manifest), (kind, resource) -> true);
 
         var failure = assertThrows(
             BossPresentationClientAssetRuntime.ResourceValidationException.class,
@@ -47,8 +47,37 @@ final class BossPresentationClientAssetRuntimeTest {
         );
 
         assertEquals(1, failure.report().byCode(BossPresentationAssetManifest.Code.MISSING_RESOURCE).size());
-        assertEquals(previous, BossPresentationClientAssetRuntime.current());
-        assertEquals(3, BossPresentationClientAssetRuntime.current().contentGeneration());
+        assertEquals(4, BossPresentationClientAssetRuntime.current().contentGeneration());
+        assertFalse(BossPresentationClientAssetRuntime.current().ready());
+    }
+
+    @Test
+    void sameContentGenerationRevalidatesAgainstCurrentResourcePack() {
+        var manifest = manifest();
+        BossPresentationClientAssetRuntime.reload(5, Optional.of(manifest), (kind, resource) -> true);
+
+        assertThrows(
+            BossPresentationClientAssetRuntime.ResourceValidationException.class,
+            () -> BossPresentationClientAssetRuntime.reload(5, Optional.of(manifest), (kind, resource) -> false)
+        );
+
+        assertEquals(5, BossPresentationClientAssetRuntime.current().contentGeneration());
+        assertFalse(BossPresentationClientAssetRuntime.current().ready());
+    }
+
+    @Test
+    void staleContentGenerationCannotReplaceNewerPublication() {
+        var manifest = manifest();
+        var current = BossPresentationClientAssetRuntime.reload(8, Optional.of(manifest), (kind, resource) -> true);
+
+        var stale = assertThrows(
+            BossPresentationClientAssetRuntime.StaleContentGenerationException.class,
+            () -> BossPresentationClientAssetRuntime.reload(7, Optional.empty(), (kind, resource) -> false)
+        );
+
+        assertEquals(7, stale.attemptedGeneration());
+        assertEquals(8, stale.currentGeneration());
+        assertEquals(current, BossPresentationClientAssetRuntime.current());
         assertTrue(BossPresentationClientAssetRuntime.current().ready());
     }
 

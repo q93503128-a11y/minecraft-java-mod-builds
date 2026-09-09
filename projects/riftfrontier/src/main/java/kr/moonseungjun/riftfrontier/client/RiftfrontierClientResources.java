@@ -1,6 +1,7 @@
 package kr.moonseungjun.riftfrontier.client;
 
 import kr.moonseungjun.riftfrontier.Riftfrontier;
+import kr.moonseungjun.riftfrontier.client.render.Region01BossClientRenderRuntime;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationClientAssetRuntime;
 import kr.moonseungjun.riftfrontier.content.ContentRuntime;
 import net.minecraft.resources.Identifier;
@@ -29,6 +30,11 @@ public final class RiftfrontierClientResources {
     }
 
     private static void reloadBossPresentationAssets(ResourceManager clientResources) {
+        // A resource-pack transition invalidates every geometry/material binding produced from the previous pack
+        // before the new pack is inspected. The ticket is intentionally not retained until the approved Region 01
+        // runtime-asset/material loader is wired here; no old or partial custom-geometry binding may survive reload.
+        Region01BossClientRenderRuntime.beginReload();
+
         var content = ContentRuntime.requireCurrent();
         try {
             var published = BossPresentationClientAssetRuntime.reload(
