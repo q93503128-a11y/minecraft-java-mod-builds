@@ -1,0 +1,218 @@
+package kr.moonseungjun.turnboundre.client;
+
+import kr.moonseungjun.turnboundre.battle.BattleEvent;
+import kr.moonseungjun.turnboundre.network.BattleNetworkPayloads;
+
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+/**
+ * Presentation-only action timeline reconstructed from authoritative server battle events.
+ * It never predicts damage, targeting or turn order; it only spaces already-published actions into readable beats.
+ */
+public final class BattleActionTimelineState {
+    static final long WINDUP_NANOS = 130_000_000L;
+    static final long IMPACT_NANOS = 150_000_000L;
+    static final long RECOVERY_NANOS = 170_000_000L;
+    static final long BEAT_NANOS = WINDUP_NANOS + IMPACT_NANOS + RECOVERY_NANOS;
+    private static final int MAX_BEATS = 12;
+
+    public enum Phase { WINDUP, IMPACT, RECOVERY }
+
+    public record Cue(
+            String actorId,
+            String actionId,
+            List<String> targetIds,
+            Phase phase,
+            double phaseProgress,
+            int beatIndex,
+            int beatCount
+    ) {
+        public Cue {
+            if (actorId == null || actorId.isBlank()) throw new IllegalArgumentException("actorId required");
+            if (actionId == null || actionId.isBlank()) throw new IllegalArgumentException("actionId required");
+            targetIds = targetIds == null ? List.of() : List.copyOf(targetIds);
+            if (phase == null) throw new IllegalArgumentException("phase required");
+            if (!Double.isFinite(phaseProgress)) phaseProgress = 0.0D;
+            phaseProgress = Math.max(0.0D, Math.min(1.0D, phaseProgress));
+            if (beatIndex < 0 || beatCount <= 0 || beatIndex >= beatCount) {
+                throw new IllegalArgumentException("invalid beat index/count");
+            }
+        }
+    }
+
+    private record Beat(String actorId, String actionId, List<String> targetIds) {}
+
+    private static final Object LOCK = new Object();
+    private static UUID battleId;
+    private static long resultingRevision = Long.MIN_VALUE;
+    private static int fromIndex = Integer.MIN_VALUE;
+    private static long startedNanos;
+    private static List<Beat> beats = List.of();
+
+    private BattleActionTimelineState() {}
+
+    public static void acceptEvents(BattleNetworkPayloads.DecodedEvents decoded) {
+        acceptEvents(decoded, System.nanoTime());
+    }
+
+    static void acceptEvents(BattleNetworkPayloads.DecodedEvents decoded, long nowNanos) {
+        if (decoded == null) return;
+        List<Beat> parsed = parseBeats(decoded.events());
+        if (parsed.isEmpty()) return;
+
+        synchronized (LOCK) {
+            boolean sameBattle = decoded.battleId().equals(battleId);
+            if (sameBattle && decoded.resultingRevision() < resultingRevision) return;
+            if (sameBattle && decoded.resultingRevision() == resultingRevision && decoded.fromIndex() <= fromIndex) return;
+
+            battleId = decoded.battleId();
+            resultingRevision = decoded.resultingRevision();
+            fromIndex = decoded.fromIndex();
+            startedNanos = nowNanos;
+            beats = parsed.size() <= MAX_BEATS ? List.copyOf(parsed) : List.copyOf(parsed.subList(0, MAX_BEATS));
+        }
+    }
+
+    public static Optional<Cue> cue(UUID expectedBattleId) {
+        return cue(expectedBattleId, System.nanoTime());
+    }
+
+    static Optional<Cue> cue(UUID expectedBattleId, long nowNanos) {
+        if (expectedBattleId == null) return Optional.empty();
+        synchronized (LOCK) {
+            if (!expectedBattleId.equals(battleId) || beats.isEmpty()) return Optional.empty();
+            long elapsed = Math.max(0L, nowNanos - startedNanos);
+            long total = safeMultiply(BEAT_NANOS, beats.size());
+            if (elapsed >= total) {
+                beats = List.of();
+                return Optional.empty();
+            }
+
+            int beatIndex = (int) Math.min(beats.size() - 1L, elapsed / BEAT_NANOS);
+            long within = elapsed - safeMultiply(BEAT_NANOS, beatIndex);
+            Beat beat = beats.get(beatIndex);
+            Phase phase;
+            double progress;
+            if (within < WINDUP_NANOS) {
+                phase = Phase.WINDUP;
+                progress = within / (double) WINDUP_NANOS;
+            } else if (within < WINDUP_NANOS + IMPACT_NANOS) {
+                phase = Phase.IMPACT;
+                progress = (within - WINDUP_NANOS) / (double) IMPACT_NANOS;
+            } else {
+                phase = Phase.RECOVERY;
+                progress = (within - WINDUP_NANOS - IMPACT_NANOS) / (double) RECOVERY_NANOS;
+            }
+            return Optional.of(new Cue(
+                    beat.actorId(), beat.actionId(), beat.targetIds(), phase, progress, beatIndex, beats.size()));
+        }
+    }
+
+    public static boolean isPlaying(UUID expectedBattleId) {
+        return cue(expectedBattleId).isPresent();
+    }
+
+    static boolean isPlaying(UUID expectedBattleId, long nowNanos) {
+        return cue(expectedBattleId, nowNanos).isPresent();
+    }
+
+    /** Remaining delay before this participant's first authoritative impact beat; zero if no direct target event names it. */
+    public static long firstImpactDelayNanos(UUID expectedBattleId, String participantId) {
+        return firstImpactDelayNanos(expectedBattleId, participantId, System.nanoTime());
+    }
+
+    static long firstImpactDelayNanos(UUID expectedBattleId, String participantId, long nowNanos) {
+        if (expectedBattleId == null || participantId == null || participantId.isBlank()) return 0L;
+        synchronized (LOCK) {
+            if (!expectedBattleId.equals(battleId) || beats.isEmpty()) return 0L;
+            for (int index = 0; index < beats.size(); index++) {
+                if (beats.get(index).targetIds().contains(participantId)) {
+                    long impactOffset = safeAdd(safeMultiply(BEAT_NANOS, index), WINDUP_NANOS);
+                    long impactAt = safeAdd(startedNanos, impactOffset);
+                    return Math.max(0L, impactAt - nowNanos);
+                }
+            }
+            return 0L;
+        }
+    }
+
+    public static void beginBattle(UUID nextBattleId) {
+        synchronized (LOCK) {
+            if (nextBattleId != null && nextBattleId.equals(battleId)) return;
+            battleId = nextBattleId;
+            resultingRevision = Long.MIN_VALUE;
+            fromIndex = Integer.MIN_VALUE;
+            startedNanos = 0L;
+            beats = List.of();
+        }
+    }
+
+    public static void clear() {
+        beginBattle(null);
+    }
+
+    private static List<Beat> parseBeats(List<BattleEvent> events) {
+        if (events == null || events.isEmpty()) return List.of();
+        List<Beat> out = new ArrayList<>();
+        MutableBeat current = null;
+        for (BattleEvent event : events) {
+            if (event == null) continue;
+            if ("COMMAND_ACCEPTED".equals(event.type()) || "AI_COMMAND".equals(event.type())) {
+                if (current != null) addBeat(out, current);
+                current = event.actorId() == null || event.actorId().isBlank()
+                        || event.detail() == null || event.detail().isBlank()
+                        ? null
+                        : new MutableBeat(event.actorId(), event.detail());
+                continue;
+            }
+            if (current == null) continue;
+            String target = targetId(event);
+            if (!target.isBlank()) current.targetIds.add(target);
+        }
+        if (current != null) addBeat(out, current);
+        return List.copyOf(out);
+    }
+
+    private static void addBeat(List<Beat> out, MutableBeat source) {
+        if (out.size() >= MAX_BEATS) return;
+        out.add(new Beat(source.actorId, source.actionId, List.copyOf(source.targetIds)));
+    }
+
+    private static String targetId(BattleEvent event) {
+        String detail = event.detail();
+        if (detail == null || detail.isBlank()) return "";
+        for (String token : detail.split("\\s+")) {
+            if (token.startsWith("target=") && token.length() > "target=".length()) {
+                return token.substring("target=".length());
+            }
+        }
+        return "";
+    }
+
+    private static long safeAdd(long value, long delta) {
+        if (delta > 0L && value > Long.MAX_VALUE - delta) return Long.MAX_VALUE;
+        return value + delta;
+    }
+
+    private static long safeMultiply(long value, long multiplier) {
+        if (value <= 0L || multiplier <= 0L) return 0L;
+        if (value > Long.MAX_VALUE / multiplier) return Long.MAX_VALUE;
+        return value * multiplier;
+    }
+
+    private static final class MutableBeat {
+        private final String actorId;
+        private final String actionId;
+        private final Set<String> targetIds = new LinkedHashSet<>();
+
+        private MutableBeat(String actorId, String actionId) {
+            this.actorId = actorId;
+            this.actionId = actionId;
+        }
+    }
+}

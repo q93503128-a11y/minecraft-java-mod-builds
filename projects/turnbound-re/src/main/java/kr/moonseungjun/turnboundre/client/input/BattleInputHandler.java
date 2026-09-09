@@ -1,6 +1,7 @@
 package kr.moonseungjun.turnboundre.client.input;
 
 import kr.moonseungjun.turnboundre.TurnboundRe;
+import kr.moonseungjun.turnboundre.client.BattleActionTimelineState;
 import kr.moonseungjun.turnboundre.client.BattleClientState;
 import kr.moonseungjun.turnboundre.client.BattlePresentationModel;
 import kr.moonseungjun.turnboundre.client.ui.BattleCommandScreen;
@@ -30,6 +31,7 @@ public final class BattleInputHandler {
             return;
         }
         if (!model.awaitingPlayerCommand()) return;
+        if (BattleActionTimelineState.isPlaying(model.battleId())) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.level == null || minecraft.gui.screen() != null) return;
         if (model.battleId().equals(lastOpenedBattleId) && model.revision() == lastOpenedRevision) return;

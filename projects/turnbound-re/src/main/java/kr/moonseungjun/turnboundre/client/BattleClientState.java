@@ -24,6 +24,9 @@ public final class BattleClientState {
             if (latestSnapshot == null
                     || !latestSnapshot.battleId().equals(decoded.battleId())
                     || decoded.revision() >= latestSnapshot.revision()) {
+                if (latestSnapshot == null || !latestSnapshot.battleId().equals(decoded.battleId())) {
+                    BattleActionTimelineState.beginBattle(decoded.battleId());
+                }
                 BattleStageFeedbackState.acceptSnapshot(latestSnapshot, decoded);
                 latestSnapshot = decoded;
                 if (latestEvents != null && !latestEvents.battleId().equals(decoded.battleId())) {
@@ -41,12 +44,14 @@ public final class BattleClientState {
                 latestSnapshot = null;
                 latestEvents = null;
                 BattleStageFeedbackState.clear();
+                BattleActionTimelineState.clear();
                 return;
             }
             if (latestEvents == null
                     || !latestEvents.battleId().equals(decoded.battleId())
                     || decoded.resultingRevision() >= latestEvents.resultingRevision()) {
                 latestEvents = decoded;
+                BattleActionTimelineState.acceptEvents(decoded);
             }
         }
     }
@@ -74,6 +79,7 @@ public final class BattleClientState {
             latestSnapshot = null;
             latestEvents = null;
             BattleStageFeedbackState.clear();
+            BattleActionTimelineState.clear();
         }
     }
 }

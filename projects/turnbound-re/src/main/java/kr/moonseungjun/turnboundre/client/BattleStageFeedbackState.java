@@ -92,24 +92,26 @@ public final class BattleStageFeedbackState {
                 boolean defeatedTriggered = old.alive() && !participant.alive();
                 if (hpDelta == 0 && poiseDelta == 0 && !exposedTriggered && !defeatedTriggered) continue;
 
+                long impactDelay = BattleActionTimelineState.firstImpactDelayNanos(next.battleId(), participant.id(), nowNanos);
+                long feedbackStart = safeAdd(nowNanos, impactDelay);
                 Entry entry = ENTRIES.computeIfAbsent(participant.id(), ignored -> new Entry());
                 if (hpDelta != 0) {
                     entry.hpDelta = hpDelta;
-                    entry.hpStarted = nowNanos;
-                    entry.hpUntil = safeAdd(nowNanos, HP_FEEDBACK_NANOS);
+                    entry.hpStarted = feedbackStart;
+                    entry.hpUntil = safeAdd(feedbackStart, HP_FEEDBACK_NANOS);
                 }
                 if (poiseDelta != 0) {
                     entry.poiseDelta = poiseDelta;
-                    entry.poiseStarted = nowNanos;
-                    entry.poiseUntil = safeAdd(nowNanos, POISE_FEEDBACK_NANOS);
+                    entry.poiseStarted = feedbackStart;
+                    entry.poiseUntil = safeAdd(feedbackStart, POISE_FEEDBACK_NANOS);
                 }
                 if (exposedTriggered) {
-                    entry.exposedStarted = nowNanos;
-                    entry.exposedUntil = safeAdd(nowNanos, EXPOSED_FEEDBACK_NANOS);
+                    entry.exposedStarted = feedbackStart;
+                    entry.exposedUntil = safeAdd(feedbackStart, EXPOSED_FEEDBACK_NANOS);
                 }
                 if (defeatedTriggered) {
-                    entry.defeatStarted = nowNanos;
-                    entry.defeatUntil = safeAdd(nowNanos, DEFEAT_FEEDBACK_NANOS);
+                    entry.defeatStarted = feedbackStart;
+                    entry.defeatUntil = safeAdd(feedbackStart, DEFEAT_FEEDBACK_NANOS);
                 }
             }
         }
@@ -138,6 +140,7 @@ public final class BattleStageFeedbackState {
                     exposedStrength,
                     defeatStrength);
             if (!cue.active()) {
+                if (entry.hasFutureCue(nowNanos)) return Optional.empty();
                 ENTRIES.remove(participantId);
                 return Optional.empty();
             }
@@ -178,5 +181,12 @@ public final class BattleStageFeedbackState {
         long exposedUntil;
         long defeatStarted;
         long defeatUntil;
+
+        boolean hasFutureCue(long nowNanos) {
+            return (hpStarted > nowNanos && hpUntil > hpStarted)
+                    || (poiseStarted > nowNanos && poiseUntil > poiseStarted)
+                    || (exposedStarted > nowNanos && exposedUntil > exposedStarted)
+                    || (defeatStarted > nowNanos && defeatUntil > defeatStarted);
+        }
     }
 }
