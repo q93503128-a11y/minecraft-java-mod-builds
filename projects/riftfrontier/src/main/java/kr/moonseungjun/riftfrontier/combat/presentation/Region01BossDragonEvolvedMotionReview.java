@@ -15,7 +15,7 @@ import java.util.Set;
  */
 public final class Region01BossDragonEvolvedMotionReview {
     public static final String EVIDENCE_RECEIPT =
-        "assets/sources/region_01_boss_dragon_evolved.animation_audit.json#motion_semantics.reviewed_clips";
+        "assets/sources/region_01_boss_dragon_evolved.motion_review.json#reviewed_clips";
 
     private static final BossAnimationMotionReview REVIEW = buildReview();
 
