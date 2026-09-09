@@ -4,14 +4,13 @@ import net.minecraft.client.renderer.entity.state.EntityRenderState;
 
 /** Renderer snapshot containing only identity needed to resolve the server-authoritative presentation cache. */
 public final class Region01BossRenderState extends EntityRenderState {
-    private int entityId = -1;
+    private final Region01BossRenderIdentity identity = new Region01BossRenderIdentity();
 
     public int entityId() {
-        return entityId;
+        return identity.entityId();
     }
 
     void setEntityId(int entityId) {
-        if (entityId < 0) throw new IllegalArgumentException("entityId must be >= 0");
-        this.entityId = entityId;
+        identity.setEntityId(entityId);
     }
 }
