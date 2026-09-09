@@ -3,6 +3,7 @@ package kr.moonseungjun.riftfrontier.combat.presentation;
 import kr.moonseungjun.riftfrontier.combat.AttackTimeline;
 import kr.moonseungjun.riftfrontier.combat.BossPresentationSemanticState;
 import kr.moonseungjun.riftfrontier.combat.presentation.mesh.AnimationClip;
+import kr.moonseungjun.riftfrontier.combat.presentation.mesh.AnimationClipInventory;
 import kr.moonseungjun.riftfrontier.content.ContentId;
 
 import java.util.LinkedHashMap;
@@ -30,6 +31,14 @@ public final class BossAnimationSampleBridge {
             }
         });
         this.clipsByLogicalKey = Map.copyOf(copy);
+    }
+
+    /**
+     * Production-safe constructor that resolves explicit source-clip names only against a verified imported inventory.
+     * It performs no name guessing and creates no fallback clips.
+     */
+    public BossAnimationSampleBridge(BossAnimationSourceBinding binding, AnimationClipInventory verifiedInventory) {
+        this(Objects.requireNonNull(binding, "binding").resolve(Objects.requireNonNull(verifiedInventory, "verifiedInventory")));
     }
 
     public Optional<Sample> sample(
