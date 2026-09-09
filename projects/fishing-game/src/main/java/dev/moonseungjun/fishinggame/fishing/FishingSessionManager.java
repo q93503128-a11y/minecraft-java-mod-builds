@@ -11,6 +11,7 @@ import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Items;
 
@@ -79,7 +80,7 @@ public final class FishingSessionManager {
             long now = player.level().getGameTime();
 
             if (session.stage == FishingStage.WAITING_FOR_HOOK) {
-                if (player.fishing != null && player.fishing.isInWater()) {
+                if (isHookAtFishingWater(player)) {
                     session.stage = FishingStage.WAITING_FOR_BITE;
                     session.biteTick = now + nextBiteDelay(player);
                     overlay(player, "찌가 물에 닿았다. 입질을 기다리는 중...");
@@ -96,7 +97,7 @@ public final class FishingSessionManager {
                 continue;
             }
 
-            if (!player.fishing.isInWater()) {
+            if (!isHookAtFishingWater(player)) {
                 finish(iterator, player, "찌가 물 밖으로 나왔다.", true);
                 continue;
             }
@@ -115,6 +116,20 @@ public final class FishingSessionManager {
 
             tickHooked(player, session, iterator);
         }
+    }
+
+    private static boolean isHookAtFishingWater(ServerPlayer player) {
+        if (player.fishing == null) return false;
+        if (player.fishing.isInWater()) return true;
+
+        // A vanilla bobber naturally rides on the water surface and can report isInWater()
+        // false for individual ticks while its center is just above the fluid boundary.
+        // Accept water in the bobber's current block or the block directly below it so
+        // surface bobbing does not instantly cancel an otherwise valid cast.
+        var hookPos = player.fishing.blockPosition();
+        var level = player.fishing.level();
+        return level.getFluidState(hookPos).is(FluidTags.WATER)
+                || level.getFluidState(hookPos.below()).is(FluidTags.WATER);
     }
 
     private static int nextBiteDelay(ServerPlayer player) {
