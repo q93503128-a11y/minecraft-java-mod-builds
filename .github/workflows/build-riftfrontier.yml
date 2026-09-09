@@ -123,6 +123,8 @@ jobs:
       - name: Inspect executable JAR
         run: |
           JAR="build/libs/riftfrontier-0.1.0-alpha.1.jar"
+          BOSS_GLTF="assets/riftfrontier/boss_presentation/region_01/dragon_evolved.sanitized.v1.gltf"
+          BOSS_GLTF_SHA256="ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac"
           test -s "$JAR"
           unzip -t "$JAR"
           unzip -l "$JAR" | tee build/jar-contents.txt
@@ -131,6 +133,8 @@ jobs:
           grep -q 'assets/riftfrontier/' build/jar-contents.txt
           grep -q 'data/riftfrontier/' build/jar-contents.txt
           grep -q 'data/riftfrontier/test_instance/authoritative_runtime_state.json' build/jar-contents.txt
+          grep -q "$BOSS_GLTF" build/jar-contents.txt
+          test "$(unzip -p "$JAR" "$BOSS_GLTF" | sha256sum | awk '{print $1}')" = "$BOSS_GLTF_SHA256"
           if grep -q '\.java$' build/jar-contents.txt; then echo 'Java source leaked into JAR'; exit 1; fi
           sha256sum "$JAR" | tee "$JAR.sha256"
       - name: Build report

@@ -40,12 +40,17 @@ This file records external assets and source families considered or used by Rift
 - Format: glTF 2.0
 - Direct source inspection: 1 mesh, 1 material (`Atlas`), 1 skin (`CharacterArmature`), 46 joints, 4,437 vertices, 7,440 triangles, bounds 5.475212574 × 2.857860476 × 2.415597856 source units.
 - Source clips: `Death`, `Fast_Flying`, `Flying_Idle`, `Headbutt`, `HitReact`, `No`, `Punch`, `Yes`
-- Rig capability: independent head/neck, bilateral forelimb/finger chains, bilateral four-segment wing chains and four-segment body chain; source `Punch`/`Headbutt` demonstrate articulated non-rigid attack motion.
+- Rig capability: independent head/neck, bilateral forelimb/finger chains, bilateral four-segment wing chains and four-segment body chain; source animation inventory proves articulated non-rigid motion, but clip names are not accepted as gameplay-semantic proof.
 - Verified conversion receipt: `assets/sources/region_01_boss_dragon_evolved.acceptance.json`.
 - Verified sanitizer output fingerprint: 681,773-byte canonical glTF, SHA-256 `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`; embedded geometry/skin/animation payload 381,212 bytes; 737 accessors and 737 bufferViews retained.
 - Verified art stripping: source image bufferView and primitive material binding plus top-level materials/textures/images/samplers are absent from the sanitized derivation. Source `Atlas` pixels are not accepted as production art.
-- Concrete production use: geometry/rig derivation source for the Region 01 first boss.
-- Explicit non-approval: original `Atlas` texture/style is **not** approved unchanged as Region 01 final art; final material/texture treatment, authored attack clips, renderer integration, hitbox alignment, VFX/sound and field-play remain separate production gates.
+- Concrete production use: geometry/rig/unaltered-source-animation payload for the Region 01 first boss custom skinned-mesh pipeline. Animation semantics remain separately review-gated.
+- Modified: yes — deterministic art-neutral sanitizer `tools/convert_region01_boss_geometry.py` strips all source art/material payload while retaining accepted geometry, skin and animation data.
+- Runtime resource ID / Used in: `riftfrontier:boss_presentation/region_01/dragon_evolved.sanitized.v1.gltf`.
+- Repository runtime path: `src/main/resources/assets/riftfrontier/boss_presentation/region_01/dragon_evolved.sanitized.v1.gltf`.
+- Runtime consumers: `Region01BossRuntimeResources.ACCEPTED_GEOMETRY` → exact staged `RiftfrontierClientResources` reload → `Region01BossGeometryPreparation` → prepared-mesh provenance gate in `Region01BossClientRenderRuntime`.
+- Runtime integrity: asset-intake tests and executable-JAR inspection both require exact SHA-256 `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`.
+- Explicit non-approval: original `Atlas` texture/style is **not** approved unchanged as Region 01 final art; final material/texture treatment, logical attack bindings, hitbox alignment, VFX/sound and field-play remain separate production gates.
 - Decision record: `REGION_01_BOSS_CANDIDATE_AUDIT.md`.
 
 #### Blue Demon
@@ -72,7 +77,7 @@ This file records external assets and source families considered or used by Rift
 - Intended use considered: Region 01 first boss
 - Rejection: recognizable cap silhouette but small attack-bearing limbs; would require presentation to be invented around the asset rather than supported by it.
 
-### Quaternius — Bestiary: Dungeon Monsters Kit (2026)
+#### Quaternius — Bestiary: Dungeon Monsters Kit (2026)
 
 - Status: `RESEARCHED`
 - Author: Quaternius
@@ -102,17 +107,9 @@ This file records external assets and source families considered or used by Rift
 
 ## Runtime/library note — not an asset
 
-GeckoLib is a code/runtime dependency candidate, not a third-party art asset. Fresh verification on 2026-09-09 found that the GeckoLib 5 wiki support table still lists Minecraft 26.2 with GeckoLib 5.5.1, while the current official distribution feeds have advanced to **GeckoLib 5.5.5** for Minecraft 26.2 NeoForge. The exact current Maven coordinate observed is `com.geckolib:geckolib-neoforge-26.2:5.5.5`.
+GeckoLib remains an available code/runtime dependency family rather than an art asset, but it is **not on the Region 01 first-boss critical path**. The current production path uses Riftfrontier's native custom skinned-mesh importer/renderer and consumes the accepted art-neutral glTF resource above directly. Do not add GeckoLib merely to re-express the already-working custom geometry path.
 
-Riftfrontier does **not** add GeckoLib in the resource-contract batch alone. Add the dependency only when a concrete boss entity/renderer integration consumes real renderer-compatible resources, and re-verify the coordinate again at that commit.
-
-GeckoLib 5 resource layout for that future integration is now treated as the runtime target contract: animated models under `assets/<namespace>/geckolib/models/`, animations under `assets/<namespace>/geckolib/animations/`, with GeoModel-facing identifiers relative to those roots and without JSON suffixes. The legacy GeckoLib 4-style `geo/` root and unscoped `animations/` root must not be treated as production-loadable proof.
-
-Sources checked 2026-09-09:
-
-- https://wiki.geckolib.com/docs/geckolib5/
-- https://www.curseforge.com/minecraft/mc-mods/geckolib/files/all
-- https://cloudsmith.io/~geckolib3/repos/geckolib/packages/detail/maven/geckolib-neoforge-26.2/latest/a%3Dnoarch%3Bxg%3Dcom.geckolib/
+If a later authored asset family actually requires GeckoLib, re-verify its Minecraft 26.2 NeoForge coordinate and resource contract at that commit instead of treating the older research note as a standing dependency decision.
 
 ## Bundle rule
 
@@ -126,4 +123,4 @@ Before adding external bytes to `src/main/resources` or any distributable packag
 6. verify that redistribution of the actual downloaded file is allowed, not merely use in screenshots or local projects;
 7. inspect the final JAR to ensure no unrelated source-pack files were accidentally bundled.
 
-For `Dragon Evolved`, source selection and exact deterministic sanitizer acceptance are recorded. The accepted sanitized bytes are still a pre-runtime derivation artifact, not a final renderer-consumable production MODEL resource. The valid animated-resource target namespace is now fixed to the GeckoLib 5 `geckolib/models/` + `geckolib/animations/` contract, but actual runtime-format conversion, final material/texture treatment, `Used in` runtime paths, dependency/renderer integration and JAR inclusion remain pending.
+For `Dragon Evolved`, source selection, exact deterministic sanitizer acceptance, concrete runtime resource ID, vendored sanitized bytes and exact JAR-integrity gate are now recorded. Source `Atlas` art remains excluded. Logical animation semantics, final material/texture treatment, final encounter presentation and graphical/field-play review remain separate gates.
