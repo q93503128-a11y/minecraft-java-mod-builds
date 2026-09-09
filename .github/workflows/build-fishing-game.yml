@@ -39,17 +39,20 @@ jobs:
 
       - name: Inspect playable JAR
         run: |
-          JAR="build/libs/fishing-game-0.1.0-alpha.1.jar"
+          JAR="build/libs/fishing-game-0.1.0-alpha.3.jar"
           test -s "$JAR"
           jar tf "$JAR" | grep -q '^fabric.mod.json$'
           jar tf "$JAR" | grep -q '^dev/moonseungjun/fishinggame/FishingGameMod.class$'
+          jar tf "$JAR" | grep -q '^dev/moonseungjun/fishinggame/world/FishingWorldManager.class$'
+          jar tf "$JAR" | grep -q '^data/fishinggame/dimension/lakeside.json$'
+          jar tf "$JAR" | grep -q '^assets/fishinggame/'
           sha256sum "$JAR" | tee "$JAR.sha256"
 
       - name: Upload build output
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: fishing-game-0.1.0-alpha.1-build
+          name: fishing-game-0.1.0-alpha.3-build
           path: |
             projects/fishing-game/build/libs/*.jar
             projects/fishing-game/build/libs/*.sha256

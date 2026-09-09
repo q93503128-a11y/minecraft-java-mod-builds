@@ -1,38 +1,47 @@
 # Fishing Game
 
-A Minecraft Java 26.2 Fabric fishing progression game focused on a very simple loop:
+A Minecraft Java 26.2 Fabric standalone fishing progression game focused on a compact loop:
 
-`catch -> collect -> sell -> improve rod -> hunt bigger/rarer fish`
+`catch -> collect -> sell -> improve rod -> reach better water -> hunt bigger/rarer fish`
 
-The project intentionally starts with fishing feel and collection instead of pets, gacha, many currencies or stacked upgrade menus.
+The project deliberately avoids survival chores, stacked currencies and unrelated systems. Minecraft supplies the world/rendering/runtime; the player experience is a dedicated fishing game.
 
-## Current alpha scope
+## Current alpha.3 slice
 
-Alpha 0.1.0 starts with the server-authoritative fishing session and a small test species catalog. The vanilla fishing hook is temporarily used as the cast anchor while catch logic is owned by this mod.
+- Adventure-mode fishing-only rules: no survival damage, hunger management, mining/crafting loop or survival HUD.
+- Dedicated `fishinggame:lakeside` location instead of ordinary Overworld roaming.
+- Authored lakeside ring with a central fishable lake, three piers, pavilion, tackle shelter, paths, trees and shoreline dressing.
+- Server-authoritative fishing session, tension/progress and catch result.
+- A real fish entity becomes visible underwater before the bite, approaches the bobber, then moves around the hook during the fight. Vanilla fish are visual proxies for now; final species models remain future visual work.
+- Persistent catch bag, coins, selling and three-tier rod progression.
+- Dedicated fishing HUD and catch-bag screen using bundled Kenney CC0 UI assets.
+- Essential remains optional and does not own game state.
 
-### Current interaction
+## Fishing interaction
 
-1. Hold a normal Minecraft fishing rod.
-2. Right click to cast into water.
-3. The bite timer starts only after the hook actually reaches water.
-4. When a fish bites, hold right click to increase line tension and release it to let tension fall.
-5. Keeping tension in the safe range advances catch progress.
-6. Excess tension breaks the line; too little tension loses progress.
+1. Spawn into Cheongram Lakeside with a fishing rod.
+2. Cast from one of the lake piers.
+3. The bite timer starts only when the bobber reaches valid water.
+4. Watch for a fish moving toward the bobber before the bite.
+5. When hooked, hold right click to raise tension and release to let it fall.
+6. Keep tension in the safe band to advance catch progress.
+7. The caught fish enters the separate catch bag rather than the vanilla inventory.
+8. Open the bag with `B`, sell catches, then buy the next rod tier.
 
-The held-use input is sent to the server as state, while the server owns tension, progress, fish selection and the final catch result. The current action-bar telemetry is still temporary; a proper fishing HUD and physical hooked-fish presentation are core follow-up work.
+The server owns tension, progress, selected species, catch size/value, coins and upgrades. Client UI only presents and requests actions.
 
 ## Technical stack
 
 - Minecraft 26.2
 - Java 25
-- Fabric Loader 0.19.5
+- Fabric Loader 0.19.3+
 - Fabric API 0.159.0+26.2
 - Loom 1.17.19
 - Gradle 9.5.1
 - Essential: optional external convenience mod, not a dependency
 
-## Development rules
+## Quality gate
 
-Repository root `AGENTS.md`, `docs/BUILD_STANDARD.md`, `docs/QUALITY_STANDARD.md`, `docs/QUALITY_STANDARD_GAME_DESIGN.md` and this project's `PROJECT.md`/`docs/GAME_DESIGN.md` are the working references.
+A successful compile is not a playtest-ready declaration. Before handing the user a JAR, the dedicated location, fish visibility, fishing HUD and complete catch -> sell -> upgrade loop still need actual Minecraft screen/play review. Tiny technical-only builds are not user test milestones.
 
-Do not turn temporary action-bar telemetry or the vanilla hook anchor into the final presentation. Fishing feel, real fish presentation, sound and HUD are core gameplay work, not polish to postpone until the end.
+Repository root `AGENTS.md`, `docs/BUILD_STANDARD.md`, `docs/QUALITY_STANDARD.md`, this project's `PROJECT.md`, and `THIRD_PARTY_ASSETS.md` are the working references.

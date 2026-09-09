@@ -1,6 +1,7 @@
 package dev.moonseungjun.fishinggame;
 
 import dev.moonseungjun.fishinggame.fishing.FishingSessionManager;
+import dev.moonseungjun.fishinggame.world.FishingWorldManager;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -23,6 +24,7 @@ public final class FishingGameRules {
             if (!player.getInventory().getItem(0).is(Items.FISHING_ROD)) {
                 player.getInventory().setItem(0, new ItemStack(Items.FISHING_ROD));
             }
+            FishingWorldManager.prepareAndPlacePlayer(player, server);
             FishingSessionManager.syncProfile(player);
             FishingSessionManager.syncIdle(player);
         });
