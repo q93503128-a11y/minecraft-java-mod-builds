@@ -11,7 +11,8 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Presentation-only world target marker cache.
+ * Presentation-only target marker cache.
+ * Live world entities use UUID lookup while virtual stage participants use stable participant-id lookup.
  * Target legality still comes exclusively from the current authoritative server snapshot.
  */
 public final class BattleTargetMarkerState {
@@ -26,7 +27,8 @@ public final class BattleTargetMarkerState {
     private static final Object LOCK = new Object();
     private static UUID battleId;
     private static long revision = Long.MIN_VALUE;
-    private static Map<UUID, MarkerEntry> markers = Map.of();
+    private static Map<UUID, MarkerEntry> entityMarkers = Map.of();
+    private static Map<String, MarkerEntry> participantMarkers = Map.of();
 
     private BattleTargetMarkerState() {}
 
@@ -43,22 +45,28 @@ public final class BattleTargetMarkerState {
         Set<String> selected = selectedTargetIds == null ? Set.of() : Set.copyOf(selectedTargetIds);
         String hovered = hoveredTargetId == null ? "" : hoveredTargetId;
 
-        Map<UUID, MarkerEntry> next = new LinkedHashMap<>();
+        Map<UUID, MarkerEntry> nextEntities = new LinkedHashMap<>();
+        Map<String, MarkerEntry> nextParticipants = new LinkedHashMap<>();
         for (int index = 0; index < participants.size(); index++) {
             BattleNetworkPayloads.SnapshotParticipant participant = participants.get(index);
-            if (participant == null || participant.entityId() == null) continue;
+            if (participant == null) continue;
             MarkerKind kind = selected.contains(participant.id())
                     ? MarkerKind.SELECTED
                     : participant.id().equals(hovered)
                     ? MarkerKind.HOVERED
                     : MarkerKind.ELIGIBLE;
-            next.put(participant.entityId(), new MarkerEntry(kind, index + 1));
+            MarkerEntry entry = new MarkerEntry(kind, index + 1);
+            if (nextParticipants.putIfAbsent(participant.id(), entry) != null) {
+                throw new IllegalArgumentException("duplicate target participant id: " + participant.id());
+            }
+            if (participant.entityId() != null) nextEntities.put(participant.entityId(), entry);
         }
 
         synchronized (LOCK) {
             battleId = sourceBattleId;
             revision = sourceRevision;
-            markers = Map.copyOf(next);
+            entityMarkers = Map.copyOf(nextEntities);
+            participantMarkers = Map.copyOf(nextParticipants);
         }
     }
 
@@ -67,7 +75,7 @@ public final class BattleTargetMarkerState {
             long expectedRevision,
             UUID entityId
     ) {
-        MarkerEntry entry = entryFor(expectedBattleId, expectedRevision, entityId);
+        MarkerEntry entry = entityEntryFor(expectedBattleId, expectedRevision, entityId);
         return entry == null ? Optional.empty() : Optional.of(entry.kind());
     }
 
@@ -76,7 +84,25 @@ public final class BattleTargetMarkerState {
             long expectedRevision,
             UUID entityId
     ) {
-        MarkerEntry entry = entryFor(expectedBattleId, expectedRevision, entityId);
+        MarkerEntry entry = entityEntryFor(expectedBattleId, expectedRevision, entityId);
+        return entry == null ? OptionalInt.empty() : OptionalInt.of(entry.ordinal());
+    }
+
+    public static Optional<MarkerKind> markerForParticipant(
+            UUID expectedBattleId,
+            long expectedRevision,
+            String participantId
+    ) {
+        MarkerEntry entry = participantEntryFor(expectedBattleId, expectedRevision, participantId);
+        return entry == null ? Optional.empty() : Optional.of(entry.kind());
+    }
+
+    public static OptionalInt markerOrdinalForParticipant(
+            UUID expectedBattleId,
+            long expectedRevision,
+            String participantId
+    ) {
+        MarkerEntry entry = participantEntryFor(expectedBattleId, expectedRevision, participantId);
         return entry == null ? OptionalInt.empty() : OptionalInt.of(entry.ordinal());
     }
 
@@ -87,11 +113,23 @@ public final class BattleTargetMarkerState {
         }
     }
 
-    private static MarkerEntry entryFor(UUID expectedBattleId, long expectedRevision, UUID entityId) {
+    private static MarkerEntry entityEntryFor(UUID expectedBattleId, long expectedRevision, UUID entityId) {
         if (expectedBattleId == null || entityId == null) return null;
         synchronized (LOCK) {
             if (!expectedBattleId.equals(battleId) || expectedRevision != revision) return null;
-            return markers.get(entityId);
+            return entityMarkers.get(entityId);
+        }
+    }
+
+    private static MarkerEntry participantEntryFor(
+            UUID expectedBattleId,
+            long expectedRevision,
+            String participantId
+    ) {
+        if (expectedBattleId == null || participantId == null || participantId.isBlank()) return null;
+        synchronized (LOCK) {
+            if (!expectedBattleId.equals(battleId) || expectedRevision != revision) return null;
+            return participantMarkers.get(participantId);
         }
     }
 
@@ -99,7 +137,8 @@ public final class BattleTargetMarkerState {
         synchronized (LOCK) {
             battleId = null;
             revision = Long.MIN_VALUE;
-            markers = Map.of();
+            entityMarkers = Map.of();
+            participantMarkers = Map.of();
         }
     }
 }

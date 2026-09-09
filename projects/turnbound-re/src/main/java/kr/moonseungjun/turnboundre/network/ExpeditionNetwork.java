@@ -85,6 +85,10 @@ public final class ExpeditionNetwork {
         var launch = TurnboundRe.AUTHORED_ENCOUNTERS.openVirtual(
                 encounterId, player.getUUID(), party, battleId, battleSeed);
         EnemyTurnService.resolveUntilPlayerOrTerminal(TurnboundRe.BATTLES, launch.battle());
+
+        // Reuse the canonical character visual catalog so virtual battle participants can be rendered
+        // without duplicating sourceEntity metadata into the dynamic battle snapshot contract.
+        context.reply(CharacterPresentationNetworkPayloads.CatalogS2C.from(definitions));
         context.reply(BattleNetworkPayloads.BattleSnapshotS2C.from(
                 launch.battle(), launch.definitionContext(), TurnboundRe.BATTLES));
     }
