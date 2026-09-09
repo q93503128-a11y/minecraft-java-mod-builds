@@ -6,6 +6,7 @@ import kr.moonseungjun.riftfrontier.combat.BossPresentationSemanticState;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossAnimationSampleBridge;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationResolver;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossSkinnedMeshFrameSampler;
+import kr.moonseungjun.riftfrontier.combat.presentation.mesh.SkinnedMeshAsset;
 import kr.moonseungjun.riftfrontier.content.ContentId;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderType;
@@ -109,6 +110,15 @@ public final class BossCustomGeometryRenderPipeline {
 
     public String variant() {
         return variant;
+    }
+
+    /**
+     * Exact mesh/rig source consumed by this pipeline's skinning stage.
+     * Used by the Region 01 publication gate to reject a pipeline assembled from any asset other than the one that
+     * passed the current staged reload's accepted-derivation import.
+     */
+    public SkinnedMeshAsset skinnedMeshAsset() {
+        return frameSampler.asset();
     }
 
     public record PreparedFrame(
