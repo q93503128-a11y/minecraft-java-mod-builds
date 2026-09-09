@@ -47,10 +47,6 @@ import java.util.UUID;
 public final class BattleStageHud {
     private static final Identifier LAYER_ID = Identifier.fromNamespaceAndPath(TurnboundRe.MOD_ID, "battle_stage");
     private static final EntityCache ENTITY_CACHE = new EntityCache();
-    private static final ItemStack PROJECTILE_ARROW = new ItemStack(Items.ARROW);
-    private static final ItemStack PROJECTILE_FIRE = new ItemStack(Items.FIRE_CHARGE);
-    private static final ItemStack PROJECTILE_ARCANE = new ItemStack(Items.AMETHYST_SHARD);
-    private static final ItemStack PROJECTILE_VOID = new ItemStack(Items.ENDER_PEARL);
 
     private static UUID audioBattleId;
     private static String audioCueKey = "";
@@ -255,10 +251,10 @@ public final class BattleStageHud {
 
     private static ItemStack projectileItem(BattleActionTimelineState.ImpactStyle style) {
         return switch (style) {
-            case PROJECTILE -> PROJECTILE_ARROW;
-            case FIRE -> PROJECTILE_FIRE;
-            case ARCANE -> PROJECTILE_ARCANE;
-            case VOID -> PROJECTILE_VOID;
+            case PROJECTILE -> new ItemStack(Items.ARROW);
+            case FIRE -> new ItemStack(Items.FIRE_CHARGE);
+            case ARCANE -> new ItemStack(Items.AMETHYST_SHARD);
+            case VOID -> new ItemStack(Items.ENDER_PEARL);
             case NONE, MELEE, BLAST -> ItemStack.EMPTY;
         };
     }
