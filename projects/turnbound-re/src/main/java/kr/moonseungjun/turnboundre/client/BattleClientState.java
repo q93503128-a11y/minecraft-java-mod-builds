@@ -24,6 +24,7 @@ public final class BattleClientState {
             if (latestSnapshot == null
                     || !latestSnapshot.battleId().equals(decoded.battleId())
                     || decoded.revision() >= latestSnapshot.revision()) {
+                BattleStageFeedbackState.acceptSnapshot(latestSnapshot, decoded);
                 latestSnapshot = decoded;
                 if (latestEvents != null && !latestEvents.battleId().equals(decoded.battleId())) {
                     latestEvents = null;
@@ -39,6 +40,7 @@ public final class BattleClientState {
             if (decoded.events().stream().anyMatch(event -> CLEAR_EVENT_TYPE.equals(event.type()))) {
                 latestSnapshot = null;
                 latestEvents = null;
+                BattleStageFeedbackState.clear();
                 return;
             }
             if (latestEvents == null
@@ -71,6 +73,7 @@ public final class BattleClientState {
         synchronized (LOCK) {
             latestSnapshot = null;
             latestEvents = null;
+            BattleStageFeedbackState.clear();
         }
     }
 }

@@ -3,6 +3,7 @@ package kr.moonseungjun.turnboundre.client.ui;
 import kr.moonseungjun.turnboundre.TurnboundRe;
 import kr.moonseungjun.turnboundre.client.BattleClientState;
 import kr.moonseungjun.turnboundre.client.BattlePresentationModel;
+import kr.moonseungjun.turnboundre.client.BattleStageFeedbackState;
 import kr.moonseungjun.turnboundre.client.BattleTargetMarkerState;
 import kr.moonseungjun.turnboundre.client.ProgressionClientState;
 import kr.moonseungjun.turnboundre.network.BattleNetworkPayloads;
@@ -106,10 +107,13 @@ public final class BattleStageHud {
                 model.battleId(), model.revision(), participant.id()).orElse(null);
         int markerOrdinal = BattleTargetMarkerState.markerOrdinalForParticipant(
                 model.battleId(), model.revision(), participant.id()).orElse(0);
+        BattleStageFeedbackState.Cue feedback = BattleStageFeedbackState
+                .cue(model.battleId(), participant.id()).orElse(null);
 
+        boolean freshDefeat = feedback != null && feedback.defeatStrength() > 0.0D;
         int textColor = participant.alive()
                 ? (current ? UiVisualLanguage.TEXT_FOCUS : UiVisualLanguage.TEXT_PRIMARY)
-                : UiVisualLanguage.TEXT_DISABLED;
+                : (freshDefeat ? UiVisualLanguage.TEXT_WARNING : UiVisualLanguage.TEXT_DISABLED);
         String name = (current ? "> " : "") + displayName(participant);
         graphics.text(font, Component.literal(fit(font, name, slot.width())),
                 slot.x(), slot.y(), textColor, true);
@@ -136,9 +140,13 @@ public final class BattleStageHud {
         if (participant.alive()) {
             LivingEntity visual = ENTITY_CACHE.resolve(minecraft, participant);
             if (visual != null) {
-                renderEntity(graphics, slot.x(), modelTop, slot.width(), modelBottom - modelTop, visual);
+                int shakeX = feedbackShakeX(feedback);
+                int recoilY = feedbackRecoilY(feedback, enemy);
+                renderEntity(graphics, slot.x() + shakeX, modelTop + recoilY,
+                        slot.width(), modelBottom - modelTop, visual);
             }
         }
+        renderHpFeedback(graphics, font, slot, modelTop, feedback);
 
         String stateLine = stageStateLine(participant, current, targetMarker, markerOrdinal);
         if (!stateLine.isBlank()) {
@@ -146,6 +154,36 @@ public final class BattleStageHud {
             graphics.text(font, Component.literal(fit(font, stateLine, slot.width())),
                     slot.x(), slot.bottom() - font.lineHeight, stateColor, true);
         }
+    }
+
+    private static int feedbackShakeX(BattleStageFeedbackState.Cue feedback) {
+        if (feedback == null || feedback.impactStrength() <= 0.0D) return 0;
+        int amplitude = Math.max(1, (int) Math.ceil(feedback.impactStrength() * 3.0D));
+        boolean positive = ((System.nanoTime() / 42_000_000L) & 1L) == 0L;
+        return positive ? amplitude : -amplitude;
+    }
+
+    private static int feedbackRecoilY(BattleStageFeedbackState.Cue feedback, boolean enemy) {
+        if (feedback == null || feedback.impactStrength() <= 0.0D) return 0;
+        int amplitude = Math.max(1, (int) Math.ceil(feedback.impactStrength() * 2.0D));
+        return enemy ? -amplitude : amplitude;
+    }
+
+    private static void renderHpFeedback(
+            GuiGraphicsExtractor graphics,
+            Font font,
+            UiLayoutMetrics.Rect slot,
+            int modelTop,
+            BattleStageFeedbackState.Cue feedback
+    ) {
+        if (feedback == null || feedback.hpStrength() <= 0.0D || feedback.hpDelta() == 0) return;
+        int delta = feedback.hpDelta();
+        String text = (delta > 0 ? "+" : "−") + Math.abs(delta);
+        int color = delta > 0 ? UiVisualLanguage.TEXT_SUCCESS : UiVisualLanguage.TEXT_WARNING;
+        int rise = (int) Math.round((1.0D - feedback.hpStrength()) * 6.0D);
+        int x = Math.max(slot.x(), slot.right() - font.width(text));
+        int y = Math.max(slot.y() + font.lineHeight, modelTop + 2 - rise);
+        graphics.text(font, Component.literal(text), x, y, color, true);
     }
 
     private static void renderEntity(
