@@ -54,7 +54,7 @@ jobs:
           python3 tools/test_progression_validator.py 2>&1 | tee build/logs/p0h-validator-tests.log
           python3 tools/validate_progression.py 2>&1 | tee build/logs/p0h-progression.log
           python3 tools/validate_m1_launch.py 2>&1 | tee build/logs/m1-launch-progression.log
-          python3 tools/validate_alpha12_acceptance.py 2>&1 | tee build/logs/alpha12-acceptance.log
+          python3 tools/validate_alpha13_acceptance.py 2>&1 | tee build/logs/alpha13-acceptance.log
       - name: Clean test and build
         shell: bash
         run: |
@@ -87,24 +87,26 @@ jobs:
           if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
             LIFECYCLE_STATUS="PASS (this run)"
           else
-            LIFECYCLE_STATUS="NOT RERUN; last verified run 34197931566 covers alpha.11 ShipState schema 2 plus fuel/oxygen"
+            LIFECYCLE_STATUS="NOT RERUN; last verified run 34197931566 covers ShipState schema 2 plus fuel/oxygen"
           fi
           cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # EARTH TO STARS — alpha.12 Live-Acceptance Rescue Build Report
+          # EARTH TO STARS — alpha.13 Client-Resource Rescue Build Report
 
           - Commit: $GITHUB_SHA
           - Mod version: $MOD_VERSION
           - Java: 25
           - Gradle: 9.2.1 wrapper
           - Minecraft: 26.2
-          - NeoForge: 26.2.0.38-beta
+          - NeoForge: 26.2.0.76
           - P0-H progression validator: PASS
           - M1 launch recipe dependency closure: PASS
           - M1 launch recipe Nether/End independence: PASS
-          - alpha.12 acceptance static gate: PASS
+          - alpha.13 acceptance static gate: PASS
           - actual passenger/control source contract: PASS
           - safe ship retirement source contract: PASS
-          - three distinct Kenney OBJ/MTL visuals packaged: PASS
+          - lowercase Kenney OBJ resource paths: PASS
+          - explicit MTL diffuse texture slots: PASS
+          - Kenney material adapter texture packaged: PASS
           - M1-D starter empty weapon/sensor slots JUnit: PASS
           - M1-D recovered autocannon/scanner capability progression JUnit: PASS
           - ShipState schema 1 -> 2 sensor-slot migration JUnit: PASS
@@ -112,9 +114,10 @@ jobs:
           - production JAR verify: PASS
           - dedicated server save/restart lifecycle: $LIFECYCLE_STATUS
           - SHA-256: $SHA
+          - client resource smoke: verified by separate path-scoped workflow on visual/resource changes
           - live Earth→orbit→salvage→combat→return cycle: NOT TESTED unless separately recorded
           - live multiplayer: NOT TESTED unless separately recorded
-          - client visual quality: NOT TESTED unless separately recorded
+          - client visual quality: NOT PLAYTESTED unless separately recorded
           EOF
       - name: Upload deliverables
         if: success()

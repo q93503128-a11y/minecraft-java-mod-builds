@@ -1,8 +1,13 @@
 {
+  "parent": "neoforge:item/default",
   "loader": "neoforge:obj",
   "model": "earth_to_stars:models/kenney/space_kit/craft_racer.obj",
+  "mtl_override": "earth_to_stars:models/kenney/space_kit/craft_racer.mtl",
   "automatic_culling": false,
   "shade_quads": true,
   "flip_v": false,
-  "emissive_ambient": false
+  "emissive_ambient": false,
+  "textures": {
+    "particle": "earth_to_stars:item/kenney_material_base"
+  }
 }

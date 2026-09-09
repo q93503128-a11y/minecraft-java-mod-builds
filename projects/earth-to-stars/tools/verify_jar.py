@@ -40,12 +40,13 @@ def main() -> None:
             "assets/earth_to_stars/models/item/starter_craft_visual.json",
             "assets/earth_to_stars/models/item/orbital_salvage_visual.json",
             "assets/earth_to_stars/models/item/orbital_interceptor_visual.json",
-            "assets/earth_to_stars/models/kenney/space_kit/craft_speederA.obj",
-            "assets/earth_to_stars/models/kenney/space_kit/craft_speederA.mtl",
+            "assets/earth_to_stars/models/kenney/space_kit/craft_speedera.obj",
+            "assets/earth_to_stars/models/kenney/space_kit/craft_speedera.mtl",
             "assets/earth_to_stars/models/kenney/space_kit/craft_miner.obj",
             "assets/earth_to_stars/models/kenney/space_kit/craft_miner.mtl",
             "assets/earth_to_stars/models/kenney/space_kit/craft_racer.obj",
             "assets/earth_to_stars/models/kenney/space_kit/craft_racer.mtl",
+            "assets/earth_to_stars/textures/item/kenney_material_base.png",
             "data/earth_to_stars/bootstrap/kernel.json",
             "data/earth_to_stars/progression/main_path.json",
             "data/earth_to_stars/recipe/reinforced_frame.json",
@@ -58,6 +59,8 @@ def main() -> None:
         for entry in required:
             if entry not in names:
                 fail(f"missing {entry}")
+        if any("craft_speederA" in name for name in names):
+            fail("illegal mixed-case Kenney resource path leaked into production jar")
         if not any(name.startswith("kr/moonseungjun/earthtostars/") and name.endswith(".class") for name in names):
             fail("no compiled EARTH TO STARS classes")
         required_classes = [
@@ -70,7 +73,7 @@ def main() -> None:
         ]
         for entry in required_classes:
             if entry not in names:
-                fail(f"missing M1/alpha.12 gameplay class {entry}")
+                fail(f"missing M1/alpha.13 gameplay class {entry}")
         if any(name.endswith(".java") for name in names):
             fail("development Java source leaked into production jar")
         if len(names) != len(set(names)):

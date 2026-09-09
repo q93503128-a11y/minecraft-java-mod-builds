@@ -10,12 +10,12 @@ import org.slf4j.Logger;
 @Mod(EarthToStars.MOD_ID)
 public final class EarthToStars {
     public static final String MOD_ID = "earth_to_stars";
-    public static final String VERSION = "0.1.0-alpha.11";
+    public static final String VERSION = "0.1.0-alpha.13";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public EarthToStars(IEventBus modEventBus) {
         EarthToStarsItems.register(modEventBus);
         EarthToStarsEntities.register(modEventBus);
-        LOGGER.info("EARTH TO STARS {} orbital recovery and first-contact systems loaded", VERSION);
+        LOGGER.info("EARTH TO STARS {} live-acceptance rescue systems loaded", VERSION);
     }
 }
