@@ -16,29 +16,41 @@ import java.util.Optional;
  *
  * <p>This type intentionally owns no clock. Sample time is derived only from the server-authored phase progress
  * carried by {@link BossPresentationSemanticState} / {@link BossPresentationResolver.ResolvedPresentation}.
- * Logical animation keys are bound to imported clips through an immutable catalog so clip choice remains data-driven.</p>
+ * Logical animation keys are bound to visually reviewed imported clip windows so a source clip can be partitioned
+ * across authoritative phases without introducing a second timing source.</p>
  */
 public final class BossAnimationSampleBridge {
-    private final Map<ContentId, AnimationClip> clipsByLogicalKey;
+    private final Map<ContentId, BossAnimationSourceBinding.ResolvedSource> sourcesByLogicalKey;
 
+    /**
+     * Full-clip fixture/general constructor. Production reviewed bindings should use
+     * {@link #BossAnimationSampleBridge(BossAnimationSourceBinding, AnimationClipInventory)}.
+     */
     public BossAnimationSampleBridge(Map<ContentId, AnimationClip> clipsByLogicalKey) {
-        Map<ContentId, AnimationClip> copy = new LinkedHashMap<>();
+        Map<ContentId, BossAnimationSourceBinding.ResolvedSource> copy = new LinkedHashMap<>();
         Objects.requireNonNull(clipsByLogicalKey, "clipsByLogicalKey").forEach((key, clip) -> {
             Objects.requireNonNull(key, "animation logical key");
             Objects.requireNonNull(clip, "animation clip");
-            if (copy.putIfAbsent(key, clip) != null) {
+            if (copy.putIfAbsent(
+                key,
+                new BossAnimationSourceBinding.ResolvedSource(
+                    clip,
+                    new BossAnimationSourceBinding.ClipWindow(0.0D, 1.0D)
+                )
+            ) != null) {
                 throw new IllegalArgumentException("duplicate animation logical key: " + key);
             }
         });
-        this.clipsByLogicalKey = Map.copyOf(copy);
+        this.sourcesByLogicalKey = Map.copyOf(copy);
     }
 
     /**
-     * Production-safe constructor that resolves explicit source-clip names only against a verified imported inventory.
-     * It performs no name guessing and creates no fallback clips.
+     * Production-safe constructor that resolves explicit source-clip names and reviewed clip windows only against a
+     * verified imported inventory. It performs no name guessing and creates no fallback clips.
      */
     public BossAnimationSampleBridge(BossAnimationSourceBinding binding, AnimationClipInventory verifiedInventory) {
-        this(Objects.requireNonNull(binding, "binding").resolve(Objects.requireNonNull(verifiedInventory, "verifiedInventory")));
+        this.sourcesByLogicalKey = Objects.requireNonNull(binding, "binding")
+            .resolveWindows(Objects.requireNonNull(verifiedInventory, "verifiedInventory"));
     }
 
     public Optional<Sample> sample(
@@ -62,13 +74,15 @@ public final class BossAnimationSampleBridge {
             throw new IllegalArgumentException("resolved presentation no longer matches authoritative semantic sample");
         }
 
-        AnimationClip clip = clipsByLogicalKey.get(resolved.animationKey());
-        if (clip == null) return Optional.empty();
+        BossAnimationSourceBinding.ResolvedSource source = sourcesByLogicalKey.get(resolved.animationKey());
+        if (source == null) return Optional.empty();
 
+        AnimationClip clip = source.clip();
         float duration = clip.durationSeconds();
+        double normalizedSourceTime = source.window().sample(state.phaseProgress());
         float sampleTime = duration == 0.0f
             ? 0.0f
-            : (float) Math.min(duration, duration * state.phaseProgress());
+            : (float) Math.min(duration, duration * normalizedSourceTime);
         return Optional.of(new Sample(
             resolved.animationKey(),
             clip,
