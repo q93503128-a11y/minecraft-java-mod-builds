@@ -4,39 +4,43 @@ This file is a recovery aid for scheduled development sessions. Current GitHub `
 
 ## Last recovered baseline
 
-- Remote `main` recovered at this run start: `e985913a97544d6811198dfcd38fbd4a1a48b06f`.
-- Previous `BossAnimationSampleBridge` validation run `34305584752` was re-checked this run and is fully SUCCESS.
-- Concurrent unrelated `turnbound-re` work advanced `main` after the first Riftfrontier implementation commit; it was preserved and the Riftfrontier follow-up was rebuilt on top without force-push or overwrite.
+- Remote `main` recovered at this run start: `2477e0be65cc702cf1ab50786b6c86300e77ed9c`.
+- Previous `BossSkinnedMeshFrameSampler` validation run `34309678765` was re-checked this run and is fully SUCCESS.
+- Concurrent unrelated `turnbound-re` commits advanced `main` during this run; they were preserved without force-push or overwrite.
 - `Dragon Evolved` remains selected only as Region 01 first-boss geometry/rig derivation source. Source `Atlas` art remains unapproved.
 
 ## Completed in this batch
 
-M3 authoritative animation sample -> deformed renderer-neutral frame composition:
+M3 renderer-neutral skinned frame -> Minecraft 26.2 custom-geometry submission boundary:
 
-- Added `BossSkinnedMeshFrameSampler` as the final renderer-neutral composition boundary.
-- It accepts only an already-authoritative `BossAnimationSampleBridge.Sample`; it owns no animation clock and performs no duplicate logical-clip resolution.
-- It feeds the authoritative sample time through `JointPoseSampler`, then through project-owned four-influence `LinearBlendSkinner`, returning immutable `SkinnedMeshFrame` geometry together with the exact source sample metadata.
-- It fail-closes if the pose palette joint count is inconsistent or skinning changes accepted vertex/triangle topology.
-- Added JUnit coverage for authoritative-time deformation, different authoritative times without any internal clock, topology/UV/index preservation, and animation channels outside the imported rig.
-- Initial run `34309560622` exposed two new test-fixture expectation errors: the fixture treated normalized progress values as seconds. Production code compiled; no feature was weakened. The fixture was corrected in follow-up commit `7d7e5defd54c3a95012621b85ff61013db73d192`.
+- Added `SkinnedMeshCustomGeometryAdapter` using the official 26.2 `SubmitNodeCollector.submitCustomGeometry` path.
+- The adapter consumes the exact immutable `BossSkinnedMeshFrameSampler.FrameSample`/`SkinnedMeshFrame`; it owns no animation clock, hit timing, clip fallback, material selection or texture lookup.
+- The caller must supply `RenderType`, so the unapproved source Atlas material cannot enter through this adapter implicitly.
+- Custom geometry preserves accepted triangle indices, positions, UVs and normals and does not convert the Dragon into cubes, bounding boxes or rigid-bone geometry.
+- Renderer data is defensively snapshotted before deferred feature submission.
+- Hardened `SkinnedMeshFrame` to fail closed on non-finite position/normal/UV data and out-of-range indices before renderer submission.
+- Added JUnit coverage for immutable prepared geometry, topology preservation, invalid indices and non-finite streams.
+- Initial implementation used the pre-26.2 `net.minecraft.client.renderer.RenderType` package. CI exposed this exact compile failure; the feature was not weakened. It was corrected to 26.2 `net.minecraft.client.renderer.rendertype.RenderType` after current NeoForge 26.2 API verification.
 
 ## Changed systems/files
 
-- `src/main/java/kr/moonseungjun/riftfrontier/combat/presentation/BossSkinnedMeshFrameSampler.java`
-- `src/test/java/kr/moonseungjun/riftfrontier/combat/presentation/BossSkinnedMeshFrameSamplerTest.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/client/render/SkinnedMeshCustomGeometryAdapter.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/combat/presentation/mesh/SkinnedMeshFrame.java`
+- `src/test/java/kr/moonseungjun/riftfrontier/client/render/SkinnedMeshCustomGeometryAdapterTest.java`
 - `docs/AUTOMATION_HANDOFF.md`
 
 ## Verification
 
-- Implementation commit: `c40a726fbf3351e1204a3c012d6fe15d7b0a87b4`.
-- Corrected test-bearing commit: `7d7e5defd54c3a95012621b85ff61013db73d192`.
-- Initial `Build Riftfrontier` run `34309560622`: asset-tool tests SUCCESS; compile SUCCESS; JUnit failed only in the two new incorrect fixture expectations; later runtime gates were skipped. This failure was corrected rather than bypassed.
-- Corrected `Build Riftfrontier` run `34309678765`: toolchain SUCCESS, asset-intake tests SUCCESS, JUnit + clean build SUCCESS, required GameTest SUCCESS; dedicated-server smoke was still IN PROGRESS at this handoff write. Client/Xvfb, executable JAR inspection, reports/artifacts therefore remain PENDING until that run finishes. Do not call the full run green until its conclusion is SUCCESS.
-- Local build/test: NOT RUN because this execution environment has no usable local repository/dependency checkout; GitHub Actions is the executed validation path.
-- Exact accepted sanitized Dragon derivation -> all eight real source clips: NOT RUN in this batch because the accepted binary was not available in conversation/library/runtime. Production clip names/mappings were not guessed.
-- Minecraft 26.2 `SubmitNodeCollector.submitCustomGeometry` renderer adapter and actual rendered boss review: NOT IMPLEMENTED / NOT TESTED.
+- Initial implementation commit: `ed4df9cd0611abb8df6a4db5ac492eb3831ceb25`.
+- Initial `Build Riftfrontier` run `34313244740`: toolchain SUCCESS; asset-intake tests SUCCESS; clean build FAILED at the first real compile error because `RenderType` moved packages in 26.2. GameTest/server/client/JAR gates were skipped. No feature/test was removed to pass.
+- Corrected code commit: `f208c713e5627fc9a800c904b936c0867553c0f7`.
+- Corrected `Build Riftfrontier` run `34313426477`: FULL SUCCESS — toolchain, asset-intake tests, JUnit + clean build, required native GameTest, dedicated-server smoke, Xvfb client smoke, executable JAR inspection, report and artifact upload all SUCCESS.
+- Local build/test: NOT RUN; GitHub Actions was the executed validation path.
+- Actual production boss entity calling `SkinnedMeshCustomGeometryAdapter.submit(...)`: NOT IMPLEMENTED / NOT TESTED.
+- Actual deformed Dragon geometry visible on screen: NOT TESTED. Xvfb client smoke proves the project/client loads with the adapter, not that a boss instance rendered through it.
+- Exact accepted sanitized Dragon derivation -> all eight real source clips: NOT RUN in this batch because the accepted binary was not available in this execution environment. Production clip names/mappings were not guessed.
 - Real physical MODEL/ANIMATION resources and `presentation_assets` manifest: NOT IMPLEMENTED.
-- Production texture/material, VFX/sound, scale/hitbox/deformation and human field-play: NOT IMPLEMENTED / NOT TESTED.
+- Production texture/material, VFX/sound, scale/culling/UV/deformation/hitbox review and human field-play: NOT IMPLEMENTED / NOT TESTED.
 
 ## Do not repeat or revert
 
@@ -47,15 +51,17 @@ M3 authoritative animation sample -> deformed renderer-neutral frame composition
 - Do not permit source `Atlas` material/texture/image bytes into production resources.
 - Do not restore legacy GeckoLib 4 paths or force GeckoMesh/GeoBone onto this asset.
 - Do not approximate arbitrary Dragon triangles into cubes/bounding boxes or collapse multi-joint weights to a dominant bone.
-- Preserve project-owned four-influence LBS deformation semantics and the completed glTF mesh/rig importer, animation importer, pose sampler, semantic sample bridge and frame sampler; optimize only after profiler evidence.
+- Preserve project-owned four-influence LBS deformation semantics and completed mesh/rig importer, animation importer, pose sampler, semantic sample bridge, frame sampler and custom-geometry adapter; optimize only after profiler evidence.
+- Keep the Minecraft 26.2 `net.minecraft.client.renderer.rendertype.RenderType` boundary; do not regress to the old package.
 - Do not weaken exact derivation SHA/count validation to make a changed asset load.
 - Do not create placeholder production resources or a fake `presentation_assets` manifest.
 - Do not tune M2 pressure/patrol values without field-play evidence.
 
 ## Exact next start point
 
-1. Re-check remote `main`, canonical docs and this handoff. First close `Build Riftfrontier` run `34309678765`; if it fails after the already-green GameTest stage, fix its first real server/client/JAR failure without shrinking features.
+1. Re-check remote `main`, canonical docs and this handoff. Treat corrected run `34313426477` as the green custom-geometry-adapter baseline.
 2. Reacquire the exact accepted sanitized Dragon derivation SHA `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac` and run `GltfAnimationImporter` over all eight real source clips. Record exact clip names, durations, channel counts and interpolation coverage. Keep source/derivation SHA gates.
 3. Bind only that verified real clip inventory to logical animation keys consumed by `BossAnimationSampleBridge`; do not guess production mappings.
-4. Connect `BossSkinnedMeshFrameSampler.FrameSample.frame()` to a Minecraft 26.2 `SubmitNodeCollector.submitCustomGeometry` renderer adapter, preserving immutable topology/UV/index data and server-authored sample timing, then validate under Xvfb/client smoke.
-5. Only after approved material/texture exists, perform scale/culling/UV/deformation/hitbox screen review and human field-play; only after all physical presentation assets exist may the first real `presentation_assets` manifest be created.
+4. Add the minimal production boss client render-state/entity-renderer call site that feeds authoritative `BossSkinnedMeshFrameSampler.FrameSample` into the completed `SkinnedMeshCustomGeometryAdapter`. Keep `RenderType`/material supplied by an explicitly approved presentation resource rather than source Atlas fallback.
+5. Validate an actually spawned boss under graphical client capture. Check topology, normals, UV orientation, culling, scale and deformation before claiming visual success.
+6. Only after approved material/texture exists, perform hitbox/telegraph/VFX/sound and human field-play review; only after all physical presentation assets exist may the first real `presentation_assets` manifest be created.
