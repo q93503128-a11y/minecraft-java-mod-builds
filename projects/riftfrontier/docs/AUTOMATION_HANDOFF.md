@@ -4,54 +4,60 @@ This file is a recovery aid for scheduled development sessions. Current GitHub `
 
 ## Last recovered baseline
 
-- Remote `main` verified at this run start: `2e100500f2a4abbdca932f6df5507fe9da308986`.
-- Latest verified Riftfrontier implementation/test HEAD: `5bd87fd4bb8ec3b1bece834912964e342838fbc9`.
-- `Dragon Evolved` is selected, sanitized and packaged as the Region 01 first-boss geometry/rig/unaltered-source-animation runtime resource. Source `Atlas` art remains explicitly unapproved and excluded.
-- Direct visual motion review of all eight accepted source clips is complete and recorded in `assets/sources/region_01_boss_dragon_evolved.motion_review.json`; gameplay/logical bindings remain separately gated.
+- Remote `main` verified at this run start: `06008b744cde23fbafa286123aba75ed172014dc`.
+- Latest verified Riftfrontier implementation/test HEAD: `b38ac52559538df75c2331833b5a08d0ff32f180`.
+- `Dragon Evolved` remains the selected, sanitized and packaged Region 01 first-boss geometry/rig/unaltered-source-animation resource. Source `Atlas` art remains explicitly unapproved and excluded.
+- Exact accepted runtime derivation SHA-256 remains `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`.
 
 ## Completed in this batch
 
-M3 Region 01 boss reviewed source-window sampling:
+M3 Region 01 boss fine source-motion phase-window evidence gate:
 
-- Recovered that exact Dragon source acquisition, deterministic art-neutral sanitizer acceptance, runtime resource packaging, same-`ResourceManager` geometry preparation, prepared-mesh provenance publication and direct visual review of all eight source clips are already complete on current `main`.
-- Identified a production integration defect before authoring logical mappings: the previous `BossAnimationSampleBridge` replayed an entire source clip from 0% to 100% for every logical presentation phase. A real source action such as the reviewed `Headbutt` or `Punch` contains anticipation/action/recovery in one clip, so reusing it for TELEGRAPH/ACTIVE/RECOVERY would restart the action at each phase boundary.
-- `BossAnimationSourceBinding` now supports an explicit normalized `ClipWindow[start,end]` per logical animation key. The explicit window map must exactly cover the binding key set; missing/extra windows fail closed.
-- Every explicit window still requires concrete `BossAnimationMotionReview` approval and a verified imported source clip. Name similarity, duration and channel metrics remain insufficient evidence.
-- `BossAnimationSampleBridge` now maps only the authoritative server phase progress into the selected source window. It still owns no independent animation clock.
-- Zero-width windows are intentionally valid for a reviewed held pose; invalid/non-finite/out-of-range/reversed windows are rejected.
-- The previous two-argument full-clip binding and direct clip-map bridge constructors remain for compatibility/general fixtures. Production phase mappings should use explicit windows once their boundaries are reviewed and authored.
-- No Region 01 production boss attack timing, logical animation key, phase boundary, material, texture, encounter, hitbox, VFX, sound or balance value was guessed or authored in this batch.
+- Recovered the exact accepted runtime glTF from the previously verified executable-JAR artifact and independently rechecked its SHA-256 against the accepted derivation before inspection.
+- Re-sampled `Headbutt` and `Punch` at their native animation-key cadence using the accepted skinned mesh plus articulated skeleton rather than clip-name inference.
+- Added `assets/sources/region_01_boss_dragon_evolved.phase_window_review.json` with source-motion-only boundaries at actual source keyframes.
+- Reviewed `Headbutt`: ANTICIPATION `0..7/45`, ACTION `7/45..9/45`, RECOVERY `9/45..22/45`. Frame 8 is the peak reviewed head/torso displacement and frame 9 starts recovery.
+- Reviewed `Punch`: ANTICIPATION `0..8/40`, ACTION `8/40..11/40`, RECOVERY `11/40..1`. Frame 10 is the peak reviewed distal-forelimb extension and frame 11 starts sustained recovery.
+- These are source-motion segments only. `ACTION` explicitly does NOT authorize a Minecraft ACTIVE damage window or define `attack_pattern` tick balance.
+- Added `BossAnimationPhaseWindowReview`: exact clip + exact `ClipWindow` evidence is required; overlapping, numerically altered, wrong-clip or duplicate source-motion segment claims fail closed.
+- Added `BossAnimationSourceBinding.reviewed(...)` and `requireReviewedPhaseWindows()`. Production phase-partitioned bindings can now require both whole-clip `BossAnimationMotionReview` and exact fine-window review. Legacy explicit-window constructors remain non-production/general compatibility paths and expose no reviewed-window capability.
+- Added Java regression coverage and Python asset-intake validation pinning the review receipt to the exact accepted runtime resource/hash.
+- No server boss timing, hit volume, logical animation key, material, texture, encounter, hitbox, VFX, sound or balance value was guessed.
 
 ## Changed systems/files
 
+- `assets/sources/region_01_boss_dragon_evolved.phase_window_review.json`
+- `src/main/java/kr/moonseungjun/riftfrontier/combat/presentation/BossAnimationPhaseWindowReview.java`
 - `src/main/java/kr/moonseungjun/riftfrontier/combat/presentation/BossAnimationSourceBinding.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/combat/presentation/BossAnimationSampleBridge.java`
-- `src/test/java/kr/moonseungjun/riftfrontier/combat/presentation/BossAnimationSourceBindingTest.java`
-- `src/test/java/kr/moonseungjun/riftfrontier/combat/presentation/BossAnimationSampleBridgeTest.java`
+- `src/test/java/kr/moonseungjun/riftfrontier/combat/presentation/BossAnimationPhaseWindowReviewTest.java`
+- `tools/tests/test_region01_boss_phase_window_review.py`
 - `docs/AUTOMATION_HANDOFF.md`
 
 ## Verification
 
-- Implementation/test HEAD `5bd87fd4bb8ec3b1bece834912964e342838fbc9`, `Build Riftfrontier` run `34393651418`: FULL SUCCESS. Passed toolchain verification, asset intake tests, JUnit + clean build, required native GameTest, dedicated-server smoke, Xvfb client smoke, executable JAR inspection, report generation, deliverable upload and logs/report upload.
-- Direct visual inspection of the actual eight accepted Dragon source clips: DONE; receipt `assets/sources/region_01_boss_dragon_evolved.motion_review.json` is separately validated on `main`.
+- Local Python receipt test: 3/3 PASS against exact accepted runtime glTF extracted from the verified prior deliverable.
+- Local Java compile: NOT RUN successfully because this execution environment only has Java 21 while the project/JAR requires Java 25; no success was claimed from that environment.
+- Implementation/test HEAD `b38ac52559538df75c2331833b5a08d0ff32f180`, `Build Riftfrontier` run `34399727213`: FULL SUCCESS.
+- CI passed toolchain verification, asset-intake tests, Java 25 JUnit + clean build, required native GameTest, dedicated-server smoke, Xvfb client smoke, executable-JAR inspection, report generation, deliverable upload and logs/report upload.
 - Exact production server-authoritative Region 01 boss `attack_pattern` / `boss_profile` / presentation logical keys: NOT AUTHORED.
-- Reviewed normalized anticipation/ACTIVE/recovery source-window boundaries for `Headbutt`, `Punch` or other action clips: NOT AUTHORED / NOT TESTED. The current coarse five-sample motion receipt proves clip motion identity, not exact combat phase cut points.
-- Approved final material/texture/`RenderType` publication, actual Region 01 encounter attachment, final dimensions/hitbox/scale, spawned/deformed Dragon graphical capture, VFX/sound and human field-play: NOT IMPLEMENTED / NOT TESTED.
+- Production reviewed logical animation binding constructed from the new fine windows: NOT AUTHORED because the server semantic keys/timing are not yet authored.
+- Same-`ResourceManager` staging/publication of reviewed animation binding: NOT IMPLEMENTED.
+- Approved final material/texture/`RenderType`, actual encounter attachment, final dimensions/hitbox/scale, spawned/deformed Dragon graphical capture, VFX/sound and human field-play: NOT IMPLEMENTED / NOT TESTED.
 
 ## Do not repeat or revert
 
-- Exact Dragon source reacquisition, deterministic sanitizer acceptance, runtime packaging and direct eight-clip visual review are DONE. Pinned source SHA-256: `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c`; accepted derivation SHA-256: `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`; provenance SHA-256: `3e16877a0043cf980ac8de05bb518834c5e77bd72d96103b4984c65a2a5a4c6c`.
-- Preserve the exact eight source clips, animation audit receipt, visual motion-review receipt and `BossAnimationMotionReview` requirement. Never infer semantics from clip names, durations or channel metrics.
-- Preserve the new source-window contract. Do not regress production phase mappings to restarting a whole source action clip for every TELEGRAPH/ACTIVE/RECOVERY phase.
-- Preserve exact-source/structure/inventory gates, staged exact-`ResourceManager` transaction, `Region01BossGeometryPreparation`, prepared `SkinnedMeshAsset` identity publication, UUID-bound actor identity, monotonic server ticks, server-authoritative ACTIVE-only damage, four-influence LBS and arbitrary triangle topology.
+- Exact Dragon source reacquisition, deterministic sanitizer acceptance, runtime packaging, eight-clip visual motion review and the new native-keyframe `Headbutt`/`Punch` source-window review are DONE.
+- Preserve source SHA-256 `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c`, accepted derivation SHA-256 `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`, and provenance SHA-256 `3e16877a0043cf980ac8de05bb518834c5e77bd72d96103b4984c65a2a5a4c6c`.
+- Preserve `BossAnimationMotionReview`, `BossAnimationPhaseWindowReview`, exact source-window evidence and server-authoritative phase progress. Never infer gameplay semantics from clip names/durations/channel metrics and never treat source `ACTION` as damage authorization by itself.
+- Preserve exact-source/structure/inventory gates, staged exact-`ResourceManager` transaction, `Region01BossGeometryPreparation`, exact prepared `SkinnedMeshAsset` identity publication, UUID actor identity, monotonic server ticks, ACTIVE-only authoritative damage, four-influence LBS and arbitrary triangle topology.
 - Do not allow source `Atlas` material/texture/image bytes into production. Do not restore GeckoLib/rigid-cube approximation as a shortcut.
-- Do not attach the boss to encounter/natural spawning or invent final dimensions/hitbox/combat/phase-window tuning before authored server semantics and review evidence exist. Do not tune M2 pressure/patrol values without field-play evidence.
+- Do not attach the boss to encounter/natural spawning or invent final dimensions/hitbox/balance timing without authored server semantics and field/visual evidence.
 
 ## Exact next start point
 
-1. Re-check remote `main`, canonical docs, M3 resource/render code, `REFERENCE_TARGETS.md`, `THIRD_PARTY_ASSETS.md`, the current Dragon motion-review receipt, then this handoff.
-2. Do not fabricate Region 01 boss balance/timing: production `region_01` still lacks authored server-authoritative boss attack patterns/profile/presentation logical keys.
-3. Perform finer deterministic frame/pose review of the accepted `Headbutt` and `Punch` clips to identify defensible normalized anticipation/action/recovery boundaries. Record those cut points in a separate review receipt; the existing coarse 0/25/50/75/100% motion receipt alone is not sufficient to claim exact phase boundaries.
-4. Once server-authoritative boss selectors/logical animation keys are authored from the M3 combat contract, create `BossAnimationSourceBinding` entries only for semantics supported by observed motion and pair each with the reviewed `ClipWindow` rather than whole-clip replay.
-5. Stage that reviewed binding capability in the same current `RiftfrontierClientResources` reload transaction as `Region01BossGeometryPreparation`, and construct `BossCustomGeometryRenderPipeline` only from the current prepared mesh.
-6. Keep approved material/texture/`RenderType` as an independent fail-closed prerequisite. When geometry + reviewed windowed binding + approved material all derive from one current reload, publish atomically and perform actual spawned-boss graphical capture before encounter attachment, final hitbox/telegraph, VFX/sound or tuning.
+1. Re-check remote `main`, canonical docs, M3 combat/presentation code, `REFERENCE_TARGETS.md`, `THIRD_PARTY_ASSETS.md`, both Dragon motion-review receipts, then this handoff.
+2. Do not redo source animation review. Treat the reviewed `Headbutt` and `Punch` windows above as source-motion evidence, not gameplay timing.
+3. Inspect the existing M3 combat/content schema and determine whether a defensible Region 01 server boss semantic contract can be authored without inventing balance timing. If timing still requires field-play evidence, do not guess it.
+4. In that case, take the next objective implementation seam instead: add a typed production animation-preparation capability tied to the current `Region01BossGeometryPreparation.PreparedGeometry` / `ValidatedReload`, and require `BossAnimationSourceBinding.requireReviewedPhaseWindows()` before a windowed binding can enter renderer publication.
+5. Once server-authoritative boss selectors/logical animation keys are legitimately authored, construct bindings only through `BossAnimationSourceBinding.reviewed(...)`, map authoritative phase progress through the reviewed source windows, and keep material/texture/`RenderType` as an independent fail-closed prerequisite.
+6. Publish geometry + reviewed windowed animation binding + approved material atomically from one current resource reload, then perform actual spawned-boss graphical capture before encounter attachment, final hitbox/telegraph tuning, VFX/sound or balance work.
