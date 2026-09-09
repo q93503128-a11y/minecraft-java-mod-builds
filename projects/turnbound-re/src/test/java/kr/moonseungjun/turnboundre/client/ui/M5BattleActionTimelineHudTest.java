@@ -43,7 +43,8 @@ class M5BattleActionTimelineHudTest {
     @Test
     void hudFocusStaysOnTheActionActorUntilTheTimelineBeatFinishes() {
         BattleActionTimelineState.Cue action = new BattleActionTimelineState.Cue(
-                "e1", "bite", List.of("p1"), BattleActionTimelineState.Phase.IMPACT, 0.4D, 1, 2);
+                "e1", "bite", List.of("p1"), BattleActionTimelineState.MotionStyle.CLOSE,
+                BattleActionTimelineState.Phase.IMPACT, 0.4D, 1, 2);
 
         assertEquals("e1", BattleHud.presentationActorId("p2", action));
         assertEquals("p2", BattleHud.presentationActorId("p2", null));
