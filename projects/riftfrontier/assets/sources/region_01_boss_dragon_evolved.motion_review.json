@@ -1,0 +1,28 @@
+{
+  "kind": "riftfrontier:region_01_boss_animation_motion_review",
+  "schema_version": 1,
+  "reviewed_on": "2026-09-10",
+  "accepted_derivation": {
+    "resource": "riftfrontier:boss_presentation/region_01/dragon_evolved.sanitized.v1.gltf",
+    "sha256": "ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac",
+    "animation_audit_receipt": "assets/sources/region_01_boss_dragon_evolved.animation_audit.json"
+  },
+  "method": {
+    "sampled_normalized_times": [0.0, 0.25, 0.5, 0.75, 1.0],
+    "description": "sampled the accepted sanitized glTF at normalized times 0.00, 0.25, 0.50, 0.75 and 1.00; applied the actual joint hierarchy, animation TRS, inverse bind matrices and four-influence skinning; visually compared both skinned-mesh and skeleton poses; used channel-value comparison only to distinguish visually subtle No/Yes neck-head rotational paths"
+  },
+  "reviewed_clips": {
+    "Death": "large whole-body orientation and silhouette transition away from the starting airborne pose; the final sample remains markedly displaced instead of cycling back to the start",
+    "Fast_Flying": "rapid bilateral wing and body oscillation across the clip with a cyclic return close to the starting pose",
+    "Flying_Idle": "slower bilateral wing and body hover-like oscillation with a cyclic return close to the starting pose",
+    "Headbutt": "pronounced early forward/downward head-and-torso drive followed by recovery toward the starting airborne pose; the forelimbs are not the dominant moving silhouette",
+    "HitReact": "short whole-body recoil/offset that peaks early-to-mid clip and recovers toward the starting pose",
+    "No": "repeating neck/head orientation swing over an otherwise shared airborne body cycle; the motion returns near the starting orientation",
+    "Punch": "one forelimb raises and extends prominently through the early/middle samples while the torso follows, then the limb retracts toward the starting pose",
+    "Yes": "repeating neck/head orientation change on a different rotational path from No over the shared airborne body cycle, returning near the starting orientation"
+  },
+  "logical_binding": {
+    "status": "NOT_AUTHORED",
+    "note": "Visual source-motion review is complete, but the current production Region 01 content does not yet define authored boss presentation logical animation keys. Do not derive gameplay mappings from source clip names; bind only after server-authoritative presentation selectors and logical keys are authored."
+  }
+}
