@@ -52,8 +52,8 @@ public final class ContentValidator {
                     if(m.behaviourChanges().isEmpty())error(issues,Code.EMPTY_WEAPON_MODULE_CHANGES,m.id(),"weapon module changes no combat behaviour");
                     for(ContentId id:m.compatibleFamilies()){
                         require(registry,issues,m.id(),CoreDefinition.Kind.WEAPON_FAMILY,id);
-                        registry.find(CoreDefinition.Kind.WEAPON_FAMILY,id).ifPresent(definition->{
-                            CoreDefinition.WeaponFamily family=(CoreDefinition.WeaponFamily)definition;
+                        registry.find(CoreDefinition.Kind.WEAPON_FAMILY,id).ifPresent(familyDefinition->{
+                            CoreDefinition.WeaponFamily family=(CoreDefinition.WeaponFamily)familyDefinition;
                             if(!m.socket().isBlank()&&!family.moduleSockets().contains(m.socket()))error(issues,Code.INCOMPATIBLE_WEAPON_MODULE_SOCKET,m.id(),"module socket '"+m.socket()+"' is not declared by family "+id);
                         });
                     }
