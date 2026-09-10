@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-alpha.4
+
+- Made the reel fight readable instead of hiding its rules: the HUD now shows the actual safe-tension band used by server-side catch progress.
+- Added live reel guidance that changes between reel in, release and maintain rhythm based on current tension.
+- Replaced the old fill-only tension display with a safe-band plus moving tension marker so line state is easier to judge at a glance.
+- Added a compact catch-result card after a successful catch with species, rarity, weight, length and value.
+- Kept the result card client-presentation-only; catch ownership, size/value, coins and progression remain server authoritative.
+- Kept the playtest gate unchanged: the lake composition and fish motion still require actual Minecraft visual review before this is declared ready for the user's playtest.
+
 ## 0.1.0-alpha.3
 
 - Added the first dedicated fishing dimension, `fishinggame:lakeside`, instead of relying on ordinary survival terrain.

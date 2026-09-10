@@ -39,7 +39,7 @@ jobs:
 
       - name: Inspect playable JAR
         run: |
-          JAR="build/libs/fishing-game-0.1.0-alpha.3.jar"
+          JAR="build/libs/fishing-game-0.1.0-alpha.4.jar"
           test -s "$JAR"
           jar tf "$JAR" | grep -q '^fabric.mod.json$'
           jar tf "$JAR" | grep -q '^dev/moonseungjun/fishinggame/FishingGameMod.class$'
@@ -84,7 +84,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: fishing-game-0.1.0-alpha.3-build
+          name: fishing-game-0.1.0-alpha.4-build
           path: |
             projects/fishing-game/build/libs/*.jar
             projects/fishing-game/build/libs/*.sha256

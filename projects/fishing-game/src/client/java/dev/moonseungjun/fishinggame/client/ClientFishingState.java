@@ -17,14 +17,24 @@ public final class ClientFishingState {
     private static String locationName = "청람 호수";
     private static String notice = "";
     private static long noticeUntilMs;
+    private static boolean profileInitialized;
+    private static CatchEntry recentCatch;
+    private static long recentCatchUntilMs;
 
     private ClientFishingState() {
     }
 
     public static void apply(ProfileSnapshotPayload payload) {
+        List<CatchEntry> incoming = List.copyOf(payload.catches());
+        if (profileInitialized && stage == 2 && incoming.size() > catches.size() && !incoming.isEmpty()) {
+            recentCatch = incoming.getLast();
+            recentCatchUntilMs = System.currentTimeMillis() + 4200L;
+        }
+
         coins = payload.coins();
         rodTier = payload.rodTier();
-        catches = List.copyOf(payload.catches());
+        catches = incoming;
+        profileInitialized = true;
     }
 
     public static void apply(FishingStatePayload payload) {
@@ -48,4 +58,5 @@ public final class ClientFishingState {
     public static String speciesName() { return speciesName; }
     public static String locationName() { return locationName; }
     public static String notice() { return System.currentTimeMillis() <= noticeUntilMs ? notice : ""; }
+    public static CatchEntry recentCatch() { return System.currentTimeMillis() <= recentCatchUntilMs ? recentCatch : null; }
 }

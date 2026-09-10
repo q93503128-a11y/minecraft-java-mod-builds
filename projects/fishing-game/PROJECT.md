@@ -5,7 +5,7 @@
 - Slug: fishing-game
 - Mod ID: fishinggame
 - Namespace: fishinggame
-- Mod version: 0.1.0-alpha.3
+- Mod version: 0.1.0-alpha.4
 - Minecraft: 26.2
 - Java: 25
 - Loader: Fabric
@@ -13,7 +13,7 @@
 - Fabric API: >=0.159.0+26.2
 - Gradle: 9.5.1
 - Build plugin: Fabric Loom 1.17.19
-- Final JAR: build/libs/fishing-game-0.1.0-alpha.3.jar
+- Final JAR: build/libs/fishing-game-0.1.0-alpha.4.jar
 - Existing-world compatibility: fishing profiles remain compatible; the dedicated fishing dimension is added without replacing vanilla dimensions
 - Required dependencies: Fabric API
 - Optional external mods: Essential, connection/hosting convenience only
@@ -37,7 +37,13 @@ The player is not expected to mine, craft, fight, manage hunger, or survive nigh
 
 ## UI / HUD rule
 
-Do not invent the visual language ad hoc. The first UI system uses Kenney CC0 UI assets, with information architecture informed by proven fishing games such as Fish It / Fisch. External assets and their licenses are tracked in `THIRD_PARTY_ASSETS.md`.
+Do not invent the visual language ad hoc. The UI system uses Kenney CC0 UI assets, with information architecture informed by proven fishing games such as Fish It / Fisch. External assets and their licenses are tracked in `THIRD_PARTY_ASSETS.md`.
+
+Alpha.4 presentation rules:
+- the tension mechanic must show its actual safe band instead of asking the player to infer an invisible threshold
+- reeling guidance must react to current tension: reel in, release, or maintain rhythm
+- a successful catch must get a compact result card with species, rarity, weight, length and value
+- HUD feedback must stay compact enough to preserve the fishing scene as the main visual focus
 
 ## World direction
 
@@ -52,7 +58,9 @@ The first lakeside is authored inside the mod because no redistributable third-p
 
 ## Catch presentation direction
 
-A hooked fish must be spatially visible. Alpha.3 uses a temporary pool of real vanilla fish entities as server-controlled visual proxies that approach the bobber and fight around it. These are not the final species models; later asset/model work should replace them without returning to invisible numeric-only catches.
+A hooked fish must be spatially visible. Alpha.3 established a temporary pool of real vanilla fish entities as server-controlled visual proxies that approach the bobber and fight around it. These are not the final species models; later asset/model work should replace them without returning to invisible numeric-only catches.
+
+Alpha.4 improves the HUD-side read of the fight and result, but it does not declare the fish proxy or lakeside art final.
 
 ## User-test gate
 
@@ -63,7 +71,9 @@ Do not hand the user another JAR for a tiny technical check. A user-facing test 
 - selling
 - meaningful rod progression
 - visible/credible fish presentation during the catch
+- readable tension control with the safe band visible
+- clear catch-result feedback
 - at least one dedicated fishing location with acceptable visual quality
 - complete cast -> catch -> sell -> upgrade loop
 
-Build success alone does not satisfy this gate. The first dedicated location and visible fish proxy move alpha.3 close to the gate, but actual Minecraft visual review is still required before calling it ready for the user's playtest.
+Build success alone does not satisfy this gate. Alpha.4 closes a major HUD/feedback gap, but actual Minecraft visual review of the lake, fish motion and screen composition is still required before calling the build playtest-ready.
