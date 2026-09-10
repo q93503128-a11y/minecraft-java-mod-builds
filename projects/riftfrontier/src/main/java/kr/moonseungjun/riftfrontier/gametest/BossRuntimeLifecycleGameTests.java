@@ -61,7 +61,7 @@ public final class BossRuntimeLifecycleGameTests {
             Set.of("step_out"),
             "boss_runtime_owner_cue"
         ));
-        registry.register(new CoreDefinition.BossProfile(boss, 1, Set.of(attack), "keep_escape_lane"));
+        registry.register(new CoreDefinition.BossProfile(boss, 2, Set.of(attack), "keep_escape_lane"));
 
         Map<BossPresentationProfile.BindingKey, BossPresentationProfile.AssetBinding> bindings = new LinkedHashMap<>();
         addPresentationBindings(bindings, "boss_runtime_owner_cue", "technical_owner_lifecycle");
@@ -75,7 +75,7 @@ public final class BossRuntimeLifecycleGameTests {
         CombatRuntimeCatalog catalog = new CombatRuntimeCatalog(registry);
         ValidatedBossCombatSemantics semantics = ValidatedBossCombatSemantics.validate(
             catalog,
-            new BossCombatSemanticProfile(boss, Map.of(1, Set.of(attack))),
+            new BossCombatSemanticProfile(boss, Map.of(1, Set.of(attack), 2, Set.of(attack))),
             presentation
         );
         MinecraftBossCombatAdapter.ValidatedRuntime runtime = MinecraftBossCombatAdapter.validated(
@@ -91,6 +91,36 @@ public final class BossRuntimeLifecycleGameTests {
         helper.assertTrue(runtime.tick(level, owner, start).combat().attack().phase() == AttackTimeline.Phase.TELEGRAPH,
             "Bound owner must advance the authored attack clock");
         helper.assertTrue(runtime.cancelAttack(), "Fixture must explicitly close its first attack before reuse checks");
+
+        try {
+            runtime.beginNextAttack(start + 2L);
+            helper.assertTrue(false,
+                "A Minecraft-bound validated runtime must not restart combat through the ownerless low-level path");
+        } catch (IllegalStateException expected) {
+            helper.assertTrue(!runtime.attackExecuting(),
+                "Rejected ownerless begin must leave no authoritative attack execution alive");
+        }
+
+        helper.assertTrue(runtime.transitionToPhase(level, owner, 2).newPhase() == 2,
+            "Bound boss phase changes must accept the exact authoritative owner context");
+        try {
+            runtime.transitionToPhase(1);
+            helper.assertTrue(false,
+                "A Minecraft-bound validated runtime must not mutate phase through the ownerless path");
+        } catch (IllegalStateException expected) {
+            helper.assertTrue(runtime.phase() == 2,
+                "Rejected ownerless phase mutation must preserve the authoritative phase");
+        }
+        try {
+            runtime.transitionToPhase(level, replacement, 1);
+            helper.assertTrue(false,
+                "A replacement actor must not mutate the phase of another boss' validated runtime");
+        } catch (IllegalStateException expected) {
+            helper.assertTrue(runtime.phase() == 2,
+                "Wrong-owner phase rejection must preserve the authoritative phase");
+        }
+        helper.assertTrue(runtime.transitionToPhase(level, owner, 1).newPhase() == 1,
+            "Original authoritative owner must remain able to perform the phase transition after rejected bypasses");
 
         try {
             runtime.beginNextAttack(level, replacement, start + 5L);
