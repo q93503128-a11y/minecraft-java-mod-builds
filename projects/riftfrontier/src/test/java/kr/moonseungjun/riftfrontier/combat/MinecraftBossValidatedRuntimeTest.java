@@ -27,7 +27,7 @@ final class MinecraftBossValidatedRuntimeTest {
         String source = normalizeWhitespace(Files.readString(ADAPTER_SOURCE));
 
         assertTrue(source.contains(
-                "public static ValidatedRuntime validated( CombatRuntimeCatalog catalog, ValidatedBossCombatSemantics validatedSemantics,"),
+                "public static ValidatedRuntime validated( CombatRuntimeCatalog catalog, ValidatedBossCombatSemantics semantics, MinecraftAttackAdapter.HitVolume hitVolume, float damage )"),
             "production factory must accept validated boss semantics and return the sealed runtime");
         assertTrue(source.contains("private ValidatedRuntime("),
             "production validated runtime must not be forgeable outside MinecraftBossCombatAdapter");
