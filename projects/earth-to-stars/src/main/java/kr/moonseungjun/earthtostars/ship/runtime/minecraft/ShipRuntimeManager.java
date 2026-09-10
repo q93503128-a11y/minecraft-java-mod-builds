@@ -26,6 +26,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -87,9 +89,12 @@ public final class ShipRuntimeManager {
         if (REPOSITORY.findOwnedBy(player.getUUID()).isPresent()) {
             return LaunchDeploymentResult.ALREADY_OWNS_CRAFT;
         }
-        return createStarterCraft(player, level, spawn) == null
-                ? LaunchDeploymentResult.DEPLOYMENT_FAILED
-                : LaunchDeploymentResult.DEPLOYED;
+        Entry entry = createStarterCraft(player, level, spawn);
+        if (entry == null) {
+            return LaunchDeploymentResult.DEPLOYMENT_FAILED;
+        }
+        boardAndControl(player, entry.exterior(), tick);
+        return LaunchDeploymentResult.DEPLOYED;
     }
 
     public static boolean restoreAndControl(ServerPlayer player, ServerLevel level, long tick) {
@@ -151,6 +156,52 @@ public final class ShipRuntimeManager {
         }
         player.sendSystemMessage(Component.translatable("message.earth_to_stars.ship.boarded"), true);
         return true;
+    }
+
+    public static InteractionResult serviceSupply(
+            ServerPlayer player,
+            ShipExteriorEntity exterior,
+            InteractionHand hand,
+            ShipSystemsManager.SupplyType type
+    ) {
+        Entry entry = ENTRIES.get(exterior.getId());
+        if (entry == null || entry.exterior() != exterior || exterior.isRemoved() || exterior.level() != player.level()) {
+            player.sendSystemMessage(Component.translatable("message.earth_to_stars.supply.no_ship"), true);
+            return InteractionResult.FAIL;
+        }
+        ShipState ship = entry.runtime().ship();
+        if (!ship.can(player.getUUID(), ShipPermission.INTERIOR_ACCESS)) {
+            player.sendSystemMessage(Component.translatable("message.earth_to_stars.supply.no_ship"), true);
+            return InteractionResult.FAIL;
+        }
+
+        ShipSystemsManager.SupplyLoadResult result = ShipSystemsManager.loadSupply(
+                ship, type, player.level().getServer());
+        return switch (result) {
+            case LOADED -> {
+                if (!player.getAbilities().instabuild) {
+                    player.getItemInHand(hand).shrink(1);
+                }
+                player.sendSystemMessage(Component.translatable(
+                        type == ShipSystemsManager.SupplyType.PROPELLANT
+                                ? "message.earth_to_stars.supply.propellant_loaded"
+                                : "message.earth_to_stars.supply.oxygen_loaded"
+                ), true);
+                yield InteractionResult.SUCCESS_SERVER;
+            }
+            case TANK_FULL -> {
+                player.sendSystemMessage(Component.translatable(
+                        type == ShipSystemsManager.SupplyType.PROPELLANT
+                                ? "message.earth_to_stars.supply.propellant_full"
+                                : "message.earth_to_stars.supply.oxygen_full"
+                ), true);
+                yield InteractionResult.SUCCESS_SERVER;
+            }
+            case NO_ACCESSIBLE_SHIP -> {
+                player.sendSystemMessage(Component.translatable("message.earth_to_stars.supply.no_ship"), true);
+                yield InteractionResult.FAIL;
+            }
+        };
     }
 
     public static boolean controlNearest(ServerPlayer player, long tick) {
@@ -427,25 +478,14 @@ public final class ShipRuntimeManager {
 
     private static VehiclePair createVehiclePair(ServerLevel level, Vec3 position, float yaw, float pitch) {
         ShipExteriorEntity exterior = new ShipExteriorEntity(EarthToStarsEntities.SHIP_EXTERIOR.get(), level);
+        exterior.setVisualItem(EarthToStarsItems.STARTER_CRAFT_VISUAL.get());
         exterior.setPos(position.x, position.y, position.z);
         exterior.setYRot(yaw);
         exterior.setXRot(pitch);
         if (!level.addFreshEntity(exterior)) {
             return null;
         }
-
-        Display.ItemDisplay visual = SpaceVisualFactory.create(
-                level,
-                EarthToStarsItems.STARTER_CRAFT_VISUAL.get(),
-                new ShipVec3(position.x, position.y, position.z),
-                yaw,
-                pitch
-        );
-        if (!level.addFreshEntity(visual)) {
-            exterior.discard();
-            return null;
-        }
-        return new VehiclePair(exterior, visual);
+        return new VehiclePair(exterior, exterior);
     }
 
     private static void executeTransition(MinecraftServer server, TransitionRequest request) {

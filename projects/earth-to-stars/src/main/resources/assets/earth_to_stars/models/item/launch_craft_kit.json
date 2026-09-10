@@ -1,7 +1,7 @@
 {
   "parent": "neoforge:item/default",
   "loader": "neoforge:obj",
-  "model": "earth_to_stars:models/kenney/space_kit/craft_speedera.obj",
+  "model": "earth_to_stars:models/runtime/starter_craft.obj",
   "mtl_override": "earth_to_stars:models/kenney/space_kit/craft_speedera.mtl",
   "automatic_culling": false,
   "shade_quads": true,
@@ -12,12 +12,79 @@
     "particle": "#base"
   },
   "display": {
-    "gui": {"rotation": [25, 225, 0], "scale": [0.55, 0.55, 0.55]},
-    "ground": {"scale": [0.35, 0.35, 0.35]},
-    "fixed": {"scale": [0.6, 0.6, 0.6]},
-    "firstperson_righthand": {"rotation": [0, 225, 0], "scale": [0.45, 0.45, 0.45]},
-    "firstperson_lefthand": {"rotation": [0, 135, 0], "scale": [0.45, 0.45, 0.45]},
-    "thirdperson_righthand": {"rotation": [0, 225, 0], "scale": [0.4, 0.4, 0.4]},
-    "thirdperson_lefthand": {"rotation": [0, 135, 0], "scale": [0.4, 0.4, 0.4]}
+    "gui": {
+      "rotation": [
+        25,
+        225,
+        0
+      ],
+      "scale": [
+        0.22,
+        0.22,
+        0.22
+      ]
+    },
+    "ground": {
+      "scale": [
+        0.14,
+        0.14,
+        0.14
+      ]
+    },
+    "fixed": {
+      "scale": [
+        0.22,
+        0.22,
+        0.22
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        225,
+        0
+      ],
+      "scale": [
+        0.18,
+        0.18,
+        0.18
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        135,
+        0
+      ],
+      "scale": [
+        0.18,
+        0.18,
+        0.18
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        0,
+        225,
+        0
+      ],
+      "scale": [
+        0.16,
+        0.16,
+        0.16
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        0,
+        135,
+        0
+      ],
+      "scale": [
+        0.16,
+        0.16,
+        0.16
+      ]
+    }
   }
 }

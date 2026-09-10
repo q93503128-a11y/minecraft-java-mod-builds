@@ -9,8 +9,8 @@
   "entity.earth_to_stars.orbital_salvage_proxy": "Drifting Salvage Signal",
   "entity.earth_to_stars.interceptor_proxy": "Unknown Interceptor Drone",
   "message.earth_to_stars.launch.earth_only": "This craft must be assembled on Earth's surface.",
-  "message.earth_to_stars.launch.blocked": "Clear a 3x3x3 area before assembling the craft.",
-  "message.earth_to_stars.launch.deployed": "The launch craft comes online.",
+  "message.earth_to_stars.launch.blocked": "The launch craft needs more room. Clear nearby solid obstacles.",
+  "message.earth_to_stars.launch.deployed": "The launch craft deploys and the pilot seat comes online.",
   "message.earth_to_stars.launch.existing": "You already have a registered launch craft.",
   "message.earth_to_stars.launch.control_unavailable": "The craft assembled, but pilot control could not be linked.",
   "message.earth_to_stars.launch.failed": "The craft cannot be assembled at this location.",
@@ -39,5 +39,6 @@
   "message.earth_to_stars.upgrade.sensor_earth_only": "Install this sensor core while servicing the craft on Earth.",
   "message.earth_to_stars.upgrade.sensor_no_ship": "There is no accessible launch craft to service nearby.",
   "message.earth_to_stars.upgrade.sensor_already": "A recovered orbital scanner is already installed.",
-  "message.earth_to_stars.upgrade.sensor_slot_blocked": "The auxiliary sensor slot is unavailable."
+  "message.earth_to_stars.upgrade.sensor_slot_blocked": "The auxiliary sensor slot is unavailable.",
+  "message.earth_to_stars.supply.use_on_ship": "Use this supply directly on the launch craft hull."
 }

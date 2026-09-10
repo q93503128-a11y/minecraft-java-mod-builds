@@ -40,6 +40,9 @@ def main() -> None:
             "assets/earth_to_stars/models/item/starter_craft_visual.json",
             "assets/earth_to_stars/models/item/orbital_salvage_visual.json",
             "assets/earth_to_stars/models/item/orbital_interceptor_visual.json",
+            "assets/earth_to_stars/models/runtime/starter_craft.obj",
+            "assets/earth_to_stars/models/runtime/orbital_salvage.obj",
+            "assets/earth_to_stars/models/runtime/orbital_interceptor.obj",
             "assets/earth_to_stars/models/kenney/space_kit/craft_speedera.obj",
             "assets/earth_to_stars/models/kenney/space_kit/craft_speedera.mtl",
             "assets/earth_to_stars/models/kenney/space_kit/craft_miner.obj",
@@ -73,7 +76,7 @@ def main() -> None:
         ]
         for entry in required_classes:
             if entry not in names:
-                fail(f"missing M1/alpha.13 gameplay class {entry}")
+                fail(f"missing M1/alpha.14 gameplay class {entry}")
         if any(name.endswith(".java") for name in names):
             fail("development Java source leaked into production jar")
         if len(names) != len(set(names)):

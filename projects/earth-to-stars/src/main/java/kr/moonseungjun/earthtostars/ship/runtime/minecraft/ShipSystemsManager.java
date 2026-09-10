@@ -127,13 +127,17 @@ public final class ShipSystemsManager {
     public static SupplyLoadResult loadSupply(ServerPlayer player, SupplyType type) {
         ShipState ship = ShipRuntimeManager.accessibleShip(player, ShipPermission.INTERIOR_ACCESS).orElse(null);
         if (ship == null) return SupplyLoadResult.NO_ACCESSIBLE_SHIP;
+        return loadSupply(ship, type, player.level().getServer());
+    }
+
+    static SupplyLoadResult loadSupply(ShipState ship, SupplyType type, MinecraftServer server) {
         ShipSystemsRuntime systems = systems(ship);
         double accepted = switch (type) {
             case PROPELLANT -> systems.loadPropellantCell();
             case OXYGEN -> systems.loadOxygenCartridge();
         };
         if (accepted <= 1.0E-9D) return SupplyLoadResult.TANK_FULL;
-        ShipSystemsSavedData.get(player.level().getServer()).put(systems.snapshot());
+        ShipSystemsSavedData.get(server).put(systems.snapshot());
         return SupplyLoadResult.LOADED;
     }
 

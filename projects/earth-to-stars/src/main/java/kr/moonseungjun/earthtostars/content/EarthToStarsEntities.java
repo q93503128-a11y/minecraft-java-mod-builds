@@ -18,9 +18,9 @@ public final class EarthToStarsEntities {
             ShipExteriorEntity::new,
             MobCategory.MISC,
             builder -> builder
-                    .sized(2.4F, 1.35F)
-                    .eyeHeight(0.85F)
-                    .attach(EntityAttachment.PASSENGER, 0.0F, -0.50F, 0.12F)
+                    .sized(5.4F, 2.3F)
+                    .eyeHeight(1.25F)
+                    .attach(EntityAttachment.PASSENGER, 0.0F, 1.20F, 0.35F)
                     .clientTrackingRange(12)
                     .updateInterval(1)
                     .noSave()

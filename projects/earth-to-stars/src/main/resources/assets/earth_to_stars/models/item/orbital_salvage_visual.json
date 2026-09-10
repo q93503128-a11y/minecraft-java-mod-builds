@@ -1,7 +1,7 @@
 {
   "parent": "neoforge:item/default",
   "loader": "neoforge:obj",
-  "model": "earth_to_stars:models/kenney/space_kit/craft_miner.obj",
+  "model": "earth_to_stars:models/runtime/orbital_salvage.obj",
   "mtl_override": "earth_to_stars:models/kenney/space_kit/craft_miner.mtl",
   "automatic_culling": false,
   "shade_quads": true,

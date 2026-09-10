@@ -9,8 +9,8 @@
   "entity.earth_to_stars.orbital_salvage_proxy": "표류 잔해 신호",
   "entity.earth_to_stars.interceptor_proxy": "미확인 무인 요격기",
   "message.earth_to_stars.launch.earth_only": "이 개척선은 지구 지표에서 조립해야 합니다.",
-  "message.earth_to_stars.launch.blocked": "개척선을 펼칠 공간이 부족합니다. 3×3×3 공간을 확보하세요.",
-  "message.earth_to_stars.launch.deployed": "소형 개척선의 시동이 걸렸습니다.",
+  "message.earth_to_stars.launch.blocked": "개척선을 펼칠 공간이 부족합니다. 주변의 단단한 장애물을 치워 주세요.",
+  "message.earth_to_stars.launch.deployed": "개척선이 전개되고 조종석이 온라인 상태로 전환됩니다.",
   "message.earth_to_stars.launch.existing": "이미 등록된 개척선이 있습니다.",
   "message.earth_to_stars.launch.control_unavailable": "개척선은 조립됐지만 조종권을 연결할 수 없습니다.",
   "message.earth_to_stars.launch.failed": "이 위치에서는 개척선을 조립할 수 없습니다.",
@@ -39,5 +39,6 @@
   "message.earth_to_stars.upgrade.sensor_earth_only": "이 센서 코어는 지구에서 함선을 정비할 때 설치해야 합니다.",
   "message.earth_to_stars.upgrade.sensor_no_ship": "정비할 수 있는 개척선이 가까이에 없습니다.",
   "message.earth_to_stars.upgrade.sensor_already": "이미 회수형 궤도 센서가 설치되어 있습니다.",
-  "message.earth_to_stars.upgrade.sensor_slot_blocked": "보조 센서 슬롯을 사용할 수 없습니다."
+  "message.earth_to_stars.upgrade.sensor_slot_blocked": "보조 센서 슬롯을 사용할 수 없습니다.",
+  "message.earth_to_stars.supply.use_on_ship": "보급품을 들고 개척선 본체에 사용하세요."
 }
