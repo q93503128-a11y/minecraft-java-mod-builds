@@ -23,6 +23,8 @@ public final class ContentDocumentCodec {
             case "extraction_result" -> new CoreDefinition.ExtractionResultProfile(id, requireString(object, "outcome"), requireInt(object, "retained_percent"), requireInt(object, "threat_delta"), requireString(object, "world_consequence"));
             case "attack_pattern" -> new CoreDefinition.AttackPattern(id, requireString(object, "delivery"), requireInt(object, "telegraph_ticks"), requireInt(object, "active_ticks"), requireInt(object, "recovery_ticks"), stringSet(object, "counterplay"), requireString(object, "presentation_cue"));
             case "boss_profile" -> new CoreDefinition.BossProfile(id, requireInt(object, "phase_count"), idSet(object, "attack_patterns"), requireString(object, "arena_rule"));
+            case "weapon_family" -> new CoreDefinition.WeaponFamily(id, idSet(object, "moves"), stringSet(object, "combat_roles"), stringSet(object, "module_sockets"));
+            case "weapon_module" -> new CoreDefinition.WeaponModule(id, idSet(object, "compatible_families"), requireString(object, "socket"), stringSet(object, "behaviour_changes"));
             default -> throw new IllegalArgumentException("Unknown content kind '" + kind + "' for " + id);
         };
     }
