@@ -6,11 +6,13 @@ import dev.moonseungjun.fishinggame.FishingGameMod;
 import dev.moonseungjun.fishinggame.fishing.FishingLocation;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.clock.WorldClock;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -42,7 +44,7 @@ public final class FishingWorldManager {
 
             ServerLevel lakeside = server.getLevel(LAKESIDE_LEVEL);
             if (lakeside == null) return;
-            lakeside.setDayTime(NOON_TICKS);
+            lockLakesideClock(lakeside);
 
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 if (!player.level().dimension().equals(LAKESIDE_LEVEL)) continue;
@@ -61,7 +63,7 @@ public final class FishingWorldManager {
         }
 
         buildIfNeeded(lakeside);
-        lakeside.setDayTime(NOON_TICKS);
+        lockLakesideClock(lakeside);
         return teleportToArrival(player, lakeside);
     }
 
@@ -70,6 +72,14 @@ public final class FishingWorldManager {
             return FishingLocation.LAKESIDE;
         }
         return FishingLocation.LAKESIDE;
+    }
+
+    private static void lockLakesideClock(ServerLevel lakeside) {
+        Holder<WorldClock> clock = lakeside.dimensionType().defaultClock().orElseThrow(() ->
+                new IllegalStateException("Lakeside dimension type is missing fishinggame:lakeside default_clock")
+        );
+        lakeside.clockManager().setTotalTicks(clock, NOON_TICKS);
+        lakeside.clockManager().setPaused(clock, true);
     }
 
     private static boolean teleportToArrival(ServerPlayer player, ServerLevel lakeside) {
