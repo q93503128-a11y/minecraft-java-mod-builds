@@ -50,7 +50,7 @@ public final class CatchBagScreen extends Screen {
     }
 
     @Override
-    protected void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractBackground(graphics, mouseX, mouseY, partialTick);
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 4; col++) {

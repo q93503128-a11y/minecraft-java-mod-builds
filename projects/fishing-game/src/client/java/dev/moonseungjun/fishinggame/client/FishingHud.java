@@ -36,7 +36,7 @@ public final class FishingHud {
 
     private static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.options.hideGui) return;
+        if (minecraft.player == null || minecraft.gui.hud.isHidden()) return;
 
         int x = 8;
         int y = 8;
