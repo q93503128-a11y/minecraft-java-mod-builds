@@ -29,12 +29,37 @@ class BossPresentationClientStateTest {
     }
 
     @Test
+    void sameTickCannotRewriteAuthoritativePresentation() {
+        BossPresentationSemanticState first = active(7, FIRST, 20L, 0.25D);
+        assertTrue(BossPresentationClientState.accept(first));
+
+        assertFalse(BossPresentationClientState.accept(first));
+        assertFalse(BossPresentationClientState.accept(active(7, FIRST, 20L, 0.75D)));
+        assertFalse(BossPresentationClientState.accept(BossPresentationSemanticState.clear(7, FIRST, 20L)));
+
+        BossPresentationSemanticState retained = BossPresentationClientState.current(7, FIRST).orElseThrow();
+        assertEquals(20L, retained.serverGameTick());
+        assertEquals(0.25D, retained.phaseProgress());
+        assertTrue(retained.active());
+    }
+
+    @Test
+    void sameTickCannotReactivateAnAuthoritativeClear() {
+        assertTrue(BossPresentationClientState.accept(active(4, FIRST, 30L, 0.5D)));
+        assertTrue(BossPresentationClientState.accept(BossPresentationSemanticState.clear(4, FIRST, 31L)));
+
+        assertFalse(BossPresentationClientState.accept(active(4, FIRST, 31L, 0.8D)));
+        assertTrue(BossPresentationClientState.current(4, FIRST).isEmpty());
+    }
+
+    @Test
     void reusedNumericIdCannotExposePreviousActorPresentation() {
         assertTrue(BossPresentationClientState.accept(active(7, FIRST, 20L, 0.75D)));
 
         assertTrue(BossPresentationClientState.current(7, SECOND).isEmpty());
         assertEquals(FIRST, BossPresentationClientState.current(7, FIRST).orElseThrow().entityUuid());
 
+        // A different UUID is a different logical actor and may come from a different level-time epoch.
         assertTrue(BossPresentationClientState.accept(active(7, SECOND, 3L, 0.25D)));
         assertTrue(BossPresentationClientState.current(7, FIRST).isEmpty());
         assertEquals(SECOND, BossPresentationClientState.current(7, SECOND).orElseThrow().entityUuid());
