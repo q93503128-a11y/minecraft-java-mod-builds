@@ -4,8 +4,8 @@ import kr.moonseungjun.turnboundre.client.BattleResultClientState;
 import kr.moonseungjun.turnboundre.network.BattleResultNetworkPayloads;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
@@ -18,7 +18,6 @@ public final class BattleResultScreen extends Screen {
     private static final int CONTINUE_UNLOCK_TICKS = 12;
 
     private BattleResultNetworkPayloads.ResultView result;
-    private Button continueButton;
     private boolean acknowledgementSent;
     private long seenGeneration = -1L;
     private String feedback = "";
@@ -32,15 +31,6 @@ public final class BattleResultScreen extends Screen {
     @Override
     protected void init() {
         syncState();
-        if (!BattleResultLayout.supports(this.width, this.height)) return;
-        BattleResultLayout.Layout layout = BattleResultLayout.calculate(this.width, this.height);
-        int buttonWidth = Math.min(110, layout.footer().width());
-        continueButton = Button.builder(Component.translatable("screen.turnbound_re.result.continue"), ignored -> acknowledge())
-                .bounds(layout.footer().x() + (layout.footer().width() - buttonWidth) / 2,
-                        layout.footer().y() + 2, buttonWidth, 20)
-                .build();
-        refreshContinueState();
-        this.addRenderableWidget(continueButton);
     }
 
     @Override
@@ -56,13 +46,12 @@ public final class BattleResultScreen extends Screen {
             acknowledgementSent = false;
             presentationTicks = 0;
         }
-        refreshContinueState();
     }
 
     @Override
     public void onClose() {
         if (presentationTicks >= CONTINUE_UNLOCK_TICKS) acknowledge();
-        // Intentionally do not call super: ESC is equivalent to Continue only after the short reveal cadence.
+        // ESC is equivalent to Continue only after the short reveal cadence.
     }
 
     @Override
@@ -96,6 +85,8 @@ public final class BattleResultScreen extends Screen {
             renderRewards(graphics, layout.rewards());
         }
 
+        renderContinueControl(graphics, mouseX, mouseY);
+
         if (acknowledgementSent) {
             feedback = Component.translatable("screen.turnbound_re.result.returning").getString();
         } else if (!BattleResultClientState.closeError().isBlank()) {
@@ -107,6 +98,49 @@ public final class BattleResultScreen extends Screen {
                     acknowledgementSent ? UiVisualLanguage.TEXT_SECONDARY : UiVisualLanguage.TEXT_WARNING, true);
         }
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (event.button() == 0 && continueEnabled() && BattleResultLayout.supports(this.width, this.height)) {
+            UiLayoutMetrics.Rect button = continueBounds();
+            int mouseX = (int) Math.floor(event.x());
+            int mouseY = (int) Math.floor(event.y());
+            if (TurnboundMenuScreen.contains(button, mouseX, mouseY)) {
+                acknowledge();
+                return true;
+            }
+        }
+        return super.mouseClicked(event, doubleClick);
+    }
+
+    private void renderContinueControl(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+        UiLayoutMetrics.Rect bounds = continueBounds();
+        boolean enabled = continueEnabled();
+        UiVisualLanguage.FrameState state = !enabled
+                ? UiVisualLanguage.FrameState.DISABLED
+                : TurnboundMenuScreen.contains(bounds, mouseX, mouseY)
+                        ? UiVisualLanguage.FrameState.FOCUS
+                        : UiVisualLanguage.FrameState.IDLE;
+        UiVisualLanguage.frame(graphics, bounds.x(), bounds.y(), bounds.width(), bounds.height(), state);
+        Component label = Component.translatable("screen.turnbound_re.result.continue");
+        int x = bounds.x() + Math.max(UiLayoutMetrics.SPACE_4, (bounds.width() - this.font.width(label)) / 2);
+        int y = bounds.y() + Math.max(UiLayoutMetrics.SPACE_2, (bounds.height() - this.font.lineHeight) / 2);
+        graphics.text(this.font, label, x, y, UiVisualLanguage.textColor(state), true);
+    }
+
+    private UiLayoutMetrics.Rect continueBounds() {
+        BattleResultLayout.Layout layout = BattleResultLayout.calculate(this.width, this.height);
+        int buttonWidth = Math.min(110, layout.footer().width());
+        return new UiLayoutMetrics.Rect(
+                layout.footer().x() + (layout.footer().width() - buttonWidth) / 2,
+                layout.footer().y() + 2,
+                buttonWidth,
+                20);
+    }
+
+    private boolean continueEnabled() {
+        return result != null && !acknowledgementSent && presentationTicks >= CONTINUE_UNLOCK_TICKS;
     }
 
     private void renderRewards(GuiGraphicsExtractor graphics, BattleResultLayout.Rect region) {
@@ -157,17 +191,10 @@ public final class BattleResultScreen extends Screen {
         return y + 26;
     }
 
-    private void refreshContinueState() {
-        if (continueButton != null) {
-            continueButton.active = result != null && !acknowledgementSent && presentationTicks >= CONTINUE_UNLOCK_TICKS;
-        }
-    }
-
     private void acknowledge() {
         if (acknowledgementSent || result == null || presentationTicks < CONTINUE_UNLOCK_TICKS) return;
         acknowledgementSent = true;
         feedback = Component.translatable("screen.turnbound_re.result.returning").getString();
-        refreshContinueState();
         ClientPacketDistributor.sendToServer(BattleResultNetworkPayloads.AcknowledgeResultC2S.from(result));
     }
 

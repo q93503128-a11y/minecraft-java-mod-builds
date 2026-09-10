@@ -26,12 +26,17 @@ import java.util.UUID;
 /**
  * Non-pausing production command picker. The screen owns only temporary selection state;
  * every action and target candidate originates from the current authoritative server snapshot.
+ * Visible controls use the adopted Kenney-backed frame language rather than vanilla button skins.
  */
 public final class BattleCommandScreen extends Screen {
     private final List<ActionButtonBinding> actionButtons = new ArrayList<>();
     private final List<TargetButtonBinding> targetButtons = new ArrayList<>();
     private BattleNetworkPayloads.SnapshotAction selectedAction;
     private final Set<String> selectedTargetIds = new LinkedHashSet<>();
+    private Button targetBackButton;
+    private Button targetConfirmButton;
+    private Button targetPrevButton;
+    private Button targetNextButton;
     private int targetPage;
     private int targetHeaderTextX;
     private int targetHeaderTextY;
@@ -47,6 +52,10 @@ public final class BattleCommandScreen extends Screen {
     protected void init() {
         actionButtons.clear();
         targetButtons.clear();
+        targetBackButton = null;
+        targetConfirmButton = null;
+        targetPrevButton = null;
+        targetNextButton = null;
         targetHeaderTextX = 0;
         targetHeaderTextY = 0;
         targetHeaderTextWidth = 0;
@@ -99,7 +108,6 @@ public final class BattleCommandScreen extends Screen {
                     .bounds(x, y, cell, 20)
                     .build();
             button.active = action.usable();
-            this.addRenderableWidget(button);
             actionButtons.add(new ActionButtonBinding(button, action));
             x += cell + gap;
         }
@@ -158,46 +166,42 @@ public final class BattleCommandScreen extends Screen {
             Button target = Button.builder(Component.literal(label), ignored -> toggleTarget(model, participant.id()))
                     .bounds(x, y, buttonWidth, rowHeight)
                     .build();
-            this.addRenderableWidget(target);
             targetButtons.add(new TargetButtonBinding(target, participant.id()));
         }
 
         UiLayoutMetrics.Rect header = layout.header();
         int headerHeight = header.height();
         int backWidth = 42;
-        this.addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), ignored -> clearTargetSelection())
+        targetBackButton = Button.builder(Component.translatable("gui.cancel"), ignored -> clearTargetSelection())
                 .bounds(header.x(), header.y(), backWidth, headerHeight)
-                .build());
+                .build();
 
         int right = header.right();
         if (selectedAction.targetCount() > 1) {
             int confirmWidth = 64;
             right -= confirmWidth;
-            Button confirm = Button.builder(
+            targetConfirmButton = Button.builder(
                             Component.translatable("screen.turnbound_re.confirm_targets",
                                     selectedTargetIds.size(), selectedAction.targetCount()),
                             ignored -> submit(model, selectedAction, List.copyOf(selectedTargetIds)))
                     .bounds(right, header.y(), confirmWidth, headerHeight)
                     .build();
-            confirm.active = selectedTargetIds.size() == selectedAction.targetCount();
-            this.addRenderableWidget(confirm);
+            targetConfirmButton.active = selectedTargetIds.size() == selectedAction.targetCount();
             right -= gap;
         }
 
         if (pageCount > 1) {
             int navWidth = 20;
             right -= navWidth;
-            Button next = Button.builder(Component.literal(">"), ignored -> changePage(1))
+            targetNextButton = Button.builder(Component.literal(">"), ignored -> changePage(1))
                     .bounds(right, header.y(), navWidth, headerHeight)
                     .build();
-            next.active = targetPage + 1 < pageCount;
-            this.addRenderableWidget(next);
+            targetNextButton.active = targetPage + 1 < pageCount;
             right -= gap + navWidth;
-            Button prev = Button.builder(Component.literal("<"), ignored -> changePage(-1))
+            targetPrevButton = Button.builder(Component.literal("<"), ignored -> changePage(-1))
                     .bounds(right, header.y(), navWidth, headerHeight)
                     .build();
-            prev.active = targetPage > 0;
-            this.addRenderableWidget(prev);
+            targetPrevButton.active = targetPage > 0;
             right -= gap;
         }
 
@@ -265,10 +269,43 @@ public final class BattleCommandScreen extends Screen {
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         BattlePresentationModel model = BattleClientState.presentation().orElse(null);
-        if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT && model != null && selectedAction != null) {
-            String stageTargetId = virtualStageTargetAt(model, event.x(), event.y());
-            if (stageTargetId != null) {
-                toggleTarget(model, stageTargetId);
+        if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT && model != null) {
+            if (selectedAction != null) {
+                String stageTargetId = virtualStageTargetAt(model, event.x(), event.y());
+                if (stageTargetId != null) {
+                    toggleTarget(model, stageTargetId);
+                    return true;
+                }
+            }
+
+            int mouseX = (int) Math.floor(event.x());
+            int mouseY = (int) Math.floor(event.y());
+            for (ActionButtonBinding binding : actionButtons) {
+                if (binding.button().active && contains(binding.button(), mouseX, mouseY)) {
+                    chooseAction(binding.action());
+                    return true;
+                }
+            }
+            for (TargetButtonBinding binding : targetButtons) {
+                if (binding.button().active && contains(binding.button(), mouseX, mouseY)) {
+                    toggleTarget(model, binding.participantId());
+                    return true;
+                }
+            }
+            if (enabledHit(targetBackButton, mouseX, mouseY)) {
+                clearTargetSelection();
+                return true;
+            }
+            if (enabledHit(targetConfirmButton, mouseX, mouseY)) {
+                submit(model, selectedAction, List.copyOf(selectedTargetIds));
+                return true;
+            }
+            if (enabledHit(targetPrevButton, mouseX, mouseY)) {
+                changePage(-1);
+                return true;
+            }
+            if (enabledHit(targetNextButton, mouseX, mouseY)) {
+                changePage(1);
                 return true;
             }
         }
@@ -321,10 +358,11 @@ public final class BattleCommandScreen extends Screen {
                     UiVisualLanguage.TEXT_WARNING, true);
         }
 
+        renderControls(graphics, mouseX, mouseY);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
         for (ActionButtonBinding binding : actionButtons) {
-            if (binding.button().isMouseOver(mouseX, mouseY)) {
+            if (contains(binding.button(), mouseX, mouseY)) {
                 graphics.setTooltipForNextFrame(
                         this.font,
                         BattleActionPresentation.tooltip(binding.action()),
@@ -340,7 +378,7 @@ public final class BattleCommandScreen extends Screen {
         }
         if (hoveredTargetId == null) {
             for (TargetButtonBinding binding : targetButtons) {
-                if (binding.button().isMouseOver(mouseX, mouseY)) {
+                if (contains(binding.button(), mouseX, mouseY)) {
                     hoveredTargetId = binding.participantId();
                     break;
                 }
@@ -351,6 +389,43 @@ public final class BattleCommandScreen extends Screen {
         } else {
             BattleTargetMarkerState.clear();
         }
+    }
+
+    private void renderControls(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+        for (ActionButtonBinding binding : actionButtons) {
+            renderControl(graphics, binding.button(), false, mouseX, mouseY);
+        }
+        for (TargetButtonBinding binding : targetButtons) {
+            renderControl(graphics, binding.button(), selectedTargetIds.contains(binding.participantId()), mouseX, mouseY);
+        }
+        renderControl(graphics, targetBackButton, false, mouseX, mouseY);
+        renderControl(graphics, targetConfirmButton, false, mouseX, mouseY);
+        renderControl(graphics, targetPrevButton, false, mouseX, mouseY);
+        renderControl(graphics, targetNextButton, false, mouseX, mouseY);
+    }
+
+    private void renderControl(GuiGraphicsExtractor graphics, Button button, boolean selected, int mouseX, int mouseY) {
+        if (button == null) return;
+        UiVisualLanguage.FrameState state = !button.active
+                ? UiVisualLanguage.FrameState.DISABLED
+                : selected || contains(button, mouseX, mouseY)
+                        ? UiVisualLanguage.FrameState.FOCUS
+                        : UiVisualLanguage.FrameState.IDLE;
+        UiVisualLanguage.frame(graphics, button.getX(), button.getY(), button.getWidth(), button.getHeight(), state);
+        Component message = button.getMessage();
+        int x = button.getX() + Math.max(UiLayoutMetrics.SPACE_2, (button.getWidth() - this.font.width(message)) / 2);
+        int y = button.getY() + Math.max(1, (button.getHeight() - this.font.lineHeight) / 2);
+        graphics.text(this.font, message, x, y, UiVisualLanguage.textColor(state), true);
+    }
+
+    private static boolean enabledHit(Button button, int x, int y) {
+        return button != null && button.active && contains(button, x, y);
+    }
+
+    private static boolean contains(Button button, int x, int y) {
+        return button != null
+                && x >= button.getX() && x < button.getRight()
+                && y >= button.getY() && y < button.getY() + button.getHeight();
     }
 
     @Override

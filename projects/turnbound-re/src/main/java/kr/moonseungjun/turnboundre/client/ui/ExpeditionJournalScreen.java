@@ -32,6 +32,14 @@ public final class ExpeditionJournalScreen extends Screen {
 
     @Override
     protected void init() {
+        boolean returningFromChild = seenGeneration >= 0;
+        if (returningFromChild) {
+            ExpeditionJournalClientState.clear();
+            view = null;
+            feedback = "";
+            startPending = false;
+            ClientPacketDistributor.sendToServer(new ExpeditionNetworkPayloads.RequestJournalC2S());
+        }
         syncState();
     }
 
