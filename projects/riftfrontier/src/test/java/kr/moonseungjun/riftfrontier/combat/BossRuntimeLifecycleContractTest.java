@@ -29,7 +29,14 @@ final class BossRuntimeLifecycleContractTest {
         assertTrue(adapter.contains("private boolean minecraftOwnerInvalidated;"),
             "validated runtime must retain irreversible owner invalidation state");
         assertTrue(adapter.contains("requireMinecraftOwner(level, boss);"),
-            "Minecraft-facing begin/tick paths must cross the owner lifetime gate");
+            "Minecraft-facing begin/tick/phase mutation paths must cross the owner lifetime gate");
+        assertTrue(adapter.contains("requireDetachedMutation(\"begin attack\");"),
+            "ownerless attack mutation must be sealed after Minecraft ownership is established");
+        assertTrue(adapter.contains("requireDetachedMutation(\"transition phase\");"),
+            "ownerless phase mutation must be sealed after Minecraft ownership is established");
+        assertTrue(adapter.contains(
+                "public BossCombatController.PhaseTransition transitionToPhase( ServerLevel level, LivingEntity boss, int newPhase )"),
+            "Minecraft-bound phase transitions must require explicit authoritative level and actor context");
         assertTrue(adapter.contains("if (!runtimes.isEmpty() && !runtimes.contains(runtime))"),
             "one live boss entity must reject a second independently mutable validated runtime");
         assertTrue(adapter.contains("bindValidatedRuntimeOwner(boss, this); minecraftOwner = boss;"),
