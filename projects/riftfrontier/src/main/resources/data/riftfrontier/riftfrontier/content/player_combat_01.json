@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "pack_id": "riftfrontier:production/player_combat_01",
+  "definitions": [
+    {
+      "kind": "attack_pattern",
+      "id": "riftfrontier:attack/player/mobile_pressure_entry",
+      "delivery": "close_reposition",
+      "telegraph_ticks": 3,
+      "active_ticks": 2,
+      "recovery_ticks": 3,
+      "counterplay": ["spacing_breaks_pressure", "area_denial_forces_reentry"],
+      "presentation_cue": "player_mobile_pressure_entry"
+    },
+    {
+      "kind": "attack_pattern",
+      "id": "riftfrontier:attack/player/mobile_pressure_finisher",
+      "delivery": "committed_close_finisher",
+      "telegraph_ticks": 5,
+      "active_ticks": 2,
+      "recovery_ticks": 7,
+      "counterplay": ["sidestep_committed_line", "punish_recovery"],
+      "presentation_cue": "player_mobile_pressure_finisher"
+    },
+    {
+      "kind": "attack_pattern",
+      "id": "riftfrontier:attack/player/reach_commitment_strike",
+      "delivery": "committed_reach_line",
+      "telegraph_ticks": 7,
+      "active_ticks": 3,
+      "recovery_ticks": 8,
+      "counterplay": ["sidestep_committed_line", "punish_recovery", "pressure_during_anticipation"],
+      "presentation_cue": "player_reach_commitment_strike"
+    },
+    {
+      "kind": "weapon_family",
+      "id": "riftfrontier:weapon_family/mobile_pressure",
+      "moves": [
+        "riftfrontier:attack/player/mobile_pressure_entry",
+        "riftfrontier:attack/player/mobile_pressure_finisher"
+      ],
+      "combat_roles": ["mobile_pressure", "repositioning_pressure", "punishable_finisher"],
+      "module_sockets": ["technique"]
+    },
+    {
+      "kind": "weapon_family",
+      "id": "riftfrontier:weapon_family/reach_commitment",
+      "moves": ["riftfrontier:attack/player/reach_commitment_strike"],
+      "combat_roles": ["reach_commitment", "spacing_control", "punishable_recovery"],
+      "module_sockets": ["technique"]
+    },
+    {
+      "kind": "weapon_module",
+      "id": "riftfrontier:weapon_module/recovery_pivot",
+      "compatible_families": [
+        "riftfrontier:weapon_family/mobile_pressure",
+        "riftfrontier:weapon_family/reach_commitment"
+      ],
+      "socket": "technique",
+      "behaviour_changes": ["recovery_pivot"]
+    }
+  ]
+}
