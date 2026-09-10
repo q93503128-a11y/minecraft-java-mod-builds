@@ -6,7 +6,7 @@ import kr.moonseungjun.riftfrontier.client.render.Region01BossClientRenderRuntim
 import kr.moonseungjun.riftfrontier.client.render.Region01BossGeometryPreparation;
 import kr.moonseungjun.riftfrontier.client.render.Region01BossMaterialPreparation;
 import kr.moonseungjun.riftfrontier.client.render.Region01BossRuntimeResources;
-import kr.moonseungjun.riftfrontier.combat.presentation.BossAnimationSourceBinding;
+import kr.moonseungjun.riftfrontier.combat.presentation.BossAnimationSemanticBinding;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationClientAssetRuntime;
 import kr.moonseungjun.riftfrontier.content.ContentRuntime;
 import net.minecraft.client.renderer.rendertype.RenderType;
@@ -27,12 +27,9 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class RiftfrontierClientResources {
     private static final Identifier BOSS_PRESENTATION_ASSET_RELOAD =
         Identifier.fromNamespaceAndPath(Riftfrontier.MOD_ID, "boss_presentation_assets");
-    private static final AtomicReference<Region01BossGeometryPreparation.PreparedGeometry> PREPARED_BOSS_GEOMETRY =
-        new AtomicReference<>();
-    private static final AtomicReference<Region01BossAnimationPreparation.PreparedAnimation> PREPARED_BOSS_ANIMATION =
-        new AtomicReference<>();
-    private static final AtomicReference<Region01BossMaterialPreparation.PreparedMaterial> PREPARED_BOSS_MATERIAL =
-        new AtomicReference<>();
+    private static final AtomicReference<Region01BossGeometryPreparation.PreparedGeometry> PREPARED_BOSS_GEOMETRY = new AtomicReference<>();
+    private static final AtomicReference<Region01BossAnimationPreparation.PreparedAnimation> PREPARED_BOSS_ANIMATION = new AtomicReference<>();
+    private static final AtomicReference<Region01BossMaterialPreparation.PreparedMaterial> PREPARED_BOSS_MATERIAL = new AtomicReference<>();
 
     private RiftfrontierClientResources() {}
 
@@ -59,13 +56,14 @@ public final class RiftfrontierClientResources {
         }
     }
 
+    /** Prepares animation only after server semantics and reviewed source windows have been explicitly joined. */
     public static Optional<Region01BossAnimationPreparation.PreparedAnimation> prepareBossAnimation(
-        BossAnimationSourceBinding sourceBinding
+        BossAnimationSemanticBinding semanticBinding
     ) {
         var geometry = preparedBossGeometry();
         if (geometry.isEmpty()) return Optional.empty();
         try {
-            var prepared = Region01BossAnimationPreparation.prepare(geometry.orElseThrow(), sourceBinding);
+            var prepared = Region01BossAnimationPreparation.prepare(geometry.orElseThrow(), semanticBinding);
             PREPARED_BOSS_MATERIAL.set(null);
             PREPARED_BOSS_ANIMATION.set(prepared);
             if (!prepared.isCurrent()) {
@@ -91,11 +89,6 @@ public final class RiftfrontierClientResources {
         return Optional.of(prepared);
     }
 
-    /**
-     * Verifies a reviewed texture against the exact current reload and binds its reviewed render treatment to the
-     * already prepared animation capability. No production material is synthesized here; callers must supply a
-     * recorded review receipt and the RenderType that receipt approved.
-     */
     public static Optional<Region01BossMaterialPreparation.PreparedMaterial> prepareBossMaterial(
         Region01BossMaterialPreparation.MaterialReview review,
         RenderType reviewedRenderType,
@@ -148,14 +141,9 @@ public final class RiftfrontierClientResources {
                     .orElseThrow(() -> new IllegalStateException(
                         "boss presentation resource reload was superseded before validated staging"
                     ));
-                var prepared = Region01BossGeometryPreparation.prepare(
-                    staged,
-                    Region01BossRuntimeResources.ACCEPTED_GEOMETRY
-                );
+                var prepared = Region01BossGeometryPreparation.prepare(staged, Region01BossRuntimeResources.ACCEPTED_GEOMETRY);
                 if (Region01BossClientRenderRuntime.staged().orElse(null) != staged) {
-                    throw new IllegalStateException(
-                        "boss geometry preparation was superseded before prepared capability staging"
-                    );
+                    throw new IllegalStateException("boss geometry preparation was superseded before prepared capability staging");
                 }
                 PREPARED_BOSS_GEOMETRY.set(prepared);
                 if (Region01BossClientRenderRuntime.staged().orElse(null) != staged) {
@@ -175,8 +163,7 @@ public final class RiftfrontierClientResources {
         } catch (BossPresentationClientAssetRuntime.ResourceValidationException invalid) {
             clearPreparedPresentation();
             invalid.report().issues().forEach(issue -> Riftfrontier.LOGGER.error(
-                "[boss-presentation-resource] {} {} - {}",
-                issue.code(), issue.logicalKey(), issue.message()
+                "[boss-presentation-resource] {} {} - {}", issue.code(), issue.logicalKey(), issue.message()
             ));
             throw invalid;
         } catch (IOException invalidGeometry) {

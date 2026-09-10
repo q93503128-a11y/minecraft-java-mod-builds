@@ -67,11 +67,7 @@ public final class ValidatedBossCombatSemantics {
         BossPresentationProfile presentation,
         CoreDefinition.AttackPattern attack
     ) {
-        for (AttackTimeline.Phase phase : List.of(
-            AttackTimeline.Phase.TELEGRAPH,
-            AttackTimeline.Phase.ACTIVE,
-            AttackTimeline.Phase.RECOVERY
-        )) {
+        for (AttackTimeline.Phase phase : presentationPhases()) {
             BossPresentationProfile.BindingKey selector = new BossPresentationProfile.BindingKey(
                 attack.presentationCue(), attack.delivery(), phase
             );
@@ -82,10 +78,42 @@ public final class ValidatedBossCombatSemantics {
         }
     }
 
+    private static List<AttackTimeline.Phase> presentationPhases() {
+        return List.of(
+            AttackTimeline.Phase.TELEGRAPH,
+            AttackTimeline.Phase.ACTIVE,
+            AttackTimeline.Phase.RECOVERY
+        );
+    }
+
     public ContentId bossProfile() { return semantics.bossProfile(); }
 
     public List<ContentId> candidateAttacks(int phase) {
         return semantics.attacksForPhase(phase).stream().sorted().toList();
+    }
+
+    /**
+     * Exact logical animation-key set required by the already validated server-authoritative attack semantics.
+     *
+     * <p>This is intentionally narrower than a whole boss animation inventory: idle, hit-react, death and other
+     * non-attack presentation may exist separately. Callers preparing attack animation publication must at least
+     * prove coverage of this immutable set.</p>
+     */
+    public Set<ContentId> requiredLogicalAnimationKeys() {
+        TreeSet<ContentId> required = new TreeSet<>();
+        for (CoreDefinition.AttackPattern attack : attacks.values()) {
+            for (AttackTimeline.Phase phase : presentationPhases()) {
+                BossPresentationProfile.BindingKey selector = new BossPresentationProfile.BindingKey(
+                    attack.presentationCue(), attack.delivery(), phase
+                );
+                BossPresentationProfile.AssetBinding binding = presentation.bindings().get(selector);
+                if (binding == null) {
+                    throw new IllegalStateException("validated presentation binding disappeared: " + selector.selector());
+                }
+                required.add(binding.animationKey());
+            }
+        }
+        return Collections.unmodifiableSet(required);
     }
 
     public ContentId logicalAnimationKey(ContentId attackId, AttackTimeline.Phase phase) {

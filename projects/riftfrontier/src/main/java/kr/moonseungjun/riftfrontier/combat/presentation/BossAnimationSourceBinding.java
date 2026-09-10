@@ -4,9 +4,7 @@ import kr.moonseungjun.riftfrontier.combat.presentation.mesh.AnimationClip;
 import kr.moonseungjun.riftfrontier.combat.presentation.mesh.AnimationClipInventory;
 import kr.moonseungjun.riftfrontier.content.ContentId;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Explicit logical-animation-key -> visually reviewed, verified imported source-clip-name binding.
@@ -24,9 +22,7 @@ public final class BossAnimationSourceBinding {
     private final Map<ContentId, String> sourceClipByLogicalKey;
     private final Map<ContentId, ClipWindow> sourceWindowByLogicalKey;
 
-    /**
-     * Backwards-compatible full-clip binding for general/non-partitioned clips.
-     */
+    /** Backwards-compatible full-clip binding for general/non-partitioned clips. */
     public BossAnimationSourceBinding(
         BossAnimationMotionReview motionReview,
         Map<ContentId, String> sourceClipByLogicalKey
@@ -36,9 +32,7 @@ public final class BossAnimationSourceBinding {
 
     /**
      * Explicit source windows without fine window evidence. Kept for API-free fixtures/general experimentation.
-     *
-     * <p>Production phase-partitioned bindings must use {@link #reviewed} so arbitrary cut points cannot be published
-     * as if they had been visually reviewed.</p>
+     * Production phase-partitioned bindings must use {@link #reviewed}.
      */
     public BossAnimationSourceBinding(
         BossAnimationMotionReview motionReview,
@@ -48,10 +42,6 @@ public final class BossAnimationSourceBinding {
         this(motionReview, null, sourceClipByLogicalKey, sourceWindowByLogicalKey);
     }
 
-    /**
-     * Creates a production-eligible phase-partitioned binding only when every exact source window has fine review
-     * evidence in addition to whole-clip motion review.
-     */
     public static BossAnimationSourceBinding reviewed(
         BossAnimationMotionReview motionReview,
         BossAnimationPhaseWindowReview phaseWindowReview,
@@ -98,14 +88,34 @@ public final class BossAnimationSourceBinding {
                 sourceWindowByLogicalKey.get(logicalKey),
                 "source clip window for " + logicalKey
             );
-            if (phaseWindowReview != null) {
-                phaseWindowReview.requireApproved(sourceClipName, window);
-            }
+            if (phaseWindowReview != null) phaseWindowReview.requireApproved(sourceClipName, window);
             clipCopy.put(logicalKey, sourceClipName);
             windowCopy.put(logicalKey, window);
         });
         this.sourceClipByLogicalKey = Map.copyOf(clipCopy);
         this.sourceWindowByLogicalKey = Map.copyOf(windowCopy);
+    }
+
+    /**
+     * Produces an evidence-preserving binding restricted to an explicit logical-key set.
+     * Missing keys fail closed; review objects and exact windows are retained rather than reconstructed or inferred.
+     */
+    public BossAnimationSourceBinding subset(Set<ContentId> logicalKeys) {
+        Objects.requireNonNull(logicalKeys, "logicalKeys");
+        if (logicalKeys.isEmpty()) throw new IllegalArgumentException("logical animation key subset must not be empty");
+        Map<ContentId, String> clips = new LinkedHashMap<>();
+        Map<ContentId, ClipWindow> windows = new LinkedHashMap<>();
+        for (ContentId logicalKey : new TreeSet<>(logicalKeys)) {
+            Objects.requireNonNull(logicalKey, "logical animation key");
+            String clip = sourceClipByLogicalKey.get(logicalKey);
+            ClipWindow window = sourceWindowByLogicalKey.get(logicalKey);
+            if (clip == null || window == null) {
+                throw new IllegalArgumentException("reviewed source binding is missing required logical animation key " + logicalKey);
+            }
+            clips.put(logicalKey, clip);
+            windows.put(logicalKey, window);
+        }
+        return new BossAnimationSourceBinding(motionReview, phaseWindowReview, clips, windows);
     }
 
     public Map<ContentId, AnimationClip> resolve(AnimationClipInventory verifiedInventory) {
@@ -121,21 +131,12 @@ public final class BossAnimationSourceBinding {
         sourceClipByLogicalKey.forEach((logicalKey, sourceClipName) -> {
             motionReview.requireApproved(sourceClipName);
             ClipWindow window = sourceWindowByLogicalKey.get(logicalKey);
-            if (phaseWindowReview != null) {
-                phaseWindowReview.requireApproved(sourceClipName, window);
-            }
-            resolved.put(logicalKey, new ResolvedSource(
-                verifiedInventory.requireClip(sourceClipName),
-                window
-            ));
+            if (phaseWindowReview != null) phaseWindowReview.requireApproved(sourceClipName, window);
+            resolved.put(logicalKey, new ResolvedSource(verifiedInventory.requireClip(sourceClipName), window));
         });
         return Map.copyOf(resolved);
     }
 
-    /**
-     * Fails closed when a caller is about to use an explicit phase-partitioned binding in production without
-     * fine window evidence.
-     */
     public BossAnimationSourceBinding requireReviewedPhaseWindows() {
         if (phaseWindowReview == null) {
             throw new IllegalStateException("boss animation source binding has no reviewed phase-window evidence");
@@ -143,21 +144,10 @@ public final class BossAnimationSourceBinding {
         return this;
     }
 
-    public boolean hasReviewedPhaseWindows() {
-        return phaseWindowReview != null;
-    }
-
-    public BossAnimationMotionReview motionReview() {
-        return motionReview;
-    }
-
-    public Map<ContentId, String> sourceClipByLogicalKey() {
-        return sourceClipByLogicalKey;
-    }
-
-    public Map<ContentId, ClipWindow> sourceWindowByLogicalKey() {
-        return sourceWindowByLogicalKey;
-    }
+    public boolean hasReviewedPhaseWindows() { return phaseWindowReview != null; }
+    public BossAnimationMotionReview motionReview() { return motionReview; }
+    public Map<ContentId, String> sourceClipByLogicalKey() { return sourceClipByLogicalKey; }
+    public Map<ContentId, ClipWindow> sourceWindowByLogicalKey() { return sourceWindowByLogicalKey; }
 
     public record ClipWindow(double normalizedStart, double normalizedEnd) {
         public ClipWindow {

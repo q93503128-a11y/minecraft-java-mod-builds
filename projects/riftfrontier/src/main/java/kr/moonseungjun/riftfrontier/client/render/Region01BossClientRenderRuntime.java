@@ -1,7 +1,7 @@
 package kr.moonseungjun.riftfrontier.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import kr.moonseungjun.riftfrontier.combat.presentation.BossAnimationSourceBinding;
+import kr.moonseungjun.riftfrontier.combat.presentation.BossAnimationSemanticBinding;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationAssetSelection;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationClientAssetRuntime;
 import kr.moonseungjun.riftfrontier.combat.presentation.mesh.Region01BossRuntimeAsset;
@@ -16,10 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Atomic client publication seam between an accepted boss runtime asset and the registered entity renderer.
- *
- * <p>A reload is a staged transaction bound to one exact {@link ResourceManager}. Geometry, reviewed animation and
- * reviewed material must all be prepared from that same reload before renderer publication can succeed. Starting a
- * newer reload or clearing the runtime invalidates every older capability.</p>
+ * Geometry, server-semantic-reviewed animation and reviewed material must all originate from one staged reload.
  */
 public final class Region01BossClientRenderRuntime {
     private static final GenerationPublicationSlot<SubmissionBinding> CURRENT = new GenerationPublicationSlot<>();
@@ -27,9 +24,7 @@ public final class Region01BossClientRenderRuntime {
 
     private Region01BossClientRenderRuntime() {}
 
-    public static Optional<SubmissionBinding> current() {
-        return CURRENT.current();
-    }
+    public static Optional<SubmissionBinding> current() { return CURRENT.current(); }
 
     public static ReloadTicket beginReload(ResourceManager resourceManager) {
         Objects.requireNonNull(resourceManager, "resourceManager");
@@ -48,7 +43,6 @@ public final class Region01BossClientRenderRuntime {
             throw new IllegalArgumentException("boss render staging requires a ready validated asset snapshot");
         }
         if (!CURRENT.isCurrent(ticket.delegate)) return Optional.empty();
-
         ValidatedReload candidate = new ValidatedReload(ticket.delegate, ticket.resourceManager, assetSnapshot);
         STAGED.set(candidate);
         if (!CURRENT.isCurrent(ticket.delegate)) {
@@ -58,18 +52,8 @@ public final class Region01BossClientRenderRuntime {
         return Optional.of(candidate);
     }
 
-    public static Optional<ValidatedReload> staged() {
-        return Optional.ofNullable(STAGED.get());
-    }
+    public static Optional<ValidatedReload> staged() { return Optional.ofNullable(STAGED.get()); }
 
-    /**
-     * Publishes one complete accepted binding only from a reviewed material capability that already retains the exact
-     * prepared animation and geometry from this staged reload. The old free-standing RenderType/overlay/color
-     * publication seam intentionally does not exist: material bytes, render treatment and renderer-visible state must
-     * cross one provenance gate together.
-     *
-     * @return {@code false} when a newer reload/clear already invalidated the prepared material capability
-     */
     public static boolean publish(
         Region01BossMaterialPreparation.PreparedMaterial preparedMaterial,
         BossCustomGeometryRenderPipeline pipeline
@@ -81,7 +65,7 @@ public final class Region01BossClientRenderRuntime {
         final Region01BossGeometryPreparation.PreparedGeometry preparedGeometry;
         final ValidatedReload reload;
         final Region01BossRuntimeAsset runtimeAsset;
-        final BossAnimationSourceBinding reviewedBinding;
+        final BossAnimationSemanticBinding semanticBinding;
         final Region01BossMaterialPreparation.MaterialReview materialReview;
         final RenderType renderType;
         final int packedOverlay;
@@ -91,7 +75,8 @@ public final class Region01BossClientRenderRuntime {
             preparedGeometry = preparedAnimation.preparedGeometry();
             reload = preparedMaterial.validatedReload();
             runtimeAsset = preparedAnimation.runtimeAsset();
-            reviewedBinding = preparedAnimation.sourceBinding().requireReviewedPhaseWindows();
+            semanticBinding = preparedAnimation.semanticBinding();
+            semanticBinding.sourceBinding().requireReviewedPhaseWindows();
             materialReview = preparedMaterial.review();
             renderType = preparedMaterial.renderType();
             packedOverlay = preparedMaterial.packedOverlay();
@@ -116,6 +101,9 @@ public final class Region01BossClientRenderRuntime {
         if (preparedAnimation.preparedGeometry() != preparedGeometry) {
             throw new IllegalArgumentException("prepared boss animation must retain its exact prepared geometry capability");
         }
+        if (!preparedAnimation.resolvedSources().keySet().equals(semanticBinding.requiredLogicalAnimationKeys())) {
+            throw new IllegalArgumentException("prepared boss animation no longer exactly covers server-required logical keys");
+        }
         if (pipeline.skinnedMeshAsset() != runtimeAsset.skinnedMesh()) {
             throw new IllegalArgumentException(
                 "boss render pipeline must consume the exact skinned mesh prepared from the current accepted derivation"
@@ -123,7 +111,7 @@ public final class Region01BossClientRenderRuntime {
         }
         if (pipeline.animationBridge() != preparedAnimation.animationBridge()) {
             throw new IllegalArgumentException(
-                "boss render pipeline must consume the exact reviewed animation bridge prepared from the current reload"
+                "boss render pipeline must consume the exact semantic-reviewed animation bridge prepared from the current reload"
             );
         }
 
@@ -131,7 +119,7 @@ public final class Region01BossClientRenderRuntime {
         SubmissionBinding binding = new SubmissionBinding(
             assetSnapshot.contentGeneration(),
             assetSnapshot.selection().orElseThrow(),
-            reviewedBinding,
+            semanticBinding,
             materialReview,
             pipeline,
             renderType,
@@ -163,36 +151,24 @@ public final class Region01BossClientRenderRuntime {
         if (binding.isEmpty()) return false;
         SubmissionBinding active = binding.orElseThrow();
         return active.pipeline().submitCurrent(
-            entityId,
-            entityUuid,
-            poseStack,
-            collector,
-            active.renderType(),
-            packedLight,
-            active.packedOverlay(),
-            active.packedColor()
+            entityId, entityUuid, poseStack, collector, active.renderType(), packedLight, active.packedOverlay(), active.packedColor()
         );
     }
 
     public static final class ReloadTicket {
         private final GenerationPublicationSlot.Ticket delegate;
         private final ResourceManager resourceManager;
-
         private ReloadTicket(GenerationPublicationSlot.Ticket delegate, ResourceManager resourceManager) {
             this.delegate = Objects.requireNonNull(delegate, "delegate");
             this.resourceManager = Objects.requireNonNull(resourceManager, "resourceManager");
         }
-
-        public long generation() {
-            return delegate.generation();
-        }
+        public long generation() { return delegate.generation(); }
     }
 
     public static final class ValidatedReload {
         private final GenerationPublicationSlot.Ticket delegate;
         private final ResourceManager resourceManager;
         private final BossPresentationClientAssetRuntime.Snapshot assetSnapshot;
-
         private ValidatedReload(
             GenerationPublicationSlot.Ticket delegate,
             ResourceManager resourceManager,
@@ -202,33 +178,18 @@ public final class Region01BossClientRenderRuntime {
             this.resourceManager = Objects.requireNonNull(resourceManager, "resourceManager");
             this.assetSnapshot = Objects.requireNonNull(assetSnapshot, "assetSnapshot");
         }
-
-        public ResourceManager resourceManager() {
-            return resourceManager;
-        }
-
-        public BossPresentationClientAssetRuntime.Snapshot assetSnapshot() {
-            return assetSnapshot;
-        }
-
-        public long publicationGeneration() {
-            return delegate.generation();
-        }
-
-        public long contentGeneration() {
-            return assetSnapshot.contentGeneration();
-        }
-
-        public BossPresentationAssetSelection assetSelection() {
-            return assetSnapshot.selection().orElseThrow();
-        }
+        public ResourceManager resourceManager() { return resourceManager; }
+        public BossPresentationClientAssetRuntime.Snapshot assetSnapshot() { return assetSnapshot; }
+        public long publicationGeneration() { return delegate.generation(); }
+        public long contentGeneration() { return assetSnapshot.contentGeneration(); }
+        public BossPresentationAssetSelection assetSelection() { return assetSnapshot.selection().orElseThrow(); }
     }
 
     /** One immutable renderer-visible publication assembled from one validated resource reload. */
     public record SubmissionBinding(
         long contentGeneration,
         BossPresentationAssetSelection assetSelection,
-        BossAnimationSourceBinding reviewedAnimationBinding,
+        BossAnimationSemanticBinding semanticAnimationBinding,
         Region01BossMaterialPreparation.MaterialReview materialReview,
         BossCustomGeometryRenderPipeline pipeline,
         RenderType renderType,
@@ -236,11 +197,10 @@ public final class Region01BossClientRenderRuntime {
         int packedColor
     ) {
         public SubmissionBinding {
-            if (contentGeneration < 0L) {
-                throw new IllegalArgumentException("contentGeneration must be >= 0");
-            }
+            if (contentGeneration < 0L) throw new IllegalArgumentException("contentGeneration must be >= 0");
             Objects.requireNonNull(assetSelection, "assetSelection");
-            Objects.requireNonNull(reviewedAnimationBinding, "reviewedAnimationBinding").requireReviewedPhaseWindows();
+            Objects.requireNonNull(semanticAnimationBinding, "semanticAnimationBinding")
+                .sourceBinding().requireReviewedPhaseWindows();
             Objects.requireNonNull(materialReview, "materialReview");
             Objects.requireNonNull(pipeline, "pipeline");
             Objects.requireNonNull(renderType, "renderType");
