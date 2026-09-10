@@ -77,6 +77,40 @@ class BossPresentationClientStateTest {
         assertEquals(SECOND, BossPresentationClientState.current(4, SECOND).orElseThrow().entityUuid());
     }
 
+    @Test
+    void forgettingActorRemovesPresentationAndOrderingWatermark() {
+        assertTrue(BossPresentationClientState.accept(active(7, FIRST, 50L, 0.6D)));
+        assertTrue(BossPresentationClientState.forgetActor(7, FIRST));
+        assertTrue(BossPresentationClientState.current(7, FIRST).isEmpty());
+        assertFalse(BossPresentationClientState.forgetActor(7, FIRST));
+
+        // A later lifecycle of the same logical UUID can start from a fresh level-time epoch.
+        assertTrue(BossPresentationClientState.accept(active(7, FIRST, 2L, 0.1D)));
+        assertEquals(2L, BossPresentationClientState.current(7, FIRST).orElseThrow().serverGameTick());
+    }
+
+    @Test
+    void staleLeaveForOldUuidCannotEraseReusedNumericId() {
+        assertTrue(BossPresentationClientState.accept(active(7, FIRST, 50L, 0.6D)));
+        assertTrue(BossPresentationClientState.accept(active(7, SECOND, 3L, 0.2D)));
+
+        assertFalse(BossPresentationClientState.forgetActor(7, FIRST));
+        BossPresentationSemanticState retained = BossPresentationClientState.current(7, SECOND).orElseThrow();
+        assertEquals(SECOND, retained.entityUuid());
+        assertEquals(3L, retained.serverGameTick());
+    }
+
+    @Test
+    void forgettingActorAlsoRetiresClearOnlyWatermark() {
+        assertTrue(BossPresentationClientState.accept(active(4, FIRST, 30L, 0.5D)));
+        assertTrue(BossPresentationClientState.accept(BossPresentationSemanticState.clear(4, FIRST, 31L)));
+        assertTrue(BossPresentationClientState.current(4, FIRST).isEmpty());
+
+        assertTrue(BossPresentationClientState.forgetActor(4, FIRST));
+        assertTrue(BossPresentationClientState.accept(active(4, FIRST, 1L, 0.2D)));
+        assertEquals(1L, BossPresentationClientState.current(4, FIRST).orElseThrow().serverGameTick());
+    }
+
     private static BossPresentationSemanticState active(int entityId, UUID uuid, long tick, double progress) {
         return new BossPresentationSemanticState(
             entityId,

@@ -24,7 +24,7 @@ public final class BossPresentationClientState {
      * <p>If a numeric entity id is reused by a new UUID, the new actor replaces the old watermark instead of
      * inheriting another actor's level-time epoch. Production render lookup still requires both numeric id and UUID,
      * so a reused id can never expose the previous actor's cached presentation. Clears retain the current actor
-     * watermark.</p>
+     * watermark until that exact actor leaves the client level.</p>
      */
     public static boolean accept(BossPresentationSemanticState state) {
         BossPresentationSemanticState incoming = Objects.requireNonNull(state, "state");
@@ -62,6 +62,25 @@ public final class BossPresentationClientState {
         Entry entry = ENTRIES.get(entityId);
         if (entry == null || !entry.entityUuid().equals(requiredUuid)) return Optional.empty();
         return Optional.ofNullable(entry.activeState());
+    }
+
+    /**
+     * Drops active semantics and the ordering watermark for one exact logical actor when it leaves the client level.
+     *
+     * <p>The UUID comparison is deliberate: a delayed leave callback for an old actor must never erase a new actor
+     * that has already reused the same numeric entity id. Removing the whole entry also retires a clear-only
+     * watermark, so a later lifecycle of the same UUID starts with a fresh level-time epoch.</p>
+     */
+    public static boolean forgetActor(int entityId, UUID entityUuid) {
+        if (entityId < 0) throw new IllegalArgumentException("entityId must be >= 0");
+        UUID requiredUuid = Objects.requireNonNull(entityUuid, "entityUuid");
+        final boolean[] removed = {false};
+        ENTRIES.computeIfPresent(entityId, (ignored, current) -> {
+            if (!current.entityUuid().equals(requiredUuid)) return current;
+            removed[0] = true;
+            return null;
+        });
+        return removed[0];
     }
 
     /** Clears both active semantics and ordering watermarks when the client leaves the current connection/world. */
