@@ -9,9 +9,11 @@ import java.util.Optional;
  * Server-thread-owned attack state machine. It owns only execution lifecycle; phase timing stays in
  * {@link CoreDefinition.AttackPattern} through {@link AttackTimeline}.
  *
- * <p>While an execution is active, sampled server game ticks must be monotonic. A rewind is treated
- * as an authority discontinuity: the execution is cancelled before an exception is raised so a
- * caller cannot continue from a phase that was already observed at a later tick.</p>
+ * <p>While an execution is active, every authoritative phase observation must use a monotonic server
+ * game tick. A rewind is treated as an authority discontinuity: the execution is cancelled before an
+ * exception is raised so a caller cannot continue from a phase that was already observed at a later
+ * tick. Read-only phase checks therefore cross this state machine too instead of sampling the raw
+ * {@link AttackExecution} clock directly.</p>
  */
 public final class AttackStateMachine {
     private AttackExecution current;
@@ -37,20 +39,30 @@ public final class AttackStateMachine {
         if (current == null) {
             return Step.idle();
         }
-        requireMonotonicTick(gameTick);
-
-        AttackExecution.Snapshot snapshot = current.sample(gameTick);
+        AttackExecution.Snapshot snapshot = observeCurrent(gameTick).orElseThrow();
         AttackTimeline.Phase phase = snapshot.presentationPhase();
         boolean phaseChanged = phase != lastPhase;
         boolean finished = phase == AttackTimeline.Phase.COMPLETE;
         lastPhase = phase;
-        lastObservedGameTick = gameTick;
 
         Step result = new Step(Optional.of(snapshot), phaseChanged, finished);
         if (finished) {
             clearExecutionState();
         }
         return result;
+    }
+
+    /**
+     * Samples the active execution without advancing lifecycle/phase-change bookkeeping, while still
+     * participating in the same monotonic server-clock authority boundary as {@link #advance(long)}.
+     * Same-tick repeated observations are legal. A rewind cancels the execution fail-closed.
+     */
+    public Optional<AttackExecution.Snapshot> observeCurrent(long gameTick) {
+        if (current == null) return Optional.empty();
+        requireMonotonicTick(gameTick);
+        AttackExecution.Snapshot snapshot = current.sample(gameTick);
+        lastObservedGameTick = gameTick;
+        return Optional.of(snapshot);
     }
 
     public boolean isExecuting() {
