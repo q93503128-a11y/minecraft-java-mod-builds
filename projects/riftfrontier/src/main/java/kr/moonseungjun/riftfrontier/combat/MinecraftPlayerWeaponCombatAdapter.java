@@ -52,8 +52,8 @@ public final class MinecraftPlayerWeaponCombatAdapter {
 
     /**
      * Advances one actor from the same server-owned clock and exposes unique hit-volume candidates
-     * only during ACTIVE. A loadout swap, world/dimension discontinuity, death/removal, or spectator
-     * transition immediately cancels and discards the old execution.
+     * only during ACTIVE. A loadout swap, actor-instance replacement, world/dimension discontinuity,
+     * death/removal, or spectator transition immediately cancels and discards the old execution.
      */
     public TickResult tick(ServerLevel level, LivingEntity actor, long gameTick) {
         Objects.requireNonNull(level, "level");
@@ -61,6 +61,10 @@ public final class MinecraftPlayerWeaponCombatAdapter {
 
         Session session = sessions.get(actor.getUUID());
         if (session == null) return TickResult.idle();
+        if (session.actor != actor) {
+            invalidate(actor.getUUID(), session);
+            return TickResult.invalidated();
+        }
         if (!isCombatEligible(actor)) {
             invalidate(actor.getUUID(), session);
             return TickResult.invalidated();
@@ -93,12 +97,12 @@ public final class MinecraftPlayerWeaponCombatAdapter {
         return new TickResult(snapshot.presentationPhase(), step.hitWindowOpen(), step.finished(), false, candidates);
     }
 
-    /** Module movement semantics can never authorize outside RECOVERY or for an ineligible actor. */
+    /** Module movement semantics can never authorize outside RECOVERY or for a stale actor instance. */
     public boolean recoveryPivotAuthorized(LivingEntity actor, long gameTick) {
         Objects.requireNonNull(actor, "actor");
         Session session = sessions.get(actor.getUUID());
         if (session == null) return false;
-        if (!isCombatEligible(actor)) {
+        if (session.actor != actor || !isCombatEligible(actor)) {
             invalidate(actor.getUUID(), session);
             return false;
         }
@@ -144,9 +148,15 @@ public final class MinecraftPlayerWeaponCombatAdapter {
     private Session synchronizeSession(LivingEntity actor, Loadout loadout) {
         ResourceKey<Level> dimension = actor.level().dimension();
         Session existing = sessions.get(actor.getUUID());
-        if (existing != null && existing.loadout.equals(loadout) && existing.dimension.equals(dimension)) return existing;
+        if (existing != null
+            && existing.actor == actor
+            && existing.loadout.equals(loadout)
+            && existing.dimension.equals(dimension)) {
+            return existing;
+        }
         if (existing != null) invalidate(actor.getUUID(), existing);
         Session replacement = new Session(
+            actor,
             loadout,
             dimension,
             catalog.playerWeaponController(loadout.familyId(), loadout.moduleId())
@@ -207,12 +217,19 @@ public final class MinecraftPlayerWeaponCombatAdapter {
     }
 
     private static final class Session {
+        private final LivingEntity actor;
         private final Loadout loadout;
         private final ResourceKey<Level> dimension;
         private final PlayerWeaponCombatController controller;
         private final Set<UUID> hitTargets = new HashSet<>();
 
-        private Session(Loadout loadout, ResourceKey<Level> dimension, PlayerWeaponCombatController controller) {
+        private Session(
+            LivingEntity actor,
+            Loadout loadout,
+            ResourceKey<Level> dimension,
+            PlayerWeaponCombatController controller
+        ) {
+            this.actor = Objects.requireNonNull(actor, "actor");
             this.loadout = Objects.requireNonNull(loadout, "loadout");
             this.dimension = Objects.requireNonNull(dimension, "dimension");
             this.controller = Objects.requireNonNull(controller, "controller");
