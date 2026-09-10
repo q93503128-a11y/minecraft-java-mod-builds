@@ -19,7 +19,6 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.GameType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -145,6 +144,23 @@ public final class PlayerWeaponGameTests {
                 "Rejected dead-actor input must leave no weapon session behind");
         }
 
+        Zombie spectatorActor = new Zombie(level) {
+            @Override
+            public boolean isSpectator() {
+                return true;
+            }
+        };
+        spectatorActor.setNoAi(true);
+        spectatorActor.snapTo(actorPos.getX() + 1.5D, actorPos.getY(), actorPos.getZ() + 0.5D, 0.0F, 0.0F);
+        helper.assertTrue(level.addFreshEntity(spectatorActor), "Technical spectator actor must enter the GameTest world");
+        try {
+            adapter.beginMove(spectatorActor, reachMove, start + 15L);
+            helper.assertTrue(false, "Spectator actors must not establish weapon authority");
+        } catch (IllegalStateException expected) {
+            helper.assertTrue(!adapter.hasSession(spectatorActor.getUUID()),
+                "Rejected spectator input must leave no weapon session behind");
+        }
+
         Zombie otherActor = new Zombie(level);
         otherActor.setNoAi(true);
         otherActor.snapTo(actorPos.getX() + 2.5D, actorPos.getY(), actorPos.getZ() + 0.5D, 0.0F, 0.0F);
@@ -212,19 +228,6 @@ public final class PlayerWeaponGameTests {
             "An unequipped player cannot start a remembered weapon move"
         );
         PlayerWeaponServerRuntime.clearPlayer(player);
-
-        ServerPlayer spectator = helper.makeMockServerPlayerInLevel();
-        spectator.setItemInHand(InteractionHand.MAIN_HAND, mobile.copy());
-        spectator.setGameMode(GameType.SPECTATOR);
-        helper.assertTrue(
-            PlayerWeaponServerRuntime.handleMoveIntent(spectator, mobileEntry) == PlayerWeaponServerRuntime.IntentResult.REJECTED,
-            "Spectator players must not establish weapon authority even with a valid server-owned loadout"
-        );
-        helper.assertTrue(
-            PlayerWeaponServerRuntime.tickPlayer(spectator).phase() == AttackTimeline.Phase.COMPLETE,
-            "Rejected spectator input must not leave a progressing weapon session"
-        );
-        PlayerWeaponServerRuntime.clearPlayer(spectator);
         helper.succeed();
     }
 }
