@@ -1,9 +1,15 @@
 package kr.moonseungjun.riftfrontier.combat;
 
 import kr.moonseungjun.riftfrontier.content.ContentId;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -18,6 +24,8 @@ import java.util.Set;
  * used to validate the damage phase. No animation/VFX cadence is authored in this adapter.</p>
  */
 public final class MinecraftBossCombatAdapter {
+    private static final Map<LivingEntity, Set<ValidatedRuntime>> VALIDATED_RUNTIMES_BY_OWNER = new IdentityHashMap<>();
+
     private final CombatRuntimeCatalog catalog;
     private final BossCombatController controller;
     private final MinecraftAttackAdapter damageAdapter;
@@ -64,6 +72,40 @@ public final class MinecraftBossCombatAdapter {
             ),
             PublishedContentGenerationGuard.fromCatalog(catalog)
         );
+    }
+
+    /**
+     * Event-driven lifetime boundary for validated Minecraft boss capabilities.
+     *
+     * <p>Once a validated runtime is bound through its Minecraft-facing begin/tick path, that exact
+     * entity instance owns the capability for the rest of its level lifetime. When the owner leaves
+     * tracking, every capability bound to that instance is invalidated and any active attack is
+     * cancelled. No world/entity scan is required.</p>
+     */
+    public static void entityLeaveLevel(EntityLeaveLevelEvent event) {
+        Objects.requireNonNull(event, "event");
+        if (event.getLevel().isClientSide() || !(event.getEntity() instanceof LivingEntity owner)) {
+            return;
+        }
+
+        Set<ValidatedRuntime> runtimes;
+        synchronized (VALIDATED_RUNTIMES_BY_OWNER) {
+            runtimes = VALIDATED_RUNTIMES_BY_OWNER.remove(owner);
+        }
+        if (runtimes == null || runtimes.isEmpty()) {
+            return;
+        }
+        for (ValidatedRuntime runtime : Set.copyOf(runtimes)) {
+            runtime.invalidateMinecraftOwner(owner);
+        }
+    }
+
+    private static void bindValidatedRuntimeOwner(LivingEntity owner, ValidatedRuntime runtime) {
+        synchronized (VALIDATED_RUNTIMES_BY_OWNER) {
+            VALIDATED_RUNTIMES_BY_OWNER
+                .computeIfAbsent(owner, ignored -> Collections.newSetFromMap(new IdentityHashMap<>()))
+                .add(runtime);
+        }
     }
 
     public int phase() { return controller.phase(); }
@@ -187,6 +229,9 @@ public final class MinecraftBossCombatAdapter {
         private final ValidatedBossCombatSemantics semantics;
         private final MinecraftBossCombatAdapter delegate;
         private final Optional<PublishedContentGenerationGuard> generationGuard;
+        private LivingEntity minecraftOwner;
+        private ResourceKey<Level> minecraftOwnerDimension;
+        private boolean minecraftOwnerInvalidated;
 
         private ValidatedRuntime(
             ValidatedBossCombatSemantics semantics,
@@ -199,38 +244,42 @@ public final class MinecraftBossCombatAdapter {
         }
 
         public ValidatedBossCombatSemantics semanticCapability() {
-            requireCurrentGeneration();
+            requireRuntimeCurrent();
             return semantics;
         }
 
         public ContentId bossProfile() {
-            requireCurrentGeneration();
+            requireRuntimeCurrent();
             return semantics.bossProfile();
         }
 
         public int phase() {
-            requireCurrentGeneration();
+            requireRuntimeCurrent();
             return delegate.phase();
         }
 
         public boolean attackExecuting() {
-            requireCurrentGeneration();
+            requireRuntimeCurrent();
             return delegate.attackExecuting();
         }
 
         public long completedAttackCount() {
-            requireCurrentGeneration();
+            requireRuntimeCurrent();
             return delegate.completedAttackCount();
         }
 
         public AttackExecution.Snapshot beginNextAttack(long gameTick) {
-            requireCurrentGeneration();
+            requireRuntimeCurrent();
             return validateSelectedAttack(delegate.beginNextAttack(gameTick));
         }
 
-        /** Minecraft-facing begin that binds the validated boss attack to its server actor immediately. */
+        /**
+         * Minecraft-facing begin. The first accepted actor permanently owns this validated capability
+         * for its current level lifetime; a later actor cannot adopt it after an attack completes.
+         */
         public AttackExecution.Snapshot beginNextAttack(ServerLevel level, LivingEntity boss, long gameTick) {
-            requireCurrentGeneration();
+            requireRuntimeCurrent();
+            requireMinecraftOwner(level, boss);
             return validateSelectedAttack(delegate.beginNextAttack(level, boss, gameTick));
         }
 
@@ -243,21 +292,29 @@ public final class MinecraftBossCombatAdapter {
         }
 
         public ValidatedTickResult tick(ServerLevel level, LivingEntity boss, long gameTick) {
-            requireCurrentGeneration();
-            Objects.requireNonNull(boss, "boss");
+            requireRuntimeCurrent();
+            requireMinecraftOwner(level, boss);
             TickResult combat = delegate.tick(level, boss, gameTick);
             return ValidatedTickResult.bind(semantics, combat, boss.getId(), boss.getUUID(), gameTick);
         }
 
         public BossCombatController.PhaseTransition transitionToPhase(int newPhase) {
-            requireCurrentGeneration();
+            requireRuntimeCurrent();
             BossCombatController.PhaseTransition transition = delegate.transitionToPhase(newPhase);
             semantics.candidateAttacks(transition.newPhase());
             return transition;
         }
 
-        /** Cancellation stays available even after a publication boundary so cleanup can never be blocked. */
+        /** Cancellation stays available even after publication/owner invalidation so cleanup can never be blocked. */
         public boolean cancelAttack() { return delegate.cancelAttack(); }
+
+        private void requireRuntimeCurrent() {
+            if (minecraftOwnerInvalidated) {
+                delegate.cancelAttack();
+                throw new IllegalStateException("Validated boss runtime owner has left its authoritative level");
+            }
+            requireCurrentGeneration();
+        }
 
         private void requireCurrentGeneration() {
             if (generationGuard.isEmpty()) return;
@@ -267,6 +324,38 @@ public final class MinecraftBossCombatAdapter {
                 delegate.cancelAttack();
                 throw stale;
             }
+        }
+
+        private void requireMinecraftOwner(ServerLevel level, LivingEntity boss) {
+            Objects.requireNonNull(level, "level");
+            Objects.requireNonNull(boss, "boss");
+            if (!MinecraftCombatAuthority.isEligibleServerActor(level, boss)) {
+                delegate.cancelAttack();
+                throw new IllegalStateException("Boss is not eligible to own a validated Minecraft combat runtime");
+            }
+
+            if (minecraftOwner == null) {
+                minecraftOwner = boss;
+                minecraftOwnerDimension = level.dimension();
+                bindValidatedRuntimeOwner(boss, this);
+                return;
+            }
+
+            if (minecraftOwner != boss
+                || minecraftOwnerDimension == null
+                || !minecraftOwnerDimension.equals(level.dimension())
+                || boss.level() != level) {
+                delegate.cancelAttack();
+                throw new IllegalStateException("Validated boss runtime belongs to a different server actor or dimension");
+            }
+        }
+
+        private void invalidateMinecraftOwner(LivingEntity owner) {
+            if (minecraftOwner != owner || minecraftOwnerInvalidated) {
+                return;
+            }
+            minecraftOwnerInvalidated = true;
+            delegate.cancelAttack();
         }
     }
 

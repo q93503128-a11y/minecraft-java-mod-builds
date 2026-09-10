@@ -1,6 +1,7 @@
 package kr.moonseungjun.riftfrontier;
 
 import com.mojang.logging.LogUtils;
+import kr.moonseungjun.riftfrontier.combat.MinecraftBossCombatAdapter;
 import kr.moonseungjun.riftfrontier.combat.PlayerWeaponServerRuntime;
 import kr.moonseungjun.riftfrontier.combat.RiftfrontierCombatDataComponents;
 import kr.moonseungjun.riftfrontier.content.ContentRuntime;
@@ -11,6 +12,7 @@ import kr.moonseungjun.riftfrontier.entity.RiftfrontierEntityTypes;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionGameplayCommand;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionGameplayEvents;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionRestartReconciler;
+import kr.moonseungjun.riftfrontier.gametest.BossRuntimeLifecycleGameTests;
 import kr.moonseungjun.riftfrontier.gametest.CombatAuthorityGameTests;
 import kr.moonseungjun.riftfrontier.gametest.CombatGameTests;
 import kr.moonseungjun.riftfrontier.gametest.PlayerWeaponGameTests;
@@ -51,11 +53,13 @@ public final class Riftfrontier {
         RiftfrontierGameTests.register(modEventBus);
         CombatGameTests.register(modEventBus);
         CombatAuthorityGameTests.register(modEventBus);
+        BossRuntimeLifecycleGameTests.register(modEventBus);
         PlayerWeaponGameTests.register(modEventBus);
         modEventBus.addListener(RiftfrontierNetworking::registerPayloads);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::addServerReloadListeners);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::registerCommands);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::serverStarted);
+        NeoForge.EVENT_BUS.addListener(MinecraftBossCombatAdapter::entityLeaveLevel);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::playerWeaponTick);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::playerWeaponLoggedIn);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::playerWeaponLoggedOut);
