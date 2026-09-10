@@ -130,19 +130,22 @@ public final class RiftfrontierGameTests {
         );
         helper.assertTrue(!Region01EncounterRuntime.patrolCleared(helper.getLevel(), center, technicalRun), "Live encounter must not report patrol-cleared");
 
-        var localThreats = helper.getLevel().getEntitiesOfClass(Mob.class, new AABB(center).inflate(12.0D, 8.0D, 12.0D));
-        helper.assertTrue(!localThreats.isEmpty(), "Encounter must expose at least one live proxy for lure-boundary regression coverage");
-        Mob lured = localThreats.getFirst();
-        lured.snapTo(center.getX() + 48.5D, center.getY(), center.getZ() + 48.5D, lured.getYRot(), lured.getXRot());
-        helper.assertTrue(
-            Region01EncounterRuntime.liveThreatCount(helper.getLevel(), center, technicalRun) == spawned.totalThreats(),
-            "A live proxy outside the technical cell must still block patrol-cleared bonus eligibility"
-        );
+        // addFreshEntity establishes the authoritative tracker immediately, but the level entity index is
+        // tick-driven. Wait only for that index boundary; the lure/cleanup assertions themselves remain strict.
+        helper.succeedWhen(() -> {
+            var localThreats = helper.getLevel().getEntitiesOfClass(Mob.class, new AABB(center).inflate(12.0D, 8.0D, 12.0D));
+            helper.assertTrue(!localThreats.isEmpty(), "Encounter must expose at least one live proxy for lure-boundary regression coverage");
+            Mob lured = localThreats.getFirst();
+            lured.snapTo(center.getX() + 48.5D, center.getY(), center.getZ() + 48.5D, lured.getYRot(), lured.getXRot());
+            helper.assertTrue(
+                Region01EncounterRuntime.liveThreatCount(helper.getLevel(), center, technicalRun) == spawned.totalThreats(),
+                "A live proxy outside the technical cell must still block patrol-cleared bonus eligibility"
+            );
 
-        Region01EncounterRuntime.clearRun(helper.getLevel(), center, technicalRun);
-        helper.assertTrue(lured.isRemoved(), "Terminal cleanup must discard a tracked proxy even after it left the technical cell");
-        helper.assertTrue(Region01EncounterRuntime.patrolCleared(helper.getLevel(), center, technicalRun), "Run cleanup must remove every encounter proxy");
-        helper.succeed();
+            Region01EncounterRuntime.clearRun(helper.getLevel(), center, technicalRun);
+            helper.assertTrue(lured.isRemoved(), "Terminal cleanup must discard a tracked proxy even after it left the technical cell");
+            helper.assertTrue(Region01EncounterRuntime.patrolCleared(helper.getLevel(), center, technicalRun), "Run cleanup must remove every encounter proxy");
+        });
     }
 
     private static void restartReconciliation(GameTestHelper helper) {
