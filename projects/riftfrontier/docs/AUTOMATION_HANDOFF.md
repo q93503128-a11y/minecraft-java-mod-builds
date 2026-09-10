@@ -4,59 +4,59 @@ This file is a recovery aid for scheduled development sessions. Current GitHub `
 
 ## Last recovered baseline
 
-- Remote `main` verified at this run start: `91acd193dfc13444dbf61440ce99c86766500b91`.
-- Implementation/test HEAD completed and fully validated in this batch: `c89eec410711d312c862804ec2e64c3f1ce56f8b`.
-- Production Region 01 still has no approved final boss material treatment and no legitimate production numeric `attack_pattern` / final `boss_profile`.
-- Production boss semantic creation is UUID-qualified. UUID-less `BossPresentationSemanticState` compatibility helpers are fixture/test convenience only; the actor-identity subthread is closed unless a real production consumer appears.
+- Remote `main` verified at run start: `d91acbdf0ba111f69946c7bedfa1e5fcc3b39dbc`.
+- Previous fully validated implementation/test HEAD: `c89eec410711d312c862804ec2e64c3f1ce56f8b` (`Build Riftfrontier` run `34439967460`, FULL SUCCESS).
+- Current batch implementation/docs HEAD before this handoff commit: `2a7de569612c063b03a107401926c2e599e73bb4`.
+- Production Region 01 still has no approved final boss material treatment and no legitimate production numeric `attack_pattern` / final `boss_profile` discovered in the recovered canonical/handoff state.
 
 ## Completed in this batch
 
-M3 player-combat composition kernel:
+M3 player weapon reference/role lock:
 
-- Audited the handoff-requested boss semantic creation/clear path first. Production server binding uses `(entityId, UUID)` and the wire payload carries UUID, so no compatibility-only API was removed merely for uniformity.
-- Moved to the next objective M3 gap required by the roadmap: player `Weapon Family + module composition` semantics.
-- Added data-driven `weapon_family` and `weapon_module` core definitions instead of weapon-specific Java subclass proliferation.
-- `weapon_family` composes authored `attack_pattern` moves, combat-role semantics, and declared module sockets. It does not create a second combat clock.
-- `weapon_module` composes compatible weapon-family ids, one socket, and behaviour-change semantics. Exact stat deltas are intentionally outside this gate.
-- Extended strict JSON decoding and graph validation. Families must have resolvable moves/roles/sockets; modules must resolve families, use sockets actually declared by every compatible family, and change at least one behaviour.
-- Added positive and fail-closed JUnit coverage for decoding, missing move references, unresolved family references, incompatible sockets, and empty semantic components.
-- Added `docs/M3_PLAYER_COMBAT_KERNEL.md` defining the production gate. Fixture ids/timings are explicitly non-production and must not be promoted.
-- No final weapon family, damage, range, cooldown, hitbox, art, VFX, sound, or field-balance value was invented.
+- Re-read remote `main`, project canon, roadmap, M3 combat reference dossier, player combat kernel, and this handoff before changing anything.
+- Performed bounded external reference research using official Capcom Monster Hunter manuals, official Fatshark Darktide weapon/update notes, and official Supergiant Hades II combat/update notes.
+- Added `docs/M3_PLAYER_WEAPON_REFERENCE_DOSSIER.md`.
+- Locked exactly two first-slice semantic role contracts, without final item names or stable production IDs:
+  - `mobile_pressure`: short-reach close pressure, repeated repositioning, lower ordinary-entry commitment, punishable committed reward/finisher.
+  - `reach_commitment`: deliberate spacing, longer practical melee reach, constrained decisive commitment, readable anticipation and punishable recovery.
+- Locked one first-slice module-composition direction:
+  - socket semantic `technique`;
+  - behaviour semantic `recovery_pivot`;
+  - changes an eligible recovery transition only; it may not create a parallel hit clock, skip required recovery, grant generic invulnerability, or silently alter authoritative hit windows.
+- Updated `docs/M3_PLAYER_COMBAT_KERNEL.md` so the reference gate is marked complete and the next engineering order is explicit.
+- No production `attack_pattern`, `weapon_family`, or `weapon_module` JSON was authored yet. No damage/range/cooldown/hitbox/stamina/cadence/art/animation/VFX/sound value was invented.
 
 ## Changed systems/files
 
-- `src/main/java/kr/moonseungjun/riftfrontier/content/CoreDefinition.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/content/ContentDocumentCodec.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/content/ContentValidator.java`
-- `src/test/java/kr/moonseungjun/riftfrontier/content/CombatDefinitionTest.java`
-- `docs/M3_PLAYER_COMBAT_KERNEL.md`
-- `docs/AUTOMATION_HANDOFF.md`
+- `docs/M3_PLAYER_WEAPON_REFERENCE_DOSSIER.md` — new bounded reference/design lock.
+- `docs/M3_PLAYER_COMBAT_KERNEL.md` — production gate advanced from reference comparison to authored data/runtime boundary.
+- `docs/AUTOMATION_HANDOFF.md` — this recovery record.
 
 ## Verification
 
-- First `Build Riftfrontier` run `34439674920` for interim HEAD `9b0f989c888896a7268da4f8469f9c2087a4c9a7`: FAILED at `Tests and clean build` before later gates. Downloaded workflow logs identified the first actual compiler error: a lambda parameter named `definition` shadowed the outer `definition` variable inside `ContentValidator.validate()`.
-- Fixed only that Java name collision; no feature/test/content requirement was removed or weakened.
-- `Build Riftfrontier` run `34439967460` for implementation/test HEAD `c89eec410711d312c862804ec2e64c3f1ce56f8b`: FULL SUCCESS.
-- PASS: Java 25/toolchain, asset-intake tests, JUnit + clean build, required native GameTest, dedicated-server smoke, Xvfb graphical client smoke, executable-JAR inspection, build report, deliverable upload, and logs/report upload.
-- Local clone/build: NOT RUN successfully in this automation environment; GitHub Actions is the validation source.
-- Production weapon families/modules and Minecraft player weapon execution: NOT AUTHORED / NOT TESTED.
-- Player damage/range/cadence/hitboxes, animation/VFX/sound, final models/textures/icons/UI, and human field-play: NOT AUTHORED / NOT TESTED.
-- Production final boss texture/material/`RenderType`: NOT APPROVED / NOT AUTHORED. Source Dragon `Atlas` remains prohibited.
-- Production Region 01 numeric boss `attack_pattern`/final `boss_profile`, actual boss encounter attachment, final dimensions/hitbox/scale, VFX/sound, and spawned/deformed Dragon graphical capture: NOT AUTHORED / NOT TESTED.
+- Source/reference inspection: PASS. Dossier sources are official Capcom/Fatshark/Supergiant pages and are recorded as URLs in the dossier.
+- Remote-main conflict check before writes: PASS; `main` remained `d91acbdf0ba111f69946c7bedfa1e5fcc3b39dbc` immediately before the first write.
+- `Build Riftfrontier` run `34443381052` for HEAD `2a7de569612c063b03a107401926c2e599e73bb4`: QUEUED at last check. Do **not** report this run as successful until all gates finish.
+- Local clone/build: NOT RUN in this automation environment.
+- Production player weapon execution: NOT AUTHORED / NOT TESTED.
+- Player damage/range/cadence/hitboxes, resource costs, final art, animation/VFX/sound, and human field-play: NOT AUTHORED / NOT TESTED.
+- Production final boss texture/material/`RenderType`: NOT APPROVED / NOT AUTHORED.
+- Production Region 01 numeric boss `attack_pattern`/final `boss_profile` and actual boss encounter attachment: NOT AUTHORED / NOT TESTED.
 
 ## Do not repeat or revert
 
-- Dragon source reacquisition, sanitizer acceptance, runtime packaging, eight-clip motion review, `Headbutt`/`Punch` window review, exact reload/geometry provenance, reviewed-animation preparation, boss semantic schema/validator, material/publication provenance, server-semantic ↔ reviewed-animation join, server-semantic presentation-resolver provenance closure, validated boss runtime, network ordering, UUID-safe lifecycle pruning, and UUID-qualified cache/render lookup are DONE.
-- Do not restore numeric-id-only boss presentation lookup/render APIs.
-- Do not modify UUID-less fixture compatibility helpers unless an actual production consumer is found.
-- The `weapon_family` / `weapon_module` schema, strict decoder, move/family/socket graph validation, and their regression tests are DONE. Do not replace them with duplicated weapon subclasses or a second attack timing system.
-- `AttackPattern` remains the authoritative telegraph/ACTIVE/recovery cadence primitive for authored weapon moves.
-- Never promote fixture weapon ids/timings to production, infer combat balance from third-party animations, or invent boss/player art or balance before their evidence gates.
+- Boss source/asset provenance, reviewed animation preparation, semantic-animation/material/geometry publication provenance, UUID-qualified presentation/network ordering/lifecycle/cache/render work are DONE. Do not recreate or weaken those gates.
+- `weapon_family` / `weapon_module` schema, strict decoder, graph validation, and regression tests are DONE. Do not replace them with weapon-specific subclass duplication or a second timing system.
+- The player-weapon reference comparison and role-lock stage is now DONE. Do not reopen the first-slice family count or add a third family unless canonical direction is explicitly changed.
+- `AttackPattern` remains the only authoritative `telegraph -> ACTIVE -> recovery` cadence primitive for player and boss authored moves.
+- The first two player role contracts are `mobile_pressure` and `reach_commitment`; the first module direction is `technique` / `recovery_pivot`.
+- Never promote fixture IDs/timings, copy third-party moves/assets, infer balance from animation clips, or invent final player/boss art or field-balance values without evidence.
 
 ## Exact next start point
 
-1. Re-check current remote `main`, canonical docs, and this handoff. Do not redo boss provenance/order/lifecycle/actor-identity work or the player-combat schema kernel.
-2. Re-check whether approved final Region 01 boss material or legitimate production boss `attack_pattern` / `boss_profile` has appeared. If so, use the already-completed boss gates instead of inventing replacements.
-3. If those remain absent, continue M3 player combat by producing a bounded `M3_PLAYER_WEAPON_REFERENCE_DOSSIER`: compare strong first/third-person action-combat weapon-family references and extract only structural lessons about commitment, reach/mobility, counterplay, recovery, and module-driven behaviour changes.
-4. From that dossier, lock exactly two genuinely different production weapon-family role contracts and one module-composition line before authoring any production `attack_pattern`, `weapon_family`, or `weapon_module` JSON.
-5. Do not assign final damage/range/cooldown/hitbox values or final art at that stage. Those remain field-play / presentation evidence gates. After semantic roles are defensible, connect the authored definitions to server-authoritative Minecraft player combat runtime and only then proceed toward executable moves and field-play tuning.
+1. Re-check current remote `main`, canon, roadmap, `M3_PLAYER_COMBAT_KERNEL.md`, `M3_PLAYER_WEAPON_REFERENCE_DOSSIER.md`, and this handoff.
+2. Check `Build Riftfrontier` run `34443381052`; if it failed, fix the first real failure without weakening tests or requirements. If still pending, do not call it successful.
+3. Re-check whether approved final Region 01 boss material or legitimate production boss data appeared. If so, use the existing completed boss gates rather than replacing them.
+4. If boss inputs remain absent, author the **smallest production `attack_pattern` set** needed to express exactly the locked `mobile_pressure` and `reach_commitment` roles. Timing fields must be defensible semantic placeholders only if the existing schema requires positive windows; do not claim them as final balance and keep them explicitly tuneable/data-driven.
+5. Author exactly two production `weapon_family` definitions with the shared `technique` socket and exactly one production `weapon_module` line for `recovery_pivot`; extend validation/tests only for real ambiguities discovered by those definitions.
+6. Then connect the authored definitions to a server-authoritative Minecraft player-combat execution boundary. Do not tune final damage/range/cadence or approve art before executable field-play/presentation evidence exists.
