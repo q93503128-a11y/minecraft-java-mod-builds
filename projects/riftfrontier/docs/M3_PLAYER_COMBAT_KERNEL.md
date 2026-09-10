@@ -1,6 +1,6 @@
 # M3 Player Combat Kernel
 
-Status: semantic/data foundation, API-free server execution capability, and Minecraft-facing server-authority adapter are complete. `M3_PLAYER_WEAPON_REFERENCE_DOSSIER.md` locks the first two production role contracts and one module-composition line. Production move definitions and concrete item/input bindings are still pending. This document does **not** approve final weapon art, damage, range, cooldown, hitbox, VFX, sound, or balance.
+Status: semantic/data foundation, reference role lock, API-free server execution capability, Minecraft-facing server-authority adapter, and the first production move/family/module pack are complete. Concrete ItemStack/equipment decoding and real client-to-server move input binding are still pending. This document does **not** approve final weapon art, damage, range, cooldown, hitbox, VFX, sound, or field balance.
 
 ## Purpose
 
@@ -20,7 +20,7 @@ WeaponModule
   -> behaviour-change semantics
 ```
 
-`AttackPattern` remains the authoritative telegraph/ACTIVE/recovery clock. A weapon family does not create a second timing system. `WeaponModule` expresses a behaviour change contract; exact numeric modifiers are deliberately excluded until a real family is authored and field-play evidence exists.
+`AttackPattern` remains the authoritative telegraph/ACTIVE/recovery clock. A weapon family does not create a second timing system. `WeaponModule` expresses a behaviour change contract; exact numeric modifiers are deliberately excluded until real field-play evidence exists.
 
 ## Validator contract
 
@@ -40,18 +40,6 @@ A valid `weapon_module` must:
 
 These are structural errors, not warnings, because accepting an unresolved move or impossible socket would make runtime composition ambiguous.
 
-## JSON shape
-
-Fixture-only example; names and timings below are not production balance:
-
-```json
-{"kind":"weapon_family","id":"riftfrontier:fixture/weapon_family/mobile_blade","moves":["riftfrontier:fixture/move/commit_slash"],"combat_roles":["mobile_commitment"],"module_sockets":["technique"]}
-```
-
-```json
-{"kind":"weapon_module","id":"riftfrontier:fixture/module/tempo_shift","compatible_families":["riftfrontier:fixture/weapon_family/mobile_blade"],"socket":"technique","behaviour_changes":["reposition_after_commitment"]}
-```
-
 ## Production role lock — completed 2026-09-10
 
 `M3_PLAYER_WEAPON_REFERENCE_DOSSIER.md` is the bounded evidence gate for the first vertical-slice families. It locks exactly:
@@ -61,11 +49,11 @@ Fixture-only example; names and timings below are not production balance:
 - shared module socket semantic `technique`;
 - first module behaviour direction `recovery_pivot`, which changes an eligible recovery transition without altering the authoritative hit clock or skipping required recovery.
 
-These are semantic role labels, not final stable content IDs or final weapon names. They do not authorize numeric balance or presentation assets.
+These are role contracts, not an approval of final presentation or balance values.
 
 ## Runtime capability — completed 2026-09-10
 
-The API-free server execution boundary now consists of:
+The API-free server execution boundary is:
 
 ```text
 validated/published content
@@ -79,7 +67,7 @@ validated/published content
        -> AttackExecution / AttackTimeline
 ```
 
-Runtime rules are fail-closed even after graph validation:
+Runtime rules remain fail-closed:
 
 - the assembled move set must exactly equal the family-authored move IDs;
 - every move must resolve to the same `AttackPattern` ID requested by the family;
@@ -107,15 +95,30 @@ The adapter intentionally emits candidates rather than applying a guessed damage
 
 Native `player_weapon_authority` GameTest coverage exercises TELEGRAPH/ACTIVE/RECOVERY authority, per-execution target deduplication, recovery-only module authorization, loadout-swap invalidation, new-family session replacement, and lifecycle cleanup using fixture-only definitions.
 
+## First production weapon data — completed 2026-09-10
+
+`data/riftfrontier/riftfrontier/content/player_combat_01.json` is the first production player-combat pack. It intentionally stays small and contains exactly:
+
+- `riftfrontier:weapon_family/mobile_pressure`
+  - `riftfrontier:attack/player/mobile_pressure_entry`
+  - `riftfrontier:attack/player/mobile_pressure_finisher`
+- `riftfrontier:weapon_family/reach_commitment`
+  - `riftfrontier:attack/player/reach_commitment_strike`
+- shared `technique` module `riftfrontier:weapon_module/recovery_pivot`.
+
+The three `AttackPattern` documents provide the structurally required authoritative clock and preserve the dossier contrast: the ordinary mobile entry has lower commitment, the mobile finisher has a larger punishable recovery, and the reach strike exposes the clearest anticipation/recovery commitment. Their current tick counts are **provisional engineering values**, remain data-driven, and are not approved field balance or final cadence. They exist so the production graph can execute and be measured; later changes require actual field-play evidence rather than inference from animation clips or third-party balance numbers.
+
+The production test `ProductionPlayerWeaponContentTest` loads the packaged JSON through `ContentPackLoader`, requires graph validity, locks exactly two families/three moves/one module, verifies the shared socket/module semantics and role contrast, and prevents fixture IDs from leaking into the production pack.
+
 ## Production gate
 
-The schema, bounded role comparison, reusable server execution capability, and Minecraft-facing authority adapter are complete. The remaining order is:
+The schema, bounded reference comparison, reusable server execution capability, Minecraft-facing authority adapter, and first production move/family/module graph are complete. The remaining order is:
 
-1. author the smallest production `attack_pattern` move set that expresses the two locked roles without claiming final field balance;
-2. author exactly two production `weapon_family` definitions and one `weapon_module` line using the existing schema;
-3. bind real server-owned item/equipment state to `MinecraftPlayerWeaponCombatAdapter.LoadoutResolver` and real move input intents to `beginMove(...)` rather than constructing another execution path;
+1. bind real server-owned `ItemStack`/equipment state to `MinecraftPlayerWeaponCombatAdapter.LoadoutResolver` without creating a second equipment truth;
+2. bind real client move intents through a serverbound payload to `beginMove(...)`, validating the sending `ServerPlayer`, currently equipped family and authored move on the server;
+3. add lifecycle/input GameTest or equivalent executable coverage for spoofed move IDs, unequip/swap invalidation and actor isolation;
 4. bind approved shape-specific hit volumes and eventual damage policy to the adapter only after field evidence exists;
-5. tune damage/range/cadence only from real field play;
+5. tune the provisional attack timings, damage and range only from real field play;
 6. approve final art/animation/VFX/sound only through the separate presentation evidence gate.
 
-Do not duplicate boss presentation plumbing, infer combat values from third-party animation clips, promote fixture IDs to production content, add a third family to evade the two-role contrast requirement, or create a second attack timing system.
+Do not duplicate boss presentation plumbing, infer combat values from third-party animation clips, promote fixture IDs to production content, add a third family to evade the two-role contrast requirement, create a second attack timing system, or treat the provisional production tick counts as final balance.
