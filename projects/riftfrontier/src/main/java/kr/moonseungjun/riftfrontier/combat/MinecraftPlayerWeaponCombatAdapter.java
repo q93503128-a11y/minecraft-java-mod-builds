@@ -42,6 +42,7 @@ public final class MinecraftPlayerWeaponCombatAdapter {
     public AttackExecution.Snapshot beginMove(LivingEntity actor, ContentId moveId, long gameTick) {
         Objects.requireNonNull(actor, "actor");
         Objects.requireNonNull(moveId, "moveId");
+        requireCombatEligible(actor);
         Loadout loadout = requireLoadout(actor);
         Session session = synchronizeSession(actor, loadout);
         AttackExecution.Snapshot snapshot = session.controller.beginMove(moveId, gameTick);
@@ -51,16 +52,21 @@ public final class MinecraftPlayerWeaponCombatAdapter {
 
     /**
      * Advances one actor from the same server-owned clock and exposes unique hit-volume candidates
-     * only during ACTIVE. A loadout swap or world/dimension discontinuity immediately cancels and
-     * discards the old execution.
+     * only during ACTIVE. A loadout swap, world/dimension discontinuity, death/removal, or spectator
+     * transition immediately cancels and discards the old execution.
      */
     public TickResult tick(ServerLevel level, LivingEntity actor, long gameTick) {
         Objects.requireNonNull(level, "level");
         Objects.requireNonNull(actor, "actor");
 
-        Optional<Loadout> currentLoadout = loadoutResolver.resolve(actor);
         Session session = sessions.get(actor.getUUID());
         if (session == null) return TickResult.idle();
+        if (!isCombatEligible(actor)) {
+            invalidate(actor.getUUID(), session);
+            return TickResult.invalidated();
+        }
+
+        Optional<Loadout> currentLoadout = loadoutResolver.resolve(actor);
         if (!session.dimension.equals(level.dimension())
             || actor.level() != level
             || currentLoadout.isEmpty()
@@ -87,11 +93,15 @@ public final class MinecraftPlayerWeaponCombatAdapter {
         return new TickResult(snapshot.presentationPhase(), step.hitWindowOpen(), step.finished(), false, candidates);
     }
 
-    /** Module movement semantics can never authorize outside the authoritative RECOVERY phase. */
+    /** Module movement semantics can never authorize outside RECOVERY or for an ineligible actor. */
     public boolean recoveryPivotAuthorized(LivingEntity actor, long gameTick) {
         Objects.requireNonNull(actor, "actor");
         Session session = sessions.get(actor.getUUID());
         if (session == null) return false;
+        if (!isCombatEligible(actor)) {
+            invalidate(actor.getUUID(), session);
+            return false;
+        }
         Optional<Loadout> current = loadoutResolver.resolve(actor);
         if (!session.dimension.equals(actor.level().dimension())
             || current.isEmpty()
@@ -119,6 +129,16 @@ public final class MinecraftPlayerWeaponCombatAdapter {
     private Loadout requireLoadout(LivingEntity actor) {
         return loadoutResolver.resolve(actor)
             .orElseThrow(() -> new IllegalStateException("Actor has no validated Riftfrontier weapon loadout: " + actor.getUUID()));
+    }
+
+    private void requireCombatEligible(LivingEntity actor) {
+        if (isCombatEligible(actor)) return;
+        clearActor(actor.getUUID());
+        throw new IllegalStateException("Actor is not combat-eligible for Riftfrontier weapon authority: " + actor.getUUID());
+    }
+
+    private static boolean isCombatEligible(LivingEntity actor) {
+        return actor.isAlive() && !actor.isRemoved() && !actor.isSpectator();
     }
 
     private Session synchronizeSession(LivingEntity actor, Loadout loadout) {
