@@ -24,6 +24,7 @@ jobs:
           git fetch origin main
           git reset --hard origin/main
           mkdir -p /tmp/ets-alpha14
+          python3 .github/scripts/ets_alpha14_fix_runner.py
           set +e
           { python3 .github/scripts/ets_alpha14_apply.py && python3 projects/earth-to-stars/tools/validate_alpha14_acceptance.py; } 2>&1 | tee /tmp/ets-alpha14/apply.log
           status=${PIPESTATUS[0]}
