@@ -102,6 +102,22 @@ public final class BossRuntimeLifecycleGameTests {
             runtime.cancelAttack();
         }
 
+        MinecraftBossCombatAdapter.ValidatedRuntime parallelRuntime = MinecraftBossCombatAdapter.validated(
+            catalog,
+            semantics,
+            new MinecraftAttackAdapter.AabbHitVolume(1.0D, 1.0D),
+            1.0F
+        );
+        try {
+            parallelRuntime.beginNextAttack(level, owner, start + 7L);
+            helper.assertTrue(false,
+                "A live boss entity must not own two independently mutable validated combat runtimes");
+        } catch (IllegalStateException expected) {
+            helper.assertTrue(runtime.beginNextAttack(level, owner, start + 8L).patternId().equals(attack),
+                "Rejected parallel capability must not disturb the authoritative runtime already claimed by the boss");
+            runtime.cancelAttack();
+        }
+
         MinecraftBossCombatAdapter.entityLeaveLevel(new EntityLeaveLevelEvent(owner, level));
         try {
             runtime.phase();
@@ -118,15 +134,9 @@ public final class BossRuntimeLifecycleGameTests {
             // Expected fail-closed owner lifetime boundary.
         }
 
-        MinecraftBossCombatAdapter.ValidatedRuntime replacementRuntime = MinecraftBossCombatAdapter.validated(
-            catalog,
-            semantics,
-            new MinecraftAttackAdapter.AabbHitVolume(1.0D, 1.0D),
-            1.0F
-        );
-        helper.assertTrue(replacementRuntime.beginNextAttack(level, replacement, start + 12L).patternId().equals(attack),
-            "Owner invalidation must be scoped to the retired capability, not globally poison valid replacement actors");
-        replacementRuntime.cancelAttack();
+        helper.assertTrue(parallelRuntime.beginNextAttack(level, replacement, start + 12L).patternId().equals(attack),
+            "A failed duplicate-owner claim must leave that runtime unbound so a different valid actor can own it later");
+        parallelRuntime.cancelAttack();
 
         helper.succeed();
     }

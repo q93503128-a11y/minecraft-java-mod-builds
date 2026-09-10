@@ -79,7 +79,7 @@ public final class MinecraftBossCombatAdapter {
      *
      * <p>Once a validated runtime is bound through its Minecraft-facing begin/tick path, that exact
      * entity instance owns the capability for the rest of its level lifetime. When the owner leaves
-     * tracking, every capability bound to that instance is invalidated and any active attack is
+     * tracking, the capability bound to that instance is invalidated and any active attack is
      * cancelled. No world/entity scan is required.</p>
      */
     public static void entityLeaveLevel(EntityLeaveLevelEvent event) {
@@ -100,11 +100,15 @@ public final class MinecraftBossCombatAdapter {
         }
     }
 
+    /** Claims the single authoritative validated boss capability for one live entity instance. */
     private static void bindValidatedRuntimeOwner(LivingEntity owner, ValidatedRuntime runtime) {
         synchronized (VALIDATED_RUNTIMES_BY_OWNER) {
-            VALIDATED_RUNTIMES_BY_OWNER
-                .computeIfAbsent(owner, ignored -> Collections.newSetFromMap(new IdentityHashMap<>()))
-                .add(runtime);
+            Set<ValidatedRuntime> runtimes = VALIDATED_RUNTIMES_BY_OWNER
+                .computeIfAbsent(owner, ignored -> Collections.newSetFromMap(new IdentityHashMap<>()));
+            if (!runtimes.isEmpty() && !runtimes.contains(runtime)) {
+                throw new IllegalStateException("Boss already owns a different validated combat runtime");
+            }
+            runtimes.add(runtime);
         }
     }
 
@@ -335,9 +339,9 @@ public final class MinecraftBossCombatAdapter {
             }
 
             if (minecraftOwner == null) {
+                bindValidatedRuntimeOwner(boss, this);
                 minecraftOwner = boss;
                 minecraftOwnerDimension = level.dimension();
-                bindValidatedRuntimeOwner(boss, this);
                 return;
             }
 

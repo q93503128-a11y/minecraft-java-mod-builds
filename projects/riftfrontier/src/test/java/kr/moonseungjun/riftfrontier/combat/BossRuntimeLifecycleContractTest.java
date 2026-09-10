@@ -30,10 +30,14 @@ final class BossRuntimeLifecycleContractTest {
             "validated runtime must retain irreversible owner invalidation state");
         assertTrue(adapter.contains("requireMinecraftOwner(level, boss);"),
             "Minecraft-facing begin/tick paths must cross the owner lifetime gate");
+        assertTrue(adapter.contains("if (!runtimes.isEmpty() && !runtimes.contains(runtime))"),
+            "one live boss entity must reject a second independently mutable validated runtime");
+        assertTrue(adapter.contains("bindValidatedRuntimeOwner(boss, this); minecraftOwner = boss;"),
+            "owner claim must succeed before the candidate runtime records itself as bound");
         assertTrue(adapter.contains("public static void entityLeaveLevel(EntityLeaveLevelEvent event)"),
             "validated runtime must expose the event-driven owner retirement boundary");
         assertTrue(adapter.contains("runtimes = VALIDATED_RUNTIMES_BY_OWNER.remove(owner);"),
-            "entity leave must detach all process-local capabilities for the exact owner instance");
+            "entity leave must detach the process-local capability for the exact owner instance");
         assertTrue(adapter.contains("runtime.invalidateMinecraftOwner(owner);"),
             "entity leave must invalidate retained capabilities, not merely cancel one attack");
         assertTrue(mod.contains("NeoForge.EVENT_BUS.addListener(MinecraftBossCombatAdapter::entityLeaveLevel);"),
