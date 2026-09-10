@@ -88,6 +88,27 @@ final class AttackStateMachineTest {
     }
 
     @Test
+    void readOnlyObservationSharesTheMonotonicClockBoundaryWithoutConsumingPhaseTransition() {
+        AttackStateMachine machine = new AttackStateMachine();
+        machine.begin(pattern(), 70);
+
+        AttackExecution.Snapshot observed = machine.observeCurrent(74).orElseThrow();
+        assertEquals(AttackTimeline.Phase.RECOVERY, observed.presentationPhase());
+
+        AttackStateMachine.Step sameTickAdvance = machine.advance(74);
+        assertTrue(sameTickAdvance.phaseChanged(), "observation must not consume lifecycle phase transition bookkeeping");
+        assertEquals(AttackTimeline.Phase.RECOVERY, sameTickAdvance.snapshot().orElseThrow().presentationPhase());
+
+        machine.observeCurrent(75);
+        IllegalArgumentException rewind = assertThrows(
+            IllegalArgumentException.class,
+            () -> machine.observeCurrent(74)
+        );
+        assertTrue(rewind.getMessage().contains("cannot move backwards"));
+        assertFalse(machine.isExecuting(), "rewound observation must invalidate the same authoritative execution");
+    }
+
+    @Test
     void rejectsNegativeBeginTickWithoutCreatingExecution() {
         AttackStateMachine machine = new AttackStateMachine();
         assertThrows(IllegalArgumentException.class, () -> machine.begin(pattern(), -1));
