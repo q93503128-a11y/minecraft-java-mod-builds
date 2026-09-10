@@ -1,5 +1,5 @@
 {
-  "type": "minecraft:overworld",
+  "type": "fishinggame:lakeside",
   "generator": {
     "type": "minecraft:flat",
     "settings": {
