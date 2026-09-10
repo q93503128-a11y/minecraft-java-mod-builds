@@ -16,7 +16,7 @@ import java.util.List;
 
 /** Play-phase network registration. Battle, expedition and progression truth remain server-authoritative. */
 public final class BattleNetwork {
-    private static final String PROTOCOL_VERSION = "10";
+    private static final String PROTOCOL_VERSION = "11";
     private static final BattleNetworkGateway GATEWAY = new BattleNetworkGateway(TurnboundRe.BATTLES);
 
     private BattleNetwork() {}
@@ -43,6 +43,7 @@ public final class BattleNetwork {
                 (payload, context) -> BattleResultClientState.accept(payload));
         ProgressionNetwork.register(registrar);
         ExpeditionNetwork.register(registrar);
+        WorldEncounterAnchorNetwork.register(registrar);
     }
 
     private static void handleCommand(BattleNetworkPayloads.BattleCommandC2S payload, IPayloadContext context) {

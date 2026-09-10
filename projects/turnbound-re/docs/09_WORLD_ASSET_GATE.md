@@ -14,6 +14,14 @@
 - debug arena.
 기능 테스트 맵은 평면/단순 블록이어도 된다.
 
+### Authored Encounter locator 계약
+- `RegionDefinition`은 production 좌표를 저장하지 않고 namespaced `locator`만 가진다.
+- 고정 월드/structure가 실제 배치를 소유하며, 조우 상호작용 지점에는 `minecraft:interaction` entity를 두고 scoreboard tag `turnbound_re:anchor=<locator>`를 붙인다.
+- 이 Interaction entity는 gameplay hitbox일 뿐이다. 플레이어에게 보이는 구조물, 표식, Display/model, 조명, VFX는 별도 production asset이며 이 문서의 Visual Gate를 통과해야 한다.
+- 상호작용 시 서버가 현재 `RegionDefinition`에서 locator와 dimension을 다시 resolve해 조우 preview를 만든다.
+- 실제 전투 확정 시 서버는 anchor entity UUID, tag, dimension, 플레이어 거리, Encounter reference를 다시 검증한다. 클라이언트가 encounter id나 위치를 권위적으로 결정하지 않는다.
+- 따라서 월드 구조물/표현을 교체해도 locator와 Encounter id가 유지되는 한 전투/보상 데이터는 다시 작성하지 않는다.
+
 ## 2. Production World Gate
 지역별로 다음을 준비한다.
 1. gameplay 목적.
