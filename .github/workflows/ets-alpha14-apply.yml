@@ -32,6 +32,7 @@ jobs:
           if [[ $status -ne 0 ]]; then
             exit "$status"
           fi
+          git restore .github/scripts/ets_alpha14_apply.py
           git status --short
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
