@@ -23,8 +23,14 @@ jobs:
           set -euo pipefail
           git fetch origin main
           git reset --hard origin/main
-          python3 .github/scripts/ets_alpha14_apply.py
-          python3 projects/earth-to-stars/tools/validate_alpha14_acceptance.py
+          mkdir -p /tmp/ets-alpha14
+          set +e
+          { python3 .github/scripts/ets_alpha14_apply.py && python3 projects/earth-to-stars/tools/validate_alpha14_acceptance.py; } 2>&1 | tee /tmp/ets-alpha14/apply.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [[ $status -ne 0 ]]; then
+            exit "$status"
+          fi
           git status --short
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -32,3 +38,11 @@ jobs:
           git commit -m 'earth-to-stars: rescue starter craft core alpha14'
           git pull --rebase origin main
           git push origin HEAD:main
+      - name: Upload patch diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ets-alpha14-patch-diagnostics
+          path: /tmp/ets-alpha14/apply.log
+          if-no-files-found: ignore
+          retention-days: 1
