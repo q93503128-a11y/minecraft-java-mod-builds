@@ -18,8 +18,6 @@ import net.minecraft.world.phys.Vec3;
 public final class TurnboundDebugAnchorCommands {
     public static final String DEBUG_ANCHOR_TAG = "turnbound_re:debug_anchor";
     private static final double SPAWN_DISTANCE = 2.5D;
-    private static final float ANCHOR_WIDTH = 1.5F;
-    private static final float ANCHOR_HEIGHT = 2.0F;
 
     private TurnboundDebugAnchorCommands() {}
 
@@ -67,11 +65,11 @@ public final class TurnboundDebugAnchorCommands {
         else horizontal = horizontal.normalize();
         Vec3 position = player.position().add(horizontal.scale(SPAWN_DISTANCE));
 
+        // Minecraft 26.2 keeps Interaction width/height/response setters private.
+        // The vanilla 1x1 hitbox is sufficient for this operator harness; center it around normal eye aim.
+        // response=false still consumes a normal interaction on both sides, so no access-transformer/NBT hack is needed.
         Interaction anchor = new Interaction(EntityTypes.INTERACTION, player.level());
-        anchor.setWidth(ANCHOR_WIDTH);
-        anchor.setHeight(ANCHOR_HEIGHT);
-        anchor.setResponse(true);
-        anchor.setPos(position.x, player.getY(), position.z);
+        anchor.setPos(position.x, player.getEyeY() - 0.5D, position.z);
         anchor.entityTags().add(WorldEncounterAnchorResolver.tagFor(locator));
         anchor.entityTags().add(DEBUG_ANCHOR_TAG);
         player.level().addFreshEntity(anchor);
