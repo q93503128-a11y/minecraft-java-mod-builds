@@ -6,6 +6,7 @@ import kr.moonseungjun.riftfrontier.content.CoreDefinition;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /** Read-only combat runtime adapter over an already validated/published content snapshot. */
 public final class CombatRuntimeCatalog {
@@ -35,8 +36,39 @@ public final class CombatRuntimeCatalog {
         return boss;
     }
 
+    public CoreDefinition.WeaponFamily requireWeaponFamily(ContentId id) {
+        Objects.requireNonNull(id, "id");
+        CoreDefinition definition = content.find(CoreDefinition.Kind.WEAPON_FAMILY, id)
+            .orElseThrow(() -> new IllegalStateException("Missing weapon family in published content: " + id));
+        if (!(definition instanceof CoreDefinition.WeaponFamily family)) {
+            throw new IllegalStateException("Content kind mismatch for weapon family: " + id);
+        }
+        return family;
+    }
+
+    public CoreDefinition.WeaponModule requireWeaponModule(ContentId id) {
+        Objects.requireNonNull(id, "id");
+        CoreDefinition definition = content.find(CoreDefinition.Kind.WEAPON_MODULE, id)
+            .orElseThrow(() -> new IllegalStateException("Missing weapon module in published content: " + id));
+        if (!(definition instanceof CoreDefinition.WeaponModule module)) {
+            throw new IllegalStateException("Content kind mismatch for weapon module: " + id);
+        }
+        return module;
+    }
+
     public AttackExecution startAttack(ContentId patternId, long gameTick) {
         return AttackExecution.start(requireAttackPattern(patternId), gameTick);
+    }
+
+    public PlayerWeaponRuntimeProfile playerWeaponProfile(ContentId familyId, Optional<ContentId> moduleId) {
+        Objects.requireNonNull(moduleId, "moduleId");
+        CoreDefinition.WeaponFamily family = requireWeaponFamily(familyId);
+        Optional<CoreDefinition.WeaponModule> module = moduleId.map(this::requireWeaponModule);
+        return PlayerWeaponRuntimeProfile.assemble(family, module, this::requireAttackPattern);
+    }
+
+    public PlayerWeaponCombatController playerWeaponController(ContentId familyId, Optional<ContentId> moduleId) {
+        return new PlayerWeaponCombatController(playerWeaponProfile(familyId, moduleId));
     }
 
     /**
