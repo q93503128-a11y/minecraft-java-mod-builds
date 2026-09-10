@@ -103,7 +103,7 @@ public final class TurnboundMenuScreen extends Screen {
 
     private void openParty() {
         ProgressionClientState.clear();
-        this.minecraft.gui.setScreen(new PartyFormationScreen());
+        this.minecraft.gui.setScreen(new PartyFormationScreen(this));
         ClientPacketDistributor.sendToServer(new ProgressionNetworkPayloads.RequestProgressC2S());
     }
 

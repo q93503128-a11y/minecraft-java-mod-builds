@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
@@ -14,10 +15,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/** Production Party Formation + Character detail shell. Persistence and growth truth stay server-owned. */
+/**
+ * Party Formation + Character detail screen.
+ * Server-owned progression logic is unchanged; visible controls use the adopted Kenney-backed frame family.
+ */
 public final class PartyFormationScreen extends Screen {
     private enum DetailTab { OVERVIEW, SKILLS, GROWTH }
 
+    private final Screen parent;
+    private final List<Button> tabButtons = new ArrayList<>();
     private final List<Button> rosterButtons = new ArrayList<>();
     private final List<Button> partyButtons = new ArrayList<>();
     private final CharacterEntityPreview entityPreview = new CharacterEntityPreview();
@@ -34,26 +40,40 @@ public final class PartyFormationScreen extends Screen {
     private Button applyButton;
     private Button resetButton;
     private Button removeButton;
+    private Button doneButton;
     private Button prevRosterButton;
     private Button nextRosterButton;
     private Button levelUpButton;
     private Button ascendButton;
 
     public PartyFormationScreen() {
+        this(null);
+    }
+
+    public PartyFormationScreen(Screen parent) {
         super(Minecraft.getInstance(), Minecraft.getInstance().font,
                 Component.translatable("screen.turnbound_re.party_formation"));
+        this.parent = parent;
     }
 
     @Override
     protected void init() {
+        tabButtons.clear();
         rosterButtons.clear();
         partyButtons.clear();
+        applyButton = null;
+        resetButton = null;
+        removeButton = null;
+        doneButton = null;
+        prevRosterButton = null;
+        nextRosterButton = null;
         levelUpButton = null;
         ascendButton = null;
+
         if (!UiLayoutMetrics.supportsPartyScreen(this.width, this.height)) {
-            this.addRenderableWidget(Button.builder(Component.translatable("gui.done"), ignored -> closeScreen())
+            doneButton = Button.builder(Component.translatable(parent == null ? "gui.done" : "gui.back"), ignored -> closeScreen())
                     .bounds(Math.max(0, this.width / 2 - 40), Math.max(0, this.height - 28), 80, 20)
-                    .build());
+                    .build();
             return;
         }
 
@@ -115,7 +135,7 @@ public final class PartyFormationScreen extends Screen {
         int x = tabs.x();
         for (DetailTab tab : DetailTab.values()) {
             String focus = tab == detailTab ? "◆ " : "";
-            this.addRenderableWidget(Button.builder(Component.literal(focus + tabLabel(tab).getString()), ignored -> selectTab(tab))
+            tabButtons.add(Button.builder(Component.literal(focus + tabLabel(tab).getString()), ignored -> selectTab(tab))
                     .bounds(x, tabs.y(), width, tabs.height()).build());
             x += width + gap;
         }
@@ -135,7 +155,6 @@ public final class PartyFormationScreen extends Screen {
             Button button = Button.builder(Component.empty(), ignored -> selectRosterRow(row))
                     .bounds(region.x(), y, region.width(), rowHeight).build();
             rosterButtons.add(button);
-            this.addRenderableWidget(button);
             y += rowHeight + gap;
         }
 
@@ -145,8 +164,6 @@ public final class PartyFormationScreen extends Screen {
                 .bounds(region.x(), navY, navWidth, navHeight).build();
         nextRosterButton = Button.builder(Component.literal(">"), ignored -> changeRosterPage(1))
                 .bounds(region.x() + navWidth + gap, navY, region.width() - navWidth - gap, navHeight).build();
-        this.addRenderableWidget(prevRosterButton);
-        this.addRenderableWidget(nextRosterButton);
     }
 
     private void buildActiveParty(UiLayoutMetrics.PartyFormationLayout layout) {
@@ -157,7 +174,6 @@ public final class PartyFormationScreen extends Screen {
             Button button = Button.builder(Component.empty(), ignored -> choosePartySlot(index))
                     .bounds(region.x(), y, region.width(), 24).build();
             partyButtons.add(button);
-            this.addRenderableWidget(button);
             y += 28;
         }
     }
@@ -172,8 +188,6 @@ public final class PartyFormationScreen extends Screen {
                 .bounds(region.x(), y, buttonWidth, 20).build();
         ascendButton = Button.builder(Component.translatable("screen.turnbound_re.growth.ascend"), ignored -> submitGrowth("ASCEND"))
                 .bounds(region.x() + buttonWidth + gap, y, region.width() - buttonWidth - gap, 20).build();
-        this.addRenderableWidget(levelUpButton);
-        this.addRenderableWidget(ascendButton);
     }
 
     private void buildFooter(UiLayoutMetrics.PartyFormationLayout layout) {
@@ -189,11 +203,8 @@ public final class PartyFormationScreen extends Screen {
         applyButton = Button.builder(Component.translatable("screen.turnbound_re.party.apply"), ignored -> submitDraft())
                 .bounds(resetButton.getRight() + gap, y, buttonWidth, 20).build();
         int doneX = footer.right() - buttonWidth;
-        this.addRenderableWidget(Button.builder(Component.translatable("gui.done"), ignored -> closeScreen())
-                .bounds(doneX, y, buttonWidth, 20).build());
-        this.addRenderableWidget(removeButton);
-        this.addRenderableWidget(resetButton);
-        this.addRenderableWidget(applyButton);
+        doneButton = Button.builder(Component.translatable(parent == null ? "gui.done" : "gui.back"), ignored -> closeScreen())
+                .bounds(doneX, y, buttonWidth, 20).build();
     }
 
     private void selectTab(DetailTab tab) {
@@ -372,6 +383,7 @@ public final class PartyFormationScreen extends Screen {
         if (!UiLayoutMetrics.supportsPartyScreen(this.width, this.height)) {
             graphics.text(this.font, Component.translatable("screen.turnbound_re.party.canvas_too_small"),
                     Math.max(8, this.width / 2 - 100), Math.max(8, this.height / 2 - 20), UiVisualLanguage.TEXT_WARNING, true);
+            renderControl(graphics, doneButton, false, mouseX, mouseY);
             super.extractRenderState(graphics, mouseX, mouseY, partialTick);
             return;
         }
@@ -405,6 +417,7 @@ public final class PartyFormationScreen extends Screen {
             renderSelectedDetail(graphics, layout.selectedDetail());
         }
 
+        renderControls(graphics, mouseX, mouseY);
         if (!feedback.isBlank()) {
             int feedbackX = layout.tabs().x() + Math.min(300, layout.tabs().width() * 3 / 4);
             graphics.text(this.font, Component.literal(fit(feedback, layout.tabs().right() - feedbackX)),
@@ -413,6 +426,100 @@ public final class PartyFormationScreen extends Screen {
                     true);
         }
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+    }
+
+    private void renderControls(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+        for (int i = 0; i < tabButtons.size(); i++) {
+            renderControl(graphics, tabButtons.get(i), DetailTab.values()[i] == detailTab, mouseX, mouseY);
+        }
+
+        int from = rosterPage * rosterPageSize;
+        for (int row = 0; row < rosterButtons.size(); row++) {
+            boolean selected = snapshot != null
+                    && from + row < snapshot.characters().size()
+                    && snapshot.characters().get(from + row).id().equals(selectedCharacterId);
+            renderControl(graphics, rosterButtons.get(row), selected, mouseX, mouseY);
+        }
+        for (int slot = 0; slot < partyButtons.size(); slot++) {
+            renderControl(graphics, partyButtons.get(slot), slot == selectedSlot, mouseX, mouseY);
+        }
+        renderControl(graphics, prevRosterButton, false, mouseX, mouseY);
+        renderControl(graphics, nextRosterButton, false, mouseX, mouseY);
+        renderControl(graphics, levelUpButton, false, mouseX, mouseY);
+        renderControl(graphics, ascendButton, false, mouseX, mouseY);
+        renderControl(graphics, removeButton, false, mouseX, mouseY);
+        renderControl(graphics, resetButton, false, mouseX, mouseY);
+        renderControl(graphics, applyButton, false, mouseX, mouseY);
+        renderControl(graphics, doneButton, false, mouseX, mouseY);
+    }
+
+    private void renderControl(GuiGraphicsExtractor graphics, Button button, boolean selected, int mouseX, int mouseY) {
+        if (button == null) return;
+        UiVisualLanguage.FrameState state = !button.active
+                ? UiVisualLanguage.FrameState.DISABLED
+                : selected || contains(button, mouseX, mouseY)
+                        ? UiVisualLanguage.FrameState.FOCUS
+                        : UiVisualLanguage.FrameState.IDLE;
+        UiVisualLanguage.frame(graphics, button.getX(), button.getY(), button.getWidth(), button.getHeight(), state);
+        Component message = button.getMessage();
+        int x = button.getX() + Math.max(UiLayoutMetrics.SPACE_4,
+                (button.getWidth() - this.font.width(message)) / 2);
+        int y = button.getY() + Math.max(UiLayoutMetrics.SPACE_2,
+                (button.getHeight() - this.font.lineHeight) / 2);
+        graphics.text(this.font, message, x, y, UiVisualLanguage.textColor(state), true);
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (event.button() != 0) return super.mouseClicked(event, doubleClick);
+        int mouseX = (int) Math.floor(event.x());
+        int mouseY = (int) Math.floor(event.y());
+
+        if (!UiLayoutMetrics.supportsPartyScreen(this.width, this.height)) {
+            if (contains(doneButton, mouseX, mouseY)) {
+                closeScreen();
+                return true;
+            }
+            return super.mouseClicked(event, doubleClick);
+        }
+
+        for (int i = 0; i < tabButtons.size(); i++) {
+            if (contains(tabButtons.get(i), mouseX, mouseY)) {
+                selectTab(DetailTab.values()[i]);
+                return true;
+            }
+        }
+        for (int row = 0; row < rosterButtons.size(); row++) {
+            if (rosterButtons.get(row).active && contains(rosterButtons.get(row), mouseX, mouseY)) {
+                selectRosterRow(row);
+                return true;
+            }
+        }
+        for (int slot = 0; slot < partyButtons.size(); slot++) {
+            if (partyButtons.get(slot).active && contains(partyButtons.get(slot), mouseX, mouseY)) {
+                choosePartySlot(slot);
+                return true;
+            }
+        }
+        if (enabledHit(prevRosterButton, mouseX, mouseY)) { changeRosterPage(-1); return true; }
+        if (enabledHit(nextRosterButton, mouseX, mouseY)) { changeRosterPage(1); return true; }
+        if (enabledHit(levelUpButton, mouseX, mouseY)) { submitGrowth("LEVEL_UP"); return true; }
+        if (enabledHit(ascendButton, mouseX, mouseY)) { submitGrowth("ASCEND"); return true; }
+        if (enabledHit(removeButton, mouseX, mouseY)) { removeSelectedSlot(); return true; }
+        if (enabledHit(resetButton, mouseX, mouseY)) { resetDraft(); return true; }
+        if (enabledHit(applyButton, mouseX, mouseY)) { submitDraft(); return true; }
+        if (contains(doneButton, mouseX, mouseY)) { closeScreen(); return true; }
+        return super.mouseClicked(event, doubleClick);
+    }
+
+    private static boolean enabledHit(Button button, int x, int y) {
+        return button != null && button.active && contains(button, x, y);
+    }
+
+    private static boolean contains(Button button, int x, int y) {
+        return button != null
+                && x >= button.getX() && x < button.getRight()
+                && y >= button.getY() && y < button.getY() + button.getHeight();
     }
 
     private void renderSelectedDetail(GuiGraphicsExtractor graphics, UiLayoutMetrics.Rect region) {
@@ -623,6 +730,9 @@ public final class PartyFormationScreen extends Screen {
     }
 
     private void closeScreen() {
-        this.minecraft.gui.setScreen(null);
+        this.minecraft.gui.setScreen(parent);
     }
+
+    @Override public boolean isPauseScreen() { return false; }
+    @Override public boolean isInGameUi() { return true; }
 }
