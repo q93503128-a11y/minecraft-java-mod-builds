@@ -65,14 +65,13 @@ public final class MinecraftPlayerWeaponCombatAdapter {
             invalidate(actor.getUUID(), session);
             return TickResult.invalidated();
         }
-        if (!isCombatEligible(actor)) {
+        if (!MinecraftCombatAuthority.isEligibleServerActor(level, actor)) {
             invalidate(actor.getUUID(), session);
             return TickResult.invalidated();
         }
 
         Optional<Loadout> currentLoadout = loadoutResolver.resolve(actor);
         if (!session.dimension.equals(level.dimension())
-            || actor.level() != level
             || currentLoadout.isEmpty()
             || !session.loadout.equals(currentLoadout.orElseThrow())) {
             invalidate(actor.getUUID(), session);
@@ -89,7 +88,7 @@ public final class MinecraftPlayerWeaponCombatAdapter {
                 "hitVolume.resolve result"
             );
             for (LivingEntity target : resolved) {
-                if (target == null || target == actor || !target.isAlive()) continue;
+                if (!MinecraftCombatAuthority.isEligibleTarget(level, actor, target)) continue;
                 if (session.hitTargets.add(target.getUUID())) candidates++;
             }
         }
@@ -102,7 +101,7 @@ public final class MinecraftPlayerWeaponCombatAdapter {
         Objects.requireNonNull(actor, "actor");
         Session session = sessions.get(actor.getUUID());
         if (session == null) return false;
-        if (session.actor != actor || !isCombatEligible(actor)) {
+        if (session.actor != actor || !MinecraftCombatAuthority.isEligibleServerActor(actor)) {
             invalidate(actor.getUUID(), session);
             return false;
         }
@@ -136,13 +135,9 @@ public final class MinecraftPlayerWeaponCombatAdapter {
     }
 
     private void requireCombatEligible(LivingEntity actor) {
-        if (isCombatEligible(actor)) return;
+        if (MinecraftCombatAuthority.isEligibleServerActor(actor)) return;
         clearActor(actor.getUUID());
         throw new IllegalStateException("Actor is not combat-eligible for Riftfrontier weapon authority: " + actor.getUUID());
-    }
-
-    private static boolean isCombatEligible(LivingEntity actor) {
-        return actor.isAlive() && !actor.isRemoved() && !actor.isSpectator();
     }
 
     private Session synchronizeSession(LivingEntity actor, Loadout loadout) {

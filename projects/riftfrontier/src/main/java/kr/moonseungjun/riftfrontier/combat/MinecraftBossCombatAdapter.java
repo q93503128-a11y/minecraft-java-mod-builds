@@ -45,13 +45,6 @@ public final class MinecraftBossCombatAdapter {
         this.damageAdapter = new MinecraftAttackAdapter(Objects.requireNonNull(hitVolume, "hitVolume"), damage);
     }
 
-    /**
-     * Production construction boundary backed by one validated server-semantic capability.
-     *
-     * <p>The caller cannot substitute a boss id or attack-selection policy: both are derived here from
-     * {@code semantics}. The returned wrapper also derives every network-facing semantic state from the exact tick
-     * result and re-validates it through the same capability before it can leave the server runtime.</p>
-     */
     public static ValidatedRuntime validated(
         CombatRuntimeCatalog catalog,
         ValidatedBossCombatSemantics semantics,
@@ -72,17 +65,9 @@ public final class MinecraftBossCombatAdapter {
         );
     }
 
-    public int phase() {
-        return controller.phase();
-    }
-
-    public boolean attackExecuting() {
-        return controller.attackExecuting();
-    }
-
-    public long completedAttackCount() {
-        return controller.completedAttackCount();
-    }
+    public int phase() { return controller.phase(); }
+    public boolean attackExecuting() { return controller.attackExecuting(); }
+    public long completedAttackCount() { return controller.completedAttackCount(); }
 
     public AttackExecution.Snapshot beginNextAttack(long gameTick) {
         AttackExecution.Snapshot selected = controller.beginNextAttack(gameTick);
@@ -101,6 +86,10 @@ public final class MinecraftBossCombatAdapter {
     public TickResult tick(ServerLevel level, LivingEntity boss, long gameTick) {
         Objects.requireNonNull(level, "level");
         Objects.requireNonNull(boss, "boss");
+        if (!MinecraftCombatAuthority.isEligibleServerActor(level, boss)) {
+            cancelAttack();
+            return new TickResult(controller.phase(), MinecraftAttackAdapter.TickResult.idle(), false, Optional.empty());
+        }
 
         BossCombatController.Step bossStep = controller.advance(gameTick);
         MinecraftAttackAdapter.TickResult damageStep = damageAdapter.tick(level, boss, gameTick);
@@ -124,17 +113,9 @@ public final class MinecraftBossCombatAdapter {
             failClosed("boss presentation and Minecraft damage hit window diverged");
         }
 
-        return new TickResult(
-            controller.phase(),
-            damageStep,
-            bossStep.attackStep().finished(),
-            Optional.of(presentation)
-        );
+        return new TickResult(controller.phase(), damageStep, bossStep.attackStep().finished(), Optional.of(presentation));
     }
 
-    /**
-     * Changes authoritative boss phase only after closing any old attack in both lifecycle and Minecraft damage state.
-     */
     public BossCombatController.PhaseTransition transitionToPhase(int newPhase) {
         BossCombatController.PhaseTransition transition = controller.transitionToPhase(newPhase);
         boolean damageCancelled = damageAdapter.cancel();
@@ -144,7 +125,6 @@ public final class MinecraftBossCombatAdapter {
         return transition;
     }
 
-    /** Explicit stun/death/despawn interruption without a phase change. */
     public boolean cancelAttack() {
         boolean lifecycleCancelled = controller.cancelAttack().isPresent();
         boolean damageCancelled = damageAdapter.cancel();
@@ -168,10 +148,6 @@ public final class MinecraftBossCombatAdapter {
         throw new IllegalStateException(message);
     }
 
-    /**
-     * Production-only wrapper that keeps construction, attack selection and outgoing presentation under one
-     * {@link ValidatedBossCombatSemantics} capability.
-     */
     public static final class ValidatedRuntime {
         private final ValidatedBossCombatSemantics semantics;
         private final MinecraftBossCombatAdapter delegate;
@@ -181,25 +157,11 @@ public final class MinecraftBossCombatAdapter {
             this.delegate = Objects.requireNonNull(delegate, "delegate");
         }
 
-        public ValidatedBossCombatSemantics semanticCapability() {
-            return semantics;
-        }
-
-        public ContentId bossProfile() {
-            return semantics.bossProfile();
-        }
-
-        public int phase() {
-            return delegate.phase();
-        }
-
-        public boolean attackExecuting() {
-            return delegate.attackExecuting();
-        }
-
-        public long completedAttackCount() {
-            return delegate.completedAttackCount();
-        }
+        public ValidatedBossCombatSemantics semanticCapability() { return semantics; }
+        public ContentId bossProfile() { return semantics.bossProfile(); }
+        public int phase() { return delegate.phase(); }
+        public boolean attackExecuting() { return delegate.attackExecuting(); }
+        public long completedAttackCount() { return delegate.completedAttackCount(); }
 
         public AttackExecution.Snapshot beginNextAttack(long gameTick) {
             AttackExecution.Snapshot snapshot = delegate.beginNextAttack(gameTick);
@@ -210,9 +172,6 @@ public final class MinecraftBossCombatAdapter {
             return snapshot;
         }
 
-        /**
-         * Advances authoritative combat and immediately seals the outgoing semantic state with this exact capability.
-         */
         public ValidatedTickResult tick(ServerLevel level, LivingEntity boss, long gameTick) {
             Objects.requireNonNull(boss, "boss");
             TickResult combat = delegate.tick(level, boss, gameTick);
@@ -221,21 +180,13 @@ public final class MinecraftBossCombatAdapter {
 
         public BossCombatController.PhaseTransition transitionToPhase(int newPhase) {
             BossCombatController.PhaseTransition transition = delegate.transitionToPhase(newPhase);
-            // candidateAttacks is intentionally touched after transition so malformed/foreign phase semantics fail now,
-            // before another attack can begin.
             semantics.candidateAttacks(transition.newPhase());
             return transition;
         }
 
-        public boolean cancelAttack() {
-            return delegate.cancelAttack();
-        }
+        public boolean cancelAttack() { return delegate.cancelAttack(); }
     }
 
-    /**
-     * Unforgeable-by-constructor result for production networking. It carries the exact semantic capability that
-     * validated the active presentation selector; inactive frames carry the canonical clear state.
-     */
     public static final class ValidatedTickResult {
         private final ValidatedBossCombatSemantics semantics;
         private final TickResult combat;
@@ -269,12 +220,7 @@ public final class MinecraftBossCombatAdapter {
             BossPresentationSemanticState state;
             Optional<ValidatedBossCombatSemantics.ValidatedPresentation> binding;
             if (combat.presentation().isPresent()) {
-                state = BossPresentationSemanticState.fromFrame(
-                    entityId,
-                    entityUuid,
-                    gameTick,
-                    combat.presentation().orElseThrow()
-                );
+                state = BossPresentationSemanticState.fromFrame(entityId, entityUuid, gameTick, combat.presentation().orElseThrow());
                 binding = Optional.of(semantics.validatePresentationState(state));
             } else {
                 state = BossPresentationSemanticState.clear(entityId, entityUuid, gameTick);
@@ -283,21 +229,10 @@ public final class MinecraftBossCombatAdapter {
             return new ValidatedTickResult(semantics, combat, state, binding);
         }
 
-        public TickResult combat() {
-            return combat;
-        }
-
-        public BossPresentationSemanticState presentationState() {
-            return presentationState;
-        }
-
-        public Optional<ValidatedBossCombatSemantics.ValidatedPresentation> presentationBinding() {
-            return presentationBinding;
-        }
-
-        public ValidatedBossCombatSemantics semanticCapability() {
-            return semantics;
-        }
+        public TickResult combat() { return combat; }
+        public BossPresentationSemanticState presentationState() { return presentationState; }
+        public Optional<ValidatedBossCombatSemantics.ValidatedPresentation> presentationBinding() { return presentationBinding; }
+        public ValidatedBossCombatSemantics semanticCapability() { return semantics; }
 
         public void requireSemanticCapability(ValidatedBossCombatSemantics expected) {
             if (semantics != Objects.requireNonNull(expected, "expected")) {
@@ -306,13 +241,6 @@ public final class MinecraftBossCombatAdapter {
         }
     }
 
-    /**
-     * Immutable client/presentation-facing view derived from the authoritative attack snapshot.
-     *
-     * <p>Animation, VFX, audio and telegraph adapters may map these semantic values to final assets,
-     * but must not invent independent timing constants. `phaseProgress` comes directly from the
-     * authored {@link AttackTimeline} sample.</p>
-     */
     public record PresentationFrame(
         int bossPhase,
         ContentId patternId,
@@ -324,9 +252,7 @@ public final class MinecraftBossCombatAdapter {
         boolean hitWindowOpen
     ) {
         public PresentationFrame {
-            if (bossPhase <= 0) {
-                throw new IllegalArgumentException("bossPhase must be positive");
-            }
+            if (bossPhase <= 0) throw new IllegalArgumentException("bossPhase must be positive");
             Objects.requireNonNull(patternId, "patternId");
             Objects.requireNonNull(attackPhase, "attackPhase");
             if (!Double.isFinite(phaseProgress) || phaseProgress < 0.0D || phaseProgress > 1.0D) {
@@ -362,9 +288,7 @@ public final class MinecraftBossCombatAdapter {
         Optional<PresentationFrame> presentation
     ) {
         public TickResult {
-            if (bossPhase <= 0) {
-                throw new IllegalArgumentException("bossPhase must be positive");
-            }
+            if (bossPhase <= 0) throw new IllegalArgumentException("bossPhase must be positive");
             Objects.requireNonNull(attack, "attack");
             presentation = Objects.requireNonNull(presentation, "presentation");
             if (attackFinished != attack.finished()) {

@@ -45,6 +45,10 @@ public final class MinecraftAttackAdapter {
     public TickResult tick(ServerLevel level, LivingEntity attacker, long gameTick) {
         Objects.requireNonNull(level, "level");
         Objects.requireNonNull(attacker, "attacker");
+        if (!MinecraftCombatAuthority.isEligibleServerActor(level, attacker)) {
+            cancel();
+            return TickResult.idle();
+        }
 
         AttackStateMachine.Step step = stateMachine.advance(gameTick);
         if (step.snapshot().isEmpty()) {
@@ -61,7 +65,7 @@ public final class MinecraftAttackAdapter {
                 "hitVolume.resolve result"
             );
             for (LivingEntity target : resolved) {
-                if (target == null || target == attacker || !target.isAlive()) {
+                if (!MinecraftCombatAuthority.isEligibleTarget(level, attacker, target)) {
                     continue;
                 }
                 candidates++;
@@ -124,7 +128,7 @@ public final class MinecraftAttackAdapter {
             List<LivingEntity> targets = level.getEntitiesOfClass(
                 LivingEntity.class,
                 bounds,
-                candidate -> candidate != attacker && candidate.isAlive()
+                candidate -> MinecraftCombatAuthority.isEligibleTarget(level, attacker, candidate)
             );
             return targets;
         }
