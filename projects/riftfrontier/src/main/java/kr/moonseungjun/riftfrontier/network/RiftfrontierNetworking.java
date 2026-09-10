@@ -22,20 +22,26 @@ public final class RiftfrontierNetworking {
     }
 
     /**
-     * Sends the exact semantic presentation state sampled by the authoritative boss tick to tracking clients.
-     * Numeric entity id and stable Minecraft UUID travel together so id reuse cannot resurrect another actor's pose.
-     * No client-facing cadence constants are introduced here.
+     * Sends the exact semantic presentation state sealed by the validated authoritative boss runtime.
+     *
+     * <p>The networking boundary no longer accepts a free-standing {@link MinecraftBossCombatAdapter.TickResult};
+     * production callers must cross {@link MinecraftBossCombatAdapter.ValidatedRuntime}, which derives boss identity,
+     * authored phase selection and this outgoing semantic state from one validated semantic capability. Numeric entity
+     * id, UUID and server tick are checked again here so a delayed result cannot be sent as another actor or tick.</p>
      */
     public static void syncBossPresentation(
         LivingEntity boss,
         long serverGameTick,
-        MinecraftBossCombatAdapter.TickResult result
+        MinecraftBossCombatAdapter.ValidatedTickResult result
     ) {
         Objects.requireNonNull(boss, "boss");
         Objects.requireNonNull(result, "result");
-        BossPresentationSemanticState state = result.presentation()
-            .map(frame -> BossPresentationSemanticState.fromFrame(boss.getId(), boss.getUUID(), serverGameTick, frame))
-            .orElseGet(() -> BossPresentationSemanticState.clear(boss.getId(), boss.getUUID(), serverGameTick));
+        BossPresentationSemanticState state = result.presentationState();
+        if (state.entityId() != boss.getId()
+            || !state.entityUuid().equals(boss.getUUID())
+            || state.serverGameTick() != serverGameTick) {
+            throw new IllegalArgumentException("validated boss presentation state does not belong to this entity/tick");
+        }
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(boss, new BossPresentationPayload(state));
     }
 }
