@@ -53,20 +53,20 @@ final class BossPresentationSyncContractTest {
 
         assertTrue(BossPresentationClientState.accept(newest));
         assertFalse(BossPresentationClientState.accept(older));
-        assertEquals(newest, BossPresentationClientState.current(12).orElseThrow());
+        assertEquals(newest, BossPresentationClientState.current(12, newest.entityUuid()).orElseThrow());
     }
 
     @Test
     void authoritativeClearRejectsOlderReactivation() {
         var active = active(8, 300L, "ACTIVE", true);
-        var clear = BossPresentationSemanticState.clear(8, 301L);
+        var clear = BossPresentationSemanticState.clear(8, active.entityUuid(), 301L);
         var delayed = active(8, 300L, "RECOVERY", false);
 
         assertTrue(BossPresentationClientState.accept(active));
         assertTrue(BossPresentationClientState.accept(clear));
-        assertTrue(BossPresentationClientState.current(8).isEmpty());
+        assertTrue(BossPresentationClientState.current(8, active.entityUuid()).isEmpty());
         assertFalse(BossPresentationClientState.accept(delayed));
-        assertTrue(BossPresentationClientState.current(8).isEmpty());
+        assertTrue(BossPresentationClientState.current(8, active.entityUuid()).isEmpty());
     }
 
     @Test
@@ -76,7 +76,7 @@ final class BossPresentationSyncContractTest {
         assertTrue(BossPresentationClientState.accept(oldSession));
         BossPresentationClientState.clearAll();
         assertTrue(BossPresentationClientState.accept(newSession));
-        assertEquals(newSession, BossPresentationClientState.current(5).orElseThrow());
+        assertEquals(newSession, BossPresentationClientState.current(5, newSession.entityUuid()).orElseThrow());
     }
 
     @Test
