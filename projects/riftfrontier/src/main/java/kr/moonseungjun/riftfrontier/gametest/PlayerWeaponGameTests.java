@@ -19,6 +19,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.level.GameType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -130,18 +131,31 @@ public final class PlayerWeaponGameTests {
             "Old module semantics must not survive a server loadout swap");
 
         adapter.beginMove(actor, reachMove, start + 10L);
+        actor.setHealth(0.0F);
+        var deathInvalidated = adapter.tick(level, actor, start + 11L);
+        helper.assertTrue(deathInvalidated.loadoutInvalidated(),
+            "Death must invalidate an existing authoritative weapon execution before it can advance");
+        helper.assertTrue(!adapter.hasSession(actor.getUUID()),
+            "Dead actors must not retain authoritative weapon sessions");
+        try {
+            adapter.beginMove(actor, reachMove, start + 12L);
+            helper.assertTrue(false, "Dead actors must not establish fresh weapon authority");
+        } catch (IllegalStateException expected) {
+            helper.assertTrue(!adapter.hasSession(actor.getUUID()),
+                "Rejected dead-actor input must leave no weapon session behind");
+        }
+
         Zombie otherActor = new Zombie(level);
         otherActor.setNoAi(true);
         otherActor.snapTo(actorPos.getX() + 2.5D, actorPos.getY(), actorPos.getZ() + 0.5D, 0.0F, 0.0F);
         helper.assertTrue(level.addFreshEntity(otherActor), "Second technical weapon actor must enter the GameTest world");
-        adapter.beginMove(otherActor, reachMove, start + 10L);
-        helper.assertTrue(adapter.hasSession(actor.getUUID()) && adapter.hasSession(otherActor.getUUID()),
-            "Two actors must own isolated authoritative weapon sessions");
-        helper.assertTrue(adapter.clearActor(actor.getUUID()),
+        adapter.beginMove(otherActor, reachMove, start + 20L);
+        helper.assertTrue(adapter.hasSession(otherActor.getUUID()),
+            "Another eligible actor may still own an isolated authoritative weapon session");
+        helper.assertTrue(adapter.clearActor(otherActor.getUUID()),
             "Lifecycle cleanup must cancel and remove the selected actor session");
-        helper.assertTrue(!adapter.hasSession(actor.getUUID()) && adapter.hasSession(otherActor.getUUID()),
-            "Clearing one actor must not discard another actor's session");
-        adapter.clearActor(otherActor.getUUID());
+        helper.assertTrue(!adapter.hasSession(otherActor.getUUID()),
+            "Clearing an actor must discard only that actor's session");
 
         helper.succeed();
     }
@@ -198,6 +212,19 @@ public final class PlayerWeaponGameTests {
             "An unequipped player cannot start a remembered weapon move"
         );
         PlayerWeaponServerRuntime.clearPlayer(player);
+
+        ServerPlayer spectator = helper.makeMockServerPlayerInLevel();
+        spectator.setItemInHand(InteractionHand.MAIN_HAND, mobile.copy());
+        spectator.setGameMode(GameType.SPECTATOR);
+        helper.assertTrue(
+            PlayerWeaponServerRuntime.handleMoveIntent(spectator, mobileEntry) == PlayerWeaponServerRuntime.IntentResult.REJECTED,
+            "Spectator players must not establish weapon authority even with a valid server-owned loadout"
+        );
+        helper.assertTrue(
+            PlayerWeaponServerRuntime.tickPlayer(spectator).phase() == AttackTimeline.Phase.COMPLETE,
+            "Rejected spectator input must not leave a progressing weapon session"
+        );
+        PlayerWeaponServerRuntime.clearPlayer(spectator);
         helper.succeed();
     }
 }
