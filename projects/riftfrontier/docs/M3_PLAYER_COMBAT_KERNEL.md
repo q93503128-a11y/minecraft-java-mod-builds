@@ -1,6 +1,6 @@
 # M3 Player Combat Kernel
 
-Status: semantic/data foundation, reference role lock, API-free server execution capability, Minecraft-facing server-authority adapter, and the first production move/family/module pack are complete. Concrete ItemStack/equipment decoding and real client-to-server move input binding are still pending. This document does **not** approve final weapon art, damage, range, cooldown, hitbox, VFX, sound, or field balance.
+Status: semantic/data foundation, reference role lock, API-free server execution capability, Minecraft-facing server-authority adapter, first production move/family/module pack, server-owned ItemStack loadout decoding, and authenticated serverbound move-intent handling are complete. Concrete client action/key emission, approved production hit volumes/damage, and final presentation/field balance are still pending. This document does **not** approve final weapon art, damage, range, cooldown, hitbox, VFX, sound, or field balance.
 
 ## Purpose
 
@@ -91,9 +91,9 @@ server equipment resolver
 
 The adapter re-resolves server equipment while ticking. A family/module swap, unequip, death/logout/despawn lifecycle clear, or other loadout invalidation cancels and discards the old per-UUID session. Hit candidates are deduplicated per execution and are never exposed during TELEGRAPH or RECOVERY. `recovery_pivot` delegates to the same controller and therefore cannot survive an equipment change or open outside RECOVERY.
 
-The adapter intentionally emits candidates rather than applying a guessed damage value. Concrete item-stack decoding, input packet binding, shape-specific production hit volumes, damage policy, and visual presentation remain later production bindings.
+The adapter intentionally emits candidates rather than applying a guessed damage value. Shape-specific production hit volumes, damage policy, and visual presentation remain later production bindings.
 
-Native `player_weapon_authority` GameTest coverage exercises TELEGRAPH/ACTIVE/RECOVERY authority, per-execution target deduplication, recovery-only module authorization, loadout-swap invalidation, new-family session replacement, and lifecycle cleanup using fixture-only definitions.
+Native `player_weapon_authority` GameTest coverage exercises TELEGRAPH/ACTIVE/RECOVERY authority, per-execution target deduplication, recovery-only module authorization, loadout-swap invalidation, session replacement, actor isolation and lifecycle cleanup using fixture-only definitions.
 
 ## First production weapon data — completed 2026-09-10
 
@@ -110,15 +110,46 @@ The three `AttackPattern` documents provide the structurally required authoritat
 
 The production test `ProductionPlayerWeaponContentTest` loads the packaged JSON through `ContentPackLoader`, requires graph validity, locks exactly two families/three moves/one module, verifies the shared socket/module semantics and role contrast, and prevents fixture IDs from leaking into the production pack.
 
+## Server equipment + move-intent authority — completed 2026-09-10
+
+The first production equipment/input authority boundary is now:
+
+```text
+server-owned main-hand ItemStack
+  -> riftfrontier:player_weapon_loadout data component
+  -> PlayerWeaponItemStackLoadoutResolver
+       -> only mobile_pressure / reach_commitment
+       -> optional recovery_pivot only
+       -> current CombatRuntimeCatalog revalidation
+
+client intent
+  -> PlayerWeaponMoveIntentPayload(moveId only)
+  -> authenticated ServerPlayer from payload context
+  -> current server-owned main-hand loadout
+  -> family-authored move validation
+  -> PlayerWeaponServerRuntime
+  -> MinecraftPlayerWeaponCombatAdapter.beginMove(..., serverGameTime)
+```
+
+The ItemStack component is stable content identity metadata, not a second weapon registry. It carries no damage, reach, timing, hit result or target authority. The resolver accepts only the two locked production families and the one current module, then reconstructs the profile from the current published content graph; malformed, stale, unknown or incompatible component data fails closed.
+
+The serverbound payload likewise carries only `moveId`. The sender identity comes from NeoForge's authenticated payload context, while loadout and server game time are resolved on the server. Client-provided damage, target, hit confirmation, attack phase, duration, cooldown or clock are not part of the wire contract.
+
+`PlayerWeaponServerRuntime` is generation-aware. A published content-generation change rebuilds the capability and discards stale executions. Player ticks advance only already-active sessions; logout/clone lifecycle paths clear per-UUID state rather than scanning all entities.
+
+Required native `player_weapon_input_authority` GameTest coverage proves wrong-family and spoofed move intents fail closed, a correct move can begin from the server-owned ItemStack component, equipment swap invalidates the old session before further execution, the new family can establish a fresh session, and unequip removes authority. Together with `player_weapon_authority`, the required GameTest suite also covers actor isolation and lifecycle cleanup.
+
+This does **not** mean a finished player weapon is playable yet. No approved production ItemStack/model provisioning path or concrete client key/action sender has been committed, and the current server runtime deliberately exposes no production hit-volume candidates until a separate evidence-backed geometry/damage gate is approved.
+
 ## Production gate
 
-The schema, bounded reference comparison, reusable server execution capability, Minecraft-facing authority adapter, and first production move/family/module graph are complete. The remaining order is:
+The schema, bounded reference comparison, reusable server execution capability, Minecraft-facing authority adapter, first production move/family/module graph, typed server ItemStack identity boundary, and serverbound move-intent authority are complete. The remaining order is:
 
-1. bind real server-owned `ItemStack`/equipment state to `MinecraftPlayerWeaponCombatAdapter.LoadoutResolver` without creating a second equipment truth;
-2. bind real client move intents through a serverbound payload to `beginMove(...)`, validating the sending `ServerPlayer`, currently equipped family and authored move on the server;
-3. add lifecycle/input GameTest or equivalent executable coverage for spoofed move IDs, unequip/swap invalidation and actor isolation;
-4. bind approved shape-specific hit volumes and eventual damage policy to the adapter only after field evidence exists;
+1. do not invent a production weapon item/model or input UX: first check whether an approved ItemStack identity/provisioning and client action/control mapping now exists;
+2. if an approved client control mapping exists, bind that action to emit only `PlayerWeaponMoveIntentPayload(moveId)` and add an executable client/server transport test where feasible;
+3. otherwise keep the wire contract ready and move to the next objective M3 server-authority boundary rather than fabricating UX;
+4. bind approved shape-specific hit volumes and eventual damage policy to the adapter only after field/presentation evidence exists;
 5. tune the provisional attack timings, damage and range only from real field play;
-6. approve final art/animation/VFX/sound only through the separate presentation evidence gate.
+6. approve final item/model/animation/VFX/sound only through the separate presentation evidence gate.
 
 Do not duplicate boss presentation plumbing, infer combat values from third-party animation clips, promote fixture IDs to production content, add a third family to evade the two-role contrast requirement, create a second attack timing system, or treat the provisional production tick counts as final balance.
