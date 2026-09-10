@@ -4,24 +4,23 @@ Recovery aid only. Current GitHub `main` plus canonical project/design documents
 
 ## Last recovered baseline
 
-- Remote `main` was independently verified at run start as `d1bcfec8e08bab97ac67a9277a830d115b22465c` and again immediately before documentation write as `4f605f6069dfe8cde4741293d3c97808f88b1978`.
-- The preceding attack-observation CI (`Build Riftfrontier` run `34480792673`, HEAD `0486a7b3676717e433eaa80517e740bad8d9caf0`) was recovered as completed SUCCESS.
-- Baseline already contained the two production weapon-family graph, server-owned ItemStack loadout boundary, move-id-only serverbound intent, generation-aware runtime, dimension-scoped sessions/lifecycle cleanup, shared monotonic attack clock, and completed boss presentation/network authority work.
+- Remote `main` was independently verified at run start as `b0de5c55f7d7a0c8df537f66d1663fe6c0aec19c`.
+- `Build Riftfrontier` run `34487087927`, HEAD `4f605f6069dfe8cde4741293d3c97808f88b1978`, was recovered as completed `SUCCESS`.
+- Baseline already contained the two production weapon-family graph, server-owned ItemStack loadout boundary, move-id-only serverbound intent, generation-aware runtime, dimension-scoped sessions, alive/non-removed/non-spectator eligibility, shared monotonic attack clock, and completed boss presentation/network authority work.
 - Region 01 still had no approved final boss material/profile/asset input.
 - No approved concrete production weapon ItemStack provisioning identity, client control mapping, shape-specific hit geometry, damage/range/resource policy, or final presentation input was available; none was invented.
 
 ## Completed in this batch
 
-M3 player-weapon actor eligibility authority:
+M3 player-weapon actor-instance ownership authority:
 
-- Implementation commit `bdd1afe7e6a07979c7b371a0d356f20847c49ac8`; final executable regression descendant `4f605f6069dfe8cde4741293d3c97808f88b1978`.
-- Found a real authority gap: a valid server-owned loadout could establish or continue a weapon session even when the actor was dead, removed, or spectator because eligibility was not part of the adapter boundary.
-- `MinecraftPlayerWeaponCombatAdapter` now requires `isAlive() && !isRemoved() && !isSpectator()` before beginning a move.
-- An actor becoming ineligible while a session exists invalidates/cancels that session before attack-clock advancement or hit-candidate resolution.
-- `recoveryPivotAuthorized(...)` applies the same eligibility gate and cannot preserve module authority for an ineligible actor.
-- Rejected ineligible input clears any stale session and creates no replacement session.
-- Native `player_weapon_authority` GameTest now covers death invalidation, rejected fresh input while dead, spectator rejection, and isolation of another eligible actor.
-- An intermediate spectator test using a mock `ServerPlayer` caused `Build Riftfrontier` run `34486758020` to fail at the GameTest gate after clean build had succeeded. The test was repaired without weakening production authority by exercising the adapter with a technical spectator actor; final descendant GameTest passes.
+- Implementation commit `47b05502f1f0bae65d18698509da01bda6361503`; regression descendant `7aea71ece239db83fa1d216eb2c3264b25616dd9`.
+- Found a real lifecycle authority gap: sessions were keyed by UUID and scoped by loadout/dimension but did not remember the exact `LivingEntity` instance that established them. A replacement/respawn entity with the same UUID, same dimension and same loadout could therefore reach the stale session if lifecycle cleanup ordering was missed.
+- `MinecraftPlayerWeaponCombatAdapter.Session` now owns the exact actor instance in addition to UUID-keyed lookup.
+- `tick(...)` invalidates the stale session before attack-clock advancement or hit-candidate resolution when the current entity instance differs, even if UUID/loadout/dimension all match.
+- `recoveryPivotAuthorized(...)` applies the same actor-instance gate, so replacement entities cannot inherit recovery-module authority.
+- `synchronizeSession(...)` reuses a session only when exact actor instance + loadout + dimension all match; a fresh eligible replacement can establish a new execution only after the stale session is cancelled.
+- Native `player_weapon_authority` GameTest now creates a distinct technical actor with the same UUID and verifies stale execution invalidation and recovery-authority rejection.
 - No cadence, damage, range, hit geometry, ItemStack/control UX, model, animation, VFX, sound, or boss content changed.
 
 ## Changed systems/files
@@ -32,27 +31,24 @@ M3 player-weapon actor eligibility authority:
 
 ## Verification
 
-- Push preflight found remote `main` unchanged at `4f605f6069dfe8cde4741293d3c97808f88b1978`; writes remained normal non-force descendants on `main`.
-- Prior run `34480792673` was recovered as FULL SUCCESS.
-- Failed intermediate run `34486758020`, HEAD `7c756f867ccdb9e323967cb4205cc2a982df18f8`: setup/toolchain, asset-intake, JUnit + clean build SUCCESS; GameTest FAILED; downstream server/client/JAR gates skipped. The brittle mock-spectator test was replaced rather than production behavior being weakened.
-- Repaired run `34487087927`, HEAD `4f605f6069dfe8cde4741293d3c97808f88b1978`: setup/toolchain, asset-intake, JUnit + clean build, and required native Riftfrontier GameTest gate verified SUCCESS. Dedicated-server smoke was IN PROGRESS when this handoff was written.
-- Xvfb client smoke, executable JAR inspection, build report/deliverables for run `34487087927`: NOT YET VERIFIED at handoff-write time.
-- Local Gradle execution: NOT RUN; GitHub Actions is the executable validation source for this session.
+- Previous required workflow run `34487087927` was recovered as FULL SUCCESS before new work.
+- Local Gradle execution: NOT RUN; this environment cannot resolve GitHub from the container, so GitHub Actions remains the executable validation source.
+- New code/test commits are pushed to `main`; their fresh Riftfrontier CI result is NOT YET VERIFIED at handoff-write time and must not be called successful until the workflow concludes.
 - Human field play, multiplayer latency, concrete player control transport, production hit geometry/damage/resource policy, and final player/boss presentation remain NOT TESTED / NOT APPROVED as applicable.
 
 ## Do not repeat or revert
 
 - Boss source/asset provenance, reviewed animation preparation, semantic-animation/material/geometry publication provenance, UUID-qualified boss presentation/network ordering/lifecycle/cache/render work are DONE.
 - `weapon_family` / `weapon_module` schema, decoder, graph validation, reference dossier, two-role lock, first production player-combat graph, server-owned ItemStack loadout component and move-id-only serverbound authority are DONE.
-- Player weapon authoritative sessions are dimension-scoped and reset on login/logout/dimension change/clone. Do not restore cross-dimension attack-clock continuity.
-- Player weapon authority additionally requires an alive, non-removed, non-spectator actor at admission and while progressing/authorizing recovery. Do not rely only on lifecycle events or allow an ineligible actor to retain a session.
+- Player weapon authoritative sessions are dimension-scoped, combat-eligibility-gated, and now bound to the exact `LivingEntity` instance that established them. Do not restore UUID-only session continuity across respawn/replacement.
+- Lifecycle events remain useful cleanup hooks but are not the sole authority boundary for death/spectator/dimension/clone transitions.
 - `AttackStateMachine` remains the single shared authoritative cadence state machine; state progression and read-only phase authorization share its nondecreasing server-tick watermark. Do not restore raw gameplay `AttackExecution.sample(...)` bypasses or add a parallel timer.
 - `AttackPattern` remains the sole authored `telegraph -> ACTIVE -> recovery` cadence primitive. `recovery_pivot` cannot shorten recovery, create another hit window, grant generic invulnerability, or survive equipment/world/actor invalidation.
 - Do not promote provisional production tick values to field-balanced values and do not invent blocked UX/art/combat values.
 
 ## Exact next start point
 
-1. Re-check current remote `main` first, then recover the final conclusion of `Build Riftfrontier` run `34487087927` and any newer descendant Riftfrontier run. If any required gate failed, repair the first real failing cause before new features.
+1. Re-check current remote `main` first and recover the final Riftfrontier CI conclusion for `7aea71ece239db83fa1d216eb2c3264b25616dd9` and any newer handoff descendant. If any required gate failed, repair the first real failing cause before new features.
 2. Re-check approved Region 01 boss inputs and approved player ItemStack/control inputs. Route them through existing gates only if legitimate new source material exists.
-3. If those remain absent, inspect the next objective M3 server-authority/runtime gap that connects existing production systems. Do not repeat death/spectator eligibility, dimension lifecycle, loadout authority, or attack-clock monotonicity work.
+3. If those remain absent, inspect the next objective M3 server-authority/runtime gap connecting existing production systems; do not repeat UUID/actor-instance, death/spectator, dimension, loadout, or attack-clock monotonicity boundaries.
 4. Shape-specific hit volumes, damage/range/resource policy, provisional timing tuning, final item/model/animation/VFX/sound, and human multiplayer feel stay blocked on evidence/approval.
