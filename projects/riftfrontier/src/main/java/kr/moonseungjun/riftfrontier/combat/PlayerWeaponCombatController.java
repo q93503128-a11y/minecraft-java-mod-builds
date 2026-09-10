@@ -9,8 +9,9 @@ import java.util.Optional;
  * Server-thread-owned player weapon execution boundary.
  *
  * <p>Only moves authored by the assembled family can start. Module behaviour authorization is sampled
- * from the same immutable {@link AttackExecution} clock, so recovery-only techniques cannot open during
- * TELEGRAPH/ACTIVE or after COMPLETE.</p>
+ * from the same immutable {@link AttackExecution} clock through {@link AttackStateMachine}, so recovery-only
+ * techniques cannot open during TELEGRAPH/ACTIVE or after COMPLETE and cannot bypass the authoritative
+ * monotonic server-tick boundary.</p>
  */
 public final class PlayerWeaponCombatController {
     private final PlayerWeaponRuntimeProfile profile;
@@ -46,8 +47,8 @@ public final class PlayerWeaponCombatController {
      */
     public boolean recoveryPivotAuthorized(long gameTick) {
         if (!profile.hasModuleBehaviour(PlayerWeaponRuntimeProfile.RECOVERY_PIVOT)) return false;
-        return attacks.currentExecution()
-            .map(execution -> execution.sample(gameTick).presentationPhase() == AttackTimeline.Phase.RECOVERY)
+        return attacks.observeCurrent(gameTick)
+            .map(snapshot -> snapshot.presentationPhase() == AttackTimeline.Phase.RECOVERY)
             .orElse(false);
     }
 }
