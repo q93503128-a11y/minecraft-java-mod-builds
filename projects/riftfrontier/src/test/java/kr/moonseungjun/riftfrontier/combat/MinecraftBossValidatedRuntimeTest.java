@@ -29,6 +29,12 @@ final class MinecraftBossValidatedRuntimeTest {
         assertTrue(source.contains(
                 "public static ValidatedRuntime validated( CombatRuntimeCatalog catalog, ValidatedBossCombatSemantics semantics, MinecraftAttackAdapter.HitVolume hitVolume, float damage )"),
             "production factory must accept validated boss semantics and return the sealed runtime");
+        assertTrue(source.contains("PublishedContentGenerationGuard.fromCatalog(catalog)"),
+            "validated boss runtime must inherit the published content generation from its catalog");
+        assertTrue(source.contains("private void requireCurrentGeneration()"),
+            "validated boss runtime must guard authoritative operations against stale content generations");
+        assertTrue(source.contains("delegate.cancelAttack(); throw stale;"),
+            "stale generation detection must fail closed by cancelling both boss lifecycle and damage execution");
         assertTrue(source.contains("private ValidatedRuntime("),
             "production validated runtime must not be forgeable outside MinecraftBossCombatAdapter");
         assertTrue(source.contains("private ValidatedTickResult("),

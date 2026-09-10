@@ -2,18 +2,33 @@ package kr.moonseungjun.riftfrontier.combat;
 
 import kr.moonseungjun.riftfrontier.content.ContentId;
 import kr.moonseungjun.riftfrontier.content.ContentLookup;
+import kr.moonseungjun.riftfrontier.content.ContentRuntimeSnapshot;
 import kr.moonseungjun.riftfrontier.content.CoreDefinition;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 /** Read-only combat runtime adapter over an already validated/published content snapshot. */
 public final class CombatRuntimeCatalog {
     private final ContentLookup content;
+    private final OptionalLong publishedGeneration;
 
     public CombatRuntimeCatalog(ContentLookup content) {
         this.content = Objects.requireNonNull(content, "content");
+        this.publishedGeneration = content instanceof ContentRuntimeSnapshot snapshot
+            ? OptionalLong.of(snapshot.generation())
+            : OptionalLong.empty();
+    }
+
+    /**
+     * Identifies the atomic published content generation that owns this catalog when the catalog was
+     * built directly from a {@link ContentRuntimeSnapshot}. Detached fixture registries intentionally
+     * return empty and therefore do not masquerade as a published runtime generation.
+     */
+    public OptionalLong publishedGeneration() {
+        return publishedGeneration;
     }
 
     public CoreDefinition.AttackPattern requireAttackPattern(ContentId id) {

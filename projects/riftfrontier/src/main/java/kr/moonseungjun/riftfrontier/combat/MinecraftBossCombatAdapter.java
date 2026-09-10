@@ -61,7 +61,8 @@ public final class MinecraftBossCombatAdapter {
                 BossAttackSelectionPolicy.authoredPhases(semantics),
                 Objects.requireNonNull(hitVolume, "hitVolume"),
                 damage
-            )
+            ),
+            PublishedContentGenerationGuard.fromCatalog(catalog)
         );
     }
 
@@ -185,24 +186,51 @@ public final class MinecraftBossCombatAdapter {
     public static final class ValidatedRuntime {
         private final ValidatedBossCombatSemantics semantics;
         private final MinecraftBossCombatAdapter delegate;
+        private final Optional<PublishedContentGenerationGuard> generationGuard;
 
-        private ValidatedRuntime(ValidatedBossCombatSemantics semantics, MinecraftBossCombatAdapter delegate) {
+        private ValidatedRuntime(
+            ValidatedBossCombatSemantics semantics,
+            MinecraftBossCombatAdapter delegate,
+            Optional<PublishedContentGenerationGuard> generationGuard
+        ) {
             this.semantics = Objects.requireNonNull(semantics, "semantics");
             this.delegate = Objects.requireNonNull(delegate, "delegate");
+            this.generationGuard = Objects.requireNonNull(generationGuard, "generationGuard");
         }
 
-        public ValidatedBossCombatSemantics semanticCapability() { return semantics; }
-        public ContentId bossProfile() { return semantics.bossProfile(); }
-        public int phase() { return delegate.phase(); }
-        public boolean attackExecuting() { return delegate.attackExecuting(); }
-        public long completedAttackCount() { return delegate.completedAttackCount(); }
+        public ValidatedBossCombatSemantics semanticCapability() {
+            requireCurrentGeneration();
+            return semantics;
+        }
+
+        public ContentId bossProfile() {
+            requireCurrentGeneration();
+            return semantics.bossProfile();
+        }
+
+        public int phase() {
+            requireCurrentGeneration();
+            return delegate.phase();
+        }
+
+        public boolean attackExecuting() {
+            requireCurrentGeneration();
+            return delegate.attackExecuting();
+        }
+
+        public long completedAttackCount() {
+            requireCurrentGeneration();
+            return delegate.completedAttackCount();
+        }
 
         public AttackExecution.Snapshot beginNextAttack(long gameTick) {
+            requireCurrentGeneration();
             return validateSelectedAttack(delegate.beginNextAttack(gameTick));
         }
 
         /** Minecraft-facing begin that binds the validated boss attack to its server actor immediately. */
         public AttackExecution.Snapshot beginNextAttack(ServerLevel level, LivingEntity boss, long gameTick) {
+            requireCurrentGeneration();
             return validateSelectedAttack(delegate.beginNextAttack(level, boss, gameTick));
         }
 
@@ -215,18 +243,31 @@ public final class MinecraftBossCombatAdapter {
         }
 
         public ValidatedTickResult tick(ServerLevel level, LivingEntity boss, long gameTick) {
+            requireCurrentGeneration();
             Objects.requireNonNull(boss, "boss");
             TickResult combat = delegate.tick(level, boss, gameTick);
             return ValidatedTickResult.bind(semantics, combat, boss.getId(), boss.getUUID(), gameTick);
         }
 
         public BossCombatController.PhaseTransition transitionToPhase(int newPhase) {
+            requireCurrentGeneration();
             BossCombatController.PhaseTransition transition = delegate.transitionToPhase(newPhase);
             semantics.candidateAttacks(transition.newPhase());
             return transition;
         }
 
+        /** Cancellation stays available even after a publication boundary so cleanup can never be blocked. */
         public boolean cancelAttack() { return delegate.cancelAttack(); }
+
+        private void requireCurrentGeneration() {
+            if (generationGuard.isEmpty()) return;
+            try {
+                generationGuard.orElseThrow().requireCurrent();
+            } catch (IllegalStateException stale) {
+                delegate.cancelAttack();
+                throw stale;
+            }
+        }
     }
 
     public static final class ValidatedTickResult {
