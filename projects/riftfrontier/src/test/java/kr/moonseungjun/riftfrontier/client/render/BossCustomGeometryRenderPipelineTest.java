@@ -16,8 +16,10 @@ import kr.moonseungjun.riftfrontier.content.ContentId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -31,6 +33,7 @@ class BossCustomGeometryRenderPipelineTest {
     private static final ContentId ANIMATION = ContentId.parse("riftfrontier:animation/boss/region_01/test_telegraph");
     private static final ContentId VFX = ContentId.parse("riftfrontier:vfx/boss/region_01/test");
     private static final ContentId SOUND = ContentId.parse("riftfrontier:sound/boss/region_01/test");
+    private static final UUID ACTOR = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
     @AfterEach
     void clearClientState() {
@@ -45,6 +48,7 @@ class BossCustomGeometryRenderPipelineTest {
         var prepared = pipeline.prepare(state).orElseThrow();
 
         assertEquals(42, prepared.entityId());
+        assertEquals(ACTOR, prepared.entityUuid());
         assertEquals(ANIMATION, prepared.resolvedPresentation().animationKey());
         assertEquals(1.0f, prepared.frameSample().authoritativeSample().sampleTimeSeconds(), 1.0e-6f);
         assertEquals(3, prepared.geometry().vertexCount());
@@ -53,25 +57,44 @@ class BossCustomGeometryRenderPipelineTest {
     }
 
     @Test
-    void currentEntityPathUsesMonotonicServerSnapshotCache() {
+    void currentEntityPathRequiresUuidAndUsesMonotonicServerSnapshotCache() {
         BossCustomGeometryRenderPipeline pipeline = pipeline();
         assertTrue(BossPresentationClientState.accept(state(7, 20L, 0.75D)));
         assertFalse(BossPresentationClientState.accept(state(7, 19L, 0.25D)));
 
-        var prepared = pipeline.prepareCurrent(7).orElseThrow();
+        var prepared = pipeline.prepareCurrent(7, ACTOR).orElseThrow();
 
+        assertEquals(ACTOR, prepared.entityUuid());
         assertEquals(1.5f, prepared.frameSample().authoritativeSample().sampleTimeSeconds(), 1.0e-6f);
         assertEquals(1.5f, prepared.geometry().positions()[0], 1.0e-6f);
     }
 
     @Test
+    void reusedNumericIdCannotBePreparedWithoutTheMatchingActorUuid() {
+        BossCustomGeometryRenderPipeline pipeline = pipeline();
+        assertTrue(BossPresentationClientState.accept(state(7, 20L, 0.75D)));
+
+        UUID otherActor = UUID.fromString("22222222-2222-2222-2222-222222222222");
+        assertTrue(pipeline.prepareCurrent(7, otherActor).isEmpty());
+        assertTrue(pipeline.prepareCurrent(7, ACTOR).isPresent());
+    }
+
+    @Test
+    void numericOnlyCurrentLookupIsNotExposedByProductionRenderPipeline() {
+        assertFalse(Arrays.stream(BossCustomGeometryRenderPipeline.class.getDeclaredMethods()).anyMatch(method ->
+            method.getName().equals("prepareCurrent")
+                && Arrays.equals(method.getParameterTypes(), new Class<?>[]{int.class})
+        ));
+    }
+
+    @Test
     void missingOrInactivePresentationDoesNotInventFallbackGeometry() {
         BossCustomGeometryRenderPipeline pipeline = pipeline();
-        assertTrue(pipeline.prepare(BossPresentationSemanticState.clear(3, 1L)).isEmpty());
-        assertTrue(pipeline.prepareCurrent(999).isEmpty());
+        assertTrue(pipeline.prepare(BossPresentationSemanticState.clear(3, ACTOR, 1L)).isEmpty());
+        assertTrue(pipeline.prepareCurrent(999, ACTOR).isEmpty());
 
         BossPresentationSemanticState unresolved = new BossPresentationSemanticState(
-            3, 2L, true, 1, "riftfrontier:attack/test", AttackTimeline.Phase.TELEGRAPH.name(), 0.5D,
+            3, ACTOR, 2L, true, 1, "riftfrontier:attack/test", AttackTimeline.Phase.TELEGRAPH.name(), 0.5D,
             "other_cue", "melee", List.of("dodge"), false
         );
         assertTrue(pipeline.prepare(unresolved).isEmpty());
@@ -113,6 +136,7 @@ class BossCustomGeometryRenderPipelineTest {
     private static BossPresentationSemanticState state(int entityId, long tick, double progress) {
         return new BossPresentationSemanticState(
             entityId,
+            ACTOR,
             tick,
             true,
             1,

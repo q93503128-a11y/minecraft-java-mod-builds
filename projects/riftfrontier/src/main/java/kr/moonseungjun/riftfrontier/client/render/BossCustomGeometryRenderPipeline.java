@@ -63,12 +63,6 @@ public final class BossCustomGeometryRenderPipeline {
         );
     }
 
-    /** Compatibility lookup for pure-Java tests. Production render submission must use the UUID-checked overload. */
-    public Optional<PreparedFrame> prepareCurrent(int entityId) {
-        if (entityId < 0) throw new IllegalArgumentException("entityId must be >= 0");
-        return BossPresentationClientState.current(entityId).flatMap(this::prepare);
-    }
-
     /** Uses the monotonic client cache only when both the current numeric id and Minecraft UUID match. */
     public Optional<PreparedFrame> prepareCurrent(int entityId, UUID entityUuid) {
         if (entityId < 0) throw new IllegalArgumentException("entityId must be >= 0");

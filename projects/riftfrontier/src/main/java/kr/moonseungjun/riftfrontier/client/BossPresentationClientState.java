@@ -49,12 +49,6 @@ public final class BossPresentationClientState {
         return changed[0];
     }
 
-    /** Compatibility lookup by numeric id. Production render paths must use the UUID-checked overload. */
-    public static Optional<BossPresentationSemanticState> current(int entityId) {
-        Entry entry = ENTRIES.get(entityId);
-        return entry == null ? Optional.empty() : Optional.ofNullable(entry.activeState());
-    }
-
     /** Fail-closed render lookup: a reused numeric id cannot expose another actor's cached presentation. */
     public static Optional<BossPresentationSemanticState> current(int entityId, UUID entityUuid) {
         if (entityId < 0) throw new IllegalArgumentException("entityId must be >= 0");

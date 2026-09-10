@@ -5,6 +5,7 @@ import kr.moonseungjun.riftfrontier.combat.BossPresentationSemanticState;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -64,6 +65,14 @@ class BossPresentationClientStateTest {
         assertTrue(BossPresentationClientState.current(7, FIRST).isEmpty());
         assertEquals(SECOND, BossPresentationClientState.current(7, SECOND).orElseThrow().entityUuid());
         assertEquals(0.25D, BossPresentationClientState.current(7, SECOND).orElseThrow().phaseProgress());
+    }
+
+    @Test
+    void numericOnlyLookupIsNotExposedByClientCache() {
+        assertFalse(Arrays.stream(BossPresentationClientState.class.getDeclaredMethods()).anyMatch(method ->
+            method.getName().equals("current")
+                && Arrays.equals(method.getParameterTypes(), new Class<?>[]{int.class})
+        ));
     }
 
     @Test
