@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-alpha.6
+
+- Removed the hidden second fishing system from the dedicated lakeside: vanilla `FishingHook#catchingFish` is now suppressed there while Fishing Game owns bite timing and catch flow.
+- Kept vanilla cast physics, line rendering and water bobbing instead of replacing the entire fishing hook.
+- Scoped the mixin to server-owned hooks in `fishinggame:lakeside` so unrelated vanilla dimensions are not globally altered.
+- Added required mixin configuration to the Fabric metadata and made CI inspect both the mixin config and mixin class in the playable JAR.
+- Preserved server authority for species selection, bite timing, tension, catch result, bag and economy.
+- Kept the existing user-test gate: this correctness fix is not a substitute for actual Minecraft visual review.
+
 ## 0.1.0-alpha.5
 
 - Replaced the obvious circular hooked-fish motion with a curved final approach and irregular fight motion.
