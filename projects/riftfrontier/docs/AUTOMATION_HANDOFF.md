@@ -6,7 +6,7 @@ This file is a recovery aid for scheduled development sessions. Current GitHub `
 
 - Remote `main` verified at this run start: `ac44c6f7b67c5f1d04a0d77d8350b35ec8e8e520`.
 - Implementation HEAD completed in this batch: `17b4456c0302f7f169c1f9c4590ae0f5e58f3936`.
-- Immediately before this handoff write, remote `main` was still exactly `17b4456c0302f7f169c1f9c4590ae0f5e58f3936`; no concurrent change required reconciliation.
+- A concurrent Earth-to-Stars workflow-only commit landed after implementation validation and before the handoff commit. Compare from `17b4456c...` to handoff HEAD confirmed the implementation remains in ancestry, zero commits behind, and the only non-handoff change is `.github/workflows/smoke-earth-to-stars-client-resources.yml`; no Riftfrontier runtime/source overlap occurred.
 - `Dragon Evolved` remains the selected sanitized Region 01 first-boss geometry/rig/unaltered-source-animation resource. Source `Atlas` art remains excluded and unapproved.
 - Preserve source SHA-256 `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c`, accepted derivation SHA-256 `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`, and provenance SHA-256 `3e16877a0043cf980ac8de05bb518834c5e77bd72d96103b4984c65a2a5a4c6c`.
 
