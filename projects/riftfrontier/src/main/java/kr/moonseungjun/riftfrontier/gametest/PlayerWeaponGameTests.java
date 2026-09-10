@@ -120,13 +120,26 @@ public final class PlayerWeaponGameTests {
         helper.assertTrue(adapter.recoveryPivotAuthorized(actor, start + 4L),
             "Validated recovery_pivot module may authorize only during RECOVERY");
 
+        Zombie replacementActor = new Zombie(level);
+        replacementActor.setNoAi(true);
+        replacementActor.setUUID(actor.getUUID());
+        replacementActor.snapTo(actorPos.getX() + 1.0D, actorPos.getY(), actorPos.getZ() + 0.5D, 0.0F, 0.0F);
+        var identityInvalidated = adapter.tick(level, replacementActor, start + 5L);
+        helper.assertTrue(identityInvalidated.loadoutInvalidated(),
+            "A different entity instance with the same UUID must not inherit the previous authoritative execution");
+        helper.assertTrue(!adapter.hasSession(actor.getUUID()),
+            "Actor-instance replacement must discard the stale UUID-keyed session before any clock progression");
+        helper.assertTrue(!adapter.recoveryPivotAuthorized(replacementActor, start + 5L),
+            "A replacement entity must not inherit recovery-module authority from the previous entity instance");
+
+        adapter.beginMove(actor, mobileMove, start + 6L);
         equipped.set(Optional.of(new MinecraftPlayerWeaponCombatAdapter.Loadout(reachFamily, Optional.empty())));
-        var invalidated = adapter.tick(level, actor, start + 5L);
+        var invalidated = adapter.tick(level, actor, start + 7L);
         helper.assertTrue(invalidated.loadoutInvalidated(),
             "Server-observed equipment swap must invalidate the old weapon execution immediately");
         helper.assertTrue(!adapter.hasSession(actor.getUUID()),
             "Invalidated equipment must discard the old per-actor runtime session");
-        helper.assertTrue(!adapter.recoveryPivotAuthorized(actor, start + 5L),
+        helper.assertTrue(!adapter.recoveryPivotAuthorized(actor, start + 7L),
             "Old module semantics must not survive a server loadout swap");
 
         adapter.beginMove(actor, reachMove, start + 10L);
