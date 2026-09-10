@@ -20,7 +20,7 @@
 - Forbidden bundled dependencies: Essential
 - Datagen task: none
 - GameTest task: none
-- Server smoke-test task: none yet
+- Server smoke-test task: CI `./gradlew runServer` launch; pass only after dedicated server reaches ready state
 - Client smoke-test task: none yet
 
 ## Game statement
