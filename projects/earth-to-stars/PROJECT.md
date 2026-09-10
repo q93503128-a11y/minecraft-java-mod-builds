@@ -3,21 +3,21 @@
 - Slug: `earth-to-stars`
 - Mod ID: `earth_to_stars`
 - Namespace: `earth_to_stars`
-- Mod version: `0.1.0-alpha.13`
+- Mod version: `0.1.0-alpha.14`
 - Minecraft: `26.2`
 - Java: `25`
 - Loader: `NeoForge`
 - Loader version: `26.2.0.76`
 - Gradle: `9.2.1`
 - Build plugin: `ModDevGradle 2.0.143`
-- Final JAR: `earth_to_stars-0.1.0-alpha.13.jar`
+- Final JAR: `earth_to_stars-0.1.0-alpha.14.jar`
 - Existing-world compatibility: save roots / registry IDs / ShipId / module IDs are compatibility contracts. Current ShipState schema is 2; schema 1 migrates by adding the missing sensor slot without resetting the ship.
 - Required dependencies: Minecraft, NeoForge
 - Optional external mods/libraries: none approved as a hard runtime dependency. Any addition requires current 26.2 compatibility, maintenance, license, multiplayer and performance review.
 - Forbidden bundled dependencies: Minecraft original files, NeoForge distribution files, external mod JARs, and models/textures/audio/UI assets without redistribution permission.
 - Datagen task: `runData` (`NOT RUN` at current gate)
 - Server lifecycle: latest two-boot disk restore verification run `34197931566`; ShipState schema 2 and Power/Ammo/Propellant/Oxygen runtime restoration loaded successfully.
-- Client resource/model smoke: `PASS` — Xvfb `runClient` on Minecraft 26.2 / NeoForge 26.2.0.76, run `34328160894`; live visual quality remains `NOT PLAYTESTED`
+- Client resource/model smoke: `PASS` — Xvfb `runClient` on Minecraft 26.2 / NeoForge 26.2.0.76, alpha.14 run `34424914782`; live visual quality remains `NOT PLAYTESTED`
 - Live multiplayer: `NOT TESTED`
 
 ## Project identity
@@ -89,52 +89,55 @@ Clients provide input/rendering/animation/UI/safe prediction only. A client neve
 
 # Current implementation baseline
 
-## 0.1.0-alpha.12 — Live-Acceptance Rescue
+## 0.1.0-alpha.14 — Starter Craft Core Rescue
 
-Latest verified implementation/CI commit:
+Latest build-gated implementation commit:
 
-`52dadef15fa0bb6faf5048c51ae67892db191653`
+`ac44c6f7b67c5f1d04a0d77d8350b35ec8e8e520`
 
-GitHub Actions `Build earth-to-stars` run `34232842854`: **PASS**
+GitHub Actions `Build earth-to-stars` run `34423576015`: **PASS**
 
 Verified JAR SHA-256:
 
-`b44f85ba2d05b885b1319822a0044e70535bff93696900b8ba5e191e04b51c15`
+`7345163281ca3ec2b0e0f58c1ec0d47d457af1ef8539492d60e25bf722fac9eb`
 
 Verified in this gate:
 
 - P0-H progression validator
 - actual M1 launch recipe dependency closure
 - actual launch recipe Nether/End independence
-- alpha.12 live-acceptance static contract
-- actual passenger/control source contract
-- safe authoritative ship retirement source contract
-- Minecraft 26.2 runtime API contract for actionbar feedback, ItemDisplay lookup and collision signature
-- three distinct Kenney Space Kit OBJ/MTL visuals packaged
+- alpha.14 starter-craft acceptance static contract
+- visible hull / interaction target / actual passenger vehicle collapsed into one `ShipExteriorEntity`
+- enlarged 5-block-class starter hull with matching interaction footprint and corrected passenger attachment
+- replaceable vegetation-tolerant 5×5×3 deployment clearance
+- successful deployment immediately attempts to put the owner in the real pilot seat
+- propellant/oxygen service bound to the exact clicked authoritative ship exterior
+- runtime OBJ UV adaptation for Minecraft item-atlas-safe presentation
+- distinct adapted runtime meshes for starter craft, salvage and interceptor
+- existing authoritative passenger/control and safe retirement contracts
 - existing M1-D starter/recovery/scanner/schema-migration JUnit regression
-- Minecraft 26.2 / NeoForge 26.2.0.38-beta compile
+- Minecraft 26.2 / NeoForge 26.2.0.76 compile
 - `clean test build`
 - production JAR verify
 
-Dedicated resource-load smoke run `34233144671`: **PASS**
+Client resource/model-bake smoke run `34424914782`: **PASS**
 
-- dedicated server reached normal `Done` startup
-- `RecipeManager` loaded 1591 recipes
-- no alpha.11-style recipe parsing error was detected
-- `earth_to_stars:ship_interiors` and `earth_to_stars:orbital_space` loaded on the server
+- Xvfb `runClient` reached the alpha.14 mod load marker
+- Minecraft 26.2 / NeoForge 26.2.0.76 client initialization was observed
+- no EARTH TO STARS missing-model / missing-texture / illegal identifier / OBJ loader error matched the gate
 
-The expensive two-boot save/restart lifecycle was **not rerun** because alpha.12 did not change the ShipState schema or persistence layout. The latest two-boot persistence verification remains run `34197931566`.
+The expensive two-boot save/restart lifecycle was **not rerun** because alpha.14 did not change the ShipState schema or persistence layout. The latest two-boot persistence verification remains run `34197931566`.
 
 Not verified by this gate:
 
 - live survival crafting/use flow
+- actual deployed craft scale and silhouette in a real client session
+- actual pilot seat position and camera feel
 - actual atmosphere ascent/transition feel
 - live Earth→Orbit→salvage→combat→Earth return cycle
-- camera/interpolation
 - salvage readability and approach feel
 - actual turret combat feel
 - reward pickup/install UX
-- client visual quality
 - live multiplayer pilot/gunner/interior session
 
 ---
@@ -173,14 +176,14 @@ recovered_sensor_core
 Server deployment verifies:
 
 1. Overworld/Earth
-2. 3×3×3 clearance
+2. 5×5×3 launch volume; harmless replaceable vegetation is cleared, solid/fluid obstruction blocks deployment
 3. no existing registered owned ship
 4. authoritative starter ShipState creation
-5. custom `ShipExteriorEntity` + model-backed spacecraft visual placement
+5. one visible model-backed `ShipExteriorEntity` used as hull, interaction target and actual passenger vehicle
 6. ShipSavedData persistence
 7. ShipSystemsRuntime initialization/persistence
-8. server-issued pilot control lease
-9. item consumption only on success
+8. immediate owner boarding/control attempt on the real pilot seat
+9. item consumption only on successful deployment
 
 Existing ownership is never silently overwritten.
 
@@ -243,10 +246,11 @@ Current supply:
 
 - propellant cell → up to `+40` Propellant
 - oxygen cartridge → up to `+40` Oxygen
-- full/no accessible ship does not consume item
+- service requires using the supply item directly on the target ship hull
+- full/no-access ship does not consume item
 - successful supply persists immediately
 
-The current use-on-block interaction is temporary M1 UX, not final refueling design.
+The current direct-hull right-click interaction is M1 UX and may later become a dedicated service/refueling presentation without changing server authority.
 
 ---
 
@@ -279,7 +283,7 @@ Important rules:
 - if the player loses/misses the core and returns to Earth without installing the scanner, session-only clear resets so a later Orbit trip can recover the progression item again.
 - scanner install is Earth-only and consumes the core only on success.
 
-Current salvage/interceptor presentation uses distinct Kenney Space Kit OBJ-backed visuals, and the pilot uses the actual `ShipExteriorEntity` passenger relationship. These are now real runtime presentation/vehicle paths, while client visual feel still requires live review.
+Current salvage/interceptor presentation uses distinct Kenney Space Kit-derived OBJ-backed visuals. The starter craft now uses the same visible `ShipExteriorEntity` for rendering, interaction and the actual passenger relationship instead of a separate render proxy. Client resource loading is verified; live scale, seat placement and handling feel still require real play review.
 
 ---
 
@@ -305,15 +309,15 @@ ShipState schema 2 adds the `sensor` slot. Schema 1 decode preserves existing id
 
 # Current visual boundary
 
-alpha.12 removed the live-acceptance blockers that used ArmorStand/fake tether presentation. The following still require later visual/UX production work or live review:
+alpha.14 removes the starter-craft split between an invisible gameplay shell and a separate visible ItemDisplay, and adapts the three imported OBJ meshes to a Minecraft-safe runtime UV path. The following still require live review or later production work:
 
 - technical linked-interior room
 - current orbital-space environment presentation
 - command-based technical controls that remain outside the main survival loop
 - logical projectile visual
-- temporary use-on-block supply/upgrade UX
+- current direct-hull supply/upgrade UX
 - cockpit/camera/interpolation polish
-- live scale, seat-position, silhouette and readability review for the three imported spacecraft meshes
+- live scale, pilot-seat position, silhouette and readability review for the three spacecraft meshes
 
 Production ship/cockpit/interior/turret/hostile/salvage/UI/VFX/sound/space visuals must pass `docs/03_UI_ART_REFERENCE_GATE.md` and use the license ledger where external assets are involved.
 
@@ -321,16 +325,17 @@ Production ship/cockpit/interior/turret/hostile/salvage/UI/VFX/sound/space visua
 
 # Current status / next work
 
-`ALPHA.12 LIVE-ACCEPTANCE RESCUE BUILD + DEDICATED RESOURCE LOAD VERIFIED / LIVE CLIENT ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`
+`ALPHA.14 BUILD VERIFIED + CLIENT RESOURCE/MODEL-BAKE SMOKE VERIFIED / LIVE STARTER-CRAFT ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`
 
 Do **not** expand to Moon/asteroid content merely because the backend builds.
 
-The next meaningful gate is the complete live M1 loop:
+The next meaningful gate is a real client playtest beginning with the rescued starter craft, then the complete M1 loop:
 
 ```text
 Earth resources
 → craft/deploy launch craft
-→ fuel/oxygen
+→ verify hull scale / click target / pilot seat / camera
+→ fuel/oxygen directly through the hull
 → controlled ascent
 → Earth Orbit
 → salvage approach
@@ -342,6 +347,6 @@ Earth resources
 → sensor-range improvement
 ```
 
-Acceptance focuses on progression blockers, control/camera feel, readability, combat duration, reward recovery, re-entry and whether the first trip actually feels worth doing.
+Acceptance focuses on whether the craft is visibly correct and directly usable first, then progression blockers, control/camera feel, readability, combat duration, reward recovery, re-entry and whether the first trip actually feels worth doing.
 
 Only after this loop is playable and feels coherent should M2 Moon content become the next expansion target.
