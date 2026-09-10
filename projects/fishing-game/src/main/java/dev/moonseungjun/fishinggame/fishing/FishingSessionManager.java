@@ -23,7 +23,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
@@ -302,10 +302,10 @@ public final class FishingSessionManager {
     private static Mob createVisualFish(ServerLevel level, FishSpecies species) {
         int variant = Math.floorMod(species.id().hashCode(), 4);
         return switch (variant) {
-            case 0 -> EntityType.COD.create(level, EntitySpawnReason.EVENT);
-            case 1 -> EntityType.SALMON.create(level, EntitySpawnReason.EVENT);
-            case 2 -> EntityType.TROPICAL_FISH.create(level, EntitySpawnReason.EVENT);
-            default -> EntityType.PUFFERFISH.create(level, EntitySpawnReason.EVENT);
+            case 0 -> EntityTypes.COD.create(level, EntitySpawnReason.EVENT);
+            case 1 -> EntityTypes.SALMON.create(level, EntitySpawnReason.EVENT);
+            case 2 -> EntityTypes.TROPICAL_FISH.create(level, EntitySpawnReason.EVENT);
+            default -> EntityTypes.PUFFERFISH.create(level, EntitySpawnReason.EVENT);
         };
     }
 
