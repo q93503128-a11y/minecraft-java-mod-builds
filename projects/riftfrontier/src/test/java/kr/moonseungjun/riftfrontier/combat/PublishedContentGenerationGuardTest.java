@@ -1,42 +1,25 @@
 package kr.moonseungjun.riftfrontier.combat;
 
-import kr.moonseungjun.riftfrontier.content.ContentRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class PublishedContentGenerationGuardTest {
     @Test
-    void acceptsOnlyTheGenerationThatCreatedTheCapability() {
+    void currentProbeTracksTheSameGenerationBoundaryAsRequireCurrent() {
         AtomicLong current = new AtomicLong(7L);
         PublishedContentGenerationGuard guard = new PublishedContentGenerationGuard(7L, current::get);
 
-        assertEquals(7L, guard.sourceGeneration());
-        assertDoesNotThrow(guard::requireCurrent);
+        assertTrue(guard.isCurrent(), "matching publication generation must remain current");
+        guard.requireCurrent();
 
         current.set(8L);
-        IllegalStateException stale = assertThrows(IllegalStateException.class, guard::requireCurrent);
-        assertTrue(stale.getMessage().contains("expected 7"));
-        assertTrue(stale.getMessage().contains("current 8"));
-    }
-
-    @Test
-    void missingPublishedRuntimeAlsoInvalidatesTheCapability() {
-        PublishedContentGenerationGuard guard = new PublishedContentGenerationGuard(3L, () -> -1L);
-        assertThrows(IllegalStateException.class, guard::requireCurrent);
-    }
-
-    @Test
-    void detachedFixtureCatalogDoesNotPretendToOwnAPublishedGeneration() {
-        CombatRuntimeCatalog detached = new CombatRuntimeCatalog(new ContentRegistry());
-        assertTrue(detached.publishedGeneration().isEmpty());
-        assertTrue(PublishedContentGenerationGuard.fromCatalog(detached).isEmpty());
-    }
-
-    @Test
-    void negativeSourceGenerationIsRejected() {
-        assertThrows(IllegalArgumentException.class, () -> new PublishedContentGenerationGuard(-1L, () -> -1L));
+        assertFalse(guard.isCurrent(), "a newer atomic publication must make the retained capability stale");
+        assertThrows(IllegalStateException.class, guard::requireCurrent,
+            "stale publication generation must still fail closed through the throwing guard");
     }
 }

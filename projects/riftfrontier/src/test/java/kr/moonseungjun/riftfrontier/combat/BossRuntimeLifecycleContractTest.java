@@ -28,6 +28,8 @@ final class BossRuntimeLifecycleContractTest {
             "validated runtime owner must remain dimension-scoped");
         assertTrue(adapter.contains("private boolean minecraftOwnerInvalidated;"),
             "validated runtime must retain irreversible owner invalidation state");
+        assertTrue(adapter.contains("private boolean minecraftOwnerGenerationRetired;"),
+            "stale publication retirement must be irreversible for the retained capability");
         assertTrue(adapter.contains("requireMinecraftOwner(level, boss);"),
             "Minecraft-facing begin/tick/phase mutation paths must cross the owner lifetime gate");
         assertTrue(adapter.contains("requireDetachedMutation(\"begin attack\");"),
@@ -37,10 +39,16 @@ final class BossRuntimeLifecycleContractTest {
         assertTrue(adapter.contains(
                 "public BossCombatController.PhaseTransition transitionToPhase( ServerLevel level, LivingEntity boss, int newPhase )"),
             "Minecraft-bound phase transitions must require explicit authoritative level and actor context");
+        assertTrue(adapter.contains("if (existing != runtime && existing.retireIfGenerationStale()) { iterator.remove(); }"),
+            "a fresh claim must prune stale-generation owner slots before enforcing singleton ownership");
         assertTrue(adapter.contains("if (!runtimes.isEmpty() && !runtimes.contains(runtime))"),
-            "one live boss entity must reject a second independently mutable validated runtime");
+            "one current-generation live boss entity must still reject a second independently mutable validated runtime");
         assertTrue(adapter.contains("bindValidatedRuntimeOwner(boss, this); minecraftOwner = boss;"),
             "owner claim must succeed before the candidate runtime records itself as bound");
+        assertTrue(adapter.contains("retireStaleGenerationOwnerClaim(); throw stale;"),
+            "a stale runtime discovered through its own API must release its process-local singleton claim");
+        assertTrue(adapter.contains("releaseValidatedRuntimeOwner(owner, this);"),
+            "generation retirement must remove exactly the stale capability rather than clearing a newer owner claim");
         assertTrue(adapter.contains("public static void entityLeaveLevel(EntityLeaveLevelEvent event)"),
             "validated runtime must expose the event-driven owner retirement boundary");
         assertTrue(adapter.contains("runtimes = VALIDATED_RUNTIMES_BY_OWNER.remove(owner);"),

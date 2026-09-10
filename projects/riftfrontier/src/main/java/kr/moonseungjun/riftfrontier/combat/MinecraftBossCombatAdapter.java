@@ -9,6 +9,7 @@ import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -98,10 +99,31 @@ public final class MinecraftBossCombatAdapter {
         synchronized (VALIDATED_RUNTIMES_BY_OWNER) {
             Set<ValidatedRuntime> runtimes = VALIDATED_RUNTIMES_BY_OWNER
                 .computeIfAbsent(owner, ignored -> Collections.newSetFromMap(new IdentityHashMap<>()));
+
+            Iterator<ValidatedRuntime> iterator = runtimes.iterator();
+            while (iterator.hasNext()) {
+                ValidatedRuntime existing = iterator.next();
+                if (existing != runtime && existing.retireIfGenerationStale()) {
+                    iterator.remove();
+                }
+            }
+
             if (!runtimes.isEmpty() && !runtimes.contains(runtime)) {
                 throw new IllegalStateException("Boss already owns a different validated combat runtime");
             }
             runtimes.add(runtime);
+        }
+    }
+
+    /** Removes exactly one retired capability claim without disturbing a newer runtime for the same live actor. */
+    private static void releaseValidatedRuntimeOwner(LivingEntity owner, ValidatedRuntime runtime) {
+        synchronized (VALIDATED_RUNTIMES_BY_OWNER) {
+            Set<ValidatedRuntime> runtimes = VALIDATED_RUNTIMES_BY_OWNER.get(owner);
+            if (runtimes == null) return;
+            runtimes.remove(runtime);
+            if (runtimes.isEmpty()) {
+                VALIDATED_RUNTIMES_BY_OWNER.remove(owner);
+            }
         }
     }
 
@@ -226,6 +248,7 @@ public final class MinecraftBossCombatAdapter {
         private LivingEntity minecraftOwner;
         private ResourceKey<Level> minecraftOwnerDimension;
         private boolean minecraftOwnerInvalidated;
+        private boolean minecraftOwnerGenerationRetired;
 
         private ValidatedRuntime(
             ValidatedBossCombatSemantics semantics,
@@ -327,6 +350,10 @@ public final class MinecraftBossCombatAdapter {
                 delegate.cancelAttack();
                 throw new IllegalStateException("Validated boss runtime owner has left its authoritative level");
             }
+            if (minecraftOwnerGenerationRetired) {
+                delegate.cancelAttack();
+                throw new IllegalStateException("Validated boss runtime was retired after its published content generation became stale");
+            }
             requireCurrentGeneration();
         }
 
@@ -335,8 +362,29 @@ public final class MinecraftBossCombatAdapter {
             try {
                 generationGuard.orElseThrow().requireCurrent();
             } catch (IllegalStateException stale) {
-                delegate.cancelAttack();
+                retireStaleGenerationOwnerClaim();
                 throw stale;
+            }
+        }
+
+        /**
+         * Called while another runtime is attempting to claim the same live actor. A stale generation
+         * must relinquish only its process-local singleton slot; the retained capability itself remains
+         * permanently retired and cannot later rebind.
+         */
+        private boolean retireIfGenerationStale() {
+            if (minecraftOwnerGenerationRetired || generationGuard.isEmpty()) return minecraftOwnerGenerationRetired;
+            if (generationGuard.orElseThrow().isCurrent()) return false;
+            minecraftOwnerGenerationRetired = true;
+            delegate.cancelAttack();
+            return true;
+        }
+
+        private void retireStaleGenerationOwnerClaim() {
+            if (!retireIfGenerationStale()) return;
+            LivingEntity owner = minecraftOwner;
+            if (owner != null) {
+                releaseValidatedRuntimeOwner(owner, this);
             }
         }
 

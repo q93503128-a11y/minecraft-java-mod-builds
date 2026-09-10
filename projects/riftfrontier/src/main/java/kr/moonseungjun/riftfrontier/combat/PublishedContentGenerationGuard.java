@@ -39,6 +39,10 @@ final class PublishedContentGenerationGuard {
         return sourceGeneration;
     }
 
+    boolean isCurrent() {
+        return currentGeneration.getAsLong() == sourceGeneration;
+    }
+
     void requireCurrent() {
         long current = currentGeneration.getAsLong();
         if (current != sourceGeneration) {
