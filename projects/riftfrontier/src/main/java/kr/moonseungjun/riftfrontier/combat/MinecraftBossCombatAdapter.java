@@ -22,6 +22,13 @@ public final class MinecraftBossCombatAdapter {
     private final BossCombatController controller;
     private final MinecraftAttackAdapter damageAdapter;
 
+    /**
+     * Low-level construction boundary retained for API-free/runtime contract tests and non-production adapters.
+     *
+     * <p>Production boss runtime must use {@link #validated(CombatRuntimeCatalog, ValidatedBossCombatSemantics,
+     * MinecraftAttackAdapter.HitVolume, float)} so boss identity, phase attack selection and outgoing presentation
+     * state all originate from one validated semantic capability.</p>
+     */
     public MinecraftBossCombatAdapter(
         CombatRuntimeCatalog catalog,
         ContentId bossId,
@@ -36,6 +43,33 @@ public final class MinecraftBossCombatAdapter {
             Objects.requireNonNull(selectionPolicy, "selectionPolicy")
         );
         this.damageAdapter = new MinecraftAttackAdapter(Objects.requireNonNull(hitVolume, "hitVolume"), damage);
+    }
+
+    /**
+     * Production construction boundary backed by one validated server-semantic capability.
+     *
+     * <p>The caller cannot substitute a boss id or attack-selection policy: both are derived here from
+     * {@code semantics}. The returned wrapper also derives every network-facing semantic state from the exact tick
+     * result and re-validates it through the same capability before it can leave the server runtime.</p>
+     */
+    public static ValidatedRuntime validated(
+        CombatRuntimeCatalog catalog,
+        ValidatedBossCombatSemantics semantics,
+        MinecraftAttackAdapter.HitVolume hitVolume,
+        float damage
+    ) {
+        Objects.requireNonNull(catalog, "catalog");
+        Objects.requireNonNull(semantics, "semantics");
+        return new ValidatedRuntime(
+            semantics,
+            new MinecraftBossCombatAdapter(
+                catalog,
+                semantics.bossProfile(),
+                BossAttackSelectionPolicy.authoredPhases(semantics),
+                Objects.requireNonNull(hitVolume, "hitVolume"),
+                damage
+            )
+        );
     }
 
     public int phase() {
@@ -132,6 +166,144 @@ public final class MinecraftBossCombatAdapter {
         controller.cancelAttack();
         damageAdapter.cancel();
         throw new IllegalStateException(message);
+    }
+
+    /**
+     * Production-only wrapper that keeps construction, attack selection and outgoing presentation under one
+     * {@link ValidatedBossCombatSemantics} capability.
+     */
+    public static final class ValidatedRuntime {
+        private final ValidatedBossCombatSemantics semantics;
+        private final MinecraftBossCombatAdapter delegate;
+
+        private ValidatedRuntime(ValidatedBossCombatSemantics semantics, MinecraftBossCombatAdapter delegate) {
+            this.semantics = Objects.requireNonNull(semantics, "semantics");
+            this.delegate = Objects.requireNonNull(delegate, "delegate");
+        }
+
+        public ValidatedBossCombatSemantics semanticCapability() {
+            return semantics;
+        }
+
+        public ContentId bossProfile() {
+            return semantics.bossProfile();
+        }
+
+        public int phase() {
+            return delegate.phase();
+        }
+
+        public boolean attackExecuting() {
+            return delegate.attackExecuting();
+        }
+
+        public long completedAttackCount() {
+            return delegate.completedAttackCount();
+        }
+
+        public AttackExecution.Snapshot beginNextAttack(long gameTick) {
+            AttackExecution.Snapshot snapshot = delegate.beginNextAttack(gameTick);
+            if (!semantics.candidateAttacks(delegate.phase()).contains(snapshot.patternId())) {
+                delegate.cancelAttack();
+                throw new IllegalStateException("selected attack escaped validated semantic phase pool: " + snapshot.patternId());
+            }
+            return snapshot;
+        }
+
+        /**
+         * Advances authoritative combat and immediately seals the outgoing semantic state with this exact capability.
+         */
+        public ValidatedTickResult tick(ServerLevel level, LivingEntity boss, long gameTick) {
+            Objects.requireNonNull(boss, "boss");
+            TickResult combat = delegate.tick(level, boss, gameTick);
+            return ValidatedTickResult.bind(semantics, combat, boss.getId(), boss.getUUID(), gameTick);
+        }
+
+        public BossCombatController.PhaseTransition transitionToPhase(int newPhase) {
+            BossCombatController.PhaseTransition transition = delegate.transitionToPhase(newPhase);
+            // candidateAttacks is intentionally touched after transition so malformed/foreign phase semantics fail now,
+            // before another attack can begin.
+            semantics.candidateAttacks(transition.currentPhase());
+            return transition;
+        }
+
+        public boolean cancelAttack() {
+            return delegate.cancelAttack();
+        }
+    }
+
+    /**
+     * Unforgeable-by-constructor result for production networking. It carries the exact semantic capability that
+     * validated the active presentation selector; inactive frames carry the canonical clear state.
+     */
+    public static final class ValidatedTickResult {
+        private final ValidatedBossCombatSemantics semantics;
+        private final TickResult combat;
+        private final BossPresentationSemanticState presentationState;
+        private final Optional<ValidatedBossCombatSemantics.ValidatedPresentation> presentationBinding;
+
+        private ValidatedTickResult(
+            ValidatedBossCombatSemantics semantics,
+            TickResult combat,
+            BossPresentationSemanticState presentationState,
+            Optional<ValidatedBossCombatSemantics.ValidatedPresentation> presentationBinding
+        ) {
+            this.semantics = Objects.requireNonNull(semantics, "semantics");
+            this.combat = Objects.requireNonNull(combat, "combat");
+            this.presentationState = Objects.requireNonNull(presentationState, "presentationState");
+            this.presentationBinding = Objects.requireNonNull(presentationBinding, "presentationBinding");
+            if (presentationState.active() != presentationBinding.isPresent()) {
+                throw new IllegalArgumentException("active semantic state must carry exactly one validated presentation binding");
+            }
+        }
+
+        private static ValidatedTickResult bind(
+            ValidatedBossCombatSemantics semantics,
+            TickResult combat,
+            int entityId,
+            java.util.UUID entityUuid,
+            long gameTick
+        ) {
+            Objects.requireNonNull(semantics, "semantics");
+            Objects.requireNonNull(combat, "combat");
+            BossPresentationSemanticState state;
+            Optional<ValidatedBossCombatSemantics.ValidatedPresentation> binding;
+            if (combat.presentation().isPresent()) {
+                state = BossPresentationSemanticState.fromFrame(
+                    entityId,
+                    entityUuid,
+                    gameTick,
+                    combat.presentation().orElseThrow()
+                );
+                binding = Optional.of(semantics.validatePresentationState(state));
+            } else {
+                state = BossPresentationSemanticState.clear(entityId, entityUuid, gameTick);
+                binding = Optional.empty();
+            }
+            return new ValidatedTickResult(semantics, combat, state, binding);
+        }
+
+        public TickResult combat() {
+            return combat;
+        }
+
+        public BossPresentationSemanticState presentationState() {
+            return presentationState;
+        }
+
+        public Optional<ValidatedBossCombatSemantics.ValidatedPresentation> presentationBinding() {
+            return presentationBinding;
+        }
+
+        public ValidatedBossCombatSemantics semanticCapability() {
+            return semantics;
+        }
+
+        public void requireSemanticCapability(ValidatedBossCombatSemantics expected) {
+            if (semantics != Objects.requireNonNull(expected, "expected")) {
+                throw new IllegalArgumentException("validated boss tick belongs to a different semantic capability");
+            }
+        }
     }
 
     /**
