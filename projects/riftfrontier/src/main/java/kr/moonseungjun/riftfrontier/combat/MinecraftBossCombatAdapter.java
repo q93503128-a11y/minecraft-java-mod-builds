@@ -74,14 +74,7 @@ public final class MinecraftBossCombatAdapter {
         );
     }
 
-    /**
-     * Event-driven lifetime boundary for validated Minecraft boss capabilities.
-     *
-     * <p>Once a validated runtime is bound through its Minecraft-facing begin/tick path, that exact
-     * entity instance owns the capability for the rest of its level lifetime. When the owner leaves
-     * tracking, the capability bound to that instance is invalidated and any active attack is
-     * cancelled. No world/entity scan is required.</p>
-     */
+    /** Event-driven lifetime boundary for validated Minecraft boss capabilities. */
     public static void entityLeaveLevel(EntityLeaveLevelEvent event) {
         Objects.requireNonNull(event, "event");
         if (event.getLevel().isClientSide() || !(event.getEntity() instanceof LivingEntity owner)) {
@@ -134,10 +127,7 @@ public final class MinecraftBossCombatAdapter {
         }
     }
 
-    /**
-     * Begins a boss attack and immediately binds the Minecraft damage execution to one eligible
-     * authoritative server actor and dimension. Failed admission leaves neither lifecycle clock alive.
-     */
+    /** Begins a boss attack and immediately binds the Minecraft damage execution to one eligible actor. */
     public AttackExecution.Snapshot beginNextAttack(ServerLevel level, LivingEntity boss, long gameTick) {
         Objects.requireNonNull(level, "level");
         Objects.requireNonNull(boss, "boss");
@@ -272,8 +262,10 @@ public final class MinecraftBossCombatAdapter {
             return delegate.completedAttackCount();
         }
 
+        /** Detached/runtime-test mutation path. It is permanently unavailable after Minecraft ownership is bound. */
         public AttackExecution.Snapshot beginNextAttack(long gameTick) {
             requireRuntimeCurrent();
+            requireDetachedMutation("begin attack");
             return validateSelectedAttack(delegate.beginNextAttack(gameTick));
         }
 
@@ -302,9 +294,27 @@ public final class MinecraftBossCombatAdapter {
             return ValidatedTickResult.bind(semantics, combat, boss.getId(), boss.getUUID(), gameTick);
         }
 
+        /** Detached/runtime-test phase mutation path; forbidden after Minecraft ownership is established. */
         public BossCombatController.PhaseTransition transitionToPhase(int newPhase) {
             requireRuntimeCurrent();
-            BossCombatController.PhaseTransition transition = delegate.transitionToPhase(newPhase);
+            requireDetachedMutation("transition phase");
+            return validatePhaseTransition(delegate.transitionToPhase(newPhase));
+        }
+
+        /** Server-authoritative phase mutation for a Minecraft-bound validated boss capability. */
+        public BossCombatController.PhaseTransition transitionToPhase(
+            ServerLevel level,
+            LivingEntity boss,
+            int newPhase
+        ) {
+            requireRuntimeCurrent();
+            requireMinecraftOwner(level, boss);
+            return validatePhaseTransition(delegate.transitionToPhase(newPhase));
+        }
+
+        private BossCombatController.PhaseTransition validatePhaseTransition(
+            BossCombatController.PhaseTransition transition
+        ) {
             semantics.candidateAttacks(transition.newPhase());
             return transition;
         }
@@ -327,6 +337,15 @@ public final class MinecraftBossCombatAdapter {
             } catch (IllegalStateException stale) {
                 delegate.cancelAttack();
                 throw stale;
+            }
+        }
+
+        private void requireDetachedMutation(String action) {
+            if (minecraftOwner != null) {
+                delegate.cancelAttack();
+                throw new IllegalStateException(
+                    "Minecraft-bound validated boss runtime cannot " + action + " without authoritative owner context"
+                );
             }
         }
 
