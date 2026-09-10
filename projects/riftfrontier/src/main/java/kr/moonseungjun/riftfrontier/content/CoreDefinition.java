@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public sealed interface CoreDefinition permits CoreDefinition.CombatArchetype, CoreDefinition.Region, CoreDefinition.LootProfile, CoreDefinition.Creature, CoreDefinition.Encounter, CoreDefinition.ExpeditionResource, CoreDefinition.Contract, CoreDefinition.ExtractionResultProfile, CoreDefinition.AttackPattern, CoreDefinition.BossProfile {
+public sealed interface CoreDefinition permits CoreDefinition.CombatArchetype, CoreDefinition.Region, CoreDefinition.LootProfile, CoreDefinition.Creature, CoreDefinition.Encounter, CoreDefinition.ExpeditionResource, CoreDefinition.Contract, CoreDefinition.ExtractionResultProfile, CoreDefinition.AttackPattern, CoreDefinition.BossProfile, CoreDefinition.WeaponFamily, CoreDefinition.WeaponModule {
     ContentId id();
     Kind kind();
 
@@ -19,7 +19,9 @@ public sealed interface CoreDefinition permits CoreDefinition.CombatArchetype, C
         CONTRACT,
         EXTRACTION_RESULT,
         ATTACK_PATTERN,
-        BOSS_PROFILE
+        BOSS_PROFILE,
+        WEAPON_FAMILY,
+        WEAPON_MODULE
     }
 
     record CombatArchetype(ContentId id, Set<String> behaviours) implements CoreDefinition {
@@ -88,7 +90,7 @@ public sealed interface CoreDefinition permits CoreDefinition.CombatArchetype, C
         @Override public Kind kind() { return Kind.EXTRACTION_RESULT; }
     }
 
-    /** Data-authored combat cadence. Presentation assets resolve separately after the M3 art gate. */
+    /** Data-authored combat cadence shared by server attack runtimes. Presentation resolves separately. */
     record AttackPattern(ContentId id, String delivery, int telegraphTicks, int activeTicks, int recoveryTicks, Set<String> counterplay, String presentationCue) implements CoreDefinition {
         public AttackPattern {
             Objects.requireNonNull(id, "id"); delivery = Objects.requireNonNull(delivery, "delivery").trim();
@@ -111,5 +113,30 @@ public sealed interface CoreDefinition permits CoreDefinition.CombatArchetype, C
             if (phaseCount <= 0) throw new IllegalArgumentException("phaseCount must be > 0");
         }
         @Override public Kind kind() { return Kind.BOSS_PROFILE; }
+    }
+
+    /**
+     * Player weapon-family semantics. Moves reuse authoritative attack patterns; roles and sockets are
+     * composition tokens, not balance values or presentation assets.
+     */
+    record WeaponFamily(ContentId id, Set<ContentId> moves, Set<String> combatRoles, Set<String> moduleSockets) implements CoreDefinition {
+        public WeaponFamily {
+            Objects.requireNonNull(id, "id");
+            moves = Set.copyOf(Objects.requireNonNull(moves, "moves"));
+            combatRoles = Set.copyOf(Objects.requireNonNull(combatRoles, "combatRoles"));
+            moduleSockets = Set.copyOf(Objects.requireNonNull(moduleSockets, "moduleSockets"));
+        }
+        @Override public Kind kind() { return Kind.WEAPON_FAMILY; }
+    }
+
+    /** Behaviour-changing module composition. Exact stat deltas remain outside this semantic gate. */
+    record WeaponModule(ContentId id, Set<ContentId> compatibleFamilies, String socket, Set<String> behaviourChanges) implements CoreDefinition {
+        public WeaponModule {
+            Objects.requireNonNull(id, "id");
+            compatibleFamilies = Set.copyOf(Objects.requireNonNull(compatibleFamilies, "compatibleFamilies"));
+            socket = Objects.requireNonNull(socket, "socket").trim();
+            behaviourChanges = Set.copyOf(Objects.requireNonNull(behaviourChanges, "behaviourChanges"));
+        }
+        @Override public Kind kind() { return Kind.WEAPON_MODULE; }
     }
 }
