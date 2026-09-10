@@ -1,0 +1,31 @@
+{
+  "regions": [
+    {
+      "id": "turnbound_re:hub_01",
+      "kind": "HUB",
+      "dimension": "minecraft:overworld",
+      "exits": ["turnbound_re:region_01"],
+      "encounterAnchors": []
+    },
+    {
+      "id": "turnbound_re:region_01",
+      "kind": "REGION",
+      "dimension": "minecraft:overworld",
+      "exits": ["turnbound_re:hub_01"],
+      "encounterAnchors": [
+        {
+          "id": "turnbound_re:region_01/overworld_patrol",
+          "encounter": "turnbound_re:debug_overworld_patrol",
+          "locator": "turnbound_re:region_01/overworld_patrol",
+          "repeatable": true
+        },
+        {
+          "id": "turnbound_re:region_01/rift_elite",
+          "encounter": "turnbound_re:debug_rift_elite",
+          "locator": "turnbound_re:region_01/rift_elite",
+          "repeatable": true
+        }
+      ]
+    }
+  ]
+}

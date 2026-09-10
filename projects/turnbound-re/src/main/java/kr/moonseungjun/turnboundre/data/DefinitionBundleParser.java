@@ -31,6 +31,7 @@ public final class DefinitionBundleParser {
         List<EncounterDefinition> encounters = new ArrayList<>();
         List<RewardTableDefinition> rewards = new ArrayList<>();
         List<ProgressionDefinition> progressions = new ArrayList<>();
+        List<RegionDefinition> regions = new ArrayList<>();
         List<String> resourceIds = new ArrayList<>();
         MessageDigest digest = sha256();
 
@@ -51,12 +52,14 @@ public final class DefinitionBundleParser {
             encounters.addAll(bundle.encounters());
             rewards.addAll(bundle.rewards());
             progressions.addAll(bundle.progressions());
+            regions.addAll(bundle.regions());
             resourceIds.add(resourceId);
             updateDigest(digest, resourceId);
             updateDigest(digest, json);
         }
 
-        DefinitionRegistry registry = DefinitionRegistry.create(actions, characters, statuses, encounters, rewards, progressions);
+        DefinitionRegistry registry = DefinitionRegistry.create(
+                actions, characters, statuses, encounters, rewards, progressions, regions);
         return new Parsed(registry, HexFormat.of().formatHex(digest.digest()), resourceIds);
     }
 

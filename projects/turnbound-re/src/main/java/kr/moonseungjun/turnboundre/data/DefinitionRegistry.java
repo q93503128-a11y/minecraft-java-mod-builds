@@ -16,6 +16,7 @@ public final class DefinitionRegistry {
     private final Map<String, EncounterDefinition> encounters;
     private final Map<String, RewardTableDefinition> rewards;
     private final Map<String, ProgressionDefinition> progressions;
+    private final Map<String, RegionDefinition> regions;
 
     private DefinitionRegistry(
             Map<String, ActionDefinition> actions,
@@ -23,7 +24,8 @@ public final class DefinitionRegistry {
             Map<String, StatusDefinition> statuses,
             Map<String, EncounterDefinition> encounters,
             Map<String, RewardTableDefinition> rewards,
-            Map<String, ProgressionDefinition> progressions
+            Map<String, ProgressionDefinition> progressions,
+            Map<String, RegionDefinition> regions
     ) {
         this.actions = Collections.unmodifiableMap(actions);
         this.characters = Collections.unmodifiableMap(characters);
@@ -31,10 +33,11 @@ public final class DefinitionRegistry {
         this.encounters = Collections.unmodifiableMap(encounters);
         this.rewards = Collections.unmodifiableMap(rewards);
         this.progressions = Collections.unmodifiableMap(progressions);
+        this.regions = Collections.unmodifiableMap(regions);
     }
 
     public static DefinitionRegistry create(List<ActionDefinition> actions, List<CharacterDefinition> characters) {
-        return create(actions, characters, List.of(), List.of(), List.of(), List.of());
+        return create(actions, characters, List.of(), List.of(), List.of(), List.of(), List.of());
     }
 
     public static DefinitionRegistry create(
@@ -42,12 +45,14 @@ public final class DefinitionRegistry {
             List<CharacterDefinition> characters,
             List<StatusDefinition> statuses
     ) {
-        return create(actions, characters, statuses, List.of(), List.of(), List.of());
+        return create(actions, characters, statuses, List.of(), List.of(), List.of(), List.of());
     }
 
     public static DefinitionRegistry create(DefinitionBundle bundle) {
         if (bundle == null) throw new IllegalArgumentException("bundle must not be null");
-        return create(bundle.actions(), bundle.characters(), bundle.statuses(), bundle.encounters(), bundle.rewards(), bundle.progressions());
+        return create(
+                bundle.actions(), bundle.characters(), bundle.statuses(), bundle.encounters(),
+                bundle.rewards(), bundle.progressions(), bundle.regions());
     }
 
     /** Compatibility overload for compact M0-M3 registries that have no progression tuning. */
@@ -58,9 +63,10 @@ public final class DefinitionRegistry {
             List<EncounterDefinition> encounters,
             List<RewardTableDefinition> rewards
     ) {
-        return create(actions, characters, statuses, encounters, rewards, List.of());
+        return create(actions, characters, statuses, encounters, rewards, List.of(), List.of());
     }
 
+    /** Compatibility overload for M4-M5 registries created before region definitions existed. */
     public static DefinitionRegistry create(
             List<ActionDefinition> actions,
             List<CharacterDefinition> characters,
@@ -69,7 +75,20 @@ public final class DefinitionRegistry {
             List<RewardTableDefinition> rewards,
             List<ProgressionDefinition> progressions
     ) {
-        if (actions == null || characters == null || statuses == null || encounters == null || rewards == null || progressions == null) {
+        return create(actions, characters, statuses, encounters, rewards, progressions, List.of());
+    }
+
+    public static DefinitionRegistry create(
+            List<ActionDefinition> actions,
+            List<CharacterDefinition> characters,
+            List<StatusDefinition> statuses,
+            List<EncounterDefinition> encounters,
+            List<RewardTableDefinition> rewards,
+            List<ProgressionDefinition> progressions,
+            List<RegionDefinition> regions
+    ) {
+        if (actions == null || characters == null || statuses == null || encounters == null
+                || rewards == null || progressions == null || regions == null) {
             throw new IllegalArgumentException("definition lists must not be null");
         }
 
@@ -89,13 +108,16 @@ public final class DefinitionRegistry {
 
         Set<String> rewardIds = ids(rewards.stream().map(RewardTableDefinition::id).toList());
         errors.addAll(DefinitionValidator.validateEncounters(encounters, characterMap, rewardIds));
+        Set<String> encounterIds = ids(encounters.stream().map(EncounterDefinition::id).toList());
+        errors.addAll(RegionDefinitionValidator.validate(regions, encounterIds));
 
         if (!errors.isEmpty()) {
             throw new IllegalArgumentException("Invalid TURNBOUND definitions: " + String.join("; ", errors));
         }
 
         return new DefinitionRegistry(
-                mapActions(actions), characterMap, mapStatuses(statuses), mapEncounters(encounters), mapRewards(rewards), mapProgressions(progressions));
+                mapActions(actions), characterMap, mapStatuses(statuses), mapEncounters(encounters),
+                mapRewards(rewards), mapProgressions(progressions), mapRegions(regions));
     }
 
     private static Set<String> ids(List<String> values) {
@@ -138,10 +160,17 @@ public final class DefinitionRegistry {
         return out;
     }
 
+    private static Map<String, RegionDefinition> mapRegions(List<RegionDefinition> values) {
+        Map<String, RegionDefinition> out = new LinkedHashMap<>();
+        for (RegionDefinition value : values) out.put(value.id(), value);
+        return out;
+    }
+
     public Map<String, ActionDefinition> actions() { return actions; }
     public Map<String, CharacterDefinition> characters() { return characters; }
     public Map<String, StatusDefinition> statuses() { return statuses; }
     public Map<String, EncounterDefinition> encounters() { return encounters; }
     public Map<String, RewardTableDefinition> rewards() { return rewards; }
     public Map<String, ProgressionDefinition> progressions() { return progressions; }
+    public Map<String, RegionDefinition> regions() { return regions; }
 }

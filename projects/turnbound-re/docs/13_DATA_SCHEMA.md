@@ -87,6 +87,28 @@ Skill 소비는 `energyDelta` 음수로 표현할 수 있으나 decode 후 `kind
 }
 ```
 
+## RegionDefinition
+월드의 기능 구조는 data-driven으로 두되, World Asset Gate가 닫히기 전 production 좌표나 건축 외형을 definition에 고정하지 않는다. `locator`는 나중에 실제 authored structure/marker와 연결되는 논리 ID다.
+
+```json
+{
+  "id": "turnbound_re:region_01",
+  "kind": "REGION",
+  "dimension": "minecraft:overworld",
+  "exits": ["turnbound_re:hub_01"],
+  "encounterAnchors": [
+    {
+      "id": "turnbound_re:region_01/overworld_patrol",
+      "encounter": "turnbound_re:debug_overworld_patrol",
+      "locator": "turnbound_re:region_01/overworld_patrol",
+      "repeatable": true
+    }
+  ]
+}
+```
+
+현재 `kind`은 `HUB`, `REGION`, `DUNGEON`만 허용한다. region/exit/anchor/locator는 namespaced ID이며, exit는 존재하는 RegionDefinition을, anchor는 존재하는 EncounterDefinition을 반드시 참조한다. anchor ID와 locator는 전체 region graph에서 중복될 수 없다.
+
 ## Save root
 ```json
 {
