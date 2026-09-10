@@ -45,8 +45,40 @@ jobs:
           jar tf "$JAR" | grep -q '^dev/moonseungjun/fishinggame/FishingGameMod.class$'
           jar tf "$JAR" | grep -q '^dev/moonseungjun/fishinggame/world/FishingWorldManager.class$'
           jar tf "$JAR" | grep -q '^data/fishinggame/dimension/lakeside.json$'
+          jar tf "$JAR" | grep -q '^data/fishinggame/dimension_type/lakeside.json$'
+          jar tf "$JAR" | grep -q '^data/fishinggame/world_clock/lakeside.json$'
           jar tf "$JAR" | grep -q '^assets/fishinggame/'
           sha256sum "$JAR" | tee "$JAR.sha256"
+
+      - name: Dedicated server smoke
+        run: |
+          mkdir -p run build
+          printf 'eula=true\n' > run/eula.txt
+          ./gradlew --no-daemon runServer > build/server-smoke.log 2>&1 &
+          GRADLE_PID=$!
+
+          cleanup() {
+            kill "$GRADLE_PID" 2>/dev/null || true
+            pkill -P "$GRADLE_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          for attempt in $(seq 1 60); do
+            if grep -q 'Done (' build/server-smoke.log 2>/dev/null || grep -q 'Done (' run/logs/latest.log 2>/dev/null; then
+              echo "Dedicated server reached ready state."
+              exit 0
+            fi
+            if ! kill -0 "$GRADLE_PID" 2>/dev/null; then
+              echo "Dedicated server exited before reaching ready state."
+              cat build/server-smoke.log
+              exit 1
+            fi
+            sleep 2
+          done
+
+          echo "Dedicated server did not reach ready state within 120 seconds."
+          cat build/server-smoke.log
+          exit 1
 
       - name: Upload build output
         if: always()
@@ -57,5 +89,7 @@ jobs:
             projects/fishing-game/build/libs/*.jar
             projects/fishing-game/build/libs/*.sha256
             projects/fishing-game/build/reports/**
+            projects/fishing-game/build/server-smoke.log
+            projects/fishing-game/run/logs/latest.log
           if-no-files-found: warn
           retention-days: 7
