@@ -33,8 +33,12 @@ final class MinecraftBossValidatedRuntimeTest {
             "validated boss runtime must inherit the published content generation from its catalog");
         assertTrue(source.contains("private void requireCurrentGeneration()"),
             "validated boss runtime must guard authoritative operations against stale content generations");
-        assertTrue(source.contains("delegate.cancelAttack(); throw stale;"),
-            "stale generation detection must fail closed by cancelling both boss lifecycle and damage execution");
+        assertTrue(source.contains("retireStaleGenerationOwnerClaim(); throw stale;"),
+            "stale generation detection must fail closed by retiring the stale owner claim before rejecting use");
+        assertTrue(source.contains("private boolean retireIfGenerationStale()"),
+            "stale generation retirement must be explicit and irreversible for the retained capability");
+        assertTrue(source.contains("delegate.cancelAttack(); return true;"),
+            "generation retirement must cancel both boss lifecycle and Minecraft damage execution");
         assertTrue(source.contains("private ValidatedRuntime("),
             "production validated runtime must not be forgeable outside MinecraftBossCombatAdapter");
         assertTrue(source.contains("private ValidatedTickResult("),
