@@ -6,7 +6,7 @@ import kr.moonseungjun.turnboundre.data.EncounterDefinition;
 import kr.moonseungjun.turnboundre.data.RegionDefinition;
 import kr.moonseungjun.turnboundre.data.RewardTableDefinition;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -55,8 +55,8 @@ public final class WorldEncounterAnchorResolver {
             Entity entity,
             String dimensionId
     ) {
-        if (entity == null || entity.getType() != EntityType.INTERACTION) return Optional.empty();
-        return locatorFromTags(entity.getTags()).flatMap(locator -> resolve(registry, locator, dimensionId));
+        if (entity == null || entity.getType() != EntityTypes.INTERACTION) return Optional.empty();
+        return locatorFromTags(entity.entityTags()).flatMap(locator -> resolve(registry, locator, dimensionId));
     }
 
     public static Optional<Resolved> resolve(
@@ -90,8 +90,8 @@ public final class WorldEncounterAnchorResolver {
 
     public static boolean matchesEntity(Entity entity, java.util.UUID entityId, String locator) {
         if (entity == null || entityId == null || locator == null || locator.isBlank()) return false;
-        if (!entityId.equals(entity.getUUID()) || entity.getType() != EntityType.INTERACTION) return false;
-        return locatorFromTags(entity.getTags()).filter(locator::equals).isPresent();
+        if (!entityId.equals(entity.getUUID()) || entity.getType() != EntityTypes.INTERACTION) return false;
+        return locatorFromTags(entity.entityTags()).filter(locator::equals).isPresent();
     }
 
     public static boolean withinConfirmRange(double distanceSqr) {

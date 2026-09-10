@@ -87,7 +87,7 @@ public final class WorldEncounterAnchorNetwork {
             return;
         }
 
-        Entity entity = player.serverLevel().getEntity(request.anchorEntityId());
+        Entity entity = player.level().getEntity(request.anchorEntityId());
         if (!WorldEncounterAnchorResolver.matchesEntity(entity, request.anchorEntityId(), request.locator())) {
             context.reply(WorldEncounterAnchorPayloads.AnchorRejectedS2C.of("ANCHOR_UNAVAILABLE", request.locator()));
             return;
