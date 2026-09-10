@@ -12,7 +12,10 @@ public final class ContentValidator {
         EMPTY_ENCOUNTER_OBJECTIVE, EMPTY_CONTRACT_OBJECTIVE, EMPTY_CONTRACT_REQUIREMENTS,
         INVALID_RESOURCE_CATEGORY, INVALID_EXTRACTION_OUTCOME, NO_WORLD_CONSEQUENCE,
         EMPTY_ATTACK_COUNTERPLAY, INVALID_ATTACK_DELIVERY, INVALID_ATTACK_PRESENTATION_CUE,
-        NO_BOSS_ATTACK_PATTERNS, INVALID_BOSS_ARENA_RULE
+        NO_BOSS_ATTACK_PATTERNS, INVALID_BOSS_ARENA_RULE,
+        NO_WEAPON_MOVES, NO_WEAPON_ROLES, NO_WEAPON_MODULE_SOCKETS,
+        NO_WEAPON_MODULE_FAMILIES, INVALID_WEAPON_MODULE_SOCKET, EMPTY_WEAPON_MODULE_CHANGES,
+        INCOMPATIBLE_WEAPON_MODULE_SOCKET
     }
     public record Issue(Code code, Severity severity, ContentId source, String message) { }
     public record Report(int definitionCount, List<Issue> issues) {
@@ -36,6 +39,25 @@ public final class ContentValidator {
                 case CoreDefinition.ExtractionResultProfile e->{if(e.outcome().isBlank())error(issues,Code.INVALID_EXTRACTION_OUTCOME,e.id(),"extraction result outcome is blank");if(e.worldConsequence().isBlank())warn(issues,Code.NO_WORLD_CONSEQUENCE,e.id(),"extraction result has no world consequence");}
                 case CoreDefinition.AttackPattern a->{if(a.delivery().isBlank())error(issues,Code.INVALID_ATTACK_DELIVERY,a.id(),"attack pattern delivery is blank");if(a.counterplay().isEmpty())error(issues,Code.EMPTY_ATTACK_COUNTERPLAY,a.id(),"attack pattern exposes no player counterplay");if(a.presentationCue().isBlank())error(issues,Code.INVALID_ATTACK_PRESENTATION_CUE,a.id(),"attack pattern has no presentation cue contract");}
                 case CoreDefinition.BossProfile b->{if(b.attackPatterns().isEmpty())error(issues,Code.NO_BOSS_ATTACK_PATTERNS,b.id(),"boss profile has no attack patterns");for(ContentId id:b.attackPatterns())require(registry,issues,b.id(),CoreDefinition.Kind.ATTACK_PATTERN,id);if(b.arenaRule().isBlank())error(issues,Code.INVALID_BOSS_ARENA_RULE,b.id(),"boss profile has no arena rule");}
+                case CoreDefinition.WeaponFamily w->{
+                    if(w.moves().isEmpty())error(issues,Code.NO_WEAPON_MOVES,w.id(),"weapon family has no authored moves");
+                    for(ContentId id:w.moves())require(registry,issues,w.id(),CoreDefinition.Kind.ATTACK_PATTERN,id);
+                    if(w.combatRoles().isEmpty())error(issues,Code.NO_WEAPON_ROLES,w.id(),"weapon family has no combat role semantics");
+                    if(w.moduleSockets().isEmpty())error(issues,Code.NO_WEAPON_MODULE_SOCKETS,w.id(),"weapon family exposes no module composition socket");
+                    if(w.moduleSockets().stream().anyMatch(String::isBlank))error(issues,Code.INVALID_WEAPON_MODULE_SOCKET,w.id(),"weapon family contains a blank module socket");
+                }
+                case CoreDefinition.WeaponModule m->{
+                    if(m.compatibleFamilies().isEmpty())error(issues,Code.NO_WEAPON_MODULE_FAMILIES,m.id(),"weapon module has no compatible families");
+                    if(m.socket().isBlank())error(issues,Code.INVALID_WEAPON_MODULE_SOCKET,m.id(),"weapon module socket is blank");
+                    if(m.behaviourChanges().isEmpty())error(issues,Code.EMPTY_WEAPON_MODULE_CHANGES,m.id(),"weapon module changes no combat behaviour");
+                    for(ContentId id:m.compatibleFamilies()){
+                        require(registry,issues,m.id(),CoreDefinition.Kind.WEAPON_FAMILY,id);
+                        registry.find(CoreDefinition.Kind.WEAPON_FAMILY,id).ifPresent(definition->{
+                            CoreDefinition.WeaponFamily family=(CoreDefinition.WeaponFamily)definition;
+                            if(!m.socket().isBlank()&&!family.moduleSockets().contains(m.socket()))error(issues,Code.INCOMPATIBLE_WEAPON_MODULE_SOCKET,m.id(),"module socket '"+m.socket()+"' is not declared by family "+id);
+                        });
+                    }
+                }
             }
         }
         issues.sort(Comparator.comparing((Issue i)->i.severity().ordinal()).thenComparing(i->i.source().toString()).thenComparing(i->i.code().name()).thenComparing(Issue::message));
