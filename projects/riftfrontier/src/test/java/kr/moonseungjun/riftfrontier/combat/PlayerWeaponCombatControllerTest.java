@@ -49,6 +49,26 @@ final class PlayerWeaponCombatControllerTest {
     }
 
     @Test
+    void recoveryAuthorizationCannotBypassOrRewindTheAuthoritativeClock() {
+        CombatRuntimeCatalog catalog = new CombatRuntimeCatalog(registry());
+        PlayerWeaponCombatController controller = catalog.playerWeaponController(MOBILE, Optional.of(PIVOT));
+        controller.beginMove(QUICK, 200);
+
+        assertTrue(controller.recoveryPivotAuthorized(208));
+        IllegalArgumentException rewind = assertThrows(
+            IllegalArgumentException.class,
+            () -> controller.advance(207)
+        );
+        assertTrue(rewind.getMessage().contains("cannot move backwards"));
+        assertFalse(controller.isExecuting(), "a rewind after a module phase observation must fail closed");
+
+        assertDoesNotThrow(() -> controller.beginMove(QUICK, 220));
+        controller.advance(228);
+        assertThrows(IllegalArgumentException.class, () -> controller.recoveryPivotAuthorized(227));
+        assertFalse(controller.isExecuting(), "the module authorization path must also reject an older tick");
+    }
+
+    @Test
     void controllerRejectsMovesOutsideFamilyAndCannotOverlapExecutions() {
         CombatRuntimeCatalog catalog = new CombatRuntimeCatalog(registry());
         PlayerWeaponCombatController controller = catalog.playerWeaponController(MOBILE, Optional.empty());
