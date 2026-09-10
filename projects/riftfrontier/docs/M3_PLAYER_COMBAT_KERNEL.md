@@ -1,6 +1,6 @@
 # M3 Player Combat Kernel
 
-Status: semantic/data foundation only. This document does **not** approve final weapon art, damage, range, cooldown, hitbox, VFX, sound, or balance.
+Status: semantic/data foundation complete. `M3_PLAYER_WEAPON_REFERENCE_DOSSIER.md` now locks the first two production role contracts and one module-composition line. This document still does **not** approve final weapon art, damage, range, cooldown, hitbox, VFX, sound, or balance.
 
 ## Purpose
 
@@ -52,15 +52,26 @@ Fixture-only example; names and timings below are not production balance:
 {"kind":"weapon_module","id":"riftfrontier:fixture/module/tempo_shift","compatible_families":["riftfrontier:fixture/weapon_family/mobile_blade"],"socket":"technique","behaviour_changes":["reposition_after_commitment"]}
 ```
 
+## Production role lock — completed 2026-09-10
+
+`M3_PLAYER_WEAPON_REFERENCE_DOSSIER.md` is now the bounded evidence gate for the first vertical-slice families. It locks exactly:
+
+- `mobile_pressure`: short-reach close pressure, repeated repositioning, lower ordinary-entry commitment and a punishable committed reward/finisher;
+- `reach_commitment`: deliberate spacing, longer practical melee engagement reach, constrained decisive commitment and a real punishable recovery;
+- shared module socket semantic `technique`;
+- first module behaviour direction `recovery_pivot`, which changes an eligible recovery transition without altering the authoritative hit clock or skipping required recovery.
+
+These are semantic role labels, not final stable content IDs or final weapon names. They do not authorize numeric balance or presentation assets.
+
 ## Production gate
 
-This kernel is **not** permission to fabricate the two final weapon families. Before production definitions are added:
+The schema kernel and the bounded role comparison are complete. The remaining order is:
 
-1. write a bounded player-weapon reference/design comparison;
-2. lock two genuinely different combat roles and their counterplay/commitment trade-offs;
-3. author their real `attack_pattern` moves from that evidence;
-4. then author `weapon_family` / `weapon_module` data;
-5. connect those definitions to server-authoritative Minecraft execution;
-6. tune damage/range/cadence only from real field play.
+1. author the smallest production `attack_pattern` move set that expresses the two locked roles without inventing final balance values;
+2. author exactly two production `weapon_family` definitions and one `weapon_module` line using the existing schema;
+3. connect those definitions to server-authoritative Minecraft execution;
+4. verify move-state transitions and hit authority automatically;
+5. tune damage/range/cadence only from real field play;
+6. approve final art/animation/VFX/sound only through the separate presentation evidence gate.
 
-Do not duplicate boss presentation plumbing, infer combat values from third-party animation clips, or promote fixture IDs to production content.
+Do not duplicate boss presentation plumbing, infer combat values from third-party animation clips, promote fixture IDs to production content, add a third family to evade the two-role contrast requirement, or create a second attack timing system.
