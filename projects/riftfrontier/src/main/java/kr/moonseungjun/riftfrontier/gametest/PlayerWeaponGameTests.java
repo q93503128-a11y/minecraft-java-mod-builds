@@ -4,13 +4,21 @@ import kr.moonseungjun.riftfrontier.Riftfrontier;
 import kr.moonseungjun.riftfrontier.combat.AttackTimeline;
 import kr.moonseungjun.riftfrontier.combat.CombatRuntimeCatalog;
 import kr.moonseungjun.riftfrontier.combat.MinecraftPlayerWeaponCombatAdapter;
+import kr.moonseungjun.riftfrontier.combat.PlayerWeaponItemStackLoadoutResolver;
+import kr.moonseungjun.riftfrontier.combat.PlayerWeaponLoadoutComponent;
+import kr.moonseungjun.riftfrontier.combat.PlayerWeaponServerRuntime;
+import kr.moonseungjun.riftfrontier.combat.RiftfrontierCombatDataComponents;
 import kr.moonseungjun.riftfrontier.content.ContentId;
 import kr.moonseungjun.riftfrontier.content.ContentRegistry;
 import kr.moonseungjun.riftfrontier.content.CoreDefinition;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.monster.zombie.Zombie;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -29,6 +37,7 @@ public final class PlayerWeaponGameTests {
 
     static {
         TEST_FUNCTIONS.register("player_weapon_authority", () -> PlayerWeaponGameTests::playerWeaponAuthority);
+        TEST_FUNCTIONS.register("player_weapon_input_authority", () -> PlayerWeaponGameTests::playerWeaponInputAuthority);
     }
 
     private PlayerWeaponGameTests() {}
@@ -121,13 +130,74 @@ public final class PlayerWeaponGameTests {
             "Old module semantics must not survive a server loadout swap");
 
         adapter.beginMove(actor, reachMove, start + 10L);
-        helper.assertTrue(adapter.hasSession(actor.getUUID()),
-            "New validated family must establish a fresh server-authoritative session");
+        Zombie otherActor = new Zombie(level);
+        otherActor.setNoAi(true);
+        otherActor.snapTo(actorPos.getX() + 2.5D, actorPos.getY(), actorPos.getZ() + 0.5D, 0.0F, 0.0F);
+        helper.assertTrue(level.addFreshEntity(otherActor), "Second technical weapon actor must enter the GameTest world");
+        adapter.beginMove(otherActor, reachMove, start + 10L);
+        helper.assertTrue(adapter.hasSession(actor.getUUID()) && adapter.hasSession(otherActor.getUUID()),
+            "Two actors must own isolated authoritative weapon sessions");
         helper.assertTrue(adapter.clearActor(actor.getUUID()),
-            "Lifecycle cleanup must cancel and remove the actor session");
-        helper.assertTrue(!adapter.hasSession(actor.getUUID()),
-            "Lifecycle cleanup must leave no stale weapon session");
+            "Lifecycle cleanup must cancel and remove the selected actor session");
+        helper.assertTrue(!adapter.hasSession(actor.getUUID()) && adapter.hasSession(otherActor.getUUID()),
+            "Clearing one actor must not discard another actor's session");
+        adapter.clearActor(otherActor.getUUID());
 
+        helper.succeed();
+    }
+
+    @SuppressWarnings("removal")
+    private static void playerWeaponInputAuthority(GameTestHelper helper) {
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ItemStack mobile = new ItemStack(Items.STICK);
+        mobile.set(
+            RiftfrontierCombatDataComponents.PLAYER_WEAPON_LOADOUT.value(),
+            new PlayerWeaponLoadoutComponent(
+                PlayerWeaponItemStackLoadoutResolver.MOBILE_PRESSURE.toString(),
+                Optional.of(PlayerWeaponItemStackLoadoutResolver.RECOVERY_PIVOT.toString())
+            )
+        );
+        player.setItemInHand(InteractionHand.MAIN_HAND, mobile);
+
+        ContentId mobileEntry = ContentId.rift("attack/player/mobile_pressure_entry");
+        ContentId reachStrike = ContentId.rift("attack/player/reach_commitment_strike");
+        helper.assertTrue(
+            PlayerWeaponServerRuntime.handleMoveIntent(player, reachStrike) == PlayerWeaponServerRuntime.IntentResult.REJECTED,
+            "Server must reject a valid authored move from the wrong equipped family"
+        );
+        helper.assertTrue(
+            PlayerWeaponServerRuntime.handleMoveIntent(player, mobileEntry) == PlayerWeaponServerRuntime.IntentResult.ACCEPTED,
+            "Server must accept an authored move belonging to the current ItemStack family"
+        );
+        helper.assertTrue(
+            PlayerWeaponServerRuntime.handleMoveIntent(player, ContentId.rift("attack/player/spoofed")) == PlayerWeaponServerRuntime.IntentResult.REJECTED,
+            "Server must reject spoofed move ids even when a valid Riftfrontier weapon is equipped"
+        );
+
+        ItemStack reach = new ItemStack(Items.STICK);
+        reach.set(
+            RiftfrontierCombatDataComponents.PLAYER_WEAPON_LOADOUT.value(),
+            new PlayerWeaponLoadoutComponent(PlayerWeaponItemStackLoadoutResolver.REACH_COMMITMENT.toString(), Optional.empty())
+        );
+        player.setItemInHand(InteractionHand.MAIN_HAND, reach);
+        var swapResult = PlayerWeaponServerRuntime.tickPlayer(player);
+        helper.assertTrue(swapResult.loadoutInvalidated(),
+            "Server-observed main-hand swap must invalidate the previous execution before further ticks");
+        helper.assertTrue(
+            PlayerWeaponServerRuntime.handleMoveIntent(player, reachStrike) == PlayerWeaponServerRuntime.IntentResult.ACCEPTED,
+            "Fresh move intent may establish a new session from the newly equipped family"
+        );
+
+        player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        var unequipResult = PlayerWeaponServerRuntime.tickPlayer(player);
+        helper.assertTrue(unequipResult.loadoutInvalidated(),
+            "Unequip must invalidate the authoritative weapon session"
+        );
+        helper.assertTrue(
+            PlayerWeaponServerRuntime.handleMoveIntent(player, reachStrike) == PlayerWeaponServerRuntime.IntentResult.REJECTED,
+            "An unequipped player cannot start a remembered weapon move"
+        );
+        PlayerWeaponServerRuntime.clearPlayer(player);
         helper.succeed();
     }
 }

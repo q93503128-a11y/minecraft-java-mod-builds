@@ -1,6 +1,8 @@
 package kr.moonseungjun.riftfrontier;
 
 import com.mojang.logging.LogUtils;
+import kr.moonseungjun.riftfrontier.combat.PlayerWeaponServerRuntime;
+import kr.moonseungjun.riftfrontier.combat.RiftfrontierCombatDataComponents;
 import kr.moonseungjun.riftfrontier.content.ContentRuntime;
 import kr.moonseungjun.riftfrontier.content.ContentServerReloadListener;
 import kr.moonseungjun.riftfrontier.content.bootstrap.CoreContentBootstrap;
@@ -14,13 +16,16 @@ import kr.moonseungjun.riftfrontier.gametest.PlayerWeaponGameTests;
 import kr.moonseungjun.riftfrontier.gametest.RiftfrontierGameTests;
 import kr.moonseungjun.riftfrontier.network.RiftfrontierNetworking;
 import kr.moonseungjun.riftfrontier.persistence.RiftfrontierWorldData;
+import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
 @Mod(Riftfrontier.MOD_ID)
@@ -39,6 +44,7 @@ public final class Riftfrontier {
             pack.packId(), pack.schemaVersion(), report.definitionCount(), snapshot.generation(), snapshot.fingerprint()
         );
 
+        RiftfrontierCombatDataComponents.register(modEventBus);
         RiftfrontierEntityTypes.register(modEventBus);
         modEventBus.addListener(RiftfrontierEntityTypes::createAttributes);
         RiftfrontierGameTests.register(modEventBus);
@@ -48,6 +54,9 @@ public final class Riftfrontier {
         NeoForge.EVENT_BUS.addListener(Riftfrontier::addServerReloadListeners);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::registerCommands);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::serverStarted);
+        NeoForge.EVENT_BUS.addListener(Riftfrontier::playerWeaponTick);
+        NeoForge.EVENT_BUS.addListener(Riftfrontier::playerWeaponLoggedOut);
+        NeoForge.EVENT_BUS.addListener(Riftfrontier::playerWeaponClone);
         NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::rightClickBlock);
         NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::entityJoinLevel);
         NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::playerClone);
@@ -77,5 +86,17 @@ public final class Riftfrontier {
             );
         }
         LOGGER.info("Riftfrontier authoritative world root ready: changed={}, {}", changed, worldData.diagnosticSummary());
+    }
+
+    private static void playerWeaponTick(PlayerTickEvent.Post event) {
+        if (event.getEntity() instanceof ServerPlayer player) PlayerWeaponServerRuntime.tickPlayer(player);
+    }
+
+    private static void playerWeaponLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) PlayerWeaponServerRuntime.clearPlayer(player);
+    }
+
+    private static void playerWeaponClone(PlayerEvent.Clone event) {
+        if (!event.getEntity().level().isClientSide()) PlayerWeaponServerRuntime.clearPlayer(event.getOriginal().getUUID());
     }
 }

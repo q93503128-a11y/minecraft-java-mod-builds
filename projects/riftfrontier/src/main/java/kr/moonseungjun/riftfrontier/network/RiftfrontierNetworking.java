@@ -2,23 +2,37 @@ package kr.moonseungjun.riftfrontier.network;
 
 import kr.moonseungjun.riftfrontier.combat.BossPresentationSemanticState;
 import kr.moonseungjun.riftfrontier.combat.MinecraftBossCombatAdapter;
+import kr.moonseungjun.riftfrontier.combat.PlayerWeaponServerRuntime;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.Objects;
 
-/** Common-side payload registration and server-to-client semantic presentation bridge. */
+/** Common-side payload registration and authoritative combat networking bridges. */
 public final class RiftfrontierNetworking {
     private static final String NETWORK_VERSION = "1";
 
     private RiftfrontierNetworking() {}
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        event.registrar(NETWORK_VERSION).playToClient(
+        var registrar = event.registrar(NETWORK_VERSION);
+        registrar.playToClient(
             BossPresentationPayload.TYPE,
             BossPresentationPayload.STREAM_CODEC
         );
+        registrar.playToServer(
+            PlayerWeaponMoveIntentPayload.TYPE,
+            PlayerWeaponMoveIntentPayload.STREAM_CODEC,
+            RiftfrontierNetworking::handlePlayerWeaponMoveIntent
+        );
+    }
+
+    private static void handlePlayerWeaponMoveIntent(PlayerWeaponMoveIntentPayload payload, IPayloadContext context) {
+        ServerPlayer player = (ServerPlayer) context.player();
+        PlayerWeaponServerRuntime.handleMoveIntent(player, payload.moveId());
     }
 
     /**
