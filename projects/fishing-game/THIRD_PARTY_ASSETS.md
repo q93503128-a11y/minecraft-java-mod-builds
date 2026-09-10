@@ -17,6 +17,7 @@
 - Repository: https://github.com/pajicadvance/simple-fishing-overhaul
 - License: MIT for mod source
 - Useful reference: real fish lure/caught goals, hook interaction, fishing feel
+- Alpha.5 use: the high-level idea of a real fish visibly moving toward the hook was retained as a reference. Fishing Game's curved approach, burst movement, scale math and server-side burst/tension coupling are project-authored rather than copied source files.
 - Rule: preserve attribution/license notices for any copied code; prefer adapting concepts unless a file is intentionally reused.
 
 ## World/map status
@@ -38,4 +39,4 @@ Current search direction:
 
 ## Minecraft-native visual proxies
 
-Alpha.3 uses Minecraft's own cod/salmon/tropical-fish/pufferfish entities as temporary hooked-fish visual proxies. These are runtime game entities, not bundled third-party assets. They establish the required visible fish behavior but are not the final per-species model/texture solution.
+Alpha.5 uses Minecraft's own cod/salmon/tropical-fish entities as temporary hooked-fish visual proxies, with project-side species size scaling and motion. These are runtime game entities, not bundled third-party assets. They establish visible catch behavior but are not the final per-species model/texture solution.

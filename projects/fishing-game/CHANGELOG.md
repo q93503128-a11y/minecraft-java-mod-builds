@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-alpha.5
+
+- Replaced the obvious circular hooked-fish motion with a curved final approach and irregular fight motion.
+- Added species-size scaling for temporary fish proxies so small freshwater fish and large catches no longer read at the same physical size.
+- Added short fish pull bursts during reeling. Bursts visibly extend the fish away from the hook and apply a small server-authoritative tension impulse so visuals and mechanics agree.
+- Added bubble trails on the final approach plus stronger bite and successful-catch splash/audio feedback.
+- Reworked temporary proxy selection to avoid inappropriate random pufferfish shapes for ordinary species.
+- Added deterministic presentation math tests for fish scale, hook approach and burst behavior.
+- Kept the existing user-test gate: build success still does not substitute for actual Minecraft visual review.
+
 ## 0.1.0-alpha.4
 
 - Made the reel fight readable instead of hiding its rules: the HUD now shows the actual safe-tension band used by server-side catch progress.

@@ -16,6 +16,10 @@ final class FishingSession {
     boolean reelHeld;
     int hudCooldown;
     int dryTicks;
+    long nextBurstTick = Long.MAX_VALUE;
+    int burstTicks;
+    float burstStrength;
+    double burstHeading;
 
     FishingSession(long castTick, FishingLocation location) {
         this.castTick = castTick;
