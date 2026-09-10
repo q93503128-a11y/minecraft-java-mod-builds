@@ -6,6 +6,7 @@ import kr.moonseungjun.turnboundre.battle.BattleManager;
 import kr.moonseungjun.turnboundre.battle.BattleWorldEventHooks;
 import kr.moonseungjun.turnboundre.data.DefinitionRepository;
 import kr.moonseungjun.turnboundre.data.DefinitionResourceLoader;
+import kr.moonseungjun.turnboundre.debug.TurnboundDebugAnchorCommands;
 import kr.moonseungjun.turnboundre.debug.TurnboundDebugCommands;
 import kr.moonseungjun.turnboundre.debug.TurnboundVisualShowcaseCommands;
 import kr.moonseungjun.turnboundre.network.BattleNetwork;
@@ -47,6 +48,7 @@ public final class TurnboundRe {
 
     private void registerCommands(RegisterCommandsEvent event) {
         TurnboundDebugCommands.register(event.getDispatcher(), BATTLES, DEFINITIONS);
+        TurnboundDebugAnchorCommands.register(event.getDispatcher(), DEFINITIONS);
         TurnboundVisualShowcaseCommands.register(event.getDispatcher(), BATTLES, DEFINITIONS);
     }
 
