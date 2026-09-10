@@ -55,7 +55,9 @@ public final class Riftfrontier {
         NeoForge.EVENT_BUS.addListener(Riftfrontier::registerCommands);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::serverStarted);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::playerWeaponTick);
+        NeoForge.EVENT_BUS.addListener(Riftfrontier::playerWeaponLoggedIn);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::playerWeaponLoggedOut);
+        NeoForge.EVENT_BUS.addListener(Riftfrontier::playerWeaponChangedDimension);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::playerWeaponClone);
         NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::rightClickBlock);
         NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::entityJoinLevel);
@@ -92,7 +94,15 @@ public final class Riftfrontier {
         if (event.getEntity() instanceof ServerPlayer player) PlayerWeaponServerRuntime.tickPlayer(player);
     }
 
+    private static void playerWeaponLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) PlayerWeaponServerRuntime.clearPlayer(player);
+    }
+
     private static void playerWeaponLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) PlayerWeaponServerRuntime.clearPlayer(player);
+    }
+
+    private static void playerWeaponChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) PlayerWeaponServerRuntime.clearPlayer(player);
     }
 

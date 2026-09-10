@@ -1,8 +1,10 @@
 package kr.moonseungjun.riftfrontier.combat;
 
 import kr.moonseungjun.riftfrontier.content.ContentId;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.Level;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -49,7 +51,8 @@ public final class MinecraftPlayerWeaponCombatAdapter {
 
     /**
      * Advances one actor from the same server-owned clock and exposes unique hit-volume candidates
-     * only during ACTIVE. A loadout swap immediately cancels and discards the old execution.
+     * only during ACTIVE. A loadout swap or world/dimension discontinuity immediately cancels and
+     * discards the old execution.
      */
     public TickResult tick(ServerLevel level, LivingEntity actor, long gameTick) {
         Objects.requireNonNull(level, "level");
@@ -58,9 +61,11 @@ public final class MinecraftPlayerWeaponCombatAdapter {
         Optional<Loadout> currentLoadout = loadoutResolver.resolve(actor);
         Session session = sessions.get(actor.getUUID());
         if (session == null) return TickResult.idle();
-        if (currentLoadout.isEmpty() || !session.loadout.equals(currentLoadout.orElseThrow())) {
-            session.controller.cancel();
-            sessions.remove(actor.getUUID());
+        if (!session.dimension.equals(level.dimension())
+            || actor.level() != level
+            || currentLoadout.isEmpty()
+            || !session.loadout.equals(currentLoadout.orElseThrow())) {
+            invalidate(actor.getUUID(), session);
             return TickResult.invalidated();
         }
 
@@ -88,9 +93,10 @@ public final class MinecraftPlayerWeaponCombatAdapter {
         Session session = sessions.get(actor.getUUID());
         if (session == null) return false;
         Optional<Loadout> current = loadoutResolver.resolve(actor);
-        if (current.isEmpty() || !session.loadout.equals(current.orElseThrow())) {
-            session.controller.cancel();
-            sessions.remove(actor.getUUID());
+        if (!session.dimension.equals(actor.level().dimension())
+            || current.isEmpty()
+            || !session.loadout.equals(current.orElseThrow())) {
+            invalidate(actor.getUUID(), session);
             return false;
         }
         return session.controller.recoveryPivotAuthorized(gameTick);
@@ -102,6 +108,7 @@ public final class MinecraftPlayerWeaponCombatAdapter {
         Session removed = sessions.remove(actorId);
         if (removed == null) return false;
         removed.controller.cancel();
+        removed.hitTargets.clear();
         return true;
     }
 
@@ -115,15 +122,23 @@ public final class MinecraftPlayerWeaponCombatAdapter {
     }
 
     private Session synchronizeSession(LivingEntity actor, Loadout loadout) {
+        ResourceKey<Level> dimension = actor.level().dimension();
         Session existing = sessions.get(actor.getUUID());
-        if (existing != null && existing.loadout.equals(loadout)) return existing;
-        if (existing != null) existing.controller.cancel();
+        if (existing != null && existing.loadout.equals(loadout) && existing.dimension.equals(dimension)) return existing;
+        if (existing != null) invalidate(actor.getUUID(), existing);
         Session replacement = new Session(
             loadout,
+            dimension,
             catalog.playerWeaponController(loadout.familyId(), loadout.moduleId())
         );
         sessions.put(actor.getUUID(), replacement);
         return replacement;
+    }
+
+    private void invalidate(UUID actorId, Session session) {
+        session.controller.cancel();
+        session.hitTargets.clear();
+        sessions.remove(actorId, session);
     }
 
     /** Server equipment decoder output; IDs must resolve through the current validated catalog. */
@@ -173,12 +188,14 @@ public final class MinecraftPlayerWeaponCombatAdapter {
 
     private static final class Session {
         private final Loadout loadout;
+        private final ResourceKey<Level> dimension;
         private final PlayerWeaponCombatController controller;
         private final Set<UUID> hitTargets = new HashSet<>();
 
-        private Session(Loadout loadout, PlayerWeaponCombatController controller) {
-            this.loadout = loadout;
-            this.controller = controller;
+        private Session(Loadout loadout, ResourceKey<Level> dimension, PlayerWeaponCombatController controller) {
+            this.loadout = Objects.requireNonNull(loadout, "loadout");
+            this.dimension = Objects.requireNonNull(dimension, "dimension");
+            this.controller = Objects.requireNonNull(controller, "controller");
         }
     }
 }
