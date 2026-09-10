@@ -1,6 +1,6 @@
 # M3 Player Combat Kernel
 
-Status: semantic/data foundation and API-free server execution capability complete. `M3_PLAYER_WEAPON_REFERENCE_DOSSIER.md` locks the first two production role contracts and one module-composition line. Production move data and the Minecraft player adapter are still pending. This document does **not** approve final weapon art, damage, range, cooldown, hitbox, VFX, sound, or balance.
+Status: semantic/data foundation, API-free server execution capability, and Minecraft-facing server-authority adapter are complete. `M3_PLAYER_WEAPON_REFERENCE_DOSSIER.md` locks the first two production role contracts and one module-composition line. Production move definitions and concrete item/input bindings are still pending. This document does **not** approve final weapon art, damage, range, cooldown, hitbox, VFX, sound, or balance.
 
 ## Purpose
 
@@ -88,18 +88,34 @@ Runtime rules are fail-closed even after graph validation:
 - `recovery_pivot` is an authorization only and becomes true exclusively while the same authoritative attack clock samples `RECOVERY`;
 - `recovery_pivot` does not shorten recovery, open a second hit window, grant invulnerability, or implement movement by itself.
 
-This layer is deliberately Minecraft-API-free so the server gameplay adapter can consume a deterministic capability instead of reconstructing family/module semantics from item state.
+## Minecraft authority adapter — completed 2026-09-10
+
+`MinecraftPlayerWeaponCombatAdapter` consumes that deterministic capability without introducing balance values or a second attack clock:
+
+```text
+server equipment resolver
+  -> Loadout(familyId, optional moduleId)
+  -> CombatRuntimeCatalog.playerWeaponController(...)
+  -> input move intent
+  -> authoritative AttackStateMachine
+  -> ACTIVE-only HitVolume candidate resolution
+```
+
+The adapter re-resolves server equipment while ticking. A family/module swap, unequip, death/logout/despawn lifecycle clear, or other loadout invalidation cancels and discards the old per-UUID session. Hit candidates are deduplicated per execution and are never exposed during TELEGRAPH or RECOVERY. `recovery_pivot` delegates to the same controller and therefore cannot survive an equipment change or open outside RECOVERY.
+
+The adapter intentionally emits candidates rather than applying a guessed damage value. Concrete item-stack decoding, input packet binding, shape-specific production hit volumes, damage policy, and visual presentation remain later production bindings.
+
+Native `player_weapon_authority` GameTest coverage exercises TELEGRAPH/ACTIVE/RECOVERY authority, per-execution target deduplication, recovery-only module authorization, loadout-swap invalidation, new-family session replacement, and lifecycle cleanup using fixture-only definitions.
 
 ## Production gate
 
-The schema, bounded role comparison, and reusable server execution capability are complete. The remaining order is:
+The schema, bounded role comparison, reusable server execution capability, and Minecraft-facing authority adapter are complete. The remaining order is:
 
 1. author the smallest production `attack_pattern` move set that expresses the two locked roles without claiming final field balance;
 2. author exactly two production `weapon_family` definitions and one `weapon_module` line using the existing schema;
-3. assemble those production definitions through `CombatRuntimeCatalog.playerWeaponController(...)` rather than a second execution path;
-4. connect Minecraft server-owned player equipment/input state and authoritative hit-volume handling to that controller;
-5. add native GameTest coverage for the real player adapter, including illegal-family moves, ACTIVE-only hit authority, recovery completion, and `recovery_pivot` timing;
-6. tune damage/range/cadence only from real field play;
-7. approve final art/animation/VFX/sound only through the separate presentation evidence gate.
+3. bind real server-owned item/equipment state to `MinecraftPlayerWeaponCombatAdapter.LoadoutResolver` and real move input intents to `beginMove(...)` rather than constructing another execution path;
+4. bind approved shape-specific hit volumes and eventual damage policy to the adapter only after field evidence exists;
+5. tune damage/range/cadence only from real field play;
+6. approve final art/animation/VFX/sound only through the separate presentation evidence gate.
 
 Do not duplicate boss presentation plumbing, infer combat values from third-party animation clips, promote fixture IDs to production content, add a third family to evade the two-role contrast requirement, or create a second attack timing system.
