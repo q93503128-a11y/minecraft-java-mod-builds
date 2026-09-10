@@ -1,5 +1,6 @@
 package kr.moonseungjun.turnboundre.client.ui;
 
+import kr.moonseungjun.turnboundre.client.BattleClientState;
 import kr.moonseungjun.turnboundre.client.ExpeditionJournalClientState;
 import kr.moonseungjun.turnboundre.client.ProgressionClientState;
 import kr.moonseungjun.turnboundre.network.ExpeditionNetworkPayloads;
@@ -17,6 +18,7 @@ public final class ExpeditionJournalScreen extends Screen {
     private ExpeditionNetworkPayloads.JournalView view;
     private long seenGeneration = -1L;
     private String feedback = "";
+    private boolean startPending;
 
     public ExpeditionJournalScreen() {
         this(null);
@@ -36,6 +38,10 @@ public final class ExpeditionJournalScreen extends Screen {
     @Override
     public void tick() {
         super.tick();
+        if (ExpeditionMenuPolicy.shouldEnterBattle(startPending, BattleClientState.latestSnapshot().isPresent())) {
+            this.minecraft.gui.setScreen(null);
+            return;
+        }
         if (ExpeditionJournalClientState.generation() != seenGeneration) syncState();
     }
 
@@ -65,7 +71,7 @@ public final class ExpeditionJournalScreen extends Screen {
             for (int i = 0; i < view.encounters().size(); i++) {
                 ExpeditionNetworkPayloads.EncounterView encounter = view.encounters().get(i);
                 UiLayoutMetrics.Rect row = encounterRow(i);
-                boolean enabled = !view.party().isEmpty();
+                boolean enabled = ExpeditionMenuPolicy.canSelectEncounter(view, startPending);
                 UiVisualLanguage.FrameState state = !enabled
                         ? UiVisualLanguage.FrameState.DISABLED
                         : TurnboundMenuScreen.contains(row, mouseX, mouseY)
@@ -80,15 +86,19 @@ public final class ExpeditionJournalScreen extends Screen {
         }
 
         UiLayoutMetrics.Rect party = partyButton();
-        UiVisualLanguage.FrameState partyState = TurnboundMenuScreen.contains(party, mouseX, mouseY)
-                ? UiVisualLanguage.FrameState.FOCUS : UiVisualLanguage.FrameState.IDLE;
+        UiVisualLanguage.FrameState partyState = startPending
+                ? UiVisualLanguage.FrameState.DISABLED
+                : TurnboundMenuScreen.contains(party, mouseX, mouseY)
+                        ? UiVisualLanguage.FrameState.FOCUS : UiVisualLanguage.FrameState.IDLE;
         UiVisualLanguage.frame(graphics, party.x(), party.y(), party.width(), party.height(), partyState);
         centered(graphics, party, Component.translatable("screen.turnbound_re.expedition.party"),
                 UiVisualLanguage.textColor(partyState));
 
         UiLayoutMetrics.Rect back = backButton();
-        UiVisualLanguage.FrameState backState = TurnboundMenuScreen.contains(back, mouseX, mouseY)
-                ? UiVisualLanguage.FrameState.FOCUS : UiVisualLanguage.FrameState.IDLE;
+        UiVisualLanguage.FrameState backState = startPending
+                ? UiVisualLanguage.FrameState.DISABLED
+                : TurnboundMenuScreen.contains(back, mouseX, mouseY)
+                        ? UiVisualLanguage.FrameState.FOCUS : UiVisualLanguage.FrameState.IDLE;
         UiVisualLanguage.frame(graphics, back.x(), back.y(), back.width(), back.height(), backState);
         centered(graphics, back, Component.translatable(parent == null ? "gui.done" : "gui.back"),
                 UiVisualLanguage.textColor(backState));
@@ -109,10 +119,11 @@ public final class ExpeditionJournalScreen extends Screen {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (startPending) return true;
         if (event.button() == 0) {
             int mouseX = (int) Math.floor(event.x());
             int mouseY = (int) Math.floor(event.y());
-            if (view != null && !view.party().isEmpty()) {
+            if (ExpeditionMenuPolicy.canSelectEncounter(view, false)) {
                 for (int i = 0; i < view.encounters().size(); i++) {
                     if (TurnboundMenuScreen.contains(encounterRow(i), mouseX, mouseY)) {
                         start(view.encounters().get(i).id());
@@ -136,12 +147,14 @@ public final class ExpeditionJournalScreen extends Screen {
         seenGeneration = ExpeditionJournalClientState.generation();
         view = ExpeditionJournalClientState.view().orElse(null);
         feedback = view == null ? "" : feedbackFor(view.resultCode());
+        if (view != null && view.resultCode() != null && !view.resultCode().isBlank()) startPending = false;
     }
 
     private void start(String encounterId) {
-        if (view == null || view.party().isEmpty()) return;
+        if (!ExpeditionMenuPolicy.canSelectEncounter(view, startPending)) return;
+        startPending = true;
+        feedback = "";
         ClientPacketDistributor.sendToServer(ExpeditionNetworkPayloads.StartEncounterC2S.of(encounterId));
-        this.minecraft.gui.setScreen(null);
     }
 
     private void openParty() {
