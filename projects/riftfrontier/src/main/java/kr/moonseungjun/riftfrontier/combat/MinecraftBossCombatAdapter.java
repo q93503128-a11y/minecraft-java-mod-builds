@@ -69,10 +69,44 @@ public final class MinecraftBossCombatAdapter {
     public boolean attackExecuting() { return controller.attackExecuting(); }
     public long completedAttackCount() { return controller.completedAttackCount(); }
 
+    /**
+     * Low-level timeline-only begin retained for API-free contract tests. Minecraft-facing callers
+     * should prefer {@link #beginNextAttack(ServerLevel, LivingEntity, long)} so ownership is fixed
+     * before the first authoritative tick can occur.
+     */
     public AttackExecution.Snapshot beginNextAttack(long gameTick) {
         AttackExecution.Snapshot selected = controller.beginNextAttack(gameTick);
         try {
             AttackExecution.Snapshot damage = damageAdapter.begin(catalog.requireAttackPattern(selected.patternId()), gameTick);
+            requireSameSnapshot(selected, damage);
+            return selected;
+        } catch (RuntimeException failure) {
+            controller.cancelAttack();
+            damageAdapter.cancel();
+            throw failure;
+        }
+    }
+
+    /**
+     * Begins a boss attack and immediately binds the Minecraft damage execution to one eligible
+     * authoritative server actor and dimension. Failed admission leaves neither lifecycle clock alive.
+     */
+    public AttackExecution.Snapshot beginNextAttack(ServerLevel level, LivingEntity boss, long gameTick) {
+        Objects.requireNonNull(level, "level");
+        Objects.requireNonNull(boss, "boss");
+        if (!MinecraftCombatAuthority.isEligibleServerActor(level, boss)) {
+            cancelAttack();
+            throw new IllegalStateException("Boss is not eligible to begin authoritative Minecraft combat");
+        }
+
+        AttackExecution.Snapshot selected = controller.beginNextAttack(gameTick);
+        try {
+            AttackExecution.Snapshot damage = damageAdapter.begin(
+                level,
+                boss,
+                catalog.requireAttackPattern(selected.patternId()),
+                gameTick
+            );
             requireSameSnapshot(selected, damage);
             return selected;
         } catch (RuntimeException failure) {
@@ -164,7 +198,15 @@ public final class MinecraftBossCombatAdapter {
         public long completedAttackCount() { return delegate.completedAttackCount(); }
 
         public AttackExecution.Snapshot beginNextAttack(long gameTick) {
-            AttackExecution.Snapshot snapshot = delegate.beginNextAttack(gameTick);
+            return validateSelectedAttack(delegate.beginNextAttack(gameTick));
+        }
+
+        /** Minecraft-facing begin that binds the validated boss attack to its server actor immediately. */
+        public AttackExecution.Snapshot beginNextAttack(ServerLevel level, LivingEntity boss, long gameTick) {
+            return validateSelectedAttack(delegate.beginNextAttack(level, boss, gameTick));
+        }
+
+        private AttackExecution.Snapshot validateSelectedAttack(AttackExecution.Snapshot snapshot) {
             if (!semantics.candidateAttacks(delegate.phase()).contains(snapshot.patternId())) {
                 delegate.cancelAttack();
                 throw new IllegalStateException("selected attack escaped validated semantic phase pool: " + snapshot.patternId());

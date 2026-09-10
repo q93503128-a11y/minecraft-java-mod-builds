@@ -126,17 +126,36 @@ public final class CombatAuthorityGameTests {
         ContentRegistry bossRegistry = new ContentRegistry();
         bossRegistry.register(pattern);
         bossRegistry.register(new CoreDefinition.BossProfile(bossId, 1, Set.of(attackId), "keep_escape_lane"));
+        CombatRuntimeCatalog bossCatalog = new CombatRuntimeCatalog(bossRegistry);
+
+        Zombie deadBossAtBegin = spawn(helper, origin, 4.5D);
+        deadBossAtBegin.setHealth(0.0F);
+        MinecraftBossCombatAdapter rejectedBossBegin = new MinecraftBossCombatAdapter(
+            bossCatalog,
+            bossId,
+            BossAttackSelectionPolicy.deterministicRoundRobin(),
+            (serverLevel, actor, snapshot) -> List.of(),
+            2.0F
+        );
+        try {
+            rejectedBossBegin.beginNextAttack(level, deadBossAtBegin, start + 15L);
+            helper.assertTrue(false, "Dead boss must not create an authoritative attack lifecycle at begin time");
+        } catch (IllegalStateException expected) {
+            helper.assertTrue(!rejectedBossBegin.attackExecuting(),
+                "Rejected boss begin must leave both lifecycle and Minecraft damage clocks closed");
+        }
+
         Zombie boss = spawn(helper, origin, 5.0D);
         Zombie bossTarget = spawn(helper, origin, 6.0D);
         float bossTargetHealth = bossTarget.getHealth();
         MinecraftBossCombatAdapter bossAdapter = new MinecraftBossCombatAdapter(
-            new CombatRuntimeCatalog(bossRegistry),
+            bossCatalog,
             bossId,
             BossAttackSelectionPolicy.deterministicRoundRobin(),
             (serverLevel, actor, snapshot) -> List.of(bossTarget),
             2.0F
         );
-        bossAdapter.beginNextAttack(start + 20L);
+        bossAdapter.beginNextAttack(level, boss, start + 20L);
         boss.setHealth(0.0F);
         var invalidBossTick = bossAdapter.tick(level, boss, start + 21L);
         helper.assertTrue(!bossAdapter.attackExecuting() && invalidBossTick.presentation().isEmpty(),
@@ -149,15 +168,15 @@ public final class CombatAuthorityGameTests {
         Zombie bossReplacementTarget = spawn(helper, origin, 7.5D);
         float bossReplacementHealth = bossReplacementTarget.getHealth();
         MinecraftBossCombatAdapter identityBossAdapter = new MinecraftBossCombatAdapter(
-            new CombatRuntimeCatalog(bossRegistry),
+            bossCatalog,
             bossId,
             BossAttackSelectionPolicy.deterministicRoundRobin(),
             (serverLevel, actor, snapshot) -> actor == bossReplacement ? List.of(bossReplacementTarget) : List.of(),
             2.0F
         );
-        identityBossAdapter.beginNextAttack(start + 25L);
+        identityBossAdapter.beginNextAttack(level, bossOwner, start + 25L);
         helper.assertTrue(identityBossAdapter.tick(level, bossOwner, start + 25L).attack().phase() == AttackTimeline.Phase.TELEGRAPH,
-            "Boss damage execution must bind to the first authoritative boss entity that advances it");
+            "Boss execution must already belong to its authoritative actor at the authored TELEGRAPH start");
         try {
             identityBossAdapter.tick(level, bossReplacement, start + 26L);
             helper.assertTrue(false, "Boss replacement must not inherit another entity's ACTIVE attack execution");
