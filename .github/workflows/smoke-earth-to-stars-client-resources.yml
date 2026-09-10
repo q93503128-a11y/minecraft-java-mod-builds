@@ -1,6 +1,7 @@
 name: Smoke earth-to-stars client resources
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
@@ -48,7 +49,7 @@ jobs:
             exit "$status"
           fi
 
-          grep -q 'EARTH TO STARS 0.1.0-alpha.13 live-acceptance rescue systems loaded' build/logs/client-resource-smoke.log
+          grep -q 'EARTH TO STARS 0.1.0-alpha.14 live-acceptance rescue systems loaded' build/logs/client-resource-smoke.log
           grep -q 'NeoForge mod loading, version 26.2.0.76, for MC 26.2' build/logs/client-resource-smoke.log
 
           if grep -Eqi 'Failed to load model earth_to_stars|IdentifierException: Non \[a-z0-9/\._-\] character|Cannot invoke "String\.charAt\(int\)" because "texture" is null|ObjGeometry.*(ERROR|Exception)|Unable to load model.*earth_to_stars|Missing texture references in model earth_to_stars|Missing texture.*earth_to_stars' build/logs/client-resource-smoke.log; then
@@ -56,12 +57,12 @@ jobs:
             exit 1
           fi
 
-          echo 'EARTH_TO_STARS_ALPHA13_CLIENT_RESOURCE_SMOKE_PASS'
+          echo 'EARTH_TO_STARS_ALPHA14_CLIENT_RESOURCE_SMOKE_PASS'
       - name: Upload client smoke log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: earth-to-stars-alpha13-client-resource-smoke-log
+          name: earth-to-stars-alpha14-client-resource-smoke-log
           path: projects/earth-to-stars/build/logs/client-resource-smoke.log
           if-no-files-found: ignore
           retention-days: 7
