@@ -3,9 +3,12 @@ package kr.moonseungjun.riftfrontier.gametest;
 import kr.moonseungjun.riftfrontier.Riftfrontier;
 import kr.moonseungjun.riftfrontier.combat.AttackTimeline;
 import kr.moonseungjun.riftfrontier.combat.BossAttackSelectionPolicy;
+import kr.moonseungjun.riftfrontier.combat.BossCombatSemanticProfile;
 import kr.moonseungjun.riftfrontier.combat.CombatRuntimeCatalog;
 import kr.moonseungjun.riftfrontier.combat.MinecraftAttackAdapter;
 import kr.moonseungjun.riftfrontier.combat.MinecraftBossCombatAdapter;
+import kr.moonseungjun.riftfrontier.combat.ValidatedBossCombatSemantics;
+import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationProfile;
 import kr.moonseungjun.riftfrontier.content.ContentId;
 import kr.moonseungjun.riftfrontier.content.ContentRegistry;
 import kr.moonseungjun.riftfrontier.content.CoreDefinition;
@@ -16,6 +19,10 @@ import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -29,6 +36,7 @@ public final class CombatGameTests {
     static {
         TEST_FUNCTIONS.register("attack_hit_window", () -> CombatGameTests::attackHitWindow);
         TEST_FUNCTIONS.register("boss_phase_damage_window", () -> CombatGameTests::bossPhaseDamageWindow);
+        TEST_FUNCTIONS.register("validated_boss_semantic_runtime", () -> CombatGameTests::validatedBossSemanticRuntime);
     }
 
     private CombatGameTests() {}
@@ -184,5 +192,100 @@ public final class CombatGameTests {
         helper.assertTrue(target.getHealth() == afterPhaseTwoHit, "Boss recovery must not damage the target");
 
         helper.succeed();
+    }
+
+    private static void validatedBossSemanticRuntime(GameTestHelper helper) {
+        var level = helper.getLevel();
+        BlockPos bossPos = helper.absolutePos(new BlockPos(4, 3, 4));
+        Zombie bossEntity = new Zombie(level);
+        bossEntity.setNoAi(true);
+        bossEntity.snapTo(bossPos.getX() + 0.5D, bossPos.getY(), bossPos.getZ() + 0.5D, 0.0F, 0.0F);
+        helper.assertTrue(level.addFreshEntity(bossEntity), "Validated semantic boss fixture must enter the GameTest world");
+
+        ContentId boss = ContentId.rift("gametest/validated_semantic_boss");
+        ContentId phaseOne = ContentId.rift("gametest/validated_phase_one");
+        ContentId phaseTwo = ContentId.rift("gametest/validated_phase_two");
+        ContentRegistry registry = new ContentRegistry();
+        registry.register(new CoreDefinition.AttackPattern(
+            phaseOne, "arc_melee", 2, 1, 1, Set.of("step_out"), "validated_phase_one_cue"
+        ));
+        registry.register(new CoreDefinition.AttackPattern(
+            phaseTwo, "line_charge", 2, 1, 1, Set.of("sidestep"), "validated_phase_two_cue"
+        ));
+        registry.register(new CoreDefinition.BossProfile(boss, 2, Set.of(phaseOne, phaseTwo), "keep_escape_lane"));
+
+        Map<BossPresentationProfile.BindingKey, BossPresentationProfile.AssetBinding> bindings = new LinkedHashMap<>();
+        addPresentationBindings(bindings, "validated_phase_one_cue", "arc_melee", "validated_phase_one");
+        addPresentationBindings(bindings, "validated_phase_two_cue", "line_charge", "validated_phase_two");
+        BossPresentationProfile presentation = new BossPresentationProfile(
+            ContentId.rift("gametest/validated_semantic_presentation"),
+            boss,
+            "default",
+            ContentId.rift("gametest/validated_semantic_model"),
+            bindings
+        );
+        CombatRuntimeCatalog catalog = new CombatRuntimeCatalog(registry);
+        ValidatedBossCombatSemantics semantics = ValidatedBossCombatSemantics.validate(
+            catalog,
+            new BossCombatSemanticProfile(boss, Map.of(1, Set.of(phaseOne), 2, Set.of(phaseTwo))),
+            presentation
+        );
+        MinecraftBossCombatAdapter.ValidatedRuntime runtime = MinecraftBossCombatAdapter.validated(
+            catalog,
+            semantics,
+            new MinecraftAttackAdapter.AabbHitVolume(1.0D, 1.0D),
+            1.0F
+        );
+
+        long start = level.getGameTime();
+        helper.assertTrue(runtime.semanticCapability() == semantics,
+            "Validated runtime must retain the exact semantic capability instance");
+        helper.assertTrue(runtime.bossProfile().equals(boss), "Validated runtime boss id must derive from semantics");
+        helper.assertTrue(runtime.beginNextAttack(start).patternId().equals(phaseOne),
+            "Phase 1 selection must derive from the validated semantic phase pool");
+
+        MinecraftBossCombatAdapter.ValidatedTickResult phaseOneTick = runtime.tick(level, bossEntity, start);
+        phaseOneTick.requireSemanticCapability(semantics);
+        helper.assertTrue(phaseOneTick.presentationState().patternId().equals(phaseOne.toString()),
+            "Outgoing semantic state must retain the authoritative selected pattern id");
+        helper.assertTrue(phaseOneTick.presentationBinding().orElseThrow().binding().animationKey()
+                .equals(ContentId.rift("gametest/validated_phase_one_anim_telegraph")),
+            "Outgoing semantic state must be re-resolved through the same validated presentation capability");
+
+        var transition = runtime.transitionToPhase(2);
+        helper.assertTrue(transition.newPhase() == 2, "Validated runtime must preserve server-owned phase transition");
+        long phaseTwoStart = start + 10L;
+        helper.assertTrue(runtime.beginNextAttack(phaseTwoStart).patternId().equals(phaseTwo),
+            "Phase 2 selection must not fall back to the full boss attack pool");
+        MinecraftBossCombatAdapter.ValidatedTickResult phaseTwoTick = runtime.tick(level, bossEntity, phaseTwoStart);
+        helper.assertTrue(phaseTwoTick.presentationState().patternId().equals(phaseTwo.toString()),
+            "Phase 2 outgoing presentation must remain bound to the phase 2 authoritative attack");
+        helper.assertTrue(phaseTwoTick.semanticCapability() == semantics,
+            "Every validated tick must retain the original semantic capability identity");
+
+        helper.succeed();
+    }
+
+    private static void addPresentationBindings(
+        Map<BossPresentationProfile.BindingKey, BossPresentationProfile.AssetBinding> bindings,
+        String cue,
+        String delivery,
+        String prefix
+    ) {
+        for (AttackTimeline.Phase phase : List.of(
+            AttackTimeline.Phase.TELEGRAPH,
+            AttackTimeline.Phase.ACTIVE,
+            AttackTimeline.Phase.RECOVERY
+        )) {
+            String suffix = phase.name().toLowerCase(Locale.ROOT);
+            bindings.put(
+                new BossPresentationProfile.BindingKey(cue, delivery, phase),
+                new BossPresentationProfile.AssetBinding(
+                    ContentId.rift("gametest/" + prefix + "_anim_" + suffix),
+                    ContentId.rift("gametest/" + prefix + "_vfx_" + suffix),
+                    ContentId.rift("gametest/" + prefix + "_sound_" + suffix)
+                )
+            );
+        }
     }
 }
