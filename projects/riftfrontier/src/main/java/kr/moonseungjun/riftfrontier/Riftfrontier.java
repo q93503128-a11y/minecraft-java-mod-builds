@@ -10,6 +10,7 @@ import kr.moonseungjun.riftfrontier.expedition.ExpeditionGameplayCommand;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionGameplayEvents;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionRestartReconciler;
 import kr.moonseungjun.riftfrontier.gametest.CombatGameTests;
+import kr.moonseungjun.riftfrontier.gametest.PlayerWeaponGameTests;
 import kr.moonseungjun.riftfrontier.gametest.RiftfrontierGameTests;
 import kr.moonseungjun.riftfrontier.network.RiftfrontierNetworking;
 import kr.moonseungjun.riftfrontier.persistence.RiftfrontierWorldData;
@@ -42,6 +43,7 @@ public final class Riftfrontier {
         modEventBus.addListener(RiftfrontierEntityTypes::createAttributes);
         RiftfrontierGameTests.register(modEventBus);
         CombatGameTests.register(modEventBus);
+        PlayerWeaponGameTests.register(modEventBus);
         modEventBus.addListener(RiftfrontierNetworking::registerPayloads);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::addServerReloadListeners);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::registerCommands);
