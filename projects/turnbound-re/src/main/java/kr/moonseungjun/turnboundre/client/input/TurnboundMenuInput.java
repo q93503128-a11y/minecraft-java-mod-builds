@@ -30,21 +30,17 @@ public final class TurnboundMenuInput {
         }
     }
 
-    @EventBusSubscriber(modid = TurnboundRe.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
-    public static final class ModEvents {
-        private ModEvents() {}
-
-        @SubscribeEvent
-        public static void registerKeys(RegisterKeyMappingsEvent event) {
-            KeyMapping.Category category = new KeyMapping.Category(
-                    Identifier.fromNamespaceAndPath(TurnboundRe.MOD_ID, "menu"));
-            event.registerCategory(category);
-            openMenu = new KeyMapping(
-                    "key.turnbound_re.open_menu",
-                    InputConstants.Type.KEYSYM,
-                    GLFW.GLFW_KEY_M,
-                    category);
-            event.register(openMenu);
-        }
+    /** RegisterKeyMappingsEvent implements the mod-bus marker and is routed automatically by current FML. */
+    @SubscribeEvent
+    public static void registerKeys(RegisterKeyMappingsEvent event) {
+        KeyMapping.Category category = new KeyMapping.Category(
+                Identifier.fromNamespaceAndPath(TurnboundRe.MOD_ID, "menu"));
+        event.registerCategory(category);
+        openMenu = new KeyMapping(
+                "key.turnbound_re.open_menu",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_M,
+                category);
+        event.register(openMenu);
     }
 }
