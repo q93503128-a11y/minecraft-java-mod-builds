@@ -4,59 +4,63 @@ This file is a recovery aid for scheduled development sessions. Current GitHub `
 
 ## Last recovered baseline
 
-- Remote `main` verified at run start: `d91acbdf0ba111f69946c7bedfa1e5fcc3b39dbc`.
-- Previous fully validated implementation/test HEAD: `c89eec410711d312c862804ec2e64c3f1ce56f8b` (`Build Riftfrontier` run `34439967460`, FULL SUCCESS).
-- Current batch implementation/docs HEAD before this handoff commit: `2a7de569612c063b03a107401926c2e599e73bb4`.
-- Production Region 01 still has no approved final boss material treatment and no legitimate production numeric `attack_pattern` / final `boss_profile` discovered in the recovered canonical/handoff state.
+- Remote `main` verified at run start: `d2c35cd9c1f14582459ff1e3dc7abd2644132d78`.
+- Prior handoff CI run `34443381052` was recovered as FAILED at native GameTest, not left as pending: `riftfrontiertest.region_01_encounter_runtime` assumed the level entity index already exposed a freshly spawned proxy on tick 0.
+- Fully validated implementation/test HEAD completed in this batch: `69f4d2c678d0745a4c4bfa9905213cff1494eb33` (`Build Riftfrontier` run `34448910763`, FULL SUCCESS).
+- Documentation HEAD immediately before this handoff commit: `e4e8c971ce289c681d5ee4392ee04191dbc70770`.
+- Production Region 01 still has no newly discovered approved final boss material treatment or legitimate production boss content in the recovered production content pack.
 
 ## Completed in this batch
 
-M3 player weapon reference/role lock:
+M3 player weapon server execution capability + GameTest race repair:
 
-- Re-read remote `main`, project canon, roadmap, M3 combat reference dossier, player combat kernel, and this handoff before changing anything.
-- Performed bounded external reference research using official Capcom Monster Hunter manuals, official Fatshark Darktide weapon/update notes, and official Supergiant Hades II combat/update notes.
-- Added `docs/M3_PLAYER_WEAPON_REFERENCE_DOSSIER.md`.
-- Locked exactly two first-slice semantic role contracts, without final item names or stable production IDs:
-  - `mobile_pressure`: short-reach close pressure, repeated repositioning, lower ordinary-entry commitment, punishable committed reward/finisher.
-  - `reach_commitment`: deliberate spacing, longer practical melee reach, constrained decisive commitment, readable anticipation and punishable recovery.
-- Locked one first-slice module-composition direction:
-  - socket semantic `technique`;
-  - behaviour semantic `recovery_pivot`;
-  - changes an eligible recovery transition only; it may not create a parallel hit clock, skip required recovery, grant generic invulnerability, or silently alter authoritative hit windows.
-- Updated `docs/M3_PLAYER_COMBAT_KERNEL.md` so the reference gate is marked complete and the next engineering order is explicit.
-- No production `attack_pattern`, `weapon_family`, or `weapon_module` JSON was authored yet. No damage/range/cooldown/hitbox/stamina/cadence/art/animation/VFX/sound value was invented.
+- Added `PlayerWeaponRuntimeProfile` as an immutable fail-closed assembly of one published `WeaponFamily`, its exact resolved `AttackPattern` move set, and an optional compatible `WeaponModule`.
+- Runtime assembly rechecks family/module compatibility and socket ownership even after graph validation; resolver ID substitution and missing family moves fail closed.
+- Extended `CombatRuntimeCatalog` with typed weapon-family/module resolution and `playerWeaponProfile(...)` / `playerWeaponController(...)` construction.
+- Added `PlayerWeaponCombatController`; only family-authored moves can start, overlapping moves are rejected, and timing remains owned exclusively by `AttackStateMachine` / `AttackExecution` / `AttackTimeline`.
+- `recovery_pivot` is exposed only as a server authorization while that same authoritative clock is in `RECOVERY`; it cannot open during TELEGRAPH/ACTIVE/COMPLETE and does not shorten recovery or create a second hit clock.
+- Added JUnit coverage for exact move-set assembly, incompatible modules, missing move resolution, illegal-family moves, overlap rejection, and recovery-only pivot authorization.
+- Repaired the existing Region 01 GameTest without weakening lure/cleanup assertions: only the asynchronous Minecraft level-entity indexing boundary now waits via `succeedWhen`; the authoritative tracker assertions remain immediate and strict.
+- Updated `docs/M3_PLAYER_COMBAT_KERNEL.md` to mark the reusable API-free server execution capability complete and keep production data/Minecraft adapter work separate.
+- No production player attack timings, damage/range/resource values, hitboxes, item IDs, art, animation, VFX, or sound were invented.
 
 ## Changed systems/files
 
-- `docs/M3_PLAYER_WEAPON_REFERENCE_DOSSIER.md` — new bounded reference/design lock.
-- `docs/M3_PLAYER_COMBAT_KERNEL.md` — production gate advanced from reference comparison to authored data/runtime boundary.
-- `docs/AUTOMATION_HANDOFF.md` — this recovery record.
+- `src/main/java/kr/moonseungjun/riftfrontier/combat/PlayerWeaponRuntimeProfile.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/combat/PlayerWeaponCombatController.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/combat/CombatRuntimeCatalog.java`
+- `src/test/java/kr/moonseungjun/riftfrontier/combat/PlayerWeaponCombatControllerTest.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/gametest/RiftfrontierGameTests.java`
+- `docs/M3_PLAYER_COMBAT_KERNEL.md`
+- `docs/AUTOMATION_HANDOFF.md`
 
 ## Verification
 
-- Source/reference inspection: PASS. Dossier sources are official Capcom/Fatshark/Supergiant pages and are recorded as URLs in the dossier.
-- Remote-main conflict check before writes: PASS; `main` remained `d91acbdf0ba111f69946c7bedfa1e5fcc3b39dbc` immediately before the first write.
-- `Build Riftfrontier` run `34443381052` for HEAD `2a7de569612c063b03a107401926c2e599e73bb4`: QUEUED at last check. Do **not** report this run as successful until all gates finish.
-- Local clone/build: NOT RUN in this automation environment.
-- Production player weapon execution: NOT AUTHORED / NOT TESTED.
-- Player damage/range/cadence/hitboxes, resource costs, final art, animation/VFX/sound, and human field-play: NOT AUTHORED / NOT TESTED.
+- Recovered prior run `34443381052`: FAILED at native GameTest with `Encounter must expose at least one live proxy for lure-boundary regression coverage on tick 0`; Java/toolchain, asset intake, JUnit and clean build had passed before that failure.
+- `Build Riftfrontier` run `34448910763` for HEAD `69f4d2c678d0745a4c4bfa9905213cff1494eb33`: FULL SUCCESS.
+- PASS: Java 25/toolchain, asset-intake tests, JUnit + clean build, required native GameTest, dedicated-server smoke, Xvfb graphical client smoke, executable-JAR inspection, build report, deliverable upload, and logs/report upload.
+- Local clone/build: NOT RUN successfully in this automation environment; GitHub Actions is the validation source.
+- Production `attack_pattern` / exactly two `weapon_family` / one `weapon_module`: NOT AUTHORED / NOT TESTED.
+- Minecraft player equipment/input adapter, authoritative player hit-volume attachment, save/network integration, and production native GameTest for the player adapter: NOT AUTHORED / NOT TESTED.
+- Player field balance, damage/range/resource costs, final art, animation/VFX/sound, and human field-play: NOT AUTHORED / NOT TESTED.
 - Production final boss texture/material/`RenderType`: NOT APPROVED / NOT AUTHORED.
-- Production Region 01 numeric boss `attack_pattern`/final `boss_profile` and actual boss encounter attachment: NOT AUTHORED / NOT TESTED.
+- Production Region 01 final boss `attack_pattern`/`boss_profile` and actual boss encounter attachment: NOT AUTHORED / NOT TESTED.
 
 ## Do not repeat or revert
 
 - Boss source/asset provenance, reviewed animation preparation, semantic-animation/material/geometry publication provenance, UUID-qualified presentation/network ordering/lifecycle/cache/render work are DONE. Do not recreate or weaken those gates.
-- `weapon_family` / `weapon_module` schema, strict decoder, graph validation, and regression tests are DONE. Do not replace them with weapon-specific subclass duplication or a second timing system.
-- The player-weapon reference comparison and role-lock stage is now DONE. Do not reopen the first-slice family count or add a third family unless canonical direction is explicitly changed.
+- `weapon_family` / `weapon_module` schema, decoder, graph validation, reference dossier, and the first-slice role lock are DONE.
+- The reusable `PlayerWeaponRuntimeProfile` + `PlayerWeaponCombatController` server execution capability is DONE. Do not add a parallel player attack clock or bypass it with weapon-specific subclasses.
 - `AttackPattern` remains the only authoritative `telegraph -> ACTIVE -> recovery` cadence primitive for player and boss authored moves.
-- The first two player role contracts are `mobile_pressure` and `reach_commitment`; the first module direction is `technique` / `recovery_pivot`.
+- `recovery_pivot` may only authorize an eligible recovery transition; do not turn it into timing bypass, generic invulnerability, ACTIVE extension, or an independent hit window.
+- The Region 01 GameTest must continue to validate luring outside the technical cell and terminal cleanup; do not restore the tick-0 entity-index assumption or delete the regression.
 - Never promote fixture IDs/timings, copy third-party moves/assets, infer balance from animation clips, or invent final player/boss art or field-balance values without evidence.
 
 ## Exact next start point
 
-1. Re-check current remote `main`, canon, roadmap, `M3_PLAYER_COMBAT_KERNEL.md`, `M3_PLAYER_WEAPON_REFERENCE_DOSSIER.md`, and this handoff.
-2. Check `Build Riftfrontier` run `34443381052`; if it failed, fix the first real failure without weakening tests or requirements. If still pending, do not call it successful.
-3. Re-check whether approved final Region 01 boss material or legitimate production boss data appeared. If so, use the existing completed boss gates rather than replacing them.
-4. If boss inputs remain absent, author the **smallest production `attack_pattern` set** needed to express exactly the locked `mobile_pressure` and `reach_commitment` roles. Timing fields must be defensible semantic placeholders only if the existing schema requires positive windows; do not claim them as final balance and keep them explicitly tuneable/data-driven.
-5. Author exactly two production `weapon_family` definitions with the shared `technique` socket and exactly one production `weapon_module` line for `recovery_pivot`; extend validation/tests only for real ambiguities discovered by those definitions.
-6. Then connect the authored definitions to a server-authoritative Minecraft player-combat execution boundary. Do not tune final damage/range/cadence or approve art before executable field-play/presentation evidence exists.
+1. Re-check current remote `main`, canon, roadmap, `M3_PLAYER_COMBAT_KERNEL.md`, `M3_PLAYER_WEAPON_REFERENCE_DOSSIER.md`, and this handoff; confirm any CI triggered by this documentation-only tail commit before calling it successful.
+2. Re-check whether approved final Region 01 boss material or legitimate production boss data appeared. If so, use the existing completed boss gates rather than replacing them.
+3. If boss inputs remain absent, author the smallest production `attack_pattern` set that expresses exactly the locked `mobile_pressure` and `reach_commitment` roles. Keep all timing windows explicitly data-driven and provisional; do not claim field balance without play evidence.
+4. Author exactly two production `weapon_family` definitions sharing the `technique` socket and exactly one production `weapon_module` for `recovery_pivot`; run the existing schema/graph validation and add tests only for real ambiguities discovered.
+5. Assemble those production definitions through `CombatRuntimeCatalog.playerWeaponController(...)`, then implement the Minecraft server-owned player equipment/input + authoritative hit-volume adapter. Do not build a second execution path.
+6. Add native GameTest coverage for the actual player adapter before any damage/range/cadence tuning or presentation approval.
