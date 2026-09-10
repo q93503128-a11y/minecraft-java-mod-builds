@@ -1,69 +1,61 @@
 # Riftfrontier Automation Handoff
 
-This file is a recovery aid for scheduled development sessions. Current GitHub `main` and canonical design documents remain authoritative.
+Recovery aid only. Current GitHub `main` plus canonical project/design documents remain authoritative.
 
 ## Last recovered baseline
 
-- Remote `main` verified at this run start: `25d09aba21dc0997f97bec15b560a66a461f1b6b`.
-- Push preflight observed an unrelated Turnbound descendant at `742c6d3514db41bf4fb96809b2183faf2b992b16`; Riftfrontier paths did not conflict, so this batch was rebuilt on that latest tree before the non-force main update.
-- A later unrelated Turnbound descendant `7a9c2512608b8945bdb243808f32b053bd1cafcd` has implementation HEAD `3eddf08cfa58410a63a62b0e47ae369bb5b48ca2` as its direct parent, preserving the Riftfrontier batch in main ancestry.
-- Production Region 01 was rechecked from the current production pack/runtime publication: no approved final boss material treatment, production boss presentation/profile or boss asset manifest is published; runtime reports `bossPresentations=0` and `bossAssetManifest=false`.
+- Remote `main` verified at run start: `278250b75c36d463e3f8653a13445e9ca4c1df22`.
+- That baseline already contained the completed M3 server-owned ItemStack loadout boundary, move-id-only serverbound intent, generation-aware player weapon runtime, two production weapon-family graph, and eight required native GameTests.
+- Latest baseline Riftfrontier CI was green before new work.
+- Region 01 was rechecked: no approved final boss material treatment, legitimate production boss profile/presentation, or boss asset manifest appeared.
+- No approved concrete production player ItemStack identity/provisioning path or client control mapping appeared; do not invent either.
 
 ## Completed in this batch
 
-M3 server-owned player equipment + authenticated move-intent authority:
+M3 player-weapon world/lifecycle session integrity:
 
-- Added persistent typed ItemStack data component `riftfrontier:player_weapon_loadout` carrying stable family/module content IDs only. It contains no damage, range, hit, timing or target authority.
-- Added `PlayerWeaponItemStackLoadoutResolver` for the server-owned main hand. It fail-closes to exactly the locked production families `mobile_pressure` / `reach_commitment` and optional `recovery_pivot`, then reassembles through the current `CombatRuntimeCatalog` so ItemStack metadata cannot become a second weapon registry.
-- Added `PlayerWeaponMoveIntentPayload`. Its serverbound wire contract carries only an authored `moveId`; sender identity comes from the authenticated NeoForge payload context and server game time/loadout are resolved on the server.
-- Added generation-aware `PlayerWeaponServerRuntime` that routes accepted intent into the existing `MinecraftPlayerWeaponCombatAdapter`, advances active per-player sessions from server `PlayerTickEvent.Post`, and clears UUID state on logout/clone lifecycle boundaries.
-- Expanded native GameTest coverage. `player_weapon_input_authority` verifies wrong-family/spoofed intent rejection, valid current-family intent, server-observed swap invalidation, fresh family replacement, unequip rejection and cleanup. `player_weapon_authority` now also proves two actors own isolated sessions.
-- Added required GameTest instances for both player-weapon tests, raising the executed required suite from six to eight tests in the implementation CI.
-- No production damage, range, resource cost, shape-specific hit volume, finished item/model, client input UX, animation, VFX or sound was invented.
+- Implementation commit: `093c51c6edab42ab5d1735766859a879536c2954`.
+- `MinecraftPlayerWeaponCombatAdapter` now binds each authoritative execution session to the server dimension in which it was created.
+- `tick(...)` fail-closes and cancels the session when the supplied server level/dimension no longer matches the actor/session, before advancing the attack clock or resolving any hit candidates.
+- `recoveryPivotAuthorized(...)` also rejects and clears a session that crossed a dimension boundary, so module movement authority cannot leak across world handoff.
+- Re-establishing the same UUID/loadout in another dimension creates a fresh controller/session rather than reusing the previous attack clock.
+- Session invalidation now clears remembered hit-target UUIDs as well as cancelling the controller.
+- Added explicit login and `PlayerChangedDimensionEvent` cleanup alongside existing logout/clone cleanup. Login is treated as a fresh process-local combat epoch even if an earlier disconnect path failed to clean up.
+- No damage/range/cadence, hit-volume geometry, client key/UI, ItemStack identity, model, animation, VFX, sound, or boss content was invented.
 
 ## Changed systems/files
 
-- `src/main/java/kr/moonseungjun/riftfrontier/combat/PlayerWeaponLoadoutComponent.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/combat/RiftfrontierCombatDataComponents.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/combat/PlayerWeaponItemStackLoadoutResolver.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/combat/PlayerWeaponServerRuntime.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/network/PlayerWeaponMoveIntentPayload.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/network/RiftfrontierNetworking.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/combat/MinecraftPlayerWeaponCombatAdapter.java`
 - `src/main/java/kr/moonseungjun/riftfrontier/Riftfrontier.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/gametest/PlayerWeaponGameTests.java`
-- `src/main/resources/data/riftfrontier/test_instance/player_weapon_authority.json`
-- `src/main/resources/data/riftfrontier/test_instance/player_weapon_input_authority.json`
-- `docs/M3_PLAYER_COMBAT_KERNEL.md`
 - `docs/AUTOMATION_HANDOFF.md`
 
 ## Verification
 
-- Implementation/test HEAD: `3eddf08cfa58410a63a62b0e47ae369bb5b48ca2`.
-- `Build Riftfrontier` run `34464663645`: FULL SUCCESS. Java 25/toolchain, 32 asset-intake tool tests, JUnit + clean build, required native GameTest, dedicated-server smoke, Xvfb client smoke, executable JAR inspection, build report and artifact/log uploads all passed.
-- Native GameTest log: `8 tests are now running` and `All 8 required tests passed`; mock server-player login occurred in the new input-authority test.
-- Executable JAR contains the new loadout component/resolver/server runtime/payload and both player-weapon required test instances. JAR SHA-256: `b23b057e49708a9ee3be6c5e5f936f0ecf44dd6587b3f70a0698ad7baf1f4b4c`.
-- Local Gradle execution: NOT RUN successfully in this session; GitHub Actions is the authoritative executable validation recorded above.
-- Real human client key/button/action emission of `PlayerWeaponMoveIntentPayload`: NOT AUTHORED / NOT TESTED. The serverbound payload registration/handler exists, but the native test enters the same authoritative server runtime directly rather than simulating a real network client.
-- Production weapon ItemStack provisioning/model identity: NOT APPROVED / NOT AUTHORED / NOT TESTED. The typed component is proven on a technical vanilla test stack only.
-- Production shape-specific hit volume and damage/range/resource policy: NOT APPROVED / NOT AUTHORED / NOT TESTED. `PlayerWeaponServerRuntime` deliberately exposes no production hit candidates until that separate evidence gate exists.
-- Human multiplayer/latency/field-play of the two production families: NOT TESTED; provisional timings must not be promoted to final balance without it.
-- Final weapon and boss art/animation/VFX/sound/material treatment: NOT APPROVED / NOT AUTHORED / NOT TESTED.
+- Push preflight rechecked remote `main` immediately before the implementation fast-forward; it was still `278250b75c36d463e3f8653a13445e9ca4c1df22`, so no concurrent changes were overwritten.
+- `Build Riftfrontier` run `34469568071` for implementation HEAD `093c51c6edab42ab5d1735766859a879536c2954`:
+  - Java/toolchain setup: SUCCESS.
+  - asset-intake tool tests: SUCCESS.
+  - tests + clean build: SUCCESS.
+  - required Riftfrontier native GameTest gate: SUCCESS.
+  - dedicated-server smoke: IN PROGRESS when this handoff was written.
+  - Xvfb client smoke, executable JAR inspection, report/artifact upload: NOT YET RUN at handoff-write time.
+- Local Gradle execution: NOT RUN; GitHub Actions is the executable validation source for this session.
+- Real dimension-transfer field play / reconnect under human multiplayer latency: NOT TESTED.
+- Production player controls, ItemStack provisioning, hit geometry/damage/resource policy and final player/boss presentation remain NOT APPROVED / NOT AUTHORED / NOT TESTED.
 
 ## Do not repeat or revert
 
-- Boss source/asset provenance, reviewed animation preparation, semantic-animation/material/geometry publication provenance, UUID-qualified presentation/network ordering/lifecycle/cache/render work are DONE.
-- `weapon_family` / `weapon_module` schema, decoder, graph validation, reference dossier, two-role lock and first production player-combat graph are DONE.
-- Server-owned ItemStack loadout data-component boundary and serverbound move-id-only authority are DONE. Do not replace them with client-provided loadout, damage, target, phase or timing fields, and do not introduce a second weapon registry.
-- `PlayerWeaponRuntimeProfile` + `PlayerWeaponCombatController` remain the reusable server execution capability. `MinecraftPlayerWeaponCombatAdapter` remains the Minecraft-facing authority boundary.
-- `AttackPattern` remains the only authoritative `telegraph -> ACTIVE -> recovery` cadence primitive.
-- `recovery_pivot` cannot shorten required recovery, open a second hit window, grant generic invulnerability or survive equipment invalidation.
-- Do not treat current production tick counts as field-balanced. Do not invent final player/boss art, control UX or combat values without evidence.
+- Boss source/asset provenance, reviewed animation preparation, semantic-animation/material/geometry publication provenance, UUID-qualified boss presentation/network ordering/lifecycle/cache/render work are DONE.
+- `weapon_family` / `weapon_module` schema, decoder, graph validation, reference dossier, two-role lock, first production player-combat graph, server-owned ItemStack loadout component and move-id-only serverbound authority are DONE.
+- Player weapon authoritative sessions are now dimension-scoped and explicitly reset on login/logout/dimension change/clone. Do not restore cross-dimension attack-clock continuity.
+- `PlayerWeaponRuntimeProfile` + `PlayerWeaponCombatController` remain the reusable execution capability; `MinecraftPlayerWeaponCombatAdapter` remains the Minecraft-facing server authority boundary.
+- `AttackPattern` remains the sole `telegraph -> ACTIVE -> recovery` cadence primitive. `recovery_pivot` cannot shorten recovery, create another hit window, grant generic invulnerability, or survive equipment/world invalidation.
+- Do not promote current production tick values to field-balanced values and do not invent blocked UX/art/combat values.
 
 ## Exact next start point
 
-1. Re-check current remote `main` and recover the newest `Build Riftfrontier` conclusion; if any descendant gate failed, fix its first actual failure before new feature work.
-2. Re-check approved Region 01 boss material/data. If legitimate production boss inputs appeared, route them through the already completed boss gates.
-3. If boss inputs remain absent, check whether canonical/reference work now approves a concrete production player ItemStack identity/provisioning path or client action/control mapping. Do not invent either merely to make the new server path reachable.
-4. If an approved client control mapping exists, bind it to emit only `PlayerWeaponMoveIntentPayload(moveId)` and add executable transport/spoof/lifecycle coverage without moving hit authority client-side.
-5. If no approved control/item input exists, leave this completed server authority boundary intact and select the next objective M3 runtime integration that does not require guessed UX, art, hit-volume geometry or balance.
-6. Shape-specific hit volumes, damage/range/resource costs, provisional timing tuning and final item/model/animation/VFX/sound remain blocked on field-play/presentation evidence.
+1. Re-check current remote `main` first, then recover final conclusion of implementation CI run `34469568071` (and any newer descendant Riftfrontier run). If failed, repair the first real failing gate before new features.
+2. Re-check approved Region 01 boss inputs; if legitimate production material/profile inputs appeared, route them through the completed boss gates.
+3. Re-check whether a canonical production player ItemStack provisioning identity or client control mapping has been approved. If yes, wire only `PlayerWeaponMoveIntentPayload(moveId)` from that approved control surface and add executable transport/spoof/lifecycle coverage.
+4. If those inputs are still absent, do not invent them. Move to the next objective M3 runtime integration that can be implemented without guessed UX, art, shape-specific hit geometry, damage/range/resource values, or balance tuning.
+5. Shape-specific hit volumes, damage/range/resource policy, timing tuning, final item/model/animation/VFX/sound, and real multiplayer feel remain blocked on evidence/approval.
