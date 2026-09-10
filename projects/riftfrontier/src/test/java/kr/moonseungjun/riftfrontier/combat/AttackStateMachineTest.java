@@ -66,4 +66,31 @@ final class AttackStateMachineTest {
         assertTrue(machine.cancel().isEmpty());
         assertDoesNotThrow(() -> machine.begin(pattern(), 40));
     }
+
+    @Test
+    void acceptsRepeatedSameTickSamplingButRejectsAndCancelsClockRewind() {
+        AttackStateMachine machine = new AttackStateMachine();
+        machine.begin(pattern(), 50);
+
+        AttackStateMachine.Step first = machine.advance(52);
+        assertEquals(AttackTimeline.Phase.ACTIVE, first.snapshot().orElseThrow().presentationPhase());
+        assertDoesNotThrow(() -> machine.advance(52));
+
+        IllegalArgumentException rewind = assertThrows(
+            IllegalArgumentException.class,
+            () -> machine.advance(51)
+        );
+        assertTrue(rewind.getMessage().contains("cannot move backwards"));
+        assertFalse(machine.isExecuting(), "rewind must invalidate the authoritative execution");
+        assertTrue(machine.currentExecution().isEmpty());
+
+        assertDoesNotThrow(() -> machine.begin(pattern(), 60));
+    }
+
+    @Test
+    void rejectsNegativeBeginTickWithoutCreatingExecution() {
+        AttackStateMachine machine = new AttackStateMachine();
+        assertThrows(IllegalArgumentException.class, () -> machine.begin(pattern(), -1));
+        assertFalse(machine.isExecuting());
+    }
 }
