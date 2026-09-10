@@ -1,8 +1,10 @@
 package kr.moonseungjun.riftfrontier.combat;
 
 import kr.moonseungjun.riftfrontier.content.CoreDefinition;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 
 import java.util.HashSet;
@@ -16,13 +18,17 @@ import java.util.UUID;
  *
  * <p>Cadence is never copied here. Every damage decision is gated by the sampled
  * {@link AttackStateMachine} state, so telegraph/recovery/cancel/complete can never open a hit
- * window independently of {@link CoreDefinition.AttackPattern}.</p>
+ * window independently of {@link CoreDefinition.AttackPattern}. Once an execution is bound to a
+ * Minecraft attacker, that exact entity instance and authoritative dimension own the execution
+ * until completion or cancellation; another entity cannot inherit the same attack clock.</p>
  */
 public final class MinecraftAttackAdapter {
     private final AttackStateMachine stateMachine = new AttackStateMachine();
     private final HitVolume hitVolume;
     private final float damage;
     private final Set<UUID> damagedThisExecution = new HashSet<>();
+    private LivingEntity executionAttacker;
+    private ResourceKey<Level> executionDimension;
 
     public MinecraftAttackAdapter(HitVolume hitVolume, float damage) {
         this.hitVolume = Objects.requireNonNull(hitVolume, "hitVolume");
@@ -32,9 +38,33 @@ public final class MinecraftAttackAdapter {
         this.damage = damage;
     }
 
+    /**
+     * Low-level timeline-only begin retained for API-free tests/adapters. The first eligible
+     * Minecraft tick binds the exact attacker instance. Minecraft-facing production code should
+     * prefer {@link #begin(ServerLevel, LivingEntity, CoreDefinition.AttackPattern, long)}.
+     */
     public AttackExecution.Snapshot begin(CoreDefinition.AttackPattern pattern, long gameTick) {
         AttackExecution.Snapshot snapshot = stateMachine.begin(pattern, gameTick);
         damagedThisExecution.clear();
+        clearExecutionOwner();
+        return snapshot;
+    }
+
+    /** Begins and immediately binds this execution to one authoritative server actor. */
+    public AttackExecution.Snapshot begin(
+        ServerLevel level,
+        LivingEntity attacker,
+        CoreDefinition.AttackPattern pattern,
+        long gameTick
+    ) {
+        Objects.requireNonNull(level, "level");
+        Objects.requireNonNull(attacker, "attacker");
+        if (!MinecraftCombatAuthority.isEligibleServerActor(level, attacker)) {
+            throw new IllegalStateException("Attacker is not eligible for authoritative Minecraft combat");
+        }
+        AttackExecution.Snapshot snapshot = begin(pattern, gameTick);
+        executionAttacker = attacker;
+        executionDimension = level.dimension();
         return snapshot;
     }
 
@@ -45,13 +75,22 @@ public final class MinecraftAttackAdapter {
     public TickResult tick(ServerLevel level, LivingEntity attacker, long gameTick) {
         Objects.requireNonNull(level, "level");
         Objects.requireNonNull(attacker, "attacker");
+        if (!stateMachine.isExecuting()) {
+            clearExecutionOwner();
+            return TickResult.idle();
+        }
         if (!MinecraftCombatAuthority.isEligibleServerActor(level, attacker)) {
+            cancel();
+            return TickResult.idle();
+        }
+        if (!executionOwnerMatchesOrBind(level, attacker)) {
             cancel();
             return TickResult.idle();
         }
 
         AttackStateMachine.Step step = stateMachine.advance(gameTick);
         if (step.snapshot().isEmpty()) {
+            clearExecutionOwner();
             return TickResult.idle();
         }
 
@@ -80,6 +119,7 @@ public final class MinecraftAttackAdapter {
 
         if (step.finished()) {
             damagedThisExecution.clear();
+            clearExecutionOwner();
         }
 
         return new TickResult(
@@ -96,11 +136,29 @@ public final class MinecraftAttackAdapter {
         return stateMachine.isExecuting();
     }
 
-    /** Stun/death/despawn interruption. Cancellation immediately and permanently closes the hit window. */
+    /** Stun/death/despawn/identity interruption. Cancellation immediately and permanently closes the hit window. */
     public boolean cancel() {
         boolean cancelled = stateMachine.cancel().isPresent();
         damagedThisExecution.clear();
+        clearExecutionOwner();
         return cancelled;
+    }
+
+    private boolean executionOwnerMatchesOrBind(ServerLevel level, LivingEntity attacker) {
+        if (executionAttacker == null) {
+            executionAttacker = attacker;
+            executionDimension = level.dimension();
+            return true;
+        }
+        return executionAttacker == attacker
+            && executionDimension != null
+            && executionDimension.equals(level.dimension())
+            && attacker.level() == level;
+    }
+
+    private void clearExecutionOwner() {
+        executionAttacker = null;
+        executionDimension = null;
     }
 
     @FunctionalInterface

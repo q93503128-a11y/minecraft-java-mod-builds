@@ -71,7 +71,7 @@ public final class CombatAuthorityGameTests {
             (serverLevel, actor, snapshot) -> List.of(validTarget, spectatorTarget, removedTarget),
             2.0F
         );
-        direct.begin(pattern, start);
+        direct.begin(level, attacker, pattern, start);
         helper.assertTrue(direct.tick(level, attacker, start).phase() == AttackTimeline.Phase.TELEGRAPH,
             "Authority regression must preserve authored TELEGRAPH");
         var active = direct.tick(level, attacker, start + 1L);
@@ -82,7 +82,32 @@ public final class CombatAuthorityGameTests {
         helper.assertTrue(spectatorTarget.getHealth() == spectatorHealth,
             "Spectator targets returned by a custom hit resolver must be rejected centrally");
 
-        Zombie deadAttacker = spawn(helper, origin, 3.0D);
+        Zombie replacementAttacker = spawn(helper, origin, 2.5D);
+        Zombie replacementOnlyTarget = spawn(helper, origin, 3.0D);
+        float replacementOnlyHealth = replacementOnlyTarget.getHealth();
+        CoreDefinition.AttackPattern identityPattern = new CoreDefinition.AttackPattern(
+            ContentId.rift("gametest/combat_attacker_identity"),
+            "technical_identity",
+            1,
+            2,
+            1,
+            Set.of("step_out"),
+            "technical_identity_cue"
+        );
+        MinecraftAttackAdapter identityBound = new MinecraftAttackAdapter(
+            (serverLevel, actor, snapshot) -> actor == replacementAttacker ? List.of(replacementOnlyTarget) : List.of(),
+            2.0F
+        );
+        identityBound.begin(level, attacker, identityPattern, start + 5L);
+        helper.assertTrue(identityBound.tick(level, attacker, start + 5L).phase() == AttackTimeline.Phase.TELEGRAPH,
+            "Identity-bound execution must still begin on the authored TELEGRAPH");
+        var replacementAttempt = identityBound.tick(level, replacementAttacker, start + 6L);
+        helper.assertTrue(!identityBound.isExecuting() && !replacementAttempt.hitWindowOpen(),
+            "A different entity instance must cancel, not inherit, an already-bound generic attack execution");
+        helper.assertTrue(replacementOnlyTarget.getHealth() == replacementOnlyHealth,
+            "Attacker replacement must fail closed before the replacement actor can resolve ACTIVE damage");
+
+        Zombie deadAttacker = spawn(helper, origin, 3.5D);
         Zombie protectedTarget = spawn(helper, origin, 4.0D);
         float protectedHealth = protectedTarget.getHealth();
         MinecraftAttackAdapter invalidActorAdapter = new MinecraftAttackAdapter(
@@ -119,14 +144,38 @@ public final class CombatAuthorityGameTests {
         helper.assertTrue(!invalidBossTick.attack().hitWindowOpen() && bossTarget.getHealth() == bossTargetHealth,
             "Invalid boss actor must not progress its damage adapter");
 
+        Zombie bossOwner = spawn(helper, origin, 6.5D);
+        Zombie bossReplacement = spawn(helper, origin, 7.0D);
+        Zombie bossReplacementTarget = spawn(helper, origin, 7.5D);
+        float bossReplacementHealth = bossReplacementTarget.getHealth();
+        MinecraftBossCombatAdapter identityBossAdapter = new MinecraftBossCombatAdapter(
+            new CombatRuntimeCatalog(bossRegistry),
+            bossId,
+            BossAttackSelectionPolicy.deterministicRoundRobin(),
+            (serverLevel, actor, snapshot) -> actor == bossReplacement ? List.of(bossReplacementTarget) : List.of(),
+            2.0F
+        );
+        identityBossAdapter.beginNextAttack(start + 25L);
+        helper.assertTrue(identityBossAdapter.tick(level, bossOwner, start + 25L).attack().phase() == AttackTimeline.Phase.TELEGRAPH,
+            "Boss damage execution must bind to the first authoritative boss entity that advances it");
+        try {
+            identityBossAdapter.tick(level, bossReplacement, start + 26L);
+            helper.assertTrue(false, "Boss replacement must not inherit another entity's ACTIVE attack execution");
+        } catch (IllegalStateException expected) {
+            helper.assertTrue(!identityBossAdapter.attackExecuting(),
+                "Boss identity divergence must fail closed across lifecycle and damage clocks");
+            helper.assertTrue(bossReplacementTarget.getHealth() == bossReplacementHealth,
+                "Boss replacement must be rejected before custom hit resolution can damage a target");
+        }
+
         ContentId familyId = ContentId.rift("gametest/combat_authority_family");
         ContentRegistry playerRegistry = new ContentRegistry();
         playerRegistry.register(pattern);
         playerRegistry.register(new CoreDefinition.WeaponFamily(
             familyId, Set.of(attackId), Set.of("mobile_pressure"), Set.of("technique")
         ));
-        Zombie playerActor = spawn(helper, origin, 7.0D);
-        Zombie playerTarget = spawn(helper, origin, 8.0D);
+        Zombie playerActor = spawn(helper, origin, 8.0D);
+        Zombie playerTarget = spawn(helper, origin, 8.5D);
         MinecraftPlayerWeaponCombatAdapter playerAdapter = new MinecraftPlayerWeaponCombatAdapter(
             new CombatRuntimeCatalog(playerRegistry),
             ignored -> Optional.of(new MinecraftPlayerWeaponCombatAdapter.Loadout(familyId, Optional.empty())),
