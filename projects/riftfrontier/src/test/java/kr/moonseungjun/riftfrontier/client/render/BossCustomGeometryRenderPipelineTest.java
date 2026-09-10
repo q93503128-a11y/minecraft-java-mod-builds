@@ -16,7 +16,9 @@ import kr.moonseungjun.riftfrontier.content.ContentId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -80,11 +82,13 @@ class BossCustomGeometryRenderPipelineTest {
     }
 
     @Test
-    void numericOnlyCurrentLookupIsNotExposedByProductionRenderPipeline() {
-        assertFalse(Arrays.stream(BossCustomGeometryRenderPipeline.class.getDeclaredMethods()).anyMatch(method ->
-            method.getName().equals("prepareCurrent")
-                && Arrays.equals(method.getParameterTypes(), new Class<?>[]{int.class})
+    void numericOnlyCurrentLookupIsNotExposedByProductionRenderPipeline() throws IOException {
+        String source = Files.readString(Path.of(
+            "src/main/java/kr/moonseungjun/riftfrontier/client/render/BossCustomGeometryRenderPipeline.java"
         ));
+        assertFalse(source.contains("prepareCurrent(int entityId)"));
+        assertTrue(source.contains("prepareCurrent(int entityId, UUID entityUuid)"));
+        assertTrue(source.contains("BossPresentationClientState.current(entityId, entityUuid)"));
     }
 
     @Test
