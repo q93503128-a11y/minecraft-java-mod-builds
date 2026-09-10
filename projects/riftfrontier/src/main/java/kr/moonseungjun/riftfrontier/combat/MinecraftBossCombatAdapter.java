@@ -223,7 +223,7 @@ public final class MinecraftBossCombatAdapter {
             BossCombatController.PhaseTransition transition = delegate.transitionToPhase(newPhase);
             // candidateAttacks is intentionally touched after transition so malformed/foreign phase semantics fail now,
             // before another attack can begin.
-            semantics.candidateAttacks(transition.currentPhase());
+            semantics.candidateAttacks(transition.newPhase());
             return transition;
         }
 
