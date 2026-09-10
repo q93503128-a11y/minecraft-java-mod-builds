@@ -112,6 +112,11 @@ public final class BossCustomGeometryRenderPipeline {
         return variant;
     }
 
+    /** Exact logical resolver consumed by this pipeline; publication verifies its semantic provenance by identity. */
+    public BossPresentationResolver presentationResolver() {
+        return presentationResolver;
+    }
+
     /** Exact reviewed animation bridge consumed by this pipeline; used only for publication provenance checks. */
     public BossAnimationSampleBridge animationBridge() {
         return animationBridge;

@@ -88,6 +88,8 @@ public final class ValidatedBossCombatSemantics {
 
     public ContentId bossProfile() { return semantics.bossProfile(); }
 
+    public BossPresentationProfile presentationProfile() { return presentation; }
+
     public List<ContentId> candidateAttacks(int phase) {
         return semantics.attacksForPhase(phase).stream().sorted().toList();
     }
@@ -117,6 +119,49 @@ public final class ValidatedBossCombatSemantics {
     }
 
     public ContentId logicalAnimationKey(ContentId attackId, AttackTimeline.Phase phase) {
+        return validatedPresentation(attackId, phase).binding().animationKey();
+    }
+
+    /**
+     * Resolves one network/client semantic state only when it still describes the exact validated server attack.
+     *
+     * <p>The pattern id is authoritative. Cue and delivery are redundant communication fields and must match that
+     * pattern rather than being allowed to select another profile entry independently. This prevents a client render
+     * resolver from accepting a semantically unrelated but otherwise valid cue/delivery pair.</p>
+     */
+    public ValidatedPresentation validatePresentationState(BossPresentationSemanticState state) {
+        Objects.requireNonNull(state, "state");
+        if (!state.active()) throw new IllegalArgumentException("inactive boss presentation has no attack binding");
+
+        ContentId attackId = ContentId.parse(state.patternId());
+        CoreDefinition.AttackPattern attack = attacks.get(attackId);
+        if (attack == null) {
+            throw new IllegalArgumentException("presentation attack was not validated for this boss semantic profile: " + attackId);
+        }
+
+        final AttackTimeline.Phase phase;
+        try {
+            phase = AttackTimeline.Phase.valueOf(state.attackPhase());
+        } catch (IllegalArgumentException invalid) {
+            throw new IllegalArgumentException("invalid boss presentation attack phase: " + state.attackPhase(), invalid);
+        }
+        if (phase == AttackTimeline.Phase.COMPLETE) {
+            throw new IllegalArgumentException("COMPLETE has no active presentation binding");
+        }
+        if (!attack.presentationCue().equals(state.presentationCue())) {
+            throw new IllegalArgumentException(
+                "presentation cue does not match authoritative attack " + attackId + ": " + state.presentationCue()
+            );
+        }
+        if (!attack.delivery().equals(state.delivery())) {
+            throw new IllegalArgumentException(
+                "presentation delivery does not match authoritative attack " + attackId + ": " + state.delivery()
+            );
+        }
+        return validatedPresentation(attackId, phase);
+    }
+
+    private ValidatedPresentation validatedPresentation(ContentId attackId, AttackTimeline.Phase phase) {
         Objects.requireNonNull(attackId, "attackId");
         Objects.requireNonNull(phase, "phase");
         CoreDefinition.AttackPattern attack = attacks.get(attackId);
@@ -127,6 +172,24 @@ public final class ValidatedBossCombatSemantics {
         );
         BossPresentationProfile.AssetBinding binding = presentation.bindings().get(selector);
         if (binding == null) throw new IllegalStateException("validated presentation binding disappeared: " + selector.selector());
-        return binding.animationKey();
+        return new ValidatedPresentation(presentation.id(), presentation.modelKey(), selector, binding, phase);
+    }
+
+    /** Immutable result proving pattern/cue/delivery/phase were resolved through this validated server semantic set. */
+    public record ValidatedPresentation(
+        ContentId presentationProfile,
+        ContentId modelKey,
+        BossPresentationProfile.BindingKey selector,
+        BossPresentationProfile.AssetBinding binding,
+        AttackTimeline.Phase phase
+    ) {
+        public ValidatedPresentation {
+            Objects.requireNonNull(presentationProfile, "presentationProfile");
+            Objects.requireNonNull(modelKey, "modelKey");
+            Objects.requireNonNull(selector, "selector");
+            Objects.requireNonNull(binding, "binding");
+            Objects.requireNonNull(phase, "phase");
+            if (selector.phase() != phase) throw new IllegalArgumentException("selector phase must match validated phase");
+        }
     }
 }

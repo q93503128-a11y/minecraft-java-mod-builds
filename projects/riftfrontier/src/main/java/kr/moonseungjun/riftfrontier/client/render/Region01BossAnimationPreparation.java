@@ -3,6 +3,7 @@ package kr.moonseungjun.riftfrontier.client.render;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossAnimationSampleBridge;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossAnimationSemanticBinding;
 import kr.moonseungjun.riftfrontier.combat.presentation.BossAnimationSourceBinding;
+import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationResolver;
 import kr.moonseungjun.riftfrontier.combat.presentation.mesh.Region01BossRuntimeAsset;
 import kr.moonseungjun.riftfrontier.content.ContentId;
 
@@ -15,7 +16,8 @@ import java.util.Objects;
  * <p>The capability can only be created from the exact prepared geometry produced by the currently staged client
  * resource reload. The supplied semantic binding must already prove that reviewed source windows cover the logical
  * animation keys required by validated server-authoritative boss semantics. Every key is then resolved only against
- * the animation inventory imported from that exact accepted runtime asset.</p>
+ * the animation inventory imported from that exact accepted runtime asset. The logical presentation resolver is also
+ * created here from the same validated semantics so a later render pipeline cannot substitute another profile.</p>
  */
 public final class Region01BossAnimationPreparation {
     private Region01BossAnimationPreparation() {}
@@ -36,6 +38,10 @@ public final class Region01BossAnimationPreparation {
         if (!resolvedSources.keySet().equals(semanticBinding.requiredLogicalAnimationKeys())) {
             throw new IllegalStateException("prepared boss animation did not resolve exact server-required logical keys");
         }
+        BossPresentationResolver presentationResolver = BossPresentationResolver.validated(semanticBinding.combatSemantics());
+        if (!presentationResolver.isValidatedBy(semanticBinding.combatSemantics())) {
+            throw new IllegalStateException("prepared boss presentation resolver lost its validated semantic authority");
+        }
         BossAnimationSampleBridge animationBridge = new BossAnimationSampleBridge(reviewedBinding, runtimeAsset.animations());
 
         requireSamePreparedSource(preparedGeometry, reload, runtimeAsset);
@@ -46,6 +52,7 @@ public final class Region01BossAnimationPreparation {
             semanticBinding,
             reviewedBinding,
             resolvedSources,
+            presentationResolver,
             animationBridge,
             reload.publicationGeneration(),
             reload.contentGeneration()
@@ -70,6 +77,7 @@ public final class Region01BossAnimationPreparation {
         private final BossAnimationSemanticBinding semanticBinding;
         private final BossAnimationSourceBinding sourceBinding;
         private final Map<ContentId, BossAnimationSourceBinding.ResolvedSource> resolvedSources;
+        private final BossPresentationResolver presentationResolver;
         private final BossAnimationSampleBridge animationBridge;
         private final long publicationGeneration;
         private final long contentGeneration;
@@ -81,6 +89,7 @@ public final class Region01BossAnimationPreparation {
             BossAnimationSemanticBinding semanticBinding,
             BossAnimationSourceBinding sourceBinding,
             Map<ContentId, BossAnimationSourceBinding.ResolvedSource> resolvedSources,
+            BossPresentationResolver presentationResolver,
             BossAnimationSampleBridge animationBridge,
             long publicationGeneration,
             long contentGeneration
@@ -91,6 +100,7 @@ public final class Region01BossAnimationPreparation {
             this.semanticBinding = Objects.requireNonNull(semanticBinding, "semanticBinding");
             this.sourceBinding = Objects.requireNonNull(sourceBinding, "sourceBinding");
             this.resolvedSources = Map.copyOf(Objects.requireNonNull(resolvedSources, "resolvedSources"));
+            this.presentationResolver = Objects.requireNonNull(presentationResolver, "presentationResolver");
             this.animationBridge = Objects.requireNonNull(animationBridge, "animationBridge");
             this.publicationGeneration = publicationGeneration;
             this.contentGeneration = contentGeneration;
@@ -101,6 +111,7 @@ public final class Region01BossAnimationPreparation {
         public BossAnimationSemanticBinding semanticBinding() { requireCurrent(); return semanticBinding; }
         public BossAnimationSourceBinding sourceBinding() { requireCurrent(); return sourceBinding; }
         public Map<ContentId, BossAnimationSourceBinding.ResolvedSource> resolvedSources() { requireCurrent(); return resolvedSources; }
+        public BossPresentationResolver presentationResolver() { requireCurrent(); return presentationResolver; }
         public BossAnimationSampleBridge animationBridge() { requireCurrent(); return animationBridge; }
         public long publicationGeneration() { return publicationGeneration; }
         public long contentGeneration() { return contentGeneration; }
@@ -121,6 +132,9 @@ public final class Region01BossAnimationPreparation {
             BossAnimationSourceBinding current = semanticBinding.sourceBinding().requireReviewedPhaseWindows();
             if (current != sourceBinding || !resolvedSources.keySet().equals(semanticBinding.requiredLogicalAnimationKeys())) {
                 throw new IllegalStateException("Region 01 boss semantic animation preparation no longer retains exact reviewed coverage");
+            }
+            if (!presentationResolver.isValidatedBy(semanticBinding.combatSemantics())) {
+                throw new IllegalStateException("Region 01 boss presentation resolver no longer retains exact semantic authority");
             }
         }
     }

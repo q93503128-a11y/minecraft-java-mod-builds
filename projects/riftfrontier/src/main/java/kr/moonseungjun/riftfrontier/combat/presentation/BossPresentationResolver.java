@@ -2,10 +2,12 @@ package kr.moonseungjun.riftfrontier.combat.presentation;
 
 import kr.moonseungjun.riftfrontier.combat.AttackTimeline;
 import kr.moonseungjun.riftfrontier.combat.BossPresentationSemanticState;
+import kr.moonseungjun.riftfrontier.combat.ValidatedBossCombatSemantics;
 import kr.moonseungjun.riftfrontier.content.ContentId;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -16,8 +18,16 @@ import java.util.Optional;
  */
 public final class BossPresentationResolver {
     private final Map<BossPresentationProfile.Context, BossPresentationProfile> profilesByContext;
+    private final ValidatedBossCombatSemantics semanticAuthority;
 
     public BossPresentationResolver(Collection<BossPresentationProfile> profiles) {
+        this(profiles, null);
+    }
+
+    private BossPresentationResolver(
+        Collection<BossPresentationProfile> profiles,
+        ValidatedBossCombatSemantics semanticAuthority
+    ) {
         Map<BossPresentationProfile.Context, BossPresentationProfile> indexed = new LinkedHashMap<>();
         for (BossPresentationProfile profile : Objects.requireNonNull(profiles, "profiles")) {
             Objects.requireNonNull(profile, "profile");
@@ -29,6 +39,16 @@ public final class BossPresentationResolver {
             }
         }
         profilesByContext = Map.copyOf(indexed);
+        this.semanticAuthority = semanticAuthority;
+    }
+
+    /**
+     * Creates a resolver that can only resolve the exact presentation profile proven by server combat semantics.
+     * Pattern id, cue and delivery are cross-checked through the validated server attack before any asset key is emitted.
+     */
+    public static BossPresentationResolver validated(ValidatedBossCombatSemantics semantics) {
+        ValidatedBossCombatSemantics authority = Objects.requireNonNull(semantics, "semantics");
+        return new BossPresentationResolver(List.of(authority.presentationProfile()), authority);
     }
 
     public Optional<ResolvedPresentation> resolve(
@@ -42,6 +62,33 @@ public final class BossPresentationResolver {
 
         BossPresentationProfile profile = profilesByContext.get(new BossPresentationProfile.Context(bossProfile, variant));
         if (profile == null) return Optional.empty();
+
+        if (semanticAuthority != null) {
+            if (!bossProfile.equals(semanticAuthority.bossProfile())
+                || profile != semanticAuthority.presentationProfile()) {
+                return Optional.empty();
+            }
+            final ValidatedBossCombatSemantics.ValidatedPresentation validated;
+            try {
+                validated = semanticAuthority.validatePresentationState(state);
+            } catch (IllegalArgumentException | IllegalStateException rejected) {
+                return Optional.empty();
+            }
+            if (!validated.presentationProfile().equals(profile.id())
+                || !validated.modelKey().equals(profile.modelKey())) {
+                throw new IllegalStateException("validated boss presentation profile changed after resolver construction");
+            }
+            return Optional.of(new ResolvedPresentation(
+                validated.presentationProfile(),
+                validated.modelKey(),
+                validated.binding().animationKey(),
+                validated.binding().vfxKey(),
+                validated.binding().soundKey(),
+                validated.phase(),
+                state.phaseProgress(),
+                state.hitWindowOpen()
+            ));
+        }
 
         AttackTimeline.Phase phase;
         try {
@@ -65,6 +112,11 @@ public final class BossPresentationResolver {
             state.phaseProgress(),
             state.hitWindowOpen()
         ));
+    }
+
+    /** Identity-level provenance check used by prepared renderer publication. */
+    public boolean isValidatedBy(ValidatedBossCombatSemantics semantics) {
+        return semanticAuthority != null && semanticAuthority == semantics;
     }
 
     public record ResolvedPresentation(

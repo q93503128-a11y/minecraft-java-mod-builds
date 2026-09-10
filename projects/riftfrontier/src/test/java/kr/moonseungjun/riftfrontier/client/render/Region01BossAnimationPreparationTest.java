@@ -46,19 +46,21 @@ class Region01BossAnimationPreparationTest {
     }
 
     @Test
-    void publicationRequiresExactPreparedGeometryAndAnimationBridgeIdentity() {
+    void publicationRequiresExactPreparedGeometryAnimationBridgeAndSemanticResolverIdentity() {
         GenerationPublicationSlot<String> slot = new GenerationPublicationSlot<>();
         GenerationPublicationSlot.Ticket reload = slot.beginUpdate();
         Object geometry = new Object();
+        Object semanticResolver = new Object();
         Object bridge = new Object();
-        Prepared prepared = new Prepared(reload, geometry, bridge);
+        Prepared prepared = new Prepared(reload, geometry, semanticResolver, bridge);
 
-        assertTrue(canPublish(slot, prepared, geometry, bridge));
-        assertFalse(canPublish(slot, prepared, new Object(), bridge));
-        assertFalse(canPublish(slot, prepared, geometry, new Object()));
+        assertTrue(canPublish(slot, prepared, geometry, semanticResolver, bridge));
+        assertFalse(canPublish(slot, prepared, new Object(), semanticResolver, bridge));
+        assertFalse(canPublish(slot, prepared, geometry, new Object(), bridge));
+        assertFalse(canPublish(slot, prepared, geometry, semanticResolver, new Object()));
 
         slot.beginUpdate();
-        assertFalse(canPublish(slot, prepared, geometry, bridge));
+        assertFalse(canPublish(slot, prepared, geometry, semanticResolver, bridge));
     }
 
     private static Prepared prepare(
@@ -72,19 +74,23 @@ class Region01BossAnimationPreparationTest {
         if (!reviewedWindows) throw new UnreviewedWindows();
         resolveReviewedSources.run();
         requireCurrent(slot, reload);
+        Object semanticResolver = new Object();
         Object bridge = new Object();
         requireCurrent(slot, reload);
-        return new Prepared(reload, geometry, bridge);
+        return new Prepared(reload, geometry, semanticResolver, bridge);
     }
 
     private static boolean canPublish(
         GenerationPublicationSlot<String> slot,
         Prepared prepared,
         Object geometry,
+        Object semanticResolver,
         Object bridge
     ) {
         if (!slot.isCurrent(prepared.reload())) return false;
-        return prepared.geometry() == geometry && prepared.bridge() == bridge;
+        return prepared.geometry() == geometry
+            && prepared.semanticResolver() == semanticResolver
+            && prepared.bridge() == bridge;
     }
 
     private static void requireCurrent(
@@ -97,6 +103,7 @@ class Region01BossAnimationPreparationTest {
     private record Prepared(
         GenerationPublicationSlot.Ticket reload,
         Object geometry,
+        Object semanticResolver,
         Object bridge
     ) { }
 

@@ -109,6 +109,17 @@ public final class Region01BossClientRenderRuntime {
                 "boss render pipeline must consume the exact skinned mesh prepared from the current accepted derivation"
             );
         }
+        if (pipeline.presentationResolver() != preparedAnimation.presentationResolver()) {
+            throw new IllegalArgumentException(
+                "boss render pipeline must consume the exact server-semantic presentation resolver prepared from the current capability"
+            );
+        }
+        if (!pipeline.bossProfile().equals(semanticBinding.bossProfile())) {
+            throw new IllegalArgumentException("boss render pipeline targets a different boss profile than validated combat semantics");
+        }
+        if (!pipeline.variant().equals(semanticBinding.combatSemantics().presentationProfile().variant())) {
+            throw new IllegalArgumentException("boss render pipeline variant differs from the validated presentation profile");
+        }
         if (pipeline.animationBridge() != preparedAnimation.animationBridge()) {
             throw new IllegalArgumentException(
                 "boss render pipeline must consume the exact semantic-reviewed animation bridge prepared from the current reload"
