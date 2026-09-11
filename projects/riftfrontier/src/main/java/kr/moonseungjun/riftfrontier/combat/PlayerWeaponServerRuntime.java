@@ -29,6 +29,10 @@ public final class PlayerWeaponServerRuntime {
     public static IntentResult handleMoveIntent(ServerPlayer player, ContentId moveId) {
         Objects.requireNonNull(player, "player");
         Objects.requireNonNull(moveId, "moveId");
+        if (!isCurrentServerPlayerInstance(player)) {
+            clearPlayer(player);
+            return IntentResult.REJECTED;
+        }
         State current = currentState();
         try {
             current.adapter.beginMove(player, moveId, player.level().getGameTime());
@@ -41,6 +45,11 @@ public final class PlayerWeaponServerRuntime {
     /** Event-driven per-player tick; no global player/entity scan is performed. */
     public static MinecraftPlayerWeaponCombatAdapter.TickResult tickPlayer(ServerPlayer player) {
         Objects.requireNonNull(player, "player");
+        if (!isCurrentServerPlayerInstance(player)) {
+            return clearPlayer(player)
+                ? MinecraftPlayerWeaponCombatAdapter.TickResult.invalidated()
+                : MinecraftPlayerWeaponCombatAdapter.TickResult.idle();
+        }
         State current = currentState();
         if (!current.adapter.hasSession(player.getUUID())) return MinecraftPlayerWeaponCombatAdapter.TickResult.idle();
         return current.adapter.tick((ServerLevel) player.level(), player, player.level().getGameTime());
@@ -75,6 +84,16 @@ public final class PlayerWeaponServerRuntime {
 
     public static synchronized void clearAllForContentBoundary() {
         state = null;
+    }
+
+    /**
+     * Revalidates that the authenticated actor is still the exact live entity registered for this UUID
+     * in its current server level. This closes the reconnect/clone race where a delayed callback from an
+     * old ServerPlayer instance could otherwise replace the successor's UUID-keyed combat session.
+     */
+    private static boolean isCurrentServerPlayerInstance(ServerPlayer player) {
+        if (!(player.level() instanceof ServerLevel level)) return false;
+        return level.getEntity(player.getUUID()) == player;
     }
 
     private static synchronized State currentState() {
