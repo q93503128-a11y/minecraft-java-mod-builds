@@ -60,7 +60,7 @@ public final class RealmEconomyManager {
         int wanted = wanted(player);
         PacketDistributor.sendToPlayer(player, new FantasyHudStatePayload(
                 account.silver(), account.renown(), wanted, professionName(account.profession()),
-                market.grain(), market.metal(), market.herb(), market.labor()
+                market.grain(), market.metal(), market.herb(), market.labor(), realmGameTime(player)
         ));
     }
 
@@ -79,7 +79,12 @@ public final class RealmEconomyManager {
     }
 
     private static long currentDay(ServerPlayer player) {
-        return Math.floorDiv(player.level().getGameTime(), 24_000L);
+        return Math.floorDiv(realmGameTime(player), 24_000L);
+    }
+
+    private static long realmGameTime(ServerPlayer player) {
+        ServerLevel realm = player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
+        return realm == null ? player.level().getGameTime() : realm.getGameTime();
     }
 
     private static String professionName(String id) {

@@ -11,9 +11,9 @@ import java.util.Set;
 
 /** Keeps first-time players out of the void while origin selection and capital construction begin. */
 public final class SelectionStagingManager {
-    private static final int CENTER_X = 0;
-    private static final int CENTER_Z = 24_000;
-    private static final int FLOOR_Y = 220;
+    public static final int CENTER_X = 0;
+    public static final int CENTER_Z = 24_000;
+    public static final int FLOOR_Y = 220;
     private static final int UPDATE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS;
     private static final BlockPos MARKER = new BlockPos(CENTER_X, FLOOR_Y - 5, CENTER_Z);
 
@@ -35,6 +35,16 @@ public final class SelectionStagingManager {
                     Set.<Relative>of(), 0.0F, 0.0F, true);
         }
         player.fallDistance = 0.0F;
+    }
+
+    /** True only for the hidden first-entry holding area; normal Erden gameplay never uses this region. */
+    public static boolean isStaging(ServerPlayer player) {
+        if (!player.level().dimension().equals(StarterRealmManager.REALM_KEY)) return false;
+        double dx = player.getX() - (CENTER_X + 0.5D);
+        double dz = player.getZ() - (CENTER_Z + 0.5D);
+        return dx * dx + dz * dz <= 64.0D * 64.0D
+                && player.getY() >= FLOOR_Y - 30
+                && player.getY() <= FLOOR_Y + 40;
     }
 
     private static void buildIfMissing(ServerLevel level) {

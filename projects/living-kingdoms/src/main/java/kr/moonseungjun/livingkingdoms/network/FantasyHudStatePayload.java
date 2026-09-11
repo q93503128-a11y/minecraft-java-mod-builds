@@ -16,7 +16,8 @@ public record FantasyHudStatePayload(
         int grainIndex,
         int metalIndex,
         int herbIndex,
-        int laborIndex
+        int laborIndex,
+        long realmGameTime
 ) implements CustomPacketPayload {
     public static final Type<FantasyHudStatePayload> TYPE = new Type<>(
             Identifier.fromNamespaceAndPath(LivingKingdoms.MOD_ID, "fantasy_hud_state")
@@ -39,8 +40,15 @@ public record FantasyHudStatePayload(
             FantasyHudStatePayload::herbIndex,
             ByteBufCodecs.VAR_INT,
             FantasyHudStatePayload::laborIndex,
+            ByteBufCodecs.VAR_LONG,
+            FantasyHudStatePayload::realmGameTime,
             FantasyHudStatePayload::new
     );
+
+    public FantasyHudStatePayload(long silver, int renown, int wanted, String profession,
+                                  int grainIndex, int metalIndex, int herbIndex, int laborIndex) {
+        this(silver, renown, wanted, profession, grainIndex, metalIndex, herbIndex, laborIndex, 0L);
+    }
 
     public FantasyHudStatePayload {
         silver = Math.max(0L, silver);
@@ -51,6 +59,7 @@ public record FantasyHudStatePayload(
         metalIndex = bounded(metalIndex);
         herbIndex = bounded(herbIndex);
         laborIndex = bounded(laborIndex);
+        realmGameTime = Math.max(0L, realmGameTime);
     }
 
     private static int bounded(int value) {

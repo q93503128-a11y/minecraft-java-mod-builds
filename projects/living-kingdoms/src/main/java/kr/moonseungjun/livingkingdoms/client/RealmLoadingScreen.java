@@ -9,6 +9,10 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 
 public final class RealmLoadingScreen extends Screen {
+    private static final double STAGING_X = 0.5D;
+    private static final double STAGING_Z = 24_000.5D;
+    private static final double STAGING_RADIUS_SQ = 64.0D * 64.0D;
+
     private String homelandId = "unknown";
     private String phase = "preparing";
     private int percent;
@@ -30,6 +34,7 @@ public final class RealmLoadingScreen extends Screen {
         complete = payload.complete();
         failed = payload.failed();
         if (failed) complete = false;
+        if (!complete) completeTicks = 0;
     }
 
     boolean allRequiredControlsFit() {
@@ -41,7 +46,26 @@ public final class RealmLoadingScreen extends Screen {
 
     @Override
     public void tick() {
-        if (complete && ++completeTicks >= 12) Minecraft.getInstance().gui.setScreen(null);
+        boolean staging = stillAtStaging();
+        if (complete && staging) {
+            completeTicks = 0;
+            return;
+        }
+        if (complete) completeTicks++;
+        if (completionMayClose(complete, staging, completeTicks)) {
+            Minecraft.getInstance().gui.setScreen(null);
+        }
+    }
+
+    static boolean completionMayClose(boolean complete, boolean atStaging, int completedTicks) {
+        return complete && !atStaging && completedTicks >= 12;
+    }
+
+    static boolean stagingCompletionGuardPassForTest() {
+        return !completionMayClose(true, true, 100)
+                && !completionMayClose(false, false, 100)
+                && !completionMayClose(true, false, 11)
+                && completionMayClose(true, false, 12);
     }
 
     @Override
@@ -99,6 +123,14 @@ public final class RealmLoadingScreen extends Screen {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
+    private boolean stillAtStaging() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null) return false;
+        double dx = minecraft.player.getX() - STAGING_X;
+        double dz = minecraft.player.getZ() - STAGING_Z;
+        return dx * dx + dz * dz <= STAGING_RADIUS_SQ;
+    }
+
     private Layout layout() {
         int panelWidth = Math.min(520, Math.max(290, width - 32));
         int panelHeight = Math.min(230, Math.max(178, height - 28));
@@ -112,7 +144,8 @@ public final class RealmLoadingScreen extends Screen {
             case "chunks" -> "지역 준비 · 선택한 부지의 청크를 생성 중";
             case "planning" -> "건축 배치 · 도로와 시설 배치를 조립 중";
             case "building" -> "왕국 건설 · 구역별 작업을 적용 중";
-            case "complete" -> "완료 · 선택한 거주지로 이동 중";
+            case "residence" -> "입주 확인 · 실제 시민 주거 내부와 진입 동선을 검증 중";
+            case "complete" -> "완료 · 검증된 시민 주거로 이동 중";
             case "failed" -> "실패 · 왕국 생성 작업을 중단함";
             default -> "시작 준비 · 출신과 소속을 확인 중";
         };
