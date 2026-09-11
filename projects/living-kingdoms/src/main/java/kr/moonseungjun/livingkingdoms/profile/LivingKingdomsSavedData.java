@@ -16,7 +16,10 @@ public final class LivingKingdomsSavedData extends SavedData {
     private static final Codec<LivingKingdomsSavedData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.unboundedMap(Codec.STRING, OriginProfile.CODEC)
                     .optionalFieldOf("origin_profiles", Map.of())
-                    .forGetter(data -> data.originProfiles)
+                    .forGetter(data -> data.originProfiles),
+            Codec.unboundedMap(Codec.STRING, ResidenceAssignment.CODEC)
+                    .optionalFieldOf("residence_assignments", Map.of())
+                    .forGetter(data -> data.residenceAssignments)
     ).apply(instance, LivingKingdomsSavedData::new));
 
     public static final SavedDataType<LivingKingdomsSavedData> TYPE = new SavedDataType<>(
@@ -25,14 +28,17 @@ public final class LivingKingdomsSavedData extends SavedData {
             level -> CODEC
     );
 
-    private Map<String, OriginProfile> originProfiles;
+    private final Map<String, OriginProfile> originProfiles;
+    private final Map<String, ResidenceAssignment> residenceAssignments;
 
     public LivingKingdomsSavedData() {
-        this(Map.of());
+        this(Map.of(), Map.of());
     }
 
-    private LivingKingdomsSavedData(Map<String, OriginProfile> originProfiles) {
+    private LivingKingdomsSavedData(Map<String, OriginProfile> originProfiles,
+                                    Map<String, ResidenceAssignment> residenceAssignments) {
         this.originProfiles = new LinkedHashMap<>(originProfiles);
+        this.residenceAssignments = new LinkedHashMap<>(residenceAssignments);
     }
 
     public Optional<OriginProfile> profile(UUID playerId) {
@@ -44,7 +50,20 @@ public final class LivingKingdomsSavedData extends SavedData {
         setDirty();
     }
 
+    public Optional<ResidenceAssignment> residenceAssignment(UUID playerId) {
+        return Optional.ofNullable(residenceAssignments.get(playerId.toString()));
+    }
+
+    public void putResidenceAssignment(UUID playerId, ResidenceAssignment assignment) {
+        residenceAssignments.put(playerId.toString(), assignment);
+        setDirty();
+    }
+
     public int profileCount() {
         return originProfiles.size();
+    }
+
+    public int residenceAssignmentCount() {
+        return residenceAssignments.size();
     }
 }

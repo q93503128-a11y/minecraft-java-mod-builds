@@ -60,6 +60,7 @@ import kr.moonseungjun.livingkingdoms.world.ErdenUrbanTopologyCorrelationAudit;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanUpperRoomOpportunityCatalog;
 import kr.moonseungjun.livingkingdoms.world.FantasyWorldRules;
 import kr.moonseungjun.livingkingdoms.world.LivingRealmWorldManager;
+import kr.moonseungjun.livingkingdoms.world.PlayerResidencePlacementManager;
 import kr.moonseungjun.livingkingdoms.world.RealmBuildCoordinator;
 import kr.moonseungjun.livingkingdoms.world.RealmSitePlanner;
 import kr.moonseungjun.livingkingdoms.world.RegionalEcologyManager;
@@ -163,6 +164,7 @@ public final class LivingKingdoms {
         ErdenEntranceThresholdManager.onServerTick(event);
         ErdenEntryPathReconciler.onServerTick(event);
         ErdenEntryTraversalAudit.onServerTick(event);
+        PlayerResidencePlacementManager.onServerTick(event);
         ErdenPopulationCiChunkRetainer.onServerTick(event);
         ErdenPopulationManager.onServerTick(event);
         ErdenCapitalLifecycleManager.onServerTick(event);
@@ -197,7 +199,11 @@ public final class LivingKingdoms {
             return;
         }
         OriginProfileManager.profile(player.getUUID()).ifPresent(profile -> {
-            LivingRealmWorldManager.requestPlacement(player, profile);
+            if (OriginProfileManager.requiresResidenceAssignment(player.getUUID())) {
+                // One-time migration for pre-hotfix profiles that could have been left on a roof/staging platform.
+                SelectionStagingManager.ensure(player);
+                LivingRealmWorldManager.requestPlacement(player, profile);
+            }
             SkillProgressionManager.state(player);
             RealmEconomyManager.account(player);
             RealmEconomyManager.sync(player);
@@ -212,7 +218,10 @@ public final class LivingKingdoms {
             return;
         }
         OriginProfileManager.profile(player.getUUID()).ifPresent(profile -> {
-            LivingRealmWorldManager.requestPlacement(player, profile);
+            if (!LivingRealmWorldManager.restoreAssignedResidence(player, profile)) {
+                SelectionStagingManager.ensure(player);
+                LivingRealmWorldManager.requestPlacement(player, profile);
+            }
             SkillProgressionManager.state(player);
             RealmEconomyManager.account(player);
             RealmEconomyManager.sync(player);
@@ -228,8 +237,8 @@ public final class LivingKingdoms {
             return;
         }
         OriginProfileManager.profile(player.getUUID()).ifPresent(profile -> {
-            ServerLevel realm = player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
-            if (realm != null && !RealmSitePlanner.isBuilt(realm, profile.homelandId()) && gameTime % 20L == 0L) {
+            if (OriginProfileManager.requiresResidenceAssignment(player.getUUID())
+                    && gameTime % 20L == 0L) {
                 SelectionStagingManager.ensure(player);
             }
         });
@@ -242,7 +251,8 @@ public final class LivingKingdoms {
 
     private void onIncomingDamage(LivingIncomingDamageEvent event) {
         if (event.getEntity() instanceof ServerPlayer player
-                && OriginProfileManager.requiresSelection(player.getUUID())) {
+                && (OriginProfileManager.requiresSelection(player.getUUID())
+                || OriginProfileManager.requiresResidenceAssignment(player.getUUID()))) {
             event.setAmount(0.0F);
             return;
         }

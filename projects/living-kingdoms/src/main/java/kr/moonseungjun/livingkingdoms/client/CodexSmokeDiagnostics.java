@@ -32,8 +32,11 @@ final class CodexSmokeDiagnostics {
         }
         if (ticks == 194) {
             verify("growth_tree");
+            if (!RealmCodexClient.directPanelHitTestForTest()) {
+                throw new IllegalStateException("Inventory-side codex direct hit boxes do not match visible buttons");
+            }
             LivingKingdoms.LOGGER.info(
-                    "LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills growth_views=mastery,tree rendered_window=true responsive=true viewport={}x{} controls_fit=true overlap_free=true atlas_drag=true atlas_zoom=true mastery_first=true split_growth_views=true",
+                    "LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills growth_views=mastery,tree rendered_window=true responsive=true viewport={}x{} controls_fit=true overlap_free=true atlas_drag=true atlas_zoom=true mastery_first=true split_growth_views=true inventory_direct_click=true",
                     active.width, active.height
             );
         }
@@ -66,16 +69,16 @@ final class CodexSmokeDiagnostics {
     }
 
     private static String sampleSnapshot() {
-        return "player\tCI Wanderer\n"
+        return "player\tCI Citizen\n"
                 + "species_id\thuman\n"
                 + "species\t인간\n"
                 + "homeland\t에르덴 왕국\n"
                 + "affiliation\t에르덴 왕국 · 로엔 변경백령\n"
                 + "citizenship\t에르덴 왕국 시민\n"
-                + "background\t방랑자\n"
-                + "residence\t왕국 북로의 방랑자 야영지\n"
+                + "background\t평범한 주민\n"
+                + "residence\t왕도 시민구의 임대방\n"
                 + "trait_title\t다재다능\n"
-                + "trait_description\t다른 종족보다 초기 기술 점수를 1점 더 받습니다.\n"
+                + "trait_description\t생활과 전투를 자유롭게 익혀 나갑니다.\n"
                 + "health\t17.0 / 20.0\n"
                 + "armor\t7\n"
                 + "food\t18 / 20\n"
@@ -110,11 +113,7 @@ final class CodexSmokeDiagnostics {
                 + "player_x\t12\n"
                 + "player_z\t8\n"
                 + "erden_x\t0\n"
-                + "erden_z\t0\n"
-                + "silvana_x\t-2400\n"
-                + "silvana_z\t-1200\n"
-                + "kardum_x\t2200\n"
-                + "kardum_z\t-1500\n";
+                + "erden_z\t0\n";
     }
 
     private static String mastery(String id, String name, int level, long xp, float progress) {

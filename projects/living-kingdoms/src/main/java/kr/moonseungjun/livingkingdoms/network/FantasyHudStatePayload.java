@@ -7,8 +7,9 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 
-/** Compact server-authoritative civic status for the always-visible fantasy HUD. */
+/** Compact server-authoritative civic status and clock for the always-visible fantasy HUD. */
 public record FantasyHudStatePayload(
+        long realmGameTime,
         long silver,
         int renown,
         int wanted,
@@ -23,6 +24,8 @@ public record FantasyHudStatePayload(
     );
 
     public static final StreamCodec<ByteBuf, FantasyHudStatePayload> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.VAR_LONG,
+            FantasyHudStatePayload::realmGameTime,
             ByteBufCodecs.VAR_LONG,
             FantasyHudStatePayload::silver,
             ByteBufCodecs.VAR_INT,
@@ -43,6 +46,7 @@ public record FantasyHudStatePayload(
     );
 
     public FantasyHudStatePayload {
+        realmGameTime = Math.max(0L, realmGameTime);
         silver = Math.max(0L, silver);
         renown = Math.max(0, renown);
         wanted = Math.max(0, wanted);
