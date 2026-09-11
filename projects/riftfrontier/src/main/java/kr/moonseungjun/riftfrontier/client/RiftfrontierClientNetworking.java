@@ -32,9 +32,14 @@ public final class RiftfrontierClientNetworking {
         BossPresentationClientState.forgetActor(event.getEntity().getId(), event.getEntity().getUUID());
     }
 
-    /** Entity ids and level game-time epochs may be reused after disconnect; discard ordering watermarks with the connection. */
+    /**
+     * Entity ids, level game-time epochs and reviewed render capabilities belong to one server connection epoch.
+     * A reconnect may legitimately restart ordering time, but it must never reuse a renderer publication prepared
+     * against the previous server/resource authority merely because the physical client process stayed alive.
+     */
     @SubscribeEvent
     private static void loggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         BossPresentationClientState.clearAll();
+        RiftfrontierClientResources.retireBossPresentationConnectionEpoch();
     }
 }

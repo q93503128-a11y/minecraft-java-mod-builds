@@ -178,6 +178,15 @@ public final class RiftfrontierClientResources {
         }
     }
 
+    /**
+     * Retires every prepared/published boss-render capability at a network connection boundary.
+     * Client resource reloads are not guaranteed to run between servers, so retaining one of these immutable
+     * capabilities across logout could let a later connection feed fresh semantics through stale reviewed assets.
+     */
+    static void retireBossPresentationConnectionEpoch() {
+        clearPreparedPresentation();
+    }
+
     private static void clearPreparedPresentation() {
         PREPARED_BOSS_MATERIAL.set(null);
         PREPARED_BOSS_ANIMATION.set(null);
