@@ -1,0 +1,100 @@
+name: TEMP HiddenRubric Lane04 Build Batch005
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-build-batch005.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build and validate batch005
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          REC=Path('temp-hiddenrubric/lane04/lane04-known-uuid-recovery.jsonl')
+          rows=[json.loads(x) for x in REC.read_text(encoding='utf-8').splitlines() if x.strip()]
+          srcrow=next(x for x in rows if x['sourceRowId']=='8c02f215-e1db-48e2-8de8-543ed61bb5b7')
+          src=srcrow['targetUserTurn']
+          ko='다음 내용을 고위 경영진 검토용으로 더 세련된 문단 형태로 다듬어 주세요.\n아래 교육에 해당 지점을 등록해 주세요. 이 교육은 학습개발센터와 협업하는 COD 수석 전문가가 진행합니다. 이후 관련 분야 전문가와 당사 파견 담당자를 통해 Privilege Center Faisalabad를 위한 대면 교육도 준비해 주세요.'
+          sa='senior management'; ka='고위 경영진'
+          ss=src.find(sa); ks=ko.find(ka)
+          assert ss>=0 and src.find(sa,ss+1)<0
+          assert ks>=0 and ko.find(ka,ks+1)<0
+          assert srcrow['isCode'] is False
+          staging={
+            'schemaVersion':'router-stage05-parallel-v1-lane04-requester-evaluator-v1',
+            'lane':'lane04-requester-evaluator',
+            'sourceDataset':'lmarena-ai/arena-human-preference-140k',
+            'sourceRevision':'a9cb587ee0906192dc1fc5e51778282f36c6bf35',
+            'sourceArtifact':'pinned-parquet-direct-recovery:public-run-34636601692',
+            'sourceEvaluationSessionId':srcrow['sourceEvaluationSessionId'],
+            'sourceRowId':srcrow['sourceRowId'],
+            'familyIndex':None,
+            'kind':'user','turnIndex':srcrow['targetTurnIndex'],
+            'sourceLanguage':'en','targetLanguage':'ko',
+            'source_en':src,'localized_ko':ko,
+            'assistantOutputsIncluded':False,'sourceComplete':True,
+            'translationReviewed':True,'semanticReviewed':True,'existingStage05DuplicateChecked':True,
+            'privacyFlags':[],
+            'ownership':{'stateOps':False,'preference':False,'crossDomain':False},
+            'actors':{
+              'requester':{'present':False,'sourceSpans':[],'koreanSpans':[],'relationEvidence':[]},
+              'evaluator':{
+                'present':True,
+                'sourceSpans':[{'start':ss,'end':ss+len(sa),'text':sa}],
+                'koreanSpans':[{'start':ks,'end':ks+len(ka),'text':ka}],
+                'relationEvidence':['review_by_actor']
+              }
+            },
+            'reviewStatus':'manual-semantic-reviewed-staging',
+            'trainingEligible':False,'humanGold':False,'factualGold':False,'domainExpertGold':False
+          }
+          review={
+            'sourceRowId':srcrow['sourceRowId'],'turnIndex':srcrow['targetTurnIndex'],
+            'accepted':True,'role':'evaluator','actorText':sa,'reason':'manual_rescue_exact_semantic_match',
+            'relationEvidence':'review_by_actor',
+            'notes':'Current requested rewrite is explicitly intended for senior management review; evaluator is attached to the requested output, not historical/background material.'
+          }
+          report={
+            'schemaVersion':'router-stage05-parallel-v1-lane04-report-v1','lane':'lane04-requester-evaluator','date':'2026-09-12',
+            'source':{'dataset':'lmarena-ai/arena-human-preference-140k','revision':'a9cb587ee0906192dc1fc5e51778282f36c6bf35','rawRows':135634,'humanUserTurnsOnly':True,'assistantOutputsUsed':False},
+            'batch':{'acceptedRows':1,'requesterPositiveRows':0,'requesterExactSpans':0,'evaluatorPositiveRows':1,'evaluatorExactSpans':1,'rawHeuristicCandidateAnnotationsReviewed':0,'rawHeuristicCandidateAnnotationsAccepted':0,'falsePositiveOrHigherLaneAnnotationsRemoved':0,'manualRescueActorAnnotations':1},
+            'ownership':{'stateOpsExcluded':True,'preferenceExcluded':True,'crossDomainExcluded':True},
+            'duplicateCheck':{'baseHead':'49b06db5f43c4b97546227ab8518462f2c9a8042','githubCodeSearchHitCount':0,'selectedRowsUnique':True},
+            'notes':['Precision-first evaluator seed recovered from pinned parquet human user text.','The requested rewrite is explicitly for senior management review.','No assistant/model output was used.']
+          }
+          # fail-closed exact checks mirroring Lane04 validator essentials
+          assert staging['source_en'][ss:ss+len(sa)]==sa
+          assert staging['localized_ko'][ks:ks+len(ka)]==ka
+          assert staging['actors']['evaluator']['relationEvidence']==['review_by_actor']
+          assert staging['sourceEvaluationSessionId'] and staging['sourceRowId']
+          out=Path('temp-hiddenrubric/lane04/batch005'); out.mkdir(parents=True,exist_ok=True)
+          (out/'staging-batch005-evaluator-expansion.jsonl').write_text(json.dumps(staging,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8')
+          (out/'review-batch005-evaluator-expansion.jsonl').write_text(json.dumps(review,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8')
+          (out/'report-batch005-evaluator-expansion.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          (out/'VALIDATION.txt').write_text('PASS rows=1 requester=0 evaluator=1 evaluatorSpans=1\n',encoding='utf-8')
+          print(json.dumps({'status':'PASS','rows':1,'evaluatorPositiveRows':1,'sourceSpan':[ss,ss+len(sa)],'koreanSpan':[ks,ks+len(ka)]},ensure_ascii=False))
+          PY
+      - name: Commit temporary batch005
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/batch005/
+          git commit -m 'chore: materialize temporary Lane04 batch005'
+          git push origin HEAD:main
