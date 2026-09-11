@@ -24,6 +24,7 @@ import java.util.UUID;
  */
 public final class MinecraftPlayerWeaponCombatAdapter {
     private final CombatRuntimeCatalog catalog;
+    private final Optional<PublishedContentGenerationGuard> generationGuard;
     private final LoadoutResolver loadoutResolver;
     private final HitVolume hitVolume;
     private final Map<UUID, Session> sessions = new HashMap<>();
@@ -34,6 +35,7 @@ public final class MinecraftPlayerWeaponCombatAdapter {
         HitVolume hitVolume
     ) {
         this.catalog = Objects.requireNonNull(catalog, "catalog");
+        this.generationGuard = PublishedContentGenerationGuard.fromCatalog(catalog);
         this.loadoutResolver = Objects.requireNonNull(loadoutResolver, "loadoutResolver");
         this.hitVolume = Objects.requireNonNull(hitVolume, "hitVolume");
     }
@@ -43,6 +45,7 @@ public final class MinecraftPlayerWeaponCombatAdapter {
         Objects.requireNonNull(actor, "actor");
         Objects.requireNonNull(moveId, "moveId");
         requireCombatEligible(actor);
+        requireCurrentGeneration(actor.getUUID());
         Loadout loadout = requireLoadout(actor);
         Session session = synchronizeSession(actor, loadout);
         AttackExecution.Snapshot snapshot = session.controller.beginMove(moveId, gameTick);
@@ -52,8 +55,9 @@ public final class MinecraftPlayerWeaponCombatAdapter {
 
     /**
      * Advances one actor from the same server-owned clock and exposes unique hit-volume candidates
-     * only during ACTIVE. A loadout swap, actor-instance replacement, world/dimension discontinuity,
-     * death/removal, or spectator transition immediately cancels and discards the old execution.
+     * only during ACTIVE. A published content-generation change, loadout swap, actor-instance replacement,
+     * world/dimension discontinuity, death/removal, or spectator transition immediately cancels and discards
+     * the old execution.
      */
     public TickResult tick(ServerLevel level, LivingEntity actor, long gameTick) {
         Objects.requireNonNull(level, "level");
@@ -61,6 +65,10 @@ public final class MinecraftPlayerWeaponCombatAdapter {
 
         Session session = sessions.get(actor.getUUID());
         if (session == null) return TickResult.idle();
+        if (!isCurrentGeneration()) {
+            invalidate(actor.getUUID(), session);
+            return TickResult.invalidated();
+        }
         if (session.actor != actor) {
             invalidate(actor.getUUID(), session);
             return TickResult.invalidated();
@@ -96,11 +104,15 @@ public final class MinecraftPlayerWeaponCombatAdapter {
         return new TickResult(snapshot.presentationPhase(), step.hitWindowOpen(), step.finished(), false, candidates);
     }
 
-    /** Module movement semantics can never authorize outside RECOVERY or for a stale actor instance. */
+    /** Module movement semantics can never authorize outside RECOVERY or from stale combat content. */
     public boolean recoveryPivotAuthorized(LivingEntity actor, long gameTick) {
         Objects.requireNonNull(actor, "actor");
         Session session = sessions.get(actor.getUUID());
         if (session == null) return false;
+        if (!isCurrentGeneration()) {
+            invalidate(actor.getUUID(), session);
+            return false;
+        }
         if (session.actor != actor || !MinecraftCombatAuthority.isEligibleServerActor(actor)) {
             invalidate(actor.getUUID(), session);
             return false;
@@ -140,6 +152,20 @@ public final class MinecraftPlayerWeaponCombatAdapter {
         throw new IllegalStateException("Actor is not combat-eligible for Riftfrontier weapon authority: " + actor.getUUID());
     }
 
+    private void requireCurrentGeneration(UUID actorId) {
+        if (generationGuard.isEmpty()) return;
+        try {
+            generationGuard.orElseThrow().requireCurrent();
+        } catch (IllegalStateException stale) {
+            clearActor(actorId);
+            throw stale;
+        }
+    }
+
+    private boolean isCurrentGeneration() {
+        return generationGuard.isEmpty() || generationGuard.orElseThrow().isCurrent();
+    }
+
     private Session synchronizeSession(LivingEntity actor, Loadout loadout) {
         ResourceKey<Level> dimension = actor.level().dimension();
         Session existing = sessions.get(actor.getUUID());
@@ -150,12 +176,9 @@ public final class MinecraftPlayerWeaponCombatAdapter {
             return existing;
         }
         if (existing != null) invalidate(actor.getUUID(), existing);
-        Session replacement = new Session(
-            actor,
-            loadout,
-            dimension,
-            catalog.playerWeaponController(loadout.familyId(), loadout.moduleId())
-        );
+        PlayerWeaponCombatController controller = catalog.playerWeaponController(loadout.familyId(), loadout.moduleId());
+        requireCurrentGeneration(actor.getUUID());
+        Session replacement = new Session(actor, loadout, dimension, controller);
         sessions.put(actor.getUUID(), replacement);
         return replacement;
     }
