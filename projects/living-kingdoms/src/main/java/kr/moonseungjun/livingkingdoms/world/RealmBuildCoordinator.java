@@ -39,10 +39,14 @@ public final class RealmBuildCoordinator {
             return;
         }
         if (RealmSitePlanner.isBuilt(realm, profile.homelandId())) {
-            LivingRealmWorldManager.finishPlacement(player, profile);
-            StarterNpcManager.ensureForPlayer(player, profile);
-            send(player, profile.homelandId(), "complete", 100,
-                    "왕국 준비가 끝났습니다. 선택한 거주지로 이동합니다.", true, false);
+            if (LivingRealmWorldManager.finishPlacement(player, profile)) {
+                StarterNpcManager.ensureForPlayer(player, profile);
+                send(player, profile.homelandId(), "complete", 100,
+                        "실제 시민구 거주지 확인이 끝났습니다. 왕도에서 삶을 시작합니다.", true, false);
+            } else {
+                send(player, profile.homelandId(), "residence", 99,
+                        "실제 시민 주택 내부와 출입 동선을 확인하고 있습니다.", false, false);
+            }
             return;
         }
 
@@ -58,7 +62,7 @@ public final class RealmBuildCoordinator {
         sendCurrent(player, profile.homelandId(), job);
         player.sendSystemMessage(Component.literal(
                 "§6[왕국 준비] §f정해진 판타지 대륙 좌표에 수도와 거주지를 건설하고 있습니다. "
-                        + "진행 화면은 건설이 끝날 때까지 유지됩니다."
+                        + "진행 화면은 실제 시민 주택 입장이 확인될 때까지 유지됩니다."
         ));
     }
 
@@ -292,15 +296,15 @@ public final class RealmBuildCoordinator {
                 ServerPlayer player = job.realm.getServer().getPlayerList().getPlayer(playerId);
                 if (player == null) continue;
                 OriginProfileManager.profile(playerId).ifPresent(profile -> {
-                    if (profile.homelandId().equals(homelandId)) {
-                        LivingRealmWorldManager.finishPlacement(player, profile);
+                    if (profile.homelandId().equals(homelandId)
+                            && LivingRealmWorldManager.finishPlacement(player, profile)) {
                         StarterNpcManager.ensureForPlayer(player, profile);
                     }
                 });
             }
             synchronized (job) {
                 job.finished = true;
-                setStatus(job, "complete", 100, "왕국 준비가 끝났습니다. 선택한 거주지로 이동합니다.");
+                setStatus(job, "complete", 100, "왕국 준비가 끝났습니다. 실제 시민 주택 입장을 확인합니다.");
             }
             broadcast(homelandId, job, true, false, true);
             notifyCompletions(job, null);
@@ -376,7 +380,13 @@ public final class RealmBuildCoordinator {
         }
         for (UUID playerId : players) {
             ServerPlayer player = job.realm.getServer().getPlayerList().getPlayer(playerId);
-            if (player != null) send(player, homelandId, phase, percent, message, complete, failed);
+            if (player == null) continue;
+            if (complete && LivingRealmWorldManager.isPlacementPending(playerId)) {
+                send(player, homelandId, "residence", 99,
+                        "실제 시민 주택 내부와 출입 동선을 확인하고 있습니다.", false, false);
+            } else {
+                send(player, homelandId, phase, percent, message, complete, failed);
+            }
         }
     }
 

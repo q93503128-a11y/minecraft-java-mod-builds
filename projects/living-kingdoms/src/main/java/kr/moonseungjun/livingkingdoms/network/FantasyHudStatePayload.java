@@ -7,7 +7,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 
-/** Compact server-authoritative civic status for the always-visible fantasy HUD. */
+/** Compact server-authoritative civic status and shared Erden clock for the always-visible HUD. */
 public record FantasyHudStatePayload(
         long silver,
         int renown,
@@ -16,7 +16,8 @@ public record FantasyHudStatePayload(
         int grainIndex,
         int metalIndex,
         int herbIndex,
-        int laborIndex
+        int laborIndex,
+        long realmGameTime
 ) implements CustomPacketPayload {
     public static final Type<FantasyHudStatePayload> TYPE = new Type<>(
             Identifier.fromNamespaceAndPath(LivingKingdoms.MOD_ID, "fantasy_hud_state")
@@ -39,6 +40,8 @@ public record FantasyHudStatePayload(
             FantasyHudStatePayload::herbIndex,
             ByteBufCodecs.VAR_INT,
             FantasyHudStatePayload::laborIndex,
+            ByteBufCodecs.VAR_LONG,
+            FantasyHudStatePayload::realmGameTime,
             FantasyHudStatePayload::new
     );
 
@@ -51,6 +54,7 @@ public record FantasyHudStatePayload(
         metalIndex = bounded(metalIndex);
         herbIndex = bounded(herbIndex);
         laborIndex = bounded(laborIndex);
+        realmGameTime = Math.max(0L, realmGameTime);
     }
 
     private static int bounded(int value) {
