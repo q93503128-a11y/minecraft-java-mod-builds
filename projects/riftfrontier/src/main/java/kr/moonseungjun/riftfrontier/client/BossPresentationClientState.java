@@ -23,8 +23,9 @@ public final class BossPresentationClientState {
      *
      * <p>If a numeric entity id is reused by a new UUID, the new actor replaces the old watermark instead of
      * inheriting another actor's level-time epoch. Production render lookup still requires both numeric id and UUID,
-     * so a reused id can never expose the previous actor's cached presentation. Clears retain the current actor
-     * watermark until that exact actor leaves the client level.</p>
+     * so a reused id can never expose the previous actor's cached presentation. Clears and actor-leave events retain
+     * the current actor watermark until the connection/world cache is reset, preventing a delayed pre-leave packet
+     * from resurrecting presentation after tracking has already ended.</p>
      */
     public static boolean accept(BossPresentationSemanticState state) {
         BossPresentationSemanticState incoming = Objects.requireNonNull(state, "state");
@@ -59,25 +60,29 @@ public final class BossPresentationClientState {
     }
 
     /**
-     * Drops active semantics and the ordering watermark for one exact logical actor when it leaves the client level.
+     * Drops active semantics for one exact logical actor when it leaves the client level while retaining its
+     * ordering watermark as a tombstone.
      *
      * <p>The UUID comparison is deliberate: a delayed leave callback for an old actor must never erase a new actor
-     * that has already reused the same numeric entity id. Removing the whole entry also retires a clear-only
-     * watermark, so a later lifecycle of the same UUID starts with a fresh level-time epoch.</p>
+     * that has already reused the same numeric entity id. Retaining the latest server tick prevents a delayed packet
+     * sampled before the leave event from recreating active presentation afterward. A later packet for the same UUID
+     * must therefore advance the server tick before it can establish a fresh active state. Connection/world reset via
+     * {@link #clearAll()} retires these tombstones when the server game-time epoch itself may restart.</p>
      */
     public static boolean forgetActor(int entityId, UUID entityUuid) {
         if (entityId < 0) throw new IllegalArgumentException("entityId must be >= 0");
         UUID requiredUuid = Objects.requireNonNull(entityUuid, "entityUuid");
-        final boolean[] removed = {false};
+        final boolean[] retired = {false};
         ENTRIES.computeIfPresent(entityId, (ignored, current) -> {
             if (!current.entityUuid().equals(requiredUuid)) return current;
-            removed[0] = true;
-            return null;
+            if (current.activeState() == null) return current;
+            retired[0] = true;
+            return new Entry(current.entityUuid(), current.latestServerGameTick(), null);
         });
-        return removed[0];
+        return retired[0];
     }
 
-    /** Clears both active semantics and ordering watermarks when the client leaves the current connection/world. */
+    /** Clears active semantics and ordering watermarks when the client leaves the current connection/world epoch. */
     public static void clearAll() {
         ENTRIES.clear();
     }
