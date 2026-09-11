@@ -4,44 +4,45 @@ Recovery aid only. Current GitHub `main` plus canonical project/design documents
 
 ## Last recovered baseline
 
-- Run-start remote `main`: `5f8b539f3285f5a88dd2db65bbafd514c6d0ecc9`.
-- Previous handoff descendant `Build Riftfrontier` run `34558376670`, HEAD `5f8b539f3285f5a88dd2db65bbafd514c6d0ecc9`: final `SUCCESS`.
+- Run-start remote `main`: `25e9097d81e1fec34e5ff967af46c25b1ebba283`.
+- Previous handoff descendant `Build Riftfrontier` run `34561558794`, HEAD `25e9097d81e1fec34e5ff967af46c25b1ebba283`: final `SUCCESS`.
 - No newly approved Region 01 final boss source/profile/assets, production player ItemStack provisioning/control mapping, shape-specific hit geometry, damage/range/resource policy, or final presentation input was found. None was invented.
 
 ## Completed in this batch
 
-M3 authenticated player exact-instance authority fence:
+M3 retained boss-presentation delivery-context authority fence:
 
-- Code/test HEAD before handoff: `2aa47a0a55b9da3ea75e6797a389e1e911aa8c87`.
-- Audited production reachability first. Production player-combat session creation is reachable only through `RiftfrontierNetworking` play-to-server handling, whose authenticated payload actor is a `ServerPlayer`, and production ticking is likewise `ServerPlayer`-typed. Direct generic `LivingEntity` adapter use remains fixture/capability code, so no redundant non-player role fence was added there.
-- Found the next real authority divergence at the reconnect/clone boundary: a delayed callback retaining an old `ServerPlayer` object with the same UUID could reach the UUID-keyed adapter and replace a successor instance's session unless production revalidated the exact currently registered server-level entity.
-- `PlayerWeaponServerRuntime` now verifies `level.getEntity(player.getUUID()) == player` before both move-intent session creation and per-player ticking.
-- A rejected stale move intent performs only exact-instance `clearPlayer(player)` cleanup and returns `REJECTED`; it never performs UUID-wide cleanup that could erase a successor session.
-- A stale tick callback similarly retires only an exact stale session, returning invalidated/idle without touching a successor instance.
-- The check uses the server level's keyed entity lookup, not a broad player/entity scan.
-- Existing login UUID-wide reconnect fence remains intentional; logout/dimension/clone/entity-leave cleanup remains exact-instance; generation/loadout/dimension/attack-clock semantics remain unchanged.
-- Added `PlayerWeaponAuthenticatedInstanceContractTest` to lock the exact lookup and exact-only stale cleanup on both production entry paths.
-- No balance, ItemStack provisioning, controls, hit geometry, damage/range/resource, model, animation, VFX or sound was invented.
+- Code/test HEAD before handoff: `f88efea168a97cefc118c2540e1fea9a54933bd3`.
+- Audited the requested production network/runtime boundary rather than repeating player reconnect/generation or boss owner-lifetime work.
+- Player move transport remains authenticated `ServerPlayer` + move-id-only intent; no demonstrated malformed/reordered production mutation path justified inventing a sequence protocol without approved client control/provisioning input.
+- Found a real retained-result divergence in boss presentation delivery: `ValidatedTickResult` is immutable and can outlive the Minecraft actor/world context that produced it, while the previous network bridge only compared entity id/UUID and a caller-supplied tick before fan-out.
+- Added `BossPresentationDeliveryGuard` as the final server-side admission fence before packet distribution.
+- Delivery now requires an authoritative `ServerLevel`, a combat-eligible non-player boss, exact keyed entity identity (`level.getEntity(uuid) == boss`), the level's current game tick matching the sampled tick, and semantic state entity id/UUID/tick matching the same actor/sample.
+- `RiftfrontierNetworking.syncBossPresentation` invokes that guard immediately before `PacketDistributor.sendToPlayersTrackingEntityAndSelf`.
+- Extended native `boss_runtime_owner_lifecycle`: it retains a presentation result produced while the owner is valid, removes the exact owner, then proves the production network bridge rejects the stale retained result before fan-out.
+- Existing boss generation/owner singleton/dimension/entity-leave/server-stop rules and player authority rules were not weakened or duplicated.
+- No balance, hit geometry, damage/range/resource policy, controls, ItemStack provisioning, model, animation, VFX or sound was invented.
 
 ## Changed systems/files
 
-- `src/main/java/kr/moonseungjun/riftfrontier/combat/PlayerWeaponServerRuntime.java`
-- `src/test/java/kr/moonseungjun/riftfrontier/combat/PlayerWeaponAuthenticatedInstanceContractTest.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/combat/BossPresentationDeliveryGuard.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/network/RiftfrontierNetworking.java`
+- `src/main/java/kr/moonseungjun/riftfrontier/gametest/BossRuntimeLifecycleGameTests.java`
 - `docs/AUTOMATION_HANDOFF.md`
 
 ## Verification
 
-- `Build Riftfrontier` run `34561082894`, code/test HEAD `2aa47a0a55b9da3ea75e6797a389e1e911aa8c87`: final `SUCCESS`.
+- `Build Riftfrontier` run `34564677672`, code/test HEAD `f88efea168a97cefc118c2540e1fea9a54933bd3`: final `SUCCESS`.
 - Successful workflow gates: Java/Gradle setup and toolchain verification; asset intake tool tests; JUnit + clean build; required native GameTest gate; dedicated-server smoke; Xvfb client smoke; executable JAR inspection; build report; deliverable upload; logs/report upload.
-- Existing native `player_weapon_input_authority` production bridge test remained green, proving its mock `ServerPlayer` is admitted by the new exact server-level lookup while the source contract seals the stale-instance branch.
-- A separate unrelated repository workflow `.github/workflows/cd-a15-export-exact3.yml` run `34561079736` failed immediately with no jobs; it is not the Riftfrontier build/validation workflow and was not used as evidence for this batch.
+- Native `boss_runtime_owner_lifecycle` remained green with the new production-network retained-result rejection regression.
 - Local Gradle: NOT RUN in this automation environment; executable validation was performed by GitHub Actions.
 - Human field play, multiplayer latency/feel, concrete player controls, production boss/player hit geometry/damage/resource policy and final player/boss presentation: NOT TESTED / NOT APPROVED.
 
 ## Do not repeat or revert
 
 - M2 persistence/restart/Region 01 technical-proxy lifecycle and owner attribution work is DONE.
-- Boss presentation/network semantic capability plumbing is DONE; do not expand presentation without legitimate approved input.
+- Boss presentation semantic capability and network payload plumbing are DONE; do not expand presentation without legitimate approved input.
+- Boss presentation delivery now revalidates exact live server entity/world/current-tick context immediately before fan-out; do not return to id/UUID/caller-tick-only admission.
 - Player `weapon_family` / `weapon_module` schema, two-family production graph, server-owned ItemStack loadout component and move-id-only serverbound intent are DONE.
 - Production player combat is authenticated `ServerPlayer`-only by reachability; do not add a redundant player-role gate to the generic fixture/capability adapter without a new production path.
 - Player sessions remain published-generation + exact actor-instance + exact currently registered server-level instance + dimension + loadout scoped and combat-eligibility gated; player process-local combat state is cleared at server stop.
@@ -52,8 +53,9 @@ M3 authenticated player exact-instance authority fence:
 
 ## Exact next start point
 
-1. Re-check current remote `main` and the final status of code run `34561082894` plus any handoff descendant CI. If a descendant failed, fix the first actual failing gate without weakening authority.
+1. Re-check current remote `main` and the final status of code run `34564677672` plus any handoff descendant CI. If a descendant failed, fix the first actual failing gate without weakening authority.
 2. Re-check approved Region 01 boss/profile/assets and player ItemStack provisioning/control input. Use existing production gates only if legitimate new input exists.
-3. If still absent and CI is green, do not repeat player production reachability, generation, lifecycle, reconnect/exact-instance admission, loadout, target-admission, attack-clock or boss owner/generation/server-lifetime work.
-4. Audit the next objective M3 server-authority divergence at the production network/runtime boundary. Prioritize whether any retained result/capability can be applied after its authoritative actor/world context has changed, or whether malformed/reordered transport can mutate a newer authoritative state. Distinguish actual production reachability from fixture-only APIs and only patch a demonstrated path.
-5. Keep production hit geometry, damage/range/resource, timing tuning, final controls/ItemStack provisioning/model/animation/VFX/sound and multiplayer feel blocked on evidence/approval.
+3. If still absent and CI is green, do not repeat player production reachability/generation/lifecycle/reconnect/exact-instance/loadout/target/attack-clock or boss owner/generation/server-lifetime/presentation-world-context work.
+4. Audit the next objective M3 server-authority divergence. A priority candidate is whether a boss presentation result produced under a now-stale published content generation can still be delivered within an otherwise live actor/world context after atomic content publication; patch only if production reachability demonstrates the gap, and preserve the new exact-world/current-tick delivery fence.
+5. If that boundary is already sealed by existing capability semantics, move to the next demonstrable production state handoff rather than adding speculative protocol infrastructure.
+6. Keep production hit geometry, damage/range/resource, timing tuning, final controls/ItemStack provisioning/model/animation/VFX/sound and multiplayer feel blocked on evidence/approval.
