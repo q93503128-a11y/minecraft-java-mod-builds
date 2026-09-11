@@ -170,11 +170,11 @@ public final class MinecraftBossCombatAdapter {
         }
     }
 
-    /** Begins a boss attack and immediately binds the Minecraft damage execution to one eligible actor. */
+    /** Begins a boss attack and immediately binds the Minecraft damage execution to one eligible boss actor. */
     public AttackExecution.Snapshot beginNextAttack(ServerLevel level, LivingEntity boss, long gameTick) {
         Objects.requireNonNull(level, "level");
         Objects.requireNonNull(boss, "boss");
-        if (!MinecraftCombatAuthority.isEligibleServerActor(level, boss)) {
+        if (!MinecraftCombatAuthority.isEligibleBossActor(level, boss)) {
             cancelAttack();
             throw new IllegalStateException("Boss is not eligible to begin authoritative Minecraft combat");
         }
@@ -200,7 +200,7 @@ public final class MinecraftBossCombatAdapter {
     public TickResult tick(ServerLevel level, LivingEntity boss, long gameTick) {
         Objects.requireNonNull(level, "level");
         Objects.requireNonNull(boss, "boss");
-        if (!MinecraftCombatAuthority.isEligibleServerActor(level, boss)) {
+        if (!MinecraftCombatAuthority.isEligibleBossActor(level, boss)) {
             cancelAttack();
             return new TickResult(controller.phase(), MinecraftAttackAdapter.TickResult.idle(), false, Optional.empty());
         }
@@ -421,7 +421,7 @@ public final class MinecraftBossCombatAdapter {
         private void requireMinecraftOwner(ServerLevel level, LivingEntity boss) {
             Objects.requireNonNull(level, "level");
             Objects.requireNonNull(boss, "boss");
-            if (!MinecraftCombatAuthority.isEligibleServerActor(level, boss)) {
+            if (!MinecraftCombatAuthority.isEligibleBossActor(level, boss)) {
                 delegate.cancelAttack();
                 throw new IllegalStateException("Boss is not eligible to own a validated Minecraft combat runtime");
             }

@@ -13,6 +13,9 @@ final class BossRuntimeLifecycleContractTest {
     private static final Path ADAPTER_SOURCE = Path.of(
         "src/main/java/kr/moonseungjun/riftfrontier/combat/MinecraftBossCombatAdapter.java"
     );
+    private static final Path AUTHORITY_SOURCE = Path.of(
+        "src/main/java/kr/moonseungjun/riftfrontier/combat/MinecraftCombatAuthority.java"
+    );
     private static final Path MOD_SOURCE = Path.of(
         "src/main/java/kr/moonseungjun/riftfrontier/Riftfrontier.java"
     );
@@ -20,6 +23,7 @@ final class BossRuntimeLifecycleContractTest {
     @Test
     void validatedRuntimeIsEntityAndServerLifetimeBoundAndLifecycleEventsAreRegistered() throws IOException {
         String adapter = normalizeWhitespace(Files.readString(ADAPTER_SOURCE));
+        String authority = normalizeWhitespace(Files.readString(AUTHORITY_SOURCE));
         String mod = normalizeWhitespace(Files.readString(MOD_SOURCE));
 
         assertTrue(adapter.contains("private LivingEntity minecraftOwner;"),
@@ -39,6 +43,16 @@ final class BossRuntimeLifecycleContractTest {
         assertTrue(adapter.contains(
                 "public BossCombatController.PhaseTransition transitionToPhase( ServerLevel level, LivingEntity boss, int newPhase )"),
             "Minecraft-bound phase transitions must require explicit authoritative level and actor context");
+        assertTrue(authority.contains("import net.minecraft.server.level.ServerPlayer;"),
+            "boss admission must be able to distinguish authenticated player actors from boss actors");
+        assertTrue(authority.contains("static boolean isEligibleBossActor(ServerLevel level, LivingEntity actor)"),
+            "shared combat authority must expose a dedicated boss-role admission boundary");
+        assertTrue(authority.contains("isEligibleServerActor(level, actor) && !(actor instanceof ServerPlayer)"),
+            "a ServerPlayer must never be admitted as a boss runtime owner even while otherwise combat-eligible");
+        assertTrue(occurrences(adapter, "MinecraftCombatAuthority.isEligibleBossActor(level, boss)") == 3,
+            "boss begin, tick and validated owner binding must all use the boss-specific role gate");
+        assertTrue(!adapter.contains("MinecraftCombatAuthority.isEligibleServerActor(level, boss)"),
+            "boss Minecraft authority must not fall back to the generic actor gate and re-admit player actors");
         assertTrue(adapter.contains("if (existing != runtime && existing.retireIfGenerationStale()) { iterator.remove(); }"),
             "a fresh claim must prune stale-generation owner slots before enforcing singleton ownership");
         assertTrue(adapter.contains("if (!runtimes.isEmpty() && !runtimes.contains(runtime))"),
@@ -71,5 +85,15 @@ final class BossRuntimeLifecycleContractTest {
 
     private static String normalizeWhitespace(String source) {
         return source.replaceAll("\\s+", " ").trim();
+    }
+
+    private static int occurrences(String haystack, String needle) {
+        int count = 0;
+        int from = 0;
+        while ((from = haystack.indexOf(needle, from)) >= 0) {
+            count++;
+            from += needle.length();
+        }
+        return count;
     }
 }
