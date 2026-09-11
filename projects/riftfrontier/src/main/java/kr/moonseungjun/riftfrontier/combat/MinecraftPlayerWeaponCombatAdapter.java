@@ -127,7 +127,22 @@ public final class MinecraftPlayerWeaponCombatAdapter {
         return session.controller.recoveryPivotAuthorized(gameTick);
     }
 
-    /** Death/logout/despawn/dimension handoff hook. */
+    /**
+     * Exact-instance lifecycle cleanup. A delayed event from an old player/entity instance must not
+     * cancel a successor session that happens to reuse the same UUID.
+     */
+    public boolean clearActor(LivingEntity actor) {
+        Objects.requireNonNull(actor, "actor");
+        Session session = sessions.get(actor.getUUID());
+        if (session == null || session.actor != actor) return false;
+        invalidate(actor.getUUID(), session);
+        return true;
+    }
+
+    /**
+     * UUID-wide reconnect/server-boundary cleanup. Use only when every process-local session for the
+     * identity is intentionally invalid, regardless of which entity instance currently owns it.
+     */
     public boolean clearActor(UUID actorId) {
         Objects.requireNonNull(actorId, "actorId");
         Session removed = sessions.remove(actorId);

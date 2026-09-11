@@ -60,6 +60,8 @@ public final class Riftfrontier {
         NeoForge.EVENT_BUS.addListener(Riftfrontier::registerCommands);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::serverStarted);
         NeoForge.EVENT_BUS.addListener(MinecraftBossCombatAdapter::entityLeaveLevel);
+        NeoForge.EVENT_BUS.addListener(PlayerWeaponServerRuntime::entityLeaveLevel);
+        NeoForge.EVENT_BUS.addListener(PlayerWeaponServerRuntime::serverStopped);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::playerWeaponTick);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::playerWeaponLoggedIn);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::playerWeaponLoggedOut);
@@ -101,7 +103,7 @@ public final class Riftfrontier {
     }
 
     private static void playerWeaponLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) PlayerWeaponServerRuntime.clearPlayer(player);
+        if (event.getEntity() instanceof ServerPlayer player) PlayerWeaponServerRuntime.clearPlayer(player.getUUID());
     }
 
     private static void playerWeaponLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
@@ -113,6 +115,6 @@ public final class Riftfrontier {
     }
 
     private static void playerWeaponClone(PlayerEvent.Clone event) {
-        if (!event.getEntity().level().isClientSide()) PlayerWeaponServerRuntime.clearPlayer(event.getOriginal().getUUID());
+        if (event.getOriginal() instanceof ServerPlayer original) PlayerWeaponServerRuntime.clearPlayer(original);
     }
 }
