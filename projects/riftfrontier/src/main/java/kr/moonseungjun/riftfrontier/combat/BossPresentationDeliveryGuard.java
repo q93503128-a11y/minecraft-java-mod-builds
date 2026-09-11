@@ -1,5 +1,7 @@
 package kr.moonseungjun.riftfrontier.combat;
 
+import kr.moonseungjun.riftfrontier.content.ContentRuntime;
+import kr.moonseungjun.riftfrontier.content.ContentRuntimeSnapshot;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 
@@ -10,10 +12,10 @@ import java.util.Objects;
  * authoritative runtime boundary.
  *
  * <p>A {@link MinecraftBossCombatAdapter.ValidatedTickResult} is immutable and may outlive the
- * actor/world context that produced it. Delivery therefore revalidates the exact live entity
- * instance, server level, current server tick and semantic identity immediately before network
- * fan-out. This does not author presentation timing or assets; it only prevents a retained sample
- * from being applied after its authoritative Minecraft context has changed.</p>
+ * actor/world/content context that produced it. Delivery therefore revalidates the exact live entity
+ * instance, server level, current server tick, published content generation and semantic identity
+ * immediately before network fan-out. This does not author presentation timing or assets; it only
+ * prevents a retained sample from being applied after its authoritative context has changed.</p>
  */
 public final class BossPresentationDeliveryGuard {
     private BossPresentationDeliveryGuard() {}
@@ -39,6 +41,11 @@ public final class BossPresentationDeliveryGuard {
                 "validated boss presentation sample is stale for the current authoritative server tick"
             );
         }
+
+        long currentGeneration = ContentRuntime.current()
+            .map(ContentRuntimeSnapshot::generation)
+            .orElse(-1L);
+        result.semanticCapability().requirePublishedGeneration(currentGeneration);
 
         BossPresentationSemanticState state = result.presentationState();
         if (state.entityId() != boss.getId()

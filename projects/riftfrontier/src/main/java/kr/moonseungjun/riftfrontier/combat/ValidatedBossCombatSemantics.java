@@ -16,15 +16,18 @@ public final class ValidatedBossCombatSemantics {
     private final BossCombatSemanticProfile semantics;
     private final BossPresentationProfile presentation;
     private final Map<ContentId, CoreDefinition.AttackPattern> attacks;
+    private final OptionalLong publishedGeneration;
 
     private ValidatedBossCombatSemantics(
         BossCombatSemanticProfile semantics,
         BossPresentationProfile presentation,
-        Map<ContentId, CoreDefinition.AttackPattern> attacks
+        Map<ContentId, CoreDefinition.AttackPattern> attacks,
+        OptionalLong publishedGeneration
     ) {
         this.semantics = semantics;
         this.presentation = presentation;
         this.attacks = Map.copyOf(attacks);
+        this.publishedGeneration = Objects.requireNonNull(publishedGeneration, "publishedGeneration");
     }
 
     public static ValidatedBossCombatSemantics validate(
@@ -60,7 +63,12 @@ public final class ValidatedBossCombatSemantics {
                 requireLogicalAnimationCoverage(presentation, attack);
             }
         }
-        return new ValidatedBossCombatSemantics(semantics, presentation, resolved);
+        return new ValidatedBossCombatSemantics(
+            semantics,
+            presentation,
+            resolved,
+            catalog.publishedGeneration()
+        );
     }
 
     private static void requireLogicalAnimationCoverage(
@@ -89,6 +97,26 @@ public final class ValidatedBossCombatSemantics {
     public ContentId bossProfile() { return semantics.bossProfile(); }
 
     public BossPresentationProfile presentationProfile() { return presentation; }
+
+    /**
+     * Generation of the atomically published content snapshot that produced this semantic capability.
+     * Detached fixture catalogs intentionally return empty and therefore do not masquerade as published authority.
+     */
+    public OptionalLong publishedGeneration() { return publishedGeneration; }
+
+    /**
+     * Final retained-capability fence used immediately before presentation delivery.
+     * A capability derived from a published snapshot is invalid as soon as another generation becomes authoritative.
+     */
+    public void requirePublishedGeneration(long currentGeneration) {
+        if (publishedGeneration.isEmpty()) return;
+        long expected = publishedGeneration.getAsLong();
+        if (currentGeneration != expected) {
+            throw new IllegalStateException(
+                "Validated boss semantics generation is stale: expected " + expected + ", current " + currentGeneration
+            );
+        }
+    }
 
     public List<ContentId> candidateAttacks(int phase) {
         return semantics.attacksForPhase(phase).stream().sorted().toList();
