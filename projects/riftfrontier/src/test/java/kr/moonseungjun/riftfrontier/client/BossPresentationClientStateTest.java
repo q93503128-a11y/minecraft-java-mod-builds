@@ -87,15 +87,20 @@ class BossPresentationClientStateTest {
     }
 
     @Test
-    void forgettingActorRemovesPresentationAndOrderingWatermark() {
+    void forgettingActorRetainsWatermarkAndRejectsDelayedPreLeavePackets() {
         assertTrue(BossPresentationClientState.accept(active(7, FIRST, 50L, 0.6D)));
         assertTrue(BossPresentationClientState.forgetActor(7, FIRST));
         assertTrue(BossPresentationClientState.current(7, FIRST).isEmpty());
         assertFalse(BossPresentationClientState.forgetActor(7, FIRST));
 
-        // A later lifecycle of the same logical UUID can start from a fresh level-time epoch.
-        assertTrue(BossPresentationClientState.accept(active(7, FIRST, 2L, 0.1D)));
-        assertEquals(2L, BossPresentationClientState.current(7, FIRST).orElseThrow().serverGameTick());
+        // A packet sampled before or at the leave watermark cannot resurrect presentation afterward.
+        assertFalse(BossPresentationClientState.accept(active(7, FIRST, 49L, 0.1D)));
+        assertFalse(BossPresentationClientState.accept(active(7, FIRST, 50L, 0.1D)));
+        assertTrue(BossPresentationClientState.current(7, FIRST).isEmpty());
+
+        // The same UUID may become present again only when authoritative server time advances.
+        assertTrue(BossPresentationClientState.accept(active(7, FIRST, 51L, 0.2D)));
+        assertEquals(51L, BossPresentationClientState.current(7, FIRST).orElseThrow().serverGameTick());
     }
 
     @Test
@@ -110,14 +115,27 @@ class BossPresentationClientStateTest {
     }
 
     @Test
-    void forgettingActorAlsoRetiresClearOnlyWatermark() {
+    void forgettingActorPreservesExistingClearWatermark() {
         assertTrue(BossPresentationClientState.accept(active(4, FIRST, 30L, 0.5D)));
         assertTrue(BossPresentationClientState.accept(BossPresentationSemanticState.clear(4, FIRST, 31L)));
         assertTrue(BossPresentationClientState.current(4, FIRST).isEmpty());
 
-        assertTrue(BossPresentationClientState.forgetActor(4, FIRST));
-        assertTrue(BossPresentationClientState.accept(active(4, FIRST, 1L, 0.2D)));
-        assertEquals(1L, BossPresentationClientState.current(4, FIRST).orElseThrow().serverGameTick());
+        // The actor is already semantically retired, so a duplicate lifecycle callback is a no-op.
+        assertFalse(BossPresentationClientState.forgetActor(4, FIRST));
+        assertFalse(BossPresentationClientState.accept(active(4, FIRST, 31L, 0.2D)));
+        assertTrue(BossPresentationClientState.accept(active(4, FIRST, 32L, 0.2D)));
+        assertEquals(32L, BossPresentationClientState.current(4, FIRST).orElseThrow().serverGameTick());
+    }
+
+    @Test
+    void clearAllRetiresLeaveTombstonesForANewConnectionEpoch() {
+        assertTrue(BossPresentationClientState.accept(active(7, FIRST, 50L, 0.6D)));
+        assertTrue(BossPresentationClientState.forgetActor(7, FIRST));
+        assertFalse(BossPresentationClientState.accept(active(7, FIRST, 2L, 0.1D)));
+
+        BossPresentationClientState.clearAll();
+        assertTrue(BossPresentationClientState.accept(active(7, FIRST, 2L, 0.1D)));
+        assertEquals(2L, BossPresentationClientState.current(7, FIRST).orElseThrow().serverGameTick());
     }
 
     private static BossPresentationSemanticState active(int entityId, UUID uuid, long tick, double progress) {
