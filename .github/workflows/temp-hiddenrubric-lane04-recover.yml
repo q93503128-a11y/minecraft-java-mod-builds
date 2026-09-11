@@ -7,7 +7,7 @@ on:
       - '.github/workflows/temp-hiddenrubric-lane04-recover.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   recover:
@@ -15,6 +15,8 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -102,20 +104,21 @@ jobs:
           missing=sorted(set(TARGETS)-set(found))
           if missing:
               raise SystemExit(f'missing target rows: {missing}')
-          out=Path('lane04-known-uuid-recovery.jsonl')
+          outdir=Path('temp-hiddenrubric/lane04')
+          outdir.mkdir(parents=True,exist_ok=True)
+          out=outdir/'lane04-known-uuid-recovery.jsonl'
           with out.open('w',encoding='utf-8') as f:
               for rid in TARGETS:
                   f.write(json.dumps(found[rid],ensure_ascii=False)+'\n')
           manifest={'sourceDataset':REPO,'sourceRevision':REV,'rawRows':raw_rows,'targetRows':len(TARGETS),'recoveredRows':len(found),'assistantOutputsIncluded':False}
-          Path('lane04-known-uuid-manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          (outdir/'lane04-known-uuid-manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
           print(json.dumps(manifest,ensure_ascii=False))
           PY
-      - name: Upload recovery artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: hiddenrubric-lane04-known-uuid-recovery
-          path: |
-            lane04-known-uuid-recovery.jsonl
-            lane04-known-uuid-manifest.json
-          if-no-files-found: error
-          retention-days: 1
+      - name: Commit temporary recovery text
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/
+          git commit -m 'chore: materialize temporary Lane04 recovery text'
+          git push origin HEAD:main
