@@ -6,6 +6,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
+import java.util.Comparator;
+
 /** Resolves and verifies the active Erden residence and civic custody cells. */
 public final class SafeResidenceLocator {
     private static final int UPDATE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS;
@@ -13,21 +15,42 @@ public final class SafeResidenceLocator {
     private SafeResidenceLocator() {
     }
 
+    /** Desired citizen-quarter anchor used only to choose the nearest real tenement. */
     public static BlockPos preferredResidence(ServerLevel level, String homelandId, String residenceId) {
         RealmSiteLayoutSavedData.RealmSite site = requiredSite(level, homelandId);
-        if (!"erden_city_room".equals(residenceId)) {
-            throw new IllegalArgumentException("Inactive residence: " + residenceId);
-        }
+        requireResidence(residenceId);
         int x = site.centerX() + 320;
         int z = site.centerZ() + 180;
         int surfaceY = authoredSurfaceY(x, z);
         return new BlockPos(x, surfaceY + 1, z);
     }
 
+    /**
+     * Returns the verified authored apartment interior in the real tenement nearest the intended
+     * citizen-quarter anchor. While that exact building is still completing, only its footprint is
+     * transiently retained and this method returns null. It never creates a floor, clears a roof,
+     * accepts a rooftop, or switches to some unrelated walkable block.
+     */
     public static BlockPos residence(ServerLevel level, String homelandId, String residenceId) {
-        BlockPos preferred = preferredResidence(level, homelandId, residenceId);
-        if (!level.hasChunkAt(preferred)) return preferred;
-        return findOrCreateWalkable(level, preferred, Blocks.SPRUCE_PLANKS, 12, 12);
+        ExternalUrbanFabricBuilder.UrbanEntrance entrance = starterEntrance(level, homelandId, residenceId);
+        if (entrance == null) return null;
+
+        ErdenPlayerResidenceChunkRetainer.retain(level, entrance);
+        if (!ErdenUrbanResidenceResolver.isResidenceReady(level, entrance)) return null;
+        BlockPos target = ErdenUrbanResidenceResolver.resolveHomeTarget(level, entrance, 0);
+        return isWalkable(level, target) ? target : null;
+    }
+
+    /**
+     * Returns the already-proven authored upper-room target even if its chunk is currently unloaded.
+     * This is for institutional recovery after the home has been completed once; it never invents a
+     * coordinate. The transient lease is refreshed so teleport can load the real building again.
+     */
+    public static BlockPos authoredRecoveryTarget(ServerLevel level, String homelandId, String residenceId) {
+        ExternalUrbanFabricBuilder.UrbanEntrance entrance = starterEntrance(level, homelandId, residenceId);
+        if (entrance == null || !ErdenUrbanAuthoredUpperRouteManager.isCompleted(level, entrance)) return null;
+        ErdenPlayerResidenceChunkRetainer.retain(level, entrance);
+        return ErdenUrbanAuthoredUpperRouteManager.verifiedUpperTarget(level, entrance);
     }
 
     public static BlockPos preferredJail(ServerLevel level, String jurisdiction) {
@@ -52,11 +75,20 @@ public final class SafeResidenceLocator {
     }
 
     public static boolean isWalkable(ServerLevel level, BlockPos feet) {
-        if (!level.hasChunkAt(feet)) return false;
+        if (feet == null || !level.hasChunkAt(feet)) return false;
         return level.getBlockState(feet.below()).isSolid()
                 && level.getBlockState(feet).isAir()
-                && level.getBlockState(feet.above()).isAir()
-                && level.getBlockState(feet.above(2)).isAir();
+                && level.getBlockState(feet.above()).isAir();
+    }
+
+    private static ExternalUrbanFabricBuilder.UrbanEntrance starterEntrance(
+            ServerLevel level, String homelandId, String residenceId) {
+        BlockPos preferred = preferredResidence(level, homelandId, residenceId);
+        return ExternalUrbanFabricBuilder.entrances().stream()
+                .filter(candidate -> "tenement".equals(candidate.role()))
+                .min(Comparator.comparingLong(candidate -> distanceSquared(
+                        candidate.x(), candidate.z(), preferred.getX(), preferred.getZ())))
+                .orElse(null);
     }
 
     private static RealmSiteLayoutSavedData.RealmSite requiredSite(ServerLevel level, String homelandId) {
@@ -65,6 +97,12 @@ public final class SafeResidenceLocator {
             throw new IllegalStateException("Authored site is not ready: " + homelandId);
         }
         return site;
+    }
+
+    private static void requireResidence(String residenceId) {
+        if (!"erden_city_room".equals(residenceId)) {
+            throw new IllegalArgumentException("Inactive residence: " + residenceId);
+        }
     }
 
     private static BlockPos findOrCreateWalkable(ServerLevel level, BlockPos preferred, Block floor,
@@ -101,9 +139,15 @@ public final class SafeResidenceLocator {
             level.setBlock(feet.above(dy), Blocks.AIR.defaultBlockState(), UPDATE_FLAGS);
         }
         if (!isWalkable(level, feet)) {
-            throw new IllegalStateException("Unable to create safe residence spawn at " + feet);
+            throw new IllegalStateException("Unable to create safe custody spawn at " + feet);
         }
         return feet;
+    }
+
+    private static long distanceSquared(int ax, int az, int bx, int bz) {
+        long dx = (long) ax - bx;
+        long dz = (long) az - bz;
+        return dx * dx + dz * dz;
     }
 
     private static int authoredSurfaceY(int x, int z) {
