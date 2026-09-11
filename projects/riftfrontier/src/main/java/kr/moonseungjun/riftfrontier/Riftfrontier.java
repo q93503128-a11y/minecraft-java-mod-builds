@@ -60,6 +60,7 @@ public final class Riftfrontier {
         NeoForge.EVENT_BUS.addListener(Riftfrontier::registerCommands);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::serverStarted);
         NeoForge.EVENT_BUS.addListener(MinecraftBossCombatAdapter::entityLeaveLevel);
+        NeoForge.EVENT_BUS.addListener(MinecraftBossCombatAdapter::serverStopped);
         NeoForge.EVENT_BUS.addListener(PlayerWeaponServerRuntime::entityLeaveLevel);
         NeoForge.EVENT_BUS.addListener(PlayerWeaponServerRuntime::serverStopped);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::playerWeaponTick);

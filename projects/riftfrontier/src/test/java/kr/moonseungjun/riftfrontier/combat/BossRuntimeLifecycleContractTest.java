@@ -18,7 +18,7 @@ final class BossRuntimeLifecycleContractTest {
     );
 
     @Test
-    void validatedRuntimeIsEntityLifetimeBoundAndLeaveEventIsRegistered() throws IOException {
+    void validatedRuntimeIsEntityAndServerLifetimeBoundAndLifecycleEventsAreRegistered() throws IOException {
         String adapter = normalizeWhitespace(Files.readString(ADAPTER_SOURCE));
         String mod = normalizeWhitespace(Files.readString(MOD_SOURCE));
 
@@ -55,8 +55,18 @@ final class BossRuntimeLifecycleContractTest {
             "entity leave must detach the process-local capability for the exact owner instance");
         assertTrue(adapter.contains("runtime.invalidateMinecraftOwner(owner);"),
             "entity leave must invalidate retained capabilities, not merely cancel one attack");
+        assertTrue(adapter.contains("public static void serverStopped(ServerStoppedEvent event)"),
+            "validated boss runtime must expose an authoritative server-lifetime retirement boundary");
+        assertTrue(adapter.contains("VALIDATED_RUNTIMES_BY_OWNER.clear();"),
+            "server stop must clear the process-local boss owner index before a future server instance starts");
+        assertTrue(adapter.contains("retired.forEach((owner, runtimes) ->"),
+            "server stop must retain exact owner/runtime pairs long enough to invalidate detached capabilities");
+        assertTrue(adapter.contains("runtime.invalidateMinecraftOwner(owner);"),
+            "server stop must irreversibly invalidate retained boss capabilities after detaching the index");
         assertTrue(mod.contains("NeoForge.EVENT_BUS.addListener(MinecraftBossCombatAdapter::entityLeaveLevel);"),
             "production mod bootstrap must register the leave boundary on the main NeoForge event bus");
+        assertTrue(mod.contains("NeoForge.EVENT_BUS.addListener(MinecraftBossCombatAdapter::serverStopped);"),
+            "production mod bootstrap must register the boss server-stop boundary on the main NeoForge event bus");
     }
 
     private static String normalizeWhitespace(String source) {

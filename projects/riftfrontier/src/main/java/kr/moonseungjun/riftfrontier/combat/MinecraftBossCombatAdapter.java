@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -92,6 +93,26 @@ public final class MinecraftBossCombatAdapter {
         for (ValidatedRuntime runtime : Set.copyOf(runtimes)) {
             runtime.invalidateMinecraftOwner(owner);
         }
+    }
+
+    /**
+     * Authoritative server-lifetime boundary. Process-local boss capabilities must not survive the
+     * Minecraft server instance that admitted their owner entities.
+     */
+    public static void serverStopped(ServerStoppedEvent event) {
+        Objects.requireNonNull(event, "event");
+        Map<LivingEntity, Set<ValidatedRuntime>> retired = new IdentityHashMap<>();
+        synchronized (VALIDATED_RUNTIMES_BY_OWNER) {
+            VALIDATED_RUNTIMES_BY_OWNER.forEach(
+                (owner, runtimes) -> retired.put(owner, Set.copyOf(runtimes))
+            );
+            VALIDATED_RUNTIMES_BY_OWNER.clear();
+        }
+        retired.forEach((owner, runtimes) -> {
+            for (ValidatedRuntime runtime : runtimes) {
+                runtime.invalidateMinecraftOwner(owner);
+            }
+        });
     }
 
     /** Claims the single authoritative validated boss capability for one live entity instance. */
