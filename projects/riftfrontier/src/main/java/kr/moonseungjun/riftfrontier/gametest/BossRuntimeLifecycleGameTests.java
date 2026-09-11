@@ -11,6 +11,7 @@ import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationProfile;
 import kr.moonseungjun.riftfrontier.content.ContentId;
 import kr.moonseungjun.riftfrontier.content.ContentRegistry;
 import kr.moonseungjun.riftfrontier.content.CoreDefinition;
+import kr.moonseungjun.riftfrontier.network.RiftfrontierNetworking;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -88,7 +89,8 @@ public final class BossRuntimeLifecycleGameTests {
         long start = level.getGameTime();
         helper.assertTrue(runtime.beginNextAttack(level, owner, start).patternId().equals(attack),
             "Minecraft-facing validated begin must bind the capability to its first authoritative owner");
-        helper.assertTrue(runtime.tick(level, owner, start).combat().attack().phase() == AttackTimeline.Phase.TELEGRAPH,
+        MinecraftBossCombatAdapter.ValidatedTickResult retainedPresentation = runtime.tick(level, owner, start);
+        helper.assertTrue(retainedPresentation.combat().attack().phase() == AttackTimeline.Phase.TELEGRAPH,
             "Bound owner must advance the authored attack clock");
         helper.assertTrue(runtime.cancelAttack(), "Fixture must explicitly close its first attack before reuse checks");
 
@@ -148,6 +150,7 @@ public final class BossRuntimeLifecycleGameTests {
             runtime.cancelAttack();
         }
 
+        owner.discard();
         MinecraftBossCombatAdapter.entityLeaveLevel(new EntityLeaveLevelEvent(owner, level));
         try {
             runtime.phase();
@@ -155,6 +158,14 @@ public final class BossRuntimeLifecycleGameTests {
         } catch (IllegalStateException expected) {
             helper.assertTrue(!runtime.cancelAttack(),
                 "Cleanup must remain callable after owner invalidation without resurrecting an attack");
+        }
+
+        try {
+            RiftfrontierNetworking.syncBossPresentation(owner, start, retainedPresentation);
+            helper.assertTrue(false,
+                "A retained boss presentation result must not fan out after its exact authoritative owner leaves the level");
+        } catch (IllegalStateException expected) {
+            // Delivery guard rejected stale world/actor context before network fan-out.
         }
 
         try {

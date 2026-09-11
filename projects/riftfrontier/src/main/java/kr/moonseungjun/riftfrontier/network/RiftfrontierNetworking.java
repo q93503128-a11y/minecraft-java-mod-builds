@@ -1,8 +1,10 @@
 package kr.moonseungjun.riftfrontier.network;
 
+import kr.moonseungjun.riftfrontier.combat.BossPresentationDeliveryGuard;
 import kr.moonseungjun.riftfrontier.combat.BossPresentationSemanticState;
 import kr.moonseungjun.riftfrontier.combat.MinecraftBossCombatAdapter;
 import kr.moonseungjun.riftfrontier.combat.PlayerWeaponServerRuntime;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -40,8 +42,9 @@ public final class RiftfrontierNetworking {
      *
      * <p>The networking boundary no longer accepts a free-standing {@link MinecraftBossCombatAdapter.TickResult};
      * production callers must cross {@link MinecraftBossCombatAdapter.ValidatedRuntime}, which derives boss identity,
-     * authored phase selection and this outgoing semantic state from one validated semantic capability. Numeric entity
-     * id, UUID and server tick are checked again here so a delayed result cannot be sent as another actor or tick.</p>
+     * authored phase selection and this outgoing semantic state from one validated semantic capability. Immediately
+     * before fan-out, the retained sample is revalidated against the exact live server entity and current server tick
+     * so a result captured before an entity/world lifetime edge cannot be replayed afterward.</p>
      */
     public static void syncBossPresentation(
         LivingEntity boss,
@@ -50,12 +53,11 @@ public final class RiftfrontierNetworking {
     ) {
         Objects.requireNonNull(boss, "boss");
         Objects.requireNonNull(result, "result");
-        BossPresentationSemanticState state = result.presentationState();
-        if (state.entityId() != boss.getId()
-            || !state.entityUuid().equals(boss.getUUID())
-            || state.serverGameTick() != serverGameTick) {
-            throw new IllegalArgumentException("validated boss presentation state does not belong to this entity/tick");
+        if (!(boss.level() instanceof ServerLevel level)) {
+            throw new IllegalStateException("validated boss presentation owner is not in an authoritative server level");
         }
+        BossPresentationDeliveryGuard.requireCurrent(level, boss, serverGameTick, result);
+        BossPresentationSemanticState state = result.presentationState();
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(boss, new BossPresentationPayload(state));
     }
 }
