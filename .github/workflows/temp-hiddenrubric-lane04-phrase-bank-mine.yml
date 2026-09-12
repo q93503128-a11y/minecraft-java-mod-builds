@@ -1,0 +1,109 @@
+name: TEMP HiddenRubric Lane04 Phrase Bank Mine
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-phrase-bank-mine.yml'
+permissions:
+  contents: write
+jobs:
+  mine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: python -m pip install --upgrade pip pyarrow huggingface_hub
+      - name: Mine evaluator phrase bank
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,re,hashlib
+          from pathlib import Path
+          import pyarrow.parquet as pq
+          from huggingface_hub import hf_hub_download
+          REPO='lmarena-ai/arena-human-preference-140k'; REV='a9cb587ee0906192dc1fc5e51778282f36c6bf35'
+          shards=[f'data/train-{i:05d}-of-00007.parquet' for i in range(7)]
+          bank=[
+            ('submit_manager',r'\b(?:submit(?:ting)?|send(?:ing)?|present(?:ing)?|share|sharing)\s+(?:this|it|the\s+(?:report|document|proposal|presentation|case|plan|application|essay|paper|thesis|assignment))\s+(?:to|with)\s+(?:my|the|our)\s+(?:manager|supervisor|team lead|director|department head|section head)\b'),
+            ('for_manager_review',r'\b(?:for|to)\s+(?:my|the|our)\s+(?:manager|supervisor|team lead|director|department head|section head)\s+(?:review|approval|feedback|evaluation|assessment|sign[- ]?off)\b'),
+            ('senior_review',r'\bfor\s+(?:senior management|senior leadership|executive committee|leadership team|executive board|board of directors)\s+(?:review|approval|feedback|evaluation|assessment|decision|sign[- ]?off)\b'),
+            ('present_board',r'\b(?:present|submit|send|share|deliver)(?:ing|ted)?\s+(?:this|it|the\s+(?:proposal|presentation|report|business case|business plan|plan|deck|document|memo|brief))?.{0,50}?\b(?:to|before)\s+(?:the\s+)?(?:executive board|board of directors|board|senior management|senior leadership|executive committee|leadership team)\b'),
+            ('committee_approval',r'\b(?:proposal|application|submission|request|business case|plan|document|report|project).{0,120}?\b(?:review|approval|evaluation|assessment|decision|selection|funding)\s+(?:by|from|of)\s+(?:the\s+)?(?:selection committee|review committee|approval committee|evaluation committee|evaluating committee|funding committee|grant committee|investment committee|committee members?)\b'),
+            ('submit_committee',r'\b(?:submit|send|present|deliver)(?:ting|ted)?\s+(?:the|this|my|our)?\s*(?:proposal|application|submission|business case|plan|document|report|project|presentation|thesis|dissertation).{0,70}?\bto\s+(?:the\s+|my\s+)?(?:selection committee|review committee|approval committee|evaluation committee|evaluating committee|funding committee|grant committee|investment committee|thesis committee|dissertation committee|committee members?)\b'),
+            ('teacher_grade',r'\b(?:teacher marker|teacher|professor|examiner|marker|instructor).{0,100}?\b(?:will|would|must|is going to|are going to|to)\s+(?:grade|mark|assess|evaluate|review|score).{0,120}?\b(?:assignment|coursework|paper|essay|thesis|dissertation|report|project|work|submission)\b'),
+            ('work_graded_by',r'\b(?:assignment|coursework|paper|essay|thesis|dissertation|report|project|work|submission).{0,100}?\b(?:graded|marked|assessed|evaluated|reviewed|scored)\s+by\s+(?:the\s+)?(?:teacher marker|teacher|professor|examiner|marker|instructor|module team|faculty|committee)\b'),
+            ('admissions_output',r'\b(?:college application|application essay|personal statement|essay|application).{0,140}?\b(?:admissions? officers?|admissions? committee|admissions? board)\b'),
+            ('hiring_output',r'\b(?:cover letter|resume|CV|job application|application).{0,140}?\b(?:hiring manager|recruiter|HR manager|human resources manager|recruiting team)\b'),
+            ('investor_output',r'\b(?:pitch|proposal|business plan|business case|investment memo|deck|presentation).{0,140}?\b(?:investors?|venture capitalists?|VCs?|investment committee|funding committee)\b'),
+            ('judge_output',r'\b(?:project|pitch|presentation|submission|proposal|entry|demo).{0,140}?\b(?:judge|judges|judging panel|panel of judges)\b'),
+            ('feedback_actor_output',r'\b(?:feedback|comments?|review).{0,80}?\bfrom\s+(?:my|the|our)\s+(?:manager|supervisor|team lead|director|teacher|professor|examiner|reviewer|committee|investor|client).{0,120}?\b(?:report|presentation|proposal|application|essay|paper|thesis|document|plan|work|submission)\b'),
+          ]
+          pats=[(n,re.compile(p,re.I|re.S)) for n,p in bank]
+          request=re.compile(r'\b(?:write|draft|create|make|prepare|develop|revise|rewrite|improve|polish|help me|generate|outline|summarize|summarise|refine|transform)\b',re.I)
+          pref=re.compile(r'\b(?:i prefer|my preference|tone|style|sound like|don.?t make it sound|formal|informal|friendly|concise|word limit|humanize|humanise)\b',re.I)
+          historical=re.compile(r'\b(?:previously|in the past|last year|had sent|received feedback|gave feedback|was approved|has been approved|already approved|past feedback)\b',re.I)
+          hypo=re.compile(r'\b(?:hypothetical|assume yourself|act as|role-play|consider yourself as)\b',re.I)
+          privacy=re.compile(r'(?:\b\d{3}-\d{2}-\d{4}\b|\b(?:password|ssn|social security)\b)',re.I)
+          def text(msg):
+            if not isinstance(msg,dict): return ''
+            if isinstance(msg.get('text'),str): return msg['text']
+            c=msg.get('content')
+            if isinstance(c,str): return c
+            if isinstance(c,list): return '\n'.join(x if isinstance(x,str) else x.get('text','') if isinstance(x,dict) else '' for x in c)
+            return ''
+          def turns(r):
+            out=[]
+            for e in r.get('full_conversation') or []:
+              if not isinstance(e,dict): continue
+              u=e.get('user')
+              if isinstance(u,dict):
+                t=text(u).strip()
+                if t: out.append(t)
+              elif str(e.get('role') or '')=='user':
+                t=text(e).strip()
+                if t: out.append(t)
+            return out
+          rows=[]; raw=0; normseen=set()
+          for shard in shards:
+            p=hf_hub_download(REPO,filename=shard,repo_type='dataset',revision=REV)
+            pf=pq.ParquetFile(p); cols=['id','evaluation_session_id','evaluation_order','language','is_code','full_conversation']; use=[c for c in cols if c in set(pf.schema_arrow.names)]
+            for b in pf.iter_batches(batch_size=512,columns=use):
+              for r in b.to_pylist():
+                raw+=1
+                if r.get('language')!='en' or bool(r.get('is_code')): continue
+                for ti,s in enumerate(turns(r)):
+                  if not 30<=len(s)<=8000 or privacy.search(s) or not request.search(s): continue
+                  norm=' '.join(s.lower().split())
+                  if norm in normseen: continue
+                  for rank,(name,patt) in enumerate(pats):
+                    m=patt.search(s)
+                    if not m: continue
+                    normseen.add(norm)
+                    st=max(0,m.start()-320); en=min(len(s),m.end()+450)
+                    risks={'preference':bool(pref.search(s)),'historical':bool(historical.search(s)),'hypothetical':bool(hypo.search(s))}
+                    rows.append({'sourceRowId':str(r.get('id') or ''),'sourceEvaluationSessionId':str(r.get('evaluation_session_id') or ''),'evaluationOrder':int(r.get('evaluation_order') or 0),'turnIndex':ti,'phraseFamily':name,'rank':rank,'risks':risks,'match':m.group(0),'sourceLength':len(s),'context':s[st:en],'sourceText':s,'assistantOutputsIncluded':False})
+                    break
+          assert raw==135634,raw
+          rows.sort(key=lambda x:(sum(x['risks'].values()),x['rank'],x['sourceLength'],x['sourceRowId']))
+          d=Path('temp-hiddenrubric/lane04/phrase-bank'); d.mkdir(parents=True,exist_ok=True)
+          (d/'full.jsonl').write_text(''.join(json.dumps(x,ensure_ascii=False)+'\n' for x in rows),encoding='utf-8')
+          compact=[]
+          for x in rows: compact.append({k:x[k] for k in ('sourceRowId','sourceEvaluationSessionId','turnIndex','phraseFamily','rank','risks','match','sourceLength','context')})
+          (d/'compact.jsonl').write_text(''.join(json.dumps(x,ensure_ascii=False)+'\n' for x in compact),encoding='utf-8')
+          (d/'manifest.json').write_text(json.dumps({'rawRows':raw,'matchedRows':len(rows),'sourceRevision':REV,'assistantOutputsIncluded':False},indent=2)+'\n',encoding='utf-8')
+          print('matched',len(rows))
+          PY
+      - name: Commit queue
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/phrase-bank/
+          git commit -m 'chore: materialize temporary Lane04 phrase bank'
+          git push origin HEAD:main
