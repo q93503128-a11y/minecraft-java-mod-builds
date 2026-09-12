@@ -1,0 +1,32 @@
+name: TEMP HiddenRubric Lane04 Postfilter
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-postfilter.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  postfilter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Postfilter
+        run: python temp-hiddenrubric/lane04/postfilter_open_relation.py
+      - name: Commit shortlist
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/open-relation-native-shortlist*.json*
+          git commit -m 'chore: materialize temporary Lane04 native shortlist'
+          git push origin HEAD:main
