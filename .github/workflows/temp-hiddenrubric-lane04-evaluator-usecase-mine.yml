@@ -1,0 +1,131 @@
+name: TEMP HiddenRubric Lane04 Evaluator Usecase Mine
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-evaluator-usecase-mine.yml'
+permissions:
+  contents: write
+jobs:
+  mine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: python -m pip install --upgrade pip pyarrow huggingface_hub
+      - name: Mine evaluator use cases
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,re,hashlib
+          from pathlib import Path
+          import pyarrow.parquet as pq
+          from huggingface_hub import hf_hub_download
+          REPO='lmarena-ai/arena-human-preference-140k'; REV='a9cb587ee0906192dc1fc5e51778282f36c6bf35'
+          shards=[f'data/train-{i:05d}-of-00007.parquet' for i in range(7)]
+          actors={
+            'admissions':r'admissions? (?:officer|officers|committee|board)',
+            'hiring':r'(?:hiring manager|recruiter|recruiting team|HR manager|human resources manager)',
+            'judges':r'(?:judge|judges|judging panel|panel of judges)',
+            'committee':r'(?:(?:selection|review|evaluation|evaluating|assessment|approval|funding|grant|thesis) committee|committee members?)',
+            'academic':r'(?:teacher marker|marker|professor|professors|teacher|instructor|examiner|examiners|thesis committee|dissertation committee)',
+            'leadership':r'(?:executive board|board of directors|board|senior management|senior leadership|management committee|executive committee|leadership team|executives)',
+            'manager':r'(?:(?:my|the|our) (?:manager|supervisor|team lead|director|department head|section head))',
+            'investor':r'(?:investor|investors|VC|venture capitalist|venture capitalists|funding panel|investment committee)',
+            'client':r'(?:(?:the|my|our) (?:client|customer|stakeholder|stakeholders))'
+          }
+          objects=r'(?:application|college application|job application|cover letter|resume|CV|essay|proposal|pitch|business case|business plan|report|presentation|deck|slide deck|assignment|coursework|paper|research paper|thesis|dissertation|memo|briefing note|brief|document|plan|submission|project|work|deliverable|request)'
+          rels=r'(?:review|approve|approval|evaluate|evaluation|assess|assessment|grade|grading|score|scoring|judge|judging|feedback|select|selection|decision|recommend|recommendation|fund|funding|hire|hiring|recruit|recruitment|award|winning|win|pass|marks?|rubric|sign[- ]?off)'
+          act_re=re.compile('|'.join(f'(?P<{k}>{v})' for k,v in actors.items()),re.I)
+          obj_re=re.compile(objects,re.I); rel_re=re.compile(rels,re.I)
+          submit_re=re.compile(r'\b(?:submit|submitted|submitting|send|sent|present|presented|presenting|share|shared|deliver|delivered|provide|provided|hand in|apply|applying)\b',re.I)
+          request_re=re.compile(r'\b(?:write|draft|create|make|prepare|develop|revise|rewrite|improve|polish|help me|give me|generate|outline|summarize|summarise)\b',re.I)
+          pref_re=re.compile(r'\b(?:i prefer|my preference|tone|style|make it sound|sound like|formal|informal|friendly|concise|word limit|format it|professional|persuasive|polish)\b',re.I)
+          state_re=re.compile(r'\b(?:remember|forget|from now on|always|never again|update your memory|previous instruction)\b',re.I)
+          cross_re=re.compile(r'\b(?:cross[- ]domain|interdisciplinary|multi[- ]disciplin|combine .* domain|integrate .* domain)\b',re.I|re.S)
+          privacy_re=re.compile(r'(?:\b\d{3}-\d{2}-\d{4}\b|\b(?:password|ssn|social security)\b)',re.I)
+          def text(msg):
+            if not isinstance(msg,dict): return ''
+            if isinstance(msg.get('text'),str): return msg['text']
+            c=msg.get('content')
+            if isinstance(c,str): return c
+            if isinstance(c,list): return '\n'.join(x if isinstance(x,str) else x.get('text','') if isinstance(x,dict) else '' for x in c)
+            return ''
+          def turns(r):
+            out=[]
+            for e in r.get('full_conversation') or []:
+              if not isinstance(e,dict): continue
+              u=e.get('user')
+              if isinstance(u,dict):
+                t=text(u).strip()
+                if t: out.append(t)
+              elif str(e.get('role') or '')=='user':
+                t=text(e).strip()
+                if t: out.append(t)
+            return out
+          out=[]; seen=set(); raw=0
+          for shard in shards:
+            p=hf_hub_download(REPO,filename=shard,repo_type='dataset',revision=REV)
+            pf=pq.ParquetFile(p); cols=['id','evaluation_session_id','evaluation_order','language','is_code','full_conversation']; use=[c for c in cols if c in set(pf.schema_arrow.names)]
+            for b in pf.iter_batches(batch_size=512,columns=use):
+              for r in b.to_pylist():
+                raw+=1
+                if r.get('language')!='en' or bool(r.get('is_code')): continue
+                for ti,s in enumerate(turns(r)):
+                  if not 40<=len(s)<=6500 or privacy_re.search(s) or not request_re.search(s): continue
+                  am=list(act_re.finditer(s)); om=list(obj_re.finditer(s)); rm=list(rel_re.finditer(s)); sm=list(submit_re.finditer(s))
+                  if not am or not om or (not rm and not sm): continue
+                  best=None
+                  for a in am:
+                    atype=next((k for k,v in a.groupdict().items() if v),None); aval=a.group(0)
+                    for o in om:
+                      d=abs(a.start()-o.start())
+                      nearby_rel=[x for x in rm if max(a.start(),o.start())-220 <= x.start() <= min(max(a.end(),o.end())+220,len(s))]
+                      nearby_submit=[x for x in sm if max(a.start(),o.start())-180 <= x.start() <= min(max(a.end(),o.end())+180,len(s))]
+                      if not nearby_rel and not nearby_submit: continue
+                      relation=nearby_rel[0].group(0) if nearby_rel else ''
+                      sub=nearby_submit[0].group(0) if nearby_submit else ''
+                      # rank: explicit relation + submission + inherently strong evaluator actor + distance
+                      strong=int(atype in {'admissions','hiring','judges','committee','academic','leadership','investor'})
+                      score=strong*8 + bool(nearby_rel)*8 + bool(nearby_submit)*5 - min(d,400)/100
+                      cand=(score,atype,aval,o.group(0),relation,sub,min(a.start(),o.start()),max(a.end(),o.end()))
+                      if best is None or cand[0]>best[0]: best=cand
+                  if not best: continue
+                  key=(str(r.get('id') or ''),ti); norm=' '.join(s.lower().split()); nk=hashlib.sha256(norm.encode()).hexdigest()
+                  if key in seen: continue
+                  seen.add(key)
+                  score,atype,aval,obj,relation,sub,st,en=best
+                  st=max(0,st-260); en=min(len(s),en+360)
+                  out.append({'sourceRowId':key[0],'sourceEvaluationSessionId':str(r.get('evaluation_session_id') or ''),'evaluationOrder':int(r.get('evaluation_order') or 0),'turnIndex':ti,'actorType':atype,'actor':aval,'object':obj,'relation':relation,'submissionVerb':sub,'score':round(score,2),'sourceLength':len(s),'context':s[st:en],'higherLaneRisk':{'preference':bool(pref_re.search(s)),'stateOps':bool(state_re.search(s)),'crossDomain':bool(cross_re.search(s))},'sourceText':s,'assistantOutputsIncluded':False})
+          assert raw==135634, raw
+          out.sort(key=lambda x:(sum(x['higherLaneRisk'].values()),-x['score'],x['sourceLength'],x['sourceRowId'],x['turnIndex']))
+          # de-dupe normalized source across repeated dataset rows
+          ded=[]; norms=set()
+          for x in out:
+            n=' '.join(x['sourceText'].lower().split())
+            if n in norms: continue
+            norms.add(n); ded.append(x)
+          d=Path('temp-hiddenrubric/lane04/evaluator-usecases'); d.mkdir(parents=True,exist_ok=True)
+          mat=ded[:400]
+          (d/'full.jsonl').write_text(''.join(json.dumps(x,ensure_ascii=False)+'\n' for x in mat),encoding='utf-8')
+          compact=[]
+          for x in mat:
+            compact.append({k:x[k] for k in ('sourceRowId','sourceEvaluationSessionId','turnIndex','actorType','actor','object','relation','submissionVerb','score','sourceLength','context','higherLaneRisk')})
+          (d/'compact.jsonl').write_text(''.join(json.dumps(x,ensure_ascii=False)+'\n' for x in compact),encoding='utf-8')
+          (d/'manifest.json').write_text(json.dumps({'rawRows':raw,'matchedRows':len(out),'dedupedRows':len(ded),'materializedRows':len(mat),'sourceRevision':REV,'assistantOutputsIncluded':False},indent=2)+'\n',encoding='utf-8')
+          print('matched',len(out),'deduped',len(ded))
+          PY
+      - name: Commit queue
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/evaluator-usecases/
+          git commit -m 'chore: materialize temporary Lane04 evaluator usecases'
+          git push origin HEAD:main
