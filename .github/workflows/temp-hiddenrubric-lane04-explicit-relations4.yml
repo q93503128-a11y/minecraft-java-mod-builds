@@ -1,0 +1,134 @@
+name: TEMP HiddenRubric Lane04 Explicit Relations Mine 4
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-explicit-relations4.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  mine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install deps
+        run: python -m pip install --upgrade pip pyarrow huggingface_hub
+      - name: Mine explicit evaluator relations
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,re,hashlib
+          from pathlib import Path
+          import pyarrow.parquet as pq
+          from huggingface_hub import hf_hub_download
+          REPO='lmarena-ai/arena-human-preference-140k';REV='a9cb587ee0906192dc1fc5e51778282f36c6bf35';EXPECT=135634
+          SHARDS=[f'data/train-{i:05d}-of-00007.parquet' for i in range(7)]
+          ACT=r'(?:hiring manager|recruiter|hr manager|hr team|human resources|interview panel|interviewers?|peer reviewers?|reviewers?|editors?|associate editor|journal editor|thesis committee|dissertation committee|evaluation committee|evaluating committee|selection committee|review committee|review board|grading committee|assessment panel|admissions committee|admissions officers?|admissions team|module team|teacher marker|graders?|examiners?|professors?|teachers?|instructors?|supervisors?|advisors?|advisers?|judges?|jury|panelists?|grant committee|funding committee|grant reviewers?|investors?|sponsors?|project sponsor|team leads?|managers?|senior management|senior leadership|executive leadership|executive board|board of directors|executives?|directors?|president|principal|approvers?|auditors?|assessors?|evaluators?)'
+          ART=r'(?:report|paper|manuscript|essay|assignment|coursework|thesis|dissertation|proposal|application|cover letter|resume|cv|portfolio|presentation|slides?|project|document|draft|submission|work|answer|response|deliverable|email|letter|plan|design|prototype|case study|abstract|statement|pitch|memo|brief|analysis|business plan|business case|recommendation|request)'
+          REL=r'(?:review|reviewed|reviews|reviewing|grade|graded|grades|grading|mark|marked|marks|marking|evaluate|evaluated|evaluates|evaluating|assess|assessed|assesses|assessing|approve|approved|approves|approving|reject|rejected|rejects|score|scored|scores|feedback|sign[- ]?off|decision)'
+          pats=[
+            ('artifact_rel_by',re.compile(rf'(?P<artifact>\b{ART}\b).{{0,140}}?\b(?P<rel>{REL})\b.{{0,40}}?\b(?:by|from)\s+(?P<actor>(?:(?:my|our|the|a|an|their|his|her)\s+)?{ACT})\b',re.I|re.S)),
+            ('actor_rel_artifact',re.compile(rf'(?P<actor>(?:(?:my|our|the|a|an|their|his|her)\s+)?{ACT})\b.{{0,80}}?\b(?P<rel>{REL})\b.{{0,120}}?(?P<artifact>\b{ART}\b)',re.I|re.S)),
+            ('artifact_for_actor_to_rel',re.compile(rf'(?P<artifact>\b{ART}\b).{{0,100}}?\b(?:for|to)\s+(?P<actor>(?:(?:my|our|the|a|an|their|his|her)\s+)?{ACT})\b.{{0,30}}?\b(?:to\s+)?(?P<rel>{REL})\b',re.I|re.S)),
+            ('rel_from_actor_artifact',re.compile(rf'\b(?P<rel>{REL})\b.{{0,40}}?\b(?:from|by|of)\s+(?P<actor>(?:(?:my|our|the|a|an|their|his|her)\s+)?{ACT})\b.{{0,120}}?(?P<artifact>\b{ART}\b)',re.I|re.S)),
+            ('actor_will_rel',re.compile(rf'(?P<actor>(?:(?:my|our|the|a|an|their|his|her)\s+)?{ACT})\b.{{0,30}}?\b(?:will|would|shall|must|should|needs? to|is going to)\s+(?P<rel>{REL})\b',re.I|re.S)),
+            ('for_actor_rel',re.compile(rf'\bfor\s+(?P<actor>(?:(?:my|our|the|a|an|their|his|her)\s+)?{ACT})\s+(?P<rel>review|approval|feedback|evaluation|assessment|grading|marking|decision|sign[- ]?off)\b',re.I)),
+            ('approval_from',re.compile(rf'\b(?P<rel>approval|feedback|review|evaluation|assessment|sign[- ]?off)\s+(?:from|of|by)\s+(?P<actor>(?:(?:my|our|the|a|an|their|his|her)\s+)?{ACT})\b',re.I)),
+          ]
+          PII=[re.compile(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b',re.I),re.compile(r'(?<!\d)(?:\+?\d[\d .()\-]{7,}\d)(?!\d)')]
+          PREF=re.compile(r'\b(?:i prefer|we prefer|my preference|our preference|i hate|i dislike|i love|i like)\b',re.I)
+          STATE=re.compile(r'\b(?:actually|instead|rather than|change|replace|revise|update|scratch that|forget that|previous|earlier|above|keep it|preserve|retain|remove|omit|delete|no longer|same as before|again but)\b',re.I)
+          PERSONA=re.compile(r'\b(?:assume yourself|act as|you are|consider yourself)\b.{0,80}\b(?:reviewer|investor|judge|teacher|professor|manager|editor|evaluator|assessor|grader|examiner)\b',re.I|re.S)
+          REQUEST=re.compile(r'\b(?:write|draft|prepare|create|transform|revise|edit|improve|polish|rewrite|develop|generate|make|help me|compose|format|finalize|refine|outline|build|craft|complete|do this|answer)\b',re.I)
+          def ctext(m):
+            if not isinstance(m,dict):return ''
+            if isinstance(m.get('text'),str):return m['text']
+            c=m.get('content')
+            if isinstance(c,str):return c
+            if isinstance(c,list):return '\n'.join(i if isinstance(i,str) else i.get('text','') for i in c if isinstance(i,(str,dict)))
+            return ''
+          def turns(r):
+            o=[]
+            for e in r.get('full_conversation') or []:
+              if not isinstance(e,dict):continue
+              u=e.get('user')
+              if isinstance(u,dict):
+                t=ctext(u).strip()
+                if t:o.append(t)
+              elif str(e.get('role') or '')=='user':
+                t=ctext(e).strip()
+                if t:o.append(t)
+            return o
+          def rkey(r,ts):
+            s=r.get('timestamp')
+            try:k=int(s.timestamp()*1e9) if hasattr(s,'timestamp') else int(s or 0)
+            except:k=0
+            return (int(r.get('evaluation_order') or 0),len(ts),k)
+          cols=['id','evaluation_session_id','evaluation_order','language','is_code','timestamp','full_conversation']
+          ses={};raw=0
+          for sh in SHARDS:
+            p=hf_hub_download(REPO,filename=sh,repo_type='dataset',revision=REV);pf=pq.ParquetFile(p);use=[c for c in cols if c in pf.schema_arrow.names]
+            for b in pf.iter_batches(batch_size=512,columns=use):
+              for r in b.to_pylist():
+                raw+=1
+                if r.get('language')!='en' or bool(r.get('is_code')):continue
+                ts=turns(r)
+                if not ts:continue
+                sid=str(r.get('evaluation_session_id') or r.get('id') or '');k=rkey(r,ts)
+                if sid not in ses or k>ses[sid][0]:ses[sid]=(k,r,ts)
+          if raw!=EXPECT:raise SystemExit(f'raw row drift {raw}')
+          def relmap(x):
+            x=x.lower()
+            if 'approv' in x or 'sign' in x:return 'approval_from_actor'
+            if 'feedback' in x:return 'feedback_from_actor'
+            if 'reject' in x:return 'reject_by_actor'
+            if 'grade' in x or 'mark' in x:return 'grade_by_actor'
+            if 'evaluat' in x or 'assess' in x or 'score' in x or 'decision' in x:return 'evaluate_by_actor'
+            return 'review_by_actor'
+          out=[];seen=set()
+          for sid,(_,r,ts) in ses.items():
+            if any(PREF.search(t) for t in ts):continue
+            if any(i>0 and STATE.search(t) for i,t in enumerate(ts)):continue
+            for ti,text in enumerate(ts):
+              if not (30<=len(text)<=1200):continue
+              if any(p.search(text) for p in PII):continue
+              norm=re.sub(r'\s+',' ',text).lower().strip();h=hashlib.sha256(norm.encode()).hexdigest()
+              if h in seen:continue
+              hits=[]
+              for name,pat in pats:
+                for m in pat.finditer(text):
+                  actor=m.group('actor').strip();a0,a1=m.span('actor');rr=m.group('rel')
+                  # If the actor is introduced only as an assistant persona, flag it rather than silently accept.
+                  near=text[max(0,a0-120):min(len(text),a1+120)]
+                  persona=bool(PERSONA.search(near) or PERSONA.search(text[:min(220,len(text))]))
+                  art=(m.groupdict().get('artifact') or '')
+                  ev=re.sub(r'\s+',' ',text[max(0,m.start()-180):min(len(text),m.end()+220)]).strip()
+                  score=8+(1 if REQUEST.search(text) else 0)+(1 if ti==0 else 0)+(1 if art else 0)-(4 if persona else 0)
+                  hits.append({'pattern':name,'actor':actor,'sourceActorSpan':{'start':a0,'end':a1,'text':text[a0:a1]},'relationEvidence':relmap(rr),'artifact':art,'personaRisk':persona,'score':score,'evidence':ev})
+              if not hits:continue
+              seen.add(h);hits.sort(key=lambda x:(-x['score'],x['sourceActorSpan']['start']));best=hits[0]
+              out.append({'sourceRowId':str(r.get('id') or ''),'sourceEvaluationSessionId':sid,'turnIndex':ti,'familyTurnCount':len(ts),'sourceLength':len(text),'sourceText':text,**best,'allHits':hits[:5],'assistantOutputsIncluded':False,'trainingEligible':False})
+          out.sort(key=lambda x:(-x['score'],x['personaRisk'],x['sourceLength'],x['sourceEvaluationSessionId'],x['turnIndex']))
+          d=Path('temp-hiddenrubric/lane04/explicit4');d.mkdir(parents=True,exist_ok=True)
+          with (d/'full.jsonl').open('w',encoding='utf-8') as f,(d/'compact.jsonl').open('w',encoding='utf-8') as c:
+            for x in out:
+              f.write(json.dumps(x,ensure_ascii=False)+'\n');c.write(json.dumps({k:x[k] for k in ['sourceRowId','sourceEvaluationSessionId','turnIndex','familyTurnCount','sourceLength','actor','sourceActorSpan','relationEvidence','artifact','pattern','personaRisk','score','evidence']},ensure_ascii=False)+'\n')
+          (d/'manifest.json').write_text(json.dumps({'rawRows':raw,'sessionFamilies':len(ses),'candidates':len(out),'personaRisk':sum(1 for x in out if x['personaRisk']),'sourceDataset':REPO,'sourceRevision':REV,'assistantOutputsIncluded':False,'candidateSignalsAreGold':False},indent=2)+'\n')
+          print('candidates',len(out))
+          PY
+      - name: Commit queue
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/explicit4/
+          git commit -m 'chore: materialize Lane04 explicit evaluator relations 4'
+          git push origin HEAD:main
