@@ -22,6 +22,18 @@ jobs:
           python-version: '3.12'
       - name: Install dependencies
         run: python -m pip install --upgrade pip pyarrow huggingface_hub
+      - name: Patch optional relation capture
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('temp-hiddenrubric/lane04/relation_first_mine.py')
+          s=p.read_text(encoding='utf-8')
+          old="rawrel=m.group('rel'); score=base"
+          new="rawrel=m.groupdict().get('rel') or ('submit' if ptype.startswith('submit') else 'review'); score=base"
+          assert old in s
+          p.write_text(s.replace(old,new),encoding='utf-8')
+          PY
       - name: Mine relation-first candidates
         run: python temp-hiddenrubric/lane04/relation_first_mine.py
       - name: Commit temporary relation-first queue
