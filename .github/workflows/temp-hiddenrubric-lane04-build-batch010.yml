@@ -1,0 +1,34 @@
+name: TEMP HiddenRubric Lane04 Build Batch010
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-build-batch010.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build batch010
+        run: python temp-hiddenrubric/lane04/build_batch010.py
+      - name: Verify validation marker
+        run: |
+          cat temp-hiddenrubric/lane04/batch010/VALIDATION.txt
+          grep -q '^PASS rows=1 requester=0 evaluator=1 evaluatorSpans=1 rejected=6$' temp-hiddenrubric/lane04/batch010/VALIDATION.txt
+      - name: Commit batch010 materialization
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/batch010/
+          git commit -m 'chore: materialize Lane04 batch010 evaluator gold candidate'
+          git push origin HEAD:main
