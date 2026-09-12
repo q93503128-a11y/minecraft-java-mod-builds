@@ -1,0 +1,12 @@
+{
+  "rawRows": 135634,
+  "matchedUniqueTurns": 16,
+  "materializedRows": 16,
+  "patternCounts": {
+    "for_actor_relation": 2,
+    "relation_from_actor": 9,
+    "actor_verb_object": 5
+  },
+  "sourceRevision": "a9cb587ee0906192dc1fc5e51778282f36c6bf35",
+  "assistantOutputsIncluded": false
+}
