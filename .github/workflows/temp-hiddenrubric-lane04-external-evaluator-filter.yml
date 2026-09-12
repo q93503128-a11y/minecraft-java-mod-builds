@@ -1,0 +1,59 @@
+name: TEMP HiddenRubric Lane04 External Evaluator Filter
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-external-evaluator-filter.yml'
+permissions:
+  contents: write
+jobs:
+  filter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Filter external evaluator relations
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          src=Path('temp-hiddenrubric/lane04/open-relation-compact.jsonl')
+          rows=[json.loads(x) for x in src.read_text(encoding='utf-8').splitlines() if x.strip()]
+          actor_rx=re.compile(r'(?i)\b(?:manager|management|supervisor|team lead|senior leadership|leadership|executive(?:s| board| committee)?|board|committee|panel|judges?|jury|professor(?:s)?|teacher|instructor|faculty|reviewers?|client|customer|investors?|stakeholders?|sponsor|hiring manager|recruiter|admissions?|grant committee|funding committee|auditors?)\b')
+          object_rx=re.compile(r'(?i)\b(?:report|presentation|proposal|pitch|application|assignment|thesis|dissertation|essay|document|draft|letter|cover letter|resume|résumé|project|plan|analysis|brief|memo|case|submission|deliverable|portfolio|statement|email|work)\b')
+          request_rx=re.compile(r'(?i)\b(?:write|draft|create|prepare|make|rewrite|re-write|polish|improve|refine|transform|help me|generate|develop|compose|edit|revise|present|submit|send)\b')
+          rel_rx=re.compile(r'(?i)\b(?:review|approve|approval|evaluate|evaluation|assess|assessment|grade|grading|mark|feedback|judge|judging|score|select|selection|reject|accept|sign[- ]?off|recommend)\w*\b')
+          bad_rx=re.compile(r'(?i)\b(?:UI|button|workflow status|review article|literature review|system administrator|admin panel|code review|pull request|peer-reviewed publication|historical|previous supervisor|received feedback)\b')
+          out=[]
+          for r in rows:
+            text=' '.join(str(r.get(k) or '') for k in ('context','evidence'))
+            actors=sorted(set(m.group(0) for m in actor_rx.finditer(text)),key=str.casefold)
+            objs=sorted(set(m.group(0) for m in object_rx.finditer(text)),key=str.casefold)
+            reqs=sorted(set(m.group(0) for m in request_rx.finditer(text)),key=str.casefold)
+            rels=sorted(set(m.group(0) for m in rel_rx.finditer(text)),key=str.casefold)
+            if not (actors and objs and rels): continue
+            score=5*len(actors)+3*len(objs)+3*len(reqs)+4*len(rels)+int(r.get('score') or 0)
+            if bad_rx.search(text): score-=12
+            if re.search(r'(?i)\byou\s+(?:will|would|should|can)?\s*(?:review|evaluate|grade|assess|judge)',text): score-=8
+            x=dict(r); x.update({'extActors':actors,'outputObjects':objs,'requestWords':reqs,'relationWords':rels,'externalScore':score})
+            out.append(x)
+          out.sort(key=lambda r:(-r['externalScore'],r.get('sourceLength',999999),r['sourceRowId'],r['turnIndex']))
+          d=Path('temp-hiddenrubric/lane04/external-evaluator-filter'); d.mkdir(parents=True,exist_ok=True)
+          (d/'shortlist.jsonl').write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in out[:160]),encoding='utf-8')
+          (d/'manifest.json').write_text(json.dumps({'inputRows':len(rows),'matchedRows':len(out),'materializedRows':min(160,len(out))},indent=2)+'\n',encoding='utf-8')
+          print('matched',len(out))
+          PY
+      - name: Commit shortlist
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/external-evaluator-filter/
+          git commit -m 'chore: materialize temporary Lane04 external evaluator shortlist'
+          git push origin HEAD:main
