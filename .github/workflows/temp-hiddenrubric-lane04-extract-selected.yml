@@ -1,0 +1,46 @@
+name: TEMP HiddenRubric Lane04 Extract Selected
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-extract-selected.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Extract selected full rows
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          ids={'6022586c-f9d3-4c5a-bb65-c557e616e24f','a9970066-e698-49b7-acbd-fa532f4a4c6a','98fd3aa1-9dbb-45b2-8423-f2d14c2cbb97'}
+          src=Path('temp-hiddenrubric/lane04/open-relation-full.jsonl')
+          selected=[]
+          for line in src.read_text(encoding='utf-8').splitlines():
+              if not line.strip(): continue
+              x=json.loads(line)
+              if x.get('sourceRowId') in ids:
+                  selected.append(x)
+          assert {x['sourceRowId'] for x in selected}==ids
+          out=Path('temp-hiddenrubric/lane04/selected-batch007-sources.jsonl')
+          out.write_text(''.join(json.dumps(x,ensure_ascii=False)+'\n' for x in selected),encoding='utf-8')
+          print('selected',len(selected))
+          PY
+      - name: Commit selected rows
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/selected-batch007-sources.jsonl
+          git commit -m 'chore: materialize temporary Lane04 selected sources'
+          git push origin HEAD:main
