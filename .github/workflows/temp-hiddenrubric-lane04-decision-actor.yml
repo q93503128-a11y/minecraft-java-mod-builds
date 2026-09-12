@@ -1,0 +1,120 @@
+name: TEMP HiddenRubric Lane04 Decision Actor
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-decision-actor.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  mine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip pyarrow huggingface_hub
+      - name: Mine decision actor evaluators
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          import pyarrow.parquet as pq
+          from huggingface_hub import hf_hub_download
+
+          REPO='lmarena-ai/arena-human-preference-140k'; REV='a9cb587ee0906192dc1fc5e51778282f36c6bf35'
+          SHARDS=[f'data/train-{i:05d}-of-00007.parquet' for i in range(7)]
+          USED={'8c02f215-e1db-48e2-8de8-543ed61bb5b7','0ca2c701-71cf-4afd-9cb0-feb2ec032743','a9970066-e698-49b7-acbd-fa532f4a4c6a','7a07fe1a-620d-478e-8c69-e826d9a91eea','f0622255-dc66-4488-886a-bd57f2321a9c','6022586c-f9d3-4c5a-bb65-c557e616e24f','8b1cfa16-9c5d-477a-a321-79a214d7aaae'}
+          ACT=r'(?:hiring manager|hiring managers|recruiter|recruiters|interview panel|interviewers|admissions committee|admission committee|admissions officer|admissions officers|admissions team|selection committee|grant committee|funding committee|grant reviewers|review panel|judging panel|judges|judge|jury|peer reviewers|journal reviewers|reviewers|journal editor|editors|investors|venture capitalists|vcs|potential investors|project sponsor|sponsors)'
+          OUT=r'(?:resume|cv|cover letter|application|personal statement|statement of purpose|sop|admissions essay|college essay|essay|portfolio|proposal|grant proposal|research proposal|paper|manuscript|abstract|presentation|slides?|deck|pitch|business plan|business case|project|submission|entry|report|letter|email|statement)'
+          WRITE=r'(?:write|draft|prepare|create|revise|edit|rewrite|polish|improve|refine|compose|craft|develop|generate|make|format|finalize|help me|help us|produce|tailor|optimize|turn this into|transform)'
+          actor=f'(?P<actor>(?:(?:my|our|the|their|a|an|your|potential)\\s+)?{ACT})'
+          pats=[
+            ('impress_actor',16,re.compile(rf'\b(?P<verb>impress|persuade|convince|win over|appeal to|stand out to|catch the attention of|grab the attention of|attract the attention of)\s+{actor}\b',re.I)),
+            ('actor_impressed_by',15,re.compile(rf'\b{actor}\s+(?:will|would|should|must|can|could|to)?\s*(?P<verb>be impressed by|find .*? compelling|be convinced by)\b',re.I)),
+            ('increase_chance_actor',15,re.compile(rf'\b(?:increase|improve|maximi[sz]e|boost)\s+(?:my|our|the)?\s*(?:chances?|odds?|likelihood)\s+(?:of\s+)?(?:being\s+)?(?:hired|selected|accepted|admitted|funded|approved|shortlisted).{{0,140}}?\b(?:by|with)\s+{actor}\b',re.I|re.S)),
+            ('for_actor_decision',16,re.compile(rf'\b(?P<object>{OUT})\b.{{0,160}}?\b(?:for|to|before)\s+{actor}\b.{{0,100}}?\b(?:hiring|selection|admission|funding|approval|judging|review|publication|shortlisting|decision)\b',re.I|re.S)),
+            ('actor_decides_output',17,re.compile(rf'\b{actor}\b.{{0,120}}?\b(?:decide|decides|determine|determines|select|selects|choose|chooses|shortlist|shortlists|rank|ranks|score|scores|judge|judges|review|reviews|assess|assesses|evaluate|evaluates)\b.{{0,140}}?\b(?P<object>{OUT})\b',re.I|re.S)),
+          ]
+          wre=re.compile(rf'\b{WRITE}\b',re.I); ore=re.compile(rf'\b{OUT}\b',re.I)
+          persona=re.compile(r'\b(?:act as|you are|assume yourself as|pretend (?:you are|to be)|imagine you are|role\s*[:=])\b',re.I)
+          historical=re.compile(r'\b(?:previously|earlier|last (?:week|month|year)|already|had been|has been|was|were)\b.{0,60}\b(?:reviewed|approved|evaluated|assessed|graded|judged|selected|accepted|rejected|funded|hired)\b',re.I|re.S)
+          PII=[re.compile(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b',re.I),re.compile(r'\b(?:sk-[A-Za-z0-9_-]{16,}|api[_-]?key\s*[:=])',re.I)]
+          def mt(m):
+            if not isinstance(m,dict):return ''
+            if isinstance(m.get('text'),str):return m['text']
+            c=m.get('content')
+            if isinstance(c,str):return c
+            if isinstance(c,list):return '\n'.join(x if isinstance(x,str) else x.get('text','') for x in c if isinstance(x,(str,dict)))
+            return ''
+          def uts(row):
+            out=[]
+            for e in row.get('full_conversation') or []:
+              if not isinstance(e,dict):continue
+              u=e.get('user')
+              if isinstance(u,dict):
+                t=mt(u).strip()
+                if t:out.append(t)
+              elif str(e.get('role') or '')=='user':
+                t=mt(e).strip()
+                if t:out.append(t)
+            return out
+          def rk(row,ts):
+            st=row.get('timestamp')
+            try:s=int(st.timestamp()*1e9) if hasattr(st,'timestamp') else int(st or 0)
+            except:s=0
+            return(int(row.get('evaluation_order') or 0),len(ts),s)
+          cols=['id','evaluation_session_id','evaluation_order','language','is_code','timestamp','full_conversation'];sessions={};raw=0
+          for sh in SHARDS:
+            p=hf_hub_download(REPO,filename=sh,repo_type='dataset',revision=REV);pf=pq.ParquetFile(p);use=[c for c in cols if c in pf.schema_arrow.names]
+            for b in pf.iter_batches(batch_size=512,columns=use):
+              for row in b.to_pylist():
+                raw+=1
+                if row.get('language')!='en' or bool(row.get('is_code')):continue
+                ts=uts(row)
+                if not ts:continue
+                sid=str(row.get('evaluation_session_id') or row.get('id') or '');k=rk(row,ts)
+                if sid not in sessions or k>sessions[sid][0]:sessions[sid]=(k,row,ts)
+          assert raw==135634
+          found=[];seen=set()
+          for sid,(_,row,ts) in sessions.items():
+            for ti,text in enumerate(ts):
+              rid=str(row.get('id') or '')
+              if rid in USED or not(20<=len(text)<=10000) or any(p.search(text) for p in PII):continue
+              if not wre.search(text) or not ore.search(text):continue
+              norm=re.sub(r'\s+',' ',text).strip().lower()
+              if norm in seen:continue
+              ms=[]
+              for name,base,pat in pats:
+                for m in pat.finditer(text):
+                  s,e=m.span();near=text[max(0,s-320):min(len(text),e+320)]
+                  if not (wre.search(near) and ore.search(near)):continue
+                  pn=bool(persona.search(near));hn=bool(historical.search(near))
+                  score=base+(2 if ti==0 else 0)+(2 if len(text)<1800 else 0)-(7 if pn else 0)-(5 if hn else 0)
+                  gd=m.groupdict();ms.append({'pattern':name,'score':score,'actor':gd.get('actor'),'object':gd.get('object'),'verb':gd.get('verb'),'match':re.sub(r'\s+',' ',m.group(0)).strip(),'near':re.sub(r'\s+',' ',near).strip(),'personaNear':pn,'historicalNear':hn})
+              if not ms:continue
+              seen.add(norm);ms.sort(key=lambda x:(-x['score'],len(x['match'])))
+              found.append({'sourceRowId':rid,'sourceEvaluationSessionId':sid,'evaluationOrder':int(row.get('evaluation_order') or 0),'turnIndex':ti,'familyTurnCount':len(ts),'sourceLength':len(text),'sourceText':text,'assistantOutputsIncluded':False,**ms[0]})
+          found.sort(key=lambda x:(-x['score'],x['sourceLength'],x['sourceRowId']));found=found[:250]
+          out=Path('temp-hiddenrubric/lane04/decision-actor');out.mkdir(parents=True,exist_ok=True)
+          (out/'full.jsonl').write_text(''.join(json.dumps(x,ensure_ascii=False)+'\n' for x in found),encoding='utf-8')
+          (out/'compact.jsonl').write_text(''.join(json.dumps({k:x[k] for k in ['sourceRowId','sourceEvaluationSessionId','turnIndex','familyTurnCount','sourceLength','score','pattern','actor','object','verb','match','near','personaNear','historicalNear']},ensure_ascii=False)+'\n' for x in found),encoding='utf-8')
+          (out/'manifest.json').write_text(json.dumps({'rawRows':raw,'candidateRows':len(found),'assistantOutputsIncluded':False},indent=2)+'\n',encoding='utf-8')
+          print('candidates',len(found))
+          PY
+      - name: Commit decision actor queue
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/decision-actor/
+          git commit -m 'chore: materialize Lane04 decision actor queue' || exit 0
+          git push origin HEAD:main
