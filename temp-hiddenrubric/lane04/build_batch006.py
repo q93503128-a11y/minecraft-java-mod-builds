@@ -1,0 +1,71 @@
+import json
+from pathlib import Path
+
+src_path=Path('temp-hiddenrubric/lane04/strict-evaluator-full.jsonl')
+target_id='0ca2c701-71cf-4afd-9cb0-feb2ec032743'
+found=None
+for line in src_path.read_text(encoding='utf-8').splitlines():
+    if not line.strip():
+        continue
+    obj=json.loads(line)
+    if obj.get('sourceRowId')==target_id and obj.get('turnIndex')==0:
+        found=obj
+        break
+assert found is not None
+source=found['sourceText']
+assert 'The finished work will be used by potential investors and stakeholders to evaluate the viability and potential of the business.' in source
+
+ko='''{"task":"가장 최신 분석을 바탕으로 현재 시점에 사업을 시작할 때의 기회와 과제를 파악할 수 있도록 포괄적이고 충분히 조사된 PESTEL 분석(외부 감사 수행)을 작성하세요.",
+"task_description":"전자상거래 분야의 창업자이자 기업가로서 가장 최신 정보를 반영한 포괄적이고 충분히 조사된 PESTEL 분석(외부 감사 수행)을 작성하는 것이 과제입니다. 완성된 결과물은 잠재 투자자와 이해관계자가 사업의 실행 가능성과 잠재력을 평가하는 데 사용됩니다. 성공 여부는 PESTEL 분석이 현재 상황을 얼마나 정확하게 평가하는지를 기준으로 측정됩니다.",
+
+“스타트업 회사”:”회사는 베트남 최초의 OEM 및 ODM 전자상거래 플랫폼으로, 사람들이 원하는 맞춤형 제품을 소유할 수 있도록 돕는 베트남의 신뢰받는 파트너가 되는 것을 목표로 합니다. 고객에게 가장 표준화되고 편리한 절차를 제공하는 동시에 공급자가 주문을 효과적으로 관리하도록 돕습니다. 주문 관리 시스템은 A부터 Z까지 맞춤화되며 제3자 소프트웨어 없이 완결되고 올인원으로 구성됩니다.”
+
+"Role":"전문가 수준의 창업자",
+"Department":"기업가",
+“Expertise”: “회사 전략 기획”,
+“Your clients”:”잠재 투자자와 이해관계자”,
+
+"rule_1":"숨을 깊이 들이쉬고 과제를 단계별로 생각하세요. 성공 요인, 기준, 목표를 고려하세요. 최적의 결과물이 어떤 모습일지 상상하고 매번 완성도를 최대한 높이세요.",
+
+"rule_2":"사용자가 제공한 세부사항을 핵심 참고자료의 통찰과 업계 모범 사례에 결합해 최적의 내용을 작성하세요.",
+
+“rule_3”:”답변은 스타트업 설명과 일관되고 간결하며 논리적이어야 합니다. 가능한 한 구체적으로 작성하고 필요하면 실제 수치와 실제 인용을 사용하세요. 장황하게 늘어놓거나 환각하지 마세요.”}'''
+
+def span(text, needle, start=0):
+    s=text.index(needle,start)
+    return {'start':s,'end':s+len(needle),'text':needle}
+
+src_spans=[span(source,'potential investors'), span(source,'stakeholders', source.index('potential investors'))]
+ko_spans=[span(ko,'잠재 투자자'), span(ko,'이해관계자', ko.index('잠재 투자자'))]
+for sp in src_spans:
+    assert source[sp['start']:sp['end']]==sp['text']
+for sp in ko_spans:
+    assert ko[sp['start']:sp['end']]==sp['text']
+
+row={
+  'schemaVersion':'router-stage05-parallel-v1-lane04-requester-evaluator-v1',
+  'lane':'lane04-requester-evaluator','sourceDataset':'lmarena-ai/arena-human-preference-140k',
+  'sourceRevision':'a9cb587ee0906192dc1fc5e51778282f36c6bf35',
+  'sourceArtifact':'pinned-parquet-strict-evaluator-mine:public-run-34637255491',
+  'sourceEvaluationSessionId':found['sourceEvaluationSessionId'],'sourceRowId':target_id,
+  'familyIndex':None,'kind':'user','turnIndex':0,'sourceLanguage':'en','targetLanguage':'ko',
+  'source_en':source,'localized_ko':ko,'assistantOutputsIncluded':False,'sourceComplete':True,
+  'translationReviewed':True,'semanticReviewed':True,'existingStage05DuplicateChecked':True,
+  'privacyFlags':[],'ownership':{'stateOps':False,'preference':False,'crossDomain':False},
+  'actors':{
+    'requester':{'present':False,'sourceSpans':[],'koreanSpans':[],'relationEvidence':[]},
+    'evaluator':{'present':True,'sourceSpans':src_spans,'koreanSpans':ko_spans,'relationEvidence':['evaluate_by_actor']}
+  },
+  'reviewStatus':'manual-semantic-reviewed-staging','trainingEligible':False,'humanGold':False,
+  'factualGold':False,'domainExpertGold':False
+}
+assert len(src_spans)==len(ko_spans)==2
+out=Path('temp-hiddenrubric/lane04/batch006')
+out.mkdir(parents=True,exist_ok=True)
+(out/'staging-batch006-evaluator-expansion.jsonl').write_text(json.dumps(row,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8')
+review={'sourceRowId':target_id,'turnIndex':0,'accepted':True,'role':'evaluator','actorText':['potential investors','stakeholders'],'reason':'manual_semantic_current_output_evaluation','relationEvidence':'evaluate_by_actor','notes':'The requested PESTEL finished work is explicitly used by potential investors and stakeholders to evaluate business viability and potential.'}
+(out/'review-batch006-evaluator-expansion.jsonl').write_text(json.dumps(review,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8')
+report={'schemaVersion':'router-stage05-parallel-v1-lane04-report-v1','lane':'lane04-requester-evaluator','date':'2026-09-12','source':{'dataset':'lmarena-ai/arena-human-preference-140k','revision':'a9cb587ee0906192dc1fc5e51778282f36c6bf35','rawRows':135634,'humanUserTurnsOnly':True,'assistantOutputsUsed':False},'batch':{'acceptedRows':1,'requesterPositiveRows':0,'requesterExactSpans':0,'evaluatorPositiveRows':1,'evaluatorExactSpans':2,'falsePositiveOrHigherLaneAnnotationsRemoved':0,'manualRescueActorAnnotations':2},'ownership':{'stateOpsExcluded':True,'preferenceExcluded':True,'crossDomainExcluded':True},'notes':['Requested PESTEL output is explicitly evaluated by potential investors and stakeholders.','No assistant/model output was used.']}
+(out/'report-batch006-evaluator-expansion.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+(out/'VALIDATION.txt').write_text('PASS rows=1 requester=0 evaluator=1 evaluatorSpans=2\n',encoding='utf-8')
+print('PASS batch006', target_id, found['sourceEvaluationSessionId'])
