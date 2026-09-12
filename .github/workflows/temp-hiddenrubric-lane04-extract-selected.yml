@@ -12,29 +12,70 @@ permissions:
 jobs:
   extract:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Extract selected full rows
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip pyarrow huggingface_hub
+      - name: Recover selected pinned rows
         shell: bash
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          ids={'6022586c-f9d3-4c5a-bb65-c557e616e24f','a9970066-e698-49b7-acbd-fa532f4a4c6a','98fd3aa1-9dbb-45b2-8423-f2d14c2cbb97'}
-          src=Path('temp-hiddenrubric/lane04/open-relation-full.jsonl')
-          selected=[]
-          for line in src.read_text(encoding='utf-8').splitlines():
-              if not line.strip(): continue
-              x=json.loads(line)
-              if x.get('sourceRowId') in ids:
-                  selected.append(x)
-          assert {x['sourceRowId'] for x in selected}==ids
+          import pyarrow.parquet as pq
+          from huggingface_hub import hf_hub_download
+          REPO='lmarena-ai/arena-human-preference-140k'
+          REV='a9cb587ee0906192dc1fc5e51778282f36c6bf35'
+          TARGETS={'6022586c-f9d3-4c5a-bb65-c557e616e24f':0,'a9970066-e698-49b7-acbd-fa532f4a4c6a':0,'98fd3aa1-9dbb-45b2-8423-f2d14c2cbb97':0}
+          SHARDS=[f'data/train-{i:05d}-of-00007.parquet' for i in range(7)]
+          def content_text(msg):
+              if not isinstance(msg,dict): return ''
+              if isinstance(msg.get('text'),str): return msg['text']
+              c=msg.get('content')
+              if isinstance(c,str): return c
+              if isinstance(c,list):
+                  out=[]
+                  for item in c:
+                      if isinstance(item,str): out.append(item)
+                      elif isinstance(item,dict) and isinstance(item.get('text'),str): out.append(item['text'])
+                  return '\n'.join(out)
+              return ''
+          def user_turns(row):
+              out=[]
+              for e in row.get('full_conversation') or []:
+                  if not isinstance(e,dict): continue
+                  u=e.get('user')
+                  if isinstance(u,dict):
+                      t=content_text(u).strip()
+                      if t: out.append(t)
+                  elif str(e.get('role') or '')=='user':
+                      t=content_text(e).strip()
+                      if t: out.append(t)
+              return out
+          found={}; raw=0
+          for shard in SHARDS:
+              path=hf_hub_download(REPO,filename=shard,repo_type='dataset',revision=REV)
+              pf=pq.ParquetFile(path)
+              cols=['id','evaluation_session_id','evaluation_order','language','is_code','full_conversation']
+              use=[c for c in cols if c in set(pf.schema_arrow.names)]
+              for batch in pf.iter_batches(batch_size=512,columns=use):
+                  for row in batch.to_pylist():
+                      raw+=1
+                      rid=str(row.get('id') or '')
+                      if rid not in TARGETS: continue
+                      turns=user_turns(row); ti=TARGETS[rid]
+                      found[rid]={'sourceDataset':REPO,'sourceRevision':REV,'sourceRowId':rid,'sourceEvaluationSessionId':str(row.get('evaluation_session_id') or ''),'evaluationOrder':int(row.get('evaluation_order') or 0),'language':row.get('language'),'isCode':bool(row.get('is_code')),'turnCount':len(turns),'targetTurnIndex':ti,'targetUserTurn':turns[ti] if ti<len(turns) else None,'userTurns':turns,'assistantOutputsIncluded':False}
+          assert raw==135634,raw
+          assert set(found)==set(TARGETS),(set(TARGETS)-set(found))
           out=Path('temp-hiddenrubric/lane04/selected-batch007-sources.jsonl')
-          out.write_text(''.join(json.dumps(x,ensure_ascii=False)+'\n' for x in selected),encoding='utf-8')
-          print('selected',len(selected))
+          out.write_text(''.join(json.dumps(found[r],ensure_ascii=False)+'\n' for r in TARGETS),encoding='utf-8')
+          print('selected',len(found),'raw',raw)
           PY
       - name: Commit selected rows
         shell: bash
