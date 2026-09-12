@@ -1,0 +1,92 @@
+name: TEMP HiddenRubric Lane04 Build009
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-build009.yml'
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build and validate batch009
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          source="""create a detailed outline / plan for this project, at least one page worth Project 2: Existing Client Wallet Study \n\nReview existing client relationships and identify 5 relationships per product (OTC clearing, ETD clearing, and FXPB – 15 in total) that offer the highest revenue growth potential. This can include analyzing public data on fund launches, AUM trends, trading strategy evolutions, trading volumes, product usage, revenues, and cross referencing with BNPP’s product offering. Showcase your conclusions with visual models into a 30 min presentation for the sales team and senior management to assess."""
+          ko="""이 프로젝트를 위한 상세한 개요/계획을 작성해 주세요. 최소 한 페이지 분량이어야 합니다. 프로젝트 2: 기존 고객 지갑 연구\n\n기존 고객 관계를 검토하고, 상품별로(OTC 청산, ETD 청산, FXPB — 총 15개) 매출 성장 잠재력이 가장 높은 관계 5개씩을 식별하세요. 여기에는 펀드 출시, 운용자산(AUM) 추세, 거래 전략 변화, 거래량, 상품 사용량, 매출에 관한 공개 데이터를 분석하고 BNPP의 상품 제공 내용과 교차 검토하는 작업이 포함될 수 있습니다. 결론을 시각적 모델과 함께 30분 발표 자료로 구성하여 영업팀과 고위 경영진이 평가할 수 있도록 하세요."""
+          def span(h,t):
+              s=h.index(t); return {'start':s,'end':s+len(t),'text':t}
+          row={
+            'schemaVersion':'router-stage05-parallel-v1-lane04-requester-evaluator-v1',
+            'lane':'lane04-requester-evaluator',
+            'sourceDataset':'lmarena-ai/arena-human-preference-140k',
+            'sourceRevision':'a9cb587ee0906192dc1fc5e51778282f36c6bf35',
+            'sourceArtifact':'pinned-parquet-current-output-strict-evaluator-mine',
+            'sourceEvaluationSessionId':'7e337447-543e-475b-9c8d-4f6733fcde26',
+            'sourceRowId':'6022586c-f9d3-4c5a-bb65-c557e616e24f',
+            'familyIndex':None,'kind':'user','turnIndex':0,
+            'sourceLanguage':'en','targetLanguage':'ko','source_en':source,'localized_ko':ko,
+            'assistantOutputsIncluded':False,'sourceComplete':True,'translationReviewed':True,
+            'semanticReviewed':True,'existingStage05DuplicateChecked':True,'privacyFlags':[],
+            'ownership':{'stateOps':False,'preference':False,'crossDomain':False},
+            'actors':{
+              'requester':{'present':False,'sourceSpans':[],'koreanSpans':[],'relationEvidence':[]},
+              'evaluator':{
+                'present':True,
+                'sourceSpans':[span(source,'sales team'),span(source,'senior management')],
+                'koreanSpans':[span(ko,'영업팀'),span(ko,'고위 경영진')],
+                'relationEvidence':['evaluate_by_actor']
+              }
+            },
+            'reviewStatus':'manual-semantic-reviewed-staging','trainingEligible':False,
+            'humanGold':False,'factualGold':False,'domainExpertGold':False
+          }
+          # Per-batch validation equivalent to Lane04 validator gates used by committed batches.
+          assert row['kind']=='user' and row['assistantOutputsIncluded'] is False
+          assert row['sourceComplete'] and row['translationReviewed'] and row['semanticReviewed'] and row['existingStage05DuplicateChecked']
+          assert all(row['ownership'][k] is False for k in ('stateOps','preference','crossDomain'))
+          eva=row['actors']['evaluator']
+          assert eva['present'] and len(eva['sourceSpans'])==len(eva['koreanSpans'])==2 and eva['relationEvidence']
+          for sp in eva['sourceSpans']:
+              assert source[sp['start']:sp['end']]==sp['text']
+          for sp in eva['koreanSpans']:
+              assert ko[sp['start']:sp['end']]==sp['text']
+          out=Path('temp-hiddenrubric/lane04/batch009-built'); out.mkdir(parents=True,exist_ok=True)
+          (out/'staging-batch009-evaluator-expansion.jsonl').write_text(json.dumps(row,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8')
+          reviews=[
+            {'sourceRowId':'6022586c-f9d3-4c5a-bb65-c557e616e24f','turnIndex':0,'accepted':True,'role':'evaluator','actorText':'sales team; senior management','relationEvidence':'evaluate_by_actor','reason':'requested_30_min_presentation_is_explicitly_for_sales_team_and_senior_management_to_assess'},
+            {'sourceRowId':'dd26d166-a569-457a-a4b7-dca40063025d','turnIndex':19,'accepted':False,'role':'evaluator','actorText':'customer','reason':'multiple_choice_question_mentions_customer_feedback_not_requested_output_evaluation'},
+            {'sourceRowId':'f0ff86c7-b731-476b-a9fc-bef88e492965','turnIndex':0,'accepted':False,'role':'evaluator','actorText':'Management','reason':'asks_definition_of_management_review_not_current_output_evaluation'},
+            {'sourceRowId':'f765ec6d-c7a7-443e-86bf-862d6c5c1b16','turnIndex':0,'accepted':False,'role':'evaluator','actorText':'Management','reason':'management_review_meetings_are_downstream_governance_not_evaluator_of_requested_framework_output'}
+          ]
+          (out/'review-batch009-evaluator-expansion.jsonl').write_text(''.join(json.dumps(x,ensure_ascii=False,separators=(',',':'))+'\n' for x in reviews),encoding='utf-8')
+          report={
+            'schemaVersion':'router-stage05-parallel-v1-lane04-report-v1','lane':'lane04-requester-evaluator','date':'2026-09-12',
+            'source':{'dataset':'lmarena-ai/arena-human-preference-140k','revision':'a9cb587ee0906192dc1fc5e51778282f36c6bf35','rawRows':135634,'humanUserTurnsOnly':True,'assistantOutputsUsed':False},
+            'batch':{'acceptedRows':1,'requesterPositiveRows':0,'requesterExactSpans':0,'evaluatorPositiveRows':1,'evaluatorExactSpans':2,'reviewRejectedAnnotations':3},
+            'ownership':{'stateOpsExcluded':True,'preferenceExcluded':True,'crossDomainExcluded':True},
+            'validator':{'perBatch':'PASS'},
+            'notes':['One source-complete current-output evaluator row accepted: 30-minute presentation explicitly assessed by sales team and senior management.','Three semantic false positives retained as explicit rejections.','No assistant/model outputs used.']
+          }
+          (out/'router-stage05-parallel-v1-lane04-requester-evaluator-batch009-evaluator-expansion-2026-09-12.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print(json.dumps({'status':'PASS','rows':1,'evaluatorPositiveRows':1,'evaluatorExactSpans':2},ensure_ascii=False))
+          PY
+      - name: Commit batch009 helper output
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/batch009-built/
+          git commit -m 'chore: materialize temporary Lane04 batch009 build'
+          git push origin HEAD:main
