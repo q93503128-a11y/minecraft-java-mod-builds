@@ -1,0 +1,47 @@
+name: TEMP HiddenRubric Lane04 High Value Seeds
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-highvalue-seeds.yml'
+permissions:
+  contents: write
+jobs:
+  filter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Filter retained high-value actor phrases
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('temp-hiddenrubric/lane04/seed-phrase-recovery/hits.jsonl')
+          rows=[json.loads(x) for x in p.read_text(encoding='utf-8').splitlines() if x.strip()]
+          wanted={'the sponsor','my manager','the auditors','the Hiring Manager','my supervisor','potential investors and stakeholders','Senior Leadership','my team lead','the President of the ISPOR Ghana Chapter','my colleague'}
+          out=[r for r in rows if r.get('actor') in wanted]
+          out.sort(key=lambda r:(r['actor'].casefold(),r['distance'],r['sourceLength'],r['sourceRowId'],r['turnIndex']))
+          d=Path('temp-hiddenrubric/lane04/highvalue-seeds'); d.mkdir(parents=True,exist_ok=True)
+          (d/'full.jsonl').write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in out),encoding='utf-8')
+          compact=[]
+          for r in out:
+            compact.append({k:r[k] for k in ('sourceRowId','sourceEvaluationSessionId','evaluationOrder','turnIndex','actor','relationMatch','distance','sourceLength','context')})
+          (d/'compact.jsonl').write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in compact),encoding='utf-8')
+          counts={}
+          for r in out: counts[r['actor']]=counts.get(r['actor'],0)+1
+          (d/'manifest.json').write_text(json.dumps({'rows':len(out),'actorCounts':counts},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print(len(out),counts)
+          PY
+      - name: Commit filtered seed queue
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/highvalue-seeds/
+          git commit -m 'chore: materialize temporary Lane04 high-value seed queue'
+          git push origin HEAD:main
