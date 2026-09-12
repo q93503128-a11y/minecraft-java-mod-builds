@@ -1,0 +1,138 @@
+name: TEMP HiddenRubric Lane04 Relation V2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-relation-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  mine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip pyarrow huggingface_hub
+      - name: Mine relation-heavy candidates
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib,json,re
+          from pathlib import Path
+          import pyarrow.parquet as pq
+          from huggingface_hub import hf_hub_download
+
+          REPO='lmarena-ai/arena-human-preference-140k'
+          REV='a9cb587ee0906192dc1fc5e51778282f36c6bf35'
+          SHARDS=[f'data/train-{i:05d}-of-00007.parquet' for i in range(7)]
+          USED={'8c02f215-e1db-48e2-8de8-543ed61bb5b7','0ca2c701-71cf-4afd-9cb0-feb2ec032743','a9970066-e698-49b7-acbd-fa532f4a4c6a','7a07fe1a-620d-478e-8c69-e826d9a91eea','f0622255-dc66-4488-886a-bd57f2321a9c','6022586c-f9d3-4c5a-bb65-c557e616e24f'}
+          OUTPUT=r'(?:report|paper|manuscript|essay|assignment|thesis|dissertation|proposal|application|resume|cv|portfolio|presentation|slides?|project|document|draft|submission|deliverable|memo|deck|pitch|case study|analysis|answer|response|letter|email|plan|statement|work|write[- ]?up|personal statement|cover letter)'
+          ACT=r'(?:judges?|jury|panelists?|interview panel|selection committee|review committee|review board|evaluation committee|evaluating committee|grading committee|assessment panel|admissions committee|admissions officers?|admissions team|grant committee|funding committee|grant reviewers?|peer reviewers?|reviewers?|examiners?|teacher marker|module team|professors?|teachers?|instructors?|supervisors?|advis(?:or|er)s?|hiring managers?|recruiters?|editors?|journal editors?|team leads?|managers?|senior management|senior leadership|executive leadership|executive board|board of directors|stakeholders?|investors?|clients?|customers?|project sponsors?|sponsors?|approvers?|auditors?|assessors?|evaluators?|graders?)'
+          REL=r'(?:review|evaluate|assess|grade|mark|judge|score|approve|reject|consider|select)'
+          relpast=r'(?:reviewed|evaluated|assessed|graded|marked|judged|scored|approved|rejected|considered|selected)'
+          out_re=re.compile(rf'\b{OUTPUT}\b',re.I)
+          request_re=re.compile(r'\b(?:write|draft|prepare|create|transform|revise|edit|improve|polish|rewrite|develop|generate|make|compose|format|finalize|refine|help me|provide|produce|build|craft)\b',re.I)
+          persona=re.compile(r'\b(?:act as|you are|assume yourself as|pretend (?:you are|to be)|imagine you are|role\s*[:=])\b',re.I)
+          historical=re.compile(r'\b(?:previously|last year|in the past|earlier|already|had been|has been)\b',re.I)
+          PII=[re.compile(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b',re.I),re.compile(r'\b(?:sk-[A-Za-z0-9_-]{16,}|api[_-]?key\s*[:=])',re.I)]
+          pref=re.compile(r'\b(?:i prefer|i would prefer|we prefer|my preference|our preference|my favorite|my favourite|i hate|i dislike|i love|i like|we like|we love)\b',re.I)
+          state=re.compile(r'\b(?:actually|instead|rather than|scratch that|forget that|previous answer|earlier answer|keep it|preserve it|don.t change|do not change|no longer)\b',re.I)
+
+          strong_judges=r'(?:judges?|jury|selection committee|review committee|evaluation committee|evaluating committee|grading committee|assessment panel|admissions committee|grant committee|funding committee|grant reviewers?|peer reviewers?|examiners?|teacher marker|module team)'
+          patterns=[
+            ('passive_by_actor',10,re.compile(rf'\b(?P<object>{OUTPUT})\b.{{0,160}}?\b(?:will|would|should|must|can|is|are|to)?\s*(?:be\s+)?(?P<rel>{relpast})\b.{{0,80}}?\bby\s+(?P<actor>(?:(?:my|our|the|their|a|an)\s+)?{ACT})\b',re.I|re.S)),
+            ('actor_future_rel_output',10,re.compile(rf'\b(?P<actor>(?:(?:my|our|the|their|a|an)\s+)?{ACT})\b.{{0,80}}?\b(?:will|would|should|must|can|is going to|are going to|to)\s+(?P<rel>{REL})(?:s|ed|ing)?\b.{{0,140}}?\b(?P<object>{OUTPUT})\b',re.I|re.S)),
+            ('output_for_actor_relation',9,re.compile(rf'\b(?P<object>{OUTPUT})\b.{{0,160}}?\b(?:for|to)\s+(?P<actor>(?:(?:my|our|the|their|a|an)\s+)?{ACT})\s+(?P<rel>review|approval|evaluation|assessment|grading|marking|consideration)\b',re.I|re.S)),
+            ('for_actor_to_rel',9,re.compile(rf'\b(?P<object>{OUTPUT})\b.{{0,180}}?\bfor\s+(?P<actor>(?:(?:my|our|the|their|a|an)\s+)?{ACT})\s+to\s+(?P<rel>{REL})\b',re.I|re.S)),
+            ('seeking_approval_from',9,re.compile(rf'\b(?P<object>{OUTPUT})\b.{{0,160}}?\b(?:seek|seeking|obtain|get|need)\s+(?:the\s+)?(?P<rel>approval)\s+(?:from|of)\s+(?P<actor>(?:(?:my|our|the|their|a|an)\s+)?{ACT})\b',re.I|re.S)),
+            ('submit_to_strong_evaluator',8,re.compile(rf'\b(?:submit|present|pitch|send|share)(?:ted|ting|s)?\b.{{0,160}}?\b(?P<object>{OUTPUT})\b.{{0,140}}?\b(?:to|before)\s+(?P<actor>(?:(?:my|our|the|their|a|an)\s+)?{strong_judges})\b',re.I|re.S)),
+            ('strong_evaluator_output',8,re.compile(rf'\b(?P<object>{OUTPUT})\b.{{0,140}}?\b(?:to|before)\s+(?P<actor>(?:(?:my|our|the|their|a|an)\s+)?{strong_judges})\b',re.I|re.S)),
+            ('actor_rel_this_output',8,re.compile(rf'\b(?P<actor>(?:(?:my|our|the|their|a|an)\s+)?{ACT})\b.{{0,100}}?\b(?P<rel>{REL})(?:s|ed|ing)?\b.{{0,120}}?\b(?:this|the|my|our)\s+(?P<object>{OUTPUT})\b',re.I|re.S)),
+          ]
+
+          def textof(msg):
+            if not isinstance(msg,dict): return ''
+            if isinstance(msg.get('text'),str): return msg['text']
+            c=msg.get('content')
+            if isinstance(c,str): return c
+            if isinstance(c,list): return '\n'.join(x if isinstance(x,str) else x.get('text','') for x in c if isinstance(x,(str,dict)))
+            return ''
+          def userturns(row):
+            out=[]
+            for e in row.get('full_conversation') or []:
+              if not isinstance(e,dict): continue
+              u=e.get('user')
+              if isinstance(u,dict):
+                t=textof(u).strip()
+                if t: out.append(t)
+              elif str(e.get('role') or '')=='user':
+                t=textof(e).strip()
+                if t: out.append(t)
+            return out
+          def key(row,ts):
+            stamp=row.get('timestamp')
+            try:s=int(stamp.timestamp()*1e9) if hasattr(stamp,'timestamp') else int(stamp or 0)
+            except:s=0
+            return (int(row.get('evaluation_order') or 0),len(ts),s)
+          cols=['id','evaluation_session_id','evaluation_order','language','is_code','timestamp','full_conversation']
+          sessions={};raw=0
+          for shard in SHARDS:
+            p=hf_hub_download(REPO,filename=shard,repo_type='dataset',revision=REV)
+            pf=pq.ParquetFile(p); use=[c for c in cols if c in pf.schema_arrow.names]
+            for b in pf.iter_batches(batch_size=512,columns=use):
+              for row in b.to_pylist():
+                raw+=1
+                if row.get('language')!='en' or bool(row.get('is_code')): continue
+                ts=userturns(row)
+                if not ts: continue
+                sid=str(row.get('evaluation_session_id') or row.get('id') or '')
+                k=key(row,ts)
+                if sid not in sessions or k>sessions[sid][0]: sessions[sid]=(k,row,ts)
+          assert raw==135634,raw
+          found=[]; seen=set()
+          for sid,(_,row,ts) in sessions.items():
+            family_pref=any(pref.search(t) for t in ts); family_state=any(i>0 and state.search(t) for i,t in enumerate(ts))
+            for ti,text in enumerate(ts):
+              rid=str(row.get('id') or '')
+              if rid in USED or not (30<=len(text)<=8000) or any(p.search(text) for p in PII): continue
+              if not request_re.search(text) or not out_re.search(text): continue
+              n=re.sub(r'\s+',' ',text).strip().lower()
+              if n in seen: continue
+              ms=[]
+              for name,base,pat in patterns:
+                for m in pat.finditer(text):
+                  gd=m.groupdict(); actor=gd.get('actor',''); obj=gd.get('object',''); rel=gd.get('rel') or ('evaluate' if name in {'submit_to_strong_evaluator','strong_evaluator_output'} else '')
+                  s,e=m.span(); near=text[max(0,s-180):min(len(text),e+180)]
+                  # Persona is only a hard rejection when it directly defines the same actor.
+                  persona_near=bool(persona.search(near))
+                  historical_near=bool(historical.search(near))
+                  score=base + (2 if ti==0 else 0) + (1 if len(text)<2000 else 0) - (4 if persona_near else 0) - (3 if historical_near else 0) - (2 if family_pref else 0) - (1 if family_state else 0)
+                  ms.append({'pattern':name,'score':score,'actor':actor,'object':obj,'relation':rel,'match':re.sub(r'\s+',' ',m.group(0)).strip(),'near':re.sub(r'\s+',' ',near).strip(),'personaNear':persona_near,'historicalNear':historical_near})
+              if not ms: continue
+              seen.add(n);ms.sort(key=lambda x:(-x['score'],len(x['match'])))
+              best=ms[0]
+              found.append({'sourceRowId':rid,'sourceEvaluationSessionId':sid,'evaluationOrder':int(row.get('evaluation_order') or 0),'turnIndex':ti,'familyTurnCount':len(ts),'sourceLength':len(text),'sourceText':text,'higherLaneRisk':{'preference':family_pref,'stateOps':family_state},'assistantOutputsIncluded':False,**best})
+          found.sort(key=lambda x:(-x['score'],x['sourceLength'],x['sourceRowId']))
+          found=found[:250]
+          out=Path('temp-hiddenrubric/lane04/relation-v2');out.mkdir(parents=True,exist_ok=True)
+          (out/'full.jsonl').write_text(''.join(json.dumps(x,ensure_ascii=False)+'\n' for x in found),encoding='utf-8')
+          (out/'compact.jsonl').write_text(''.join(json.dumps({k:x[k] for k in ['sourceRowId','sourceEvaluationSessionId','turnIndex','familyTurnCount','sourceLength','score','pattern','actor','object','relation','match','near','personaNear','historicalNear','higherLaneRisk']},ensure_ascii=False)+'\n' for x in found),encoding='utf-8')
+          (out/'manifest.json').write_text(json.dumps({'rawRows':raw,'sessionFamilies':len(sessions),'candidateRows':len(found),'assistantOutputsIncluded':False},indent=2)+'\n',encoding='utf-8')
+          print('candidates',len(found))
+          PY
+      - name: Commit relation-v2 queue
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/relation-v2/
+          git commit -m 'chore: materialize Lane04 relation-v2 queue' || exit 0
+          git push origin HEAD:main
