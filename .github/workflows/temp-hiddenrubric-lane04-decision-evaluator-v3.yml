@@ -1,0 +1,105 @@
+name: TEMP HiddenRubric Lane04 Decision Evaluator v3
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-decision-evaluator-v3.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  mine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip pyarrow huggingface_hub
+      - name: Mine academic and decision evaluator grammar
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,re,hashlib
+          from pathlib import Path
+          import pyarrow.parquet as pq
+          from huggingface_hub import hf_hub_download
+          REPO='lmarena-ai/arena-human-preference-140k'; REV='a9cb587ee0906192dc1fc5e51778282f36c6bf35'
+          SHARDS=[f'data/train-{i:05d}-of-00007.parquet' for i in range(7)]
+          OUT=Path('temp-hiddenrubric/lane04/decision-evaluator-v3'); OUT.mkdir(parents=True,exist_ok=True)
+          USED={'8c02f215-e1db-48e2-8de8-543ed61bb5b7:0','0ca2c701-71cf-4afd-9cb0-feb2ec032743:0','a9970066-e698-49b7-acbd-fa532f4a4c6a:0','7a07fe1a-620d-478e-8c69-e826d9a91eea:0','f0622255-dc66-4488-886a-bd57f2321a9c:0','6022586c-f9d3-4c5a-bb65-c557e616e24f:0','8b1cfa16-9c5d-477a-a321-79a214d7aaae:0'}
+          ACADEMIC=r'(?:teacher marker|module team|professors?|teachers?|instructors?|markers?|examiners?|grading committee|evaluation committee|evaluating committee|thesis committee|dissertation committee)'
+          DECIDER=r'(?:senior management|management|managers?|supervisors?|team leads?|team leaders?|committees?|boards?|panels?|judges?|jury|reviewers?|editors?|clients?|customers?|stakeholders?|investors?|sponsors?|hiring managers?|recruiters?|selection committees?|executive committees?|executives?|leadership|directors?|assessors?|evaluators?|admissions officers?|admissions committees?|exco)'
+          OBJ=r'(?:assignment|work|essay|report|paper|thesis|dissertation|submission|project|presentation|answer|proposal|pitch|application|plan|document|memo|brief|case|request|deck|deliverable|output|statement|letter|resume|cv)'
+          P=[
+            ('academic_active',re.compile(rf'(?P<actor>{ACADEMIC}).{{0,80}}?\b(?:will|would|must|should|to|is going to)\s+(?P<verb>grade|mark|assess|evaluate|review)\b.{{0,90}}?(?P<object>{OBJ})',re.I|re.S)),
+            ('academic_passive',re.compile(rf'(?P<object>{OBJ}).{{0,90}}?\b(?:will|would|must|should|is|are|be)\s+(?P<verb>graded|marked|assessed|evaluated|reviewed)\s+by\s+(?P<actor>{ACADEMIC})',re.I|re.S)),
+            ('impress_actor',re.compile(rf'\b(?P<verb>impress|convince|persuade)\s+(?:the\s+)?(?P<actor>{DECIDER})\b',re.I)),
+            ('secure_from_actor',re.compile(rf'\b(?P<verb>secure|get|obtain|win|gain)\s+(?:the\s+)?(?P<object>approval|buy[- ]?in|support|funding|recommendation|sign[- ]?off).{{0,70}}?\bfrom\s+(?:the\s+)?(?P<actor>{DECIDER})',re.I|re.S)),
+            ('actor_decides',re.compile(rf'(?P<actor>{DECIDER}).{{0,80}}?\b(?:will|would|must|should|to|can)\s+(?P<verb>approve|select|choose|fund|recommend|reject|accept|decide|sign[- ]?off)\b.{{0,90}}?(?P<object>{OBJ})',re.I|re.S)),
+            ('object_for_approval',re.compile(rf'(?P<object>{OBJ}).{{0,100}}?\b(?:to|for)\s+(?:the\s+)?(?P<actor>{DECIDER})\s+(?:for\s+)?(?P<verb>approval|review|evaluation|assessment|decision|feedback|sign[- ]?off)',re.I|re.S)),
+            ('submit_to_actor_for',re.compile(rf'\b(?:submit|send|present|deliver|provide|share)\b.{{0,100}}?(?P<object>{OBJ}).{{0,80}}?\bto\s+(?:the\s+)?(?P<actor>{DECIDER}).{{0,40}}?\bfor\s+(?P<verb>approval|review|evaluation|assessment|decision|feedback|grading)',re.I|re.S)),
+          ]
+          def txt(x):
+            if not isinstance(x,dict): return ''
+            if isinstance(x.get('text'),str): return x['text']
+            c=x.get('content')
+            if isinstance(c,str): return c
+            if isinstance(c,list): return '\n'.join(i if isinstance(i,str) else i.get('text','') for i in c if isinstance(i,(str,dict)))
+            return ''
+          def userturns(row):
+            o=[]
+            for e in row.get('full_conversation') or []:
+              if not isinstance(e,dict): continue
+              u=e.get('user')
+              if isinstance(u,dict):
+                t=txt(u).strip()
+                if t:o.append(t)
+              elif str(e.get('role') or '')=='user':
+                t=txt(e).strip()
+                if t:o.append(t)
+            return o
+          rows=[]; raw=0; seen=set()
+          for sh in SHARDS:
+            path=hf_hub_download(REPO,filename=sh,repo_type='dataset',revision=REV)
+            pf=pq.ParquetFile(path); cols=['id','evaluation_session_id','evaluation_order','language','is_code','full_conversation']; use=[c for c in cols if c in pf.schema_arrow.names]
+            for batch in pf.iter_batches(batch_size=512,columns=use):
+              for r in batch.to_pylist():
+                raw+=1
+                if r.get('language')!='en' or bool(r.get('is_code')): continue
+                rid=str(r.get('id') or ''); sid=str(r.get('evaluation_session_id') or rid)
+                for ti,text in enumerate(userturns(r)):
+                  key=f'{rid}:{ti}'
+                  if key in USED or not (30<=len(text)<=9000): continue
+                  n=' '.join(text.lower().split())
+                  if n in seen: continue
+                  ms=[]
+                  for name,rx in P:
+                    for m in rx.finditer(text):
+                      gd=m.groupdict(); actor=gd.get('actor') or ''; obj=gd.get('object') or ''; verb=gd.get('verb') or ''
+                      s=max(0,m.start()-120); e=min(len(text),m.end()+180)
+                      ms.append({'pattern':name,'actor':actor,'object':obj,'verb':verb,'actorStart':m.start('actor'),'actorEnd':m.end('actor'),'context':' '.join(text[s:e].split())})
+                  if not ms: continue
+                  seen.add(n)
+                  rows.append({'sourceRowId':rid,'sourceEvaluationSessionId':sid,'evaluationOrder':int(r.get('evaluation_order') or 0),'turnIndex':ti,'sourceLength':len(text),'sourceText':text,'matches':ms,'assistantOutputsIncluded':False})
+          if raw!=135634: raise SystemExit(f'raw drift {raw}')
+          rows.sort(key=lambda x:(-len(x['matches']),x['sourceLength'],x['sourceRowId']))
+          full=OUT/'candidates.jsonl'; compact=OUT/'compact.jsonl'
+          full.write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in rows),encoding='utf-8')
+          compact.write_text(''.join(json.dumps({k:r[k] for k in ['sourceRowId','sourceEvaluationSessionId','turnIndex','sourceLength']}|{'matches':r['matches']},ensure_ascii=False)+'\n' for r in rows),encoding='utf-8')
+          man={'sourceDataset':REPO,'sourceRevision':REV,'rawRows':raw,'candidateRows':len(rows),'assistantOutputsIncluded':False,'sha256':hashlib.sha256(full.read_bytes()).hexdigest()}
+          (OUT/'manifest.json').write_text(json.dumps(man,ensure_ascii=False,indent=2)+'\n',encoding='utf-8'); print(json.dumps(man))
+          PY
+      - name: Commit evaluator-v3 queue
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/decision-evaluator-v3/
+          git commit -m 'chore: materialize temporary Lane04 decision evaluator v3 queue'
+          git push origin HEAD:main
