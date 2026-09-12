@@ -1,0 +1,100 @@
+name: TEMP HiddenRubric Lane04 Decision Recipient v5
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-decision-recipient-v5.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  mine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip pyarrow huggingface_hub
+      - name: Mine outputs submitted to decision actors
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,re,hashlib
+          from pathlib import Path
+          import pyarrow.parquet as pq
+          from huggingface_hub import hf_hub_download
+          REPO='lmarena-ai/arena-human-preference-140k'; REV='a9cb587ee0906192dc1fc5e51778282f36c6bf35'
+          SHARDS=[f'data/train-{i:05d}-of-00007.parquet' for i in range(7)]
+          OUT=Path('temp-hiddenrubric/lane04/decision-recipient-v5'); OUT.mkdir(parents=True,exist_ok=True)
+          USED={'8c02f215-e1db-48e2-8de8-543ed61bb5b7:0','0ca2c701-71cf-4afd-9cb0-feb2ec032743:0','a9970066-e698-49b7-acbd-fa532f4a4c6a:0','7a07fe1a-620d-478e-8c69-e826d9a91eea:0','f0622255-dc66-4488-886a-bd57f2321a9c:0','6022586c-f9d3-4c5a-bb65-c557e616e24f:0','8b1cfa16-9c5d-477a-a321-79a214d7aaae:0'}
+          ACT=r'(?:hiring manager|recruiter|recruitment team|admissions committee|admission committee|admissions officer|selection committee|scholarship committee|review committee|evaluation committee|judging panel|judges?|jury|investors?|venture capitalists?|VCs?|sponsors?|grant committee|funding committee|executive board|board of directors|executive committee|senior management|management team|leadership team|client|prospective client|customer|prospective customer|procurement team|tender committee|reviewers?|editors?|professors?|thesis committee|dissertation committee)'
+          OBJ=r'(?:cover letter|resume|cv|personal statement|statement of purpose|SOP|application essay|college essay|admission essay|scholarship essay|application|proposal|business proposal|project proposal|grant proposal|pitch|pitch deck|presentation|one pager|one-pager|business case|business plan|report|memo|brief|submission|project|portfolio|writing sample|research proposal|thesis proposal|abstract|paper|manuscript|response|bid|tender|RFP response)'
+          P=[
+            ('create_for_actor',re.compile(rf'\b(?:write|draft|create|prepare|craft|make|develop|refine|rewrite|polish|compose)\b.{{0,80}}?(?P<object>{OBJ}).{{0,100}}?\b(?:for|to)\s+(?:the\s+|a\s+|an\s+)?(?P<actor>{ACT})\b',re.I|re.S)),
+            ('object_for_actor',re.compile(rf'(?P<object>{OBJ}).{{0,60}}?\b(?:for|to)\s+(?:the\s+|a\s+|an\s+)?(?P<actor>{ACT})\b',re.I|re.S)),
+            ('submit_object_to_actor',re.compile(rf'\b(?:submit|send|present|deliver|pitch|share|forward)\b.{{0,100}}?(?P<object>{OBJ}).{{0,100}}?\bto\s+(?:the\s+|a\s+|an\s+)?(?P<actor>{ACT})\b',re.I|re.S)),
+            ('actor_decision_goal',re.compile(rf'(?P<object>{OBJ}).{{0,160}}?\b(?:convince|persuade|impress|win over|secure|obtain|get)\b.{{0,70}}?(?:the\s+|a\s+|an\s+)?(?P<actor>{ACT})\b',re.I|re.S)),
+            ('actor_should_choose',re.compile(rf'(?P<object>{OBJ}).{{0,180}}?(?:why|so that|so)\s+(?:the\s+|a\s+|an\s+)?(?P<actor>{ACT}).{{0,50}}?\b(?:choose|select|hire|admit|fund|approve|accept|shortlist|award)\b',re.I|re.S)),
+          ]
+          def txt(x):
+            if not isinstance(x,dict): return ''
+            if isinstance(x.get('text'),str): return x['text']
+            c=x.get('content')
+            if isinstance(c,str): return c
+            if isinstance(c,list): return '\n'.join(i if isinstance(i,str) else i.get('text','') for i in c if isinstance(i,(str,dict)))
+            return ''
+          def turns(r):
+            out=[]
+            for e in r.get('full_conversation') or []:
+              if not isinstance(e,dict): continue
+              u=e.get('user')
+              if isinstance(u,dict):
+                t=txt(u).strip()
+                if t:out.append(t)
+              elif str(e.get('role') or '')=='user':
+                t=txt(e).strip()
+                if t:out.append(t)
+            return out
+          rows=[]; raw=0; seen=set()
+          for sh in SHARDS:
+            p=hf_hub_download(REPO,filename=sh,repo_type='dataset',revision=REV)
+            pf=pq.ParquetFile(p); cols=['id','evaluation_session_id','evaluation_order','language','is_code','full_conversation']; use=[c for c in cols if c in pf.schema_arrow.names]
+            for b in pf.iter_batches(batch_size=512,columns=use):
+              for r in b.to_pylist():
+                raw+=1
+                if r.get('language')!='en' or bool(r.get('is_code')): continue
+                rid=str(r.get('id') or ''); sid=str(r.get('evaluation_session_id') or rid)
+                for ti,text in enumerate(turns(r)):
+                  key=f'{rid}:{ti}'
+                  if key in USED or not (30<=len(text)<=10000): continue
+                  norm=' '.join(text.lower().split())
+                  if norm in seen: continue
+                  ms=[]
+                  for name,rx in P:
+                    for m in rx.finditer(text):
+                      gd=m.groupdict(); actor=gd['actor']; obj=gd['object']; s=max(0,m.start()-180); e=min(len(text),m.end()+220)
+                      ms.append({'pattern':name,'actor':actor,'object':obj,'actorStart':m.start('actor'),'actorEnd':m.end('actor'),'context':' '.join(text[s:e].split())})
+                  if ms:
+                    seen.add(norm); rows.append({'sourceRowId':rid,'sourceEvaluationSessionId':sid,'evaluationOrder':int(r.get('evaluation_order') or 0),'turnIndex':ti,'sourceLength':len(text),'sourceText':text,'matches':ms,'assistantOutputsIncluded':False})
+          if raw!=135634: raise SystemExit(f'raw drift {raw}')
+          rows.sort(key=lambda x:(-len(x['matches']),x['sourceLength'],x['sourceRowId']))
+          full=OUT/'candidates.jsonl'; compact=OUT/'compact.jsonl'
+          full.write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in rows),encoding='utf-8')
+          compact.write_text(''.join(json.dumps({k:r[k] for k in ['sourceRowId','sourceEvaluationSessionId','turnIndex','sourceLength']}|{'matches':r['matches']},ensure_ascii=False)+'\n' for r in rows),encoding='utf-8')
+          man={'sourceDataset':REPO,'sourceRevision':REV,'rawRows':raw,'candidateRows':len(rows),'assistantOutputsIncluded':False,'sha256':hashlib.sha256(full.read_bytes()).hexdigest()}
+          (OUT/'manifest.json').write_text(json.dumps(man,ensure_ascii=False,indent=2)+'\n',encoding='utf-8'); print(json.dumps(man))
+          PY
+      - name: Commit decision-recipient queue
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/decision-recipient-v5/
+          git commit -m 'chore: materialize temporary Lane04 decision recipient v5 queue'
+          git push origin HEAD:main
