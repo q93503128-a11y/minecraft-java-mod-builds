@@ -1,0 +1,76 @@
+name: TEMP HiddenRubric Lane04 Build007
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-build007.yml'
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build precision-first batch007
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          src=Path('temp-hiddenrubric/lane04/selected-batch007-sources.jsonl')
+          rows=[json.loads(x) for x in src.read_text(encoding='utf-8').splitlines() if x.strip()]
+          byid={r['sourceRowId']:r for r in rows}
+          target='a9970066-e698-49b7-acbd-fa532f4a4c6a'
+          r=byid[target]
+          source=r['targetUserTurn']
+          assert 'submit to the hackathon' in source and 'impressing the judges' in source
+          ko='''당신은 비범한 문제 해결 능력과 우아한 단순함을 결합하고, 돈과 위험을 즐기는 천재입니다.\n\n당신은 최고 상금이 1,000,000달러인 Web3 해커톤에 참가했습니다. 이 상금은 당신의 삶을 영구적으로 더 나은 방향으로 바꿀 수 있습니다.\n\n당신의 목표는 직접 선택한 기능하는 프로젝트를 만들어 해커톤에 제출하고, 심사위원들에게 깊은 인상을 남겨 인생을 바꿀 상금을 탈 가능성을 갖게 하는 것입니다.'''
+          def sp(text, needle):
+              s=text.index(needle); return {'start':s,'end':s+len(needle),'text':needle}
+          srcspan=sp(source,'judges'); kospan=sp(ko,'심사위원들')
+          assert source[srcspan['start']:srcspan['end']]=='judges'
+          assert ko[kospan['start']:kospan['end']]=='심사위원들'
+          row={
+            'schemaVersion':'router-stage05-parallel-v1-lane04-requester-evaluator-v1','lane':'lane04-requester-evaluator',
+            'sourceDataset':'lmarena-ai/arena-human-preference-140k','sourceRevision':'a9cb587ee0906192dc1fc5e51778282f36c6bf35',
+            'sourceArtifact':'pinned-parquet-open-relation-selected-recovery','sourceEvaluationSessionId':r['sourceEvaluationSessionId'],
+            'sourceRowId':target,'familyIndex':None,'kind':'user','turnIndex':0,'sourceLanguage':'en','targetLanguage':'ko',
+            'source_en':source,'localized_ko':ko,'assistantOutputsIncluded':False,'sourceComplete':True,'translationReviewed':True,
+            'semanticReviewed':True,'existingStage05DuplicateChecked':True,'privacyFlags':[],
+            'ownership':{'stateOps':False,'preference':False,'crossDomain':False},
+            'actors':{'requester':{'present':False,'sourceSpans':[],'koreanSpans':[],'relationEvidence':[]},
+                      'evaluator':{'present':True,'sourceSpans':[srcspan],'koreanSpans':[kospan],'relationEvidence':['evaluate_by_actor']}},
+            'reviewStatus':'manual-semantic-reviewed-staging','trainingEligible':False,'humanGold':False,'factualGold':False,'domainExpertGold':False}
+          out=Path('temp-hiddenrubric/lane04/batch007'); out.mkdir(parents=True,exist_ok=True)
+          (out/'staging-batch007-evaluator-expansion.jsonl').write_text(json.dumps(row,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8')
+          reviews=[
+            {'sourceRowId':target,'turnIndex':0,'accepted':True,'role':'evaluator','actorText':'judges','relationEvidence':'evaluate_by_actor','reason':'current_requested_project_is_explicitly_for_hackathon_judges','notes':'The requested functional project is the hackathon submission whose success depends on impressing the judges.'},
+            {'sourceRowId':'6022586c-f9d3-4c5a-bb65-c557e616e24f','turnIndex':0,'accepted':False,'role':'evaluator','actorText':['sales team','senior management'],'reason':'downstream_deliverable_not_current_requested_outline','notes':'The current request is for an outline/plan; the later 30-minute presentation is what senior management assesses.'},
+            {'sourceRowId':'98fd3aa1-9dbb-45b2-8423-f2d14c2cbb97','turnIndex':0,'accepted':False,'role':'evaluator','actorText':'Human Resources Manager','reason':'recipient_without_explicit_evaluation_relation','notes':'The HR Manager is the cover-letter recipient, but the turn does not explicitly state that this actor reviews/evaluates/grades the requested output.'}
+          ]
+          (out/'review-batch007-evaluator-expansion.jsonl').write_text(''.join(json.dumps(x,ensure_ascii=False,separators=(',',':'))+'\n' for x in reviews),encoding='utf-8')
+          report={'schemaVersion':'router-stage05-parallel-v1-lane04-report-v1','lane':'lane04-requester-evaluator','date':'2026-09-12',
+                  'source':{'dataset':'lmarena-ai/arena-human-preference-140k','revision':'a9cb587ee0906192dc1fc5e51778282f36c6bf35','rawRows':135634,'humanUserTurnsOnly':True,'assistantOutputsUsed':False},
+                  'batch':{'acceptedRows':1,'requesterPositiveRows':0,'requesterExactSpans':0,'evaluatorPositiveRows':1,'evaluatorExactSpans':1,'reviewRejectedAnnotations':2},
+                  'ownership':{'stateOpsExcluded':True,'preferenceExcluded':True,'crossDomainExcluded':True},
+                  'notes':['One hackathon-judges evaluator row accepted; two downstream/recipient false positives retained as explicit rejections.','No assistant/model outputs used.']}
+          (out/'report-batch007-evaluator-expansion.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          assert row['source_en'][srcspan['start']:srcspan['end']]==srcspan['text']
+          assert row['localized_ko'][kospan['start']:kospan['end']]==kospan['text']
+          (out/'VALIDATION.txt').write_text('PASS rows=1 requester=0 evaluator=1 evaluatorSpans=1 rejected=2\n',encoding='utf-8')
+          print('PASS batch007')
+          PY
+      - name: Commit temporary batch007
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/batch007/
+          git commit -m 'chore: materialize temporary Lane04 batch007'
+          git push origin HEAD:main
