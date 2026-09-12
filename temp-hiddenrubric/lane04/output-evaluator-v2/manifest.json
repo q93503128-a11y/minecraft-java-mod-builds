@@ -1,0 +1,8 @@
+{
+  "sourceDataset": "lmarena-ai/arena-human-preference-140k",
+  "sourceRevision": "a9cb587ee0906192dc1fc5e51778282f36c6bf35",
+  "rawRows": 135634,
+  "candidateRows": 2,
+  "assistantOutputsIncluded": false,
+  "fullSha256": "177cc344c3a95ca702931d223dcfb4739cdbce2a3ca6f9727359b3639b142856"
+}
