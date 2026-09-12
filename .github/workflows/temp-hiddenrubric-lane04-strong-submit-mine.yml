@@ -1,0 +1,114 @@
+name: TEMP HiddenRubric Lane04 Strong Submit Mine
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-strong-submit-mine.yml'
+permissions:
+  contents: write
+jobs:
+  mine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: python -m pip install --upgrade pip pyarrow huggingface_hub
+      - name: Mine strong submit-to-evaluator cases
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,re,hashlib
+          from pathlib import Path
+          import pyarrow.parquet as pq
+          from huggingface_hub import hf_hub_download
+          REPO='lmarena-ai/arena-human-preference-140k'; REV='a9cb587ee0906192dc1fc5e51778282f36c6bf35'
+          shards=[f'data/train-{i:05d}-of-00007.parquet' for i in range(7)]
+          actor=r'(?:my\s+|the\s+|our\s+)?(?:team lead|manager|supervisor|director|department head|section head|hiring manager|HR manager|human resources manager|recruiter|admissions? officer(?:s)?|admissions? committee|selection committee|evaluation committee|evaluating committee|review committee|approval committee|funding committee|grant committee|investment committee|thesis committee|dissertation committee|teacher marker|marker|examiner(?:s)?|professor(?:s)?|teacher|instructor|judge(?:s)?|judging panel|panel of judges|executive board|board of directors|senior management|senior leadership|executive committee|leadership team|investor(?:s)?|venture capitalist(?:s)?)'
+          obj=r'(?:application|college application|job application|cover letter|resume|CV|essay|proposal|pitch|business case|business plan|report|presentation|deck|slide deck|assignment|coursework|paper|research paper|thesis|dissertation|memo|briefing note|brief|document|plan|submission|project|promotion case|promotion packet|performance review|self[- ]assessment|work|deliverable)'
+          request=r'(?:write|draft|create|make|prepare|develop|revise|rewrite|improve|polish|help me(?: write| draft| create| make| prepare| develop| revise| rewrite| improve| polish)?|generate|outline|summarize|summarise)'
+          submit=r'(?:submit(?:ted|ting)?|send|sent|present(?:ed|ing)?|deliver(?:ed|ing)?|share(?:d|ing)?|provide(?:d|ing)?|hand(?:ed)? in|apply(?:ing)?)'
+          # Four high-yield grammatical families. Require current-output request + object + strong evaluator actor.
+          pats=[
+            ('request_output_submit_to_actor',re.compile(rf'(?P<request>{request}).{{0,180}}?(?P<object>{obj}).{{0,220}}?(?P<submit>{submit}).{{0,60}}?(?:to|before|with)\s+(?P<actor>{actor})',re.I|re.S)),
+            ('request_output_for_actor',re.compile(rf'(?P<request>{request}).{{0,160}}?(?P<object>{obj}).{{0,120}}?\bfor\s+(?P<actor>{actor})',re.I|re.S)),
+            ('submit_output_to_actor_request',re.compile(rf'(?P<submit>{submit}).{{0,80}}?(?P<object>{obj}).{{0,80}}?(?:to|before|with)\s+(?P<actor>{actor}).{{0,240}}?(?P<request>{request})',re.I|re.S)),
+            ('actor_context_request_output',re.compile(rf'(?P<actor>{actor}).{{0,180}}?(?P<request>{request}).{{0,180}}?(?P<object>{obj})',re.I|re.S)),
+          ]
+          # Positive context that indicates the actor has evaluative authority, not mere audience.
+          evalctx=re.compile(r'\b(?:review|approve|approval|feedback|evaluate|evaluation|assess|assessment|grade|grading|score|judge|judging|select|selection|decision|recommend|recommendation|hire|hiring|recruit|recruitment|admission|admissions|fund|funding|award|win|winning|pass|marks?|rubric|sign[- ]?off|promotion|performance review|application)\b',re.I)
+          pref=re.compile(r'\b(?:i prefer|my preference|tone|style|sound like|don.?t make it sound|formal|informal|friendly|concise|word limit|professional|persuasive|polish|humanize|humanise)\b',re.I)
+          state=re.compile(r'\b(?:remember|forget|from now on|always|never again|update your memory|previous instruction)\b',re.I)
+          cross=re.compile(r'\b(?:cross[- ]domain|interdisciplinary|multi[- ]disciplin|combine .* domain|integrate .* domain)\b',re.I|re.S)
+          privacy=re.compile(r'(?:\b\d{3}-\d{2}-\d{4}\b|\b(?:password|ssn|social security)\b)',re.I)
+          historical=re.compile(r'\b(?:previously|in the past|last year|had sent|received feedback|gave feedback|was approved|has been approved|already approved|past feedback|historical)\b',re.I)
+          hypothetical=re.compile(r'\b(?:hypothetical|imagine|assume yourself|act as|role-play|consider yourself as)\b',re.I)
+          def text(msg):
+            if not isinstance(msg,dict): return ''
+            if isinstance(msg.get('text'),str): return msg['text']
+            c=msg.get('content')
+            if isinstance(c,str): return c
+            if isinstance(c,list): return '\n'.join(x if isinstance(x,str) else x.get('text','') if isinstance(x,dict) else '' for x in c)
+            return ''
+          def turns(r):
+            out=[]
+            for e in r.get('full_conversation') or []:
+              if not isinstance(e,dict): continue
+              u=e.get('user')
+              if isinstance(u,dict):
+                t=text(u).strip()
+                if t: out.append(t)
+              elif str(e.get('role') or '')=='user':
+                t=text(e).strip()
+                if t: out.append(t)
+            return out
+          found=[]; raw=0; text_seen=set()
+          for shard in shards:
+            p=hf_hub_download(REPO,filename=shard,repo_type='dataset',revision=REV)
+            pf=pq.ParquetFile(p); cols=['id','evaluation_session_id','evaluation_order','language','is_code','full_conversation']; use=[c for c in cols if c in set(pf.schema_arrow.names)]
+            for b in pf.iter_batches(batch_size=512,columns=use):
+              for r in b.to_pylist():
+                raw+=1
+                if r.get('language')!='en' or bool(r.get('is_code')): continue
+                for ti,s in enumerate(turns(r)):
+                  if not 40<=len(s)<=6500 or privacy.search(s): continue
+                  norm=' '.join(s.lower().split())
+                  if norm in text_seen: continue
+                  best=None
+                  for rank,(name,patt) in enumerate(pats):
+                    m=patt.search(s)
+                    if m:
+                      gd={k:v.strip() for k,v in m.groupdict().items() if isinstance(v,str) and v.strip()}
+                      best=(rank,name,m,gd); break
+                  if not best: continue
+                  text_seen.add(norm)
+                  rank,name,m,gd=best
+                  # evaluative context can be anywhere in short prompt, or near actor/object for longer prompt.
+                  near=s[max(0,m.start()-350):min(len(s),m.end()+500)]
+                  has_eval=bool(evalctx.search(near))
+                  risk={'preference':bool(pref.search(s)),'stateOps':bool(state.search(s)),'crossDomain':bool(cross.search(s)),'historical':bool(historical.search(s)),'hypothetical':bool(hypothetical.search(s))}
+                  score=20-rank*2 + (6 if has_eval else 0) - 5*sum(risk.values())
+                  found.append({'sourceRowId':str(r.get('id') or ''),'sourceEvaluationSessionId':str(r.get('evaluation_session_id') or ''),'evaluationOrder':int(r.get('evaluation_order') or 0),'turnIndex':ti,'pattern':name,'groups':gd,'hasEvaluativeContext':has_eval,'score':score,'risks':risk,'match':m.group(0),'context':near,'sourceText':s,'assistantOutputsIncluded':False})
+          assert raw==135634,raw
+          found.sort(key=lambda x:(-x['score'],sum(x['risks'].values()),len(x['sourceText']),x['sourceRowId']))
+          d=Path('temp-hiddenrubric/lane04/strong-submit'); d.mkdir(parents=True,exist_ok=True)
+          (d/'full.jsonl').write_text(''.join(json.dumps(x,ensure_ascii=False)+'\n' for x in found[:400]),encoding='utf-8')
+          compact=[]
+          for x in found[:400]: compact.append({k:x[k] for k in ('sourceRowId','sourceEvaluationSessionId','turnIndex','pattern','groups','hasEvaluativeContext','score','risks','match','context')})
+          (d/'compact.jsonl').write_text(''.join(json.dumps(x,ensure_ascii=False)+'\n' for x in compact),encoding='utf-8')
+          (d/'manifest.json').write_text(json.dumps({'rawRows':raw,'matchedRows':len(found),'materializedRows':min(400,len(found)),'sourceRevision':REV,'assistantOutputsIncluded':False},indent=2)+'\n',encoding='utf-8')
+          print('matched',len(found))
+          PY
+      - name: Commit queue
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/strong-submit/
+          git commit -m 'chore: materialize temporary Lane04 strong submit queue'
+          git push origin HEAD:main
