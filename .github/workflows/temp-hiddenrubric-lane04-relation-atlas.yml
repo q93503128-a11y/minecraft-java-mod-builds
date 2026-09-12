@@ -1,0 +1,145 @@
+name: TEMP HiddenRubric Lane04 Relation Atlas
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-relation-atlas.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  mine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip pyarrow huggingface_hub
+      - name: Mine relation atlas
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          import pyarrow.parquet as pq
+          from huggingface_hub import hf_hub_download
+
+          REPO='lmarena-ai/arena-human-preference-140k'
+          REV='a9cb587ee0906192dc1fc5e51778282f36c6bf35'
+          SHARDS=[f'data/train-{i:05d}-of-00007.parquet' for i in range(7)]
+          USED={
+            '8c02f215-e1db-48e2-8de8-543ed61bb5b7','0ca2c701-71cf-4afd-9cb0-feb2ec032743',
+            'a9970066-e698-49b7-acbd-fa532f4a4c6a','7a07fe1a-620d-478e-8c69-e826d9a91eea',
+            'f0622255-dc66-4488-886a-bd57f2321a9c','6022586c-f9d3-4c5a-bb65-c557e616e24f',
+            '8b1cfa16-9c5d-477a-a321-79a214d7aaae'
+          }
+          ACT=r'(?:hiring manager|line manager|project manager|manager|boss|supervisor|team lead|team leader|senior management|management team|leadership team|senior leadership|executive leadership|executive board|board of directors|board|director|head of [A-Za-z &/-]{2,50}|professor|teacher|instructor|advisor|adviser|mentor|reviewer|peer reviewer|editor|examiner|assessor|evaluator|grader|marker|teacher marker|module team|committee|selection committee|review committee|evaluation committee|evaluating committee|assessment panel|interview panel|admissions committee|admissions officer|grant committee|funding committee|grant reviewer|judge|judges|jury|client|customer|stakeholder|investor|sponsor|project sponsor|auditor|approver|recruiter)'
+          REL=r'(?:review|approve|approval|evaluate|evaluation|assess|assessment|grade|grading|mark|marking|judge|judging|score|scoring|feedback|sign[- ]?off|sign off|reject|accept|consideration)'
+          WRITE=r'(?:write|draft|prepare|create|revise|edit|rewrite|polish|improve|refine|compose|craft|develop|generate|make|format|finalize|help me|help us|produce|turn this into|transform)'
+          OUTPUT=r'(?:report|paper|manuscript|essay|assignment|thesis|dissertation|proposal|application|resume|cv|portfolio|presentation|slides?|deck|pitch|document|draft|submission|deliverable|memo|analysis|answer|response|letter|email|message|plan|statement|write[- ]?up|case study|business case|brief|request|recommendation|work)'
+          actor=f'(?P<actor>(?:(?:my|our|the|their|a|an|your)\\s+)?{ACT})'
+          pats=[
+            ('for_actor_to_rel',14,re.compile(rf'\b(?:for|so that)\s+{actor}\s+(?:can|could|will|would|to|may|might)\s+(?P<rel>review|approve|evaluate|assess|grade|mark|judge|score|sign[- ]?off|accept|reject)\b',re.I)),
+            ('rel_from_actor',14,re.compile(rf'\b(?P<rel>approval|feedback|review|evaluation|assessment|grading|marking|sign[- ]?off)\s+(?:from|by)\s+{actor}\b',re.I)),
+            ('actor_will_rel',13,re.compile(rf'\b{actor}\s+(?:will|would|can|could|must|has to|have to|needs? to|is going to|are going to)\s+(?P<rel>review|approve|evaluate|assess|grade|mark|judge|score|sign[- ]?off|accept|reject)\b',re.I)),
+            ('send_to_actor_for_rel',15,re.compile(rf'\b(?:send|submit|forward|share|present|provide|deliver|email)(?:ing|ed|s)?\b.{{0,180}}?\b(?:to|before)\s+{actor}\s+(?:for|to get|to obtain)\s+(?P<rel>review|approval|feedback|evaluation|assessment|grading|marking|sign[- ]?off|consideration)\b',re.I|re.S)),
+            ('seek_rel_from_actor',15,re.compile(rf'\b(?:seek|seeking|get|getting|obtain|obtaining|need|needs|request|requesting|ask|asking)\s+(?P<rel>approval|feedback|review|evaluation|assessment|sign[- ]?off)\s+(?:from|of)\s+{actor}\b',re.I)),
+            ('actor_rel_pronoun',12,re.compile(rf'\b{actor}\s+(?:to|can|could|will|would|should|must|needs? to)\s+(?P<rel>review|approve|evaluate|assess|grade|mark|judge|score)\s+(?:it|this|them|the same|my work|our work|the work)\b',re.I)),
+            ('for_actor_rel_noun',13,re.compile(rf'\b(?:for|to)\s+{actor}\s+(?P<rel>review|approval|feedback|evaluation|assessment|grading|marking|sign[- ]?off|consideration)\b',re.I)),
+          ]
+          write_re=re.compile(rf'\b{WRITE}\b',re.I)
+          output_re=re.compile(rf'\b{OUTPUT}\b',re.I)
+          persona=re.compile(r'\b(?:act as|you are|assume yourself as|pretend (?:you are|to be)|imagine you are|role\s*[:=]|as an? expert)\b',re.I)
+          hist=re.compile(r'\b(?:previously|earlier|last (?:week|month|year)|in the past|already|had been|has been|was|were)\s+(?:reviewed|approved|evaluated|assessed|graded|marked|judged|scored|rejected|accepted)\b',re.I)
+          quoted_job=re.compile(r'\b(?:job description|responsibilities|duties|role description|cv bullet|resume bullet)\b',re.I)
+          pref=re.compile(r'\b(?:i prefer|we prefer|my preference|our preference|i like|i love|i hate|i dislike|rather than)\b',re.I)
+          state=re.compile(r'\b(?:actually|scratch that|forget that|instead|no longer|previous answer|earlier answer|keep the|do not change|don.t change)\b',re.I)
+          PII=[re.compile(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b',re.I),re.compile(r'\b(?:sk-[A-Za-z0-9_-]{16,}|api[_-]?key\s*[:=])',re.I)]
+
+          def msgtext(m):
+            if not isinstance(m,dict): return ''
+            if isinstance(m.get('text'),str): return m['text']
+            c=m.get('content')
+            if isinstance(c,str): return c
+            if isinstance(c,list): return '\n'.join(x if isinstance(x,str) else x.get('text','') for x in c if isinstance(x,(str,dict)))
+            return ''
+          def userturns(row):
+            out=[]
+            for e in row.get('full_conversation') or []:
+              if not isinstance(e,dict): continue
+              u=e.get('user')
+              if isinstance(u,dict):
+                t=msgtext(u).strip()
+                if t: out.append(t)
+              elif str(e.get('role') or '')=='user':
+                t=msgtext(e).strip()
+                if t: out.append(t)
+            return out
+          def rowkey(row,ts):
+            st=row.get('timestamp')
+            try: stamp=int(st.timestamp()*1e9) if hasattr(st,'timestamp') else int(st or 0)
+            except: stamp=0
+            return (int(row.get('evaluation_order') or 0),len(ts),stamp)
+
+          cols=['id','evaluation_session_id','evaluation_order','language','is_code','timestamp','full_conversation']
+          sessions={}; raw=0
+          for shard in SHARDS:
+            p=hf_hub_download(REPO,filename=shard,repo_type='dataset',revision=REV)
+            pf=pq.ParquetFile(p); use=[c for c in cols if c in pf.schema_arrow.names]
+            for b in pf.iter_batches(batch_size=512,columns=use):
+              for row in b.to_pylist():
+                raw+=1
+                if row.get('language')!='en' or bool(row.get('is_code')): continue
+                ts=userturns(row)
+                if not ts: continue
+                sid=str(row.get('evaluation_session_id') or row.get('id') or '')
+                k=rowkey(row,ts)
+                if sid not in sessions or k>sessions[sid][0]: sessions[sid]=(k,row,ts)
+          assert raw==135634,raw
+          found=[];seen=set()
+          for sid,(_,row,ts) in sessions.items():
+            hp=any(pref.search(t) for t in ts); hs=any(i>0 and state.search(t) for i,t in enumerate(ts))
+            for ti,text in enumerate(ts):
+              rid=str(row.get('id') or '')
+              if rid in USED or not(20<=len(text)<=10000) or any(p.search(text) for p in PII): continue
+              # Needs a generation/edit request OR an obvious requested-output noun near a relation.
+              has_write=bool(write_re.search(text)); has_output=bool(output_re.search(text))
+              if not (has_write or has_output): continue
+              norm=re.sub(r'\s+',' ',text).strip().lower()
+              if norm in seen: continue
+              matches=[]
+              for name,base,pat in pats:
+                for m in pat.finditer(text):
+                  s,e=m.span(); near=text[max(0,s-260):min(len(text),e+260)]
+                  # There must be some authoring request or concrete output within a broad local window.
+                  local_write=bool(write_re.search(near)); local_output=bool(output_re.search(near))
+                  if not (local_write or local_output): continue
+                  pn=bool(persona.search(near)); hn=bool(hist.search(near)); qn=bool(quoted_job.search(near))
+                  score=base+(2 if local_write else 0)+(2 if local_output else 0)+(1 if ti==0 else 0)+(1 if len(text)<1800 else 0)-(6 if pn else 0)-(5 if hn else 0)-(4 if qn else 0)-(2 if hp else 0)-(1 if hs else 0)
+                  matches.append({'pattern':name,'score':score,'actor':m.group('actor'),'relation':m.group('rel'),'match':re.sub(r'\s+',' ',m.group(0)).strip(),'near':re.sub(r'\s+',' ',near).strip(),'personaNear':pn,'historicalNear':hn,'quotedJobNear':qn,'localWrite':local_write,'localOutput':local_output})
+              if not matches: continue
+              seen.add(norm); matches.sort(key=lambda x:(-x['score'],len(x['match'])))
+              best=matches[0]
+              found.append({'sourceRowId':rid,'sourceEvaluationSessionId':sid,'evaluationOrder':int(row.get('evaluation_order') or 0),'turnIndex':ti,'familyTurnCount':len(ts),'sourceLength':len(text),'sourceText':text,'higherLaneRisk':{'preference':hp,'stateOps':hs},'assistantOutputsIncluded':False,**best})
+          found.sort(key=lambda x:(-x['score'],x['sourceLength'],x['sourceRowId']))
+          found=found[:300]
+          out=Path('temp-hiddenrubric/lane04/relation-atlas');out.mkdir(parents=True,exist_ok=True)
+          (out/'full.jsonl').write_text(''.join(json.dumps(x,ensure_ascii=False)+'\n' for x in found),encoding='utf-8')
+          (out/'compact.jsonl').write_text(''.join(json.dumps({k:x[k] for k in ['sourceRowId','sourceEvaluationSessionId','turnIndex','familyTurnCount','sourceLength','score','pattern','actor','relation','match','near','personaNear','historicalNear','quotedJobNear','localWrite','localOutput','higherLaneRisk']},ensure_ascii=False)+'\n' for x in found),encoding='utf-8')
+          (out/'manifest.json').write_text(json.dumps({'rawRows':raw,'sessionFamilies':len(sessions),'candidateRows':len(found),'assistantOutputsIncluded':False},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print(json.dumps({'rawRows':raw,'sessionFamilies':len(sessions),'candidateRows':len(found)},ensure_ascii=False))
+          PY
+      - name: Commit relation atlas
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/relation-atlas/
+          git commit -m 'chore: materialize Lane04 evaluator relation atlas' || exit 0
+          git push origin HEAD:main
