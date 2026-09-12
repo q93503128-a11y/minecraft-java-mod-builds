@@ -1,0 +1,17 @@
+{
+  "rawRows": 135634,
+  "requestedIds": [
+    "38465fb5-5948-48ad-ace2-d9ebf26c68ca",
+    "475c5a93-94e6-40b3-b17d-e8d352a555ed",
+    "48c2e262-1e5a-4231-bd17-0ff9e8abbe36",
+    "e2848d8e-ee40-44b0-b83c-ce0b1f239a88"
+  ],
+  "recoveredIds": [
+    "38465fb5-5948-48ad-ace2-d9ebf26c68ca",
+    "475c5a93-94e6-40b3-b17d-e8d352a555ed",
+    "48c2e262-1e5a-4231-bd17-0ff9e8abbe36",
+    "e2848d8e-ee40-44b0-b83c-ce0b1f239a88"
+  ],
+  "rows": 4,
+  "assistantOutputsIncluded": false
+}
