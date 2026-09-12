@@ -1,0 +1,16 @@
+{
+  "sourceDataset": "lmarena-ai/arena-human-preference-140k",
+  "sourceRevision": "a9cb587ee0906192dc1fc5e51778282f36c6bf35",
+  "rawRows": 135634,
+  "sessionFamilies": 41038,
+  "relationFirstCandidates": 6,
+  "assistantOutputsIncluded": false,
+  "candidateSignalsAreGold": false,
+  "rejections": {
+    "higherLaneFamily": 1699,
+    "privacy": 392,
+    "length": 4900,
+    "duplicateText": 0,
+    "noOutputCue": 44012
+  }
+}
