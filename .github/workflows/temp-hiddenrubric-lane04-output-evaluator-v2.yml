@@ -1,0 +1,119 @@
+name: TEMP HiddenRubric Lane04 Output Evaluator v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-output-evaluator-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  mine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip pyarrow huggingface_hub
+      - name: Mine explicit current-output evaluator grammar
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,re,hashlib
+          from pathlib import Path
+          import pyarrow.parquet as pq
+          from huggingface_hub import hf_hub_download
+
+          REPO='lmarena-ai/arena-human-preference-140k'
+          REV='a9cb587ee0906192dc1fc5e51778282f36c6bf35'
+          SHARDS=[f'data/train-{i:05d}-of-00007.parquet' for i in range(7)]
+          OUT=Path('temp-hiddenrubric/lane04/output-evaluator-v2'); OUT.mkdir(parents=True,exist_ok=True)
+          USED={
+            '8c02f215-e1db-48e2-8de8-543ed61bb5b7:0','0ca2c701-71cf-4afd-9cb0-feb2ec032743:0',
+            'a9970066-e698-49b7-acbd-fa532f4a4c6a:0','7a07fe1a-620d-478e-8c69-e826d9a91eea:0',
+            'f0622255-dc66-4488-886a-bd57f2321a9c:0','6022586c-f9d3-4c5a-bb65-c557e616e24f:0',
+            '8b1cfa16-9c5d-477a-a321-79a214d7aaae:0'
+          }
+          ACT=r'(?:senior management|management|manager|supervisor|team lead|team leader|committee|board|panel|judges?|jury|professors?|teachers?|module team|reviewers?|editors?|clients?|customers?|stakeholders?|investors?|sponsors?|hiring manager|selection committee|executive committee|executives?|leadership|directors?|assessors?|evaluators?|admissions committee|exco)'
+          OBJ=r'(?:report|proposal|presentation|assignment|work|document|plan|application|submission|pitch|case|memo|brief|analysis|paper|thesis|project|deliverable|output|response|deck|request|entry|entries)'
+          patterns=[
+            ('actor_to_action', re.compile(rf'(?P<actor>{ACT}).{{0,80}}?\b(?:will|would|must|should|can|to)\s+(?P<verb>review|evaluate|assess|approve|grade|judge|mark)\b.{{0,70}}?(?P<object>{OBJ})',re.I|re.S)),
+            ('passive_by_actor', re.compile(rf'(?P<object>{OBJ}).{{0,70}}?\b(?:will|would|must|should|is|are|be)\s+(?P<verb>reviewed|evaluated|assessed|approved|graded|judged|marked)\s+by\s+(?P<actor>{ACT})',re.I|re.S)),
+            ('object_for_actor_action', re.compile(rf'(?P<object>{OBJ}).{{0,120}}?\b(?:for|to)\s+(?:the\s+)?(?P<actor>{ACT}).{{0,35}}?\b(?:to\s+)?(?P<verb>review|evaluate|assess|approve|grade|judge|mark)\b',re.I|re.S)),
+            ('send_object_to_actor', re.compile(rf'\b(?:submit|send|present|deliver|provide|share)\b.{{0,100}}?(?P<object>{OBJ}).{{0,80}}?\bto\s+(?:the\s+)?(?P<actor>{ACT}).{{0,50}}?\b(?:for\s+)?(?P<verb>review|evaluation|assessment|approval|feedback|grading)',re.I|re.S)),
+            ('for_actor_noun', re.compile(rf'(?P<object>{OBJ}).{{0,100}}?\bfor\s+(?:the\s+)?(?P<actor>{ACT})\s+(?P<verb>review|evaluation|assessment|approval|feedback|grading)',re.I|re.S)),
+          ]
+          higher=[re.compile(x,re.I) for x in [
+            r'\b(?:prefer|preference|rather than|instead of|i like|i dislike)\b',
+            r'\b(?:remember|forget|previously|earlier|from now on)\b',
+            r'\b(?:combine|across|cross[- ]domain|both domains?)\b'
+          ]]
+          privacy=re.compile(r'\b(?:password|ssn|social security|credit card|api key|secret key)\b',re.I)
+          def text_of(x):
+            if not isinstance(x,dict): return ''
+            if isinstance(x.get('text'),str): return x['text']
+            c=x.get('content')
+            if isinstance(c,str): return c
+            if isinstance(c,list): return '\n'.join(i if isinstance(i,str) else i.get('text','') for i in c if isinstance(i,(str,dict)))
+            return ''
+          def turns(row):
+            out=[]
+            for e in row.get('full_conversation') or []:
+              if not isinstance(e,dict): continue
+              u=e.get('user')
+              if isinstance(u,dict):
+                t=text_of(u).strip()
+                if t: out.append(t)
+              elif str(e.get('role') or '')=='user':
+                t=text_of(e).strip()
+                if t: out.append(t)
+            return out
+          rows=[]; raw=0; seen=set()
+          for shard in SHARDS:
+            p=hf_hub_download(REPO,filename=shard,repo_type='dataset',revision=REV)
+            pf=pq.ParquetFile(p); cols=['id','evaluation_session_id','evaluation_order','language','is_code','full_conversation']; use=[c for c in cols if c in pf.schema_arrow.names]
+            for b in pf.iter_batches(batch_size=512,columns=use):
+              for row in b.to_pylist():
+                raw+=1
+                if row.get('language')!='en' or bool(row.get('is_code')): continue
+                rid=str(row.get('id') or ''); sid=str(row.get('evaluation_session_id') or rid)
+                for ti,text in enumerate(turns(row)):
+                  key=f'{rid}:{ti}'
+                  if key in USED or len(text)<30 or len(text)>9000 or privacy.search(text): continue
+                  nt=' '.join(text.lower().split())
+                  if nt in seen: continue
+                  matches=[]
+                  for name,rx in patterns:
+                    for m in rx.finditer(text):
+                      actor=m.group('actor'); obj=m.group('object'); verb=m.group('verb')
+                      s=max(0,m.start()-120); e=min(len(text),m.end()+160)
+                      matches.append({'pattern':name,'actor':actor,'object':obj,'verb':verb,'start':m.start('actor'),'end':m.end('actor'),'context':' '.join(text[s:e].split())})
+                  if not matches: continue
+                  seen.add(nt)
+                  rows.append({'sourceRowId':rid,'sourceEvaluationSessionId':sid,'evaluationOrder':int(row.get('evaluation_order') or 0),'turnIndex':ti,'sourceLength':len(text),'higherLaneRisk':any(r.search(text) for r in higher),'sourceText':text,'matches':matches,'assistantOutputsIncluded':False})
+          if raw!=135634: raise SystemExit(f'raw row drift {raw}')
+          rows.sort(key=lambda r:(r['higherLaneRisk'], -len(r['matches']), r['sourceLength'], r['sourceRowId']))
+          full=OUT/'candidates.jsonl'; compact=OUT/'compact.jsonl'
+          full.write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in rows),encoding='utf-8')
+          with compact.open('w',encoding='utf-8') as f:
+            for r in rows:
+              f.write(json.dumps({k:r[k] for k in ['sourceRowId','sourceEvaluationSessionId','turnIndex','sourceLength','higherLaneRisk']}|{'matches':r['matches']},ensure_ascii=False)+'\n')
+          manifest={'sourceDataset':REPO,'sourceRevision':REV,'rawRows':raw,'candidateRows':len(rows),'assistantOutputsIncluded':False,'fullSha256':hashlib.sha256(full.read_bytes()).hexdigest()}
+          (OUT/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print(json.dumps(manifest,ensure_ascii=False))
+          PY
+      - name: Commit temporary evaluator-v2 queue
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/output-evaluator-v2/
+          git commit -m 'chore: materialize temporary Lane04 output evaluator v2 queue'
+          git push origin HEAD:main
