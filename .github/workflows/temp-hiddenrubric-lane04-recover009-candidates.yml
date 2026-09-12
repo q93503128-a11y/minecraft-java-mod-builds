@@ -1,0 +1,42 @@
+name: TEMP HiddenRubric Lane04 Recover009 Candidates
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-recover009-candidates.yml'
+permissions:
+  contents: write
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Recover selected full rows
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          ids={'48c2e262-1e5a-4231-bd17-0ff9e8abbe36','475c5a93-94e6-40b3-b17d-e8d352a555ed','38465fb5-5948-48ad-ace2-d9ebf26c68ca','e2848d8e-ee40-44b0-b83c-ce0b1f239a88'}
+          rows=[json.loads(x) for x in Path('temp-hiddenrubric/lane04/open-relation-full.jsonl').read_text(encoding='utf-8').splitlines() if x.strip()]
+          out=[r for r in rows if r.get('sourceRowId') in ids]
+          d=Path('temp-hiddenrubric/lane04/batch009-candidates'); d.mkdir(parents=True,exist_ok=True)
+          (d/'selected.jsonl').write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in out),encoding='utf-8')
+          (d/'manifest.json').write_text(json.dumps({'requestedIds':sorted(ids),'recoveredIds':sorted({r.get('sourceRowId') for r in out}),'rows':len(out)},indent=2)+'\n',encoding='utf-8')
+          assert {r.get('sourceRowId') for r in out}==ids
+          print('recovered',len(out))
+          PY
+      - name: Commit selected sources
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/batch009-candidates/
+          git commit -m 'chore: materialize temporary Lane04 batch009 candidates'
+          git push origin HEAD:main
