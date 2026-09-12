@@ -1,0 +1,4 @@
+{"sourceRowId":"6022586c-f9d3-4c5a-bb65-c557e616e24f","turnIndex":0,"accepted":true,"role":"evaluator","actorText":"sales team; senior management","relationEvidence":"evaluate_by_actor","reason":"requested_30_min_presentation_is_explicitly_for_sales_team_and_senior_management_to_assess"}
+{"sourceRowId":"dd26d166-a569-457a-a4b7-dca40063025d","turnIndex":19,"accepted":false,"role":"evaluator","actorText":"customer","reason":"multiple_choice_question_mentions_customer_feedback_not_requested_output_evaluation"}
+{"sourceRowId":"f0ff86c7-b731-476b-a9fc-bef88e492965","turnIndex":0,"accepted":false,"role":"evaluator","actorText":"Management","reason":"asks_definition_of_management_review_not_current_output_evaluation"}
+{"sourceRowId":"f765ec6d-c7a7-443e-86bf-862d6c5c1b16","turnIndex":0,"accepted":false,"role":"evaluator","actorText":"Management","reason":"management_review_meetings_are_downstream_governance_not_evaluator_of_requested_framework_output"}
