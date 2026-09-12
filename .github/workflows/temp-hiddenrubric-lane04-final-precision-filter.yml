@@ -1,0 +1,83 @@
+name: TEMP HiddenRubric Lane04 Final Precision Filter
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-final-precision-filter.yml'
+permissions:
+  contents: write
+jobs:
+  filter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Filter usecase queue to explicit evaluator relations
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          src=Path('temp-hiddenrubric/lane04/evaluator-usecases/full.jsonl')
+          rows=[json.loads(x) for x in src.read_text(encoding='utf-8').splitlines() if x.strip()]
+          # Already committed Lane04 evaluator/requester rows to exclude.
+          used={
+            '8c02f215-e1db-48e2-8de8-543ed61bb5b7','0ca2c701-71cf-4afd-9cb0-feb2ec032743',
+            'a9970066-e698-49b7-acbd-fa532f4a4c6a','7a07fe1a-620d-478e-8c69-e826d9a91eea',
+            'f0622255-dc66-4488-886a-bd57f2321a9c','6022586c-f9d3-4c5a-bb65-c557e616e24f'
+          }
+          strong_actor=re.compile(r'(?:admissions? (?:officer|officers|committee|board)|hiring manager|recruiter|HR manager|human resources manager|judge|judges|judging panel|panel of judges|(?:selection|review|evaluation|evaluating|assessment|approval|funding|grant|thesis|dissertation) committee|teacher marker|examiner|examiners|professor|professors|teacher|instructor|executive board|board of directors|senior management|senior leadership|executive committee|leadership team|investment committee|investors?|venture capitalist|team lead|supervisor|manager|director)',re.I)
+          output=re.compile(r'(?:application|cover letter|resume|cv|essay|proposal|pitch|business case|business plan|report|presentation|deck|assignment|coursework|paper|thesis|dissertation|memo|briefing note|brief|document|plan|submission|project|work|deliverable)',re.I)
+          exact_patterns=[
+            ('submit_for_relation',re.compile(r'(?P<submit>submit(?:ted|ting)?|send|sent|present(?:ed|ing)?|deliver(?:ed|ing)?|share(?:d)?)\b.{0,100}?(?P<object>'+output.pattern+r').{0,100}?\b(?:to|before)\s+(?P<actor>'+strong_actor.pattern+r').{0,100}?\b(?:for\s+)?(?P<relation>review|approval|feedback|evaluation|assessment|grading|grade|judging|decision|sign[- ]?off)',re.I|re.S)),
+            ('output_to_actor_for_relation',re.compile(r'(?P<object>'+output.pattern+r').{0,100}?\b(?:to|before)\s+(?P<actor>'+strong_actor.pattern+r').{0,100}?\b(?:for\s+)?(?P<relation>review|approval|feedback|evaluation|assessment|grading|grade|judging|decision|sign[- ]?off)',re.I|re.S)),
+            ('actor_will_relation',re.compile(r'(?P<actor>'+strong_actor.pattern+r').{0,60}?\b(?:will|would|must|should|is going to|are going to)\s+(?P<relation>review|approve|evaluate|assess|grade|judge|score|provide feedback on|give feedback on).{0,100}?(?P<object>'+output.pattern+r')',re.I|re.S)),
+            ('output_passive_by_actor',re.compile(r'(?P<object>'+output.pattern+r').{0,100}?\b(?P<relation>reviewed|approved|evaluated|assessed|graded|judged|scored)\s+by\s+(?P<actor>'+strong_actor.pattern+r')',re.I|re.S)),
+            ('for_actor_review',re.compile(r'(?P<object>'+output.pattern+r')?.{0,80}?\bfor\s+(?P<actor>'+strong_actor.pattern+r')\s+(?P<relation>review|approval|feedback|evaluation|assessment|grading|judging|decision|sign[- ]?off)',re.I|re.S)),
+            ('actor_relation_object',re.compile(r'(?P<actor>'+strong_actor.pattern+r').{0,60}?\b(?P<relation>review|approve|evaluate|assess|grade|judge|score).{0,90}?(?P<object>'+output.pattern+r')',re.I|re.S)),
+          ]
+          reject_context=re.compile(r'\b(?:previously|in the past|had sent|received feedback|gave feedback|was approved|has been approved|already approved|past feedback|historical|example|hypothetical|persona|role-play|act as|assume yourself|consider yourself as)\b',re.I)
+          out=[]
+          for r in rows:
+            if r['sourceRowId'] in used: continue
+            if any(r.get('higherLaneRisk',{}).values()): continue
+            s=r['sourceText']
+            best=None
+            for rank,(name,p) in enumerate(exact_patterns):
+              m=p.search(s)
+              if m:
+                gd={k:v.strip() for k,v in m.groupdict().items() if isinstance(v,str) and v.strip()}
+                best=(rank,name,m,gd); break
+            if not best: continue
+            rank,name,m,gd=best
+            # Historical/example language doesn't auto-reject, but flags it for manual review.
+            st=max(0,m.start()-300); en=min(len(s),m.end()+420)
+            out.append({
+              'sourceRowId':r['sourceRowId'],'sourceEvaluationSessionId':r['sourceEvaluationSessionId'],'turnIndex':r['turnIndex'],
+              'pattern':name,'patternRank':rank,'groups':gd,'match':m.group(0),'sourceLength':len(s),
+              'historicalOrHypotheticalRisk':bool(reject_context.search(s)),
+              'context':s[st:en],'sourceText':s,'assistantOutputsIncluded':False
+            })
+          out.sort(key=lambda x:(x['historicalOrHypotheticalRisk'],x['patternRank'],x['sourceLength'],x['sourceRowId']))
+          d=Path('temp-hiddenrubric/lane04/final-precision'); d.mkdir(parents=True,exist_ok=True)
+          (d/'full.jsonl').write_text(''.join(json.dumps(x,ensure_ascii=False)+'\n' for x in out),encoding='utf-8')
+          compact=[]
+          for x in out:
+            compact.append({k:x[k] for k in ('sourceRowId','sourceEvaluationSessionId','turnIndex','pattern','patternRank','groups','match','sourceLength','historicalOrHypotheticalRisk','context')})
+          (d/'compact.jsonl').write_text(''.join(json.dumps(x,ensure_ascii=False)+'\n' for x in compact),encoding='utf-8')
+          (d/'manifest.json').write_text(json.dumps({'inputRows':len(rows),'precisionRows':len(out),'assistantOutputsIncluded':False},indent=2)+'\n',encoding='utf-8')
+          print('precisionRows',len(out))
+          PY
+      - name: Commit precision queue
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/final-precision/
+          git commit -m 'chore: materialize temporary Lane04 final precision queue'
+          git push origin HEAD:main
