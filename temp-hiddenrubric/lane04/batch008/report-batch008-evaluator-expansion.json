@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "router-stage05-parallel-v1-lane04-report-v1",
+  "lane": "lane04-requester-evaluator",
+  "date": "2026-09-12",
+  "source": {
+    "dataset": "lmarena-ai/arena-human-preference-140k",
+    "revision": "a9cb587ee0906192dc1fc5e51778282f36c6bf35",
+    "rawRows": 135634,
+    "humanUserTurnsOnly": true,
+    "assistantOutputsUsed": false
+  },
+  "batch": {
+    "acceptedRows": 2,
+    "requesterPositiveRows": 1,
+    "requesterExactSpans": 1,
+    "evaluatorPositiveRows": 2,
+    "evaluatorExactSpans": 2,
+    "reviewRejectedAnnotations": 3
+  },
+  "ownership": {
+    "stateOpsExcluded": true,
+    "preferenceExcluded": true,
+    "crossDomainExcluded": true
+  },
+  "notes": [
+    "Two source-complete evaluator rows accepted from retained seed-phrase recovery: judges presentation and team-lead promotion report.",
+    "Three historical/workflow false positives retained as explicit rejections.",
+    "No assistant/model outputs used."
+  ]
+}

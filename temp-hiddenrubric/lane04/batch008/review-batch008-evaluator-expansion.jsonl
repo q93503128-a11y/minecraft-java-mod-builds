@@ -1,0 +1,5 @@
+{"sourceRowId":"7a07fe1a-620d-478e-8c69-e826d9a91eea","turnIndex":0,"accepted":true,"role":"evaluator","actorText":"judges","relationEvidence":"evaluate_by_actor","reason":"requested_speaking_notes_are_for_project_presentation_to_judges"}
+{"sourceRowId":"f0622255-dc66-4488-886a-bd57f2321a9c","turnIndex":0,"accepted":true,"role":"evaluator","actorText":"my team lead","relationEvidence":"submit_to_actor","reason":"requested_promotion_case_report_is_explicitly_submitted_to_team_lead"}
+{"sourceRowId":"9de0effd-8ece-4a26-96a3-fb0723790206","turnIndex":0,"accepted":false,"role":"evaluator","actorText":"my manager","reason":"historical_feedback_not_current_output_evaluation"}
+{"sourceRowId":"8e4425aa-c336-4c81-ba46-489df62d8f2f","turnIndex":0,"accepted":false,"role":"evaluator","actorText":"my supervisor","reason":"historical_feedback_on_prior_report"}
+{"sourceRowId":"91699b36-f921-40b5-8d36-28d38252b2ab","turnIndex":0,"accepted":false,"role":"evaluator","actorText":"the Hiring Manager","reason":"generic_workflow_question_not_requested_output_evaluator"}
