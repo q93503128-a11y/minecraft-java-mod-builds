@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "router-stage05-parallel-v1-lane04-report-v1",
+  "lane": "lane04-requester-evaluator",
+  "date": "2026-09-12",
+  "source": {
+    "dataset": "lmarena-ai/arena-human-preference-140k",
+    "revision": "a9cb587ee0906192dc1fc5e51778282f36c6bf35",
+    "rawRows": 135634,
+    "humanUserTurnsOnly": true,
+    "assistantOutputsUsed": false
+  },
+  "batch": {
+    "acceptedRows": 1,
+    "requesterPositiveRows": 0,
+    "requesterExactSpans": 0,
+    "evaluatorPositiveRows": 1,
+    "evaluatorExactSpans": 1,
+    "rawHeuristicCandidateAnnotationsReviewed": 6,
+    "rawHeuristicCandidateAnnotationsAccepted": 1,
+    "falsePositiveOrHigherLaneAnnotationsRemoved": 5,
+    "manualRescueActorAnnotations": 1
+  },
+  "ownership": {
+    "stateOpsExcluded": true,
+    "preferenceExcluded": true,
+    "crossDomainExcluded": true
+  },
+  "duplicateCheck": {
+    "baseHead": "9538b47a6c261ade711727bcdb6f721d7ab60341",
+    "githubCodeSearchHitCount": 0,
+    "selectedRowsUnique": true,
+    "sourceKeys": [
+      "a5bee9ea-656a-4ab4-9185-d1976e279902:0"
+    ]
+  },
+  "validator": {
+    "status": "PASS"
+  },
+  "notes": [
+    "The requested Upwork application response is explicitly written to convince the client who decides whether to engage the applicant.",
+    "Five nearby decision/persuasion candidates remain explicit rejections rather than relaxed into evaluator gold.",
+    "No assistant/model output was used as source data."
+  ]
+}
