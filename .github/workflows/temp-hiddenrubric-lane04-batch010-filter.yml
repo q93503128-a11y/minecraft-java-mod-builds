@@ -1,0 +1,108 @@
+name: TEMP HiddenRubric Lane04 Batch010 Filter
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-batch010-filter.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  filter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Filter current-output evaluators
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+
+          src=Path('temp-hiddenrubric/lane04/evaluator-usecases/full.jsonl')
+          outdir=Path('temp-hiddenrubric/lane04/batch010-filter')
+          outdir.mkdir(parents=True,exist_ok=True)
+
+          USED={
+            '8c02f215-e1db-48e2-8de8-543ed61bb5b7','0ca2c701-71cf-4afd-9cb0-feb2ec032743',
+            'a9970066-e698-49b7-acbd-fa532f4a4c6a','7a07fe1a-620d-478e-8c69-e826d9a91eea',
+            'f0622255-dc66-4488-886a-bd57f2321a9c','6022586c-f9d3-4c5a-bb65-c557e616e24f'
+          }
+          actor=r'(?:hiring manager|peer reviewers?|reviewers?|thesis committee|dissertation committee|selection committee|review committee|review board|grading committee|assessment panel|evaluation committee|evaluating committee|admissions committee|interview panel|module team|teacher marker|professors?|teachers?|instructors?|supervisors?|managers?|boss|advis(?:or|er)s?|mentors?|recruiters?|editors?|examiners?|judges?|jury|client team|clients?|customer team|customers?|stakeholders?|board of directors|executive board|senior management|management|team lead|senior leadership|executive leadership|leadership|principals?|presidents?|directors?|executives?|investors?|grant committee|funding committee|grant reviewers?|hr manager|hr team|human resources|project sponsor|sponsors?|approvers?|auditors?|assessors?|evaluators?|graders?)'
+          output=r'(?:report|paper|manuscript|essay|assignment|thesis|dissertation|proposal|application|resume|cv|portfolio|presentation|slides?|project|document|draft|submission|deliverable|memo|deck|pitch|case study|analysis|answer|response|letter|email|plan|statement|work)'
+          rel=r'(?:review(?:ed|ing)?|evaluat(?:e|ed|ing)|assess(?:ed|ing)?|grad(?:e|ed|ing)|mark(?:ed|ing)?|approv(?:e|ed|ing)|judg(?:e|ed|ing)|scor(?:e|ed|ing)|reject(?:ed|ing)?)'
+          req=re.compile(r'\b(?:write|draft|prepare|create|transform|revise|edit|improve|polish|rewrite|develop|generate|make|compose|format|finalize|refine|help me)\b',re.I)
+          out_re=re.compile(rf'\b{output}\b',re.I)
+          patterns=[
+            ('output_by_actor',re.compile(rf'\b(?P<object>{output})\b.{{0,160}}?\b(?:will|would|should|must|can|to|be|is|are)?\s*(?P<rel>{rel})\b.{{0,80}}?\bby\s+(?P<actor>(?:(?:my|our|the|their|a|an)\s+)?{actor})\b',re.I|re.S)),
+            ('actor_eval_output',re.compile(rf'\b(?P<actor>(?:(?:my|our|the|their|a|an)\s+)?{actor})\b.{{0,100}}?\b(?:will|would|should|must|can|to)?\s*(?P<rel>{rel})\b.{{0,120}}?\b(?P<object>{output})\b',re.I|re.S)),
+            ('output_for_actor_review',re.compile(rf'\b(?P<object>{output})\b.{{0,140}}?\b(?:for|to)\s+(?P<actor>(?:(?:my|our|the|their|a|an)\s+)?{actor})\s+(?P<rel>review|approval|evaluation|assessment|grading|marking)\b',re.I|re.S)),
+            ('present_to_actor_for_review',re.compile(rf'\b(?:submit|present|send|share)(?:ted|ting|s)?\b.{{0,120}}?\b(?P<object>{output})\b.{{0,120}}?\bto\s+(?P<actor>(?:(?:my|our|the|their|a|an)\s+)?{actor})\b.{{0,80}}?\bfor\s+(?P<rel>review|approval|evaluation|assessment|grading|marking)\b',re.I|re.S)),
+            ('for_actor_review_output_near',re.compile(rf'\bfor\s+(?P<actor>(?:(?:my|our|the|their|a|an)\s+)?{actor})\s+(?P<rel>review|approval|evaluation|assessment|grading|marking)\b',re.I|re.S)),
+          ]
+          persona=re.compile(r'\b(?:act as|you are|assume yourself as|role\s*[:=]|pretend (?:you are|to be)|imagine you are)\b',re.I)
+          historical=re.compile(r'\b(?:has been|had been|was|were|previous(?:ly)?|past|earlier|last year|already)\s+(?:reviewed|evaluated|assessed|graded|marked|approved|judged|scored|rejected)\b|\bfeedback from (?:my|the|our)\b',re.I)
+          adjective=re.compile(r'\b(?:investor|executive|client|customer)[-‑ ]grade\b',re.I)
+          customer_reviews=re.compile(r'\bcustomer reviews?\b|\bgoogle reviews?\b',re.I)
+
+          kept=[]; rejected=[]
+          for line in src.read_text(encoding='utf-8').splitlines():
+            if not line.strip(): continue
+            row=json.loads(line)
+            rid=row.get('sourceRowId','')
+            text=row.get('sourceText','')
+            if rid in USED: continue
+            if not req.search(text) or not out_re.search(text): continue
+            if adjective.search(text) or customer_reviews.search(text): continue
+            matches=[]
+            for name,pat in patterns:
+              for m in pat.finditer(text):
+                s,e=m.span()
+                near=text[max(0,s-220):min(len(text),e+220)]
+                if persona.search(near):
+                  continue
+                if historical.search(near):
+                  continue
+                # for_actor_review_output_near has no object capture; require a concrete output very close.
+                obj=m.groupdict().get('object')
+                if not obj:
+                  om=out_re.search(near)
+                  if not om: continue
+                  obj=om.group(0)
+                actor_text=m.group('actor')
+                rel_text=m.group('rel')
+                # relation must concern the output, not an unrelated process term.
+                matches.append({'pattern':name,'actor':actor_text,'relation':rel_text,'object':obj,'match':m.group(0),'near':re.sub(r'\s+',' ',near).strip()})
+            if not matches: continue
+            # shortest relation window first.
+            matches.sort(key=lambda x:(len(x['match']),x['pattern']))
+            best=matches[0]
+            item={k:row.get(k) for k in ['sourceRowId','sourceEvaluationSessionId','evaluationOrder','turnIndex','sourceLength','sourceText','assistantOutputsIncluded']}
+            item.update(best)
+            kept.append(item)
+          # dedupe normalized source
+          seen=set(); ded=[]
+          for x in sorted(kept,key=lambda z:(len(z['match']),z['sourceLength'],z['sourceRowId'])):
+            n=re.sub(r'\s+',' ',x['sourceText']).strip().lower()
+            if n in seen: continue
+            seen.add(n); ded.append(x)
+          kept=ded[:80]
+          (outdir/'full.jsonl').write_text(''.join(json.dumps(x,ensure_ascii=False)+'\n' for x in kept),encoding='utf-8')
+          (outdir/'compact.jsonl').write_text(''.join(json.dumps({k:x[k] for k in ['sourceRowId','sourceEvaluationSessionId','turnIndex','sourceLength','pattern','actor','relation','object','match','near']},ensure_ascii=False)+'\n' for x in kept),encoding='utf-8')
+          (outdir/'manifest.json').write_text(json.dumps({'inputRows':190,'keptRows':len(kept),'usedRowsExcluded':len(USED)},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print('kept',len(kept))
+          PY
+      - name: Commit batch010 filter results
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/batch010-filter/
+          git commit -m 'chore: materialize Lane04 batch010 filter' || exit 0
+          git push origin HEAD:main
