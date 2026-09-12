@@ -1,0 +1,41 @@
+name: TEMP HiddenRubric Lane04 Split Batch010
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-split-batch010.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Split payload
+        run: |
+          python - <<'PY'
+          import base64,json,hashlib
+          from pathlib import Path
+          src=Path('temp-hiddenrubric/lane04/batch010/staging-batch010-evaluator-expansion.jsonl')
+          raw=src.read_bytes(); enc=base64.b64encode(raw).decode('ascii')
+          out=Path('temp-hiddenrubric/lane04/batch010-transfer');out.mkdir(parents=True,exist_ok=True)
+          size=2400
+          chunks=[enc[i:i+size] for i in range(0,len(enc),size)]
+          for i,c in enumerate(chunks): (out/f'staging-{i:03d}.b64.txt').write_text(c+'\n',encoding='ascii')
+          (out/'manifest.json').write_text(json.dumps({'rawBytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest(),'base64Chars':len(enc),'chunkSize':size,'chunks':len(chunks)},indent=2)+'\n')
+          PY
+      - name: Commit chunks
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/batch010-transfer/
+          git commit -m 'chore: materialize Lane04 batch010 transfer chunks'
+          git push origin HEAD:main
