@@ -1,0 +1,9 @@
+{
+  "rawRows": 135634,
+  "sessionFamilies": 41038,
+  "candidates": 59,
+  "sourceDataset": "lmarena-ai/arena-human-preference-140k",
+  "sourceRevision": "a9cb587ee0906192dc1fc5e51778282f36c6bf35",
+  "assistantOutputsIncluded": false,
+  "candidateSignalsAreGold": false
+}
