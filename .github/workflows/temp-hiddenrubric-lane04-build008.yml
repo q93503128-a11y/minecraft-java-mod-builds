@@ -1,0 +1,77 @@
+name: TEMP HiddenRubric Lane04 Build008
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-build008.yml'
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build batch008
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          hits=[json.loads(x) for x in Path('temp-hiddenrubric/lane04/seed-phrase-recovery/hits.jsonl').read_text(encoding='utf-8').splitlines() if x.strip()]
+          byid={x['sourceRowId']:x for x in hits}
+          ids=['7a07fe1a-620d-478e-8c69-e826d9a91eea','f0622255-dc66-4488-886a-bd57f2321a9c']
+          assert all(i in byid for i in ids)
+          def span(t,n):
+            s=t.index(n); return {'start':s,'end':s+len(n),'text':n}
+          rows=[]
+          # judges presentation
+          r=byid[ids[0]]; src=r['sourceText']
+          ko='''당신은 심사위원들에게 솔루션을 발표하는 전문가입니다. 프로젝트 사용 사례와 솔루션 발표를 위한 발표 노트를 작성해 주세요. 발표 노트는 처음부터 끝까지 전체 발표가 3분을 넘지 않아야 합니다. 슬라이드는 세 장입니다. 첫 번째 슬라이드는 제목과 핵심 문구가 있는 주요 프로젝트 아이디어, 두 번째 슬라이드는 솔루션을 사용하고 혜택을 받을 다양한 페르소나, 세 번째이자 마지막 슬라이드는 아키텍처와 설계 다이어그램입니다.\n프로젝트 세부 정보: watsox orchestrate agentic ai 위에 구축된 agentic AI 솔루션입니다.\n첫 번째 슬라이드부터 시작합시다:\nProject Sherpa, 수작업 오버헤드를 제거합니다. 흩어진 도구를 통합합니다. 실시간 인사이트를 제공합니다.​\n반복 작업을 자동화하고 여러 도구에 걸친 작업을 조율하여 팀이 고가치 업무에 집중할 수 있게 합니다.​\n실행 가능한 인텔리전스를 즉시 제공하여 더 빠른 데이터 기반 의사결정을 지원합니다.​\n분산된 시스템을 하나의 경험으로 연결해 컨텍스트 전환을 줄이고 생산성을 높입니다.​\n\n두 번째 슬라이드는 이후에 논의하겠습니다.'''
+          rows.append({'schemaVersion':'router-stage05-parallel-v1-lane04-requester-evaluator-v1','lane':'lane04-requester-evaluator','sourceDataset':'lmarena-ai/arena-human-preference-140k','sourceRevision':'a9cb587ee0906192dc1fc5e51778282f36c6bf35','sourceArtifact':'pinned-parquet-seed-phrase-recovery','sourceEvaluationSessionId':r['sourceEvaluationSessionId'],'sourceRowId':r['sourceRowId'],'familyIndex':None,'kind':'user','turnIndex':r['turnIndex'],'sourceLanguage':'en','targetLanguage':'ko','source_en':src,'localized_ko':ko,'assistantOutputsIncluded':False,'sourceComplete':True,'translationReviewed':True,'semanticReviewed':True,'existingStage05DuplicateChecked':True,'privacyFlags':[],'ownership':{'stateOps':False,'preference':False,'crossDomain':False},'actors':{'requester':{'present':False,'sourceSpans':[],'koreanSpans':[],'relationEvidence':[]},'evaluator':{'present':True,'sourceSpans':[span(src,'judges')],'koreanSpans':[span(ko,'심사위원들')],'relationEvidence':['evaluate_by_actor']}},'reviewStatus':'manual-semantic-reviewed-staging','trainingEligible':False,'humanGold':False,'factualGold':False,'domainExpertGold':False})
+          # promotion report submitted to team lead
+          r=byid[ids[1]]; src=r['sourceText']
+          ko='''저는 정신건강 스타트업의 소규모 고성과 기술 팀에서 일합니다. 여기서 주니어/미드레벨 개발자로 3년 조금 넘게 일했고, 시니어 엔지니어 직급으로의 승진을 강하게 추진하고 싶습니다. 제가 시니어 개발자 기준을 달성하고 넘어섰다는 점을 사례로 보여 주며 강한 근거를 만들어야 합니다. 지난 몇 년 동안 대규모 기능 출시, 여러 팀이 함께하는 프로젝트, 팀원 면접과 채용, 그리고 성공적인 온보딩에 참여했습니다. 여러 기술 스택에서 일했습니다. 백엔드는 C#, 프런트엔드는 React, iOS 앱은 Swift입니다. 코드베이스의 큰 부분을 직접 작성했고 아키텍처를 깊이 이해하고 있으며 모바일 팀 등 팀원들의 문제를 지속적으로 풀어 주고 있습니다. 팀에 새로운 아이디어와 프로세스를 도입합니다. PwC, Pendo 같은 외부 이해관계자 및 고객과도 일했습니다. 제품 팀과 기능 및 스프린트 계획을 더 긴밀하게 진행합니다. 근무 기간 전체에서 스프린트당 가장 많은 스토리 포인트를 지속적으로 처리해 왔습니다. 퇴사한 이전 상사에게서도 매우 긍정적인 피드백을 받았습니다. 또한 신뢰할 수 있으며 양질의 작업을 제시간에 제공합니다.\n\n제가 승진 근거를 제시할 때 활용할 핵심 포인트를 뽑을 수 있도록 짧은 보고서를 만들어 주세요. 이 보고서를 제 팀 리드에게 제출할 예정입니다. 대형 테크 회사의 팀들이 작성하는 방식처럼 만들어 주세요.'''
+          rows.append({'schemaVersion':'router-stage05-parallel-v1-lane04-requester-evaluator-v1','lane':'lane04-requester-evaluator','sourceDataset':'lmarena-ai/arena-human-preference-140k','sourceRevision':'a9cb587ee0906192dc1fc5e51778282f36c6bf35','sourceArtifact':'pinned-parquet-seed-phrase-recovery','sourceEvaluationSessionId':r['sourceEvaluationSessionId'],'sourceRowId':r['sourceRowId'],'familyIndex':None,'kind':'user','turnIndex':r['turnIndex'],'sourceLanguage':'en','targetLanguage':'ko','source_en':src,'localized_ko':ko,'assistantOutputsIncluded':False,'sourceComplete':True,'translationReviewed':True,'semanticReviewed':True,'existingStage05DuplicateChecked':True,'privacyFlags':[],'ownership':{'stateOps':False,'preference':False,'crossDomain':False},'actors':{'requester':{'present':True,'sourceSpans':[span(src,'junior/medior developer')],'koreanSpans':[span(ko,'주니어/미드레벨 개발자')],'relationEvidence':[]},'evaluator':{'present':True,'sourceSpans':[span(src,'my team lead')],'koreanSpans':[span(ko,'제 팀 리드')],'relationEvidence':['submit_to_actor']}},'reviewStatus':'manual-semantic-reviewed-staging','trainingEligible':False,'humanGold':False,'factualGold':False,'domainExpertGold':False})
+          # exact-span/schema sanity
+          keys=set(); texts=set()
+          for row in rows:
+            key=(row['sourceRowId'],row['turnIndex']); assert key not in keys; keys.add(key)
+            nt=' '.join(row['source_en'].lower().split()); assert nt not in texts; texts.add(nt)
+            assert row['assistantOutputsIncluded'] is False and row['sourceComplete'] and row['semanticReviewed'] and row['translationReviewed'] and row['existingStage05DuplicateChecked']
+            assert all(row['ownership'][k] is False for k in ('stateOps','preference','crossDomain'))
+            for role in ('requester','evaluator'):
+              a=row['actors'][role]
+              assert a['present']==bool(a['sourceSpans'])
+              assert len(a['sourceSpans'])==len(a['koreanSpans'])
+              for s in a['sourceSpans']: assert row['source_en'][s['start']:s['end']]==s['text']
+              for s in a['koreanSpans']: assert row['localized_ko'][s['start']:s['end']]==s['text']
+            assert row['actors']['evaluator']['relationEvidence']
+          out=Path('temp-hiddenrubric/lane04/batch008'); out.mkdir(parents=True,exist_ok=True)
+          (out/'staging-batch008-evaluator-expansion.jsonl').write_text(''.join(json.dumps(x,ensure_ascii=False,separators=(',',':'))+'\n' for x in rows),encoding='utf-8')
+          reviews=[
+            {'sourceRowId':ids[0],'turnIndex':0,'accepted':True,'role':'evaluator','actorText':'judges','relationEvidence':'evaluate_by_actor','reason':'requested_speaking_notes_are_for_project_presentation_to_judges'},
+            {'sourceRowId':ids[1],'turnIndex':0,'accepted':True,'role':'evaluator','actorText':'my team lead','relationEvidence':'submit_to_actor','reason':'requested_promotion_case_report_is_explicitly_submitted_to_team_lead'},
+            {'sourceRowId':'9de0effd-8ece-4a26-96a3-fb0723790206','turnIndex':0,'accepted':False,'role':'evaluator','actorText':'my manager','reason':'historical_feedback_not_current_output_evaluation'},
+            {'sourceRowId':'8e4425aa-c336-4c81-ba46-489df62d8f2f','turnIndex':0,'accepted':False,'role':'evaluator','actorText':'my supervisor','reason':'historical_feedback_on_prior_report'},
+            {'sourceRowId':'91699b36-f921-40b5-8d36-28d38252b2ab','turnIndex':0,'accepted':False,'role':'evaluator','actorText':'the Hiring Manager','reason':'generic_workflow_question_not_requested_output_evaluator'}
+          ]
+          (out/'review-batch008-evaluator-expansion.jsonl').write_text(''.join(json.dumps(x,ensure_ascii=False,separators=(',',':'))+'\n' for x in reviews),encoding='utf-8')
+          report={'schemaVersion':'router-stage05-parallel-v1-lane04-report-v1','lane':'lane04-requester-evaluator','date':'2026-09-12','source':{'dataset':'lmarena-ai/arena-human-preference-140k','revision':'a9cb587ee0906192dc1fc5e51778282f36c6bf35','rawRows':135634,'humanUserTurnsOnly':True,'assistantOutputsUsed':False},'batch':{'acceptedRows':2,'requesterPositiveRows':1,'requesterExactSpans':1,'evaluatorPositiveRows':2,'evaluatorExactSpans':2,'reviewRejectedAnnotations':3},'ownership':{'stateOpsExcluded':True,'preferenceExcluded':True,'crossDomainExcluded':True},'notes':['Two source-complete evaluator rows accepted from retained seed-phrase recovery: judges presentation and team-lead promotion report.','Three historical/workflow false positives retained as explicit rejections.','No assistant/model outputs used.']}
+          (out/'report-batch008-evaluator-expansion.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          (out/'VALIDATION.txt').write_text('PASS rows=2 requester=1 requesterSpans=1 evaluator=2 evaluatorSpans=2 rejected=3\n',encoding='utf-8')
+          print('PASS batch008')
+          PY
+      - name: Commit batch008
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/batch008/
+          git commit -m 'chore: materialize temporary Lane04 batch008'
+          git push origin HEAD:main
