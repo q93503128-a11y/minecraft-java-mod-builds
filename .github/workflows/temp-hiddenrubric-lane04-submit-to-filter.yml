@@ -1,0 +1,53 @@
+name: TEMP HiddenRubric Lane04 Submit-To Filter
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-hiddenrubric-lane04-submit-to-filter.yml'
+permissions:
+  contents: write
+jobs:
+  filter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Filter submit-to candidates
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          rows=[json.loads(x) for x in Path('temp-hiddenrubric/lane04/open-relation-compact.jsonl').read_text(encoding='utf-8').splitlines() if x.strip()]
+          actor=re.compile(r'(?i)\b(?:committee|panel|judges?|jury|manager|supervisor|team lead|leadership|executive|board|professor|teacher|instructor|faculty|dean|admissions?|reviewer|editor|client|customer|investor|stakeholder|sponsor|recruiter|hiring|HR|auditor|legal|compliance|director|VP|CEO|CFO|CTO|COO)\w*\b')
+          obj=re.compile(r'(?i)\b(?:proposal|application|report|presentation|pitch|assignment|essay|thesis|paper|manuscript|document|draft|letter|cover letter|resume|CV|case|business case|memo|brief|plan|project|portfolio|submission|deliverable|request|email)\b')
+          ask=re.compile(r'(?i)\b(?:write|draft|create|prepare|make|polish|rewrite|re-write|edit|revise|refine|help me|generate|develop|compose)\b')
+          out=[]
+          for r in rows:
+            if r.get('pattern')!='submit_to': continue
+            text=(r.get('context') or '')+' '+(r.get('evidence') or '')
+            actors=sorted(set(m.group(0) for m in actor.finditer(text)),key=str.casefold)
+            objs=sorted(set(m.group(0) for m in obj.finditer(text)),key=str.casefold)
+            asks=sorted(set(m.group(0) for m in ask.finditer(text)),key=str.casefold)
+            if not actors: continue
+            x=dict(r); x.update({'actorsFound':actors,'objectsFound':objs,'requestWords':asks,'submitScore':10*len(actors)+4*len(objs)+5*len(asks)+int(r.get('score') or 0)})
+            out.append(x)
+          out.sort(key=lambda x:(-x['submitScore'],x.get('sourceLength',999999),x['sourceRowId'],x['turnIndex']))
+          d=Path('temp-hiddenrubric/lane04/submit-to-filter'); d.mkdir(parents=True,exist_ok=True)
+          (d/'shortlist.jsonl').write_text(''.join(json.dumps(x,ensure_ascii=False)+'\n' for x in out),encoding='utf-8')
+          (d/'manifest.json').write_text(json.dumps({'inputRows':len(rows),'submitToRows':sum(r.get('pattern')=='submit_to' for r in rows),'actorFilteredRows':len(out)},indent=2)+'\n',encoding='utf-8')
+          print('rows',len(out))
+          PY
+      - name: Commit shortlist
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add temp-hiddenrubric/lane04/submit-to-filter/
+          git commit -m 'chore: materialize temporary Lane04 submit-to shortlist'
+          git push origin HEAD:main
