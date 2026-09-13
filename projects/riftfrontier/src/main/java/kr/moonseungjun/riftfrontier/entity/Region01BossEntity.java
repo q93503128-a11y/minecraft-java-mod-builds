@@ -83,6 +83,11 @@ public final class Region01BossEntity extends LivingEntity {
         MinecraftBossCombatAdapter.ValidatedRuntime runtime = requireFieldTestRuntime();
         long gameTick = serverLevel.getGameTime();
         if (!runtime.attackExecuting()) {
+            // This is an execution boundary, so no ACTIVE-entry observation from the previous execution may leak
+            // into the next one even if future authored data has a zero-length telegraph/recovery phase.
+            fieldTestPreviousPattern = null;
+            fieldTestPreviousPhase = null;
+
             ServerPlayer target = nearestFieldTestTarget(serverLevel);
             if (target == null) {
                 return;
