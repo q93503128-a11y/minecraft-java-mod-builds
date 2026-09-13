@@ -90,7 +90,7 @@ public final class ExpeditionJournalScreen extends Screen {
 
         UiLayoutMetrics.Rect back = backButton();
         UiVisualLanguage.FrameState backState = TurnboundMenuScreen.contains(back, mouseX, mouseY)
-                ? UiVisualLanguage.FrameState.FOCUS : UiVisualLanguage.FrameState.IDLEK
+                ? UiVisualLanguage.FrameState.FOCUS : UiVisualLanguage.FrameState.IDLE;
         UiVisualLanguage.frame(graphics, back.x(), back.y(), back.width(), back.height(), backState);
         centered(graphics, back, Component.translatable(parent == null ? "gui.done" : "gui.back"),
                 UiVisualLanguage.textColor(backState));
