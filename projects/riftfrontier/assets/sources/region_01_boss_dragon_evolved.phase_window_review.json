@@ -88,6 +88,12 @@
       ]
     }
   },
+  "runtime_evidence_bridge": {
+    "status": "CODED_PENDING_CI",
+    "production_catalog": "src/main/java/kr/moonseungjun/riftfrontier/combat/presentation/Region01BossDragonEvolvedPhaseWindowReview.java",
+    "regression_test": "src/test/java/kr/moonseungjun/riftfrontier/combat/presentation/Region01BossDragonEvolvedPhaseWindowReviewTest.java",
+    "rule": "runtime code exposes only the exact reviewed Headbutt/Punch source windows; approximate or unreviewed windows fail closed"
+  },
   "gameplay_binding": {
     "status": "NOT_AUTHORED",
     "note": "These windows describe observed source motion only. Region 01 server-authoritative attack_pattern timing, hit volumes, logical animation keys and encounter binding must be authored separately; do not equate ACTION with an ACTIVE damage window without that contract."
