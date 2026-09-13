@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-alpha.8
+
+- Expanded encounter-fish presentation from three silhouettes to five: small, tall, fat, long and dedicated angler.
+- Bluegill now uses the taller/deeper-bodied silhouette instead of sharing the generic small fish body.
+- Deep-sea angler now uses an adapted Sea Life `AnglerfishModel` silhouette instead of the long-fish fallback.
+- Replaced the project-authored angler placeholder texture with Sea Life's MIT-licensed `anglerfish.png` and recorded the direct binary reuse.
+- Added entity types, model layers and client render registration for the new silhouettes while keeping encounter fish transient, unsaved and server-session-owned.
+- Expanded `FishVisualFamilyTest` so bluegill, mackerel, angler, catfish, oarfish and ancient sturgeon cannot silently regress to the wrong family.
+- Kept the user-test gate: this visual refactor still requires actual Minecraft client review before a JAR is called playtest-ready.
+
 ## 0.1.0-alpha.7
 
 - Replaced vanilla cod/salmon/tropical-fish encounter proxies with dedicated Fishing Game encounter-fish entities.
