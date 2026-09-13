@@ -31,7 +31,7 @@
           "id": "turnbound_re:region_01/rift_elite",
           "encounter": "turnbound_re:debug_rift_elite",
           "locator": "turnbound_re:region_01/rift_elite",
-          "repeatable": true
+          "repeatable": false
         }
       ],
       "resourceAnchors": [

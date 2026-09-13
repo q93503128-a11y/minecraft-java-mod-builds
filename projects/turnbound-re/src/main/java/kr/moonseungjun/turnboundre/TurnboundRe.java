@@ -16,6 +16,7 @@ import kr.moonseungjun.turnboundre.progression.BattleRewardLifecycleHooks;
 import kr.moonseungjun.turnboundre.progression.BattleRewardSettlementService;
 import kr.moonseungjun.turnboundre.progression.EquipmentForgeService;
 import kr.moonseungjun.turnboundre.progression.PlayerProgressStore;
+import kr.moonseungjun.turnboundre.world.FirstExpeditionQuestService;
 import kr.moonseungjun.turnboundre.world.VanillaMobWorldPolicy;
 import kr.moonseungjun.turnboundre.world.WorldEncounterAnchorHooks;
 import kr.moonseungjun.turnboundre.world.WorldFastTravelHooks;
@@ -37,6 +38,7 @@ public final class TurnboundRe {
     public static final PlayerProgressStore PROGRESS = new PlayerProgressStore(DEFINITIONS);
     public static final EquipmentForgeService EQUIPMENT_FORGE = new EquipmentForgeService(DEFINITIONS, PROGRESS);
     public static final WorldFastTravelService FAST_TRAVEL = new WorldFastTravelService(DEFINITIONS, BATTLES);
+    public static final FirstExpeditionQuestService FIRST_EXPEDITION = new FirstExpeditionQuestService(PROGRESS);
     public static final AuthoredEncounterLauncher AUTHORED_ENCOUNTERS = new AuthoredEncounterLauncher(BATTLES, DEFINITIONS);
     public static final BattleRewardSettlementService REWARD_SETTLEMENT = new BattleRewardSettlementService(BATTLES, PROGRESS);
     public static final BattleResultPresentationService RESULT_PRESENTATION = new BattleResultPresentationService(BATTLES);
@@ -46,9 +48,10 @@ public final class TurnboundRe {
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
         NeoForge.EVENT_BUS.addListener(this::addServerReloadListeners);
         new BattleWorldEventHooks(BATTLES).register(NeoForge.EVENT_BUS);
-        new BattleRewardLifecycleHooks(BATTLES, REWARD_SETTLEMENT, RESULT_PRESENTATION).register(NeoForge.EVENT_BUS);
+        new BattleRewardLifecycleHooks(BATTLES, REWARD_SETTLEMENT, RESULT_PRESENTATION, FIRST_EXPEDITION)
+                .register(NeoForge.EVENT_BUS);
         new WorldEncounterAnchorHooks().register(NeoForge.EVENT_BUS);
-        new WorldFastTravelHooks(FAST_TRAVEL).register(NeoForge.EVENT_BUS);
+        new WorldFastTravelHooks(FAST_TRAVEL, FIRST_EXPEDITION).register(NeoForge.EVENT_BUS);
         new VanillaMobWorldPolicy().register(NeoForge.EVENT_BUS);
         LOGGER.info("TURNBOUND: RE {} natural expedition/battle lifecycle loaded", VERSION);
     }

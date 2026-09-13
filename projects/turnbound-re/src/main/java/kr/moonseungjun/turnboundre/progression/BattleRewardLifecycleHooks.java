@@ -3,7 +3,9 @@ package kr.moonseungjun.turnboundre.progression;
 import kr.moonseungjun.turnboundre.TurnboundRe;
 import kr.moonseungjun.turnboundre.battle.BattleInstance;
 import kr.moonseungjun.turnboundre.battle.BattleManager;
+import kr.moonseungjun.turnboundre.battle.BattleRewardContext;
 import kr.moonseungjun.turnboundre.network.BattleResultPresentationService;
+import kr.moonseungjun.turnboundre.world.FirstExpeditionQuestService;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
@@ -19,6 +21,7 @@ public final class BattleRewardLifecycleHooks {
     private final BattleManager battles;
     private final BattleRewardSettlementService settlements;
     private final BattleResultPresentationService results;
+    private final FirstExpeditionQuestService firstExpedition;
     private final Set<UUID> loggedPersistenceFailures = new HashSet<>();
 
     public BattleRewardLifecycleHooks(
@@ -26,12 +29,22 @@ public final class BattleRewardLifecycleHooks {
             BattleRewardSettlementService settlements,
             BattleResultPresentationService results
     ) {
+        this(battles, settlements, results, null);
+    }
+
+    public BattleRewardLifecycleHooks(
+            BattleManager battles,
+            BattleRewardSettlementService settlements,
+            BattleResultPresentationService results,
+            FirstExpeditionQuestService firstExpedition
+    ) {
         if (battles == null || settlements == null || results == null) {
             throw new IllegalArgumentException("battles/settlements/results required");
         }
         this.battles = battles;
         this.settlements = settlements;
         this.results = results;
+        this.firstExpedition = firstExpedition;
     }
 
     public void register(IEventBus bus) {
@@ -56,10 +69,14 @@ public final class BattleRewardLifecycleHooks {
 
             stillPersistencePending.add(battleId);
             try {
+                BattleRewardContext rewardContext = battles.rewardContext(battleId).orElse(null);
                 var settlement = settlements.settleIfReady(event.getServer(), battleId);
                 if (settlement.isPresent()) {
                     loggedPersistenceFailures.remove(battleId);
                     stillPersistencePending.remove(battleId);
+                    if (firstExpedition != null && rewardContext != null) {
+                        firstExpedition.onSettlement(event.getServer(), rewardContext, settlement.get());
+                    }
                     results.presentSettlement(event.getServer(), battleId, settlement.get());
                 }
             } catch (RuntimeException failure) {

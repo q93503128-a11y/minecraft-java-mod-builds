@@ -9,10 +9,16 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 /** Bridges physical fast-travel Interaction entities to the server-authoritative travel service. */
 public final class WorldFastTravelHooks {
     private final WorldFastTravelService service;
+    private final FirstExpeditionQuestService firstExpedition;
 
     public WorldFastTravelHooks(WorldFastTravelService service) {
+        this(service, null);
+    }
+
+    public WorldFastTravelHooks(WorldFastTravelService service, FirstExpeditionQuestService firstExpedition) {
         if (service == null) throw new IllegalArgumentException("service required");
         this.service = service;
+        this.firstExpedition = firstExpedition;
     }
 
     public void register(IEventBus bus) {
@@ -27,6 +33,7 @@ public final class WorldFastTravelHooks {
         String dimensionId = player.level().dimension().identifier().toString();
         if (WorldFastTravelResolver.resolveEntity(
                 TurnboundRe.DEFINITIONS.snapshot().registry(), event.getTarget(), dimensionId).isEmpty()) return;
-        service.use(player, event.getTarget());
+        WorldFastTravelService.Result result = service.use(player, event.getTarget());
+        if (firstExpedition != null) firstExpedition.onFastTravelResult(player, result);
     }
 }
