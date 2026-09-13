@@ -56,6 +56,9 @@ jobs:
             exit 0
           fi
           git commit -m 'frontier: stabilize builder site approach alpha.132'
+          # compileJava may update ignored/tracked generated state. The source/doc patch is now safely
+          # committed, so discard runner-only build-tree drift before rebasing onto concurrent main work.
+          git reset --hard HEAD
           for attempt in 1 2 3 4 5; do
             git fetch origin main
             if ! git rebase origin/main; then
