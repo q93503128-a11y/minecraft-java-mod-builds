@@ -48,16 +48,6 @@ public final class ExpeditionNetworkPayloads {
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
-    public record StartEncounterC2S(String wire) implements CustomPacketPayload {
-        public static final Type<StartEncounterC2S> TYPE = new Type<>(Identifier.fromNamespaceAndPath(TurnboundRe.MOD_ID, "expedition_start"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, StartEncounterC2S> STREAM_CODEC = StreamCodec.composite(
-                ByteBufCodecs.STRING_UTF8, StartEncounterC2S::wire, StartEncounterC2S::new);
-        public StartEncounterC2S { wire = checkedWire(wire); }
-        public static StartEncounterC2S of(String encounterId) { return new StartEncounterC2S(pack(encounterId)); }
-        public String encounterId() { return unpack(wire); }
-        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
-    }
-
     public record JournalSnapshotS2C(String wire) implements CustomPacketPayload {
         public static final Type<JournalSnapshotS2C> TYPE = new Type<>(Identifier.fromNamespaceAndPath(TurnboundRe.MOD_ID, "expedition_snapshot"));
         public static final StreamCodec<RegistryFriendlyByteBuf, JournalSnapshotS2C> STREAM_CODEC = StreamCodec.composite(
