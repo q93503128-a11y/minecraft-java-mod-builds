@@ -16,6 +16,14 @@ public final class ExpeditionGameplayEvents {
         if (event.getSide() != LogicalSide.SERVER || event.getHand() != InteractionHand.MAIN_HAND) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
 
+        // Close the post-extraction hub loop through world interaction while preserving the existing
+        // authoritative provision/start services as the only mutation paths.
+        if (ExpeditionHubTerminal.tryUse(player, event.getPos())) {
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.SUCCESS);
+            return;
+        }
+
         // Keep the first vertical slice playable in-world: recovery interaction materializes a temporary
         // technical extraction relay, while the existing lifecycle remains the sole extraction authority.
         ExpeditionFieldExtractionRelay.ensurePresent(player);

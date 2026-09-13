@@ -66,6 +66,10 @@ public final class ExpeditionFieldExtractionRelay {
 
         try {
             ExpeditionGameplayService.extract(player);
+            ExpeditionHubTerminal.ensurePresent(player);
+            player.sendSystemMessage(Component.literal(
+                "[Riftfrontier] Hub stations online: smithing table = provision, lodestone = deploy."
+            ));
         } catch (IllegalStateException rejected) {
             player.sendSystemMessage(Component.literal(
                 "[Riftfrontier] Extraction relay locked: " + rejected.getMessage()
