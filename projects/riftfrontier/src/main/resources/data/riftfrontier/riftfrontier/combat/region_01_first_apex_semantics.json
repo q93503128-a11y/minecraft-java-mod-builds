@@ -1,0 +1,14 @@
+{
+  "boss_profile": "riftfrontier:boss/region_01_first_apex",
+  "phase_attack_patterns": {
+    "1": [
+      "riftfrontier:attack/boss/region_01_committed_strike",
+      "riftfrontier:attack/boss/region_01_line_displacement"
+    ],
+    "2": [
+      "riftfrontier:attack/boss/region_01_committed_strike",
+      "riftfrontier:attack/boss/region_01_line_displacement",
+      "riftfrontier:attack/boss/region_01_arena_pressure"
+    ]
+  }
+}
