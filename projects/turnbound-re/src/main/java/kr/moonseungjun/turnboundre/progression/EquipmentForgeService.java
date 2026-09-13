@@ -174,15 +174,7 @@ public final class EquipmentForgeService {
 
     static int countItem(ResourceHandler<ItemResource> inventory, Item item) {
         if (inventory == null || item == null || item == Items.AIR) return 0;
-        long total = 0L;
-        for (int index = 0; index < inventory.size(); index++) {
-            ItemResource resource = inventory.getResource(index);
-            if (!resource.isEmpty() && resource.value() == item) {
-                total += inventory.getAmountAsLong(index);
-                if (total >= Integer.MAX_VALUE) return Integer.MAX_VALUE;
-            }
-        }
-        return (int) total;
+        return ExactResourceTransaction.count(inventory, resource -> resource.value() == item);
     }
 
     static int extractItem(
@@ -192,14 +184,7 @@ public final class EquipmentForgeService {
             TransactionContext transaction
     ) {
         if (inventory == null || item == null || transaction == null) throw new IllegalArgumentException("inventory/item/transaction required");
-        if (amount < 0) throw new IllegalArgumentException("amount must be >= 0");
-        int extracted = 0;
-        for (int index = 0; index < inventory.size() && extracted < amount; index++) {
-            ItemResource resource = inventory.getResource(index);
-            if (resource.isEmpty() || resource.value() != item) continue;
-            extracted += inventory.extract(index, resource, amount - extracted, transaction);
-        }
-        return extracted;
+        return ExactResourceTransaction.extract(inventory, resource -> resource.value() == item, amount, transaction);
     }
 
     private static Item resolveItem(String itemId) {
