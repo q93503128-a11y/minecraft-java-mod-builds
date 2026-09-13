@@ -1,4 +1,7 @@
 {
   "mod.riftfrontier.name": "Riftfrontier",
-  "riftfrontier.content.validation_failed": "Riftfrontier content validation failed"
+  "riftfrontier.content.validation_failed": "Riftfrontier content validation failed",
+  "key.category.riftfrontier.combat": "Riftfrontier Combat",
+  "key.riftfrontier.weapon_action_1": "Weapon Action 1",
+  "key.riftfrontier.weapon_action_2": "Weapon Action 2"
 }
