@@ -3,6 +3,7 @@ package kr.moonseungjun.riftfrontier.entity;
 import kr.moonseungjun.riftfrontier.combat.CombatRuntimeCatalog;
 import kr.moonseungjun.riftfrontier.combat.MinecraftBossCombatAdapter;
 import kr.moonseungjun.riftfrontier.combat.Region01BossFieldAimPolicy;
+import kr.moonseungjun.riftfrontier.combat.Region01BossFieldImpactProfile;
 import kr.moonseungjun.riftfrontier.combat.Region01BossFieldImpactResolver;
 import kr.moonseungjun.riftfrontier.combat.Region01BossProductionSemantics;
 import kr.moonseungjun.riftfrontier.combat.ValidatedBossCombatSemantics;
@@ -15,8 +16,10 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Physical server/client actor identity for the Region 01 boss.
@@ -82,7 +85,41 @@ public final class Region01BossEntity extends LivingEntity {
             runtime.beginNextAttack(serverLevel, this, gameTick);
         }
         MinecraftBossCombatAdapter.ValidatedTickResult result = runtime.tick(serverLevel, this, gameTick);
+        applyFieldTestActiveTravel(result);
         RiftfrontierNetworking.syncBossPresentation(this, gameTick, result);
+    }
+
+    /**
+     * Gives the authored {@code line_charge} role real server-owned travel in the field harness.
+     *
+     * <p>The step length comes from {@link Region01BossFieldImpactProfile}, so provisional travel and provisional
+     * threat geometry are reviewed as one calibration surface. Movement happens only while the authoritative attack
+     * clock is ACTIVE, uses the already-committed facing, and goes through Minecraft's normal entity collision move.
+     * This is intentionally not a final boss locomotion/AI policy.</p>
+     */
+    private void applyFieldTestActiveTravel(MinecraftBossCombatAdapter.ValidatedTickResult result) {
+        var frame = result.combat().presentation().orElse(null);
+        if (frame == null || !frame.hitWindowOpen()) {
+            return;
+        }
+
+        double forwardStep = Region01BossFieldImpactProfile.find(frame.patternId())
+            .map(Region01BossFieldImpactProfile.Profile::activeForwardStep)
+            .orElse(0.0D);
+        if (forwardStep <= 0.0D) {
+            return;
+        }
+
+        Vec3 look = getLookAngle();
+        double horizontalLength = Math.hypot(look.x, look.z);
+        if (horizontalLength < 1.0E-6D) {
+            return;
+        }
+        move(MoverType.SELF, new Vec3(
+            look.x / horizontalLength * forwardStep,
+            0.0D,
+            look.z / horizontalLength * forwardStep
+        ));
     }
 
     /**
