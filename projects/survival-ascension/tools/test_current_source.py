@@ -17,10 +17,10 @@ def require(condition, message):
 props = text(ROOT / "gradle.properties")
 require("minecraft_version=26.2" in props, "Minecraft version drift")
 require("neo_version=26.2.0.38-beta" in props, "NeoForge version drift")
-require("mod_version=0.61.23-alpha.1" in props, "Survival Ascension version drift")
+require("mod_version=0.61.24-alpha.1" in props, "Survival Ascension version drift")
 
 main = text(JAVA / "SurvivalAscension.java")
-require('VERSION = "0.61.23-alpha.1"' in main, "source version drift")
+require('VERSION = "0.61.24-alpha.1"' in main, "source version drift")
 for event in (
     "MiningProgression::onBlockBreak",
     "BulkMiningService::onServerTick",
@@ -230,6 +230,12 @@ for invariant in (
     "rank == Rank.MYTHIC_III && !canAdmitMythic(level, mob)",
     "Math.min(0.012D, 0.0008D + power * 0.00005D + worldStage * 0.0012D)",
     "candidate.distanceToSqr(active) <= localRadiusSqr",
+    "if (entry.getKey().equals(candidate.getUUID())) continue;",
+    "if (!canAdmitMythic(level, mob))",
+    "enforceMythicRuntimeCaps(event.getServer())",
+    "retireOverflowMythic(mob)",
+    "loaded.sort((left, right) -> Double.compare(nearestPlayerDistanceSqr",
+    "mob.discard()",
 ):
     require(invariant in elite_system, f"Mythic population-control invariant missing: {invariant}")
 require("double maxDistanceSqr = MYTHIC_TRACKER_RADIUS * MYTHIC_TRACKER_RADIUS;" in elite_system,

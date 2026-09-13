@@ -120,7 +120,13 @@ public final class EliteMobSystem {
     }
 
     public static void onEntityJoin(EntityJoinLevelEvent event) {
-        if (event.getEntity() instanceof Mob mob && event.getLevel() instanceof ServerLevel && rank(mob) == Rank.MYTHIC_III) {
+        if (event.getEntity() instanceof Mob mob && event.getLevel() instanceof ServerLevel level && rank(mob) == Rank.MYTHIC_III) {
+            // 0.61.23 only capped fresh promotions. Mythics persisted by older builds can re-enter
+            // through chunk loading, so apply the same population admission before registering them.
+            if (!canAdmitMythic(level, mob)) {
+                retireOverflowMythic(mob);
+                return;
+            }
             mob.setPersistenceRequired();
             mob.setGlowingTag(true);
             ensureMythicRuntime(mob);
@@ -130,6 +136,7 @@ public final class EliteMobSystem {
     public static void onServerTick(ServerTickEvent.Pre event) {
         if (++mythicTicker < MYTHIC_RUNTIME_INTERVAL_TICKS) return;
         mythicTicker = 0;
+        enforceMythicRuntimeCaps(event.getServer());
         List<UUID> remove = new ArrayList<>();
         for (Map.Entry<UUID, MythicRuntime> entry : new ArrayList<>(MYTHICS.entrySet())) {
             MythicRuntime runtime = entry.getValue();
@@ -287,6 +294,11 @@ public final class EliteMobSystem {
             player.sendSystemMessage(Component.literal("§c[신화 테스트] §f좀비 생성에 실패했습니다."));
             return 0;
         }
+        if (!canAdmitMythic(level, mob)) {
+            mob.discard();
+            player.sendSystemMessage(Component.literal("§e[신화 테스트] §f주변 신화 개체 제한에 걸려 소환하지 않았습니다."));
+            return 0;
+        }
         applyElite(mob, Rank.MYTHIC_III, Trait.SWIFT, 1);
         syncMythicTracker(player);
         player.sendSystemMessage(Component.literal("§6[신화 테스트] §f정면 약 10블록에 신화 III 좀비를 소환했습니다."));
@@ -384,6 +396,7 @@ public final class EliteMobSystem {
         int activeInDimension = 0;
         double localRadiusSqr = MYTHIC_LOCAL_CAP_RADIUS * MYTHIC_LOCAL_CAP_RADIUS;
         for (Map.Entry<UUID, MythicRuntime> entry : MYTHICS.entrySet()) {
+            if (entry.getKey().equals(candidate.getUUID())) continue;
             MythicRuntime runtime = entry.getValue();
             if (runtime.level != level) continue;
             Entity entity = level.getEntity(entry.getKey());
@@ -393,6 +406,64 @@ public final class EliteMobSystem {
             if (activeInDimension >= MYTHIC_DIMENSION_CAP) return false;
         }
         return true;
+    }
+
+    private static void enforceMythicRuntimeCaps(net.minecraft.server.MinecraftServer server) {
+        Map<ServerLevel, List<Mob>> byLevel = new HashMap<>();
+        List<UUID> stale = new ArrayList<>();
+        for (Map.Entry<UUID, MythicRuntime> entry : new ArrayList<>(MYTHICS.entrySet())) {
+            MythicRuntime runtime = entry.getValue();
+            if (runtime.level.getServer() != server) continue;
+            Entity entity = runtime.level.getEntity(entry.getKey());
+            if (!(entity instanceof Mob mob) || !mob.isAlive() || rank(mob) != Rank.MYTHIC_III) {
+                stale.add(entry.getKey());
+                continue;
+            }
+            byLevel.computeIfAbsent(runtime.level, ignored -> new ArrayList<>()).add(mob);
+        }
+        for (UUID id : stale) {
+            MythicRuntime runtime = MYTHICS.remove(id);
+            if (runtime != null) closeMythicBar(runtime);
+        }
+
+        double localRadiusSqr = MYTHIC_LOCAL_CAP_RADIUS * MYTHIC_LOCAL_CAP_RADIUS;
+        for (Map.Entry<ServerLevel, List<Mob>> dimension : byLevel.entrySet()) {
+            List<Mob> loaded = dimension.getValue();
+            // Preserve bosses closest to an active player first so backlog cleanup is least likely
+            // to erase the fight the player is currently engaging.
+            loaded.sort((left, right) -> Double.compare(nearestPlayerDistanceSqr(dimension.getKey(), left),
+                    nearestPlayerDistanceSqr(dimension.getKey(), right)));
+            List<Mob> kept = new ArrayList<>();
+            for (Mob mob : loaded) {
+                boolean localConflict = false;
+                for (Mob existing : kept) {
+                    if (mob.distanceToSqr(existing) <= localRadiusSqr) {
+                        localConflict = true;
+                        break;
+                    }
+                }
+                if (localConflict || kept.size() >= MYTHIC_DIMENSION_CAP) {
+                    retireOverflowMythic(mob);
+                } else {
+                    kept.add(mob);
+                }
+            }
+        }
+    }
+
+    private static double nearestPlayerDistanceSqr(ServerLevel level, Mob mob) {
+        double nearest = Double.MAX_VALUE;
+        for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
+            if (player.level() != level || !player.isAlive() || player.isSpectator()) continue;
+            nearest = Math.min(nearest, player.distanceToSqr(mob));
+        }
+        return nearest;
+    }
+
+    private static void retireOverflowMythic(Mob mob) {
+        MythicRuntime runtime = MYTHICS.remove(mob.getUUID());
+        if (runtime != null) closeMythicBar(runtime);
+        mob.discard();
     }
 
     private static void applyElite(Mob mob, Rank rank, Trait trait, int nearbyPlayers) {

@@ -1,11 +1,18 @@
 # Survival Ascension
 
-- Mod version: `0.61.23-alpha.1`
+- Mod version: `0.61.24-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `15`
-- Existing-world compatibility: 0.61.23 changes only Mythic spawn admission/chance, alert radius and runtime cadence; it adds no SavedData ID/codec field and does not bump the network protocol. Existing Mythic entities, skill XP, fishing meters, infrastructure/logistics/outpost/production data and equipment CustomData remain compatible. Network protocol remains 15.
+- Existing-world compatibility: 0.61.24 adds no SavedData ID/codec field and does not bump the network protocol. It intentionally retires loaded Mythic III entities that exceed the 256-block / three-per-dimension cap so old persistent backlogs cannot survive indefinitely; all player progression and valid in-cap Mythics remain compatible. Network protocol remains 15.
+
+## 0.61.24 Mythic Backlog Enforcement / 신화 누적 개체 정리
+- 0.61.23 correctly capped newly promoted Mythics but intentionally preserved older persistent Mythics. That left a real hole: existing saves could reload 10-20+ Mythic III mobs through `EntityJoinLevelEvent`, and those restored bosses bypassed the new admission cap.
+- Loaded Mythic III entities now pass the same 256-block / three-per-dimension admission rule when they enter the world. Overflow legacy Mythics are retired without drops or kill rewards instead of being registered as more persistent bosses.
+- Runtime maintenance also reconciles the registered Mythic set every second. If an old backlog or another load path produces an over-cap set, the bosses nearest active players are preserved first and overflow is removed.
+- The Mythic test summon now respects the same cap, so testing cannot accidentally create a permanent backlog.
+- This intentionally changes the 0.61.23 preservation policy: existing Mythics above the cap may disappear when their chunks load. It does not touch player skill XP, infrastructure, equipment, fishing data, rewards for valid Mythics, SavedData schemas or network protocol 15.
 
 ## 0.61.23 Mythic Population Control / 신화 개체 밀도 제어
 - Mythic III spawn pressure is not tied directly to Minecraft day count; the previous probability rose with nearby players' average mastery and World Ascension stage, which made late saves look as if each passing day increased Mythic frequency.

@@ -4,6 +4,13 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `15`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.61.24-alpha.1 — Mythic Backlog Enforcement / 신화 누적 개체 정리
+0.61.23은 새로 승급되는 신화 III만 제한했고, 이전 버전에서 이미 `setPersistenceRequired()`로 저장된 신화 III는 월드/청크 로딩 때 제한 검사를 받지 않았다. 그래서 오래된 세이브에서는 새 출현률을 낮춰도 과거에 쌓인 신화가 한꺼번에 다시 로드되어 10~20체 이상 보일 수 있었다.
+
+이제 신화 III는 새 출현뿐 아니라 **월드에 다시 들어오는 순간에도 256블록 내 1체 / 차원 내 3체 제한을 적용**한다. 제한을 넘는 기존 누적 개체는 보상이나 처치 판정 없이 정리된다. 1초 주기의 런타임 정합 검사도 추가해 우회 경로로 초과 개체가 등록되더라도 플레이어에게 가까운 신화를 우선 남기고 나머지를 제거한다. 테스트 소환도 같은 제한을 따른다.
+
+따라서 0.61.24 JAR로 월드를 다시 열면 로드되는 과거 신화 누적분이 자동으로 정리된다. 정상 범위 안의 신화 전투/보상, 숙련·장비·인프라·낚시 데이터와 네트워크 프로토콜 15는 그대로다.
+
 ## 0.61.23-alpha.1 — Mythic Population Control / 신화 개체 밀도 제어
 신화 III 출현은 날짜 자체에 비례하지 않았다. 기존 확률이 플레이어 평균 숙련과 월드 승천 단계에 따라 함께 상승했고, 신화 III는 영구 유지되기 때문에 진행도가 높은 세이브에서 개체와 알림이 누적되는 구조였다.
 

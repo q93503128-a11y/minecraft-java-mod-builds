@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.61.24-alpha.1
+- Fixed the 0.61.23 Mythic-cap hole for existing saves: persistent Mythic III mobs reloaded through EntityJoin now pass the same 256-block / three-per-dimension admission rule instead of bypassing it.
+- Loaded over-cap legacy Mythics are retired without drops/rewards; a one-second runtime reconciliation preserves Mythics nearest active players first and removes overflow.
+- Mythic test summons now respect the production population cap, preventing accidental permanent test backlogs.
+- No SavedData schema, normal Mythic reward/stat/phase, player progression, packet or protocol change. Protocol remains 15.
+
 ## 0.61.23-alpha.1
 - Mythic III frequency is no longer allowed to scale into late-save alert spam: the conditional Mythic rank roll now caps at 1.2% and uses a much smaller mastery/world-stage slope.
 - New Mythic admission is capped to one active loaded Mythic within 256 blocks and three per loaded dimension. Overflow Mythic rolls become Ascended II rather than canceling normal hostile spawns.
