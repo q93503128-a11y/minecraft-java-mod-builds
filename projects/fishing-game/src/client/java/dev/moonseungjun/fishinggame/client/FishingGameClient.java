@@ -2,11 +2,13 @@ package dev.moonseungjun.fishinggame.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.moonseungjun.fishinggame.FishingGameMod;
+import dev.moonseungjun.fishinggame.client.fish.AnglerEncounterFishModel;
 import dev.moonseungjun.fishinggame.client.fish.EncounterFishModelLayers;
 import dev.moonseungjun.fishinggame.client.fish.EncounterFishRenderer;
 import dev.moonseungjun.fishinggame.client.fish.FatEncounterFishModel;
 import dev.moonseungjun.fishinggame.client.fish.LongEncounterFishModel;
 import dev.moonseungjun.fishinggame.client.fish.SmallEncounterFishModel;
+import dev.moonseungjun.fishinggame.client.fish.TallEncounterFishModel;
 import dev.moonseungjun.fishinggame.entity.FishingEntities;
 import dev.moonseungjun.fishinggame.network.FishingStatePayload;
 import dev.moonseungjun.fishinggame.network.ProfileSnapshotPayload;
@@ -79,36 +81,31 @@ public final class FishingGameClient implements ClientModInitializer {
 
     @SuppressWarnings("deprecation")
     private static void registerEncounterFishRendering() {
-        ModelLayerRegistry.registerModelLayer(
-                EncounterFishModelLayers.SMALL,
-                SmallEncounterFishModel::createBodyLayer
-        );
-        ModelLayerRegistry.registerModelLayer(
-                EncounterFishModelLayers.FAT,
-                FatEncounterFishModel::createBodyLayer
-        );
-        ModelLayerRegistry.registerModelLayer(
-                EncounterFishModelLayers.LONG,
-                LongEncounterFishModel::createBodyLayer
-        );
+        ModelLayerRegistry.registerModelLayer(EncounterFishModelLayers.SMALL, SmallEncounterFishModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(EncounterFishModelLayers.TALL, TallEncounterFishModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(EncounterFishModelLayers.FAT, FatEncounterFishModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(EncounterFishModelLayers.LONG, LongEncounterFishModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(EncounterFishModelLayers.ANGLER, AnglerEncounterFishModel::createBodyLayer);
 
         EntityRendererRegistry.register(
                 FishingEntities.SMALL_FISH,
-                context -> new EncounterFishRenderer(
-                        context, EncounterFishModelLayers.SMALL, SmallEncounterFishModel::new
-                )
+                context -> new EncounterFishRenderer(context, EncounterFishModelLayers.SMALL, SmallEncounterFishModel::new)
+        );
+        EntityRendererRegistry.register(
+                FishingEntities.TALL_FISH,
+                context -> new EncounterFishRenderer(context, EncounterFishModelLayers.TALL, TallEncounterFishModel::new)
         );
         EntityRendererRegistry.register(
                 FishingEntities.FAT_FISH,
-                context -> new EncounterFishRenderer(
-                        context, EncounterFishModelLayers.FAT, FatEncounterFishModel::new
-                )
+                context -> new EncounterFishRenderer(context, EncounterFishModelLayers.FAT, FatEncounterFishModel::new)
         );
         EntityRendererRegistry.register(
                 FishingEntities.LONG_FISH,
-                context -> new EncounterFishRenderer(
-                        context, EncounterFishModelLayers.LONG, LongEncounterFishModel::new
-                )
+                context -> new EncounterFishRenderer(context, EncounterFishModelLayers.LONG, LongEncounterFishModel::new)
+        );
+        EntityRendererRegistry.register(
+                FishingEntities.ANGLER_FISH,
+                context -> new EncounterFishRenderer(context, EncounterFishModelLayers.ANGLER, AnglerEncounterFishModel::new)
         );
     }
 }
