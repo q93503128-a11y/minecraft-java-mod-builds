@@ -8,14 +8,19 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
-/** Server-side event adapters for field recovery, restart cleanup and terminal failure policy. */
+/** Server-side event adapters for field recovery, extraction, restart cleanup and terminal failure policy. */
 public final class ExpeditionGameplayEvents {
     private ExpeditionGameplayEvents() {}
 
     public static void rightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         if (event.getSide() != LogicalSide.SERVER || event.getHand() != InteractionHand.MAIN_HAND) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (ExpeditionGameplayService.tryRecover(player, event.getPos())) {
+
+        // Keep the first vertical slice playable in-world: recovery interaction materializes a temporary
+        // technical extraction relay, while the existing lifecycle remains the sole extraction authority.
+        ExpeditionFieldExtractionRelay.ensurePresent(player);
+        if (ExpeditionGameplayService.tryRecover(player, event.getPos())
+            || ExpeditionFieldExtractionRelay.tryUse(player, event.getPos())) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
         }
