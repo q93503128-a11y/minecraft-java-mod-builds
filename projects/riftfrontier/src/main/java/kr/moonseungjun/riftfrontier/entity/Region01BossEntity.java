@@ -45,6 +45,7 @@ public final class Region01BossEntity extends LivingEntity {
      * Dragon/Wither boss UI instead of inventing Riftfrontier's final HUD language before that language is reviewed.
      */
     private final ServerBossEvent fieldTestBossEvent = new ServerBossEvent(
+        getUUID(),
         Component.translatable("entity.riftfrontier.region_01_boss"),
         BossEvent.BossBarColor.RED,
         BossEvent.BossBarOverlay.PROGRESS
