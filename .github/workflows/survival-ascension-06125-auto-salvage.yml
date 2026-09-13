@@ -75,6 +75,9 @@ jobs:
             if git push origin HEAD:main; then
               exit 0
             fi
+            # The Java build may leave harmless working-tree metadata changes. The intended
+            # project patch is already committed, so discard only uncommitted residue before rebase.
+            git reset --hard HEAD
             git fetch origin main
             git rebase origin/main
             sleep $((attempt * 2))
