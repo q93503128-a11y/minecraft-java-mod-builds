@@ -21,20 +21,37 @@ class M6WorldEncounterAnchorPayloadTest {
                 List.of("COIN", "ESSENCE", "CHARACTER_SHARD"),
                 true,
                 4,
+                "iron_reinforcement",
                 "",
                 "");
         assertEquals(view, WorldEncounterAnchorPayloads.AnchorPreviewS2C.from(view).decode());
     }
 
     @Test
-    void startRequestRoundTripBindsEntityLocatorAndEncounter() {
+    void startRequestRoundTripBindsEntityLocatorEncounterAndPreviewedPreparation() {
         var decoded = WorldEncounterAnchorPayloads.StartAnchorEncounterC2S.of(
                 ANCHOR,
                 "turnbound_re:region_01/overworld_patrol",
-                "turnbound_re:debug_overworld_patrol").decode();
+                "turnbound_re:debug_overworld_patrol",
+                "cooked_salmon_ration").decode();
         assertEquals(ANCHOR, decoded.anchorEntityId());
         assertEquals("turnbound_re:region_01/overworld_patrol", decoded.locator());
         assertEquals("turnbound_re:debug_overworld_patrol", decoded.encounterId());
+        assertEquals("cooked_salmon_ration", decoded.expectedPreparationId());
+    }
+
+    @Test
+    void emptyPreparationIsAValidExplicitNoPreparationSelection() {
+        var view = new WorldEncounterAnchorPayloads.PreviewView(
+                ANCHOR, "turnbound_re:a", "turnbound_re:e", 1,
+                List.of("minecraft:zombie"), List.of("COIN"), true, 1,
+                null, "", "");
+        assertEquals("", view.preparationId());
+        assertEquals("", WorldEncounterAnchorPayloads.AnchorPreviewS2C.from(view).decode().preparationId());
+
+        var start = WorldEncounterAnchorPayloads.StartAnchorEncounterC2S.of(
+                ANCHOR, "turnbound_re:a", "turnbound_re:e", null).decode();
+        assertEquals("", start.expectedPreparationId());
     }
 
     @Test
@@ -48,9 +65,9 @@ class M6WorldEncounterAnchorPayloadTest {
     void impossiblePreviewFactsAreRejected() {
         assertThrows(IllegalArgumentException.class, () -> new WorldEncounterAnchorPayloads.PreviewView(
                 ANCHOR, "turnbound_re:a", "turnbound_re:e", 1,
-                List.of(), List.of("COIN"), true, 1, "", ""));
+                List.of(), List.of("COIN"), true, 1, "", "", ""));
         assertThrows(IllegalArgumentException.class, () -> new WorldEncounterAnchorPayloads.PreviewView(
                 ANCHOR, "turnbound_re:a", "turnbound_re:e", 1,
-                List.of("minecraft:zombie"), List.of("COIN"), true, 5, "", ""));
+                List.of("minecraft:zombie"), List.of("COIN"), true, 5, "", "", ""));
     }
 }

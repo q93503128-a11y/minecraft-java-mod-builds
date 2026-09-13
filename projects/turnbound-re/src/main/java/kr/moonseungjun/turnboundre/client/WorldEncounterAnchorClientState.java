@@ -22,7 +22,7 @@ public final class WorldEncounterAnchorClientState {
         latest = new WorldEncounterAnchorPayloads.PreviewView(
                 latest.anchorEntityId(), latest.locator(), latest.encounterId(), latest.difficulty(),
                 latest.enemySources(), latest.rewardKinds(), latest.repeatable(), latest.partySize(),
-                payload.code(), payload.detail());
+                latest.preparationId(), payload.code(), payload.detail());
         generation++;
     }
 

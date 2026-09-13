@@ -88,6 +88,9 @@ public final class WorldEncounterAnchorScreen extends Screen {
             Component party = Component.translatable("screen.turnbound_re.anchor.party", view.partySize());
             graphics.text(this.font, Component.literal(repeat.getString() + " · " + party.getString()),
                     textX, y, view.partySize() > 0 ? UiVisualLanguage.TEXT_SECONDARY : UiVisualLanguage.TEXT_WARNING, true);
+            y += this.font.lineHeight + UiLayoutMetrics.SPACE_4;
+            graphics.text(this.font, preparationLine(), textX, y,
+                    view.preparationId().isBlank() ? UiVisualLanguage.TEXT_SECONDARY : UiVisualLanguage.TEXT_FOCUS, true);
         }
 
         UiLayoutMetrics.Rect challenge = challengeButton();
@@ -128,7 +131,7 @@ public final class WorldEncounterAnchorScreen extends Screen {
             if (canChallenge() && TurnboundMenuScreen.contains(challengeButton(), mouseX, mouseY)) {
                 startPending = true;
                 ClientPacketDistributor.sendToServer(WorldEncounterAnchorPayloads.StartAnchorEncounterC2S.of(
-                        view.anchorEntityId(), view.locator(), view.encounterId()));
+                        view.anchorEntityId(), view.locator(), view.encounterId(), view.preparationId()));
                 return true;
             }
             if (!startPending && TurnboundMenuScreen.contains(backButton(), mouseX, mouseY)) {
@@ -176,6 +179,27 @@ public final class WorldEncounterAnchorScreen extends Screen {
                 : String.join(" · ", names);
     }
 
+    /**
+     * Uses vanilla item localization plus language-neutral stat abbreviations so the new preparation row
+     * does not introduce an ad-hoc parallel localization surface before the final UI copy pass.
+     */
+    private Component preparationLine() {
+        if (view == null || view.preparationId().isBlank()) return Component.literal("◇ —");
+        return switch (view.preparationId()) {
+            case "iron_reinforcement" -> prepared("item.minecraft.iron_ingot", "DEF/POISE +8%");
+            case "golden_provision" -> prepared("item.minecraft.golden_carrot", "HP +10%");
+            case "cooked_cod_ration" -> prepared("item.minecraft.cooked_cod", "ATK +8%");
+            case "cooked_salmon_ration" -> prepared("item.minecraft.cooked_salmon", "ATK +8%");
+            default -> Component.literal("◇ ?");
+        };
+    }
+
+    private Component prepared(String itemKey, String effect) {
+        return Component.literal("◇ ")
+                .append(Component.translatable(itemKey))
+                .append(Component.literal(" ×1 · " + effect));
+    }
+
     private String entityName(String source) {
         if (source == null || source.isBlank()) return "?";
         int colon = source.indexOf(':');
@@ -196,7 +220,7 @@ public final class WorldEncounterAnchorScreen extends Screen {
             case "ALREADY_IN_BATTLE" -> Component.translatable("screen.turnbound_re.expedition.already_in_battle").getString();
             case "ANCHOR_CLEARED" -> Component.translatable("screen.turnbound_re.anchor.cleared").getString();
             case "TOO_FAR" -> Component.translatable("screen.turnbound_re.anchor.too_far").getString();
-            case "ANCHOR_MISMATCH" -> Component.translatable("screen.turnbound_re.anchor.mismatch").getString();
+            case "ANCHOR_MISMATCH", "PREPARATION_CHANGED" -> Component.translatable("screen.turnbound_re.anchor.mismatch").getString();
             case "ANCHOR_UNAVAILABLE", "INVALID_ENCOUNTER" -> Component.translatable("screen.turnbound_re.anchor.unavailable").getString();
             default -> Component.translatable("screen.turnbound_re.anchor.server_rejected").getString();
         };
@@ -204,7 +228,7 @@ public final class WorldEncounterAnchorScreen extends Screen {
 
     private UiLayoutMetrics.Rect root() {
         int width = Math.min(380, Math.max(252, this.width - UiLayoutMetrics.SPACE_16 * 2));
-        int height = 174;
+        int height = 190;
         int x = Math.max(0, (this.width - width) / 2);
         int y = Math.max(UiLayoutMetrics.SPACE_8, this.height / 2 - height / 2);
         return new UiLayoutMetrics.Rect(x, y, width, height);

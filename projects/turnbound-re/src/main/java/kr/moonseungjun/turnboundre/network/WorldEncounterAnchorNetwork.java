@@ -4,6 +4,7 @@ import kr.moonseungjun.turnboundre.TurnboundRe;
 import kr.moonseungjun.turnboundre.client.WorldEncounterAnchorClientState;
 import kr.moonseungjun.turnboundre.data.DefinitionRegistry;
 import kr.moonseungjun.turnboundre.progression.PlayerProgress;
+import kr.moonseungjun.turnboundre.world.BattlePreparationService;
 import kr.moonseungjun.turnboundre.world.WorldEncounterAnchorAccessPolicy;
 import kr.moonseungjun.turnboundre.world.WorldEncounterAnchorResolver;
 import net.minecraft.server.MinecraftServer;
@@ -42,6 +43,7 @@ public final class WorldEncounterAnchorNetwork {
         if (server == null) return;
         DefinitionRegistry definitions = TurnboundRe.DEFINITIONS.snapshot().registry();
         PlayerProgress progress = TurnboundRe.PROGRESS.getOrCreate(server, player.getUUID());
+        BattlePreparationService.Selection preparation = BattlePreparationService.preview(player);
 
         boolean repeatable = WorldEncounterAnchorAccessPolicy.repeatable(resolved);
         String code = "";
@@ -59,6 +61,7 @@ public final class WorldEncounterAnchorNetwork {
                         WorldEncounterAnchorResolver.rewardKinds(definitions, resolved.encounter()),
                         repeatable,
                         progress.party().size(),
+                        preparation.id(),
                         code,
                         "")));
     }
@@ -100,7 +103,8 @@ public final class WorldEncounterAnchorNetwork {
             return;
         }
 
-        EncounterLaunchService.Result result = EncounterLaunchService.tryLaunchFromAnchor(player, resolved);
+        EncounterLaunchService.Result result = EncounterLaunchService.tryLaunchFromAnchor(
+                player, resolved, request.expectedPreparationId());
         if (!result.accepted()) {
             context.reply(WorldEncounterAnchorPayloads.AnchorRejectedS2C.of(result.code(), result.detail()));
             return;

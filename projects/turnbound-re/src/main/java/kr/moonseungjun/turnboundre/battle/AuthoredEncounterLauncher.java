@@ -72,7 +72,8 @@ public final class AuthoredEncounterLauncher {
         int ordinal = 0;
 
         for (PlayerSlot slot : playerSlots) {
-            addPlayer(registry, participants, characterIds, controllers, slot.participantId(), slot.progress(), ownerPlayerId, ordinal++);
+            addPlayer(registry, participants, characterIds, controllers, slot.participantId(), slot.progress(), ownerPlayerId,
+                    ordinal++, BattlePreparationBonus.NONE);
             bindings.add(new EntityParticipantBinding(slot.participantId(), slot.entityId()));
         }
 
@@ -99,7 +100,8 @@ public final class AuthoredEncounterLauncher {
             UUID battleId,
             long battleSeed
     ) {
-        return openVirtualInternal(encounterId, ownerPlayerId, party, battleId, battleSeed, "", false);
+        return openVirtualInternal(encounterId, ownerPlayerId, party, battleId, battleSeed,
+                "", false, BattlePreparationBonus.NONE);
     }
 
     /** Captures the world-anchor source so victory settlement can atomically persist non-repeatable completion. */
@@ -112,11 +114,31 @@ public final class AuthoredEncounterLauncher {
             String worldAnchorLocator,
             boolean worldAnchorRepeatable
     ) {
+        return openVirtualFromAnchor(encounterId, ownerPlayerId, party, battleId, battleSeed,
+                worldAnchorLocator, worldAnchorRepeatable, BattlePreparationBonus.NONE);
+    }
+
+    /**
+     * World-anchor launch with one already server-validated, battle-local preparation.
+     * The bonus changes only the immutable battle participants and never persisted character growth.
+     */
+    public Launch openVirtualFromAnchor(
+            String encounterId,
+            UUID ownerPlayerId,
+            List<CharacterProgress> party,
+            UUID battleId,
+            long battleSeed,
+            String worldAnchorLocator,
+            boolean worldAnchorRepeatable,
+            BattlePreparationBonus preparation
+    ) {
         if (worldAnchorLocator == null || worldAnchorLocator.isBlank()) {
             throw new IllegalArgumentException("worldAnchorLocator must not be blank");
         }
+        if (preparation == null) throw new IllegalArgumentException("preparation required");
         return openVirtualInternal(
-                encounterId, ownerPlayerId, party, battleId, battleSeed, worldAnchorLocator, worldAnchorRepeatable);
+                encounterId, ownerPlayerId, party, battleId, battleSeed,
+                worldAnchorLocator, worldAnchorRepeatable, preparation);
     }
 
     private Launch openVirtualInternal(
@@ -126,11 +148,13 @@ public final class AuthoredEncounterLauncher {
             UUID battleId,
             long battleSeed,
             String worldAnchorLocator,
-            boolean worldAnchorRepeatable
+            boolean worldAnchorRepeatable,
+            BattlePreparationBonus preparation
     ) {
         if (encounterId == null || encounterId.isBlank()) throw new IllegalArgumentException("encounterId must not be blank");
         if (ownerPlayerId == null || battleId == null) throw new IllegalArgumentException("ownerPlayerId/battleId required");
         if (party == null || party.isEmpty() || party.size() > 4) throw new IllegalArgumentException("party must contain 1..4 characters");
+        if (preparation == null) throw new IllegalArgumentException("preparation required");
 
         DefinitionRepository.Snapshot snapshot = definitions.snapshot();
         DefinitionRegistry registry = snapshot.registry();
@@ -145,7 +169,7 @@ public final class AuthoredEncounterLauncher {
             CharacterProgress progress = party.get(index);
             if (progress == null) throw new IllegalArgumentException("party progress must not be null");
             addPlayer(registry, participants, characterIds, controllers,
-                    "party_" + index, progress, ownerPlayerId, ordinal++);
+                    "party_" + index, progress, ownerPlayerId, ordinal++, preparation);
         }
         for (int index = 0; index < encounter.enemies().size(); index++) {
             addEnemy(registry, participants, characterIds, encounter.enemies().get(index), "enemy_" + index, ordinal++);
@@ -191,14 +215,15 @@ public final class AuthoredEncounterLauncher {
             String participantId,
             CharacterProgress progress,
             UUID ownerPlayerId,
-            int ordinal
+            int ordinal,
+            BattlePreparationBonus preparation
     ) {
         if (characterIds.putIfAbsent(participantId, progress.characterId()) != null) {
             throw new IllegalArgumentException("duplicate player participantId " + participantId);
         }
         CharacterDefinition definition = requireCharacter(registry, progress.characterId());
         ProgressionRules.requireMatches(definition, progress);
-        CharacterDefinition.Stats stats = ProgressionRules.stats(definition, progress);
+        CharacterDefinition.Stats stats = preparation.apply(ProgressionRules.stats(definition, progress));
         participants.add(participant(participantId, BattleTeam.PLAYER, ordinal, stats));
         controllers.put(participantId, ownerPlayerId);
     }

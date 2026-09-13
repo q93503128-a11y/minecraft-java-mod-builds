@@ -6,6 +6,7 @@ import kr.moonseungjun.turnboundre.battle.EnemyTurnService;
 import kr.moonseungjun.turnboundre.data.DefinitionRegistry;
 import kr.moonseungjun.turnboundre.progression.CharacterProgress;
 import kr.moonseungjun.turnboundre.progression.PlayerProgress;
+import kr.moonseungjun.turnboundre.world.BattlePreparationService;
 import kr.moonseungjun.turnboundre.world.WorldEncounterAnchorAccessPolicy;
 import kr.moonseungjun.turnboundre.world.WorldEncounterAnchorResolver;
 import net.minecraft.server.MinecraftServer;
@@ -41,7 +42,17 @@ final class EncounterLaunchService {
 
     private EncounterLaunchService() {}
 
+    /** Source-compatible path for server-owned callers that do not have a client preview token. */
     static Result tryLaunchFromAnchor(ServerPlayer player, WorldEncounterAnchorResolver.Resolved resolved) {
+        String currentPreparation = BattlePreparationService.preview(player).id();
+        return tryLaunchFromAnchor(player, resolved, currentPreparation);
+    }
+
+    static Result tryLaunchFromAnchor(
+            ServerPlayer player,
+            WorldEncounterAnchorResolver.Resolved resolved,
+            String expectedPreparationId
+    ) {
         if (resolved == null) return Result.rejected("ANCHOR_UNAVAILABLE", "");
         if (player == null) return Result.rejected("INVALID_PLAYER", "");
 
@@ -70,6 +81,11 @@ final class EncounterLaunchService {
             party.add(character);
         }
 
+        BattlePreparationService.Selection preparation = BattlePreparationService.preview(player);
+        if (!BattlePreparationService.matchesExpected(expectedPreparationId, preparation)) {
+            return Result.rejected("PREPARATION_CHANGED", preparation.id());
+        }
+
         UUID battleId = UUID.randomUUID();
         long battleSeed = player.level().getGameTime()
                 ^ player.getUUID().getMostSignificantBits()
@@ -82,7 +98,16 @@ final class EncounterLaunchService {
                 battleId,
                 battleSeed,
                 resolved.anchor().locator(),
-                WorldEncounterAnchorAccessPolicy.repeatable(resolved));
+                WorldEncounterAnchorAccessPolicy.repeatable(resolved),
+                preparation.bonus());
+
+        // Consume only after battle construction/registration succeeded. If the selected offhand changed
+        // unexpectedly on the same server thread, tear the battle back down rather than granting a free bonus.
+        if (!BattlePreparationService.consumeOffhand(player, preparation)) {
+            TurnboundRe.BATTLES.cleanup(battleId);
+            return Result.rejected("PREPARATION_CHANGED", BattlePreparationService.preview(player).id());
+        }
+
         EnemyTurnService.resolveUntilPlayerOrTerminal(TurnboundRe.BATTLES, launch.battle());
         return Result.accepted(launch, definitions);
     }

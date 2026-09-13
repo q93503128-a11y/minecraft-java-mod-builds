@@ -30,6 +30,7 @@ public final class WorldEncounterAnchorPayloads {
             List<String> rewardKinds,
             boolean repeatable,
             int partySize,
+            String preparationId,
             String resultCode,
             String resultDetail
     ) {
@@ -42,16 +43,44 @@ public final class WorldEncounterAnchorPayloads {
             rewardKinds = rewardKinds == null ? List.of() : List.copyOf(rewardKinds);
             if (enemySources.isEmpty()) throw new IllegalArgumentException("enemySources required");
             if (partySize < 0 || partySize > 4) throw new IllegalArgumentException("partySize must be 0..4");
+            preparationId = preparationId == null ? "" : preparationId;
             resultCode = resultCode == null ? "" : resultCode;
             resultDetail = resultDetail == null ? "" : resultDetail;
         }
+
+        /** Source-compatible adapter for callers authored before battle preparation existed. */
+        public PreviewView(
+                UUID anchorEntityId,
+                String locator,
+                String encounterId,
+                int difficulty,
+                List<String> enemySources,
+                List<String> rewardKinds,
+                boolean repeatable,
+                int partySize,
+                String resultCode,
+                String resultDetail
+        ) {
+            this(anchorEntityId, locator, encounterId, difficulty, enemySources, rewardKinds,
+                    repeatable, partySize, "", resultCode, resultDetail);
+        }
     }
 
-    public record StartRequest(UUID anchorEntityId, String locator, String encounterId) {
+    public record StartRequest(
+            UUID anchorEntityId,
+            String locator,
+            String encounterId,
+            String expectedPreparationId
+    ) {
         public StartRequest {
             if (anchorEntityId == null) throw new IllegalArgumentException("anchorEntityId required");
             if (locator == null || locator.isBlank()) throw new IllegalArgumentException("locator required");
             if (encounterId == null || encounterId.isBlank()) throw new IllegalArgumentException("encounterId required");
+            expectedPreparationId = expectedPreparationId == null ? "" : expectedPreparationId;
+        }
+
+        public StartRequest(UUID anchorEntityId, String locator, String encounterId) {
+            this(anchorEntityId, locator, encounterId, "");
         }
     }
 
@@ -73,13 +102,14 @@ public final class WorldEncounterAnchorPayloads {
                             + packList(view.rewardKinds()) + "|"
                             + view.repeatable() + "|"
                             + view.partySize() + "|"
+                            + pack(view.preparationId()) + "|"
                             + pack(view.resultCode()) + "|"
                             + pack(view.resultDetail()));
         }
 
         public PreviewView decode() {
             String[] parts = wire.split("\\|", -1);
-            if (parts.length != 10) throw new IllegalArgumentException("invalid anchor preview wire");
+            if (parts.length != 11) throw new IllegalArgumentException("invalid anchor preview wire");
             return new PreviewView(
                     UUID.fromString(unpack(parts[0])),
                     unpack(parts[1]),
@@ -90,7 +120,8 @@ public final class WorldEncounterAnchorPayloads {
                     Boolean.parseBoolean(parts[6]),
                     Integer.parseInt(parts[7]),
                     unpack(parts[8]),
-                    unpack(parts[9]));
+                    unpack(parts[9]),
+                    unpack(parts[10]));
         }
 
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
@@ -104,15 +135,31 @@ public final class WorldEncounterAnchorPayloads {
 
         public StartAnchorEncounterC2S { wire = checkedWire(wire); }
 
-        public static StartAnchorEncounterC2S of(UUID anchorEntityId, String locator, String encounterId) {
+        public static StartAnchorEncounterC2S of(
+                UUID anchorEntityId,
+                String locator,
+                String encounterId,
+                String expectedPreparationId
+        ) {
             return new StartAnchorEncounterC2S(
-                    pack(anchorEntityId.toString()) + "|" + pack(locator) + "|" + pack(encounterId));
+                    pack(anchorEntityId.toString()) + "|"
+                            + pack(locator) + "|"
+                            + pack(encounterId) + "|"
+                            + pack(expectedPreparationId));
+        }
+
+        public static StartAnchorEncounterC2S of(UUID anchorEntityId, String locator, String encounterId) {
+            return of(anchorEntityId, locator, encounterId, "");
         }
 
         public StartRequest decode() {
             String[] parts = wire.split("\\|", -1);
-            if (parts.length != 3) throw new IllegalArgumentException("invalid anchor start wire");
-            return new StartRequest(UUID.fromString(unpack(parts[0])), unpack(parts[1]), unpack(parts[2]));
+            if (parts.length != 4) throw new IllegalArgumentException("invalid anchor start wire");
+            return new StartRequest(
+                    UUID.fromString(unpack(parts[0])),
+                    unpack(parts[1]),
+                    unpack(parts[2]),
+                    unpack(parts[3]));
         }
 
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
