@@ -1,6 +1,5 @@
 package kr.moonseungjun.turnboundre.client.ui;
 
-import kr.moonseungjun.turnboundre.client.BattleClientState;
 import kr.moonseungjun.turnboundre.client.ExpeditionJournalClientState;
 import kr.moonseungjun.turnboundre.client.ProgressionClientState;
 import kr.moonseungjun.turnboundre.network.ExpeditionNetworkPayloads;
@@ -12,13 +11,14 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
-/** Expedition selection reached from the unified menu, using the adopted Kenney-backed visual language. */
+/**
+ * Read-only authored expedition reference reached from the unified menu.
+ * Actual combat entry is world-first and happens only through validated encounter anchors.
+ */
 public final class ExpeditionJournalScreen extends Screen {
     private final Screen parent;
     private ExpeditionNetworkPayloads.JournalView view;
     private long seenGeneration = -1L;
-    private String feedback = "";
-    private boolean startPending;
 
     public ExpeditionJournalScreen() {
         this(null);
@@ -36,8 +36,6 @@ public final class ExpeditionJournalScreen extends Screen {
         if (returningFromChild) {
             ExpeditionJournalClientState.clear();
             view = null;
-            feedback = "";
-            startPending = false;
             ClientPacketDistributor.sendToServer(new ExpeditionNetworkPayloads.RequestJournalC2S());
         }
         syncState();
@@ -46,16 +44,12 @@ public final class ExpeditionJournalScreen extends Screen {
     @Override
     public void tick() {
         super.tick();
-        if (ExpeditionMenuPolicy.shouldEnterBattle(startPending, BattleClientState.latestSnapshot().isPresent())) {
-            this.minecraft.gui.setScreen(null);
-            return;
-        }
         if (ExpeditionJournalClientState.generation() != seenGeneration) syncState();
     }
 
     @Override
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        // Keep world context visible behind the compact route selector.
+        // Keep world context visible behind the compact authored-route reference.
     }
 
     @Override
@@ -79,44 +73,31 @@ public final class ExpeditionJournalScreen extends Screen {
             for (int i = 0; i < view.encounters().size(); i++) {
                 ExpeditionNetworkPayloads.EncounterView encounter = view.encounters().get(i);
                 UiLayoutMetrics.Rect row = encounterRow(i);
-                boolean enabled = ExpeditionMenuPolicy.canSelectEncounter(view, startPending);
-                UiVisualLanguage.FrameState state = !enabled
-                        ? UiVisualLanguage.FrameState.DISABLED
-                        : TurnboundMenuScreen.contains(row, mouseX, mouseY)
-                                ? UiVisualLanguage.FrameState.FOCUS
-                                : UiVisualLanguage.FrameState.IDLE;
-                UiVisualLanguage.frame(graphics, row.x(), row.y(), row.width(), row.height(), state);
+                UiVisualLanguage.frame(graphics, row.x(), row.y(), row.width(), row.height(), UiVisualLanguage.FrameState.IDLE);
                 Component label = Component.translatable(
                         "screen.turnbound_re.expedition.encounter_row",
                         encounterName(encounter.id()), encounter.difficulty(), encounter.enemyCount());
-                centered(graphics, row, label, UiVisualLanguage.textColor(state));
+                centered(graphics, row, label, UiVisualLanguage.TEXT_PRIMARY);
             }
         }
 
         UiLayoutMetrics.Rect party = partyButton();
-        UiVisualLanguage.FrameState partyState = startPending
-                ? UiVisualLanguage.FrameState.DISABLED
-                : TurnboundMenuScreen.contains(party, mouseX, mouseY)
-                        ? UiVisualLanguage.FrameState.FOCUS : UiVisualLanguage.FrameState.IDLE;
+        UiVisualLanguage.FrameState partyState = TurnboundMenuScreen.contains(party, mouseX, mouseY)
+                ? UiVisualLanguage.FrameState.FOCUS : UiVisualLanguage.FrameState.IDLE;
         UiVisualLanguage.frame(graphics, party.x(), party.y(), party.width(), party.height(), partyState);
         centered(graphics, party, Component.translatable("screen.turnbound_re.expedition.party"),
                 UiVisualLanguage.textColor(partyState));
 
         UiLayoutMetrics.Rect back = backButton();
-        UiVisualLanguage.FrameState backState = startPending
-                ? UiVisualLanguage.FrameState.DISABLED
-                : TurnboundMenuScreen.contains(back, mouseX, mouseY)
-                        ? UiVisualLanguage.FrameState.FOCUS : UiVisualLanguage.FrameState.IDLE;
+        UiVisualLanguage.FrameState backState = TurnboundMenuScreen.contains(back, mouseX, mouseY)
+                ? UiVisualLanguage.FrameState.FOCUS : UiVisualLanguage.FrameState.IDLEK
         UiVisualLanguage.frame(graphics, back.x(), back.y(), back.width(), back.height(), backState);
         centered(graphics, back, Component.translatable(parent == null ? "gui.done" : "gui.back"),
                 UiVisualLanguage.textColor(backState));
 
-        String visibleFeedback = feedback;
         if (view != null && view.party().isEmpty()) {
-            visibleFeedback = Component.translatable("screen.turnbound_re.expedition.empty_party").getString();
-        }
-        if (!visibleFeedback.isBlank()) {
-            graphics.text(this.font, Component.literal(fit(visibleFeedback, root.width() - UiLayoutMetrics.SPACE_16)),
+            String feedback = Component.translatable("screen.turnbound_re.expedition.empty_party").getString();
+            graphics.text(this.font, Component.literal(fit(feedback, root.width() - UiLayoutMetrics.SPACE_16)),
                     root.x() + UiLayoutMetrics.SPACE_8,
                     Math.min(this.height - this.font.lineHeight - UiLayoutMetrics.SPACE_4, back.bottom() + UiLayoutMetrics.SPACE_4),
                     UiVisualLanguage.TEXT_WARNING, true);
@@ -127,18 +108,9 @@ public final class ExpeditionJournalScreen extends Screen {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        if (startPending) return true;
         if (event.button() == 0) {
             int mouseX = (int) Math.floor(event.x());
             int mouseY = (int) Math.floor(event.y());
-            if (ExpeditionMenuPolicy.canSelectEncounter(view, false)) {
-                for (int i = 0; i < view.encounters().size(); i++) {
-                    if (TurnboundMenuScreen.contains(encounterRow(i), mouseX, mouseY)) {
-                        start(view.encounters().get(i).id());
-                        return true;
-                    }
-                }
-            }
             if (TurnboundMenuScreen.contains(partyButton(), mouseX, mouseY)) {
                 openParty();
                 return true;
@@ -154,15 +126,6 @@ public final class ExpeditionJournalScreen extends Screen {
     private void syncState() {
         seenGeneration = ExpeditionJournalClientState.generation();
         view = ExpeditionJournalClientState.view().orElse(null);
-        feedback = view == null ? "" : feedbackFor(view.resultCode());
-        if (view != null && view.resultCode() != null && !view.resultCode().isBlank()) startPending = false;
-    }
-
-    private void start(String encounterId) {
-        if (!ExpeditionMenuPolicy.canSelectEncounter(view, startPending)) return;
-        startPending = true;
-        feedback = "";
-        ClientPacketDistributor.sendToServer(ExpeditionNetworkPayloads.StartEncounterC2S.of(encounterId));
     }
 
     private void openParty() {
@@ -211,16 +174,6 @@ public final class ExpeditionJournalScreen extends Screen {
         int colon = id == null ? -1 : id.indexOf(':');
         String path = colon >= 0 ? id.substring(colon + 1) : id;
         return Component.translatable("encounter.turnbound_re." + path + ".name");
-    }
-
-    private String feedbackFor(String code) {
-        if (code == null || code.isBlank()) return "";
-        return switch (code) {
-            case "ALREADY_IN_BATTLE" -> Component.translatable("screen.turnbound_re.expedition.already_in_battle").getString();
-            case "EMPTY_PARTY", "INVALID_PARTY" -> Component.translatable("screen.turnbound_re.expedition.empty_party").getString();
-            case "INVALID_ENCOUNTER" -> Component.translatable("screen.turnbound_re.expedition.invalid_encounter").getString();
-            default -> Component.translatable("screen.turnbound_re.expedition.server_rejected").getString();
-        };
     }
 
     private String fit(String text, int maxWidth) {

@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/** Shared server-authoritative authored encounter launch path for menus and world anchors. */
+/** Server-authoritative authored encounter launch path for validated in-world anchors. */
 final class EncounterLaunchService {
     record Result(
             boolean accepted,
@@ -41,22 +41,10 @@ final class EncounterLaunchService {
 
     private EncounterLaunchService() {}
 
-    static Result tryLaunch(ServerPlayer player, String encounterId) {
-        return tryLaunch(player, encounterId, null);
-    }
-
     static Result tryLaunchFromAnchor(ServerPlayer player, WorldEncounterAnchorResolver.Resolved resolved) {
         if (resolved == null) return Result.rejected("ANCHOR_UNAVAILABLE", "");
-        return tryLaunch(player, resolved.encounter().id(), resolved);
-    }
-
-    private static Result tryLaunch(
-            ServerPlayer player,
-            String encounterId,
-            WorldEncounterAnchorResolver.Resolved worldAnchor
-    ) {
         if (player == null) return Result.rejected("INVALID_PLAYER", "");
-        if (encounterId == null || encounterId.isBlank()) return Result.rejected("INVALID_ENCOUNTER", "");
+
         MinecraftServer server = player.level().getServer();
         if (server == null) return Result.rejected("SERVER_UNAVAILABLE", "");
         if (TurnboundRe.BATTLES.battleForController(player.getUUID()).isPresent()) {
@@ -64,13 +52,14 @@ final class EncounterLaunchService {
         }
 
         DefinitionRegistry definitions = TurnboundRe.DEFINITIONS.snapshot().registry();
+        String encounterId = resolved.encounter().id();
         if (!definitions.encounters().containsKey(encounterId)) {
             return Result.rejected("INVALID_ENCOUNTER", encounterId);
         }
 
         PlayerProgress progress = TurnboundRe.PROGRESS.getOrCreate(server, player.getUUID());
-        if (worldAnchor != null && WorldEncounterAnchorAccessPolicy.cleared(progress, worldAnchor)) {
-            return Result.rejected("ANCHOR_CLEARED", worldAnchor.anchor().locator());
+        if (WorldEncounterAnchorAccessPolicy.cleared(progress, resolved)) {
+            return Result.rejected("ANCHOR_CLEARED", resolved.anchor().locator());
         }
         if (progress.party().isEmpty()) return Result.rejected("EMPTY_PARTY", "");
 
@@ -86,17 +75,14 @@ final class EncounterLaunchService {
                 ^ player.getUUID().getMostSignificantBits()
                 ^ Long.rotateLeft(player.getUUID().getLeastSignificantBits(), 21)
                 ^ Integer.toUnsignedLong(encounterId.hashCode());
-        AuthoredEncounterLauncher.Launch launch = worldAnchor == null
-                ? TurnboundRe.AUTHORED_ENCOUNTERS.openVirtual(
-                        encounterId, player.getUUID(), party, battleId, battleSeed)
-                : TurnboundRe.AUTHORED_ENCOUNTERS.openVirtualFromAnchor(
-                        encounterId,
-                        player.getUUID(),
-                        party,
-                        battleId,
-                        battleSeed,
-                        worldAnchor.anchor().locator(),
-                        WorldEncounterAnchorAccessPolicy.repeatable(worldAnchor));
+        AuthoredEncounterLauncher.Launch launch = TurnboundRe.AUTHORED_ENCOUNTERS.openVirtualFromAnchor(
+                encounterId,
+                player.getUUID(),
+                party,
+                battleId,
+                battleSeed,
+                resolved.anchor().locator(),
+                WorldEncounterAnchorAccessPolicy.repeatable(resolved));
         EnemyTurnService.resolveUntilPlayerOrTerminal(TurnboundRe.BATTLES, launch.battle());
         return Result.accepted(launch, definitions);
     }

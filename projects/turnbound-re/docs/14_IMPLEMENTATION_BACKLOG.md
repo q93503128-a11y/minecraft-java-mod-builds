@@ -81,6 +81,13 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 - logical battle-stage participant rendering.
 - data-driven action timeline, impact/travel accent.
 - Skeleton / Enderman 대표 3D character presentation pass.
+- authoritative previous/final snapshot만 사용하는 impact-synchronized HP/Poise/EXPOSED/defeat presentation projection.
+- WINDUP 이전값 유지 → IMPACT aggregate easing → RECOVERY exact final.
+- healing/multi-target/reset/interruption 계약 자동 검증.
+
+마지막 impact sync 코드 기준:
+- commit `41397f92b501820f519de56712663cba6fc62db1`
+- Build turnbound-re #212 / run `34732981207`: Java 25 / clean build / 전체 JUnit / JAR verify / artifact upload PASS.
 
 남은 gate:
 - 실제 Minecraft screenshot quality.
@@ -91,14 +98,15 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 - representative 3D model pose/centering/실제 체감.
 - Skeleton aim / Enderman phase가 실제 플레이에서 충분히 읽히는지 검증.
 
-**중요:** screenshot/reference 비교 전 M5 production visual PASS를 선언하지 않는다.
+**중요:** screenshot/reference 비교 전 M5 production visual PASS를 선언하지 않는다. 사용자의 현재 방침에 따라 중간 실플레이 테스트를 요구하지 않고, 통합 테스트 가치가 있는 완성 구간에서 한 번에 검증한다.
 
 ## M6 — World & Life Loop
-상태: **IN PROGRESS — AUTHORED ENCOUNTER ENTRY/LIFECYCLE AUTO VERIFIED**
+상태: **IN PROGRESS — WORLD-FIRST ENCOUNTER LIFECYCLE AUTO VERIFIED / LIFE LOOP INTEGRATION NEXT**
 
 완료:
-- authored Encounter를 메뉴/월드 anchor에서 여는 server-authoritative 진입 경로.
+- authored Encounter의 production 진입은 world anchor가 소유하는 server-authoritative 경로로 수렴.
 - world anchor locator/dimension/entity/range/encounter identity 최종 서버 재검증.
+- Expedition Journal은 authored route/reference 정보만 표시하고 encounter id만으로 전투를 직접 여는 C2S 우회 경로 제거.
 - anchor/Encounter 양쪽 `repeatable` 계약.
 - 비반복 anchor 승리 시 reward + completion을 하나의 immutable save write로 정산.
 - `PlayerProgress` schema 2의 `completedEncounterLocators`.
@@ -110,12 +118,13 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 
 남음:
 - authored hub/region prototype의 실제 월드 배치와 시각 gate.
-- mining/farming/fishing/crafting 산출물을 성장 루프에 연결.
+- resource node 기능 계약과 실제 채집 동선.
+- mining/farming/fishing/crafting 산출물을 장비/지원 아이템/전투 준비/성장 루프에 연결.
 - fast travel/exploration/quest hooks.
 - production non-repeatable anchor를 실제 콘텐츠로 배치한 뒤 playtest.
 
 ### PASS
-각 활동의 산출이 성장 루프에 실제 사용되고 막힌 경로가 없으며, fixed-world encounter lifecycle이 실제 Minecraft 플레이에서도 의도대로 작동해야 한다.
+각 활동의 산출이 다음 시스템에 실제 사용되고, 메뉴 우회나 막힌 경로 없이 fixed-world loop가 성립하며, 실제 Minecraft 플레이에서도 의도대로 작동해야 한다.
 
 ## M7 — Full Vanilla Roster
 ### 작업
@@ -137,37 +146,21 @@ eligible 전수 PLAYABLE 이상, 미분류 0.
 
 ## 지금 바로 할 일 — 2026-09-13 최신
 
-마지막 TURNBOUND 코드 단위는 `turnbound-re: persist one-time world encounter clears`이며 Build turnbound-re #209가 clean build/JUnit/JAR verify까지 성공했다.
+impact/meter synchronization은 자동 계약과 Build #212까지 닫혔다.
 
-다음 코드 작업은 새 generic UI나 무작정 roster VFX 확장이 아니라 **authoritative action impact와 HP/Poise/EXPOSED/defeat 표시 타이밍 동기화**다.
+현재 우선순위는 **M6 world-first loop를 실제 생활/성장 루프로 연결하는 것**이다.
 
-현재 문제:
-- 서버 snapshot은 행동 해결 직후 최종 HP/Poise를 authoritative하게 전달한다.
-- client action presentation은 WINDUP → IMPACT → RECOVERY로 시각 타이밍을 늦춘다.
-- 따라서 실제 타격 연출보다 HP/Poise bar 또는 EXPOSED/defeat 상태가 먼저 바뀌어 보일 수 있다.
+순서:
+1. 구 Expedition Journal encounter-id 직접 시작 우회를 제거하고 world anchor 단일 production entry를 고정한다.
+2. `RegionDefinition`/locator 철학을 유지한 resource node 기능 계약을 만든다. production 좌표/미술은 World Asset Gate가 소유한다.
+3. 채광/농사/낚시/제작을 각각 독립 미니게임/재화로 늘리지 않고 Minecraft material → 장비/지원 아이템/전투 준비/접근 해금으로 이어지는 공통 sink를 먼저 만든다.
+4. authored HUB_01 ↔ REGION_01의 실제 prototype 동선을 만든다.
+5. fast travel / exploration / quest는 이 루프에 필요한 최소 hook부터 연결한다.
 
-구현 원칙:
-1. 전투 결과를 client가 예측하지 않는다.
-2. 이미 받은 이전/최종 authoritative snapshot만 presentation 용도로 사용한다.
-3. WINDUP 동안 이전 authoritative 표시값 유지.
-4. IMPACT에서 이전→최종 값을 짧게 easing.
-5. RECOVERY 끝에서는 최종 authoritative 값과 정확히 일치.
-6. heal / Poise damage / Poise break / EXPOSED / defeat도 같은 타이밍 언어를 따른다.
-7. multi-hit은 서버가 제공하지 않은 hit별 수치를 창작하지 않는다. aggregate previous→final만 안전하게 연출한다.
-8. battleId/revision/cue 변경 시 stale staged state를 즉시 reset한다.
-9. non-target/no-cue participant는 불필요하게 지연하지 않는다.
+금지:
+- 재료를 이유 없이 Coin/Essence로 환전해 모든 생활 활동을 같은 숫자로 평탄화.
+- 새 활동마다 별도 통화/메뉴를 추가.
+- 실제 월드 진입을 우회하는 encounter 선택 메뉴 부활.
+- World Asset Gate 없이 production 건축/외형을 즉흥 확정.
 
-필수 테스트:
-- damage.
-- healing.
-- Poise damage.
-- Poise break + EXPOSED.
-- defeat.
-- no cue / non-target.
-- multi-target.
-- battle/revision reset.
-- recovery exact final.
-
-이 코드는 전투 authority를 바꾸지 않는 presentation-only 수정이어야 한다. 의미 있는 한 단위 완료 후 관련 test + Build turnbound-re 1회만 수행한다.
-
-그 다음에는 실제 screenshot/playtest 증거가 들어오기 전 representative visual styling을 무작정 확대하지 않는다.
+자동 코드 검증은 의미 있는 단위마다 수행하되, 사용자에게 중간 수동 테스트를 요구하지 않는다. 실제 screenshot/playtest 및 M2/M4 수동 gate는 통합 테스트 가치가 있는 완성 구간에서 함께 수행한다.
