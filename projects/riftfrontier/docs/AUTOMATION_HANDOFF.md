@@ -2,58 +2,48 @@
 
 Recovery aid only. Current GitHub `main` plus canonical project/design documents remain authoritative.
 
-## Last recovered baseline
+## Current recovered state
 
-- Run-start remote `main`: `0c46050d7eb8f720baeacda67fcc5f6307a5b1e0`.
-- Previous code `Build Riftfrontier` run `34572661455`, HEAD `99df3a8acc48df4b22ed5110e84ae0283a61b120`: final `SUCCESS`.
-- Previous handoff descendant `Build Riftfrontier` run `34572773683`, HEAD `0c46050d7eb8f720baeacda67fcc5f6307a5b1e0`: final `SUCCESS`.
-- No newly approved Region 01 final boss source/profile/assets, production player ItemStack provisioning/control mapping, shape-specific hit geometry, damage/range/resource policy, or final presentation input was found. None was invented.
+- The M2 expedition/runtime/restart authority work is already closed enough for this stage; do not repeat it without a demonstrated regression.
+- M3 player combat already has the two production weapon-family graph, server-owned ItemStack loadout component, authenticated move-id-only serverbound intent, server runtime authority/lifecycle fencing, and client-side action-slot sender.
+- `RiftfrontierClientCombatInput` already resolves authored move slots from the locally published graph and sends `PlayerWeaponMoveIntentPayload(moveId)` only.
+- `RiftfrontierClientKeyMappings` already exposes two configurable combat actions. They intentionally remain unbound by default because no final control layout has been approved; do not invent a final key layout merely to make the controls look complete.
+- Region 01 first-boss geometry/rig direction remains the selected Quaternius CC0 `Dragon Evolved` derivation source feeding Riftfrontier's custom skinned-mesh rendering path. Do not restart candidate search or add GeckoLib merely to duplicate the working custom path.
+- Production hit geometry, damage/range/resource policy, final weapon provisioning/presentation, final boss material/VFX/sound, and human field balance/readability remain evidence-gated.
 
-## Completed in this batch
+## This run
 
-M3 client boss-render connection-epoch retirement fence:
+- Re-read the current project canon and quality rules instead of relying on the older handoff.
+- Confirmed the previous handoff was stale about concrete client combat controls: client input and key mapping code already exist.
+- Removed obsolete `BossPresentationGeckoLibResourceId`: the project has no GeckoLib dependency, the current Region 01 production path uses the custom skinned-mesh renderer, and repository reference searches found no consumer of the adapter.
+- Added `assets/riftfrontier/lang/ko_kr.json` for the already-existing player-facing mod/combat key strings. This changes localization only; it does not invent UI layout or final control design.
+- No combat balance, hit shape, control default, model, material, VFX, sound, or final art direction was invented.
 
-- Code/test HEAD before handoff: `53183214b210357dc7536258cad74fd0aedeced2`.
-- Audited the next retained client capability after the actor-leave tombstone work.
-- Found a concrete production lifecycle gap: logout cleared `BossPresentationClientState`, but the immutable prepared geometry/animation/material and `Region01BossClientRenderRuntime` publication could survive because a client resource reload is not guaranteed between server connections.
-- A later connection could therefore accept fresh server semantics and feed them through a renderer capability reviewed/prepared against the previous connection epoch.
-- `ClientPlayerNetworkEvent.LoggingOut` now retires both semantic ordering state and the full boss-presentation render/resource capability via `RiftfrontierClientResources.retireBossPresentationConnectionEpoch()`.
-- Connection retirement clears prepared material, animation and geometry and invalidates `Region01BossClientRenderRuntime`; the next connection cannot reuse a previous publication unless a legitimate client resource preparation path establishes a new one.
-- Entity-leave UUID/tick tombstones remain unchanged and are still actor-local; only disconnect retires the whole connection epoch.
-- Expanded pure-Java lifecycle source contract so disconnect must clear both semantic cache and renderer-visible publication.
-- No balance, hit geometry, damage/range/resource policy, controls, ItemStack provisioning, model, animation, VFX or sound was invented.
+## Verification status
 
-## Changed systems/files
-
-- `src/main/java/kr/moonseungjun/riftfrontier/client/RiftfrontierClientNetworking.java`
-- `src/main/java/kr/moonseungjun/riftfrontier/client/RiftfrontierClientResources.java`
-- `src/test/java/kr/moonseungjun/riftfrontier/client/RiftfrontierClientPresentationLifecycleTest.java`
-- `docs/AUTOMATION_HANDOFF.md`
-
-## Verification
-
-- Previous runs `34572661455` and `34572773683`: final `SUCCESS`.
-- Current code/test `Build Riftfrontier` run `34577042551`, HEAD `53183214b210357dc7536258cad74fd0aedeced2`: `IN PROGRESS` at handoff write. Checkout and Java setup are confirmed `SUCCESS`; Gradle setup is in progress. Toolchain, asset tests, JUnit/clean build, native GameTest, dedicated-server smoke, Xvfb client smoke, executable JAR inspection, reports and artifacts are not yet complete and must not be claimed successful until the run or a descendant finishes.
-- Local Gradle: NOT RUN in this automation environment; executable validation is delegated to repository CI.
-- Human field play, multiplayer reconnect/latency feel, concrete player controls, production boss/player hit geometry/damage/resource policy and final player/boss presentation: NOT TESTED / NOT APPROVED.
+- Canon/source reviewed against current main: YES.
+- Obsolete adapter reference search: performed before deletion; no consumer found, and `build.gradle` contains no GeckoLib dependency.
+- Korean language resource structure mirrors the existing `en_us.json` keys.
+- Local Gradle/build: NOT RUN in this automation environment.
+- Current post-change GitHub Actions result: not yet confirmed in this handoff. Do not claim BUILD VERIFIED until a Riftfrontier workflow for the descendant commit finishes successfully.
+- Human field play: NOT TESTED.
+- Multiplayer field play: NOT TESTED.
 
 ## Do not repeat or revert
 
-- M2 persistence/restart/Region 01 technical-proxy lifecycle and owner attribution work is DONE.
-- Boss presentation semantic capability and network payload plumbing are DONE; do not expand presentation without legitimate approved input.
-- Server boss presentation delivery remains exact-live-entity/world/current-tick and published-content-generation fenced.
-- Client actor leave preserves UUID + ordering-watermark tombstones; delayed same/older pre-leave packets must never resurrect retired presentation.
-- Client disconnect now also retires prepared/published boss-render capabilities; never let renderer publication cross a server connection epoch without fresh legitimate preparation.
-- Player `weapon_family` / `weapon_module` schema, two-family production graph, server-owned ItemStack loadout component and move-id-only serverbound intent are DONE.
-- Production player combat remains authenticated `ServerPlayer`-only, published-generation + exact actor-instance + exact server-level/dimension/loadout scoped, process-local state cleared at server stop, and stale callbacks cannot replace/UUID-wide-clear a successor session.
-- Boss validated runtimes remain generation-bound, exact entity-instance + dimension lifetime-bound, singleton per live owner, entity-leave/server-stop retired, and reject `ServerPlayer` ownership.
-- Shared target admission and attack-clock boundaries are already closed.
-- Provisional attack ticks are not final balance. Do not invent blocked geometry/damage/range/resource/control/art values.
+- Do not recreate a second client move-intent sender or a second key-mapping layer.
+- Do not bind arbitrary default keys until an approved control layout exists.
+- Do not reintroduce the removed GeckoLib resource-id adapter unless a later selected asset genuinely requires GeckoLib and the dependency/renderer decision is explicitly changed.
+- Do not replace the selected Region 01 boss source simply because another asset is easier to integrate.
+- Do not add more player/boss generation, reconnect, owner, exact-instance, target-admission, attack-clock, presentation-world/tick/content-generation fences without a concrete regression.
+- Provisional attack ticks are not final balance.
 
-## Exact next start point
+## Exact next development boundary
 
-1. Re-check current remote `main` and final status of `Build Riftfrontier` run `34577042551` plus the handoff descendant CI. If failed, fix the first actual failing gate without weakening connection-epoch retirement or earlier authority fences.
-2. Re-check approved Region 01 boss/profile/assets and player ItemStack provisioning/control input. Use existing production gates only if legitimate new input exists.
-3. If still absent and CI is green, do not repeat player reachability/generation/lifecycle/reconnect/exact-instance/loadout/target/attack-clock, boss owner/generation/server-lifetime/presentation world/tick/content-generation, client actor-leave tombstone, or client connection-epoch render retirement work.
-4. Audit the next demonstrable M3 retained capability/state handoff with real production reachability. Prefer a concrete renderer/resource publication or server→client lifecycle transition only if stale authority can actually cross it; do not add speculative protocol infrastructure.
-5. Keep production hit geometry, damage/range/resource, timing tuning, final controls/ItemStack provisioning/model/animation/VFX/sound and multiplayer feel blocked on evidence/approval.
+1. Check the descendant `Build Riftfrontier` workflow. If it fails, fix the first real regression caused by this cleanup without weakening existing authority contracts.
+2. Keep work centered on a genuinely playable M3 slice rather than more backend fencing.
+3. Re-check whether a legitimate production ItemStack provisioning path now exists. If absent, implement the smallest player-testable provisioning path that preserves server-owned loadout authority; do not fake a finished weapon UI or final art.
+4. Do not invent final control defaults. Existing unbound action slots can be assigned through Minecraft Controls for field testing until the project has an approved mapping.
+5. Bind production hit geometry/damage only after an explicit evidence-backed gate; keep provisional values data-driven and clearly provisional where a test slice requires them.
+6. Continue the selected Region 01 boss through actual material/animation/VFX/sound/readability work on the existing custom renderer, using external references/assets and recorded provenance rather than improvised AI art direction.
+7. When a playable checkpoint is available, produce exact Minecraft test commands/JAR/reproduction steps and request human field-play evidence. Never promote CI/client smoke to PLAYTESTED.
