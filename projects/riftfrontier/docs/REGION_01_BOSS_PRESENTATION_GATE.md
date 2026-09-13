@@ -1,14 +1,31 @@
 # Region 01 Boss Presentation Gate
 
-Status: **REFERENCE / ASSET-SELECTION GATE LOCKED — FINAL PRODUCTION ASSETS NOT YET SELECTED**
+Status: **GEOMETRY/RIG + CUSTOM RENDER PATH SELECTED — FINAL MATERIAL / ATTACK SOURCE BINDINGS / VFX / SOUND STILL GATED**
 
-This document is the design gate between the verified M3 presentation runtime and any real Region 01 boss model, animation, VFX, sound, or renderer integration. It intentionally does not invent final art.
+This document is the current design gate between the verified M3 presentation runtime and the remaining real Region 01 boss presentation work. It must not be read as a reason to restart model selection or renderer research that has already been closed.
 
-## 1. Why this gate exists
+## 1. Current selected direction
 
-The M3 runtime can already express authoritative `telegraph -> ACTIVE -> recovery` semantics, resolve logical presentation keys, validate selected physical assets, publish them atomically on client resource reload, and refuse stale content/asset generations. That architecture must now be fed by a coherent boss presentation instead of more plumbing.
+The first Region 01 boss geometry/rig source is the Quaternius CC0 **Dragon Evolved** derivation recorded in `docs/THIRD_PARTY_ASSETS.md` and `assets/sources/region_01_boss_dragon_evolved.acceptance.json`.
 
-A production asset is accepted only when it improves combat readability and belongs to the Region 01 package. License compatibility alone is insufficient.
+The production rendering direction is Riftfrontier's existing native custom skinned-mesh importer/renderer. GeckoLib is **not** on the current first-boss critical path and must not be added merely to duplicate this working path.
+
+The accepted art-neutral runtime resource is:
+
+```text
+riftfrontier:boss_presentation/region_01/dragon_evolved.sanitized.v1.gltf
+```
+
+The original source `Atlas` material/texture was deliberately stripped and is **not approved as final Region 01 art**.
+
+What remains unresolved is not another model search. The open production gates are:
+
+- explicit gameplay-semantic source-animation binding;
+- final material/texture treatment;
+- VFX;
+- sound;
+- Minecraft scale/hit-geometry evidence;
+- human combat readability and field-play.
 
 ## 2. Combat identity requirements
 
@@ -24,21 +41,21 @@ Required combat language:
 - every damaging action must remain driven by the authoritative `AttackPattern` timing source;
 - animation, VFX and sound may emphasize timing but may not create a second independent hit clock.
 
-This locks encounter communication, not species, name, palette, anatomy, faction origin, or final lore.
+The production semantic content already implements the three required roles and two-phase composition. This gate now governs how those roles become readable physical presentation.
 
 ## 3. Silhouette and Minecraft-fit requirements
 
-A candidate model must pass all of the following before bundling:
+The selected Dragon derivation must still pass these conditions in actual Minecraft field use before encounter promotion:
 
 1. **Readable facing** — front/back and attack-bearing side remain obvious at typical third-person combat distance.
-2. **Attack-bearing mass** — limbs, weapon, horn, tail, body mass, or equivalent geometry that performs a hit must visually support the real hit volume.
-3. **Telegraph headroom** — the rig can create materially different anticipation, active, and recovery poses instead of only translating the whole body.
-4. **Minecraft scale fit** — dimensions can be adapted without becoming a tiny low-detail toy or a screen-filling model whose weak points and feet disappear.
-5. **Texture/style fit** — the asset can be brought into Riftfrontier's eventual Region 01 visual language without simply importing an unrelated low-poly game aesthetic.
-6. **Variant stability** — base/phase variants can share a stable skeleton or deterministic resolver contract.
-7. **Performance fit** — geometry, material count and animation complexity are reasonable for a boss plus surrounding encounter actors.
+2. **Attack-bearing mass** — the limb/head/body motion performing a hit visually supports the real hit volume.
+3. **Telegraph headroom** — anticipation, ACTIVE motion and recovery are materially distinguishable rather than only whole-body translation.
+4. **Minecraft scale fit** — the boss is neither a tiny low-detail toy nor a screen-filling shape whose feet/weak points disappear.
+5. **Texture/style fit** — final material treatment coheres with Region 01 and Minecraft rather than importing an unrelated low-poly palette unchanged.
+6. **Variant stability** — phase/presentation variants retain the accepted skeleton and deterministic resolver contract.
+7. **Performance fit** — final material/VFX/animation complexity stays reasonable alongside encounter actors.
 
-No model passes merely because it is animated or free.
+Geometry selection is closed unless actual Minecraft evidence proves that this accepted direction cannot satisfy these requirements.
 
 ## 4. Animation acceptance matrix
 
@@ -59,6 +76,10 @@ Minimum production clips or equivalent state-driven poses:
 
 One generic `attack` animation copied across mechanically different attacks is not production-complete.
 
+The source-motion review has directly observed `Punch` and `Headbutt` and exact source phase windows exist for those reviewed clips. That evidence does **not** authorize `Punch -> committed_strike`, `Headbutt -> line_displacement`, or source ACTION -> server ACTIVE. A gameplay-role binding must explicitly review the observed motion against the intended authoritative attack.
+
+Arena pressure currently has no approved source-motion mapping and must remain unresolved until a compatible, legally usable/authored motion is reviewed.
+
 ## 5. VFX and sound contract
 
 VFX and sound are timing channels, not decoration.
@@ -70,70 +91,69 @@ VFX and sound are timing channels, not decoration.
 - Camera shake, flash, bloom, particles and screen effects are optional and must not become the only source of readability.
 - Color-only telegraphs are insufficient; shape, motion, placement or sound must provide redundant information.
 
-## 6. External asset survey — 2026-09-09
+No final VFX or sound asset is selected merely because a logical presentation key now exists.
 
-### Quaternius — Ultimate Monsters
+## 6. Provenance and physical asset status
 
-Source: https://quaternius.com/packs/ultimatemonsters.html
+### Quaternius — Dragon Evolved
 
-Observed source facts:
+- Status: **SELECTED** for Region 01 first-boss geometry/rig derivation.
+- Author: Quaternius.
+- Family source: https://quaternius.com/packs/ultimatemonsters.html
+- License: CC0 1.0 / public-domain dedication, with exact source/hash/provenance recorded in `docs/THIRD_PARTY_ASSETS.md`.
+- Runtime use: art-neutral sanitized glTF consumed by Riftfrontier's custom skinned-mesh pipeline.
+- Source `Atlas`: intentionally excluded from accepted production art.
+- Source motion inventory: retained, but gameplay-semantic mappings remain separately review-gated.
 
-- 50 monster models;
-- animated;
-- FBX / OBJ / Blend / glTF distributions;
-- page declares CC0 and permits personal/commercial use.
+Rejected/alternative Quaternius candidates remain historical evidence in `REGION_01_BOSS_CANDIDATE_AUDIT.md`; do not reopen that search without evidence that Dragon Evolved fails the Minecraft field gate.
 
-Decision: **LICENSE-ELIGIBLE SOURCE FAMILY, NOT SELECTED AS FINAL BOSS ASSET.**
+### GeckoLib
 
-Reason: the pack is valuable as a legal animated source and rig/conversion study, but selecting one merely because it is CC0 would violate the project quality gate. Exact silhouette, texture language, attack-bearing rig, Minecraft scale and Region 01 identity still need visual inspection in Blockbench/Minecraft before a production model can be accepted.
+GeckoLib was previously researched as a technology candidate. That research is now superseded for the first-boss path by the verified custom Riftfrontier skinned-mesh renderer. Do not add GeckoLib solely to re-express the accepted Dragon geometry/rig path.
 
-### Poly Pizza mirrors / individual Quaternius monsters
+## 7. Logical profile versus selected physical assets
 
-Examples inspected include public-domain/CC0 animated entries such as `Blue Demon` and `Mushroom King`.
+The packaged logical profile `region_01_first_apex.json` now exists and covers the production three attacks across TELEGRAPH / ACTIVE / RECOVERY.
 
-Decision: **DISCOVERY/PROVENANCE CROSS-CHECK ONLY, NOT SELECTED.**
+Those model/animation/VFX/sound IDs are logical contract keys. They are **not** evidence that final physical resources exist.
 
-Reason: individual mirror pages can help identify source assets, but the immutable original author/source should be preferred when bundling. No individual model has yet passed the Riftfrontier silhouette and presentation matrix.
+`ContentServerReloadListener` intentionally stages the logical boss presentation instead of publishing it into the authoritative runtime while no real `presentation_assets` manifest exists. Do not create placeholder physical paths or a fake manifest to bypass this boundary.
 
-### GeckoLib 5
+A real `presentation_assets` manifest becomes appropriate only after a coherent set of actual production resources has been selected, provenance-reviewed and present in the repository.
 
-Source: https://wiki.geckolib.com/docs/geckolib5/
+## 8. Field-test boundary
 
-Observed source fact: GeckoLib's current support table lists Minecraft 26.2 with GeckoLib 5.5.1 and active support.
+A development-only boss combat harness now exists so the authored server semantics can be exercised before production encounter promotion:
 
-Decision: **TECHNOLOGY CANDIDATE APPROVED FOR THE NEXT ASSET-INTEGRATION SPIKE, NOT YET A REQUIRED DEPENDENCY.**
+```text
+/riftfrontier boss fieldtest spawn
+/riftfrontier boss fieldtest phase1
+/riftfrontier boss fieldtest phase2
+```
 
-The dependency is added only after an accepted production animated asset demonstrates that vanilla animation/rendering would materially reduce quality or maintainability.
+Its neutral AABB and `1.0F` damage are diagnostic only. It does not prove final attack geometry or balance, and it does not authorize adding the boss to Region 01 production encounter composition.
 
-## 7. Asset-selection decision
+The exact human procedure is `docs/M3_REGION01_BOSS_FIELD_PLAY.md`.
 
-No production Region 01 boss model, texture, animation, VFX, or sound asset is selected in this gate.
+## 9. Exact next implementation boundary
 
-This is an intentional **NO-GO on premature bundling**, not a blocked task:
+1. Run/record human field evidence for the development boss harness when a person is available; do not invent `PLAYTESTED` or `MULTIPLAYER TESTED` results.
+2. Explicitly review whether observed `Punch` and/or `Headbutt` motion truly fits a production gameplay role before authoring source bindings.
+3. Resolve arena-pressure motion with a reviewed legal/authored source compatible with the selected rig direction; fail closed otherwise.
+4. Select a real final material/texture direction with documented commercial-game/major-mod visual references plus legal provenance for any external bytes. Do not invent an arbitrary palette and do not restore stripped Atlas by default.
+5. Select or author VFX/sound under the same readability/provenance constraints.
+6. Author the first real `presentation_assets` manifest only after all referenced physical resources actually exist and pass review.
+7. Publish through the existing validated reload/render pipeline and verify resource reload, animation timing, material rendering, VFX/sound timing and Minecraft readability.
+8. Only then consider production Region 01 encounter insertion and final attack geometry/damage tuning.
 
-- a legally usable animated source family has been identified;
-- technical animation compatibility has been re-verified;
-- exact acceptance criteria are now locked;
-- the project must next inspect real candidate geometry/animations visually before committing bytes to the repository.
+## 10. Explicitly still NOT TESTED
 
-Do not create placeholder production files or a fake `presentation_assets` manifest to bypass this decision.
-
-## 8. Exact next implementation boundary
-
-1. Inspect a bounded set of real candidate models/rigs from license-eligible sources in Blockbench or an equivalent viewer.
-2. Record candidate name, immutable/original source, license, formats, skeleton/animation inventory, approximate bounds/poly/material cost, and which required semantic clips can be authored without breaking the rig.
-3. Reject candidates that fail silhouette, style, timing, scale, or performance requirements even if licensing is perfect.
-4. Once one candidate is accepted, record it in `THIRD_PARTY_ASSETS.md` as `SELECTED`, preserve original provenance, and add only the actually used source/derived files permitted by that license.
-5. Re-verify GeckoLib 5.5.1 coordinates for NeoForge 26.2 at the moment of dependency addition.
-6. Author the first real selected-asset manifest only after the physical files exist.
-7. Connect `BossPresentationRenderResolver` to the chosen renderer and validate animation/VFX/sound against authoritative telegraph/ACTIVE/recovery hit windows in Minecraft.
-
-## 9. Explicitly still NOT TESTED
-
-- final Region 01 boss silhouette in Minecraft;
-- final model scale/hitbox alignment;
-- actual production animation playback;
+- final Region 01 boss material/texture in Minecraft;
+- final boss scale/hitbox alignment;
+- approved production gameplay-source animation playback;
+- arena-pressure motion;
 - VFX and sound timing;
-- renderer integration;
-- resource-pack reload with real production boss assets;
-- human combat readability and field-play.
+- full published presentation manifest reload;
+- human combat readability;
+- human boss combat field play;
+- multiplayer boss combat field play.
