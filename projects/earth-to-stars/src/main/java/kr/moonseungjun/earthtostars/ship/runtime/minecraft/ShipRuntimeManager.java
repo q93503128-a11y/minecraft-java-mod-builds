@@ -93,7 +93,10 @@ public final class ShipRuntimeManager {
         if (entry == null) {
             return LaunchDeploymentResult.DEPLOYMENT_FAILED;
         }
-        boardAndControl(player, entry.exterior(), tick);
+        if (!boardAndControl(player, entry.exterior(), tick)) {
+            rollbackFailedDeployment(level.getServer(), entry);
+            return LaunchDeploymentResult.CONTROL_UNAVAILABLE;
+        }
         return LaunchDeploymentResult.DEPLOYED;
     }
 
@@ -145,7 +148,12 @@ public final class ShipRuntimeManager {
         }
 
         boolean newlyMounted = player.getVehicle() != exterior;
-        if (newlyMounted && !player.startRiding(exterior)) {
+        // Minecraft 26.2 rejects non-serializable vehicle types before it even
+        // considers the force flag. SHIP_EXTERIOR is therefore a serializable EntityType,
+        // while ShipExteriorEntity.shouldBeSaved() keeps this runtime shell ephemeral.
+        // Authorization, distance and single-seat occupancy have already been checked here,
+        // so force mounting is safe and avoids sneak/boarding-cooldown false negatives.
+        if (newlyMounted && !player.startRiding(exterior, true, true)) {
             return false;
         }
         if (!grantControl(player, entry, tick)) {
@@ -428,6 +436,22 @@ public final class ShipRuntimeManager {
         return true;
     }
 
+    private static void rollbackFailedDeployment(MinecraftServer server, Entry entry) {
+        int entityId = entry.exterior().getId();
+        ShipId shipId = entry.runtime().ship().shipId();
+        ENTRIES.remove(entityId);
+        discardPair(entry);
+        REPOSITORY.remove(shipId);
+        ShipSystemsManager.removeShip(shipId);
+        ShipTurretManager.removeShip(shipId);
+        OrbitalMissionManager.removeShip(shipId);
+        LAST_READINESS_WARNING.remove(shipId);
+        ShipSavedData.get(server).remove(shipId);
+        ShipSystemsSavedData.get(server).remove(shipId);
+        InteriorSavedData.get(server).release(shipId);
+        ShipSystemsManager.flush(server);
+    }
+
     public static void prepareForShutdown() {
         for (Entry entry : ENTRIES.values()) {
             SpaceVisualFactory.discard(entry.visual());
@@ -538,7 +562,7 @@ public final class ShipRuntimeManager {
                 TeleportTransition.DO_NOTHING
         ));
         if (teleported == null) {
-            pilot.startRiding(entry.exterior());
+            pilot.startRiding(entry.exterior(), true, true);
             grantControl(pilot, entry, origin.getGameTime());
             return;
         }
@@ -549,7 +573,7 @@ public final class ShipRuntimeManager {
                 (float) destination.yawDegrees(),
                 (float) destination.pitchDegrees()
         );
-        if (nextPair == null || !teleported.startRiding(nextPair.exterior())) {
+        if (nextPair == null || !teleported.startRiding(nextPair.exterior(), true, true)) {
             if (nextPair != null) {
                 discardPair(nextPair);
             }
@@ -597,7 +621,7 @@ public final class ShipRuntimeManager {
                 Set.of(),
                 TeleportTransition.DO_NOTHING
         ));
-        if (returned != null && returned.startRiding(entry.exterior())) {
+        if (returned != null && returned.startRiding(entry.exterior(), true, true)) {
             grantControl(returned, entry, origin.getGameTime());
         }
     }

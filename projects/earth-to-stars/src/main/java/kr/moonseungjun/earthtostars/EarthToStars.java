@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 @Mod(EarthToStars.MOD_ID)
 public final class EarthToStars {
     public static final String MOD_ID = "earth_to_stars";
-    public static final String VERSION = "0.1.0-alpha.14";
+    public static final String VERSION = "0.1.0-alpha.15";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public EarthToStars(IEventBus modEventBus) {

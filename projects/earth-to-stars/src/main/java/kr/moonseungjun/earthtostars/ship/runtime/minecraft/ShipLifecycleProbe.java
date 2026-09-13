@@ -1,6 +1,7 @@
 package kr.moonseungjun.earthtostars.ship.runtime.minecraft;
 
 import kr.moonseungjun.earthtostars.EarthToStars;
+import kr.moonseungjun.earthtostars.content.EarthToStarsEntities;
 import kr.moonseungjun.earthtostars.ship.domain.ModuleSlot;
 import kr.moonseungjun.earthtostars.ship.domain.ModuleSlotType;
 import kr.moonseungjun.earthtostars.ship.domain.ShipId;
@@ -41,6 +42,7 @@ final class ShipLifecycleProbe {
             switch (mode) {
                 case "seed" -> seed(server);
                 case "verify" -> verify(server);
+                case "boarding_contract" -> verifyBoardingEntityContract(server);
                 default -> throw new IllegalArgumentException("unknown lifecycle probe mode: " + mode);
             }
         } finally {
@@ -113,6 +115,23 @@ final class ShipLifecycleProbe {
                 persisted.ammoAmounts().get(ShipSystemsTuning.P0.primaryAmmoType()),
                 persisted.propellantStored(),
                 persisted.oxygenStored()
+        );
+    }
+
+    private static void verifyBoardingEntityContract(MinecraftServer server) {
+        requireSpaceLevels(server);
+        var type = EarthToStarsEntities.SHIP_EXTERIOR.get();
+        if (!type.canSerialize()) {
+            throw new IllegalStateException("ship exterior EntityType is non-serializable and vanilla riding will always reject it");
+        }
+        ShipExteriorEntity exterior = new ShipExteriorEntity(type, server.overworld());
+        if (exterior.shouldBeSaved()) {
+            throw new IllegalStateException("runtime ship exterior would be persisted alongside authoritative ShipState");
+        }
+        EarthToStars.LOGGER.info(
+                "EARTH_TO_STARS_ALPHA15_BOARDING_ENTITY_CONTRACT_PASS serializable={} instanceSaved={}",
+                type.canSerialize(),
+                exterior.shouldBeSaved()
         );
     }
 

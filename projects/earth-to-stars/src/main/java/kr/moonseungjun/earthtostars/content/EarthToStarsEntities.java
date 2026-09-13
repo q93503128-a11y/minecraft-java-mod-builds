@@ -23,7 +23,6 @@ public final class EarthToStarsEntities {
                     .attach(EntityAttachment.PASSENGER, 0.0F, 1.20F, 0.35F)
                     .clientTrackingRange(12)
                     .updateInterval(1)
-                    .noSave()
                     .noSummon()
     );
 

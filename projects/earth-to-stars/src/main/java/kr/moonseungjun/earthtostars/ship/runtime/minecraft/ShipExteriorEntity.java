@@ -71,6 +71,11 @@ public final class ShipExteriorEntity extends Display.ItemDisplay {
     }
 
     @Override
+    public boolean shouldBeSaved() {
+        return false;
+    }
+
+    @Override
     public boolean canCollideWith(Entity other) {
         return false;
     }
