@@ -1,0 +1,45 @@
+{
+  "kind": "riftfrontier:region_01_boss_animation_semantic_role_review",
+  "schema_version": 1,
+  "reviewed_on": "2026-09-14",
+  "accepted_derivation": {
+    "resource": "riftfrontier:boss_presentation/region_01/dragon_evolved.sanitized.v1.gltf",
+    "sha256": "ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac",
+    "motion_review_receipt": "assets/sources/region_01_boss_dragon_evolved.motion_review.json",
+    "phase_window_review_receipt": "assets/sources/region_01_boss_dragon_evolved.phase_window_review.json"
+  },
+  "review_basis": "Explicit comparison of already observed skinned source motion against the already-authored production attack roles. Clip names were not used as semantic evidence and source ACTION windows remain presentation motion, not server damage timing.",
+  "accepted_role_mappings": [
+    {
+      "attack_role": "region_01_committed_strike",
+      "source_clip": "Punch",
+      "decision": "ACCEPTED_STAGED",
+      "reason": "The reviewed motion is dominated by a clearly raised and committed forelimb extension with torso follow-through, then visible retraction. That silhouette directly supports the authored broad committed-melee read without inventing locomotion or area effects.",
+      "phase_windows": {
+        "TELEGRAPH": [0.0, 0.2],
+        "ACTIVE_PRESENTATION": [0.2, 0.275],
+        "RECOVERY": [0.275, 1.0]
+      }
+    },
+    {
+      "attack_role": "region_01_line_displacement",
+      "source_clip": "Headbutt",
+      "decision": "ACCEPTED_STAGED",
+      "reason": "The reviewed motion commits the head and torso together in a pronounced forward/downward drive while the forelimbs remain secondary, matching the authored directional body-line read. Server movement, lane geometry and hit timing remain independent authority and are not derived from this clip.",
+      "phase_windows": {
+        "TELEGRAPH": [0.0, 0.15555555555555556],
+        "ACTIVE_PRESENTATION": [0.15555555555555556, 0.2],
+        "RECOVERY": [0.2, 0.4888888888888889]
+      }
+    }
+  ],
+  "unresolved_role_mappings": [
+    {
+      "attack_role": "region_01_arena_pressure",
+      "decision": "UNRESOLVED",
+      "reason": "No carried source clip currently has both a reviewed area-pressure semantic fit and exact reviewed phase windows. Existing Flying/Yes/No/HitReact/Death motion is not recycled merely to obtain complete coverage."
+    }
+  ],
+  "publication_status": "STAGED_INCOMPLETE",
+  "publication_note": "This receipt authorizes only the six logical animation keys belonging to committed strike and line displacement. It does not satisfy the production BossAnimationSemanticBinding exact-coverage gate until arena pressure receives compatible reviewed motion."
+}
