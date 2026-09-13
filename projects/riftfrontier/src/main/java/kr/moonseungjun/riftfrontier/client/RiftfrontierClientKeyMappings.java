@@ -11,7 +11,7 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
 
 /** Client-only configurable controls for authored weapon action slots. */
-@EventBusSubscriber(value = Dist.CLIENT, modid = Riftfrontier.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(value = Dist.CLIENT, modid = Riftfrontier.MOD_ID)
 public final class RiftfrontierClientKeyMappings {
     static final KeyMapping.Category COMBAT_CATEGORY = new KeyMapping.Category(
         Identifier.fromNamespaceAndPath(Riftfrontier.MOD_ID, "combat")
