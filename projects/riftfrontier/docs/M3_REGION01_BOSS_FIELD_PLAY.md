@@ -2,7 +2,7 @@
 
 Status: **HUMAN FIELD PLAY READY / NOT YET PLAYTESTED**
 
-This document is the exact manual validation contract for the development-only Region 01 boss combat harness. It does not promote the boss into Region 01 production encounter composition and it does not approve final hit geometry, damage, targeting range, material, animation mapping, VFX or sound.
+This document is the exact manual validation contract for the development-only Region 01 boss combat harness. It does not promote the boss into Region 01 production encounter composition and it does not approve final hit geometry, damage, targeting range, movement speed, material, animation mapping, VFX or sound.
 
 ## Purpose
 
@@ -16,13 +16,16 @@ The harness exists to exercise the already-authored server-authoritative Region 
 - one damage event per target per attack execution;
 - attack-specific provisional field geometry that exposes the three authored combat roles;
 - attack-start target commitment toward a nearby real player, without mid-attack homing;
+- provisional server-owned ACTIVE travel for the authored `line_charge` role;
 - semantic presentation payload delivery from the same validated server runtime.
 
 The harness uses role-specific **provisional** geometry and `1.0F` damage. Committed strike is a broad short forward commitment, line displacement is a longer narrow forward lane, and arena pressure is a local area around the boss. These dimensions are **not final boss balance or attack geometry** and must not be tuned from automated results alone; they exist so human field play can decide whether the already-authored role contrast is actually readable and fair in Minecraft.
 
+The authored line-displacement attack uses `delivery: line_charge` and counterplay `read_travel_lane`, `move_laterally`, `punish_recovery`. The field harness therefore gives only this role provisional physical travel: **0.5 blocks per authoritative ACTIVE tick** along the facing committed before TELEGRAPH. Committed strike and arena pressure have zero authored field travel. The 0.5 value is calibration scaffolding, not final boss movement speed or charge distance; human play must decide whether it needs revision. The move uses Minecraft entity collision resolution rather than teleporting through terrain.
+
 The harness also uses a provisional **24-block target-acquisition radius**. It is only a field-test convenience, not final aggro, encounter leash, arena, perception, or AI policy. When no alive non-spectator player is inside that radius the actor waits instead of attacking empty space. When a new attack begins, the server faces the actor toward the nearest eligible player once; the direction is then committed for the whole TELEGRAPH/ACTIVE/RECOVERY execution so sidestep and lane-reading counterplay can be tested without homing rotation.
 
-A client-side development readability overlay projects the same `Region01BossFieldImpactProfile` boundary with lightweight vanilla particles while no reviewed production boss render binding is published. `CLOUD` marks TELEGRAPH, `CRIT` marks ACTIVE, and `SMOKE` marks RECOVERY. This is diagnostic instrumentation, **not final VFX/art direction**. It changes no server hit logic and automatically disappears once a reviewed production render binding exists.
+A client-side development readability overlay projects the same `Region01BossFieldImpactProfile` boundary with lightweight vanilla particles while no reviewed production boss render binding is published. `CLOUD` marks TELEGRAPH, `CRIT` marks ACTIVE, and `SMOKE` marks RECOVERY. This is diagnostic instrumentation, **not final VFX/art direction**. It changes no server hit logic and automatically disappears once a reviewed production render binding exists. During line displacement the projection follows the server actor as it advances; hit/miss remains authoritative if any visual disagreement is observed.
 
 ## Prerequisites
 
@@ -78,24 +81,30 @@ Expected:
 
 The 24-block threshold is instrumentation, not a balance recommendation. Record whether the transition behaves correctly; do not tune the radius from feel yet.
 
-## Test B — committed aim, readable lane and no mid-attack homing
+## Test B — committed aim, readable lane, ACTIVE charge and no mid-attack homing
 
 1. Stand within the 24-block acquisition radius and let the actor become idle between attacks.
-2. When the next TELEGRAPH begins, note the boss facing and visible diagnostic boundary.
+2. When the next TELEGRAPH begins, note the boss facing, actor position and visible diagnostic boundary.
 3. After that direction is committed, move laterally across or out of the displayed lane/arc before ACTIVE.
-4. Repeat for both `region_01_committed_strike` and `region_01_line_displacement`.
-5. Repeat once while another eligible player is present at a different angle if doing a real multiplayer session.
+4. For `region_01_line_displacement`, also watch the actor position through TELEGRAPH, ACTIVE and recovery.
+5. Repeat line displacement once with a solid wall or obstacle in the committed travel lane.
+6. Repeat for `region_01_committed_strike` and confirm it does not inherit charge travel.
+7. Repeat once while another eligible player is present at a different angle if doing a real multiplayer session.
 
 Expected:
 
 - at each new attack start the server turns the boss toward the nearest eligible player rather than reusing its original spawn-facing direction;
 - once TELEGRAPH has begun, the boss does **not** keep rotating to follow a moving target through TELEGRAPH/ACTIVE/RECOVERY;
 - a lateral dodge can therefore move out of the committed line/arc instead of the attack homing onto the player;
-- the diagnostic outline remains aligned with the committed attack facing for that execution;
+- `region_01_line_displacement` remains stationary during TELEGRAPH, advances only during authoritative ACTIVE, and stops receiving field-charge travel in recovery;
+- line-displacement travel remains on the committed facing rather than steering toward the player's new position;
+- solid terrain constrains the charge through normal Minecraft entity collision instead of the actor teleporting through the obstacle;
+- committed strike and arena pressure do not inherit the line-charge forward step;
+- the diagnostic outline remains aligned with the committed attack facing and follows the actor during line travel;
 - a later attack may choose a new facing from the then-nearest eligible player;
 - multiplayer observations do not count unless a real two-client/dedicated or otherwise genuinely multiplayer session was run.
 
-If the boss turns continuously during the execution, or the server hit result rotates away from the telegraphed lane, record video/player positions if possible. That is a field-harness targeting/readability regression, not a request to widen the hit volume.
+If the boss turns continuously during the execution, moves before ACTIVE, keeps receiving charge travel in recovery, passes through a solid obstacle, or the server hit result rotates away from the telegraphed lane, record video/player positions if possible. Those are field-harness movement/targeting/readability regressions, not requests to widen the hit volume or increase charge speed.
 
 ## Test C — ACTIVE-only damage and execution dedupe
 
@@ -112,22 +121,25 @@ Expected:
 - the target can be damaged during ACTIVE;
 - one attack execution cannot repeatedly damage the same target every ACTIVE tick;
 - current diagnostic damage is `1.0F` before armor/effect handling and is not a final balance decision;
+- the line-charge actor movement does not create a second independent damage clock or bypass per-execution target dedupe;
 - the particle phase changes are readability hints only; if particle timing and actual damage disagree, record the exact mismatch rather than treating particles as authority.
 
 If repeated damage occurs within one execution, record the attack/presentation phase and approximate server tick; that is a regression and should be fixed before tuning visuals.
 
-## Test D — physical role contrast and visual boundary agreement
+## Test D — physical role contrast, charge travel and visual boundary agreement
 
 Use the semantic/presentation observation tools already available in the field harness to identify which attack is executing, then deliberately probe the edge of each provisional shape. The diagnostic particle outline should make the provisional boundary visible, but the server damage result remains authoritative.
 
 Expected:
 
-- `region_01_committed_strike`: a target in front and close to the boss can be hit; a similarly close target clearly behind the boss cannot be hit; the usable forward area is broader than the line-displacement lane; its particle outline should remain entirely inside the same forward arc envelope used by the server resolver;
-- `region_01_line_displacement`: the forward lane reaches farther than committed strike, but a target standing clearly to either side of the narrow lane is not hit; the two particle side rails should mark the same `halfWidth` boundary used by the server profile;
-- `region_01_arena_pressure`: phase 2 only; nearby targets around the boss can be hit regardless of facing, while targets clearly outside the local pressure radius are not hit; the particle ring should remain facing-independent and use the exact provisional profile radius;
+- `region_01_committed_strike`: a target in front and close to the boss can be hit; a similarly close target clearly behind the boss cannot be hit; the usable forward area is broader than the line-displacement lane; its particle outline should remain entirely inside the same forward arc envelope used by the server resolver; the boss itself does not receive line-charge travel;
+- `region_01_line_displacement`: the forward lane reaches farther than committed strike, but a target standing clearly to either side of the narrow lane is not hit; the two particle side rails should mark the same `halfWidth` boundary used by the server profile; during ACTIVE the boss physically advances along that same committed lane at the provisional 0.5-block-per-tick calibration, so later ACTIVE samples originate from the advanced actor position;
+- `region_01_arena_pressure`: phase 2 only; nearby targets around the boss can be hit regardless of facing, while targets clearly outside the local pressure radius are not hit; the particle ring should remain facing-independent and use the exact provisional profile radius; the boss does not receive line-charge travel;
 - all three shapes still obey the same authoritative ACTIVE-only and once-per-execution damage rules from Test C.
 
-Record whether the contrast is immediately understandable in motion. If a particle boundary says one thing while hit/miss behavior says another, capture player/boss positions or video: that is an overlay/server-projection regression, not a balance-tuning prompt. If both agree but a miss/hit still feels surprising, capture the same evidence before changing dimensions by intuition.
+Record whether the contrast is immediately understandable in motion. For line displacement, specifically record whether physical travel makes the authored `read_travel_lane -> move_laterally -> punish_recovery` sequence more legible or instead creates unfair contact/camera/collision behavior. Do **not** change the 0.5 step merely because another value sounds better; capture video/position evidence first.
+
+If a particle boundary says one thing while hit/miss behavior says another, capture player/boss positions or video: that is an overlay/server-projection regression, not a balance-tuning prompt. If both agree but a miss/hit still feels surprising, capture the same evidence before changing dimensions by intuition.
 
 ## Test E — phase composition
 
@@ -156,7 +168,7 @@ Expected:
 
 - the retained old validated runtime is retired when its published generation becomes stale;
 - the entity rebuilds its field-test runtime from the newly published content snapshot;
-- no stale-generation runtime resumes damage after reload;
+- no stale-generation runtime resumes damage or charge movement after reload;
 - the actor remains usable for subsequent field-test attacks.
 
 ## Test G — player weapon versus boss actor
@@ -180,7 +192,7 @@ Expected:
 
 - the boss is a normal authoritative server target for the existing player weapon impact path;
 - player field-impact behavior stays governed by the existing `M3_PLAYER_COMBAT_FIELD_PLAY.md` contract;
-- no conclusion about final boss health, hitbox, weapon balance or encounter difficulty is valid from this harness alone.
+- no conclusion about final boss health, hitbox, weapon balance, charge speed or encounter difficulty is valid from this harness alone.
 
 ## Evidence to record
 
@@ -192,7 +204,7 @@ For each human session record:
 - commands used;
 - whether Tests A–G were attempted;
 - PASS/FAIL per expected observation;
-- screenshots/video for any visual or timing issue where practical;
-- exact symptom for any target-acquisition error, mid-attack homing, duplicate damage, stale runtime, phase-pool escape, particle/server boundary disagreement, surprising shape result, crash or desync.
+- screenshots/video for any visual, movement or timing issue where practical;
+- exact symptom for any target-acquisition error, mid-attack homing, charge-before-ACTIVE, charge-after-ACTIVE, collision tunnelling, duplicate damage, stale runtime, phase-pool escape, particle/server boundary disagreement, surprising shape result, crash or desync.
 
 Only after a real human session may the corresponding checkpoint be labeled `PLAYTESTED`. A real two-client/dedicated-session observation is required for `MULTIPLAYER TESTED`.
