@@ -68,10 +68,7 @@ public final class FishingWorldManager {
     }
 
     public static FishingLocation locationFor(ServerPlayer player) {
-        if (player.level().dimension().equals(LAKESIDE_LEVEL)) {
-            return FishingLocation.LAKESIDE;
-        }
-        return FishingLocation.LAKESIDE;
+        return FishingTravelManager.locationFor(player);
     }
 
     private static void lockLakesideClock(ServerLevel lakeside) {

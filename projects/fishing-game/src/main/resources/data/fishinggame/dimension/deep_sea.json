@@ -1,0 +1,16 @@
+{
+  "type": "fishinggame:deep_sea",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "minecraft:deep_ocean",
+      "layers": [
+        { "block": "minecraft:bedrock", "height": 1 },
+        { "block": "minecraft:stone", "height": 104 },
+        { "block": "minecraft:gravel", "height": 3 },
+        { "block": "minecraft:water", "height": 20 }
+      ],
+      "structure_overrides": []
+    }
+  }
+}

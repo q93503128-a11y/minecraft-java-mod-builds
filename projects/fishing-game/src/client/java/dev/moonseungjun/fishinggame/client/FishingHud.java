@@ -54,7 +54,7 @@ public final class FishingHud {
         graphics.text(minecraft.font, "가방  " + ClientFishingState.catches().size() + "/" + PlayerFishingProfile.BAG_CAPACITY, x + 10, y + 43, 0xFFFFFFFF, false);
         graphics.text(minecraft.font, rod.displayName(), x + 10, y + 57, 0xFFB9E5FF, false);
         graphics.text(minecraft.font, ClientFishingState.locationName(), x + 10, y + 71, 0xFFB8FFCF, false);
-        graphics.text(minecraft.font, "[B] 어획 가방", x + 10, y + 85, 0xFFD6D6D6, false);
+        graphics.text(minecraft.font, "[B] 가방  [M] 이동", x + 10, y + 85, 0xFFD6D6D6, false);
 
         int width = graphics.guiWidth();
         int height = graphics.guiHeight();
@@ -87,11 +87,9 @@ public final class FishingHud {
 
         graphics.text(minecraft.font, "줄 장력", barX, tensionY - 11, 0xFFFFFFFF, false);
         graphics.blit(RenderPipelines.GUI_TEXTURED, SLIDER, barX, tensionY, 0, 0, 190, 4, 190, 4);
-
         int safeStart = barX + 1 + Math.round(BAR_INNER_WIDTH * safeMin);
         int safeEnd = barX + 1 + Math.round(BAR_INNER_WIDTH * safeMax);
         graphics.fill(safeStart, tensionY, safeEnd, tensionY + 4, 0xFF71D18A);
-
         int markerX = barX + 1 + Math.round(BAR_INNER_WIDTH * Math.max(0.0f, Math.min(1.0f, tension)));
         int markerColor = tension >= ReelMath.BREAK_TENSION
                 ? 0xFFFF6666
@@ -112,7 +110,6 @@ public final class FishingHud {
         int cardX = width / 2 - 50;
         int cardY = height / 2 - 50;
         graphics.blit(RenderPipelines.GUI_TEXTURED, PANEL, cardX, cardY, 0, 0, 100, 100, 100, 100);
-
         graphics.centeredText(minecraft.font, "어획 성공", width / 2, cardY + 10, 0xFFFFFFFF);
         graphics.centeredText(minecraft.font, species.displayName(), width / 2, cardY + 27, rarityColor(species.rarity()));
         graphics.centeredText(minecraft.font, species.rarity().displayName(), width / 2, cardY + 41, rarityColor(species.rarity()));

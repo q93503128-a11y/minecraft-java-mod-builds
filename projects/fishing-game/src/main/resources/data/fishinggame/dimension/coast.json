@@ -1,0 +1,16 @@
+{
+  "type": "fishinggame:coast",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "minecraft:beach",
+      "layers": [
+        { "block": "minecraft:bedrock", "height": 1 },
+        { "block": "minecraft:stone", "height": 114 },
+        { "block": "minecraft:sand", "height": 5 },
+        { "block": "minecraft:water", "height": 8 }
+      ],
+      "structure_overrides": []
+    }
+  }
+}

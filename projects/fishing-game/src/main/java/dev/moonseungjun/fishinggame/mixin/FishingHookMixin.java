@@ -1,6 +1,6 @@
 package dev.moonseungjun.fishinggame.mixin;
 
-import dev.moonseungjun.fishinggame.world.FishingWorldManager;
+import dev.moonseungjun.fishinggame.world.FishingTravelManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.projectile.FishingHook;
@@ -15,7 +15,7 @@ public abstract class FishingHookMixin {
     private void fishinggame$disableVanillaBiteCycle(BlockPos blockPos, CallbackInfo ci) {
         FishingHook hook = (FishingHook) (Object) this;
         if (hook.getPlayerOwner() instanceof ServerPlayer
-                && hook.level().dimension().equals(FishingWorldManager.LAKESIDE_LEVEL)) {
+                && FishingTravelManager.isDedicatedFishingLevel(hook.level().dimension())) {
             ci.cancel();
         }
     }

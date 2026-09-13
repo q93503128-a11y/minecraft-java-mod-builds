@@ -1,4 +1,6 @@
 {
   "key.fishinggame.catch_bag": "Catch Bag",
-  "key.categories.fishinggame.controls": "Fishing Game"
+  "key.fishinggame.travel": "Fishing Locations",
+  "key.categories.fishinggame.controls": "Fishing Game",
+  "key.categories.fishinggame.travel_controls": "Fishing Game · Travel"
 }

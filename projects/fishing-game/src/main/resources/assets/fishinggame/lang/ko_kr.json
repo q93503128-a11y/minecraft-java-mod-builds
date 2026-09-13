@@ -1,4 +1,6 @@
 {
   "key.fishinggame.catch_bag": "어획 가방",
-  "key.categories.fishinggame.controls": "Fishing Game"
+  "key.fishinggame.travel": "낚시터 이동",
+  "key.categories.fishinggame.controls": "Fishing Game",
+  "key.categories.fishinggame.travel_controls": "Fishing Game · 이동"
 }

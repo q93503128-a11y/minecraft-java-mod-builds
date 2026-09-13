@@ -1,39 +1,34 @@
 # Fishing Game
 
-A Minecraft Java 26.2 Fabric standalone fishing progression game focused on:
+Minecraft Java 26.2 Fabric standalone fishing progression game:
 
-`catch -> collect -> sell -> improve rod -> reach better water -> hunt bigger/rarer fish`
+`catch -> collect -> sell -> improve rod -> unlock better water -> hunt bigger/rarer fish`
 
-The project deliberately avoids survival chores, stacked currencies and unrelated systems. Minecraft supplies the runtime/world renderer; the player experience is a dedicated fishing game.
+Minecraft supplies the runtime/world renderer; the player experience is a dedicated fishing game rather than survival.
 
-## Current alpha.8 slice
+## Current alpha.9 slice
 
-- Adventure-mode fishing-only rules: no survival damage, hunger management, mining/crafting loop or survival HUD.
-- Dedicated `fishinggame:lakeside` Cheongram Lakeside instead of ordinary Overworld roaming.
-- Server-authoritative fishing session, tension/progress, fish pull bursts and catch results.
-- Vanilla hook remains cast/line/bobber only; its separate lure/nibble/bite cycle is suppressed in the dedicated lake.
-- Visible fish curve toward the bobber, burst against the line and converge as catch progress rises.
-- Encounter presentation now uses five transient body families: small, tall, fat, long and dedicated angler.
-- Bluegill uses the deeper-bodied tall family; deep-sea angler uses a dedicated angler silhouette and Sea Life MIT texture.
-- Species id is synchronized on the encounter entity and selects a species-specific texture.
-- Encounter fish are no-AI, unsaved, short-lived visual entities, not permanent ambient populations.
-- Persistent catch bag, coins, selling and three-tier rod progression.
-- Dedicated HUD and catch-bag screen using bundled Kenney CC0 UI assets.
-- Successful catches get a compact result card with species, rarity, weight, length and value.
-- Essential remains optional and does not own game state.
+- Adventure-mode fishing-only rules: no survival damage, hunger chores, mining/crafting loop or survival HUD.
+- Three dedicated fishing locations are now connected to progression:
+  - Cheongram Lakeside — starting freshwater location.
+  - Gull Harbor — unlocks with `호수 전문가` rod tier.
+  - Deepwater Channel — unlocks with `블루워터` rod tier.
+- `M` opens a Kenney-based travel screen. The client requests travel; the server validates destination and required rod tier.
+- Coast and deep-sea species already present in the catalog are now reachable in their intended locations.
+- Harbor environment includes a stone quay, three fishing piers, shelter, lighthouse, lamps and dock props.
+- Deep-sea environment uses an offshore dark deck, long fishing arms, observation structure and sea-lantern lighting.
+- Server-authoritative fishing session, species, tension/progress, pull bursts, catch value, coins and upgrades.
+- Vanilla hook remains cast/line/bobber only in every dedicated fishing dimension; its independent bite cycle is suppressed.
+- Five transient encounter-fish silhouettes: small, tall, fat, long and angler, with species-specific textures.
+- Persistent catch bag, selling and three-tier rod progression.
+- Dedicated HUD, catch bag and travel UI reuse bundled Kenney CC0 assets.
+- Essential remains optional and owns no game state.
 
-## Fishing interaction
+## Controls
 
-1. Spawn into Cheongram Lakeside with a fishing rod.
-2. Cast from one of the lake piers.
-3. The custom bite timer starts only when the bobber reaches valid water.
-4. Watch the species-specific fish approach the bobber.
-5. When hooked, hold right click to raise tension and release to let it fall.
-6. Keep the marker inside the visible safe band while reacting to fish surges.
-7. The catch enters the separate catch bag and gets an immediate result card.
-8. Open the bag with `B`, sell catches, then buy the next rod tier.
-
-The server owns bite timing, species, tension, burst impulses, progress, catch size/value, coins and upgrades. Client state presents those results and sends input requests.
+- Fishing rod right click: cast / reel input.
+- `B`: catch bag, selling and rod upgrade.
+- `M`: fishing-location travel.
 
 ## Technical stack
 
@@ -43,12 +38,7 @@ The server owns bite timing, species, tension, burst impulses, progress, catch s
 - Fabric API 0.159.0+26.2
 - Loom 1.17.19
 - Gradle 9.5.1
-- Essential: optional external convenience mod, not a dependency
-
-## Visual-source policy
-
-Encounter-fish geometry is adapted from Sea Life under MIT and the full notice is bundled under `META-INF/licenses/fishinggame/`. Compatible largemouth/carp/catfish/perch/tuna textures and the alpha.8 angler texture reuse Sea Life assets under MIT; remaining species textures are project-authored. See `THIRD_PARTY_ASSETS.md`.
 
 ## Quality gate
 
-A successful compile is not a playtest-ready declaration. Before handing the user a test JAR, Cheongram Lakeside, fish proportions/textures, fishing HUD composition and the complete catch -> sell -> upgrade loop still need actual Minecraft client review.
+Compile/build success is not a playtest-ready declaration. The new harbor and deep-sea spaces, fish proportions and complete screen composition still need actual Minecraft graphical review before a JAR is handed to the user as a meaningful playtest milestone.

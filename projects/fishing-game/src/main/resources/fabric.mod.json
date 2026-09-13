@@ -3,7 +3,7 @@
   "id": "fishinggame",
   "version": "${version}",
   "name": "Fishing Game",
-  "description": "Catch, collect and master increasingly challenging fish across Minecraft waters.",
+  "description": "Catch, collect and master increasingly challenging fish across dedicated fishing locations.",
   "authors": ["MoonSeungJun"],
   "license": "All-Rights-Reserved",
   "environment": "*",
@@ -12,7 +12,8 @@
       "dev.moonseungjun.fishinggame.FishingGameMod"
     ],
     "client": [
-      "dev.moonseungjun.fishinggame.client.FishingGameClient"
+      "dev.moonseungjun.fishinggame.client.FishingGameClient",
+      "dev.moonseungjun.fishinggame.client.FishingTravelClient"
     ]
   },
   "mixins": [
