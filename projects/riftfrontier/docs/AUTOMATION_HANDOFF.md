@@ -11,6 +11,15 @@ Recovery aid only. Current GitHub `main` plus canonical project/design documents
 - Region 01 first-boss geometry/rig direction remains the selected Quaternius CC0 `Dragon Evolved` derivation source feeding Riftfrontier's custom skinned-mesh rendering path. Do not restart candidate search or add GeckoLib merely to duplicate the working custom path.
 - Final damage/range/resource policy, final weapon art/presentation, final boss material/VFX/sound, and human field balance/readability remain evidence-gated.
 
+### Canon drift cleanup — 2026-09-13
+
+- `PROJECT.md` had fallen behind actual `main`: it still advertised `M2-B — ... FIELD PLAY NEXT`, an old M2 CI/JAR baseline, and GeckoLib as the animation direction even though the project has already advanced into M3 player combat and the selected Dragon Evolved custom skinned-mesh pipeline.
+- `PROJECT.md` is now aligned with the real current stage: `M3 — PLAYER COMBAT BUILD VERIFIED / HUMAN FIELD PLAY + BOSS PRESENTATION NEXT`.
+- The optional-dependency note now records that GeckoLib is not on the Region 01 first-boss critical path; do not reintroduce it unless a later concrete asset requirement justifies a new dependency decision.
+- The current verified player field-impact checkpoint is now pinned in `PROJECT.md` to run `34739314980` and executable JAR SHA-256 `310257a14a6e8d7c990aa21fb2bff314dd0cfea3234825c5379a1912fb80b8d1`.
+- The next visible-quality boundary in both PROJECT and this handoff is the same: human player-combat field play plus the independent selected-boss material/animation/VFX/sound/readability path. Do not regress into M2 authority plumbing or speculative presentation fences.
+- This was documentation-only canonical cleanup. No build/CI was triggered for it, and it does not change the already verified code/JAR checkpoint.
+
 ## Latest playable-slice work
 
 ### Recovery and cleanup
@@ -73,4 +82,6 @@ Recovery aid only. Current GitHub `main` plus canonical project/design documents
 3. Do not tune the numeric geometry or damage before an observed symptom is captured. If repeated tuning begins, move calibration values into the appropriate data-driven production policy rather than growing hard-coded values.
 4. If the mechanical field pass succeeds but readability/feel is weak, the next visible-quality task is player attack presentation/hit feedback using external references and legal assets where appropriate. Do not create an arbitrary final animation/VFX language.
 5. Work that is independent of the blocked human player-combat gate may proceed on the already selected Region 01 boss material/animation/VFX/sound/readability path, but must preserve the selected Dragon Evolved source/provenance and existing custom renderer direction.
-6. Never promote CI/client smoke to PLAYTESTED or MULTIPLAYER TESTED. Human evidence remains required for both labels.
+6. The next boss-side asset gate is a real reviewed material/texture. The runtime resource directory currently contains the sanitized Dragon glTF but no boss texture; do not fill that gap with an AI-improvised palette or restore the stripped source Atlas. Select/author it only from a documented reference/asset decision, then pass it through the existing `MaterialReview` integrity gate.
+7. Do not add the boss to production Region 01 encounter composition until presentation, Minecraft scale/hit geometry and authoritative combat/damage policy have evidence-backed inputs.
+8. Never promote CI/client smoke to PLAYTESTED or MULTIPLAYER TESTED. Human evidence remains required for both labels.
