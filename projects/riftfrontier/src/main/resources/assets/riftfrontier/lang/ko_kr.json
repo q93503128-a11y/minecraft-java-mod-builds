@@ -3,5 +3,6 @@
   "riftfrontier.content.validation_failed": "Riftfrontier 콘텐츠 검증에 실패했습니다",
   "key.category.riftfrontier.combat": "Riftfrontier 전투",
   "key.riftfrontier.weapon_action_1": "무기 액션 1",
-  "key.riftfrontier.weapon_action_2": "무기 액션 2"
+  "key.riftfrontier.weapon_action_2": "무기 액션 2",
+  "entity.riftfrontier.region_01_boss": "01구역 보스"
 }
