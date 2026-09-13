@@ -30,16 +30,28 @@ Recovery aid only. Current GitHub `main` plus canonical project/design documents
 - Added `PlayerWeaponFieldImpactProfileTest` to lock the intended relative reach/shape contrast and the intentionally uniform diagnostic damage while ensuring unrelated boss attacks do not acquire this player calibration accidentally.
 - This is a field-play bridge, not the final data/balance layer. After human evidence exists, migrate repeated tuning into the appropriate data-driven production policy instead of letting this calibration class become permanent magic-number design.
 
+### Human field-play gate prepared
+
+- `docs/M3_PLAYER_COMBAT_FIELD_PLAY.md` is now the exact manual validation contract for this checkpoint.
+- It pins the verified CI run, code SHA, executable-JAR SHA-256, provisioning commands, temporary control setup, controlled target placement, health inspection, facing/reach/lane/deduplication/telegraph/loadout-invalidation checks, expected outcomes and evidence-reporting format.
+- This gate was added instead of inventing extra hit feedback or tuning numbers before observing the actual Minecraft result.
+- If mechanics pass but feel visually disconnected, proceed to reference-backed player attack presentation/hit feedback. If geometry fails, fix the observed symptom first. Do not hide a geometry/readability failure by inflating range or removing telegraph.
+
 ## Verification status
 
 - Canon/source reviewed against current main: YES.
-- Previous recovery run `34736865658`: BUILD VERIFIED / SUCCESS for the pre-impact baseline.
-- Latest field-impact test commit: `2d94c54cfddcb8d81d0ae7567a4d90adb0cd0dca`.
-- Latest `Build Riftfrontier` run `34739314980`: IN PROGRESS at handoff write. Do not claim this new field-impact checkpoint BUILD VERIFIED until that run or a descendant finishes successfully.
-- Local Gradle/build: NOT RUN in this automation environment.
-- Human player-weapon field play with the new impact geometry: NOT TESTED.
-- Multiplayer field play: NOT TESTED.
-- Final hitbox/visual alignment, final damage/range balance, final weapon presentation: NOT APPROVED / NOT TESTED.
+- Recovery run `34736865658`: BUILD VERIFIED / SUCCESS for the pre-impact baseline.
+- Field-impact code commit: `2d94c54cfddcb8d81d0ae7567a4d90adb0cd0dca`.
+- `Build Riftfrontier` run `34739314980`: **SUCCESS**.
+- Run `34739314980` completed toolchain verification, asset-intake tests, `clean test build`, all 9 required native GameTests, dedicated-server smoke, Xvfb client initialization smoke, executable-JAR inspection, build report and deliverable/log uploads.
+- Verified executable JAR: `riftfrontier-0.1.0-alpha.1.jar`.
+- Verified JAR SHA-256: `310257a14a6e8d7c990aa21fb2bff314dd0cfea3234825c5379a1912fb80b8d1`.
+- GitHub Actions deliverable artifact: `riftfrontier-0.1.0-alpha.1-deliverables` from run `34739314980`.
+- Current status for this checkpoint: CODE REVIEWED / TESTED / BUILD VERIFIED / JAR PRODUCED.
+- Local Gradle/build in the automation environment: NOT RUN; executable verification came from repository CI.
+- Human player-weapon field play with the new impact geometry: **NOT TESTED**.
+- Multiplayer field play: **NOT TESTED**.
+- Final hitbox/visual alignment, final damage/range balance, final weapon presentation: **NOT APPROVED / NOT TESTED**.
 
 ## Do not repeat or revert
 
@@ -52,11 +64,13 @@ Recovery aid only. Current GitHub `main` plus canonical project/design documents
 - Do not promote `PlayerWeaponFieldImpactProfile` numeric calibration to final balance. It exists only to make the current authoritative combat slice actually strike targets so human evidence can be collected.
 - Do not derive final damage/range from Monster Hunter, Darktide, Hades or other third-party balance numbers; those references lock role/decision structure only.
 - Provisional attack ticks are not final balance.
+- Do not claim the successful Xvfb client smoke is a human playtest; it only proves nonfatal initialization.
 
 ## Exact next development boundary
 
-1. Check `Build Riftfrontier` run `34739314980`. If it fails, fix the first actual compile/test/runtime gate without weakening the ACTIVE-only/dedup/server-authority path.
-2. If green, use the provisioning commands plus the two existing configurable combat actions for a real Minecraft player-combat pass against ordinary hostile mobs. Verify: attacks outside facing geometry miss; mobile entry has materially shorter practical reach than reach commitment; one target receives at most one diagnostic hit per execution; TELEGRAPH/RECOVERY never damage; loadout swap/unequip still invalidates the execution.
-3. Do not tune the numeric geometry or damage from intuition after this point. Capture the observed symptom first. Once repeated tuning begins, move the calibration values into the appropriate data-driven production policy rather than growing hard-coded values.
-4. Next visible-quality work after this combat checkpoint should be player attack presentation/hit feedback or the selected Region 01 boss material/animation/VFX/sound/readability path, using existing external references/assets and provenance rather than improvised final art.
-5. Never promote CI/client smoke to PLAYTESTED. If human play is needed, provide exact commands, control setup, target placement and expected observations.
+1. The field-impact build gate is green. Do not rerun or re-investigate `34739314980` unless a regression appears.
+2. A human now needs to execute `docs/M3_PLAYER_COMBAT_FIELD_PLAY.md` using the verified JAR. The required observations are: facing geometry, practical mobile-vs-reach engagement contrast, once-per-execution damage, non-instant telegraph/ACTIVE causality, no recovery re-hit, loadout swap/unequip cancellation, and authored action-slot behavior.
+3. Do not tune the numeric geometry or damage before an observed symptom is captured. If repeated tuning begins, move calibration values into the appropriate data-driven production policy rather than growing hard-coded values.
+4. If the mechanical field pass succeeds but readability/feel is weak, the next visible-quality task is player attack presentation/hit feedback using external references and legal assets where appropriate. Do not create an arbitrary final animation/VFX language.
+5. Work that is independent of the blocked human player-combat gate may proceed on the already selected Region 01 boss material/animation/VFX/sound/readability path, but must preserve the selected Dragon Evolved source/provenance and existing custom renderer direction.
+6. Never promote CI/client smoke to PLAYTESTED or MULTIPLAYER TESTED. Human evidence remains required for both labels.
