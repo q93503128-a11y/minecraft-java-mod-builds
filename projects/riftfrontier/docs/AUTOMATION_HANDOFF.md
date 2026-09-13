@@ -4,7 +4,7 @@ Recovery aid only. Reconstruct canonical truth from current GitHub `main`, `PROJ
 
 ## Current stage
 
-`M3 — PLAYER COMBAT BUILD VERIFIED / REGION 01 BOSS FIELD ROLE-CONTRAST BUILD VERIFIED / FIRST EXPEDITION PHYSICAL LOOP BUILD VERIFIED / DRAGON ATTACK SOURCE MAPPING PARTIALLY REVIEWED`
+`M3 — PLAYER COMBAT BUILD VERIFIED / REGION 01 BOSS FIELD ROLE-CONTRAST + NATIVE HEALTH READABILITY BUILD VERIFIED / FIRST EXPEDITION PHYSICAL LOOP BUILD VERIFIED / DRAGON ATTACK SOURCE MAPPING PARTIALLY REVIEWED`
 
 Prioritize the playable vertical slice and visible production quality. Do not reopen settled expedition authority/restart work or add lifecycle/authority fences without a demonstrated regression.
 
@@ -16,6 +16,7 @@ Prioritize the playable vertical slice and visible production quality. Do not re
 - Accepted sanitized boss resource: `riftfrontier:boss_presentation/region_01/dragon_evolved.sanitized.v1.gltf`, SHA-256 `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`.
 - Canonical third-party registry is `docs/THIRD_PARTY_ASSETS.md`. Original Dragon Evolved `Atlas` art is provenance/reference only and is not approved final production art. Do not restore it, invent a final palette, create fake `presentation_assets`, or weaken exact-coverage gates.
 - Diagnostic vanilla particles and technical hub/field blocks are validation affordances, not final art/UI/VFX language.
+- The new native boss bar is an intentional Minecraft-platform readability baseline for the field actor, not approval to invent Riftfrontier's final custom HUD language.
 
 ## First expedition loop — verified automation checkpoints
 
@@ -53,11 +54,11 @@ The actor remains excluded from natural spawning and production encounter compos
 - role-specific provisional geometry and client diagnostic boundary overlay;
 - `region_01_line_displacement` (`delivery: line_charge`) physically travels only during ACTIVE at provisional `0.5` blocks/tick along committed facing and uses normal Minecraft collision.
 
-### Arena-pressure physical role contrast — new verified checkpoint
+### Arena-pressure physical role contrast — verified checkpoint
 
 Commits `a31253c53f86e17122a11250a1851b49dcd8f3a4` and `2cd121da0f96e3ae40ae72e69c8a426e0c5b60da` add a field-play-only physical distinction for `region_01_arena_pressure` without adding another attack clock:
 
-- `Region01BossFieldImpactProfile` now carries `activeEntryRadialImpulse` alongside geometry/line travel;
+- `Region01BossFieldImpactProfile` carries `activeEntryRadialImpulse` alongside geometry/line travel;
 - committed strike and line displacement author zero radial impulse;
 - arena pressure authors provisional horizontal strength `0.85`;
 - on the authoritative transition into ACTIVE, eligible targets inside the existing `LOCAL_AREA` field profile are pushed horizontally away from the boss once;
@@ -69,12 +70,27 @@ Commits `a31253c53f86e17122a11250a1851b49dcd8f3a4` and `2cd121da0f96e3ae40ae72e6
 
 `0.85` is calibration scaffolding, not final knockback balance. Do not tune it from automation alone.
 
-Workflow `34785968882` for latest code HEAD `2cd121da0f96e3ae40ae72e69c8a426e0c5b60da` completed **SUCCESS** through clean tests/build, required GameTest, dedicated-server smoke, Xvfb client smoke, executable-JAR inspection, report and artifacts. Deliverable artifact: `riftfrontier-0.1.0-alpha.1-deliverables`, artifact digest `sha256:11dc7424197c629c6bac876f195b3e085b8c7993bd9dc3fbfeec755452cdd97e`.
+Workflow `34785968882` for code HEAD `2cd121da0f96e3ae40ae72e69c8a426e0c5b60da` completed SUCCESS through clean tests/build, required GameTest, dedicated-server smoke, Xvfb client smoke, executable-JAR inspection, report and artifacts. Deliverable artifact digest: `sha256:11dc7424197c629c6bac876f195b3e085b8c7993bd9dc3fbfeec755452cdd97e`.
 
-Therefore this arena-pressure field batch is `CODE REVIEWED / TESTED / BUILD VERIFIED / JAR PRODUCED`. `PLAYTESTED: NO`. `MULTIPLAYER TESTED: NO`.
+### Native boss-health readability — verified checkpoint
+
+The field actor now uses Minecraft's own `ServerBossEvent` progress UI as a deliberate platform-native readability baseline rather than inventing a new final HUD style:
+
+- the boss event exists only for the explicit field-test actor path;
+- `startSeenByPlayer` / `stopSeenByPlayer` attach and detach tracked players instead of maintaining a second client-local visibility model;
+- progress is derived every server tick from the real entity `getHealth()/getMaxHealth()` value, so the bar owns no duplicate combat-health state;
+- the neutral field label is localized as `Region 01 Boss` / `01구역 보스`; it is not final lore naming;
+- no boss max-health, DPS, phase threshold or encounter-duration balance was changed in this batch.
+
+The first implementation commit `326828f5b5711bf98d136eaac4997e324e44c47f` exposed a Minecraft 26.2 API difference: `ServerBossEvent` requires `(UUID, Component, BossBarColor, BossBarOverlay)`. CI failed at compile time rather than being misreported as verified. Recovery commit `9081a074347d041f687ca5f84478a0b575bcb13b` uses the entity UUID and is the verified code checkpoint.
+
+Workflow `34788624295` for `9081a074347d041f687ca5f84478a0b575bcb13b` completed **SUCCESS** through toolchain, asset intake, clean tests/build, required GameTest, dedicated-server smoke, Xvfb client smoke, executable-JAR inspection, reports and artifact upload. Deliverable artifact `riftfrontier-0.1.0-alpha.1-deliverables` has artifact digest `sha256:e8f44b6e2774c6ca13b46cecc952cde12ae86ca64ca104bfd427df125a9a92ed`.
+
+Therefore this HUD/readability code batch is `CODE REVIEWED / TESTED / BUILD VERIFIED / JAR PRODUCED`. `PLAYTESTED: NO`. `MULTIPLAYER TESTED: NO`.
 
 General boss checklist: `docs/M3_REGION01_BOSS_FIELD_PLAY.md`.
 Focused arena-pressure displacement check: `docs/M3_REGION01_ARENA_PRESSURE_FIELD_CHECK.md`.
+Focused native boss-health/tracking check: `docs/M3_REGION01_BOSS_HUD_FIELD_CHECK.md`.
 
 ## Dragon Evolved animation/presentation state
 
@@ -98,8 +114,9 @@ The packaged boss contains the sanitized GLTF but no approved final texture reso
 ## Exact next development boundary
 
 1. Do not add more expedition authority/lifecycle hardening unless human/automated evidence exposes a real regression.
-2. The field harness now gives all three authored boss roles distinct physical behavior suitable for human evaluation: close broad commitment, traveling narrow line, and local radial displacement. Further numerical tuning requires field evidence; do not churn these calibration values automatically.
-3. Automatic implementation should return to **production-visible Region 01 presentation quality**: evidence-backed arena-pressure source motion or a legally usable/reviewed material-texture/VFX/sound set with provenance and Minecraft-scale readability.
-4. Once all nine logical animation keys have evidence, assemble the complete production `BossAnimationSourceBinding` without weakening exact coverage.
-5. Do not restore the source Atlas or promote diagnostic particles/technical blocks as final art.
-6. `PLAYTESTED: NO`. `MULTIPLAYER TESTED: NO`. Unit tests, GameTest, dedicated-server smoke and Xvfb client smoke never count as either.
+2. The field harness now gives all three authored boss roles distinct physical behavior plus native authoritative health readability suitable for human evaluation. Further numerical tuning requires field evidence; do not churn these calibration values automatically.
+3. Do not turn the native field boss bar into speculative custom HUD art. Final custom HUD work still requires reference study/review.
+4. Automatic implementation should return to **production-visible Region 01 presentation quality**: evidence-backed arena-pressure source motion or a legally usable/reviewed material-texture/VFX/sound set with provenance and Minecraft-scale readability.
+5. Once all nine logical animation keys have evidence, assemble the complete production `BossAnimationSourceBinding` without weakening exact coverage.
+6. Do not restore the source Atlas or promote diagnostic particles/technical blocks as final art.
+7. `PLAYTESTED: NO`. `MULTIPLAYER TESTED: NO`. Unit tests, GameTest, dedicated-server smoke and Xvfb client smoke never count as either.
