@@ -122,10 +122,14 @@ public final class RewardService {
             shards.put(entry.getKey(), Math.addExact(shards.getOrDefault(entry.getKey(), 0), entry.getValue()));
         }
         return new PlayerProgress(
-                state.schemaVersion(),
+                PlayerProgress.CURRENT_SCHEMA,
                 Math.addExact(state.coin(), grant.coin()),
                 Math.addExact(state.essence(), grant.essence()),
-                shards, state.characters(), state.party(), state.partyCapacity());
+                shards,
+                state.characters(),
+                state.party(),
+                state.partyCapacity(),
+                state.completedEncounterLocators());
     }
 
     private static int amount(SplittableRandom random, RewardTableDefinition.Roll roll) {

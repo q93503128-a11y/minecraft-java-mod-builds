@@ -35,11 +35,18 @@ public final class BattleRewardSettlementService {
     }
 
     private Settlement settle(MinecraftServer server, BattleRewardContext context) {
-        RewardService.Applied applied = progress.applyReward(
-                server,
-                context.ownerPlayerId(),
-                context.rewardTable(),
-                context.rewardSeed());
+        RewardService.Applied applied = context.fromWorldAnchor() && !context.worldAnchorRepeatable()
+                ? progress.applyRewardAndCompleteEncounter(
+                        server,
+                        context.ownerPlayerId(),
+                        context.rewardTable(),
+                        context.rewardSeed(),
+                        context.worldAnchorLocator())
+                : progress.applyReward(
+                        server,
+                        context.ownerPlayerId(),
+                        context.rewardTable(),
+                        context.rewardSeed());
         return new Settlement(
                 context.ownerPlayerId(),
                 context.rewardTableId(),

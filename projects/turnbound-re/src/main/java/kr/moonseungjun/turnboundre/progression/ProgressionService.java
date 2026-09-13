@@ -4,7 +4,6 @@ import kr.moonseungjun.turnboundre.data.CharacterDefinition;
 import kr.moonseungjun.turnboundre.data.DefinitionRegistry;
 import kr.moonseungjun.turnboundre.data.ProgressionDefinition;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +48,7 @@ public final class ProgressionService {
 
     public PlayerProgress grantShards(PlayerProgress state, String characterId, int amount) {
         requireState(state);
-        character(characterId); // Unknown shard IDs are rejected instead of silently creating dead balances.
+        character(characterId);
         if (amount < 0) throw new IllegalArgumentException("shard grant must be >= 0");
         Map<String, Integer> shards = new LinkedHashMap<>(state.shards());
         shards.put(characterId, Math.addExact(shards.getOrDefault(characterId, 0), amount));
@@ -164,7 +163,15 @@ public final class ProgressionService {
             Map<String, CharacterProgress> characters,
             List<String> party
     ) {
-        return new PlayerProgress(state.schemaVersion(), coin, essence, shards, characters, party, state.partyCapacity());
+        return new PlayerProgress(
+                PlayerProgress.CURRENT_SCHEMA,
+                coin,
+                essence,
+                shards,
+                characters,
+                party,
+                state.partyCapacity(),
+                state.completedEncounterLocators());
     }
 
     private static Result accept(PlayerProgress state, String detail) {

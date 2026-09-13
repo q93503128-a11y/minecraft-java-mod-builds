@@ -85,7 +85,7 @@ public final class AuthoredEncounterLauncher {
         }
 
         return register(encounter, rewardTable, snapshot, ownerPlayerId, battleId, battleSeed,
-                participants, bindings, characterIds, controllers);
+                participants, bindings, characterIds, controllers, "", false);
     }
 
     /**
@@ -98,6 +98,35 @@ public final class AuthoredEncounterLauncher {
             List<CharacterProgress> party,
             UUID battleId,
             long battleSeed
+    ) {
+        return openVirtualInternal(encounterId, ownerPlayerId, party, battleId, battleSeed, "", false);
+    }
+
+    /** Captures the world-anchor source so victory settlement can atomically persist non-repeatable completion. */
+    public Launch openVirtualFromAnchor(
+            String encounterId,
+            UUID ownerPlayerId,
+            List<CharacterProgress> party,
+            UUID battleId,
+            long battleSeed,
+            String worldAnchorLocator,
+            boolean worldAnchorRepeatable
+    ) {
+        if (worldAnchorLocator == null || worldAnchorLocator.isBlank()) {
+            throw new IllegalArgumentException("worldAnchorLocator must not be blank");
+        }
+        return openVirtualInternal(
+                encounterId, ownerPlayerId, party, battleId, battleSeed, worldAnchorLocator, worldAnchorRepeatable);
+    }
+
+    private Launch openVirtualInternal(
+            String encounterId,
+            UUID ownerPlayerId,
+            List<CharacterProgress> party,
+            UUID battleId,
+            long battleSeed,
+            String worldAnchorLocator,
+            boolean worldAnchorRepeatable
     ) {
         if (encounterId == null || encounterId.isBlank()) throw new IllegalArgumentException("encounterId must not be blank");
         if (ownerPlayerId == null || battleId == null) throw new IllegalArgumentException("ownerPlayerId/battleId required");
@@ -123,7 +152,7 @@ public final class AuthoredEncounterLauncher {
         }
 
         return register(encounter, rewardTable, snapshot, ownerPlayerId, battleId, battleSeed,
-                participants, List.of(), characterIds, controllers);
+                participants, List.of(), characterIds, controllers, worldAnchorLocator, worldAnchorRepeatable);
     }
 
     private Launch register(
@@ -136,12 +165,18 @@ public final class AuthoredEncounterLauncher {
             List<BattleParticipant> participants,
             List<EntityParticipantBinding> bindings,
             Map<String, String> characterIds,
-            Map<String, UUID> controllers
+            Map<String, UUID> controllers,
+            String worldAnchorLocator,
+            boolean worldAnchorRepeatable
     ) {
         BattleInstance battle = new BattleInstance(battleId, battleSeed, participants);
         BattleDefinitionContext definitionContext = new BattleDefinitionContext(snapshot.registry(), snapshot.hash(), characterIds);
         BattleRewardContext rewardContext = new BattleRewardContext(
-                ownerPlayerId, rewardTable, rewardSeed(battleSeed, ownerPlayerId, encounter.id()));
+                ownerPlayerId,
+                rewardTable,
+                rewardSeed(battleSeed, ownerPlayerId, encounter.id()),
+                worldAnchorLocator,
+                worldAnchorRepeatable);
         battles.register(battle, bindings, participants, definitionContext, rewardContext, controllers);
         battle.start();
         publishAuthoredEnemyIntents(battle, definitionContext);

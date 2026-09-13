@@ -4,6 +4,7 @@ import kr.moonseungjun.turnboundre.TurnboundRe;
 import kr.moonseungjun.turnboundre.client.WorldEncounterAnchorClientState;
 import kr.moonseungjun.turnboundre.data.DefinitionRegistry;
 import kr.moonseungjun.turnboundre.progression.PlayerProgress;
+import kr.moonseungjun.turnboundre.world.WorldEncounterAnchorAccessPolicy;
 import kr.moonseungjun.turnboundre.world.WorldEncounterAnchorResolver;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -42,8 +43,10 @@ public final class WorldEncounterAnchorNetwork {
         DefinitionRegistry definitions = TurnboundRe.DEFINITIONS.snapshot().registry();
         PlayerProgress progress = TurnboundRe.PROGRESS.getOrCreate(server, player.getUUID());
 
+        boolean repeatable = WorldEncounterAnchorAccessPolicy.repeatable(resolved);
         String code = "";
         if (TurnboundRe.BATTLES.battleForController(player.getUUID()).isPresent()) code = "ALREADY_IN_BATTLE";
+        else if (WorldEncounterAnchorAccessPolicy.cleared(progress, resolved)) code = "ANCHOR_CLEARED";
         else if (progress.party().isEmpty()) code = "EMPTY_PARTY";
 
         PacketDistributor.sendToPlayer(player, WorldEncounterAnchorPayloads.AnchorPreviewS2C.from(
@@ -54,7 +57,7 @@ public final class WorldEncounterAnchorNetwork {
                         resolved.encounter().difficulty(),
                         WorldEncounterAnchorResolver.enemySourceEntities(definitions, resolved.encounter()),
                         WorldEncounterAnchorResolver.rewardKinds(definitions, resolved.encounter()),
-                        resolved.anchor().repeatable() && resolved.encounter().repeatable(),
+                        repeatable,
                         progress.party().size(),
                         code,
                         "")));
@@ -97,7 +100,7 @@ public final class WorldEncounterAnchorNetwork {
             return;
         }
 
-        EncounterLaunchService.Result result = EncounterLaunchService.tryLaunch(player, request.encounterId());
+        EncounterLaunchService.Result result = EncounterLaunchService.tryLaunchFromAnchor(player, resolved);
         if (!result.accepted()) {
             context.reply(WorldEncounterAnchorPayloads.AnchorRejectedS2C.of(result.code(), result.detail()));
             return;

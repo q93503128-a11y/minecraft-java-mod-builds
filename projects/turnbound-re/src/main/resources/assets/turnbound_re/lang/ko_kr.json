@@ -145,6 +145,7 @@
   "screen.turnbound_re.anchor.reward.essence": "에센스",
   "screen.turnbound_re.anchor.reward.character_shard": "캐릭터 조각",
   "screen.turnbound_re.anchor.reward.unknown": "기타 보상",
+  "screen.turnbound_re.anchor.cleared": "이미 완료한 일회성 조우입니다.",
   "screen.turnbound_re.anchor.too_far": "조우 지점에서 너무 멀어졌습니다. 다시 가까이 가세요.",
   "screen.turnbound_re.anchor.unavailable": "이 조우는 지금 사용할 수 없습니다.",
   "screen.turnbound_re.anchor.mismatch": "조우 정보가 바뀌었습니다. 다시 확인하세요.",

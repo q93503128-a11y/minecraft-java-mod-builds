@@ -81,13 +81,56 @@ public final class PlayerProgressStore {
             RewardTableDefinition rewardTable,
             long seed
     ) {
+        return applyRewardInternal(server, playerId, rewardTable, seed, "");
+    }
+
+    /**
+     * Persists the captured reward and one non-repeatable world encounter completion in a single SavedData replacement.
+     * No reward-only intermediate state is written, so claim retry cannot observe half of the transaction.
+     */
+    public RewardService.Applied applyRewardAndCompleteEncounter(
+            MinecraftServer server,
+            UUID playerId,
+            RewardTableDefinition rewardTable,
+            long seed,
+            String locator
+    ) {
+        if (locator == null || locator.isBlank()) throw new IllegalArgumentException("locator must not be blank");
+        return applyRewardInternal(server, playerId, rewardTable, seed, locator);
+    }
+
+    private RewardService.Applied applyRewardInternal(
+            MinecraftServer server,
+            UUID playerId,
+            RewardTableDefinition rewardTable,
+            long seed,
+            String completedLocator
+    ) {
         if (rewardTable == null) throw new IllegalArgumentException("rewardTable must not be null");
         Context context = context();
         TurnboundProgressSavedData data = data(server);
         PlayerProgress current = currentOrFresh(data, playerId, context);
-        RewardService.Applied applied = new RewardService(context.registry()).rollAndApply(current, rewardTable, seed);
+        RewardService.Applied applied = applyRewardToState(
+                context.registry(), current, rewardTable, seed, completedLocator);
         data.put(playerId, applied.state());
         return applied;
+    }
+
+    /** Pure transaction composer used by persistence and focused tests. */
+    static RewardService.Applied applyRewardToState(
+            DefinitionRegistry registry,
+            PlayerProgress current,
+            RewardTableDefinition rewardTable,
+            long seed,
+            String completedLocator
+    ) {
+        if (registry == null || current == null || rewardTable == null) {
+            throw new IllegalArgumentException("registry/current/rewardTable required");
+        }
+        RewardService.Applied applied = new RewardService(registry).rollAndApply(current, rewardTable, seed);
+        if (completedLocator == null || completedLocator.isBlank()) return applied;
+        PlayerProgress completed = applied.state().completeEncounterLocator(completedLocator);
+        return new RewardService.Applied(applied.grant(), completed);
     }
 
     private ProgressionService.Result transact(

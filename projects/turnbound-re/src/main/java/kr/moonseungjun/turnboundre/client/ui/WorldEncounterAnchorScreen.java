@@ -194,6 +194,7 @@ public final class WorldEncounterAnchorScreen extends Screen {
         return switch (code) {
             case "EMPTY_PARTY", "INVALID_PARTY" -> Component.translatable("screen.turnbound_re.expedition.empty_party").getString();
             case "ALREADY_IN_BATTLE" -> Component.translatable("screen.turnbound_re.expedition.already_in_battle").getString();
+            case "ANCHOR_CLEARED" -> Component.translatable("screen.turnbound_re.anchor.cleared").getString();
             case "TOO_FAR" -> Component.translatable("screen.turnbound_re.anchor.too_far").getString();
             case "ANCHOR_MISMATCH" -> Component.translatable("screen.turnbound_re.anchor.mismatch").getString();
             case "ANCHOR_UNAVAILABLE", "INVALID_ENCOUNTER" -> Component.translatable("screen.turnbound_re.anchor.unavailable").getString();

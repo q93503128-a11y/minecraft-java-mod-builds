@@ -145,6 +145,7 @@
   "screen.turnbound_re.anchor.reward.essence": "Essence",
   "screen.turnbound_re.anchor.reward.character_shard": "Character Shards",
   "screen.turnbound_re.anchor.reward.unknown": "Other rewards",
+  "screen.turnbound_re.anchor.cleared": "This one-time encounter has already been cleared.",
   "screen.turnbound_re.anchor.too_far": "You moved too far from the encounter. Move closer and try again.",
   "screen.turnbound_re.anchor.unavailable": "This encounter is not available right now.",
   "screen.turnbound_re.anchor.mismatch": "The encounter changed. Check it again.",

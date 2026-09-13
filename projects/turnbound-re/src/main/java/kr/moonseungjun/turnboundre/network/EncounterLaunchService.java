@@ -6,6 +6,8 @@ import kr.moonseungjun.turnboundre.battle.EnemyTurnService;
 import kr.moonseungjun.turnboundre.data.DefinitionRegistry;
 import kr.moonseungjun.turnboundre.progression.CharacterProgress;
 import kr.moonseungjun.turnboundre.progression.PlayerProgress;
+import kr.moonseungjun.turnboundre.world.WorldEncounterAnchorAccessPolicy;
+import kr.moonseungjun.turnboundre.world.WorldEncounterAnchorResolver;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -40,6 +42,19 @@ final class EncounterLaunchService {
     private EncounterLaunchService() {}
 
     static Result tryLaunch(ServerPlayer player, String encounterId) {
+        return tryLaunch(player, encounterId, null);
+    }
+
+    static Result tryLaunchFromAnchor(ServerPlayer player, WorldEncounterAnchorResolver.Resolved resolved) {
+        if (resolved == null) return Result.rejected("ANCHOR_UNAVAILABLE", "");
+        return tryLaunch(player, resolved.encounter().id(), resolved);
+    }
+
+    private static Result tryLaunch(
+            ServerPlayer player,
+            String encounterId,
+            WorldEncounterAnchorResolver.Resolved worldAnchor
+    ) {
         if (player == null) return Result.rejected("INVALID_PLAYER", "");
         if (encounterId == null || encounterId.isBlank()) return Result.rejected("INVALID_ENCOUNTER", "");
         MinecraftServer server = player.level().getServer();
@@ -54,6 +69,9 @@ final class EncounterLaunchService {
         }
 
         PlayerProgress progress = TurnboundRe.PROGRESS.getOrCreate(server, player.getUUID());
+        if (worldAnchor != null && WorldEncounterAnchorAccessPolicy.cleared(progress, worldAnchor)) {
+            return Result.rejected("ANCHOR_CLEARED", worldAnchor.anchor().locator());
+        }
         if (progress.party().isEmpty()) return Result.rejected("EMPTY_PARTY", "");
 
         List<CharacterProgress> party = new ArrayList<>(progress.party().size());
@@ -68,8 +86,17 @@ final class EncounterLaunchService {
                 ^ player.getUUID().getMostSignificantBits()
                 ^ Long.rotateLeft(player.getUUID().getLeastSignificantBits(), 21)
                 ^ Integer.toUnsignedLong(encounterId.hashCode());
-        AuthoredEncounterLauncher.Launch launch = TurnboundRe.AUTHORED_ENCOUNTERS.openVirtual(
-                encounterId, player.getUUID(), party, battleId, battleSeed);
+        AuthoredEncounterLauncher.Launch launch = worldAnchor == null
+                ? TurnboundRe.AUTHORED_ENCOUNTERS.openVirtual(
+                        encounterId, player.getUUID(), party, battleId, battleSeed)
+                : TurnboundRe.AUTHORED_ENCOUNTERS.openVirtualFromAnchor(
+                        encounterId,
+                        player.getUUID(),
+                        party,
+                        battleId,
+                        battleSeed,
+                        worldAnchor.anchor().locator(),
+                        WorldEncounterAnchorAccessPolicy.repeatable(worldAnchor));
         EnemyTurnService.resolveUntilPlayerOrTerminal(TurnboundRe.BATTLES, launch.battle());
         return Result.accepted(launch, definitions);
     }
