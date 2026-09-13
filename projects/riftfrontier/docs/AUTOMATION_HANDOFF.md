@@ -9,23 +9,27 @@ Recovery aid only. Current GitHub `main` plus canonical project/design documents
 - `RiftfrontierClientCombatInput` already resolves authored move slots from the locally published graph and sends `PlayerWeaponMoveIntentPayload(moveId)` only.
 - `RiftfrontierClientKeyMappings` already exposes two configurable combat actions. They intentionally remain unbound by default because no final control layout has been approved; do not invent a final key layout merely to make the controls look complete.
 - Region 01 first-boss geometry/rig direction remains the selected Quaternius CC0 `Dragon Evolved` derivation source feeding Riftfrontier's custom skinned-mesh rendering path. Do not restart candidate search or add GeckoLib merely to duplicate the working custom path.
-- Production hit geometry, damage/range/resource policy, final weapon provisioning/presentation, final boss material/VFX/sound, and human field balance/readability remain evidence-gated.
+- Production hit geometry, damage/range/resource policy, final weapon art/presentation, final boss material/VFX/sound, and human field balance/readability remain evidence-gated.
 
-## This run
+## Latest playable-slice work
 
 - Re-read the current project canon and quality rules instead of relying on the older handoff.
-- Confirmed the previous handoff was stale about concrete client combat controls: client input and key mapping code already exist.
+- Confirmed concrete client combat controls already exist, so no second sender/key-mapping layer was created.
 - Removed obsolete `BossPresentationGeckoLibResourceId`: the project has no GeckoLib dependency, the current Region 01 production path uses the custom skinned-mesh renderer, and repository reference searches found no consumer of the adapter.
 - Added `assets/riftfrontier/lang/ko_kr.json` for the already-existing player-facing mod/combat key strings. This changes localization only; it does not invent UI layout or final control design.
-- No combat balance, hit shape, control default, model, material, VFX, sound, or final art direction was invented.
+- Added `PlayerWeaponProvisioningCommand` and registered it on the existing command event. This closes the previous practical field-play gap where the server could authenticate a loadout but a player had no supported way to obtain a stack carrying that production identity.
+- Provisioning deliberately uses a vanilla iron sword only as a temporary physical carrier. The stack receives the registered `riftfrontier:player_weapon_loadout` component; family/module identity is then revalidated through the existing current published combat catalog. No damage, reach, hit result, timing or target authority was moved into the item or command.
+- Available field-play provisioning commands are `/riftfrontier weapon mobile`, `/riftfrontier weapon mobile pivot`, `/riftfrontier weapon reach`, and `/riftfrontier weapon reach pivot`. The issued item must be held in the main hand and the two existing Riftfrontier combat actions must be bound in Minecraft Controls.
+- No combat balance, hit shape, final control default, model, material, VFX, sound, or final art direction was invented.
 
 ## Verification status
 
 - Canon/source reviewed against current main: YES.
 - Obsolete adapter reference search: performed before deletion; no consumer found, and `build.gradle` contains no GeckoLib dependency.
 - Korean language resource structure mirrors the existing `en_us.json` keys.
+- New provisioning path is wired through `Riftfrontier.registerCommands` and uses the already registered persistent loadout data component plus the two locked production family IDs and optional `recovery_pivot` module ID.
 - Local Gradle/build: NOT RUN in this automation environment.
-- Current post-change GitHub Actions result: not yet confirmed in this handoff. Do not claim BUILD VERIFIED until a Riftfrontier workflow for the descendant commit finishes successfully.
+- `Build Riftfrontier` run `34734535858`, HEAD `42a5b5e283a3d790a0052b8a8f89a3a27f9093c7`: QUEUED at handoff update. Do not claim BUILD VERIFIED until this run or a descendant finishes successfully.
 - Human field play: NOT TESTED.
 - Multiplayer field play: NOT TESTED.
 
@@ -36,14 +40,13 @@ Recovery aid only. Current GitHub `main` plus canonical project/design documents
 - Do not reintroduce the removed GeckoLib resource-id adapter unless a later selected asset genuinely requires GeckoLib and the dependency/renderer decision is explicitly changed.
 - Do not replace the selected Region 01 boss source simply because another asset is easier to integrate.
 - Do not add more player/boss generation, reconnect, owner, exact-instance, target-admission, attack-clock, presentation-world/tick/content-generation fences without a concrete regression.
+- Do not promote the vanilla iron-sword carrier into final weapon art or balance. It exists only to make the current authoritative combat slice human-testable before final weapon presentation is approved.
 - Provisional attack ticks are not final balance.
 
 ## Exact next development boundary
 
-1. Check the descendant `Build Riftfrontier` workflow. If it fails, fix the first real regression caused by this cleanup without weakening existing authority contracts.
-2. Keep work centered on a genuinely playable M3 slice rather than more backend fencing.
-3. Re-check whether a legitimate production ItemStack provisioning path now exists. If absent, implement the smallest player-testable provisioning path that preserves server-owned loadout authority; do not fake a finished weapon UI or final art.
-4. Do not invent final control defaults. Existing unbound action slots can be assigned through Minecraft Controls for field testing until the project has an approved mapping.
-5. Bind production hit geometry/damage only after an explicit evidence-backed gate; keep provisional values data-driven and clearly provisional where a test slice requires them.
-6. Continue the selected Region 01 boss through actual material/animation/VFX/sound/readability work on the existing custom renderer, using external references/assets and recorded provenance rather than improvised AI art direction.
-7. When a playable checkpoint is available, produce exact Minecraft test commands/JAR/reproduction steps and request human field-play evidence. Never promote CI/client smoke to PLAYTESTED.
+1. Check `Build Riftfrontier` run `34734535858` (or its descendant). If it fails, fix the first real regression caused by provisioning without weakening existing authority contracts.
+2. Once CI is green, use the new provisioning commands plus the existing configurable combat actions to prepare a human-testable player combat pass.
+3. Do not invent production hit geometry/damage from intuition. Establish the smallest evidence-backed hit geometry/damage gate needed for actual combat feedback, keep values data-driven/provisional, and align visible attack range with authoritative candidates.
+4. Continue the selected Region 01 boss through actual material/animation/VFX/sound/readability work on the existing custom renderer, using external references/assets and recorded provenance rather than improvised AI art direction.
+5. When a playable checkpoint is available, provide exact Minecraft commands/reproduction steps and expected observations. Never promote CI/client smoke to PLAYTESTED.
