@@ -4,6 +4,13 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `15`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.61.25-alpha.1 — Endgame Auto-Salvage / 종결 이후 자동 분해
+장비 메뉴에 `자동 분해`가 추가된다. 별도 설정창을 늘리지 않고 한 번 누를 때마다 **꺼짐 → 정예만 → 승천 이하 → 신화 포함 → 꺼짐**으로 순환한다.
+
+자동 분해는 인벤토리를 주기적으로 검사하지 않는다. 플레이어가 정예/승천/신화 적을 처치해 Survival Ascension 장비 드롭이 새로 만들어지는 순간에만 적용하며, 설정한 등급 이하라면 바닥에 장비 ItemEntity를 만들기 전에 기존 수동 분해와 동일한 환급 계산으로 바로 재료화한다. 따라서 종결 이후의 장비 정리 노동과 불필요한 드롭 엔티티를 함께 줄인다.
+
+기존 인벤토리/착용 장비/수동 각인 장비는 절대 자동으로 건드리지 않고, 각성 장비는 항상 보호한다. 설정은 서버 권한이며 사망/차원 이동으로 ServerPlayer가 교체되어도 유지된다. 저장 스키마와 네트워크 프로토콜 15는 그대로다.
+
 ## 0.61.24-alpha.1 — Mythic Backlog Enforcement / 신화 누적 개체 정리
 0.61.23은 새로 승급되는 신화 III만 제한했고, 이전 버전에서 이미 `setPersistenceRequired()`로 저장된 신화 III는 월드/청크 로딩 때 제한 검사를 받지 않았다. 그래서 오래된 세이브에서는 새 출현률을 낮춰도 과거에 쌓인 신화가 한꺼번에 다시 로드되어 10~20체 이상 보일 수 있었다.
 

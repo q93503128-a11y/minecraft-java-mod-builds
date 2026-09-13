@@ -17,10 +17,10 @@ def require(condition, message):
 props = text(ROOT / "gradle.properties")
 require("minecraft_version=26.2" in props, "Minecraft version drift")
 require("neo_version=26.2.0.38-beta" in props, "NeoForge version drift")
-require("mod_version=0.61.24-alpha.1" in props, "Survival Ascension version drift")
+require("mod_version=0.61.25-alpha.1" in props, "Survival Ascension version drift")
 
 main = text(JAVA / "SurvivalAscension.java")
-require('VERSION = "0.61.24-alpha.1"' in main, "source version drift")
+require('VERSION = "0.61.25-alpha.1"' in main, "source version drift")
 for event in (
     "MiningProgression::onBlockBreak",
     "BulkMiningService::onServerTick",
@@ -276,6 +276,18 @@ require("rerollAffixes" in affixes and "previous.containsAll(chosen)" in affixes
         and "!previous.contains(key)" in affixes,
         "paid equipment reroll can return the identical affix set")
 require("salvageText(held)" in equipment_ui, "salvage UI still previews rarity-only rewards")
+require("ACTION_AUTO_SALVAGE_CYCLE = 4" in equipment and "AUTO_SALVAGE_THRESHOLD_KEY" in equipment,
+        "auto-salvage action/preference authority missing")
+require("tryAutoSalvage(ServerPlayer player, ItemStack stack)" in equipment
+        and "rarity > threshold" in equipment and "AscensionAffixes.isAwakened(stack)" in equipment,
+        "auto-salvage threshold/awakened safety missing")
+require("EquipmentReforgeService.tryAutoSalvage(killer, drop)" in affixes,
+        "elite generated loot bypasses auto-salvage before ItemEntity creation")
+require("survivalascension_auto_salvage_threshold" in text(JAVA / "progress/PlayerLifecycleState.java"),
+        "auto-salvage preference is not preserved across player clone")
+require("Action.AUTO_SALVAGE" in equipment_ui and "Items.HOPPER" in equipment_ui
+        and "ACTION_AUTO_SALVAGE_CYCLE" in equipment_ui,
+        "auto-salvage radial control missing")
 require("FreightService.FRONTLINE_FOOD" in guide and "FreightService.FRONTLINE_STONE_BRICKS" in guide,
         "guide no longer derives frontline manifest from freight authority")
 require("식량176" not in guide and "철56" not in guide and "석재벽돌128만 선별" not in guide,

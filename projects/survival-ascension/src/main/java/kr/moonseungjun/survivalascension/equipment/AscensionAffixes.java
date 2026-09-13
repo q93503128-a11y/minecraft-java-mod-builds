@@ -67,6 +67,7 @@ public final class AscensionAffixes {
         double chance = switch (rankId) { case 1 -> 0.25D; case 2 -> 0.65D; default -> 1.0D; };
         if (level.getRandom().nextDouble() > chance) return;
         ItemStack drop = createEliteDrop(level.getRandom(), rankId);
+        if (EquipmentReforgeService.tryAutoSalvage(killer, drop)) return;
         level.addFreshEntity(new ItemEntity(level, mob.getX(), mob.getY() + 0.5D, mob.getZ(), drop));
     }
 

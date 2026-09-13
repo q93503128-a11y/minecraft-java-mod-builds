@@ -23,7 +23,8 @@ public final class PlayerLifecycleState {
     };
     private static final String[] INT_KEYS = {
             "survivalascension_bulk_tool_wear_bank",
-            "survivalascension_operation_interdiction_stage"
+            "survivalascension_operation_interdiction_stage",
+            "survivalascension_auto_salvage_threshold"
     };
     private static final String[] STRING_KEYS = {
             "survivalascension_apex_content_mark_type",

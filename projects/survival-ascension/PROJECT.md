@@ -1,11 +1,18 @@
 # Survival Ascension
 
-- Mod version: `0.61.24-alpha.1`
+- Mod version: `0.61.25-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `15`
-- Existing-world compatibility: 0.61.24 adds no SavedData ID/codec field and does not bump the network protocol. It intentionally retires loaded Mythic III entities that exceed the 256-block / three-per-dimension cap so old persistent backlogs cannot survive indefinitely; all player progression and valid in-cap Mythics remain compatible. Network protocol remains 15.
+- Existing-world compatibility: 0.61.25 adds only a player-local auto-salvage preference key and no SavedData ID/codec field or packet-schema change. Existing progression, equipment, infrastructure, Mythics and worlds remain compatible. Network protocol remains 15.
+
+## 0.61.25 Endgame Auto-Salvage / 종결 이후 자동 분해
+- Equipment radial menu adds one compact `자동 분해` control rather than a separate settings screen. Each click cycles OFF → Elite only → Ascended-or-lower → Mythic included → OFF.
+- Auto-salvage applies only to newly generated Survival Ascension elite equipment credited to that killer. It does not scan inventory, equipped items, manually imprinted gear or existing world items.
+- Eligible gear is converted through the exact same body/material/condition-aware salvage reward authority before an ItemEntity is spawned, so it reduces both inventory cleanup and discarded gear entities.
+- Awakened equipment is always excluded. Creative mode never receives auto-salvage material rewards. Preference is server-authoritative and preserved across ServerPlayer clone.
+- No SavedData schema, reward formula, affix roll, packet schema or network protocol change. Protocol remains 15.
 
 ## 0.61.24 Mythic Backlog Enforcement / 신화 누적 개체 정리
 - 0.61.23 correctly capped newly promoted Mythics but intentionally preserved older persistent Mythics. That left a real hole: existing saves could reload 10-20+ Mythic III mobs through `EntityJoinLevelEvent`, and those restored bosses bypassed the new admission cap.

@@ -19,6 +19,8 @@ public final class EquipmentReforgeService {
     public static final int ACTION_SALVAGE = 1;
     public static final int ACTION_AWAKEN = 2;
     public static final int ACTION_IMPRINT = 3;
+    public static final int ACTION_AUTO_SALVAGE_CYCLE = 4;
+    public static final String AUTO_SALVAGE_THRESHOLD_KEY = "survivalascension_auto_salvage_threshold";
 
     private EquipmentReforgeService() {}
 
@@ -27,6 +29,7 @@ public final class EquipmentReforgeService {
         else if (action == ACTION_SALVAGE) salvage(player);
         else if (action == ACTION_AWAKEN) awaken(player);
         else if (action == ACTION_IMPRINT) imprint(player);
+        else if (action == ACTION_AUTO_SALVAGE_CYCLE) cycleAutoSalvage(player);
     }
 
     private static void imprint(ServerPlayer player) {
@@ -134,6 +137,44 @@ public final class EquipmentReforgeService {
         player.containerMenu.broadcastChanges();
         player.sendSystemMessage(Component.literal("§b[분해 완료] §f" + oldName + " §7→ §f" + join(rewards)
                 + " §8· 장비 부위/재질 체급/남은 내구도 반영"));
+    }
+
+    public static int autoSalvageThreshold(ServerPlayer player) {
+        return Math.max(0, Math.min(3, player.getPersistentData().getIntOr(AUTO_SALVAGE_THRESHOLD_KEY, 0)));
+    }
+
+    private static void cycleAutoSalvage(ServerPlayer player) {
+        int next = (autoSalvageThreshold(player) + 1) % 4;
+        player.getPersistentData().putInt(AUTO_SALVAGE_THRESHOLD_KEY, next);
+        String mode = switch (next) {
+            case 1 -> "정예만";
+            case 2 -> "승천 이하";
+            case 3 -> "신화 포함";
+            default -> "꺼짐";
+        };
+        player.sendSystemMessage(Component.literal(next == 0
+                ? "§7[자동 분해] §f꺼짐 · 신규 승천 장비가 다시 바닥에 드롭됩니다."
+                : "§b[자동 분해] §f" + mode + " §7· 정예 처치 신규 장비를 드롭 전에 즉시 재료로 환급합니다. 각성 장비는 항상 보호됩니다."));
+    }
+
+    /**
+     * Converts only newly generated Survival Ascension elite loot. It never scans the player's
+     * inventory or touches manually imprinted/equipped gear, so enabling it cannot silently eat
+     * an existing endgame set. Returns true when the physical gear drop was consumed.
+     */
+    public static boolean tryAutoSalvage(ServerPlayer player, ItemStack stack) {
+        if (player.isCreative() || stack.isEmpty() || AscensionAffixes.isAwakened(stack)) return false;
+        int threshold = autoSalvageThreshold(player);
+        int rarity = AscensionAffixes.rarity(stack);
+        if (threshold <= 0 || rarity <= 0 || rarity > threshold) return false;
+
+        String oldName = stack.getHoverName().getString();
+        MaterialCost[] rewards = salvageRewards(stack);
+        for (MaterialCost reward : rewards) give(player, new ItemStack(reward.item(), reward.count()));
+        player.getInventory().setChanged();
+        player.containerMenu.broadcastChanges();
+        player.sendSystemMessage(Component.literal("§b[자동 분해] §f" + oldName + " §7→ §f" + join(rewards)), true);
+        return true;
     }
 
     public static String costText(int rarity) {

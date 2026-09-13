@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.61.25-alpha.1
+- Added a compact equipment-menu auto-salvage control: OFF → Elite → Ascended-or-lower → Mythic included → OFF.
+- Auto-salvage converts only newly generated Survival Ascension elite loot before ItemEntity creation, using the exact existing dynamic salvage reward calculation. Existing inventory/equipped/imprinted gear is never scanned.
+- Awakened gear is always protected, creative mode cannot receive salvage materials, and the server-authoritative preference survives Player clone.
+- Reduces endgame inventory cleanup and unnecessary discarded gear entities without changing affix rolls, salvage economy, packet schema or protocol 15.
+
 ## 0.61.24-alpha.1
 - Fixed the 0.61.23 Mythic-cap hole for existing saves: persistent Mythic III mobs reloaded through EntityJoin now pass the same 256-block / three-per-dimension admission rule instead of bypassing it.
 - Loaded over-cap legacy Mythics are retired without drops/rewards; a one-second runtime reconciliation preserves Mythics nearest active players first and removes overflow.
