@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.132" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.133" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -78,9 +78,13 @@ require("ACTIVE_SITE_WORK_MARGIN = 4" in construction and "safeGroundWorkCell" i
 require("Set<BlockPos> reservedHomes = new HashSet<>()" in construction
         and "returnBuilderHome(level, data, builder, reservedHomes)" in construction,
         "idle construction workers can again pile onto one shared home coordinate")
-require("builderStrandedOnArtificialElevation" in construction and "builderOnArtificialElevation" in construction
-        and "nearestNaturalGroundBelow" in construction and "return artificialRise >= 3;" in construction,
-        "disconnected elevated builder recovery missing")
+builder_recovery = construction.split("private static void recoverBuilderFromBlockedCell", 1)[1].split(
+        "private static BlockPos findSafeBuilderHome", 1)[0]
+require("findLocalBuilderEscape" in builder_recovery and "findSafeBuilderHome" not in builder_recovery
+        and "radius <= 3" in builder_recovery,
+        "active construction recovery can again jump a resident back to settlement home")
+require("boolean insideFootprint" in construction and "if (insideFootprint) return false;" in construction,
+        "building workers can again stop inside the blueprint footprint and be built into the structure")
 require("Preserve an in-flight site path" in construction
         and "thenComparingLong(BlockPos::asLong)" in construction,
         "construction workers can again thrash between changing blueprint-side approach targets")
@@ -141,9 +145,12 @@ require(worker.count("withinResourceWorkReach(worker, target") >= 2, "resource w
 require("canWorkOrApproach(level, worker, pos, LUMBER_REMOTE_WORK_REACH_SQR)" in worker, "near lumber target still requires a walkable final cell")
 require("isBlockedOutsideWorkReach" in worker, "blocked-target retry still suppresses already-reachable remote work")
 require("DUPLICATE_MAINTENANCE_INTERVAL_TICKS = 200" in worker, "maintenance duplicate scans regressed to hot-path cadence")
-require("DEEP_WORK_RETURN_TELEPORT_TICKS = 240L" in worker
-        and "CARGO_RETURN_STARTED_AT" in worker and "rescueLongDeepWorkReturn" in worker,
-        "deep quarry/mine cargo-return recovery missing")
+require("DEEP_WORK_RETURN_REPATH_TICKS = 240L" in worker
+        and "CARGO_RETURN_STARTED_AT" in worker and "restartLongDeepWorkReturn" in worker
+        and "DEEP_WORK_RETURN_TELEPORT_TICKS" not in worker and "rescueLongDeepWorkReturn" not in worker,
+        "deep quarry/mine cargo return can again teleport a visible resident")
+require("safeLocalWorkerEscape" in worker and "safeWorkerSpawn(level, workplace)" not in worker,
+        "blocked production-worker recovery can again jump across the settlement")
 require("RESOURCE_SEARCH_RETRY_TICKS = 200L" in worker
         and "RESOURCE_SEARCH_RETRY_JITTER_TICKS = 200L" in worker
         and worker.count("resourceSearchRetryTicks(worker)") >= 3,

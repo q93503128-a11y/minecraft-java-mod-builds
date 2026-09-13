@@ -1058,6 +1058,12 @@ public final class SettlementConstructionService {
         if (builder.getX() < minX || builder.getX() > maxX || builder.getZ() < minZ || builder.getZ() > maxZ) return false;
         int x = (int) Math.floor(builder.getX());
         int z = (int) Math.floor(builder.getZ());
+        // A resident standing inside the blueprint footprint is not a valid finished approach.
+        // Treating the interior as "on site" let the next wall/floor placement occupy the resident's
+        // own cell, after which the old recovery path jumped them back to the settlement home.
+        boolean insideFootprint = x >= construction.originX() && x < construction.originX() + width
+                && z >= construction.originZ() && z < construction.originZ() + depth;
+        if (insideFootprint) return false;
         BlockPos ground = safeGroundWorkCell(level, x, z);
         return ground != null && Math.abs(builder.getY() - ground.getY()) <= 1.25D;
     }
@@ -1478,39 +1484,37 @@ public final class SettlementConstructionService {
         if (!level.hasChunkAt(feet) || !level.hasChunkAt(head)) return;
         boolean physicallyBlocked = blocksCurrentPathCell(level, feet, level.getBlockState(feet))
                 || blocksCurrentPathCell(level, head, level.getBlockState(head));
-        boolean elevatedCandidate = !physicallyBlocked && builderOnArtificialElevation(level, builder);
-        if (!physicallyBlocked && !elevatedCandidate) return;
+        if (!physicallyBlocked) return;
 
-        BlockPos safe = findSafeBuilderHome(level, data, occupied);
-        if (safe == null) return;
-        // A connected bridge/balcony is still physical world traversal. Only a genuinely disconnected
-        // elevated perch is recovered; ordinary accessible structures never become a teleport shortcut.
-        if (elevatedCandidate && !builderStrandedOnArtificialElevation(level, builder, safe)) return;
+        // Automatic recovery must never jump a visible resident across the settlement. The only
+        // forced relocation left here is a bounded local unstuck nudge for a body already intersecting
+        // collision (for example an old save or a block placed on the exact same tick).
+        BlockPos safe = findLocalBuilderEscape(level, builder, occupied);
+        if (safe == null) {
+            builder.getNavigation().stop();
+            return;
+        }
         builder.getNavigation().stop();
         builder.setPos(safe.getX() + 0.5D, safe.getY(), safe.getZ() + 0.5D);
     }
 
-    private static boolean builderOnArtificialElevation(ServerLevel level, FrontierWorkerEntity builder) {
-        BlockPos feet = builder.blockPosition();
-        int naturalGroundY = nearestNaturalGroundBelow(level, feet, 16);
-        if (naturalGroundY == Integer.MIN_VALUE) return false;
-        int artificialRise = (feet.getY() - 1) - naturalGroundY;
-        return artificialRise >= 3;
-    }
-
-    /** Accessible balconies/bridges stay physical; only a disconnected elevated perch is recovered. */
-    private static boolean builderStrandedOnArtificialElevation(ServerLevel level, FrontierWorkerEntity builder,
-                                                                 BlockPos safe) {
-        return builderOnArtificialElevation(level, builder) && createReachablePath(builder, safe) == null;
-    }
-
-    private static int nearestNaturalGroundBelow(ServerLevel level, BlockPos feet, int maxDepth) {
-        for (int depth = 1; depth <= maxDepth; depth++) {
-            BlockPos probe = feet.below(depth);
-            if (!level.hasChunkAt(probe)) return Integer.MIN_VALUE;
-            if (isNaturalGround(level.getBlockState(probe))) return probe.getY();
+    private static BlockPos findLocalBuilderEscape(ServerLevel level, FrontierWorkerEntity builder,
+                                                   Set<BlockPos> occupied) {
+        BlockPos origin = builder.blockPosition();
+        int[] dyOrder = {0, 1, -1, 2, -2};
+        for (int radius = 1; radius <= 3; radius++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
+                    for (int dy : dyOrder) {
+                        BlockPos candidate = origin.offset(dx, dy, dz);
+                        if (occupied.contains(candidate)) continue;
+                        if (isWalkableApproachCell(level, candidate)) return candidate;
+                    }
+                }
+            }
         }
-        return Integer.MIN_VALUE;
+        return null;
     }
 
     private static BlockPos findSafeBuilderHome(ServerLevel level, SettlementData data) {

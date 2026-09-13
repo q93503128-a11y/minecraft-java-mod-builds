@@ -66,9 +66,9 @@ public final class SettlementWorkerService {
     private static final long RESOURCE_SEARCH_RETRY_JITTER_TICKS = 200L;
     private static final long BLOCKED_TARGET_RETRY_TICKS = 120L;
     private static final long STUCK_PROGRESS_TIMEOUT_TICKS = 80L;
-    // Deep quarry/mine routes can become physically valid but impractically long after excavation.
-    // Keep ordinary walking first, then recover only the cargo-return leg after twelve seconds.
-    private static final long DEEP_WORK_RETURN_TELEPORT_TICKS = 240L;
+    // Deep quarry/mine returns may need a fresh path after excavation, but visible residents must
+    // remain physical. After twelve seconds, clear stale path/blocked-target state and repath in place.
+    private static final long DEEP_WORK_RETURN_REPATH_TICKS = 240L;
     private static final int MAX_APPROACH_PATH_TRIES = 24;
     private static final int PRODUCTION_HAUL_STACK = 64;
     // Civic administration cadence is owned by SettlementCityInvestmentService so one grade
@@ -292,7 +292,7 @@ public final class SettlementWorkerService {
             // relog or save migration cannot swap jobs merely because UUID lexical order changed.
             worker.setNoAi(false);
             worker.setInvulnerable(false);
-            recoverBlockedWorker(level, worker, building.workCenter());
+            recoverBlockedWorker(level, worker);
             SettlementProductionStatusService.mark(level, building, "정상 작업 중");
             // Old saves can contain a worker that was carrying a worksite-export stack. That old
             // state caused a local-barrel -> MAINHAND -> town-storage retry loop. Retire it once and
@@ -604,17 +604,37 @@ public final class SettlementWorkerService {
         return null;
     }
 
-    private static void recoverBlockedWorker(ServerLevel level, FrontierWorkerEntity worker, BlockPos workplace) {
+    private static void recoverBlockedWorker(ServerLevel level, FrontierWorkerEntity worker) {
         BlockPos feet = worker.blockPosition();
         if (!level.hasChunkAt(feet) || !level.hasChunkAt(feet.above())) return;
         boolean blocked = !level.getBlockState(feet).getCollisionShape(level, feet).isEmpty()
                 || !level.getBlockState(feet.above()).getCollisionShape(level, feet.above()).isEmpty();
         if (!blocked) return;
-        BlockPos safe = safeWorkerSpawn(level, workplace);
-        if (safe == null) return;
+        BlockPos safe = safeLocalWorkerEscape(level, worker);
+        if (safe == null) {
+            worker.getNavigation().stop();
+            return;
+        }
         worker.getNavigation().stop();
         worker.setPos(safe.getX() + 0.5D, safe.getY(), safe.getZ() + 0.5D);
         clearTransientWorkerState(worker);
+    }
+
+    private static BlockPos safeLocalWorkerEscape(ServerLevel level, FrontierWorkerEntity worker) {
+        BlockPos origin = worker.blockPosition();
+        int[] dyOrder = {0, 1, -1, 2, -2};
+        for (int radius = 1; radius <= 3; radius++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
+                    for (int dy : dyOrder) {
+                        BlockPos candidate = origin.offset(dx, dy, dz);
+                        if (isWalkableApproach(level, candidate)) return candidate;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -941,7 +961,7 @@ public final class SettlementWorkerService {
                 clearTargetIfEmpty(worker);
                 return;
             }
-            if (rescueLongDeepWorkReturn(level, worker, building)) {
+            if (restartLongDeepWorkReturn(level, worker, building)) {
                 SettlementProductionStatusService.mark(level, building, "귀환 경로 재정비");
                 return;
             }
@@ -954,8 +974,8 @@ public final class SettlementWorkerService {
         deliverToTownStorage(level, data, worker, building, carried);
     }
 
-    private static boolean rescueLongDeepWorkReturn(ServerLevel level, FrontierWorkerEntity worker,
-                                                    BuildingRecord building) {
+    private static boolean restartLongDeepWorkReturn(ServerLevel level, FrontierWorkerEntity worker,
+                                                     BuildingRecord building) {
         BuildingType type = building.buildingType();
         java.util.UUID workerId = worker.getUUID();
         if (type != BuildingType.QUARRY && type != BuildingType.MINE) {
@@ -964,15 +984,14 @@ public final class SettlementWorkerService {
         }
         long now = level.getGameTime();
         long started = CARGO_RETURN_STARTED_AT.computeIfAbsent(workerId, ignored -> now);
-        if (now - started < DEEP_WORK_RETURN_TELEPORT_TICKS) return false;
-        BlockPos safe = safeWorkerSpawn(level, building.workCenter());
-        if (safe == null) return false;
+        if (now - started < DEEP_WORK_RETURN_REPATH_TICKS) return false;
+        // Do not teleport the resident or its real carried ItemStack. Reset only transient routing
+        // evidence so the next work tick computes a fresh physical return path from the same position.
         worker.getNavigation().stop();
-        worker.setPos(safe.getX() + 0.5D, safe.getY(), safe.getZ() + 0.5D);
         clearResourceTarget(worker);
         MOVEMENT_WATCHES.remove(workerId);
         BLOCKED_TARGETS.remove(workerId);
-        CARGO_RETURN_STARTED_AT.remove(workerId);
+        CARGO_RETURN_STARTED_AT.put(workerId, now);
         return true;
     }
 

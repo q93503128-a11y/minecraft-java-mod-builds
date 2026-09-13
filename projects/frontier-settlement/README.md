@@ -2,7 +2,11 @@
 
 Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
-## Current version: 0.1.0-alpha.132
+## Current version: 0.1.0-alpha.133
+
+## Alpha.133 resident movement: no settlement-home teleport fallback
+
+Real play after Alpha.132 exposed a second movement bug: an active construction resident that intersected a newly placed block, or was judged stranded on artificial elevation, could be recovered with `setPos` all the way back to the settlement safe-home cell. That is why a resident could visibly vanish and reappear at the same house. Alpha.133 removes that long-range automatic recovery. Ordinary builders may no longer count the inside of the blueprint footprint as a finished approach, collision recovery is limited to a three-block local unstuck nudge, and elevated residents must recover through real navigation rather than a town-center jump. The same rule now applies to production residents: blocked-worker recovery is local only, while the old twelve-second quarry/mine cargo-return teleport has been replaced by an in-place path reset and physical repath. Newly created residents still spawn normally at a safe initial cell; this change targets already-existing visible residents.
 
 ## Alpha.132 construction-route commitment
 
