@@ -134,8 +134,12 @@ M2-B에서 지금까지 검증된 실제 Minecraft adapter:
 
 1. 실제 Minecraft client에서 반복 플레이하며 spawn spacing, aggro/pacing, salvage hazard, extraction 선택 압력을 검수한다.
 2. death/logout/abort/extraction 직전·직후와 restart 이후 플레이어 재진입의 플레이 체감·동선·저장 결과를 수동 field-play에서 재검수한다.
-3. 플레이 결과를 기준으로 pressure scaling과 patrol reward 수치를 조정한다. 추측만으로 장기 밸런스를 확정하지 않는다.
-4. restart/logout 뒤 stranded/re-entry 문제가 실제로 확인되면 무조건 순간이동이 아니라 명시적 field-exit/re-entry adapter를 설계·검증한다.
-5. M3 전투/elite/boss presentation 작업 전 `REFERENCE_TARGETS.md` 원칙에 맞는 combat/visual reference dossier를 만든다.
-6. 기술 proxy를 최종 모델·애니메이션으로 오인하지 않는다. 실제 플레이/시각 검수 전 combat/presentation 완료를 선언하지 않는다.
-7. `준비 → 진입 → 탐사/전투/회수 → 철수 → 투자 → 다음 원정 변화` 전체 vertical slice를 실제 게임에서 검수한 뒤 M2 완료 여부를 판단한다.
+3. 플레이어 조작 가능한 M3 전투 vertical slice를 실제 게임 안에서 성립시키는 작업을 우선한다. 이미 검증된 서버 권한/세션/생명주기 fence를 반복 확장하지 않는다.
+4. production weapon ItemStack 지급/장착 경로와 concrete client action/control sender가 아직 없다면, 임시 개발자 전용 우회가 아니라 테스트 가능한 플레이어-facing 경계로 최소 연결한다. 단, UI/키 배치/아이템 외형은 기존 레퍼런스와 승인된 방향을 따르고 임의 최종 디자인으로 확정하지 않는다.
+5. 승인된 attack geometry/damage/presentation 근거가 없는 상태에서 임의 수치를 final로 고정하지 않는다. 실제 플레이를 위해 provisional engineering 값이 필요하면 data-driven으로 분리하고 문서에 provisional임을 명시한다.
+6. Region 01 첫 보스는 이미 선정된 외부 geometry/rig source와 provenance를 유지한다. 새 모델을 다시 찾기보다 현재 selected asset을 실제 Minecraft presentation으로 끌어올리는 것을 우선한다.
+7. obsolete/duplicate/temporary 구현은 검증된 대체 경로가 있을 때 제거한다. 빌드를 단순화하려고 살아 있는 기능이나 호환성 경계를 지우지 않는다.
+
+M2 완료 조건:
+
+`준비 → 진입 → 목표/탐사/전투 → 철수 → 투자 → 다음 원정 변화`가 실제 게임에서 끊기지 않고 동작하며 GameTest와 실제 플레이 검수를 통과한다.
