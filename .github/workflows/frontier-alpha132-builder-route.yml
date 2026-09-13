@@ -1,0 +1,59 @@
+name: Frontier Alpha.132 Builder Route Patch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/frontier_alpha132_builder_route_patch.py'
+      - '.github/workflows/frontier-alpha132-builder-route.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Sync latest main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git reset --hard origin/main
+      - name: Apply Alpha.132 patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/frontier_alpha132_builder_route_patch.py
+      - name: Targeted source/docs audit and compile
+        working-directory: projects/frontier-settlement
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/test_current_source.py
+          python3 tools/test_current_docs.py
+          chmod +x gradlew
+          ./gradlew --no-daemon compileJava --stacktrace --console=plain
+          git diff --check
+      - name: Commit Alpha.132
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/frontier-settlement
+          if git diff --cached --quiet; then
+            echo 'No project changes to commit.'
+            exit 0
+          fi
+          git commit -m 'frontier: stabilize builder site approach alpha.132'
+          git push origin HEAD:main
