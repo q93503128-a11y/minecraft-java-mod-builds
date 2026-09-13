@@ -20,6 +20,10 @@ import java.util.Optional;
 /**
  * Loads all server data-pack content, presentation documents and selected-asset metadata into isolated
  * candidates, validates the complete graph, and only then atomically replaces the runtime snapshot.
+ *
+ * <p>Authored boss presentation profiles may exist before their production assets have been selected.
+ * Those profiles remain staged until a selected-asset manifest exists; they are not published into the
+ * authoritative runtime snapshot early and they are never paired with invented placeholder selections.</p>
  */
 public final class ContentServerReloadListener implements ResourceManagerReloadListener {
     public static final Identifier ID = Identifier.fromNamespaceAndPath(Riftfrontier.MOD_ID, "content_runtime");
@@ -55,11 +59,20 @@ public final class ContentServerReloadListener implements ResourceManagerReloadL
             }
         }
 
-        List<BossPresentationProfile> presentationProfiles = loadPresentationProfiles(resourceManager);
+        List<BossPresentationProfile> authoredPresentationProfiles = loadPresentationProfiles(resourceManager);
         Optional<BossPresentationAssetManifest> assetManifest = loadPresentationAssetManifest(resourceManager);
+        List<BossPresentationProfile> publishablePresentationProfiles = authoredPresentationProfiles;
+        if (!authoredPresentationProfiles.isEmpty() && assetManifest.isEmpty()) {
+            Riftfrontier.LOGGER.info(
+                "Riftfrontier boss presentation profiles staged but not published: authoredProfiles={}, reason=no selected-asset manifest",
+                authoredPresentationProfiles.size()
+            );
+            publishablePresentationProfiles = List.of();
+        }
+
         ContentPackSet.Merged merged = ContentPackSet.merge(packs);
         ContentRuntimeSnapshot snapshot = ContentRuntime.installValidated(
-            merged.registry(), merged.packIds(), presentationProfiles, assetManifest
+            merged.registry(), merged.packIds(), publishablePresentationProfiles, assetManifest
         );
         Riftfrontier.LOGGER.info(
             "Riftfrontier content snapshot published: generation={}, packs={}, definitions={}, bossPresentations={}, bossAssetManifest={}, fingerprint={}, provenance={}",
