@@ -12,7 +12,12 @@ import java.util.Map;
 public final class ProductionDefinitionFixture {
     private static final String ROOT = "data/turnbound_re/turnbound_definitions/";
     private static final String[] FILES = {
-            "core_statuses.json", "progression.json", "vertical_actions.json", "vertical_characters.json", "vertical_encounters.json"
+            "core_statuses.json",
+            "progression.json",
+            "vertical_actions.json",
+            "vertical_characters.json",
+            "vertical_encounters.json",
+            "world_regions.json"
     };
 
     private ProductionDefinitionFixture() {}
