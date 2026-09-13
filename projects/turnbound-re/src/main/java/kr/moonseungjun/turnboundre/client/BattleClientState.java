@@ -14,6 +14,7 @@ public final class BattleClientState {
     private static final Object LOCK = new Object();
     private static BattleNetworkPayloads.DecodedSnapshot latestSnapshot;
     private static BattleNetworkPayloads.DecodedEvents latestEvents;
+    private static long eventEpoch;
 
     private BattleClientState() {}
 
@@ -28,9 +29,11 @@ public final class BattleClientState {
                     BattleActionTimelineState.beginBattle(decoded.battleId());
                 }
                 BattleStageFeedbackState.acceptSnapshot(latestSnapshot, decoded);
+                BattleImpactPresentationState.acceptSnapshot(latestSnapshot, decoded, eventEpoch);
                 latestSnapshot = decoded;
                 if (latestEvents != null && !latestEvents.battleId().equals(decoded.battleId())) {
                     latestEvents = null;
+                    eventEpoch++;
                 }
             }
         }
@@ -43,13 +46,16 @@ public final class BattleClientState {
             if (decoded.events().stream().anyMatch(event -> CLEAR_EVENT_TYPE.equals(event.type()))) {
                 latestSnapshot = null;
                 latestEvents = null;
+                eventEpoch++;
                 BattleStageFeedbackState.clear();
+                BattleImpactPresentationState.clear();
                 BattleActionTimelineState.clear();
                 return;
             }
             if (latestEvents == null
                     || !latestEvents.battleId().equals(decoded.battleId())
                     || decoded.resultingRevision() >= latestEvents.resultingRevision()) {
+                if (!decoded.equals(latestEvents)) eventEpoch++;
                 latestEvents = decoded;
                 BattleActionTimelineState.acceptEvents(decoded);
             }
@@ -70,7 +76,9 @@ public final class BattleClientState {
 
     public static Optional<BattlePresentationModel> presentation() {
         synchronized (LOCK) {
-            return latestSnapshot == null ? Optional.empty() : Optional.of(BattlePresentationModel.from(latestSnapshot));
+            if (latestSnapshot == null) return Optional.empty();
+            BattleNetworkPayloads.DecodedSnapshot projected = BattleImpactPresentationState.project(latestSnapshot, eventEpoch);
+            return Optional.of(BattlePresentationModel.from(projected));
         }
     }
 
@@ -78,7 +86,9 @@ public final class BattleClientState {
         synchronized (LOCK) {
             latestSnapshot = null;
             latestEvents = null;
+            eventEpoch++;
             BattleStageFeedbackState.clear();
+            BattleImpactPresentationState.clear();
             BattleActionTimelineState.clear();
         }
     }
