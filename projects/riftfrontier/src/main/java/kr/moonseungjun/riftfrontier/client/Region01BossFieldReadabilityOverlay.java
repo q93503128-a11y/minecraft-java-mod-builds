@@ -3,6 +3,7 @@ package kr.moonseungjun.riftfrontier.client;
 import kr.moonseungjun.riftfrontier.Riftfrontier;
 import kr.moonseungjun.riftfrontier.client.render.Region01BossClientRenderRuntime;
 import kr.moonseungjun.riftfrontier.combat.Region01BossFieldImpactProfile;
+import kr.moonseungjun.riftfrontier.combat.Region01BossFieldReadabilityProjection;
 import kr.moonseungjun.riftfrontier.content.ContentId;
 import kr.moonseungjun.riftfrontier.entity.Region01BossEntity;
 import net.minecraft.client.Minecraft;
@@ -13,9 +14,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Development readability overlay for the Region 01 boss field harness.
@@ -43,7 +41,11 @@ public final class Region01BossFieldReadabilityOverlay {
         if (minecraft.level.getGameTime() % SAMPLE_INTERVAL_TICKS != 0L) return;
 
         var search = minecraft.player.getBoundingBox().inflate(SEARCH_RADIUS);
-        for (Region01BossEntity boss : minecraft.level.getEntitiesOfClass(Region01BossEntity.class, search, Region01BossEntity::isAlive)) {
+        for (Region01BossEntity boss : minecraft.level.getEntitiesOfClass(
+            Region01BossEntity.class,
+            search,
+            Region01BossEntity::isAlive
+        )) {
             BossPresentationClientState.current(boss.getId(), boss.getUUID()).ifPresent(state -> {
                 if (!state.active()) return;
                 Region01BossFieldImpactProfile.Profile profile;
@@ -61,7 +63,8 @@ public final class Region01BossFieldReadabilityOverlay {
                 ParticleOptions particle = particleForPhase(state.attackPhase());
                 double y = boss.getY() + 0.12D;
 
-                for (LocalSample sample : localSamples(profile)) {
+                for (Region01BossFieldReadabilityProjection.LocalSample sample
+                    : Region01BossFieldReadabilityProjection.samples(profile)) {
                     double x = boss.getX() + sample.forward() * forwardX - sample.lateral() * forwardZ;
                     double z = boss.getZ() + sample.forward() * forwardZ + sample.lateral() * forwardX;
                     minecraft.level.addParticle(particle, x, y, z, 0.0D, 0.012D, 0.0D);
@@ -78,50 +81,4 @@ public final class Region01BossFieldReadabilityOverlay {
             default -> ParticleTypes.CLOUD;
         };
     }
-
-    static List<LocalSample> localSamples(Region01BossFieldImpactProfile.Profile profile) {
-        return switch (profile.shape()) {
-            case LOCAL_AREA -> localAreaSamples(profile);
-            case FORWARD_LANE -> forwardLaneSamples(profile);
-            case FORWARD_ARC -> forwardArcSamples(profile);
-        };
-    }
-
-    private static List<LocalSample> localAreaSamples(Region01BossFieldImpactProfile.Profile profile) {
-        List<LocalSample> samples = new ArrayList<>();
-        int points = 20;
-        for (int i = 0; i < points; i++) {
-            double angle = (Math.PI * 2.0D * i) / points;
-            samples.add(new LocalSample(Math.cos(angle) * profile.reach(), Math.sin(angle) * profile.reach()));
-        }
-        return List.copyOf(samples);
-    }
-
-    private static List<LocalSample> forwardLaneSamples(Region01BossFieldImpactProfile.Profile profile) {
-        List<LocalSample> samples = new ArrayList<>();
-        int longitudinalSteps = 8;
-        for (int i = 0; i <= longitudinalSteps; i++) {
-            double forward = profile.reach() * i / longitudinalSteps;
-            samples.add(new LocalSample(forward, -profile.halfWidth()));
-            samples.add(new LocalSample(forward, profile.halfWidth()));
-        }
-        samples.add(new LocalSample(profile.reach(), 0.0D));
-        return List.copyOf(samples);
-    }
-
-    private static List<LocalSample> forwardArcSamples(Region01BossFieldImpactProfile.Profile profile) {
-        List<LocalSample> samples = new ArrayList<>();
-        int forwardSteps = 8;
-        for (int i = 1; i <= forwardSteps; i++) {
-            double forward = profile.reach() * i / forwardSteps;
-            double circleHalfWidth = Math.sqrt(Math.max(0.0D, profile.reach() * profile.reach() - forward * forward));
-            double lateral = Math.min(profile.halfWidth(), circleHalfWidth);
-            samples.add(new LocalSample(forward, -lateral));
-            samples.add(new LocalSample(forward, lateral));
-        }
-        samples.add(new LocalSample(profile.reach(), 0.0D));
-        return List.copyOf(samples);
-    }
-
-    record LocalSample(double forward, double lateral) {}
 }
