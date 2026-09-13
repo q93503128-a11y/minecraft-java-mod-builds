@@ -4,7 +4,7 @@ Recovery aid only. Current GitHub `main` plus `PROJECT.md`, `docs/CANONICAL.md`,
 
 ## Current stage
 
-`M3 — PLAYER COMBAT BUILD VERIFIED / REGION 01 BOSS FIELD HARNESS ADDED / HUMAN FIELD PLAY NEXT`
+`M3 — PLAYER COMBAT BUILD VERIFIED / REGION 01 BOSS ROLE-SPECIFIC FIELD HARNESS READY / HUMAN FIELD PLAY NEXT`
 
 Do not reopen M2 expedition/runtime/restart authority work without a demonstrated regression. The current priority is a genuinely playable vertical slice: human player-combat field play, Region 01 boss field evidence, and evidence-backed boss presentation/combat integration.
 
@@ -107,7 +107,7 @@ Do not treat Xvfb smoke as human play. PLAYTESTED remains NO and MULTIPLAYER TES
 
 A development-only path now exists to exercise the already-authored production boss semantics in a real Minecraft world without prematurely inserting the boss into Region 01 encounter composition.
 
-Code checkpoint before documentation: `c2726fad1019a3af49ec7335a756574814b151bc`.
+Initial harness code checkpoint: `c2726fad1019a3af49ec7335a756574814b151bc`.
 
 ### Commands
 
@@ -123,24 +123,46 @@ Code checkpoint before documentation: `c2726fad1019a3af49ec7335a756574814b151bc`
 - A content reload retires a stale published-generation capability; the enabled field actor rebuilds its diagnostic runtime from the new published snapshot rather than continuing stale damage authority.
 - The harness is intentionally **not persisted** as production encounter state and remains excluded from natural spawning/Region 01 encounter composition.
 
-### Diagnostic-only physical policy
+### Attack-specific provisional physical policy
 
-The current harness uses one neutral `MinecraftAttackAdapter.AabbHitVolume(2.5D, 1.5D)` and `1.0F` damage for every boss attack. This exists only to make telegraph/ACTIVE/recovery, damage dedupe, phase composition and network presentation observable in a real world. It is not evidence that committed strike, line displacement and arena pressure share final geometry or damage.
+The original neutral `MinecraftAttackAdapter.AabbHitVolume(2.5D, 1.5D)` has been replaced in the development-only field harness by `Region01BossFieldImpactProfile` + `Region01BossFieldImpactResolver` so the three already-authored gameplay roles are physically distinguishable before final art exists:
 
-Do not tune or promote these values until human field evidence identifies an actual symptom. Production attack geometry/damage still requires evidence-backed authoring.
+- committed strike: broad, shorter forward arc;
+- line displacement: longer, narrower forward lane;
+- arena pressure: facing-independent local area around the boss, available only through the phase-2 attack pool.
+
+All three still use `1.0F` diagnostic damage, the existing authoritative ACTIVE-only timing gate, server target eligibility, and once-per-execution target dedupe. The numeric dimensions are calibration scaffolding only. They are not final reach, hitbox, encounter balance or production damage and must be revised only from actual Minecraft field evidence.
+
+`Region01BossFieldImpactProfileTest` locks the intended relative contrast and verifies that the three profile IDs exactly belong to the canonical Region 01 production semantic phase sets. It does not approve the concrete numeric dimensions as final balance.
+
+### Verification for the role-specific field-impact batch
+
+Code/docs checkpoint before this handoff update: `f65e6f98d3a986582117e33f773ccb3220a9faff`.
+
+`Build Riftfrontier` run `34761913225` is the verification run for that checkpoint. At the time this handoff was written:
+
+- toolchain verification: SUCCESS;
+- asset-intake tests: SUCCESS;
+- `Tests and clean build`: SUCCESS;
+- required Riftfrontier GameTest gate: SUCCESS;
+- dedicated-server smoke: still in progress;
+- client smoke / executable-JAR inspection / artifact upload: not yet completed.
+
+Therefore this batch is currently **CODE REVIEWED / TESTED / GAMETEST VERIFIED / FULL CI IN PROGRESS**. Do not upgrade it to BUILD VERIFIED or JAR PRODUCED until run `34761913225` actually completes those remaining gates successfully.
 
 ### Exact human test contract
 
-`docs/M3_REGION01_BOSS_FIELD_PLAY.md` is now the canonical manual procedure. It covers:
+`docs/M3_REGION01_BOSS_FIELD_PLAY.md` is the canonical manual procedure. It now covers:
 
 - explicit spawn/cleanup;
 - ACTIVE-only damage and one-hit-per-execution dedupe;
+- physical role contrast for broad committed strike vs narrow long line displacement vs local arena pressure;
 - phase 1/phase 2 composition switching;
 - `/reload` generation retirement/rebuild;
 - interaction with the existing M3 player weapons;
 - required evidence fields and the exact boundary for `PLAYTESTED` / `MULTIPLAYER TESTED` labels.
 
-The harness itself is automated-build verified only after its current code CI finishes successfully. Human field play remains NOT TESTED until a person actually runs that document.
+Human field play remains NOT TESTED until a person actually runs that document.
 
 ## Asset/provenance rules that remain locked
 
@@ -159,7 +181,8 @@ The harness itself is automated-build verified only after its current code CI fi
 - Do not replace Dragon Evolved simply because another asset is easier to integrate.
 - Do not add new reconnect/owner/exact-instance/target-admission/attack-clock/content-generation fences without an observed regression.
 - Do not promote the vanilla sword carrier or `PlayerWeaponFieldImpactProfile` calibration into final design.
-- Do not promote the boss field-test AABB/damage into production attack geometry or balance.
+- Do not restore the old one-size-fits-all boss field-test AABB; its verified replacement exists specifically so the three authored combat roles can be tested physically.
+- Do not promote `Region01BossFieldImpactProfile` dimensions or `1.0F` damage into production geometry/balance without human evidence.
 - Do not add the field-test boss to production Region 01 encounter composition merely because the command path works.
 - Do not claim successful automated client/server smoke as human play.
 - Do not confuse logical boss presentation keys, authored profiles, reviewed source motion and selected production assets; they are distinct gates.
@@ -167,13 +190,14 @@ The harness itself is automated-build verified only after its current code CI fi
 
 ## Exact next development boundary
 
-1. Human player-combat field play is still required via `docs/M3_PLAYER_COMBAT_FIELD_PLAY.md`. Do not tune the provisional player geometry/damage before an observed symptom exists.
-2. Human Region 01 boss field play can now proceed via `docs/M3_REGION01_BOSS_FIELD_PLAY.md`; record exact JAR hash and observations rather than inferring success from CI.
-3. Boss-side automated work may continue independently on visible quality. The highest-value next work is actual evidence-backed production presentation, not more lifecycle plumbing.
-4. Review whether observed Dragon Evolved `Punch` and/or `Headbutt` motion genuinely fits committed-strike or line-displacement gameplay semantics before authoring a source binding. Unsupported mappings remain unresolved.
-5. Arena pressure still needs either a legally usable reviewed motion compatible with the selected rig direction or an authored/derived motion under documented reference constraints.
-6. Select/review a real boss material/texture direction with provenance/license records and Minecraft readability in mind. Do not invent an arbitrary final palette and do not restore stripped Atlas art by default.
-7. Select/review VFX and sound assets or authored directions under the same evidence/provenance rule.
-8. Only when a coherent set of real production resources is selected should `presentation_assets` be authored so the logical profile can move from staged to authoritative published presentation.
-9. Do not add the boss to production Region 01 encounter composition until presentation, Minecraft scale/hit geometry and authoritative combat/damage policy have evidence-backed inputs.
-10. PLAYTESTED and MULTIPLAYER TESTED remain human-evidence labels only.
+1. First check the final conclusion of `Build Riftfrontier` run `34761913225`; if it is not SUCCESS, repair only the demonstrated regression before adding more work.
+2. Human player-combat field play is still required via `docs/M3_PLAYER_COMBAT_FIELD_PLAY.md`. Do not tune the provisional player geometry/damage before an observed symptom exists.
+3. Human Region 01 boss field play should now use the role-specific geometry checks in `docs/M3_REGION01_BOSS_FIELD_PLAY.md`; record exact JAR hash, hit/miss positions and observations instead of inferring success from CI.
+4. Boss-side automated work may continue independently on visible quality. The highest-value next work is actual evidence-backed production presentation, not more lifecycle plumbing or more field-shape fences.
+5. Review whether observed Dragon Evolved `Punch` and/or `Headbutt` motion genuinely fits committed-strike or line-displacement gameplay semantics before authoring a source binding. Unsupported mappings remain unresolved.
+6. Arena pressure still needs either a legally usable reviewed motion compatible with the selected rig direction or an authored/derived motion under documented reference constraints.
+7. Select/review a real boss material/texture direction with provenance/license records and Minecraft readability in mind. Do not invent an arbitrary final palette and do not restore stripped Atlas art by default.
+8. Select/review VFX and sound assets or authored directions under the same evidence/provenance rule.
+9. Only when a coherent set of real production resources is selected should `presentation_assets` be authored so the logical profile can move from staged to authoritative published presentation.
+10. Do not add the boss to production Region 01 encounter composition until presentation, Minecraft scale/hit geometry and authoritative combat/damage policy have evidence-backed inputs.
+11. PLAYTESTED and MULTIPLAYER TESTED remain human-evidence labels only.
