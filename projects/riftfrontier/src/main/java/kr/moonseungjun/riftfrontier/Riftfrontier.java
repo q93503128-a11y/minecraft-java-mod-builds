@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import kr.moonseungjun.riftfrontier.combat.MinecraftBossCombatAdapter;
 import kr.moonseungjun.riftfrontier.combat.PlayerWeaponProvisioningCommand;
 import kr.moonseungjun.riftfrontier.combat.PlayerWeaponServerRuntime;
+import kr.moonseungjun.riftfrontier.combat.Region01BossFieldPlayCommand;
 import kr.moonseungjun.riftfrontier.combat.RiftfrontierCombatDataComponents;
 import kr.moonseungjun.riftfrontier.content.ContentRuntime;
 import kr.moonseungjun.riftfrontier.content.ContentServerReloadListener;
@@ -84,6 +85,7 @@ public final class Riftfrontier {
         RuntimeDiagnosticsCommand.register(event);
         ExpeditionGameplayCommand.register(event);
         PlayerWeaponProvisioningCommand.register(event);
+        Region01BossFieldPlayCommand.register(event);
     }
 
     private static void serverStarted(ServerStartedEvent event) {
