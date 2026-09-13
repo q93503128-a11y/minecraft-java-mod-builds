@@ -101,7 +101,7 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 **중요:** screenshot/reference 비교 전 M5 production visual PASS를 선언하지 않는다. 사용자의 현재 방침에 따라 중간 실플레이 테스트를 요구하지 않고, 통합 테스트 가치가 있는 완성 구간에서 한 번에 검증한다.
 
 ## M6 — World & Life Loop
-상태: **IN PROGRESS — AUTHORED WORLD + DISCOVERY LOOP AUTO-INTEGRATED / PRODUCTION VISUAL GATE PENDING**
+상태: **IN PROGRESS — FIRST EXPEDITION AUTO-INTEGRATED / PRODUCTION VISUAL GATE PENDING**
 
 완료:
 - authored Encounter의 production 진입은 world anchor가 소유하는 server-authoritative 경로로 수렴.
@@ -138,13 +138,18 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 - Hub/REGION_01에 실제 Lodestone + Interaction waypoint를 배치하고, 두 지점을 각각 직접 발견한 뒤에만 서버 권한 빠른 이동이 열리도록 연결.
 - fast travel은 client 좌표/unlock 입력을 신뢰하지 않고 definition/tag/dimension/range/current registered position/discovery/link를 서버가 재검증.
 - 전투 중 fast travel 차단, 낡은 prototype Interaction marker 위치 불일치 차단, 첫 two-point slice에서 다중 목적지면 이동 대신 selection-required로 중단.
-- 상세 정본: `19_M6_WORLD_ENCOUNTER_LIFECYCLE.md`, `21_M6_RESOURCE_NODE_CONTRACT.md`, `22_M6_BATTLE_PREPARATION_MATERIAL_SINK.md`, `23_M6_MINIMAL_EQUIPMENT_CONTRACT.md`, `24_M6_EQUIPMENT_FORGE_TRANSACTION.md`, `25_M6_FUNCTIONAL_WORLD_SLICE.md`, `26_M6_WORLD_ASSET_GATE.md`, `27_M6_FAST_TRAVEL_DISCOVERY.md`.
+- production `rift_elite` anchor를 one-time 목표로 전환하고 `overworld_patrol`은 반복 파밍 Encounter로 유지.
+- 첫 임무 단계는 별도 quest save 없이 `FastTravelSavedData`의 개인 waypoint 발견 상태와 `PlayerProgress.completedEncounterLocators`에서 파생.
+- Hub waypoint 발견 → REGION_01 waypoint 직접 발견 → rift elite 도전 → reward/completion 저장 성공 → Hub 귀환 안내의 최소 quest hook 연결.
+- quest 안내는 실제 서버 waypoint 발견/성공한 reward settlement 뒤에만 발생하며 client가 quest stage를 제출하는 경로 없음.
+- reward persistence 실패 시 one-time completion과 quest 완료 안내가 모두 진행되지 않아 기존 one-shot claim 원자성을 유지.
+- 상세 정본: `19_M6_WORLD_ENCOUNTER_LIFECYCLE.md`, `21_M6_RESOURCE_NODE_CONTRACT.md`, `22_M6_BATTLE_PREPARATION_MATERIAL_SINK.md`, `23_M6_MINIMAL_EQUIPMENT_CONTRACT.md`, `24_M6_EQUIPMENT_FORGE_TRANSACTION.md`, `25_M6_FUNCTIONAL_WORLD_SLICE.md`, `26_M6_WORLD_ASSET_GATE.md`, `27_M6_FAST_TRAVEL_DISCOVERY.md`, `28_M6_FIRST_EXPEDITION_QUEST.md`.
 
 남음:
-- production non-repeatable anchor를 실제 콘텐츠로 배치하고 첫 quest hook에 연결.
-- quest가 Hub → 탐험/생활 → visible encounter → reward → Hub 흐름을 안내하되 기존 월드 플레이를 메뉴로 대체하지 않게 설계.
 - 3개 이상 travel destination이 실제 필요해질 때만 destination selection UX 추가.
-- 장비/준비물/채집/discovery/fast travel까지 포함한 통합 screenshot/playtest 및 밸런스 조정.
+- Hub → 채집 → 장비/준비 → discovery → one-time elite → reward → fast travel 귀환 전체의 자동 통합 acceptance를 한 단계 더 묶어 회귀를 잠근다.
+- 첫 광산/농장/강 산출량과 장비 Lv1/준비물 비용의 정적 밸런스 범위를 검증해 명백한 막힘/과잉을 제거한다.
+- 장비/준비물/채집/discovery/fast travel/첫 임무까지 포함한 통합 screenshot/playtest 및 밸런스 조정.
 - production visual screenshot 비교 후 Hub/광산/농장/강/Encounter landmark 세부 수정.
 
 ### PASS
@@ -170,14 +175,14 @@ eligible 전수 PLAYABLE 이상, 미분류 0.
 
 ## 지금 바로 할 일 — 2026-09-13 최신
 
-현재 우선순위는 **production non-repeatable Encounter와 첫 quest hook을 현재 authored world loop에 연결하는 것**이다.
+현재 우선순위는 **첫 임무까지 닫힌 M6 월드 루프를 자동 통합 acceptance와 밸런스 사전검사로 잠근 뒤, 한 번의 의미 있는 실제 Minecraft 통합 playtest에 들어갈 준비를 끝내는 것**이다.
 
 순서:
-1. REGION_01의 첫 one-time Encounter를 기존 locator/reward completion 계약으로 실제 배치한다.
-2. Hub에서 시작해 자원 분기와 patrol을 지나 one-time 목표까지 자연스럽게 유도하는 최소 quest hook을 설계한다.
-3. quest는 별도 통화·반복 클릭·원격 encounter 메뉴를 만들지 않고 월드의 실제 landmark/행동을 가리키는 역할만 한다.
-4. 완료 보상이 기존 Coin/Essence/Shard/장비·생활 루프 중 다음 선택으로 이어지게 한다.
-5. Hub → 탐험 → 실제 채집 → 장비/준비 → waypoint discovery → visible encounter → battle → reward → fast travel 귀환 전체를 통합 screenshot/playtest에서 검증한다.
+1. Hub → REGION waypoint discovery → one-time elite completion → Hub return eligibility의 전체 상태 전이를 production definitions 기준 자동 검증한다.
+2. 광산 ore 수량, 농장 식량, 낚시 준비물 경로와 장비 Lv1/전투 준비 비용을 비교해 첫 사이클에서 막힌 선택지가 없는지 정적 검사한다.
+3. one-time elite의 최초 reward가 다음 성장/장비 선택을 만들 수 있는지 현재 reward table 기준으로 검토한다.
+4. 자동 회귀가 잠기면 Hub → 탐험 → 실제 채집 → 장비/준비 → waypoint discovery → visible encounter → battle → reward → fast travel 귀환 전체를 통합 screenshot/playtest에서 검증한다.
+5. 실제 체감에서만 판단 가능한 동선·채집시간·전투시간·UI·연출·랜드마크 문제를 그 결과로 조정한다.
 
 금지:
 - 재료를 이유 없이 Coin/Essence로 환전해 모든 생활 활동을 같은 숫자로 평탄화.
@@ -187,5 +192,6 @@ eligible 전수 PLAYABLE 이상, 미분류 0.
 - 랜덤 옵션/희귀도/다중 슬롯을 필요 검증 없이 추가.
 - World Asset Gate 없이 production 건축/외형을 즉흥 확정.
 - 발견하지 않은 waypoint를 원격 메뉴/클라이언트 payload로 해금.
+- 기존 discovery/completion과 중복되는 quest save를 따로 만들어 상태를 이중화.
 
 자동 코드 검증은 의미 있는 단위마다 수행하되, 사용자에게 중간 수동 테스트를 요구하지 않는다. 실제 screenshot/playtest 및 M2/M4 수동 gate는 통합 테스트 가치가 있는 완성 구간에서 함께 수행한다.
