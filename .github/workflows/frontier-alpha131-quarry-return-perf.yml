@@ -1,0 +1,74 @@
+name: Frontier Alpha.131 Quarry Return Perf Patch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/frontier_alpha131_quarry_return_perf_patch.py'
+      - '.github/workflows/frontier-alpha131-quarry-return-perf.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: frontier-alpha131-quarry-return-perf
+  cancel-in-progress: true
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Sync latest main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git reset --hard origin/main
+
+      - name: Apply Alpha.131 patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/frontier_alpha131_quarry_return_perf_patch.py
+
+      - name: Targeted source/docs audit and compile
+        working-directory: projects/frontier-settlement
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/test_current_source.py
+          python3 tools/test_current_docs.py
+          chmod +x gradlew
+          ./gradlew --no-daemon --no-configuration-cache --no-build-cache compileJava --stacktrace --console=plain
+          git diff --check
+
+      - name: Commit Alpha.131
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/frontier-settlement
+          git diff --cached --exit-code && exit 0 || true
+          git commit -m 'frontier: recover deep workers and smooth search bursts alpha.131'
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
