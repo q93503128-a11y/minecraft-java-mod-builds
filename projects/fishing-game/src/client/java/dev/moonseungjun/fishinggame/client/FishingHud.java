@@ -54,7 +54,7 @@ public final class FishingHud {
         graphics.text(minecraft.font, "가방  " + ClientFishingState.catches().size() + "/" + PlayerFishingProfile.BAG_CAPACITY, x + 10, y + 43, 0xFFFFFFFF, false);
         graphics.text(minecraft.font, rod.displayName(), x + 10, y + 57, 0xFFB9E5FF, false);
         graphics.text(minecraft.font, ClientFishingState.locationName(), x + 10, y + 71, 0xFFB8FFCF, false);
-        graphics.text(minecraft.font, "[B] 가방  [M] 이동", x + 10, y + 85, 0xFFD6D6D6, false);
+        graphics.text(minecraft.font, "B가방 J도감 M이동", x + 10, y + 85, 0xFFD6D6D6, false);
 
         int width = graphics.guiWidth();
         int height = graphics.guiHeight();

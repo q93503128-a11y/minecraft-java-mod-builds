@@ -5,12 +5,18 @@ import java.util.List;
 
 import dev.moonseungjun.fishinggame.FishingGameMod;
 import dev.moonseungjun.fishinggame.profile.CatchEntry;
+import dev.moonseungjun.fishinggame.profile.FishRecord;
 import dev.moonseungjun.fishinggame.profile.PlayerFishingProfile;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
-public record ProfileSnapshotPayload(int coins, int rodTier, List<CatchEntry> catches) implements CustomPacketPayload {
+public record ProfileSnapshotPayload(
+        int coins,
+        int rodTier,
+        List<CatchEntry> catches,
+        List<FishRecord> records
+) implements CustomPacketPayload {
     public static final Type<ProfileSnapshotPayload> TYPE = new Type<>(FishingGameMod.id("profile_snapshot"));
     public static final StreamCodec<FriendlyByteBuf, ProfileSnapshotPayload> CODEC = StreamCodec.of(
             ProfileSnapshotPayload::encode,
@@ -18,11 +24,12 @@ public record ProfileSnapshotPayload(int coins, int rodTier, List<CatchEntry> ca
     );
 
     public ProfileSnapshotPayload(PlayerFishingProfile profile) {
-        this(profile.coins(), profile.rodTier(), profile.catches());
+        this(profile.coins(), profile.rodTier(), profile.catches(), profile.records());
     }
 
     public ProfileSnapshotPayload {
         catches = List.copyOf(catches);
+        records = List.copyOf(records);
     }
 
     private static void encode(FriendlyByteBuf buf, ProfileSnapshotPayload payload) {
@@ -35,17 +42,32 @@ public record ProfileSnapshotPayload(int coins, int rodTier, List<CatchEntry> ca
             buf.writeVarInt(entry.lengthMm());
             buf.writeVarInt(entry.value());
         }
+
+        buf.writeVarInt(payload.records.size());
+        for (FishRecord record : payload.records) {
+            buf.writeUtf(record.speciesId());
+            buf.writeVarInt(record.caughtCount());
+            buf.writeVarInt(record.bestWeightGrams());
+            buf.writeVarInt(record.bestLengthMm());
+        }
     }
 
     private static ProfileSnapshotPayload decode(FriendlyByteBuf buf) {
         int coins = buf.readVarInt();
         int rodTier = buf.readVarInt();
-        int size = Math.min(PlayerFishingProfile.BAG_CAPACITY, Math.max(0, buf.readVarInt()));
-        ArrayList<CatchEntry> catches = new ArrayList<>(size);
-        for (int i = 0; i < size; i++) {
+
+        int catchSize = Math.min(PlayerFishingProfile.BAG_CAPACITY, Math.max(0, buf.readVarInt()));
+        ArrayList<CatchEntry> catches = new ArrayList<>(catchSize);
+        for (int i = 0; i < catchSize; i++) {
             catches.add(new CatchEntry(buf.readUtf(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
         }
-        return new ProfileSnapshotPayload(coins, rodTier, catches);
+
+        int recordSize = Math.min(128, Math.max(0, buf.readVarInt()));
+        ArrayList<FishRecord> records = new ArrayList<>(recordSize);
+        for (int i = 0; i < recordSize; i++) {
+            records.add(new FishRecord(buf.readUtf(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
+        }
+        return new ProfileSnapshotPayload(coins, rodTier, catches, records);
     }
 
     @Override

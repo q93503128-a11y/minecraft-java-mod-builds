@@ -48,6 +48,12 @@ public final class FishingGameClient implements ClientModInitializer {
                 GLFW.GLFW_KEY_B,
                 category
         ));
+        KeyMapping bestiaryKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                "key.fishinggame.bestiary",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_J,
+                category
+        ));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null) return;
@@ -57,6 +63,15 @@ public final class FishingGameClient implements ClientModInitializer {
                     client.gui.setScreen(null);
                 } else {
                     client.gui.setScreen(new CatchBagScreen());
+                }
+            }
+
+            while (bestiaryKey.consumeClick()) {
+                if (client.player.fishing != null) continue;
+                if (client.gui.screen() instanceof BestiaryScreen) {
+                    client.gui.setScreen(null);
+                } else {
+                    client.gui.setScreen(new BestiaryScreen());
                 }
             }
 

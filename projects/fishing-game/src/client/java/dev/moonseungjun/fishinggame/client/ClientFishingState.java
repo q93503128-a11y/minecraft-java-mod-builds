@@ -5,11 +5,13 @@ import java.util.List;
 import dev.moonseungjun.fishinggame.network.FishingStatePayload;
 import dev.moonseungjun.fishinggame.network.ProfileSnapshotPayload;
 import dev.moonseungjun.fishinggame.profile.CatchEntry;
+import dev.moonseungjun.fishinggame.profile.FishRecord;
 
 public final class ClientFishingState {
     private static int coins;
     private static int rodTier;
     private static List<CatchEntry> catches = List.of();
+    private static List<FishRecord> records = List.of();
     private static int stage = 3;
     private static float tension;
     private static float progress;
@@ -34,6 +36,7 @@ public final class ClientFishingState {
         coins = payload.coins();
         rodTier = payload.rodTier();
         catches = incoming;
+        records = List.copyOf(payload.records());
         profileInitialized = true;
     }
 
@@ -52,6 +55,7 @@ public final class ClientFishingState {
     public static int coins() { return coins; }
     public static int rodTier() { return rodTier; }
     public static List<CatchEntry> catches() { return catches; }
+    public static List<FishRecord> records() { return records; }
     public static int stage() { return stage; }
     public static float tension() { return tension; }
     public static float progress() { return progress; }
