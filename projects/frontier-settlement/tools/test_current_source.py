@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.130" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.131" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -134,6 +134,13 @@ require(worker.count("withinResourceWorkReach(worker, target") >= 2, "resource w
 require("canWorkOrApproach(level, worker, pos, LUMBER_REMOTE_WORK_REACH_SQR)" in worker, "near lumber target still requires a walkable final cell")
 require("isBlockedOutsideWorkReach" in worker, "blocked-target retry still suppresses already-reachable remote work")
 require("DUPLICATE_MAINTENANCE_INTERVAL_TICKS = 200" in worker, "maintenance duplicate scans regressed to hot-path cadence")
+require("DEEP_WORK_RETURN_TELEPORT_TICKS = 240L" in worker
+        and "CARGO_RETURN_STARTED_AT" in worker and "rescueLongDeepWorkReturn" in worker,
+        "deep quarry/mine cargo-return recovery missing")
+require("RESOURCE_SEARCH_RETRY_TICKS = 200L" in worker
+        and "RESOURCE_SEARCH_RETRY_JITTER_TICKS = 200L" in worker
+        and worker.count("resourceSearchRetryTicks(worker)") >= 3,
+        "expensive empty resource searches can again synchronize every five seconds")
 require("SettlementCityInvestmentService.workerAttractionIntervalTicks(data)" in worker,
         "city-investment civilian attraction cadence missing")
 require("WORKSITE_STORAGE_INTERACTION_REACH_SQR = 36.0D" in worker, "close worksite deposit reach missing")

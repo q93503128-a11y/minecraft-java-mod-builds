@@ -2,7 +2,13 @@
 
 Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
-## Current version: 0.1.0-alpha.130
+## Current version: 0.1.0-alpha.131
+
+## Alpha.131 deep-work return recovery and performance smoothing
+
+Quarry and mine residents still walk normally, but a resident carrying real production cargo no longer spends an unlimited amount of time trying to climb out of an excavated work face. If the return to an available local profession barrel lasts twelve seconds, the server moves that same resident and the same carried ItemStack to a safe walkable cell at its own workplace; ordinary outbound work, short returns and central-storage overflow still use physical navigation. Expensive empty lumber/quarry/mine world searches now back off for 10-20 seconds with a deterministic per-worker offset instead of every worker repeating a full miss scan together every five seconds. This smooths known burst work without changing production radius, resource authority or chunk-loading rules.
+
+Static review still does not prove which subsystem owns the remaining real-play hitch. A JFR/spark capture from the affected world remains the acceptance path for deeper performance work.
 
 ## Alpha.130 construction-worker routing recovery
 

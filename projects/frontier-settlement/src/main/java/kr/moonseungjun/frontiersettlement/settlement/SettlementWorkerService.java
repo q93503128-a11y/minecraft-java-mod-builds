@@ -60,9 +60,15 @@ public final class SettlementWorkerService {
     private static final int MINE_HORIZONTAL_SEARCH_RADIUS = 32;
     private static final int MINE_SEARCH_DEPTH = 80;
     private static final long RESOURCE_TARGET_CACHE_TICKS = 600L;
-    private static final long RESOURCE_SEARCH_RETRY_TICKS = 100L;
+    // A miss is expensive (large bounded world scan). Back off longer and add a deterministic
+    // per-worker offset so lumber/quarry/mine misses cannot all burst on the same server tick.
+    private static final long RESOURCE_SEARCH_RETRY_TICKS = 200L;
+    private static final long RESOURCE_SEARCH_RETRY_JITTER_TICKS = 200L;
     private static final long BLOCKED_TARGET_RETRY_TICKS = 120L;
     private static final long STUCK_PROGRESS_TIMEOUT_TICKS = 80L;
+    // Deep quarry/mine routes can become physically valid but impractically long after excavation.
+    // Keep ordinary walking first, then recover only the cargo-return leg after twelve seconds.
+    private static final long DEEP_WORK_RETURN_TELEPORT_TICKS = 240L;
     private static final int MAX_APPROACH_PATH_TRIES = 24;
     private static final int PRODUCTION_HAUL_STACK = 64;
     // Civic administration cadence is owned by SettlementCityInvestmentService so one grade
@@ -96,6 +102,7 @@ public final class SettlementWorkerService {
     private static final Map<java.util.UUID, Long> RESOURCE_SEARCH_RETRY_AFTER = new HashMap<>();
     private static final Map<java.util.UUID, Map<BlockPos, Long>> BLOCKED_TARGETS = new HashMap<>();
     private static final Map<java.util.UUID, MovementWatch> MOVEMENT_WATCHES = new HashMap<>();
+    private static final Map<java.util.UUID, Long> CARGO_RETURN_STARTED_AT = new HashMap<>();
 
     public static void onServerStopping(ServerStoppingEvent event) {
         SettlementProductionStatusService.clear();
@@ -103,6 +110,7 @@ public final class SettlementWorkerService {
         RESOURCE_SEARCH_RETRY_AFTER.clear();
         BLOCKED_TARGETS.clear();
         MOVEMENT_WATCHES.clear();
+        CARGO_RETURN_STARTED_AT.clear();
     }
 
     public static void tick(MinecraftServer server, SettlementData data) {
@@ -912,23 +920,60 @@ public final class SettlementWorkerService {
     private static void deliverToWorksiteStorage(ServerLevel level, SettlementData data,
                                                  FrontierWorkerEntity worker, BuildingRecord building,
                                                  ItemStack carried) {
-        if (carried.isEmpty()) return;
+        java.util.UUID workerId = worker.getUUID();
+        if (carried.isEmpty()) {
+            CARGO_RETURN_STARTED_AT.remove(workerId);
+            return;
+        }
+        boolean localDestination = false;
         for (BlockPos local : SettlementStorageService.desiredWorksiteStoragePositions(building, data)) {
             if (!level.hasChunkAt(local) || !level.getBlockState(local).is(Blocks.BARREL)
                     || !SettlementStorageService.hasRoomAt(level, local, carried)) continue;
+            localDestination = true;
             double distance = worker.distanceToSqr(
                     local.getX() + 0.5D, local.getY() + 0.5D, local.getZ() + 0.5D);
             if (distance <= WORKSITE_STORAGE_INTERACTION_REACH_SQR) {
                 worker.getNavigation().stop();
+                CARGO_RETURN_STARTED_AT.remove(workerId);
                 SettlementProductionStatusService.mark(level, building, "현장 저장고 적재 중");
                 ItemStack remaining = SettlementStorageService.insertAt(level, local, carried);
                 worker.setItemSlot(EquipmentSlot.MAINHAND, remaining);
                 clearTargetIfEmpty(worker);
                 return;
             }
-            if (!isTargetBlocked(level, worker, local) && moveNear(level, worker, local, 0.86D)) { SettlementProductionStatusService.mark(level, building, "현장 저장고 운반 중"); return; }
+            if (rescueLongDeepWorkReturn(level, worker, building)) {
+                SettlementProductionStatusService.mark(level, building, "귀환 경로 재정비");
+                return;
+            }
+            if (!isTargetBlocked(level, worker, local) && moveNear(level, worker, local, 0.86D)) {
+                SettlementProductionStatusService.mark(level, building, "현장 저장고 운반 중");
+                return;
+            }
         }
+        if (!localDestination) CARGO_RETURN_STARTED_AT.remove(workerId);
         deliverToTownStorage(level, data, worker, building, carried);
+    }
+
+    private static boolean rescueLongDeepWorkReturn(ServerLevel level, FrontierWorkerEntity worker,
+                                                    BuildingRecord building) {
+        BuildingType type = building.buildingType();
+        java.util.UUID workerId = worker.getUUID();
+        if (type != BuildingType.QUARRY && type != BuildingType.MINE) {
+            CARGO_RETURN_STARTED_AT.remove(workerId);
+            return false;
+        }
+        long now = level.getGameTime();
+        long started = CARGO_RETURN_STARTED_AT.computeIfAbsent(workerId, ignored -> now);
+        if (now - started < DEEP_WORK_RETURN_TELEPORT_TICKS) return false;
+        BlockPos safe = safeWorkerSpawn(level, building.workCenter());
+        if (safe == null) return false;
+        worker.getNavigation().stop();
+        worker.setPos(safe.getX() + 0.5D, safe.getY(), safe.getZ() + 0.5D);
+        clearResourceTarget(worker);
+        MOVEMENT_WATCHES.remove(workerId);
+        BLOCKED_TARGETS.remove(workerId);
+        CARGO_RETURN_STARTED_AT.remove(workerId);
+        return true;
     }
 
     private static void deliverToTownStorage(ServerLevel level, SettlementData data,
@@ -1047,6 +1092,12 @@ public final class SettlementWorkerService {
         RESOURCE_SEARCH_RETRY_AFTER.remove(worker.getUUID());
     }
 
+    private static long resourceSearchRetryTicks(FrontierWorkerEntity worker) {
+        long jitterSlots = Math.max(1L, RESOURCE_SEARCH_RETRY_JITTER_TICKS / 10L);
+        long jitter = Math.floorMod(worker.getUUID().getLeastSignificantBits(), jitterSlots) * 10L;
+        return RESOURCE_SEARCH_RETRY_TICKS + jitter;
+    }
+
     private static void clearTargetIfEmpty(FrontierWorkerEntity worker) {
         if (!worker.getMainHandItem().isEmpty()) {
             MOVEMENT_WATCHES.remove(worker.getUUID());
@@ -1062,6 +1113,7 @@ public final class SettlementWorkerService {
         clearResourceTarget(worker);
         MOVEMENT_WATCHES.remove(worker.getUUID());
         BLOCKED_TARGETS.remove(worker.getUUID());
+        CARGO_RETURN_STARTED_AT.remove(worker.getUUID());
         worker.removeTag(LEGACY_WORKSITE_EXPORT_TAG);
     }
 
@@ -1088,7 +1140,7 @@ public final class SettlementWorkerService {
         if (RESOURCE_SEARCH_RETRY_AFTER.getOrDefault(id, 0L) > now) return null;
         BlockPos target = findTree(level, data, worker, center, expected);
         if (target == null) {
-            RESOURCE_SEARCH_RETRY_AFTER.put(id, now + RESOURCE_SEARCH_RETRY_TICKS);
+            RESOURCE_SEARCH_RETRY_AFTER.put(id, now + resourceSearchRetryTicks(worker));
             return null;
         }
         RESOURCE_SEARCH_RETRY_AFTER.remove(id);
@@ -1312,7 +1364,7 @@ public final class SettlementWorkerService {
         if (RESOURCE_SEARCH_RETRY_AFTER.getOrDefault(id, 0L) > now) return null;
         BlockPos target = findManagedQuarryStone(level, data, worker, center, expected);
         if (target == null) {
-            RESOURCE_SEARCH_RETRY_AFTER.put(id, now + RESOURCE_SEARCH_RETRY_TICKS);
+            RESOURCE_SEARCH_RETRY_AFTER.put(id, now + resourceSearchRetryTicks(worker));
             return null;
         }
         RESOURCE_SEARCH_RETRY_AFTER.remove(id);
@@ -1436,7 +1488,7 @@ public final class SettlementWorkerService {
         if (RESOURCE_SEARCH_RETRY_AFTER.getOrDefault(id, 0L) > now) return null;
         BlockPos target = findOreBelow(level, data, center, expected);
         if (target == null) {
-            RESOURCE_SEARCH_RETRY_AFTER.put(id, now + RESOURCE_SEARCH_RETRY_TICKS);
+            RESOURCE_SEARCH_RETRY_AFTER.put(id, now + resourceSearchRetryTicks(worker));
             return null;
         }
         RESOURCE_SEARCH_RETRY_AFTER.remove(id);
