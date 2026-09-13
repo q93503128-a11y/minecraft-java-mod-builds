@@ -54,7 +54,7 @@ jobs:
           python3 tools/test_progression_validator.py 2>&1 | tee build/logs/p0h-validator-tests.log
           python3 tools/validate_progression.py 2>&1 | tee build/logs/p0h-progression.log
           python3 tools/validate_m1_launch.py 2>&1 | tee build/logs/m1-launch-progression.log
-          python3 tools/validate_alpha14_acceptance.py 2>&1 | tee build/logs/alpha14-acceptance.log
+          python3 tools/validate_alpha15_acceptance.py 2>&1 | tee build/logs/alpha15-acceptance.log
       - name: Clean test and build
         shell: bash
         run: |
@@ -79,18 +79,24 @@ jobs:
           grep -q 'EARTH_TO_STARS_P0G_VERIFY_PASS' build/logs/p0g-server-verify.log
           grep -q 'propellant=51.25' build/logs/p0g-server-verify.log
           grep -q 'oxygen=66.5' build/logs/p0g-server-verify.log
+
+          rm -rf run
+          mkdir -p run
+          printf 'eula=true\n' > run/eula.txt
+          EARTH_TO_STARS_LIFECYCLE_PROBE=boarding_contract timeout --kill-after=15s 180s ./gradlew --no-daemon runServer --stacktrace 2>&1 | tee build/logs/alpha15-boarding-server.log
+          grep -q 'EARTH_TO_STARS_ALPHA15_BOARDING_ENTITY_CONTRACT_PASS serializable=true instanceSaved=false' build/logs/alpha15-boarding-server.log
       - name: Write build report
         shell: bash
         run: |
           JAR=$(ls build/libs/earth_to_stars-*.jar | head -n1)
           SHA=$(cat "$JAR.sha256")
           if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            LIFECYCLE_STATUS="PASS (this run)"
+            LIFECYCLE_STATUS="PASS (this run, including alpha.15 boarding EntityType contract)"
           else
-            LIFECYCLE_STATUS="NOT RERUN; last verified run 34197931566 covers ShipState schema 2 plus fuel/oxygen"
+            LIFECYCLE_STATUS="NOT RERUN; save/restore run 34197931566 remains valid, boarding EntityType probe last passed run 34731266964"
           fi
           cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # EARTH TO STARS — alpha.14 Starter Craft Core Rescue Build Report
+          # EARTH TO STARS — alpha.15 Boarding Root-Cause Rescue Build Report
 
           - Commit: $GITHUB_SHA
           - Mod version: $MOD_VERSION
@@ -101,23 +107,24 @@ jobs:
           - P0-H progression validator: PASS
           - M1 launch recipe dependency closure: PASS
           - M1 launch recipe Nether/End independence: PASS
-          - alpha.14 acceptance static gate: PASS
+          - alpha.15 acceptance static gate: PASS
+          - rideable serializable EntityType + non-persisted runtime exterior contract: PASS
+          - authorized forced mounting + failed-deployment rollback contract: PASS
           - visible hull / interaction / passenger vehicle single-entity contract: PASS
           - enlarged 5-block-class starter hull and matching hitbox contract: PASS
           - replaceable vegetation-tolerant deployment contract: PASS
           - exact-hull propellant/oxygen servicing contract: PASS
           - atlas-safe runtime OBJ UV adaptation contract: PASS
           - starter/salvage/interceptor distinct adapted runtime meshes: PASS
-          - existing authoritative passenger/control and safe retirement contracts: PASS
           - M1-D starter empty weapon/sensor slots JUnit: PASS
           - M1-D recovered autocannon/scanner capability progression JUnit: PASS
           - ShipState schema 1 -> 2 sensor-slot migration JUnit: PASS
           - clean/test/build: PASS
           - production JAR verify: PASS
-          - dedicated server save/restart lifecycle: $LIFECYCLE_STATUS
+          - dedicated lifecycle status: $LIFECYCLE_STATUS
           - SHA-256: $SHA
-          - client resource/model bake smoke: NOT YET VERIFIED BY THIS BUILD; separate client gate required
-          - live starter-craft visual/seat/handling quality: NOT PLAYTESTED
+          - client model/resource smoke: alpha.14 visual resources passed run 34424914782; alpha.15 changes no visual resources
+          - live starter-craft boarding/handling quality: NOT PLAYTESTED
           - live Earth→orbit→salvage→combat→return cycle: NOT PLAYTESTED
           - live multiplayer: NOT TESTED
           EOF
