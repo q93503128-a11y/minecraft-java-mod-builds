@@ -27,6 +27,47 @@
     },
     {"kind":"creature","id":"riftfrontier:creature/region_01_scout","region":"riftfrontier:region/region_01","archetype":"riftfrontier:archetype/region_01_skirmisher","loot_profile":"riftfrontier:loot/region_01_salvage","behaviours":["orbit","retreat","ranged_pressure"]},
     {"kind":"creature","id":"riftfrontier:creature/region_01_hunter","region":"riftfrontier:region/region_01","archetype":"riftfrontier:archetype/region_01_pursuer","loot_profile":"riftfrontier:loot/region_01_salvage","behaviours":["pursue","melee_combo"]},
-    {"kind":"encounter","id":"riftfrontier:encounter/region_01_patrol","region":"riftfrontier:region/region_01","participants":["riftfrontier:creature/region_01_scout","riftfrontier:creature/region_01_hunter"],"objective":"recover salvage while managing patrol pressure","world_consequence":"successful recovery opens the first material return loop"}
+    {"kind":"encounter","id":"riftfrontier:encounter/region_01_patrol","region":"riftfrontier:region/region_01","participants":["riftfrontier:creature/region_01_scout","riftfrontier:creature/region_01_hunter"],"objective":"recover salvage while managing patrol pressure","world_consequence":"successful recovery opens the first material return loop"},
+    {
+      "kind":"attack_pattern",
+      "id":"riftfrontier:attack/boss/region_01_committed_strike",
+      "delivery":"arc_melee",
+      "telegraph_ticks":18,
+      "active_ticks":5,
+      "recovery_ticks":16,
+      "counterplay":["read_pre_hit_pose","sidestep_or_backstep","punish_recovery"],
+      "presentation_cue":"region_01_boss_committed_strike"
+    },
+    {
+      "kind":"attack_pattern",
+      "id":"riftfrontier:attack/boss/region_01_line_displacement",
+      "delivery":"line_charge",
+      "telegraph_ticks":16,
+      "active_ticks":6,
+      "recovery_ticks":14,
+      "counterplay":["read_travel_lane","move_laterally","punish_recovery"],
+      "presentation_cue":"region_01_boss_line_displacement"
+    },
+    {
+      "kind":"attack_pattern",
+      "id":"riftfrontier:attack/boss/region_01_arena_pressure",
+      "delivery":"area_denial",
+      "telegraph_ticks":22,
+      "active_ticks":8,
+      "recovery_ticks":12,
+      "counterplay":["read_danger_area","leave_marked_space","reposition_for_counterattack"],
+      "presentation_cue":"region_01_boss_arena_pressure"
+    },
+    {
+      "kind":"boss_profile",
+      "id":"riftfrontier:boss/region_01_first_apex",
+      "phase_count":2,
+      "attack_patterns":[
+        "riftfrontier:attack/boss/region_01_committed_strike",
+        "riftfrontier:attack/boss/region_01_line_displacement",
+        "riftfrontier:attack/boss/region_01_arena_pressure"
+      ],
+      "arena_rule":"position-control encounter; phase changes must alter attack composition or arena pressure rather than only health or damage multipliers"
+    }
   ]
 }
