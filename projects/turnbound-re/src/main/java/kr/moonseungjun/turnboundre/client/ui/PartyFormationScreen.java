@@ -1,7 +1,9 @@
 package kr.moonseungjun.turnboundre.client.ui;
 
+import kr.moonseungjun.turnboundre.client.EquipmentClientState;
 import kr.moonseungjun.turnboundre.client.PartyFormationDraft;
 import kr.moonseungjun.turnboundre.client.ProgressionClientState;
+import kr.moonseungjun.turnboundre.network.EquipmentNetworkPayloads;
 import kr.moonseungjun.turnboundre.network.ProgressionNetworkPayloads;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -20,21 +22,27 @@ import java.util.Locale;
  * Server-owned progression logic is unchanged; visible controls use the adopted Kenney-backed frame family.
  */
 public final class PartyFormationScreen extends Screen {
-    private enum DetailTab { OVERVIEW, SKILLS, GROWTH }
+    private enum DetailTab { OVERVIEW, SKILLS, GROWTH, EQUIPMENT }
+
+    private static final int EQUIPMENT_ROWS = 3;
 
     private final Screen parent;
     private final List<Button> tabButtons = new ArrayList<>();
     private final List<Button> rosterButtons = new ArrayList<>();
     private final List<Button> partyButtons = new ArrayList<>();
+    private final List<Button> equipmentButtons = new ArrayList<>();
     private final CharacterEntityPreview entityPreview = new CharacterEntityPreview();
     private ProgressionNetworkPayloads.Snapshot snapshot;
+    private EquipmentNetworkPayloads.Snapshot equipmentSnapshot;
     private List<String> draftParty = List.of();
     private String selectedCharacterId = "";
+    private String selectedEquipmentId = "";
     private DetailTab detailTab = DetailTab.OVERVIEW;
     private int selectedSlot;
     private int rosterPage;
     private int rosterPageSize = 1;
     private long seenGeneration = -1L;
+    private long seenEquipmentGeneration = -1L;
     private String feedback = "";
     private boolean feedbackSuccess;
     private Button applyButton;
@@ -45,6 +53,8 @@ public final class PartyFormationScreen extends Screen {
     private Button nextRosterButton;
     private Button levelUpButton;
     private Button ascendButton;
+    private Button forgeButton;
+    private Button equipmentActionButton;
 
     public PartyFormationScreen() {
         this(null);
@@ -61,6 +71,7 @@ public final class PartyFormationScreen extends Screen {
         tabButtons.clear();
         rosterButtons.clear();
         partyButtons.clear();
+        equipmentButtons.clear();
         applyButton = null;
         resetButton = null;
         removeButton = null;
@@ -69,6 +80,8 @@ public final class PartyFormationScreen extends Screen {
         nextRosterButton = null;
         levelUpButton = null;
         ascendButton = null;
+        forgeButton = null;
+        equipmentActionButton = null;
 
         if (!UiLayoutMetrics.supportsPartyScreen(this.width, this.height)) {
             doneButton = Button.builder(Component.translatable(parent == null ? "gui.done" : "gui.back"), ignored -> closeScreen())
@@ -77,12 +90,16 @@ public final class PartyFormationScreen extends Screen {
             return;
         }
 
-        if (ProgressionClientState.generation() != seenGeneration) syncFromClient();
+        if (ProgressionClientState.generation() != seenGeneration
+                || EquipmentClientState.generation() != seenEquipmentGeneration) {
+            syncFromClient();
+        }
         UiLayoutMetrics.PartyFormationLayout layout = UiLayoutMetrics.partyFormation(this.width, this.height);
         buildTabs(layout);
         buildRoster(layout);
         buildActiveParty(layout);
         buildGrowthActions(layout);
+        buildEquipmentActions(layout);
         buildFooter(layout);
         refreshButtons();
     }
@@ -90,7 +107,8 @@ public final class PartyFormationScreen extends Screen {
     @Override
     public void tick() {
         super.tick();
-        if (ProgressionClientState.generation() != seenGeneration) {
+        if (ProgressionClientState.generation() != seenGeneration
+                || EquipmentClientState.generation() != seenEquipmentGeneration) {
             syncFromClient();
             this.rebuildWidgets();
         }
@@ -104,7 +122,9 @@ public final class PartyFormationScreen extends Screen {
 
     private void syncFromClient() {
         seenGeneration = ProgressionClientState.generation();
+        seenEquipmentGeneration = EquipmentClientState.generation();
         snapshot = ProgressionClientState.snapshot().orElse(null);
+        equipmentSnapshot = EquipmentClientState.snapshot().orElse(null);
         if (snapshot == null) {
             draftParty = List.of();
             selectedCharacterId = "";
@@ -122,10 +142,20 @@ public final class PartyFormationScreen extends Screen {
                     .map(ProgressionNetworkPayloads.CharacterView::id)
                     .orElse("");
         }
+        selectedEquipmentId = EquipmentUiState.selectionForCharacter(
+                equipmentSnapshot, selectedEquipmentId, selectedCharacterId);
         selectedSlot = Math.max(0, Math.min(selectedSlot, 3));
         rosterPage = 0;
-        feedback = resultFeedback(snapshot.resultCode(), snapshot.resultDetail());
-        feedbackSuccess = "ACCEPTED".equals(snapshot.resultCode()) || "GROWTH_ACCEPTED".equals(snapshot.resultCode());
+
+        String equipmentFeedback = equipmentSnapshot == null ? ""
+                : equipmentResultFeedback(equipmentSnapshot.resultCode(), equipmentSnapshot.resultDetail());
+        if (!equipmentFeedback.isBlank()) {
+            feedback = equipmentFeedback;
+            feedbackSuccess = "ACCEPTED".equals(equipmentSnapshot.resultCode());
+        } else {
+            feedback = resultFeedback(snapshot.resultCode(), snapshot.resultDetail());
+            feedbackSuccess = "ACCEPTED".equals(snapshot.resultCode()) || "GROWTH_ACCEPTED".equals(snapshot.resultCode());
+        }
     }
 
     private void buildTabs(UiLayoutMetrics.PartyFormationLayout layout) {
@@ -190,6 +220,27 @@ public final class PartyFormationScreen extends Screen {
                 .bounds(region.x() + buttonWidth + gap, y, region.width() - buttonWidth - gap, 20).build();
     }
 
+    private void buildEquipmentActions(UiLayoutMetrics.PartyFormationLayout layout) {
+        if (detailTab != DetailTab.EQUIPMENT || equipmentSnapshot == null) return;
+        UiLayoutMetrics.Rect region = layout.selectedDetail();
+        int y = region.y() + 18;
+        int visibleRows = Math.min(EQUIPMENT_ROWS, equipmentSnapshot.equipment().size());
+        for (int row = 0; row < visibleRows; row++) {
+            final int index = row;
+            equipmentButtons.add(Button.builder(Component.empty(), ignored -> selectEquipmentRow(index))
+                    .bounds(region.x(), y, region.width(), 20).build());
+            y += 22;
+        }
+
+        int gap = UiLayoutMetrics.SPACE_4;
+        int buttonWidth = Math.max(56, (region.width() - gap) / 2);
+        int actionY = region.bottom() - 20;
+        forgeButton = Button.builder(Component.translatable("screen.turnbound_re.equipment.craft"), ignored -> submitForge())
+                .bounds(region.x(), actionY, buttonWidth, 20).build();
+        equipmentActionButton = Button.builder(Component.translatable("screen.turnbound_re.equipment.equip"), ignored -> submitEquipmentEquip())
+                .bounds(region.x() + buttonWidth + gap, actionY, region.width() - buttonWidth - gap, 20).build();
+    }
+
     private void buildFooter(UiLayoutMetrics.PartyFormationLayout layout) {
         UiLayoutMetrics.Rect footer = layout.footer();
         int gap = UiLayoutMetrics.SPACE_4;
@@ -210,6 +261,10 @@ public final class PartyFormationScreen extends Screen {
     private void selectTab(DetailTab tab) {
         if (detailTab == tab) return;
         detailTab = tab;
+        if (tab == DetailTab.EQUIPMENT) {
+            selectedEquipmentId = EquipmentUiState.selectionForCharacter(
+                    equipmentSnapshot, selectedEquipmentId, selectedCharacterId);
+        }
         feedback = "";
         feedbackSuccess = false;
         this.rebuildWidgets();
@@ -220,6 +275,18 @@ public final class PartyFormationScreen extends Screen {
         int index = rosterPage * rosterPageSize + row;
         if (index < 0 || index >= snapshot.characters().size()) return;
         selectedCharacterId = snapshot.characters().get(index).id();
+        if (detailTab == DetailTab.EQUIPMENT) {
+            selectedEquipmentId = EquipmentUiState.selectionForCharacter(
+                    equipmentSnapshot, selectedEquipmentId, selectedCharacterId);
+        }
+        feedback = "";
+        feedbackSuccess = false;
+        refreshButtons();
+    }
+
+    private void selectEquipmentRow(int row) {
+        if (equipmentSnapshot == null || row < 0 || row >= equipmentSnapshot.equipment().size()) return;
+        selectedEquipmentId = equipmentSnapshot.equipment().get(row).id();
         feedback = "";
         feedbackSuccess = false;
         refreshButtons();
@@ -280,6 +347,32 @@ public final class PartyFormationScreen extends Screen {
         refreshButtons();
     }
 
+    private void submitForge() {
+        EquipmentNetworkPayloads.EquipmentView equipment = selectedEquipment();
+        if (equipment == null || !equipment.canForge()) return;
+        feedback = Component.translatable("screen.turnbound_re.equipment.saving").getString();
+        feedbackSuccess = false;
+        ClientPacketDistributor.sendToServer(EquipmentNetworkPayloads.ActionC2S.of(
+                equipment.action(), selectedCharacterId, equipment.id(), equipment.level(),
+                EquipmentUiState.equippedToCharacter(equipmentSnapshot, selectedCharacterId)));
+        refreshButtons();
+    }
+
+    private void submitEquipmentEquip() {
+        if (snapshot == null) return;
+        ProgressionNetworkPayloads.CharacterView character = snapshot.character(selectedCharacterId).orElse(null);
+        EquipmentNetworkPayloads.EquipmentView equipment = selectedEquipment();
+        if (character == null || equipment == null
+                || !EquipmentUiState.canEquip(equipment, selectedCharacterId, character.owned())) return;
+        String operation = EquipmentUiState.equipOperation(equipment, selectedCharacterId);
+        feedback = Component.translatable("screen.turnbound_re.equipment.saving").getString();
+        feedbackSuccess = false;
+        ClientPacketDistributor.sendToServer(EquipmentNetworkPayloads.ActionC2S.of(
+                operation, selectedCharacterId, equipment.id(), equipment.level(),
+                EquipmentUiState.equippedToCharacter(equipmentSnapshot, selectedCharacterId)));
+        refreshButtons();
+    }
+
     private void changeRosterPage(int delta) {
         if (snapshot == null) return;
         int pages = Math.max(1, (snapshot.characters().size() + rosterPageSize - 1) / rosterPageSize);
@@ -291,6 +384,7 @@ public final class PartyFormationScreen extends Screen {
         if (snapshot == null) {
             for (Button button : rosterButtons) button.active = false;
             for (Button button : partyButtons) button.active = false;
+            for (Button button : equipmentButtons) button.active = false;
             if (applyButton != null) applyButton.active = false;
             if (resetButton != null) resetButton.active = false;
             if (removeButton != null) removeButton.active = false;
@@ -298,6 +392,8 @@ public final class PartyFormationScreen extends Screen {
             if (nextRosterButton != null) nextRosterButton.active = false;
             if (levelUpButton != null) levelUpButton.active = false;
             if (ascendButton != null) ascendButton.active = false;
+            if (forgeButton != null) forgeButton.active = false;
+            if (equipmentActionButton != null) equipmentActionButton.active = false;
             return;
         }
 
@@ -347,6 +443,58 @@ public final class PartyFormationScreen extends Screen {
         ProgressionNetworkPayloads.CharacterView selected = snapshot.character(selectedCharacterId).orElse(null);
         if (levelUpButton != null) levelUpButton.active = selected != null && selected.growth().canLevelUp();
         if (ascendButton != null) ascendButton.active = selected != null && selected.growth().canAscend();
+        refreshEquipmentButtons(selected);
+    }
+
+    private void refreshEquipmentButtons(ProgressionNetworkPayloads.CharacterView selectedCharacter) {
+        if (equipmentSnapshot == null) {
+            for (Button button : equipmentButtons) button.active = false;
+            if (forgeButton != null) forgeButton.active = false;
+            if (equipmentActionButton != null) equipmentActionButton.active = false;
+            return;
+        }
+        for (int row = 0; row < equipmentButtons.size(); row++) {
+            Button button = equipmentButtons.get(row);
+            if (row >= equipmentSnapshot.equipment().size()) {
+                button.setMessage(Component.empty());
+                button.active = false;
+                continue;
+            }
+            EquipmentNetworkPayloads.EquipmentView equipment = equipmentSnapshot.equipment().get(row);
+            String state = equipment.owned()
+                    ? "Lv" + equipment.level() + "/" + equipment.maxLevel()
+                    : Component.translatable("screen.turnbound_re.equipment.unowned_short").getString();
+            String equipped = "";
+            if (selectedCharacterId.equals(equipment.equippedCharacterId())) {
+                equipped = " · " + Component.translatable("screen.turnbound_re.equipment.equipped_short").getString();
+            } else if (!equipment.equippedCharacterId().isBlank()) {
+                equipped = " · " + displayName(equipment.equippedCharacterId());
+            }
+            button.setMessage(Component.literal(fit(equipmentName(equipment.id()) + " · " + state + equipped, button.getWidth() - 8)));
+            button.active = true;
+        }
+
+        EquipmentNetworkPayloads.EquipmentView equipment = selectedEquipment();
+        if (forgeButton != null) {
+            forgeButton.active = equipment != null && equipment.canForge();
+            forgeButton.setMessage(Component.translatable(equipment == null ? "screen.turnbound_re.equipment.craft"
+                    : switch (equipment.action()) {
+                        case "CRAFT" -> "screen.turnbound_re.equipment.craft";
+                        case "UPGRADE" -> "screen.turnbound_re.equipment.upgrade";
+                        default -> "screen.turnbound_re.equipment.max";
+                    }));
+        }
+        if (equipmentActionButton != null) {
+            boolean characterOwned = selectedCharacter != null && selectedCharacter.owned();
+            equipmentActionButton.active = equipment != null
+                    && EquipmentUiState.canEquip(equipment, selectedCharacterId, characterOwned);
+            String key;
+            if (equipment == null || !equipment.owned()) key = "screen.turnbound_re.equipment.equip";
+            else if (selectedCharacterId.equals(equipment.equippedCharacterId())) key = "screen.turnbound_re.equipment.unequip";
+            else if (!equipment.equippedCharacterId().isBlank()) key = "screen.turnbound_re.equipment.in_use";
+            else key = "screen.turnbound_re.equipment.equip";
+            equipmentActionButton.setMessage(Component.translatable(key));
+        }
     }
 
     private String previewFeedback() {
@@ -376,6 +524,26 @@ public final class PartyFormationScreen extends Screen {
             default -> Component.translatable(resultCode.startsWith("GROWTH_")
                     ? "screen.turnbound_re.growth.server_rejected" : "screen.turnbound_re.party.server_rejected").getString();
         };
+    }
+
+    private static String equipmentResultFeedback(String resultCode, String detail) {
+        if (resultCode == null || resultCode.isBlank()) return "";
+        String key = switch (resultCode) {
+            case "ACCEPTED" -> "screen.turnbound_re.equipment.saved";
+            case "STALE" -> "screen.turnbound_re.equipment.stale";
+            case "FORGE_UNAVAILABLE" -> "screen.turnbound_re.equipment.forge_unavailable";
+            case "INVALID_MATERIAL" -> "screen.turnbound_re.equipment.invalid_material";
+            case "ALREADY_OWNED" -> "screen.turnbound_re.equipment.already_owned";
+            case "EQUIPMENT_NOT_OWNED" -> "screen.turnbound_re.equipment.not_owned";
+            case "CHARACTER_NOT_OWNED" -> "screen.turnbound_re.equipment.character_not_owned";
+            case "EQUIPMENT_IN_USE" -> "screen.turnbound_re.equipment.in_use_other";
+            case "INSUFFICIENT_COIN" -> "screen.turnbound_re.equipment.insufficient_coin";
+            case "INSUFFICIENT_MATERIAL" -> "screen.turnbound_re.equipment.insufficient_material";
+            case "MAX_LEVEL" -> "screen.turnbound_re.equipment.max_level";
+            case "NOT_EQUIPPED" -> "screen.turnbound_re.equipment.not_equipped";
+            default -> "screen.turnbound_re.equipment.server_rejected";
+        };
+        return Component.translatable(key, detail == null ? "" : detail).getString();
     }
 
     @Override
@@ -443,10 +611,18 @@ public final class PartyFormationScreen extends Screen {
         for (int slot = 0; slot < partyButtons.size(); slot++) {
             renderControl(graphics, partyButtons.get(slot), slot == selectedSlot, mouseX, mouseY);
         }
+        for (int row = 0; row < equipmentButtons.size(); row++) {
+            boolean selected = equipmentSnapshot != null
+                    && row < equipmentSnapshot.equipment().size()
+                    && equipmentSnapshot.equipment().get(row).id().equals(selectedEquipmentId);
+            renderControl(graphics, equipmentButtons.get(row), selected, mouseX, mouseY);
+        }
         renderControl(graphics, prevRosterButton, false, mouseX, mouseY);
         renderControl(graphics, nextRosterButton, false, mouseX, mouseY);
         renderControl(graphics, levelUpButton, false, mouseX, mouseY);
         renderControl(graphics, ascendButton, false, mouseX, mouseY);
+        renderControl(graphics, forgeButton, false, mouseX, mouseY);
+        renderControl(graphics, equipmentActionButton, false, mouseX, mouseY);
         renderControl(graphics, removeButton, false, mouseX, mouseY);
         renderControl(graphics, resetButton, false, mouseX, mouseY);
         renderControl(graphics, applyButton, false, mouseX, mouseY);
@@ -501,10 +677,18 @@ public final class PartyFormationScreen extends Screen {
                 return true;
             }
         }
+        for (int row = 0; row < equipmentButtons.size(); row++) {
+            if (equipmentButtons.get(row).active && contains(equipmentButtons.get(row), mouseX, mouseY)) {
+                selectEquipmentRow(row);
+                return true;
+            }
+        }
         if (enabledHit(prevRosterButton, mouseX, mouseY)) { changeRosterPage(-1); return true; }
         if (enabledHit(nextRosterButton, mouseX, mouseY)) { changeRosterPage(1); return true; }
         if (enabledHit(levelUpButton, mouseX, mouseY)) { submitGrowth("LEVEL_UP"); return true; }
         if (enabledHit(ascendButton, mouseX, mouseY)) { submitGrowth("ASCEND"); return true; }
+        if (enabledHit(forgeButton, mouseX, mouseY)) { submitForge(); return true; }
+        if (enabledHit(equipmentActionButton, mouseX, mouseY)) { submitEquipmentEquip(); return true; }
         if (enabledHit(removeButton, mouseX, mouseY)) { removeSelectedSlot(); return true; }
         if (enabledHit(resetButton, mouseX, mouseY)) { resetDraft(); return true; }
         if (enabledHit(applyButton, mouseX, mouseY)) { submitDraft(); return true; }
@@ -526,6 +710,10 @@ public final class PartyFormationScreen extends Screen {
         if (snapshot == null || selectedCharacterId.isBlank()) return;
         ProgressionNetworkPayloads.CharacterView character = snapshot.character(selectedCharacterId).orElse(null);
         if (character == null) return;
+        if (detailTab == DetailTab.EQUIPMENT) {
+            renderEquipment(graphics, region, character);
+            return;
+        }
 
         EntityPreviewLayout.PreviewSpec preview = detailTab == DetailTab.OVERVIEW
                 ? entityPreview.layout(this.minecraft,
@@ -544,6 +732,7 @@ public final class PartyFormationScreen extends Screen {
             case OVERVIEW -> renderOverview(graphics, region, character, y, textWidth);
             case SKILLS -> renderSkills(graphics, region, character, y);
             case GROWTH -> renderGrowth(graphics, region, character, y);
+            case EQUIPMENT -> { }
         }
     }
 
@@ -626,6 +815,63 @@ public final class PartyFormationScreen extends Screen {
         }
     }
 
+    private void renderEquipment(GuiGraphicsExtractor graphics, UiLayoutMetrics.Rect region,
+                                 ProgressionNetworkPayloads.CharacterView character) {
+        if (equipmentSnapshot == null) {
+            line(graphics, region.x(), region.y() + 20,
+                    Component.translatable("screen.turnbound_re.equipment.loading").getString(),
+                    UiVisualLanguage.TEXT_SECONDARY, region.width());
+            return;
+        }
+        EquipmentNetworkPayloads.EquipmentView equipment = selectedEquipment();
+        if (equipment == null) return;
+        int y = region.y() + 18 + equipmentButtons.size() * 22 + 4;
+        int maxY = region.bottom() - 24;
+        if (y < maxY) {
+            String forge = Component.translatable(equipmentSnapshot.forgeAvailable()
+                    ? "screen.turnbound_re.equipment.forge_ready"
+                    : "screen.turnbound_re.equipment.forge_far").getString();
+            line(graphics, region.x(), y, forge,
+                    equipmentSnapshot.forgeAvailable() ? UiVisualLanguage.TEXT_SUCCESS : UiVisualLanguage.TEXT_WARNING,
+                    region.width());
+            y += 11;
+        }
+        if (y < maxY) {
+            String current = equipment.owned()
+                    ? Component.translatable("screen.turnbound_re.equipment.current", equipment.level(), bonusText(equipment.currentBonus())).getString()
+                    : Component.translatable("screen.turnbound_re.equipment.not_crafted").getString();
+            line(graphics, region.x(), y, current, UiVisualLanguage.TEXT_PRIMARY, region.width());
+            y += 11;
+        }
+        if (!"MAX".equals(equipment.action()) && y < maxY) {
+            line(graphics, region.x(), y,
+                    Component.translatable("screen.turnbound_re.equipment.next", bonusText(equipment.nextBonus())).getString(),
+                    UiVisualLanguage.TEXT_FOCUS, region.width());
+            y += 11;
+        }
+        if (!"MAX".equals(equipment.action()) && y < maxY) {
+            line(graphics, region.x(), y,
+                    Component.translatable("screen.turnbound_re.equipment.cost",
+                            equipment.nextCoinCost(), materialName(equipment.ingredientItem()),
+                            equipment.materialOwned(), equipment.nextMaterialCount()).getString(),
+                    equipment.blockCode().isBlank() ? UiVisualLanguage.TEXT_SECONDARY : UiVisualLanguage.TEXT_WARNING,
+                    region.width());
+            y += 11;
+        }
+        if (!equipment.blockCode().isBlank() && y < maxY) {
+            line(graphics, region.x(), y, equipmentBlock(equipment.blockCode()), UiVisualLanguage.TEXT_WARNING, region.width());
+        } else if (!character.owned() && y < maxY) {
+            line(graphics, region.x(), y,
+                    Component.translatable("screen.turnbound_re.equipment.character_not_owned").getString(),
+                    UiVisualLanguage.TEXT_WARNING, region.width());
+        }
+    }
+
+    private EquipmentNetworkPayloads.EquipmentView selectedEquipment() {
+        if (equipmentSnapshot == null) return null;
+        return equipmentSnapshot.equipment(selectedEquipmentId).orElse(null);
+    }
+
     private String statDelta(ProgressionNetworkPayloads.CharacterView current, ProgressionNetworkPayloads.StatsView next) {
         return "HP " + current.hp() + "→" + next.hp() + "  ATK " + current.atk() + "→" + next.atk()
                 + "  DEF " + current.def() + "→" + next.def() + "  SPD " + current.spd() + "→" + next.spd()
@@ -650,12 +896,50 @@ public final class PartyFormationScreen extends Screen {
         return Component.translatable(key).getString();
     }
 
+    private static String equipmentBlock(String code) {
+        String key = switch (code) {
+            case "FORGE_UNAVAILABLE" -> "screen.turnbound_re.equipment.forge_unavailable";
+            case "INSUFFICIENT_COIN" -> "screen.turnbound_re.equipment.insufficient_coin";
+            case "INSUFFICIENT_MATERIAL" -> "screen.turnbound_re.equipment.insufficient_material";
+            case "MAX_LEVEL" -> "screen.turnbound_re.equipment.max_level";
+            default -> "screen.turnbound_re.equipment.server_rejected";
+        };
+        return Component.translatable(key).getString();
+    }
+
     private static Component tabLabel(DetailTab tab) {
         return Component.translatable(switch (tab) {
             case OVERVIEW -> "screen.turnbound_re.tab.overview";
             case SKILLS -> "screen.turnbound_re.tab.skills";
             case GROWTH -> "screen.turnbound_re.tab.growth";
+            case EQUIPMENT -> "screen.turnbound_re.tab.equipment";
         });
+    }
+
+    private static String bonusText(EquipmentNetworkPayloads.BonusView bonus) {
+        List<String> parts = new ArrayList<>();
+        if (bonus.hpPercent() > 0) parts.add("HP +" + bonus.hpPercent() + "%");
+        if (bonus.atkPercent() > 0) parts.add("ATK +" + bonus.atkPercent() + "%");
+        if (bonus.defPercent() > 0) parts.add("DEF +" + bonus.defPercent() + "%");
+        if (bonus.poisePercent() > 0) parts.add("P +" + bonus.poisePercent() + "%");
+        return parts.isEmpty() ? Component.translatable("screen.turnbound_re.equipment.no_bonus").getString()
+                : String.join(" · ", parts);
+    }
+
+    private static String equipmentName(String id) {
+        return switch (id) {
+            case "turnbound_re:iron_bulwark" -> Component.translatable("equipment.turnbound_re.iron_bulwark.name").getString();
+            case "turnbound_re:copper_edge" -> Component.translatable("equipment.turnbound_re.copper_edge.name").getString();
+            case "turnbound_re:golden_heart" -> Component.translatable("equipment.turnbound_re.golden_heart.name").getString();
+            default -> displayName(id);
+        };
+    }
+
+    private static String materialName(String id) {
+        if (id == null || id.isBlank()) return "?";
+        String[] parts = id.split(":", 2);
+        if (parts.length != 2) return displayName(id);
+        return Component.translatable("item." + parts[0] + "." + parts[1]).getString();
     }
 
     private static String actionKind(String kind) {

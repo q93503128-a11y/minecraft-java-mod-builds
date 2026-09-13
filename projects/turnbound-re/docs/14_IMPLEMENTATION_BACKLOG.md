@@ -101,7 +101,7 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 **중요:** screenshot/reference 비교 전 M5 production visual PASS를 선언하지 않는다. 사용자의 현재 방침에 따라 중간 실플레이 테스트를 요구하지 않고, 통합 테스트 가치가 있는 완성 구간에서 한 번에 검증한다.
 
 ## M6 — World & Life Loop
-상태: **IN PROGRESS — WORLD ENTRY / RESOURCE CONTRACT / BATTLE PREP AUTO VERIFIED, EQUIPMENT BACKEND INTEGRATION ACTIVE**
+상태: **IN PROGRESS — WORLD ENTRY / RESOURCE / PREPARATION / EQUIPMENT LOOP AUTO-INTEGRATED**
 
 완료:
 - authored Encounter의 production 진입은 world anchor가 소유하는 server-authoritative 경로로 수렴.
@@ -120,15 +120,21 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 - 장기 sink는 캐릭터당 장비 1슬롯, 고정 bonus, random affix/rarity/durability 없음으로 최소화.
 - 장비 definition/save schema 3/구 schema 호환/forge-upgrade pure transaction/중복 장착 차단/전투 participant 적용 backend.
 - 장비 효과는 HP/ATK/DEF/POISE만 허용하고 SPD는 구조적으로 제외.
-- 상세 정본: `19_M6_WORLD_ENCOUNTER_LIFECYCLE.md`, `21_M6_RESOURCE_NODE_CONTRACT.md`, `22_M6_BATTLE_PREPARATION_MATERIAL_SINK.md`, `23_M6_MINIMAL_EQUIPMENT_CONTRACT.md`.
+- 실제 Minecraft main inventory material을 NeoForge transaction으로 정확히 소비하고 Coin/progress CAS와 결합.
+- armor/offhand는 forge material 소비에서 제외하여 Battle Preparation과 충돌하지 않음.
+- Smithing Table 근처에서만 Craft/Upgrade가 가능한 physical workstation gate.
+- 장비 server-authored snapshot/action network와 stale token 검증.
+- 기존 Character Detail에 네 번째 `Equipment` context 통합: 3개 장비 목록, 현재/다음 bonus, 실제 material 보유량, Coin 비용, forge 접근 상태, Craft/Upgrade/Equip/Unequip.
+- 장비 UI는 새 dashboard/새 통화를 만들지 않고 기존 M5 visual language를 재사용.
+- 상세 정본: `19_M6_WORLD_ENCOUNTER_LIFECYCLE.md`, `21_M6_RESOURCE_NODE_CONTRACT.md`, `22_M6_BATTLE_PREPARATION_MATERIAL_SINK.md`, `23_M6_MINIMAL_EQUIPMENT_CONTRACT.md`, `24_M6_EQUIPMENT_FORGE_TRANSACTION.md`.
 
 남음:
-- 장비 제작/강화의 실제 Minecraft inventory material 확인·소비와 progression 저장을 하나의 server transaction으로 연결.
-- 기존 selected-character UI에 장비 1슬롯/비교 수치/제작·강화 진입을 현재 visual language로 통합.
 - authored HUB_01 ↔ REGION_01 prototype의 실제 월드 배치와 시각 gate.
 - resource anchor가 가리키는 광산/농장/강의 실제 채집 동선.
+- Hub 전용 forge 외형/배치로 현재 Smithing Table bridge를 감싸기.
 - fast travel/exploration/quest hooks.
 - production non-repeatable anchor를 실제 콘텐츠로 배치한 뒤 playtest.
+- 장비/준비물/채집까지 포함한 통합 screenshot/playtest 및 밸런스 조정.
 
 ### PASS
 각 활동의 산출이 다음 시스템에 실제 사용되고, 메뉴 우회나 막힌 경로 없이 fixed-world loop가 성립하며, 실제 Minecraft 플레이에서도 의도대로 작동해야 한다.
@@ -153,13 +159,13 @@ eligible 전수 PLAYABLE 이상, 미분류 0.
 
 ## 지금 바로 할 일 — 2026-09-13 최신
 
-현재 우선순위는 **M6 생활 재료 sink를 실제 production interaction으로 닫는 것**이다.
+현재 우선순위는 **M6의 닫힌 생활→성장 루프를 실제 authored 월드 동선으로 옮기는 것**이다.
 
 순서:
-1. 장비 data/save/battle backend를 자동 계약으로 고정한다.
-2. 실제 Minecraft inventory에서 장비 제작/강화 material을 서버가 검증·소비하고 Coin/progress와 원자적으로 정산한다.
-3. Hub의 물리 제작 진입과 기존 Character Detail의 장비 1슬롯/비교 정보를 연결하되 새 독립 dashboard는 만들지 않는다.
-4. authored HUB_01 ↔ REGION_01의 실제 prototype 동선을 만든다.
+1. authored HUB_01 ↔ REGION_01 prototype의 실제 공간/동선을 만든다.
+2. ResourceAnchor가 실제 광산/농장/강 채집 위치를 가리키게 한다.
+3. Hub의 전용 forge 외형/배치가 현재 Smithing Table 기능을 자연스럽게 감싸게 한다.
+4. world exploration → 실제 채집 → 장비/준비 → visible encounter → battle → reward가 메뉴 우회 없이 한 사이클로 연결되는지 자동/구조 검증한다.
 5. fast travel / exploration / quest는 이 루프에 필요한 최소 hook부터 연결한다.
 
 금지:
