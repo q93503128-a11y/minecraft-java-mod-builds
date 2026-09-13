@@ -9,10 +9,8 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 
 public final class KenneyButton extends AbstractWidget {
-    private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath("fishinggame", "textures/gui/kenney/blue_button00.png");
     private final Runnable onPress;
 
     public KenneyButton(int x, int y, Component message, Runnable onPress) {
@@ -27,12 +25,31 @@ public final class KenneyButton extends AbstractWidget {
 
     @Override
     protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        graphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, getX(), getY(), 0, 0, 190, 49, 190, 49);
-        if (isHovered() && active) {
+        graphics.blit(
+                RenderPipelines.GUI_TEXTURED,
+                FishingUiTheme.BUTTON,
+                getX(),
+                getY(),
+                0,
+                0,
+                190,
+                49,
+                190,
+                49
+        );
+        if (!active) {
+            graphics.fill(getX() + 3, getY() + 3, getX() + 187, getY() + 46, 0x66000000);
+        } else if (isHovered()) {
             graphics.fill(getX() + 3, getY() + 3, getX() + 187, getY() + 46, 0x22FFFFFF);
         }
-        int color = active ? 0xFFFFFFFF : 0xFF777777;
-        graphics.centeredText(net.minecraft.client.Minecraft.getInstance().font, getMessage(), getX() + 95, getY() + 20, color);
+        int color = active ? FishingUiTheme.TEXT_PRIMARY : FishingUiTheme.TEXT_DISABLED;
+        graphics.centeredText(
+                net.minecraft.client.Minecraft.getInstance().font,
+                getMessage(),
+                getX() + 95,
+                getY() + 20,
+                color
+        );
     }
 
     @Override

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-alpha.14
+
+- Unified HUD, catch bag, bestiary and travel screens behind one Kenney-based Fishing Game UI theme instead of maintaining separate ad-hoc color/layout rules.
+- Widened the always-on fishing HUD so coin, bag, rod, location and B/J/M navigation no longer compete inside a 100px panel.
+- Reworked bag information hierarchy into summary, catch list and rod-progression sections; unaffordable rod upgrades are now visibly disabled instead of inviting a failed request.
+- Added size-grade visibility to bag rows and consistent rarity/record colors shared with catch-result and bestiary presentation.
+- Added lightweight audio cues for full cast charge, strong hooked-fish pulls, trophy/rare catches, first discoveries, personal records, selling and rod upgrades while preserving the existing bite/catch sounds for ordinary events.
+- Kept all new audio presentation client-side/cosmetic; species, catch result, records, money and purchases remain server-authoritative.
+- Added CI JAR inspection for the shared UI theme and client audio classes.
+
 ## 0.1.0-alpha.13
 
 - Replaced immediate vanilla-speed casting with hold-and-release charge casting.

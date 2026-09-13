@@ -105,6 +105,9 @@ public final class FishingGameClient implements ClientModInitializer {
                 if (castCharging) {
                     if (useDown && canCharge) {
                         castChargeTicks++;
+                        if (castChargeTicks == CastChargeMath.FULL_CHARGE_TICKS) {
+                            FishingClientAudio.onCastFullyCharged();
+                        }
                     } else {
                         boolean cancelled = !holdingRod || client.gui.screen() != null || !bagHasSpace;
                         sendCastRelease(cancelled);

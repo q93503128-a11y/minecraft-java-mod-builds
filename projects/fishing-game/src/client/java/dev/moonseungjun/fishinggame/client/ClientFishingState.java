@@ -32,8 +32,12 @@ public final class ClientFishingState {
     public static void apply(ProfileSnapshotPayload payload) {
         List<CatchEntry> incoming = List.copyOf(payload.catches());
         List<FishRecord> previousRecords = records;
+        int previousCoins = coins;
+        int previousRodTier = rodTier;
+        int previousCatchCount = catches.size();
+        boolean wasInitialized = profileInitialized;
 
-        if (profileInitialized && stage == 2 && incoming.size() > catches.size() && !incoming.isEmpty()) {
+        if (wasInitialized && stage == 2 && incoming.size() > previousCatchCount && !incoming.isEmpty()) {
             CatchEntry entry = incoming.getLast();
             FishSpecies species = FishCatalog.byId(entry.speciesId());
             FishRecord previous = recordFor(previousRecords, entry.speciesId());
@@ -48,6 +52,13 @@ public final class ClientFishingState {
                     newLengthRecord
             );
             recentCatchUntilMs = System.currentTimeMillis() + 5200L;
+            FishingClientAudio.onCatch(recentCatch, species.rarity());
+        } else if (wasInitialized && previousCatchCount > 0 && incoming.isEmpty() && payload.coins() > previousCoins) {
+            FishingClientAudio.onSale();
+        }
+
+        if (wasInitialized && payload.rodTier() > previousRodTier) {
+            FishingClientAudio.onRodUpgrade();
         }
 
         coins = payload.coins();
@@ -58,6 +69,9 @@ public final class ClientFishingState {
     }
 
     public static void apply(FishingStatePayload payload) {
+        int previousStage = stage;
+        float previousTension = tension;
+
         stage = payload.stage();
         tension = payload.tension();
         progress = payload.progress();
@@ -67,6 +81,8 @@ public final class ClientFishingState {
             notice = payload.notice();
             noticeUntilMs = System.currentTimeMillis() + 3200L;
         }
+
+        FishingClientAudio.onFishingState(previousStage, previousTension, stage, tension);
     }
 
     private static FishRecord recordFor(List<FishRecord> source, String speciesId) {

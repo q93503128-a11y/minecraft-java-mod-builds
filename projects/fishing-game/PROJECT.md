@@ -5,7 +5,7 @@
 - Slug: fishing-game
 - Mod ID: fishinggame
 - Namespace: fishinggame
-- Mod version: 0.1.0-alpha.13
+- Mod version: 0.1.0-alpha.14
 - Minecraft: 26.2
 - Java: 25
 - Loader: Fabric
@@ -13,7 +13,7 @@
 - Fabric API: >=0.159.0+26.2
 - Gradle: 9.5.1
 - Build plugin: Fabric Loom 1.17.19
-- Final JAR: build/libs/fishing-game-0.1.0-alpha.13.jar
+- Final JAR: build/libs/fishing-game-0.1.0-alpha.14.jar
 - Required dependencies: Fabric API
 - Optional external mods: Essential, connection/hosting convenience only
 - Forbidden bundled dependencies: Essential
@@ -84,6 +84,25 @@ Every catch is graded from its configured species weight/length ranges: `일반`
 
 Do not invent the visual language ad hoc. HUD, cast meter, bag, bestiary and travel screens reuse the Kenney CC0 UI language already bundled with the project. External assets and licenses are tracked in `THIRD_PARTY_ASSETS.md`.
 
+Alpha.14 centralizes that visual language in one Fishing Game theme instead of duplicating panel/color rules per screen.
+
+- The always-on HUD uses a 200px-wide two-tile Kenney panel so coin, bag, rod, location and B/J/M navigation remain readable instead of overflowing a 100px card.
+- Bag, bestiary and travel screens share title/subtitle hierarchy, separators, section labels, text colors and disabled-state treatment.
+- Unaffordable rod upgrades are visibly disabled client-side while the server remains the authority for the actual purchase.
+- Catch bag rows expose rarity, size grade, weight, length and value without creating more menus.
+- UI changes must still be judged in a real Minecraft client at supported GUI scales; code/build success does not certify screen composition.
+
+## Audio feedback rule
+
+Alpha.14 separates ordinary fishing audio from reward/interaction cues.
+
+- Existing bobber splash remains the bite cue; ordinary catches retain the existing catch sound.
+- Full cast charge gets one light confirmation cue rather than repeated charging noise.
+- Large tension jumps during the hooked fight can trigger a restrained fish-pull cue with a client cooldown.
+- Trophy/rare catches receive an extra reward layer; first discoveries, personal records, monster-size catches and legendary fish receive a stronger confirmation layer.
+- Successful selling and rod upgrades have distinct reward cues.
+- These added cues are cosmetic client feedback only. They do not own catch state, records, currency, progression or purchase success.
+
 ## Catch presentation direction
 
 Fishing encounters use five transient silhouettes — small, tall, fat, long and angler — with species-specific textures. They are session-only entities: unsaved, no AI, no loot, cleaned up on the fishing lifecycle. Visible approach and burst motion must agree with server-side bite/tension behavior.
@@ -107,4 +126,4 @@ Do not hand the user a JAR for a tiny technical check. A user-facing test build 
 - complete cast -> catch -> sell -> upgrade -> travel -> collect loop
 - acceptable actual Minecraft screen quality
 
-Build success alone is not the final gate. Alpha.13 closes the missing casting-feel step, but the actual Minecraft client still needs graphical/play review before PLAYTESTED or GRAPHICAL CLIENT REVIEWED is claimed.
+Build success alone is not the final gate. Alpha.14 closes the first shared UI/audio feedback pass, but the actual Minecraft client still needs graphical/play review before PLAYTESTED or GRAPHICAL CLIENT REVIEWED is claimed.
