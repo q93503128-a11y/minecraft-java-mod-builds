@@ -7,12 +7,12 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Provisional field-play geometry for the three authored Region 01 boss attack roles.
+ * Provisional field-play geometry and movement calibration for the three authored Region 01 boss attack roles.
  *
  * <p>These values are calibration scaffolding, not final boss balance. The semantic content already locks the
- * relative jobs: committed strike is a broad close commitment, line displacement owns a longer narrow lane, and
- * arena pressure threatens a local area. Human Minecraft field play must approve or revise the concrete dimensions
- * before production encounter attachment.</p>
+ * relative jobs: committed strike is a broad close commitment, line displacement owns a longer narrow lane and is
+ * authored as a {@code line_charge}, and arena pressure threatens a local area. Human Minecraft field play must
+ * approve or revise the concrete dimensions and charge travel before production encounter attachment.</p>
  */
 public final class Region01BossFieldImpactProfile {
     public static final ContentId COMMITTED_STRIKE =
@@ -23,9 +23,11 @@ public final class Region01BossFieldImpactProfile {
         ContentId.parse("riftfrontier:attack/boss/region_01_arena_pressure");
 
     private static final Map<ContentId, Profile> PROFILES = Map.of(
-        COMMITTED_STRIKE, new Profile(Shape.FORWARD_ARC, 3.4D, 2.2D, 1.7D),
-        LINE_DISPLACEMENT, new Profile(Shape.FORWARD_LANE, 6.0D, 1.15D, 1.7D),
-        ARENA_PRESSURE, new Profile(Shape.LOCAL_AREA, 4.5D, 4.5D, 1.7D)
+        COMMITTED_STRIKE, new Profile(Shape.FORWARD_ARC, 3.4D, 2.2D, 1.7D, 0.0D),
+        // 0.5 blocks per ACTIVE tick yields a visible provisional charge while staying well inside the authored
+        // six-block threat lane. This is a field-play calibration value, not final boss movement balance.
+        LINE_DISPLACEMENT, new Profile(Shape.FORWARD_LANE, 6.0D, 1.15D, 1.7D, 0.5D),
+        ARENA_PRESSURE, new Profile(Shape.LOCAL_AREA, 4.5D, 4.5D, 1.7D, 0.0D)
     );
 
     private Region01BossFieldImpactProfile() {}
@@ -40,7 +42,13 @@ public final class Region01BossFieldImpactProfile {
         LOCAL_AREA
     }
 
-    public record Profile(Shape shape, double reach, double halfWidth, double verticalRadius) {
+    public record Profile(
+        Shape shape,
+        double reach,
+        double halfWidth,
+        double verticalRadius,
+        double activeForwardStep
+    ) {
         public Profile {
             Objects.requireNonNull(shape, "shape");
             if (!Double.isFinite(reach) || reach <= 0.0D) {
@@ -51,6 +59,15 @@ public final class Region01BossFieldImpactProfile {
             }
             if (!Double.isFinite(verticalRadius) || verticalRadius <= 0.0D) {
                 throw new IllegalArgumentException("verticalRadius must be finite and > 0");
+            }
+            if (!Double.isFinite(activeForwardStep) || activeForwardStep < 0.0D) {
+                throw new IllegalArgumentException("activeForwardStep must be finite and >= 0");
+            }
+            if (activeForwardStep > 0.0D && shape != Shape.FORWARD_LANE) {
+                throw new IllegalArgumentException("provisional forward travel is only authored for the line lane role");
+            }
+            if (activeForwardStep > reach) {
+                throw new IllegalArgumentException("activeForwardStep cannot exceed the field threat reach");
             }
         }
     }
