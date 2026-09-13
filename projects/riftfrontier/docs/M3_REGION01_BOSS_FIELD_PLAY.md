@@ -14,13 +14,14 @@ The harness exists to exercise the already-authored server-authoritative Region 
 - authoritative telegraph -> ACTIVE -> recovery attack clock;
 - real server damage gated by ACTIVE only;
 - one damage event per target per attack execution;
+- attack-specific provisional field geometry that exposes the three authored combat roles;
 - semantic presentation payload delivery from the same validated server runtime.
 
-The harness deliberately uses one neutral diagnostic hit volume and `1.0F` damage for every attack. Those values are **not final boss balance or attack geometry** and must not be tuned from automated results alone.
+The harness uses role-specific **provisional** geometry and `1.0F` damage. Committed strike is a broad short forward commitment, line displacement is a longer narrow forward lane, and arena pressure is a local area around the boss. These dimensions are **not final boss balance or attack geometry** and must not be tuned from automated results alone; they exist so human field play can decide whether the already-authored role contrast is actually readable and fair in Minecraft.
 
 ## Prerequisites
 
-Use a current JAR built from the checkpoint that contains `Region01BossFieldPlayCommand` and the `Region01BossEntity` field harness. Human testing must be performed in a real Minecraft client; CI client smoke does not count.
+Use a current JAR built from the checkpoint that contains `Region01BossFieldPlayCommand`, `Region01BossFieldImpactProfile`, and the `Region01BossEntity` field harness. Human testing must be performed in a real Minecraft client; CI client smoke does not count.
 
 For damage observations, use Survival or Adventure mode and remove armor/resistance effects that would make one-health-point changes hard to read.
 
@@ -70,7 +71,7 @@ Expected:
 ## Test B — ACTIVE-only damage and execution dedupe
 
 1. Use Survival/Adventure mode with clearly visible health.
-2. Move close enough to intersect the current diagnostic local volume.
+2. Move inside the current attack's provisional field shape.
 3. Remain inside it through one complete attack execution.
 4. Observe health over telegraph, ACTIVE and recovery.
 5. Repeat several attacks.
@@ -85,7 +86,20 @@ Expected:
 
 If repeated damage occurs within one execution, record the attack/presentation phase and approximate server tick; that is a regression and should be fixed before tuning visuals.
 
-## Test C — phase composition
+## Test C — physical role contrast
+
+Use the semantic/presentation observation tools already available in the field harness to identify which attack is executing, then deliberately probe the edge of each provisional shape. Do not infer the attack solely from the temporary geometry.
+
+Expected:
+
+- `region_01_committed_strike`: a target in front and close to the boss can be hit; a similarly close target clearly behind the boss cannot be hit; the usable forward area is broader than the line-displacement lane;
+- `region_01_line_displacement`: the forward lane reaches farther than committed strike, but a target standing clearly to either side of the narrow lane is not hit;
+- `region_01_arena_pressure`: phase 2 only; nearby targets around the boss can be hit regardless of facing, while targets clearly outside the local pressure radius are not hit;
+- all three shapes still obey the same authoritative ACTIVE-only and once-per-execution damage rules from Test B.
+
+Record whether the contrast is immediately understandable in motion. If a miss/hit feels surprising, capture player/boss positions or video instead of changing dimensions by intuition. The current values are calibration inputs waiting for human evidence.
+
+## Test D — phase composition
 
 1. Spawn a fresh field-test boss and observe phase 1 for several complete attacks.
 2. Run `/riftfrontier boss fieldtest phase2`.
@@ -99,9 +113,9 @@ Expected:
 - phase 1 may select only committed strike and line displacement;
 - phase 2 may select committed strike, line displacement and arena pressure.
 
-Because final animation/VFX/sound bindings are not published yet, this test verifies semantic/runtime composition rather than final human readability of the three roles.
+Because final animation/VFX/sound bindings are not published yet, this test verifies semantic/runtime composition and physical role contrast rather than final human readability of presentation assets.
 
-## Test D — content reload continuity
+## Test E — content reload continuity
 
 1. Spawn an enabled field-test boss.
 2. Let at least one attack begin.
@@ -115,7 +129,7 @@ Expected:
 - no stale-generation runtime resumes damage after reload;
 - the actor remains usable for subsequent field-test attacks.
 
-## Test E — player weapon versus boss actor
+## Test F — player weapon versus boss actor
 
 1. Provision either supported player weapon loadout, for example:
 
@@ -146,9 +160,9 @@ For each human session record:
 - singleplayer/integrated server or dedicated multiplayer;
 - Minecraft/NeoForge versions;
 - commands used;
-- whether Tests A–E were attempted;
+- whether Tests A–F were attempted;
 - PASS/FAIL per expected observation;
 - screenshots/video for any visual or timing issue where practical;
-- exact symptom for any duplicate damage, stale runtime, phase-pool escape, crash or desync.
+- exact symptom for any duplicate damage, stale runtime, phase-pool escape, surprising shape result, crash or desync.
 
 Only after a real human session may the corresponding checkpoint be labeled `PLAYTESTED`. A real two-client/dedicated-session observation is required for `MULTIPLAYER TESTED`.
