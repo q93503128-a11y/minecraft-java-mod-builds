@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class Region01BossFieldImpactProfileTest {
     @Test
-    void authoredBossRolesHaveDistinctFieldCalibrationShapes() {
+    void authoredBossRolesHaveDistinctFieldCalibrationShapesAndOnlyLineRoleTravels() {
         var committed = Region01BossFieldImpactProfile.find(Region01BossFieldImpactProfile.COMMITTED_STRIKE).orElseThrow();
         var line = Region01BossFieldImpactProfile.find(Region01BossFieldImpactProfile.LINE_DISPLACEMENT).orElseThrow();
         var area = Region01BossFieldImpactProfile.find(Region01BossFieldImpactProfile.ARENA_PRESSURE).orElseThrow();
@@ -19,6 +19,11 @@ class Region01BossFieldImpactProfileTest {
         assertTrue(committed.reach() < line.reach(), "line displacement must own the longer forward lane");
         assertTrue(committed.halfWidth() > line.halfWidth(), "committed strike must remain broader than the line attack");
         assertTrue(area.reach() > committed.reach(), "arena pressure must threaten a visibly larger local area");
+
+        assertEquals(0.0D, committed.activeForwardStep(), "committed strike must not inherit line-charge travel");
+        assertTrue(line.activeForwardStep() > 0.0D, "authored line_charge role must visibly travel during ACTIVE");
+        assertTrue(line.activeForwardStep() < line.reach(), "one charge step must remain inside the threat lane calibration");
+        assertEquals(0.0D, area.activeForwardStep(), "arena pressure must remain facing-independent local pressure");
     }
 
     @Test
