@@ -1,8 +1,8 @@
 package kr.moonseungjun.riftfrontier.entity;
 
 import kr.moonseungjun.riftfrontier.combat.CombatRuntimeCatalog;
-import kr.moonseungjun.riftfrontier.combat.MinecraftAttackAdapter;
 import kr.moonseungjun.riftfrontier.combat.MinecraftBossCombatAdapter;
+import kr.moonseungjun.riftfrontier.combat.Region01BossFieldImpactResolver;
 import kr.moonseungjun.riftfrontier.combat.Region01BossProductionSemantics;
 import kr.moonseungjun.riftfrontier.combat.ValidatedBossCombatSemantics;
 import kr.moonseungjun.riftfrontier.combat.presentation.Region01BossProductionPresentation;
@@ -24,10 +24,9 @@ import net.minecraft.world.level.Level;
  * attack/phase semantics can be exercised in a real Minecraft world before the production encounter gate opens.</p>
  */
 public final class Region01BossEntity extends LivingEntity {
-    /** Deliberately diagnostic until human boss-field evidence approves physical reach and damage. */
-    private static final MinecraftAttackAdapter.HitVolume FIELD_TEST_HIT_VOLUME =
-        new MinecraftAttackAdapter.AabbHitVolume(2.5D, 1.5D);
+    /** Deliberately diagnostic until human boss-field evidence approves final damage. */
     private static final float FIELD_TEST_DAMAGE = 1.0F;
+    private static final Region01BossFieldImpactResolver FIELD_TEST_HIT_RESOLVER = new Region01BossFieldImpactResolver();
 
     private boolean fieldTestCombatEnabled;
     private MinecraftBossCombatAdapter.ValidatedRuntime fieldTestRuntime;
@@ -102,7 +101,7 @@ public final class Region01BossEntity extends LivingEntity {
         fieldTestRuntime = MinecraftBossCombatAdapter.validated(
             catalog,
             semantics,
-            FIELD_TEST_HIT_VOLUME,
+            FIELD_TEST_HIT_RESOLVER,
             FIELD_TEST_DAMAGE
         );
         return fieldTestRuntime;
