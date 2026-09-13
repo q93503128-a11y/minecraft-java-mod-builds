@@ -22,7 +22,7 @@
     "Yes": "repeating neck/head orientation change on a different rotational path from No over the shared airborne body cycle, returning near the starting orientation"
   },
   "logical_binding": {
-    "status": "LOGICAL_PROFILE_AUTHORED_SOURCE_MAPPING_NOT_AUTHORED",
-    "note": "The production Region 01 logical presentation profile now exists and defines server-facing logical animation keys for all attack phases. This source-motion receipt still authorizes no gameplay-role mapping. Do not derive mappings from source clip names or treat reviewed source ACTION windows as server ACTIVE timing; bind a clip only after its observed motion is explicitly reviewed against the intended authoritative gameplay role. Arena pressure currently has no approved source-motion mapping."
+    "status": "NOT_AUTHORED",
+    "note": "The production Region 01 logical presentation profile now exists and defines server-facing logical animation keys for all attack phases, but source-clip gameplay mappings remain NOT_AUTHORED. Do not derive mappings from source clip names or treat reviewed source ACTION windows as server ACTIVE timing; bind a clip only after its observed motion is explicitly reviewed against the intended authoritative gameplay role. Arena pressure currently has no approved source-motion mapping."
   }
 }
