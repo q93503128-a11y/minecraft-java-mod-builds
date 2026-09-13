@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.61.22-alpha.1
+- Rebalanced Fishing mastery around its real action rate instead of the generic late-game taper. Fishing XP normalization now rises continuously through Lv0/10/30/60/90/100 anchors of 8x/10x/16x/32x/50x/60x.
+- A normal one-fish catch now reaches Lv30 in roughly 50 successful catches, Lv60 around 180 and Lv100 around 480 before Angler Harbor or treasure variation, instead of roughly 3,400 catches to Lv100 under the previous 6x -> 5x taper.
+- Existing Fishing XP and deterministic bonus/preservation meters are untouched; Angler Harbor keeps its +25% XP multiplier. No fishing-hook timing, SavedData schema, packet or network protocol changes. Protocol remains 15.
+
 ## 0.61.21-alpha.1
 - Mining 2D pickaxe areas, shovel earthworks, connected veins and Extract no longer execute hundreds of full vanilla/NeoForge block-break pipelines inside the initiating break event. Automatic extras are queued at 12 per player / 48 global per tick with additional 3 ms local / 5 ms global soft server-thread budgets.
 - The manual center block remains vanilla-authoritative and every queued extra still uses ServerPlayerGameMode.destroyBlock through AutomatedToolBreak, preserving protection cancellation, Fortune/Silk Touch/loot, drops, stats, durability policy and client synchronization. No chunk force-loading is added.

@@ -1,11 +1,18 @@
 # Survival Ascension
 
-- Mod version: `0.61.21-alpha.1`
+- Mod version: `0.61.22-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `15`
-- Existing-world compatibility: 0.61.21 adds no SavedData ID or codec field and does not bump the network protocol. Existing skill XP, infrastructure/logistics/outpost/production data and affix CustomData remain compatible. Bulk Mining queues and queued-tool profiles are runtime-only. Network protocol remains 15.
+- Existing-world compatibility: 0.61.22 changes only Fishing mastery XP pacing and does not add a SavedData ID/codec field or bump the network protocol. Existing skill XP, deterministic fishing meters, infrastructure/logistics/outpost/production data and equipment CustomData remain compatible. Bulk Mining queues and queued-tool profiles are runtime-only. Network protocol remains 15.
+
+## 0.61.22 Fishing Mastery Pacing / 낚시 숙련 속도 재조정
+- Fishing remains one validated action per successful reel-in, so it no longer shares the generic early-to-late XP taper used by skills that gain area/chain action counts.
+- Fishing mastery XP scaling now grows with level: Lv0 8x, Lv10 10x, Lv30 16x, Lv60 32x, Lv90 50x, Lv100 60x. Interpolation is continuous between milestones.
+- A normal one-fish catch still uses the existing raw catch value; only the Fishing normalization factor changes. The existing Angler Harbor +25% Fishing XP remains multiplicative on the raw catch before mastery scaling.
+- Approximate plain single-fish pacing falls from roughly 3,400 successful catches for Lv100 to about 480 before Harbor/treasure variation, with Lv30 around 50 catches and Lv60 around 180. This is intentionally a feel correction for a time-gated one-action skill, not a global mastery-curve reduction.
+- No SavedData field, event authority, fishing-hook timing, bonus-yield rule, rod-preservation rule or network protocol changes. Existing Fishing XP carries forward unchanged.
 
 ## 0.61.21 Bounded Bulk Mining / 대량 채굴 틱 분산
 - Pickaxe area mining, shovel earthworks, connected ore veins and Extract queue only automatic extra targets; the manually broken center block remains vanilla-authoritative.

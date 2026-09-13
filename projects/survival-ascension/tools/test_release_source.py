@@ -8,8 +8,8 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 errors: list[str] = []
-CURRENT_VERSION = "0.61.21-alpha.1"
-PREVIOUS_DOC_VERSION = "0.61.21-alpha.1"
+CURRENT_VERSION = "0.61.22-alpha.1"
+PREVIOUS_DOC_VERSION = "0.61.22-alpha.1"
 
 
 def read(rel: str) -> str:
@@ -370,7 +370,7 @@ forbid(mobility + construction, ["setChunkForced", "addRegionTicket", "getChunk(
 need(elite, ["FinalAscensionBossSystem.isInternalSpawn()"], "0.61 final boss elite isolation")
 
 # Historical docs remain regression evidence; 0.61 has a focused release/acceptance note.
-need(project, ["Mod version: `0.61.21-alpha.1`", "## 0.59 Apex Content Escort Integration"], "historical PROJECT regression docs")
+need(project, [f"Mod version: `{CURRENT_VERSION}`", "## 0.59 Apex Content Escort Integration"], "current PROJECT identity + historical regression docs")
 need(readme, ["## 0.59.0-alpha.1", "정점 사냥", "호위 수 자체를 늘리지"], "historical README regression docs")
 need(changelog, ["## 0.60.0-alpha.1", "Final Ascension", "Network protocol remains 9"], "0.60 CHANGELOG regression docs")
 need(testing, ["## 0.60 focused checks", "최후의 승천", "웅크리기", "Apex 진행"], "0.60 manual regression matrix")

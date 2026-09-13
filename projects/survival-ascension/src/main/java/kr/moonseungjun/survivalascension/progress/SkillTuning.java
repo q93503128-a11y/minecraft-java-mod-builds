@@ -63,6 +63,8 @@ public final class SkillTuning {
      */
     public static double skillXpMultiplier(SkillType skill, int currentLevel) {
         int level = clamp(currentLevel);
+        if (skill == SkillType.FISHING) return fishingXpMultiplier(level);
+
         double early;
         double late;
         switch (skill) {
@@ -72,7 +74,6 @@ public final class SkillTuning {
             // infrastructure/mastery threshold, so these must not require thousands of repetitive actions.
             case WOODCUTTING -> { early = 2.50D; late = 2.00D; }
             case HARVESTING -> { early = 3.00D; late = 2.50D; }
-            case FISHING -> { early = 6.00D; late = 5.00D; }
             case COMBAT -> { early = 4.00D; late = 3.50D; }
             case CONSTRUCTION -> { early = 5.00D; late = 3.50D; }
             case MOBILITY -> { early = 4.00D; late = 3.00D; }
@@ -80,6 +81,22 @@ public final class SkillTuning {
         }
         double progress = Math.min(1.0D, level / 60.0D);
         return early + (late - early) * progress;
+    }
+
+    /**
+     * Fishing remains one reel-in per action even at high mastery, so it cannot rely on the area/chain
+     * action scaling that naturally accelerates Mining, Woodcutting and Harvesting. Keep the opening
+     * readable, then raise XP density with the shared XP curve so late Fishing stays measured in tens
+     * of catches per level rather than hundreds. Anchors: Lv0 8x, Lv10 10x, Lv30 16x, Lv60 32x,
+     * Lv90 50x, Lv100 60x. Angler Harbor's existing 1.25x multiplier still stacks afterward.
+     */
+    private static double fishingXpMultiplier(int level) {
+        int clamped = clamp(level);
+        if (clamped < 10) return 8.0D + 2.0D * clamped / 10.0D;
+        if (clamped < 30) return 10.0D + 6.0D * (clamped - 10) / 20.0D;
+        if (clamped < 60) return 16.0D + 16.0D * (clamped - 30) / 30.0D;
+        if (clamped < 90) return 32.0D + 18.0D * (clamped - 60) / 30.0D;
+        return 50.0D + 10.0D * (clamped - 90) / 10.0D;
     }
 
     public static long scaleSkillXp(SkillType skill, int currentLevel, long rawXp) {

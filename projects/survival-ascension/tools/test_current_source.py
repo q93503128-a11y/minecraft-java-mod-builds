@@ -17,10 +17,10 @@ def require(condition, message):
 props = text(ROOT / "gradle.properties")
 require("minecraft_version=26.2" in props, "Minecraft version drift")
 require("neo_version=26.2.0.38-beta" in props, "NeoForge version drift")
-require("mod_version=0.61.21-alpha.1" in props, "Survival Ascension version drift")
+require("mod_version=0.61.22-alpha.1" in props, "Survival Ascension version drift")
 
 main = text(JAVA / "SurvivalAscension.java")
-require('VERSION = "0.61.21-alpha.1"' in main, "source version drift")
+require('VERSION = "0.61.22-alpha.1"' in main, "source version drift")
 for event in (
     "MiningProgression::onBlockBreak",
     "BulkMiningService::onServerTick",
@@ -52,12 +52,19 @@ for multiplier in (
     "case MINING -> { early = 1.25D; late = 1.10D; }",
     "case WOODCUTTING -> { early = 2.50D; late = 2.00D; }",
     "case HARVESTING -> { early = 3.00D; late = 2.50D; }",
-    "case FISHING -> { early = 6.00D; late = 5.00D; }",
+    "if (skill == SkillType.FISHING) return fishingXpMultiplier(level);",
     "case COMBAT -> { early = 4.00D; late = 3.50D; }",
     "case CONSTRUCTION -> { early = 5.00D; late = 3.50D; }",
     "case MOBILITY -> { early = 4.00D; late = 3.00D; }",
 ):
     require(multiplier in tuning, f"skill pacing drift: {multiplier}")
+require("if (clamped < 10) return 8.0D + 2.0D * clamped / 10.0D;" in tuning
+        and "if (clamped < 30) return 10.0D + 6.0D * (clamped - 10) / 20.0D;" in tuning
+        and "if (clamped < 60) return 16.0D + 16.0D * (clamped - 30) / 30.0D;" in tuning
+        and "if (clamped < 90) return 32.0D + 18.0D * (clamped - 60) / 30.0D;" in tuning
+        and "return 50.0D + 10.0D * (clamped - 90) / 10.0D;" in tuning,
+        "Fishing action-rate normalization curve drift")
+
 for threshold in (
     "if (level >= 100)",
     "if (level >= 90)",

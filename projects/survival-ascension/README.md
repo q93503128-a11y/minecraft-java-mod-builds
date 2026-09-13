@@ -4,6 +4,11 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `15`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.61.22-alpha.1 — Fishing Mastery Pacing / 낚시 숙련 속도 재조정
+낚시는 숙련도가 올라도 한 번의 성공적인 릴인에서 얻는 유효 행동 수가 1회인 반면, 기존 공용 숙련 곡선은 후반 요구 XP가 크게 오르고 낚시 보정은 오히려 6x에서 5x로 낮아졌다. 채굴·벌목·수확처럼 숙련 상승으로 면적/연쇄 행동 수가 늘어나는 기술과 같은 후반 보정 구조를 쓰던 것이 실제 플레이 감각과 맞지 않았다.
+
+낚시만 행동 빈도에 맞는 전용 XP 보정을 사용한다: Lv0 8x → Lv10 10x → Lv30 16x → Lv60 32x → Lv90 50x → Lv100 60x. 단계 사이는 연속 보간된다. 일반 물고기 1회 어획 기준 Lv100까지 필요한 성공 어획은 대략 3,400회에서 약 480회 수준으로 줄며, 기존 어업 부두의 +25% 낚시 XP는 그대로 추가 적용된다. 저장 데이터·낚시찌 타이밍·추가 어획·낚싯대 보존·네트워크 프로토콜은 바뀌지 않는다.
+
 ## 0.61.21-alpha.1 — Bounded Bulk Mining / 대량 채굴 틱 분산
 채굴 2D 면적 작업, 삽 토공, 연결 광맥, Extract의 자동 추가 블록은 최초 파괴 이벤트 안에서 한꺼번에 처리하지 않고 큐에 넣어 틱마다 분산한다. 수동으로 부순 중심 블록은 계속 바닐라 권한이며, 모든 추가 블록도 `ServerPlayerGameMode.destroyBlock` 경로를 사용한다.
 
