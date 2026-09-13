@@ -2,6 +2,7 @@ package kr.moonseungjun.riftfrontier.entity;
 
 import kr.moonseungjun.riftfrontier.combat.CombatRuntimeCatalog;
 import kr.moonseungjun.riftfrontier.combat.MinecraftBossCombatAdapter;
+import kr.moonseungjun.riftfrontier.combat.Region01BossFieldAimPolicy;
 import kr.moonseungjun.riftfrontier.combat.Region01BossFieldImpactResolver;
 import kr.moonseungjun.riftfrontier.combat.Region01BossProductionSemantics;
 import kr.moonseungjun.riftfrontier.combat.ValidatedBossCombatSemantics;
@@ -9,6 +10,7 @@ import kr.moonseungjun.riftfrontier.combat.presentation.Region01BossProductionPr
 import kr.moonseungjun.riftfrontier.content.ContentRuntime;
 import kr.moonseungjun.riftfrontier.network.RiftfrontierNetworking;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.HumanoidArm;
@@ -70,10 +72,37 @@ public final class Region01BossEntity extends LivingEntity {
         MinecraftBossCombatAdapter.ValidatedRuntime runtime = requireFieldTestRuntime();
         long gameTick = serverLevel.getGameTime();
         if (!runtime.attackExecuting()) {
+            ServerPlayer target = nearestFieldTestTarget(serverLevel);
+            if (target == null) {
+                return;
+            }
+            setYRot(Region01BossFieldAimPolicy.committedYawDegrees(
+                getX(), getZ(), target.getX(), target.getZ()
+            ));
             runtime.beginNextAttack(serverLevel, this, gameTick);
         }
         MinecraftBossCombatAdapter.ValidatedTickResult result = runtime.tick(serverLevel, this, gameTick);
         RiftfrontierNetworking.syncBossPresentation(this, gameTick, result);
+    }
+
+    /**
+     * Acquires only when a new attack is about to begin. Once TELEGRAPH starts, facing is deliberately left untouched
+     * until the authoritative attack finishes so line/arc counterplay remains readable instead of homing mid-swing.
+     */
+    private ServerPlayer nearestFieldTestTarget(ServerLevel serverLevel) {
+        ServerPlayer nearest = null;
+        double nearestDistance = Double.POSITIVE_INFINITY;
+        for (ServerPlayer player : serverLevel.players()) {
+            if (!player.isAlive() || player.isSpectator()) continue;
+            double horizontalX = player.getX() - getX();
+            double horizontalZ = player.getZ() - getZ();
+            if (horizontalX * horizontalX + horizontalZ * horizontalZ < 1.0E-12D) continue;
+            double distance = distanceToSqr(player);
+            if (!Region01BossFieldAimPolicy.withinAcquisitionRadius(distance) || distance >= nearestDistance) continue;
+            nearest = player;
+            nearestDistance = distance;
+        }
+        return nearest;
     }
 
     private MinecraftBossCombatAdapter.ValidatedRuntime requireFieldTestRuntime() {
