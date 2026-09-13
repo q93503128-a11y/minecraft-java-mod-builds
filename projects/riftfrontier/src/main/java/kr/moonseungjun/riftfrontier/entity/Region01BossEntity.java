@@ -1,13 +1,16 @@
 package kr.moonseungjun.riftfrontier.entity;
 
+import kr.moonseungjun.riftfrontier.combat.AttackTimeline;
 import kr.moonseungjun.riftfrontier.combat.CombatRuntimeCatalog;
 import kr.moonseungjun.riftfrontier.combat.MinecraftBossCombatAdapter;
 import kr.moonseungjun.riftfrontier.combat.Region01BossFieldAimPolicy;
 import kr.moonseungjun.riftfrontier.combat.Region01BossFieldImpactProfile;
 import kr.moonseungjun.riftfrontier.combat.Region01BossFieldImpactResolver;
+import kr.moonseungjun.riftfrontier.combat.Region01BossFieldImpulseResolver;
 import kr.moonseungjun.riftfrontier.combat.Region01BossProductionSemantics;
 import kr.moonseungjun.riftfrontier.combat.ValidatedBossCombatSemantics;
 import kr.moonseungjun.riftfrontier.combat.presentation.Region01BossProductionPresentation;
+import kr.moonseungjun.riftfrontier.content.ContentId;
 import kr.moonseungjun.riftfrontier.content.ContentRuntime;
 import kr.moonseungjun.riftfrontier.network.RiftfrontierNetworking;
 import net.minecraft.server.level.ServerLevel;
@@ -32,9 +35,12 @@ public final class Region01BossEntity extends LivingEntity {
     /** Deliberately diagnostic until human boss-field evidence approves final damage. */
     private static final float FIELD_TEST_DAMAGE = 1.0F;
     private static final Region01BossFieldImpactResolver FIELD_TEST_HIT_RESOLVER = new Region01BossFieldImpactResolver();
+    private static final Region01BossFieldImpulseResolver FIELD_TEST_IMPULSE_RESOLVER = new Region01BossFieldImpulseResolver();
 
     private boolean fieldTestCombatEnabled;
     private MinecraftBossCombatAdapter.ValidatedRuntime fieldTestRuntime;
+    private ContentId fieldTestPreviousPattern;
+    private AttackTimeline.Phase fieldTestPreviousPhase;
 
     public Region01BossEntity(EntityType<? extends Region01BossEntity> entityType, Level level) {
         super(entityType, level);
@@ -50,6 +56,8 @@ public final class Region01BossEntity extends LivingEntity {
         }
         fieldTestCombatEnabled = true;
         fieldTestRuntime = null;
+        fieldTestPreviousPattern = null;
+        fieldTestPreviousPhase = null;
     }
 
     public boolean fieldTestCombatEnabled() {
@@ -85,8 +93,40 @@ public final class Region01BossEntity extends LivingEntity {
             runtime.beginNextAttack(serverLevel, this, gameTick);
         }
         MinecraftBossCombatAdapter.ValidatedTickResult result = runtime.tick(serverLevel, this, gameTick);
+        applyFieldTestActiveEntryImpulse(serverLevel, result);
         applyFieldTestActiveTravel(result);
         RiftfrontierNetworking.syncBossPresentation(this, gameTick, result);
+    }
+
+    /**
+     * Gives the local arena-pressure role one server-owned outward displacement when authoritative ACTIVE begins.
+     *
+     * <p>This is field-play calibration, not final knockback balance or VFX. It reuses the same eligible-target and
+     * local-area geometry contract as the damage resolver, adds no second attack clock, and deliberately does not
+     * reapply every ACTIVE tick.</p>
+     */
+    private void applyFieldTestActiveEntryImpulse(
+        ServerLevel serverLevel,
+        MinecraftBossCombatAdapter.ValidatedTickResult result
+    ) {
+        var frame = result.combat().presentation().orElse(null);
+        if (frame == null) {
+            fieldTestPreviousPattern = null;
+            fieldTestPreviousPhase = null;
+            return;
+        }
+
+        boolean enteringActive = frame.attackPhase() == AttackTimeline.Phase.ACTIVE
+            && (fieldTestPreviousPhase != AttackTimeline.Phase.ACTIVE
+                || fieldTestPreviousPattern == null
+                || !fieldTestPreviousPattern.equals(frame.patternId()));
+
+        fieldTestPreviousPattern = frame.patternId();
+        fieldTestPreviousPhase = frame.attackPhase();
+        if (!enteringActive) {
+            return;
+        }
+        FIELD_TEST_IMPULSE_RESOLVER.applyActiveEntry(serverLevel, this, frame.patternId());
     }
 
     /**
@@ -154,6 +194,8 @@ public final class Region01BossEntity extends LivingEntity {
                 // A content reload retires the old capability. Rebuild below from the newly published snapshot.
                 fieldTestRuntime.cancelAttack();
                 fieldTestRuntime = null;
+                fieldTestPreviousPattern = null;
+                fieldTestPreviousPhase = null;
             }
         }
 
