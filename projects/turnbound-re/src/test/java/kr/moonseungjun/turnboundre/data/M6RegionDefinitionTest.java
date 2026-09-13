@@ -11,12 +11,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class M6RegionDefinitionTest {
     @Test
-    void validRegionGraphAndAnchorReferences() {
+    void validRegionGraphAndWorldAnchorReferences() {
         RegionDefinition hub = new RegionDefinition(
                 "turnbound_re:hub_01",
                 "HUB",
                 "minecraft:overworld",
                 List.of("turnbound_re:region_01"),
+                List.of(),
                 List.of());
         RegionDefinition region = new RegionDefinition(
                 "turnbound_re:region_01",
@@ -27,14 +28,18 @@ final class M6RegionDefinitionTest {
                         "turnbound_re:region_01/overworld_patrol",
                         "turnbound_re:debug_overworld_patrol",
                         "turnbound_re:region_01/overworld_patrol",
-                        true)));
+                        true)),
+                List.of(new RegionDefinition.ResourceAnchor(
+                        "turnbound_re:region_01/ore_outcrop",
+                        "MINING",
+                        "turnbound_re:region_01/ore_outcrop")));
 
         assertTrue(RegionDefinitionValidator.validate(
                 List.of(hub, region), Set.of("turnbound_re:debug_overworld_patrol")).isEmpty());
     }
 
     @Test
-    void rejectsBrokenRegionGraphAndAnchorReferences() {
+    void rejectsBrokenRegionGraphEncounterAndResourceReferences() {
         RegionDefinition broken = new RegionDefinition(
                 "turnbound_re:region_01",
                 "WRONG_KIND",
@@ -44,17 +49,22 @@ final class M6RegionDefinitionTest {
                         "turnbound_re:region_01/broken",
                         "turnbound_re:missing_encounter",
                         "turnbound_re:region_01/broken",
-                        true)));
+                        true)),
+                List.of(new RegionDefinition.ResourceAnchor(
+                        "turnbound_re:region_01/broken_resource",
+                        "CRAFTING",
+                        "turnbound_re:region_01/broken_resource")));
 
         List<String> errors = RegionDefinitionValidator.validate(List.of(broken), Set.of());
         assertTrue(errors.stream().anyMatch(error -> error.contains("unknown region kind")));
         assertTrue(errors.stream().anyMatch(error -> error.contains("cannot exit to itself")));
         assertTrue(errors.stream().anyMatch(error -> error.contains("unresolved exit region")));
         assertTrue(errors.stream().anyMatch(error -> error.contains("unresolved encounter")));
+        assertTrue(errors.stream().anyMatch(error -> error.contains("unknown resource activity")));
     }
 
     @Test
-    void bundleParserCarriesRegionDefinitions() {
+    void oldRegionJsonWithoutResourceAnchorsRemainsReadableAsEmptyList() {
         String json = """
                 {
                   "regions": [
@@ -70,7 +80,37 @@ final class M6RegionDefinitionTest {
                 """;
 
         DefinitionBundleParser.Parsed parsed = DefinitionBundleParser.parse(Map.of("turnbound_re:test_region.json", json));
-        assertEquals(1, parsed.registry().regions().size());
-        assertEquals("HUB", parsed.registry().regions().get("turnbound_re:hub_01").kind());
+        RegionDefinition region = parsed.registry().regions().get("turnbound_re:hub_01");
+        assertEquals("HUB", region.kind());
+        assertTrue(region.resourceAnchors().isEmpty());
+    }
+
+    @Test
+    void bundleParserCarriesResourceAnchorsWithoutRewardFields() {
+        String json = """
+                {
+                  "regions": [
+                    {
+                      "id": "turnbound_re:region_01",
+                      "kind": "REGION",
+                      "dimension": "minecraft:overworld",
+                      "exits": [],
+                      "resourceAnchors": [
+                        {
+                          "id": "turnbound_re:region_01/river_pool",
+                          "activity": "FISHING",
+                          "locator": "turnbound_re:region_01/river_pool"
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """;
+
+        DefinitionBundleParser.Parsed parsed = DefinitionBundleParser.parse(Map.of("turnbound_re:test_resource_region.json", json));
+        RegionDefinition.ResourceAnchor anchor = parsed.registry().regions()
+                .get("turnbound_re:region_01").resourceAnchors().getFirst();
+        assertEquals("FISHING", anchor.activity());
+        assertEquals("turnbound_re:region_01/river_pool", anchor.locator());
     }
 }

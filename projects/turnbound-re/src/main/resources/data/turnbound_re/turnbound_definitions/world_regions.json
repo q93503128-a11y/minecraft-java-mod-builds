@@ -5,7 +5,8 @@
       "kind": "HUB",
       "dimension": "minecraft:overworld",
       "exits": ["turnbound_re:region_01"],
-      "encounterAnchors": []
+      "encounterAnchors": [],
+      "resourceAnchors": []
     },
     {
       "id": "turnbound_re:region_01",
@@ -24,6 +25,23 @@
           "encounter": "turnbound_re:debug_rift_elite",
           "locator": "turnbound_re:region_01/rift_elite",
           "repeatable": true
+        }
+      ],
+      "resourceAnchors": [
+        {
+          "id": "turnbound_re:region_01/ore_outcrop",
+          "activity": "MINING",
+          "locator": "turnbound_re:region_01/ore_outcrop"
+        },
+        {
+          "id": "turnbound_re:region_01/riverside_plot",
+          "activity": "FARMING",
+          "locator": "turnbound_re:region_01/riverside_plot"
+        },
+        {
+          "id": "turnbound_re:region_01/river_pool",
+          "activity": "FISHING",
+          "locator": "turnbound_re:region_01/river_pool"
         }
       ]
     }

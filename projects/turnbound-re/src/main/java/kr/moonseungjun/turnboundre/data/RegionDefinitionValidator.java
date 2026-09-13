@@ -8,6 +8,7 @@ import java.util.Set;
 /** Semantic/cross-reference validation for authored region definitions. */
 public final class RegionDefinitionValidator {
     private static final Set<String> KINDS = Set.of("HUB", "REGION", "DUNGEON");
+    private static final Set<String> RESOURCE_ACTIVITIES = Set.of("MINING", "FARMING", "FISHING");
 
     private RegionDefinitionValidator() {}
 
@@ -18,6 +19,7 @@ public final class RegionDefinitionValidator {
         List<String> errors = new ArrayList<>();
         Set<String> regionIds = new HashSet<>();
         Set<String> anchorIds = new HashSet<>();
+        Set<String> resourceAnchorIds = new HashSet<>();
         Set<String> locators = new HashSet<>();
 
         for (RegionDefinition region : regions) {
@@ -47,8 +49,20 @@ public final class RegionDefinitionValidator {
                 else if (!anchorIds.add(anchor.id())) errors.add("duplicate encounter anchor id: " + anchor.id());
                 if (!validId(anchor.encounter())) errors.add(anchor.id() + ": invalid encounter id " + anchor.encounter());
                 else if (!encounterIds.contains(anchor.encounter())) errors.add(anchor.id() + ": unresolved encounter " + anchor.encounter());
-                if (!validId(anchor.locator())) errors.add(anchor.id() + ": invalid locator " + anchor.locator());
-                else if (!locators.add(anchor.locator())) errors.add("duplicate authored locator: " + anchor.locator());
+                validateLocator(anchor.id(), anchor.locator(), locators, errors);
+            }
+
+            for (RegionDefinition.ResourceAnchor anchor : region.resourceAnchors()) {
+                if (anchor == null) {
+                    errors.add(id + ": resource anchor must not be null");
+                    continue;
+                }
+                if (!validId(anchor.id())) errors.add(id + ": invalid resource anchor id " + anchor.id());
+                else if (!resourceAnchorIds.add(anchor.id())) errors.add("duplicate resource anchor id: " + anchor.id());
+                if (!RESOURCE_ACTIVITIES.contains(anchor.activity())) {
+                    errors.add(anchor.id() + ": unknown resource activity " + anchor.activity());
+                }
+                validateLocator(anchor.id(), anchor.locator(), locators, errors);
             }
         }
 
@@ -61,6 +75,11 @@ public final class RegionDefinitionValidator {
             }
         }
         return List.copyOf(errors);
+    }
+
+    private static void validateLocator(String anchorId, String locator, Set<String> locators, List<String> errors) {
+        if (!validId(locator)) errors.add(anchorId + ": invalid locator " + locator);
+        else if (!locators.add(locator)) errors.add("duplicate authored locator: " + locator);
     }
 
     private static boolean validId(String value) {
