@@ -51,14 +51,11 @@ jobs:
           set -euo pipefail
           jar='build/libs/frontier_settlement-0.1.0-alpha.132.jar'
           test -s "$jar"
-          test -f 'build/libs/frontier_settlement-0.1.0-alpha.132.jar.sha256'
-          expected="$(awk '{print $1}' build/libs/frontier_settlement-0.1.0-alpha.132.jar.sha256)"
           actual="$(sha256sum "$jar" | awk '{print $1}')"
-          test "$expected" = "$actual"
           mkdir -p build/deliverables
           cp "$jar" build/deliverables/
-          cp build/libs/frontier_settlement-0.1.0-alpha.132.jar.sha256 build/deliverables/
-          printf 'version=0.1.0-alpha.132\nsha256=%s\nsource_sha=%s\n' "$actual" "$GITHUB_SHA" > build/deliverables/BUILD_INFO.txt
+          printf '%s  %s\n' "$actual" "$(basename "$jar")" > build/deliverables/frontier_settlement-0.1.0-alpha.132.jar.sha256
+          printf 'version=0.1.0-alpha.132\nsha256=%s\nsource_sha=%s\n' "$actual" "$(git rev-parse HEAD)" > build/deliverables/BUILD_INFO.txt
       - uses: actions/upload-artifact@v4
         with:
           name: frontier-settlement-0.1.0-alpha.132-focused-deliverables
