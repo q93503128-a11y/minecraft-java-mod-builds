@@ -8,7 +8,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -16,10 +15,9 @@ import java.util.UUID;
  * Process-local server bridge for authenticated player weapon intents.
  *
  * <p>Content reloads replace the whole capability by generation, which also drops stale executions.
- * The current M3 slice intentionally has no approved production hit-volume geometry yet, so the
- * runtime advances the authoritative attack clock but exposes no hit candidates until that separate
- * evidence gate is completed. This is not damage authority and cannot be used to claim combat is
- * presentation/field complete.</p>
+ * The current M3 slice now includes a deliberately provisional field-play impact resolver so the two
+ * locked weapon roles can be tested against real Minecraft targets. Geometry and damage remain a
+ * calibration checkpoint, not approved final balance or presentation.</p>
  */
 public final class PlayerWeaponServerRuntime {
     private static State state;
@@ -102,10 +100,12 @@ public final class PlayerWeaponServerRuntime {
 
         CombatRuntimeCatalog catalog = new CombatRuntimeCatalog(snapshot);
         PlayerWeaponItemStackLoadoutResolver loadoutResolver = new PlayerWeaponItemStackLoadoutResolver(catalog);
+        PlayerWeaponFieldImpactResolver fieldImpact = new PlayerWeaponFieldImpactResolver();
         MinecraftPlayerWeaponCombatAdapter adapter = new MinecraftPlayerWeaponCombatAdapter(
             catalog,
             loadoutResolver,
-            (level, actor, attack) -> List.of()
+            fieldImpact,
+            fieldImpact
         );
         state = new State(snapshot.generation(), adapter);
         return state;
