@@ -15,7 +15,8 @@ public record RegionDefinition(
         String dimension,
         List<String> exits,
         List<EncounterAnchor> encounterAnchors,
-        List<ResourceAnchor> resourceAnchors
+        List<ResourceAnchor> resourceAnchors,
+        List<FastTravelAnchor> fastTravelAnchors
 ) {
     public record EncounterAnchor(
             String id,
@@ -47,14 +48,47 @@ public record RegionDefinition(
         ).apply(instance, ResourceAnchor::new));
     }
 
+    /**
+     * Physical fast-travel activation point. Data owns stable meaning/linkage only; the world structure owns coordinates.
+     * A destination locator is usable only after the player physically discovers that destination.
+     */
+    public record FastTravelAnchor(
+            String id,
+            String locator,
+            List<String> destinations
+    ) {
+        public static final Codec<FastTravelAnchor> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                Codec.STRING.fieldOf("id").forGetter(FastTravelAnchor::id),
+                Codec.STRING.fieldOf("locator").forGetter(FastTravelAnchor::locator),
+                Codec.STRING.listOf().optionalFieldOf("destinations", List.of()).forGetter(FastTravelAnchor::destinations)
+        ).apply(instance, FastTravelAnchor::new));
+
+        public FastTravelAnchor {
+            destinations = destinations == null ? List.of() : List.copyOf(destinations);
+        }
+    }
+
     public static final Codec<RegionDefinition> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.fieldOf("id").forGetter(RegionDefinition::id),
             Codec.STRING.fieldOf("kind").forGetter(RegionDefinition::kind),
             Codec.STRING.fieldOf("dimension").forGetter(RegionDefinition::dimension),
             Codec.STRING.listOf().optionalFieldOf("exits", List.of()).forGetter(RegionDefinition::exits),
             EncounterAnchor.CODEC.listOf().optionalFieldOf("encounterAnchors", List.of()).forGetter(RegionDefinition::encounterAnchors),
-            ResourceAnchor.CODEC.listOf().optionalFieldOf("resourceAnchors", List.of()).forGetter(RegionDefinition::resourceAnchors)
+            ResourceAnchor.CODEC.listOf().optionalFieldOf("resourceAnchors", List.of()).forGetter(RegionDefinition::resourceAnchors),
+            FastTravelAnchor.CODEC.listOf().optionalFieldOf("fastTravelAnchors", List.of()).forGetter(RegionDefinition::fastTravelAnchors)
     ).apply(instance, RegionDefinition::new));
+
+    /** Backward-compatible constructor for callers authored before fast travel existed. */
+    public RegionDefinition(
+            String id,
+            String kind,
+            String dimension,
+            List<String> exits,
+            List<EncounterAnchor> encounterAnchors,
+            List<ResourceAnchor> resourceAnchors
+    ) {
+        this(id, kind, dimension, exits, encounterAnchors, resourceAnchors, List.of());
+    }
 
     /** Backward-compatible constructor for tests/callers authored before resource anchors existed. */
     public RegionDefinition(
@@ -64,12 +98,13 @@ public record RegionDefinition(
             List<String> exits,
             List<EncounterAnchor> encounterAnchors
     ) {
-        this(id, kind, dimension, exits, encounterAnchors, List.of());
+        this(id, kind, dimension, exits, encounterAnchors, List.of(), List.of());
     }
 
     public RegionDefinition {
         exits = exits == null ? List.of() : List.copyOf(exits);
         encounterAnchors = encounterAnchors == null ? List.of() : List.copyOf(encounterAnchors);
         resourceAnchors = resourceAnchors == null ? List.of() : List.copyOf(resourceAnchors);
+        fastTravelAnchors = fastTravelAnchors == null ? List.of() : List.copyOf(fastTravelAnchors);
     }
 }

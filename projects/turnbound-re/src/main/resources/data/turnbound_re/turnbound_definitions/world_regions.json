@@ -6,7 +6,14 @@
       "dimension": "minecraft:overworld",
       "exits": ["turnbound_re:region_01"],
       "encounterAnchors": [],
-      "resourceAnchors": []
+      "resourceAnchors": [],
+      "fastTravelAnchors": [
+        {
+          "id": "turnbound_re:hub_01/waypoint",
+          "locator": "turnbound_re:hub_01/waypoint",
+          "destinations": ["turnbound_re:region_01/waypoint"]
+        }
+      ]
     },
     {
       "id": "turnbound_re:region_01",
@@ -42,6 +49,13 @@
           "id": "turnbound_re:region_01/river_pool",
           "activity": "FISHING",
           "locator": "turnbound_re:region_01/river_pool"
+        }
+      ],
+      "fastTravelAnchors": [
+        {
+          "id": "turnbound_re:region_01/waypoint",
+          "locator": "turnbound_re:region_01/waypoint",
+          "destinations": ["turnbound_re:hub_01/waypoint"]
         }
       ]
     }

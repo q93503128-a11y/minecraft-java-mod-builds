@@ -2,11 +2,13 @@ package kr.moonseungjun.turnboundre.debug;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import kr.moonseungjun.turnboundre.data.DefinitionRegistry;
 import kr.moonseungjun.turnboundre.data.DefinitionRepository;
 import kr.moonseungjun.turnboundre.world.FunctionalWorldSliceBuilder;
 import kr.moonseungjun.turnboundre.world.FunctionalWorldSliceLayout;
 import kr.moonseungjun.turnboundre.world.ProductionWorldSlicePlan;
 import kr.moonseungjun.turnboundre.world.ProductionWorldSlicePrototypeBuilder;
+import kr.moonseungjun.turnboundre.world.WorldFastTravelPrototype;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -37,14 +39,16 @@ public final class TurnboundWorldSliceCommands {
     private static int validate(CommandSourceStack source, DefinitionRepository definitions) throws CommandSyntaxException {
         ServerPlayer player = source.getPlayerOrException();
         String dimension = player.level().dimension().identifier().toString();
-        List<String> errors = new ArrayList<>(FunctionalWorldSliceLayout.validate(definitions.snapshot().registry(), dimension));
+        DefinitionRegistry registry = definitions.snapshot().registry();
+        List<String> errors = new ArrayList<>(FunctionalWorldSliceLayout.validate(registry, dimension));
         errors.addAll(ProductionWorldSlicePlan.validate());
+        errors.addAll(WorldFastTravelPrototype.validate(registry));
         if (!errors.isEmpty()) {
             source.sendFailure(Component.literal("World slice contract rejected: " + String.join("; ", errors)));
             return 0;
         }
         source.sendSuccess(() -> Component.literal(
-                "World slice contracts valid: functional loop plus production scale/readability plan."), false);
+                "World slice contracts valid: functional loop, production scale and discovery-gated fast travel."), false);
         return 1;
     }
 
@@ -69,8 +73,11 @@ public final class TurnboundWorldSliceCommands {
     private static int buildPrototype(CommandSourceStack source, DefinitionRepository definitions) throws CommandSyntaxException {
         ServerPlayer player = source.getPlayerOrException();
         final ProductionWorldSlicePrototypeBuilder.Result result;
+        final WorldFastTravelPrototype.Result travel;
         try {
-            result = ProductionWorldSlicePrototypeBuilder.build(player, definitions.snapshot().registry());
+            DefinitionRegistry registry = definitions.snapshot().registry();
+            result = ProductionWorldSlicePrototypeBuilder.build(player, registry);
+            travel = WorldFastTravelPrototype.install(player, registry, result.origin());
         } catch (RuntimeException failure) {
             source.sendFailure(Component.literal("Production world prototype rejected: " + failure.getMessage()));
             return 0;
@@ -80,7 +87,8 @@ public final class TurnboundWorldSliceCommands {
                 "Production-facing world prototype built from origin "
                         + result.origin().getX() + " " + result.origin().getY() + " " + result.origin().getZ()
                         + ". Forge hall -> resource branches -> patrol ruin -> rift landmark. "
-                        + "Encounter anchors=" + result.encounterAnchors().size()), false);
+                        + "Encounter anchors=" + result.encounterAnchors().size()
+                        + ", travel anchors=" + travel.anchorEntityIds().size()), false);
         return 1;
     }
 }

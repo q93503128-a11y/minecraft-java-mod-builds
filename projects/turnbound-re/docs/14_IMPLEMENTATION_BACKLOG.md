@@ -101,7 +101,7 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 **중요:** screenshot/reference 비교 전 M5 production visual PASS를 선언하지 않는다. 사용자의 현재 방침에 따라 중간 실플레이 테스트를 요구하지 않고, 통합 테스트 가치가 있는 완성 구간에서 한 번에 검증한다.
 
 ## M6 — World & Life Loop
-상태: **IN PROGRESS — WORLD REFERENCE GATE PASS / PRODUCTION PROTOTYPE IMPLEMENTED / VISUAL PLAYTEST PENDING**
+상태: **IN PROGRESS — AUTHORED WORLD + DISCOVERY LOOP AUTO-INTEGRATED / PRODUCTION VISUAL GATE PENDING**
 
 완료:
 - authored Encounter의 production 진입은 world anchor가 소유하는 server-authoritative 경로로 수렴.
@@ -133,21 +133,19 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 - `river_pool`에 실제 water pool을 배치해 vanilla fishing→Cooked Fish 준비물 흐름 연결.
 - patrol/elite Interaction entity가 기존 authored locator tag를 사용해 world-first Encounter 진입 경로에 연결.
 - 기능 slice offset은 production 좌표가 아니며 RegionDefinition에는 좌표를 추가하지 않음.
-- HUB_01 / REGION_01 World Asset Gate reference 조사 완료: Minecraft Legends / Minecraft Dungeons Camp / MineColonies style family를 구조 원리 reference로 채택하고 proprietary/오픈소스 asset은 복제하지 않음.
-- `ProductionWorldSlicePlan`으로 23×19 Hub, 5-block main road, resource branch breathing room, patrol→elite escalation distance를 pure contract로 고정.
-- `ProductionWorldSlicePrototypeBuilder`로 stone/tuff + spruce forge hall, readable road, quarry/farm/river, patrol ruin, rift landmark의 production-facing prototype 구현.
-- forge hall 내부에 기존 Smithing Table/Furnace/Crafting/Anvil/Grindstone 동선을 실제 공간으로 통합.
-- quarry prototype yield를 Coal 8 / Copper 10 / Iron 8 / Gold 4로 조정해 첫 장비 선택과 preparation resource 경쟁을 실제 Minecraft material로 연결.
-- `/turnbound_re_world_slice prototype` operator harness 추가. 기존 `build` 기능 slice는 비교용으로 보존.
-- 상세 정본: `19_M6_WORLD_ENCOUNTER_LIFECYCLE.md`, `21_M6_RESOURCE_NODE_CONTRACT.md`, `22_M6_BATTLE_PREPARATION_MATERIAL_SINK.md`, `23_M6_MINIMAL_EQUIPMENT_CONTRACT.md`, `24_M6_EQUIPMENT_FORGE_TRANSACTION.md`, `25_M6_FUNCTIONAL_WORLD_SLICE.md`, `26_M6_WORLD_ASSET_GATE.md`.
+- World Asset Gate를 통해 HUB_01/REGION_01 첫 production-facing palette·footprint·landmark cadence를 정하고 forge camp/resource branches/patrol ruin/rift landmark prototype을 구현.
+- `fastTravelAnchors` data contract와 별도 `FastTravelSavedData`를 추가해 월드 공용 waypoint 위치와 플레이어 개인 discovery를 분리.
+- Hub/REGION_01에 실제 Lodestone + Interaction waypoint를 배치하고, 두 지점을 각각 직접 발견한 뒤에만 서버 권한 빠른 이동이 열리도록 연결.
+- fast travel은 client 좌표/unlock 입력을 신뢰하지 않고 definition/tag/dimension/range/current registered position/discovery/link를 서버가 재검증.
+- 전투 중 fast travel 차단, 낡은 prototype Interaction marker 위치 불일치 차단, 첫 two-point slice에서 다중 목적지면 이동 대신 selection-required로 중단.
+- 상세 정본: `19_M6_WORLD_ENCOUNTER_LIFECYCLE.md`, `21_M6_RESOURCE_NODE_CONTRACT.md`, `22_M6_BATTLE_PREPARATION_MATERIAL_SINK.md`, `23_M6_MINIMAL_EQUIPMENT_CONTRACT.md`, `24_M6_EQUIPMENT_FORGE_TRANSACTION.md`, `25_M6_FUNCTIONAL_WORLD_SLICE.md`, `26_M6_WORLD_ASSET_GATE.md`, `27_M6_FAST_TRAVEL_DISCOVERY.md`.
 
 남음:
-- production prototype 실제 screenshot side-by-side audit 및 palette/scale 보정.
-- fast travel/exploration discovery의 최소 server-authoritative hook.
-- quest hook은 이동/전투/채집 루프를 방해하지 않는 최소 범위로 연결.
-- production non-repeatable anchor를 실제 콘텐츠로 배치하고 completion state와 월드 표현을 연결.
-- 장비/준비물/채집까지 포함한 통합 screenshot/playtest 및 밸런스 조정.
-- 최종 structure/worldgen 배치 방식 확정.
+- production non-repeatable anchor를 실제 콘텐츠로 배치하고 첫 quest hook에 연결.
+- quest가 Hub → 탐험/생활 → visible encounter → reward → Hub 흐름을 안내하되 기존 월드 플레이를 메뉴로 대체하지 않게 설계.
+- 3개 이상 travel destination이 실제 필요해질 때만 destination selection UX 추가.
+- 장비/준비물/채집/discovery/fast travel까지 포함한 통합 screenshot/playtest 및 밸런스 조정.
+- production visual screenshot 비교 후 Hub/광산/농장/강/Encounter landmark 세부 수정.
 
 ### PASS
 각 활동의 산출이 다음 시스템에 실제 사용되고, 메뉴 우회나 막힌 경로 없이 fixed-world loop가 성립하며, 실제 Minecraft 플레이에서도 의도대로 작동해야 한다.
@@ -172,14 +170,14 @@ eligible 전수 PLAYABLE 이상, 미분류 0.
 
 ## 지금 바로 할 일 — 2026-09-13 최신
 
-현재 우선순위는 **production-facing world prototype 위에 최소한의 탐험 진행 상태를 연결하는 것**이다.
+현재 우선순위는 **production non-repeatable Encounter와 첫 quest hook을 현재 authored world loop에 연결하는 것**이다.
 
 순서:
-1. fast travel / exploration discovery를 기존 world locator와 서버 권한 save에 최소 hook으로 연결한다.
-2. HUB_01 / REGION_01을 발견하기 전후의 이동 가능 상태를 명확히 하되 새 통화/별도 관리 메뉴는 만들지 않는다.
-3. 첫 production non-repeatable Encounter를 실제 locator에 배치하고 승리 후 completion이 월드에서 읽히게 한다.
-4. quest는 위 동선에 자연스럽게 얹히는 첫 목표 1개만 연결하고 독립 quest grind를 만들지 않는다.
-5. 그 뒤 world exploration → 실제 채집 → 장비/준비 → visible encounter → battle → reward → 귀환 전체를 통합 screenshot/playtest에서 검증한다.
+1. REGION_01의 첫 one-time Encounter를 기존 locator/reward completion 계약으로 실제 배치한다.
+2. Hub에서 시작해 자원 분기와 patrol을 지나 one-time 목표까지 자연스럽게 유도하는 최소 quest hook을 설계한다.
+3. quest는 별도 통화·반복 클릭·원격 encounter 메뉴를 만들지 않고 월드의 실제 landmark/행동을 가리키는 역할만 한다.
+4. 완료 보상이 기존 Coin/Essence/Shard/장비·생활 루프 중 다음 선택으로 이어지게 한다.
+5. Hub → 탐험 → 실제 채집 → 장비/준비 → waypoint discovery → visible encounter → battle → reward → fast travel 귀환 전체를 통합 screenshot/playtest에서 검증한다.
 
 금지:
 - 재료를 이유 없이 Coin/Essence로 환전해 모든 생활 활동을 같은 숫자로 평탄화.
@@ -187,7 +185,7 @@ eligible 전수 PLAYABLE 이상, 미분류 0.
 - 실제 월드 진입을 우회하는 encounter 선택 메뉴 부활.
 - material을 소비하지 않는 가짜 장비 제작 네트워크 경로.
 - 랜덤 옵션/희귀도/다중 슬롯을 필요 검증 없이 추가.
-- World Asset Gate를 무시하고 production 건축/외형을 즉흥 변경.
-- reference 게임/오픈소스 schematic을 출처·license 검토 없이 직접 복제.
+- World Asset Gate 없이 production 건축/외형을 즉흥 확정.
+- 발견하지 않은 waypoint를 원격 메뉴/클라이언트 payload로 해금.
 
 자동 코드 검증은 의미 있는 단위마다 수행하되, 사용자에게 중간 수동 테스트를 요구하지 않는다. 실제 screenshot/playtest 및 M2/M4 수동 gate는 통합 테스트 가치가 있는 완성 구간에서 함께 수행한다.

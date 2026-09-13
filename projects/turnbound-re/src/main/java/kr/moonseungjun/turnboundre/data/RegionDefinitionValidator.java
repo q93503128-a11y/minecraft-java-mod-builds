@@ -1,8 +1,10 @@
 package kr.moonseungjun.turnboundre.data;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /** Semantic/cross-reference validation for authored region definitions. */
@@ -20,7 +22,11 @@ public final class RegionDefinitionValidator {
         Set<String> regionIds = new HashSet<>();
         Set<String> anchorIds = new HashSet<>();
         Set<String> resourceAnchorIds = new HashSet<>();
+        Set<String> fastTravelAnchorIds = new HashSet<>();
         Set<String> locators = new HashSet<>();
+        Set<String> fastTravelLocators = new HashSet<>();
+        Map<String, String> travelLocatorToRegion = new HashMap<>();
+        List<TravelLink> travelLinks = new ArrayList<>();
 
         for (RegionDefinition region : regions) {
             if (region == null) {
@@ -64,6 +70,32 @@ public final class RegionDefinitionValidator {
                 }
                 validateLocator(anchor.id(), anchor.locator(), locators, errors);
             }
+
+            for (RegionDefinition.FastTravelAnchor anchor : region.fastTravelAnchors()) {
+                if (anchor == null) {
+                    errors.add(id + ": fast travel anchor must not be null");
+                    continue;
+                }
+                if (!validId(anchor.id())) errors.add(id + ": invalid fast travel anchor id " + anchor.id());
+                else if (!fastTravelAnchorIds.add(anchor.id())) errors.add("duplicate fast travel anchor id: " + anchor.id());
+                validateLocator(anchor.id(), anchor.locator(), locators, errors);
+                if (validId(anchor.locator())) {
+                    fastTravelLocators.add(anchor.locator());
+                    travelLocatorToRegion.put(anchor.locator(), id);
+                }
+                if (anchor.destinations().isEmpty()) {
+                    errors.add(anchor.id() + ": fast travel anchor requires at least one destination");
+                }
+                Set<String> localDestinations = new HashSet<>();
+                for (String destination : anchor.destinations()) {
+                    if (!validId(destination)) errors.add(anchor.id() + ": invalid fast travel destination " + destination);
+                    else if (!localDestinations.add(destination)) errors.add(anchor.id() + ": duplicate fast travel destination " + destination);
+                    if (anchor.locator() != null && anchor.locator().equals(destination)) {
+                        errors.add(anchor.id() + ": fast travel anchor cannot target itself");
+                    }
+                    travelLinks.add(new TravelLink(id, anchor.id(), anchor.locator(), destination));
+                }
+            }
         }
 
         for (RegionDefinition region : regions) {
@@ -72,6 +104,24 @@ public final class RegionDefinitionValidator {
                 if (validId(exit) && !regionIds.contains(exit)) {
                     errors.add(region.id() + ": unresolved exit region " + exit);
                 }
+            }
+        }
+
+        Map<String, RegionDefinition> regionsById = new HashMap<>();
+        for (RegionDefinition region : regions) {
+            if (region != null && validId(region.id())) regionsById.put(region.id(), region);
+        }
+        for (TravelLink link : travelLinks) {
+            if (!validId(link.destination()) || !fastTravelLocators.contains(link.destination())) {
+                if (validId(link.destination())) errors.add(link.anchorId() + ": unresolved fast travel destination " + link.destination());
+                continue;
+            }
+            String destinationRegion = travelLocatorToRegion.get(link.destination());
+            if (destinationRegion == null || destinationRegion.equals(link.sourceRegion())) continue;
+            RegionDefinition source = regionsById.get(link.sourceRegion());
+            if (source != null && !source.exits().contains(destinationRegion)) {
+                errors.add(link.anchorId() + ": fast travel link must follow authored region exit "
+                        + link.sourceRegion() + " -> " + destinationRegion);
             }
         }
         return List.copyOf(errors);
@@ -100,4 +150,6 @@ public final class RegionDefinitionValidator {
         }
         return true;
     }
+
+    private record TravelLink(String sourceRegion, String anchorId, String sourceLocator, String destination) {}
 }
