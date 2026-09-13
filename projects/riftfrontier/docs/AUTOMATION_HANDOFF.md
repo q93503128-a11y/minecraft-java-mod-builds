@@ -46,6 +46,18 @@ Recovery aid only. Current GitHub `main` plus canonical project/design documents
 - This gate was added instead of inventing extra hit feedback or tuning numbers before observing the actual Minecraft result.
 - If mechanics pass but feel visually disconnected, proceed to reference-backed player attack presentation/hit feedback. If geometry fails, fix the observed symptom first. Do not hide a geometry/readability failure by inflating range or removing telegraph.
 
+### Region 01 boss combat/presentation progression — 2026-09-13
+
+- Region 01 production boss combat now has the three authored roles `region_01_committed_strike`, `region_01_line_displacement`, and `region_01_arena_pressure` under `riftfrontier:boss/region_01_first_apex`.
+- `region_01_first_apex_semantics.json` and `Region01BossProductionSemantics` author the two-phase composition: phase 1 uses committed strike + line displacement; phase 2 adds arena pressure. The phase-policy CI run `34750881421` finished SUCCESS.
+- The selected Dragon Evolved source has direct visual motion review and exact reviewed phase-window evidence for `Headbutt` and `Punch`, but those source clip names do NOT by themselves authorize gameplay-role assignment or ACTIVE hit timing.
+- Added the production logical profile `data/riftfrontier/riftfrontier/presentation/region_01_first_apex.json`. It covers all nine server semantic selectors: three attacks × TELEGRAPH/ACTIVE/RECOVERY.
+- Added `Region01BossProductionPresentation` so the packaged profile is decoded through the existing strict `BossPresentationProfileCodec` instead of being recreated in Java.
+- Added `ProductionRegion01BossPresentationTest` to lock the production boss/model context and exact nine-selector coverage.
+- The animation/VFX/sound IDs in that profile are logical contract keys only. They do NOT claim that a reviewed source clip, final VFX, or final sound asset exists for those keys yet.
+- Do not infer `Punch -> committed_strike`, `Headbutt -> line_displacement`, or any arena-pressure clip merely from source names. A source binding is allowed only when the observed motion evidence and intended gameplay role are explicitly reviewed together. Arena pressure currently has no approved source-motion mapping.
+- Because the complete production profile requires nine logical animation keys, do not publish a partial `BossAnimationSourceBinding` as if it covered the boss. Keep missing source motion fail-closed while material/VFX/sound/animation evidence is authored.
+
 ## Verification status
 
 - Canon/source reviewed against current main: YES.
@@ -56,11 +68,14 @@ Recovery aid only. Current GitHub `main` plus canonical project/design documents
 - Verified executable JAR: `riftfrontier-0.1.0-alpha.1.jar`.
 - Verified JAR SHA-256: `310257a14a6e8d7c990aa21fb2bff314dd0cfea3234825c5379a1912fb80b8d1`.
 - GitHub Actions deliverable artifact: `riftfrontier-0.1.0-alpha.1-deliverables` from run `34739314980`.
-- Current status for this checkpoint: CODE REVIEWED / TESTED / BUILD VERIFIED / JAR PRODUCED.
+- Current status for the player field-impact checkpoint: CODE REVIEWED / TESTED / BUILD VERIFIED / JAR PRODUCED.
+- Region 01 boss phase-policy run `34750881421`: **SUCCESS**.
+- The new production logical presentation profile commits are not yet promoted to BUILD VERIFIED until their own CI run completes successfully.
 - Local Gradle/build in the automation environment: NOT RUN; executable verification came from repository CI.
 - Human player-weapon field play with the new impact geometry: **NOT TESTED**.
 - Multiplayer field play: **NOT TESTED**.
 - Final hitbox/visual alignment, final damage/range balance, final weapon presentation: **NOT APPROVED / NOT TESTED**.
+- Region 01 boss source-motion-to-gameplay binding, final material/VFX/sound, Minecraft-scale readability and human boss playtest: **NOT APPROVED / NOT TESTED**.
 
 ## Do not repeat or revert
 
@@ -74,14 +89,15 @@ Recovery aid only. Current GitHub `main` plus canonical project/design documents
 - Do not derive final damage/range from Monster Hunter, Darktide, Hades or other third-party balance numbers; those references lock role/decision structure only.
 - Provisional attack ticks are not final balance.
 - Do not claim the successful Xvfb client smoke is a human playtest; it only proves nonfatal initialization.
+- Do not confuse logical boss presentation keys with reviewed source assets. The logical profile may exist while actual animation/VFX/sound bindings remain unresolved.
 
 ## Exact next development boundary
 
-1. The field-impact build gate is green. Do not rerun or re-investigate `34739314980` unless a regression appears.
-2. A human now needs to execute `docs/M3_PLAYER_COMBAT_FIELD_PLAY.md` using the verified JAR. The required observations are: facing geometry, practical mobile-vs-reach engagement contrast, once-per-execution damage, non-instant telegraph/ACTIVE causality, no recovery re-hit, loadout swap/unequip cancellation, and authored action-slot behavior.
-3. Do not tune the numeric geometry or damage before an observed symptom is captured. If repeated tuning begins, move calibration values into the appropriate data-driven production policy rather than growing hard-coded values.
-4. If the mechanical field pass succeeds but readability/feel is weak, the next visible-quality task is player attack presentation/hit feedback using external references and legal assets where appropriate. Do not create an arbitrary final animation/VFX language.
-5. Work that is independent of the blocked human player-combat gate may proceed on the already selected Region 01 boss material/animation/VFX/sound/readability path, but must preserve the selected Dragon Evolved source/provenance and existing custom renderer direction.
-6. The next boss-side asset gate is a real reviewed material/texture. The runtime resource directory currently contains the sanitized Dragon glTF but no boss texture; do not fill that gap with an AI-improvised palette or restore the stripped source Atlas. Select/author it only from a documented reference/asset decision, then pass it through the existing `MaterialReview` integrity gate.
+1. Check CI for the new Region 01 production logical presentation profile first; if it fails, repair that concrete failure without reopening closed combat-authority work.
+2. Human player-combat field play remains required via `docs/M3_PLAYER_COMBAT_FIELD_PLAY.md`; do not tune its numeric geometry or diagnostic damage before an observed symptom is captured.
+3. Boss-side work may continue independently on evidence-backed presentation: explicitly review whether observed Dragon Evolved motions semantically fit committed strike or line displacement before binding them. Leave any unsupported role unresolved rather than guessing from clip names.
+4. Arena pressure currently has no approved source motion. Either select/review a legally usable external motion consistent with the selected rig direction or author/derive one under documented reference constraints; do not fake coverage by recycling an unrelated clip.
+5. The next boss-side material gate is still a real reviewed material/texture. The runtime resource directory contains the sanitized Dragon glTF but no production boss texture; do not invent an arbitrary palette or restore the stripped source Atlas.
+6. Final VFX/sound similarly require documented reference/asset decisions; the new logical IDs are placeholders for those reviewed assets, not approval of an aesthetic.
 7. Do not add the boss to production Region 01 encounter composition until presentation, Minecraft scale/hit geometry and authoritative combat/damage policy have evidence-backed inputs.
 8. Never promote CI/client smoke to PLAYTESTED or MULTIPLAYER TESTED. Human evidence remains required for both labels.
