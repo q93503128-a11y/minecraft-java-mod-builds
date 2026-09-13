@@ -5,6 +5,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
+import dev.moonseungjun.fishinggame.entity.EncounterFishEntity;
+import dev.moonseungjun.fishinggame.entity.FishingEntities;
 import dev.moonseungjun.fishinggame.network.FishingStatePayload;
 import dev.moonseungjun.fishinggame.network.ProfileSnapshotPayload;
 import dev.moonseungjun.fishinggame.profile.CatchEntry;
@@ -26,7 +28,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.Items;
@@ -242,7 +243,13 @@ public final class FishingSessionManager {
             FishingProfiles.set(player, updated);
             syncProfile(player);
             playCatchFx(player, session);
-            finish(iterator, session, player, String.format("%s %.2f kg 포획! 가방 %d/%d", session.species.displayName(), weight, updated.catches().size(), PlayerFishingProfile.BAG_CAPACITY), true);
+            finish(iterator, session, player, String.format(
+                    "%s %.2f kg 포획! 가방 %d/%d",
+                    session.species.displayName(),
+                    weight,
+                    updated.catches().size(),
+                    PlayerFishingProfile.BAG_CAPACITY
+            ), true);
             return;
         }
 
@@ -268,12 +275,17 @@ public final class FishingSessionManager {
         session.burstHeading = player.getRandom().nextDouble() * Math.PI * 2.0;
         int cooldown = Math.max(22, 52 - Math.round(resistance * 10.0f));
         session.nextBurstTick = now + cooldown + player.getRandom().nextInt(22);
-        session.tension = FishPresentationMath.burstPull(session.tension, resistance, rod.strength(), session.burstStrength);
+        session.tension = FishPresentationMath.burstPull(
+                session.tension, resistance, rod.strength(), session.burstStrength
+        );
 
         if (session.visualFish != null && !session.visualFish.isRemoved()) {
             ServerLevel level = player.level();
             Vec3 pos = session.visualFish.position();
-            level.sendParticles(ParticleTypes.BUBBLE, pos.x, pos.y + 0.15, pos.z, 6, 0.28, 0.12, 0.28, 0.035);
+            level.sendParticles(
+                    ParticleTypes.BUBBLE, pos.x, pos.y + 0.15, pos.z,
+                    6, 0.28, 0.12, 0.28, 0.035
+            );
         }
     }
 
@@ -298,7 +310,10 @@ public final class FishingSessionManager {
         moveVisualFish(session.visualFish, x, y, z, hook.x, hook.y - 0.75, hook.z);
 
         if ((now - session.visualStartTick) % 4 == 0 && t > 0.20) {
-            player.level().sendParticles(ParticleTypes.BUBBLE, x, y + 0.10, z, 2, 0.10, 0.06, 0.10, 0.015);
+            player.level().sendParticles(
+                    ParticleTypes.BUBBLE, x, y + 0.10, z,
+                    2, 0.10, 0.06, 0.10, 0.015
+            );
         }
     }
 
@@ -309,7 +324,9 @@ public final class FishingSessionManager {
 
         Vec3 hook = player.fishing.position();
         float burst = session.burstTicks > 0 ? session.burstStrength : 0.0f;
-        double radius = FishPresentationMath.fightRadius(session.progress, session.species.resistance(), burst, session.tension);
+        double radius = FishPresentationMath.fightRadius(
+                session.progress, session.species.resistance(), burst, session.tension
+        );
         double calmAngle = session.visualAngle
                 + Math.sin(now * 0.064 + session.visualAngle) * 1.05
                 + Math.sin(now * 0.021 + session.visualAngle * 0.5) * 0.46;
@@ -318,7 +335,8 @@ public final class FishingSessionManager {
                 : calmAngle;
 
         double x = hook.x + Math.cos(angle) * radius;
-        double y = hook.y - 1.02 + session.progress * 0.50 + Math.sin(now * 0.22 + session.visualAngle) * 0.11;
+        double y = hook.y - 1.02 + session.progress * 0.50
+                + Math.sin(now * 0.22 + session.visualAngle) * 0.11;
         if (burst > 0.0f) y -= 0.10 * burst;
         double z = hook.z + Math.sin(angle) * radius;
         moveVisualFish(session.visualFish, x, y, z, hook.x, hook.y - 0.45, hook.z);
@@ -329,15 +347,16 @@ public final class FishingSessionManager {
         if (session.species == null || player.fishing == null) return;
 
         ServerLevel level = player.level();
-        Mob fish = createVisualFish(level, session.species);
+        EncounterFishEntity fish = createVisualFish(level, session.species);
         if (fish == null) return;
 
         fish.setNoAi(true);
         fish.setNoGravity(true);
         fish.setInvulnerable(true);
         fish.setSilent(true);
-        fish.setPersistenceRequired();
+        fish.setSpeciesId(session.species.id());
         fish.setDeltaMovement(Vec3.ZERO);
+
         var scaleAttribute = fish.getAttribute(Attributes.SCALE);
         if (scaleAttribute != null) {
             scaleAttribute.setBaseValue(FishPresentationMath.scaleFor(session.species));
@@ -353,16 +372,20 @@ public final class FishingSessionManager {
         moveVisualFish(fish, x, y, z, hook.x, hook.y - 0.75, hook.z);
     }
 
-    private static Mob createVisualFish(ServerLevel level, FishSpecies species) {
-        return switch (species.id()) {
-            case "bluegill" -> EntityTypes.TROPICAL_FISH.create(level, EntitySpawnReason.EVENT);
-            case "trout", "largemouth", "salmon", "tuna", "oarfish", "ancient_sturgeon" ->
-                    EntityTypes.SALMON.create(level, EntitySpawnReason.EVENT);
-            default -> EntityTypes.COD.create(level, EntitySpawnReason.EVENT);
-        };
+    private static EncounterFishEntity createVisualFish(ServerLevel level, FishSpecies species) {
+        return FishingEntities.typeFor(FishVisualFamily.forSpecies(species.id()))
+                .create(level, EntitySpawnReason.EVENT);
     }
 
-    private static void moveVisualFish(Mob fish, double x, double y, double z, double targetX, double targetY, double targetZ) {
+    private static void moveVisualFish(
+            Mob fish,
+            double x,
+            double y,
+            double z,
+            double targetX,
+            double targetY,
+            double targetZ
+    ) {
         Vec3 previous = fish.position();
         Vec3 next = new Vec3(x, y, z);
         Vec3 motion = next.subtract(previous);
@@ -386,10 +409,19 @@ public final class FishingSessionManager {
         if (player.fishing == null) return;
         ServerLevel level = player.level();
         Vec3 hook = player.fishing.position();
-        level.sendParticles(ParticleTypes.SPLASH, hook.x, hook.y + 0.12, hook.z, 8, 0.32, 0.05, 0.32, 0.16);
-        level.sendParticles(ParticleTypes.BUBBLE, hook.x, hook.y - 0.22, hook.z, 6, 0.24, 0.12, 0.24, 0.04);
-        level.playSound(null, hook.x, hook.y, hook.z, SoundEvents.FISHING_BOBBER_SPLASH, SoundSource.PLAYERS,
-                0.65f, 0.92f + player.getRandom().nextFloat() * 0.16f);
+        level.sendParticles(
+                ParticleTypes.SPLASH, hook.x, hook.y + 0.12, hook.z,
+                8, 0.32, 0.05, 0.32, 0.16
+        );
+        level.sendParticles(
+                ParticleTypes.BUBBLE, hook.x, hook.y - 0.22, hook.z,
+                6, 0.24, 0.12, 0.24, 0.04
+        );
+        level.playSound(
+                null, hook.x, hook.y, hook.z,
+                SoundEvents.FISHING_BOBBER_SPLASH, SoundSource.PLAYERS,
+                0.65f, 0.92f + player.getRandom().nextFloat() * 0.16f
+        );
     }
 
     private static void playCatchFx(ServerPlayer player, FishingSession session) {
@@ -397,9 +429,15 @@ public final class FishingSessionManager {
         Vec3 pos = session.visualFish != null && !session.visualFish.isRemoved()
                 ? session.visualFish.position()
                 : player.position();
-        level.sendParticles(ParticleTypes.SPLASH, pos.x, pos.y + 0.25, pos.z, 10, 0.35, 0.18, 0.35, 0.18);
-        level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.EXPERIENCE_ORB_PICKUP,
-                SoundSource.PLAYERS, 0.7f, 1.28f);
+        level.sendParticles(
+                ParticleTypes.SPLASH, pos.x, pos.y + 0.25, pos.z,
+                10, 0.35, 0.18, 0.35, 0.18
+        );
+        level.playSound(
+                null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS,
+                0.7f, 1.28f
+        );
     }
 
     private static double clamp01(double value) {
@@ -413,7 +451,13 @@ public final class FishingSessionManager {
         sendIdle(player, message);
     }
 
-    private static void finish(Iterator<?> iterator, FishingSession session, ServerPlayer player, String message, boolean removeFishingHook) {
+    private static void finish(
+            Iterator<?> iterator,
+            FishingSession session,
+            ServerPlayer player,
+            String message,
+            boolean removeFishingHook
+    ) {
         discardVisualFish(session);
         if (removeFishingHook) removeHook(player);
         iterator.remove();

@@ -1,51 +1,47 @@
 # Changelog
 
+## 0.1.0-alpha.7
+
+- Replaced vanilla cod/salmon/tropical-fish encounter proxies with dedicated Fishing Game encounter-fish entities.
+- Added three reusable encounter silhouettes — small, fat and long — adapted from Sea Life's MIT-licensed fish model geometry with bundled attribution/license.
+- Added synchronized species ids so the client renders the selected catch with a species-specific texture instead of a generic vanilla fish appearance.
+- Added species textures for the current catalog; UV-compatible largemouth/carp/catfish/perch/tuna textures reuse Sea Life MIT assets, while the remaining alpha.7 textures are project-authored.
+- Kept encounter fish transient: no AI, no save serialization, no loot, and cleanup on the existing fishing-session lifecycle.
+- Preserved species-size scaling, curved approach, fight bursts, tension coupling and catch VFX from the existing fishing presentation.
+- Added `FishVisualFamilyTest` to lock purposeful body-family routing for key species.
+- Kept the playtest gate: build success does not replace actual Minecraft client review of fish proportions/textures and the dedicated lake.
+
 ## 0.1.0-alpha.6
 
-- Removed the hidden second fishing system from the dedicated lakeside: vanilla `FishingHook#catchingFish` is now suppressed there while Fishing Game owns bite timing and catch flow.
+- Removed the hidden second fishing system from the dedicated lakeside: vanilla `FishingHook#catchingFish` is suppressed there while Fishing Game owns bite timing and catch flow.
 - Kept vanilla cast physics, line rendering and water bobbing instead of replacing the entire fishing hook.
 - Scoped the mixin to server-owned hooks in `fishinggame:lakeside` so unrelated vanilla dimensions are not globally altered.
 - Added required mixin configuration to the Fabric metadata and made CI inspect both the mixin config and mixin class in the playable JAR.
 - Preserved server authority for species selection, bite timing, tension, catch result, bag and economy.
-- Kept the existing user-test gate: this correctness fix is not a substitute for actual Minecraft visual review.
 
 ## 0.1.0-alpha.5
 
 - Replaced the obvious circular hooked-fish motion with a curved final approach and irregular fight motion.
 - Added species-size scaling for temporary fish proxies so small freshwater fish and large catches no longer read at the same physical size.
-- Added short fish pull bursts during reeling. Bursts visibly extend the fish away from the hook and apply a small server-authoritative tension impulse so visuals and mechanics agree.
-- Added bubble trails on the final approach plus stronger bite and successful-catch splash/audio feedback.
-- Reworked temporary proxy selection to avoid inappropriate random pufferfish shapes for ordinary species.
-- Added deterministic presentation math tests for fish scale, hook approach and burst behavior.
-- Kept the existing user-test gate: build success still does not substitute for actual Minecraft visual review.
+- Added short fish pull bursts during reeling; bursts visibly extend the fish and apply a server-authoritative tension impulse.
+- Added bubble trails on final approach plus stronger bite and successful-catch splash/audio feedback.
+- Added deterministic presentation math tests.
 
 ## 0.1.0-alpha.4
 
-- Made the reel fight readable instead of hiding its rules: the HUD now shows the actual safe-tension band used by server-side catch progress.
-- Added live reel guidance that changes between reel in, release and maintain rhythm based on current tension.
-- Replaced the old fill-only tension display with a safe-band plus moving tension marker so line state is easier to judge at a glance.
-- Added a compact catch-result card after a successful catch with species, rarity, weight, length and value.
-- Kept the result card client-presentation-only; catch ownership, size/value, coins and progression remain server authoritative.
-- Kept the playtest gate unchanged: the lake composition and fish motion still require actual Minecraft visual review before this is declared ready for the user's playtest.
+- Made the reel fight readable by showing the actual safe-tension band.
+- Added live reel/release/maintain guidance.
+- Added a compact catch-result card with species, rarity, weight, length and value.
 
 ## 0.1.0-alpha.3
 
-- Added the first dedicated fishing dimension, `fishinggame:lakeside`, instead of relying on ordinary survival terrain.
-- Added an authored Cheongram Lakeside environment with a central fishing lake, multiple piers, pavilion, tackle shelter, paths, trees, shoreline and rock dressing.
-- Added boundary recovery and fixed daytime maintenance for the dedicated fishing location.
-- Added physical fish presentation: a server-controlled fish becomes visible underwater before the bite, approaches the bobber and visibly fights around the hook during reeling.
-- Kept catch species hidden from the HUD until the bite while allowing the server to preselect the visual proxy consistently.
-- Added cleanup for temporary hooked-fish visuals on cancel, catch, line loss and disconnect.
-- Updated the fishing build workflow to verify the alpha.3 JAR, world dimension resource and fishing world class.
-- Kept the playtest gate unchanged: build success is not enough until the actual Minecraft screen/play pass is acceptable.
+- Added dedicated `fishinggame:lakeside` and its authored fishing environment.
+- Added physical fish presentation before and during the bite.
+- Added cleanup for temporary hooked-fish visuals.
 
 ## 0.1.0-alpha.2
 
-- Converted project direction from survival-adjacent mod to standalone fishing game.
-- Added persistent catch bag, coins and three-tier rod progression.
-- Expanded catalog to freshwater, coast and deep-sea species pools.
-- Added server-authoritative sell-all and rod purchase actions.
-- Added player-safe Adventure-mode rules and removed survival HUD layers.
-- Added dedicated fishing HUD and catch-bag/rod screen using Kenney CC0 UI assets.
+- Converted the project from survival-adjacent mod to standalone fishing game.
+- Added persistent catch bag, coins, selling and three-tier rod progression.
+- Added dedicated fishing HUD/catch-bag screen using Kenney CC0 UI assets.
 - Kept Essential optional and external to game-state authority.
-- User-test gate raised: no more tiny technical JARs before a meaningful fishing-game slice.

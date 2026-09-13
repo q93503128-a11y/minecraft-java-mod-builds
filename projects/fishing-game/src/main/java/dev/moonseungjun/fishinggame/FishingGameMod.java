@@ -1,5 +1,6 @@
 package dev.moonseungjun.fishinggame;
 
+import dev.moonseungjun.fishinggame.entity.FishingEntities;
 import dev.moonseungjun.fishinggame.fishing.FishingSessionManager;
 import dev.moonseungjun.fishinggame.network.FishingNetworking;
 import dev.moonseungjun.fishinggame.world.FishingWorldManager;
@@ -14,6 +15,7 @@ public final class FishingGameMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        FishingEntities.initialize();
         FishingNetworking.initialize();
         FishingSessionManager.initialize();
         FishingWorldManager.initialize();

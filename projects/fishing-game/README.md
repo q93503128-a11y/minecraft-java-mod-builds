@@ -1,38 +1,38 @@
 # Fishing Game
 
-A Minecraft Java 26.2 Fabric standalone fishing progression game focused on a compact loop:
+A Minecraft Java 26.2 Fabric standalone fishing progression game focused on:
 
 `catch -> collect -> sell -> improve rod -> reach better water -> hunt bigger/rarer fish`
 
-The project deliberately avoids survival chores, stacked currencies and unrelated systems. Minecraft supplies the world/rendering/runtime; the player experience is a dedicated fishing game.
+The project deliberately avoids survival chores, stacked currencies and unrelated systems. Minecraft supplies the runtime/world renderer; the player experience is a dedicated fishing game.
 
-## Current alpha.6 slice
+## Current alpha.7 slice
 
 - Adventure-mode fishing-only rules: no survival damage, hunger management, mining/crafting loop or survival HUD.
-- Dedicated `fishinggame:lakeside` location instead of ordinary Overworld roaming.
-- Authored lakeside ring with a central fishable lake, three piers, pavilion, tackle shelter, paths, trees and shoreline dressing.
-- Server-authoritative fishing session, tension/progress, fish pull bursts and catch result.
-- Visible fish approach the bobber on a curved path, scale with species size, produce bubble/splash feedback and make irregular pull bursts during the fight.
-- A visible pull burst also adds a small server-authoritative tension impulse so presentation and mechanics agree.
-- Vanilla `FishingHook` remains the cast/line/bobber anchor, but its separate vanilla lure/nibble/bite cycle is suppressed inside the dedicated lakeside so it cannot compete with Fishing Game's own bite timing or feedback.
+- Dedicated `fishinggame:lakeside` Cheongram Lakeside instead of ordinary Overworld roaming.
+- Server-authoritative fishing session, tension/progress, fish pull bursts and catch results.
+- Vanilla hook remains cast/line/bobber only; its separate lure/nibble/bite cycle is suppressed in the dedicated lake.
+- Visible fish curve toward the bobber, burst against the line and converge as catch progress rises.
+- Vanilla cod/salmon/tropical-fish encounter proxies are replaced by dedicated transient small/fat/long fish body families.
+- Species id is synchronized on the encounter entity and selects a species-specific project texture.
+- Encounter fish are no-AI, unsaved, short-lived visual entities, not permanent ambient populations.
 - Persistent catch bag, coins, selling and three-tier rod progression.
-- Dedicated fishing HUD and catch-bag screen using bundled Kenney CC0 UI assets.
-- The reel HUD exposes the real safe-tension band and gives live reel/release/maintain guidance.
-- Successful catches get a compact result card showing species, rarity, weight, length and value.
+- Dedicated HUD and catch-bag screen using bundled Kenney CC0 UI assets.
+- Successful catches get a compact result card with species, rarity, weight, length and value.
 - Essential remains optional and does not own game state.
 
 ## Fishing interaction
 
 1. Spawn into Cheongram Lakeside with a fishing rod.
 2. Cast from one of the lake piers.
-3. The custom bite timer starts only when the bobber reaches valid water; vanilla's independent bite cycle is disabled in the dedicated lake.
-4. Watch the fish curve in toward the bobber, with bubbles making the final approach readable.
+3. The custom bite timer starts only when the bobber reaches valid water.
+4. Watch the species-specific fish approach the bobber.
 5. When hooked, hold right click to raise tension and release to let it fall.
-6. Keep the tension marker inside the visible green safe band. Fish can surge away in short bursts, which also push tension upward.
-7. The caught fish enters the separate catch bag rather than the vanilla inventory and gets an immediate catch-result card.
+6. Keep the marker inside the visible safe band while reacting to fish surges.
+7. The catch enters the separate catch bag and gets an immediate result card.
 8. Open the bag with `B`, sell catches, then buy the next rod tier.
 
-The server owns bite timing, tension, burst impulses, progress, selected species, catch size/value, coins and upgrades. Client UI only presents and requests actions.
+The server owns bite timing, species, tension, burst impulses, progress, catch size/value, coins and upgrades. Client state presents those results and sends input requests.
 
 ## Technical stack
 
@@ -44,8 +44,10 @@ The server owns bite timing, tension, burst impulses, progress, selected species
 - Gradle 9.5.1
 - Essential: optional external convenience mod, not a dependency
 
+## Visual-source policy
+
+The encounter fish small/fat/long geometry is adapted from Sea Life under MIT; the full notice is bundled under `META-INF/licenses/fishinggame/`. UV-compatible largemouth/carp/catfish/perch/tuna textures reuse Sea Life assets under MIT; the remaining alpha.7 species textures are project-authored. See `THIRD_PARTY_ASSETS.md`.
+
 ## Quality gate
 
-A successful compile is not a playtest-ready declaration. Before handing the user a JAR, the dedicated location, fish visibility/motion, fishing HUD and complete catch -> sell -> upgrade loop still need actual Minecraft screen/play review. Tiny technical-only builds are not user test milestones.
-
-Repository root `AGENTS.md`, `docs/BUILD_STANDARD.md`, `docs/QUALITY_STANDARD.md`, this project's `PROJECT.md`, and `THIRD_PARTY_ASSETS.md` are the working references.
+A successful compile is not a playtest-ready declaration. Before handing the user a test JAR, Cheongram Lakeside, fish proportions/textures, fishing HUD composition and the complete catch -> sell -> upgrade loop still need actual Minecraft client review.
