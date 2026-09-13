@@ -49,6 +49,15 @@ public final class Region01BossFieldImpactProfile {
         double verticalRadius,
         double activeForwardStep
     ) {
+        /**
+         * Backward-compatible geometry-only construction used by projection/tests that intentionally do not author
+         * movement. Keeping this overload avoids turning an added field-harness calibration axis into unrelated
+         * call-site churn; geometry-only profiles explicitly mean zero travel.
+         */
+        public Profile(Shape shape, double reach, double halfWidth, double verticalRadius) {
+            this(shape, reach, halfWidth, verticalRadius, 0.0D);
+        }
+
         public Profile {
             Objects.requireNonNull(shape, "shape");
             if (!Double.isFinite(reach) || reach <= 0.0D) {
