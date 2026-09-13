@@ -13,8 +13,11 @@ import kr.moonseungjun.riftfrontier.combat.presentation.Region01BossProductionPr
 import kr.moonseungjun.riftfrontier.content.ContentId;
 import kr.moonseungjun.riftfrontier.content.ContentRuntime;
 import kr.moonseungjun.riftfrontier.network.RiftfrontierNetworking;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerBossEvent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.BossEvent;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.HumanoidArm;
@@ -37,6 +40,16 @@ public final class Region01BossEntity extends LivingEntity {
     private static final Region01BossFieldImpactResolver FIELD_TEST_HIT_RESOLVER = new Region01BossFieldImpactResolver();
     private static final Region01BossFieldImpulseResolver FIELD_TEST_IMPULSE_RESOLVER = new Region01BossFieldImpulseResolver();
 
+    /**
+     * Native Minecraft boss-health affordance for the field actor. This deliberately reuses the platform's established
+     * Dragon/Wither boss UI instead of inventing Riftfrontier's final HUD language before that language is reviewed.
+     */
+    private final ServerBossEvent fieldTestBossEvent = new ServerBossEvent(
+        Component.translatable("entity.riftfrontier.region_01_boss"),
+        BossEvent.BossBarColor.RED,
+        BossEvent.BossBarOverlay.PROGRESS
+    );
+
     private boolean fieldTestCombatEnabled;
     private MinecraftBossCombatAdapter.ValidatedRuntime fieldTestRuntime;
     private ContentId fieldTestPreviousPattern;
@@ -44,6 +57,7 @@ public final class Region01BossEntity extends LivingEntity {
 
     public Region01BossEntity(EntityType<? extends Region01BossEntity> entityType, Level level) {
         super(entityType, level);
+        fieldTestBossEvent.setVisible(false);
     }
 
     /**
@@ -58,6 +72,8 @@ public final class Region01BossEntity extends LivingEntity {
         fieldTestRuntime = null;
         fieldTestPreviousPattern = null;
         fieldTestPreviousPhase = null;
+        fieldTestBossEvent.setProgress(1.0F);
+        fieldTestBossEvent.setVisible(true);
     }
 
     public boolean fieldTestCombatEnabled() {
@@ -74,11 +90,28 @@ public final class Region01BossEntity extends LivingEntity {
     }
 
     @Override
+    public void startSeenByPlayer(ServerPlayer player) {
+        super.startSeenByPlayer(player);
+        if (fieldTestCombatEnabled) {
+            fieldTestBossEvent.addPlayer(player);
+        }
+    }
+
+    @Override
+    public void stopSeenByPlayer(ServerPlayer player) {
+        super.stopSeenByPlayer(player);
+        fieldTestBossEvent.removePlayer(player);
+    }
+
+    @Override
     public void tick() {
         super.tick();
         if (!fieldTestCombatEnabled || !(level() instanceof ServerLevel serverLevel) || !isAlive()) {
             return;
         }
+
+        float maxHealth = getMaxHealth();
+        fieldTestBossEvent.setProgress(maxHealth <= 0.0F ? 0.0F : Math.clamp(getHealth() / maxHealth, 0.0F, 1.0F));
 
         MinecraftBossCombatAdapter.ValidatedRuntime runtime = requireFieldTestRuntime();
         long gameTick = serverLevel.getGameTime();
