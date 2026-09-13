@@ -72,7 +72,7 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 
 완료된 자동 구현 범위:
 - production Battle HUD / command input / world-first target chooser.
-- Party Formation / Character Overview / Skills / Growth.
+- Party Formation / Character Overview / Skills / Growth / Equipment.
 - server-authoritative progression write/reconciliation.
 - selected-character adaptive 3D entity preview.
 - authoritative Battle Result / Reward / ACK / world return lifecycle.
@@ -101,7 +101,7 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 **중요:** screenshot/reference 비교 전 M5 production visual PASS를 선언하지 않는다. 사용자의 현재 방침에 따라 중간 실플레이 테스트를 요구하지 않고, 통합 테스트 가치가 있는 완성 구간에서 한 번에 검증한다.
 
 ## M6 — World & Life Loop
-상태: **IN PROGRESS — WORLD ENTRY / RESOURCE / PREPARATION / EQUIPMENT LOOP AUTO-INTEGRATED**
+상태: **IN PROGRESS — FUNCTIONAL WORLD LOOP AUTO-INTEGRATED / PRODUCTION VISUAL GATE PENDING**
 
 완료:
 - authored Encounter의 production 진입은 world anchor가 소유하는 server-authoritative 경로로 수렴.
@@ -126,13 +126,20 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 - 장비 server-authored snapshot/action network와 stale token 검증.
 - 기존 Character Detail에 네 번째 `Equipment` context 통합: 3개 장비 목록, 현재/다음 bonus, 실제 material 보유량, Coin 비용, forge 접근 상태, Craft/Upgrade/Equip/Unequip.
 - 장비 UI는 새 dashboard/새 통화를 만들지 않고 기존 M5 visual language를 재사용.
-- 상세 정본: `19_M6_WORLD_ENCOUNTER_LIFECYCLE.md`, `21_M6_RESOURCE_NODE_CONTRACT.md`, `22_M6_BATTLE_PREPARATION_MATERIAL_SINK.md`, `23_M6_MINIMAL_EQUIPMENT_CONTRACT.md`, `24_M6_EQUIPMENT_FORGE_TRANSACTION.md`.
+- `HUB_01 -> REGION_01` 기능 slice의 실제 block/entity 배치 harness 구현.
+- Hub Smithing Table/Furnace/Crafting Table과 동쪽 route를 실제 월드에 연결.
+- `ore_outcrop`에 실제 Coal/Copper/Iron/Gold ore를 배치해 채광→제련→장비 material 흐름 연결.
+- `riverside_plot`에 실제 farmland + mature Carrot/Wheat를 배치해 농사→전투 준비물 흐름 연결.
+- `river_pool`에 실제 water pool을 배치해 vanilla fishing→Cooked Fish 준비물 흐름 연결.
+- patrol/elite Interaction entity가 기존 authored locator tag를 사용해 world-first Encounter 진입 경로에 연결.
+- 기능 slice offset은 production 좌표가 아니며 RegionDefinition에는 좌표를 추가하지 않음.
+- 상세 정본: `19_M6_WORLD_ENCOUNTER_LIFECYCLE.md`, `21_M6_RESOURCE_NODE_CONTRACT.md`, `22_M6_BATTLE_PREPARATION_MATERIAL_SINK.md`, `23_M6_MINIMAL_EQUIPMENT_CONTRACT.md`, `24_M6_EQUIPMENT_FORGE_TRANSACTION.md`, `25_M6_FUNCTIONAL_WORLD_SLICE.md`.
 
 남음:
-- authored HUB_01 ↔ REGION_01 prototype의 실제 월드 배치와 시각 gate.
-- resource anchor가 가리키는 광산/농장/강의 실제 채집 동선.
-- Hub 전용 forge 외형/배치로 현재 Smithing Table bridge를 감싸기.
-- fast travel/exploration/quest hooks.
+- HUB_01 / REGION_01 production 환경 reference·block palette·규모 기준 확정.
+- Hub 전용 forge 외형/배치로 현재 Smithing Table bridge를 자연스럽게 감싸기.
+- 광산/농장/강과 Encounter landmark의 production 구조물 제작.
+- fast travel/exploration discovery/quest hooks.
 - production non-repeatable anchor를 실제 콘텐츠로 배치한 뒤 playtest.
 - 장비/준비물/채집까지 포함한 통합 screenshot/playtest 및 밸런스 조정.
 
@@ -159,14 +166,14 @@ eligible 전수 PLAYABLE 이상, 미분류 0.
 
 ## 지금 바로 할 일 — 2026-09-13 최신
 
-현재 우선순위는 **M6의 닫힌 생활→성장 루프를 실제 authored 월드 동선으로 옮기는 것**이다.
+현재 우선순위는 **기능적으로 닫힌 M6 world slice를 production authored 환경으로 승격하는 것**이다.
 
 순서:
-1. authored HUB_01 ↔ REGION_01 prototype의 실제 공간/동선을 만든다.
-2. ResourceAnchor가 실제 광산/농장/강 채집 위치를 가리키게 한다.
-3. Hub의 전용 forge 외형/배치가 현재 Smithing Table 기능을 자연스럽게 감싸게 한다.
-4. world exploration → 실제 채집 → 장비/준비 → visible encounter → battle → reward가 메뉴 우회 없이 한 사이클로 연결되는지 자동/구조 검증한다.
-5. fast travel / exploration / quest는 이 루프에 필요한 최소 hook부터 연결한다.
+1. HUB_01 / REGION_01의 실제 환경·건축 reference를 조사하고 World Asset Gate 기록을 만든다.
+2. 기능 slice의 거리·시야·생활 분기 구조를 보존하면서 production Hub/광산/농장/강/Encounter landmark 구조를 결정한다.
+3. 현재 Smithing Table 기능을 Hub 전용 forge 외형으로 감싼다.
+4. fast travel / exploration discovery / quest는 현재 고정 동선에 필요한 최소 hook부터 연결한다.
+5. world exploration → 실제 채집 → 장비/준비 → visible encounter → battle → reward 전체를 통합 screenshot/playtest에서 검증한다.
 
 금지:
 - 재료를 이유 없이 Coin/Essence로 환전해 모든 생활 활동을 같은 숫자로 평탄화.

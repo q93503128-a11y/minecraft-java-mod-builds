@@ -9,6 +9,7 @@ import kr.moonseungjun.turnboundre.data.DefinitionResourceLoader;
 import kr.moonseungjun.turnboundre.debug.TurnboundDebugAnchorCommands;
 import kr.moonseungjun.turnboundre.debug.TurnboundDebugCommands;
 import kr.moonseungjun.turnboundre.debug.TurnboundVisualShowcaseCommands;
+import kr.moonseungjun.turnboundre.debug.TurnboundWorldSliceCommands;
 import kr.moonseungjun.turnboundre.network.BattleNetwork;
 import kr.moonseungjun.turnboundre.network.BattleResultPresentationService;
 import kr.moonseungjun.turnboundre.progression.BattleRewardLifecycleHooks;
@@ -52,6 +53,7 @@ public final class TurnboundRe {
         TurnboundDebugCommands.register(event.getDispatcher(), BATTLES, DEFINITIONS);
         TurnboundDebugAnchorCommands.register(event.getDispatcher(), DEFINITIONS);
         TurnboundVisualShowcaseCommands.register(event.getDispatcher(), BATTLES, DEFINITIONS);
+        TurnboundWorldSliceCommands.register(event.getDispatcher(), DEFINITIONS);
     }
 
     private void addServerReloadListeners(AddServerReloadListenersEvent event) {
