@@ -3,6 +3,7 @@ package dev.moonseungjun.fishinggame;
 import dev.moonseungjun.fishinggame.entity.FishingEntities;
 import dev.moonseungjun.fishinggame.fishing.FishingSessionManager;
 import dev.moonseungjun.fishinggame.network.FishingNetworking;
+import dev.moonseungjun.fishinggame.world.FishingLocationQualityBuilder;
 import dev.moonseungjun.fishinggame.world.FishingTravelManager;
 import dev.moonseungjun.fishinggame.world.FishingWorldManager;
 import net.fabricmc.api.ModInitializer;
@@ -21,6 +22,7 @@ public final class FishingGameMod implements ModInitializer {
         FishingSessionManager.initialize();
         FishingWorldManager.initialize();
         FishingTravelManager.initialize();
+        FishingLocationQualityBuilder.initialize();
         FishingGameRules.initialize();
         LOGGER.info("Fishing Game initialized");
     }

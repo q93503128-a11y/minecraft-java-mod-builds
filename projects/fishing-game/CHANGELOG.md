@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-alpha.12
+
+- Added a versioned environment-quality pass so existing authored fishing worlds can receive later visual upgrades without deleting saves or rebuilding every tick.
+- Upgraded Gull Harbor with an arrival promenade, shoreline rockwork, breakwater arms, harbor-entry beacons and three expanded fishing stations.
+- Strengthened the lighthouse silhouette with a wider balcony and multi-light crown.
+- Upgraded Deepwater Channel with three outward-facing fishing pods, protected circulation rails, hazard guide stripes, submerged guide lights and a signal mast.
+- Kept fishing-facing platform edges open so scenery improves navigation without obstructing casting.
+- Added alpha.12 environment builder inspection to the Fishing Game CI artifact gate.
+
 ## 0.1.0-alpha.11
 
 - Added catch-size grades (`일반`, `대형`, `트로피`, `괴물급`) derived from each species' configured weight/length range.

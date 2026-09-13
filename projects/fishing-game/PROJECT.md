@@ -5,7 +5,7 @@
 - Slug: fishing-game
 - Mod ID: fishinggame
 - Namespace: fishinggame
-- Mod version: 0.1.0-alpha.11
+- Mod version: 0.1.0-alpha.12
 - Minecraft: 26.2
 - Java: 25
 - Loader: Fabric
@@ -13,7 +13,7 @@
 - Fabric API: >=0.159.0+26.2
 - Gradle: 9.5.1
 - Build plugin: Fabric Loom 1.17.19
-- Final JAR: build/libs/fishing-game-0.1.0-alpha.11.jar
+- Final JAR: build/libs/fishing-game-0.1.0-alpha.12.jar
 - Required dependencies: Fabric API
 - Optional external mods: Essential, connection/hosting convenience only
 - Forbidden bundled dependencies: Essential
@@ -34,15 +34,23 @@ The player is not expected to mine, craft, fight, manage hunger, or survive nigh
 
 ## Location progression
 
-The fish catalog is connected to a three-location progression rather than leaving coast/deep-sea species unreachable.
-
 - `청람 호수` / `fishinggame:lakeside`: available from the start; freshwater catalog.
 - `갈매기 항구` / `fishinggame:coast`: requires rod tier 1 (`호수 전문가`); coast catalog.
 - `심해 수로` / `fishinggame:deep_sea`: requires rod tier 2 (`블루워터`); deep-sea catalog.
 
-Travel is requested from the client but unlocked/validated by the server. Active fishing blocks travel. The player opens the Kenney-based travel screen with `M`; the screen shows current location, fish count and rod requirement rather than adding another currency or arbitrary stage key.
+Travel is requested from the client but unlocked/validated by the server. Active fishing blocks travel. `M` opens the Kenney-based travel screen.
 
-All three current locations are dedicated fishing spaces rather than ordinary survival terrain. Cheongram Lakeside remains the authored lake. Gull Harbor has a stone quay, three piers, shelter and lighthouse; Deepwater Channel is an offshore fishing platform with fishing arms, observation structure and lights. Their clocks are independent so each location can keep its own visual time. Third-party map candidates remain reference-only until redistribution rights are explicit.
+### Environment quality contract
+
+Alpha.12 gives the two progression locations readable authored silhouettes instead of leaving them as flat functional platforms.
+
+- Gull Harbor: arrival promenade, layered shoreline rockwork, two breakwater arms with entrance beacons, three expanded fishing stations and a stronger lighthouse balcony/light silhouette.
+- Deepwater Channel: three dedicated outward-facing fishing pods, hazard-guide stripes at each approach, rail-protected circulation space, submerged guide lights and a tall signal mast.
+- Fishing edges remain open toward water so scenery does not fight the core interaction.
+- New environment work is deterministic and server-authored; it runs only once per dimension revision rather than rebuilding every tick.
+- Existing alpha.9+ worlds are upgraded through a separate alpha.12 quality marker after the original base-build marker is detected. New worlds receive the same pass after their base structures are authored.
+- Future environment revisions must use a new revision marker rather than silently relying on the original build marker.
+- Third-party map candidates remain reference-only until redistribution rights are explicit; do not bundle unknown-license maps.
 
 ## Collection / bestiary rule
 
@@ -57,18 +65,9 @@ The temporary catch bag and permanent collection records are separate systems.
 - The collection screen shows per-location discovery progress as well as total discovery progress.
 - Existing saves without a `records` field remain loadable. Fish still present in an old catch bag seed their initial records on migration; catches sold before this record system existed cannot be reconstructed.
 
-The bestiary exists to make rare-fish hunting, replaying old locations and personal-record chasing part of the core loop without adding another currency or maintenance chore.
-
 ## Catch quality / record feedback
 
-Alpha.11 makes catch quality immediately readable instead of forcing the player to inspect raw numbers after every catch.
-
-- Every catch is graded from its configured species weight/length ranges: `일반`, `대형`, `트로피`, `괴물급`.
-- The grade uses a combined size score weighted toward mass while still respecting length, so one lucky dimension alone does not turn an otherwise ordinary catch into a trophy.
-- The catch-result card expands within the existing Kenney CC0 visual language and shows rarity, size grade, weight, length and sale value together.
-- First-time catches are called out as `새 어종 발견!` and write into the persistent bestiary.
-- Later catches call out a personal-best weight and/or length when they exceed the player's prior record.
-- This presentation is derived from the server-authoritative profile snapshots; the client does not award coins, catches or records.
+Every catch is graded from its configured species weight/length ranges: `일반`, `대형`, `트로피`, `괴물급`. The catch-result card shows rarity, size grade, weight, length and sale value, and calls out first discoveries or new personal records. Presentation is derived from server-authoritative profile snapshots.
 
 ## UI / HUD rule
 
@@ -96,4 +95,4 @@ Do not hand the user a JAR for a tiny technical check. A user-facing test build 
 - complete cast -> catch -> sell -> upgrade -> travel -> collect loop
 - acceptable actual Minecraft screen quality
 
-Build success alone is not the final gate. Alpha.11 strengthens the collection/record chase and catch-result feedback, but the authored environments and overall HUD/menu composition still require actual graphical client review before PLAYTESTED is claimed.
+Build success alone is not the final gate. Alpha.12 raises the authored environment pass, but the actual Minecraft client still needs graphical review before PLAYTESTED or GRAPHICAL CLIENT REVIEWED is claimed.

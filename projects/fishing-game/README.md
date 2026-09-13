@@ -6,17 +6,17 @@ Minecraft Java 26.2 Fabric standalone fishing progression game:
 
 Minecraft supplies the runtime/world renderer; the player experience is a dedicated fishing game rather than survival.
 
-## Current alpha.11 slice
+## Current alpha.12 slice
 
 - Adventure-mode fishing-only rules: no survival damage, hunger chores, mining/crafting loop or survival HUD.
 - Three dedicated fishing locations are connected to progression:
   - Cheongram Lakeside — starting freshwater location.
   - Gull Harbor — unlocks with `호수 전문가` rod tier.
   - Deepwater Channel — unlocks with `블루워터` rod tier.
-- `M` opens a Kenney-based travel screen. The client requests travel; the server validates destination and required rod tier.
-- Coast and deep-sea species already present in the catalog are reachable in their intended locations.
-- Harbor environment includes a stone quay, three fishing piers, shelter, lighthouse, lamps and dock props.
-- Deep-sea environment uses an offshore dark deck, long fishing arms, observation structure and sea-lantern lighting.
+- `M` opens a Kenney-based travel screen; destination and required rod tier are validated server-side.
+- Gull Harbor now has a stronger fishing-game layout: arrival promenade, layered shoreline rocks, breakwater arms, entrance beacons, three expanded fishing stations and a stronger lighthouse silhouette.
+- Deepwater Channel now reads as an offshore fishing facility: three outward fishing pods, hazard guides, rail-protected circulation, submerged guide lights and a signal mast.
+- Existing alpha.9+ coast/deep-sea worlds receive the alpha.12 environment pass through a separate one-time revision marker instead of requiring a new save.
 - Server-authoritative fishing session, species, tension/progress, pull bursts, catch value, coins, upgrades and collection records.
 - Vanilla hook remains cast/line/bobber only in every dedicated fishing dimension; its independent bite cycle is suppressed.
 - Five transient encounter-fish silhouettes: small, tall, fat, long and angler, with species-specific textures.
@@ -44,4 +44,4 @@ Minecraft supplies the runtime/world renderer; the player experience is a dedica
 
 ## Quality gate
 
-Compile/build success is not a playtest-ready declaration. The authored environments, fish proportions and complete screen composition still need actual Minecraft graphical review before a JAR is handed to the user as a meaningful playtest milestone.
+Compile/build success is not a playtest-ready declaration. Alpha.12 materially improves authored map composition, but the result still needs actual Minecraft graphical review for scale, sightlines, prop density, fish proportions and UI composition before a JAR is handed to the user as a meaningful playtest milestone.
