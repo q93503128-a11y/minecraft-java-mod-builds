@@ -34,10 +34,10 @@ clean build, JAR verify, invalid data test, 미분류 mob test가 동작.
 - Entity participant binding.
 - world AI/damage isolation.
 - C2S command/S2C snapshot+events.
-- DEBUG_ONLY HUD.
+- production battle presentation cache/HUD.
 - cleanup/disconnect/dimension guards.
 ### PASS
-자동 20-cycle soak는 통과. 실제 클라이언트 debug encounter 20회/orphan battle 0 수동 gate는 최종 완성본 테스트 때 함께 수행.
+자동 20-cycle soak는 통과. 실제 클라이언트 debug encounter 20회/orphan battle 0 수동 gate는 최종 통합 테스트 때 함께 수행.
 
 ## M3 — Representative Content
 상태: **AUTOMATED PASS / FINAL BALANCE NOT LOCKED**
@@ -67,33 +67,55 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 
 실제 Minecraft world save/reload/재접속 체감 검증은 M2 manual client gate와 함께 최종 완성본에서 수행한다.
 
-## M5 — Production UI/Presentation Gate
-상태: **NEXT — RESEARCH/DESIGN GATE ONLY**
-### 선행
-`06_UI_UX_PRESENTATION.md` Visual Gate 완료.
-### 작업 순서
-1. 실제 우수 턴제 RPG UI 다수 조사.
-2. 실제 Minecraft UI/모드 구현 사례 조사.
-3. `08_REFERENCE_CATALOG.md` 보강.
-4. 화면별 information hierarchy.
-5. design tokens.
-6. mockup.
-7. production HUD/menu.
-8. 실제 Minecraft screenshot comparison iteration.
-### PASS
-공용 QUALITY_STANDARD visual audit.
+## M5 — Production UI / Presentation
+상태: **AUTOMATED IMPLEMENTATION GATE PASS / SCREENSHOT VISUAL AUDIT PENDING**
 
-**금지:** reference catalog / hierarchy / tokens / mockup이 닫히기 전에 production UI Java를 먼저 구현하지 않는다.
+완료된 자동 구현 범위:
+- production Battle HUD / command input / world-first target chooser.
+- Party Formation / Character Overview / Skills / Growth.
+- server-authoritative progression write/reconciliation.
+- selected-character adaptive 3D entity preview.
+- authoritative Battle Result / Reward / ACK / world return lifecycle.
+- EN/KO localization parity.
+- shared `UiVisualLanguage` 및 외부 CC0 UI asset 적용.
+- logical battle-stage participant rendering.
+- data-driven action timeline, impact/travel accent.
+- Skeleton / Enderman 대표 3D character presentation pass.
+
+남은 gate:
+- 실제 Minecraft screenshot quality.
+- GUI Scale별 clipping/가독성/시선 이동.
+- 480×270 실화면 밀도.
+- final frame/icon/sprite source/license.
+- animation/transition/reward reveal/audio timing.
+- representative 3D model pose/centering/실제 체감.
+- Skeleton aim / Enderman phase가 실제 플레이에서 충분히 읽히는지 검증.
+
+**중요:** screenshot/reference 비교 전 M5 production visual PASS를 선언하지 않는다.
 
 ## M6 — World & Life Loop
-### 선행
-`09_WORLD_ASSET_GATE.md` 통과.
-### 작업
-- authored hub/region prototype.
-- mining/farming/fishing/crafting 연결.
+상태: **IN PROGRESS — AUTHORED ENCOUNTER ENTRY/LIFECYCLE AUTO VERIFIED**
+
+완료:
+- authored Encounter를 메뉴/월드 anchor에서 여는 server-authoritative 진입 경로.
+- world anchor locator/dimension/entity/range/encounter identity 최종 서버 재검증.
+- anchor/Encounter 양쪽 `repeatable` 계약.
+- 비반복 anchor 승리 시 reward + completion을 하나의 immutable save write로 정산.
+- `PlayerProgress` schema 2의 `completedEncounterLocators`.
+- schema 1 backward decode.
+- 완료한 one-time anchor preview/confirm 차단.
+- 반복형 encounter는 기존 farming loop 유지.
+- 현재 대표 두 anchor는 의도대로 repeatable 유지.
+- 상세 정본: `19_M6_WORLD_ENCOUNTER_LIFECYCLE.md`.
+
+남음:
+- authored hub/region prototype의 실제 월드 배치와 시각 gate.
+- mining/farming/fishing/crafting 산출물을 성장 루프에 연결.
 - fast travel/exploration/quest hooks.
+- production non-repeatable anchor를 실제 콘텐츠로 배치한 뒤 playtest.
+
 ### PASS
-각 활동의 산출이 성장 루프에 실제 사용되고 막힌 경로 없음.
+각 활동의 산출이 성장 루프에 실제 사용되고 막힌 경로가 없으며, fixed-world encounter lifecycle이 실제 Minecraft 플레이에서도 의도대로 작동해야 한다.
 
 ## M7 — Full Vanilla Roster
 ### 작업
@@ -113,9 +135,39 @@ eligible 전수 PLAYABLE 이상, 미분류 0.
 - dedicated server/multiplayer verification 가능 시 수행.
 - 최종 visual regression.
 
-## 지금 바로 할 일
-M0~M4 automated gate는 닫혔다. 다음 작업은 **M5 Production UI/Presentation Gate의 연구/설계 단계**다.
+## 지금 바로 할 일 — 2026-09-13 최신
 
-production UI 코드를 즉시 만들지 않는다. 공용 `QUALITY_STANDARD.md`, `AGENT_RULES.md`, `06_UI_UX_PRESENTATION.md`, `08_REFERENCE_CATALOG.md`를 기준으로 외부 reference 조사→비교 분석→information hierarchy→design tokens→mockup을 먼저 정본화한다.
+마지막 TURNBOUND 코드 단위는 `turnbound-re: persist one-time world encounter clears`이며 Build turnbound-re #209가 clean build/JUnit/JAR verify까지 성공했다.
 
-M0~M4 중 수치가 이후 플레이테스트에서 달라지는 것은 정상이며, CANON을 건드리지 않는 튜닝은 데이터로 조정한다.
+다음 코드 작업은 새 generic UI나 무작정 roster VFX 확장이 아니라 **authoritative action impact와 HP/Poise/EXPOSED/defeat 표시 타이밍 동기화**다.
+
+현재 문제:
+- 서버 snapshot은 행동 해결 직후 최종 HP/Poise를 authoritative하게 전달한다.
+- client action presentation은 WINDUP → IMPACT → RECOVERY로 시각 타이밍을 늦춘다.
+- 따라서 실제 타격 연출보다 HP/Poise bar 또는 EXPOSED/defeat 상태가 먼저 바뀌어 보일 수 있다.
+
+구현 원칙:
+1. 전투 결과를 client가 예측하지 않는다.
+2. 이미 받은 이전/최종 authoritative snapshot만 presentation 용도로 사용한다.
+3. WINDUP 동안 이전 authoritative 표시값 유지.
+4. IMPACT에서 이전→최종 값을 짧게 easing.
+5. RECOVERY 끝에서는 최종 authoritative 값과 정확히 일치.
+6. heal / Poise damage / Poise break / EXPOSED / defeat도 같은 타이밍 언어를 따른다.
+7. multi-hit은 서버가 제공하지 않은 hit별 수치를 창작하지 않는다. aggregate previous→final만 안전하게 연출한다.
+8. battleId/revision/cue 변경 시 stale staged state를 즉시 reset한다.
+9. non-target/no-cue participant는 불필요하게 지연하지 않는다.
+
+필수 테스트:
+- damage.
+- healing.
+- Poise damage.
+- Poise break + EXPOSED.
+- defeat.
+- no cue / non-target.
+- multi-target.
+- battle/revision reset.
+- recovery exact final.
+
+이 코드는 전투 authority를 바꾸지 않는 presentation-only 수정이어야 한다. 의미 있는 한 단위 완료 후 관련 test + Build turnbound-re 1회만 수행한다.
+
+그 다음에는 실제 screenshot/playtest 증거가 들어오기 전 representative visual styling을 무작정 확대하지 않는다.
