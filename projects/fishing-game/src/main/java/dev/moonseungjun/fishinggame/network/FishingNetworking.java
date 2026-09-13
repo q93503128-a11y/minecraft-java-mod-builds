@@ -10,6 +10,7 @@ public final class FishingNetworking {
     }
 
     public static void initialize() {
+        PayloadTypeRegistry.serverboundPlay().register(CastReleasePayload.TYPE, CastReleasePayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(ReelInputPayload.TYPE, ReelInputPayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(SellAllPayload.TYPE, SellAllPayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(BuyRodPayload.TYPE, BuyRodPayload.CODEC);
@@ -17,6 +18,10 @@ public final class FishingNetworking {
         PayloadTypeRegistry.clientboundPlay().register(ProfileSnapshotPayload.TYPE, ProfileSnapshotPayload.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(FishingStatePayload.TYPE, FishingStatePayload.CODEC);
 
+        ServerPlayNetworking.registerGlobalReceiver(
+                CastReleasePayload.TYPE,
+                (payload, context) -> FishingSessionManager.finishCastCharge(context.player(), payload.cancelled())
+        );
         ServerPlayNetworking.registerGlobalReceiver(
                 ReelInputPayload.TYPE,
                 (payload, context) -> FishingSessionManager.setReelHeld(context.player(), payload.held())

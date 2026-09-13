@@ -5,7 +5,7 @@
 - Slug: fishing-game
 - Mod ID: fishinggame
 - Namespace: fishinggame
-- Mod version: 0.1.0-alpha.12
+- Mod version: 0.1.0-alpha.13
 - Minecraft: 26.2
 - Java: 25
 - Loader: Fabric
@@ -13,7 +13,7 @@
 - Fabric API: >=0.159.0+26.2
 - Gradle: 9.5.1
 - Build plugin: Fabric Loom 1.17.19
-- Final JAR: build/libs/fishing-game-0.1.0-alpha.12.jar
+- Final JAR: build/libs/fishing-game-0.1.0-alpha.13.jar
 - Required dependencies: Fabric API
 - Optional external mods: Essential, connection/hosting convenience only
 - Forbidden bundled dependencies: Essential
@@ -26,11 +26,22 @@
 
 Fishing Game is a standalone fishing progression game built on Minecraft, not a survival expansion.
 
-> cast -> see the fish approach -> hook -> reel -> catch -> bag/collection -> sell -> improve rod -> unlock a new fishing location -> catch rarer/larger fish -> complete records
+> charge cast -> see the fish approach -> hook -> reel -> catch -> bag/collection -> sell -> improve rod -> unlock a new fishing location -> catch rarer/larger fish -> complete records
 
 ## Non-survival rule
 
 The player is not expected to mine, craft, fight, manage hunger, or survive nights. Player damage is disabled, hunger/health are stabilized, Adventure mode is enforced, and survival HUD layers are removed.
+
+## Casting rule
+
+Casting is part of the fishing interaction, not an instant vanilla transport step.
+
+- Press/hold right click to build cast charge; release to throw.
+- Full charge is reached after 18 server ticks. Holding longer gives no additional distance.
+- Charge affects hook launch speed/distance only. It never increases species rarity, fish size, sale value or bite luck.
+- The client shows a compact charge meter, but the authoritative charge duration is measured from server game time between accepted press and release.
+- Release/cancel requests are transition packets rather than per-frame charge spam.
+- Once a fish is hooked, the same right-click hold/release input returns to line-tension control.
 
 ## Location progression
 
@@ -71,7 +82,7 @@ Every catch is graded from its configured species weight/length ranges: `일반`
 
 ## UI / HUD rule
 
-Do not invent the visual language ad hoc. HUD, bag, bestiary and travel screens reuse the Kenney CC0 UI language already bundled with the project. External assets and licenses are tracked in `THIRD_PARTY_ASSETS.md`.
+Do not invent the visual language ad hoc. HUD, cast meter, bag, bestiary and travel screens reuse the Kenney CC0 UI language already bundled with the project. External assets and licenses are tracked in `THIRD_PARTY_ASSETS.md`.
 
 ## Catch presentation direction
 
@@ -79,12 +90,13 @@ Fishing encounters use five transient silhouettes — small, tall, fat, long and
 
 ## Fishing-hook ownership rule
 
-Vanilla fishing hook is only cast/line/bobber transport and visual anchor in all dedicated Fishing Game dimensions. Vanilla's independent lure/nibble/bite cycle is suppressed there; Fishing Game owns species, bite timing, reel fight, catch result and economy.
+Vanilla fishing hook is only line/bobber transport and visual anchor in all dedicated Fishing Game dimensions. Fishing Game owns charge/release timing, species, bite timing, reel fight, catch result and economy. Vanilla's independent lure/nibble/bite cycle is suppressed there.
 
 ## User-test gate
 
 Do not hand the user a JAR for a tiny technical check. A user-facing test build must have:
 - dedicated non-survival HUD
+- readable charge casting with meaningful distance response
 - catch bag, persistence, coins and selling
 - meaningful rod progression
 - visible species presentation and readable reel control
@@ -95,4 +107,4 @@ Do not hand the user a JAR for a tiny technical check. A user-facing test build 
 - complete cast -> catch -> sell -> upgrade -> travel -> collect loop
 - acceptable actual Minecraft screen quality
 
-Build success alone is not the final gate. Alpha.12 raises the authored environment pass, but the actual Minecraft client still needs graphical review before PLAYTESTED or GRAPHICAL CLIENT REVIEWED is claimed.
+Build success alone is not the final gate. Alpha.13 closes the missing casting-feel step, but the actual Minecraft client still needs graphical/play review before PLAYTESTED or GRAPHICAL CLIENT REVIEWED is claimed.

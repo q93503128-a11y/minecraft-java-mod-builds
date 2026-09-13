@@ -2,23 +2,25 @@
 
 Minecraft Java 26.2 Fabric standalone fishing progression game:
 
-`catch -> collect -> sell -> improve rod -> unlock better water -> hunt bigger/rarer fish`
+`charge cast -> catch -> collect -> sell -> improve rod -> unlock better water -> hunt bigger/rarer fish`
 
 Minecraft supplies the runtime/world renderer; the player experience is a dedicated fishing game rather than survival.
 
-## Current alpha.12 slice
+## Current alpha.13 slice
 
 - Adventure-mode fishing-only rules: no survival damage, hunger chores, mining/crafting loop or survival HUD.
+- Right click now charges the cast before release instead of throwing at full vanilla speed immediately. Charge changes throw distance only; it does not improve rarity or catch odds.
+- A compact bottom-center cast meter shows the real charge state and caps after 18 ticks, so holding longer gives no hidden advantage.
+- Cast duration is validated from server game time; the client only requests release/cancel and renders the local meter.
 - Three dedicated fishing locations are connected to progression:
   - Cheongram Lakeside — starting freshwater location.
   - Gull Harbor — unlocks with `호수 전문가` rod tier.
   - Deepwater Channel — unlocks with `블루워터` rod tier.
 - `M` opens a Kenney-based travel screen; destination and required rod tier are validated server-side.
-- Gull Harbor now has a stronger fishing-game layout: arrival promenade, layered shoreline rocks, breakwater arms, entrance beacons, three expanded fishing stations and a stronger lighthouse silhouette.
-- Deepwater Channel now reads as an offshore fishing facility: three outward fishing pods, hazard guides, rail-protected circulation, submerged guide lights and a signal mast.
-- Existing alpha.9+ coast/deep-sea worlds receive the alpha.12 environment pass through a separate one-time revision marker instead of requiring a new save.
+- Gull Harbor has an arrival promenade, layered shoreline rocks, breakwater arms, entrance beacons, three fishing stations and a stronger lighthouse silhouette.
+- Deepwater Channel reads as an offshore fishing facility with three outward fishing pods, hazard guides, rail-protected circulation, submerged guide lights and a signal mast.
 - Server-authoritative fishing session, species, tension/progress, pull bursts, catch value, coins, upgrades and collection records.
-- Vanilla hook remains cast/line/bobber only in every dedicated fishing dimension; its independent bite cycle is suppressed.
+- Vanilla hook remains line/bobber transport only in every dedicated fishing dimension; its independent bite cycle is suppressed.
 - Five transient encounter-fish silhouettes: small, tall, fat, long and angler, with species-specific textures.
 - Persistent catch bag, selling and three-tier rod progression.
 - Permanent bestiary tracks discovered species, catch counts and personal-best weight/length even after selling.
@@ -28,7 +30,8 @@ Minecraft supplies the runtime/world renderer; the player experience is a dedica
 
 ## Controls
 
-- Fishing rod right click: cast / reel input.
+- Fishing rod right click: hold to charge, release to cast.
+- During a hooked fight: hold/release right click to manage line tension.
 - `B`: catch bag, selling and rod upgrade.
 - `J`: fish bestiary / records.
 - `M`: fishing-location travel.
@@ -44,4 +47,4 @@ Minecraft supplies the runtime/world renderer; the player experience is a dedica
 
 ## Quality gate
 
-Compile/build success is not a playtest-ready declaration. Alpha.12 materially improves authored map composition, but the result still needs actual Minecraft graphical review for scale, sightlines, prop density, fish proportions and UI composition before a JAR is handed to the user as a meaningful playtest milestone.
+Compile/build success is not a playtest-ready declaration. Alpha.13 closes the missing cast-feel step in the core loop, but the three authored locations, cast distance, fish motion and screen composition still need actual Minecraft graphical/play review before a JAR is handed to the user as a meaningful playtest milestone.

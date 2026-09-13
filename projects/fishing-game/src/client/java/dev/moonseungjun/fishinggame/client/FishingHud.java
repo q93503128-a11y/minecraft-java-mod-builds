@@ -61,7 +61,9 @@ public final class FishingHud {
         int height = graphics.guiHeight();
         int stage = ClientFishingState.stage();
 
-        if (stage == 1) {
+        if (FishingGameClient.isCastCharging()) {
+            renderCastHud(graphics, minecraft, width, height);
+        } else if (stage == 1) {
             graphics.centeredText(minecraft.font, "물결을 보고 입질을 기다리세요", width / 2, height - 34, 0xFFFFFFFF);
         } else if (stage == 2) {
             renderFightHud(graphics, minecraft, rod, width, height);
@@ -73,6 +75,19 @@ public final class FishingHud {
         if (!notice.isBlank()) {
             graphics.centeredText(minecraft.font, notice, width / 2, 18, 0xFFFFFFFF);
         }
+    }
+
+    private static void renderCastHud(GuiGraphicsExtractor graphics, Minecraft minecraft, int width, int height) {
+        int barX = width / 2 - 95;
+        int barY = height - 28;
+        float charge = FishingGameClient.castChargeProgress();
+        String hint = charge >= 1.0f ? "최대 거리 · 놓아서 던지기" : "캐스팅 · 놓아서 던지기";
+        int hintColor = charge >= 1.0f ? 0xFFFFD86B : 0xFFFFFFFF;
+
+        graphics.centeredText(minecraft.font, hint, width / 2, barY - 16, hintColor);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, SLIDER, barX, barY, 0, 0, 190, 4, 190, 4);
+        int fillWidth = Math.max(0, Math.min(BAR_INNER_WIDTH, Math.round(BAR_INNER_WIDTH * charge)));
+        graphics.fill(barX + 1, barY, barX + 1 + fillWidth, barY + 4, charge >= 1.0f ? 0xFFFFD86B : 0xFF86C5FF);
     }
 
     private static void renderFightHud(GuiGraphicsExtractor graphics, Minecraft minecraft, RodDefinition rod, int width, int height) {

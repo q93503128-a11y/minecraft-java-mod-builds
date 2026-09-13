@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-alpha.13
+
+- Replaced immediate vanilla-speed casting with hold-and-release charge casting.
+- Added a compact Kenney-language cast meter; full charge is reached after 18 ticks and overcharging gives no extra distance.
+- Made cast duration server-authoritative: the initial rod use starts a server charge and the client sends only release/cancel transitions.
+- Scaled the vanilla fishing-hook launch velocity from the validated charge while keeping species rarity, fish size, value and luck completely independent from cast power.
+- Preserved the same right-click hold/release input for line-tension control once a fish is actually hooked.
+- Added deterministic charge normalization / throw-speed tests and CI JAR inspection for the new cast payload and math helper.
+
 ## 0.1.0-alpha.12
 
 - Added a versioned environment-quality pass so existing authored fishing worlds can receive later visual upgrades without deleting saves or rebuilding every tick.

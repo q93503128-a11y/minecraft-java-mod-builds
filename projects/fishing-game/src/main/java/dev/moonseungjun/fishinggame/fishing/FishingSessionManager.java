@@ -26,6 +26,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.Mob;
@@ -40,6 +41,7 @@ public final class FishingSessionManager {
     private static final double VISUAL_START_DISTANCE = 5.4;
     private static final double VISUAL_HOOK_DISTANCE = 0.55;
     private static final Map<UUID, FishingSession> SESSIONS = new HashMap<>();
+    private static final Map<UUID, CastCharge> CAST_CHARGES = new HashMap<>();
 
     private FishingSessionManager() {
     }
@@ -52,12 +54,13 @@ public final class FishingSessionManager {
 
             FishingSession session = SESSIONS.get(serverPlayer.getUUID());
             if (session == null) {
+                if (serverPlayer.fishing != null) return InteractionResult.PASS;
                 if (FishingProfiles.get(serverPlayer).bagFull()) {
                     sendIdle(serverPlayer, "어획 가방이 가득 찼습니다. B에서 판매해 주세요.");
                     return InteractionResult.SUCCESS;
                 }
-                beginCast(serverPlayer);
-                return InteractionResult.PASS;
+                CAST_CHARGES.put(serverPlayer.getUUID(), new CastCharge(level.getGameTime(), hand));
+                return InteractionResult.SUCCESS;
             }
 
             if (session.stage == FishingStage.HOOKED) {
@@ -70,9 +73,33 @@ public final class FishingSessionManager {
 
         ServerTickEvents.END_SERVER_TICK.register(FishingSessionManager::tick);
         ServerPlayerEvents.LEAVE.register(player -> {
+            CAST_CHARGES.remove(player.getUUID());
             FishingSession session = SESSIONS.remove(player.getUUID());
             discardVisualFish(session);
         });
+    }
+
+    public static void finishCastCharge(ServerPlayer player, boolean cancelled) {
+        CastCharge charge = CAST_CHARGES.remove(player.getUUID());
+        if (charge == null || cancelled) return;
+        if (SESSIONS.containsKey(player.getUUID()) || player.fishing != null) return;
+        if (!player.getItemInHand(charge.hand()).is(Items.FISHING_ROD)) return;
+        if (FishingProfiles.get(player).bagFull()) {
+            sendIdle(player, "어획 가방이 가득 찼습니다. B에서 판매해 주세요.");
+            return;
+        }
+
+        long heldTicks = Math.max(0L, player.level().getGameTime() - charge.startTick());
+        beginCast(player);
+        Items.FISHING_ROD.use(player.level(), player, charge.hand());
+        if (player.fishing == null) {
+            SESSIONS.remove(player.getUUID());
+            sendIdle(player, "캐스팅하지 못했습니다.");
+            return;
+        }
+
+        float speedMultiplier = CastChargeMath.speedMultiplier(heldTicks);
+        player.fishing.setDeltaMovement(player.fishing.getDeltaMovement().scale(speedMultiplier));
     }
 
     public static void setReelHeld(ServerPlayer player, boolean held) {
@@ -445,6 +472,7 @@ public final class FishingSessionManager {
     }
 
     private static void cancel(ServerPlayer player, String message) {
+        CAST_CHARGES.remove(player.getUUID());
         FishingSession session = SESSIONS.remove(player.getUUID());
         discardVisualFish(session);
         removeHook(player);
@@ -493,5 +521,8 @@ public final class FishingSessionManager {
             player.fishing.discard();
             player.fishing = null;
         }
+    }
+
+    private record CastCharge(long startTick, InteractionHand hand) {
     }
 }

@@ -10,9 +10,12 @@ import dev.moonseungjun.fishinggame.client.fish.LongEncounterFishModel;
 import dev.moonseungjun.fishinggame.client.fish.SmallEncounterFishModel;
 import dev.moonseungjun.fishinggame.client.fish.TallEncounterFishModel;
 import dev.moonseungjun.fishinggame.entity.FishingEntities;
+import dev.moonseungjun.fishinggame.fishing.CastChargeMath;
+import dev.moonseungjun.fishinggame.network.CastReleasePayload;
 import dev.moonseungjun.fishinggame.network.FishingStatePayload;
 import dev.moonseungjun.fishinggame.network.ProfileSnapshotPayload;
 import dev.moonseungjun.fishinggame.network.ReelInputPayload;
+import dev.moonseungjun.fishinggame.profile.PlayerFishingProfile;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
@@ -20,11 +23,16 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.ModelLayerRegistry;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.world.item.Items;
 import org.lwjgl.glfw.GLFW;
 
 public final class FishingGameClient implements ClientModInitializer {
     private static final int HEARTBEAT_TICKS = 5;
+    private static boolean castCharging;
+    private static int castChargeTicks;
+
     private boolean lastHeld;
+    private boolean previousUseDown;
     private int heartbeatTicks;
 
     @Override
@@ -56,7 +64,13 @@ public final class FishingGameClient implements ClientModInitializer {
         ));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (client.player == null) return;
+            if (client.player == null) {
+                resetCastCharge();
+                previousUseDown = false;
+                lastHeld = false;
+                heartbeatTicks = 0;
+                return;
+            }
 
             while (bagKey.consumeClick()) {
                 if (client.gui.screen() instanceof CatchBagScreen) {
@@ -75,14 +89,42 @@ public final class FishingGameClient implements ClientModInitializer {
                 }
             }
 
+            boolean useDown = client.options.keyUse.isDown();
             boolean fishing = client.player.fishing != null;
             if (!fishing) {
+                boolean holdingRod = client.player.getMainHandItem().is(Items.FISHING_ROD)
+                        || client.player.getOffhandItem().is(Items.FISHING_ROD);
+                boolean bagHasSpace = ClientFishingState.catches().size() < PlayerFishingProfile.BAG_CAPACITY;
+                boolean canCharge = holdingRod && bagHasSpace && client.gui.screen() == null;
+
+                if (!castCharging && useDown && !previousUseDown && canCharge) {
+                    castCharging = true;
+                    castChargeTicks = 0;
+                }
+
+                if (castCharging) {
+                    if (useDown && canCharge) {
+                        castChargeTicks++;
+                    } else {
+                        boolean cancelled = !holdingRod || client.gui.screen() != null || !bagHasSpace;
+                        sendCastRelease(cancelled);
+                        resetCastCharge();
+                    }
+                }
+
+                previousUseDown = useDown;
                 lastHeld = false;
                 heartbeatTicks = 0;
                 return;
             }
 
-            boolean held = client.options.keyUse.isDown();
+            if (castCharging) {
+                sendCastRelease(true);
+                resetCastCharge();
+            }
+            previousUseDown = useDown;
+
+            boolean held = useDown;
             heartbeatTicks++;
             if (held != lastHeld || heartbeatTicks >= HEARTBEAT_TICKS) {
                 if (ClientPlayNetworking.canSend(ReelInputPayload.TYPE)) {
@@ -92,6 +134,25 @@ public final class FishingGameClient implements ClientModInitializer {
                 heartbeatTicks = 0;
             }
         });
+    }
+
+    public static boolean isCastCharging() {
+        return castCharging;
+    }
+
+    public static float castChargeProgress() {
+        return CastChargeMath.normalizedCharge(castChargeTicks);
+    }
+
+    private static void sendCastRelease(boolean cancelled) {
+        if (ClientPlayNetworking.canSend(CastReleasePayload.TYPE)) {
+            ClientPlayNetworking.send(new CastReleasePayload(cancelled));
+        }
+    }
+
+    private static void resetCastCharge() {
+        castCharging = false;
+        castChargeTicks = 0;
     }
 
     @SuppressWarnings("deprecation")
