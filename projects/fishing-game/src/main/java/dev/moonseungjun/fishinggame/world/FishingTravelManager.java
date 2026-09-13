@@ -102,7 +102,7 @@ public final class FishingTravelManager {
     }
 
     public static boolean travel(ServerPlayer player, FishingLocation target) {
-        MinecraftServer server = player.getServer();
+        MinecraftServer server = player.level().getServer();
         if (server == null) return false;
         if (target == FishingLocation.LAKESIDE) {
             return FishingWorldManager.prepareAndPlacePlayer(player, server);
@@ -247,7 +247,7 @@ public final class FishingTravelManager {
         int cx = 30;
         int cz = 33;
         for (int y = DECK_Y + 1; y <= DECK_Y + 10; y++) {
-            Block shell = ((y - DECK_Y) / 2) % 2 == 0 ? Blocks.WHITE_CONCRETE : Blocks.RED_CONCRETE;
+            Block shell = ((y - DECK_Y) / 2) % 2 == 0 ? Blocks.CONCRETE.white() : Blocks.CONCRETE.red();
             for (int dx = -2; dx <= 2; dx++) {
                 for (int dz = -2; dz <= 2; dz++) {
                     if (Math.abs(dx) != 2 && Math.abs(dz) != 2) continue;
