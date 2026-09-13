@@ -17,16 +17,17 @@ import java.util.UUID;
 /**
  * Minecraft-facing server authority boundary for player-weapon execution.
  *
- * <p>The adapter deliberately owns no balance values. Equipment is resolved on the server into a
- * validated family/module loadout, {@link PlayerWeaponCombatController} remains the only attack
- * clock, and hit-volume candidates are exposed only while that clock is ACTIVE. Damage, range and
- * presentation remain policy supplied by later validated production data.</p>
+ * <p>Equipment is resolved on the server into a validated family/module loadout,
+ * {@link PlayerWeaponCombatController} remains the only attack clock, and hit-volume candidates are
+ * exposed only while that clock is ACTIVE. Shape/damage remain separately supplied policy so this
+ * adapter never trusts client hit confirmation or invents a second combat clock.</p>
  */
 public final class MinecraftPlayerWeaponCombatAdapter {
     private final CombatRuntimeCatalog catalog;
     private final Optional<PublishedContentGenerationGuard> generationGuard;
     private final LoadoutResolver loadoutResolver;
     private final HitVolume hitVolume;
+    private final ImpactPolicy impactPolicy;
     private final Map<UUID, Session> sessions = new HashMap<>();
 
     public MinecraftPlayerWeaponCombatAdapter(
@@ -34,10 +35,20 @@ public final class MinecraftPlayerWeaponCombatAdapter {
         LoadoutResolver loadoutResolver,
         HitVolume hitVolume
     ) {
+        this(catalog, loadoutResolver, hitVolume, (level, actor, target, snapshot) -> {});
+    }
+
+    public MinecraftPlayerWeaponCombatAdapter(
+        CombatRuntimeCatalog catalog,
+        LoadoutResolver loadoutResolver,
+        HitVolume hitVolume,
+        ImpactPolicy impactPolicy
+    ) {
         this.catalog = Objects.requireNonNull(catalog, "catalog");
         this.generationGuard = PublishedContentGenerationGuard.fromCatalog(catalog);
         this.loadoutResolver = Objects.requireNonNull(loadoutResolver, "loadoutResolver");
         this.hitVolume = Objects.requireNonNull(hitVolume, "hitVolume");
+        this.impactPolicy = Objects.requireNonNull(impactPolicy, "impactPolicy");
     }
 
     /** Accepts an input intent only after re-resolving the actor's authoritative server loadout. */
@@ -97,7 +108,10 @@ public final class MinecraftPlayerWeaponCombatAdapter {
             );
             for (LivingEntity target : resolved) {
                 if (!MinecraftCombatAuthority.isEligibleTarget(level, actor, target)) continue;
-                if (session.hitTargets.add(target.getUUID())) candidates++;
+                if (session.hitTargets.add(target.getUUID())) {
+                    candidates++;
+                    impactPolicy.apply(level, actor, target, snapshot);
+                }
             }
         }
         if (step.finished()) session.hitTargets.clear();
@@ -220,6 +234,12 @@ public final class MinecraftPlayerWeaponCombatAdapter {
     @FunctionalInterface
     public interface HitVolume {
         Iterable<? extends LivingEntity> resolve(ServerLevel level, LivingEntity actor, AttackExecution.Snapshot snapshot);
+    }
+
+    /** Applies one server-authoritative impact after hit-volume admission and per-execution deduplication. */
+    @FunctionalInterface
+    public interface ImpactPolicy {
+        void apply(ServerLevel level, LivingEntity actor, LivingEntity target, AttackExecution.Snapshot snapshot);
     }
 
     public record TickResult(
