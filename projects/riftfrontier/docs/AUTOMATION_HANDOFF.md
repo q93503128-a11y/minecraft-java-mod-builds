@@ -4,7 +4,7 @@ Recovery aid only. Current GitHub `main` plus `PROJECT.md`, `docs/CANONICAL.md`,
 
 ## Current stage
 
-`M3 — PLAYER COMBAT BUILD VERIFIED / REGION 01 BOSS ROLE-SPECIFIC FIELD HARNESS READY / HUMAN FIELD PLAY NEXT`
+`M3 — PLAYER COMBAT BUILD VERIFIED / REGION 01 BOSS ROLE-SPECIFIC FIELD HARNESS + READABILITY OVERLAY BUILD VERIFIED / HUMAN FIELD PLAY NEXT`
 
 Do not reopen M2 expedition/runtime/restart authority work without a demonstrated regression. The current priority is a genuinely playable vertical slice: human player-combat field play, Region 01 boss field evidence, and evidence-backed boss presentation/combat integration.
 
@@ -137,26 +137,70 @@ All three still use `1.0F` diagnostic damage, the existing authoritative ACTIVE-
 
 ### Verification for the role-specific field-impact batch
 
-Code/docs checkpoint before this handoff update: `f65e6f98d3a986582117e33f773ccb3220a9faff`.
+Code checkpoint: `f65e6f98d3a986582117e33f773ccb3220a9faff`.
 
-`Build Riftfrontier` run `34761913225` is the verification run for that checkpoint. At the time this handoff was written:
+`Build Riftfrontier` run `34761913225`: SUCCESS.
 
-- toolchain verification: SUCCESS;
-- asset-intake tests: SUCCESS;
-- `Tests and clean build`: SUCCESS;
-- required Riftfrontier GameTest gate: SUCCESS;
-- dedicated-server smoke: still in progress;
-- client smoke / executable-JAR inspection / artifact upload: not yet completed.
+That run completed successfully through toolchain verification, asset-intake tests, `clean test build`, required Riftfrontier GameTests, dedicated-server smoke, Xvfb client initialization smoke, executable-JAR inspection and artifact upload. The role-specific field-impact batch is therefore CODE REVIEWED / TESTED / BUILD VERIFIED / JAR PRODUCED. This still does not constitute human play or multiplayer play.
 
-Therefore this batch is currently **CODE REVIEWED / TESTED / GAMETEST VERIFIED / FULL CI IN PROGRESS**. Do not upgrade it to BUILD VERIFIED or JAR PRODUCED until run `34761913225` actually completes those remaining gates successfully.
+## Region 01 boss field readability overlay — 2026-09-14
 
-### Exact human test contract
+The field harness now has a client-only diagnostic readability layer so a human tester can see the provisional server-authored hit geometry while probing the three boss roles in Minecraft. This is not final presentation art and does not replace the pending material/animation/VFX/sound work.
+
+### Implementation
+
+- `Region01BossFieldReadabilityOverlay` listens on the client and projects the current synchronized boss attack over the existing field-test actor.
+- It obtains the current attack pattern from `BossPresentationClientState` and looks up the same `Region01BossFieldImpactProfile` used by the server resolver. It owns no independent reach/width/damage/timing values.
+- `Region01BossFieldReadabilityProjection` is a Minecraft-client-free projection helper. It derives local outline samples directly from `Region01BossFieldImpactProfile.Profile`:
+  - committed strike: samples remain inside the same provisional forward-arc envelope;
+  - line displacement: two rails expose the exact provisional half-width through the authored reach;
+  - arena pressure: a facing-independent ring uses the exact provisional radius.
+- Diagnostic phase particles are intentionally vanilla and temporary: `CLOUD` for TELEGRAPH, `CRIT` for ACTIVE, `SMOKE` for RECOVERY.
+- Those particles are instrumentation only. They are not final VFX language, asset selection, combat authority, or a promise that the final boss will use those colors/particles.
+- The overlay auto-retires when `Region01BossClientRenderRuntime` has a reviewed production render binding, preventing this diagnostic layer from becoming accidental final presentation.
+- No damage, hit admission, server attack clock, phase composition, target dedupe or production encounter composition was changed.
+
+### Initial test-runtime failure and repair
+
+The first readability test checkpoint `d2088accfe6bf5526da889ed18ce0b50557cc94f` produced `Build Riftfrontier` run `34764507625`, which failed at `:test` after Java compilation succeeded. The three new tests failed with `NoClassDefFoundError` because the pure JUnit runtime directly loaded the client overlay class annotated with `Dist.CLIENT`; this test runtime intentionally does not provide the NeoForge client distmarker class.
+
+The repair did not weaken production client isolation or add client dependencies to pure tests. Instead:
+
+- commit `1c6310f32b2dcd0f8628789d6d8edb70c33e33ae` extracted the geometry sampling into `Region01BossFieldReadabilityProjection`;
+- commit `ff3b733f0132af708d7c4778eaaa5f5829e2ea0f` changed the client overlay to consume that projection;
+- commit `c8530276486606e0a42c15b61c804bd7ed0a9e5d` added the client-free projection tests;
+- commit `3ddcc5640689d84e8449c0845418b45fa6dc2121` removed the obsolete client-loaded test fixture.
+
+The tests now verify that local-area samples stay on the exact profile radius, line samples expose both exact half-width boundaries across the full reach, and arc samples never advertise points outside the server profile envelope.
+
+### Recovery verification
+
+`Build Riftfrontier` run `34764647070`, HEAD `3ddcc5640689d84e8449c0845418b45fa6dc2121`: SUCCESS.
+
+That run completed successfully through:
+
+- toolchain verification;
+- asset-intake tests;
+- `clean test build`;
+- required Riftfrontier GameTest gate;
+- dedicated-server smoke;
+- Xvfb client initialization smoke;
+- executable JAR inspection;
+- build report;
+- deliverable and log artifact upload.
+
+Deliverable artifact: `riftfrontier-0.1.0-alpha.1-deliverables`, artifact ID `10320190641` for run `34764647070`. Status for the readability checkpoint: CODE REVIEWED / TESTED / BUILD VERIFIED / JAR PRODUCED.
+
+`docs/M3_REGION01_BOSS_FIELD_PLAY.md` now includes the diagnostic-boundary agreement checks. Human field play remains NOT TESTED and multiplayer field play remains NOT TESTED.
+
+## Exact human test contract
 
 `docs/M3_REGION01_BOSS_FIELD_PLAY.md` is the canonical manual procedure. It now covers:
 
 - explicit spawn/cleanup;
 - ACTIVE-only damage and one-hit-per-execution dedupe;
 - physical role contrast for broad committed strike vs narrow long line displacement vs local arena pressure;
+- visible diagnostic boundary agreement for the arc/lane/local-area profiles;
 - phase 1/phase 2 composition switching;
 - `/reload` generation retirement/rebuild;
 - interaction with the existing M3 player weapons;
@@ -183,6 +227,7 @@ Human field play remains NOT TESTED until a person actually runs that document.
 - Do not promote the vanilla sword carrier or `PlayerWeaponFieldImpactProfile` calibration into final design.
 - Do not restore the old one-size-fits-all boss field-test AABB; its verified replacement exists specifically so the three authored combat roles can be tested physically.
 - Do not promote `Region01BossFieldImpactProfile` dimensions or `1.0F` damage into production geometry/balance without human evidence.
+- Do not promote the diagnostic `CLOUD` / `CRIT` / `SMOKE` readability overlay into final VFX or art direction.
 - Do not add the field-test boss to production Region 01 encounter composition merely because the command path works.
 - Do not claim successful automated client/server smoke as human play.
 - Do not confuse logical boss presentation keys, authored profiles, reviewed source motion and selected production assets; they are distinct gates.
@@ -190,14 +235,13 @@ Human field play remains NOT TESTED until a person actually runs that document.
 
 ## Exact next development boundary
 
-1. First check the final conclusion of `Build Riftfrontier` run `34761913225`; if it is not SUCCESS, repair only the demonstrated regression before adding more work.
-2. Human player-combat field play is still required via `docs/M3_PLAYER_COMBAT_FIELD_PLAY.md`. Do not tune the provisional player geometry/damage before an observed symptom exists.
-3. Human Region 01 boss field play should now use the role-specific geometry checks in `docs/M3_REGION01_BOSS_FIELD_PLAY.md`; record exact JAR hash, hit/miss positions and observations instead of inferring success from CI.
-4. Boss-side automated work may continue independently on visible quality. The highest-value next work is actual evidence-backed production presentation, not more lifecycle plumbing or more field-shape fences.
-5. Review whether observed Dragon Evolved `Punch` and/or `Headbutt` motion genuinely fits committed-strike or line-displacement gameplay semantics before authoring a source binding. Unsupported mappings remain unresolved.
-6. Arena pressure still needs either a legally usable reviewed motion compatible with the selected rig direction or an authored/derived motion under documented reference constraints.
-7. Select/review a real boss material/texture direction with provenance/license records and Minecraft readability in mind. Do not invent an arbitrary final palette and do not restore stripped Atlas art by default.
-8. Select/review VFX and sound assets or authored directions under the same evidence/provenance rule.
-9. Only when a coherent set of real production resources is selected should `presentation_assets` be authored so the logical profile can move from staged to authoritative published presentation.
-10. Do not add the boss to production Region 01 encounter composition until presentation, Minecraft scale/hit geometry and authoritative combat/damage policy have evidence-backed inputs.
-11. PLAYTESTED and MULTIPLAYER TESTED remain human-evidence labels only.
+1. Human player-combat field play is still required via `docs/M3_PLAYER_COMBAT_FIELD_PLAY.md`. Do not tune the provisional player geometry/damage before an observed symptom exists.
+2. Human Region 01 boss field play should use the role-specific geometry plus diagnostic-boundary checks in `docs/M3_REGION01_BOSS_FIELD_PLAY.md`; record exact JAR hash, hit/miss positions and observations instead of inferring success from CI.
+3. Boss-side automated work may continue independently on visible production quality. The diagnostic overlay is now sufficient for field-harness readability; do not add more backend or diagnostic fences unless a real test exposes a need.
+4. Review whether observed Dragon Evolved `Punch` and/or `Headbutt` motion genuinely fits committed-strike or line-displacement gameplay semantics before authoring a source binding. Unsupported mappings remain unresolved.
+5. Arena pressure still needs either a legally usable reviewed motion compatible with the selected rig direction or an authored/derived motion under documented reference constraints.
+6. Select/review a real boss material/texture direction with provenance/license records and Minecraft readability in mind. Do not invent an arbitrary final palette and do not restore stripped Atlas art by default.
+7. Select/review VFX and sound assets or authored directions under the same evidence/provenance rule.
+8. Only when a coherent set of real production resources is selected should `presentation_assets` be authored so the logical profile can move from staged to authoritative published presentation.
+9. Do not add the boss to production Region 01 encounter composition until presentation, Minecraft scale/hit geometry and authoritative combat/damage policy have evidence-backed inputs.
+10. PLAYTESTED and MULTIPLAYER TESTED remain human-evidence labels only.
