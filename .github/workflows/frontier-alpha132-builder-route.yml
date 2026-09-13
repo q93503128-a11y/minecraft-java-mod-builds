@@ -56,9 +56,10 @@ jobs:
             exit 0
           fi
           git commit -m 'frontier: stabilize builder site approach alpha.132'
-          # compileJava may update ignored/tracked generated state. The source/doc patch is now safely
-          # committed, so discard runner-only build-tree drift before rebasing onto concurrent main work.
+          # Gradle/setup actions can leave runner-only tracked or untracked state after validation.
+          # The wanted project patch is committed already; quarantine all remaining workspace drift.
           git reset --hard HEAD
+          git stash push --include-untracked -m alpha132-runner-drift || true
           for attempt in 1 2 3 4 5; do
             git fetch origin main
             if ! git rebase origin/main; then
