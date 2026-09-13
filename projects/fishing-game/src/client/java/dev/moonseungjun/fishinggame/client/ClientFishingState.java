@@ -2,6 +2,9 @@ package dev.moonseungjun.fishinggame.client;
 
 import java.util.List;
 
+import dev.moonseungjun.fishinggame.fishing.FishCatalog;
+import dev.moonseungjun.fishinggame.fishing.FishSizeGrade;
+import dev.moonseungjun.fishinggame.fishing.FishSpecies;
 import dev.moonseungjun.fishinggame.network.FishingStatePayload;
 import dev.moonseungjun.fishinggame.network.ProfileSnapshotPayload;
 import dev.moonseungjun.fishinggame.profile.CatchEntry;
@@ -20,7 +23,7 @@ public final class ClientFishingState {
     private static String notice = "";
     private static long noticeUntilMs;
     private static boolean profileInitialized;
-    private static CatchEntry recentCatch;
+    private static RecentCatchPresentation recentCatch;
     private static long recentCatchUntilMs;
 
     private ClientFishingState() {
@@ -28,9 +31,23 @@ public final class ClientFishingState {
 
     public static void apply(ProfileSnapshotPayload payload) {
         List<CatchEntry> incoming = List.copyOf(payload.catches());
+        List<FishRecord> previousRecords = records;
+
         if (profileInitialized && stage == 2 && incoming.size() > catches.size() && !incoming.isEmpty()) {
-            recentCatch = incoming.getLast();
-            recentCatchUntilMs = System.currentTimeMillis() + 4200L;
+            CatchEntry entry = incoming.getLast();
+            FishSpecies species = FishCatalog.byId(entry.speciesId());
+            FishRecord previous = recordFor(previousRecords, entry.speciesId());
+            boolean firstDiscovery = previous == null;
+            boolean newWeightRecord = previous != null && entry.weightGrams() > previous.bestWeightGrams();
+            boolean newLengthRecord = previous != null && entry.lengthMm() > previous.bestLengthMm();
+            recentCatch = new RecentCatchPresentation(
+                    entry,
+                    FishSizeGrade.classify(species, entry.weightGrams(), entry.lengthMm()),
+                    firstDiscovery,
+                    newWeightRecord,
+                    newLengthRecord
+            );
+            recentCatchUntilMs = System.currentTimeMillis() + 5200L;
         }
 
         coins = payload.coins();
@@ -52,6 +69,13 @@ public final class ClientFishingState {
         }
     }
 
+    private static FishRecord recordFor(List<FishRecord> source, String speciesId) {
+        for (FishRecord record : source) {
+            if (record.speciesId().equals(speciesId)) return record;
+        }
+        return null;
+    }
+
     public static int coins() { return coins; }
     public static int rodTier() { return rodTier; }
     public static List<CatchEntry> catches() { return catches; }
@@ -62,5 +86,7 @@ public final class ClientFishingState {
     public static String speciesName() { return speciesName; }
     public static String locationName() { return locationName; }
     public static String notice() { return System.currentTimeMillis() <= noticeUntilMs ? notice : ""; }
-    public static CatchEntry recentCatch() { return System.currentTimeMillis() <= recentCatchUntilMs ? recentCatch : null; }
+    public static RecentCatchPresentation recentCatch() {
+        return System.currentTimeMillis() <= recentCatchUntilMs ? recentCatch : null;
+    }
 }

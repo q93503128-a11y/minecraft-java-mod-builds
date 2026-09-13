@@ -3,6 +3,7 @@ package dev.moonseungjun.fishinggame.client;
 import dev.moonseungjun.fishinggame.FishingGameMod;
 import dev.moonseungjun.fishinggame.fishing.FishCatalog;
 import dev.moonseungjun.fishinggame.fishing.FishRarity;
+import dev.moonseungjun.fishinggame.fishing.FishSizeGrade;
 import dev.moonseungjun.fishinggame.fishing.FishSpecies;
 import dev.moonseungjun.fishinggame.fishing.ReelMath;
 import dev.moonseungjun.fishinggame.profile.CatchEntry;
@@ -103,19 +104,47 @@ public final class FishingHud {
     }
 
     private static void renderRecentCatch(GuiGraphicsExtractor graphics, Minecraft minecraft, int width, int height) {
-        CatchEntry catchEntry = ClientFishingState.recentCatch();
-        if (catchEntry == null) return;
+        RecentCatchPresentation recent = ClientFishingState.recentCatch();
+        if (recent == null) return;
 
+        CatchEntry catchEntry = recent.catchEntry();
         FishSpecies species = FishCatalog.byId(catchEntry.speciesId());
-        int cardX = width / 2 - 50;
+        int cardX = width / 2 - 100;
         int cardY = height / 2 - 50;
         graphics.blit(RenderPipelines.GUI_TEXTURED, PANEL, cardX, cardY, 0, 0, 100, 100, 100, 100);
-        graphics.centeredText(minecraft.font, "어획 성공", width / 2, cardY + 10, 0xFFFFFFFF);
-        graphics.centeredText(minecraft.font, species.displayName(), width / 2, cardY + 27, rarityColor(species.rarity()));
-        graphics.centeredText(minecraft.font, species.rarity().displayName(), width / 2, cardY + 41, rarityColor(species.rarity()));
-        graphics.centeredText(minecraft.font, String.format("%.2f kg", catchEntry.weightKg()), width / 2, cardY + 57, 0xFFFFFFFF);
-        graphics.centeredText(minecraft.font, String.format("%.1f cm", catchEntry.lengthCm()), width / 2, cardY + 70, 0xFFDADADA);
-        graphics.centeredText(minecraft.font, catchEntry.value() + " C", width / 2, cardY + 84, 0xFFFFD86B);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, PANEL, cardX + 100, cardY, 0, 0, 100, 100, 100, 100);
+
+        String title = recent.firstDiscovery()
+                ? "새 어종 발견!"
+                : (recent.personalBest()
+                        ? "개인 최고기록!"
+                        : (recent.sizeGrade() == FishSizeGrade.MONSTER ? "괴물급 어획!" : "어획 성공"));
+        int titleColor = recent.firstDiscovery() || recent.personalBest() ? 0xFFFFD86B : 0xFFFFFFFF;
+
+        graphics.centeredText(minecraft.font, title, width / 2, cardY + 8, titleColor);
+        graphics.centeredText(minecraft.font, species.displayName(), width / 2, cardY + 24, rarityColor(species.rarity()));
+        graphics.centeredText(
+                minecraft.font,
+                species.rarity().displayName() + " · " + recent.sizeGrade().displayName(),
+                width / 2,
+                cardY + 38,
+                sizeGradeColor(recent.sizeGrade())
+        );
+        graphics.centeredText(
+                minecraft.font,
+                String.format("%.2f kg   ·   %.1f cm", catchEntry.weightKg(), catchEntry.lengthCm()),
+                width / 2,
+                cardY + 54,
+                0xFFFFFFFF
+        );
+        graphics.centeredText(minecraft.font, catchEntry.value() + " C", width / 2, cardY + 69, 0xFFFFD86B);
+
+        String highlight = recent.highlightText();
+        if (!highlight.isBlank()) {
+            graphics.centeredText(minecraft.font, highlight, width / 2, cardY + 84, 0xFFB8FFCF);
+        } else {
+            graphics.centeredText(minecraft.font, "J 도감에서 기록 확인", width / 2, cardY + 84, 0xFFC7CDD3);
+        }
     }
 
     private static String tensionHint(float tension, float safeMin, float safeMax) {
@@ -129,6 +158,15 @@ public final class FishingHud {
         if (tension > safeMax) return 0xFFFFB264;
         if (tension < safeMin) return 0xFFB9E5FF;
         return 0xFFB8FFCF;
+    }
+
+    private static int sizeGradeColor(FishSizeGrade grade) {
+        return switch (grade) {
+            case STANDARD -> 0xFFD7DCE1;
+            case LARGE -> 0xFF8EF3A0;
+            case TROPHY -> 0xFF86C5FF;
+            case MONSTER -> 0xFFFFCF66;
+        };
     }
 
     private static int rarityColor(FishRarity rarity) {

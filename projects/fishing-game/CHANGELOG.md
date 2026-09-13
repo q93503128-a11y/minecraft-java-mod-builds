@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.1.0-alpha.11
+
+- Added catch-size grades (`일반`, `대형`, `트로피`, `괴물급`) derived from each species' configured weight/length range.
+- Expanded the catch-result card inside the existing Kenney CC0 UI language so rarity, size grade, weight, length and sale value are readable together.
+- Added immediate first-discovery feedback for newly registered species.
+- Added immediate personal-best feedback when a catch beats prior weight and/or length records.
+- Kept all rewards and records authoritative on the server; the client derives presentation only from synchronized profile state.
+- Added deterministic size-grade tests and JAR inspection for the new presentation classes.
+
+## 0.1.0-alpha.10
+
+- Separated the temporary catch bag from permanent species records.
+- Added persistent per-species caught count, best weight and best length.
+- Added `J` bestiary screen with hidden names for undiscovered species and per-location collection progress.
+- Selling fish now clears only the bag while preserving collection history.
+- Added legacy-save migration behavior that seeds records from fish still present in an old catch bag.
+- Added profile tests covering records, personal bests, selling and migration.
+
 ## 0.1.0-alpha.9
 
 - Added two playable dedicated fishing locations so coast/deep-sea catalog content is no longer unreachable.
