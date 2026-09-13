@@ -35,3 +35,5 @@ This is not a profiler result. It removes one confirmed burst pattern and one ob
 3. If the resident cannot finish the local return within about 12 seconds, confirm it reappears on a safe workplace cell with the exact same carried stack, then deposits normally.
 4. With an exhausted/no-target production site, observe that large target reacquisition does not recur every five seconds in lockstep across workers.
 5. For deeper performance conclusions, collect a profiler capture from the same world.
+
+Canonical Alpha.131 validation trigger: 2026-09-13.
