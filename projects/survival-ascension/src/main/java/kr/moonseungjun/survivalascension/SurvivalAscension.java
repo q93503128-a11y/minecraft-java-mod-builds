@@ -18,6 +18,7 @@ import kr.moonseungjun.survivalascension.elite.WarbandDirector;
 import kr.moonseungjun.survivalascension.endgame.AscensionTrialSystem;
 import kr.moonseungjun.survivalascension.endgame.FinalAscensionBossSystem;
 import kr.moonseungjun.survivalascension.endgame.FinalAscensionSystem;
+import kr.moonseungjun.survivalascension.endgame.MythicEndgameRewardService;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionIncidentSystem;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionInterdictionService;
@@ -38,6 +39,7 @@ import kr.moonseungjun.survivalascension.production.OutpostService;
 import kr.moonseungjun.survivalascension.production.OutpostSiegeBreachService;
 import kr.moonseungjun.survivalascension.production.OutpostSiegeSystem;
 import kr.moonseungjun.survivalascension.production.PortableLogisticsBarrelService;
+import kr.moonseungjun.survivalascension.registry.AscensionItems;
 import kr.moonseungjun.survivalascension.woodcutting.WoodcuttingProgression;
 import kr.moonseungjun.survivalascension.world.WorldAscensionProgression;
 import net.neoforged.bus.api.IEventBus;
@@ -52,12 +54,15 @@ public final class SurvivalAscension {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
+        AscensionItems.register(modEventBus);
         modEventBus.addListener(SkillNetwork::onRegisterPayloads);
         NeoForge.EVENT_BUS.addListener(MiningProgression::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(MiningProgression::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(FieldRecoveryService::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(EncounterInterruptionData::onPlayerLoggedIn);
+        NeoForge.EVENT_BUS.addListener(MythicEndgameRewardService::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(PlayerLifecycleState::onClone);
+        NeoForge.EVENT_BUS.addListener(MythicEndgameRewardService::onRightClickItem);
         NeoForge.EVENT_BUS.addListener(MiningProgression::onBreakSpeed);
         NeoForge.EVENT_BUS.addListener(MiningProgression::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(BulkMiningService::onServerTick);
@@ -75,6 +80,7 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(FinalAscensionBossSystem::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(CombatProgression::onShieldBlock);
         NeoForge.EVENT_BUS.addListener(CombatProgression::onLivingDeath);
+        NeoForge.EVENT_BUS.addListener(MythicEndgameRewardService::onLivingDeath);
         // Recovery inspects encounter state before encounter death handlers tear runtime state down.
         NeoForge.EVENT_BUS.addListener(FieldRecoveryService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(FinalAscensionSystem::onLivingDeath);
@@ -132,6 +138,7 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(AscensionTrialSystem::onServerStopping);
         NeoForge.EVENT_BUS.addListener(OutpostSiegeSystem::onServerStopping);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onDamagePre);
+        NeoForge.EVENT_BUS.addListener(MythicEndgameRewardService::onDamagePost);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onDamagePost);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(EndgameMutationSystem::onFinalizeSpawn);
