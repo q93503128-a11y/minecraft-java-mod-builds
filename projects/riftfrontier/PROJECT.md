@@ -19,7 +19,3 @@
 - GameTest task: `runGameTestServer` / native 26.2 test-function registry + data-driven `test_instance`
 - Server smoke-test task: CI `Dedicated server smoke` → `runServer`, ready/content/authoritative-world marker 검증
 - Client smoke-test task: CI `Client smoke under virtual display` → Xvfb `runClient`, init/fatal-crash marker 검증
-
-## 프로젝트 정체성
-
-Riftfrontier는 단순한 RPG 콘텐츠 팩이나 차원 추가 모드가 아니다.
