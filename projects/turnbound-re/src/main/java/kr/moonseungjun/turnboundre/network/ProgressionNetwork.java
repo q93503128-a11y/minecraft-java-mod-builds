@@ -36,6 +36,7 @@ public final class ProgressionNetwork {
                 CharacterPresentationNetworkPayloads.CatalogS2C.TYPE,
                 CharacterPresentationNetworkPayloads.CatalogS2C.STREAM_CODEC,
                 (payload, context) -> ProgressionClientState.accept(payload));
+        EquipmentNetwork.register(registrar);
     }
 
     private static void handleRequest(ProgressionNetworkPayloads.RequestProgressC2S payload, IPayloadContext context) {
@@ -102,11 +103,22 @@ public final class ProgressionNetwork {
         replyState(context, player, "GROWTH_" + result.code().name(), result.detail());
     }
 
-    private static void replyState(
+    static void replyState(
             IPayloadContext context,
             ServerPlayer player,
             String resultCode,
             String resultDetail
+    ) {
+        replyState(context, player, resultCode, resultDetail, "", "");
+    }
+
+    static void replyState(
+            IPayloadContext context,
+            ServerPlayer player,
+            String resultCode,
+            String resultDetail,
+            String equipmentResultCode,
+            String equipmentResultDetail
     ) {
         MinecraftServer server = player.level().getServer();
         if (server == null) throw new IllegalStateException("server unavailable for progression snapshot");
@@ -118,5 +130,6 @@ public final class ProgressionNetwork {
                 definitions,
                 resultCode,
                 resultDetail));
+        EquipmentNetwork.replyState(context, player, equipmentResultCode, equipmentResultDetail);
     }
 }

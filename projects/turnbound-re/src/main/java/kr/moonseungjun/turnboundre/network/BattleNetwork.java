@@ -16,7 +16,7 @@ import java.util.List;
 
 /** Play-phase network registration. Battle, expedition and progression truth remain server-authoritative. */
 public final class BattleNetwork {
-    private static final String PROTOCOL_VERSION = "12";
+    private static final String PROTOCOL_VERSION = "13";
     private static final BattleNetworkGateway GATEWAY = new BattleNetworkGateway(TurnboundRe.BATTLES);
 
     private BattleNetwork() {}

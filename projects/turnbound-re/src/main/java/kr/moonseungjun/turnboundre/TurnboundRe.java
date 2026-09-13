@@ -13,6 +13,7 @@ import kr.moonseungjun.turnboundre.network.BattleNetwork;
 import kr.moonseungjun.turnboundre.network.BattleResultPresentationService;
 import kr.moonseungjun.turnboundre.progression.BattleRewardLifecycleHooks;
 import kr.moonseungjun.turnboundre.progression.BattleRewardSettlementService;
+import kr.moonseungjun.turnboundre.progression.EquipmentForgeService;
 import kr.moonseungjun.turnboundre.progression.PlayerProgressStore;
 import kr.moonseungjun.turnboundre.world.VanillaMobWorldPolicy;
 import kr.moonseungjun.turnboundre.world.WorldEncounterAnchorHooks;
@@ -31,6 +32,7 @@ public final class TurnboundRe {
     public static final BattleManager BATTLES = new BattleManager();
     public static final DefinitionRepository DEFINITIONS = new DefinitionRepository();
     public static final PlayerProgressStore PROGRESS = new PlayerProgressStore(DEFINITIONS);
+    public static final EquipmentForgeService EQUIPMENT_FORGE = new EquipmentForgeService(DEFINITIONS, PROGRESS);
     public static final AuthoredEncounterLauncher AUTHORED_ENCOUNTERS = new AuthoredEncounterLauncher(BATTLES, DEFINITIONS);
     public static final BattleRewardSettlementService REWARD_SETTLEMENT = new BattleRewardSettlementService(BATTLES, PROGRESS);
     public static final BattleResultPresentationService RESULT_PRESENTATION = new BattleResultPresentationService(BATTLES);

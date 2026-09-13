@@ -33,6 +33,20 @@ public final class PlayerProgressStore {
         });
     }
 
+    /**
+     * Replaces one immutable player root only when the currently persisted value is exactly the expected snapshot.
+     * Equipment inventory transactions use this as their persistence-side compare-and-set boundary.
+     */
+    public boolean replaceIfCurrent(MinecraftServer server, UUID playerId, PlayerProgress expected, PlayerProgress next) {
+        if (playerId == null || expected == null || next == null) throw new IllegalArgumentException("playerId/expected/next required");
+        Context context = context();
+        TurnboundProgressSavedData data = data(server);
+        PlayerProgress current = currentOrFresh(data, playerId, context);
+        if (!current.equals(expected)) return false;
+        data.put(playerId, next);
+        return true;
+    }
+
     public PlayerProgress grantCurrency(MinecraftServer server, UUID playerId, long coin, long essence) {
         Context context = context();
         TurnboundProgressSavedData data = data(server);
