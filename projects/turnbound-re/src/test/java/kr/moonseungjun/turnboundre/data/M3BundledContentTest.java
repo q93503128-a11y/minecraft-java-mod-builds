@@ -25,7 +25,8 @@ class M3BundledContentTest {
         assertEquals(2, registry.encounters().size());
         assertEquals(2, registry.rewards().size());
         assertEquals(1, registry.progressions().size());
-        assertEquals(5, parsed.resourceIds().size());
+        assertEquals(2, registry.regions().size());
+        assertEquals(6, parsed.resourceIds().size());
 
         assertTrue(registry.characters().keySet().containsAll(Set.of(
                 "turnbound_re:zombie", "turnbound_re:skeleton", "turnbound_re:spider", "turnbound_re:creeper",
@@ -51,6 +52,8 @@ class M3BundledContentTest {
         assertEquals(3, registry.encounters().get("turnbound_re:debug_overworld_patrol").enemies().size());
         assertEquals(4, registry.encounters().get("turnbound_re:debug_rift_elite").enemies().size());
         assertEquals(12, registry.progressions().get("turnbound_re:default_progression").partyCapacity());
+        assertTrue(registry.regions().containsKey("turnbound_re:hub_01"));
+        assertTrue(registry.regions().containsKey("turnbound_re:region_01"));
     }
 
     @Test
