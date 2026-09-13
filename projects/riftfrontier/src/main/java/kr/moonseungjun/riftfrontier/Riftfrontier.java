@@ -2,6 +2,7 @@ package kr.moonseungjun.riftfrontier;
 
 import com.mojang.logging.LogUtils;
 import kr.moonseungjun.riftfrontier.combat.MinecraftBossCombatAdapter;
+import kr.moonseungjun.riftfrontier.combat.PlayerWeaponProvisioningCommand;
 import kr.moonseungjun.riftfrontier.combat.PlayerWeaponServerRuntime;
 import kr.moonseungjun.riftfrontier.combat.RiftfrontierCombatDataComponents;
 import kr.moonseungjun.riftfrontier.content.ContentRuntime;
@@ -82,6 +83,7 @@ public final class Riftfrontier {
     private static void registerCommands(RegisterCommandsEvent event) {
         RuntimeDiagnosticsCommand.register(event);
         ExpeditionGameplayCommand.register(event);
+        PlayerWeaponProvisioningCommand.register(event);
     }
 
     private static void serverStarted(ServerStartedEvent event) {
