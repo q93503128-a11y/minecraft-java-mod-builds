@@ -1,0 +1,18 @@
+{
+  "kind": "boss_presentation_profile",
+  "id": "riftfrontier:presentation/boss/region_01_first_apex",
+  "boss_profile": "riftfrontier:boss/region_01_first_apex",
+  "variant": "default",
+  "model_key": "riftfrontier:model/boss/region_01_dragon_evolved",
+  "bindings": [
+    {"presentation_cue":"region_01_boss_committed_strike","delivery":"arc_melee","phase":"TELEGRAPH","animation_key":"riftfrontier:animation/boss/region_01_committed_strike/telegraph","vfx_key":"riftfrontier:vfx/boss/region_01_committed_strike/telegraph","sound_key":"riftfrontier:sound/boss/region_01_committed_strike/telegraph"},
+    {"presentation_cue":"region_01_boss_committed_strike","delivery":"arc_melee","phase":"ACTIVE","animation_key":"riftfrontier:animation/boss/region_01_committed_strike/active","vfx_key":"riftfrontier:vfx/boss/region_01_committed_strike/active","sound_key":"riftfrontier:sound/boss/region_01_committed_strike/active"},
+    {"presentation_cue":"region_01_boss_committed_strike","delivery":"arc_melee","phase":"RECOVERY","animation_key":"riftfrontier:animation/boss/region_01_committed_strike/recovery","vfx_key":"riftfrontier:vfx/boss/region_01_committed_strike/recovery","sound_key":"riftfrontier:sound/boss/region_01_committed_strike/recovery"},
+    {"presentation_cue":"region_01_boss_line_displacement","delivery":"line_charge","phase":"TELEGRAPH","animation_key":"riftfrontier:animation/boss/region_01_line_displacement/telegraph","vfx_key":"riftfrontier:vfx/boss/region_01_line_displacement/telegraph","sound_key":"riftfrontier:sound/boss/region_01_line_displacement/telegraph"},
+    {"presentation_cue":"region_01_boss_line_displacement","delivery":"line_charge","phase":"ACTIVE","animation_key":"riftfrontier:animation/boss/region_01_line_displacement/active","vfx_key":"riftfrontier:vfx/boss/region_01_line_displacement/active","sound_key":"riftfrontier:sound/boss/region_01_line_displacement/active"},
+    {"presentation_cue":"region_01_boss_line_displacement","delivery":"line_charge","phase":"RECOVERY","animation_key":"riftfrontier:animation/boss/region_01_line_displacement/recovery","vfx_key":"riftfrontier:vfx/boss/region_01_line_displacement/recovery","sound_key":"riftfrontier:sound/boss/region_01_line_displacement/recovery"},
+    {"presentation_cue":"region_01_boss_arena_pressure","delivery":"area_denial","phase":"TELEGRAPH","animation_key":"riftfrontier:animation/boss/region_01_arena_pressure/telegraph","vfx_key":"riftfrontier:vfx/boss/region_01_arena_pressure/telegraph","sound_key":"riftfrontier:sound/boss/region_01_arena_pressure/telegraph"},
+    {"presentation_cue":"region_01_boss_arena_pressure","delivery":"area_denial","phase":"ACTIVE","animation_key":"riftfrontier:animation/boss/region_01_arena_pressure/active","vfx_key":"riftfrontier:vfx/boss/region_01_arena_pressure/active","sound_key":"riftfrontier:sound/boss/region_01_arena_pressure/active"},
+    {"presentation_cue":"region_01_boss_arena_pressure","delivery":"area_denial","phase":"RECOVERY","animation_key":"riftfrontier:animation/boss/region_01_arena_pressure/recovery","vfx_key":"riftfrontier:vfx/boss/region_01_arena_pressure/recovery","sound_key":"riftfrontier:sound/boss/region_01_arena_pressure/recovery"}
+  ]
+}
