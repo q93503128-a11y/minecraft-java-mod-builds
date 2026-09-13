@@ -4,6 +4,13 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `15`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.61.23-alpha.1 — Mythic Population Control / 신화 개체 밀도 제어
+신화 III 출현은 날짜 자체에 비례하지 않았다. 기존 확률이 플레이어 평균 숙련과 월드 승천 단계에 따라 함께 상승했고, 신화 III는 영구 유지되기 때문에 진행도가 높은 세이브에서 개체와 알림이 누적되는 구조였다.
+
+신화 등급 추첨 확률을 크게 낮추고, 같은 차원에서 **256블록 이내 신화 III 1체**, 로드된 차원 전체 **최대 3체**까지만 새 신화를 허용한다. 제한에 걸린 신화 추첨은 승천 II로 내려가므로 일반 몹 스폰 자체를 취소하지 않는다. 출현 알림은 192→128블록으로 줄이되 방향 추적은 192블록 그대로 유지한다. 신화 런타임 갱신도 0.5초마다에서 1초마다로 줄여 다수 개체가 로드됐을 때의 서버 작업을 낮췄다.
+
+기존 월드에 이미 존재하는 신화 III는 삭제하거나 강제로 약화시키지 않는다. 그 개체들이 로드돼 있는 동안에는 새 신화가 지역/차원 제한에 막히므로 추가 누적이 멈춘다. 저장 데이터·보상·보스 능력치·3단계 전투·네트워크 프로토콜은 그대로다.
+
 ## 0.61.22-alpha.1 — Fishing Mastery Pacing / 낚시 숙련 속도 재조정
 낚시는 숙련도가 올라도 한 번의 성공적인 릴인에서 얻는 유효 행동 수가 1회인 반면, 기존 공용 숙련 곡선은 후반 요구 XP가 크게 오르고 낚시 보정은 오히려 6x에서 5x로 낮아졌다. 채굴·벌목·수확처럼 숙련 상승으로 면적/연쇄 행동 수가 늘어나는 기술과 같은 후반 보정 구조를 쓰던 것이 실제 플레이 감각과 맞지 않았다.
 

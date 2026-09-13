@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.61.23-alpha.1
+- Mythic III frequency is no longer allowed to scale into late-save alert spam: the conditional Mythic rank roll now caps at 1.2% and uses a much smaller mastery/world-stage slope.
+- New Mythic admission is capped to one active loaded Mythic within 256 blocks and three per loaded dimension. Overflow Mythic rolls become Ascended II rather than canceling normal hostile spawns.
+- Spawn alerts now reach 128 blocks while the directional Mythic tracker retains 192-block targeting.
+- Mythic runtime/bossbar maintenance cadence is reduced from 10 to 20 ticks; phase effects remain continuous. Existing Mythics are preserved and block further local accumulation.
+- No SavedData, reward, boss-stat, packet or protocol change. Protocol remains 15.
+
 ## 0.61.22-alpha.1
 - Rebalanced Fishing mastery around its real action rate instead of the generic late-game taper. Fishing XP normalization now rises continuously through Lv0/10/30/60/90/100 anchors of 8x/10x/16x/32x/50x/60x.
 - A normal one-fish catch now reaches Lv30 in roughly 50 successful catches, Lv60 around 180 and Lv100 around 480 before Angler Harbor or treasure variation, instead of roughly 3,400 catches to Lv100 under the previous 6x -> 5x taper.

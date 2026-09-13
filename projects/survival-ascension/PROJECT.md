@@ -1,11 +1,20 @@
 # Survival Ascension
 
-- Mod version: `0.61.22-alpha.1`
+- Mod version: `0.61.23-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `15`
-- Existing-world compatibility: 0.61.22 changes only Fishing mastery XP pacing and does not add a SavedData ID/codec field or bump the network protocol. Existing skill XP, deterministic fishing meters, infrastructure/logistics/outpost/production data and equipment CustomData remain compatible. Bulk Mining queues and queued-tool profiles are runtime-only. Network protocol remains 15.
+- Existing-world compatibility: 0.61.23 changes only Mythic spawn admission/chance, alert radius and runtime cadence; it adds no SavedData ID/codec field and does not bump the network protocol. Existing Mythic entities, skill XP, fishing meters, infrastructure/logistics/outpost/production data and equipment CustomData remain compatible. Network protocol remains 15.
+
+## 0.61.23 Mythic Population Control / 신화 개체 밀도 제어
+- Mythic III spawn pressure is not tied directly to Minecraft day count; the previous probability rose with nearby players' average mastery and World Ascension stage, which made late saves look as if each passing day increased Mythic frequency.
+- Mythic rank probability is reduced from the old `min(8%, 0.4% + power*0.035% + stage*1.2%)` conditional roll to `min(1.2%, 0.08% + power*0.005% + stage*0.12%)`. Elite admission itself is unchanged.
+- At most one loaded Mythic may be admitted within 256 blocks, and at most three loaded Mythics may be active in one dimension. A Mythic roll that hits either cap is downgraded to Ascended II instead of creating another persistent boss.
+- Spawn alerts are reduced from 192 to 128 blocks while the directional tracker keeps its existing 192-block acquisition range. This cuts chat spam without making an already-nearby Mythic harder to track.
+- Mythic runtime/bossbar maintenance moves from every 10 ticks to every 20 ticks. Phase effects still last 30 ticks, so combat behavior remains continuous while idle server work is roughly halved.
+- Existing Mythic entities are not deleted or silently demoted. The caps prevent new accumulation around them; old loaded Mythics remain valid fights/rewards until killed or unloaded.
+- No SavedData, packet, reward, boss stats, phase rules or network protocol changes.
 
 ## 0.61.22 Fishing Mastery Pacing / 낚시 숙련 속도 재조정
 - Fishing remains one validated action per successful reel-in, so it no longer shares the generic early-to-late XP taper used by skills that gain area/chain action counts.

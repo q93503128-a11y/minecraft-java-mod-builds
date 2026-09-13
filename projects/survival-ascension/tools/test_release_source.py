@@ -8,8 +8,8 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 errors: list[str] = []
-CURRENT_VERSION = "0.61.22-alpha.1"
-PREVIOUS_DOC_VERSION = "0.61.22-alpha.1"
+CURRENT_VERSION = "0.61.23-alpha.1"
+PREVIOUS_DOC_VERSION = "0.61.23-alpha.1"
 
 
 def read(rel: str) -> str:

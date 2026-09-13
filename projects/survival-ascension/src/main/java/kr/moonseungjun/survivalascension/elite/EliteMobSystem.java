@@ -62,9 +62,13 @@ public final class EliteMobSystem {
     private static final String TRAIT_KEY = "survivalascension_elite_trait";
     private static final String REACTION_READY_KEY = "survivalascension_elite_reaction_ready";
     private static final String MYTHIC_PHASE_KEY = "survivalascension_mythic_phase";
-    private static final double MYTHIC_ALERT_RADIUS = 192.0D;
+    private static final double MYTHIC_ALERT_RADIUS = 128.0D;
+    private static final double MYTHIC_TRACKER_RADIUS = 192.0D;
     private static final double MYTHIC_BOSSBAR_RADIUS = 128.0D;
     private static final double MYTHIC_REWARD_RADIUS = 48.0D;
+    private static final double MYTHIC_LOCAL_CAP_RADIUS = 256.0D;
+    private static final int MYTHIC_DIMENSION_CAP = 3;
+    private static final int MYTHIC_RUNTIME_INTERVAL_TICKS = 20;
 
     private static final Identifier HEALTH_ID = id("elite_health");
     private static final Identifier ARMOR_ID = id("elite_armor");
@@ -100,6 +104,7 @@ public final class EliteMobSystem {
         if (random.nextDouble() >= eliteChance) return;
 
         Rank rank = chooseRank(random, power, worldStage);
+        if (rank == Rank.MYTHIC_III && !canAdmitMythic(level, mob)) rank = Rank.ASCENDED_II;
         Trait trait = Trait.values()[random.nextInt(Trait.values().length)];
         applyElite(mob, rank, trait, nearby.size());
 
@@ -123,7 +128,7 @@ public final class EliteMobSystem {
     }
 
     public static void onServerTick(ServerTickEvent.Pre event) {
-        if (++mythicTicker < 10) return;
+        if (++mythicTicker < MYTHIC_RUNTIME_INTERVAL_TICKS) return;
         mythicTicker = 0;
         List<UUID> remove = new ArrayList<>();
         for (Map.Entry<UUID, MythicRuntime> entry : new ArrayList<>(MYTHICS.entrySet())) {
@@ -368,11 +373,26 @@ public final class EliteMobSystem {
 
     private static Rank chooseRank(RandomSource random, double power, int worldStage) {
         double roll = random.nextDouble();
-        double mythicChance = Math.min(0.08D, 0.004D + power * 0.00035D + worldStage * 0.012D);
+        double mythicChance = Math.min(0.012D, 0.0008D + power * 0.00005D + worldStage * 0.0012D);
         double ascendedChance = Math.min(0.52D, 0.11D + power * 0.0032D + worldStage * 0.05D);
         if (roll < mythicChance) return Rank.MYTHIC_III;
         if (roll < mythicChance + ascendedChance) return Rank.ASCENDED_II;
         return Rank.ELITE_I;
+    }
+
+    private static boolean canAdmitMythic(ServerLevel level, Mob candidate) {
+        int activeInDimension = 0;
+        double localRadiusSqr = MYTHIC_LOCAL_CAP_RADIUS * MYTHIC_LOCAL_CAP_RADIUS;
+        for (Map.Entry<UUID, MythicRuntime> entry : MYTHICS.entrySet()) {
+            MythicRuntime runtime = entry.getValue();
+            if (runtime.level != level) continue;
+            Entity entity = level.getEntity(entry.getKey());
+            if (!(entity instanceof Mob active) || !active.isAlive() || rank(active) != Rank.MYTHIC_III) continue;
+            activeInDimension++;
+            if (candidate.distanceToSqr(active) <= localRadiusSqr) return false;
+            if (activeInDimension >= MYTHIC_DIMENSION_CAP) return false;
+        }
+        return true;
     }
 
     private static void applyElite(Mob mob, Rank rank, Trait trait, int nearbyPlayers) {
@@ -480,7 +500,7 @@ public final class EliteMobSystem {
             SkillNetwork.sendMythicTarget(player, MythicTargetPayload.clear());
             return;
         }
-        double maxDistanceSqr = MYTHIC_ALERT_RADIUS * MYTHIC_ALERT_RADIUS;
+        double maxDistanceSqr = MYTHIC_TRACKER_RADIUS * MYTHIC_TRACKER_RADIUS;
         Mob nearest = null;
         double nearestDistanceSqr = Double.MAX_VALUE;
         for (Map.Entry<UUID, MythicRuntime> entry : MYTHICS.entrySet()) {

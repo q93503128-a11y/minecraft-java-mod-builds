@@ -17,10 +17,10 @@ def require(condition, message):
 props = text(ROOT / "gradle.properties")
 require("minecraft_version=26.2" in props, "Minecraft version drift")
 require("neo_version=26.2.0.38-beta" in props, "NeoForge version drift")
-require("mod_version=0.61.22-alpha.1" in props, "Survival Ascension version drift")
+require("mod_version=0.61.23-alpha.1" in props, "Survival Ascension version drift")
 
 main = text(JAVA / "SurvivalAscension.java")
-require('VERSION = "0.61.22-alpha.1"' in main, "source version drift")
+require('VERSION = "0.61.23-alpha.1"' in main, "source version drift")
 for event in (
     "MiningProgression::onBlockBreak",
     "BulkMiningService::onServerTick",
@@ -219,6 +219,21 @@ require("FieldDepotService.hasMaterial" in irrigation and "FieldDepotService.con
         "irrigation replant no longer consumes physical seed material")
 require("EventHooks.onBlockPlace" in construction and "FieldDepotService.consumeOne" in construction,
         "construction placement/material transaction guard missing")
+
+elite_system = text(JAVA / "elite/EliteMobSystem.java")
+for invariant in (
+    "MYTHIC_ALERT_RADIUS = 128.0D",
+    "MYTHIC_TRACKER_RADIUS = 192.0D",
+    "MYTHIC_LOCAL_CAP_RADIUS = 256.0D",
+    "MYTHIC_DIMENSION_CAP = 3",
+    "MYTHIC_RUNTIME_INTERVAL_TICKS = 20",
+    "rank == Rank.MYTHIC_III && !canAdmitMythic(level, mob)",
+    "Math.min(0.012D, 0.0008D + power * 0.00005D + worldStage * 0.0012D)",
+    "candidate.distanceToSqr(active) <= localRadiusSqr",
+):
+    require(invariant in elite_system, f"Mythic population-control invariant missing: {invariant}")
+require("double maxDistanceSqr = MYTHIC_TRACKER_RADIUS * MYTHIC_TRACKER_RADIUS;" in elite_system,
+        "Mythic tracker range must stay independent from reduced spawn-alert range")
 
 warband = text(JAVA / "elite/WarbandDirector.java")
 require("BEHAVIOR_INTERVAL = 20" in warband, "warband broad scan cadence regressed")
