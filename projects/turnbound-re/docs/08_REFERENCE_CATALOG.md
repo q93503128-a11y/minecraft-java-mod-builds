@@ -104,7 +104,32 @@
 - 공식: https://www.minecraft.net/en-us/article/minecraft-snapshot-23w04a
 - 관찰: 장비 변경/강화를 별도 추상 통화가 아니라 실제 장비와 Minecraft 소재가 만나는 물리 workstation으로 표현한다.
 - 채택: TURNBOUND 장비 제작/강화도 Coin + 실제 Minecraft material을 서버에서 소비하는 물리적 Hub 흐름을 목표로 한다.
-- 현재 단계: 장비 data/save/battle backend만 고정했으며 inventory transaction과 production station access가 연결되기 전 player-facing 제작 경로는 열지 않는다.
+- 현재 단계: inventory transaction, server-authored Equipment UI, Smithing Table proximity gate까지 연결됨. production Hub forge 외형은 M6 World Asset Gate에서 감싼다.
+
+## R-017 Minecraft Legends — Well of Fate / Village landmarks
+- 공식: https://www.minecraft.net/en-us/article/the-overworld-minecraft-legends
+- 공식 campaign tips: https://www.minecraft.net/en-us/article/minecraft-legends-campaign-tips
+- 관찰: Well of Fate는 성장 기능이 모이는 강한 home landmark이고, 발견한 village의 fountain은 fast travel과 지역 상태를 공간적으로 표현한다.
+- 채택: HUB_01은 한 개의 명확한 기능 landmark를 중심으로 읽히게 하고, future fast travel도 발견 가능한 월드 landmark와 연결한다. Region resource는 main route에서 짧은 분기로 읽히게 한다.
+- 금지: Well of Fate geometry/color/asset 복제.
+- 사용 분류: reference only / proprietary.
+
+## R-018 Minecraft Dungeons — Camp / Blacksmith
+- 공식: https://www.minecraft.net/en-us/article/new-dungeons-dlc-and-more-september-8
+- 공식: https://www.minecraft.net/en-us/article/creeping-winter-here
+- 관찰: 월드에서 확보한 기능이 camp의 merchant/station으로 자리 잡고, Blacksmith가 gear upgrade의 물리적 귀환 지점이 된다.
+- 채택: TURNBOUND forge는 Character UI만의 버튼이 아니라 Hub의 실제 forge hall과 계속 결합한다. Hub station은 실제 귀환 동기가 있는 기능만 추가한다.
+- 금지: Camp 배치/상점/asset 복제.
+- 사용 분류: reference only / proprietary.
+
+## R-019 MineColonies — Medieval Oak / Medieval Spruce style family
+- gallery: https://minecolonies.com/schematics/
+- schematic repository: https://github.com/ldtteam/minecolonies-schematics
+- repository license: GPL-3.0 (2026-09-13 review; direct use 전 다시 확인)
+- 관찰: 건물 기능이 달라도 반복 material/roof/foundation language를 유지해 settlement 전체를 한 장소로 읽게 한다.
+- 채택: HUB_01은 stone/tuff foundation + spruce timber/roof family를 반복하고, REGION_01은 같은 family를 자연 재료 비중이 높은 형태로 낮춰 연결감을 유지한다.
+- 현재 실제 schematic/asset 복사: 없음. reference only.
+- 직접 사용 시 author/version/GPL 의무와 배포 조건을 다시 검토하고 `THIRD_PARTY_ASSETS.md` 기록이 필요하다.
 
 ## UI 구현 기술 reference
 - NeoForge Screens: https://docs.neoforged.net/docs/rendering/screens/
@@ -130,9 +155,19 @@
 - [x] Party Formation structural mockup.
 - [x] 상세 정본: `17_M5_UI_VISUAL_GATE.md`.
 
+### M6 World architecture — REFERENCE GATE PASS / SCREENSHOT GATE PENDING
+- [x] Hub home-landmark reference: Minecraft Legends.
+- [x] Hub physical progression-station reference: Minecraft Dungeons Camp.
+- [x] Minecraft settlement material-family reference: MineColonies styles.
+- [x] HUB_01 / REGION_01 palette and scale contract: `26_M6_WORLD_ASSET_GATE.md`.
+- [x] Production-facing authored prototype implementation.
+- [ ] actual Minecraft screenshot side-by-side audit.
+- [ ] movement/yield/readability/performance playtest.
+- [ ] final structure/worldgen placement lock.
+
 ### 별도 후속 visual gate
 - [ ] 실제 production sprite/icon asset 선정·검수.
 - [ ] 구현 후 Minecraft screenshot side-by-side audit.
-- [ ] World architecture/reference set — M6 전에 수행.
+- [x] World architecture/reference set — M6 reference stage.
 - [ ] Skill/VFX reference language — 해당 presentation 단계 전에 수행.
 - [ ] 캐릭터 고유 외형 reference — roster production pass 전에 수행.
