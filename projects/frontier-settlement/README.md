@@ -2,7 +2,11 @@
 
 Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
-## Current version: 0.1.0-alpha.131
+## Current version: 0.1.0-alpha.132
+
+## Alpha.132 construction-route commitment
+
+Real-play feedback showed construction residents visibly starting toward a building and then reversing. The shared build/grade step can advance while another resident is still walking, and the old approach chooser weighted the newest blueprint cell heavily enough to replace that resident's path with a different side of the site. Low-water reserve refills could also pre-empt an approach even though the site still had enough material for the next placement. Alpha.132 keeps one valid in-flight route until it finishes, uses the nearest stable ground perimeter entry rather than the newest block as the approach priority, stages the initial 64-item reserve once, and after work begins refills only when the next paid placement cannot proceed. Physical hauling, actual ItemStack costs, safe-ground site authority and multiplayer server authority are unchanged.
 
 ## Alpha.131 deep-work return recovery and performance smoothing
 

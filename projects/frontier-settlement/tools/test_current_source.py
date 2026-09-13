@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.131" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.132" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -81,6 +81,13 @@ require("Set<BlockPos> reservedHomes = new HashSet<>()" in construction
 require("builderStrandedOnArtificialElevation" in construction and "builderOnArtificialElevation" in construction
         and "nearestNaturalGroundBelow" in construction and "return artificialRise >= 3;" in construction,
         "disconnected elevated builder recovery missing")
+require("Preserve an in-flight site path" in construction
+        and "thenComparingLong(BlockPos::asLong)" in construction,
+        "construction workers can again thrash between changing blueprint-side approach targets")
+require("initialStaging = step <= 0" in construction and "SITE_RESERVE_LOW_WATER" not in construction,
+        "construction coordinator can again reverse mid-approach for proactive low-water refills")
+require("Do not replace a valid in-flight vanilla path every tick" in construction,
+        "grading workers can again replace an active path whenever another builder advances the grade step")
 context_service = text(SETTLEMENT / "SettlementContextService.java")
 require("constructionIssueSummary" in context_service and "부지 접근 불가" in context_service
         and "자재·현장 접근 불가" in context_service,

@@ -45,7 +45,6 @@ public final class SettlementConstructionService {
     private static final double SUPPLY_INTERACTION_RANGE_SQR = 9.0D;
     private static final int HAUL_BATCH_SIZE = 64;
     private static final long SITE_RESERVE_TARGET_PER_CATEGORY = 64L;
-    private static final long SITE_RESERVE_LOW_WATER = 8L;
     private static final int GRADE_INTERVAL_TICKS = 1;
     private static final double GRADE_WORK_RANGE_SQR = 110.25D;
     private static final int BUILD_INTERVAL_TICKS = 2;
@@ -392,6 +391,9 @@ public final class SettlementConstructionService {
     }
 
     private static boolean moveBuilderTowardGradeCell(ServerLevel level, FrontierWorkerEntity builder, BlockPos target) {
+        // Multiple builders can advance the shared grade step while another builder is still walking.
+        // Do not replace a valid in-flight vanilla path every tick just because the shared next cell moved.
+        if (!builder.getNavigation().isDone()) return true;
         for (BlockPos candidate : gradeApproachPositions(level, builder, target)) {
             double distance = builder.distanceToSqr(candidate.getX() + 0.5D, candidate.getY(), candidate.getZ() + 0.5D);
             if (distance <= 4.0D) {
@@ -602,18 +604,17 @@ public final class SettlementConstructionService {
         long nextWoodDelta = Math.max(0L, costAtStep(type.woodCost(), step + 1, totalSteps) - spentWood);
         long nextStoneDelta = Math.max(0L, costAtStep(type.stoneCost(), step + 1, totalSteps) - spentStone);
 
-        // Alpha.85 accidentally treated every item consumed from a full reserve as an immediate
-        // refill request. A 32 -> 31 transition therefore sent the same builder back to town for
-        // exactly one item before another blueprint step could run. Keep physical hauling, but use
-        // a low-water mark: initial staging is large, construction continues locally, and another
-        // town trip is requested only when the crate is actually running low (or cannot fund the
-        // very next transactional placement).
-        boolean needsWood = currentWood < nextWoodDelta
-                || (remainingWood > currentWood && currentWood <= SITE_RESERVE_LOW_WATER);
-        boolean needsStone = currentStone < nextStoneDelta
-                || (remainingStone > currentStone && currentStone <= SITE_RESERVE_LOW_WATER);
+        // Alpha.132 keeps the large physical reserve but removes mid-approach low-water turnarounds.
+        // Stage a useful reserve once at project start. After visible construction begins, a builder
+        // returns to town only when the *next* transactional placement cannot be funded. A refill still
+        // targets up to 64 items, so this does not regress to the old one-item shuttle loop.
         long targetWood = Math.min(SITE_RESERVE_TARGET_PER_CATEGORY, remainingWood);
         long targetStone = Math.min(SITE_RESERVE_TARGET_PER_CATEGORY, remainingStone);
+        boolean initialStaging = step <= 0;
+        boolean needsWood = currentWood < nextWoodDelta
+                || (initialStaging && currentWood < targetWood);
+        boolean needsStone = currentStone < nextStoneDelta
+                || (initialStaging && currentStone < targetStone);
         long missingWood = needsWood ? Math.max(0L, targetWood - currentWood) : 0L;
         long missingStone = needsStone ? Math.max(0L, targetStone - currentStone) : 0L;
 
@@ -1030,6 +1031,9 @@ public final class SettlementConstructionService {
             builder.getNavigation().stop();
             return true;
         }
+        // The shared build step can advance several times while this builder is still approaching.
+        // Preserve an in-flight site path instead of continuously retargeting another wall/corner.
+        if (!builder.getNavigation().isDone()) return false;
         for (BlockPos work : workPositionsFor(level, construction, type, placement, builder, supply)) {
             double workDistance = builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
             if (workDistance <= WORK_POSITION_REACHED_SQR) {
@@ -1099,13 +1103,13 @@ public final class SettlementConstructionService {
         }
 
         List<BlockPos> result = new ArrayList<>(unique);
-        result.sort(Comparator.comparingDouble(pos -> {
-            double tx = (double) pos.getX() - target.getX();
-            double tz = (double) pos.getZ() - target.getZ();
-            double targetHorizontal = tx * tx + tz * tz;
-            return targetHorizontal * 4.0D + builder.distanceToSqr(
-                    pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D);
-        }));
+        // Every candidate below belongs to the same complete perimeter set. Prefer the physically
+        // nearest stable entry cell, not the latest blueprint block, so another builder advancing the
+        // shared step cannot make an approaching resident reverse direction across the site.
+        result.sort(Comparator
+                .comparingDouble((BlockPos pos) -> builder.distanceToSqr(
+                        pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D))
+                .thenComparingLong(BlockPos::asLong));
         return List.copyOf(result);
     }
 
