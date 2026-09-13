@@ -1,0 +1,31 @@
+{
+  "equipment": [
+    {
+      "id": "turnbound_re:iron_bulwark",
+      "ingredientItem": "minecraft:iron_ingot",
+      "tiers": [
+        {"level": 1, "coinCost": 60, "materialCount": 6, "bonus": {"defPercent": 4, "poisePercent": 4}},
+        {"level": 2, "coinCost": 100, "materialCount": 10, "bonus": {"defPercent": 6, "poisePercent": 6}},
+        {"level": 3, "coinCost": 160, "materialCount": 16, "bonus": {"defPercent": 8, "poisePercent": 8}}
+      ]
+    },
+    {
+      "id": "turnbound_re:copper_edge",
+      "ingredientItem": "minecraft:copper_ingot",
+      "tiers": [
+        {"level": 1, "coinCost": 60, "materialCount": 6, "bonus": {"atkPercent": 4}},
+        {"level": 2, "coinCost": 100, "materialCount": 10, "bonus": {"atkPercent": 6}},
+        {"level": 3, "coinCost": 160, "materialCount": 16, "bonus": {"atkPercent": 8}}
+      ]
+    },
+    {
+      "id": "turnbound_re:golden_heart",
+      "ingredientItem": "minecraft:gold_ingot",
+      "tiers": [
+        {"level": 1, "coinCost": 80, "materialCount": 4, "bonus": {"hpPercent": 5}},
+        {"level": 2, "coinCost": 130, "materialCount": 6, "bonus": {"hpPercent": 7}},
+        {"level": 3, "coinCost": 200, "materialCount": 10, "bonus": {"hpPercent": 10}}
+      ]
+    }
+  ]
+}

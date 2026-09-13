@@ -13,6 +13,7 @@ public record DefinitionBundle(
         List<EncounterDefinition> encounters,
         List<RewardTableDefinition> rewards,
         List<ProgressionDefinition> progressions,
+        List<EquipmentDefinition> equipment,
         List<RegionDefinition> regions
 ) {
     public static final Codec<DefinitionBundle> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -22,10 +23,11 @@ public record DefinitionBundle(
             EncounterDefinition.CODEC.listOf().optionalFieldOf("encounters", List.of()).forGetter(DefinitionBundle::encounters),
             RewardTableDefinition.CODEC.listOf().optionalFieldOf("rewards", List.of()).forGetter(DefinitionBundle::rewards),
             ProgressionDefinition.CODEC.listOf().optionalFieldOf("progressions", List.of()).forGetter(DefinitionBundle::progressions),
+            EquipmentDefinition.CODEC.listOf().optionalFieldOf("equipment", List.of()).forGetter(DefinitionBundle::equipment),
             RegionDefinition.CODEC.listOf().optionalFieldOf("regions", List.of()).forGetter(DefinitionBundle::regions)
     ).apply(instance, DefinitionBundle::new));
 
-    /** Compatibility constructor for M0-M5 callers created before region definitions existed. */
+    /** Compatibility constructor for M0-M5 callers created before region/equipment definitions existed. */
     public DefinitionBundle(
             List<ActionDefinition> actions,
             List<CharacterDefinition> characters,
@@ -34,7 +36,20 @@ public record DefinitionBundle(
             List<RewardTableDefinition> rewards,
             List<ProgressionDefinition> progressions
     ) {
-        this(actions, characters, statuses, encounters, rewards, progressions, List.of());
+        this(actions, characters, statuses, encounters, rewards, progressions, List.of(), List.of());
+    }
+
+    /** Compatibility constructor for callers authored after regions but before equipment definitions. */
+    public DefinitionBundle(
+            List<ActionDefinition> actions,
+            List<CharacterDefinition> characters,
+            List<StatusDefinition> statuses,
+            List<EncounterDefinition> encounters,
+            List<RewardTableDefinition> rewards,
+            List<ProgressionDefinition> progressions,
+            List<RegionDefinition> regions
+    ) {
+        this(actions, characters, statuses, encounters, rewards, progressions, List.of(), regions);
     }
 
     public DefinitionBundle {
@@ -44,6 +59,7 @@ public record DefinitionBundle(
         encounters = encounters == null ? List.of() : List.copyOf(encounters);
         rewards = rewards == null ? List.of() : List.copyOf(rewards);
         progressions = progressions == null ? List.of() : List.copyOf(progressions);
+        equipment = equipment == null ? List.of() : List.copyOf(equipment);
         regions = regions == null ? List.of() : List.copyOf(regions);
     }
 }

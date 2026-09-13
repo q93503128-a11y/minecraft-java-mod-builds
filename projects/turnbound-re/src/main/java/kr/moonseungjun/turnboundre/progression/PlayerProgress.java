@@ -19,9 +19,11 @@ public record PlayerProgress(
         Map<String, CharacterProgress> characters,
         List<String> party,
         int partyCapacity,
-        Set<String> completedEncounterLocators
+        Set<String> completedEncounterLocators,
+        Map<String, EquipmentProgress> equipment,
+        Map<String, String> equippedEquipment
 ) {
-    public static final int CURRENT_SCHEMA = 2;
+    public static final int CURRENT_SCHEMA = 3;
 
     private static final Codec<Set<String>> STRING_SET_CODEC = Codec.STRING.listOf().xmap(
             values -> Set.copyOf(values),
@@ -35,10 +37,12 @@ public record PlayerProgress(
             Codec.unboundedMap(Codec.STRING, CharacterProgress.CODEC).optionalFieldOf("characters", Map.of()).forGetter(PlayerProgress::characters),
             Codec.STRING.listOf().optionalFieldOf("party", List.of()).forGetter(PlayerProgress::party),
             Codec.INT.fieldOf("partyCapacity").forGetter(PlayerProgress::partyCapacity),
-            STRING_SET_CODEC.optionalFieldOf("completedEncounterLocators", Set.of()).forGetter(PlayerProgress::completedEncounterLocators)
+            STRING_SET_CODEC.optionalFieldOf("completedEncounterLocators", Set.of()).forGetter(PlayerProgress::completedEncounterLocators),
+            Codec.unboundedMap(Codec.STRING, EquipmentProgress.CODEC).optionalFieldOf("equipment", Map.of()).forGetter(PlayerProgress::equipment),
+            Codec.unboundedMap(Codec.STRING, Codec.STRING).optionalFieldOf("equippedEquipment", Map.of()).forGetter(PlayerProgress::equippedEquipment)
     ).apply(instance, PlayerProgress::new));
 
-    /** Source-compatible constructor for schema-1 callers; decoded schema-1 saves also default the new field to empty. */
+    /** Source-compatible constructor for schema-1 callers. */
     public PlayerProgress(
             int schemaVersion,
             long coin,
@@ -48,7 +52,22 @@ public record PlayerProgress(
             List<String> party,
             int partyCapacity
     ) {
-        this(schemaVersion, coin, essence, shards, characters, party, partyCapacity, Set.of());
+        this(schemaVersion, coin, essence, shards, characters, party, partyCapacity, Set.of(), Map.of(), Map.of());
+    }
+
+    /** Source-compatible constructor for schema-2 callers created before equipment existed. */
+    public PlayerProgress(
+            int schemaVersion,
+            long coin,
+            long essence,
+            Map<String, Integer> shards,
+            Map<String, CharacterProgress> characters,
+            List<String> party,
+            int partyCapacity,
+            Set<String> completedEncounterLocators
+    ) {
+        this(schemaVersion, coin, essence, shards, characters, party, partyCapacity,
+                completedEncounterLocators, Map.of(), Map.of());
     }
 
     public PlayerProgress {
@@ -61,6 +80,11 @@ public record PlayerProgress(
         characters = characters == null ? Map.of() : Map.copyOf(characters);
         party = party == null ? List.of() : List.copyOf(party);
         completedEncounterLocators = completedEncounterLocators == null ? Set.of() : Set.copyOf(completedEncounterLocators);
+        equipment = equipment == null ? Map.of() : Map.copyOf(equipment);
+        equippedEquipment = equippedEquipment == null ? Map.of() : Map.copyOf(equippedEquipment);
+        if (schemaVersion < 3 && (!equipment.isEmpty() || !equippedEquipment.isEmpty())) {
+            throw new IllegalArgumentException("equipment fields require schemaVersion >= 3");
+        }
         for (Map.Entry<String, Integer> entry : shards.entrySet()) {
             if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null || entry.getValue() < 0) {
                 throw new IllegalArgumentException("invalid shard balance");
@@ -80,6 +104,25 @@ public record PlayerProgress(
         for (String locator : completedEncounterLocators) {
             if (locator == null || locator.isBlank()) throw new IllegalArgumentException("completed encounter locator must not be blank");
         }
+        for (Map.Entry<String, EquipmentProgress> entry : equipment.entrySet()) {
+            if (entry.getValue() == null || !entry.getKey().equals(entry.getValue().equipmentId())) {
+                throw new IllegalArgumentException("equipment map key must equal equipmentId");
+            }
+        }
+        Set<String> equippedIds = new HashSet<>();
+        for (Map.Entry<String, String> entry : equippedEquipment.entrySet()) {
+            String characterId = entry.getKey();
+            String equipmentId = entry.getValue();
+            if (characterId == null || characterId.isBlank() || !characters.containsKey(characterId)) {
+                throw new IllegalArgumentException("equipped equipment references unowned character " + characterId);
+            }
+            if (equipmentId == null || equipmentId.isBlank() || !equipment.containsKey(equipmentId)) {
+                throw new IllegalArgumentException("equipped equipment references unowned equipment " + equipmentId);
+            }
+            if (!equippedIds.add(equipmentId)) {
+                throw new IllegalArgumentException("one equipment piece cannot be equipped by multiple characters: " + equipmentId);
+            }
+        }
     }
 
     public boolean hasCompletedEncounterLocator(String locator) {
@@ -93,12 +136,14 @@ public record PlayerProgress(
         Set<String> completed = new LinkedHashSet<>(completedEncounterLocators);
         completed.add(locator);
         return new PlayerProgress(
-                CURRENT_SCHEMA, coin, essence, shards, characters, party, partyCapacity, completed);
+                CURRENT_SCHEMA, coin, essence, shards, characters, party, partyCapacity,
+                completed, equipment, equippedEquipment);
     }
 
     public static PlayerProgress fresh(ProgressionDefinition tuning) {
         if (tuning == null) throw new IllegalArgumentException("tuning must not be null");
         return new PlayerProgress(
-                CURRENT_SCHEMA, 0L, 0L, Map.of(), Map.of(), List.of(), tuning.partyCapacity(), Set.of());
+                CURRENT_SCHEMA, 0L, 0L, Map.of(), Map.of(), List.of(), tuning.partyCapacity(),
+                Set.of(), Map.of(), Map.of());
     }
 }

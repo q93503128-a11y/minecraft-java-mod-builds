@@ -129,7 +129,9 @@ public final class RewardService {
                 state.characters(),
                 state.party(),
                 state.partyCapacity(),
-                state.completedEncounterLocators());
+                state.completedEncounterLocators(),
+                state.equipment(),
+                state.equippedEquipment());
     }
 
     private static int amount(SplittableRandom random, RewardTableDefinition.Roll roll) {

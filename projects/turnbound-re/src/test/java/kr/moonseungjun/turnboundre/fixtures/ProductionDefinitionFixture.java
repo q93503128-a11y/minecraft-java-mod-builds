@@ -17,6 +17,7 @@ public final class ProductionDefinitionFixture {
             "vertical_actions.json",
             "vertical_characters.json",
             "vertical_encounters.json",
+            "vertical_equipment.json",
             "world_regions.json"
     };
 

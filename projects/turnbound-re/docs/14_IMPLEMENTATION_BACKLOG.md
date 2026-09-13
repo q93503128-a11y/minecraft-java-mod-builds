@@ -101,7 +101,7 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 **중요:** screenshot/reference 비교 전 M5 production visual PASS를 선언하지 않는다. 사용자의 현재 방침에 따라 중간 실플레이 테스트를 요구하지 않고, 통합 테스트 가치가 있는 완성 구간에서 한 번에 검증한다.
 
 ## M6 — World & Life Loop
-상태: **IN PROGRESS — WORLD-FIRST ENCOUNTER LIFECYCLE AUTO VERIFIED / LIFE LOOP INTEGRATION NEXT**
+상태: **IN PROGRESS — WORLD ENTRY / RESOURCE CONTRACT / BATTLE PREP AUTO VERIFIED, EQUIPMENT BACKEND INTEGRATION ACTIVE**
 
 완료:
 - authored Encounter의 production 진입은 world anchor가 소유하는 server-authoritative 경로로 수렴.
@@ -109,17 +109,24 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 - Expedition Journal은 authored route/reference 정보만 표시하고 encounter id만으로 전투를 직접 여는 C2S 우회 경로 제거.
 - anchor/Encounter 양쪽 `repeatable` 계약.
 - 비반복 anchor 승리 시 reward + completion을 하나의 immutable save write로 정산.
-- `PlayerProgress` schema 2의 `completedEncounterLocators`.
-- schema 1 backward decode.
+- `PlayerProgress`의 completed Encounter locator 저장/구버전 decode.
 - 완료한 one-time anchor preview/confirm 차단.
 - 반복형 encounter는 기존 farming loop 유지.
-- 현재 대표 두 anchor는 의도대로 repeatable 유지.
-- 상세 정본: `19_M6_WORLD_ENCOUNTER_LIFECYCLE.md`.
+- `ResourceAnchor` MINING/FARMING/FISHING 기능 계약과 locator/dimension/range 검증.
+- resource anchor 자체가 loot를 지급하지 않고 실제 Minecraft 채집을 유지하도록 고정.
+- 실제 Minecraft 재료를 보조손에서 선택해 Encounter 준비물로 소비하는 battle preparation sink.
+- Iron/Golden Carrot/Cooked Fish 대표 준비 효과, confirm 재검증, 성공한 battle 등록 후 정확히 1개 소비.
+- preparation은 battle-local이며 PlayerProgress/적/SPD를 변경하지 않음.
+- 장기 sink는 캐릭터당 장비 1슬롯, 고정 bonus, random affix/rarity/durability 없음으로 최소화.
+- 장비 definition/save schema 3/구 schema 호환/forge-upgrade pure transaction/중복 장착 차단/전투 participant 적용 backend.
+- 장비 효과는 HP/ATK/DEF/POISE만 허용하고 SPD는 구조적으로 제외.
+- 상세 정본: `19_M6_WORLD_ENCOUNTER_LIFECYCLE.md`, `21_M6_RESOURCE_NODE_CONTRACT.md`, `22_M6_BATTLE_PREPARATION_MATERIAL_SINK.md`, `23_M6_MINIMAL_EQUIPMENT_CONTRACT.md`.
 
 남음:
-- authored hub/region prototype의 실제 월드 배치와 시각 gate.
-- resource node 기능 계약과 실제 채집 동선.
-- mining/farming/fishing/crafting 산출물을 장비/지원 아이템/전투 준비/성장 루프에 연결.
+- 장비 제작/강화의 실제 Minecraft inventory material 확인·소비와 progression 저장을 하나의 server transaction으로 연결.
+- 기존 selected-character UI에 장비 1슬롯/비교 수치/제작·강화 진입을 현재 visual language로 통합.
+- authored HUB_01 ↔ REGION_01 prototype의 실제 월드 배치와 시각 gate.
+- resource anchor가 가리키는 광산/농장/강의 실제 채집 동선.
 - fast travel/exploration/quest hooks.
 - production non-repeatable anchor를 실제 콘텐츠로 배치한 뒤 playtest.
 
@@ -146,14 +153,12 @@ eligible 전수 PLAYABLE 이상, 미분류 0.
 
 ## 지금 바로 할 일 — 2026-09-13 최신
 
-impact/meter synchronization은 자동 계약과 Build #212까지 닫혔다.
-
-현재 우선순위는 **M6 world-first loop를 실제 생활/성장 루프로 연결하는 것**이다.
+현재 우선순위는 **M6 생활 재료 sink를 실제 production interaction으로 닫는 것**이다.
 
 순서:
-1. 구 Expedition Journal encounter-id 직접 시작 우회를 제거하고 world anchor 단일 production entry를 고정한다.
-2. `RegionDefinition`/locator 철학을 유지한 resource node 기능 계약을 만든다. production 좌표/미술은 World Asset Gate가 소유한다.
-3. 채광/농사/낚시/제작을 각각 독립 미니게임/재화로 늘리지 않고 Minecraft material → 장비/지원 아이템/전투 준비/접근 해금으로 이어지는 공통 sink를 먼저 만든다.
+1. 장비 data/save/battle backend를 자동 계약으로 고정한다.
+2. 실제 Minecraft inventory에서 장비 제작/강화 material을 서버가 검증·소비하고 Coin/progress와 원자적으로 정산한다.
+3. Hub의 물리 제작 진입과 기존 Character Detail의 장비 1슬롯/비교 정보를 연결하되 새 독립 dashboard는 만들지 않는다.
 4. authored HUB_01 ↔ REGION_01의 실제 prototype 동선을 만든다.
 5. fast travel / exploration / quest는 이 루프에 필요한 최소 hook부터 연결한다.
 
@@ -161,6 +166,8 @@ impact/meter synchronization은 자동 계약과 Build #212까지 닫혔다.
 - 재료를 이유 없이 Coin/Essence로 환전해 모든 생활 활동을 같은 숫자로 평탄화.
 - 새 활동마다 별도 통화/메뉴를 추가.
 - 실제 월드 진입을 우회하는 encounter 선택 메뉴 부활.
+- material을 소비하지 않는 가짜 장비 제작 네트워크 경로.
+- 랜덤 옵션/희귀도/다중 슬롯을 필요 검증 없이 추가.
 - World Asset Gate 없이 production 건축/외형을 즉흥 확정.
 
 자동 코드 검증은 의미 있는 단위마다 수행하되, 사용자에게 중간 수동 테스트를 요구하지 않는다. 실제 screenshot/playtest 및 M2/M4 수동 gate는 통합 테스트 가치가 있는 완성 구간에서 함께 수행한다.

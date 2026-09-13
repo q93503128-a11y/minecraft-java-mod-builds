@@ -171,7 +171,9 @@ public final class ProgressionService {
                 characters,
                 party,
                 state.partyCapacity(),
-                state.completedEncounterLocators());
+                state.completedEncounterLocators(),
+                state.equipment(),
+                state.equippedEquipment());
     }
 
     private static Result accept(PlayerProgress state, String detail) {

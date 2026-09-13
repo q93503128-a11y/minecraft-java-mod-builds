@@ -5,6 +5,8 @@ import kr.moonseungjun.turnboundre.battle.AuthoredEncounterLauncher;
 import kr.moonseungjun.turnboundre.battle.EnemyTurnService;
 import kr.moonseungjun.turnboundre.data.DefinitionRegistry;
 import kr.moonseungjun.turnboundre.progression.CharacterProgress;
+import kr.moonseungjun.turnboundre.progression.EquipmentProgress;
+import kr.moonseungjun.turnboundre.progression.EquipmentRules;
 import kr.moonseungjun.turnboundre.progression.PlayerProgress;
 import kr.moonseungjun.turnboundre.world.BattlePreparationService;
 import kr.moonseungjun.turnboundre.world.WorldEncounterAnchorAccessPolicy;
@@ -14,7 +16,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /** Server-authoritative authored encounter launch path for validated in-world anchors. */
@@ -75,10 +79,19 @@ final class EncounterLaunchService {
         if (progress.party().isEmpty()) return Result.rejected("EMPTY_PARTY", "");
 
         List<CharacterProgress> party = new ArrayList<>(progress.party().size());
+        Map<String, EquipmentProgress> equipmentByCharacter = new LinkedHashMap<>();
         for (String characterId : progress.party()) {
             CharacterProgress character = progress.characters().get(characterId);
             if (character == null) return Result.rejected("INVALID_PARTY", characterId);
             party.add(character);
+
+            String equipmentId = progress.equippedEquipment().get(characterId);
+            if (equipmentId == null) continue;
+            EquipmentProgress equipment = progress.equipment().get(equipmentId);
+            if (equipment == null || !EquipmentRules.valid(definitions, equipment)) {
+                return Result.rejected("INVALID_EQUIPMENT", characterId);
+            }
+            equipmentByCharacter.put(characterId, equipment);
         }
 
         BattlePreparationService.Selection preparation = BattlePreparationService.preview(player);
@@ -99,7 +112,8 @@ final class EncounterLaunchService {
                 battleSeed,
                 resolved.anchor().locator(),
                 WorldEncounterAnchorAccessPolicy.repeatable(resolved),
-                preparation.bonus());
+                preparation.bonus(),
+                equipmentByCharacter);
 
         // Consume only after battle construction/registration succeeded. If the selected offhand changed
         // unexpectedly on the same server thread, tear the battle back down rather than granting a free bonus.

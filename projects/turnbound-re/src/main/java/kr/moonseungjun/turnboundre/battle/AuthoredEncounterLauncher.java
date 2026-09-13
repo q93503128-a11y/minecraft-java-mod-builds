@@ -7,6 +7,8 @@ import kr.moonseungjun.turnboundre.data.DefinitionRepository;
 import kr.moonseungjun.turnboundre.data.EncounterDefinition;
 import kr.moonseungjun.turnboundre.data.RewardTableDefinition;
 import kr.moonseungjun.turnboundre.progression.CharacterProgress;
+import kr.moonseungjun.turnboundre.progression.EquipmentProgress;
+import kr.moonseungjun.turnboundre.progression.EquipmentRules;
 import kr.moonseungjun.turnboundre.progression.ProgressionRules;
 
 import java.util.ArrayList;
@@ -73,7 +75,7 @@ public final class AuthoredEncounterLauncher {
 
         for (PlayerSlot slot : playerSlots) {
             addPlayer(registry, participants, characterIds, controllers, slot.participantId(), slot.progress(), ownerPlayerId,
-                    ordinal++, BattlePreparationBonus.NONE);
+                    ordinal++, BattlePreparationBonus.NONE, null);
             bindings.add(new EntityParticipantBinding(slot.participantId(), slot.entityId()));
         }
 
@@ -101,7 +103,7 @@ public final class AuthoredEncounterLauncher {
             long battleSeed
     ) {
         return openVirtualInternal(encounterId, ownerPlayerId, party, battleId, battleSeed,
-                "", false, BattlePreparationBonus.NONE);
+                "", false, BattlePreparationBonus.NONE, Map.of());
     }
 
     /** Captures the world-anchor source so victory settlement can atomically persist non-repeatable completion. */
@@ -115,13 +117,10 @@ public final class AuthoredEncounterLauncher {
             boolean worldAnchorRepeatable
     ) {
         return openVirtualFromAnchor(encounterId, ownerPlayerId, party, battleId, battleSeed,
-                worldAnchorLocator, worldAnchorRepeatable, BattlePreparationBonus.NONE);
+                worldAnchorLocator, worldAnchorRepeatable, BattlePreparationBonus.NONE, Map.of());
     }
 
-    /**
-     * World-anchor launch with one already server-validated, battle-local preparation.
-     * The bonus changes only the immutable battle participants and never persisted character growth.
-     */
+    /** World-anchor launch with one already server-validated, battle-local preparation. */
     public Launch openVirtualFromAnchor(
             String encounterId,
             UUID ownerPlayerId,
@@ -132,13 +131,34 @@ public final class AuthoredEncounterLauncher {
             boolean worldAnchorRepeatable,
             BattlePreparationBonus preparation
     ) {
+        return openVirtualFromAnchor(encounterId, ownerPlayerId, party, battleId, battleSeed,
+                worldAnchorLocator, worldAnchorRepeatable, preparation, Map.of());
+    }
+
+    /**
+     * Production launch with server-owned persistent equipment and one battle-local preparation.
+     * Equipment is keyed by character id and may contain at most one piece for each party member.
+     */
+    public Launch openVirtualFromAnchor(
+            String encounterId,
+            UUID ownerPlayerId,
+            List<CharacterProgress> party,
+            UUID battleId,
+            long battleSeed,
+            String worldAnchorLocator,
+            boolean worldAnchorRepeatable,
+            BattlePreparationBonus preparation,
+            Map<String, EquipmentProgress> equipmentByCharacter
+    ) {
         if (worldAnchorLocator == null || worldAnchorLocator.isBlank()) {
             throw new IllegalArgumentException("worldAnchorLocator must not be blank");
         }
-        if (preparation == null) throw new IllegalArgumentException("preparation required");
+        if (preparation == null || equipmentByCharacter == null) {
+            throw new IllegalArgumentException("preparation/equipmentByCharacter required");
+        }
         return openVirtualInternal(
                 encounterId, ownerPlayerId, party, battleId, battleSeed,
-                worldAnchorLocator, worldAnchorRepeatable, preparation);
+                worldAnchorLocator, worldAnchorRepeatable, preparation, Map.copyOf(equipmentByCharacter));
     }
 
     private Launch openVirtualInternal(
@@ -149,12 +169,15 @@ public final class AuthoredEncounterLauncher {
             long battleSeed,
             String worldAnchorLocator,
             boolean worldAnchorRepeatable,
-            BattlePreparationBonus preparation
+            BattlePreparationBonus preparation,
+            Map<String, EquipmentProgress> equipmentByCharacter
     ) {
         if (encounterId == null || encounterId.isBlank()) throw new IllegalArgumentException("encounterId must not be blank");
         if (ownerPlayerId == null || battleId == null) throw new IllegalArgumentException("ownerPlayerId/battleId required");
         if (party == null || party.isEmpty() || party.size() > 4) throw new IllegalArgumentException("party must contain 1..4 characters");
-        if (preparation == null) throw new IllegalArgumentException("preparation required");
+        if (preparation == null || equipmentByCharacter == null) {
+            throw new IllegalArgumentException("preparation/equipmentByCharacter required");
+        }
 
         DefinitionRepository.Snapshot snapshot = definitions.snapshot();
         DefinitionRegistry registry = snapshot.registry();
@@ -169,7 +192,8 @@ public final class AuthoredEncounterLauncher {
             CharacterProgress progress = party.get(index);
             if (progress == null) throw new IllegalArgumentException("party progress must not be null");
             addPlayer(registry, participants, characterIds, controllers,
-                    "party_" + index, progress, ownerPlayerId, ordinal++, preparation);
+                    "party_" + index, progress, ownerPlayerId, ordinal++, preparation,
+                    equipmentByCharacter.get(progress.characterId()));
         }
         for (int index = 0; index < encounter.enemies().size(); index++) {
             addEnemy(registry, participants, characterIds, encounter.enemies().get(index), "enemy_" + index, ordinal++);
@@ -216,14 +240,17 @@ public final class AuthoredEncounterLauncher {
             CharacterProgress progress,
             UUID ownerPlayerId,
             int ordinal,
-            BattlePreparationBonus preparation
+            BattlePreparationBonus preparation,
+            EquipmentProgress equipment
     ) {
         if (characterIds.putIfAbsent(participantId, progress.characterId()) != null) {
             throw new IllegalArgumentException("duplicate player participantId " + participantId);
         }
         CharacterDefinition definition = requireCharacter(registry, progress.characterId());
         ProgressionRules.requireMatches(definition, progress);
-        CharacterDefinition.Stats stats = preparation.apply(ProgressionRules.stats(definition, progress));
+        CharacterDefinition.Stats stats = ProgressionRules.stats(definition, progress);
+        if (equipment != null) stats = EquipmentRules.apply(registry, equipment, stats);
+        stats = preparation.apply(stats);
         participants.add(participant(participantId, BattleTeam.PLAYER, ordinal, stats));
         controllers.put(participantId, ownerPlayerId);
     }

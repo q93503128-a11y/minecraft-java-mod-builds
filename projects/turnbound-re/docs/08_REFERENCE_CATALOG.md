@@ -93,6 +93,19 @@
 - 관찰: 큰 데이터 화면에서 chapter/filter/graph/detail을 역할별 영역으로 분리한다.
 - 채택: 비전투 화면에서 roster/active party/detail을 한 화면에 역할별로 분리하는 원리.
 
+## R-015 Pokémon held item
+- 공식 가이드: https://diamondpearl.pokemon.com/en-gb/trainersguide/fundamentals/battling/
+- 관찰: 한 캐릭터가 한 개의 held item을 선택하고, 캐릭터 자체 성장과 별도로 전투 성격을 조정한다.
+- 채택: 첫 장비 Vertical Slice는 캐릭터당 장비 1슬롯만 사용해 선택을 읽기 쉽게 유지한다.
+- TURNBOUND: RE 변환: 장비는 고정된 작은 HP/ATK/DEF/POISE 보정만 주고 캐릭터 kit/originStar 정체성을 대체하지 않는다.
+- 금지: Pokémon 고유 아이템/수치/UI/아트를 복제하지 않는다.
+
+## R-016 Minecraft Smithing Table
+- 공식: https://www.minecraft.net/en-us/article/minecraft-snapshot-23w04a
+- 관찰: 장비 변경/강화를 별도 추상 통화가 아니라 실제 장비와 Minecraft 소재가 만나는 물리 workstation으로 표현한다.
+- 채택: TURNBOUND 장비 제작/강화도 Coin + 실제 Minecraft material을 서버에서 소비하는 물리적 Hub 흐름을 목표로 한다.
+- 현재 단계: 장비 data/save/battle backend만 고정했으며 inventory transaction과 production station access가 연결되기 전 player-facing 제작 경로는 열지 않는다.
+
 ## UI 구현 기술 reference
 - NeoForge Screens: https://docs.neoforged.net/docs/rendering/screens/
 - 채택: GUI-scale relative layout, `blitSprite`, `nine_slice`, scissor, tooltip/input.

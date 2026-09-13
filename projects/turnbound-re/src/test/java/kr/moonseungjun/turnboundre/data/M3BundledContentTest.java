@@ -25,12 +25,17 @@ class M3BundledContentTest {
         assertEquals(2, registry.encounters().size());
         assertEquals(2, registry.rewards().size());
         assertEquals(1, registry.progressions().size());
+        assertEquals(3, registry.equipment().size());
         assertEquals(2, registry.regions().size());
-        assertEquals(6, parsed.resourceIds().size());
+        assertEquals(7, parsed.resourceIds().size());
 
         assertTrue(registry.characters().keySet().containsAll(Set.of(
                 "turnbound_re:zombie", "turnbound_re:skeleton", "turnbound_re:spider", "turnbound_re:creeper",
                 "turnbound_re:blaze", "turnbound_re:witch", "turnbound_re:enderman", "turnbound_re:iron_golem")));
+        assertEquals(Set.of(
+                "turnbound_re:iron_bulwark",
+                "turnbound_re:copper_edge",
+                "turnbound_re:golden_heart"), registry.equipment().keySet());
 
         Set<String> roles = registry.characters().values().stream()
                 .flatMap(character -> character.roles().stream()).collect(Collectors.toSet());
