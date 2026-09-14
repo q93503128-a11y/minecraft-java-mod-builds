@@ -48,6 +48,8 @@ public final class Region01BossRenderer extends EntityRenderer<Region01BossEntit
         RiftfrontierClientResources.preparedBossGeometry().ifPresent(prepared ->
             Region01BossFieldReviewRenderPreview.submit(
                 prepared,
+                state.entityId(),
+                state.entityUuid(),
                 state.fieldReviewPreviewTimeSeconds(),
                 poseStack,
                 collector,
