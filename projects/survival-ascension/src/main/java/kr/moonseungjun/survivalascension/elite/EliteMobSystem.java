@@ -119,17 +119,16 @@ public final class EliteMobSystem {
     }
 
     public static void onEntityJoin(EntityJoinLevelEvent event) {
-        if (event.getEntity() instanceof Mob mob && event.getLevel() instanceof ServerLevel level && rank(mob) == Rank.MYTHIC_III) {
-            // Persisted Mythics and external field bosses still pass the same population admission.
-            if (!canAdmitMythic(level, mob)) {
-                retireOverflowMythic(mob);
-                return;
-            }
-            mob.setPersistenceRequired();
-            if (MythicFieldBossService.isExternalFieldBoss(mob)) mob.setGlowingTag(false);
-            else mob.setGlowingTag(true);
-            ensureMythicRuntime(mob);
+        if (!(event.getEntity() instanceof Mob mob) || !(event.getLevel() instanceof ServerLevel level)) return;
+        if (rank(mob) == Rank.MYTHIC_III && !canAdmitMythic(level, mob)) {
+            retireOverflowMythic(mob);
+            return;
         }
+        if (rank(mob) != Rank.MYTHIC_III) return;
+        mob.setPersistenceRequired();
+        if (MythicFieldBossService.isExternalFieldBoss(mob)) mob.setGlowingTag(false);
+        else mob.setGlowingTag(true);
+        ensureMythicRuntime(mob);
     }
 
     public static void onServerTick(ServerTickEvent.Pre event) {
