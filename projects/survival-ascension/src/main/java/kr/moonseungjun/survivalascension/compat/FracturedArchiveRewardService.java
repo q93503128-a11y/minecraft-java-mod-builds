@@ -109,8 +109,8 @@ public final class FracturedArchiveRewardService {
     }
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        FracturedArchivePendingData.Reward pending = FracturedArchivePendingData.get(player.getServer()).take(player.getUUID());
+        if (!(event.getEntity() instanceof ServerPlayer player) || !(player.level() instanceof ServerLevel level)) return;
+        FracturedArchivePendingData.Reward pending = FracturedArchivePendingData.get(level.getServer()).take(player.getUUID());
         if (pending.stones() <= 0 && pending.scraps() <= 0) return;
         grant(player, new Reward(pending.stones(), pending.scraps()), false, true, 0);
     }
