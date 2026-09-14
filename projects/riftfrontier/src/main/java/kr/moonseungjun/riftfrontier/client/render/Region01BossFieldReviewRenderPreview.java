@@ -1,6 +1,8 @@
 package kr.moonseungjun.riftfrontier.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import kr.moonseungjun.riftfrontier.client.BossPresentationClientState;
+import kr.moonseungjun.riftfrontier.combat.presentation.Region01BossReviewedFieldAnimationPreview;
 import kr.moonseungjun.riftfrontier.combat.presentation.mesh.Affine3x4;
 import kr.moonseungjun.riftfrontier.combat.presentation.mesh.AnimationClip;
 import kr.moonseungjun.riftfrontier.combat.presentation.mesh.JointPoseSampler;
@@ -14,15 +16,18 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 
 import java.util.Arrays;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Non-production visual fallback for the explicit Region 01 field-review actor.
  *
  * <p>The production renderer remains gated on exact semantic-animation coverage and a reviewed final material. Until
- * those gates are satisfied, this preview renders the already accepted Dragon Evolved geometry with the already
- * reviewed cyclic {@code Flying_Idle} source motion and Minecraft's own stone texture. It exists only so human field
- * review can see the accepted silhouette instead of testing an invisible entity. It is not an attack binding, final
- * material, palette, VFX language or server-authoritative animation clock.</p>
+ * those gates are satisfied, this preview renders the accepted Dragon Evolved geometry with Minecraft's own stone
+ * texture. The two attack roles that already have explicit motion-role and phase-window review consume their synced
+ * server semantic state and display those reviewed source windows; unresolved roles, including arena pressure, remain
+ * on the neutral reviewed {@code Flying_Idle} silhouette/deformation loop rather than receiving an invented mapping.
+ * This remains a field-review aid, not final material, palette, VFX language or server-authoritative animation clock.</p>
  *
  * <p>Once the production presentation publishes, {@link Region01BossClientRenderRuntime#submit} wins and this path is
  * not reached. A resource reload that invalidates the prepared geometry also makes this preview fail closed.</p>
@@ -37,11 +42,15 @@ public final class Region01BossFieldReviewRenderPreview {
 
     public static boolean submit(
         Region01BossGeometryPreparation.PreparedGeometry preparedGeometry,
+        int entityId,
+        UUID entityUuid,
         float previewTimeSeconds,
         PoseStack poseStack,
         SubmitNodeCollector collector,
         int packedLight
     ) {
+        Objects.requireNonNull(entityUuid, "entityUuid");
+        if (entityId < 0) throw new IllegalArgumentException("entityId must be >= 0");
         if (!Float.isFinite(previewTimeSeconds) || previewTimeSeconds < 0.0F) {
             throw new IllegalArgumentException("previewTimeSeconds must be finite and >= 0");
         }
@@ -53,9 +62,20 @@ public final class Region01BossFieldReviewRenderPreview {
             return false;
         }
 
-        AnimationClip clip = runtimeAsset.animations().requireClip(REVIEWED_IDLE_CLIP);
-        float duration = clip.durationSeconds();
-        float sampleTime = duration <= 0.0F ? 0.0F : previewTimeSeconds % duration;
+        AnimationClip clip;
+        float sampleTime;
+        var reviewedAttackSample = BossPresentationClientState.current(entityId, entityUuid)
+            .flatMap(state -> Region01BossReviewedFieldAnimationPreview.sample(state, runtimeAsset.animations()));
+        if (reviewedAttackSample.isPresent()) {
+            var sample = reviewedAttackSample.orElseThrow();
+            clip = sample.clip();
+            sampleTime = sample.sampleTimeSeconds();
+        } else {
+            clip = runtimeAsset.animations().requireClip(REVIEWED_IDLE_CLIP);
+            float duration = clip.durationSeconds();
+            sampleTime = duration <= 0.0F ? 0.0F : previewTimeSeconds % duration;
+        }
+
         Affine3x4[] skinMatrices = JointPoseSampler.sampleSkinMatrices(
             runtimeAsset.skinnedMesh().rig(), clip, sampleTime
         );
