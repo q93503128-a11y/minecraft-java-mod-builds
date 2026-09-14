@@ -1,6 +1,9 @@
 package kr.moonseungjun.riftfrontier.combat;
 
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -41,6 +44,40 @@ public final class Region01BossFieldImpulseResolver {
             target.push(horizontal.x(), 0.0D, horizontal.z());
             displaced++;
         }
+
+        emitPlatformReadabilityBurst(level, attacker, origin);
         return displaced;
+    }
+
+    /**
+     * Gives the field-only arena-pressure ACTIVE entry one Minecraft-native audiovisual punctuation.
+     *
+     * <p>This deliberately reuses vanilla explosion language instead of inventing Riftfrontier's final VFX/sound
+     * direction before reference review. It is emitted from the same server-authoritative ACTIVE-entry call as the
+     * radial impulse, so it cannot drift onto TELEGRAPH/RECOVERY or repeat every ACTIVE tick. No gameplay authority,
+     * damage, geometry or knockback is derived from the effect.</p>
+     */
+    private static void emitPlatformReadabilityBurst(ServerLevel level, LivingEntity attacker, Vec3 origin) {
+        level.playSound(
+            null,
+            origin.x,
+            origin.y,
+            origin.z,
+            SoundEvents.GENERIC_EXPLODE,
+            SoundSource.HOSTILE,
+            1.0F,
+            1.0F
+        );
+        level.sendParticles(
+            ParticleTypes.EXPLOSION,
+            origin.x,
+            origin.y,
+            origin.z,
+            1,
+            0.0D,
+            0.0D,
+            0.0D,
+            0.0D
+        );
     }
 }
