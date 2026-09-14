@@ -14,7 +14,7 @@ class Region01BossFieldTelegraphEmitterTest {
     @Test
     void localPressureBoundaryMatchesTheAuthoredThreatRadius() {
         var profile = Region01BossFieldImpactProfile.find(Region01BossFieldImpactProfile.ARENA_PRESSURE).orElseThrow();
-        List<Region01BossFieldTelegraphEmitter.LocalPoint> points = Region01BossFieldTelegraphEmitter.sampleBoundary(profile);
+        List<Region01BossFieldTelegraphGeometry.LocalPoint> points = Region01BossFieldTelegraphGeometry.sampleBoundary(profile);
 
         assertFalse(points.isEmpty());
         for (var point : points) {
@@ -25,7 +25,7 @@ class Region01BossFieldTelegraphEmitterTest {
     @Test
     void lineBoundaryStaysInsideTheExactLaneAndShowsItsForwardCap() {
         var profile = Region01BossFieldImpactProfile.find(Region01BossFieldImpactProfile.LINE_DISPLACEMENT).orElseThrow();
-        List<Region01BossFieldTelegraphEmitter.LocalPoint> points = Region01BossFieldTelegraphEmitter.sampleBoundary(profile);
+        List<Region01BossFieldTelegraphGeometry.LocalPoint> points = Region01BossFieldTelegraphGeometry.sampleBoundary(profile);
 
         assertFalse(points.isEmpty());
         assertTrue(points.stream().anyMatch(point -> Math.abs(point.forward() - profile.reach()) <= EPSILON));
@@ -38,7 +38,7 @@ class Region01BossFieldTelegraphEmitterTest {
     @Test
     void committedStrikeBoundaryNeverClaimsSpaceOutsideItsArcProfile() {
         var profile = Region01BossFieldImpactProfile.find(Region01BossFieldImpactProfile.COMMITTED_STRIKE).orElseThrow();
-        List<Region01BossFieldTelegraphEmitter.LocalPoint> points = Region01BossFieldTelegraphEmitter.sampleBoundary(profile);
+        List<Region01BossFieldTelegraphGeometry.LocalPoint> points = Region01BossFieldTelegraphGeometry.sampleBoundary(profile);
 
         assertFalse(points.isEmpty());
         for (var point : points) {
