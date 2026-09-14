@@ -43,6 +43,15 @@ public final class ShipFlightRuntime {
         this.input = ShipControlInput.ZERO;
     }
 
+    /**
+     * Accepts the collision-resolved transform from the authoritative Minecraft entity without
+     * dropping the active pilot input/lease. This is intentionally separate from relocate(),
+     * which is used for layer transitions and clears input.
+     */
+    public void reconcileMotion(ShipTransform resolvedTransform) {
+        this.transform = Objects.requireNonNull(resolvedTransform, "resolvedTransform");
+    }
+
     public Optional<UUID> requestControl(UUID playerId, long tick) {
         Objects.requireNonNull(playerId, "playerId");
         expireIfNeeded(tick);
