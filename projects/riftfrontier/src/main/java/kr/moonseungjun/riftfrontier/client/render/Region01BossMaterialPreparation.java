@@ -4,6 +4,8 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 
+import javax.imageio.ImageIO;
+import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -74,6 +76,9 @@ public final class Region01BossMaterialPreparation {
         }
         requireCurrent(preparedAnimation, reload);
 
+        validateDecodableTexture(review.textureResource(), textureBytes);
+        requireCurrent(preparedAnimation, reload);
+
         return new PreparedMaterial(
             preparedAnimation,
             reload,
@@ -91,6 +96,22 @@ public final class Region01BossMaterialPreparation {
             .orElseThrow(() -> new FileNotFoundException("reviewed Region 01 boss texture is missing: " + resourceId));
         try (InputStream input = resource.open()) {
             return input.readAllBytes();
+        }
+    }
+
+    static void validateDecodableTexture(Identifier resourceId, byte[] textureBytes) throws IOException {
+        if (textureBytes.length == 0) {
+            throw new MaterialDecodeException(resourceId, "texture is empty");
+        }
+        try (ByteArrayInputStream input = new ByteArrayInputStream(textureBytes)) {
+            var image = ImageIO.read(input);
+            if (image == null || image.getWidth() <= 0 || image.getHeight() <= 0) {
+                throw new MaterialDecodeException(resourceId, "texture bytes are not a decodable image");
+            }
+        } catch (MaterialDecodeException failure) {
+            throw failure;
+        } catch (IOException | RuntimeException failure) {
+            throw new MaterialDecodeException(resourceId, "texture decode failed", failure);
         }
     }
 
@@ -252,6 +273,24 @@ public final class Region01BossMaterialPreparation {
 
         public String actualSha256() {
             return actualSha256;
+        }
+    }
+
+    public static final class MaterialDecodeException extends IOException {
+        private final Identifier resourceId;
+
+        private MaterialDecodeException(Identifier resourceId, String detail) {
+            super("reviewed Region 01 boss texture cannot be decoded for " + resourceId + ": " + detail);
+            this.resourceId = resourceId;
+        }
+
+        private MaterialDecodeException(Identifier resourceId, String detail, Throwable cause) {
+            super("reviewed Region 01 boss texture cannot be decoded for " + resourceId + ": " + detail, cause);
+            this.resourceId = resourceId;
+        }
+
+        public Identifier resourceId() {
+            return resourceId;
         }
     }
 
