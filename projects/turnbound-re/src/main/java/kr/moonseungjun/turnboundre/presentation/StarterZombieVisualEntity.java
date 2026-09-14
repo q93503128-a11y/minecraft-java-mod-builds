@@ -3,16 +3,19 @@ package kr.moonseungjun.turnboundre.presentation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.HumanoidArm;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
 /**
  * Presentation-only humanoid used by character preview and the virtual battle stage.
- * It has no gameplay AI, inventory, drops, progression state, or server-owned combat authority.
+ * It has no registered goals, inventory, drops, progression state, or server-owned combat authority.
+ *
+ * It extends Monster only so the existing presentation Pose contract can drive Mob#aggressive without creating
+ * a second animation-control path. The entity is never spawned into normal gameplay by TURNBOUND: RE.
  */
-public final class StarterZombieVisualEntity extends LivingEntity {
-    public StarterZombieVisualEntity(EntityType<? extends LivingEntity> type, Level level) {
+public final class StarterZombieVisualEntity extends Monster {
+    public StarterZombieVisualEntity(EntityType<? extends Monster> type, Level level) {
         super(type, level);
     }
 

@@ -7,6 +7,7 @@ import kr.moonseungjun.turnboundre.client.BattleActionTimelineState;
  * It never decides damage, legality, targets, or turn order.
  */
 public final class BattleStageCharacterPresentation {
+    static final String ZOMBIE = "turnbound_re:zombie";
     static final String SKELETON = "turnbound_re:skeleton";
     static final String ENDERMAN = "turnbound_re:enderman";
     static final float DEFAULT_X_ANGLE = 0.0F;
@@ -35,6 +36,21 @@ public final class BattleStageCharacterPresentation {
             String participantId,
             BattleActionTimelineState.Cue cue
     ) {
+        if (ZOMBIE.equals(characterId)) {
+            boolean attacking = isActor(participantId, cue)
+                    && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.MELEE
+                    && targetsOtherParticipant(cue)
+                    && (cue.phase() == BattleActionTimelineState.Phase.WINDUP
+                    || cue.phase() == BattleActionTimelineState.Phase.IMPACT);
+            return new Pose(
+                    0,
+                    attacking ? -1 : 0,
+                    attacking ? -0.05F : DEFAULT_X_ANGLE,
+                    attacking ? 0.43F : DEFAULT_Y_ANGLE,
+                    true,
+                    attacking);
+        }
+
         if (SKELETON.equals(characterId)) {
             boolean aiming = isActor(participantId, cue)
                     && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.PROJECTILE
@@ -92,6 +108,14 @@ public final class BattleStageCharacterPresentation {
         return participantId != null
                 && cue != null
                 && participantId.equals(cue.actorId());
+    }
+
+    private static boolean targetsOtherParticipant(BattleActionTimelineState.Cue cue) {
+        if (cue == null || cue.targetIds().isEmpty()) return false;
+        for (String targetId : cue.targetIds()) {
+            if (targetId != null && !targetId.isBlank() && !targetId.equals(cue.actorId())) return true;
+        }
+        return false;
     }
 
     private static double clamp(double value) {
