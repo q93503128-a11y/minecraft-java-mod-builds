@@ -10,12 +10,18 @@ import kr.moonseungjun.turnboundre.presentation.TurnboundPresentationPose;
 public final class BattleStageCharacterPresentation {
     static final String ZOMBIE = "turnbound_re:zombie";
     static final String SKELETON = "turnbound_re:skeleton";
+    static final String CREEPER = "turnbound_re:creeper";
     static final String BLAZE = "turnbound_re:blaze";
     static final String WITCH = "turnbound_re:witch";
     static final String ENDERMAN = "turnbound_re:enderman";
     static final String IRON_GOLEM = "turnbound_re:iron_golem";
     static final float DEFAULT_X_ANGLE = 0.0F;
     static final float DEFAULT_Y_ANGLE = 0.35F;
+
+    static final String CREEPER_FUSE_BASH = "turnbound_re:creeper_fuse_bash";
+    static final String CREEPER_VOLATILE_CHARGE = "turnbound_re:creeper_volatile_charge";
+    static final String CREEPER_BLAST_WAVE = "turnbound_re:creeper_blast_wave";
+    static final String CREEPER_CATASTROPHE = "turnbound_re:creeper_catastrophe";
 
     private static final String BLAZE_EMBER_BOLT = "turnbound_re:blaze_ember_bolt";
     private static final String BLAZE_SEARING_VOLLEY = "turnbound_re:blaze_searing_volley";
@@ -100,6 +106,10 @@ public final class BattleStageCharacterPresentation {
                     aiming);
         }
 
+        if (CREEPER.equals(characterId)) {
+            return creeperPose(participantId, cue);
+        }
+
         if (BLAZE.equals(characterId)) {
             return blazePose(participantId, cue);
         }
@@ -120,6 +130,17 @@ public final class BattleStageCharacterPresentation {
         return Pose.DEFAULT;
     }
 
+    static boolean isCreeperVolatileChargeAction(String actionId) {
+        return CREEPER_VOLATILE_CHARGE.equals(actionId);
+    }
+
+    static boolean isCreeperVolatileChargeCue(BattleActionTimelineState.Cue cue) {
+        return cue != null
+                && CREEPER_VOLATILE_CHARGE.equals(cue.actionId())
+                && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.BLAST
+                && targetsOnlyActor(cue);
+    }
+
     static boolean isWitchSupportAction(String actionId) {
         return WITCH_RESTORATIVE_DRAUGHT.equals(actionId)
                 || WITCH_CAULDRON_OVERFLOW.equals(actionId);
@@ -138,6 +159,34 @@ public final class BattleStageCharacterPresentation {
         return IRON_GOLEM_IRON_FIST.equals(actionId)
                 || IRON_GOLEM_GROUND_SLAM.equals(actionId)
                 || IRON_GOLEM_VILLAGE_JUDGMENT.equals(actionId);
+    }
+
+    private static Pose creeperPose(String participantId, BattleActionTimelineState.Cue cue) {
+        if (!isActor(participantId, cue) || !isActiveBeat(cue)) return neutralControlledPose();
+
+        if (CREEPER_FUSE_BASH.equals(cue.actionId())
+                && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.MELEE
+                && targetsOtherParticipant(cue)) {
+            return new Pose(
+                    0, -1, -0.045F, 0.46F, true, true, TurnboundPresentationPose.OFFENSIVE);
+        }
+        if (isCreeperVolatileChargeCue(cue)) {
+            return new Pose(
+                    0, -1, 0.055F, DEFAULT_Y_ANGLE, true, false, TurnboundPresentationPose.CHARGE);
+        }
+        if (CREEPER_BLAST_WAVE.equals(cue.actionId())
+                && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.BLAST
+                && targetsOtherParticipant(cue)) {
+            return new Pose(
+                    0, -2, 0.085F, 0.41F, true, true, TurnboundPresentationPose.BLAST);
+        }
+        if (CREEPER_CATASTROPHE.equals(cue.actionId())
+                && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.BLAST
+                && targetsOtherParticipant(cue)) {
+            return new Pose(
+                    0, -3, 0.12F, 0.50F, true, true, TurnboundPresentationPose.CATASTROPHE);
+        }
+        return neutralControlledPose();
     }
 
     private static Pose blazePose(String participantId, BattleActionTimelineState.Cue cue) {

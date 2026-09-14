@@ -9,5 +9,8 @@ public enum TurnboundPresentationPose {
     OFFENSIVE,
     DEFENSIVE,
     SLAM,
-    EXECUTE
+    EXECUTE,
+    CHARGE,
+    BLAST,
+    CATASTROPHE
 }

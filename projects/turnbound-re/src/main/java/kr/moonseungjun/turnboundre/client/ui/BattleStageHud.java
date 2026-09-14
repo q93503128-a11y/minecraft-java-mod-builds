@@ -8,6 +8,7 @@ import kr.moonseungjun.turnboundre.client.BattleStageFeedbackState;
 import kr.moonseungjun.turnboundre.client.BattleTargetMarkerState;
 import kr.moonseungjun.turnboundre.client.ProgressionClientState;
 import kr.moonseungjun.turnboundre.network.BattleNetworkPayloads;
+import kr.moonseungjun.turnboundre.presentation.CreeperVisualEntity;
 import kr.moonseungjun.turnboundre.presentation.PresentationPoseAware;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -158,6 +159,9 @@ public final class BattleStageHud {
         if (participant.alive()) {
             LivingEntity visual = ENTITY_CACHE.resolve(minecraft, participant);
             if (visual != null) {
+                if (visual instanceof CreeperVisualEntity creeperVisual) {
+                    creeperVisual.setVolatileCharged(hasStatus(participant, "turnbound_re:volatile"));
+                }
                 BattleStageCharacterPresentation.Pose characterPose = BattleStageCharacterPresentation.pose(
                         participant.characterId(), participant.id(), actionCue);
                 applyCharacterPose(visual, characterPose);
@@ -268,7 +272,10 @@ public final class BattleStageHud {
             UUID battleId,
             BattleActionTimelineState.Cue cue
     ) {
-        BattleActionTimelineState.Phase trigger = BattleStageActionFx.soundTriggerPhase(cue.impactStyle());
+        boolean creeperCharge = BattleStageCharacterPresentation.isCreeperVolatileChargeCue(cue);
+        BattleActionTimelineState.Phase trigger = creeperCharge
+                ? BattleActionTimelineState.Phase.WINDUP
+                : BattleStageActionFx.soundTriggerPhase(cue.impactStyle());
         if (cue.phase().ordinal() < trigger.ordinal()) return;
 
         long revision = BattleActionTimelineState.timelineRevision(battleId);
@@ -280,6 +287,12 @@ public final class BattleStageHud {
         }
         if (key.equals(audioCueKey)) return;
 
+        if (creeperCharge) {
+            minecraft.getSoundManager().play(
+                    SimpleSoundInstance.forUI(SoundEvents.CREEPER_PRIMED, 0.96F, 0.78F));
+            audioCueKey = key;
+            return;
+        }
         if (BattleStageCharacterPresentation.isIronGolemGuardianAction(cue.actionId())) {
             minecraft.getSoundManager().play(
                     SimpleSoundInstance.forUI(SoundEvents.IRON_GOLEM_REPAIR, 0.92F, 0.65F));
@@ -403,6 +416,14 @@ public final class BattleStageHud {
         int y1 = y + height;
         InventoryScreen.renderEntityInInventoryFollowsAngle(
                 graphics, x0, y0, x1, y1, scale, 0.0F, xAngle, yAngle, entity);
+    }
+
+    private static boolean hasStatus(BattleNetworkPayloads.SnapshotParticipant participant, String statusId) {
+        if (participant == null || statusId == null || statusId.isBlank()) return false;
+        for (BattleNetworkPayloads.SnapshotStatus status : participant.statuses()) {
+            if (status != null && statusId.equals(status.id())) return true;
+        }
+        return false;
     }
 
     private static String compactIntent(BattleNetworkPayloads.SnapshotParticipant participant) {

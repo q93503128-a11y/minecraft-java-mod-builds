@@ -22,6 +22,8 @@ public final class TurnboundPresentationEntities {
             TurnboundRe.MOD_ID, "witch_visual");
     public static final Identifier IRON_GOLEM_ID = Identifier.fromNamespaceAndPath(
             TurnboundRe.MOD_ID, "iron_golem_visual");
+    public static final Identifier CREEPER_ID = Identifier.fromNamespaceAndPath(
+            TurnboundRe.MOD_ID, "creeper_visual");
 
     public static final DeferredHolder<EntityType<?>, EntityType<StarterZombieVisualEntity>> STARTER_ZOMBIE =
             DeferredHolder.create(Registries.ENTITY_TYPE, STARTER_ZOMBIE_ID);
@@ -31,6 +33,8 @@ public final class TurnboundPresentationEntities {
             DeferredHolder.create(Registries.ENTITY_TYPE, WITCH_ID);
     public static final DeferredHolder<EntityType<?>, EntityType<IronGolemVisualEntity>> IRON_GOLEM =
             DeferredHolder.create(Registries.ENTITY_TYPE, IRON_GOLEM_ID);
+    public static final DeferredHolder<EntityType<?>, EntityType<CreeperVisualEntity>> CREEPER =
+            DeferredHolder.create(Registries.ENTITY_TYPE, CREEPER_ID);
 
     private TurnboundPresentationEntities() {}
 
@@ -58,6 +62,10 @@ public final class TurnboundPresentationEntities {
                 .of(IronGolemVisualEntity::new, MobCategory.MISC)
                 .sized(1.45F, 2.75F)
                 .build(ResourceKey.create(Registries.ENTITY_TYPE, IRON_GOLEM_ID)));
+        event.register(Registries.ENTITY_TYPE, CREEPER_ID, () -> EntityType.Builder
+                .of(CreeperVisualEntity::new, MobCategory.MISC)
+                .sized(0.60F, 1.70F)
+                .build(ResourceKey.create(Registries.ENTITY_TYPE, CREEPER_ID)));
     }
 
     private static void registerAttributes(EntityAttributeCreationEvent event) {
@@ -65,5 +73,6 @@ public final class TurnboundPresentationEntities {
         event.put(BLAZE.get(), Monster.createMonsterAttributes().build());
         event.put(WITCH.get(), Monster.createMonsterAttributes().build());
         event.put(IRON_GOLEM.get(), Monster.createMonsterAttributes().build());
+        event.put(CREEPER.get(), Monster.createMonsterAttributes().build());
     }
 }
