@@ -37,6 +37,10 @@ public final class ProgressionClientState {
         }
     }
 
+    public static Optional<ProgressionNetworkPayloads.Snapshot> snapshot() {
+        return Optional.ofNullable(snapshot);
+    }
+
     /**
      * Returns the entity id used by client presentation. The server-authored catalog is preserved on the wire;
      * known TURNBOUND-only visual entities are substituted only after decode on this client cache.
