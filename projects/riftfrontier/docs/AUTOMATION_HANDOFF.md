@@ -4,7 +4,7 @@ Recovery aid only. Reconstruct canonical truth from current GitHub `main`, `/AGE
 
 ## Current stage
 
-`M3 — PLAYABLE TECHNICAL EXPEDITION LOOP + PLAYER COMBAT BUILD VERIFIED / REGION 01 LIVE FIELD-STATUS READABILITY BUILD VERIFIED / REGION 01 BOSS THREAT-SHAPE TELEGRAPH BUILD VERIFIED / HUMAN FIELD PLAY + FINAL BOSS MATERIAL + ARENA-PRESSURE MOTION ACCEPTANCE + PRODUCTION VFX/SOUND STILL OPEN`
+`M3 — PLAYABLE TECHNICAL EXPEDITION LOOP + PLAYER COMBAT BUILD VERIFIED / REGION 01 LIVE FIELD-STATUS + EXTRACTION-RELAY READABILITY BUILD VERIFIED / REGION 01 BOSS THREAT-SHAPE TELEGRAPH BUILD VERIFIED / HUMAN FIELD PLAY + FINAL BOSS MATERIAL + ARENA-PRESSURE MOTION ACCEPTANCE + PRODUCTION VFX/SOUND STILL OPEN`
 
 Priority remains a genuinely playable, polished Region 01 vertical slice. Do not grow speculative authority/lifecycle infrastructure or expand region count while visible gameplay/presentation remains incomplete.
 
@@ -17,7 +17,7 @@ Priority remains a genuinely playable, polished Region 01 vertical slice. Do not
 - Accepted sanitized boss resource: `riftfrontier:boss_presentation/region_01/dragon_evolved.sanitized.v1.gltf`, SHA-256 `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`.
 - Provenance/license registry remains `docs/THIRD_PARTY_ASSETS.md`. The source Dragon Evolved Atlas is provenance/reference only and is **not** approved final Region 01 art.
 - Production boss rendering must continue to fail closed until reviewed final material plus complete reviewed animation semantic coverage exist. Do not weaken exact-coverage/review gates or fabricate `presentation_assets`.
-- Diagnostic Minecraft particles/sounds, technical blocks, bossbar, stone-textured boss preview, actionbar and current hit cues are temporary readability/field-review aids, not final Riftfrontier UI/art/VFX language.
+- Diagnostic Minecraft particles/sounds, technical blocks, bossbar, stone-textured boss preview, actionbar, extraction-relay dressing/readiness markers and current hit cues are temporary readability/field-review aids, not final Riftfrontier UI/art/VFX language.
 - Do not auto-tune provisional damage, hit geometry, charge travel, radial impulse, particle density or key layout without human field evidence.
 
 ## Connected expedition loop
@@ -61,6 +61,44 @@ Verification vocabulary for `54f070f1937e861f4aabc896b8803fa81aa1aae1`:
 
 Human procedure: `docs/M2B_REGION01_LIVE_FIELD_STATUS_REVIEW.md`.
 
+### Latest extraction-relay world-space readability checkpoint
+
+Commit `eee2a34b28ecaddcb0597ac8f42ddda80a318700` improves the existing technical field relay without changing expedition authority or inventing final Riftfrontier art language.
+
+Implementation:
+
+- the relay remains the existing far-edge lodestone and still delegates extraction exclusively to `ExpeditionGameplayService.extract(...)` and the existing extraction gate;
+- the small technical approach floor now uses only Minecraft runtime blocks in a vanilla-reference hierarchy: smooth basalt -> calcite -> deepslate tiles, with chiseled deepslate directly under the relay;
+- `FieldRelayPresentationPolicy` derives readiness only from the existing authoritative recovered Region 01 salvage count; no SavedData field, client-owned state or new network payload exists;
+- at the existing `3/3` threshold two vanilla end-rod flank markers appear immediately after the successful third salvage interaction; below threshold they stay absent, and successful extraction clears them;
+- the dressing helper replaces only the technical floor material set it owns and does not blindly overwrite unrelated blocks;
+- rewards, pressure, encounter ownership, salvage recognition, save/network contracts and extraction eligibility remain unchanged.
+
+Reference basis is recorded in `docs/M2B_REGION01_EXTRACTION_RELAY_PRESENTATION_REVIEW.md`: Mojang's vanilla amethyst-geode smooth-basalt/calcite layering and Ancient City / Deep Dark deepslate contrast. No external redistributable asset was introduced.
+
+Verification: `Build Riftfrontier` workflow `34856309722` completed SUCCESS on `eee2a34b28ecaddcb0597ac8f42ddda80a318700`. Asset intake tests, `clean test build`, required GameTest, dedicated-server smoke, Xvfb client smoke, executable-JAR inspection, build report and artifact uploads all passed.
+
+Successful deliverable:
+
+- artifact: `riftfrontier-0.1.0-alpha.1-deliverables`
+- artifact id: `10353482114`
+- archive digest: `sha256:035d1116a9e9f718888b73868466ba49a3ff9cc9d3099ec61b429989bdfe9fc2`
+- executable JAR SHA-256: `3616ebbb045ecfbb8722e52727b9a85e5f0c2bf9bebe2939c17cfff845760371`
+
+Verification vocabulary for `eee2a34b28ecaddcb0597ac8f42ddda80a318700`:
+
+- `CODE REVIEWED`: YES
+- `TESTED`: YES
+- `BUILD VERIFIED`: YES
+- `JAR PRODUCED`: YES
+- `PLAYTESTED`: NO
+- `MULTIPLAYER TESTED`: NO
+- `HUMAN VISUAL ACCEPTANCE`: NO
+
+Human procedure: `docs/M2B_REGION01_EXTRACTION_RELAY_PRESENTATION_REVIEW.md`.
+
+Do not keep elaborating the technical relay or hub palette without new human field evidence. It is a temporary wayfinding/readiness aid, not a final Region 01 environment or portal design.
+
 ## Region 01 boss field harness
 
 Development-only commands:
@@ -99,9 +137,9 @@ The boss TELEGRAPH outline remains build verified. `Region01BossFieldTelegraphGe
 
 ## Exact next development boundary
 
-Do not spend the next run adding more backend/telegraph fences just because current automation is stable.
+Do not spend the next run adding more backend/telegraph fences or decorating the temporary hub/relay just because current automation is stable.
 
-1. If actual human field evidence is supplied, use it to accept/reject/calibrate the live field-status readability, boss threat outline and/or arena-pressure motion candidate. Do not invent observations.
+1. If actual human field evidence is supplied, use it to accept/reject/calibrate the live field-status readability, extraction-relay readability, boss threat outline and/or arena-pressure motion candidate. Do not invent observations.
 2. Otherwise prioritize independent production-visible Region 01 work: a legally usable, decodable, provenance-recorded final Dragon material/texture direction based on strong references, or other combat/environment presentation that does not bypass the material/animation gates.
 3. Once arena-pressure motion is human accepted and all nine logical animation keys have evidence, assemble complete production animation binding without weakening exact coverage.
 4. Select/author final VFX and sound under the same reference/provenance/readability rules. Presentation may emphasize authoritative windows but must never create a second hit clock.
