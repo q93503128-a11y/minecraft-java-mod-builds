@@ -14,6 +14,7 @@ import kr.moonseungjun.survivalascension.compat.TbosFractureShrineLocator;
 import kr.moonseungjun.survivalascension.construction.ConstructionProgression;
 import kr.moonseungjun.survivalascension.elite.EliteMobSystem;
 import kr.moonseungjun.survivalascension.elite.EndgameMutationSystem;
+import kr.moonseungjun.survivalascension.elite.MythicCombatPatternService;
 import kr.moonseungjun.survivalascension.elite.WarbandDirector;
 import kr.moonseungjun.survivalascension.endgame.AscensionTrialSystem;
 import kr.moonseungjun.survivalascension.endgame.FinalAscensionBossSystem;
@@ -81,6 +82,7 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(CombatProgression::onShieldBlock);
         NeoForge.EVENT_BUS.addListener(CombatProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(MythicEndgameRewardService::onLivingDeath);
+        NeoForge.EVENT_BUS.addListener(MythicCombatPatternService::onLivingDeath);
         // Recovery inspects encounter state before encounter death handlers tear runtime state down.
         NeoForge.EVENT_BUS.addListener(FieldRecoveryService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(FinalAscensionSystem::onLivingDeath);
@@ -129,16 +131,19 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onFinalizeSpawn);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onServerTick);
+        NeoForge.EVENT_BUS.addListener(MythicCombatPatternService::onServerTick);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onPlayerChangedDimension);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onServerStopping);
+        NeoForge.EVENT_BUS.addListener(MythicCombatPatternService::onServerStopping);
         NeoForge.EVENT_BUS.addListener(ExpeditionIncidentSystem::onServerStopping);
         NeoForge.EVENT_BUS.addListener(ApexHuntSystem::onServerStopping);
         NeoForge.EVENT_BUS.addListener(AscensionTrialSystem::onServerStopping);
         NeoForge.EVENT_BUS.addListener(OutpostSiegeSystem::onServerStopping);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onDamagePre);
         NeoForge.EVENT_BUS.addListener(MythicEndgameRewardService::onDamagePost);
+        NeoForge.EVENT_BUS.addListener(MythicCombatPatternService::onDamagePost);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onDamagePost);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(EndgameMutationSystem::onFinalizeSpawn);
