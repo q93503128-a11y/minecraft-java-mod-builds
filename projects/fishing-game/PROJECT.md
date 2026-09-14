@@ -5,7 +5,7 @@
 - Slug: fishing-game
 - Mod ID: fishinggame
 - Namespace: fishinggame
-- Mod version: 0.1.0-alpha.15
+- Mod version: 0.1.0-alpha.16
 - Minecraft: 26.2
 - Java: 25
 - Loader: Fabric
@@ -13,7 +13,7 @@
 - Fabric API: >=0.159.0+26.2
 - Gradle: 9.5.1
 - Build plugin: Fabric Loom 1.17.19
-- Final JAR: build/libs/fishing-game-0.1.0-alpha.15.jar
+- Final JAR: build/libs/fishing-game-0.1.0-alpha.16.jar
 - Required dependencies: Fabric API
 - Optional external mods: Essential, connection/hosting convenience only
 - Forbidden bundled dependencies: Essential
@@ -26,7 +26,7 @@
 
 Fishing Game is a standalone fishing progression game built on Minecraft, not a survival expansion.
 
-> charge cast -> see the fish approach -> hook -> reel -> catch -> bag/collection -> sell -> improve rod -> unlock a new fishing location -> catch rarer/larger fish -> complete records
+> charge cast -> choose water -> see the fish approach -> hook -> reel -> catch -> bag/collection -> sell -> improve rod -> unlock a new fishing location -> hunt specific rarer/larger fish -> complete records
 
 ## Non-survival rule
 
@@ -58,6 +58,20 @@ Travel is requested from the client but unlocked/validated by the server. Active
 - Future environment revisions must use a new revision marker rather than silently relying on the original build marker.
 - Third-party map candidates remain reference-only until redistribution rights are explicit; do not bundle unknown-license maps.
 
+### Fishing hotspot rule
+
+Alpha.16 makes authored geography affect fish hunting without turning the maps into hard-gated puzzle zones.
+
+- The server resolves a hotspot from the bobber's actual water coordinates when the cast first becomes valid.
+- Hotspots modify species selection weights only. Every species in the location remains possible from every valid water position.
+- Preferred species receive a moderate weight boost and other species receive a small relative reduction, enough to make targeted hunting worthwhile without making one pier mandatory.
+- Cheongram Lakeside: `서쪽 얕은 물`, `깊은 물골`, `바위 그늘`.
+- Gull Harbor: `방파제 안쪽`, `항로 중앙`, `외해 끝부두`.
+- Deepwater Channel: `유도등 수역`, `심해 골`, `고대 해구`.
+- The first valid water contact reports the resolved hotspot and a short hint to the player.
+- Undiscovered bestiary entries keep their species name hidden but show a recommended hotspot, giving the player a hunt direction without revealing the answer.
+- Hotspot resolution is server-authoritative and isolated per fishing session, so multiplayer players can fish different water at the same time without sharing selection state.
+
 ## Collection / bestiary rule
 
 The temporary catch bag and permanent collection records are separate systems.
@@ -73,7 +87,7 @@ The temporary catch bag and permanent collection records are separate systems.
 
 ### Collection reward loop
 
-Alpha.15 makes collection feed the same coin economy instead of adding another currency or menu.
+Collection feeds the same coin economy instead of adding another currency or menu.
 
 - The first catch of a species awards a one-time discovery bonus based on rarity: Common 12 C, Uncommon 20 C, Rare 35 C, Epic 65 C, Legendary 120 C.
 - Completing every species record in a location awards one one-time completion bonus: Cheongram Lakeside 180 C, Gull Harbor 300 C, Deepwater Channel 500 C.
@@ -94,7 +108,8 @@ Do not invent the visual language ad hoc. HUD, cast meter, bag, bestiary and tra
 - Bag, bestiary and travel screens share title/subtitle hierarchy, separators, section labels, text colors and disabled-state treatment.
 - Unaffordable rod upgrades are visibly disabled client-side while the server remains the authority for the actual purchase.
 - Catch bag rows expose rarity, size grade, weight, length and value without creating more menus.
-- Alpha.15 adds location collection counts to the HUD/travel view and collection-completion targets to the bestiary rather than adding a separate quest screen.
+- Location collection counts stay visible in the HUD/travel view and collection-completion targets stay inside the bestiary rather than creating a quest screen.
+- Alpha.16 adds hotspot hunt hints to existing notices/bestiary rows instead of adding another map or hunting menu.
 - UI changes must still be judged in a real Minecraft client at supported GUI scales; code/build success does not certify screen composition.
 
 ## Audio feedback rule
@@ -112,7 +127,7 @@ Fishing encounters use five transient silhouettes — small, tall, fat, long and
 
 ## Fishing-hook ownership rule
 
-Vanilla fishing hook is only line/bobber transport and visual anchor in all dedicated Fishing Game dimensions. Fishing Game owns charge/release timing, species, bite timing, reel fight, catch result and economy. Vanilla's independent lure/nibble/bite cycle is suppressed there.
+Vanilla fishing hook is only line/bobber transport and visual anchor in all dedicated Fishing Game dimensions. Fishing Game owns charge/release timing, hotspot resolution, species, bite timing, reel fight, catch result and economy. Vanilla's independent lure/nibble/bite cycle is suppressed there.
 
 ## User-test gate
 
@@ -127,7 +142,8 @@ Do not hand the user a JAR for a tiny technical check. A user-facing test build 
 - multiple dedicated fishing locations connected to progression
 - permanent collection/personal-best records that survive selling
 - collection goals that feed the existing economy without another chore currency
-- complete cast -> catch -> sell -> upgrade -> travel -> collect loop
+- map sub-areas that meaningfully affect target hunting without hard-gating species
+- complete cast -> target water -> catch -> sell -> upgrade -> travel -> collect loop
 - acceptable actual Minecraft screen quality
 
-Build success alone is not the final gate. Alpha.15 closes the first collection-motivation loop, but the actual Minecraft client still needs graphical/play review before PLAYTESTED or GRAPHICAL CLIENT REVIEWED is claimed.
+Build success alone is not the final gate. Alpha.16 connects map geography to target hunting, but the actual Minecraft client still needs graphical/play review before PLAYTESTED or GRAPHICAL CLIENT REVIEWED is claimed.

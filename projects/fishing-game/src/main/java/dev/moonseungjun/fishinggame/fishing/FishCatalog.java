@@ -35,23 +35,33 @@ public final class FishCatalog {
     }
 
     public static FishSpecies pick(FishingLocation location, double unitRoll, float luck) {
+        return pick(location, unitRoll, luck, null);
+    }
+
+    public static FishSpecies pick(
+            FishingLocation location,
+            double unitRoll,
+            float luck,
+            FishingHotspot hotspot
+    ) {
         List<FishSpecies> pool = SPECIES.stream().filter(species -> species.location() == location).toList();
-        int total = pool.stream().mapToInt(species -> effectiveWeight(species, luck)).sum();
+        int total = pool.stream().mapToInt(species -> effectiveWeight(species, luck, hotspot)).sum();
         int target = (int) Math.floor(Math.max(0.0, Math.min(Math.nextDown(1.0), unitRoll)) * total);
         int cursor = 0;
         for (FishSpecies species : pool) {
-            cursor += effectiveWeight(species, luck);
+            cursor += effectiveWeight(species, luck, hotspot);
             if (target < cursor) return species;
         }
         return pool.getLast();
     }
 
     public static FishSpecies pick(double unitRoll) {
-        return pick(FishingLocation.LAKESIDE, unitRoll, 0.0f);
+        return pick(FishingLocation.LAKESIDE, unitRoll, 0.0f, null);
     }
 
-    private static int effectiveWeight(FishSpecies species, float luck) {
+    private static int effectiveWeight(FishSpecies species, float luck, FishingHotspot hotspot) {
         double rarityBoost = 1.0 + Math.max(0.0f, luck) * species.rarity().ordinal() * 1.8;
-        return Math.max(1, (int) Math.round(species.selectionWeight() * rarityBoost));
+        double hotspotBoost = hotspot == null ? 1.0 : hotspot.weightMultiplier(species);
+        return Math.max(1, (int) Math.round(species.selectionWeight() * rarityBoost * hotspotBoost));
     }
 }

@@ -174,13 +174,24 @@ public final class FishingSessionManager {
                 if (isHookAtFishingWater(player)) {
                     PlayerFishingProfile profile = FishingProfiles.get(player);
                     RodDefinition rod = FishingRods.byTier(profile.rodTier());
-                    session.species = FishCatalog.pick(session.location, player.getRandom().nextDouble(), rod.luck());
+                    Vec3 hook = player.fishing.position();
+                    session.hotspot = FishingHotspot.at(session.location, hook.x, hook.z);
+                    session.species = FishCatalog.pick(
+                            session.location,
+                            player.getRandom().nextDouble(),
+                            rod.luck(),
+                            session.hotspot
+                    );
                     session.stage = FishingStage.WAITING_FOR_BITE;
                     session.biteTick = now + nextBiteDelay(player);
                     session.visualStartTick = Math.max(now + 5, session.biteTick - VISUAL_APPROACH_TICKS);
                     session.visualAngle = player.getRandom().nextDouble() * Math.PI * 2.0;
                     session.dryTicks = 0;
-                    sendState(player, session, "");
+                    sendState(
+                            player,
+                            session,
+                            session.hotspot.displayName() + " · " + session.hotspot.hint()
+                    );
                 } else if (player.fishing != null && now - session.castTick > HOOK_WATER_TIMEOUT_TICKS) {
                     finish(iterator, session, player, "물에 찌를 던져 주세요.", true);
                 } else if (player.fishing == null && now - session.castTick > 12) {

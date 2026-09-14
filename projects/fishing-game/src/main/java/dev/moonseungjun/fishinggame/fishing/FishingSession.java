@@ -6,6 +6,7 @@ final class FishingSession {
     FishingStage stage = FishingStage.WAITING_FOR_HOOK;
     final long castTick;
     final FishingLocation location;
+    FishingHotspot hotspot;
     long biteTick = Long.MAX_VALUE;
     long visualStartTick = Long.MAX_VALUE;
     FishSpecies species;

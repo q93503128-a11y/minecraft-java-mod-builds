@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.0-alpha.16
+
+- Added three server-resolved fishing hotspots to each dedicated location so map sub-areas affect target hunting instead of acting as scenery only.
+- Hotspots are resolved from the bobber's actual water coordinates when a cast becomes valid.
+- Hotspots bias species selection weights rather than hard-gating species; every species in the current location remains possible from every valid fishing spot.
+- Added Cheongram Lakeside hotspots: `서쪽 얕은 물`, `깊은 물골`, `바위 그늘`.
+- Added Gull Harbor hotspots: `방파제 안쪽`, `항로 중앙`, `외해 끝부두`.
+- Added Deepwater Channel hotspots: `유도등 수역`, `심해 골`, `고대 해구`.
+- Added a short hotspot/ecology notice when the bobber first reaches valid water.
+- Added recommended-hotspot hints to undiscovered bestiary rows while keeping undiscovered species names hidden.
+- Added deterministic hotspot classification/bias tests, including an assertion that non-preferred species remain catchable.
+
 ## 0.1.0-alpha.15
 
 - Added one-time first-discovery coin rewards that scale with existing fish rarity instead of introducing another currency.

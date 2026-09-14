@@ -4,6 +4,7 @@ import java.util.List;
 
 import dev.moonseungjun.fishinggame.fishing.CollectionRewards;
 import dev.moonseungjun.fishinggame.fishing.FishCatalog;
+import dev.moonseungjun.fishinggame.fishing.FishingHotspot;
 import dev.moonseungjun.fishinggame.fishing.FishSpecies;
 import dev.moonseungjun.fishinggame.fishing.FishingLocation;
 import dev.moonseungjun.fishinggame.profile.FishRecord;
@@ -45,7 +46,7 @@ public final class BestiaryScreen extends Screen {
                 graphics,
                 font,
                 "물고기 도감  " + discovered + "/" + FishCatalog.all().size(),
-                "새 어종을 발견하면 코인 보너스 · 지역을 완성하면 추가 보너스",
+                "새 어종을 발견하면 코인 보너스 · 미발견 어종은 추천 수역 힌트 제공",
                 panelX,
                 panelY,
                 PANEL_WIDTH
@@ -98,10 +99,11 @@ public final class BestiaryScreen extends Screen {
         for (FishSpecies fish : species) {
             FishRecord record = recordFor(fish.id());
             if (record == null) {
+                FishingHotspot hotspot = FishingHotspot.primaryForSpecies(fish.id());
                 graphics.text(font, "???", x + 7, rowY, FishingUiTheme.TEXT_MUTED, false);
                 graphics.text(
                         font,
-                        "미발견 · 보너스 있음",
+                        "추천: " + hotspot.displayName(),
                         x + 7,
                         rowY + 11,
                         FishingUiTheme.TEXT_DISABLED,
