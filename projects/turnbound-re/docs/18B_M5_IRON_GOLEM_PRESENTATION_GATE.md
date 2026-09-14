@@ -1,7 +1,7 @@
 # 18B — IRON GOLEM VANGUARD / BREAKER PRESENTATION GATE
 
 최종 갱신: 2026-09-14  
-상태: **REFERENCE GATE PASS / CODE IMPLEMENTED / AUTOMATED GATE PENDING / SCREENSHOT PASS PENDING**
+상태: **REFERENCE GATE PASS / CODE + AUTOMATED GATE PASS / SCREENSHOT PASS PENDING**
 
 이 문서는 `18_CHARACTER_VFX_REFERENCE_GATE.md`를 대체하지 않는다. 대표 roster 확장에서 Iron Golem의 외형/행동/VFX를 즉흥 설계하지 않기 위한 좁은 보조 gate다.
 
@@ -133,7 +133,30 @@
 - screen shake/particle spam을 캐릭터 정체성으로 대체.
 - screenshot 없이 production visual PASS 선언.
 
-## 5. Screenshot gate
+## 5. Automated validation
+
+검증 기준 코드 commit:
+
+- `8da2676a6867d25c3d6f78cfe20af1e26ab2ff83` — `turnbound-re: add Iron Golem production presentation`
+- GitHub Actions: `Build turnbound-re` #261 / run `34810001527`
+- result: **SUCCESS**
+- Java 25 toolchain verification: PASS
+- dependency resolution + clean build + full JUnit: PASS
+- production JAR verification: PASS
+- logs / deliverables artifact upload: PASS
+
+자동 계약에서 확인한 것:
+
+- 정확히 `minecraft:iron_golem` source에만 presentation override 적용.
+- server gameplay catalog 원본은 그대로 유지.
+- Iron Fist → OFFENSIVE.
+- Guardian Plate → non-aggressive DEFENSIVE + support accent.
+- Ground Slam → SLAM.
+- Village Judgment → EXECUTE.
+- unknown MELEE / RECOVERY / other actor → NEUTRAL fail-closed.
+- Guardian support accent는 exact action + non-self target에만 적용.
+
+## 6. Screenshot gate
 
 통합 playtest 때 확인:
 
