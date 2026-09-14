@@ -1,0 +1,6 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "tbos:phoenix_guardian", "required": false }
+  ]
+}
