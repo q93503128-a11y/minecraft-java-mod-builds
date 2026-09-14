@@ -155,8 +155,9 @@ public final class SettlementInventory {
     /**
      * A physical stack may fund exactly one settlement resource ledger. Mis-tagged companion/datapack
      * items that match several categories fail closed instead of being counted twice and then only
-     * partly removed. Expedition relics and recognized external weapons are never construction,
-     * recruitment or upkeep material even if an external datapack accidentally gives them a resource tag.
+     * partly removed. Expedition relics, masterwork catalysts and recognized external weapons are never
+     * construction, recruitment or upkeep material even if an external datapack accidentally gives them
+     * a resource tag.
      */
     private static boolean exclusiveResource(ItemStack stack, int expected) {
         return resourceMask(stack) == expected;
@@ -164,6 +165,7 @@ public final class SettlementInventory {
 
     private static int resourceMask(ItemStack stack) {
         if (stack.isEmpty() || stack.is(ExternalContentTags.EXPEDITION_RELICS)
+                || stack.is(ExternalContentTags.MASTERWORK_CATALYSTS)
                 || SettlementExternalContentService.isExternalWeapon(stack)) return 0;
         int mask = 0;
         if (rawWood(stack)) mask |= RESOURCE_WOOD;
