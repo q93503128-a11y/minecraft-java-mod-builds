@@ -77,7 +77,7 @@ public final class ConstructionProgression {
             if (resolved == ConstructionMode.LINE || resolved == ConstructionMode.CAUSEWAY) {
                 int length = selectedLength(player, level);
                 String shape = resolved == ConstructionMode.CAUSEWAY ? "3폭 × " + length + "칸" : length + "칸";
-                player.sendSystemMessage(Component.literal("§7현재 길이 §e" + shape + "§7 · 건축 메뉴에서 Shift+클릭으로 변경. 실제 배치 중 Shift는 단일 배치."));
+                player.sendSystemMessage(Component.literal("§7현재 길이 §e" + shape + "§7 · 건축 메뉴에서 Shift+클릭으로 변경. 웅크리기는 배치 모드를 바꾸지 않으며 정밀 배치는 단일 모드."));
             }
         }
     }
@@ -146,7 +146,6 @@ public final class ConstructionProgression {
 
         ExpeditionProgression.recordSkillAction(player, SkillType.CONSTRUCTION, 1);
         announceMilestones(player, SkillProgressionService.award(player, SkillType.CONSTRUCTION, 2L));
-        if (player.isShiftKeyDown()) return;
 
         int level = SkillProgressData.get(player).level(player, SkillType.CONSTRUCTION);
         ConstructionMode mode = MODES.getOrDefault(uuid, ConstructionMode.SINGLE);
