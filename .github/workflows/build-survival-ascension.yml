@@ -59,8 +59,8 @@ jobs:
           python3 tools/test_release_source.py 2>&1 | tee "$GITHUB_WORKSPACE/survival-ascension-audit.log"
           python3 tools/test_release_content_pack.py 2>&1 | tee "$GITHUB_WORKSPACE/survival-ascension-content-pack-audit.log"
           python3 -m py_compile tools/build_mrpack.py tools/stage_locked_content.py tools/test_current_source.py tools/test_content_pack_source.py tools/test_release_source.py tools/test_release_content_pack.py tools/verify_jar.py tools/verify_release_jar.py
-          git diff --check
-          git diff --exit-code
+          git diff --check -- .
+          git diff --exit-code -- .
 
       - name: Clean build
         working-directory: ${{ env.PROJECT_DIR }}
