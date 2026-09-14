@@ -4,7 +4,7 @@ Recovery aid only. Reconstruct canonical truth from current GitHub `main`, `/AGE
 
 ## Current stage
 
-`M3 — PLAYABLE TECHNICAL EXPEDITION LOOP + PLAYER COMBAT BUILD VERIFIED / REGION 01 FIELD READABILITY BUILD VERIFIED / BOSS THREAT-SHAPE TELEGRAPH BUILD VERIFIED / HUMAN FIELD PLAY + FINAL BOSS MATERIAL + ARENA-PRESSURE MOTION ACCEPTANCE + PRODUCTION CREATURE/VFX/SOUND STILL OPEN`
+`M3 — PLAYABLE TECHNICAL EXPEDITION LOOP + PLAYER COMBAT BUILD VERIFIED / REGION 01 FIELD READABILITY BUILD VERIFIED / CONNECTED-LOOP LOCALIZATION BUILD VERIFIED / BOSS THREAT-SHAPE TELEGRAPH BUILD VERIFIED / HUMAN FIELD PLAY + FINAL BOSS MATERIAL + ARENA-PRESSURE MOTION ACCEPTANCE + PRODUCTION CREATURE/VFX/SOUND STILL OPEN`
 
 Priority remains a genuinely playable, polished Region 01 vertical slice. Do not grow speculative authority/lifecycle infrastructure or expand region count while visible gameplay/presentation remains incomplete.
 
@@ -21,44 +21,31 @@ Priority remains a genuinely playable, polished Region 01 vertical slice. Do not
 - Diagnostic Minecraft particles/sounds, technical blocks, bossbar, stone-textured boss preview, actionbar, extraction-relay dressing/readiness markers, proxy role names, player hit cues and salvage-hazard cues are temporary readability/field-review aids, not final Riftfrontier UI/art/VFX/audio language.
 - Do not auto-tune provisional damage, hit geometry, charge travel, radial impulse, particle density, salvage-hazard cue intensity or key layout without human field evidence.
 
-## Connected expedition loop
+## Connected expedition loop — current verified checkpoint
 
-Fresh-world login can bootstrap the technical hub when there is no active run and no expedition history. Hub lodestone delegates to existing authoritative deployment; smithing table delegates to existing provisioning. Existing expedition history prevents bootstrap reset. `/riftfrontier expedition start` remains diagnostic/fallback only.
+Fresh-world login can bootstrap the technical hub when there is no active run and no expedition history. Hub lodestone delegates to authoritative deployment; smithing table delegates to authoritative provisioning. Existing expedition history prevents bootstrap reset. `/riftfrontier expedition start` remains diagnostic/fallback only.
 
-Key verified checkpoints:
+Latest implementation checkpoint: `2bee9f88d2e978a742a107e2e5d96c02ed1df1e9` (`riftfrontier: localize expedition loop feedback`).
 
-- fresh bootstrap/login: `5f9d6b6bb889a5eab84135437df4150ec80c6494`, `19a54bdf9ac5c620099688cbdeac4e1722d3b21d`, workflow `34808226019` SUCCESS;
-- actionbar API correction: `fded37cbe91668af213af477ae0b0238ac455693`, workflow `34821369460` successful rerun;
-- player hit readability: `24a15b2a0c8db3ade4c6ae730da1373c93e59e00`, workflow `34825929915` SUCCESS;
-- live field-status readability: `54f070f1937e861f4aabc896b8803fa81aa1aae1`, workflow `34849271056` SUCCESS;
-- extraction-relay readability: `eee2a34b28ecaddcb0597ac8f42ddda80a318700`, workflow `34856309722` SUCCESS;
-- proxy-role readability: `e7b7421ae809711d394189595bbc90c47bc4dd2b`, workflow `34860050735` SUCCESS.
+This batch removes hard-coded English from the normal `ExpeditionGameplayService` player-facing detail path without changing gameplay authority:
 
-Do not keep elaborating temporary hub/relay palette, actionbar state or proxy labels without new human field evidence.
+- deployment, salvage recovery, extraction and provisioning detail messages now use `Component.translatable(...)`;
+- matching `en_us` and `ko_kr` resources are present for those detail messages;
+- expedition failure and post-failure re-entry now localize the existing `ExpeditionRun.EndReason` values instead of exposing English-only reason text;
+- `/riftfrontier expedition status` remains a developer/diagnostic string intentionally and was not turned into player UI;
+- no save/network schema, expedition lifecycle transition, supply/storage/pressure mutation, encounter ownership, reward math, extraction gate, hit authority or combat timing changed;
+- temporary hub/relay supplemental diagnostics were deliberately not expanded in this batch. Do not turn localization into another round of technical fixture/UI churn without actual field evidence.
 
-## Latest Region 01 salvage-hazard readability checkpoint
-
-Implementation batch ending at `54d03af79ec33471d3263f79d3bd2ba60529727b` makes the already-existing salvage `rift drag` penalty perceptible at the moment a salvage node is successfully recovered. It does **not** alter the penalty, reward, pressure or extraction contract.
-
-Implementation:
-
-- `Region01EncounterRuntime.applySalvageHazard(...)` still derives duration/amplifier from the same authoritative `EncounterPlan` and still applies the same Slowness effect;
-- after that authoritative effect succeeds, the server emits a small Minecraft-native `SCULK_SOUL` burst around the player and a restrained `SCULK_SHRIEKER_SHRIEK` cue;
-- the previous hard-coded English diagnostic line was replaced with localized `riftfrontier.expedition.feedback.rift_drag` feedback in `en_us` and `ko_kr`, carrying the same authoritative duration and intensity values;
-- no new saved state, network payload, damage, knockback, teleport, hit clock, reward path, threat-count rule or extraction rule was added;
-- the reference rationale is Minecraft's established Deep Dark/sculk warning language, especially Mojang's sculk-shrieker warning/alarm presentation (`https://www.minecraft.net/en-us/article/sculk-shrieker`). No external asset/code was copied or bundled;
-- this is field-review presentation only. It is **not** final Riftfrontier VFX/audio language and must not become a reason to expand sculk theming across Region 01 without a separate art-direction decision.
-
-Verification: `Build Riftfrontier` workflow `34866121039` completed SUCCESS on `54d03af79ec33471d3263f79d3bd2ba60529727b`. Toolchain verification, asset-intake tests, `clean test build`, required GameTest, dedicated-server smoke, Xvfb client smoke, executable-JAR inspection, build report and artifact uploads all passed.
+Verification: `Build Riftfrontier` workflow `34873147707` completed SUCCESS on `2bee9f88d2e978a742a107e2e5d96c02ed1df1e9`. Toolchain verification, asset-intake tests, `clean test build`, required GameTest, dedicated-server smoke, Xvfb client smoke, executable-JAR inspection, build report and artifact uploads all passed.
 
 Successful deliverable:
 
 - artifact: `riftfrontier-0.1.0-alpha.1-deliverables`
-- artifact id: `10357890112`
-- archive digest: `sha256:249c96795080ad428461a6bf40009ec29a19222c356bcdfff42da0f1a9c581fa`
-- executable JAR SHA-256: `9d0e57219340f3dba5d284da123e533b09a9384889e2f3a30c3350f3bf436e3b`
+- artifact id: `10360076506`
+- archive digest: `sha256:013f9cd9fdd7f0cb67f90da0a331fe0a32fe47af2708bf1a89e5ee7f88bc52ee`
+- executable JAR SHA-256: `315e64da295f326fc19a0cc881c9b3dfd2b7fa283a3dde493668214aa1b27208`
 
-Verification vocabulary for `54d03af79ec33471d3263f79d3bd2ba60529727b`:
+Verification vocabulary for `2bee9f88d2e978a742a107e2e5d96c02ed1df1e9`:
 
 - `CODE REVIEWED`: YES
 - `TESTED`: YES
@@ -66,17 +53,24 @@ Verification vocabulary for `54d03af79ec33471d3263f79d3bd2ba60529727b`:
 - `JAR PRODUCED`: YES
 - `PLAYTESTED`: NO
 - `MULTIPLAYER TESTED`: NO
-- `HUMAN AUDIO/VISUAL ACCEPTANCE`: NO
+- `HUMAN LOCALIZATION ACCEPTANCE`: NO
 
-Human field procedure:
+Human localization field procedure:
 
-1. Use a disposable/fresh world and deploy through the normal hub lodestone path into Region 01.
-2. Recover an actual amethyst salvage node through normal interaction. On each successful recovery, verify that the existing Slowness penalty occurs and the brief sculk-soul + restrained shrieker cue occurs at the same moment.
-3. Verify the system feedback reports the same duration/intensity as the applied effect in both `en_us` and `ko_kr`.
-4. Click invalid/non-salvage blocks and confirm no rift-drag cue appears. A cue without a successful salvage recovery is a failure.
-5. Confirm the cue itself causes no damage, knockback, teleport, threat-count change, salvage duplication/loss, pressure change or extraction-state mutation.
-6. At a higher persisted Region 01 pressure, confirm only the already-defined Slowness duration/intensity scaling changes; the audiovisual cue must not create a second gameplay scaling system.
-7. Reject the presentation if the shriek is too loud/long, the particle burst materially obscures combat, or the sculk language reads as an unintended final biome identity. Do not auto-tune it from automation alone; record actual field evidence first.
+1. Use a disposable/fresh world with language set to English (US), log in and enter the commandless technical hub.
+2. Deploy through the hub lodestone. Confirm the detailed deployment line and actionbar are English, no raw translation key is visible, and pressure/threat numbers match the actual run.
+3. Recover a real amethyst salvage node. Confirm the detailed salvage line and actionbar agree on recovered count and live patrol threats.
+4. Reach 3/3 and use the extraction relay. Confirm extraction detail reports retained/base/patrol-bonus/stored salvage, pressure and next supply cost consistently with `/riftfrontier expedition status`.
+5. Provision through the smithing table and redeploy; confirm the detailed provision values are current and the normal loop still closes.
+6. On a disposable active run, disconnect and reconnect to exercise logout failure/re-entry. Confirm the reason is localized and no active-run state is resurrected.
+7. Switch client language to Korean and repeat at minimum deploy -> salvage -> extract -> provision. Confirm Korean glyphs render, placeholders resolve, values remain identical to authoritative state, and no untranslated key appears.
+8. Reject the localization if any message appears before its mutation succeeds, any numeric value drifts from authoritative state, a raw key appears, or changing client language changes gameplay state.
+
+Earlier connected-loop checkpoints remain valid and should not be reimplemented merely to create activity: fresh bootstrap/login (`5f9d6b6...`, `19a54bdf...`, workflow `34808226019`), actionbar API correction (`fded37cb...`, workflow `34821369460`), player hit readability (`24a15b2a...`, workflow `34825929915`), live field status (`54f070f1...`, workflow `34849271056`), extraction relay (`eee2a34b...`, workflow `34856309722`), proxy-role readability (`e7b7421a...`, workflow `34860050735`) and salvage-hazard readability (`54d03af7...`, workflow `34866121039`).
+
+## Region 01 salvage hazard
+
+The already-existing salvage `rift drag` penalty remains unchanged: authoritative pressure-derived Slowness first, then a small Minecraft-native `SCULK_SOUL` burst plus restrained `SCULK_SHRIEKER_SHRIEK` cue only after successful salvage recovery. It is field-review presentation, not final Riftfrontier VFX/audio or Region 01 biome identity. Do not add more warning layers or auto-tune cue intensity without human evidence. Detailed human procedure remains recover valid/invalid blocks, compare duration/intensity to state, verify no damage/knockback/reward/threat/extraction side effect, and reject if the cue obscures combat or overstates sculk theming.
 
 ## Region 01 boss field harness
 
@@ -90,37 +84,25 @@ Development-only commands:
 
 The actor remains excluded from natural spawning and production Region 01 encounter composition.
 
-Current server-authoritative field behavior remains: production semantic profile `riftfrontier:boss/region_01_first_apex`; phase 1 committed strike + line displacement; phase 2 arena pressure; authoritative `TELEGRAPH -> ACTIVE -> RECOVERY`; diagnostic `1.0F` ACTIVE-only damage with per-execution dedupe; attack-start facing commitment; provisional role-specific hit geometry; ACTIVE-only line travel; one-shot arena-pressure radial impulse; native diagnostic explosion cue; health-backed bossbar.
+Current authoritative field behavior remains: production semantic profile `riftfrontier:boss/region_01_first_apex`; phase 1 committed strike + line displacement; phase 2 arena pressure; authoritative `TELEGRAPH -> ACTIVE -> RECOVERY`; diagnostic `1.0F` ACTIVE-only damage with per-execution dedupe; attack-start facing commitment; provisional role-specific hit geometry; ACTIVE-only line travel; one-shot arena-pressure radial impulse; native diagnostic explosion cue; health-backed bossbar.
 
-### Dragon Evolved presentation
+### Dragon Evolved presentation gates
 
-The temporary field-review renderer exposes the accepted sanitized Dragon geometry with Minecraft stone only while production presentation cannot publish. Production rendering has priority; duplicate preview + production meshes are a failure.
-
-Evidence-backed source motion currently used for field review:
-
-- committed strike -> reviewed `Punch` windows;
-- line displacement -> reviewed `Headbutt` windows;
-- non-attacking damage -> reviewed `HitReact`;
-- terminal death -> reviewed non-looping `Death`;
-- unresolved cases -> reviewed neutral `Flying_Idle` fallback.
-
-Presentation priority remains `Death > reviewed authoritative attack sample > HitReact > Flying_Idle`.
+The temporary field-review renderer exposes accepted sanitized Dragon geometry with Minecraft stone only while production presentation cannot publish. Evidence-backed field motion remains committed strike -> reviewed `Punch`, line displacement -> reviewed `Headbutt`, damage -> reviewed `HitReact`, death -> reviewed non-looping `Death`, unresolved -> reviewed `Flying_Idle`; priority remains `Death > reviewed authoritative attack sample > HitReact > Flying_Idle`.
 
 The authored arena-pressure compression/burst/recovery candidate is automated-build verified but **not human accepted**. It does not close production animation coverage. Checkpoint `bca0816381c09b28d613bc12d2e395eb62368761`, workflow `34812925676` SUCCESS. Human review is required before promotion.
 
 A previous dark-rock material candidate contained a corrupt PNG and is rejected. Keep the verified stone fallback. Future material candidates must be physical redistributable resources with provenance/license evidence and successful decode/format validation before renderer hookup. Canonical rejection record: `docs/M3_REGION01_MATERIAL_INTAKE_REJECTION.md`.
 
-### Threat-shape telegraph
-
-The boss TELEGRAPH outline remains build verified. `Region01BossFieldTelegraphGeometry` derives sparse boundary samples from existing `Region01BossFieldImpactProfile`; `Region01BossFieldTelegraphEmitter` displays them with Minecraft-native particles only during TELEGRAPH and owns no gameplay timing/hit authority. Corrected implementation SHA `fc5e8411714d2dcf87df56141cf92156cb7de809`, workflow `34841785748` SUCCESS. Human procedure remains in `docs/M3_REGION01_BOSS_THREAT_TELEGRAPH_REVIEW.md`.
+The boss TELEGRAPH outline remains build verified. `Region01BossFieldTelegraphGeometry` derives sparse boundary samples from existing `Region01BossFieldImpactProfile`; `Region01BossFieldTelegraphEmitter` displays them only during TELEGRAPH and owns no gameplay timing/hit authority. Corrected implementation SHA `fc5e8411714d2dcf87df56141cf92156cb7de809`, workflow `34841785748` SUCCESS. Human procedure remains in `docs/M3_REGION01_BOSS_THREAT_TELEGRAPH_REVIEW.md`.
 
 ## Exact next development boundary
 
-Do not spend the next run adding more backend/telegraph fences, more actionbar state, more technical proxy labels, more hub/relay decoration, or more salvage warning layers simply because automation is stable.
+Do not spend the next run adding more backend/telegraph fences, more actionbar state, more technical proxy labels, more hub/relay decoration, more salvage warning layers, or more localization churn simply because automation is stable.
 
-1. If actual human field evidence is supplied, use it to accept/reject/calibrate proxy-role labels, live field status, extraction relay, salvage-hazard cue, boss threat outline and/or arena-pressure motion. Do not invent observations.
+1. If actual human field evidence is supplied, use it to accept/reject/calibrate localization, proxy-role labels, live field status, extraction relay, salvage-hazard cue, boss threat outline and/or arena-pressure motion. Do not invent observations.
 2. Otherwise prioritize independent **production-visible** Region 01 work: a legally usable, decodable, provenance-recorded final Dragon material/texture direction based on strong references, or other combat/environment presentation that does not bypass the material/animation gates.
-3. Production creature silhouettes for hunter/scout/elite are a valid visible-quality target only after establishing a reference/asset direction. Do not improvise them from scratch merely to replace the vanilla proxies.
+3. Production creature silhouettes for hunter/scout/elite are a valid visible-quality target only after establishing a reference/asset direction. Do not improvise them from scratch merely to replace vanilla proxies.
 4. Once arena-pressure motion is human accepted and all nine logical animation keys have evidence, assemble complete production animation binding without weakening exact coverage.
 5. Select/author final VFX and sound under the same reference/provenance/readability rules. Presentation may emphasize authoritative windows but must never create a second hit clock.
 6. Author the first real `presentation_assets` manifest only after referenced physical resources exist and are reviewed.
