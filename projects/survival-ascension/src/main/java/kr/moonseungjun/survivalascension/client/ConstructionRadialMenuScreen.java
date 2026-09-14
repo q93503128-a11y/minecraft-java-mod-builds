@@ -56,7 +56,7 @@ public final class ConstructionRadialMenuScreen extends Screen {
         String detail=unlocked?entry.detail():"건축 Lv."+entry.mode().requiredLevel()+" 필요";
         graphics.text(this.font,title,cx-this.font.width(title)/2,cy-5,unlocked?0xFFFFFFFF:0xFFFF7777,true);
         graphics.text(this.font,detail,cx-this.font.width(detail)/2,cy+8,0xFFB8B8B8,false);
-        String caption="건축 Lv."+level+" · Shift+클릭(선/도로)=길이 변경 · 정밀 배치=단일 모드 · 웅크리기 배치 유지";
+        String caption="건축 Lv."+level+" · Shift+클릭=길이 · 정밀=단일 · 웅크리기=현재 모드 유지";
         graphics.text(this.font,caption,cx-this.font.width(caption)/2,cy-102,0xFFE0E0E0,true);
     }
 
