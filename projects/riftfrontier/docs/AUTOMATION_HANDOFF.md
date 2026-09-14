@@ -8,7 +8,48 @@ Recovery aid only. Reconstruct canonical truth from current GitHub `main`, `/AGE
 
 Priority remains a genuinely playable, polished Region 01 vertical slice. Do not grow speculative authority/lifecycle infrastructure or expand region count while visible gameplay/presentation remains incomplete.
 
-## Latest verified checkpoint — boss material real-decode gate
+## Latest verified gameplay checkpoint — patrol-clear objective feedback correctness
+
+Implementation checkpoint: `f356732b1865ef3fa642262b2acc69cca278bde0` (`riftfrontier: distinguish cleared patrol in field status`).
+
+A concrete field-readability regression was found in the existing temporary actionbar projection: after the authoritative tracked patrol count reached `0`, `ExpeditionPlayerFeedback.fieldStatus` still rendered the unfinished instruction `Clear patrol for +1` / `순찰 전멸 시 +1`. This made an already-earned extraction bonus look like an outstanding objective.
+
+The projection now branches only on the existing server-authoritative `Region01EncounterRuntime.liveThreatCount(...)`: non-zero threats keep the prior objective text; `0` shows `Patrol cleared • Extraction bonus +1 secured` / `순찰 전멸 • 철수 보너스 +1 확보`. No reward calculation, extraction condition, encounter ownership, persistence, network packet, combat state, pressure rule or polling cadence changed.
+
+Verification: `Build Riftfrontier` workflow `34907014664` completed **SUCCESS** on `f356732b1865ef3fa642262b2acc69cca278bde0`.
+
+Passed in that workflow:
+
+- toolchain verification
+- asset-intake tests
+- `clean test build`
+- required native GameTest gate
+- dedicated-server smoke
+- Xvfb client smoke
+- executable-JAR inspection
+- build report and artifact upload
+
+Successful deliverable:
+
+- artifact: `riftfrontier-0.1.0-alpha.1-deliverables`
+- artifact id: `10372739882`
+- archive digest: `sha256:ce2d02688f01cd20efa0d70f8b9f15aab0cb3a1a96bd0fb0ee1f77ab86ad8b1c`
+
+Verification vocabulary:
+
+- `CODE REVIEWED`: YES
+- `TESTED`: YES
+- `BUILD VERIFIED`: YES
+- `JAR PRODUCED`: YES
+- `PLAYTESTED`: NO
+- `MULTIPLAYER TESTED`: NO
+- `HUMAN FIELD-FEEDBACK ACCEPTANCE`: NO
+
+Human field check, when convenient: deploy normally, leave at least one tracked patrol threat alive and confirm the actionbar still reports the remaining count and `+1` objective. Then kill the final tracked threat without extracting. Within the existing ~1-second field-status cadence, the actionbar must switch to the patrol-cleared / bonus-secured state. Extraction should still award exactly the pre-existing patrol bonus. Reject if the cleared message appears while a tracked threat is alive, if the message fails to change after the final tracked threat dies, or if the feedback change alters settlement/reward behavior.
+
+This is a narrow demonstrated-regression fix. Ordinary actionbar/localization work is closed again; do not continue polishing temporary field text without new evidence.
+
+## Latest boss-material checkpoint — real-decode gate
 
 Implementation checkpoint: `a961099624fdbf44aa81cd5d224b976b6ca37902` (`riftfrontier: reject undecodable boss materials`).
 
@@ -70,7 +111,7 @@ Fresh-world hub bootstrap and commandless station rejection paths are localized 
 - Fresh-world commandless hub/bootstrap, extraction, failure/restart reconciliation, supply/storage/pressure and authoritative expedition persistence are settled.
 - Player combat has `mobile_pressure` / `reach_commitment`, `recovery_pivot`, authenticated move-id input, server-owned attack timing, ACTIVE-only damage and per-execution target dedupe.
 - Accepted move-start native swing checkpoint remains `22a39b59671ad88cfbf76b830234f222ea9520c2`, workflow `34878394712` SUCCESS. Do not add more generic weapon cues without human evidence.
-- Connected expedition localization baseline remains `2bee9f88d2e978a742a107e2e5d96c02ed1df1e9`; commandless-hub gap is fixed by `5c5601a1...`. Do not reopen ordinary localization without a demonstrated regression.
+- Connected expedition localization baseline remains `2bee9f88d2e978a742a107e2e5d96c02ed1df1e9`; commandless-hub gap is fixed by `5c5601a1...`. The patrol-clear actionbar correctness regression is fixed by `f356732b...`; do not reopen ordinary localization/actionbar work without another demonstrated regression.
 - Earlier field-readability checkpoints remain valid: hit readability `24a15b2a...`, live status `54f070f1...`, extraction relay `eee2a34b...`, proxy role labels `e7b7421...`, salvage hazard cue `54d03af...`.
 - Combat-space baseline remains `40fe05c08634b80f0fc87b3f0df2b1e5cdc02c82`, workflow `34885087681` SUCCESS. Do not grow more tuff decoration; current material/layout is a technical field-review baseline, not final environment art.
 - Threat staging baseline remains `f49357355899d3efb0e21f0101c837c5e28d0353`, workflow `34890699183` SUCCESS. Hunters west, Scouts east, Elite back-center; do not auto-tune coordinates/cover without human field evidence.
@@ -88,7 +129,7 @@ Fresh-world hub bootstrap and commandless station rejection paths are localized 
 
 ## Next useful development boundary
 
-Do not respond to the material decode fix by growing more intake framework. The proven corrupt-image hole is closed.
+Do not respond to the material decode fix by growing more intake framework, and do not respond to the patrol-clear text correction by adding more temporary HUD/actionbar layers. Both demonstrated holes are closed.
 
 Unless new human field evidence arrives, prioritize one of these concrete completion paths:
 
