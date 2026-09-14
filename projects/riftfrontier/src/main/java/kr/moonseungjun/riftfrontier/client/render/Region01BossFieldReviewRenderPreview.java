@@ -25,9 +25,11 @@ import java.util.UUID;
  * Non-production visual fallback for the explicit Region 01 field-review actor.
  *
  * <p>The production renderer remains gated on exact semantic-animation coverage and a reviewed final material. Until
- * those gates are satisfied, this preview renders the accepted Dragon Evolved geometry with Minecraft's own stone
- * texture. Reviewed source attacks consume their synced server semantic state. Arena pressure deliberately does not
- * pretend that an existing source clip is a reviewed attack: while its motion remains unresolved, an authored
+ * those gates are satisfied, this preview renders the accepted Dragon Evolved geometry with an explicit
+ * Riftfrontier material-review candidate. The candidate exists only to let a human judge UV fit, silhouette and
+ * material readability in Minecraft; it is not a final-material approval and does not authorize production
+ * publication. Reviewed source attacks consume their synced server semantic state. Arena pressure deliberately does
+ * not pretend that an existing source clip is a reviewed attack: while its motion remains unresolved, an authored
  * whole-body scale candidate is layered over neutral Flying_Idle only for human field review. Directly reviewed
  * HitReact/Death source motion remains presentation-only. Terminal Death has priority, an executing reviewed source
  * attack has priority over HitReact, then HitReact may play while no reviewed source attack sample is active.</p>
@@ -37,8 +39,9 @@ import java.util.UUID;
  */
 public final class Region01BossFieldReviewRenderPreview {
     private static final String REVIEWED_IDLE_CLIP = "Flying_Idle";
-    private static final Identifier PREVIEW_TEXTURE =
-        Identifier.fromNamespaceAndPath("minecraft", "textures/block/stone.png");
+    private static final Identifier PREVIEW_TEXTURE = Identifier.fromNamespaceAndPath(
+        "riftfrontier", "textures/entity/region_01/boss_dark_rock_candidate.png"
+    );
     private static final RenderType PREVIEW_RENDER_TYPE = RenderTypes.entityCutout(PREVIEW_TEXTURE);
 
     private Region01BossFieldReviewRenderPreview() {}
