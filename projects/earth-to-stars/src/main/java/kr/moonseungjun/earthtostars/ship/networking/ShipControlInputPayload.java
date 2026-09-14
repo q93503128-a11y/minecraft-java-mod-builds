@@ -15,7 +15,7 @@ public record ShipControlInputPayload(
         long sequence,
         float throttle,
         float yaw,
-        float pitch
+        float lift
 ) implements CustomPacketPayload {
     public static final Type<ShipControlInputPayload> TYPE = new Type<>(
             Identifier.fromNamespaceAndPath(EarthToStars.MOD_ID, "ship_control_input")
@@ -29,7 +29,7 @@ public record ShipControlInputPayload(
                 buf.writeLong(payload.sequence());
                 buf.writeFloat(payload.throttle());
                 buf.writeFloat(payload.yaw());
-                buf.writeFloat(payload.pitch());
+                buf.writeFloat(payload.lift());
             },
             buf -> new ShipControlInputPayload(
                     buf.readInt(),
