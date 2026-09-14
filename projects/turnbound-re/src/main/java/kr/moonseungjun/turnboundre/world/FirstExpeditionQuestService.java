@@ -40,6 +40,16 @@ public final class FirstExpeditionQuestService {
         return Stage.FIND_REGION_WAYPOINT;
     }
 
+    /** Natural new-game entry. Hub discovery is already committed by the server before this guidance is sent. */
+    public void onInitialHubArrival(ServerPlayer player) {
+        if (player == null) return;
+        MinecraftServer server = player.level().getServer();
+        if (server == null) return;
+        PlayerProgress state = progress.getOrCreate(server, player.getUUID());
+        Stage current = stage(state, FastTravelSavedData.get(server).discovered(player.getUUID()));
+        if (current != Stage.COMPLETE) player.sendSystemMessage(objective(current), false);
+    }
+
     /** Called only after the fast-travel service accepted a real physical waypoint interaction. */
     public void onFastTravelResult(ServerPlayer player, WorldFastTravelService.Result result) {
         if (player == null || result == null || result.code() != WorldFastTravelService.ResultCode.DISCOVERED) return;
