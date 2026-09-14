@@ -106,6 +106,7 @@ public final class MythicEndgameRewardService {
     }
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        FracturedArchiveRewardService.onPlayerLoggedIn(event);
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         int pending = MythicEndgamePendingData.get(player.getServer()).take(player.getUUID());
         if (pending > 0) applyQualifiedKills(player, pending, true);
