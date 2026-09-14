@@ -4,7 +4,7 @@ Recovery aid only. Reconstruct canonical truth from current GitHub `main`, `PROJ
 
 ## Current stage
 
-`M3 — PLAYER COMBAT BUILD VERIFIED / REGION 01 BOSS FIELD ROLE-CONTRAST + NATIVE HEALTH READABILITY + VISIBLE FIELD-REVIEW BODY BUILD VERIFIED / FIRST EXPEDITION PHYSICAL LOOP BUILD VERIFIED / DRAGON ATTACK SOURCE MAPPING PARTIALLY REVIEWED`
+`M3 — PLAYER COMBAT BUILD VERIFIED / REGION 01 BOSS FIELD ROLE-CONTRAST + NATIVE HEALTH READABILITY + VISIBLE REVIEWED ATTACK MOTION BUILD VERIFIED / FIRST EXPEDITION PHYSICAL LOOP BUILD VERIFIED / DRAGON ATTACK SOURCE MAPPING PARTIALLY REVIEWED`
 
 Prioritize the playable vertical slice and visible production quality. Do not reopen settled expedition authority/restart work or add lifecycle/authority fences without a demonstrated regression.
 
@@ -77,9 +77,7 @@ This has now been resolved without weakening production gates:
 - the renderer always attempts `Region01BossClientRenderRuntime.submit(...)` first; if production submission succeeds, the preview is not reached;
 - only while production publication is unavailable, the preview consumes the already integrity-checked `RiftfrontierClientResources.preparedBossGeometry()` capability;
 - it renders the accepted sanitized Dragon Evolved skinned geometry rather than a cube/proxy;
-- it loops the already visually reviewed `Flying_Idle` source clip only as a neutral local silhouette/deformation preview. This is **not** a logical attack binding and does not move any of the unresolved `region_01_arena_pressure` keys toward 9/9 coverage;
 - the preview material is Minecraft's own `minecraft:textures/block/stone.png`, intentionally chosen as an unmistakably temporary review surface. It is not Riftfrontier final material/palette work and adds no third-party binary asset;
-- the preview clock is client-local presentation-only and owns no damage, movement, target selection, attack phase, hit window or gameplay authority;
 - prepared geometry still fails closed on stale reload capability, and a future complete production publication takes absolute priority.
 
 Two compile failures were retained as evidence rather than hidden:
@@ -90,9 +88,22 @@ Two compile failures were retained as evidence rather than hidden:
 
 Workflow `34794765872` for `ad273f3bd17fb307994c672972349eb4e05426ef` completed **SUCCESS** through toolchain, asset intake, clean tests/build, required GameTest, dedicated-server smoke, Xvfb client smoke, executable-JAR inspection, build report and both artifact uploads. Deliverable artifact `riftfrontier-0.1.0-alpha.1-deliverables` digest: `sha256:28e77e878c96a7886d198325e86be1fdec2e99639ed71983a76014f43c0243f6`.
 
-Treat this visible-body batch as `CODE REVIEWED / TESTED / BUILD VERIFIED / JAR PRODUCED`. It is **not** human play evidence: `PLAYTESTED: NO`, `MULTIPLAYER TESTED: NO`.
+### Reviewed field attack motion — verified checkpoint
 
-Human field procedure: `docs/M3_REGION01_BOSS_VISIBLE_FIELD_PREVIEW.md`. It requires checking silhouette/scale/deformation, neutral hover motion, combat/telegraph independence, no duplicate production+preview mesh, and resource-reload behavior.
+The temporary visible-body path now consumes already-reviewed attack motion instead of showing neutral hover through every attack. This does **not** complete or weaken the production 9/9 animation gate:
+
+- `Region01BossReviewedFieldAnimationPreview` maps only authoritative synced semantic states for the two already-reviewed roles;
+- `region_01_committed_strike` samples the accepted `Punch` TELEGRAPH / ACTIVE / RECOVERY source windows;
+- `region_01_line_displacement` samples the accepted `Headbutt` TELEGRAPH / ACTIVE / RECOVERY source windows;
+- source time comes from the server-synced semantic `phaseProgress`; no second attack clock, hit window, movement authority or damage timing exists on the client;
+- `region_01_arena_pressure` remains unresolved and therefore gets no recycled attack mapping. While production publication is unavailable it continues to show the neutral reviewed `Flying_Idle` visible-body fallback only;
+- production `Region01BossClientRenderRuntime.submit(...)` still has absolute priority, and exact 9/9 semantic animation coverage plus reviewed material remain required before production publication.
+
+Checkpoint `1683cc426891ce2907e66fece520ffc903b5c2aa`, workflow `34797829558`: full `Build Riftfrontier` workflow **SUCCESS** through toolchain, asset intake, clean tests/build, required GameTest, dedicated-server smoke, Xvfb client smoke, executable-JAR inspection, build report and both artifact uploads. Deliverable artifact `riftfrontier-0.1.0-alpha.1-deliverables` digest: `sha256:ebc27ce3c8fff49ba66c8eeae9c7eacec4137d64b0f7c47ce1cc7765a16f8f20`.
+
+Treat this batch as `CODE REVIEWED / TESTED / BUILD VERIFIED / JAR PRODUCED`. It is **not** human play evidence: `PLAYTESTED: NO`, `MULTIPLAYER TESTED: NO`.
+
+Human field procedure: `docs/M3_REGION01_BOSS_VISIBLE_FIELD_PREVIEW.md`. It now requires checking the accepted silhouette/material scaffold, reviewed `Punch` committed-strike progression, reviewed `Headbutt` line-displacement progression plus lateral dodge/charge travel, neutral fallback for unresolved arena pressure, combat-authority independence, production/preview exclusivity and resource-reload behavior.
 
 General boss checklist: `docs/M3_REGION01_BOSS_FIELD_PLAY.md`.
 Focused arena-pressure displacement check: `docs/M3_REGION01_ARENA_PRESSURE_FIELD_CHECK.md`.
@@ -111,7 +122,7 @@ Reviewed source mappings remain evidence-based rather than clip-name guesses:
   - presentational ACTIVE `0.15555555555555556–0.2`
   - RECOVERY `0.2–0.4888888888888889`
 
-These windows never authorize server damage timing, hit geometry, movement or target admission.
+These windows never authorize server damage timing, hit geometry, movement or target admission. The field-review path may now visibly sample them, but that does not transform the six-key staged source binding into complete production coverage.
 
 `region_01_arena_pressure` still has no accepted source motion with exact reviewed phase windows. Do not recycle `Fast_Flying`, `Flying_Idle`, `Yes`, `No`, `HitReact`, or `Death` merely to reach 9/9 coverage. Staged source binding intentionally remains incomplete at six logical animation keys.
 
@@ -121,9 +132,9 @@ The packaged boss contains the sanitized GLTF but no approved final texture reso
 
 1. Do not add more expedition authority/lifecycle hardening unless human/automated evidence exposes a real regression.
 2. Do not auto-tune provisional field combat numbers without human field evidence.
-3. Do not embellish the stone-textured field preview into a pseudo-final boss. It exists only to make current human silhouette/deformation/combat-readability review possible.
+3. Do not embellish the stone-textured field preview into a pseudo-final boss. Its reviewed strike/line motion exists only to make current human combat-readability review more representative while production gates remain closed.
 4. Automatic implementation should now target **real production-visible Region 01 quality**: either an evidence-backed `arena_pressure` source motion with exact reviewed phase windows, or a legally usable/reference-reviewed final material/texture direction (then VFX/sound) with provenance and Minecraft-scale evaluation.
 5. Once all nine logical animation keys have evidence, assemble the complete production `BossAnimationSourceBinding` without weakening exact coverage.
-6. Once a verified production renderer/material replaces the field-preview scaffold, remove the temporary preview path and its stone-material assumption as superseded code rather than maintaining two long-term render systems.
+6. Once a verified production renderer/material replaces the field-preview scaffold, remove `Region01BossFieldReviewRenderPreview`, `Region01BossReviewedFieldAnimationPreview` and the stone-material assumption as superseded temporary code rather than maintaining two long-term render systems.
 7. Do not restore the Dragon source Atlas or promote diagnostic particles, native field cues, technical blocks, boss bar, or stone preview material as final Riftfrontier art language.
 8. `PLAYTESTED: NO`. `MULTIPLAYER TESTED: NO`. Unit tests, GameTest, dedicated-server smoke and Xvfb client smoke never count as either.
