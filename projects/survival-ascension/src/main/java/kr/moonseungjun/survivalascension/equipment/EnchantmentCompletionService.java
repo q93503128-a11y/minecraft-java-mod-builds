@@ -17,16 +17,15 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 /**
  * Late-game enchantment completion without another menu or abstract currency.
  *
- * The stone is used in one hand while the equipment sits in the other. Every successful use moves the
- * equipment toward a conventional finished set: general Protection replaces mutually-exclusive protection
- * variants, Sharpness replaces Smite/Bane of Arthropods, then missing compatible enchants are added before
- * existing curated enchants are upgraded. Vanilla maximum levels and compatibility rules are respected.
+ * The stone never deletes an enchantment that the player already chose. Missing compatible enchants are
+ * rolled first, then existing curated enchants are upgraded. Protection is excluded from the roll when any
+ * specialist protection is already present, and Sharpness is excluded when Smite or Bane of Arthropods is
+ * already present. Existing specialist enchants can still be upgraded to their normal vanilla maximum.
  */
 public final class EnchantmentCompletionService {
     private static final Spec PROTECTION = new Spec("protection", "보호");
@@ -39,8 +38,11 @@ public final class EnchantmentCompletionService {
             "smite", "bane_of_arthropods"
     );
 
-    /** Curses and mutually-exclusive specialist damage/protection variants are deliberately omitted. */
-    private static final List<Spec> CURATED = List.of(
+    /**
+     * Enchants that may be newly added when compatible. Specialist protection/damage variants are not in
+     * this list, so the stone never randomly changes the player's chosen damage/protection specialization.
+     */
+    private static final List<Spec> ADDABLE = List.of(
             PROTECTION,
             new Spec("feather_falling", "가벼운 착지"),
             new Spec("respiration", "호흡"),
@@ -76,6 +78,15 @@ public final class EnchantmentCompletionService {
             new Spec("lure", "미끼"),
             new Spec("unbreaking", "내구성"),
             new Spec("mending", "수선")
+    );
+
+    /** Existing specialist choices are eligible for +1 upgrades, but never added from an empty slot. */
+    private static final List<Spec> UPGRADE_ONLY = List.of(
+            new Spec("fire_protection", "화염으로부터 보호"),
+            new Spec("blast_protection", "폭발로부터 보호"),
+            new Spec("projectile_protection", "발사체로부터 보호"),
+            new Spec("smite", "강타"),
+            new Spec("bane_of_arthropods", "살충")
     );
 
     private EnchantmentCompletionService() {}
@@ -115,43 +126,14 @@ public final class EnchantmentCompletionService {
         var registry = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
         ItemEnchantments current = EnchantmentHelper.getEnchantmentsForCrafting(stack);
 
-        Holder<Enchantment> protection = registry.getOrThrow(key(PROTECTION.path()));
-        if (stack.supportsEnchantment(protection) && current.getLevel(protection) <= 0) {
-            int oldSpecialist = highestLevel(current, registry, PROTECTION_ALTERNATIVES);
-            Collection<Holder<Enchantment>> retained = without(current.keySet(), PROTECTION_ALTERNATIVES);
-            if (EnchantmentHelper.isEnchantmentCompatible(retained, protection)) {
-                int levelToSet = Math.min(protection.value().getMaxLevel(),
-                        Math.max(midLevel(protection), oldSpecialist));
-                ItemEnchantments.Mutable mutable = new ItemEnchantments.Mutable(current);
-                mutable.removeIf(holder -> isAny(holder, PROTECTION_ALTERNATIVES));
-                mutable.set(protection, levelToSet);
-                EnchantmentHelper.setEnchantments(stack, mutable.toImmutable());
-                return new Result(true, oldSpecialist > 0
-                        ? "보호 계열을 §e보호 " + levelToSet + "§f로 통합했습니다."
-                        : "핵심 방어 인챈트 §e보호 " + levelToSet + "§f를 부여했습니다.");
-            }
-        }
+        boolean specialistProtection = hasAny(current, registry, PROTECTION_ALTERNATIVES);
+        boolean specialistDamage = hasAny(current, registry, DAMAGE_ALTERNATIVES);
 
-        Holder<Enchantment> sharpness = registry.getOrThrow(key(SHARPNESS.path()));
-        if (stack.supportsEnchantment(sharpness) && current.getLevel(sharpness) <= 0) {
-            int oldSpecialist = highestLevel(current, registry, DAMAGE_ALTERNATIVES);
-            Collection<Holder<Enchantment>> retained = without(current.keySet(), DAMAGE_ALTERNATIVES);
-            if (EnchantmentHelper.isEnchantmentCompatible(retained, sharpness)) {
-                int levelToSet = Math.min(sharpness.value().getMaxLevel(),
-                        Math.max(midLevel(sharpness), oldSpecialist));
-                ItemEnchantments.Mutable mutable = new ItemEnchantments.Mutable(current);
-                mutable.removeIf(holder -> isAny(holder, DAMAGE_ALTERNATIVES));
-                mutable.set(sharpness, levelToSet);
-                EnchantmentHelper.setEnchantments(stack, mutable.toImmutable());
-                return new Result(true, oldSpecialist > 0
-                        ? "공격 계열을 §e날카로움 " + levelToSet + "§f로 통합했습니다."
-                        : "핵심 공격 인챈트 §e날카로움 " + levelToSet + "§f를 부여했습니다.");
-            }
-        }
-
-        current = EnchantmentHelper.getEnchantmentsForCrafting(stack);
         List<Candidate> missing = new ArrayList<>();
-        for (Spec spec : CURATED) {
+        for (Spec spec : ADDABLE) {
+            if (spec == PROTECTION && specialistProtection) continue;
+            if (spec == SHARPNESS && specialistDamage) continue;
+
             Holder<Enchantment> holder = registry.getOrThrow(key(spec.path()));
             if (!stack.supportsEnchantment(holder) || current.getLevel(holder) > 0) continue;
             if (!EnchantmentHelper.isEnchantmentCompatible(current.keySet(), holder)) continue;
@@ -168,12 +150,8 @@ public final class EnchantmentCompletionService {
         }
 
         List<Candidate> upgradeable = new ArrayList<>();
-        for (Spec spec : CURATED) {
-            Holder<Enchantment> holder = registry.getOrThrow(key(spec.path()));
-            int oldLevel = current.getLevel(holder);
-            if (oldLevel <= 0 || oldLevel >= holder.value().getMaxLevel()) continue;
-            upgradeable.add(new Candidate(spec, holder));
-        }
+        collectUpgradeable(upgradeable, current, registry, ADDABLE);
+        collectUpgradeable(upgradeable, current, registry, UPGRADE_ONLY);
         if (upgradeable.isEmpty()) return Result.NO_CHANGE;
 
         Candidate chosen = upgradeable.get(level.getRandom().nextInt(upgradeable.size()));
@@ -185,21 +163,23 @@ public final class EnchantmentCompletionService {
         return new Result(true, "§e" + chosen.spec().label() + "§f을 §e" + oldLevel + " → " + newLevel + "§f로 강화했습니다.");
     }
 
-    private static int highestLevel(ItemEnchantments current, net.minecraft.core.HolderLookup.RegistryLookup<Enchantment> registry,
-                                    List<String> paths) {
-        int highest = 0;
-        for (String path : paths) highest = Math.max(highest, current.getLevel(registry.getOrThrow(key(path))));
-        return highest;
+    private static void collectUpgradeable(List<Candidate> result, ItemEnchantments current,
+                                           net.minecraft.core.HolderLookup.RegistryLookup<Enchantment> registry,
+                                           List<Spec> specs) {
+        for (Spec spec : specs) {
+            Holder<Enchantment> holder = registry.getOrThrow(key(spec.path()));
+            int oldLevel = current.getLevel(holder);
+            if (oldLevel <= 0 || oldLevel >= holder.value().getMaxLevel()) continue;
+            result.add(new Candidate(spec, holder));
+        }
     }
 
-    private static Collection<Holder<Enchantment>> without(Collection<Holder<Enchantment>> source, List<String> blocked) {
-        List<Holder<Enchantment>> retained = new ArrayList<>();
-        for (Holder<Enchantment> holder : source) if (!isAny(holder, blocked)) retained.add(holder);
-        return retained;
-    }
-
-    private static boolean isAny(Holder<Enchantment> holder, List<String> paths) {
-        for (String path : paths) if (holder.is(key(path))) return true;
+    private static boolean hasAny(ItemEnchantments current,
+                                  net.minecraft.core.HolderLookup.RegistryLookup<Enchantment> registry,
+                                  List<String> paths) {
+        for (String path : paths) {
+            if (current.getLevel(registry.getOrThrow(key(path))) > 0) return true;
+        }
         return false;
     }
 
