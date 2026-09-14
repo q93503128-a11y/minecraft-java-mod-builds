@@ -11,6 +11,7 @@
   "riftfrontier.expedition.feedback.hub_ready": "자철석: 출정 • 대장장이 작업대: 보급",
   "riftfrontier.expedition.feedback.deployed": "01구역 • 회수품 %s/%s • 압력 %s",
   "riftfrontier.expedition.feedback.salvage": "회수품 %s/%s • 순찰 위협 %s • 순찰 전멸 시 +1",
+  "riftfrontier.expedition.feedback.patrol_cleared": "회수품 %s/%s • 순찰 전멸 • 철수 보너스 +1 확보",
   "riftfrontier.expedition.feedback.rift_drag": "균열 견인 파동 • %s틱 동안 둔화 • 강도 %s",
   "riftfrontier.expedition.feedback.relay_online": "철수 중계기 활성 • 회수 목표 완료 후 자철석 사용",
   "riftfrontier.expedition.feedback.extracted": "철수 완료 • 저장 회수품 %s • 압력 %s • 다음 보급 비용 %s",
