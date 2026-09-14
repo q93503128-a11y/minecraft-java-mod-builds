@@ -39,6 +39,9 @@ public final class Region01EncounterRuntime {
     private static final String ROLE_HUNTER = "hunter";
     private static final String ROLE_SCOUT = "scout";
     private static final String ROLE_ELITE = "elite_anchor";
+    private static final String ROLE_HUNTER_NAME = "riftfrontier.expedition.region_01.role.hunter";
+    private static final String ROLE_SCOUT_NAME = "riftfrontier.expedition.region_01.role.scout";
+    private static final String ROLE_ELITE_NAME = "riftfrontier.expedition.region_01.role.elite_anchor";
 
     /**
      * M2 has exactly one authoritative non-terminal expedition. Direct handles make same-process
@@ -139,6 +142,20 @@ public final class Region01EncounterRuntime {
         return OptionalLong.empty();
     }
 
+    /**
+     * Field-review-only role label. These translation keys make the behaviour proxies readable while
+     * their production creature silhouettes are still intentionally unresolved. The label has no
+     * combat, targeting, reward, persistence or ownership authority.
+     */
+    public static Component fieldReviewRoleName(String role) {
+        return Component.translatable(switch (role) {
+            case ROLE_HUNTER -> ROLE_HUNTER_NAME;
+            case ROLE_SCOUT -> ROLE_SCOUT_NAME;
+            case ROLE_ELITE -> ROLE_ELITE_NAME;
+            default -> throw new IllegalArgumentException("Unknown Region 01 technical role: " + role);
+        });
+    }
+
     private static List<Mob> liveThreats(ServerLevel level, BlockPos center, long runSequence) {
         List<Mob> tracked = RUN_THREATS.get(runSequence);
         if (tracked == null || tracked.isEmpty()) return List.of();
@@ -153,6 +170,8 @@ public final class Region01EncounterRuntime {
         mob.setPersistenceRequired();
         mob.addTag(runTag(runSequence));
         mob.addTag(ROLE_TAG_PREFIX + role);
+        mob.setCustomName(fieldReviewRoleName(role));
+        mob.setCustomNameVisible(true);
         mob.snapTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, 0.0F, 0.0F);
         if (!level.addFreshEntity(mob)) throw new IllegalStateException("Minecraft rejected Region 01 encounter spawn for role " + role);
         RUN_THREATS.computeIfAbsent(runSequence, ignored -> new ArrayList<>()).add(mob);
