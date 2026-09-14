@@ -46,7 +46,7 @@ Do not infer permission from "downloadable" or "open source" alone.
 | Candidate | Area | Known status / license at latest research | Project intent |
 |---|---|---|---|
 | AcroWield | dodge / guard / parry | VERIFY / code candidate | inspect as a basis for dodge, guard and perfect-guard behavior |
-| Better Combat | weapon animation / combo cadence | VERIFY / dependency or reference | use proven animation/combo concepts without importing unrelated code |
+| Better Combat | weapon animation / combo cadence | ARR; current 26.2 Fabric release observed | use as dependency/reference for proven attack movement, animation and combo cadence; do not copy ARR source/assets |
 | RPG Inventory | RPG inventory/equipment slots | VERIFY / code candidate | inspect architecture and interaction model; final visual selected separately |
 | open minimap implementations | minimap rendering/markers | VERIFY / code candidate | adapt proven rendering/marker logic rather than rebuilding a weak minimap |
 | Veloren | open-source voxel RPG precedent | REFERENCE | study open-world traversal, towns, dungeons, combat state machines and progression |
@@ -68,6 +68,82 @@ Do not infer permission from "downloadable" or "open source" alone.
 | Horse Combat Controls | mounted-combat controls | MIT | code/reference candidate for Mount & Blade-like horse controls; version compatibility must be rechecked |
 | Jasmine Dragons | flying dragon behavior/riding reference | ARR; current 26.2 Fabric release observed | behavior/design reference only unless terms permit dependency use |
 | Musket Mod | flintlock/musket mechanics | public source; license/version must be re-audited | reference/code candidate for non-modern black-powder firearm behavior |
+| Spell Engine | skill/spell runtime, weapon skills, data-driven casting | GPL-3.0-only; current 26.2 Fabric + NeoForge listing observed | preferred dependency candidate for data-driven active skills and weapon-skill execution; avoid copying source unless GPL implications are intentionally accepted |
+| Rogues & Warriors (RPG Series) | warrior/rogue skills, martial weapons, combat presentation | ARR; current 26.2 Fabric + NeoForge listing observed | `DEPENDENCY / LOCAL_ONLY / REFERENCE`; use high-quality martial skills directly when they fit the project, but do not copy ARR code/assets into the public repo |
+| Archers (RPG Series) | bow/ranged skills and equipment | ARR; current 26.2 Fabric + NeoForge listing observed | `DEPENDENCY / LOCAL_ONLY / REFERENCE`; source for Hunter ranged skill packages and presentation |
+| Paladins & Priests (RPG Series) | healing, holy combat, shields/support | ARR; current 26.2 Fabric + NeoForge listing observed | `DEPENDENCY / LOCAL_ONLY / REFERENCE`; source for Cleric and selected Guardian skill packages |
+| Wizards (RPG Series) | arcane/fire/frost spell packages | ARR; current 26.2 Fabric + NeoForge listing observed | `DEPENDENCY / LOCAL_ONLY / REFERENCE`; source for Mage spell packages and presentation |
+| Skill Tree (RPG Series) | class skill-tree content/UI behavior | ARR; current 26.2 Fabric + NeoForge listing observed | dependency/reference only; study 100+ node class-tree organization without copying ARR content into repo |
+| RPG Class Selection (RPG Series Tweaks) | data-driven class selection / upgrades | MIT; Fabric 1.21.1 source | strong `CODE_CANDIDATE`; port only the useful class-definition/state/UI architecture to 26.2 if it fits the project-owned progression model |
+| Archetypes | server-authoritative active/passive class skill implementation | MIT; current 26.2 Fabric/Forge/NeoForge listing observed | strong `CODE_CANDIDATE`; selectively reuse/port skill, targeting, networking and server-authority patterns while rejecting its vanilla-XP progression rules |
+| Pufferfish's Skills | configurable skill-tree framework | custom license; current 26.2 Fabric + NeoForge releases observed | `VERIFY / DEPENDENCY`; evaluate terms and UX before adoption, especially if RPG Series Skill Tree becomes useful |
+| Ranged Weapon API | bow/crossbow construction and ranged weapon behavior | MIT; current 26.2 Fabric + NeoForge listing observed | strong dependency/code candidate for Hunter ranged families instead of rebuilding bow/crossbow fundamentals |
+
+---
+
+# Class / skill reuse strategy
+
+The class system is intentionally **external-first at the mechanic/content level**, not only at the visual-reference level.
+
+Rules:
+
+- If a current external mod already provides a high-quality class skill, animation, targeting behavior or weapon interaction that fits the project, prefer using it directly as a dependency/local-installed module or adapting legally reusable source rather than rebuilding a weaker clone.
+- ARR RPG Series content may be used as a normal installed dependency/reference for the private playable build, but its source/assets are not copied into this public repository.
+- MIT sources such as `RPG Class Selection` and `Archetypes` may be selectively ported/adapted with required notices; import only the necessary architecture/mechanics instead of copying entire mod trees.
+- Spell Engine is currently the strongest runtime candidate for data-driven active skills and weapon skills. Prefer dependency use. Copying GPL source into project code is not the default because it changes licensing obligations.
+- The project keeps ownership of its canonical EXP/Lv, five root classes, per-class progression, advancement history, class-switch economy, ultimate rules and server-authoritative state. External vanilla-XP or advancement assumptions are not imported merely because a source uses them.
+- External class names do not automatically become player-facing canon. Their best skill packages may be mapped into the project's Warrior / Hunter / Cleric / Mage / Guardian roles and advancement branches.
+- Weapon hard locks from external mods are not inherited by default. The canonical weapon-freedom rule remains: equipment can be used broadly, while stats, skill compatibility, passives and cadence create natural specialization.
+- External skills must still satisfy the project's readable telegraph, visible-range = actual-hitbox, multiplayer authority, resource-cost and animation-quality standards.
+- When a dependency already supplies polished effects/animations/models that are permitted for normal use, preserve them when they outperform a custom replacement; do not redesign only to make the result more original.
+
+## Spell Engine
+
+- Modrinth: https://modrinth.com/mod/spell-engine
+- Source: https://github.com/ZsoltMolnarrr/SpellEngine
+- License observed: GPL-3.0-only.
+- Current listing observed on 2026-09-14: Minecraft 26.2, Fabric and NeoForge.
+- Provides data-driven spells, hot-reload/network synchronization, weapon-spell assignment and built-in class-agnostic weapon skills.
+- Project status: strong `DEPENDENCY`; use as the leading M0 active-skill runtime candidate.
+
+## RPG Series combat/class content
+
+Current 26.2 candidates observed on 2026-09-14:
+
+- Rogues & Warriors — https://modrinth.com/mod/rogues-and-warriors
+- Archers — https://modrinth.com/mod/archers
+- Paladins & Priests — https://modrinth.com/mod/paladins-and-priests
+- Wizards — https://modrinth.com/mod/wizards
+- Skill Tree — https://modrinth.com/mod/skill-tree
+
+The content projects are listed ARR. Treat them as normal dependencies/local content/reference, not source-asset donor repositories. Their strongest skills, spell presentation and equipment interactions may be used directly in the private build when compatibility is good, then wrapped/mapped into the project's class/progression contract.
+
+## RPG Class Selection
+
+- Modrinth: https://modrinth.com/mod/rpg-class-selection
+- Source: https://github.com/TheRedBrain/rpg-class-selection
+- License: MIT.
+- Observed version: Fabric 1.21.1; direct 26.2 compatibility is not established.
+- Classes and upgrades are data-defined and can combine Spell Engine spells with attribute modifiers; unlocking and screen access are configurable.
+- Project status: strong `CODE_CANDIDATE` for class definitions, saved selection/upgrades and service-triggered class screens. Port concepts/code selectively rather than adopting its RPG Inventory coupling unchanged.
+
+## Archetypes
+
+- Modrinth: https://modrinth.com/mod/archetypes
+- Source: https://github.com/balovich-matje/archetypes
+- License: MIT.
+- Current Modrinth listing observed on 2026-09-14 includes Minecraft 26.2 on Fabric/Forge/NeoForge.
+- Source contains implemented server-side class/skill logic, active and passive abilities, networking, mana, targeting and specialization logic despite an outdated planning-oriented repository description/README.
+- Useful examples include whirlwind-style melee, shadow-step targeting, marksman/deadeye logic, protector/colossus-style defensive mechanics and elementalist magic.
+- Project status: strong `CODE_CANDIDATE`, not a wholesale dependency decision. Reuse only mechanics that fit; reject vanilla XP mirroring, vanilla advancement progression and other incompatible progression assumptions.
+
+## Ranged Weapon API
+
+- Modrinth: https://modrinth.com/mod/ranged-weapon-api
+- License: MIT.
+- Current listing observed on 2026-09-14 includes Minecraft 26.2 on Fabric and NeoForge.
+- Provides bow/crossbow construction, damage, pull-time, projectile velocity and first/third-person behavior.
+- Project status: strong `DEPENDENCY / CODE_CANDIDATE` for Hunter ranged foundations.
 
 ---
 
