@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "survivalascension:tempering_seal",
+      "required": false
+    }
+  ]
+}

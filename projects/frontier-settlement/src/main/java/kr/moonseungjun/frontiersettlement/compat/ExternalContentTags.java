@@ -19,6 +19,7 @@ public final class ExternalContentTags {
     public static final TagKey<Item> SETTLEMENT_METAL = frontier("settlement_metal");
     public static final TagKey<Item> SETTLEMENT_FOOD = frontier("settlement_food");
     public static final TagKey<Item> EXPEDITION_RELICS = frontier("expedition_relics");
+    public static final TagKey<Item> MASTERWORK_CATALYSTS = frontier("masterwork_catalysts");
 
     public static final TagKey<Item> C_INGOTS = common("ingots");
     public static final TagKey<Item> C_RAW_MATERIALS = common("raw_materials");

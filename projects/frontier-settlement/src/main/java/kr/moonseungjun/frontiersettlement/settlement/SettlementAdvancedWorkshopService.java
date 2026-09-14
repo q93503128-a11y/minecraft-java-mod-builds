@@ -4,6 +4,7 @@ import kr.moonseungjun.frontiersettlement.content.FrontierContent;
 import kr.moonseungjun.frontiersettlement.compat.ExternalContentTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -36,6 +37,11 @@ import java.util.function.Predicate;
  * domain-only second pass for an already-enchanted external weapon: two relics and eight real metal can
  * add only new table-compatible enchantments. Existing enchantments are never removed or downgraded,
  * and a no-improvement result consumes nothing.
+ *
+ * The current endgame bridge adds an optional masterwork catalyst seam. A successful domain reforge with
+ * one tagged catalyst compares two bounded enchantment rolls, keeps the stronger candidate and clears the
+ * resulting stack's standard prior-work repair cost. The catalyst is consumed only after a real improvement
+ * has been validated, and Frontier never links the providing mod's Java classes.
  */
 public final class SettlementAdvancedWorkshopService {
     public static final String ADVANCED_WORKER_TAG = "frontier_settlement_advanced_workshop_worker";
@@ -46,10 +52,13 @@ public final class SettlementAdvancedWorkshopService {
     public static final int REFORGE_RELIC_COST = 2;
     public static final int REFORGE_METAL_COST = 8;
     public static final int REFORGE_POWER = 40;
+    public static final int MASTERWORK_CATALYST_COST = 1;
 
     private static final String WORKER_NAME = "고급 제작 주민";
     private static final int SERVICE_PERIOD_TICKS = 160;
     private static final int METAL_HAUL_BATCH = 4;
+    private static final int MASTERWORK_REFORGE_POWER_BONUS = 8;
+    private static final int MASTERWORK_REFORGE_ROLLS = 2;
     private static final double INTERACTION_RANGE_SQR = 9.0D;
 
     private SettlementAdvancedWorkshopService() {}
@@ -251,7 +260,7 @@ public final class SettlementAdvancedWorkshopService {
     private static boolean forgeOne(ServerLevel level, Container crate, int weaponSlot, int relicSlot, SettlementData data) {
         ItemStack weapon = crate.getItem(weaponSlot);
         ItemStack relic = crate.getItem(relicSlot);
-        if (!isForgeableWeapon(weapon) || relic.isEmpty() || !relic.is(ExternalContentTags.EXPEDITION_RELICS)) return false;
+        if (!isForgeableWeapon(weapon) || !isExpeditionRelic(relic)) return false;
         if (countMatching(crate, SettlementAdvancedWorkshopService::isForgeMetal) < METAL_COST) return false;
 
         ItemStack forged = weapon.copy();
@@ -273,10 +282,11 @@ public final class SettlementAdvancedWorkshopService {
     }
 
     /**
-     * Alpha.47 domain reforge. Candidate selection excludes every enchantment already present and
-     * rejects anything incompatible with the existing set. The original enchantment component is
-     * therefore never rewritten or downgraded; successful additions are applied to a copy only after
-     * a non-empty compatible selection exists. Real relic/metal mutation happens last.
+     * Domain reforge. Candidate selection excludes every enchantment already present and rejects anything
+     * incompatible with the existing set. A tagged masterwork catalyst is optional: when present it compares
+     * two bounded higher-power candidates and clears the successful output's standard prior-work repair cost.
+     * Existing enchantments are never removed or downgraded, and all physical costs mutate only after a valid
+     * improvement has been selected.
      */
     private static boolean reforgeOne(ServerLevel level, Container crate, int weaponSlot, SettlementData data) {
         ItemStack weapon = crate.getItem(weaponSlot);
@@ -284,16 +294,31 @@ public final class SettlementAdvancedWorkshopService {
         if (countRelics(crate) < REFORGE_RELIC_COST) return false;
         if (countMatching(crate, SettlementAdvancedWorkshopService::isForgeMetal) < REFORGE_METAL_COST) return false;
 
+        boolean masterwork = countMatching(crate, SettlementAdvancedWorkshopService::isMasterworkCatalyst)
+                >= MASTERWORK_CATALYST_COST;
         ItemStack reforged = weapon.copy();
         var existing = EnchantmentHelper.getEnchantmentsForCrafting(reforged);
         var enchantments = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
-        List<EnchantmentInstance> additions = EnchantmentHelper.selectEnchantment(level.getRandom(), reforged, SettlementExplorationBenefitService.reforgePower(data),
-                enchantments.listElements()
-                        .<Holder<Enchantment>>map(holder -> holder)
-                        .filter(holder -> holder.is(EnchantmentTags.IN_ENCHANTING_TABLE))
-                        .filter(reforged::supportsEnchantment)
-                        .filter(holder -> existing.getLevel(holder) == 0)
-                        .filter(holder -> EnchantmentHelper.isEnchantmentCompatible(existing.keySet(), holder)));
+        int power = SettlementExplorationBenefitService.reforgePower(data)
+                + (masterwork ? MASTERWORK_REFORGE_POWER_BONUS : 0);
+        int rolls = masterwork ? MASTERWORK_REFORGE_ROLLS : 1;
+        List<EnchantmentInstance> additions = List.of();
+        int bestScore = -1;
+        for (int roll = 0; roll < rolls; roll++) {
+            List<EnchantmentInstance> candidate = EnchantmentHelper.selectEnchantment(level.getRandom(), reforged, power,
+                    enchantments.listElements()
+                            .<Holder<Enchantment>>map(holder -> holder)
+                            .filter(holder -> holder.is(EnchantmentTags.IN_ENCHANTING_TABLE))
+                            .filter(reforged::supportsEnchantment)
+                            .filter(holder -> existing.getLevel(holder) == 0)
+                            .filter(holder -> EnchantmentHelper.isEnchantmentCompatible(existing.keySet(), holder)));
+            int score = candidate.size();
+            for (EnchantmentInstance addition : candidate) score += addition.level() * 10;
+            if (score > bestScore) {
+                additions = candidate;
+                bestScore = score;
+            }
+        }
         if (additions.isEmpty()) return false;
         for (EnchantmentInstance addition : additions) {
             reforged.enchant(addition.enchantment(), addition.level());
@@ -305,8 +330,11 @@ public final class SettlementAdvancedWorkshopService {
         }
 
         reforged.setDamageValue(0);
+        if (masterwork) reforged.set(DataComponents.REPAIR_COST, 0);
         if (!consumeMatching(crate, SettlementAdvancedWorkshopService::isForgeMetal, REFORGE_METAL_COST)) return false;
-        if (!consumeMatching(crate, stack -> stack.is(ExternalContentTags.EXPEDITION_RELICS), REFORGE_RELIC_COST)) return false;
+        if (!consumeMatching(crate, SettlementAdvancedWorkshopService::isExpeditionRelic, REFORGE_RELIC_COST)) return false;
+        if (masterwork && !consumeMatching(crate, SettlementAdvancedWorkshopService::isMasterworkCatalyst,
+                MASTERWORK_CATALYST_COST)) return false;
         crate.setItem(weaponSlot, reforged);
         crate.setChanged();
         return true;
@@ -337,26 +365,37 @@ public final class SettlementAdvancedWorkshopService {
     }
 
     /**
-     * Forge metal and expedition relics are intentionally disjoint cost domains. A companion
-     * datapack may accidentally tag the same item as both; treating that stack as a relic only
-     * prevents one sequential consume from invalidating the next after resources already changed.
+     * Metal, relic and masterwork catalyst are intentionally disjoint physical cost domains. Companion
+     * datapacks can extend each tag independently; if one stack is accidentally cross-tagged, catalyst wins,
+     * then relic, so a later sequential consume can never invalidate a cost that was already committed.
      */
     private static boolean isForgeMetal(ItemStack stack) {
         return !stack.isEmpty()
                 && SettlementStorageService.isMetalStack(stack)
-                && !stack.is(ExternalContentTags.EXPEDITION_RELICS);
+                && !isExpeditionRelic(stack)
+                && !isMasterworkCatalyst(stack);
+    }
+
+    private static boolean isExpeditionRelic(ItemStack stack) {
+        return !stack.isEmpty()
+                && stack.is(ExternalContentTags.EXPEDITION_RELICS)
+                && !isMasterworkCatalyst(stack);
+    }
+
+    private static boolean isMasterworkCatalyst(ItemStack stack) {
+        return !stack.isEmpty() && stack.is(ExternalContentTags.MASTERWORK_CATALYSTS);
     }
 
     private static int findRelicSlot(Container crate) {
         for (int slot = 0; slot < crate.getContainerSize(); slot++) {
             ItemStack stack = crate.getItem(slot);
-            if (!stack.isEmpty() && stack.is(ExternalContentTags.EXPEDITION_RELICS)) return slot;
+            if (isExpeditionRelic(stack)) return slot;
         }
         return -1;
     }
 
     private static int countRelics(Container crate) {
-        return countMatching(crate, stack -> stack.is(ExternalContentTags.EXPEDITION_RELICS));
+        return countMatching(crate, SettlementAdvancedWorkshopService::isExpeditionRelic);
     }
 
     private static int countMatching(Container container, Predicate<ItemStack> predicate) {
