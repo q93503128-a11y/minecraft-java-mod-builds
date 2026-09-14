@@ -74,6 +74,7 @@ public final class Region01EncounterRuntime {
     public static EncounterPlan begin(ServerLevel level, BlockPos center, long runSequence, int pressure) {
         clearRun(level, center, runSequence);
         RUN_THREATS.put(runSequence, new ArrayList<>());
+        Region01FieldArena.materialize(level, center);
         EncounterPlan plan = planForPressure(pressure);
 
         for (int i = 0; i < plan.hunters(); i++) {
