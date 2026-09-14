@@ -252,13 +252,25 @@ public final class EliteMobSystem {
 
         if (rank == Rank.MYTHIC_III && event.getEntity() instanceof Mob mob) {
             MythicRuntime runtime = MYTHICS.remove(mob.getUUID());
+            if (runtime != null) closeMythicBar(runtime);
+
+            boolean fieldBoss = MythicFieldBossService.isExternalFieldBoss(mob);
+            if (fieldBoss) {
+                // External bosses already own their native loot and are credited through the contribution-based
+                // Mythic endgame service. Do not stack the legacy proximity material bundle on top of those rewards.
+                if (killer != null) {
+                    killer.giveExperiencePoints(90);
+                    killer.sendSystemMessage(Component.literal(
+                            "§4[필드보스 격파] §f경험치 §e+90 §7· 고유 전리품과 신화 사냥 기여 보상은 별도 정산됩니다."));
+                }
+                return;
+            }
+
             Set<UUID> recipients = new HashSet<>();
             if (runtime != null) recipients.addAll(runtime.contributors);
             if (killer != null) recipients.add(killer.getUUID());
             for (ServerPlayer player : playersNear(level, mob, MYTHIC_REWARD_RADIUS)) recipients.add(player.getUUID());
-            if (runtime != null) closeMythicBar(runtime);
             dropRankReward(level, mob, rank);
-            boolean fieldBoss = MythicFieldBossService.isExternalFieldBoss(mob);
             for (UUID id : recipients) {
                 ServerPlayer player = level.getServer().getPlayerList().getPlayer(id);
                 if (player == null || player.level() != level) continue;
@@ -266,9 +278,8 @@ public final class EliteMobSystem {
                 giveOrDrop(player, new ItemStack(Items.DIAMOND, 1));
                 giveOrDrop(player, new ItemStack(Items.EMERALD, 2 + level.getRandom().nextInt(3)));
                 giveOrDrop(player, new ItemStack(Items.ECHO_SHARD, 1));
-                player.sendSystemMessage(Component.literal(fieldBoss
-                        ? "§4[필드보스 격파] §f경험치 §e+90 §7· 다이아1 · 에메랄드2~4 · 메아리1"
-                        : "§6[신화 공동 격파] §f경험치 §e+90 §7· 다이아1 · 에메랄드2~4 · 메아리1"));
+                player.sendSystemMessage(Component.literal(
+                        "§6[신화 공동 격파] §f경험치 §e+90 §7· 다이아1 · 에메랄드2~4 · 메아리1"));
             }
             return;
         }
