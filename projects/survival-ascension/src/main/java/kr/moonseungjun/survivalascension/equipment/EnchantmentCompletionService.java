@@ -22,10 +22,9 @@ import java.util.List;
 /**
  * Late-game enchantment completion without another menu or abstract currency.
  *
- * The stone never deletes an enchantment that the player already chose. Missing compatible enchants are
- * rolled first, then existing curated enchants are upgraded. Protection is excluded from the roll when any
- * specialist protection is already present, and Sharpness is excluded when Smite or Bane of Arthropods is
- * already present. Existing specialist enchants can still be upgraded to their normal vanilla maximum.
+ * Normal use completes conventional enchantments without deleting the player's specialist protection/damage
+ * choice. Sneak-use on Mythic III affix gear is a separate endgame sink: it consumes multiple stones to swap
+ * exactly one ascension affix while preserving the rest of the item.
  */
 public final class EnchantmentCompletionService {
     private static final Spec PROTECTION = new Spec("protection", "보호");
@@ -109,10 +108,19 @@ public final class EnchantmentCompletionService {
         }
         if (!(player.level() instanceof ServerLevel level)) return;
 
+        if (player.isShiftKeyDown()) {
+            precisionReengrave(player, stone, targetHand, target, level);
+            return;
+        }
+
         Result result = improve(target, level);
         if (!result.changed()) {
+            String precisionHint = AscensionAffixes.rarity(target) == 3
+                    ? " §7신화 장비는 웅크리고 사용하면 승천 옵션 하나를 정밀 재각인할 수 있습니다."
+                    : "";
             player.sendSystemMessage(Component.literal(
-                    "§d[마력 각인석] §f이 장비에는 현재 각인석으로 더 완성할 수 있는 호환 인챈트가 없습니다. §7재화는 소비하지 않았습니다."));
+                    "§d[마력 각인석] §f이 장비에는 현재 각인석으로 더 완성할 수 있는 호환 인챈트가 없습니다. §7재화는 소비하지 않았습니다."
+                            + precisionHint));
             return;
         }
 
@@ -120,6 +128,37 @@ public final class EnchantmentCompletionService {
         player.getInventory().setChanged();
         player.containerMenu.broadcastChanges();
         player.sendSystemMessage(Component.literal("§d[마력 각인] §f" + result.description()));
+    }
+
+    private static void precisionReengrave(ServerPlayer player, ItemStack stone, InteractionHand targetHand,
+                                           ItemStack target, ServerLevel level) {
+        int cost = PrecisionReengravingService.stoneCost(target);
+        if (cost <= 0) {
+            player.sendSystemMessage(Component.literal(
+                    "§d[정밀 재각인] §f승천 옵션이 정상적으로 붙은 신화 III 장비만 정밀 재각인할 수 있습니다. §7재화는 소비하지 않았습니다."));
+            return;
+        }
+        if (!player.isCreative() && stone.getCount() < cost) {
+            player.sendSystemMessage(Component.literal(
+                    "§d[정밀 재각인] §f마력 각인석이 부족합니다. §7필요 " + cost + "개 · 보유 " + stone.getCount() + "개"));
+            return;
+        }
+
+        PrecisionReengravingService.Result result = PrecisionReengravingService.rerollOne(target, level.getRandom());
+        if (!result.changed()) {
+            player.sendSystemMessage(Component.literal(
+                    "§d[정밀 재각인] §f유효한 새 각인을 만들지 못했습니다. §7재화는 소비하지 않았습니다."));
+            return;
+        }
+
+        player.setItemInHand(targetHand, result.stack());
+        if (!player.isCreative()) stone.shrink(result.cost());
+        player.getInventory().setChanged();
+        player.containerMenu.broadcastChanges();
+        player.sendSystemMessage(Component.literal("§5[정밀 재각인] §f승천 옵션 하나를 교체했습니다. §7마력 각인석 -"
+                + result.cost()));
+        player.sendSystemMessage(Component.literal("§7이전: §f" + result.before()));
+        player.sendSystemMessage(Component.literal("§7현재: §e" + result.after()));
     }
 
     private static Result improve(ItemStack stack, ServerLevel level) {
