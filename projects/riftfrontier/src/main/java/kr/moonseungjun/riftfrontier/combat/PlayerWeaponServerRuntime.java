@@ -5,6 +5,7 @@ import kr.moonseungjun.riftfrontier.content.ContentRuntime;
 import kr.moonseungjun.riftfrontier.content.ContentRuntimeSnapshot;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 
@@ -34,6 +35,9 @@ public final class PlayerWeaponServerRuntime {
         State current = currentState();
         try {
             current.adapter.beginMove(player, moveId, player.level().getGameTime());
+            // Presentation follows authority: only a move that the server actually admitted gets a visible start cue.
+            // updateSelf=true keeps the initiating client and nearby observers on the same vanilla swing animation.
+            player.swing(InteractionHand.MAIN_HAND, true);
             return IntentResult.ACCEPTED;
         } catch (IllegalArgumentException | IllegalStateException ex) {
             return IntentResult.REJECTED;
