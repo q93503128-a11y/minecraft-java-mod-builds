@@ -1,0 +1,127 @@
+name: EARTH TO STARS alpha17 flight feel rescue
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/ets-alpha17-flight-rescue.yml'
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: projects/earth-to-stars
+
+jobs:
+  rescue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: gradle
+      - name: Apply final alpha.17 source changes
+        shell: bash
+        working-directory: .
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/ets_alpha17_finish.py
+      - name: Validate alpha.17 contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/logs
+          python3 tools/test_progression_validator.py 2>&1 | tee build/logs/p0h-validator-tests.log
+          python3 tools/validate_progression.py 2>&1 | tee build/logs/p0h-progression.log
+          python3 tools/validate_m1_launch.py 2>&1 | tee build/logs/m1-launch-progression.log
+          python3 tools/validate_alpha17_acceptance.py 2>&1 | tee build/logs/alpha17-acceptance.log
+      - name: Clean test and build
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon clean test build --stacktrace 2>&1 | tee build/logs/build.log
+      - name: Verify production JAR
+        run: python3 tools/verify_jar.py
+      - name: Dedicated wall-collision probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run
+          mkdir -p run build/logs
+          printf 'eula=true\n' > run/eula.txt
+          EARTH_TO_STARS_LIFECYCLE_PROBE=flight_collision timeout --kill-after=15s 180s ./gradlew --no-daemon runServer --stacktrace 2>&1 | tee build/logs/alpha17-flight-collision.log
+          grep -q 'EARTH_TO_STARS_ALPHA17_FLIGHT_COLLISION_PASS' build/logs/alpha17-flight-collision.log
+      - name: Preserve verified deliverables
+        shell: bash
+        working-directory: .
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ets-alpha17
+          cp projects/earth-to-stars/build/libs/earth_to_stars-0.1.0-alpha.17.jar /tmp/ets-alpha17/
+          cp projects/earth-to-stars/build/libs/earth_to_stars-0.1.0-alpha.17.jar.sha256 /tmp/ets-alpha17/
+          cp projects/earth-to-stars/build/logs/alpha17-flight-collision.log /tmp/ets-alpha17/
+      - name: Commit verified alpha.17 source
+        shell: bash
+        working-directory: .
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            projects/earth-to-stars/gradle.properties \
+            projects/earth-to-stars/tools/validate_alpha17_acceptance.py \
+            projects/earth-to-stars/src/main/java/kr/moonseungjun/earthtostars/EarthToStars.java \
+            projects/earth-to-stars/src/main/java/kr/moonseungjun/earthtostars/ship/runtime/minecraft/ShipRuntimeManager.java \
+            projects/earth-to-stars/src/main/java/kr/moonseungjun/earthtostars/ship/runtime/minecraft/ShipServerEvents.java \
+            projects/earth-to-stars/src/main/java/kr/moonseungjun/earthtostars/ship/runtime/minecraft/ShipLifecycleProbe.java
+          git commit -m 'earth-to-stars: finish flight feel collision rescue alpha17'
+          git reset --hard HEAD
+          git clean -fdx \
+            projects/earth-to-stars/.gradle \
+            projects/earth-to-stars/build \
+            projects/earth-to-stars/run \
+            projects/earth-to-stars/tools/__pycache__
+          git pull --rebase origin main
+          git push origin HEAD:main
+          git rev-parse HEAD > /tmp/ets-alpha17/source-sha.txt
+      - name: Write alpha.17 verification report
+        shell: bash
+        working-directory: .
+        run: |
+          set -euo pipefail
+          SHA=$(cat /tmp/ets-alpha17/earth_to_stars-0.1.0-alpha.17.jar.sha256)
+          SOURCE_SHA=$(cat /tmp/ets-alpha17/source-sha.txt)
+          cat > /tmp/ets-alpha17/ALPHA17_FLIGHT_RESCUE_REPORT.md <<EOF
+          # EARTH TO STARS alpha.17 Flight Feel / Collision / Cockpit Rescue
+
+          - Source commit: $SOURCE_SHA
+          - Minecraft: 26.2
+          - NeoForge: 26.2.0.76
+          - Java: 25
+          - alpha.17 static acceptance: PASS
+          - movement JUnit: PASS
+          - clean test build: PASS
+          - production JAR verify: PASS
+          - dedicated solid-wall collision probe: PASS
+          - Space/Ctrl explicit vertical thrust: VERIFIED BY UNIT/STATIC TEST
+          - A/D left/right semantic mapping: VERIFIED BY UNIT/STATIC TEST
+          - Display noPhysics override: VERIFIED
+          - cockpit-local rider position + sitting contract: CODE/BUILD VERIFIED; LIVE VISUAL PLAYTEST REQUIRED
+          - third-person ship camera distance hook: BUILD VERIFIED; LIVE PLAYTEST REQUIRED
+          - live flight feel: NOT PLAYTESTED
+          - live multiplayer: NOT TESTED
+          - JAR SHA-256: $SHA
+          EOF
+      - name: Upload alpha.17 deliverables
+        uses: actions/upload-artifact@v4
+        with:
+          name: earth-to-stars-0.1.0-alpha.17-flight-rescue
+          path: /tmp/ets-alpha17/
+          retention-days: 7
