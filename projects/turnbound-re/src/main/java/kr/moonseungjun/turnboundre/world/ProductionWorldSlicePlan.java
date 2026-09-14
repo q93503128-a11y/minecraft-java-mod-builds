@@ -21,6 +21,12 @@ public final class ProductionWorldSlicePlan {
     public static final int PATROL_HALF_SIZE = 4;
     public static final int ELITE_HALF_SIZE = 5;
 
+    /** Baseline one-pass output of the authored quarry before Fortune or external world mining. */
+    public static final int COAL_ORE_BLOCKS = 8;
+    public static final int COPPER_ORE_BLOCKS = 10;
+    public static final int IRON_ORE_BLOCKS = 8;
+    public static final int GOLD_ORE_BLOCKS = 4;
+
     public static final int HUB_GATE_X = 10;
     public static final int ROUTE_END_X = 78;
     public static final int LANTERN_SPACING = 14;
@@ -53,6 +59,20 @@ public final class ProductionWorldSlicePlan {
 
     private ProductionWorldSlicePlan() {}
 
+    /**
+     * Conservative first-quarry ingot budget after ordinary smelting. It deliberately ignores Fortune so
+     * first-expedition balance never depends on an enchantment roll or hidden multiplier.
+     */
+    public static int firstMineMaterialBudget(String ingredientItem) {
+        if (ingredientItem == null) return 0;
+        return switch (ingredientItem) {
+            case "minecraft:iron_ingot" -> IRON_ORE_BLOCKS;
+            case "minecraft:copper_ingot" -> COPPER_ORE_BLOCKS;
+            case "minecraft:gold_ingot" -> GOLD_ORE_BLOCKS;
+            default -> 0;
+        };
+    }
+
     public static List<String> validate() {
         List<String> errors = new ArrayList<>();
 
@@ -67,6 +87,9 @@ public final class ProductionWorldSlicePlan {
         }
         if (LANTERN_SPACING < 10 || LANTERN_SPACING > 18) {
             errors.add("route landmark cadence must stay readable without becoming cluttered");
+        }
+        if (COAL_ORE_BLOCKS <= 0 || COPPER_ORE_BLOCKS <= 0 || IRON_ORE_BLOCKS <= 0 || GOLD_ORE_BLOCKS <= 0) {
+            errors.add("first quarry material budgets must stay positive");
         }
 
         requireBranchGap(errors, MINE, "mine");
