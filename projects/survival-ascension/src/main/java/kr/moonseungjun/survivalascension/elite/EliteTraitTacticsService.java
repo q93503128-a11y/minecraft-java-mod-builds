@@ -1,9 +1,11 @@
 package kr.moonseungjun.survivalascension.elite;
 
+import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -36,9 +38,8 @@ public final class EliteTraitTacticsService {
         if (rank <= 0 || !"bulwark".equals(trait(defender))) return;
         if (!(defender.level() instanceof ServerLevel level)) return;
 
-        Entity attacker = event.getSource().getEntity();
-        if (attacker == null) attacker = event.getSource().getDirectEntity();
-        if (!(attacker instanceof ServerPlayer) || !isInFront(defender, attacker)) return;
+        ServerPlayer attacker = contributingPlayer(event.getSource(), level);
+        if (attacker == null || !isInFront(defender, attacker)) return;
 
         float multiplier = rank >= 2 ? 0.62F : 0.75F;
         event.setAmount(Math.max(0.0F, event.getAmount() * multiplier));
@@ -64,7 +65,8 @@ public final class EliteTraitTacticsService {
         if (event.getEntity() instanceof Mob defender && defender.isAlive()
                 && defender.level() instanceof ServerLevel level) {
             int rank = ambientRank(defender);
-            if (rank > 0 && event.getSource().getEntity() instanceof ServerPlayer player) {
+            ServerPlayer player = rank > 0 ? contributingPlayer(event.getSource(), level) : null;
+            if (player != null) {
                 String trait = trait(defender);
                 if ("swift".equals(trait)) triggerSwiftFlank(level, defender, player, rank);
                 else if ("berserker".equals(trait) && defender.getHealth() <= defender.getMaxHealth() * 0.50F) {
@@ -119,6 +121,11 @@ public final class EliteTraitTacticsService {
         level.sendParticles(ParticleTypes.DAMAGE_INDICATOR,
                 mob.getX(), mob.getY() + mob.getBbHeight() * 0.65D, mob.getZ(),
                 rank >= 2 ? 12 : 8, 0.4D, 0.55D, 0.4D, 0.04D);
+    }
+
+    private static ServerPlayer contributingPlayer(DamageSource source, ServerLevel level) {
+        if (source.getEntity() instanceof ServerPlayer direct) return direct;
+        return AscensionAffixes.rangedProjectileOwner(source.getDirectEntity(), level);
     }
 
     private static boolean claimTactic(Mob mob, long now, int cooldownTicks) {
