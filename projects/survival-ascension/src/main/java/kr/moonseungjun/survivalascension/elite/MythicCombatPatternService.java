@@ -72,12 +72,17 @@ public final class MythicCombatPatternService {
         for (Map.Entry<UUID, Runtime> entry : new ArrayList<>(ACTIVE.entrySet())) {
             Runtime runtime = entry.getValue();
             if (runtime.level.getServer() != server) continue;
+            long now = runtime.level.getGameTime();
+            if (now - runtime.lastCombatTick > COMBAT_MEMORY_TICKS) {
+                stale.add(entry.getKey());
+                continue;
+            }
             Entity entity = runtime.level.getEntity(entry.getKey());
             if (!(entity instanceof Mob mob) || !mob.isAlive() || EliteMobSystem.rankId(mob) != 3) {
                 stale.add(entry.getKey());
                 continue;
             }
-            tickRuntime(runtime, mob);
+            tickRuntime(runtime, mob, now);
         }
         for (UUID id : stale) ACTIVE.remove(id);
     }
@@ -96,14 +101,7 @@ public final class MythicCombatPatternService {
         runtime.lastCombatTick = level.getGameTime();
     }
 
-    private static void tickRuntime(Runtime runtime, Mob mob) {
-        long now = runtime.level.getGameTime();
-        if (now - runtime.lastCombatTick > COMBAT_MEMORY_TICKS) {
-            clearPending(runtime);
-            runtime.nextPatternTick = now + 60L;
-            return;
-        }
-
+    private static void tickRuntime(Runtime runtime, Mob mob, long now) {
         int phase = phase(mob);
         if (phase <= 0) {
             clearPending(runtime);
