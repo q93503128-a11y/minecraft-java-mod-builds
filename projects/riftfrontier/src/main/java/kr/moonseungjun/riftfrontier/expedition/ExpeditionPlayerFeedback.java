@@ -16,7 +16,7 @@ public final class ExpeditionPlayerFeedback {
     private ExpeditionPlayerFeedback() {}
 
     public static void hubReady(ServerPlayer player) {
-        player.displayClientMessage(Component.translatable("riftfrontier.expedition.feedback.hub_ready"), true);
+        player.sendSystemMessage(Component.translatable("riftfrontier.expedition.feedback.hub_ready"), true);
     }
 
     public static void deployed(ServerPlayer player) {
@@ -24,7 +24,7 @@ public final class ExpeditionPlayerFeedback {
         ExpeditionRun run = ExpeditionGameplayService.activeFor(player, world).orElse(null);
         if (run == null) return;
         int recovered = run.recoveredResources().getOrDefault(ExpeditionGameplayService.RESOURCE_ID, 0);
-        player.displayClientMessage(Component.translatable(
+        player.sendSystemMessage(Component.translatable(
             "riftfrontier.expedition.feedback.deployed",
             recovered,
             3,
@@ -43,7 +43,7 @@ public final class ExpeditionPlayerFeedback {
             ExpeditionGameplayService.technicalRegionCenter(),
             run.sequence()
         );
-        player.displayClientMessage(Component.translatable(
+        player.sendSystemMessage(Component.translatable(
             "riftfrontier.expedition.feedback.salvage",
             recovered,
             3,
@@ -52,12 +52,12 @@ public final class ExpeditionPlayerFeedback {
     }
 
     public static void extractionRelayOnline(ServerPlayer player) {
-        player.displayClientMessage(Component.translatable("riftfrontier.expedition.feedback.relay_online"), true);
+        player.sendSystemMessage(Component.translatable("riftfrontier.expedition.feedback.relay_online"), true);
     }
 
     public static void extractionComplete(ServerPlayer player) {
         RiftfrontierWorldData world = RiftfrontierWorldData.get((ServerLevel) player.level());
-        player.displayClientMessage(Component.translatable(
+        player.sendSystemMessage(Component.translatable(
             "riftfrontier.expedition.feedback.extracted",
             world.securedRegion01Salvage(),
             world.region01Pressure(),
@@ -67,7 +67,7 @@ public final class ExpeditionPlayerFeedback {
 
     public static void provisioned(ServerPlayer player) {
         RiftfrontierWorldData world = RiftfrontierWorldData.get((ServerLevel) player.level());
-        player.displayClientMessage(Component.translatable(
+        player.sendSystemMessage(Component.translatable(
             "riftfrontier.expedition.feedback.provisioned",
             world.expeditionSupply(),
             world.securedRegion01Salvage(),
