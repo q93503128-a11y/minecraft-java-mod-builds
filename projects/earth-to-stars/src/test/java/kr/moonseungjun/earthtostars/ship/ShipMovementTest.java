@@ -37,18 +37,47 @@ class ShipMovementTest {
     }
 
     @Test
-    void movementAcceleratesBrakesAndClampsPitch() {
+    void movementAcceleratesCoastsAndCapsForwardSpeed() {
         ShipTransform transform = new ShipTransform(ShipVec3.ZERO, ShipVec3.ZERO, 0.0D, 0.0D);
-        for (int i = 0; i < 100; i++) {
-            transform = ShipMovementSimulator.step(transform, new ShipControlInput(1.0D, 0.0D, -1.0D), ShipFlightTuning.P0);
+        for (int i = 0; i < 160; i++) {
+            transform = ShipMovementSimulator.step(transform, new ShipControlInput(1.0D, 0.0D, 0.0D), ShipFlightTuning.P0);
         }
 
-        assertEquals(ShipFlightTuning.P0.maxForwardSpeed(), transform.velocity().length(), EPSILON);
-        assertEquals(-ShipFlightTuning.P0.maxPitchDegrees(), transform.pitchDegrees(), EPSILON);
+        assertEquals(ShipFlightTuning.P0.maxForwardSpeed(), transform.velocity().length(), 1.0E-6D);
+        double poweredSpeed = transform.velocity().length();
+        ShipTransform coast = ShipMovementSimulator.step(transform, ShipControlInput.ZERO, ShipFlightTuning.P0);
+        assertTrue(coast.velocity().length() < poweredSpeed);
+        assertTrue(coast.velocity().length() > 0.0D);
+    }
 
-        double movingSpeed = transform.velocity().length();
-        ShipTransform braking = ShipMovementSimulator.step(transform, ShipControlInput.ZERO, ShipFlightTuning.P0);
-        assertTrue(braking.velocity().length() < movingSpeed);
+    @Test
+    void liftIsExplicitlyUpAndDownInsteadOfPitch() {
+        ShipTransform level = new ShipTransform(ShipVec3.ZERO, ShipVec3.ZERO, 0.0D, 0.0D);
+        ShipTransform rising = ShipMovementSimulator.step(level, new ShipControlInput(0.0D, 0.0D, 1.0D), ShipFlightTuning.P0);
+        ShipTransform descending = ShipMovementSimulator.step(level, new ShipControlInput(0.0D, 0.0D, -1.0D), ShipFlightTuning.P0);
+
+        assertTrue(rising.velocity().y() > 0.0D);
+        assertTrue(descending.velocity().y() < 0.0D);
+        assertEquals(0.0D, rising.pitchDegrees(), EPSILON);
+        assertEquals(0.0D, descending.pitchDegrees(), EPSILON);
+    }
+
+    @Test
+    void positiveYawInputMeansLeftTurnAndMomentumIsNotDeleted() {
+        ShipTransform transform = new ShipTransform(
+                ShipVec3.ZERO,
+                new ShipVec3(0.0D, 0.0D, 0.30D),
+                0.0D,
+                0.0D
+        );
+        ShipTransform turned = ShipMovementSimulator.step(
+                transform,
+                new ShipControlInput(0.0D, 1.0D, 0.0D),
+                ShipFlightTuning.P0
+        );
+
+        assertTrue(turned.yawDegrees() < 0.0D);
+        assertTrue(turned.velocity().length() > 0.0D);
     }
 
     @Test
