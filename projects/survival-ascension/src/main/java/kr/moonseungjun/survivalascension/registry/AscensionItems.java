@@ -17,6 +17,13 @@ public final class AscensionItems {
                     .component(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true)
     );
 
+    public static final DeferredItem<Item> ENCHANTMENT_STONE = ITEMS.registerSimpleItem(
+            "enchantment_stone",
+            properties -> properties
+                    .stacksTo(16)
+                    .component(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true)
+    );
+
     private AscensionItems() {}
 
     public static void register(IEventBus modEventBus) {
