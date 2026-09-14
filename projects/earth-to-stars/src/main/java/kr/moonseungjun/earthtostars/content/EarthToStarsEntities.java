@@ -2,7 +2,6 @@ package kr.moonseungjun.earthtostars.content;
 
 import kr.moonseungjun.earthtostars.EarthToStars;
 import kr.moonseungjun.earthtostars.ship.runtime.minecraft.ShipExteriorEntity;
-import net.minecraft.world.entity.EntityAttachment;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.neoforged.bus.api.IEventBus;
@@ -20,7 +19,6 @@ public final class EarthToStarsEntities {
             builder -> builder
                     .sized(5.4F, 2.3F)
                     .eyeHeight(1.25F)
-                    .attach(EntityAttachment.PASSENGER, 0.0F, 1.20F, 0.35F)
                     .clientTrackingRange(12)
                     .updateInterval(1)
                     .noSummon()
