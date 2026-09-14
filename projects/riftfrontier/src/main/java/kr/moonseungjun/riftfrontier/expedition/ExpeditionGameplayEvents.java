@@ -27,8 +27,9 @@ public final class ExpeditionGameplayEvents {
         // Keep the first vertical slice playable in-world: recovery interaction materializes a temporary
         // technical extraction relay, while the existing lifecycle remains the sole extraction authority.
         ExpeditionFieldExtractionRelay.ensurePresent(player);
-        if (ExpeditionGameplayService.tryRecover(player, event.getPos())
-            || ExpeditionFieldExtractionRelay.tryUse(player, event.getPos())) {
+        boolean recovered = ExpeditionGameplayService.tryRecover(player, event.getPos());
+        if (recovered) ExpeditionPlayerFeedback.salvageUpdated(player);
+        if (recovered || ExpeditionFieldExtractionRelay.tryUse(player, event.getPos())) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
         }

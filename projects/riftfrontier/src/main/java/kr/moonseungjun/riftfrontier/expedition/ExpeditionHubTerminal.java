@@ -65,6 +65,7 @@ public final class ExpeditionHubTerminal {
             "[Riftfrontier] Technical expedition hub online. Right-click the lodestone to deploy; "
                 + "the smithing table converts secured salvage into expedition supply after extraction."
         ));
+        ExpeditionPlayerFeedback.hubReady(player);
         return true;
     }
 
@@ -76,6 +77,7 @@ public final class ExpeditionHubTerminal {
         if (clickedPos.equals(provisionPosition()) && level.getBlockState(clickedPos).is(Blocks.SMITHING_TABLE)) {
             try {
                 ExpeditionGameplayService.provision(player);
+                ExpeditionPlayerFeedback.provisioned(player);
             } catch (IllegalStateException rejected) {
                 player.sendSystemMessage(Component.literal(
                     "[Riftfrontier] Provision station unavailable: " + rejected.getMessage()
@@ -87,6 +89,7 @@ public final class ExpeditionHubTerminal {
         if (clickedPos.equals(deployPosition()) && level.getBlockState(clickedPos).is(Blocks.LODESTONE)) {
             try {
                 ExpeditionGameplayService.start(player);
+                ExpeditionPlayerFeedback.deployed(player);
             } catch (IllegalStateException rejected) {
                 player.sendSystemMessage(Component.literal(
                     "[Riftfrontier] Deployment station unavailable: " + rejected.getMessage()

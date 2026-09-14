@@ -4,5 +4,11 @@
   "key.category.riftfrontier.combat": "Riftfrontier Combat",
   "key.riftfrontier.weapon_action_1": "Weapon Action 1",
   "key.riftfrontier.weapon_action_2": "Weapon Action 2",
-  "entity.riftfrontier.region_01_boss": "Region 01 Boss"
+  "entity.riftfrontier.region_01_boss": "Region 01 Boss",
+  "riftfrontier.expedition.feedback.hub_ready": "Lodestone: deploy • Smithing table: provision",
+  "riftfrontier.expedition.feedback.deployed": "Region 01 • Salvage %s/%s • Pressure %s",
+  "riftfrontier.expedition.feedback.salvage": "Salvage %s/%s • Patrol threats %s • Clear patrol for +1",
+  "riftfrontier.expedition.feedback.relay_online": "Extraction relay online • Finish salvage, then use the lodestone",
+  "riftfrontier.expedition.feedback.extracted": "Extracted • Stored salvage %s • Pressure %s • Next supply cost %s",
+  "riftfrontier.expedition.feedback.provisioned": "Supply %s • Stored salvage %s • Next deployment cost %s"
 }

@@ -43,6 +43,7 @@ public final class ExpeditionFieldExtractionRelay {
             "[Riftfrontier] Extraction relay online at the far edge of the field cell. "
                 + "Complete the salvage objective, then right-click the lodestone to extract."
         ));
+        ExpeditionPlayerFeedback.extractionRelayOnline(player);
     }
 
     /**
@@ -67,6 +68,7 @@ public final class ExpeditionFieldExtractionRelay {
         try {
             ExpeditionGameplayService.extract(player);
             ExpeditionHubTerminal.ensurePresent(player);
+            ExpeditionPlayerFeedback.extractionComplete(player);
             player.sendSystemMessage(Component.literal(
                 "[Riftfrontier] Hub stations online: smithing table = provision, lodestone = deploy."
             ));
