@@ -2,6 +2,7 @@ package kr.moonseungjun.turnboundre.client;
 
 import kr.moonseungjun.turnboundre.network.CharacterPresentationNetworkPayloads;
 import kr.moonseungjun.turnboundre.network.ProgressionNetworkPayloads;
+import kr.moonseungjun.turnboundre.presentation.CharacterVisualOverrideCatalog;
 
 import java.util.Map;
 import java.util.Optional;
@@ -28,7 +29,7 @@ public final class ProgressionClientState {
     public static void accept(CharacterPresentationNetworkPayloads.CatalogS2C payload) {
         if (payload == null) return;
         try {
-            sourceEntities = payload.decode();
+            sourceEntities = CharacterVisualOverrideCatalog.apply(payload.decode());
             generation++;
         } catch (RuntimeException invalidPayload) {
             sourceEntities = Map.of();
@@ -36,10 +37,10 @@ public final class ProgressionClientState {
         }
     }
 
-    public static Optional<ProgressionNetworkPayloads.Snapshot> snapshot() {
-        return Optional.ofNullable(snapshot);
-    }
-
+    /**
+     * Returns the entity id used by client presentation. The server-authored catalog is preserved on the wire;
+     * known TURNBOUND-only visual entities are substituted only after decode on this client cache.
+     */
     public static Optional<String> sourceEntity(String characterId) {
         if (characterId == null || characterId.isBlank()) return Optional.empty();
         String sourceEntity = sourceEntities.get(characterId);

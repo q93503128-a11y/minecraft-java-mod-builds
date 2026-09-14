@@ -8,6 +8,7 @@
 | REF-UI-001 | UI production skin | Kenney, `UI Pack - Pixel Adventure` 2.0 — https://kenney.nl/assets/ui-pack-pixel-adventure | CC0 1.0 | **사용 중** | Large tiles / Thin outline의 `tile_0002`, `0008`, `0009`, `0020`, `0021`, `0022`를 title + semantic frame으로 사용. meter는 같은 pack의 neutral/red/blue/gold palette를 5px strip으로 축약한 수정본. GUI 확장은 9-slice metadata 사용 |
 | REF-UI-002 | UI 자산 후보 / 비교 | tiopalada, `Tiny RPG - Dragon Regalia GUI` — https://tiopalada.itch.io/tiny-rpg-dragon-regalia-gui | CC0 1.0 | 파일 반입 전 | 9-slice frame, rest/hover/click/disabled 상태, target cursor, meter 구조 참고 및 보조 후보. 원본의 강한 JRPG 색/장식은 TURNBOUND: RE 전체 skin으로 그대로 혼합하지 않음 |
 | REF-UI-003 | UI 자산 후보 / 입력 glyph | Kenney `Input Prompts Pixel 16×` — Kenney Game Assets preview/catalog | CC0 1.0 | 파일 반입 전 | 키보드/패드 입력 glyph 후보. 실제 파일 반입 전 개별 pack의 공식 배포 페이지와 CC0 표시를 다시 고정 확인 |
+| REF-MODEL-001 | humanoid articulation / editable base reference | SL0ANE/Loy-s-Goodies, `models/generic-model/characters/230507_alex.bbmodel`, commit `afbb7695b09de0ed8ee3aa97732ff7c3d367520c` — https://github.com/SL0ANE/Loy-s-Goodies | CC0 1.0 | **Zombie model 구조 참고에 사용 중** | 분절 팔/다리와 humanoid articulation을 base/reference로 사용. 원본 texture/BBModel 자체는 저장소에 복사하지 않고 TURNBOUND 전용 Java geometry/UV로 재구성 |
 
 ## M5 현재 선택
 
@@ -15,6 +16,12 @@
 - 이유: Minecraft와 충돌이 적은 픽셀 해상도, 500+ 분리 sprite, thin/thick outline, panel/button/bar 계열을 한 family에서 공급하며 CC0라 수정/재배포 제약이 가장 낮다.
 - `REF-UI-002`는 상태별 frame/9-slice/target cursor의 구조가 매우 좋지만, 원본의 분홍/주황/청색 JRPG visual identity를 그대로 섞으면 화면별 언어가 갈라질 위험이 있어 보조 레퍼런스로 제한한다.
 - 검증 원본 ZIP SHA-256: `6ebf462e7f209f5f348419b09be6601a559ef1e1d6b595f0e9f8aa4c00a84048`. 현재 M5 frame/title/meter는 `turnbound_re` namespace production resource를 사용하며 vanilla advancement/boss-bar bridge는 제거했다.
+
+## Starter character visual asset
+
+- `starter_zombie.png`는 이 프로젝트 작업에서 직접 제공된 128×128 texture 원본이다.
+- SHA-256: `52822eabfae98c0dbacc1299173b80b2aae4c372e964c568a4139613cf4b1b7b`.
+- 외부 `REF-MODEL-001`의 texture를 사용하지 않는다.
 
 ## 규칙
 - `현재 사용=없음` 또는 `파일 반입 전`은 실제 외부 파일이 저장소에 들어오지 않았다는 뜻이다.

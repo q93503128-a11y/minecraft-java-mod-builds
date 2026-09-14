@@ -12,6 +12,7 @@ import kr.moonseungjun.turnboundre.debug.TurnboundVisualShowcaseCommands;
 import kr.moonseungjun.turnboundre.debug.TurnboundWorldSliceCommands;
 import kr.moonseungjun.turnboundre.network.BattleNetwork;
 import kr.moonseungjun.turnboundre.network.BattleResultPresentationService;
+import kr.moonseungjun.turnboundre.presentation.TurnboundPresentationEntities;
 import kr.moonseungjun.turnboundre.progression.BattleRewardLifecycleHooks;
 import kr.moonseungjun.turnboundre.progression.BattleRewardSettlementService;
 import kr.moonseungjun.turnboundre.progression.EquipmentForgeService;
@@ -47,6 +48,7 @@ public final class TurnboundRe {
     public static final BattleResultPresentationService RESULT_PRESENTATION = new BattleResultPresentationService(BATTLES);
 
     public TurnboundRe(IEventBus modEventBus) {
+        TurnboundPresentationEntities.register(modEventBus);
         modEventBus.addListener(BattleNetwork::register);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
         NeoForge.EVENT_BUS.addListener(this::addServerReloadListeners);
