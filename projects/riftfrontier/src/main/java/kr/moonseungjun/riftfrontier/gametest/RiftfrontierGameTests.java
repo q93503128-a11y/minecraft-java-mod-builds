@@ -135,6 +135,23 @@ public final class RiftfrontierGameTests {
         helper.succeedWhen(() -> {
             var localThreats = helper.getLevel().getEntitiesOfClass(Mob.class, new AABB(center).inflate(12.0D, 8.0D, 12.0D));
             helper.assertTrue(!localThreats.isEmpty(), "Encounter must expose at least one live proxy for lure-boundary regression coverage");
+            helper.assertTrue(
+                localThreats.stream().allMatch(mob -> mob.getCustomName() != null && mob.isCustomNameVisible()),
+                "Every technical Region 01 threat must expose its field-review role label without changing combat authority"
+            );
+            helper.assertTrue(
+                localThreats.stream().anyMatch(mob -> mob.entityTags().contains("riftfrontier.region01.role.hunter") && mob.getCustomName().equals(Region01EncounterRuntime.fieldReviewRoleName("hunter"))),
+                "Hunter proxy must expose the hunter field-review label"
+            );
+            helper.assertTrue(
+                localThreats.stream().anyMatch(mob -> mob.entityTags().contains("riftfrontier.region01.role.scout") && mob.getCustomName().equals(Region01EncounterRuntime.fieldReviewRoleName("scout"))),
+                "Scout proxy must expose the scout field-review label"
+            );
+            helper.assertTrue(
+                localThreats.stream().anyMatch(mob -> mob.entityTags().contains("riftfrontier.region01.role.elite_anchor") && mob.getCustomName().equals(Region01EncounterRuntime.fieldReviewRoleName("elite_anchor"))),
+                "Elite proxy must expose the elite-anchor field-review label"
+            );
+
             Mob lured = localThreats.getFirst();
             lured.snapTo(center.getX() + 48.5D, center.getY(), center.getZ() + 48.5D, lured.getYRot(), lured.getXRot());
             helper.assertTrue(
