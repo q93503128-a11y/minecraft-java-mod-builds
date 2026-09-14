@@ -101,7 +101,7 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 **중요:** screenshot/reference 비교 전 M5 production visual PASS를 선언하지 않는다. 사용자의 현재 방침에 따라 중간 실플레이 테스트를 요구하지 않고, 통합 테스트 가치가 있는 완성 구간에서 한 번에 검증한다.
 
 ## M6 — World & Life Loop
-상태: **IN PROGRESS — FIRST EXPEDITION AUTO-INTEGRATED / PRODUCTION VISUAL GATE PENDING**
+상태: **IN PROGRESS — FIRST LOOP AUTOMATED ACCEPTANCE PASS / INTEGRATED PLAYTEST + VISUAL GATE PENDING**
 
 완료:
 - authored Encounter의 production 진입은 world anchor가 소유하는 server-authoritative 경로로 수렴.
@@ -143,14 +143,20 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 - Hub waypoint 발견 → REGION_01 waypoint 직접 발견 → rift elite 도전 → reward/completion 저장 성공 → Hub 귀환 안내의 최소 quest hook 연결.
 - quest 안내는 실제 서버 waypoint 발견/성공한 reward settlement 뒤에만 발생하며 client가 quest stage를 제출하는 경로 없음.
 - reward persistence 실패 시 one-time completion과 quest 완료 안내가 모두 진행되지 않아 기존 one-shot claim 원자성을 유지.
-- 상세 정본: `19_M6_WORLD_ENCOUNTER_LIFECYCLE.md`, `21_M6_RESOURCE_NODE_CONTRACT.md`, `22_M6_BATTLE_PREPARATION_MATERIAL_SINK.md`, `23_M6_MINIMAL_EQUIPMENT_CONTRACT.md`, `24_M6_EQUIPMENT_FORGE_TRANSACTION.md`, `25_M6_FUNCTIONAL_WORLD_SLICE.md`, `26_M6_WORLD_ASSET_GATE.md`, `27_M6_FAST_TRAVEL_DISCOVERY.md`, `28_M6_FIRST_EXPEDITION_QUEST.md`.
+- 첫 quarry one-pass 재료 예산을 Coal 8 / Copper 10 / Iron 8 / Gold 4로 자동 계약화하고 실제 장비/준비물 비용과 연결 검증.
+- 최소 patrol 1회는 gear-vs-growth 선택을 남기고, 최소 patrol 2회면 60 Coin 첫 장비 1개 + starter 전원 Lv2 준비선을 충족하도록 자동 acceptance 고정.
+- 기존 first `rift_elite` Lv24/30/30/36 late-game scale을 폐기하고 Lv4/3/3/4로 조정. 높은 origin star를 elite 정체성으로 유지하면서 first-region 수치 폭주를 제거.
+- prepared starter 대비 rift elite aggregate HP/ATK/DEF는 강하게 유지하되 HP 130% / ATK 150% / DEF 130% / SPD 120% / POISE 110% ceiling으로 first-region 이탈 방지.
+- rift elite 최소 보상 Coin 180 / Essence 60이 starter 전원 Lv2→Lv3 비용 Coin 72 / Essence 41을 열어 다음 성장 선택으로 이어지는지 자동 검증.
+- Build turnbound-re #233 / run `34793967823`: clean build / 전체 JUnit / first-loop balance acceptance / production JAR verify / artifact upload PASS.
+- 상세 정본: `19_M6_WORLD_ENCOUNTER_LIFECYCLE.md`, `21_M6_RESOURCE_NODE_CONTRACT.md`, `22_M6_BATTLE_PREPARATION_MATERIAL_SINK.md`, `23_M6_MINIMAL_EQUIPMENT_CONTRACT.md`, `24_M6_EQUIPMENT_FORGE_TRANSACTION.md`, `25_M6_FUNCTIONAL_WORLD_SLICE.md`, `26_M6_WORLD_ASSET_GATE.md`, `27_M6_FAST_TRAVEL_DISCOVERY.md`, `28_M6_FIRST_EXPEDITION_QUEST.md`, `29_M6_FIRST_LOOP_BALANCE_ACCEPTANCE.md`.
 
 남음:
+- 장비/준비물/채집/discovery/fast travel/첫 임무를 실제 Minecraft 한 사이클에서 통합 playtest하고 screenshot visual audit 수행.
+- 실제 Hub→REGION 이동시간, 채집/제련시간, patrol/elite 전투시간, 필요한 patrol 횟수, 보상 후 성장 선택의 체감을 측정해 밸런스 조정.
+- GUI Scale별 Equipment/Battle HUD/Result 가독성 및 월드 waypoint/광산/농장/강/patrol/rift landmark 시각 품질 검수.
+- production visual screenshot 비교 후 Hub/광산/농장/강/Encounter landmark와 UI/연출 세부 수정.
 - 3개 이상 travel destination이 실제 필요해질 때만 destination selection UX 추가.
-- Hub → 채집 → 장비/준비 → discovery → one-time elite → reward → fast travel 귀환 전체의 자동 통합 acceptance를 한 단계 더 묶어 회귀를 잠근다.
-- 첫 광산/농장/강 산출량과 장비 Lv1/준비물 비용의 정적 밸런스 범위를 검증해 명백한 막힘/과잉을 제거한다.
-- 장비/준비물/채집/discovery/fast travel/첫 임무까지 포함한 통합 screenshot/playtest 및 밸런스 조정.
-- production visual screenshot 비교 후 Hub/광산/농장/강/Encounter landmark 세부 수정.
 
 ### PASS
 각 활동의 산출이 다음 시스템에 실제 사용되고, 메뉴 우회나 막힌 경로 없이 fixed-world loop가 성립하며, 실제 Minecraft 플레이에서도 의도대로 작동해야 한다.
@@ -173,16 +179,17 @@ eligible 전수 PLAYABLE 이상, 미분류 0.
 - dedicated server/multiplayer verification 가능 시 수행.
 - 최종 visual regression.
 
-## 지금 바로 할 일 — 2026-09-13 최신
+## 지금 바로 할 일 — 2026-09-14 최신
 
-현재 우선순위는 **첫 임무까지 닫힌 M6 월드 루프를 자동 통합 acceptance와 밸런스 사전검사로 잠근 뒤, 한 번의 의미 있는 실제 Minecraft 통합 playtest에 들어갈 준비를 끝내는 것**이다.
+현재 우선순위는 **더 많은 backend 기능을 추가하는 것이 아니라 첫 완성 사이클을 실제 Minecraft에서 통합 playtest하고 production visual gate를 수행하는 것**이다.
 
 순서:
-1. Hub → REGION waypoint discovery → one-time elite completion → Hub return eligibility의 전체 상태 전이를 production definitions 기준 자동 검증한다.
-2. 광산 ore 수량, 농장 식량, 낚시 준비물 경로와 장비 Lv1/전투 준비 비용을 비교해 첫 사이클에서 막힌 선택지가 없는지 정적 검사한다.
-3. one-time elite의 최초 reward가 다음 성장/장비 선택을 만들 수 있는지 현재 reward table 기준으로 검토한다.
-4. 자동 회귀가 잠기면 Hub → 탐험 → 실제 채집 → 장비/준비 → waypoint discovery → visible encounter → battle → reward → fast travel 귀환 전체를 통합 screenshot/playtest에서 검증한다.
-5. 실제 체감에서만 판단 가능한 동선·채집시간·전투시간·UI·연출·랜드마크 문제를 그 결과로 조정한다.
+1. 새 월드/신규 진행 상태에서 production world slice를 설치하고 Hub waypoint부터 REGION_01, 생활 분기, patrol, rift elite, reward, fast travel 귀환까지 끊지 않고 한 사이클 플레이한다.
+2. Hub→REGION waypoint 이동시간, patrol 전투시간, elite 전투시간, elite 전에 필요하다고 느낀 patrol 횟수를 기록한다.
+3. 첫 quarry 채광→제련→Lv1 장비 제작/장착, offhand battle preparation 소비, Equipment UI 상태가 실제 조작에서 자연스러운지 확인한다.
+4. Hub/광산/농장/강/patrol/rift landmark, Equipment UI, Battle HUD, Battle Result를 대표 screenshot으로 남겨 가독성·밀도·시선 이동·visual hierarchy를 검수한다.
+5. 실제 증상 기준으로 동선·채집량·보상·적 스펙·UI·연출을 조정한 뒤 M5/M6 production visual PASS 여부를 판정한다.
+6. 그 다음에만 M7 Full Vanilla Roster로 확장한다.
 
 금지:
 - 재료를 이유 없이 Coin/Essence로 환전해 모든 생활 활동을 같은 숫자로 평탄화.
@@ -193,5 +200,6 @@ eligible 전수 PLAYABLE 이상, 미분류 0.
 - World Asset Gate 없이 production 건축/외형을 즉흥 확정.
 - 발견하지 않은 waypoint를 원격 메뉴/클라이언트 payload로 해금.
 - 기존 discovery/completion과 중복되는 quest save를 따로 만들어 상태를 이중화.
+- 실제 통합 playtest 없이 M5/M6 production visual PASS 선언.
 
-자동 코드 검증은 의미 있는 단위마다 수행하되, 사용자에게 중간 수동 테스트를 요구하지 않는다. 실제 screenshot/playtest 및 M2/M4 수동 gate는 통합 테스트 가치가 있는 완성 구간에서 함께 수행한다.
+이제 자동 gate가 통합 테스트 가치가 있는 수준까지 닫혔으므로, 다음 단계에서는 사용자에게 실제 Minecraft 첫 사이클 playtest를 요청한다. 결과는 기능 정상/비정상뿐 아니라 시간·귀찮음·약함/강함·UI/월드 시각 품질을 함께 본다.
