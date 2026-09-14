@@ -109,8 +109,13 @@ public final class EliteMobSystem {
             // Mythic rarity is now the admission roll for a true content-pack field boss. Ordinary
             // zombies/skeletons never become stat-inflated Mythic III bodies. If optional boss content
             // is absent, the same spawn degrades safely to Ascended II rather than inventing a fake boss.
-            if (worldStage >= 1 && canAdmitMythic(level, mob)
-                    && MythicFieldBossService.tryReplacePromotion(level, mob, nearby.size())) return;
+            if (worldStage >= 1) {
+                if (!canAdmitMythic(level, mob)) {
+                    rank = Rank.ASCENDED_II;
+                } else if (MythicFieldBossService.tryReplacePromotion(level, mob, nearby.size())) {
+                    return;
+                }
+            }
             rank = Rank.ASCENDED_II;
         }
 
@@ -120,11 +125,12 @@ public final class EliteMobSystem {
 
     public static void onEntityJoin(EntityJoinLevelEvent event) {
         if (!(event.getEntity() instanceof Mob mob) || !(event.getLevel() instanceof ServerLevel level)) return;
-        if (rank(mob) == Rank.MYTHIC_III && !canAdmitMythic(level, mob)) {
+        Rank rank = rank(mob);
+        if (rank == Rank.MYTHIC_III && !canAdmitMythic(level, mob)) {
             retireOverflowMythic(mob);
             return;
         }
-        if (rank(mob) != Rank.MYTHIC_III) return;
+        if (rank != Rank.MYTHIC_III) return;
         mob.setPersistenceRequired();
         if (MythicFieldBossService.isExternalFieldBoss(mob)) mob.setGlowingTag(false);
         else mob.setGlowingTag(true);
