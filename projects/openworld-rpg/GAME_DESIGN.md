@@ -30,23 +30,52 @@ Depth and system interaction take priority over disconnected menus, currencies o
 
 ---
 
-# 2. Production rules
+# 2. Non-negotiable production rules
 
-## External-first visuals
+## 2.1 External-first visuals
 
-No player-facing feature starts with disposable AI-made or generic placeholder art, even in test builds. From its first visible version, every important visual feature uses a deliberately selected external high-quality design, reference or usable asset.
+No player-facing feature starts with disposable AI-made or generic placeholder art, even in test builds.
+From the first visible implementation, important visuals use a deliberately selected external high-quality design, reference or usable asset.
 
-This includes inventory/equipment, skill HUD, stats/class screens, forge/alchemy/cooking, minimap/world map, monsters/bosses, weapons/armor/accessories, shrines, camps/tents/campfires, inns, towns/service buildings, starting settlement, dungeons/ruins, mounts, resource nodes, VFX and sound direction.
+This applies to:
 
-If a design can be used directly and already looks better than a custom redesign, preserve it as intact as practical. Only alter what is required for information, controls, GUI scale and consistency. Do not create temporary web-game-style panels, disposable vanilla-entity placeholders or throwaway player-facing screens.
+- inventory/equipment;
+- skill HUD and ultimate presentation;
+- stats/class/advancement screens;
+- forge, alchemy, cooking and other workstation screens;
+- minimap/world map;
+- monsters and bosses;
+- weapons, armor and accessories;
+- shrines/checkpoints;
+- camps, tents and campfires;
+- inns, towns and service buildings;
+- starting settlement;
+- dungeons/ruins;
+- mounts;
+- resource nodes;
+- important VFX/sound direction.
 
-## Private-play target / public-repo boundary
+If an external design can legally be used directly and already looks better than a custom redesign, preserve it as intact as practical. Only alter what is required for this game's information, controls, GUI scale and consistency.
 
-The playable project is for private use, not public distribution. The GitHub repository is public, so non-redistributable or local/private-use asset bytes stay outside GitHub. The repository records provenance and local integration instructions instead. Redistributable CC0/MIT/etc. assets may be committed under their terms.
+Do not create temporary web-game-style panels, generic black translucent boxes, disposable vanilla-entity placeholders or throwaway player-facing screens.
 
-## Code hygiene
+## 2.2 Private-play target / public-repo boundary
 
-After a replacement is appropriately verified, remove superseded dead, duplicate, prototype and unused compatibility code immediately unless still required for save migration, active compatibility or a live feature. Git history is the archive; the source tree is not.
+The playable project is for private use, not public distribution. The GitHub repository is public.
+
+Therefore:
+
+- local/private-use assets may be used in the owner's local playable instance when their terms permit it;
+- non-redistributable asset bytes stay outside GitHub;
+- the repo records provenance and local integration instructions instead;
+- CC0/MIT/otherwise redistributable assets may be committed under their terms;
+- no DRM/access-control bypass or paid-asset piracy.
+
+## 2.3 Code hygiene
+
+After a replacement is appropriately verified, remove superseded dead, duplicate, prototype and unused compatibility code immediately unless still required for save migration, active compatibility or a live feature.
+
+Git history is the archive; the active source tree is not.
 
 ---
 
@@ -61,7 +90,7 @@ Replace/remove from the core RPG loop:
 - vanilla monsters as the primary enemy ecosystem;
 - vanilla crafting-grid progression as the main production system;
 - vanilla inventory/equipment presentation as the main character interface;
-- vanilla cave-strip-mining as the intended core resource-gathering loop;
+- vanilla cave/strip-mining as the intended core resource-gathering loop;
 - Nether/End as mandatory progression gates.
 
 Vanilla blocks/building/environmental interactions may remain where they improve the open-world sandbox without competing with project systems.
@@ -72,7 +101,7 @@ Vanilla blocks/building/environmental interactions may remain where they improve
 
 - Experience: `EXP`
 - Level: `Lv`
-- Player/enemy display uses the same format: `Lv <number>`
+- Player and enemy level display use the same format: `Lv <number>`
 - Vanilla green XP/level presentation is not used for RPG progression.
 
 ---
@@ -85,19 +114,39 @@ Primary survival resource. Natural recovery exists but is intentionally slow. Re
 
 ## Mana
 
-Primary active-skill resource. Most active skills consume Mana. A small concept-driven minority of martial/physical skills may use Stamina instead. Mana may recover slowly over time and more effectively through rest, items, class effects or equipment.
+Primary active-skill resource.
+
+- most active skills consume Mana;
+- a small concept-driven minority of physical/martial skills may use Stamina instead;
+- class/equipment/passives may alter cost, recovery and resource behavior;
+- Mana can regenerate naturally, but rest and dedicated effects are much more efficient.
 
 ## Stamina
 
-Used primarily by non-skill physical actions: dodge/roll, sprinting, guard/block impact, parry attempts and other non-skill mobility/defense. Normal basic attacks cost no Stamina. Sprint drain must be light enough that normal exploration is comfortable. Stamina recovery is substantially more responsive than HP recovery.
+Stamina is primarily a non-skill action resource.
+
+Used by:
+
+- dodge/roll;
+- sprinting;
+- guard/block impact;
+- parry attempts or related defensive actions;
+- other non-skill mobility/defensive actions where appropriate.
+
+Rules:
+
+- normal basic attacks cost no Stamina;
+- sprinting drains Stamina slowly enough that ordinary exploration remains comfortable;
+- Stamina recovery is substantially faster/more responsive than HP recovery;
+- maximum Stamina and recovery are valid build axes.
 
 ## Rest / food / potions
 
 - Potions are obtained mainly through purchase and appropriate RPG economy sources rather than vanilla crafting-grid dependence.
-- Food is useful recovery/buff content rather than meaningless hunger busywork.
-- Passive regeneration exists but is deliberately slow enough that rest/items matter.
+- Food is useful recovery/buff content rather than hunger busywork.
+- Passive regeneration exists but remains slow enough that rest/items matter.
 - Camps, inns, shrines or other valid rest points restore resources efficiently.
-- Inns are valid world-service buildings if a strong external building/design source is selected.
+- Inns are valid world-service buildings when a strong external design/build is selected.
 
 ---
 
@@ -114,7 +163,9 @@ Use six primary stats:
 
 Attack Speed remains an independent build axis rather than being universally dictated by DEX.
 
-Derived stats may include Physical Power, Magic Power, Defense, Magic Resistance, Critical Chance/Damage, Attack Speed, Movement Speed, Stamina/Mana Recovery, Guard Strength/Stability, healing and elemental/status modifiers. Exact formulas are data-driven balance work.
+Derived stats may include Physical Power, Magic Power, Defense, Magic Resistance, Critical Chance/Damage, Attack Speed, Movement Speed, Stamina/Mana Recovery, Guard Strength/Stability, healing and elemental/status modifiers.
+
+Exact formulas are data-driven balance work.
 
 ---
 
@@ -122,18 +173,40 @@ Derived stats may include Physical Power, Magic Power, Defense, Magic Resistance
 
 Combat mixes fast action-RPG flow, skill-driven builds and readable defensive play.
 
-- Left click: weapon basic attack/combo. No Stamina cost.
-- No universal heavy attack. Right click remains for shield/guard, weapon-specific alternate use, consumables and contextual item use.
-- Dedicated rebindable dodge/roll key. Directional movement, Stamina cost, movement + evasion utility, visible timing aligned with actual evasion/i-frame timing.
-- Guard and parry are core mechanics. Blocking costs Stamina through impact/defensive cost. Parry has readable timing and strong success feedback.
-- Proven external combat implementations should be reused/adapted where technically and legally appropriate.
+## Basic attack
+
+- Left click: weapon basic attack/combo.
+- No Stamina cost.
+- Weapon families differ in animation timing, reach, speed, hit cadence, hit count and scaling.
+- Attack Speed is a serious independent build axis.
+
+## No universal heavy attack
+
+There is no generic heavy-attack input.
+Right click remains for held-item behavior such as shield/guard, weapon-specific alternate use, consumables and contextual interactions.
+
+## Dodge / roll
+
+- dedicated rebindable key;
+- directional movement;
+- consumes Stamina;
+- useful for both mobility and evasion;
+- visible animation/motion must match actual evasion or i-frame timing.
+
+## Guard / parry
+
+- core combat mechanics;
+- blocking consumes Stamina through impact/defensive cost;
+- parry has readable timing and strong success feedback;
+- suitable weapons, shields and class effects may differ in guard/parry performance;
+- proven external implementations should be reused/adapted where technically and legally suitable.
 
 ## Stagger / poise
 
-Use a layered stagger system:
+Use a layered system:
 
 - normal enemies use simpler stagger resistance/reaction rules;
-- elites and bosses have a meaningful poise/stagger gauge or equivalent;
+- elites and bosses have meaningful poise/stagger gauges or equivalent;
 - heavy weapons, impact attacks, selected skills and successful parries can reduce poise strongly;
 - breaking poise creates a readable punish/damage window;
 - animation and actual vulnerability state must match.
@@ -147,11 +220,11 @@ Use a layered stagger system:
 
 ## Ultimate
 
-Ultimate activation is hybrid:
+Ultimate activation uses a hybrid model:
 
-- combat contribution builds charge/gauge;
-- charge comes from role-appropriate useful actions, not damage only;
-- attack, guard/parry, healing/support, control or other class-relevant contribution may charge it;
+- useful combat contribution builds charge/gauge;
+- charge sources are role-aware, not damage-only;
+- attacking, guarding/parrying, healing/support, control and other relevant actions may contribute;
 - after use there is an anti-spam cooldown/lockout;
 - only one ultimate can be equipped, so it should be distinctly stronger, more spectacular and more build-defining than normal skills.
 
@@ -161,9 +234,11 @@ Ultimate HUD uses an externally selected final-quality design from the first pla
 
 # 8. Input policy
 
-All project actions are rebindable. Default bindings must not conflict with important Minecraft or Essential controls. Low-value vanilla bindings may be repurposed if their original action is irrelevant and the user can rebind it.
+All project actions are rebindable.
+Default bindings must not conflict with important Minecraft or Essential controls.
+Low-value vanilla bindings may be repurposed if their original action is irrelevant and the user can rebind it.
 
-Before locking defaults, audit current Minecraft defaults, Essential defaults, required companion-mod defaults and this project's full action list.
+Before locking defaults, audit current Minecraft defaults, Essential defaults, required companion-mod defaults and the project's complete action list.
 
 ---
 
@@ -173,57 +248,72 @@ Before locking defaults, audit current Minecraft defaults, Essential defaults, r
 
 Use five clear fantasy RPG root roles:
 
-1. **전사** — direct melee combat, pressure and weapon mastery.
-2. **사냥꾼** — ranged/precision/mobility-oriented combat, field utility and potential early-firearm specialization.
-3. **성직자** — healing, buffs, protection and holy/support-oriented combat.
+1. **전사** — direct melee pressure, weapon mastery and aggressive/defensive melee branches.
+2. **사냥꾼** — ranged precision, mobility, field utility and possible early-firearm specialization.
+3. **성직자** — healing, buffs, protection and holy/support combat.
 4. **마도사** — offensive magic, elemental/arcane damage and control.
-5. **수호자** — defense, aggro/control, guarding allies and counter-oriented play.
+5. **수호자** — defense, aggro/control, ally protection and counter-oriented play.
 
-Weapons are broadly class-independent. Effectiveness comes from stat scaling, attack cadence, class passives/skills and equipment synergy rather than hard weapon locks.
+Weapons are broadly class-independent. Effectiveness comes from stat scaling, cadence, class passives/skills and equipment synergy rather than hard weapon locks.
 
 ## 9.2 Advancement depth / branching
 
-Canonical initial production target is about five advancement stages per root-class line, while architecture remains open for more later. Never label a stage as `final`.
-
-Use a depth-first branch structure:
-
-- root class;
-- an early/mid major specialization branch materially changes playstyle;
-- the chosen route continues through multiple deeper advancement stages;
-- special/hidden advancements may require bosses, quests, stats, items or discoveries;
+- initial production target: about five advancement stages per root-class line;
+- architecture remains open for more later;
+- never label a stage as `final`;
+- use a depth-first structure;
+- an early/mid major specialization branch changes playstyle materially;
+- the chosen route then continues through multiple deeper stages;
+- hidden/special advancements may require bosses, quests, stats, items or discoveries;
 - advancement adds mechanics/passives/skill behavior/build identity, not only numbers.
 
-Example: Warrior may branch toward damage pressure or defense/tanking. Similar meaningful playstyle changes should exist across all root classes.
+Example principle: Warrior can branch toward damage pressure or defensive/tank play.
 
 ## 9.3 Persistent class history and switching
 
 Progress is stored separately for every class line.
 
-- Switching to an untrained class starts that class from its beginning.
-- Switching back restores its saved advancement, progress and unlocked content.
-- Class switching costs currency/resource.
-- Cost scales with player Lv but has a cap.
-- No class-switch cooldown.
-- Switching does not erase learned history.
+- an untrained class starts from its beginning;
+- switching back restores saved advancement/progress/unlocked content;
+- class switching costs the core currency/resource;
+- cost scales with player `Lv` but has a cap;
+- no class-switch cooldown;
+- switching never erases learned history.
 
 ## 9.4 Skills and passives
 
 Skill acquisition is mixed:
 
-- core class skills come from class progress/advancement;
-- world exploration, bosses, quests, NPCs and rare finds may unlock additional skills or meaningful variants.
+- core class skills come from class progression/advancement;
+- exploration, bosses, quests, NPCs and rare finds may unlock additional skills or meaningful variants.
 
-Passives use a tree/investment structure, but all passives unlocked on the currently active class apply. There is no passive-slot limit. Class-specific passives never remain active after switching away from that class. Each class retains its own saved passive tree and restores it only while active.
+Passives:
+
+- use a tree/investment structure;
+- all passives unlocked on the currently active class apply;
+- no passive-slot limit;
+- class-specific passives never remain active after switching away from that class;
+- each class retains its own saved passive tree and restores it only while active;
+- cross-class passive stacking is forbidden unless a future separate global-progression system explicitly introduces it.
 
 ---
 
 # 10. Shrines / world services
 
-Class change, respec and advancement happen through believable in-world facilities such as shrines, sanctums, guild halls or trainers rather than a settings button.
+Class change, respec and advancement happen through believable world facilities such as shrines, sanctums, guild halls or trainers rather than a settings button.
 
-Possible functions include class services, respawn/checkpoint, fast-travel access, build management and selected rituals. Do not force every function into one universal menu building if distributing roles creates a better world.
+Possible services include:
 
-All structures use selected external high-quality builds/assets from the first visible implementation.
+- class change;
+- class advancement;
+- respec;
+- respawn checkpoint;
+- fast travel;
+- build management;
+- selected rituals/progression interactions.
+
+Do not force every service into one universal menu building if distributed locations create a better world.
+All important structures use selected external high-quality builds/assets from the first visible implementation.
 
 ---
 
@@ -234,25 +324,25 @@ At respawn, choose one penalty:
 1. pay part of core currency; or
 2. lose part of current EXP progress.
 
-EXP loss can never reduce an already-earned Lv. The EXP floor is the start of the current Lv.
+EXP loss can never reduce an already-earned `Lv`. The EXP floor is the start of the current `Lv`.
 
 Exact percentages/caps, insufficient-currency behavior, boss-arena handling and penalty-reduction items remain balance decisions.
 
 ## Multiplayer down / revive
 
-- In multiplayer, lethal damage can enter a temporary downed state instead of immediately forcing shrine respawn.
-- A teammate can revive the downed player within the allowed rescue window.
-- If rescue fails, normal shrine/checkpoint respawn and the chosen death penalty apply.
-- Single-player does not need a fake waiting phase; lethal defeat may proceed directly to normal death/respawn flow.
-- Revive behavior must remain server-authoritative.
+- lethal damage can enter a temporary downed state;
+- teammates can revive the downed player within the rescue window;
+- failed rescue leads to normal shrine/checkpoint respawn and the chosen death penalty;
+- single-player does not need a fake waiting phase and may proceed directly to defeat/respawn;
+- revive behavior is server-authoritative.
 
 ---
 
-# 12. Inventory and equipment slots
+# 12. Inventory and equipment
 
 The vanilla inventory screen is replaced as the main RPG character interface by an externally selected final-quality RPG inventory/equipment design.
 
-Canonical equipment layout target:
+Canonical equipment target:
 
 - Main Weapon
 - Off-hand
@@ -267,9 +357,24 @@ Canonical equipment layout target:
 - Charm
 - Relic
 
-Two-handed weapons may disable or repurpose the off-hand slot. Exact visual placement follows the selected external GUI rather than an internally improvised layout. Accessory/Charm/Relic slots should enable build effects, not exist only for minor percentage increases.
+Two-handed weapons may disable or repurpose the off-hand slot.
+Exact visual placement follows the selected external GUI rather than an internally improvised layout.
+Accessory/Charm/Relic slots should create build effects, not exist only for tiny percentage bonuses.
 
-Equipment has **no ordinary durability/repair chore**. Do not use vanilla-style durability as routine maintenance unless a future special mechanic has a clear gameplay purpose.
+## Inventory capacity
+
+- no inventory-weight system;
+- inventory uses a larger RPG-oriented slot capacity than vanilla;
+- capacity can be expanded through progression/upgrades;
+- materials should have a dedicated material pouch/category or equivalent organization so gathering does not constantly fill the main inventory;
+- item stacks are not globally limited to vanilla's 64-item cap;
+- stackable materials/consumables may use substantially larger stack caps appropriate to RPG play;
+- exact starting slot count, expansion milestones and per-category stack caps remain balance decisions.
+
+## Durability
+
+Equipment has no ordinary vanilla-style durability/repair chore.
+A future special mechanic may use wear only if it creates real gameplay value.
 
 ---
 
@@ -277,7 +382,8 @@ Equipment has **no ordinary durability/repair chore**. Do not use vanilla-style 
 
 ## Weapon families
 
-Prioritize coherent external model/design packs and good animation support. Candidate families:
+Prioritize coherent external model/design packs and good animation support.
+Candidate families:
 
 - sword;
 - greatsword;
@@ -290,46 +396,56 @@ Prioritize coherent external model/design packs and good animation support. Cand
 - staff;
 - catalyst / grimoire / wand-type magical focus;
 - shield and specialized off-hands;
-- **early / black-powder firearm family** such as hand cannon, matchlock/flintlock pistol or musket when the Hunter line and external design quality justify it.
+- early black-powder firearms such as hand cannon, matchlock/flintlock pistol or musket when the Hunter line and external design quality justify it.
 
-Modern/automatic firearms are not part of the current fantasy baseline. More advanced firearms may be reconsidered only for a future cyberpunk/advanced-tech direction or dedicated later class/region.
+Modern/automatic firearms are not part of the current fantasy baseline. More advanced firearms may be reconsidered only for a future advanced-tech/cyberpunk region or dedicated later class.
 
 ## Item generation / drops
 
 Use a hybrid item model and probabilistic loot tables:
 
-- regular enemy, elite, dungeon and boss drop tables use weighted/probability-based drops rather than giving every item every clear;
-- common equipment may roll controlled affixes;
-- named/boss/signature gear may have fixed identity, visuals and unique mechanics but can still be probabilistic drops;
-- progression-critical quest/key items should not create softlocks solely through bad RNG;
-- first-clear progression rewards may be deterministic even when farmable equipment remains probabilistic;
+- normal enemies, elites, dungeons and bosses use weighted/probability-based drops;
+- common field equipment may roll controlled affixes;
+- named/boss/signature gear may have fixed identity, visuals and unique mechanics while still being probabilistic drops;
+- progression-critical quest/key items must not softlock progress through bad RNG;
+- first-clear progression rewards may be deterministic while farmable gear remains probabilistic;
 - stronger grade does not always mean strict numeric replacement.
 
 ## Multiplayer loot ownership
 
-Use **personal loot for all dropped rewards in multiplayer**. A player's combat/loot rewards are not a shared floor-race where another player can take them first. Shared-world resource-node behavior is a separate gathering decision and is not automatically inferred from personal combat loot.
+All dropped combat/loot rewards are **personal per player** in multiplayer.
+No shared-floor race where another player can take the reward first.
 
 ## Item grade structure
 
-Use about five grades, but avoid the tired `Common / Rare / Epic / Legendary` naming set. Exact player-facing grade names are finalized with world lore/design language. Until then implementation uses neutral internal tier identifiers.
+Use about five grades, but avoid the tired `Common / Rare / Epic / Legendary` naming set.
+Player-facing names are chosen with the world's lore/design language later.
+Until then use neutral internal tier IDs.
 
 ---
 
 # 14. Damage types and status effects
 
-Use a medium-complexity system. Physical identity may distinguish slash / pierce / impact where useful. Core magical/elemental families may include fire, frost, lightning, poison/corrosion and arcane-like effects. Status effects must be mechanically distinct rather than differently colored copies of the same DOT.
+Use medium complexity.
+
+Physical identity may distinguish slash / pierce / impact where useful.
+Core magical/elemental families may include fire, frost, lightning, poison/corrosion and arcane-like effects.
+Status effects must be mechanically distinct rather than differently colored copies of the same DOT.
 
 ---
 
 # 15. Workstations / professions / production
 
-Major RPG production does not rely on the vanilla crafting-grid experience. Forge/smithing, alchemy, cooking and justified enhancement/customization systems may exist.
+Major RPG production does not rely on the vanilla crafting grid.
+Potential systems include forge/smithing, alchemy, cooking and justified enhancement/customization.
 
-Use **light profession mastery** rather than giant mandatory profession grinds. Smithing, alchemy and cooking may improve through use and unlock useful recipes/quality/options, but progression must not require repetitive mass-crafting for dozens of hours.
+Use **light profession mastery** rather than giant mandatory profession grinds.
+Smithing, alchemy and cooking may improve through use and unlock recipes/quality/options, but progression must not require repetitive mass-crafting for dozens of hours.
 
-Each important workstation gets a purpose-built screen selected from an external proven game/mod design first. If direct use is permitted and visually strong, preserve it rather than redesigning it into a weaker UI. Physical workstation/building appearance follows the same rule.
+Each important workstation gets a purpose-built screen selected from an external proven game/mod design first. If a directly usable design is visually strong, preserve it rather than redesigning it into a weaker UI.
+Physical workstation/building appearance follows the same external-first rule.
 
-Avoid extra production steps that only add clicks.
+Avoid production steps that only add clicks.
 
 ---
 
@@ -337,59 +453,66 @@ Avoid extra production steps that only add clicks.
 
 Use a high-quality external open-world RPG map/terrain solution rather than hand-authoring the entire continent from zero.
 
-Target about **12 major regions**, adjustable to roughly 10–14 if the selected external map's geography supports a different count. Each region contains subregions/landmarks/POIs and defines environmental identity, danger/Lv profile, enemies, elites, signature threats, resources, gear identity, settlements, dungeons, camps/checkpoints, quests/events and traversal gimmicks.
+Target about **12 major regions**, adjustable to roughly 10–14 if the selected external map's geography strongly supports a different count.
+Each region contains subregions/landmarks/POIs and defines environmental identity, danger/Lv profile, enemies, elites, signature threats, resources, gear identity, settlements, dungeons, camps/checkpoints, quests/events and traversal gimmicks.
 
 ## Enemy Lv model
 
-Use **regional Lv bands with only narrow contextual adjustment**. Do not scale every enemy to the player. A low-Lv region remains low-Lv later; a dangerous region remains genuinely dangerous when entered early.
+Use **regional Lv bands with only narrow contextual adjustment**.
+Do not scale every enemy to the player.
+A low-Lv region remains low-Lv later; a dangerous region remains dangerous when entered early.
 
 ## Starting settlement
 
-The game should have a memorable starting village/settlement that acts as the player's first safe social/service hub. Its final name and world lore are decided later; do not use a generic vanilla village as the finished result.
+The game has a memorable starting village/settlement as the first safe social/service hub.
+Its final name and lore are decided later; do not use a generic vanilla village as the finished result.
 
-The starting settlement may contain selected services such as:
+Possible services:
 
 - inn / tavern;
 - forge / smith;
-- merchant/market;
-- alchemy/healer service;
-- adventurer/quest guild;
+- merchant / market;
+- alchemy / healer;
+- adventurer / quest guild;
 - class/trainer/guild access where appropriate;
-- storage/bank;
+- bank/storage;
 - stable/mount access;
 - nearby shrine/checkpoint;
 - quest/NPC hooks.
 
-The village layout and buildings are sourced from a coherent external high-quality village/build family or map/schematic. Avoid stitching together unrelated building styles when a coherent pack/source is available.
+The village layout and buildings come from a coherent external high-quality village/build family or map/schematic.
+Avoid stitching together unrelated building styles when a coherent pack/source exists.
 
 ## Town / service-building baseline
 
-Default service palette, adjusted per settlement rather than copied mechanically everywhere:
+Default palette, adjusted per settlement rather than copied everywhere:
 
-- inn/tavern — rest, food, local information and selected checkpoint/time services;
-- forge/smithy — weapon/armor production and related upgrade services;
+- inn/tavern — rest, food, local information, selected time/checkpoint services;
+- forge/smithy — weapon/armor production and upgrades;
 - alchemy/healer — potions, treatment and alchemy;
-- market/merchant district — general buying/selling and regional goods;
-- adventurer/quest guild — contracts, regional jobs and world hooks;
+- market/merchant district — buying/selling and regional goods;
+- adventurer/quest guild — contracts, jobs and world hooks;
 - shrine/sanctum — checkpoint, selected travel/class/ritual services;
-- stable — mount purchase/management/travel services;
+- stable — mount purchase/management;
 - bank/storage — player storage and economy support;
-- class hall/trainer where appropriate — advancement/training/class services;
+- class hall/trainer where appropriate;
 - region-specific special facilities when they create real gameplay.
 
 All important buildings are external-first designs/assets.
 
 ## Factions / reputation
 
-Use reputation only for selected meaningful factions/regions. Do not create a dozen reputation bars by default. Reputation should unlock/change relationships, services, quests, prices, access or rewards where it actually matters.
+Use reputation only for selected meaningful factions/regions.
+Do not create many reputation bars by default.
+Reputation should affect relationships, services, quests, prices, access or rewards where it matters.
 
 ## Day / night / weather
 
 Use moderate gameplay impact:
 
-- selected enemies, rare hunts, resources, events and boss behaviors may depend on time/weather;
-- weather can alter region atmosphere and selected encounters;
-- do not make ordinary play depend on tedious waiting for the correct clock/weather state.
+- selected enemies, rare hunts, resources, events and boss behavior may depend on time/weather;
+- weather may alter region atmosphere and selected encounters;
+- ordinary play must not require tedious waiting for the correct clock/weather state.
 
 ---
 
@@ -397,11 +520,13 @@ Use moderate gameplay impact:
 
 Use a middle-ground discovery model:
 
-- general terrain/world shape can be visible enough for navigation;
-- detailed POIs, dungeons, shrines, special bosses and discoveries must be found through exploration;
+- general terrain/world shape is visible enough for navigation;
+- detailed POIs, dungeons, shrines, special bosses and discoveries are revealed through exploration;
 - minimap does not reveal every enemy or undiscovered reward.
 
-Fast travel is available between discovered **shrines and major settlements/hubs**. Ordinary camps and every minor POI are not universal teleport nodes. Combat prevents fast travel.
+Fast travel is available between discovered **shrines and major settlements/hubs**.
+Ordinary camps and minor POIs are not universal teleport nodes.
+Combat prevents fast travel.
 
 Minimap/world-map visuals and implementation are external-first.
 
@@ -411,35 +536,44 @@ Minimap/world-map visuals and implementation are external-first.
 
 Use ground mounts as a real progression/travel system.
 
-Rules:
-
-- different mounts can have meaningfully different travel speed, acceleration/handling, toughness and other role-relevant properties;
+- mounts can differ meaningfully in speed, acceleration/handling, toughness and role;
 - some mounts may support mounted combat or combat utility;
-- mounts should use external high-quality models/animations and proven mount implementations/code where suitable;
-- do not make every mount a cosmetic reskin with identical stats;
-- later progression should unlock substantially faster traversal options;
-- late-game traversal may include flying mounts or another high-speed traversal system if it preserves world design and progression;
-- flight should not be available so early that terrain, danger and dungeon approaches become irrelevant.
+- use external high-quality models/animations and proven mount implementations/code where suitable;
+- mounts are not cosmetic reskins with identical stats;
+- later progression unlocks substantially faster traversal;
+- late-game traversal may include flying mounts or another high-speed system;
+- flight must not arrive so early that terrain, danger and dungeon approaches become irrelevant.
 
 ---
 
 # 19. Enemies, bosses, world events and dungeons
 
-Custom/project enemies dominate the combat roster. Important enemies require readable states, attack telegraphs, recovery, custom visuals/animation/VFX/sound appropriate to importance.
+Custom/project enemies dominate the combat roster.
+Important enemies require readable states, attack telegraphs, recovery, custom visuals/animation/VFX/sound appropriate to importance.
 
-Accepted iconic directions include desert earth/sand-worm-style giants, dragons and region-specific large creatures/field bosses.
+Accepted iconic directions include:
+
+- desert earth/sand-worm-style giant monsters;
+- dragons;
+- region-specific giant creatures and field bosses.
 
 ## Dynamic world events
 
-Use region-specific dynamic events at a controlled frequency. Examples may include caravan attacks, rare dragon appearances, night creatures, magical weather/incursions or roaming major monsters. Events should feel discovered in the world, not like constant MMORPG chores.
+Use region-specific dynamic events at controlled frequency.
+Examples may include caravan attacks, rare dragon appearances, night creatures, magical weather/incursions or roaming major monsters.
+Events should feel discovered in the world, not like constant MMORPG chores.
 
 ## Dungeon replay
 
-Dungeons are replayable. First clear provides unique/progression-significant rewards where appropriate; later clears may provide probabilistic gear, materials and rare drops. External dungeon architecture is retained where strong while encounters, enemies, bosses and rewards are project-specific.
+Dungeons are replayable.
+First clear provides unique/progression-significant rewards where appropriate; later clears provide probabilistic gear, materials and rare drops.
+External dungeon architecture is retained where strong while encounters, enemies, bosses and rewards are project-specific.
 
 ## Field/world bosses
 
-Field/world bosses can reappear under suitable timers/conditions. First defeat can have unique progression rewards, while repeat defeats focus on probabilistic rare drops/materials. Avoid rapid repetitive respawn loops.
+Field/world bosses can reappear under suitable timers/conditions.
+First defeat may have unique progression rewards; repeats focus on probabilistic rare drops/materials.
+Avoid rapid repetitive respawn loops.
 
 ---
 
@@ -449,9 +583,9 @@ Use a mixed structure:
 
 - main narrative for world/system introduction and major progression;
 - regional quest chains that give each area identity;
-- free exploration and discovery that do not require constant quest-marker following.
+- free exploration/discovery without constant quest-marker following.
 
-The main story should guide without turning the open world into a linear corridor.
+The main story guides without turning the open world into a linear corridor.
 
 ---
 
@@ -459,18 +593,48 @@ The main story should guide without turning the open world into a linear corrido
 
 The intended gathering loop is **open-world RPG gathering**, not vanilla cave mining or strip-mining.
 
-## Resource-node direction
+## Gathering categories
 
-- ore veins/mineral deposits, herbs, timber/wood resources, food ingredients and rare materials should appear as recognizable world gathering nodes or resource points;
-- nodes are placed/generated according to region/terrain/ecology rather than hidden randomly behind thousands of ordinary stone blocks;
-- gathering should involve discovery, route choice and region knowledge;
-- common nodes may regenerate after a suitable time/condition so the world does not become permanently exhausted;
-- rare resources may use longer respawn, special conditions, events, bosses or dangerous locations;
-- node visuals/models/interactions are external-first where good assets/designs exist;
-- node system design should study proven external implementations rather than reinventing resource regeneration poorly;
-- vanilla block breaking can remain possible as a sandbox action, but it is not the intended progression source for core RPG ores/materials.
+Use a manageable set:
 
-Exact shared-vs-personal node ownership in multiplayer, gathering tool requirements, gathering mastery and node respawn rules are still open decisions.
+- mining;
+- herbalism / plant gathering;
+- forestry / timber gathering;
+- fishing / foraging-style resource gathering.
+
+These may have light mastery/progression, but gathering is not a massive mandatory profession grind.
+
+## Resource nodes
+
+- ore veins/mineral deposits, herbs, timber resources, food ingredients and rare materials appear as recognizable world gathering nodes/resource points;
+- nodes are placed/generated according to region, terrain and ecology rather than hidden behind thousands of ordinary stone blocks;
+- gathering emphasizes discovery, route choice and region knowledge;
+- vanilla block breaking can remain possible as sandbox interaction, but it is not the intended source of core RPG resources.
+
+## Multiplayer ownership
+
+Resource nodes use **personal gathering state** in multiplayer.
+One player gathering a node does not deny the same node to another player simply because they arrived a moment later.
+
+## Gathering tools
+
+Use dedicated gathering tools such as pickaxe, axe, harvesting knife/sickle and fishing rod as appropriate.
+
+- tools are project/RPG tools, not the core vanilla mining progression;
+- routine tool durability is not used;
+- tools should not occupy normal combat equipment slots during ordinary play;
+- a tool pouch/equipment category or context-sensitive interaction is preferred;
+- tool quality may affect speed/yield/access when it creates meaningful progression.
+
+## Regeneration
+
+- common nodes regenerate after a suitable time/condition;
+- rare nodes use longer regeneration and/or special conditions, events, dangerous locations or boss-linked access;
+- rare resource design should create reasons to explore rather than simply wait on a short timer;
+- exact timers remain balance work.
+
+Node visuals/models/interactions are external-first when good assets/designs exist.
+External node-system implementations should be studied instead of reinventing regeneration poorly.
 
 ---
 
@@ -480,53 +644,86 @@ Travel should have a sense of journey and temporary shelter.
 
 ## Camps
 
-Camps are **quick-build temporary field infrastructure**:
+Camps are **quick-build temporary field infrastructure**.
 
 - player spends defined materials/resources to deploy/build a camp rapidly rather than manually constructing it block by block;
-- camp visuals use an external final-quality tent/campfire/shelter design from the first implementation;
-- camp can provide strong rest/resource recovery and selected travel/utility functions;
-- camp construction should support exploration rather than become a construction grind;
-- ordinary camps are not universal fast-travel nodes unless later design explicitly adds a limited exception.
+- visuals use an external final-quality tent/campfire/shelter design from the first implementation;
+- camps provide strong rest/resource recovery and selected field utility;
+- camp construction supports exploration rather than becoming a construction grind;
+- ordinary camps are not universal fast-travel nodes.
 
 ## Housing
 
 Permanent player housing is separate from camps.
 
 - towns/settlements can contain empty/purchasable houses;
-- player can buy a residence rather than automatically upgrading a field camp into a full base;
-- house shells/interiors should use coherent external building designs/assets;
-- exact furnishing, storage, cosmetic and gameplay functions remain to be designed.
+- player buys a residence rather than turning a field camp into a full permanent base;
+- house shells/interiors use coherent external building designs/assets;
+- house functions include rest, storage, furnishing/decor and trophy/collection display;
+- the house does not automatically replace every town service such as forge/alchemy, because those service buildings need to remain meaningful world locations.
 
 ---
 
 # 23. Multiplayer / Essential
 
-Essential-friendly multiplayer is a major usability goal. Convenience networking does not own game authority. Damage, item ownership, currency, EXP/Lv, skill cost/success, class/progression, quests, world state and saves remain server-authoritative.
+Essential-friendly multiplayer is a major usability goal.
+Connection convenience does not own game authority.
 
-Combat/loot rewards are personal per player. Downed/revive behavior is defined in the death section.
+Server-authoritative state includes damage, item ownership, currency, EXP/Lv, skill cost/success, class/progression, quests, world state and saves.
+
+Combat/loot rewards are personal per player.
+Resource gathering is also personal per player at the node-availability level.
 
 Do not claim multiplayer quality until actually tested.
 
 ---
 
-# 24. Economy
+# 24. Economy and merchants
 
-A core currency is required for at least class switching, death-penalty choice, merchants, housing and selected services.
+## Core currency
 
-The exact **player-facing currency name and unit are not locked yet**. Choose them together with the world's lore rather than forcing a generic name too early.
+Use **one primary numeric currency** for the ordinary economy.
 
-Preferred design direction to decide next:
-
-- one primary numeric currency for ordinary economy;
-- avoid unnecessary copper/silver/gold denomination conversion unless it adds real value;
-- add special currencies/tokens only when a specific activity needs a distinct reward loop;
+- player-facing currency name/icon are not locked yet and should be chosen with world lore;
+- avoid copper/silver/gold denomination conversion unless it later proves valuable;
+- add special currencies/tokens only when a specific activity genuinely needs a distinct reward loop;
 - do not multiply currencies merely to make the game look larger.
+
+The core currency supports at least class switching, death-penalty choice, merchants, housing and selected services.
+
+## Merchant stock
+
+Merchant inventory is **mostly randomized/rotating**, but essential items and explicitly designated goods remain fixed.
+
+Examples of fixed or reliably available stock may include:
+
+- core potions/recovery necessities;
+- required basic supplies;
+- specific progression-safe items that should not disappear because of RNG.
+
+Other equipment, regional goods, rare materials or special finds may rotate or randomize according to merchant/region rules.
+Exact refresh cadence and pool composition remain balance decisions.
 
 ---
 
 # 25. Data-driven / maintainability
 
-Repeatedly tuned values should be data-driven where practical: player/enemy stats, Lv curves, skill parameters, Mana/Stamina costs, equipment scaling, affixes, drop probabilities, loot, encounters, resource nodes, region parameters, advancement values, dungeon rewards, quests and dialogue.
+Repeatedly tuned values should be data-driven where practical:
+
+- player/enemy stats;
+- Lv curves;
+- skill parameters;
+- Mana/Stamina costs;
+- equipment scaling;
+- affixes and drop probabilities;
+- merchant pools/refresh data;
+- inventory capacity/stack caps;
+- loot/encounters;
+- resource nodes and respawn rules;
+- region parameters;
+- advancement values;
+- dungeon rewards;
+- quests/dialogue.
 
 Code owns rules; data owns content/tuning where feasible.
 
@@ -534,10 +731,12 @@ Code owns rules; data owns content/tuning where feasible.
 
 # 26. Current locked decisions
 
-Major locked decisions as of 2026-09-14 include:
+Major locked decisions as of 2026-09-14:
 
 - private-use large open-world action RPG with very low vanilla progression dependence;
 - external-first visuals/assets from the first visible/test implementation;
+- no temporary player-facing design;
+- dead/superseded/duplicate code removed after safe replacement;
 - `EXP` / `Lv` notation and removal of vanilla XP progression/drop loop;
 - HP + Mana + Stamina; Stamina is primarily non-skill action resource; basic attack costs no Stamina;
 - dodge, guard, parry and layered stagger/poise combat;
@@ -547,40 +746,48 @@ Major locked decisions as of 2026-09-14 include:
 - deep ~5-stage initial advancement target, one major playstyle-changing branch, no `final` terminology;
 - persistent per-class progression with paid Lv-scaled/capped switching and no switch cooldown;
 - all unlocked passives of the active class apply; inactive-class passives never leak across;
-- broad weapon freedom, including future Hunter-compatible black-powder firearms but no modern firearms baseline;
+- broad weapon freedom including Hunter-compatible black-powder firearms; modern firearms excluded from baseline;
 - 12-slot RPG equipment target and no routine durability chore;
-- hybrid random-affix + named/signature equipment; roughly five non-cliché player-facing grades later;
+- larger expandable RPG inventory, no weight system, material pouch/category and stack sizes above vanilla 64 where appropriate;
+- hybrid random-affix + named/signature equipment; about five non-cliché grades later;
 - medium damage/status complexity;
 - light smithing/alchemy/cooking mastery;
 - regional Lv bands, roughly 12 major regions, discovered POIs, shrine/major-hub fast travel;
 - ground mounts with varied speed/handling/combat roles and later high-speed/flying traversal;
 - mixed main/regional/free-exploration quests, dynamic region events, replayable dungeons, respawning field/world bosses;
 - probabilistic drops with deterministic protection for progression-critical items;
-- multiplayer down/revive and fully personal combat loot;
-- quick-build material-cost camps; permanent houses are purchased separately in settlements;
+- multiplayer down/revive and fully personal loot;
+- RPG field resource nodes instead of cave/strip-mining as the core gathering loop;
+- personal node gathering state in multiplayer;
+- mining/herbalism/forestry/fishing-foraging categories with light mastery;
+- dedicated no-routine-durability gathering tools, separate from combat slots;
+- common node regeneration and slower/conditional rare-node regeneration;
+- one primary currency; player-facing name chosen later with world lore;
+- merchants use mostly randomized stock while potions/essentials/designated items remain reliably available;
+- quick-build material-cost camps;
+- permanent houses are purchased separately in settlements and provide rest/storage/decor/trophy functions;
 - selected faction/reputation systems only where meaningful;
 - moderate day/night/weather gameplay effects;
-- RPG field resource nodes instead of cave/strip-mining as the core gathering loop;
-- dead/superseded/duplicate code removed after safe replacement;
+- starting settlement and all important buildings use coherent external architecture/designs;
 - Essential-friendly server-authoritative multiplayer target.
 
 ---
 
-# 27. Next decision queue
+# 27. Next design queue for the next chat
 
-Keep batches manageable. Next choices should cover:
+Do not re-decide the locked systems above. Continue from here.
 
-1. resource-node ownership in multiplayer: shared depletion vs personal gathering state;
-2. gathering categories/mastery: mining, herbalism, forestry, fishing/foraging and how light the progression stays;
-3. gathering tools/interactions and whether tools are required or simply improve yield/speed;
-4. resource-node regeneration timing and rare-node rules;
-5. core currency structure/name timing and whether one primary currency is accepted;
-6. merchant economy: buy/sell rules, rotating stock and rare goods;
-7. inventory capacity: slot count, material pouch and whether weight is completely absent;
-8. purchased-house functions and furnishing/storage depth;
-9. starting-settlement role/unlocks and whether services expand through story/quests;
-10. exact class advancement branches after external character/weapon design research;
-11. world-map/terrain candidate selection and region derivation;
-12. final keybind audit only after the full action list exists.
+Recommended next batch:
 
-Do not invent answers merely to make the document look complete.
+1. **Starting settlement gameplay design** — which services exist immediately, what unlocks later, first NPC/service flow, house purchase timing.
+2. **Five root-class advancement trees** — actual first major branch for 전사 / 사냥꾼 / 성직자 / 마도사 / 수호자, then deeper advancement direction without using `final` terminology.
+3. **External open-world map selection** — shortlist actual usable/downloadable RPG maps/terrain and choose the map before naming all 12 regions.
+4. **First-region content package** — once the map is chosen: Lv band, common mobs, elite, field boss, dungeon, resources, quests, shrine/camp and signature rewards.
+5. **External UI selection** — inventory/equipment, skill HUD, forge, alchemy, cooking, class/advancement and death/respawn screens; choose proven final designs before implementation.
+6. **Economy balance** — currency sources/sinks, class-switch cost curve, death penalty %, house prices, shop refresh cadence.
+7. **Inventory numbers** — starting slot count, expansion steps, material-pouch behavior and practical stack caps above 64.
+8. **Loot economy** — affix count/ranges, grade probabilities, boss-drop rates, bad-luck protection only where needed.
+9. **Mount progression** — first ground mount, speed classes, combat mounts, later high-speed/flying unlock conditions.
+10. **Final keybind audit** only after the complete frequent-action list is known; important Minecraft/Essential keys must not conflict.
+
+When design direction becomes unclear, research real open-world RPGs, open-source RPGs and large Minecraft RPG mods before inventing filler systems.
