@@ -1,3 +1,2 @@
-RELEASE SOURCE AUDIT FAIL
-- 0.58 construction length UI missing: Shift+클릭(선/도로)=길이 변경
+0.58 regression assertion: Mythic population-control invariant missing: rank == Rank.MYTHIC_III && !canAdmitMythic(level, mob)
 RELEASE SOURCE AUDIT FAIL: 0.58 regression contract failed under 0.61 runtime identity
