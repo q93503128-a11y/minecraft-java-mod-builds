@@ -17,7 +17,7 @@ class M5BattleStageCharacterPresentationTest {
 
         BattleStageCharacterPresentation.Pose aiming = BattleStageCharacterPresentation.pose(
                 "turnbound_re:skeleton", "p1",
-                cue("p1", BattleActionTimelineState.ImpactStyle.PROJECTILE,
+                cue("p1", List.of("e1"), BattleActionTimelineState.ImpactStyle.PROJECTILE,
                         BattleActionTimelineState.Phase.WINDUP, 0.6D, 0));
         assertTrue(aiming.controlsAggressive());
         assertTrue(aiming.aggressive());
@@ -25,7 +25,7 @@ class M5BattleStageCharacterPresentationTest {
 
         BattleStageCharacterPresentation.Pose recovering = BattleStageCharacterPresentation.pose(
                 "turnbound_re:skeleton", "p1",
-                cue("p1", BattleActionTimelineState.ImpactStyle.PROJECTILE,
+                cue("p1", List.of("e1"), BattleActionTimelineState.ImpactStyle.PROJECTILE,
                         BattleActionTimelineState.Phase.RECOVERY, 0.2D, 0));
         assertTrue(recovering.controlsAggressive());
         assertFalse(recovering.aggressive());
@@ -36,7 +36,7 @@ class M5BattleStageCharacterPresentationTest {
     void skeletonDoesNotAimWhenAnotherParticipantActs() {
         BattleStageCharacterPresentation.Pose pose = BattleStageCharacterPresentation.pose(
                 "turnbound_re:skeleton", "p2",
-                cue("p1", BattleActionTimelineState.ImpactStyle.PROJECTILE,
+                cue("p1", List.of("e1"), BattleActionTimelineState.ImpactStyle.PROJECTILE,
                         BattleActionTimelineState.Phase.WINDUP, 0.5D, 0));
         assertFalse(pose.aggressive());
     }
@@ -45,7 +45,7 @@ class M5BattleStageCharacterPresentationTest {
     void endermanVoidBeatMovesTheActualModelButReturnsToNeutral() {
         BattleStageCharacterPresentation.Pose windup = BattleStageCharacterPresentation.pose(
                 "turnbound_re:enderman", "p1",
-                cue("p1", BattleActionTimelineState.ImpactStyle.VOID,
+                cue("p1", List.of("e1"), BattleActionTimelineState.ImpactStyle.VOID,
                         BattleActionTimelineState.Phase.WINDUP, 0.5D, 0));
         assertTrue(Math.abs(windup.offsetX()) > 0);
         assertTrue(Math.abs(windup.offsetX()) <= 3);
@@ -53,7 +53,7 @@ class M5BattleStageCharacterPresentationTest {
 
         BattleStageCharacterPresentation.Pose done = BattleStageCharacterPresentation.pose(
                 "turnbound_re:enderman", "p1",
-                cue("p1", BattleActionTimelineState.ImpactStyle.VOID,
+                cue("p1", List.of("e1"), BattleActionTimelineState.ImpactStyle.VOID,
                         BattleActionTimelineState.Phase.RECOVERY, 1.0D, 0));
         assertEquals(0, done.offsetX());
         assertEquals(BattleStageCharacterPresentation.DEFAULT_X_ANGLE, done.xAngle());
@@ -61,16 +61,49 @@ class M5BattleStageCharacterPresentationTest {
     }
 
     @Test
-    void nonRepresentativeCharactersKeepExistingStageView() {
+    void zombieUsesDedicatedMeleeStanceOnlyForAnActualEnemyTarget() {
+        BattleStageCharacterPresentation.Pose windup = BattleStageCharacterPresentation.pose(
+                "turnbound_re:zombie", "p1",
+                cue("p1", List.of("e1"), BattleActionTimelineState.ImpactStyle.MELEE,
+                        BattleActionTimelineState.Phase.WINDUP, 0.5D, 0));
+        assertTrue(windup.controlsAggressive());
+        assertTrue(windup.aggressive());
+        assertTrue(windup.offsetY() < 0);
+        assertTrue(windup.yAngle() > BattleStageCharacterPresentation.DEFAULT_Y_ANGLE);
+
+        BattleStageCharacterPresentation.Pose selfBuff = BattleStageCharacterPresentation.pose(
+                "turnbound_re:zombie", "p1",
+                cue("p1", List.of("p1"), BattleActionTimelineState.ImpactStyle.MELEE,
+                        BattleActionTimelineState.Phase.WINDUP, 0.5D, 0));
+        assertTrue(selfBuff.controlsAggressive());
+        assertFalse(selfBuff.aggressive());
+        assertEquals(0, selfBuff.offsetY());
+        assertEquals(BattleStageCharacterPresentation.DEFAULT_X_ANGLE, selfBuff.xAngle());
+        assertEquals(BattleStageCharacterPresentation.DEFAULT_Y_ANGLE, selfBuff.yAngle());
+
+        BattleStageCharacterPresentation.Pose recovering = BattleStageCharacterPresentation.pose(
+                "turnbound_re:zombie", "p1",
+                cue("p1", List.of("e1"), BattleActionTimelineState.ImpactStyle.MELEE,
+                        BattleActionTimelineState.Phase.RECOVERY, 0.4D, 0));
+        assertTrue(recovering.controlsAggressive());
+        assertFalse(recovering.aggressive());
+        assertEquals(0, recovering.offsetY());
+        assertEquals(BattleStageCharacterPresentation.DEFAULT_X_ANGLE, recovering.xAngle());
+        assertEquals(BattleStageCharacterPresentation.DEFAULT_Y_ANGLE, recovering.yAngle());
+    }
+
+    @Test
+    void charactersWithoutDedicatedPresentationKeepExistingStageView() {
         assertEquals(BattleStageCharacterPresentation.Pose.DEFAULT,
                 BattleStageCharacterPresentation.pose(
-                        "turnbound_re:zombie", "p1",
-                        cue("p1", BattleActionTimelineState.ImpactStyle.MELEE,
+                        "turnbound_re:creeper", "p1",
+                        cue("p1", List.of("e1"), BattleActionTimelineState.ImpactStyle.MELEE,
                                 BattleActionTimelineState.Phase.WINDUP, 0.5D, 0)));
     }
 
     private static BattleActionTimelineState.Cue cue(
             String actorId,
+            List<String> targetIds,
             BattleActionTimelineState.ImpactStyle impactStyle,
             BattleActionTimelineState.Phase phase,
             double progress,
@@ -79,7 +112,7 @@ class M5BattleStageCharacterPresentationTest {
         return new BattleActionTimelineState.Cue(
                 actorId,
                 "action",
-                List.of("e1"),
+                targetIds,
                 BattleActionTimelineState.MotionStyle.RANGED,
                 impactStyle,
                 impactStyle == BattleActionTimelineState.ImpactStyle.VOID
