@@ -3,7 +3,6 @@ package kr.moonseungjun.turnboundre.client.presentation;
 import kr.moonseungjun.turnboundre.TurnboundRe;
 import kr.moonseungjun.turnboundre.presentation.StarterZombieVisualEntity;
 import kr.moonseungjun.turnboundre.presentation.TurnboundPresentationEntities;
-import net.minecraft.Util;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.resources.Identifier;
@@ -20,7 +19,7 @@ public final class StarterZombieVisualRenderer extends LivingEntityRenderer<
         StarterZombieVisualModel> {
     private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath(
             TurnboundRe.MOD_ID, "textures/entity/starter_zombie.png");
-    private static final long PRESENTATION_EPOCH_MILLIS = Util.getMillis();
+    private static final long PRESENTATION_EPOCH_NANOS = System.nanoTime();
 
     public StarterZombieVisualRenderer(EntityRendererProvider.Context context) {
         super(context, new StarterZombieVisualModel(context.bakeLayer(StarterZombieVisualModel.LAYER)), 0.42F);
@@ -44,7 +43,7 @@ public final class StarterZombieVisualRenderer extends LivingEntityRenderer<
     ) {
         super.extractRenderState(entity, state, partialTick);
         state.aggressive = entity.isAggressive();
-        state.presentationTime = (Util.getMillis() - PRESENTATION_EPOCH_MILLIS) / 50.0F;
+        state.presentationTime = (System.nanoTime() - PRESENTATION_EPOCH_NANOS) / 50_000_000.0F;
     }
 
     @Override
