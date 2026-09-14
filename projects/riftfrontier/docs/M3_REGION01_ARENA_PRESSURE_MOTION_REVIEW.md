@@ -12,11 +12,35 @@ This is a human field-review checklist for the temporary authored arena-pressure
 
 The candidate owns no clock, damage, hit geometry, impulse, movement, targeting, health, death, or phase state. It must remain field-review-only until a human judges the motion readable and appropriate. Production binding remains incomplete regardless of automated test/build success.
 
+## Verified build checkpoint
+
+Checkpoint commit under review: `bca0816381c09b28d613bc12d2e395eb62368761`.
+
+`Build Riftfrontier` workflow `34812925676` completed **SUCCESS** on 2026-09-14 through the project workflow, including tests/clean build, required GameTest, dedicated-server smoke, Xvfb client smoke, executable-JAR inspection and artifact upload.
+
+Deliverable artifact:
+
+- name: `riftfrontier-0.1.0-alpha.1-deliverables`
+- artifact id: `10335940979`
+- artifact digest: `sha256:9ab57cfec3a13f69c37b6d6732f126b9371eaf0b05d5e5fb32f7e39a5bf772f0`
+- workflow run: `34812925676`
+
+For this checkpoint the accurate verification vocabulary is:
+
+- `CODE REVIEWED`: YES
+- `TESTED`: YES
+- `BUILD VERIFIED`: YES
+- `JAR PRODUCED`: YES
+- `PLAYTESTED`: NO
+- `MULTIPLAYER TESTED`: NO
+
+Automated client/server smoke is not human play evidence.
+
 ## Build / launch
 
-Use the JAR produced by the successful `Build Riftfrontier` workflow for the checkpoint commit under review.
+Use the JAR produced by the verified checkpoint above. Put the Riftfrontier mod JAR from the deliverable artifact into the normal Minecraft 26.2 / NeoForge 26.2.0.38-beta test instance used for this project.
 
-Run:
+Create or open a disposable test world, then run:
 
 ```text
 /riftfrontier boss fieldtest spawn
