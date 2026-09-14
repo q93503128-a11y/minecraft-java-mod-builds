@@ -52,9 +52,9 @@ public final class MythicEndgameRewardService {
         FracturedArchiveRewardService.onDamagePost(event);
 
         if (!(event.getEntity() instanceof Mob mob) || EliteMobSystem.rankId(mob) != 3) return;
-        if (event.getHealthDamage() <= 0.0F) return;
+        if (!(mob.level() instanceof ServerLevel level) || event.getHealthDamage() <= 0.0F) return;
 
-        ServerPlayer player = contributingPlayer(event.getSource());
+        ServerPlayer player = contributingPlayer(event.getSource(), level);
         if (player == null) return;
 
         CompoundTag entityData = mob.getPersistentData();
@@ -91,7 +91,7 @@ public final class MythicEndgameRewardService {
             }
         }
 
-        ServerPlayer killer = contributingPlayer(event.getSource());
+        ServerPlayer killer = contributingPlayer(event.getSource(), level);
         if (killer != null) qualified.add(killer.getUUID());
         if (qualified.isEmpty()) return;
 
@@ -107,8 +107,8 @@ public final class MythicEndgameRewardService {
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         FracturedArchiveRewardService.onPlayerLoggedIn(event);
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        int pending = MythicEndgamePendingData.get(player.getServer()).take(player.getUUID());
+        if (!(event.getEntity() instanceof ServerPlayer player) || !(player.level() instanceof ServerLevel level)) return;
+        int pending = MythicEndgamePendingData.get(level.getServer()).take(player.getUUID());
         if (pending > 0) applyQualifiedKills(player, pending, true);
     }
 
@@ -145,9 +145,9 @@ public final class MythicEndgameRewardService {
         player.sendSystemMessage(Component.literal("§6[담금질 인장] §a누적 모루 부담을 지웠습니다. §f인챈트와 장비 옵션은 그대로 유지됩니다."));
     }
 
-    private static ServerPlayer contributingPlayer(DamageSource source) {
+    private static ServerPlayer contributingPlayer(DamageSource source, ServerLevel level) {
         if (source.getEntity() instanceof ServerPlayer direct) return direct;
-        return AscensionAffixes.rangedProjectileOwner(source.getDirectEntity());
+        return AscensionAffixes.rangedProjectileOwner(source.getDirectEntity(), level);
     }
 
     private static void applyQualifiedKills(ServerPlayer player, int killCount, boolean restored) {
