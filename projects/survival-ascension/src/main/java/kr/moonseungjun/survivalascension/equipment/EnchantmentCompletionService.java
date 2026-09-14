@@ -71,6 +71,9 @@ public final class EnchantmentCompletionService {
             new Spec("density", "밀도"),
             new Spec("breach", "격파"),
             new Spec("wind_burst", "돌풍"),
+            new Spec("lunge", "돌진"),
+            new Spec("luck_of_the_sea", "바다의 행운"),
+            new Spec("lure", "미끼"),
             new Spec("unbreaking", "내구성"),
             new Spec("mending", "수선")
     );
