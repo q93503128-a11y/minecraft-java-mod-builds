@@ -86,10 +86,11 @@ public final class EliteMobSystem {
     private EliteMobSystem() {}
 
     public static void onFinalizeSpawn(FinalizeSpawnEvent event) {
-        if (FinalAscensionBossSystem.isInternalSpawn()) return;
+        if (FinalAscensionBossSystem.isInternalSpawn() || MythicFieldBossService.isInternalSpawn()) return;
         Mob mob = event.getEntity();
         if (!(mob instanceof Enemy) || mob instanceof EnderDragon || mob instanceof WitherBoss || mob.isBaby()) return;
         if (!(mob.level() instanceof ServerLevel level)) return;
+        if (MythicFieldBossService.isMajorTarget(mob)) return;
         if (isElite(mob)) return;
         if (event.getSpawnType().name().contains("SPAWNER")) return;
 
@@ -104,31 +105,29 @@ public final class EliteMobSystem {
         if (random.nextDouble() >= eliteChance) return;
 
         Rank rank = chooseRank(random, power, worldStage);
-        if (rank == Rank.MYTHIC_III && !canAdmitMythic(level, mob)) rank = Rank.ASCENDED_II;
+        if (rank == Rank.MYTHIC_III) {
+            // Mythic rarity is now the admission roll for a true content-pack field boss. Ordinary
+            // zombies/skeletons never become stat-inflated Mythic III bodies. If optional boss content
+            // is absent, the same spawn degrades safely to Ascended II rather than inventing a fake boss.
+            if (worldStage >= 1 && canAdmitMythic(level, mob)
+                    && MythicFieldBossService.tryReplacePromotion(level, mob, nearby.size())) return;
+            rank = Rank.ASCENDED_II;
+        }
+
         Trait trait = Trait.values()[random.nextInt(Trait.values().length)];
         applyElite(mob, rank, trait, nearby.size());
-
-        if (rank == Rank.MYTHIC_III) {
-            MythicRuntime runtime = ensureMythicRuntime(mob);
-            for (ServerPlayer viewer : playersNear(level, mob, MYTHIC_ALERT_RADIUS)) {
-                runtime.contributors.add(viewer.getUUID());
-                viewer.sendSystemMessage(Component.literal("§6§l[신화 III 출현] §r§f" + mob.getName().getString()
-                        + " §7· §e" + directionLabel(viewer, mob) + " " + (int)Math.round(Math.sqrt(viewer.distanceToSqr(mob))) + "m"
-                        + " §7· §6상단 방향 화살표로 추적됩니다."));
-            }
-        }
     }
 
     public static void onEntityJoin(EntityJoinLevelEvent event) {
         if (event.getEntity() instanceof Mob mob && event.getLevel() instanceof ServerLevel level && rank(mob) == Rank.MYTHIC_III) {
-            // 0.61.23 only capped fresh promotions. Mythics persisted by older builds can re-enter
-            // through chunk loading, so apply the same population admission before registering them.
+            // Persisted Mythics and external field bosses still pass the same population admission.
             if (!canAdmitMythic(level, mob)) {
                 retireOverflowMythic(mob);
                 return;
             }
             mob.setPersistenceRequired();
-            mob.setGlowingTag(true);
+            if (MythicFieldBossService.isExternalFieldBoss(mob)) mob.setGlowingTag(false);
+            else mob.setGlowingTag(true);
             ensureMythicRuntime(mob);
         }
     }
@@ -151,9 +150,13 @@ public final class EliteMobSystem {
                 remove.add(entry.getKey());
                 continue;
             }
-            mob.setGlowingTag(true);
+
+            boolean externalFieldBoss = MythicFieldBossService.isExternalFieldBoss(mob);
             mob.setPersistenceRequired();
+            if (!externalFieldBoss) mob.setGlowingTag(true);
             syncMythicBossBar(runtime, mob);
+            if (externalFieldBoss) continue;
+
             int phase = mob.getPersistentData().getIntOr(MYTHIC_PHASE_KEY, 0);
             if (phase >= 1) mob.addEffect(new MobEffectInstance(MobEffects.SPEED, 30, phase >= 2 ? 1 : 0, true, false));
             if (phase >= 2) {
@@ -194,6 +197,7 @@ public final class EliteMobSystem {
 
     public static void onDamagePre(LivingDamageEvent.Pre event) {
         if (!(event.getSource().getEntity() instanceof Mob attacker) || !isElite(attacker)) return;
+        if (MythicFieldBossService.isExternalFieldBoss(attacker)) return;
         if (trait(attacker) != Trait.BERSERKER || attacker.getHealth() > attacker.getMaxHealth() * 0.5F) return;
         float multiplier = switch (rank(attacker)) {
             case ELITE_I -> 1.25F;
@@ -208,6 +212,7 @@ public final class EliteMobSystem {
         if (event.getSource().getEntity() instanceof Mob attacker
                 && event.getEntity() instanceof ServerPlayer
                 && isElite(attacker)
+                && !MythicFieldBossService.isExternalFieldBoss(attacker)
                 && trait(attacker) == Trait.VAMPIRIC
                 && event.getHealthDamage() > 0.0F
                 && attacker.isAlive()) {
@@ -229,10 +234,11 @@ public final class EliteMobSystem {
             ServerPlayer player = event.getSource().getEntity() instanceof ServerPlayer sourcePlayer
                     ? sourcePlayer : AscensionAffixes.rangedProjectileOwner(event.getSource().getDirectEntity(), level);
             if (player != null) {
-                reactToPlayerHit(defender, player);
+                boolean externalFieldBoss = MythicFieldBossService.isExternalFieldBoss(defender);
+                if (!externalFieldBoss) reactToPlayerHit(defender, player);
                 if (rank(defender) == Rank.MYTHIC_III) {
                     ensureMythicRuntime(defender).contributors.add(player.getUUID());
-                    updateMythicPhase(defender);
+                    if (!externalFieldBoss) updateMythicPhase(defender);
                 }
             }
         }
@@ -252,6 +258,7 @@ public final class EliteMobSystem {
             for (ServerPlayer player : playersNear(level, mob, MYTHIC_REWARD_RADIUS)) recipients.add(player.getUUID());
             if (runtime != null) closeMythicBar(runtime);
             dropRankReward(level, mob, rank);
+            boolean fieldBoss = MythicFieldBossService.isExternalFieldBoss(mob);
             for (UUID id : recipients) {
                 ServerPlayer player = level.getServer().getPlayerList().getPlayer(id);
                 if (player == null || player.level() != level) continue;
@@ -259,7 +266,9 @@ public final class EliteMobSystem {
                 giveOrDrop(player, new ItemStack(Items.DIAMOND, 1));
                 giveOrDrop(player, new ItemStack(Items.EMERALD, 2 + level.getRandom().nextInt(3)));
                 giveOrDrop(player, new ItemStack(Items.ECHO_SHARD, 1));
-                player.sendSystemMessage(Component.literal("§6[신화 공동 격파] §f경험치 §e+90 §7· 다이아1 · 에메랄드2~4 · 메아리1"));
+                player.sendSystemMessage(Component.literal(fieldBoss
+                        ? "§4[필드보스 격파] §f경험치 §e+90 §7· 다이아1 · 에메랄드2~4 · 메아리1"
+                        : "§6[신화 공동 격파] §f경험치 §e+90 §7· 다이아1 · 에메랄드2~4 · 메아리1"));
             }
             return;
         }
@@ -283,26 +292,37 @@ public final class EliteMobSystem {
         return entity.getPersistentData().getIntOr(RANK_KEY, 0);
     }
 
+    /**
+     * Promote an original optional-content boss into the shared Mythic reward/tracking contract without
+     * replacing its model, renderer, sounds, attributes or combat AI. Only modest co-op health scaling is
+     * added so multiple players do not erase the encounter instantly; the boss's native moves stay intact.
+     */
+    static boolean adoptExternalFieldBoss(Mob mob, int nearbyPlayers) {
+        if (!(mob.level() instanceof ServerLevel level) || !canAdmitMythic(level, mob)) return false;
+        CompoundTag data = mob.getPersistentData();
+        data.putInt(RANK_KEY, Rank.MYTHIC_III.id);
+        MythicFieldBossService.markExternalFieldBoss(mob);
+
+        int extraPlayers = Math.min(4, Math.max(0, nearbyPlayers - 1));
+        addPermanent(mob.getAttribute(Attributes.MAX_HEALTH), MYTHIC_COOP_HEALTH_ID, extraPlayers * 0.25D,
+                AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
+        mob.setHealth(mob.getMaxHealth());
+        mob.setPersistenceRequired();
+        mob.setGlowingTag(false);
+
+        MythicRuntime runtime = ensureMythicRuntime(mob);
+        for (ServerPlayer viewer : playersNear(level, mob, MYTHIC_ALERT_RADIUS)) {
+            runtime.contributors.add(viewer.getUUID());
+            viewer.sendSystemMessage(Component.literal("§4§l[필드보스 출현] §r§f" + mob.getName().getString()
+                    + " §7· §e" + directionLabel(viewer, mob) + " "
+                    + (int)Math.round(Math.sqrt(viewer.distanceToSqr(mob))) + "m"
+                    + " §7· §4상단 방향 화살표로 추적됩니다."));
+        }
+        return true;
+    }
+
     public static int spawnTestMythic(ServerPlayer player) {
-        if (!(player.level() instanceof ServerLevel level)) return 0;
-        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getValue(Identifier.parse("minecraft:zombie"));
-        if (type == null) return 0;
-        BlockPos pos = player.blockPosition().relative(player.getDirection(), 10);
-        Entity entity = type.spawn(level, pos, EntitySpawnReason.COMMAND);
-        if (!(entity instanceof Mob mob)) {
-            if (entity != null) entity.discard();
-            player.sendSystemMessage(Component.literal("§c[신화 테스트] §f좀비 생성에 실패했습니다."));
-            return 0;
-        }
-        if (!canAdmitMythic(level, mob)) {
-            mob.discard();
-            player.sendSystemMessage(Component.literal("§e[신화 테스트] §f주변 신화 개체 제한에 걸려 소환하지 않았습니다."));
-            return 0;
-        }
-        applyElite(mob, Rank.MYTHIC_III, Trait.SWIFT, 1);
-        syncMythicTracker(player);
-        player.sendSystemMessage(Component.literal("§6[신화 테스트] §f정면 약 10블록에 신화 III 좀비를 소환했습니다."));
-        return 1;
+        return MythicFieldBossService.spawnTestFieldBoss(player);
     }
 
     private static void reactToPlayerHit(Mob defender, ServerPlayer player) {
@@ -605,8 +625,17 @@ public final class EliteMobSystem {
 
     private static void syncMythicBossBar(MythicRuntime runtime, Mob mob) {
         Set<ServerPlayer> shouldSee = new HashSet<>(playersNear(runtime.level, mob, MYTHIC_BOSSBAR_RADIUS));
+        for (ServerPlayer player : shouldSee) runtime.contributors.add(player.getUUID());
+
+        if (MythicFieldBossService.isExternalFieldBoss(mob)) {
+            // Audited external bosses own their own boss event. A second yellow Survival bar would
+            // obscure the original encounter UI, so keep only our invisible tracking/contribution state.
+            runtime.bossBar.setVisible(false);
+            for (ServerPlayer viewer : List.copyOf(runtime.bossBar.getPlayers())) runtime.bossBar.removePlayer(viewer);
+            return;
+        }
+
         for (ServerPlayer player : shouldSee) {
-            runtime.contributors.add(player.getUUID());
             if (!runtime.bossBar.getPlayers().contains(player)) runtime.bossBar.addPlayer(player);
         }
         for (ServerPlayer viewer : List.copyOf(runtime.bossBar.getPlayers())) if (!shouldSee.contains(viewer)) runtime.bossBar.removePlayer(viewer);
@@ -635,7 +664,7 @@ public final class EliteMobSystem {
             this.bossBar = new ServerBossEvent(UUID.randomUUID(), Component.literal("신화 III"),
                     BossEvent.BossBarColor.YELLOW, BossEvent.BossBarOverlay.PROGRESS);
             this.bossBar.setProgress(1.0F);
-            this.bossBar.setVisible(true);
+            this.bossBar.setVisible(!MythicFieldBossService.isExternalFieldBoss(mob));
         }
     }
 
