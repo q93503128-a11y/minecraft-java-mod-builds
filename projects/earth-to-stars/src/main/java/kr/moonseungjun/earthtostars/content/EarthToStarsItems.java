@@ -7,6 +7,8 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
+import java.util.List;
+
 public final class EarthToStarsItems {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(EarthToStars.MOD_ID);
 
@@ -58,7 +60,21 @@ public final class EarthToStarsItems {
             props -> props.stacksTo(1)
     );
 
+    private static final List<DeferredItem<? extends Item>> CREATIVE_ITEMS = List.of(
+            REINFORCED_FRAME,
+            AVIONICS_UNIT,
+            PROPELLANT_CELL,
+            OXYGEN_CARTRIDGE,
+            LIFE_SUPPORT_UNIT,
+            LAUNCH_CRAFT_KIT,
+            RECOVERED_SENSOR_CORE
+    );
+
     private EarthToStarsItems() {
+    }
+
+    public static List<DeferredItem<? extends Item>> creativeItems() {
+        return CREATIVE_ITEMS;
     }
 
     public static void register(IEventBus modBus) {

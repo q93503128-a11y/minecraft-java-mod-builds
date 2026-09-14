@@ -54,7 +54,7 @@ jobs:
           python3 tools/test_progression_validator.py 2>&1 | tee build/logs/p0h-validator-tests.log
           python3 tools/validate_progression.py 2>&1 | tee build/logs/p0h-progression.log
           python3 tools/validate_m1_launch.py 2>&1 | tee build/logs/m1-launch-progression.log
-          python3 tools/validate_alpha15_acceptance.py 2>&1 | tee build/logs/alpha15-acceptance.log
+          python3 tools/validate_alpha16_acceptance.py 2>&1 | tee build/logs/alpha16-acceptance.log
       - name: Clean test and build
         shell: bash
         run: |
@@ -96,7 +96,7 @@ jobs:
             LIFECYCLE_STATUS="NOT RERUN; save/restore run 34197931566 remains valid, boarding EntityType probe last passed run 34731266964"
           fi
           cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # EARTH TO STARS — alpha.15 Boarding Root-Cause Rescue Build Report
+          # EARTH TO STARS — alpha.16 Creative Test Access Build Report
 
           - Commit: $GITHUB_SHA
           - Mod version: $MOD_VERSION
@@ -107,8 +107,11 @@ jobs:
           - P0-H progression validator: PASS
           - M1 launch recipe dependency closure: PASS
           - M1 launch recipe Nether/End independence: PASS
-          - alpha.15 acceptance static gate: PASS
-          - rideable serializable EntityType + non-persisted runtime exterior contract: PASS
+          - alpha.16 acceptance static gate: PASS
+          - dedicated EARTH TO STARS creative tab: PASS
+          - all player-facing registered items exposed in creative inventory: PASS
+          - render-only ship/salvage/interceptor visual tokens kept internal: PASS
+          - alpha.15 rideable serializable EntityType + non-persisted runtime exterior contract: PASS
           - authorized forced mounting + failed-deployment rollback contract: PASS
           - visible hull / interaction / passenger vehicle single-entity contract: PASS
           - enlarged 5-block-class starter hull and matching hitbox contract: PASS
@@ -123,7 +126,8 @@ jobs:
           - production JAR verify: PASS
           - dedicated lifecycle status: $LIFECYCLE_STATUS
           - SHA-256: $SHA
-          - client model/resource smoke: alpha.14 visual resources passed run 34424914782; alpha.15 changes no visual resources
+          - client model/resource smoke: alpha.14 visual resources passed run 34424914782; alpha.16 changes add creative-tab/lang registration only
+          - live creative-tab visibility: NOT PLAYTESTED
           - live starter-craft boarding/handling quality: NOT PLAYTESTED
           - live Earth→orbit→salvage→combat→return cycle: NOT PLAYTESTED
           - live multiplayer: NOT TESTED

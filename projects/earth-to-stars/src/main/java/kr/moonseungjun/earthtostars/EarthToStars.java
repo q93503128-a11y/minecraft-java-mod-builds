@@ -1,6 +1,7 @@
 package kr.moonseungjun.earthtostars;
 
 import com.mojang.logging.LogUtils;
+import kr.moonseungjun.earthtostars.content.EarthToStarsCreativeTabs;
 import kr.moonseungjun.earthtostars.content.EarthToStarsEntities;
 import kr.moonseungjun.earthtostars.content.EarthToStarsItems;
 import net.neoforged.bus.api.IEventBus;
@@ -10,12 +11,13 @@ import org.slf4j.Logger;
 @Mod(EarthToStars.MOD_ID)
 public final class EarthToStars {
     public static final String MOD_ID = "earth_to_stars";
-    public static final String VERSION = "0.1.0-alpha.15";
+    public static final String VERSION = "0.1.0-alpha.16";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public EarthToStars(IEventBus modEventBus) {
         EarthToStarsItems.register(modEventBus);
+        EarthToStarsCreativeTabs.register(modEventBus);
         EarthToStarsEntities.register(modEventBus);
-        LOGGER.info("EARTH TO STARS {} live-acceptance rescue systems loaded", VERSION);
+        LOGGER.info("EARTH TO STARS {} systems loaded", VERSION);
     }
 }
