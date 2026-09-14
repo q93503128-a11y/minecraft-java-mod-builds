@@ -1,6 +1,7 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "minecraft:item/amethyst_shard"
+    "layer0": "tbos:item/curator_core",
+    "layer1": "tbos:item/cantor_sigil"
   }
 }
