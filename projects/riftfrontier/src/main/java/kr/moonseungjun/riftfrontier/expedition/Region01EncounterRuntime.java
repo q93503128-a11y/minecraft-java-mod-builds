@@ -77,18 +77,24 @@ public final class Region01EncounterRuntime {
         Region01FieldArena.materialize(level, center);
         EncounterPlan plan = planForPressure(pressure);
 
+        var hunterSpawns = Region01FieldArenaPlan.hunterSpawnCells();
+        var scoutSpawns = Region01FieldArenaPlan.scoutSpawnCells();
+        if (plan.hunters() > hunterSpawns.size() || plan.scouts() > scoutSpawns.size()) {
+            throw new IllegalStateException("Region 01 encounter pressure exceeds reviewed combat-space spawn capacity");
+        }
+
         for (int i = 0; i < plan.hunters(); i++) {
             Zombie hunter = new Zombie(level);
-            spawn(level, hunter, center.offset(-4 + (i * 2), 0, 3), runSequence, ROLE_HUNTER);
+            spawn(level, hunter, offset(center, hunterSpawns.get(i)), runSequence, ROLE_HUNTER);
         }
         for (int i = 0; i < plan.scouts(); i++) {
             Skeleton scout = new Skeleton(EntityTypes.SKELETON, level);
             scout.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
-            spawn(level, scout, center.offset(4 - (i * 2), 0, -3), runSequence, ROLE_SCOUT);
+            spawn(level, scout, offset(center, scoutSpawns.get(i)), runSequence, ROLE_SCOUT);
         }
 
         Ravager elite = new Ravager(EntityTypes.RAVAGER, level);
-        spawn(level, elite, center.offset(0, 0, 2), runSequence, ROLE_ELITE);
+        spawn(level, elite, offset(center, Region01FieldArenaPlan.eliteSpawnCell()), runSequence, ROLE_ELITE);
         return plan;
     }
 
@@ -197,6 +203,10 @@ public final class Region01EncounterRuntime {
             .filter(Mob::isAlive)
             .filter(mob -> !mob.isRemoved())
             .toList();
+    }
+
+    private static BlockPos offset(BlockPos center, Region01FieldArenaPlan.SpawnCell cell) {
+        return center.offset(cell.dx(), 0, cell.dz());
     }
 
     private static void spawn(ServerLevel level, Mob mob, BlockPos pos, long runSequence, String role) {

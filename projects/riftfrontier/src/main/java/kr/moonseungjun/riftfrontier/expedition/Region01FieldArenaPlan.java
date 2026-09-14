@@ -13,6 +13,18 @@ public final class Region01FieldArenaPlan {
     public static final int FIELD_RADIUS = 5;
     public static final int PRESENTATION_MAX_Z = 2;
 
+    private static final List<SpawnCell> HUNTER_SPAWNS = List.of(
+        new SpawnCell(-4, -1),
+        new SpawnCell(-4, 1),
+        new SpawnCell(-4, 2)
+    );
+    private static final List<SpawnCell> SCOUT_SPAWNS = List.of(
+        new SpawnCell(4, 2),
+        new SpawnCell(4, 0),
+        new SpawnCell(4, -2)
+    );
+    private static final SpawnCell ELITE_SPAWN = new SpawnCell(0, 2);
+
     private Region01FieldArenaPlan() {}
 
     public enum FloorRole {
@@ -27,6 +39,8 @@ public final class Region01FieldArenaPlan {
             if (height < 1) throw new IllegalArgumentException("Region 01 cover height must be positive");
         }
     }
+
+    public record SpawnCell(int dx, int dz) {}
 
     /**
      * Leaves z=3..5 untouched so the existing extraction-relay approach can keep owning its reviewed
@@ -55,4 +69,13 @@ public final class Region01FieldArenaPlan {
             new CoverPillar(3, 1, 2)
         );
     }
+
+    /**
+     * Reviewed technical staging points keep every patrol role inside the combat-owned z=-5..2 space.
+     * Hunters begin on the west flank behind/alongside the left cover pair, scouts on the east flank with
+     * staggered sightlines, and the elite keeps the open center-back anchor. This changes no role count or stats.
+     */
+    public static List<SpawnCell> hunterSpawnCells() { return HUNTER_SPAWNS; }
+    public static List<SpawnCell> scoutSpawnCells() { return SCOUT_SPAWNS; }
+    public static SpawnCell eliteSpawnCell() { return ELITE_SPAWN; }
 }
