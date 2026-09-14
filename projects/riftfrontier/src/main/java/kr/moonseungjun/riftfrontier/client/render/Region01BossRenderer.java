@@ -24,6 +24,7 @@ public final class Region01BossRenderer extends EntityRenderer<Region01BossEntit
         super.extractRenderState(entity, state, partialTick);
         state.setIdentity(entity.getId(), entity.getUUID());
         state.setFieldReviewPreviewTimeSeconds((entity.tickCount + partialTick) / 20.0F);
+        state.setFieldReviewReactionState(entity.hurtTime, entity.hurtDuration, entity.deathTime);
     }
 
     @Override
@@ -51,6 +52,9 @@ public final class Region01BossRenderer extends EntityRenderer<Region01BossEntit
                 state.entityId(),
                 state.entityUuid(),
                 state.fieldReviewPreviewTimeSeconds(),
+                state.hurtTime(),
+                state.hurtDuration(),
+                state.deathTime(),
                 poseStack,
                 collector,
                 state.lightCoords
