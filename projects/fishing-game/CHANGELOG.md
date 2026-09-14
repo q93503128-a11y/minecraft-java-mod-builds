@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-alpha.17
+
+- Added five species fight styles so hooked fish no longer differ only by a resistance scalar: `꾸준한 힘싸움`, `연속 질주`, `깊은 잠수`, `묵직한 버팀`, `불규칙 난동`.
+- Kept the existing one-button hold/release reel control; fight styles change burst cadence, duration, force and visible movement without adding another meter, skill or currency.
+- Coupled server-side tension bursts and encounter-fish movement to the same fight style so the visible run/dive behavior matches the real pressure applied to the line.
+- Added distinct lateral/orbit/dive motion profiles for fast, diving, heavy and erratic fish while preserving rod strength/control as the progression counterplay.
+- Added a short player-facing fight-style cue at the hook moment so the player can react immediately without opening a menu.
+- Added deterministic fight-style tests covering cadence, strength/duration, dive bias and representative species assignments.
+
 ## 0.1.0-alpha.16
 
 - Added three server-resolved fishing hotspots to each dedicated location so map sub-areas affect target hunting instead of acting as scenery only.

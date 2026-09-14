@@ -226,10 +226,15 @@ public final class FishingSessionManager {
                     session.reelHeld = false;
                     session.burstTicks = 0;
                     session.burstStrength = 0.0f;
-                    session.nextBurstTick = now + 16 + player.getRandom().nextInt(22);
+                    FishFightStyle fightStyle = FishFightStyle.forSpecies(session.species.id());
+                    session.nextBurstTick = now + fightStyle.burstCooldownTicks(16, player.getRandom().nextInt(22));
                     updateHookedVisual(player, session, now);
                     playBiteFx(player);
-                    sendState(player, session, "입질! 안전 구간을 지키며 감아 올리세요.");
+                    sendState(
+                            player,
+                            session,
+                            "입질! " + fightStyle.displayName() + " · 안전 구간을 지키며 감아 올리세요."
+                    );
                 }
                 continue;
             }
@@ -306,13 +311,17 @@ public final class FishingSessionManager {
         if (now < session.nextBurstTick) return;
 
         float resistance = session.species.resistance();
-        session.burstStrength = 0.55f
+        FishFightStyle fightStyle = FishFightStyle.forSpecies(session.species.id());
+        float baseStrength = 0.55f
                 + Math.min(0.75f, Math.max(0.0f, resistance - 0.65f) * 0.55f)
                 + player.getRandom().nextFloat() * 0.22f;
-        session.burstTicks = 6 + Math.min(8, Math.round(resistance * 4.0f));
+        int baseDuration = 6 + Math.min(8, Math.round(resistance * 4.0f));
+        int baseCooldown = Math.max(22, 52 - Math.round(resistance * 10.0f));
+
+        session.burstStrength = fightStyle.burstStrength(baseStrength);
+        session.burstTicks = fightStyle.burstDurationTicks(baseDuration);
         session.burstHeading = player.getRandom().nextDouble() * Math.PI * 2.0;
-        int cooldown = Math.max(22, 52 - Math.round(resistance * 10.0f));
-        session.nextBurstTick = now + cooldown + player.getRandom().nextInt(22);
+        session.nextBurstTick = now + fightStyle.burstCooldownTicks(baseCooldown, player.getRandom().nextInt(22));
         session.tension = FishPresentationMath.burstPull(
                 session.tension, resistance, rod.strength(), session.burstStrength
         );
@@ -360,22 +369,24 @@ public final class FishingSessionManager {
         ensureVisualFish(player, session);
         if (session.visualFish == null) return;
 
+        FishFightStyle fightStyle = FishFightStyle.forSpecies(session.species.id());
         Vec3 hook = player.fishing.position();
         float burst = session.burstTicks > 0 ? session.burstStrength : 0.0f;
         double radius = FishPresentationMath.fightRadius(
                 session.progress, session.species.resistance(), burst, session.tension
-        );
+        ) * fightStyle.lateralRangeMultiplier();
+        double orbitSpeed = fightStyle.orbitSpeedMultiplier();
         double calmAngle = session.visualAngle
-                + Math.sin(now * 0.064 + session.visualAngle) * 1.05
-                + Math.sin(now * 0.021 + session.visualAngle * 0.5) * 0.46;
+                + Math.sin(now * 0.064 * orbitSpeed + session.visualAngle) * 1.05
+                + Math.sin(now * 0.021 * orbitSpeed + session.visualAngle * 0.5) * 0.46;
         double angle = burst > 0.0f
-                ? session.burstHeading + Math.sin(now * 0.31) * 0.24
+                ? session.burstHeading + Math.sin(now * 0.31 * orbitSpeed) * 0.24
                 : calmAngle;
 
         double x = hook.x + Math.cos(angle) * radius;
         double y = hook.y - 1.02 + session.progress * 0.50
-                + Math.sin(now * 0.22 + session.visualAngle) * 0.11;
-        if (burst > 0.0f) y -= 0.10 * burst;
+                + Math.sin(now * 0.22 * Math.max(0.72, orbitSpeed) + session.visualAngle) * 0.11;
+        if (burst > 0.0f) y -= 0.10 * burst * fightStyle.diveMultiplier();
         double z = hook.z + Math.sin(angle) * radius;
         moveVisualFish(session.visualFish, x, y, z, hook.x, hook.y - 0.45, hook.z);
     }

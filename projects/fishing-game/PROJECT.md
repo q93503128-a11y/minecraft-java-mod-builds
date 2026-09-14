@@ -5,7 +5,7 @@
 - Slug: fishing-game
 - Mod ID: fishinggame
 - Namespace: fishinggame
-- Mod version: 0.1.0-alpha.16
+- Mod version: 0.1.0-alpha.17
 - Minecraft: 26.2
 - Java: 25
 - Loader: Fabric
@@ -13,7 +13,7 @@
 - Fabric API: >=0.159.0+26.2
 - Gradle: 9.5.1
 - Build plugin: Fabric Loom 1.17.19
-- Final JAR: build/libs/fishing-game-0.1.0-alpha.16.jar
+- Final JAR: build/libs/fishing-game-0.1.0-alpha.17.jar
 - Required dependencies: Fabric API
 - Optional external mods: Essential, connection/hosting convenience only
 - Forbidden bundled dependencies: Essential
@@ -72,6 +72,18 @@ Alpha.16 makes authored geography affect fish hunting without turning the maps i
 - Undiscovered bestiary entries keep their species name hidden but show a recommended hotspot, giving the player a hunt direction without revealing the answer.
 - Hotspot resolution is server-authoritative and isolated per fishing session, so multiplayer players can fish different water at the same time without sharing selection state.
 
+## Species fight identity
+
+Alpha.17 keeps the one-button reel system but stops different fish from feeling like the same fight with a different resistance number.
+
+- Overall force/difficulty still comes from each species' existing resistance and the equipped rod's strength/control.
+- Each species is assigned one server-owned fight style: `꾸준한 힘싸움`, `연속 질주`, `깊은 잠수`, `묵직한 버팀`, or `불규칙 난동`.
+- Fight style changes burst cadence, burst duration, burst force and the visible fish's lateral/orbit/dive motion; it does not add another stamina bar, skill button, currency or equipment layer.
+- The first hooked notice identifies the behavior in player-facing language so a player can immediately react without opening another screen.
+- Fast fish make shorter, more frequent lateral runs; divers pull downward; bruisers create longer/heavier pressure windows; erratic fish move quickly and irregularly; steady fish favor slower readable pressure.
+- The visible encounter fish uses the same style that drives server tension bursts, so animation/motion and real catch pressure do not contradict each other.
+- Fight-style calculation is deterministic data keyed by species identity while burst timing remains per-session/randomized and isolated per player.
+
 ## Collection / bestiary rule
 
 The temporary catch bag and permanent collection records are separate systems.
@@ -109,7 +121,7 @@ Do not invent the visual language ad hoc. HUD, cast meter, bag, bestiary and tra
 - Unaffordable rod upgrades are visibly disabled client-side while the server remains the authority for the actual purchase.
 - Catch bag rows expose rarity, size grade, weight, length and value without creating more menus.
 - Location collection counts stay visible in the HUD/travel view and collection-completion targets stay inside the bestiary rather than creating a quest screen.
-- Alpha.16 adds hotspot hunt hints to existing notices/bestiary rows instead of adding another map or hunting menu.
+- Hotspot hunt hints stay in existing notices/bestiary rows instead of adding another map or hunting menu.
 - UI changes must still be judged in a real Minecraft client at supported GUI scales; code/build success does not certify screen composition.
 
 ## Audio feedback rule
@@ -137,6 +149,7 @@ Do not hand the user a JAR for a tiny technical check. A user-facing test build 
 - catch bag, persistence, coins and selling
 - meaningful rod progression
 - visible species presentation and readable reel control
+- species fights whose visible motion and tension cadence are meaningfully different
 - clear catch result with rarity, size grade, records and collection reward feedback
 - no competing vanilla bite/loot presentation
 - multiple dedicated fishing locations connected to progression
@@ -146,4 +159,4 @@ Do not hand the user a JAR for a tiny technical check. A user-facing test build 
 - complete cast -> target water -> catch -> sell -> upgrade -> travel -> collect loop
 - acceptable actual Minecraft screen quality
 
-Build success alone is not the final gate. Alpha.16 connects map geography to target hunting, but the actual Minecraft client still needs graphical/play review before PLAYTESTED or GRAPHICAL CLIENT REVIEWED is claimed.
+Build success alone is not the final gate. Alpha.17 deepens the hooked-fish interaction, but hotspot readability, fight-style feel, fish motion, sound balance and screen composition still need actual Minecraft graphical/play review before PLAYTESTED or GRAPHICAL CLIENT REVIEWED is claimed.
