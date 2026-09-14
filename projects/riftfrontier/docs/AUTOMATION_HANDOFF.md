@@ -4,7 +4,7 @@ Recovery aid only. Reconstruct canonical truth from current GitHub `main`, `PROJ
 
 ## Current stage
 
-`M3 — PLAYER COMBAT BUILD VERIFIED / COMMANDLESS TECHNICAL EXPEDITION LOOP + NATIVE ACTIONBAR READABILITY BUILD VERIFIED / REGION 01 BOSS FIELD ROLE-CONTRAST + HEALTH + REVIEWED ATTACK/REACTION MOTION BUILD VERIFIED / ARENA-PRESSURE MOTION CANDIDATE AWAITING HUMAN REVIEW / PRODUCTION BOSS PRESENTATION STILL MATERIAL + ARENA-PRESSURE ACCEPTANCE + VFX/SOUND GATED`
+`M3 — PLAYER COMBAT + NATIVE HIT READABILITY BUILD VERIFIED / COMMANDLESS TECHNICAL EXPEDITION LOOP + NATIVE ACTIONBAR READABILITY BUILD VERIFIED / REGION 01 BOSS FIELD ROLE-CONTRAST + HEALTH + REVIEWED ATTACK/REACTION MOTION BUILD VERIFIED / ARENA-PRESSURE MOTION CANDIDATE AWAITING HUMAN REVIEW / PRODUCTION BOSS PRESENTATION STILL MATERIAL + ARENA-PRESSURE ACCEPTANCE + VFX/SOUND GATED`
 
 Prioritize a genuinely playable vertical slice and visible production quality. Do not reopen settled expedition authority/restart work or add speculative lifecycle/authority fences without a demonstrated regression.
 
@@ -15,7 +15,7 @@ Prioritize a genuinely playable vertical slice and visible production quality. D
 - Region 01 first-boss geometry/rig remains Quaternius `Dragon Evolved` through Riftfrontier's custom skinned-mesh importer/renderer. Do not restart model search or reintroduce GeckoLib merely to duplicate this working path.
 - Accepted sanitized boss resource: `riftfrontier:boss_presentation/region_01/dragon_evolved.sanitized.v1.gltf`, SHA-256 `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`.
 - Canonical provenance/license registry is `docs/THIRD_PARTY_ASSETS.md`. The original Dragon Evolved `Atlas` is source provenance/reference only and is **not** approved final Region 01 art. Do not restore it, invent a final palette, create fake `presentation_assets`, or weaken exact-coverage gates.
-- Diagnostic vanilla particles/sounds, technical hub/field blocks, native boss bar, stone-textured field-review body and expedition actionbar are temporary validation/readability affordances, not final Riftfrontier UI/art/VFX language.
+- Diagnostic vanilla particles/sounds, technical hub/field blocks, native boss bar, stone-textured field-review body, expedition actionbar and current player-hit cues are temporary validation/readability affordances, not final Riftfrontier UI/art/VFX language.
 
 ## First expedition physical loop — latest verified checkpoint
 
@@ -75,6 +75,35 @@ Treat `fded37cbe91668af213af477ae0b0238ac455693` as `CODE REVIEWED / TESTED / BU
 Post-extraction loop checkpoint `09109a4b8fc11b5c136ff8d329e380fd9fe65eaf`, workflow `34782718258`: full SUCCESS.
 
 No new lifecycle or persistence semantics were added by the fresh-world bootstrap or actionbar batch. Death/logout/restart reconciliation, extraction gates, pressure-scaled preparation cost, storage, supply and evidence remain owned by their existing server-authoritative services.
+
+## Player weapon impact readability — build verified, human field play pending
+
+Checkpoint `24a15b2a0c8db3ade4c6ae730da1373c93e59e00` adds Minecraft-native hit confirmation to the existing player field-impact bridge without adding a second attack clock or trusting client hit claims.
+
+`PlayerWeaponFieldImpactResolver.apply(...)` now emits feedback **only after** the authoritative `hurtServer(...)` call reports successful damage. A successful ACTIVE hit produces a small `DAMAGE_INDICATOR` burst at the target plus `PLAYER_ATTACK_STRONG` through the player sound source. A whiff, closed hit window, duplicate target in the same execution, ineligible target, or rejected damage produces no new success cue.
+
+This follows the same broad readability pattern used by established Minecraft combat mods (server-side impact particles and native attack sounds) while deliberately reusing Minecraft assets rather than inventing Riftfrontier's final weapon VFX/audio language. No external code or art asset was copied into the project, so no new redistributable asset provenance entry is required.
+
+Workflow `34825929915`: full SUCCESS. It passed asset-intake tests, `clean test build`, required GameTest, dedicated-server smoke, Xvfb client smoke, executable-JAR inspection, build report and artifact uploads.
+
+Successful deliverable:
+
+- artifact: `riftfrontier-0.1.0-alpha.1-deliverables`
+- artifact id: `10340393261`
+- digest: `sha256:58f5e65db6e7cba6ae2d932a8984e1acf738836b3b37a75445f4abe366d2cdbc`
+
+Treat `24a15b2a0c8db3ade4c6ae730da1373c93e59e00` as `CODE REVIEWED / TESTED / BUILD VERIFIED / JAR PRODUCED`. `PLAYTESTED: NO`, `MULTIPLAYER TESTED: NO`.
+
+Exact human field check for this checkpoint:
+
+1. Use a disposable client world and bind both Riftfrontier combat actions in Minecraft Controls; no final default key layout has been approved.
+2. Enter the normal commandless Region 01 loop through the hub lodestone so real patrol targets are present.
+3. Issue `/riftfrontier weapon mobile`, hold the issued iron-sword carrier, and exercise both combat actions against a patrol target. Repeat with `/riftfrontier weapon reach`.
+4. Confirm a successful server-authoritative hit produces one concise damage-particle burst and one native strong-attack sound at the struck target.
+5. Deliberately whiff outside the target volume and confirm there is no false hit-confirmation cue.
+6. Confirm the cue does not repeat on the same target throughout one ACTIVE execution and does not appear during TELEGRAPH or RECOVERY.
+7. Repeat with `/riftfrontier weapon mobile pivot` and `/riftfrontier weapon reach pivot`; recovery-pivot behavior must remain unchanged and must not itself create a hit cue.
+8. Do not approve particle count, sound, pitch, damage, geometry or key layout as final balance/presentation from automation alone. Record whether the cue makes the existing two weapon roles easier to read without masking spacing/recovery differences.
 
 ## Region 01 boss field harness — verified technical behavior
 
@@ -154,7 +183,7 @@ Next automatic development should target work that does not fake that acceptance
 
 1. Establish a legally usable, commercial-game/major-mod-reference-reviewed final material/texture direction and physical resource, preserving provenance/license records; or obtain actual human acceptance/rejection evidence for the arena-pressure candidate when available.
 2. Only when all nine attack logical keys have evidence, assemble complete production `BossAnimationSourceBinding` without weakening exact coverage.
-3. Select/author VFX and sound under the same readability/provenance rules; presentation channels may emphasize but never create a second gameplay hit clock.
+3. Select/author VFX and sound under the same readability/provenance rules; presentation channels may emphasize but never create a second gameplay hit clock. The current Minecraft-native player hit cue is only a field-readability baseline, not approval of final Riftfrontier combat audiovisual language.
 4. Author the first real `presentation_assets` manifest only after every referenced physical resource exists and is reviewed.
 5. Publish through the existing reload/render pipeline, then verify Minecraft scale/hit-volume readability and resource reload.
 6. Only after verified production presentation replaces the temporary path, remove field-review render/motion/reaction scaffolding and stone-material assumption as superseded code.
@@ -164,7 +193,7 @@ Do **not** auto-tune provisional combat numbers without human field evidence. Do
 
 ## Verification vocabulary — latest gameplay/readability code checkpoint
 
-For `fded37cbe91668af213af477ae0b0238ac455693` after workflow `34821369460` successful rerun:
+For `24a15b2a0c8db3ade4c6ae730da1373c93e59e00` after workflow `34825929915`:
 
 - `CODE REVIEWED`: YES
 - `TESTED`: YES
