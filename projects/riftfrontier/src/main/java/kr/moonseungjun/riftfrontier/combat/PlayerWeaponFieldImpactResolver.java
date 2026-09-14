@@ -1,7 +1,10 @@
 package kr.moonseungjun.riftfrontier.combat;
 
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -54,7 +57,34 @@ public final class PlayerWeaponFieldImpactResolver
         PlayerWeaponFieldImpactProfile.Profile profile = PlayerWeaponFieldImpactProfile.find(snapshot.patternId())
             .orElse(null);
         if (profile == null || !snapshot.mayApplyHit() || !(actor instanceof ServerPlayer player)) return;
-        target.hurtServer(level, level.damageSources().playerAttack(player), profile.diagnosticDamage());
+
+        boolean damaged = target.hurtServer(level, level.damageSources().playerAttack(player), profile.diagnosticDamage());
+        if (!damaged) return;
+
+        // Minecraft-native impact readability only. These cues are emitted strictly after the
+        // authoritative ACTIVE hit succeeds, so presentation can never create a second hit clock.
+        // Final Riftfrontier weapon VFX/audio still require reference review and human field play.
+        level.sendParticles(
+            ParticleTypes.DAMAGE_INDICATOR,
+            target.getX(),
+            target.getY(0.5D),
+            target.getZ(),
+            2,
+            0.12D,
+            0.08D,
+            0.12D,
+            0.08D
+        );
+        level.playSound(
+            null,
+            target.getX(),
+            target.getY(),
+            target.getZ(),
+            SoundEvents.PLAYER_ATTACK_STRONG,
+            SoundSource.PLAYERS,
+            0.7F,
+            1.0F
+        );
     }
 
     static boolean insideProfile(
