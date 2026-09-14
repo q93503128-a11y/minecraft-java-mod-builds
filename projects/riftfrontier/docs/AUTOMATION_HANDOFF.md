@@ -8,32 +8,27 @@ Recovery aid only. Reconstruct canonical truth from current GitHub `main`, `/AGE
 
 Priority remains a genuinely playable, polished Region 01 vertical slice. Do not grow speculative authority/lifecycle infrastructure or expand region count while visible gameplay/presentation remains incomplete.
 
-## Latest verified gameplay checkpoint — Region 01 threat staging
+## Latest verified gameplay checkpoint — commandless hub feedback regression fix
 
-Implementation checkpoint: `f49357355899d3efb0e21f0101c837c5e28d0353` (`riftfrontier: stage Region 01 threats into combat space`).
+Implementation checkpoint: `5c5601a1a26c17b3305f38872ed684cf2da816fb` (`riftfrontier: localize commandless hub station feedback`).
 
-The preceding combat-space checkpoint created staggered cover across the combat-owned z=-5..2 field, but the encounter runtime still spawned Hunters at z=3 inside the extraction-relay-owned approach and Scouts immediately beside the arrival side at z=-3. This batch connects encounter staging to the reviewed combat-space plan instead of adding more decoration or backend state.
+A demonstrated player-facing regression remained after the earlier expedition localization checkpoint: the fresh-world hub bootstrap message and both commandless hub station rejection paths still exposed hardcoded English, and the rejection paths appended raw internal `IllegalStateException` text. This batch closes only that proven gap; it does not reopen ordinary localization/UI work.
 
-- `Region01FieldArenaPlan` now owns three reviewed technical spawn cells for Hunter and Scout roles plus one Elite anchor cell.
-- Hunters stage on the west flank at `(-4,-1)`, `(-4,1)`, `(-4,2)`.
-- Scouts stage on the east flank at `(4,2)`, `(4,0)`, `(4,-2)`.
-- Elite anchor remains on the open back-center lane at `(0,2)`.
-- Every technical spawn is inside the combat-owned z=-5..2 field, outside the relay-owned z=3..5 approach, and does not overlap arrival, salvage objectives, extraction relay, or cover pillars.
-- `Region01EncounterRuntime.begin(...)` consumes this pure plan while retaining the existing pressure-derived Hunter/Scout counts and single Elite.
-- Encounter composition, mob types, AI/stats, role labels, salvage hazard, rewards, extraction gate, run ownership, save/network contracts and player/boss combat authority are unchanged.
-- The plan has explicit capacity for the current maximum three Hunters and three Scouts; if future pressure data exceeds that reviewed capacity, runtime fails rather than silently placing additional mobs into unreviewed cells.
-- Pure regression coverage verifies capacity, uniqueness, west/east role separation, combat-space bounds, and non-overlap with objectives/cover.
+- `ExpeditionHubTerminal.bootstrapFreshWorld(...)` now uses a translatable EN/KO bootstrap message.
+- Provision-station rejection now reports authoritative stored salvage, current supply and next deployment cost through a localized message instead of exposing the internal exception string.
+- Deployment rejection now reports authoritative current supply and required cost through a localized message instead of exposing the internal exception string or command-oriented implementation guidance.
+- Success paths remain the already-localized expedition feedback paths.
+- No save/network schema, expedition state transition, supply consumption, pressure, reward, encounter, combat or extraction contract changed.
+- No new UI/art language or external asset was introduced; the existing technical lodestone/smithing-table affordances remain validation scaffolding.
 
-Human-review record: `docs/M2B_REGION01_THREAT_STAGING_REVIEW.md`.
-
-Verification: `Build Riftfrontier` workflow `34890699183` completed **SUCCESS** on `f49357355899d3efb0e21f0101c837c5e28d0353`.
+Verification: `Build Riftfrontier` workflow `34896538570` completed **SUCCESS** on `5c5601a1a26c17b3305f38872ed684cf2da816fb`.
 
 Passed in that workflow:
 
 - toolchain verification
 - asset-intake tests
 - `clean test build`
-- required native GameTest gate, including `region_01_encounter_runtime`
+- required native GameTest gate
 - dedicated-server smoke
 - Xvfb client smoke
 - executable-JAR inspection
@@ -42,9 +37,9 @@ Passed in that workflow:
 Successful deliverable:
 
 - artifact: `riftfrontier-0.1.0-alpha.1-deliverables`
-- artifact id: `10366927173`
-- archive digest: `sha256:37e476566e8fe5e6096a2cd60d89503a3c2f69a9d3fbee48f5112ed2c13a3c0b`
-- executable JAR SHA-256: `9cd41f6b080113e5fa79b4e461e917b73cc70e212d726a27fc10554d54968686`
+- artifact id: `10368609320`
+- archive digest: `sha256:6fc93f3311d33da7e3670274f9fe2abad757ca7fe32ccd11ac2887d2aece8267`
+- executable JAR SHA-256: `232841bcf1aad00d02ccf4a2fd8781a086cffc99a35046fd1d63d9654e259490`
 
 Verification vocabulary:
 
@@ -54,22 +49,19 @@ Verification vocabulary:
 - `JAR PRODUCED`: YES
 - `PLAYTESTED`: NO
 - `MULTIPLAYER TESTED`: NO
-- `HUMAN COMBAT-STAGING ACCEPTANCE`: NO
+- `HUMAN LOCALIZATION ACCEPTANCE`: NO
 
 ### Exact human field procedure
 
 1. Put the verified JAR in a disposable Minecraft 26.2 / NeoForge 26.2.0.38-beta instance.
-2. Enter a fresh/disposable world and use the normal commandless hub -> lodestone deployment path into Region 01.
-3. Equip `/riftfrontier weapon mobile` or `/riftfrontier weapon reach` only if needed for combat convenience.
-4. On a low-pressure run, confirm the initial Hunter begins on the west combat flank, Scout on the east combat flank, and Elite on the open back-center lane; no patrol actor should begin in the far extraction-relay approach.
-5. Confirm the player can leave the `(0,-4)` arrival lane without immediately being body-pinned by a spawn and that the Scout's first useful sightline can be broken with the reviewed staggered cover.
-6. Pull Hunter and Elite around the cover. They must retain practical paths toward the player instead of idling behind a pillar or becoming trapped.
-7. Recover central/corner salvage and reach the existing relay. Spawn staging must not obstruct any objective or change the authoritative 3-recovery extraction requirement.
-8. Repeat after enough successful runs to increase Region 01 pressure. Extra Hunters/Scouts should occupy the additional west/east staging cells without overlapping each other or producing an unavoidable opening surround.
-9. Reject/revise if arrival becomes an unavoidable crossfire, a role repeatedly stalls behind cover, the Elite spawn pins the center objective, the relay approach is occupied at run start, or higher-pressure staging creates an unwinnable body-block.
-10. Do not mark multiplayer tested until two human clients exercise the same run.
+2. Enter a fresh/disposable world. On the first commandless bootstrap into the technical hub, confirm the bootstrap instruction is localized for the selected client language and no raw translation key appears.
+3. Before the world has enough valid resources/state for provisioning, right-click the smithing table. The rejection must be localized and show stored salvage, current supply and next deployment cost; it must not expose a Java/internal exception string.
+4. When deployment is invalid or supply is insufficient, right-click the lodestone. The rejection must be localized and show current supply and required cost; it must not expose the old internal English exception or `/riftfrontier expedition provision` implementation hint.
+5. Complete the normal commandless `deploy -> recover 3 salvage -> extract -> provision -> redeploy` path and confirm the existing success messages and authoritative state changes still behave normally.
+6. Repeat the bootstrap/rejection observations with English and Korean client language if practical. Reject if `riftfrontier.expedition.detail.*` raw keys appear or values disagree with `/riftfrontier expedition status` diagnostics.
+7. Do not mark `PLAYTESTED` or `MULTIPLAYER TESTED` until a human actually performs the relevant run(s).
 
-Do not auto-tune the spawn coordinates or cover geometry from automation alone after this checkpoint. Human field evidence should decide whether staging stays, moves, or is replaced by later production creature/environment work.
+Ordinary localization/actionbar/live-status work is closed again after this demonstrated regression fix. Do not keep polishing copy without new player evidence.
 
 ## Settled direction — do not redo without demonstrated regression or new evidence
 
@@ -77,9 +69,10 @@ Do not auto-tune the spawn coordinates or cover geometry from automation alone a
 - Fresh-world commandless hub/bootstrap, extraction, failure/restart reconciliation, supply/storage/pressure and authoritative expedition persistence are settled.
 - Player combat has `mobile_pressure` / `reach_commitment`, `recovery_pivot`, authenticated move-id input, server-owned attack timing, ACTIVE-only damage and per-execution target dedupe.
 - Accepted move-start native swing checkpoint remains `22a39b59671ad88cfbf76b830234f222ea9520c2`, workflow `34878394712` SUCCESS. Do not add more generic weapon cues without human evidence.
-- Connected expedition localization remains `2bee9f88d2e978a742a107e2e5d96c02ed1df1e9`, workflow `34873147707` SUCCESS. Do not reopen ordinary localization/actionbar/live-status work without evidence.
+- Connected expedition localization baseline remains `2bee9f88d2e978a742a107e2e5d96c02ed1df1e9`; the commandless-hub gap is now fixed by `5c5601a1...`. Do not reopen ordinary localization without a demonstrated regression.
 - Earlier field-readability checkpoints remain valid: hit readability `24a15b2a...`, live status `54f070f1...`, extraction relay `eee2a34b...`, proxy role labels `e7b7421...`, salvage hazard cue `54d03af...`.
 - Combat-space baseline remains `40fe05c08634b80f0fc87b3f0df2b1e5cdc02c82`, workflow `34885087681` SUCCESS. Do not grow more tuff decoration; current material/layout is a technical field-review baseline, not final environment art.
+- Threat staging baseline remains `f49357355899d3efb0e21f0101c837c5e28d0353`, workflow `34890699183` SUCCESS. Hunters west, Scouts east, Elite back-center; do not auto-tune coordinates/cover without human field evidence.
 - Zombie/Skeleton/Ravager remain behaviour proxies only. Their vanilla silhouettes, equipment and role names are not production creature art.
 - Diagnostic Minecraft particles/sounds, technical blocks, bossbar, stone boss preview, actionbar, relay dressing, proxy labels, player hit cues, salvage cues, native swing and current tuff combat-space treatment are field-review aids, not final Riftfrontier UI/art/VFX/audio/environment language.
 - Do not auto-tune provisional damage, hit geometry, boss attack timing/travel/impulse, particle density, salvage cue intensity, control layout, cover geometry or threat spawn staging without human field evidence.
@@ -98,7 +91,7 @@ Do not auto-tune the spawn coordinates or cover geometry from automation alone a
 
 ## Next useful development boundary
 
-Do **not** respond to this staging checkpoint by growing more tuff decoration, spawn labels, actionbar text, generic combat cues or another authority/lifecycle fence.
+Do **not** respond to this small proven regression fix by continuing message-copy cleanup, growing hub/relay scaffolding, adding generic combat cues, or creating another authority/lifecycle fence.
 
 Unless new human field evidence arrives, prioritize:
 
