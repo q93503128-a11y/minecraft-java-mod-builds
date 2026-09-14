@@ -1,6 +1,7 @@
 package kr.moonseungjun.riftfrontier.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import kr.moonseungjun.riftfrontier.client.RiftfrontierClientResources;
 import kr.moonseungjun.riftfrontier.entity.Region01BossEntity;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -22,6 +23,7 @@ public final class Region01BossRenderer extends EntityRenderer<Region01BossEntit
     public void extractRenderState(Region01BossEntity entity, Region01BossRenderState state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
         state.setIdentity(entity.getId(), entity.getUUID());
+        state.setFieldReviewPreviewTimeSeconds((entity.tickCount + partialTick) / 20.0F);
     }
 
     @Override
@@ -35,8 +37,22 @@ public final class Region01BossRenderer extends EntityRenderer<Region01BossEntit
         if (!state.identityExtracted()) {
             throw new IllegalStateException("Region 01 boss render state was submitted before entity extraction");
         }
-        Region01BossClientRenderRuntime.submit(
+
+        boolean productionSubmitted = Region01BossClientRenderRuntime.submit(
             state.entityId(), state.entityUuid(), poseStack, collector, state.lightCoords
+        );
+        if (productionSubmitted) {
+            return;
+        }
+
+        RiftfrontierClientResources.preparedBossGeometry().ifPresent(prepared ->
+            Region01BossFieldReviewRenderPreview.submit(
+                prepared,
+                state.fieldReviewPreviewTimeSeconds(),
+                poseStack,
+                collector,
+                state.lightCoords
+            )
         );
     }
 }

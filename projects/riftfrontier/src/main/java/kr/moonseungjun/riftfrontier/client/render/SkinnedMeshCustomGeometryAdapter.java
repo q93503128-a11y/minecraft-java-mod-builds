@@ -33,7 +33,7 @@ public final class SkinnedMeshCustomGeometryAdapter {
     }
 
     /**
-     * Submits an immutable triangle frame through Minecraft 26.2's feature renderer.
+     * Submits an immutable authoritative frame sample through Minecraft 26.2's feature renderer.
      *
      * @param packedColor ARGB color multiplier supplied by the eventual approved presentation profile
      */
@@ -46,11 +46,32 @@ public final class SkinnedMeshCustomGeometryAdapter {
         int packedOverlay,
         int packedColor
     ) {
+        Objects.requireNonNull(sample, "sample");
+        submit(sample.frame(), poseStack, collector, renderType, packedLight, packedOverlay, packedColor);
+    }
+
+    /**
+     * Submits an already-skinned immutable frame without inventing animation semantics.
+     *
+     * <p>This overload exists so explicit non-production review surfaces can render an accepted mesh pose without
+     * fabricating a {@link BossSkinnedMeshFrameSampler.FrameSample}. Production attack rendering should continue to
+     * use the authoritative sample overload above.</p>
+     */
+    public static void submit(
+        SkinnedMeshFrame frame,
+        PoseStack poseStack,
+        SubmitNodeCollector collector,
+        RenderType renderType,
+        int packedLight,
+        int packedOverlay,
+        int packedColor
+    ) {
+        Objects.requireNonNull(frame, "frame");
         Objects.requireNonNull(poseStack, "poseStack");
         Objects.requireNonNull(collector, "collector");
         Objects.requireNonNull(renderType, "renderType");
 
-        PreparedGeometry geometry = prepare(sample);
+        PreparedGeometry geometry = prepare(frame);
         collector.submitCustomGeometry(
             poseStack,
             renderType,
