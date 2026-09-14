@@ -79,7 +79,7 @@ public final class EliteTraitTacticsService {
                 && attacker.level() instanceof ServerLevel level) {
             int rank = ambientRank(attacker);
             if (rank > 0 && "vampiric".equals(trait(attacker))) {
-                triggerBloodHunt(level, attacker, rank, event.getHealthDamage());
+                triggerBloodHunt(level, attacker, rank);
             }
         }
     }
@@ -111,12 +111,10 @@ public final class EliteTraitTacticsService {
                 rank >= 2 ? 18 : 12, 0.5D, 0.65D, 0.5D, 0.12D);
     }
 
-    private static void triggerBloodHunt(ServerLevel level, Mob mob, int rank, float healthDamage) {
+    private static void triggerBloodHunt(ServerLevel level, Mob mob, int rank) {
         if (!claimTactic(mob, level.getGameTime(), rank >= 2 ? 34 : 46)) return;
 
-        float shieldGain = Math.min(rank >= 2 ? 4.0F : 2.0F, Math.max(0.5F, healthDamage * 0.20F));
-        float shieldCap = rank >= 2 ? 6.0F : 3.0F;
-        mob.setAbsorptionAmount(Math.min(shieldCap, mob.getAbsorptionAmount() + shieldGain));
+        mob.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, rank >= 2 ? 60 : 40, rank >= 2 ? 1 : 0, true, false));
         mob.addEffect(new MobEffectInstance(MobEffects.SPEED, rank >= 2 ? 45 : 32, 0, true, false));
         level.sendParticles(ParticleTypes.DAMAGE_INDICATOR,
                 mob.getX(), mob.getY() + mob.getBbHeight() * 0.65D, mob.getZ(),
