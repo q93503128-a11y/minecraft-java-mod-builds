@@ -13,6 +13,7 @@ final class CharacterVisualOverrideCatalogTest {
         Map<String, String> serverCatalog = new LinkedHashMap<>();
         serverCatalog.put("turnbound_re:zombie", "minecraft:zombie");
         serverCatalog.put("turnbound_re:skeleton", "minecraft:skeleton");
+        serverCatalog.put("turnbound_re:spider", "minecraft:spider");
         serverCatalog.put("turnbound_re:creeper", "minecraft:creeper");
         serverCatalog.put("turnbound_re:blaze", "minecraft:blaze");
         serverCatalog.put("turnbound_re:witch", "minecraft:witch");
@@ -22,11 +23,13 @@ final class CharacterVisualOverrideCatalogTest {
 
         assertEquals("turnbound_re:starter_zombie_visual", presentation.get("turnbound_re:zombie"));
         assertEquals("minecraft:skeleton", presentation.get("turnbound_re:skeleton"));
+        assertEquals("turnbound_re:spider_visual", presentation.get("turnbound_re:spider"));
         assertEquals("turnbound_re:creeper_visual", presentation.get("turnbound_re:creeper"));
         assertEquals("turnbound_re:blaze_visual", presentation.get("turnbound_re:blaze"));
         assertEquals("turnbound_re:witch_visual", presentation.get("turnbound_re:witch"));
         assertEquals("turnbound_re:iron_golem_visual", presentation.get("turnbound_re:iron_golem"));
         assertEquals("minecraft:zombie", serverCatalog.get("turnbound_re:zombie"));
+        assertEquals("minecraft:spider", serverCatalog.get("turnbound_re:spider"));
         assertEquals("minecraft:creeper", serverCatalog.get("turnbound_re:creeper"));
         assertEquals("minecraft:blaze", serverCatalog.get("turnbound_re:blaze"));
         assertEquals("minecraft:witch", serverCatalog.get("turnbound_re:witch"));
@@ -39,6 +42,10 @@ final class CharacterVisualOverrideCatalogTest {
                 "turnbound_re:zombie", "minecraft:husk"));
         assertEquals("minecraft:zombie", CharacterVisualOverrideCatalog.visualEntityId(
                 "turnbound_re:other", "minecraft:zombie"));
+        assertEquals("minecraft:cave_spider", CharacterVisualOverrideCatalog.visualEntityId(
+                "turnbound_re:spider", "minecraft:cave_spider"));
+        assertEquals("minecraft:spider", CharacterVisualOverrideCatalog.visualEntityId(
+                "turnbound_re:other", "minecraft:spider"));
         assertEquals("minecraft:bogged", CharacterVisualOverrideCatalog.visualEntityId(
                 "turnbound_re:creeper", "minecraft:bogged"));
         assertEquals("minecraft:creeper", CharacterVisualOverrideCatalog.visualEntityId(

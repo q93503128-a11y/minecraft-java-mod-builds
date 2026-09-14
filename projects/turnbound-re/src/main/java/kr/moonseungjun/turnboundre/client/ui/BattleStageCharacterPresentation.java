@@ -10,6 +10,7 @@ import kr.moonseungjun.turnboundre.presentation.TurnboundPresentationPose;
 public final class BattleStageCharacterPresentation {
     static final String ZOMBIE = "turnbound_re:zombie";
     static final String SKELETON = "turnbound_re:skeleton";
+    static final String SPIDER = "turnbound_re:spider";
     static final String CREEPER = "turnbound_re:creeper";
     static final String BLAZE = "turnbound_re:blaze";
     static final String WITCH = "turnbound_re:witch";
@@ -17,6 +18,11 @@ public final class BattleStageCharacterPresentation {
     static final String IRON_GOLEM = "turnbound_re:iron_golem";
     static final float DEFAULT_X_ANGLE = 0.0F;
     static final float DEFAULT_Y_ANGLE = 0.35F;
+
+    static final String SPIDER_FANG = "turnbound_re:spider_fang";
+    static final String SPIDER_VENOM_BITE = "turnbound_re:spider_venom_bite";
+    static final String SPIDER_BINDING_WEB = "turnbound_re:spider_binding_web";
+    static final String SPIDER_BROOD_POUNCE = "turnbound_re:spider_brood_pounce";
 
     static final String CREEPER_FUSE_BASH = "turnbound_re:creeper_fuse_bash";
     static final String CREEPER_VOLATILE_CHARGE = "turnbound_re:creeper_volatile_charge";
@@ -106,6 +112,10 @@ public final class BattleStageCharacterPresentation {
                     aiming);
         }
 
+        if (SPIDER.equals(characterId)) {
+            return spiderPose(participantId, cue);
+        }
+
         if (CREEPER.equals(characterId)) {
             return creeperPose(participantId, cue);
         }
@@ -128,6 +138,17 @@ public final class BattleStageCharacterPresentation {
             return enderPose(cue);
         }
         return Pose.DEFAULT;
+    }
+
+    static boolean isSpiderBindingWebAction(String actionId) {
+        return SPIDER_BINDING_WEB.equals(actionId);
+    }
+
+    static boolean isSpiderBindingWebCue(BattleActionTimelineState.Cue cue) {
+        return cue != null
+                && SPIDER_BINDING_WEB.equals(cue.actionId())
+                && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.PROJECTILE
+                && targetsOtherParticipant(cue);
     }
 
     static boolean isCreeperVolatileChargeAction(String actionId) {
@@ -159,6 +180,34 @@ public final class BattleStageCharacterPresentation {
         return IRON_GOLEM_IRON_FIST.equals(actionId)
                 || IRON_GOLEM_GROUND_SLAM.equals(actionId)
                 || IRON_GOLEM_VILLAGE_JUDGMENT.equals(actionId);
+    }
+
+    private static Pose spiderPose(String participantId, BattleActionTimelineState.Cue cue) {
+        if (!isActor(participantId, cue) || !isActiveBeat(cue)) return neutralControlledPose();
+
+        if (SPIDER_FANG.equals(cue.actionId())
+                && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.MELEE
+                && targetsOtherParticipant(cue)) {
+            return new Pose(
+                    0, -1, -0.055F, 0.48F, true, true, TurnboundPresentationPose.OFFENSIVE);
+        }
+        if (SPIDER_VENOM_BITE.equals(cue.actionId())
+                && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.MELEE
+                && targetsOtherParticipant(cue)) {
+            return new Pose(
+                    0, -2, 0.045F, 0.52F, true, true, TurnboundPresentationPose.VENOM);
+        }
+        if (isSpiderBindingWebCue(cue)) {
+            return new Pose(
+                    0, -1, 0.025F, 0.37F, true, true, TurnboundPresentationPose.WEB);
+        }
+        if (SPIDER_BROOD_POUNCE.equals(cue.actionId())
+                && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.MELEE
+                && targetsOtherParticipant(cue)) {
+            return new Pose(
+                    0, -3, 0.10F, 0.56F, true, true, TurnboundPresentationPose.POUNCE);
+        }
+        return neutralControlledPose();
     }
 
     private static Pose creeperPose(String participantId, BattleActionTimelineState.Cue cue) {

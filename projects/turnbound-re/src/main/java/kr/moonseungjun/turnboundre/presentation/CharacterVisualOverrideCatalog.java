@@ -11,6 +11,9 @@ public final class CharacterVisualOverrideCatalog {
     public static final String STARTER_ZOMBIE_CHARACTER_ID = "turnbound_re:zombie";
     public static final String STARTER_ZOMBIE_SOURCE_ENTITY = "minecraft:zombie";
     public static final String STARTER_ZOMBIE_VISUAL_ENTITY = "turnbound_re:starter_zombie_visual";
+    public static final String SPIDER_CHARACTER_ID = "turnbound_re:spider";
+    public static final String SPIDER_SOURCE_ENTITY = "minecraft:spider";
+    public static final String SPIDER_VISUAL_ENTITY = "turnbound_re:spider_visual";
     public static final String CREEPER_CHARACTER_ID = "turnbound_re:creeper";
     public static final String CREEPER_SOURCE_ENTITY = "minecraft:creeper";
     public static final String CREEPER_VISUAL_ENTITY = "turnbound_re:creeper_visual";
@@ -30,6 +33,10 @@ public final class CharacterVisualOverrideCatalog {
         if (STARTER_ZOMBIE_CHARACTER_ID.equals(characterId)
                 && STARTER_ZOMBIE_SOURCE_ENTITY.equals(sourceEntityId)) {
             return STARTER_ZOMBIE_VISUAL_ENTITY;
+        }
+        if (SPIDER_CHARACTER_ID.equals(characterId)
+                && SPIDER_SOURCE_ENTITY.equals(sourceEntityId)) {
+            return SPIDER_VISUAL_ENTITY;
         }
         if (CREEPER_CHARACTER_ID.equals(characterId)
                 && CREEPER_SOURCE_ENTITY.equals(sourceEntityId)) {

@@ -222,7 +222,7 @@ public final class BattleStageHud {
 
         boolean travelling = cue.phase() == BattleActionTimelineState.Phase.WINDUP
                 && BattleStageActionFx.hasTravel(cue.impactStyle());
-        ItemStack projectile = travelling ? projectileItem(cue.impactStyle()) : ItemStack.EMPTY;
+        ItemStack projectile = travelling ? projectileItem(cue) : ItemStack.EMPTY;
 
         for (String targetId : cue.targetIds()) {
             StageParticipant target = stageParticipant(stage, model, targetId);
@@ -257,8 +257,11 @@ public final class BattleStageHud {
         }
     }
 
-    private static ItemStack projectileItem(BattleActionTimelineState.ImpactStyle style) {
-        return switch (style) {
+    private static ItemStack projectileItem(BattleActionTimelineState.Cue cue) {
+        if (BattleStageCharacterPresentation.isSpiderBindingWebCue(cue)) {
+            return new ItemStack(Items.COBWEB);
+        }
+        return switch (cue.impactStyle()) {
             case PROJECTILE -> new ItemStack(Items.ARROW);
             case FIRE -> new ItemStack(Items.FIRE_CHARGE);
             case ARCANE -> new ItemStack(Items.AMETHYST_SHARD);
@@ -290,6 +293,12 @@ public final class BattleStageHud {
         if (creeperCharge) {
             minecraft.getSoundManager().play(
                     SimpleSoundInstance.forUI(SoundEvents.CREEPER_PRIMED, 0.96F, 0.78F));
+            audioCueKey = key;
+            return;
+        }
+        if (BattleStageCharacterPresentation.isSpiderBindingWebCue(cue)) {
+            minecraft.getSoundManager().play(
+                    SimpleSoundInstance.forUI(SoundEvents.SNOWBALL_THROW, 0.92F, 0.82F));
             audioCueKey = key;
             return;
         }

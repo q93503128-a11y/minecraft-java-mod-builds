@@ -12,5 +12,8 @@ public enum TurnboundPresentationPose {
     EXECUTE,
     CHARGE,
     BLAST,
-    CATASTROPHE
+    CATASTROPHE,
+    VENOM,
+    WEB,
+    POUNCE
 }
