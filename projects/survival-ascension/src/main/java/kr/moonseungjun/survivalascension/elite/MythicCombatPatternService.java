@@ -20,11 +20,13 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Server-authoritative field-combat patterns for Mythic III elites.
+ * Server-authoritative field-combat patterns for Survival-owned Mythic III elites.
  *
  * The ordinary Mythic entity keeps its vanilla AI and trait reactions. This service only becomes active
- * after real damage has been exchanged, then adds bounded telegraphed positional attacks. It never scans
- * the world for mobs, force-loads chunks, or keeps an encounter alive after combat has gone quiet.
+ * after real damage has been exchanged, then adds bounded telegraphed positional attacks. Original
+ * content-pack field bosses are intentionally excluded so their native animation, attacks and encounter
+ * identity remain authoritative. It never scans the world for mobs, force-loads chunks, or keeps an
+ * encounter alive after combat has gone quiet.
  */
 public final class MythicCombatPatternService {
     private static final int TICK_INTERVAL = 5;
@@ -45,13 +47,15 @@ public final class MythicCombatPatternService {
 
         if (event.getEntity() instanceof Mob defender
                 && defender.level() instanceof ServerLevel level
-                && EliteMobSystem.rankId(defender) == 3) {
+                && EliteMobSystem.rankId(defender) == 3
+                && !MythicFieldBossService.isExternalFieldBoss(defender)) {
             engage(level, defender);
         }
 
         if (event.getSource().getEntity() instanceof Mob attacker
                 && attacker.level() instanceof ServerLevel level
-                && EliteMobSystem.rankId(attacker) == 3) {
+                && EliteMobSystem.rankId(attacker) == 3
+                && !MythicFieldBossService.isExternalFieldBoss(attacker)) {
             engage(level, attacker);
         }
     }
@@ -78,7 +82,8 @@ public final class MythicCombatPatternService {
                 continue;
             }
             Entity entity = runtime.level.getEntity(entry.getKey());
-            if (!(entity instanceof Mob mob) || !mob.isAlive() || EliteMobSystem.rankId(mob) != 3) {
+            if (!(entity instanceof Mob mob) || !mob.isAlive() || EliteMobSystem.rankId(mob) != 3
+                    || MythicFieldBossService.isExternalFieldBoss(mob)) {
                 stale.add(entry.getKey());
                 continue;
             }
