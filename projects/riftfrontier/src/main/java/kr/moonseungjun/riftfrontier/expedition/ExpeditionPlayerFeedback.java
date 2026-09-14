@@ -51,6 +51,14 @@ public final class ExpeditionPlayerFeedback {
             ExpeditionGameplayService.technicalRegionCenter(),
             run.sequence()
         );
+        if (threats == 0) {
+            player.sendSystemMessage(Component.translatable(
+                "riftfrontier.expedition.feedback.patrol_cleared",
+                recovered,
+                3
+            ), true);
+            return;
+        }
         player.sendSystemMessage(Component.translatable(
             "riftfrontier.expedition.feedback.salvage",
             recovered,
