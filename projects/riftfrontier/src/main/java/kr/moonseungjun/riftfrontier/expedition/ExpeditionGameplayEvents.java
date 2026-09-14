@@ -59,10 +59,13 @@ public final class ExpeditionGameplayEvents {
     /**
      * Re-entry is evaluated only when the server has a concrete player login event. This keeps the
      * restart/logout UX event-driven and avoids broad world scans or proximity-based ownership guesses.
+     * A genuinely fresh world is then routed into the same technical hub interaction path used after extraction,
+     * removing the remaining command-only bootstrap without creating a second expedition lifecycle.
      */
     public static void playerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             ExpeditionGameplayService.reconcilePlayerFieldReentry(player);
+            ExpeditionHubTerminal.bootstrapFreshWorld(player);
         }
     }
 }
