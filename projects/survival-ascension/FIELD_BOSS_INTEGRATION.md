@@ -21,6 +21,26 @@ Natural vanilla-hostile Mythic III promotion is retired. A would-be Mythic III r
 
 External field bosses keep their native boss bar, animation, AI and attack patterns. Survival's generic Mythic phase buffs, trait reactions, glow and generic ring/marked attacks are not layered on top of them.
 
+## Field-boss strength doctrine
+
+A true field boss must be clearly harder than the old Survival-owned Mythic III, but not by setting absurd attack damage or multiplying health until the fight becomes tedious.
+
+Current cross-system reinforcement:
+
+- Native external attacks, animation and AI remain authoritative.
+- Incoming damage receives a bounded 18% Survival-side mitigation layer.
+- One hit cannot remove more than roughly 14% of maximum health before the external boss's own downstream defenses. This is an anti-burst guard, not permanent invulnerability.
+- At roughly 66% and 33% health the boss enters a ward phase and summons audited content-pack escorts.
+- Ward phase 1 attempts two escorts; ward phase 2 attempts three. Three or more nearby players add at most one extra escort, with a hard cap of four.
+- While at least one ward escort remains, Survival-side incoming damage is reduced again to 42% of the already bounded value.
+- Killing every ward escort immediately collapses the ward. Players are rewarded for switching targets instead of waiting through a fixed immunity timer.
+- A ward has a 15-second upper limit so failed pathfinding or an unreachable escort cannot soft-lock the boss.
+- Phase escorts come only from the already audited `expedition_reinforcements_tier_*` pools. The current high-stage pool includes TBOS enemies such as Blank Chronist, Gnomon Knight, Parallax Wraith, Meridian Sentinel and Hour Hand Wraith.
+- Old phase escorts are removed before the next ward cohort is created, and surviving field-boss escorts are removed when the boss encounter ends or the server stops. This bounds accumulation.
+- No world-wide mob scan or chunk force-load is used. Runtime work is limited to currently adopted field bosses and their small tracked escort sets.
+
+Design intent: the boss is durable because the player must survive its native kit, control adds and create damage windows. It is not durable because its attack damage is set to an arbitrary triple-digit value or because it has an enormous passive health sponge.
+
 ## Reward doctrine
 
 The most valuable repeatable rewards should come from choices and progression, not piles of diamonds/emeralds.
@@ -31,8 +51,9 @@ Existing field-boss hooks currently include:
 - Survival major-target combat/expedition credit
 - guaranteed rank-III Survival equipment roll for the killer
 - meaningful-contribution Mythic hunt progress for every qualified contributor
-- deterministic Netherite Scrap progress every 3 qualified Mythic kills
-- deterministic Tempering Seal progress every 4 qualified Mythic kills
+- deterministic Netherite Scrap progress every 3 ordinary hunt credits
+- deterministic Tempering Seal progress every 4 ordinary hunt credits
+- a qualified true field-boss kill counts as two hunt credits because the encounter is intentionally above the old Mythic III combat tier
 
 Before final playtest, audit legacy raw diamond/emerald/XP rewards together with native boss loot so the encounter does not become a loot printer. Premium progression must remain per-qualified-player to reduce loot-stealing problems.
 
