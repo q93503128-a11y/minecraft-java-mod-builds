@@ -19,6 +19,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -88,14 +89,23 @@ public final class FracturedArchiveRewardService {
         if (qualified.isEmpty()) return;
 
         boolean finalTarget = mob.getType().builtInRegistryHolder().is(FINAL_TARGETS);
+        FracturedArchivePendingData pending = FracturedArchivePendingData.get(level.getServer());
         for (UUID id : qualified) {
+            Reward reward = rollReward(level, finalTarget);
             ServerPlayer player = level.getServer().getPlayerList().getPlayer(id);
-            if (player == null || player.level() != level) continue;
-            grant(player, level, finalTarget);
+            if (player != null) grant(player, reward, finalTarget, false);
+            else pending.add(id, reward.stones(), reward.scraps());
         }
     }
 
-    private static void grant(ServerPlayer player, ServerLevel level, boolean finalTarget) {
+    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        FracturedArchivePendingData.Reward pending = FracturedArchivePendingData.get(player.getServer()).take(player.getUUID());
+        if (pending.stones() <= 0 && pending.scraps() <= 0) return;
+        grant(player, new Reward(pending.stones(), pending.scraps()), false, true);
+    }
+
+    private static Reward rollReward(ServerLevel level, boolean finalTarget) {
         int stones = finalTarget ? 2 : 1;
         int scraps = finalTarget ? 1 : 0;
         if (finalTarget) {
@@ -103,14 +113,22 @@ public final class FracturedArchiveRewardService {
         } else if (level.getRandom().nextFloat() < 0.35F) {
             scraps = 1;
         }
+        return new Reward(stones, scraps);
+    }
 
-        giveOrDrop(player, new ItemStack(AscensionItems.ENCHANTMENT_STONE.get(), stones));
-        if (scraps > 0) giveOrDrop(player, new ItemStack(Items.NETHERITE_SCRAP, scraps));
+    private static void grant(ServerPlayer player, Reward reward, boolean finalTarget, boolean restored) {
+        if (reward.stones() > 0) giveOrDrop(player, new ItemStack(AscensionItems.ENCHANTMENT_STONE.get(), reward.stones()));
+        if (reward.scraps() > 0) giveOrDrop(player, new ItemStack(Items.NETHERITE_SCRAP, reward.scraps()));
 
-        String scrapText = scraps > 0 ? " §7· 네더라이트 파편 §6+" + scraps : "";
+        String scrapText = reward.scraps() > 0 ? " §7· 네더라이트 파편 §6+" + reward.scraps() : "";
+        if (restored) {
+            player.sendSystemMessage(Component.literal("§d[균열 기록고 정산] §f이탈 중 확보한 보상 · 마력 각인석 §d+"
+                    + reward.stones() + scrapText));
+            return;
+        }
         player.sendSystemMessage(Component.literal(finalTarget
-                ? "§5[균열 기록고 심층 보상] §f마력 각인석 §d+" + stones + scrapText
-                : "§d[균열 기록고 보상] §f마력 각인석 §d+" + stones + scrapText));
+                ? "§5[균열 기록고 심층 보상] §f마력 각인석 §d+" + reward.stones() + scrapText
+                : "§d[균열 기록고 보상] §f마력 각인석 §d+" + reward.stones() + scrapText));
     }
 
     private static ServerPlayer contributingPlayer(DamageSource source, ServerLevel level) {
@@ -125,4 +143,6 @@ public final class FracturedArchiveRewardService {
     private static void giveOrDrop(ServerPlayer player, ItemStack stack) {
         if (!player.getInventory().add(stack)) player.drop(stack, false);
     }
+
+    private record Reward(int stones, int scraps) {}
 }
