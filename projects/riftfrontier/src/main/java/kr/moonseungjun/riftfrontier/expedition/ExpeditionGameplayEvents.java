@@ -7,6 +7,7 @@ import net.neoforged.fml.LogicalSide;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 /** Server-side event adapters for field recovery, extraction, restart cleanup and terminal failure policy. */
 public final class ExpeditionGameplayEvents {
@@ -33,6 +34,16 @@ public final class ExpeditionGameplayEvents {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
         }
+    }
+
+    /**
+     * Refreshes the temporary field objective projection at a human-readable cadence without scanning the world.
+     * The projection reads only the current player's existing authoritative run and tracked encounter handles.
+     */
+    public static void playerTick(PlayerTickEvent.Post event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (player.level().getGameTime() % 20L != 0L) return;
+        ExpeditionPlayerFeedback.fieldStatus(player);
     }
 
     /**

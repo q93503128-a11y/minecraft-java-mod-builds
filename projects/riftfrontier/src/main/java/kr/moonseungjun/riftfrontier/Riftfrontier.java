@@ -71,6 +71,7 @@ public final class Riftfrontier {
         NeoForge.EVENT_BUS.addListener(Riftfrontier::playerWeaponChangedDimension);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::playerWeaponClone);
         NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::rightClickBlock);
+        NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::playerTick);
         NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::entityJoinLevel);
         NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::playerClone);
         NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::playerLoggedOut);

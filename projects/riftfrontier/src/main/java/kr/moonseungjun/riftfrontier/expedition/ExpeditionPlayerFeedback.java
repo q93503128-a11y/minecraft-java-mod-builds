@@ -32,11 +32,19 @@ public final class ExpeditionPlayerFeedback {
         ), true);
     }
 
-    public static void salvageUpdated(ServerPlayer player) {
+    /**
+     * Refreshes the field objective from existing authoritative run + encounter state.
+     * This owns no progress, combat or extraction state; it is only a temporary readable projection.
+     */
+    public static void fieldStatus(ServerPlayer player) {
         ServerLevel level = (ServerLevel) player.level();
         RiftfrontierWorldData world = RiftfrontierWorldData.get(level);
         ExpeditionRun run = ExpeditionGameplayService.activeFor(player, world).orElse(null);
-        if (run == null) return;
+        if (run == null
+            || run.status() != ExpeditionRun.Status.DEPLOYED
+            || !run.regionId().equals(ExpeditionGameplayService.REGION_ID)) {
+            return;
+        }
         int recovered = run.recoveredResources().getOrDefault(ExpeditionGameplayService.RESOURCE_ID, 0);
         int threats = Region01EncounterRuntime.liveThreatCount(
             level.getServer().overworld(),
@@ -49,6 +57,10 @@ public final class ExpeditionPlayerFeedback {
             3,
             threats
         ), true);
+    }
+
+    public static void salvageUpdated(ServerPlayer player) {
+        fieldStatus(player);
     }
 
     public static void extractionRelayOnline(ServerPlayer player) {
