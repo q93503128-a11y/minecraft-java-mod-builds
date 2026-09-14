@@ -110,11 +110,14 @@ public final class ExpeditionGameplayService {
             encounter.totalThreats()
         );
         teleport(player, overworld, TECHNICAL_REGION.offset(0, 0, -4));
-        player.sendSystemMessage(Component.literal(
-            "[Riftfrontier] Expedition deployed. Supply spent: " + startContext.preparationSupplyCost()
-                + ". Region pressure: " + startContext.regionPressure()
-                + ". Threats: " + encounter.totalThreats() + " (hunter=" + encounter.hunters()
-                + ", scout=" + encounter.scouts() + ", elite=" + encounter.elites() + "). Recover 3 salvage nodes."
+        player.sendSystemMessage(Component.translatable(
+            "riftfrontier.expedition.detail.deployed",
+            startContext.preparationSupplyCost(),
+            startContext.regionPressure(),
+            encounter.totalThreats(),
+            encounter.hunters(),
+            encounter.scouts(),
+            encounter.elites()
         ));
         return deployed;
     }
@@ -147,9 +150,10 @@ public final class ExpeditionGameplayService {
             liveThreats
         );
         int amount = recovered.recoveredResources().getOrDefault(RESOURCE_ID, 0);
-        player.sendSystemMessage(Component.literal(
-            "[Riftfrontier] Field salvage secured: " + amount + "/3. Active patrol threats=" + liveThreats
-                + ". Clear the patrol for a bonus salvage unit, or risk a fast extraction."
+        player.sendSystemMessage(Component.translatable(
+            "riftfrontier.expedition.detail.salvage",
+            amount,
+            liveThreats
         ));
         return true;
     }
@@ -194,12 +198,15 @@ public final class ExpeditionGameplayService {
         );
         Region01EncounterRuntime.clearRun(overworld, TECHNICAL_REGION, run.sequence());
         returnToHub(player);
-        player.sendSystemMessage(Component.literal(
-            "[Riftfrontier] Extraction complete. Hub salvage +" + retainedSalvage
-                + " (base=" + baseRetainedSalvage + ", patrol bonus=" + patrolBonus
-                + ", stored=" + world.securedRegion01Salvage() + "). Region pressure is now " + world.region01Pressure()
-                + "; next expedition supply cost=" + world.region01PreparationSupplyCost()
-                + ". " + resolution.worldConsequence()
+        player.sendSystemMessage(Component.translatable(
+            "riftfrontier.expedition.detail.extracted",
+            retainedSalvage,
+            baseRetainedSalvage,
+            patrolBonus,
+            world.securedRegion01Salvage(),
+            world.region01Pressure(),
+            world.region01PreparationSupplyCost(),
+            resolution.worldConsequence()
         ));
         return resolution;
     }
@@ -207,10 +214,11 @@ public final class ExpeditionGameplayService {
     public static void provision(ServerPlayer player) {
         RiftfrontierWorldData world = RiftfrontierWorldData.get(serverLevel(player));
         world.provisionRegion01Supply();
-        player.sendSystemMessage(Component.literal(
-            "[Riftfrontier] Provisioned 2 expedition supply from 1 secured salvage. Storage="
-                + world.securedRegion01Salvage() + ", supply=" + world.expeditionSupply()
-                + ", next cost=" + world.region01PreparationSupplyCost()
+        player.sendSystemMessage(Component.translatable(
+            "riftfrontier.expedition.detail.provisioned",
+            world.securedRegion01Salvage(),
+            world.expeditionSupply(),
+            world.region01PreparationSupplyCost()
         ));
     }
 
@@ -240,9 +248,9 @@ public final class ExpeditionGameplayService {
             liveThreatsBeforeFailure
         );
         Region01EncounterRuntime.clearRun(overworld, TECHNICAL_REGION, failed.sequence());
-        player.sendSystemMessage(Component.literal(
-            "[Riftfrontier] Expedition failed: " + messageReason + " [cause=" + endReason.serializedName()
-                + "]. Preparation supply is not refunded."
+        player.sendSystemMessage(Component.translatable(
+            "riftfrontier.expedition.detail.failed",
+            localizedEndReason(endReason, messageReason)
         ));
         return Optional.of(failed);
     }
@@ -277,11 +285,13 @@ public final class ExpeditionGameplayService {
             .filter(run -> run.ownerId().isEmpty() || run.ownedBy(player.getUUID()))
             .max(java.util.Comparator.comparingLong(ExpeditionRun::sequence))
             .orElse(null);
-        String cause = latest == null ? "unknown" : latest.endReason().serializedName();
+        Component cause = latest == null
+            ? Component.translatable("riftfrontier.expedition.end_reason.unknown")
+            : localizedEndReason(latest.endReason(), latest.endReason().serializedName());
         returnToHub(player);
-        player.sendSystemMessage(Component.literal(
-            "[Riftfrontier] Previous field expedition is no longer active (cause=" + cause
-                + "). Returned to the hub; spent preparation supply remains consumed."
+        player.sendSystemMessage(Component.translatable(
+            "riftfrontier.expedition.detail.reentry",
+            cause
         ));
         return decision;
     }
@@ -341,6 +351,17 @@ public final class ExpeditionGameplayService {
             world.expeditionSupply(),
             world.region01Pressure()
         );
+    }
+
+    private static Component localizedEndReason(ExpeditionRun.EndReason reason, String fallback) {
+        return switch (reason) {
+            case PLAYER_ABORT -> Component.translatable("riftfrontier.expedition.end_reason.player_abort");
+            case PLAYER_DEATH -> Component.translatable("riftfrontier.expedition.end_reason.player_death");
+            case PLAYER_LOGOUT -> Component.translatable("riftfrontier.expedition.end_reason.player_logout");
+            case SERVER_RESTART -> Component.translatable("riftfrontier.expedition.end_reason.server_restart");
+            case OTHER_FAILURE -> Component.translatable("riftfrontier.expedition.end_reason.other_failure");
+            default -> Component.literal(fallback);
+        };
     }
 
     private static void prepareTechnicalCell(ServerLevel level, BlockPos center, boolean resourceNodes) {
