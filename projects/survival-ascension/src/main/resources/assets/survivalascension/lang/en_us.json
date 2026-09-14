@@ -2,5 +2,6 @@
   "mod.survivalascension.name": "Survival Ascension",
   "key.survivalascension.menu": "Open Radial Menu",
   "key.survivalascension.mobility_action": "Mobility Action / Dash",
-  "item.survivalascension.tempering_seal": "Tempering Seal"
+  "item.survivalascension.tempering_seal": "Tempering Seal",
+  "item.survivalascension.enchantment_stone": "Enchantment Stone"
 }
