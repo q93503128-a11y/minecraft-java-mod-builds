@@ -9,6 +9,7 @@ import kr.moonseungjun.riftfrontier.combat.presentation.mesh.Region01BossRuntime
 import kr.moonseungjun.riftfrontier.combat.presentation.mesh.SkinnedMeshFrame;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 
@@ -30,7 +31,7 @@ public final class Region01BossFieldReviewRenderPreview {
     private static final String REVIEWED_IDLE_CLIP = "Flying_Idle";
     private static final Identifier PREVIEW_TEXTURE =
         Identifier.fromNamespaceAndPath("minecraft", "textures/block/stone.png");
-    private static final RenderType PREVIEW_RENDER_TYPE = RenderType.entityCutout(PREVIEW_TEXTURE);
+    private static final RenderType PREVIEW_RENDER_TYPE = RenderTypes.entityCutout(PREVIEW_TEXTURE);
 
     private Region01BossFieldReviewRenderPreview() {}
 
