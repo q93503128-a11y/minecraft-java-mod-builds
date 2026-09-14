@@ -1,0 +1,1 @@
+Starter Zombie texture is a project-provided source asset; its production PNG is tracked as binary in Git.
