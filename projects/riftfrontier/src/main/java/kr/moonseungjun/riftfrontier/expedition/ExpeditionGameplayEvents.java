@@ -29,7 +29,10 @@ public final class ExpeditionGameplayEvents {
         // technical extraction relay, while the existing lifecycle remains the sole extraction authority.
         ExpeditionFieldExtractionRelay.ensurePresent(player);
         boolean recovered = ExpeditionGameplayService.tryRecover(player, event.getPos());
-        if (recovered) ExpeditionPlayerFeedback.salvageUpdated(player);
+        if (recovered) {
+            ExpeditionPlayerFeedback.salvageUpdated(player);
+            ExpeditionFieldExtractionRelay.refreshPresentation(player);
+        }
         if (recovered || ExpeditionFieldExtractionRelay.tryUse(player, event.getPos())) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
