@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-alpha.15
+
+- Added one-time first-discovery coin rewards that scale with existing fish rarity instead of introducing another currency.
+- Added one-time location collection-completion rewards for Cheongram Lakeside, Gull Harbor and Deepwater Channel.
+- Made collection rewards server-authoritative by deriving them from the transition between previous and updated permanent species records.
+- Prevented repeat catches, selling, reconnecting and legacy-save migration from duplicating discovery/completion rewards.
+- Added collection reward and location-completion callouts to catch-result feedback.
+- Added current-location collection progress to the HUD and collection progress/completion targets to bestiary and travel screens without revealing undiscovered species names.
+- Added deterministic profile tests for first-discovery rewards, no duplicate rewards, one-time location completion and legacy migration behavior.
+
 ## 0.1.0-alpha.14
 
 - Unified HUD, catch bag, bestiary and travel screens behind one Kenney-based Fishing Game UI theme instead of maintaining separate ad-hoc color/layout rules.

@@ -1,9 +1,11 @@
 package dev.moonseungjun.fishinggame.client;
 
 import dev.moonseungjun.fishinggame.FishingGameMod;
+import dev.moonseungjun.fishinggame.fishing.CollectionRewards;
 import dev.moonseungjun.fishinggame.fishing.FishCatalog;
 import dev.moonseungjun.fishinggame.fishing.FishSizeGrade;
 import dev.moonseungjun.fishinggame.fishing.FishSpecies;
+import dev.moonseungjun.fishinggame.fishing.FishingLocation;
 import dev.moonseungjun.fishinggame.fishing.ReelMath;
 import dev.moonseungjun.fishinggame.profile.CatchEntry;
 import dev.moonseungjun.fishinggame.profile.PlayerFishingProfile;
@@ -46,8 +48,19 @@ public final class FishingHud {
         FishingUiTheme.drawPanel(graphics, x, y, 2, 1);
 
         RodDefinition rod = FishingRods.byTier(ClientFishingState.rodTier());
+        FishingLocation location = currentLocation();
+        int found = CollectionRewards.discoveredCount(ClientFishingState.records(), location);
+        int total = CollectionRewards.speciesCount(location);
+
         graphics.text(minecraft.font, "FISHING", x + 11, y + 10, FishingUiTheme.TEXT_PRIMARY, true);
-        graphics.text(minecraft.font, ClientFishingState.locationName(), x + 78, y + 10, FishingUiTheme.SUCCESS, false);
+        graphics.text(
+                minecraft.font,
+                ClientFishingState.locationName() + "  " + found + "/" + total,
+                x + 78,
+                y + 10,
+                found >= total ? FishingUiTheme.MONEY : FishingUiTheme.SUCCESS,
+                false
+        );
         graphics.fill(x + 10, y + 24, x + 190, y + 25, FishingUiTheme.BORDER);
         graphics.text(minecraft.font, "코인  " + ClientFishingState.coins(), x + 11, y + 31, FishingUiTheme.MONEY, false);
         graphics.text(
@@ -85,6 +98,13 @@ public final class FishingHud {
         if (!notice.isBlank()) {
             graphics.centeredText(minecraft.font, notice, width / 2, 18, FishingUiTheme.TEXT_PRIMARY);
         }
+    }
+
+    private static FishingLocation currentLocation() {
+        for (FishingLocation location : FishingLocation.values()) {
+            if (location.displayName().equals(ClientFishingState.locationName())) return location;
+        }
+        return FishingLocation.LAKESIDE;
     }
 
     private static void renderCastHud(GuiGraphicsExtractor graphics, Minecraft minecraft, int width, int height) {
@@ -167,12 +187,14 @@ public final class FishingHud {
         int cardY = height / 2 - 50;
         FishingUiTheme.drawPanel(graphics, cardX, cardY, 2, 1);
 
-        String title = recent.firstDiscovery()
-                ? "새 어종 발견!"
-                : (recent.personalBest()
-                        ? "개인 최고기록!"
-                        : (recent.sizeGrade() == FishSizeGrade.MONSTER ? "괴물급 어획!" : "어획 성공"));
-        int titleColor = recent.firstDiscovery() || recent.personalBest()
+        String title = recent.locationCompleted()
+                ? "지역 도감 완성!"
+                : (recent.firstDiscovery()
+                        ? "새 어종 발견!"
+                        : (recent.personalBest()
+                                ? "개인 최고기록!"
+                                : (recent.sizeGrade() == FishSizeGrade.MONSTER ? "괴물급 어획!" : "어획 성공")));
+        int titleColor = recent.locationCompleted() || recent.firstDiscovery() || recent.personalBest()
                 ? FishingUiTheme.MONEY
                 : FishingUiTheme.TEXT_PRIMARY;
 
@@ -198,7 +220,9 @@ public final class FishingHud {
                 cardY + 54,
                 FishingUiTheme.TEXT_PRIMARY
         );
-        graphics.centeredText(minecraft.font, catchEntry.value() + " C", width / 2, cardY + 69, FishingUiTheme.MONEY);
+        String valueText = catchEntry.value() + " C";
+        if (recent.collectionRewardCoins() > 0) valueText += "   ·   도감 +" + recent.collectionRewardCoins() + " C";
+        graphics.centeredText(minecraft.font, valueText, width / 2, cardY + 69, FishingUiTheme.MONEY);
 
         String highlight = recent.highlightText();
         graphics.centeredText(

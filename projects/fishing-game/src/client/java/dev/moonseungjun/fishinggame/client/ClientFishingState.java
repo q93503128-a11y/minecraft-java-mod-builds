@@ -2,6 +2,7 @@ package dev.moonseungjun.fishinggame.client;
 
 import java.util.List;
 
+import dev.moonseungjun.fishinggame.fishing.CollectionRewards;
 import dev.moonseungjun.fishinggame.fishing.FishCatalog;
 import dev.moonseungjun.fishinggame.fishing.FishSizeGrade;
 import dev.moonseungjun.fishinggame.fishing.FishSpecies;
@@ -31,6 +32,7 @@ public final class ClientFishingState {
 
     public static void apply(ProfileSnapshotPayload payload) {
         List<CatchEntry> incoming = List.copyOf(payload.catches());
+        List<FishRecord> incomingRecords = List.copyOf(payload.records());
         List<FishRecord> previousRecords = records;
         int previousCoins = coins;
         int previousRodTier = rodTier;
@@ -44,14 +46,18 @@ public final class ClientFishingState {
             boolean firstDiscovery = previous == null;
             boolean newWeightRecord = previous != null && entry.weightGrams() > previous.bestWeightGrams();
             boolean newLengthRecord = previous != null && entry.lengthMm() > previous.bestLengthMm();
+            CollectionRewards.Reward reward = CollectionRewards.rewardForCatch(previousRecords, incomingRecords, species);
+
             recentCatch = new RecentCatchPresentation(
                     entry,
                     FishSizeGrade.classify(species, entry.weightGrams(), entry.lengthMm()),
                     firstDiscovery,
                     newWeightRecord,
-                    newLengthRecord
+                    newLengthRecord,
+                    reward.discoveryCoins(),
+                    reward.locationCompletionCoins()
             );
-            recentCatchUntilMs = System.currentTimeMillis() + 5200L;
+            recentCatchUntilMs = System.currentTimeMillis() + 5600L;
             FishingClientAudio.onCatch(recentCatch, species.rarity());
         } else if (wasInitialized && previousCatchCount > 0 && incoming.isEmpty() && payload.coins() > previousCoins) {
             FishingClientAudio.onSale();
@@ -64,7 +70,7 @@ public final class ClientFishingState {
         coins = payload.coins();
         rodTier = payload.rodTier();
         catches = incoming;
-        records = List.copyOf(payload.records());
+        records = incomingRecords;
         profileInitialized = true;
     }
 

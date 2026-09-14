@@ -8,14 +8,25 @@ public record RecentCatchPresentation(
         FishSizeGrade sizeGrade,
         boolean firstDiscovery,
         boolean newWeightRecord,
-        boolean newLengthRecord
+        boolean newLengthRecord,
+        int discoveryRewardCoins,
+        int locationCompletionRewardCoins
 ) {
     public boolean personalBest() {
         return newWeightRecord || newLengthRecord;
     }
 
+    public boolean locationCompleted() {
+        return locationCompletionRewardCoins > 0;
+    }
+
+    public int collectionRewardCoins() {
+        return discoveryRewardCoins + locationCompletionRewardCoins;
+    }
+
     public String highlightText() {
-        if (firstDiscovery) return "신규 도감 등록";
+        if (locationCompleted()) return "지역 도감 완성 · +" + collectionRewardCoins() + " C";
+        if (firstDiscovery) return "신규 도감 · +" + discoveryRewardCoins + " C";
         if (newWeightRecord && newLengthRecord) return "개인 최고 · 무게 + 길이";
         if (newWeightRecord) return "개인 최고 · 무게";
         if (newLengthRecord) return "개인 최고 · 길이";

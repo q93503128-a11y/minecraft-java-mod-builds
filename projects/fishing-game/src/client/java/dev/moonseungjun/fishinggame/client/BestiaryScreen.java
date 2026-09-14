@@ -2,6 +2,7 @@ package dev.moonseungjun.fishinggame.client;
 
 import java.util.List;
 
+import dev.moonseungjun.fishinggame.fishing.CollectionRewards;
 import dev.moonseungjun.fishinggame.fishing.FishCatalog;
 import dev.moonseungjun.fishinggame.fishing.FishSpecies;
 import dev.moonseungjun.fishinggame.fishing.FishingLocation;
@@ -44,7 +45,7 @@ public final class BestiaryScreen extends Screen {
                 graphics,
                 font,
                 "물고기 도감  " + discovered + "/" + FishCatalog.all().size(),
-                "판매한 뒤에도 수집과 개인 최고기록은 남습니다",
+                "새 어종을 발견하면 코인 보너스 · 지역을 완성하면 추가 보너스",
                 panelX,
                 panelY,
                 PANEL_WIDTH
@@ -56,7 +57,7 @@ public final class BestiaryScreen extends Screen {
             renderLocationColumn(graphics, locations[i], x, panelY + 55);
             if (i < locations.length - 1) {
                 int dividerX = x + COLUMN_WIDTH - 5;
-                graphics.fill(dividerX, panelY + 55, dividerX + 1, panelY + 280, FishingUiTheme.BORDER);
+                graphics.fill(dividerX, panelY + 55, dividerX + 1, panelY + 286, FishingUiTheme.BORDER);
             }
         }
     }
@@ -70,17 +71,42 @@ public final class BestiaryScreen extends Screen {
         List<FishSpecies> species = FishCatalog.all().stream()
                 .filter(fish -> fish.location() == location)
                 .toList();
-        long found = species.stream().filter(fish -> recordFor(fish.id()) != null).count();
+        int found = CollectionRewards.discoveredCount(ClientFishingState.records(), location);
+        int total = species.size();
+        int completionReward = CollectionRewards.locationCompletionReward(location);
+        boolean complete = found >= total && total > 0;
 
         FishingUiTheme.drawSectionTitle(graphics, font, location.displayName(), x, y);
-        graphics.text(font, "수집 " + found + "/" + species.size(), x + 7, y + 16, FishingUiTheme.SUCCESS, false);
+        graphics.text(
+                font,
+                "수집 " + found + "/" + total,
+                x + 7,
+                y + 16,
+                complete ? FishingUiTheme.MONEY : FishingUiTheme.SUCCESS,
+                false
+        );
+        graphics.text(
+                font,
+                complete ? "지역 도감 완성" : "완성 보너스 +" + completionReward + " C",
+                x + 7,
+                y + 29,
+                complete ? FishingUiTheme.MONEY : FishingUiTheme.TEXT_SECONDARY,
+                false
+        );
 
-        int rowY = y + 36;
+        int rowY = y + 47;
         for (FishSpecies fish : species) {
             FishRecord record = recordFor(fish.id());
             if (record == null) {
                 graphics.text(font, "???", x + 7, rowY, FishingUiTheme.TEXT_MUTED, false);
-                graphics.text(font, "미발견", x + 7, rowY + 11, FishingUiTheme.TEXT_DISABLED, false);
+                graphics.text(
+                        font,
+                        "미발견 · 보너스 있음",
+                        x + 7,
+                        rowY + 11,
+                        FishingUiTheme.TEXT_DISABLED,
+                        false
+                );
             } else {
                 graphics.text(
                         font,

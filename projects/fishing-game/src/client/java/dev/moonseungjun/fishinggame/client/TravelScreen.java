@@ -1,6 +1,6 @@
 package dev.moonseungjun.fishinggame.client;
 
-import dev.moonseungjun.fishinggame.fishing.FishCatalog;
+import dev.moonseungjun.fishinggame.fishing.CollectionRewards;
 import dev.moonseungjun.fishinggame.fishing.FishingLocation;
 import dev.moonseungjun.fishinggame.network.TravelRequestPayload;
 import dev.moonseungjun.fishinggame.progression.FishingRods;
@@ -56,7 +56,7 @@ public final class TravelScreen extends Screen {
                 graphics,
                 font,
                 "낚시터 이동",
-                "낚싯대를 성장시키면 더 먼 바다가 열립니다",
+                "낚싯대 성장으로 지역을 열고, 지역 도감을 채워 추가 보상을 얻습니다",
                 panelX,
                 panelY,
                 PANEL_WIDTH
@@ -66,7 +66,9 @@ public final class TravelScreen extends Screen {
         for (int i = 0; i < locations.length; i++) {
             FishingLocation location = locations[i];
             int rowY = panelY + 58 + i * 70;
-            long speciesCount = FishCatalog.all().stream().filter(species -> species.location() == location).count();
+            int total = CollectionRewards.speciesCount(location);
+            int found = CollectionRewards.discoveredCount(ClientFishingState.records(), location);
+            boolean complete = found >= total && total > 0;
             boolean current = location.displayName().equals(ClientFishingState.locationName());
             boolean unlocked = ClientFishingState.rodTier() >= location.minRodTier();
 
@@ -74,7 +76,14 @@ public final class TravelScreen extends Screen {
                 graphics.fill(panelX + 16, rowY - 7, panelX + PANEL_WIDTH - 16, rowY - 6, FishingUiTheme.BORDER);
             }
             FishingUiTheme.drawSectionTitle(graphics, font, location.displayName(), panelX + 18, rowY);
-            graphics.text(font, speciesCount + "종의 물고기", panelX + 25, rowY + 18, FishingUiTheme.ACCENT, false);
+            graphics.text(
+                    font,
+                    "수집 " + found + "/" + total + (complete ? " · 완성" : " · 완성 +" + CollectionRewards.locationCompletionReward(location) + " C"),
+                    panelX + 25,
+                    rowY + 18,
+                    complete ? FishingUiTheme.MONEY : FishingUiTheme.ACCENT,
+                    false
+            );
 
             if (current) {
                 graphics.text(font, "현재 낚시 중인 지역", panelX + 25, rowY + 35, FishingUiTheme.SUCCESS, false);

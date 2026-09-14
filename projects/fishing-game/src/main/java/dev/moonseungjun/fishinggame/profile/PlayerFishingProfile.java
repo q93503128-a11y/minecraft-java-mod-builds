@@ -8,6 +8,9 @@ import java.util.Optional;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import dev.moonseungjun.fishinggame.fishing.CollectionRewards;
+import dev.moonseungjun.fishinggame.fishing.FishCatalog;
+import dev.moonseungjun.fishinggame.fishing.FishSpecies;
 
 public record PlayerFishingProfile(int coins, int rodTier, List<CatchEntry> catches, List<FishRecord> records) {
     public static final int BAG_CAPACITY = 40;
@@ -62,16 +65,27 @@ public record PlayerFishingProfile(int coins, int rodTier, List<CatchEntry> catc
             nextRecords.add(FishRecord.fromCatch(entry));
         }
 
-        return new PlayerFishingProfile(coins, rodTier, nextCatches, nextRecords);
+        FishSpecies species = FishCatalog.byId(entry.speciesId());
+        CollectionRewards.Reward reward = CollectionRewards.rewardForCatch(records, nextRecords, species);
+        return new PlayerFishingProfile(
+                safeAddCoins(coins, reward.totalCoins()),
+                rodTier,
+                nextCatches,
+                nextRecords
+        );
     }
 
     public PlayerFishingProfile sellAll() {
         if (catches.isEmpty()) return this;
-        return new PlayerFishingProfile(coins + bagValue(), rodTier, List.of(), records);
+        return new PlayerFishingProfile(safeAddCoins(coins, bagValue()), rodTier, List.of(), records);
     }
 
     public PlayerFishingProfile withRodTierAndCoins(int nextTier, int nextCoins) {
         return new PlayerFishingProfile(nextCoins, nextTier, catches, records);
+    }
+
+    private static int safeAddCoins(int current, int amount) {
+        return (int) Math.min(Integer.MAX_VALUE, Math.max(0L, (long) current + Math.max(0, amount)));
     }
 
     private static List<FishRecord> normalizeRecords(List<FishRecord> savedRecords, List<CatchEntry> catches) {

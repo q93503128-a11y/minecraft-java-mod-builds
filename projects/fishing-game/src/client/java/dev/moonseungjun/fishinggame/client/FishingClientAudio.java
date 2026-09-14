@@ -33,6 +33,7 @@ public final class FishingClientAudio {
         boolean rare = rarity == FishRarity.EPIC || rarity == FishRarity.LEGENDARY;
         boolean major = presentation.firstDiscovery()
                 || presentation.personalBest()
+                || presentation.locationCompleted()
                 || presentation.sizeGrade() == FishSizeGrade.MONSTER
                 || rarity == FishRarity.LEGENDARY;
 
@@ -41,7 +42,7 @@ public final class FishingClientAudio {
             play(SoundEvents.AMETHYST_BLOCK_CHIME, 0.48f, pitch);
         }
         if (major) {
-            play(SoundEvents.PLAYER_LEVELUP, 0.42f, 1.16f);
+            play(SoundEvents.PLAYER_LEVELUP, presentation.locationCompleted() ? 0.55f : 0.42f, 1.16f);
         }
     }
 
