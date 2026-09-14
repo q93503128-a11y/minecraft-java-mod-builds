@@ -84,12 +84,12 @@ public final class AuthoredWorldBootstrapService {
             DefinitionRegistry registry
     ) {
         ServerLevel overworld = server.overworld();
-        BlockPos sharedSpawn = overworld.getSharedSpawnPos();
+        BlockPos sharedSpawn = overworld.getRespawnData().pos();
         overworld.getChunkAt(sharedSpawn);
 
         try {
-            // Move the bootstrap player to the canonical shared-spawn surface before deriving the authored origin.
-            // ProductionWorldSlicePrototypeBuilder currently derives origin from the player's block position.
+            // Minecraft 26.2 exposes the world spawn through RespawnData rather than getSharedSpawnPos().
+            // Move the bootstrap player there before deriving the authored origin from the player's position.
             player.stopRiding();
             player.teleportTo(
                     overworld,
