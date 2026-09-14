@@ -16,10 +16,10 @@
       "id":"turnbound_re:debug_rift_elite",
       "difficulty":3,
       "enemies":[
-        {"character":"turnbound_re:creeper","level":24,"currentStar":3},
-        {"character":"turnbound_re:blaze","level":30,"currentStar":4},
-        {"character":"turnbound_re:witch","level":30,"currentStar":4},
-        {"character":"turnbound_re:enderman","level":36,"currentStar":5}
+        {"character":"turnbound_re:creeper","level":4,"currentStar":3},
+        {"character":"turnbound_re:blaze","level":3,"currentStar":4},
+        {"character":"turnbound_re:witch","level":3,"currentStar":4},
+        {"character":"turnbound_re:enderman","level":4,"currentStar":5}
       ],
       "rewardTable":"turnbound_re:debug_rift_elite",
       "sceneKey":"turnbound_re:debug_rift_arena",
