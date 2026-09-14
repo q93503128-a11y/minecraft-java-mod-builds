@@ -1,6 +1,7 @@
 package kr.moonseungjun.turnboundre.client.ui;
 
 import kr.moonseungjun.turnboundre.client.BattleActionTimelineState;
+import kr.moonseungjun.turnboundre.presentation.TurnboundPresentationPose;
 
 /**
  * Pure presentation contract for representative virtual-stage character identity.
@@ -12,6 +13,7 @@ public final class BattleStageCharacterPresentation {
     static final String BLAZE = "turnbound_re:blaze";
     static final String WITCH = "turnbound_re:witch";
     static final String ENDERMAN = "turnbound_re:enderman";
+    static final String IRON_GOLEM = "turnbound_re:iron_golem";
     static final float DEFAULT_X_ANGLE = 0.0F;
     static final float DEFAULT_Y_ANGLE = 0.35F;
 
@@ -25,16 +27,37 @@ public final class BattleStageCharacterPresentation {
     static final String WITCH_RESTORATIVE_DRAUGHT = "turnbound_re:witch_restorative_draught";
     static final String WITCH_CAULDRON_OVERFLOW = "turnbound_re:witch_cauldron_overflow";
 
+    static final String IRON_GOLEM_IRON_FIST = "turnbound_re:iron_golem_iron_fist";
+    static final String IRON_GOLEM_GUARDIAN_PLATE = "turnbound_re:iron_golem_guardian_plate";
+    static final String IRON_GOLEM_GROUND_SLAM = "turnbound_re:iron_golem_ground_slam";
+    static final String IRON_GOLEM_VILLAGE_JUDGMENT = "turnbound_re:iron_golem_village_judgment";
+
     public record Pose(
             int offsetX,
             int offsetY,
             float xAngle,
             float yAngle,
             boolean controlsAggressive,
-            boolean aggressive
+            boolean aggressive,
+            TurnboundPresentationPose modelPose
     ) {
         static final Pose DEFAULT = new Pose(
-                0, 0, DEFAULT_X_ANGLE, DEFAULT_Y_ANGLE, false, false);
+                0, 0, DEFAULT_X_ANGLE, DEFAULT_Y_ANGLE, false, false, TurnboundPresentationPose.NEUTRAL);
+
+        Pose(
+                int offsetX,
+                int offsetY,
+                float xAngle,
+                float yAngle,
+                boolean controlsAggressive,
+                boolean aggressive
+        ) {
+            this(offsetX, offsetY, xAngle, yAngle, controlsAggressive, aggressive, TurnboundPresentationPose.NEUTRAL);
+        }
+
+        public Pose {
+            if (modelPose == null) modelPose = TurnboundPresentationPose.NEUTRAL;
+        }
     }
 
     private BattleStageCharacterPresentation() {}
@@ -85,6 +108,10 @@ public final class BattleStageCharacterPresentation {
             return witchPose(participantId, cue);
         }
 
+        if (IRON_GOLEM.equals(characterId)) {
+            return ironGolemPose(participantId, cue);
+        }
+
         if (ENDERMAN.equals(characterId)
                 && isActor(participantId, cue)
                 && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.VOID) {
@@ -101,6 +128,16 @@ public final class BattleStageCharacterPresentation {
     static boolean isWitchOffensiveAction(String actionId) {
         return WITCH_SPLASH_HEX.equals(actionId)
                 || WITCH_WEAKENING_BREW.equals(actionId);
+    }
+
+    static boolean isIronGolemGuardianAction(String actionId) {
+        return IRON_GOLEM_GUARDIAN_PLATE.equals(actionId);
+    }
+
+    static boolean isIronGolemOffensiveAction(String actionId) {
+        return IRON_GOLEM_IRON_FIST.equals(actionId)
+                || IRON_GOLEM_GROUND_SLAM.equals(actionId)
+                || IRON_GOLEM_VILLAGE_JUDGMENT.equals(actionId);
     }
 
     private static Pose blazePose(String participantId, BattleActionTimelineState.Cue cue) {
@@ -146,6 +183,32 @@ public final class BattleStageCharacterPresentation {
         if (support) {
             // Support deliberately remains non-aggressive: a slight lift/open camera angle pairs with the ally-link FX.
             return new Pose(0, -2, -0.075F, 0.29F, true, false);
+        }
+        return neutralControlledPose();
+    }
+
+    private static Pose ironGolemPose(String participantId, BattleActionTimelineState.Cue cue) {
+        if (!isActor(participantId, cue)) return neutralControlledPose();
+        boolean activeBeat = isActiveBeat(cue);
+        if (!activeBeat || cue.impactStyle() != BattleActionTimelineState.ImpactStyle.MELEE) {
+            return neutralControlledPose();
+        }
+
+        if (IRON_GOLEM_GUARDIAN_PLATE.equals(cue.actionId()) && targetsOtherParticipant(cue)) {
+            return new Pose(
+                    0, -1, 0.035F, 0.29F, true, false, TurnboundPresentationPose.DEFENSIVE);
+        }
+        if (IRON_GOLEM_GROUND_SLAM.equals(cue.actionId()) && targetsOtherParticipant(cue)) {
+            return new Pose(
+                    0, -2, 0.075F, 0.40F, true, true, TurnboundPresentationPose.SLAM);
+        }
+        if (IRON_GOLEM_VILLAGE_JUDGMENT.equals(cue.actionId()) && targetsOtherParticipant(cue)) {
+            return new Pose(
+                    0, -2, -0.085F, 0.53F, true, true, TurnboundPresentationPose.EXECUTE);
+        }
+        if (IRON_GOLEM_IRON_FIST.equals(cue.actionId()) && targetsOtherParticipant(cue)) {
+            return new Pose(
+                    0, -1, -0.045F, 0.49F, true, true, TurnboundPresentationPose.OFFENSIVE);
         }
         return neutralControlledPose();
     }

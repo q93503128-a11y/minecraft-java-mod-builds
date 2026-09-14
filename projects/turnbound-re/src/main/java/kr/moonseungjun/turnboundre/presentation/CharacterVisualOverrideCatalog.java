@@ -17,6 +17,9 @@ public final class CharacterVisualOverrideCatalog {
     public static final String WITCH_CHARACTER_ID = "turnbound_re:witch";
     public static final String WITCH_SOURCE_ENTITY = "minecraft:witch";
     public static final String WITCH_VISUAL_ENTITY = "turnbound_re:witch_visual";
+    public static final String IRON_GOLEM_CHARACTER_ID = "turnbound_re:iron_golem";
+    public static final String IRON_GOLEM_SOURCE_ENTITY = "minecraft:iron_golem";
+    public static final String IRON_GOLEM_VISUAL_ENTITY = "turnbound_re:iron_golem_visual";
 
     private CharacterVisualOverrideCatalog() {}
 
@@ -32,6 +35,10 @@ public final class CharacterVisualOverrideCatalog {
         if (WITCH_CHARACTER_ID.equals(characterId)
                 && WITCH_SOURCE_ENTITY.equals(sourceEntityId)) {
             return WITCH_VISUAL_ENTITY;
+        }
+        if (IRON_GOLEM_CHARACTER_ID.equals(characterId)
+                && IRON_GOLEM_SOURCE_ENTITY.equals(sourceEntityId)) {
+            return IRON_GOLEM_VISUAL_ENTITY;
         }
         return sourceEntityId == null ? "" : sourceEntityId;
     }

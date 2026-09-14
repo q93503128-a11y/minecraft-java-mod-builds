@@ -20,6 +20,8 @@ public final class TurnboundPresentationEntities {
             TurnboundRe.MOD_ID, "blaze_visual");
     public static final Identifier WITCH_ID = Identifier.fromNamespaceAndPath(
             TurnboundRe.MOD_ID, "witch_visual");
+    public static final Identifier IRON_GOLEM_ID = Identifier.fromNamespaceAndPath(
+            TurnboundRe.MOD_ID, "iron_golem_visual");
 
     public static final DeferredHolder<EntityType<?>, EntityType<StarterZombieVisualEntity>> STARTER_ZOMBIE =
             DeferredHolder.create(Registries.ENTITY_TYPE, STARTER_ZOMBIE_ID);
@@ -27,6 +29,8 @@ public final class TurnboundPresentationEntities {
             DeferredHolder.create(Registries.ENTITY_TYPE, BLAZE_ID);
     public static final DeferredHolder<EntityType<?>, EntityType<WitchVisualEntity>> WITCH =
             DeferredHolder.create(Registries.ENTITY_TYPE, WITCH_ID);
+    public static final DeferredHolder<EntityType<?>, EntityType<IronGolemVisualEntity>> IRON_GOLEM =
+            DeferredHolder.create(Registries.ENTITY_TYPE, IRON_GOLEM_ID);
 
     private TurnboundPresentationEntities() {}
 
@@ -50,11 +54,16 @@ public final class TurnboundPresentationEntities {
                 .of(WitchVisualEntity::new, MobCategory.MISC)
                 .sized(0.72F, 1.95F)
                 .build(ResourceKey.create(Registries.ENTITY_TYPE, WITCH_ID)));
+        event.register(Registries.ENTITY_TYPE, IRON_GOLEM_ID, () -> EntityType.Builder
+                .of(IronGolemVisualEntity::new, MobCategory.MISC)
+                .sized(1.45F, 2.75F)
+                .build(ResourceKey.create(Registries.ENTITY_TYPE, IRON_GOLEM_ID)));
     }
 
     private static void registerAttributes(EntityAttributeCreationEvent event) {
         event.put(STARTER_ZOMBIE.get(), Monster.createMonsterAttributes().build());
         event.put(BLAZE.get(), Monster.createMonsterAttributes().build());
         event.put(WITCH.get(), Monster.createMonsterAttributes().build());
+        event.put(IRON_GOLEM.get(), Monster.createMonsterAttributes().build());
     }
 }

@@ -8,6 +8,7 @@ import kr.moonseungjun.turnboundre.client.BattleStageFeedbackState;
 import kr.moonseungjun.turnboundre.client.BattleTargetMarkerState;
 import kr.moonseungjun.turnboundre.client.ProgressionClientState;
 import kr.moonseungjun.turnboundre.network.BattleNetworkPayloads;
+import kr.moonseungjun.turnboundre.presentation.PresentationPoseAware;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -189,6 +190,9 @@ public final class BattleStageHud {
             LivingEntity visual,
             BattleStageCharacterPresentation.Pose pose
     ) {
+        if (visual instanceof PresentationPoseAware poseAware) {
+            poseAware.setPresentationPose(pose.modelPose());
+        }
         if (pose.controlsAggressive() && visual instanceof Mob mob) {
             mob.setAggressive(pose.aggressive());
         }
@@ -275,6 +279,19 @@ public final class BattleStageHud {
             audioCueKey = "";
         }
         if (key.equals(audioCueKey)) return;
+
+        if (BattleStageCharacterPresentation.isIronGolemGuardianAction(cue.actionId())) {
+            minecraft.getSoundManager().play(
+                    SimpleSoundInstance.forUI(SoundEvents.IRON_GOLEM_REPAIR, 0.92F, 0.65F));
+            audioCueKey = key;
+            return;
+        }
+        if (BattleStageCharacterPresentation.isIronGolemOffensiveAction(cue.actionId())) {
+            minecraft.getSoundManager().play(
+                    SimpleSoundInstance.forUI(SoundEvents.IRON_GOLEM_ATTACK, 0.90F, 0.72F));
+            audioCueKey = key;
+            return;
+        }
 
         switch (cue.impactStyle()) {
             case MELEE -> minecraft.getSoundManager().play(

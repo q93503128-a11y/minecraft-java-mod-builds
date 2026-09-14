@@ -41,7 +41,10 @@ public final class BattleStageSignatureFx {
         BattleActionTimelineState.Cue cue = BattleActionTimelineState.cue(model.battleId()).orElse(null);
         if (cue == null) return;
         boolean witchSupport = isWitchSupportCue(cue);
-        if (cue.presentationStyle() == BattleActionTimelineState.PresentationStyle.STANDARD && !witchSupport) return;
+        boolean ironGuardian = isIronGolemGuardianCue(cue);
+        if (cue.presentationStyle() == BattleActionTimelineState.PresentationStyle.STANDARD
+                && !witchSupport
+                && !ironGuardian) return;
 
         UiLayoutMetrics.Rect viewport = UiLayoutMetrics
                 .battleHud(graphics.guiWidth(), graphics.guiHeight())
@@ -69,8 +72,9 @@ public final class BattleStageSignatureFx {
         }
 
         boolean witchSupportImpact = witchSupportAccentVisible(cue);
-        if (accentVisible(cue) || witchSupportImpact) {
-            UiVisualLanguage.FrameState frameState = witchSupportImpact
+        boolean ironGuardianImpact = ironGolemGuardianAccentVisible(cue);
+        if (accentVisible(cue) || witchSupportImpact || ironGuardianImpact) {
+            UiVisualLanguage.FrameState frameState = (witchSupportImpact || ironGuardianImpact)
                     ? UiVisualLanguage.FrameState.SUCCESS
                     : accentState(cue.presentationStyle());
             for (String targetId : cue.targetIds()) {
@@ -207,6 +211,19 @@ public final class BattleStageSignatureFx {
         return false;
     }
 
+    static boolean isIronGolemGuardianCue(BattleActionTimelineState.Cue cue) {
+        if (cue == null
+                || cue.impactStyle() != BattleActionTimelineState.ImpactStyle.MELEE
+                || !BattleStageCharacterPresentation.isIronGolemGuardianAction(cue.actionId())
+                || cue.targetIds().isEmpty()) {
+            return false;
+        }
+        for (String targetId : cue.targetIds()) {
+            if (targetId != null && !targetId.isBlank() && !targetId.equals(cue.actorId())) return true;
+        }
+        return false;
+    }
+
     static double supportTransferProgress(double baseProgress, int ordinal) {
         if (!Double.isFinite(baseProgress) || ordinal < 0) return 0.0D;
         double p = Math.max(0.0D, Math.min(1.0D, baseProgress));
@@ -222,6 +239,12 @@ public final class BattleStageSignatureFx {
 
     static boolean witchSupportAccentVisible(BattleActionTimelineState.Cue cue) {
         return isWitchSupportCue(cue)
+                && cue.phase() == BattleActionTimelineState.Phase.IMPACT
+                && cue.phaseProgress() < 0.68D;
+    }
+
+    static boolean ironGolemGuardianAccentVisible(BattleActionTimelineState.Cue cue) {
+        return isIronGolemGuardianCue(cue)
                 && cue.phase() == BattleActionTimelineState.Phase.IMPACT
                 && cue.phaseProgress() < 0.68D;
     }

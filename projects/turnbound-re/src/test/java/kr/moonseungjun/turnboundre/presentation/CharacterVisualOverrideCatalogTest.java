@@ -15,6 +15,7 @@ final class CharacterVisualOverrideCatalogTest {
         serverCatalog.put("turnbound_re:skeleton", "minecraft:skeleton");
         serverCatalog.put("turnbound_re:blaze", "minecraft:blaze");
         serverCatalog.put("turnbound_re:witch", "minecraft:witch");
+        serverCatalog.put("turnbound_re:iron_golem", "minecraft:iron_golem");
 
         Map<String, String> presentation = CharacterVisualOverrideCatalog.apply(serverCatalog);
 
@@ -22,9 +23,11 @@ final class CharacterVisualOverrideCatalogTest {
         assertEquals("minecraft:skeleton", presentation.get("turnbound_re:skeleton"));
         assertEquals("turnbound_re:blaze_visual", presentation.get("turnbound_re:blaze"));
         assertEquals("turnbound_re:witch_visual", presentation.get("turnbound_re:witch"));
+        assertEquals("turnbound_re:iron_golem_visual", presentation.get("turnbound_re:iron_golem"));
         assertEquals("minecraft:zombie", serverCatalog.get("turnbound_re:zombie"));
         assertEquals("minecraft:blaze", serverCatalog.get("turnbound_re:blaze"));
         assertEquals("minecraft:witch", serverCatalog.get("turnbound_re:witch"));
+        assertEquals("minecraft:iron_golem", serverCatalog.get("turnbound_re:iron_golem"));
     }
 
     @Test
@@ -41,5 +44,9 @@ final class CharacterVisualOverrideCatalogTest {
                 "turnbound_re:witch", "minecraft:evoker"));
         assertEquals("minecraft:witch", CharacterVisualOverrideCatalog.visualEntityId(
                 "turnbound_re:other", "minecraft:witch"));
+        assertEquals("minecraft:snow_golem", CharacterVisualOverrideCatalog.visualEntityId(
+                "turnbound_re:iron_golem", "minecraft:snow_golem"));
+        assertEquals("minecraft:iron_golem", CharacterVisualOverrideCatalog.visualEntityId(
+                "turnbound_re:other", "minecraft:iron_golem"));
     }
 }
