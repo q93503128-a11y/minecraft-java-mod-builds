@@ -7,6 +7,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.storage.LevelData;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
@@ -17,10 +18,11 @@ import java.util.Set;
  * Production entry point for the first authored TURNBOUND: RE world slice.
  *
  * A fresh world no longer requires an operator command. The first joining player causes the authored Hub/Region
- * slice to be installed once around the vanilla Overworld shared spawn. Per-player Hub discovery doubles as the
- * onboarding marker, so every new player begins in the same server-owned Hub without a second quest/save flag.
+ * slice to be installed once near the vanilla Overworld spawn. Per-player Hub discovery doubles as the onboarding
+ * marker, so every new player begins in the same server-owned Hub without a second quest/save flag.
  */
 public final class AuthoredWorldBootstrapService {
+    private static final float HUB_FACING_YAW = -90.0F;
     private final DefinitionRepository definitions;
     private final FirstExpeditionQuestService firstExpedition;
 
@@ -84,29 +86,35 @@ public final class AuthoredWorldBootstrapService {
             DefinitionRegistry registry
     ) {
         ServerLevel overworld = server.overworld();
-        BlockPos sharedSpawn = overworld.getRespawnData().pos();
-        overworld.getChunkAt(sharedSpawn);
+        BlockPos vanillaSpawn = overworld.getRespawnData().pos();
+        overworld.getChunkAt(vanillaSpawn);
 
         try {
-            // Minecraft 26.2 exposes the world spawn through RespawnData rather than getSharedSpawnPos().
-            // Move the bootstrap player there before deriving the authored origin from the player's position.
-            player.stopRiding();
-            player.teleportTo(
-                    overworld,
-                    sharedSpawn.getX() + 0.5D,
-                    sharedSpawn.getY(),
-                    sharedSpawn.getZ() + 0.5D,
-                    Set.of(),
-                    player.getYRot(),
-                    player.getXRot(),
-                    false);
+            if (player.level() != overworld) {
+                player.stopRiding();
+                player.teleportTo(
+                        overworld,
+                        vanillaSpawn.getX() + 0.5D,
+                        vanillaSpawn.getY(),
+                        vanillaSpawn.getZ() + 0.5D,
+                        Set.of(),
+                        HUB_FACING_YAW,
+                        0.0F,
+                        false);
+            }
 
-            ProductionWorldSlicePrototypeBuilder.Result world =
-                    ProductionWorldSlicePrototypeBuilder.build(player, registry);
-            WorldFastTravelPrototype.install(player, registry, world.origin());
+            AuthoredFirstRegionBuilder.Result world =
+                    AuthoredFirstRegionBuilder.build(player, registry, vanillaSpawn);
+
+            // 26.2 world spawn is server RespawnData. Death/no-bed respawn now returns to the authored Hub,
+            // rather than the discarded vanilla spawn used only as a search seed.
+            server.setRespawnData(LevelData.RespawnData.of(
+                    overworld.dimension(), world.hubArrival(), HUB_FACING_YAW, 0.0F));
+
             TurnboundRe.LOGGER.info(
-                    "Installed TURNBOUND authored first region at shared spawn origin {} {} {}",
-                    world.origin().getX(), world.origin().getY(), world.origin().getZ());
+                    "Installed TURNBOUND authored first region at {} {} {} (terrain relief={}, wet samples={}, search distance²={})",
+                    world.origin().getX(), world.origin().getY(), world.origin().getZ(),
+                    world.terrain().relief(), world.terrain().wetSamples(), world.terrain().distanceSquared());
             return true;
         } catch (RuntimeException failure) {
             TurnboundRe.LOGGER.error("TURNBOUND authored world bootstrap failed", failure);
@@ -133,8 +141,8 @@ public final class AuthoredWorldBootstrapService {
                 hub.y(),
                 hub.z() + 0.5D,
                 Set.of(),
-                player.getYRot(),
-                player.getXRot(),
+                HUB_FACING_YAW,
+                0.0F,
                 false);
         firstExpedition.onInitialHubArrival(player);
     }
