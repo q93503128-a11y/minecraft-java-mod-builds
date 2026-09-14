@@ -1,8 +1,10 @@
 package kr.moonseungjun.survivalascension.endgame;
 
+import kr.moonseungjun.survivalascension.compat.FracturedArchiveRewardService;
 import kr.moonseungjun.survivalascension.elite.EliteMobSystem;
 import kr.moonseungjun.survivalascension.elite.MythicFieldBossService;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
+import kr.moonseungjun.survivalascension.equipment.EnchantmentCompletionService;
 import kr.moonseungjun.survivalascension.registry.AscensionItems;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
@@ -27,8 +29,8 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Field-Mythic endgame loop: meaningful contributors build deterministic netherite and tempering progress.
- * Expensive work is event-driven; no world/player scan runs per tick.
+ * Endgame reward hub: Mythic contribution progress plus lightweight delegation for Archive completion
+ * rewards and physical completion items. Expensive work remains event-driven; there is no world scan.
  */
 public final class MythicEndgameRewardService {
     private static final String DAMAGE_LEDGER_KEY = "survivalascension_mythic_endgame_damage";
@@ -47,6 +49,8 @@ public final class MythicEndgameRewardService {
     private MythicEndgameRewardService() {}
 
     public static void onDamagePost(LivingDamageEvent.Post event) {
+        FracturedArchiveRewardService.onDamagePost(event);
+
         if (!(event.getEntity() instanceof Mob mob) || EliteMobSystem.rankId(mob) != 3) return;
         if (event.getHealthDamage() <= 0.0F) return;
 
@@ -63,6 +67,8 @@ public final class MythicEndgameRewardService {
     }
 
     public static void onLivingDeath(LivingDeathEvent event) {
+        FracturedArchiveRewardService.onLivingDeath(event);
+
         if (event.isCanceled() || !(event.getEntity() instanceof Mob mob) || EliteMobSystem.rankId(mob) != 3) return;
         if (!(mob.level() instanceof ServerLevel level)) return;
 
@@ -108,6 +114,10 @@ public final class MythicEndgameRewardService {
     public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         ItemStack seal = event.getItemStack();
+        if (seal.is(AscensionItems.ENCHANTMENT_STONE.get())) {
+            EnchantmentCompletionService.onRightClickItem(event);
+            return;
+        }
         if (!seal.is(AscensionItems.TEMPERING_SEAL.get())) return;
 
         event.setCanceled(true);
