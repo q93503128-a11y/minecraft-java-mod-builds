@@ -30,7 +30,7 @@ public final class Region01BossFieldReviewRenderPreview {
     private static final String REVIEWED_IDLE_CLIP = "Flying_Idle";
     private static final Identifier PREVIEW_TEXTURE =
         Identifier.fromNamespaceAndPath("minecraft", "textures/block/stone.png");
-    private static final RenderType PREVIEW_RENDER_TYPE = RenderType.entityCutoutNoCull(PREVIEW_TEXTURE);
+    private static final RenderType PREVIEW_RENDER_TYPE = RenderType.entityCutout(PREVIEW_TEXTURE);
 
     private Region01BossFieldReviewRenderPreview() {}
 
