@@ -7,6 +7,7 @@ import kr.moonseungjun.riftfrontier.combat.Region01BossFieldAimPolicy;
 import kr.moonseungjun.riftfrontier.combat.Region01BossFieldImpactProfile;
 import kr.moonseungjun.riftfrontier.combat.Region01BossFieldImpactResolver;
 import kr.moonseungjun.riftfrontier.combat.Region01BossFieldImpulseResolver;
+import kr.moonseungjun.riftfrontier.combat.Region01BossFieldTelegraphEmitter;
 import kr.moonseungjun.riftfrontier.combat.Region01BossProductionSemantics;
 import kr.moonseungjun.riftfrontier.combat.ValidatedBossCombatSemantics;
 import kr.moonseungjun.riftfrontier.combat.presentation.Region01BossProductionPresentation;
@@ -39,6 +40,7 @@ public final class Region01BossEntity extends LivingEntity {
     private static final float FIELD_TEST_DAMAGE = 1.0F;
     private static final Region01BossFieldImpactResolver FIELD_TEST_HIT_RESOLVER = new Region01BossFieldImpactResolver();
     private static final Region01BossFieldImpulseResolver FIELD_TEST_IMPULSE_RESOLVER = new Region01BossFieldImpulseResolver();
+    private static final Region01BossFieldTelegraphEmitter FIELD_TEST_TELEGRAPH_EMITTER = new Region01BossFieldTelegraphEmitter();
 
     /**
      * Native Minecraft boss-health affordance for the field actor. This deliberately reuses the platform's established
@@ -132,6 +134,7 @@ public final class Region01BossEntity extends LivingEntity {
             runtime.beginNextAttack(serverLevel, this, gameTick);
         }
         MinecraftBossCombatAdapter.ValidatedTickResult result = runtime.tick(serverLevel, this, gameTick);
+        FIELD_TEST_TELEGRAPH_EMITTER.emit(serverLevel, this, result.presentationState());
         applyFieldTestActiveEntryImpulse(serverLevel, result);
         applyFieldTestActiveTravel(result);
         RiftfrontierNetworking.syncBossPresentation(this, gameTick, result);
