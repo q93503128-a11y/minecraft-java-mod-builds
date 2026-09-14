@@ -1,6 +1,7 @@
 package kr.moonseungjun.survivalascension.endgame;
 
 import kr.moonseungjun.survivalascension.elite.EliteMobSystem;
+import kr.moonseungjun.survivalascension.elite.MythicFieldBossService;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.registry.AscensionItems;
 import net.minecraft.core.component.DataComponents;
@@ -39,6 +40,7 @@ public final class MythicEndgameRewardService {
     private static final int DAMAGE_SCALE = 100;
     private static final int ALLOY_KILLS_PER_SCRAP = 3;
     private static final int TEMPERING_KILLS_PER_SEAL = 4;
+    private static final int FIELD_BOSS_HUNT_CREDIT = 2;
     private static final float MIN_CONTRIBUTION_HEALTH = 6.0F;
     private static final float MIN_CONTRIBUTION_SHARE = 0.05F;
 
@@ -87,12 +89,13 @@ public final class MythicEndgameRewardService {
         if (killer != null) qualified.add(killer.getUUID());
         if (qualified.isEmpty()) return;
 
+        int huntCredit = MythicFieldBossService.isExternalFieldBoss(mob) ? FIELD_BOSS_HUNT_CREDIT : 1;
         MinecraftServer server = level.getServer();
         MythicEndgamePendingData pending = MythicEndgamePendingData.get(server);
         for (UUID playerId : qualified) {
             ServerPlayer online = server.getPlayerList().getPlayer(playerId);
-            if (online != null) applyQualifiedKills(online, 1, false);
-            else pending.add(playerId, 1);
+            if (online != null) applyQualifiedKills(online, huntCredit, false);
+            else pending.add(playerId, huntCredit);
         }
     }
 
@@ -159,10 +162,11 @@ public final class MythicEndgameRewardService {
         if (sealRewards > 0) giveOrDrop(player, new ItemStack(AscensionItems.TEMPERING_SEAL.get(), sealRewards));
 
         String restoredText = restored ? " §7· 이탈 중 전투 기여 " + killCount + "회 정산" : "";
+        String weightedText = !restored && killCount > 1 ? " §7· 강적 가중치 §e×" + killCount : "";
         String rewardText = (scrapRewards > 0 ? " §8· §6네더라이트 파편 +" + scrapRewards : "")
                 + (sealRewards > 0 ? " §8· §6담금질 인장 +" + sealRewards : "");
         player.sendSystemMessage(Component.literal(
-                "§6[신화 사냥] §f유효 기여 인정" + restoredText + rewardText
+                "§6[신화 사냥] §f유효 기여 인정" + weightedText + restoredText + rewardText
                         + " §7· 고대 합금 " + alloyProgress + "/" + ALLOY_KILLS_PER_SCRAP
                         + " · 담금질 " + temperingProgress + "/" + TEMPERING_KILLS_PER_SEAL
         ));
