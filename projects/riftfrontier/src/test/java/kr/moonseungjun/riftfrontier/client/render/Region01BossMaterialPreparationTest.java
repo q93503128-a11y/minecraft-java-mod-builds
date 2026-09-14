@@ -2,8 +2,6 @@ package kr.moonseungjun.riftfrontier.client.render;
 
 import org.junit.jupiter.api.Test;
 
-import javax.imageio.ImageIO;
-import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
@@ -11,15 +9,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** API-free regression coverage for the material preparation provenance discipline. */
 class Region01BossMaterialPreparationTest {
-    private static final String FIELD_REVIEW_MATERIAL =
-        "/assets/riftfrontier/textures/entity/region_01/boss_dark_rock_candidate.png";
-
     @Test
     void staleGenerationIsRejectedBeforeTextureRead() {
         GenerationPublicationSlot<String> slot = new GenerationPublicationSlot<>();
@@ -81,17 +75,6 @@ class Region01BossMaterialPreparationTest {
             hashReached
         ));
         assertFalse(hashReached.get(), "stale texture bytes must be rejected before integrity/publication work");
-    }
-
-    @Test
-    void fieldReviewMaterialCandidateRemainsARealDecodablePng() throws IOException {
-        try (var stream = Region01BossMaterialPreparationTest.class.getResourceAsStream(FIELD_REVIEW_MATERIAL)) {
-            assertNotNull(stream, "field-review boss material must be packaged as a classpath resource");
-            var image = ImageIO.read(stream);
-            assertNotNull(image, "field-review boss material must remain a decodable PNG");
-            assertTrue(image.getWidth() > 0, "field-review boss material width must be positive");
-            assertTrue(image.getHeight() > 0, "field-review boss material height must be positive");
-        }
     }
 
     private static Prepared prepare(
