@@ -6,7 +6,9 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -18,9 +20,14 @@ import net.minecraft.world.phys.Vec3;
  * Persistent authority remains in ShipState/SavedData; this runtime exterior is recreated as needed.
  */
 public final class ShipExteriorEntity extends Display.ItemDisplay {
+    private static final Vec3 PILOT_SEAT_LOCAL = new Vec3(0.0D, 0.45D, -0.65D);
+
     public ShipExteriorEntity(EntityType<? extends ShipExteriorEntity> type, Level level) {
         super(type, level);
         setNoGravity(true);
+        // Display entities opt out of vanilla physics in their constructor. A vehicle cannot do that:
+        // block collision must resolve through Entity.move() on the authoritative server entity.
+        this.noPhysics = false;
     }
 
     public void setVisualItem(Item item) {
@@ -58,6 +65,39 @@ public final class ShipExteriorEntity extends Display.ItemDisplay {
     @Override
     protected boolean canAddPassenger(Entity passenger) {
         return passenger instanceof Player && getPassengers().isEmpty();
+    }
+
+    @Override
+    protected Vec3 getPassengerAttachmentPoint(Entity passenger, EntityDimensions dimensions, float scale) {
+        double yaw = Math.toRadians(getYRot());
+        double cos = Math.cos(yaw);
+        double sin = Math.sin(yaw);
+        double x = PILOT_SEAT_LOCAL.x * cos - PILOT_SEAT_LOCAL.z * sin;
+        double z = PILOT_SEAT_LOCAL.x * sin + PILOT_SEAT_LOCAL.z * cos;
+        return new Vec3(x, PILOT_SEAT_LOCAL.y, z);
+    }
+
+    @Override
+    protected void addPassenger(Entity passenger) {
+        super.addPassenger(passenger);
+        passenger.setYRot(getYRot());
+        passenger.setYHeadRot(getYRot());
+        if (passenger instanceof LivingEntity living) {
+            living.yBodyRot = getYRot();
+        }
+    }
+
+    @Override
+    protected void positionRider(Entity passenger, Entity.MoveFunction moveFunction) {
+        super.positionRider(passenger, moveFunction);
+        if (passenger instanceof LivingEntity living) {
+            living.yBodyRot = getYRot();
+        }
+    }
+
+    @Override
+    public boolean shouldRiderSit() {
+        return true;
     }
 
     @Override
