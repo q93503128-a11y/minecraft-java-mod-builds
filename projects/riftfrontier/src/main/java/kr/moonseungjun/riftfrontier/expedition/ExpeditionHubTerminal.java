@@ -61,10 +61,7 @@ public final class ExpeditionHubTerminal {
         if (!moved) throw new IllegalStateException("Minecraft rejected Riftfrontier initial hub teleport");
 
         ensurePresent(player);
-        player.sendSystemMessage(Component.literal(
-            "[Riftfrontier] Technical expedition hub online. Right-click the lodestone to deploy; "
-                + "the smithing table converts secured salvage into expedition supply after extraction."
-        ));
+        player.sendSystemMessage(Component.translatable("riftfrontier.expedition.detail.hub_bootstrap"));
         ExpeditionPlayerFeedback.hubReady(player);
         return true;
     }
@@ -79,8 +76,12 @@ public final class ExpeditionHubTerminal {
                 ExpeditionGameplayService.provision(player);
                 ExpeditionPlayerFeedback.provisioned(player);
             } catch (IllegalStateException rejected) {
-                player.sendSystemMessage(Component.literal(
-                    "[Riftfrontier] Provision station unavailable: " + rejected.getMessage()
+                RiftfrontierWorldData world = RiftfrontierWorldData.get(level);
+                player.sendSystemMessage(Component.translatable(
+                    "riftfrontier.expedition.detail.provision_rejected",
+                    world.securedRegion01Salvage(),
+                    world.expeditionSupply(),
+                    world.region01PreparationSupplyCost()
                 ));
             }
             return true;
@@ -91,8 +92,11 @@ public final class ExpeditionHubTerminal {
                 ExpeditionGameplayService.start(player);
                 ExpeditionPlayerFeedback.deployed(player);
             } catch (IllegalStateException rejected) {
-                player.sendSystemMessage(Component.literal(
-                    "[Riftfrontier] Deployment station unavailable: " + rejected.getMessage()
+                RiftfrontierWorldData world = RiftfrontierWorldData.get(level);
+                player.sendSystemMessage(Component.translatable(
+                    "riftfrontier.expedition.detail.deploy_rejected",
+                    world.expeditionSupply(),
+                    world.region01PreparationSupplyCost()
                 ));
             }
             return true;
