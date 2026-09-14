@@ -4,6 +4,12 @@
 
 ## 활성 프로젝트
 
+- [`openworld-rpg`](./openworld-rpg/) — 최종 명칭 미정, Minecraft 위에서 동작하는 저-바닐라 의존 대형 오픈월드 액션 RPG
+  - 상태: `DESIGN CANON BUILDING / NO SOURCE BOOTSTRAP YET`
+  - 정본 시작점: [`openworld-rpg/README.md`](./openworld-rpg/README.md)
+  - 다음 순서: 직업/전직 구조 → 무기군/보정 → 전투 자원 타이밍 → 장비 슬롯 → 외부 UI 선택 → 외부 오픈월드 맵 선택 → 지역/몬스터/던전 설계 → M0 Build Bootstrap
+  - 핵심 원칙: EXP/Lv 자체 성장, 바닐라 XP 제거, Mana/Stamina 액션 전투, 4 액티브 + 1 궁극, 깊은 다단 전직, 외부 최종 디자인/맵/던전 우선, 임시 플레이어-facing 디자인 금지, Essential 친화 멀티 목표, 대체 완료된 쓰레기/중복 코드 즉시 정리
+
 - [`earth-to-stars`](./earth-to-stars/) — EARTH TO STARS, SF 우주 개척 + 모듈식 함선 성장 + 협동 함선 운용
   - 상태: `ALPHA.13 CLIENT MODEL/RESOURCE RESCUE BUILD + ACTUAL CLIENT RESOURCE LOAD VERIFIED / LIVE VISUAL ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`
   - 현재 버전: `0.1.0-alpha.13`
