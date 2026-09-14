@@ -45,17 +45,18 @@ Design intent: the boss is durable because the player must survive its native ki
 
 The most valuable repeatable rewards should come from choices and progression, not piles of diamonds/emeralds.
 
-Existing field-boss hooks currently include:
+Current field-boss reward stack:
 
 - native external-mod boss loot
 - Survival major-target combat/expedition credit
 - guaranteed rank-III Survival equipment roll for the killer
+- killer-only 90 vanilla XP from the shared elite reward layer
 - meaningful-contribution Mythic hunt progress for every qualified contributor
 - deterministic Netherite Scrap progress every 3 ordinary hunt credits
 - deterministic Tempering Seal progress every 4 ordinary hunt credits
 - a qualified true field-boss kill counts as two hunt credits because the encounter is intentionally above the old Mythic III combat tier
 
-Before final playtest, audit legacy raw diamond/emerald/XP rewards together with native boss loot so the encounter does not become a loot printer. Premium progression must remain per-qualified-player to reduce loot-stealing problems.
+External field bosses deliberately skip the legacy Mythic raw-material world drop and the old proximity reward bundle. They do not grant extra Survival diamonds, emeralds or echo shards merely for standing within the old reward radius. Premium progression is awarded only through the actual damage-contribution authority, with the killer included, so multiplayer participation is useful without turning the encounter into a proximity loot printer.
 
 ## Endgame enchantment-completion role
 
