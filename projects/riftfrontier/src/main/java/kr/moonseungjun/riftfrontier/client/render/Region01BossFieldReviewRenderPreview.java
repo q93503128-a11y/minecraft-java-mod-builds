@@ -2,6 +2,7 @@ package kr.moonseungjun.riftfrontier.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import kr.moonseungjun.riftfrontier.client.BossPresentationClientState;
+import kr.moonseungjun.riftfrontier.combat.presentation.Region01BossArenaPressureFieldMotionCandidate;
 import kr.moonseungjun.riftfrontier.combat.presentation.Region01BossReviewedFieldAnimationPreview;
 import kr.moonseungjun.riftfrontier.combat.presentation.Region01BossReviewedReactionPreview;
 import kr.moonseungjun.riftfrontier.combat.presentation.mesh.Affine3x4;
@@ -25,10 +26,11 @@ import java.util.UUID;
  *
  * <p>The production renderer remains gated on exact semantic-animation coverage and a reviewed final material. Until
  * those gates are satisfied, this preview renders the accepted Dragon Evolved geometry with Minecraft's own stone
- * texture. Reviewed attack roles consume their synced server semantic state. Directly reviewed HitReact/Death source
- * motion is also exposed for field readability without assigning those clips to attack roles: terminal Death has
- * priority, an executing reviewed attack has priority over HitReact, then HitReact may play while no reviewed attack
- * sample is active. Unresolved attack roles, including arena pressure, remain on neutral Flying_Idle.</p>
+ * texture. Reviewed source attacks consume their synced server semantic state. Arena pressure deliberately does not
+ * pretend that an existing source clip is a reviewed attack: while its motion remains unresolved, an authored
+ * whole-body scale candidate is layered over neutral Flying_Idle only for human field review. Directly reviewed
+ * HitReact/Death source motion remains presentation-only. Terminal Death has priority, an executing reviewed source
+ * attack has priority over HitReact, then HitReact may play while no reviewed source attack sample is active.</p>
  *
  * <p>Once the production presentation publishes, {@link Region01BossClientRenderRuntime#submit} wins and this path is
  * not reached. A resource reload that invalidates the prepared geometry also makes this preview fail closed.</p>
@@ -69,14 +71,19 @@ public final class Region01BossFieldReviewRenderPreview {
         AnimationClip clip;
         float sampleTime;
 
+        var semanticState = BossPresentationClientState.current(entityId, entityUuid);
         var reactionSample = Region01BossReviewedReactionPreview.sample(
             hurtTime, hurtDuration, deathTime, runtimeAsset.animations()
         );
-        var reviewedAttackSample = BossPresentationClientState.current(entityId, entityUuid)
+        var reviewedAttackSample = semanticState
             .flatMap(state -> Region01BossReviewedFieldAnimationPreview.sample(state, runtimeAsset.animations()));
+        var arenaPressureCandidate = semanticState
+            .flatMap(Region01BossArenaPressureFieldMotionCandidate::sample);
 
-        if (reactionSample.isPresent()
-            && reactionSample.orElseThrow().kind() == Region01BossReviewedReactionPreview.ReactionKind.DEATH) {
+        boolean terminalDeath = reactionSample.isPresent()
+            && reactionSample.orElseThrow().kind() == Region01BossReviewedReactionPreview.ReactionKind.DEATH;
+
+        if (terminalDeath) {
             var sample = reactionSample.orElseThrow();
             clip = sample.clip();
             sampleTime = sample.sampleTimeSeconds();
@@ -101,15 +108,30 @@ public final class Region01BossFieldReviewRenderPreview {
             runtimeAsset.skinnedMesh().mesh(), Arrays.asList(skinMatrices)
         );
 
-        SkinnedMeshCustomGeometryAdapter.submit(
-            frame,
-            poseStack,
-            collector,
-            PREVIEW_RENDER_TYPE,
-            packedLight,
-            OverlayTexture.NO_OVERLAY,
-            0xFFFFFFFF
-        );
+        boolean applyArenaPressureCandidate = !terminalDeath
+            && reviewedAttackSample.isEmpty()
+            && reactionSample.isEmpty()
+            && arenaPressureCandidate.isPresent();
+        if (applyArenaPressureCandidate) {
+            var scale = arenaPressureCandidate.orElseThrow();
+            poseStack.pushPose();
+            poseStack.scale(scale.horizontal(), scale.vertical(), scale.horizontal());
+        }
+        try {
+            SkinnedMeshCustomGeometryAdapter.submit(
+                frame,
+                poseStack,
+                collector,
+                PREVIEW_RENDER_TYPE,
+                packedLight,
+                OverlayTexture.NO_OVERLAY,
+                0xFFFFFFFF
+            );
+        } finally {
+            if (applyArenaPressureCandidate) {
+                poseStack.popPose();
+            }
+        }
         return true;
     }
 }
