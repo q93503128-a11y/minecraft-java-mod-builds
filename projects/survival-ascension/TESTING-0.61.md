@@ -1,9 +1,9 @@
-# Survival Ascension 0.61 — Final Boundary Focused Test Matrix
+# Survival Ascension 0.61 — Current Release-Candidate Test Matrix
 
-Use the 0.61 JAR with `0.61.0-alpha.1-content-preview.1`. Back up any long-lived world before the first run.
+Use the current `0.61.25-alpha.1` JAR with the matching generated content-preview `.mrpack`. Back up any long-lived world before the first run.
 
 ## 1. Regression before Final Ascension
-- Boot one fresh world and one existing 0.60 world.
+- Boot one fresh world and one existing 0.60/0.61 world.
 - PASS: no save migration crash, missing registry, codec error, repeated login exception or external-mod linkage error.
 - Verify the existing Final Ascension readiness gate still requires exactly Dragon stage2 + Expedition 9/9 + Apex first-clear 9/9 + Ascension Nexus.
 - Run the 0.60 acts: mining wall, four construction cells, three guards, movement checkpoints, three regional echo sets, and three Shift seals. No GUI-only numeric submission may advance them.
@@ -85,16 +85,41 @@ Use Construction Lv.100 after world completion.
 - Without Field Mastery: selected line/causeway maximum remains bounded at 65.
 - With Field Mastery: length cycling adds 81 and must not allow a value above 81.
 - Wall/Floor final mastery size must reach 15×15.
-- Shift during actual placement must still force the ordinary single placement behavior.
+- Construction-menu Shift+click on LINE/CAUSEWAY cycles the unlocked length. Crouching during world placement must not silently force single placement; precision one-block construction is selected explicitly through `단일` mode.
+- Test causeway/bridge placement while crouching at an edge. The currently selected bulk mode must remain active and must not be converted to one block merely because the player is crouching.
 - Every generated target must still require loaded chunk, interaction permission, valid placement and real material from the existing physical supply path.
 - Pending work must remain bounded by the existing per-player queue and global tick budget.
 
-## 11. Multiplayer-later structural checks
+## 11. External field-boss integration
+Use the locked content-preview pack and run:
+
+```mcfunction
+/ascension mythic spawn
+/gamemode survival
+/effect give @s minecraft:resistance infinite 2 true
+```
+
+PASS conditions:
+- the summon resolves an audited original TBOS field boss rather than a stat-inflated vanilla zombie/skeleton;
+- original model, animation, native AI/attacks, sound and original boss bar remain authoritative;
+- no duplicate yellow Survival boss bar, generic Survival Mythic ring/marked attack or forced glowing outline appears on the field boss;
+- normal incoming damage is burst-bounded, and ward phases occur once near 66% and 33% health;
+- phase 1 attempts two escorts and phase 2 attempts three, with at most one additional escort when three or more players are nearby and a hard cap of four;
+- killing the final living escort collapses the ward immediately; the ward also has a 15-second upper bound so pathfinding cannot soft-lock the fight;
+- remaining owned escorts are removed when the boss dies or the server stops;
+- the killer receives only the modest shared 90 XP from the legacy elite layer; the field boss must not create the old Survival diamond/emerald/echo-shard proximity bundle or legacy Mythic raw-material world drop;
+- actual qualified damage contributors receive the separate Mythic hunt settlement, and a true field-boss clear counts as `×2` hunt credit;
+- native external loot and the normal Survival rank-III equipment path remain intact.
+
+STOP and report if the directly spawned external boss loses its native scripting outside its original arena, escorts appear inside solid blocks or remain orphaned, the ward cannot collapse, a phase repeats after reload, generic Survival Mythic attacks/bossbar reappear, or raw Survival diamond/emerald/echo rewards still duplicate native boss loot.
+
+## 12. Multiplayer-later structural checks
 Current practical validation is single-player first. Before future multiplayer sign-off, retain these acceptance points:
 - completion is world-scoped and should unlock the same conquered-world authority for players in that world;
 - bossbar viewers may observe nearby combat but only the run owner owns failure/admission state;
 - no second owner may inherit or claim an orphaned active boss;
+- field-boss premium progression remains actual-contribution based rather than proximity based;
 - reward ownership and helper behavior need a dedicated multiplayer pass when real multiplayer testing becomes available.
 
 ## Stop-and-report signals
-Immediately report crash/save corruption, duplicate first-clear reward, Apex state mutation, force-loaded/generated chunks, boss health skipping the 65% or 30% boundary, anchors becoming remotely completable, Warden target loss or idle burrow during the active fight, unavoidable invisible attacks, orderly Stop/restart leaving temporary Final Ascension markers or the boss behind, marker cleanup deleting player blocks, orphan boss persistence, final SavedData disappearing after reload, air-dash count exceeding its bound, construction exceeding 81 or 15×15, or any external content classloading error.
+Immediately report crash/save corruption, duplicate first-clear reward, Apex state mutation, force-loaded/generated chunks, boss health skipping the 65% or 30% boundary, anchors becoming remotely completable, Warden target loss or idle burrow during the active fight, unavoidable invisible attacks, orderly Stop/restart leaving temporary Final Ascension markers or the boss behind, marker cleanup deleting player blocks, orphan boss persistence, final SavedData disappearing after reload, air-dash count exceeding its bound, construction exceeding 81 or 15×15, crouching unexpectedly forcing bulk construction to one block, field-boss reward duplication, or any external content classloading error.
