@@ -1,0 +1,3 @@
+baseline content-pack assertion: 0.48 PROJECT contract missing
+RELEASE CONTENT-PACK AUDIT FAIL: baseline regression contract failed
+RELEASE CONTENT-PACK AUDIT FAIL: 0.58 regression contract failed under 0.61 pack identity
