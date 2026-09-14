@@ -16,8 +16,13 @@ import net.neoforged.neoforge.registries.RegisterEvent;
 public final class TurnboundPresentationEntities {
     public static final Identifier STARTER_ZOMBIE_ID = Identifier.fromNamespaceAndPath(
             TurnboundRe.MOD_ID, "starter_zombie_visual");
+    public static final Identifier BLAZE_ID = Identifier.fromNamespaceAndPath(
+            TurnboundRe.MOD_ID, "blaze_visual");
+
     public static final DeferredHolder<EntityType<?>, EntityType<StarterZombieVisualEntity>> STARTER_ZOMBIE =
             DeferredHolder.create(Registries.ENTITY_TYPE, STARTER_ZOMBIE_ID);
+    public static final DeferredHolder<EntityType<?>, EntityType<BlazeVisualEntity>> BLAZE =
+            DeferredHolder.create(Registries.ENTITY_TYPE, BLAZE_ID);
 
     private TurnboundPresentationEntities() {}
 
@@ -33,9 +38,14 @@ public final class TurnboundPresentationEntities {
                 .of(StarterZombieVisualEntity::new, MobCategory.MISC)
                 .sized(0.78F, 2.05F)
                 .build(ResourceKey.create(Registries.ENTITY_TYPE, STARTER_ZOMBIE_ID)));
+        event.register(Registries.ENTITY_TYPE, BLAZE_ID, () -> EntityType.Builder
+                .of(BlazeVisualEntity::new, MobCategory.MISC)
+                .sized(0.82F, 1.95F)
+                .build(ResourceKey.create(Registries.ENTITY_TYPE, BLAZE_ID)));
     }
 
     private static void registerAttributes(EntityAttributeCreationEvent event) {
         event.put(STARTER_ZOMBIE.get(), Monster.createMonsterAttributes().build());
+        event.put(BLAZE.get(), Monster.createMonsterAttributes().build());
     }
 }

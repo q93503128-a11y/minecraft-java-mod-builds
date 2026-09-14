@@ -9,9 +9,15 @@ import kr.moonseungjun.turnboundre.client.BattleActionTimelineState;
 public final class BattleStageCharacterPresentation {
     static final String ZOMBIE = "turnbound_re:zombie";
     static final String SKELETON = "turnbound_re:skeleton";
+    static final String BLAZE = "turnbound_re:blaze";
     static final String ENDERMAN = "turnbound_re:enderman";
     static final float DEFAULT_X_ANGLE = 0.0F;
     static final float DEFAULT_Y_ANGLE = 0.35F;
+
+    private static final String BLAZE_EMBER_BOLT = "turnbound_re:blaze_ember_bolt";
+    private static final String BLAZE_SEARING_VOLLEY = "turnbound_re:blaze_searing_volley";
+    private static final String BLAZE_HEAT_UP = "turnbound_re:blaze_heat_up";
+    private static final String BLAZE_INFERNO_BURST = "turnbound_re:blaze_inferno_burst";
 
     public record Pose(
             int offsetX,
@@ -65,12 +71,50 @@ public final class BattleStageCharacterPresentation {
                     aiming);
         }
 
+        if (BLAZE.equals(characterId)) {
+            return blazePose(participantId, cue);
+        }
+
         if (ENDERMAN.equals(characterId)
                 && isActor(participantId, cue)
                 && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.VOID) {
             return enderPose(cue);
         }
         return Pose.DEFAULT;
+    }
+
+    private static Pose blazePose(String participantId, BattleActionTimelineState.Cue cue) {
+        if (!isActor(participantId, cue)) return neutralControlledPose();
+
+        boolean activeBeat = cue.phase() == BattleActionTimelineState.Phase.WINDUP
+                || cue.phase() == BattleActionTimelineState.Phase.IMPACT;
+        boolean offensiveFire = activeBeat
+                && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.FIRE
+                && isBlazeOffensiveAction(cue.actionId())
+                && targetsOtherParticipant(cue);
+        if (offensiveFire) {
+            return new Pose(0, -1, -0.06F, 0.47F, true, true);
+        }
+
+        boolean heatUp = activeBeat
+                && BLAZE_HEAT_UP.equals(cue.actionId())
+                && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.FIRE
+                && targetsOnlyActor(cue);
+        if (heatUp) {
+            // Heat Up reads as a short lift/charge, never as the forward firing silhouette.
+            return new Pose(0, -2, -0.08F, DEFAULT_Y_ANGLE, true, false);
+        }
+        return neutralControlledPose();
+    }
+
+    private static Pose neutralControlledPose() {
+        return new Pose(0, 0, DEFAULT_X_ANGLE, DEFAULT_Y_ANGLE, true, false);
+    }
+
+    private static boolean isBlazeOffensiveAction(String actionId) {
+        return BLAZE_EMBER_BOLT.equals(actionId)
+                || BLAZE_SEARING_VOLLEY.equals(actionId)
+                || BLAZE_INFERNO_BURST.equals(actionId);
     }
 
     private static Pose enderPose(BattleActionTimelineState.Cue cue) {
@@ -116,6 +160,14 @@ public final class BattleStageCharacterPresentation {
             if (targetId != null && !targetId.isBlank() && !targetId.equals(cue.actorId())) return true;
         }
         return false;
+    }
+
+    private static boolean targetsOnlyActor(BattleActionTimelineState.Cue cue) {
+        if (cue == null || cue.targetIds().isEmpty()) return false;
+        for (String targetId : cue.targetIds()) {
+            if (targetId == null || targetId.isBlank() || !targetId.equals(cue.actorId())) return false;
+        }
+        return true;
     }
 
     private static double clamp(double value) {

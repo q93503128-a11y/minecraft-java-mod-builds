@@ -147,3 +147,34 @@ Burst `turnbound_re:enderman_horizon_break` 및 VOID action 기준:
 - CODE REVIEWED / TESTED / BUILD VERIFIED는 자동 계약 상태다.
 - 실제 Minecraft screenshot에서 silhouette, timing, readability, visual intrusion을 확인하기 전에는 **PLAYTESTED가 아니다**.
 - 대표 2명의 screenshot 품질이 통과해야 roster production pass로 넘어간다.
+
+## 8. 2026-09-14 — Blaze controlled production expansion
+
+현재 개발 지침에 따라 screenshot gate를 PASS로 선언하기 전에도 다음 production 캐릭터의 코드/자동 계약 작업은 계속한다. 이 절은 Section 7의 실제 화면 검수 의무를 해제하지 않는다.
+
+### Blaze — Furnace Striker signature
+
+현재 production data 기준:
+- 역할: `STRIKER / CONTROLLER`.
+- 적 대상 FIRE: `Ember Bolt`, `Searing Volley`, `Inferno Burst`.
+- 자기 강화 FIRE: `Heat Up`.
+
+구현 계약:
+1. gameplay/source identity는 계속 `minecraft:blaze`이며 damage/drop/save/progression 권한을 변경하지 않는다.
+2. Character Detail과 virtual Battle Stage에서만 `turnbound_re:blaze_visual` presentation entity를 사용한다.
+3. vanilla Blaze renderer를 그대로 재사용하지 않고, TURNBOUND 전용 core + 3-tier rod geometry/animation을 사용한다.
+4. idle에서는 세 rod tier가 서로 다른 방향/속도로 움직여 compact hovering fire specialist 실루엣을 만든다.
+5. canonical enemy-target FIRE action의 WINDUP/IMPACT에서만 rods가 전방으로 압축된 furnace-cage firing silhouette를 만든다.
+6. `Heat Up`은 FIRE 태그를 공유해도 공격 자세를 사용하지 않는다. 짧은 상승/충전 pose만 허용한다.
+7. 알 수 없는 FIRE action, 다른 actor의 action, RECOVERY는 공격 상태를 강제로 해제한다.
+8. 다중 FIRE action의 travel/impact는 기존 authoritative action timeline의 FIRE + `VOLLEY` 피드백을 재사용한다. presentation 때문에 damage event나 target 수를 늘리지 않는다.
+9. 새 외부 바이너리 자산은 포함하지 않는다. 모델 geometry/animation은 TURNBOUND 코드이며 texture는 Minecraft 기본 `blaze.png` resource를 참조한다.
+10. 실제 screenshot audit 전에는 Blaze production visual을 PASS로 판정하지 않는다.
+
+자동 회귀 계약:
+- Blaze source entity가 정확히 `minecraft:blaze`일 때만 presentation override 적용.
+- source mismatch에서는 override 금지.
+- offensive FIRE action + other-target 관계에서만 aggressive firing pose.
+- `Heat Up` self-target에서는 non-aggressive charge pose.
+- unknown FIRE/recovery는 neutral.
+- dedicated presentation이 없는 기존 캐릭터는 기존 stage view 유지.
