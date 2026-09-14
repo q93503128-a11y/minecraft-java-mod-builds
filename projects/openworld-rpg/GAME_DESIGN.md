@@ -256,6 +256,13 @@ Use five clear fantasy RPG root roles:
 
 Weapons are broadly class-independent. Effectiveness comes from stat scaling, cadence, class passives/skills and equipment synergy rather than hard weapon locks.
 
+Weapon-freedom rule:
+
+- classes and advancements do not hard-lock ordinary weapon families unless a specific skill physically requires a weapon behavior;
+- poor combinations remain possible, but lose the scaling, passive, animation or skill synergy that makes a specialization effective;
+- a Marksman can technically carry a sword and a Warrior can carry a bow, but class mechanics naturally make their intended weapon patterns stronger;
+- external mods' weapon locks are not inherited automatically if they conflict with this rule.
+
 ## 9.2 Advancement depth / branching
 
 - initial production target: about five advancement stages per root-class line;
@@ -267,7 +274,39 @@ Weapons are broadly class-independent. Effectiveness comes from stat scaling, ca
 - hidden/special advancements may require bosses, quests, stats, items or discoveries;
 - advancement adds mechanics/passives/skill behavior/build identity, not only numbers.
 
-Example principle: Warrior can branch toward damage pressure or defensive/tank play.
+Canonical first major specialization directions:
+
+- **전사**: `공세 계열` / `무기 숙련 계열`
+  - 공세 계열 — continuous melee pressure, poise destruction, close-range burst and aggressive tempo.
+  - 무기 숙련 계열 — precise guard/parry, counters and weapon-family mastery; personal offensive mastery rather than party tanking.
+- **사냥꾼**: `레인저 계열` / `명사수 계열`
+  - 레인저 계열 — mobile shooting, multi-target pressure, traps/field utility and flexible mid-range combat.
+  - 명사수 계열 — weak-point play, long-range precision and high-risk/high-reward single-target shots.
+- **성직자**: `성인 계열` / `심판관 계열`
+  - 성인 계열 — healing, cleansing, protection and support buffs.
+  - 심판관 계열 — holy marks/judgement, offensive support and combat-healing so solo play remains active.
+- **마도사**: `원소술사 계열` / `비전술사 계열`
+  - 원소술사 계열 — fire/frost/lightning interaction, elemental combinations and area damage.
+  - 비전술사 계열 — teleportation, barriers, binding/control, projectile manipulation and spell-shaping.
+- **수호자**: `보루 계열` / `파수꾼 계열`
+  - 보루 계열 — aggro, barriers, ally damage mitigation and holding space.
+  - 파수꾼 계열 — blocking/parrying, retaliation, attack denial and battlefield control.
+
+Warrior weapon-mastery and Guardian sentinel/counter gameplay must remain distinct:
+
+- Warrior converts personal defensive precision into stronger personal offense and weapon mastery.
+- Guardian converts defensive precision into enemy denial, positioning control and party protection.
+
+A major advancement should change at least three of the following when applicable:
+
+1. a core mechanic or combat rule;
+2. available active-skill family;
+3. passive-tree identity;
+4. ultimate candidates or ultimate behavior.
+
+Pure `+X% damage` promotions are not sufficient advancement identity.
+
+Working specialization names may be replaced later by stronger world/lore names without reopening their gameplay identity.
 
 ## 9.3 Persistent class history and switching
 
@@ -279,6 +318,9 @@ Progress is stored separately for every class line.
 - cost scales with player `Lv` but has a cap;
 - no class-switch cooldown;
 - switching never erases learned history.
+
+The player's first root-class choice in the starting settlement is free.
+Later switches follow the normal paid switching rule.
 
 ## 9.4 Skills and passives
 
@@ -295,6 +337,22 @@ Passives:
 - class-specific passives never remain active after switching away from that class;
 - each class retains its own saved passive tree and restores it only while active;
 - cross-class passive stacking is forbidden unless a future separate global-progression system explicitly introduces it.
+
+## 9.5 External class / skill reuse policy
+
+Class and skill production is **external-first** in the same way as visual production.
+Do not rebuild a lower-quality copy merely to make the mechanic internally original.
+
+- if a current mod already supplies a polished skill, animation, targeting pattern, spell effect, weapon behavior or support mechanic that fits a canonical class, prefer direct dependency/local use or legally permitted selective adaptation;
+- ARR content such as RPG Series class mods can be used as dependencies/local content/reference, but their source/assets are not copied into this public repository;
+- permissively licensed code such as MIT class/skill implementations may be selectively ported/adapted with required notices;
+- Spell Engine is the leading dependency candidate for data-driven active skills and weapon skills because it currently supports 26.2 and provides a complete spell runtime;
+- external class names do not automatically replace the five root classes or their advancement identities; good external skills may be mapped into the project's class branches;
+- the project-owned EXP/Lv, class history, advancement depth, switch economy, ultimate rules and server authority remain canonical even when external skill content is reused;
+- do not inherit vanilla-XP progression, arbitrary crafting requirements, weapon hard locks or other donor-mod rules that conflict with this game;
+- every reused skill must still meet the project's visible-range = hitbox, telegraph, animation, resource-cost and multiplayer-authority standards.
+
+Current priority source pool is maintained in `EXTERNAL_SOURCES.md`; important candidates include Spell Engine, RPG Series combat/class modules, RPG Class Selection, Archetypes and Ranged Weapon API.
 
 ---
 
@@ -467,18 +525,83 @@ A low-Lv region remains low-Lv later; a dangerous region remains dangerous when 
 The game has a memorable starting village/settlement as the first safe social/service hub.
 Its final name and lore are decided later; do not use a generic vanilla village as the finished result.
 
-Possible services:
+The starting settlement is a real long-term hub, not a disposable tutorial town.
+Its buildings exist coherently from the beginning; progression primarily unlocks advanced services or access rather than making arbitrary buildings appear out of nowhere.
 
-- inn / tavern;
-- forge / smith;
-- merchant / market;
-- alchemy / healer;
-- adventurer / quest guild;
-- class/trainer/guild access where appropriate;
-- bank/storage;
-- stable/mount access;
+### Opening / first reveal
+
+- start on an approach road or settlement outskirts rather than spawning directly in the central plaza;
+- use a short roughly 2–4 minute playable approach/encounter to establish movement/combat/context without a long forced tutorial;
+- reaching the gate/entrance gives the first clear reveal of the settlement and safe hub;
+- do not turn the opening into a chain of NPC errands before the player is allowed to explore.
+
+### Immediately usable services
+
+From the first settlement visit, provide at least:
+
 - nearby shrine/checkpoint;
-- quest/NPC hooks.
+- inn/tavern rest;
+- basic merchant/market access;
+- bank/storage;
+- adventurer/quest guild;
+- basic forge/smith service.
+
+The first root-class selection happens through the guild/class facility and is free.
+
+### Physical first-use flow
+
+Prefer a readable world layout such as:
+
+```text
+Gate / arrival
+→ inn / central square
+→ adventurer guild / class access
+→ forge / smith
+→ quest board / exits
+```
+
+The architecture/signage/NPC placement should teach the route visually.
+Avoid a compulsory sequence of trivial `talk to banker → talk to smith → talk to merchant` tutorial errands.
+
+### Service growth
+
+- the forge building is usable immediately for basic commerce/service, while deeper crafting/enhancement can unlock after the player actually gathers early ore/timber resources;
+- alchemy/healer access can introduce deeper alchemy after the player first gathers relevant herbs;
+- these unlocks exist to connect `explore/gather → return → produce/upgrade → explore again`, not to add menu chores;
+- service unlock conditions must remain short, legible and impossible to miss permanently.
+
+### Quest board / guild density
+
+At the beginning, expose roughly:
+
+- 1 main objective;
+- 2–3 regional contracts/side objectives;
+- additional work revealed through exploration, discoveries and regional progress.
+
+Do not fill the starting hub with a wall of MMO-style chores on first arrival.
+
+### Stable / first mount
+
+- the stable and mount NPC should be visible from the beginning so mount progression is an obvious future goal;
+- the first usable ground mount is unlocked through an early first-region event/quest rather than given immediately;
+- this preserves the value of early terrain discovery while making faster traversal arrive soon enough to matter.
+
+### Housing
+
+- starting-settlement homes may be inspected and purchased from the beginning;
+- there is **no story, boss-clear or reputation permission gate for the right to buy the first home**;
+- normal price/economy is the gate: starting funds should not trivially buy a home, making it a visible early savings goal;
+- exact prices are decided in the economy-balance pass.
+
+### Exits / open-world signal
+
+The settlement should connect to at least three meaningful directions when the selected external map permits it:
+
+1. a main road toward first-region core content;
+2. a secondary route toward gathering/small POIs/exploration;
+3. a visibly riskier route toward a higher-Lv area or dangerous encounter.
+
+Use regional Lv danger rather than invisible walls to communicate that the world extends beyond the intended first path.
 
 The village layout and buildings come from a coherent external high-quality village/build family or map/schematic.
 Avoid stitching together unrelated building styles when a coherent pack/source exists.
@@ -657,6 +780,8 @@ Camps are **quick-build temporary field infrastructure**.
 Permanent player housing is separate from camps.
 
 - towns/settlements can contain empty/purchasable houses;
+- the right to buy the first available home is present from the beginning rather than unlocked by story/boss progression;
+- price and available funds create the practical early-game gate instead of an arbitrary permission gate;
 - player buys a residence rather than turning a field camp into a full permanent base;
 - house shells/interiors use coherent external building designs/assets;
 - house functions include rest, storage, furnishing/decor and trophy/collection display;
@@ -744,9 +869,14 @@ Major locked decisions as of 2026-09-14:
 - VIT / END / STR / DEX / INT / WIL primary stats;
 - five root classes: 전사 / 사냥꾼 / 성직자 / 마도사 / 수호자;
 - deep ~5-stage initial advancement target, one major playstyle-changing branch, no `final` terminology;
+- first major specialization directions are 전사 공세/무기숙련, 사냥꾼 레인저/명사수, 성직자 성인/심판관, 마도사 원소술사/비전술사, 수호자 보루/파수꾼;
+- major advancements must change mechanics/skills/passives/ultimate identity rather than only numeric stats;
+- class/skill production is external-first: reuse high-quality current external skills/dependencies or legally reusable code when they fit instead of rebuilding weaker copies;
+- Spell Engine and the current 26.2 RPG Series ecosystem are priority dependency/content candidates; MIT sources such as RPG Class Selection and Archetypes are selective code-port candidates;
 - persistent per-class progression with paid Lv-scaled/capped switching and no switch cooldown;
+- first root-class selection in the starting settlement is free;
 - all unlocked passives of the active class apply; inactive-class passives never leak across;
-- broad weapon freedom including Hunter-compatible black-powder firearms; modern firearms excluded from baseline;
+- broad weapon freedom: classes create natural weapon synergy rather than ordinary hard weapon locks; Hunter-compatible black-powder firearms remain allowed and modern firearms excluded from baseline;
 - 12-slot RPG equipment target and no routine durability chore;
 - larger expandable RPG inventory, no weight system, material pouch/category and stack sizes above vanilla 64 where appropriate;
 - hybrid random-affix + named/signature equipment; about five non-cliché grades later;
@@ -766,6 +896,13 @@ Major locked decisions as of 2026-09-14:
 - merchants use mostly randomized stock while potions/essentials/designated items remain reliably available;
 - quick-build material-cost camps;
 - permanent houses are purchased separately in settlements and provide rest/storage/decor/trophy functions;
+- first-home purchase permission exists from the beginning; price rather than story/boss permission is the early gate;
+- starting settlement begins with a short approach/reveal, then immediate shrine/inn/basic merchant/bank/guild/basic-smith access;
+- starting settlement uses a visually taught gate → square/inn → guild → smith → board/exits flow rather than mandatory NPC errand chains;
+- forge/alchemy deeper functionality is introduced through early gathering so exploration → gathering → return → production forms an immediate loop;
+- starting quest density is intentionally low: about 1 main objective plus 2–3 regional contracts before discoveries add more;
+- the stable is visible immediately but the first ground mount arrives through early first-region progression;
+- starting settlement should expose multiple routes including an intentionally dangerous higher-Lv direction when geography supports it;
 - selected faction/reputation systems only where meaningful;
 - moderate day/night/weather gameplay effects;
 - starting settlement and all important buildings use coherent external architecture/designs;
@@ -773,21 +910,20 @@ Major locked decisions as of 2026-09-14:
 
 ---
 
-# 27. Next design queue for the next chat
+# 27. Next design queue
 
 Do not re-decide the locked systems above. Continue from here.
 
 Recommended next batch:
 
-1. **Starting settlement gameplay design** — which services exist immediately, what unlocks later, first NPC/service flow, house purchase timing.
-2. **Five root-class advancement trees** — actual first major branch for 전사 / 사냥꾼 / 성직자 / 마도사 / 수호자, then deeper advancement direction without using `final` terminology.
-3. **External open-world map selection** — shortlist actual usable/downloadable RPG maps/terrain and choose the map before naming all 12 regions.
-4. **First-region content package** — once the map is chosen: Lv band, common mobs, elite, field boss, dungeon, resources, quests, shrine/camp and signature rewards.
-5. **External UI selection** — inventory/equipment, skill HUD, forge, alchemy, cooking, class/advancement and death/respawn screens; choose proven final designs before implementation.
-6. **Economy balance** — currency sources/sinks, class-switch cost curve, death penalty %, house prices, shop refresh cadence.
-7. **Inventory numbers** — starting slot count, expansion steps, material-pouch behavior and practical stack caps above 64.
-8. **Loot economy** — affix count/ranges, grade probabilities, boss-drop rates, bad-luck protection only where needed.
-9. **Mount progression** — first ground mount, speed classes, combat mounts, later high-speed/flying unlock conditions.
-10. **Final keybind audit** only after the complete frequent-action list is known; important Minecraft/Essential keys must not conflict.
+1. **External open-world map selection** — shortlist actual usable/downloadable RPG maps/terrain and choose the map before naming all 12 regions.
+2. **First-region content package** — once the map is chosen: Lv band, common mobs, elite, field boss, dungeon, resources, quests, shrine/camp and signature rewards.
+3. **External UI selection** — inventory/equipment, skill HUD, forge, alchemy, cooking, class/advancement and death/respawn screens; choose proven final designs before implementation.
+4. **Economy balance** — currency sources/sinks, class-switch cost curve, death penalty %, house prices, shop refresh cadence.
+5. **Inventory numbers** — starting slot count, expansion steps, material-pouch behavior and practical stack caps above 64.
+6. **Loot economy** — affix count/ranges, grade probabilities, boss-drop rates, bad-luck protection only where needed.
+7. **Mount progression** — first ground mount, speed classes, combat mounts, later high-speed/flying unlock conditions.
+8. **M0 class/skill dependency audit** — verify current 26.2 loader compatibility and exact integration boundaries for Spell Engine, selected RPG Series modules, RPG Class Selection/Archetypes code candidates and ranged/combat libraries before source bootstrap.
+9. **Final keybind audit** only after the complete frequent-action list is known; important Minecraft/Essential keys must not conflict.
 
 When design direction becomes unclear, research real open-world RPGs, open-source RPGs and large Minecraft RPG mods before inventing filler systems.
