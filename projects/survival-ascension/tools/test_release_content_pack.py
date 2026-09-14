@@ -9,7 +9,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 errors: list[str] = []
 CURRENT_LOCK_VERSION = "0.61.21-alpha.1-content-preview.1"
-PREVIOUS_DOC_VERSION = "0.61.21-alpha.1"
+PREVIOUS_DOC_VERSION = "0.61.25-alpha.1"
 
 
 def read(rel: str) -> str:
@@ -130,7 +130,7 @@ for _old, _new in [
     ('화물 → 전초 현지재고 → 방어/원정', '등록 물류 통은 같은 차원 로딩 중이면 원격 사용'),
     ('new Requirement(Items.STONE_BRICKS, "석재 벽돌", 2048)', 'new Requirement(Items.STONE_BRICKS, "석재 벽돌", 384)'),
     ('new Requirement(Items.COBBLESTONE, "조약돌", 1536)', 'new Requirement(Items.COBBLESTONE, "조약돌", 256)'),
-    ('new Requirement(Items.GRAVEL, "자갈", 1536)', 'new Requirement(Items.GRAVEL, "자갈", 256)'),
+    ('new Requirement(Items.GRAVEL, "자갈", 1536)', 'new Requirement(Items.GRAVEL, "자갈", 256'),
     ('한도3→토목6→중추9', '산업 가공소 완공 → 통/공용 보급고 4블록 이내'),
     ('FRONTLINE_FOOD = 176', 'FRONTLINE_FOOD = 60'),
     ('FRONTLINE_IRON = 56', 'FRONTLINE_IRON = 16'),
