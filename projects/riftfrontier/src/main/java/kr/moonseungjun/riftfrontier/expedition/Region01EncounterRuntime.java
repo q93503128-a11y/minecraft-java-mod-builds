@@ -1,9 +1,12 @@
 package kr.moonseungjun.riftfrontier.expedition;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -42,6 +45,7 @@ public final class Region01EncounterRuntime {
     private static final String ROLE_HUNTER_NAME = "riftfrontier.expedition.region_01.role.hunter";
     private static final String ROLE_SCOUT_NAME = "riftfrontier.expedition.region_01.role.scout";
     private static final String ROLE_ELITE_NAME = "riftfrontier.expedition.region_01.role.elite_anchor";
+    private static final String SALVAGE_HAZARD_FEEDBACK = "riftfrontier.expedition.feedback.rift_drag";
 
     /**
      * M2 has exactly one authoritative non-terminal expedition. Direct handles make same-process
@@ -90,11 +94,39 @@ public final class Region01EncounterRuntime {
     public static void applySalvageHazard(ServerPlayer player, int pressure) {
         EncounterPlan plan = planForPressure(pressure);
         player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, plan.hazardTicks(), plan.hazardAmplifier()));
-        player.sendSystemMessage(Component.literal(
-            "[Riftfrontier] Rift drag pulse: movement impaired for " + plan.hazardTicks() + " ticks"
-                + (plan.hazardAmplifier() > 0 ? " (intensity " + (plan.hazardAmplifier() + 1) + ")" : "")
-                + ". Recovering salvage while patrols remain active is deliberately riskier."
-        ));
+
+        ServerLevel level = serverLevel(player);
+        // Field-review presentation only: borrow Minecraft's established sculk warning language so the
+        // already-authoritative salvage penalty is readable at the exact moment it is applied. These
+        // cues do not own timing, damage, movement or extraction state and are not final Riftfrontier VFX/audio.
+        level.sendParticles(
+            ParticleTypes.SCULK_SOUL,
+            player.getX(),
+            player.getY(0.55D),
+            player.getZ(),
+            10,
+            0.45D,
+            0.35D,
+            0.45D,
+            0.02D
+        );
+        level.playSound(
+            null,
+            player.getX(),
+            player.getY(),
+            player.getZ(),
+            SoundEvents.SCULK_SHRIEKER_SHRIEK,
+            SoundSource.PLAYERS,
+            0.35F,
+            1.2F
+        );
+        player.sendSystemMessage(salvageHazardFeedback(pressure));
+    }
+
+    /** Presentation-only localized description of the already-authoritative salvage hazard. */
+    public static Component salvageHazardFeedback(int pressure) {
+        EncounterPlan plan = planForPressure(pressure);
+        return Component.translatable(SALVAGE_HAZARD_FEEDBACK, plan.hazardTicks(), plan.hazardAmplifier() + 1);
     }
 
     public static int liveThreatCount(ServerLevel level, BlockPos center, long runSequence) {
@@ -179,5 +211,12 @@ public final class Region01EncounterRuntime {
 
     private static String runTag(long runSequence) {
         return RUN_TAG_PREFIX + runSequence;
+    }
+
+    private static ServerLevel serverLevel(ServerPlayer player) {
+        if (!(player.level() instanceof ServerLevel level)) {
+            throw new IllegalStateException("Region 01 salvage hazard requires a server-side player");
+        }
+        return level;
     }
 }
