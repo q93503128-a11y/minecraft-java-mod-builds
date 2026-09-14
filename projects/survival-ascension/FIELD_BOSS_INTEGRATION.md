@@ -57,6 +57,23 @@ Existing field-boss hooks currently include:
 
 Before final playtest, audit legacy raw diamond/emerald/XP rewards together with native boss loot so the encounter does not become a loot printer. Premium progression must remain per-qualified-player to reduce loot-stealing problems.
 
+## Endgame enchantment-completion role
+
+Field bosses and the Fractured Archive deliberately do not collapse into the same reward table.
+
+- Field bosses remain the main repeatable source of weighted Mythic hunt progress, Netherite Scrap progress and Tempering Seal progress.
+- Late Fractured Archive major targets supply the physical `Enchantment Stone` completion resource. The Survival layer does not rewrite TBOS chests or remove native dungeon loot.
+- A qualifying Archive major-target clear grants one Enchantment Stone and has a 35% chance for one Netherite Scrap.
+- The tagged final Archive target (`tbos:phoenix_guardian`) grants two Enchantment Stones, one guaranteed Netherite Scrap and a 25% chance for a second scrap.
+- Rewards use actual damage contribution with the killer included; already-earned rewards are persisted if a qualified contributor disconnects before payout.
+- Enchantment Stones act directly on equipment held in the opposite hand. General Protection replaces Fire/Blast/Projectile Protection, and Sharpness replaces Smite/Bane of Arthropods when that item supports the canonical enchantment.
+- After canonicalization, the stone adds one missing compatible curated enchantment at a useful mid level. Once no compatible curated enchantment is missing, it upgrades one existing curated enchantment by one level.
+- Vanilla maximum levels and compatibility remain authoritative. The stone does not create over-level enchantments, curses or illegal incompatible combinations.
+- The completion pool covers armor, melee/ranged weapons, mace/trident/spear-specific progression, tools and fishing rods so the system does not solve only one equipment family.
+- If no legal improvement exists, the stone is not consumed.
+
+Design intent: late progression should reduce enchanting-table/anvil lottery friction and make a true finished set realistically attainable, while still requiring repeated high-end content rather than granting a complete loadout in one reward.
+
 ## Candidate expansion
 
 ### World Bosses — first candidate
