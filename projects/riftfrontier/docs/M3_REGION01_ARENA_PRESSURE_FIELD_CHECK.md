@@ -6,7 +6,7 @@ This focused check extends `M3_REGION01_BOSS_FIELD_PLAY.md` for the development-
 
 ## What changed
 
-`region_01_arena_pressure` keeps the existing server-authoritative local-area damage shape and authoritative attack timeline. The field harness now adds one provisional horizontal radial displacement when that attack first enters ACTIVE.
+`region_01_arena_pressure` keeps the existing server-authoritative local-area damage shape and authoritative attack timeline. The field harness adds one provisional horizontal radial displacement when that attack first enters ACTIVE, and now punctuates that same authoritative transition with a Minecraft-native explosion sound/particle cue so a human tester can judge timing without inventing Riftfrontier's final audiovisual language.
 
 - provisional horizontal impulse strength: `0.85`
 - vertical impulse: `0.0`
@@ -15,12 +15,13 @@ This focused check extends `M3_REGION01_BOSS_FIELD_PLAY.md` for the development-
 - spatial admission: the same provisional `LOCAL_AREA` profile used by the field hit resolver
 - facing: irrelevant; displacement points away from the boss center
 - exact-center case: no arbitrary direction is invented, so an exactly coincident target receives no displacement from this calibration layer
+- field readability cue: one vanilla `GENERIC_EXPLODE` hostile sound plus one `EXPLOSION` particle at boss center on authoritative ACTIVE entry
 
-`0.85` is a field-play calibration value, not final boss knockback balance.
+`0.85` is a field-play calibration value, not final boss knockback balance. The vanilla sound and particle are also calibration/readability scaffolding, not approved final Riftfrontier VFX or sound design.
 
 ## Setup
 
-1. Use a JAR built from the checkpoint containing `Region01BossFieldImpulsePolicy` and `Region01BossFieldImpulseResolver`.
+1. Use a JAR built from the checkpoint containing `Region01BossFieldImpulsePolicy`, `Region01BossFieldImpulseResolver` and the ACTIVE-entry readability burst.
 2. Enter a disposable flat test world in Survival or Adventure mode.
 3. Spawn the development actor:
 
@@ -36,7 +37,7 @@ This focused check extends `M3_REGION01_BOSS_FIELD_PLAY.md` for the development-
 
 5. Stay inside the provisional 24-block acquisition radius and wait for `region_01_arena_pressure`.
 
-The existing diagnostic particle ring is still instrumentation only. Server hit/displacement results are authoritative if visuals disagree.
+The existing diagnostic particle ring and the new explosion burst are instrumentation/readability aids only. Server hit/displacement results are authoritative if visuals disagree.
 
 ## Check A — one outward displacement at ACTIVE entry
 
@@ -46,14 +47,15 @@ The existing diagnostic particle ring is still instrumentation only. Server hit/
 
 Expected:
 
-- TELEGRAPH causes no arena-pressure push;
+- TELEGRAPH causes no arena-pressure push and no explosion burst;
 - entering ACTIVE causes one horizontal movement away from the boss center;
+- the vanilla explosion sound and one explosion particle occur with that same ACTIVE-entry moment;
 - displacement is radial and does not depend on boss facing;
-- later ACTIVE ticks do not repeatedly accelerate the same target from this field calibration;
-- recovery causes no additional arena-pressure push;
+- later ACTIVE ticks do not repeatedly accelerate the same target or replay the ACTIVE-entry burst;
+- recovery causes no additional arena-pressure push or burst;
 - existing damage remains governed by the authoritative ACTIVE window and once-per-execution damage dedupe.
 
-A repeated shove every ACTIVE tick is a regression, not a request to lower the strength.
+A repeated shove or repeated explosion burst every ACTIVE tick is a regression, not a request to lower the strength or volume.
 
 ## Check B — spatial agreement with the existing local-area threat
 
@@ -65,8 +67,9 @@ Expected:
 
 - an eligible target inside the local-area profile may receive the one ACTIVE-entry displacement regardless of facing;
 - a target clearly outside the profile receives no field impulse;
+- the ACTIVE-entry explosion cue still marks the boss attack timing rather than target eligibility, so hearing/seeing it outside the hit area is not evidence of a hit;
 - changing angle around the boss changes push direction outward but not eligibility radius;
-- committed strike and line displacement never inherit this radial impulse.
+- committed strike and line displacement never inherit this radial impulse or arena-pressure explosion cue.
 
 If hit eligibility and displacement eligibility disagree, record exact positions/video before changing geometry.
 
@@ -79,7 +82,7 @@ Expected:
 
 - line displacement moves the boss forward only during ACTIVE along its committed lane and does not radially shove targets through the arena-pressure calibration;
 - arena pressure does not move the boss forward through the line-charge calibration;
-- arena pressure instead creates a one-time outward target displacement at ACTIVE entry;
+- arena pressure instead creates a one-time outward target displacement and platform-native audiovisual punctuation at ACTIVE entry;
 - both still use the same server-owned attack clock and existing damage authority.
 
 The purpose is role readability, not numerical tuning. Record whether the difference is immediately understandable before proposing final values.
@@ -95,6 +98,7 @@ Expected:
 
 - each eligible target is displaced away from the same boss origin;
 - targets are not forced into one shared facing direction;
+- one shared ACTIVE-entry audiovisual burst marks the attack rather than one burst per target;
 - this observation counts as `MULTIPLAYER TESTED` only if a real multiplayer session was actually used.
 
 ## Evidence to record
@@ -105,7 +109,8 @@ Record:
 - integrated server or real multiplayer topology;
 - Minecraft/NeoForge versions;
 - whether Checks A-D were attempted;
-- PASS/FAIL for one-shot cadence, direction, range agreement and role separation;
-- video or before/after positions for repeated push, inward/wrong-angle push, outside-radius push, missing push, damage/impulse disagreement, crash or desync.
+- PASS/FAIL for one-shot cadence, direction, range agreement, audiovisual timing and role separation;
+- whether the vanilla burst is clear enough as a temporary field cue without being mistaken for final art;
+- video or before/after positions for repeated push/burst, inward/wrong-angle push, outside-radius push, missing push, damage/impulse disagreement, crash or desync.
 
 Do not mark the checkpoint `PLAYTESTED` until a human performs it in Minecraft. CI, unit tests, GameTest, dedicated-server smoke and Xvfb client smoke are not human field play.
