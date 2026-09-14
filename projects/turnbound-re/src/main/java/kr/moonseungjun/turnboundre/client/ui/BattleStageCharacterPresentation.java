@@ -10,6 +10,7 @@ public final class BattleStageCharacterPresentation {
     static final String ZOMBIE = "turnbound_re:zombie";
     static final String SKELETON = "turnbound_re:skeleton";
     static final String BLAZE = "turnbound_re:blaze";
+    static final String WITCH = "turnbound_re:witch";
     static final String ENDERMAN = "turnbound_re:enderman";
     static final float DEFAULT_X_ANGLE = 0.0F;
     static final float DEFAULT_Y_ANGLE = 0.35F;
@@ -18,6 +19,11 @@ public final class BattleStageCharacterPresentation {
     private static final String BLAZE_SEARING_VOLLEY = "turnbound_re:blaze_searing_volley";
     private static final String BLAZE_HEAT_UP = "turnbound_re:blaze_heat_up";
     private static final String BLAZE_INFERNO_BURST = "turnbound_re:blaze_inferno_burst";
+
+    static final String WITCH_SPLASH_HEX = "turnbound_re:witch_splash_hex";
+    static final String WITCH_WEAKENING_BREW = "turnbound_re:witch_weakening_brew";
+    static final String WITCH_RESTORATIVE_DRAUGHT = "turnbound_re:witch_restorative_draught";
+    static final String WITCH_CAULDRON_OVERFLOW = "turnbound_re:witch_cauldron_overflow";
 
     public record Pose(
             int offsetX,
@@ -75,6 +81,10 @@ public final class BattleStageCharacterPresentation {
             return blazePose(participantId, cue);
         }
 
+        if (WITCH.equals(characterId)) {
+            return witchPose(participantId, cue);
+        }
+
         if (ENDERMAN.equals(characterId)
                 && isActor(participantId, cue)
                 && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.VOID) {
@@ -83,11 +93,20 @@ public final class BattleStageCharacterPresentation {
         return Pose.DEFAULT;
     }
 
+    static boolean isWitchSupportAction(String actionId) {
+        return WITCH_RESTORATIVE_DRAUGHT.equals(actionId)
+                || WITCH_CAULDRON_OVERFLOW.equals(actionId);
+    }
+
+    static boolean isWitchOffensiveAction(String actionId) {
+        return WITCH_SPLASH_HEX.equals(actionId)
+                || WITCH_WEAKENING_BREW.equals(actionId);
+    }
+
     private static Pose blazePose(String participantId, BattleActionTimelineState.Cue cue) {
         if (!isActor(participantId, cue)) return neutralControlledPose();
 
-        boolean activeBeat = cue.phase() == BattleActionTimelineState.Phase.WINDUP
-                || cue.phase() == BattleActionTimelineState.Phase.IMPACT;
+        boolean activeBeat = isActiveBeat(cue);
         boolean offensiveFire = activeBeat
                 && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.FIRE
                 && isBlazeOffensiveAction(cue.actionId())
@@ -107,6 +126,30 @@ public final class BattleStageCharacterPresentation {
         return neutralControlledPose();
     }
 
+    private static Pose witchPose(String participantId, BattleActionTimelineState.Cue cue) {
+        if (!isActor(participantId, cue)) return neutralControlledPose();
+        boolean activeBeat = isActiveBeat(cue);
+
+        boolean offensive = activeBeat
+                && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.ARCANE
+                && isWitchOffensiveAction(cue.actionId())
+                && targetsOtherParticipant(cue);
+        if (offensive) {
+            // Forward lean supports the model's compact potion-throw silhouette.
+            return new Pose(0, -1, -0.055F, 0.49F, true, true);
+        }
+
+        boolean support = activeBeat
+                && cue.impactStyle() == BattleActionTimelineState.ImpactStyle.ARCANE
+                && isWitchSupportAction(cue.actionId())
+                && targetsOtherParticipant(cue);
+        if (support) {
+            // Support deliberately remains non-aggressive: a slight lift/open camera angle pairs with the ally-link FX.
+            return new Pose(0, -2, -0.075F, 0.29F, true, false);
+        }
+        return neutralControlledPose();
+    }
+
     private static Pose neutralControlledPose() {
         return new Pose(0, 0, DEFAULT_X_ANGLE, DEFAULT_Y_ANGLE, true, false);
     }
@@ -115,6 +158,12 @@ public final class BattleStageCharacterPresentation {
         return BLAZE_EMBER_BOLT.equals(actionId)
                 || BLAZE_SEARING_VOLLEY.equals(actionId)
                 || BLAZE_INFERNO_BURST.equals(actionId);
+    }
+
+    private static boolean isActiveBeat(BattleActionTimelineState.Cue cue) {
+        return cue != null
+                && (cue.phase() == BattleActionTimelineState.Phase.WINDUP
+                || cue.phase() == BattleActionTimelineState.Phase.IMPACT);
     }
 
     private static Pose enderPose(BattleActionTimelineState.Cue cue) {

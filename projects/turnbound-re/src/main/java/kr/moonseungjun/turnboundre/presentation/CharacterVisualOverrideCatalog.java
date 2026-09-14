@@ -14,6 +14,9 @@ public final class CharacterVisualOverrideCatalog {
     public static final String BLAZE_CHARACTER_ID = "turnbound_re:blaze";
     public static final String BLAZE_SOURCE_ENTITY = "minecraft:blaze";
     public static final String BLAZE_VISUAL_ENTITY = "turnbound_re:blaze_visual";
+    public static final String WITCH_CHARACTER_ID = "turnbound_re:witch";
+    public static final String WITCH_SOURCE_ENTITY = "minecraft:witch";
+    public static final String WITCH_VISUAL_ENTITY = "turnbound_re:witch_visual";
 
     private CharacterVisualOverrideCatalog() {}
 
@@ -25,6 +28,10 @@ public final class CharacterVisualOverrideCatalog {
         if (BLAZE_CHARACTER_ID.equals(characterId)
                 && BLAZE_SOURCE_ENTITY.equals(sourceEntityId)) {
             return BLAZE_VISUAL_ENTITY;
+        }
+        if (WITCH_CHARACTER_ID.equals(characterId)
+                && WITCH_SOURCE_ENTITY.equals(sourceEntityId)) {
+            return WITCH_VISUAL_ENTITY;
         }
         return sourceEntityId == null ? "" : sourceEntityId;
     }

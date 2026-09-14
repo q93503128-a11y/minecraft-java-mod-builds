@@ -39,7 +39,9 @@ public final class BattleStageSignatureFx {
         BattlePresentationModel model = BattleClientState.presentation().orElse(null);
         if (model == null || !UiLayoutMetrics.supportsBattleHud(graphics.guiWidth(), graphics.guiHeight())) return;
         BattleActionTimelineState.Cue cue = BattleActionTimelineState.cue(model.battleId()).orElse(null);
-        if (cue == null || cue.presentationStyle() == BattleActionTimelineState.PresentationStyle.STANDARD) return;
+        if (cue == null) return;
+        boolean witchSupport = isWitchSupportCue(cue);
+        if (cue.presentationStyle() == BattleActionTimelineState.PresentationStyle.STANDARD && !witchSupport) return;
 
         UiLayoutMetrics.Rect viewport = UiLayoutMetrics
                 .battleHud(graphics.guiWidth(), graphics.guiHeight())
@@ -56,7 +58,9 @@ public final class BattleStageSignatureFx {
         if (actorModel == null) return;
 
         graphics.enableScissor(viewport.x(), viewport.y(), viewport.right(), viewport.bottom());
-        if (cue.presentationStyle() == BattleActionTimelineState.PresentationStyle.VOLLEY
+        if (witchSupport && cue.phase() == BattleActionTimelineState.Phase.WINDUP) {
+            renderWitchSupportTransfer(graphics, model, layout, actorModel, cue, lineHeight);
+        } else if (cue.presentationStyle() == BattleActionTimelineState.PresentationStyle.VOLLEY
                 && cue.phase() == BattleActionTimelineState.Phase.WINDUP) {
             renderVolley(graphics, model, layout, actorModel, cue, lineHeight);
         } else if (cue.presentationStyle() == BattleActionTimelineState.PresentationStyle.RIFT
@@ -64,8 +68,11 @@ public final class BattleStageSignatureFx {
             renderRiftTravel(graphics, model, layout, actorModel, cue, lineHeight);
         }
 
-        if (accentVisible(cue)) {
-            UiVisualLanguage.FrameState frameState = accentState(cue.presentationStyle());
+        boolean witchSupportImpact = witchSupportAccentVisible(cue);
+        if (accentVisible(cue) || witchSupportImpact) {
+            UiVisualLanguage.FrameState frameState = witchSupportImpact
+                    ? UiVisualLanguage.FrameState.SUCCESS
+                    : accentState(cue.presentationStyle());
             for (String targetId : cue.targetIds()) {
                 StageParticipant target = participant(layout, model, targetId);
                 if (target == null || target.participant().entityId() != null) continue;
@@ -107,6 +114,35 @@ public final class BattleStageSignatureFx {
                 int side = ordinal == 1 ? -5 : 5;
                 graphics.item(projectile, point.x() - 8 + side, point.y() - 8);
             }
+        }
+    }
+
+    private static void renderWitchSupportTransfer(
+            GuiGraphicsExtractor graphics,
+            BattlePresentationModel model,
+            BattleStageLayout.Layout layout,
+            UiLayoutMetrics.Rect actorModel,
+            BattleActionTimelineState.Cue cue,
+            int lineHeight
+    ) {
+        ItemStack draught = new ItemStack(Items.POTION);
+        BattleStageActionFx.Point from = BattleStageActionFx.center(actorModel);
+        int ordinal = 0;
+        for (String targetId : cue.targetIds()) {
+            StageParticipant target = participant(layout, model, targetId);
+            if (target == null || target.participant().entityId() != null) continue;
+            UiLayoutMetrics.Rect targetModel = BattleStageActionFx
+                    .modelBounds(target.slot().bounds(), target.enemy(), lineHeight)
+                    .orElse(null);
+            if (targetModel == null) continue;
+
+            double progress = supportTransferProgress(cue.phaseProgress(), ordinal++);
+            if (progress <= 0.0D) continue;
+            BattleStageActionFx.Point to = BattleStageActionFx.center(targetModel);
+            BattleStageActionFx.Point point = BattleStageActionFx.travel(from, to, progress);
+            graphics.item(draught,
+                    point.x() - 8,
+                    point.y() - 8 - supportArcLift(progress));
         }
     }
 
@@ -156,6 +192,38 @@ public final class BattleStageSignatureFx {
                     bounds.width() - 6, bounds.height() - 6,
                     UiVisualLanguage.FrameState.FOCUS);
         }
+    }
+
+    static boolean isWitchSupportCue(BattleActionTimelineState.Cue cue) {
+        if (cue == null
+                || cue.impactStyle() != BattleActionTimelineState.ImpactStyle.ARCANE
+                || !BattleStageCharacterPresentation.isWitchSupportAction(cue.actionId())
+                || cue.targetIds().isEmpty()) {
+            return false;
+        }
+        for (String targetId : cue.targetIds()) {
+            if (targetId != null && !targetId.isBlank() && !targetId.equals(cue.actorId())) return true;
+        }
+        return false;
+    }
+
+    static double supportTransferProgress(double baseProgress, int ordinal) {
+        if (!Double.isFinite(baseProgress) || ordinal < 0) return 0.0D;
+        double p = Math.max(0.0D, Math.min(1.0D, baseProgress));
+        double delay = Math.min(0.24D, ordinal * 0.08D);
+        if (p <= delay) return 0.0D;
+        return Math.max(0.0D, Math.min(1.0D, (p - delay) / (1.0D - delay)));
+    }
+
+    static int supportArcLift(double progress) {
+        double p = Double.isFinite(progress) ? Math.max(0.0D, Math.min(1.0D, progress)) : 0.0D;
+        return (int) Math.round(Math.sin(p * Math.PI) * 8.0D);
+    }
+
+    static boolean witchSupportAccentVisible(BattleActionTimelineState.Cue cue) {
+        return isWitchSupportCue(cue)
+                && cue.phase() == BattleActionTimelineState.Phase.IMPACT
+                && cue.phaseProgress() < 0.68D;
     }
 
     static double extraProjectileProgress(double baseProgress, int ordinal) {
