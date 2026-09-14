@@ -16,20 +16,22 @@ When this file or the design canon conflicts with older chat history, current `m
 - Namespace: TBD before source bootstrap
 - Mod version: not started
 - Minecraft: target 26.2 unless design/dependency audit requires a change
-- Java: TBD from the selected loader/toolchain
-- Loader: **Fabric is the current preferred candidate; final choice is locked only after the M0 dependency/Essential audit**
+- Java: TBD from the selected Fabric toolchain
+- Loader: **Fabric — locked for this project**
 - Loader version: TBD at M0
 - Gradle: TBD at M0
-- Build plugin: TBD at M0
+- Build plugin: Fabric Loom / exact version TBD at M0
 - Final JAR: TBD
 - Existing-world compatibility: no implementation exists yet
-- Required dependencies: TBD; likely animation/UI/combat support only when they materially improve quality
+- Required dependencies: TBD; prioritize current Fabric 26.2 dependencies that materially improve quality
 - Optional external mods: Essential compatibility is a major goal
 - Forbidden bundled dependencies: anything whose license/terms do not permit repository redistribution
 - Datagen task: TBD
 - GameTest task: TBD
 - Server smoke-test task: TBD
 - Client smoke-test task: TBD
+
+Fabric is no longer a provisional loader candidate. Do not reopen the loader choice during ordinary planning. Re-evaluate only if a hard technical blocker appears that prevents a required canonical feature from being delivered on Fabric 26.2.
 
 ## Product identity
 
