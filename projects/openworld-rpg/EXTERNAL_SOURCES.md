@@ -60,7 +60,8 @@ Do not infer permission from "downloadable" or "open source" alone.
 | Quaternius Medieval Village Pack / MegaKit | buildings / settlement | CC0 / strong direct-use-editable candidate | coherent visual base for service buildings and settlements |
 | Kenney Fantasy Town Kit | town/building family | CC0 candidate | alternate coherent town/building visual family |
 | Planet Minecraft schematics | inns / blacksmiths / villages / shrines / castles / dungeons | VERIFY; creator terms vary | primary pool for private/local structure use |
-| external open-world RPG maps | terrain/region skeleton | VERIFY / REFERENCE or LOCAL_ONLY | select terrain first, then derive about 12 regions |
+| Azari 30k x 30k | primary open-world terrain | free download; usage/redistribution terms not explicit; map uses some third-party assets | `VERIFY / LOCAL_ONLY` primary map candidate; use local world bytes only, derive 10–14 regions from its terrain, do not commit map bytes until permission is explicit |
+| external open-world RPG maps | terrain/region skeleton | VERIFY / REFERENCE or LOCAL_ONLY | Azari is current first choice; keep Theia/other free maps only as fallback if Azari import/terms fail |
 | external dungeon/structure packs | dungeons / ruins / shrines / towns | VERIFY | retain strong architecture, replace encounters/rewards |
 | external RPG UI designs/assets | inventory / skill HUD / forge / alchemy / cooking / stats / class | VERIFY | select proven final designs and minimize redesign |
 | Icy's Better Horses | mount progression/travel/UI/code precedent | MIT; current 26.2 Fabric release observed | strong code/reference candidate for meaningful mount progression and riding UX |
@@ -78,6 +79,85 @@ Do not infer permission from "downloadable" or "open source" alone.
 | Archetypes | server-authoritative active/passive class skill implementation | MIT; current 26.2 Fabric/Forge/NeoForge listing observed | strong `CODE_CANDIDATE`; selectively reuse/port skill, targeting, networking and server-authority patterns while rejecting its vanilla-XP progression rules |
 | Pufferfish's Skills | configurable skill-tree framework | custom license; current 26.2 Fabric + NeoForge releases observed | `VERIFY / DEPENDENCY`; evaluate terms and UX before adoption, especially if RPG Series Skill Tree becomes useful |
 | Ranged Weapon API | bow/crossbow construction and ranged weapon behavior | MIT; current 26.2 Fabric + NeoForge listing observed | strong dependency/code candidate for Hunter ranged families instead of rebuilding bow/crossbow fundamentals |
+| Alex's Mobs Continued | broad wildlife + creature roster | GPL-3.0-only; current Fabric 26.2 release observed; full ~116-mob roster | strong `DEPENDENCY / REFERENCE`; use selected biome-appropriate creatures/wildlife in local playable build and configure/suppress spawns that weaken project identity; do not copy GPL code into project by default |
+| Nemo's Creatures | biome-specific hostile variants/creatures | MIT; current Fabric 26.2 release observed | strong `DEPENDENCY / CODE_CANDIDATE`; useful especially for desert/frozen/scorched regional monster families |
+| Threateningly Mobs Continued | fantasy monsters, heavy creatures, bosses | MIT; current Fabric 26.2 listing observed | strong `DEPENDENCY / CODE_CANDIDATE`; selectively use/re-map creatures such as Nature Spirit, Desert Beetle, Hydra, Steelboar, Flamehorn and large bosses; do not inherit its dimension/progression wholesale |
+| Mob Champions | elite modifier/champion behavior | MIT; current Fabric 26.2 release observed | `REFERENCE / CODE_CANDIDATE`; study elite spawning/modifier/readability logic, but project owns elite reward tables and regional identities |
+| Mutant Monsters | large mutant miniboss creatures | AGPL-3.0-only; current Fabric 26.2 release observed | secondary `DEPENDENCY / REFERENCE`; possible special-event/miniboss pool, not a base ecology because vanilla-mutant identity is too strong |
+| Ambient Creatures | passive ambient wildlife | MIT; current Fabric 26.2 release observed | optional `DEPENDENCY / CODE_CANDIDATE` for world life where it does not dilute stronger regional ecology |
+
+---
+
+# Primary world candidate
+
+## Azari — 30k x 30k
+
+- Source: https://www.planetminecraft.com/project/azari-30k-x-30k-world-painter-map/
+- Author: itzvmbie / vmbie.
+- Published map size: 30,000 x 30,000 blocks.
+- Current page: free download by entering `$0`; creator profile states world downloads are intended to remain free.
+- Current compatibility note: 1.21+ world; later 2026 update added underground and above-ground structures.
+- Published terrain includes 30+ custom biomes and 15+ cave variants.
+- Published biome/terrain examples include plains, meadows, badlands, desert, oasis, jungle, bamboo forest, barrier reef, multiple ocean types, fairy/whimsical forests, pirate cove, great mountains, ice spikes/ocean/abyss, freezing taiga, windswept hills, multiple shore types, rich forest, eroding waterfall, overgrown caves, obsidian spikes, volcanic ash island, pollinating cliffs and flower forest.
+- Vanilla structures are not expected inside the authored 30k area; this is useful for the project because settlements/dungeons can be deliberately authored instead of inheriting random vanilla villages.
+- The page states some terrain assets come from other creators. Therefore free download does **not** establish redistribution permission for the complete world.
+- Project status: **primary `VERIFY / LOCAL_ONLY` world candidate**. Use the downloaded world only in the private playable instance until modification/redistribution terms are explicit. GitHub stores provenance and integration notes, not world bytes.
+- Design intent: derive roughly 12 major RPG regions from the visible terrain instead of inventing an unrelated continent layout.
+- Exact borders remain provisional until the world is imported and inspected in-game; biome-based boundaries should follow actual rivers, mountain chains, coastlines and terrain transitions.
+
+---
+
+# Creature / monster reuse strategy
+
+The world ecology is external-first, but external mobs are not dumped into the map indiscriminately.
+
+Rules:
+
+- Region identity owns spawning. A dependency creature is enabled only where it strengthens that region's ecology, difficulty profile or encounter role.
+- Normal wildlife, normal hostile enemies, elites, minibosses, field bosses and dungeon bosses are separate content tiers.
+- Early-region normal enemies should be readable and fair; the sharp difficulty spikes belong mainly to elites and bosses.
+- Ordinary enemies do not become the main equipment-drop source. Their rewards focus on EXP, currency, materials and selected consumables; equipment farming is concentrated in elites/bosses/dungeons/quests/chests/merchants/crafting.
+- External mods' default spawn tables, item progression, dimensions, crafting recipes and loot are not canonical. Disable, override or ignore conflicting parts where technically possible.
+- Prefer direct dependency use for large polished rosters. Prefer MIT source adaptation only when a narrow project-owned behavior is needed.
+- Important bosses still need project-level telegraph, hitbox, reward, phase and region-fit review even when their model/animation comes from a dependency.
+- Do not use large numbers of simple vanilla reskins as the primary ecology merely because they are easy to source.
+
+## Alex's Mobs Continued
+
+- Source: https://modrinth.com/mod/alexs-mobs-continued
+- Current listing observed 2026-09-14: Fabric 26.2, client+server, GPL-3.0-only, Fabric API + CodxLib.
+- Carries the full Alex's Mobs roster with original models/textures/animations/behaviors.
+- Strong biome-specific pool includes examples such as grizzly bear, gazelle, crocodile, orca, gorilla, rattlesnake, hammerhead shark, komodo dragon, cave centipede, moose, seal, elephant, snow leopard, snapping turtle, catfish, rhinoceros, caiman and numerous fantastical creatures.
+- Project status: strong **dependency** for wildlife/secondary monsters. Do not turn all 116 creatures on by default; curate by region.
+
+## Nemo's Creatures
+
+- Source: https://modrinth.com/mod/nemos-creatures
+- Current listing observed 2026-09-14: Fabric 26.2, client+server, MIT.
+- Gallery exposes region-friendly hostile variants such as Mummy, Sand Spider, Scorched Creeper/Skeleton, Venomous Zombie/Skeleton/Spider/Creeper and Frozen mobs.
+- Project status: strong candidate for low-cost regional normal/enhanced enemy families while custom elites/bosses provide the stronger identity.
+
+## Threateningly Mobs Continued
+
+- Source: https://modrinth.com/mod/threateningly-mobs-continued
+- Current listing observed 2026-09-14: Fabric 26.2, client+server, MIT.
+- Useful published heavy-creature placements include Nature Spirit in forests, Earthloong in forests/jungles, Desert Beetle and Armor of Desert in deserts/badlands, Beast Horseshoe Crab in oceans/beaches, Hydra in oceans/rivers/swamps, Steelboar in savannas/meadows/dark forests/badlands, Regalhart in meadows/taigas/forests, Riptooth in oceans at night and Flamehorn in savannas.
+- Summonable larger bosses include Titan Rabbit, Inferno, Terradragon and Abyss Fang.
+- Project status: strong **dependency/code candidate** for elites, field bosses and selected normal threats. Its palaces/dimension/progression are not automatically imported.
+
+## Mob Champions
+
+- Source: https://modrinth.com/mod/mobchampions
+- Current Fabric 26.2 release observed; MIT.
+- Creates enhanced champion versions of mobs with equipment/stats/effects.
+- Project status: study as an elite-generation/readability implementation reference. The project's own elite taxonomy, visuals and rewards remain authoritative; do not allow random champion spam to erase authored region identity.
+
+## Mutant Monsters
+
+- Source: https://modrinth.com/mod/mutant-monsters
+- Current Fabric 26.2 release observed; AGPL-3.0-only.
+- Provides polished large mutant Zombie/Skeleton/Creeper/Enderman-style encounters.
+- Project status: optional dependency/reference for rare corruption/event minibosses only. Not a preferred everyday roster because the visual identity remains strongly tied to vanilla mobs.
 
 ---
 
