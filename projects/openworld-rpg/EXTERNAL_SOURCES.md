@@ -50,7 +50,11 @@ Do not infer permission from "downloadable" or "open source" alone.
 | RPG Inventory | RPG inventory/equipment slots | VERIFY / code candidate | inspect architecture and interaction model; final visual selected separately |
 | open minimap implementations | minimap rendering/markers | VERIFY / code candidate | adapt proven rendering/marker logic rather than rebuilding a weak minimap |
 | Veloren | open-source voxel RPG precedent | REFERENCE | study open-world traversal, towns, dungeons, combat state machines and progression |
-| Wynncraft | Minecraft MMORPG precedent | REFERENCE | study region density, service buildings, dungeons/raids and class presentation; never copy proprietary assets |
+| Wynncraft | Minecraft MMORPG precedent | REFERENCE | study region density, service buildings, gathering-node gameplay, dungeons/raids and class presentation; never copy proprietary assets |
+| Wynntils | Wynncraft client augmentation | LGPL-3.0-only observed; source linked | reference implementation for highlighting/discovering gathering nodes and map/HUD interaction |
+| JD Resource Nodes | renewable ore-node system | Apache-2.0 observed; NeoForge 1.21.1 | strong code/behavior reference for permanent renewable nodes, depletion states, regeneration and scanner concepts |
+| Deep Drilling | biome-based rare ore nodes | MIT observed; Fabric/Forge 1.20.1 | reference/code candidate for biome-conditioned resource nodes and region-linked extraction concepts |
+| DarkMining | RPG-style probabilistic mining drops | current 26.2 Fabric/Forge/NeoForge listing observed | loot probability reference only; does not replace the project's node-based gathering direction |
 | Quaternius Modular Weapons Pack | weapon models | CC0 / strong direct-use-editable candidate | coherent medieval weapon source family |
 | Quaternius Fantasy Props MegaKit | props / crafting / town dressing | CC0 / strong direct-use-editable candidate | weapons, tools, potions, stalls, chests, furniture and service props |
 | Quaternius Medieval Village Pack / MegaKit | buildings / settlement | CC0 / strong direct-use-editable candidate | coherent visual base for service buildings and settlements |
@@ -64,6 +68,42 @@ Do not infer permission from "downloadable" or "open source" alone.
 | Horse Combat Controls | mounted-combat controls | MIT | code/reference candidate for Mount & Blade-like horse controls; version compatibility must be rechecked |
 | Jasmine Dragons | flying dragon behavior/riding reference | ARR; current 26.2 Fabric release observed | behavior/design reference only unless terms permit dependency use |
 | Musket Mod | flintlock/musket mechanics | public source; license/version must be re-audited | reference/code candidate for non-modern black-powder firearm behavior |
+
+---
+
+# Gathering / resource-node precedents
+
+## JD Resource Nodes
+
+- Source: CurseForge project `resource-nodes`; source link is published on the project page.
+- License shown by the current project page: Apache-2.0.
+- Observed supported game version: Minecraft 1.21.1, NeoForge.
+- Adds permanent renewable vanilla ore nodes.
+- A harvested node enters a depleted/base-block state and regenerates after a configurable delay.
+- Nodes are immovable/indestructible in ordinary survival and are explicitly described as useful for map-oriented play.
+- Includes node purity tiers and an unlockable scanner concept.
+- Project status: strong `CODE_CANDIDATE / REFERENCE` for the project's field-resource-node state machine, regeneration and map-authored placement; not a direct 26.2 Fabric dependency candidate without porting.
+
+## Deep Drilling
+
+- Source: Modrinth project `deepdrilling`; source is linked.
+- License shown: MIT.
+- Observed platform/version: Fabric/Forge 1.20.1.
+- Uses rare ore nodes associated with different biomes.
+- Project status: useful `REFERENCE / CODE_CANDIDATE` for region/biome-linked resource identity; version is old enough that direct dependency is not the current plan.
+
+## Wynncraft / Wynntils gathering precedent
+
+- Wynncraft is reference-only proprietary game content, not an asset source.
+- Its gathering-profession model demonstrates a Minecraft open-world RPG loop where players locate dedicated gathering resources rather than treating arbitrary cave mining as the entire profession system.
+- Wynntils is open source and its current changelog includes gathering-node highlighting functionality.
+- Project status: use Wynncraft for gameplay/UX precedent and Wynntils for inspectable client-side node-discovery/highlight interaction patterns where useful.
+
+## DarkMining
+
+- Current project listing observed for Minecraft 26.2 across Fabric/Forge/NeoForge.
+- Focuses on chance-based extra mining drops rather than persistent world nodes.
+- Project status: secondary probability/loot reference only. It does not match the canonical gathering loop as closely as renewable/placed resource nodes.
 
 ---
 
@@ -94,7 +134,7 @@ Do not infer permission from "downloadable" or "open source" alone.
 
 ## Other inn/tavern pool
 
-Planet Minecraft currently has multiple downloadable 2026 inn/tavern schematics with full interiors or editable interiors. These are useful because the project can choose a final architecture instead of drawing its own temporary building. Every individual creator page still requires terms verification before actual use.
+Planet Minecraft currently has multiple downloadable inn/tavern schematics with full interiors or editable interiors. These are useful because the project can choose a final architecture instead of drawing its own temporary building. Every individual creator page still requires terms verification before actual use.
 
 ---
 
