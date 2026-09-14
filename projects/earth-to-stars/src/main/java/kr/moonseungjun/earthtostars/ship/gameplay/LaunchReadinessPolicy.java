@@ -37,7 +37,7 @@ public final class LaunchReadinessPolicy {
     public static double propellantPerTick(AtmosphereBand band, ShipControlInput input) {
         Objects.requireNonNull(band, "band");
         Objects.requireNonNull(input, "input");
-        double activity = Math.max(Math.abs(input.throttle()), Math.max(Math.abs(input.yaw()), Math.abs(input.pitch())));
+        double activity = Math.max(Math.abs(input.throttle()), Math.max(Math.abs(input.yaw()), Math.abs(input.lift())));
         if (activity <= 1.0E-6D) {
             return 0.0D;
         }
