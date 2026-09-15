@@ -14,10 +14,20 @@ class M5BattleResultLayoutTest {
             assertTrue(layout.rewards().fitsInside(size[0], size[1]));
             assertTrue(layout.footer().fitsInside(size[0], size[1]));
             assertTrue(layout.root().width() >= 448, "result root became too narrow at " + size[0] + "x" + size[1]);
-            assertTrue(layout.rewards().height() >= 160, "reward rows lost vertical room at " + size[0] + "x" + size[1]);
+            assertTrue(layout.rewards().height() >= 174,
+                    "reward rows cannot fit Coin + Essence + four elite shard rows at " + size[0] + "x" + size[1]);
             assertTrue(layout.header().bottom() <= layout.rewards().y());
             assertTrue(layout.rewards().bottom() <= layout.footer().y());
         }
+    }
+
+    @Test
+    void minimumCanvasFitsCurrentWorstCaseRewardRows() {
+        var layout = BattleResultLayout.calculate(480, 270);
+        int rewardTitleHeight = 18;
+        int currentRowStep = 26;
+        int currentWorstCaseRows = 6; // Coin + Essence + Creeper/Blaze/Witch/Enderman shards.
+        assertTrue(layout.rewards().height() >= rewardTitleHeight + currentRowStep * currentWorstCaseRows);
     }
 
     @Test
