@@ -1,6 +1,6 @@
 # Open-World RPG — R01 External Asset Intake Manifest
 
-> Status: **ASSET INTAKE PHASE B / EVIDENCE PASS 1 COMPLETE — NOT ASSET READY**  
+> Status: **ASSET INTAKE PHASE B / EVIDENCE PASS 2 COMPLETE — NOT ASSET READY**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Project contract: `PROJECT.md`  
 > Opening: `R01_VERTICAL_SLICE.md`  
@@ -74,6 +74,8 @@ If an exact package was demonstrably obtained earlier under CC0, preserve that e
 
 The older generic Quaternius `CC0 / direct-use` labels in `EXTERNAL_SOURCES.md`, `R01_VERTICAL_SLICE.md`, `RECOVERY_PRODUCTION_APPEARANCE.md` or `EQUIPMENT_BALANCE.md` must be read through this newer intake rule until the registry-wide provenance cleanup is completed.
 
+Source-specific exception handling matters: if an exact Quaternius artifact is independently published by Quaternius on another source such as OpenGameArt or itch with explicit CC0 terms, preserve that artifact's own source/license evidence instead of silently replacing it with the central site's current default label.
+
 ---
 
 # 3. Public-safe baseline families
@@ -114,6 +116,18 @@ Accepted R01 source families:
 - `UI Audio` / `Interface Sounds` — menu/confirmation/error/notification baseline.
 
 Kenney is a baseline reusable pool, not automatic permission to give every boss the same generic sound. Signature bosses/Mythics may require stronger dedicated external audio later.
+
+## 3.3 Quaternius Universal Animation Library family
+
+Quaternius `Universal Animation Library` and `Universal Animation Library 2` remain strong humanoid motion candidates because they use a universal humanoid rig and public source pages/source-specific mirrors have explicit CC0 evidence for relevant editions.
+
+Phase-B pass 2 established:
+
+- UAL2 exact clip candidate `Consume` for meal eating;
+- UAL1 contains a real drink action in a downstream imported 120-clip library, but the exact raw clip string is not yet pinned;
+- UAL2 also covers chop/mine/fish/farm/carry/sleep and therefore is a useful cross-check against KayKit for motions that clip less with the selected Quaternius body/outfit family.
+
+Because current central Quaternius licensing has drifted, actual project adoption still records the exact UAL/UAL2 source edition, acquisition-time license evidence and source hash. Do not infer raw-repo safety from the family name alone.
 
 ---
 
@@ -395,7 +409,7 @@ Accepted source families:
 
 - Better Combat dependency for weapon attack runtime/cadence where applicable;
 - current KayKit Character Animations for melee/ranged/spellcasting/blocking/tool actions;
-- Quaternius UAL/UAL2 only after acquisition-time license is recorded under the Quaternius rule in §2.
+- Quaternius UAL/UAL2 only after source-specific acquisition-time license is recorded under the Quaternius rule in §2.
 
 KayKit 1.1's authoritative devlog now pins exact R01 work/fishing clip names:
 
@@ -418,23 +432,40 @@ Fishing_Tug
 
 R01 visible work minimum therefore has an exact clip family for smithing, generic work, mining and fishing. These clips still require retarget/visual acceptance; the devlog name is not equivalent to `PLAYTESTED`.
 
+UAL2 is retained as a coherent alternate/cross-check where a Quaternius-rig motion clips materially better with the selected body/outfit family. A downstream imported 134-clip UAL2 library confirms real clips such as `TreeChopping_Loop`, `Mining_Loop`, `Fish_Cast_Idle_Loop`, `Farm_Harvest` and `Farm_PlantSeed`.
+
 No production action is accepted with only a vanilla arm bob if a full-body external animation is player-visible.
 
-## 8.3 Still unresolved clips
+## 8.3 Eat / drink / revive / mount gaps
 
-The current KayKit Character Animations page does **not** guarantee eating/drinking; as of the current page they remain described as planned future animations rather than part of the shipped 1.1 list.
+KayKit 1.1 still does **not** supply evidence for eating/drinking; its current page describes those as planned future actions. Phase-B pass 2 therefore looked at other external sources rather than inventing placeholders.
 
-Therefore:
+| Action | Current evidence | Current state |
+|---|---|---|
+| meal eat | Quaternius UAL2 exact vendor clip `Consume` is mapped to eat by a real downstream importer | `ARCHIVE_INSPECTION_REQUIRED`; exact candidate identified, acquired-edition/license/hash + Minecraft review pending |
+| potion drink | imported Quaternius UAL1 120-clip library is verified to contain/wire a drink action, but exact raw clip string is not published by the evidence inspected | `ARCHIVE_INSPECTION_REQUIRED`; source family identified, exact clip locator still pending |
+| teammate revive/help-up | Fab `Revive & Downed Animation Pack` exposes paired reviver/reviving clips | `NEEDS_EXTERNAL_CLIP`; `VERIFY / LOCAL_ONLY` candidate only until license/acquisition + two-character alignment review |
+| Trail Stag mount | Fab `Modular Classic Horse` exposes rider mount animations/root-motion variants | `NEEDS_EXTERNAL_CLIP`; `VERIFY / LOCAL_ONLY` candidate; horse-to-stag retarget/clearance not proven |
+| Trail Stag dismount | same pack explicitly exposes rider dismount animations/root-motion variants | `NEEDS_EXTERNAL_CLIP`; same gate |
 
-| Action | Current state |
-|---|---|
-| potion drink | `NEEDS_EXTERNAL_CLIP` |
-| meal eat | `NEEDS_EXTERNAL_CLIP` |
-| teammate revive/help-up | `NEEDS_EXTERNAL_CLIP` |
-| Trail Stag mount | `NEEDS_EXTERNAL_CLIP` unless the accepted animal/humanoid package supplies a proven transition |
-| Trail Stag dismount | `NEEDS_EXTERNAL_CLIP` |
+Evidence-backed paired revive candidate names include:
 
-Do not close these rows with a two-keyframe hand-to-face placeholder or instant teleport onto the mount.
+```text
+anim_Knocked_Reviver
+anim_Knocked_Reviving
+anim_Reviver_Without_Medic_L
+anim_Reviver_Without_Medic_R
+anim_Reviver_With_Medic_L2
+anim_Reviver_With_Medic_R2
+anim_Downed_Revive_With_Medic_L2
+anim_Downed_Revive_With_Medic_R2
+```
+
+These are discovery candidates, not project assets. Marketplace terms, source format, skeleton compatibility and quality must be checked before acquisition/use.
+
+For Trail Stag, a horse rider transition is only useful if it can be retargeted without implausible hip height, hand target, antler/body collision or a visible mismatch with the server mount snap. If not, reject it and keep searching.
+
+Do not close any row with a two-keyframe hand-to-face placeholder or instant teleport onto the mount.
 
 ---
 
@@ -485,9 +516,21 @@ Phase-A bindings:
 | Earthloong lightning lane support | Kenney particles only as component | `READY_PUBLIC` component | actual ground warning geometry must match canonical lane |
 | loot grade highlight | Kenney component pool | `READY_PUBLIC` component | obey Lucifer/loot presentation language |
 
-Boss signature VFX may require additional external sources. Kenney is a reusable component pool, not an excuse for generic particles on every important attack.
+Phase-B pass 2 pinned real candidate filename families from a public packaging of Kenney Particle Pack:
 
-Exact sprite selection remains Phase-B work because actual archive/file inspection has not yet been completed.
+```text
+circle_01.png ... circle_05.png
+dirt_01.png ... dirt_03.png
+fire_01.png ... fire_02.png
+flame_01.png ... flame_06.png
+flare_01.png
+light_01.png ... light_03.png
+magic_01.png ... magic_05.png
+```
+
+These are **candidate names**, not final assignments. Filename alone does not establish that `dirt_01` is the best dodge dust or that `magic_01` is the best heal VFX. Actual sprite inspection and in-game blend/scale/timing review remain required.
+
+Boss signature VFX may require additional external sources. Kenney is a reusable component pool, not an excuse for generic particles on every important attack.
 
 ---
 
@@ -509,7 +552,24 @@ Phase-A intended bindings:
 - quarry stone/impact baseline;
 - smith/workstation baseline.
 
-Exact filenames remain `ARCHIVE_INSPECTION_REQUIRED` until real archives are downloaded and auditioned.
+Phase-B pass 2 pinned real candidate families from public indexes/repackaging trees:
+
+```text
+Impact Sounds:
+  Audio/impactMetal_heavy_000.ogg ... impactMetal_heavy_004.ogg
+  Audio/impactMetal_medium_000.ogg ... impactMetal_medium_004.ogg
+  Audio/impactMetal_light_000.ogg ... impactMetal_light_004.ogg
+  Audio/impactMining_000.ogg ... impactMining_004.ogg
+
+UI Audio:
+  click1.wav ... click5.wav
+  mouseclick1.wav
+  mouserelease1.wav
+  rollover1.wav ... rollover6.wav
+  switch1.wav ...
+```
+
+The authoritative Kenney pages remain the license authority. These indexes are filename evidence only. The original archive was not successfully acquired in this environment, and audio was not auditioned, so no final clip assignment or project acquisition SHA-256 is claimed.
 
 Regalhart and Earthloong attacks, Mythic drops and major class ultimates require distinctive accepted audio; they are not considered complete merely because a generic Kenney impact can be played.
 
@@ -586,16 +646,25 @@ Before binding an external model:
 
 # 14. Phase-B progress and remaining gates before R01 is asset-ready
 
-Phase-B evidence pass 1 completed these documentation-level advances:
+Phase-B evidence pass 1 completed:
 
-1. re-verified the current Quaternius QAL v1.0 central license against still-CC0-labeled individual pack pages;
-2. preserved the package-specific acquisition rule instead of silently treating all Quaternius files as CC0;
-3. verified current authoritative KayKit CC0 pages for Fantasy Weapons Bits, RPG Tools Bits and Character Animations;
-4. pinned exact official KayKit Character Animations 1.1 tool/fishing clip names;
-5. inspected the official Restaurant Bits GitHub tree and pinned candidate filenames for Herbed Louxia Roast / Glow Broth while keeping Trail Skewers unresolved;
-6. inspected evidence-backed Fantasy Weapons Bits filename families for bow/sword/hammer/spear/staff/shield/wand;
-7. inspected evidence-backed RPG Tools Bits filenames for hammer/anvil/pickaxe and forge support props;
-8. recorded the evidence/provenance boundary in `R01_ASSET_PHASE_B_EVIDENCE_2026-09-15.md`.
+1. re-verified current Quaternius QAL v1.0 against still-CC0-labeled individual pages;
+2. preserved package-specific acquisition rules instead of flattening all Quaternius files to CC0;
+3. verified authoritative KayKit CC0 pages for Fantasy Weapons Bits, RPG Tools Bits and Character Animations;
+4. pinned exact KayKit Character Animations 1.1 tool/fishing clip names;
+5. inspected the official Restaurant Bits GitHub tree and pinned roast/stew candidates while keeping Trail Skewers unresolved;
+6. pinned evidence-backed Fantasy Weapons Bits filename families;
+7. pinned evidence-backed RPG Tools Bits filenames.
+
+Phase-B evidence pass 2 additionally completed:
+
+8. verified source-specific Quaternius UAL/UAL2 CC0 publication evidence separately from the central QAL drift;
+9. identified UAL2 `Consume` as an exact real eat-animation candidate;
+10. identified UAL1 as a real drink-animation family without inventing the still-unseen exact clip string;
+11. found paired external teammate-revive and rider mount/dismount candidates for later license/rig/quality evaluation;
+12. pinned Kenney Particle Pack filename families for R01 VFX evaluation;
+13. pinned Kenney Impact Sounds and UI Audio filename families without falsely claiming audition or archive SHA-256;
+14. updated `R01_ASSET_PHASE_B_EVIDENCE_2026-09-15.md` with the source/evidence boundaries.
 
 Still required:
 
@@ -606,11 +675,11 @@ Still required:
 5. acquire the authoritative KayKit weapon/tools package bytes used by the project, record SHA-256, and visually choose the final A/B/C variants rather than promoting mirror tree names directly;
 6. finish Trail Skewers exact food source and inspect the Restaurant Bits candidate meshes;
 7. choose exact external potion bottle files;
-8. choose actual external drink/eat clips;
-9. choose actual external revive/help-up and mount/dismount clips;
-10. audition and pin exact Kenney VFX/audio files;
-11. run Blockbench/3D-viewer intake, then actual Minecraft visual review for the accepted set;
-12. reconcile stale generic Quaternius CC0 classifications in `EXTERNAL_SOURCES.md` against the package-specific rule.
+8. acquire/inspect the chosen UAL editions, pin UAL1's exact drink clip string and visually accept UAL2 `Consume`;
+9. resolve licensing/acquisition/retarget quality for teammate revive/help-up and Trail Stag mount/dismount, or replace those candidates;
+10. visually inspect and select exact Kenney VFX sprites;
+11. actually audition and select exact Kenney audio clips;
+12. run Blockbench/3D-viewer intake, then actual Minecraft visual review for the accepted set.
 
 Until those rows are resolved, `R01 ASSET READY = NO`. Phase B is active and materially advanced, but not complete.
 
@@ -618,15 +687,19 @@ Until those rows are resolved, `R01 ASSET READY = NO`. Phase B is active and mat
 
 # 15. Verification state
 
-Current state after Phase-B evidence pass 1:
+Current state after Phase-B evidence pass 2:
 
 - `DESIGN REVIEWED`: YES
 - `EXTERNAL SOURCE REVIEWED`: YES
-- `LICENSE METADATA REVIEWED`: YES, with Quaternius drift explicitly unresolved per package
+- `LICENSE METADATA REVIEWED`: YES, with Quaternius drift explicitly resolved only at source/package-evidence level, not blanket family level
 - `PHASE-B EVIDENCE DOC RECORDED`: YES
 - `EXACT PUBLIC-SAFE KAYKIT PATHS PINNED`: YES for listed Adventurers + Restaurant Bits evidence
 - `KAYKIT WORK/FISHING CLIP NAMES PINNED`: YES
 - `KAYKIT WEAPON/TOOLS CANDIDATE FILENAMES PINNED`: YES as tree evidence; authoritative archive SHA-256/final visual selection pending
+- `EAT EXTERNAL CLIP CANDIDATE PINNED`: YES — UAL2 `Consume`; source acquisition/visual acceptance pending
+- `DRINK EXTERNAL SOURCE FAMILY IDENTIFIED`: YES — UAL1; exact raw clip name pending
+- `REVIVE/MOUNT EXTERNAL CANDIDATES IDENTIFIED`: YES; not accepted
+- `KENNEY VFX/AUDIO CANDIDATE FILENAME FAMILIES PINNED`: YES; visual/audition acceptance pending
 - `ALL R01 EXACT ASSET FILENAMES PINNED`: NO
 - `R01 ASSET READY`: NO
 - `BLOCKBENCH / CONVERSION TESTED`: NO
@@ -635,4 +708,4 @@ Current state after Phase-B evidence pass 1:
 - `PLAYTESTED`: NO
 - `MULTIPLAYER TESTED`: NO
 
-Do not upgrade these labels merely because a pack page, filename or source model exists.
+Do not upgrade these labels merely because a pack page, filename, candidate clip or source model exists.
