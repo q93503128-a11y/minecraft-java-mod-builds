@@ -79,14 +79,13 @@ dependencies {
     modImplementation('maven.modrinth:vlib:1.20.1-0.1.0+forge')
     modRuntimeOnly('maven.modrinth:architectury-api:9.2.14+forge')
 
-    modImplementation('maven.modrinth:zps:1.20.1-2.4.0')
+    // Power Cell was introduced in ZPS 2.5.0. Pin 2.5.1, the current 1.20.1 release,
+    // because the starter craft deliberately uses the finite Power Cell rather than a fake battery.
+    modImplementation('maven.modrinth:zps:1.20.1-2.5.1')
     modImplementation('maven.modrinth:zpl:1.20.1-1.5.0')
     modImplementation('maven.modrinth:curios:5.14.1+1.20.1')
     modImplementation('maven.modrinth:lodestonelib:1.20.1-1.6.4.1')
     modImplementation('maven.modrinth:vs-genesis:1.20.1-0.7.3')
-
-    // ZPS uses Fusion for client models; keep it off dedicated-server classpaths.
-    clientOnlyMods('maven.modrinth:fusion-connected-textures:1.2.12-forge-mc1.20.1')
 
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
