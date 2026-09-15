@@ -33,6 +33,12 @@ def main() -> None:
     ):
         require(build, needle)
 
+    build_text = build.read_text(encoding="utf-8")
+    if build_text.count("systemProperty 'forge.enableGameTest', 'false'") < 2:
+        raise SystemExit("REBOOT STACK VALIDATION FAILED: normal client/server runtime runs must disable Forge GameTest discovery")
+    if build_text.count("systemProperty 'forge.enabledGameTestNamespaces', mod_id") < 2:
+        raise SystemExit("REBOOT STACK VALIDATION FAILED: client/server run GameTest namespace guard missing")
+
     for needle in (
         "minecraft_version=1.20.1",
         "forge_version=1.20.1-47.4.0",
@@ -97,7 +103,6 @@ def main() -> None:
             raise SystemExit(f"REBOOT STACK VALIDATION FAILED: missing resource {resource}")
 
     # The reboot must not compile the failed 26.2 Display-entity ship implementation.
-    build_text = build.read_text(encoding="utf-8")
     if "src/main/java" in build_text or "src/main/resources" in build_text:
         raise SystemExit("REBOOT STACK VALIDATION FAILED: legacy 26.2 source tree leaked into reboot sourceSets")
 
@@ -109,7 +114,7 @@ def main() -> None:
         if forbidden in reboot_text:
             raise SystemExit(f"REBOOT STACK VALIDATION FAILED: custom vehicle implementation leaked into reboot: {forbidden}")
 
-    print("REBOOT STACK VALIDATION OK: released VS 2.4.10 block assembly + ZPS 2.5.1 cockpit/power + ZPL propulsion/gyro; legacy custom ship physics excluded")
+    print("REBOOT STACK VALIDATION OK: released VS 2.4.10 block assembly + ZPS 2.5.1 cockpit/power + ZPL propulsion/gyro; runtime smoke runs isolate external optional GameTests; legacy custom ship physics excluded")
 
 
 if __name__ == "__main__":
