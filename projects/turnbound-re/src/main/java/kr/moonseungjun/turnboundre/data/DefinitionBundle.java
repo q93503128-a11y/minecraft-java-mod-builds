@@ -14,7 +14,8 @@ public record DefinitionBundle(
         List<RewardTableDefinition> rewards,
         List<ProgressionDefinition> progressions,
         List<EquipmentDefinition> equipment,
-        List<RegionDefinition> regions
+        List<RegionDefinition> regions,
+        List<ExternalWorldProfileDefinition> externalWorldProfiles
 ) {
     public static final Codec<DefinitionBundle> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             ActionDefinition.CODEC.listOf().optionalFieldOf("actions", List.of()).forGetter(DefinitionBundle::actions),
@@ -24,7 +25,9 @@ public record DefinitionBundle(
             RewardTableDefinition.CODEC.listOf().optionalFieldOf("rewards", List.of()).forGetter(DefinitionBundle::rewards),
             ProgressionDefinition.CODEC.listOf().optionalFieldOf("progressions", List.of()).forGetter(DefinitionBundle::progressions),
             EquipmentDefinition.CODEC.listOf().optionalFieldOf("equipment", List.of()).forGetter(DefinitionBundle::equipment),
-            RegionDefinition.CODEC.listOf().optionalFieldOf("regions", List.of()).forGetter(DefinitionBundle::regions)
+            RegionDefinition.CODEC.listOf().optionalFieldOf("regions", List.of()).forGetter(DefinitionBundle::regions),
+            ExternalWorldProfileDefinition.CODEC.listOf().optionalFieldOf("externalWorldProfiles", List.of())
+                    .forGetter(DefinitionBundle::externalWorldProfiles)
     ).apply(instance, DefinitionBundle::new));
 
     /** Compatibility constructor for M0-M5 callers created before region/equipment definitions existed. */
@@ -36,7 +39,7 @@ public record DefinitionBundle(
             List<RewardTableDefinition> rewards,
             List<ProgressionDefinition> progressions
     ) {
-        this(actions, characters, statuses, encounters, rewards, progressions, List.of(), List.of());
+        this(actions, characters, statuses, encounters, rewards, progressions, List.of(), List.of(), List.of());
     }
 
     /** Compatibility constructor for callers authored after regions but before equipment definitions. */
@@ -49,7 +52,21 @@ public record DefinitionBundle(
             List<ProgressionDefinition> progressions,
             List<RegionDefinition> regions
     ) {
-        this(actions, characters, statuses, encounters, rewards, progressions, List.of(), regions);
+        this(actions, characters, statuses, encounters, rewards, progressions, List.of(), regions, List.of());
+    }
+
+    /** Compatibility constructor for callers authored before external-world profile definitions existed. */
+    public DefinitionBundle(
+            List<ActionDefinition> actions,
+            List<CharacterDefinition> characters,
+            List<StatusDefinition> statuses,
+            List<EncounterDefinition> encounters,
+            List<RewardTableDefinition> rewards,
+            List<ProgressionDefinition> progressions,
+            List<EquipmentDefinition> equipment,
+            List<RegionDefinition> regions
+    ) {
+        this(actions, characters, statuses, encounters, rewards, progressions, equipment, regions, List.of());
     }
 
     public DefinitionBundle {
@@ -61,5 +78,6 @@ public record DefinitionBundle(
         progressions = progressions == null ? List.of() : List.copyOf(progressions);
         equipment = equipment == null ? List.of() : List.copyOf(equipment);
         regions = regions == null ? List.of() : List.copyOf(regions);
+        externalWorldProfiles = externalWorldProfiles == null ? List.of() : List.copyOf(externalWorldProfiles);
     }
 }
