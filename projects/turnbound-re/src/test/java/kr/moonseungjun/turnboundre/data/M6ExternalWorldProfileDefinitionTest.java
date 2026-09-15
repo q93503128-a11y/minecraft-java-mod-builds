@@ -18,6 +18,7 @@ final class M6ExternalWorldProfileDefinitionTest {
                       "id": "turnbound_re:hub_01",
                       "kind": "HUB",
                       "dimension": "minecraft:overworld",
+                      "exits": ["turnbound_re:region_01"],
                       "fastTravelAnchors": [
                         {
                           "id": "turnbound_re:hub_01/waypoint",
@@ -30,6 +31,7 @@ final class M6ExternalWorldProfileDefinitionTest {
                       "id": "turnbound_re:region_01",
                       "kind": "REGION",
                       "dimension": "minecraft:overworld",
+                      "exits": ["turnbound_re:hub_01"],
                       "fastTravelAnchors": [
                         {
                           "id": "turnbound_re:region_01/waypoint",
