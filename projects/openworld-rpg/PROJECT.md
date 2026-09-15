@@ -63,9 +63,10 @@ However, this GitHub repository is public. Therefore:
 - `EXTERNAL_SOURCES.md` — external code/assets/UI/map/structure provenance and adoption status
 - `PROJECT.md` — technical/build identity and project-wide contracts
 
-Subordinate reference:
+Subordinate references:
 
 - `REGIONS.md` — Azari regional content expansion for the regional work explicitly queued by `GAME_DESIGN.md` §27. It does not override the master canon; when any detail conflicts, `GAME_DESIGN.md` wins.
+- `UI_DIRECTION.md` — selected external CC0 UI family, screen architecture, scaling rules and visual acceptance criteria for the UI work indexed by `GAME_DESIGN.md`. It does not override gameplay rules in the master canon.
 
 Do not create parallel competing design documents. Subordinate reference files may expand a workstream that is explicitly indexed/queued by `GAME_DESIGN.md`, but `GAME_DESIGN.md` remains the master index and conflict authority.
 
