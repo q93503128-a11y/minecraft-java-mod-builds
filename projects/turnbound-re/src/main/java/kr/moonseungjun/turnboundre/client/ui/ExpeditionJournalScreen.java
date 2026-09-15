@@ -11,12 +11,23 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Read-only authored expedition reference reached from the unified menu.
  * Actual combat entry is world-first and happens only through validated encounter anchors.
  */
 public final class ExpeditionJournalScreen extends Screen {
+    private static final int ENCOUNTER_ROW_HEIGHT = 38;
+    private static final int ENCOUNTER_ROW_STEP = 42;
+    private static final int ENEMY_PREVIEW_SLOT = 26;
+    private static final int ENEMY_PREVIEW_GAP = 2;
+    private static final int MAX_ENEMY_PREVIEWS = 4;
+
     private final Screen parent;
+    private final Map<String, CharacterEntityPreview> enemyPreviews = new HashMap<>();
     private ExpeditionNetworkPayloads.JournalView view;
     private long seenGeneration = -1L;
 
@@ -71,13 +82,7 @@ public final class ExpeditionJournalScreen extends Screen {
 
         if (view != null) {
             for (int i = 0; i < view.encounters().size(); i++) {
-                ExpeditionNetworkPayloads.EncounterView encounter = view.encounters().get(i);
-                UiLayoutMetrics.Rect row = encounterRow(i);
-                UiVisualLanguage.frame(graphics, row.x(), row.y(), row.width(), row.height(), UiVisualLanguage.FrameState.IDLE);
-                Component label = Component.translatable(
-                        "screen.turnbound_re.expedition.encounter_row",
-                        encounterName(encounter.id()), encounter.difficulty(), encounter.enemyCount());
-                centered(graphics, row, label, UiVisualLanguage.TEXT_PRIMARY);
+                renderEncounterRow(graphics, view.encounters().get(i), encounterRow(i));
             }
         }
 
@@ -104,6 +109,51 @@ public final class ExpeditionJournalScreen extends Screen {
         }
 
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+    }
+
+    private void renderEncounterRow(
+            GuiGraphicsExtractor graphics,
+            ExpeditionNetworkPayloads.EncounterView encounter,
+            UiLayoutMetrics.Rect row
+    ) {
+        UiVisualLanguage.frame(graphics, row.x(), row.y(), row.width(), row.height(), UiVisualLanguage.FrameState.IDLE);
+
+        List<String> sources = encounter.enemySourceEntities();
+        int previewCount = Math.min(MAX_ENEMY_PREVIEWS, sources.size());
+        int previewStartX = row.x() + UiLayoutMetrics.SPACE_4;
+        int previewY = row.y() + Math.max(1, (row.height() - ENEMY_PREVIEW_SLOT) / 2);
+        int previewBlockWidth = previewCount == 0
+                ? 0
+                : previewCount * ENEMY_PREVIEW_SLOT + (previewCount - 1) * ENEMY_PREVIEW_GAP;
+
+        graphics.enableScissor(row.x() + 1, row.y() + 1, row.right() - 1, row.bottom() - 1);
+        for (int i = 0; i < previewCount; i++) {
+            String sourceEntity = sources.get(i);
+            CharacterEntityPreview preview = enemyPreviews.computeIfAbsent(sourceEntity, ignored -> new CharacterEntityPreview());
+            UiLayoutMetrics.Rect slot = new UiLayoutMetrics.Rect(
+                    previewStartX + i * (ENEMY_PREVIEW_SLOT + ENEMY_PREVIEW_GAP),
+                    previewY,
+                    ENEMY_PREVIEW_SLOT,
+                    ENEMY_PREVIEW_SLOT);
+            EntityPreviewLayout.PreviewSpec spec = preview.layout(
+                    this.minecraft, sourceEntity, slot.width(), slot.height());
+            preview.extract(graphics, slot, spec);
+        }
+
+        int textX = previewCount == 0
+                ? row.x() + UiLayoutMetrics.SPACE_8
+                : previewStartX + previewBlockWidth + UiLayoutMetrics.SPACE_4;
+        int textWidth = Math.max(1, row.right() - UiLayoutMetrics.SPACE_8 - textX);
+        String title = encounterName(encounter.id()).getString();
+        graphics.text(this.font, Component.literal(fit(title, textWidth)),
+                textX, row.y() + 5, UiVisualLanguage.TEXT_PRIMARY, true);
+
+        String danger = Component.translatable("screen.turnbound_re.anchor.danger", encounter.difficulty()).getString();
+        String enemies = Component.translatable("screen.turnbound_re.anchor.enemies", encounter.enemyCount()).getString();
+        String meta = danger + " · " + enemies;
+        graphics.text(this.font, Component.literal(fit(meta, textWidth)),
+                textX, row.bottom() - this.font.lineHeight - 5, UiVisualLanguage.TEXT_SECONDARY, true);
+        graphics.disableScissor();
     }
 
     @Override
@@ -145,9 +195,9 @@ public final class ExpeditionJournalScreen extends Screen {
         UiLayoutMetrics.Rect root = root();
         return new UiLayoutMetrics.Rect(
                 root.x() + UiLayoutMetrics.SPACE_8,
-                root.y() + 48 + index * 34,
+                root.y() + 48 + index * ENCOUNTER_ROW_STEP,
                 root.width() - UiLayoutMetrics.SPACE_16,
-                28);
+                ENCOUNTER_ROW_HEIGHT);
     }
 
     private UiLayoutMetrics.Rect partyButton() {
@@ -187,6 +237,13 @@ public final class ExpeditionJournalScreen extends Screen {
 
     private void closeScreen() {
         this.minecraft.gui.setScreen(parent);
+    }
+
+    @Override
+    public void removed() {
+        enemyPreviews.values().forEach(CharacterEntityPreview::clear);
+        enemyPreviews.clear();
+        super.removed();
     }
 
     @Override public boolean isPauseScreen() { return false; }
