@@ -76,6 +76,7 @@ Subordinate references:
 - `EQUIPMENT_BALANCE.md` — concrete Item-Lv/base-stat curves, exact affix ranges/caps, forge/reforge rules, R01 resource/equipment catalog and external visual bindings. It closes implementation-time equipment-number invention but does not override `GAME_DESIGN.md`.
 - `MOUNTS.md` — external-first mount roster, traversal-speed/handling balance, stable economy, summon/Resolve/combat rules, flight model and multiplayer authority. It expands `GAME_DESIGN.md` §18 without overriding the master canon.
 - `M0_DEPENDENCY_AUDIT.md` — exact Fabric 26.2 toolchain, pinned dependency/version set, license/public-repository boundaries, integration ownership, server-authority contract and first bootstrap acceptance matrix.
+- `COMBAT_BALANCE.md` — exact combat-stat formulas, damage/mitigation math, dodge/guard/perfect-guard timing, player/enemy poise, attack commitment, encounter TTK/damage bands, multiplayer boss scaling and revive timing. It expands `GAME_DESIGN.md` §§5–7 and 23 without overriding the master canon.
 
 Do not create parallel competing design documents. Subordinate reference files may expand a workstream that is explicitly indexed/queued by `GAME_DESIGN.md`, but `GAME_DESIGN.md` remains the master index and conflict authority.
 
