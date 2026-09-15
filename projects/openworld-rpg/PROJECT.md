@@ -81,6 +81,7 @@ Subordinate references:
 - `CLASS_PROGRESSION.md` — per-root Class Rank/XP and catch-up, five advancement beats, branch switching, 30-point passive economy, all root/branch passive nodes, Rank-20 actives, Rank-32 doctrines, Rank-44 ascendant mechanics, world-discovered skills, Hidden Techniques and Class Insight challenges. It expands `GAME_DESIGN.md` §9 without overriding the master canon.
 - `STATUS_AND_R01_ENCOUNTERS.md` — element/status layering, buildup/repeat-resistance/cleanse rules, Poison/Bleed/Frostbite/Shock behavior, and exact R01 ecology/elite/field-boss/first-dungeon encounter stats, attacks, rewards and external-asset boundaries. It expands the R01/combat work in `GAME_DESIGN.md` without overriding the master canon.
 - `R01_VERTICAL_SLICE.md` — external-first player-motion bindings, coherent starting-settlement architecture/NPC/prop direction, first 55–75 minute route, first Trail Stag event, Regalhart discovery, quarry dungeon room flow, opening economy/audio/presentation and first-playable acceptance rules. It expands the opening/R01 work in `GAME_DESIGN.md` without overriding the master canon.
+- `RECOVERY_PRODUCTION_APPEARANCE.md` — exact HP recovery, four-dose quick-recovery belt, R01 potion/food/alchemy/cooking rules, light profession mastery, external-first armor/apparel/NPC clothing, Wardrobe and armor-motion compatibility requirements. It expands `GAME_DESIGN.md` §§5, 12, 15, 16 and 24 without overriding the master canon.
 
 Do not create parallel competing design documents. Subordinate reference files may expand a workstream that is explicitly indexed/queued by `GAME_DESIGN.md`, but `GAME_DESIGN.md` remains the master index and conflict authority.
 
@@ -94,6 +95,7 @@ Before gameplay source bootstrap is considered design-complete:
 - balance-sensitive systems have concrete formulas/tables/default values rather than `decide during coding` placeholders;
 - every major UI screen has selected external visual family, information hierarchy, interaction states and scaling behavior;
 - every player-visible creature, boss, mount, weapon family, important armor/accessory family, workstation, structure and traversal object has an external design/model/asset/reference direction;
+- every player/NPC-visible combat armor, robe, civilian outfit, class/trainer clothing and profession apparel has an accepted external 3D design/model family before implementation;
 - every player-visible locomotion/combat/work/mount action — including dash, dodge, roll, jump, landing, guard/parry, attack movement, cast gestures, revive and mount transitions — has an accepted external animation/motion source or external reference before implementation;
 - every production resource/material/node/item family has a viable external model/icon/reference mapping before its final name and role are locked;
 - important VFX and sound families have an external source/reference direction appropriate to their importance;
@@ -109,7 +111,7 @@ If implementation exposes a hard technical constraint that invalidates canon, st
 
 External-first applies to **content design itself**, not only to the final art pass.
 
-For a new player-facing resource, ore, herb, material, consumable, weapon, armor piece, accessory, monster, boss drop, mount, structure, workstation or major prop:
+For a new player-facing resource, ore, herb, material, consumable, weapon, armor piece, robe/outfit/apparel piece, accessory, monster, boss drop, mount, structure, workstation or major prop:
 
 ```text
 find/verify strong external visual/model/icon/reference candidate
@@ -157,6 +159,7 @@ From the first player-visible implementation:
 - UI/HUD uses selected external final-quality design/reference/assets;
 - inventory/equipment specifically follows `UI_DIRECTION.md` and the Foozle `Lucifer - RPG UI` + `Lucifer - Equipment` visual family rather than an internally redesigned Minecraft inventory;
 - characters, monsters, bosses, structures, workstations and major props use selected external design/assets/reference;
+- combat armor, robes, civilian clothes, class/trainer outfits and NPC profession apparel use accepted external 3D design/model families; recolored vanilla armor or flat skin recolors are not accepted as the finished apparel solution;
 - player locomotion, dash/dodge/roll, attack transitions, casting, interaction/work actions, revive and mount transitions use selected external animation/motion sources; code-only displacement with a vanilla running/static pose or throwaway two-keyframe substitute is not accepted as finished presentation;
 - ores, herbs, resource nodes, material pickups, important loot icons/models and signature boss materials also follow the external-first content-admission rule;
 - no improvised AI black-panel/card/glow UI;
