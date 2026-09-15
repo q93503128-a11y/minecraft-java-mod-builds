@@ -1,0 +1,44 @@
+{
+  "schema": "riftfrontier.field_review_build_receipt.v1",
+  "subject": "region_01_hunter_alien_localized_field_review",
+  "code_commit": "f4257709f8a7f0a7bd454a6660f264fa43a94604",
+  "workflow": {
+    "name": "Build Riftfrontier",
+    "run_id": 35023044642,
+    "conclusion": "success"
+  },
+  "deliverable": {
+    "artifact_name": "riftfrontier-0.1.0-alpha.1-deliverables",
+    "artifact_id": 10418303513,
+    "archive_digest": "sha256:318f978514bd0244b070596ae2b9956869b680101d5cfd99a4e374cacae2d460"
+  },
+  "runtime_scope": {
+    "entity": "riftfrontier:region_01_hunter_field_review",
+    "review_only": true,
+    "natural_region_01_spawn": false,
+    "production_selected": false,
+    "human_visual_acceptance": false,
+    "localization": ["en_us", "ko_kr"]
+  },
+  "human_review": {
+    "command": "/summon riftfrontier:region_01_hunter_field_review",
+    "observe": [
+      "scale relative to player and proxy threats",
+      "facing and ground alignment",
+      "UV and texture integrity",
+      "near/combat/medium-distance silhouette",
+      "Idle/Walk/Run/Punch/HitReact/Death deformation",
+      "Punch attack readability"
+    ]
+  },
+  "verification": {
+    "code_reviewed": true,
+    "tested": true,
+    "build_verified": true,
+    "jar_produced": true,
+    "playtested": false,
+    "multiplayer_tested": false,
+    "human_creature_acceptance": false
+  },
+  "boundary": "Do not replace the authoritative Region 01 Hunter technical proxy or wire Alien into natural encounters until human Minecraft visual review is recorded. While acceptance is pending, advance independent visible Region 01 vertical-slice work instead of retuning the review actor without evidence."
+}
