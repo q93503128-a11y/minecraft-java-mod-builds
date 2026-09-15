@@ -59,7 +59,7 @@ However, this GitHub repository is public. Therefore:
 - private-use-only or non-redistributable third-party assets MUST NOT be committed to this public repository;
 - the repository may record their source and local installation/import instructions;
 - assets/code committed here must still be redistributable under their actual terms;
-- no paywall/access-control/DRM bypass is allowed;
+- no paywall/access-control bypass or paid-asset piracy is allowed;
 - if public distribution is ever planned, all third-party material must be re-audited first.
 
 ## Canon files
@@ -77,6 +77,7 @@ Subordinate references:
 - `MOUNTS.md` — external-first mount roster, traversal-speed/handling balance, stable economy, summon/Resolve/combat rules, flight model and multiplayer authority. It expands `GAME_DESIGN.md` §18 without overriding the master canon.
 - `M0_DEPENDENCY_AUDIT.md` — exact Fabric 26.2 toolchain, pinned dependency/version set, license/public-repository boundaries, integration ownership, server-authority contract and first bootstrap acceptance matrix.
 - `COMBAT_BALANCE.md` — exact combat-stat formulas, damage/mitigation math, dodge/guard/perfect-guard timing, player/enemy poise, attack commitment, encounter TTK/damage bands, multiplayer boss scaling and revive timing. It expands `GAME_DESIGN.md` §§5–7 and 23 without overriding the master canon.
+- `CLASS_COMBAT_KITS.md` — exact five root-class mechanics, starting actives/passives/ultimates, costs/cooldowns/coefficients, class ultimate-charge rules, first specialization branches, required class statuses and external animation/VFX/icon directions. It expands `GAME_DESIGN.md` §9 on top of `COMBAT_BALANCE.md` without overriding the master canon.
 
 Do not create parallel competing design documents. Subordinate reference files may expand a workstream that is explicitly indexed/queued by `GAME_DESIGN.md`, but `GAME_DESIGN.md` remains the master index and conflict authority.
 
