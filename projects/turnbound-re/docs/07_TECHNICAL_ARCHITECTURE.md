@@ -74,6 +74,8 @@ battle participant는 battle 중:
 - vanilla AI goal 실행/공격을 일시 억제.
 - vanilla damage는 **피격자와 causing/source entity 양쪽**에서 battle ownership을 검사하여 차단한다.
 - battle-owned player의 `AttackEntityEvent`를 선제 차단하여 외부 world entity를 vanilla melee로 공격하지 못하게 한다.
+- battle-owned entity가 소유한 새 vanilla `Projectile`은 `EntityJoinLevelEvent`에서 world spawn을 차단한다.
+- 외부 projectile이 battle-owned entity에 명중할 때는 `ProjectileImpactEvent` 자체를 취소하여 potion/status 등 damage 외 side effect도 우회하지 못하게 한다.
 - 외부 entity 피해/knockback을 차단한다.
 - despawn/removal은 battle cleanup 경계를 거친다.
 - battle 종료 시 정책이 즉시 원상복구된다.
