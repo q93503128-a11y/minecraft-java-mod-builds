@@ -5,7 +5,7 @@ public final class BattleResultLayout {
     public static final int MIN_WIDTH = 480;
     public static final int MIN_HEIGHT = 270;
     private static final int MAX_ROOT_WIDTH = 520;
-    private static final int MAX_ROOT_HEIGHT = 230;
+    private static final int MAX_ROOT_HEIGHT = 238;
     private static final int MARGIN = 16;
 
     private BattleResultLayout() {}
@@ -36,7 +36,7 @@ public final class BattleResultLayout {
         Rect root = new Rect(x, y, rootWidth, rootHeight);
         int headerHeight = 32;
         int footerHeight = 24;
-        int gap = 6;
+        int gap = 4;
         Rect header = new Rect(x, y, rootWidth, headerHeight);
         Rect footer = new Rect(x, y + rootHeight - footerHeight, rootWidth, footerHeight);
         Rect rewards = new Rect(x, header.bottom() + gap, rootWidth,
