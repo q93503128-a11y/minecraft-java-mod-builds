@@ -32,7 +32,7 @@ Date: 2026-09-15
 | Battle Result Essence | Mojang `experience_bottle` runtime item | SOURCE CLEAN | reveal timing/readability |
 | Battle Result Character Shard | Mojang `amethyst_shard` runtime item | SOURCE CLEAN | reveal timing/readability |
 | Encounter preparation | Mojang Iron Ingot / Golden Carrot / Cooked Cod / Cooked Salmon runtime item | SOURCE CLEAN | screenshot audit |
-| Expedition Journal encounter rows | Kenney frame + authored text facts | VISUAL GATE PENDING | text-only density가 충분한지 screenshot으로 판단. 필요 시 실제 외부/Mojang visual source를 먼저 고정 |
+| Expedition Journal encounter rows | Kenney frame + server-authored Mojang runtime enemy entity lineup + translated encounter facts | SOURCE CLEAN / VISUAL GATE PENDING | 26×26 compact lineup의 실제 GUI scale 가독성·모델 겹침 screenshot 확인 |
 | Production world | Drehmal: APOTHEOSIS v2.2.2f external world | SOURCE LOCKED | Java 26.2 migration/load + actual-world visual gate |
 
 ## 3. 이번 감사에서 제거한 placeholder
@@ -96,6 +96,20 @@ license는 `third_party/licenses/Kenney_Input_Prompts_Pixel_CC0.txt`에 보존�
 
 TURNBOUND 전용 skill icon PNG는 추가하지 않았다.
 
+### Expedition Journal encounter identity
+
+이전 Journal encounter row는 Kenney frame 안에 이름 / 위험도 / 적 수만 표시되어 전투 구성이 텍스트에만 의존했다.
+
+현재:
+- 서버 `EncounterView`가 해당 encounter의 validated character definition에서 실제 `sourceEntity` 목록을 함께 publish한다.
+- 클라이언트가 encounter id를 보고 적 종류를 추측하거나 하드코딩하지 않는다.
+- row 왼쪽에는 `CharacterEntityPreview`를 통해 Mojang runtime `EntityType` 모델을 최대 4기까지 실제 lineup으로 표시한다.
+- 26×26 소형 슬롯은 별도 `EntityPreviewLayout.fitCompact` 경로로 체형에 맞춰 스케일한다.
+- source entity가 잘못되었거나 LivingEntity가 아니면 임의 몹 실루엣/icon으로 대체하지 않고 해당 preview만 fail-closed한다.
+- 내부 encounter id가 `debug_*`여도 플레이어-facing 이름은 `encounter.turnbound_re.*.name` 번역 key를 사용한다. 현재 `폐허 길목 순찰`, `균열 선봉대`처럼 세계 내 이름으로 노출한다.
+
+TURNBOUND 전용 encounter illustration/icon은 추가하지 않았다.
+
 ## 4. 금지 회귀
 
 다음은 이후 작업에서도 금지한다.
@@ -107,6 +121,7 @@ TURNBOUND 전용 skill icon PNG는 추가하지 않았다.
 - 임시 자작 RPG panel을 Kenney family 사이에 섞음.
 - Mojang runtime item을 visual identity로 사용한다는 이유로 vanilla gameplay component/effect를 TURNBOUND 시스템에 몰래 상속.
 - 모르는 action에 generic sword/star/magic icon을 자동 fallback으로 붙임.
+- encounter id를 보고 클라이언트에서 적 visual을 임의 추측하거나 generic skull/sword icon을 붙임.
 
 상태 표시용 문자나 텍스트는 정보 전달 보조로 사용할 수 있지만, **필요한 artwork가 존재해야 하는 자리를 영구적으로 대신할 수 없다.**
 
@@ -114,8 +129,8 @@ TURNBOUND 전용 skill icon PNG는 추가하지 않았다.
 
 다음 우선순위:
 1. 현재 Mojang runtime action mapping이 실제 480x270 / 일반 GUI Scale에서 action 간 silhouette를 충분히 구분하는지 screenshot audit.
-2. 특정 action의 의미가 Mojang item으로 충분히 전달되지 않으면 그 action만 억지 mapping으로 유지하지 말고 **하나의 실제 외부 action-icon family** gate를 다시 연다.
-3. Expedition Journal encounter row가 텍스트-only 카드처럼 느껴지면 같은 방식으로 외부/Mojang visual source gate를 먼저 통과.
+2. Expedition Journal의 26×26 실제 몹 lineup이 Zombie/Skeleton/Spider와 Creeper/Blaze/Witch/Enderman을 충분히 구분하는지 screenshot audit.
+3. 특정 action/entity의 의미가 현재 runtime visual로 충분히 전달되지 않으면 억지 mapping/크기 조정으로 버티지 말고 실제 외부 asset gate를 다시 연다.
 4. Drehmal 26.2 migration 후 실제 world에서 anchor/marker/UI의 시야 충돌 검사.
 
 외부 source가 확정되지 않은 상태에서 1~3을 AI 자작 icon/illustration으로 임시 완성하지 않는다.
@@ -124,6 +139,7 @@ TURNBOUND 전용 skill icon PNG는 추가하지 않았다.
 
 - SOURCE / LICENSE REVIEW: DONE for the assets listed as SOURCE CLEAN.
 - CODE REVIEWED: YES for the changes recorded in this audit.
+- RELATED TEST CONTRACTS UPDATED: YES, but not executed in this batch.
 - BUILD VERIFIED after this audit batch: NO.
 - CI RUN for this audit batch: NO (`[skip ci]`).
 - SCREENSHOT AUDIT: NOT RUN.
