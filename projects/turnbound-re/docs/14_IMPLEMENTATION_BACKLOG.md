@@ -79,26 +79,35 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 - EN/KO localization parity.
 - shared `UiVisualLanguage` 및 외부 CC0 UI asset 적용.
 - UI frame/title/meter source/license 고정: Kenney `UI Pack - Pixel Adventure` 2.0 / CC0.
+- Battle Command 숫자 입력 prompt source/license 고정: Kenney `Input Prompts Pixel` 1.0 / CC0.
 - logical battle-stage participant rendering.
 - data-driven action timeline, impact/travel accent.
+- Battle action identity를 server snapshot + Mojang runtime semantic `ItemStack`으로 연결.
+- Battle Result Coin/Essence/Shard를 Mojang runtime item visual로 연결.
+- Encounter preparation material을 Mojang runtime item visual로 연결.
+- Expedition Journal encounter row를 server-authored enemy `sourceEntity` + Mojang runtime entity lineup으로 연결.
 - Skeleton / Enderman 대표 3D character presentation pass.
 - authoritative previous/final snapshot만 사용하는 impact-synchronized HP/Poise/EXPOSED/defeat presentation projection.
 - WINDUP 이전값 유지 → IMPACT aggregate easing → RECOVERY exact final.
 - healing/multi-target/reset/interruption 계약 자동 검증.
 
-마지막 impact sync 코드 기준:
+마지막 전체 build-verified impact sync 기준:
 - commit `41397f92b501820f519de56712663cba6fc62db1`
 - Build turnbound-re #212 / run `34732981207`: Java 25 / clean build / 전체 JUnit / JAR verify / artifact upload PASS.
 
+그 이후 player-facing visual source 정리 batch는 CODE REVIEWED 및 관련 test contract 갱신 상태지만 아직 새 build를 실행하지 않았다. 상세 정본은 `32_M5_PLAYER_FACING_VISUAL_AUDIT.md`와 `33_M5_ACTION_VISUAL_ASSET_GATE.md`를 따른다.
+
 남은 gate:
+- 최근 visual/network 변경을 포함한 의미 있는 build 1회.
 - 실제 Minecraft screenshot quality.
 - GUI Scale별 clipping/가독성/시선 이동.
 - 480×270 실화면 밀도.
 - animation/transition/reward reveal/audio timing.
 - representative 3D model pose/centering/실제 체감.
 - Skeleton aim / Enderman phase가 실제 플레이에서 충분히 읽히는지 검증.
+- action icon silhouette 및 Expedition Journal compact entity lineup이 실제 크기에서 구분되는지 검증.
 
-**중요:** screenshot/reference 비교 전 M5 production visual PASS를 선언하지 않는다. 사용자의 현재 방침에 따라 중간 실플레이 테스트를 요구하지 않고, 통합 테스트 가치가 있는 완성 구간에서 한 번에 검증한다.
+**중요:** screenshot/reference 비교 전 M5 production visual PASS를 선언하지 않는다. 현재는 기능을 더 쌓기보다 M6 외부 월드와 함께 첫 통합 실플레이에서 검증하는 것이 우선이다.
 
 ## M6 — World & Life Loop
 상태: **IN PROGRESS — FIRST LOOP AUTOMATED ACCEPTANCE PASS / EXTERNAL WORLD MIGRATION + INTEGRATED PLAYTEST + VISUAL GATE PENDING**
@@ -126,7 +135,8 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 - 장비 server-authored snapshot/action network와 stale token 검증.
 - 기존 Character Detail에 네 번째 `Equipment` context 통합: 3개 장비 목록, 현재/다음 bonus, 실제 material 보유량, Coin 비용, forge 접근 상태, Craft/Upgrade/Equip/Unequip.
 - 장비 UI는 새 dashboard/새 통화를 만들지 않고 기존 M5 visual language를 재사용.
-- 대표 장비 시각 원천 고정: `Iron Bulwark → minecraft:shield`, `Copper Edge → minecraft:copper_sword`, `Golden Heart → minecraft:golden_apple`. 별도 TURNBOUND 아이콘을 만들지 않고 Mojang runtime item model을 직접 쓰는 방향을 `31_M6_EQUIPMENT_VISUAL_ASSET_GATE.md`에 고정.
+- `visualItem`을 equipment definition data에 추가하고 server snapshot까지 전달.
+- 대표 장비 시각 원천 고정: `Iron Bulwark → minecraft:shield`, `Copper Edge → minecraft:copper_sword`, `Golden Heart → minecraft:golden_apple`; Equipment UI는 해당 `visualItem`을 vanilla `ItemStack` renderer로 표시.
 - `HUB_01 -> REGION_01` 기능 slice의 실제 block/entity 배치 harness 구현.
 - Hub Smithing Table/Furnace/Crafting Table과 동쪽 route를 실제 월드에 연결.
 - `ore_outcrop`에 실제 Coal/Copper/Iron/Gold ore를 배치해 채광→제련→장비 material 흐름 연결.
@@ -158,12 +168,12 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 - 상세 정본: `19_M6_WORLD_ENCOUNTER_LIFECYCLE.md`, `21_M6_RESOURCE_NODE_CONTRACT.md`, `22_M6_BATTLE_PREPARATION_MATERIAL_SINK.md`, `23_M6_MINIMAL_EQUIPMENT_CONTRACT.md`, `24_M6_EQUIPMENT_FORGE_TRANSACTION.md`, `25_M6_FUNCTIONAL_WORLD_SLICE.md`, `26_M6_WORLD_ASSET_GATE.md`, `27_M6_FAST_TRAVEL_DISCOVERY.md`, `28_M6_FIRST_EXPEDITION_QUEST.md`, `29_M6_FIRST_LOOP_BALANCE_ACCEPTANCE.md`, `30_EXTERNAL_WORLD_BASE.md`, `31_M6_EQUIPMENT_VISUAL_ASSET_GATE.md`.
 
 남음:
-- `visualItem`을 equipment definition data에 추가하고 server snapshot으로 전달한 뒤 Equipment UI에서 vanilla `ItemStack` renderer로 실제 장비 아이콘을 표시. 자체 placeholder art 금지.
+- 최근 M5/M6 visual/network 변경을 포함한 build/JUnit/JAR checkpoint 1회.
 - 공식 Drehmal: APOTHEOSIS v2.2.2f test copy를 Java 26.2 + NeoForge에서 실제 load/migration하고 New Drabyel / Stasis Facility 및 disabled candidate 5곳을 검사.
 - migration 확인 뒤에만 외부 광산/농장/낚시/patrol/elite candidate를 실제 geography에 맞춰 enable/좌표 조정.
 - 장비/준비물/채집/discovery/fast travel/첫 임무를 실제 Minecraft 한 사이클에서 통합 playtest하고 screenshot visual audit 수행.
 - 실제 Hub→REGION 이동시간, 채집/제련시간, patrol/elite 전투시간, 필요한 patrol 횟수, 보상 후 성장 선택의 체감을 측정해 밸런스 조정.
-- GUI Scale별 Equipment/Battle HUD/Result 가독성 및 외부 월드 waypoint/resource/Encounter anchor의 시각 품질 검수.
+- GUI Scale별 Equipment/Battle HUD/Result/Expedition Journal 가독성 및 외부 월드 waypoint/resource/Encounter anchor의 시각 품질 검수.
 - 실제 external world screenshot 비교 후 anchor 배치/UI/연출 세부 수정. 외부 terrain/building 자체를 TURNBOUND가 재디자인하지 않음.
 - 3개 이상 travel destination이 실제 필요해질 때만 destination selection UX 추가.
 
@@ -188,20 +198,40 @@ eligible 전수 PLAYABLE 이상, 미분류 0.
 - dedicated server/multiplayer verification 가능 시 수행.
 - 최종 visual regression.
 
-## 지금 바로 할 일 — 2026-09-15 최신
+## 첫 통합 플레이테스트 진입 기준 — 2026-09-15 최신
 
-현재 우선순위는 **외부 시각 원천이 확정되지 않은 부분을 먼저 닫고, 외부 authored world를 실제 target 환경에서 검증한 뒤 첫 완성 사이클을 통합 playtest하는 것**이다.
+**지금부터 새 시스템/캐릭터 수를 늘리는 것보다 첫 통합 플레이테스트가 우선이다.**
 
-순서:
-1. `31_M6_EQUIPMENT_VISUAL_ASSET_GATE.md`의 mapping을 data-driven `visualItem` 계약으로 구현하고 Equipment UI에 vanilla `ItemStack` renderer를 연결한다.
-2. 관련 definition/network/UI contract test를 수행하고 의미 있는 코드 단위가 끝났을 때만 `Build turnbound-re`를 1회 실행한다.
-3. 공식 Drehmal: APOTHEOSIS v2.2.2f의 복사본을 Java 26.2 + NeoForge에서 실제 load/migration한다. 원본 배포본은 수정하지 않는다.
-4. New Drabyel / Stasis Facility와 기록된 resource/encounter 후보를 직접 검사해 external-world profile 좌표와 enabled 상태를 확정한다.
-5. 새 진행 상태에서 Hub waypoint → REGION gateway → 생활 분기 → patrol → rift elite → reward → fast travel 귀환까지 끊지 않고 한 사이클 플레이한다.
-6. Hub→REGION 이동시간, 채집/제련시간, patrol/elite 전투시간, elite 전에 필요하다고 느낀 patrol 횟수를 기록한다.
-7. Equipment UI, Battle HUD, Battle Result와 external-world 대표 지점을 screenshot으로 남겨 가독성·밀도·시선 이동·visual hierarchy를 검수한다.
-8. 실제 증상 기준으로 동선·채집량·보상·적 스펙·UI·연출을 조정한 뒤 M5/M6 production visual PASS 여부를 판정한다.
-9. 그 다음에만 M7 Full Vanilla Roster로 확장한다.
+진입 조건은 두 개뿐이다.
+1. 최근 M5/M6 visual/network 변경을 포함한 의미 있는 build/JUnit/JAR checkpoint가 1회 통과한다.
+2. 공식 Drehmal: APOTHEOSIS v2.2.2f 복사본이 Java 26.2 + NeoForge에서 실제로 열리고 New Drabyel / Stasis Facility를 확인할 수 있다.
+
+두 조건이 만족되면 더 기다리지 않고 바로 테스트한다. 다섯 candidate를 완벽하게 다 고정하고 콘텐츠를 늘린 뒤 테스트하는 것이 아니라, migration 검사에서 실제 geography에 맞는 candidate만 enable/좌표 조정한 뒤 첫 사이클을 플레이한다.
+
+첫 테스트 순서:
+1. 새 진행 상태에서 Hub/New Drabyel 시작 및 waypoint 발견.
+2. 파티 4명 편성, 캐릭터/장비 화면 확인.
+3. Stasis Facility 방향으로 이동해 REGION gateway 직접 발견.
+4. 실제 채광/농사/낚시 중 연결 가능한 생활 분기를 수행하고 전투 준비물 또는 장비 재료를 확보.
+5. 반복 patrol을 최소 1회 수행하며 Intent → 약점 → Poise → EXPOSED → 공격 창이 실제로 판단을 만드는지 확인.
+6. 획득한 Coin/Essence/material로 성장 또는 첫 장비 중 하나를 선택.
+7. 필요하면 두 번째 patrol 후 rift elite에 도전.
+8. 승리 → reward/completion 저장 → Hub fast travel 귀환.
+9. save/reload 후 party/growth/equipment/discovery/completion 보존 확인.
+10. 같은 세션에서 Battle HUD, Command, Result, Equipment, Expedition Journal과 주요 월드 지점을 screenshot으로 남김.
+
+측정:
+- Hub→REGION 실제 이동시간.
+- 채집/제련에 걸린 시간과 귀찮음.
+- 일반전/elite 실제 전투시간 및 cycle 수.
+- Intent를 보고 행동을 바꾼 횟수.
+- EXPOSED 공격 창을 실제 활용한 횟수.
+- elite 전에 필요하다고 느낀 patrol 횟수.
+- 보상 후 성장/장비 선택이 실제 고민이 되는지.
+- 480×270 및 일반 GUI Scale에서 핵심 정보가 잘리거나 너무 작은지.
+- 전투 모델/스킬/타격/사운드/카메라가 '기능 확인용'이 아니라 한 게임처럼 느껴지는지.
+
+이 첫 테스트에서 나온 증상이 다음 M5/M6 수정 batch의 정본이다. **M7 Full Vanilla Roster는 이 통합 테스트와 1차 수정 뒤에 시작한다.**
 
 금지:
 - 재료를 이유 없이 Coin/Essence로 환전해 모든 생활 활동을 같은 숫자로 평탄화.
@@ -215,4 +245,4 @@ eligible 전수 PLAYABLE 이상, 미분류 0.
 - 외부 item/model/UI reference를 보고 TURNBOUND 전용 replacement art를 새로 제작.
 - 실제 통합 playtest 없이 M5/M6 production visual PASS 선언.
 
-현재 자동 gate는 통합 테스트 가치가 있는 수준까지 닫혀 있지만, **Drehmal 26.2 migration과 실제 Minecraft visual/playtest는 아직 미실행**이다. 실행하지 않은 항목을 PASS로 승격하지 않는다.
+현재 자동 gate는 통합 테스트 가치가 있는 수준까지 닫혀 있지만, **최근 visual/network batch의 새 build와 Drehmal 26.2 migration, 실제 Minecraft visual/playtest는 아직 미실행**이다. 실행하지 않은 항목을 PASS로 승격하지 않는다.
