@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.0-alpha.19
+
+- Added the first simulator-style rebirth loop without adding a second currency or another management menu.
+- Rebirth becomes available only after reaching `블루워터`, emptying the catch bag and holding the current rebirth cost; the first cost is 10,000 C and later costs rise by 1,500 C per rebirth.
+- Rebirth returns the player to Cheongram Lakeside, resets coins, catch bag and rod tier, but permanently preserves the bestiary, catch counts and personal-best records.
+- Each rebirth permanently increases ordinary fish sale income by 30%, so later progression cycles become meaningfully faster while first-discovery/location-completion bonuses remain one-time collection rewards.
+- Kept rebirth server-authoritative: the client only requests it, while the server validates rod tier, active fishing state, bag state, coins and the location reset.
+- Reused the existing catch-bag progression panel for rebirth instead of creating another screen; the panel shows rebirth count, permanent sale multiplier, next cost and readiness state.
+- Added a distinct rebirth confirmation sound and persistent rod presentation: post-rebirth rods keep a glint and carry the rebirth count in the equipped item name even after the rod tier resets.
+- Added backward-compatible persistent `rebirths` profile data, synchronized it to clients, and added deterministic rebirth eligibility/sale-growth tests.
+
 ## 0.1.0-alpha.18
 
 - Added visible three-tier rod progression without replacing vanilla fishing-hook transport: each saved rod tier now selects a dedicated client item model while gameplay continues to use `minecraft:fishing_rod` as the carrier.
@@ -22,7 +33,7 @@
 
 - Added three server-resolved fishing hotspots to each dedicated location so map sub-areas affect target hunting instead of acting as scenery only.
 - Hotspots are resolved from the bobber's actual water coordinates when a cast becomes valid.
-- Hotspots bias species selection weights rather than hard-gating species; every species in the current location remains possible from every valid fishing spot.
+- Hotspots bias species selection weights rather than hard-gating species; every species in the location remains possible from every valid fishing spot.
 - Added Cheongram Lakeside hotspots: `서쪽 얕은 물`, `깊은 물골`, `바위 그늘`.
 - Added Gull Harbor hotspots: `방파제 안쪽`, `항로 중앙`, `외해 끝부두`.
 - Added Deepwater Channel hotspots: `유도등 수역`, `심해 골`, `고대 해구`.
