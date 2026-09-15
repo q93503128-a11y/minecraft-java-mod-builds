@@ -1,6 +1,6 @@
 # Open-World RPG — R01 External Asset Intake Manifest
 
-> Status: **ASSET INTAKE PHASE B / EVIDENCE PASS 2 COMPLETE — NOT ASSET READY**  
+> Status: **ASSET INTAKE PHASE B / EVIDENCE PASS 3 COMPLETE — NOT ASSET READY**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Project contract: `PROJECT.md`  
 > Opening: `R01_VERTICAL_SLICE.md`  
@@ -8,6 +8,7 @@
 > Appearance/recovery: `RECOVERY_PRODUCTION_APPEARANCE.md`  
 > Provenance registry: `EXTERNAL_SOURCES.md`  
 > Phase-B evidence: `R01_ASSET_PHASE_B_EVIDENCE_2026-09-15.md`  
+> Pass-3 evidence: `R01_ASSET_PHASE_B_PASS3_EVIDENCE_2026-09-15.md`  
 > Rule: gameplay canon still wins. For **R01 asset-admission/license decisions**, this file records the newest verified evidence and supersedes older subordinate notes whose license label has become stale.
 
 This file converts the project's external-first rule from a pack-level intention into an intake manifest. It is deliberately conservative: an asset is not considered production-ready merely because a web page looks good or because a previous conversation called a pack CC0.
@@ -76,6 +77,22 @@ The older generic Quaternius `CC0 / direct-use` labels in `EXTERNAL_SOURCES.md`,
 
 Source-specific exception handling matters: if an exact Quaternius artifact is independently published by Quaternius on another source such as OpenGameArt or itch with explicit CC0 terms, preserve that artifact's own source/license evidence instead of silently replacing it with the central site's current default label.
 
+Phase-B pass 3 confirms two directly useful creator-uploaded OpenGameArt snapshots:
+
+```text
+Fantasy Props MegaKit Standard
+  file = fantasy_props_megakitstandard.zip
+  license = CC0
+  published Standard count = 94 models
+
+Medieval Village MegaKit Standard
+  file = medieval_village_megakitstandard.zip
+  license = CC0
+  published Standard count = 176 models
+```
+
+These source-specific CC0 snapshots are public-safe **candidate sources** when the project acquires and hashes those exact artifacts. A third-party recorded SHA-256 is evidence, not a substitute for locally hashing the bytes actually used.
+
 ---
 
 # 3. Public-safe baseline families
@@ -121,10 +138,10 @@ Kenney is a baseline reusable pool, not automatic permission to give every boss 
 
 Quaternius `Universal Animation Library` and `Universal Animation Library 2` remain strong humanoid motion candidates because they use a universal humanoid rig and public source pages/source-specific mirrors have explicit CC0 evidence for relevant editions.
 
-Phase-B pass 2 established:
+Phase-B pass 3 establishes exact candidate clip names:
 
-- UAL2 exact clip candidate `Consume` for meal eating;
-- UAL1 contains a real drink action in a downstream imported 120-clip library, but the exact raw clip string is not yet pinned;
+- UAL2 `Consume` for meal eating;
+- UAL1 `Drink` for potion drinking;
 - UAL2 also covers chop/mine/fish/farm/carry/sleep and therefore is a useful cross-check against KayKit for motions that clip less with the selected Quaternius body/outfit family.
 
 Because current central Quaternius licensing has drifted, actual project adoption still records the exact UAL/UAL2 source edition, acquisition-time license evidence and source hash. Do not infer raw-repo safety from the family name alone.
@@ -227,23 +244,35 @@ Preferred visual family remains:
 
 Current published pack properties are strong enough to keep the family selected: 12 outfits, 62 modular parts, 3 texture variants, humanoid rig, retargeting and UAL compatibility.
 
-However exact R01 part names/paths are **not invented from screenshots**.
+Phase-B pass 3 found an extracted Standard snapshot whose embedded `License_Standard.txt` identifies the Standard version as the free partial package under CC0 and says remaining outfits/separate parts belong to the Source version. Current Quaternius itch also lists `Modular Character Outfits - Fantasy[Standard].zip` as a free CC0 download. The exact snapshot is still treated as evidence until the project acquires the intended creator-controlled archive and hashes it.
 
 Current intake state:
 
 | Use | Source family | Status | Phase-B requirement |
 |---|---|---|---|
-| River Scholar Garb | Modular Character Outfits - Fantasy | `ARCHIVE_INSPECTION_REQUIRED / READY_LOCAL_ONLY` | download legal package, save package license, choose exact head/chest/legs/gloves/boots parts, hash files |
-| Wayfarer Leathers | same | `ARCHIVE_INSPECTION_REQUIRED / READY_LOCAL_ONLY` | same; verify dodge/roll and bow draw clipping |
-| Ironbound Guard | same | `ARCHIVE_INSPECTION_REQUIRED / READY_LOCAL_ONLY` | same; verify guard/perfect-guard/heavy attack clipping |
-| guild/class trainer | Outfits + Universal Base Characters | `ARCHIVE_INSPECTION_REQUIRED / READY_LOCAL_ONLY` | exact body/hair/outfit/prop IDs |
-| smith | same + external tool prop | `ARCHIVE_INSPECTION_REQUIRED / READY_LOCAL_ONLY` | exact outfit + KayKit hammer/anvil binding |
-| alchemist/healer | same + bottle/cauldron prop | `ARCHIVE_INSPECTION_REQUIRED / READY_LOCAL_ONLY` | exact outfit/prop IDs |
-| inn worker | same | `ARCHIVE_INSPECTION_REQUIRED / READY_LOCAL_ONLY` | exact civilian/tavern combination |
-| merchant | same | `ARCHIVE_INSPECTION_REQUIRED / READY_LOCAL_ONLY` | exact merchant silhouette |
-| stable handler | same | `ARCHIVE_INSPECTION_REQUIRED / READY_LOCAL_ONLY` | exact handler outfit + tack/brush prop |
-| guards | same | `ARCHIVE_INSPECTION_REQUIRED / READY_LOCAL_ONLY` | 2–3 authored variations, not clones |
-| civilians/travelers | same | `ARCHIVE_INSPECTION_REQUIRED / READY_LOCAL_ONLY` | small coherent variation library |
+| River Scholar Garb | Modular Character Outfits - Fantasy | `ARCHIVE_INSPECTION_REQUIRED` | Standard Ranger/Peasant are not a truthful scholar silhouette; inspect current Standard/Source or another coherent family, preserve source license/hash, choose exact parts |
+| Wayfarer Leathers | Standard Ranger part family | exact candidate filenames pinned; `ARCHIVE_INSPECTION_REQUIRED` until source acquisition + rig/clip review | evaluate `*_Ranger_Body/Arms/Legs/Feet`, optional `Facewear`/`Pauldron`; verify dodge/roll and bow draw clipping |
+| Ironbound Guard | Modular Character Outfits - Fantasy | `ARCHIVE_INSPECTION_REQUIRED` | Standard Ranger/Peasant are not accepted as heavy armor; inspect other legal parts/source family and verify guard/heavy-attack clipping |
+| guild/class trainer | Outfits + Universal Base Characters | `ARCHIVE_INSPECTION_REQUIRED / READY_LOCAL_ONLY` | exact body/hair/outfit/prop IDs still needed |
+| smith | Peasant/Ranger candidate + external tool prop | exact clothing candidate family exists; role composition pending | acquire/hash Standard, inspect silhouette, bind KayKit hammer/anvil and work animation |
+| alchemist/healer | Peasant candidate + bottle/cauldron prop | clothing candidate exists; role-specific final still pending | exact body/head/hair + potion/cauldron selection |
+| inn worker | Standard Peasant part family | exact candidate filenames pinned; visual role review pending | acquire/hash Standard and author 1–2 coherent combinations |
+| merchant | Standard Peasant baseline + role props | candidate family exists; final silhouette pending | avoid cloning inn/civilian appearance |
+| stable handler | Standard Peasant/Ranger baseline | candidate family exists; final silhouette + tack/brush prop pending | verify mount interaction poses |
+| guards | Ranger candidate is not automatically guard armor | `ARCHIVE_INSPECTION_REQUIRED` | 2–3 authored variations with sufficiently defensive silhouette |
+| civilians/travelers | Standard Peasant part family | exact candidate filenames pinned; variation authoring pending | create a small coherent variation library rather than clones |
+
+Exact Standard modular part families observed:
+
+```text
+Female_Peasant_Arms / Body / Feet / Legs
+Male_Peasant_Arms / Body / Feet / Legs
+
+Female_Ranger_Arms / Body / Facewear / Feet / Legs / Pauldron
+Male_Ranger_Arms / Body / Facewear / Feet / Legs / Pauldron
+```
+
+Matching whole-outfit glTFs also exist for Female/Male Peasant and Ranger, including `NoBody` variants. Full paths and evidence are recorded in `R01_ASSET_PHASE_B_PASS3_EVIDENCE_2026-09-15.md`.
 
 Runtime conversion target remains Fabric 26.2 `Armor Model API` for project-owned worn geometry unless asset testing proves a hard blocker.
 
@@ -315,16 +344,28 @@ Canonical items:
 
 Preferred prop family:
 
-- accepted Quaternius fantasy potion props if acquisition license evidence supports the intended handling; otherwise another coherent CC0 bottle set must be selected.
+- Quaternius `Fantasy Props MegaKit Standard` CC0 snapshot when the exact creator-uploaded/source artifact is acquired and preserved; otherwise another coherent accepted bottle family.
 
-Current status for all three exact bottles/icons: `ARCHIVE_INSPECTION_REQUIRED`.
+Phase-B pass 3 pins the real Fantasy Props candidate filename universe:
+
+```text
+Potion_1.gltf
+Potion_2.gltf
+Potion_3.gltf
+Potion_4.gltf
+```
+
+`Potion_1.gltf` is independently corroborated by a creator-domain path reference and by a consumer of the OpenGameArt Standard archive. `Potion_2`, `Potion_3` and `Potion_4` are also observed in downstream extracted Fantasy Props trees/manifests.
+
+Current status: **exact candidate filenames pinned; final three-item assignment still `ARCHIVE_INSPECTION_REQUIRED`.** Do not map Healing/Focus/Cleansing to 1/2/3 solely from filenames or color.
 
 Requirements:
 
-- distinct silhouette/contents enough to distinguish the three without color alone;
+- inspect all candidates in 3D and choose three with sufficiently distinct silhouette/contents/readability;
 - same accepted 3D model is the basis for world/hand presentation and inventory icon render;
-- bottle hand pivot must align with the final drink animation;
-- no vanilla potion bottle as final presentation.
+- bottle hand pivot must align with UAL1 `Drink` or whichever final drink clip wins visual review;
+- no vanilla potion bottle as final presentation;
+- preserve source-specific CC0 evidence and calculate project-local SHA-256 from the exact archive/files actually used.
 
 ## 7.2 Food
 
@@ -438,12 +479,12 @@ No production action is accepted with only a vanilla arm bob if a full-body exte
 
 ## 8.3 Eat / drink / revive / mount gaps
 
-KayKit 1.1 still does **not** supply evidence for eating/drinking; its current page describes those as planned future actions. Phase-B pass 2 therefore looked at other external sources rather than inventing placeholders.
+KayKit 1.1 still does **not** supply evidence for eating/drinking; its current page describes those as planned future actions. Other accepted/verified external candidates are therefore used instead of inventing placeholders.
 
 | Action | Current evidence | Current state |
 |---|---|---|
-| meal eat | Quaternius UAL2 exact vendor clip `Consume` is mapped to eat by a real downstream importer | `ARCHIVE_INSPECTION_REQUIRED`; exact candidate identified, acquired-edition/license/hash + Minecraft review pending |
-| potion drink | imported Quaternius UAL1 120-clip library is verified to contain/wire a drink action, but exact raw clip string is not published by the evidence inspected | `ARCHIVE_INSPECTION_REQUIRED`; source family identified, exact clip locator still pending |
+| meal eat | Quaternius UAL2 exact clip `Consume` | `ARCHIVE_INSPECTION_REQUIRED`; exact candidate identified, source acquisition/license/hash + retarget/prop/Minecraft review pending |
+| potion drink | Quaternius UAL1 exact clip `Drink` | `ARCHIVE_INSPECTION_REQUIRED`; exact candidate identified, source acquisition/license/hash + bottle alignment/Minecraft review pending |
 | teammate revive/help-up | Fab `Revive & Downed Animation Pack` exposes paired reviver/reviving clips | `NEEDS_EXTERNAL_CLIP`; `VERIFY / LOCAL_ONLY` candidate only until license/acquisition + two-character alignment review |
 | Trail Stag mount | Fab `Modular Classic Horse` exposes rider mount animations/root-motion variants | `NEEDS_EXTERNAL_CLIP`; `VERIFY / LOCAL_ONLY` candidate; horse-to-stag retarget/clearance not proven |
 | Trail Stag dismount | same pack explicitly exposes rider dismount animations/root-motion variants | `NEEDS_EXTERNAL_CLIP`; same gate |
@@ -473,15 +514,32 @@ Do not close any row with a two-keyframe hand-to-face placeholder or instant tel
 
 Preferred design language remains Quaternius `Medieval Village MegaKit` because the existing R01 canon was built around its coherent modular medieval/fantasy architecture.
 
-Due to §2, new raw package handling is:
+Phase-B pass 3 identifies a direct creator-uploaded OpenGameArt Standard snapshot:
 
 ```text
-private playable use: allowed subject to current QAL/package terms
-public repo raw asset bytes: false until acquisition-time license is recorded
-exact module IDs: ARCHIVE_INSPECTION_REQUIRED
+medieval_village_megakitstandard.zip
+license = CC0
+published Standard count = 176 models
 ```
 
-The starting settlement still requires exact Phase-B intake for:
+A curated consumer of that exact Standard family records real modular source paths including:
+
+```text
+glTF/Wall_Plaster_Straight.gltf
+glTF/Wall_Plaster_Window_Wide_Round.gltf
+glTF/Wall_Plaster_Door_Round.gltf
+glTF/Wall_UnevenBrick_Straight.gltf
+glTF/Roof_RoundTiles_6x8.gltf
+glTF/Roof_Front_Brick6.gltf
+glTF/Prop_Chimney.gltf
+glTF/Balcony_Cross_Straight.gltf
+glTF/Prop_Vine1.gltf
+glTF/Prop_Vine4.gltf
+```
+
+This materially improves provenance and gives the starting settlement a public-safe candidate modular vocabulary. It does **not** mean service buildings are already designed.
+
+The starting settlement still requires authored composition/visual acceptance for:
 
 - gate;
 - shrine silhouette/details;
@@ -494,7 +552,11 @@ The starting settlement still requires exact Phase-B intake for:
 - starter homes;
 - market/quest-board props.
 
-A Minecraft block translation inspired by the external architecture must still be reviewed for source-license implications before it is packaged publicly. The private playable build may use local integration where the terms permit it.
+Acquisition rule:
+
+- if the exact OpenGameArt CC0 Standard snapshot is used, preserve that page/archive identity and calculate the project-local archive/file SHA-256;
+- if a newer Quaternius package is used instead, preserve that exact package's source/license evidence rather than transferring the historical snapshot's status automatically;
+- service-specific layout quality still requires 3D/Minecraft review.
 
 Fallback/replacement architecture must come from one coherent external family such as an accepted Kenney CC0 set, not a collage of unrelated schematics.
 
@@ -608,7 +670,8 @@ Rules:
 - `source_sha256` hashes the actual downloaded source/archive or exact source file used, not a web page;
 - generated/converted project files also receive hashes in the normal build/art pipeline where useful;
 - if a source is `LOCAL_ONLY`, Git stores the manifest/path/integration instructions, not the forbidden raw bytes;
-- screenshots/renders are evidence of acceptance, not license evidence.
+- screenshots/renders are evidence of acceptance, not license evidence;
+- a SHA-256 copied from a third-party manifest is recorded as **reported evidence**, not as the project's own acquisition hash.
 
 ---
 
@@ -660,22 +723,30 @@ Phase-B evidence pass 2 additionally completed:
 
 8. verified source-specific Quaternius UAL/UAL2 CC0 publication evidence separately from the central QAL drift;
 9. identified UAL2 `Consume` as an exact real eat-animation candidate;
-10. identified UAL1 as a real drink-animation family without inventing the still-unseen exact clip string;
+10. identified UAL1 as a real drink-animation family without inventing a clip string;
 11. found paired external teammate-revive and rider mount/dismount candidates for later license/rig/quality evaluation;
 12. pinned Kenney Particle Pack filename families for R01 VFX evaluation;
-13. pinned Kenney Impact Sounds and UI Audio filename families without falsely claiming audition or archive SHA-256;
-14. updated `R01_ASSET_PHASE_B_EVIDENCE_2026-09-15.md` with the source/evidence boundaries.
+13. pinned Kenney Impact Sounds and UI Audio filename families without falsely claiming audition or archive SHA-256.
+
+Phase-B evidence pass 3 additionally completed:
+
+14. pinned UAL1's exact drink candidate clip as `Drink` and retained UAL2 `Consume` for eat;
+15. found creator-uploaded OpenGameArt CC0 Standard snapshots for Fantasy Props (94 models) and Medieval Village (176 models), so those exact historical artifacts no longer inherit a blanket current-QAL assumption;
+16. pinned exact Standard Ranger and Peasant modular outfit part families and kept Scholar/Heavy armor unresolved instead of misusing them;
+17. expanded the Fantasy Props potion universe to exact `Potion_1` / `Potion_2` / `Potion_3` / `Potion_4` candidates while keeping final three-potion visual assignment gated;
+18. pinned real Medieval Village Standard wall/window/door/roof/prop module filenames for settlement-shell intake;
+19. recorded all pass-3 evidence and boundaries in `R01_ASSET_PHASE_B_PASS3_EVIDENCE_2026-09-15.md`.
 
 Still required:
 
-1. download/inspect the actual Quaternius packages legally used by the project;
-2. preserve acquisition-time license files/screens/evidence and calculate archive/file SHA-256 values;
-3. resolve exact modular part filenames for River Scholar Garb / Wayfarer Leathers / Ironbound Guard and settlement NPC roles;
-4. resolve exact Medieval Village/Fantasy Props module filenames for all starting-settlement services;
-5. acquire the authoritative KayKit weapon/tools package bytes used by the project, record SHA-256, and visually choose the final A/B/C variants rather than promoting mirror tree names directly;
+1. actually acquire the exact source archives/files chosen by the project and calculate project-local SHA-256 values;
+2. inspect and accept exact River Scholar Garb and Ironbound Guard parts/families;
+3. visually select and accept the Wayfarer Ranger combination plus authored Peasant settlement-role combinations;
+4. compose and visually accept each starting-settlement service building from the now-pinned modular vocabulary;
+5. acquire the authoritative KayKit weapon/tools package bytes used by the project, record SHA-256, and visually choose final A/B/C variants rather than promoting mirror tree names directly;
 6. finish Trail Skewers exact food source and inspect the Restaurant Bits candidate meshes;
-7. choose exact external potion bottle files;
-8. acquire/inspect the chosen UAL editions, pin UAL1's exact drink clip string and visually accept UAL2 `Consume`;
+7. visually inspect `Potion_1..4`, select three sufficiently distinct potion models, and verify hand pivots/icons;
+8. acquire/inspect chosen UAL editions and visually accept UAL1 `Drink` + UAL2 `Consume` after retarget/prop alignment;
 9. resolve licensing/acquisition/retarget quality for teammate revive/help-up and Trail Stag mount/dismount, or replace those candidates;
 10. visually inspect and select exact Kenney VFX sprites;
 11. actually audition and select exact Kenney audio clips;
@@ -687,18 +758,22 @@ Until those rows are resolved, `R01 ASSET READY = NO`. Phase B is active and mat
 
 # 15. Verification state
 
-Current state after Phase-B evidence pass 2:
+Current state after Phase-B evidence pass 3:
 
 - `DESIGN REVIEWED`: YES
 - `EXTERNAL SOURCE REVIEWED`: YES
-- `LICENSE METADATA REVIEWED`: YES, with Quaternius drift explicitly resolved only at source/package-evidence level, not blanket family level
-- `PHASE-B EVIDENCE DOC RECORDED`: YES
+- `LICENSE METADATA REVIEWED`: YES, with Quaternius handled source/package-specifically rather than by blanket family assumption
+- `PHASE-B PASS-3 EVIDENCE DOC RECORDED`: YES
 - `EXACT PUBLIC-SAFE KAYKIT PATHS PINNED`: YES for listed Adventurers + Restaurant Bits evidence
 - `KAYKIT WORK/FISHING CLIP NAMES PINNED`: YES
 - `KAYKIT WEAPON/TOOLS CANDIDATE FILENAMES PINNED`: YES as tree evidence; authoritative archive SHA-256/final visual selection pending
+- `QUATERNIUS STANDARD CC0 SNAPSHOT SOURCES IDENTIFIED`: YES for Fantasy Props + Medieval Village; project-local archive hashing pending
+- `WAYFARER RANGER / PEASANT STANDARD PART NAMES PINNED`: YES; visual acceptance pending
+- `POTION MODEL CANDIDATE FILENAMES PINNED`: YES — `Potion_1..4`; final three-model assignment pending
 - `EAT EXTERNAL CLIP CANDIDATE PINNED`: YES — UAL2 `Consume`; source acquisition/visual acceptance pending
-- `DRINK EXTERNAL SOURCE FAMILY IDENTIFIED`: YES — UAL1; exact raw clip name pending
+- `DRINK EXTERNAL CLIP CANDIDATE PINNED`: YES — UAL1 `Drink`; source acquisition/visual acceptance pending
 - `REVIVE/MOUNT EXTERNAL CANDIDATES IDENTIFIED`: YES; not accepted
+- `MEDIEVAL VILLAGE MODULE CANDIDATE NAMES PINNED`: YES for a useful Standard subset; service compositions not accepted
 - `KENNEY VFX/AUDIO CANDIDATE FILENAME FAMILIES PINNED`: YES; visual/audition acceptance pending
 - `ALL R01 EXACT ASSET FILENAMES PINNED`: NO
 - `R01 ASSET READY`: NO
