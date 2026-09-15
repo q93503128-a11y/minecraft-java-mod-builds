@@ -63,7 +63,11 @@ However, this GitHub repository is public. Therefore:
 - `EXTERNAL_SOURCES.md` — external code/assets/UI/map/structure provenance and adoption status
 - `PROJECT.md` — technical/build identity and project-wide contracts
 
-Do not create parallel competing design documents. If the design grows, split subordinate reference files only when `GAME_DESIGN.md` explicitly points to them and remains the master index.
+Subordinate reference:
+
+- `REGIONS.md` — Azari regional content expansion for the regional work explicitly queued by `GAME_DESIGN.md` §27. It does not override the master canon; when any detail conflicts, `GAME_DESIGN.md` wins.
+
+Do not create parallel competing design documents. Subordinate reference files may expand a workstream that is explicitly indexed/queued by `GAME_DESIGN.md`, but `GAME_DESIGN.md` remains the master index and conflict authority.
 
 ## Implementation cleanliness contract
 
