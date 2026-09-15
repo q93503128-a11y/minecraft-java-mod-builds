@@ -135,7 +135,7 @@ public final class ExpeditionJournalScreen extends Screen {
                     previewY,
                     ENEMY_PREVIEW_SLOT,
                     ENEMY_PREVIEW_SLOT);
-            EntityPreviewLayout.PreviewSpec spec = preview.layout(
+            EntityPreviewLayout.PreviewSpec spec = preview.compactLayout(
                     this.minecraft, sourceEntity, slot.width(), slot.height());
             preview.extract(graphics, slot, spec);
         }
