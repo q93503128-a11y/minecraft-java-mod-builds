@@ -6,6 +6,7 @@ public final class EntityPreviewLayout {
     private static final int MIN_REGION_HEIGHT = 120;
     private static final int MIN_TEXT_WIDTH = 118;
     private static final int MAX_RENDER_SCALE = 48;
+    private static final int COMPACT_INSET = 2;
 
     private EntityPreviewLayout() {}
 
@@ -33,10 +34,10 @@ public final class EntityPreviewLayout {
         }
     }
 
+    /** Character-detail layout that preserves a readable text column. */
     public static PreviewSpec fit(int regionWidth, int regionHeight, float entityWidth, float entityHeight) {
         if (regionWidth < MIN_REGION_WIDTH || regionHeight < MIN_REGION_HEIGHT
-                || !Float.isFinite(entityWidth) || !Float.isFinite(entityHeight)
-                || entityWidth <= 0.0F || entityHeight <= 0.0F) {
+                || !validEntityDimensions(entityWidth, entityHeight)) {
             return PreviewSpec.hidden(regionWidth);
         }
 
@@ -47,10 +48,34 @@ public final class EntityPreviewLayout {
 
         int innerWidth = Math.max(1, boxWidth - 12);
         int innerHeight = Math.max(1, boxHeight - 8);
-        int scale = (int) Math.floor(Math.min(innerWidth / entityWidth, innerHeight / entityHeight));
-        scale = clamp(scale, 1, MAX_RENDER_SCALE);
+        int scale = fitScale(innerWidth, innerHeight, entityWidth, entityHeight);
 
         return new PreviewSpec(true, regionWidth - boxWidth, 18, boxWidth, boxHeight, scale, textWidth);
+    }
+
+    /**
+     * Small source-backed lineup layout for places such as Expedition Journal encounter rows.
+     * This contract reserves the whole slot for the entity and intentionally carries no text column.
+     */
+    public static PreviewSpec fitCompact(int regionWidth, int regionHeight, float entityWidth, float entityHeight) {
+        if (regionWidth < COMPACT_INSET * 2 + 1 || regionHeight < COMPACT_INSET * 2 + 1
+                || !validEntityDimensions(entityWidth, entityHeight)) {
+            return PreviewSpec.hidden(regionWidth);
+        }
+        int innerWidth = Math.max(1, regionWidth - COMPACT_INSET * 2);
+        int innerHeight = Math.max(1, regionHeight - COMPACT_INSET * 2);
+        int scale = fitScale(innerWidth, innerHeight, entityWidth, entityHeight);
+        return new PreviewSpec(true, 0, 0, regionWidth, regionHeight, scale, 1);
+    }
+
+    private static int fitScale(int innerWidth, int innerHeight, float entityWidth, float entityHeight) {
+        int scale = (int) Math.floor(Math.min(innerWidth / entityWidth, innerHeight / entityHeight));
+        return clamp(scale, 1, MAX_RENDER_SCALE);
+    }
+
+    private static boolean validEntityDimensions(float entityWidth, float entityHeight) {
+        return Float.isFinite(entityWidth) && Float.isFinite(entityHeight)
+                && entityWidth > 0.0F && entityHeight > 0.0F;
     }
 
     private static int clamp(int value, int min, int max) {
