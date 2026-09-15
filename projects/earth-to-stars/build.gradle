@@ -50,13 +50,21 @@ repositories {
         name = 'Modrinth'
         url = 'https://api.modrinth.com/maven'
     }
+    // KotlinForForge publishes its Forge runtime (including the -all artifact requested
+    // by Forge metadata transforms) on its own Maven. Make that group exclusive so a
+    // partial copy of the POM on another repository cannot win artifact resolution.
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Kotlin for Forge'
+                url = 'https://thedarkcolour.github.io/KotlinForForge/'
+            }
+        }
+        filter { includeGroup 'thedarkcolour' }
+    }
     maven {
         name = 'Valkyrien Skies Internal'
         url = 'https://maven.valkyrienskies.org'
-    }
-    maven {
-        name = 'Kotlin for Forge'
-        url = 'https://thedarkcolour.github.io/KotlinForForge/'
     }
 }
 
