@@ -26,6 +26,24 @@ class M6ExpeditionWorldFirstContractTest {
                 views.stream().map(ExpeditionNetworkPayloads.EncounterView::id).toList());
         assertEquals(views.size(), views.stream().map(ExpeditionNetworkPayloads.EncounterView::id).distinct().count());
         assertTrue(views.stream().allMatch(view -> view.difficulty() > 0 && view.enemyCount() > 0));
+        assertEquals(List.of("minecraft:zombie", "minecraft:skeleton", "minecraft:spider"),
+                views.get(0).enemySourceEntities());
+        assertEquals(List.of("minecraft:creeper", "minecraft:blaze", "minecraft:witch", "minecraft:enderman"),
+                views.get(1).enemySourceEntities());
+    }
+
+    @Test
+    void journalSnapshotRoundTripsServerAuthoredEnemyVisualIdentities() throws IOException {
+        DefinitionRegistry definitions = ProductionDefinitionFixture.load().registry();
+        ExpeditionNetworkPayloads.JournalView view = new ExpeditionNetworkPayloads.JournalView(
+                List.of("turnbound_re:zombie"),
+                ExpeditionJournalProjection.encounters(definitions),
+                "",
+                "");
+
+        ExpeditionNetworkPayloads.JournalView decoded = ExpeditionNetworkPayloads.JournalSnapshotS2C.of(view).decode();
+
+        assertEquals(view, decoded);
     }
 
     @Test
