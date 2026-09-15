@@ -88,7 +88,7 @@ public final class ShipSystemsRuntime {
         if (!Double.isFinite(propellantCost) || propellantCost < 0.0D) {
             throw new IllegalArgumentException("propellantCost must be finite and >= 0");
         }
-        double activity = Math.max(Math.abs(input.throttle()), Math.max(Math.abs(input.yaw()), Math.abs(input.pitch())));
+        double activity = Math.max(Math.abs(input.throttle()), Math.max(Math.abs(input.yaw()), Math.abs(input.lift())));
         if (activity <= AXIS_EPSILON) {
             return true;
         }
