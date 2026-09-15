@@ -28,14 +28,14 @@ if ($gitAvailable) {
         $commit = (& git -C $projectRoot rev-parse HEAD 2>$null | Out-String).Trim()
         $branch = (& git -C $projectRoot branch --show-current 2>$null | Out-String).Trim()
         if ([string]::IsNullOrWhiteSpace($branch)) { $branch = 'DETACHED' }
-        $dirty = (& git -C $projectRoot status --porcelain 2>$null | Out-String).Trim()
-        $worktreeState = if ([string]::IsNullOrWhiteSpace($dirty)) { 'CLEAN' } else { 'DIRTY' }
+        $dirty = (& git -C $projectRoot status --porcelain -- . 2>$null | Out-String).Trim()
+        $worktreeState = if ([string]::IsNullOrWhiteSpace($dirty)) { 'PROJECT_CLEAN' } else { 'PROJECT_DIRTY' }
 
         if (-not $AllowNonMain -and $branch -ne 'main') {
             throw "Pre-playtest checkpoint must run from branch main. Current branch: $branch. Use -AllowNonMain only for an intentional non-canonical build."
         }
-        if (-not $AllowDirty -and $worktreeState -ne 'CLEAN') {
-            throw 'Pre-playtest checkpoint requires a clean worktree so the produced JAR matches a reproducible commit. Commit/stash local changes, or use -AllowDirty only intentionally.'
+        if (-not $AllowDirty -and $worktreeState -ne 'PROJECT_CLEAN') {
+            throw 'Pre-playtest checkpoint requires projects/turnbound-re to be clean so the produced JAR matches the reported commit. Commit/stash TURNBOUND changes, or use -AllowDirty only intentionally. Unrelated monorepo projects do not block this check.'
         }
     }
 }
@@ -46,7 +46,7 @@ try {
     Write-Host "Project: $projectRoot"
     Write-Host "Commit: $commit"
     Write-Host "Branch: $branch"
-    Write-Host "Worktree: $worktreeState"
+    Write-Host "TURNBOUND tree: $worktreeState"
 
     $javaVersion = (& java -version 2>&1 | Out-String)
     Write-Host $javaVersion.Trim()
@@ -138,7 +138,7 @@ try {
 
 - Commit: $commit
 - Branch: $branch
-- Worktree: $worktreeState
+- TURNBOUND project tree: $worktreeState
 - Version: $($props['mod_version'])
 - Minecraft: $($props['minecraft_version'])
 - Java: 25
@@ -155,7 +155,7 @@ try {
 - Minecraft playtest: NOT RUN
 - Drehmal 26.2 migration: NOT RUN by this script
 
-Validation scope: canonical checkout state, Gradle dependency resolution (unless explicitly skipped), clean build, JUnit, production JAR metadata/class/assets/data presence, source/development-path exclusion, duplicate entry check, SHA-256.
+Validation scope: main-branch identity, TURNBOUND project-subtree cleanliness, Gradle dependency resolution (unless explicitly skipped), clean build, JUnit, production JAR metadata/class/assets/data presence, source/development-path exclusion, duplicate entry check, SHA-256. Unrelated monorepo project dirtiness is intentionally out of scope.
 "@
     Set-Content -Path (Join-Path $outDir 'BUILD_AND_RUNTIME_REPORT.md') -Value $report -Encoding utf8
 
