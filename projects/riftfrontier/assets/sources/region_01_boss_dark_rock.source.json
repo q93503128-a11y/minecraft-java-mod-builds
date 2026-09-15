@@ -2,7 +2,7 @@
   "schema_version": 1,
   "asset_id": "polyhaven:dark_rock",
   "role": "region_01_boss_material_source",
-  "status": "SOURCE_PINNED_ENDPOINT_REACHED_BYTES_NOT_ACCEPTED",
+  "status": "SOURCE_BYTES_ACCEPTED_DERIVATION_PENDING",
   "author": "Amal Kumar",
   "publisher": "Poly Haven",
   "canonical_page": "https://polyhaven.com/a/dark_rock",
@@ -15,13 +15,20 @@
   },
   "transfer_receipt": {
     "observed_date": "2026-09-15",
+    "workflow_run_id": 34934969947,
+    "artifact_id": 10383212118,
     "endpoint_reached": true,
-    "reported_content_length_bytes": 94658158,
-    "body_acquired": false,
-    "content_length_verified_against_downloaded_body": false,
-    "sha256": null,
-    "decoded": false,
-    "note": "The chat/web retrieval layer reached the exact pinned Poly Haven endpoint but could not retain the approximately 94 MB body. A repository-scoped GitHub Actions intake now acquires only this exact pinned URL, verifies PNG structure/chunk CRCs, records byte size/SHA-256/dimensions, and publishes the source bytes plus receipt as a short-lived artifact for deterministic downstream derivation. This receipt remains unaccepted until that workflow succeeds and its artifact is inspected."
+    "byte_size": 94658158,
+    "sha256": "cf323f68f6a784bf160d5394524ca2a606b6909b37c5a906601668afeb45bde4",
+    "png_width": 4096,
+    "png_height": 4096,
+    "png_chunk_count": 11549,
+    "png_crc_verified": true,
+    "png_iend_verified": true,
+    "body_acquired": true,
+    "content_length_verified_against_downloaded_body": true,
+    "decoded": true,
+    "note": "The repository-scoped GitHub Actions intake acquired the exact pinned Poly Haven 4K diffuse URL. Its artifact was independently downloaded and inspected on 2026-09-15; local SHA-256 matched receipt.json and the workflow-verified byte size, dimensions, PNG chunk CRCs and IEND state. This accepts the upstream source bytes only. Dragon UV derivation, runtime bundling, Minecraft render review and human visual acceptance remain pending."
   },
   "geometry_target": {
     "asset": "Quaternius Dragon Evolved",
@@ -29,10 +36,6 @@
     "source_atlas_allowed_as_final_art": false
   },
   "acceptance_requirements": [
-    "acquire_exact_pinned_bytes",
-    "verify_actual_byte_size",
-    "record_sha256",
-    "decode_image",
     "derive_dragon_uv_material_deterministically",
     "record_source_to_runtime_provenance",
     "inspect_executable_jar",
