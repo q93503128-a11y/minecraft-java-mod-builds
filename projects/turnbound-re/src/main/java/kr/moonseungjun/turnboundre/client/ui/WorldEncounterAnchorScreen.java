@@ -89,8 +89,7 @@ public final class WorldEncounterAnchorScreen extends Screen {
             graphics.text(this.font, Component.literal(repeat.getString() + " · " + party.getString()),
                     textX, y, view.partySize() > 0 ? UiVisualLanguage.TEXT_SECONDARY : UiVisualLanguage.TEXT_WARNING, true);
             y += this.font.lineHeight + UiLayoutMetrics.SPACE_4;
-            graphics.text(this.font, preparationLine(), textX, y,
-                    view.preparationId().isBlank() ? UiVisualLanguage.TEXT_SECONDARY : UiVisualLanguage.TEXT_FOCUS, true);
+            renderPreparation(graphics, textX, y, root.width() - UiLayoutMetrics.SPACE_16);
         }
 
         UiLayoutMetrics.Rect challenge = challengeButton();
@@ -179,24 +178,47 @@ public final class WorldEncounterAnchorScreen extends Screen {
                 : String.join(" · ", names);
     }
 
-    /**
-     * Uses vanilla item localization plus language-neutral stat abbreviations so the new preparation row
-     * does not introduce an ad-hoc parallel localization surface before the final UI copy pass.
-     */
+    private void renderPreparation(GuiGraphicsExtractor graphics, int x, int y, int maxWidth) {
+        Component text = preparationLine();
+        String visualItem = preparationVisualItem();
+        var stack = RuntimeItemVisualResolver.stack(visualItem);
+        int textX = x;
+        if (!stack.isEmpty()) {
+            graphics.item(stack, x, y - 3);
+            textX += 20;
+        }
+        graphics.text(this.font, Component.literal(fit(text.getString(), Math.max(1, maxWidth - (textX - x)))),
+                textX, y,
+                view == null || view.preparationId().isBlank()
+                        ? UiVisualLanguage.TEXT_SECONDARY : UiVisualLanguage.TEXT_FOCUS,
+                true);
+    }
+
+    private String preparationVisualItem() {
+        if (view == null || view.preparationId().isBlank()) return "";
+        return switch (view.preparationId()) {
+            case "iron_reinforcement" -> "minecraft:iron_ingot";
+            case "golden_provision" -> "minecraft:golden_carrot";
+            case "cooked_cod_ration" -> "minecraft:cooked_cod";
+            case "cooked_salmon_ration" -> "minecraft:cooked_salmon";
+            default -> "";
+        };
+    }
+
+    /** Uses vanilla item localization; the visual identity is the matching Mojang runtime item. */
     private Component preparationLine() {
-        if (view == null || view.preparationId().isBlank()) return Component.literal("◇ —");
+        if (view == null || view.preparationId().isBlank()) return Component.literal("—");
         return switch (view.preparationId()) {
             case "iron_reinforcement" -> prepared("item.minecraft.iron_ingot", "DEF/POISE +8%");
             case "golden_provision" -> prepared("item.minecraft.golden_carrot", "HP +10%");
             case "cooked_cod_ration" -> prepared("item.minecraft.cooked_cod", "ATK +8%");
             case "cooked_salmon_ration" -> prepared("item.minecraft.cooked_salmon", "ATK +8%");
-            default -> Component.literal("◇ ?");
+            default -> Component.literal("?");
         };
     }
 
     private Component prepared(String itemKey, String effect) {
-        return Component.literal("◇ ")
-                .append(Component.translatable(itemKey))
+        return Component.translatable(itemKey)
                 .append(Component.literal(" ×1 · " + effect));
     }
 
