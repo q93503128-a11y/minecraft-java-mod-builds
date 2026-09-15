@@ -140,7 +140,7 @@ class M5BattleStageCharacterPresentationTest {
     void charactersWithoutDedicatedPresentationKeepExistingStageView() {
         assertEquals(BattleStageCharacterPresentation.Pose.DEFAULT,
                 BattleStageCharacterPresentation.pose(
-                        "turnbound_re:creeper", "p1",
+                        "turnbound_re:cow", "p1",
                         cue("p1", List.of("e1"), BattleActionTimelineState.ImpactStyle.MELEE,
                                 BattleActionTimelineState.Phase.WINDUP, 0.5D, 0)));
     }

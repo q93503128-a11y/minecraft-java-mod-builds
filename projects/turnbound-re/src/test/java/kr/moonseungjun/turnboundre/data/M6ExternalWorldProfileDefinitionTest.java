@@ -22,7 +22,7 @@ final class M6ExternalWorldProfileDefinitionTest {
                         {
                           "id": "turnbound_re:hub_01/waypoint",
                           "locator": "turnbound_re:hub_01/waypoint",
-                          "destinations": []
+                          "destinations": ["turnbound_re:region_01/waypoint"]
                         }
                       ]
                     },
@@ -30,6 +30,13 @@ final class M6ExternalWorldProfileDefinitionTest {
                       "id": "turnbound_re:region_01",
                       "kind": "REGION",
                       "dimension": "minecraft:overworld",
+                      "fastTravelAnchors": [
+                        {
+                          "id": "turnbound_re:region_01/waypoint",
+                          "locator": "turnbound_re:region_01/waypoint",
+                          "destinations": ["turnbound_re:hub_01/waypoint"]
+                        }
+                      ],
                       "resourceAnchors": [
                         {
                           "id": "turnbound_re:region_01/ore_outcrop",
