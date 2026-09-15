@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "asset_id": "polyhaven:dark_rock",
+  "role": "region_01_boss_material_source",
+  "status": "SOURCE_PINNED_ENDPOINT_REACHED_BYTES_NOT_ACCEPTED",
+  "author": "Amal Kumar",
+  "publisher": "Poly Haven",
+  "canonical_page": "https://polyhaven.com/a/dark_rock",
+  "license": "CC0",
+  "pinned_source": {
+    "kind": "diffuse",
+    "format": "png",
+    "resolution": "4k",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/4k/dark_rock/dark_rock_diff_4k.png"
+  },
+  "transfer_receipt": {
+    "observed_date": "2026-09-15",
+    "endpoint_reached": true,
+    "reported_content_length_bytes": 94658158,
+    "body_acquired": false,
+    "content_length_verified_against_downloaded_body": false,
+    "sha256": null,
+    "decoded": false,
+    "note": "The available web retrieval layer reached the exact pinned Poly Haven endpoint but refused the approximately 94 MB body because of its transfer-size limit. The execution container also could not resolve the external host. The reported content length is provenance evidence only and must be rechecked after an actual byte-for-byte download."
+  },
+  "geometry_target": {
+    "asset": "Quaternius Dragon Evolved",
+    "runtime_geometry": "riftfrontier:boss_presentation/region_01/dragon_evolved.sanitized.v1.gltf",
+    "source_atlas_allowed_as_final_art": false
+  },
+  "acceptance_requirements": [
+    "acquire_exact_pinned_bytes",
+    "verify_actual_byte_size",
+    "record_sha256",
+    "decode_image",
+    "derive_dragon_uv_material_deterministically",
+    "record_source_to_runtime_provenance",
+    "inspect_executable_jar",
+    "review_minecraft_render",
+    "human_visual_acceptance"
+  ],
+  "prohibited_substitutions": [
+    "search_engine_mirror",
+    "preview_thumbnail",
+    "screenshot",
+    "reencoded_copy",
+    "lower_resolution_file_used_only_to_bypass_transfer_limit"
+  ]
+}
