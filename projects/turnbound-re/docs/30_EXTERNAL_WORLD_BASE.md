@@ -102,9 +102,17 @@ As of 2026-09-15:
 - Drehmal `Archived Memory 2 — To Feel The Stars`: separately released for Java 26.2, proving a current team pipeline but not a 26.2 APOTHEOSIS release.
 - TURNBOUND has **not yet loaded/migrated APOTHEOSIS v2.2.2f under Java 26.2 + NeoForge**.
 
-Therefore:
-- CODE REVIEWED: external-world binding/data architecture.
-- BUILD VERIFIED: PENDING — one schema checkpoint build requested after `7f7bc5ed9128ddb8fc4c9f218966e6e3db6faf52`.
+Schema checkpoint history:
+- Build #262 / run `34921535375` compiled Java and test sources successfully, then failed JUnit with 2 fixture mismatches.
+- `M5BattleStageCharacterPresentationTest` incorrectly used Creeper as a character without dedicated presentation; current `main` uses Cow for that fallback contract.
+- `M6ExternalWorldProfileDefinitionTest` used a fast-travel anchor with no destinations; current `main` now declares reciprocal Hub ↔ Region waypoint destinations and matches the production validator.
+- These failures were test-data/expectation regressions, not a compiler/API failure in `ExternalWorldProfileDefinition`, its parser, registry, or runtime adapter.
+
+Therefore before the recheck completes:
+- CODE REVIEWED: YES — external-world binding/data architecture and the two failed fixtures were inspected against current `main`.
+- TESTED: RECHECK REQUESTED on current `main` after the fixture corrections above.
+- BUILD VERIFIED: NO until that current-main recheck succeeds.
+- JAR PRODUCED: NO for the current external-world checkpoint.
 - WORLD MIGRATION TESTED: NO.
 - PLAYTESTED: NO.
 - MULTIPLAYER TESTED: NO.
