@@ -16,6 +16,61 @@ defaults:
     working-directory: projects/riftfrontier
 
 jobs:
+  hunter-alien-intake:
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, 'hunter-alien-intake')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire exact creator-published Big Alien glTF
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/hunter-alien-intake
+          python3 -m pip install --disable-pip-version-check --no-input gdown==5.2.0
+          gdown 'https://drive.google.com/uc?id=1rWF4Jo_G7-odDa5LfkQ0e2d9_p9pxb3W' -O build/hunter-alien-intake/Alien.source.gltf
+      - name: Inspect exact Alien glTF
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          src = Path('build/hunter-alien-intake/Alien.source.gltf')
+          data = src.read_bytes()
+          doc = json.loads(data.decode('utf-8'))
+          receipt = {
+              'asset': 'Alien', 'variant': 'Big/glTF', 'author': 'Quaternius',
+              'family': 'Ultimate Monsters',
+              'creator_pack_page': 'https://quaternius.com/packs/ultimatemonsters.html',
+              'creator_distribution_folder': 'https://drive.google.com/drive/folders/18m4KpzpEzhC9wl7jzr6dUc0N8Jozr79C',
+              'creator_file_id': '1rWF4Jo_G7-odDa5LfkQ0e2d9_p9pxb3W',
+              'license': 'CC0 1.0 / public domain dedication',
+              'intended_role': 'Region 01 Hunter visual/rig candidate only',
+              'source_relative_path': 'Big/glTF/Alien.gltf', 'source_file': 'Alien.gltf',
+              'byte_size': len(data), 'sha256': hashlib.sha256(data).hexdigest(),
+              'gltf_asset_version': doc.get('asset', {}).get('version'),
+              'mesh_count': len(doc.get('meshes', [])), 'skin_count': len(doc.get('skins', [])),
+              'material_count': len(doc.get('materials', [])), 'image_count': len(doc.get('images', [])),
+              'animation_clips': [a.get('name') for a in doc.get('animations', [])],
+              'animation_count': len(doc.get('animations', [])), 'node_count': len(doc.get('nodes', [])),
+              'buffer_uris': [b.get('uri') for b in doc.get('buffers', [])],
+              'image_uris': [i.get('uri') for i in doc.get('images', [])],
+              'selected_for_production': False, 'human_visual_acceptance': False,
+          }
+          Path('build/hunter-alien-intake/receipt.json').write_text(json.dumps(receipt, indent=2) + '\n', encoding='utf-8')
+          print(json.dumps(receipt, indent=2))
+          PY
+      - name: Upload exact candidate and inspection receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: riftfrontier-region01-hunter-alien-source-inspection
+          path: |
+            projects/riftfrontier/build/hunter-alien-intake/Alien.source.gltf
+            projects/riftfrontier/build/hunter-alien-intake/receipt.json
+          if-no-files-found: error
+          retention-days: 7
+
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -45,27 +100,13 @@ jobs:
           STATUS=$?
           set -e
           cat build/smoke/gametest-console.log
-          if [ "$STATUS" -ne 0 ]; then
-            echo "runGameTestServer failed or timed out with status $STATUS"
-            exit "$STATUS"
-          fi
+          if [ "$STATUS" -ne 0 ]; then echo "runGameTestServer failed or timed out with status $STATUS"; exit "$STATUS"; fi
           LOGS=$(find . -type f -path '*/logs/latest.log' -print)
-          if [ -n "$LOGS" ]; then
-            cat $LOGS > build/smoke/gametest-latest-combined.log
-          fi
+          if [ -n "$LOGS" ]; then cat $LOGS > build/smoke/gametest-latest-combined.log; fi
           cat build/smoke/gametest-console.log build/smoke/gametest-latest-combined.log 2>/dev/null > build/smoke/gametest-verification.log || true
-          if grep -Eq 'Game test.*failed|Failed game tests|Crash report|Encountered an unexpected exception' build/smoke/gametest-verification.log; then
-            echo 'GameTest failure marker found'
-            exit 1
-          fi
-          if ! grep -Eq '[1-9][0-9]* tests are now running' build/smoke/gametest-verification.log; then
-            echo 'No positive marker proving that at least one GameTest actually ran'
-            exit 1
-          fi
-          if ! grep -Eq 'All [1-9][0-9]* required tests passed' build/smoke/gametest-verification.log; then
-            echo 'No positive marker proving that required GameTests passed'
-            exit 1
-          fi
+          if grep -Eq 'Game test.*failed|Failed game tests|Crash report|Encountered an unexpected exception' build/smoke/gametest-verification.log; then echo 'GameTest failure marker found'; exit 1; fi
+          if ! grep -Eq '[1-9][0-9]* tests are now running' build/smoke/gametest-verification.log; then echo 'No positive marker proving that at least one GameTest actually ran'; exit 1; fi
+          if ! grep -Eq 'All [1-9][0-9]* required tests passed' build/smoke/gametest-verification.log; then echo 'No positive marker proving that required GameTests passed'; exit 1; fi
           echo 'PASS — non-zero required GameTest suite executed and passed' > build/smoke/gametest.status
       - name: Dedicated server smoke
         run: |
@@ -77,24 +118,15 @@ jobs:
           STATUS=$?
           set -e
           cat build/smoke/server-console.log
-          if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 124 ]; then
-            echo "runServer exited unexpectedly with status $STATUS"
-            exit "$STATUS"
-          fi
+          if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 124 ]; then echo "runServer exited unexpectedly with status $STATUS"; exit "$STATUS"; fi
           LOGS=$(find . -type f -path '*/logs/latest.log' -print)
-          if [ -z "$LOGS" ]; then
-            echo 'No server latest.log was produced'
-            exit 1
-          fi
+          if [ -z "$LOGS" ]; then echo 'No server latest.log was produced'; exit 1; fi
           cat $LOGS > build/smoke/server-latest-combined.log
           grep -q 'Riftfrontier core loaded' build/smoke/server-latest-combined.log
           grep -q 'Riftfrontier content snapshot published' build/smoke/server-latest-combined.log
           grep -q 'Riftfrontier authoritative world root ready' build/smoke/server-latest-combined.log
           grep -q 'Done (' build/smoke/server-latest-combined.log
-          if grep -Eq 'Crash report|Encountered an unexpected exception|Failed to start the minecraft server' build/smoke/server-latest-combined.log; then
-            echo 'Fatal server startup marker found'
-            exit 1
-          fi
+          if grep -Eq 'Crash report|Encountered an unexpected exception|Failed to start the minecraft server' build/smoke/server-latest-combined.log; then echo 'Fatal server startup marker found'; exit 1; fi
           echo 'PASS — dedicated server reached ready state, loaded content, and attached authoritative world state' > build/smoke/server.status
       - name: Client smoke under virtual display
         run: |
@@ -104,21 +136,12 @@ jobs:
           STATUS=$?
           set -e
           cat build/smoke/client-console.log
-          if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 124 ]; then
-            echo "runClient exited unexpectedly with status $STATUS"
-            exit "$STATUS"
-          fi
+          if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 124 ]; then echo "runClient exited unexpectedly with status $STATUS"; exit "$STATUS"; fi
           LOGS=$(find . -type f -path '*/logs/latest.log' -print)
-          if [ -z "$LOGS" ]; then
-            echo 'No client latest.log was produced'
-            exit 1
-          fi
+          if [ -z "$LOGS" ]; then echo 'No client latest.log was produced'; exit 1; fi
           cat $LOGS > build/smoke/client-latest-combined.log
           grep -q 'Riftfrontier core loaded' build/smoke/client-latest-combined.log
-          if grep -Eq 'Crash report|Minecraft crashed|Encountered an unexpected exception' build/smoke/client-latest-combined.log; then
-            echo 'Fatal client startup marker found'
-            exit 1
-          fi
+          if grep -Eq 'Crash report|Minecraft crashed|Encountered an unexpected exception' build/smoke/client-latest-combined.log; then echo 'Fatal client startup marker found'; exit 1; fi
           echo 'PASS — client initialized Riftfrontier under Xvfb without a fatal crash marker' > build/smoke/client.status
       - name: Inspect executable JAR
         run: |
@@ -145,17 +168,7 @@ jobs:
           SERVER_STATUS=$(cat build/smoke/server.status 2>/dev/null || echo 'FAILED OR NOT COMPLETED — see smoke logs')
           CLIENT_STATUS=$(cat build/smoke/client.status 2>/dev/null || echo 'FAILED OR NOT COMPLETED — see smoke logs')
           {
-            echo '# Riftfrontier CI Build Report'
-            echo
-            echo "- Commit: $GITHUB_SHA"
-            echo '- Java: 25'
-            echo '- Gradle: 9.2.1'
-            echo '- Minecraft: 26.2'
-            echo '- NeoForge: 26.2.0.38-beta'
-            echo '- clean/test/build: see workflow logs'
-            echo "- GameTest: $GAMETEST_STATUS"
-            echo "- server smoke: $SERVER_STATUS"
-            echo "- client smoke: $CLIENT_STATUS"
+            echo '# Riftfrontier CI Build Report'; echo; echo "- Commit: $GITHUB_SHA"; echo '- Java: 25'; echo '- Gradle: 9.2.1'; echo '- Minecraft: 26.2'; echo '- NeoForge: 26.2.0.38-beta'; echo '- clean/test/build: see workflow logs'; echo "- GameTest: $GAMETEST_STATUS"; echo "- server smoke: $SERVER_STATUS"; echo "- client smoke: $CLIENT_STATUS";
           } > build/reports/riftfrontier/BUILD_AND_RUNTIME_REPORT.md
       - name: Upload deliverables
         if: success()
