@@ -48,10 +48,7 @@ public final class ExpeditionFieldExtractionRelay {
         decorateApproach(overworld, relay);
         overworld.setBlockAndUpdate(relay, Blocks.LODESTONE.defaultBlockState());
         refreshPresentation(player);
-        player.sendSystemMessage(Component.literal(
-            "[Riftfrontier] Extraction relay online at the far edge of the field cell. "
-                + "Complete the salvage objective, then right-click the lodestone to extract."
-        ));
+        player.sendSystemMessage(Component.translatable("riftfrontier.expedition.detail.relay_online"));
         ExpeditionPlayerFeedback.extractionRelayOnline(player);
     }
 
@@ -106,12 +103,11 @@ public final class ExpeditionFieldExtractionRelay {
             clearReadyMarkers(level, clickedPos);
             ExpeditionHubTerminal.ensurePresent(player);
             ExpeditionPlayerFeedback.extractionComplete(player);
-            player.sendSystemMessage(Component.literal(
-                "[Riftfrontier] Hub stations online: smithing table = provision, lodestone = deploy."
-            ));
+            player.sendSystemMessage(Component.translatable("riftfrontier.expedition.detail.hub_return_ready"));
         } catch (IllegalStateException rejected) {
-            player.sendSystemMessage(Component.literal(
-                "[Riftfrontier] Extraction relay locked: " + rejected.getMessage()
+            player.sendSystemMessage(Component.translatable(
+                "riftfrontier.expedition.detail.relay_locked",
+                rejected.getMessage()
             ));
         }
         return true;
