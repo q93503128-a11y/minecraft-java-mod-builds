@@ -39,6 +39,19 @@ Notes:
 
 Do not infer permission from "downloadable" or "open source" alone.
 
+## Quaternius 2026 license-drift override
+
+As of the 2026-09-15 review, Quaternius public metadata is not safe to compress into a blanket `Quaternius = CC0` rule:
+
+- the central `https://quaternius.com/license.html` publishes **Quaternius Asset License (QAL) v1.0**, last updated 2026-08-28;
+- QAL permits use, modification and incorporation into a completed Product, but prohibits redistribution of the raw Assets themselves as assets;
+- QAL §7 states later license changes are not retroactive to assets already obtained under an earlier license;
+- at the same time, multiple individual pack pages still display `CC0`, including `Modular Character Outfits - Fantasy` and `Medieval Village MegaKit` during this review.
+
+Therefore every Quaternius adoption is package/acquisition specific. A current pack page showing `CC0` is evidence to preserve, but it does not justify blindly committing newly downloaded raw Quaternius bytes while the central QAL also exists. For the public repository, exact package/license-at-acquisition evidence wins. If that evidence is not preserved, use `VERIFY / LOCAL_ONLY` or the stricter state recorded in `R01_ASSET_INTAKE.md`.
+
+R01-specific evidence is recorded in `R01_ASSET_PHASE_B_EVIDENCE_2026-09-15.md`.
+
 ---
 
 # Research/adoption queue
@@ -55,9 +68,13 @@ Do not infer permission from "downloadable" or "open source" alone.
 | JD Resource Nodes | renewable ore-node system | Apache-2.0 observed; NeoForge 1.21.1 | strong code/behavior reference for permanent renewable nodes, depletion states, regeneration and scanner concepts |
 | Deep Drilling | biome-based rare ore nodes | MIT observed; Fabric/Forge 1.20.1 | reference/code candidate for biome-conditioned resource nodes and region-linked extraction concepts |
 | DarkMining | RPG-style probabilistic mining drops | current 26.2 Fabric/Forge/NeoForge listing observed | loot probability reference only; does not replace the project's node-based gathering direction |
-| Quaternius Modular Weapons Pack | weapon models | CC0 / strong direct-use-editable candidate | coherent medieval weapon source family |
-| Quaternius Fantasy Props MegaKit | props / crafting / town dressing | CC0 / strong direct-use-editable candidate | weapons, tools, potions, stalls, chests, furniture and service props |
-| Quaternius Medieval Village Pack / MegaKit | buildings / settlement | CC0 / strong direct-use-editable candidate | coherent visual base for service buildings and settlements |
+| Quaternius Modular Weapons Pack | weapon models | package-specific `VERIFY / LOCAL_ONLY` unless acquisition-time CC0 evidence is preserved; central QAL v1.0 now exists | coherent medieval weapon source family; do not assume newly downloaded raw files are public-repo redistributable |
+| Quaternius Fantasy Props MegaKit | props / crafting / town dressing | package-specific `VERIFY / LOCAL_ONLY` unless acquisition-time CC0 evidence is preserved; central QAL v1.0 now exists | weapons, tools, potions, stalls, chests, furniture and service props; private Product use remains a strong candidate |
+| Quaternius Medieval Village Pack / MegaKit | buildings / settlement | pack pages still show CC0, while central QAL v1.0 also exists; acquisition evidence required | coherent visual base for service buildings and settlements; raw repo inclusion is not assumed |
+| KayKit Fantasy Weapons Bits | weapon models | current authoritative itch page CC0; exact A/B/C filename families inspected, source archive SHA-256 and final mesh selection pending | strong public-safe R01 weapon family; acquire authoritative package before import and choose final variants after 3D review |
+| KayKit RPG Tools Bits | tools / crafting props | current authoritative itch page CC0; exact tool filenames inspected, archive SHA-256/model review pending | smith/mining/workstation prop family |
+| KayKit Restaurant Bits | food / kitchen props | CC0; official public GitHub tree inspected at commit `153c8a7535b48237854cb54ff6890679f8c574d1` | R01 meal/ingredient family; exact roast/stew candidates pinned, Trail Skewers still unresolved |
+| KayKit Character Animations 1.1 | humanoid animation | current authoritative itch page CC0; 161 clips; exact 1.1 work/fishing names published | primary public-safe motion pool; eating/drinking are still described as planned, not shipped |
 | Kenney Fantasy Town Kit | town/building family | CC0 candidate | alternate coherent town/building visual family |
 | Planet Minecraft schematics | inns / blacksmiths / villages / shrines / castles / dungeons | VERIFY; creator terms vary | primary pool for private/local structure use |
 | Azari 30k x 30k | primary open-world terrain | free download; usage/redistribution terms not explicit; map uses some third-party assets | `VERIFY / LOCAL_ONLY` primary map candidate; use local world bytes only, derive 10–14 regions from its terrain, do not commit map bytes until permission is explicit |
@@ -372,24 +389,35 @@ The project now permits an **early black-powder firearm family** when it fits th
 
 - Source: https://quaternius.com/packs/medievalweapons.html
 - 24 models; FBX / OBJ / Blend.
-- Source license: CC0.
+- Historical/current pack-page metadata has described Quaternius assets as CC0, but the central site now also publishes QAL v1.0.
+- Project status: **package-specific verification required**. Preserve the actual package/license-at-acquisition before deciding raw public-repo handling.
 - Includes swords, daggers, bows, shields, hammers and more.
 
 ## Quaternius Fantasy Props MegaKit
 
 - Source: https://quaternius.com/packs/fantasypropsmegakit.html
 - 200+ medieval/fantasy props; FBX / OBJ / Blend / glTF.
-- Source license: CC0.
-- Strong coherent family for weapons, tools, potions, stalls, chests and furniture.
+- Do not reuse the old blanket `Source license: CC0` statement without package-specific acquisition evidence because the central QAL v1.0 now exists.
+- Strong coherent family for weapons, tools, potions, stalls, chests and furniture; remains a strong private-play candidate under applicable terms.
 
 ## Quaternius Medieval Village Pack / MegaKit
 
 - Sources:
   - https://quaternius.com/packs/medievalvillage.html
   - https://quaternius.com/packs/medievalvillagemegakit.html
-- Village Pack: 44 models, CC0.
-- MegaKit: 300+ modular environment pieces, CC0.
-- Useful as building/environment editable bases if converted appropriately to Minecraft.
+- Village Pack: 44 models.
+- MegaKit: 300+ modular environment pieces.
+- The MegaKit page still displayed CC0 during the 2026-09-15 review while the central site also published QAL v1.0.
+- Project status: **package-specific acquisition/license evidence required** before raw source files are treated as public-repo redistributable.
+- Useful as building/environment editable bases if converted appropriately to Minecraft and handled under the applicable package terms.
+
+## KayKit R01 Phase-B asset families
+
+- Fantasy Weapons Bits: https://kaylousberg.itch.io/fantasy-weapons-bits — current page CC0; exact bow/sword/hammer/spear/staff/shield filename families have been inspected as tree evidence, but final model selection and authoritative archive SHA-256 remain pending.
+- RPG Tools Bits: https://kaylousberg.itch.io/rpg-tools-bits — current page CC0; evidence-backed names include `hammer.gltf`, `anvil.gltf`, `pickaxe.gltf`, `grindstone.gltf`, `tongs.gltf` and `mallet.gltf`; source package hash/model acceptance pending.
+- Restaurant Bits official repository: https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0 — CC0 public tree; observed commit `153c8a7535b48237854cb54ff6890679f8c574d1`; R01 candidate entries include `food_dinner.gltf` and `food_stew.gltf`; Trail Skewers remains unresolved.
+- Character Animations: https://kaylousberg.itch.io/kaykit-character-animations — CC0, 161 current animations; exact 1.1 `Hammer/Hammering`, `Pickaxe/Pickaxing`, `Work_*`, `Working_*` and fishing clip names are published. Current page still describes eating/drinking as planned rather than shipped.
+- Detailed R01 evidence: `R01_ASSET_PHASE_B_EVIDENCE_2026-09-15.md`.
 
 ## Kenney Fantasy Town Kit
 
