@@ -70,7 +70,14 @@ jobs:
       - name: Write reboot report
         shell: bash
         run: |
-          VERSION=$(awk -F= '$1=="mod_version" { print $2 }' gradle.properties)
+          prop() { awk -F= -v key="$1" '$1==key { print $2 }' gradle.properties; }
+          VERSION=$(prop mod_version)
+          MINECRAFT=$(prop minecraft_version)
+          FORGE=$(prop forge_version)
+          VS=$(prop valkyrien_skies_version)
+          GENESIS=$(prop genesis_version)
+          ZPS=$(prop zps_version)
+          ZPL=$(prop zpl_version)
           JAR=$(ls build/libs/earth_to_stars-*.jar | grep -v sources | head -n1)
           SHA=$(cat "$JAR.sha256")
           cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
@@ -78,14 +85,14 @@ jobs:
 
           - Commit: $GITHUB_SHA
           - Mod version: $VERSION
-          - Minecraft: 1.20.1
-          - Forge: 47.4.0
+          - Minecraft: $MINECRAFT
+          - Forge: $FORGE
           - Java: 17
           - Gradle: 8.14
-          - Valkyrien Skies: 2.4.10
-          - Genesis: 1.20.1-0.7.3
-          - Zero Point Systems: 1.20.1-2.4.0
-          - Zero Point Labs: 1.20.1-1.5.0
+          - Valkyrien Skies: $VS
+          - Genesis: $GENESIS
+          - Zero Point Systems: $ZPS
+          - Zero Point Labs: $ZPL
           - reboot source-set isolation: PASS
           - legacy 26.2 custom ship classes packaged: NO
           - clean/test/build: PASS
@@ -93,7 +100,7 @@ jobs:
           - dedicated external-stack boot: PASS
           - real VS starter craft assembly: PASS
           - ZPS cockpit + ZPL thruster/gyro hardware present: PASS
-          - client graphical smoke: NOT RUN IN CI
+          - client graphical smoke: SEPARATE WORKFLOW
           - live flight feel / control direction: NOT RUN
           - Genesis Earth-to-space flight with occupied craft: NOT RUN
           - multiplayer playtest: NOT RUN
