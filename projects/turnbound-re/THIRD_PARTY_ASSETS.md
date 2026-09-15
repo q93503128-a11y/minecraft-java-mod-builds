@@ -9,12 +9,13 @@
 | EXT-WORLD-001 | production external authored world | Drehmal Team, `Drehmal: APOTHEOSIS v2.2.2f` — https://www.drehmal.net/downloads / https://github.com/Drehmal-Team/map/releases/tag/v2.2.2f | 공식 무료 다운로드/싱글·멀티·서버 설치 안내 확인. TURNBOUND 저장소 재배포 허가는 확인되지 않았으므로 **원본 world/resource-pack vendoring/재배포 금지**. 사용자가 공식 배포본을 별도 설치 | **production base 채택 / 외부 설치 방식** | 원본 terrain/town/building 직접 사용. `external_world_profiles.json`이 TURNBOUND semantic anchor 좌표/상태를 data-driven으로 보유하고 `DrehmalExternalWorldBinding`은 enabled anchor만 server metadata/Interaction entity로 연결. 현재 New Drabyel + Stasis fast-travel만 enabled. 광산/농장/낚시/일반전/엘리트 후보는 26.2 migration 전까지 disabled |
 | REF-UI-001 | UI production skin | Kenney, `UI Pack - Pixel Adventure` 2.0 — https://kenney.nl/assets/ui-pack-pixel-adventure | CC0 1.0 | **사용 중** | Large tiles / Thin outline 계열을 title + semantic frame으로 사용. GUI 확장은 9-slice metadata 사용 |
 | REF-UI-002 | UI 자산 후보 / 비교 | tiopalada, `Tiny RPG - Dragon Regalia GUI` — https://tiopalada.itch.io/tiny-rpg-dragon-regalia-gui | CC0 1.0 | 파일 반입 전 | state frame/9-slice/target cursor 보조 후보. 화풍 혼합 금지 |
-| REF-UI-003 | UI 자산 후보 / 입력 glyph | Kenney `Input Prompts Pixel 16×` | CC0 1.0 | 파일 반입 전 | keyboard/gamepad glyph 후보. 실제 파일 반입 전 공식 배포조건 재확인 |
+| REF-UI-003 | UI 자산 후보 / 입력 glyph | Kenney `Input Prompts Pixel 16×` — https://kenney.nl/assets/input-prompts-pixel | CC0 1.0 | 파일 반입 전 | keyboard/gamepad glyph 후보. 16×16, 800+ sprite, 공식 페이지 기준 CC0. 실제 파일 반입 전 sprite 위치/원본 버전 기록 |
 | REF-MODEL-001 | humanoid articulation reference | SL0ANE/Loy-s-Goodies, `230507_alex.bbmodel`, commit `afbb7695b09de0ed8ee3aa97732ff7c3d367520c` | CC0 1.0 | **legacy reference only / production 미사용** | 과거 reference-recreated Zombie geometry는 external-only 규칙에서 폐기 |
 | EXT-MODEL-002 | runtime production base | Mojang Minecraft entity model layers + entity textures, Java 26.2 runtime | Mojang first-party proprietary runtime content | **직접 사용 중** | Creeper/Spider/Blaze/Witch/Iron Golem/Zombie 대응 runtime model/texture 직접 사용. TURNBOUND는 replacement geometry/UV/texture를 새로 디자인하지 않음 |
 | EXT-ITEM-003 | representative equipment visual base | Mojang Minecraft Java 26.2 runtime item models/textures: `minecraft:shield`, `minecraft:copper_sword`, `minecraft:golden_apple` | Mojang first-party proprietary runtime content | **production visual source 채택 / runtime 직접 참조** | `iron_bulwark`→Shield, `copper_edge`→Copper Sword, `golden_heart`→Golden Apple. TURNBOUND namespace로 PNG를 복사하지 않고 vanilla `ItemStack` renderer를 사용. vanilla item gameplay component/effect는 TURNBOUND 장비 수치에 상속하지 않음 |
 | CAND-ITEM-004 | future custom equipment icon family | Kettoman, `Pixel Art Icons - RPG Essentials (16x16)` — https://kettoman.itch.io/pixel-art-icons-rpg-essentials-16x16 | CC0, author page에 no generative AI 표기 | **후보 / 미반입** | 64개 16×16 weapons/food/materials/potions. 현재 대표 3종은 Mojang runtime item으로 충분하므로 production에는 미사용 |
 | CAND-ITEM-005 | future custom equipment icon family | Shade, `Free 16x16 Assorted RPG Icons` — https://merchant-shade.itch.io/16x16-mixed-rpg-icons | CC0 1.0 Universal, author page에 no generative AI 표기 | **후보 / 미반입** | weapons/armours/consumables/chests 등. 향후 vanilla runtime item으로 역할 표현이 부족할 때 동일 family에서 직접 sprite를 채택하는 후보 |
+| EXT-ITEM-006 | reward currency visual base | Mojang Minecraft Java 26.2 runtime item models/textures: `minecraft:gold_nugget`, `minecraft:experience_bottle`, `minecraft:amethyst_shard` | Mojang first-party proprietary runtime content | **production reward visual source 채택 / runtime 직접 참조** | Battle Result의 `Coin`→Gold Nugget, `Essence`→Experience Bottle, `Character Shard`→Amethyst Shard. 보상 값/경제 규칙은 변경하지 않고 시각 identity만 제공. TURNBOUND 전용 통화 PNG를 새로 만들지 않음 |
 | CAND-MODEL-003 | Creeper replacement candidate | Moth's Creeper Redone | MIT | 파일 반입 전 | 26.2 호환/의존성 검증 뒤 실제 asset 직접 사용 후보 |
 | CAND-MODEL-004 | Spider replacement candidate | Scary Spider | MIT | 파일 반입 전 | 실제 asset 직접 사용 후보. 눈으로 보고 재구성 금지 |
 | CAND-ANIM-001 | Spider animation/base candidate | Wall Climbers 1.2 | MIT + 프로젝트 사용조건 | 파일 반입 전 | 26.2 지원. 실제 파일/고지조건 고정 후 사용 가능 |
@@ -26,6 +27,7 @@
 - **Primary UI skin:** `REF-UI-001` Kenney UI Pack - Pixel Adventure.
 - **Vanilla-source roster base:** `EXT-MODEL-002` Mojang runtime model/texture.
 - **Representative equipment visuals:** `EXT-ITEM-003` Mojang runtime item models. 현재 mapping은 Shield / Copper Sword / Golden Apple이며 별도 TURNBOUND 아이콘을 만들지 않는다.
+- **Battle reward visuals:** `EXT-ITEM-006` Mojang runtime item models. Coin / Essence / Character Shard는 Gold Nugget / Experience Bottle / Amethyst Shard로 읽히며 별도 TURNBOUND 통화 아이콘을 만들지 않는다.
 - **Turn-based Minecraft adapter:** `EXT-CODE-001`의 실제 MIT integration pattern adaptation.
 - **Battle camera smoothing:** `EXT-CODE-002`의 실제 MIT 26.2 source adaptation.
 
@@ -37,6 +39,14 @@
 - `minecraft:golden_apple`을 Golden Heart의 visual identity로 사용해도 vanilla food/effect를 장비 시스템에 복사하지 않는다.
 - 향후 custom equipment가 필요하면 `CAND-ITEM-004/005` 같은 실제 허용 asset family에서 직접 파일을 채택하고, sprite 위치/원본 버전/수정 내역을 먼저 이 문서에 고정한다.
 - 외부 pack을 참고만 한 뒤 TURNBOUND 전용 16×16 sprite를 새로 그리는 방식은 금지한다.
+
+## Reward visual boundary
+
+- Battle Result의 보상 경제 값은 서버 snapshot이 정본이며 runtime item은 presentation-only다.
+- `Coin`은 `minecraft:gold_nugget`, `Essence`는 `minecraft:experience_bottle`, `Character Shard`는 `minecraft:amethyst_shard`의 Mojang runtime model/texture를 직접 렌더링한다.
+- 보상 icon을 위해 TURNBOUND namespace에 자체 coin/crystal/shard PNG를 만들지 않는다.
+- vanilla item 자체를 지급하거나 해당 vanilla gameplay 효과를 보상 재화에 상속하지 않는다.
+- 잘못되거나 존재하지 않는 runtime item id는 임시 자작 icon으로 대체하지 않고 시각 요소만 fail-closed한다.
 
 ## World external-base boundary
 
