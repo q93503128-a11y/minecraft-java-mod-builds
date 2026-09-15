@@ -12,6 +12,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
@@ -26,9 +27,12 @@ import java.util.UUID;
 /**
  * Non-pausing production command picker. The screen owns only temporary selection state;
  * every action and target candidate originates from the current authoritative server snapshot.
- * Visible controls use the adopted Kenney-backed frame language rather than vanilla button skins.
+ * Visible controls use the adopted Kenney-backed frame and input-prompt families rather than
+ * vanilla button skins or TURNBOUND-authored placeholder icons.
  */
 public final class BattleCommandScreen extends Screen {
+    private static final int MAX_NUMBER_SHORTCUTS = 6;
+
     private final List<ActionButtonBinding> actionButtons = new ArrayList<>();
     private final List<TargetButtonBinding> targetButtons = new ArrayList<>();
     private BattleNetworkPayloads.SnapshotAction selectedAction;
@@ -98,17 +102,20 @@ public final class BattleCommandScreen extends Screen {
         int y = command.bottom() - 20;
         String actorName = model.currentActor().map(BattleCommandScreen::displayName).orElse("");
 
-        for (BattleNetworkPayloads.SnapshotAction action : actions) {
+        for (int i = 0; i < actions.size(); i++) {
+            BattleNetworkPayloads.SnapshotAction action = actions.get(i);
+            int shortcutOrdinal = i + 1;
             String actionName = conciseActionName(action.id(), actorName);
             String energy = action.energyCost() > 0 ? " E" + action.energyCost() : "";
             String rawLabel = BattleActionPresentation.slotLabel(action).getString()
                     + " · " + actionName + energy;
-            Component label = Component.literal(fit(rawLabel, Math.max(1, cell - UiLayoutMetrics.SPACE_4)));
+            int glyphReserve = InputPromptVisuals.hasNumberKey(shortcutOrdinal) ? 22 : UiLayoutMetrics.SPACE_4;
+            Component label = Component.literal(fit(rawLabel, Math.max(1, cell - glyphReserve - UiLayoutMetrics.SPACE_4)));
             Button button = Button.builder(label, ignored -> chooseAction(action))
                     .bounds(x, y, cell, 20)
                     .build();
             button.active = action.usable();
-            actionButtons.add(new ActionButtonBinding(button, action));
+            actionButtons.add(new ActionButtonBinding(button, action, shortcutOrdinal));
             x += cell + gap;
         }
     }
@@ -160,13 +167,14 @@ public final class BattleCommandScreen extends Screen {
             int row = i / columns;
             int x = layout.grid().x() + col * (buttonWidth + gap);
             int y = layout.grid().y() + row * (rowHeight + gap);
-            int ordinal = from + i + 1;
+            int globalOrdinal = from + i + 1;
+            int shortcutOrdinal = i + 1;
             boolean chosen = selectedTargetIds.contains(participant.id());
-            String label = (chosen ? "◆ " : "  ") + "#" + ordinal + " " + displayName(participant);
+            String label = (chosen ? "◆ " : "") + "#" + globalOrdinal + " " + displayName(participant);
             Button target = Button.builder(Component.literal(label), ignored -> toggleTarget(model, participant.id()))
                     .bounds(x, y, buttonWidth, rowHeight)
                     .build();
-            targetButtons.add(new TargetButtonBinding(target, participant.id()));
+            targetButtons.add(new TargetButtonBinding(target, participant.id(), shortcutOrdinal));
         }
 
         UiLayoutMetrics.Rect header = layout.header();
@@ -265,6 +273,32 @@ public final class BattleCommandScreen extends Screen {
 
     @Override
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {}
+
+    @Override
+    public boolean keyPressed(KeyEvent event) {
+        int index = event.key() - GLFW.GLFW_KEY_1;
+        if (index >= 0 && index < MAX_NUMBER_SHORTCUTS) {
+            BattlePresentationModel model = BattleClientState.presentation().orElse(null);
+            if (model != null && model.awaitingPlayerCommand()) {
+                if (selectedAction == null) {
+                    if (index < actionButtons.size()) {
+                        ActionButtonBinding binding = actionButtons.get(index);
+                        if (binding.button().active) {
+                            chooseAction(binding.action());
+                            return true;
+                        }
+                    }
+                } else if (index < targetButtons.size()) {
+                    TargetButtonBinding binding = targetButtons.get(index);
+                    if (binding.button().active) {
+                        toggleTarget(model, binding.participantId());
+                        return true;
+                    }
+                }
+            }
+        }
+        return super.keyPressed(event);
+    }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
@@ -393,15 +427,46 @@ public final class BattleCommandScreen extends Screen {
 
     private void renderControls(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         for (ActionButtonBinding binding : actionButtons) {
-            renderControl(graphics, binding.button(), false, mouseX, mouseY);
+            renderNumberedControl(graphics, binding.button(), false, binding.shortcutOrdinal(), mouseX, mouseY);
         }
         for (TargetButtonBinding binding : targetButtons) {
-            renderControl(graphics, binding.button(), selectedTargetIds.contains(binding.participantId()), mouseX, mouseY);
+            renderNumberedControl(graphics, binding.button(), selectedTargetIds.contains(binding.participantId()),
+                    binding.shortcutOrdinal(), mouseX, mouseY);
         }
         renderControl(graphics, targetBackButton, false, mouseX, mouseY);
         renderControl(graphics, targetConfirmButton, false, mouseX, mouseY);
         renderControl(graphics, targetPrevButton, false, mouseX, mouseY);
         renderControl(graphics, targetNextButton, false, mouseX, mouseY);
+    }
+
+    private void renderNumberedControl(
+            GuiGraphicsExtractor graphics,
+            Button button,
+            boolean selected,
+            int shortcutOrdinal,
+            int mouseX,
+            int mouseY
+    ) {
+        if (button == null) return;
+        if (!InputPromptVisuals.hasNumberKey(shortcutOrdinal)) {
+            renderControl(graphics, button, selected, mouseX, mouseY);
+            return;
+        }
+
+        UiVisualLanguage.FrameState state = !button.active
+                ? UiVisualLanguage.FrameState.DISABLED
+                : selected || contains(button, mouseX, mouseY)
+                        ? UiVisualLanguage.FrameState.FOCUS
+                        : UiVisualLanguage.FrameState.IDLE;
+        UiVisualLanguage.frame(graphics, button.getX(), button.getY(), button.getWidth(), button.getHeight(), state);
+        int glyphY = button.getY() + Math.max(0, (button.getHeight() - InputPromptVisuals.glyphSize()) / 2);
+        InputPromptVisuals.numberKey(graphics, shortcutOrdinal, button.getX() + 2, glyphY);
+
+        int textX = button.getX() + 20;
+        int textWidth = Math.max(1, button.getRight() - textX - UiLayoutMetrics.SPACE_2);
+        Component message = Component.literal(fit(button.getMessage().getString(), textWidth));
+        int textY = button.getY() + Math.max(1, (button.getHeight() - this.font.lineHeight) / 2);
+        graphics.text(this.font, message, textX, textY, UiVisualLanguage.textColor(state), true);
     }
 
     private void renderControl(GuiGraphicsExtractor graphics, Button button, boolean selected, int mouseX, int mouseY) {
@@ -541,8 +606,8 @@ public final class BattleCommandScreen extends Screen {
         return result.isEmpty() ? "?" : String.join(" ", result);
     }
 
-    private record ActionButtonBinding(Button button, BattleNetworkPayloads.SnapshotAction action) {}
-    private record TargetButtonBinding(Button button, String participantId) {}
+    private record ActionButtonBinding(Button button, BattleNetworkPayloads.SnapshotAction action, int shortcutOrdinal) {}
+    private record TargetButtonBinding(Button button, String participantId, int shortcutOrdinal) {}
 
     @Override public boolean isPauseScreen() { return false; }
     @Override public boolean isInGameUi() { return true; }
