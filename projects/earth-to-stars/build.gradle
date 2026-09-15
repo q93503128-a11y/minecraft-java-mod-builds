@@ -50,9 +50,6 @@ repositories {
         name = 'Modrinth'
         url = 'https://api.modrinth.com/maven'
     }
-    // KotlinForForge publishes its Forge runtime (including the -all artifact requested
-    // by Forge metadata transforms) on its own Maven. Make that group exclusive so a
-    // partial copy of the POM on another repository cannot win artifact resolution.
     exclusiveContent {
         forRepository {
             maven {
@@ -69,8 +66,15 @@ repositories {
 }
 
 dependencies {
-    // Reboot runtime foundation. Do not replace these with custom vehicle physics.
-    modImplementation('maven.modrinth:valkyrien-skies:1.20.1-forge-2.4.10')
+    // Mirror Genesis' own 1.20.1 development contract so the VS ship assembly API is
+    // available at compile time as well as runtime. Keep the core artifacts non-transitive;
+    // Genesis and VS remain the owners of the physical ship implementation.
+    implementation("org.valkyrienskies.core:api:${vs_core_version}") { transitive = false }
+    implementation("org.valkyrienskies.core:internal:${vs_core_version}") { transitive = false }
+    implementation("org.valkyrienskies.core:util:${vs_core_version}") { transitive = false }
+    implementation("org.valkyrienskies.core:impl:${vs_core_version}") { transitive = false }
+    modApi("org.valkyrienskies:valkyrienskies-120-forge:${valkyrien_skies_version}") { transitive = false }
+
     modImplementation('thedarkcolour:kotlinforforge:4.11.0')
     modImplementation('maven.modrinth:vlib:1.20.1-0.1.0+forge')
     modRuntimeOnly('maven.modrinth:architectury-api:9.2.14+forge')
