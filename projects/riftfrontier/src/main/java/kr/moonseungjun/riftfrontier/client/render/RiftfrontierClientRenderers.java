@@ -11,9 +11,9 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 @EventBusSubscriber(modid = Riftfrontier.MOD_ID, value = Dist.CLIENT)
 public final class RiftfrontierClientRenderers {
     private RiftfrontierClientRenderers() {}
-
     @SubscribeEvent
     public static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(RiftfrontierEntityTypes.REGION_01_BOSS.get(), Region01BossRenderer::new);
+        event.registerEntityRenderer(RiftfrontierEntityTypes.REGION_01_HUNTER_FIELD_REVIEW.get(), Region01HunterFieldReviewRenderer::new);
     }
 }
