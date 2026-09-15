@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Pin the exact upstream material source for the already-selected Dragon Evolved geometry without promoting unverified pixels to final art. This closes source discovery; it does **not** close Minecraft visual acceptance.
+Pin and authenticate the exact upstream material source for the already-selected Dragon Evolved geometry without promoting unreviewed derived pixels to final art. Source discovery and source-byte acquisition are now closed; Minecraft visual acceptance is not.
 
 ## Selected source direction
 
@@ -10,48 +10,58 @@ Pin the exact upstream material source for the already-selected Dragon Evolved g
 - Author: **Amal Kumar**
 - Publisher/source: **Poly Haven**
 - Canonical asset page: https://polyhaven.com/a/dark_rock
-- License: **CC0** (Poly Haven asset page/license presentation)
+- License: **CC0**
 - Intended use: source material for a derived Dragon Evolved albedo/material treatment; not a wholesale texture-pack import.
 - Geometry source remains Quaternius `Dragon Evolved`; its original `Atlas` art remains excluded.
 
-## Exact upstream file pinned for intake
-
-Poly Haven's own download link exposed from the canonical asset page on 2026-09-15:
+## Exact upstream file
 
 `https://dl.polyhaven.org/file/ph-assets/Textures/png/4k/dark_rock/dark_rock_diff_4k.png`
 
-The link is the 4K PNG diffuse map served by Poly Haven's download host. Do not substitute a search-engine mirror, screenshot, preview thumbnail, re-encoded copy, or lower-resolution file merely to bypass an execution-environment transfer limit.
+Do not substitute a search-engine mirror, screenshot, preview thumbnail, re-encoded copy, or lower-resolution file merely to bypass an execution-environment transfer limit.
 
-The machine-readable provenance/intake receipt is:
+Machine-readable provenance/intake receipt:
 
 `assets/sources/region_01_boss_dark_rock.source.json`
 
-That receipt is intentionally non-accepting: until exact source bytes are acquired it carries no source SHA-256 and cannot authorize a runtime material.
+## Accepted source-byte receipt — 2026-09-15
 
-## Transfer receipt — 2026-09-15
+Repository-scoped GitHub Actions run **34934969947** successfully acquired the exact pinned 4K PNG and published artifact **10383212118** (`riftfrontier-region01-boss-material-source`). The artifact was then downloaded independently and inspected against its `receipt.json`.
 
-A fresh request through the available web retrieval path reached the exact pinned Poly Haven download URL. The host reported a payload length of **94,658,158 bytes**, but the retrieval layer refused to transfer the body because it exceeded that layer's content-size limit. A second attempt from the local execution container could not resolve the external host and therefore also did not obtain bytes.
+Accepted exact source facts:
 
-This is useful provenance evidence only: it proves that the pinned endpoint currently resolves to a large payload through the web retrieval path, but **does not authenticate the file body**. No SHA-256, dimensions, decoded pixels, or derived texture may be claimed from this receipt. The 94,658,158-byte value must be rechecked against the actual downloaded file before it is promoted to an accepted source receipt.
+- byte size: **94,658,158 bytes**
+- SHA-256: **`cf323f68f6a784bf160d5394524ca2a606b6909b37c5a906601668afeb45bde4`**
+- PNG dimensions: **4096 × 4096**
+- parsed PNG chunks: **11,549**
+- PNG chunk CRC verification: **passed**
+- terminal IEND verification: **passed**
+- independent local SHA-256 after artifact download: **matched receipt**
 
-Do not repeat source discovery or replace the pinned 4K file merely to work around an execution-environment transfer limit. A later environment that can retrieve the exact URL should continue directly from byte acquisition and hashing.
+This closes the earlier transfer uncertainty. The exact source body is authenticated for deterministic downstream derivation. It does **not** approve any Dragon texture treatment by itself.
 
 ## Acceptance state
 
-**SOURCE PINNED / ENDPOINT REACHED / BYTES NOT YET ACCEPTED.**
+**SOURCE BYTES ACCEPTED / DRAGON UV DERIVATION PENDING.**
 
-The repository must not claim this file as bundled/production material until one run has all of the following from the exact downloaded bytes:
+Completed:
 
-1. successful image decode;
-2. exact byte size and SHA-256 receipt;
-3. deterministic derivation into the Dragon Evolved UV/material pipeline;
-4. provenance record from source hash to derived runtime resource hash;
-5. executable-JAR inspection proving only the intended derived resource is bundled;
-6. Minecraft render review for UV seams, head/neck readability, wing membranes, belly/limb separation and distance silhouette;
-7. human visual acceptance.
+1. exact pinned source acquired;
+2. actual byte size recorded;
+3. source SHA-256 recorded and independently rechecked;
+4. PNG structure/chunk CRC/IEND verified;
+5. 4096×4096 image accepted as the pinned diffuse source.
 
-A source/license page alone is not visual approval. The existing `Region01BossMaterialPreparation` decode/integrity gate remains the runtime boundary; do not add another speculative gate around it.
+Still required before production material approval:
+
+1. deterministic derivation into the Dragon Evolved UV/material pipeline;
+2. provenance record from accepted source hash to derived runtime resource hash;
+3. executable-JAR inspection proving only the intended derived resource is bundled;
+4. Minecraft render review for UV seams, head/neck readability, wing membranes, belly/limb separation and distance silhouette;
+5. human visual acceptance.
+
+A source/license page or a valid PNG is not visual approval. The existing `Region01BossMaterialPreparation` decode/integrity gate remains the runtime boundary; do not add another speculative gate around it.
 
 ## Next implementation batch
 
-Fetch the exact pinned PNG in an environment that can transfer the 94 MB-class source body, record the actual byte size and SHA-256 in `region_01_boss_dark_rock.source.json`, decode it, derive the first legal Dragon Evolved runtime material candidate, wire it through the existing material preparation/render path, run the normal Riftfrontier verification stack, and produce a field-review JAR. If the source host still cannot be fetched, do not fabricate bytes/hashes and do not restart material-source research; move to another production-visible Region 01 task that is independent of this transfer gate.
+Do **not** repeat source discovery or download work. Continue directly from accepted source SHA-256 `cf323f68f6a784bf160d5394524ca2a606b6909b37c5a906601668afeb45bde4`: derive the first legal Dragon Evolved runtime material candidate deterministically, record source-to-runtime provenance, wire it through the existing material preparation/render path, run the normal Riftfrontier verification stack, inspect the executable JAR, and produce a Minecraft field-review JAR with explicit human reject criteria. If derivation cannot be completed in the current environment, move to an independent production-visible Region 01 task rather than adding more material gates.
