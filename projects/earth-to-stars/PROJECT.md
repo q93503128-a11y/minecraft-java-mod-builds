@@ -1,352 +1,240 @@
 # EARTH TO STARS
 
 - Slug: `earth-to-stars`
-- Mod ID: `earth_to_stars`
-- Namespace: `earth_to_stars`
-- Mod version: `0.1.0-alpha.14`
-- Minecraft: `26.2`
-- Java: `25`
-- Loader: `NeoForge`
-- Loader version: `26.2.0.76`
-- Gradle: `9.2.1`
-- Build plugin: `ModDevGradle 2.0.143`
-- Final JAR: `earth_to_stars-0.1.0-alpha.14.jar`
-- Existing-world compatibility: save roots / registry IDs / ShipId / module IDs are compatibility contracts. Current ShipState schema is 2; schema 1 migrates by adding the missing sensor slot without resetting the ship.
-- Required dependencies: Minecraft, NeoForge
-- Optional external mods/libraries: none approved as a hard runtime dependency. Any addition requires current 26.2 compatibility, maintenance, license, multiplayer and performance review.
-- Forbidden bundled dependencies: Minecraft original files, NeoForge distribution files, external mod JARs, and models/textures/audio/UI assets without redistribution permission.
-- Datagen task: `runData` (`NOT RUN` at current gate)
-- Server lifecycle: latest two-boot disk restore verification run `34197931566`; ShipState schema 2 and Power/Ammo/Propellant/Oxygen runtime restoration loaded successfully.
-- Client resource/model smoke: `PASS` — Xvfb `runClient` on Minecraft 26.2 / NeoForge 26.2.0.76, alpha.14 run `34424914782`; live visual quality remains `NOT PLAYTESTED`
+- Mod ID / namespace: `earth_to_stars`
+- Current reboot version: `0.2.0-alpha.2`
+- Minecraft: `1.20.1`
+- Java: `17`
+- Loader: `Forge`
+- Forge: `47.4.0`
+- Gradle: `8.14`
+- Build plugin: ModDevGradle legacy Forge line
+- Final JAR: `earth_to_stars-0.2.0-alpha.2.jar`
+- Physical ship foundation: Valkyrien Skies `2.4.10`
+- Space transition foundation: Genesis `1.20.1-0.7.3`
+- Cockpit / control / power hardware: Zero Point Systems `1.20.1-2.5.1`
+- Thruster / gyroscope hardware: Zero Point Labs `1.20.1-1.5.0`
 - Live multiplayer: `NOT TESTED`
+- Pre-reboot `0.1.x` / Minecraft 26.2 saves: compatibility with the `0.2.x` reboot is **not claimed or verified**.
+
+The detailed external stack and reboot rationale are canonical in `docs/06_VS_GENESIS_REBOOT.md`.
 
 ## Project identity
 
 EARTH TO STARS is a large-scale science-fiction Minecraft survival/expansion game built around one connected fantasy:
 
-> **Start on the vanilla Overworld as Earth, build industry and a small craft, cross the atmosphere under player control, expand into orbit and other celestial regions, recover resources and technology, and grow one modular ship from a fragile vehicle into a mobile home, factory and warship.**
+> Start on the Overworld as Earth, build practical industry and a small spacecraft, leave the atmosphere under player control, expand into orbit and other celestial regions, recover resources and technology, and grow one authored modular ship from a fragile vehicle into a mobile home, factory and warship.
 
-It is not a generic tech mod, a planet-selection menu, a collection of recolored ores, or a Space Engineers clone. Minecraft survival remains the foundation; the playable world expands upward and outward.
+It is not a generic tech mod, a planet-selection menu, a collection of recolored ores, or a freeform Space Engineers clone. Minecraft survival remains the foundation; the playable world expands upward and outward.
 
 ## Locked product decisions
 
-1. `minecraft:overworld` is Earth and remains useful throughout the game.
-2. The primary progression route must be completable without mandatory Nether or End visits.
-3. Nether and End are optional side routes, shortcuts, specialist-material sources and late-game variants, never mandatory gates.
-4. Surface-to-space travel must feel continuous. Internal dimension/layer transitions may protect performance, but presentation must not feel like menu teleportation.
-5. Player ships use the **B-type modular ship architecture**: one authoritative ship object with modules, hardpoints, systems and linked interior; not an arbitrary moving-block contraption.
-6. Ship progression changes capabilities and play patterns, not only numbers.
-7. Manual and automatic weapon control share one server-owned weapon/system truth.
-8. Multiplayer is first-class from the beginning. Important state is server-authoritative.
-9. Solo play stays viable through automation/assistance; multiplayer roles are opportunities, not jobs.
-10. Ship power, ammo, sensors, propellant and oxygen use centralized/batched simulation; modules do not each broad-scan or independently duplicate resources.
-11. Repeatedly tuned values should become data-driven. Code owns rules; data owns content.
-12. Final UI/ship/module/weapon/planet/VFX/sound design is reference-gated; generic AI sci-fi styling is not production art.
-13. External references/assets are actively used where licensing permits and recorded in `THIRD_PARTY_ASSETS.md`.
-14. Technical success is not product completion. Real Minecraft play, visual review, performance and multiplayer verification are separately tracked.
+1. `minecraft:overworld` is Earth and remains useful throughout progression.
+2. The primary route must be completable without mandatory Nether or End visits. Nether/End may provide side routes, shortcuts or specialist rewards.
+3. Surface → atmosphere → space should feel like one continuous trip from the player's perspective. Internal dimension transfer is allowed when the transition itself preserves the craft and control fantasy.
+4. The physical vehicle is a real Valkyrien Skies block ship. EARTH TO STARS does not recreate ship physics, collision or player-on-ship movement.
+5. The game remains **B-type authored modular ship progression**. Using VS as the physical substrate does not turn the game into unrestricted freeform ship construction. Hull stages, module slots, hardpoints, permissions, progression and resources remain authoritative ETS game state.
+6. Genesis owns the baseline Earth↔space ship transition. ETS does not return to the retired fake-void/player-only teleport implementation.
+7. Proven external hardware is used before custom replacement: ZPS cockpit/control/power and ZPL propulsion/gyro are the current starter baseline.
+8. Important game state is server-authoritative: ownership, module changes, power/fuel/ammo, progression, damage, rewards, travel success and saves.
+9. Manual and automatic weapons use the same authoritative weapon-system state.
+10. Solo remains viable through assistance/automation; multiplayer roles are opportunities rather than mandatory jobs.
+11. Repeatedly tuned content belongs in data where practical. Code owns rules; data owns content.
+12. Final ship/UI/module/weapon/planet/VFX/sound art is reference-gated. Generic AI sci-fi styling is not production art.
+13. External code/assets/references are actively used when appropriate and provenance/license terms are recorded.
+14. Technical success is not product completion. Build, runtime boot, live play feel, visual acceptance, performance and multiplayer are tracked separately.
 
 ## Core loop
 
 ```text
-Earth survival/resource acquisition
+Earth survival / resource acquisition
 → practical industry and launch capability
-→ fuel/oxygen readiness
-→ atmosphere/orbit breakthrough
-→ orbital salvage/science/combat
-→ ship/module upgrade
-→ Moon/asteroid/planetary expedition
-→ new environmental constraints/resources
-→ stronger mobility/automation/weapons/production
+→ physical starter craft
+→ controlled atmosphere ascent
+→ orbit / space
+→ salvage, science and combat
+→ ship capability upgrades
+→ Moon / asteroid / planetary expeditions
+→ new environmental constraints and resources
+→ stronger mobility / automation / weapons / production
 → deeper space
 → discoveries feed back into Earth, bases and ship growth
 ```
 
-Every major feature must attach to this loop.
+Every major feature must attach to this loop and create a new choice, capability or risk response rather than only another currency or menu.
 
-## Multiplayer authority
+## Authority model
 
 Server authority includes at minimum:
 
-- ship ownership/membership
-- accepted ship transform
-- installed modules/hardpoints
-- module damage/repair
+- ship ownership / crew permissions
+- accepted ship identity and ETS logical state
+- installed modules / hardpoints
+- module damage / repair
 - power / propellant / oxygen / ammunition
 - supply transactions
-- atmosphere/launch readiness
-- weapon cooldown/target/hit/damage
-- pilot/turret control leases
-- salvage/reward resolution
-- mining/resource transfer
-- recipes/production results
-- progression/celestial access
-- interior assignment
-- save data/migrations
+- launch / travel readiness
+- weapon cooldown / target / hit / damage
+- pilot / turret control rights
+- salvage / reward resolution
+- mining / resource transfer
+- recipes / production results
+- progression / celestial access
+- save data / migrations
 
-Clients provide input/rendering/animation/UI/safe prediction only. A client never reports that damage, resources, crafting, refueling, salvage or travel already succeeded.
-
----
-
-# Current implementation baseline
-
-## 0.1.0-alpha.14 — Starter Craft Core Rescue
-
-Latest build-gated implementation commit:
-
-`ac44c6f7b67c5f1d04a0d77d8350b35ec8e8e520`
-
-GitHub Actions `Build earth-to-stars` run `34423576015`: **PASS**
-
-Verified JAR SHA-256:
-
-`7345163281ca3ec2b0e0f58c1ec0d47d457af1ef8539492d60e25bf722fac9eb`
-
-Verified in this gate:
-
-- P0-H progression validator
-- actual M1 launch recipe dependency closure
-- actual launch recipe Nether/End independence
-- alpha.14 starter-craft acceptance static contract
-- visible hull / interaction target / actual passenger vehicle collapsed into one `ShipExteriorEntity`
-- enlarged 5-block-class starter hull with matching interaction footprint and corrected passenger attachment
-- replaceable vegetation-tolerant 5×5×3 deployment clearance
-- successful deployment immediately attempts to put the owner in the real pilot seat
-- propellant/oxygen service bound to the exact clicked authoritative ship exterior
-- runtime OBJ UV adaptation for Minecraft item-atlas-safe presentation
-- distinct adapted runtime meshes for starter craft, salvage and interceptor
-- existing authoritative passenger/control and safe retirement contracts
-- existing M1-D starter/recovery/scanner/schema-migration JUnit regression
-- Minecraft 26.2 / NeoForge 26.2.0.76 compile
-- `clean test build`
-- production JAR verify
-
-Client resource/model-bake smoke run `34424914782`: **PASS**
-
-- Xvfb `runClient` reached the alpha.14 mod load marker
-- Minecraft 26.2 / NeoForge 26.2.0.76 client initialization was observed
-- no EARTH TO STARS missing-model / missing-texture / illegal identifier / OBJ loader error matched the gate
-
-The expensive two-boot save/restart lifecycle was **not rerun** because alpha.14 did not change the ShipState schema or persistence layout. The latest two-boot persistence verification remains run `34197931566`.
-
-Not verified by this gate:
-
-- live survival crafting/use flow
-- actual deployed craft scale and silhouette in a real client session
-- actual pilot seat position and camera feel
-- actual atmosphere ascent/transition feel
-- live Earth→Orbit→salvage→combat→Earth return cycle
-- salvage readability and approach feel
-- actual turret combat feel
-- reward pickup/install UX
-- live multiplayer pilot/gunner/interior session
+Clients provide input, rendering, animation, UI, sound, VFX and safe prediction only.
 
 ---
 
-# M1 survival launch contract
+# 0.2 reboot boundary
 
-The first Earth progression does not add a large new ore layer. Existing Minecraft resources are reinterpreted as early spaceflight materials:
+The old Minecraft 26.2 vehicle stack is retired. It used a custom Display-entity-style spacecraft, custom movement/collision approximations and a technical void-space implementation. Live testing showed unacceptable cockpit placement, collision, control and flight feel. The reboot intentionally keeps those sources outside the compiled source set rather than continuing to patch the wrong foundation.
 
-- Iron → structure/pressure vessel
-- Copper → conduction/plumbing/control hardware
-- Redstone → control/power electronics
-- Gold → precision electronics
-- Amethyst → early navigation/sensing component
-- Gunpowder + Paper → solid propellant abstraction
-- Water → oxygen production input
-- Leather → life-support sealing/packing
-
-Player-facing items:
+Current compiled source roots are:
 
 ```text
-reinforced_frame
-avionics_unit
-propellant_cell
-oxygen_cartridge
-life_support_unit
-launch_craft_kit
-recovered_sensor_core
+src/reboot/java
+src/reboot/resources
 ```
 
-`tools/validate_m1_launch.py` recursively follows the actual launch-craft recipe closure so practical recipes cannot silently drift into mandatory Nether/End progression.
+The previous implementation remains in Git history for forensic reference only.
 
-## Launch craft construction
-
-`launch_craft_kit` is a construction package, not a portable fully simulated ship.
-
-Server deployment verifies:
-
-1. Overworld/Earth
-2. 5×5×3 launch volume; harmless replaceable vegetation is cleared, solid/fluid obstruction blocks deployment
-3. no existing registered owned ship
-4. authoritative starter ShipState creation
-5. one visible model-backed `ShipExteriorEntity` used as hull, interaction target and actual passenger vehicle
-6. ShipSavedData persistence
-7. ShipSystemsRuntime initialization/persistence
-8. immediate owner boarding/control attempt on the real pilot seat
-9. item consumption only on successful deployment
-
-Existing ownership is never silently overwritten.
-
-## Starter craft canonical loadout
-
-Slots:
-
-- `core`
-- `engine`
-- `power`
-- `cargo`
-- `life_support`
-- `turret`
-- `sensor`
-
-Installed at construction:
-
-- `command_core_mk1`
-- `engine_mk1`
-- `battery_mk1`
-- `cargo_mk1`
-- `life_support_mk1`
-
-Intentionally empty:
-
-- `turret`
-- `sensor`
-
-Initial central resources:
-
-- Power `80 / 100`
-- Propellant `80 / 240`
-- Oxygen `80 / 240`
-
----
-
-# Launch readiness / atmosphere
-
-Current Earth bands:
+## External runtime stack
 
 ```text
-Dense Atmosphere : Y < 256
-Thin Atmosphere  : 256 ≤ Y < 384
-Upper Atmosphere : 384 ≤ Y < 512
-Earth→Orbit      : Y = 512
-Earth re-entry   : Y = 504
+Minecraft 1.20.1 / Forge 47.4.0
+        ↓
+Valkyrien Skies 2.4.10
+        ↓
+Genesis 0.7.3 + VLib
+        ↓
+ZPS 2.5.1 cockpit / controller / finite Power Cell
+ZPL 1.5.0 ion propulsion / gyroscopes
+        ↓
+EARTH TO STARS game rules and progression
 ```
 
-Propellant draw scales with control activity and atmosphere band. Oxygen draw scales with active crew: pilot lease holder + logged-in players in the linked interior, deduplicated by UUID.
-
-Earth→Orbit requires:
-
-- `life_support_mk1`
-- Propellant ≥ `8`
-- Oxygen ≥ `20`
-
-If insufficient, transition is denied, the craft is held below the boundary, upward velocity is removed, and the pilot receives throttled readiness feedback.
-
-Current supply:
-
-- propellant cell → up to `+40` Propellant
-- oxygen cartridge → up to `+40` Oxygen
-- service requires using the supply item directly on the target ship hull
-- full/no-access ship does not consume item
-- successful supply persists immediately
-
-The current direct-hull right-click interaction is M1 UX and may later become a dedicated service/refueling presentation without changing server authority.
+ETS does not bundle or counterfeit those external projects. They remain runtime dependencies/API owners according to their licenses and are tracked in `THIRD_PARTY_ASSETS.md` / `docs/06_VS_GENESIS_REBOOT.md`.
 
 ---
 
-# M1-D progression contract
+# Current implementation — 0.2.0-alpha.2
 
-The first Orbit trip fills actual missing ship capabilities rather than just raising a stat.
+## Physical starter craft
+
+The reboot can construct an authored starter shuttle from real blocks and convert the complete structure into a Valkyrien Skies ship through the released VS `ShipAssembler` API.
+
+Current technical loadout:
+
+- tapered iron / waxed copper / glass hull
+- ZPS Octo Controller as the real rideable cockpit/input source
+- finite ZPS Power Cell
+- ZPL Ion Modulator + Thruster Exhaust pairs for forward, reverse, lift/descent and lateral translation
+- opposed ZPL gyroscopes for yaw
+- ETS `starter_flight_core`
+- ETS control nodes used to route controller channels to the external hardware
+- ETS battery bus transferring Forge Energy from the Power Cell to the ion modulators
+
+VS owns physical ship relocation, collision and physics. ZPL owns actual thruster/gyro force behavior. ETS owns assembly choice, input routing, power distribution and later progression rules.
+
+## Starter controls
+
+While the player is actually riding the ZPS Octo mounting seat, ETS reads the controller's supplied channels:
 
 ```text
-starter: no turret / no scanner
-→ first orbital salvage
-→ autocannon_mk1 installs into turret slot
-→ AUTO_DEFENSE immediately available
-→ first unmanned interceptor encounter
-→ server-owned contact/movement/health/power attack
-→ central SensorGrid + turret engage the encounter
-→ recovered_sensor_core reward
-→ Earth return
-→ orbital_scanner_mk1 installs into sensor slot
-→ sensor range 64 → 96
+W / OCT_A → forward
+A / OCT_B → yaw left
+S / OCT_C → reverse
+D / OCT_D → yaw right
+Up / OCT_E → ascend
+Left / OCT_F → strafe left
+Down / OCT_G → descend
+Right / OCT_H → strafe right
 ```
 
-Important rules:
+These mappings are technically connected but are **not yet live-play accepted** for direction, strength or feel.
 
-- no installed autocannon means no usable TurretRuntime, even through technical commands.
-- MANUAL and AUTO_DEFENSE are modes of the same installed turret state.
-- encounter target data enters the ship-level central SensorGrid; turrets do not each broad-scan the world every tick.
-- hostile attacks drain authoritative ship PowerGrid.
-- projectile hits and hostile health are server-resolved.
-- first hostile clear prevents immediate same-session reward farming.
-- if the player loses/misses the core and returns to Earth without installing the scanner, session-only clear resets so a later Orbit trip can recover the progression item again.
-- scanner install is Earth-only and consumes the core only on success.
+## Runtime verification structure
 
-Current salvage/interceptor presentation uses distinct Kenney Space Kit-derived OBJ-backed visuals. The starter craft now uses the same visible `ShipExteriorEntity` for rendering, interaction and the actual passenger relationship instead of a separate render proxy. Client resource loading is verified; live scale, seat placement and handling feel still require real play review.
+Normal ETS client/server smoke runs disable Forge GameTest discovery and restrict the namespace because released VS contains optional compatibility GameTest holders whose method signatures can reference unrelated absent mods such as Create. This avoids turning optional external tests into false ETS runtime failures; it does not replace future ETS-specific GameTests.
+
+The released VS 2.4.10 Forge line may also log optional compatibility missing-class warnings and its documented sculk vibration interface-mixin limitation. These are tracked as external-stack warnings rather than hidden by adding unrelated fake dependencies.
 
 ---
 
-# Persistence / migration
+# Verification state
 
-Persisted:
+Current automated evidence establishes the following categories independently:
 
-- ShipId / owner / crew / slots / modules
-- ShipId→interior assignment
-- central Power / Ammo / Propellant / Oxygen quantities
+- `CODE REVIEWED`: current reboot assembly/control/power integration reviewed against the pinned external APIs.
+- `BUILD VERIFIED`: clean test/build and production JAR verification have passed on the reboot stack.
+- `JAR PRODUCED`: `earth_to_stars-0.2.0-alpha.2.jar` has been produced and structurally verified.
+- `DEDICATED STACK BOOT`: Forge + VS + Genesis + VLib + ZPS + ZPL have reached real dedicated-server startup.
+- `PHYSICAL VS STARTER ASSEMBLY`: previously verified on the dedicated-server gate; the gate is being kept regression-safe against terrain-dependent placement.
+- `CLIENT RESOURCE/MODEL SMOKE`: headless `runClient` now verifies actual resource reload / block-atlas creation in addition to mod initialization.
+- `PLAYTESTED`: **NO** for the reboot starter craft.
+- `GENESIS OCCUPIED-CRAFT EARTH→SPACE`: **NOT TESTED**.
+- `MULTIPLAYER TESTED`: **NO**.
 
-Not persisted:
-
-- SensorGrid contact cache
-- pilot/turret leases
-- logical projectiles
-- temporary exterior IDs
-- M1 encounter proxy state
-
-ShipState schema 2 adds the `sensor` slot. Schema 1 decode preserves existing identity, ownership, crew, slots and modules and adds only a missing `sensor` UTILITY size-1 slot. Unsupported future schema is rejected rather than silently resetting the ship.
+Automated boot or compile success must never be described as successful flight feel or successful multiplayer.
 
 ---
 
-# Current visual boundary
+# Immediate acceptance gate
 
-alpha.14 removes the starter-craft split between an invisible gameplay shell and a separate visible ItemDisplay, and adapts the three imported OBJ meshes to a Minecraft-safe runtime UV path. The following still require live review or later production work:
+Do not expand Moon/asteroid content yet. The next real milestone is one complete live starter-craft sequence:
 
-- technical linked-interior room
-- current orbital-space environment presentation
-- command-based technical controls that remain outside the main survival loop
-- logical projectile visual
-- current direct-hull supply/upgrade UX
-- cockpit/camera/interpolation polish
-- live scale, pilot-seat position, silhouette and readability review for the three spacecraft meshes
+```text
+open a real client
+→ obtain/deploy the starter craft from the ETS creative tab
+→ confirm the assembled object is a real VS ship
+→ board the actual ZPS cockpit
+→ verify W/A/S/D + arrow controls
+→ take off
+→ collide with terrain/entities correctly
+→ leave the seat and move on the physical ship where appropriate
+→ inspect hull scale, cockpit position and camera
+→ ascend to the Genesis atmosphere boundary
+→ transfer the complete occupied VS ship to space
+→ keep controlling the same craft after transition
+```
 
-Production ship/cockpit/interior/turret/hostile/salvage/UI/VFX/sound/space visuals must pass `docs/03_UI_ART_REFERENCE_GATE.md` and use the license ledger where external assets are involved.
+Acceptance is based on feel and continuity, not only whether coordinates changed.
+
+If the first craft is too heavy, weak, unstable or awkward, tune hardware/layout using actual play evidence before building more progression around it.
 
 ---
 
-# Current status / next work
+# Progression contract after physical-flight acceptance
 
-`ALPHA.14 BUILD VERIFIED + CLIENT RESOURCE/MODEL-BAKE SMOKE VERIFIED / LIVE STARTER-CRAFT ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`
-
-Do **not** expand to Moon/asteroid content merely because the backend builds.
-
-The next meaningful gate is a real client playtest beginning with the rescued starter craft, then the complete M1 loop:
+The previous 0.1.x M1 progression is retained as **design intent**, not as a claim about the current compiled reboot runtime. Once the physical starter craft passes live acceptance, rebuild the first closed loop on top of the new stack:
 
 ```text
 Earth resources
-→ craft/deploy launch craft
-→ verify hull scale / click target / pilot seat / camera
-→ fuel/oxygen directly through the hull
-→ controlled ascent
-→ Earth Orbit
-→ salvage approach
-→ autocannon recovery
-→ first interceptor
-→ sensor core pickup
-→ re-entry
-→ scanner install
-→ sensor-range improvement
+→ starter craft construction
+→ fuel / oxygen / power readiness
+→ first real flight and orbit transition
+→ orbital salvage
+→ first weapon capability
+→ first hostile encounter
+→ recovered sensor capability
+→ Earth return
+→ scanner / exploration improvement
 ```
 
-Acceptance focuses on whether the craft is visibly correct and directly usable first, then progression blockers, control/camera feel, readability, combat duration, reward recovery, re-entry and whether the first trip actually feels worth doing.
+Important retained design principles:
 
-Only after this loop is playable and feels coherent should M2 Moon content become the next expansion target.
+- early spaceflight should reinterpret useful vanilla Earth resources before adding a wall of new ores,
+- first-space rewards should unlock capabilities rather than only larger numbers,
+- weapons and sensors use central ship-level simulation instead of every module broad-scanning each tick,
+- progression must have anti-soft-lock recovery,
+- Nether/End remain optional for the main route,
+- production UI/art/VFX/sound only proceed through the project's reference/asset gate.
+
+Detailed legacy M1 design remains available in `docs/05_M1_EARTH_ORBIT_GAMEPLAY_SLICE.md`; implementation details in that document referring to the retired 26.2 vehicle stack must not override the current reboot architecture.
+
+---
+
+# Next expansion after the gate
+
+Only after the starter craft is visibly correct, directly usable, physically convincing and able to cross Earth→space intact should the project reconnect survival crafting/progression and then advance toward Moon/asteroid content.
