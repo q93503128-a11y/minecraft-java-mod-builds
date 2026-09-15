@@ -1,12 +1,13 @@
 # Open-World RPG — R01 External Asset Intake Manifest
 
-> Status: **ASSET INTAKE PHASE A / SOURCE BINDINGS + LICENSE BOUNDARIES LOCKED**  
+> Status: **ASSET INTAKE PHASE B / EVIDENCE PASS 1 COMPLETE — NOT ASSET READY**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Project contract: `PROJECT.md`  
 > Opening: `R01_VERTICAL_SLICE.md`  
 > Equipment: `EQUIPMENT_BALANCE.md`, `LOOT_ECONOMY.md`  
 > Appearance/recovery: `RECOVERY_PRODUCTION_APPEARANCE.md`  
 > Provenance registry: `EXTERNAL_SOURCES.md`  
+> Phase-B evidence: `R01_ASSET_PHASE_B_EVIDENCE_2026-09-15.md`  
 > Rule: gameplay canon still wins. For **R01 asset-admission/license decisions**, this file records the newest verified evidence and supersedes older subordinate notes whose license label has become stale.
 
 This file converts the project's external-first rule from a pack-level intention into an intake manifest. It is deliberately conservative: an asset is not considered production-ready merely because a web page looks good or because a previous conversation called a pack CC0.
@@ -87,10 +88,18 @@ Accepted source families:
 - legacy `KayKit Character Animations` — exact named fallback clips including `Roll`, `Dash Front`, `Dash Back`, `Dash Right`, `Dash Left`;
 - `KayKit Fantasy Weapons Bits` — free tier 25+ fantasy weapon models, broader pack 40+; swords, axes, hammers, bows, staves, wands, shields, spears, etc.;
 - `KayKit RPG Tools Bits` — free tier 45+ tool/production props; hammer, anvil, pickaxe, axe, hand tools, blueprints, etc.;
-- `KayKit Restaurant Bits` — 140+ food/kitchen models, including ingredients and raw/cooked/chopped states;
+- `KayKit Restaurant Bits` — food/kitchen models, including ingredients and prepared-food states;
 - `KayKit Character Pack: Adventurers 1.0` GitHub repository — exact public CC0 package used below for path-level bindings and fallback compatibility models.
 
 The Adventurers repository itself contains a CC0 `LICENSE.txt`; repository main tree observed at commit `672074b73ba276876a19e8816ecdc5241817ab47` during this intake.
+
+Phase-B evidence rule:
+
+- authoritative KayKit pack pages establish license/family eligibility;
+- official KayKit GitHub repositories may establish exact public file paths;
+- third-party mirrors may be used only to inspect filename/tree evidence when the authoritative page does not expose internal filenames;
+- a third-party mirror never replaces the authoritative KayKit license or acquisition source;
+- archive/file SHA-256 is recorded only after the actual source bytes used by the project are obtained.
 
 ## 3.2 Kenney
 
@@ -140,8 +149,50 @@ Important boundaries:
 
 - these exact assets establish public-safe geometry/scale/attachment baselines; they do not force the entire R01 art direction to become the Adventurers pack if a stronger accepted family exists;
 - a crossbow is not substituted for the canonical `Riverthorn Bow` merely because its exact path is known;
-- `Riverthorn Bow` remains tied to `Fantasy Weapons Bits` and is `ARCHIVE_INSPECTION_REQUIRED` until its actual bow filename is recorded;
 - `mug_full` is a tavern prop, **not** the Healing Potion bottle.
+
+## 4.1 Phase-B KayKit filename evidence
+
+Detailed source evidence is recorded in `R01_ASSET_PHASE_B_EVIDENCE_2026-09-15.md`.
+
+The official `KayKit-Restaurant-Bits-1.0` repository was observed at commit `153c8a7535b48237854cb54ff6890679f8c574d1`. Exact public-tree entries include:
+
+```text
+food_dinner.gltf
+food_stew.gltf
+stew_bowl.gltf
+stew_pot.gltf
+food_ingredient_steak.gltf
+food_ingredient_steak_pieces.gltf
+food_ingredient_ham_cooked.gltf
+```
+
+A third-party mirror of KayKit packs was used only as filename/tree inspection evidence for packs whose itch pages do not expose internal names. It exposed these exact filename families:
+
+```text
+Fantasy Weapons Bits:
+  bow_A / bow_B / bow_C (+ withString variants)
+  sword_A ... sword_G
+  hammer_A ... hammer_D
+  spear_A / spear_B
+  staff_A ... staff_D
+  shield_A ... shield_D
+  wand_A / wand_B
+
+RPG Tools Bits:
+  anvil.gltf
+  hammer.gltf
+  pickaxe.gltf
+  grindstone.gltf
+  tongs.gltf
+  mallet.gltf
+  axe.gltf
+  shovel.gltf
+  knife.gltf
+  saw.gltf
+```
+
+Those names are no longer guesses, but final A/B/C variant selection remains blocked until actual mesh/scale/grip/silhouette review. The mirror is **not** the license authority or preferred acquisition source.
 
 ---
 
@@ -208,27 +259,33 @@ Catastrophic skirt/robe/pauldron clipping is an asset/rig problem to fix or reje
 |---|---|---|
 | Heartland Arming Sword | Quaternius Modular Weapons if acquisition license is preserved/verified; KayKit `sword_1handed.gltf` is public-safe fallback/baseline | `READY_PUBLIC` fallback, preferred Quaternius `ARCHIVE_INSPECTION_REQUIRED` |
 | Wayfarer Daggers | Quaternius paired daggers preferred; KayKit `dagger.gltf` public-safe baseline | same |
-| Quarry Maul | KayKit Fantasy Weapons Bits or accepted Quaternius hammer | `ARCHIVE_INSPECTION_REQUIRED` |
-| River Pike | Fantasy Weapons Bits / accepted Quaternius spear | `ARCHIVE_INSPECTION_REQUIRED` |
-| Riverwood Bow | KayKit Fantasy Weapons Bits grounded bow | `ARCHIVE_INSPECTION_REQUIRED` |
-| Initiate Staff | KayKit Fantasy Weapons Bits preferred; exact Adventurers `staff.gltf` available as public-safe baseline | `READY_PUBLIC` baseline |
-| Initiate Wand | KayKit Fantasy Weapons Bits preferred; exact Adventurers `wand.gltf` available | `READY_PUBLIC` baseline |
-| Watch Buckler | preferred external round shield; exact KayKit `shield_round.gltf` exists | `READY_PUBLIC` baseline |
+| Quarry Maul | KayKit Fantasy Weapons Bits `hammer_A..D` candidate family or accepted Quaternius hammer | exact candidate filenames pinned; final model `ARCHIVE_INSPECTION_REQUIRED` pending mesh review/source SHA-256 |
+| River Pike | Fantasy Weapons Bits `spear_A/B` / accepted Quaternius spear | exact candidate filenames pinned; final model pending visual review |
+| Riverwood Bow | KayKit Fantasy Weapons Bits `bow_A/B/C_withString` family | exact candidate filenames pinned; final variant pending visual review |
+| Initiate Staff | Fantasy Weapons Bits `staff_A..D` preferred; exact Adventurers `staff.gltf` available as public-safe baseline | exact candidate filenames pinned; `READY_PUBLIC` baseline |
+| Initiate Wand | Fantasy Weapons Bits `wand_A/B` preferred; exact Adventurers `wand.gltf` available | exact candidate filenames pinned; `READY_PUBLIC` baseline |
+| Watch Buckler | preferred external round shield; exact KayKit `shield_round.gltf` exists; Fantasy Weapons Bits `shield_A..D` candidate family also known | `READY_PUBLIC` baseline; alternate variant review pending |
 | Apprentice Focus | exact KayKit `spellbook_open.gltf` / `spellbook_closed.gltf` is accepted public-safe book-focus baseline | `READY_PUBLIC` |
 
 ## 6.2 First dungeon deterministic rewards
 
-- `Ironroot Longsword`: use the best grounded straight-sword source accepted from the above family; exact model must be named in Phase B before implementation.
-- `Riverthorn Bow`: Fantasy Weapons Bits bow; exact archive file required.
-- `Lumenwood Staff`: Fantasy Weapons Bits staff; exact archive file required even though `kk_adv_staff` can serve as a technical fallback.
+- `Ironroot Longsword`: exact candidate universe is now evidence-backed as `sword_A.gltf` through `sword_G.gltf`; final letter is **not** selected until the meshes are visually inspected for a grounded straight-sword silhouette, grip and Minecraft scale.
+- `Riverthorn Bow`: exact candidate universe is `bow_A_withString.gltf`, `bow_B_withString.gltf`, `bow_C_withString.gltf`; final letter waits for draw/silhouette review.
+- `Lumenwood Staff`: exact candidate universe is `staff_A.gltf` through `staff_D.gltf`; final letter waits for caster silhouette, grip and spell-VFX origin review.
 
-The canonical stats/effects do not authorize using whatever model happens to be easiest during coding.
+The canonical stats/effects do not authorize using whatever model happens to be easiest during coding. A filename-tree pass narrows the choice but does not replace quality review.
 
 ## 6.3 Mythic/signature models
 
 `Hartcrown Spear`, `Rootquake Maul`, `Earthscale Ward` remain **asset-blocked for final presentation** until the chosen external model actually supports their silhouette/identity.
 
-Do not call a recolored ordinary spear/hammer/shield Mythic merely because mechanics are complete.
+Current evidence-backed candidate universes are:
+
+- Hartcrown Spear: `spear_A.gltf`, `spear_B.gltf`;
+- Rootquake Maul: `hammer_A.gltf` through `hammer_D.gltf`;
+- Earthscale Ward: `shield_A.gltf` through `shield_D.gltf`.
+
+These are not automatically Mythic-quality. Do not call a recolored ordinary spear/hammer/shield Mythic merely because mechanics are complete.
 
 ---
 
@@ -263,17 +320,38 @@ Canonical R01 meals:
 - Trail Skewers;
 - Glow Broth.
 
-Source family: `KayKit Restaurant Bits` — current page states 140+ CC0 food/kitchen models.
+Source family: `KayKit Restaurant Bits`, CC0. The official public GitHub repository gives path-level evidence rather than guessed names.
 
-Status: `ARCHIVE_INSPECTION_REQUIRED` for exact filenames, but **license family accepted**.
+Current Phase-B mapping:
 
-Phase B chooses the exact cooked-meat/skewer/bowl/soup models from the real archive; do not invent filenames.
+| Meal | Exact observed candidate | Status |
+|---|---|---|
+| Herbed Louxia Roast | `addons/kaykit_restaurant_bits/Assets/gltf/food_dinner.gltf` | candidate filename pinned; 3D appearance review pending |
+| Trail Skewers | no `skewer` filename established in observed official free tree | `ARCHIVE_INSPECTION_REQUIRED`; do not invent filename |
+| Glow Broth | `addons/kaykit_restaurant_bits/Assets/gltf/food_stew.gltf`; compare `stew_bowl.gltf` | candidate filename pinned; final visual selection pending |
+
+The observed tree also includes ingredient/cooking support such as `food_ingredient_steak.gltf`, `food_ingredient_steak_pieces.gltf`, `food_ingredient_ham_cooked.gltf` and `stew_pot.gltf`.
 
 ## 7.3 Forge / alchemy / cooking tools
 
 Source family: `KayKit RPG Tools Bits` — current free page states 45+ CC0 models including hammer, anvil, axe, pickaxe, tools, blueprints and related production props.
 
-Status: license/family `READY_PUBLIC`; exact filenames `ARCHIVE_INSPECTION_REQUIRED`.
+Filename inspection evidence now pins:
+
+```text
+hammer.gltf
+anvil.gltf
+pickaxe.gltf
+grindstone.gltf
+tongs.gltf
+mallet.gltf
+axe.gltf
+shovel.gltf
+knife.gltf
+saw.gltf
+```
+
+Status: license/family `READY_PUBLIC`; exact names are evidence-backed, but authoritative archive acquisition/source SHA-256 and actual model inspection remain pending.
 
 Visible workstation actions must bind the prop to an accepted work animation, not leave the tool floating while the vanilla arm swings.
 
@@ -319,20 +397,32 @@ Accepted source families:
 - current KayKit Character Animations for melee/ranged/spellcasting/blocking/tool actions;
 - Quaternius UAL/UAL2 only after acquisition-time license is recorded under the Quaternius rule in §2.
 
-R01 visible work minimum:
+KayKit 1.1's authoritative devlog now pins exact R01 work/fishing clip names:
 
-- smith hammering;
-- generic crafting/work interaction;
-- pickaxe/mining;
-- fishing when fishing is introduced;
-- pickup/interact;
-- appropriate spellcast/channel motions.
+```text
+Hammer / Hammering
+Pickaxe / Pickaxing
+Chop / Chopping
+Dig / Digging
+Saw / Sawing
+Work_A / Work_B / Work_C
+Working_A / Working_B / Working_C
+Fishing_Bite
+Fishing_Cast
+Fishing_Catch
+Fishing_Idle
+Fishing_Reeling
+Fishing_Struggling
+Fishing_Tug
+```
+
+R01 visible work minimum therefore has an exact clip family for smithing, generic work, mining and fishing. These clips still require retarget/visual acceptance; the devlog name is not equivalent to `PLAYTESTED`.
 
 No production action is accepted with only a vanilla arm bob if a full-body external animation is player-visible.
 
 ## 8.3 Still unresolved clips
 
-The current KayKit Character Animations page does **not** guarantee eating/drinking; those are described as planned rather than present.
+The current KayKit Character Animations page does **not** guarantee eating/drinking; as of the current page they remain described as planned future animations rather than part of the shipped 1.1 list.
 
 Therefore:
 
@@ -396,6 +486,8 @@ Phase-A bindings:
 | loot grade highlight | Kenney component pool | `READY_PUBLIC` component | obey Lucifer/loot presentation language |
 
 Boss signature VFX may require additional external sources. Kenney is a reusable component pool, not an excuse for generic particles on every important attack.
+
+Exact sprite selection remains Phase-B work because actual archive/file inspection has not yet been completed.
 
 ---
 
@@ -492,39 +584,55 @@ Before binding an external model:
 
 ---
 
-# 14. Phase-B work still required before R01 is asset-ready
+# 14. Phase-B progress and remaining gates before R01 is asset-ready
 
-Phase A deliberately does **not** claim these are finished:
+Phase-B evidence pass 1 completed these documentation-level advances:
 
-1. download/inspect the actual current Quaternius packages legally used by the project;
+1. re-verified the current Quaternius QAL v1.0 central license against still-CC0-labeled individual pack pages;
+2. preserved the package-specific acquisition rule instead of silently treating all Quaternius files as CC0;
+3. verified current authoritative KayKit CC0 pages for Fantasy Weapons Bits, RPG Tools Bits and Character Animations;
+4. pinned exact official KayKit Character Animations 1.1 tool/fishing clip names;
+5. inspected the official Restaurant Bits GitHub tree and pinned candidate filenames for Herbed Louxia Roast / Glow Broth while keeping Trail Skewers unresolved;
+6. inspected evidence-backed Fantasy Weapons Bits filename families for bow/sword/hammer/spear/staff/shield/wand;
+7. inspected evidence-backed RPG Tools Bits filenames for hammer/anvil/pickaxe and forge support props;
+8. recorded the evidence/provenance boundary in `R01_ASSET_PHASE_B_EVIDENCE_2026-09-15.md`.
+
+Still required:
+
+1. download/inspect the actual Quaternius packages legally used by the project;
 2. preserve acquisition-time license files/screens/evidence and calculate archive/file SHA-256 values;
 3. resolve exact modular part filenames for River Scholar Garb / Wayfarer Leathers / Ironbound Guard and settlement NPC roles;
 4. resolve exact Medieval Village/Fantasy Props module filenames for all starting-settlement services;
-5. inspect KayKit `Fantasy Weapons Bits`, `Restaurant Bits`, `RPG Tools Bits` archives and record exact filenames for bow/maul/pike/staff/meal/tool models;
-6. choose exact external potion bottle files;
-7. choose actual external drink/eat clips;
-8. choose actual external revive/help-up and mount/dismount clips;
-9. audition and pin exact Kenney VFX/audio files;
-10. run Blockbench/3D-viewer intake, then actual Minecraft visual review for the accepted set;
-11. reconcile stale generic Quaternius CC0 classifications in `EXTERNAL_SOURCES.md` against package-specific acquisition evidence.
+5. acquire the authoritative KayKit weapon/tools package bytes used by the project, record SHA-256, and visually choose the final A/B/C variants rather than promoting mirror tree names directly;
+6. finish Trail Skewers exact food source and inspect the Restaurant Bits candidate meshes;
+7. choose exact external potion bottle files;
+8. choose actual external drink/eat clips;
+9. choose actual external revive/help-up and mount/dismount clips;
+10. audition and pin exact Kenney VFX/audio files;
+11. run Blockbench/3D-viewer intake, then actual Minecraft visual review for the accepted set;
+12. reconcile stale generic Quaternius CC0 classifications in `EXTERNAL_SOURCES.md` against the package-specific rule.
 
-Until those rows are resolved, `R01 ASSET INTAKE = PHASE A COMPLETE`, **not** full asset-ready/implemented/playtested.
+Until those rows are resolved, `R01 ASSET READY = NO`. Phase B is active and materially advanced, but not complete.
 
 ---
 
 # 15. Verification state
 
-Current state after Phase A:
+Current state after Phase-B evidence pass 1:
 
 - `DESIGN REVIEWED`: YES
 - `EXTERNAL SOURCE REVIEWED`: YES
 - `LICENSE METADATA REVIEWED`: YES, with Quaternius drift explicitly unresolved per package
-- `EXACT PUBLIC-SAFE KAYKIT PATHS PINNED`: YES for the listed Adventurers assets
+- `PHASE-B EVIDENCE DOC RECORDED`: YES
+- `EXACT PUBLIC-SAFE KAYKIT PATHS PINNED`: YES for listed Adventurers + Restaurant Bits evidence
+- `KAYKIT WORK/FISHING CLIP NAMES PINNED`: YES
+- `KAYKIT WEAPON/TOOLS CANDIDATE FILENAMES PINNED`: YES as tree evidence; authoritative archive SHA-256/final visual selection pending
 - `ALL R01 EXACT ASSET FILENAMES PINNED`: NO
+- `R01 ASSET READY`: NO
 - `BLOCKBENCH / CONVERSION TESTED`: NO
 - `BUILD VERIFIED`: NO
 - `JAR PRODUCED`: NO
 - `PLAYTESTED`: NO
 - `MULTIPLAYER TESTED`: NO
 
-Do not upgrade these labels merely because a pack page or source model exists.
+Do not upgrade these labels merely because a pack page, filename or source model exists.
