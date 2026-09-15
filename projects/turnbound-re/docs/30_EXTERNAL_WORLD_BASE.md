@@ -95,7 +95,7 @@ These remain mechanics/layout harnesses only:
 
 They are **not production world sources**. Production bootstrap must not call them automatically. `26_M6_WORLD_ASSET_GATE.md` is historical harness/reference documentation.
 
-## 7. Compatibility status
+## 7. Compatibility and validation status
 
 As of 2026-09-15:
 - APOTHEOSIS public full-map distribution: 1.20.1-era, with Fabric-oriented companion setup.
@@ -103,19 +103,27 @@ As of 2026-09-15:
 - TURNBOUND has **not yet loaded/migrated APOTHEOSIS v2.2.2f under Java 26.2 + NeoForge**.
 
 Schema checkpoint history:
-- Build #262 / run `34921535375` compiled Java and test sources successfully, then failed JUnit with 2 fixture mismatches.
-- `M5BattleStageCharacterPresentationTest` incorrectly used Creeper as a character without dedicated presentation; current `main` uses Cow for that fallback contract.
-- `M6ExternalWorldProfileDefinitionTest` used a fast-travel anchor with no destinations; current `main` now declares reciprocal Hub ↔ Region waypoint destinations and matches the production validator.
-- These failures were test-data/expectation regressions, not a compiler/API failure in `ExternalWorldProfileDefinition`, its parser, registry, or runtime adapter.
+- Build #262 / run `34921535375` compiled Java and test sources successfully, then exposed two stale test-fixture assumptions.
+- `M5BattleStageCharacterPresentationTest` had used Creeper as a character without dedicated presentation even though Creeper has dedicated presentation; the fallback fixture now uses Cow.
+- `M6ExternalWorldProfileDefinitionTest` initially omitted fast-travel destinations.
+- Build #264 / run `34927673779` then exposed the remaining fixture mismatch: reciprocal waypoint destinations must follow reciprocal authored region exits.
+- The M6 fixture was aligned with production `world_regions.json` by declaring `hub_01 -> region_01` and `region_01 -> hub_01` exits.
+- Build #265 / run `34927989993`, commit `abdfcd926ecf3a20ba323d7328e73d963d01e704`: `dependencies clean build` SUCCESS, JUnit SUCCESS, production JAR verification SUCCESS, deliverables uploaded.
+- verified JAR: `turnbound_re-0.1.0-alpha.1.jar`
+- JAR SHA-256: `64e422731b5bf751dcb7e1deb16ff4e04d0da5cbc4247f49cbb3b04e355afd45`
 
-Therefore before the recheck completes:
-- CODE REVIEWED: YES — external-world binding/data architecture and the two failed fixtures were inspected against current `main`.
-- TESTED: RECHECK REQUESTED on current `main` after the fixture corrections above.
-- BUILD VERIFIED: NO until that current-main recheck succeeds.
-- JAR PRODUCED: NO for the current external-world checkpoint.
+Current validation state:
+- CODE REVIEWED: YES.
+- TESTED: YES — current Gradle/JUnit suite passed in Build #265.
+- BUILD VERIFIED: YES — Build #265.
+- JAR PRODUCED: YES — `turnbound_re-0.1.0-alpha.1.jar` from Build #265.
+- JAR VERIFIED: YES — ZIP integrity, NeoForge metadata, compiled mod class, asset/data namespaces, source/development-path exclusion and duplicate-entry checks passed.
 - WORLD MIGRATION TESTED: NO.
 - PLAYTESTED: NO.
 - MULTIPLAYER TESTED: NO.
+- GameTest: NOT RUN — no GameTest contract is currently established by the workflow.
+- Dedicated server smoke test: NOT RUN — runtime smoke task is not established.
+- Client smoke test: NOT RUN — headless presentation/runtime gate is not established.
 
 Do not enable the recorded resource/encounter candidates or claim external-world compatibility until an actual copied test save loads successfully and its landmarks, datapack behavior and resource-pack dependencies are inspected.
 
