@@ -3,6 +3,7 @@ package kr.moonseungjun.turnboundre.client.presentation;
 import kr.moonseungjun.turnboundre.TurnboundRe;
 import kr.moonseungjun.turnboundre.presentation.StarterZombieVisualEntity;
 import kr.moonseungjun.turnboundre.presentation.TurnboundPresentationEntities;
+import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.resources.Identifier;
@@ -17,17 +18,11 @@ public final class StarterZombieVisualRenderer extends LivingEntityRenderer<
         StarterZombieVisualEntity,
         StarterZombieVisualRenderState,
         StarterZombieVisualModel> {
-    private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath(
-            TurnboundRe.MOD_ID, "textures/entity/starter_zombie.png");
+    private static final Identifier TEXTURE = Identifier.withDefaultNamespace("textures/entity/zombie/zombie.png");
     private static final long PRESENTATION_EPOCH_NANOS = System.nanoTime();
 
     public StarterZombieVisualRenderer(EntityRendererProvider.Context context) {
-        super(context, new StarterZombieVisualModel(context.bakeLayer(StarterZombieVisualModel.LAYER)), 0.42F);
-    }
-
-    @SubscribeEvent
-    public static void registerLayer(EntityRenderersEvent.RegisterLayerDefinitions event) {
-        event.registerLayerDefinition(StarterZombieVisualModel.LAYER, StarterZombieVisualModel::createLayer);
+        super(context, new StarterZombieVisualModel(context.bakeLayer(ModelLayers.ZOMBIE)), 0.42F);
     }
 
     @SubscribeEvent

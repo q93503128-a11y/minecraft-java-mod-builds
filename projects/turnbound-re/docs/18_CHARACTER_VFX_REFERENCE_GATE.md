@@ -1,180 +1,122 @@
 # 18 — REPRESENTATIVE CHARACTER / SKILL VFX REFERENCE GATE
 
-이 문서는 전체 roster의 최종 미술 정본이 아니다.
-M5 production presentation 단계에서 **대표 캐릭터 2명(Skeleton, Enderman)** 을 먼저 상용/외부 사례에 맞춰 차별화하기 위한 좁은 vertical-quality gate다.
+이 문서는 전체 roster의 최종 미술 정본이 아니다. M5 production presentation에서 대표 캐릭터의 행동 가독성을 확보하면서, 외형 자체는 승인된 외부 production asset/base를 직접 사용하도록 강제하는 gate다.
 
-## 1. 목표
+## 1. 공통 목표
 
-대표 캐릭터의 차이는 이름표가 아니라 전투 중 실루엣과 행동 준비만 봐도 읽혀야 한다.
+대표 캐릭터의 차이는 이름표가 아니라 전투 중 model/weapon/action timing만 봐도 읽혀야 한다.
 
-- Skeleton: 정밀 원거리 공격자. 실제 3D 모델의 활/조준 자세와 다발 사격이 이어지는 방향.
-- Enderman: 공간/위상 공격자. 직선 투사체 마법사가 아니라 실제 3D 모델의 위치/시선이 흔들리고 Rift가 이어지는 방향.
-- 두 캐릭터 모두 server-authoritative damage / target / turn 결과는 변경하지 않는다.
-- presentation은 이미 확정된 authoritative action event를 읽어 짧은 시각 beat만 추가한다.
+- Skeleton: 정밀 원거리 공격자. 실제 3D Bow와 조준/연속 사격.
+- Enderman: 공간/위상 공격자. 실제 모델 위치/시선 변화 + Rift travel.
+- Blaze: FIRE striker/controller. Mojang Blaze runtime model을 직접 사용하고 enemy FIRE action만 공격 state로 구분.
+- Witch: support/controller. Mojang Witch runtime model을 직접 사용하고 공격과 지원 target presentation을 분리.
+- Iron Golem: vanguard/breaker. Mojang Iron Golem runtime model을 직접 사용하고 수호/단일/광역/Burst pose를 구분.
+- Creeper / Spider / Zombie도 동일하게 Mojang runtime model/texture를 직접 production base로 사용한다.
+- server-authoritative damage / target / turn 결과는 presentation이 변경하지 않는다.
 
-## 2. 외부 reference
+## 2. 외부 reference와 직접 사용의 구분
 
 ### R-CVFX-001 — Fresh Animations
 - official project: https://modrinth.com/resourcepack/fresh-animations
-- creator: FreshLX
-- 관찰:
-  - Minecraft 기본 외형을 버리지 않고 mob의 움직임을 더 dynamic하고 believable하게 만든다.
-  - Skeleton과 Enderman 모두 지원 대상이다.
-- TURNBOUND: RE 채택:
-  - 바닐라 silhouette를 유지한 상태에서 행동 준비 자세와 움직임을 더 명확히 읽게 한다.
-  - 캐릭터 고유성은 과도한 새 장식보다 pose / weapon-read / timing에서 먼저 만든다.
 - 사용 상태: **REFERENCE ONLY**.
-- 이유:
-  - 현재 Terms & Conditions는 custom entity model/animation 자산에 별도 조건을 두고 있으며, 공개 배포에서 원본 자산의 무단 재배포를 허용하지 않는다.
-  - TURNBOUND: RE 공개 저장소에 Fresh Animations 원본 `.jem/.jpm` 또는 애니메이션 자산을 그대로 포함하지 않는다.
+- 원본 CEM/model/animation 자산을 허용 범위 확인 없이 repository에 포함하지 않는다.
+- 더 중요하게, 공개 이미지를 보고 TURNBOUND가 비슷한 replacement geometry를 새로 만드는 것도 금지한다.
 
 ### R-CVFX-002 — Fresh Animations: Quivers
 - project: https://www.curseforge.com/minecraft/texture-packs/fresh-animations-quivers
-- 관찰:
-  - Skeleton의 원거리 정체성을 활만이 아니라 화살/사격 준비 실루엣까지 확장한다.
-- TURNBOUND: RE 채택:
-  - virtual Skeleton 모델 자체가 3D Bow를 들고, projectile action 동안 Skeleton의 공격/조준 상태를 사용한다.
-  - Arrow Storm의 추가 화살은 동시에 한 덩어리로 날리지 않고 기존 authoritative impact timing에 맞춰 시간차를 둔다.
 - 사용 상태: **REFERENCE ONLY**.
+- Skeleton의 원거리 role readability 원칙만 참고한다.
 
 ### R-CVFX-003 — Minecraft Dungeons / End family
 - official reference: https://www.minecraft.net/en-us/article/meet-enderlings
-- 관찰:
-  - End 계열 적은 단순히 보라색 효과를 많이 쓰는 것이 아니라, 각 개체의 능력과 행동 방식 자체로 역할이 갈린다.
-- TURNBOUND: RE 채택:
-  - Enderman은 generic purple particle caster가 아니라 **phase / rift / 공간 이동** 문법으로 고유성을 만든다.
-  - Horizon Break는 actual entity model의 horizontal phase movement + view-angle shift → curved Rift travel → impact 순서로 읽히게 한다.
-- 금지:
-  - Minecraft Dungeons 고유 모델/텍스처/VFX를 복제하지 않는다.
+- 사용 상태: **REFERENCE ONLY / proprietary**.
+- Enderman의 phase/rift 행동 문법을 이해하기 위한 reference이며 고유 모델/텍스처/VFX를 복제하지 않는다.
 
-## 3. 대표 구현 규칙
+### P-CVFX-001 — Minecraft Java 26.2 runtime entity models
+- classification: **DIRECT RUNTIME PRODUCTION BASE / Mojang first-party**.
+- current direct bases include `ModelLayers.ZOMBIE`, `CREEPER`, `SPIDER`, `BLAZE`, `WITCH`, `IRON_GOLEM` 및 대응 runtime entity textures.
+- TURNBOUND가 새 creature silhouette/UV/skin을 만드는 대신 기존 model part pose와 stage presentation만 authoritative action에 연결한다.
 
-### Skeleton — Marksman signature
+## 3. Skeleton — Marksman signature
 
 Burst `turnbound_re:skeleton_arrow_storm` 및 projectile action 기준:
 
-1. virtual Skeleton 생성 시 main hand에 실제 3D Bow를 장착한다.
-2. Skeleton이 projectile action의 현재 actor일 때 wind-up 및 초기 impact 동안 aggressive/aim 상태를 사용한다.
-3. 조준 중에는 stage render angle을 조금 틀어 활과 팔 실루엣이 정면에 묻히지 않게 한다.
-4. Arrow Storm은 기존 base projectile 뒤로 추가 화살 2발이 시간차를 두고 따라간다.
-5. target impact는 기존 authoritative target + impact feedback을 그대로 사용한다.
-6. 추가 화살은 presentation-only이며 damage event 수를 늘리지 않는다.
-7. 이전의 actor 옆 2D Bow/Arrow 아이콘은 제거한다. 캐릭터 정체성을 UI 아이콘으로 대신하지 않는다.
+1. virtual Skeleton은 실제 3D Bow를 장착한다.
+2. projectile action의 현재 actor일 때 기존 Skeleton model의 공격/조준 상태를 사용한다.
+3. stage render angle을 조정해 Bow와 팔이 정면에 묻히지 않게 한다.
+4. Arrow Storm의 추가 화살은 기존 authoritative impact timing에 맞춰 시간차로 이동한다.
+5. 추가 화살은 presentation-only이며 damage event 수를 늘리지 않는다.
+6. 캐릭터 옆 2D Bow/Arrow 장식으로 정체성을 대신하지 않는다.
 
-의도:
-- Skeleton이 단순히 'PROJECTILE 태그를 가진 캐릭터'가 아니라 실제 3D 모델만 봐도 원거리 specialist로 읽힌다.
-
-### Enderman — Rift signature
+## 4. Enderman — Rift signature
 
 Burst `turnbound_re:enderman_horizon_break` 및 VOID action 기준:
 
-1. Enderman이 VOID action의 현재 actor일 때 actual 3D model이 짧게 좌우 phase 이동한다.
-2. 같은 beat에서 entity render view angle을 흔들어 단순 직선 이동보다 공간이 어긋나는 느낌을 준다.
-3. actor→target Rift travel은 직선이 아니라 곡선 offset을 사용한다.
-4. impact 시 target에는 기존 WARNING + FOCUS 계열 feedback을 짧게 표시한다.
-5. actor 주위 2D Ender Pearl/이중 frame 장식은 제거한다. 실제 모델 움직임을 우선한다.
-6. particle fog/glow spam으로 화면을 덮지 않는다.
-7. 실제 damage/target legality는 기존 server event/snapshot만 따른다.
+1. VOID action actor의 실제 3D model이 짧게 horizontal phase 이동한다.
+2. view angle shift와 curved Rift travel을 결합한다.
+3. target impact는 authoritative target의 feedback만 사용한다.
+4. 2D pearl/frame 장식이나 particle fog로 정체성을 대신하지 않는다.
+5. damage/target legality는 server event/snapshot만 따른다.
 
-의도:
-- Enderman의 핵심은 색이 아니라 **실제 모델과 공격 경로의 공간 어긋남**이다.
+## 5. Blaze — external-only FIRE signature
 
-## 4. 현재 구현 범위와 한계
+현재 production data:
+- roles: `STRIKER / CONTROLLER`.
+- enemy FIRE: `Ember Bolt`, `Searing Volley`, `Inferno Burst`.
+- self FIRE buff: `Heat Up`.
 
-현재 pass에서 하는 것:
-- Skeleton virtual entity에 3D Bow 장착.
-- Skeleton projectile action에 실제 model aim/aggressive pose 적용.
-- Skeleton aim 시 stage render angle 조정.
-- Enderman VOID action에 실제 3D model horizontal phase motion + view-angle shift 적용.
-- 기존 Volley/Rift travel/impact timing과 결합.
-- character-specific actor 2D weapon/pearl/frame cue 제거.
-- 480×270을 포함한 기존 reserved world viewport 안에서만 렌더.
+production contract:
+1. gameplay/source identity는 `minecraft:blaze` 유지.
+2. Character Detail/Battle Stage에서 `turnbound_re:blaze_visual` presentation entity를 사용할 수 있으나 renderer base는 **Minecraft Java 26.2 `ModelLayers.BLAZE`**다.
+3. texture는 runtime `minecraft:textures/entity/blaze.png`를 직접 사용한다.
+4. TURNBOUND 전용 core, rod size/tier, replacement silhouette, custom UV는 만들지 않는다.
+5. canonical enemy-target FIRE action에서만 기존 Blaze model 위에 짧은 action-readable head/pose state를 추가한다.
+6. `Heat Up`은 self-target이므로 공격 state를 사용하지 않는다.
+7. unknown FIRE / other actor / RECOVERY는 neutral fail-closed.
+8. FIRE/VOLLEY travel/impact는 existing authoritative event를 그대로 읽으며 damage event/target을 늘리지 않는다.
 
-현재 pass에서 아직 하지 않는 것:
-- Fresh Animations 자산 복사.
-- GeckoLib 기반 전용 skeleton/enderman 모델.
-- 전용 texture override.
-- 전용 bone animation clip.
-- 카메라 연출 확대.
-- roster 8명 전체의 최종 외형 확정.
+### Removed Blaze legacy design
 
-## 5. 다음 gate
+external-only 규칙 이전의 TURNBOUND 자체 3-tier rod/core geometry와 furnace-cage silhouette은 production에서 제거한다. 그 디자인은 외부 production asset을 직접 사용한 것이 아니므로 최종 외형 근거로 인정하지 않는다.
 
-대표 2명 실제 Minecraft screenshot audit 후 다음을 결정한다.
+## 6. Witch / Iron Golem / Creeper / Spider / Zombie
 
-1. Skeleton의 바닐라 aim pose가 충분히 강하게 읽히지 않으면 자체 model/GeckoLib 장비·팔 animation으로 승격한다.
-2. Enderman phase motion이 단순 흔들림처럼 보이면 bone pose/afterimage 또는 별도 model animation을 검토한다.
-3. 대표 2명 방향이 통과하면 Blaze/Witch/Iron Golem 등 다음 3명을 같은 방식으로 reference gate 후 확장한다.
-4. 외부 자산을 실제 repository에 포함할 경우 `THIRD_PARTY_ASSETS.md`에 원본 URL/제작자/라이선스/수정 여부를 기록한다.
+세부 gate:
+- Witch: `18A_M5_WITCH_SUPPORT_PRESENTATION_GATE.md`
+- Iron Golem: `18B_M5_IRON_GOLEM_PRESENTATION_GATE.md`
+- Creeper: `18C_M5_CREEPER_PRESENTATION_GATE.md`
+- Spider: `18D_M5_SPIDER_PRESENTATION_GATE.md`
+- Zombie: `27_STARTER_CHARACTER_VISUAL_PIPELINE.md`
 
-## 6. 실제 화면 검수용 showcase
+공통 규칙은 동일하다.
 
-기존 `debug_encounter`는 플레이어 캐릭터를 실제 Minecraft player entity에 바인딩하므로 virtual 3D actor 검수에 적합하지 않다. 또한 Skeleton의 Arrow Storm은 3-target Burst라 기존 1v1 `debug_burst` 경로에서 거부된다.
+- 외형은 Mojang runtime base 또는 실제 반입 가능한 외부 asset을 직접 사용.
+- reference-only 자료를 보고 비슷한 geometry를 재구성하지 않음.
+- TURNBOUND는 exact action에 필요한 existing part pose, stage motion, target transfer, projectile/impact timing만 연결.
+- gameplay source/save/drop/progression authority는 바꾸지 않음.
 
-그래서 대표 2명 전용 operator showcase를 별도로 둔다.
+## 7. 실제 화면 검수용 showcase
 
-명령:
+기존 operator showcase:
 
 `/turnbound_re_showcase`
-
-동작:
-1. 실제 world entity binding 없이 Enderman + Skeleton을 virtual PLAYER actor로 생성한다.
-2. 동일 플레이어가 두 actor의 controller가 된다.
-3. 시각 검수 중 적이 먼저 죽지 않도록 고내구 virtual Iron Golem 3체를 배치한다.
-4. production definition / strict target gate / `BattleNetworkGateway` / `BattleActionExecutor`를 그대로 사용한다.
-5. Enderman `Horizon Break`를 먼저 실행한다.
-6. 이어서 Skeleton `Arrow Storm`을 3 target에 실행한다.
-7. 두 action event를 한 번에 client로 보내 기존 action timeline이 순서대로 재생하게 한다.
 
 정리:
 
 `/turnbound_re_showcase cleanup`
 
-스크린샷/플레이 검수 포인트:
-- Enderman: 실제 3D model의 phase 이동이 단순 좌우 떨림처럼 보이지 않는가.
-- Enderman: curved Rift path가 actor motion과 한 동작처럼 이어지는가.
-- Skeleton: Bow와 팔의 조준 silhouette가 작은 GUI Scale에서도 읽히는가.
-- Skeleton: Arrow Storm의 추가 2발이 한 덩어리 아이콘이 아니라 연속 사격처럼 보이는가.
-- 두 캐릭터: 이름표/HP/Intent/target marker 가독성을 침범하지 않는가.
-- 480×270 및 일반 GUI Scale에서 모델/투사체가 reserved viewport 밖으로 잘리지 않는가.
+검수 포인트:
+- Skeleton: Bow/aim silhouette와 Arrow Storm 연속성이 읽히는가.
+- Enderman: phase 이동 + curved Rift가 한 행동으로 읽히는가.
+- 외부 runtime model이 reserved viewport 밖으로 잘리지 않는가.
+- 이름표/HP/Intent/target marker 가독성을 침범하지 않는가.
+- visual target과 server-authored target이 일치하는가.
 
-이 showcase는 시각 검수용 setup만 비생산 전투 수치(고내구 target, 고정 initiative)를 사용한다. action legality, target count, damage execution, event generation은 production 경로를 그대로 사용한다.
-
-## 7. 완료 판정
+## 8. 완료 판정
 
 자동 검증 통과만으로 production visual PASS를 선언하지 않는다.
 
 - CODE REVIEWED / TESTED / BUILD VERIFIED는 자동 계약 상태다.
-- 실제 Minecraft screenshot에서 silhouette, timing, readability, visual intrusion을 확인하기 전에는 **PLAYTESTED가 아니다**.
-- 대표 2명의 screenshot 품질이 통과해야 roster production pass로 넘어간다.
-
-## 8. 2026-09-14 — Blaze controlled production expansion
-
-현재 개발 지침에 따라 screenshot gate를 PASS로 선언하기 전에도 다음 production 캐릭터의 코드/자동 계약 작업은 계속한다. 이 절은 Section 7의 실제 화면 검수 의무를 해제하지 않는다.
-
-### Blaze — Furnace Striker signature
-
-현재 production data 기준:
-- 역할: `STRIKER / CONTROLLER`.
-- 적 대상 FIRE: `Ember Bolt`, `Searing Volley`, `Inferno Burst`.
-- 자기 강화 FIRE: `Heat Up`.
-
-구현 계약:
-1. gameplay/source identity는 계속 `minecraft:blaze`이며 damage/drop/save/progression 권한을 변경하지 않는다.
-2. Character Detail과 virtual Battle Stage에서만 `turnbound_re:blaze_visual` presentation entity를 사용한다.
-3. vanilla Blaze renderer를 그대로 재사용하지 않고, TURNBOUND 전용 core + 3-tier rod geometry/animation을 사용한다.
-4. idle에서는 세 rod tier가 서로 다른 방향/속도로 움직여 compact hovering fire specialist 실루엣을 만든다.
-5. canonical enemy-target FIRE action의 WINDUP/IMPACT에서만 rods가 전방으로 압축된 furnace-cage firing silhouette를 만든다.
-6. `Heat Up`은 FIRE 태그를 공유해도 공격 자세를 사용하지 않는다. 짧은 상승/충전 pose만 허용한다.
-7. 알 수 없는 FIRE action, 다른 actor의 action, RECOVERY는 공격 상태를 강제로 해제한다.
-8. 다중 FIRE action의 travel/impact는 기존 authoritative action timeline의 FIRE + `VOLLEY` 피드백을 재사용한다. presentation 때문에 damage event나 target 수를 늘리지 않는다.
-9. 새 외부 바이너리 자산은 포함하지 않는다. 모델 geometry/animation은 TURNBOUND 코드이며 texture는 Minecraft 기본 `blaze.png` resource를 참조한다.
-10. 실제 screenshot audit 전에는 Blaze production visual을 PASS로 판정하지 않는다.
-
-자동 회귀 계약:
-- Blaze source entity가 정확히 `minecraft:blaze`일 때만 presentation override 적용.
-- source mismatch에서는 override 금지.
-- offensive FIRE action + other-target 관계에서만 aggressive firing pose.
-- `Heat Up` self-target에서는 non-aggressive charge pose.
-- unknown FIRE/recovery는 neutral.
-- dedicated presentation이 없는 기존 캐릭터는 기존 stage view 유지.
+- 실제 Minecraft screenshot에서 silhouette, timing, readability, visual intrusion을 확인하기 전에는 PLAYTESTED가 아니다.
+- external-only 전환 뒤의 코드가 과거 custom-model build 성공 기록을 상속하지 않는다.
+- 현재 외형 전환 batch는 사용자 요청에 따라 build/CI를 실행하지 않고 묶어 둔 뒤, 의미 있는 checkpoint에서 한 번만 검증한다.

@@ -3,6 +3,7 @@ package kr.moonseungjun.turnboundre.client.presentation;
 import kr.moonseungjun.turnboundre.TurnboundRe;
 import kr.moonseungjun.turnboundre.presentation.IronGolemVisualEntity;
 import kr.moonseungjun.turnboundre.presentation.TurnboundPresentationEntities;
+import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.resources.Identifier;
@@ -21,12 +22,7 @@ public final class IronGolemVisualRenderer extends LivingEntityRenderer<
     private static final long PRESENTATION_EPOCH_NANOS = System.nanoTime();
 
     public IronGolemVisualRenderer(EntityRendererProvider.Context context) {
-        super(context, new IronGolemVisualModel(context.bakeLayer(IronGolemVisualModel.LAYER)), 0.62F);
-    }
-
-    @SubscribeEvent
-    public static void registerLayer(EntityRenderersEvent.RegisterLayerDefinitions event) {
-        event.registerLayerDefinition(IronGolemVisualModel.LAYER, IronGolemVisualModel::createLayer);
+        super(context, new IronGolemVisualModel(context.bakeLayer(ModelLayers.IRON_GOLEM)), 0.62F);
     }
 
     @SubscribeEvent

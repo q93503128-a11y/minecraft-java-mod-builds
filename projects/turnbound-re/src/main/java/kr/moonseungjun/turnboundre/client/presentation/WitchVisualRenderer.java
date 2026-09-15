@@ -3,6 +3,7 @@ package kr.moonseungjun.turnboundre.client.presentation;
 import kr.moonseungjun.turnboundre.TurnboundRe;
 import kr.moonseungjun.turnboundre.presentation.TurnboundPresentationEntities;
 import kr.moonseungjun.turnboundre.presentation.WitchVisualEntity;
+import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.resources.Identifier;
@@ -21,12 +22,7 @@ public final class WitchVisualRenderer extends LivingEntityRenderer<
     private static final long PRESENTATION_EPOCH_NANOS = System.nanoTime();
 
     public WitchVisualRenderer(EntityRendererProvider.Context context) {
-        super(context, new WitchVisualModel(context.bakeLayer(WitchVisualModel.LAYER)), 0.46F);
-    }
-
-    @SubscribeEvent
-    public static void registerLayer(EntityRenderersEvent.RegisterLayerDefinitions event) {
-        event.registerLayerDefinition(WitchVisualModel.LAYER, WitchVisualModel::createLayer);
+        super(context, new WitchVisualModel(context.bakeLayer(ModelLayers.WITCH)), 0.46F);
     }
 
     @SubscribeEvent

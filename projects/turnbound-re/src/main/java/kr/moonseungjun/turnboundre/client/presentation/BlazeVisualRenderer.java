@@ -3,6 +3,7 @@ package kr.moonseungjun.turnboundre.client.presentation;
 import kr.moonseungjun.turnboundre.TurnboundRe;
 import kr.moonseungjun.turnboundre.presentation.BlazeVisualEntity;
 import kr.moonseungjun.turnboundre.presentation.TurnboundPresentationEntities;
+import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.resources.Identifier;
@@ -22,12 +23,7 @@ public final class BlazeVisualRenderer extends LivingEntityRenderer<
     private static final long PRESENTATION_EPOCH_NANOS = System.nanoTime();
 
     public BlazeVisualRenderer(EntityRendererProvider.Context context) {
-        super(context, new BlazeVisualModel(context.bakeLayer(BlazeVisualModel.LAYER)), 0.38F);
-    }
-
-    @SubscribeEvent
-    public static void registerLayer(EntityRenderersEvent.RegisterLayerDefinitions event) {
-        event.registerLayerDefinition(BlazeVisualModel.LAYER, BlazeVisualModel::createLayer);
+        super(context, new BlazeVisualModel(context.bakeLayer(ModelLayers.BLAZE)), 0.38F);
     }
 
     @SubscribeEvent
