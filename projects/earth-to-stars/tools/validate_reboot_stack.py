@@ -14,6 +14,9 @@ def main() -> None:
     build = PROJECT / "build.gradle"
     props = PROJECT / "gradle.properties"
     mod = PROJECT / "src/reboot/java/kr/moonseungjun/earthtostars/EarthToStars.java"
+    deployment = PROJECT / "src/reboot/java/kr/moonseungjun/earthtostars/StarterCraftDeploymentService.java"
+    control = PROJECT / "src/reboot/java/kr/moonseungjun/earthtostars/StarterCraftControlManager.java"
+    content = PROJECT / "src/reboot/java/kr/moonseungjun/earthtostars/EarthToStarsContent.java"
     toml = PROJECT / "src/reboot/resources/META-INF/mods.toml"
 
     for needle in (
@@ -30,22 +33,62 @@ def main() -> None:
     for needle in (
         "minecraft_version=1.20.1",
         "forge_version=1.20.1-47.4.0",
-        "mod_version=0.2.0-alpha.1",
+        "mod_version=0.2.0-alpha.2",
     ):
         require(props, needle)
 
     for needle in (
-        'VERSION = "0.2.0-alpha.1"',
+        'VERSION = "0.2.0-alpha.2"',
         '"valkyrienskies"',
         '"genesis"',
         '"zps"',
         '"zpl"',
         "EARTH_TO_STARS_REBOOT_STACK_BOOT_PASS",
+        "EARTH_TO_STARS_STARTER_CRAFT_ASSEMBLY_PASS",
     ):
         require(mod, needle)
 
+    for needle in (
+        "ShipAssemblyKt.createNewShipWithBlocks",
+        "OCTO_CONTROLLER",
+        "THRUSTER_EXHAUST_BLOCK",
+        "GYROSCOPE_BLOCK",
+        "POWER_CELL",
+        "STARTER_FLIGHT_CORE",
+    ):
+        require(deployment, needle)
+
+    for needle in (
+        "OctoMountingEntity",
+        "Channels.OCT_A",
+        "Channels.OCT_H",
+        "STARTER_CONTROL_NODE",
+        "ForgeCapabilities.ENERGY",
+    ):
+        require(control, needle)
+
+    for needle in (
+        '"starter_craft_deployer"',
+        '"starter_flight_core"',
+        '"starter_control_node"',
+        "CreativeModeTab.builder()",
+    ):
+        require(content, needle)
+
     for mod_id in ("valkyrienskies", "genesis", "vlib", "zps", "zpl"):
         require(toml, f'modId="{mod_id}"')
+
+    for resource in (
+        "assets/earth_to_stars/lang/en_us.json",
+        "assets/earth_to_stars/lang/ko_kr.json",
+        "assets/earth_to_stars/models/item/starter_craft_deployer.json",
+        "assets/earth_to_stars/models/block/starter_flight_core.json",
+        "assets/earth_to_stars/models/block/starter_control_node.json",
+        "assets/earth_to_stars/blockstates/starter_flight_core.json",
+        "assets/earth_to_stars/blockstates/starter_control_node.json",
+    ):
+        if not (PROJECT / "src/reboot/resources" / resource).is_file():
+            raise SystemExit(f"REBOOT STACK VALIDATION FAILED: missing resource {resource}")
 
     # The reboot must not compile the failed 26.2 Display-entity ship implementation.
     build_text = build.read_text(encoding="utf-8")
@@ -60,7 +103,7 @@ def main() -> None:
         if forbidden in reboot_text:
             raise SystemExit(f"REBOOT STACK VALIDATION FAILED: custom vehicle implementation leaked into reboot: {forbidden}")
 
-    print("REBOOT STACK VALIDATION OK: Forge 1.20.1 + Valkyrien Skies + Genesis + ZPS/ZPL; legacy custom ship physics excluded")
+    print("REBOOT STACK VALIDATION OK: real VS block starter craft + ZPS cockpit + ZPL propulsion/gyro; legacy custom ship physics excluded")
 
 
 if __name__ == "__main__":
