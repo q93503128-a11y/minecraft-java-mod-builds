@@ -83,7 +83,7 @@ The UI is an RPG interface layered onto a voxel world, not a vanilla inventory r
 - Use one spacing/grid system across every screen rather than tuning each screen independently.
 - Interactive states must include at least normal / hover / pressed / disabled where relevant.
 - Icons must remain legible at Minecraft GUI scales and at common 1080p play resolution before decorative detail is added.
-- Important information is shown once. Do not repeat the same currency, stats or instructions in several panels merely to fill space.
+- Important information is shown once. Do not repeat the same Gold, stats or instructions in several panels merely to fill space.
 
 The player-facing interface must never contain development labels such as `R01`, `P0`, `debug`, `temporary`, internal tier IDs or implementation names.
 
@@ -122,7 +122,7 @@ The inventory is a full RPG character screen, not the vanilla container with ext
 
 1. character/equipment zone;
 2. main backpack/grid;
-3. material pouch/category access;
+3. Material Pouch / Key Items category access;
 4. sorting/filter/search where it materially reduces inventory work;
 5. item detail/comparison layer.
 
@@ -145,13 +145,56 @@ Preferred composition:
 
 - equipment arranged around a central character render/preview or a similarly readable silhouette;
 - backpack to the right or lower-right as the largest repeated grid;
-- material pouch as an explicit category/tab rather than forcing materials to compete with equipment for the same space;
+- Material Pouch and Key Items are explicit categories/tabs rather than forcing materials/quest objects to compete with equipment for the same space;
 - equipped-item comparison appears when relevant and disappears when irrelevant;
 - no permanent giant stat wall beside every item.
 
 Two-handed weapons may disable/repurpose Off-hand exactly as defined by the master canon.
 
-## Technical candidates
+## Canonical backpack grid
+
+The quickbar/hotbar remains nine slots. General backpack size is separate:
+
+- start — `4 x 9` = 36 general slots + 9 hotbar = **45 ordinary carried slots**;
+- expansion I — `5 x 9` + 9 = **54** total;
+- expansion II — `6 x 9` + 9 = **63** total;
+- expansion III — `7 x 9` + 9 = **72** total.
+
+The player should understand every expansion as “one more row,” not as an invisible +N capacity stat.
+At 1920×1080, target showing the full current grid without awkward pagination. At smaller GUI/resolution combinations, a clean clipped/scrolling backpack area is acceptable if slot scale would otherwise become unreadably small.
+
+## Material Pouch UI
+
+The Material Pouch behaves more like a categorized material catalog than a second arbitrary backpack.
+
+- eligible materials enter automatically;
+- each material entry shows icon, amount and the canonical field cap of 999;
+- crafting/service screens may read pouch quantities directly;
+- search/filter and category grouping matter more than manual slot arrangement;
+- manual withdraw/deposit exists for trading and edge cases;
+- when an entry reaches 999, overflow entering the normal backpack must be clearly communicated rather than silently disappearing;
+- bank Material Vault capacity is 9,999 per material type and should support a single clear `Deposit Materials` action.
+
+Do not represent hundreds of material types as a fixed 27/54-slot grid that eventually becomes another inventory-cleanup problem.
+
+## Key Items UI
+
+Quest/progression keys live in their own category and consume no ordinary inventory slots.
+The screen may show source/purpose/progress context, but these entries are not normal draggable items and cannot be sold or dropped.
+
+## Sorting / protection
+
+Inventory management target includes:
+
+- one-action sort;
+- category/filter/search;
+- favorite/lock state that sort and ordinary sell actions respect;
+- recent/new-loot feedback;
+- context-sensitive compare against equipped gear.
+
+Do not add management labor merely because Minecraft inventories traditionally require it.
+
+## Technical candidates / precedents
 
 ### Trinkets Updated
 
@@ -173,9 +216,19 @@ It is a backend candidate, not visual authority.
 
 - current Fabric 26.2 release observed;
 - MIT;
-- optional QoL/reference candidate if the project backpack needs proven sorting behavior.
+- strong QoL/reference candidate for sort behavior and protected/ignored positions.
 
 Sorting must not destroy intentional protected/favorite positions.
+
+### Inventory Profiles Next
+
+- current Fabric 26.2 release observed;
+- powerful sorting/locked-slot/gear-set reference;
+- client-side and AGPL, so use primarily as UX/behavior reference unless its licensing/dependency implications are deliberately accepted.
+
+### Backpack precedents
+
+Current Fabric 26.2 Traveler's Backpack and Simple Traveler Packs demonstrate readable tiered portable-storage expansion. Their separate wearable-backpack progression is useful reference, but this project does not stack multiple nested backpacks on top of the canonical general backpack merely to inflate capacity.
 
 ---
 
@@ -247,17 +300,19 @@ Avoid a giant ornate border that wastes a large fraction of screen area.
 
 # 8. Death / respawn
 
-Death is a focused decision, not a menu stack.
+Death is a focused state, not a penalty-choice menu.
 
-Show:
+Show only what the player needs:
 
 - defeat state;
 - current respawn point;
-- the two canonical penalty choices: currency payment or current-Lv EXP-progress loss;
-- exact consequence before confirmation;
+- the **automatic** penalty that was applied: either current-Lv `EXP -N` or `Gold -N`;
+- current Gold balance if a Gold penalty pushed it negative;
 - multiplayer revive state when applicable.
 
-The screen must make it impossible to accidentally believe an earned Lv will be lost.
+There is no penalty-selection confirmation. If removable current-Lv EXP exists, the game deducts the canonical small EXP amount. If none exists, Gold is deducted automatically and may become negative.
+
+The screen must make it impossible to believe an earned Lv was lost.
 Single-player skips fake downed waiting and goes directly to defeat/respawn flow.
 
 ---
@@ -309,7 +364,8 @@ Implementation libraries are separate from visual assets:
 - Spell Engine: skill runtime candidate, GPL dependency, not visual canon;
 - Trinkets Updated: accessory backend candidate, MIT;
 - RPG Inventory: MIT architecture/reference, 26.2 compatibility not yet established;
-- Inventory Sorting: optional MIT QoL candidate.
+- Inventory Sorting: optional MIT QoL candidate;
+- Inventory Profiles Next: current 26.2 UX/reference candidate with separate AGPL/client-side considerations.
 
 The first in-game UI implementation should already use this selected visual language. There is no temporary vanilla-button/black-panel phase.
 
@@ -322,7 +378,7 @@ Before source bootstrap or immediately at M0:
 1. obtain the CC0 Lucifer RPG UI, Lucifer Equipment and Kenney support packs;
 2. record exact downloaded versions/file hashes if assets are committed;
 3. make a single visual atlas/folder convention rather than scattering raw source-pack files;
-4. prototype only one complete player-facing screen first — inventory/equipment is preferred because it exercises slots, tooltips, tabs, character preview and scaling;
+4. prototype only one complete player-facing screen first — inventory/equipment is preferred because it exercises 36–63 general backpack slots, equipment slots, Material Pouch/Key Items, tooltips, tabs, character preview and scaling;
 5. inspect the real Minecraft screenshot before propagating the style to every other screen;
 6. once the visual grammar passes, reuse the same components for class, forge, alchemy, cooking and death screens.
 
