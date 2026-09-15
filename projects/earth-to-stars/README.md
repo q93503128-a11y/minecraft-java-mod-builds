@@ -2,7 +2,7 @@
 
 Minecraft Java `26.2` / Fabric 기반의 SF 우주 개척·모듈식 함선 성장 프로젝트다.
 
-> **현재 상태: `0.3.0-alpha.1` FABRIC STANDALONE REBASE — 외부 우주/함선 모드 전체를 런타임 의존성으로 요구하지 않는 26.2 독립형 기반으로 전환 중. 기존 loader-neutral ship kernel과 CC0 자산은 보존하고, Minecraft 연동부는 Fabric으로 실제 포팅한다.**
+> **현재 상태: `0.3.0-alpha.1` FABRIC STANDALONE REBASE — 외부 우주/함선 모드 전체를 런타임 의존성으로 요구하지 않는 26.2 독립형 기반이 빌드·서버·클라이언트 부트 게이트를 통과했다. 기존 loader-neutral ship kernel과 CC0 자산은 보존하고, Minecraft 연동부를 Fabric으로 실제 포팅하는 단계다.**
 
 ## 한 줄 설명
 
@@ -86,20 +86,28 @@ Kenney Space Kit CC0 함선 mesh 3종은 이미 출처를 기록해 repository�
 ## 현재 검증 상태
 
 - Fabric 26.2 build contract: **CODE REVIEWED**
-- loader-neutral kernel regression tests: **PENDING CI**
-- Fabric build: **PENDING CI**
-- production Fabric JAR: **PENDING CI**
-- dedicated Fabric boot: **PENDING CI**
-- Fabric client smoke: **PENDING CI**
+- loader-neutral kernel regression tests: **TESTED — PASS**
+- Fabric build: **BUILD VERIFIED — PASS** (`Build earth-to-stars Fabric 26.2` run `34953067177`)
+- production Fabric JAR: **JAR PRODUCED / VERIFIED — PASS**
+- dedicated Fabric boot: **TESTED — PASS**
+- Fabric client smoke: **TESTED — PASS** (`Smoke earth-to-stars Fabric client` run `34953482466`)
 - actual starter craft flight: **NOT PLAYTESTED**
 - Earth→space continuity: **NOT TESTED**
 - multiplayer: **NOT TESTED**
 
+Verified production JAR from source commit `374c7db5b268417cd68126d79bb716e81c567194`:
+
+```text
+earth_to_stars-0.3.0-alpha.1.jar
+SHA-256 cb4c7cf82662e9111106b28632d633c2a2470f6fc9210ed9c1d1dcb1e14ec18b
+```
+
+The later workflow-only commit does not alter production source bytes. Build/client boot success does not mean the player-facing Fabric ship runtime is complete.
+
 ## 다음 실제 작업
 
 ```text
-Fabric build/kernel gate 확정
-→ registry/network/save authority bridge
+registry/network/save authority bridge
 → 외부 허용 자산 기반 starter craft visual
 → pilot seat + control session
 → 외부 오픈소스 연구를 반영한 collision/movement
