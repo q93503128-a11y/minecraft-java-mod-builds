@@ -41,7 +41,7 @@ public final class BattleActionIdentityHud {
 
         BattleActionTimelineState.Cue cue = BattleActionTimelineState.cue(model.battleId()).orElse(null);
         if (cue != null) {
-            renderActiveCue(graphics, model, cue);
+            renderActiveCue(graphics, cue);
             return;
         }
 
@@ -54,7 +54,6 @@ public final class BattleActionIdentityHud {
 
     private static void renderActiveCue(
             GuiGraphicsExtractor graphics,
-            BattlePresentationModel model,
             BattleActionTimelineState.Cue cue
     ) {
         ItemStack icon = BattleActionRuntimeVisuals.icon(cue.actionId());
