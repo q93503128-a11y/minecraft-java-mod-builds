@@ -12,6 +12,9 @@
 | REF-UI-003 | UI 자산 후보 / 입력 glyph | Kenney `Input Prompts Pixel 16×` | CC0 1.0 | 파일 반입 전 | keyboard/gamepad glyph 후보. 실제 파일 반입 전 공식 배포조건 재확인 |
 | REF-MODEL-001 | humanoid articulation reference | SL0ANE/Loy-s-Goodies, `230507_alex.bbmodel`, commit `afbb7695b09de0ed8ee3aa97732ff7c3d367520c` | CC0 1.0 | **legacy reference only / production 미사용** | 과거 reference-recreated Zombie geometry는 external-only 규칙에서 폐기 |
 | EXT-MODEL-002 | runtime production base | Mojang Minecraft entity model layers + entity textures, Java 26.2 runtime | Mojang first-party proprietary runtime content | **직접 사용 중** | Creeper/Spider/Blaze/Witch/Iron Golem/Zombie 대응 runtime model/texture 직접 사용. TURNBOUND는 replacement geometry/UV/texture를 새로 디자인하지 않음 |
+| EXT-ITEM-003 | representative equipment visual base | Mojang Minecraft Java 26.2 runtime item models/textures: `minecraft:shield`, `minecraft:copper_sword`, `minecraft:golden_apple` | Mojang first-party proprietary runtime content | **production visual source 채택 / runtime 직접 참조** | `iron_bulwark`→Shield, `copper_edge`→Copper Sword, `golden_heart`→Golden Apple. TURNBOUND namespace로 PNG를 복사하지 않고 vanilla `ItemStack` renderer를 사용. vanilla item gameplay component/effect는 TURNBOUND 장비 수치에 상속하지 않음 |
+| CAND-ITEM-004 | future custom equipment icon family | Kettoman, `Pixel Art Icons - RPG Essentials (16x16)` — https://kettoman.itch.io/pixel-art-icons-rpg-essentials-16x16 | CC0, author page에 no generative AI 표기 | **후보 / 미반입** | 64개 16×16 weapons/food/materials/potions. 현재 대표 3종은 Mojang runtime item으로 충분하므로 production에는 미사용 |
+| CAND-ITEM-005 | future custom equipment icon family | Shade, `Free 16x16 Assorted RPG Icons` — https://merchant-shade.itch.io/16x16-mixed-rpg-icons | CC0 1.0 Universal, author page에 no generative AI 표기 | **후보 / 미반입** | weapons/armours/consumables/chests 등. 향후 vanilla runtime item으로 역할 표현이 부족할 때 동일 family에서 직접 sprite를 채택하는 후보 |
 | CAND-MODEL-003 | Creeper replacement candidate | Moth's Creeper Redone | MIT | 파일 반입 전 | 26.2 호환/의존성 검증 뒤 실제 asset 직접 사용 후보 |
 | CAND-MODEL-004 | Spider replacement candidate | Scary Spider | MIT | 파일 반입 전 | 실제 asset 직접 사용 후보. 눈으로 보고 재구성 금지 |
 | CAND-ANIM-001 | Spider animation/base candidate | Wall Climbers 1.2 | MIT + 프로젝트 사용조건 | 파일 반입 전 | 26.2 지원. 실제 파일/고지조건 고정 후 사용 가능 |
@@ -22,8 +25,18 @@
 - **World:** `EXT-WORLD-001` Drehmal: APOTHEOSIS v2.2.2f. 공식 배포본을 별도 설치하며 TURNBOUND repo에는 원본 맵을 넣지 않는다.
 - **Primary UI skin:** `REF-UI-001` Kenney UI Pack - Pixel Adventure.
 - **Vanilla-source roster base:** `EXT-MODEL-002` Mojang runtime model/texture.
+- **Representative equipment visuals:** `EXT-ITEM-003` Mojang runtime item models. 현재 mapping은 Shield / Copper Sword / Golden Apple이며 별도 TURNBOUND 아이콘을 만들지 않는다.
 - **Turn-based Minecraft adapter:** `EXT-CODE-001`의 실제 MIT integration pattern adaptation.
 - **Battle camera smoothing:** `EXT-CODE-002`의 실제 MIT 26.2 source adaptation.
+
+## Equipment visual boundary
+
+- gameplay equipment id와 visual item id는 분리한다.
+- 현재 대표 mapping은 `docs/31_M6_EQUIPMENT_VISUAL_ASSET_GATE.md`가 정본이다.
+- runtime item model/texture는 Minecraft가 이미 보유한 asset을 직접 렌더링하며 TURNBOUND repo에 복사하지 않는다.
+- `minecraft:golden_apple`을 Golden Heart의 visual identity로 사용해도 vanilla food/effect를 장비 시스템에 복사하지 않는다.
+- 향후 custom equipment가 필요하면 `CAND-ITEM-004/005` 같은 실제 허용 asset family에서 직접 파일을 채택하고, sprite 위치/원본 버전/수정 내역을 먼저 이 문서에 고정한다.
+- 외부 pack을 참고만 한 뒤 TURNBOUND 전용 16×16 sprite를 새로 그리는 방식은 금지한다.
 
 ## World external-base boundary
 

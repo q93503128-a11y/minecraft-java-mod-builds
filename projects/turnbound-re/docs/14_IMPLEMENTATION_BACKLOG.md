@@ -78,6 +78,7 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 - authoritative Battle Result / Reward / ACK / world return lifecycle.
 - EN/KO localization parity.
 - shared `UiVisualLanguage` 및 외부 CC0 UI asset 적용.
+- UI frame/title/meter source/license 고정: Kenney `UI Pack - Pixel Adventure` 2.0 / CC0.
 - logical battle-stage participant rendering.
 - data-driven action timeline, impact/travel accent.
 - Skeleton / Enderman 대표 3D character presentation pass.
@@ -93,7 +94,6 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 - 실제 Minecraft screenshot quality.
 - GUI Scale별 clipping/가독성/시선 이동.
 - 480×270 실화면 밀도.
-- final frame/icon/sprite source/license.
 - animation/transition/reward reveal/audio timing.
 - representative 3D model pose/centering/실제 체감.
 - Skeleton aim / Enderman phase가 실제 플레이에서 충분히 읽히는지 검증.
@@ -101,7 +101,7 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 **중요:** screenshot/reference 비교 전 M5 production visual PASS를 선언하지 않는다. 사용자의 현재 방침에 따라 중간 실플레이 테스트를 요구하지 않고, 통합 테스트 가치가 있는 완성 구간에서 한 번에 검증한다.
 
 ## M6 — World & Life Loop
-상태: **IN PROGRESS — FIRST LOOP AUTOMATED ACCEPTANCE PASS / INTEGRATED PLAYTEST + VISUAL GATE PENDING**
+상태: **IN PROGRESS — FIRST LOOP AUTOMATED ACCEPTANCE PASS / EXTERNAL WORLD MIGRATION + INTEGRATED PLAYTEST + VISUAL GATE PENDING**
 
 완료:
 - authored Encounter의 production 진입은 world anchor가 소유하는 server-authoritative 경로로 수렴.
@@ -126,6 +126,7 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 - 장비 server-authored snapshot/action network와 stale token 검증.
 - 기존 Character Detail에 네 번째 `Equipment` context 통합: 3개 장비 목록, 현재/다음 bonus, 실제 material 보유량, Coin 비용, forge 접근 상태, Craft/Upgrade/Equip/Unequip.
 - 장비 UI는 새 dashboard/새 통화를 만들지 않고 기존 M5 visual language를 재사용.
+- 대표 장비 시각 원천 고정: `Iron Bulwark → minecraft:shield`, `Copper Edge → minecraft:copper_sword`, `Golden Heart → minecraft:golden_apple`. 별도 TURNBOUND 아이콘을 만들지 않고 Mojang runtime item model을 직접 쓰는 방향을 `31_M6_EQUIPMENT_VISUAL_ASSET_GATE.md`에 고정.
 - `HUB_01 -> REGION_01` 기능 slice의 실제 block/entity 배치 harness 구현.
 - Hub Smithing Table/Furnace/Crafting Table과 동쪽 route를 실제 월드에 연결.
 - `ore_outcrop`에 실제 Coal/Copper/Iron/Gold ore를 배치해 채광→제련→장비 material 흐름 연결.
@@ -133,7 +134,11 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 - `river_pool`에 실제 water pool을 배치해 vanilla fishing→Cooked Fish 준비물 흐름 연결.
 - patrol/elite Interaction entity가 기존 authored locator tag를 사용해 world-first Encounter 진입 경로에 연결.
 - 기능 slice offset은 production 좌표가 아니며 RegionDefinition에는 좌표를 추가하지 않음.
-- World Asset Gate를 통해 HUB_01/REGION_01 첫 production-facing palette·footprint·landmark cadence를 정하고 forge camp/resource branches/patrol ruin/rift landmark prototype을 구현.
+- 과거 World Asset Gate의 자작 Hub/Region은 mechanics/layout harness로만 유지하고 production visual source에서 제외.
+- production world visual source를 외부 authored world **Drehmal: APOTHEOSIS v2.2.2f**로 전환.
+- `external_world_profiles.json` + `DrehmalExternalWorldBinding`으로 외부 월드 좌표/semantic anchor를 data-driven 연결하고 TURNBOUND가 원본 terrain/building을 복사·재생성하지 않도록 고정.
+- fresh-world bootstrap은 외부 world binding이 없을 때 TURNBOUND 자작 replacement Hub/Region을 자동 생성하지 않고 fail-closed.
+- 현재 enabled external anchors는 New Drabyel Hub와 Stasis Facility gateway 두 fast-travel seed뿐이며, 광산/농장/낚시/patrol/elite 후보는 26.2 migration 전까지 disabled.
 - `fastTravelAnchors` data contract와 별도 `FastTravelSavedData`를 추가해 월드 공용 waypoint 위치와 플레이어 개인 discovery를 분리.
 - Hub/REGION_01에 실제 Lodestone + Interaction waypoint를 배치하고, 두 지점을 각각 직접 발견한 뒤에만 서버 권한 빠른 이동이 열리도록 연결.
 - fast travel은 client 좌표/unlock 입력을 신뢰하지 않고 definition/tag/dimension/range/current registered position/discovery/link를 서버가 재검증.
@@ -149,13 +154,17 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 - prepared starter 대비 rift elite aggregate HP/ATK/DEF는 강하게 유지하되 HP 130% / ATK 150% / DEF 130% / SPD 120% / POISE 110% ceiling으로 first-region 이탈 방지.
 - rift elite 최소 보상 Coin 180 / Essence 60이 starter 전원 Lv2→Lv3 비용 Coin 72 / Essence 41을 열어 다음 성장 선택으로 이어지는지 자동 검증.
 - Build turnbound-re #233 / run `34793967823`: clean build / 전체 JUnit / first-loop balance acceptance / production JAR verify / artifact upload PASS.
-- 상세 정본: `19_M6_WORLD_ENCOUNTER_LIFECYCLE.md`, `21_M6_RESOURCE_NODE_CONTRACT.md`, `22_M6_BATTLE_PREPARATION_MATERIAL_SINK.md`, `23_M6_MINIMAL_EQUIPMENT_CONTRACT.md`, `24_M6_EQUIPMENT_FORGE_TRANSACTION.md`, `25_M6_FUNCTIONAL_WORLD_SLICE.md`, `26_M6_WORLD_ASSET_GATE.md`, `27_M6_FAST_TRAVEL_DISCOVERY.md`, `28_M6_FIRST_EXPEDITION_QUEST.md`, `29_M6_FIRST_LOOP_BALANCE_ACCEPTANCE.md`.
+- external-world profile schema checkpoint Build #265 / run `34927989993`, commit `abdfcd926ecf3a20ba323d7328e73d963d01e704`: clean build / JUnit / production JAR verify PASS.
+- 상세 정본: `19_M6_WORLD_ENCOUNTER_LIFECYCLE.md`, `21_M6_RESOURCE_NODE_CONTRACT.md`, `22_M6_BATTLE_PREPARATION_MATERIAL_SINK.md`, `23_M6_MINIMAL_EQUIPMENT_CONTRACT.md`, `24_M6_EQUIPMENT_FORGE_TRANSACTION.md`, `25_M6_FUNCTIONAL_WORLD_SLICE.md`, `26_M6_WORLD_ASSET_GATE.md`, `27_M6_FAST_TRAVEL_DISCOVERY.md`, `28_M6_FIRST_EXPEDITION_QUEST.md`, `29_M6_FIRST_LOOP_BALANCE_ACCEPTANCE.md`, `30_EXTERNAL_WORLD_BASE.md`, `31_M6_EQUIPMENT_VISUAL_ASSET_GATE.md`.
 
 남음:
+- `visualItem`을 equipment definition data에 추가하고 server snapshot으로 전달한 뒤 Equipment UI에서 vanilla `ItemStack` renderer로 실제 장비 아이콘을 표시. 자체 placeholder art 금지.
+- 공식 Drehmal: APOTHEOSIS v2.2.2f test copy를 Java 26.2 + NeoForge에서 실제 load/migration하고 New Drabyel / Stasis Facility 및 disabled candidate 5곳을 검사.
+- migration 확인 뒤에만 외부 광산/농장/낚시/patrol/elite candidate를 실제 geography에 맞춰 enable/좌표 조정.
 - 장비/준비물/채집/discovery/fast travel/첫 임무를 실제 Minecraft 한 사이클에서 통합 playtest하고 screenshot visual audit 수행.
 - 실제 Hub→REGION 이동시간, 채집/제련시간, patrol/elite 전투시간, 필요한 patrol 횟수, 보상 후 성장 선택의 체감을 측정해 밸런스 조정.
-- GUI Scale별 Equipment/Battle HUD/Result 가독성 및 월드 waypoint/광산/농장/강/patrol/rift landmark 시각 품질 검수.
-- production visual screenshot 비교 후 Hub/광산/농장/강/Encounter landmark와 UI/연출 세부 수정.
+- GUI Scale별 Equipment/Battle HUD/Result 가독성 및 외부 월드 waypoint/resource/Encounter anchor의 시각 품질 검수.
+- 실제 external world screenshot 비교 후 anchor 배치/UI/연출 세부 수정. 외부 terrain/building 자체를 TURNBOUND가 재디자인하지 않음.
 - 3개 이상 travel destination이 실제 필요해질 때만 destination selection UX 추가.
 
 ### PASS
@@ -179,17 +188,20 @@ eligible 전수 PLAYABLE 이상, 미분류 0.
 - dedicated server/multiplayer verification 가능 시 수행.
 - 최종 visual regression.
 
-## 지금 바로 할 일 — 2026-09-14 최신
+## 지금 바로 할 일 — 2026-09-15 최신
 
-현재 우선순위는 **더 많은 backend 기능을 추가하는 것이 아니라 첫 완성 사이클을 실제 Minecraft에서 통합 playtest하고 production visual gate를 수행하는 것**이다.
+현재 우선순위는 **외부 시각 원천이 확정되지 않은 부분을 먼저 닫고, 외부 authored world를 실제 target 환경에서 검증한 뒤 첫 완성 사이클을 통합 playtest하는 것**이다.
 
 순서:
-1. 새 월드/신규 진행 상태에서 production world slice를 설치하고 Hub waypoint부터 REGION_01, 생활 분기, patrol, rift elite, reward, fast travel 귀환까지 끊지 않고 한 사이클 플레이한다.
-2. Hub→REGION waypoint 이동시간, patrol 전투시간, elite 전투시간, elite 전에 필요하다고 느낀 patrol 횟수를 기록한다.
-3. 첫 quarry 채광→제련→Lv1 장비 제작/장착, offhand battle preparation 소비, Equipment UI 상태가 실제 조작에서 자연스러운지 확인한다.
-4. Hub/광산/농장/강/patrol/rift landmark, Equipment UI, Battle HUD, Battle Result를 대표 screenshot으로 남겨 가독성·밀도·시선 이동·visual hierarchy를 검수한다.
-5. 실제 증상 기준으로 동선·채집량·보상·적 스펙·UI·연출을 조정한 뒤 M5/M6 production visual PASS 여부를 판정한다.
-6. 그 다음에만 M7 Full Vanilla Roster로 확장한다.
+1. `31_M6_EQUIPMENT_VISUAL_ASSET_GATE.md`의 mapping을 data-driven `visualItem` 계약으로 구현하고 Equipment UI에 vanilla `ItemStack` renderer를 연결한다.
+2. 관련 definition/network/UI contract test를 수행하고 의미 있는 코드 단위가 끝났을 때만 `Build turnbound-re`를 1회 실행한다.
+3. 공식 Drehmal: APOTHEOSIS v2.2.2f의 복사본을 Java 26.2 + NeoForge에서 실제 load/migration한다. 원본 배포본은 수정하지 않는다.
+4. New Drabyel / Stasis Facility와 기록된 resource/encounter 후보를 직접 검사해 external-world profile 좌표와 enabled 상태를 확정한다.
+5. 새 진행 상태에서 Hub waypoint → REGION gateway → 생활 분기 → patrol → rift elite → reward → fast travel 귀환까지 끊지 않고 한 사이클 플레이한다.
+6. Hub→REGION 이동시간, 채집/제련시간, patrol/elite 전투시간, elite 전에 필요하다고 느낀 patrol 횟수를 기록한다.
+7. Equipment UI, Battle HUD, Battle Result와 external-world 대표 지점을 screenshot으로 남겨 가독성·밀도·시선 이동·visual hierarchy를 검수한다.
+8. 실제 증상 기준으로 동선·채집량·보상·적 스펙·UI·연출을 조정한 뒤 M5/M6 production visual PASS 여부를 판정한다.
+9. 그 다음에만 M7 Full Vanilla Roster로 확장한다.
 
 금지:
 - 재료를 이유 없이 Coin/Essence로 환전해 모든 생활 활동을 같은 숫자로 평탄화.
@@ -200,6 +212,7 @@ eligible 전수 PLAYABLE 이상, 미분류 0.
 - World Asset Gate 없이 production 건축/외형을 즉흥 확정.
 - 발견하지 않은 waypoint를 원격 메뉴/클라이언트 payload로 해금.
 - 기존 discovery/completion과 중복되는 quest save를 따로 만들어 상태를 이중화.
+- 외부 item/model/UI reference를 보고 TURNBOUND 전용 replacement art를 새로 제작.
 - 실제 통합 playtest 없이 M5/M6 production visual PASS 선언.
 
-이제 자동 gate가 통합 테스트 가치가 있는 수준까지 닫혔으므로, 다음 단계에서는 사용자에게 실제 Minecraft 첫 사이클 playtest를 요청한다. 결과는 기능 정상/비정상뿐 아니라 시간·귀찮음·약함/강함·UI/월드 시각 품질을 함께 본다.
+현재 자동 gate는 통합 테스트 가치가 있는 수준까지 닫혀 있지만, **Drehmal 26.2 migration과 실제 Minecraft visual/playtest는 아직 미실행**이다. 실행하지 않은 항목을 PASS로 승격하지 않는다.
