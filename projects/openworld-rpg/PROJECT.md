@@ -44,7 +44,7 @@ Core pillars:
 2. Fast action combat with dodge / guard / parry / skills
 3. Deep character growth through stats, equipment, classes and repeated class advancement
 4. Distinct regions, monsters, bosses and dungeons
-5. Strong external-first art/UI/structure direction from the first implementation
+5. Strong external-first art/UI/structure/content direction from the first implementation
 
 ## Personal-use scope
 
@@ -65,10 +65,58 @@ However, this GitHub repository is public. Therefore:
 
 Subordinate references:
 
-- `REGIONS.md` — Azari regional content expansion for the regional work explicitly queued by `GAME_DESIGN.md` §27. It does not override the master canon; when any detail conflicts, `GAME_DESIGN.md` wins.
+- `REGIONS.md` — Azari regional content expansion for the regional work explicitly queued by `GAME_DESIGN.md`. It does not override the master canon; when any detail conflicts, `GAME_DESIGN.md` wins.
 - `UI_DIRECTION.md` — selected external CC0 UI family, screen architecture, scaling rules and visual acceptance criteria for the UI work indexed by `GAME_DESIGN.md`. It does not override gameplay rules in the master canon.
+- `LOOT_ECONOMY.md` — detailed equipment-generation, affix, drop-rate, target-farming, signature-material and loot-presentation rules for the loot-economy work explicitly queued by `GAME_DESIGN.md`. It does not override the master canon.
 
 Do not create parallel competing design documents. Subordinate reference files may expand a workstream that is explicitly indexed/queued by `GAME_DESIGN.md`, but `GAME_DESIGN.md` remains the master index and conflict authority.
+
+## Pre-code design-completion contract
+
+The target is not “start coding once the broad concept is understandable.” The target is that **the finished canon can be handed to an implementer and the remaining work is implementation, integration and validation rather than game-design invention.**
+
+Before gameplay source bootstrap is considered design-complete:
+
+- player-facing systems have canonical behavior, state transitions, failure/edge behavior and multiplayer authority;
+- balance-sensitive systems have concrete formulas/tables/default values rather than `decide during coding` placeholders;
+- every major UI screen has selected external visual family, information hierarchy, interaction states and scaling behavior;
+- every player-visible creature, boss, mount, weapon family, important armor/accessory family, workstation, structure and traversal object has an external design/model/asset/reference direction;
+- every production resource/material/node/item family has a viable external model/icon/reference mapping before its final name and role are locked;
+- important VFX and sound families have an external source/reference direction appropriate to their importance;
+- region content identifies actual encounter/reward/resource families rather than vague `add something here later` placeholders;
+- data schemas needed for tuning are specified so implementation does not hard-code content lists;
+- unresolved `TBD` values that affect player-facing gameplay are closed before implementation of that subsystem.
+
+Technical identifiers and toolchain values that genuinely depend on the M0 dependency audit—exact Fabric Loader/Loom/API versions, mod ID/namespace, Gradle details and similar build metadata—may remain open until that audit. They are technical bootstrap decisions, not permission to invent gameplay while coding.
+
+If implementation exposes a hard technical constraint that invalidates canon, stop that subsystem, revise the canon first, then implement the revised rule. Do not silently let code become the new game design.
+
+## External-first content admission contract
+
+External-first applies to **content design itself**, not only to the final art pass.
+
+For a new player-facing resource, ore, herb, material, consumable, weapon, armor piece, accessory, monster, boss drop, mount, structure, workstation or major prop:
+
+```text
+find/verify strong external visual/model/icon/reference candidate
+→ classify license / dependency / local-only boundary
+→ decide how it visually fits the project
+→ then lock player-facing name, role, region, source, stats/reward use
+→ record the source mapping
+→ implement
+```
+
+Do not do this in reverse:
+
+```text
+invent a list of generic resources/items
+→ code them
+→ later search for any art that vaguely fits
+```
+
+A mechanic may identify the *need* for a resource before art research, but the production-canonical resource definition is not final until its visual source is viable.
+
+Directly usable or editable external design should be preserved when it already looks better than an internally invented replacement. Modification exists to fit Minecraft scale, gameplay readability and the shared art direction—not to replace good design merely for originality.
 
 ## Implementation cleanliness contract
 
@@ -93,7 +141,9 @@ There is no "temporary ugly UI/model because this is only a test" stage for play
 From the first player-visible implementation:
 
 - UI/HUD uses selected external final-quality design/reference/assets;
+- inventory/equipment specifically follows `UI_DIRECTION.md` and the Foozle `Lucifer - RPG UI` + `Lucifer - Equipment` visual family rather than an internally redesigned Minecraft inventory;
 - characters, monsters, bosses, structures, workstations and major props use selected external design/assets/reference;
+- ores, herbs, resource nodes, material pickups, important loot icons/models and signature boss materials also follow the external-first content-admission rule;
 - no improvised AI black-panel/card/glow UI;
 - no placeholder vanilla entity + particles for important enemies;
 - no vanilla crafting-screen reskin for major RPG workstations unless the selected external reference genuinely uses that structure.
