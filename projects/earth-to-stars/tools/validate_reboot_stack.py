@@ -67,6 +67,8 @@ def main() -> None:
         "GYROSCOPE_BLOCK",
         'requireExternalBlock("zps", "power_cell")',
         "STARTER_FLIGHT_CORE",
+        "snapshotPreviousStates",
+        "restorePreviousStates",
     ):
         require(deployment, needle)
 
@@ -89,6 +91,7 @@ def main() -> None:
 
     for mod_id in ("valkyrienskies", "genesis", "vlib", "zps", "zpl"):
         require(toml, f'modId="{mod_id}"')
+    require(toml, 'versionRange="[1.20.1-2.5.1,)"')
 
     for resource in (
         "assets/earth_to_stars/lang/en_us.json",
@@ -114,7 +117,7 @@ def main() -> None:
         if forbidden in reboot_text:
             raise SystemExit(f"REBOOT STACK VALIDATION FAILED: custom vehicle implementation leaked into reboot: {forbidden}")
 
-    print("REBOOT STACK VALIDATION OK: released VS 2.4.10 block assembly + ZPS 2.5.1 cockpit/power + ZPL propulsion/gyro; runtime smoke runs isolate external optional GameTests; legacy custom ship physics excluded")
+    print("REBOOT STACK VALIDATION OK: released VS 2.4.10 block assembly + ZPS 2.5.1 cockpit/power + ZPL propulsion/gyro; deployment rollback and dependency minimum aligned; runtime smoke runs isolate external optional GameTests; legacy custom ship physics excluded")
 
 
 if __name__ == "__main__":

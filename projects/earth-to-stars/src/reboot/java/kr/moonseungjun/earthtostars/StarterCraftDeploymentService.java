@@ -44,19 +44,24 @@ public final class StarterCraftDeploymentService {
             throw new IllegalStateException("starter craft deployment area is blocked at " + blocked.toShortString());
         }
 
-        for (Map.Entry<BlockPos, BlockState> entry : template.entrySet()) {
-            level.setBlock(entry.getKey(), entry.getValue(), Block.UPDATE_ALL);
-        }
-
-        BlockPos controllerPos = StarterCraftLayout.controllerFromFloor(floorCenter);
-        fillBattery(level, controllerPos.offset(StarterCraftLayout.BATTERY));
-
+        Map<BlockPos, BlockState> previousStates = snapshotPreviousStates(level, template);
         try {
+            for (Map.Entry<BlockPos, BlockState> entry : template.entrySet()) {
+                if (!level.setBlock(entry.getKey(), entry.getValue(), Block.UPDATE_ALL)) {
+                    throw new IllegalStateException(
+                            "starter craft block placement failed at " + entry.getKey().toShortString()
+                    );
+                }
+            }
+
+            BlockPos controllerPos = StarterCraftLayout.controllerFromFloor(floorCenter);
+            fillBattery(level, controllerPos.offset(StarterCraftLayout.BATTERY));
+
             // This is the @JvmStatic assembly API shipped by the pinned VS 2.4.10 line and
             // used by Genesis' own 1.20.1 source. VS owns relocation, collision and physics.
             return ShipAssembler.assembleToShipFull(level, template.keySet(), 1.0D).getShip();
         } catch (RuntimeException | AssertionError error) {
-            template.keySet().forEach(pos -> level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL));
+            restorePreviousStates(level, previousStates, error);
             throw error;
         }
     }
@@ -68,6 +73,34 @@ public final class StarterCraftDeploymentService {
             }
         }
         return null;
+    }
+
+    private static Map<BlockPos, BlockState> snapshotPreviousStates(ServerLevel level, Map<BlockPos, BlockState> template) {
+        LinkedHashMap<BlockPos, BlockState> previousStates = new LinkedHashMap<>();
+        for (BlockPos pos : template.keySet()) {
+            previousStates.put(pos, level.getBlockState(pos));
+        }
+        return previousStates;
+    }
+
+    private static void restorePreviousStates(ServerLevel level, Map<BlockPos, BlockState> previousStates, Throwable originalError) {
+        for (Map.Entry<BlockPos, BlockState> entry : previousStates.entrySet()) {
+            try {
+                if (!level.setBlock(entry.getKey(), entry.getValue(), Block.UPDATE_ALL)) {
+                    EarthToStars.LOGGER.error(
+                            "Starter craft rollback could not restore {}",
+                            entry.getKey().toShortString()
+                    );
+                }
+            } catch (RuntimeException | AssertionError rollbackError) {
+                originalError.addSuppressed(rollbackError);
+                EarthToStars.LOGGER.error(
+                        "Starter craft rollback failed while restoring {}",
+                        entry.getKey().toShortString(),
+                        rollbackError
+                );
+            }
+        }
     }
 
     private static Map<BlockPos, BlockState> buildTemplate(BlockPos floorCenter) {
