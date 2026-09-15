@@ -62,12 +62,14 @@ Do not infer permission from "downloadable" or "open source" alone.
 | Planet Minecraft schematics | inns / blacksmiths / villages / shrines / castles / dungeons | VERIFY; creator terms vary | primary pool for private/local structure use |
 | Azari 30k x 30k | primary open-world terrain | free download; usage/redistribution terms not explicit; map uses some third-party assets | `VERIFY / LOCAL_ONLY` primary map candidate; use local world bytes only, derive 10–14 regions from its terrain, do not commit map bytes until permission is explicit |
 | external open-world RPG maps | terrain/region skeleton | VERIFY / REFERENCE or LOCAL_ONLY | Azari is current first choice; keep Theia/other free maps only as fallback if Azari import/terms fail |
+| DeCubed Dungeons | biome-specific dungeon architecture | CC-BY-NC-SA-4.0; current 26.2 datapack + Fabric/Forge/NeoForge/Quilt mod release observed | `DEPENDENCY / LOCAL_ONLY / REFERENCE`; strong free architecture pool, but replace every vanilla spawner/loot assumption before use in this project's no-vanilla ecology |
 | external dungeon/structure packs | dungeons / ruins / shrines / towns | VERIFY | retain strong architecture, replace encounters/rewards |
 | external RPG UI designs/assets | inventory / skill HUD / forge / alchemy / cooking / stats / class | VERIFY | select proven final designs and minimize redesign |
-| Icy's Better Horses | mount progression/travel/UI/code precedent | MIT; current 26.2 Fabric release observed | strong code/reference candidate for meaningful mount progression and riding UX |
-| Vehicle Upgrade | mount/vehicle quality-of-life | MPL-2.0; current 26.2 Fabric release observed | inspect mount handling/QoL architecture; use as dependency/reference if appropriate |
-| Horse Combat Controls | mounted-combat controls | MIT | code/reference candidate for Mount & Blade-like horse controls; version compatibility must be rechecked |
-| Jasmine Dragons | flying dragon behavior/riding reference | ARR; current 26.2 Fabric release observed | behavior/design reference only unless terms permit dependency use |
+| MobFilter | spawn suppression / authored ecology | Apache-2.0; current 26.2 Fabric + NeoForge listing observed | strong `DEPENDENCY / CODE_CANDIDATE`; use or adapt rule-based spawn blocking so all vanilla mobs stay out of the authored RPG ecology, with project code remaining authoritative |
+| Icy's Better Horses | riding/progression code precedent | MIT; current 26.2 Fabric release observed | **reference/code candidate only under current design**; useful ownership/bonding/QoL ideas, but visible vanilla horses cannot be the finished mount population |
+| Vehicle Upgrade | mount/vehicle quality-of-life | MPL-2.0; current 26.2 Fabric release observed | inspect generic riding/QoL architecture; only retain features that also work with non-vanilla mounts |
+| Horse Combat Controls | mounted-combat controls | MIT | code/reference candidate for Mount & Blade-like steering/combat concepts; do not make vanilla horse visuals canonical |
+| Jasmine Dragons | flying dragon behavior/riding reference | ARR; current 26.2 Fabric release observed | behavior/design reference and possible normal dependency use under its terms for later dragon/high-speed traversal |
 | Musket Mod | flintlock/musket mechanics | public source; license/version must be re-audited | reference/code candidate for non-modern black-powder firearm behavior |
 | Spell Engine | skill/spell runtime, weapon skills, data-driven casting | GPL-3.0-only; current 26.2 Fabric + NeoForge listing observed | preferred dependency candidate for data-driven active skills and weapon-skill execution; avoid copying source unless GPL implications are intentionally accepted |
 | Rogues & Warriors (RPG Series) | warrior/rogue skills, martial weapons, combat presentation | ARR; current 26.2 Fabric + NeoForge listing observed | `DEPENDENCY / LOCAL_ONLY / REFERENCE`; use high-quality martial skills directly when they fit the project, but do not copy ARR code/assets into the public repo |
@@ -79,11 +81,11 @@ Do not infer permission from "downloadable" or "open source" alone.
 | Archetypes | server-authoritative active/passive class skill implementation | MIT; current 26.2 Fabric/Forge/NeoForge listing observed | strong `CODE_CANDIDATE`; selectively reuse/port skill, targeting, networking and server-authority patterns while rejecting its vanilla-XP progression rules |
 | Pufferfish's Skills | configurable skill-tree framework | custom license; current 26.2 Fabric + NeoForge releases observed | `VERIFY / DEPENDENCY`; evaluate terms and UX before adoption, especially if RPG Series Skill Tree becomes useful |
 | Ranged Weapon API | bow/crossbow construction and ranged weapon behavior | MIT; current 26.2 Fabric + NeoForge listing observed | strong dependency/code candidate for Hunter ranged families instead of rebuilding bow/crossbow fundamentals |
-| Alex's Mobs Continued | broad wildlife + creature roster | GPL-3.0-only; current Fabric 26.2 release observed; full ~116-mob roster | strong `DEPENDENCY / REFERENCE`; use selected biome-appropriate creatures/wildlife in local playable build and configure/suppress spawns that weaken project identity; do not copy GPL code into project by default |
-| Nemo's Creatures | biome-specific hostile variants/creatures | MIT; current Fabric 26.2 release observed | strong `DEPENDENCY / CODE_CANDIDATE`; useful especially for desert/frozen/scorched regional monster families |
-| Threateningly Mobs Continued | fantasy monsters, heavy creatures, bosses | MIT; current Fabric 26.2 listing observed | strong `DEPENDENCY / CODE_CANDIDATE`; selectively use/re-map creatures such as Nature Spirit, Desert Beetle, Hydra, Steelboar, Flamehorn and large bosses; do not inherit its dimension/progression wholesale |
+| Alex's Mobs Continued | broad wildlife + creature roster | GPL-3.0-only; current Fabric 26.2 release observed; full ~116-mob roster | strong `DEPENDENCY / REFERENCE`; curate non-vanilla wildlife by region and override/suppress unwanted defaults; useful R01 candidates include gazelle, bison, raccoon, crow, grizzly, rattlesnake and cave centipede |
+| Nemo's Creatures | biome-specific hostile variants/creatures | MIT; current Fabric 26.2 release observed | secondary `DEPENDENCY / CODE_CANDIDATE`; current 26.2 v2.0 removed Mummy and Scorched Skeleton, and vanilla-derived variants are lower priority under the no-vanilla-identity rule |
+| Threateningly Mobs Continued | fantasy monsters, breedable creatures, heavy creatures, bosses | MIT; current Fabric 26.2 listing observed | strong `DEPENDENCY / CODE_CANDIDATE`; R01 uses Louxia as food ecology and considers Steelboar/Nature Spirit/Regalhart/Earthloong for authored elite/boss roles; default global progression/spawns are not inherited |
 | Mob Champions | elite modifier/champion behavior | MIT; current Fabric 26.2 release observed | `REFERENCE / CODE_CANDIDATE`; study elite spawning/modifier/readability logic, but project owns elite reward tables and regional identities |
-| Mutant Monsters | large mutant miniboss creatures | AGPL-3.0-only; current Fabric 26.2 release observed | secondary `DEPENDENCY / REFERENCE`; possible special-event/miniboss pool, not a base ecology because vanilla-mutant identity is too strong |
+| Mutant Monsters | large mutant miniboss creatures | AGPL-3.0-only; current Fabric 26.2 release observed | low-priority `DEPENDENCY / REFERENCE`; vanilla-mutant identity conflicts with the current no-vanilla visible ecology, so do not use as normal regional content |
 | Ambient Creatures | passive ambient wildlife | MIT; current Fabric 26.2 release observed | optional `DEPENDENCY / CODE_CANDIDATE` for world life where it does not dilute stronger regional ecology |
 
 ---
@@ -113,37 +115,53 @@ The world ecology is external-first, but external mobs are not dumped into the m
 
 Rules:
 
+- **No vanilla living mob is part of the normal visible world population.** Vanilla hostile, passive, neutral, aquatic, villager/trader/golem and ambient mob spawn paths are disabled/replaced inside authored RPG play.
 - Region identity owns spawning. A dependency creature is enabled only where it strengthens that region's ecology, difficulty profile or encounter role.
 - Normal wildlife, normal hostile enemies, elites, minibosses, field bosses and dungeon bosses are separate content tiers.
 - Early-region normal enemies should be readable and fair; the sharp difficulty spikes belong mainly to elites and bosses.
 - Ordinary enemies do not become the main equipment-drop source. Their rewards focus on EXP, currency, materials and selected consumables; equipment farming is concentrated in elites/bosses/dungeons/quests/chests/merchants/crafting.
 - External mods' default spawn tables, item progression, dimensions, crafting recipes and loot are not canonical. Disable, override or ignore conflicting parts where technically possible.
-- Prefer direct dependency use for large polished rosters. Prefer MIT source adaptation only when a narrow project-owned behavior is needed.
+- Imported structure packs must have vanilla mob spawners/encounters replaced before they are considered finished content.
+- Prefer direct dependency use for large polished rosters. Prefer permissive source adaptation only when a narrow project-owned behavior is needed.
 - Important bosses still need project-level telegraph, hitbox, reward, phase and region-fit review even when their model/animation comes from a dependency.
-- Do not use large numbers of simple vanilla reskins as the primary ecology merely because they are easy to source.
+- Vanilla-derived reskins/variants may be rejected even when technically non-vanilla entities if their visual identity undermines the replacement goal.
+- Creature-derived food/materials are supplied by the custom ecology; the game must never require cows/pigs/sheep/chickens or vanilla fish just to keep food/crafting functional.
+
+## Spawn suppression — MobFilter
+
+- Source: https://modrinth.com/mod/mobfilter
+- Current listing observed 2026-09-15: Minecraft 26.2; Fabric and NeoForge; Apache-2.0; server-side/singleplayer.
+- Supports completely preventing selected mobs from spawning and contextual rules by biome/time/light.
+- Project status: strong `DEPENDENCY / CODE_CANDIDATE` for M0. It can provide an immediate robust external solution for vanilla spawn suppression while project-owned spawn/region rules are integrated.
+- Acceptance rule: no visible vanilla mob may leak into authored gameplay through normal natural spawn, imported structures or dependency spawn side effects.
 
 ## Alex's Mobs Continued
 
 - Source: https://modrinth.com/mod/alexs-mobs-continued
-- Current listing observed 2026-09-14: Fabric 26.2, client+server, GPL-3.0-only, Fabric API + CodxLib.
+- Current listing observed 2026-09-15: Fabric 26.2, client+server, GPL-3.0-only, Fabric API + CodxLib.
 - Carries the full Alex's Mobs roster with original models/textures/animations/behaviors.
+- The current Fabric build keeps the full roster rather than a reduced port.
 - Strong biome-specific pool includes examples such as grizzly bear, gazelle, crocodile, orca, gorilla, rattlesnake, hammerhead shark, komodo dragon, cave centipede, moose, seal, elephant, snow leopard, snapping turtle, catfish, rhinoceros, caiman and numerous fantastical creatures.
-- Project status: strong **dependency** for wildlife/secondary monsters. Do not turn all 116 creatures on by default; curate by region.
+- R01 shortlist: gazelle and bison for large open-meadow wildlife/resource roles; raccoon/crow for ambient life; grizzly for rare territorial danger; rattlesnake and cave centipede for readable low-level threats.
+- Project status: strong **dependency** for wildlife/secondary monsters. Do not turn all ~116 creatures on by default; curate by region.
 
 ## Nemo's Creatures
 
 - Source: https://modrinth.com/mod/nemos-creatures
-- Current listing observed 2026-09-14: Fabric 26.2, client+server, MIT.
-- Gallery exposes region-friendly hostile variants such as Mummy, Sand Spider, Scorched Creeper/Skeleton, Venomous Zombie/Skeleton/Spider/Creeper and Frozen mobs.
-- Project status: strong candidate for low-cost regional normal/enhanced enemy families while custom elites/bosses provide the stronger identity.
+- Current listing observed 2026-09-15: Fabric 26.2, client+server, MIT.
+- Important correction: current `26.2-2.0` explicitly removed **Mummy** and **Scorched Skeleton**. Do not design current content around old gallery/wiki references to those removed entities.
+- The mod still supplies biome-specific variants/creatures, but many are visually tied to vanilla hostile archetypes.
+- Project status: secondary candidate rather than a core ecology dependency. Use only creatures that remain visually strong under the project's no-vanilla-mob identity.
 
 ## Threateningly Mobs Continued
 
 - Source: https://modrinth.com/mod/threateningly-mobs-continued
-- Current listing observed 2026-09-14: Fabric 26.2, client+server, MIT.
+- Current listing observed 2026-09-15: Fabric 26.2, client+server, MIT.
 - Useful published heavy-creature placements include Nature Spirit in forests, Earthloong in forests/jungles, Desert Beetle and Armor of Desert in deserts/badlands, Beast Horseshoe Crab in oceans/beaches, Hydra in oceans/rivers/swamps, Steelboar in savannas/meadows/dark forests/badlands, Regalhart in meadows/taigas/forests, Riptooth in oceans at night and Flamehorn in savannas.
 - Summonable larger bosses include Titan Rabbit, Inferno, Terradragon and Abyss Fang.
-- Project status: strong **dependency/code candidate** for elites, field bosses and selected normal threats. Its palaces/dimension/progression are not automatically imported.
+- The companion wiki documents breedable/passive creatures that can replace vanilla resource animals. **Louxia** naturally fits plains/sunflower-plains-like environments, is passive/breedable and drops Louxia meat plus a luminous material; it is the current strongest R01 food-ecology candidate.
+- Other documented non-vanilla resource creatures such as Copas, Hippofish, Red Triplefish, Giant Sea Cucumber and Diplocaulus can support later hot/coastal/swamp regions instead of vanilla livestock/fish.
+- Project status: strong **dependency/code candidate** for custom food ecology, elites, field bosses and selected threats. Its original stats, loot, summon-stone progression, structures/dimension and default spawn frequencies are not automatically canonical.
 
 ## Mob Champions
 
@@ -157,7 +175,21 @@ Rules:
 - Source: https://modrinth.com/mod/mutant-monsters
 - Current Fabric 26.2 release observed; AGPL-3.0-only.
 - Provides polished large mutant Zombie/Skeleton/Creeper/Enderman-style encounters.
-- Project status: optional dependency/reference for rare corruption/event minibosses only. Not a preferred everyday roster because the visual identity remains strongly tied to vanilla mobs.
+- Project status: currently **not planned for normal world content** because its identity is explicitly derived from vanilla mobs. Keep only as a distant reference unless a later special corruption concept justifies it without undermining the no-vanilla ecology.
+
+---
+
+# Dungeon / structure sources
+
+## DeCubed Dungeons
+
+- Source: https://modrinth.com/datapack/dungeons%2B
+- Current listing observed 2026-09-15: Minecraft 26.2; Data Pack + Fabric/Forge/NeoForge/Quilt; server-side/singleplayer.
+- License: CC-BY-NC-SA-4.0.
+- Adds 30+ biome-specific underground dungeons/structures and also ships a loader-mod release.
+- Project use: strong **free private-use architecture/reference candidate** for dungeon shells and layout ideas.
+- Critical integration rule: its vanilla spawner types and standard vanilla dungeon loot are **not** adopted unchanged. Any selected shell is manually integrated/converted so project enemies, rewards, Lv rules and no-vanilla ecology remain authoritative.
+- R01 use: inspect lush/mouldy/forest-compatible or quarry-compatible structures as a shell/source for the first root-overgrown quarry dungeon rather than building a generic AI dungeon from scratch.
 
 ---
 
@@ -296,29 +328,33 @@ Planet Minecraft currently has multiple downloadable inn/tavern schematics with 
 
 # Mount candidates
 
+## Mount policy after vanilla-mob removal
+
+Visible mounts must use non-vanilla creature/model identities. Horse-centric projects may still supply useful permissive code/UX ideas, but ordinary horses, camels, pigs or other vanilla mobs are not restored merely because a riding library targets them.
+
 ## Icy's Better Horses
 
 - Current public listing observed: Minecraft 26.2, Fabric maintained, source linked, MIT license.
 - Features include horse progression, ownership/bonding, multiple breeds/genetics, tack, carts, command wheel, owned-horse roster and riding fixes.
-- Useful to study or reuse under license for differentiated ground mounts rather than cosmetic reskins.
+- Project status changed from direct visible-mount candidate to **CODE_CANDIDATE / REFERENCE**. Reuse/port generic ownership, bonding, roster or riding UX where worthwhile, but do not use vanilla horse presentation as final game content.
 
 ## Vehicle Upgrade
 
 - Current public listing observed: Minecraft 26.2 Fabric, MPL-2.0, source linked.
 - Focuses on mount/vehicle QoL and handling.
-- Candidate for dependency/reference rather than importing unrelated source.
+- Candidate for generic dependency/reference if its improvements work with custom rideable entities.
 
 ## Horse Combat Controls
 
 - GitHub project with MIT license and Mount & Blade-style horse steering/combat-control concept.
 - Version fit must be checked before adoption.
-- Useful architecture/interaction reference for combat mounts.
+- Useful architecture/interaction reference for custom combat mounts rather than a reason to reintroduce horses.
 
 ## Jasmine Dragons
 
 - Current listing observed for Minecraft 26.2 Fabric.
-- ARR, so treat primarily as behavior/reference unless terms permit dependency use.
-- Useful reference for large flying predators, mounted flight, dive/climb control and ranged breath attacks.
+- ARR, so treat primarily as behavior/reference unless terms permit normal dependency use.
+- Useful reference/candidate for large flying predators, mounted flight, dive/climb control and ranged breath attacks in later progression.
 
 ---
 
@@ -375,7 +411,7 @@ Prefer high-quality external builds/worlds. For every candidate classify whether
 
 ## Models / characters / monsters
 
-Important enemies do not ship as vanilla recolors. Prioritize models that support suitable conversion/topology, rigging, animations, textures and modification permission.
+Important enemies do not ship as vanilla recolors. Prioritize models that support suitable conversion/topology, rigging, animations, textures and modification permission. Under the current canon, vanilla living mobs are not part of normal visible world population.
 
 ## Code
 
