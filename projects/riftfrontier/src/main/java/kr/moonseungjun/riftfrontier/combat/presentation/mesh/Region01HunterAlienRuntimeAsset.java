@@ -1,6 +1,6 @@
 package kr.moonseungjun.riftfrontier.combat.presentation.mesh;
 
-import java.util.Set;
+import java.util.List;
 
 /** Exact-source field-review gate for the Quaternius CC0 Alien Hunter candidate. */
 public record Region01HunterAlienRuntimeAsset(SkinnedMeshAsset skinnedMesh, AnimationClipInventory animations) {
@@ -8,7 +8,7 @@ public record Region01HunterAlienRuntimeAsset(SkinnedMeshAsset skinnedMesh, Anim
     public static final int VERTEX_COUNT = 4227;
     public static final int TRIANGLE_COUNT = 7676;
     public static final int JOINT_COUNT = 43;
-    public static final Set<String> EXPECTED_CLIPS = Set.of(
+    public static final List<String> EXPECTED_CLIPS = List.of(
         "Death", "Duck", "HitReact", "Idle", "Jump", "Jump_Idle", "Jump_Land",
         "No", "Punch", "Run", "Walk", "Wave", "Weapon", "Yes"
     );
@@ -20,7 +20,7 @@ public record Region01HunterAlienRuntimeAsset(SkinnedMeshAsset skinnedMesh, Anim
         if (mesh.mesh().vertexCount() != VERTEX_COUNT || mesh.mesh().triangleCount() != TRIANGLE_COUNT || mesh.rig().jointCount() != JOINT_COUNT) {
             throw new IllegalArgumentException("Region 01 Hunter Alien source structure does not match inspection receipt");
         }
-        AnimationClipInventory clips = GltfAnimationImporter.importClips(sourceBytes, mesh.rig());
+        AnimationClipInventory clips = AnimationClipInventory.fromImported(GltfAnimationImporter.importClips(sourceBytes, mesh.rig()));
         clips.requireExactNames(EXPECTED_CLIPS);
         return new Region01HunterAlienRuntimeAsset(mesh, clips);
     }
