@@ -1,13 +1,12 @@
-name: Smoke earth-to-stars client resources
+name: Smoke earth-to-stars reboot client
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
-      - 'projects/earth-to-stars/src/main/resources/assets/earth_to_stars/models/**'
-      - 'projects/earth-to-stars/src/main/resources/assets/earth_to_stars/items/**'
-      - 'projects/earth-to-stars/src/main/resources/assets/earth_to_stars/textures/**'
+      - 'projects/earth-to-stars/src/reboot/resources/**'
+      - 'projects/earth-to-stars/build.gradle'
       - 'projects/earth-to-stars/gradle.properties'
       - '.github/workflows/smoke-earth-to-stars-client-resources.yml'
 
@@ -19,7 +18,7 @@ defaults:
     working-directory: projects/earth-to-stars
 
 jobs:
-  client-resource-smoke:
+  reboot-client-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -27,11 +26,11 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: '17'
           cache: gradle
       - name: Verify Xvfb
         run: command -v xvfb-run
-      - name: Run client model/resource smoke
+      - name: Run reboot client smoke
         shell: bash
         run: |
           set -euo pipefail
@@ -40,7 +39,7 @@ jobs:
           mkdir -p build/logs
 
           set +e
-          timeout --kill-after=15s 120s xvfb-run -a ./gradlew --no-daemon runClient --stacktrace 2>&1 | tee build/logs/client-resource-smoke.log
+          timeout --kill-after=15s 150s xvfb-run -a ./gradlew --no-daemon runClient --stacktrace 2>&1 | tee build/logs/reboot-client-smoke.log
           status=${PIPESTATUS[0]}
           set -e
 
@@ -49,20 +48,20 @@ jobs:
             exit "$status"
           fi
 
-          grep -q 'EARTH TO STARS 0.1.0-alpha.14 live-acceptance rescue systems loaded' build/logs/client-resource-smoke.log
-          grep -q 'NeoForge mod loading, version 26.2.0.76, for MC 26.2' build/logs/client-resource-smoke.log
+          grep -q 'EARTH TO STARS 0.2.0-alpha.2 physical VS starter-craft bootstrap loaded' build/logs/reboot-client-smoke.log
+          grep -q 'Forge mod loading, version 47.4.0, for MC 1.20.1' build/logs/reboot-client-smoke.log
 
-          if grep -Eqi 'Failed to load model earth_to_stars|IdentifierException: Non \[a-z0-9/\._-\] character|Cannot invoke "String\.charAt\(int\)" because "texture" is null|ObjGeometry.*(ERROR|Exception)|Unable to load model.*earth_to_stars|Missing texture references in model earth_to_stars|Missing texture.*earth_to_stars' build/logs/client-resource-smoke.log; then
-            echo 'EARTH TO STARS client model/resource error detected.'
+          if grep -Eqi 'NoClassDefFoundError|ClassNotFoundException: .*earthtostars|ModLoadingException|MixinTransformerError|Failed to load model earth_to_stars|Unable to load model.*earth_to_stars|Missing texture references in model earth_to_stars|Missing texture.*earth_to_stars' build/logs/reboot-client-smoke.log; then
+            echo 'EARTH TO STARS reboot client/runtime error detected.'
             exit 1
           fi
 
-          echo 'EARTH_TO_STARS_ALPHA14_CLIENT_RESOURCE_SMOKE_PASS'
+          echo 'EARTH_TO_STARS_REBOOT_CLIENT_SMOKE_PASS'
       - name: Upload client smoke log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: earth-to-stars-alpha14-client-resource-smoke-log
-          path: projects/earth-to-stars/build/logs/client-resource-smoke.log
+          name: earth-to-stars-reboot-client-smoke-${{ github.sha }}
+          path: projects/earth-to-stars/build/logs/reboot-client-smoke.log
           if-no-files-found: ignore
           retention-days: 7
