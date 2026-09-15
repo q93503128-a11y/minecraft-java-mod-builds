@@ -14,6 +14,7 @@ import dev.moonseungjun.fishinggame.profile.FishRecord;
 public final class ClientFishingState {
     private static int coins;
     private static int rodTier;
+    private static int rebirths;
     private static List<CatchEntry> catches = List.of();
     private static List<FishRecord> records = List.of();
     private static int stage = 3;
@@ -36,6 +37,7 @@ public final class ClientFishingState {
         List<FishRecord> previousRecords = records;
         int previousCoins = coins;
         int previousRodTier = rodTier;
+        int previousRebirths = rebirths;
         int previousCatchCount = catches.size();
         boolean wasInitialized = profileInitialized;
 
@@ -63,12 +65,15 @@ public final class ClientFishingState {
             FishingClientAudio.onSale();
         }
 
-        if (wasInitialized && payload.rodTier() > previousRodTier) {
+        if (wasInitialized && payload.rebirths() > previousRebirths) {
+            FishingClientAudio.onRebirth();
+        } else if (wasInitialized && payload.rodTier() > previousRodTier) {
             FishingClientAudio.onRodUpgrade();
         }
 
         coins = payload.coins();
         rodTier = payload.rodTier();
+        rebirths = payload.rebirths();
         catches = incoming;
         records = incomingRecords;
         profileInitialized = true;
@@ -100,6 +105,7 @@ public final class ClientFishingState {
 
     public static int coins() { return coins; }
     public static int rodTier() { return rodTier; }
+    public static int rebirths() { return rebirths; }
     public static List<CatchEntry> catches() { return catches; }
     public static List<FishRecord> records() { return records; }
     public static int stage() { return stage; }

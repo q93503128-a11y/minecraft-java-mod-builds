@@ -12,33 +12,53 @@ import dev.moonseungjun.fishinggame.fishing.CollectionRewards;
 import dev.moonseungjun.fishinggame.fishing.FishCatalog;
 import dev.moonseungjun.fishinggame.fishing.FishSpecies;
 
-public record PlayerFishingProfile(int coins, int rodTier, List<CatchEntry> catches, List<FishRecord> records) {
+public record PlayerFishingProfile(
+        int coins,
+        int rodTier,
+        List<CatchEntry> catches,
+        List<FishRecord> records,
+        int rebirths
+) {
     public static final int BAG_CAPACITY = 40;
 
     public static final Codec<PlayerFishingProfile> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.INT.optionalFieldOf("coins", 0).forGetter(PlayerFishingProfile::coins),
             Codec.INT.optionalFieldOf("rod_tier", 0).forGetter(PlayerFishingProfile::rodTier),
             CatchEntry.CODEC.listOf().optionalFieldOf("catches", List.of()).forGetter(PlayerFishingProfile::catches),
-            FishRecord.CODEC.listOf().optionalFieldOf("records", List.of()).forGetter(PlayerFishingProfile::records)
+            FishRecord.CODEC.listOf().optionalFieldOf("records", List.of()).forGetter(PlayerFishingProfile::records),
+            Codec.INT.optionalFieldOf("rebirths", 0).forGetter(PlayerFishingProfile::rebirths)
     ).apply(instance, PlayerFishingProfile::new));
+
+    public PlayerFishingProfile(int coins, int rodTier, List<CatchEntry> catches, List<FishRecord> records) {
+        this(coins, rodTier, catches, records, 0);
+    }
 
     public PlayerFishingProfile {
         coins = Math.max(0, coins);
         rodTier = Math.max(0, Math.min(2, rodTier));
         catches = catches == null ? List.of() : List.copyOf(catches);
         records = normalizeRecords(records == null ? List.of() : records, catches);
+        rebirths = Math.max(0, Math.min(FishingPrestige.MAX_REBIRTHS, rebirths));
     }
 
     public static PlayerFishingProfile empty() {
-        return new PlayerFishingProfile(0, 0, List.of(), List.of());
+        return new PlayerFishingProfile(0, 0, List.of(), List.of(), 0);
     }
 
     public boolean bagFull() {
         return catches.size() >= BAG_CAPACITY;
     }
 
-    public int bagValue() {
+    public int baseBagValue() {
         return catches.stream().mapToInt(CatchEntry::value).sum();
+    }
+
+    public int bagValue() {
+        return FishingPrestige.boostedSaleValue(baseBagValue(), rebirths);
+    }
+
+    public double saleMultiplier() {
+        return FishingPrestige.saleMultiplier(rebirths);
     }
 
     public Optional<FishRecord> recordFor(String speciesId) {
@@ -71,17 +91,23 @@ public record PlayerFishingProfile(int coins, int rodTier, List<CatchEntry> catc
                 safeAddCoins(coins, reward.totalCoins()),
                 rodTier,
                 nextCatches,
-                nextRecords
+                nextRecords,
+                rebirths
         );
     }
 
     public PlayerFishingProfile sellAll() {
         if (catches.isEmpty()) return this;
-        return new PlayerFishingProfile(safeAddCoins(coins, bagValue()), rodTier, List.of(), records);
+        return new PlayerFishingProfile(safeAddCoins(coins, bagValue()), rodTier, List.of(), records, rebirths);
     }
 
     public PlayerFishingProfile withRodTierAndCoins(int nextTier, int nextCoins) {
-        return new PlayerFishingProfile(nextCoins, nextTier, catches, records);
+        return new PlayerFishingProfile(nextCoins, nextTier, catches, records, rebirths);
+    }
+
+    public PlayerFishingProfile rebirth() {
+        if (rebirths >= FishingPrestige.MAX_REBIRTHS) return this;
+        return new PlayerFishingProfile(0, 0, List.of(), records, rebirths + 1);
     }
 
     private static int safeAddCoins(int current, int amount) {

@@ -15,7 +15,8 @@ public record ProfileSnapshotPayload(
         int coins,
         int rodTier,
         List<CatchEntry> catches,
-        List<FishRecord> records
+        List<FishRecord> records,
+        int rebirths
 ) implements CustomPacketPayload {
     public static final Type<ProfileSnapshotPayload> TYPE = new Type<>(FishingGameMod.id("profile_snapshot"));
     public static final StreamCodec<FriendlyByteBuf, ProfileSnapshotPayload> CODEC = StreamCodec.of(
@@ -24,12 +25,17 @@ public record ProfileSnapshotPayload(
     );
 
     public ProfileSnapshotPayload(PlayerFishingProfile profile) {
-        this(profile.coins(), profile.rodTier(), profile.catches(), profile.records());
+        this(profile.coins(), profile.rodTier(), profile.catches(), profile.records(), profile.rebirths());
+    }
+
+    public ProfileSnapshotPayload(int coins, int rodTier, List<CatchEntry> catches, List<FishRecord> records) {
+        this(coins, rodTier, catches, records, 0);
     }
 
     public ProfileSnapshotPayload {
         catches = List.copyOf(catches);
         records = List.copyOf(records);
+        rebirths = Math.max(0, rebirths);
     }
 
     private static void encode(FriendlyByteBuf buf, ProfileSnapshotPayload payload) {
@@ -50,6 +56,7 @@ public record ProfileSnapshotPayload(
             buf.writeVarInt(record.bestWeightGrams());
             buf.writeVarInt(record.bestLengthMm());
         }
+        buf.writeVarInt(payload.rebirths);
     }
 
     private static ProfileSnapshotPayload decode(FriendlyByteBuf buf) {
@@ -67,7 +74,8 @@ public record ProfileSnapshotPayload(
         for (int i = 0; i < recordSize; i++) {
             records.add(new FishRecord(buf.readUtf(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
         }
-        return new ProfileSnapshotPayload(coins, rodTier, catches, records);
+        int rebirths = Math.max(0, buf.readVarInt());
+        return new ProfileSnapshotPayload(coins, rodTier, catches, records, rebirths);
     }
 
     @Override

@@ -39,7 +39,7 @@ jobs:
 
       - name: Inspect playable JAR
         run: |
-          JAR="build/libs/fishing-game-0.1.0-alpha.18.jar"
+          JAR="build/libs/fishing-game-0.1.0-alpha.19.jar"
           test -s "$JAR"
           jar tf "$JAR" | grep -q '^fabric.mod.json$'
           jar tf "$JAR" | grep -q '^fishinggame.mixins.json$'
@@ -49,7 +49,10 @@ jobs:
           jar tf "$JAR" | grep -q '^dev/moonseungjun/fishinggame/fishing/CollectionRewards.class$'
           jar tf "$JAR" | grep -q '^dev/moonseungjun/fishinggame/profile/FishRecord.class$'
           jar tf "$JAR" | grep -q '^dev/moonseungjun/fishinggame/profile/PlayerFishingProfile.class$'
+          jar tf "$JAR" | grep -q '^dev/moonseungjun/fishinggame/profile/FishingPrestige.class$'
+          jar tf "$JAR" | grep -q '^dev/moonseungjun/fishinggame/progression/FishingRebirthService.class$'
           jar tf "$JAR" | grep -q '^dev/moonseungjun/fishinggame/progression/FishingRodVisuals.class$'
+          jar tf "$JAR" | grep -q '^dev/moonseungjun/fishinggame/network/RebirthPayload.class$'
           jar tf "$JAR" | grep -q '^dev/moonseungjun/fishinggame/client/BestiaryScreen.class$'
           for LOCATION in lakeside coast deep_sea; do
             jar tf "$JAR" | grep -q "^data/fishinggame/dimension/$LOCATION.json$"
@@ -101,7 +104,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: fishing-game-0.1.0-alpha.18-build
+          name: fishing-game-0.1.0-alpha.19-build
           path: |
             projects/fishing-game/build/libs/*.jar
             projects/fishing-game/build/libs/*.sha256

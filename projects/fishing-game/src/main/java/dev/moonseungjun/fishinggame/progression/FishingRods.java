@@ -22,6 +22,10 @@ public final class FishingRods {
         return next < RODS.size() ? RODS.get(next) : null;
     }
 
+    public static int maxTier() {
+        return RODS.size() - 1;
+    }
+
     public static List<RodDefinition> all() {
         return RODS;
     }

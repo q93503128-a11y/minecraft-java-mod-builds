@@ -54,6 +54,11 @@ public final class FishingClientAudio {
         play(SoundEvents.PLAYER_LEVELUP, 0.58f, 1.03f);
     }
 
+    public static void onRebirth() {
+        play(SoundEvents.AMETHYST_BLOCK_CHIME, 0.62f, 0.88f);
+        play(SoundEvents.PLAYER_LEVELUP, 0.72f, 1.28f);
+    }
+
     private static void play(SoundEvent sound, float volume, float pitch) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player != null) {

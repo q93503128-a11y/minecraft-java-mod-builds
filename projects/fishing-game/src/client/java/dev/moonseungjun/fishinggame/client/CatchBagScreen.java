@@ -6,8 +6,10 @@ import dev.moonseungjun.fishinggame.fishing.FishCatalog;
 import dev.moonseungjun.fishinggame.fishing.FishSizeGrade;
 import dev.moonseungjun.fishinggame.fishing.FishSpecies;
 import dev.moonseungjun.fishinggame.network.BuyRodPayload;
+import dev.moonseungjun.fishinggame.network.RebirthPayload;
 import dev.moonseungjun.fishinggame.network.SellAllPayload;
 import dev.moonseungjun.fishinggame.profile.CatchEntry;
+import dev.moonseungjun.fishinggame.profile.FishingPrestige;
 import dev.moonseungjun.fishinggame.profile.PlayerFishingProfile;
 import dev.moonseungjun.fishinggame.progression.FishingRods;
 import dev.moonseungjun.fishinggame.progression.RodDefinition;
@@ -24,7 +26,7 @@ public final class CatchBagScreen extends Screen {
     private int panelX;
     private int panelY;
     private KenneyButton sellButton;
-    private KenneyButton upgradeButton;
+    private KenneyButton progressionButton;
 
     public CatchBagScreen() {
         super(Component.literal("어획 가방"));
@@ -39,14 +41,18 @@ public final class CatchBagScreen extends Screen {
                 ClientPlayNetworking.send(new SellAllPayload(true));
             }
         });
-        upgradeButton = new KenneyButton(panelX + 205, panelY + 243, Component.literal("낚싯대 강화"), () -> {
+        progressionButton = new KenneyButton(panelX + 205, panelY + 243, Component.literal("낚싯대 강화"), () -> {
             RodDefinition next = FishingRods.nextAfter(ClientFishingState.rodTier());
-            if (next != null && ClientPlayNetworking.canSend(BuyRodPayload.TYPE)) {
-                ClientPlayNetworking.send(new BuyRodPayload(next.tier()));
+            if (next != null) {
+                if (ClientPlayNetworking.canSend(BuyRodPayload.TYPE)) {
+                    ClientPlayNetworking.send(new BuyRodPayload(next.tier()));
+                }
+            } else if (ClientPlayNetworking.canSend(RebirthPayload.TYPE)) {
+                ClientPlayNetworking.send(new RebirthPayload(true));
             }
         });
         addRenderableWidget(sellButton);
-        addRenderableWidget(upgradeButton);
+        addRenderableWidget(progressionButton);
     }
 
     @Override
@@ -63,7 +69,9 @@ public final class CatchBagScreen extends Screen {
         RodDefinition current = FishingRods.byTier(ClientFishingState.rodTier());
         RodDefinition next = FishingRods.nextAfter(ClientFishingState.rodTier());
         int coins = ClientFishingState.coins();
-        int bagValue = catches.stream().mapToInt(CatchEntry::value).sum();
+        int rebirths = ClientFishingState.rebirths();
+        int baseBagValue = catches.stream().mapToInt(CatchEntry::value).sum();
+        int bagValue = FishingPrestige.boostedSaleValue(baseBagValue, rebirths);
 
         FishingUiTheme.drawHeader(
                 graphics,
@@ -119,27 +127,49 @@ public final class CatchBagScreen extends Screen {
 
         int rodX = panelX + 278;
         graphics.text(font, "현재", rodX, panelY + 91, FishingUiTheme.TEXT_SECONDARY, false);
-        graphics.text(font, current.displayName(), rodX, panelY + 106, FishingUiTheme.ACCENT, true);
+        String rodName = current.displayName() + (rebirths > 0 ? " · R" + rebirths : "");
+        graphics.text(font, rodName, rodX, panelY + 106, FishingUiTheme.ACCENT, true);
         graphics.text(font, "힘  x" + String.format("%.2f", current.strength()), rodX, panelY + 128, FishingUiTheme.TEXT_PRIMARY, false);
         graphics.text(font, "제어  +" + Math.round(current.controlBonus() * 100) + "%", rodX, panelY + 145, FishingUiTheme.TEXT_PRIMARY, false);
         graphics.text(font, "행운  +" + Math.round(current.luck() * 100) + "%", rodX, panelY + 162, FishingUiTheme.TEXT_PRIMARY, false);
+        graphics.text(
+                font,
+                "환생 " + rebirths + "회 · 판매 x" + String.format("%.2f", FishingPrestige.saleMultiplier(rebirths)),
+                rodX,
+                panelY + 179,
+                rebirths > 0 ? FishingUiTheme.MONEY : FishingUiTheme.TEXT_MUTED,
+                false
+        );
 
         if (next != null) {
-            graphics.text(font, "다음", rodX, panelY + 188, FishingUiTheme.TEXT_SECONDARY, false);
-            graphics.text(font, next.displayName(), rodX, panelY + 203, FishingUiTheme.TEXT_PRIMARY, false);
+            graphics.text(font, "다음", rodX, panelY + 196, FishingUiTheme.TEXT_SECONDARY, false);
+            graphics.text(font, next.displayName(), rodX, panelY + 211, FishingUiTheme.TEXT_PRIMARY, false);
             boolean affordable = coins >= next.price();
             graphics.text(
                     font,
                     next.price() + " 코인",
                     rodX,
-                    panelY + 220,
+                    panelY + 226,
                     affordable ? FishingUiTheme.SUCCESS : FishingUiTheme.DANGER,
                     false
             );
-            upgradeButton.active = affordable;
+            progressionButton.setMessage(Component.literal("낚싯대 강화"));
+            progressionButton.active = affordable;
         } else {
-            graphics.text(font, "최고 등급 낚싯대", rodX, panelY + 195, FishingUiTheme.SUCCESS, false);
-            upgradeButton.active = false;
+            int cost = FishingPrestige.nextCost(rebirths);
+            graphics.text(font, "다음 환생", rodX, panelY + 196, FishingUiTheme.TEXT_SECONDARY, false);
+            graphics.text(font, cost + " 코인", rodX, panelY + 211, coins >= cost ? FishingUiTheme.SUCCESS : FishingUiTheme.DANGER, false);
+            boolean bagReady = catches.isEmpty();
+            graphics.text(
+                    font,
+                    bagReady ? "초기화 후 판매 +30%" : "가방을 먼저 판매하세요",
+                    rodX,
+                    panelY + 226,
+                    bagReady ? FishingUiTheme.MONEY : FishingUiTheme.WARNING,
+                    false
+            );
+            progressionButton.setMessage(Component.literal("환생하기"));
+            progressionButton.active = bagReady && coins >= cost;
         }
         sellButton.active = !catches.isEmpty();
     }

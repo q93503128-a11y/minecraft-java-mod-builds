@@ -25,6 +25,6 @@ public final class FishingProfiles {
 
     public static void set(ServerPlayer player, PlayerFishingProfile profile) {
         player.setAttached(PROFILE, profile);
-        FishingRodVisuals.refreshEquipped(player, FishingRods.byTier(profile.rodTier()));
+        FishingRodVisuals.refreshEquipped(player, FishingRods.byTier(profile.rodTier()), profile.rebirths());
     }
 }

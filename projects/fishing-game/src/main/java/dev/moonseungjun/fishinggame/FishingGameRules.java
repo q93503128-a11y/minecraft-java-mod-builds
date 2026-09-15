@@ -2,6 +2,7 @@ package dev.moonseungjun.fishinggame;
 
 import dev.moonseungjun.fishinggame.fishing.FishingSessionManager;
 import dev.moonseungjun.fishinggame.profile.FishingProfiles;
+import dev.moonseungjun.fishinggame.profile.PlayerFishingProfile;
 import dev.moonseungjun.fishinggame.progression.FishingRodVisuals;
 import dev.moonseungjun.fishinggame.progression.FishingRods;
 import dev.moonseungjun.fishinggame.world.FishingWorldManager;
@@ -22,7 +23,12 @@ public final class FishingGameRules {
             ServerPlayer player = handler.getPlayer();
             player.setGameMode(GameType.ADVENTURE);
             keepPlayerStable(player);
-            FishingRodVisuals.ensureEquipped(player, FishingRods.byTier(FishingProfiles.get(player).rodTier()));
+            PlayerFishingProfile profile = FishingProfiles.get(player);
+            FishingRodVisuals.ensureEquipped(
+                    player,
+                    FishingRods.byTier(profile.rodTier()),
+                    profile.rebirths()
+            );
             FishingWorldManager.prepareAndPlacePlayer(player, server);
             FishingSessionManager.syncProfile(player);
             FishingSessionManager.syncIdle(player);
