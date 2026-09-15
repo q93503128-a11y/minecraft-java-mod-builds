@@ -39,32 +39,73 @@ function Require-Command([string]$Name) {
     }
 }
 
-function Download-File([string]$Url, [string]$Target) {
-    if (Test-Path $Target) {
-        Write-Host "Using existing download: $Target"
-        return
+function Get-Sha256([string]$Path) {
+    return (Get-FileHash -Algorithm SHA256 -Path $Path).Hash.ToLowerInvariant()
+}
+
+function Download-Fresh([string]$Url, [string]$Target) {
+    $part = "$Target.part"
+    if (Test-Path $part) {
+        Remove-Item -Force $part
     }
 
     Write-Host "Downloading $Url"
-    & curl.exe -L --fail --retry 5 --retry-delay 3 -o $Target $Url
+    & curl.exe -L --fail --retry 5 --retry-delay 3 -o $part $Url
     if ($LASTEXITCODE -ne 0) {
         throw "Download failed with curl exit code $LASTEXITCODE: $Url"
     }
+    Move-Item -Force $part $Target
 }
 
-function Assert-Sha256([string]$Path, [string]$Expected) {
-    $actual = (Get-FileHash -Algorithm SHA256 -Path $Path).Hash.ToLowerInvariant()
-    if ($actual -ne $Expected.ToLowerInvariant()) {
-        throw "SHA-256 mismatch for $Path`nexpected=$Expected`nactual=$actual"
+function Ensure-VerifiedShard([hashtable]$Shard) {
+    $target = Join-Path $downloads $Shard.Name
+    if (Test-Path $target) {
+        $existingHash = Get-Sha256 $target
+        if ($existingHash -eq $Shard.Sha256.ToLowerInvariant()) {
+            Write-Host "Using verified existing download: $target"
+            return $target
+        }
+        Write-Warning "Existing $($Shard.Name) failed SHA-256. Deleting the incomplete/corrupt TEST download and downloading it again."
+        Remove-Item -Force $target
     }
-    Write-Host "SHA-256 OK: $(Split-Path $Path -Leaf)"
+
+    Download-Fresh $Shard.Url $target
+    $actual = Get-Sha256 $target
+    if ($actual -ne $Shard.Sha256.ToLowerInvariant()) {
+        Remove-Item -Force $target -ErrorAction SilentlyContinue
+        throw "SHA-256 mismatch after fresh download for $target`nexpected=$($Shard.Sha256)`nactual=$actual"
+    }
+    Write-Host "SHA-256 OK: $($Shard.Name)"
+    return $target
+}
+
+function Ensure-ResourcePack([hashtable]$Resource) {
+    $target = Join-Path $downloads $Resource.Name
+    if (Test-Path $target) {
+        $existingSize = (Get-Item $target).Length
+        if ($existingSize -eq $Resource.Size) {
+            Write-Host "Using existing resources.zip with the official release size: $target"
+            return $target
+        }
+        Write-Warning "Existing resources.zip has an unexpected size. Deleting the TEST download and downloading it again."
+        Remove-Item -Force $target
+    }
+
+    Download-Fresh $Resource.Url $target
+    $actualSize = (Get-Item $target).Length
+    if ($actualSize -ne $Resource.Size) {
+        Remove-Item -Force $target -ErrorAction SilentlyContinue
+        throw "Unexpected resources.zip size after fresh download. expected=$($Resource.Size) actual=$actualSize"
+    }
+    Write-Host 'resources.zip size matches the official GitHub release metadata. No official release digest is published for this asset.'
+    return $target
 }
 
 Require-Command 'curl.exe'
 Require-Command 'tar.exe'
 
-New-Item -ItemType Directory -Force -Path $downloads | Out-Null
 New-Item -ItemType Directory -Force -Path $Root | Out-Null
+New-Item -ItemType Directory -Force -Path $downloads | Out-Null
 
 if (Test-Path $worldOut) {
     $existing = @(Get-ChildItem -Force -Path $worldOut -ErrorAction SilentlyContinue)
@@ -79,25 +120,18 @@ Write-Host 'Drehmal: APOTHEOSIS v2.2.2f migration-copy preparation'
 Write-Host 'Expected official payload: ~3.99 GB compressed / ~5.14 GB map uncompressed.'
 Write-Host 'Keep substantially more free disk space for downloads, extraction, Minecraft migration backup, and logs.'
 
+$verifiedShardPaths = @()
 foreach ($shard in $shards) {
-    $target = Join-Path $downloads $shard.Name
-    Download-File $shard.Url $target
-    Assert-Sha256 $target $shard.Sha256
+    $verifiedShardPaths += Ensure-VerifiedShard $shard
 }
 
+$resourceTarget = $null
 if (-not $SkipResourcePack) {
-    $resourceTarget = Join-Path $downloads $resource.Name
-    Download-File $resource.Url $resourceTarget
-    $actualSize = (Get-Item $resourceTarget).Length
-    if ($actualSize -ne $resource.Size) {
-        throw "Unexpected resources.zip size. expected=$($resource.Size) actual=$actualSize"
-    }
-    Write-Host 'resources.zip size matches the official GitHub release metadata. No official release digest is published for this asset.'
+    $resourceTarget = Ensure-ResourcePack $resource
 }
 
-foreach ($shard in $shards) {
-    $path = Join-Path $downloads $shard.Name
-    Write-Host "Extracting $($shard.Name) into the shared test output..."
+foreach ($path in $verifiedShardPaths) {
+    Write-Host "Extracting $(Split-Path $path -Leaf) into the shared test output..."
     & tar.exe -xf $path -C $worldOut
     if ($LASTEXITCODE -ne 0) {
         throw "Extraction failed with tar exit code $LASTEXITCODE: $path"
@@ -114,7 +148,7 @@ Write-Host ''
 Write-Host 'Official shard download/hash checks: PASS'
 Write-Host 'Shard assembly: PASS'
 Write-Host "Detected Minecraft save root: $saveRoot"
-Write-Host "Resource pack: $(if ($SkipResourcePack) { 'SKIPPED' } else { Join-Path $downloads $resource.Name })"
+Write-Host "Resource pack: $(if ($SkipResourcePack) { 'SKIPPED' } else { $resourceTarget })"
 Write-Host ''
 Write-Host 'NEXT: copy the detected save root into a Minecraft 26.2 TEST saves directory. Do not overwrite the original 1.20.1 source.'
 Write-Host 'Then follow docs/34_DREHMAL_26_2_MIGRATION_AUDIT.md. This script does NOT claim Minecraft 26.2 migration success.'
