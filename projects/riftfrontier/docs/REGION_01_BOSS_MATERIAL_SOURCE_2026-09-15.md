@@ -20,7 +20,13 @@ Poly Haven's own download link exposed from the canonical asset page on 2026-09-
 
 `https://dl.polyhaven.org/file/ph-assets/Textures/png/4k/dark_rock/dark_rock_diff_4k.png`
 
-The link is the 4K PNG diffuse map served by Poly Haven's download host. Do not substitute a search-engine mirror, screenshot, preview thumbnail, or re-encoded copy.
+The link is the 4K PNG diffuse map served by Poly Haven's download host. Do not substitute a search-engine mirror, screenshot, preview thumbnail, re-encoded copy, or lower-resolution file merely to bypass an execution-environment transfer limit.
+
+The machine-readable provenance/intake receipt is:
+
+`assets/sources/region_01_boss_dark_rock.source.json`
+
+That receipt is intentionally non-accepting: until exact source bytes are acquired it carries no source SHA-256 and cannot authorize a runtime material.
 
 ## Transfer receipt — 2026-09-15
 
@@ -48,4 +54,4 @@ A source/license page alone is not visual approval. The existing `Region01BossMa
 
 ## Next implementation batch
 
-Fetch the exact pinned PNG in an environment that can transfer the 94 MB-class source body, record the actual byte size and SHA-256, decode it, derive the first legal Dragon Evolved runtime material candidate, wire it through the existing material preparation/render path, run the normal Riftfrontier verification stack, and produce a field-review JAR. If the source host still cannot be fetched, do not fabricate bytes/hashes and do not restart material-source research; move to another production-visible Region 01 task that is independent of this transfer gate.
+Fetch the exact pinned PNG in an environment that can transfer the 94 MB-class source body, record the actual byte size and SHA-256 in `region_01_boss_dark_rock.source.json`, decode it, derive the first legal Dragon Evolved runtime material candidate, wire it through the existing material preparation/render path, run the normal Riftfrontier verification stack, and produce a field-review JAR. If the source host still cannot be fetched, do not fabricate bytes/hashes and do not restart material-source research; move to another production-visible Region 01 task that is independent of this transfer gate.
