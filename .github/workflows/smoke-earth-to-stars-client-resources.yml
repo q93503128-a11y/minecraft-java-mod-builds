@@ -6,9 +6,12 @@ on:
     branches: [main]
     paths:
       - 'projects/earth-to-stars/src/fabric/**'
+      - 'projects/earth-to-stars/src/main/java/kr/moonseungjun/earthtostars/ship/**'
       - 'projects/earth-to-stars/build.gradle'
       - 'projects/earth-to-stars/gradle.properties'
       - 'projects/earth-to-stars/settings.gradle'
+      - 'projects/earth-to-stars/gradle/**'
+      - 'projects/earth-to-stars/tools/validate_fabric_standalone.py'
       - '.github/workflows/smoke-earth-to-stars-client-resources.yml'
 
 permissions:
