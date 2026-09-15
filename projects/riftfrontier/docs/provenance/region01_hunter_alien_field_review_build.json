@@ -1,0 +1,62 @@
+{
+  "schema": "riftfrontier.field_review_build_receipt.v1",
+  "subject": "region_01_hunter_alien",
+  "purpose": "human_field_review_only",
+  "source_commit": "84fd2499b7892707902f596006792a259a045cd1",
+  "source_asset": {
+    "creator": "Quaternius",
+    "asset": "Alien",
+    "license": "CC0",
+    "gltf_sha256": "e6fec42f9d4db3c3177da9027c5cdb2c4abd71cb934ea4f4788aea155f267124"
+  },
+  "github_actions": {
+    "workflow": "Build Riftfrontier",
+    "run_id": 34998970438,
+    "conclusion": "success",
+    "verified_steps": [
+      "toolchain",
+      "asset_intake_tool_tests",
+      "tests_and_clean_build",
+      "required_gametest_gate",
+      "dedicated_server_smoke",
+      "xvfb_client_initialization_smoke",
+      "executable_jar_inspection",
+      "deliverable_upload"
+    ]
+  },
+  "deliverable": {
+    "artifact_id": 10409501069,
+    "artifact_name": "riftfrontier-0.1.0-alpha.1-deliverables",
+    "archive_digest": "sha256:032fee410643ba10b50c5a8c4a8cdaae59dbf4cfe6e2991c49b7acec5436ded5",
+    "jar": "riftfrontier-0.1.0-alpha.1.jar",
+    "jar_sha256": "794d76bb1490ffeb6f9063e25ebf3f4086b33b1ee9ac3a433b552b764c6c6ff6"
+  },
+  "field_review": {
+    "spawn_command": "/summon riftfrontier:region_01_hunter_field_review",
+    "required_observations": [
+      "scale_relative_to_player_and_region_01_combat_space",
+      "forward_facing_and_ground_alignment",
+      "texture_uv_integrity",
+      "idle_deformation",
+      "walk_deformation",
+      "run_deformation",
+      "punch_deformation_and_attack_readability",
+      "hitreact_deformation",
+      "death_deformation",
+      "silhouette_readability_at_near_combat_and_medium_distance"
+    ],
+    "human_visual_acceptance": false,
+    "selected_for_production": false,
+    "natural_encounter_integration": false
+  },
+  "verification_vocabulary": {
+    "CODE_REVIEWED": "YES",
+    "TESTED": "YES",
+    "BUILD_VERIFIED": "YES",
+    "JAR_PRODUCED": "YES",
+    "PLAYTESTED": "NO",
+    "MULTIPLAYER_TESTED": "NO",
+    "HUMAN_CREATURE_ACCEPTANCE": "NO"
+  },
+  "next_boundary": "Do not change Hunter role semantics or replace the natural Zombie behaviour proxy until human Minecraft review accepts Alien scale/facing/grounding/UV/animation readability. Continue independent visible Region 01 completion work while that review is pending."
+}
