@@ -29,6 +29,16 @@ def main() -> None:
         for required in (
             "META-INF/mods.toml",
             "kr/moonseungjun/earthtostars/EarthToStars.class",
+            "kr/moonseungjun/earthtostars/EarthToStarsContent.class",
+            "kr/moonseungjun/earthtostars/StarterCraftDeploymentItem.class",
+            "kr/moonseungjun/earthtostars/StarterCraftDeploymentService.class",
+            "kr/moonseungjun/earthtostars/StarterCraftControlManager.class",
+            "kr/moonseungjun/earthtostars/StarterControlNodeBlock.class",
+            "assets/earth_to_stars/lang/en_us.json",
+            "assets/earth_to_stars/lang/ko_kr.json",
+            "assets/earth_to_stars/models/item/starter_craft_deployer.json",
+            "assets/earth_to_stars/models/block/starter_flight_core.json",
+            "assets/earth_to_stars/models/block/starter_control_node.json",
             "pack.mcmeta",
         ):
             if required not in names:
