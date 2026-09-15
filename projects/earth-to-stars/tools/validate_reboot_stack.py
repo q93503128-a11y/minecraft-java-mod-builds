@@ -27,7 +27,7 @@ def main() -> None:
         'org.valkyrienskies.core:util:${vs_core_version}',
         'org.valkyrienskies:valkyrienskies-120-forge:${valkyrien_skies_version}',
         "maven.modrinth:vs-genesis:1.20.1-0.7.3",
-        "maven.modrinth:zps:1.20.1-2.4.0",
+        "maven.modrinth:zps:1.20.1-2.5.1",
         "maven.modrinth:zpl:1.20.1-1.5.0",
     ):
         require(build, needle)
@@ -37,6 +37,7 @@ def main() -> None:
         "forge_version=1.20.1-47.4.0",
         "valkyrien_skies_version=2.4.10",
         "vs_core_version=1.1.0+1d4a7373e9",
+        "zps_version=1.20.1-2.5.1",
         "mod_version=0.2.0-alpha.2",
     ):
         require(props, needle)
@@ -107,7 +108,7 @@ def main() -> None:
         if forbidden in reboot_text:
             raise SystemExit(f"REBOOT STACK VALIDATION FAILED: custom vehicle implementation leaked into reboot: {forbidden}")
 
-    print("REBOOT STACK VALIDATION OK: real VS block starter craft + ZPS cockpit + ZPL propulsion/gyro; legacy custom ship physics excluded")
+    print("REBOOT STACK VALIDATION OK: real VS block starter craft + ZPS 2.5.1 cockpit/power + ZPL propulsion/gyro; legacy custom ship physics excluded")
 
 
 if __name__ == "__main__":
