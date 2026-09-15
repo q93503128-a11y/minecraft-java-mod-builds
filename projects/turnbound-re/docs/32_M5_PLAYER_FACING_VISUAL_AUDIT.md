@@ -21,7 +21,7 @@ Date: 2026-09-15
 | Battle Command frame | Kenney UI frame family | SOURCE CLEAN | screenshot audit |
 | Battle Command number prompts | Kenney `Input Prompts Pixel` 1.0, original `tile_0051`~`tile_0056` bytes renamed to `key_1`~`key_6` | SOURCE CLEAN | 실화면 크기/가독성 확인 |
 | Battle Command input | top-row `1`~`6` screen-local shortcuts, glyph와 실제 입력 일치 | CODE REVIEWED | runtime keyboard test |
-| Battle action identity | server snapshot action name/slot/energy + tooltip | VISUAL GATE PENDING | 충분한 의미를 주는 실제 외부 action-icon family 또는 Minecraft-runtime semantic icon이 필요한지 screenshot 기준 결정. AI 자작 icon 금지 |
+| Battle action identity | Mojang runtime semantic `ItemStack` + server snapshot action name/slot/energy/tooltip | SOURCE CLEAN / VISUAL GATE PENDING | 480x270 포함 screenshot에서 item silhouette와 text가 실제로 충분히 구분되는지 확인 |
 | Target chooser buttons | Kenney frame + Kenney number prompt + authoritative participant name | SOURCE CLEAN / VISUAL GATE PENDING | 실제 전투 밀도에서 가독성 확인 |
 | Live-world target marker | Minecraft nametag text state, server-published eligible/selected marker facts | SOURCE CLEAN | world clutter/readability playtest |
 | Virtual participant target marker | Kenney semantic frame on logical stage slot | SOURCE CLEAN | stage readability playtest |
@@ -83,6 +83,19 @@ license는 `third_party/licenses/Kenney_Input_Prompts_Pixel_CC0.txt`에 보존�
 이 shortcut은 GUI-local input이며 별도 global TURNBOUND combat key mapping을 등록하지 않는다.
 서버가 publish한 action/eligible target을 선택하는 UI shortcut일 뿐 command legality/damage/reward 권한을 클라이언트로 이전하지 않는다.
 
+### Battle action identity
+
+이전에는 action identity가 action name / slot / energy / tooltip 텍스트에 거의 전적으로 의존했다.
+
+현재는 `vertical_actions.json`의 8캐릭터 32개 active action을 `docs/33_M5_ACTION_VISUAL_ASSET_GATE.md`의 정본 mapping에 따라 실제 Mojang runtime item으로 연결한다.
+
+- action picker에서는 각 action button 위 compact identity icon으로 표시,
+- action timeline에서는 현재 실행 중 action의 compact identity icon으로 표시,
+- unknown action은 generic sword/star/magic icon을 만들지 않고 icon 없이 fail-closed,
+- gameplay 수치/타깃/상태/판정은 그대로 server-authoritative data가 정본이다.
+
+TURNBOUND 전용 skill icon PNG는 추가하지 않았다.
+
 ## 4. 금지 회귀
 
 다음은 이후 작업에서도 금지한다.
@@ -93,14 +106,15 @@ license는 `third_party/licenses/Kenney_Input_Prompts_Pixel_CC0.txt`에 보존�
 - 외부 icon pack을 눈으로 본 뒤 비슷한 TURNBOUND icon을 새로 그림.
 - 임시 자작 RPG panel을 Kenney family 사이에 섞음.
 - Mojang runtime item을 visual identity로 사용한다는 이유로 vanilla gameplay component/effect를 TURNBOUND 시스템에 몰래 상속.
+- 모르는 action에 generic sword/star/magic icon을 자동 fallback으로 붙임.
 
 상태 표시용 문자나 텍스트는 정보 전달 보조로 사용할 수 있지만, **필요한 artwork가 존재해야 하는 자리를 영구적으로 대신할 수 없다.**
 
 ## 5. 다음 visual gate
 
 다음 우선순위:
-1. Battle action identity가 text+tooltip만으로 실제 480x270 / 일반 GUI Scale에서 충분히 읽히는지 screenshot audit.
-2. 부족하면 먼저 **하나의 실제 외부 action-icon family** 또는 의미가 명확한 Mojang runtime semantic item mapping을 source/license와 함께 고정.
+1. 현재 Mojang runtime action mapping이 실제 480x270 / 일반 GUI Scale에서 action 간 silhouette를 충분히 구분하는지 screenshot audit.
+2. 특정 action의 의미가 Mojang item으로 충분히 전달되지 않으면 그 action만 억지 mapping으로 유지하지 말고 **하나의 실제 외부 action-icon family** gate를 다시 연다.
 3. Expedition Journal encounter row가 텍스트-only 카드처럼 느껴지면 같은 방식으로 외부/Mojang visual source gate를 먼저 통과.
 4. Drehmal 26.2 migration 후 실제 world에서 anchor/marker/UI의 시야 충돌 검사.
 
