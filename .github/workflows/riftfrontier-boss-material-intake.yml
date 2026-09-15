@@ -10,7 +10,7 @@ on:
       - 'projects/riftfrontier/tools/derive_region01_boss_material.py'
 
 permissions:
-  contents: read
+  contents: write
 
 defaults:
   run:
@@ -22,6 +22,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - name: Acquire exact pinned source bytes
         shell: bash
         run: |
@@ -108,3 +110,22 @@ jobs:
             projects/riftfrontier/build/material-intake/dragon_evolved_dark_rock_v1.provenance.json
           if-no-files-found: error
           retention-days: 7
+      - name: Publish exact field-review candidate to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          resource="src/main/resources/assets/riftfrontier/textures/entity/region_01/dragon_evolved_dark_rock_v1.png"
+          provenance="assets/sources/region_01_boss_dark_rock.derived.v1.json"
+          mkdir -p "$(dirname "$resource")" "$(dirname "$provenance")"
+          cp build/material-intake/dragon_evolved_dark_rock_v1.png "$resource"
+          cp build/material-intake/dragon_evolved_dark_rock_v1.provenance.json "$provenance"
+          test "$(sha256sum "$resource" | cut -d' ' -f1)" = "4a82cd2765a44acccb2842b0d9bf77bdad96bf72bc5df62fba0184ccf9bd46fd"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add "$resource" "$provenance"
+          if git diff --cached --quiet; then
+            echo 'Derived field-review candidate already published.'
+            exit 0
+          fi
+          git commit -m 'riftfrontier: publish boss material field-review candidate [skip ci]'
+          git push origin HEAD:main
