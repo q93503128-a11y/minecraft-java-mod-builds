@@ -141,17 +141,25 @@ The repository already contains Kenney Space Kit CC0 source meshes for the start
 
 # Verification state
 
-At the start of this rebase, the required gates are tracked independently:
+The first Fabric standalone foundation gate is now closed:
 
 - `CODE REVIEWED`: Fabric build boundary, loader-neutral kernel reuse boundary and external-dependency policy reviewed.
-- `TESTED`: pending first Fabric CI run for the retained pure-Java kernel tests.
-- `BUILD VERIFIED`: pending first Fabric CI run.
-- `JAR PRODUCED`: pending first Fabric CI run.
-- `DEDICATED FABRIC BOOT`: pending first Fabric CI run.
-- `CLIENT FABRIC SMOKE`: pending first Fabric client workflow.
-- `PLAYTESTED`: **NO** for the Fabric rebase.
+- `TESTED`: retained loader-neutral ship kernel regression suite passed in Fabric CI.
+- `BUILD VERIFIED`: `Build earth-to-stars Fabric 26.2` run `34953067177` passed clean test/build.
+- `JAR PRODUCED`: `earth_to_stars-0.3.0-alpha.1.jar` produced and structurally verified from source commit `374c7db5b268417cd68126d79bb716e81c567194`.
+- `DEDICATED FABRIC BOOT`: run `34953067177` passed a real Fabric dedicated-server boot with the ETS standalone entrypoint loaded.
+- `CLIENT FABRIC SMOKE`: `Smoke earth-to-stars Fabric client` run `34953482466` passed under Xvfb after the same production source; the later workflow-only commit did not alter runtime source.
+- `PLAYTESTED`: **NO** for the Fabric rebase starter craft because the player-facing Fabric vehicle layer is not migrated yet.
 - `EARTH→SPACE CONTINUITY`: **NOT TESTED**.
 - `MULTIPLAYER TESTED`: **NO**.
+
+Verified JAR SHA-256:
+
+```text
+cb4c7cf82662e9111106b28632d633c2a2470f6fc9210ed9c1d1dcb1e14ec18b
+```
+
+The initial Fabric CI exposed one stale kernel mismatch: `ShipSystemsRuntime` still called a removed `pitch()` control axis while `ShipControlInput` and movement semantics use `lift()`. This was corrected at the source contract rather than hidden by exclusions; the subsequent build, JAR verification, server boot and client smoke passed.
 
 Compile/build success must never be described as successful flight feel or successful multiplayer.
 
@@ -162,7 +170,7 @@ Compile/build success must never be described as successful flight feel or succe
 Do not expand Moon/asteroid content yet. Rebuild one complete starter-craft vertical slice on Fabric in this order:
 
 ```text
-Fabric 26.2 build + kernel regression tests
+Fabric 26.2 build + kernel regression tests  [PASS]
 → Fabric item/entity/network/save authority bridge
 → production starter-craft visual pipeline using approved external assets
 → seat / pilot control session
