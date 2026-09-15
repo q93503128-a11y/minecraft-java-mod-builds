@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "kind": "riftfrontier:boss_material_derivation",
+  "algorithm": "riftfrontier-dark-rock-dragon-albedo-v1",
+  "source": {
+    "asset_id": "polyhaven:dark_rock",
+    "sha256": "cf323f68f6a784bf160d5394524ca2a606b6909b37c5a906601668afeb45bde4",
+    "byte_size": 94658158,
+    "dimensions": [
+      4096,
+      4096
+    ],
+    "license": "CC0"
+  },
+  "output": {
+    "resource": "riftfrontier:textures/entity/region_01/dragon_evolved_dark_rock_v1.png",
+    "sha256": "4a82cd2765a44acccb2842b0d9bf77bdad96bf72bc5df62fba0184ccf9bd46fd",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "color_mode": "RGB"
+  },
+  "operations": [
+    "decode exact accepted 4096x4096 PNG",
+    "convert to RGB",
+    "LANCZOS resize to 1024x1024",
+    "full-range autocontrast",
+    "contrast multiplier 1.12",
+    "color saturation multiplier 0.72",
+    "PNG encode compress_level=9 optimize=false"
+  ],
+  "acceptance": "FIELD_REVIEW_CANDIDATE_ONLY",
+  "human_visual_acceptance": false
+}
