@@ -15,7 +15,7 @@ import java.util.Locale;
 public final class BattleResultScreen extends Screen {
     private static final int REWARD_REVEAL_START_TICKS = 6;
     private static final int REWARD_ROW_INTERVAL_TICKS = 3;
-    private static final int CONTINUE_UNLOCK_TICKS = 12;
+    private static final int CONTINUE_UNLOCK_TICKS = 21;
     private static final String COIN_VISUAL_ITEM = "minecraft:gold_nugget";
     private static final String ESSENCE_VISUAL_ITEM = "minecraft:experience_bottle";
     private static final String SHARD_VISUAL_ITEM = "minecraft:amethyst_shard";
