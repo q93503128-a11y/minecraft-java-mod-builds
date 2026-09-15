@@ -61,6 +61,7 @@ public final class ExpeditionHubTerminal {
         if (!moved) throw new IllegalStateException("Minecraft rejected Riftfrontier initial hub teleport");
 
         ensurePresent(player);
+        Region01FieldGuide.giveInitial(player);
         player.sendSystemMessage(Component.translatable("riftfrontier.expedition.detail.hub_bootstrap"));
         ExpeditionPlayerFeedback.hubReady(player);
         return true;
