@@ -16,6 +16,9 @@ public final class BattleResultScreen extends Screen {
     private static final int REWARD_REVEAL_START_TICKS = 6;
     private static final int REWARD_ROW_INTERVAL_TICKS = 3;
     private static final int CONTINUE_UNLOCK_TICKS = 12;
+    private static final String COIN_VISUAL_ITEM = "minecraft:gold_nugget";
+    private static final String ESSENCE_VISUAL_ITEM = "minecraft:experience_bottle";
+    private static final String SHARD_VISUAL_ITEM = "minecraft:amethyst_shard";
 
     private BattleResultNetworkPayloads.ResultView result;
     private boolean acknowledgementSent;
@@ -162,16 +165,16 @@ public final class BattleResultScreen extends Screen {
                 presentationTicks, totalRows, REWARD_REVEAL_START_TICKS, REWARD_ROW_INTERVAL_TICKS);
         int row = 0;
         if (result.coinDelta() > 0 && row++ < visibleRows) {
-            y = rewardRow(graphics, region, y, Component.translatable(
+            y = rewardRow(graphics, region, y, COIN_VISUAL_ITEM, Component.translatable(
                     "screen.turnbound_re.result.coin", result.coinDelta(), result.coinTotal()));
         }
         if (result.essenceDelta() > 0 && row++ < visibleRows) {
-            y = rewardRow(graphics, region, y, Component.translatable(
+            y = rewardRow(graphics, region, y, ESSENCE_VISUAL_ITEM, Component.translatable(
                     "screen.turnbound_re.result.essence", result.essenceDelta(), result.essenceTotal()));
         }
         for (BattleResultNetworkPayloads.ShardView shard : result.shards()) {
             if (row++ >= visibleRows) break;
-            y = rewardRow(graphics, region, y, Component.translatable(
+            y = rewardRow(graphics, region, y, SHARD_VISUAL_ITEM, Component.translatable(
                     "screen.turnbound_re.result.shard", displayName(shard.characterId()), shard.amount(), shard.total()));
         }
     }
@@ -184,8 +187,19 @@ public final class BattleResultScreen extends Screen {
         return rows;
     }
 
-    private int rewardRow(GuiGraphicsExtractor graphics, BattleResultLayout.Rect region, int y, Component text) {
-        UiVisualLanguage.frame(graphics, region.x() + 8, y, 20, 20, UiVisualLanguage.FrameState.SUCCESS);
+    private int rewardRow(
+            GuiGraphicsExtractor graphics,
+            BattleResultLayout.Rect region,
+            int y,
+            String visualItem,
+            Component text
+    ) {
+        int iconX = region.x() + 8;
+        UiVisualLanguage.frame(graphics, iconX, y, 20, 20, UiVisualLanguage.FrameState.SUCCESS);
+        var stack = RuntimeItemVisualResolver.stack(visualItem);
+        if (!stack.isEmpty()) {
+            graphics.item(stack, iconX + 2, y + 2);
+        }
         graphics.text(this.font, Component.literal(fit(text.getString(), Math.max(1, region.width() - 42))),
                 region.x() + 34, y + 6, UiVisualLanguage.TEXT_PRIMARY, true);
         return y + 26;
