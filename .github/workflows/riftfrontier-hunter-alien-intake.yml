@@ -2,6 +2,9 @@ name: Riftfrontier Hunter Alien Intake
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/riftfrontier-hunter-alien-intake.yml'
 
 permissions:
   contents: read
