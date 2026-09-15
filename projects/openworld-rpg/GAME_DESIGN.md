@@ -87,11 +87,30 @@ Replace/remove from the core RPG loop:
 - normal vanilla XP-orb drops;
 - vanilla enchantment progression as a primary growth system;
 - vanilla weapons/armor as meaningful long-term gear;
-- vanilla monsters as the primary enemy ecosystem;
+- **all vanilla mobs as world population, combat enemies, livestock, wildlife and NPC population**;
 - vanilla crafting-grid progression as the main production system;
 - vanilla inventory/equipment presentation as the main character interface;
 - vanilla cave/strip-mining as the intended core resource-gathering loop;
 - Nether/End as mandatory progression gates.
+
+## Vanilla-mob exclusion
+
+The authored RPG world does not naturally populate with vanilla living mobs.
+
+This includes vanilla:
+
+- hostile mobs;
+- passive/neutral animals and livestock;
+- fish and ordinary aquatic mobs;
+- villagers, wandering traders and village golems as the finished NPC population;
+- bats and other ambient living mobs;
+- vanilla mob spawners embedded in imported structures.
+
+Third-party maps, structures or dependencies that attempt to spawn vanilla mobs must have those spawn paths disabled, filtered or replaced before they become part of normal gameplay. Imported dungeons may keep strong architecture, but their vanilla spawners/encounters are not retained.
+
+Food, hide/leather-like materials, bones and other creature-derived resources come from the custom/external creature ecosystem or project resource systems instead of reintroducing cows, pigs, sheep, chickens or other vanilla animals as shortcuts. Fishing likewise uses the project's custom aquatic roster/reward tables rather than depending on vanilla fish as the visible ecology.
+
+Project/player NPCs use selected custom/external NPC presentation rather than ordinary villagers as the final population.
 
 Vanilla blocks/building/environmental interactions may remain where they improve the open-world sandbox without competing with project systems.
 
@@ -147,6 +166,7 @@ Rules:
 - Passive regeneration exists but remains slow enough that rest/items matter.
 - Camps, inns, shrines or other valid rest points restore resources efficiently.
 - Inns are valid world-service buildings when a strong external design/build is selected.
+- Creature-based cooking ingredients come from the custom ecology; starting-region examples include Louxia meat and selected non-vanilla wildlife meat.
 
 ---
 
@@ -462,12 +482,14 @@ Modern/automatic firearms are not part of the current fantasy baseline. More adv
 
 Use a hybrid item model and probabilistic loot tables:
 
-- normal enemies, elites, dungeons and bosses use weighted/probability-based drops;
-- common field equipment may roll controlled affixes;
+- **ordinary/common enemies do not drop equipment as routine loot**; their rewards focus on EXP, currency, creature/material drops and selected consumables;
+- equipment drops are concentrated in elites, minibosses, field/world bosses, dungeons, authored treasure, quests and selected merchant/crafting rewards;
+- common equipment obtained from valid equipment sources may roll controlled affixes;
 - named/boss/signature gear may have fixed identity, visuals and unique mechanics while still being probabilistic drops;
 - progression-critical quest/key items must not softlock progress through bad RNG;
 - first-clear progression rewards may be deterministic while farmable gear remains probabilistic;
-- stronger grade does not always mean strict numeric replacement.
+- stronger grade does not always mean strict numeric replacement;
+- loot density must not create a constant inventory-cleanup chore.
 
 ## Multiplayer loot ownership
 
@@ -511,6 +533,8 @@ Avoid production steps that only add clicks.
 
 Use a high-quality external open-world RPG map/terrain solution rather than hand-authoring the entire continent from zero.
 
+**Azari 30k x 30k is the current primary terrain candidate and region planning proceeds against it.** Its world bytes remain local/private while usage terms are still being verified. If its import or terms fail, preserve the same gameplay/region principles on the strongest free fallback rather than reopening every system decision.
+
 Target about **12 major regions**, adjustable to roughly 10–14 if the selected external map's geography strongly supports a different count.
 Each region contains subregions/landmarks/POIs and defines environmental identity, danger/Lv profile, enemies, elites, signature threats, resources, gear identity, settlements, dungeons, camps/checkpoints, quests/events and traversal gimmicks.
 
@@ -519,6 +543,13 @@ Each region contains subregions/landmarks/POIs and defines environmental identit
 Use **regional Lv bands with only narrow contextual adjustment**.
 Do not scale every enemy to the player.
 A low-Lv region remains low-Lv later; a dangerous region remains dangerous when entered early.
+
+Early difficulty direction:
+
+- the starting region is approachable rather than punishing;
+- ordinary enemies still require basic positioning and combat attention, but should not repeatedly kill a new player who is learning the systems;
+- major difficulty spikes begin with elites, dangerous POIs, minibosses, field bosses and dungeons;
+- high-Lv areas are never blocked by invisible walls or arbitrary story gates merely because the player is under-levelled.
 
 ## Starting settlement
 
@@ -584,7 +615,10 @@ Do not fill the starting hub with a wall of MMO-style chores on first arrival.
 
 - the stable and mount NPC should be visible from the beginning so mount progression is an obvious future goal;
 - the first usable ground mount is unlocked through an early first-region event/quest rather than given immediately;
-- this preserves the value of early terrain discovery while making faster traversal arrive soon enough to matter.
+- the first mount arrives quickly, before the first region is exhausted;
+- its travel speed is around ordinary player sprinting speed rather than a huge early skip, while sustained travel and convenience make it worthwhile;
+- the first visible mount is a **non-vanilla creature/model**; vanilla horses/camels/etc. do not return as the world's visible mount population;
+- later mounts provide the meaningful speed/handling/combat/flight progression.
 
 ### Housing
 
@@ -605,6 +639,119 @@ Use regional Lv danger rather than invisible walls to communicate that the world
 
 The village layout and buildings come from a coherent external high-quality village/build family or map/schematic.
 Avoid stitching together unrelated building styles when a coherent pack/source exists.
+
+## R01 — first-region content package
+
+`R01` is an internal production identifier. Final player-facing names wait until the actual Azari terrain is imported and lore naming is coherent with the world.
+
+### Terrain / role
+
+Use Azari's central or south-central **meadow / plains / river / forest-fringe** geography for the first region.
+
+The region should teach the world by contrast rather than tutorials:
+
+- open meadow around the starting route and settlement;
+- river/woodland transition for exploration and herbs;
+- an old quarry/cave complex for the first dungeon route;
+- a deeper grove or rugged edge for elite/field-boss encounters;
+- at least one obvious route leading into a visibly more dangerous neighboring region.
+
+Working difficulty target is roughly **Lv 1–8** before global EXP-curve benchmarking. The exact numbers may shift together later, but the relative order is locked.
+
+Suggested sub-area pressure:
+
+- arrival road / settlement outskirts — Lv 1–2;
+- open meadow and farms/foraging routes — Lv 1–4;
+- riverwood / forest fringe — Lv 3–5;
+- quarry / cave approach — Lv 4–6;
+- deep grove / dangerous ridge — Lv 6–8;
+- neighboring-region exits may immediately expose stronger enemies beyond the intended band.
+
+### Wildlife / food ecology
+
+No vanilla livestock or animals spawn here.
+
+Primary early ecology uses selected external creatures rather than filling every biome with every installed mob:
+
+- **Louxia** — common passive herd creature in plains/meadows; main early creature-food source and a candidate for later controlled breeding/farming; its luminous organ/material can also feed early utility/crafting loops;
+- **gazelle** — optional/common open-meadow prey/wildlife from Alex's Mobs Continued; useful for meat/hide-style resources after project loot normalization;
+- **bison** — uncommon herd wildlife; neutral until threatened and substantially more dangerous than a basic food animal; useful as higher-yield meat/hide ecology rather than a cow replacement reskin;
+- **raccoon / crow** — low-impact ambient/foraging wildlife near forest edge, roads and settlement outskirts;
+- **grizzly bear** — rare territorial forest-edge wildlife that can punish careless early exploration without being treated as a routine trash mob.
+
+External default loot is not automatically canonical. Project loot tables normalize food/material yields so one dependency does not dominate the economy.
+
+### Common combat threats
+
+The first region is not zombie/skeleton replacement spam. Common danger comes from understandable wildlife/creature behavior:
+
+- rattlesnake-style ambush/area-denial creature in rocky grass and warm banks;
+- cave centipede-style close-range threat in quarry/caves;
+- territorial grizzly/bison encounters where aggression is readable and avoidable;
+- additional small non-vanilla creature threats may be selected only after their 26.2 behavior is inspected in-game.
+
+Common threats provide EXP, currency/materials and creature resources, **not routine equipment drops**.
+
+### Elites / field boss
+
+Use Threateningly Mobs Continued selectively rather than accepting its default world-wide spawn rules:
+
+- **Steelboar** — first-region elite hunt candidate; armored charge/impact identity, placed in specific meadow/woodland pockets rather than common spawn spam;
+- **Nature Spirit** — rare magical elite in the deeper grove; teaches that regional ecology can shift from natural wildlife into fantasy threats;
+- **Regalhart** — first-region optional field-boss candidate, discoverable through exploration/hunt clues rather than mandatory story gating.
+
+Their original mod stats/loot/spawn rates are reference inputs only. Project data owns Lv, HP/damage, stagger, rewards, respawn and placement.
+
+### First dungeon
+
+Working concept: **an abandoned quarry / root-overgrown underground complex** connecting the region's mining/resource loop to its fantasy ecology.
+
+- target first-clear length: short-to-medium, roughly 15–25 minutes rather than a huge early maze;
+- use an external high-quality dungeon/structure shell where terms permit;
+- any imported vanilla mob spawners are removed/replaced;
+- 2–3 meaningful combat spaces plus traversal/side-cache choices are preferable to many copy-pasted rooms;
+- quarry layers first teach gathering/resource visuals, then transition into root/magic corruption deeper inside;
+- **Earthloong** is the current external boss candidate for the deepest chamber because its forest/earth identity fits the region and gives the first dungeon a non-vanilla silhouette;
+- first-clear reward includes a deterministic meaningful equipment choice through the settlement/smith flow so bad RNG cannot leave a new player without useful progression;
+- repeat clears focus on regional materials and a controlled chance at a signature Earthloong-themed item rather than flooding the inventory with random gear.
+
+DeCubed Dungeons is a current free 26.2 Fabric/datapack architecture candidate, but its vanilla spawners/loot are not adopted unchanged. Final shell selection happens during map integration.
+
+### First-region resources
+
+Keep the first gathering loop simple and immediately connected to settlement services:
+
+- common ore/mineral outcrops for the forge;
+- timber nodes along woodland routes;
+- common healing/alchemy herbs around river/forest transitions;
+- food/foraging ingredients in meadow and riverside areas;
+- one rarer quarry/grove material that gives the player a reason to revisit the region later.
+
+The first hour should demonstrate `explore → gather → return to settlement → improve/craft → go back out` without making crafting mandatory busywork.
+
+### Quest / discovery flow
+
+Do not front-load NPC chores.
+
+Recommended first-region progression:
+
+1. short approach encounter → settlement reveal;
+2. free first root-class selection and access to basic services;
+3. main objective points the player toward a disturbed road/quarry situation without forcing every side service tutorial;
+4. 2–3 optional regional contracts expose hunting, gathering and a dangerous POI;
+5. an early regional event/quest unlocks the first non-vanilla ground mount before the region is mostly complete;
+6. quarry investigation becomes the first replayable dungeon;
+7. Regalhart remains an optional field-boss discovery rather than a gate;
+8. completing the region strongly suggests neighboring routes but never locks the player inside R01.
+
+### Multiplayer feel
+
+R01 must work both together and separately:
+
+- players may split between gathering, contracts and exploration without losing each other's permanent progression;
+- personal combat loot and personal node state remain active;
+- dungeon/field-boss participation rewards each eligible player individually;
+- no party-presence requirement for ordinary exploration.
 
 ## Town / service-building baseline
 
@@ -657,11 +804,13 @@ Minimap/world-map visuals and implementation are external-first.
 
 # 18. Mounts and traversal
 
-Use ground mounts as a real progression/travel system.
+Use **non-vanilla visible mounts** as a real progression/travel system.
 
-- mounts can differ meaningfully in speed, acceleration/handling, toughness and role;
+- the first mount arrives early in R01 and mainly improves sustained travel convenience, with speed around ordinary sprinting rather than instantly trivializing the map;
+- later mounts can differ meaningfully in speed, acceleration/handling, toughness and role;
 - some mounts may support mounted combat or combat utility;
 - use external high-quality models/animations and proven mount implementations/code where suitable;
+- vanilla horse/camel/etc. visuals are not used as the finished mount population;
 - mounts are not cosmetic reskins with identical stats;
 - later progression unlocks substantially faster traversal;
 - late-game traversal may include flying mounts or another high-speed system;
@@ -671,8 +820,18 @@ Use ground mounts as a real progression/travel system.
 
 # 19. Enemies, bosses, world events and dungeons
 
-Custom/project enemies dominate the combat roster.
+The visible world ecology and combat roster use **non-vanilla creatures/NPCs**.
 Important enemies require readable states, attack telegraphs, recovery, custom visuals/animation/VFX/sound appropriate to importance.
+
+Creature sourcing is external-first but curated by region:
+
+- do not enable every dependency's global default spawns;
+- region definitions decide which wildlife/enemies can appear, at what density and in what role;
+- ordinary wildlife, normal threats, elites, minibosses, field bosses and dungeon bosses are distinct content tiers;
+- default dependency stats, loot, dimensions and progression are not automatically inherited;
+- vanilla-derived reskins/variants are low priority and cannot become the primary ecology under the no-vanilla-mob rule.
+
+Food/resource ecology is part of monster design. Passive/neutral custom creatures must provide enough meat/hide/bone-like resources that removing vanilla livestock does not create a survival-resource hole.
 
 Accepted iconic directions include:
 
@@ -691,6 +850,7 @@ Events should feel discovered in the world, not like constant MMORPG chores.
 Dungeons are replayable.
 First clear provides unique/progression-significant rewards where appropriate; later clears provide probabilistic gear, materials and rare drops.
 External dungeon architecture is retained where strong while encounters, enemies, bosses and rewards are project-specific.
+Imported vanilla spawners/encounters are always replaced.
 
 ## Field/world bosses
 
@@ -702,12 +862,13 @@ Avoid rapid repetitive respawn loops.
 
 # 20. Quests
 
-Use a mixed structure:
+Use a mixed structure weighted toward exploration:
 
 - main narrative for world/system introduction and major progression;
 - regional quest chains that give each area identity;
 - free exploration/discovery without constant quest-marker following.
 
+Target overall feel is approximately **30% guided objectives / 70% free exploration and self-directed discovery**, not a rigid numerical quota.
 The main story guides without turning the open world into a linear corridor.
 
 ---
@@ -799,6 +960,8 @@ Server-authoritative state includes damage, item ownership, currency, EXP/Lv, sk
 Combat/loot rewards are personal per player.
 Resource gathering is also personal per player at the node-availability level.
 
+Players can travel together or pursue separate exploration/content and regroup later. Ordinary progression must not require constant party proximity.
+
 Do not claim multiplayer quality until actually tested.
 
 ---
@@ -815,6 +978,10 @@ Use **one primary numeric currency** for the ordinary economy.
 - do not multiply currencies merely to make the game look larger.
 
 The core currency supports at least class switching, death-penalty choice, merchants, housing and selected services.
+
+## Economy feel
+
+Early and midgame should feel **slightly money-constrained but not grind-starved**: the player usually has several attractive uses for currency and must choose priorities, while normal play still funds essential recovery and progression. Later progression can become more financially comfortable rather than maintaining artificial scarcity forever.
 
 ## Merchant stock
 
@@ -856,13 +1023,17 @@ Code owns rules; data owns content/tuning where feasible.
 
 # 26. Current locked decisions
 
-Major locked decisions as of 2026-09-14:
+Major locked decisions as of 2026-09-15:
 
 - private-use large open-world action RPG with very low vanilla progression dependence;
+- Fabric is the locked mod loader for this project unless a future hard technical blocker forces a deliberate migration review;
+- Azari 30k x 30k is the primary free terrain candidate and region planning proceeds against it while local-use/import terms are verified;
 - external-first visuals/assets from the first visible/test implementation;
 - no temporary player-facing design;
 - dead/superseded/duplicate code removed after safe replacement;
 - `EXP` / `Lv` notation and removal of vanilla XP progression/drop loop;
+- **no vanilla mobs as normal world population**: hostile mobs, animals/livestock, aquatic mobs and ordinary villager/golem population are replaced by the custom/external ecosystem and NPC roster;
+- creature-derived food/materials come from non-vanilla wildlife/livestock equivalents; imported vanilla spawners are replaced;
 - HP + Mana + Stamina; Stamina is primarily non-skill action resource; basic attack costs no Stamina;
 - dodge, guard, parry and layered stagger/poise combat;
 - 4 active skills + 1 high-impact hybrid-charge ultimate;
@@ -879,20 +1050,25 @@ Major locked decisions as of 2026-09-14:
 - broad weapon freedom: classes create natural weapon synergy rather than ordinary hard weapon locks; Hunter-compatible black-powder firearms remain allowed and modern firearms excluded from baseline;
 - 12-slot RPG equipment target and no routine durability chore;
 - larger expandable RPG inventory, no weight system, material pouch/category and stack sizes above vanilla 64 where appropriate;
+- ordinary enemies do not routinely drop equipment; equipment farming centers on elites/bosses/dungeons/authored rewards/merchants/crafting;
 - hybrid random-affix + named/signature equipment; about five non-cliché grades later;
 - medium damage/status complexity;
 - light smithing/alchemy/cooking mastery;
 - regional Lv bands, roughly 12 major regions, discovered POIs, shrine/major-hub fast travel;
-- ground mounts with varied speed/handling/combat roles and later high-speed/flying traversal;
-- mixed main/regional/free-exploration quests, dynamic region events, replayable dungeons, respawning field/world bosses;
+- starting region is approachable while elites/POIs/bosses provide the first major difficulty spikes;
+- high-Lv regions remain physically enterable rather than being blocked by invisible/story walls;
+- ground mounts use non-vanilla visible creatures/models; first mount arrives early at about sprint-speed convenience, later mounts provide meaningful speed/handling/combat/flight progression;
+- mixed main/regional/free-exploration quests with roughly 30/70 guided-vs-free-exploration feel, dynamic region events, replayable dungeons, respawning field/world bosses;
 - probabilistic drops with deterministic protection for progression-critical items;
 - multiplayer down/revive and fully personal loot;
+- multiplayer allows players to explore together or separately and regroup without ordinary progression requiring party proximity;
 - RPG field resource nodes instead of cave/strip-mining as the core gathering loop;
 - personal node gathering state in multiplayer;
 - mining/herbalism/forestry/fishing-foraging categories with light mastery;
 - dedicated no-routine-durability gathering tools, separate from combat slots;
 - common node regeneration and slower/conditional rare-node regeneration;
 - one primary currency; player-facing name chosen later with world lore;
+- economy is slightly constrained in early/midgame and becomes more comfortable later;
 - merchants use mostly randomized stock while potions/essentials/designated items remain reliably available;
 - quick-build material-cost camps;
 - permanent houses are purchased separately in settlements and provide rest/storage/decor/trophy functions;
@@ -901,8 +1077,9 @@ Major locked decisions as of 2026-09-14:
 - starting settlement uses a visually taught gate → square/inn → guild → smith → board/exits flow rather than mandatory NPC errand chains;
 - forge/alchemy deeper functionality is introduced through early gathering so exploration → gathering → return → production forms an immediate loop;
 - starting quest density is intentionally low: about 1 main objective plus 2–3 regional contracts before discoveries add more;
-- the stable is visible immediately but the first ground mount arrives through early first-region progression;
+- the stable is visible immediately but the first non-vanilla ground mount arrives through early first-region progression;
 - starting settlement should expose multiple routes including an intentionally dangerous higher-Lv direction when geography supports it;
+- R01 is an Azari central/south-central meadow/river/forest-fringe region with an approachable Lv 1–8 working band, Louxia-led custom food ecology, curated non-vanilla wildlife, Steelboar/Nature Spirit elites, Regalhart field-boss candidate and Earthloong first-dungeon boss candidate;
 - selected faction/reputation systems only where meaningful;
 - moderate day/night/weather gameplay effects;
 - starting settlement and all important buildings use coherent external architecture/designs;
@@ -912,18 +1089,18 @@ Major locked decisions as of 2026-09-14:
 
 # 27. Next design queue
 
-Do not re-decide the locked systems above. Continue from here.
+Do not re-decide the locked systems above. Continue from here without asking the user to reselect details that can be solved through research, external assets or normal balance work.
 
 Recommended next batch:
 
-1. **External open-world map selection** — shortlist actual usable/downloadable RPG maps/terrain and choose the map before naming all 12 regions.
-2. **First-region content package** — once the map is chosen: Lv band, common mobs, elite, field boss, dungeon, resources, quests, shrine/camp and signature rewards.
+1. **Azari regional expansion** — derive R02–R12 from actual published terrain families, then refine borders after the local world import.
+2. **Regional creature/content sourcing** — assign external wildlife, normal threats, elites, bosses and food/resource ecology to each region; no vanilla mobs.
 3. **External UI selection** — inventory/equipment, skill HUD, forge, alchemy, cooking, class/advancement and death/respawn screens; choose proven final designs before implementation.
-4. **Economy balance** — currency sources/sinks, class-switch cost curve, death penalty %, house prices, shop refresh cadence.
-5. **Inventory numbers** — starting slot count, expansion steps, material-pouch behavior and practical stack caps above 64.
-6. **Loot economy** — affix count/ranges, grade probabilities, boss-drop rates, bad-luck protection only where needed.
-7. **Mount progression** — first ground mount, speed classes, combat mounts, later high-speed/flying unlock conditions.
-8. **M0 class/skill dependency audit** — verify current 26.2 loader compatibility and exact integration boundaries for Spell Engine, selected RPG Series modules, RPG Class Selection/Archetypes code candidates and ranged/combat libraries before source bootstrap.
+4. **Economy / EXP benchmark pass** — compare current high-quality RPG mods/games and set concrete Lv curve, currency sources/sinks, switch cost, death penalty, housing price and shop refresh values.
+5. **Inventory numbers** — starting slot count, expansion steps, material-pouch behavior and practical stack caps above 64, decided from real item density and selected UI rather than user re-questioning.
+6. **Loot economy** — affix count/ranges, grade probabilities, elite/boss drop rates and targeted bad-luck protection while keeping normal enemies equipment-free.
+7. **Non-vanilla mount sourcing** — replace horse-centric visible solutions with custom-creature mount candidates while retaining useful permissive riding/QoL code where appropriate.
+8. **M0 Fabric dependency audit** — verify exact current 26.2 integration boundaries for world/spawn filtering, creature mods, Spell Engine, selected RPG Series modules, RPG Class Selection/Archetypes candidates and ranged/combat libraries before source bootstrap.
 9. **Final keybind audit** only after the complete frequent-action list is known; important Minecraft/Essential keys must not conflict.
 
 When design direction becomes unclear, research real open-world RPGs, open-source RPGs and large Minecraft RPG mods before inventing filler systems.
