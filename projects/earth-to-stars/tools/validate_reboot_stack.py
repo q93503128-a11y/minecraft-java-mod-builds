@@ -23,7 +23,9 @@ def main() -> None:
         "src/reboot/java",
         "src/reboot/resources",
         "net.neoforged.moddev.legacyforge",
-        "maven.modrinth:valkyrien-skies:1.20.1-forge-2.4.10",
+        'org.valkyrienskies.core:api:${vs_core_version}',
+        'org.valkyrienskies.core:util:${vs_core_version}',
+        'org.valkyrienskies:valkyrienskies-120-forge:${valkyrien_skies_version}',
         "maven.modrinth:vs-genesis:1.20.1-0.7.3",
         "maven.modrinth:zps:1.20.1-2.4.0",
         "maven.modrinth:zpl:1.20.1-1.5.0",
@@ -33,6 +35,8 @@ def main() -> None:
     for needle in (
         "minecraft_version=1.20.1",
         "forge_version=1.20.1-47.4.0",
+        "valkyrien_skies_version=2.4.10",
+        "vs_core_version=1.1.0+1d4a7373e9",
         "mod_version=0.2.0-alpha.2",
     ):
         require(props, needle)
@@ -53,7 +57,7 @@ def main() -> None:
         "OCTO_CONTROLLER",
         "THRUSTER_EXHAUST_BLOCK",
         "GYROSCOPE_BLOCK",
-        "POWER_CELL",
+        'requireExternalBlock("zps", "power_cell")',
         "STARTER_FLIGHT_CORE",
     ):
         require(deployment, needle)
