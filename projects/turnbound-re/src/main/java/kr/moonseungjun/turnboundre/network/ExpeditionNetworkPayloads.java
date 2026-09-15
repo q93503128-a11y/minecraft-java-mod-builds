@@ -20,10 +20,28 @@ public final class ExpeditionNetworkPayloads {
 
     private ExpeditionNetworkPayloads() {}
 
-    public record EncounterView(String id, int difficulty, int enemyCount, boolean repeatable) {
+    public record EncounterView(
+            String id,
+            int difficulty,
+            int enemyCount,
+            boolean repeatable,
+            List<String> enemySourceEntities
+    ) {
         public EncounterView {
             if (id == null || id.isBlank()) throw new IllegalArgumentException("encounter id required");
             if (difficulty < 1 || enemyCount < 1) throw new IllegalArgumentException("invalid encounter summary");
+            enemySourceEntities = enemySourceEntities == null ? List.of() : List.copyOf(enemySourceEntities);
+            if (!enemySourceEntities.isEmpty() && enemySourceEntities.size() != enemyCount) {
+                throw new IllegalArgumentException("encounter visual identity count mismatch");
+            }
+            if (enemySourceEntities.stream().anyMatch(value -> value == null || value.isBlank())) {
+                throw new IllegalArgumentException("encounter visual identity must not be blank");
+            }
+        }
+
+        /** Compatibility constructor for older callers and legacy 4-field snapshots. */
+        public EncounterView(String id, int difficulty, int enemyCount, boolean repeatable) {
+            this(id, difficulty, enemyCount, repeatable, List.of());
         }
     }
 
@@ -56,7 +74,11 @@ public final class ExpeditionNetworkPayloads {
 
         public static JournalSnapshotS2C of(JournalView view) {
             List<String> rows = view.encounters().stream()
-                    .map(encounter -> encounter.id() + "\t" + encounter.difficulty() + "\t" + encounter.enemyCount() + "\t" + encounter.repeatable())
+                    .map(encounter -> encounter.id()
+                            + "\t" + encounter.difficulty()
+                            + "\t" + encounter.enemyCount()
+                            + "\t" + encounter.repeatable()
+                            + "\t" + packList(encounter.enemySourceEntities()))
                     .toList();
             return new JournalSnapshotS2C(
                     packList(view.party()) + "|" + packList(rows) + "|" + pack(view.resultCode()) + "|" + pack(view.resultDetail()));
@@ -68,8 +90,16 @@ public final class ExpeditionNetworkPayloads {
             List<EncounterView> encounters = new ArrayList<>();
             for (String row : unpackList(parts[1])) {
                 String[] fields = row.split("\\t", -1);
-                if (fields.length != 4) throw new IllegalArgumentException("invalid expedition encounter row");
-                encounters.add(new EncounterView(fields[0], Integer.parseInt(fields[1]), Integer.parseInt(fields[2]), Boolean.parseBoolean(fields[3])));
+                if (fields.length != 4 && fields.length != 5) {
+                    throw new IllegalArgumentException("invalid expedition encounter row");
+                }
+                List<String> enemySourceEntities = fields.length == 5 ? unpackList(fields[4]) : List.of();
+                encounters.add(new EncounterView(
+                        fields[0],
+                        Integer.parseInt(fields[1]),
+                        Integer.parseInt(fields[2]),
+                        Boolean.parseBoolean(fields[3]),
+                        enemySourceEntities));
             }
             return new JournalView(unpackList(parts[0]), encounters, unpack(parts[2]), unpack(parts[3]));
         }
