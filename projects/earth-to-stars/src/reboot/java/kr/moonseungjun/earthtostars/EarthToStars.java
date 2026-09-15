@@ -51,14 +51,32 @@ public final class EarthToStars {
 
         if ("1".equals(System.getenv("EARTH_TO_STARS_STACK_PROBE"))) {
             ServerLevel overworld = event.getServer().overworld();
-            BlockPos spawn = overworld.getSharedSpawnPos();
-            int x = spawn.getX() + 32;
-            int z = spawn.getZ();
-            int surface = overworld.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-            int y = Math.min(overworld.getMaxBuildHeight() - 8, surface + 4);
-            StarterCraftDeploymentService.deploy(overworld, new BlockPos(x, y, z));
-            LOGGER.info("EARTH_TO_STARS_STARTER_CRAFT_ASSEMBLY_PASS physical_vs_ship=true octo=true zpl_thrusters=true zpl_gyros=true finite_battery=true");
+            BlockPos probeSite = findClearProbeSite(overworld, overworld.getSharedSpawnPos());
+            StarterCraftDeploymentService.deploy(overworld, probeSite);
+            LOGGER.info(
+                    "EARTH_TO_STARS_STARTER_CRAFT_ASSEMBLY_PASS physical_vs_ship=true octo=true zpl_thrusters=true zpl_gyros=true finite_battery=true probe_site={}",
+                    probeSite.toShortString()
+            );
             event.getServer().halt(false);
         }
+    }
+
+    private static BlockPos findClearProbeSite(ServerLevel level, BlockPos spawn) {
+        int x = spawn.getX() + 32;
+        int z = spawn.getZ();
+        int surface = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+        int minY = Math.max(level.getMinBuildHeight() + 4, surface + 8);
+        int maxY = level.getMaxBuildHeight() - 8;
+
+        for (int y = minY; y <= maxY; y++) {
+            BlockPos candidate = new BlockPos(x, y, z);
+            if (StarterCraftDeploymentService.canDeploy(level, candidate)) {
+                return candidate;
+            }
+        }
+
+        throw new IllegalStateException(
+                "no clear starter craft probe volume near shared spawn at x=" + x + " z=" + z
+        );
     }
 }
