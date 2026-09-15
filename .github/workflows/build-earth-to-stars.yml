@@ -54,7 +54,7 @@ jobs:
       - name: Verify production JAR excludes legacy vehicle stack
         run: python3 tools/verify_reboot_jar.py
 
-      - name: Boot dedicated server with external space stack
+      - name: Boot dedicated server and assemble real VS starter craft
         shell: bash
         run: |
           rm -rf run
@@ -64,6 +64,8 @@ jobs:
           EARTH_TO_STARS_STACK_PROBE=1 timeout --kill-after=15s 240s ./gradlew --no-daemon runServer --stacktrace 2>&1 | tee build/logs/reboot-server.log
           grep -q 'EARTH_TO_STARS_REBOOT_STACK_BOOT_PASS' build/logs/reboot-server.log
           grep -q 'valkyrienskies=true genesis=true vlib=true zps=true zpl=true' build/logs/reboot-server.log
+          grep -q 'EARTH_TO_STARS_STARTER_CRAFT_ASSEMBLY_PASS' build/logs/reboot-server.log
+          grep -q 'physical_vs_ship=true octo=true zpl_thrusters=true zpl_gyros=true finite_battery=true' build/logs/reboot-server.log
 
       - name: Write reboot report
         shell: bash
@@ -72,7 +74,7 @@ jobs:
           JAR=$(ls build/libs/earth_to_stars-*.jar | grep -v sources | head -n1)
           SHA=$(cat "$JAR.sha256")
           cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # EARTH TO STARS — VS/Genesis Reboot Baseline
+          # EARTH TO STARS — VS/Genesis Reboot Starter Craft
 
           - Commit: $GITHUB_SHA
           - Mod version: $VERSION
@@ -89,9 +91,11 @@ jobs:
           - clean/test/build: PASS
           - production JAR verify: PASS
           - dedicated external-stack boot: PASS
-          - real VS starter craft integration: NOT IMPLEMENTED YET
-          - client graphical smoke: NOT RUN IN THIS BASELINE
-          - live playtest: NOT RUN
+          - real VS starter craft assembly: PASS
+          - ZPS cockpit + ZPL thruster/gyro hardware present: PASS
+          - client graphical smoke: NOT RUN IN CI
+          - live flight feel / control direction: NOT RUN
+          - Genesis Earth-to-space flight with occupied craft: NOT RUN
           - multiplayer playtest: NOT RUN
           - SHA-256: $SHA
           EOF
