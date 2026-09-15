@@ -11,6 +11,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 import java.util.ArrayList;
@@ -470,7 +471,9 @@ public final class PartyFormationScreen extends Screen {
             } else if (!equipment.equippedCharacterId().isBlank()) {
                 equipped = " · " + displayName(equipment.equippedCharacterId());
             }
-            button.setMessage(Component.literal(fit(equipmentName(equipment.id()) + " · " + state + equipped, button.getWidth() - 8)));
+            button.setMessage(Component.literal(fit(
+                    equipmentName(equipment.id()) + " · " + state + equipped,
+                    Math.max(1, button.getWidth() - 30))));
             button.active = true;
         }
 
@@ -612,10 +615,14 @@ public final class PartyFormationScreen extends Screen {
             renderControl(graphics, partyButtons.get(slot), slot == selectedSlot, mouseX, mouseY);
         }
         for (int row = 0; row < equipmentButtons.size(); row++) {
-            boolean selected = equipmentSnapshot != null
-                    && row < equipmentSnapshot.equipment().size()
-                    && equipmentSnapshot.equipment().get(row).id().equals(selectedEquipmentId);
-            renderControl(graphics, equipmentButtons.get(row), selected, mouseX, mouseY);
+            Button button = equipmentButtons.get(row);
+            if (equipmentSnapshot == null || row >= equipmentSnapshot.equipment().size()) {
+                renderControl(graphics, button, false, mouseX, mouseY);
+                continue;
+            }
+            EquipmentNetworkPayloads.EquipmentView equipment = equipmentSnapshot.equipment().get(row);
+            renderEquipmentControl(graphics, button, equipment,
+                    equipment.id().equals(selectedEquipmentId), mouseX, mouseY);
         }
         renderControl(graphics, prevRosterButton, false, mouseX, mouseY);
         renderControl(graphics, nextRosterButton, false, mouseX, mouseY);
@@ -643,6 +650,35 @@ public final class PartyFormationScreen extends Screen {
         int y = button.getY() + Math.max(UiLayoutMetrics.SPACE_2,
                 (button.getHeight() - this.font.lineHeight) / 2);
         graphics.text(this.font, message, x, y, UiVisualLanguage.textColor(state), true);
+    }
+
+    private void renderEquipmentControl(
+            GuiGraphicsExtractor graphics,
+            Button button,
+            EquipmentNetworkPayloads.EquipmentView equipment,
+            boolean selected,
+            int mouseX,
+            int mouseY
+    ) {
+        if (button == null || equipment == null) return;
+        UiVisualLanguage.FrameState state = !button.active
+                ? UiVisualLanguage.FrameState.DISABLED
+                : selected || contains(button, mouseX, mouseY)
+                        ? UiVisualLanguage.FrameState.FOCUS
+                        : UiVisualLanguage.FrameState.IDLE;
+        UiVisualLanguage.frame(graphics, button.getX(), button.getY(), button.getWidth(), button.getHeight(), state);
+
+        ItemStack visual = EquipmentVisualItemResolver.stack(equipment.visualItem());
+        if (!visual.isEmpty()) {
+            graphics.item(visual, button.getX() + 2, button.getY() + 2);
+        }
+
+        int textX = button.getX() + 22;
+        int textWidth = Math.max(1, button.getRight() - textX - UiLayoutMetrics.SPACE_4);
+        Component message = Component.literal(fit(button.getMessage().getString(), textWidth));
+        int textY = button.getY() + Math.max(UiLayoutMetrics.SPACE_2,
+                (button.getHeight() - this.font.lineHeight) / 2);
+        graphics.text(this.font, message, textX, textY, UiVisualLanguage.textColor(state), true);
     }
 
     @Override
