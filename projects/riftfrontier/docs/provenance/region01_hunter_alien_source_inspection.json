@@ -1,0 +1,63 @@
+{
+  "asset": "Alien",
+  "variant": "Big/glTF",
+  "author": "Quaternius",
+  "family": "Ultimate Monsters",
+  "creator_pack_page": "https://quaternius.com/packs/ultimatemonsters.html",
+  "creator_distribution_folder": "https://drive.google.com/drive/folders/18m4KpzpEzhC9wl7jzr6dUc0N8Jozr79C",
+  "creator_file_id": "1rWF4Jo_G7-odDa5LfkQ0e2d9_p9pxb3W",
+  "license": "CC0 1.0 / public domain dedication",
+  "source_relative_path": "Big/glTF/Alien.gltf",
+  "byte_size": 1295881,
+  "sha256": "e6fec42f9d4db3c3177da9027c5cdb2c4abd71cb934ea4f4788aea155f267124",
+  "gltf_asset_version": "2.0",
+  "mesh_count": 1,
+  "skin_count": 1,
+  "material_count": 1,
+  "image_count": 1,
+  "node_count": 45,
+  "vertex_count": 4227,
+  "triangle_count": 7676,
+  "source_bounds_min": [-2.324558973312378, -0.0033269033301621675, -0.665105402469635],
+  "source_bounds_max": [2.324558734893799, 3.543466567993164, 0.8227649927139282],
+  "source_extent": [4.649117708206177, 3.5467934713233262, 1.4878703951835632],
+  "embedded_buffer": true,
+  "embedded_image": true,
+  "image_mime_type": "image/png",
+  "image_name": "Atlas_Monsters",
+  "animation_clips": [
+    {"name": "Death", "duration_seconds": 0.767},
+    {"name": "Duck", "duration_seconds": 1.667},
+    {"name": "HitReact", "duration_seconds": 0.6},
+    {"name": "Idle", "duration_seconds": 1.0},
+    {"name": "Jump", "duration_seconds": 0.367},
+    {"name": "Jump_Idle", "duration_seconds": 0.5},
+    {"name": "Jump_Land", "duration_seconds": 0.367},
+    {"name": "No", "duration_seconds": 1.667},
+    {"name": "Punch", "duration_seconds": 0.867},
+    {"name": "Run", "duration_seconds": 0.567},
+    {"name": "Walk", "duration_seconds": 1.0},
+    {"name": "Wave", "duration_seconds": 1.667},
+    {"name": "Weapon", "duration_seconds": 0.867},
+    {"name": "Yes", "duration_seconds": 1.667}
+  ],
+  "technical_role_assessment": {
+    "hunter_role_candidate": true,
+    "reasons": [
+      "Run and Walk locomotion clips are present",
+      "Punch and HitReact clips directly cover the current melee Hunter role",
+      "Death and Idle clips cover baseline lifecycle presentation",
+      "Single skinned mesh and single skin match the existing custom skinned-mesh presentation approach"
+    ],
+    "constraints": [
+      "Source-space width is larger than height; Minecraft field review must establish scale, facing, hitbox and silhouette",
+      "Source Atlas material is CC0 but remains source presentation; final Region 01 material/art acceptance is still human-gated",
+      "No natural encounter replacement until field-review render and role readability are accepted"
+    ]
+  },
+  "field_review_candidate": true,
+  "selected_for_production": false,
+  "human_visual_acceptance": false,
+  "intake_workflow_run": 34992661332,
+  "intake_artifact_id": 10405783077
+}
