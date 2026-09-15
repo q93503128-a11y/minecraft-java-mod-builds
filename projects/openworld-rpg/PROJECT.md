@@ -78,6 +78,7 @@ Subordinate references:
 - `M0_DEPENDENCY_AUDIT.md` — exact Fabric 26.2 toolchain, pinned dependency/version set, license/public-repository boundaries, integration ownership, server-authority contract and first bootstrap acceptance matrix.
 - `COMBAT_BALANCE.md` — exact combat-stat formulas, damage/mitigation math, dodge/guard/perfect-guard timing, player/enemy poise, attack commitment, encounter TTK/damage bands, multiplayer boss scaling and revive timing. It expands `GAME_DESIGN.md` §§5–7 and 23 without overriding the master canon.
 - `CLASS_COMBAT_KITS.md` — exact five root-class mechanics, starting actives/passives/ultimates, costs/cooldowns/coefficients, class ultimate-charge rules, first specialization branches, required class statuses and external animation/VFX/icon directions. It expands `GAME_DESIGN.md` §9 on top of `COMBAT_BALANCE.md` without overriding the master canon.
+- `CLASS_PROGRESSION.md` — per-root Class Rank/XP and catch-up, five advancement beats, branch switching, 30-point passive economy, all root/branch passive nodes, Rank-20 actives, Rank-32 doctrines, Rank-44 ascendant mechanics, world-discovered skills, Hidden Techniques and Class Insight challenges. It expands `GAME_DESIGN.md` §9 without overriding the master canon.
 
 Do not create parallel competing design documents. Subordinate reference files may expand a workstream that is explicitly indexed/queued by `GAME_DESIGN.md`, but `GAME_DESIGN.md` remains the master index and conflict authority.
 
