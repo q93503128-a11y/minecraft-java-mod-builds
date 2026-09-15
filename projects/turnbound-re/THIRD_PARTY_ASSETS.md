@@ -4,7 +4,8 @@
 
 | ID | 종류 | 출처 | 라이선스 | 현재 사용 | 허용 범위 |
 |---|---|---|---|---|---|
-| REF-CODE-001 | 구조 참고 | Stephen-Seo/TurnBasedMinecraftMod, `neoforge` branch | MIT | 코드 복사 없음 | Battle/Combatant/manager/network 분리 및 Minecraft 턴제 구현 사례 조사만 |
+| EXT-CODE-001 | turn-based Minecraft integration | Stephen-Seo/TurnBasedMinecraftMod, `neoforge`, commit `4d685cb187f91b2573a469d09fc47df270b90a4e`, `common/AttackEventHandler.java` — https://github.com/Stephen-Seo/TurnBasedMinecraftMod | MIT | **일부 패턴 직접 adaptation 사용 중** | `BattleWorldEventHooks`의 source/target 양방향 vanilla damage interception 및 player attack 선제 차단 경계에 적용. 외부 모드의 battle rule/RNG/UI/config는 복사하지 않고 TURNBOUND 정본 규칙을 유지. 라이선스는 `third_party/licenses/Stephen-Seo_TurnBasedMinecraftMod_MIT.txt` 보존 |
+| EXT-CODE-002 | battle camera smoothing | Cukkoo12/free-camera, `master`, commit `9dc299c70e19cfbd297a65912ea3e70809548b9d`, NeoForge 26.2 `CinematicRotationSmoother.java` + `CinematicMotionProfile.java` — https://github.com/Cukkoo12/free-camera | MIT | **adapted source 사용 중** | `FreeCameraRotationSmoother`에 upstream critically-damped exponential yaw/pitch integration과 CINEMATIC rotation frequency `7.0`을 적용. TURNBOUND glue는 active battle snapshot일 때만 NeoForge `ComputeCameraAngles`에 연결. 라이선스는 `third_party/licenses/Cukkoo12_free-camera_MIT.txt` 보존 |
 | REF-UI-001 | UI production skin | Kenney, `UI Pack - Pixel Adventure` 2.0 — https://kenney.nl/assets/ui-pack-pixel-adventure | CC0 1.0 | **사용 중** | Large tiles / Thin outline의 `tile_0002`, `0008`, `0009`, `0020`, `0021`, `0022`를 title + semantic frame으로 사용. meter는 같은 pack의 neutral/red/blue/gold palette를 5px strip으로 축약한 수정본. GUI 확장은 9-slice metadata 사용 |
 | REF-UI-002 | UI 자산 후보 / 비교 | tiopalada, `Tiny RPG - Dragon Regalia GUI` — https://tiopalada.itch.io/tiny-rpg-dragon-regalia-gui | CC0 1.0 | 파일 반입 전 | 9-slice frame, rest/hover/click/disabled 상태, target cursor, meter 구조 참고 및 보조 후보. 원본의 강한 JRPG 색/장식은 TURNBOUND: RE 전체 skin으로 그대로 혼합하지 않음 |
 | REF-UI-003 | UI 자산 후보 / 입력 glyph | Kenney `Input Prompts Pixel 16×` — Kenney Game Assets preview/catalog | CC0 1.0 | 파일 반입 전 | 키보드/패드 입력 glyph 후보. 실제 파일 반입 전 개별 pack의 공식 배포 페이지와 CC0 표시를 다시 고정 확인 |
@@ -24,6 +25,14 @@
 - **대표 roster의 vanilla-source 캐릭터 production base:** 새 creature geometry를 만들지 않고 `EXT-MODEL-002` Mojang runtime model/texture를 직접 사용한다.
 - TURNBOUND가 추가하는 것은 server-authored action을 구분하기 위한 기존 bone/part pose, stage motion, projectile/impact timing뿐이다.
 - 별도 외부 custom model을 채택하려면 실제 사용 가능한 파일과 라이선스, 26.2 호환을 먼저 고정하고 그 파일 자체를 사용한다.
+
+## 전투/카메라 external-code boundary
+
+- TURNBOUND의 `Intent + Affinity + Poise + EXPOSED`, deterministic RNG, server-authoritative command/target/reward 규칙은 `CANON.md`와 `02_COMBAT_SYSTEM.md`가 정본이다.
+- 외부 턴제 코드는 이 규칙을 대체하지 않는다. Minecraft vanilla combat을 턴제 소유권 경계와 충돌하지 않게 막는 adapter 수준에서 실제 코드를 재사용/adapt한다.
+- 일반 자연몹을 공격했다고 자동으로 battle을 여는 TurnBasedMinecraftMod의 gameplay 흐름은 채택하지 않는다. TURNBOUND는 authored visible Encounter 진입을 유지한다.
+- battle camera는 외부 Free Camera의 실제 26.2 NeoForge smoothing math를 사용한다. 외부 근거 없는 TURNBOUND 전용 cinematic profile/shot을 임의 추가하지 않는다.
+- Free Camera 전체를 runtime dependency로 요구하지 않는다. 필요한 MIT source subset만 provenance/notice와 함께 vendor/adapt하여 설치 부담과 모드 충돌을 줄인다.
 
 ## 제거된 legacy visual
 

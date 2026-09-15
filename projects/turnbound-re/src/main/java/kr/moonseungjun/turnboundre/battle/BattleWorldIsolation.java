@@ -25,9 +25,24 @@ public final class BattleWorldIsolation {
         return !isBattleOwned(entityId);
     }
 
-    /** Damage outside the deterministic battle resolver must be rejected. */
+    /** Damage received outside the deterministic battle resolver must be rejected. */
     public boolean allowWorldDamage(UUID entityId) {
         return !isBattleOwned(entityId);
+    }
+
+    /** A battle-owned attacker must not damage arbitrary world entities through vanilla combat. */
+    public boolean allowWorldAttackFrom(UUID entityId) {
+        return !isBattleOwned(entityId);
+    }
+
+    /**
+     * Vanilla damage is allowed only when neither the target nor the causing entity is battle-owned.
+     * A null source represents environmental/world damage and is still rejected for a battle-owned target.
+     */
+    public boolean allowWorldDamage(UUID targetEntityId, UUID sourceEntityId) {
+        Objects.requireNonNull(targetEntityId, "targetEntityId");
+        return allowWorldDamage(targetEntityId)
+                && (sourceEntityId == null || allowWorldAttackFrom(sourceEntityId));
     }
 
     /** Vanilla knockback would desync world position from deterministic battle state. */

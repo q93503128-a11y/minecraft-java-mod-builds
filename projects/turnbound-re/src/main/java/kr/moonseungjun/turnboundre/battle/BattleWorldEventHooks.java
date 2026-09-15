@@ -7,15 +7,21 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingKnockBackEvent;
+import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 
 /**
  * Live NeoForge adapter for M2 battle/world isolation.
  *
- * The deterministic battle core owns combat while an entity is bound to a live battle. These hooks
- * prevent the vanilla world simulation from simultaneously applying AI, incoming damage or knockback,
- * and tear down ownership before an entity leaves its level so dimension changes, disconnects and
- * removals cannot silently strand an orphan battle registry entry.
+ * <p>The deterministic battle core owns combat while an entity is bound to a live battle. These hooks
+ * prevent the vanilla world simulation from simultaneously applying AI, attacks, incoming damage or
+ * knockback, and tear down ownership before an entity leaves its level so dimension changes, disconnects
+ * and removals cannot silently strand an orphan battle registry entry.</p>
+ *
+ * <p>The source-side damage interception follows the integration pattern used by Stephen-Seo's
+ * TurnBasedMinecraftMod {@code AttackEventHandler} (MIT, neoforge commit
+ * {@code 4d685cb187f91b2573a469d09fc47df270b90a4e}). TURNBOUND keeps its own deterministic battle rules;
+ * only the Minecraft-world combat interception boundary is adapted.</p>
  */
 public final class BattleWorldEventHooks {
     private final BattleManager battles;
@@ -29,15 +35,27 @@ public final class BattleWorldEventHooks {
 
     public void register(IEventBus bus) {
         if (bus == null) throw new IllegalArgumentException("bus must not be null");
+        bus.addListener(this::onPlayerAttackEntity);
         bus.addListener(this::onIncomingDamage);
         bus.addListener(this::onKnockBack);
         bus.addListener(this::onEntityTickPre);
         bus.addListener(this::onEntityLeaveLevel);
     }
 
+    private void onPlayerAttackEntity(AttackEntityEvent event) {
+        if (event.getEntity().level().isClientSide()) return;
+        if (!isolation.allowWorldAttackFrom(event.getEntity().getUUID())) {
+            event.setCanceled(true);
+        }
+    }
+
     private void onIncomingDamage(LivingIncomingDamageEvent event) {
-        Entity entity = event.getEntity();
-        if (!entity.level().isClientSide() && !isolation.allowWorldDamage(entity.getUUID())) {
+        Entity target = event.getEntity();
+        if (target.level().isClientSide()) return;
+
+        Entity source = event.getSource().getEntity();
+        UUID sourceId = source == null ? null : source.getUUID();
+        if (!isolation.allowWorldDamage(target.getUUID(), sourceId)) {
             event.setCanceled(true);
         }
     }

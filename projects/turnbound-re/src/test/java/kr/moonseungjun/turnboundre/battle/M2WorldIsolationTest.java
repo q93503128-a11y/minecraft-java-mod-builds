@@ -26,6 +26,7 @@ final class M2WorldIsolationTest {
             assertTrue(isolation.isBattleOwned(entityId));
             assertFalse(isolation.allowWorldAi(entityId));
             assertFalse(isolation.allowWorldDamage(entityId));
+            assertFalse(isolation.allowWorldAttackFrom(entityId));
             assertFalse(isolation.allowWorldKnockback(entityId));
             assertFalse(isolation.allowWorldDespawn(entityId));
             assertTrue(isolation.requiresBattleCleanupBeforeRemoval(entityId));
@@ -34,9 +35,16 @@ final class M2WorldIsolationTest {
         assertFalse(isolation.isBattleOwned(UNBOUND_ENTITY));
         assertTrue(isolation.allowWorldAi(UNBOUND_ENTITY));
         assertTrue(isolation.allowWorldDamage(UNBOUND_ENTITY));
+        assertTrue(isolation.allowWorldAttackFrom(UNBOUND_ENTITY));
         assertTrue(isolation.allowWorldKnockback(UNBOUND_ENTITY));
         assertTrue(isolation.allowWorldDespawn(UNBOUND_ENTITY));
         assertFalse(isolation.requiresBattleCleanupBeforeRemoval(UNBOUND_ENTITY));
+
+        assertFalse(isolation.allowWorldDamage(PLAYER_ENTITY, UNBOUND_ENTITY));
+        assertFalse(isolation.allowWorldDamage(UNBOUND_ENTITY, PLAYER_ENTITY));
+        assertFalse(isolation.allowWorldDamage(ENEMY_ENTITY, PLAYER_ENTITY));
+        assertTrue(isolation.allowWorldDamage(UNBOUND_ENTITY, UNBOUND_ENTITY));
+        assertTrue(isolation.allowWorldDamage(UNBOUND_ENTITY, null));
 
         manager.cleanup(battle.battleId());
 
@@ -44,10 +52,12 @@ final class M2WorldIsolationTest {
             assertFalse(isolation.isBattleOwned(entityId));
             assertTrue(isolation.allowWorldAi(entityId));
             assertTrue(isolation.allowWorldDamage(entityId));
+            assertTrue(isolation.allowWorldAttackFrom(entityId));
             assertTrue(isolation.allowWorldKnockback(entityId));
             assertTrue(isolation.allowWorldDespawn(entityId));
             assertFalse(isolation.requiresBattleCleanupBeforeRemoval(entityId));
         }
+        assertTrue(isolation.allowWorldDamage(UNBOUND_ENTITY, PLAYER_ENTITY));
     }
 
     private static BattleInstance battle() {
