@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-alpha.18
+
+- Added visible three-tier rod progression without replacing vanilla fishing-hook transport: each saved rod tier now selects a dedicated client item model while gameplay continues to use `minecraft:fishing_rod` as the carrier.
+- Adapted the MIT-licensed Fishing Frenzy `Deluxe Fishing Rod` art into three coherent material variants for `갈대 낚싯대`, `호수 전문가`, and `블루워터`, with matching cast-state textures.
+- Added a restrained animated glint to Bluewater so the highest current tier reads as a simulator-style premium upgrade without inventing a placeholder fantasy model.
+- Synchronized the equipped rod presentation on login and profile upgrades, so visual tier and server-authoritative progression cannot drift during normal play.
+- Added explicit 26.2 client-item fishing-rod cast dispatch resources and CI JAR checks for rod model definitions, textures and bundled MIT notice.
+- Recorded the exact Fishing Frenzy source commit and upstream texture blob hashes in `THIRD_PARTY_ASSETS.md`.
+
 ## 0.1.0-alpha.17
 
 - Added five species fight styles so hooked fish no longer differ only by a resistance scalar: `꾸준한 힘싸움`, `연속 질주`, `깊은 잠수`, `묵직한 버팀`, `불규칙 난동`.
@@ -18,7 +27,7 @@
 - Added Gull Harbor hotspots: `방파제 안쪽`, `항로 중앙`, `외해 끝부두`.
 - Added Deepwater Channel hotspots: `유도등 수역`, `심해 골`, `고대 해구`.
 - Added a short hotspot/ecology notice when the bobber first reaches valid water.
-- Added recommended-hotspot hints to undiscovered bestiary rows while keeping undiscovered species names hidden.
+- Added recommended-hotspot hints to undiscovered bestiary rows while keeping the species name hidden.
 - Added deterministic hotspot classification/bias tests, including an assertion that non-preferred species remain catchable.
 
 ## 0.1.0-alpha.15

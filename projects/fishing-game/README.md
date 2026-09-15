@@ -6,7 +6,7 @@ Minecraft Java 26.2 Fabric standalone fishing progression game:
 
 Minecraft supplies the runtime/world renderer; the player experience is a dedicated fishing game rather than survival.
 
-## Current alpha.17 slice
+## Current alpha.18 slice
 
 - Adventure-mode fishing-only rules: no survival damage, hunger chores, mining/crafting loop or survival HUD.
 - Hold/release right click for charge casting; cast charge changes distance only, never rarity or catch odds.
@@ -18,11 +18,13 @@ Minecraft supplies the runtime/world renderer; the player experience is a dedica
 - Gull Harbor: 방파제 안쪽 / 항로 중앙 / 외해 끝부두.
 - Deepwater Channel: 유도등 수역 / 심해 골 / 고대 해구.
 - Landing the bobber reports the hotspot and a short ecological hint; undiscovered bestiary entries show only a recommended hotspot while keeping the species name hidden.
-- Hooked fish now use five species fight styles: 꾸준한 힘싸움 / 연속 질주 / 깊은 잠수 / 묵직한 버팀 / 불규칙 난동.
+- Hooked fish use five species fight styles: 꾸준한 힘싸움 / 연속 질주 / 깊은 잠수 / 묵직한 버팀 / 불규칙 난동.
 - Fight style changes server-side burst cadence/force and the encounter fish's visible lateral/orbit/dive motion while keeping the same hold/release reel control.
 - Server-authoritative fishing session, hotspot resolution, fish selection, tension/progress, catch value, coins, upgrades and permanent collection records.
 - Five transient encounter-fish silhouettes with species-specific textures and visible approach/fight motion.
 - Persistent catch bag, selling and three-tier rod progression.
+- Rod progression now changes the actual held-rod presentation: 갈대 낚싯대 / 호수 전문가 / 블루워터 use adapted Fishing Frenzy MIT rod art, distinct material palettes and cast states; Bluewater adds an animated glint layer.
+- The vanilla fishing rod remains the gameplay carrier, so custom visuals do not replace the proven bobber/line transport or server-owned fishing session.
 - Permanent bestiary keeps species discovery, catch count and personal-best weight/length after selling.
 - First discovery and location completion pay one-time rewards into the existing coin economy; repeat catches cannot duplicate those rewards.
 - HUD, bag, bestiary, travel and catch-result presentation share the bundled Kenney CC0 UI language.
@@ -47,4 +49,4 @@ Minecraft supplies the runtime/world renderer; the player experience is a dedica
 
 ## Quality gate
 
-Compile/build success is not a playtest-ready declaration. Alpha.17 gives species distinct fight behavior without adding another management system, but hotspot readability, fight-style feel, fish motion, sound balance and screen composition still need actual Minecraft graphical/play review before a JAR is handed to the user as a meaningful playtest milestone.
+Compile/build success is not a playtest-ready declaration. Alpha.18 makes rod progression visible in the player's hand without replacing the vanilla fishing transport, but rod readability at Minecraft GUI/hand scales, Bluewater glint strength, hotspot readability, fight-style feel, fish motion, sound balance and screen composition still need actual Minecraft graphical/play review before a JAR is handed to the user as a meaningful playtest milestone.

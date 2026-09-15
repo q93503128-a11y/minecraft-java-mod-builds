@@ -1,6 +1,8 @@
 package dev.moonseungjun.fishinggame.profile;
 
 import dev.moonseungjun.fishinggame.FishingGameMod;
+import dev.moonseungjun.fishinggame.progression.FishingRodVisuals;
+import dev.moonseungjun.fishinggame.progression.FishingRods;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.minecraft.server.level.ServerPlayer;
@@ -23,5 +25,6 @@ public final class FishingProfiles {
 
     public static void set(ServerPlayer player, PlayerFishingProfile profile) {
         player.setAttached(PROFILE, profile);
+        FishingRodVisuals.refreshEquipped(player, FishingRods.byTier(profile.rodTier()));
     }
 }

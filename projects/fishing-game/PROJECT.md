@@ -5,7 +5,7 @@
 - Slug: fishing-game
 - Mod ID: fishinggame
 - Namespace: fishinggame
-- Mod version: 0.1.0-alpha.17
+- Mod version: 0.1.0-alpha.18
 - Minecraft: 26.2
 - Java: 25
 - Loader: Fabric
@@ -13,7 +13,7 @@
 - Fabric API: >=0.159.0+26.2
 - Gradle: 9.5.1
 - Build plugin: Fabric Loom 1.17.19
-- Final JAR: build/libs/fishing-game-0.1.0-alpha.17.jar
+- Final JAR: build/libs/fishing-game-0.1.0-alpha.18.jar
 - Required dependencies: Fabric API
 - Optional external mods: Essential, connection/hosting convenience only
 - Forbidden bundled dependencies: Essential
@@ -84,6 +84,18 @@ Alpha.17 keeps the one-button reel system but stops different fish from feeling 
 - The visible encounter fish uses the same style that drives server tension bursts, so animation/motion and real catch pressure do not contradict each other.
 - Fight-style calculation is deterministic data keyed by species identity while burst timing remains per-session/randomized and isolated per player.
 
+## Rod presentation rule
+
+Alpha.18 makes existing rod progression visible without replacing the stable fishing transport.
+
+- `minecraft:fishing_rod` remains the physical item and bobber/line carrier; rod tier is still server-owned profile progression rather than item-owned authority.
+- The equipped stack receives a tier-specific `ITEM_MODEL`, and each client item dispatches between normal and cast art with the vanilla `minecraft:fishing_rod/cast` condition.
+- `갈대 낚싯대`, `호수 전문가`, and `블루워터` share a coherent silhouette adapted from the MIT-licensed Fishing Frenzy Deluxe Fishing Rod instead of using placeholder geometry.
+- Tier identity comes from material/palette treatment: natural reed/brass, graphite/freshwater teal, then deep-ocean blue/cyan.
+- Bluewater adds Minecraft's animated enchantment glint so the highest current tier visibly reads as premium; lower tiers stay clean rather than applying glow to everything.
+- Login restores the saved tier presentation, and profile upgrades refresh the equipped presentation immediately.
+- Future prestige/rebirth-grade rods may become more extravagant, but no prestige gameplay is introduced by alpha.18. Such rods must use a licensed external base or a purpose-built final asset rather than a temporary cube/vanilla recolor presented as finished.
+
 ## Collection / bestiary rule
 
 The temporary catch bag and permanent collection records are separate systems.
@@ -147,7 +159,7 @@ Do not hand the user a JAR for a tiny technical check. A user-facing test build 
 - dedicated non-survival HUD
 - readable charge casting with meaningful distance response
 - catch bag, persistence, coins and selling
-- meaningful rod progression
+- meaningful rod progression with held-item visuals that match the saved tier
 - visible species presentation and readable reel control
 - species fights whose visible motion and tension cadence are meaningfully different
 - clear catch result with rarity, size grade, records and collection reward feedback
@@ -159,4 +171,4 @@ Do not hand the user a JAR for a tiny technical check. A user-facing test build 
 - complete cast -> target water -> catch -> sell -> upgrade -> travel -> collect loop
 - acceptable actual Minecraft screen quality
 
-Build success alone is not the final gate. Alpha.17 deepens the hooked-fish interaction, but hotspot readability, fight-style feel, fish motion, sound balance and screen composition still need actual Minecraft graphical/play review before PLAYTESTED or GRAPHICAL CLIENT REVIEWED is claimed.
+Build success alone is not the final gate. Alpha.18 improves rod progression presentation, but rod readability/glint strength, hotspot readability, fight-style feel, fish motion, sound balance and screen composition still need actual Minecraft graphical/play review before PLAYTESTED or GRAPHICAL CLIENT REVIEWED is claimed.

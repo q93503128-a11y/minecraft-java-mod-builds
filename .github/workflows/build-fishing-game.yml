@@ -39,7 +39,7 @@ jobs:
 
       - name: Inspect playable JAR
         run: |
-          JAR="build/libs/fishing-game-0.1.0-alpha.17.jar"
+          JAR="build/libs/fishing-game-0.1.0-alpha.18.jar"
           test -s "$JAR"
           jar tf "$JAR" | grep -q '^fabric.mod.json$'
           jar tf "$JAR" | grep -q '^fishinggame.mixins.json$'
@@ -49,6 +49,7 @@ jobs:
           jar tf "$JAR" | grep -q '^dev/moonseungjun/fishinggame/fishing/CollectionRewards.class$'
           jar tf "$JAR" | grep -q '^dev/moonseungjun/fishinggame/profile/FishRecord.class$'
           jar tf "$JAR" | grep -q '^dev/moonseungjun/fishinggame/profile/PlayerFishingProfile.class$'
+          jar tf "$JAR" | grep -q '^dev/moonseungjun/fishinggame/progression/FishingRodVisuals.class$'
           jar tf "$JAR" | grep -q '^dev/moonseungjun/fishinggame/client/BestiaryScreen.class$'
           for LOCATION in lakeside coast deep_sea; do
             jar tf "$JAR" | grep -q "^data/fishinggame/dimension/$LOCATION.json$"
@@ -56,6 +57,14 @@ jobs:
             jar tf "$JAR" | grep -q "^data/fishinggame/world_clock/$LOCATION.json$"
           done
           jar tf "$JAR" | grep -q '^assets/fishinggame/textures/entity/fish/angler.png$'
+          for ROD in reed lake_pro bluewater; do
+            jar tf "$JAR" | grep -q "^assets/fishinggame/items/rod/$ROD.json$"
+            jar tf "$JAR" | grep -q "^assets/fishinggame/models/item/rods/$ROD.json$"
+            jar tf "$JAR" | grep -q "^assets/fishinggame/models/item/rods/${ROD}_cast.json$"
+            jar tf "$JAR" | grep -q "^assets/fishinggame/textures/item/rods/$ROD.png$"
+            jar tf "$JAR" | grep -q "^assets/fishinggame/textures/item/rods/${ROD}_cast.png$"
+          done
+          jar tf "$JAR" | grep -q '^META-INF/licenses/fishinggame/fishing-frenzy-mit.txt$'
           sha256sum "$JAR" | tee "$JAR.sha256"
 
       - name: Dedicated server smoke
@@ -92,7 +101,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: fishing-game-0.1.0-alpha.17-build
+          name: fishing-game-0.1.0-alpha.18-build
           path: |
             projects/fishing-game/build/libs/*.jar
             projects/fishing-game/build/libs/*.sha256

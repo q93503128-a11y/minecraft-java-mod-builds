@@ -21,6 +21,18 @@
 - Direct binary texture reuse: Sea Life `bass.png` -> `largemouth.png`, `carp.png` -> `carp.png`, `catfish.png` -> `catfish.png`, `perch.png` -> `perch.png`, `tuna.png` -> `tuna.png`, `anglerfish.png` -> `angler.png`
 - Remaining catalog textures are project-authored and may later be replaced when a clearly licensed, species-appropriate source improves quality.
 
+### Fishing Frenzy deluxe fishing rod
+- Type: editable item-art/model base
+- Repository: https://github.com/Vg34100/Minecraft-FishingFrenzy
+- Source branch: `master`
+- Inspected commit: `b1409d38f19cdf4222f20863a2d699fbfb84121c`
+- License: MIT, Copyright (c) 2024 Vg34100
+- Upstream assets: `deluxe_fishing_rod.png`, `deluxe_fishing_rod_cast.png`, and their handheld-rod model convention
+- Upstream texture blobs: normal `4e78d447c97b7eb345f0638f704f1d18b217d084`, cast `3d400366184d8cc12bc51034f909f9e50737f340`
+- Fishing Game use: source silhouette/pixel structure recolored into `reed`, `lake_pro`, and `bluewater` rod families; Bluewater additionally uses Minecraft's enchantment-glint presentation rather than baking a fake glow into the source art.
+- License notice bundled at `META-INF/licenses/fishinggame/fishing-frenzy-mit.txt`.
+- Future prestige/rebirth-grade rods should keep using clearly licensed external bases or purpose-built final assets; do not ship placeholder rods merely to fill a tier.
+
 ## Code / behavior references
 
 ### Simple Fishing Overhaul
