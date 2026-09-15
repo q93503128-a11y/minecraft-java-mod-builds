@@ -21,7 +21,7 @@
     "content_length_verified_against_downloaded_body": false,
     "sha256": null,
     "decoded": false,
-    "note": "The available web retrieval layer reached the exact pinned Poly Haven endpoint but refused the approximately 94 MB body because of its transfer-size limit. The execution container also could not resolve the external host. The reported content length is provenance evidence only and must be rechecked after an actual byte-for-byte download."
+    "note": "The chat/web retrieval layer reached the exact pinned Poly Haven endpoint but could not retain the approximately 94 MB body. A repository-scoped GitHub Actions intake now acquires only this exact pinned URL, verifies PNG structure/chunk CRCs, records byte size/SHA-256/dimensions, and publishes the source bytes plus receipt as a short-lived artifact for deterministic downstream derivation. This receipt remains unaccepted until that workflow succeeds and its artifact is inspected."
   },
   "geometry_target": {
     "asset": "Quaternius Dragon Evolved",
