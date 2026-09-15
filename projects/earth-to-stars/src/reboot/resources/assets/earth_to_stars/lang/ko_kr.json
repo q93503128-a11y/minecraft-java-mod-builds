@@ -1,0 +1,11 @@
+{
+  "itemGroup.earth_to_stars": "EARTH TO STARS",
+  "item.earth_to_stars.starter_craft_deployer": "스타터 함선 조립 코어",
+  "item.earth_to_stars.starter_flight_core": "스타터 비행 코어",
+  "item.earth_to_stars.starter_control_node": "비행 버스 노드",
+  "block.earth_to_stars.starter_flight_core": "스타터 비행 코어",
+  "block.earth_to_stars.starter_control_node": "비행 버스 노드",
+  "message.earth_to_stars.deploy_top_surface": "넓고 평평한 바닥 위에 함선을 조립해야 합니다.",
+  "message.earth_to_stars.deploy_success": "스타터 함선 조립 완료. Octo Controller에 탑승해 조종하세요.",
+  "message.earth_to_stars.deploy_failed": "스타터 함선 조립 실패: %s"
+}
