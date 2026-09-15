@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/** Server-authored equipment presentation plus client intent. Material balances are never client-authored. */
+/** Server-authored equipment presentation plus client intent. Material balances and visual identity are never client-authored. */
 public final class EquipmentNetworkPayloads {
     private static final int MAX_WIRE_CHARS = 32_000;
     private static final Base64.Encoder B64E = Base64.getUrlEncoder().withoutPadding();
@@ -39,6 +39,7 @@ public final class EquipmentNetworkPayloads {
     public record EquipmentView(
             String id,
             String ingredientItem,
+            String visualItem,
             int level,
             int maxLevel,
             String equippedCharacterId,
@@ -51,7 +52,8 @@ public final class EquipmentNetworkPayloads {
             String blockCode
     ) {
         public EquipmentView {
-            if (id == null || id.isBlank() || ingredientItem == null || ingredientItem.isBlank()) {
+            if (id == null || id.isBlank() || ingredientItem == null || ingredientItem.isBlank()
+                    || visualItem == null || visualItem.isBlank()) {
                 throw new IllegalArgumentException("equipment ids required");
             }
             if (level < 0 || maxLevel < 1 || level > maxLevel || materialOwned < 0 || nextCoinCost < 0 || nextMaterialCount < 0) {
@@ -62,6 +64,26 @@ public final class EquipmentNetworkPayloads {
             action = action == null ? "" : action;
             blockCode = blockCode == null ? "" : blockCode;
         }
+
+        /** Wire/source-fixture compatibility for pre-visualItem callers. */
+        public EquipmentView(
+                String id,
+                String ingredientItem,
+                int level,
+                int maxLevel,
+                String equippedCharacterId,
+                int materialOwned,
+                BonusView currentBonus,
+                long nextCoinCost,
+                int nextMaterialCount,
+                BonusView nextBonus,
+                String action,
+                String blockCode
+        ) {
+            this(id, ingredientItem, ingredientItem, level, maxLevel, equippedCharacterId, materialOwned,
+                    currentBonus, nextCoinCost, nextMaterialCount, nextBonus, action, blockCode);
+        }
+
         public boolean owned() { return level > 0; }
         public boolean canForge() { return ("CRAFT".equals(action) || "UPGRADE".equals(action)) && blockCode.isBlank(); }
     }
@@ -157,8 +179,8 @@ public final class EquipmentNetworkPayloads {
                         .map(Map.Entry::getKey)
                         .findFirst().orElse("");
                 views.add(new EquipmentView(
-                        definition.id(), definition.ingredientItem(), level, definition.maxLevel(), equippedCharacter,
-                        materialOwned,
+                        definition.id(), definition.ingredientItem(), definition.visualItem(),
+                        level, definition.maxLevel(), equippedCharacter, materialOwned,
                         currentTier == null ? BonusView.ZERO : bonus(currentTier.bonus()),
                         nextTier == null ? 0L : nextTier.coinCost(),
                         nextTier == null ? 0 : nextTier.materialCount(),
@@ -192,7 +214,8 @@ public final class EquipmentNetworkPayloads {
         List<String> packed = new ArrayList<>();
         for (EquipmentView value : values) {
             packed.add(String.join(",",
-                    pack(value.id()), pack(value.ingredientItem()), Integer.toString(value.level()), Integer.toString(value.maxLevel()),
+                    pack(value.id()), pack(value.ingredientItem()), pack(value.visualItem()),
+                    Integer.toString(value.level()), Integer.toString(value.maxLevel()),
                     pack(value.equippedCharacterId()), Integer.toString(value.materialOwned()), packBonus(value.currentBonus()),
                     Long.toString(value.nextCoinCost()), Integer.toString(value.nextMaterialCount()), packBonus(value.nextBonus()),
                     pack(value.action()), pack(value.blockCode())));
@@ -205,10 +228,19 @@ public final class EquipmentNetworkPayloads {
         List<EquipmentView> values = new ArrayList<>();
         for (String packed : wire.split(";", -1)) {
             String[] p = packed.split(",", -1);
-            if (p.length != 12) throw new IllegalArgumentException("invalid equipment view wire");
-            values.add(new EquipmentView(unpack(p[0]), unpack(p[1]), Integer.parseInt(p[2]), Integer.parseInt(p[3]),
-                    unpack(p[4]), Integer.parseInt(p[5]), unpackBonus(p[6]), Long.parseLong(p[7]), Integer.parseInt(p[8]),
-                    unpackBonus(p[9]), unpack(p[10]), unpack(p[11])));
+            if (p.length == 12) {
+                String ingredient = unpack(p[1]);
+                values.add(new EquipmentView(unpack(p[0]), ingredient, ingredient,
+                        Integer.parseInt(p[2]), Integer.parseInt(p[3]), unpack(p[4]), Integer.parseInt(p[5]),
+                        unpackBonus(p[6]), Long.parseLong(p[7]), Integer.parseInt(p[8]), unpackBonus(p[9]),
+                        unpack(p[10]), unpack(p[11])));
+                continue;
+            }
+            if (p.length != 13) throw new IllegalArgumentException("invalid equipment view wire");
+            values.add(new EquipmentView(unpack(p[0]), unpack(p[1]), unpack(p[2]),
+                    Integer.parseInt(p[3]), Integer.parseInt(p[4]), unpack(p[5]), Integer.parseInt(p[6]),
+                    unpackBonus(p[7]), Long.parseLong(p[8]), Integer.parseInt(p[9]), unpackBonus(p[10]),
+                    unpack(p[11]), unpack(p[12])));
         }
         return List.copyOf(values);
     }

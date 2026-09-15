@@ -5,10 +5,11 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import java.util.List;
 
-/** One minimal character equipment piece. Costs and stat choices are data-driven; rules stay in code. */
+/** One minimal character equipment piece. Costs, visual source and stat choices are data-driven; rules stay in code. */
 public record EquipmentDefinition(
         String id,
         String ingredientItem,
+        String visualItem,
         List<Tier> tiers
 ) {
     public record Bonus(int hpPercent, int atkPercent, int defPercent, int poisePercent) {
@@ -33,11 +34,18 @@ public record EquipmentDefinition(
     public static final Codec<EquipmentDefinition> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.fieldOf("id").forGetter(EquipmentDefinition::id),
             Codec.STRING.fieldOf("ingredientItem").forGetter(EquipmentDefinition::ingredientItem),
+            Codec.STRING.optionalFieldOf("visualItem", "").forGetter(EquipmentDefinition::visualItem),
             Tier.CODEC.listOf().fieldOf("tiers").forGetter(EquipmentDefinition::tiers)
     ).apply(instance, EquipmentDefinition::new));
 
     public EquipmentDefinition {
+        visualItem = visualItem == null || visualItem.isBlank() ? ingredientItem : visualItem;
         tiers = tiers == null ? List.of() : List.copyOf(tiers);
+    }
+
+    /** Legacy/source-fixture compatibility: old definitions without visualItem use the material item as a safe runtime fallback. */
+    public EquipmentDefinition(String id, String ingredientItem, List<Tier> tiers) {
+        this(id, ingredientItem, ingredientItem, tiers);
     }
 
     public Tier tier(int level) {

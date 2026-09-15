@@ -3,6 +3,7 @@
     {
       "id": "turnbound_re:iron_bulwark",
       "ingredientItem": "minecraft:iron_ingot",
+      "visualItem": "minecraft:shield",
       "tiers": [
         {"level": 1, "coinCost": 60, "materialCount": 6, "bonus": {"defPercent": 4, "poisePercent": 4}},
         {"level": 2, "coinCost": 100, "materialCount": 10, "bonus": {"defPercent": 6, "poisePercent": 6}},
@@ -12,6 +13,7 @@
     {
       "id": "turnbound_re:copper_edge",
       "ingredientItem": "minecraft:copper_ingot",
+      "visualItem": "minecraft:copper_sword",
       "tiers": [
         {"level": 1, "coinCost": 60, "materialCount": 6, "bonus": {"atkPercent": 4}},
         {"level": 2, "coinCost": 100, "materialCount": 10, "bonus": {"atkPercent": 6}},
@@ -21,6 +23,7 @@
     {
       "id": "turnbound_re:golden_heart",
       "ingredientItem": "minecraft:gold_ingot",
+      "visualItem": "minecraft:golden_apple",
       "tiers": [
         {"level": 1, "coinCost": 80, "materialCount": 4, "bonus": {"hpPercent": 5}},
         {"level": 2, "coinCost": 130, "materialCount": 6, "bonus": {"hpPercent": 7}},

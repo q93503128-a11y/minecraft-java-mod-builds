@@ -20,6 +20,9 @@ class M6EquipmentDefinitionTest {
         assertEquals("minecraft:iron_ingot", registry.equipment().get("turnbound_re:iron_bulwark").ingredientItem());
         assertEquals("minecraft:copper_ingot", registry.equipment().get("turnbound_re:copper_edge").ingredientItem());
         assertEquals("minecraft:gold_ingot", registry.equipment().get("turnbound_re:golden_heart").ingredientItem());
+        assertEquals("minecraft:shield", registry.equipment().get("turnbound_re:iron_bulwark").visualItem());
+        assertEquals("minecraft:copper_sword", registry.equipment().get("turnbound_re:copper_edge").visualItem());
+        assertEquals("minecraft:golden_apple", registry.equipment().get("turnbound_re:golden_heart").visualItem());
         registry.equipment().values().forEach(definition -> assertEquals(3, definition.maxLevel(), definition.id()));
 
         List<String> bonusFields = Arrays.stream(EquipmentDefinition.Bonus.class.getRecordComponents())
@@ -31,6 +34,22 @@ class M6EquipmentDefinitionTest {
     }
 
     @Test
+    void legacyDefinitionWithoutVisualItemFallsBackToIngredient() {
+        EquipmentDefinition legacy = EquipmentDefinition.CODEC.parse(JsonOps.INSTANCE, JsonParser.parseString("""
+                {
+                  "id": "turnbound_re:legacy_edge",
+                  "ingredientItem": "minecraft:iron_ingot",
+                  "tiers": [
+                    {"level":1,"coinCost":10,"materialCount":1,"bonus":{"atkPercent":1}}
+                  ]
+                }
+                """))
+                .getOrThrow();
+        assertEquals("minecraft:iron_ingot", legacy.visualItem());
+        assertTrue(EquipmentDefinitionValidator.validate(List.of(legacy)).isEmpty());
+    }
+
+    @Test
     void legacyDefinitionBundleWithoutEquipmentStillDecodes() {
         DefinitionBundle bundle = DefinitionBundle.CODEC.parse(JsonOps.INSTANCE, JsonParser.parseString("{}"))
                 .getOrThrow();
@@ -39,7 +58,7 @@ class M6EquipmentDefinitionTest {
     }
 
     @Test
-    void validatorRejectsPowerCreepAndBrokenTierSequences() {
+    void validatorRejectsPowerCreepBrokenTierSequencesAndInvalidVisualItems() {
         EquipmentDefinition gap = new EquipmentDefinition(
                 "turnbound_re:gap",
                 "minecraft:iron_ingot",
@@ -66,5 +85,14 @@ class M6EquipmentDefinitionTest {
         assertTrue(errors.stream().anyMatch(error -> error.contains("coinCost must not decrease")));
         assertTrue(errors.stream().anyMatch(error -> error.contains("materialCount must not decrease")));
         assertTrue(errors.stream().anyMatch(error -> error.contains("stat bonuses must not decrease")));
+
+        EquipmentDefinition invalidVisual = new EquipmentDefinition(
+                "turnbound_re:invalid_visual",
+                "minecraft:iron_ingot",
+                "not a resource id",
+                List.of(new EquipmentDefinition.Tier(1, 10, 1,
+                        new EquipmentDefinition.Bonus(0, 1, 0, 0))));
+        assertTrue(EquipmentDefinitionValidator.validate(List.of(invalidVisual)).stream()
+                .anyMatch(error -> error.contains("visualItem")));
     }
 }

@@ -27,6 +27,9 @@ public final class EquipmentDefinitionValidator {
             if (!validId(definition.ingredientItem())) {
                 errors.add(id + ": ingredientItem must be a namespaced item id");
             }
+            if (!validId(definition.visualItem())) {
+                errors.add(id + ": visualItem must be a namespaced item id");
+            }
             if (definition.tiers().isEmpty()) {
                 errors.add(id + ": tiers must not be empty");
                 continue;

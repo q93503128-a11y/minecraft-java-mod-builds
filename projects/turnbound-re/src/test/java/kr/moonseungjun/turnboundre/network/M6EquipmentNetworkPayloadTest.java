@@ -32,7 +32,7 @@ class M6EquipmentNetworkPayloadTest {
     }
 
     @Test
-    void serverProjectionCarriesActualMaterialBalanceAndForgeGate() throws IOException {
+    void serverProjectionCarriesActualMaterialBalanceForgeGateAndVisualItem() throws IOException {
         var registry = ProductionDefinitionFixture.load().registry();
         var zombie = registry.characters().get(ZOMBIE);
         PlayerProgress state = new PlayerProgress(
@@ -53,6 +53,7 @@ class M6EquipmentNetworkPayloadTest {
         EquipmentNetworkPayloads.EquipmentView view = decoded.equipment(BULWARK).orElseThrow();
 
         assertTrue(decoded.forgeAvailable());
+        assertEquals("minecraft:shield", view.visualItem());
         assertEquals(9, view.materialOwned());
         assertEquals(1, view.level());
         assertEquals(ZOMBIE, view.equippedCharacterId());
@@ -63,6 +64,16 @@ class M6EquipmentNetworkPayloadTest {
         assertEquals(4, view.currentBonus().defPercent());
         assertEquals(6, view.nextBonus().defPercent());
         assertEquals("ACCEPTED", decoded.resultCode());
+    }
+
+    @Test
+    void legacyTwelveFieldEquipmentViewWireFallsBackToIngredientVisual() {
+        var legacyView = new EquipmentNetworkPayloads.EquipmentView(
+                BULWARK, "minecraft:iron_ingot", 1, 3, ZOMBIE, 6,
+                new EquipmentNetworkPayloads.BonusView(0, 0, 4, 4),
+                100L, 10, new EquipmentNetworkPayloads.BonusView(0, 0, 6, 6),
+                "UPGRADE", "");
+        assertEquals("minecraft:iron_ingot", legacyView.visualItem());
     }
 
     @Test
@@ -82,5 +93,7 @@ class M6EquipmentNetworkPayloadTest {
 
         assertTrue(snapshot.equipment().stream().allMatch(view -> "FORGE_UNAVAILABLE".equals(view.blockCode())));
         assertTrue(snapshot.equipment().stream().noneMatch(EquipmentNetworkPayloads.EquipmentView::canForge));
+        assertEquals("minecraft:copper_sword", snapshot.equipment("turnbound_re:copper_edge").orElseThrow().visualItem());
+        assertEquals("minecraft:golden_apple", snapshot.equipment("turnbound_re:golden_heart").orElseThrow().visualItem());
     }
 }
