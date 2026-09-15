@@ -2,10 +2,11 @@
 
 외부 코드·맵·모델·텍스처·UI 키트·사운드·폰트를 실제 프로젝트에 넣기 전 반드시 이 문서를 갱신한다.
 
-| ID | 종류 | 출처 | 라이선스 | 현재 사용 | 허용 범위 |
+| ID | 종류 | 출처 | 라이선스 / 사용조건 | 현재 사용 | 허용 범위 |
 |---|---|---|---|---|---|
 | EXT-CODE-001 | turn-based Minecraft integration | Stephen-Seo/TurnBasedMinecraftMod, `neoforge`, commit `4d685cb187f91b2573a469d09fc47df270b90a4e`, `common/AttackEventHandler.java` — https://github.com/Stephen-Seo/TurnBasedMinecraftMod | MIT | **일부 패턴 직접 adaptation 사용 중** | `BattleWorldEventHooks`의 source/target 양방향 vanilla damage interception 및 player attack 선제 차단 경계에 적용. 외부 모드의 battle rule/RNG/UI/config는 복사하지 않고 TURNBOUND 정본 규칙을 유지. 라이선스는 `third_party/licenses/Stephen-Seo_TurnBasedMinecraftMod_MIT.txt` 보존 |
 | EXT-CODE-002 | battle camera smoothing | Cukkoo12/free-camera, `master`, commit `9dc299c70e19cfbd297a65912ea3e70809548b9d`, NeoForge 26.2 `CinematicRotationSmoother.java` + `CinematicMotionProfile.java` — https://github.com/Cukkoo12/free-camera | MIT | **adapted source 사용 중** | `FreeCameraRotationSmoother`에 upstream critically-damped exponential yaw/pitch integration과 CINEMATIC rotation frequency `7.0`을 적용. TURNBOUND glue는 active battle snapshot일 때만 NeoForge `ComputeCameraAngles`에 연결. 라이선스는 `third_party/licenses/Cukkoo12_free-camera_MIT.txt` 보존 |
+| EXT-WORLD-001 | production external authored world | Drehmal Team, `Drehmal: APOTHEOSIS v2.2.2f` — official download https://www.drehmal.net/downloads / release https://github.com/Drehmal-Team/map/releases/tag/v2.2.2f | 공식 무료 다운로드/싱글·멀티·서버 설치 안내 확인. TURNBOUND 저장소 재배포 허가는 확인되지 않았으므로 **원본 world/resource-pack 파일은 vendoring/재배포 금지**, 사용자가 공식 배포본을 별도 설치 | **production base로 채택 / 외부 설치 방식** | 원본 terrain/town/building을 직접 사용. TURNBOUND는 `DrehmalExternalWorldBinding`으로 server metadata/Interaction anchor만 추가. 본편 공개판은 MC 1.20.1이므로 Java 26.2 호환은 아직 PLAYTESTED 아님. New Drabyel `(502,67,1801)`을 HUB_01 초기 기준점, Stasis Facility `(778,31,668)`을 REGION_01 초기 기준점으로 사용 |
 | REF-UI-001 | UI production skin | Kenney, `UI Pack - Pixel Adventure` 2.0 — https://kenney.nl/assets/ui-pack-pixel-adventure | CC0 1.0 | **사용 중** | Large tiles / Thin outline의 `tile_0002`, `0008`, `0009`, `0020`, `0021`, `0022`를 title + semantic frame으로 사용. meter는 같은 pack의 neutral/red/blue/gold palette를 5px strip으로 축약한 수정본. GUI 확장은 9-slice metadata 사용 |
 | REF-UI-002 | UI 자산 후보 / 비교 | tiopalada, `Tiny RPG - Dragon Regalia GUI` — https://tiopalada.itch.io/tiny-rpg-dragon-regalia-gui | CC0 1.0 | 파일 반입 전 | 9-slice frame, rest/hover/click/disabled 상태, target cursor, meter 구조 참고 및 보조 후보. 원본의 강한 JRPG 색/장식은 TURNBOUND: RE 전체 skin으로 그대로 혼합하지 않음 |
 | REF-UI-003 | UI 자산 후보 / 입력 glyph | Kenney `Input Prompts Pixel 16×` — Kenney Game Assets preview/catalog | CC0 1.0 | 파일 반입 전 | 키보드/패드 입력 glyph 후보. 실제 파일 반입 전 개별 pack의 공식 배포 페이지와 CC0 표시를 다시 고정 확인 |
@@ -16,15 +17,21 @@
 | CAND-ANIM-001 | Spider animation/base candidate | Wall Climbers 1.2 — https://modrinth.com/resourcepack/wall-climbers/version/1.2 | MIT + 프로젝트 사용조건 확인 | **파일 반입 전** | 26.2 지원. Spider/Cave Spider의 벽/천장 leg presentation external animation/base 후보. 실제 파일과 고지 조건을 고정한 뒤에만 반입 |
 | REF-MODEL-005 | Spider reference only | Fresh Animations: Spiders — https://modrinth.com/resourcepack/fresh-animations-spiders | ARR / custom terms | **reference only** | 원본 `.jem`/`.jpm`/texture/animation 파일 미반입. 공개 설명/이미지를 보고 비슷한 geometry를 수동 재구성하는 것도 금지 |
 
-## M5 현재 선택
+## 현재 production 선택
 
+- **World:** `EXT-WORLD-001` Drehmal: APOTHEOSIS v2.2.2f. 원본 파일은 공식 배포본을 별도 설치하고 TURNBOUND repo에는 넣지 않는다.
 - **Primary UI skin:** `REF-UI-001` Kenney UI Pack - Pixel Adventure.
-- 이유: Minecraft와 충돌이 적은 픽셀 해상도, 500+ 분리 sprite, thin/thick outline, panel/button/bar 계열을 한 family에서 공급하며 CC0라 수정/재배포 제약이 가장 낮다.
-- `REF-UI-002`는 상태별 frame/9-slice/target cursor 구조가 좋지만 화풍 혼합 위험 때문에 보조 후보로 제한한다.
-- 검증 원본 ZIP SHA-256: `6ebf462e7f209f5f348419b09be6601a559ef1e1d6b595f0e9f8aa4c00a84048`.
-- **대표 roster의 vanilla-source 캐릭터 production base:** 새 creature geometry를 만들지 않고 `EXT-MODEL-002` Mojang runtime model/texture를 직접 사용한다.
-- TURNBOUND가 추가하는 것은 server-authored action을 구분하기 위한 기존 bone/part pose, stage motion, projectile/impact timing뿐이다.
-- 별도 외부 custom model을 채택하려면 실제 사용 가능한 파일과 라이선스, 26.2 호환을 먼저 고정하고 그 파일 자체를 사용한다.
+- **Vanilla-source roster base:** `EXT-MODEL-002` Mojang runtime model/texture 직접 사용.
+- TURNBOUND가 추가하는 world 요소는 server-authoritative 의미/anchor/encounter/progression이며 외부 맵의 건축을 AI가 다시 만들지 않는다.
+
+## World external-base boundary
+
+- `DrehmalExternalWorldBinding`은 원본 terrain/building/resource-pack을 복사하지 않는다.
+- fast-travel 위치와 TURNBOUND Interaction anchor 같은 서버 메타데이터만 외부 월드에 얹는다.
+- `FunctionalWorldSliceBuilder`, `ProductionWorldSlicePrototypeBuilder`, `AuthoredFirstRegionBuilder`는 mechanics/layout 검증용 harness다. production visual source가 아니다.
+- 현재 Drehmal 본편 공개판은 1.20.1/Fabric ecosystem 기준이다. Java 26.2 + NeoForge TURNBOUND와 실제 save migration/월드 로딩을 아직 실행하지 않았으므로 호환 성공을 주장하지 않는다.
+- Drehmal 팀의 2026 `Archived Memory 2`는 Java 26.2 월드로 공개되어 제작진의 최신 버전 파이프라인 존재를 확인했지만, APOTHEOSIS 본편 26.2 공개판을 의미하지 않는다.
+- 외부 월드가 호환되지 않을 때 AI 자작 맵으로 자동 대체하지 않는다.
 
 ## 전투/카메라 external-code boundary
 

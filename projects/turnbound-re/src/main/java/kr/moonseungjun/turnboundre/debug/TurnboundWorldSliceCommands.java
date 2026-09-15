@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import kr.moonseungjun.turnboundre.data.DefinitionRegistry;
 import kr.moonseungjun.turnboundre.data.DefinitionRepository;
+import kr.moonseungjun.turnboundre.world.DrehmalExternalWorldBinding;
 import kr.moonseungjun.turnboundre.world.FunctionalWorldSliceBuilder;
 import kr.moonseungjun.turnboundre.world.FunctionalWorldSliceLayout;
 import kr.moonseungjun.turnboundre.world.ProductionWorldSlicePlan;
@@ -17,7 +18,7 @@ import net.minecraft.server.level.ServerPlayer;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Operator-only harness for M6 authored-world integration and the post-reference production prototype. */
+/** Operator-only world integration harness. Production world geometry comes from the selected external map. */
 public final class TurnboundWorldSliceCommands {
     private TurnboundWorldSliceCommands() {}
 
@@ -30,6 +31,8 @@ public final class TurnboundWorldSliceCommands {
                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                 .then(Commands.literal("validate")
                         .executes(ctx -> validate(ctx.getSource(), definitions)))
+                .then(Commands.literal("bind_drehmal")
+                        .executes(ctx -> bindDrehmal(ctx.getSource(), definitions)))
                 .then(Commands.literal("build")
                         .executes(ctx -> buildFunctional(ctx.getSource(), definitions)))
                 .then(Commands.literal("prototype")
@@ -43,12 +46,30 @@ public final class TurnboundWorldSliceCommands {
         List<String> errors = new ArrayList<>(FunctionalWorldSliceLayout.validate(registry, dimension));
         errors.addAll(ProductionWorldSlicePlan.validate());
         errors.addAll(WorldFastTravelPrototype.validate(registry));
+        errors.addAll(DrehmalExternalWorldBinding.validate(registry));
         if (!errors.isEmpty()) {
-            source.sendFailure(Component.literal("World slice contract rejected: " + String.join("; ", errors)));
+            source.sendFailure(Component.literal("World integration contract rejected: " + String.join("; ", errors)));
             return 0;
         }
         source.sendSuccess(() -> Component.literal(
-                "World slice contracts valid: functional loop, production scale and discovery-gated fast travel."), false);
+                "World integration contracts valid: external-world binding plus retained functional harnesses."), false);
+        return 1;
+    }
+
+    private static int bindDrehmal(CommandSourceStack source, DefinitionRepository definitions) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        final DrehmalExternalWorldBinding.Result result;
+        try {
+            result = DrehmalExternalWorldBinding.install(player, definitions.snapshot().registry());
+        } catch (RuntimeException failure) {
+            source.sendFailure(Component.literal("Drehmal world binding rejected: " + failure.getMessage()));
+            return 0;
+        }
+
+        source.sendSuccess(() -> Component.literal(
+                "External world bound without rebuilding map geometry. Hub="
+                        + result.hubArrival().getX() + " " + result.hubArrival().getY() + " " + result.hubArrival().getZ()
+                        + ", Region=" + result.regionArrival().getX() + " " + result.regionArrival().getY() + " " + result.regionArrival().getZ()), false);
         return 1;
     }
 
@@ -58,15 +79,14 @@ public final class TurnboundWorldSliceCommands {
         try {
             result = FunctionalWorldSliceBuilder.build(player, definitions.snapshot().registry());
         } catch (RuntimeException failure) {
-            source.sendFailure(Component.literal("World slice build rejected: " + failure.getMessage()));
+            source.sendFailure(Component.literal("Functional harness build rejected: " + failure.getMessage()));
             return 0;
         }
 
         source.sendSuccess(() -> Component.literal(
-                "Functional world slice built from origin "
+                "Functional harness built from origin "
                         + result.origin().getX() + " " + result.origin().getY() + " " + result.origin().getZ()
-                        + ". Follow the east road: quarry/farm/river -> patrol -> elite. "
-                        + "Encounter anchors=" + result.encounterAnchors().size()), false);
+                        + ". This is not the production world. Encounter anchors=" + result.encounterAnchors().size()), false);
         return 1;
     }
 
@@ -79,14 +99,14 @@ public final class TurnboundWorldSliceCommands {
             result = ProductionWorldSlicePrototypeBuilder.build(player, registry);
             travel = WorldFastTravelPrototype.install(player, registry, result.origin());
         } catch (RuntimeException failure) {
-            source.sendFailure(Component.literal("Production world prototype rejected: " + failure.getMessage()));
+            source.sendFailure(Component.literal("Legacy world-layout harness rejected: " + failure.getMessage()));
             return 0;
         }
 
         source.sendSuccess(() -> Component.literal(
-                "Production-facing world prototype built from origin "
+                "Legacy world-layout harness built from origin "
                         + result.origin().getX() + " " + result.origin().getY() + " " + result.origin().getZ()
-                        + ". Forge hall -> resource branches -> patrol ruin -> rift landmark. "
+                        + ". It is retained only for mechanics comparison, not production map design. "
                         + "Encounter anchors=" + result.encounterAnchors().size()
                         + ", travel anchors=" + travel.anchorEntityIds().size()), false);
         return 1;

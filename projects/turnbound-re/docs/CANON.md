@@ -28,13 +28,26 @@ TURNBOUND: RE는 구 TURNBOUND의 후속 코드베이스가 아니다. `projects
 전투 핵심은 `Intent + Affinity + Poise + EXPOSED`다. 적의 다음 행동을 읽고, 약점/역할에 맞는 공격으로 Poise를 깎아 큰 행동을 끊거나 약화시키고, EXPOSED의 제한된 공격 창에서 파티가 연계한다.
 
 ## C-008 월드
-고정/저작형 RPG 월드를 기본으로 한다. 단, Minecraft의 광질·제작·낚시·농사·탐험은 장식이 아니라 성장 루프와 연결한다.
+고정/저작형 RPG 월드를 기본으로 한다. production 월드의 외형/지형/건축은 AI 즉흥 제작으로 채우지 않고 **실제 외부 authored world를 직접 base로 사용**한다.
+
+현재 선택된 production base는 `Drehmal: APOTHEOSIS v2.2.2f` 공식 월드다.
+- 원본 월드 파일은 TURNBOUND 저장소에 재배포하지 않는다. 사용자는 공식 배포본을 별도로 설치한다.
+- TURNBOUND는 원본 지형/도시/건축을 다시 만들지 않고 server anchor, Encounter, progression, fast travel 의미만 얹는다.
+- 현재 공개 본편은 Minecraft 1.20.1 기반이므로 Java 26.2에서 실제 호환 검증 전에는 `PLAYTESTED`로 취급하지 않는다.
+- 호환 문제가 생겨도 임의 자작 월드로 자동 대체하지 않는다. 외부 base의 호환 adapter/업데이트 또는 다른 사용 가능한 외부 authored world를 먼저 검토한다.
+- 기존 `FunctionalWorldSliceBuilder`, `ProductionWorldSlicePrototypeBuilder`, `AuthoredFirstRegionBuilder` 계열은 mechanics/layout 검증용 harness이며 production visual/world source가 아니다.
+
+Minecraft의 광질·제작·낚시·농사·탐험은 외부 월드 위에서도 장식이 아니라 성장 루프와 연결한다.
 
 ## C-009 서버 권한
 전투 상태, RNG, 대미지, 대상 검증, 보상은 서버가 권위자다. 클라이언트는 명령 의도와 표시만 담당한다.
 
 ## C-010 시각 디자인
-최종 UI/외형/VFX/맵/건축은 AI의 즉흥 디자인으로 확정하지 않는다. 외부 레퍼런스 분석과 목업 및 실게임 비교를 거친다. 이는 선택사항이 아니라 품질 게이트다.
+최종 UI/외형/VFX/맵/건축에 임시 AI 디자인이나 AI가 외부 reference를 보고 다시 만든 디자인을 production으로 넣지 않는다.
+- 직접 사용 가능한 외부 asset/base가 있으면 실제 파일/런타임 자산을 사용한다.
+- proprietary/reference-only 자산을 눈으로 보고 비슷하게 재구성하지 않는다.
+- 사용할 수 있는 외부 asset이 없으면 임시 자작 visual로 빈칸을 채우지 않고 해당 visual을 미완 상태로 둔다.
+- 외부 자산은 URL/버전 또는 commit/라이선스/사용 분류를 `THIRD_PARTY_ASSETS.md`에 기록한다.
 
 ## C-011 데이터 중심
 캐릭터, 행동, 상태, 조우, 보상, 지역은 가능한 한 데이터 정의로 분리한다. 핵심 규칙만 코드에 둔다.

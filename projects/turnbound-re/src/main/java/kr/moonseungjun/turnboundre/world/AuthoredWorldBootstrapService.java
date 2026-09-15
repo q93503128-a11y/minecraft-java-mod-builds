@@ -3,11 +3,9 @@ package kr.moonseungjun.turnboundre.world;
 import kr.moonseungjun.turnboundre.TurnboundRe;
 import kr.moonseungjun.turnboundre.data.DefinitionRegistry;
 import kr.moonseungjun.turnboundre.data.DefinitionRepository;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.storage.LevelData;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
@@ -15,11 +13,14 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Production entry point for the first authored TURNBOUND: RE world slice.
+ * Production entry point for TURNBOUND: RE's external authored-world base.
  *
- * A fresh world no longer requires an operator command. The first joining player causes the authored Hub/Region
- * slice to be installed once near the vanilla Overworld spawn. Per-player Hub discovery doubles as the onboarding
- * marker, so every new player begins in the same server-owned Hub without a second quest/save flag.
+ * <p>Production no longer generates a TURNBOUND-authored replacement Hub/Region on first login. The selected
+ * external world must be installed separately and bound through {@link DrehmalExternalWorldBinding}. Once its
+ * server-owned anchors exist, per-player Hub discovery remains the onboarding marker.</p>
+ *
+ * <p>The old generated world builders remain operator-only functional harnesses. They must never silently replace
+ * a missing external production world.</p>
  */
 public final class AuthoredWorldBootstrapService {
     private static final float HUB_FACING_YAW = -90.0F;
@@ -55,14 +56,16 @@ public final class AuthoredWorldBootstrapService {
         DefinitionRegistry registry = definitions.snapshot().registry();
         if (registry.regions().get(FunctionalWorldSliceLayout.HUB_ID) == null
                 || registry.regions().get(FunctionalWorldSliceLayout.REGION_ID) == null) {
-            TurnboundRe.LOGGER.error("TURNBOUND authored world bootstrap skipped because region definitions are unavailable");
+            TurnboundRe.LOGGER.error("TURNBOUND external-world bootstrap skipped because region definitions are unavailable");
             return;
         }
 
         FastTravelSavedData saved = FastTravelSavedData.get(server);
         if (needsWorldInstall(saved.anchorsSnapshot())) {
-            if (!installFreshWorld(player, server, registry)) return;
-            saved = FastTravelSavedData.get(server);
+            TurnboundRe.LOGGER.warn(
+                    "TURNBOUND production world is not bound. Install the official external world and bind it; "
+                            + "the mod will not generate replacement Hub/Region geometry automatically.");
+            return;
         }
 
         if (needsInitialHubArrival(saved.discovered(player.getUUID()))) {
@@ -70,6 +73,7 @@ public final class AuthoredWorldBootstrapService {
         }
     }
 
+    /** Kept as the stable contract name: true now means external-world binding is missing, not that blocks should be built. */
     static boolean needsWorldInstall(Map<String, FastTravelSavedData.AnchorLocation> anchors) {
         if (anchors == null) return true;
         return !anchors.containsKey(WorldFastTravelPrototype.HUB_LOCATOR)
@@ -78,48 +82,6 @@ public final class AuthoredWorldBootstrapService {
 
     static boolean needsInitialHubArrival(Set<String> discoveredLocators) {
         return discoveredLocators == null || !discoveredLocators.contains(WorldFastTravelPrototype.HUB_LOCATOR);
-    }
-
-    private boolean installFreshWorld(
-            ServerPlayer player,
-            MinecraftServer server,
-            DefinitionRegistry registry
-    ) {
-        ServerLevel overworld = server.overworld();
-        BlockPos vanillaSpawn = overworld.getRespawnData().pos();
-        overworld.getChunkAt(vanillaSpawn);
-
-        try {
-            if (player.level() != overworld) {
-                player.stopRiding();
-                player.teleportTo(
-                        overworld,
-                        vanillaSpawn.getX() + 0.5D,
-                        vanillaSpawn.getY(),
-                        vanillaSpawn.getZ() + 0.5D,
-                        Set.of(),
-                        HUB_FACING_YAW,
-                        0.0F,
-                        false);
-            }
-
-            AuthoredFirstRegionBuilder.Result world =
-                    AuthoredFirstRegionBuilder.build(player, registry, vanillaSpawn);
-
-            // 26.2 world spawn is server RespawnData. Death/no-bed respawn now returns to the authored Hub,
-            // rather than the discarded vanilla spawn used only as a search seed.
-            server.setRespawnData(LevelData.RespawnData.of(
-                    overworld.dimension(), world.hubArrival(), HUB_FACING_YAW, 0.0F));
-
-            TurnboundRe.LOGGER.info(
-                    "Installed TURNBOUND authored first region at {} {} {} (terrain relief={}, wet samples={}, search distance²={})",
-                    world.origin().getX(), world.origin().getY(), world.origin().getZ(),
-                    world.terrain().relief(), world.terrain().wetSamples(), world.terrain().distanceSquared());
-            return true;
-        } catch (RuntimeException failure) {
-            TurnboundRe.LOGGER.error("TURNBOUND authored world bootstrap failed", failure);
-            return false;
-        }
     }
 
     private void placeNewPlayerAtHub(
