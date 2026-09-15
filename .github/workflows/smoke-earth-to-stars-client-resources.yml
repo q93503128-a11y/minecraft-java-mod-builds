@@ -20,7 +20,7 @@ defaults:
 jobs:
   reboot-client-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -30,16 +30,19 @@ jobs:
           cache: gradle
       - name: Verify Xvfb
         run: command -v xvfb-run
-      - name: Run reboot client smoke
+      - name: Prepare reboot client runtime
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon classes prepareClientRun
+      - name: Run reboot client resource/model smoke
         shell: bash
         run: |
           set -euo pipefail
-          chmod +x gradlew
           rm -rf run
           mkdir -p build/logs
 
           set +e
-          timeout --kill-after=15s 150s xvfb-run -a ./gradlew --no-daemon runClient --stacktrace 2>&1 | tee build/logs/reboot-client-smoke.log
+          timeout --kill-after=15s 180s xvfb-run -a ./gradlew --no-daemon runClient --stacktrace 2>&1 | tee build/logs/reboot-client-smoke.log
           status=${PIPESTATUS[0]}
           set -e
 
@@ -50,13 +53,15 @@ jobs:
 
           grep -q 'EARTH TO STARS 0.2.0-alpha.2 physical VS starter-craft bootstrap loaded' build/logs/reboot-client-smoke.log
           grep -q 'Forge mod loading, version 47.4.0, for MC 1.20.1' build/logs/reboot-client-smoke.log
+          grep -q 'Reloading ResourceManager' build/logs/reboot-client-smoke.log
+          grep -Eq 'minecraft:textures/atlas/blocks\.png-atlas' build/logs/reboot-client-smoke.log
 
           if grep -Eqi 'NoClassDefFoundError|ClassNotFoundException: .*earthtostars|ModLoadingException|MixinTransformerError|Failed to load model earth_to_stars|Unable to load model.*earth_to_stars|Missing texture references in model earth_to_stars|Missing texture.*earth_to_stars' build/logs/reboot-client-smoke.log; then
-            echo 'EARTH TO STARS reboot client/runtime error detected.'
+            echo 'EARTH TO STARS reboot client/runtime or resource error detected.'
             exit 1
           fi
 
-          echo 'EARTH_TO_STARS_REBOOT_CLIENT_SMOKE_PASS'
+          echo 'EARTH_TO_STARS_REBOOT_CLIENT_RESOURCE_MODEL_SMOKE_PASS'
       - name: Upload client smoke log
         if: always()
         uses: actions/upload-artifact@v4
