@@ -44,23 +44,21 @@ public final class Region01BossFieldPlayCommand {
         boss.setYRot(player.getYRot() + 180.0F);
         boss.enableFieldTestCombat();
         if (!level.addFreshEntity(boss)) {
-            player.sendSystemMessage(Component.literal("Riftfrontier Region 01 boss field-test spawn failed."));
+            player.sendSystemMessage(Component.translatable("riftfrontier.boss.fieldtest.spawn_failed"));
             return 0;
         }
-        player.sendSystemMessage(Component.literal(
-            "Region 01 boss field-test actor spawned 6 blocks ahead. Diagnostic damage/reach are provisional; use '/riftfrontier boss fieldtest phase2' to exercise the phase-2 attack pool."
-        ));
+        player.sendSystemMessage(Component.translatable("riftfrontier.boss.fieldtest.spawned"));
         return Command.SINGLE_SUCCESS;
     }
 
     private static int setPhase(ServerPlayer player, int phase) {
         Region01BossEntity boss = nearestFieldTestBoss(player, 64.0D);
         if (boss == null) {
-            player.sendSystemMessage(Component.literal("No enabled Region 01 boss field-test actor found within 64 blocks."));
+            player.sendSystemMessage(Component.translatable("riftfrontier.boss.fieldtest.not_found"));
             return 0;
         }
         boss.setFieldTestPhase(phase);
-        player.sendSystemMessage(Component.literal("Region 01 boss field-test phase set to " + phase + "."));
+        player.sendSystemMessage(Component.translatable("riftfrontier.boss.fieldtest.phase_set", phase));
         return Command.SINGLE_SUCCESS;
     }
 
