@@ -33,8 +33,17 @@ legacyForge {
     version = forge_version
 
     runs {
-        client { client() }
-        server { server() }
+        client {
+            client()
+            // Forge dev runs enable GameTest discovery by default. Restrict it to ETS so
+            // optional compat GameTest holders inside VS/addons are not reflectively loaded
+            // without their unrelated soft dependencies (for example Create).
+            systemProperty 'forge.enabledGameTestNamespaces', mod_id
+        }
+        server {
+            server()
+            systemProperty 'forge.enabledGameTestNamespaces', mod_id
+        }
     }
 
     mods {
