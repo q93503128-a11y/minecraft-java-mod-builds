@@ -558,6 +558,8 @@ Acquisition rule:
 - if a newer Quaternius package is used instead, preserve that exact package's source/license evidence rather than transferring the historical snapshot's status automatically;
 - service-specific layout quality still requires 3D/Minecraft review.
 
+A Minecraft block translation inspired by the external architecture must still be reviewed for source-license implications before it is packaged publicly. The private playable build may use local integration where the terms permit it.
+
 Fallback/replacement architecture must come from one coherent external family such as an accepted Kenney CC0 set, not a collage of unrelated schematics.
 
 ---
