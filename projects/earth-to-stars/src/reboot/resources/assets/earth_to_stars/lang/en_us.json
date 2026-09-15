@@ -1,0 +1,11 @@
+{
+  "itemGroup.earth_to_stars": "EARTH TO STARS",
+  "item.earth_to_stars.starter_craft_deployer": "Starter Craft Assembly Core",
+  "item.earth_to_stars.starter_flight_core": "Starter Flight Core",
+  "item.earth_to_stars.starter_control_node": "Flight Bus Node",
+  "block.earth_to_stars.starter_flight_core": "Starter Flight Core",
+  "block.earth_to_stars.starter_control_node": "Flight Bus Node",
+  "message.earth_to_stars.deploy_top_surface": "Deploy the craft on an open top surface.",
+  "message.earth_to_stars.deploy_success": "Starter craft assembled. Board the Octo Controller to fly.",
+  "message.earth_to_stars.deploy_failed": "Starter craft assembly failed: %s"
+}
