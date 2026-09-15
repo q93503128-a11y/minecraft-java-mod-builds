@@ -26,16 +26,22 @@ public final class StarterCraftDeploymentService {
     private StarterCraftDeploymentService() {
     }
 
+    public static boolean canDeploy(ServerLevel level, BlockPos floorCenter) {
+        if (!level.dimension().equals(Level.OVERWORLD)) {
+            return false;
+        }
+        return firstBlockedPosition(level, buildTemplate(floorCenter)) == null;
+    }
+
     public static ServerShip deploy(ServerLevel level, BlockPos floorCenter) {
         if (!level.dimension().equals(Level.OVERWORLD)) {
             throw new IllegalStateException("starter craft can only be assembled on Earth");
         }
 
         Map<BlockPos, BlockState> template = buildTemplate(floorCenter);
-        for (BlockPos pos : template.keySet()) {
-            if (!level.getBlockState(pos).canBeReplaced()) {
-                throw new IllegalStateException("starter craft deployment area is blocked at " + pos.toShortString());
-            }
+        BlockPos blocked = firstBlockedPosition(level, template);
+        if (blocked != null) {
+            throw new IllegalStateException("starter craft deployment area is blocked at " + blocked.toShortString());
         }
 
         for (Map.Entry<BlockPos, BlockState> entry : template.entrySet()) {
@@ -53,6 +59,15 @@ public final class StarterCraftDeploymentService {
             template.keySet().forEach(pos -> level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL));
             throw error;
         }
+    }
+
+    private static BlockPos firstBlockedPosition(ServerLevel level, Map<BlockPos, BlockState> template) {
+        for (BlockPos pos : template.keySet()) {
+            if (!level.getBlockState(pos).canBeReplaced()) {
+                return pos;
+            }
+        }
+        return null;
     }
 
     private static Map<BlockPos, BlockState> buildTemplate(BlockPos floorCenter) {
