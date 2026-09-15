@@ -12,24 +12,29 @@ When this file or the design canon conflicts with older chat history, current `m
 ## Technical identity
 
 - Slug: `openworld-rpg`
-- Mod ID: TBD before source bootstrap
-- Namespace: TBD before source bootstrap
-- Mod version: not started
-- Minecraft: target 26.2 unless design/dependency audit requires a change
-- Java: TBD from the selected Fabric toolchain
+- Mod ID: `openworld_rpg`
+- Namespace: `openworld_rpg`
+- Bootstrap mod version: `0.1.0-alpha.1`
+- Minecraft: **26.2**
+- Java: **25**
 - Loader: **Fabric — locked for this project**
-- Loader version: TBD at M0
-- Gradle: TBD at M0
-- Build plugin: Fabric Loom / exact version TBD at M0
-- Final JAR: TBD
-- Existing-world compatibility: no implementation exists yet
-- Required dependencies: TBD; prioritize current Fabric 26.2 dependencies that materially improve quality
-- Optional external mods: Essential compatibility is a major goal
+- Fabric Loader: **0.19.5**
+- Fabric API: **0.160.0+26.2**
+- Gradle: **9.5.1**
+- Fabric Loom: **1.17.20**
+- Build plugin: `net.fabricmc.fabric-loom`
+- Planned bootstrap JAR: `openworld-rpg-0.1.0-alpha.1.jar`
+- Existing-world compatibility: no gameplay implementation/save format exists yet
+- Required project/runtime stack: Fabric API, Player Animation Library, GeckoLib, Armor Model API, Ranged Weapon API, Trinkets Updated, Better Combat, Spell Engine + Spell Power Attributes + Cloth Config, MobFilter, Alex's Mobs Continued + CodxLib, Threateningly Mobs Continued — exact versions/boundaries are canonical in `M0_DEPENDENCY_AUDIT.md`
+- Optional external mod: Essential `1.4.1.1` for hosting/social convenience only; gameplay/save correctness must not depend on it
+- Not baseline: full RPG Series/Skill Tree/Runes, AzureLib as a second project animation engine, RPG Inventory, Shield API, Structure Pool API, external inventory-QoL mods as requirements
 - Forbidden bundled dependencies: anything whose license/terms do not permit repository redistribution
-- Datagen task: TBD
-- GameTest task: TBD
-- Server smoke-test task: TBD
-- Client smoke-test task: TBD
+- Datagen task: define during source bootstrap if/when project data generation warrants a dedicated task
+- GameTest task: define during source bootstrap around the actual test harness
+- Server smoke-test task: define during source bootstrap
+- Client smoke-test task: define during source bootstrap
+
+The exact M0 toolchain and dependency ownership boundaries are locked in `M0_DEPENDENCY_AUDIT.md`. Do not silently substitute newer versions, duplicate runtimes or donor-mod progression systems during implementation merely because they are convenient.
 
 Fabric is no longer a provisional loader candidate. Do not reopen the loader choice during ordinary planning. Re-evaluate only if a hard technical blocker appears that prevents a required canonical feature from being delivered on Fabric 26.2.
 
@@ -70,6 +75,7 @@ Subordinate references:
 - `LOOT_ECONOMY.md` — detailed equipment-generation, affix, drop-rate, target-farming, signature-material and loot-presentation rules for the loot-economy work explicitly queued by `GAME_DESIGN.md`. It does not override the master canon.
 - `EQUIPMENT_BALANCE.md` — concrete Item-Lv/base-stat curves, exact affix ranges/caps, forge/reforge rules, R01 resource/equipment catalog and external visual bindings. It closes implementation-time equipment-number invention but does not override `GAME_DESIGN.md`.
 - `MOUNTS.md` — external-first mount roster, traversal-speed/handling balance, stable economy, summon/Resolve/combat rules, flight model and multiplayer authority. It expands `GAME_DESIGN.md` §18 without overriding the master canon.
+- `M0_DEPENDENCY_AUDIT.md` — exact Fabric 26.2 toolchain, pinned dependency/version set, license/public-repository boundaries, integration ownership, server-authority contract and first bootstrap acceptance matrix.
 
 Do not create parallel competing design documents. Subordinate reference files may expand a workstream that is explicitly indexed/queued by `GAME_DESIGN.md`, but `GAME_DESIGN.md` remains the master index and conflict authority.
 
@@ -89,7 +95,7 @@ Before gameplay source bootstrap is considered design-complete:
 - data schemas needed for tuning are specified so implementation does not hard-code content lists;
 - unresolved `TBD` values that affect player-facing gameplay are closed before implementation of that subsystem.
 
-Technical identifiers and toolchain values that genuinely depend on the M0 dependency audit—exact Fabric Loader/Loom/API versions, mod ID/namespace, Gradle details and similar build metadata—may remain open until that audit. They are technical bootstrap decisions, not permission to invent gameplay while coding.
+M0 has closed the Minecraft/Java/Fabric Loader/API/Gradle/Loom/mod-ID baseline and the dependency/integration boundaries in `M0_DEPENDENCY_AUDIT.md`. Remaining tooling task names or artifact details that genuinely require the source tree/test harness to exist may be finalized during bootstrap; they do not authorize gameplay, balance, UI or content invention during coding.
 
 If implementation exposes a hard technical constraint that invalidates canon, stop that subsystem, revise the canon first, then implement the revised rule. Do not silently let code become the new game design.
 
