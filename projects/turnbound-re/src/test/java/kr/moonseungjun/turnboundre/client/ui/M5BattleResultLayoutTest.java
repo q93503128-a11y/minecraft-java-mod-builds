@@ -31,6 +31,12 @@ class M5BattleResultLayoutTest {
     }
 
     @Test
+    void currentEliteRevealCadenceFinishesAllSixRowsAtTickTwentyOne() {
+        assertEquals(5, UiVisualLanguage.revealedRows(20, 6, 6, 3));
+        assertEquals(6, UiVisualLanguage.revealedRows(21, 6, 6, 3));
+    }
+
+    @Test
     void unsupportedTinyCanvasFailsClosed() {
         assertFalse(BattleResultLayout.supports(320, 180));
         assertThrows(IllegalArgumentException.class, () -> BattleResultLayout.calculate(320, 180));
