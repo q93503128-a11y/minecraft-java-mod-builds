@@ -6,6 +6,13 @@
 
 This file is the single source of truth for gameplay/design decisions. Do not create a competing master design document. When a decision changes, edit the existing section instead of leaving contradictory versions behind.
 
+Subordinate references currently indexed by this canon:
+
+- `REGIONS.md` — regional expansion/content details for Azari.
+- `UI_DIRECTION.md` — selected external UI family, screen architecture and visual acceptance rules.
+
+If a subordinate reference conflicts with this file, this file wins.
+
 ---
 
 # 1. Vision
@@ -248,7 +255,7 @@ Ultimate activation uses a hybrid model:
 - after use there is an anti-spam cooldown/lockout;
 - only one ultimate can be equipped, so it should be distinctly stronger, more spectacular and more build-defining than normal skills.
 
-Ultimate HUD uses an externally selected final-quality design from the first playable version.
+Ultimate HUD uses the externally selected final-quality project UI family from the first playable version.
 
 ---
 
@@ -418,7 +425,7 @@ Exact percentages/caps, insufficient-currency behavior, boss-arena handling and 
 
 # 12. Inventory and equipment
 
-The vanilla inventory screen is replaced as the main RPG character interface by an externally selected final-quality RPG inventory/equipment design.
+The vanilla inventory screen is replaced as the main RPG character interface by the selected external RPG UI language documented in `UI_DIRECTION.md`.
 
 Canonical equipment target:
 
@@ -522,8 +529,7 @@ Potential systems include forge/smithing, alchemy, cooking and justified enhance
 Use **light profession mastery** rather than giant mandatory profession grinds.
 Smithing, alchemy and cooking may improve through use and unlock recipes/quality/options, but progression must not require repetitive mass-crafting for dozens of hours.
 
-Each important workstation gets a purpose-built screen selected from an external proven game/mod design first. If a directly usable design is visually strong, preserve it rather than redesigning it into a weaker UI.
-Physical workstation/building appearance follows the same external-first rule.
+Each important workstation gets a purpose-built screen from the shared external UI language documented in `UI_DIRECTION.md`. Physical workstation/building appearance follows the same external-first rule.
 
 Avoid production steps that only add clicks.
 
@@ -540,9 +546,16 @@ Each region contains subregions/landmarks/POIs and defines environmental identit
 
 ## Enemy Lv model
 
-Use **regional Lv bands with only narrow contextual adjustment**.
-Do not scale every enemy to the player.
-A low-Lv region remains low-Lv later; a dangerous region remains dangerous when entered early.
+Use **one suggested-entry Lv per major region plus local encounter Lv** rather than broad overlapping region ranges.
+
+- each major region has one clear suggested-entry Lv indicating when an average build should first feel comfortable there;
+- subregions, dangerous POIs, elites, dungeons and bosses can sit above or below the region's entry recommendation;
+- peer regions may intentionally share the same or nearly the same recommended Lv when they are alternate routes with similar overall difficulty;
+- do not universally scale every enemy to the player;
+- a low-Lv region remains low-Lv later and a dangerous region remains dangerous when entered early;
+- recommended Lv is guidance, not a hard gate; high-Lv areas remain physically enterable.
+
+The concrete working values and region graph are maintained in `REGIONS.md`. Those values may be globally rescaled during the EXP benchmark pass without changing the world's route structure or identity.
 
 Early difficulty direction:
 
@@ -635,7 +648,7 @@ The settlement should connect to at least three meaningful directions when the s
 2. a secondary route toward gathering/small POIs/exploration;
 3. a visibly riskier route toward a higher-Lv area or dangerous encounter.
 
-Use regional Lv danger rather than invisible walls to communicate that the world extends beyond the intended first path.
+Use recommended-Lv danger rather than invisible walls to communicate that the world extends beyond the intended first path.
 
 The village layout and buildings come from a coherent external high-quality village/build family or map/schematic.
 Avoid stitching together unrelated building styles when a coherent pack/source exists.
@@ -656,16 +669,16 @@ The region should teach the world by contrast rather than tutorials:
 - a deeper grove or rugged edge for elite/field-boss encounters;
 - at least one obvious route leading into a visibly more dangerous neighboring region.
 
-Working difficulty target is roughly **Lv 1–8** before global EXP-curve benchmarking. The exact numbers may shift together later, but the relative order is locked.
+**R01 suggested entry Lv is 1.** Local encounter pressure rises through roughly Lv 1–8 across the opening road, meadow, forest edge, quarry, dangerous grove, elites and first dungeon before the later EXP benchmark pass. This `1–8` spread describes encounter progression inside R01; it is **not** a broad regional recommendation band.
 
-Suggested sub-area pressure:
+Working local pressure:
 
-- arrival road / settlement outskirts — Lv 1–2;
-- open meadow and farms/foraging routes — Lv 1–4;
-- riverwood / forest fringe — Lv 3–5;
-- quarry / cave approach — Lv 4–6;
-- deep grove / dangerous ridge — Lv 6–8;
-- neighboring-region exits may immediately expose stronger enemies beyond the intended band.
+- arrival road / settlement outskirts — roughly Lv 1–2;
+- open meadow and foraging routes — roughly Lv 1–4;
+- riverwood / forest fringe — roughly Lv 3–5;
+- quarry / cave approach — roughly Lv 4–6;
+- deep grove / dangerous ridge / first major threats — roughly Lv 6–8;
+- neighboring-region exits may immediately expose stronger enemies beyond the intended early route.
 
 ### Wildlife / food ecology
 
@@ -798,7 +811,7 @@ Fast travel is available between discovered **shrines and major settlements/hubs
 Ordinary camps and minor POIs are not universal teleport nodes.
 Combat prevents fast travel.
 
-Minimap/world-map visuals and implementation are external-first.
+Minimap/world-map visuals use the selected project UI language documented in `UI_DIRECTION.md`.
 
 ---
 
@@ -838,6 +851,23 @@ Accepted iconic directions include:
 - desert earth/sand-worm-style giant monsters;
 - dragons;
 - region-specific giant creatures and field bosses.
+
+## Spawn ownership / natural generation
+
+The project owns the authored RPG ecology instead of accepting every dependency's global defaults.
+
+Implementation direction on Fabric 26.2:
+
+- use Minecraft/Fabric's normal loaded-chunk natural-spawn systems rather than scanning the whole world every tick;
+- remove vanilla/default spawn entries from authored RPG biomes and add only approved regional custom creatures;
+- ordinary wildlife and common threats may use natural spawning with project-owned region/biome weights and group sizes;
+- elites, field/world bosses, dungeon bosses, quest mobs and event encounters use authored encounter controllers/locations/conditions rather than uncontrolled natural-spawn spam;
+- separately suppress vanilla spawn paths that do not come only from biome tables, including imported spawners and special vanilla systems as applicable;
+- a final server-side safety filter may reject forbidden vanilla entities if another dependency leaks them into authored gameplay;
+- do not simulate the entire 30k world ecology while unloaded; offscreen predator/prey simulation is deliberately bounded for performance and reliability;
+- validate density and spawn performance with profiler/playtest rather than guessing.
+
+Exact implementation may reuse permissive external spawn-filter/code solutions where they reduce risk, but project region rules remain authoritative.
 
 ## Dynamic world events
 
@@ -1021,7 +1051,31 @@ Code owns rules; data owns content/tuning where feasible.
 
 ---
 
-# 26. Current locked decisions
+# 26. UI / UX canon
+
+The UI visual direction is now selected and is no longer an open user-choice question.
+Detailed screen rules live in `UI_DIRECTION.md`.
+
+Canonical direction:
+
+- **Foozle `Lucifer - RPG UI`** is the primary free CC0 visual family;
+- **Foozle `Lucifer - Equipment`** is the matching equipment/inventory companion;
+- **Kenney `Fantasy UI Borders`** supplies scalable CC0 9-slice support where the primary family lacks a suitable resizable frame;
+- **Kenney `UI Pack - Adventure`** may supply missing low-level CC0 controls only, not a competing visual theme;
+- preserve the external family's pixel density, framing, ornament language and component consistency while adapting the donor pack's heavy red/infernal palette to the project's broader fantasy world;
+- dark stone/iron/charcoal surfaces with restrained bronze/gold trim form the baseline; saturated red is reserved for danger/high-impact states instead of every control;
+- HP/Mana/Stamina and 4-skill + ultimate presentation use the same visual language;
+- Spell Engine or another runtime may own skill behavior, but its default UI does not override project visual canon;
+- inventory is a purpose-built RPG character screen with the canonical 12 slots, larger backpack, material category/pouch and contextual comparison—not a vanilla inventory reskin;
+- forge, alchemy, cooking, class/advancement, map, death/respawn and other important screens reuse the same component/spacing grammar;
+- no generic black translucent panel phase, no unrelated UI-pack collage, no temporary vanilla buttons;
+- real Minecraft-client screenshot review at multiple GUI scales/resolutions is required before a screen is visually accepted.
+
+Backend/UI-library candidates are not visual canon. Current candidates include a current 26.2 Fabric accessory backend such as Trinkets Updated where it fits; older RPG Inventory architecture remains reference/code material unless 26.2 compatibility is established.
+
+---
+
+# 27. Current locked decisions
 
 Major locked decisions as of 2026-09-15:
 
@@ -1029,11 +1083,13 @@ Major locked decisions as of 2026-09-15:
 - Fabric is the locked mod loader for this project unless a future hard technical blocker forces a deliberate migration review;
 - Azari 30k x 30k is the primary free terrain candidate and region planning proceeds against it while local-use/import terms are verified;
 - external-first visuals/assets from the first visible/test implementation;
+- UI visual language is the free CC0 Foozle Lucifer RPG UI + Lucifer Equipment family, with Kenney Fantasy UI Borders/Adventure only as supporting scalable/control primitives; details live in `UI_DIRECTION.md`;
 - no temporary player-facing design;
 - dead/superseded/duplicate code removed after safe replacement;
 - `EXP` / `Lv` notation and removal of vanilla XP progression/drop loop;
 - **no vanilla mobs as normal world population**: hostile mobs, animals/livestock, aquatic mobs and ordinary villager/golem population are replaced by the custom/external ecosystem and NPC roster;
 - creature-derived food/materials come from non-vanilla wildlife/livestock equivalents; imported vanilla spawners are replaced;
+- project region/spawn rules own normal ecology; ordinary creatures may use natural spawning while elites/bosses/events use authored encounter logic;
 - HP + Mana + Stamina; Stamina is primarily non-skill action resource; basic attack costs no Stamina;
 - dodge, guard, parry and layered stagger/poise combat;
 - 4 active skills + 1 high-impact hybrid-charge ultimate;
@@ -1054,7 +1110,9 @@ Major locked decisions as of 2026-09-15:
 - hybrid random-affix + named/signature equipment; about five non-cliché grades later;
 - medium damage/status complexity;
 - light smithing/alchemy/cooking mastery;
-- regional Lv bands, roughly 12 major regions, discovered POIs, shrine/major-hub fast travel;
+- roughly 12 major regions with **one suggested-entry Lv plus local encounter Lv**, peer regions allowed at equal difficulty, no universal scaling, no level-gate walls;
+- discovered POIs and shrine/major-hub fast travel;
+- starting region suggested entry Lv 1, with local early encounter pressure rising roughly through Lv 8 rather than treating 1–8 as a broad region recommendation band;
 - starting region is approachable while elites/POIs/bosses provide the first major difficulty spikes;
 - high-Lv regions remain physically enterable rather than being blocked by invisible/story walls;
 - ground mounts use non-vanilla visible creatures/models; first mount arrives early at about sprint-speed convenience, later mounts provide meaningful speed/handling/combat/flight progression;
@@ -1079,7 +1137,8 @@ Major locked decisions as of 2026-09-15:
 - starting quest density is intentionally low: about 1 main objective plus 2–3 regional contracts before discoveries add more;
 - the stable is visible immediately but the first non-vanilla ground mount arrives through early first-region progression;
 - starting settlement should expose multiple routes including an intentionally dangerous higher-Lv direction when geography supports it;
-- R01 is an Azari central/south-central meadow/river/forest-fringe region with an approachable Lv 1–8 working band, Louxia-led custom food ecology, curated non-vanilla wildlife, Steelboar/Nature Spirit elites, Regalhart field-boss candidate and Earthloong first-dungeon boss candidate;
+- R01 is an Azari central/south-central meadow/river/forest-fringe region with suggested entry Lv 1, Louxia-led custom food ecology, curated non-vanilla wildlife, Steelboar/Nature Spirit elites, Regalhart field-boss candidate and Earthloong first-dungeon boss candidate;
+- R02–R12 terrain identities, creature roles, bosses, resources, dungeon directions and working suggested-entry values are expanded in `REGIONS.md`;
 - selected faction/reputation systems only where meaningful;
 - moderate day/night/weather gameplay effects;
 - starting settlement and all important buildings use coherent external architecture/designs;
@@ -1087,20 +1146,23 @@ Major locked decisions as of 2026-09-15:
 
 ---
 
-# 27. Next design queue
+# 28. Next design queue
 
 Do not re-decide the locked systems above. Continue from here without asking the user to reselect details that can be solved through research, external assets or normal balance work.
 
+Completed/advanced design work that should **not** be restarted from zero:
+
+- Azari provisional R01–R12 regional expansion;
+- regional creature/ecology sourcing and no-vanilla spawn architecture;
+- external UI family selection and screen-language direction.
+
 Recommended next batch:
 
-1. **Azari regional expansion** — derive R02–R12 from actual published terrain families, then refine borders after the local world import.
-2. **Regional creature/content sourcing** — assign external wildlife, normal threats, elites, bosses and food/resource ecology to each region; no vanilla mobs.
-3. **External UI selection** — inventory/equipment, skill HUD, forge, alchemy, cooking, class/advancement and death/respawn screens; choose proven final designs before implementation.
-4. **Economy / EXP benchmark pass** — compare current high-quality RPG mods/games and set concrete Lv curve, currency sources/sinks, switch cost, death penalty, housing price and shop refresh values.
-5. **Inventory numbers** — starting slot count, expansion steps, material-pouch behavior and practical stack caps above 64, decided from real item density and selected UI rather than user re-questioning.
-6. **Loot economy** — affix count/ranges, grade probabilities, elite/boss drop rates and targeted bad-luck protection while keeping normal enemies equipment-free.
-7. **Non-vanilla mount sourcing** — replace horse-centric visible solutions with custom-creature mount candidates while retaining useful permissive riding/QoL code where appropriate.
-8. **M0 Fabric dependency audit** — verify exact current 26.2 integration boundaries for world/spawn filtering, creature mods, Spell Engine, selected RPG Series modules, RPG Class Selection/Archetypes candidates and ranged/combat libraries before source bootstrap.
-9. **Final keybind audit** only after the complete frequent-action list is known; important Minecraft/Essential keys must not conflict.
+1. **Economy / EXP benchmark pass** — compare strong open-world/RPG/Minecraft-RPG precedents and set a concrete global Lv curve, typical time-to-level, regional progression pacing, currency sources/sinks, class-switch cost curve, death penalty, housing price bands and merchant refresh cadence. Preserve the region ordering in `REGIONS.md`; globally rescale suggested-entry values if the benchmark proves a different overall Lv cap is better.
+2. **Inventory numbers** — set starting slot count, expansion steps, material-pouch behavior and practical stack caps above 64 from real item density and the selected UI rather than re-asking the user.
+3. **Loot economy** — set affix count/ranges, grade probabilities, elite/boss drop rates, deterministic first-clear protections and targeted bad-luck protection while keeping ordinary enemies equipment-free.
+4. **Non-vanilla mount sourcing** — select actual free/current custom-creature mount candidates for the first ground mount and later traversal tiers while retaining useful permissive riding/QoL code where appropriate.
+5. **M0 Fabric dependency audit** — verify exact current 26.2 integration boundaries for Azari import/spawn filtering, creature mods, Spell Engine, RPG Series modules, class/accessory/inventory candidates, ranged/combat libraries and Essential compatibility before source bootstrap.
+6. **Final keybind audit** only after the complete frequent-action list is known; important Minecraft/Essential keys must not conflict.
 
 When design direction becomes unclear, research real open-world RPGs, open-source RPGs and large Minecraft RPG mods before inventing filler systems.
