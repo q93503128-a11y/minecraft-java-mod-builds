@@ -1,5 +1,6 @@
 package kr.moonseungjun.turnboundre.network;
 
+import kr.moonseungjun.turnboundre.data.CharacterDefinition;
 import kr.moonseungjun.turnboundre.data.DefinitionRegistry;
 import kr.moonseungjun.turnboundre.data.EncounterDefinition;
 
@@ -24,7 +25,18 @@ final class ExpeditionJournalProjection {
                         encounter.id(),
                         encounter.difficulty(),
                         encounter.enemies().size(),
-                        encounter.repeatable()))
+                        encounter.repeatable(),
+                        encounter.enemies().stream()
+                                .map(enemy -> character(definitions, enemy.character()).sourceEntity())
+                                .toList()))
                 .toList();
+    }
+
+    private static CharacterDefinition character(DefinitionRegistry definitions, String characterId) {
+        CharacterDefinition character = definitions.characters().get(characterId);
+        if (character == null) {
+            throw new IllegalStateException("validated encounter references missing character " + characterId);
+        }
+        return character;
     }
 }
