@@ -130,6 +130,111 @@ Vanilla blocks/building/environmental interactions may remain where they improve
 - Player and enemy level display use the same format: `Lv <number>`
 - Vanilla green XP/level presentation is not used for RPG progression.
 
+## Global Lv / EXP progression
+
+### Launch cap
+
+- launch progression has a hard **Lv 80** cap;
+- there is no prestige/bonus level or infinite overflow-EXP treadmill at launch;
+- the cap is data-driven so a future content expansion can raise it deliberately, but the cap is never raised merely to create more grind;
+- post-cap growth comes primarily from class advancement, equipment/build refinement, discoveries, mastery and difficult content rather than hidden extra combat levels.
+
+The current `REGIONS.md` progression already fits this cap: R12 begins at Lv 72, leaving room for extreme encounters and endgame growth before Lv 80. The Economy / EXP benchmark therefore **does not globally rescale the current region suggested-entry values**.
+
+### EXP required per level
+
+For current player Lv `L`, where `1 <= L <= 79`:
+
+```text
+EXP_to_next(L) = round_to_10(100 + 50L + 4L²)
+```
+
+`round_to_10` means normal rounding to the nearest 10 EXP. The smooth quadratic curve deliberately avoids an MMO-style exponential wall late in the game.
+
+Reference anchors:
+
+| Current Lv | EXP to next Lv | Cumulative EXP from Lv 1 |
+|---:|---:|---:|
+| 1 | 150 | 0 |
+| 8 | 760 | 2,660 |
+| 12 | 1,280 | 6,420 |
+| 20 | 2,700 | 21,280 |
+| 28 | 4,640 | 49,320 |
+| 30 | 5,200 | 58,870 |
+| 34 | 6,420 | 81,470 |
+| 44 | 10,040 | 161,340 |
+| 58 | 16,460 | 341,810 |
+| 64 | 19,680 | 448,480 |
+| 72 | 24,440 | 622,240 |
+| 79 | 29,010 | 806,810 |
+| 80 | cap | 835,820 |
+
+### Target leveling tempo
+
+These are ordinary mixed-play targets, not speedrun/grind-route guarantees:
+
+| Lv span | Typical active time per Lv |
+|---|---:|
+| 1–10 | 10–15 min |
+| 11–25 | 18–25 min |
+| 26–45 | 28–38 min |
+| 46–65 | 40–55 min |
+| 66–80 | 50–70 min |
+
+A player following varied exploration, quests, dungeons and combat should typically approach Lv 80 after roughly **55–70 hours** of a substantial first playthrough. Focused optimized play can be faster; completionist exploration can be substantially longer. Leveling must not require repetitive mob grinding to remain on the intended region curve.
+
+### EXP reward calibration
+
+Let `X` be `EXP_to_next` for the receiving player's current Lv. For content close to the player's Lv, use the following starting targets:
+
+| Reward source | Base EXP target |
+|---|---:|
+| ordinary common enemy | ~0.35% of `X` |
+| elite | ~2.5% of `X` |
+| miniboss | ~5% of `X` |
+| field/world boss — first eligible defeat | ~12% of `X` |
+| field/world boss — repeat | ~4% of `X` |
+| regional contract / normal side quest | ~8–12% of `X` |
+| main/regional milestone | ~15–20% of `X` |
+| discovery / meaningful dynamic event | ~2–5% of `X` |
+| dungeon first-clear completion | ~20–25% of `X`, plus boss reward |
+| dungeon repeat completion | ~10–12% of `X`, plus repeat boss reward |
+
+A normal first dungeon should therefore total roughly **30–35% of one Lv** including its boss, while repeat clearing remains worthwhile without becoming the dominant leveling exploit.
+
+Across an ordinary first playthrough, tune toward this approximate source mix rather than enforcing a literal quota:
+
+- ordinary combat: ~20%;
+- elites/minibosses: ~12%;
+- bosses: ~8%;
+- quests/contracts: ~25%;
+- dungeons: ~25%;
+- discoveries/events and other meaningful exploration rewards: ~10%.
+
+Gathering itself primarily advances its light mastery/economy loop rather than becoming a mandatory combat-Lv grind.
+
+### Level-difference EXP modifiers
+
+Combat reward modifier by `encounter Lv - player Lv`:
+
+- `+6 or more` — 120%;
+- `+3 to +5` — 110%;
+- `-2 to +2` — 100%;
+- player is `3–5` Lv above — 75%;
+- player is `6–10` Lv above — 40%;
+- player is `11+` Lv above — 10%.
+
+The base reward still uses the receiving player's `X`, so being carried through a much higher-Lv encounter cannot skip huge sections of the level curve. Under-level danger is rewarded modestly, not exponentially.
+
+For quests/dungeon completion, compare player Lv with the content's recommended Lv and use a softer anti-overlevel curve:
+
+- up to 5 Lv under or near intended level — 100%;
+- 6–10 Lv over — 75%;
+- 11–20 Lv over — 50%;
+- 21+ Lv over — 25%.
+
+Do not grant an extra under-level quest multiplier. Sequence-breaking remains allowed because the world is open, but it is not a power-level shortcut.
+
 ---
 
 # 5. Core resources and recovery
@@ -349,6 +454,16 @@ Progress is stored separately for every class line.
 The player's first root-class choice in the starting settlement is free.
 Later switches follow the normal paid switching rule.
 
+Class-switch cost at player Lv `L`:
+
+```text
+SwitchCost(L) = round_to_10(min(2500, 50 + 15L + 0.4L²))
+```
+
+Reference anchors: Lv 8 = 200, Lv 20 = 510, Lv 40 = 1,290, Lv 60 = 2,390, and the cost caps at **2,500** from the late game onward.
+
+The purpose is to make switching a real economy choice without turning experimentation into a long re-grind. A late-game switch should usually cost on the order of tens of minutes of normal income, not hours.
+
 ## 9.4 Skills and passives
 
 Skill acquisition is mixed:
@@ -411,7 +526,29 @@ At respawn, choose one penalty:
 
 EXP loss can never reduce an already-earned `Lv`. The EXP floor is the start of the current `Lv`.
 
-Exact percentages/caps, insufficient-currency behavior, boss-arena handling and penalty-reduction items remain balance decisions.
+Currency option at player Lv `L`:
+
+```text
+DeathCurrencyCost(L) = round_to_10(min(1200, 30 + 6L + 0.12L²))
+```
+
+Reference anchors: Lv 1 = 40, Lv 10 = 100, Lv 20 = 200, Lv 40 = 460, Lv 60 = 820, Lv 80 = 1,200.
+
+EXP option:
+
+```text
+EXP_loss = min(10% of EXP_to_next(current Lv), 25% of EXP currently earned inside the current Lv)
+```
+
+This means a death near the beginning of a Lv loses little EXP, a death near the end of a Lv is capped at 10% of that level's requirement, and an earned Lv can never be lost.
+
+Additional rules:
+
+- the opening approach before the first settlement shrine/checkpoint is activated has no economic death penalty;
+- if the player cannot afford the currency option, that option is visibly disabled and shows the shortfall; the EXP option remains available;
+- the core currency is server-authoritative account/state data rather than a physical dropped stack, so banking/dropping items cannot bypass the penalty;
+- boss/dungeon failure applies the same one-choice penalty at the nearest valid checkpoint/entrance; there is no additional equipment loss or mandatory corpse run;
+- penalty-reduction items are not part of the baseline system unless later playtesting proves they add a useful choice rather than another consumable chore.
 
 ## Multiplayer down / revive
 
@@ -555,7 +692,7 @@ Use **one suggested-entry Lv per major region plus local encounter Lv** rather t
 - a low-Lv region remains low-Lv later and a dangerous region remains dangerous when entered early;
 - recommended Lv is guidance, not a hard gate; high-Lv areas remain physically enterable.
 
-The concrete working values and region graph are maintained in `REGIONS.md`. Those values may be globally rescaled during the EXP benchmark pass without changing the world's route structure or identity.
+The concrete values and region graph are maintained in `REGIONS.md`. The Economy / EXP benchmark confirmed that the current progression already fits the Lv 80 launch cap, so the existing suggested-entry values are retained without a global rescale.
 
 Early difficulty direction:
 
@@ -637,8 +774,11 @@ Do not fill the starting hub with a wall of MMO-style chores on first arrival.
 
 - starting-settlement homes may be inspected and purchased from the beginning;
 - there is **no story, boss-clear or reputation permission gate for the right to buy the first home**;
-- normal price/economy is the gate: starting funds should not trivially buy a home, making it a visible early savings goal;
-- exact prices are decided in the economy-balance pass.
+- normal price/economy is the gate: starting funds do not trivially buy a home;
+- the first normal starter home costs **2,400 core-currency units** at baseline;
+- a starter furnishing/storage package should cost roughly **600–900** additional units, so owning the shell and fully furnishing it are separate early goals;
+- with the target R01 income curve, a savings-focused player can normally reach the first home in roughly **5–7 hours** without dedicated currency grinding;
+- later ordinary homes may occupy roughly 7,500–12,000 and 20,000–35,000 bands, while 60,000+ prestige properties are optional late-game sinks rather than progression requirements.
 
 ### Exits / open-world signal
 
@@ -669,7 +809,7 @@ The region should teach the world by contrast rather than tutorials:
 - a deeper grove or rugged edge for elite/field-boss encounters;
 - at least one obvious route leading into a visibly more dangerous neighboring region.
 
-**R01 suggested entry Lv is 1.** Local encounter pressure rises through roughly Lv 1–8 across the opening road, meadow, forest edge, quarry, dangerous grove, elites and first dungeon before the later EXP benchmark pass. This `1–8` spread describes encounter progression inside R01; it is **not** a broad regional recommendation band.
+**R01 suggested entry Lv is 1.** Local encounter pressure rises through roughly Lv 1–8 across the opening road, meadow, forest edge, quarry, dangerous grove, elites and first dungeon. This `1–8` spread describes encounter progression inside R01; it is **not** a broad regional recommendation band.
 
 Working local pressure:
 
@@ -976,7 +1116,8 @@ Permanent player housing is separate from camps.
 - player buys a residence rather than turning a field camp into a full permanent base;
 - house shells/interiors use coherent external building designs/assets;
 - house functions include rest, storage, furnishing/decor and trophy/collection display;
-- the house does not automatically replace every town service such as forge/alchemy, because those service buildings need to remain meaningful world locations.
+- the house does not automatically replace every town service such as forge/alchemy, because those service buildings need to remain meaningful world locations;
+- baseline house price bands are defined in the starting-settlement housing section and economy tuning, not independently per UI.
 
 ---
 
@@ -1003,28 +1144,108 @@ Do not claim multiplayer quality until actually tested.
 Use **one primary numeric currency** for the ordinary economy.
 
 - player-facing currency name/icon are not locked yet and should be chosen with world lore;
+- documentation may refer to raw numeric values as `core-currency units`; that phrase is not a player-facing currency name;
 - avoid copper/silver/gold denomination conversion unless it later proves valuable;
 - add special currencies/tokens only when a specific activity genuinely needs a distinct reward loop;
 - do not multiply currencies merely to make the game look larger.
 
 The core currency supports at least class switching, death-penalty choice, merchants, housing and selected services.
+Starting liquid currency target is roughly **150 units**: enough for basic supplies and a mistake, nowhere near enough to trivialize the first house.
 
-## Economy feel
+## Economy feel / income curve
 
-Early and midgame should feel **slightly money-constrained but not grind-starved**: the player usually has several attractive uses for currency and must choose priorities, while normal play still funds essential recovery and progression. Later progression can become more financially comfortable rather than maintaining artificial scarcity forever.
+Early and midgame should feel **slightly money-constrained but not grind-starved**: the player usually has several attractive uses for currency and must choose priorities, while normal play still funds essential recovery and progression. Later progression becomes more financially comfortable rather than maintaining artificial scarcity forever.
 
-## Merchant stock
+Target ordinary gross and routine-spend-adjusted net income:
+
+| Lv span | Gross currency / active hour | Typical net after routine consumables/services |
+|---|---:|---:|
+| 1–9 | 500–700 | 350–500 |
+| 10–24 | 900–1,400 | 600–900 |
+| 25–44 | 2,000–3,200 | 1,200–2,000 |
+| 45–64 | 4,000–6,500 | 2,500–4,500 |
+| 65–80 | 7,000–11,000 | 4,500–8,000 |
+
+Routine unavoidable spending should normally remain below roughly one third of gross income. Larger optional purchases create the meaningful tradeoffs; essential recovery should not force a currency grind.
+
+### Primary currency sources
+
+Tune first-play gross income roughly around these roles rather than a rigid exact split:
+
+- quests/contracts and first-clear objective payments — largest reliable source;
+- normal combat — small steady currency, with elites/bosses paying noticeably more;
+- dungeon clears/chests and world events — major burst income;
+- selling unwanted equipment and genuine material surplus — useful secondary source, not the dominant optimal loop;
+- selected gathering/crafting orders or regional trade opportunities — bounded supplemental income.
+
+Do not make repetitive slaughter of the easiest common mob, relogging a chest or merchant arbitrage the best currency strategy.
+
+### Primary sinks
+
+Core sinks are:
+
+- potions, food and selected consumables;
+- class switching and any future justified respec service;
+- merchant equipment/special rotating stock;
+- forge/alchemy/crafting service fees and materials;
+- housing, furnishing, trophy/display and storage expansion where appropriate;
+- later mounts/stable and selected travel/service purchases;
+- chosen currency death penalty.
+
+Fast travel does not need a routine tax merely to delete money. Add a travel fee only if later playtesting proves it creates an actual route/economy choice rather than friction.
+
+## Merchant stock / refresh
 
 Merchant inventory is **mostly randomized/rotating**, but essential items and explicitly designated goods remain fixed.
 
-Examples of fixed or reliably available stock may include:
+Fixed/reliably available stock includes:
 
 - core potions/recovery necessities;
 - required basic supplies;
-- specific progression-safe items that should not disappear because of RNG.
+- explicitly progression-safe goods that should not disappear because of RNG.
 
-Other equipment, regional goods, rare materials or special finds may rotate or randomize according to merchant/region rules.
-Exact refresh cadence and pool composition remain balance decisions.
+Rotating equipment, regional goods, special materials and rare finds refresh every **60 minutes of active server/world playtime** by default.
+
+Refresh rules:
+
+- sleeping, reopening the UI, relogging or changing the Minecraft clock does not force a reroll;
+- stock generation is deterministic from stable world/merchant identity plus refresh-cycle state so simple save/reload abuse does not reroll it;
+- the server owns the current catalog and cycle timing;
+- ordinary rotating purchase availability is personal per player in multiplayer so one player cannot empty another player's normal shopping opportunity;
+- intentionally unique world-event lots may be shared only when scarcity itself is the authored mechanic.
+
+Do not add separate refresh timers for every merchant tier at baseline. Keep one readable cadence until real playtesting proves a second cadence materially improves the economy.
+
+## Merchant pricing structure
+
+Price items by their own tier/identity and regional economy, not by silently scaling the exact same item to the buyer's Lv.
+
+Target affordability relative to same-tier gross income:
+
+- basic recovery/consumable: roughly 1–3 minutes of income;
+- ordinary current-tier gear purchase or clear upgrade: roughly 10–20 minutes;
+- strong rotating higher-grade gear: roughly 30–60 minutes;
+- rare/signature merchant item: roughly 1.5–3 hours and therefore a deliberate savings target.
+
+R01 starting anchors before the later loot-economy pass:
+
+- food/basic utility consumable: ~10–25;
+- basic potion: ~25–40;
+- ordinary starter weapon/armor shop item: ~120–250;
+- strong R01 rotating gear: ~350–600;
+- rare/signature R01 merchant item: ~900–1,500.
+
+Sell-back baselines:
+
+- equipment: **25%** of standard buy value;
+- materials: **35%**;
+- consumables: **20%**.
+
+Specific authored trade goods may override these values, but buy/sell tables must never permit deterministic merchant-to-merchant arbitrage.
+
+Meaningful reputation may alter prices by at most roughly **±10–15%** unless a rare authored faction rule explicitly justifies more. Reputation is not allowed to turn the ordinary economy into a mandatory grind.
+
+Housing baseline remains 2,400 for the first starter home, with later price bands as defined in the settlement section. Class switching and death-cost formulas are defined in their own canonical sections so merchant tuning cannot silently change them.
 
 ---
 
@@ -1087,6 +1308,9 @@ Major locked decisions as of 2026-09-15:
 - no temporary player-facing design;
 - dead/superseded/duplicate code removed after safe replacement;
 - `EXP` / `Lv` notation and removal of vanilla XP progression/drop loop;
+- launch combat-Lv cap is Lv 80 with a smooth quadratic EXP curve, no launch prestige/overflow-Lv treadmill, and typical varied first-play progression toward cap in roughly 55–70 hours;
+- current R01–R12 suggested-entry values remain unchanged after the EXP benchmark; R12 begins at Lv 72 and leaves endgame headroom before the Lv 80 cap;
+- ordinary combat is only a minority of total EXP; quests, dungeons, elites/bosses and exploration rewards keep leveling tied to the whole game loop rather than mob grinding;
 - **no vanilla mobs as normal world population**: hostile mobs, animals/livestock, aquatic mobs and ordinary villager/golem population are replaced by the custom/external ecosystem and NPC roster;
 - creature-derived food/materials come from non-vanilla wildlife/livestock equivalents; imported vanilla spawners are replaced;
 - project region/spawn rules own normal ecology; ordinary creatures may use natural spawning while elites/bosses/events use authored encounter logic;
@@ -1100,7 +1324,7 @@ Major locked decisions as of 2026-09-15:
 - major advancements must change mechanics/skills/passives/ultimate identity rather than only numeric stats;
 - class/skill production is external-first: reuse high-quality current external skills/dependencies or legally reusable code when they fit instead of rebuilding weaker copies;
 - Spell Engine and the current 26.2 RPG Series ecosystem are priority dependency/content candidates; MIT sources such as RPG Class Selection and Archetypes are selective code-port candidates;
-- persistent per-class progression with paid Lv-scaled/capped switching and no switch cooldown;
+- persistent per-class progression with paid Lv-scaled/capped switching and no switch cooldown; first class free; switch cost caps at 2,500 core-currency units;
 - first root-class selection in the starting settlement is free;
 - all unlocked passives of the active class apply; inactive-class passives never leak across;
 - broad weapon freedom: classes create natural weapon synergy rather than ordinary hard weapon locks; Hunter-compatible black-powder firearms remain allowed and modern firearms excluded from baseline;
@@ -1119,6 +1343,7 @@ Major locked decisions as of 2026-09-15:
 - mixed main/regional/free-exploration quests with roughly 30/70 guided-vs-free-exploration feel, dynamic region events, replayable dungeons, respawning field/world bosses;
 - probabilistic drops with deterministic protection for progression-critical items;
 - multiplayer down/revive and fully personal loot;
+- death offers a capped Lv-scaled currency payment or current-Lv-only EXP loss; earned Lv never decreases, opening pre-shrine deaths are free, and no extra corpse/equipment-loss layer is added;
 - multiplayer allows players to explore together or separately and regroup without ordinary progression requiring party proximity;
 - RPG field resource nodes instead of cave/strip-mining as the core gathering loop;
 - personal node gathering state in multiplayer;
@@ -1126,11 +1351,12 @@ Major locked decisions as of 2026-09-15:
 - dedicated no-routine-durability gathering tools, separate from combat slots;
 - common node regeneration and slower/conditional rare-node regeneration;
 - one primary currency; player-facing name chosen later with world lore;
-- economy is slightly constrained in early/midgame and becomes more comfortable later;
-- merchants use mostly randomized stock while potions/essentials/designated items remain reliably available;
+- economy is slightly constrained in early/midgame and becomes more comfortable later; ordinary routine spending should not consume most income;
+- merchants use fixed essentials plus rotating stock on a 60-minute active-world-time cadence; reopen/relog/sleep cannot reroll them;
+- baseline sell-back ratios are 25% equipment / 35% materials / 20% consumables and deterministic arbitrage is forbidden;
 - quick-build material-cost camps;
 - permanent houses are purchased separately in settlements and provide rest/storage/decor/trophy functions;
-- first-home purchase permission exists from the beginning; price rather than story/boss permission is the early gate;
+- first-home purchase permission exists from the beginning; the starter house baseline is 2,400 core-currency units and functions as roughly a 5–7 hour savings goal rather than a story gate;
 - starting settlement begins with a short approach/reveal, then immediate shrine/inn/basic merchant/bank/guild/basic-smith access;
 - starting settlement uses a visually taught gate → square/inn → guild → smith → board/exits flow rather than mandatory NPC errand chains;
 - forge/alchemy deeper functionality is introduced through early gathering so exploration → gathering → return → production forms an immediate loop;
@@ -1138,7 +1364,7 @@ Major locked decisions as of 2026-09-15:
 - the stable is visible immediately but the first non-vanilla ground mount arrives through early first-region progression;
 - starting settlement should expose multiple routes including an intentionally dangerous higher-Lv direction when geography supports it;
 - R01 is an Azari central/south-central meadow/river/forest-fringe region with suggested entry Lv 1, Louxia-led custom food ecology, curated non-vanilla wildlife, Steelboar/Nature Spirit elites, Regalhart field-boss candidate and Earthloong first-dungeon boss candidate;
-- R02–R12 terrain identities, creature roles, bosses, resources, dungeon directions and working suggested-entry values are expanded in `REGIONS.md`;
+- R02–R12 terrain identities, creature roles, bosses, resources, dungeon directions and suggested-entry values are expanded in `REGIONS.md`;
 - selected faction/reputation systems only where meaningful;
 - moderate day/night/weather gameplay effects;
 - starting settlement and all important buildings use coherent external architecture/designs;
@@ -1154,15 +1380,16 @@ Completed/advanced design work that should **not** be restarted from zero:
 
 - Azari provisional R01–R12 regional expansion;
 - regional creature/ecology sourcing and no-vanilla spawn architecture;
-- external UI family selection and screen-language direction.
+- external UI family selection and screen-language direction;
+- global Lv 80 / EXP reward benchmark and no-rescale confirmation for current region entry levels;
+- core-currency income/sink targets, class-switch cost, death penalty, starter housing prices and merchant refresh/pricing structure.
 
 Recommended next batch:
 
-1. **Economy / EXP benchmark pass** — compare strong open-world/RPG/Minecraft-RPG precedents and set a concrete global Lv curve, typical time-to-level, regional progression pacing, currency sources/sinks, class-switch cost curve, death penalty, housing price bands and merchant refresh cadence. Preserve the region ordering in `REGIONS.md`; globally rescale suggested-entry values if the benchmark proves a different overall Lv cap is better.
-2. **Inventory numbers** — set starting slot count, expansion steps, material-pouch behavior and practical stack caps above 64 from real item density and the selected UI rather than re-asking the user.
-3. **Loot economy** — set affix count/ranges, grade probabilities, elite/boss drop rates, deterministic first-clear protections and targeted bad-luck protection while keeping ordinary enemies equipment-free.
-4. **Non-vanilla mount sourcing** — select actual free/current custom-creature mount candidates for the first ground mount and later traversal tiers while retaining useful permissive riding/QoL code where appropriate.
-5. **M0 Fabric dependency audit** — verify exact current 26.2 integration boundaries for Azari import/spawn filtering, creature mods, Spell Engine, RPG Series modules, class/accessory/inventory candidates, ranged/combat libraries and Essential compatibility before source bootstrap.
-6. **Final keybind audit** only after the complete frequent-action list is known; important Minecraft/Essential keys must not conflict.
+1. **Inventory numbers** — set starting slot count, expansion steps, material-pouch behavior and practical stack caps above 64 from real item density and the selected UI rather than re-asking the user.
+2. **Loot economy** — set affix count/ranges, grade probabilities, elite/boss drop rates, deterministic first-clear protections and targeted bad-luck protection while keeping ordinary enemies equipment-free.
+3. **Non-vanilla mount sourcing** — select actual free/current custom-creature mount candidates for the first ground mount and later traversal tiers while retaining useful permissive riding/QoL code where appropriate.
+4. **M0 Fabric dependency audit** — verify exact current 26.2 integration boundaries for Azari import/spawn filtering, creature mods, Spell Engine, RPG Series modules, class/accessory/inventory candidates, ranged/combat libraries and Essential compatibility before source bootstrap.
+5. **Final keybind audit** only after the complete frequent-action list is known; important Minecraft/Essential keys must not conflict.
 
 When design direction becomes unclear, research real open-world RPGs, open-source RPGs and large Minecraft RPG mods before inventing filler systems.
