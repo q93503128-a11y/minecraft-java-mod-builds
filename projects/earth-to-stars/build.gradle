@@ -1,56 +1,43 @@
 plugins {
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
     id 'maven-publish'
-    id 'net.neoforged.moddev.legacyforge' version '2.0.137'
 }
 
-version = mod_version
-group = mod_group_id
-base { archivesName = mod_id }
+version = project.mod_version
+group = project.maven_group
 
-configurations {
-    clientOnlyMods {
-        attributes {
-            attribute(
-                    Attribute.of("net.neoforged.moddevgradle.legacy.minecraft_mappings.v2", Named),
-                    objects.named(Named, "named")
-            )
-        }
-    }
+base {
+    archivesName = project.archives_base_name
 }
 
+// Fabric 26.2 migration boundary:
+// - src/fabric contains the new loader/runtime bridge.
+// - loader-neutral ship kernel code is reused in-place from src/main.
+// - retired NeoForge Minecraft glue stays in Git for reference but is not silently
+//   compiled into the Fabric artifact. It is ported feature-by-feature instead of
+//   being deleted or patched with fake APIs.
 sourceSets {
     main {
-        java.setSrcDirs(['src/reboot/java'])
-        resources.setSrcDirs(['src/reboot/resources'])
+        java {
+            setSrcDirs(['src/fabric/java', 'src/main/java'])
+            include 'kr/moonseungjun/earthtostars/fabric/**'
+            include 'kr/moonseungjun/earthtostars/ship/**'
+            exclude 'kr/moonseungjun/earthtostars/ship/client/**'
+            exclude 'kr/moonseungjun/earthtostars/ship/networking/**'
+            exclude 'kr/moonseungjun/earthtostars/ship/persistence/minecraft/**'
+            exclude 'kr/moonseungjun/earthtostars/ship/runtime/minecraft/**'
+        }
+        resources.setSrcDirs(['src/fabric/resources'])
     }
     test {
-        java.setSrcDirs(['src/rebootTest/java'])
-        resources.setSrcDirs(['src/rebootTest/resources'])
+        java.setSrcDirs(['src/test/java'])
+        resources.setSrcDirs(['src/test/resources'])
     }
 }
 
-legacyForge {
-    version = forge_version
-
-    runs {
-        client {
-            client()
-            // Normal client/server smoke runs are runtime integration gates, not Forge
-            // GameTest runs. VS ships optional compatibility GameTest holders whose method
-            // signatures can reference mods ETS does not install (for example Create), so
-            // reflecting every holder would make a healthy runtime stack fail before boot.
-            systemProperty 'forge.enableGameTest', 'false'
-            systemProperty 'forge.enabledGameTestNamespaces', mod_id
-        }
-        server {
-            server()
-            systemProperty 'forge.enableGameTest', 'false'
-            systemProperty 'forge.enabledGameTestNamespaces', mod_id
-        }
-    }
-
+loom {
     mods {
-        earth_to_stars {
+        "earth_to_stars" {
             sourceSet sourceSets.main
         }
     }
@@ -58,77 +45,43 @@ legacyForge {
 
 repositories {
     mavenCentral()
-    maven {
-        name = 'Modrinth'
-        url = 'https://api.modrinth.com/maven'
-    }
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = 'Kotlin for Forge'
-                url = 'https://thedarkcolour.github.io/KotlinForForge/'
-            }
-        }
-        filter { includeGroup 'thedarkcolour' }
-    }
-    maven {
-        name = 'Valkyrien Skies Internal'
-        url = 'https://maven.valkyrienskies.org'
-    }
 }
 
 dependencies {
-    // Mirror Genesis' own 1.20.1 development contract so the VS ship assembly API is
-    // available at compile time as well as runtime. Keep the core artifacts non-transitive;
-    // Genesis and VS remain the owners of the physical ship implementation.
-    implementation("org.valkyrienskies.core:api:${vs_core_version}") { transitive = false }
-    implementation("org.valkyrienskies.core:internal:${vs_core_version}") { transitive = false }
-    implementation("org.valkyrienskies.core:util:${vs_core_version}") { transitive = false }
-    implementation("org.valkyrienskies.core:impl:${vs_core_version}") { transitive = false }
-    modApi("org.valkyrienskies:valkyrienskies-120-forge:${valkyrien_skies_version}") { transitive = false }
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-    implementation('org.jetbrains.kotlin:kotlin-stdlib:2.0.0')
-    modImplementation('thedarkcolour:kotlinforforge:4.11.0')
-    modImplementation('maven.modrinth:vlib:1.20.1-0.1.0+forge')
-    modRuntimeOnly('maven.modrinth:architectury-api:9.2.14+forge')
-
-    // Power Cell was introduced in ZPS 2.5.0. Pin 2.5.1, the current 1.20.1 release,
-    // because the starter craft deliberately uses the finite Power Cell rather than a fake battery.
-    modImplementation('maven.modrinth:zps:1.20.1-2.5.1')
-    modImplementation('maven.modrinth:zpl:1.20.1-1.5.0')
-    modImplementation('maven.modrinth:curios:5.14.1+1.20.1')
-    modImplementation('maven.modrinth:lodestonelib:1.20.1-1.6.4.1')
-    modImplementation('maven.modrinth:vs-genesis:1.20.1-0.7.3')
-
-    testImplementation platform('org.junit:junit-bom:5.11.4')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-
-afterEvaluate {
-    tasks.named('runClient') {
-        classpath += configurations.clientOnlyMods.incoming.files
-    }
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.12.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.12.2'
 }
 
 processResources {
     inputs.property 'version', project.version
-    filesMatching('META-INF/mods.toml') {
-        expand version: project.version
+    filesMatching('fabric.mod.json') {
+        expand 'version': project.version
     }
 }
 
-test {
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 25
+}
+
+tasks.withType(Test).configureEach {
     useJUnitPlatform()
 }
 
 java {
     withSourcesJar()
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 }
 
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
-    options.release = 17
+publishing {
+    publications {
+        create('mavenJava', MavenPublication) {
+            from components.java
+        }
+    }
 }

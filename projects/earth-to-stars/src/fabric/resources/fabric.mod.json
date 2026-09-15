@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "earth_to_stars",
+  "version": "${version}",
+  "name": "EARTH TO STARS",
+  "description": "Survive on Earth, build a modular spacecraft, and expand from atmosphere to deep space.",
+  "authors": ["MoonSeungJun"],
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "kr.moonseungjun.earthtostars.fabric.EarthToStarsFabric"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~26.2",
+    "java": ">=25",
+    "fabric-api": ">=0.160.0"
+  }
+}

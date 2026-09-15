@@ -1,18 +1,19 @@
-name: Build earth-to-stars reboot
+name: Build earth-to-stars Fabric 26.2
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
-      - 'projects/earth-to-stars/src/reboot/**'
-      - 'projects/earth-to-stars/src/rebootTest/**'
+      - 'projects/earth-to-stars/src/fabric/**'
+      - 'projects/earth-to-stars/src/main/java/kr/moonseungjun/earthtostars/ship/**'
+      - 'projects/earth-to-stars/src/test/**'
       - 'projects/earth-to-stars/build.gradle'
       - 'projects/earth-to-stars/gradle.properties'
       - 'projects/earth-to-stars/settings.gradle'
       - 'projects/earth-to-stars/gradle/**'
-      - 'projects/earth-to-stars/tools/validate_reboot_stack.py'
-      - 'projects/earth-to-stars/tools/verify_reboot_jar.py'
+      - 'projects/earth-to-stars/tools/validate_fabric_standalone.py'
+      - 'projects/earth-to-stars/tools/verify_fabric_jar.py'
       - '.github/workflows/build-earth-to-stars.yml'
 
 permissions:
@@ -23,86 +24,88 @@ defaults:
     working-directory: projects/earth-to-stars
 
 jobs:
-  reboot-stack:
+  fabric-standalone:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '25'
           cache: gradle
 
-      - name: Verify reboot contract
+      - name: Verify Fabric standalone contract
         run: |
           chmod +x gradlew
-          python3 tools/validate_reboot_stack.py
+          python3 tools/validate_fabric_standalone.py
           java -version
           ./gradlew --version
 
-      - name: Clean test and build
+      - name: Test and build
         shell: bash
         run: |
-          rm -rf /tmp/earth-to-stars-reboot-logs
-          mkdir -p /tmp/earth-to-stars-reboot-logs
-          set -o pipefail
-          ./gradlew --no-daemon clean test build --stacktrace 2>&1 | tee /tmp/earth-to-stars-reboot-logs/build.log
+          rm -rf build/logs
           mkdir -p build/logs
-          cp /tmp/earth-to-stars-reboot-logs/build.log build/logs/build.log
+          set -o pipefail
+          ./gradlew --no-daemon clean test build --stacktrace 2>&1 | tee build/logs/build.log
 
-      - name: Verify production JAR excludes legacy vehicle stack
-        run: python3 tools/verify_reboot_jar.py
+      - name: Verify production JAR
+        run: python3 tools/verify_fabric_jar.py
 
-      - name: Boot dedicated server and assemble real VS starter craft
+      - name: Boot Fabric dedicated server
         shell: bash
         run: |
+          set -euo pipefail
           rm -rf run
           mkdir -p run build/logs
           printf 'eula=true\n' > run/eula.txt
-          set -o pipefail
-          EARTH_TO_STARS_STACK_PROBE=1 timeout --kill-after=15s 240s ./gradlew --no-daemon runServer --stacktrace 2>&1 | tee build/logs/reboot-server.log
-          grep -q 'EARTH_TO_STARS_REBOOT_STACK_BOOT_PASS' build/logs/reboot-server.log
-          grep -q 'valkyrienskies=true genesis=true vlib=true zps=true zpl=true' build/logs/reboot-server.log
-          grep -q 'EARTH_TO_STARS_STARTER_CRAFT_ASSEMBLY_PASS' build/logs/reboot-server.log
-          grep -q 'physical_vs_ship=true octo=true zpl_thrusters=true zpl_gyros=true finite_battery=true' build/logs/reboot-server.log
 
-      - name: Write reboot report
+          set +e
+          timeout --kill-after=15s 150s ./gradlew --no-daemon runServer --stacktrace 2>&1 | tee build/logs/fabric-server.log
+          status=${PIPESTATUS[0]}
+          set -e
+
+          if [[ $status -ne 0 && $status -ne 124 && $status -ne 137 ]]; then
+            echo "runServer exited unexpectedly with status $status"
+            exit "$status"
+          fi
+
+          grep -q 'Fabric 26.2 standalone kernel loaded' build/logs/fabric-server.log
+          if grep -Eqi 'Could not execute entrypoint|ModResolutionException|NoClassDefFoundError.*earthtostars|ClassNotFoundException.*earthtostars' build/logs/fabric-server.log; then
+            echo 'EARTH TO STARS Fabric server integration error detected.'
+            exit 1
+          fi
+
+          echo 'EARTH_TO_STARS_FABRIC_SERVER_BOOT_PASS'
+
+      - name: Write build report
         shell: bash
         run: |
           prop() { awk -F= -v key="$1" '$1==key { print $2 }' gradle.properties; }
           VERSION=$(prop mod_version)
           MINECRAFT=$(prop minecraft_version)
-          FORGE=$(prop forge_version)
-          VS=$(prop valkyrien_skies_version)
-          GENESIS=$(prop genesis_version)
-          ZPS=$(prop zps_version)
-          ZPL=$(prop zpl_version)
+          LOADER=$(prop loader_version)
+          API=$(prop fabric_api_version)
           JAR=$(ls build/libs/earth_to_stars-*.jar | grep -v sources | head -n1)
           SHA=$(cat "$JAR.sha256")
           cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # EARTH TO STARS — VS/Genesis Reboot Starter Craft
+          # EARTH TO STARS — Fabric 26.2 Standalone Rebase
 
           - Commit: $GITHUB_SHA
           - Mod version: $VERSION
           - Minecraft: $MINECRAFT
-          - Forge: $FORGE
-          - Java: 17
-          - Gradle: 8.14
-          - Valkyrien Skies: $VS
-          - Genesis: $GENESIS
-          - Zero Point Systems: $ZPS
-          - Zero Point Labs: $ZPL
-          - reboot source-set isolation: PASS
-          - legacy 26.2 custom ship classes packaged: NO
-          - clean/test/build: PASS
+          - Fabric Loader: $LOADER
+          - Fabric API: $API
+          - Java: 25
+          - loader-neutral ship kernel tests: PASS
+          - clean build: PASS
           - production JAR verify: PASS
-          - dedicated external-stack boot: PASS
-          - real VS starter craft assembly: PASS
-          - ZPS cockpit + ZPL thruster/gyro hardware present: PASS
-          - client graphical smoke: SEPARATE WORKFLOW
-          - live flight feel / control direction: NOT RUN
-          - Genesis Earth-to-space flight with occupied craft: NOT RUN
+          - dedicated Fabric boot: PASS
+          - whole external ship/space mods required at runtime: NO
+          - player-facing Fabric ship runtime: NOT RUN / migration not complete
+          - live flight feel: NOT RUN
+          - Earth-to-space continuity: NOT RUN
           - multiplayer playtest: NOT RUN
           - SHA-256: $SHA
           EOF
@@ -111,7 +114,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: earth-to-stars-reboot-${{ github.sha }}
+          name: earth-to-stars-fabric-${{ github.sha }}
           path: |
             projects/earth-to-stars/build/libs/earth_to_stars-*.jar
             projects/earth-to-stars/build/libs/earth_to_stars-*.jar.sha256
@@ -122,7 +125,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: earth-to-stars-reboot-logs-${{ github.sha }}
+          name: earth-to-stars-fabric-logs-${{ github.sha }}
           path: projects/earth-to-stars/build/logs/
           if-no-files-found: ignore
           retention-days: 7
