@@ -16,6 +16,7 @@
 | CAND-ITEM-004 | future custom equipment icon family | Kettoman, `Pixel Art Icons - RPG Essentials (16x16)` — https://kettoman.itch.io/pixel-art-icons-rpg-essentials-16x16 | CC0, author page에 no generative AI 표기 | **후보 / 미반입** | 64개 16×16 weapons/food/materials/potions. 현재 대표 3종은 Mojang runtime item으로 충분하므로 production에는 미사용 |
 | CAND-ITEM-005 | future custom equipment icon family | Shade, `Free 16x16 Assorted RPG Icons` — https://merchant-shade.itch.io/16x16-mixed-rpg-icons | CC0 1.0 Universal, author page에 no generative AI 표기 | **후보 / 미반입** | weapons/armours/consumables/chests 등. 향후 vanilla runtime item으로 역할 표현이 부족할 때 동일 family에서 직접 sprite를 채택하는 후보 |
 | EXT-ITEM-006 | reward currency visual base | Mojang Minecraft Java 26.2 runtime item models/textures: `minecraft:gold_nugget`, `minecraft:experience_bottle`, `minecraft:amethyst_shard` | Mojang first-party proprietary runtime content | **production reward visual source 채택 / runtime 직접 참조** | Battle Result의 `Coin`→Gold Nugget, `Essence`→Experience Bottle, `Character Shard`→Amethyst Shard. 보상 값/경제 규칙은 변경하지 않고 시각 identity만 제공. TURNBOUND 전용 통화 PNG를 새로 만들지 않음 |
+| EXT-ITEM-007 | battle action semantic visual base | Mojang Minecraft Java 26.2 runtime item models/textures | Mojang first-party proprietary runtime content | **production action identity source 채택 / runtime 직접 참조** | 현재 8캐릭터의 32개 active action을 의미가 맞는 vanilla `ItemStack`으로 매핑한다. action picker와 action timeline에서 presentation-only로 사용하며 unknown action은 icon 없이 fail-closed한다. TURNBOUND 전용 skill icon PNG를 새로 만들지 않음 |
 | CAND-MODEL-003 | Creeper replacement candidate | Moth's Creeper Redone | MIT | 파일 반입 전 | 26.2 호환/의존성 검증 뒤 실제 asset 직접 사용 후보 |
 | CAND-MODEL-004 | Spider replacement candidate | Scary Spider | MIT | 파일 반입 전 | 실제 asset 직접 사용 후보. 눈으로 보고 재구성 금지 |
 | CAND-ANIM-001 | Spider animation/base candidate | Wall Climbers 1.2 | MIT + 프로젝트 사용조건 | 파일 반입 전 | 26.2 지원. 실제 파일/고지조건 고정 후 사용 가능 |
@@ -29,6 +30,7 @@
 - **Vanilla-source roster base:** `EXT-MODEL-002` Mojang runtime model/texture.
 - **Representative equipment visuals:** `EXT-ITEM-003` Mojang runtime item models. 현재 mapping은 Shield / Copper Sword / Golden Apple이며 별도 TURNBOUND 아이콘을 만들지 않는다.
 - **Battle reward visuals:** `EXT-ITEM-006` Mojang runtime item models. Coin / Essence / Character Shard는 Gold Nugget / Experience Bottle / Amethyst Shard로 읽히며 별도 TURNBOUND 통화 아이콘을 만들지 않는다.
+- **Battle action visuals:** `EXT-ITEM-007` Mojang runtime item models. 현재 vertical의 32개 active action에 semantic runtime item을 매핑하며 별도 TURNBOUND skill icon을 만들지 않는다.
 - **Turn-based Minecraft adapter:** `EXT-CODE-001`의 실제 MIT integration pattern adaptation.
 - **Battle camera smoothing:** `EXT-CODE-002`의 실제 MIT 26.2 source adaptation.
 
@@ -39,6 +41,15 @@
 - 숫자 glyph는 gameplay action identity를 대신하는 자체 스킬 아이콘이 아니다. 액션 의미는 서버 snapshot의 action name/slot/tooltip이 계속 정본이다.
 - 새 키/게임패드 glyph가 필요하면 같은 Kenney family의 실제 원본 sprite를 추가하고 source tile과 local rename을 이 문서에 기록한다.
 - glyph가 없다는 이유로 TURNBOUND 전용 키캡 PNG를 새로 그리지 않는다.
+
+## Action visual boundary
+
+- `BattleActionRuntimeVisuals`는 `vertical_actions.json`의 현재 active action id를 Mojang runtime item id에만 연결한다.
+- runtime item은 action의 presentation identity일 뿐 damage, targeting, status, energy, priority를 결정하지 않는다. 해당 전투 사실은 계속 서버 snapshot/정의 데이터가 정본이다.
+- action picker에서는 실제 버튼 위의 compact identity icon으로, action timeline에서는 현재 실행 중 action의 compact identity icon으로만 사용한다.
+- unknown/new action id는 generic sword/star/magic 같은 자작 fallback icon으로 대체하지 않고 `ItemStack.EMPTY`로 fail-closed한다.
+- 매핑을 추가할 때는 action 의미와 실제 vanilla item의 시각 의미가 명확히 맞는 경우만 사용한다. 억지 매핑이면 icon을 생략하고 외부 asset gate를 다시 연다.
+- Mojang item 자체를 지급하거나 vanilla item의 gameplay effect를 action에 상속하지 않는다.
 
 ## Equipment visual boundary
 
