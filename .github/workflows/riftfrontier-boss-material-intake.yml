@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/riftfrontier-boss-material-intake.yml'
       - 'projects/riftfrontier/assets/sources/region_01_boss_dark_rock.source.json'
+      - 'projects/riftfrontier/tools/derive_region01_boss_material.py'
 
 permissions:
   contents: read
@@ -46,8 +47,6 @@ jobs:
           width, height = struct.unpack('>II', data[16:24])
           if width <= 0 or height <= 0:
               raise SystemExit('invalid PNG dimensions')
-          # Validate every chunk CRC and require a complete IEND. This is stronger than
-          # trusting an extension/header and remains independent of preview/mirror files.
           offset = 8
           chunks = []
           saw_iend = False
@@ -81,15 +80,31 @@ jobs:
               'png_crc_verified': True,
               'png_iend_verified': True,
           }
+          expected_sha = 'cf323f68f6a784bf160d5394524ca2a606b6909b37c5a906601668afeb45bde4'
+          if receipt['sha256'] != expected_sha:
+              raise SystemExit(f'pinned source changed: {receipt["sha256"]}')
           Path('build/material-intake/receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
           print(json.dumps(receipt, indent=2))
           PY
-      - name: Upload exact source receipt
+      - name: Install pinned image derivation dependency
+        run: python3 -m pip install --disable-pip-version-check --no-input Pillow==11.3.0
+      - name: Derive field-review material candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/derive_region01_boss_material.py \
+            --source build/material-intake/dark_rock_diff_4k.png \
+            --output build/material-intake/dragon_evolved_dark_rock_v1.png \
+            --provenance build/material-intake/dragon_evolved_dark_rock_v1.provenance.json
+          test "$(python3 -c 'from PIL import Image; im=Image.open("build/material-intake/dragon_evolved_dark_rock_v1.png"); print(f"{im.width}x{im.height}")')" = "1024x1024"
+      - name: Upload exact source and derived review candidate
         uses: actions/upload-artifact@v4
         with:
-          name: riftfrontier-region01-boss-material-source
+          name: riftfrontier-region01-boss-material-source-and-review-candidate
           path: |
             projects/riftfrontier/build/material-intake/dark_rock_diff_4k.png
             projects/riftfrontier/build/material-intake/receipt.json
+            projects/riftfrontier/build/material-intake/dragon_evolved_dark_rock_v1.png
+            projects/riftfrontier/build/material-intake/dragon_evolved_dark_rock_v1.provenance.json
           if-no-files-found: error
           retention-days: 7
