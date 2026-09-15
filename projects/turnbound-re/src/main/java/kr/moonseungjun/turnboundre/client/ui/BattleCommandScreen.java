@@ -167,10 +167,8 @@ public final class BattleCommandScreen extends Screen {
             int row = i / columns;
             int x = layout.grid().x() + col * (buttonWidth + gap);
             int y = layout.grid().y() + row * (rowHeight + gap);
-            int globalOrdinal = from + i + 1;
             int shortcutOrdinal = i + 1;
-            boolean chosen = selectedTargetIds.contains(participant.id());
-            String label = (chosen ? "◆ " : "") + "#" + globalOrdinal + " " + displayName(participant);
+            String label = displayName(participant);
             Button target = Button.builder(Component.literal(label), ignored -> toggleTarget(model, participant.id()))
                     .bounds(x, y, buttonWidth, rowHeight)
                     .build();
