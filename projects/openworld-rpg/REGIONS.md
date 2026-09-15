@@ -12,7 +12,7 @@ This file expands the regional design requested by `GAME_DESIGN.md` without beco
 
 # 1. World-shape reading
 
-The published Azari overview supports a strong authored RPG layout rather than a linear chain:
+The published Azari overview supports a branching authored RPG layout rather than a linear chain:
 
 - a broad central inland sea / lake network with islands and peninsulas;
 - a huge frozen northern crown;
@@ -24,30 +24,52 @@ The published Azari overview supports a strong authored RPG layout rather than a
 - dark obsidian-like pockets around the western-central interior;
 - enough shoreline, reef, ocean and island space for a separate maritime layer.
 
-The region graph must therefore be branching. Recommended Lv bands are guidance, not doors. A player can physically ride, walk or sail into a stronger region early and retreat if it is too dangerous.
-
-Current working bands are intentionally provisional until the EXP benchmark pass. When the global curve changes, rescale all bands together rather than redesigning the world.
+The region graph is intentionally branching. Recommended levels are guidance, not doors. A player can physically ride, walk or sail into a stronger region early and retreat if it is too dangerous.
 
 ---
 
-# 2. Region summary
+# 2. Difficulty / recommended-level model
 
-| ID | Working terrain identity | Working Lv band | Main play identity | Signature danger |
+Do **not** use broad overlapping level ranges as if every region is a linear step in one ladder.
+
+The project instead uses:
+
+1. **Suggested entry Lv** — one clear number indicating when an average build should first feel comfortable entering a major region.
+2. **Local encounter Lv** — subregions, dangerous POIs, elites, dungeons and bosses may sit above or below that region entry value.
+3. **Peer regions** — two or more regions with intentionally similar difficulty may share or nearly share a suggested entry Lv, creating route choice rather than fake progression.
+4. **No universal scaling** — low-Lv regions stay low-Lv and high-Lv threats remain dangerous if reached early.
+5. **No level gate** — recommended Lv is communicated through enemy UI, contracts, NPC warnings, map information and encounter feel, not invisible walls.
+
+This follows the useful part of open-world RPG precedent: The Witcher 3 uses suggested levels for areas/quests while still allowing the player to enter stronger territory, and Wynncraft deliberately has several activities/dungeons inhabiting overlapping bands instead of demanding that every location be a unique sequential level slice. The project keeps that route freedom but avoids confusing every neighboring region with a huge overlapping range.
+
+Current numbers are **working targets**, not the final EXP curve. The later EXP benchmark pass can rescale them globally without changing region order or identity.
+
+## Working region progression
+
+| ID | Terrain identity | Suggested entry Lv | Difficulty role | Signature danger |
 |---|---|---:|---|---|
-| R01 | central/south-central meadow, river, forest fringe | 1–8 | starting hub, basic gathering, first dungeon | Steelboar / Regalhart / Earthloong |
-| R02 | western rich forest and river basin | 6–16 | dense woodland exploration, herbs, timber, old ruins | Nature Spirit / Lich |
-| R03 | western/southwestern great mountains and windswept ridges | 12–24 | vertical routes, mining, exposed passes | Rocky Roller / Basalt Wyvern |
-| R04 | northern ice crown, freezing taiga, ice ocean edge | 18–30 | cold expedition, visibility/weather pressure | Froststalker / Ferox Iceworm / Icebroodmother |
-| R05 | northeastern jungle and bamboo-rich green belt | 24–36 | dense traversal, predators, rare plants | Tiger / Komodo / mature Earthloong |
-| R06 | eastern river delta, wetland and swamp mosaic | 30–42 | water/land combat, alchemy ecology | Crocodile/Caiman / Hydra |
-| R07 | eastern desert, oasis and badlands | 36–50 | heat, open sightlines, ambushes, giant-monster hunt | Desert Beetle / Armor of Desert / Ferox Deathworm |
-| R08 | flower forest, fairy/whimsical forest, pollinating cliffs | 42–56 | magical ecology, vertical floral terrain, strange discoveries | Nature Spirit variants / Moonpriest / Titan Rabbit |
-| R09 | southern rocky marches, dry grasslands and eroded coast | 48–62 | hard overland travel, caravan routes, impact enemies | Flamehorn / Rhino / Executioner |
-| R10 | southeastern volcanic ash island and obsidian lava terrain | 56–70 | fire/impact combat, volcanic resources | Scorch Golem / Basalt Wyvern / Inferno |
-| R11 | central inland sea, pirate coast, reefs and deep-ocean routes | 48–76 by subzone | naval/coastal exploration, fishing, underwater danger | Riptooth / Beast Horseshoe Crab / Abyss Fang |
-| R12 | western-central obsidian spikes, overgrown caves and anomaly pockets | 72–90 | late-game abnormal ecology, rift dungeons | Farseer / Reaper-Lich tier / Terradragon |
+| R01 | central/south-central meadow, river, forest fringe | 1 | starting region | Steelboar / Regalhart / Earthloong |
+| R02 | western rich forest and river basin | 8 | early branch | Nature Spirit / Lich |
+| R03 | western/southwestern great mountains and windswept ridges | 12 | early-harder branch | Rocky Roller / Basalt Wyvern |
+| R04 | northern ice crown, freezing taiga, ice-ocean edge | 20 | expedition tier | Froststalker / Ferox Iceworm / Icebroodmother |
+| R05 | northeastern jungle and bamboo-rich green belt | 20 | peer expedition route | Tiger / Komodo / mature Earthloong |
+| R06 | eastern river delta, wetland and swamp mosaic | 30 | midgame route | Crocodile/Caiman / Hydra |
+| R07 | eastern desert, oasis and badlands | 34 | midgame-harder route | Desert Beetle / Armor of Desert / Ferox Deathworm |
+| R08 | flower forest, fairy/whimsical forest, pollinating cliffs | 44 | high-tier magical route | Nature Spirit variants / Moonpriest / Titan Rabbit |
+| R09 | southern rocky marches, dry grasslands and eroded coast | 44 | peer high-tier physical route | Flamehorn / Rhino / Executioner |
+| R10 | southeastern volcanic ash island and obsidian-lava terrain | 58 | late-game destination | Scorch Golem / Basalt Wyvern / Inferno |
+| R11 | central inland sea, pirate coast, reefs and deep-ocean routes | 28 / 44 / 64 | layered maritime route | Riptooth / Beast Horseshoe Crab / Abyss Fang |
+| R12 | western-central obsidian spikes, overgrown caves and anomaly pockets | 72 | extreme open-world zone | Farseer / Reaper-Lich tier / Terradragon |
 
-R11 deliberately spans a wider range because coastline and shallow water should be accessible before the abyssal/deep-ocean content. R12 is not a mandatory "final biome"; it is simply the strongest currently planned open-world danger band.
+R11 is intentionally layered rather than assigned one misleading number:
+
+- coast / harbor / shallow islands: suggested Lv 28;
+- open sea / reef / pirate routes: suggested Lv 44;
+- abyssal trenches / deep temples: suggested Lv 64.
+
+R04 and R05 intentionally share a suggested entry level because they are alternate expedition-tier regions with different threats, not one being a mandatory prerequisite for the other. R08 and R09 follow the same rule at a higher tier.
+
+The recommended-level UI should therefore answer **“is this region broadly appropriate for me?”**, while elite/boss markers answer **“is this specific encounter appropriate for me?”**.
 
 ---
 
@@ -55,10 +77,10 @@ R11 deliberately spans a wider range because coastline and shallow water should 
 
 ## R01 — Heartland starting region
 
-Canonical details live in `GAME_DESIGN.md`.
-
 Core identity:
+
 - meadow / plains / river / forest-fringe start;
+- approachable ordinary combat; major early difficulty spikes begin with elites, dangerous POIs and the first dungeon;
 - Louxia-led non-vanilla food ecology;
 - gazelle, bison, raccoon, crow and rare grizzly as curated wildlife;
 - common threats include rattlesnake/cave-centipede-style enemies and readable territorial animals;
@@ -70,490 +92,531 @@ Core identity:
 
 R01 foreshadows neighboring ecology. A rare Nature Spirit at the forest edge should imply that the western forest contains much stronger versions of that ecosystem rather than feeling like a random one-off monster.
 
+Resources:
+
+- common ore outcrops;
+- starter timber nodes;
+- river/forest healing herbs;
+- basic foraging ingredients;
+- one rarer quarry/grove material used later so the region remains relevant.
+
+Reward identity:
+
+- foundational weapons/armor rather than highly specialized builds;
+- deterministic first-dungeon equipment choice so bad RNG cannot cripple early progression.
+
 ---
 
 ## R02 — Western rich forest / river basin
 
-### World role
+World role:
 
-R02 is the first region where exploration density rises sharply. Roads become narrower, landmarks are hidden by canopy and rivers create natural route choices. It should feel more mysterious than R01 without becoming oppressive.
+- first dense-exploration region;
+- narrower roads, hidden landmarks and river forks create route choice;
+- more mysterious than R01 without becoming oppressive.
 
-### Ecology
+Ecology:
 
-Curated Alex's Mobs Continued pool:
-- raccoon, crow and selected small wildlife for ambient life;
-- grizzly bears as territorial hazards rather than constant aggro trash;
-- bunfungus / other visually compatible fantasy wildlife only where it strengthens the forest identity;
-- cave centipedes in root caves and abandoned cuts.
+- raccoon, crow and selected small wildlife;
+- grizzly as territorial hazard, not constant aggro trash;
+- Bunfungus or other compatible fantasy wildlife only where it strengthens identity;
+- cave centipedes in root caves and abandoned cuts;
+- Nature Spirit becomes a native major threat;
+- Regalhart can appear as an uncommon hunt species;
+- Lich appears only in authored ruins.
 
-Threateningly Mobs Continued:
-- Nature Spirit becomes a native major threat rather than a rare R01 teaser;
-- Regalhart may appear as an uncommon regional species/hunt after the player has already seen the R01 field boss version;
-- Lich is reserved for authored ruins instead of random global spawn.
+Encounter hierarchy:
 
-### Encounter hierarchy
+- common: small predators/ambushers and territorial wildlife;
+- elites: mature Nature Spirits and ancient Regalhart variants;
+- field encounter: roaming forest guardian hunt;
+- dungeon boss: Lich in a ruined woodland sanctum.
 
-- common: small forest predators/ambushers and territorial wildlife;
-- elite: mature Nature Spirit, ancient Regalhart variants;
-- field encounter: roaming forest guardian hunt with multiple route/terrain approaches;
-- dungeon boss: Lich in a ruined woodland sanctum, with project-authored attacks/rewards rather than donor progression.
+Resources / settlement:
 
-### Services / resources
+- logging/trade hamlet smaller than the starting hub;
+- hardwood, resin, mushrooms, healing plants, mana-active flora.
 
-- one forest settlement or logging/trade hamlet, smaller than the starting hub;
-- hardwood/timber, resin, mushrooms, healing plants and mana-active flora;
-- deeper forest nodes reward route knowledge rather than simple distance from town.
+Dungeon:
 
-### Dungeon direction
+- ancient woodland sanctum / collapsed arboretum;
+- side branches expose lore/rare herbs instead of padding combat length.
 
-Ancient woodland sanctum / collapsed arboretum. Use a strong external ruin shell, then replace encounters and loot. Branching side rooms should expose lore/rare herbs rather than extend combat length for no reason.
+Reward identity:
 
-### Signature reward identity
-
-DEX/WIL utility, poison/status resistance, forest movement, bow/finesse options and nature-linked accessories rather than raw universal damage upgrades.
+- DEX/WIL utility;
+- poison/status resistance;
+- forest movement;
+- bow/finesse options;
+- nature-linked accessories.
 
 ---
 
 ## R03 — Whitecrest highlands / windswept mountains
 
-### World role
+World role:
 
-First major vertical-traversal region. Cliffs and passes matter, but ordinary movement must remain usable before late-game flight. The region introduces valuable mineral routes and long sightlines toward stronger lands.
+- first major vertical-traversal region;
+- cliffs/passes matter without requiring flight;
+- important mineral routes and long sightlines toward stronger lands.
 
-### Ecology
+Ecology:
 
-Alex's Mobs Continued candidates:
 - bison in lower upland meadows;
-- bald-eagle / highland bird equivalents where available;
-- gelada monkey in rocky highland pockets;
-- snow leopard near the colder upper transition;
+- highland birds where available;
+- gelada monkey in rocky pockets;
+- snow leopard near colder upper transitions;
 - Sunbird as rare high-altitude fantasy wildlife;
-- Rocky Roller in caves and exposed stone corridors.
+- Rocky Roller in caves and exposed stone corridors;
+- Basalt Wyvern as elite / field-boss candidate;
+- Steelboar persists only at low density in lower passes.
 
-Threateningly Mobs Continued:
-- Basalt Wyvern as a strong highland elite / field-boss candidate where its current 26.2 behavior fits;
-- Steelboar can persist in lower passes but at low density.
-
-### Encounter hierarchy
+Encounter hierarchy:
 
 - common: highland wildlife, cave creatures, rolling/charge enemies;
-- elite: Rocky Roller packs in authored rockfall zones, highland wyvern encounters;
+- elites: authored Rocky Roller rockfall zones and wyvern encounters;
 - field boss: Basalt Wyvern on a high exposed plateau;
-- dungeon boss: source remains open until in-game inspection identifies the strongest current 26.2 mountain-fit external monster. Do not force a weak thematic match merely to fill the slot.
+- dungeon boss remains open until in-game inspection identifies a strong mountain-fit 26.2 candidate.
 
-### Services / resources
+Resources / settlement:
 
 - fortified mining town / cliff outpost;
 - iron-family ore, dense stone, silver-like mineral, highland crystal;
-- traversal shortcuts unlock through lifts/bridges/shrine routes rather than permanent movement-stat chores.
+- lifts/bridges/shrine shortcuts replace annoying permanent movement penalties.
 
-### Dungeon direction
+Dungeon:
 
-Collapsed cliff mine → ancient observatory/forge depth. Vertical loops, elevators/bridges and one exterior cliff segment should distinguish it from R01's quarry.
+- collapsed cliff mine into ancient observatory/forge;
+- vertical loops, lifts and one exterior cliff segment distinguish it from R01.
 
-### Signature reward identity
+Reward identity:
 
-Guard strength, poise damage, heavy weapons, ranged weak-point gear and movement-on-slope/knockback resistance.
+- guard strength;
+- poise damage;
+- heavy weapons;
+- ranged weak-point gear;
+- knockback resistance.
 
 ---
 
 ## R04 — Northern frozen crown
 
-### World role
+World role:
 
-Large northern cap using Azari's ice spikes, freezing taiga, ice ocean and freezing-abyss terrain. Weather and visibility can matter, but the player should not spend the region maintaining a tedious temperature meter unless a later playtest proves such a system actually improves the game.
+- ice spikes, freezing taiga, ice ocean and freezing-abyss terrain;
+- weather/visibility matter, but no tedious always-on temperature-management chore unless playtest proves value.
 
-### Ecology
+Ecology:
 
-Alex's Mobs Continued:
 - moose;
-- seals near the ice-ocean edge;
+- seal;
 - snow leopard;
-- Froststalker as a primary hostile fantasy predator.
+- Froststalker as a major hostile predator;
+- Ferox Iceworm as field/world-boss candidate;
+- Icebroodmother as dungeon-boss candidate if current behavior/animation passes inspection.
 
-Threateningly Mobs Continued candidates:
-- Ferox Iceworm as a major field/world-boss candidate;
-- Icebroodmother as a dungeon-boss candidate if the current 26.2 port retains acceptable behavior/animation.
+Encounter hierarchy:
 
-### Encounter hierarchy
+- common: cold wildlife and Froststalker pockets;
+- elites: large Froststalker hunts / ice-cave predators;
+- field boss: Ferox Iceworm;
+- dungeon boss: Icebroodmother.
 
-- common: cold-adapted wildlife + Froststalker pockets;
-- elite: large Froststalker hunts / ice-cave predators;
-- field boss: Ferox Iceworm breaking through snow/ice routes;
-- dungeon boss: Icebroodmother in a glacial cavern or frozen nest.
+Resources / settlement:
 
-### Services / resources
-
-- expedition fort / geothermal refuge rather than a giant city;
+- expedition fort / geothermal refuge;
 - fur/hide, frost crystal, cold-water ingredients, rare winter herbs;
-- frozen shoreline connects into R11 maritime content.
+- frozen coastline connects into R11.
 
-### Dungeon direction
+Dungeon:
 
-Glacial fissure / frozen nest with shifting sightlines, breakable ice shortcuts and a final wide arena. Avoid slippery-floor gimmicks in every room.
+- glacial fissure / frozen nest;
+- breakable ice shortcuts and wide final arena;
+- slippery-floor gimmicks used sparingly.
 
-### Signature reward identity
+Reward identity:
 
-Frost/status control, high poise, defensive accessories, cold-element spell/weapon variants and anti-slow mobility.
+- frost/status control;
+- high poise;
+- defensive accessories;
+- anti-slow mobility.
 
 ---
 
 ## R05 — Northeastern jungle / bamboo greenbelt
 
-### World role
+World role:
 
-Dense high-biodiversity land. Navigation is constrained by vegetation and rivers rather than invisible walls. Vertical canopy landmarks should make the region readable from a distance.
+- dense biodiversity;
+- navigation constrained by vegetation/rivers rather than invisible walls;
+- canopy landmarks keep the region readable.
 
-### Ecology
+Ecology:
 
-Alex's Mobs Continued:
-- gorilla;
-- capuchin monkey;
-- toucan and other jungle ambience;
-- tiger as a dangerous stalker;
+- gorilla, capuchin, toucan and jungle ambience;
+- tiger as stalking threat;
 - komodo dragon;
-- anaconda where the current roster/behavior is stable;
-- leafcutter ants and selected insects for ecological density rather than combat spam.
+- anaconda where current behavior is stable;
+- leafcutter ants and selected insects as ecology, not combat spam;
+- mature Earthloong as native high-tier threat.
 
-Threateningly Mobs Continued:
-- mature Earthloong becomes a native high-tier jungle/forest threat. R01's dungeon encounter functions as the player's early introduction to the species, not its only appearance.
+Encounter hierarchy:
 
-### Encounter hierarchy
+- common: insects/reptiles and avoidable predators;
+- elites: tiger/komodo/anaconda variants where tuning makes roles distinct;
+- field boss: mature Earthloong;
+- dungeon boss remains open for a strong current 26.2 jungle/temple candidate.
 
-- common: insects/reptiles and avoidable predator encounters;
-- elite: tiger/komodo/anaconda variants where project Lv tuning makes them mechanically distinct;
-- field boss: mature Earthloong in an ancient grove/river-temple approach;
-- dungeon boss: keep open for a high-quality external jungle/temple monster after current 26.2 dependency inspection; do not recycle another biome's boss purely for completeness.
-
-### Services / resources
+Resources / settlement:
 
 - river market / canopy-edge settlement;
-- rare herbs, resin, tropical food, venom materials, flexible wood/bamboo-like crafting resources;
-- some plants are alchemy ingredients unavailable in R01/R02, giving real trade value.
+- rare herbs, resin, tropical food, venom materials, flexible wood/bamboo resources.
 
-### Dungeon direction
+Dungeon:
 
-Overgrown stepped temple / flooded root vault. Routes alternate between exterior canopy, interior stone and root-filled chambers.
+- overgrown stepped temple / flooded root vault;
+- exterior canopy + interior stone + root chambers.
 
-### Signature reward identity
+Reward identity:
 
-Poison/status builds, mobility, rapid attack, herbal/alchemy upgrades and nature/earth spell variants.
+- poison/status builds;
+- mobility and rapid attack;
+- herbal/alchemy upgrades;
+- nature/earth spell variants.
 
 ---
 
 ## R06 — Mirewater delta / swamps
 
-### World role
+World role:
 
-Water and land interlock. The challenge is positioning and line-of-sight, not constant slow movement. Boardwalks, shallow channels, ruined towers and large trees create navigation landmarks.
+- water and land interlock;
+- challenge comes from positioning/line-of-sight rather than permanent movement slowdown;
+- boardwalks, shallow channels, ruins and giant trees create landmarks.
 
-### Ecology
+Ecology:
 
-Alex's Mobs Continued:
-- crocodile and caiman;
-- alligator snapping turtle;
-- mudskipper / shoebill-style wetland ambience;
-- anaconda where appropriate.
+- crocodile, caiman, snapping turtle;
+- wetland ambience such as mudskipper/shoebill equivalents;
+- anaconda where appropriate;
+- Diplocaulus as resource creature;
+- Hydra as signature major predator.
 
-Threateningly Mobs Continued:
-- Diplocaulus as valuable passive/breedable meat/leather/bone ecology;
-- Hydra as the region's signature major predator.
-
-### Encounter hierarchy
+Encounter hierarchy:
 
 - common: smaller wetland predators and territorial reptiles;
-- elite: large crocodilian / venomous wetland encounters;
-- field boss: Hydra in a large river basin or flooded ruin;
-- dungeon boss: currently open pending inspection of external swamp-fit candidates; quality beats filling every slot early.
+- elites: large crocodilian / venomous encounters;
+- field boss: Hydra in a river basin or flooded ruin;
+- dungeon boss remains open pending better swamp-fit candidate inspection.
 
-### Services / resources
+Resources / settlement:
 
 - raised-platform settlement / alchemist enclave;
-- medicinal fluids/materials from Diplocaulus under normalized project loot;
 - swamp herbs, poison reagents, clay, wetland fiber and river resources.
 
-### Dungeon direction
+Dungeon:
 
-Flooded observatory / sunken shrine. Water depth changes routes but must not turn combat into awkward swimming for the entire dungeon.
+- flooded observatory / sunken shrine;
+- water depth changes routes without forcing prolonged awkward swimming combat.
 
-### Signature reward identity
+Reward identity:
 
-Poison/bleed control, healing amplification, water mobility, anti-grab effects and alchemy-oriented accessories.
+- poison/bleed control;
+- healing amplification;
+- water mobility;
+- anti-grab effects;
+- alchemy accessories.
 
 ---
 
 ## R07 — Sunscar desert / oasis / badlands
 
-### World role
+World role:
 
-A broad exposed region where sightlines are long and major threats can be seen before they reach the player. The giant sand/earth-worm fantasy belongs here.
+- wide sightlines and exposed travel;
+- giant sand/earth-worm fantasy belongs here;
+- danger should often be visible before it reaches the player.
 
-### Ecology
+Ecology:
 
-Alex's Mobs Continued:
-- gazelle, jerboa and roadrunner-style prey/ambient wildlife;
+- gazelle, jerboa, roadrunner-style ambience;
 - rattlesnake;
-- Guster as a supernatural sand threat if its current behavior remains stable under project spawn control;
-- selected vultures only when they visually fit the non-vanilla identity.
-
-Threateningly Mobs Continued:
-- Copas as passive/breedable food + alloy ecology in badland/hill edges;
+- Guster if current behavior fits project spawn control;
+- selected vultures only if visual style fits;
+- Copas as food + alloy ecology;
 - Desert Beetle as heavy roaming threat;
 - Armor of Desert as elite/guardian;
-- Ferox Deathworm as the signature giant desert world-boss candidate.
+- Ferox Deathworm as signature giant world boss.
 
-### Encounter hierarchy
+Encounter hierarchy:
 
-- common: snakes, desert spirits and smaller predators;
-- elite: Desert Beetle / Armor of Desert;
-- field/world boss: Ferox Deathworm roaming or surfacing in a marked sand basin;
-- dungeon boss: Armor of Desert-type guardian in a buried ruin, with a different authored moveset/reward role from roaming elites.
+- common: snakes, sand spirits and smaller predators;
+- elites: Desert Beetle / Armor of Desert;
+- world boss: Ferox Deathworm in a major sand basin;
+- dungeon boss: authored guardian variant in buried ruins.
 
-### Services / resources
+Resources / settlement:
 
 - oasis trade town / caravan hub;
-- Copas meat/alloy, dry herbs, glass/silica resources, desert mineral nodes;
-- caravan events connect the region to R09 and R01 economy.
+- Copas meat/alloy, dry herbs, silica/glass resources and desert minerals;
+- caravans connect R07 to R09 and R01 economy.
 
-### Dungeon direction
+Dungeon:
 
-Buried palace / collapsed aqueduct beneath an oasis. Sandfall and vertical shafts should change traversal without turning into repetitive falling-block traps.
+- buried palace / collapsed aqueduct beneath oasis;
+- sandfall and vertical shafts alter traversal without repetitive traps.
 
-### Signature reward identity
+Reward identity:
 
-Impact/armor penetration, heat/fire preparation, stamina efficiency over long fights, black-powder/ranged materials and desert guardian gear.
+- impact/armor penetration;
+- stamina efficiency;
+- black-powder/ranged materials;
+- desert guardian equipment.
 
 ---
 
 ## R08 — Bloomveil fairy forests / pollinating cliffs
 
-### World role
+World role:
 
-A visually fantastical region using Azari's fairy forest, whimsical forest, great flower forest and pollinating-cliff families. It should look dramatically different from the grounded R01/R02 forests and justify higher magical density.
+- visually fantastical fairy forest / great flower forest / pollinating cliffs;
+- deliberately more magical than grounded R01/R02 woodland.
 
-### Ecology
+Ecology:
 
-Alex's Mobs Continued:
 - hummingbird;
 - Flutter;
 - Bunfungus and selected non-hostile fantastical creatures;
-- Sunbird may appear as a very rare sky encounter if it does not overcrowd R03's identity.
+- rare Sunbird only if it does not dilute R03;
+- Knowledge Fairy in authored library/ruin encounters;
+- Nature Spirit variants;
+- Moonpriest as high-tier magical encounter;
+- Titan Rabbit as strange field/world boss.
 
-Threateningly Mobs Continued:
-- Knowledge Fairy for authored library/ruin encounters rather than random bookshelf farming;
-- Nature Spirit variants as magical ecology;
-- Moonpriest as a high-tier humanoid/magical encounter candidate;
-- Titan Rabbit as the deliberately strange field/world-boss candidate.
+Encounter hierarchy:
 
-### Encounter hierarchy
+- common: magical wildlife and sparse aggressive flora/fae threats;
+- elites: Nature Spirit variants / Moonpriest groups in authored spaces;
+- field boss: Titan Rabbit;
+- dungeon boss: Moonpriest or better current external caster after animation review.
 
-- common: magical wildlife and low-density aggressive flora/fae threats;
-- elite: Nature Spirit variants / Moonpriest groups in authored spaces;
-- field boss: Titan Rabbit in a huge flowering basin where its scale feels intentional;
-- dungeon boss: Moonpriest or another externally sourced magical caster after animation review.
+Resources / settlement:
 
-### Services / resources
+- secluded sanctuary / scholar enclave;
+- mana flora, rare pigments, magical pollen, light materials, spellcraft ingredients.
 
-- secluded sanctuary / scholar enclave rather than another full trade city;
-- mana flora, rare pigments, magical pollen, light materials, spellcraft ingredients;
-- Knowledge Fairy mechanics are adapted to project skill/progression rewards rather than vanilla enchanted-book economy.
+Dungeon:
 
-### Dungeon direction
+- fae archive / glass-and-root observatory / overgrown library;
+- puzzles stay light enough that combat/exploration remains primary.
 
-Fae archive / glass-and-root observatory / overgrown library. Puzzle density stays light; the dungeon is still an action-RPG space, not a menu puzzle collection.
+Reward identity:
 
-### Signature reward identity
-
-Mana sustain, spell-shaping, support/healing interactions, status conversion and visually distinctive magical accessories.
+- Mana sustain;
+- spell shaping;
+- support/healing interactions;
+- status conversion;
+- magical accessories.
 
 ---
 
 ## R09 — Southstone marches / dry rocky belt
 
-### World role
+World role:
 
-A harsh transition belt around Azari's south: rocky shores, dry grassland, eroded land and trade roads. It supports caravans and harder physical enemies before the volcanic island.
+- harsh southern transition belt of rocky shore, dry grassland, eroded terrain and trade roads;
+- caravan gameplay and heavy physical enemies prepare the player for R10.
 
-### Ecology
+Ecology:
 
-Alex's Mobs Continued:
 - rhinoceros;
-- elephant where terrain width supports herds;
-- kangaroo / maned-wolf-style dryland wildlife where appropriate;
-- selected raptors/insects for ambience.
+- elephant where terrain supports herds;
+- kangaroo/maned-wolf-style dryland wildlife where appropriate;
+- selected raptors/insects for ambience;
+- Flamehorn as signature heavy creature;
+- Steelboar in limited pockets;
+- Executioner only in authored forts/ruins.
 
-Threateningly Mobs Continued:
-- Flamehorn as signature hostile/neutral heavy creature;
-- Steelboar persists in limited pockets;
-- Executioner can occupy authored forts/ruins rather than spawn everywhere.
-
-### Encounter hierarchy
+Encounter hierarchy:
 
 - common: dryland wildlife and smaller predators;
-- elite: Flamehorn / armored charge enemies;
-- field boss: a high-stat Flamehorn herd leader or externally sourced regional giant after in-game quality check;
-- dungeon boss: Executioner in a ruined road fortress if its current 26.2 presentation is strong enough.
+- elites: Flamehorn / armored charge enemies;
+- field boss: high-stat herd leader or stronger regional giant after quality check;
+- dungeon boss: Executioner if 26.2 presentation passes review.
 
-### Services / resources
+Resources / settlement:
 
 - caravan fort / foundry outpost;
 - dense metal, clay, hardstone, hide, dry medicinal plants;
-- trade routes make this a currency/source-sink connector rather than a region that only exists for combat.
+- trade routes make the region an economy connector rather than combat-only zone.
 
-### Dungeon direction
+Dungeon:
 
-Ruined canyon fortress with exterior battlements, interior foundry and collapsed lower vault. Enemy placement should make use of height without ranged spam.
+- ruined canyon fortress with battlements, foundry and collapsed lower vault.
 
-### Signature reward identity
+Reward identity:
 
-Heavy armor, guard/counter builds, impact resistance, merchant/travel utility and high-quality metal components.
+- heavy armor;
+- guard/counter builds;
+- impact resistance;
+- merchant/travel utility;
+- high-quality metal components.
 
 ---
 
 ## R10 — Cinderfall volcanic ash island
 
-### World role
+World role:
 
-Azari's southeastern red volcanic landmass is visually isolated enough to feel like a major destination. It is a late-game region, but it should be reachable early by a reckless player via coast/route rather than story teleport only.
+- visually isolated late-game volcanic destination;
+- reachable early by reckless traversal rather than story-only teleport.
 
-### Ecology
+Ecology:
 
-Threateningly Mobs Continued is the primary current source:
-- Scorch Golem as a heavy normal/elite enemy depending project tuning;
-- Basalt Wyvern in cliffs/ash skies;
-- Inferno as the signature world/dungeon boss candidate.
+- Scorch Golem;
+- Basalt Wyvern;
+- Inferno as signature boss candidate;
+- further fire creatures only if they outperform these visually and mechanically;
+- no Blaze/Magma Cube population.
 
-Additional fire creatures should be added only from current Fabric 26.2 sources that visually outperform these; no vanilla Blaze/Magma Cube substitute population is allowed.
+Encounter hierarchy:
 
-### Encounter hierarchy
+- common: curated ashland creatures still to be finalized after dependency inspection;
+- elites: Scorch Golem / Basalt Wyvern;
+- field boss: wyvern alpha or equivalent cliff encounter;
+- major boss: Inferno in a volcanic forge/caldera.
 
-- common: ashland creatures and smaller externally sourced fire threats still to be selected after M0 dependency inspection;
-- elite: Scorch Golem / Basalt Wyvern;
-- field boss: Basalt Wyvern alpha or equivalent cliff encounter;
-- major boss: Inferno in a volcanic forge/caldera dungeon.
+Resources / settlement:
 
-### Services / resources
-
-- one fortified refuge / forge enclave rather than natural farmland;
+- fortified refuge / forge enclave;
 - volcanic glass, high-grade ore, fire-reactive mineral, ash reagent;
-- highest-tier smithing materials begin here but are not exclusively RNG boss drops.
+- high-tier smithing materials begin here but are not exclusively RNG boss drops.
 
-### Dungeon direction
+Dungeon:
 
-Caldera forge / buried volcanic foundry. Heat is communicated through hazards/telegraphs rather than a constant UI maintenance bar.
+- caldera forge / buried volcanic foundry;
+- heat communicated through hazards/telegraphs rather than permanent maintenance UI.
 
-### Signature reward identity
+Reward identity:
 
-Fire/impact builds, high-grade smithing, charged weapon effects, explosive/black-powder advancement materials and high-poise equipment.
+- fire/impact builds;
+- high-grade smithing;
+- charged weapon effects;
+- explosive/black-powder advancement;
+- high-poise gear.
 
 ---
 
 ## R11 — Inner Sea, pirate coast and abyssal routes
 
-### World role
+World role:
 
-The huge central water network is not empty travel space. Shallows, islands, reef, pirate cove and deep-water routes form a maritime region layered across multiple Lv bands.
+The central water network is a layered region rather than empty travel space.
 
 Subzones:
-- coast/shallow islands: roughly midgame-accessible;
-- open sea / reef: stronger encounters;
-- deep trenches / freezing-abyss-linked waters: late-game danger.
 
-### Ecology
+- Lv 28 coast / harbors / shallow islands;
+- Lv 44 open sea / reefs / pirate routes;
+- Lv 64 abyssal trenches / deep temples.
 
-Threateningly Mobs Continued:
-- Hippofish and Red Triplefish for breedable/resource fish ecology;
-- Giant Sea Cucumber for medicinal/material ecology;
+Ecology:
+
+Threateningly Mobs Continued candidates:
+
+- Hippofish and Red Triplefish as food/resource fish;
+- Giant Sea Cucumber as medicinal/material ecology;
 - Beast Horseshoe Crab as heavy coast/ocean threat;
-- Riptooth as dangerous night/ocean predator;
-- Abyss Fang as late deep-water boss.
+- Riptooth as night/ocean predator;
+- Abyss Fang as deep-water boss.
 
-Alex's Mobs Continued:
+Alex's Mobs Continued candidates:
+
 - orca;
 - hammerhead shark;
 - frilled shark;
 - giant squid;
 - cachalot whale;
-- lobster, flying fish, comb jelly and other curated marine ambience.
+- lobster, flying fish, comb jelly and curated ambience.
 
-No vanilla cod/salmon/tropical fish/dolphin/squid population is required. If a dependency's taming/breeding recipe expects vanilla fish, project recipes/loot should be redirected to custom aquatic food where technically possible rather than bringing vanilla fish back as visible ecology.
+No vanilla cod/salmon/tropical fish/dolphin/squid population. If a dependency expects vanilla fish in recipes, project recipes/loot should redirect to custom aquatic food where feasible.
 
-### Encounter hierarchy
+Encounter hierarchy:
 
-- common: passive fish/sea life + low-density predators;
-- elite: hammerhead/frilled-shark encounters and Beast Horseshoe Crab;
-- field boss: Riptooth night hunt or large roaming sea predator;
-- deep boss: Abyss Fang in an underwater altar/cavern reauthored around project progression.
+- common: passive sea life and low-density predators;
+- elites: sharks / Beast Horseshoe Crab;
+- field boss: Riptooth or large roaming predator;
+- deep boss: Abyss Fang.
 
-### Services / resources
+Resources / settlement:
 
-- one major harbor/pirate-trade settlement plus small island ports;
-- fish/seafood economy, coral/reef reagents, medicinal sea cucumber materials, abyssal minerals;
-- fishing becomes a meaningful side economy because the visible aquatic roster is custom rather than vanilla fish filler.
+- major harbor/pirate-trade settlement plus small island ports;
+- seafood economy, reef reagents, medicinal sea-cucumber materials, abyssal minerals.
 
-### Dungeon direction
+Dungeon archetypes:
 
-Two reusable archetypes:
-1. pirate-cove / sea-fort dungeon for ordinary maritime progression;
-2. deep reef / abyssal temple for late-game underwater content.
+1. pirate-cove / sea-fort progression dungeon;
+2. deep reef / abyssal temple late-game dungeon.
 
-Underwater combat sections should be designed for project movement and ranged/melee viability rather than forcing prolonged vanilla swimming combat.
+Reward identity:
 
-### Signature reward identity
-
-Water mobility, projectile control, bleed/predator effects, fishing/resource utility and abyssal spell/weapon variants.
+- water mobility;
+- projectile control;
+- bleed/predator effects;
+- fishing/resource utility;
+- abyssal spell/weapon variants.
 
 ---
 
 ## R12 — Obsidian Rift / overgrown anomaly
 
-### World role
+World role:
 
-Use Azari's dark western-central pockets, obsidian-spike terrain and overgrown-cave systems as the strongest current open-world anomaly. It should feel abnormal without requiring Nether/End progression.
+- strongest currently planned open-world anomaly;
+- sparse rather than crowded;
+- fewer creatures with larger encounter footprints and stronger environmental storytelling;
+- not presented as a mandatory “final biome.”
 
-The region is sparse rather than crowded: fewer creatures, larger encounter footprints and more environmental storytelling.
+Ecology:
 
-### Ecology
-
-Alex's Mobs Continued candidates:
-- Farseer as an abnormal ranged/interdimensional threat;
-- Murmur in deep cave systems;
-- selected fantastical entities only if their source behavior can be detached from Nether/End assumptions cleanly.
-
-Threateningly Mobs Continued:
+- Farseer;
+- Murmur;
+- selected fantastical entities only if Nether/End assumptions can be detached cleanly;
 - Reaper;
-- Lich / Moonpriest / Executioner only in authored ruins where reuse does not dilute their earlier regional identities;
-- Terradragon as the current high-end world-boss candidate.
+- Lich/Moonpriest/Executioner only in authored ruins where reuse does not dilute earlier identities;
+- Terradragon as current high-end world-boss candidate;
+- avoid Skreecher unless Warden-summon behavior can be disabled/replaced because vanilla Wardens are excluded.
 
-Avoid Skreecher unless its Warden-summon behavior can be cleanly disabled/replaced, because vanilla Wardens are excluded from the ecology.
+Encounter hierarchy:
 
-### Encounter hierarchy
+- common: low-density anomaly creatures;
+- elites: Farseer / Reaper-tier encounters;
+- field/world boss: Terradragon;
+- separate rift/cathedral boss remains open if Terradragon works better as an open-world spectacle.
 
-- common: low-density anomaly creatures; ordinary enemies are individually more meaningful rather than numerous;
-- elite: Farseer / Reaper-tier encounters;
-- field/world boss: Terradragon in the largest open obsidian basin;
-- dungeon boss: separate rift/cathedral boss candidate remains open if Terradragon works better as the region's open-world spectacle.
+Resources / settlement:
 
-### Services / resources
-
-- no normal large city inside the anomaly;
-- one edge refuge / research camp connected to a nearby safer region;
+- no large ordinary city inside anomaly;
+- one edge refuge / research camp;
 - rift crystal, obsidian-glass material, arcane ore and late spellcraft components;
-- resources should reward dangerous expeditions without making all earlier materials obsolete.
+- earlier materials remain useful.
 
-### Dungeon direction
+Dungeon:
 
-Obsidian cathedral / rift excavation descending into overgrown caves. Combat spaces should emphasize telegraphed high-impact attacks and vertical sightlines, not simply inflated HP.
+- obsidian cathedral / rift excavation descending into overgrown caves;
+- telegraphed high-impact attacks and vertical sightlines instead of inflated HP.
 
-### Signature reward identity
+Reward identity:
 
-Late build-defining relics, class-skill variants, high-end arcane/status effects and unusual mechanics rather than only top numeric stats.
+- build-defining relics;
+- class-skill variants;
+- high-end arcane/status mechanics;
+- unusual effects rather than only highest numbers.
 
 ---
 
 # 4. Adjacency / traversal graph
 
-The world should not play as R01 → R02 → R03 → ... in a straight line.
+The world does not play as R01 → R02 → R03 → ... in a straight line.
 
 Preferred broad graph before coordinate audit:
 
@@ -573,15 +636,17 @@ Preferred broad graph before coordinate audit:
                             ---- R10 Cinderfall
 ```
 
-This graph is conceptual. Actual roads/coastlines must follow imported terrain.
-
 Design intent:
-- R01 has at least two sensible progression routes plus one obviously dangerous route;
-- R02/R03 offer a western/northern progression branch;
-- R05/R06/R07/R08 create a broad eastern loop;
-- R09 connects the southern mainland to the volcano and desert trade routes;
-- R11 acts as a cross-map maritime connector once appropriate travel is available;
-- R12 can be discovered from multiple western/central approaches rather than behind one mandatory story door.
+
+- R01 offers at least two sensible routes plus one obviously dangerous direction;
+- R02/R03 form an early western/northern branch;
+- R04/R05 are peer expedition-tier destinations rather than sequential requirements;
+- R06/R07 form a midgame eastern branch;
+- R08/R09 are peer high-tier routes with very different combat/ecology;
+- R11 acts as a cross-map connector with its own layered difficulty;
+- R12 is discoverable from multiple approaches rather than behind one mandatory story door.
+
+Actual roads/coastlines must follow the imported terrain.
 
 ---
 
@@ -589,25 +654,124 @@ Design intent:
 
 Regional content depends on strict spawn ownership.
 
-- Natural vanilla mob population is disabled globally inside authored RPG gameplay.
-- External dependencies do not own global spawn balance; project region data does.
-- A creature can be globally disabled and manually/regionally re-enabled through project rules if the dependency allows it.
-- Imported structures have vanilla spawners replaced.
-- Donor-mod dimensions, summon progression, crafting recipes and default loot do not become canon automatically.
-- Passive creature density is tuned so the world feels alive without creating entity-count/performance problems on a 30k map.
-- Predators do not constantly wipe out food ecology offscreen; ecosystem simulation is deliberately bounded for performance and reliability.
-- Normal creatures do not routinely drop equipment.
-- Elites/bosses have authored reward pools and deterministic first-clear protection where appropriate.
+## 5.1 Principle
+
+The project does **not** replace Minecraft spawning with a completely custom every-tick entity search unless profiling proves that necessary. Reuse Minecraft/Fabric's existing spawn machinery where it is good, then put project ownership around it.
+
+Goals:
+
+- no natural vanilla living-mob population;
+- no donor mod globally dumping its entire roster into Azari;
+- common ecology uses efficient natural spawning;
+- elites, bosses, events and dungeon encounters are authored systems rather than random biome-spawn noise;
+- multiplayer server owns spawn/encounter truth.
+
+## 5.2 Fabric 26.2 biome spawn layer
+
+Fabric API 26.2 exposes `BiomeModificationContext.MobSpawnSettingsContext` with:
+
+- `getMobs(...)`;
+- `addSpawn(...)`;
+- `removeSpawns(...)`;
+- `removeSpawnsOfEntityType(...)`;
+- `clearSpawns(category)`;
+- `clearSpawns()`.
+
+Fabric's modification phases run in this order:
+
+1. `ADDITIONS`
+2. `REMOVALS`
+3. `REPLACEMENTS`
+4. `POST_PROCESSING`
+
+For this project, the preferred M0 architecture is:
+
+1. mark every biome actually used by the authored Azari world with project data/tags after import audit;
+2. in a late project-owned biome modification, clear ordinary biome spawn entries for those authored biomes;
+3. rebuild only the approved custom creature spawn table for each terrain/biome family;
+4. preserve the original third-party entity spawn-placement rules unless they conflict with the project;
+5. use region/biome-specific weights, group sizes and density instead of enabling donor defaults globally.
+
+Because the project needs to remove spawn additions from dependencies as well as vanilla entries, a late `REPLACEMENTS` or `POST_PROCESSING` project modifier is safer than adding approved mobs first and then clearing in `REMOVALS`. Exact ordering is verified against the final dependency set during M0 rather than guessed.
+
+## 5.3 Natural ecology vs authored encounters
+
+Use Minecraft's natural-spawn machinery mainly for:
+
+- passive/neutral wildlife;
+- ordinary predators;
+- low-tier hostile creatures;
+- ambient aquatic/air creatures.
+
+Do **not** put the following into ordinary uncontrolled biome spawning by default:
+
+- named elites;
+- field/world bosses;
+- dungeon bosses;
+- quest targets;
+- event monsters;
+- rare signature creatures whose appearance should matter.
+
+Those use project encounter controllers, authored locations, event conditions or explicit spawn anchors so rarity, telegraphing, respawn and rewards remain reliable.
+
+## 5.4 Vanilla special-spawn paths
+
+Clearing biome spawn lists alone is not enough to satisfy the no-vanilla-mob rule.
+
+Minecraft 26.2 has separate game rules for ordinary mob spawning and special systems including patrols, phantoms, wandering traders, Wardens and spawner blocks. The project disables the relevant vanilla special spawn systems in the authored RPG world and removes/replaces imported vanilla spawner blocks.
+
+Do **not** simply turn `spawn_mobs` off globally if the custom ecology still relies on normal mob spawning; doing so would suppress the project creatures too. Instead:
+
+- clear/rebuild biome spawn tables;
+- disable vanilla-only special spawn systems individually;
+- replace structure spawners;
+- audit dependency-specific custom spawners/event spawners;
+- add a narrow server-side safety gate only for vanilla EntityTypes that still leak through an unhandled path.
+
+The safety gate is a last line of defense, not the primary ecosystem implementation. It should reject only forbidden vanilla living entities in the authored world and must not interfere with project NPCs, custom mobs, explicit developer test summons or legitimate scripted encounters.
+
+## 5.5 Imported structures / map conversion
+
+During Azari and structure import:
+
+- scan/remove vanilla mob spawner blocks from adopted dungeons;
+- remove vanilla villagers/animals/entities saved into imported structures;
+- replace vanilla encounter markers with project anchors/data;
+- keep architecture when strong, not the donor encounter table;
+- validate that newly loaded chunks do not repopulate vanilla mobs through donor datapacks or structures.
+
+## 5.6 Dependency spawn ownership
+
+For Alex's Mobs Continued, Threateningly Mobs Continued and later creature dependencies:
+
+- prefer dependency config/data options to disable global default spawning when available;
+- if not sufficient, strip their biome entries in the project late biome-modification pass and re-add only approved entities;
+- do not fork/copy a large dependency merely to change spawn weights unless its license and maintenance cost justify it;
+- donor structures, dimensions, recipes and loot remain non-canonical unless separately adopted.
+
+## 5.7 Density / performance
+
+A 30k authored map does not mean all chunks simulate ecology at once. Normal Minecraft chunk/player proximity rules remain useful.
+
+Additional rules:
+
+- avoid persistent mobs unless gameplay requires persistence;
+- keep ambient packs small enough to avoid pathfinding/entity-count spikes;
+- do not simulate predator/prey ecology globally offscreen;
+- boss/event controllers sleep when no relevant player is nearby;
+- no every-tick scan of the whole world or every loaded entity;
+- profile before changing spawn radius/caps/pathfinding budgets.
 
 ---
 
 # 6. External creature source mapping
 
-Current principal dependencies/candidates already tracked in `EXTERNAL_SOURCES.md`:
+Current principal dependencies/candidates already tracked in `EXTERNAL_SOURCES.md`.
 
 ## Alex's Mobs Continued
 
 Use primarily for diverse wildlife, predators and selected fantasy creatures:
+
 - R01/R02: gazelle, bison, raccoon, crow, grizzly, cave centipede;
 - R03: highland wildlife, Sunbird, Rocky Roller;
 - R04: moose, seal, snow leopard, Froststalker;
@@ -624,6 +788,7 @@ This is a dependency roster, not permission to enable its full default spawn lis
 ## Threateningly Mobs Continued
 
 Use primarily for distinct high-tier monsters, bosses and replacement resource creatures:
+
 - R01: Louxia, Steelboar, Regalhart, Earthloong introduction;
 - R02: Nature Spirit, Lich authored encounter;
 - R03: Basalt Wyvern candidate;
@@ -648,12 +813,12 @@ Each major region eventually needs, at minimum:
 - one safe service node or a deliberate reason to have none;
 - several recognizable traversal landmarks;
 - multiple common ecology roles, not only hostile mobs;
-- at least 2–3 authored elite/hunt patterns across its subregions;
-- one field-boss/world-boss direction where appropriate;
-- at least one dungeon/major interior or a deliberate alternate signature activity;
+- at least 2–3 authored elite/hunt patterns across subregions;
+- one field/world-boss direction where appropriate;
+- at least one dungeon/major interior or deliberate alternate signature activity;
 - regional gathering/resource identity;
 - at least one meaningful reward family/build hook;
-- events/quests that use the region's geography rather than generic kill counters;
+- events/quests that use geography rather than generic kill counters;
 - return reasons after first completion without daily-chore structure.
 
 Do not satisfy these counts by duplicating the same encounter with a different name.
@@ -666,7 +831,9 @@ Before source bootstrap:
 
 1. import the actual Azari world locally and confirm which published biome/terrain family corresponds to each provisional region;
 2. draw exact R01–R12 borders from rivers, mountain chains, coastlines and biome transitions;
-3. inspect all selected current Fabric 26.2 creatures in-game for model/animation/AI quality;
-4. reject or replace candidates that leak vanilla entities, require unsuitable donor progression, or have poor visual quality;
-5. select the actual external structures/dungeon shells and settlement architecture per region;
-6. then convert the working Lv bands into the final EXP/Lv curve during the benchmark pass.
+3. inspect selected current Fabric 26.2 creatures in-game for model/animation/AI quality;
+4. inspect each creature dependency's config/spawn registration path, then decide whether config suppression or the Fabric late biome-rebuild layer owns its natural spawning;
+5. reject or replace candidates that leak vanilla entities, require unsuitable donor progression, or have poor visual quality;
+6. select actual external structures/dungeon shells and settlement architecture per region;
+7. run the economy/EXP benchmark pass and rescale suggested entry levels together rather than reopening region identities;
+8. only after the real spawn table is implemented, profile loaded-entity counts/pathfinding under representative multiplayer conditions before changing caps or spawn frequency.
