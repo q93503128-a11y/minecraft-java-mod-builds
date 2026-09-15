@@ -11,8 +11,17 @@ def fail(message: str) -> None:
 
 def main() -> None:
     project = Path(__file__).resolve().parents[1]
-    jar = Path(sys.argv[1]) if len(sys.argv) > 1 else next((project / "build/libs").glob("earth_to_stars-*.jar"), None)
-    if jar is None or not jar.is_file():
+    if len(sys.argv) > 1:
+        jar = Path(sys.argv[1])
+    else:
+        candidates = sorted(
+            path for path in (project / "build/libs").glob("earth_to_stars-*.jar")
+            if not path.name.endswith("-sources.jar")
+        )
+        if len(candidates) != 1:
+            fail(f"expected exactly one production jar, found {len(candidates)}")
+        jar = candidates[0]
+    if not jar.is_file():
         fail("production jar missing")
 
     with zipfile.ZipFile(jar) as archive:

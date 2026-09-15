@@ -44,9 +44,12 @@ jobs:
       - name: Clean test and build
         shell: bash
         run: |
-          mkdir -p build/logs
+          rm -rf /tmp/earth-to-stars-reboot-logs
+          mkdir -p /tmp/earth-to-stars-reboot-logs
           set -o pipefail
-          ./gradlew --no-daemon clean test build --stacktrace 2>&1 | tee build/logs/build.log
+          ./gradlew --no-daemon clean test build --stacktrace 2>&1 | tee /tmp/earth-to-stars-reboot-logs/build.log
+          mkdir -p build/logs
+          cp /tmp/earth-to-stars-reboot-logs/build.log build/logs/build.log
 
       - name: Verify production JAR excludes legacy vehicle stack
         run: python3 tools/verify_reboot_jar.py
