@@ -12,8 +12,8 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 
 /**
- * Client-only cache for the selected character's real Minecraft entity preview.
- * The authoritative character->entity id comes from the server progression snapshot.
+ * Client-only cache for real Minecraft entity previews.
+ * The authoritative character->entity id originates from server-authored presentation data.
  */
 final class CharacterEntityPreview {
     private ClientLevel cachedLevel;
@@ -25,6 +25,17 @@ final class CharacterEntityPreview {
         LivingEntity entity = resolve(minecraft, sourceEntity);
         if (entity == null || cachedType == null) return EntityPreviewLayout.PreviewSpec.hidden(regionWidth);
         return EntityPreviewLayout.fit(regionWidth, regionHeight, cachedType.getWidth(), cachedType.getHeight());
+    }
+
+    EntityPreviewLayout.PreviewSpec compactLayout(
+            Minecraft minecraft,
+            String sourceEntity,
+            int regionWidth,
+            int regionHeight
+    ) {
+        LivingEntity entity = resolve(minecraft, sourceEntity);
+        if (entity == null || cachedType == null) return EntityPreviewLayout.PreviewSpec.hidden(regionWidth);
+        return EntityPreviewLayout.fitCompact(regionWidth, regionHeight, cachedType.getWidth(), cachedType.getHeight());
     }
 
     void extract(GuiGraphicsExtractor graphics, UiLayoutMetrics.Rect region, EntityPreviewLayout.PreviewSpec spec) {
