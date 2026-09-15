@@ -10,6 +10,16 @@ Subordinate references currently indexed by this canon:
 
 - `REGIONS.md` — regional expansion/content details for Azari.
 - `UI_DIRECTION.md` — selected external UI family, screen architecture and visual acceptance rules.
+- `LOOT_ECONOMY.md` — equipment grades, affixes, drop rates, target farming, first-clear protection and signature-material rules.
+- `EQUIPMENT_BALANCE.md` — Item-Lv/base-stat curves, exact affix ranges, forge/reforge rules and R01 equipment/resource catalog.
+- `MOUNTS.md` — non-vanilla mount roster, traversal balance, summon/combat rules and external visual sources.
+- `M0_DEPENDENCY_AUDIT.md` — pinned Fabric 26.2 toolchain/dependency/integration boundaries.
+- `COMBAT_BALANCE.md` — combat formulas, dodge/guard/parry timing, poise, TTK, encounter damage and multiplayer scaling.
+- `CLASS_COMBAT_KITS.md` — five root-class combat kits, first specialization branches and external animation/VFX/icon direction.
+- `CLASS_PROGRESSION.md` — Class Rank/XP, advancement beats, passive economy, deeper branch mechanics and world-discovered skills.
+- `STATUS_AND_R01_ENCOUNTERS.md` — element/status rules and concrete R01 ecology/elite/field-boss/first-dungeon combat kits.
+- `R01_VERTICAL_SLICE.md` — opening settlement, external player-motion bindings and first 55–75 minute playable R01 route.
+- `RECOVERY_PRODUCTION_APPEARANCE.md` — recovery belt, potions, food, alchemy/cooking, light profession mastery and external-first armor/apparel/Wardrobe rules.
 
 If a subordinate reference conflicts with this file, this file wins.
 
@@ -69,6 +79,8 @@ This applies to:
 - minimap/world map;
 - monsters and bosses;
 - weapons, armor and accessories;
+- player/NPC robes, civilian clothing, profession apparel and cosmetic outfits;
+- player locomotion/combat/work/mount animations including dash, dodge, roll, guard/parry and action transitions;
 - shrines/checkpoints;
 - camps, tents and campfires;
 - inns, towns and service buildings;
@@ -78,9 +90,9 @@ This applies to:
 - resource nodes;
 - important VFX/sound direction.
 
-If an external design can legally be used directly and already looks better than a custom redesign, preserve it as intact as practical. Only alter what is required for this game's information, controls, GUI scale and consistency.
+If an external design can legally be used directly and already looks better than a custom redesign, preserve it as intact as practical. Only alter what is required for this game's information, controls, GUI scale, Minecraft-scale rig/geometry compatibility and consistency.
 
-Do not create temporary web-game-style panels, generic black translucent boxes, disposable vanilla-entity placeholders or throwaway player-facing screens.
+Do not create temporary web-game-style panels, generic black translucent boxes, disposable vanilla-entity placeholders, recolored vanilla armor as finished RPG gear, code-only dash displacement with a vanilla running pose, or throwaway player-facing screens.
 
 ## 2.2 Private-play target / public-repo boundary
 
@@ -274,6 +286,8 @@ Do not grant an extra under-level quest multiplier. Sequence-breaking remains al
 
 Primary survival resource. Natural recovery exists but is intentionally slow. Recovery can also come from purchased potions, food, skills/effects and rest.
 
+Exact natural HP recovery, Recovery Belt, R01 recovery items, food and rest behavior are expanded in `RECOVERY_PRODUCTION_APPEARANCE.md`.
+
 ## Mana
 
 Primary active-skill resource.
@@ -310,6 +324,7 @@ Rules:
 - Camps, inns, shrines or other valid rest points restore resources efficiently.
 - Inns are valid world-service buildings when a strong external design/build is selected.
 - Creature-based cooking ingredients come from the custom ecology; starting-region examples include Louxia meat and selected non-vanilla wildlife meat.
+- baseline in-combat recovery access is deliberately bounded through the four-dose quick Recovery Belt defined in `RECOVERY_PRODUCTION_APPEARANCE.md` rather than letting a stack of 20 potions become one uninterrupted boss-healing pool.
 
 ---
 
@@ -354,7 +369,8 @@ Right click remains for held-item behavior such as shield/guard, weapon-specific
 - directional movement;
 - consumes Stamina;
 - useful for both mobility and evasion;
-- visible animation/motion must match actual evasion or i-frame timing.
+- visible animation/motion must match actual evasion or i-frame timing;
+- finished presentation uses an accepted external motion/animation source; code-only displacement with an unrelated vanilla pose is not acceptable.
 
 ## Guard / parry
 
@@ -392,6 +408,8 @@ Ultimate activation uses a hybrid model:
 - only one ultimate can be equipped, so it should be distinctly stronger, more spectacular and more build-defining than normal skills.
 
 Ultimate HUD uses the externally selected final-quality project UI family from the first playable version.
+
+Exact combat math/timing lives in `COMBAT_BALANCE.md`; class action kits live in `CLASS_COMBAT_KITS.md`.
 
 ---
 
@@ -511,6 +529,8 @@ Passives:
 - each class retains its own saved passive tree and restores it only while active;
 - cross-class passive stacking is forbidden unless a future separate global-progression system explicitly introduces it.
 
+Detailed root/branch skills and progression are locked in `CLASS_COMBAT_KITS.md` and `CLASS_PROGRESSION.md`.
+
 ## 9.5 External class / skill reuse policy
 
 Class and skill production is **external-first** in the same way as visual production.
@@ -621,6 +641,8 @@ Canonical equipment target:
 Two-handed weapons may disable or repurpose the off-hand slot.
 Exact visual placement follows the selected external GUI rather than an internally improvised layout.
 Accessory/Charm/Relic slots should create build effects, not exist only for tiny percentage bonuses.
+
+All visible armor/robes/apparel use accepted external 3D design/model families. Exact appearance/Wardrobe rules and the preferred 26.2 Armor Model API path are expanded in `RECOVERY_PRODUCTION_APPEARANCE.md`.
 
 ## Inventory capacity
 
@@ -747,9 +769,7 @@ No shared-floor race where another player can take the reward first.
 
 ## Item grade structure
 
-Use about five grades, but avoid the tired `Common / Rare / Epic / Legendary` naming set.
-Player-facing names are chosen with the world's lore/design language later.
-Until then use neutral internal tier IDs.
+Use the grade structure and loot rules locked in `LOOT_ECONOMY.md` rather than re-inventing them during implementation.
 
 ---
 
@@ -760,6 +780,8 @@ Use medium complexity.
 Physical identity may distinguish slash / pierce / impact where useful.
 Core magical/elemental families may include fire, frost, lightning, poison/corrosion and arcane-like effects.
 Status effects must be mechanically distinct rather than differently colored copies of the same DOT.
+
+Exact launch status/buildup relationships are defined in `STATUS_AND_R01_ENCOUNTERS.md`.
 
 ---
 
@@ -774,6 +796,8 @@ Smithing, alchemy and cooking may improve through use and unlock recipes/quality
 Each important workstation gets a purpose-built screen from the shared external UI language documented in `UI_DIRECTION.md`. Physical workstation/building appearance follows the same external-first rule.
 
 Avoid production steps that only add clicks.
+
+The current five-rank non-grindy mastery shape and R01 alchemy/cooking behavior are defined in `RECOVERY_PRODUCTION_APPEARANCE.md`; forge/reforge behavior is defined in `EQUIPMENT_BALANCE.md`.
 
 ---
 
@@ -820,6 +844,8 @@ Its buildings exist coherently from the beginning; progression primarily unlocks
 - use a short roughly 2–4 minute playable approach/encounter to establish movement/combat/context without a long forced tutorial;
 - reaching the gate/entrance gives the first clear reveal of the settlement and safe hub;
 - do not turn the opening into a chain of NPC errands before the player is allowed to explore.
+
+The detailed first 55–75 minute opening route is locked in `R01_VERTICAL_SLICE.md`.
 
 ### Immediately usable services
 
@@ -874,6 +900,8 @@ Do not fill the starting hub with a wall of MMO-style chores on first arrival.
 - its travel speed is around ordinary player sprinting speed rather than a huge early skip, while sustained travel and convenience make it worthwhile;
 - the first visible mount is a **non-vanilla creature/model**; vanilla horses/camels/etc. do not return as the world's visible mount population;
 - later mounts provide the meaningful speed/handling/combat/flight progression.
+
+Exact Trail Stag and later mount rules live in `MOUNTS.md`.
 
 ### Housing
 
@@ -941,22 +969,15 @@ External default loot is not automatically canonical. Project loot tables normal
 
 ### Common combat threats
 
-The first region is not zombie/skeleton replacement spam. Common danger comes from understandable wildlife/creature behavior:
-
-- rattlesnake-style ambush/area-denial creature in rocky grass and warm banks;
-- cave centipede-style close-range threat in quarry/caves;
-- territorial grizzly/bison encounters where aggression is readable and avoidable;
-- additional small non-vanilla creature threats may be selected only after their 26.2 behavior is inspected in-game.
+The first region is not zombie/skeleton replacement spam. Common danger comes from understandable wildlife/creature behavior.
+The production R01 threat roster and the correction from the earlier rattlesnake-style candidate to the external CC0 Meadow Viper are defined in `STATUS_AND_R01_ENCOUNTERS.md`.
 
 Common threats provide EXP, Gold/materials and creature resources, **not routine equipment drops**.
 
 ### Elites / field boss
 
-Use Threateningly Mobs Continued selectively rather than accepting its default world-wide spawn rules:
-
-- **Steelboar** — first-region elite hunt candidate; armored charge/impact identity, placed in specific meadow/woodland pockets rather than common spawn spam;
-- **Nature Spirit** — rare magical elite in the deeper grove; teaches that regional ecology can shift from natural wildlife into fantasy threats;
-- **Regalhart** — first-region optional field-boss candidate, discoverable through exploration/hunt clues rather than mandatory story gating.
+Use Threateningly Mobs Continued selectively rather than accepting its default world-wide spawn rules.
+The exact Steelboar, Nature Spirit, Regalhart and Earthloong project-normalized encounter kits are defined in `STATUS_AND_R01_ENCOUNTERS.md`.
 
 Their original mod stats/loot/spawn rates are reference inputs only. Project data owns Lv, HP/damage, stagger, rewards, respawn and placement.
 
@@ -969,21 +990,18 @@ Working concept: **an abandoned quarry / root-overgrown underground complex** co
 - any imported vanilla mob spawners are removed/replaced;
 - 2–3 meaningful combat spaces plus traversal/side-cache choices are preferable to many copy-pasted rooms;
 - quarry layers first teach gathering/resource visuals, then transition into root/magic corruption deeper inside;
-- **Earthloong** is the current external boss candidate for the deepest chamber because its forest/earth identity fits the region and gives the first dungeon a non-vanilla silhouette;
+- **Earthloong** is the deepest-chamber boss and its exact phases/attacks are defined in `STATUS_AND_R01_ENCOUNTERS.md`;
 - first-clear reward includes a deterministic meaningful equipment choice through the settlement/smith flow so bad RNG cannot leave a new player without useful progression;
-- repeat clears focus on regional materials and a controlled chance at a signature Earthloong-themed item rather than flooding the inventory with random gear.
+- repeat clears focus on regional materials and a controlled chance at signature Earthloong-themed items rather than flooding the inventory with random gear.
 
-DeCubed Dungeons is a current free 26.2 Fabric/datapack architecture candidate, but its vanilla spawners/loot are not adopted unchanged. Final shell selection happens during map integration.
+DeCubed Dungeons is a current free 26.2 Fabric/datapack architecture candidate, but its vanilla spawners/loot are not adopted unchanged. Final shell selection happens during map integration/asset intake.
+
+The room-by-room opening flow and shortcut expectations are defined in `R01_VERTICAL_SLICE.md`.
 
 ### First-region resources
 
-Keep the first gathering loop simple and immediately connected to settlement services:
-
-- common ore/mineral outcrops for the forge;
-- timber nodes along woodland routes;
-- common healing/alchemy herbs around river/forest transitions;
-- food/foraging ingredients in meadow and riverside areas;
-- one rarer quarry/grove material that gives the player a reason to revisit the region later.
+Keep the first gathering loop simple and immediately connected to settlement services.
+The actual R01 resource catalog is locked in `EQUIPMENT_BALANCE.md` and its current alchemy/cooking uses are expanded in `RECOVERY_PRODUCTION_APPEARANCE.md`.
 
 The first hour should demonstrate `explore → gather → return to settlement → improve/craft → go back out` without making crafting mandatory busywork.
 
@@ -1001,6 +1019,8 @@ Recommended first-region progression:
 6. quarry investigation becomes the first replayable dungeon;
 7. Regalhart remains an optional field-boss discovery rather than a gate;
 8. completing the region strongly suggests neighboring routes but never locks the player inside R01.
+
+The current concrete first-play route is `R01_VERTICAL_SLICE.md`.
 
 ### Multiplayer feel
 
@@ -1026,7 +1046,7 @@ Default palette, adjusted per settlement rather than copied everywhere:
 - class hall/trainer where appropriate;
 - region-specific special facilities when they create real gameplay.
 
-All important buildings are external-first designs/assets.
+All important buildings, NPC clothes, props and visible work animations are external-first designs/assets.
 
 ## Factions / reputation
 
@@ -1073,6 +1093,8 @@ Use **non-vanilla visible mounts** as a real progression/travel system.
 - later progression unlocks substantially faster traversal;
 - late-game traversal may include flying mounts or another high-speed system;
 - flight must not arrive so early that terrain, danger and dungeon approaches become irrelevant.
+
+Exact launch mount roster/progression/speeds/handling live in `MOUNTS.md`.
 
 ---
 
@@ -1381,7 +1403,9 @@ Repeatedly tuned values should be data-driven where practical:
 - region parameters;
 - advancement values;
 - dungeon rewards;
-- quests/dialogue.
+- quests/dialogue;
+- recovery items/food recipes/profession mastery;
+- armor/apparel appearance bindings and NPC outfit role data.
 
 Code owns rules; data owns content/tuning where feasible.
 
@@ -1403,7 +1427,7 @@ Canonical direction:
 - HP/Mana/Stamina and 4-skill + ultimate presentation use the same visual language;
 - Spell Engine or another runtime may own skill behavior, but its default UI does not override project visual canon;
 - inventory is a purpose-built RPG character screen with the canonical 12 slots, 45 starting ordinary carried slots, expandable to 72, Material Pouch, Key Items and contextual comparison—not a vanilla inventory reskin;
-- forge, alchemy, cooking, class/advancement, map, death/respawn and other important screens reuse the same component/spacing grammar;
+- forge, alchemy, cooking, class/advancement, map, death/respawn, Wardrobe/Appearance and other important screens reuse the same component/spacing grammar;
 - no generic black translucent panel phase, no unrelated UI-pack collage, no temporary vanilla buttons;
 - real Minecraft-client screenshot review at multiple GUI scales/resolutions is required before a screen is visually accepted.
 
@@ -1421,6 +1445,8 @@ Major locked decisions as of 2026-09-15:
 - Fabric is the locked mod loader for this project unless a future hard technical blocker forces a deliberate migration review;
 - Azari 30k x 30k is the primary free terrain candidate and region planning proceeds against it while local-use/import terms are verified;
 - external-first visuals/assets from the first visible/test implementation;
+- player/NPC armor, robes, clothing and profession outfits use accepted external 3D model/design families rather than recolored vanilla armor/flat-skin substitutes;
+- player locomotion/combat/work/mount motions including dash/dodge/roll are external-first and must match actual server movement/hit/i-frame timing;
 - UI visual language is the free CC0 Foozle Lucifer RPG UI + Lucifer Equipment family, with Kenney Fantasy UI Borders/Adventure only as supporting scalable/control primitives; details live in `UI_DIRECTION.md`;
 - no temporary player-facing design;
 - dead/superseded/duplicate code removed after safe replacement;
@@ -1434,34 +1460,39 @@ Major locked decisions as of 2026-09-15:
 - creature-derived food/materials come from non-vanilla wildlife/livestock equivalents; imported vanilla spawners are replaced;
 - project region/spawn rules own normal ecology; ordinary creatures may use natural spawning while elites/bosses/events use authored encounter logic;
 - HP + Mana + Stamina; Stamina is primarily non-skill action resource; basic attack costs no Stamina;
+- natural HP recovery is deliberately slow; combat recovery is bounded by a four-dose quick Recovery Belt loaded from real consumable reserves;
+- baseline Healing Potion restores 35% MaxHP; Focus Draught and Cleansing Tonic provide bounded Mana/cleanse alternatives and all use a shared recovery lockout;
+- food is one-at-a-time 20-minute Nourishment preparation, never a hunger-management requirement;
 - dodge, guard, parry and layered stagger/poise combat;
+- exact combat formulas/TTK/defensive windows are locked in `COMBAT_BALANCE.md`;
 - 4 active skills + 1 high-impact hybrid-charge ultimate;
 - VIT / END / STR / DEX / INT / WIL primary stats;
 - five root classes: 전사 / 사냥꾼 / 성직자 / 마도사 / 수호자;
+- root class mechanics, starting skills, first specializations and deeper Rank-50 class progression/passive economies are already specified in `CLASS_COMBAT_KITS.md` / `CLASS_PROGRESSION.md`;
 - deep ~5-stage initial advancement target, one major playstyle-changing branch, no `final` terminology;
 - first major specialization directions are 전사 공세/무기숙련, 사냥꾼 레인저/명사수, 성직자 성인/심판관, 마도사 원소술사/비전술사, 수호자 보루/파수꾼;
 - major advancements must change mechanics/skills/passives/ultimate identity rather than only numeric stats;
 - class/skill production is external-first: reuse high-quality current external skills/dependencies or legally reusable code when they fit instead of rebuilding weaker copies;
-- Spell Engine and the current 26.2 RPG Series ecosystem are priority dependency/content candidates; MIT sources such as RPG Class Selection and Archetypes are selective code-port candidates;
 - persistent per-class progression with paid Lv-scaled/capped switching and no switch cooldown; first class free; switch cost caps at 2,500 Gold;
-- first root-class selection in the starting settlement is free;
 - all unlocked passives of the active class apply; inactive-class passives never leak across;
 - broad weapon freedom: classes create natural weapon synergy rather than ordinary hard weapon locks; Hunter-compatible black-powder firearms remain allowed and modern firearms excluded from baseline;
 - 12-slot RPG equipment target and no routine durability chore;
+- equipment Item-Lv/base curves, five grades, affix ranges, forge/reforge rules and boss-signature bad-luck protection are already defined in loot/equipment subordinate canon;
 - starting general backpack is 36 slots plus 9 hotbar slots = 45 ordinary carried slots; three 9-slot expansions raise the total to 54 / 63 / 72;
 - Material Pouch auto-routes eligible materials, stores up to 999 of each material type without consuming general slots, and town Material Vault stores 9,999 per material type;
 - Key Items do not consume ordinary backpack capacity; category stack caps replace blanket vanilla 64 behavior;
 - sorting/favorite-lock/search behavior is part of the inventory target and portable-storage recursion cannot create infinite nested storage;
+- lightweight Wardrobe unlocks legitimately acquired visual appearances, provides free Hide Helmet, changes no stats and restricts weapon overrides to compatible family/reach/handedness;
 - ordinary enemies do not routinely drop equipment; equipment farming centers on elites/bosses/dungeons/authored rewards/merchants/crafting;
-- hybrid random-affix + named/signature equipment; about five non-cliché grades later;
-- medium damage/status complexity;
-- light smithing/alchemy/cooking mastery;
+- medium damage/status complexity with direct conditions plus bounded Poison/Bleed/Frostbite/Shock buildup and repeat resistance;
+- five-rank light smithing/alchemy/cooking mastery is non-grindy and advances through distinct recipe/order/technique experiences rather than mass-crafting one cheap recipe;
 - roughly 12 major regions with **one suggested-entry Lv plus local encounter Lv**, peer regions allowed at equal difficulty, no universal scaling, no level-gate walls;
 - discovered POIs and shrine/major-hub fast travel;
 - starting region suggested entry Lv 1, with local early encounter pressure rising roughly through Lv 8 rather than treating 1–8 as a broad region recommendation band;
+- R01 has concrete Louxia/Meadow Viper/Cave Centipede/Bison/Grizzly/Steelboar/Nature Spirit/Regalhart/Earthloong combat/ecology roles and first-dungeon boss numbers;
 - starting region is approachable while elites/POIs/bosses provide the first major difficulty spikes;
 - high-Lv regions remain physically enterable rather than being blocked by invisible/story walls;
-- ground mounts use non-vanilla visible creatures/models; first mount arrives early at about sprint-speed convenience, later mounts provide meaningful speed/handling/combat/flight progression;
+- ground mounts use non-vanilla visible creatures/models; Trail Stag arrives early and later Komodo/Elephant/Laviathan/Sky Drake roles are specified in `MOUNTS.md`;
 - mixed main/regional/free-exploration quests with roughly 30/70 guided-vs-free-exploration feel, dynamic region events, replayable dungeons, respawning field/world bosses;
 - probabilistic drops with deterministic protection for progression-critical items;
 - multiplayer down/revive and fully personal loot;
@@ -1480,12 +1511,12 @@ Major locked decisions as of 2026-09-15:
 - permanent houses are purchased separately in settlements and provide rest/storage/decor/trophy functions;
 - first-home purchase permission exists from the beginning; the starter house baseline is 2,400 Gold and functions as roughly a 5–7 hour savings goal rather than a story gate;
 - starting settlement begins with a short approach/reveal, then immediate shrine/inn/basic merchant/bank/guild/basic-smith access;
-- starting settlement uses a visually taught gate → square/inn → guild → smith → board/exits flow rather than mandatory NPC errand chains;
-- forge/alchemy deeper functionality is introduced through early gathering so exploration → gathering → return → production forms an immediate loop;
+- starting settlement uses a coherent external village/prop/NPC clothing family and a visually taught gate → square/inn → guild → smith → board/exits flow rather than mandatory NPC errand chains;
+- the first 55–75 minute R01 route, first Trail Stag event, Regalhart clue discovery and quarry room sequence are already defined in `R01_VERTICAL_SLICE.md`;
+- forge/alchemy/cooking deeper functionality is introduced through early gathering so exploration → gathering → return → production forms an immediate loop;
 - starting quest density is intentionally low: about 1 main objective plus 2–3 regional contracts before discoveries add more;
 - the stable is visible immediately but the first non-vanilla ground mount arrives through early first-region progression;
 - starting settlement should expose multiple routes including an intentionally dangerous higher-Lv direction when geography supports it;
-- R01 is an Azari central/south-central meadow/river/forest-fringe region with suggested entry Lv 1, Louxia-led custom food ecology, curated non-vanilla wildlife, Steelboar/Nature Spirit elites, Regalhart field-boss candidate and Earthloong first-dungeon boss candidate;
 - R02–R12 terrain identities, creature roles, bosses, resources, dungeon directions and suggested-entry values are expanded in `REGIONS.md`;
 - selected faction/reputation systems only where meaningful;
 - moderate day/night/weather gameplay effects;
@@ -1505,13 +1536,25 @@ Completed/advanced design work that should **not** be restarted from zero:
 - external UI family selection and screen-language direction;
 - global Lv 80 curve and fast ~3x reward benchmark with no-rescale confirmation for current region entry levels;
 - Gold economy, class-switch cost, automatic death penalty, starter housing prices and 10-minute merchant refresh/pricing structure;
-- inventory capacity, expansion steps, Material Pouch/Material Vault behavior, Key Items and baseline category stack caps.
+- inventory capacity, Material Pouch/Vault, Key Items and stack-cap rules;
+- loot economy, five grades, affixes, targeted boss farming, signature-material bad-luck protection and R01 equipment/resource catalog;
+- exact equipment stat/affix/forge/reforge rules;
+- non-vanilla mount roster/progression/balance;
+- M0 Fabric 26.2 dependency/toolchain audit;
+- combat formulas, TTK, dodge/guard/parry, poise and multiplayer boss scaling;
+- all five root combat kits, first ten specializations and Rank-50 class/passive advancement structure;
+- launch status/buildup rules and complete R01 combat roster including Regalhart/Earthloong;
+- R01 opening vertical slice from approach road through first Trail Stag and Earthloong clear;
+- external-first player motion rule including dash/dodge/roll/work/mount actions;
+- four-dose Recovery Belt, baseline R01 potions, food, alchemy/cooking and five-rank light profession mastery;
+- external-first armor/apparel/NPC-clothing pipeline, R01 outfit family, Armor Model API direction and lightweight Wardrobe rules.
 
-Recommended next batch:
+Recommended next batches:
 
-1. **Loot economy** — set affix count/ranges, grade probabilities, elite/boss drop rates, deterministic first-clear protections and targeted bad-luck protection while keeping ordinary enemies equipment-free.
-2. **Non-vanilla mount sourcing** — select actual free/current custom-creature mount candidates for the first ground mount and later traversal tiers while retaining useful permissive riding/QoL code where appropriate.
-3. **M0 Fabric dependency audit** — verify exact current 26.2 integration boundaries for Azari import/spawn filtering, creature mods, Spell Engine, RPG Series modules, class/accessory/inventory candidates, ranged/combat libraries and Essential compatibility before source bootstrap.
-4. **Final keybind audit** only after the complete frequent-action list is known; important Minecraft/Essential keys must not conflict.
+1. **R01 exact asset intake / presentation binding** — choose exact external filenames and hashes for R01 armor parts, weapons/resources, NPC outfits, potion/food props, consume/work animations, key VFX/sounds and settlement/dungeon structure parts; test representative conversions at Minecraft scale before gameplay code.
+2. **Gathering / fishing / camp / housing completion** — lock gathering interaction timings/tool progression/yields, fishing loop, node presentation/respawn, camp deployment material/placement rules and starter-house furnishing/trophy/storage behavior without turning them into grind systems.
+3. **Quest / dialogue / world-state / multiplayer progression** — lock personal versus shared quest state, objective credit, dialogue/choice behavior, event/reset state, party-split progression and save authority before implementing the R01 quest flow.
+4. **R02 implementation-ready regional package** — convert the existing broad R02 region concept into actual external resource/equipment/enemy/NPC/settlement/dungeon/reward families after R01 asset intake proves the pipeline.
+5. **Final keybind audit** only after the complete frequent-action list is known; important Minecraft/Essential/companion-mod keys must not conflict.
 
 When design direction becomes unclear, research real open-world RPGs, open-source RPGs and large Minecraft RPG mods before inventing filler systems.
