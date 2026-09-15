@@ -35,13 +35,16 @@ legacyForge {
     runs {
         client {
             client()
-            // Forge dev runs enable GameTest discovery by default. Restrict it to ETS so
-            // optional compat GameTest holders inside VS/addons are not reflectively loaded
-            // without their unrelated soft dependencies (for example Create).
+            // Normal client/server smoke runs are runtime integration gates, not Forge
+            // GameTest runs. VS ships optional compatibility GameTest holders whose method
+            // signatures can reference mods ETS does not install (for example Create), so
+            // reflecting every holder would make a healthy runtime stack fail before boot.
+            systemProperty 'forge.enableGameTest', 'false'
             systemProperty 'forge.enabledGameTestNamespaces', mod_id
         }
         server {
             server()
+            systemProperty 'forge.enableGameTest', 'false'
             systemProperty 'forge.enabledGameTestNamespaces', mod_id
         }
     }
