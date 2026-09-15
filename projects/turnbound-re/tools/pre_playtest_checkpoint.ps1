@@ -1,5 +1,7 @@
 param(
-    [switch]$SkipDependencies
+    [switch]$SkipDependencies,
+    [switch]$AllowDirty,
+    [switch]$AllowNonMain
 )
 
 $ErrorActionPreference = 'Stop'
@@ -16,10 +18,35 @@ if (-not (Test-Path $gradleProperties)) {
     throw "gradle.properties not found at $gradleProperties"
 }
 
+$gitAvailable = $null -ne (Get-Command git -ErrorAction SilentlyContinue)
+$commit = 'UNKNOWN'
+$branch = 'UNKNOWN'
+$worktreeState = 'UNKNOWN'
+if ($gitAvailable) {
+    $insideWorktree = (& git -C $projectRoot rev-parse --is-inside-work-tree 2>$null | Out-String).Trim()
+    if ($insideWorktree -eq 'true') {
+        $commit = (& git -C $projectRoot rev-parse HEAD 2>$null | Out-String).Trim()
+        $branch = (& git -C $projectRoot branch --show-current 2>$null | Out-String).Trim()
+        if ([string]::IsNullOrWhiteSpace($branch)) { $branch = 'DETACHED' }
+        $dirty = (& git -C $projectRoot status --porcelain 2>$null | Out-String).Trim()
+        $worktreeState = if ([string]::IsNullOrWhiteSpace($dirty)) { 'CLEAN' } else { 'DIRTY' }
+
+        if (-not $AllowNonMain -and $branch -ne 'main') {
+            throw "Pre-playtest checkpoint must run from branch main. Current branch: $branch. Use -AllowNonMain only for an intentional non-canonical build."
+        }
+        if (-not $AllowDirty -and $worktreeState -ne 'CLEAN') {
+            throw 'Pre-playtest checkpoint requires a clean worktree so the produced JAR matches a reproducible commit. Commit/stash local changes, or use -AllowDirty only intentionally.'
+        }
+    }
+}
+
 Push-Location $projectRoot
 try {
     Write-Host 'TURNBOUND: RE local pre-playtest checkpoint'
     Write-Host "Project: $projectRoot"
+    Write-Host "Commit: $commit"
+    Write-Host "Branch: $branch"
+    Write-Host "Worktree: $worktreeState"
 
     $javaVersion = (& java -version 2>&1 | Out-String)
     Write-Host $javaVersion.Trim()
@@ -32,14 +59,14 @@ try {
         throw "Gradle wrapper check failed with exit code $LASTEXITCODE"
     }
 
-    $args = @('--no-daemon')
+    $gradleArgs = @('--no-daemon')
     if (-not $SkipDependencies) {
-        $args += 'dependencies'
+        $gradleArgs += 'dependencies'
     }
-    $args += @('clean', 'build', '--stacktrace')
+    $gradleArgs += @('clean', 'build', '--stacktrace')
 
-    Write-Host "Running: gradlew.bat $($args -join ' ')"
-    & $gradlew @args
+    Write-Host "Running: gradlew.bat $($gradleArgs -join ' ')"
+    & $gradlew @gradleArgs
     if ($LASTEXITCODE -ne 0) {
         throw "Gradle checkpoint failed with exit code $LASTEXITCODE"
     }
@@ -106,23 +133,17 @@ try {
     $hashLine = "$hash *$($jar.Name)"
     Set-Content -Path (Join-Path $outDir 'turnbound-re.sha256') -Value $hashLine -Encoding ascii
 
-    $commit = ''
-    if (Get-Command git -ErrorAction SilentlyContinue) {
-        $commit = (& git rev-parse HEAD 2>$null | Out-String).Trim()
-    }
-    if ([string]::IsNullOrWhiteSpace($commit)) {
-        $commit = 'UNKNOWN'
-    }
-
     $report = @"
 # TURNBOUND: RE Local Pre-Playtest Checkpoint
 
 - Commit: $commit
+- Branch: $branch
+- Worktree: $worktreeState
 - Version: $($props['mod_version'])
 - Minecraft: $($props['minecraft_version'])
 - Java: 25
 - NeoForge: $($props['neo_version'])
-- Command: gradlew.bat $($args -join ' ')
+- Command: gradlew.bat $($gradleArgs -join ' ')
 - Gradle build/JUnit: PASS
 - Production JAR verify: PASS
 - JAR: $($jar.FullName)
@@ -134,7 +155,7 @@ try {
 - Minecraft playtest: NOT RUN
 - Drehmal 26.2 migration: NOT RUN by this script
 
-Validation scope: Gradle dependency resolution (unless explicitly skipped), clean build, JUnit, production JAR metadata/class/assets/data presence, source/development-path exclusion, duplicate entry check, SHA-256.
+Validation scope: canonical checkout state, Gradle dependency resolution (unless explicitly skipped), clean build, JUnit, production JAR metadata/class/assets/data presence, source/development-path exclusion, duplicate entry check, SHA-256.
 "@
     Set-Content -Path (Join-Path $outDir 'BUILD_AND_RUNTIME_REPORT.md') -Value $report -Encoding utf8
 
