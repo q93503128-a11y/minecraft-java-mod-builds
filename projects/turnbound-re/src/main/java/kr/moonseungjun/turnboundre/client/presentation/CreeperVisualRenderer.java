@@ -3,6 +3,7 @@ package kr.moonseungjun.turnboundre.client.presentation;
 import kr.moonseungjun.turnboundre.TurnboundRe;
 import kr.moonseungjun.turnboundre.presentation.CreeperVisualEntity;
 import kr.moonseungjun.turnboundre.presentation.TurnboundPresentationEntities;
+import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.resources.Identifier;
@@ -21,12 +22,7 @@ public final class CreeperVisualRenderer extends LivingEntityRenderer<
     private static final long PRESENTATION_EPOCH_NANOS = System.nanoTime();
 
     public CreeperVisualRenderer(EntityRendererProvider.Context context) {
-        super(context, new CreeperVisualModel(context.bakeLayer(CreeperVisualModel.LAYER)), 0.50F);
-    }
-
-    @SubscribeEvent
-    public static void registerLayer(EntityRenderersEvent.RegisterLayerDefinitions event) {
-        event.registerLayerDefinition(CreeperVisualModel.LAYER, CreeperVisualModel::createLayer);
+        super(context, new CreeperVisualModel(context.bakeLayer(ModelLayers.CREEPER)), 0.50F);
     }
 
     @SubscribeEvent
