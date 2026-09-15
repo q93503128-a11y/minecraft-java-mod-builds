@@ -22,9 +22,17 @@ Poly Haven's own download link exposed from the canonical asset page on 2026-09-
 
 The link is the 4K PNG diffuse map served by Poly Haven's download host. Do not substitute a search-engine mirror, screenshot, preview thumbnail, or re-encoded copy.
 
+## Transfer receipt — 2026-09-15
+
+A fresh request through the available web retrieval path reached the exact pinned Poly Haven download URL. The host reported a payload length of **94,658,158 bytes**, but the retrieval layer refused to transfer the body because it exceeded that layer's content-size limit. A second attempt from the local execution container could not resolve the external host and therefore also did not obtain bytes.
+
+This is useful provenance evidence only: it proves that the pinned endpoint currently resolves to a large payload through the web retrieval path, but **does not authenticate the file body**. No SHA-256, dimensions, decoded pixels, or derived texture may be claimed from this receipt. The 94,658,158-byte value must be rechecked against the actual downloaded file before it is promoted to an accepted source receipt.
+
+Do not repeat source discovery or replace the pinned 4K file merely to work around an execution-environment transfer limit. A later environment that can retrieve the exact URL should continue directly from byte acquisition and hashing.
+
 ## Acceptance state
 
-**SOURCE PINNED / BYTES NOT YET ACCEPTED.**
+**SOURCE PINNED / ENDPOINT REACHED / BYTES NOT YET ACCEPTED.**
 
 The repository must not claim this file as bundled/production material until one run has all of the following from the exact downloaded bytes:
 
@@ -40,4 +48,4 @@ A source/license page alone is not visual approval. The existing `Region01BossMa
 
 ## Next implementation batch
 
-Fetch the exact pinned PNG, record its receipt, derive the first legal Dragon Evolved runtime material candidate, wire it through the existing material preparation/render path, run the normal Riftfrontier verification stack, and produce a field-review JAR. If the source host cannot be fetched in the execution environment, stop at the source pin rather than fabricating bytes or hashes.
+Fetch the exact pinned PNG in an environment that can transfer the 94 MB-class source body, record the actual byte size and SHA-256, decode it, derive the first legal Dragon Evolved runtime material candidate, wire it through the existing material preparation/render path, run the normal Riftfrontier verification stack, and produce a field-review JAR. If the source host still cannot be fetched, do not fabricate bytes/hashes and do not restart material-source research; move to another production-visible Region 01 task that is independent of this transfer gate.
