@@ -6,6 +6,7 @@ import g_mungus.zpl.block.thruster.ThrusterExhaustBlock;
 import g_mungus.zps.block.cableNetwork.OctoControllerBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -14,6 +15,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.energy.IEnergyStorage;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.joml.Vector3i;
 import org.valkyrienskies.core.api.ships.ServerShip;
 import org.valkyrienskies.core.util.datastructures.DenseBlockPosSet;
@@ -93,8 +95,10 @@ public final class StarterCraftDeploymentService {
         putRelative(blocks, controller, BlockPos.ZERO,
                 g_mungus.zps.block.ModBlocks.OCTO_CONTROLLER.get().defaultBlockState()
                         .setValue(OctoControllerBlock.FACING, Direction.NORTH));
+        // ZPS 2.4.0 is the pinned runtime. Bind optional/newer public fields only through
+        // stable registry IDs so our compile contract does not silently depend on ZPS master.
         putRelative(blocks, controller, StarterCraftLayout.BATTERY,
-                g_mungus.zps.block.ModBlocks.POWER_CELL.get().defaultBlockState());
+                requireExternalBlock("zps", "power_cell").defaultBlockState());
 
         // Forward pair.
         putIonPair(blocks, controller, new BlockPos(-1, 0, 4), new BlockPos(-1, 0, 5), Direction.SOUTH);
@@ -149,6 +153,14 @@ public final class StarterCraftDeploymentService {
 
     private static void putRelative(Map<BlockPos, BlockState> blocks, BlockPos origin, BlockPos offset, BlockState state) {
         blocks.put(origin.offset(offset), state);
+    }
+
+    private static Block requireExternalBlock(String namespace, String path) {
+        Block block = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(namespace, path));
+        if (block == null || block == Blocks.AIR) {
+            throw new IllegalStateException("required external block is absent: " + namespace + ":" + path);
+        }
+        return block;
     }
 
     private static void fillBattery(ServerLevel level, BlockPos batteryPos) {
