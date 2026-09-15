@@ -31,10 +31,19 @@ class M5EntityPreviewLayoutTest {
     }
 
     @Test
+    void compactLineupFitsRepresentativeBodiesInsideTwentySixPixelSlots() {
+        assertCompactFits(26, 26, 0.6F, 2.9F);  // Enderman-like tall body
+        assertCompactFits(26, 26, 1.4F, 2.7F);  // Iron Golem-like large body
+        assertCompactFits(26, 26, 1.4F, 0.9F);  // Spider-like wide/low body
+        assertCompactFits(26, 26, 0.6F, 1.95F); // Zombie-like humanoid
+    }
+
+    @Test
     void invalidEntityDimensionsFailClosed() {
         assertFalse(EntityPreviewLayout.fit(240, 166, 0.0F, 1.0F).visible());
         assertFalse(EntityPreviewLayout.fit(240, 166, Float.NaN, 1.0F).visible());
         assertFalse(EntityPreviewLayout.fit(240, 166, 1.0F, Float.POSITIVE_INFINITY).visible());
+        assertFalse(EntityPreviewLayout.fitCompact(26, 26, 0.0F, 1.0F).visible());
     }
 
     private static void assertFits(int regionWidth, int regionHeight, float entityWidth, float entityHeight) {
@@ -43,5 +52,13 @@ class M5EntityPreviewLayoutTest {
         assertTrue(spec.fitsInside(regionWidth, regionHeight));
         assertTrue(entityWidth * spec.renderScale() <= spec.width() - 12 + 0.001F);
         assertTrue(entityHeight * spec.renderScale() <= spec.height() - 8 + 0.001F);
+    }
+
+    private static void assertCompactFits(int regionWidth, int regionHeight, float entityWidth, float entityHeight) {
+        EntityPreviewLayout.PreviewSpec spec = EntityPreviewLayout.fitCompact(regionWidth, regionHeight, entityWidth, entityHeight);
+        assertTrue(spec.visible());
+        assertTrue(spec.fitsInside(regionWidth, regionHeight));
+        assertTrue(entityWidth * spec.renderScale() <= regionWidth - 4 + 0.001F);
+        assertTrue(entityHeight * spec.renderScale() <= regionHeight - 4 + 0.001F);
     }
 }
