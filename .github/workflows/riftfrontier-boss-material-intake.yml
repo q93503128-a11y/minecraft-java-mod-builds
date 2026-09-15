@@ -1,0 +1,95 @@
+name: Riftfrontier Boss Material Intake
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/riftfrontier-boss-material-intake.yml'
+      - 'projects/riftfrontier/assets/sources/region_01_boss_dark_rock.source.json'
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: projects/riftfrontier
+
+jobs:
+  intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire exact pinned source bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/material-intake
+          url="$(python3 -c 'import json; print(json.load(open("assets/sources/region_01_boss_dark_rock.source.json"))["pinned_source"]["url"])')"
+          curl --fail --location --retry 4 --retry-all-errors --connect-timeout 20 --max-time 900 \
+            --output build/material-intake/dark_rock_diff_4k.png "$url"
+      - name: Verify receipt and PNG decode
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, struct, zlib
+          from pathlib import Path
+
+          p = Path('build/material-intake/dark_rock_diff_4k.png')
+          data = p.read_bytes()
+          if data[:8] != b'\x89PNG\r\n\x1a\n':
+              raise SystemExit('not a PNG')
+          if data[12:16] != b'IHDR':
+              raise SystemExit('missing IHDR')
+          width, height = struct.unpack('>II', data[16:24])
+          if width <= 0 or height <= 0:
+              raise SystemExit('invalid PNG dimensions')
+          # Validate every chunk CRC and require a complete IEND. This is stronger than
+          # trusting an extension/header and remains independent of preview/mirror files.
+          offset = 8
+          chunks = []
+          saw_iend = False
+          while offset < len(data):
+              if offset + 12 > len(data):
+                  raise SystemExit('truncated PNG chunk')
+              length = struct.unpack('>I', data[offset:offset+4])[0]
+              kind = data[offset+4:offset+8]
+              end = offset + 12 + length
+              if end > len(data):
+                  raise SystemExit('truncated PNG payload')
+              payload = data[offset+8:offset+8+length]
+              expected = struct.unpack('>I', data[offset+8+length:end])[0]
+              actual = zlib.crc32(kind + payload) & 0xffffffff
+              if actual != expected:
+                  raise SystemExit(f'PNG CRC mismatch in {kind!r}')
+              chunks.append(kind.decode('ascii', errors='replace'))
+              offset = end
+              if kind == b'IEND':
+                  saw_iend = True
+                  break
+          if not saw_iend or offset != len(data):
+              raise SystemExit('PNG does not terminate cleanly at IEND')
+          receipt = {
+              'source_file': p.name,
+              'byte_size': len(data),
+              'sha256': hashlib.sha256(data).hexdigest(),
+              'png_width': width,
+              'png_height': height,
+              'png_chunk_count': len(chunks),
+              'png_crc_verified': True,
+              'png_iend_verified': True,
+          }
+          Path('build/material-intake/receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+      - name: Upload exact source receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: riftfrontier-region01-boss-material-source
+          path: |
+            projects/riftfrontier/build/material-intake/dark_rock_diff_4k.png
+            projects/riftfrontier/build/material-intake/receipt.json
+          if-no-files-found: error
+          retention-days: 7
