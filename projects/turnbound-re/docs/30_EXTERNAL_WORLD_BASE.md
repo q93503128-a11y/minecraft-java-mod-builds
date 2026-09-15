@@ -5,110 +5,117 @@
 TURNBOUND: RE production world geometry is not authored by TURNBOUND code.
 
 Selected external production base:
-
 - **Drehmal: APOTHEOSIS v2.2.2f**
 - official site: https://www.drehmal.net/downloads
-- official release source: https://github.com/Drehmal-Team/map/releases/tag/v2.2.2f
-- official public version at this decision point: Minecraft Java 1.20.1
+- official release: https://github.com/Drehmal-Team/map/releases/tag/v2.2.2f
+- public full-map target at review time: Minecraft Java 1.20.1
 - TURNBOUND target: Minecraft Java 26.2 / NeoForge 26.2
 
-The external world must be installed from the official distribution. The TURNBOUND repository does **not** redistribute the Drehmal world or resource pack because explicit redistribution permission was not found during the 2026-09-15 review.
-
-## 2. What TURNBOUND may add
-
-TURNBOUND may add game meaning on top of the installed world without rebuilding its visual environment:
-
-- server-authoritative Encounter locators
-- invisible `Interaction` entities used as TURNBOUND anchors
-- fast-travel/save metadata
-- party/progression/quest state
-- turn-based battle ownership and presentation
-- non-visual data needed to connect Minecraft activity to the progression loop
+The external world is installed from the official distribution. TURNBOUND does **not** vendor or redistribute the Drehmal world/resource pack because explicit redistribution permission was not confirmed during the 2026-09-15 review.
 
 TURNBOUND does not recreate Drehmal towns, terrain, roads, structures or silhouettes by eye.
 
-## 3. Initial binding
+## 2. Data-driven binding contract
 
-The first integration uses two public, documented Drehmal landmarks.
+External-world coordinates are reloadable definition data, not Java layout constants.
+
+Canonical profile:
+- id: `turnbound_re:drehmal_apotheosis_2_2_2f`
+- data file: `data/turnbound_re/turnbound_definitions/external_world_profiles.json`
+- runtime adapter: `DrehmalExternalWorldBinding`
+
+Every profile anchor declares:
+- semantic `kind`: `FAST_TRAVEL`, `RESOURCE` or `ENCOUNTER`
+- stable TURNBOUND locator
+- external-world coordinate
+- `enabled` gate
+- source/provenance note
+
+Registry validation rejects unknown kinds, unresolved TURNBOUND locators, duplicate profile locators and dimension mismatches. This keeps map placement data separate from combat/progression identity and lets a future Drehmal update or verified 26.2 migration change coordinates without rewriting game rules.
+
+## 3. Enabled initial binding
+
+Only two external anchors are enabled before migration inspection.
 
 ### HUB_01 — New Drabyel
-
-Official wiki location:
-- approximate coordinates: **502, 67, 1801**
-- role in Drehmal: first town normally reached by following the path away from the Stasis Facility
-
-TURNBOUND role:
-- initial Hub arrival
-- party/growth/forge/shop/quest service neighborhood
-- exact workstation and service bindings must attach to existing external-world landmarks or directly usable external assets; do not construct an AI-designed replacement town.
+- integration seed: **502, 67, 1801**
+- semantic locator: `turnbound_re:hub_01/waypoint`
+- role: initial Hub arrival and return point
 
 ### REGION_01 gateway — Stasis Facility
+- integration seed: **778, 31, 668**
+- semantic locator: `turnbound_re:region_01/waypoint`
+- role: first Region / Capital Valley gateway
 
-Official wiki location used by the adapter:
-- coordinates near the inside holo-door: **778, 31, 668**
+These are integration seeds, not a claim that the exact post-migration standing block has already passed visual/play validation.
 
-TURNBOUND role:
-- first Region travel endpoint / Capital Valley entry reference
-- a physical external-world landmark, not a TURNBOUND-built waypoint structure
+`/turnbound_re_world_slice bind_drehmal` is operator setup. To reduce accidental binding of an unrelated Overworld, the operator must stand near the configured New Drabyel Hub seed before the bind is accepted.
 
-These coordinates are integration seeds, not a claim that all future encounters should use Drehmal's original story progression.
+The adapter:
+1. reads the external-world profile from the atomic definition registry.
+2. loads only enabled anchor chunks.
+3. registers enabled fast-travel positions in server saved data.
+4. creates deterministic invisible `Interaction` entities for enabled semantic anchors.
+5. changes TURNBOUND respawn metadata to the configured Hub.
+6. never copies, clears, fills or regenerates Drehmal blocks.
 
-## 4. Runtime contract
+## 4. Recorded but disabled mapping candidates
 
-`DrehmalExternalWorldBinding`:
+The first profile records likely existing Drehmal locations for the first gameplay slice, but they remain `enabled=false` until the APOTHEOSIS world is actually opened under the target 26.2 environment.
 
-1. requires an operator-confirmed bind action; no unreliable auto-detection of arbitrary saves.
-2. loads the two known landmark chunks.
-3. registers existing TURNBOUND `HUB_01` / `REGION_01` fast-travel locator semantics in server saved data.
-4. adds deterministic invisible Interaction anchor UUIDs.
-5. changes TURNBOUND respawn metadata to the bound Hub without changing map blocks.
-6. never copies or regenerates Drehmal blocks.
+| TURNBOUND semantic | External candidate | Status |
+|---|---|---|
+| `region_01/riverside_plot` | Drabyel farmhouse / wheat-field neighborhood near the Adventuring Merchant | disabled — migration inspection required |
+| `region_01/ore_outcrop` | Primal Caverns | disabled — mining/readability/progression inspection required |
+| `region_01/river_pool` | Solvei stream area | disabled — fishing access inspection required |
+| `region_01/overworld_patrol` | Hunter's Crypt | disabled — encounter access/spacing inspection required |
+| `region_01/rift_elite` | Ruins of Ihted | disabled — elite/readability inspection required |
 
-Operator binding command:
+Recording a candidate is not a visual or gameplay PASS. No disabled candidate spawns an Interaction anchor or changes TURNBOUND state.
 
-`/turnbound_re_world_slice bind_drehmal`
+## 5. Minecraft-native activity rule
 
-The command is intended for development/setup. It is not player-facing game copy.
+External-map resource anchors do not turn mining/farming/fishing into generic click rewards.
 
-## 5. Legacy generated world status
+- mining remains actual Minecraft block breaking / material acquisition.
+- farming remains actual crop interaction.
+- fishing remains actual Minecraft fishing.
+- the external anchor only identifies where the activity belongs in the progression loop.
 
-The following remain only because they are useful mechanics/layout harnesses:
+Encounter anchors likewise attach TURNBOUND battle meaning to existing world locations without constructing a replacement ruin, rift or arena.
 
+## 6. Legacy generated world status
+
+These remain mechanics/layout harnesses only:
 - `FunctionalWorldSliceBuilder`
 - `ProductionWorldSlicePrototypeBuilder`
 - `AuthoredFirstRegionBuilder`
 - `/turnbound_re_world_slice build`
 - `/turnbound_re_world_slice prototype`
 
-They are **not production world sources**. Production bootstrap must not call them automatically.
+They are **not production world sources**. Production bootstrap must not call them automatically. `26_M6_WORLD_ASSET_GATE.md` is historical harness/reference documentation.
 
-`26_M6_WORLD_ASSET_GATE.md` therefore records a historical prototype/reference gate. Its hand-authored Wayfarer Forge Court / Riverward Foothill layout is no longer the production visual direction where it conflicts with this document or `CANON.md`.
-
-## 6. Compatibility status
+## 7. Compatibility status
 
 As of 2026-09-15:
-
-- APOTHEOSIS public full-map distribution: 1.20.1 and Fabric-oriented companion setup.
-- Drehmal `Archived Memory 2 — To Feel The Stars`: officially released as a Java 26.2 world, which confirms the team has a 26.2 content pipeline, but it is a separate short teaser and not a 26.2 release of APOTHEOSIS.
+- APOTHEOSIS public full-map distribution: 1.20.1-era, with Fabric-oriented companion setup.
+- Drehmal `Archived Memory 2 — To Feel The Stars`: separately released for Java 26.2, proving a current team pipeline but not a 26.2 APOTHEOSIS release.
 - TURNBOUND has **not yet loaded/migrated APOTHEOSIS v2.2.2f under Java 26.2 + NeoForge**.
 
 Therefore:
-
-- CODE REVIEWED: binding architecture only.
-- BUILD VERIFIED: NO for this external-world change.
+- CODE REVIEWED: external-world binding/data architecture.
+- BUILD VERIFIED: NO until the current schema batch is compiled.
 - WORLD MIGRATION TESTED: NO.
 - PLAYTESTED: NO.
 - MULTIPLAYER TESTED: NO.
 
-Do not claim external-world compatibility until an actual copied test save successfully loads and the relevant landmarks, entities, datapack behavior and resource-pack dependencies are checked.
+Do not enable the recorded resource/encounter candidates or claim external-world compatibility until an actual copied test save loads successfully and its landmarks, datapack behavior and resource-pack dependencies are inspected.
 
-## 7. Next world work
+## 8. Next world gate
 
-After the first compatible test copy exists:
-
+After a compatible test copy exists:
 1. load APOTHEOSIS under the target 26.2 environment without modifying the source copy.
-2. verify New Drabyel and Stasis Facility survive migration visually and functionally.
-3. identify existing world landmarks for the first patrol and elite Encounter; anchor gameplay to them instead of building replacement scenery.
-4. map mining/farming/fishing loops onto existing geography and resources.
-5. audit original Drehmal datapack/resource-pack mechanics for conflicts with TURNBOUND server authority.
-6. verify navigation, encounter readability, camera clipping and UI readability in the actual external environment.
+2. verify New Drabyel and Stasis Facility and adjust only profile coordinates if the migration shifts safe arrival positions.
+3. inspect the five disabled candidates in-game and enable only those that actually fit TURNBOUND flow.
+4. audit Drehmal datapack/resource-pack mechanics against TURNBOUND server authority.
+5. verify navigation, encounter readability, camera collision and UI readability in the actual external environment.
