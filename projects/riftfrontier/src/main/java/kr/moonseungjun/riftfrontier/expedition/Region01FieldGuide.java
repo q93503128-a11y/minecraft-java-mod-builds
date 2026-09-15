@@ -31,7 +31,7 @@ public final class Region01FieldGuide {
 
     public static ItemStack create() {
         List<Filterable<Component>> pages = PAGE_KEYS.stream()
-            .map(key -> Filterable.passThrough(Component.translatable(key)))
+            .map(key -> Filterable.<Component>passThrough(Component.translatable(key)))
             .toList();
 
         ItemStack guide = new ItemStack(Items.WRITTEN_BOOK);
