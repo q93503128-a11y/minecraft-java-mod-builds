@@ -33,10 +33,10 @@ TURNBOUND: RE의 장비는 gameplay 수치만 존재하고 플레이어-facing �
 
 Equipment UI에서는 새 PNG를 추가하지 않고 Minecraft 26.2의 정식 GUI item renderer를 사용한다.
 
-목표 경로:
+현재 경로:
 
 ```text
-EquipmentDefinition visual item id
+EquipmentDefinition.visualItem
 → server-authored equipment snapshot
 → client Item registry resolve
 → ItemStack
@@ -52,11 +52,17 @@ EquipmentDefinition visual item id
 - 재료 비용을 시각화할 때도 `iron_ingot`, `copper_ingot`, `gold_ingot`의 vanilla item render를 우선한다.
 - unknown/invalid visual id는 AI placeholder icon으로 대체하지 않고 fail-closed 한다.
 
+현재 구현:
+- `EquipmentVisualItemResolver`가 server-authored `visualItem`만 registry resolve한다.
+- 존재하지 않거나 잘못된 id는 `ItemStack.EMPTY`로 닫으며 임시 아이콘을 생성하지 않는다.
+- `PartyFormationScreen`의 Equipment 행은 기존 Kenney frame 위에 Mojang runtime item을 직접 렌더링한다.
+- 아이콘용 20px 영역을 확보하고 텍스트 폭을 줄여 기존 hitbox/선택 상태를 보존한다.
+
 ## 4. 데이터 방향
 
-장비 visual source는 반복 조정 가능한 콘텐츠 값이므로 최종 구현에서는 Java switch보다 definition data에 둔다.
+장비 visual source는 반복 조정 가능한 콘텐츠 값이므로 Java switch가 아니라 definition data에 둔다.
 
-권장 field:
+현재 field:
 
 ```json
 {
@@ -68,10 +74,11 @@ EquipmentDefinition visual item id
 ```
 
 호환 규칙:
-- 기존 definition에 `visualItem`이 없을 때는 legacy decode가 깨지지 않아야 한다.
-- production 3종은 explicit `visualItem`을 반드시 선언한다.
+- 기존 definition에 `visualItem`이 없을 때는 `ingredientItem`으로 legacy fallback하여 decode를 보존한다.
+- production 3종은 explicit `visualItem`을 선언한다.
 - server snapshot이 visual item id를 제공하고 client가 임의로 equipment id → icon을 재설계하지 않는다.
 - visual item id는 namespaced item id 형식 검증을 거친다.
+- 구 12-field equipment snapshot은 `ingredientItem`을 visual fallback으로 읽어 기존 wire 호환을 유지한다.
 
 ## 5. 외부 자산 조사 결과
 
@@ -111,9 +118,11 @@ EquipmentDefinition visual item id
 - VISUAL SOURCE LOCKED: YES.
 - LICENSE / SOURCE REGISTERED: YES — Mojang runtime direct use, no vendored copy.
 - CUSTOM TURNBOUND ITEM ART: NONE.
-- DATA `visualItem` FIELD: NOT IMPLEMENTED YET.
-- EQUIPMENT UI ITEM RENDER: NOT IMPLEMENTED YET.
+- DATA `visualItem` FIELD: IMPLEMENTED.
+- SERVER SNAPSHOT / LEGACY WIRE FALLBACK: IMPLEMENTED.
+- EQUIPMENT UI ITEM RENDER: IMPLEMENTED — runtime `ItemStack` direct render.
+- AUTOMATED CONTRACT TESTS: EXIST for definition/snapshot mapping; latest visual-row renderer change itself is **CODE REVIEWED**, not rebuilt in this unit.
 - SCREENSHOT VISUAL AUDIT: NOT RUN.
 - PLAYTESTED: NO.
 
-다음 코드 단위는 `visualItem` data contract → snapshot → `GuiGraphicsExtractor.item(...)` 연결과 관련 unit/contract test다.
+다음 visual gate는 실제 Minecraft 통합 playtest 시 Equipment 행의 아이콘 크기/텍스트 밀도/GUI Scale 가독성을 screenshot으로 확인하는 것이다. 그 전까지 visual 품질 PASS를 선언하지 않는다.
