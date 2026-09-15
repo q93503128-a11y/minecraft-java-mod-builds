@@ -1,0 +1,85 @@
+name: Riftfrontier Hunter Alien Intake
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: projects/riftfrontier
+
+jobs:
+  intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Acquire creator-published Ultimate Monsters pack
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/hunter-alien-intake
+          python3 -m pip install --disable-pip-version-check --no-input gdown==5.2.0
+          gdown --folder --remaining-ok --fuzzy \
+            'https://drive.google.com/drive/folders/18m4KpzpEzhC9wl7jzr6dUc0N8Jozr79C?usp=sharing' \
+            -O build/hunter-alien-intake/ultimate-monsters
+      - name: Locate and inspect exact Alien glTF
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, shutil
+          from pathlib import Path
+
+          root = Path('build/hunter-alien-intake/ultimate-monsters')
+          matches = [p for p in root.rglob('*') if p.is_file() and p.suffix.lower() in {'.gltf', '.glb'} and p.stem.lower() == 'alien']
+          if len(matches) != 1:
+              raise SystemExit(f'expected exactly one Alien glTF/GLB, found {len(matches)}: {[str(p) for p in matches]}')
+          src = matches[0]
+          data = src.read_bytes()
+          receipt = {
+              'asset': 'Alien',
+              'author': 'Quaternius',
+              'family': 'Ultimate Monsters',
+              'creator_pack_page': 'https://quaternius.com/packs/ultimatemonsters.html',
+              'creator_distribution_folder': 'https://drive.google.com/drive/folders/18m4KpzpEzhC9wl7jzr6dUc0N8Jozr79C',
+              'license': 'CC0 1.0 / public domain dedication',
+              'intended_role': 'Region 01 Hunter visual/rig candidate only',
+              'source_relative_path': str(src.relative_to(root)),
+              'source_file': src.name,
+              'byte_size': len(data),
+              'sha256': hashlib.sha256(data).hexdigest(),
+              'selected_for_production': False,
+              'human_visual_acceptance': False,
+          }
+          if src.suffix.lower() == '.gltf':
+              doc = json.loads(data.decode('utf-8'))
+              receipt.update({
+                  'gltf_asset_version': doc.get('asset', {}).get('version'),
+                  'mesh_count': len(doc.get('meshes', [])),
+                  'skin_count': len(doc.get('skins', [])),
+                  'material_count': len(doc.get('materials', [])),
+                  'image_count': len(doc.get('images', [])),
+                  'animation_clips': [a.get('name') for a in doc.get('animations', [])],
+                  'animation_count': len(doc.get('animations', [])),
+                  'node_count': len(doc.get('nodes', [])),
+              })
+          out = Path('build/hunter-alien-intake/Alien.source' + src.suffix.lower())
+          shutil.copyfile(src, out)
+          Path('build/hunter-alien-intake/receipt.json').write_text(json.dumps(receipt, indent=2) + '\n', encoding='utf-8')
+          print(json.dumps(receipt, indent=2))
+          PY
+      - name: Upload exact candidate and inspection receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: riftfrontier-region01-hunter-alien-source-inspection
+          path: |
+            projects/riftfrontier/build/hunter-alien-intake/Alien.source.gltf
+            projects/riftfrontier/build/hunter-alien-intake/Alien.source.glb
+            projects/riftfrontier/build/hunter-alien-intake/receipt.json
+          if-no-files-found: warn
+          retention-days: 7
