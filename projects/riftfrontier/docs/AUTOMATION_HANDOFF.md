@@ -4,46 +4,35 @@ Recovery aid only. Reconstruct canonical truth from current GitHub `main`, `/AGE
 
 ## Current stage
 
-`M3 — PLAYABLE TECHNICAL EXPEDITION LOOP + PLAYER COMBAT + REGION 01 COMBAT-SPACE/STAGING + FIRST-SLICE FIELD GUIDE BUILD VERIFIED / BOSS MATERIAL DECODE GATE BUILD VERIFIED / HUMAN FIELD PLAY + FINAL BOSS MATERIAL + ARENA-PRESSURE MOTION ACCEPTANCE + PRODUCTION CREATURE/VFX/SOUND STILL OPEN`
+`M3 — PLAYABLE TECHNICAL EXPEDITION LOOP + PLAYER COMBAT + REGION 01 COMBAT-SPACE/STAGING + FIRST-SLICE FIELD GUIDE BUILD VERIFIED / BOSS DARK-ROCK FIELD-REVIEW BUILD VERIFIED / HUMAN FIELD PLAY + BOSS MATERIAL ACCEPTANCE + ARENA-PRESSURE MOTION ACCEPTANCE + PRODUCTION CREATURE/VFX/SOUND STILL OPEN`
 
 Priority remains a genuinely playable, polished Region 01 vertical slice. Do not grow speculative authority/lifecycle infrastructure or expand region count while visible gameplay/presentation remains incomplete.
 
-## Latest verified gameplay checkpoint — Region 01 first-slice field guide
+## Latest boss-material field-review checkpoint
 
-Verified gameplay/client checkpoint: `041fb1731a5b27decb78660902525659d35ffaee` (`riftfrontier: isolate field guide test contract`), following the functional field-guide implementation `f6c7a2876ce8b5c7b048887af565c68337f875d2`.
+Code checkpoint: `863717398a1ed2e952d5f1c76f00ea8fee1c6765` (`riftfrontier: render boss material candidate in field review`). `Build Riftfrontier` workflow `34955777908` completed **SUCCESS**.
 
-Fresh-world commandless bootstrap now gives the player one vanilla `WRITTEN_BOOK` field guide. This intentionally uses Minecraft's existing written-book UX instead of inventing a custom Riftfrontier Screen before final UI language is reviewed. The four EN/KO-localized pages only explain rules that already exist in authoritative gameplay:
+The explicit development-only `/riftfrontier boss fieldtest spawn` presentation now renders the accepted Dragon Evolved geometry with the repository's provenance-tracked derived Dark Rock material candidate instead of Minecraft stone. This is intentionally a human field-review path only. Production rendering remains fail-closed behind the existing reviewed-material and semantic-animation coverage gates; seeing this candidate in the fieldtest does not approve or publish it.
 
-1. hub prepare -> lodestone deploy -> recover 3 salvage -> field relay extraction;
-2. Hunter / Scout / Elite Anchor technical roles and optional patrol-clear +1 extraction salvage;
-3. salvage-triggered rift drag, 3/3 relay activation, patrol clear as optional bonus;
-4. extraction storage/pressure and smithing-table conversion of 1 stored salvage into 2 expedition supply.
-
-`Region01FieldGuide` owns no progression state and cannot mutate supply, salvage, pressure, encounter ownership, extraction or combat. `Region01FieldGuideSpec` is a pure-data contract so the normal JUnit source set can verify the compact/stable localization-key surface without importing Minecraft classes. The actual Minecraft item/component construction is compiled and then exercised through the normal full client/server build path.
-
-No persistent "guide received" flag was added. The guide is supplied only by the already-authoritative one-time fresh-world bootstrap; if the inventory is full the item drops at the player instead of being silently lost. Existing worlds with expedition history are intentionally not retroactively mutated by this first-slice onboarding checkpoint.
-
-Verification: `Build Riftfrontier` workflow `34912099164` completed **SUCCESS** on `041fb1731a5b27decb78660902525659d35ffaee`.
-
-Passed in that workflow:
+Passed in workflow `34955777908`:
 
 - toolchain verification
 - asset-intake tests
 - `clean test build`
 - required native GameTest gate
 - dedicated-server smoke
-- Xvfb client smoke
+- Xvfb client initialization smoke
 - executable-JAR inspection
 - build report and artifact upload
 
 Successful deliverable:
 
 - artifact: `riftfrontier-0.1.0-alpha.1-deliverables`
-- artifact id: `10374836675`
-- archive digest: `sha256:81f6771f6b23a6aa7ae8d01c585e0f1fc06a54ff1e4e736255f464f8ae8ed4ed`
-- executable JAR SHA-256: `fc8bc27465be67f47db7ee63ba3a9e423debc1169f6b64285c2f55917373c81a`
+- artifact id: `10391665418`
+- archive digest: `sha256:644bf5b3bd37863ee3fcf8b8deb87cec68c9f49c8b5f99dad86ae61693e00992`
+- executable JAR SHA-256: `1ba220ab318d7285299faf3f02d42cd5e77747867759648012ba0d33e7471a2a`
 
-Verification vocabulary:
+Verification vocabulary for this checkpoint:
 
 - `CODE REVIEWED`: YES
 - `TESTED`: YES
@@ -51,32 +40,23 @@ Verification vocabulary:
 - `JAR PRODUCED`: YES
 - `PLAYTESTED`: NO
 - `MULTIPLAYER TESTED`: NO
-- `HUMAN GUIDE ACCEPTANCE`: NO
+- `HUMAN MATERIAL ACCEPTANCE`: NO
 
-### Human field review procedure
+### Exact human boss-material review
 
-Use a fresh world with the verified JAR. The first commandless bootstrap into the technical hub must place exactly one `Region 01 Field Guide` in the player's inventory, or drop that one book at the player if the inventory is deliberately full. Open all four pages in English, then Korean. Reject if a raw `riftfrontier.guide...` key appears, if the book describes a rule different from actual `/riftfrontier expedition status`/play behavior, if station use or extraction duplicates the guide, or if merely possessing/opening the book changes supply, salvage, pressure, threats or extraction state.
+Install the executable JAR from artifact `10391665418` into a Minecraft 26.2 / NeoForge 26.2.0.38-beta test instance. In a test world run `/riftfrontier boss fieldtest spawn`. Review the Dragon at near, combat and medium distances while idle, then exercise the existing `phase1` / `phase2` fieldtest controls and ordinary damage/death presentation.
 
-Then run the normal loop once: lodestone deploy -> recover three salvage -> optionally clear patrol -> relay extraction -> smithing-table provision -> redeploy. The guide must remain explanatory only. Do not mark this checkpoint `PLAYTESTED` or `HUMAN GUIDE ACCEPTANCE` until a person actually performs that review.
+Accept only if the actual Minecraft render has coherent Dark Rock scale and orientation across face/head, neck, torso, limbs and wing membranes; no severe UV seam, mirrored discontinuity, stretching, texture swimming or bright-vein concentration that destroys silhouette/readability; and the candidate remains readable during Flying_Idle, Punch, Headbutt, HitReact and Death. Record screenshots/observations before any production-material receipt is created. Reject or request a deterministic re-derivation if the UV result is visibly poor. Do not silently tune the material from automation without that evidence.
 
-This is the minimal first-slice guide, not final UI/art language and not a complete bestiary system. Do not respond by building speculative custom guide screens, persistence flags, quest journals or menu infrastructure without new evidence.
+## Latest verified gameplay checkpoint — Region 01 first-slice field guide
 
-## Latest boss-material checkpoint — real-decode gate
+Verified gameplay/client checkpoint: `041fb1731a5b27decb78660902525659d35ffaee` (`riftfrontier: isolate field guide test contract`), following the functional field-guide implementation `f6c7a2876ce8b5c7b048887af565c68337f875d2`.
 
-Verified checkpoint: `a961099624fdbf44aa81cd5d224b976b6ca37902` (`riftfrontier: reject undecodable boss materials`), workflow `34902795221` SUCCESS.
+Fresh-world commandless bootstrap gives the player one vanilla `WRITTEN_BOOK` field guide. This intentionally uses Minecraft's existing written-book UX instead of inventing a custom Riftfrontier Screen before final UI language is reviewed. The four EN/KO-localized pages only explain rules that already exist in authoritative gameplay: hub prepare -> lodestone deploy -> recover 3 salvage -> field relay extraction; technical threat roles and optional patrol-clear +1; salvage-triggered rift drag / 3-of-3 relay activation; and extraction storage/pressure plus smithing-table conversion of 1 stored salvage into 2 expedition supply.
 
-`Region01BossMaterialPreparation` now authenticates exact resource bytes/SHA-256 and performs a real image decode before a material can become prepared. Missing, hash-mismatched, empty, malformed or undecodable texture bytes fail closed. This does not approve art or weaken human review.
+`Region01FieldGuide` owns no progression state and cannot mutate supply, salvage, pressure, encounter ownership, extraction or combat. No persistent guide-received flag was added; the guide is supplied only by the existing one-time fresh-world bootstrap.
 
-Material direction remains settled:
-
-- selected boss rig/geometry: Quaternius CC0 `Dragon Evolved` through Riftfrontier's custom skinned-mesh importer/renderer;
-- accepted sanitized runtime resource: `riftfrontier:boss_presentation/region_01/dragon_evolved.sanitized.v1.gltf`;
-- accepted sanitized model SHA-256: `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`;
-- source Atlas remains provenance/reference only and must not be shipped unchanged as final art;
-- older broken dark-rock file remains rejected;
-- Poly Haven `Dark Rock` remains an eligible CC0 material-source direction, but page/license confirmation is not asset admission. Exact downloaded bytes, checksum, decode, transformation/UV provenance, final checksum, Minecraft render and human review are still required.
-
-Do not restart model search or add GeckoLib merely to duplicate the selected path. Do not grow more material-gate framework unless a demonstrated intake failure requires it.
+Verification: `Build Riftfrontier` workflow `34912099164` completed SUCCESS. Deliverable artifact id `10374836675`; executable JAR SHA-256 `fc8bc27465be67f47db7ee63ba3a9e423debc1169f6b64285c2f55917373c81a`. Human guide acceptance remains open.
 
 ## Connected Region 01 baseline — settled unless evidence regresses it
 
@@ -90,11 +70,15 @@ Do not restart model search or add GeckoLib merely to duplicate the selected pat
 - Combat-space baseline: `40fe05c08634b80f0fc87b3f0df2b1e5cdc02c82`, workflow `34885087681` SUCCESS. Current tuff treatment is technical only; do not grow more tuff decoration.
 - Threat staging baseline: `f49357355899d3efb0e21f0101c837c5e28d0353`, workflow `34890699183` SUCCESS. Hunters west, Scouts east, Elite back-center. Do not auto-tune coordinates/cover without human field evidence.
 - Zombie/Skeleton/Ravager are behaviour proxies only; vanilla silhouettes/equipment/role labels are not production creature art.
-- Diagnostic particles/sounds, technical blocks, bossbar, stone boss preview, actionbar, relay dressing, proxy labels, native swing and tuff arena are field-review aids, not final Riftfrontier presentation language.
+- Diagnostic particles/sounds, technical blocks, bossbar, actionbar, relay dressing, proxy labels, native swing and tuff arena are field-review aids, not final Riftfrontier presentation language.
 - Do not auto-tune provisional damage, hit geometry, boss attack timing/travel/impulse, particle density, salvage cue intensity, control layout, cover geometry or threat staging without human field evidence.
 
 ## Region 01 boss presentation gates — still open
 
+- Selected boss rig/geometry remains Quaternius CC0 `Dragon Evolved` through Riftfrontier's custom skinned-mesh importer/renderer.
+- Accepted sanitized runtime resource: `riftfrontier:boss_presentation/region_01/dragon_evolved.sanitized.v1.gltf`; SHA-256 `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`.
+- Source Atlas art remains provenance/reference only and must not be shipped unchanged as final art.
+- Provenance-tracked Poly Haven Dark Rock source and deterministic derived candidate are now available for field review. Do not restart material/model search merely because human acceptance is pending.
 - Production boss rendering remains fail-closed until reviewed final material and complete reviewed animation semantic coverage exist. Do not fabricate `presentation_assets` or weaken coverage/review gates.
 - Evidence-backed source motion: committed strike -> `Punch`, line displacement -> `Headbutt`, damage -> `HitReact`, death -> non-looping `Death`, unresolved -> `Flying_Idle`.
 - Authored arena-pressure compression/burst/recovery candidate `bca0816381c09b28d613bc12d2e395eb62368761` is automated-build verified but **not human accepted**.
@@ -103,10 +87,6 @@ Do not restart model search or add GeckoLib merely to duplicate the selected pat
 
 ## Next useful development boundary
 
-The first-slice guide is now present and build verified. Do not keep expanding onboarding/UI automatically. Unless new human field evidence arrives, prioritize production-visible completion work:
-
-1. legally obtain an exact redistributable final-material source candidate in the already-selected direction, preserve provenance/checksums, decode it, adapt it coherently to Dragon Evolved UVs, render it in Minecraft, and prepare a human material-review build; or
-2. strong-reference / legally usable production creature or Region 01 environment presentation that can replace proxy/technical presentation without bypassing boss material/animation gates; or
-3. another connected visible combat/environment improvement that materially advances the vertical slice and is independent of still-open human gates.
+The Dark Rock Dragon material is now actually visible in the build-verified Minecraft field-review path. Do not keep changing that material automatically while human acceptance is pending. Parallel automation should prioritize production-visible work independent of this gate: strong-reference / legally usable production creature or Region 01 environment presentation that replaces proxy/technical presentation, or another connected visible combat/environment improvement that materially advances the vertical slice. Preserve provenance and use actual Minecraft review before declaring final art.
 
 Production creature silhouettes must not be invented from scratch by automation. Final VFX/sound/UI/environment language requires the same reference/provenance discipline and actual Minecraft human review. Remove temporary scaffolding only after a verified replacement exists.
