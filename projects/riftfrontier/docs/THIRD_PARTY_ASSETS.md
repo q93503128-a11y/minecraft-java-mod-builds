@@ -77,6 +77,58 @@ This file records external assets and source families considered or used by Rift
 - Intended use considered: Region 01 first boss
 - Rejection: recognizable cap silhouette but small attack-bearing limbs; would require presentation to be invented around the asset rather than supported by it.
 
+### Region 01 production-creature source study — 2026-09-15
+
+This study exists to replace the current Zombie/Skeleton/Ravager **behaviour proxies** with an evidence-backed art direction without inventing silhouettes from scratch. It does not change encounter authority, spawn counts, rewards, role semantics, or the settled boss selection.
+
+#### Quaternius — Ultimate Monsters / Alien
+
+- Status: `CANDIDATE`
+- Author: Quaternius
+- Family source: https://quaternius.com/packs/ultimatemonsters.html
+- Individual cross-check: https://poly.pizza/m/sUTLXji0aL
+- License: CC0 / public domain. The creator family page currently advertises 50 fully animated monsters in FBX/OBJ/Blend/glTF and marks the pack CC0; the individual Poly Pizza entry identifies `Alien` as Public Domain (CC0), animated, FBX/GLTF.
+- Source date re-verified: 2026-09-15
+- Intended use: **visual/rig candidate for the Region 01 Hunter role**, replacing the Zombie silhouette while preserving the already-settled close pursuit behaviour contract.
+- Why it fits: non-humanoid hostile silhouette, same already-approved creator/source family as Dragon Evolved, animated source, and a substantially clearer separation from vanilla undead than re-skinning the Zombie proxy.
+- Not yet approved: exact upstream bytes/hash, source clip inventory, Minecraft scale/hitbox alignment, material treatment, role animation semantics and actual field readability still require intake/review before `SELECTED`.
+- Do not ship the Poly Pizza page preview or silently reuse the source material as final Riftfrontier art.
+
+#### Quaternius — Ultimate Monsters / Armabee
+
+- Status: `CANDIDATE`
+- Author: Quaternius
+- Family source: https://quaternius.com/packs/ultimatemonsters.html
+- Individual cross-check: https://poly.pizza/m/42djT5zJnx
+- License: CC0 / public domain. The individual Poly Pizza entry identifies `Armabee` as Public Domain (CC0), animated, FBX/GLTF.
+- Source date re-verified: 2026-09-15
+- Intended use: **visual/rig candidate for the Region 01 Scout role**, replacing the Skeleton silhouette while preserving the already-settled ranged-pressure role.
+- Why it fits: aerial/insectoid silhouette is immediately distinct from the ground Hunter and gives ranged pressure a readable spatial identity without changing the server-authoritative role contract.
+- Not yet approved: exact upstream bytes/hash, animation vocabulary, ranged presentation fit, flight/grounding requirements, hitbox and Minecraft field readability must be inspected before selection. Do not add flight mechanics merely because the source silhouette can fly; gameplay semantics remain authoritative.
+
+#### Quaternius — Goleling Evolved, reconsidered only as elite-role candidate
+
+- Status: `CANDIDATE`
+- Author: Quaternius
+- Family source: https://quaternius.com/packs/ultimatemonsters.html
+- Individual cross-check: https://poly.pizza/m/iHEuXiH6Aj
+- License: CC0 / public domain; individual entry is Public Domain (CC0), animated, FBX/GLTF.
+- Source date re-verified: 2026-09-15
+- Intended use: **visual/rig candidate for the Region 01 Elite Anchor role only**.
+- Scope clarification: this does not reverse the earlier `REJECTED` decision for **first-boss use**. Goleling Evolved remains rejected as the Region 01 first boss because it could not carry the boss attack vocabulary. Its compact heavy silhouette may still fit the much narrower elite-anchor role.
+- Not yet approved: exact bytes/hash, clip inventory, shield-stun/counterplay readability, scale/hitbox and actual Minecraft render must be proven before selection. The existing Ravager shield-stun gameplay contract must not be deleted merely to fit this model.
+
+#### Quaternius — Cube World Kit
+
+- Status: `RESEARCHED`
+- Author: Quaternius
+- Source: https://quaternius.com/packs/cubeworldkit.html
+- License: CC0
+- Source date re-verified: 2026-09-15
+- Technical note: creator page advertises 108 models, animated characters/animals/enemies/environment, FBX/OBJ/Blend/glTF, personal/commercial use.
+- Possible use: Region 01 environment/prop vocabulary study where its cube-scaled forms adapt cleanly to Minecraft.
+- Current decision: do not select or bundle wholesale. Exact pieces require visual reference fit and provenance before use; Region 01's final environment language is not being invented from this pack automatically.
+
 #### Quaternius — Bestiary: Dungeon Monsters Kit (2026)
 
 - Status: `RESEARCHED`
@@ -99,11 +151,13 @@ This file records external assets and source families considered or used by Rift
   - https://poly.pizza/m/grnFTziU8u — Mushroom King
   - https://poly.pizza/m/LlwD0QNUPj — Dragon Evolved
   - https://poly.pizza/m/iHEuXiH6Aj — Goleling Evolved
-- Source date observed: 2026-09-09
-- License / usage note: inspected pages identify the entries as Public Domain / CC0.
+  - https://poly.pizza/m/sUTLXji0aL — Alien
+  - https://poly.pizza/m/42djT5zJnx — Armabee
+- Source date observed/re-verified: 2026-09-15
+- License / usage note: inspected pages identify these entries as Public Domain / CC0.
 - Modified: no
 - Intended/possible use: discovery and provenance cross-check
-- Current decision: original creator source is authoritative for the selected Dragon Evolved asset.
+- Current decision: original creator source remains authoritative for any selected production intake; mirrors are discovery/cross-check evidence, not an excuse to skip exact-source verification.
 
 ## Runtime/library note — not an asset
 
