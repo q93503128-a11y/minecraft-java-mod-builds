@@ -33,6 +33,7 @@ public final class DefinitionBundleParser {
         List<ProgressionDefinition> progressions = new ArrayList<>();
         List<EquipmentDefinition> equipment = new ArrayList<>();
         List<RegionDefinition> regions = new ArrayList<>();
+        List<ExternalWorldProfileDefinition> externalWorldProfiles = new ArrayList<>();
         List<String> resourceIds = new ArrayList<>();
         MessageDigest digest = sha256();
 
@@ -55,13 +56,14 @@ public final class DefinitionBundleParser {
             progressions.addAll(bundle.progressions());
             equipment.addAll(bundle.equipment());
             regions.addAll(bundle.regions());
+            externalWorldProfiles.addAll(bundle.externalWorldProfiles());
             resourceIds.add(resourceId);
             updateDigest(digest, resourceId);
             updateDigest(digest, json);
         }
 
         DefinitionRegistry registry = DefinitionRegistry.create(
-                actions, characters, statuses, encounters, rewards, progressions, equipment, regions);
+                actions, characters, statuses, encounters, rewards, progressions, equipment, regions, externalWorldProfiles);
         return new Parsed(registry, HexFormat.of().formatHex(digest.digest()), resourceIds);
     }
 
