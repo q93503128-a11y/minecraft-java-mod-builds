@@ -1,0 +1,172 @@
+name: Build Frontier Survival Deliverables
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-frontier-survival-deliverables.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Resolve versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          FRONTIER_VERSION="$(sed -n 's/^mod_version=//p' projects/frontier-settlement/gradle.properties | head -n1)"
+          SURVIVAL_VERSION="$(sed -n 's/^mod_version=//p' projects/survival-ascension/gradle.properties | head -n1)"
+          echo "FRONTIER_VERSION=$FRONTIER_VERSION" >> "$GITHUB_ENV"
+          echo "SURVIVAL_VERSION=$SURVIVAL_VERSION" >> "$GITHUB_ENV"
+          echo "FRONTIER_JAR=projects/frontier-settlement/build/libs/frontier_settlement-$FRONTIER_VERSION.jar" >> "$GITHUB_ENV"
+          echo "SURVIVAL_JAR=projects/survival-ascension/build/libs/survivalascension-$SURVIVAL_VERSION.jar" >> "$GITHUB_ENV"
+
+      - name: Build both project JARs
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd projects/survival-ascension && chmod +x gradlew && ./gradlew --no-daemon --no-configuration-cache clean build --console=plain)
+          (cd projects/frontier-settlement && chmod +x gradlew && ./gradlew --no-daemon --no-configuration-cache clean build --console=plain)
+          python3 projects/survival-ascension/tools/verify_jar.py "$SURVIVAL_JAR"
+          python3 projects/frontier-settlement/tools/verify_jar.py "$FRONTIER_JAR"
+
+      - name: Build Survival external-content manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 projects/survival-ascension/tools/build_mrpack.py \
+            --survival-jar "$SURVIVAL_JAR" \
+            --output "$GITHUB_WORKSPACE/survival-content.mrpack"
+
+      - name: Build current integrated Frontier Survival MRPack
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, urllib.request, zipfile
+          from pathlib import Path
+
+          root=Path.cwd()
+          frontier_jar=root/os.environ['FRONTIER_JAR']
+          survival_jar=root/os.environ['SURVIVAL_JAR']
+          frontier_version=os.environ['FRONTIER_VERSION']
+          survival_version=os.environ['SURVIVAL_VERSION']
+          resolved=json.loads((root/'projects/frontier-settlement/companion-testpack/resolved-lock.client.json').read_text(encoding='utf-8'))
+          with zipfile.ZipFile(root/'survival-content.mrpack') as z:
+              survival_index=json.loads(z.read('modrinth.index.json'))
+
+          req=urllib.request.Request('https://api.modrinth.com/v2/version/k8NezZZW',headers={'User-Agent':'Frontier-Survival-Packager/1.0'})
+          with urllib.request.urlopen(req,timeout=60) as r:
+              jei_meta=json.load(r)
+          if jei_meta.get('version_number') != '30.13.0.77':
+              raise SystemExit('JEI pin drifted from 30.13.0.77')
+          jei_file=next((f for f in jei_meta['files'] if f.get('primary')),jei_meta['files'][0])
+
+          files=[]
+          by_name={}
+          for f in resolved['files']:
+              entry={
+                  'path':'mods/'+f['filename'],
+                  'hashes':{'sha1':f['sha1'],'sha512':f['sha512']},
+                  'env':{'client':'required','server':'unsupported' if f['id']=='xaeros_minimap' else 'required'},
+                  'downloads':[f['url']],
+                  'fileSize':f.get('size',0),
+              }
+              files.append(entry); by_name[f['filename']]=entry
+
+          for entry in survival_index['files']:
+              name=Path(entry['path']).name
+              existing=by_name.get(name)
+              if existing:
+                  if existing['hashes'].get('sha1') != entry['hashes'].get('sha1') or existing['hashes'].get('sha512') != entry['hashes'].get('sha512'):
+                      raise SystemExit(f'duplicate filename hash mismatch: {name}')
+                  continue
+              files.append(entry); by_name[name]=entry
+
+          if jei_file['filename'] not in by_name:
+              files.append({
+                  'path':'mods/'+jei_file['filename'],
+                  'hashes':{'sha1':jei_file['hashes']['sha1'],'sha512':jei_file['hashes']['sha512']},
+                  'env':{'client':'required','server':'unsupported'},
+                  'downloads':[jei_file['url']],
+                  'fileSize':jei_file['size'],
+              })
+
+          out=root/'Frontier-Survival-FULL-KO-JEI.mrpack'
+          index={
+              'formatVersion':1,
+              'game':'minecraft',
+              'versionId':f'frontier-{frontier_version}-survival-{survival_version}-full-ko-jei',
+              'name':'Frontier Survival — 마을키우기 + 숙련 FULL KO + JEI',
+              'summary':f'Frontier Settlement {frontier_version} + Survival Ascension {survival_version} integrated pack.',
+              'files':files,
+              'dependencies':{'minecraft':'26.2','neoforge':'26.2.0.38-beta'},
+          }
+          readme=(
+              f'Frontier Survival — 마을키우기 + 숙련 FULL KO + JEI\n\n'
+              f'Frontier Settlement {frontier_version}\n'
+              f'Survival Ascension {survival_version}\n'
+              'Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25\n\n'
+              '마을키우기 메뉴: M\n숙련 메뉴: K\n\n'
+              '외부 모드는 각 공식 배포 URL에서 Modrinth 런처가 자동 설치합니다.\n'
+              '두 프로젝트 자체 JAR은 이 MRPack 안에 포함되어 있습니다.\n'
+          )
+          with zipfile.ZipFile(out,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as z:
+              z.writestr('modrinth.index.json',json.dumps(index,ensure_ascii=False,indent=2)+'\n')
+              z.write(frontier_jar,'overrides/mods/'+frontier_jar.name)
+              z.write(survival_jar,'overrides/mods/'+survival_jar.name)
+              z.writestr('overrides/FRONTIER_SURVIVAL_README.txt',readme)
+
+          with zipfile.ZipFile(out) as z:
+              parsed=json.loads(z.read('modrinth.index.json'))
+              assert 'overrides/mods/'+frontier_jar.name in z.namelist()
+              assert 'overrides/mods/'+survival_jar.name in z.namelist()
+              assert len(parsed['files']) == len({Path(x['path']).name for x in parsed['files']})
+              assert any('Terralith' in x['path'] for x in parsed['files'])
+              assert any('BiomesOPlenty' in x['path'] for x in parsed['files'])
+              assert any('tbos' in x['path'].lower() for x in parsed['files'])
+              assert any('jei-' in x['path'].lower() for x in parsed['files'])
+
+          Path('SHA256.txt').write_text(
+              f"{hashlib.sha256(frontier_jar.read_bytes()).hexdigest()}  {frontier_jar.name}\n"
+              f"{hashlib.sha256(survival_jar.read_bytes()).hexdigest()}  {survival_jar.name}\n"
+              f"{hashlib.sha256(out.read_bytes()).hexdigest()}  {out.name}\n",
+              encoding='utf-8'
+          )
+          print('integrated_external_entries=',len(files))
+          print('mrpack=',out)
+          PY
+
+      - name: Stage deliverables
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deliverables/project-jars
+          cp "$FRONTIER_JAR" deliverables/project-jars/
+          cp "$SURVIVAL_JAR" deliverables/project-jars/
+          cp Frontier-Survival-FULL-KO-JEI.mrpack deliverables/
+          cp SHA256.txt deliverables/
+          (cd deliverables/project-jars && zip -9 ../Frontier-Survival-PROJECT-JARS.zip *.jar)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontier-survival-current-deliverables
+          path: deliverables/
+          if-no-files-found: error
+          retention-days: 30
