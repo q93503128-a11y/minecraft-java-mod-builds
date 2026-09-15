@@ -18,26 +18,17 @@ import java.util.List;
  * gameplay state and cannot mutate expedition progression.</p>
  */
 public final class Region01FieldGuide {
-    static final String TITLE = "Riftfrontier Field Guide";
-    static final String AUTHOR = "Riftfrontier";
-    static final List<String> PAGE_KEYS = List.of(
-        "riftfrontier.guide.region_01.page.overview",
-        "riftfrontier.guide.region_01.page.patrol",
-        "riftfrontier.guide.region_01.page.salvage",
-        "riftfrontier.guide.region_01.page.logistics"
-    );
-
     private Region01FieldGuide() {}
 
     public static ItemStack create() {
-        List<Filterable<Component>> pages = PAGE_KEYS.stream()
+        List<Filterable<Component>> pages = Region01FieldGuideSpec.PAGE_KEYS.stream()
             .map(key -> Filterable.<Component>passThrough(Component.translatable(key)))
             .toList();
 
         ItemStack guide = new ItemStack(Items.WRITTEN_BOOK);
         guide.set(DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(
-            Filterable.passThrough(TITLE),
-            AUTHOR,
+            Filterable.passThrough(Region01FieldGuideSpec.TITLE),
+            Region01FieldGuideSpec.AUTHOR,
             0,
             pages,
             true
