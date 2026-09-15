@@ -16,10 +16,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.energy.IEnergyStorage;
 import net.minecraftforge.registries.ForgeRegistries;
-import org.joml.Vector3i;
 import org.valkyrienskies.core.api.ships.ServerShip;
-import org.valkyrienskies.core.util.datastructures.DenseBlockPosSet;
-import org.valkyrienskies.mod.common.assembly.ShipAssemblyKt;
+import org.valkyrienskies.mod.common.assembly.ShipAssembler;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -47,12 +45,11 @@ public final class StarterCraftDeploymentService {
         BlockPos controllerPos = StarterCraftLayout.controllerFromFloor(floorCenter);
         fillBattery(level, controllerPos.offset(StarterCraftLayout.BATTERY));
 
-        DenseBlockPosSet selectedBlocks = new DenseBlockPosSet();
-        template.keySet().forEach(pos -> selectedBlocks.add(new Vector3i(pos.getX(), pos.getY(), pos.getZ())));
-
         try {
-            return ShipAssemblyKt.createNewShipWithBlocks(controllerPos, selectedBlocks, level);
-        } catch (RuntimeException error) {
+            // This is the @JvmStatic assembly API shipped by the pinned VS 2.4.10 line and
+            // used by Genesis' own 1.20.1 source. VS owns relocation, collision and physics.
+            return ShipAssembler.assembleToShipFull(level, template.keySet(), 1.0D).getShip();
+        } catch (RuntimeException | AssertionError error) {
             template.keySet().forEach(pos -> level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL));
             throw error;
         }
@@ -95,8 +92,8 @@ public final class StarterCraftDeploymentService {
         putRelative(blocks, controller, BlockPos.ZERO,
                 g_mungus.zps.block.ModBlocks.OCTO_CONTROLLER.get().defaultBlockState()
                         .setValue(OctoControllerBlock.FACING, Direction.NORTH));
-        // ZPS 2.4.0 is the pinned runtime. Bind optional/newer public fields only through
-        // stable registry IDs so our compile contract does not silently depend on ZPS master.
+        // The finite Power Cell exists in the pinned ZPS 2.5.1 runtime. Resolve by stable
+        // registry id so the integration does not couple to an implementation field name.
         putRelative(blocks, controller, StarterCraftLayout.BATTERY,
                 requireExternalBlock("zps", "power_cell").defaultBlockState());
 
