@@ -104,7 +104,7 @@ As of 2026-09-15:
 
 Therefore:
 - CODE REVIEWED: external-world binding/data architecture.
-- BUILD VERIFIED: NO until the current schema batch is compiled.
+- BUILD VERIFIED: PENDING — one schema checkpoint build requested after `7f7bc5ed9128ddb8fc4c9f218966e6e3db6faf52`.
 - WORLD MIGRATION TESTED: NO.
 - PLAYTESTED: NO.
 - MULTIPLAYER TESTED: NO.
