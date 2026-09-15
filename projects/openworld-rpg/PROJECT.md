@@ -69,6 +69,7 @@ Subordinate references:
 - `UI_DIRECTION.md` — selected external CC0 UI family, screen architecture, scaling rules and visual acceptance criteria for the UI work indexed by `GAME_DESIGN.md`. It does not override gameplay rules in the master canon.
 - `LOOT_ECONOMY.md` — detailed equipment-generation, affix, drop-rate, target-farming, signature-material and loot-presentation rules for the loot-economy work explicitly queued by `GAME_DESIGN.md`. It does not override the master canon.
 - `EQUIPMENT_BALANCE.md` — concrete Item-Lv/base-stat curves, exact affix ranges/caps, forge/reforge rules, R01 resource/equipment catalog and external visual bindings. It closes implementation-time equipment-number invention but does not override `GAME_DESIGN.md`.
+- `MOUNTS.md` — external-first mount roster, traversal-speed/handling balance, stable economy, summon/Resolve/combat rules, flight model and multiplayer authority. It expands `GAME_DESIGN.md` §18 without overriding the master canon.
 
 Do not create parallel competing design documents. Subordinate reference files may expand a workstream that is explicitly indexed/queued by `GAME_DESIGN.md`, but `GAME_DESIGN.md` remains the master index and conflict authority.
 
