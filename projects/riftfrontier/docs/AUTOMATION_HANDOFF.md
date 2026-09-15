@@ -8,6 +8,22 @@ Recovery aid only. Reconstruct canonical truth from current GitHub `main`, `/AGE
 
 Priority remains a genuinely playable, polished Region 01 vertical slice. Do not grow speculative authority/lifecycle infrastructure or expand region count while visible gameplay/presentation remains incomplete.
 
+## Latest production-creature source checkpoint
+
+Source-study checkpoint: `14e9bfce4a4674e624f379d964049feffcbeb542` (`riftfrontier: record production creature source candidates`). This is a provenance/reference checkpoint only; it changes no runtime resources or gameplay.
+
+The current Zombie/Skeleton/Ravager encounter remains a behaviour proxy, but production-creature work now has a concrete CC0 direction instead of an open-ended model search. `docs/THIRD_PARTY_ASSETS.md` records three role-specific candidates from the same Quaternius `Ultimate Monsters` family already used for the selected Dragon Evolved boss source:
+
+- Hunter visual/rig candidate: `Alien` — Quaternius, CC0, animated FBX/GLTF; creator family page + Poly Pizza Public Domain cross-check.
+- Scout visual/rig candidate: `Armabee` — Quaternius, CC0, animated FBX/GLTF; chosen as a visually distinct aerial/insectoid ranged-pressure candidate. **Do not add flight gameplay merely to fit the model.**
+- Elite Anchor visual/rig candidate: `Goleling Evolved` — Quaternius, CC0, animated FBX/GLTF. This does not reverse its earlier rejection for boss use; it is reconsidered only for the narrower heavy elite role.
+
+None is `SELECTED` yet. Next production-creature intake should inspect exact upstream bytes, hashes, mesh/skin/clip inventories and Minecraft scale/hitbox suitability before committing runtime model bytes. Preserve existing Hunter/Scout/Elite server-authoritative role semantics, pressure counts, ownership and patrol-clear reward. Do not delete the Ravager shield-stun counterplay until an actual elite replacement preserves or deliberately replaces that observable counterplay with evidence.
+
+The Quaternius `Cube World Kit` is also recorded as a CC0 environment/prop **research** source only. Do not turn it into an automatic Region 01 art direction or bundle the pack wholesale.
+
+Because this checkpoint changes docs/provenance only, no new Riftfrontier build/JAR is claimed for it. Verification vocabulary: `CODE REVIEWED: YES`, `TESTED: N/A`, `BUILD VERIFIED: N/A`, `JAR PRODUCED: NO NEW JAR`, `PLAYTESTED: NO`, `MULTIPLAYER TESTED: NO`.
+
 ## Latest boss-material field-review checkpoint
 
 Code checkpoint: `863717398a1ed2e952d5f1c76f00ea8fee1c6765` (`riftfrontier: render boss material candidate in field review`). `Build Riftfrontier` workflow `34955777908` completed **SUCCESS**.
@@ -87,6 +103,6 @@ Verification: `Build Riftfrontier` workflow `34912099164` completed SUCCESS. Del
 
 ## Next useful development boundary
 
-The Dark Rock Dragon material is now actually visible in the build-verified Minecraft field-review path. Do not keep changing that material automatically while human acceptance is pending. Parallel automation should prioritize production-visible work independent of this gate: strong-reference / legally usable production creature or Region 01 environment presentation that replaces proxy/technical presentation, or another connected visible combat/environment improvement that materially advances the vertical slice. Preserve provenance and use actual Minecraft review before declaring final art.
+Do not keep changing the Dark Rock boss material while human acceptance is pending. The production-creature search is also no longer open-ended: start with the recorded Alien / Armabee / Goleling Evolved role candidates and either (a) perform exact-source intake + direct mesh/rig/animation inspection for one role, or (b) reject it with concrete evidence and then search a replacement. Prefer getting one production creature all the way to a Minecraft field-review render over collecting many candidates.
 
-Production creature silhouettes must not be invented from scratch by automation. Final VFX/sound/UI/environment language requires the same reference/provenance discipline and actual Minecraft human review. Remove temporary scaffolding only after a verified replacement exists.
+Do not wire a candidate into natural Region 01 encounter spawning until its exact source/license/provenance and Minecraft render path are verified. Preserve the current proxy behaviour underneath until a replacement is proven. Final VFX/sound/UI/environment language requires the same reference/provenance discipline and actual Minecraft human review. Remove temporary scaffolding only after a verified replacement exists.
