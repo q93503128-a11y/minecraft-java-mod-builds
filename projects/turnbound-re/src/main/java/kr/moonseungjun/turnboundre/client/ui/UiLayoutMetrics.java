@@ -9,10 +9,14 @@ public final class UiLayoutMetrics {
     public static final int SPACE_16 = 16;
     public static final int SPACE_24 = 24;
 
-    public static final int MIN_BATTLE_HUD_WIDTH = 480;
-    public static final int MIN_BATTLE_HUD_HEIGHT = 270;
-    public static final int MIN_PARTY_SCREEN_WIDTH = 480;
-    public static final int MIN_PARTY_SCREEN_HEIGHT = 270;
+    /**
+     * Logical GUI pixels, not physical window pixels. A 1680x945 window at GUI scale 4 is roughly 420x236,
+     * which is a normal player setup and must not blank the production screens/HUD.
+     */
+    public static final int MIN_BATTLE_HUD_WIDTH = 400;
+    public static final int MIN_BATTLE_HUD_HEIGHT = 220;
+    public static final int MIN_PARTY_SCREEN_WIDTH = 400;
+    public static final int MIN_PARTY_SCREEN_HEIGHT = 228;
 
     private UiLayoutMetrics() {}
 
@@ -43,8 +47,8 @@ public final class UiLayoutMetrics {
     ) {}
 
     /**
-     * Party status stays one row on normal layouts. At the minimum supported width, four members become a 2x2 grid
-     * so names and core resources are not crushed into ~64 logical pixels each.
+     * Party status stays one row on normal layouts. At compact logical sizes, four members become a 2x2 grid
+     * so names and core resources are not crushed into unusable single-row cells.
      */
     public record PartyGridLayout(
             int columns,
@@ -93,7 +97,7 @@ public final class UiLayoutMetrics {
         }
     }
 
-    /** Rendering quietly defers at extreme GUI scales instead of throwing every frame. */
+    /** Rendering defers only when even the compact production layout cannot remain readable. */
     public static boolean supportsBattleHud(int screenWidth, int screenHeight) {
         return screenWidth >= MIN_BATTLE_HUD_WIDTH && screenHeight >= MIN_BATTLE_HUD_HEIGHT;
     }
@@ -109,13 +113,18 @@ public final class UiLayoutMetrics {
                             + " logical pixels, got " + screenWidth + "x" + screenHeight);
         }
 
+        boolean compactCanvas = screenWidth < 480 || screenHeight < 270;
         int margin = SPACE_8;
-        int bottomHeight = screenWidth < 600 ? 82 : clamp(screenHeight / 5, 58, 82);
-        int railWidth = clamp(screenWidth / 10, 72, 112);
-        int railHeight = clamp(screenHeight - bottomHeight - SPACE_24 - margin, 120, 228);
-        int enemyWidth = clamp(screenWidth / 3, 180, 300);
+        int bottomHeight = compactCanvas ? 72 : screenWidth < 600 ? 82 : clamp(screenHeight / 5, 58, 82);
+        int railWidth = compactCanvas ? clamp(screenWidth / 10, 64, 88) : clamp(screenWidth / 10, 72, 112);
+        int railHeight = compactCanvas
+                ? clamp(screenHeight - bottomHeight - SPACE_24 - margin, 104, 192)
+                : clamp(screenHeight - bottomHeight - SPACE_24 - margin, 120, 228);
+        int enemyWidth = compactCanvas ? clamp(screenWidth / 3, 160, 220) : clamp(screenWidth / 3, 180, 300);
         int enemyHeight = 44;
-        int commandWidth = clamp((screenWidth * 2) / 5, 200, 340);
+        int commandWidth = compactCanvas
+                ? clamp((screenWidth * 2) / 5, 180, 240)
+                : clamp((screenWidth * 2) / 5, 200, 340);
         int partyWidth = screenWidth - commandWidth - margin * 3;
 
         Rect turnRail = new Rect(margin, margin, railWidth, railHeight);
@@ -159,15 +168,27 @@ public final class UiLayoutMetrics {
         int contentY = tabs.bottom() + SPACE_8;
         int contentHeight = footer.y() - SPACE_8 - contentY;
         int gap = SPACE_8;
-        int rosterWidth = clamp((root.width() * 35) / 100, 170, 300);
-        int activeWidth = clamp((root.width() * 25) / 100, 120, 220);
+        int rosterWidth;
+        int activeWidth;
+        if (root.width() < 480) {
+            // GUI scale 4 on common 1600-1700px windows: keep all three canonical regions visible,
+            // sacrificing scan width before sacrificing the selected-character pane.
+            rosterWidth = clamp((root.width() * 35) / 100, 128, 146);
+            activeWidth = clamp((root.width() * 25) / 100, 92, 104);
+        } else {
+            rosterWidth = clamp((root.width() * 35) / 100, 170, 300);
+            activeWidth = clamp((root.width() * 25) / 100, 120, 220);
+        }
         int detailWidth = root.width() - rosterWidth - activeWidth - gap * 2;
-        if (detailWidth < 150) {
-            int deficit = 150 - detailWidth;
-            int rosterShrink = Math.min(deficit, Math.max(0, rosterWidth - 160));
+        int minimumDetail = root.width() < 480 ? 138 : 150;
+        if (detailWidth < minimumDetail) {
+            int deficit = minimumDetail - detailWidth;
+            int rosterFloor = root.width() < 480 ? 124 : 160;
+            int activeFloor = root.width() < 480 ? 88 : 110;
+            int rosterShrink = Math.min(deficit, Math.max(0, rosterWidth - rosterFloor));
             rosterWidth -= rosterShrink;
             deficit -= rosterShrink;
-            activeWidth -= Math.min(deficit, Math.max(0, activeWidth - 110));
+            activeWidth -= Math.min(deficit, Math.max(0, activeWidth - activeFloor));
             detailWidth = root.width() - rosterWidth - activeWidth - gap * 2;
         }
 
