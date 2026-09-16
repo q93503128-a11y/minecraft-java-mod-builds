@@ -182,7 +182,7 @@ Do not invent the visual language ad hoc. HUD, cast meter, bag, bestiary and tra
 
 ## Catch presentation direction
 
-Fishing encounters use five transient silhouettes — small, tall, fat, long and angler — with species-specific textures. They are session-only entities: unsaved, no AI, no loot, cleaned up on the fishing lifecycle. Visible approach and burst motion must agree with server-side bite/tension behavior.
+Fishing encounters use nine transient morphology families — small, tall, fat, long, angler, cyprinid, pelagic, bream and catfish — with species-specific textures. The added families deliberately separate carp/crucian depth, salmonid/tuna streamlining, sea-bream compression and catfish head/whisker identity instead of routing most of the catalog through one generic fat model. They are session-only entities: unsaved, no AI, no loot, cleaned up on the fishing lifecycle. Visible approach and burst motion must agree with server-side bite/tension behavior.
 
 ## Fishing-hook ownership rule
 
@@ -208,4 +208,4 @@ Do not hand the user a JAR for a tiny technical check. A user-facing test build 
 - complete cast -> target water -> catch -> sell -> upgrade -> travel -> collect -> rebirth loop
 - acceptable actual Minecraft screen and world quality
 
-Alpha.20 passed automated build/server checks but failed the next real graphical review: major screens were oversized at the user's GUI scale, the hotbar removal was incoherent with the retained inventory, natural terrain debris remained suspended in the lake, and integrated-server shutdown logged a player/chunk-tracking NPE. Alpha.21 is the corrective slice. It must pass automated CI and then be re-tested in a real client for UI scale, lake cleanup and join/exit shutdown behavior before PLAYTESTED, GRAPHICAL CLIENT REVIEWED or shutdown-regression-verified status is claimed.
+Alpha.20 passed automated build/server checks but failed the next real graphical review: major screens were oversized at the user's GUI scale, the hotbar removal was incoherent with the retained inventory, natural terrain debris remained suspended in the lake, and integrated-server shutdown logged a player/chunk-tracking NPE. Alpha.21 is the corrective slice. It must pass automated CI and then be re-tested in a real client for UI scale, lake cleanup, rod hold/release animation, encounter-fish morphology and join/exit shutdown behavior before PLAYTESTED, GRAPHICAL CLIENT REVIEWED or shutdown-regression-verified status is claimed.

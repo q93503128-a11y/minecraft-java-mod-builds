@@ -33,6 +33,16 @@
 - License notice bundled at `META-INF/licenses/fishinggame/fishing-frenzy-mit.txt`.
 - Future prestige/rebirth-grade rods should keep using clearly licensed external bases or purpose-built final assets; do not ship placeholder rods merely to fill a tier.
 
+### Fishing Frenzy fish morphology references
+- Type: editable model-geometry reference; Fishing Game geometry is re-authored for the current renderer/texture contracts rather than copied as an old-version class dump.
+- Repository: https://github.com/Vg34100/Minecraft-FishingFrenzy
+- Source branch: `master`
+- Inspected commit: `b1409d38f19cdf4222f20863a2d699fbfb84121c`
+- License: MIT, Copyright (c) 2024 Vg34100
+- Inspected model sources: `AlbacoreModel.java`, `BreamModel.java`, `CatfishModel.java`.
+- Fishing Game use: the new `PELAGIC`, `BREAM`, and `CATFISH` encounter families use those real-fish proportions as morphology references while keeping Fishing Game's current 26.2 model API, session-only entity architecture and existing species texture atlas contracts. `CYPRINID` is authored to separate carp/crucian body shape from the generic fat-fish family.
+- The existing Fishing Frenzy MIT notice at `META-INF/licenses/fishinggame/fishing-frenzy-mit.txt` covers this reference/adaptation source as well.
+
 ## Code / behavior references
 
 ### Simple Fishing Overhaul
@@ -61,4 +71,4 @@ Current external search direction remains:
 
 ## Encounter fish status
 
-Fishing encounters use five purposeful transient silhouette families. They are visual/session entities only, not ambient ecosystem AI and not save data.
+Fishing encounters now use nine purposeful transient morphology families: small, tall, fat, long, angler, cyprinid, pelagic, bream and catfish. Species textures remain independent, and these entities are visual/session-only rather than ambient ecosystem AI or save data.
