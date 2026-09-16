@@ -106,9 +106,9 @@ Clients provide input, rendering, animation, UI, sound, VFX and safe prediction 
 
 ---
 
-# Current implementation — Fabric rebase foundation
+# Current implementation — Fabric starter-craft foundation
 
-The current compiled Fabric artifact deliberately starts with the parts of the previous 26.2 codebase that are loader-neutral and worth preserving:
+The current Fabric artifact preserves the loader-neutral parts of the previous 26.2 codebase that are worth keeping:
 
 - ship identity / ownership / crew permissions
 - authored module catalog, slots and module instances
@@ -119,16 +119,24 @@ The current compiled Fabric artifact deliberately starts with the parts of the p
 - launch-readiness and first-orbit progression rules
 - binary ship-state codec and migration tests
 
-The current Fabric integration also includes the first real server-authoritative bridge:
+The Fabric integration now includes both the server-authoritative bridge and the first real physical Launch Craft boundary:
 
 - Fabric C2S control-input payload and S2C control-session payload contracts
 - server-owned pilot session binding over the existing `ShipFlightRuntime` permission, lease, sequence and expiry rules
 - `ShipRepository` as the authoritative in-memory logical ship registry
 - Fabric `SavedData` persistence backed by the existing `ShipStateCodec`
 - server lifecycle load/reset so integrated or dedicated server worlds do not leak static ship/runtime state into one another
-- three real construction components from the first content bridge: `reinforced_frame`, `avionics_unit`, and `life_support_unit`
+- construction components: `reinforced_frame`, `avionics_unit`, and `life_support_unit`
+- `earth_to_stars:launch_craft_kit` real Overworld deployment transaction
+- real Minecraft 26.2 `VehicleEntity` Launch Craft bound to stable `ShipId`
+- one real pilot seat with range / ownership / `PILOT` permission validation before server control grant
+- W/S throttle, A/D yaw, jump lift-up and sprint lift-down client input tied to server-issued sessions
+- collision-resolved movement reconciled back into the existing loader-neutral `ShipFlightRuntime`
+- approved Kenney Space Kit CC0 starter-craft source mesh loaded through a Fabric/Minecraft 26.2 submit/render-state client path
 
-The client cannot create a control session or mutate authoritative ship state by packet. A later physical craft layer must first validate the real craft, seat/range/world state and then call the server-side control grant path. No fake vehicle is created merely to exercise the bridge.
+The client cannot create a control session or mutate authoritative ship state by packet. The physical entity does not own a duplicate economy, module inventory, fuel store, oxygen store or permission model.
+
+The current initial craft is a **one-pilot implementation** of the planned small 1–2 person Launch Craft. A second seat is not claimed yet and should be added only when crew/passenger play has a concrete gameplay role.
 
 The new Fabric entrypoint lives under `src/fabric/java`. Existing loader-neutral kernel code is reused in-place from `src/main/java`.
 
@@ -146,70 +154,87 @@ The 1.20.1 Forge `src/reboot` VS/Genesis/ZPS/ZPL integration is also retained on
 
 ## Current external assets
 
-The repository already contains Kenney Space Kit CC0 source meshes for the starter craft, salvage craft and interceptor. Their provenance remains recorded in `THIRD_PARTY_ASSETS.md`. They are valid bases for the Fabric visual pipeline, but the old NeoForge OBJ adapter is not assumed to work on Fabric and must be replaced with a Fabric-compatible production rendering path.
+The repository contains Kenney Space Kit CC0 source meshes for the starter craft, salvage craft and interceptor with provenance recorded in `THIRD_PARTY_ASSETS.md`.
+
+The Fabric Launch Craft now uses the approved starter-craft mesh through a new 26.2-compatible renderer path. The old NeoForge OBJ adapter was not restored. Current client smoke confirms that the Fabric client resource path parses the starter mesh (`280` triangles), but in-world visual scale/orientation/material/camera acceptance remains a live-playtest task.
+
+No unverified current-version vehicle-mod source code was copied into the physical craft implementation. External vehicle projects remain research references unless exact source revision/license/obligations are independently verified and recorded.
 
 ---
 
 # Verification state
 
-The Fabric authority bridge gate is closed at source commit `06ca1ecda7d42e8b6451ab5b434147458cc020d0`.
+The current physical Launch Craft integration gate is closed at source commit `6ec6e8c860e3f1f52403bd8be3e721667ebaabe2` after initial implementation commit `69bde96fc6fec2ad7c93048e0de853ecbcf13e10`.
 
-`Build earth-to-stars Fabric 26.2` run `35050302544` / run number `#40`: **PASS**
+`Build earth-to-stars Fabric 26.2` run `35054576328` / run number `#42`: **PASS**
 
 - standalone Fabric contract validator: PASS
 - retained loader-neutral ship kernel tests: PASS
 - clean test/build: PASS
 - production JAR structure verification: PASS
 - dedicated Fabric server boot: PASS
+- physical Launch Craft registration + ship authority bridge initialization: PASS
 - production JAR: `earth_to_stars-0.3.0-alpha.1.jar`
-- SHA-256: `40034f8310fcf9654cf78c19a84c6c218e8ee74888314643da4a174573425109`
+- SHA-256: `23f652d32f5053a83c2ecfb468d5fdcbaa6b98ae51a421aaa89eee3404d88122`
 
-`Smoke earth-to-stars Fabric client` run `35050302541` / run number `#15`: **PASS**
+`Smoke earth-to-stars Fabric client` run `35054576366` / run number `#17`: **PASS**
 
 - Fabric client preparation: PASS
 - Xvfb `runClient` smoke: PASS
+- ETS client initialization: PASS
+- resource reload: PASS
+- Kenney Launch Craft OBJ parser: PASS (`280` triangles)
 - no fatal ETS client initialization failure in the smoke gate
 
-The first authority-bridge build run `35050092286` correctly failed on the Minecraft 26.2 `SavedDataType` constructor contract. The save bridge was aligned to the current four-argument constructor without changing the ETS save key, binary `ShipStateCodec`, or hiding the feature behind an exclusion; the succeeding run above passed.
+The first physical-craft build run `35054175541` passed the standalone contract validator and then correctly failed during Java compilation on Minecraft 26.2 API differences at the new renderer/entity/message/riding/removal boundaries. Commit `6ec6e8c...` aligned those APIs and also removed pre-spawn world mutation from deployment and made physical-entity unbinding safely own runtime teardown. No craft feature was hidden or deleted to obtain a green build.
+
+The headless CI client reports missing narrator `flite` and unavailable OpenAL/audio device. Minecraft continued to run and the ETS client smoke passed; these are runner-environment limitations rather than an ETS entrypoint failure.
 
 Current verification labels:
 
-- `CODE REVIEWED`: YES for the Fabric construction + authority bridge source
-- `TESTED`: YES for automated kernel/contract/build/server/client gates
+- `CODE REVIEWED`: YES for the Fabric construction + authority + physical Launch Craft source
+- `TESTED`: YES for automated kernel/contract/build/server/client initialization gates
 - `BUILD VERIFIED`: YES
 - `JAR PRODUCED`: YES
 - `DEDICATED FABRIC BOOT`: YES
 - `CLIENT FABRIC SMOKE`: YES
-- `PLAYTESTED`: **NO** — no player-facing Fabric starter craft exists yet
+- `KENNEY MESH PARSE`: YES
+- `PHYSICAL STARTER CRAFT PLAYTESTED`: **NO**
+- `LIVE FLIGHT FEEL`: **NOT TESTED**
+- `CRAFT VISUAL ACCEPTANCE IN WORLD`: **NOT TESTED**
+- `POPULATED CRAFT SAVE/RELOAD`: **NOT TESTED**
+- `POWER / PROPELLANT / OXYGEN FLIGHT CONSUMPTION`: **NOT CONNECTED**
 - `EARTH→SPACE CONTINUITY`: **NOT TESTED**
 - `MULTIPLAYER TESTED`: **NO**
 
-A successful build/server/client smoke proves integration and initialization, not flight feel, collision quality, visual acceptance or multiplayer correctness.
+A successful build/server/client smoke proves integration and initialization. It does not prove flight feel, collision fairness, visible model quality, populated-world persistence or multiplayer correctness.
+
+Detailed implementation/acceptance notes are canonical in `docs/10_FABRIC_LAUNCH_CRAFT.md`.
 
 ---
 
 # Immediate migration sequence
 
-Do not expand Moon/asteroid content yet. Rebuild one complete starter-craft vertical slice on Fabric in this order:
+Do not expand Moon/asteroid content yet. Close the first complete starter-craft vertical slice in this order:
 
 ```text
 Fabric 26.2 build + kernel regression tests              [PASS]
 → Fabric construction content bridge                     [PASS]
 → Fabric server authority / network / save bridge        [PASS]
-→ exact-source/license physical-vehicle research         [IN PROGRESS]
-→ real launch / deploy transaction
-→ production starter-craft entity + visual path using approved external assets
-→ physical seat validation + pilot input + camera
-→ collision + movement solution informed by permissively licensed external code research
+→ real launch / deploy transaction                       [PASS - automated]
+→ real VehicleEntity starter craft                       [PASS - automated]
+→ Kenney starter-craft Fabric render resource path       [PASS - initialization / mesh parse]
+→ physical seat validation + server pilot session        [PASS - code/build; live play pending]
+→ collision + movement reconciliation                    [PASS - code/build; live feel pending]
+→ actual client craft playtest                           [NEXT]
 → power / propellant / oxygen hooked to real flight
 → continuous-feeling atmosphere → space transition
 → return to Earth
-→ actual client playtest and feel tuning
 ```
 
-The old Display-entity-style 26.2 implementation is not automatically restored just because the loader returns to 26.2. Its failed cockpit/collision/flight assumptions must be replaced, preferably using proven external implementation ideas or permissively reusable code rather than repeating the same invention.
+The immediate product gate is not more content. It is a live acceptance test of the Launch Craft's scale, orientation, seat/camera, acceleration, yaw, lift, collision, jitter, chunk/save behavior and material presentation.
 
-The current vehicle-source research must verify exact source files, source commit/version, license and modification/redistribution obligations before code is copied into ETS or recorded as a reusable production source. An unofficial current-version port may be useful evidence, but it is not trusted solely because it compiles.
+The old Display-entity-style 26.2 implementation is not restored. Its failed cockpit/collision/flight assumptions stay retired.
 
 ---
 

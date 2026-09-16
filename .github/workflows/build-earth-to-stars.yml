@@ -90,7 +90,7 @@ jobs:
           JAR=$(ls build/libs/earth_to_stars-*.jar | grep -v sources | head -n1)
           SHA=$(cat "$JAR.sha256")
           cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # EARTH TO STARS — Fabric 26.2 Standalone Rebase
+          # EARTH TO STARS — Fabric 26.2 Standalone Runtime Gate
 
           - Commit: $GITHUB_SHA
           - Mod version: $VERSION
@@ -103,8 +103,11 @@ jobs:
           - production JAR verify: PASS
           - dedicated Fabric boot: PASS
           - whole external ship/space mods required at runtime: NO
-          - player-facing Fabric ship runtime: NOT RUN / migration not complete
+          - physical Launch Craft implementation: COMPILED / REGISTERED
+          - player-facing physical craft live playtest: NOT RUN
           - live flight feel: NOT RUN
+          - populated-craft save/reload: NOT RUN
+          - power / propellant / oxygen flight consumption: NOT CONNECTED
           - Earth-to-space continuity: NOT RUN
           - multiplayer playtest: NOT RUN
           - SHA-256: $SHA
