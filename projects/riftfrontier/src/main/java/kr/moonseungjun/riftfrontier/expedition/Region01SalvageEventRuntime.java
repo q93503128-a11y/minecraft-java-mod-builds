@@ -18,14 +18,9 @@ import net.minecraft.world.effect.MobEffects;
  * VFX/audio direction remains under human review.
  */
 public final class Region01SalvageEventRuntime {
-    public static final int TRIGGER_SALVAGE = 2;
     public static final int BLACKOUT_TICKS = 80;
 
     private Region01SalvageEventRuntime() {}
-
-    public static boolean isDue(int recoveredSalvage) {
-        return recoveredSalvage == TRIGGER_SALVAGE;
-    }
 
     public static boolean triggerIfDue(ServerPlayer player) {
         ServerLevel level = (ServerLevel) player.level();
@@ -33,7 +28,7 @@ public final class Region01SalvageEventRuntime {
         ExpeditionRun run = ExpeditionGameplayService.activeFor(player, world).orElse(null);
         if (run == null || run.status() != ExpeditionRun.Status.DEPLOYED) return false;
         int recovered = run.recoveredResources().getOrDefault(ExpeditionGameplayService.RESOURCE_ID, 0);
-        if (!isDue(recovered)) return false;
+        if (!Region01SalvageEventRules.isBlackoutDue(recovered)) return false;
 
         player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, BLACKOUT_TICKS, 0));
         level.sendParticles(
