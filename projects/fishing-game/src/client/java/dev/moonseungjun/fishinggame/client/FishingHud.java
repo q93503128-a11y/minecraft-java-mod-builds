@@ -52,7 +52,7 @@ public final class FishingHud {
         int found = CollectionRewards.discoveredCount(ClientFishingState.records(), location);
         int total = CollectionRewards.speciesCount(location);
 
-        graphics.text(minecraft.font, "FISHING", x + 11, y + 10, FishingUiTheme.TEXT_PRIMARY, true);
+        graphics.text(minecraft.font, "FISHING", x + 11, y + 10, FishingUiTheme.TEXT_PRIMARY, false);
         graphics.text(
                 minecraft.font,
                 ClientFishingState.locationName() + "  " + found + "/" + total,
@@ -86,7 +86,7 @@ public final class FishingHud {
                     "물결을 보고 입질을 기다리세요",
                     width / 2,
                     height - 34,
-                    FishingUiTheme.TEXT_PRIMARY
+                    FishingUiTheme.OVERLAY_PRIMARY
             );
         } else if (stage == 2) {
             renderFightHud(graphics, minecraft, rod, width, height);
@@ -96,7 +96,7 @@ public final class FishingHud {
 
         String notice = ClientFishingState.notice();
         if (!notice.isBlank()) {
-            graphics.centeredText(minecraft.font, notice, width / 2, 18, FishingUiTheme.TEXT_PRIMARY);
+            graphics.centeredText(minecraft.font, notice, width / 2, 18, FishingUiTheme.OVERLAY_PRIMARY);
         }
     }
 
@@ -112,7 +112,7 @@ public final class FishingHud {
         int barY = height - 28;
         float charge = FishingGameClient.castChargeProgress();
         String hint = charge >= 1.0f ? "최대 거리 · 놓아서 던지기" : "캐스팅 · 놓아서 던지기";
-        int hintColor = charge >= 1.0f ? FishingUiTheme.MONEY : FishingUiTheme.TEXT_PRIMARY;
+        int hintColor = charge >= 1.0f ? FishingUiTheme.OVERLAY_MONEY : FishingUiTheme.OVERLAY_PRIMARY;
 
         graphics.centeredText(minecraft.font, hint, width / 2, barY - 16, hintColor);
         graphics.blit(RenderPipelines.GUI_TEXTURED, FishingUiTheme.SLIDER, barX, barY, 0, 0, 190, 4, 190, 4);
@@ -122,7 +122,7 @@ public final class FishingHud {
                 barY,
                 barX + 1 + fillWidth,
                 barY + 4,
-                charge >= 1.0f ? FishingUiTheme.MONEY : FishingUiTheme.ACCENT
+                charge >= 1.0f ? FishingUiTheme.OVERLAY_MONEY : FishingUiTheme.OVERLAY_ACCENT
         );
     }
 
@@ -145,7 +145,7 @@ public final class FishingHud {
                 ClientFishingState.speciesName(),
                 width / 2,
                 height - 84,
-                FishingUiTheme.TEXT_PRIMARY
+                FishingUiTheme.OVERLAY_PRIMARY
         );
         graphics.centeredText(
                 minecraft.font,
@@ -155,20 +155,20 @@ public final class FishingHud {
                 hintColor(tension, safeMin, safeMax)
         );
 
-        graphics.text(minecraft.font, "줄 장력", barX, tensionY - 11, FishingUiTheme.TEXT_PRIMARY, false);
+        graphics.text(minecraft.font, "줄 장력", barX, tensionY - 11, FishingUiTheme.OVERLAY_PRIMARY, false);
         graphics.blit(RenderPipelines.GUI_TEXTURED, FishingUiTheme.SLIDER, barX, tensionY, 0, 0, 190, 4, 190, 4);
         int safeStart = barX + 1 + Math.round(BAR_INNER_WIDTH * safeMin);
         int safeEnd = barX + 1 + Math.round(BAR_INNER_WIDTH * safeMax);
         graphics.fill(safeStart, tensionY, safeEnd, tensionY + 4, 0xFF71D18A);
         int markerX = barX + 1 + Math.round(BAR_INNER_WIDTH * Math.max(0.0f, Math.min(1.0f, tension)));
         int markerColor = tension >= ReelMath.BREAK_TENSION
-                ? FishingUiTheme.DANGER
+                ? FishingUiTheme.OVERLAY_DANGER
                 : (tension > safeMax
-                        ? FishingUiTheme.WARNING
-                        : (tension < safeMin ? FishingUiTheme.ACCENT : FishingUiTheme.TEXT_PRIMARY));
+                        ? FishingUiTheme.OVERLAY_WARNING
+                        : (tension < safeMin ? FishingUiTheme.OVERLAY_ACCENT : FishingUiTheme.OVERLAY_PRIMARY));
         graphics.fill(markerX - 1, tensionY - 2, markerX + 2, tensionY + 6, markerColor);
 
-        graphics.text(minecraft.font, "포획 진척", barX, progressY - 11, FishingUiTheme.TEXT_PRIMARY, false);
+        graphics.text(minecraft.font, "포획 진척", barX, progressY - 11, FishingUiTheme.OVERLAY_PRIMARY, false);
         graphics.blit(RenderPipelines.GUI_TEXTURED, FishingUiTheme.SLIDER, barX, progressY, 0, 0, 190, 4, 190, 4);
         int progressWidth = Math.max(
                 0,
@@ -241,9 +241,9 @@ public final class FishingHud {
     }
 
     private static int hintColor(float tension, float safeMin, float safeMax) {
-        if (tension >= ReelMath.BREAK_TENSION) return FishingUiTheme.DANGER;
-        if (tension > safeMax) return FishingUiTheme.WARNING;
-        if (tension < safeMin) return FishingUiTheme.ACCENT;
-        return FishingUiTheme.SUCCESS;
+        if (tension >= ReelMath.BREAK_TENSION) return FishingUiTheme.OVERLAY_DANGER;
+        if (tension > safeMax) return FishingUiTheme.OVERLAY_WARNING;
+        if (tension < safeMin) return FishingUiTheme.OVERLAY_ACCENT;
+        return FishingUiTheme.OVERLAY_SUCCESS;
     }
 }

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.0-alpha.20
+
+- Repaired the Kenney UI composition after graphical play review exposed repeated full-panel tiles, visible seams and unreadable light-on-light text.
+- Replaced the old 100x100 full-panel repetition with one reusable nine-slice panel renderer, so HUD, catch-result, bag, bestiary and travel surfaces keep Kenney corners/borders without multiplying whole panels.
+- Split light-panel typography from world-overlay typography: menu/card text now uses a dark readable palette while cast/fight/notice text stays bright against the 3D world.
+- Removed the broken blue-button texture path from runtime rendering after it appeared as Minecraft's magenta/black missing-texture surface; travel/progression buttons now use the same verified Kenney panel skin with explicit hover/disabled treatment.
+- Re-authored Cheongram Lakeside's surrounding presentation as an inland-lake basin instead of exposing the flat-ocean generator outside the original thin shoreline ring.
+- Added a sloped authored lake bed, continuous exterior terrain, raised scenic ridge, grounded conifer belt and rockwork to hide the infinite-water horizon from the normal playable area.
+- Switched newly generated Lakeside chunks to the void biome and added targeted ambient-mob cleanup inside the dedicated fishing scenery while explicitly preserving Fishing Game encounter fish.
+- Added an alpha.20 world-quality marker so existing alpha.19 saves receive the Lakeside presentation repair once without deleting progression or rebuilding the terrain every tick.
+
 ## 0.1.0-alpha.19
 
 - Added the first simulator-style rebirth loop without adding a second currency or another management menu.

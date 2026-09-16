@@ -6,6 +6,7 @@ import dev.moonseungjun.fishinggame.network.FishingNetworking;
 import dev.moonseungjun.fishinggame.world.FishingLocationQualityBuilder;
 import dev.moonseungjun.fishinggame.world.FishingTravelManager;
 import dev.moonseungjun.fishinggame.world.FishingWorldManager;
+import dev.moonseungjun.fishinggame.world.LakesidePresentationRepair;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
@@ -21,6 +22,7 @@ public final class FishingGameMod implements ModInitializer {
         FishingNetworking.initialize();
         FishingSessionManager.initialize();
         FishingWorldManager.initialize();
+        LakesidePresentationRepair.initialize();
         FishingTravelManager.initialize();
         FishingLocationQualityBuilder.initialize();
         FishingGameRules.initialize();

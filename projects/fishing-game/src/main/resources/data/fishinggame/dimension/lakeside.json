@@ -3,7 +3,7 @@
   "generator": {
     "type": "minecraft:flat",
     "settings": {
-      "biome": "minecraft:plains",
+      "biome": "minecraft:the_void",
       "layers": [
         { "block": "minecraft:bedrock", "height": 1 },
         { "block": "minecraft:stone", "height": 114 },

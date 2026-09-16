@@ -5,7 +5,7 @@
 - Slug: fishing-game
 - Mod ID: fishinggame
 - Namespace: fishinggame
-- Mod version: 0.1.0-alpha.19
+- Mod version: 0.1.0-alpha.20
 - Minecraft: 26.2
 - Java: 25
 - Loader: Fabric
@@ -13,7 +13,7 @@
 - Fabric API: >=0.159.0+26.2
 - Gradle: 9.5.1
 - Build plugin: Fabric Loom 1.17.19
-- Final JAR: build/libs/fishing-game-0.1.0-alpha.19.jar
+- Final JAR: build/libs/fishing-game-0.1.0-alpha.20.jar
 - Required dependencies: Fabric API
 - Optional external mods: Essential, connection/hosting convenience only
 - Forbidden bundled dependencies: Essential
@@ -51,10 +51,13 @@ Travel is requested from the client but unlocked/validated by the server. Active
 
 ### Environment quality contract
 
+- Cheongram Lakeside: the playable lake must read as an inland authored lake rather than a thin island ring in an infinite flat ocean. Alpha.20 adds a shaped lake bed, continuous exterior terrain, a raised scenic ridge, grounded conifer belt and rockwork around the existing fishing structures.
+- Cheongram Lakeside suppresses stray vanilla ambient mobs inside the dedicated scenic area while explicitly preserving Fishing Game encounter fish. New chunks use the void biome to avoid introducing new ambient spawn ecology into the fishing-only map.
 - Gull Harbor: arrival promenade, layered shoreline rockwork, two breakwater arms with entrance beacons, three expanded fishing stations and a stronger lighthouse balcony/light silhouette.
 - Deepwater Channel: three dedicated outward-facing fishing pods, hazard-guide stripes at each approach, rail-protected circulation space, submerged guide lights and a tall signal mast.
 - Fishing edges remain open toward water so scenery does not fight the core interaction.
 - Environment work is deterministic and server-authored; versioned quality markers upgrade existing worlds once rather than rebuilding every tick.
+- Alpha.20 uses a separate Lakeside quality marker so existing alpha.19 saves receive the visual repair without deleting progression or requiring a fresh world.
 - Future environment revisions must use a new revision marker rather than silently relying on the original build marker.
 - Third-party map candidates remain reference-only until redistribution rights are explicit; do not bundle unknown-license maps.
 
@@ -146,7 +149,10 @@ Every catch is graded from its configured species weight/length ranges: `일반`
 
 Do not invent the visual language ad hoc. HUD, cast meter, bag, bestiary and travel screens reuse the Kenney CC0 UI language already bundled with the project. External assets and licenses are tracked in `THIRD_PARTY_ASSETS.md`.
 
-- The always-on HUD uses a 200px-wide two-tile Kenney panel so coin, bag, rod, location and B/J/M navigation remain readable.
+- A Kenney panel texture is a single framed surface, not a 100x100 wallpaper tile. Alpha.20 composes arbitrary panel sizes with nine-slice corners/edges/center so no full-panel seams appear in HUD, catch-result, bag, bestiary or travel screens.
+- Light Kenney surfaces use a dark panel-text palette; world-space cast/fight/notice overlays use a separate bright palette so one color scheme is not forced onto opposite backgrounds.
+- Buttons use the same verified Kenney panel skin and explicit accent/hover/disabled states. A missing/broken texture must never be allowed to render as Minecraft's magenta/black fallback.
+- The always-on HUD is a continuous 200x100 Kenney surface so coin, bag, rod, location and B/J/M navigation remain readable without a visible mid-panel seam.
 - Bag, bestiary and travel screens share title/subtitle hierarchy, separators, section labels, text colors and disabled-state treatment.
 - Unaffordable rod upgrades are visibly disabled client-side while the server remains the authority for the actual purchase.
 - At maximum rod tier, the existing progression button switches to `환생하기` and the same rod panel shows rebirth count, permanent sale multiplier, next cost and whether the bag must be sold first.
@@ -191,4 +197,4 @@ Do not hand the user a JAR for a tiny technical check. A user-facing test build 
 - complete cast -> target water -> catch -> sell -> upgrade -> travel -> collect -> rebirth loop
 - acceptable actual Minecraft screen quality
 
-Alpha.19 is BUILD VERIFIED and dedicated-server smoke verified by CI. It is not PLAYTESTED or GRAPHICAL CLIENT REVIEWED. Rebirth pacing, rebirth-panel readability, post-rebirth rod glint/name readability, hotspot readability, fight-style feel, fish motion, sound balance and screen composition still need actual Minecraft graphical/play review before those stronger statuses are claimed.
+The alpha.19 executable was BUILD VERIFIED and dedicated-server smoke verified, but its actual graphical review failed the screen-composition and Cheongram Lakeside presentation quality gate. Alpha.20 is the corrective slice for those failures. It must pass CI and then be visually re-tested in Minecraft before PLAYTESTED or GRAPHICAL CLIENT REVIEWED can be claimed.

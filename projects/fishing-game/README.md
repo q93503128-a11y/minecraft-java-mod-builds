@@ -6,7 +6,7 @@ Minecraft Java 26.2 Fabric standalone fishing progression game:
 
 Minecraft supplies the runtime/world renderer; the player experience is a dedicated fishing game rather than survival.
 
-## Current alpha.19 slice
+## Current alpha.20 slice
 
 - Adventure-mode fishing-only rules: no survival damage, hunger chores, mining/crafting loop or survival HUD.
 - Hold/release right click for charge casting; cast charge changes distance only, never rarity or catch odds.
@@ -31,7 +31,9 @@ Minecraft supplies the runtime/world renderer; the player experience is a dedica
 - Rebirth resets coins, catch bag and rod tier and returns the player to Cheongram Lakeside, while permanently adding +30% ordinary fish sale income per rebirth.
 - Post-rebirth rods keep a visible glint and rebirth count even after the tier resets, so permanent progression is not hidden behind a number-only bonus.
 - Rebirth reuses the existing `B` progression panel; no second currency or extra management screen is introduced.
-- HUD, bag, bestiary, travel and catch-result presentation share the bundled Kenney CC0 UI language.
+- HUD, bag, bestiary, travel and catch-result presentation share the bundled Kenney CC0 UI language. Alpha.20 composes each panel as one continuous nine-slice surface instead of repeating complete 100x100 panel images.
+- Cheongram Lakeside is presented as an inland lake: a shaped lake bed, continuous surrounding terrain, raised scenic ridge, grounded tree belt and targeted ambient-mob cleanup prevent the flat-ocean horizon and stray vanilla mobs seen in the alpha.19 graphical review.
+- Existing alpha.19 worlds receive the Lakeside presentation pass once through a versioned world-quality marker; progression/save data is not reset.
 - Essential remains optional and owns no game state.
 
 ## Controls
@@ -53,4 +55,4 @@ Minecraft supplies the runtime/world renderer; the player experience is a dedica
 
 ## Quality gate
 
-Alpha.19 is BUILD VERIFIED and dedicated-server smoke verified by CI, but that is not a playtest declaration. Rebirth pacing, the readability of the rebirth state in the bag panel, post-rebirth rod glint/name readability, hotspot readability, fight-style feel, fish motion, sound balance and overall screen composition still require an actual Minecraft graphical/play review before PLAYTESTED or GRAPHICAL CLIENT REVIEWED is claimed.
+Alpha.20 is the corrective UI/environment slice produced from an actual alpha.19 graphical review. The previous alpha.19 build was BUILD VERIFIED and dedicated-server smoke verified, but its screen composition and Cheongram Lakeside presentation failed the graphical quality gate. Alpha.20 must pass CI and then be re-opened in a real Minecraft client before PLAYTESTED or GRAPHICAL CLIENT REVIEWED is claimed.
