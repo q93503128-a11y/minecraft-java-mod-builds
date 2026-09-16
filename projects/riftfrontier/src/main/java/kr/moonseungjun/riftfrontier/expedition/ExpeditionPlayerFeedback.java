@@ -37,8 +37,9 @@ public final class ExpeditionPlayerFeedback {
 
     /**
      * Refreshes the connected-loop objective from existing authoritative state. In the field it projects salvage,
-     * threat and extraction state; back at the technical hub it projects the stored-salvage/supply decision needed
-     * for the next deployment. This owns no progression state and introduces no second lifecycle.
+     * threat and extraction state; back at the technical hub it projects both the stored-salvage/supply decision and
+     * the already-established station interactions needed for the next deployment. This owns no progression state
+     * and introduces no second lifecycle.
      */
     public static void currentStatus(ServerPlayer player) {
         ServerLevel level = (ServerLevel) player.level();
@@ -46,12 +47,18 @@ public final class ExpeditionPlayerFeedback {
         ExpeditionRun run = ExpeditionGameplayService.activeFor(player, world).orElse(null);
         if (run == null) {
             if (level == level.getServer().overworld() && player.blockPosition().distManhattan(TECHNICAL_HUB) <= 12) {
-                player.sendSystemMessage(Component.translatable(
+                Component logistics = Component.translatable(
                     "riftfrontier.expedition.feedback.provisioned",
                     world.expeditionSupply(),
                     world.securedRegion01Salvage(),
                     world.region01PreparationSupplyCost()
-                ), true);
+                );
+                player.sendSystemMessage(
+                    logistics.copy()
+                        .append(Component.literal(" • "))
+                        .append(Component.translatable("riftfrontier.expedition.feedback.hub_ready")),
+                    true
+                );
             }
             return;
         }
