@@ -1,18 +1,46 @@
 # Open-World RPG — R01 Vertical Slice / Opening 60–90 Minute Canon
 
-> Status: **DESIGN CANON — opening settlement, first-region flow, first mount, first dungeon and external motion/presentation sourcing locked before implementation**  
+> Status: **DESIGN CANON — opening settlement, named cast, first-session quest/scene flow, first mount, first dungeon, state/recovery behavior and player-facing text locked before implementation**  
 > Master gameplay canon: `GAME_DESIGN.md`  
+> Project contract: `PROJECT.md`  
 > Region: `REGIONS.md`  
+> Story: `WORLD_STORY_CANON.md`  
+> Quest/state: `QUEST_WORLD_STATE.md`  
 > Combat: `COMBAT_BALANCE.md`, `STATUS_AND_R01_ENCOUNTERS.md`  
 > Classes: `CLASS_COMBAT_KITS.md`, `CLASS_PROGRESSION.md`  
 > Equipment/economy: `LOOT_ECONOMY.md`, `EQUIPMENT_BALANCE.md`  
+> Recovery/food: `RECOVERY_PRODUCTION_APPEARANCE.md`  
 > Mounts: `MOUNTS.md`  
 > UI: `UI_DIRECTION.md`  
+> External provenance: `EXTERNAL_SOURCES.md`, `R01_ASSET_INTAKE.md`  
 > Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins.
 
-This file turns the already-designed R01 systems into one playable first-session slice. The objective is that implementation does not have to invent the opening route, service order, quest density, first mount timing, first dungeon room flow, or movement-animation direction.
+This file turns the already-designed R01 systems into one implementation-ready first-session content package. The objective is that an implementer does **not** invent the opening route, settlement/service order, named cast, quest conditions, dialogue beats, reward flow, failure recovery, first mount timing, first dungeon sequence or R01-to-Act-I handoff while coding.
 
-The target is **not a long tutorial**. The player should understand the game by moving through a real region, seeing a coherent settlement, using a few services, choosing a class, taking a short objective, finding optional content, unlocking the first mount and clearing the first dungeon.
+The target is **not a long tutorial**. The player learns the game by moving through a real region, meeting a small recurring cast, using useful services, choosing a class, following one grounded local problem, finding optional content, unlocking the first mount and clearing the first dungeon.
+
+---
+
+# 0. Player-facing text / development-language contract
+
+Internal development terminology may exist in source, data, tests and logs. It must never leak into the finished player-facing game.
+
+Forbidden in normal player-facing UI, dialogue, item text, quest text, map text, loading text, tutorial prompts and system messages:
+
+- `P0`, `P1`, milestone labels or production-priority tags;
+- `alpha`, `beta`, `prototype`, `temporary`, `placeholder`, `TODO`, `debug`, `developer`;
+- implementation class/registry/data IDs such as `r01_main_stage`, `quest.r01.*`, `todo_asset` or internal asset-intake labels;
+- asset-license/provenance notes;
+- test instructions or acceptance-check wording;
+- raw exception, missing-localization or internal enum text.
+
+Player-facing text must use only world/game language. Examples:
+
+- internal `r01_main_stage=QUARRY_DISCOVERED` → player sees **Roots Below Stone** and its current objective;
+- internal `first_root_class_selected=false` → player sees the class-selection interaction at the Wayfarers' Hall;
+- internal asset-binding failure is a build/content error, not a message saying `missing model` to the player.
+
+A player-visible build with unresolved localization keys or internal identifiers is rejected rather than treated as acceptable temporary presentation.
 
 ---
 
@@ -24,20 +52,20 @@ Useful precedent:
 
 - after a brief tutorial, the player is placed in a real low-level explorable area;
 - starting service areas expose useful crafting/storage/merchant functions;
-- Renown Hearts can progress from useful actions in an area without requiring the player to talk to an NPC before every activity;
+- local activity can progress through useful actions without requiring a dialogue click before every action;
 - POIs, events and world challenges encourage self-directed movement.
 
 Project adoption:
 
 - the opening settlement provides services quickly;
-- the first main objective gives direction but local activity can progress through multiple useful actions;
+- the first main objective gives direction but local activity can progress through several useful action types;
 - optional contracts and discoveries are visible without becoming a wall of quest markers;
-- not every event starts with a dialogue interaction.
+- not every event starts with an NPC interaction.
 
 Not adopted:
 
 - no map-completion checklist requiring every icon;
-- no MMO-style permanent heart/task panel over every local area.
+- no permanent MMO-style task panel over every local area.
 
 References:
 - `https://wiki.guildwars2.com/wiki/Starting_area`
@@ -49,17 +77,17 @@ References:
 Useful precedent:
 
 - an open-world field boss can be encountered early, escaped from and returned to later;
-- early difficult encounters signal that the world is not arranged as a mandatory linear corridor.
+- difficult optional encounters communicate that the world is not a mandatory linear corridor.
 
 Project adoption:
 
 - Regalhart is discoverable during the opening route but never gates the quarry dungeon;
-- hunt clues help the player understand that something important lives nearby without placing an exact GPS pin on it immediately;
+- hunt clues create a broad search region rather than an immediate exact GPS pin;
 - the player may leave, return later or defeat it early.
 
 Not adopted:
 
-- R01 is not tuned to repeatedly kill a new player for failing to understand a boss placed directly on the mandatory road.
+- R01 does not repeatedly kill a new player for failing to understand a boss placed directly on a mandatory road.
 
 ---
 
@@ -67,7 +95,7 @@ Not adopted:
 
 External-first applies to **animation/motion itself**, not only to character models or VFX.
 
-The following player-visible actions must begin from a selected external animation or external motion reference before implementation:
+The following player-visible actions require a selected external animation or external motion reference before gameplay source implementation of that action:
 
 - idle / locomotion transitions;
 - walk / jog / sprint;
@@ -85,49 +113,35 @@ The following player-visible actions must begin from a selected external animati
 - mount / dismount;
 - important class movement skills.
 
-**Forbidden production shortcut:** moving the player several blocks with code while leaving the vanilla run pose, a static body, or an improvised two-keyframe animation and calling that a dash.
+**Forbidden production shortcut:** moving the player several blocks with code while leaving a vanilla run pose, static body or improvised two-keyframe animation and calling that a dash.
 
 ## 2.1 Primary humanoid motion sources
 
-### KayKit Character Animations — primary dodge/dash/work-action source
+### KayKit Character Animations
 
-Current public pack direction:
+Primary dodge/dash/work-action source family.
 
-- 161 humanoid animations;
+Current direction:
+
 - CC0;
-- movement includes walking, running, jumping, crawling, sneaking and dodging;
-- also includes melee, ranged, bow, magic/spellcasting and tool/work actions;
-- current files are FBX / GLTF and are intended to be retargetable.
+- broad humanoid movement/combat/work coverage;
+- legacy/free releases explicitly expose `Roll`, `Dash Front`, `Dash Back`, `Dash Right`, `Dash Left`;
+- current FBX/GLTF clips are retargetable candidates.
 
-Legacy/free KayKit animation releases explicitly include:
+Selection order:
 
-```text
-Roll
-Dash Front
-Dash Back
-Dash Right
-Dash Left
-```
+1. inspect current KayKit pack for the best matching clip;
+2. if exact directional coverage is better in the legal CC0 legacy pack, use that clip;
+3. retarget/retime only as required for Minecraft proportions and canonical duration;
+4. reject a clip if body/feet cannot visually agree with real server movement.
 
-Therefore baseline project dodge/dash sourcing order is:
-
-1. inspect the current KayKit pack for the best current dodge/dash clips;
-2. if the current pack's clip is not superior or exact direction coverage is missing, use the still-legal CC0 legacy `Dash Front/Back/Right/Left` / `Roll` clips;
-3. retarget and retime only as needed for Minecraft proportions and canonical action duration;
-4. reject the clip and select another external clip if feet/body motion cannot match the real server movement convincingly.
-
-Source:
+Sources:
 - `https://kaylousberg.itch.io/kaykit-character-animations`
-- legacy source: `https://kaylousberg.itch.io/kaykit-animations`
+- `https://kaylousberg.itch.io/kaykit-animations`
 
-### Quaternius Universal Animation Library / Library 2 — locomotion/combat/parkour source
+### Quaternius Universal Animation Library / Library 2
 
-- CC0;
-- UAL: 120+ animation library covering locomotion, combat, spell-related and general actions;
-- UAL2: 130+ animation library with melee/armed combos, parkour and other movement actions;
-- 2026 updates provide root-motion and non-root-motion exports for locomotion/movement.
-
-Use these when their motion reads better for a specific class/weapon/action than KayKit.
+Use when locomotion/combat/parkour motion reads better than the KayKit alternative.
 
 Sources:
 - `https://quaternius.com/packs/universalanimationlibrary.html`
@@ -135,9 +149,9 @@ Sources:
 
 ## 2.2 Server-authoritative movement versus animation root motion
 
-The server remains authoritative for the real position, collision, stamina cost and i-frame state.
+The server owns real position, collision, Stamina cost and i-frame state.
 
-For the canonical universal dodge:
+Canonical universal dodge:
 
 ```text
 duration: 0.45 s
@@ -146,17 +160,16 @@ i-frame: 0.30 s
 Stamina cost: 30
 ```
 
-External root motion may be used to derive the intended motion curve, acceleration and body pose, but **client root motion does not own gameplay displacement**.
+External root motion may define the intended visual motion curve, but client root motion never owns gameplay displacement.
 
 Acceptance:
 
-- server movement and animation contact/footwork should visually agree;
-- start, i-frame body compression/evade moment and recovery should align to within about one server tick where applicable;
-- no visible wall penetration because the source clip expected more distance than collision allowed;
-- when collision shortens a dash, animation playback/motion must resolve gracefully instead of foot-sliding three blocks into a wall;
-- if an external clip cannot be reconciled, change the clip, not the canonical hitbox/movement merely to save the asset.
+- server movement and animation foot/body motion agree visually;
+- startup, i-frame body movement and recovery agree within roughly one server tick where practical;
+- collision-shortened dodges resolve without obvious wall penetration or prolonged foot sliding;
+- if a clip cannot be reconciled, replace the clip rather than distorting the canonical hitbox/movement solely to save the asset.
 
-The same rule applies to skill lunges, teleports with visible startup/recovery, mount charges and knockback reactions.
+The same rule applies to lunges, visible teleports, mount charges and knockback reactions.
 
 ---
 
@@ -164,539 +177,781 @@ The same rule applies to skill lunges, teleports with visible startup/recovery, 
 
 ## 3.1 Starting settlement architecture
 
-Primary architectural design source:
+Primary architecture/design source:
 
-- **Quaternius `Medieval Village MegaKit`**;
-- CC0;
-- 300+ modular environment pieces;
-- grid-based walls, roofs, stairs, doors/windows and related village components.
+- Quaternius `Medieval Village MegaKit` family;
+- use only the exact package/artifact whose source/license evidence is accepted in `R01_ASSET_INTAKE.md`;
+- its roof language, wall rhythm, timber/stone balance and modular composition define the starting settlement.
 
-Project use:
+Final buildings are translated into Minecraft-compatible block architecture/interiors when that improves collision/navigation/world integration. Model/display elements may provide signs, awnings, trims and props.
 
-- its silhouettes, roof language, wall rhythm, timber/stone balance and modular composition define the starting settlement;
-- final world buildings are translated into Minecraft-compatible block architecture/interiors where that produces better collision, navigation and world integration;
-- custom model/display elements may be used for signs, awnings, trims, props and non-block details;
-- do not replace the pack's coherent design with unrelated Minecraft-build styles building-by-building.
+Secondary fallback/reference:
 
-Secondary reference/fallback only:
-
-- Kenney `Fantasy Town Kit`, CC0, 160+ town objects;
-- use only when one missing building/prop concept cannot be solved cleanly in the main Quaternius family, and visually harmonize it before admission.
+- Kenney `Fantasy Town Kit`, CC0, only where a missing concept cannot be solved cleanly inside the primary family and the result still harmonizes visually.
 
 ## 3.2 Props / services
 
-Primary prop source:
+Primary prop family:
 
-- **Quaternius `Fantasy Props MegaKit`**;
-- CC0;
-- 200+ medieval/fantasy props including tools, weapons, books, potions, market stalls, chests, furniture, cauldron and blacksmith-related objects.
-
-Use it for:
-
-- forge dressing;
-- market stalls;
-- guild interior;
-- inn furniture;
-- bank/storage props;
-- potion/alchemy presentation;
-- quest-board dressing;
-- carts/crates/barrels;
-- dungeon utility props where suitable.
+- accepted Quaternius `Fantasy Props MegaKit` artifact/source;
+- forge, market, guild, inn, bank/storage, potion/alchemy, quest board, carts/crates/barrels and compatible dungeon props.
 
 ## 3.3 NPC source family
 
-Primary source:
+Primary body/outfit direction:
 
-- Quaternius `Universal Base Characters` — CC0, six base-character proportion variants + hairstyles, humanoid retargetable rig;
-- Quaternius `Modular Character Outfits - Fantasy` — CC0, 12 outfits / 62 modular pieces, compatible with the same rig and Universal Animation Library.
+- Quaternius `Universal Base Characters`;
+- Quaternius `Modular Character Outfits - Fantasy`;
+- exact accepted package/source/license follows `R01_ASSET_INTAKE.md`.
 
-The first settlement therefore uses a coherent NPC family instead of vanilla villagers or unrelated custom skins.
+No vanilla villagers or unrelated flat skins are final NPC presentation.
 
-Important NPCs receive different silhouette/outfit/hair/prop combinations:
-
-- guild steward / class trainer;
-- smith;
-- innkeeper;
-- merchant;
-- stable keeper;
-- healer/alchemist;
-- bank/storage keeper;
-- quest-board/guild staff;
-- selected guards / townsfolk.
-
-NPC work animations also come from KayKit/Quaternius external motion families: hammering, interacting, carrying, writing-like interaction, idles and other accepted clips.
+Exact model-part bindings are a **pre-code asset-intake gate**, not an implementation decision. Names, roles and scene functions below are already locked and do not change merely because a different accepted modular part fits better.
 
 ---
 
-# 4. Starting settlement physical layout
+# 4. Starting settlement — Alderford
 
-The settlement remains a long-term hub rather than a disposable tutorial village.
+The R01 starting settlement's final player-facing name is **Alderford**.
 
-Exact orientation follows imported Azari terrain, but the first accepted layout must preserve this readable topology:
+Alderford is a working river-road settlement that exists because quarry traffic, farms, travelers and river trade meet at a dependable ford. It remains useful long after the opening and must not read as a disposable tutorial village.
+
+## 4.1 Physical topology
+
+Exact world coordinates wait for the Azari spatial-closure pass, but the accepted placement must preserve this topology:
 
 ```text
 Approach road
   ↓
-Gate / first shrine
+Alderford Gate + first shrine
   ↓ 45–60 blocks
-Inn + central market square
-  ├─ Guild / class hall
-  ├─ Forge / smith
-  ├─ Bank / Material Vault
-  ├─ Healer / alchemy
-  ├─ Stable and visible Trail Stag paddock
-  └─ road exits / quest board
+Market Square / The Copper Kettle
+  ├─ Wayfarers' Hall
+  ├─ Holt Forge
+  ├─ Alderford Vault
+  ├─ Greenwater Remedies
+  ├─ Fordside Stables + visible Trail Stag paddock
+  ├─ Guild board / route board
+  └─ road exits / housing cluster
 ```
 
-Target spatial rules:
+Spatial requirements:
 
-- central square: roughly 25–35 blocks across;
-- main service doors should normally sit within about 15–35 blocks of the square center;
-- the stable is visible from the arrival/plaza route, but slightly toward the outward road so mounts do not crowd the central square;
-- the shrine/checkpoint is visible immediately after the gate reveal;
-- forge chimney/anvil silhouette, guild banner, inn sign, stable paddock and shrine vertical motif provide visual wayfinding without floating tutorial arrows;
-- at least two starter homes are visible as purchasable housing examples from the beginning;
-- no compulsory service tour quest.
+- central square roughly 25–35 blocks across;
+- main service doors normally 15–35 blocks from square center;
+- stable visible from arrival/plaza route but offset toward the outward road;
+- shrine visible immediately after gate reveal;
+- forge chimney/anvil silhouette, Wayfarers' banner, inn sign, stable paddock and shrine silhouette provide physical wayfinding;
+- at least two starter-home exteriors are visible from normal settlement circulation;
+- no compulsory service-tour quest.
 
-## 4.1 Functional building set at first visit
+## 4.2 Functional buildings at first visit
 
-Present from the beginning:
-
-1. gate/watch structure;
-2. shrine/checkpoint;
-3. inn/tavern;
-4. market/basic merchant;
-5. adventurer guild/class facility;
-6. forge/smith;
-7. bank/storage / Material Vault;
-8. healer/alchemy shop;
-9. stable;
+1. Alderford Gate/watch structure;
+2. gate shrine/checkpoint;
+3. **The Copper Kettle** inn/tavern and cooking service;
+4. market/basic merchant stall;
+5. **Wayfarers' Hall** — guild/class facility;
+6. **Holt Forge** — smith/forge;
+7. **Alderford Vault** — personal storage / Material Vault access;
+8. **Greenwater Remedies** — healer/alchemy;
+9. **Fordside Stables**;
 10. small housing cluster.
 
-Buildings do not magically spawn after quest completion. Progress unlocks service depth, recipes or NPC dialogue inside already-existing spaces.
+Buildings exist from the beginning. Progress unlocks service depth, recipes, dialogue and world context rather than magically spawning the buildings.
 
 ---
 
-# 5. NPC density / performance
+# 5. Named Alderford cast
 
-Starter-hub target at ordinary daytime population:
+These names and functions are final player-facing R01 canon. Asset intake may alter exact face/hair/outfit pieces only; it does not rename/rewrite the character during implementation.
 
-- **8–12 functional/service/guard NPCs**;
-- **4–8 ambient townsfolk** near square/inn/roads;
-- do not spawn 30 pathfinding NPCs merely to make the square look busy.
+| Character | Role | Normal Alderford anchor | R01 narrative/gameplay function |
+|---|---|---|---|
+| **Mara Venn** | Guild Pathfinder | gate/Wayfarers' Hall | primary R01 main-story guide; practical route/safety perspective; recurring early-region character |
+| **Elian Rook** | Guild Steward / class trainer | Wayfarers' Hall | first root-class selection, class-service explanation |
+| **Daren Holt** | Smith / engineer | Holt Forge | forge/service; recurring Engineer/Smith story role; practical machinery interpretation |
+| **Lysa Fen** | healer / alchemist | Greenwater Remedies | recovery/alchemy introduction; `Riverbank Remedies` |
+| **Toma Reed** | stable keeper | Fordside Stables | Trail Stag introduction and registration |
+| **Brin Hale** | innkeeper / cook | The Copper Kettle | rest, food/cooking service, grounded settlement life |
+| **Nessa Bell** | market merchant | market square | early consumable/material buy/sell service |
+| **Oren Quill** | vault keeper | Alderford Vault | storage / Material Vault explanation on first use only |
+| **Sera Wren** | cartographer / ranger | route board / west edge | recurring Cartographer/Ranger role; `Signs in the Meadow`; route/ecology perspective |
+| **Ilyan Voss** | Anchor scholar | Copper Kettle guest table before clear; Wayfarers' Hall after clear | recurring Anchor Scholar; interprets quarry evidence without knowing everything in advance |
+| **Kest Arden** | rival wanderer | optional field appearances | recurring Rival Wanderer; optional R01 hunt encounter; no companion AI |
 
-Behavior:
+Daytime target remains **8–12 functional/service/guard NPCs + 4–8 ambient townsfolk**. The named roster does not imply all eleven characters pathfind simultaneously around the square.
 
-- service NPCs use short local anchor zones rather than full-village wandering AI;
-- ambient NPCs use bounded patrol/idle routes;
-- smith animation runs at the forge, stable keeper works near paddock, merchant interacts with stall, etc.;
-- NPC actions are visually supported by external animations/props;
-- night schedule may move selected NPCs indoors later, but is not required to block service use in the opening slice.
+Behavior rules:
 
-No vanilla villagers are used as final NPCs.
+- service NPCs use short local anchor zones;
+- ambient townsfolk use bounded patrol/idle routes;
+- visible work uses accepted external animations/props;
+- normal services stay usable regardless of optional ambient schedules;
+- no vanilla villagers are final population.
+
+## 5.1 First-visit ambient character presentation
+
+The player does not have to talk to everyone.
+
+- Mara is encountered naturally near the gate/Wayfarers' route after the opening-road disturbance.
+- Elian is the only mandatory settlement interaction before normal class-based progression.
+- Ilyan is physically present at The Copper Kettle before the quarry clear, but his early dialogue does not explain Anchors or spoil the mystery.
+- Daren, Lysa, Toma, Brin, Nessa, Oren and Sera are usable immediately in their roles.
+- Kest is not required for R01 completion.
 
 ---
 
 # 6. Opening loadout before class selection
 
-The approach road occurs before the guild class selection, so the player needs a small universal combat vocabulary without inventing a temporary class.
+Starting equipment/state:
 
-Starting equipment:
+```text
+Heartland Arming Sword — Standard, Item Lv1
+Watch Buckler — Standard, Item Lv1
+Healing Potion x1 — loaded in the Recovery Belt
+Recovery Belt loaded capacity — 4 total slots
+starting Gold — 150
+```
 
-- Standard Item Lv1 `Heartland Arming Sword`;
-- Standard Item Lv1 `Watch Buckler`;
-- one basic healing consumable once the consumable system is finalized;
-- starting Gold remains the canonical ~150 Gold.
+The starting Healing Potion uses the canonical recovery rule in `RECOVERY_PRODUCTION_APPEARANCE.md`:
+
+```text
+35% MaxHP
+0.95 s drink action
+0.72 s resolution point
+6.0 s shared Recovery lockout after resolution
+```
 
 Available before class selection:
 
 - basic weapon attack;
 - sprint;
 - universal dodge;
-- guard / perfect guard with the buckler;
-- interact.
+- guard / perfect guard with Watch Buckler;
+- interact;
+- Recovery Belt use.
 
-Unavailable until class selection:
+Unavailable until first root-class selection:
 
-- class mechanic;
-- four class actives;
-- ultimate.
+- root-class mechanic;
+- four root-class active skills;
+- root-class ultimate.
 
-On the first free root-class selection, the guild provides **one non-sellable-for-profit starter package** appropriate to making that class immediately functional:
+## 6.1 First root-class starter grant
 
-| Root class | Recommended free starter equipment |
+First root-class selection is free.
+
+| Root class | Canonical first-selection grant |
 |---|---|
-| Warrior | keep Heartland Arming Sword + Watch Buckler; no duplicate Gold-value grant |
+| Warrior | no duplicate weapon; keep Heartland Arming Sword + Watch Buckler |
 | Hunter | Riverwood Bow |
 | Cleric | Initiate Staff |
 | Mage | Initiate Wand |
-| Guardian | keep sword + Watch Buckler |
+| Guardian | no duplicate weapon; keep Heartland Arming Sword + Watch Buckler |
 
-Rules:
+Every granted class starter item uses:
 
-- this is a usability grant, not a class weapon lock;
-- it occurs only for the player's first-ever root-class selection;
-- switching classes later does not create infinitely sellable starter gear;
-- granted gear cannot be sold until replaced or may have zero sell value; implementation chooses the cleanest anti-exploit representation without changing its combat stats.
+```text
+starter_bound: true
+sell_value: 0
+tradeable: false
+dismantle_yield: 0
+```
+
+It may be destroyed only through the normal deliberate item-discard confirmation once the player no longer wants it. Changing class never grants another sellable copy.
+
+This is a usability grant, not a class weapon lock.
 
 ---
 
-# 7. Opening timeline target
+# 7. Opening timeline and authored content
 
-Normal first-play flow should usually reach the Earthloong first clear in roughly **55–75 minutes**. Optional exploration, Regalhart, extra gathering, inventory inspection, housing browsing or experimentation can naturally extend the same first session toward **90+ minutes**.
+Normal first play should usually reach Earthloong first clear in roughly **55–75 minutes**. Optional exploration, Regalhart, gathering, housing browsing or experimentation can extend the first session toward 90+ minutes.
 
-This is a pacing target, not a speedrun timer or forced mission clock.
+This is a pacing target, not a mission timer.
 
 ## Phase A — 0:00–0:04 — approach road / first reveal
 
-Goals:
-
-- establish movement and camera;
-- demonstrate that creatures are non-vanilla;
-- teach one real combat read without a tutorial arena;
-- reveal the settlement quickly.
-
 Sequence:
 
-1. player begins on a short approach road/outskirts route;
-2. Louxia/gazelle-style ecology is visible at a distance before combat;
-3. a single authored Meadow Viper encounter demonstrates its coil/warning tell;
-4. one compact context prompt may show `Dodge` only when the Viper commits to its first bite;
-5. player can kill it, guard it, dodge it or simply back away;
-6. crest/gate reveal shows the settlement;
-7. first shrine/checkpoint activates at the gate/inside approach.
+1. player begins on the Alderford approach road as an independent traveler;
+2. Louxia/gazelle-style ecology is visible before combat;
+3. one authored Meadow Viper threatens the road;
+4. the first committed bite may trigger one compact contextual **Dodge** prompt;
+5. player may defeat, guard, dodge or retreat from the Viper;
+6. the ridge/road bend reveals Alderford;
+7. the gate shrine activates on legitimate approach interaction.
 
-The opening pre-shrine death remains economically free as already canonical.
-
-Animation requirements:
-
-- run/sprint from external locomotion source;
-- dodge from accepted KayKit/Quaternius external clip;
-- sword/basic guard from Better Combat/external animation family;
-- Viper uses its accepted external Snake animation family.
+Pre-shrine death remains economically free under existing death canon.
 
 No forced `press W`, `press space`, `talk to three NPCs` corridor.
 
-## Phase B — ~0:04–0:10 — settlement / class choice
+### Mara's gate line
+
+After the player reaches the gate following the road disturbance, Mara may deliver this short world line without locking the camera:
+
+> “You picked a lively road to arrive on. If you're looking for work, the Wayfarers' Hall is ahead. Quarry carts have stopped coming back on time.”
+
+This line is skippable and is not itself a quest-completion requirement.
+
+## Phase B — ~0:04–0:10 — Alderford / first class
 
 On first arrival:
 
 - shrine is usable;
-- guild/class facility is immediately reachable;
-- forge, market, bank, inn, stable and healer are visible/usable at their baseline level;
-- quest board shows **1 main objective + 2 optional contracts**;
-- first root class selection is free.
+- all baseline settlement services are physically present;
+- Wayfarers' Hall is clearly reachable from the square;
+- the guild board displays `Dust on the Quarry Road`, `Riverbank Remedies`, `Signs in the Meadow`;
+- the main entry is visibly distinguished from optional contracts;
+- first class selection is free.
 
-Class selection immediately activates its root mechanic, four actives and root ultimate under `CLASS_COMBAT_KITS.md`.
+### Elian Rook — first class interaction
 
-The player is free to leave town immediately after choosing a class.
+Player-facing opening line:
 
-## Phase C — ~0:10–0:25 — first open-field loop
+> “Choose the discipline you want to begin with. You can learn another path later; this is where you start.”
 
-Main objective: **Dust on the Quarry Road**.
+Class selection uses the canonical class UI and immediately grants the root mechanic, four actives and ultimate defined in `CLASS_COMBAT_KITS.md`.
 
-Narrative function:
+After the server commits first class selection and starter grant, `Dust on the Quarry Road` becomes the current main objective. The player may leave Alderford immediately; no other service interaction is mandatory.
 
-- traffic toward the old quarry has become unsafe;
-- do not explain the full Earthloong/root problem yet.
+## Phase C — ~0:10–0:25 — Dust on the Quarry Road
 
-The first road area uses a flexible local objective rather than a linear checklist. Progress can come from several nearby useful actions, for example:
+Final player-facing quest title: **Dust on the Quarry Road**.
 
-- recover lost road cargo;
-- drive off/defeat a Meadow Viper threat;
-- inspect one damaged wagon/road marker;
-- gather one nearby Hardwood/Iron/Healing Herb node relevant to repair/supplies;
-- help resolve a small local event if it is active.
+Quest giver/owner: **Mara Venn**.  
+Category: Main.  
+Repeatability: once per player.  
+Failure: cannot permanently fail.
 
-A player should not need to do every possible action.
+Mara's offer line:
 
-Reward target:
+> “The old quarry road should be dull work. Today it isn't. Check the wrecks, help anyone still out there, and bring back enough of the picture that we know what we're dealing with.”
+
+### Completion model
+
+The road area contains five authored **distinct evidence/action categories**:
+
+1. recover the lost cargo bundle from the overturned road cart;
+2. defeat or meaningfully participate against the authored Meadow Viper road threat;
+3. inspect the broken quarry-road marker;
+4. gather one valid nearby R01 field resource from Iron Ore / Hardwood / Healing Herb;
+5. meaningfully participate in the small road-assistance event if it is active.
+
+The quest completes after **any 3 distinct categories** are credited.
+
+Rules:
+
+- repeating one category cannot supply multiple required credits;
+- if the dynamic road-assistance event is inactive/unavailable, the other four categories still make the quest completable;
+- cargo/marker interactions are personal logical state even when the world prop is shared;
+- combat/support participation follows `QUEST_WORLD_STATE.md`;
+- no item must be physically carried back to Mara after the three-category requirement is complete.
+
+Reward on server-authoritative completion:
 
 ```text
-EXP: ~35% of current next-Lv requirement
+EXP: 35% of current next-Lv requirement
 Gold: 90
-Class XP: ~25% of current Class Rank requirement
+Class XP: 25% of current Class Rank requirement
 ```
 
-First optional contracts:
+Mara's completion line:
 
-### Riverbank Remedies
+> “That's more than bad luck. Traffic and wildlife are both being pushed off their usual lines. The quarry crew marked roots in the lower workings before they pulled out.”
 
-- gather a small amount of Healing Herb from a marked broad river/forest-edge area;
-- the nodes themselves remain personal;
-- no requirement to craft ten potions afterwards.
+Completion unlocks:
+
+- `Roots Below Stone` as the next main objective;
+- Toma Reed's explicit `A Stag at the Ford` hint if the player has not already discovered the event;
+- `Steel in the Grass` remains discovery-gated rather than appearing automatically.
+
+### Reconnect / defeat behavior
+
+- distinct action-category credits persist immediately as personal state;
+- defeat does not reset credited categories;
+- disconnect does not respawn/duplicate the personal cargo reward state;
+- if an authored enemy despawns, alternative categories remain sufficient.
+
+---
+
+# 8. First optional contracts
+
+## 8.1 Riverbank Remedies
+
+Quest giver: **Lysa Fen**.  
+Category: Contract.  
+Availability: first Alderford arrival.  
+Repeatability: once per player.
+
+Board text:
+
+> “Greenwater Remedies needs three fresh Healing Herbs from the river edge. Bring them to Lysa Fen.”
+
+Lysa's accept line:
+
+> “Three fresh river herbs will do. Don't strip a whole patch; take what you need and leave the bank alive.”
+
+Objective:
+
+```text
+gather 3 Healing Herb from the player's personal valid R01 herb nodes
+return to Lysa Fen
+```
+
+Trade-acquired herbs do not satisfy this first teaching contract; the objective specifically demonstrates gathering. The herbs are consumed on turn-in.
 
 Reward:
 
 ```text
-EXP: ~20%
+EXP: 20% of current next-Lv requirement
 Gold: 60
-Class XP: ~15%
+Class XP: 15% of current Class Rank requirement
+Healing Potion x1
 ```
 
-### Signs in the Meadow
+Lysa's completion line:
 
-- investigate a damaged cart / hoof-scarred roadside site;
-- teaches bison/large-creature territory and foreshadows Steelboar/Regalhart rather than immediately demanding an elite kill.
+> “Good. That's enough for the road and enough left for the next traveler. Keep a dose ready before you go underground.”
+
+Alchemy itself is already mechanically available when the player owns ingredients; this quest does **not** gate the service.
+
+## 8.2 Signs in the Meadow
+
+Quest giver: **Sera Wren**.  
+Category: Contract / discovery teaching.  
+Availability: first Alderford arrival.  
+Repeatability: once per player.
+
+Sera's accept line:
+
+> “Big tracks don't mean ‘go kill the biggest thing nearby.’ Learn what made them first. Check the damaged cart and the meadow edge.”
+
+Authored sites:
+
+1. damaged cart with broad impact/hoof evidence;
+2. churned meadow edge near a territorial route;
+3. broken fence/tree scoring closer to the grove boundary.
+
+Completion:
+
+```text
+inspect any 2 of the 3 sites
+```
+
+This contract teaches territorial ecology and foreshadows Steelboar/Regalhart. It never requires an elite or boss kill.
 
 Reward:
 
 ```text
-EXP: ~20%
+EXP: 20% of current next-Lv requirement
 Gold: 70
-Class XP: ~15%
+Class XP: 15% of current Class Rank requirement
 ```
 
-## 7.1 Service depth unlocks are material-driven, not errand-driven
+Sera's completion line:
 
-When the player first obtains the relevant material and returns/opens the service:
+> “Steelboar made part of it. The deeper scoring didn't. If you follow the larger trail, do it because you chose to—not because a board told you to.”
 
-- Iron Ore / Hardwood makes the basic forge crafting options meaningful/visible;
-- Healing Herb makes basic alchemy options meaningful/visible;
-- Louxia Meat/food materials expose the inn/cooking interaction when that consumable data is finalized;
-- Verdant Crystal later reveals the first Superior R01 recipe tier.
+---
 
-There is no separate `talk to smith so he teaches you what iron is` quest.
+# 9. Service-depth triggers — exact R01 behavior
 
-## Phase D — ~0:25–0:40 — first Trail Stag
+Services are useful without errand quests.
 
-Quest/event: **A Stag at the Ford**.
+## 9.1 Forge
+
+When the player first possesses relevant materials, Holt Forge shows currently legal recipes automatically:
+
+- Iron Ore / Hardwood → baseline R01 forge options defined in `EQUIPMENT_BALANCE.md`;
+- Verdant Crystal → first Superior R01 recipe options defined in the equipment canon;
+- Earthloong Scale → signature-craft progress after first clear.
+
+Daren does not require a `teach me what iron is` quest.
+
+First-use line:
+
+> “If it's in your Material Pouch, I can work from it. Bring better material and you'll see better options.”
+
+## 9.2 Alchemy
+
+Canonical R01 recipes are already final in `RECOVERY_PRODUCTION_APPEARANCE.md`:
+
+```text
+Healing Potion: 2 Healing Herb + 5 Gold
+Focus Draught: 1 Healing Herb + 1 Louxia Glow + 8 Gold
+Cleansing Tonic: 1 Healing Herb + 1 Louxia Glow + 10 Gold
+```
+
+## 9.3 Cooking
+
+Canonical R01 meals are already final:
+
+```text
+Herbed Louxia Roast: 2 Louxia Meat + 1 Healing Herb → MaxHP +6% / 20 min
+Trail Skewers: 1 Louxia Meat + 1 Healing Herb → Stamina recovery +10% / 20 min
+Glow Broth: 1 Louxia Meat + 1 Louxia Glow + 1 Healing Herb → Mana recovery +10% / 20 min
+```
+
+There is no unresolved `finalize consumable data later` dependency in the R01 content flow.
+
+---
+
+# 10. A Stag at the Ford
+
+Final player-facing title: **A Stag at the Ford**.  
+Quest/event owner: **Toma Reed**.  
+Category: Regional discovery/event.  
+Target local Lv: 3–4.  
+Normal timing: 25–40 minutes.  
+Repeatability: unlock/reward once per player; physical rescue encounter may reset for incomplete players.
 
 Availability:
 
-- stable and keeper are visible from first arrival;
-- event becomes directly hinted after the road objective;
-- the player can also discover the ford first and trigger the event organically;
-- target local Lv: ~3–4;
-- normal timing: first 25–40 minutes.
+- Fordside Stables and Toma are visible from first arrival;
+- after `Dust on the Quarry Road`, Toma's direct hint becomes available;
+- discovering the ford event first starts it organically without requiring the hint.
 
-Event flow:
+Toma's hint line:
 
-1. find a Trail Stag near a damaged riverside harness/cart route;
-2. resolve 1–2 small threats / unsafe approach conditions, normally Meadow Vipers or a local territorial hazard;
-3. use a short external interaction/calming animation rather than a menu-only `claim mount` button;
-4. mount the Stag;
-5. ride it back toward the stable along a short road segment, naturally teaching steering/jump/dismount;
-6. stable registration becomes permanent and free.
+> “One of my stags tore loose by the ford. If you find it, don't chase it. Clear the danger, then let it come to you.”
 
-This is **not an escort quest**: the player rides the animal; the AI does not slowly walk beside the player.
+Event sequence:
+
+1. enter the authored ford event volume;
+2. locate the frightened Trail Stag near the damaged harness/cart route;
+3. clear the event hazard pack — solo baseline **2 Meadow Vipers**, adding **+1 Viper-equivalent threat per additional active participant up to 4 total threats**;
+4. perform the accepted calming interaction animation at close range after combat state ends;
+5. mount the Stag;
+6. ride the short authored ford-to-stable road segment;
+7. enter the stable registration volume while mounted or leading the Stag after a legal dismount;
+8. permanent Trail Stag unlock commits per eligible player.
+
+This is not an escort quest. The player rides the animal; no slow walking AI follows the player.
 
 Reward:
 
 ```text
 Trail Stag permanent unlock
 Gold: 60
-EXP: ~25%
-Class XP: ~20%
+EXP: 25% of current next-Lv requirement
+Class XP: 20% of current Class Rank requirement
 ```
+
+Toma's completion line:
+
+> “There. It knows your hands now. Call it when the road is open enough to ride; don't ask it to fight your battles.”
 
 Movement remains `MOUNTS.md`:
 
-- 6.4 b/s cruise;
-- forgiving steering;
-- no mount stamina drain;
-- no mount attack.
+```text
+cruise: 6.4 b/s
+forgiving steering
+no mount Stamina drain
+no mount attack
+```
 
-External source:
+External model direction: accepted Quaternius Stag candidate from the appropriate animated-animal source package, exact artifact/animation binding required by the pre-code asset gate.
 
-- Quaternius `Ultimate Animated Animal Pack` Stag, CC0.
+### Failure / reconnect
 
-## Phase E — ~0:35–0:55 — quarry approach / optional major threats
+- player defeat before registration resets only that player's incomplete logical step;
+- event-owned Stag/hazard state may reset after 60 seconds with no active incomplete participant in the event volume;
+- disconnect before registration resumes at `FORD_DISCOVERED` or `STAG_CALMED` only if the corresponding server commit occurred;
+- permanent unlock/reward is atomic and cannot be farmed by replaying the physical event.
 
-Main objective: **Roots Below Stone**.
+---
 
-Flow:
+# 11. Roots Below Stone
 
-- travel toward the abandoned quarry;
-- encounter visible ore nodes and the first deep/cave transition;
-- first Cave Centipede teaches vertical awareness;
-- inspect the old lower-workings entrance/root intrusion;
-- reveal the dungeon entrance and Suggested Lv 8 warning.
+Final player-facing title: **Roots Below Stone**.  
+Quest owner: **Mara Venn**.  
+Category: Main.  
+Availability: completion of `Dust on the Quarry Road`.  
+Failure: cannot permanently fail.
 
-Reward for the investigation milestone before entering the dungeon:
+Mara's start line:
+
+> “The quarry crew marked roots where there shouldn't be roots. Get eyes on the lower workings. If the entrance is open, don't assume miners opened it.”
+
+Exact pre-dungeon stages:
+
+1. reach the old quarry overlook discovery volume;
+2. descend to the lower-workings approach by any legal route;
+3. inspect the root-split masonry at the lower entrance;
+4. the player receives the exact dungeon marker and **Suggested Lv 8** warning;
+5. entering the quarry dungeon advances the main objective to `Reach the root-breached workings`.
+
+Milestone reward after personal inspection of the lower entrance:
 
 ```text
-EXP: ~40%
+EXP: 40% of current next-Lv requirement
 Gold: 120
-Class XP: ~25%
+Class XP: 25% of current Class Rank requirement
 ```
 
-No hard Lv8 gate. A skilled under-level player may enter.
+No hard Lv8 gate exists. A skilled under-level player may enter.
 
-### Optional Steelboar contract — Steel in the Grass
+The first Cave Centipede and visible ore/cave transition provide the intended encounter/readability teaching without requiring an arbitrary kill count.
 
-The contract appears only after the player has seen/identified a Steelboar or its clear territorial evidence.
+---
 
-Reward beyond the elite's normal loot/EXP:
+# 12. Optional R01 major-threat content
+
+## 12.1 Steel in the Grass
+
+Final title: **Steel in the Grass**.  
+Quest owner: **Sera Wren**.  
+Availability: only after the player personally identifies a Steelboar or clear authored Steelboar territorial evidence.  
+Completion: meaningfully participate in defeating one qualifying Steelboar after contract activation.  
+Not required for quarry access.
+
+Sera's offer line:
+
+> “That plated boar has started pushing closer to the road. If you choose to hunt it, keep clear of the first charge. The armor matters less once it commits.”
+
+Reward beyond normal elite reward:
 
 ```text
-EXP: ~30%
+EXP: 30% of current next-Lv requirement
 Gold: 100
-Class XP: ~15%
+Class XP: 15% of current Class Rank requirement
 ```
 
-It is not required for dungeon access.
+## 12.2 The Crowned Trail — Regalhart discovery
 
-### Regalhart discovery — the Crowned Trail
+Final journal/discovery title: **The Crowned Trail**.
 
-Regalhart is not shown as a precise boss pin on first arrival.
+Regalhart never receives an exact first-arrival boss pin.
 
-Three authored clue types exist across the meadow/deep-grove boundary:
+Three authored clue types across meadow/deep-grove boundary:
 
-1. antler-height scoring on a large tree / wooden structure;
-2. unusually deep hoof furrows / trampled vegetation;
-3. a broken hunter/road marker with visible crown-shaped antler damage.
+1. antler-height scoring on a large tree/wooden structure;
+2. unusually deep hoof furrows and trampled vegetation;
+3. a broken hunter/road marker with crown-shaped antler damage.
 
 Discovering any **2 of 3**:
 
 - adds a broad search region to the map;
-- adds a small field-boss/hunt entry to the journal;
-- does **not** spawn Regalhart artificially if its encounter controller is already valid;
-- does not gate fighting it if the player finds the boss before finding clues.
+- adds `The Crowned Trail` hunt/discovery entry;
+- does not spawn Regalhart artificially if the encounter controller is already valid;
+- does not gate fighting Regalhart if the player finds it first.
 
-This keeps the boss optional and discoverable rather than turning exploration into GPS following.
+Finding/fighting Regalhart first immediately records boss discovery and preserves remaining clue interactions as optional world context; it does not retroactively force clue collection.
 
-## Phase F — ~0:45–0:70 — first quarry dungeon
+### Kest Arden optional first appearance
 
-Target first-clear duration remains **15–25 minutes**.
+If Kest is present for the player's first broad-search entry or first Regalhart aftermath, use one short scene only. He is another competent wanderer, not a quest dispenser.
 
-The dungeon is a physical authored location in Azari/R01, not a random maze.
+First-search line:
 
-### External architecture direction
+> “If you're following the crown marks, you're late by about an hour. Good news: it didn't stay where I found them.”
+
+If the player defeats Regalhart before meeting Kest, his later R01 line changes to:
+
+> “So you're the one who brought down the crowned hart. Saves me a long walk.”
+
+No reward/progression depends on meeting Kest in R01.
+
+---
+
+# 13. First quarry dungeon
+
+Target first-clear duration: **15–25 minutes**.
+
+The quarry is one physical authored Azari/R01 location, not a random maze.
+
+## 13.1 Architecture direction
 
 Primary external design/reference bases:
 
-- Quaternius `Modular Dungeon Pack`, CC0;
-- Quaternius `Ultimate Modular Ruins Pack`, CC0;
-- Quaternius `Fantasy Props MegaKit`, CC0.
+- accepted Quaternius `Modular Dungeon Pack` source;
+- accepted Quaternius `Ultimate Modular Ruins Pack` source;
+- accepted Quaternius `Fantasy Props MegaKit` source.
 
-DeCubed Dungeons may remain a current 26.2 **layout/reference/local-only** source under its CC-BY-NC-SA terms, but its vanilla spawners/loot/style are not copied into the public project as the canonical R01 dungeon.
+DeCubed Dungeons may remain a 26.2 layout/reference/local-only source under its actual terms; vanilla spawners/loot/style are not retained as canonical R01 content.
 
-The final block structure should preserve a coherent quarry → ruined workings → root-overgrown chamber language rather than stitching unrelated downloaded rooms together.
+Visual language:
 
-### Room / encounter sequence
+```text
+ordinary quarry
+→ abandoned lower workings
+→ root intrusion
+→ old worked masonry that clearly predates the quarry
+→ Earthloong chamber / buried Anchor-era relay evidence
+```
 
-#### 1. Upper Mining Gallery
+Do not stitch unrelated downloaded rooms together.
 
-Purpose:
+## 13.2 Room / encounter sequence
 
-- establish abandoned industrial/quarry identity;
-- expose Iron Ore and mining props;
-- short first combat group using Cave Centipede / small accepted threats;
-- one visible optional side ledge/cache.
+### 1. Upper Mining Gallery
 
-Target active combat: ~45–75 seconds.
+- abandoned quarry identity;
+- Iron Ore / mining props;
+- one short Cave Centipede/small-threat group;
+- one visible optional side ledge/cache;
+- active combat target 45–75 seconds.
 
-#### 2. Collapsed Hoist Chamber
+### 2. Collapsed Hoist Chamber
 
-Purpose:
+- compact traversal around broken platforms/hoist;
+- vertical centipede pressure;
+- nearby mechanism opens a persistent-in-run lift shortcut toward entrance;
+- no required Hardwood/material sacrifice;
+- room target 2–4 minutes.
 
-- one compact traversal problem around broken platforms/hoist rather than a puzzle menu;
-- a second combat space with vertical centipede pressure;
-- nearby mechanism opens a **persistent-in-run lift shortcut** back toward the entrance.
+### 3. Root-Breached Workings
 
-No mandatory material sacrifice is required to repair the hoist. The player should not be softlocked for failing to carry Hardwood.
+- visual transition into fantasy ecology and old masonry;
+- one Nature Spirit elite using canonical Living Shell/melee identity;
+- Verdant Crystal/herb side cache;
+- no repeated copies of the same elite;
+- active combat target 15–25 seconds, room total 2–4 minutes.
 
-Target room time: ~2–4 minutes.
+### 4. Relay Gallery / boss antechamber
 
-#### 3. Root-Breached Workings
+This replaces an empty generic breathing room with a small but important environmental-story beat.
 
-Purpose:
+Visible features:
 
-- visual transition from ordinary quarry into fantasy ecology;
-- one **Nature Spirit elite** encounter using its existing Living Shell / melee identity;
-- Verdant Crystal / herb side cache shows why the roots matter to the region's materials.
+- quarry supports stop and much older fitted stone begins;
+- a damaged relief/plate shows several lines radiating beyond Alderford;
+- no readable exposition paragraph is placed on a wall;
+- personal interaction records **Quarry Relay Evidence** as journal/key-state, not as a normal inventory item or currency;
+- opened lift shortcut remains available for the current dungeon cycle;
+- no permanent shrine/fast-travel node inside the dungeon.
 
-Target active combat: ~15–25 seconds plus positioning/recovery; room total ~2–4 minutes.
+Player-facing investigation text:
 
-The Nature Spirit is the one major pre-boss elite. Do not pad the dungeon with three copies of it.
+> “The stonework predates the quarry. Repeating route lines continue beyond Alderford—west through the forest and upward toward the mountains.”
 
-#### 4. Boss Antechamber / opened lift shortcut
+### 5. Earthloong Chamber
 
-- short breathing/readability space;
-- shortcut ensures a boss death does not require replaying the entire dungeon trash route;
-- no long cutscene;
-- no new permanent shrine/fast-travel node inside the dungeon.
+Use `STATUS_AND_R01_ENCOUNTERS.md` exactly:
 
-#### 5. Earthloong Chamber
+```text
+Lv 8
+4,900 HP solo baseline
+~120–150 s active-combat target
+physical phase + lightning space-control phase
+no long untargetable state
+only authored r01_earthloong_breakable_prop blocks break
+visible lightning lane/decal range = server hit area
+```
 
-Use the exact `STATUS_AND_R01_ENCOUNTERS.md` boss kit:
+## 13.3 First-clear rewards
 
-- Lv8;
-- 4,900 HP solo baseline;
-- ~120–150 s active-combat target;
-- physical phase plus lightning space-control phase;
-- no long untargetable state;
-- break only authored `r01_earthloong_breakable_prop` blocks;
-- visible lane/decal range matches server hit area.
-
-### Dungeon first-clear rewards
-
-Keep existing canon:
+Canonical first-clear package:
 
 - Earthloong Scale x2;
 - guaranteed Superior+ normal boss gear;
 - 15% direct Mythic roll from `Rootquake Maul / Earthscale Ward` pool;
-- completion choice: `Ironroot Longsword / Riverthorn Bow / Lumenwood Staff`;
+- deterministic completion choice: `Ironroot Longsword / Riverthorn Bow / Lumenwood Staff`;
 - completion EXP: 50% current next-Lv requirement + boss contribution;
-- completion Class XP: 32% + boss contribution.
+- completion Class XP: 32% + boss contribution;
+- Gold: 180.
 
-Add first-clear Gold baseline:
+Reward choice uses accepted Lucifer-family reward UI and real accepted item previews, not a vanilla chest GUI.
 
-```text
-Gold: 180
-```
-
-The deterministic three-item choice appears in the accepted Lucifer reward panel with real accepted model/icon previews. It is not a vanilla chest GUI.
-
-After the first clear, returning to the smith exposes the known Earthloong Signature Craft progress (`2 / 4 Earthloong Scales`) without forcing an immediate repeat clear.
-
-## Phase G — ~0:65–0:90+ — free continuation
-
-After the first dungeon clear, the game stops behaving like a tutorial.
-
-Natural options:
-
-- return to settlement, compare/re-equip reward and use forge;
-- continue saving toward first home;
-- pursue Regalhart;
-- hunt Steelboar/Nature Spirit;
-- explore unfinished R01 POIs/resources;
-- investigate R02/R03 route signals;
-- complete first specialization/class challenge if Class Rank has reached the relevant threshold;
-- replay the quarry if desired.
-
-No mandatory `now talk to six NPCs because the tutorial is over` sequence.
+After first clear, Holt Forge shows Earthloong Signature Craft progress at `2 / 4 Earthloong Scales`; no immediate repeat clear is forced.
 
 ---
 
-# 8. Quest-board density and marker rules
+# 14. Earthloong aftermath / Act-I handoff
 
-On first arrival:
+Earthloong's defeat must complete the R01 story function instead of ending as a loot screen.
 
-```text
-Main objectives visible: 1
-Optional contracts visible: 2
-```
+## 14.1 Immediate chamber aftermath
 
-During the first session:
+After encounter completion and first-clear reward transaction:
 
-- no more than about 4 unresolved R01 board/guild hooks should be simultaneously foregrounded by default;
-- additional contracts appear through discovery/progress rather than all being dumped at time zero;
-- discovered POIs may appear on the map;
-- optional bosses use clue/search areas before exact markers where that improves exploration;
-- dungeon entrance may receive an exact marker after it has been physically discovered/investigated;
-- quest UI never covers the screen with an MMO checklist while free-roaming.
+1. combat music resolves;
+2. the damaged relay stone/plate becomes safely interactable;
+3. if `Quarry Relay Evidence` was missed in the antechamber, this interaction records it here so the main story cannot softlock;
+4. the journal records that the root breach exposed an older networked structure beneath the quarry;
+5. the current main objective becomes **Lines Beneath the Land — Return to Alderford**.
 
-Main objectives remain roughly the 30% guidance side of the project's 30/70 guidance/exploration target.
+No mandatory long cutscene occurs in the dungeon.
+
+## 14.2 Return scene — Wayfarers' Hall
+
+The return is justified because several people physically interpret the evidence and establish the next open-world leads.
+
+Required characters:
+
+- Mara Venn;
+- Ilyan Voss;
+- Daren Holt.
+
+The scene begins when the player enters the Wayfarers' Hall briefing interaction after Earthloong first clear. It is skippable line-by-line and may be skipped as a whole after the first line; skipping commits the same progression state and never removes information from the journal.
+
+Canonical dialogue:
+
+**Mara Venn**
+> “You found the quarry problem. I was hoping it would stop at roots and bad stone.”
+
+**Ilyan Voss**
+> “It doesn't. This mark isn't a shrine seal; it's a route notation. These lines point west and uphill—forest relays and a mountain station.”
+
+**Daren Holt**
+> “And if a dead quarry is still tied to them, I want to know what happens before anyone wakes the rest.”
+
+**Mara Venn**
+> “Then we don't wake anything blind. Follow either line. See what's still connected, and keep the roads open while we learn.”
+
+The player's journal then receives two peer leads:
+
+- **Western Relay** — points toward R02's forest/river-basin investigation;
+- **Whitecrest Station** — points toward R03's observatory/forge investigation.
+
+Final main entry after the scene:
+
+**Lines Beneath the Land**
+
+Objective text:
+
+> “Follow one of the old route lines beyond Alderford. The western relay and Whitecrest station may explain what the quarry was connected to.”
+
+Act-I progression later requires at least one qualifying R02/R03 major lead as defined in `WORLD_STORY_CANON.md`; both remain playable.
+
+## 14.3 Ilyan before the quarry clear
+
+If the player talks to Ilyan at The Copper Kettle before the first dungeon clear, use only:
+
+> “I'm here for old road records. Alderford keeps better ledgers than most places twice its size.”
+
+He does not use the word `Anchor`, identify the quarry facility or reveal the continental network before evidence exists.
 
 ---
 
-# 9. Gold / early economy check
+# 15. Quest-board density and marker rules
 
-Starting liquid balance remains approximately **150 Gold**.
+First arrival board state:
 
-Fixed first-session authored rewards in this slice:
+```text
+Main: Dust on the Quarry Road
+Optional: Riverbank Remedies
+Optional: Signs in the Meadow
+```
+
+During first session:
+
+- normal free-roam HUD shows at most 1 main + 2 manually pinned optional objectives;
+- no more than about four unresolved R01 board/guild hooks are foregrounded by default;
+- `A Stag at the Ford`, `Steel in the Grass`, `The Crowned Trail` arise from progress/discovery rather than all appearing at time zero;
+- dungeon entrance gets an exact map marker only after personal lower-entrance inspection;
+- optional boss exploration uses broad search areas where appropriate;
+- main objectives provide guidance without turning R01 into an icon-clearing checklist.
+
+---
+
+# 16. Early economy check
+
+Starting liquid balance: **150 Gold**.
+
+Fixed authored R01 objective payments:
 
 | Objective | Gold |
 |---|---:|
@@ -704,106 +959,181 @@ Fixed first-session authored rewards in this slice:
 | Riverbank Remedies | 60 |
 | Signs in the Meadow | 70 |
 | A Stag at the Ford | 60 |
-| Roots Below Stone | 120 |
+| Roots Below Stone investigation milestone | 120 |
 | Steel in the Grass | 100 |
 | Earthloong first dungeon completion | 180 |
 
-A player who completes every optional listed activity earns **680 Gold** from these objective payments, plus ordinary combat/material/loot income. A more direct player earns less.
+Completing every listed optional objective yields **680 Gold** in fixed objective payments plus ordinary loot/material/combat income. A direct player earns less.
 
-This remains consistent with the early gross-income target of roughly 500–700 Gold/hour and keeps the 2,400-Gold starter home a real multi-hour savings target instead of a first-session freebie.
-
-The first Trail Stag itself is free after the event, so basic traversal is not delayed by Gold grinding.
+The first Trail Stag is free after its event. The 2,400-Gold starter house remains a real multi-hour savings target rather than first-session free property.
 
 ---
 
-# 10. Audio source direction for the slice
+# 17. Audio source direction
 
-No important R01 sound is accepted as `use whatever vanilla sound is closest` by default.
+No important R01 sound defaults to `whatever vanilla sound is closest`.
 
 Primary redistributable source families:
 
-- **Kenney RPG Audio** — CC0, 50 footsteps/weapon/RPG Foley sounds;
-- **Kenney Impact Sounds** — CC0, 130 impact/Foley sounds;
-- **Kenney UI Audio / Interface Sounds** — CC0, 50/100 interface sounds;
-- selected **CC0 Freesound/OpenGameArt ambience** with exact source recorded.
+- Kenney RPG Audio;
+- Kenney Impact Sounds;
+- Kenney UI Audio / Interface Sounds;
+- selected exact CC0 Freesound/OpenGameArt ambience with provenance recorded.
 
-Current ambient candidates:
+Current ambience direction:
 
-- Freesound `Forest birds - ambient seamless loop` by Magnesus — CC0, 27-second seamless forest-bird loop;
-- OpenGameArt `Park ambiences` — CC0 recordings for birds/river/wind;
-- use only recordings without obvious modern contamination after listening in context.
-
-Per-area direction:
-
-- settlement: restrained people/work/forge layers, not constant loud crowd loop;
+- Alderford: restrained people/work/forge layers;
 - meadow: wind + sparse wildlife;
 - riverwood: water + bird/leaf ambience;
-- quarry: stone/wood creak/low cave air, less wildlife;
-- Nature Spirit/root sections: subtle tonal layer, not generic horror drone;
-- Earthloong: dedicated body impact, stone/root, electricity charge/strike layers selected during asset intake.
+- quarry: stone/wood creak/low cave air;
+- root sections: subtle tonal layer, not generic horror drone;
+- Earthloong: dedicated body impact, stone/root, electrical charge/strike layers.
 
-Every accepted sound receives source URL/license/exact filename/hash in source bindings before release-quality implementation.
-
----
-
-# 11. VFX / signage / interaction presentation
-
-Use existing external-first visual rules.
-
-- quest board is a real external prop/model/block structure with restrained interaction highlight;
-- forge uses real furnace/anvil/tool props and smith animation rather than a floating menu kiosk;
-- stable has real paddock/tack/feeding props;
-- shrine has a distinctive external-source vertical silhouette and VFX family;
-- mount unlock uses Stag animation + tack/registration presentation, not a text-only unlock toast;
-- resource nodes use their accepted external models;
-- dungeon danger decals and Earthloong lightning lanes use external VFX sprites/geometry and match hitboxes exactly;
-- important rewards show real equipment model/icon preview.
-
-Lucifer-family UI remains the overlay language for dialogue/reward/inventory/service screens.
+Every accepted production sound gets exact source/license/filename/hash in bindings before the source-bootstrap gate opens for the relevant content.
 
 ---
 
-# 12. Multiplayer behavior for the opening slice
+# 18. VFX / signage / interaction presentation
 
-Progression is per player unless a state is explicitly world-shared.
+- guild board is a physical coherent prop/structure with restrained interaction highlight;
+- forge uses accepted furnace/anvil/tool props and smith motion;
+- stable uses paddock/tack/feeding props;
+- shrine uses a distinctive external-source silhouette/VFX family;
+- Trail Stag unlock uses real Stag/tack/registration presentation, not a text-only toast;
+- resource nodes use accepted external models;
+- Earthloong telegraphs match real server hit areas;
+- important rewards display real equipment previews;
+- Lucifer-family UI remains the overlay language for dialogue/reward/inventory/service screens.
 
-## Settlement / services
+No player-facing R01 screen uses a temporary black developer panel while waiting for later art.
 
-- shrine discovery, class selection, inventory/bank state, mount unlock, quest completion and first-clear rewards are personal/server-authoritative;
-- service buildings physically exist for everyone;
-- one player's class choice does not change another player's available class.
+---
 
-## Field objectives
+# 19. Multiplayer behavior
 
-- natural enemies and world events are shared physical entities;
-- eligible players receive personal EXP/loot/progress according to contribution rules;
-- personal gathering nodes remain personal;
-- a player may complete `Riverbank Remedies` without requiring the other player to gather the same nodes.
+Progression is per player unless explicitly world-shared.
 
-## Trail Stag event
+## 19.1 Settlement / services
 
-- eligible nearby players may complete the rescue together;
-- each eligible participant receives their own permanent Trail Stag unlock;
-- a player who missed the event can trigger/replay the personal unlock state later without deleting another player's mount;
-- event implementation may respawn/reset its authored Stag interaction for incomplete players after the area is idle; completed players cannot farm rewards.
+- shrine discovery, class selection, inventory/bank state, Trail Stag unlock, quest completion and first-clear rewards are personal/server-authoritative;
+- buildings physically exist for everyone;
+- one player's class/story state does not overwrite another's.
 
-## Quarry dungeon
+## 19.2 Field objectives
 
-R01 quarry remains a physical authored dungeon rather than requiring dynamic per-party world copies at launch.
+- natural enemies/events are shared physical entities;
+- eligible participants receive personal rewards/progress;
+- personal gathering remains personal;
+- investigation sites record personal logical interaction even when the physical prop is shared.
 
-- encounter controller tracks currently engaged eligible players;
-- boss scales by existing participant HP/poise rules;
-- outgoing boss damage does not increase with player count;
+## 19.3 Trail Stag
+
+- nearby eligible incomplete players may resolve the rescue together;
+- each receives their own permanent unlock exactly once;
+- a player who missed it may later trigger the incomplete-player version;
+- completed players cannot farm repeat Gold/EXP/unlock rewards.
+
+## 19.4 Quarry dungeon
+
+- physical authored dungeon, not mandatory per-party copies at launch;
+- encounter controller owns current run state;
+- boss scales by canonical participant HP/poise rules;
+- outgoing boss damage does not scale upward with player count;
 - first-clear/completion/signature loot is personal;
-- internal shortcut state resets with the dungeon encounter cycle as appropriate;
-- players joining after boss engagement do not receive first-clear reward without meeting normal contribution/eligibility rules;
-- no player can duplicate first-clear reward by relogging or changing participant count.
+- shortcut is encounter-cycle state;
+- late joiners must meet normal contribution eligibility;
+- reward transaction is idempotent.
+
+## 19.5 Disconnect-critical transactions
+
+- if Earthloong is defeated but a player's deterministic reward choice is not committed before disconnect, store `reward_choice_pending=true`; reopen the exact choice on reconnect before granting another copy;
+- if the post-quarry briefing is interrupted, reopen from the first uncommitted presentation beat or allow whole-scene skip; story progression commits only once;
+- quest reward claim and story-stage transitions use separate idempotent transaction keys.
 
 ---
 
-# 13. R01 presentation asset manifest requirements
+# 20. Data / state contract
 
-Before the slice is considered asset-ready, bind exact files for at least:
+Canonical data ownership layout may use equivalent final paths, but these logical records must exist as data-driven content rather than hard-coded quest branches:
+
+```text
+opening/
+  starting_loadout
+  settlement_services
+  r01_opening_flow
+
+quests/r01/
+  dust_on_quarry_road
+  riverbank_remedies
+  signs_in_meadow
+  stag_at_ford
+  roots_below_stone
+  steel_in_grass
+  crowned_trail
+  lines_beneath_land
+
+dungeons/r01_quarry/
+  rooms
+  encounters
+  shortcut
+  relay_evidence
+  completion_rewards
+
+presentation/
+  motion_bindings
+  npc_bindings
+  settlement_bindings
+  dialogue_r01
+  audio_bindings
+```
+
+## 20.1 R01 main-stage enum
+
+Internal only; never player-facing:
+
+```text
+ARRIVAL_ROAD
+ALDERFORD_REACHED
+FIRST_CLASS_SELECTED
+QUARRY_ROAD_ACTIVE
+QUARRY_ROAD_COMPLETE
+QUARRY_ENTRANCE_DISCOVERED
+QUARRY_DUNGEON_ACTIVE
+EARTHLOONG_CLEARED
+POST_QUARRY_BRIEFING_PENDING
+ACT1_LEADS_OPEN
+```
+
+Required persistent personal fields:
+
+```text
+first_shrine_activated
+first_root_class_selected
+starter_package_claimed
+r01_main_stage
+quarry_road_action_bits
+optional_contract_states
+trail_stag_state
+trail_stag_unlocked
+regalhart_clues_seen
+regalhart_discovered
+quarry_discovered
+quarry_relay_evidence_seen
+quarry_first_clear
+first_clear_reward_claimed
+reward_choice_pending
+post_quarry_briefing_seen
+act1_western_relay_lead_known
+act1_whitecrest_station_lead_known
+```
+
+All progression-changing fields are server-authoritative.
+
+---
+
+# 21. Exact pre-code presentation-asset gate
+
+Before gameplay source implementation of the R01 slice begins, bind exact accepted files/sources for at least:
 
 ## Player / NPC motion
 
@@ -832,175 +1162,162 @@ pickup
 smith_hammer
 revive
 mount
- dismount
+dismount
+drink
+eat
+stag_calm_interaction
 ```
 
-Every entry records:
+Each binding records:
 
 ```text
 source_pack
 source_clip_filename
-license
-retarget_notes
-playback_speed
-root_motion_source: yes/no
-server_movement_profile_if_applicable
+license / local-only boundary
+exact artifact identity/hash where available
+retarget notes
+playback speed
+root-motion source yes/no
+server-movement profile if applicable
 ```
 
-## Settlement
+## Named NPCs
 
-- gate/watch design source;
-- inn;
-- guild;
-- forge;
-- bank/storage;
-- healer/alchemy;
-- stable;
+Every named R01 NPC receives before implementation:
+
+- exact accepted body/proportion variant;
+- outfit modular-part set;
+- hair/head/accessory treatment;
+- profession/story prop if any;
+- idle/work animation set;
+- color/material palette compatible with Alderford;
+- source/license/artifact provenance.
+
+No NPC binding may be `generic ranger for now`, `temporary villager`, or an internal placeholder in a player-visible build.
+
+## Settlement / dungeon
+
+Bind exact accepted sources for:
+
+- Alderford gate/watch;
+- Copper Kettle;
+- Wayfarers' Hall;
+- Holt Forge;
+- Alderford Vault;
+- Greenwater Remedies;
+- Fordside Stables;
 - shrine;
-- market stalls;
-- housing shells;
-- major signs / banners;
-- major interior prop families.
-
-## Dungeon
-
-- quarry block palette/reference;
-- mine supports/carts/hoist props;
+- market/sign/banner/interior prop families;
+- quarry supports/carts/hoist;
 - root-overgrowth treatment;
+- old relay masonry/plate treatment;
 - side-cache props;
-- breakable arena props;
-- Earthloong telegraph VFX and sound assets.
+- Earthloong telegraph VFX/sound.
 
-No manifest entry may be `todo_asset`, `use vanilla for now` or `make AI placeholder` in a player-visible build.
-
----
-
-# 14. Data / state contract
-
-Suggested ownership:
-
-```text
-opening/
-  starting_loadout.json
-  settlement_services.json
-  r01_opening_flow.json
-
-quests/r01/
-  dust_on_quarry_road.json
-  riverbank_remedies.json
-  signs_in_meadow.json
-  stag_at_ford.json
-  roots_below_stone.json
-  steel_in_grass.json
-  crowned_trail.json
-
-dungeons/r01_quarry/
-  rooms.json
-  encounters.json
-  shortcut.json
-  completion_rewards.json
-
-presentation/
-  motion_bindings.json
-  npc_bindings.json
-  settlement_bindings.json
-  audio_bindings.json
-```
-
-Opening state must separately store:
-
-```text
-first_shrine_activated
-first_root_class_selected
-starter_package_claimed
-trail_stag_unlocked
-r01_main_stage
-optional_contract_states
-regalhart_clues_seen
-quarry_discovered
-quarry_first_clear
-first_clear_reward_claimed
-```
-
-All progression-changing fields are server-authoritative.
+This is a **source-bootstrap blocker**. Missing exact player-visible bindings are not deferred to implementation.
 
 ---
 
-# 15. First playable acceptance checklist
+# 22. Azari spatial-closure gate
 
-When this vertical slice is implemented, acceptance requires more than build success.
+R01 content logic is locked here, but exact world coordinates must be authored from the real imported Azari terrain before source implementation of world placement.
 
-## Motion
+The spatial pass must record, at minimum:
 
-1. dodge/dash uses an accepted external animation clip;
+- Alderford center/gate/shrine/service-building coordinates;
+- approach-road start and settlement reveal sightline;
+- quarry overlook/entrance/chamber coordinates;
+- ford event volume and stable-return route;
+- Riverbank Remedies gather-area bounds;
+- Signs in the Meadow evidence-site coordinates;
+- Steelboar discovery/hunt territory;
+- Regalhart clue/search/boss territory;
+- R02/R03 outgoing road/visual lead directions;
+- measured ordinary first-play travel times between major R01 beats.
+
+The spatial pass may move a POI to fit terrain, sightlines and pacing. It may **not** redesign its quest function, reward, NPC owner, story meaning or content rules without first revising this canon.
+
+---
+
+# 23. First playable acceptance checklist
+
+## Motion / combat presentation
+
+1. dodge/dash uses accepted external motion;
 2. no vanilla running/static pose during real dash displacement;
-3. animation and 3.2-block/0.45-second server movement remain visually synchronized;
-4. collision-shortened dodges do not create obvious foot skating/wall penetration;
-5. weapon/cast/guard hit timing matches gameplay events within about one server tick where applicable.
+3. animation and server displacement remain visually synchronized;
+4. collision-shortened dodge resolves cleanly;
+5. weapon/cast/guard event timing agrees with gameplay within about one server tick where practical.
 
-## Opening flow
+## Opening / content
 
-6. new player reaches settlement reveal in roughly 2–4 minutes without a long forced tutorial;
-7. first class can be chosen and used immediately;
-8. first board presents 1 main + 2 optional objectives, not a quest wall;
-9. player can leave town without talking to every service NPC;
-10. basic gather → return → service loop is understandable without compulsory fetch-chain dialogue;
-11. Trail Stag normally unlocks around 25–40 minutes and is free;
-12. Trail Stag visually uses accepted external Stag animation/model and feels like 6.4 b/s rather than a reskinned vanilla horse;
-13. Regalhart can be found/fought without completing its clue sequence and never gates the dungeon;
-14. first quarry run lasts roughly 15–25 minutes on normal first play;
-15. opened shortcut prevents full trash rerun after a boss failure;
-16. first Earthloong clear usually lands around 55–75 minutes of a normal first session;
-17. completion reward choice uses real item art/models and the Lucifer reward UI;
-18. the first session does not normally provide enough Gold to trivialize the 2,400-Gold starter house goal.
+6. normal new player sees Alderford within roughly 2–4 minutes;
+7. first class is immediately usable after selection;
+8. first board shows exactly 1 main + 2 optional contracts;
+9. player can leave without visiting every service NPC;
+10. `Dust on the Quarry Road` completes from any three distinct legal action categories;
+11. basic gather → service loop is understandable without compulsory fetch-chain dialogue;
+12. Trail Stag normally unlocks around 25–40 minutes and is free;
+13. Regalhart can be found/fought without clue completion and never gates quarry;
+14. first quarry run lasts roughly 15–25 minutes;
+15. shortcut prevents a full trash rerun after boss failure;
+16. Earthloong first clear normally lands around 55–75 minutes;
+17. post-quarry scene opens both R02/R03 Act-I leads without pretending one is mandatory;
+18. first-session fixed Gold does not trivialize the 2,400-Gold starter home.
+
+## Narrative / player-facing quality
+
+19. Alderford, all named NPCs and quest titles match this canon;
+20. Ilyan does not reveal Anchor-network truth before quarry evidence;
+21. Mara/Daren/Ilyan post-quarry scene delivers the Act-I handoff even when skipped, through journal state;
+22. no player-facing `P0`, `alpha`, `temporary`, `TODO`, debug ID, raw localization key or implementation term is visible;
+23. no mandatory dialogue is a long exposition dump; routine scenes remain immediately advanceable/skippable;
+24. Kest remains optional in R01 and does not gate main progression.
 
 ## Presentation
 
-19. no vanilla villagers are visible as final settlement NPCs;
-20. settlement architecture reads as one coherent external design family;
-21. forge/stable/guild are identifiable from world silhouette/signage before opening the map;
-22. NPC work/interaction actions use external animations rather than static entities;
-23. important audio/VFX sources are external and provenance-recorded;
-24. dungeon rooms do not contain vanilla spawners/vanilla-mob fallback content;
-25. Earthloong lightning visuals match server hit areas.
+25. no vanilla villagers as final Alderford NPCs;
+26. settlement architecture reads as one coherent family;
+27. forge/stable/guild are identifiable from world silhouette/signage;
+28. NPC work/interactions use accepted motion;
+29. important audio/VFX provenance is recorded;
+30. dungeon contains no vanilla-spawner/vanilla-mob fallback content;
+31. Earthloong lightning visuals match server hit areas;
+32. reward choice uses accepted Lucifer-family UI and real item previews.
 
-## Multiplayer
+## Multiplayer / persistence
 
-26. two players may split gathering/contracts without blocking each other's permanent progress;
-27. both eligible players can earn Trail Stag unlock;
-28. quarry rewards are personal;
-29. boss scaling follows existing HP/poise participant rules and does not raise outgoing damage;
-30. first-clear rewards cannot be duplicated through relog/re-entry.
+33. two players can split personal gathering/contracts without blocking each other;
+34. eligible incomplete players can each unlock Trail Stag;
+35. quarry first-clear rewards are personal;
+36. boss scaling follows canonical participant rules without increased outgoing damage;
+37. first-clear reward cannot duplicate through disconnect/relog/re-entry;
+38. interrupted post-quarry briefing resumes/skips without losing or duplicating story state.
 
 ---
 
-# 16. What this pass closes
+# 24. R01 design-closure status
 
-Closed for implementation:
+This pass closes for implementation **as design**, not merely as a concept:
 
-- external-animation requirement for dash/dodge/roll/locomotion and other player-facing motion;
-- primary KayKit / Quaternius motion families;
-- root-motion versus server-authority boundary;
-- starting settlement coherent external architecture/prop/NPC families;
-- settlement physical service topology and NPC-density target;
-- pre-class opening loadout and first-class usability grant;
-- opening 0–90 minute flow;
-- first quest/contract density and initial reward values;
-- Trail Stag event timing and interaction flow;
-- Regalhart clue/discovery behavior;
-- quarry dungeon room/shortcut/encounter sequence;
-- Earthloong first-clear placement in the opening flow;
-- early Gold pacing check;
-- R01 audio-source direction;
-- multiplayer state behavior for the first slice;
-- motion/settlement/dungeon asset manifest requirements;
-- first playable acceptance checklist.
+- final starting-settlement player-facing name and service names;
+- named R01/recurring cast and their R01 functions;
+- first-class grant anti-exploit representation;
+- exact starting recovery item;
+- exact main/optional quest ownership, objective counts and completion logic;
+- exact first-session key dialogue lines and post-quarry briefing;
+- Trail Stag encounter scaling/reset/reconnect behavior;
+- quarry relay-evidence story beat;
+- Earthloong-to-Act-I handoff;
+- exact R01 persistent state expectations;
+- player-facing developer-language prohibition;
+- exact distinction between design decisions and remaining pre-code asset/spatial gates.
 
-Still intentionally requires later passes before all gameplay coding is design-complete:
+Still required **before gameplay source bootstrap for the relevant R01 content**:
 
-- exact consumable/healing-food/alchemy/cooking stat tables;
-- exact dialogue/lore/final settlement and NPC names after Azari terrain/lore naming is locked;
-- exact downloaded model/animation/audio filenames and hashes during asset intake;
-- R02+ vertical content;
-- actual Azari coordinate placement after local map import and inspection;
-- final tuning after real Minecraft playtest.
+1. exact external model/animation/VFX/audio artifact bindings and provenance/hash where applicable under §21;
+2. exact Azari coordinates, volumes, sightlines and measured travel times under §22.
+
+Those two items are not permission for an implementer to improvise design. They are dedicated pre-code planning/verification gates. If either gate exposes a hard conflict, update this canon first and only then implement the revised rule.
+
+Real playtesting may later tune already-defined numbers such as travel time, enemy density or reward pacing when evidence shows a feel/balance problem; it must not silently invent missing gameplay systems or rewrite story/content inside code.
