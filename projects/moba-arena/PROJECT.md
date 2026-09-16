@@ -36,12 +36,14 @@ Current planned runtime:
 
 - Anime Assembly 1.1.4 — player characters, abilities, animations/VFX, health bars, character selection, MOBA Ready/Start, shop and minimap;
 - GeckoLib 3.1.40 for Forge 1.19.2 — required Anime Assembly animation runtime;
-- playerAnimator / player-animation-lib-forge 1.0.2 — required Anime Assembly player animation runtime;
+- playerAnimator / `player-animation-lib-forge-1.0.2.jar` — CurseForge project 658587, file 4418149, MIT; required Anime Assembly player animation runtime;
 - Pehkui 3.8.2 for Forge 1.19.2 — required Anime Assembly scaling runtime;
-- Kleider Custom Renderer — required by Anime Assembly, but the exact 1.19.2 file/version is **not yet pinned and is a hard preflight blocker**;
+- Kleiders Custom Renderer API 6.0.0 for Forge 1.19.2 — CurseForge project 682065, file 5083496, All Rights Reserved; required Anime Assembly renderer and its CurseForge relations page declares no dependencies;
 - SmartBrainLib 1.9 / 1.19.2 branch — minion sensing, targeting, path movement and combat behavior runtime.
 
-Third-party runtime JARs are dependencies, not files to copy casually into this public repository. Their licenses, download identity, checksum and redistribution boundary must be recorded before packaging.
+The former Kleider version-identification blocker is closed. That does **not** mean the dependency profile is tested: the exact JAR bytes still need to be obtained from their original sources, fingerprinted and smoke-tested together.
+
+Third-party runtime JARs are dependencies, not files to copy casually into this public repository. Their licenses, download identity, checksum and redistribution boundary must be recorded before packaging. In particular, the All Rights Reserved Kleider JAR is a local/direct runtime dependency and is not to be rehosted in this repository.
 
 ## Product identity
 
@@ -118,8 +120,10 @@ The goal is not zero new lines. The goal is that project code connects external 
 - Never build a new arena map for this project.
 - Never modify map geometry because of player count.
 - Anime Assembly's modified MOBA map is the first local-runtime candidate because it is the map its MOBA mode was designed around.
-- The modified map and its parent Summoner's Rift derivative must remain **local-only until their exact usage/redistribution terms and checksum are recorded**.
-- Git may store metadata, coordinates, expected folder identity and checksums; it must not store restricted map bytes.
+- Anime Assembly credits the parent as Shinkiroo's `League of Legends Summoner's Rift (Pre-Season 10)` map. The original Planet Minecraft page explicitly says editing and distributing are not allowed, and no separate redistribution/edit permission for Anime Assembly's modified Google Drive copy has been verified.
+- Therefore the parent and modified map bytes are **local-only** for this project unless a separate permission grant is later proven. Do not commit, redistribute or package them from this public repository.
+- Git may store source identity, the modified-copy Drive file ID, metadata, coordinates, expected folder identity and checksums; it must not store restricted map bytes.
+- The modified copy's world-folder identity and SHA-256 remain M0 intake work because the bytes have not yet been acquired in this environment.
 - Backup candidates remain documented in `EXTERNAL_SOURCES.md`.
 
 ## Public repository / private-use boundary
@@ -131,6 +135,7 @@ Therefore:
 - do not commit third-party JARs/maps/assets unless redistribution permission is established;
 - do not assume Anime Assembly's AFL-3.0 license grants rights to every underlying franchise character, trademark or externally sourced asset contained in or depicted by the mod;
 - preserve MIT/Apache/MPL notices and modification notices where applicable;
+- treat All Rights Reserved runtime dependencies as dependency references/local bytes rather than repo-bundled artifacts unless explicit redistribution permission is proven;
 - do not bypass paid access, DRM or access controls;
 - re-audit every adopted source before any public game distribution.
 
@@ -148,11 +153,11 @@ Therefore:
 
 Do **not** bootstrap gameplay source until all of these are closed:
 
-1. exact Kleider Custom Renderer 1.19.2 dependency file/version is identified;
+1. obtain the exact pinned Anime Assembly, GeckoLib, playerAnimator, Pehkui and Kleider JAR bytes from their original sources and record SHA-256 fingerprints;
 2. Anime Assembly 1.1.4 + required dependencies boots on the selected Forge 1.19.2 profile;
 3. the same profile is checked for multiplayer/dedicated-server viability to the extent the dependency supports it;
 4. Anime Assembly's actual JAR symbols/resources are inventoried and `AnimeAssemblyBridge` is designed from real symbols, not guessed class names;
-5. the primary local MOBA map's terms, folder identity and checksum are recorded;
+5. the local-only MOBA map's modified-copy identity, world-folder name and checksum are recorded without committing or redistributing the map bytes;
 6. character select, abilities, health bars, team assignment, Ready/Start, M shop and minimap are manually demonstrated in the donor-only profile;
 7. the missing-screen UI asset family for map/team/result screens has a legally usable external basis.
 

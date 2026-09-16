@@ -82,18 +82,35 @@ A generic combat framework such as Spell Engine would still require this project
 ### playerAnimator
 
 - Status: `CONDITIONAL RUNTIME LOCK`
+- Author/project: KosmX `playerAnimator`
 - Source: https://www.curseforge.com/minecraft/mc-mods/playeranimator
+- CurseForge project ID: `658587`
 - Exact first target: `player-animation-lib-forge-1.0.2.jar`
+- CurseForge file ID: `4418149`
 - Game/loader: 1.19.2 / Forge
+- License: MIT
+- Curse Maven: `implementation fg.deobf("curse.maven:playeranimator-658587:4418149")`
 - Use: direct required player-animation dependency.
-- Intake requirement: record source repository license/notice and exact file ID/SHA-256 during M0 rather than inventing metadata here.
+- Note: the Anime Assembly dependency link points to this KosmX project. Do not substitute a similarly named Player Animator fork/API without a new compatibility audit.
+- SHA-256 remains M0 intake work because the actual JAR bytes have not yet been acquired in the current environment.
 
-### Kleider Custom Renderer
+### Kleiders Custom Renderer API
 
-- Status: `BLOCKER`
-- Source: linked as a required dependency from the Anime Assembly project page.
-- Exact Forge 1.19.2 file/version: **not yet verified**.
-- Rule: source bootstrap is blocked until this is identified from the original source and tested. Do not substitute a guessed build.
+- Status: `CONDITIONAL RUNTIME LOCK`
+- Author: kleiders3010
+- Source: https://www.curseforge.com/minecraft/mc-mods/kleiders-custom-renderer-api
+- CurseForge project ID: `682065`
+- Exact first target: `Kleiders Custom Renderer API 6.0.0 1.19.2.jar`
+- CurseForge file ID: `5083496`
+- Game/loader: 1.19.2 / Forge
+- License: All Rights Reserved
+- Curse Maven metadata: `implementation fg.deobf("curse.maven:kleiders-custom-renderer-api-682065:5083496")`
+- Declared project relations: Dependencies (0); no required dependency is listed by CurseForge for this renderer itself.
+- Use: local/direct required Anime Assembly renderer dependency.
+- Public-repo bytes: **NO** unless explicit redistribution permission is later established. Reference the original project/file identity instead of rehosting the JAR.
+- SHA-256 remains M0 intake work because the actual JAR bytes have not yet been acquired in the current environment.
+
+The former Kleider identification `BLOCKER` is closed. Runtime compatibility is still unproven until the complete donor profile boots successfully.
 
 ---
 
@@ -196,15 +213,20 @@ Apache-2.0 attribution and modified-file notices are mandatory for actual ports.
 ### Anime Assembly modified MOBA map
 
 - Status: `PRIMARY LOCAL-ONLY CANDIDATE`
-- Source: linked by the Anime Assembly CurseForge description as `Moba Mode Map Download`.
-- Parent map credited by Anime Assembly: Re-League of Legends / Summoner's Rift.
-- Planned use: first local arena because the adopted MOBA runtime was authored around it.
-- Public Git: **do not commit yet**.
+- Modified-copy source: Anime Assembly's `Moba Mode Map Download` Google Drive link, file ID `1tL4A1RIjUULe7tJy2tRBjI1AFwGsqipW`.
+- Parent map: Shinkiroo, `League of Legends Summoner's Rift (Pre-Season 10) [DOWNLOAD]`.
+- Parent source: https://www.planetminecraft.com/project/re-league-of-legend-summoner-s-rift-download/
+- Parent-map terms visible on the source page: editing and distributing are not allowed; the author asks to be informed for YouTube/public-server use.
+- Anime Assembly identifies its map as a modified MOBA map, but no separate redistribution/edit permission for that modified copy has been verified.
+- Planned use: first **local-only** arena because the adopted MOBA runtime was authored around it.
+- Public Git/package: **DO NOT COMMIT OR REDISTRIBUTE MAP BYTES** under the evidence currently available.
+- Git-safe records: source URLs/IDs, local checksum, expected world-folder identity, and project-created coordinate/metadata bindings.
 - Remaining intake work:
-  - verify exact author/terms for both parent and modified copy;
+  - obtain the modified copy locally from the original Anime Assembly link without bypassing access controls;
   - record filename/world folder;
-  - SHA-256;
-  - inspect geometry and derive metadata coordinates without rebuilding terrain.
+  - record SHA-256;
+  - inspect geometry and derive metadata coordinates without editing/rebuilding the third-party terrain;
+  - re-audit permission if the project ever moves beyond private/local play.
 
 ### Matter Overdrive — MOBA Map
 
@@ -293,9 +315,11 @@ The audit now conditionally chooses **Forge 1.19.2 / Java 17** for the first pla
 This is not permanent loyalty to Forge or to an old Minecraft version. It is a direct consequence of external reuse value:
 
 - Anime Assembly provides the broadest coherent ready-made MOBA player layer found so far;
-- all of its documented required dependencies have 1.19.2 Forge paths except the still-unresolved exact Kleider pin;
+- every dependency explicitly listed by Anime Assembly now has an identified Forge 1.19.2 build target;
 - SmartBrainLib has a dedicated 1.19.2 Forge module;
 - LoM and SimpleLaneWars are source ports and therefore do not force a loader.
+
+The version/file identification phase is no longer the blocker. The next blocker is empirical: the pinned donor profile must actually boot and expose enough stable integration state.
 
 Re-evaluate platform only if M0 proves this stack unusable or a stronger legally reusable complete donor appears.
 
@@ -321,12 +345,12 @@ For every source that actually enters development, record:
 - conflicts with other adopted systems;
 - SHA-256 for downloaded runtime bytes where practical.
 
-## 10. Next action — no coding before this
+## 10. Next action — no gameplay coding before this
 
-1. resolve Kleider Custom Renderer exact Forge 1.19.2 file;
-2. build the donor-only Anime Assembly runtime profile;
-3. run the full donor feature checklist;
-4. inventory real Anime Assembly symbols/resources;
-5. fingerprint every tested JAR;
-6. verify the local MOBA map terms/checksum;
+1. obtain the exact pinned donor JARs from their original sources and record SHA-256 fingerprints;
+2. build and boot the donor-only Anime Assembly runtime profile on Forge 1.19.2;
+3. run the full donor feature checklist, including character select, four skills/additional skill, health bars, team behavior, all-player Start, M shop and minimap;
+4. inventory real Anime Assembly symbols/resources and write the bridge symbol map;
+5. check client plus dedicated-server/multiplayer viability to the extent supported;
+6. obtain the local-only modified MOBA map from its original Anime Assembly link, record folder/checksum, and derive metadata without redistributing the map;
 7. only then bootstrap `moba-arena` source following `IMPLEMENTATION_BLUEPRINT.md`.

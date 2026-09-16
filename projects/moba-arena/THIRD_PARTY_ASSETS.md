@@ -73,16 +73,27 @@ The following are **planned**, not proof that files have been downloaded, checks
 ### playerAnimator 1.0.2
 
 - Category: runtime library
-- Source: https://www.curseforge.com/minecraft/mc-mods/playeranimator
+- Author/project: KosmX `playerAnimator`
+- Source: https://www.curseforge.com/minecraft/mc-mods/playeranimator/files/4418149
 - File: `player-animation-lib-forge-1.0.2.jar`
+- CurseForge project/file ID: `658587` / `4418149`
+- License: MIT
 - Use mode: dependency
-- Exact file ID / license notice / SHA-256: **PENDING M0**
+- Public-repo bytes: dependency metadata preferred; bundle only if packaging terms and need are deliberately re-audited
+- SHA-256: **PENDING M0**
 
-### Kleider Custom Renderer
+### Kleiders Custom Renderer API 6.0.0
 
 - Category: runtime renderer
-- Source: Anime Assembly required-dependency link
-- Exact 1.19.2 file/version/license/SHA-256: **UNRESOLVED — BLOCKER**
+- Author: kleiders3010
+- Source: https://www.curseforge.com/minecraft/mc-mods/kleiders-custom-renderer-api/files/5083496
+- File: `Kleiders Custom Renderer API 6.0.0 1.19.2.jar`
+- CurseForge project/file ID: `682065` / `5083496`
+- License: All Rights Reserved
+- Declared required dependencies: none on the CurseForge relations page
+- Use mode: local/direct dependency
+- Public-repo bytes: **NO** unless explicit redistribution permission is later established
+- SHA-256: **PENDING M0**
 
 ### SmartBrainLib 1.9
 
@@ -96,11 +107,17 @@ The following are **planned**, not proof that files have been downloaded, checks
 ### Anime Assembly modified MOBA map
 
 - Category: map
-- Source: original Anime Assembly project page's MOBA map link
-- Use mode: local-only candidate
-- Parent/source terms: **PENDING AUDIT**
+- Modified-copy source: Anime Assembly project page `Moba Mode Map Download`
+- Modified-copy Google Drive file ID: `1tL4A1RIjUULe7tJy2tRBjI1AFwGsqipW`
+- Parent author: Shinkiroo
+- Parent source: https://www.planetminecraft.com/project/re-league-of-legend-summoner-s-rift-download/
+- Parent title: `League of Legends Summoner's Rift (Pre-Season 10) [DOWNLOAD]`
+- Parent usage terms found on source page: editing and distributing are not allowed; author requests notification for YouTube/public-server use
+- Separate permission for Anime Assembly's modified copy: **NOT VERIFIED**
+- Use mode: **local-only candidate**
 - World folder identity / SHA-256: **PENDING M0**
-- Public-repo bytes: **NO**
+- Public-repo/package bytes: **NO** under current evidence
+- Allowed repo record: source identity/Drive ID, checksum after local intake, expected folder identity, and project-created metadata coordinates
 
 ## Code donors approved for port provenance — no donor code copied yet
 
@@ -139,8 +156,12 @@ The following are **planned**, not proof that files have been downloaded, checks
 
 No third-party bytes or ported donor source are claimed to be integrated yet.
 
+Metadata identification is now complete for the previously unresolved playerAnimator and Kleider runtime pins, but that is not a runtime test.
+
+- dependency version/file IDs: **PINNED FOR M0**
 - dependency checksums: **PENDING**
 - runtime compatibility: **NOT TESTED**
 - code ports: **NOT STARTED**
-- map intake: **NOT DONE**
+- map source/parent terms: **AUDITED; LOCAL-ONLY UNDER CURRENT EVIDENCE**
+- map bytes/folder/checksum: **NOT INTAKEN**
 - UI visual acceptance: **NOT DONE**

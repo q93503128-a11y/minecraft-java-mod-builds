@@ -27,10 +27,12 @@ Forge 43.3.13 is not declared proven yet. It is the initial compatibility target
 |---|---|---|---|---|
 | Anime Assembly | 1.1.4, CurseForge project 1169249, file 7514535, `AnimeAssembly+1.1.4.jar` | AFL-3.0 for the project-listed work; underlying franchise/content rights still require caution | player characters, abilities, character select, animation/VFX presentation, health bars, team helpers, Ready/Start, shop, MOBA minimap | direct runtime dependency; do not commit JAR until redistribution is separately justified |
 | GeckoLib | Forge 1.19.2 3.1.40, CurseForge file 4407241 | MIT | Anime Assembly animation runtime | direct dependency |
-| playerAnimator | Forge 1.19.2 `player-animation-lib-forge-1.0.2.jar` | verify repository notice at intake; established external runtime | Anime Assembly player animation runtime | direct dependency |
+| playerAnimator | Forge 1.19.2 `player-animation-lib-forge-1.0.2.jar`, CurseForge project 658587, file 4418149 | MIT | Anime Assembly player animation runtime | direct dependency; use the KosmX project linked by Anime Assembly |
 | Pehkui | 3.8.2+1.19.2-forge, CurseForge file 5393090 | MIT | scaling required by Anime Assembly | direct dependency |
-| Kleider Custom Renderer | **exact 1.19.2 build TBD** | verify before intake | required Anime Assembly renderer | **hard blocker: do not guess version** |
+| Kleiders Custom Renderer API | `Kleiders Custom Renderer API 6.0.0 1.19.2.jar`, CurseForge project 682065, file 5083496 | All Rights Reserved; CurseForge declares 0 dependencies | required Anime Assembly renderer | local/direct dependency; do not rehost/bundle in public repo without explicit permission |
 | SmartBrainLib | 1.9, Git branch `1.19.2`, commit `3d1263fe39bc96c84fe920632208e8958d24b13f` | MPL-2.0 | minion sensing/targeting/path/combat primitives | direct dependency; prefer unmodified library |
+
+The exact version-identification blocker is closed. The profile remains conditional until the pinned bytes are downloaded from their original sources, fingerprinted and proven together on the selected Forge runtime.
 
 ### Dependency fingerprint file
 
@@ -133,7 +135,7 @@ The project is useful as a modern behavioral reference because it contains broad
 | minion pathing/target/combat | SmartBrainLib | lane waypoint memory + MOBA target predicates | Vanilla Brain only if SBL compatibility fails and re-audit approves |
 | structure state | LoM port | map binding + server sync | another licensed MOBA donor after re-audit |
 | tower target selection | LoM state + project adapter + entity/AI queries | fill known incomplete donor behavior | re-audit donor |
-| imported map | Anime Assembly modified MOBA map local candidate | metadata only | Matter Overdrive public-domain map / other audited map |
+| imported map | Anime Assembly modified MOBA map, **local-only** | metadata binding only; do not alter/repackage restricted terrain | Matter Overdrive public-domain map / other audited map |
 | map/team/result UI | external UI asset family | layout wiring, scaling, text | Kenney CC0 family currently primary free fallback |
 | result/reset | project orchestration around donor states | allowed because no donor currently owns the integration boundary | LoM GameManager pattern |
 
@@ -252,6 +254,16 @@ Never maintain two balances that can diverge.
 
 ## 9. External map metadata contract
 
+The first arena candidate is the map linked by Anime Assembly as `Moba Mode Map Download`, Google Drive file ID `1tL4A1RIjUULe7tJy2tRBjI1AFwGsqipW`. Anime Assembly credits Shinkiroo's `League of Legends Summoner's Rift (Pre-Season 10)` as the parent. The parent's Planet Minecraft page says editing and distributing are not allowed, and no separate redistribution/edit grant for the Anime Assembly modified copy has been verified.
+
+Therefore:
+
+- map bytes remain local-only;
+- never commit/package/rehost the parent or modified world from this public repo under current evidence;
+- project code may store bindings/coordinates/checksums derived from local inspection;
+- do not edit the third-party terrain to solve gameplay problems; solve bindings/rules in metadata/code or select a different legally usable map;
+- re-audit permission before any public distribution/server use beyond the source terms.
+
 Recommended data-driven shape:
 
 ```json
@@ -277,7 +289,7 @@ Recommended data-driven shape:
 }
 ```
 
-Coordinates above are schema examples only, never canonical values. Real coordinates must come from inspection of the imported map.
+Coordinates above are schema examples only, never canonical values. Real coordinates must come from inspection of the locally obtained map.
 
 ## 10. Missing-screen UI contract
 
@@ -295,14 +307,15 @@ These are **not automatically final** merely because the license is clean. Build
 
 ### M0 — donor runtime preflight
 
-- resolve exact Kleider 1.19.2 file/version;
-- assemble Anime Assembly + GeckoLib + PlayerAnimator + Pehkui + Kleider on Forge 1.19.2;
+- obtain the exact pinned Anime Assembly, GeckoLib, playerAnimator, Pehkui and Kleider JARs from their original sources;
+- record each dependency's SHA-256 before testing;
+- assemble the donor-only profile on Forge 1.19.2 / Java 17, provisional Forge target 43.3.13;
 - boot client;
 - test multiplayer/dedicated-server viability where supported;
-- load the donor MOBA map locally;
+- obtain and load the donor MOBA map locally without committing/redistributing it;
+- record map world-folder identity and SHA-256;
 - manually verify character selection, four skills/additional skill, health bars, blue/red team behavior, all-player Start, M shop and minimap;
-- record every dependency SHA-256;
-- build `ANIME_ASSEMBLY_SYMBOL_MAP.md`;
+- build `ANIME_ASSEMBLY_SYMBOL_MAP.md` from actual JAR symbols/resources;
 - stop and reassess on a critical incompatibility.
 
 ### M1 — project bootstrap + donor bridge
@@ -356,7 +369,8 @@ Do not:
 - copy SimpleLaneWars' raw velocity movement or wave deletion bug;
 - preserve LoM no-op/incomplete attack branches as if they were finished;
 - guess dependency versions or Anime Assembly class names;
-- commit restricted map/JAR bytes to the public repo;
+- rehost the All Rights Reserved Kleider JAR in the public repository;
+- edit, commit or redistribute the restricted Summoner's Rift map under the currently verified source terms;
 - make final UI from temporary black panels;
 - treat build success as playtest success.
 
@@ -364,8 +378,11 @@ Do not:
 
 This blueprint is source-audit/planning output only.
 
+- dependency version/file identification: **PINNED FOR M0**
 - code compilation: **NOT RUN**
 - donor runtime smoke test: **NOT RUN**
+- map source/terms: **AUDITED; LOCAL-ONLY UNDER CURRENT EVIDENCE**
+- map bytes/folder/checksum: **NOT INTAKEN**
 - map loaded: **NOT RUN**
 - multiplayer: **NOT TESTED**
 - external dependency checksums: **NOT YET RECORDED**
