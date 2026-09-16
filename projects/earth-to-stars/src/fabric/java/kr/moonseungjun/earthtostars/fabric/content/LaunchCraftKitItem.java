@@ -17,7 +17,6 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
 public final class LaunchCraftKitItem extends Item {
@@ -38,21 +37,20 @@ public final class LaunchCraftKitItem extends Item {
             return InteractionResult.FAIL;
         }
         if (!serverLevel.dimension().equals(Level.OVERWORLD)) {
-            player.displayClientMessage(Component.translatable("message.earth_to_stars.launch_craft.earth_only"), true);
+            player.sendSystemMessage(Component.translatable("message.earth_to_stars.launch_craft.earth_only"));
             return InteractionResult.FAIL;
         }
         if (EarthToStarsFabricShipAuthority.findOwnedShip(player.getUUID()).isPresent()) {
-            player.displayClientMessage(Component.translatable("message.earth_to_stars.launch_craft.already_owned"), true);
+            player.sendSystemMessage(Component.translatable("message.earth_to_stars.launch_craft.already_owned"));
             return InteractionResult.FAIL;
         }
 
         BlockPos base = context.getClickedPos().relative(context.getClickedFace());
         if (!hasClearance(serverLevel, base)) {
-            player.displayClientMessage(Component.translatable("message.earth_to_stars.launch_craft.clearance"), true);
+            player.sendSystemMessage(Component.translatable("message.earth_to_stars.launch_craft.clearance"));
             return InteractionResult.FAIL;
         }
 
-        clearReplaceableVolume(serverLevel, base);
         double spawnX = base.getX() + 0.5D;
         double spawnY = base.getY() + 0.05D;
         double spawnZ = base.getZ() + 0.5D;
@@ -82,7 +80,7 @@ public final class LaunchCraftKitItem extends Item {
             craft.setYRot(player.getYRot());
             if (!serverLevel.addFreshEntity(craft)) {
                 EarthToStarsFabricShipAuthority.removePersistentShip(ship.shipId());
-                player.displayClientMessage(Component.translatable("message.earth_to_stars.launch_craft.deploy_failed"), true);
+                player.sendSystemMessage(Component.translatable("message.earth_to_stars.launch_craft.deploy_failed"));
                 return InteractionResult.FAIL;
             }
         } catch (RuntimeException deploymentFailure) {
@@ -107,26 +105,14 @@ public final class LaunchCraftKitItem extends Item {
                     if (!level.getFluidState(cursor).isEmpty()) {
                         return false;
                     }
-                    if (!state.isAir() && !state.canBeReplaced()) {
-                        return false;
+                    if (!state.isAir()) {
+                        if (!state.canBeReplaced() || !state.getCollisionShape(level, cursor).isEmpty()) {
+                            return false;
+                        }
                     }
                 }
             }
         }
         return true;
-    }
-
-    private static void clearReplaceableVolume(ServerLevel level, BlockPos base) {
-        for (int y = 0; y < DEPLOY_HEIGHT; y++) {
-            for (int x = -DEPLOY_RADIUS; x <= DEPLOY_RADIUS; x++) {
-                for (int z = -DEPLOY_RADIUS; z <= DEPLOY_RADIUS; z++) {
-                    BlockPos cursor = base.offset(x, y, z);
-                    BlockState state = level.getBlockState(cursor);
-                    if (!state.isAir() && state.canBeReplaced() && level.getFluidState(cursor).isEmpty()) {
-                        level.setBlockAndUpdate(cursor, Blocks.AIR.defaultBlockState());
-                    }
-                }
-            }
-        }
     }
 }

@@ -75,13 +75,11 @@ public final class LaunchCraftEntity extends VehicleEntity {
 
     @Override
     protected void addAdditionalSaveData(ValueOutput output) {
-        super.addAdditionalSaveData(output);
         shipId().ifPresent(id -> output.putString(TAG_SHIP_ID, id.toString()));
     }
 
     @Override
     protected void readAdditionalSaveData(ValueInput input) {
-        super.readAdditionalSaveData(input);
         String encoded = input.getStringOr(TAG_SHIP_ID, "");
         if (encoded.isEmpty()) {
             entityData.set(DATA_SHIP_ID, "");
@@ -179,16 +177,16 @@ public final class LaunchCraftEntity extends VehicleEntity {
         }
         ShipState ship = EarthToStarsFabricShipAuthority.findShip(shipId).orElse(null);
         if (ship == null || !ship.can(player.getUUID(), ShipPermission.PILOT)) {
-            serverPlayer.displayClientMessage(Component.translatable("message.earth_to_stars.launch_craft.no_pilot_access"), true);
+            serverPlayer.sendSystemMessage(Component.translatable("message.earth_to_stars.launch_craft.no_pilot_access"));
             return InteractionResult.FAIL;
         }
         if (!getPassengers().isEmpty() && !hasPassenger(player)) {
-            serverPlayer.displayClientMessage(Component.translatable("message.earth_to_stars.launch_craft.seat_occupied"), true);
+            serverPlayer.sendSystemMessage(Component.translatable("message.earth_to_stars.launch_craft.seat_occupied"));
             return InteractionResult.FAIL;
         }
 
         EarthToStarsFabricShipAuthority.ensureStarterRuntime(ship, transformFromEntity());
-        if (!hasPassenger(player) && !player.startRiding(this, true)) {
+        if (!hasPassenger(player) && !player.startRiding(this)) {
             return InteractionResult.FAIL;
         }
         if (EarthToStarsFabricShipAuthority.grantControl(serverPlayer, shipId, level().getGameTime()).isEmpty()) {
@@ -234,13 +232,19 @@ public final class LaunchCraftEntity extends VehicleEntity {
     }
 
     @Override
-    public void onRemovedFromLevel() {
-        shipId().ifPresent(id -> EarthToStarsFabricShipAuthority.unbindPhysicalEntity(id, getUUID()));
-        if (lastControllerId != null) {
-            EarthToStarsFabricShipAuthority.releaseControl(lastControllerId);
-            lastControllerId = null;
+    public void remove(Entity.RemovalReason reason) {
+        if (!level().isClientSide()) {
+            shipId().ifPresent(id -> {
+                if (EarthToStarsFabricShipAuthority.unbindPhysicalEntity(id, getUUID())) {
+                    EarthToStarsFabricShipAuthority.deactivateRuntime(id);
+                }
+            });
+            if (lastControllerId != null) {
+                EarthToStarsFabricShipAuthority.releaseControl(lastControllerId);
+                lastControllerId = null;
+            }
         }
-        super.onRemovedFromLevel();
+        super.remove(reason);
     }
 
     private ShipTransform transformFromEntity() {

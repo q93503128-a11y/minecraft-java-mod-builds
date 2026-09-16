@@ -159,8 +159,8 @@ public final class EarthToStarsFabricShipAuthority {
         return existing == null || existing.equals(entityId);
     }
 
-    public static synchronized void unbindPhysicalEntity(ShipId shipId, UUID entityId) {
-        PHYSICAL_ENTITIES.remove(shipId, entityId);
+    public static synchronized boolean unbindPhysicalEntity(ShipId shipId, UUID entityId) {
+        return PHYSICAL_ENTITIES.remove(shipId, entityId);
     }
 
     public static synchronized boolean deactivateRuntime(ShipId shipId) {
