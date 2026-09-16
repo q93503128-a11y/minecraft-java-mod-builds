@@ -3,13 +3,14 @@
 > Status: **DESIGN CANON — R02 world/combat/service/reward flow is implementation-ready; exact external asset file bindings remain gated by intake where explicitly marked**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Region graph: `REGIONS.md`  
+> Cross-region refinement: `REGION_CROSS_AUDIT.md`  
 > Combat: `COMBAT_BALANCE.md`, `STATUS_AND_R01_ENCOUNTERS.md`  
 > Loot/equipment: `LOOT_ECONOMY.md`, `EQUIPMENT_BALANCE.md`  
 > Field systems: `GATHERING_FISHING_CAMP_HOUSING.md`, `FISHING_COLLECTION_HOUSING_MARKET.md`  
 > Quest/state: `QUEST_WORLD_STATE.md`  
 > UI: `UI_DIRECTION.md`  
 > External provenance: `EXTERNAL_SOURCES.md`  
-> Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins. It refines the existing R02 section of `REGIONS.md`; it does not reopen R02's Lv/terrain/role decisions.
+> Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins. Later explicit anti-repetition refinements in `REGION_CROSS_AUDIT.md` are incorporated into this file and must not be reintroduced from older snapshots.
 
 This package turns the already-canonical R02 western rich forest / river basin into a region that can be implemented without inventing its flow during coding.
 
@@ -19,7 +20,7 @@ The region's core play sentence is:
 leave the open R01 heartland
 → enter a denser forest where roads split and landmarks hide behind terrain
 → discover a compact logging/trade hamlet
-→ follow river, timber and ruin clues instead of a single corridor
+→ follow river, timber and ruin evidence instead of a single corridor
 → gather/fish/hunt while learning stronger forest ecology
 → find an ancient ruined sanctum
 → defeat its Lich without turning the forest into an undead biome
@@ -72,15 +73,9 @@ Clover_1.gltf
 Petal_1.gltf ... Petal_5.gltf
 ```
 
-These filenames are **candidate bindings**, not automatic acceptance. Exact locally acquired package, license evidence, SHA-256, Minecraft scale and material appearance must still be recorded before committing raw bytes.
+These filenames are candidate bindings, not automatic acceptance. Exact locally acquired package, license evidence, SHA-256, Minecraft scale and material appearance must still be recorded before committing raw bytes.
 
-R02 uses the family mainly for:
-
-- readable forest nodes;
-- mushroom/plant resource presentation;
-- twisted/deep-forest silhouettes;
-- ruin-overgrowth dressing;
-- field-boss arena framing.
+R02 uses the family mainly for readable forest nodes, mushroom/plant resource presentation, twisted/deep-forest silhouettes, ruin-overgrowth dressing and field-boss arena framing.
 
 Do not cover Azari terrain with thousands of display entities. Translate large-scale forest language into performant world/block treatment and reserve model assets for nodes, props and landmark detail.
 
@@ -136,27 +131,19 @@ Production decision for baseline R02:
 
 - **do not use Bunfungus as a normal R02 spawn**;
 - its established external mushroom-field identity is too specific and would make the western forest feel like a transplanted donor biome;
-- it may be reconsidered for a future dedicated mushroom/fungal pocket if the actual Azari terrain supports one.
-
-This is candidate rejection, not content deletion.
+- it may be reconsidered only for a future dedicated fungal pocket if the actual Azari terrain supports one.
 
 ## 2.4 Nature Spirit / Lich dependency boundary
 
-Current R02 uses `Nature Spirit` and `Lich` from Threateningly Mobs Continued as **dependency-only** entities.
+Current R02 uses `Nature Spirit` and `Lich` from Threateningly Mobs Continued as dependency-only entities.
 
-License evidence remains conflicted across current storefront metadata:
-
-- continuation CurseForge listing displays All Rights Reserved;
-- other metadata/pages have displayed MIT lineage/status;
-- the original older project has MIT listings.
-
-Therefore:
+License evidence remains conflicted across current storefront metadata. Therefore:
 
 - normal installed dependency use may proceed when terms/runtime allow;
 - do not copy continuation model/code/assets into the public repository until exact upstream/source licensing is reconciled;
 - project-owned stats, regional spawning, attacks/rewards/state remain canonical regardless of donor defaults.
 
-The original/current source history supports Lich having a reinforcement-oriented skill identity. R02 deliberately preserves that design clue instead of turning the boss into a generic projectile sponge.
+The original/current source history supports Lich having a reinforcement-oriented skill identity. R02 preserves that clue rather than turning the boss into a generic projectile sponge.
 
 ## 2.5 R02 field-boss visual candidate
 
@@ -164,8 +151,8 @@ The field guardian must not be merely a larger/recolored R01 Nature Spirit.
 
 Primary current candidate:
 
-- Quaternius **`Goleling Evolved`** from the Ultimate Monsters family / creator model distribution;
-- animated external model; current downstream/source evidence identifies it as a Quaternius model and the Ultimate Monsters family is published as CC0.
+- Quaternius `Goleling Evolved` from the Ultimate Monsters family / creator model distribution;
+- animated external model; current source evidence identifies the family as CC0.
 
 Status:
 
@@ -179,27 +166,23 @@ Before final binding:
 2. inspect silhouette at Minecraft scale;
 3. inspect available attack/run/hit/death animation clips;
 4. verify the model reads as an ancient forest/stone guardian without relying on a bad recolor;
-5. only then lock the player-facing guardian name and exact attack animation bindings.
+5. only then lock player-facing guardian name and exact animation bindings.
 
 Fallback order if the model fails:
 
 1. another distinct animated CC0 Quaternius Ultimate Monsters guardian/golem model;
 2. another legally redistributable external forest-guardian model of equal/higher quality;
-3. **not** `Nature Spirit x 1.8 scale + green particles`.
+3. never `Nature Spirit x 1.8 scale + green particles`.
 
 ## 2.6 Lich reinforcement visual
 
-If the dependency's own reinforcement actor cannot be cleanly normalized to project encounter rules, use an accepted external animated ghost/shade model such as Quaternius Ultimate Monsters `Ghost` as a project-owned **Sanctum Shade** presentation.
-
-This is a fallback, not permission to mix random undead packs.
+If the dependency's own reinforcement actor cannot be normalized cleanly to project encounter rules, use an accepted external animated ghost/shade model such as a compatible Quaternius Ultimate Monsters Ghost as a project-owned Sanctum Shade presentation.
 
 ---
 
 # 3. Spatial progression / local encounter pressure
 
 R02 Suggested Entry Lv stays **8**.
-
-Use local pressure instead of treating the region as a flat Lv8 zone:
 
 | Sub-area | Intended local pressure | Role |
 |---|---:|---|
@@ -221,33 +204,31 @@ No invisible wall appears at the sanctum, R03 exit or field-boss arena.
 
 # 4. Navigation / landmark language
 
-Dense forest can become annoying if every direction looks the same. R02 requires authored visual orientation.
-
 Use at least these landmark classes when Azari inspection permits:
 
-1. **main river** — persistent macro-navigation spine;
-2. **logging road** — broadest safe-ish route from R01 into hamlet;
-3. **split river ford / bridge** — memorable decision point;
-4. **tall twisted-tree grove** — deep forest silhouette visible through canopy gaps;
-5. **ruined sanctum tower/arch** — glimpsed before full dungeon discovery;
-6. **mountain/ridge sightline** — signal toward R03;
-7. **one dangerous high-ground/stone clearing** — guardian-hunt territory.
+1. main river — persistent macro-navigation spine;
+2. logging road — broadest safe-ish route from R01 into hamlet;
+3. split river ford / bridge — memorable decision point;
+4. tall twisted-tree grove — deep forest silhouette visible through canopy gaps;
+5. ruined sanctum tower/arch — glimpsed before full dungeon discovery;
+6. mountain/ridge sightline — signal toward R03;
+7. one dangerous high-ground/stone clearing — guardian-hunt territory.
 
 Rules:
 
-- do not solve navigation with permanent floating arrows;
-- paths can be narrower than R01, but Trail Stag remains usable on the main routes;
-- side paths may require dismount/foot exploration when that reveals real content;
+- no permanent floating arrows;
+- Trail Stag remains usable on main routes;
+- side paths may require dismount when doing so reveals real content;
 - repeated fallen-log jumping is not a traversal gimmick;
-- river crossings are deliberately placed so water does not become constant movement friction.
+- river crossings are deliberately placed so water does not become constant friction.
 
 ---
 
 # 5. R02 logging/trade hamlet
 
-The R02 hamlet is a **secondary regional hub**, smaller than the starting settlement.
+The R02 hamlet is a secondary regional hub, smaller than Alderford.
 
-Target physical population at daytime:
+Daytime population target:
 
 ```text
 6–9 functional/guard NPCs
@@ -276,26 +257,21 @@ Not duplicated here by default:
 - full advanced alchemy lab;
 - every R01 specialist NPC.
 
-Reason:
-
-- the hamlet must be useful enough that visiting it matters;
-- the starting settlement must still remain a meaningful long-term hub.
-
 Basic regional recipes/orders may be handed in here when they do not require full forge/alchemy infrastructure.
 
 ## 5.2 Housing
 
-R02 visibly introduces the **first Town House-class upgrade opportunity** from `FISHING_COLLECTION_HOUSING_MARKET.md`.
+R02 visibly introduces the first Town House-class upgrade opportunity from `FISHING_COLLECTION_HOUSING_MARKET.md`.
 
 Target vacant authored properties:
 
 - 1–2 Small Cottage-class regional alternatives where map space allows;
 - **2 Town House-class properties** around the ~9,000 Gold baseline;
-- at least one should visually offer more interior/display room than the R01 starter cottage.
+- at least one visibly offers more interior/display room than the R01 starter cottage.
 
-The player still owns only one residence at a time and uses atomic trade-in/move behavior.
+The player owns **one residence at a time**. Buying another property uses the authoritative trade-up/resale/migration flow in `FISHING_COLLECTION_HOUSING_MARKET.md`; older wording suggesting simultaneous multi-property ownership is obsolete and must not be implemented.
 
-Housing is optional. The player does not need to buy a forest house to use the hamlet or finish the region.
+Housing is optional.
 
 ---
 
@@ -307,30 +283,21 @@ Do not invent a huge second material tier. R02 adds a small number of visibly ju
 
 ### Hardwood
 
-Existing R01 resource remains common and useful.
-
 ```text
 yield: 2–3
 personal respawn: 5 active min
 Field Axe valid
 ```
 
-R02 contains richer/denser authored nodes rather than a new `Hardwood II` item.
+R02 uses richer/denser authored nodes rather than a `Hardwood II` item.
 
 ### Healing Herb
 
-Existing ordinary recovery herb remains available at lower density around river/clearings.
-
-No redundant `Forest Healing Herb` is introduced merely for region color.
+Existing ordinary recovery herb remains available at lower density around river/clearings. No redundant `Forest Healing Herb` exists.
 
 ## 6.2 New resource — Forest Mushroom
 
-Production direction:
-
-- external exact candidate: `Mushroom_Common.gltf` from the source-specific Quaternius Stylized Nature MegaKit Standard snapshot;
-- readable ordinary name is acceptable because the resource is intentionally ordinary.
-
-Baseline:
+External candidate: `Mushroom_Common.gltf` from the source-specific Quaternius Stylized Nature MegaKit Standard snapshot.
 
 ```text
 player-facing working name: Forest Mushroom
@@ -342,13 +309,9 @@ primary uses: cooking, bounded alchemy/contract uses, ordinary sale
 
 Do not make every mushroom color a separate material ID.
 
-Final model/texture acceptance still requires intake review.
+## 6.3 Tree-resin resource role
 
-## 6.3 New resource role — tree resin
-
-R02 needs one resin/sap material because it connects logging to bow/finesse equipment, furnishing and selected consumables.
-
-Design role:
+R02 uses one resin/sap material because it connects logging to bow/finesse equipment, furnishing and selected consumables.
 
 ```text
 yield target: 1–2
@@ -357,36 +320,25 @@ source: authored resin-bearing tree/scar nodes, not every tree block
 uses: bow/string/handle treatment, selected furnishing/utility recipe, bounded alchemy use
 ```
 
-**Player-facing final name/model is not locked yet.**
+Final player-facing name/model remains a pre-code asset-intake gate. Internal role names are never player-facing.
 
-Reason:
+## 6.4 Mana-active flora role
 
-- the exact external resin/bottle/glob model has not yet passed intake;
-- external-first rules prohibit locking an item just because the mechanic needs a noun.
-
-Internal data may temporarily call the role `r02_tree_resin_role`, never player-facing.
-
-## 6.4 New resource role — mana-active flora
-
-Use a distinct accepted plant model from the Stylized Nature family; `Plant_7.gltf` is a current exact filename candidate but has not been visually accepted.
-
-Target behavior:
+Use a distinct accepted plant model from the Stylized Nature family; `Plant_7.gltf` remains a current candidate pending visual acceptance.
 
 ```text
 yield: 1
 personal respawn: 10 active min
-locations: deep grove / sanctum approaches, not roadside spam
+locations: deep grove / sanctum approaches
 tool: Harvest Knife / Sickle
-uses: WIL/Focus/alchemy/support-related regional recipes
+uses: WIL/Focus/alchemy/support regional recipes
 ```
 
-Final player-facing name waits for visual review.
+Final player-facing name is closed during pre-code visual intake, not during implementation.
 
 ## 6.5 No new profession
 
-R02 does **not** add Carpentry or Foraging as another giant mastery tree.
-
-Furniture/trade orders can consume wood/resin through existing economy/service rules without inventing another profession bar.
+R02 does not add Carpentry or Foraging as another mastery tree.
 
 ---
 
@@ -396,70 +348,42 @@ R02 is the first region where fishing should feel like a real optional collectio
 
 Use river bends, deeper pools, old docks and shaded tributaries as authored shoal spots.
 
-R02 codex target:
+R02 contributes to the **global 36–48 species launch roster** rather than receiving a mandatory identical quota. Expected local composition after model/ecology review is roughly 4–5 identities, with shared species allowed where ecology fits.
 
-```text
-4–5 fish identities
-```
+Current external model pool contains several Quaternius animated-fish candidates. Final species names are locked only after side-by-side model inspection in the pre-code content pass.
 
-Composition target:
-
-- 2 common river/pond catches;
-- 1 uncommon deep-pool/tributary catch;
-- 1 rare regional catch;
-- optional fifth shared fish overlapping R01/R03 water where ecology fits.
-
-Current external model pool already contains several Quaternius CC0 animated fish candidates, including generic Fish variants, Goldfish/Blue Goldfish and other distinct silhouettes. **Do not lock the final R02 species names until the actual models are inspected side-by-side.**
-
-R02 fishing uses the canonical:
-
-- Fish Codex;
-- personal-best size;
-- Trophy band;
-- sell/cook/display loop;
-- ordinary fish → `Grilled Catch` option;
-- no fishing currency.
-
-Rare R02 catch conditions may prefer shaded/deep forest pools or a broad time/weather weight, but no required main progression waits for a narrow weather window.
+R02 fishing uses the canonical Fish Codex, personal-best size, Trophy band, sell/cook/display loop, ordinary-fish `Grilled Catch` option and no fishing currency.
 
 ---
 
 # 8. R02 ecology / spawn density
 
-The forest must still read as ecology, not continuous combat.
-
 Normal daylight composition target:
 
 - Raccoon/Crow: ambient/common near roads/hamlet;
-- Forest Wolf: low-density predator packs, primarily deeper from services;
+- Forest Wolf: low-density predator packs;
 - Forest Spider: shaded/root/fallen-log ambusher;
 - Grizzly: rare territorial hazard;
-- Nature Spirit: uncommon/rare elite in authored grove-biased zones;
+- Nature Spirit: uncommon/rare elite in grove-biased zones;
 - Cave Centipede: underground/root cuts only;
-- Regalhart: uncommon authored hunt/trace occurrence only where external variant presentation actually supports it;
+- Regalhart: uncommon authored traces/sighting only where variant presentation supports it;
 - R02 field guardian: authored boss controller only;
-- Lich: **never a natural forest spawn**; sanctum/ruin encounter only.
+- Lich: never a natural forest spawn.
 
-No default dependency global-spawn table owns this region.
+No dependency global-spawn table owns this region.
 
-## 8.1 Pack pressure limit
-
-Ordinary loaded forest should avoid accidental `wolf pack + spider + Nature Spirit + grizzly` dogpiles.
-
-Regional spawn controller should enforce local role pressure such as:
+## 8.1 Pack-pressure limit
 
 - only one nearby elite-class natural threat in an ordinary exploration pocket;
 - predator packs remain small;
 - territorial wildlife does not join unrelated fights from huge radii;
-- boss/hunt controllers suppress conflicting natural elite spawns inside their immediate arena/context.
+- boss/hunt controllers suppress conflicting natural elite spawns in their immediate arena/context.
 
 Actual density is profiler/playtest tuned.
 
 ---
 
 # 9. Forest Spider combat kit
-
-Working project identity: **Forest Spider** until the external model is inspected; a stronger lore name is not required for an ordinary animal-scale enemy.
 
 ```text
 Lv: 8–10 by placement
@@ -471,9 +395,7 @@ Poise: 20
 same-Lv active TTK target: ~2.8–3.2 s
 ```
 
-## Attack — Root Pounce
-
-Use the external jump/attack animation rather than inventing ranged web spam.
+## Root Pounce
 
 ```text
 wind-up: 0.50 s
@@ -485,9 +407,7 @@ Poison buildup: 20
 recovery: 0.40 s
 ```
 
-## Attack — Fang Follow-up
-
-Only after reaching close range.
+## Fang Follow-up
 
 ```text
 wind-up: 0.32 s
@@ -497,23 +417,11 @@ guard pressure: light
 recovery: 0.30 s
 ```
 
-Rules:
-
-- no invisible wall-climb teleport;
-- no web projectile unless later external motion/VFX inspection justifies a distinct enemy variant;
-- two/three spiders may pressure positioning, but common packs cannot stunlock the player.
-
-Rewards:
-
-- ordinary common EXP/Gold budget;
-- no routine equipment;
-- no new `Spider Fang` material unless a later real recipe needs it.
+No invisible wall-climb teleport; no web projectile unless a later accepted enemy variant and motion/VFX support a genuinely distinct kit; common packs cannot stunlock the player.
 
 ---
 
 # 10. Forest Wolf combat kit
-
-External source candidate: Quaternius animated Wolf CC0.
 
 ```text
 Lv: 9–11
@@ -528,12 +436,12 @@ pack size baseline: 1–3
 
 Behavior:
 
-- patrol/roam in bounded forest territory;
-- packs spread slightly rather than occupy exactly one hitbox;
-- do not chase through the entire region;
-- if only one wolf remains far from territory/pack after a failed pursuit, it may disengage instead of behaving like a zombie.
+- bounded patrol/territory;
+- slight pack spread;
+- no region-wide chase;
+- a lone distant wolf may disengage after failed pursuit.
 
-## Quick Bite
+### Quick Bite
 
 ```text
 wind-up: 0.32 s
@@ -542,7 +450,7 @@ guardable/perfect_guardable: true
 recovery: 0.28 s
 ```
 
-## Bounding Lunge
+### Bounding Lunge
 
 ```text
 wind-up: 0.60 s
@@ -553,16 +461,7 @@ perfect_guardable: true
 recovery on miss: 0.65 s
 ```
 
-Pack rule:
-
-- no synchronized three-wolf lunge on the same server tick;
-- local pack attack scheduler offsets heavy commitments so the player can actually read them.
-
-Rewards:
-
-- common EXP/Gold/material budget only;
-- no ordinary equipment;
-- creature resource drops only if existing cooking/material design gives them a real use.
+No synchronized three-wolf heavy lunge on the same server tick; pack scheduler offsets heavy commitments.
 
 ---
 
@@ -570,11 +469,7 @@ Rewards:
 
 Do not create new species variants solely to increase numbers.
 
-## Grizzly
-
-R02 may place stronger territorial Grizzlies around Lv10–11 using the established R01 kit with source-Lv-scaled attack data.
-
-Reference target at Lv10:
+Grizzly Lv10 reference:
 
 ```text
 HP: ~470
@@ -584,13 +479,7 @@ Poise: 62
 active fight target: ~10–12 s if provoked
 ```
 
-This remains wildlife, not an elite loot pinata.
-
-## Cave Centipede
-
-R02 root cuts use the R01 physical/wall-climb kit at Lv10–12.
-
-Reference target Lv10:
+Cave Centipede Lv10 reference:
 
 ```text
 HP: ~280
@@ -599,15 +488,11 @@ MR: 14
 Poise: 46
 ```
 
-Do not add new poison-leg currency or global surface spawning.
+No new token/material exists unless a real recipe later justifies a physical resource.
 
 ---
 
 # 12. Mature Nature Spirit — native R02 elite
-
-R01 taught the basic identity. R02 makes Nature Spirit a native elite with one additional area-control decision rather than only higher HP.
-
-Reference target:
 
 ```text
 Lv: 11
@@ -619,18 +504,9 @@ Poise: 88
 solo active TTK: ~23–25 s
 ```
 
-Preserve:
-
-- Rooted Swipe;
-- Earthen Ram;
-- Living Shell;
-- Bloom Quake;
-- melee/earth identity;
-- no generic projectile spam during defense.
+Preserve Rooted Swipe, Earthen Ram, Living Shell, Bloom Quake and the melee/earth identity.
 
 ## R02 addition — Root Snare
-
-The Spirit braces and causes a clearly visible external root/ground VFX at target ground.
 
 ```text
 telegraph: 1.00 s
@@ -643,39 +519,18 @@ recovery: 0.70 s
 reuse floor: 7 s
 ```
 
-Rules:
+Actual server area matches visible roots. Root Snare cannot chain into an unavoidable Bloom Quake without a legal movement window. Living Shell continues to increase incoming poise damage.
 
-- area appears before resolution;
-- actual server area matches visible roots;
-- one Spirit cannot chain Snare directly into an unavoidable Bloom Quake before the player receives a legal movement window;
-- Living Shell still increases incoming poise damage, preserving the learned R01 answer.
-
-Status relations remain broadly R01-like:
-
-- Poison strongly resistant;
-- Fire direct damage weak;
-- MR higher than Defense.
-
-Rewards:
-
-- elite 30% equipment-roll rule;
-- regional mushroom/flora/material output only when source tables justify it;
-- no new abstract Nature currency.
+Rewards follow elite equipment rules; no abstract Nature currency.
 
 ---
 
 # 13. Regalhart in R02
 
-R02 should acknowledge that Regalhart is a forest-capable species without making the R01 boss meaningless.
-
-Baseline:
-
 - no common natural Regalhart spawn;
-- occasional authored tracks/sightings may appear;
-- a stronger `ancient/mature` hunt variant becomes production content **only if the dependency or accepted external asset path supports clear visual differentiation** such as genuinely different antler/body presentation;
-- if visual differentiation is weak, keep Regalhart as rare ecological sighting/traces and do not create a second stat-scaled boss.
-
-This decision is deliberately quality-gated.
+- authored tracks/sightings may occur;
+- an ancient/mature hunt variant becomes production content only if the dependency/external asset path supports clear visual differentiation;
+- if visual differentiation is weak, keep Regalhart as rare ecology/traces and do not create a stat-scaled repeat boss.
 
 ---
 
@@ -687,7 +542,7 @@ Internal production ID:
 r02_grove_guardian
 ```
 
-Do not expose this internal name to players.
+Never expose the internal ID to players.
 
 Current visual candidate: Quaternius `Goleling Evolved`.
 
@@ -703,46 +558,61 @@ Poise: 205
 solo active TTK target: ~145–155 s
 ```
 
-Exact attack names/player-facing boss name wait for model/animation inspection, but gameplay roles are locked:
+Gameplay roles are locked:
 
-1. **quick close-range strike** — ~10–12% HP, guardable;
-2. **wide committed double-arm/sweep sequence** — 20–24% total, readable follow-up;
-3. **forward committed rush/body movement** — ~26%, strong miss punish;
-4. **ground-line/ground-ring signature** — ~30%, >=1.10 s visible tell, unguardable and matched to external ground VFX;
-5. **<=45% pattern transition** — adds aftershock/sequence pressure, **not** flat +damage/+HP.
+1. quick close-range strike — ~10–12% HP, guardable;
+2. wide committed double-arm/sweep sequence — 20–24% total;
+3. forward committed rush/body movement — ~26%, strong miss punish;
+4. ground-line/ground-ring signature — ~30%, >=1.10 s visible tell, unguardable and matched to external ground VFX;
+5. <=45% pattern transition adds aftershock/sequence pressure, not flat +damage/+HP.
 
 Constraints:
 
 - no teleport;
 - no random full-arena unavoidable AoE;
-- model animation must support the actual attack body language;
-- if the model's available animations cannot support these roles convincingly, redesign the kit around its real clips **before implementation** rather than faking motions.
+- model animation must support actual attack body language;
+- if the final accepted model cannot support these roles convincingly, revise the kit in canon before implementation rather than faking motion.
 
-## Hunt discovery
+## 14.1 Hunt discovery — continuous environmental trail
 
-The field boss is discovered through **2 of 3** clue types, structurally similar to Regalhart but with different physical language:
+The old numeric `2 of 3 clues` discovery rule is **removed**. Do not restore it from earlier snapshots.
 
-- split/broken old stone marker or ruin segment;
-- deeply displaced roots/soil around a clearing;
-- heavy impact marks on abandoned logging equipment/bridge support.
+Discovery now uses one continuous environmental-reading sequence that is deliberately different from R01 Regalhart:
 
-Any 2 clues reveal a broad search area, not a precise GPS pin.
+1. the player encounters one **major disturbance anchor** in the working forest — a damaged logging site, bridge support or large route obstruction visibly beyond ordinary wildlife damage;
+2. that anchor exposes a physically continuous trail of displaced roots, broken soil, shifted stone and intermittent heavy impacts leading deeper from the working woods;
+3. the trail may branch around terrain, but each legitimate continuation must be readable from the previous segment by world geometry/environmental damage rather than a quest counter;
+4. entering the guardian territory records the hunt location and broad map search area;
+5. finding the guardian before the disturbance/trail sequence is always valid and records discovery immediately.
 
-Finding the boss first remains valid.
+There is **no numeric clue count** and no requirement to click arbitrary evidence props. The player is reading a sustained physical path through the forest.
 
-## Reward contract
+The map may show a broad search area after the major disturbance is found. It never reveals an exact boss GPS pin before territory/boss discovery.
+
+Internal personal state may use semantic flags such as:
+
+```text
+guardian_disturbance_found
+guardian_trail_followed
+guardian_territory_found
+guardian_discovered
+```
+
+These are never player-facing.
+
+## 14.2 Reward contract
 
 First eligible defeat:
 
 - one guaranteed Superior+ normal equipment roll;
-- 2 signature materials tied to the **accepted final model identity**;
+- 2 signature materials tied to the accepted final model identity;
 - 15% direct Mythic roll from the final guardian signature pool;
 - EXP ~20% current next-Lv requirement;
 - Class XP ~15% current Class Rank requirement.
 
 Repeat follows global field-boss rules.
 
-**Do not name the signature material or Mythic before the accepted model gives it a real visual identity.**
+Signature material/Mythic player-facing names remain a pre-code visual-identity gate and cannot ship as generic `Guardian Token`/internal labels.
 
 ---
 
@@ -754,8 +624,6 @@ Target first-clear active length:
 18–24 minutes
 ```
 
-It should be modestly denser/more branching than R01 but not become a maze.
-
 Architecture:
 
 ```text
@@ -766,70 +634,44 @@ forest exterior
 → inner sanctum
 ```
 
-Primary external visual direction:
-
-- Quaternius Ultimate Modular Ruins / Modular Dungeon architecture;
-- Stylized Nature MegaKit overgrowth;
-- Fantasy Props books/statues/candles/chests/furniture where accepted;
-- no imported vanilla spawner encounters.
+Primary direction: accepted Quaternius ruins/dungeon architecture, Stylized Nature overgrowth, Fantasy Props where appropriate, and no imported vanilla spawner encounters.
 
 ## Room 1 — Arboretum Court
 
-Purpose:
-
-- transition from living forest to abandoned ordered garden/sanctum;
+- living forest → abandoned ordered garden/sanctum transition;
 - one common group + environmental clue;
-- optional mushroom/flora cache.
-
-Target room time: ~2–3 min.
+- optional mushroom/flora cache;
+- target 2–3 min.
 
 ## Room 2 — Root Archive
 
-Purpose:
-
-- shelves/ruins split by tree roots;
+- shelves/ruins split by roots;
 - one Mature Nature Spirit elite or equivalent authored guardian;
-- optional side branch with lore + rare regional plant/resource rather than another trash pack.
-
-Target room time: ~3–4 min.
+- optional lore + rare regional resource side branch instead of another trash pack;
+- target 3–4 min.
 
 ## Room 3 — Broken Cloister / River Channel
 
-Purpose:
-
-- shallow water/bridge path gives a visual break;
-- short traversal and one compact combat setup;
-- opens a persistent-in-run shortcut back toward the entrance.
-
-Do not require prolonged swimming combat.
+- shallow-water/bridge visual break;
+- short traversal + compact combat;
+- persistent-in-run shortcut toward entrance;
+- no prolonged swimming combat.
 
 ## Room 4 — Sepulchral Gallery
 
-Purpose:
-
-- first explicit undead/sanctum corruption presentation;
-- 1–2 weak shade actors or equivalent external/dependency enemies;
-- introduces the Lich's reinforcement visual language before the boss without spawning Liches as trash.
+- first explicit undead/sanctum presentation;
+- 1–2 weak shade actors/equivalent;
+- previews Lich reinforcement language without spawning Liches as trash.
 
 ## Room 5 — Inner Sanctum
 
-Lich arena.
-
-Arena supports:
-
-- open central movement space;
-- 3–4 readable pillars/roots for orientation, not permanent projectile cheese;
-- external ground-sigil telegraph readability;
-- reinforcement spawns from visible authored anchors;
-- no arbitrary terrain destruction.
+Lich arena with open central movement space, 3–4 orientation pillars/roots, readable external ground-sigil telegraphs, visible authored reinforcement anchors and no arbitrary terrain destruction.
 
 ---
 
 # 16. Lich — R02 dungeon boss
 
 Dependency visual identity: Threateningly Mobs Continued `Lich`, dependency-only.
-
-Project-normalized target:
 
 ```text
 Lv: 14
@@ -840,11 +682,9 @@ Poise: 170
 solo active TTK target: ~140–150 s
 ```
 
-The Lich is a **caster/controller with bounded reinforcement**, not a stationary projectile turret.
+The Lich is a caster/controller with bounded reinforcement.
 
-## Attack 1 — Soul Bolt
-
-Working gameplay label; final VFX/name may be refined after dependency animation inspection.
+## Soul Bolt
 
 ```text
 wind-up: 0.45–0.55 s
@@ -856,9 +696,7 @@ projectile_reflectable: only if final runtime/visual supports it cleanly
 recovery: ~0.30 s
 ```
 
-Projectile speed must allow a real side-step/dodge read at ordinary arena distance.
-
-## Attack 2 — Grave Line
+## Grave Line
 
 ```text
 telegraph: 0.90 s visible floor lane
@@ -871,9 +709,7 @@ perfect_guardable: false
 recovery: 0.70 s
 ```
 
-No hidden extension beyond the decal.
-
-## Attack 3 — Withered Sigil
+## Withered Sigil
 
 ```text
 telegraph: 1.20 s ground circle
@@ -882,73 +718,54 @@ damage: 26%
 channel: magic
 guardable: false
 perfect_guardable: false
-negative effect: brief authored Snared/slow-space pressure only if the accepted VFX clearly communicates it
+negative effect: brief authored Snared/slow-space pressure only if accepted VFX clearly communicates it
 recovery: 0.80 s
 ```
 
-This is movement pressure, not long hard crowd control.
-
-## Reinforcement — Sanctum Call
-
-Preserve the donor Lich's reinforcement identity in a bounded project form.
+## Sanctum Call
 
 Trigger points:
 
 ```text
-first cast: at/below 70% HP
-second cast: at/below 35% HP
+first cast: <=70% HP
+second cast: <=35% HP
 ```
 
 Each cast:
 
 - >=1.20 s visible channel;
-- spawns at most 2 `Sanctum Shade`-role adds from authored anchors;
-- if 2 valid shades are already alive, the summon is skipped/replaced by a non-summon attack rather than exceeding the cap;
-- Lich is **not invulnerable** during the channel;
-- killing shades is useful but not mandatory if the player can manage space.
+- at most 2 Sanctum Shade-role adds from authored anchors;
+- if 2 valid shades already live, use another attack instead of exceeding cap;
+- Lich is not invulnerable during channel.
 
 Shade target:
 
 ```text
 Lv: 13–14
 HP: 120–150
-role: fragile common/add
 Poise: ~18–22
+role: fragile add
 ```
-
-Use dependency reinforcement actor if its presentation fits. Otherwise bind one coherent accepted external animated ghost/shade model.
 
 No vanilla zombie/skeleton reinforcement.
 
-## Phase change — <=45% HP
+## <=45% HP pattern change
 
-No stat steroid.
+- Grave Line may gain one separately telegraphed offset follow-up;
+- Soul Bolt may become a short two-shot rhythm with readable interval;
+- Withered Sigil may predict movement more aggressively;
+- no flat stat steroid.
 
-Pattern changes:
+Status relations:
 
-- Grave Line may be followed by one separately telegraphed offset lane;
-- Soul Bolt may appear as a short 2-shot rhythm with a readable interval;
-- Withered Sigil may target predicted movement more aggressively;
-- second reinforcement threshold remains bounded as above.
+- Poison buildup immune;
+- Bleeding strongly resistant;
+- Frostbite resistant;
+- Shocked neutral;
+- Fire direct damage weak 1.15x;
+- normal Defense/MR still applies.
 
-No permanent +20% damage/haste simply because HP reached 45%.
-
-## Status relations
-
-Visually justified undead resistance:
-
-- Poison buildup: immune;
-- Bleeding buildup: strongly resistant;
-- Frostbite: resistant;
-- Shocked: neutral;
-- Fire direct damage: weak (1.15x);
-- physical/magic mitigation still uses normal Defense/MR.
-
-Hard immunity is used only for Poison because the accepted undead identity genuinely lacks a normal toxin biology.
-
-## Reward contract
-
-First eligible clear — boss layer:
+First-clear boss layer:
 
 - guaranteed Superior+ normal equipment;
 - 2 Lich signature materials;
@@ -957,10 +774,10 @@ First eligible clear — boss layer:
 
 Dungeon completion layer:
 
-- choose one of **3 curated Superior Item Lv14** region/dungeon rewards;
-- completion EXP: **50%** current next-Lv requirement + boss contribution;
-- completion Class XP: **32%** + boss contribution;
-- Gold baseline target: **260 Gold**.
+- choose 1 of 3 curated Superior Item Lv14 rewards;
+- completion EXP 50% current next-Lv + boss contribution;
+- completion Class XP 32% + boss contribution;
+- Gold 260.
 
 Repeat:
 
@@ -970,45 +787,31 @@ Repeat:
 - repeat EXP 22% + boss contribution;
 - Class XP 15% completion + boss contribution.
 
-The signature material's final name/model remains blocked on exact external/dependency visual intake. Do not ship `Lich Token`.
+No generic `Lich Token` ships.
 
 ---
 
 # 17. R02 dungeon first-clear choice
 
-Gameplay roles are locked; exact player-facing item identities/model files are selected in R02 asset intake before implementation.
+Gameplay roles are locked; exact item identities/models are selected in pre-code R02 asset intake:
 
-The three candidates must be visually distinct and support the region's reward identity:
-
-1. **bow/finesse weapon candidate**
-   - Superior Item Lv14;
-   - DEX + Critical/weak-point or Attack Speed identity;
-   - accepted external grounded forest/fantasy bow model;
-2. **WIL-focused light equipment/accessory candidate**
-   - Superior Item Lv14;
-   - WIL + status handling / Mana sustain;
-   - accepted external apparel/accessory model/icon;
-3. **nature/forest utility off-hand or accessory candidate**
-   - Superior Item Lv14;
-   - movement/status/guard or support utility rather than another pure DPS weapon;
-   - accepted external model/icon.
+1. bow/finesse weapon — Superior Item Lv14, DEX + Critical/weak-point or Attack Speed identity;
+2. WIL-focused light equipment/accessory — Superior Item Lv14, WIL + status handling / Mana sustain;
+3. nature/forest utility off-hand/accessory — Superior Item Lv14, movement/status/guard/support utility rather than another pure DPS weapon.
 
 Rules:
 
 - at least two different equipment slots/families across the three;
-- broad weapon freedom remains intact;
 - no class-exclusive choice labels;
-- exact names are locked only after model/icon intake.
-
-This is intentionally stricter than inventing three cool names first and searching for art later.
+- exact names bind only after accepted model/icon intake, before implementation.
 
 ---
 
 # 18. R02 ordinary loot identity
 
-Regional ordinary equipment pools should weight toward:
+Weight regional pools toward:
 
-- bows / daggers / light swords / spear-finesse options where accepted models exist;
+- bows / daggers / light swords / spear-finesse where accepted models exist;
 - medium armor / ranger-traveler visual language;
 - light/WIL clothing/accessories;
 - poison/status handling;
@@ -1016,21 +819,21 @@ Regional ordinary equipment pools should weight toward:
 - Mana/resource utility;
 - forest/nature-linked accessory visuals.
 
-Do not create a new universal `Forest Set` where every piece is simply green.
+No universal green `Forest Set`.
 
-Target pool follows global source rules:
+Global source rules remain:
 
 - ordinary enemies: no routine equipment;
 - elites: 30% one roll;
 - dangerous POI/rare chest: targeted regional gear;
-- field boss/dungeon boss: guaranteed normal gear + signature path;
-- merchants: regional rotating subsets rather than global pool.
+- field/dungeon bosses: guaranteed normal gear + signature path;
+- merchants: regional rotating subsets.
 
 ---
 
 # 19. R02 regional quest flow
 
-R02 should be discoverable even if the player arrives without a board quest.
+R02 remains discoverable without a board quest.
 
 On first hamlet arrival, foreground at most:
 
@@ -1039,27 +842,25 @@ On first hamlet arrival, foreground at most:
 + 2 optional contracts
 ```
 
-following the existing HUD/quest-density canon.
-
-## Regional lead — working title: Forks Beneath the Boughs
+## Regional lead — Forks Beneath the Boughs
 
 Purpose:
 
-- establish missing/unsafe forest routes;
-- lead naturally from hamlet → deep grove → ruin signs → sanctum without a straight quest corridor.
+- establish unsafe/missing forest routes;
+- lead naturally from hamlet → deep grove → ruin signs → sanctum without a straight corridor.
 
-First phase completes by any **3 distinct actions from an authored set**, for example:
+First phase completes by any 3 distinct actions from its authored set, such as:
 
 - inspect an abandoned logging marker;
 - resolve a wolf/spider hazard near a route;
 - discover the split river crossing;
 - inspect Nature Spirit damage/trace;
 - recover a route ledger/cargo cache;
-- find first ruined sanctum marker.
+- find the first ruined-sanctum marker.
 
-Do not require every action.
+Repeating one category does not count multiple times.
 
-Reward target for the first regional milestone:
+Reward target:
 
 ```text
 EXP: ~25–30% current next-Lv requirement
@@ -1069,13 +870,9 @@ Class XP: ~18–22%
 
 ## Optional contract — River Ledger
 
-Fishing/trade-facing contract:
-
 - discover one R02 fishing pool and catch an allowed ordinary regional fish category;
 - first catch can simultaneously unlock its Codex entry;
-- no requirement for rare/signature fish.
-
-Reward target:
+- no rare/signature fish requirement.
 
 ```text
 EXP: ~20%
@@ -1085,105 +882,75 @@ Class XP: ~12–15%
 
 ## Optional contract — Resin and Rot
 
-Gathering/exploration-facing contract:
-
-- gather/inspect a small amount of the accepted resin-role and Forest Mushroom/plant material;
-- may reveal an alchemy/cooking or furnishing/trade use;
-- no mass-gather requirement.
-
-If resin visual intake is not complete, do not ship this contract until the real item is admitted.
+- gather/inspect a small amount of the accepted resin role and Forest Mushroom/plant material;
+- reveals an actual production/trade use;
+- no mass gathering requirement;
+- does not ship until resin visual/name intake is complete.
 
 ## Guardian hunt discovery
 
-Uses the 2-of-3 clue rule in §14 and becomes a broad hunt entry only after meaningful discovery.
+Uses the **continuous disturbance → environmental trail → guardian territory** flow in §14.1. There is no clue counter and no `2 of 3` requirement.
 
 ## Sanctum discovery
 
-The dungeon receives an exact map marker only after the player physically discovers the ruin approach or reaches the appropriate regional investigation step.
-
-No key item is required merely to open the door unless the selected external structure physically needs a meaningful short interaction.
+The dungeon receives an exact marker only after the player physically discovers the ruin approach or reaches the appropriate regional-investigation step. No arbitrary key item gates the door unless the accepted structure gives the interaction a real world function.
 
 ---
 
 # 20. Dynamic events
 
-Use **2–3 small event families**, not constant MMO spam.
-
-Candidate event roles:
+Use 2–3 small event families rather than MMO spam.
 
 ### Fallen Timber Route
 
-- shared physical obstruction / wildlife pressure around a road;
-- players clear threat/interact with the route;
-- personal participation rewards;
-- no permanent world repair unless the authored event is explicitly a one-time world change.
+Shared physical obstruction/wildlife pressure around a road; threat/interactions contribute; personal participation rewards.
 
 ### River Cargo Trouble
 
-- recover/secure trade cargo around a ford/dock;
-- supports combat + interaction participation;
-- fishing/gathering is not required.
+Trade cargo around a ford/dock; supports combat + interaction participation.
 
 ### Grove Disturbance
 
-- temporary Nature Spirit / forest-threat event in an authored pocket;
-- elite cap prevents accidental raid density;
-- not the field-boss encounter.
+Temporary Nature Spirit/forest-threat event in an authored pocket; elite cap prevents accidental raid density; not the field-boss encounter.
 
-Events use `QUEST_WORLD_STATE.md` participation/reward rules and do not require pre-accept.
+Events follow `QUEST_WORLD_STATE.md` and require no pre-accept.
 
 ---
 
 # 21. R02 housing/fishing collection integration
 
-R02 is where the side systems begin to feel like a persistent RPG world rather than isolated mechanics.
-
 Fishing:
 
-- local fish appear in the Fish Codex;
-- one regional rare fish can become a trophy/display candidate after exact model intake;
-- fish buyer/inn gives immediate Gold/cooking use;
-- no separate fisherman currency.
+- local fish enter Fish Codex;
+- regional rare fish may become a trophy/display candidate after exact model intake;
+- buyer/inn gives immediate Gold/cooking use;
+- no fisherman currency.
 
 Housing:
 
-- Town House-class physical properties provide visible midgame aspiration;
-- forest furniture variants may use accepted wood/plant/furniture external assets;
-- regional decor is purchased/earned through Gold/material/collection routes, not a new currency;
-- buying property is never required for regional completion.
+- Town House-class properties provide visible midgame aspiration;
+- regional decor uses accepted external assets;
+- decor uses Gold/material/collection routes, not another currency;
+- one-residence-at-a-time ownership remains authoritative;
+- property purchase is never required for regional completion.
 
-A trophy fish displayed in an R02 house is a nice cross-system reward; it grants no combat stat.
+A displayed trophy fish grants no combat stat.
 
 ---
 
 # 22. R02 sound / VFX direction
 
-Do not default important sounds to vanilla.
+External/verified layers are required for broad forest wind/leaves, river water, sparse wildlife, logging/hamlet work, deep-grove tonal shift and sanctum room tone.
 
-## Forest ambience
+Combat:
 
-Need externally sourced/verified layers for:
+- Wolf/Spider get creature-specific attack/hit/death sounds;
+- Nature Spirit uses heavier body/earth/root impacts;
+- field guardian gets dedicated signature set after final model acceptance;
+- Lich gets distinct cast onset, lane/sigil telegraphs and reinforcement cue;
+- unguardable ground attacks must warn differently from ordinary Soul Bolt.
 
-- broad forest wind/leaves;
-- river water;
-- sparse bird/wildlife;
-- logging/hamlet work;
-- deep-grove tonal shift;
-- sanctum stone/wood/room tone.
-
-Keep layers restrained. Dense forest does not mean constant loud birds.
-
-## Combat
-
-- Wolf/Spider: creature-specific attacks/hit/death sounds matched to external visuals;
-- Nature Spirit: body/earth/root impacts heavier than R01 common combat;
-- field guardian: dedicated stone/wood/ground signature set after final model acceptance;
-- Lich: distinct cast onset, lane/sigil telegraphs and reinforcement cue;
-- an unguardable Lich ground attack must have a recognizably different warning from ordinary Soul Bolt.
-
-VFX must use exact hit areas.
-
-No generic green particle cloud = `nature`; no purple cloud = `lich` shortcut.
+VFX hit areas match server hit areas. No generic green cloud=`nature` or purple cloud=`lich` shortcut.
 
 ---
 
@@ -1193,69 +960,56 @@ Suggested data layout:
 
 ```text
 regions/r02/
-  region.json
-  subareas.json
-  spawn_tables.json
-  landmarks.json
-  fishing_spots.json
-  resources.json
-  merchants.json
-  housing.json
+  region
+  subareas
+  spawn_tables
+  landmarks
+  fishing_spots
+  resources
+  merchants
+  housing
 
 encounters/r02/
-  forest_spider.json
-  forest_wolf.json
-  grizzly.json
-  cave_centipede.json
-  mature_nature_spirit.json
-  grove_guardian.json
-  lich.json
-  sanctum_shade.json
+  forest_spider
+  forest_wolf
+  grizzly
+  cave_centipede
+  mature_nature_spirit
+  grove_guardian
+  lich
+  sanctum_shade
 
 dungeons/r02_sanctum/
-  rooms.json
-  encounters.json
-  shortcut.json
-  rewards.json
+  rooms
+  encounters
+  shortcut
+  rewards
 
 quests/r02/
-  regional_chain.json
-  river_contract.json
-  resource_contract.json
-  guardian_hunt.json
+  regional_chain
+  river_contract
+  resource_contract
+  guardian_hunt
 
 assets/source_bindings/
-  r02_*.json
+  r02_*
 ```
 
-Server authority owns:
-
-- encounter Lv/stats;
-- spawns;
-- boss phases/hit validation;
-- resource/fish personal state;
-- quest progress;
-- dungeon first-clear/reward claim;
-- Gold/items;
-- property availability/ownership.
-
-Client-only presentation never awards or advances these states.
+Server authority owns encounter levels/stats, spawns, hit validation, resources/fishing state, quest progress, rewards, Gold/items and property ownership. Client presentation never awards/advances these states.
 
 ---
 
 # 24. Performance constraints
 
-R02's density cannot be achieved through brute-force entities.
-
 - no every-tick whole-forest search;
 - loaded-chunk spawn tables only;
-- ambient wildlife density remains bounded;
-- external decorative flora models are used selectively for landmarks/nodes, not one display entity per grass tuft;
-- fishing spots use lightweight authored markers/state, not hundreds of simulated fish entities;
-- field boss controller activates only near its authored hunt area/eligible players;
-- dungeon controller scopes logic to active run/nearby tracking players;
-- Lich reinforcement hard-caps active adds;
-- hamlet NPCs use short anchor/patrol zones rather than full-village pathfinding.
+- ambient wildlife bounded;
+- decorative models selective, not one display entity per grass tuft;
+- fishing spots use lightweight authored markers/state;
+- field-boss controller activates near authored hunt area/eligible players only;
+- dungeon controller scopes logic to active run/nearby players;
+- Lich adds hard-capped;
+- hamlet NPCs use short anchor/patrol zones.
 
 Profiler decides final density limits.
 
@@ -1265,63 +1019,62 @@ Profiler decides final density limits.
 
 Before R02 player-visible implementation, close at least:
 
-1. acquire/hash visually accept Quaternius Wolf candidate;
-2. acquire/hash visually accept Easy Enemies Spider candidate;
-3. acquire/hash inspect `Goleling Evolved` or replace it with a clearly superior guardian candidate;
-4. inspect exact field-guardian animation clips before final attack animation binding;
-5. confirm Threateningly Mobs Continued dependency/license/runtime boundary for Nature Spirit/Lich normal dependency use;
-6. inspect Lich actual model/animation/reinforcement presentation;
-7. acquire/hash selected Stylized Nature Standard files including mushroom/plant/tree candidates;
-8. accept actual resin model before locking resin player-facing name;
-9. accept actual mana-flora model before locking player-facing name;
-10. choose exact 4–5 R02 fish models and then lock their species names/size/value tables;
-11. accept hamlet building compositions and two Town House-class shells;
+1. acquire/hash/visually accept Wolf candidate;
+2. acquire/hash/visually accept Spider candidate;
+3. acquire/hash/inspect `Goleling Evolved` or replace with a superior guardian candidate;
+4. inspect exact guardian animation clips before final attack binding;
+5. confirm Threateningly dependency/license/runtime boundary;
+6. inspect Lich model/animation/reinforcement presentation;
+7. acquire/hash selected Stylized Nature files;
+8. accept resin model and lock its player-facing name;
+9. accept mana-flora model and lock its player-facing name;
+10. choose exact R02/global fish models applicable here and lock species/size/value tables;
+11. accept hamlet compositions and two Town House-class shells;
 12. accept sanctum room/prop family;
 13. accept field-guardian/Lich VFX + sound families;
 14. accept the three dungeon first-clear item model/icon bindings;
 15. accept signature-material/Mythic visual identities before naming them.
 
-A missing external binding stays marked unresolved. Do not fill it with a temporary vanilla/AI asset just to start coding.
+Missing external bindings remain source-bootstrap blockers, not implementation-time choices.
 
 ---
 
 # 26. First R02 playtest acceptance
 
-When eventually implemented, a real client playtest must verify:
-
 ## Exploration
 
-- player can orient using river/road/landmarks without map-arrow spam;
-- forest feels denser than R01 but Trail Stag does not constantly collide with scenery on main routes;
-- side routes reveal meaningful resource/POI content rather than dead ends.
+- river/road/landmarks orient without arrow spam;
+- forest feels denser than R01 without constant Trail Stag collision on main routes;
+- side routes reveal meaningful content rather than dead ends;
+- guardian discovery reads as a continuous physical trail and never as a numeric clue checklist.
 
 ## Combat
 
 - Forest Spider dies quickly but can punish ignored poison pressure;
-- Wolf packs pressure positioning without synchronized unavoidable lunges;
-- Nature Spirit visibly extends the R01 learned kit rather than only gaining HP;
-- field guardian feels visually like a new important creature, not scaled Nature Spirit;
-- Lich reinforcement adds a tactical decision without turning 145 s into 4 minutes of add cleanup;
-- Lich ground telegraphs/hitboxes match.
+- Wolf packs pressure without synchronized unavoidable lunges;
+- Nature Spirit visibly extends the R01 learned kit;
+- field guardian reads as a new important creature rather than scaled Nature Spirit;
+- Lich reinforcement adds a tactical decision without turning the fight into prolonged add cleanup;
+- Lich telegraphs/hitboxes match.
 
-## Economy/side loops
+## Economy / side loops
 
-- R02 gathering feeds real recipes/orders;
-- fishing catches update Codex and can be sold/cooked;
-- hamlet services reduce unnecessary travel without replacing the R01 hub;
-- Town House preview clearly communicates the next housing step.
+- gathering feeds real recipes/orders;
+- fishing catches update Codex and sell/cook correctly;
+- hamlet reduces unnecessary travel without replacing Alderford;
+- Town House preview communicates the next housing step and never implies simultaneous residence ownership.
 
 ## Dungeon
 
-- first clear lands around 18–24 minutes;
+- first clear ~18–24 minutes;
 - shortcut prevents full trash replay after boss death;
-- first-clear choice is useful and visually distinct;
+- first-clear choice useful and visually distinct;
 - no vanilla spawners/UI/chests undermine presentation.
 
 ## Multiplayer
 
 - personal node/fishing state independent;
-- boss/event participation supports non-DPS roles;
+- participation supports non-DPS roles;
 - first-clear rewards personal/idempotent;
 - physical housing vacancy cannot be double-purchased;
 - no party-leader quest ownership.
@@ -1331,10 +1084,13 @@ When eventually implemented, a real client playtest must verify:
 # 27. Current verification state
 
 - DESIGN REVIEWED AGAINST CURRENT MASTER CANON: YES
-- R02 EXISTING REGIONS.md DIRECTION PRESERVED: YES
+- REGION_CROSS_AUDIT R02 GUARDIAN-DISCOVERY REFINEMENT MERGED INTO THIS FILE: YES
+- OLD R02 `2 OF 3 CLUES` RULE: REMOVED / NON-CANONICAL
+- ONE-RESIDENCE HOUSING RULE EXPLICITLY REASSERTED: YES
 - EXTERNAL SOURCE RESEARCH: YES
-- SOURCE/LICENSING CONFLICT FOR THREATENINGLY CONTINUATION RECORDED: YES
-- R02 SPATIAL / SERVICE / COMBAT / QUEST / DUNGEON FLOW LOCKED: YES
+- THREATENINGLY CONTINUATION SOURCE/LICENSING CONFLICT RECORDED: YES
+- R02 SPATIAL / SERVICE / COMBAT / DUNGEON MACRO FLOW LOCKED: YES
+- R02 QUEST/NPC/SCENE AUTHORING AT R01 CLOSURE LEVEL: NO — NEXT CONTENT PASS
 - EXACT ALL R02 ASSET FILES HASHED/ACCEPTED: NO
 - FIELD GUARDIAN FINAL MODEL: CANDIDATE ONLY (`Goleling Evolved`)
 - R02 FISH FINAL ROSTER: NO — model-first intake required
