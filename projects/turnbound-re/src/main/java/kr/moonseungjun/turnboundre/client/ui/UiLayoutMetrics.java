@@ -168,9 +168,10 @@ public final class UiLayoutMetrics {
         int contentY = tabs.bottom() + SPACE_8;
         int contentHeight = footer.y() - SPACE_8 - contentY;
         int gap = SPACE_8;
+        boolean compactCanvas = screenWidth < 480;
         int rosterWidth;
         int activeWidth;
-        if (root.width() < 480) {
+        if (compactCanvas) {
             // GUI scale 4 on common 1600-1700px windows: keep all three canonical regions visible,
             // sacrificing scan width before sacrificing the selected-character pane.
             rosterWidth = clamp((root.width() * 35) / 100, 128, 146);
@@ -180,11 +181,11 @@ public final class UiLayoutMetrics {
             activeWidth = clamp((root.width() * 25) / 100, 120, 220);
         }
         int detailWidth = root.width() - rosterWidth - activeWidth - gap * 2;
-        int minimumDetail = root.width() < 480 ? 138 : 150;
+        int minimumDetail = compactCanvas ? 138 : 150;
         if (detailWidth < minimumDetail) {
             int deficit = minimumDetail - detailWidth;
-            int rosterFloor = root.width() < 480 ? 124 : 160;
-            int activeFloor = root.width() < 480 ? 88 : 110;
+            int rosterFloor = compactCanvas ? 124 : 160;
+            int activeFloor = compactCanvas ? 88 : 110;
             int rosterShrink = Math.min(deficit, Math.max(0, rosterWidth - rosterFloor));
             rosterWidth -= rosterShrink;
             deficit -= rosterShrink;
