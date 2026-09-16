@@ -25,7 +25,8 @@ public final class EarthToStarsFabricShipSavedData extends SavedData {
     public static final SavedDataType<EarthToStarsFabricShipSavedData> TYPE = new SavedDataType<>(
             EarthToStarsFabric.id("ships"),
             EarthToStarsFabricShipSavedData::new,
-            CODEC
+            CODEC,
+            null
     );
 
     private final Map<String, String> encodedShips;
