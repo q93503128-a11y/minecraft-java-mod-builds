@@ -1,6 +1,7 @@
 package kr.moonseungjun.riftfrontier.combat;
 
 import com.mojang.brigadier.Command;
+import kr.moonseungjun.riftfrontier.content.ContentId;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -16,7 +17,8 @@ import java.util.Optional;
  *
  * <p>The vanilla sword is only a temporary physical carrier. Combat identity remains the registered
  * server-owned ItemStack component, and all move/timing authority is still reconstructed from the
- * currently published content graph.</p>
+ * currently published content graph. Commands and the technical hub stations intentionally share this
+ * single issuer so field-play convenience cannot create a second loadout contract.</p>
  */
 public final class PlayerWeaponProvisioningCommand {
     private PlayerWeaponProvisioningCommand() {}
@@ -53,11 +55,13 @@ public final class PlayerWeaponProvisioningCommand {
         );
     }
 
-    private static int provision(
-        ServerPlayer player,
-        kr.moonseungjun.riftfrontier.content.ContentId familyId,
-        Optional<kr.moonseungjun.riftfrontier.content.ContentId> moduleId
-    ) {
+    private static int provision(ServerPlayer player, ContentId familyId, Optional<ContentId> moduleId) {
+        issueLoadout(player, familyId, moduleId);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /** Issues the same authoritative field rig used by the command surface. */
+    public static void issueLoadout(ServerPlayer player, ContentId familyId, Optional<ContentId> moduleId) {
         ItemStack stack = new ItemStack(Items.IRON_SWORD);
         stack.set(
             RiftfrontierCombatDataComponents.PLAYER_WEAPON_LOADOUT.value(),
@@ -69,17 +73,10 @@ public final class PlayerWeaponProvisioningCommand {
         boolean inserted = player.addItem(stack);
         if (!inserted) player.drop(stack, false);
 
-        player.sendSystemMessage(Component.translatable(
-            "riftfrontier.combat.loadout_issued",
-            loadoutName
-        ));
-        return Command.SINGLE_SUCCESS;
+        player.sendSystemMessage(Component.translatable("riftfrontier.combat.loadout_issued", loadoutName));
     }
 
-    private static String loadoutTranslationKey(
-        kr.moonseungjun.riftfrontier.content.ContentId familyId,
-        Optional<kr.moonseungjun.riftfrontier.content.ContentId> moduleId
-    ) {
+    private static String loadoutTranslationKey(ContentId familyId, Optional<ContentId> moduleId) {
         boolean pivot = moduleId.filter(PlayerWeaponItemStackLoadoutResolver.RECOVERY_PIVOT::equals).isPresent();
         if (PlayerWeaponItemStackLoadoutResolver.MOBILE_PRESSURE.equals(familyId)) {
             return pivot ? "riftfrontier.combat.loadout.mobile_pivot" : "riftfrontier.combat.loadout.mobile";

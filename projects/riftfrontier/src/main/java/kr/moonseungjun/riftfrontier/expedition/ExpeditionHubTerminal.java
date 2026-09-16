@@ -1,5 +1,7 @@
 package kr.moonseungjun.riftfrontier.expedition;
 
+import kr.moonseungjun.riftfrontier.combat.PlayerWeaponItemStackLoadoutResolver;
+import kr.moonseungjun.riftfrontier.combat.PlayerWeaponProvisioningCommand;
 import kr.moonseungjun.riftfrontier.persistence.RiftfrontierWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -8,39 +10,35 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Relative;
 import net.minecraft.world.level.block.Blocks;
 
+import java.util.Optional;
 import java.util.Set;
 
 /**
  * Minecraft-native technical interaction stations for the first hub loop.
  *
  * These vanilla blocks are validation affordances only, not final hub art/UI language. They intentionally
- * delegate every resource and lifecycle mutation to ExpeditionGameplayService so the existing server-authoritative
- * save contracts remain canonical.
+ * delegate every resource/lifecycle mutation to ExpeditionGameplayService and every combat-rig mutation to the
+ * existing PlayerWeaponProvisioningCommand issuer, so no station-owned authority is introduced.
  */
 public final class ExpeditionHubTerminal {
-    // Mirrors the bounded M2-B technical hub cell owned by ExpeditionGameplayService. This validation-only
-    // presentation layer must move with that cell if the technical fixture is relocated before final hub authoring.
     private static final BlockPos TECHNICAL_HUB = new BlockPos(0, 100, 0);
     private static final int PROVISION_OFFSET_X = -2;
     private static final int DEPLOY_OFFSET_X = 2;
+    private static final int MOBILE_WEAPON_OFFSET_Z = -2;
+    private static final int REACH_WEAPON_OFFSET_Z = 2;
 
     private ExpeditionHubTerminal() {}
 
-    /** Restores the two temporary hub affordances after an authoritative extraction returns the player home. */
+    /** Restores the temporary hub affordances after an authoritative extraction returns the player home. */
     public static void ensurePresent(ServerPlayer player) {
         ServerLevel level = (ServerLevel) player.level();
         if (level != level.getServer().overworld()) return;
         level.setBlockAndUpdate(provisionPosition(), Blocks.SMITHING_TABLE.defaultBlockState());
         level.setBlockAndUpdate(deployPosition(), Blocks.LODESTONE.defaultBlockState());
+        level.setBlockAndUpdate(mobileWeaponPosition(), Blocks.GRINDSTONE.defaultBlockState());
+        level.setBlockAndUpdate(reachWeaponPosition(), Blocks.FLETCHING_TABLE.defaultBlockState());
     }
 
-    /**
-     * Makes the very first vertical-slice deployment reachable without a command-only bootstrap.
-     *
-     * <p>This runs only while the authoritative world has no expedition history and no active run. It builds the same
-     * bounded technical hub fixture already used by the expedition service, moves the player there once, and exposes
-     * the existing deployment station. No station-owned lifecycle or balance state is introduced.</p>
-     */
     public static boolean bootstrapFreshWorld(ServerPlayer player) {
         ServerLevel currentLevel = (ServerLevel) player.level();
         ServerLevel overworld = currentLevel.getServer().overworld();
@@ -67,7 +65,7 @@ public final class ExpeditionHubTerminal {
         return true;
     }
 
-    /** Routes world interaction into the existing authoritative provision/start services. */
+    /** Routes world interaction into the existing authoritative expedition and combat services. */
     public static boolean tryUse(ServerPlayer player, BlockPos clickedPos) {
         ServerLevel level = (ServerLevel) player.level();
         if (level != level.getServer().overworld()) return false;
@@ -103,6 +101,19 @@ public final class ExpeditionHubTerminal {
             return true;
         }
 
+        boolean pivot = player.isShiftKeyDown();
+        Optional<kr.moonseungjun.riftfrontier.content.ContentId> module = pivot
+            ? Optional.of(PlayerWeaponItemStackLoadoutResolver.RECOVERY_PIVOT)
+            : Optional.empty();
+        if (clickedPos.equals(mobileWeaponPosition()) && level.getBlockState(clickedPos).is(Blocks.GRINDSTONE)) {
+            PlayerWeaponProvisioningCommand.issueLoadout(player, PlayerWeaponItemStackLoadoutResolver.MOBILE_PRESSURE, module);
+            return true;
+        }
+        if (clickedPos.equals(reachWeaponPosition()) && level.getBlockState(clickedPos).is(Blocks.FLETCHING_TABLE)) {
+            PlayerWeaponProvisioningCommand.issueLoadout(player, PlayerWeaponItemStackLoadoutResolver.REACH_COMMITMENT, module);
+            return true;
+        }
+
         return false;
     }
 
@@ -118,6 +129,7 @@ public final class ExpeditionHubTerminal {
     }
 
     static BlockPos provisionPosition() { return TECHNICAL_HUB.offset(PROVISION_OFFSET_X, 0, 0); }
-
     static BlockPos deployPosition() { return TECHNICAL_HUB.offset(DEPLOY_OFFSET_X, 0, 0); }
+    static BlockPos mobileWeaponPosition() { return TECHNICAL_HUB.offset(0, 0, MOBILE_WEAPON_OFFSET_Z); }
+    static BlockPos reachWeaponPosition() { return TECHNICAL_HUB.offset(0, 0, REACH_WEAPON_OFFSET_Z); }
 }
