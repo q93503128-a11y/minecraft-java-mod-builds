@@ -5,6 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffects;
 
 /**
  * Lightweight Minecraft-native player feedback for the first expedition vertical slice.
@@ -72,6 +73,17 @@ public final class ExpeditionPlayerFeedback {
             ExpeditionGameplayService.technicalRegionCenter(),
             run.sequence()
         );
+        if (recovered == 2 && player.hasEffect(MobEffects.DARKNESS)) {
+            player.sendSystemMessage(
+                Component.translatable("mod.riftfrontier.name")
+                    .append(Component.literal(" • "))
+                    .append(Component.translatable("effect.minecraft.darkness"))
+                    .append(Component.literal(" • "))
+                    .append(Component.translatable("riftfrontier.expedition.feedback.salvage", recovered, 3, threats)),
+                true
+            );
+            return;
+        }
         if (threats == 0) {
             player.sendSystemMessage(Component.translatable(
                 "riftfrontier.expedition.feedback.patrol_cleared",
