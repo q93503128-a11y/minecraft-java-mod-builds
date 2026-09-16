@@ -28,6 +28,9 @@ def main() -> None:
     metadata = PROJECT / "src/fabric/resources/fabric.mod.json"
     entrypoint = PROJECT / "src/fabric/java/kr/moonseungjun/earthtostars/fabric/EarthToStarsFabric.java"
     items = PROJECT / "src/fabric/java/kr/moonseungjun/earthtostars/fabric/content/EarthToStarsFabricItems.java"
+    networking = PROJECT / "src/fabric/java/kr/moonseungjun/earthtostars/fabric/networking/EarthToStarsFabricNetworking.java"
+    authority = PROJECT / "src/fabric/java/kr/moonseungjun/earthtostars/fabric/ship/EarthToStarsFabricShipAuthority.java"
+    saved_data = PROJECT / "src/fabric/java/kr/moonseungjun/earthtostars/fabric/persistence/EarthToStarsFabricShipSavedData.java"
 
     for needle in (
         "net.fabricmc.fabric-loom",
@@ -70,6 +73,8 @@ def main() -> None:
         'VERSION = "0.3.0-alpha.1"',
         "ShipBootstrapCatalog.create()",
         "EarthToStarsFabricItems.initialize()",
+        "EarthToStarsFabricNetworking.initialize()",
+        "EarthToStarsFabricShipAuthority.initializeLifecycle()",
         "Fabric 26.2 standalone kernel loaded",
     ):
         require(entrypoint, needle)
@@ -84,7 +89,36 @@ def main() -> None:
     ):
         require(items, needle)
 
+    for needle in (
+        "PayloadTypeRegistry.serverboundPlay().register",
+        "PayloadTypeRegistry.clientboundPlay().register",
+        "ServerPlayNetworking.registerGlobalReceiver",
+        "EarthToStarsFabricShipAuthority.acceptControlInput",
+    ):
+        require(networking, needle)
+
+    for needle in (
+        "ShipRepository",
+        "EarthToStarsFabricShipSavedData.get(server)",
+        "ServerLifecycleEvents.SERVER_STARTED.register",
+        "ServerLifecycleEvents.SERVER_STOPPED.register",
+        "runtime.requestControl",
+        "runtime.acceptInput",
+        "CONTROLLER_BINDINGS",
+    ):
+        require(authority, needle)
+
+    for needle in (
+        "SavedDataType",
+        "ShipStateCodec.encode(state)",
+        "ShipStateCodec.decode",
+        "setDirty()",
+    ):
+        require(saved_data, needle)
+
     for relative in (
+        "src/fabric/java/kr/moonseungjun/earthtostars/fabric/networking/ShipControlInputPayload.java",
+        "src/fabric/java/kr/moonseungjun/earthtostars/fabric/networking/ShipControlSessionPayload.java",
         "src/fabric/resources/assets/earth_to_stars/items/reinforced_frame.json",
         "src/fabric/resources/assets/earth_to_stars/items/avionics_unit.json",
         "src/fabric/resources/assets/earth_to_stars/items/life_support_unit.json",
@@ -105,8 +139,9 @@ def main() -> None:
 
     print(
         "FABRIC STANDALONE VALIDATION OK: Minecraft 26.2 + Fabric Loader 0.19.5 + "
-        "Fabric API 0.160.0; loader-neutral ship kernel retained; Fabric construction-component "
-        "registry/resources present; whole external ship/space mods are not runtime dependencies"
+        "Fabric API 0.160.0; loader-neutral ship kernel retained; Fabric construction components, "
+        "network session authority and ShipStateCodec-backed SavedData bridge present; whole external "
+        "ship/space mods are not runtime dependencies"
     )
 
 
