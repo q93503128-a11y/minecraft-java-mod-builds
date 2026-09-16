@@ -4,105 +4,87 @@ Recovery aid only. Reconstruct canonical truth from current GitHub `main`, `/AGE
 
 ## Current stage
 
-`M3 — PLAYABLE TECHNICAL EXPEDITION LOOP + PLAYER COMBAT + REGION 01 COMBAT-SPACE/STAGING + FIRST-SLICE FIELD GUIDE BUILD VERIFIED / BOSS DARK-ROCK FIELD-REVIEW BUILD VERIFIED / HUMAN FIELD PLAY + BOSS MATERIAL ACCEPTANCE + ARENA-PRESSURE MOTION ACCEPTANCE + PRODUCTION CREATURE/VFX/SOUND STILL OPEN`
+`M3 — PLAYABLE REGION 01 TECHNICAL VERTICAL SLICE / PLAYER COMBAT + CONNECTED EXPEDITION LOOP BUILD VERIFIED / BOSS + HUNTER FIELD-REVIEW PATHS READY / HUMAN PRESENTATION ACCEPTANCE STILL OPEN`
 
 Priority remains a genuinely playable, polished Region 01 vertical slice. Do not grow speculative authority/lifecycle infrastructure or expand region count while visible gameplay/presentation remains incomplete.
 
-## Latest production-creature source checkpoint
+## Latest verified checkpoint
 
-Source-study checkpoint: `14e9bfce4a4674e624f379d964049feffcbeb542` (`riftfrontier: record production creature source candidates`). This is a provenance/reference checkpoint only; it changes no runtime resources or gameplay.
+Current code checkpoint before this handoff refresh: `a6a81d01b06e2ad06b79687533d84d1240952cc1` (`riftfrontier: add Korean boss field-review localization`). `Build Riftfrontier` workflow `35038504898` completed **SUCCESS** on 2026-09-16.
 
-The current Zombie/Skeleton/Ravager encounter remains a behaviour proxy, but production-creature work now has a concrete CC0 direction instead of an open-ended model search. `docs/THIRD_PARTY_ASSETS.md` records three role-specific candidates from the same Quaternius `Ultimate Monsters` family already used for the selected Dragon Evolved boss source:
+The boss field-review command messages are now EN/KO-localized instead of exposing hard-coded English literals. The preceding extraction-relay player-facing messages are also localized. These changes do not alter boss authority, natural encounter insertion, expedition state, combat balance or persistence.
 
-- Hunter visual/rig candidate: `Alien` — Quaternius, CC0, animated FBX/GLTF; creator family page + Poly Pizza Public Domain cross-check.
-- Scout visual/rig candidate: `Armabee` — Quaternius, CC0, animated FBX/GLTF; chosen as a visually distinct aerial/insectoid ranged-pressure candidate. **Do not add flight gameplay merely to fit the model.**
-- Elite Anchor visual/rig candidate: `Goleling Evolved` — Quaternius, CC0, animated FBX/GLTF. This does not reverse its earlier rejection for boss use; it is reconsidered only for the narrower heavy elite role.
-
-None is `SELECTED` yet. Next production-creature intake should inspect exact upstream bytes, hashes, mesh/skin/clip inventories and Minecraft scale/hitbox suitability before committing runtime model bytes. Preserve existing Hunter/Scout/Elite server-authoritative role semantics, pressure counts, ownership and patrol-clear reward. Do not delete the Ravager shield-stun counterplay until an actual elite replacement preserves or deliberately replaces that observable counterplay with evidence.
-
-The Quaternius `Cube World Kit` is also recorded as a CC0 environment/prop **research** source only. Do not turn it into an automatic Region 01 art direction or bundle the pack wholesale.
-
-Because this checkpoint changes docs/provenance only, no new Riftfrontier build/JAR is claimed for it. Verification vocabulary: `CODE REVIEWED: YES`, `TESTED: N/A`, `BUILD VERIFIED: N/A`, `JAR PRODUCED: NO NEW JAR`, `PLAYTESTED: NO`, `MULTIPLAYER TESTED: NO`.
-
-## Latest boss-material field-review checkpoint
-
-Code checkpoint: `863717398a1ed2e952d5f1c76f00ea8fee1c6765` (`riftfrontier: render boss material candidate in field review`). `Build Riftfrontier` workflow `34955777908` completed **SUCCESS**.
-
-The explicit development-only `/riftfrontier boss fieldtest spawn` presentation now renders the accepted Dragon Evolved geometry with the repository's provenance-tracked derived Dark Rock material candidate instead of Minecraft stone. This is intentionally a human field-review path only. Production rendering remains fail-closed behind the existing reviewed-material and semantic-animation coverage gates; seeing this candidate in the fieldtest does not approve or publish it.
-
-Passed in workflow `34955777908`:
-
-- toolchain verification
-- asset-intake tests
-- `clean test build`
-- required native GameTest gate
-- dedicated-server smoke
-- Xvfb client initialization smoke
-- executable-JAR inspection
-- build report and artifact upload
-
-Successful deliverable:
-
-- artifact: `riftfrontier-0.1.0-alpha.1-deliverables`
-- artifact id: `10391665418`
-- archive digest: `sha256:644bf5b3bd37863ee3fcf8b8deb87cec68c9f49c8b5f99dad86ae61693e00992`
-- executable JAR SHA-256: `1ba220ab318d7285299faf3f02d42cd5e77747867759648012ba0d33e7471a2a`
-
-Verification vocabulary for this checkpoint:
+Verification vocabulary for `a6a81d01...`:
 
 - `CODE REVIEWED`: YES
 - `TESTED`: YES
 - `BUILD VERIFIED`: YES
-- `JAR PRODUCED`: YES
+- `JAR PRODUCED`: YES by CI
 - `PLAYTESTED`: NO
 - `MULTIPLAYER TESTED`: NO
-- `HUMAN MATERIAL ACCEPTANCE`: NO
 
-### Exact human boss-material review
+Do not infer human visual acceptance from CI client smoke.
 
-Install the executable JAR from artifact `10391665418` into a Minecraft 26.2 / NeoForge 26.2.0.38-beta test instance. In a test world run `/riftfrontier boss fieldtest spawn`. Review the Dragon at near, combat and medium distances while idle, then exercise the existing `phase1` / `phase2` fieldtest controls and ordinary damage/death presentation.
+## Hunter production-creature checkpoint — Alien is no longer an uninspected candidate
 
-Accept only if the actual Minecraft render has coherent Dark Rock scale and orientation across face/head, neck, torso, limbs and wing membranes; no severe UV seam, mirrored discontinuity, stretching, texture swimming or bright-vein concentration that destroys silhouette/readability; and the candidate remains readable during Flying_Idle, Punch, Headbutt, HitReact and Death. Record screenshots/observations before any production-material receipt is created. Reject or request a deterministic re-derivation if the UV result is visibly poor. Do not silently tune the material from automation without that evidence.
+The old handoff text saying Alien still needs exact-source intake is obsolete and must not be followed.
 
-## Latest verified gameplay checkpoint — Region 01 first-slice field guide
+Quaternius CC0 `Ultimate Monsters` `Big/glTF/Alien.gltf` has already passed exact-source intake and structural inspection. Canonical machine-readable evidence is in:
 
-Verified gameplay/client checkpoint: `041fb1731a5b27decb78660902525659d35ffaee` (`riftfrontier: isolate field guide test contract`), following the functional field-guide implementation `f6c7a2876ce8b5c7b048887af565c68337f875d2`.
+- `docs/provenance/region01_hunter_alien_source_inspection.json`
+- `docs/provenance/region01_hunter_alien_field_review_build.json`
+- `docs/provenance/region01_hunter_alien_localized_field_review_build.json`
 
-Fresh-world commandless bootstrap gives the player one vanilla `WRITTEN_BOOK` field guide. This intentionally uses Minecraft's existing written-book UX instead of inventing a custom Riftfrontier Screen before final UI language is reviewed. The four EN/KO-localized pages only explain rules that already exist in authoritative gameplay: hub prepare -> lodestone deploy -> recover 3 salvage -> field relay extraction; technical threat roles and optional patrol-clear +1; salvage-triggered rift drag / 3-of-3 relay activation; and extraction storage/pressure plus smithing-table conversion of 1 stored salvage into 2 expedition supply.
+Verified source facts include source SHA-256 `e6fec42f9d4db3c3177da9027c5cdb2c4abd71cb934ea4f4788aea155f267124`, one skinned mesh, embedded texture and usable Hunter-relevant source clips including Idle, Walk, Run, Punch, HitReact and Death.
 
-`Region01FieldGuide` owns no progression state and cannot mutate supply, salvage, pressure, encounter ownership, extraction or combat. No persistent guide-received flag was added; the guide is supplied only by the existing one-time fresh-world bootstrap.
+A review-only Minecraft actor already exists:
 
-Verification: `Build Riftfrontier` workflow `34912099164` completed SUCCESS. Deliverable artifact id `10374836675`; executable JAR SHA-256 `fc8bc27465be67f47db7ee63ba3a9e423debc1169f6b64285c2f55917373c81a`. Human guide acceptance remains open.
+`/summon riftfrontier:region_01_hunter_field_review`
+
+It renders the exact inspected Alien source through the project skinned-mesh path and cycles the review motions. It is localized EN/KO. It remains deliberately isolated from natural Region 01 spawning and from authoritative Hunter encounter semantics.
+
+**Do not redo Alien candidate search, exact-source intake, source hash inspection, animation inventory or field-review actor plumbing.** Human Minecraft review is the next Alien gate. Until that review exists:
+
+- `selected_for_production = false`
+- `human_visual_acceptance = false`
+- keep the server-authoritative Hunter behaviour proxy underneath
+- do not wire Alien into natural Region 01 encounters
+
+Human review must inspect player-relative scale, facing, ground alignment, UV/texture integrity, near/combat/medium-distance silhouette and Idle/Walk/Run/Punch/HitReact/Death deformation/readability.
 
 ## Connected Region 01 baseline — settled unless evidence regresses it
 
-- Core slice: `prepare -> deploy -> fight/recover -> extract -> hub/provision -> redeploy`.
+- Core loop: `prepare -> deploy -> fight/recover -> extract -> hub/provision -> redeploy`.
 - Fresh-world commandless hub/bootstrap, extraction, failure/restart reconciliation, supply/storage/pressure and authoritative expedition persistence are settled.
 - Player combat has `mobile_pressure` / `reach_commitment`, `recovery_pivot`, authenticated move-id input, server-owned attack timing, ACTIVE-only damage and per-execution target dedupe.
-- Native move-start swing checkpoint: `22a39b59671ad88cfbf76b830234f222ea9520c2`, workflow `34878394712` SUCCESS. Do not add generic weapon cues without human evidence.
-- Expedition EN/KO localization baseline: `2bee9f88d2e978a742a107e2e5d96c02ed1df1e9`; commandless-hub regression fix: `5c5601a1a26c17b3305f38872ed684cf2da816fb`.
-- Patrol-clear objective feedback fix: `f356732b1865ef3fa642262b2acc69cca278bde0`, workflow `34907014664` SUCCESS. Ordinary actionbar/localization work is closed again.
-- Other field-review checkpoints remain valid: hit readability `24a15b2a...`, live status `54f070f1...`, extraction relay `eee2a34b...`, proxy role labels `e7b7421...`, salvage hazard cue `54d03af...`.
-- Combat-space baseline: `40fe05c08634b80f0fc87b3f0df2b1e5cdc02c82`, workflow `34885087681` SUCCESS. Current tuff treatment is technical only; do not grow more tuff decoration.
-- Threat staging baseline: `f49357355899d3efb0e21f0101c837c5e28d0353`, workflow `34890699183` SUCCESS. Hunters west, Scouts east, Elite back-center. Do not auto-tune coordinates/cover without human field evidence.
-- Zombie/Skeleton/Ravager are behaviour proxies only; vanilla silhouettes/equipment/role labels are not production creature art.
-- Diagnostic particles/sounds, technical blocks, bossbar, actionbar, relay dressing, proxy labels, native swing and tuff arena are field-review aids, not final Riftfrontier presentation language.
-- Do not auto-tune provisional damage, hit geometry, boss attack timing/travel/impulse, particle density, salvage cue intensity, control layout, cover geometry or threat staging without human field evidence.
+- Field provisioning remains `/riftfrontier weapon mobile`, `/riftfrontier weapon mobile pivot`, `/riftfrontier weapon reach`, `/riftfrontier weapon reach pivot`.
+- Zombie/Skeleton/Ravager remain behaviour/runtime proxies, not production creature art.
+- Do not reopen M0/M1/M2 authority, lifecycle, restart, ownership or persistence fences without a demonstrated regression.
+- Do not auto-tune provisional damage, hit geometry, boss attack timing/travel/impulse, particle density, salvage cue intensity, final control layout, cover geometry or threat staging without human field evidence.
+- Existing diagnostic particles/sounds, technical blocks, bossbar/actionbar, relay dressing, proxy labels, native swing and tuff arena are review aids, not final Riftfrontier presentation language.
 
-## Region 01 boss presentation gates — still open
+## Region 01 boss presentation — human gates remain open
 
-- Selected boss rig/geometry remains Quaternius CC0 `Dragon Evolved` through Riftfrontier's custom skinned-mesh importer/renderer.
-- Accepted sanitized runtime resource: `riftfrontier:boss_presentation/region_01/dragon_evolved.sanitized.v1.gltf`; SHA-256 `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`.
-- Source Atlas art remains provenance/reference only and must not be shipped unchanged as final art.
-- Provenance-tracked Poly Haven Dark Rock source and deterministic derived candidate are now available for field review. Do not restart material/model search merely because human acceptance is pending.
-- Production boss rendering remains fail-closed until reviewed final material and complete reviewed animation semantic coverage exist. Do not fabricate `presentation_assets` or weaken coverage/review gates.
-- Evidence-backed source motion: committed strike -> `Punch`, line displacement -> `Headbutt`, damage -> `HitReact`, death -> non-looping `Death`, unresolved -> `Flying_Idle`.
-- Authored arena-pressure compression/burst/recovery candidate `bca0816381c09b28d613bc12d2e395eb62368761` is automated-build verified but **not human accepted**.
-- Boss TELEGRAPH threat-shape rendering remains build verified (`fc5e841...`). Do not add telegraph layers without evidence.
-- Development harness remains `/riftfrontier boss fieldtest spawn`, `phase1`, `phase2`; the boss is still excluded from natural/production Region 01 encounter insertion.
+- Selected rig/geometry: Quaternius CC0 `Dragon Evolved`.
+- Accepted sanitized runtime geometry/skin/animation resource: `riftfrontier:boss_presentation/region_01/dragon_evolved.sanitized.v1.gltf`.
+- Source Atlas art is provenance/reference only and must not ship unchanged as final art.
+- Provenance-tracked Poly Haven Dark Rock derived material candidate is available in the explicit field-review path but is **not human accepted**.
+- Production boss rendering remains fail-closed until reviewed final material and complete reviewed animation semantic coverage exist.
+- Development harness remains `/riftfrontier boss fieldtest spawn`, `phase1`, `phase2`; boss remains excluded from natural/production Region 01 encounter insertion.
+- Boss field-review command output is now localized EN/KO.
+
+Do not restart boss model/material search merely because human acceptance is pending. Do not silently retune Dark Rock UV/material, arena-pressure motion, telegraph density or boss timings without field evidence.
+
+## First-slice guide and presentation baseline
+
+Fresh-world bootstrap provides a vanilla written-book field guide explaining only existing authoritative rules: hub preparation, lodestone deployment, three salvage recovery, relay extraction, technical threat roles, optional patrol-clear reward, salvage-triggered rift drag and hub storage/pressure conversion. It owns no progression state. Continue using vanilla written-book UX until a final Riftfrontier UI language has reference approval; do not invent a replacement custom Screen from scratch.
 
 ## Next useful development boundary
 
-Do not keep changing the Dark Rock boss material while human acceptance is pending. The production-creature search is also no longer open-ended: start with the recorded Alien / Armabee / Goleling Evolved role candidates and either (a) perform exact-source intake + direct mesh/rig/animation inspection for one role, or (b) reject it with concrete evidence and then search a replacement. Prefer getting one production creature all the way to a Minecraft field-review render over collecting many candidates.
+Human field play is required to approve or reject the Alien Hunter render and the boss Dark Rock presentation, but development is not globally blocked on those two gates.
 
-Do not wire a candidate into natural Region 01 encounter spawning until its exact source/license/provenance and Minecraft render path are verified. Preserve the current proxy behaviour underneath until a replacement is proven. Final VFX/sound/UI/environment language requires the same reference/provenance discipline and actual Minecraft human review. Remove temporary scaffolding only after a verified replacement exists.
+While those reviews are pending, prefer independent visible-gameplay work that advances Region 01 completion: connected expedition readability, combat feel that does not require unapproved numeric tuning, legally sourced/provenance-tracked production presentation, or another clearly missing vertical-slice requirement. Use already approved external/reference direction. Do not collect broad speculative asset lists.
+
+For production creatures, do not start another open-ended search. Scout `Armabee` and Elite Anchor `Goleling Evolved` remain recorded Quaternius CC0 role candidates, but only advance one when doing so produces a concrete exact-source inspection or Minecraft field-review result. Preserve Scout ranged-pressure semantics and Elite observable counterplay; do not add flight merely because Armabee is winged, and do not delete Ravager shield-stun counterplay until a verified replacement deliberately preserves or replaces it.
+
+When human field play is the actual next dependency, provide the exact verified JAR, commands, reproduction sequence and expected observations. Never report `PLAYTESTED` or `MULTIPLAYER TESTED` from GameTest, dedicated-server smoke or Xvfb client initialization alone.
