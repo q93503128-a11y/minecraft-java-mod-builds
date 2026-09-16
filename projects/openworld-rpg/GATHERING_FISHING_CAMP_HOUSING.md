@@ -1,18 +1,19 @@
 # Open-World RPG — Gathering / Fishing / Camp / Housing Canon
 
-> Status: **DESIGN CANON — field gathering, fishing, temporary camps and player housing rules locked before implementation**  
+> Status: **DESIGN CANON — field gathering, fishing, temporary camps and current one-residence housing rules locked before implementation**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Project contract: `PROJECT.md`  
+> Fishing/housing refinement: `FISHING_COLLECTION_HOUSING_MARKET.md`  
 > R01 resources/equipment: `EQUIPMENT_BALANCE.md`  
 > Recovery/cooking: `RECOVERY_PRODUCTION_APPEARANCE.md`  
 > Opening flow: `R01_VERTICAL_SLICE.md`  
 > UI: `UI_DIRECTION.md`  
 > External provenance: `EXTERNAL_SOURCES.md`  
-> Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins.
+> Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins. The one-residence/trade-up/storage rules from `FISHING_COLLECTION_HOUSING_MARKET.md` are now merged here; older multi-home wording is removed and must not be restored from history.
 
-This document closes the next implementation-time gaps without turning the open-world RPG into a survival chore simulator.
+This document closes implementation-time gaps without turning the open-world RPG into a survival chore simulator.
 
-The shared objective is:
+Shared objective:
 
 ```text
 explore
@@ -31,13 +32,6 @@ No subsystem below introduces a new numeric currency, routine durability, mandat
 
 ## 1.1 Guild Wars 2 — readable node categories, dedicated tools
 
-Useful precedent:
-
-- mining, logging and harvesting are separate readable gathering categories;
-- nodes are placed in environmentally sensible locations;
-- dedicated tools communicate the interaction clearly;
-- higher tool tiers can gate higher resource tiers.
-
 Project adoption:
 
 - Mining / Forestry / Herbalism use dedicated field tools;
@@ -47,18 +41,12 @@ Project adoption:
 Not adopted:
 
 - disposable tool charges;
-- tools breaking after a fixed number of uses;
-- ruined/junk material punishment for using the wrong tool.
+- tool breakage after a fixed number of uses;
+- junk-material punishment for using the wrong tool.
 
 Reference: `https://wiki.guildwars2.com/wiki/Gathering`
 
-## 1.2 Genshin Impact / Stardew Valley — fishing needs one real interaction layer
-
-Useful precedent:
-
-- cast position and bite timing matter;
-- a caught fish can require active reeling/tension management rather than one passive timer;
-- fish identity can affect difficulty.
+## 1.2 Genshin Impact / Stardew Valley — one real fishing interaction layer
 
 Project adoption:
 
@@ -72,19 +60,13 @@ Not adopted:
 - long mandatory fishing sessions;
 - one bait type per ordinary fish species;
 - frequent trash catches;
-- a difficult minigame for every tiny common fish.
+- difficult minigame for every tiny common fish.
 
 References:
 - `https://genshin-impact.fandom.com/wiki/Fishing`
 - `https://wiki.stardewvalley.net/Fish`
 
-## 1.3 Monster Hunter Wilds — field camp as convenient infrastructure, not a second town
-
-Useful precedent:
-
-- a field camp is quick infrastructure for recovery/preparation;
-- placement/availability is bounded;
-- the camp improves long expeditions without replacing settlements.
+## 1.3 Monster Hunter Wilds — field camp as convenient infrastructure
 
 Project adoption:
 
@@ -96,27 +78,18 @@ Project adoption:
 Not adopted:
 
 - camp fast travel at baseline;
-- repeated currency fee on every deployment;
-- camp destruction/repair busywork as a routine tax.
+- repeated currency fee per deployment;
+- routine destruction/repair busywork.
 
-Reference: current Monster Hunter Wilds pop-up camp behavior was used only as structural precedent.
+## 1.4 Housing storage — physical residence, one logical storage pool
 
-## 1.4 ESO housing storage — physical home, shared logical storage access
+Useful precedent from ESO-style explicit home storage remains valid, but the project ownership model is now stricter:
 
-Useful precedent:
-
-- housing storage is an explicit service distinct from ordinary inventory;
-- storage furniture can expose the same logical storage rather than multiplying capacity infinitely per placed chest.
-
-Project adoption:
-
-- owned homes expose a personal `Home Storage` pool;
-- additional homes do not multiply the pool merely by placing duplicate storage props;
+- the player owns **one residence at a time**;
+- the current residence exposes one personal `Home Storage` pool whose capacity depends on residence tier;
+- multiple cabinets/chests are access points to that same logical pool, not independent capacity multiplication;
+- moving residence migrates storage/furniture safely as one atomic transaction;
 - furnishing remains physical and visible.
-
-Not adopted:
-
-- monetized housing limits or subscription storage.
 
 Reference: `https://help.elderscrollsonline.com/app/answers/detail/a_id/41067/`
 
@@ -126,27 +99,27 @@ Reference: `https://help.elderscrollsonline.com/app/answers/detail/a_id/41067/`
 
 ## 2.1 Gathering tools and resource nodes
 
-Already selected families remain authoritative:
+Selected source families:
 
 - KayKit `RPG Tools Bits` — pickaxe/axe/hand-tool family;
 - KayKit `Resource Bits` — ore, wood and material pickup family;
 - Quaternius `Stylized Nature MegaKit` — herb/plant/rock node family;
 - KayKit `Forest Nature Pack` — fallback environmental node family;
-- KayKit Character Animations 1.1 — exact published work clips including `Pickaxe`, `Pickaxing`, `Chop`, `Chopping`, `Dig`, `Digging`, `Work_*`, `Working_*`.
+- KayKit Character Animations 1.1 — `Pickaxe`, `Pickaxing`, `Chop`, `Chopping`, `Dig`, `Digging`, `Work_*`, `Working_*`.
 
-Exact imported model files still go through the R01 asset-intake provenance/hash/scale review before implementation.
+Exact model files still pass provenance/hash/scale review before implementation.
 
 ## 2.2 Fishing ecology and motion
 
 Preferred visible fish family:
 
 - Quaternius `LowPoly Animated Fish` / creator-uploaded `Animated Fish` artifact;
-- current creator pages/source-specific publication expose the pack under CC0;
-- fish are rigged and already include swimming animation.
+- fish are rigged and include swimming animation;
+- package-specific license/source evidence must be preserved.
 
-The R01 fish species names are **not locked from text alone**. First inspect the actual fish models and choose the subset whose silhouettes suit an early river/meadow region; then assign player-facing species names/rarity/food value.
+R01/global fish names are locked only after actual model inspection during pre-code asset intake.
 
-Fishing player-motion source is already strong in KayKit Character Animations 1.1:
+Fishing player-motion family:
 
 ```text
 Fishing_Cast
@@ -158,38 +131,27 @@ Fishing_Struggling
 Fishing_Tug
 ```
 
-The rod model must come from an accepted external source. KayKit `RPG Tools Bits` EXTRA is a legal CC0 candidate if acquired, but a free/public-safe source may replace it if it matches the character/tool language better. Do not invent a low-quality internal rod simply to avoid this intake step.
+The final rod comes from an accepted external source. Do not retain vanilla rod presentation merely because mechanics work.
 
 ## 2.3 Camp visuals
 
-Primary camp-prop candidate:
+Primary candidate: Kenney `Survival Kit` 2.0, CC0.
 
-- Kenney `Survival Kit` 2.0 — current asset page states CC0 and contains 80 survival/nature models.
-
-Use a coherent subset for:
-
-- tent/shelter;
-- bedroll/rest prop;
-- campfire/cooking point;
-- small crate/bag/sign/utility dressing where useful.
-
-Camp appearance must remain compact enough to deploy in the authored world without looking like a prefabricated house.
+Use a coherent compact subset for tent/shelter, bedroll, campfire/cooking, crate/bag/sign and utility dressing. A camp must not look like a prefabricated house.
 
 ## 2.4 Housing visuals
 
-- shell/settlement language: the same accepted Quaternius Medieval Village Standard/MegaKit family used by the starting settlement;
-- furniture/props: accepted Quaternius Fantasy Props, KayKit Restaurant/Dungeon furniture or another coherent accepted family;
-- do not make the purchased house interior look like a different asset-store project from the settlement exterior.
+- shells use the same accepted Medieval Village family as their settlement;
+- furniture uses accepted Quaternius Fantasy Props, compatible KayKit/furniture dependencies or another coherent external family;
+- shell/interior cannot look like unrelated asset-store projects.
 
 ---
 
 # 3. Shared gathering interaction contract
 
-Gathering is a **short authored interaction**, not repeated left-click block breaking.
+Gathering is a short authored interaction, not repeated block breaking.
 
 ## 3.1 Tool Pouch
-
-The character owns a separate logical Tool Pouch containing:
 
 ```text
 Mining Pick
@@ -200,27 +162,15 @@ Fishing Rod
 
 Rules:
 
-- these tools do not consume general-backpack or hotbar slots;
-- the correct tool auto-equips visually when a valid node/spot is used;
-- tools have no routine durability;
-- field tools are not combat weapons and do not occupy combat equipment slots;
-- tool visuals still use actual accepted external models and animation bindings.
+- no backpack/hotbar consumption;
+- correct tool auto-equips visually for a valid interaction;
+- no routine durability;
+- field tools are not combat equipment;
+- visuals use accepted external models/animations.
 
-### Starting kit
-
-The initial character begins with baseline **Field** versions of all four tools in the Tool Pouch.
-
-Reason:
-
-- R01 already allows gathering in the first open-field objective;
-- forcing the player to buy four prerequisite tools from four NPCs would add friction before the core loop has started;
-- progression comes from better tools and harder nodes, not from withholding basic interaction.
-
-This does not add four visible starter-inventory items because the Tool Pouch owns them.
+The player starts with Field versions of all four tools.
 
 ## 3.2 Interaction timing
-
-Baseline Field-tool action times before mastery/tool-speed modifiers:
 
 | Node/action | Baseline time | Presentation |
 |---|---:|---|
@@ -228,108 +178,87 @@ Baseline Field-tool action times before mastery/tool-speed modifiers:
 | timber node | 1.35 s | two readable chop beats |
 | ordinary ore | 1.55 s | two-to-three readable pick strikes |
 | rare crystal / dense mineral | 1.80 s | stronger mining commitment |
-| ordinary pickup/cache material | 0.35–0.55 s | hand/pickup interaction rather than tool spam |
+| ordinary pickup/cache | 0.35–0.55 s | hand/pickup interaction |
 
 Rules:
 
-- no active gathering while the player is in combat state;
-- no gathering while mounted, downed, climbing or in an incompatible committed action;
-- movement/dodge can cancel before the server resolution point with no node consumption;
-- after the resolution point, reward ownership is committed even if the recovery animation is interrupted;
-- hostile forced interruption before resolution cancels the attempt and leaves the personal node available;
-- important event frames and tool contact must align with the server resolution within about one tick where practical.
+- no gathering in combat, mounted, downed, climbing or incompatible committed action;
+- movement/dodge can cancel before server resolution without node consumption;
+- after resolution, reward ownership is committed even if recovery animation is interrupted;
+- hostile interruption before resolution cancels and leaves the personal node available;
+- visible contact and server resolution align within about one tick where practical.
 
 ## 3.3 Node targeting / readability
 
-- nodes use real external models/silhouettes and environmental placement;
-- no giant permanent glowing beam over every herb/ore node;
-- a restrained outline/interaction marker appears only when the player is within practical interaction range or uses a valid accessibility/highlight setting;
-- world map does not reveal every ordinary node;
-- discovered rich/rare authored locations may be remembered on the map when that supports route planning.
+- real external silhouettes/environmental placement;
+- no permanent giant beam;
+- restrained outline/marker only at useful interaction distance or accessibility setting;
+- ordinary nodes not all revealed on world map;
+- rich/rare authored locations may be remembered after discovery.
 
 ---
 
 # 4. Tool progression
 
-Use **three broad permanent tool tiers** across the full Lv 1–80 game rather than a six-tier material treadmill.
+Three permanent tool tiers across Lv1–80:
 
-| Tool tier | Role | Speed modifier | Node access |
-|---|---|---:|---|
-| Field | starting baseline | 100% action time | ordinary/common nodes |
-| Refined | early-mid progression | 85% action time | ordinary + dense regional nodes |
-| Masterwork | mid-late progression | 75% action time | all ordinary/dense + authored high-tier nodes |
+| Tool tier | Speed | Access |
+|---|---:|---|
+| Field | 100% action time | ordinary/common |
+| Refined | 85% | ordinary + dense regional |
+| Masterwork | 75% | all ordinary/dense + authored high-tier |
 
 Rules:
 
-- upgrades are permanent items/Tool-Pouch state, not disposable charges;
-- a better tool can gather lower-tier nodes normally;
-- a tool below the required tier simply reports that the node is too hard/advanced and does **not** consume the node or produce junk;
-- tool tier is unlocked through world/service/material progression, not a naked `Lv 20 required` menu check;
-- tool upgrades may use real regional materials + Gold, but do not create a separate tool-upgrade currency;
-- final exact recipes are region-content work and must use already-admitted external materials.
-
-The speed gain is intentionally useful but not so large that the player feels punished for exploring before obtaining the next tool tier.
+- permanent Tool-Pouch state, no charges;
+- higher tier gathers lower nodes normally;
+- insufficient tier does not consume node or yield junk;
+- unlock through world/service/material progression, not naked level checks;
+- upgrades use real materials + Gold, no separate tool currency;
+- exact recipes are closed in region content before implementation.
 
 ---
 
 # 5. Light gathering mastery
 
-Mining, Herbalism, Forestry and Fishing each use a **five-rank automatic mastery track**.
+Mining, Herbalism, Forestry and Fishing each have Rank I–V automatic mastery.
 
-There are:
-
-- no mastery skill points;
-- no mastery tree;
-- no respec;
-- no mandatory daily task;
-- no mass-craft equivalent.
+No points/tree/respec/daily grind.
 
 ## 5.1 Mastery XP
 
-Baseline mastery XP events:
-
 ```text
 ordinary successful gather/catch: 1
-rich/dense/rare successful gather/catch: 3
+rich/dense/rare gather/catch: 3
 first discovery of a material/fish family in a major region: +10 once
-relevant authored gathering/fishing contract or discovery: +6 to +15
+relevant authored contract/discovery: +6 to +15
 ```
 
-Rank thresholds:
+Thresholds:
 
 ```text
-Rank I   = 0
-Rank II  = 20
-Rank III = 60
-Rank IV  = 130
-Rank V   = 240
+Rank I   0
+Rank II  20
+Rank III 60
+Rank IV  130
+Rank V   240
 ```
 
-This means repeated gathering can progress mastery, but exploration and new regional resources accelerate it naturally.
-
-## 5.2 Mining / Herbalism / Forestry rank benefits
+## 5.2 Mining / Herbalism / Forestry benefits
 
 | Rank | Benefit |
 |---|---|
-| I | baseline interaction |
-| II | gathering action time -5% |
-| III | 5% chance for +1 ordinary base material |
-| IV | total gathering action time -10% |
-| V | 10% chance for +1 ordinary base material; rare-secondary roll chance +10% relative |
+| I | baseline |
+| II | action time -5% |
+| III | 5% chance +1 ordinary base material |
+| IV | total action time -10% |
+| V | 10% chance +1 ordinary base material; rare-secondary roll +10% relative |
 
-Restrictions:
-
-- bonus yield never duplicates boss/signature materials;
-- rare-secondary bonus applies only to a node's already-defined secondary table;
-- mastery cannot bypass minimum tool tier.
-
-The economy impact stays small enough that gathering remains a route/activity choice rather than the only rational Gold strategy.
+No bonus duplicates boss/signature materials; mastery cannot bypass tool tier.
 
 ---
 
 # 6. R01 node behavior
-
-The existing R01 resource catalog remains unchanged:
 
 | Resource | Base yield | Personal respawn |
 |---|---:|---:|
@@ -338,160 +267,103 @@ The existing R01 resource catalog remains unchanged:
 | Healing Herb | 1–2 | 4 active min |
 | Verdant Crystal | 1 | 18 active min |
 
-Additional rules:
+Rules:
 
-- respawn timers are per-player and advance only while that player/world state is actively loaded according to the existing active-playtime convention;
-- the node's shared physical shell may remain visible, but interaction availability/feedback is personal;
-- one player's harvest cannot deny another player's harvest;
-- changing dimension/relogging does not reset the node;
-- node availability is server-authoritative save state;
-- ordinary R01 nodes use Field tools;
-- Verdant Crystal may require the Refined Pick after the first scripted/introductory crystal access if visual playtesting shows that the tool upgrade creates useful access progression. The first required R01 progression path must never softlock on this rule.
-
-That last clause prevents tool progression from contradicting the already-authored first-dungeon/first-Superior flow.
+- personal active-playtime cooldowns;
+- shared shell may remain visible, availability is personal;
+- one player cannot deny another's harvest;
+- relog/dimension change does not reset;
+- server-authoritative save state;
+- ordinary nodes use Field tools;
+- if Verdant Crystal later requires Refined Pick for ordinary nodes, the first scripted/required R01 progression access remains non-softlocking and is documented before implementation.
 
 ---
 
 # 7. Fishing — world interaction
 
-Fishing is a real small gameplay loop, but it must not become a separate full game that interrupts the action-RPG pace.
+Fishing remains a compact optional loop.
 
 ## 7.1 Fishing spots
 
-Use authored/region-generated **shoal spots** in suitable water rather than allowing identical reward tables from every one-block puddle.
+Use authored/region-generated shoal spots at sensible river bends, pools, banks, docks, reefs and region waters.
 
-A spot communicates itself through restrained world presentation:
+Presentation:
 
-- water ripple / disturbed surface;
-- occasional accepted external fish silhouette below the surface where technically/visually practical;
-- environmental placement near river bends, pools, banks, docks, reefs or region-specific water features.
+- water ripple/disturbance;
+- occasional accepted submerged fish silhouette where practical;
+- no permanent giant fishing icon.
 
-No giant floating fishing icon is permanently visible in the world.
-
-### Personal availability
-
-R01/common fishing spot baseline:
+R01/common spot:
 
 ```text
 personal catches before depletion: 2
-personal respawn after depletion: 6 active minutes
+personal respawn: 6 active min
 ```
 
-Rare/special authored spot baseline:
+Rare/special spot:
 
 ```text
 personal catches: 1
-personal respawn: 15–20 active minutes or authored event condition
+personal respawn: 15–20 active min or authored condition
 ```
-
-The exact regional table can override these values when a location is intentionally richer.
 
 ## 7.2 Casting
 
-1. interact/use Fishing Rod near a valid fishing spot;
-2. character transitions into accepted `Fishing_Idle`/cast stance;
-3. hold input briefly to aim cast direction/distance;
-4. release to cast;
-5. landing too far outside the valid shoal simply produces no bite and can be recast immediately after the line returns;
-6. ordinary casting does not consume bait at baseline.
+1. use Fishing Rod near valid spot;
+2. accepted idle/cast stance;
+3. brief aim hold;
+4. release cast;
+5. invalid landing returns line without consuming spot;
+6. ordinary fishing uses no bait.
 
-The system does not require one bait item per common fish species.
-
-Special bait may exist later only for a rare hunt/target-fishing role that justifies another item.
-
-## 7.3 Bite timing and hook
-
-Field Rod baseline bite delay:
+## 7.3 Bite / hook
 
 ```text
-minimum: 1.5 s
-maximum: 5.0 s
+bite delay: 1.5–5.0 s
 ```
 
-A bite produces:
-
-- rod/line motion;
-- clear external/accepted sound;
-- small contextual hook cue near the crosshair/character, not a large modal.
-
-Hook reaction windows:
-
-| Fish difficulty | Hook window |
+| Difficulty | Hook window |
 |---|---:|
 | common | 0.90 s |
 | uncommon | 0.75 s |
 | rare | 0.65 s |
 | trophy/signature | 0.55 s |
 
-Missing the hook does not consume the personal fishing-spot charge.
+Missed hook does not consume spot charge.
 
 ## 7.4 Catch resolution
 
-### Common fish
+Common fish: ~1.0–1.5 s short automatic finish after hook.
 
-A successful hook on an ordinary common fish uses a short automatic reel/catch finish:
+Uncommon/rare/trophy: compact hold/release tension system, 2.5–6 s normally and exceptional trophy catch capped around 8 s.
 
-```text
-~1.0–1.5 s after hook
-```
+## 7.5 Fishing mastery
 
-Do **not** force a tension minigame for every small fish.
-
-### Uncommon / rare / trophy fish
-
-Use one compact hold/release tension mechanic:
-
-- holding increases line tension;
-- releasing decreases tension;
-- progress rises while tension is inside the fish's moving valid zone;
-- progress slowly decays outside it;
-- extreme high/low tension for too long breaks the attempt;
-- intended duration is about 2.5–6 s, with exceptional trophy fish capped around 8 s.
-
-Use `Fishing_Reeling`, `Fishing_Struggling`, `Fishing_Tug` and `Fishing_Catch` motion states as appropriate.
-
-This is the recommended middle ground between a one-click timer and a long Stardew-style minigame.
-
-## 7.5 Fishing mastery benefits
-
-| Rank | Fishing benefit |
+| Rank | Benefit |
 |---|---|
 | I | baseline |
 | II | maximum bite wait -8% |
 | III | hook windows +0.08 s |
 | IV | maximum bite wait -15% total |
-| V | tension valid-zone width +10%; trophy-size/value roll gets one extra bounded roll |
+| V | tension valid-zone width +10%; one extra bounded trophy-size/value roll |
 
-Fishing mastery does not directly multiply rare-fish drop chance enough to invalidate exploration/location/time conditions.
+Mastery cannot replace exploration/location conditions with brute-force rarity farming.
 
 ## 7.6 Fish rewards
 
-Ordinary fishing output feeds existing systems:
+Fish feed cooking, contracts, collection/trophies, Gold and only visually/logically justified regional material roles.
 
-- cooking ingredients;
-- selected regional contracts;
-- collection/trophy records;
-- a small number of region-specific crafting materials where visually/logically justified.
+No equipment drops, large junk table or fishing currency.
 
-Rules:
-
-- ordinary fishing does not directly drop random equipment;
-- no large trash/junk table at baseline;
-- fish are not a separate currency;
-- common fish remain obtainable under ordinary conditions;
-- time/weather may improve weights or expose special catches, but baseline progression never requires waiting idly for a narrow clock/weather window.
-
-Player-facing R01 fish names/stat values wait for exact model intake from the external fish family.
+Launch collection scale and current one-residence trophy/display rules are canonical in `FISHING_COLLECTION_HOUSING_MARKET.md`.
 
 ---
 
 # 8. Field Camp Kit
 
-A camp is temporary **field infrastructure**, not a portable settlement.
+A camp is temporary field infrastructure, not a portable settlement.
 
 ## 8.1 Unlock / recipe
-
-R01 baseline reusable kit recipe/service target:
 
 ```text
 4 Hardwood
@@ -500,234 +372,267 @@ R01 baseline reusable kit recipe/service target:
 → Field Camp Kit
 ```
 
-The kit is permanent after creation. Repeated deployment does not consume another 4 Hardwood + 2 Tough Hide.
-
-Reason:
-
-- material input connects gathering/ecology to exploration;
-- repeated per-placement material tax would become inventory/route friction rather than a meaningful choice.
-
-The recipe may become visible after the player has obtained the required materials; it does not require a separate tutorial quest.
+Permanent reusable kit; deployment does not consume another recipe.
 
 ## 8.2 Deployment
-
-Baseline deployment:
 
 ```text
 commit time: 2.5 s
 maximum active camps per owner: 1
 ```
 
-Legal placement requires:
+Requires out of combat, suitable footprint, not submerged, outside settlements/dungeons/boss/event/protected volumes, not blocking critical travel, >=24 blocks from shrine/major service center and >=12 blocks from another camp unless intentionally sharing a party camp zone.
 
-- out of combat;
-- sufficient roughly flat footprint;
-- not submerged;
-- not inside settlements, dungeons, boss arenas, authored encounter volumes or protected structures;
-- not blocking a major road/door/critical traversal route;
-- not within 24 blocks of a shrine/major settlement service center;
-- not within 12 blocks of another active camp unless the game is deliberately treating them as one party camp zone.
+Failed placement loses nothing.
 
-If placement fails, no state/resource is lost.
+## 8.3 Functions
 
-## 8.3 Camp functions
+Provides:
 
-A deployed camp provides:
-
-- full HP/Mana/Stamina rest under the already-canonical camp-rest rules;
+- full HP/Mana/Stamina rest;
 - Recovery Belt reload from carried reserves;
-- cooking from known recipes/materials;
-- safe equipment/inventory management while not in combat;
-- visible tent/bedroll/campfire field presentation.
+- cooking;
+- safe inventory/equipment management out of combat;
+- physical tent/bedroll/campfire presentation.
 
-It does **not** provide at baseline:
+Does not provide:
 
 - fast travel;
-- death checkpoint/respawn ownership;
-- bank/Material Vault access;
-- forge;
-- alchemy lab;
-- class switching/advancement;
-- merchant stock.
-
-This preserves settlements/shrines as meaningful world infrastructure.
+- death checkpoint;
+- Material Vault;
+- forge/alchemy/class service/merchant.
 
 ## 8.4 Persistence / multiplayer
 
-- camp placement is server-authoritative and saved;
-- the owner's active camp may persist across normal save/reload until packed/redeployed;
-- nearby eligible players may rest/cook at the physical camp without owning a separate copy;
-- using another player's camp does not grant ownership or duplicate the kit;
-- party members can share the camp's services, but personal inventories/recovery reserves remain personal;
-- redeploying the kit removes the owner's previous camp after a successful new placement;
-- no camp can be duplicated through relog/disconnect races.
-
-Camp destruction by random ambient monsters is **not** a baseline maintenance mechanic. An authored event may temporarily threaten a camp only if the encounter itself is the content.
+- server-authoritative placement/owner/save;
+- one persisted active camp per owner;
+- nearby eligible players may rest/cook without gaining ownership;
+- personal inventory/reserves remain personal;
+- successful redeploy removes previous camp;
+- no relog/disconnect duplication;
+- random ambient camp destruction is not a baseline maintenance mechanic.
 
 ---
 
-# 9. Housing — ownership model
+# 9. Housing — one-residence ownership model
 
-Housing is a physical settlement property system, not an instanced menu-only room and not a full colony builder.
+Housing is a physical settlement property system, not an instanced menu room and not a colony builder.
 
 ## 9.1 Physical properties
 
-- authored settlements contain explicit purchasable houses;
-- the exterior remains part of the real world;
-- each property has a stable server-side `property_id`;
-- ownership is world/server authoritative;
-- a property has one primary owner and optional trusted/co-owner permissions;
-- guests may be allowed entry/use by owner permissions;
-- the authored shell is protected from destructive structural edits at baseline.
+- settlements contain authored purchasable houses;
+- exterior remains in the real world;
+- every property has stable server-side `property_id`;
+- property ownership is server-authoritative;
+- a physical property has one primary owner;
+- optional trusted/guest permissions do not create co-ownership of the property economy;
+- authored shell is protected from destructive structural edits.
 
-The starting settlement should expose **at least four purchasable starter-house shells** even though the opening visual rule only requires at least two to be visible. This avoids immediate multiplayer scarcity in the intended small-friend-group use case.
+Starting settlement target:
 
-No artificial story/reputation permission gate is added to the starter property.
+- at least **3–4 Small Cottage-class vacancies** for intended small multiplayer;
+- at least one visibly larger future-upgrade residence.
 
-## 9.2 Starter price
+No story/reputation permission gate for the first residence; Gold is the practical gate.
 
-Existing economy canon remains:
+## 9.2 Property tiers / price anchors
+
+| Tier | Baseline purchase target | Role |
+|---|---:|---|
+| Small Cottage | **2,400 Gold** | first residence |
+| Town House | **9,000 Gold** | midgame move, larger display/storage |
+| Large Residence | **25,000 Gold** | major furnishing/trophy space |
+| Prestige Estate | **65,000+ Gold** | optional late luxury/collection sink |
+
+Equivalent shells should not have wildly different prices. The optional first furnishing package remains approximately **750 Gold**.
+
+## 9.3 One residence / moving
+
+Canonical launch rule:
 
 ```text
-starter house: 2,400 Gold
-starter furnishing/storage package target: 750 Gold
+maximum owned residential properties per player: 1
 ```
 
-The furnishing package sits inside the already-canonical 600–900 Gold band.
+Progression:
 
-The shell can be bought without buying the furnishing package immediately.
+```text
+save Gold
+→ buy one vacant residence
+→ furnish/use it
+→ later select another vacant residence
+→ atomic Move / Trade Residence transaction
+→ old property sold
+→ furniture/storage migrated safely
+→ own only the new residence
+```
 
-## 9.3 Multiple homes / moving
+The old multi-property rule is deleted. There is no `Primary Residence` plus extra owned homes model at launch.
 
-A player may own multiple properties later, but exactly one is marked the **Primary Residence** for UI sorting/house-related convenience.
+## 9.4 First purchase
 
-Owning a second home does not multiply personal storage capacity automatically.
+If no residence is owned:
 
-There is no launch need for a real-estate speculation/resale economy. If property resale is later added, it must be a bounded convenience operation and cannot generate profit.
+```text
+validate vacancy + Gold
+→ pay full price
+→ commit ownership
+```
+
+## 9.5 Move / trade-in
+
+Do not require selling first.
+
+```text
+required Gold difference
+= new purchase price
+- old-home sale credit
+```
+
+Baseline sale credit:
+
+```text
+80% of old property's normal purchase price
+```
+
+Rules:
+
+- merchant/reputation discounts do not increase resale credit;
+- normal resale cannot generate profit;
+- furnishings are not sold with shell;
+- unavailable/newly occupied target aborts transaction with no changes;
+- special quest-granted property would require an explicit authored rule.
+
+## 9.6 Safe furniture/storage migration
+
+Before ownership/Gold changes, server builds a durable Moving Inventory containing:
+
+- all owner movable furniture;
+- all ordinary owner display/trophy items;
+- current Home Storage contents.
+
+Successful move:
+
+1. validate target vacancy, owner, Gold and migration state;
+2. reserve transaction server-side;
+3. create durable migration snapshot;
+4. apply Gold delta;
+5. transfer ownership;
+6. migrate furniture/storage;
+7. reset old property to authored default;
+8. finalize idempotent transaction.
+
+If validation/migration fails, transaction aborts before irreversible ownership/Gold changes.
+
+Moving into a smaller residence is allowed. Overflow movable objects enter a temporary `Moving` section until withdrawn/placed; it cannot be used as infinite permanent storage.
 
 ---
 
 # 10. Housing functions
 
-The house should create a satisfying ownership/collection goal without replacing settlement services.
-
-Baseline useful functions:
+Baseline functions:
 
 - rest;
-- personal ordinary-item storage;
+- Home Storage;
 - furnishing/decor placement;
 - boss/collection trophy display;
-- Wardrobe/appearance access through an appropriate furniture object if desired;
-- optional basic cooking access after installing a kitchen/cooking furnishing.
+- Wardrobe/appearance access through appropriate furniture;
+- basic cooking after installing suitable kitchen/cooking furnishing.
 
-Not baseline home functions:
+Not baseline:
 
 - forge;
 - full alchemy lab;
 - class change/advancement;
 - merchant;
 - shrine fast travel;
-- death checkpoint override;
-- material-production automation.
+- death-checkpoint override;
+- material automation.
 
-The player still has reasons to walk into the settlement.
+## 10.1 Home Storage by residence tier
 
-## 10.1 Home Storage
-
-Starter furnished home unlocks:
-
-```text
-Home Storage: 54 ordinary-item slots
-```
-
-Later furniture/service expansion target:
-
-```text
-Home Storage expansion: 108 ordinary-item slots total
-```
+| Residence | Home Storage |
+|---|---:|
+| Small Cottage | 54 ordinary slots |
+| Town House | 72 ordinary slots |
+| Large Residence | 108 ordinary slots |
+| Prestige Estate | 144 ordinary slots |
 
 Rules:
 
-- Home Storage is personal server-authoritative storage;
-- storage furniture in any owned home accesses the same logical pool;
-- placing ten chests does not create ten independent 54-slot pools;
-- Home Storage is separate from the settlement Material Vault;
-- materials inside Home Storage are not automatically preferred over the Material Pouch/Vault for service crafting unless a future explicit rule says so;
-- key/quest items never need Home Storage.
-
-This prevents housing from turning into an infinite chest multiplication exploit while still giving the home a real function.
+- one logical pool for the currently owned residence;
+- ten cabinets do not multiply capacity;
+- accepted storage furniture is an access point/visual object;
+- Material Vault remains separate with its own material role;
+- move/sale never deletes contents;
+- migration snapshot protects contents before old property reset;
+- key/quest items never require Home Storage.
 
 ---
 
 # 11. Furnishing interaction
 
-Housing customization is deliberately lighter than Minecraft creative building.
+Housing customization is lighter than unrestricted survival building.
 
 ## 11.1 Protected shell
 
-Baseline owner editing permits:
+Owner may:
 
-- place/remove accepted furniture/prop objects in owned interior/property volumes;
+- place/remove/move accepted furniture in owned interior/property volumes;
 - rotate supported furnishings;
-- move existing placed furnishings;
-- choose from authored material/color variants when the accepted asset family supports them.
+- choose authored material/color variants.
 
-Baseline owner editing does **not** freely delete:
+Owner may not freely delete:
 
 - load-bearing walls;
 - roof;
-- settlement road;
-- neighboring building geometry;
+- settlement roads;
+- neighboring geometry;
 - service infrastructure.
-
-This preserves the coherent external settlement architecture and prevents multiplayer grief/visual collapse.
 
 ## 11.2 Placement UX
 
-Use direct world placement with a restrained placement overlay:
-
-- ghost preview of the real accepted furniture model;
+- ghost preview of real accepted furnishing;
 - valid/invalid placement feedback;
-- grid/surface snapping by default;
-- 90-degree rotation as the simple baseline, with finer rotation only for furnishings that genuinely benefit;
-- cancel returns the furnishing without loss;
-- no separate construction currency.
-
-Furniture belongs to normal item/material/economy sources or authored housing packages.
+- grid/surface snapping default;
+- 90-degree rotation baseline, finer only where valuable;
+- cancel returns item without loss;
+- no construction currency.
 
 ## 11.3 Starter furnishing package
 
-The 750-Gold starter package should visibly complete an otherwise empty starter shell with a coherent minimal set such as:
+~750 Gold target, coherent minimal set:
 
 - bed/rest point;
-- storage chest/cabinet access point;
+- Home Storage access chest/cabinet;
 - table + 2 chairs;
 - lighting;
 - simple shelf/cabinet;
 - one trophy/display surface;
-- small decor set matching the settlement visual family.
+- small matching decor set.
 
-Exact model filenames are asset-intake work, not design invention during coding.
+Exact external models are closed in asset intake before implementation.
 
 ---
 
 # 12. Trophy / collection use
 
-Housing provides a destination for memorable world rewards without adding another combat-stat progression layer.
+Housing provides a destination for memorable rewards without combat-stat stacking.
 
 Examples:
 
-- Regalhart antler display after qualifying discovery/defeat;
-- Earthloong trophy/display piece;
-- large/rare fish records or mounted/displayed model where an accepted asset supports it;
+- Regalhart antler display;
+- Earthloong trophy/display;
+- trophy fish where accepted asset supports it;
 - region keepsakes.
 
 Rules:
 
-- trophy display is cosmetic/collection-first;
-- no hidden +5% damage for placing the correct boss head;
+- cosmetic/collection-first;
+- no hidden combat stat bonus;
 - no mandatory trophy checklist for region completion;
-- unlocked trophy appearance/state is server-authoritative and cannot be duplicated for economy profit.
+- server-authoritative unlock/item identity;
+- migration preserves trophies when moving residence.
 
 ---
 
@@ -735,37 +640,30 @@ Rules:
 
 ## Gathering
 
-Server owns:
-
-- personal node availability;
-- resolution time/result;
-- yield;
-- mastery XP;
-- tool-tier validity.
-
-Two players can harvest the same personal node independently.
+Server owns personal node availability, resolution/result, yield, mastery XP and tool-tier validity.
 
 ## Fishing
 
-Server owns:
-
-- spot personal charge/cooldown;
-- selected fish/result table;
-- hook success validation window;
-- tension result;
-- reward/mastery.
-
-Client presentation may predict rod/line motion but cannot award fish.
+Server owns spot charge/cooldown, result selection, hook validation, tension result, reward/mastery.
 
 ## Camp
 
-Server owns placement legality, owner identity, world position, persistence and service availability.
+Server owns placement legality, owner, position, persistence and service flags.
 
 ## Housing
 
-Server owns property ownership, co-owner permissions, furniture state, Home Storage and trophy unlock state.
+Server owns:
 
-Never trust client-side `I own this house/node/fish/camp` state for item or Gold changes.
+- current residence property ID;
+- vacancy/ownership;
+- trusted permissions;
+- furniture state;
+- Home Storage;
+- moving transaction;
+- trophy state;
+- Gold changes.
+
+Two players cannot buy the same vacancy simultaneously. A player cannot own a second residence while the first ownership remains active.
 
 ---
 
@@ -773,80 +671,83 @@ Never trust client-side `I own this house/node/fish/camp` state for item or Gold
 
 ## Resource nodes
 
-- no every-tick global scan for nearby nodes;
-- use chunk/region-local authored node data and event-driven interaction;
-- personal cooldown checks happen on interaction/visibility update boundaries, not by iterating every player's every node each tick.
+- no every-tick global scan;
+- chunk/region-local authored data + event-driven interaction;
+- cooldown checks on interaction/visibility boundaries.
 
 ## Fishing
 
-- fishing spots are lightweight region objects/markers;
-- do not keep large schools of fully pathfinding fish entities active only to provide loot visuals;
-- if submerged fish are shown, use bounded/simple client visuals or a small number of ambient entities appropriate to the area.
+- lightweight region spot objects;
+- no huge schools of pathfinding fish solely for loot visuals;
+- bounded client/ambient fish visuals where useful.
 
 ## Camps / housing
 
-- camp props and furnishings use bounded static rendering/normal block-entity/display strategies appropriate to the chosen asset backend;
-- no continuous pathfinding or per-tick UI calculation for decorative furniture;
-- enforce reasonable furnishing-count limits based on actual performance measurements rather than an arbitrary tiny cap.
-
-Profiler/playtest decides final density limits.
+- static/bounded rendering strategies appropriate to asset backend;
+- no decorative-furniture pathfinding or per-tick UI calculation;
+- furnishing-count limits based on measured performance, not arbitrary tiny caps.
 
 ---
 
 # 15. UI requirements
 
-All four systems reuse the Lucifer-family UI grammar.
+All systems use Lucifer-family grammar.
 
 ## Tool Pouch / mastery
 
-- compact category view for Pick / Axe / Harvest Knife / Rod;
-- show current tool tier and one simple Rank I–V mastery indicator per category;
-- no skill-tree screen for gathering mastery.
+Compact four-tool view with tool tier + Rank I–V indicator; no gathering mastery tree screen.
 
 ## Fishing
 
-- ordinary common catch requires almost no modal UI;
-- rare tension phase uses one compact tension/progress element near the center/bottom combat-safe area;
-- no giant opaque minigame panel covering the world.
+Common catch uses almost no modal UI; tension phase uses one compact combat-safe tension/progress element.
 
 ## Camp
 
-- world ghost placement + small validity reason;
-- rest/cook interaction uses existing service components, not a new camp-only design language.
+World ghost placement + small validity reason; rest/cook reuses existing service language.
 
 ## Housing
 
-- property purchase uses the existing merchant/service component language;
-- furnishing mode is world-first with compact controls;
-- Home Storage reuses inventory components;
-- trophy/collection placement avoids a separate collectible-currency screen.
+Purchase/move screen shows:
+
+- property name/location;
+- real-world/exterior preview;
+- tier;
+- purchase price;
+- room/usable-footprint summary;
+- Home Storage capacity;
+- furnishing package status;
+- current old-home 80% trade-in credit;
+- exact Gold difference for Move / Trade Residence.
+
+Furnishing mode is world-first and compact. Home Storage reuses inventory components.
 
 ---
 
 # 16. Data contract
 
-Suggested data ownership:
+Suggested ownership:
 
 ```text
 gathering/
-  tool_tiers.json
-  mastery.json
-  nodes/*.json
-  regions/*.json
+  tool_tiers
+  mastery
+  nodes/*
+  regions/*
 
 fishing/
-  spots/*.json
-  fish/*.json
-  regional_tables/*.json
+  spots/*
+  fish/*
+  regional_tables/*
 
 camp/
-  field_camp.json
-  placement_rules.json
+  field_camp
+  placement_rules
 
 housing/
-  properties/*.json
-  furnishing_catalog/*.json
-  storage.json
+  properties/*
+  furnishing_catalog/*
+  storage
+  moving_transactions
 ```
 
 ## Node schema
@@ -893,58 +794,70 @@ service_flags
 placement_rule_set
 ```
 
-## Housing schema
+## Housing property schema
 
 ```text
 property_id
 settlement_id
-price
+property_tier
+normal_purchase_price
 owner_uuid
-coowners[]
-primary_residence
+trusted_decorators[]
+guest_permissions
 furnishing_volume
 furnishings[]
 home_storage_profile
 trophy_state[]
 ```
 
+## Player housing state
+
+```text
+current_residence_property_id | null
+moving_transaction_id | null
+```
+
+There is no owned-properties array at launch.
+
 ---
 
 # 17. R01 acceptance targets
 
-Before these systems are considered implementation-ready for R01:
+Before these systems are source-ready for R01:
 
-1. exact R01 herb/ore/wood node models are bound and scale-reviewed;
-2. Pick/Axe/Harvest Knife/Rod models are accepted;
-3. `Pickaxing`, `Chopping` and fishing animation chains are retarget-tested against the selected player body/outfit;
-4. at least 3 suitable early-river fish models are selected from a legal external fish family and assigned real player-facing identities;
-5. the fishing tension UI receives a Lucifer-family visual mock/implementation direction;
-6. Kenney Survival Kit exact camp models are acquired/hashed/inspected or replaced with a stronger coherent accepted camp family;
-7. one starter-house exterior/interior is visually composed from the accepted settlement/furniture families;
-8. starter furniture package models are pinned;
-9. all personal node/fishing/camp/housing state has explicit server save ownership;
-10. actual Minecraft playtest checks gathering speed, fishing fatigue, camp usefulness and house travel friction before the subsystem is called complete.
+1. exact R01 herb/ore/wood node models bound and scale-reviewed;
+2. Pick/Axe/Harvest Knife/Rod models accepted;
+3. work/fishing animations retarget-tested;
+4. at least the canonical early R01 fish model set selected and assigned player-facing identities;
+5. fishing tension UI accepted in Lucifer family;
+6. camp model family acquired/hashed/inspected;
+7. Small Cottage exterior/interior visually composed from accepted settlement/furniture families;
+8. starter furnishing package models pinned;
+9. personal node/fishing/camp/housing state has explicit server save ownership;
+10. property buy/move/80%-resale/migration transaction is specified exactly as §9 before implementation;
+11. actual Minecraft playtest later checks gathering speed, fishing fatigue, camp usefulness, housing travel friction and migration UX.
 
 ---
 
 # 18. What this closes
 
-This document closes design-time rules for:
+Closed as design:
 
 - Tool Pouch and starting Field tools;
-- gathering interaction timing/cancellation;
-- three permanent gathering-tool tiers;
-- five-rank non-grindy Mining/Herbalism/Forestry/Fishing mastery;
-- R01 node timing integration;
-- authored fishing spots, personal depletion/respawn and cast/hook/tension loop;
-- ordinary vs rare-fish interaction cost;
-- no mandatory ordinary bait/junk loop;
-- reusable material-built Field Camp Kit;
-- camp placement/services/persistence/multiplayer boundaries;
-- physical property ownership;
-- starter-house price/furnishing package;
-- shared logical Home Storage across owned homes;
-- lightweight furnishing/trophy rules;
-- server authority and performance boundaries.
+- gathering timing/cancellation;
+- three tool tiers;
+- five-rank non-grindy gathering/fishing mastery;
+- R01 node timing;
+- fishing spot/cast/hook/tension loop;
+- reusable Field Camp Kit and server authority;
+- **one residence at a time**;
+- property tiers: 2,400 / 9,000 / 25,000 / 65,000+ Gold;
+- **80% resale/trade-in**;
+- atomic Move / Trade Residence;
+- durable furniture/storage migration;
+- Home Storage tiers: 54 / 72 / 108 / 144 ordinary slots;
+- furnishing/trophy rules;
+- multiplayer ownership/transaction safety;
+- performance and data ownership boundaries.
 
-Remaining work is primarily **external asset intake / R01 fish identity selection / exact source bindings / UI visual acceptance / implementation/playtest**, not permission to invent a different gathering/camp/housing game during coding.
+Remaining work is external asset intake, exact fish identity/model binding, exact property-shell/furniture binding, UI visual acceptance, implementation and evidence-driven playtest tuning — **not permission to reintroduce multi-home ownership or invent a different housing economy during coding**.
