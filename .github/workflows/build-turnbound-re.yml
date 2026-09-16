@@ -51,6 +51,7 @@ jobs:
             unzip -t "$JAR"
             unzip -l "$JAR" | grep 'META-INF/neoforge.mods.toml'
             unzip -l "$JAR" | grep 'kr/moonseungjun/turnboundre/TurnboundRe.class'
+            unzip -l "$JAR" | grep 'kr/moonseungjun/turnboundre/client/install/DrehmalPackInstaller.class'
             unzip -l "$JAR" | grep 'assets/turnbound_re/'
             unzip -l "$JAR" | grep 'data/turnbound_re/'
             if unzip -Z1 "$JAR" | grep -Eq '\.(java|kt|groovy)$'; then
@@ -70,34 +71,43 @@ jobs:
           } 2>&1 | tee ci-output/jar-verify.log
           sha256sum "$JAR" | tee ci-output/turnbound-re.sha256
           cp "$JAR" ci-output/
-      - name: Package Prism instance
+      - name: Package Modrinth pack
         id: pack
         if: steps.build.outcome == 'success' && steps.verify.outcome == 'success'
         run: |
           set -euo pipefail
           JAR=$(find build/libs -maxdepth 1 -type f -name 'turnbound_re-*.jar' ! -name '*-sources.jar' ! -name '*-javadoc.jar' -printf '%s %p\n' | sort -nr | head -n1 | cut -d' ' -f2-)
-          STAGE=ci-output/prism-instance
+          STAGE=ci-output/modrinth-pack
           rm -rf "$STAGE"
           mkdir -p "$STAGE"
-          cp -R packaging/prism/. "$STAGE/"
-          mkdir -p "$STAGE/.minecraft/mods"
-          cp "$JAR" "$STAGE/.minecraft/mods/"
+          cp -R packaging/modrinth/. "$STAGE/"
+          mkdir -p "$STAGE/overrides/mods"
+          cp "$JAR" "$STAGE/overrides/mods/"
 
-          python -m json.tool "$STAGE/mmc-pack.json" >/dev/null
-          grep -F 'net.neoforged' "$STAGE/mmc-pack.json"
-          grep -F '26.2.0.38-beta' "$STAGE/mmc-pack.json"
-          grep -F '$INST_MC_DIR' "$STAGE/instance.cfg"
-          pwsh -NoProfile -File "$STAGE/.minecraft/turnbound-bootstrap.ps1" -ValidateOnly
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('ci-output/modrinth-pack/modrinth.index.json')
+          data = json.loads(p.read_text(encoding='utf-8'))
+          assert data['formatVersion'] == 1
+          assert data['game'] == 'minecraft'
+          assert data['versionId'] == '0.1.0-alpha.1'
+          assert data['dependencies']['minecraft'] == '26.2'
+          assert data['dependencies']['neoforge'] == '26.2.0.38-beta'
+          assert isinstance(data['files'], list)
+          marker = Path('ci-output/modrinth-pack/overrides/config/turnbound_re_distribution.properties').read_text(encoding='utf-8')
+          assert 'distribution=modrinth' in marker
+          assert 'autoInstallDrehmal=true' in marker
+          PY
 
           (
             cd "$STAGE"
-            zip -qr ../TURNBOUND_RE_Prism.zip .
+            zip -qr ../TURNBOUND_RE.mrpack .
           )
-          unzip -t ci-output/TURNBOUND_RE_Prism.zip | tee ci-output/prism-package-verify.log
-          unzip -Z1 ci-output/TURNBOUND_RE_Prism.zip | grep '^\.minecraft/mods/turnbound_re-.*\.jar$'
-          unzip -Z1 ci-output/TURNBOUND_RE_Prism.zip | grep '^\.minecraft/turnbound-bootstrap\.ps1$'
-          unzip -Z1 ci-output/TURNBOUND_RE_Prism.zip | grep '^instance\.cfg$'
-          unzip -Z1 ci-output/TURNBOUND_RE_Prism.zip | grep '^mmc-pack\.json$'
+          unzip -t ci-output/TURNBOUND_RE.mrpack | tee ci-output/modrinth-package-verify.log
+          unzip -Z1 ci-output/TURNBOUND_RE.mrpack | grep '^modrinth.index.json$'
+          unzip -Z1 ci-output/TURNBOUND_RE.mrpack | grep '^overrides/mods/turnbound_re-.*\.jar$'
+          unzip -Z1 ci-output/TURNBOUND_RE.mrpack | grep '^overrides/config/turnbound_re_distribution.properties$'
       - name: Write build report
         if: always()
         env:
@@ -121,14 +131,14 @@ jobs:
           - Workflow run: $GITHUB_RUN_ID
           - Clean build/unit tests: $BUILD_OUTCOME
           - JAR verify: $VERIFY_OUTCOME
-          - Prism instance package: ${PACK_OUTCOME:-not-run}
+          - Modrinth pack: ${PACK_OUTCOME:-not-run}
           - JAR: ${JAR:-NOT PRODUCED}
           - SHA-256: ${HASH:-NOT PRODUCED}
           - Datagen: NOT RUN — no new generated production data required by this packaging change.
           - GameTest: NOT RUN — external world migration remains a real-client playtest gate.
           - Dedicated server smoke test: NOT RUN.
           - Client smoke test: NOT RUN.
-          - Validation scope: Gradle dependency resolution, clean build, JUnit contracts, JAR integrity, Prism metadata JSON, bootstrap script syntax/manifest, packaged instance ZIP integrity.
+          - Validation scope: Gradle dependency resolution, clean build, JUnit contracts, JAR integrity, Modrinth pack metadata/marker, and packaged .mrpack ZIP integrity.
           EOF
       - name: Upload logs
         if: always()
@@ -145,6 +155,6 @@ jobs:
           path: |
             projects/turnbound-re/ci-output/turnbound_re-*.jar
             projects/turnbound-re/ci-output/turnbound-re.sha256
-            projects/turnbound-re/ci-output/TURNBOUND_RE_Prism.zip
+            projects/turnbound-re/ci-output/TURNBOUND_RE.mrpack
             projects/turnbound-re/ci-output/BUILD_AND_RUNTIME_REPORT.md
           retention-days: 14
