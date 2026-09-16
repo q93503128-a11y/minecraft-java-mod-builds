@@ -20,6 +20,13 @@ Subordinate references currently indexed by this canon:
 - `STATUS_AND_R01_ENCOUNTERS.md` — element/status rules and concrete R01 ecology/elite/field-boss/first-dungeon combat kits.
 - `R01_VERTICAL_SLICE.md` — opening settlement, external player-motion bindings and first 55–75 minute playable R01 route.
 - `RECOVERY_PRODUCTION_APPEARANCE.md` — recovery belt, potions, food, alchemy/cooking, light profession mastery and external-first armor/apparel/Wardrobe rules.
+- `R01_ASSET_INTAKE.md` — current R01 exact asset/provenance intake state and unresolved presentation gates.
+- `GATHERING_FISHING_CAMP_HOUSING.md` — Tool Pouch, gathering mastery/timing, fishing, reusable Field Camp Kit, housing/storage/furnishing and authority rules.
+- `FISHING_COLLECTION_HOUSING_MARKET.md` — Fish Codex/records/trophy loop and the authoritative one-residence-at-a-time housing trade-up refinement.
+- `QUEST_WORLD_STATE.md` — personal/shared quest state, objective credit, dialogue, dynamic events, late join, idempotent rewards and multiplayer quest authority.
+- `DESIGN_COMPLETENESS_AUDIT.md` — design-completeness and finished-game-quality audit with external open-world RPG production lessons and quality gates.
+- `WORLD_STORY_CANON.md` — customizable protagonist frame, Anchor-network premise, factions/recurring roles, non-linear acts, regional evidence structure, three personal endings and postgame state.
+- `R02_IMPLEMENTATION_PACKAGE.md` through `R12_IMPLEMENTATION_PACKAGE.md` — implementation-ready regional packages that turn the broad region graph into concrete settlement, traversal, ecology, encounter, dungeon, reward, story-evidence and external-asset gates.
 
 If a subordinate reference conflicts with this file, this file wins.
 
@@ -909,9 +916,15 @@ Exact Trail Stag and later mount rules live in `MOUNTS.md`.
 - there is **no story, boss-clear or reputation permission gate for the right to buy the first home**;
 - normal price/economy is the gate: starting funds do not trivially buy a home;
 - the first normal starter home costs **2,400 Gold** at baseline;
-- a starter furnishing/storage package should cost roughly **600–900 Gold** additional units, so owning the shell and fully furnishing it are separate early goals;
+- a starter furnishing/storage package costs **750 Gold** at baseline and remains separate from buying the shell;
 - with the target R01 income curve, a savings-focused player can normally reach the first home in roughly **5–7 hours** without dedicated Gold grinding;
-- later ordinary homes may occupy roughly 7,500–12,000 and 20,000–35,000 Gold bands, while 60,000+ prestige properties are optional late-game sinks rather than progression requirements.
+- a player owns **one active residence at a time** at baseline; later houses are upgrades/trade-ups rather than storage-multiplying extra properties;
+- canonical vacant-house price anchors are **Small 2,400 / Town House 9,000 / Large 25,000 / Prestige 65,000+ Gold**;
+- selling/trading up returns **80% of the old house's standard purchase value**;
+- moving house must atomically preserve owned furniture, trophies and home-storage contents; a failed move cannot delete or duplicate them;
+- Home Storage grows by residence tier and remains one logical personal pool rather than multiplying with every placed chest.
+
+Exact housing-market, furnishing, storage and external-system direction lives in `FISHING_COLLECTION_HOUSING_MARKET.md`.
 
 ### Exits / open-world signal
 
@@ -1157,7 +1170,7 @@ Avoid rapid repetitive respawn loops.
 
 ---
 
-# 20. Quests
+# 20. Quests / narrative / world state
 
 Use a mixed structure weighted toward exploration:
 
@@ -1167,6 +1180,19 @@ Use a mixed structure weighted toward exploration:
 
 Target overall feel is approximately **30% guided objectives / 70% free exploration and self-directed discovery**, not a rigid numerical quota.
 The main story guides without turning the open world into a linear corridor.
+
+Canonical protagonist/story structure:
+
+- player name, appearance, class and moment-to-moment roleplay remain freely customizable;
+- the shared background is deliberately light: an independent outsider/adventurer arriving into the continent's road/settlement network, not a prewritten chosen one, monarch or reincarnated hero;
+- the main mystery concerns the ancient **Anchor network**, whose regional branches historically measured, routed, contained or stabilized selected large-scale processes without making the natural world itself artificial;
+- modern regional societies adapted differently as Anchor infrastructure weakened, so restoration, release and regional partition each have real benefits and costs;
+- R01 is the common opening, while later acts permit alternate evidence routes rather than forcing all 12 regions into a mandatory checklist;
+- the launch finale resolves the immediate Central Anchor cascade first, then presents the player-personal **Restore / Release / Partition** decision;
+- multiplayer players keep their own story choice/ending state rather than a host choosing the moral result for everyone;
+- postgame preserves a stable explorable world and continues through bosses, dungeons, Mythics, hidden techniques, collection/fishing/housing and difficult regional content rather than rolling the save back before the ending.
+
+Quest/world-state ownership, objective credit, split-party behavior, dynamic events, dialogue and idempotent rewards are defined in `QUEST_WORLD_STATE.md`; the full story spine and recurring roles are defined in `WORLD_STORY_CANON.md`.
 
 ---
 
@@ -1213,48 +1239,72 @@ Use dedicated gathering tools such as pickaxe, axe, harvesting knife/sickle and 
 
 - tools are project/RPG tools, not the core vanilla mining progression;
 - routine tool durability is not used;
-- tools should not occupy normal combat equipment slots during ordinary play;
-- a tool pouch/equipment category or context-sensitive interaction is preferred;
-- tool quality may affect speed/yield/access when it creates meaningful progression.
+- tools do not occupy normal combat equipment slots during ordinary play;
+- the Tool Pouch/context system automatically presents the appropriate accepted external tool at valid nodes;
+- baseline Field tools are available from the start, with Refined and Masterwork permanent tiers providing bounded speed/access growth rather than consumable charges.
 
 ## Regeneration
 
-- common nodes regenerate after a suitable time/condition;
+- common nodes regenerate after a suitable active-world-time interval;
 - rare nodes use longer regeneration and/or special conditions, events, dangerous locations or boss-linked access;
 - rare resource design should create reasons to explore rather than simply wait on a short timer;
-- exact timers remain balance work.
+- personal respawn/save state is server-authoritative and relog/dimension changes do not refresh it.
+
+Exact interaction times, mastery ranks, R01 node timers/yields and tool-tier rules are locked in `GATHERING_FISHING_CAMP_HOUSING.md`.
 
 Node visuals/models/interactions are external-first when good assets/designs exist.
 External node-system implementations should be studied instead of reinventing regeneration poorly.
 
 ---
 
-# 22. Camps / housing / rest
+# 22. Fishing / camps / housing / rest
 
-Travel should have a sense of journey and temporary shelter.
+Travel should have a sense of journey and temporary shelter, while fishing/housing remain optional-but-useful side loops rather than survival chores.
+
+## Fishing
+
+Fishing is a compact collection/economy/cooking activity rather than a long mandatory minigame.
+
+- use custom/external visible fish, rod and fishing animations rather than vanilla-fish presentation;
+- common catches resolve quickly; uncommon/rare/trophy catches may use a short readable tension interaction;
+- no ordinary bait-per-fish tax at baseline;
+- authored fishing spots/shoals provide regional species and controlled depletion/respawn instead of one reward table for every puddle;
+- Fish Codex tracks discovered species, useful source/location information and personal records/trophy catches;
+- fish can feed selling, cooking, collections, contracts and home trophy/display loops without becoming another currency;
+- narrow weather/time catches remain optional collection advantages, not progression gates.
+
+Exact fishing timings, mastery and spot rules live in `GATHERING_FISHING_CAMP_HOUSING.md`; collection/records/cooking/market/UI direction lives in `FISHING_COLLECTION_HOUSING_MARKET.md`.
 
 ## Camps
 
-Camps are **quick-build temporary field infrastructure**.
+Camps are **quick-deploy reusable field infrastructure**.
 
-- player spends defined materials/resources to deploy/build a camp rapidly rather than manually constructing it block by block;
-- visuals use an external final-quality tent/campfire/shelter design from the first implementation;
-- camps provide strong rest/resource recovery and selected field utility;
-- camp construction supports exploration rather than becoming a construction grind;
-- ordinary camps are not universal fast-travel nodes.
+- the player crafts/acquires one reusable **Field Camp Kit** rather than paying a material cost every placement;
+- deployment is rapid and placement is server-validated against combat, terrain, settlement/dungeon/boss/protected-route restrictions;
+- at baseline one active camp exists per owner; successful redeploy packs/replaces the previous camp;
+- camps provide full HP/Mana/Stamina rest, Recovery Belt reload from carried reserve, cooking and out-of-combat inventory/equipment management;
+- camps do **not** baseline provide fast travel, a death checkpoint, Material Vault/bank, forge, full alchemy lab, merchant or class advancement;
+- nearby players may use appropriate rest/cooking functions while ownership/state remains authoritative;
+- random routine camp destruction and repair chores are not part of the baseline.
+
+Exact placement dimensions/rules, persistence and external camp candidates live in `GATHERING_FISHING_CAMP_HOUSING.md`.
 
 ## Housing
 
-Permanent player housing is separate from camps.
+Permanent player housing is separate from camps and uses actual vacant settlement properties.
 
-- towns/settlements can contain empty/purchasable houses;
-- the right to buy the first available home is present from the beginning rather than unlocked by story/boss progression;
-- price and available funds create the practical early-game gate instead of an arbitrary permission gate;
-- player buys a residence rather than turning a field camp into a full permanent base;
-- house shells/interiors use coherent external building designs/assets;
-- house functions include rest, storage, furnishing/decor and trophy/collection display;
-- the house does not automatically replace every town service such as forge/alchemy, because those service buildings need to remain meaningful world locations;
-- baseline house price bands are defined in the starting-settlement housing section and economy tuning, not independently per UI.
+- towns/settlements contain external-first empty/purchasable house shells in multiple sizes;
+- the right to buy the first available home exists from the beginning rather than being unlocked by story/boss progression;
+- a player owns one active residence at a time at baseline and **trades up** rather than accumulating houses for multiplied storage;
+- canonical price anchors are Small 2,400 / Town House 9,000 / Large 25,000 / Prestige 65,000+ Gold;
+- selling the old home returns 80% of its standard purchase value;
+- furniture, trophies and logical Home Storage migrate safely/atomically during a move;
+- house functions include rest, Home Storage, furnishing/decor, wardrobe access where suitable, cooking after appropriate furnishing and trophy/collection display;
+- placing extra chests/furniture does not multiply logical storage pools;
+- the house does not replace town forge/full alchemy/class/merchant/shrine services;
+- exterior/structural shell is protected at baseline; player customization focuses on interior furniture, accepted variants and trophy display rather than unrestricted demolition of roads/walls/neighbors.
+
+Exact housing market, storage tiers, furnishing and external 26.2 furniture/property-system candidates live in `FISHING_COLLECTION_HOUSING_MARKET.md`.
 
 ---
 
@@ -1382,7 +1432,7 @@ Specific authored trade goods may override these values, but buy/sell tables mus
 
 Meaningful reputation may alter prices by at most roughly **±10–15%** unless a rare authored faction rule explicitly justifies more. Reputation is not allowed to turn the ordinary economy into a mandatory grind.
 
-Housing baseline remains 2,400 Gold for the first starter home, with later price bands as defined in the settlement section. Class switching and death-cost formulas are defined in their own canonical sections so merchant tuning cannot silently change them.
+Housing follows the fixed trade-up market in §16/§22: 2,400 / 9,000 / 25,000 / 65,000+ Gold house anchors with 80% old-house resale. Class switching and death-cost formulas are defined in their own canonical sections so merchant tuning cannot silently change them.
 
 ---
 
@@ -1428,6 +1478,7 @@ Canonical direction:
 - Spell Engine or another runtime may own skill behavior, but its default UI does not override project visual canon;
 - inventory is a purpose-built RPG character screen with the canonical 12 slots, 45 starting ordinary carried slots, expandable to 72, Material Pouch, Key Items and contextual comparison—not a vanilla inventory reskin;
 - forge, alchemy, cooking, class/advancement, map, death/respawn, Wardrobe/Appearance and other important screens reuse the same component/spacing grammar;
+- fishing/Fish Codex, housing/property/furnishing and quest-journal screens must use the same external visual grammar rather than becoming unrelated minigame UIs;
 - no generic black translucent panel phase, no unrelated UI-pack collage, no temporary vanilla buttons;
 - real Minecraft-client screenshot review at multiple GUI scales/resolutions is required before a screen is visually accepted.
 
@@ -1437,10 +1488,13 @@ Backend/UI-library candidates are not visual canon. Current candidates include a
 
 # 27. Current locked decisions
 
-Major locked decisions as of 2026-09-15:
+Major locked decisions as of **2026-09-16**:
 
 - private-use large open-world fantasy action RPG with very low vanilla progression dependence;
 - core identity is exploration + fast action combat + character/build growth across a large authored regional world rather than vanilla survival or an MMO chore list;
+- protagonist is customizable in name/appearance/class with only a light shared outsider/adventurer starting frame; no strongly fixed chosen-one identity;
+- main story centers on the ancient Anchor network and three legitimate long-term stewardship directions rather than one obvious good/evil answer;
+- launch ending choice is personal **Restore / Release / Partition** after the immediate Central Anchor crisis is contained; multiplayer players may choose independently and postgame remains explorable;
 - ordinary universal terms stay readable; primary currency is **Gold**, while distinctive naming effort goes to regions/factions/bosses/signature materials/gear;
 - Fabric is the locked mod loader for this project unless a future hard technical blocker forces a deliberate migration review;
 - Azari 30k x 30k is the primary free terrain candidate and region planning proceeds against it while local-use/import terms are verified;
@@ -1487,28 +1541,30 @@ Major locked decisions as of 2026-09-15:
 - medium damage/status complexity with direct conditions plus bounded Poison/Bleed/Frostbite/Shock buildup and repeat resistance;
 - five-rank light smithing/alchemy/cooking mastery is non-grindy and advances through distinct recipe/order/technique experiences rather than mass-crafting one cheap recipe;
 - roughly 12 major regions with **one suggested-entry Lv plus local encounter Lv**, peer regions allowed at equal difficulty, no universal scaling, no level-gate walls;
+- R02–R12 now each have dedicated implementation-ready regional packages tying world problem/NPC roles/traversal/POIs/ecology/resources/dungeon/boss/reward/story evidence together rather than leaving them as biome lists;
 - discovered POIs and shrine/major-hub fast travel;
 - starting region suggested entry Lv 1, with local early encounter pressure rising roughly through Lv 8 rather than treating 1–8 as a broad region recommendation band;
 - R01 has concrete Louxia/Meadow Viper/Cave Centipede/Bison/Grizzly/Steelboar/Nature Spirit/Regalhart/Earthloong combat/ecology roles and first-dungeon boss numbers;
 - starting region is approachable while elites/POIs/bosses provide the first major difficulty spikes;
-- high-Lv regions remain physically enterable rather than being blocked by invisible/story walls;
+- high-Lv regions remain physically enterable rather than being blocked by invisible/story walls; R12 exploration can be entered early while only the deep Central Anchor finale requires main-investigation state;
 - ground mounts use non-vanilla visible creatures/models; Trail Stag arrives early and later Komodo/Elephant/Laviathan/Sky Drake roles are specified in `MOUNTS.md`;
 - mixed main/regional/free-exploration quests with roughly 30/70 guided-vs-free-exploration feel, dynamic region events, replayable dungeons, respawning field/world bosses;
 - probabilistic drops with deterministic protection for progression-critical items;
 - multiplayer down/revive and fully personal loot;
+- quest/main-story progress and important reward claims are personal/server-authoritative unless a physical world fact genuinely requires one shared truth;
 - death automatically removes a small amount of current-Lv EXP; if no current-Lv EXP can be removed, it automatically charges Lv-scaled Gold, and death can drive Gold negative;
 - earned Lv never decreases; opening pre-shrine deaths are free and there is no extra corpse/equipment-loss layer;
 - multiplayer allows players to explore together or separately and regroup without ordinary progression requiring party proximity;
 - RPG field resource nodes instead of cave/strip-mining as the core gathering loop;
 - personal node gathering state in multiplayer;
-- mining/herbalism/forestry/fishing-foraging categories with light mastery;
-- dedicated no-routine-durability gathering tools, separate from combat slots;
-- common node regeneration and slower/conditional rare-node regeneration;
+- mining/herbalism/forestry/fishing-foraging categories with five-rank light mastery;
+- dedicated Field/Refined/Masterwork no-routine-durability gathering tools in Tool Pouch/context use, separate from combat slots;
+- fishing is an optional collection/cooking/selling/record/trophy loop with external fish/rod/animation/Codex UI and short rare/trophy tension play rather than a long universal minigame;
 - economy is slightly constrained in early/midgame and becomes more comfortable later; ordinary routine spending should not consume most income;
 - merchants use fixed essentials plus rotating stock on a **10-minute active-world-time cadence**; reopen/relog/sleep cannot reroll them;
 - baseline sell-back ratios are 25% equipment / 35% materials / 20% consumables and deterministic arbitrage is forbidden;
-- quick-build material-cost camps;
-- permanent houses are purchased separately in settlements and provide rest/storage/decor/trophy functions;
+- camps use a **reusable Field Camp Kit**; ordinary placement does not consume materials and camps do not replace fast travel/town services;
+- permanent houses are fixed vacant settlement properties with **one active residence at a time**, 2,400 / 9,000 / 25,000 / 65,000+ Gold trade-up tiers, 80% resale and safe furniture/storage migration;
 - first-home purchase permission exists from the beginning; the starter house baseline is 2,400 Gold and functions as roughly a 5–7 hour savings goal rather than a story gate;
 - starting settlement begins with a short approach/reveal, then immediate shrine/inn/basic merchant/bank/guild/basic-smith access;
 - starting settlement uses a coherent external village/prop/NPC clothing family and a visually taught gate → square/inn → guild → smith → board/exits flow rather than mandatory NPC errand chains;
@@ -1517,11 +1573,11 @@ Major locked decisions as of 2026-09-15:
 - starting quest density is intentionally low: about 1 main objective plus 2–3 regional contracts before discoveries add more;
 - the stable is visible immediately but the first non-vanilla ground mount arrives through early first-region progression;
 - starting settlement should expose multiple routes including an intentionally dangerous higher-Lv direction when geography supports it;
-- R02–R12 terrain identities, creature roles, bosses, resources, dungeon directions and suggested-entry values are expanded in `REGIONS.md`;
 - selected faction/reputation systems only where meaningful;
 - moderate day/night/weather gameplay effects;
 - starting settlement and all important buildings use coherent external architecture/designs;
-- Essential-friendly server-authoritative multiplayer target.
+- Essential-friendly server-authoritative multiplayer target;
+- Terradragon is R12 optional altar-summoned world-boss spectacle, **not** the main-story final guardian; the Central Anchor finale keeps a separate external-model/anatomy asset gate.
 
 ---
 
@@ -1531,11 +1587,14 @@ Do not re-decide the locked systems above. Continue from here without asking the
 
 Completed/advanced design work that should **not** be restarted from zero:
 
-- Azari provisional R01–R12 regional expansion;
+- broad R01–R12 region graph plus implementation-ready R02–R12 regional content packages;
+- world/protagonist/Anchor story spine, regional evidence structure, recurring-role framework and Restore/Release/Partition endings;
+- quest/world-state/multiplayer progression authority;
+- gathering tools/mastery/node loop, fishing loop/Fish Codex direction, reusable camp and one-residence housing market;
 - regional creature/ecology sourcing and no-vanilla spawn architecture;
 - external UI family selection and screen-language direction;
 - global Lv 80 curve and fast ~3x reward benchmark with no-rescale confirmation for current region entry levels;
-- Gold economy, class-switch cost, automatic death penalty, starter housing prices and 10-minute merchant refresh/pricing structure;
+- Gold economy, class-switch cost, automatic death penalty, housing trade-up anchors and 10-minute merchant refresh/pricing structure;
 - inventory capacity, Material Pouch/Vault, Key Items and stack-cap rules;
 - loot economy, five grades, affixes, targeted boss farming, signature-material bad-luck protection and R01 equipment/resource catalog;
 - exact equipment stat/affix/forge/reforge rules;
@@ -1547,14 +1606,16 @@ Completed/advanced design work that should **not** be restarted from zero:
 - R01 opening vertical slice from approach road through first Trail Stag and Earthloong clear;
 - external-first player motion rule including dash/dodge/roll/work/mount actions;
 - four-dose Recovery Belt, baseline R01 potions, food, alchemy/cooking and five-rank light profession mastery;
-- external-first armor/apparel/NPC-clothing pipeline, R01 outfit family, Armor Model API direction and lightweight Wardrobe rules.
+- external-first armor/apparel/NPC-clothing pipeline, R01 outfit family, Armor Model API direction and lightweight Wardrobe rules;
+- finished-game quality model and design-completeness audit criteria.
 
 Recommended next batches:
 
-1. **R01 exact asset intake / presentation binding** — choose exact external filenames and hashes for R01 armor parts, weapons/resources, NPC outfits, potion/food props, consume/work animations, key VFX/sounds and settlement/dungeon structure parts; test representative conversions at Minecraft scale before gameplay code.
-2. **Gathering / fishing / camp / housing completion** — lock gathering interaction timings/tool progression/yields, fishing loop, node presentation/respawn, camp deployment material/placement rules and starter-house furnishing/trophy/storage behavior without turning them into grind systems.
-3. **Quest / dialogue / world-state / multiplayer progression** — lock personal versus shared quest state, objective credit, dialogue/choice behavior, event/reset state, party-split progression and save authority before implementing the R01 quest flow.
-4. **R02 implementation-ready regional package** — convert the existing broad R02 region concept into actual external resource/equipment/enemy/NPC/settlement/dungeon/reward families after R01 asset intake proves the pipeline.
-5. **Final keybind audit** only after the complete frequent-action list is known; important Minecraft/Essential/companion-mod keys must not conflict.
+1. **Whole-game cross-region audit** — compare R01–R12 side by side for repeated encounter shapes, settlement-service sameness, POI cadence, resource/reward duplication, traversal fatigue, story-evidence balance and level/economy gaps; revise only real duplication/holes.
+2. **Exact external asset intake expansion** — finish R01 unresolved intake first, then bind each region's production-critical creatures/bosses/resources/settlement/dungeon/VFX/audio to exact acceptable sources; resolve the R12 final-guardian model rather than inventing a placeholder.
+3. **Main-quest and recurring-character scene package** — convert the story spine into actual major quest beats/dialogue encounters/rejoin points with external NPC/animation/structure direction while preserving open-world route freedom.
+4. **World density / content-count budget** — after Azari terrain import/coordinate audit, place major/minor POI, settlement, shrine, dungeon, boss and event cadence so 30k terrain never relies on size alone; use travel-time targets from the quality audit rather than arbitrary icon counts.
+5. **Global audio/music, accessibility/difficulty and final keybind pass** — select external audio/music direction, close subtitles/camera/motion/GUI/readability options and difficulty/accessibility rules, then audit the complete frequent-action key list against Minecraft/Essential/companion-mod defaults.
+6. **Pre-bootstrap canon closure** — re-run design completeness against `PROJECT.md` acceptance rules and begin gameplay source bootstrap only when remaining player-facing TBDs are genuine asset/terrain integration gates rather than design decisions.
 
 When design direction becomes unclear, research real open-world RPGs, open-source RPGs and large Minecraft RPG mods before inventing filler systems.
