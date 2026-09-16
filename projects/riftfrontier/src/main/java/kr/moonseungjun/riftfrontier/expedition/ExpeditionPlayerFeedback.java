@@ -59,6 +59,13 @@ public final class ExpeditionPlayerFeedback {
             ), true);
             return;
         }
+        if (recovered >= 3) {
+            player.sendSystemMessage(Component.translatable(
+                "riftfrontier.expedition.feedback.extraction_choice",
+                threats
+            ), true);
+            return;
+        }
         player.sendSystemMessage(Component.translatable(
             "riftfrontier.expedition.feedback.salvage",
             recovered,

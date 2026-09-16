@@ -21,6 +21,7 @@
   "riftfrontier.expedition.feedback.hub_ready": "Lodestone: deploy • Smithing table: provision",
   "riftfrontier.expedition.feedback.deployed": "Region 01 • Salvage %s/%s • Pressure %s",
   "riftfrontier.expedition.feedback.salvage": "Salvage %s/%s • Patrol threats %s • Clear patrol for +1",
+  "riftfrontier.expedition.feedback.extraction_choice": "Relay ready • Extract now or clear %s patrol threats for +1 salvage",
   "riftfrontier.expedition.feedback.patrol_cleared": "Salvage %s/%s • Patrol cleared • Extraction bonus +1 secured",
   "riftfrontier.expedition.feedback.rift_drag": "Rift drag pulse • Slowed for %s ticks • Intensity %s",
   "riftfrontier.expedition.feedback.relay_online": "Extraction relay online • Finish salvage, then use the lodestone",
