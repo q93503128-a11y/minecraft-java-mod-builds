@@ -17,6 +17,10 @@ public final class FishingEntities {
     public static final EntityType<EncounterFishEntity> FAT_FISH = register("encounter_fat_fish", 0.85f, 0.58f);
     public static final EntityType<EncounterFishEntity> LONG_FISH = register("encounter_long_fish", 1.15f, 0.48f);
     public static final EntityType<EncounterFishEntity> ANGLER_FISH = register("encounter_angler_fish", 1.05f, 0.82f);
+    public static final EntityType<EncounterFishEntity> CYPRINID_FISH = register("encounter_cyprinid_fish", 0.80f, 0.62f);
+    public static final EntityType<EncounterFishEntity> PELAGIC_FISH = register("encounter_pelagic_fish", 0.95f, 0.48f);
+    public static final EntityType<EncounterFishEntity> BREAM_FISH = register("encounter_bream_fish", 0.70f, 0.78f);
+    public static final EntityType<EncounterFishEntity> CATFISH_FISH = register("encounter_catfish_fish", 1.00f, 0.53f);
 
     private FishingEntities() {
     }
@@ -31,6 +35,10 @@ public final class FishingEntities {
             case FAT -> FAT_FISH;
             case LONG -> LONG_FISH;
             case ANGLER -> ANGLER_FISH;
+            case CYPRINID -> CYPRINID_FISH;
+            case PELAGIC -> PELAGIC_FISH;
+            case BREAM -> BREAM_FISH;
+            case CATFISH -> CATFISH_FISH;
         };
     }
 

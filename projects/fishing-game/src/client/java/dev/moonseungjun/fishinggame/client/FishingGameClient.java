@@ -3,10 +3,14 @@ package dev.moonseungjun.fishinggame.client;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.moonseungjun.fishinggame.FishingGameMod;
 import dev.moonseungjun.fishinggame.client.fish.AnglerEncounterFishModel;
+import dev.moonseungjun.fishinggame.client.fish.BreamEncounterFishModel;
+import dev.moonseungjun.fishinggame.client.fish.CatfishEncounterFishModel;
+import dev.moonseungjun.fishinggame.client.fish.CyprinidEncounterFishModel;
 import dev.moonseungjun.fishinggame.client.fish.EncounterFishModelLayers;
 import dev.moonseungjun.fishinggame.client.fish.EncounterFishRenderer;
 import dev.moonseungjun.fishinggame.client.fish.FatEncounterFishModel;
 import dev.moonseungjun.fishinggame.client.fish.LongEncounterFishModel;
+import dev.moonseungjun.fishinggame.client.fish.PelagicEncounterFishModel;
 import dev.moonseungjun.fishinggame.client.fish.SmallEncounterFishModel;
 import dev.moonseungjun.fishinggame.client.fish.TallEncounterFishModel;
 import dev.moonseungjun.fishinggame.entity.FishingEntities;
@@ -165,6 +169,10 @@ public final class FishingGameClient implements ClientModInitializer {
         ModelLayerRegistry.registerModelLayer(EncounterFishModelLayers.FAT, FatEncounterFishModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(EncounterFishModelLayers.LONG, LongEncounterFishModel::createBodyLayer);
         ModelLayerRegistry.registerModelLayer(EncounterFishModelLayers.ANGLER, AnglerEncounterFishModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(EncounterFishModelLayers.CYPRINID, CyprinidEncounterFishModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(EncounterFishModelLayers.PELAGIC, PelagicEncounterFishModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(EncounterFishModelLayers.BREAM, BreamEncounterFishModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(EncounterFishModelLayers.CATFISH, CatfishEncounterFishModel::createBodyLayer);
 
         EntityRendererRegistry.register(
                 FishingEntities.SMALL_FISH,
@@ -185,6 +193,22 @@ public final class FishingGameClient implements ClientModInitializer {
         EntityRendererRegistry.register(
                 FishingEntities.ANGLER_FISH,
                 context -> new EncounterFishRenderer(context, EncounterFishModelLayers.ANGLER, AnglerEncounterFishModel::new)
+        );
+        EntityRendererRegistry.register(
+                FishingEntities.CYPRINID_FISH,
+                context -> new EncounterFishRenderer(context, EncounterFishModelLayers.CYPRINID, CyprinidEncounterFishModel::new)
+        );
+        EntityRendererRegistry.register(
+                FishingEntities.PELAGIC_FISH,
+                context -> new EncounterFishRenderer(context, EncounterFishModelLayers.PELAGIC, PelagicEncounterFishModel::new)
+        );
+        EntityRendererRegistry.register(
+                FishingEntities.BREAM_FISH,
+                context -> new EncounterFishRenderer(context, EncounterFishModelLayers.BREAM, BreamEncounterFishModel::new)
+        );
+        EntityRendererRegistry.register(
+                FishingEntities.CATFISH_FISH,
+                context -> new EncounterFishRenderer(context, EncounterFishModelLayers.CATFISH, CatfishEncounterFishModel::new)
         );
     }
 }
