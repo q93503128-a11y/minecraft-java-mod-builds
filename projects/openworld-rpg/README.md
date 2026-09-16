@@ -40,6 +40,27 @@ When touching a stale section during future work, update or remove the obsolete 
 5. [`REGION_CROSS_AUDIT.md`](./REGION_CROSS_AUDIT.md) — R01–R12 anti-repetition and regional-identity contract
 6. `R02_IMPLEMENTATION_PACKAGE.md` through `R12_IMPLEMENTATION_PACKAGE.md` — regional implementation packages
 
+## Design-closure and player-facing-content rule
+
+`PROJECT.md`'s pre-code design-completion contract is mandatory. The project is **not** ready for gameplay source bootstrap merely because the broad concept is understandable.
+
+Before a subsystem/content package is considered design-complete, its canon must be specific enough that an implementer can finish it from the documents without inventing game design during coding. This includes, as applicable:
+
+- exact player-facing behavior and state transitions;
+- balance formulas, defaults, costs, rewards, limits and failure/edge behavior;
+- multiplayer/server authority and late-join/rejoin behavior;
+- UI information hierarchy, interactions, states and scaling;
+- quest objectives, branches, recovery/failure behavior, visible aftermath and reward ownership;
+- named NPC roles, scene beats, dialogue intent and recurring appearances where narrative content depends on them;
+- encounter composition, boss phases/telegraphs/rewards and dungeon progression;
+- POI/settlement/service roles and world placement requirements;
+- accepted external visual/model/animation/VFX/audio direction and asset/provenance gates;
+- data-driven content fields required for later tuning.
+
+Do **not** leave player-facing `TBD`, `decide during coding`, vague `add something later`, or equivalent placeholders in a subsystem that is being handed to implementation. If a hard technical constraint discovered during implementation invalidates canon, revise the canon first and only then implement the revised rule. Code must not silently become the design authority.
+
+Player-facing text and presentation must never expose the development process. Do not put internal/developer wording such as `P0`, `P1`, `alpha`, `temporary`, `prototype`, `TODO`, `debug`, `developer`, internal milestone names, test-stage labels, implementation notes, asset-intake language or similar production terminology into gameplay UI, item descriptions, quests, dialogue, system messages, tutorials, loading text or other player-visible content. Internal identifiers may exist in code/data/logs, but all shipped player-facing copy must be written from the game's world/player perspective.
+
 ## Locked direction summary
 
 - open-world action RPG rather than vanilla-plus;
