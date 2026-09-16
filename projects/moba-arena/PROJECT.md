@@ -2,13 +2,13 @@
 
 > Working project slug: `moba-arena`
 > Final player-facing title: **TBD**
-> Current phase: **DESIGN CANON + EXTERNAL SOURCE AUDIT**
+> Current phase: **DONOR STACK CONDITIONALLY LOCKED / RUNTIME PREFLIGHT NEXT**
 
 ## Repository contract
 
-This project follows repository root `AGENTS.md`, `docs/BUILD_STANDARD.md`, `docs/QUALITY_STANDARD.md`, and the current 문승준 Minecraft high-quality playbook.
+This project follows repository root `AGENTS.md`, `docs/BUILD_STANDARD.md`, `docs/QUALITY_STANDARD.md`, the current 문승준 Minecraft high-quality playbook, and this project's canon.
 
-When this file or the project canon conflicts with older chat history, current GitHub `main` and these project files win.
+When older chat history conflicts with current GitHub `main`, current `main` wins.
 
 ## Technical identity
 
@@ -16,29 +16,36 @@ When this file or the project canon conflicts with older chat history, current G
 - Provisional Mod ID: `moba_arena`
 - Provisional Namespace: `moba_arena`
 - Bootstrap mod version: `0.1.0-alpha.1`
-- Minecraft target: **26.2**
-- Java target: **25**
-- Loader: **TBD — must be selected by external-code reuse audit, not habit**
-- Loader/API version: **TBD**
-- Gradle: **TBD after loader lock**
-- Build plugin: **TBD after loader lock**
+- Minecraft target: **1.19.2 — conditional donor lock**
+- Java target: **17**
+- Loader: **Forge**
+- Forge compatibility target: **43.3.13 provisional; must pass Anime Assembly dependency smoke test before source bootstrap**
+- Build plugin / Gradle: lock during M0 after the dependency profile boots cleanly
 - Planned JAR: `moba-arena-0.1.0-alpha.1.jar`
-- Existing-world compatibility: not promised; the game is match/map-instance oriented and depends on imported third-party arena worlds
-- Required dependencies: TBD from `EXTERNAL_SOURCES.md`
-- Optional external mods: TBD
-- Forbidden bundled dependencies: Minecraft redistribution-prohibited files, paid/pirated assets, or any third-party code/assets whose terms do not permit inclusion in this public repository
-- Datagen task: define during source bootstrap if needed
-- GameTest task: define during source bootstrap
-- Server smoke-test task: define during source bootstrap
-- Client smoke-test task: define during source bootstrap
+- Existing-world compatibility: not promised; matches use imported arena worlds and resettable match state
 
-The loader is intentionally not locked yet. Fabric and NeoForge are both candidates. The winner is whichever allows the strongest external code, UI, animation, combat, and MOBA donor stack to be reused with the least rewriting on Minecraft 26.2.
+The project intentionally prefers the version with the strongest complete external game stack over the newest Minecraft version. The current first-slice choice is Forge 1.19.2 because Anime Assembly 1.1.4 already supplies a coherent player-facing MOBA combat layer: character selection, 22 playable kits, four character abilities plus an additional skill, health bars, team assignment helpers, all-player Ready/Start flow, an M-key equipment shop, NPC combat facilities and a MOBA minimap.
+
+Minecraft 26.2 remains a researched alternative, not the initial target. Anime Limitless 1.1.0 on Fabric 26.2 has a much larger character/technique roster, but is All Rights Reserved and does not currently document an equivalent integrated MOBA team/ready/shop/minimap match layer. Choosing it first would force this project to author substantially more game architecture, which violates the external-first goal.
+
+## Required first-slice runtime stack
+
+The exact intake rules and versions are normative in `IMPLEMENTATION_BLUEPRINT.md` and `EXTERNAL_SOURCES.md`.
+
+Current planned runtime:
+
+- Anime Assembly 1.1.4 — player characters, abilities, animations/VFX, health bars, character selection, MOBA Ready/Start, shop and minimap;
+- GeckoLib 3.1.40 for Forge 1.19.2 — required Anime Assembly animation runtime;
+- playerAnimator / player-animation-lib-forge 1.0.2 — required Anime Assembly player animation runtime;
+- Pehkui 3.8.2 for Forge 1.19.2 — required Anime Assembly scaling runtime;
+- Kleider Custom Renderer — required by Anime Assembly, but the exact 1.19.2 file/version is **not yet pinned and is a hard preflight blocker**;
+- SmartBrainLib 1.9 / 1.19.2 branch — minion sensing, targeting, path movement and combat behavior runtime.
+
+Third-party runtime JARs are dependencies, not files to copy casually into this public repository. Their licenses, download identity, checksum and redistribution boundary must be recorded before packaging.
 
 ## Product identity
 
-This project is a Minecraft-hosted MOBA assembled primarily from existing third-party code, maps, UI, models, animation, VFX and audio rather than internally designed substitutes.
-
-The project is deliberately **not** an exercise in inventing a new visual language or rebuilding systems that already exist externally.
+This is a Minecraft-hosted MOBA assembled primarily from existing third-party code, maps, UI, models, animation, VFX and audio rather than internally designed substitutes.
 
 Core play target:
 
@@ -46,144 +53,118 @@ Core play target:
 - each team accepts **1 to 5 human players**;
 - asymmetric sizes such as `1v2`, `2v5`, `5v1`, `4v5` are legal;
 - standard symmetric sizes through `5v5` are legal;
-- the selected map does **not** resize, crop, simplify or change because of player count;
-- multiple external maps may be supported and selected before a match;
-- player-controlled bots are **out of initial scope**;
-- MOBA-native AI such as minions, neutral monsters and structure targeting remains mandatory.
-
-## Personal-use scope
-
-The intended gameplay build is for the owner's private personal use, not public distribution.
-
-However, this GitHub repository is public. Therefore:
-
-- private-use-only or non-redistributable third-party maps/assets MUST NOT be committed here;
-- the repository may record source URLs, checksums, expected local paths and installation/import instructions;
-- redistributable third-party code/assets may be committed only under their actual terms and with required notices;
-- local-only files should remain outside Git or under ignored local intake paths once source bootstrap exists;
-- access-control/DRM bypass and paid-asset piracy are forbidden;
-- if public distribution is ever planned, every third-party source must be re-audited first.
+- selected map geometry never resizes/crops/simplifies because of team size;
+- multiple external maps may eventually be selectable;
+- player/champion bots are **out of initial scope**;
+- MOBA-native AI such as lane minions, neutral monsters and automated structures remains mandatory.
 
 ## External-first hard contract
 
-### Player-facing visuals
+### Player-facing layer
 
-The following must come from external usable assets or an external mod/resource pack that supplies them:
+Do not build a parallel replacement for functionality already supplied by the adopted runtime.
 
-- map/world geometry;
-- HUD art;
-- menu/panel/button art;
-- icons;
-- character/champion models;
-- character/champion textures;
-- animations;
-- VFX;
-- sound effects;
-- music if used;
-- tower/base/minion visual models when custom visuals are used.
+For the first slice, Anime Assembly owns by default:
 
-**Do not create original final visual design for these categories.**
+- character roster and character-selection presentation;
+- character combat kits and ability execution;
+- character animations and bundled skill presentation;
+- character health bars;
+- MOBA Ready/Start interaction;
+- the visible in-match equipment shop when technically bridgeable;
+- the visible MOBA minimap when technically bridgeable;
+- its own player/NPC rendering dependencies.
 
-Reference-only material is not enough for a final visual if it would require us to invent/redraw the final design. A usable external asset family must be selected.
+The project may wrap or validate these systems but must not silently replace them with a second custom character engine, second shop, second cooldown HUD or project-created final art.
 
-### Code
+### Major gameplay code
 
-For major gameplay subsystems, the default order is:
+Default order:
 
-1. use an external library/mod directly;
-2. port an external open-source implementation;
-3. adapt an external open-source implementation;
-4. write only the minimum adapter, integration, compatibility and configuration code required to connect those pieces.
+1. use an external mod/library directly;
+2. port a permissively licensed external implementation;
+3. adapt that implementation only where Minecraft/loader/API integration requires it;
+4. write the minimum adapter/orchestration code needed to connect the external pieces.
 
-Do not create a major subsystem from scratch merely because doing so would be faster than finding or porting a donor implementation.
+The currently selected donor split is:
 
-If no acceptable donor exists for a major subsystem, stop that subsystem and perform another source audit before authoring new architecture.
+- player combat/presentation: Anime Assembly direct dependency;
+- lane wave/reward lifecycle: SimpleLaneWars (`c0mbit/mc-dota`, MIT) narrow port;
+- minion AI executor/pathing: SmartBrainLib direct dependency;
+- tower/inhibitor/final-core state skeleton: `cadox8/LoM` (Apache-2.0) narrow port;
+- match/team bridge: Anime Assembly state first, LoM team/game state shapes only where a missing boundary must be filled;
+- visible shop/economy: Anime Assembly first; LoM shop code only as a fallback backend if Anime Assembly cannot expose a reliable server-authoritative transaction path.
 
-### Allowed project-owned code
+`lol-minecraft` is **reference only** because no repository license was found. No implementation code may be copied from it.
 
-Project-owned code may exist for:
+## Allowed project-owned code
 
-- version/loader compatibility ports;
-- adapters between third-party systems;
-- registration and dependency wiring;
-- map metadata bindings;
-- spawn/waypoint/objective coordinates for an imported map;
-- match state orchestration when no single donor exposes the full integration boundary;
-- configuration/data conversion;
-- bug fixes needed to make adopted donor code function together;
-- server-authoritative validation and synchronization glue;
-- tests and validation tools.
+Project-owned code is limited mainly to:
 
-The goal is not literally zero new lines. The goal is that the **game's foundation remains externally sourced**, while original code is integration glue rather than a parallel reimplementation.
+- Forge registration and compatibility glue;
+- `AnimeAssemblyBridge` and version fingerprinting;
+- map metadata and local-map binding;
+- match phase orchestration not exposed by the dependency;
+- server-authoritative validation/synchronization;
+- lane waypoint memory/predicates connecting SmartBrainLib to map metadata;
+- ports of explicitly admitted donor files;
+- result/reset flow;
+- tests, validators and provenance tooling.
+
+The goal is not zero new lines. The goal is that project code connects external foundations rather than recreating them.
 
 ## Map contract
 
 - Never build a new arena map for this project.
-- Never redesign terrain to fit a team size.
-- Never auto-scale a map based on team size.
-- Never cut a 3-lane map down to 1 lane merely because the match is 1v1.
-- If several usable maps are available, expose them as separate selectable maps.
-- Prefer importing a map unchanged geometrically.
-- Game metadata may identify existing spawn positions, lanes, tower positions, neutral objectives and base cores without rebuilding the world.
-- If a map requires gameplay objects that are already present in the donor map, prefer using those rather than replacing them.
+- Never modify map geometry because of player count.
+- Anime Assembly's modified MOBA map is the first local-runtime candidate because it is the map its MOBA mode was designed around.
+- The modified map and its parent Summoner's Rift derivative must remain **local-only until their exact usage/redistribution terms and checksum are recorded**.
+- Git may store metadata, coordinates, expected folder identity and checksums; it must not store restricted map bytes.
+- Backup candidates remain documented in `EXTERNAL_SOURCES.md`.
 
-## Player bot contract
+## Public repository / private-use boundary
 
-Player/champion bots are not part of the initial project.
+Private personal play does not turn third-party content into redistributable content.
 
-Do not add Baritone, fake-player agents, LLM agents or custom player-bot AI as baseline dependencies just to fill empty team slots.
+Therefore:
 
-A match slot is initially either:
-
-- human player; or
-- empty.
-
-If player bots are requested later, they require a new explicit audit and plan.
-
-## Required non-player AI
-
-The following remain in scope because the genre requires them:
-
-- lane minions;
-- neutral/jungle monsters if the selected donor ruleset/map contains them;
-- tower/structure targeting or donor-equivalent automated defenses;
-- objective/boss AI where present in the selected external ruleset.
-
-These AI systems must themselves use or port external implementations wherever practical.
+- do not commit third-party JARs/maps/assets unless redistribution permission is established;
+- do not assume Anime Assembly's AFL-3.0 license grants rights to every underlying franchise character, trademark or externally sourced asset contained in or depicted by the mod;
+- preserve MIT/Apache/MPL notices and modification notices where applicable;
+- do not bypass paid access, DRM or access controls;
+- re-audit every adopted source before any public game distribution.
 
 ## Canon files
 
-- `PROJECT.md` — technical identity and hard project constraints
-- `GAME_DESIGN.md` — master gameplay and match-flow canon
-- `EXTERNAL_SOURCES.md` — donor-code/map/UI/asset candidates and adoption status
-- `THIRD_PARTY_ASSETS.md` — provenance and usage ledger for adopted third-party material
+- `PROJECT.md` — technical identity and hard constraints
+- `GAME_DESIGN.md` — gameplay and match-flow conflict authority
+- `IMPLEMENTATION_BLUEPRINT.md` — exact donor ownership, port map, adapter boundaries and ordered implementation plan
+- `EXTERNAL_SOURCES.md` — source/license/version research and candidate/adoption status
+- `THIRD_PARTY_ASSETS.md` — provenance ledger for material actually entering the project/runtime
 
-Do not create a competing master design document. Subordinate implementation notes may be added later, but `GAME_DESIGN.md` remains the gameplay conflict authority.
+`IMPLEMENTATION_BLUEPRINT.md` is a technical annex, not a competing gameplay design document. If implementation mapping conflicts with older exploratory notes, the blueprint wins. If it conflicts with gameplay intent in `GAME_DESIGN.md`, fix the blueprint rather than changing the game silently.
 
-## Current gate before source bootstrap
+## Preflight gate before gameplay source bootstrap
 
-Do not bootstrap gameplay code until the external-source audit has at least identified viable donors for:
+Do **not** bootstrap gameplay source until all of these are closed:
 
-1. arena map;
-2. core MOBA mechanics or a sufficiently broad mechanics donor;
-3. minion movement/combat AI;
-4. player ability/combat framework;
-5. player animation;
-6. HUD/UI implementation and visual asset family;
-7. tower/base/objective behavior;
-8. economy/shop/level progression if the chosen MOBA donor does not already supply them.
+1. exact Kleider Custom Renderer 1.19.2 dependency file/version is identified;
+2. Anime Assembly 1.1.4 + required dependencies boots on the selected Forge 1.19.2 profile;
+3. the same profile is checked for multiplayer/dedicated-server viability to the extent the dependency supports it;
+4. Anime Assembly's actual JAR symbols/resources are inventoried and `AnimeAssemblyBridge` is designed from real symbols, not guessed class names;
+5. the primary local MOBA map's terms, folder identity and checksum are recorded;
+6. character select, abilities, health bars, team assignment, Ready/Start, M shop and minimap are manually demonstrated in the donor-only profile;
+7. the missing-screen UI asset family for map/team/result screens has a legally usable external basis.
 
-The loader is selected only after this matrix is strong enough to compare Fabric vs NeoForge on actual reuse value.
+If Anime Assembly fails a critical compatibility gate, stop and re-evaluate the donor stack. Do not respond by writing a parallel home-grown character/skill engine.
 
 ## Validation state
 
-Current state after creation of this project folder:
-
-- `CODE REVIEWED`: **NO gameplay source exists yet**
+- `CODE REVIEWED`: **planning/donor documents reviewed; no gameplay source exists yet**
 - `TESTED`: **NOT RUN**
 - `BUILD VERIFIED`: **NOT RUN**
 - `JAR PRODUCED`: **NO**
 - `PLAYTESTED`: **NO**
 - `MULTIPLAYER TESTED`: **NO**
 
-This is a planning/source-audit checkpoint only.
+This remains a design/source-audit checkpoint.

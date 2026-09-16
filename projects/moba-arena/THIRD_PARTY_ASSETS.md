@@ -1,60 +1,146 @@
 # MOBA Arena — Third-Party Asset & Code Ledger
 
-This ledger tracks material that moves from candidate status into actual project use.
+This ledger tracks material that actually moves from research into project/runtime use.
 
-`EXTERNAL_SOURCES.md` is the research/candidate catalog. This file is the adoption/provenance record.
+`EXTERNAL_SOURCES.md` is the research catalog. `IMPLEMENTATION_BLUEPRINT.md` is the planned integration map. This file is the intake/provenance record.
 
 ## Repository boundary
 
-The project is intended for private personal play, but the GitHub repository is public.
+The game is intended for private personal play, but this GitHub repository is public.
 
 Therefore:
 
-- do not commit third-party bytes unless redistribution is actually permitted;
-- for local-only maps/assets, store source and installation metadata only;
-- do not upload paid or access-controlled content;
-- preserve required notices/licenses for redistributable material;
-- re-audit everything before any future public game distribution.
+- do not commit third-party bytes unless redistribution is established;
+- keep restricted maps/assets/JARs local;
+- store source, expected identity and checksums instead of prohibited bytes;
+- preserve license/NOTICE/modification requirements for code ports;
+- do not assume a mod's project license grants rights to every franchise/trademark/third-party asset represented inside that mod;
+- re-audit before any public game distribution.
 
 ## Record template
 
 ```text
 Name:
-Category: code / map / UI / model / texture / animation / VFX / audio / other
+Category: code / runtime / map / UI / model / texture / animation / VFX / audio / other
 Author:
 Source:
-Version / Commit / File:
+Version / Commit / File / File ID:
+SHA-256:
 License / Usage Terms:
 Use Mode: dependency / port / bundled asset / local-only asset / reference
 Modified:
 Modification Summary:
 Redistributable in this public repo: yes / no / unclear
-Attribution Required:
+Attribution / NOTICE Required:
 Used In:
-Local Install Path (if applicable):
-Checksum (if applicable):
+Local Install Path:
 Notes:
 ```
 
-## Adopted material
+## Locked for M0 intake — bytes not yet admitted
 
-None yet. This project has only completed the initial design/source-audit setup.
+The following are **planned**, not proof that files have been downloaded, checksum-verified or committed:
 
-Candidates listed in `EXTERNAL_SOURCES.md` are **not** considered adopted merely by being named there.
+### Anime Assembly 1.1.4
 
-## Visual-production rule
+- Category: runtime / character / combat / UI / animation / VFX
+- Source: https://www.curseforge.com/minecraft/mc-mods/anime-assembly/files/7514535
+- File: `AnimeAssembly+1.1.4.jar`
+- File ID: 7514535
+- Project-listed license: AFL-3.0
+- Use mode: local/direct dependency
+- Public-repo bytes: **NO by default**; dependency metadata only until rights are re-audited
+- SHA-256: **PENDING M0**
 
-For final player-facing visual categories, this ledger must identify a usable external source before production implementation is accepted.
+### GeckoLib 3.1.40
 
-Required categories include:
+- Category: runtime library
+- Source: https://www.curseforge.com/minecraft/mc-mods/geckolib/files/4407241
+- File: `geckolib-forge-1.19-3.1.40.jar`
+- License: MIT
+- Use mode: dependency
+- SHA-256: **PENDING M0**
 
-- arena map;
-- HUD/menu art;
-- icons;
-- playable-character visuals;
-- animations;
-- VFX;
-- audio;
-- custom minion/structure visuals when applicable.
+### Pehkui 3.8.2
 
-If a category remains unresolved, do not replace it with project-invented final art.
+- Category: runtime library
+- Source: https://www.curseforge.com/minecraft/mc-mods/pehkui/files/5393090
+- File: `Pehkui-3.8.2+1.19.2-forge.jar`
+- License: MIT
+- Use mode: dependency
+- SHA-256: **PENDING M0**
+
+### playerAnimator 1.0.2
+
+- Category: runtime library
+- Source: https://www.curseforge.com/minecraft/mc-mods/playeranimator
+- File: `player-animation-lib-forge-1.0.2.jar`
+- Use mode: dependency
+- Exact file ID / license notice / SHA-256: **PENDING M0**
+
+### Kleider Custom Renderer
+
+- Category: runtime renderer
+- Source: Anime Assembly required-dependency link
+- Exact 1.19.2 file/version/license/SHA-256: **UNRESOLVED — BLOCKER**
+
+### SmartBrainLib 1.9
+
+- Category: AI runtime library
+- Source: https://github.com/Tslat/SmartBrainLib
+- Branch/commit: `1.19.2` / `3d1263fe39bc96c84fe920632208e8958d24b13f`
+- License: MPL-2.0
+- Use mode: direct dependency
+- SHA-256: **PENDING M0**
+
+### Anime Assembly modified MOBA map
+
+- Category: map
+- Source: original Anime Assembly project page's MOBA map link
+- Use mode: local-only candidate
+- Parent/source terms: **PENDING AUDIT**
+- World folder identity / SHA-256: **PENDING M0**
+- Public-repo bytes: **NO**
+
+## Code donors approved for port provenance — no donor code copied yet
+
+### SimpleLaneWars / c0mbit/mc-dota
+
+- Category: code
+- Source: https://github.com/c0mbit/mc-dota
+- Commit: `cacd3625b8a0066d6085bbaa0c81a18ac58254fc`
+- License: MIT
+- Planned use: narrow wave/minion identity/reward port
+- Actual copied/modified files: **NONE YET**
+
+### cadox8/LoM
+
+- Category: code
+- Source: https://github.com/cadox8/LoM
+- Commit: `5ae2b4b747989dc74ebe1af17869a11879cceecb`
+- License: Apache-2.0
+- Planned use: structure/team state and fallback shop-data port
+- Actual copied/modified files: **NONE YET**
+
+## UI candidates — not yet admitted
+
+### Kenney UI Pack family
+
+- Category: UI assets
+- Sources:
+  - https://kenney.nl/assets/ui-pack
+  - https://kenney.nl/assets/ui-pack-rpg-expansion
+  - https://kenney.nl/assets/pixel-ui-pack
+- License: CC0
+- Planned use: missing map/team/result screens if visual fit passes actual Minecraft screenshot review
+- Downloaded/admitted: **NO**
+
+## Validation state
+
+No third-party bytes or ported donor source are claimed to be integrated yet.
+
+- dependency checksums: **PENDING**
+- runtime compatibility: **NOT TESTED**
+- code ports: **NOT STARTED**
+- map intake: **NOT DONE**
+- UI visual acceptance: **NOT DONE**

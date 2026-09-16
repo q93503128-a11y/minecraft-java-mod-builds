@@ -1,248 +1,332 @@
 # MOBA Arena — External Source & Donor Audit
 
-This file records candidate and adopted third-party code, maps, UI and asset families.
+This file records the exact external foundations considered for the project and how each one may be used.
 
-It is a planning/audit ledger, not proof that every candidate has already been downloaded or integrated.
+Candidate status is not proof that third-party bytes have already entered the repository. Actual intake is recorded in `THIRD_PARTY_ASSETS.md`.
 
 ## Status vocabulary
 
-- `ADOPTED` — selected for production use
-- `PRIMARY CANDIDATE` — strongest current lead, not yet locked
-- `CANDIDATE` — worth inspecting
-- `REFERENCE ONLY` — may inform behavior, but is not an approved code/asset intake source
-- `LOCAL-ONLY CANDIDATE` — potentially usable by the owner locally, but must not be committed to this public repository under current known terms
-- `REJECTED` — not suitable for this project
-- `NEEDS LICENSE AUDIT` — terms are unclear or incomplete
-
-## Source-use vocabulary
-
-- `dependency` — use the external mod/library directly
-- `port` — adapt external source code to the target Minecraft/loader version
-- `asset` — use external art/map/audio/etc. under its terms
-- `local asset` — user installs original third-party bytes locally; Git stores only integration metadata/code
-- `reference` — behavior/design study only; cannot become the final asset by itself
+- `ADOPTED DONOR` — selected implementation provenance for a subsystem; port still requires notice/modification tracking
+- `CONDITIONAL RUNTIME LOCK` — selected if the M0 compatibility/smoke test passes
+- `PRIMARY LOCAL-ONLY CANDIDATE` — intended owner-local content, not approved to commit
+- `FALLBACK` — retained only if the primary path fails
+- `REFERENCE ONLY` — study behavior; do not copy code/assets
+- `REJECTED FOR INITIAL STACK` — not used in the first slice
+- `BLOCKER` — unresolved source/version/terms that must be closed before source bootstrap
 
 ---
 
-## 1. Map and broad MOBA donors
+## 1. Primary player-facing runtime
 
-### Matter Overdrive — MOBA Map
+### Anime Assembly 1.1.4
 
-- Status: `PRIMARY CANDIDATE` for an unrestricted map donor; `CANDIDATE` for minion behavior provenance
-- Source: https://www.curseforge.com/minecraft/worlds/matter-overdrive-moba-map
-- Version: Minecraft 1.7.10
-- Map license shown by CurseForge: **Public Domain**
-- Known behavior: team Android spawners produce units assigned to opposing teams; units travel from one side toward the other and attack enemy Androids/players.
-- Required old runtime: Matter Overdrive + Forge 1.7.10
-- Planned use:
-  - inspect/import map as a possible selectable arena;
-  - study its spawn/lane setup;
-  - inspect Matter Overdrive Android source as a donor for lane combat behavior.
-- Risk: very old world/mod version, so map conversion and code porting need proof.
+- Status: `CONDITIONAL RUNTIME LOCK`
+- Author: Haxsa_1545
+- Source: https://www.curseforge.com/minecraft/mc-mods/anime-assembly
+- Exact file: `AnimeAssembly+1.1.4.jar`
+- CurseForge project ID: `1169249`
+- File ID: `7514535`
+- Game/loader: Minecraft 1.19.2 / Forge
+- Curse Maven: `implementation fg.deobf("curse.maven:anime-assembly-1169249:7514535")`
+- Project-listed license: Academic Free License v3.0
+- Environment: client + server
+- Advertised player-facing scope:
+  - 22 playable characters;
+  - character selection UI (`Ctrl+U`) and cycling;
+  - four character abilities plus additional skill;
+  - health-bar display;
+  - blue/red team assignment helper;
+  - MOBA Info/Start flow where all non-spectators must start/ready;
+  - M-key equipment shop;
+  - NPC hero variants and `/team` integration;
+  - integrated MOBA mode and improved MOBA minimap;
+  - modified MOBA map download linked from the project page.
+- Required external dependencies listed by the author:
+  - GeckoLib;
+  - Kleider Custom Renderer;
+  - Pehkui;
+  - Player Animator.
+- Planned use: direct dependency; it owns the character/combat/presentation layer.
+- Public-repo boundary: do not blindly commit the JAR or extracted character/franchise assets. AFL-3.0 on the project page does not by itself establish rights to every underlying anime/comic character, trademark or third-party work represented inside it.
+- M0 gate: must prove dependency compatibility, actual server-visible state and bridgeable shop/team/Ready signals before project bootstrap.
 
-### Matter Overdrive source
+### Why this beats the initial 26.2 combat-framework plan
 
-- Status: `CANDIDATE` code donor
-- Source: https://github.com/simeonradivoev/MatterOverdrive
-- License: **GPL-3.0**
-- Repository state: archived legacy source
-- Planned use: inspect Android/team/pathing/combat code connected to the old MOBA map and port only if it is still the strongest donor.
-- Risk: major API gap from legacy Forge to Minecraft 26.2; adopting source may impose GPL obligations on derivative code.
-
-### League of Legends - 1.12.2 - Summoner's Rift (playable map)
-
-- Status: `CANDIDATE / NEEDS LICENSE AUDIT`
-- Source: https://www.planetminecraft.com/project/league-of-legends-in-minecraft---playable-3479252/
-- Known advertised mechanics: turrets, inhibitors, brushes, minions, AP-scaling abilities, shop, respawn timer; project page also describes champions, AD/AP scaling, gold, kills/assists, jungle, Dragon/Baron and a resource pack.
-- Intended players: page describes 2–10 players.
-- Planned use: inspect as a broad gameplay donor because it already attempted most core MOBA loops inside Minecraft.
-- Restriction: do not commit/reuse its files or code until actual usage terms are verified.
-
-### World of Champions / War of Champions
-
-- Status: `REFERENCE ONLY / LOCAL-ONLY CANDIDATE`
-- Source: https://www.curseforge.com/minecraft/worlds/world-of-champions-the-vanilla-moba
-- Known scope: Minecraft vanilla MOBA with character kits and 3v3-oriented gameplay.
-- License shown by CurseForge: **All Rights Reserved**
-- Planned use: gameplay/UX/balance study and possibly local personal play for comparison under original download terms.
-- Not approved for repository code/assets.
-
-### Summoner's Rift Pre-Season 10 replica
-
-- Status: `LOCAL-ONLY CANDIDATE`
-- Source: https://www.planetminecraft.com/project/re-league-of-legend-summoner-s-rift-download/
-- Description: 1:1-scale Summoner's Rift replica.
-- Author page states editing and distributing are not allowed, while use for video/public server is described separately.
-- Planned use: possible owner-local selectable arena if its actual terms permit the intended private use.
-- Public Git boundary: do not commit the map or modified copies.
-
-### Other Summoner's Rift maps
-
-- Status: `CANDIDATE / NEEDS LICENSE AUDIT`
-- Example source: https://www.planetminecraft.com/project/summoners-rift-map/
-- Purpose: broaden map choice if more than one legally/technically usable arena exists.
-- Rule: each candidate gets its own provenance/license entry before adoption.
+A generic combat framework such as Spell Engine would still require this project to choose/build champion kits, character art, animations, VFX, icons, character select, health bars and other presentation. Anime Assembly already provides these as one coherent runtime. The project therefore prefers the older Minecraft version with the stronger finished donor package.
 
 ---
 
-## 2. Combat / ability code donors
-
-### Spell Engine
-
-- Status: `PRIMARY CANDIDATE`
-- Source: https://github.com/ZsoltMolnarrr/SpellEngine
-- Distribution: https://www.curseforge.com/minecraft/mc-mods/spell-engine
-- License: **GPL-3.0**
-- Current audit observation: Minecraft 26.2 builds exist for both Fabric and NeoForge; the 26.2 port targets Java 25.
-- Useful scope: data-driven spell/casting system, targeting, delivery/impact hooks, visuals, weapon integration, HUD/GUI support.
-- Planned use: direct dependency first; source port/modification only if needed and license-compatible.
-- Loader implication: does not decide the loader by itself because both Fabric and NeoForge are supported.
-
-### Matter Overdrive combat/entity code
-
-- Status: `CANDIDATE`
-- Source: https://github.com/simeonradivoev/MatterOverdrive
-- License: GPL-3.0
-- Useful scope: team-aware Android/minion-like entity behavior from the historical MOBA setup.
-- Planned use: narrow port candidate, not a reason to import the entire old tech mod.
-
----
-
-## 3. Animation/runtime donors
+## 2. Required Anime Assembly dependency profile
 
 ### GeckoLib
 
-- Status: `PRIMARY CANDIDATE`
-- Source: https://github.com/bernie-g/geckolib
-- Distribution: https://www.curseforge.com/minecraft/mc-mods/geckolib
-- License: **MIT**
-- Current audit observation: Minecraft 26.2 builds exist for Fabric, Forge and NeoForge.
-- Planned use: external model/entity/item/armor animation runtime where adopted third-party assets are compatible.
-- Important: GeckoLib is runtime technology, not an art source by itself.
+- Status: `CONDITIONAL RUNTIME LOCK`
+- Source: https://www.curseforge.com/minecraft/mc-mods/geckolib
+- Exact first target: `geckolib-forge-1.19-3.1.40.jar`
+- CurseForge file ID: `4407241`
+- Game/loader: 1.19.2 / Forge
+- License: MIT
+- Use: direct required animation/runtime dependency.
 
-### Player Animation Library
+### Pehkui
 
-- Status: `PRIMARY CANDIDATE`
-- Source: https://github.com/PlayerAnimationLibrary/PlayerAnimationLibrary
-- Distribution: https://www.curseforge.com/minecraft/mc-mods/player-animation-library
-- License: **MIT**
-- Current audit observation: Minecraft 26.2 builds exist for Fabric and NeoForge.
-- Useful scope: external player animation clips, including Blockbench/GeckoLib/Bedrock-format animation ingestion.
-- Planned use: direct dependency if playable characters remain player-model based or donor content requires it.
+- Status: `CONDITIONAL RUNTIME LOCK`
+- Source: https://www.curseforge.com/minecraft/mc-mods/pehkui
+- Exact first target: `Pehkui-3.8.2+1.19.2-forge.jar`
+- CurseForge file ID: `5393090`
+- Game/loader: 1.19.2 / Forge
+- License: MIT
+- Source page reports last successful test on Forge `1.19.2-43.3.13`.
+- Use: direct required scaling dependency.
 
----
+### playerAnimator
 
-## 4. UI implementation and UI visual donors
+- Status: `CONDITIONAL RUNTIME LOCK`
+- Source: https://www.curseforge.com/minecraft/mc-mods/playeranimator
+- Exact first target: `player-animation-lib-forge-1.0.2.jar`
+- Game/loader: 1.19.2 / Forge
+- Use: direct required player-animation dependency.
+- Intake requirement: record source repository license/notice and exact file ID/SHA-256 during M0 rather than inventing metadata here.
 
-### UI Lib
+### Kleider Custom Renderer
 
-- Status: `PRIMARY CANDIDATE` as implementation framework
-- Distribution: https://www.curseforge.com/minecraft/mc-mods/ui
-- License: **Apache-2.0**
-- Current audit observation: Minecraft 26.2 builds exist for Fabric and NeoForge.
-- Planned use: screen/component implementation if it reduces glue code.
-- Important: it does not satisfy the project's external-design requirement alone. A real external visual asset/HUD family is still required.
-
-### RPG-HUD
-
-- Status: `CANDIDATE` code/layout donor
-- Distribution: https://modrinth.com/mod/rpg-hud
-- License: **GPL-3.0-or-later**
-- Current audit observation: Minecraft 26.2 is supported and source is public.
-- Useful scope: externally designed RPG-style HUD behavior/layout/components.
-- Planned use: inspect source/assets/terms as one candidate for actual HUD adoption or code/layout reuse.
-- Risk: MOBA-specific ability/shop/score screens are not guaranteed; additional external UI sources will likely be needed.
-
-### Production UI visual family
-
-- Status: `UNRESOLVED — BLOCKS FINAL UI IMPLEMENTATION`
-- Requirement: must be a directly usable/editable external UI asset/mod family with clear terms.
-- Do not substitute AI-created panels/icons while unresolved.
+- Status: `BLOCKER`
+- Source: linked as a required dependency from the Anime Assembly project page.
+- Exact Forge 1.19.2 file/version: **not yet verified**.
+- Rule: source bootstrap is blocked until this is identified from the original source and tested. Do not substitute a guessed build.
 
 ---
 
-## 5. Character/model/VFX/audio donors
+## 3. Minion code and AI
 
-Current status: `UNRESOLVED`.
+### SimpleLaneWars / `c0mbit/mc-dota`
 
-Before locking a playable roster, audit actual external packages that contain enough of:
+- Status: `ADOPTED DONOR` for narrow wave/tag/reward logic
+- Source: https://github.com/c0mbit/mc-dota
+- Audited commit: `cacd3625b8a0066d6085bbaa0c81a18ac58254fc`
+- License: MIT
+- Platform: Paper/Bukkit-style implementation, therefore source concepts must be ported to Forge 1.19.2.
+- Exact useful provenance:
+  - `src/main/java/com/simplelanewars/Main.java`
+    - wave scheduling;
+    - team/minion identity;
+    - per-team spawn lifecycle;
+    - nearby enemy lookup concepts.
+  - `MinionListener.java`
+    - no vanilla drops/XP;
+    - killer/last-hit reward flow;
+    - friendly-target filtering.
+- Explicitly rejected source behavior:
+  - generated 35x35/flat arena;
+  - delete-all-minions before each wave;
+  - raw `setVelocity` movement toward enemy spawn;
+  - asymmetric/hard-coded player team handling;
+  - scoreboard as production HUD.
+- Modification rule: retain MIT notice/provenance in the port.
 
-- model/texture;
-- animation;
-- ability visuals;
-- icons;
-- sound;
-- source code or data-driven abilities.
+### SmartBrainLib 1.9
 
-Prefer coherent packs/mods over mixing unrelated visual styles.
-
-No project-original final art may fill a missing category.
+- Status: `CONDITIONAL RUNTIME LOCK`
+- Source: https://github.com/Tslat/SmartBrainLib
+- Branch: `1.19.2`
+- Audited commit: `3d1263fe39bc96c84fe920632208e8958d24b13f`
+- Project version on branch: 1.9
+- Forge version used by that branch: 43.2.8
+- License: MPL-2.0
+- Use mode: direct dependency, not copied source.
+- Useful audited primitives include:
+  - `NearbyLivingEntitySensor`;
+  - `GenericAttackTargetSensor`;
+  - `SetAttackTarget`;
+  - `SetWalkTargetToAttackTarget`;
+  - `MoveToWalkTarget` / `WalkOrRunToWalkTarget`;
+  - `StayWithinDistanceOfAttackTarget`;
+  - `AnimatableMeleeAttack` / ranged behavior;
+  - `ReactToUnreachableTarget`;
+  - `LookAtTarget`.
+- Planned use: actual pathfinding/behavior execution. Project glue provides lane waypoint memory and MOBA team/structure predicates.
+- Compatibility note: branch Forge 43.2.8 vs provisional runtime target 43.3.13 must be smoke-tested, not assumed.
 
 ---
 
-## 6. Loader decision matrix
+## 4. Structures, game state and fallback shop
 
-Loader is still open because the strongest modern candidates currently support both sides.
+### `cadox8/LoM`
 
-### Fabric advantages to investigate
+- Status: `ADOPTED DONOR`
+- Source: https://github.com/cadox8/LoM
+- Audited commit: `5ae2b4b747989dc74ebe1af17869a11879cceecb`
+- License: Apache-2.0
+- Old platform: Bukkit/Spigot-era project; use requires porting rather than binary dependency.
 
-- breadth of modern lightweight libraries and open-source examples;
-- compatibility with selected 26.2 donor stack;
-- local/private multiplayer convenience if later desired;
-- ease of porting donor code where relevant.
+Selected source provenance:
 
-### NeoForge advantages to investigate
+- `structures/Structure.java`
+- `structures/TowerType.java`
+- `structures/InhibType.java`
+- `task/InhibTask.java`
+- `managers/GameManager.java`
+- `managers/Teams.java`
+- `utils/TeamData.java`
+- fallback-only: `shop/Shop.java`, `ShopManager.java`, `shop/item/ShopItem.java`, `ItemEffects.java`, `ShopItemType.java`
 
-- possible easier conceptual migration from old Forge-era donor code;
-- current support in Spell Engine, GeckoLib, Player Animation Library, UI Lib and other candidates;
-- server/entity/event APIs that may fit legacy donor ports.
+Adopted concepts:
 
-### Selection rule
+- common TOWER / INHIB / final-core structure state;
+- team ownership;
+- health/reward lifecycle;
+- tower attack parameters;
+- inhibitor delayed regeneration;
+- game/team state shapes;
+- shop item price/effect/parts data model only if needed.
 
-Do not choose by preference alone.
+Known limitations requiring deliberate repair:
 
-Lock only after we score the final candidate set on:
+- old Bukkit integration is obsolete for this mod;
+- tower `Structure.attack()` contains incomplete minion-target branches;
+- old particle/reflection utilities are not desired production presentation;
+- champion/skill code overlaps Anime Assembly and must not be ported.
 
-1. direct code reuse amount;
-2. porting effort;
-3. UI/animation/content compatibility;
-4. minion/tower/entity implementation compatibility;
-5. network/server authority requirements;
-6. dependency conflicts;
-7. Minecraft 26.2 maintenance health.
+Apache-2.0 attribution and modified-file notices are mandatory for actual ports.
 
 ---
 
-## 7. Source-admission checklist
+## 5. Arena maps
 
-For every adopted source record:
+### Anime Assembly modified MOBA map
+
+- Status: `PRIMARY LOCAL-ONLY CANDIDATE`
+- Source: linked by the Anime Assembly CurseForge description as `Moba Mode Map Download`.
+- Parent map credited by Anime Assembly: Re-League of Legends / Summoner's Rift.
+- Planned use: first local arena because the adopted MOBA runtime was authored around it.
+- Public Git: **do not commit yet**.
+- Remaining intake work:
+  - verify exact author/terms for both parent and modified copy;
+  - record filename/world folder;
+  - SHA-256;
+  - inspect geometry and derive metadata coordinates without rebuilding terrain.
+
+### Matter Overdrive — MOBA Map
+
+- Status: `FALLBACK`
+- Source: https://www.curseforge.com/minecraft/worlds/matter-overdrive-moba-map
+- Version: 1.7.10
+- Listed map license: Public Domain
+- Value: legally cleaner backup arena and historical lane-spawner reference.
+- Risk: very old world/runtime; conversion needs proof.
+
+### League of Legends 1.12.2 playable map
+
+- Status: `FALLBACK / TERMS AUDIT REQUIRED`
+- Source: https://www.planetminecraft.com/project/league-of-legends-in-minecraft---playable-3479252/
+- Advertised scope includes turrets, inhibitors, minions, shop, respawn, jungle and objective systems.
+- Do not import files/code until actual terms are verified.
+
+### Other Summoner's Rift replicas
+
+- Status: `REFERENCE ONLY / LOCAL-ONLY UNTIL TERMS PROVE MORE`
+- Never infer redistribution rights from download availability.
+
+---
+
+## 6. Missing-screen UI assets
+
+Anime Assembly already owns much of the visible in-match/player layer. The project still needs external final visuals for map select, asymmetric team setup and result/reset if the donor lacks suitable screens.
+
+### Kenney UI Pack family
+
+- Status: `PRIMARY FREE VISUAL FALLBACK`, not yet final-accepted
+- Sources:
+  - https://kenney.nl/assets/ui-pack — 430 files, CC0
+  - https://kenney.nl/assets/ui-pack-rpg-expansion — 85 files, CC0
+  - https://kenney.nl/assets/pixel-ui-pack — 750 files, CC0
+- Use mode: directly usable/editable external UI assets.
+- Rule: create one real Minecraft screen and compare its visual language with Anime Assembly before locking. If stylistically incompatible, reject and research another usable family rather than inventing project art.
+
+### UI Lib / RPG-HUD / other UI frameworks
+
+- Status: `RESERVE ONLY`
+- A framework is not automatically needed because Anime Assembly already provides several visible screens.
+- Add one only after a concrete missing-screen implementation demonstrates that Vanilla Forge Screen + adopted assets is insufficient or wasteful.
+
+---
+
+## 7. Alternatives deliberately not selected for the first slice
+
+### Anime Limitless 1.1.0
+
+- Status: `REJECTED FOR INITIAL STACK / OPTIONAL FUTURE LOCAL ALTERNATIVE`
+- Source: https://www.curseforge.com/minecraft/mc-mods/anime-limitless
+- File: `gojo-limitless-1.1.0.jar`, CurseForge file 8688244
+- Platform: Minecraft 26.2 / Fabric
+- Requirements documented by project: Fabric Loader >= 0.19.3, Fabric API, Java >= 25
+- License: All Rights Reserved
+- Advertised content: 128 characters, 1,786 techniques, bundled skins, transformation visuals, character list, broad combat features.
+- Reason not selected: excellent character quantity and modern platform, but no equivalently documented integrated MOBA team/Ready/shop/minimap ruleset; ARR also prevents treating its implementation/assets as a permissive code donor. Using it first would require more project-owned MOBA architecture.
+
+### Spell Engine
+
+- Status: `REJECTED FOR INITIAL STACK / 26.2 FALLBACK`
+- Source: https://github.com/ZsoltMolnarrr/SpellEngine
+- License: GPL-3.0
+- Reason: strong generic framework, but redundant when Anime Assembly is the selected full character/combat runtime. Do not install both by default.
+
+### Matter Overdrive source
+
+- Status: `FALLBACK`
+- Source: https://github.com/simeonradivoev/MatterOverdrive
+- License: GPL-3.0
+- Reason: historically relevant minion/team behavior but much older and more expensive to port than SimpleLaneWars + SmartBrainLib.
+
+### `lol-minecraft`
+
+- Status: `REFERENCE ONLY — NO LICENSE FOUND`
+- Useful scope: modern Minecraft MOBA architecture reference.
+- Rule: no copying source/assets/substantial implementation without an actual license grant.
+
+---
+
+## 8. Loader/version decision
+
+The audit now conditionally chooses **Forge 1.19.2 / Java 17** for the first playable slice.
+
+This is not permanent loyalty to Forge or to an old Minecraft version. It is a direct consequence of external reuse value:
+
+- Anime Assembly provides the broadest coherent ready-made MOBA player layer found so far;
+- all of its documented required dependencies have 1.19.2 Forge paths except the still-unresolved exact Kleider pin;
+- SmartBrainLib has a dedicated 1.19.2 Forge module;
+- LoM and SimpleLaneWars are source ports and therefore do not force a loader.
+
+Re-evaluate platform only if M0 proves this stack unusable or a stronger legally reusable complete donor appears.
+
+---
+
+## 9. Source-admission checklist
+
+For every source that actually enters development, record:
 
 - exact source URL/repository;
 - author;
 - exact license/usage terms;
-- exact version/commit/tag/file;
-- whether source is dependency, port, asset, local asset or reference;
+- exact version/commit/file/file ID;
+- dependency vs port vs local asset vs reference;
 - modification permission;
 - redistribution permission;
 - attribution/notice requirement;
 - public-Git eligibility;
-- Minecraft/loader version;
+- game/loader/Java version;
 - dependencies;
-- what subsystem it owns;
-- what adapter code we must write;
-- known conflicts with other adopted sources.
+- exact subsystem ownership;
+- exact adapter/port scope;
+- conflicts with other adopted systems;
+- SHA-256 for downloaded runtime bytes where practical.
 
-Do not mark a source `ADOPTED` until these fields are sufficiently known for its intended use.
+## 10. Next action — no coding before this
 
-## 8. Next audit work
-
-Priority order:
-
-1. download/inspect the strongest broad MOBA map/mechanics donors;
-2. inspect Matter Overdrive Android/minion code paths and determine whether a narrow port is practical;
-3. find at least two additional open-source minion/lane/structure donors before locking the AI architecture;
-4. find actual reusable MOBA-style UI visual assets/mods, not merely UI frameworks;
-5. find coherent playable-character/skill/animation packs;
-6. map donor requirements against Fabric and NeoForge 26.2;
-7. lock the smallest coherent external stack;
-8. only then bootstrap source/build files.
+1. resolve Kleider Custom Renderer exact Forge 1.19.2 file;
+2. build the donor-only Anime Assembly runtime profile;
+3. run the full donor feature checklist;
+4. inventory real Anime Assembly symbols/resources;
+5. fingerprint every tested JAR;
+6. verify the local MOBA map terms/checksum;
+7. only then bootstrap `moba-arena` source following `IMPLEMENTATION_BLUEPRINT.md`.
