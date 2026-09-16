@@ -10,7 +10,7 @@ Priority remains a genuinely playable, polished Region 01 vertical slice. Do not
 
 ## Latest verified checkpoint
 
-Latest Riftfrontier gameplay checkpoint is `bf7b7771e76f0132ba0b1071c9484360518eb5bb` (`riftfrontier: keep hub actions visible between expeditions`). `Build Riftfrontier` workflow run `35105545728` completed **SUCCESS** on 2026-09-16.
+Latest build-verified Riftfrontier gameplay checkpoint is `bf7b7771e76f0132ba0b1071c9484360518eb5bb` (`riftfrontier: keep hub actions visible between expeditions`). `Build Riftfrontier` workflow run `35105545728` completed **SUCCESS** on 2026-09-16.
 
 That checkpoint keeps the already-established commandless technical-hub interactions readable between expeditions without creating a custom HUD or new authority. While a player is inside the technical hub and has no active expedition, the existing one-second actionbar projection combines authoritative supplies / stored salvage / next deployment cost with the existing localized hub-ready station guidance. Active expeditions continue to use the existing salvage / threat / extraction projection. No new progression state, lifecycle, balance value, final UI language or client-owned gameplay state was introduced.
 
@@ -28,6 +28,12 @@ Verification vocabulary for `bf7b7771...`:
 - `MULTIPLAYER TESTED`: NO
 
 Do not infer human play or visual acceptance from GameTest, dedicated-server smoke or Xvfb client initialization.
+
+## Latest implementation checkpoint pending CI
+
+The current main child after the verified hub-action checkpoint makes the already-authoritative `riftfrontier:contract/region_01_salvage_recovery` legible in the connected player loop instead of leaving the contract as an invisible backend fact. EN/KO field-guide overview, deployment status, salvage/patrol actionbar states and extraction completion now consistently identify the Salvage Recovery / 회수 작전 contract and state that the returned shipment feeds the next preparation cycle. This is presentation/localization only: contract ID, required resources, rewards, extraction rules, persistence, pressure, balance and authority are unchanged.
+
+Do not invent a second Region 01 contract or faction backend merely to satisfy the first-slice checklist. Verify this localization/presentation checkpoint through the normal Riftfrontier CI, then move to a genuinely missing event or production-presentation requirement.
 
 ## Hunter production-creature checkpoint — Alien is no longer an uninspected candidate
 
@@ -83,7 +89,7 @@ Do not restart boss model/material search merely because human acceptance is pen
 
 ## First-slice guide and presentation baseline
 
-Fresh-world bootstrap provides a vanilla written-book field guide explaining only existing authoritative rules: hub preparation, combat-rig stations, lodestone deployment, three salvage recovery, relay extraction, technical threat roles, optional patrol-clear reward, salvage-triggered rift drag and hub storage/pressure conversion. It owns no progression state. Continue using vanilla written-book UX until a final Riftfrontier UI language has reference approval; do not invent a replacement custom Screen from scratch.
+Fresh-world bootstrap provides a vanilla written-book field guide explaining only existing authoritative rules: the Region 01 Salvage Recovery contract, hub preparation, combat-rig stations, lodestone deployment, three salvage recovery, relay extraction, technical threat roles, optional patrol-clear reward, salvage-triggered rift drag and hub storage/pressure conversion. It owns no progression state. Continue using vanilla written-book UX until a final Riftfrontier UI language has reference approval; do not invent a replacement custom Screen from scratch.
 
 ## Next useful development boundary
 
@@ -91,7 +97,7 @@ Human field play is required to approve or reject the Alien Hunter render and th
 
 While those reviews are pending, prefer independent visible-gameplay work that advances Region 01 completion: combat feel that does not require unapproved numeric tuning, legally sourced/provenance-tracked production presentation, or another clearly missing vertical-slice requirement. The commandless combat-rig hub path, hub logistics/action projection and expedition salvage/relay projection are now implemented and build-verified; do not churn them again absent a demonstrated regression. Use already approved external/reference direction. Do not collect broad speculative asset lists.
 
-The canonical first-slice checklist still calls for a minimal real faction-or-contract connection and at least one event. The production Region 01 content graph already contains `riftfrontier:contract/region_01_salvage_recovery`, and deployment is validated against that contract, so do not invent a second contract merely to satisfy a checkbox. Before adding new faction infrastructure, prefer making the existing contract legible/meaningful in the connected play loop or advancing a genuinely missing event/presentation requirement using existing server-authoritative state.
+The canonical first-slice checklist still calls for a minimal real faction-or-contract connection and at least one event. The production Region 01 content graph already contains `riftfrontier:contract/region_01_salvage_recovery`, deployment is validated against that contract, and the current presentation checkpoint makes that existing contract explicit throughout the connected player loop. Do not invent a second contract merely to satisfy a checkbox. Before adding new faction infrastructure, prefer advancing the genuinely missing event/presentation requirement using existing server-authoritative state.
 
 For production creatures, do not start another open-ended search. Scout `Armabee` and Elite Anchor `Goleling Evolved` remain recorded Quaternius CC0 role candidates, but only advance one when doing so produces a concrete exact-source inspection or Minecraft field-review result. Preserve Scout ranged-pressure semantics and Elite observable counterplay; do not add flight merely because Armabee is winged, and do not delete Ravager shield-stun counterplay until a verified replacement deliberately preserves or replaces it.
 
