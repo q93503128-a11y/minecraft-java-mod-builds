@@ -47,6 +47,7 @@ public final class FishingWorldManager {
             lockLakesideClock(lakeside);
 
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                if (player.isRemoved()) continue;
                 if (!player.level().dimension().equals(LAKESIDE_LEVEL)) continue;
                 if (outsidePlayableArea(player) || player.getY() < 54.0 || player.getY() > 96.0) {
                     teleportToArrival(player, lakeside);
@@ -55,20 +56,40 @@ public final class FishingWorldManager {
         });
     }
 
-    public static boolean prepareAndPlacePlayer(ServerPlayer player, MinecraftServer server) {
-        ServerLevel lakeside = server.getLevel(LAKESIDE_LEVEL);
-        if (lakeside == null) {
-            FishingGameMod.LOGGER.error("Dedicated lakeside dimension is unavailable; player remains in current level");
-            return false;
-        }
+    public static boolean prepareInitialPlayer(ServerPlayer player, MinecraftServer server) {
+        ServerLevel lakeside = prepareLakeside(server);
+        if (lakeside == null || player.isRemoved()) return false;
 
-        buildIfNeeded(lakeside);
-        lockLakesideClock(lakeside);
+        // Rejoining a save that is already in the dedicated lakeside does not need another
+        // tracking transition. Keep the player's valid location and only correct bad/out-of-bounds saves.
+        if (player.level().dimension().equals(LAKESIDE_LEVEL)
+                && !outsidePlayableArea(player)
+                && player.getY() >= 54.0
+                && player.getY() <= 96.0) {
+            return true;
+        }
+        return teleportToArrival(player, lakeside);
+    }
+
+    public static boolean prepareAndPlacePlayer(ServerPlayer player, MinecraftServer server) {
+        ServerLevel lakeside = prepareLakeside(server);
+        if (lakeside == null || player.isRemoved()) return false;
         return teleportToArrival(player, lakeside);
     }
 
     public static FishingLocation locationFor(ServerPlayer player) {
         return FishingTravelManager.locationFor(player);
+    }
+
+    private static ServerLevel prepareLakeside(MinecraftServer server) {
+        ServerLevel lakeside = server.getLevel(LAKESIDE_LEVEL);
+        if (lakeside == null) {
+            FishingGameMod.LOGGER.error("Dedicated lakeside dimension is unavailable; player remains in current level");
+            return null;
+        }
+        buildIfNeeded(lakeside);
+        lockLakesideClock(lakeside);
+        return lakeside;
     }
 
     private static void lockLakesideClock(ServerLevel lakeside) {
@@ -80,6 +101,7 @@ public final class FishingWorldManager {
     }
 
     private static boolean teleportToArrival(ServerPlayer player, ServerLevel lakeside) {
+        if (player.isRemoved()) return false;
         return player.teleportTo(
                 lakeside,
                 0.5, 65.0, 28.5,

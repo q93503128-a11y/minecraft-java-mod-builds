@@ -6,9 +6,10 @@ Minecraft Java 26.2 Fabric standalone fishing progression game:
 
 Minecraft supplies the runtime/world renderer; the player experience is a dedicated fishing game rather than survival.
 
-## Current alpha.20 slice
+## Current alpha.21 slice
 
-- Adventure-mode fishing-only rules: no survival damage, hunger chores, mining/crafting loop or survival HUD.
+- Adventure-mode fishing-only rules: no survival damage, hunger chores, mining/crafting loop or survival status HUD.
+- The vanilla hotbar and held-item tooltip remain visible because Fishing Game still uses real Minecraft inventory slots; health/food/armor/air/XP layers stay hidden.
 - Hold/release right click for charge casting; cast charge changes distance only, never rarity or catch odds.
 - Three dedicated progression locations: Cheongram Lakeside -> Gull Harbor -> Deepwater Channel.
 - `M` travel is validated server-side against rod tier; active fishing blocks travel.
@@ -29,11 +30,10 @@ Minecraft supplies the runtime/world renderer; the player experience is a dedica
 - First discovery and location completion pay one-time rewards into the existing coin economy; repeat catches and later rebirth cycles cannot duplicate those rewards.
 - Rebirth unlocks after reaching Bluewater, emptying the bag and meeting the current coin target. The first target is 10,000 C; later targets rise by 1,500 C.
 - Rebirth resets coins, catch bag and rod tier and returns the player to Cheongram Lakeside, while permanently adding +30% ordinary fish sale income per rebirth.
-- Post-rebirth rods keep a visible glint and rebirth count even after the tier resets, so permanent progression is not hidden behind a number-only bonus.
-- Rebirth reuses the existing `B` progression panel; no second currency or extra management screen is introduced.
-- HUD, bag, bestiary, travel and catch-result presentation share the bundled Kenney CC0 UI language. Alpha.20 composes each panel as one continuous nine-slice surface instead of repeating complete 100x100 panel images.
-- Cheongram Lakeside is presented as an inland lake: a shaped lake bed, continuous surrounding terrain, raised scenic ridge, grounded tree belt and targeted ambient-mob cleanup prevent the flat-ocean horizon and stray vanilla mobs seen in the alpha.19 graphical review.
-- Existing alpha.19 worlds receive the Lakeside presentation pass once through a versioned world-quality marker; progression/save data is not reset.
+- HUD, bag, bestiary, travel and catch-result presentation share the bundled Kenney CC0 UI language. Alpha.21 uses the actual outer 4px frame of the 100x100 panel texture and clamps all major screens to the current Minecraft logical GUI size.
+- Preferred logical UI sizes are intentionally compact: HUD 174x62, bag 340x220, bestiary 348x220 and travel 320x206, with additional clamping on smaller GUI sizes.
+- Cheongram Lakeside remains an authored inland lake. Alpha.21 adds a one-time water cleanup pass that removes stray natural terrain blocks floating in/above the lake while preserving the wooden fishing structures.
+- Initial dedicated-dimension placement is deferred out of the connection JOIN callback and valid players already saved in Lakeside are not redundantly teleported, reducing chunk-tracking lifecycle risk during join/exit.
 - Essential remains optional and owns no game state.
 
 ## Controls
@@ -43,6 +43,7 @@ Minecraft supplies the runtime/world renderer; the player experience is a dedica
 - `B`: catch bag, selling, rod upgrade and rebirth.
 - `J`: fish bestiary / records / hotspot hints.
 - `M`: fishing-location travel.
+- Vanilla number keys / mouse wheel: normal hotbar selection remains available.
 
 ## Technical stack
 
@@ -55,4 +56,4 @@ Minecraft supplies the runtime/world renderer; the player experience is a dedica
 
 ## Quality gate
 
-Alpha.20 is the corrective UI/environment slice produced from an actual alpha.19 graphical review. The previous alpha.19 build was BUILD VERIFIED and dedicated-server smoke verified, but its screen composition and Cheongram Lakeside presentation failed the graphical quality gate. Alpha.20 must pass CI and then be re-opened in a real Minecraft client before PLAYTESTED or GRAPHICAL CLIENT REVIEWED is claimed.
+Alpha.20 passed automated build/server checks but failed the next real graphical review: major screens were still oversized at the user's GUI scale, the hotbar removal was not coherent with the retained inventory, stray terrain blocks remained in the lake, and integrated-server shutdown produced a player/chunk-tracking NPE. Alpha.21 is the corrective slice. Automated CI can verify code/build/server startup, but actual screen scale, lake cleanup and the shutdown error must be re-tested in a real Minecraft client before PLAYTESTED, GRAPHICAL CLIENT REVIEWED or shutdown-regression-verified status is claimed.

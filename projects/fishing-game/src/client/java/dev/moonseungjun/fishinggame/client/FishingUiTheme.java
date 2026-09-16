@@ -31,7 +31,9 @@ public final class FishingUiTheme {
     public static final int OVERLAY_DANGER = 0xFFFF9C9C;
 
     private static final int PANEL_TILE = 100;
-    private static final int PANEL_BORDER = 12;
+    // Kenney's bundled grey panel only uses the outer four source pixels for its frame.
+    // Sampling twelve pixels, as alpha.20 did, made every GUI frame visually three times heavier than the asset itself.
+    private static final int PANEL_BORDER = 4;
     private static final int PANEL_CENTER = PANEL_TILE - PANEL_BORDER * 2;
 
     private FishingUiTheme() {
@@ -118,16 +120,16 @@ public final class FishingUiTheme {
             int panelY,
             int panelWidth
     ) {
-        graphics.centeredText(font, title, panelX + panelWidth / 2, panelY + 12, TEXT_PRIMARY);
+        graphics.centeredText(font, title, panelX + panelWidth / 2, panelY + 8, TEXT_PRIMARY);
         if (subtitle != null && !subtitle.isBlank()) {
-            graphics.centeredText(font, subtitle, panelX + panelWidth / 2, panelY + 27, TEXT_SECONDARY);
+            graphics.centeredText(font, subtitle, panelX + panelWidth / 2, panelY + 20, TEXT_SECONDARY);
         }
-        graphics.fill(panelX + 12, panelY + 42, panelX + panelWidth - 12, panelY + 43, BORDER);
+        graphics.fill(panelX + 10, panelY + 34, panelX + panelWidth - 10, panelY + 35, BORDER);
     }
 
     public static void drawSectionTitle(GuiGraphicsExtractor graphics, Font font, String label, int x, int y) {
-        graphics.fill(x, y + 1, x + 2, y + 11, ACCENT);
-        graphics.text(font, label, x + 7, y, TEXT_PRIMARY, false);
+        graphics.fill(x, y + 1, x + 2, y + 10, ACCENT);
+        graphics.text(font, label, x + 6, y, TEXT_PRIMARY, false);
     }
 
     public static int rarityColor(FishRarity rarity) {

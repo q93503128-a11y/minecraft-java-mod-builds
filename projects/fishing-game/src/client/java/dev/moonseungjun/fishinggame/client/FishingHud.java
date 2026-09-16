@@ -11,6 +11,7 @@ import dev.moonseungjun.fishinggame.profile.CatchEntry;
 import dev.moonseungjun.fishinggame.profile.PlayerFishingProfile;
 import dev.moonseungjun.fishinggame.progression.FishingRods;
 import dev.moonseungjun.fishinggame.progression.RodDefinition;
+import dev.moonseungjun.fishinggame.ui.FishingUiLayout;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.DeltaTracker;
@@ -19,13 +20,15 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 
 public final class FishingHud {
-    private static final int BAR_INNER_WIDTH = 188;
+    private static final int BAR_WIDTH = 150;
+    private static final int BAR_INNER_WIDTH = BAR_WIDTH - 2;
 
     private FishingHud() {
     }
 
     public static void initialize() {
-        HudElementRegistry.removeElement(VanillaHudElements.HOTBAR);
+        // Keep the vanilla hotbar and held-item tooltip: Fishing Game still uses real inventory slots.
+        // Only survival-status layers that have no gameplay purpose are removed.
         HudElementRegistry.removeElement(VanillaHudElements.ARMOR_BAR);
         HudElementRegistry.removeElement(VanillaHudElements.HEALTH_BAR);
         HudElementRegistry.removeElement(VanillaHudElements.FOOD_BAR);
@@ -33,7 +36,6 @@ public final class FishingHud {
         HudElementRegistry.removeElement(VanillaHudElements.MOUNT_HEALTH);
         HudElementRegistry.removeElement(VanillaHudElements.INFO_BAR);
         HudElementRegistry.removeElement(VanillaHudElements.EXPERIENCE_LEVEL);
-        HudElementRegistry.removeElement(VanillaHudElements.HELD_ITEM_TOOLTIP);
         HudElementRegistry.removeElement(VanillaHudElements.MOB_EFFECTS);
         HudElementRegistry.removeElement(VanillaHudElements.OVERLAY_MESSAGE);
         HudElementRegistry.addLast(FishingGameMod.id("fishing_hud"), FishingHud::extract);
@@ -43,36 +45,37 @@ public final class FishingHud {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.gui.hud.isHidden()) return;
 
-        int x = 8;
-        int y = 8;
-        FishingUiTheme.drawPanel(graphics, x, y, 2, 1);
+        int x = 6;
+        int y = 6;
+        FishingUiLayout.Size hud = FishingUiLayout.hud(graphics.guiWidth(), graphics.guiHeight());
+        FishingUiTheme.drawPanelPixels(graphics, x, y, hud.width(), hud.height());
 
         RodDefinition rod = FishingRods.byTier(ClientFishingState.rodTier());
         FishingLocation location = currentLocation();
         int found = CollectionRewards.discoveredCount(ClientFishingState.records(), location);
         int total = CollectionRewards.speciesCount(location);
 
-        graphics.text(minecraft.font, "FISHING", x + 11, y + 10, FishingUiTheme.TEXT_PRIMARY, false);
+        graphics.text(minecraft.font, "FISHING", x + 8, y + 7, FishingUiTheme.TEXT_PRIMARY, false);
         graphics.text(
                 minecraft.font,
-                ClientFishingState.locationName() + "  " + found + "/" + total,
-                x + 78,
-                y + 10,
+                ClientFishingState.locationName() + " " + found + "/" + total,
+                x + 58,
+                y + 7,
                 found >= total ? FishingUiTheme.MONEY : FishingUiTheme.SUCCESS,
                 false
         );
-        graphics.fill(x + 10, y + 24, x + 190, y + 25, FishingUiTheme.BORDER);
-        graphics.text(minecraft.font, "코인  " + ClientFishingState.coins(), x + 11, y + 31, FishingUiTheme.MONEY, false);
+        graphics.fill(x + 7, y + 20, x + hud.width() - 7, y + 21, FishingUiTheme.BORDER);
+        graphics.text(minecraft.font, "코인 " + ClientFishingState.coins(), x + 8, y + 26, FishingUiTheme.MONEY, false);
         graphics.text(
                 minecraft.font,
-                "가방  " + ClientFishingState.catches().size() + "/" + PlayerFishingProfile.BAG_CAPACITY,
-                x + 104,
-                y + 31,
+                "가방 " + ClientFishingState.catches().size() + "/" + PlayerFishingProfile.BAG_CAPACITY,
+                x + 82,
+                y + 26,
                 FishingUiTheme.TEXT_PRIMARY,
                 false
         );
-        graphics.text(minecraft.font, "낚싯대  " + rod.displayName(), x + 11, y + 50, FishingUiTheme.ACCENT, false);
-        graphics.text(minecraft.font, "B 가방   J 도감   M 이동", x + 11, y + 82, FishingUiTheme.TEXT_SECONDARY, false);
+        graphics.text(minecraft.font, "낚싯대 " + rod.displayName(), x + 8, y + 39, FishingUiTheme.ACCENT, false);
+        graphics.text(minecraft.font, "B 가방 · J 도감 · M 이동", x + 8, y + 52, FishingUiTheme.TEXT_SECONDARY, false);
 
         int width = graphics.guiWidth();
         int height = graphics.guiHeight();
@@ -85,7 +88,7 @@ public final class FishingHud {
                     minecraft.font,
                     "물결을 보고 입질을 기다리세요",
                     width / 2,
-                    height - 34,
+                    height - 54,
                     FishingUiTheme.OVERLAY_PRIMARY
             );
         } else if (stage == 2) {
@@ -96,7 +99,7 @@ public final class FishingHud {
 
         String notice = ClientFishingState.notice();
         if (!notice.isBlank()) {
-            graphics.centeredText(minecraft.font, notice, width / 2, 18, FishingUiTheme.OVERLAY_PRIMARY);
+            graphics.centeredText(minecraft.font, notice, width / 2, 14, FishingUiTheme.OVERLAY_PRIMARY);
         }
     }
 
@@ -108,14 +111,14 @@ public final class FishingHud {
     }
 
     private static void renderCastHud(GuiGraphicsExtractor graphics, Minecraft minecraft, int width, int height) {
-        int barX = width / 2 - 95;
-        int barY = height - 28;
+        int barX = width / 2 - BAR_WIDTH / 2;
+        int barY = height - 44;
         float charge = FishingGameClient.castChargeProgress();
         String hint = charge >= 1.0f ? "최대 거리 · 놓아서 던지기" : "캐스팅 · 놓아서 던지기";
         int hintColor = charge >= 1.0f ? FishingUiTheme.OVERLAY_MONEY : FishingUiTheme.OVERLAY_PRIMARY;
 
-        graphics.centeredText(minecraft.font, hint, width / 2, barY - 16, hintColor);
-        graphics.blit(RenderPipelines.GUI_TEXTURED, FishingUiTheme.SLIDER, barX, barY, 0, 0, 190, 4, 190, 4);
+        graphics.centeredText(minecraft.font, hint, width / 2, barY - 14, hintColor);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, FishingUiTheme.SLIDER, barX, barY, 0, 0, BAR_WIDTH, 4, 190, 4);
         int fillWidth = Math.max(0, Math.min(BAR_INNER_WIDTH, Math.round(BAR_INNER_WIDTH * charge)));
         graphics.fill(
                 barX + 1,
@@ -133,9 +136,9 @@ public final class FishingHud {
             int width,
             int height
     ) {
-        int barX = width / 2 - 95;
-        int tensionY = height - 44;
-        int progressY = height - 20;
+        int barX = width / 2 - BAR_WIDTH / 2;
+        int tensionY = height - 64;
+        int progressY = height - 40;
         float tension = ClientFishingState.tension();
         float safeMin = ReelMath.safeMin(rod.controlBonus());
         float safeMax = ReelMath.safeMax(rod.controlBonus());
@@ -144,19 +147,19 @@ public final class FishingHud {
                 minecraft.font,
                 ClientFishingState.speciesName(),
                 width / 2,
-                height - 84,
+                height - 102,
                 FishingUiTheme.OVERLAY_PRIMARY
         );
         graphics.centeredText(
                 minecraft.font,
                 tensionHint(tension, safeMin, safeMax),
                 width / 2,
-                height - 69,
+                height - 88,
                 hintColor(tension, safeMin, safeMax)
         );
 
-        graphics.text(minecraft.font, "줄 장력", barX, tensionY - 11, FishingUiTheme.OVERLAY_PRIMARY, false);
-        graphics.blit(RenderPipelines.GUI_TEXTURED, FishingUiTheme.SLIDER, barX, tensionY, 0, 0, 190, 4, 190, 4);
+        graphics.text(minecraft.font, "줄 장력", barX, tensionY - 10, FishingUiTheme.OVERLAY_PRIMARY, false);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, FishingUiTheme.SLIDER, barX, tensionY, 0, 0, BAR_WIDTH, 4, 190, 4);
         int safeStart = barX + 1 + Math.round(BAR_INNER_WIDTH * safeMin);
         int safeEnd = barX + 1 + Math.round(BAR_INNER_WIDTH * safeMax);
         graphics.fill(safeStart, tensionY, safeEnd, tensionY + 4, 0xFF71D18A);
@@ -168,8 +171,8 @@ public final class FishingHud {
                         : (tension < safeMin ? FishingUiTheme.OVERLAY_ACCENT : FishingUiTheme.OVERLAY_PRIMARY));
         graphics.fill(markerX - 1, tensionY - 2, markerX + 2, tensionY + 6, markerColor);
 
-        graphics.text(minecraft.font, "포획 진척", barX, progressY - 11, FishingUiTheme.OVERLAY_PRIMARY, false);
-        graphics.blit(RenderPipelines.GUI_TEXTURED, FishingUiTheme.SLIDER, barX, progressY, 0, 0, 190, 4, 190, 4);
+        graphics.text(minecraft.font, "포획 진척", barX, progressY - 10, FishingUiTheme.OVERLAY_PRIMARY, false);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, FishingUiTheme.SLIDER, barX, progressY, 0, 0, BAR_WIDTH, 4, 190, 4);
         int progressWidth = Math.max(
                 0,
                 Math.min(BAR_INNER_WIDTH, Math.round(BAR_INNER_WIDTH * ClientFishingState.progress()))
@@ -183,9 +186,11 @@ public final class FishingHud {
 
         CatchEntry catchEntry = recent.catchEntry();
         FishSpecies species = FishCatalog.byId(catchEntry.speciesId());
-        int cardX = width / 2 - 100;
-        int cardY = height / 2 - 50;
-        FishingUiTheme.drawPanel(graphics, cardX, cardY, 2, 1);
+        int cardWidth = 176;
+        int cardHeight = 78;
+        int cardX = width / 2 - cardWidth / 2;
+        int cardY = height / 2 - cardHeight / 2;
+        FishingUiTheme.drawPanelPixels(graphics, cardX, cardY, cardWidth, cardHeight);
 
         String title = recent.locationCompleted()
                 ? "지역 도감 완성!"
@@ -198,38 +203,32 @@ public final class FishingHud {
                 ? FishingUiTheme.MONEY
                 : FishingUiTheme.TEXT_PRIMARY;
 
-        graphics.centeredText(minecraft.font, title, width / 2, cardY + 8, titleColor);
-        graphics.centeredText(
-                minecraft.font,
-                species.displayName(),
-                width / 2,
-                cardY + 24,
-                FishingUiTheme.rarityColor(species.rarity())
-        );
+        graphics.centeredText(minecraft.font, title, width / 2, cardY + 7, titleColor);
+        graphics.centeredText(minecraft.font, species.displayName(), width / 2, cardY + 20, FishingUiTheme.rarityColor(species.rarity()));
         graphics.centeredText(
                 minecraft.font,
                 species.rarity().displayName() + " · " + recent.sizeGrade().displayName(),
                 width / 2,
-                cardY + 38,
+                cardY + 32,
                 FishingUiTheme.sizeGradeColor(recent.sizeGrade())
         );
         graphics.centeredText(
                 minecraft.font,
-                String.format("%.2f kg   ·   %.1f cm", catchEntry.weightKg(), catchEntry.lengthCm()),
+                String.format("%.2f kg · %.1f cm", catchEntry.weightKg(), catchEntry.lengthCm()),
                 width / 2,
-                cardY + 54,
+                cardY + 44,
                 FishingUiTheme.TEXT_PRIMARY
         );
         String valueText = catchEntry.value() + " C";
-        if (recent.collectionRewardCoins() > 0) valueText += "   ·   도감 +" + recent.collectionRewardCoins() + " C";
-        graphics.centeredText(minecraft.font, valueText, width / 2, cardY + 69, FishingUiTheme.MONEY);
+        if (recent.collectionRewardCoins() > 0) valueText += " · 도감 +" + recent.collectionRewardCoins() + " C";
+        graphics.centeredText(minecraft.font, valueText, width / 2, cardY + 56, FishingUiTheme.MONEY);
 
         String highlight = recent.highlightText();
         graphics.centeredText(
                 minecraft.font,
                 highlight.isBlank() ? "J 도감에서 기록 확인" : highlight,
                 width / 2,
-                cardY + 84,
+                cardY + 68,
                 highlight.isBlank() ? FishingUiTheme.TEXT_SECONDARY : FishingUiTheme.SUCCESS
         );
     }

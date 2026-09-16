@@ -14,7 +14,11 @@ public final class KenneyButton extends AbstractWidget {
     private final Runnable onPress;
 
     public KenneyButton(int x, int y, Component message, Runnable onPress) {
-        super(x, y, 190, 49, message);
+        this(x, y, 190, 49, message, onPress);
+    }
+
+    public KenneyButton(int x, int y, int width, int height, Component message, Runnable onPress) {
+        super(x, y, width, height, message);
         this.onPress = Objects.requireNonNull(onPress);
     }
 
@@ -27,12 +31,25 @@ public final class KenneyButton extends AbstractWidget {
     protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         FishingUiTheme.drawPanelPixels(graphics, getX(), getY(), getWidth(), getHeight());
 
+        int inset = Math.max(3, Math.min(5, getHeight() / 6));
         int accent = active ? FishingUiTheme.ACCENT : FishingUiTheme.TEXT_DISABLED;
-        graphics.fill(getX() + 7, getY() + 7, getX() + 10, getY() + getHeight() - 7, accent);
+        graphics.fill(getX() + inset, getY() + inset, getX() + inset + 2, getY() + getHeight() - inset, accent);
         if (!active) {
-            graphics.fill(getX() + 12, getY() + 7, getX() + getWidth() - 7, getY() + getHeight() - 7, 0x228B949C);
+            graphics.fill(
+                    getX() + inset + 4,
+                    getY() + inset,
+                    getX() + getWidth() - inset,
+                    getY() + getHeight() - inset,
+                    0x228B949C
+            );
         } else if (isHovered()) {
-            graphics.fill(getX() + 12, getY() + 7, getX() + getWidth() - 7, getY() + getHeight() - 7, 0x222678B8);
+            graphics.fill(
+                    getX() + inset + 4,
+                    getY() + inset,
+                    getX() + getWidth() - inset,
+                    getY() + getHeight() - inset,
+                    0x222678B8
+            );
         }
 
         var font = Minecraft.getInstance().font;
@@ -40,7 +57,7 @@ public final class KenneyButton extends AbstractWidget {
         graphics.centeredText(
                 font,
                 getMessage(),
-                getX() + getWidth() / 2,
+                getX() + getWidth() / 2 + 2,
                 getY() + (getHeight() - font.lineHeight) / 2 + 1,
                 color
         );

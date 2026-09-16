@@ -5,7 +5,7 @@
 - Slug: fishing-game
 - Mod ID: fishinggame
 - Namespace: fishinggame
-- Mod version: 0.1.0-alpha.20
+- Mod version: 0.1.0-alpha.21
 - Minecraft: 26.2
 - Java: 25
 - Loader: Fabric
@@ -13,7 +13,7 @@
 - Fabric API: >=0.159.0+26.2
 - Gradle: 9.5.1
 - Build plugin: Fabric Loom 1.17.19
-- Final JAR: build/libs/fishing-game-0.1.0-alpha.20.jar
+- Final JAR: build/libs/fishing-game-0.1.0-alpha.21.jar
 - Required dependencies: Fabric API
 - Optional external mods: Essential, connection/hosting convenience only
 - Forbidden bundled dependencies: Essential
@@ -30,7 +30,7 @@ Fishing Game is a standalone fishing progression game built on Minecraft, not a 
 
 ## Non-survival rule
 
-The player is not expected to mine, craft, fight, manage hunger, or survive nights. Player damage is disabled, hunger/health are stabilized, Adventure mode is enforced, and survival HUD layers are removed.
+The player is not expected to mine, craft, fight, manage hunger, or survive nights. Player damage is disabled, hunger/health are stabilized, Adventure mode is enforced, and survival status HUD layers are removed. The vanilla hotbar and held-item tooltip remain visible while Fishing Game still uses real Minecraft inventory slots; do not hide half of the inventory affordance unless a complete replacement inventory interaction has been designed and implemented.
 
 ## Casting rule
 
@@ -53,11 +53,11 @@ Travel is requested from the client but unlocked/validated by the server. Active
 
 - Cheongram Lakeside: the playable lake must read as an inland authored lake rather than a thin island ring in an infinite flat ocean. Alpha.20 adds a shaped lake bed, continuous exterior terrain, a raised scenic ridge, grounded conifer belt and rockwork around the existing fishing structures.
 - Cheongram Lakeside suppresses stray vanilla ambient mobs inside the dedicated scenic area while explicitly preserving Fishing Game encounter fish. New chunks use the void biome to avoid introducing new ambient spawn ecology into the fishing-only map.
+- Alpha.21 adds a second versioned Lakeside quality marker that repairs existing alpha.20 saves by replacing stray natural terrain/plant blocks inside the inner lake with water and removing those same debris classes above the surface. Wooden piers, posts, fences, lamps and other authored structures are deliberately excluded from cleanup.
 - Gull Harbor: arrival promenade, layered shoreline rockwork, two breakwater arms with entrance beacons, three expanded fishing stations and a stronger lighthouse balcony/light silhouette.
 - Deepwater Channel: three dedicated outward-facing fishing pods, hazard-guide stripes at each approach, rail-protected circulation space, submerged guide lights and a tall signal mast.
 - Fishing edges remain open toward water so scenery does not fight the core interaction.
 - Environment work is deterministic and server-authored; versioned quality markers upgrade existing worlds once rather than rebuilding every tick.
-- Alpha.20 uses a separate Lakeside quality marker so existing alpha.19 saves receive the visual repair without deleting progression or requiring a fresh world.
 - Future environment revisions must use a new revision marker rather than silently relying on the original build marker.
 - Third-party map candidates remain reference-only until redistribution rights are explicit; do not bundle unknown-license maps.
 
@@ -149,10 +149,13 @@ Every catch is graded from its configured species weight/length ranges: `일반`
 
 Do not invent the visual language ad hoc. HUD, cast meter, bag, bestiary and travel screens reuse the Kenney CC0 UI language already bundled with the project. External assets and licenses are tracked in `THIRD_PARTY_ASSETS.md`.
 
-- A Kenney panel texture is a single framed surface, not a 100x100 wallpaper tile. Alpha.20 composes arbitrary panel sizes with nine-slice corners/edges/center so no full-panel seams appear in HUD, catch-result, bag, bestiary or travel screens.
+- The bundled Kenney grey panel is a 100x100 framed surface whose visible frame is the outer 4 source pixels. Nine-slice composition must preserve that source frame instead of sampling an arbitrary thicker border.
+- Screen dimensions are Minecraft logical GUI units, not physical window pixels. Major panels must derive from `guiWidth`/`guiHeight` and fit inside explicit margins; fixed sizes larger than the active logical GUI are forbidden.
+- Current preferred logical sizes are HUD 174x62, catch bag 340x220, bestiary 348x220 and travel 320x206, with smaller-window clamping.
 - Light Kenney surfaces use a dark panel-text palette; world-space cast/fight/notice overlays use a separate bright palette so one color scheme is not forced onto opposite backgrounds.
 - Buttons use the same verified Kenney panel skin and explicit accent/hover/disabled states. A missing/broken texture must never be allowed to render as Minecraft's magenta/black fallback.
-- The always-on HUD is a continuous 200x100 Kenney surface so coin, bag, rod, location and B/J/M navigation remain readable without a visible mid-panel seam.
+- The vanilla hotbar and held-item tooltip stay visible while the game relies on actual inventory slots. If a future fishing-specific inventory replaces them, the replacement must cover the complete item-selection/inventory interaction rather than hiding only the hotbar.
+- Cast and reel overlays reserve the bottom hotbar region and render above it.
 - Bag, bestiary and travel screens share title/subtitle hierarchy, separators, section labels, text colors and disabled-state treatment.
 - Unaffordable rod upgrades are visibly disabled client-side while the server remains the authority for the actual purchase.
 - At maximum rod tier, the existing progression button switches to `환생하기` and the same rod panel shows rebirth count, permanent sale multiplier, next cost and whether the bag must be sold first.
@@ -160,6 +163,13 @@ Do not invent the visual language ad hoc. HUD, cast meter, bag, bestiary and tra
 - Location collection counts stay visible in the HUD/travel view and collection-completion targets stay inside the bestiary rather than creating a quest screen.
 - Hotspot hunt hints stay in existing notices/bestiary rows instead of adding another map or hunting menu.
 - UI changes must still be judged in a real Minecraft client at supported GUI scales; code/build success does not certify screen composition.
+
+## Player placement / tracking lifecycle rule
+
+- Initial placement into the dedicated Lakeside dimension must not cross-dimension teleport directly inside `ServerPlayConnectionEvents.JOIN`; the player may still be completing vanilla chunk-tracker registration at that point.
+- Alpha.21 queues initial placement for a later server tick, clears pending placement on disconnect, skips removed players, and avoids re-teleporting a player whose saved position is already valid in Lakeside.
+- Explicit travel and rebirth are different: those actions intentionally move the player and continue to use the normal server-authoritative travel path.
+- The alpha.20 integrated-server shutdown `DistanceManager.removePlayer` NPE is not considered proven fixed until a real client join -> play -> exit reproducer is clean. Automated dedicated-server startup alone cannot certify this lifecycle regression.
 
 ## Audio feedback rule
 
@@ -181,7 +191,8 @@ Vanilla fishing hook is only line/bobber transport and visual anchor in all dedi
 ## User-test gate
 
 Do not hand the user a JAR for a tiny technical check. A user-facing test build must have:
-- dedicated non-survival HUD
+- dedicated non-survival HUD that fits the actual logical GUI without crowding the playfield
+- a usable hotbar/inventory affordance unless a complete fishing-specific replacement has been implemented
 - readable charge casting with meaningful distance response
 - catch bag, persistence, coins and selling
 - meaningful rod progression with held-item visuals that match the saved tier
@@ -195,6 +206,6 @@ Do not hand the user a JAR for a tiny technical check. A user-facing test build 
 - map sub-areas that meaningfully affect target hunting without hard-gating species
 - server-authoritative Bluewater -> rebirth -> starter reset -> faster selling loop with no duplicate collection rewards
 - complete cast -> target water -> catch -> sell -> upgrade -> travel -> collect -> rebirth loop
-- acceptable actual Minecraft screen quality
+- acceptable actual Minecraft screen and world quality
 
-The alpha.19 executable was BUILD VERIFIED and dedicated-server smoke verified, but its actual graphical review failed the screen-composition and Cheongram Lakeside presentation quality gate. Alpha.20 is the corrective slice for those failures. It must pass CI and then be visually re-tested in Minecraft before PLAYTESTED or GRAPHICAL CLIENT REVIEWED can be claimed.
+Alpha.20 passed automated build/server checks but failed the next real graphical review: major screens were oversized at the user's GUI scale, the hotbar removal was incoherent with the retained inventory, natural terrain debris remained suspended in the lake, and integrated-server shutdown logged a player/chunk-tracking NPE. Alpha.21 is the corrective slice. It must pass automated CI and then be re-tested in a real client for UI scale, lake cleanup and join/exit shutdown behavior before PLAYTESTED, GRAPHICAL CLIENT REVIEWED or shutdown-regression-verified status is claimed.

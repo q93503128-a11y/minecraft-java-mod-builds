@@ -14,6 +14,7 @@ import net.minecraft.world.phys.AABB;
 public final class LakesidePresentationRepair {
     private static final BlockPos BASE_BUILD_MARKER = new BlockPos(0, 58, 27);
     private static final BlockPos QUALITY_MARKER_ALPHA20 = new BlockPos(0, 40, 27);
+    private static final BlockPos QUALITY_MARKER_ALPHA21 = new BlockPos(1, 40, 27);
     private static final int WATER_Y = 63;
     private static final int LAND_Y = 64;
     private static final int ORIGINAL_OUTER_X = 44;
@@ -40,19 +41,51 @@ public final class LakesidePresentationRepair {
             if (lakeside.getBlockState(BASE_BUILD_MARKER).is(Blocks.LODESTONE)
                     && !lakeside.getBlockState(QUALITY_MARKER_ALPHA20).is(Blocks.EMERALD_BLOCK)) {
                 FishingGameMod.LOGGER.info("Applying alpha.20 Cheongram Lakeside presentation repair");
-                apply(lakeside);
+                applyAlpha20(lakeside);
                 set(lakeside, QUALITY_MARKER_ALPHA20, Blocks.EMERALD_BLOCK);
+            }
+
+            if (lakeside.getBlockState(BASE_BUILD_MARKER).is(Blocks.LODESTONE)
+                    && !lakeside.getBlockState(QUALITY_MARKER_ALPHA21).is(Blocks.DIAMOND_BLOCK)) {
+                FishingGameMod.LOGGER.info("Applying alpha.21 Cheongram Lakeside water cleanup");
+                cleanupLakeDebris(lakeside);
+                set(lakeside, QUALITY_MARKER_ALPHA21, Blocks.DIAMOND_BLOCK);
             }
 
             removeAmbientMobs(lakeside);
         });
     }
 
-    static void apply(ServerLevel level) {
+    static void applyAlpha20(ServerLevel level) {
         authorLakeBed(level);
         authorInlandBasin(level);
         buildScenicTreeBelt(level);
         buildRidgeRockwork(level);
+    }
+
+    private static void cleanupLakeDebris(ServerLevel level) {
+        for (int x = -LAKE_X; x <= LAKE_X; x++) {
+            for (int z = -LAKE_Z; z <= LAKE_Z; z++) {
+                double lake = ellipse(x, z, LAKE_X, LAKE_Z);
+                if (lake > 0.94) continue;
+
+                int bedY = lakeBedY(lake);
+                for (int y = bedY + 1; y <= WATER_Y; y++) {
+                    BlockPos pos = new BlockPos(x, y, z);
+                    BlockState state = level.getBlockState(pos);
+                    if (state.isAir() || isLakeDebris(state)) {
+                        set(level, pos, Blocks.WATER);
+                    }
+                }
+
+                for (int y = WATER_Y + 1; y <= LAND_Y + 6; y++) {
+                    BlockPos pos = new BlockPos(x, y, z);
+                    if (isLakeDebris(level.getBlockState(pos))) {
+                        set(level, pos, Blocks.AIR);
+                    }
+                }
+            }
+        }
     }
 
     private static void authorLakeBed(ServerLevel level) {
@@ -61,8 +94,7 @@ public final class LakesidePresentationRepair {
                 double lake = ellipse(x, z, LAKE_X, LAKE_Z);
                 if (lake > 1.0) continue;
 
-                double distance = Math.sqrt(lake);
-                int bedY = 56 + (int) Math.round(Math.pow(distance, 1.65) * 4.0);
+                int bedY = lakeBedY(lake);
                 for (int y = 56; y <= bedY; y++) {
                     BlockPos pos = new BlockPos(x, y, z);
                     BlockState state = level.getBlockState(pos);
@@ -82,10 +114,15 @@ public final class LakesidePresentationRepair {
                 for (int y = bedY + 1; y <= WATER_Y; y++) {
                     BlockPos pos = new BlockPos(x, y, z);
                     BlockState state = level.getBlockState(pos);
-                    if (isLakeNatural(state)) set(level, pos, Blocks.WATER);
+                    if (isLakeNatural(state) || state.isAir()) set(level, pos, Blocks.WATER);
                 }
             }
         }
+    }
+
+    private static int lakeBedY(double lake) {
+        double distance = Math.sqrt(lake);
+        return 56 + (int) Math.round(Math.pow(distance, 1.65) * 4.0);
     }
 
     private static Block lakeBedTop(int x, int z) {
@@ -103,6 +140,24 @@ public final class LakesidePresentationRepair {
                 || state.is(Blocks.SAND)
                 || state.is(Blocks.GRAVEL)
                 || state.is(Blocks.CLAY);
+    }
+
+    private static boolean isLakeDebris(BlockState state) {
+        return state.is(Blocks.STONE)
+                || state.is(Blocks.DIRT)
+                || state.is(Blocks.GRASS_BLOCK)
+                || state.is(Blocks.COARSE_DIRT)
+                || state.is(Blocks.PODZOL)
+                || state.is(Blocks.MOSS_BLOCK)
+                || state.is(Blocks.SAND)
+                || state.is(Blocks.GRAVEL)
+                || state.is(Blocks.CLAY)
+                || state.is(Blocks.COBBLESTONE)
+                || state.is(Blocks.MOSSY_COBBLESTONE)
+                || state.is(Blocks.ANDESITE)
+                || state.is(Blocks.DANDELION)
+                || state.is(Blocks.FERN)
+                || state.is(Blocks.POPPY);
     }
 
     private static void authorInlandBasin(ServerLevel level) {

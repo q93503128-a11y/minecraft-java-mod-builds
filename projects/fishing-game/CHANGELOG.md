@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.0-alpha.21
+
+- Reworked Fishing Game UI sizing around Minecraft's logical GUI dimensions instead of physical window pixels. HUD, catch bag, bestiary and travel panels now clamp to `guiWidth`/`guiHeight`, preventing 400x300/500x300 logical panels from consuming or clipping a scale-2 client window.
+- Corrected the bundled Kenney CC0 panel slicing after inspecting the actual 100x100 asset: its visible frame occupies the outer 4 source pixels, not the 12 pixels used by alpha.20. This restores the intended lighter border weight without replacing the external UI language.
+- Compacted the HUD to a preferred 174x62 logical surface, catch bag to 340x220, bestiary to 348x220 and travel to 320x206, with smaller buttons and denser information hierarchy.
+- Restored Minecraft's hotbar and held-item tooltip because Fishing Game still uses real inventory slots. Survival-only status layers remain hidden, and cast/reel overlays were moved upward so they do not collide with the restored hotbar.
+- Added deterministic UI-layout tests covering the observed 428x259 logical client size and smaller-window clamping so oversized fixed panels cannot silently return.
+- Added a second one-time Cheongram Lakeside quality marker that removes stray natural terrain blocks left floating in or above the authored lake while preserving intended wooden piers, supports and fishing structures.
+- Hardened initial player placement after the integrated-server shutdown error: cross-dimension placement is deferred out of the Fabric JOIN callback, valid players already in Lakeside are not redundantly teleported, pending placement is cleared on disconnect, and removed players are excluded from placement/bounds correction.
+- The shutdown `DistanceManager.removePlayer` NPE is treated as a targeted lifecycle/tracking mitigation, not as fully reproduced or proven fixed; a real client join/exit test is still required.
+
 ## 0.1.0-alpha.20
 
 - Repaired the Kenney UI composition after graphical play review exposed repeated full-panel tiles, visible seams and unreadable light-on-light text.
