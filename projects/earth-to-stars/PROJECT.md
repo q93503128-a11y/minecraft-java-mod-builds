@@ -119,9 +119,20 @@ The current compiled Fabric artifact deliberately starts with the parts of the p
 - launch-readiness and first-orbit progression rules
 - binary ship-state codec and migration tests
 
+The current Fabric integration also includes the first real server-authoritative bridge:
+
+- Fabric C2S control-input payload and S2C control-session payload contracts
+- server-owned pilot session binding over the existing `ShipFlightRuntime` permission, lease, sequence and expiry rules
+- `ShipRepository` as the authoritative in-memory logical ship registry
+- Fabric `SavedData` persistence backed by the existing `ShipStateCodec`
+- server lifecycle load/reset so integrated or dedicated server worlds do not leak static ship/runtime state into one another
+- three real construction components from the first content bridge: `reinforced_frame`, `avionics_unit`, and `life_support_unit`
+
+The client cannot create a control session or mutate authoritative ship state by packet. A later physical craft layer must first validate the real craft, seat/range/world state and then call the server-side control grant path. No fake vehicle is created merely to exercise the bridge.
+
 The new Fabric entrypoint lives under `src/fabric/java`. Existing loader-neutral kernel code is reused in-place from `src/main/java`.
 
-The following older NeoForge integration areas remain in Git history/source for migration reference but are not part of the Fabric artifact yet:
+The following older NeoForge integration areas remain in Git history/source for migration reference but are not automatically part of the Fabric artifact:
 
 - NeoForge registry/content glue
 - NeoForge networking payload registration
@@ -141,27 +152,39 @@ The repository already contains Kenney Space Kit CC0 source meshes for the start
 
 # Verification state
 
-The first Fabric standalone foundation gate is now closed:
+The Fabric authority bridge gate is closed at source commit `06ca1ecda7d42e8b6451ab5b434147458cc020d0`.
 
-- `CODE REVIEWED`: Fabric build boundary, loader-neutral kernel reuse boundary and external-dependency policy reviewed.
-- `TESTED`: retained loader-neutral ship kernel regression suite passed in Fabric CI.
-- `BUILD VERIFIED`: `Build earth-to-stars Fabric 26.2` run `34953067177` passed clean test/build.
-- `JAR PRODUCED`: `earth_to_stars-0.3.0-alpha.1.jar` produced and structurally verified from source commit `374c7db5b268417cd68126d79bb716e81c567194`.
-- `DEDICATED FABRIC BOOT`: run `34953067177` passed a real Fabric dedicated-server boot with the ETS standalone entrypoint loaded.
-- `CLIENT FABRIC SMOKE`: `Smoke earth-to-stars Fabric client` run `34953482466` passed under Xvfb after the same production source; the later workflow-only commit did not alter runtime source.
-- `PLAYTESTED`: **NO** for the Fabric rebase starter craft because the player-facing Fabric vehicle layer is not migrated yet.
-- `EARTH→SPACE CONTINUITY`: **NOT TESTED**.
-- `MULTIPLAYER TESTED`: **NO**.
+`Build earth-to-stars Fabric 26.2` run `35050302544` / run number `#40`: **PASS**
 
-Verified JAR SHA-256:
+- standalone Fabric contract validator: PASS
+- retained loader-neutral ship kernel tests: PASS
+- clean test/build: PASS
+- production JAR structure verification: PASS
+- dedicated Fabric server boot: PASS
+- production JAR: `earth_to_stars-0.3.0-alpha.1.jar`
+- SHA-256: `40034f8310fcf9654cf78c19a84c6c218e8ee74888314643da4a174573425109`
 
-```text
-cb4c7cf82662e9111106b28632d633c2a2470f6fc9210ed9c1d1dcb1e14ec18b
-```
+`Smoke earth-to-stars Fabric client` run `35050302541` / run number `#15`: **PASS**
 
-The initial Fabric CI exposed one stale kernel mismatch: `ShipSystemsRuntime` still called a removed `pitch()` control axis while `ShipControlInput` and movement semantics use `lift()`. This was corrected at the source contract rather than hidden by exclusions; the subsequent build, JAR verification, server boot and client smoke passed.
+- Fabric client preparation: PASS
+- Xvfb `runClient` smoke: PASS
+- no fatal ETS client initialization failure in the smoke gate
 
-Compile/build success must never be described as successful flight feel or successful multiplayer.
+The first authority-bridge build run `35050092286` correctly failed on the Minecraft 26.2 `SavedDataType` constructor contract. The save bridge was aligned to the current four-argument constructor without changing the ETS save key, binary `ShipStateCodec`, or hiding the feature behind an exclusion; the succeeding run above passed.
+
+Current verification labels:
+
+- `CODE REVIEWED`: YES for the Fabric construction + authority bridge source
+- `TESTED`: YES for automated kernel/contract/build/server/client gates
+- `BUILD VERIFIED`: YES
+- `JAR PRODUCED`: YES
+- `DEDICATED FABRIC BOOT`: YES
+- `CLIENT FABRIC SMOKE`: YES
+- `PLAYTESTED`: **NO** — no player-facing Fabric starter craft exists yet
+- `EARTH→SPACE CONTINUITY`: **NOT TESTED**
+- `MULTIPLAYER TESTED`: **NO**
+
+A successful build/server/client smoke proves integration and initialization, not flight feel, collision quality, visual acceptance or multiplayer correctness.
 
 ---
 
@@ -170,18 +193,23 @@ Compile/build success must never be described as successful flight feel or succe
 Do not expand Moon/asteroid content yet. Rebuild one complete starter-craft vertical slice on Fabric in this order:
 
 ```text
-Fabric 26.2 build + kernel regression tests  [PASS]
-→ Fabric item/entity/network/save authority bridge
-→ production starter-craft visual pipeline using approved external assets
-→ seat / pilot control session
+Fabric 26.2 build + kernel regression tests              [PASS]
+→ Fabric construction content bridge                     [PASS]
+→ Fabric server authority / network / save bridge        [PASS]
+→ exact-source/license physical-vehicle research         [IN PROGRESS]
+→ real launch / deploy transaction
+→ production starter-craft entity + visual path using approved external assets
+→ physical seat validation + pilot input + camera
 → collision + movement solution informed by permissively licensed external code research
-→ power/propellant/oxygen hooked to real flight
-→ continuous-feeling atmosphere→space transition
+→ power / propellant / oxygen hooked to real flight
+→ continuous-feeling atmosphere → space transition
 → return to Earth
 → actual client playtest and feel tuning
 ```
 
 The old Display-entity-style 26.2 implementation is not automatically restored just because the loader returns to 26.2. Its failed cockpit/collision/flight assumptions must be replaced, preferably using proven external implementation ideas or permissively reusable code rather than repeating the same invention.
+
+The current vehicle-source research must verify exact source files, source commit/version, license and modification/redistribution obligations before code is copied into ETS or recorded as a reusable production source. An unofficial current-version port may be useful evidence, but it is not trusted solely because it compiles.
 
 ---
 

@@ -61,28 +61,35 @@ Verification state:
 
 A successful client smoke proves loading/initialization, not visual quality or flight feel.
 
-## Next migration unit
+## Follow-on status
 
-The next meaningful unit is the **server-authoritative Fabric ship authority bridge**, not more decorative items.
+The server-authoritative Fabric ship authority bridge that was the next target from this content slice is now implemented and verified. Its implementation, failure correction and exact verification state are recorded in `docs/09_FABRIC_SHIP_AUTHORITY_BRIDGE.md`.
 
-Target sequence:
+Closed sequence:
 
 ```text
-Fabric networking contract
-→ server-owned pilot/control session
-→ Fabric save bridge around existing ShipRepository / ShipStateCodec
+Fabric networking contract                                [PASS]
+→ server-owned pilot/control-session authority            [PASS]
+→ Fabric save bridge around ShipRepository/ShipStateCodec [PASS]
+```
+
+The next meaningful unit is **not more decorative items**. It is the physical starter-craft path:
+
+```text
+exact-source/license vehicle implementation research
 → real launch/deploy transaction
-→ starter craft entity/visual path
-→ seat/input/camera
+→ starter craft entity + approved production visual asset path
+→ real seat/range/world validation before control grant
+→ client input/camera
 → collision + movement
 → real power/propellant/oxygen consumption
 ```
 
-Rules for the next unit:
+Rules that remain in force:
 
 - reuse the existing loader-neutral `ShipRepository`, `ShipState`, permissions, system simulation, and `ShipStateCodec` rather than duplicating ship state in Fabric glue;
 - client packets contain requests/input only; the server validates player, ship, role/session, ranges, and state before mutation;
-- old NeoForge `ship/networking/**`, `ship/persistence/minecraft/**`, and `ship/runtime/minecraft/**` are migration references only;
+- old NeoForge `ship/networking/**`, `ship/persistence/minecraft/**`, and `ship/runtime/minecraft/**` remain migration references only;
 - do not restore the failed old display-entity cockpit/flight assumptions merely because Minecraft 26.2 is back;
 - before choosing the physical vehicle implementation, inspect permissively licensed Fabric/current-Minecraft vehicle or entity movement implementations and record exact source, commit/version, license, and what is reused;
 - do not expand Moon/asteroid content before the starter-craft vertical slice passes live play acceptance.
