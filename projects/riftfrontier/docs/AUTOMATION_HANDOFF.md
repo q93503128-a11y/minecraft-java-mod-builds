@@ -10,13 +10,13 @@ Priority remains a genuinely playable, polished Region 01 vertical slice. Do not
 
 ## Latest verified checkpoint
 
-Latest Riftfrontier code checkpoint is `ed23ceb21dd2bb6f79f9723d2b1dfeffcf5d2b2f` (`riftfrontier: identify field combat loadouts`). `Build Riftfrontier` workflow run `35066807754` completed **SUCCESS** on 2026-09-16.
+Latest Riftfrontier code checkpoint is `f99b31e5e9d9fbb8e1b1c54e8ac6bbf0ff246145` (`riftfrontier: keep hub logistics readable between expeditions`). `Build Riftfrontier` workflow run `35077346929` completed **SUCCESS** on 2026-09-16.
 
-That checkpoint preserves the authoritative ItemStack loadout component and existing combat semantics while making the four field-play provisioning variants visibly distinguishable in inventory via localized custom names. `/riftfrontier weapon mobile`, `mobile pivot`, `reach`, and `reach pivot` now issue distinct EN/KO field-rig names, and the localized issuance message tells the player to hold the rig in the main hand and bind Weapon Action 1/2 under Riftfrontier Combat in Controls. No final key layout, weapon art, damage hierarchy, attack geometry, or server authority contract was changed.
+That checkpoint closes a connected-loop readability gap after extraction. While a player is inside the technical hub and has no active expedition, the existing one-second actionbar projection now keeps current supplies, stored salvage and the next deployment cost visible from authoritative `RiftfrontierWorldData`. Active expeditions still use the existing salvage/threat/extraction projection. No new progression state, lifecycle, custom HUD, balance value or client-owned gameplay state was introduced.
 
-Verified CI deliverables artifact: `10434586882` (`riftfrontier-0.1.0-alpha.1-deliverables`), archive digest `sha256:c59b1f72e5dbc736f37fe388f47b945babfe5b0e78a20344541be52df5efb632`. Logs artifact: `10434881101`.
+Verified CI deliverables artifact: `10439460396` (`riftfrontier-0.1.0-alpha.1-deliverables`), archive digest `sha256:7d5eb890197f72156913cfebdf029df88b8c3b8fe1ad417a99fee490c0ec2f93`. Logs artifact: `10438648340`, digest `sha256:39539efbf4c3f1b36eb5d7c932cd148b8fc503334a13908841490888157a5736`.
 
-Verification vocabulary for `ed23ceb2...`:
+Verification vocabulary for `f99b31e5...`:
 
 - `CODE REVIEWED`: YES
 - `TESTED`: YES
@@ -59,9 +59,10 @@ Human review must inspect player-relative scale, facing, ground alignment, UV/te
 - Core loop: `prepare -> deploy -> fight/recover -> extract -> hub/provision -> redeploy`.
 - Fresh-world commandless hub/bootstrap, extraction, failure/restart reconciliation, supply/storage/pressure and authoritative expedition persistence are settled.
 - Player combat has `mobile_pressure` / `reach_commitment`, `recovery_pivot`, authenticated move-id input, server-owned attack timing, ACTIVE-only damage and per-execution target dedupe.
-- Field provisioning remains `/riftfrontier weapon mobile`, `/riftfrontier weapon mobile pivot`, `/riftfrontier weapon reach`, `/riftfrontier weapon reach pivot`. These now issue distinct localized custom names while retaining the same authoritative loadout data. Do not redo this identification/localization work unless a regression is demonstrated.
+- Field provisioning remains `/riftfrontier weapon mobile`, `/riftfrontier weapon mobile pivot`, `/riftfrontier weapon reach`, `/riftfrontier weapon reach pivot`. These issue distinct localized custom names while retaining the same authoritative loadout data. Do not redo this identification/localization work unless a regression is demonstrated.
 - Zombie/Skeleton/Ravager remain behaviour/runtime proxies, not production creature art.
-- Live actionbar readability distinguishes `salvage incomplete`, `relay ready but patrol alive`, and `patrol cleared / +1 secured` from authoritative run + tracked threat state. Salvage/relay guidance states the actual 3-salvage unlock and field-lodestone right-click interaction. Do not rebuild this as a new custom HUD before final UI direction is approved.
+- Live actionbar readability distinguishes `salvage incomplete`, `relay ready but patrol alive`, and `patrol cleared / +1 secured` from authoritative run + tracked threat state. Salvage/relay guidance states the actual 3-salvage unlock and field-lodestone right-click interaction.
+- Between expeditions, the technical-hub actionbar now continuously exposes authoritative supplies, stored salvage and next deployment cost. Do not rebuild this or the expedition actionbar as a new custom HUD before final UI direction is approved.
 - Do not reopen M0/M1/M2 authority, lifecycle, restart, ownership or persistence fences without a demonstrated regression.
 - Do not auto-tune provisional damage, hit geometry, boss attack timing/travel/impulse, particle density, salvage cue intensity, final control layout, cover geometry or threat staging without human field evidence.
 - Existing diagnostic particles/sounds, technical blocks, bossbar/actionbar, relay dressing, proxy labels, native swing and tuff arena are review aids, not final Riftfrontier presentation language.
@@ -86,7 +87,7 @@ Fresh-world bootstrap provides a vanilla written-book field guide explaining onl
 
 Human field play is required to approve or reject the Alien Hunter render and the boss Dark Rock presentation, but development is not globally blocked on those two gates.
 
-While those reviews are pending, prefer independent visible-gameplay work that advances Region 01 completion: connected expedition readability, combat feel that does not require unapproved numeric tuning, legally sourced/provenance-tracked production presentation, or another clearly missing vertical-slice requirement. Use already approved external/reference direction. Do not collect broad speculative asset lists.
+While those reviews are pending, prefer independent visible-gameplay work that advances Region 01 completion: combat feel that does not require unapproved numeric tuning, legally sourced/provenance-tracked production presentation, or another clearly missing vertical-slice requirement. The hub logistics projection and expedition salvage/relay projection are now implemented and build-verified; do not churn them again absent a demonstrated readability regression. Use already approved external/reference direction. Do not collect broad speculative asset lists.
 
 For production creatures, do not start another open-ended search. Scout `Armabee` and Elite Anchor `Goleling Evolved` remain recorded Quaternius CC0 role candidates, but only advance one when doing so produces a concrete exact-source inspection or Minecraft field-review result. Preserve Scout ranged-pressure semantics and Elite observable counterplay; do not add flight merely because Armabee is winged, and do not delete Ravager shield-stun counterplay until a verified replacement deliberately preserves or replaces it.
 
