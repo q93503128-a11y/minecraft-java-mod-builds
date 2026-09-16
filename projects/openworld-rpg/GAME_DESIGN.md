@@ -25,6 +25,7 @@ Subordinate references currently indexed by this canon:
 - `FISHING_COLLECTION_HOUSING_MARKET.md` — Fish Codex/records/trophy loop and the authoritative one-residence-at-a-time housing trade-up refinement.
 - `QUEST_WORLD_STATE.md` — personal/shared quest state, objective credit, dialogue, dynamic events, late join, idempotent rewards and multiplayer quest authority.
 - `DESIGN_COMPLETENESS_AUDIT.md` — design-completeness and finished-game-quality audit with external open-world RPG production lessons and quality gates.
+- `REGION_CROSS_AUDIT.md` — R01–R12 anti-repetition and regional-identity audit covering encounter/dungeon/evidence/service/resource/travel grammar; later explicit refinements in this file govern older regional-package details unless the master canon says otherwise.
 - `WORLD_STORY_CANON.md` — customizable protagonist frame, Anchor-network premise, factions/recurring roles, non-linear acts, regional evidence structure, three personal endings and postgame state.
 - `R02_IMPLEMENTATION_PACKAGE.md` through `R12_IMPLEMENTATION_PACKAGE.md` — implementation-ready regional packages that turn the broad region graph into concrete settlement, traversal, ecology, encounter, dungeon, reward, story-evidence and external-asset gates.
 
@@ -1542,6 +1543,7 @@ Major locked decisions as of **2026-09-16**:
 - five-rank light smithing/alchemy/cooking mastery is non-grindy and advances through distinct recipe/order/technique experiences rather than mass-crafting one cheap recipe;
 - roughly 12 major regions with **one suggested-entry Lv plus local encounter Lv**, peer regions allowed at equal difficulty, no universal scaling, no level-gate walls;
 - R02–R12 now each have dedicated implementation-ready regional packages tying world problem/NPC roles/traversal/POIs/ecology/resources/dungeon/boss/reward/story evidence together rather than leaving them as biome lists;
+- R01–R12 are governed by `REGION_CROSS_AUDIT.md` anti-repetition rules so later implementation must vary evidence delivery, dungeon grammar, settlement identity, signature-encounter discovery and resource/reward mechanics rather than merely reskinning one regional formula;
 - discovered POIs and shrine/major-hub fast travel;
 - starting region suggested entry Lv 1, with local early encounter pressure rising roughly through Lv 8 rather than treating 1–8 as a broad region recommendation band;
 - R01 has concrete Louxia/Meadow Viper/Cave Centipede/Bison/Grizzly/Steelboar/Nature Spirit/Regalhart/Earthloong combat/ecology roles and first-dungeon boss numbers;
@@ -1591,6 +1593,7 @@ Completed/advanced design work that should **not** be restarted from zero:
 - world/protagonist/Anchor story spine, regional evidence structure, recurring-role framework and Restore/Release/Partition endings;
 - quest/world-state/multiplayer progression authority;
 - gathering tools/mastery/node loop, fishing loop/Fish Codex direction, reusable camp and one-residence housing market;
+- R01–R12 cross-region anti-repetition/density/settlement/dungeon/evidence audit and its R02 guardian-discovery refinement;
 - regional creature/ecology sourcing and no-vanilla spawn architecture;
 - external UI family selection and screen-language direction;
 - global Lv 80 curve and fast ~3x reward benchmark with no-rescale confirmation for current region entry levels;
@@ -1611,11 +1614,10 @@ Completed/advanced design work that should **not** be restarted from zero:
 
 Recommended next batches:
 
-1. **Whole-game cross-region audit** — compare R01–R12 side by side for repeated encounter shapes, settlement-service sameness, POI cadence, resource/reward duplication, traversal fatigue, story-evidence balance and level/economy gaps; revise only real duplication/holes.
-2. **Exact external asset intake expansion** — finish R01 unresolved intake first, then bind each region's production-critical creatures/bosses/resources/settlement/dungeon/VFX/audio to exact acceptable sources; resolve the R12 final-guardian model rather than inventing a placeholder.
-3. **Main-quest and recurring-character scene package** — convert the story spine into actual major quest beats/dialogue encounters/rejoin points with external NPC/animation/structure direction while preserving open-world route freedom.
-4. **World density / content-count budget** — after Azari terrain import/coordinate audit, place major/minor POI, settlement, shrine, dungeon, boss and event cadence so 30k terrain never relies on size alone; use travel-time targets from the quality audit rather than arbitrary icon counts.
-5. **Global audio/music, accessibility/difficulty and final keybind pass** — select external audio/music direction, close subtitles/camera/motion/GUI/readability options and difficulty/accessibility rules, then audit the complete frequent-action key list against Minecraft/Essential/companion-mod defaults.
-6. **Pre-bootstrap canon closure** — re-run design completeness against `PROJECT.md` acceptance rules and begin gameplay source bootstrap only when remaining player-facing TBDs are genuine asset/terrain integration gates rather than design decisions.
+1. **Exact external asset intake expansion** — finish R01 unresolved intake first, then bind each region's production-critical creatures/bosses/resources/settlement/dungeon/VFX/audio to exact acceptable sources; resolve the R12 final-guardian model rather than inventing a placeholder.
+2. **Main-quest and recurring-character scene package** — convert the story spine into actual major quest beats/dialogue encounters/rejoin points with external NPC/animation/structure direction while preserving open-world route freedom.
+3. **World density / content-count budget** — after Azari terrain import/coordinate audit, place major/minor POI, settlement, shrine, dungeon, boss and event cadence so 30k terrain never relies on size alone; use travel-time targets from the quality audit rather than arbitrary icon counts.
+4. **Global audio/music, accessibility/difficulty and final keybind pass** — select external audio/music direction, close subtitles/camera/motion/GUI/readability options and difficulty/accessibility rules, then audit the complete frequent-action key list against Minecraft/Essential/companion-mod defaults.
+5. **Pre-bootstrap canon closure** — re-run design completeness against `PROJECT.md` acceptance rules and begin gameplay source bootstrap only when remaining player-facing TBDs are genuine asset/terrain integration gates rather than design decisions.
 
 When design direction becomes unclear, research real open-world RPGs, open-source RPGs and large Minecraft RPG mods before inventing filler systems.
