@@ -8,7 +8,7 @@ Large Minecraft Java open-world action RPG project with very low dependence on v
 
 No implementation exists yet. Do not treat the project as buildable until M0 explicitly creates the loader/toolchain/source layout.
 
-The major gameplay systems, Lv 1–80 progression, class/combat framework, equipment/economy, world-state model, main story spine, mounts, field systems and R01–R12 regional packages are already specified. **R01–R04 now have concrete named-NPC, exact quest-condition, scene/dialogue, reconnect/reward-state and story-evidence authoring locked.** The remaining pre-bootstrap work is primarily exact external-asset binding, equivalent concrete quest/NPC authoring for R05–R12, Azari spatial placement/travel-time validation, global audio/accessibility/input closure and a final design-closure audit.
+The major gameplay systems, Lv 1–80 progression, class/combat framework, equipment/economy, world-state model, main story spine, mounts, field systems and R01–R12 regional packages are already specified. **R01–R07 now have concrete named-NPC, exact quest-condition, scene/dialogue, reconnect/reward-state and story-evidence authoring locked.** The remaining pre-bootstrap work is primarily exact external-asset binding, equivalent concrete quest/NPC authoring for R08–R12, Azari spatial placement/travel-time validation, global audio/accessibility/input closure and a final design-closure audit.
 
 ## Canon priority / stale-document rule
 
@@ -27,7 +27,7 @@ Known examples of supersession:
 
 - housing is **one residence at a time** with the later trade-up/resale rules; older multi-property wording is obsolete;
 - later `REGION_CROSS_AUDIT.md` anti-repetition refinements override older regional-package encounter/discovery grammar where explicitly changed;
-- `R02_CONTENT_BIBLE.md`, `R03_CONTENT_BIBLE.md` and `R04_CONTENT_BIBLE.md` close narrative/content-authoring blanks in their matching implementation packages without reopening already-locked regional system/combat contracts;
+- `R02_CONTENT_BIBLE.md` through `R07_CONTENT_BIBLE.md` close narrative/content-authoring blanks in their matching implementation packages without reopening already-locked regional system/combat contracts;
 - older completion percentages and `next work` sections are historical snapshots, not current scheduling authority.
 
 When touching a stale section during future work, update or remove the obsolete wording instead of preserving contradictory variants.
@@ -43,7 +43,10 @@ When touching a stale section during future work, update or remove the obsolete 
 7. [`R02_IMPLEMENTATION_PACKAGE.md`](./R02_IMPLEMENTATION_PACKAGE.md) + [`R02_CONTENT_BIBLE.md`](./R02_CONTENT_BIBLE.md) — Rillcross region systems/encounters plus exact R02 quest/NPC/scene/evidence closure
 8. [`R03_IMPLEMENTATION_PACKAGE.md`](./R03_IMPLEMENTATION_PACKAGE.md) + [`R03_CONTENT_BIBLE.md`](./R03_CONTENT_BIBLE.md) — Cairnwatch vertical-route systems plus exact R03 content/Act-I network-evidence closure
 9. [`R04_IMPLEMENTATION_PACKAGE.md`](./R04_IMPLEMENTATION_PACKAGE.md) + [`R04_CONTENT_BIBLE.md`](./R04_CONTENT_BIBLE.md) — Hearthspring frozen-expedition systems plus exact R04 content/bounded-restoration evidence closure
-10. `R05_IMPLEMENTATION_PACKAGE.md` through `R12_IMPLEMENTATION_PACKAGE.md` — later regional implementation packages awaiting equivalent content-authoring closure
+10. [`R05_IMPLEMENTATION_PACKAGE.md`](./R05_IMPLEMENTATION_PACKAGE.md) + [`R05_CONTENT_BIBLE.md`](./R05_CONTENT_BIBLE.md) — Tanglewater jungle/river systems plus exact local-adaptation evidence and Jungle Komodo content closure
+11. [`R06_IMPLEMENTATION_PACKAGE.md`](./R06_IMPLEMENTATION_PACKAGE.md) + [`R06_CONTENT_BIBLE.md`](./R06_CONTENT_BIBLE.md) — Siltwake wetland/gate systems plus exact regional-stewardship evidence closure
+12. [`R07_IMPLEMENTATION_PACKAGE.md`](./R07_IMPLEMENTATION_PACKAGE.md) + [`R07_CONTENT_BIBLE.md`](./R07_CONTENT_BIBLE.md) — Amberwell desert/water-scarcity systems plus exact remote-optimization evidence closure
+13. `R08_IMPLEMENTATION_PACKAGE.md` through `R12_IMPLEMENTATION_PACKAGE.md` — remaining regional implementation packages awaiting equivalent content-authoring closure
 
 ## Design-closure and player-facing-content rule
 
@@ -88,10 +91,10 @@ Player-facing text and presentation must never expose the development process. D
 
 ## Current pre-bootstrap design queue
 
-1. **Exact external-asset intake expansion** — unresolved core models, bosses, structures, VFX, sound and R12 final guardian; record exact source/license/hash/animation bindings where applicable. R01–R04 still cannot enter affected visible-source implementation until their explicit pre-code asset gates close.
-2. **R05–R12 concrete quest / recurring-NPC scene packages** — use the R01–R04 closure level as the minimum bar: named participants, exact objectives/conditions, scene/dialogue beats, state/rejoin/failure rules, rewards, visible aftermath and next-region/story handoff. Do not duplicate the same quest grammar across regions.
+1. **Exact external-asset intake expansion** — unresolved core models, bosses, structures, VFX, sound and R12 final guardian; record exact source/license/hash/animation bindings where applicable. R01–R07 still cannot enter affected visible-source implementation until their explicit pre-code asset gates close.
+2. **R08–R12 concrete quest / recurring-NPC scene packages** — use the R01–R07 closure level as the minimum bar: named participants, exact objectives/conditions, scene/dialogue beats, state/rejoin/failure rules, rewards, visible aftermath and next-region/story handoff. Do not duplicate the same quest grammar across regions.
 3. **Azari spatial closure** — inspect the actual terrain and lock POI/road/settlement/dungeon/boss placement using coordinates, sightlines and travel-time/content-density targets.
 4. **Global presentation/comfort closure** — music and sound-state coverage, accessibility, difficulty options and final key/input mapping.
 5. **Final pre-bootstrap closure audit** — remove remaining stale rules, verify cross-document consistency and identify only genuine implementation-time unknowns.
 
-Do not reopen already-closed class topology, weapon/resource fundamentals, R01–R04 quest/story ownership or regional macro direction unless implementation/playtest evidence exposes a real problem.
+Do not reopen already-closed class topology, weapon/resource fundamentals, R01–R07 quest/story ownership or regional macro direction unless implementation/playtest evidence exposes a real problem.
