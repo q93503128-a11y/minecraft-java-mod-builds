@@ -15,6 +15,7 @@ public final class EarthToStarsFabricItems {
     public static final ResourceKey<Item> REINFORCED_FRAME_KEY = key("reinforced_frame");
     public static final ResourceKey<Item> AVIONICS_UNIT_KEY = key("avionics_unit");
     public static final ResourceKey<Item> LIFE_SUPPORT_UNIT_KEY = key("life_support_unit");
+    public static final ResourceKey<Item> LAUNCH_CRAFT_KIT_KEY = key("launch_craft_kit");
 
     public static final Item REINFORCED_FRAME = register(
             REINFORCED_FRAME_KEY,
@@ -31,6 +32,11 @@ public final class EarthToStarsFabricItems {
             Item::new,
             new Item.Properties().stacksTo(8)
     );
+    public static final Item LAUNCH_CRAFT_KIT = register(
+            LAUNCH_CRAFT_KIT_KEY,
+            LaunchCraftKitItem::new,
+            new Item.Properties().stacksTo(1)
+    );
 
     private EarthToStarsFabricItems() {
     }
@@ -40,6 +46,7 @@ public final class EarthToStarsFabricItems {
             entries.accept(REINFORCED_FRAME);
             entries.accept(AVIONICS_UNIT);
             entries.accept(LIFE_SUPPORT_UNIT);
+            entries.accept(LAUNCH_CRAFT_KIT);
         });
     }
 

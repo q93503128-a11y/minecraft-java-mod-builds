@@ -10,6 +10,9 @@
   "entrypoints": {
     "main": [
       "kr.moonseungjun.earthtostars.fabric.EarthToStarsFabric"
+    ],
+    "client": [
+      "kr.moonseungjun.earthtostars.fabric.client.EarthToStarsFabricClient"
     ]
   },
   "depends": {

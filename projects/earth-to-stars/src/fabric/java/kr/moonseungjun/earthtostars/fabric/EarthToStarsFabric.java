@@ -1,5 +1,6 @@
 package kr.moonseungjun.earthtostars.fabric;
 
+import kr.moonseungjun.earthtostars.fabric.content.EarthToStarsFabricEntities;
 import kr.moonseungjun.earthtostars.fabric.content.EarthToStarsFabricItems;
 import kr.moonseungjun.earthtostars.fabric.networking.EarthToStarsFabricNetworking;
 import kr.moonseungjun.earthtostars.fabric.ship.EarthToStarsFabricShipAuthority;
@@ -19,11 +20,12 @@ public final class EarthToStarsFabric implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        EarthToStarsFabricEntities.initialize();
         EarthToStarsFabricItems.initialize();
         EarthToStarsFabricNetworking.initialize();
         EarthToStarsFabricShipAuthority.initializeLifecycle();
         LOGGER.info(
-                "EARTH TO STARS {} Fabric 26.2 standalone kernel loaded modules={} registered_components=3 ship_authority_bridge=registered",
+                "EARTH TO STARS {} Fabric 26.2 standalone kernel loaded modules={} registered_components=4 physical_launch_craft=registered ship_authority_bridge=registered",
                 VERSION,
                 BOOTSTRAP_CATALOG.definitions().size()
         );

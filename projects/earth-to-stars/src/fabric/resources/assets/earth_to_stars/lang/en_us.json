@@ -1,5 +1,13 @@
 {
-  "item.earth_to_stars.reinforced_frame": "Lightweight Reinforced Frame",
+  "item.earth_to_stars.reinforced_frame": "Light Reinforced Frame",
   "item.earth_to_stars.avionics_unit": "Avionics Unit",
-  "item.earth_to_stars.life_support_unit": "Life Support Unit"
+  "item.earth_to_stars.life_support_unit": "Life Support Unit",
+  "item.earth_to_stars.launch_craft_kit": "Launch Craft Assembly Kit",
+  "entity.earth_to_stars.launch_craft": "Launch Craft",
+  "message.earth_to_stars.launch_craft.earth_only": "The launch craft must be deployed from an Earth base.",
+  "message.earth_to_stars.launch_craft.already_owned": "You already have an active ship.",
+  "message.earth_to_stars.launch_craft.clearance": "There is not enough room to deploy the launch craft.",
+  "message.earth_to_stars.launch_craft.deploy_failed": "The launch craft could not be deployed.",
+  "message.earth_to_stars.launch_craft.no_pilot_access": "You do not have permission to pilot this ship.",
+  "message.earth_to_stars.launch_craft.seat_occupied": "The pilot seat is occupied."
 }

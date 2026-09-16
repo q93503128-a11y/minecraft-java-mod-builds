@@ -9,7 +9,9 @@ import kr.moonseungjun.earthtostars.ship.domain.ShipState;
 import kr.moonseungjun.earthtostars.ship.runtime.ShipControlInput;
 import kr.moonseungjun.earthtostars.ship.runtime.ShipControlLease;
 import kr.moonseungjun.earthtostars.ship.runtime.ShipFlightRuntime;
+import kr.moonseungjun.earthtostars.ship.runtime.ShipFlightTuning;
 import kr.moonseungjun.earthtostars.ship.runtime.ShipRepository;
+import kr.moonseungjun.earthtostars.ship.runtime.ShipTransform;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.MinecraftServer;
@@ -24,6 +26,7 @@ public final class EarthToStarsFabricShipAuthority {
     private static final ShipRepository REPOSITORY = new ShipRepository();
     private static final Map<ShipId, ShipFlightRuntime> ACTIVE_RUNTIMES = new LinkedHashMap<>();
     private static final Map<UUID, ShipId> CONTROLLER_BINDINGS = new LinkedHashMap<>();
+    private static final Map<ShipId, UUID> PHYSICAL_ENTITIES = new LinkedHashMap<>();
 
     private static MinecraftServer activeServer;
     private static EarthToStarsFabricShipSavedData savedData;
@@ -70,6 +73,11 @@ public final class EarthToStarsFabricShipAuthority {
         return REPOSITORY.findOwnedBy(ownerId);
     }
 
+    public static synchronized Optional<ShipFlightRuntime> activeRuntime(ShipId shipId) {
+        requireInitialized();
+        return Optional.ofNullable(ACTIVE_RUNTIMES.get(shipId));
+    }
+
     public static synchronized int persistedShipCount() {
         requireInitialized();
         return REPOSITORY.size();
@@ -106,16 +114,13 @@ public final class EarthToStarsFabricShipAuthority {
             throw new IllegalStateException("authoritative repository/save mismatch for ship " + shipId);
         }
         deactivateRuntime(shipId);
+        PHYSICAL_ENTITIES.remove(shipId);
         if (REPOSITORY.remove(shipId).isEmpty()) {
             throw new IllegalStateException("authoritative repository changed during ship removal " + shipId);
         }
         return true;
     }
 
-    /**
-     * Registers the real server-owned flight runtime after a physical craft has been deployed.
-     * This method never creates a craft or grants control by itself.
-     */
     public static synchronized void activateRuntime(ShipFlightRuntime runtime) {
         requireInitialized();
         ShipState authoritative = REPOSITORY.find(runtime.ship().shipId())
@@ -127,6 +132,35 @@ public final class EarthToStarsFabricShipAuthority {
         if (previous != null && previous != runtime) {
             throw new IllegalStateException("ship already has an active flight runtime: " + runtime.ship().shipId());
         }
+    }
+
+    public static synchronized ShipFlightRuntime ensureStarterRuntime(ShipState state, ShipTransform fallbackTransform) {
+        requireInitialized();
+        ShipState authoritative = REPOSITORY.find(state.shipId())
+                .orElseThrow(() -> new IllegalArgumentException("unknown authoritative ship: " + state.shipId()));
+        if (authoritative != state) {
+            throw new IllegalArgumentException("starter runtime must use authoritative ShipState");
+        }
+        ShipFlightRuntime existing = ACTIVE_RUNTIMES.get(state.shipId());
+        if (existing != null) {
+            return existing;
+        }
+        ShipFlightRuntime created = new ShipFlightRuntime(state, fallbackTransform, ShipFlightTuning.P0);
+        ACTIVE_RUNTIMES.put(state.shipId(), created);
+        return created;
+    }
+
+    public static synchronized boolean bindPhysicalEntity(ShipId shipId, UUID entityId) {
+        requireInitialized();
+        if (REPOSITORY.find(shipId).isEmpty()) {
+            return false;
+        }
+        UUID existing = PHYSICAL_ENTITIES.putIfAbsent(shipId, entityId);
+        return existing == null || existing.equals(entityId);
+    }
+
+    public static synchronized void unbindPhysicalEntity(ShipId shipId, UUID entityId) {
+        PHYSICAL_ENTITIES.remove(shipId, entityId);
     }
 
     public static synchronized boolean deactivateRuntime(ShipId shipId) {
@@ -146,10 +180,6 @@ public final class EarthToStarsFabricShipAuthority {
         return true;
     }
 
-    /**
-     * Called only after the future physical craft layer has validated seat/range/world state.
-     * The client has no packet that can mint its own session.
-     */
     public static synchronized Optional<UUID> grantControl(ServerPlayer player, ShipId shipId, long tick) {
         if (!belongsToActiveServer(player)) {
             return Optional.empty();
@@ -213,9 +243,13 @@ public final class EarthToStarsFabricShipAuthority {
         return releaseControlInternal(player.getUUID(), true);
     }
 
-    /**
-     * The physical runtime calls this after ShipFlightRuntime.tick reports an expired controller.
-     */
+    public static synchronized boolean releaseControl(UUID playerId) {
+        if (activeServer == null) {
+            return false;
+        }
+        return releaseControlInternal(playerId, true);
+    }
+
     public static synchronized void onControlLeaseExpired(ShipId shipId, UUID controllerId) {
         requireInitialized();
         CONTROLLER_BINDINGS.remove(controllerId, shipId);
@@ -257,5 +291,6 @@ public final class EarthToStarsFabricShipAuthority {
         }
         ACTIVE_RUNTIMES.clear();
         CONTROLLER_BINDINGS.clear();
+        PHYSICAL_ENTITIES.clear();
     }
 }
