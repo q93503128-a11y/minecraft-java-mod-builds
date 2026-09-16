@@ -1,1088 +1,362 @@
 # Open-World RPG — Design Completeness & Game Quality Audit
 
 > Date: 2026-09-16  
-> Status: **DESIGN AUDIT / QUALITY CONTRACT**  
+> Status: **CURRENT DESIGN AUDIT / PRE-CODE QUALITY GATE**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Project contract: `PROJECT.md`  
-> Region/content references: `REGIONS.md`, `R01_VERTICAL_SLICE.md`, `R02_IMPLEMENTATION_PACKAGE.md`  
-> Rule: this document audits completeness and defines how to judge finished-game quality. It does not override gameplay rules in `GAME_DESIGN.md`.
+> Region canon: `REGIONS.md`, `REGION_CROSS_AUDIT.md`, `R01_VERTICAL_SLICE.md`, `R02_CONTENT_BIBLE.md` through `R12_CONTENT_BIBLE.md`  
+> Rule: this document reports current closure, detected conflicts and pre-code blockers. It does not override `GAME_DESIGN.md`.
 
-This audit exists because **design completeness, feature completeness and game quality are not the same thing**.
+This audit replaces the earlier snapshot that still described the main story, R03–R12 and the ending as mostly unwritten. Those statements are obsolete. Git history is the archive; they are not alternate current plans.
 
-A project may have every system written down and still be boring, awkward, visually inconsistent or exhausting to play. Conversely, a polished vertical slice can feel excellent while the rest of the game is still mostly undefined.
+The project is now in **late pre-production**: the reusable gameplay systems and all twelve regional content packages are substantially authored, but gameplay source bootstrap remains blocked by exact presentation, spatial and technical gates. `design written` is not the same as `implementation-ready`, `playtested` or `finished`.
 
-The project therefore tracks two separate questions:
+---
 
-1. **Design closure** — how much important player-facing behavior can be implemented without inventing design during coding?
-2. **Game quality** — when implemented, does the whole game actually feel like a cohesive, polished open-world action RPG?
+# 1. Audit basis
 
-The target remains the repository/playbook contract:
+The current active design corpus was cross-read against:
+
+- repository `AGENTS.md`, `docs/BUILD_STANDARD.md`, `docs/QUALITY_STANDARD.md`;
+- the Minecraft high-quality playbook;
+- `GAME_DESIGN.md`, `PROJECT.md`, `README.md`;
+- combat/class/status/equipment/loot/recovery/field-system/mount/UI/quest-state documents;
+- `WORLD_STORY_CANON.md`, `REGION_CROSS_AUDIT.md`, `REGIONS.md`;
+- R01 vertical-slice/asset work and R02–R12 implementation-package + content-bible pairs.
+
+The audit specifically searched for:
 
 ```text
-not feature count
-not compile success
-not document length
-
-but
-
-one cohesive playable game
+stale canon / superseded wording
+implementation-time design choices
+numeric contradictions
+progression or economy deadlocks
+boss HP / intended TTK disagreement
+quest / reward / multiplayer ownership disagreement
+region repetition
+player-facing development terminology
+asset/license assumptions
+world-placement gaps
 ```
 
----
-
-# 1. Current source basis
-
-This audit was made after re-reading the current project canon on GitHub `main`, especially:
-
-- `GAME_DESIGN.md`;
-- `PROJECT.md`;
-- `REGIONS.md`;
-- `UI_DIRECTION.md`;
-- `LOOT_ECONOMY.md`;
-- `EQUIPMENT_BALANCE.md`;
-- `MOUNTS.md`;
-- `M0_DEPENDENCY_AUDIT.md`;
-- `COMBAT_BALANCE.md`;
-- `CLASS_COMBAT_KITS.md`;
-- `CLASS_PROGRESSION.md`;
-- `STATUS_AND_R01_ENCOUNTERS.md`;
-- `R01_VERTICAL_SLICE.md`;
-- `RECOVERY_PRODUCTION_APPEARANCE.md`;
-- `R01_ASSET_INTAKE.md`;
-- `GATHERING_FISHING_CAMP_HOUSING.md`;
-- `FISHING_COLLECTION_HOUSING_MARKET.md`;
-- `QUEST_WORLD_STATE.md`;
-- `R02_IMPLEMENTATION_PACKAGE.md`;
-- repository `QUALITY_STANDARD.md`;
-- the project high-quality playbook.
-
-External comparison material was selected for **structure and production lessons**, not copied content/numbers.
-
-Primary comparison references:
-
-- Guerrilla Games / GDC — `Horizon Zero Dawn: A Game Design Postmortem`;
-- Guerrilla Games / GDC — `Balancing Action and RPG in Horizon Zero Dawn Quests`;
-- Guerrilla Games / GDC — `Building Non-linear Narratives in Horizon Zero Dawn`;
-- Guerrilla Games — `Horizon Zero Dawn: An Open World QA Case Study`;
-- CD Projekt RED / GDC — `The Living World of The Witcher`;
-- CD Projekt RED / GDC — `Witchcraft: The Alchemy of a Crafting-Based Economy`;
-- BioWare / GDC — `Worlds Collide: Combining Story and Systems in Dragon Age: Inquisition`;
-- Bethesda Game Studios / GDC — `Level Design in a Day: How We Used Iterative Level Design to Ship Skyrim and Fallout 3`;
-- Bethesda Game Studios / GDC — `Fallout 4's Modular Level Design`;
-- Obsidian / GDC 2026 — `Designing POIs (Points of Interest) for The Outer Worlds 2`;
-- GDDKit `Lumenfall` worked GDD example, used only as a document-coverage cross-check.
-
-Useful source URLs:
-
-- https://www.guerrilla-games.com/read/horizon-zero-dawn-a-game-design-postmortem
-- https://www.guerrilla-games.com/read/balancing-action-and-rpg-in-horizon-zero-dawn-quests
-- https://www.guerrilla-games.com/read/building-non-linear-narratives-in-horizon-zero-dawn
-- https://www.guerrilla-games.com/read/horizon-zero-dawn-an-open-world-qa-case-study
-- https://www.gdcvault.com/play/1023867/The-Living-World-of-The
-- https://www.gdcvault.com/play/1022800/Witchcraft-The-Alchemy-of-a
-- https://www.gdcvault.com/play/1022377/Worlds-Collide-Combining-Story-and
-- https://www.gdcvault.com/play/1020171/Level-Design-in-a-Day
-- https://www.gdcvault.com/play/1022930/-Fallout-4-s-Modular
-- https://www.gdcvault.com/play/1035724/Designing-POIs-%28Points-of-Interest%29
+Historical evidence snapshots remain evidence snapshots. They do not become gameplay authority merely because they still exist in the repository.
 
 ---
 
-# 2. Important lessons from external open-world RPG production
+# 2. Current closure verdict
 
-## 2.1 A large world is not content
+## 2.1 Substantially closed before source bootstrap
 
-Bethesda's open-world level-design material repeatedly treats player motivation, landmarks, POIs, iteration and content density as design problems rather than assuming terrain size is enough.
+These areas are sufficiently specified that coding should implement their rules rather than redesign them:
 
-Project consequence:
+- product identity and core loop;
+- Lv1–80 EXP model;
+- VIT / END / STR / DEX / INT / WIL stat model;
+- damage, mitigation, dodge, guard, perfect guard, poise and multiplayer boss scaling;
+- five root classes, skills, first specialization branches and deeper class progression;
+- equipment grades/base curves/affix philosophy/reforge/signature-item protection;
+- Gold economy direction and merchant cadence;
+- recovery belt, healing, food, alchemy/cooking direction;
+- inventory / Material Pouch / Key Item ownership;
+- Tool Pouch, gathering, fishing, Field Camp and one-residence housing model;
+- mount roster and economy;
+- quest personal/shared/encounter-state ownership and idempotent reward delivery;
+- Anchor main story, recurring cast functions, Act structure and Restore / Release / Partition endings;
+- R01–R12 settlement identities, named casts, regional quest chains, rewards, reconnect rules, story evidence and aftermath;
+- server-authority requirements and the rule that real multiplayer testing is still required.
 
-- Azari's 30k x 30k size is **not** itself a quality advantage;
-- each traveled route needs readable goals, landmarks, risk/reward and deliberate distraction;
-- empty scenery may exist for breathing room, but long accidental dead travel is not acceptable;
-- region design needs a measurable POI/travel cadence rather than only a biome description.
+## 2.2 Genuine pre-code blockers
 
-Current project status:
+Source bootstrap is still blocked by work that an implementer must not improvise:
 
-- R01 has a real route and content cadence;
-- R02 is significantly better specified;
-- R03–R12 do not yet have enough concrete density/travel contracts.
+1. **final player-facing title / branding string** — the production slug may remain `openworld-rpg`, but a player-visible build must not ship `TBD` or the internal slug as an accidental title;
+2. **exact external asset binding** — unresolved boss/creature models, NPC outfits, weapon/item families, structures, Anchor machinery, important VFX, animation, SFX/BGM and exact provenance/hash records;
+3. **Azari spatial closure** — actual coordinates, route relationships, sightlines, settlement/POI/dungeon/boss placement, travel times and content-density validation;
+4. **R11 aquatic presentation matrix** — every frequent action tagged `AQUATIC_NATIVE`, `AQUATIC_ADAPTED` or `AQUATIC_DISABLED_WITH_FALLBACK`, with accepted locomotion/attack/cast/guard animations;
+5. **global presentation/comfort contract** — final key map, accessibility, subtitles/non-audio cues, difficulty/assist behavior and complete music/audio-state coverage;
+6. **asset-gated final boss sheets** — exact player-facing names, anatomy-supported attacks/weak points and signature materials after model acceptance where regional documents explicitly gate them;
+7. **final stale-document cleanup** — older package wording must not offer obsolete alternatives to later content bibles.
 
-## 2.2 Story-only and system-only open-world content both fail when isolated
+These are pre-code gates, not permission to `decide during coding`.
 
-The Dragon Age: Inquisition GDC talk describes a production problem highly relevant here: discrete narrative content alone scaled poorly, while standalone systems felt disconnected from the world. The useful solution is to combine authored context with reusable systemic gameplay.
+---
 
-Project consequence:
+# 3. Major consistency findings
 
-A regional package is not complete merely because it contains:
+## 3.1 Old completeness snapshot was materially wrong
+
+The previous version of this file still described:
+
+- main narrative as D0–D1;
+- final act/ending as D0;
+- R03–R12 as mostly broad regional direction;
+- whole-project planning around 65–75%.
+
+That was true before `WORLD_STORY_CANON.md`, the later regional packages and R02–R12 content bibles. It is false on current `main` and has been removed.
+
+Current state is better represented as:
 
 ```text
-mobs + materials + boss + dungeon
+system rules: substantially closed
+regional/narrative authoring: substantially closed
+exact presentation binding: incomplete
+actual world placement: incomplete
+source implementation: not started
+play quality: unproven until implementation/playtest
 ```
 
-It also needs:
+No single percentage is used because it creates false precision and is easy to confuse with implementation progress.
+
+## 3.2 `implementation-ready` wording was too broad
+
+Several older regional-package headers say their flow is `implementation-ready` while also naming exact external-asset or technical gates.
+
+Current interpretation is stricter:
+
+> a regional package can be **content/mechanics closed** while gameplay source for gated visible content remains **blocked**.
+
+No package-level `implementation-ready` phrase overrides the project-wide pre-code completion contract.
+
+## 3.3 Region index had stale encounter assignments
+
+The old `REGIONS.md` still listed R03 Basalt Wyvern/Rocky Roller direction even after later canon moved Basalt Wyvern to R10 and established Griffin + Rock Golem direction for R03. It also still called the region levels `working targets` pending a later EXP pass even though the EXP pass has already happened and retained the region progression.
+
+`REGIONS.md` must therefore be treated as a current index, not a reservoir of old candidates. Its refreshed version removes those conflicts.
+
+## 3.4 Laviathan placement is closed
+
+Older mount/R10 wording allowed an R10 or R11 unlock. Current launch canon is:
 
 ```text
-who lives here
-what changed here
-why the player cares
-what local conflict or mystery gives the systems meaning
-what the player can change/discover
-what world or character memory remains afterward
+Laviathan acquisition: R11 Inner Sea only
+registration: 3,000 Gold after the authored handler/route trial
 ```
 
-R01 and R02 already partially satisfy this through route context, clues, settlement roles and dungeon identity. Later regions are not yet sufficiently authored at this level.
+R10 may foreshadow maritime/volcanic-water travel but does not own the launch unlock.
 
-## 2.3 Economy should bind the world, not sit beside it
+## 3.5 R01 Verdant Crystal tool gate must not remain open
 
-The Witcher 3 economy talks frame money/crafting/progression as a mechanism that connects world activity rather than as isolated menus.
+R01 Superior recipes consume Verdant Crystal. Therefore leaving `maybe Refined Pick later` in the R01 gathering table creates an avoidable progression ambiguity.
 
-Current project status is strong here:
-
-- exploration feeds materials;
-- materials feed forge/alchemy/cooking/camps/housing;
-- combat feeds equipment/signature materials;
-- Gold connects merchants, class switching, housing and services;
-- fishing feeds collection, cooking, sale and display;
-- boss materials feed deterministic signature crafting.
-
-Risk to continue watching:
-
-- later regional materials must not become isolated `R07-only token A` items;
-- late-game Gold sinks must remain meaningful without becoming repair/tax chores;
-- no region should introduce a new currency merely to make itself look deep.
-
-## 2.4 Quest architecture needs non-linearity as a system, not exceptions
-
-Horizon Zero Dawn's public quest-system material explicitly emphasizes non-linearity and a common language for simple/complex quest state.
-
-Current project status is strong at the framework level because `QUEST_WORLD_STATE.md` already defines:
-
-- personal progression;
-- shared encounter state;
-- late joining;
-- contribution credit;
-- split-party behavior;
-- idempotent rewards;
-- dialogue/choice authority.
-
-Remaining gap:
-
-- the project lacks enough **authored main/regional narrative content** using that framework.
-
-The engine of the quest system is ahead of the actual story carried by it.
-
-## 2.5 POIs should intersect worldbuilding, progression, spatial design and navigation
-
-The Outer Worlds 2 POI talk gives a useful four-axis check:
-
-1. worldbuilding;
-2. progression;
-3. spatial design;
-4. navigation.
-
-Project adoption:
-
-Every important authored POI should be reviewed against all four axes.
-
-A POI that is only:
+Canonical closure for source implementation:
 
 ```text
-chest behind ruin
+R01 ordinary Verdant Crystal nodes: Field Pick accessible
+later dense regional minerals/crystals: may require Refined or Masterwork Pick as explicitly authored
 ```
 
-is weak even if the model is pretty.
+This keeps R01 crafting non-circular and reserves meaningful tool gating for later regions.
 
-A strong POI should answer several questions at once:
+## 3.6 Natural HP recovery had a numeric conflict
 
-- what does this place tell me about the region?
-- why is it worth reaching?
-- what choice/risk/gameplay happens there?
-- how did I notice/find it?
-- what route or landmark relationship does it create?
-- does it connect to a resource, enemy, quest, shortcut, equipment source, lore clue or later return?
-
-## 2.6 Massive worlds require modular production without modular-looking repetition
-
-Fallout 4 / Skyrim production talks show the value of modular kits and rapid iteration for large worlds.
-
-Project consequence:
-
-External modular architecture/prop families are a major advantage, but their use must be governed by **composition identity**.
-
-Reuse:
-
-- wall/roof/prop kits;
-- encounter controller patterns;
-- quest objective primitives;
-- merchant/service components;
-- UI components;
-- data schemas.
-
-Do not visibly reuse:
-
-- the same room layout with different stone;
-- the same boss pattern with a different model;
-- the same three-POI composition in every region;
-- the same settlement service layout with palette swaps.
-
-Production reuse should be invisible to the player where possible.
-
-## 2.7 Open-world QA is a design concern
-
-Guerrilla's open-world QA case study emphasizes risk management, exploratory testing, telemetry and automated support for a huge state space.
-
-Project consequence:
-
-`build succeeds` cannot be the main completion proof.
-
-The final project needs local/dev-only telemetry and targeted scenario testing for:
-
-- route completion;
-- sequence breaking;
-- quest state;
-- reward duplication;
-- player split/regroup;
-- save/load during events;
-- chunk unload/reload;
-- encounter reset;
-- economy exploits;
-- inventory overflow;
-- travel dead time;
-- performance hotspots;
-- multiplayer state disagreement.
-
-No external analytics service is required; local debug/session summaries are sufficient for private play.
-
----
-
-# 3. Design maturity scale
-
-Use this only to measure **decision closure**, not fun.
-
-## D0 — absent
-
-The player-facing need is not defined.
-
-## D1 — direction only
-
-Fantasy/intent/reference exists, but implementation would still require major design decisions.
-
-## D2 — system rules
-
-Main behavior is defined, but content, exceptions, numbers, presentation or state ownership still has meaningful gaps.
-
-## D3 — implementation-ready
-
-A competent implementer can build the subsystem without inventing core gameplay rules.
-
-Expected:
-
-- inputs/outputs;
-- numbers/defaults;
-- important edge cases;
-- multiplayer/server authority where relevant;
-- UI/presentation direction;
-- data ownership;
-- acceptance criteria.
-
-## D4 — production-bound design
-
-D3 plus the actual player-visible content required for the planned slice is substantially bound:
-
-- selected external model/UI/animation/audio sources where relevant;
-- exact content roster/data;
-- source/license status;
-- final world placement/composition direction;
-- testable acceptance cases.
-
-D4 still does **not** mean implemented or playtested.
-
----
-
-# 4. Current planning-completeness audit
-
-The current project is unusually detailed in systems, but much less complete in whole-game authored content.
-
-Approximate maturity is intentionally given as a range, not false precision.
-
-## 4.1 Strong / near-implementation-ready areas
-
-| Area | Current maturity | Notes |
-|---|---|---|
-| product identity / core loop | D4 | strong, consistent, easy to explain |
-| combat math / dodge / guard / poise | D4 | exact timing/formulas/TTK/authority exist |
-| root classes / first branches / class progression | D4 | unusually detailed before code |
-| loot / gear / affix / signature protection | D4 | source ownership and anti-confetti philosophy clear |
-| inventory / material pouch / key items | D3–D4 | capacity and overflow rules defined |
-| recovery / food / alchemy / cooking | D3–D4 | R01 concrete, later content still expands |
-| mounts | D3–D4 | rules/progression/source direction strong |
-| quest/world-state framework | D4 | personal/shared/encounter authority well defined |
-| gathering / fishing / camp / housing rules | D3–D4 | new fishing collection and one-home trade-up direction closes major gaps |
-| multiplayer authority model | D4 design | actual multiplayer is still untested by definition |
-| R01 gameplay route | D4 design | strongest content package; asset intake remains incomplete |
-| R02 regional flow | D3–D4 | implementation package exists; exact asset acceptance still pending |
-
-## 4.2 Partially closed areas
-
-| Area | Current maturity | Main gap |
-|---|---|---|
-| UI/UX | D3 | visual family and architecture exist; not every major screen has final mockup/real-client proof |
-| world map / navigation | D2–D3 | general rules exist; whole-world landmark/POI density and route-time budget missing |
-| factions/reputation | D1–D2 | rule says `selected meaningful factions`; actual factions/relationships mostly absent |
-| day/night/weather | D1–D2 | principle exists; concrete per-region content/weather tables missing |
-| global audio/music | D1–D2 | R01 audio direction exists; whole-game adaptive music/ambience system absent |
-| external asset closure | D2 | strong source research, but many exact model/hash/visual acceptance gates remain |
-| later-region economy/content | D1–D2 | broad identities exist; actual resources, shops, gear pools and service differences mostly absent |
-| open-world QA strategy | D2 | standards exist, but project-specific risk matrix/telemetry/route test plan is not yet a canon artifact |
-
-## 4.3 Major under-authored areas
-
-| Area | Current maturity | Why it matters |
-|---|---|---|
-| main narrative spine | D0–D1 | the player has systems and regions, but no concrete whole-game purpose/arc |
-| core NPC cast / character relationships | D0–D1 | settlements risk feeling like service kiosks rather than a world |
-| actual factions / political-social geography | D0–D1 | reputation framework exists without enough authored targets |
-| region narrative capsules R03–R12 | D1 | later regions currently risk becoming biome + monster + dungeon packages |
-| implementation-ready R03–R12 | D1–D2 | R03 is in progress; most later regions remain broad |
-| whole-world POI density / travel pacing budget | D0–D1 | Azari size could create long dead travel or uneven density |
-| final act / climax / ending | D0 | no whole-game closure target |
-| Lv80 / post-final-boss endgame role | D0–D1 | level cap exists but endgame purpose is not yet clearly authored |
-| accessibility / difficulty / input-assist canon | D0–D1 | no clear final player-options contract |
-| complete keybind/control map | D1 | explicitly deferred, correctly, but still unresolved |
-| save/version migration / corrupted-state recovery design | D1 | important for a long private world and multiplayer persistence |
-
----
-
-# 5. Overall current design-completeness verdict
-
-## System design closure
-
-**Approximately 85–90%.**
-
-The project is already far past ordinary concept-stage design in combat, progression, inventory, economy, classes, field systems and server authority.
-
-## R01 vertical-slice design closure
-
-**Approximately 85%.**
-
-The remaining gap is dominated by:
-
-- exact asset acquisition/binding;
-- final visual conversion;
-- final UI mockup/client validation;
-- actual implementation/playtest.
-
-The gameplay rules themselves are mostly closed.
-
-## Whole-game authored-content closure
-
-**Approximately 35–45%.**
-
-Reason:
-
-- R01 is detailed;
-- R02 now has an implementation package;
-- R03 is still in planning;
-- R04–R12 remain largely regional direction rather than final production content;
-- narrative/faction/endgame content is substantially under-authored.
-
-## Whole-project planning maturity
-
-**Approximately 65–75%, with ~70% as the practical center estimate.**
-
-This number should never be read as `the game is 70% complete`.
-
-It means roughly:
-
-> most reusable rules are closed, but a large amount of authored world content and final presentation binding still needs design work.
-
-A useful mental model:
+`COMBAT_BALANCE.md` retained an older `0.30% MaxHP/s` value while the dedicated recovery canon uses:
 
 ```text
-systems: ahead
-R01/R02: healthy
-later world content: behind
-narrative/characters/endgame: clearly behind
-presentation asset closure: behind systems
-actual implementation/playtest: not started / not proven
+8.0 s out-of-combat delay
+0.40% MaxHP/s natural recovery
 ```
+
+The recovery document is the dedicated authority and the combat document must align to **0.40%**. This remains deliberately slow: normal recovery tools are still materially faster.
 
 ---
 
-# 6. The largest missing design decisions
+# 4. Combat / boss balance audit
 
-## 6.1 World narrative spine
-
-Before writing ten more independent region packages, define the minimum whole-game narrative spine.
-
-Need:
-
-- world premise/current crisis or central change;
-- why the player begins in R01;
-- what keeps the player moving beyond personal power gain;
-- what the player gradually learns about the continent;
-- how R01–R12 relate to the central problem;
-- what changes at major act boundaries;
-- what the final confrontation/problem actually is;
-- what `finishing the game` means;
-- what remains explorable afterward.
-
-The main story should remain compatible with the 30/70 guided/exploration direction. It does **not** need to become a linear cinematic RPG.
-
-## 6.2 Player-avatar identity
-
-One significant user-level choice remains unresolved:
+`COMBAT_BALANCE.md` explicitly states that this is not an MMO HP-sponge game. Its benchmark model provides a useful consistency test:
 
 ```text
-A. mostly blank/custom adventurer whose identity comes from the player's actions
-B. lightly authored protagonist with a defined background but broad role-play freedom
-C. strongly authored named protagonist
+GearScale(L) = 1 + 0.055 * (L - 1)
+WeaponBudget(L) = 22 * GearScale(L)
+BenchmarkDPS(L) = WeaponBudget(L) * (1.15 + 0.0075 * (L - 1))
 ```
 
-The current Minecraft/custom-class structure naturally supports A or B better than C, but this should be deliberately locked because it affects dialogue, voice, relationships and quest writing.
-
-## 6.3 Core NPC/faction cast
-
-Need a small memorable cast before dozens of service NPCs are authored.
-
-At minimum define:
-
-- R01 recurring anchor NPCs;
-- major faction or institution representatives;
-- one or more recurring rivals/allies/mentors where useful;
-- which NPCs travel or reappear across regions;
-- what changes in their behavior based on major choices/progress;
-- which NPCs are service-only and deliberately not pretending to be major characters.
-
-Do not create 40 reputation bars.
-
-## 6.4 Regional narrative capsule
-
-Every R03+ implementation package must include:
+For a boss authored around a target **active solo TTK**, its starting HP should be approximately:
 
 ```text
-central local tension / mystery
-2–4 named local characters or role anchors
-one major regional chain
-one optional narrative/discovery chain
-one world-state or relationship consequence where appropriate
-how the dungeon/boss relates to the region rather than merely living there
-what the player learns about the larger world
+BossHP_start = BenchmarkDPS(L) * target_active_TTK
 ```
 
-Exact counts may vary. The requirement is **meaning**, not quota fulfillment.
+Then real play may adjust HP after animation, defense, phase downtime and vulnerable uptime are measured. **Do not add HP to compensate for long untargetable phases; shorten/fix the downtime instead.**
 
-## 6.5 World density / travel pacing
+The audit found that several late-region draft HP ranges drifted well above their own stated TTK targets.
 
-Need a dedicated spatial budget after Azari is actually imported.
+| Encounter | Lv | Intended active TTK | Audited starting HP band | Result |
+|---|---:|---:|---:|---|
+| R04 Ferox Iceworm | 24 | 200–225 s | ~13.0–15.0k | current band only slightly high |
+| R04 Icebroodmother | 25 | 170–195 s | ~11.5–13.0k | current band slightly high |
+| R05 mature Earthloong | 26 | 200–225 s | ~14.0–15.5k | current band high |
+| R06 Hydra | 35 | 190–225 s | ~17.0–20.0k | current band good |
+| R07 Ferox Deathworm | 39 | 200–235 s | ~19.5–23.0k | current band high |
+| R08 Titan Rabbit | 49 | 210–245 s | ~25.5–29.5k | current 33–38k is too high |
+| R09 optional major hunt | 49 | 195–230 s | ~23.5–28.0k | use after model selection |
+| R10 Basalt Wyvern | 63 | 205–240 s | ~32.0–37.5k | current 42–48k is too high |
+| R10 Inferno/final guardian role | 64 | 220–270 s | ~35.0–43.0k | current 48–58k is too high |
+| R11 Riptooth | 51 | 195–225 s | ~24.5–28.5k | current 28–33k is high |
+| R11 Abyss Fang | 69 | 235–290 s | ~40.5–50.0k | current 55–65k is too high |
+| R12 Terradragon | 78 | 250–290 s | ~49.5–57.5k | current 48–58k is coherent |
+| R12 final systemic guardian | 80 | 285–320 s | ~58.5–65.5k | current 58–66k is coherent |
 
-Measure in **travel time**, not only blocks.
+These are **authoring baselines**, not final playtested values. Defense, MR, movement, target uptime and multiplayer scaling still require actual measurement.
 
-Initial playtest targets to test, not blindly enforce:
+Important conclusion:
+
+- the global DPS/TTK framework is not the problem;
+- R06 and R12 already demonstrate that the formula can produce coherent boss budgets;
+- the correction is to realign the drifted regional boss HP ranges, not to inflate global player damage and destabilize the entire combat model.
+
+---
+
+# 5. Progression / EXP audit
+
+The global EXP design is internally coherent:
 
 ```text
-major visual landmark or route decision: usually visible/encountered within ~30–90 s of ordinary travel
-meaningful optional interaction/POI opportunity on primary exploration routes: roughly every ~1–3 min
-major authored POI / settlement / dungeon / field boss / major event: enough spacing to feel distinct, usually several minutes apart
+EXP_to_next(L) = round_to_10(100 + 50L + 4L^2)
+launch cap = 80
 ```
 
-The correct result may differ per region:
+The documented mixed-play target of roughly **20–30 hours** to approach Lv80 is plausible because combat is only one contribution source and regional/main/dungeon rewards are authored as percentages of the receiving player's next-level requirement.
 
-- R01 should be readable and relatively dense;
-- R02 can hide more content behind forks;
-- R03 can use long sightlines and vertical detours;
-- desert/ocean regions may intentionally create longer stretches, but those stretches need navigation spectacle, risk or destination readability.
-
-Do not make every 60 seconds contain a chest/encounter. Density is rhythm, not clutter.
-
-## 6.6 Endgame and closure
-
-Before implementation gets far, define:
-
-- final major encounter/content sequence;
-- expected Lv/Item Lv at first completion;
-- whether the world remains playable afterward;
-- repeatable endgame targets;
-- what Class Rank/build progression remains relevant after Lv80;
-- what optional world bosses/dungeons remain aspirational after story completion;
-- whether there is any NG+ concept at all.
-
-Default recommendation unless a later design proves otherwise:
-
-- world remains playable after ending;
-- no mandatory NG+ at launch;
-- endgame consists mainly of hard optional bosses/dungeons, build completion, collection/housing/fishing/codex and class mastery;
-- no endless numeric prestige treadmill.
-
-## 6.7 Accessibility / difficulty / control settings
-
-Need explicit player options because action combat contains tight timing.
-
-At minimum evaluate:
-
-- remappable project keybinds;
-- hold/toggle options for sprint/guard/aim where relevant;
-- camera shake strength;
-- hit-stop/camera impact reduction;
-- subtitle/dialogue readability;
-- UI scale compatibility;
-- color-independent rarity/status communication;
-- optional stronger attack-telegraph visibility;
-- optional perfect-guard/dodge timing assistance only if it can be implemented without breaking authoritative multiplayer;
-- difficulty presets or selected assists versus a single fixed difficulty.
-
-Do not finalize arbitrary assists before combat playtest. First define what can safely be adjusted.
-
-## 6.8 Global audio/music system
-
-R01 has audio directions, but the whole game needs a music/ambience contract.
-
-Need:
-
-- exploration layers by region;
-- settlement layer;
-- danger/combat escalation;
-- elite/boss music ownership;
-- dungeon transition;
-- discovery/major reward stingers;
-- night/weather variation where useful;
-- crossfade rules;
-- silence/breathing-space policy;
-- sound-priority/mix rules so telegraphs remain audible.
-
-External audio remains provenance-tracked.
-
----
-
-# 7. Required regional implementation package from R03 onward
-
-Every region does **not** need identical amounts of content, but an implementation-ready package must answer the same categories.
-
-## Identity
-
-- one-sentence player fantasy;
-- suggested entry Lv;
-- why the region is not a reskin of a previous region;
-- visual/terrain source direction;
-- 3–5 macro landmarks/navigation anchors.
-
-## Traversal
-
-- primary movement challenge/opportunity;
-- mounts usable/not usable and why;
-- shortcuts/unlocks;
-- what prevents terrain from becoming annoying rather than interesting.
-
-## Settlement/social layer
-
-- settlement role and size;
-- essential services;
-- services deliberately absent;
-- housing tier/opportunities where relevant;
-- NPC/faction anchors;
-- local economy identity.
-
-## Ecology/combat
-
-- passive/ambient ecology;
-- common threats with distinct behavior roles;
-- sturdy/elite roles;
-- optional hunt/field boss;
-- dungeon boss;
-- actual external model/dependency direction;
-- no enemy exists solely because a model was available.
-
-## Resources/fishing/production
-
-- reused prior resources;
-- only a small number of justified new resources;
-- fish where water ecology supports it;
-- recipes/services/rewards that make those materials useful;
-- no dead regional material.
-
-## Exploration/POIs
-
-For each important POI, cover:
+Current reward hierarchy is healthy:
 
 ```text
-worldbuilding
-progression/reward
-spatial gameplay
-navigation/discovery
+ordinary kill: small
+exploration/event: small-to-medium
+elite/miniboss: meaningful
+regional quest: large
+first dungeon clear: very large
+field/world boss first clear: large
 ```
 
-Region should include more than combat POIs.
+Public Guild Wars 2 tables provide a useful structural comparison: successful dynamic events award about 7% of a same-level progression requirement, storyline instances about 27%, and dungeon story/explorable completions much larger. The project intentionally runs somewhat more generous regional/main/dungeon percentages because it targets a finite authored 20–30 hour action-RPG progression rather than an MMO leveling ecosystem.
 
-Possible roles:
+Audit rule:
 
-- dangerous resource pocket;
-- environmental story site;
-- puzzle/traversal space;
-- hunt clue;
-- mini encounter;
-- rare fishing location;
-- hidden shrine/shortcut;
-- social/trade site;
-- lore/skill discovery;
-- treasure with a meaningful source identity.
+- ordinary event/discovery rewards should stay around the existing 5–10% family;
+- normal regional/main steps generally stay around 35–45%;
+- major regional climax steps may reach roughly 45–55% when they replace several smaller objectives;
+- a dungeon first clear + boss may be a substantial level fraction, but repeated farming must fall back to repeat rewards and anti-overlevel rules;
+- do not increase every later-region percentage merely because the absolute EXP requirement is larger; the percentage model already scales.
 
-## Narrative
-
-- local tension/mystery;
-- regional quest chain;
-- key NPC roles;
-- relation to main narrative;
-- discoverable environmental storytelling;
-- at least one optional story/discovery beat;
-- relevant choice/consequence where it adds value.
-
-## Rewards/growth
-
-- equipment identity;
-- skill/class/discovery relevance;
-- first-clear deterministic protection where needed;
-- boss signature path;
-- onward-region reason.
-
-## Presentation
-
-- architecture kit;
-- creature/model sources;
-- animation/VFX/audio direction;
-- region ambience/music;
-- UI-specific needs if any.
-
-## Runtime / multiplayer
-
-- personal/shared states;
-- encounter reset behavior;
-- sequence-breaking safety;
-- chunk unload/reload behavior;
-- performance risks;
-- multiplayer participation/reward rules.
-
-## Acceptance
-
-- minimum actual play route;
-- expected active time;
-- intended memorable moments;
-- obvious fail symptoms;
-- test commands/setup when implementation begins.
+No global EXP curve change is recommended before playtesting.
 
 ---
 
-# 8. Whole-game quality model
+# 6. Economy / loot audit
 
-The project should not declare completion from a single number, but a weighted score helps expose weak areas.
+The economy is structurally strong because Gold is one primary currency and systems share it rather than inventing regional tokens.
 
-Use eight quality dimensions after implementation.
+Current useful anchors remain coherent with same-tier income:
 
-| Dimension | Weight | What it asks |
-|---|---:|---|
-| Core feel / controls / moment-to-moment feedback | 18 | Is simply moving, fighting, interacting and looting satisfying? |
-| World / exploration / spatial pacing | 15 | Does travel create curiosity, readable goals and meaningful discovery rather than dead distance? |
-| Combat / enemy / boss quality | 15 | Are enemy roles, tells, hitboxes, reactions and encounter decisions strong? |
-| Progression / economy / build decisions | 10 | Do rewards create new choices without grind/currency clutter? |
-| Content / narrative / regional identity | 12 | Are regions memorable and meaningful rather than asset-filled biomes? |
-| Presentation — UI/art/animation/VFX/audio | 15 | Does it look/sound like one intentional game? |
-| UX / onboarding / accessibility | 5 | Can players learn, read and comfortably control the game? |
-| Technical / stability / save / performance / multiplayer | 10 | Does the game remain trustworthy under real play? |
+- Small / Town / Large / Prestige housing: 2,400 / 9,000 / 25,000 / 65,000+ Gold;
+- Jungle Komodo: 600 Gold registration;
+- Caravan Elephant: 1,500 Gold;
+- Laviathan: 3,000 Gold;
+- Sky Drake: 6,000 Gold;
+- recovery and normal merchant purchases stay small relative to those savings goals.
 
-Total: 100.
-
-## Important: weighted score cannot hide a fatal weakness
-
-A 90 in art cannot compensate for broken save data.
-A 95 in combat cannot compensate for an empty world.
-A 90 average cannot compensate for multiplayer duplicating boss rewards.
-
-Therefore use **quality gates** as well as the score.
-
-### Candidate high-quality completion gate
-
-Before calling the game broadly complete:
-
-- no critical dimension is below 70/100;
-- Core Feel, World/Exploration, Combat and Presentation should target **85+** because they define this project's identity;
-- the main route is playable from start to end without developer intervention;
-- no mandatory progression state can softlock;
-- no player-facing placeholder assets/UI remain;
-- major external-source/license state is resolved for the actual playable build/repo boundary;
-- save/load works across major quest/dungeon/boss/housing states;
-- multiplayer reward/progression authority is actually tested before claiming it works;
-- worst-case performance is measured in the heaviest real region/settlement/boss scenarios;
-- actual playtests confirm that the designed loops are fun rather than merely numerically compliant.
-
-These are targets, not marketing scores.
-
----
-
-# 9. Quality must be judged at several time scales
-
-An open-world RPG can feel good for ten minutes and become dull after ten hours. Review quality at multiple horizons.
-
-## 9.1 Ten-second quality
-
-Ask during ordinary play:
-
-- movement responsive?
-- attack/guard/dodge readable and satisfying?
-- camera stable?
-- hit reaction/sound/VFX convincing?
-- interaction prompt obvious without visual clutter?
-- pickup/reward feedback clear?
-
-If the answer is no, adding another region does not help.
-
-## 9.2 Ten-minute quality
-
-Within a normal ten-minute slice:
-
-- did the player make at least one meaningful choice?
-- did something visually/gameplay-wise change?
-- was there a reason to deviate from the road?
-- did the player obtain/use a meaningful reward or discovery?
-- was there avoidable dead travel/menu management?
-
-Not every ten minutes requires combat or loot, but the player should remain intentionally engaged.
-
-## 9.3 One-hour quality
-
-A representative hour should naturally touch several connected loops, for example:
+The boss signature-material system is intentionally generous but suitable for a private authored RPG:
 
 ```text
-travel/exploration
-→ encounter or discovery
-→ resource / quest / dungeon progress
-→ reward
-→ build/service choice
-→ different next destination
+first eligible clear: 2 signature materials
+repeat clear: 1
+4 materials + Gold service fee: craft one chosen known Mythic
 ```
 
-Audit:
+This prevents an unlucky player from grinding one boss indefinitely and is consistent with the project's anti-chore philosophy.
 
-- too many repeated enemy groups?
-- too much travel with no decisions?
-- too many town returns?
-- inventory cleanup too frequent?
-- quests feel like errands?
-- rewards actually affect choices?
-- fishing/housing/gathering remain optional pleasures rather than obligations?
+No generic enhancement treadmill, salvage currency, boss token or fishing currency should be added without a new real design need.
 
-## 9.4 Five-to-ten-hour quality
-
-This horizon exposes shallow systems.
-
-Check:
-
-- do classes/builds materially diverge?
-- do new regions change tactics/traversal/ecology?
-- are earlier resources/services still relevant?
-- have bosses become pattern variants of the same fight?
-- are new items mostly numeric upgrades or new decisions?
-- is map exploration still curious rather than checklist cleanup?
-
-## 9.5 Full-playthrough quality
-
-Check:
-
-- pacing rises/falls intentionally;
-- the main narrative provides direction without suffocating exploration;
-- late regions still introduce real novelty;
-- Lv80 feels earned rather than grindy;
-- the final act/final encounter provides closure;
-- optional systems remain relevant but not mandatory;
-- there is a satisfying reason to continue after the ending, or a satisfying reason to stop.
+Stale loot-document blockers claiming that weapon curves, affix curves or forge/reforge rules are still unknown are obsolete; `EQUIPMENT_BALANCE.md` already closes those rules. Remaining equipment work is primarily exact regional catalog/model/icon/source binding and model-linked Mythic completion.
 
 ---
 
-# 10. Feature completion ladder
+# 7. World / quest / narrative comparison
 
-A feature is not `complete` just because code exists.
+Public production material supports the project's current direction:
 
-Use this ladder internally:
+- Guerrilla's Horizon quest-system material emphasizes non-linearity and a robust quest-state language; this project already has explicit personal/shared/encounter ownership, late join, split-party progress and idempotent rewards in `QUEST_WORLD_STATE.md`.
+- Bethesda's Skyrim/Fallout production material emphasizes plan → implement → test → polish for huge quantities of open-world content. The project therefore must not confuse completed documents with proven gameplay.
+- CD Projekt RED's Witcher/Cyberpunk quest-design lessons emphasize engagement, brevity, fun, emotional impact, consequences, novelty and production effectiveness; the regional bibles deliberately avoid a repeated `town → three chores → boss → ancient device` grammar and specify visible aftermath.
+- the publicly documented Van Buren Denver package is an 83-page area design covering places, characters and quests. The project's package+bible pairs are now in the same **kind** of production-document territory: named people, exact objective conditions, rewards, state and aftermath exist. However the project is still behind a true production-ready area package in one important respect: **actual Azari spatial placement, sightlines, travel time and accepted final assets are not yet bound.**
 
-## S — SPECIFIED
-
-Rules/content/presentation/state/acceptance are defined.
-
-## I — IMPLEMENTED
-
-Core code/data exists and is code-reviewed.
-
-## G — INTEGRATED
-
-Works with relevant neighboring systems.
-
-Examples:
-
-- fishing integrates inventory/cooking/sale/codex/housing;
-- boss integrates quest/reward/loot/signature craft/multiplayer;
-- housing integrates economy/storage/furniture/permissions.
-
-## P — PLAYTESTED
-
-Actually used in Minecraft under realistic conditions.
-
-## Q — POLISHED
-
-Feel, visual, audio, UX, edge cases and performance meet the project standard.
-
-A whole subsystem is only broadly complete when its important paths reach at least `Q`.
-
-Use existing verification vocabulary alongside this ladder:
-
-- CODE REVIEWED;
-- TESTED;
-- BUILD VERIFIED;
-- JAR PRODUCED;
-- PLAYTESTED;
-- MULTIPLAYER TESTED.
-
-Never collapse these into one fake `done` state.
+This comparison means the next useful work is not adding more systems. It is binding the already-authored design to the actual world and actual presentation sources.
 
 ---
 
-# 11. Project-local quality telemetry / observations
+# 8. Region anti-repetition audit
 
-No external analytics platform is required.
-During development/playtest, local debug/session summaries can measure:
+The twelve major regions now have different gameplay/story theses rather than palette-swapped Anchor incidents:
 
-## Travel/exploration
+- R01: grounded introduction and first relay discovery;
+- R02: continuous environmental trail / memory relay;
+- R03: vertical infrastructure and first continental network geometry proof;
+- R04: bounded restoration visibly helps ordinary people;
+- R05: a modern ecology/society successfully adapted after old regulation faded;
+- R06: retain useful infrastructure while severing remote authority into local stewardship;
+- R07: centralized optimization can sacrifice peripheral communities under scarcity;
+- R08: technically successful old-style stabilization can suppress valuable modern magical ecology;
+- R09: people can build redundant roads/signals/depots without restoring centralized authority;
+- R10: restoration works locally, then remote coupling creates a fast cascade;
+- R11: the same success creates a delayed consequence far away and far below;
+- R12: the previous regional truths are physically reconciled at the over-coupled Central Anchor.
 
-- minutes between meaningful decisions/interactions;
-- time spent only traveling;
-- POIs visited per hour;
-- route backtracking;
-- fast-travel frequency;
-- regions/routes players repeatedly avoid.
-
-## Combat
-
-- ordinary/elite/boss encounter duration;
-- damage/death cause distribution;
-- dodge/guard/perfect-guard usage;
-- poise break frequency;
-- healing-belt usage;
-- attacks that miss players visually but still hit, or visually hit but fail.
-
-## Progression/economy
-
-- EXP sources by category;
-- Gold income/sinks;
-- items immediately sold/discarded;
-- materials that accumulate with no use;
-- time to meaningful equipment improvement;
-- forge/merchant/crafting usage;
-- class-switch/respec frequency.
-
-## UX
-
-- inventory-full events;
-- time in inventory/menus;
-- abandoned contracts;
-- missed tutorial concepts;
-- repeated failed interaction attempts;
-- accidental key conflicts.
-
-## Technical
-
-- server tick time hotspots;
-- entity counts by region;
-- display/VFX counts;
-- chunk load spikes;
-- save/load failures;
-- duplicate reward attempts;
-- multiplayer state mismatches.
-
-Metrics inform diagnosis. They do not replace observation of actual feel.
+This is a strong anti-repetition foundation. Actual Azari placement must preserve it: if every region is laid out as hub → straight road → dungeon at far edge, the documents' variety will still be lost in play.
 
 ---
 
-# 12. Whole-game content-density rules
+# 9. Player-facing development-language audit
 
-Avoid both empty-world and icon-map extremes.
+Production documents may use internal identifiers, gates, status labels and test terminology.
 
-Each region should intentionally mix:
+The game may not.
 
-- calm traversal;
-- visual destination;
-- spontaneous ecology;
-- meaningful optional detour;
-- authored quest/discovery;
-- dangerous encounter;
-- settlement/service recovery;
-- dungeon/major challenge.
-
-Do not require equal density everywhere.
-
-A mountain ridge, desert, ocean or haunted ruin may use emptiness intentionally, but the emptiness must create:
-
-- anticipation;
-- scale;
-- navigation choice;
-- spectacle;
-- danger;
-- resource opportunity;
-- destination visibility.
-
-If it creates none of these, it is dead travel.
-
----
-
-# 13. Avoiding region formula fatigue
-
-The new regional-package contract is a coverage checklist, **not** a mandate that every region contains the same content count.
-
-Avoid:
+Forbidden player-facing examples include:
 
 ```text
-1 town
-3 quests
-4 common mobs
-1 elite
-1 field boss
-1 dungeon
-repeat x12
+P0 / P1
+alpha / beta
+prototype / placeholder / temporary
+TODO / debug / developer
+asset intake / license / hash
+internal quest-state IDs
+acceptance-test labels
+milestone names
 ```
 
-Instead deliberately vary region structure.
+Missing assets/localization are build/content failures. They are never explained to the player with development text.
 
-Examples:
-
-- R03 can center vertical route mastery and a mining town;
-- R04 can feel like an expedition with one strong refuge and dangerous long-distance ice travel;
-- R06 can use river/boardwalk movement and partially flooded locations;
-- R07 can make visible giant threats and oasis/caravan routes more important than dense POI count;
-- R11 can be layered maritime progression with ports/islands/reefs/abyss;
-- R12 can intentionally reduce ordinary services and focus on extreme anomaly/exploration pressure.
-
-The player should recognize the shared game's rules but not predict the exact region template.
+This rule applies to UI, quests, dialogue, tooltips, item descriptions, loading text, tutorials and system messages.
 
 ---
 
-# 14. Explicitly acceptable omissions
+# 10. Final pre-bootstrap acceptance gate
 
-A complete game does **not** need every common RPG feature.
+Do not begin gameplay source bootstrap until the remaining blockers are explicitly closed or scoped to a technically unavoidable bootstrap-only tooling choice.
 
-The following are optional unless later playtest proves they strengthen the core:
+Required pre-code exit condition:
 
-- romance system;
-- permanent AI party companions;
-- giant settlement-building system;
-- farming simulator;
-- survival hunger/thirst;
-- durability/repair grind;
-- daily/weekly quests;
-- battle pass/live-service progression;
-- prestige/infinite Lv treadmill;
-- procedural random dungeons;
-- dozens of reputation bars;
-- universal loot salvage currency;
-- mandatory NG+;
-- PvP.
+```text
+all active player-facing rules have one current authority
+no unresolved gameplay-affecting TBD / decide-later option
+all gated visible content has an accepted external source direction/binding
+Azari major content has spatial coordinates + route/sightline/travel targets
+R11 aquatic action compatibility is bound
+accessibility / input / audio global contracts are closed
+stale conflicting design text is removed or explicitly historical
+```
 
-Absence is better than a shallow disconnected version.
+After source exists, implementation still proceeds iteratively. A document cannot prove combat feel, UI readability, traversal comfort, performance or multiplayer correctness.
 
----
+Verification state for this audit:
 
-# 15. Revised planning order after this audit
-
-The previous queue was too region-forward relative to the missing narrative/world-density foundation.
-
-Recommended order now:
-
-## A. World narrative spine + player identity
-
-Create a concise but production-usable document covering:
-
-- player identity model;
-- opening premise;
-- main-world conflict/mystery;
-- act progression;
-- core recurring cast/factions;
-- how major regions feed the central arc;
-- climax/ending/postgame state.
-
-Do this **before** fully authoring R04–R12 so later regions do not become disconnected content islands.
-
-## B. World density / POI / traversal pacing contract
-
-After/alongside actual Azari import inspection:
-
-- landmark strategy;
-- travel-time bands;
-- POI roles;
-- density measurement;
-- calm-space rules;
-- mount/fast-travel interaction;
-- route readability.
-
-## C. Finish R03 using the new regional package contract
-
-R03 remains the next implementation-ready regional package, but now it must include its narrative/social/POI layer, not only enemies/resources/dungeon.
-
-The already identified correction remains sound:
-
-- do not force Basalt Wyvern into R03 merely because a model exists;
-- keep basalt/volcanic identity for a region where it visually/ecologically fits better;
-- choose R03 field/dungeon boss only after external-source/model/animation review.
-
-## D. R04–R12 implementation packages
-
-Build them in manageable batches and reuse proven production schemas without copy-pasting region gameplay.
-
-## E. Global audio/music + accessibility/control contract
-
-Close before broad implementation makes retrofitting expensive.
-
-## F. Endgame/completion contract
-
-Lock before high-level regions and final bosses are implemented.
-
-## G. Project-specific QA / telemetry / save-state risk matrix
-
-Create before content implementation expands enough to create an unmanageable state space.
-
----
-
-# 16. User decisions that should not be guessed
-
-Most gaps can be solved through research and project logic. A small number materially affect the game's identity and deserve explicit user choice.
-
-The first important one is **player-avatar authorship**:
-
-- blank/custom adventurer;
-- lightly authored background;
-- strongly authored protagonist.
-
-A second later choice may be the tone/importance of major narrative choices:
-
-- mostly exploratory story with limited branch consequences;
-- moderate personal/regional choices;
-- heavily branching story with major mutually exclusive outcomes.
-
-Do not ask these repeatedly. Once locked, record them in the master narrative canon.
-
----
-
-# 17. Audit conclusion
-
-The project is **not under-designed in mechanics**.
-
-Its current weakness is the opposite:
-
-> reusable systems are approaching production readiness faster than the whole world has acquired authored meaning, density and closure.
-
-The next improvement in quality will not come from inventing another progression menu.
-
-It will come from:
-
-- giving the continent a narrative reason to exist;
-- giving regions recurring people, local problems and consequences;
-- measuring actual travel/content rhythm;
-- completing later-region packages with the same depth as R01/R02;
-- locking endgame/ending;
-- closing final presentation/audio/accessibility gaps;
-- then validating all of it through real Minecraft play rather than document confidence.
-
-The project should therefore preserve its strong system canon while shifting planning effort toward **world meaning + content density + completion criteria** before broad source implementation.
+```text
+DESIGN/CANON REVIEWED: YES
+EXTERNAL PRODUCTION/BALANCE REFERENCES REVIEWED: YES
+CODE REVIEWED: N/A — gameplay source does not exist
+TESTED: NO
+BUILD VERIFIED: NO
+JAR PRODUCED: NO
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
+```
