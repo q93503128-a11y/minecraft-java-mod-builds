@@ -49,7 +49,7 @@ public final class FishingSessionManager {
     public static void initialize() {
         UseItemCallback.EVENT.register((player, level, hand) -> {
             if (!player.getItemInHand(hand).is(Items.FISHING_ROD)) return InteractionResult.PASS;
-            if (level.isClientSide()) return InteractionResult.SUCCESS;
+            if (level.isClientSide()) return InteractionResult.CONSUME;
             if (!(player instanceof ServerPlayer serverPlayer)) return InteractionResult.PASS;
 
             FishingSession session = SESSIONS.get(serverPlayer.getUUID());
@@ -59,7 +59,7 @@ public final class FishingSessionManager {
                     sendIdle(serverPlayer, "어획 가방이 가득 찼습니다. B에서 판매해 주세요.");
                     return InteractionResult.SUCCESS;
                 }
-                CAST_CHARGES.put(serverPlayer.getUUID(), new CastCharge(level.getGameTime(), hand));
+                CAST_CHARGES.putIfAbsent(serverPlayer.getUUID(), new CastCharge(level.getGameTime(), hand));
                 return InteractionResult.SUCCESS;
             }
 
