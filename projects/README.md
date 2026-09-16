@@ -4,6 +4,11 @@
 
 ## 활성 프로젝트
 
+- [`moba-arena`](./moba-arena/) — 외부 코드·맵·UI·아트 중심으로 조립하는 Minecraft MOBA
+  - 상태: `DESIGN CANON + EXTERNAL SOURCE AUDIT / NO SOURCE BOOTSTRAP YET`
+  - 정본 시작점: [`moba-arena/PROJECT.md`](./moba-arena/PROJECT.md), [`moba-arena/GAME_DESIGN.md`](./moba-arena/GAME_DESIGN.md)
+  - 핵심 원칙: 1~5명 대 1~5명 모든 조합 허용, 인원수에 따른 맵 변경 금지, 외부 맵 선택식, 플레이어 봇 초기 범위 제외, 미니언/중립몹/구조 AI는 외부 구현 우선, UI·디자인·모델·애니메이션·VFX·사운드 자체 제작 금지, 핵심 코드도 외부 dependency/port 기반
+
 - [`openworld-rpg`](./openworld-rpg/) — 최종 명칭 미정, Minecraft 위에서 동작하는 저-바닐라 의존 대형 오픈월드 액션 RPG
   - 상태: `DESIGN CANON BUILDING / NO SOURCE BOOTSTRAP YET`
   - 정본 시작점: [`openworld-rpg/README.md`](./openworld-rpg/README.md)
