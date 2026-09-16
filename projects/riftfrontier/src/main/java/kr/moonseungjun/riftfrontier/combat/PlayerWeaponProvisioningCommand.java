@@ -2,6 +2,7 @@ package kr.moonseungjun.riftfrontier.combat;
 
 import com.mojang.brigadier.Command;
 import net.minecraft.commands.Commands;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -62,14 +63,30 @@ public final class PlayerWeaponProvisioningCommand {
             RiftfrontierCombatDataComponents.PLAYER_WEAPON_LOADOUT.value(),
             new PlayerWeaponLoadoutComponent(familyId.toString(), moduleId.map(Object::toString))
         );
+        Component loadoutName = Component.translatable(loadoutTranslationKey(familyId, moduleId));
+        stack.set(DataComponents.CUSTOM_NAME, loadoutName);
 
         boolean inserted = player.addItem(stack);
         if (!inserted) player.drop(stack, false);
 
-        String module = moduleId.map(id -> " + " + id).orElse("");
-        player.sendSystemMessage(Component.literal(
-            "Riftfrontier combat loadout issued: " + familyId + module + ". Hold the item in your main hand and bind the two Riftfrontier combat actions in Controls."
+        player.sendSystemMessage(Component.translatable(
+            "riftfrontier.combat.loadout_issued",
+            loadoutName
         ));
         return Command.SINGLE_SUCCESS;
+    }
+
+    private static String loadoutTranslationKey(
+        kr.moonseungjun.riftfrontier.content.ContentId familyId,
+        Optional<kr.moonseungjun.riftfrontier.content.ContentId> moduleId
+    ) {
+        boolean pivot = moduleId.filter(PlayerWeaponItemStackLoadoutResolver.RECOVERY_PIVOT::equals).isPresent();
+        if (PlayerWeaponItemStackLoadoutResolver.MOBILE_PRESSURE.equals(familyId)) {
+            return pivot ? "riftfrontier.combat.loadout.mobile_pivot" : "riftfrontier.combat.loadout.mobile";
+        }
+        if (PlayerWeaponItemStackLoadoutResolver.REACH_COMMITMENT.equals(familyId)) {
+            return pivot ? "riftfrontier.combat.loadout.reach_pivot" : "riftfrontier.combat.loadout.reach";
+        }
+        return "riftfrontier.combat.loadout.unknown";
     }
 }
