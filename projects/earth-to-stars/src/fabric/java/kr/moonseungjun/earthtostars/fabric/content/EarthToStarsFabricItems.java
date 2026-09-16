@@ -1,7 +1,7 @@
 package kr.moonseungjun.earthtostars.fabric.content;
 
 import kr.moonseungjun.earthtostars.fabric.EarthToStarsFabric;
-import net.fabricmc.fabric.api.itemgroup.v1.CreativeModeTabEvents;
+import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
