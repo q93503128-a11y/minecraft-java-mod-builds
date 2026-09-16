@@ -45,6 +45,47 @@ class M5UiLayoutMetricsTest {
     }
 
     @Test
+    void commonScaleFourDesktopCanvasUsesCompactProductionLayoutInsteadOfBlankingUi() {
+        int width = 420;
+        int height = 236;
+
+        assertTrue(UiLayoutMetrics.supportsBattleHud(width, height));
+        UiLayoutMetrics.BattleHudLayout battle = UiLayoutMetrics.battleHud(width, height);
+        List<UiLayoutMetrics.Rect> battleRegions = List.of(
+                battle.turnRail(), battle.enemySummary(), battle.partyStatus(),
+                battle.commandStrip(), battle.reservedWorldViewport());
+        assertTrue(battleRegions.stream().allMatch(rect -> rect.inside(width, height)));
+        assertFalse(battle.partyStatus().intersects(battle.commandStrip()));
+        assertFalse(battle.reservedWorldViewport().intersects(battle.turnRail()));
+        assertFalse(battle.reservedWorldViewport().intersects(battle.enemySummary()));
+        assertFalse(battle.reservedWorldViewport().intersects(battle.partyStatus()));
+        assertFalse(battle.reservedWorldViewport().intersects(battle.commandStrip()));
+        assertTrue(battle.reservedWorldViewport().width() >= 300);
+        assertTrue(battle.reservedWorldViewport().height() >= 60);
+
+        UiLayoutMetrics.PartyGridLayout partyGrid = UiLayoutMetrics.partyGrid(battle.partyStatus(), 4);
+        assertTrue(partyGrid.compact());
+        assertEquals(2, partyGrid.columns());
+        assertEquals(2, partyGrid.rows());
+        assertTrue(partyGrid.cellWidth() >= 100);
+        assertTrue(partyGrid.cellHeight() >= 34);
+
+        assertTrue(UiLayoutMetrics.supportsPartyScreen(width, height));
+        UiLayoutMetrics.PartyFormationLayout party = UiLayoutMetrics.partyFormation(width, height);
+        List<UiLayoutMetrics.Rect> partyRegions = List.of(
+                party.root(), party.header(), party.tabs(), party.roster(),
+                party.activeParty(), party.selectedDetail(), party.footer());
+        assertTrue(partyRegions.stream().allMatch(rect -> rect.inside(width, height)));
+        assertFalse(party.roster().intersects(party.activeParty()));
+        assertFalse(party.activeParty().intersects(party.selectedDetail()));
+        assertFalse(party.roster().intersects(party.selectedDetail()));
+        assertTrue(party.roster().width() >= 128);
+        assertTrue(party.activeParty().width() >= 92);
+        assertTrue(party.selectedDetail().width() >= 138);
+        assertTrue(party.roster().height() >= 120);
+    }
+
+    @Test
     void normalCanvasKeepsFourMemberPartyOnOneRow() {
         UiLayoutMetrics.BattleHudLayout layout = UiLayoutMetrics.battleHud(640, 360);
         UiLayoutMetrics.PartyGridLayout party = UiLayoutMetrics.partyGrid(layout.partyStatus(), 4);
@@ -57,6 +98,7 @@ class M5UiLayoutMetricsTest {
     @Test
     void targetChooserReusesCommandStripInsteadOfCreatingCenterModal() {
         for (int[] size : List.of(
+                new int[]{420, 236},
                 new int[]{480, 270},
                 new int[]{640, 360},
                 new int[]{1280, 720},
