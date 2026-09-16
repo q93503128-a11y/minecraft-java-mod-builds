@@ -15,12 +15,9 @@ import java.util.Set;
 /**
  * Production entry point for TURNBOUND: RE's external authored-world base.
  *
- * <p>Production no longer generates a TURNBOUND-authored replacement Hub/Region on first login. The selected
- * external world must be installed separately and bound through {@link DrehmalExternalWorldBinding}. Once its
- * server-owned anchors exist, per-player Hub discovery remains the onboarding marker.</p>
- *
- * <p>The old generated world builders remain operator-only functional harnesses. They must never silently replace
- * a missing external production world.</p>
+ * <p>The recommended Prism distribution downloads the pinned official external world on first launch and writes a
+ * verified profile marker. That trusted pack world self-binds on the first player login. Manual external-world
+ * installs remain operator-confirmed and never cause arbitrary saves to be rewritten as TURNBOUND worlds.</p>
  */
 public final class AuthoredWorldBootstrapService {
     private static final float HUB_FACING_YAW = -90.0F;
@@ -62,10 +59,29 @@ public final class AuthoredWorldBootstrapService {
 
         FastTravelSavedData saved = FastTravelSavedData.get(server);
         if (needsWorldInstall(saved.anchorsSnapshot())) {
-            TurnboundRe.LOGGER.warn(
-                    "TURNBOUND production world is not bound. Install the official external world and bind it; "
-                            + "the mod will not generate replacement Hub/Region geometry automatically.");
-            return;
+            if (!DrehmalExternalWorldBinding.hasTrustedPackMarker(server)) {
+                TurnboundRe.LOGGER.warn(
+                        "TURNBOUND production world is not bound. Use the TURNBOUND Prism distribution, or install "
+                                + "the official external world manually and bind it near New Drabyel.");
+                return;
+            }
+
+            try {
+                DrehmalExternalWorldBinding.Result result =
+                        DrehmalExternalWorldBinding.installTrustedPackWorld(server, registry);
+                TurnboundRe.LOGGER.info(
+                        "TURNBOUND verified pack world bound automatically: Hub {} / Region {}",
+                        result.hubArrival(),
+                        result.regionArrival());
+            } catch (RuntimeException exception) {
+                TurnboundRe.LOGGER.error("TURNBOUND verified pack world could not be bound", exception);
+                return;
+            }
+
+            if (needsWorldInstall(saved.anchorsSnapshot())) {
+                TurnboundRe.LOGGER.error("TURNBOUND pack binding completed without both canonical fast-travel anchors");
+                return;
+            }
         }
 
         if (needsInitialHubArrival(saved.discovered(player.getUUID()))) {
@@ -73,7 +89,7 @@ public final class AuthoredWorldBootstrapService {
         }
     }
 
-    /** Kept as the stable contract name: true now means external-world binding is missing, not that blocks should be built. */
+    /** True when the server still lacks one of the two canonical external-world waypoints. */
     static boolean needsWorldInstall(Map<String, FastTravelSavedData.AnchorLocation> anchors) {
         if (anchors == null) return true;
         return !anchors.containsKey(WorldFastTravelPrototype.HUB_LOCATOR)

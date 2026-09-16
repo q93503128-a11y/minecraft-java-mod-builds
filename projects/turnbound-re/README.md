@@ -2,7 +2,7 @@
 
 Minecraft Java에서 동작하는 파티 기반 턴제 RPG 프로젝트의 새 정본이다.
 
-> **상태: FIRST INTEGRATED PLAYTEST / M5-M6 AUTOMATED GATES PASS / VISUAL + EXTERNAL-WORLD GATES PENDING**
+> **상태: FIRST INTEGRATED PLAYTEST / M5-M6 AUTOMATED GATES PASS / PRISM DISTRIBUTION WIRED / EXTERNAL-WORLD MIGRATION PENDING**
 
 `projects/turnbound/`의 구 TURNBOUND는 폐기 프로젝트이며 TURNBOUND: RE의 설계 근거로 사용하지 않는다. 이름이 비슷하더라도 자동 승계되는 규칙은 없다.
 
@@ -34,26 +34,40 @@ Minecraft Java에서 동작하는 파티 기반 턴제 RPG 프로젝트의 새 �
 - `docs/15_READINESS_AUDIT.md` — 지금 바로 개발 가능한 범위와 아직 콘텐츠 완성 전인 범위
 - `docs/30_EXTERNAL_WORLD_BASE.md` — production 외부 월드 정본
 - `docs/34_DREHMAL_26_2_MIGRATION_AUDIT.md` — APOTHEOSIS 26.2 migration/playtest 절차
+- `packaging/README.md` — TURNBOUND Prism 배포/외부 월드 bootstrap 계약
 
 ## 핵심 한 줄
 Minecraft의 탐험·채집·제작을 버리지 않으면서, 보이는 조우를 통해 4인 파티가 적의 의도를 읽고 약점/Poise를 공략해 `EXPOSED` 창을 만드는 빠른 턴제 전투를 반복한다.
 
-## 첫 통합 플레이테스트 월드 설정
+## 권장 설치 — TURNBOUND Prism 패키지
 
-**평지나 새 바닐라 월드를 만들지 않는다.** TURNBOUND: RE의 production 월드는 TURNBOUND가 생성하는 지형이 아니라 외부 authored world인 **Drehmal: APOTHEOSIS v2.2.2f**다.
+**평지나 새 바닐라 월드를 만들지 않는다.** TURNBOUND: RE의 production 월드는 외부 authored world인 **Drehmal: APOTHEOSIS v2.2.2f**다.
 
-현재 TURNBOUND JAR은 Drehmal 월드 자체를 포함하거나 재배포하지 않는다. 따라서 JAR만 넣고 새 월드를 만들면 일반 Minecraft 지형이 나오는 것이 정상이며, 그 save는 production 플레이테스트 월드가 아니다.
+이제 플레이테스트의 권장 전달물은 단독 JAR이 아니라 CI가 생성하는 **`TURNBOUND_RE_Prism.zip`**이다.
 
-현재 정본 절차:
-1. 공식 `Drehmal: APOTHEOSIS v2.2.2f` 배포본을 별도로 준비한다.
-2. 원본은 보존하고 **테스트 복사본**만 Minecraft Java 26.2에서 연다.
-3. 최초 migration/load가 crash, chunk regeneration, 핵심 landmark 유실 없이 성공하는지 확인한다.
-4. New Drabyel 부근 `502 67 1801`, Stasis Facility 부근 `778 31 668`을 직접 확인한다.
-5. operator 환경에서 `/turnbound_re_world_slice validate`를 실행한다.
-6. New Drabyel configured seed에서 192 blocks 이내에 선 뒤 `/turnbound_re_world_slice bind_drehmal`을 실행한다.
-7. 그 뒤 Hub → Region → 생활 → patrol → 성장/장비 → rift elite → 귀환 → save/reload 순서로 첫 통합 사이클을 검증한다.
+1. Prism Launcher에서 `Add Instance → Import`로 `TURNBOUND_RE_Prism.zip`을 그대로 가져온다.
+2. 인스턴스를 실행한다.
+3. 첫 실행의 pre-launch bootstrap이 Drehmal Team 공식 GitHub release에서 pinned v2.2.2f map shard 3개와 resource pack을 직접 내려받는다.
+4. 세 shard를 전용 save로 합쳐 풀고, 공식 manifest의 directory SHA-256과 일치할 때만 `.turnbound_re_profile` marker를 기록한다.
+5. resource pack을 인스턴스에 설치/활성화하고 GUI scale을 읽기 쉬운 범위로 맞춘다.
+6. Minecraft가 시작되면 `TURNBOUND RE - Drehmal APOTHEOSIS 2.2.2f` 월드를 연다.
+7. 검증된 pack marker가 있는 월드는 첫 player login에서 TURNBOUND anchor를 자동 바인딩하고 Hub로 이동한다. 수동 `/bind_drehmal` 단계는 필요 없다.
 
-APOTHEOSIS 공개 본편은 1.20.1-era 월드이므로 **26.2 migration은 아직 PLAYTESTED로 확정되지 않았다.** 실제 migration 결과가 나오기 전에는 resource/farming/fishing/patrol/elite 후보 좌표를 임의로 활성화하지 않는다.
+외부 월드와 resource pack 원본은 TURNBOUND 저장소나 Prism ZIP에 vendoring하지 않는다. 배포 허가를 추측하지 않고, 사용자의 PC가 공식 release에서 직접 받는다. 공식 manifest 기준 map은 약 4 GB compressed / 5.1 GB uncompressed이므로 첫 설치에는 최소 12 GiB 여유 공간을 권장한다.
+
+현재 bootstrap은 실제 플레이테스트 환경에 맞춰 **Windows-first**다. Java 25는 Prism에서 자동 다운로드/선택할 수 있다.
+
+APOTHEOSIS 공개 본편은 1.20.1-era 월드이므로 **26.2 migration은 아직 PLAYTESTED로 확정되지 않았다.** 패키징과 자동 바인딩이 성공해도 실제 월드 migration 결과까지 성공했다고 간주하지 않는다.
+
+### 수동 외부 월드 fallback
+Prism bootstrap이 아닌 수동 설치를 사용할 때만 기존 안전 절차를 유지한다.
+
+1. 공식 Drehmal v2.2.2f 월드 복사본을 Java 26.2에서 연다.
+2. New Drabyel `502 67 1801`, Stasis Facility `778 31 668`의 landmark/chunk가 보존됐는지 확인한다.
+3. `/turnbound_re_world_slice validate`
+4. New Drabyel configured seed 192 blocks 이내에서 `/turnbound_re_world_slice bind_drehmal`
+
+수동 경로는 임의 save 오바인딩을 막기 위해 의도적으로 operator confirmation을 유지한다.
 
 ## 현재 구현 경계
 M0~M4 전투 코어·네트워크·조우·대표 캐릭터·성장/보상 기반은 구현 정본을 유지한다. M5/M6의 주요 자동 계약과 JAR 검증은 통과했지만, 실제 Minecraft 화면과 외부 월드에서의 첫 통합 실플레이가 현재 최우선 gate다.

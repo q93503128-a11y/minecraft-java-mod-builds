@@ -70,11 +70,40 @@ jobs:
           } 2>&1 | tee ci-output/jar-verify.log
           sha256sum "$JAR" | tee ci-output/turnbound-re.sha256
           cp "$JAR" ci-output/
+      - name: Package Prism instance
+        id: pack
+        if: steps.build.outcome == 'success' && steps.verify.outcome == 'success'
+        run: |
+          set -euo pipefail
+          JAR=$(find build/libs -maxdepth 1 -type f -name 'turnbound_re-*.jar' ! -name '*-sources.jar' ! -name '*-javadoc.jar' -printf '%s %p\n' | sort -nr | head -n1 | cut -d' ' -f2-)
+          STAGE=ci-output/prism-instance
+          rm -rf "$STAGE"
+          mkdir -p "$STAGE"
+          cp -R packaging/prism/. "$STAGE/"
+          mkdir -p "$STAGE/.minecraft/mods"
+          cp "$JAR" "$STAGE/.minecraft/mods/"
+
+          python -m json.tool "$STAGE/mmc-pack.json" >/dev/null
+          grep -F 'net.neoforged' "$STAGE/mmc-pack.json"
+          grep -F '26.2.0.38-beta' "$STAGE/mmc-pack.json"
+          grep -F '$INST_MC_DIR' "$STAGE/instance.cfg"
+          pwsh -NoProfile -File "$STAGE/.minecraft/turnbound-bootstrap.ps1" -ValidateOnly
+
+          (
+            cd "$STAGE"
+            zip -qr ../TURNBOUND_RE_Prism.zip .
+          )
+          unzip -t ci-output/TURNBOUND_RE_Prism.zip | tee ci-output/prism-package-verify.log
+          unzip -Z1 ci-output/TURNBOUND_RE_Prism.zip | grep '^\.minecraft/mods/turnbound_re-.*\.jar$'
+          unzip -Z1 ci-output/TURNBOUND_RE_Prism.zip | grep '^\.minecraft/turnbound-bootstrap\.ps1$'
+          unzip -Z1 ci-output/TURNBOUND_RE_Prism.zip | grep '^instance\.cfg$'
+          unzip -Z1 ci-output/TURNBOUND_RE_Prism.zip | grep '^mmc-pack\.json$'
       - name: Write build report
         if: always()
         env:
           BUILD_OUTCOME: ${{ steps.build.outcome }}
           VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+          PACK_OUTCOME: ${{ steps.pack.outcome }}
         run: |
           VERSION=$(grep '^mod_version=' gradle.properties | cut -d= -f2-)
           MC=$(grep '^minecraft_version=' gradle.properties | cut -d= -f2-)
@@ -92,13 +121,14 @@ jobs:
           - Workflow run: $GITHUB_RUN_ID
           - Clean build/unit tests: $BUILD_OUTCOME
           - JAR verify: $VERIFY_OUTCOME
+          - Prism instance package: ${PACK_OUTCOME:-not-run}
           - JAR: ${JAR:-NOT PRODUCED}
           - SHA-256: ${HASH:-NOT PRODUCED}
-          - Datagen: NOT RUN — M0 has no required generated production data yet.
-          - GameTest: NOT RUN — no GameTest contract is implemented in M0.
-          - Dedicated server smoke test: NOT RUN — runtime smoke task not yet established.
-          - Client smoke test: NOT RUN — headless CI presentation/runtime gate not yet established.
-          - Validation scope: Gradle dependency resolution, clean build, JUnit contracts, ZIP integrity, metadata, compiled class, asset/data namespace, source/development-path exclusion, duplicate entries, SHA-256.
+          - Datagen: NOT RUN — no new generated production data required by this packaging change.
+          - GameTest: NOT RUN — external world migration remains a real-client playtest gate.
+          - Dedicated server smoke test: NOT RUN.
+          - Client smoke test: NOT RUN.
+          - Validation scope: Gradle dependency resolution, clean build, JUnit contracts, JAR integrity, Prism metadata JSON, bootstrap script syntax/manifest, packaged instance ZIP integrity.
           EOF
       - name: Upload logs
         if: always()
@@ -108,12 +138,13 @@ jobs:
           path: projects/turnbound-re/ci-output/
           retention-days: 14
       - name: Upload deliverables
-        if: steps.build.outcome == 'success' && steps.verify.outcome == 'success'
+        if: steps.build.outcome == 'success' && steps.verify.outcome == 'success' && steps.pack.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: turnbound-re-0.1.0-alpha.1-deliverables
           path: |
             projects/turnbound-re/ci-output/turnbound_re-*.jar
             projects/turnbound-re/ci-output/turnbound-re.sha256
+            projects/turnbound-re/ci-output/TURNBOUND_RE_Prism.zip
             projects/turnbound-re/ci-output/BUILD_AND_RUNTIME_REPORT.md
           retention-days: 14

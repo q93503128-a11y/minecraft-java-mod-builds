@@ -9,8 +9,12 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Interaction;
 import net.minecraft.world.level.storage.LevelData;
+import net.minecraft.world.level.storage.LevelResource;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -24,6 +28,7 @@ import java.util.UUID;
  */
 public final class DrehmalExternalWorldBinding {
     public static final String PROFILE_ID = "turnbound_re:drehmal_apotheosis_2_2_2f";
+    public static final String PACK_PROFILE_MARKER_FILE = ".turnbound_re_profile";
     public static final String EXTERNAL_WORLD_ENTITY_TAG = "turnbound_re:external_world_anchor";
     private static final double SETUP_CONFIRM_DISTANCE_SQR = 192.0D * 192.0D;
     private static final float HUB_FACING_YAW = 180.0F;
@@ -61,8 +66,8 @@ public final class DrehmalExternalWorldBinding {
     }
 
     /**
-     * Operator-confirmed binding. This deliberately does not auto-detect arbitrary saves. To reduce accidental
-     * binding of an unrelated Overworld, the operator must also stand near the configured external Hub landmark.
+     * Operator-confirmed binding for manually installed worlds. The operator must stand near the configured
+     * New Drabyel landmark so an unrelated save cannot be bound by accident.
      */
     public static Result install(ServerPlayer operator, DefinitionRegistry definitions) {
         if (operator == null || definitions == null) throw new IllegalArgumentException("operator/definitions required");
@@ -75,13 +80,8 @@ public final class DrehmalExternalWorldBinding {
             throw new IllegalStateException("Drehmal binding must be run from " + profile.dimension());
         }
 
-        ExternalWorldProfileDefinition.Anchor hubBinding = enabledAnchor(
-                profile, ExternalWorldProfileDefinition.FAST_TRAVEL, WorldFastTravelPrototype.HUB_LOCATOR);
-        ExternalWorldProfileDefinition.Anchor regionBinding = enabledAnchor(
-                profile, ExternalWorldProfileDefinition.FAST_TRAVEL, WorldFastTravelPrototype.REGION_LOCATOR);
-        BlockPos hubArrival = position(hubBinding);
-        BlockPos regionArrival = position(regionBinding);
-
+        BlockPos hubArrival = position(enabledAnchor(
+                profile, ExternalWorldProfileDefinition.FAST_TRAVEL, WorldFastTravelPrototype.HUB_LOCATOR));
         if (operator.distanceToSqr(
                 hubArrival.getX() + 0.5D,
                 hubArrival.getY() + 0.5D,
@@ -92,6 +92,48 @@ public final class DrehmalExternalWorldBinding {
 
         MinecraftServer server = operator.level().getServer();
         if (server == null) throw new IllegalStateException("server unavailable");
+        return installOnServer(server, definitions);
+    }
+
+    /**
+     * Zero-command binding for the TURNBOUND Prism distribution. The bootstrapper writes a tiny profile marker
+     * only after the pinned official Drehmal world passes its directory hash. Arbitrary saves remain fail-closed.
+     */
+    public static Result installTrustedPackWorld(MinecraftServer server, DefinitionRegistry definitions) {
+        if (server == null || definitions == null) throw new IllegalArgumentException("server/definitions required");
+        if (!hasTrustedPackMarker(server)) {
+            throw new IllegalStateException("TURNBOUND pack world marker is missing or does not match " + PROFILE_ID);
+        }
+        return installOnServer(server, definitions);
+    }
+
+    public static boolean hasTrustedPackMarker(MinecraftServer server) {
+        if (server == null) return false;
+        Path marker = server.getWorldPath(LevelResource.ROOT).resolve(PACK_PROFILE_MARKER_FILE);
+        try {
+            return Files.isRegularFile(marker)
+                    && markerMatches(Files.readString(marker, StandardCharsets.UTF_8));
+        } catch (IOException ignored) {
+            return false;
+        }
+    }
+
+    static boolean markerMatches(String markerText) {
+        return markerText != null && PROFILE_ID.equals(markerText.trim());
+    }
+
+    private static Result installOnServer(MinecraftServer server, DefinitionRegistry definitions) {
+        List<String> errors = validate(definitions);
+        if (!errors.isEmpty()) throw new IllegalStateException(String.join("; ", errors));
+
+        ExternalWorldProfileDefinition profile = definitions.externalWorldProfiles().get(PROFILE_ID);
+        ExternalWorldProfileDefinition.Anchor hubBinding = enabledAnchor(
+                profile, ExternalWorldProfileDefinition.FAST_TRAVEL, WorldFastTravelPrototype.HUB_LOCATOR);
+        ExternalWorldProfileDefinition.Anchor regionBinding = enabledAnchor(
+                profile, ExternalWorldProfileDefinition.FAST_TRAVEL, WorldFastTravelPrototype.REGION_LOCATOR);
+        BlockPos hubArrival = position(hubBinding);
+        BlockPos regionArrival = position(regionBinding);
+
         ServerLevel overworld = server.overworld();
         FastTravelSavedData saved = FastTravelSavedData.get(server);
         List<UUID> entityIds = new ArrayList<>();
@@ -116,8 +158,7 @@ public final class DrehmalExternalWorldBinding {
             entityIds.add(id);
         }
 
-        // Binding is server setup, not player progression. Do not mark the operator as having discovered the Hub.
-        // TURNBOUND's current loop begins at its Hub. This changes only respawn metadata, never Drehmal geometry.
+        // Binding is server setup, not player progression. Do not mark any player as having discovered the Hub.
         server.setRespawnData(LevelData.RespawnData.of(
                 overworld.dimension(), hubArrival, HUB_FACING_YAW, 0.0F));
 

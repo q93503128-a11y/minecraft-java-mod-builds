@@ -37,4 +37,15 @@ class M6ZeroCommandWorldBootstrapTest {
                 WorldFastTravelPrototype.HUB_LOCATOR,
                 WorldFastTravelPrototype.REGION_LOCATOR)));
     }
+
+    @Test
+    void trustedPackMarkerAcceptsOnlyThePinnedExternalWorldProfile() {
+        assertTrue(DrehmalExternalWorldBinding.markerMatches(
+                DrehmalExternalWorldBinding.PROFILE_ID));
+        assertTrue(DrehmalExternalWorldBinding.markerMatches(
+                "  " + DrehmalExternalWorldBinding.PROFILE_ID + "\r\n"));
+        assertFalse(DrehmalExternalWorldBinding.markerMatches(null));
+        assertFalse(DrehmalExternalWorldBinding.markerMatches(""));
+        assertFalse(DrehmalExternalWorldBinding.markerMatches("turnbound_re:some_other_world"));
+    }
 }
