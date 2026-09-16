@@ -10,8 +10,8 @@ class Region01FieldGuideTest {
     void keepsFirstSliceGuideSmallStableAndLocalizationDriven() {
         assertEquals("Riftfrontier Field Guide", Region01FieldGuideSpec.TITLE);
         assertEquals("Riftfrontier", Region01FieldGuideSpec.AUTHOR);
-        assertEquals(4, Region01FieldGuideSpec.PAGE_KEYS.size());
-        assertEquals(4, Region01FieldGuideSpec.PAGE_KEYS.stream().distinct().count());
+        assertEquals(5, Region01FieldGuideSpec.PAGE_KEYS.size());
+        assertEquals(5, Region01FieldGuideSpec.PAGE_KEYS.stream().distinct().count());
         assertTrue(Region01FieldGuideSpec.PAGE_KEYS.stream().allMatch(key -> key.startsWith("riftfrontier.guide.region_01.page.")));
     }
 }
