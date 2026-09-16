@@ -10,13 +10,13 @@ Priority remains a genuinely playable, polished Region 01 vertical slice. Do not
 
 ## Latest verified checkpoint
 
-Latest Riftfrontier code checkpoint is `6c29fedc5f68c2b6b08978ac3f4c3b1ecda2661f` (`riftfrontier: clarify salvage and relay interaction cues`). `Build Riftfrontier` workflow run `35057942270` completed **SUCCESS** on 2026-09-16.
+Latest Riftfrontier code checkpoint is `ed23ceb21dd2bb6f79f9723d2b1dfeffcf5d2b2f` (`riftfrontier: identify field combat loadouts`). `Build Riftfrontier` workflow run `35066807754` completed **SUCCESS** on 2026-09-16.
 
-That checkpoint keeps the authoritative extraction rules unchanged while making the connected Region 01 loop accurately explain them. Salvage guidance now states that extraction unlocks at 3 recovered salvage rather than implying early extraction is available, and relay-ready guidance tells the player to right-click the field lodestone while preserving the optional patrol-clear +1 salvage choice. EN/KO translations are present. The earlier actionbar distinction between `salvage incomplete`, `relay ready but patrol alive`, and `patrol cleared / +1 secured` remains intact.
+That checkpoint preserves the authoritative ItemStack loadout component and existing combat semantics while making the four field-play provisioning variants visibly distinguishable in inventory via localized custom names. `/riftfrontier weapon mobile`, `mobile pivot`, `reach`, and `reach pivot` now issue distinct EN/KO field-rig names, and the localized issuance message tells the player to hold the rig in the main hand and bind Weapon Action 1/2 under Riftfrontier Combat in Controls. No final key layout, weapon art, damage hierarchy, attack geometry, or server authority contract was changed.
 
-Verified CI deliverables artifact: `10431501449` (`riftfrontier-0.1.0-alpha.1-deliverables`), archive digest `sha256:ce7333761ff97433666af0ebe85056149d123f23b2c1a21d630b49529382cd49`. Logs artifact: `10430634635`.
+Verified CI deliverables artifact: `10434586882` (`riftfrontier-0.1.0-alpha.1-deliverables`), archive digest `sha256:c59b1f72e5dbc736f37fe388f47b945babfe5b0e78a20344541be52df5efb632`. Logs artifact: `10434881101`.
 
-Verification vocabulary for `6c29fedc...`:
+Verification vocabulary for `ed23ceb2...`:
 
 - `CODE REVIEWED`: YES
 - `TESTED`: YES
@@ -59,9 +59,9 @@ Human review must inspect player-relative scale, facing, ground alignment, UV/te
 - Core loop: `prepare -> deploy -> fight/recover -> extract -> hub/provision -> redeploy`.
 - Fresh-world commandless hub/bootstrap, extraction, failure/restart reconciliation, supply/storage/pressure and authoritative expedition persistence are settled.
 - Player combat has `mobile_pressure` / `reach_commitment`, `recovery_pivot`, authenticated move-id input, server-owned attack timing, ACTIVE-only damage and per-execution target dedupe.
-- Field provisioning remains `/riftfrontier weapon mobile`, `/riftfrontier weapon mobile pivot`, `/riftfrontier weapon reach`, `/riftfrontier weapon reach pivot`.
+- Field provisioning remains `/riftfrontier weapon mobile`, `/riftfrontier weapon mobile pivot`, `/riftfrontier weapon reach`, `/riftfrontier weapon reach pivot`. These now issue distinct localized custom names while retaining the same authoritative loadout data. Do not redo this identification/localization work unless a regression is demonstrated.
 - Zombie/Skeleton/Ravager remain behaviour/runtime proxies, not production creature art.
-- Live actionbar readability distinguishes `salvage incomplete`, `relay ready but patrol alive`, and `patrol cleared / +1 secured` from authoritative run + tracked threat state. Salvage/relay guidance now also states the actual 3-salvage unlock and field-lodestone right-click interaction. Do not rebuild this as a new custom HUD before final UI direction is approved.
+- Live actionbar readability distinguishes `salvage incomplete`, `relay ready but patrol alive`, and `patrol cleared / +1 secured` from authoritative run + tracked threat state. Salvage/relay guidance states the actual 3-salvage unlock and field-lodestone right-click interaction. Do not rebuild this as a new custom HUD before final UI direction is approved.
 - Do not reopen M0/M1/M2 authority, lifecycle, restart, ownership or persistence fences without a demonstrated regression.
 - Do not auto-tune provisional damage, hit geometry, boss attack timing/travel/impulse, particle density, salvage cue intensity, final control layout, cover geometry or threat staging without human field evidence.
 - Existing diagnostic particles/sounds, technical blocks, bossbar/actionbar, relay dressing, proxy labels, native swing and tuff arena are review aids, not final Riftfrontier presentation language.
