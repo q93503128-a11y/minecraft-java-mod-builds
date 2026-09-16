@@ -1,6 +1,7 @@
 package kr.moonseungjun.riftfrontier.expedition;
 
 import kr.moonseungjun.riftfrontier.persistence.RiftfrontierWorldData;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,6 +14,8 @@ import net.minecraft.server.level.ServerPlayer;
  * owned by the existing server services.</p>
  */
 public final class ExpeditionPlayerFeedback {
+    private static final BlockPos TECHNICAL_HUB = new BlockPos(0, 100, 0);
+
     private ExpeditionPlayerFeedback() {}
 
     public static void hubReady(ServerPlayer player) {
@@ -33,15 +36,26 @@ public final class ExpeditionPlayerFeedback {
     }
 
     /**
-     * Refreshes the field objective from existing authoritative run + encounter state.
-     * This owns no progress, combat or extraction state; it is only a temporary readable projection.
+     * Refreshes the connected-loop objective from existing authoritative state. In the field it projects salvage,
+     * threat and extraction state; back at the technical hub it projects the stored-salvage/supply decision needed
+     * for the next deployment. This owns no progression state and introduces no second lifecycle.
      */
-    public static void fieldStatus(ServerPlayer player) {
+    public static void currentStatus(ServerPlayer player) {
         ServerLevel level = (ServerLevel) player.level();
         RiftfrontierWorldData world = RiftfrontierWorldData.get(level);
         ExpeditionRun run = ExpeditionGameplayService.activeFor(player, world).orElse(null);
-        if (run == null
-            || run.status() != ExpeditionRun.Status.DEPLOYED
+        if (run == null) {
+            if (level == level.getServer().overworld() && player.blockPosition().distManhattan(TECHNICAL_HUB) <= 12) {
+                player.sendSystemMessage(Component.translatable(
+                    "riftfrontier.expedition.feedback.provisioned",
+                    world.expeditionSupply(),
+                    world.securedRegion01Salvage(),
+                    world.region01PreparationSupplyCost()
+                ), true);
+            }
+            return;
+        }
+        if (run.status() != ExpeditionRun.Status.DEPLOYED
             || !run.regionId().equals(ExpeditionGameplayService.REGION_ID)) {
             return;
         }
@@ -72,6 +86,10 @@ public final class ExpeditionPlayerFeedback {
             3,
             threats
         ), true);
+    }
+
+    public static void fieldStatus(ServerPlayer player) {
+        currentStatus(player);
     }
 
     public static void salvageUpdated(ServerPlayer player) {
