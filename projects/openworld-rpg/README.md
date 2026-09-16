@@ -8,7 +8,7 @@ Large Minecraft Java open-world action RPG project with very low dependence on v
 
 No implementation exists yet. Do not treat the project as buildable until M0 explicitly creates the loader/toolchain/source layout.
 
-The major gameplay systems, Lv 1–80 progression, class/combat framework, equipment/economy, world-state model, main story spine, mounts, field systems and R01–R12 regional packages are already specified. **R01 now also has concrete named-NPC, quest-condition, scene/dialogue, reconnect/reward-state and Act-I handoff authoring locked in `R01_VERTICAL_SLICE.md`.** The remaining pre-bootstrap work is primarily exact external-asset binding, equivalent concrete quest/NPC authoring for later regions, Azari spatial placement/travel-time validation, global audio/accessibility/input closure and a final design-closure audit.
+The major gameplay systems, Lv 1–80 progression, class/combat framework, equipment/economy, world-state model, main story spine, mounts, field systems and R01–R12 regional packages are already specified. **R01 and R02 now both have concrete named-NPC, exact quest-condition, scene/dialogue, reconnect/reward-state and main-story handoff authoring locked.** The remaining pre-bootstrap work is primarily exact external-asset binding, equivalent concrete quest/NPC authoring for R03–R12, Azari spatial placement/travel-time validation, global audio/accessibility/input closure and a final design-closure audit.
 
 ## Canon priority / stale-document rule
 
@@ -18,7 +18,7 @@ Use the following order whenever two statements differ:
 2. [`GAME_DESIGN.md`](./GAME_DESIGN.md) — gameplay/design master canon;
 3. [`PROJECT.md`](./PROJECT.md) — technical/build/project contracts;
 4. later explicit refinement documents referenced by the master canon, including [`REGION_CROSS_AUDIT.md`](./REGION_CROSS_AUDIT.md), [`WORLD_STORY_CANON.md`](./WORLD_STORY_CANON.md) and [`FISHING_COLLECTION_HOUSING_MARKET.md`](./FISHING_COLLECTION_HOUSING_MARKET.md);
-5. subordinate regional/system documents;
+5. subordinate regional/system/content documents;
 6. historical audits, old completion estimates and previous conversation summaries.
 
 Do **not** merge conflicting historical rules. If an older subordinate document still contains a superseded rule, the later/master rule replaces it entirely for implementation. Git history is the archive; stale rules are not alternative design options.
@@ -27,6 +27,7 @@ Known examples of supersession:
 
 - housing is **one residence at a time** with the later trade-up/resale rules; older multi-property wording is obsolete;
 - later `REGION_CROSS_AUDIT.md` anti-repetition refinements override older regional-package encounter/discovery grammar where explicitly changed;
+- `R02_CONTENT_BIBLE.md` closes R02 narrative/content-authoring blanks and replaces older working-title/open-quest wording without reopening the region's already-locked system/combat contracts;
 - older completion percentages and `next work` sections are historical snapshots, not current scheduling authority.
 
 When touching a stale section during future work, update or remove the obsolete wording instead of preserving contradictory variants.
@@ -39,7 +40,8 @@ When touching a stale section during future work, update or remove the obsolete 
 4. [`WORLD_STORY_CANON.md`](./WORLD_STORY_CANON.md) — protagonist/story/faction/ending spine
 5. [`REGION_CROSS_AUDIT.md`](./REGION_CROSS_AUDIT.md) — R01–R12 anti-repetition and regional-identity contract
 6. [`R01_VERTICAL_SLICE.md`](./R01_VERTICAL_SLICE.md) — Alderford opening, named R01 cast, exact first-session quest/scene/state handoff and first dungeon
-7. `R02_IMPLEMENTATION_PACKAGE.md` through `R12_IMPLEMENTATION_PACKAGE.md` — later regional implementation packages
+7. [`R02_IMPLEMENTATION_PACKAGE.md`](./R02_IMPLEMENTATION_PACKAGE.md) + [`R02_CONTENT_BIBLE.md`](./R02_CONTENT_BIBLE.md) — Rillcross region systems/encounters plus exact R02 quest/NPC/scene/evidence closure
+8. `R03_IMPLEMENTATION_PACKAGE.md` through `R12_IMPLEMENTATION_PACKAGE.md` — later regional implementation packages awaiting equivalent content-authoring closure
 
 ## Design-closure and player-facing-content rule
 
@@ -84,10 +86,10 @@ Player-facing text and presentation must never expose the development process. D
 
 ## Current pre-bootstrap design queue
 
-1. **Exact external-asset intake expansion** — unresolved core models, bosses, structures, VFX, sound and R12 final guardian; record exact source/license/hash/animation bindings where applicable. R01 still cannot enter visible-source implementation until its exact asset bindings pass the gate in `R01_VERTICAL_SLICE.md` / `R01_ASSET_INTAKE.md`.
-2. **R02–R12 concrete quest / recurring-NPC scene packages** — use the R01 closure level as the minimum bar: named participants, exact objectives/conditions, scene/dialogue beats, state/rejoin/failure rules, rewards, visible aftermath and next-region/story handoff. Do not merely duplicate R01's quest grammar across regions.
-3. **Azari spatial closure** — inspect the actual terrain and lock POI/road/settlement/dungeon/boss placement using coordinates, sightlines and travel-time/content-density targets. R01's required coordinate/volume list is now explicit in `R01_VERTICAL_SLICE.md`.
+1. **Exact external-asset intake expansion** — unresolved core models, bosses, structures, VFX, sound and R12 final guardian; record exact source/license/hash/animation bindings where applicable. R01/R02 still cannot enter affected visible-source implementation until their explicit pre-code asset gates close.
+2. **R03–R12 concrete quest / recurring-NPC scene packages** — use the R01/R02 closure level as the minimum bar: named participants, exact objectives/conditions, scene/dialogue beats, state/rejoin/failure rules, rewards, visible aftermath and next-region/story handoff. Do not duplicate the same quest grammar across regions.
+3. **Azari spatial closure** — inspect the actual terrain and lock POI/road/settlement/dungeon/boss placement using coordinates, sightlines and travel-time/content-density targets.
 4. **Global presentation/comfort closure** — music and sound-state coverage, accessibility, difficulty options and final key/input mapping.
 5. **Final pre-bootstrap closure audit** — remove remaining stale rules, verify cross-document consistency and identify only genuine implementation-time unknowns.
 
-Do not reopen already-closed class topology, weapon/resource fundamentals, R01 quest/story ownership or regional macro direction unless implementation/playtest evidence exposes a real problem.
+Do not reopen already-closed class topology, weapon/resource fundamentals, R01/R02 quest/story ownership or regional macro direction unless implementation/playtest evidence exposes a real problem.
