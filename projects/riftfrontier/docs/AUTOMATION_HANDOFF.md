@@ -10,11 +10,13 @@ Priority remains a genuinely playable, polished Region 01 vertical slice. Do not
 
 ## Latest verified checkpoint
 
-Latest Riftfrontier code checkpoint is `746d2ad4b9e7cc6992998d1cfa56d8d4cccce9da` (`riftfrontier: clarify live extraction choice`). `Build Riftfrontier` workflow run `35046318629` completed **SUCCESS** on 2026-09-16.
+Latest Riftfrontier code checkpoint is `6c29fedc5f68c2b6b08978ac3f4c3b1ecda2661f` (`riftfrontier: clarify salvage and relay interaction cues`). `Build Riftfrontier` workflow run `35057942270` completed **SUCCESS** on 2026-09-16.
 
-That checkpoint improves the live Region 01 extraction decision without changing authority or balance: once the authoritative run has recovered at least 3 salvage while tracked patrol threats remain alive, the existing Minecraft actionbar explicitly says that extraction is available now or that the player may stay to clear the remaining patrol for +1 salvage. When threats reach zero, the existing patrol-cleared projection remains. EN/KO translations are present.
+That checkpoint keeps the authoritative extraction rules unchanged while making the connected Region 01 loop accurately explain them. Salvage guidance now states that extraction unlocks at 3 recovered salvage rather than implying early extraction is available, and relay-ready guidance tells the player to right-click the field lodestone while preserving the optional patrol-clear +1 salvage choice. EN/KO translations are present. The earlier actionbar distinction between `salvage incomplete`, `relay ready but patrol alive`, and `patrol cleared / +1 secured` remains intact.
 
-Verification vocabulary for `746d2ad4...`:
+Verified CI deliverables artifact: `10431501449` (`riftfrontier-0.1.0-alpha.1-deliverables`), archive digest `sha256:ce7333761ff97433666af0ebe85056149d123f23b2c1a21d630b49529382cd49`. Logs artifact: `10430634635`.
+
+Verification vocabulary for `6c29fedc...`:
 
 - `CODE REVIEWED`: YES
 - `TESTED`: YES
@@ -59,7 +61,7 @@ Human review must inspect player-relative scale, facing, ground alignment, UV/te
 - Player combat has `mobile_pressure` / `reach_commitment`, `recovery_pivot`, authenticated move-id input, server-owned attack timing, ACTIVE-only damage and per-execution target dedupe.
 - Field provisioning remains `/riftfrontier weapon mobile`, `/riftfrontier weapon mobile pivot`, `/riftfrontier weapon reach`, `/riftfrontier weapon reach pivot`.
 - Zombie/Skeleton/Ravager remain behaviour/runtime proxies, not production creature art.
-- Live actionbar readability now distinguishes `salvage incomplete`, `relay ready but patrol alive`, and `patrol cleared / +1 secured` from authoritative run + tracked threat state. Do not rebuild this as a new custom HUD before final UI direction is approved.
+- Live actionbar readability distinguishes `salvage incomplete`, `relay ready but patrol alive`, and `patrol cleared / +1 secured` from authoritative run + tracked threat state. Salvage/relay guidance now also states the actual 3-salvage unlock and field-lodestone right-click interaction. Do not rebuild this as a new custom HUD before final UI direction is approved.
 - Do not reopen M0/M1/M2 authority, lifecycle, restart, ownership or persistence fences without a demonstrated regression.
 - Do not auto-tune provisional damage, hit geometry, boss attack timing/travel/impulse, particle density, salvage cue intensity, final control layout, cover geometry or threat staging without human field evidence.
 - Existing diagnostic particles/sounds, technical blocks, bossbar/actionbar, relay dressing, proxy labels, native swing and tuff arena are review aids, not final Riftfrontier presentation language.
