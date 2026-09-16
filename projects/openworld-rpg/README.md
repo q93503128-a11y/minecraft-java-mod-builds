@@ -8,7 +8,7 @@ Large Minecraft Java open-world action RPG project with very low dependence on v
 
 No implementation exists yet. Do not treat the project as buildable until M0 explicitly creates the loader/toolchain/source layout.
 
-The major gameplay systems, Lv 1–80 progression, class/combat framework, equipment/economy, world-state model, main story spine, mounts, field systems and R01–R12 regional packages are already specified. The remaining pre-bootstrap work is primarily exact external-asset binding, concrete quest/NPC scene authoring, Azari spatial placement/travel-time validation, global audio/accessibility/input closure and a final design-closure audit.
+The major gameplay systems, Lv 1–80 progression, class/combat framework, equipment/economy, world-state model, main story spine, mounts, field systems and R01–R12 regional packages are already specified. **R01 now also has concrete named-NPC, quest-condition, scene/dialogue, reconnect/reward-state and Act-I handoff authoring locked in `R01_VERTICAL_SLICE.md`.** The remaining pre-bootstrap work is primarily exact external-asset binding, equivalent concrete quest/NPC authoring for later regions, Azari spatial placement/travel-time validation, global audio/accessibility/input closure and a final design-closure audit.
 
 ## Canon priority / stale-document rule
 
@@ -38,7 +38,8 @@ When touching a stale section during future work, update or remove the obsolete 
 3. [`EXTERNAL_SOURCES.md`](./EXTERNAL_SOURCES.md) — external code/assets/UI/maps/structures provenance and adoption status
 4. [`WORLD_STORY_CANON.md`](./WORLD_STORY_CANON.md) — protagonist/story/faction/ending spine
 5. [`REGION_CROSS_AUDIT.md`](./REGION_CROSS_AUDIT.md) — R01–R12 anti-repetition and regional-identity contract
-6. `R02_IMPLEMENTATION_PACKAGE.md` through `R12_IMPLEMENTATION_PACKAGE.md` — regional implementation packages
+6. [`R01_VERTICAL_SLICE.md`](./R01_VERTICAL_SLICE.md) — Alderford opening, named R01 cast, exact first-session quest/scene/state handoff and first dungeon
+7. `R02_IMPLEMENTATION_PACKAGE.md` through `R12_IMPLEMENTATION_PACKAGE.md` — later regional implementation packages
 
 ## Design-closure and player-facing-content rule
 
@@ -83,10 +84,10 @@ Player-facing text and presentation must never expose the development process. D
 
 ## Current pre-bootstrap design queue
 
-1. **Exact external-asset intake expansion** — unresolved core models, bosses, structures, VFX, sound and R12 final guardian; record exact source/license/hash/animation bindings where applicable.
-2. **Concrete main-quest / recurring-NPC scene packages** — convert the story spine and regional quest roles into actual quest beats, dialogue/scene intents, rejoin states, failure/recovery and visible consequences.
-3. **Azari spatial closure** — inspect the actual terrain and lock POI/road/settlement/dungeon/boss placement using coordinates, sightlines and travel-time/content-density targets.
+1. **Exact external-asset intake expansion** — unresolved core models, bosses, structures, VFX, sound and R12 final guardian; record exact source/license/hash/animation bindings where applicable. R01 still cannot enter visible-source implementation until its exact asset bindings pass the gate in `R01_VERTICAL_SLICE.md` / `R01_ASSET_INTAKE.md`.
+2. **R02–R12 concrete quest / recurring-NPC scene packages** — use the R01 closure level as the minimum bar: named participants, exact objectives/conditions, scene/dialogue beats, state/rejoin/failure rules, rewards, visible aftermath and next-region/story handoff. Do not merely duplicate R01's quest grammar across regions.
+3. **Azari spatial closure** — inspect the actual terrain and lock POI/road/settlement/dungeon/boss placement using coordinates, sightlines and travel-time/content-density targets. R01's required coordinate/volume list is now explicit in `R01_VERTICAL_SLICE.md`.
 4. **Global presentation/comfort closure** — music and sound-state coverage, accessibility, difficulty options and final key/input mapping.
 5. **Final pre-bootstrap closure audit** — remove remaining stale rules, verify cross-document consistency and identify only genuine implementation-time unknowns.
 
-Do not reopen already-closed class topology, weapon/resource fundamentals or regional macro direction unless implementation/playtest evidence exposes a real problem.
+Do not reopen already-closed class topology, weapon/resource fundamentals, R01 quest/story ownership or regional macro direction unless implementation/playtest evidence exposes a real problem.
