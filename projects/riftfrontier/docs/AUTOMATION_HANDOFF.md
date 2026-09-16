@@ -10,11 +10,11 @@ Priority remains a genuinely playable, polished Region 01 vertical slice. Do not
 
 ## Latest verified checkpoint
 
-Current code checkpoint before this handoff refresh: `a6a81d01b06e2ad06b79687533d84d1240952cc1` (`riftfrontier: add Korean boss field-review localization`). `Build Riftfrontier` workflow `35038504898` completed **SUCCESS** on 2026-09-16.
+Latest Riftfrontier code checkpoint is `746d2ad4b9e7cc6992998d1cfa56d8d4cccce9da` (`riftfrontier: clarify live extraction choice`). `Build Riftfrontier` workflow run `35046318629` completed **SUCCESS** on 2026-09-16.
 
-The boss field-review command messages are now EN/KO-localized instead of exposing hard-coded English literals. The preceding extraction-relay player-facing messages are also localized. These changes do not alter boss authority, natural encounter insertion, expedition state, combat balance or persistence.
+That checkpoint improves the live Region 01 extraction decision without changing authority or balance: once the authoritative run has recovered at least 3 salvage while tracked patrol threats remain alive, the existing Minecraft actionbar explicitly says that extraction is available now or that the player may stay to clear the remaining patrol for +1 salvage. When threats reach zero, the existing patrol-cleared projection remains. EN/KO translations are present.
 
-Verification vocabulary for `a6a81d01...`:
+Verification vocabulary for `746d2ad4...`:
 
 - `CODE REVIEWED`: YES
 - `TESTED`: YES
@@ -23,7 +23,7 @@ Verification vocabulary for `a6a81d01...`:
 - `PLAYTESTED`: NO
 - `MULTIPLAYER TESTED`: NO
 
-Do not infer human visual acceptance from CI client smoke.
+Do not infer human play or visual acceptance from GameTest, dedicated-server smoke or Xvfb client initialization.
 
 ## Hunter production-creature checkpoint — Alien is no longer an uninspected candidate
 
@@ -59,6 +59,7 @@ Human review must inspect player-relative scale, facing, ground alignment, UV/te
 - Player combat has `mobile_pressure` / `reach_commitment`, `recovery_pivot`, authenticated move-id input, server-owned attack timing, ACTIVE-only damage and per-execution target dedupe.
 - Field provisioning remains `/riftfrontier weapon mobile`, `/riftfrontier weapon mobile pivot`, `/riftfrontier weapon reach`, `/riftfrontier weapon reach pivot`.
 - Zombie/Skeleton/Ravager remain behaviour/runtime proxies, not production creature art.
+- Live actionbar readability now distinguishes `salvage incomplete`, `relay ready but patrol alive`, and `patrol cleared / +1 secured` from authoritative run + tracked threat state. Do not rebuild this as a new custom HUD before final UI direction is approved.
 - Do not reopen M0/M1/M2 authority, lifecycle, restart, ownership or persistence fences without a demonstrated regression.
 - Do not auto-tune provisional damage, hit geometry, boss attack timing/travel/impulse, particle density, salvage cue intensity, final control layout, cover geometry or threat staging without human field evidence.
 - Existing diagnostic particles/sounds, technical blocks, bossbar/actionbar, relay dressing, proxy labels, native swing and tuff arena are review aids, not final Riftfrontier presentation language.
@@ -71,7 +72,7 @@ Human review must inspect player-relative scale, facing, ground alignment, UV/te
 - Provenance-tracked Poly Haven Dark Rock derived material candidate is available in the explicit field-review path but is **not human accepted**.
 - Production boss rendering remains fail-closed until reviewed final material and complete reviewed animation semantic coverage exist.
 - Development harness remains `/riftfrontier boss fieldtest spawn`, `phase1`, `phase2`; boss remains excluded from natural/production Region 01 encounter insertion.
-- Boss field-review command output is now localized EN/KO.
+- Boss field-review command output is localized EN/KO.
 
 Do not restart boss model/material search merely because human acceptance is pending. Do not silently retune Dark Rock UV/material, arena-pressure motion, telegraph density or boss timings without field evidence.
 
