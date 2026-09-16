@@ -30,6 +30,7 @@ public final class ExpeditionGameplayEvents {
         ExpeditionFieldExtractionRelay.ensurePresent(player);
         boolean recovered = ExpeditionGameplayService.tryRecover(player, event.getPos());
         if (recovered) {
+            Region01SalvageEventRuntime.triggerIfDue(player);
             ExpeditionPlayerFeedback.salvageUpdated(player);
             ExpeditionFieldExtractionRelay.refreshPresentation(player);
         }
