@@ -1,8 +1,10 @@
 package kr.moonseungjun.earthtostars.fabric;
 
+import kr.moonseungjun.earthtostars.fabric.content.EarthToStarsFabricItems;
 import kr.moonseungjun.earthtostars.ship.domain.ModuleCatalog;
 import kr.moonseungjun.earthtostars.ship.persistence.ShipBootstrapCatalog;
 import net.fabricmc.api.ModInitializer;
+import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,11 +17,16 @@ public final class EarthToStarsFabric implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        EarthToStarsFabricItems.initialize();
         LOGGER.info(
-                "EARTH TO STARS {} Fabric 26.2 standalone kernel loaded modules={}",
+                "EARTH TO STARS {} Fabric 26.2 standalone kernel loaded modules={} registered_components=3",
                 VERSION,
                 BOOTSTRAP_CATALOG.definitions().size()
         );
+    }
+
+    public static Identifier id(String path) {
+        return Identifier.fromNamespaceAndPath(MOD_ID, path);
     }
 
     public static ModuleCatalog bootstrapCatalog() {

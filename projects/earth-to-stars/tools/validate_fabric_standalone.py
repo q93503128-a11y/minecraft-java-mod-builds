@@ -16,12 +16,18 @@ def forbid(path: Path, needle: str) -> None:
         raise SystemExit(f"FABRIC STANDALONE VALIDATION FAILED: {path.relative_to(PROJECT)} still contains runtime dependency marker {needle!r}")
 
 
+def require_file(path: Path) -> None:
+    if not path.is_file() or path.stat().st_size == 0:
+        raise SystemExit(f"FABRIC STANDALONE VALIDATION FAILED: missing non-empty {path.relative_to(PROJECT)}")
+
+
 def main() -> None:
     build = PROJECT / "build.gradle"
     props = PROJECT / "gradle.properties"
     settings = PROJECT / "settings.gradle"
     metadata = PROJECT / "src/fabric/resources/fabric.mod.json"
     entrypoint = PROJECT / "src/fabric/java/kr/moonseungjun/earthtostars/fabric/EarthToStarsFabric.java"
+    items = PROJECT / "src/fabric/java/kr/moonseungjun/earthtostars/fabric/content/EarthToStarsFabricItems.java"
 
     for needle in (
         "net.fabricmc.fabric-loom",
@@ -63,9 +69,33 @@ def main() -> None:
         "implements ModInitializer",
         'VERSION = "0.3.0-alpha.1"',
         "ShipBootstrapCatalog.create()",
+        "EarthToStarsFabricItems.initialize()",
         "Fabric 26.2 standalone kernel loaded",
     ):
         require(entrypoint, needle)
+
+    for needle in (
+        'key("reinforced_frame")',
+        'key("avionics_unit")',
+        'key("life_support_unit")',
+        "properties.setId(key)",
+        "Registry.register(BuiltInRegistries.ITEM, key, item)",
+        "CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.INGREDIENTS)",
+    ):
+        require(items, needle)
+
+    for relative in (
+        "src/fabric/resources/assets/earth_to_stars/items/reinforced_frame.json",
+        "src/fabric/resources/assets/earth_to_stars/items/avionics_unit.json",
+        "src/fabric/resources/assets/earth_to_stars/items/life_support_unit.json",
+        "src/fabric/resources/assets/earth_to_stars/models/item/reinforced_frame.json",
+        "src/fabric/resources/assets/earth_to_stars/models/item/avionics_unit.json",
+        "src/fabric/resources/assets/earth_to_stars/models/item/life_support_unit.json",
+        "src/fabric/resources/assets/earth_to_stars/lang/ko_kr.json",
+        "src/fabric/resources/assets/earth_to_stars/lang/en_us.json",
+        "src/fabric/resources/data/earth_to_stars/bootstrap/kernel.json",
+    ):
+        require_file(PROJECT / relative)
 
     # The standalone product may research or port permissively licensed code, but it must
     # not silently revert to requiring whole external ship/space mods at runtime.
@@ -75,8 +105,8 @@ def main() -> None:
 
     print(
         "FABRIC STANDALONE VALIDATION OK: Minecraft 26.2 + Fabric Loader 0.19.5 + "
-        "Fabric API 0.160.0; loader-neutral ship kernel retained; whole external ship/space "
-        "mods are not runtime dependencies"
+        "Fabric API 0.160.0; loader-neutral ship kernel retained; Fabric construction-component "
+        "registry/resources present; whole external ship/space mods are not runtime dependencies"
     )
 
 
