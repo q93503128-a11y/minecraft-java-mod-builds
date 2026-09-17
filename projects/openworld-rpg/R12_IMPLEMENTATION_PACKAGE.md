@@ -152,7 +152,14 @@ Reference:
 
 ## 3.1 Threateningly Mobs Continued — dependency candidates
 
-Current public project metadata exposes a Fabric 26.2 release and currently lists the project under MIT.
+A current Fabric 26.2 continuation exists, but storefront/project metadata is **not treated as sufficient authority for copying or redistributing raw source/model bytes** because license labels surfaced across the project's research history have not been consistently reliable enough for that conclusion. Ordinary dependency use and raw-byte reuse are separate decisions.
+
+Project license rule for this dependency:
+
+- use the current mod as a dependency only after the pinned runtime/version gate passes;
+- project data may override stats/spawns/rewards/encounter ownership without copying donor assets into this repository;
+- source/model/texture/animation bytes may be copied, modified or redistributed only when the exact upstream file/repository/version has a verified license/provenance path that permits that use;
+- a storefront `MIT` label by itself does not waive a conflicting or unclear upstream asset/source license.
 
 Strong R12 candidate:
 
