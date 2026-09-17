@@ -107,6 +107,7 @@ Primary gameplay/system canon:
 - `QUEST_WORLD_STATE.md`
 - `PARTY_MULTIPLAYER.md` — formal party UX, participation eligibility, non-split personal EXP/Class XP, personal loot/Gold, co-op scaling, friendly-fire baseline and multiplayer acceptance matrix
 - `UI_DIRECTION.md`
+- `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md` — world challenge presets, personal accessibility assists, final frequent-action input map, Essential-safe defaults, subtitles/captions, non-audio combat cues, camera/VFX comfort and dynamic audio/music state behavior
 - `M0_DEPENDENCY_AUDIT.md`
 
 World/story/regional canon:
@@ -186,11 +187,11 @@ Older package headers using `implementation-ready` must be interpreted narrowly 
 3. actual Azari coordinates, sightlines, route joins, travel-time and content-density validation;
 4. exact asset-gated boss names/anatomy-supported attacks/weak points/signature materials;
 5. R11 aquatic animation/action compatibility matrix;
-6. global accessibility, difficulty/assist, subtitles/non-audio cues and final input map;
-7. full music/audio-state coverage;
-8. final stale-document/hidden-choice audit.
+6. final stale-document/hidden-choice audit.
 
-Only after these are closed should M0 create the gameplay source/resource/data layout.
+The global accessibility/difficulty/assist, subtitles/non-audio cues, frequent-action input map and audio/music state-behavior design are now closed in `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md`. Exact music/SFX bytes remain part of the external-asset gate in item 2.
+
+Only after these remaining gates are closed should M0 create the gameplay source/resource/data layout.
 
 ---
 
