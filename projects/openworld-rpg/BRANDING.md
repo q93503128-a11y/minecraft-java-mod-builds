@@ -1,39 +1,57 @@
-# Anchorwake — Player-Facing Title / Branding Canon
+# Open-World RPG — Player-Facing Title / Branding Evaluation
 
-> Status: **TITLE STRING LOCKED / VISUAL LOGO ASSET STILL EXTERNAL-FIRST**  
+> Status: **CANDIDATE EVALUATED / FINAL TITLE NOT LOCKED**  
 > Project contract: `PROJECT.md`  
 > Master design: `GAME_DESIGN.md`  
 > UI language: `UI_DIRECTION.md`  
 > External provenance: `EXTERNAL_SOURCES.md`
 
-The final player-facing game title is:
+The final player-facing game title is **not yet locked**.
 
-# **Anchorwake**
+`Anchorwake` remains a researched candidate, not current final canon.
 
-The repository/project slug remains `openworld-rpg`. The mod namespace remains `openworld_rpg`. Neither is a player-facing replacement for the title.
-
----
-
-## 1. Why this title fits the game
-
-`Anchorwake` is intentionally short and tied to the central fiction without revealing the final truth.
-
-It supports two readings that both fit the game:
-
-- **wake = awakening / reactivation** — the ancient Anchor network is being rediscovered and partially reactivated;
-- **wake = the trail / consequence left behind** — every restoration, severance or regional intervention leaves effects elsewhere in the connected world.
-
-That second meaning is especially appropriate to the game's core narrative thesis: a change that helps one region may create a delayed or distant consequence because the old system was over-coupled.
-
-The title therefore points at the game's identity without declaring one ending philosophy correct and without framing the player as a chosen `Anchorbound` hero.
+The repository/project slug remains `openworld-rpg`. The mod namespace remains `openworld_rpg`. Neither is a player-facing replacement for the eventual title.
 
 ---
 
-## 2. Collision screen performed before lock
+## 1. Why the previous lock was reopened
 
-A public web collision screen was performed on 2026-09-17 for exact-title use across common game/mod surfaces.
+`Anchorwake` was initially attractive because it connected to the game's central Anchor-network fiction and had no obvious exact game/mod collision in the first public search pass.
 
-Queries included exact `Anchorwake` matches against:
+However, immediate owner feedback exposed a more important problem: **the word `Anchor` was not self-explanatory before the setting was explained.**
+
+That matters because the title is encountered before the player has learned the fiction. A title should not require prior knowledge of an internal lore noun merely to understand its basic fantasy/adventure identity.
+
+Therefore:
+
+```text
+recognition/readability failure at first exposure
+→ treat as real player-facing feedback
+→ reopen title gate
+→ keep the research evidence
+→ do not defend the old lock merely because the lore meaning works after explanation
+```
+
+This does not permanently reject `Anchorwake`. It means the candidate must compete against names that communicate the game's identity more immediately.
+
+---
+
+## 2. What still works about `Anchorwake`
+
+The candidate supports two setting-relevant readings:
+
+- `wake` as awakening/reactivation — ancient infrastructure is rediscovered and partially reactivated;
+- `wake` as the trail/consequence left behind — local interventions can have delayed or distant effects through an over-connected system.
+
+It is short, pronounceable and does not imply that the player is a chosen hero.
+
+The weakness is not the internal meaning. The weakness is **first-contact legibility**: a new player has no reason yet to know what an Anchor is or why that noun should define the whole game.
+
+---
+
+## 3. Collision screen already performed
+
+A practical public-web collision screen was performed on 2026-09-17 for exact `Anchorwake` use across common game/mod surfaces, including:
 
 - Steam;
 - itch.io;
@@ -42,95 +60,77 @@ Queries included exact `Anchorwake` matches against:
 - GitHub;
 - broad web search.
 
-No exact game/mod title collision was found in those searches.
+No exact game/mod title collision was found in that pass.
 
-Unrelated uses of the word/string exist in other contexts, including a World Anvil location/organization name and a visual-effect label in a web UI reference. Those are not treated as a conflicting game/mod identity.
+This evidence is retained because it remains useful if `Anchorwake` survives later comparison. It is a practical naming screen, not formal worldwide trademark clearance.
 
-This is a **practical naming-collision screen**, not a legal trademark opinion or worldwide registry search. If the project ever becomes a public commercial release, perform a fresh formal naming/trademark check at that time.
-
----
-
-## 3. Player-facing spelling
-
-Canonical ordinary-text spelling:
-
-```text
-Anchorwake
-```
-
-Allowed logo capitalization:
-
-```text
-ANCHORWAKE
-```
-
-Do not player-facing display:
-
-```text
-openworld-rpg
-openworld_rpg
-Open World RPG
-Anchor Wake
-AnchorWake
-ANCHOR WAKE
-```
-
-unless a future deliberate branding revision changes the title canon.
-
-The proper noun is not automatically translated into a different title per language. Localized store descriptions/subtitles may explain it, but the game name remains `Anchorwake` by default.
+If the project ever becomes a public commercial release, perform a fresh formal naming/trademark check regardless of which title wins.
 
 ---
 
-## 4. Logo / title-screen visual contract
+## 4. Final-title acceptance criteria
 
-Locking the name does **not** authorize an improvised AI-looking wordmark.
+The next naming pass must compare candidates on all of these axes rather than choosing only for lore cleverness:
 
-The final logo/title treatment must follow the project's external-first visual rule:
+1. **Immediate readability** — a new player should understand the broad fantasy/adventure tone without reading a lore explanation.
+2. **Project specificity** — it should not sound like a generic modpack name that could fit any fantasy RPG.
+3. **Open-world fit** — the name should support exploration, regions and a large journey rather than sounding like one dungeon or one boss.
+4. **Narrative fit** — it may hint at the Anchor conflict, regional consequences or world stewardship without spoiling the late truth.
+5. **Pronounceability / memory** — short enough to remember and say naturally in Korean/English discussion.
+6. **Search collision** — no obvious exact game/mod collision on the major surfaces checked above.
+7. **Logo viability** — remains readable at Minecraft title-screen scale, launcher/store thumbnail scale and small icon-adjacent usage.
+8. **Longevity** — still fits the game after the player learns that the world is more than the Anchor crisis; the title must not shrink the whole RPG to one lore device.
+
+A candidate failing first-contact readability should not win solely because its hidden meaning is clever.
+
+---
+
+## 5. Visual logo contract remains external-first
+
+Reopening the title does not weaken the visual-quality rule.
+
+After the title string is finally selected:
 
 1. research/select a legally usable high-quality fantasy wordmark/typeface/reference direction;
-2. preserve the restrained grounded-to-mystical visual escalation of the game rather than using generic infernal/MMO chrome;
-3. integrate a subtle Anchor-network / divided-ring / route-line motif only if it improves recognition;
-4. ensure the mark remains readable at Minecraft title-screen scale and in small launcher/icon contexts;
-5. record font/graphic source and license in the normal provenance registry;
-6. review the final title screen in the actual client.
+2. preserve the game's grounded-to-mystical escalation rather than generic infernal/MMO chrome;
+3. use world/network/route motifs only when they improve recognition instead of exposing late lore;
+4. verify readability at Minecraft title-screen and small launcher/icon contexts;
+5. record font/graphic source and license;
+6. review the actual title screen in the client.
 
 Avoid:
 
-- a vanilla Minecraft title recolor as the finished identity;
+- vanilla Minecraft title recolor as the finished identity;
 - random gold bevel + glow + particles;
-- giant lore symbols that reveal late-game information before play;
+- giant unexplained lore glyphs;
 - a logo style that conflicts with the established Lucifer-derived UI language;
-- an internal `alpha`, milestone or development label in the normal player-facing logo.
+- player-facing `alpha`, milestone or development labels.
 
-Exact logo font/graphic bytes remain part of the project-wide **external presentation binding / provenance gate**. The title **string** itself is closed by this document.
+Exact logo/font/graphic bytes remain inside the global external-presentation/provenance gate.
 
 ---
 
-## 5. Packaging / metadata rule
-
-Where platform/mod metadata permits a display name, use:
+## 6. Current candidate state
 
 ```text
 Anchorwake
+  collision screen: performed
+  lore fit: strong after explanation
+  immediate first-contact readability: not proven / owner feedback exposed weakness
+  status: CANDIDATE ONLY
 ```
 
-Internal technical IDs remain stable unless a later migration has a compelling technical reason:
-
-```text
-project folder: projects/openworld-rpg/
-mod id: openworld_rpg
-artifact basename: openworld-rpg-...
-```
-
-Do not rename technical IDs merely for cosmetic consistency before source bootstrap; unnecessary namespace churn creates no player value.
+Do not player-facing ship `Anchorwake`, `openworld-rpg`, `Open World RPG` or another working name until a later title pass explicitly locks one candidate.
 
 ---
 
-## 6. Verification state
+## 7. Verification state
 
 ```text
-TITLE STRING: LOCKED — Anchorwake
-PUBLIC WEB COLLISION SCREEN: PERFORMED 2026-09-17
+FINAL TITLE STRING: NOT LOCKED
+ANCHORWAKE: EVALUATED CANDIDATE
+OWNER FIRST-CONTACT FEEDBACK INCORPORATED: YES
+PUBLIC WEB COLLISION SCREEN FOR ANCHORWAKE: PERFORMED 2026-09-17
 FORMAL TRADEMARK CLEARANCE: NOT PERFORMED / not required for current private-play scope
 FINAL LOGO ART: NOT SELECTED
 FINAL LOGO FONT/GRAPHIC PROVENANCE: NOT COMPLETE
@@ -139,4 +139,4 @@ BUILD VERIFIED: NO
 PLAYTESTED: NO
 ```
 
-The former `final player-facing title` pre-code blocker is closed. Final logo/title-screen **visual asset binding** remains inside the general external-asset gate rather than surviving as a separate gameplay-design blocker.
+The **final player-facing title / branding string** remains a pre-code design gate.
