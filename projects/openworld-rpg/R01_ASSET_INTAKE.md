@@ -1,6 +1,6 @@
 # Open-World RPG — R01 External Asset Intake Manifest
 
-> Status: **ASSET INTAKE PHASE B / EVIDENCE PASS 3 COMPLETE — NOT ASSET READY**  
+> Status: **ASSET INTAKE PHASE B / EVIDENCE PASS 4 COMPLETE — NOT ASSET READY**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Project contract: `PROJECT.md`  
 > Opening: `R01_VERTICAL_SLICE.md`  
@@ -9,7 +9,8 @@
 > Provenance registry: `EXTERNAL_SOURCES.md`  
 > Phase-B evidence: `R01_ASSET_PHASE_B_EVIDENCE_2026-09-15.md`  
 > Pass-3 evidence: `R01_ASSET_PHASE_B_PASS3_EVIDENCE_2026-09-15.md`  
-> Rule: gameplay canon still wins. For **R01 asset-admission/license decisions**, this file records the newest verified evidence and supersedes older subordinate notes whose license label has become stale.
+> Pass-4 evidence: `R01_ASSET_PHASE_B_PASS4_EVIDENCE_2026-09-17.md`  
+> Rule: gameplay canon still wins. For **R01 asset-admission/license decisions**, this file records the newest verified evidence and supersedes older subordinate notes whose license label or candidate state has become stale.
 
 This file converts the project's external-first rule from a pack-level intention into an intake manifest. It is deliberately conservative: an asset is not considered production-ready merely because a web page looks good or because a previous conversation called a pack CC0.
 
@@ -128,6 +129,7 @@ Accepted R01 source families:
 
 - `Particle Pack` — 80 VFX sprites;
 - `Smoke Particles` — dust/smoke secondary pool;
+- `Food Kit` — public-safe low-poly food/kitchen pool; Pass 4 identifies `skewerVegetables` as the first exact editable-base candidate for Trail Skewers;
 - `RPG Audio` — footsteps/weapon/RPG foley baseline;
 - `Impact Sounds` — 130 impact/foley sounds;
 - `UI Audio` / `Interface Sounds` — menu/confirmation/error/notification baseline.
@@ -246,20 +248,22 @@ Current published pack properties are strong enough to keep the family selected:
 
 Phase-B pass 3 found an extracted Standard snapshot whose embedded `License_Standard.txt` identifies the Standard version as the free partial package under CC0 and says remaining outfits/separate parts belong to the Source version. Current Quaternius itch also lists `Modular Character Outfits - Fantasy[Standard].zip` as a free CC0 download. The exact snapshot is still treated as evidence until the project acquires the intended creator-controlled archive and hashes it.
 
+Phase-B pass 4 additionally pins the Wizard modular family as the first honest River Scholar candidate and the Knight armor family as the first honest Ironbound Guard candidate. These are **candidate-level closures** only; source acquisition, license evidence, project-local hashes and 3D/Minecraft acceptance are still required.
+
 Current intake state:
 
 | Use | Source family | Status | Phase-B requirement |
 |---|---|---|---|
-| River Scholar Garb | Modular Character Outfits - Fantasy | `ARCHIVE_INSPECTION_REQUIRED` | Standard Ranger/Peasant are not a truthful scholar silhouette; inspect current Standard/Source or another coherent family, preserve source license/hash, choose exact parts |
+| River Scholar Garb | Modular Character Outfits - Fantasy / Wizard | exact male+female Wizard Body/Arms/Legs/Feet candidate family pinned; `ARCHIVE_INSPECTION_REQUIRED` | acquire/hash intended creator-controlled archive; inspect all texture variants; verify robe silhouette and sprint/dodge/cast/drink/eat/revive/mount clipping |
 | Wayfarer Leathers | Standard Ranger part family | exact candidate filenames pinned; `ARCHIVE_INSPECTION_REQUIRED` until source acquisition + rig/clip review | evaluate `*_Ranger_Body/Arms/Legs/Feet`, optional `Facewear`/`Pauldron`; verify dodge/roll and bow draw clipping |
-| Ironbound Guard | Modular Character Outfits - Fantasy | `ARCHIVE_INSPECTION_REQUIRED` | Standard Ranger/Peasant are not accepted as heavy armor; inspect other legal parts/source family and verify guard/heavy-attack clipping |
+| Ironbound Guard | Modular Character Outfits - Fantasy / Knight | exact heavy armor/pauldron candidate family pinned; `ARCHIVE_INSPECTION_REQUIRED` | acquire/hash intended archive; prefer Round pauldron baseline; verify guard/heavy-attack/bow/cast/mount/revive clipping and male/female silhouette parity |
 | guild/class trainer | Outfits + Universal Base Characters | `ARCHIVE_INSPECTION_REQUIRED / READY_LOCAL_ONLY` | exact body/hair/outfit/prop IDs still needed |
 | smith | Peasant/Ranger candidate + external tool prop | exact clothing candidate family exists; role composition pending | acquire/hash Standard, inspect silhouette, bind KayKit hammer/anvil and work animation |
 | alchemist/healer | Peasant candidate + bottle/cauldron prop | clothing candidate exists; role-specific final still pending | exact body/head/hair + potion/cauldron selection |
 | inn worker | Standard Peasant part family | exact candidate filenames pinned; visual role review pending | acquire/hash Standard and author 1–2 coherent combinations |
 | merchant | Standard Peasant baseline + role props | candidate family exists; final silhouette pending | avoid cloning inn/civilian appearance |
 | stable handler | Standard Peasant/Ranger baseline | candidate family exists; final silhouette + tack/brush prop pending | verify mount interaction poses |
-| guards | Ranger candidate is not automatically guard armor | `ARCHIVE_INSPECTION_REQUIRED` | 2–3 authored variations with sufficiently defensive silhouette |
+| guards | Knight/Ranger accepted-family candidates | `ARCHIVE_INSPECTION_REQUIRED` | author 2–3 coherent defensive variations without making every guard identical to starter Heavy gear |
 | civilians/travelers | Standard Peasant part family | exact candidate filenames pinned; variation authoring pending | create a small coherent variation library rather than clones |
 
 Exact Standard modular part families observed:
@@ -272,7 +276,38 @@ Female_Ranger_Arms / Body / Facewear / Feet / Legs / Pauldron
 Male_Ranger_Arms / Body / Facewear / Feet / Legs / Pauldron
 ```
 
-Matching whole-outfit glTFs also exist for Female/Male Peasant and Ranger, including `NoBody` variants. Full paths and evidence are recorded in `R01_ASSET_PHASE_B_PASS3_EVIDENCE_2026-09-15.md`.
+Pass-4 exact Wizard candidate family:
+
+```text
+Male_Wizard_Body.gltf
+Male_Wizard_Arms.gltf
+Male_Wizard_Legs.gltf
+Male_Wizard_Feet.gltf
+Female_Wizard_Body.gltf
+Female_Wizard_Arms.gltf
+Female_Wizard_Legs.gltf
+Female_Wizard_Feet.gltf
+```
+
+Pass-4 exact Knight candidate evidence includes:
+
+```text
+Male_Knight_Body_Armor.gltf
+Male_Knight_Feet_Armor.gltf
+Male_Knight_Legs_Armor.gltf
+Male_Knight_Head_Armet.gltf
+Male_Knight_Acc_Pauldron_Round.gltf
+Male_Knight_Acc_Pauldron_Spike.gltf
+Female_Knight_Body_Armor.gltf
+Female_Knight_Acc_Pauldrons_Round.gltf
+Female_Knight_Acc_Pauldrons_Spike.gltf
+Female_Knight_Feet.gltf
+Female_Knight_Legs.gltf
+```
+
+The female lower-piece names above are preserved exactly as observed rather than being silently normalized to male-style `_Armor` names.
+
+Matching whole-outfit glTFs also exist for Female/Male Peasant and Ranger, including `NoBody` variants. Full earlier paths are recorded in `R01_ASSET_PHASE_B_PASS3_EVIDENCE_2026-09-15.md`; Wizard/Knight evidence and acceptance boundaries are recorded in `R01_ASSET_PHASE_B_PASS4_EVIDENCE_2026-09-17.md`.
 
 Runtime conversion target remains Fabric 26.2 `Armor Model API` for project-owned worn geometry unless asset testing proves a hard blocker.
 
@@ -375,17 +410,26 @@ Canonical R01 meals:
 - Trail Skewers;
 - Glow Broth.
 
-Source family: `KayKit Restaurant Bits`, CC0. The official public GitHub repository gives path-level evidence rather than guessed names.
+KayKit Restaurant Bits remains the coherent primary kitchen/meal family for roast, stew and ingredients. Its observed free tree does **not** contain an honest skewer/kebab filename, so Pass 4 intentionally uses Kenney Food Kit rather than falsely relabeling steak/ham/dinner geometry.
 
 Current Phase-B mapping:
 
 | Meal | Exact observed candidate | Status |
 |---|---|---|
 | Herbed Louxia Roast | `addons/kaykit_restaurant_bits/Assets/gltf/food_dinner.gltf` | candidate filename pinned; 3D appearance review pending |
-| Trail Skewers | no `skewer` filename established in observed official free tree | `ARCHIVE_INSPECTION_REQUIRED`; do not invent filename |
+| Trail Skewers | Kenney Food Kit `skewerVegetables` editable-base candidate; source trees also expose generic `skewer` geometry | exact external candidate pinned; `READY_PUBLIC` candidate under CC0, but official archive acquisition/hash + visual adaptation/Minecraft review still required |
 | Glow Broth | `addons/kaykit_restaurant_bits/Assets/gltf/food_stew.gltf`; compare `stew_bowl.gltf` | candidate filename pinned; final visual selection pending |
 
-The observed tree also includes ingredient/cooking support such as `food_ingredient_steak.gltf`, `food_ingredient_steak_pieces.gltf`, `food_ingredient_ham_cooked.gltf` and `stew_pot.gltf`.
+Kenney Food Kit tree evidence includes format variants such as:
+
+```text
+skewer.fbx / skewer.obj / skewer.dae
+skewerVegetables.fbx / skewerVegetables.obj / skewerVegetables.dae
+```
+
+`skewerVegetables` is an **editable-base**, not the literal final recipe identity. The accepted derivative must keep the readable skewer silhouette while adapting the food pieces/material treatment so it reads as the canonical R01 Trail Skewers rather than a vegetable-only dish. The inventory icon is rendered from that same accepted 3D result.
+
+The observed Restaurant Bits tree also includes ingredient/cooking support such as `food_ingredient_steak.gltf`, `food_ingredient_steak_pieces.gltf`, `food_ingredient_ham_cooked.gltf` and `stew_pot.gltf`.
 
 ## 7.3 Forge / alchemy / cooking tools
 
@@ -739,14 +783,22 @@ Phase-B evidence pass 3 additionally completed:
 18. pinned real Medieval Village Standard wall/window/door/roof/prop module filenames for settlement-shell intake;
 19. recorded all pass-3 evidence and boundaries in `R01_ASSET_PHASE_B_PASS3_EVIDENCE_2026-09-15.md`.
 
+Phase-B evidence pass 4 additionally completed:
+
+20. pinned male+female Wizard modular Body/Arms/Legs/Feet as the first exact River Scholar Garb candidate family instead of treating Ranger/Peasant as a scholar outfit;
+21. pinned Knight body armor, lower pieces and Round/Spike pauldron families as the first exact Ironbound Guard candidate, with Round pauldron as the baseline intake direction;
+22. found a public-safe CC0 Kenney Food Kit skewer family and selected `skewerVegetables` as the first editable-base Trail Skewers candidate rather than inventing a KayKit filename or misusing plated meat;
+23. rechecked revive/help-up and Trail Stag mount/dismount and deliberately left them `NEEDS_EXTERNAL_CLIP` because no stronger license+rig+quality-safe binding was proven;
+24. recorded pass-4 evidence and boundaries in `R01_ASSET_PHASE_B_PASS4_EVIDENCE_2026-09-17.md`.
+
 Still required:
 
 1. actually acquire the exact source archives/files chosen by the project and calculate project-local SHA-256 values;
-2. inspect and accept exact River Scholar Garb and Ironbound Guard parts/families;
-3. visually select and accept the Wayfarer Ranger combination plus authored Peasant settlement-role combinations;
+2. inspect and accept the pinned Wizard River Scholar and Knight Ironbound combinations in 3D and actual Minecraft;
+3. visually select and accept the Wayfarer Ranger combination plus authored Peasant/role-specific settlement combinations;
 4. compose and visually accept each starting-settlement service building from the now-pinned modular vocabulary;
 5. acquire the authoritative KayKit weapon/tools package bytes used by the project, record SHA-256, and visually choose final A/B/C variants rather than promoting mirror tree names directly;
-6. finish Trail Skewers exact food source and inspect the Restaurant Bits candidate meshes;
+6. acquire the official Kenney Food Kit archive, hash it, inspect/adapt `skewerVegetables`, and verify the final Trail Skewers silhouette/icon in the same low-poly language;
 7. visually inspect `Potion_1..4`, select three sufficiently distinct potion models, and verify hand pivots/icons;
 8. acquire/inspect chosen UAL editions and visually accept UAL1 `Drink` + UAL2 `Consume` after retarget/prop alignment;
 9. resolve licensing/acquisition/retarget quality for teammate revive/help-up and Trail Stag mount/dismount, or replace those candidates;
@@ -760,23 +812,27 @@ Until those rows are resolved, `R01 ASSET READY = NO`. Phase B is active and mat
 
 # 15. Verification state
 
-Current state after Phase-B evidence pass 3:
+Current state after Phase-B evidence pass 4:
 
 - `DESIGN REVIEWED`: YES
 - `EXTERNAL SOURCE REVIEWED`: YES
 - `LICENSE METADATA REVIEWED`: YES, with Quaternius handled source/package-specifically rather than by blanket family assumption
-- `PHASE-B PASS-3 EVIDENCE DOC RECORDED`: YES
+- `PHASE-B PASS-4 EVIDENCE DOC RECORDED`: YES
 - `EXACT PUBLIC-SAFE KAYKIT PATHS PINNED`: YES for listed Adventurers + Restaurant Bits evidence
 - `KAYKIT WORK/FISHING CLIP NAMES PINNED`: YES
 - `KAYKIT WEAPON/TOOLS CANDIDATE FILENAMES PINNED`: YES as tree evidence; authoritative archive SHA-256/final visual selection pending
 - `QUATERNIUS STANDARD CC0 SNAPSHOT SOURCES IDENTIFIED`: YES for Fantasy Props + Medieval Village; project-local archive hashing pending
+- `RIVER SCHOLAR EXACT WIZARD CANDIDATE FAMILY PINNED`: YES; visual/Minecraft acceptance pending
+- `IRONBOUND GUARD EXACT KNIGHT CANDIDATE FAMILY PINNED`: YES; visual/Minecraft acceptance pending
 - `WAYFARER RANGER / PEASANT STANDARD PART NAMES PINNED`: YES; visual acceptance pending
+- `TRAIL SKEWERS EXACT EXTERNAL CANDIDATE PINNED`: YES — Kenney Food Kit `skewerVegetables` editable base; adaptation/review pending
 - `POTION MODEL CANDIDATE FILENAMES PINNED`: YES — `Potion_1..4`; final three-model assignment pending
 - `EAT EXTERNAL CLIP CANDIDATE PINNED`: YES — UAL2 `Consume`; source acquisition/visual acceptance pending
 - `DRINK EXTERNAL CLIP CANDIDATE PINNED`: YES — UAL1 `Drink`; source acquisition/visual acceptance pending
 - `REVIVE/MOUNT EXTERNAL CANDIDATES IDENTIFIED`: YES; not accepted
 - `MEDIEVAL VILLAGE MODULE CANDIDATE NAMES PINNED`: YES for a useful Standard subset; service compositions not accepted
 - `KENNEY VFX/AUDIO CANDIDATE FILENAME FAMILIES PINNED`: YES; visual/audition acceptance pending
+- `PROJECT-LOCAL SOURCE SHA-256 COMPLETE`: NO
 - `ALL R01 EXACT ASSET FILENAMES PINNED`: NO
 - `R01 ASSET READY`: NO
 - `BLOCKBENCH / CONVERSION TESTED`: NO
