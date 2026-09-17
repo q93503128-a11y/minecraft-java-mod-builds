@@ -6,6 +6,7 @@
 > Project contract: `PROJECT.md`  
 > Provenance registry: `EXTERNAL_SOURCES.md`  
 > R01 detailed intake: `R01_ASSET_INTAKE.md`  
+> R05–R08 boss-selection contract: `BOSS_REFERENCE_DESIGN_PASS_R05_R08_2026-09-17.md`  
 > Rule: this matrix does not redesign gameplay. It only records whether a player-facing visual/content slot already has a concrete external source, needs runtime acceptance, or still needs model selection.
 
 ---
@@ -96,14 +97,14 @@ Any older live wording that flattens the continuation to `MIT` is stale for raw-
 | R04 | Ferox Iceworm | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | burrow/surface animation, hit volume, camera/readability |
 | R04 | Icebroodmother + Ice Weaver | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | boss/minion current-model quality, add readability, VFX/hitbox |
 | R05 | mature Earthloong field boss | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | current 26.2 quality + distinct mature encounter presentation |
-| R05 | root-vault / regulator dungeon guardian | Quaternius/other animated guardian pool only | `OPEN_MODEL_SELECTION` | choose final model first; only then name/anatomy/weak-point/attack binding |
+| R05 | root-vault / regulator dungeon guardian | ancient regulator construct with readable core + articulated control components | `OPEN_MODEL_SELECTION` | design/reference contract closed in `BOSS_REFERENCE_DESIGN_PASS_R05_R08_2026-09-17.md`; targeted exact-model search + 3D/license review only |
 | R06 | Hydra field boss | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | multi-head hit/readability, water combat behavior, authored basin integration |
-| R06 | Sunken Observatory dungeon guardian | animated aquatic/flow guardian pool | `OPEN_MODEL_SELECTION` | final model, name, anatomy-supported lane/gate attacks |
+| R06 | Sunken Observatory dungeon guardian | hydromechanical/ceremonial flow guardian with directional components | `OPEN_MODEL_SELECTION` | design/reference contract closed; targeted exact-model search must support visible flow lanes and shallow-water arena readability |
 | R07 | Ferox Deathworm field boss | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | sand/burrow presentation, melee access, hitbox |
-| R07 | buried fortress/cistern dungeon guardian | Armor of Desert only if quality passes; otherwise external guardian | `OPEN_MODEL_SELECTION` | accept/reject Armor of Desert after visual review or choose replacement |
+| R07 | buried fortress/cistern dungeon guardian | armored infrastructure sentinel; Armor of Desert only if it passes direct review | `OPEN_MODEL_SELECTION` | design/reference contract closed; accept/reject Armor of Desert or choose replacement against visible armor/seam/pressure-state criteria |
 | R08 | Titan Rabbit ritual boss | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | current model/animation/hitbox, stomp/leap honesty, signature material visual |
 | R08 | Moonpriest / Knowledge Fairy authored identities | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | current presentation, density/readability, no donor progression leakage |
-| R08 | Glass-Root Archive final guardian | external magical guardian/caster pool | `OPEN_MODEL_SELECTION` | final model, phase geometry, weak points/status relations |
+| R08 | Glass-Root Archive final guardian | magical archive/regulator guardian with visible movable lens/ring/root/crystal components | `OPEN_MODEL_SELECTION` | design/reference contract closed; targeted exact-model search must support field redirection and visible reconfiguration |
 | R09 | Caravan Elephant | Alex's Mobs Continued | `DEPENDENCY_VALIDATE` | current 26.2 riding/charge/body-width behavior and project registration integration |
 | R09 | Executioner dungeon boss | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` with replace-if-fail rule | current animation/reach/poise quality; replace if boss bar exceeds presentation quality |
 | R09 | optional Lv49 dryland field boss | distinct heavy external creature not yet accepted | `OPEN_MODEL_SELECTION` | exact model/name/anatomy/signature material; no scaled Rhino placeholder |
@@ -146,10 +147,10 @@ Their next step is **actual current-version runtime/visual acceptance**, not ano
 
 The current large visible search queue is intentionally narrow:
 
-1. R05 root-vault dungeon guardian;
-2. R06 Sunken Observatory dungeon guardian;
-3. R07 buried fortress/cistern dungeon guardian;
-4. R08 Glass-Root Archive final guardian;
+1. R05 root-vault dungeon guardian — reference/design contract closed; exact model open;
+2. R06 Sunken Observatory dungeon guardian — reference/design contract closed; exact model open;
+3. R07 buried fortress/cistern dungeon guardian — reference/design contract closed; exact model open;
+4. R08 Glass-Root Archive final guardian — reference/design contract closed; exact model open;
 5. R09 optional dryland field boss;
 6. R10 Inferno accept/replace decision;
 7. R11 Sea-Fort boss;
@@ -157,6 +158,8 @@ The current large visible search queue is intentionally narrow:
 9. R12 low-density anomaly roster only where current dependency candidates fail.
 
 R02/R03 already have concrete external candidates and therefore belong to acquisition/conversion review, not broad discovery.
+
+For R05–R08, do not restart generic boss ideation. Candidate selection must use `BOSS_REFERENCE_DESIGN_PASS_R05_R08_2026-09-17.md`.
 
 ---
 
@@ -218,7 +221,7 @@ OPEN_MODEL_SELECTION
 
 The next implementation-prep work should therefore prioritize:
 
-1. true `OPEN_MODEL_SELECTION` slots;
+1. true `OPEN_MODEL_SELECTION` slots using their already-closed design/reference criteria;
 2. actual Azari spatial closure in parallel;
 3. acquisition/conversion/hash work for already-selected external candidates;
 4. runtime visual/hitbox acceptance for dependency actors;
