@@ -797,7 +797,7 @@ Every skill below still requires the external animation/VFX asset-intake gate fr
 
 ### Seismic Lunge — R03 mountain combat discovery
 
-- source: Rocky Roller / Basalt-Wyvern highland technique quest;
+- source: R03 Whitecrest collapsed-mine / lift-route combat mastery chain;
 - 30 Mana / 12 s;
 - 4.5-block collision-safe line advance;
 - ActionCoeff 2.35;
@@ -896,7 +896,7 @@ Hidden Techniques are optional world discoveries, not mandatory sixth advancemen
 
 ## Warrior — Mountain's Answer
 
-Source: R03 Basalt-Wyvern/major highland mastery challenge.
+Source: R03 Griffin plateau / major highland mastery challenge.
 
 - perfect-guarding a heavy/crush attack grants +1 Momentum and causes the next Warrior skill within 4 s to deal +20% poise damage;
 - 8 s ICD.
@@ -940,8 +940,8 @@ Only the first five completed Insights per root class grant Passive Points.
 ## Warrior candidate Insights
 
 1. R01 Steelboar impact/poise challenge.
-2. R03 Rocky Roller break challenge.
-3. R03 Basalt Wyvern highland duel.
+2. R03 collapsed-mine break challenge.
+3. R03 Griffin highland duel.
 4. R07 Armor of Desert guard-break challenge.
 5. R09 Flamehorn impact hunt.
 6. R09 fortress Executioner challenge.
@@ -984,7 +984,7 @@ Only the first five completed Insights per root class grant Passive Points.
 ## Guardian candidate Insights
 
 1. R01 Earthloong defensive clear.
-2. R03 highland convoy/wyvern defense.
+2. R03 highland convoy/lift defense.
 3. R04 expedition rescue holdout.
 4. R06 flooded-shrine defense event.
 5. R07 caravan defense.
@@ -1144,12 +1144,11 @@ Closed before coding:
 - respec costs and server-authority rules;
 - progression data contract.
 
-Still intentionally separate design work:
+Remaining work is integration/production validation rather than a new class-progression design pass:
 
-- exact visual asset filename/hash intake for each new world skill/icon/VFX;
-- later advancement-stage player-facing lore names if the world narrative produces better names;
-- individual enemy/boss kits required to serve the class trials;
-- complete status-effect global roster beyond the statuses already required by current class kits;
-- final keybind audit after every frequent action is known.
+- exact visual asset filename/hash intake for each world skill/icon/VFX;
+- exact Azari coordinates for Insight/trial locations when the spatial gate is closed;
+- external animation/VFX/audio acceptance for player-visible advancement/challenge actions;
+- any regional encounter binding that changes only because its accepted external boss/creature asset changes must update this file at the same time as the owning regional canon.
 
-The next design batch should therefore leave class progression and move to **status/element interaction rules + enemy combat archetypes / first-region encounter kits**, while keeping every visible enemy external-first.
+The frequent-action key map, accessibility/difficulty contract and current global status/element baseline are already owned by their dedicated active canon. Do not reopen those as generic `next class-progression work`.
