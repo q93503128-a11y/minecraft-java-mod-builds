@@ -12,7 +12,7 @@
 
 This audit replaces the earlier snapshot that still described the main story, R03–R12 and the ending as mostly unwritten. Those statements are obsolete. Git history is the archive; they are not alternate current plans.
 
-The project is now in **late pre-production**: the reusable gameplay systems, main quest route package and all twelve regional content packages are substantially authored. Gameplay source bootstrap remains blocked by exact presentation binding, actual Azari placement, asset-dependent boss closure, branding and final canon cleanup. `design written` is not the same as `source-ready`, `playtested` or `finished`.
+The project is now in **late pre-production**: the reusable gameplay systems, main quest route package and all twelve regional content packages are substantially authored. Gameplay source bootstrap remains blocked by exact presentation binding, actual Azari placement, asset-dependent boss closure and final canon cleanup. Final player-facing branding remains required before branded player-facing release/presentation, but it does not block gameplay source bootstrap. `design written` is not the same as `source-ready`, `playtested` or `finished`.
 
 ---
 
@@ -77,13 +77,16 @@ These areas are sufficiently specified that coding should implement their rules 
 
 Source bootstrap is still blocked by work that an implementer must not improvise:
 
-1. **final player-facing title / branding string** — the production slug may remain `openworld-rpg`, but a player-visible build must not ship `TBD` or the internal slug as an accidental title;
-2. **exact external asset binding** — unresolved boss/creature models, NPC outfits, weapon/item families, structures, Anchor machinery, important VFX, animation, SFX/BGM and exact provenance/hash records; R01 Pass 4 narrows several candidates but does not equal visual/Minecraft acceptance;
-3. **Azari spatial closure** — actual coordinates, route relationships, sightlines, settlement/POI/dungeon/boss placement, travel times and content-density validation;
-4. **asset-gated boss/final-guardian sheets** — exact player-facing names, anatomy-supported attacks/weak points and signature materials after model acceptance where regional documents explicitly gate them;
-5. **final stale-document / hidden-choice cleanup** — active files must not retain obsolete alternatives, already-closed blockers or implementation-time gameplay choices.
+1. **exact external asset binding** — unresolved boss/creature models, NPC outfits, weapon/item families, structures, Anchor machinery, important VFX, animation, SFX/BGM and exact provenance/hash records; R01 Pass 4 narrows several candidates but does not equal visual/Minecraft acceptance;
+2. **Azari spatial closure** — actual coordinates, route relationships, sightlines, settlement/POI/dungeon/boss placement, travel times and content-density validation;
+3. **asset-gated boss/final-guardian sheets** — exact player-facing names, anatomy-supported attacks/weak points and signature materials after model acceptance where regional documents explicitly gate them;
+4. **final stale-document / hidden-choice cleanup** — active files must not retain obsolete alternatives, already-closed blockers or implementation-time gameplay choices.
 
 These are pre-code gates, not permission to `decide during coding`.
+
+Separate player-facing release/presentation gate:
+
+- **final player-facing title / branding string** — the production slug may remain `openworld-rpg` during gameplay bootstrap, but a branded player-facing release/presentation must not ship `TBD`, the internal slug or an unapproved candidate as the final title.
 
 The following former blockers are now **closed at design-contract level** and must not be re-listed as open merely because runtime validation has not happened yet:
 
@@ -96,7 +99,7 @@ music/audio state behavior — CLOSED
 cross-region main quest route/rejoin package — CLOSED in MAIN_QUEST_SCENE_PACKAGE.md
 ```
 
-Exact music/SFX files still belong to blocker 2. Aquatic retarget/render quality still requires implementation/playtest validation, but neither is a missing gameplay-design decision.
+Exact music/SFX files still belong to blocker 1. Aquatic retarget/render quality still requires implementation/playtest validation, but neither is a missing gameplay-design decision.
 
 ---
 
@@ -403,11 +406,17 @@ Do not begin gameplay source bootstrap until the remaining blockers are explicit
 Required remaining pre-code exit condition:
 
 ```text
-final player-facing title/branding is locked
-all gated visible content has an accepted external source direction/binding + provenance boundary
+all gated visible gameplay content has an accepted external source direction/binding + provenance boundary
 Azari major content has spatial coordinates + route/sightline/travel/content-density targets
 asset-dependent boss/final-guardian identities and anatomy-supported kits are closed after model acceptance
 stale conflicting design text / hidden implementation-time gameplay choices are removed
+```
+
+Separate branding gate:
+
+```text
+final player-facing title/branding must be locked before branded player-facing release/presentation
+internal production slug may remain during gameplay source bootstrap
 ```
 
 Already-satisfied design conditions that remain runtime validation work rather than blockers:
