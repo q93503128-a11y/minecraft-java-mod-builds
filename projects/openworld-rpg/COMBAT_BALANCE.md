@@ -1,6 +1,6 @@
 # Open-World RPG — Combat Math / Timing / Feel Canon
 
-> Status: **DESIGN CANON — combat balance baseline locked before class-kit implementation**  
+> Status: **DESIGN CANON — combat balance baseline locked; class/status/encounter specifics are now closed in their dedicated canon files**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Equipment math: `EQUIPMENT_BALANCE.md`  
 > Technical runtime boundaries: `M0_DEPENDENCY_AUDIT.md`  
@@ -272,7 +272,7 @@ The middle examples are benchmark-build values used later for enemy-damage autho
 ## Natural HP recovery
 
 - no baseline passive HP regeneration while in combat;
-- after **8 s** without dealing/taking hostile damage, recover **0.30% MaxHP/s**;
+- after **8 s** without dealing/taking hostile damage, recover **0.40% MaxHP/s**;
 - natural recovery is deliberately slow; potions, food, healing skills, camps, inns and shrines remain meaningful;
 - explicit class/item effects may alter this.
 
@@ -303,7 +303,7 @@ Then apply Stamina Recovery equipment/passive bonuses.
 Reference:
 
 | END | Max Stamina | Base regen/s |
-|---:|---:|---:|
+|---:|---:|
 | 5 | 100 | 24.0 |
 | 30 | 130 | 27.0 |
 | 60 | 154 | 30.6 |
@@ -1163,13 +1163,11 @@ Closed for implementation:
 - multiplayer down/revive timing;
 - first combat implementation acceptance targets.
 
-Still intentionally deferred to the next design work because it requires actual class/skill identity rather than generic formulas:
+The items that this document once listed as `next design work` are now closed in later dedicated canon:
 
-- exact five root-class starting active skills/passives/ultimates;
-- advancement-stage class mechanics and skill variants;
-- exact skill Mana/Stamina costs and coefficients;
-- class-specific ultimate-charge sources/rates;
-- exact elemental/status-effect roster and buildup/effect values;
-- individual enemy/boss attack kits beyond the global authoring bands.
+- root-class starting skills/passives/ultimates and specialization mechanics — `CLASS_COMBAT_KITS.md`;
+- deeper advancement/passive/class progression — `CLASS_PROGRESSION.md`;
+- elemental/status roster and buildup/effects — `STATUS_AND_R01_ENCOUNTERS.md` plus later regional encounter canon;
+- individual enemy/boss attack kits — R01 encounter canon and the R02–R12 implementation packages/content bibles.
 
-The next combat-design batch should therefore build the **five root-class complete starting kits and first specialization branches on top of these numbers**, using external animation/VFX/skill references before locking each skill.
+Remaining combat work before source implementation is **presentation binding and technical validation**, not permission to invent a new combat model: accepted animation/VFX/audio/model bindings, model-anatomy-supported hitboxes/weak points, R11 aquatic action compatibility, and later real-client/single-player/multiplayer feel testing.
