@@ -1,13 +1,14 @@
 # Open-World RPG — World / Story / Faction / Ending Canon
 
-> Status: **DESIGN CANON — protagonist frame, world conflict, main-story spine, recurring-character roles, ending structure and region-story integration locked before later region packages**  
+> Status: **DESIGN CANON — protagonist frame, world conflict, main-story spine, recurring-character roles, ending structure and region-story integration locked before implementation**  
 > Master gameplay canon: `GAME_DESIGN.md`  
+> Main-quest implementation package: `MAIN_QUEST_SCENE_PACKAGE.md`  
 > Region graph: `REGIONS.md`  
 > Quest/state authority: `QUEST_WORLD_STATE.md`  
 > Quality audit: `DESIGN_COMPLETENESS_AUDIT.md`  
 > Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins. Final proper nouns and exact player-facing NPC appearances remain subject to external-first asset intake where this document explicitly marks them provisional.
 
-This document exists to correct the largest gap found by the 2026-09-16 design audit: the project already has strong combat, progression, economy and multiplayer rules, but the world needs a memorable human/narrative spine so later regions do not become only `new biome + mobs + resources + dungeon`.
+This document exists to keep a memorable human/narrative spine around the project's combat, progression, economy and multiplayer systems so the later regions do not become only `new biome + mobs + resources + dungeon`.
 
 The story must support the open world rather than turn it into a linear campaign corridor.
 
@@ -236,6 +237,8 @@ The main story is **non-linear inside acts** and uses region choices so open-wor
 
 The player may physically enter stronger regions early. Main-story recommendations and facility access may require discovered evidence, but normal region geography is not sealed behind invisible story walls.
 
+The implementation-level route/rejoin rules, sequence-break recognition and multiplayer-safe scene ownership are closed in `MAIN_QUEST_SCENE_PACKAGE.md`. This document owns the story meaning; that package owns the cross-region playable handoff structure.
+
 ## Prologue / Act 0 — The Road and the Quarry
 
 Primary region: R01.
@@ -346,7 +349,7 @@ enter anomaly zone
 → choose the future operating model
 ```
 
-Exact final boss model/mechanics are **not locked here**. They require external-first boss intake and a dedicated final-encounter design pass.
+Exact final boss model/mechanics are **not locked here**. They require external-first boss intake and the asset-gated final-guardian closure defined by `PROJECT.md`.
 
 The final boss should be an ancient/systemic guardian or crisis-form encounter whose mechanics visibly express the Anchor network. The Restoration Director may be present/opposed without requiring a generic humanoid HP-sponge duel.
 
@@ -687,6 +690,8 @@ No launch requirement for:
 - journals/records should be short enough to read voluntarily and never required merely to understand the basic main objective;
 - major revelations should be supported by location/visual evidence rather than a single lore dump.
 
+Final localized dialogue prose is content writing governed by the locked scene intent/objectives/rejoin state, not a license to change quest logic during implementation.
+
 ---
 
 # 16. External-first narrative presentation
@@ -729,11 +734,13 @@ Rules:
 - regional optional flags may alter epilogue/dialogue but never erase unrelated progression;
 - migration/versioning is required before any persistent test world becomes valuable.
 
+`MAIN_QUEST_SCENE_PACKAGE.md` refines the exact route/rejoin/sequence-break ownership that uses these durable states. A player who completed an eligible region before the main quest requests it must not be forced to replay the content merely to set a later flag.
+
 ---
 
 # 18. What this closes
 
-Closed for later regional design:
+Closed before implementation:
 
 - customizable protagonist with light shared background;
 - early-adventure → late-strange serious-but-not-grimdark tone;
@@ -747,16 +754,17 @@ Closed for later regional design:
 - POI/travel cadence quality targets;
 - three personal ending philosophies;
 - multiplayer-safe personal endings and neutral shared postgame;
-- postgame role without infinite progression treadmill.
+- postgame role without infinite progression treadmill;
+- cross-region main-route selection requirements, scene/rejoin ownership and sequence-break behavior through `MAIN_QUEST_SCENE_PACKAGE.md`;
+- R03–R12 regional story/outcome content through their current implementation-package + content-bible pairs.
 
-Still requires later dedicated work:
+Remaining work is presentation/spatial binding rather than another broad story-design pass:
 
-- exact final names/visual models/outfits for recurring NPCs/factions;
-- exact main quest-by-quest dialogue/objective scripts;
-- exact R03–R12 regional stories and outcomes inside each implementation package;
-- final Anchor machinery/facility external asset language;
-- final boss exact external model, phases and rewards;
-- region-specific music motifs and main-story audio direction;
-- epilogue presentation/cinematic implementation details.
+- exact final visual models/outfits and asset-dependent proper-name presentation for recurring NPCs/factions where still gated;
+- actual Azari coordinates, staging, sightlines and travel relationships for major story scenes/locations;
+- final Anchor machinery/facility external asset language and accepted provenance;
+- final systemic guardian exact external model, anatomy-supported phases/weak points and rewards;
+- exact region/main-scene music and SFX asset selection; behavior/state priority is already closed in `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md`;
+- epilogue/cinematic presentation assets and final localized prose built from the locked scene intents.
 
-The next regional package must start applying this document rather than returning to `biome + mob list` planning.
+Do not return to `biome + mob list` planning or reopen the main route. The next story-facing work must bind this canon to accepted assets and actual world space.
