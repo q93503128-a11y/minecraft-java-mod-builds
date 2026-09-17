@@ -1,6 +1,6 @@
 # Open-World RPG — R07 Sunscar Desert Implementation Package
 
-> Status: **DESIGN CANON — R07 world/story/traversal/service/combat/reward flow is implementation-ready; exact dungeon-boss and several desert-prop bindings remain external-intake gates**  
+> Status: **DESIGN CANON — R07 world/story/traversal/service/combat/reward flow is content/mechanics-closed; exact dungeon-boss and several desert-prop bindings remain external-intake gates**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Story spine: `WORLD_STORY_CANON.md`  
 > Region graph: `REGIONS.md`  
@@ -615,7 +615,7 @@ Working project role:
 ```text
 Lv: 39
 role: optional field/world boss
-HP target: ~23,000–27,000
+HP target: ~19,500–23,000
 Defense: ~95
 MR: ~66
 Poise: 240

@@ -161,7 +161,7 @@ Boss first-clear curated rewards use at least the boss/content Lv and do not rol
 
 Unless a specific named item states otherwise, required player Lv equals `Item Lv`. A player who sequence-breaks into high-level content may obtain the reward early, but cannot bypass the global equipment progression merely through multiplayer carrying.
 
-Base-stat curves by weapon/armor family are locked in the later equipment-scaling pass before gameplay coding. Loot code must read those data values; it must not invent family curves internally.
+Base-stat curves by weapon/armor family are locked in `EQUIPMENT_BALANCE.md`. Loot code must read those canonical data values; it must not invent family curves internally.
 
 ---
 
@@ -427,7 +427,7 @@ The loot system is deliberately low-density enough that inventory management rem
 - bulk actions always preview expected Gold and number of items;
 - Mythic and favorited items are never included in default bulk actions.
 
-A salvage system is **not automatically added** merely because DungeonRPG/Diablo use one. It becomes canonical only if the later forge/enhancement design has a real material sink that makes salvage meaningful. Otherwise selling remains sufficient and avoids another management loop.
+A salvage system is **not part of the launch canon**. `EQUIPMENT_BALANCE.md` closes the forge/reforge loop without a salvage-material sink, so ordinary unwanted gear is sold. Salvage should be reconsidered only if a future explicitly authored system creates a real need rather than being added because another RPG has it.
 
 ---
 
@@ -524,16 +524,25 @@ No Java switch statement should contain the final list of every boss drop or aff
 
 ---
 
-# 15. Pre-code dependencies still required
+# 15. Remaining pre-code content / presentation bindings
 
-Loot-system **rules are locked here**, but gameplay source bootstrap remains blocked until the rest of the design canon closes the remaining values that loot code would otherwise have to invent:
+Loot-system rules and numerical equipment/forge rules are already closed between this file and `EQUIPMENT_BALANCE.md`. Gameplay source must not reopen them.
 
-1. weapon/armor base-stat curves by Item Lv and family;
-2. exact affix min/max curves by Item Lv;
-3. forge/enhancement/re-roll rules and whether salvage has a justified role;
-4. actual region-by-region equipment/model catalog;
-5. actual R01 material/node catalog with external model/icon mapping;
-6. every first-clear reward's real model/icon/source;
-7. final Mythic list only after boss/item visual sources pass quality review.
+The remaining pre-code work is exact content/presentation binding that implementation must not invent:
 
-These are planning tasks, not implementation-time decisions.
+1. region-by-region equipment/model/icon catalogs beyond the already-authored R01 mechanical catalog;
+2. exact source file/model/hash binding for R01 items/resources as tracked by `R01_ASSET_INTAKE.md`;
+3. every regional first-clear reward's real model/icon/source;
+4. final Mythic identities only after each boss/item visual source passes quality review;
+5. exact boss signature-material names/models derived from accepted boss anatomy/presentation;
+6. later-region resource-node/item models, icons and provenance.
+
+The following are **not open design tasks anymore**:
+
+- weapon/armor base-stat curves by Item Lv and family;
+- exact affix min/max curves by Item Lv;
+- forge/reforge behavior and Gold costs;
+- launch salvage policy;
+- R01 mechanical equipment/resource catalog.
+
+Those are canonical in `EQUIPMENT_BALANCE.md`. If a hard implementation constraint invalidates one of them, revise the canon first rather than silently reopening the decision in code.

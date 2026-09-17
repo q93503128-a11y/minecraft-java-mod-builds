@@ -1,6 +1,6 @@
 # Open-World RPG — R04 Frozen Crown Implementation Package
 
-> Status: **DESIGN CANON — R04 world/story/traversal/service/combat/reward flow is implementation-ready; exact external asset file bindings remain gated where marked**  
+> Status: **DESIGN CANON — R04 world/story/traversal/service/combat/reward flow is content/mechanics-closed; exact external asset file bindings remain gated where marked**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Story spine: `WORLD_STORY_CANON.md`  
 > Region graph: `REGIONS.md`  
@@ -695,7 +695,7 @@ Working role:
 ```text
 Lv: 24
 role: optional field/world boss
-HP target: ~14,000–15,500
+HP target: ~13,000–15,000
 Defense: ~56
 MR: ~44
 Poise: 215
@@ -853,7 +853,7 @@ Working role:
 ```text
 Lv: 25
 role: dungeon boss
-HP target: ~12,500–13,800
+HP target: ~11,500–13,000
 Defense: ~50
 MR: ~62
 Poise: 210
