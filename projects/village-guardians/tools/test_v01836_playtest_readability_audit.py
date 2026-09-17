@@ -52,11 +52,11 @@ def main() -> None:
     # Movement ownership stays split: raid owns north/inside and aerial, attack plan owns side/rear exterior.
     assert "VillageAttackPlanSystem.ownsExteriorRouting(id, mob.blockPosition())" in raid
     assert "frontOf(uuid) != Front.NORTH && !isInsideFortress(pos)" in attack
-    for owner in ("VillageRaidSystem.tick(server);", "VillageAttackPlanSystem.tick(server);",
-                  "VillageEnemyEliteSystem.tick(server);", "VillageSiegeBossSystem.tick(server);",
-                  "VillagePlacedTurretSystem.tick(server);", "VillageMercenarySystem.tick(server);",
-                  "VillageMercenaryDeploymentSystem.tick(server);"):
-        assert owner in guardians, owner
+    server_tick = section(guardians, "public void onServerTick", "public void onServerStopping")
+    for owner in ("VillageRaidSystem", "VillageAttackPlanSystem", "VillageEnemyEliteSystem",
+                  "VillageSiegeBossSystem", "VillagePlacedTurretSystem", "VillageMercenarySystem",
+                  "VillageMercenaryDeploymentSystem"):
+        assert f"{owner}.tick(event.getServer())" in server_tick, owner
 
     # No regression in facility ownership or town hall simplification.
     assert 'action.startsWith("facility:") || action.startsWith("manage:")' in local
