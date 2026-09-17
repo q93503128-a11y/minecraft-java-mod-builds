@@ -1,6 +1,6 @@
 # Open-World RPG — R11 Inner Sea Implementation Package
 
-> Status: **DESIGN CANON — R11 layered world/story/traversal/economy/boss flow locked; deep-water combat animation/skill compatibility and exact sea-fort boss are explicit technical/asset gates**  
+> Status: **DESIGN CANON — R11 layered world/story/traversal/economy/boss flow locked; aquatic action compatibility is design-closed in `R11_AQUATIC_ACTION_MATRIX.md`, while exact underwater animation/retarget/render proof and the sea-fort boss remain technical/asset gates**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Story spine: `WORLD_STORY_CANON.md`  
 > Region graph: `REGIONS.md`  
@@ -9,9 +9,10 @@
 > Mounts: `MOUNTS.md`  
 > Fishing/housing: `FISHING_COLLECTION_HOUSING_MARKET.md`  
 > Quest/state: `QUEST_WORLD_STATE.md`  
+> Aquatic action authority: `R11_AQUATIC_ACTION_MATRIX.md`  
 > Quality contract: `DESIGN_COMPLETENESS_AUDIT.md`  
 > External provenance: `EXTERNAL_SOURCES.md`  
-> Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins. Later exact quest/reward/service values closed in `R11_CONTENT_BIBLE.md` are incorporated here and must not be reopened during coding.
+> Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins. Later exact quest/reward/service values closed in `R11_CONTENT_BIBLE.md` and per-action aquatic compatibility closed in `R11_AQUATIC_ACTION_MATRIX.md` are incorporated here and must not be reopened during coding.
 
 R11 is not one flat `ocean biome`. It is a **three-layer major region** that grows with the player across the campaign:
 
@@ -569,7 +570,7 @@ Explicitly forbidden:
 
 ## 9.2 Skill compatibility adaptation
 
-Before deep-content implementation, each frequent combat action receives one of three data tags:
+The canonical per-action result is now owned by `R11_AQUATIC_ACTION_MATRIX.md`. Each frequent combat action is already classified as one of:
 
 ```text
 AQUATIC_NATIVE
@@ -579,24 +580,24 @@ AQUATIC_DISABLED_WITH_FALLBACK
 
 ### AQUATIC_NATIVE
 
-Skill already works cleanly in 3D water with accepted external animation/VFX.
+Skill already works cleanly in 3D water with the matrix's accepted behavior; production still needs a final-quality animation/VFX binding where required.
 
 ### AQUATIC_ADAPTED
 
-Same learned skill identity/economy, but movement/trajectory/animation is adjusted for water.
+Same learned skill identity/economy, but movement/trajectory/animation is adjusted for water according to the closed matrix.
 
-Examples:
+Examples of the already-adopted adaptation language include:
 
 - ground dash → directional swim burst;
-- ground slam → short downward/forward pressure strike if the animation supports it;
+- ground slam → short downward/forward pressure strike where the animation supports it;
 - horizontal projectile → full 3D aim with bounded range;
 - stationary cast → stabilized swim cast.
 
 ### AQUATIC_DISABLED_WITH_FALLBACK
 
-Only allowed where the original skill cannot be made visually/mechanically honest.
+Only used where the original action cannot be made visually/mechanically honest.
 
-The slot temporarily exposes a **direct aquatic variant of that same learned skill**, not a separate progression unlock.
+The slot exposes the matrix-defined direct aquatic variant of that same learned skill, not a separate progression unlock.
 
 The player does not manage or equip it separately.
 
@@ -604,18 +605,25 @@ The player does not manage or equip it separately.
 
 - sword/dagger/spear/staff/catalyst/bow/ranged families remain their owned/equipped weapons;
 - exact underwater attack animation sets require external intake;
-- huge ground-only hammer/greatsword swings may be shortened/retimed underwater if the model/animation supports believable drag/commitment;
+- huge ground-only hammer/greatsword swings may be shortened/retimed underwater where the closed matrix permits adaptation and the accepted animation supports believable drag/commitment;
 - project never shows a full land combo pose while the player floats horizontally;
 - hitboxes remain server-authoritative and tied to visible weapon movement.
 
-## 9.4 Defense
+## 9.4 Defense / remaining technical gate
 
 - underwater dodge becomes Swim Burst, preserving the same concept of short defensive invulnerability + recovery;
-- guard/parry remains available only where the weapon/off-hand and animation can present it honestly;
-- if a specific guard pose fails visually, use a class/weapon-compatible aquatic defensive animation before implementation;
+- guard/parry follows the per-action matrix and requires a visually honest aquatic defensive animation where applicable;
 - no global underwater damage penalty.
 
-This entire section is a **technical/animation gate**: design is locked, but exact per-class animation bindings must pass a dedicated R11 aquatic-combat audit before source implementation.
+The **gameplay compatibility design gate is closed** by `R11_AQUATIC_ACTION_MATRIX.md`. Remaining work is production/runtime proof:
+
+- exact external swim/attack/cast/guard animation selection;
+- retargeting and animation layering;
+- Minecraft-scale render/camera review;
+- movement/hitbox/server-timing validation;
+- multiplayer synchronization and feel testing.
+
+Implementation must consume the matrix; it may not reopen per-class compatibility as an implementation-time design choice.
 
 ---
 
@@ -1408,7 +1416,7 @@ Required multiplayer tests later:
 
 # 30. Asset / technical blockers before implementation
 
-R11 is not implementation-ready at the **deep combat presentation** level until all of these close:
+R11 is not implementation-ready at the **deep combat presentation/runtime** level until all of these close:
 
 1. current 26.2 Fabric Alex aquatic roster in-game review, especially Cachalot/Giant Squid/Laviathan multipart behavior;
 2. current Riptooth/Abyss Fang model, animation, hitbox and attack review;
@@ -1418,7 +1426,7 @@ R11 is not implementation-ready at the **deep combat presentation** level until 
 6. Laviathan mount integration and seating visual review;
 7. **Deep-Dive Harness external model / player animation family**;
 8. external swim locomotion, Swim Burst, underwater attack/cast/guard animation sources;
-9. per-class `AQUATIC_NATIVE / ADAPTED / DISABLED_WITH_FALLBACK` audit;
+9. runtime implementation and Minecraft-scale validation against the already-closed `R11_AQUATIC_ACTION_MATRIX.md`, including every native/adapted/fallback action;
 10. sea-fort final boss external model;
 11. abyssal temple architecture / pressure machinery family;
 12. abyssal mineral/reef/medicinal resource models;
@@ -1457,8 +1465,9 @@ Verification state:
 ```text
 DESIGN REVIEWED: YES
 EXTERNAL REFERENCE REVIEWED: YES
+R11 AQUATIC ACTION COMPATIBILITY DESIGN: CLOSED — R11_AQUATIC_ACTION_MATRIX.md
 EXACT ASSET INTAKE: PARTIAL / REQUIRED
-DEEP COMBAT TECHNICAL/ANIMATION GATE: REQUIRED
+DEEP COMBAT PRESENTATION / RETARGET / RUNTIME GATE: REQUIRED
 CODE REVIEWED: N/A
 TESTED: NO
 BUILD VERIFIED: NO
