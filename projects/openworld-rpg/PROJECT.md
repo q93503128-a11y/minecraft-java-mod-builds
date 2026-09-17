@@ -63,6 +63,7 @@ Minecraft supplies the block world, runtime, input base and hosting environment.
 - custom/external creature ecology;
 - dungeons/field bosses/world bosses;
 - gathering/fishing/camps/housing/mounts;
+- party/co-op multiplayer;
 - external-first UI/models/animation/VFX/audio;
 - Anchor-network story and personal endings.
 
@@ -104,6 +105,7 @@ Primary gameplay/system canon:
 - `FISHING_COLLECTION_HOUSING_MARKET.md`
 - `MOUNTS.md`
 - `QUEST_WORLD_STATE.md`
+- `PARTY_MULTIPLAYER.md` — formal party UX, participation eligibility, non-split personal EXP/Class XP, personal loot/Gold, co-op scaling, friendly-fire baseline and multiplayer acceptance matrix
 - `UI_DIRECTION.md`
 - `M0_DEPENDENCY_AUDIT.md`
 
@@ -132,6 +134,8 @@ Quality/intake:
 - `R01_ASSET_INTAKE.md` and evidence snapshots where applicable.
 
 The implementation package owns a region's traversal/ecology/encounter/dungeon/system contract. The later matching content bible closes settlement name, named cast, exact quests/scenes/rewards/reconnect state and story handoff. If an old package contains a working placeholder superseded by its content bible, the later content bible wins for that explicitly refined point.
+
+`PARTY_MULTIPLAYER.md` is a subordinate refinement of `GAME_DESIGN.md` §23, `QUEST_WORLD_STATE.md`, `COMBAT_BALANCE.md` and `CLASS_PROGRESSION.md`. It does not replace their solo rules; it closes the missing co-op reward/party behavior details.
 
 ---
 
@@ -247,16 +251,32 @@ Important state is server-authoritative, including:
 - HP/resources/status/poise;
 - item ownership and loot eligibility;
 - Gold;
-- EXP/Lv/class progression;
+- EXP/Lv/Class XP;
 - skill cost/success/cooldowns;
+- class/progression;
 - quests and evidence;
 - world-state changes;
 - mounts/major encounter controllers;
+- party membership/leadership;
 - save data and reward transactions.
 
 Essential never replaces this authority model.
 
 Personal/shared/encounter ownership follows `QUEST_WORLD_STATE.md`. Rewards must be idempotent. Support contribution must count where specified. Host ownership does not make the host the only legitimate story player.
+
+### Co-op reward invariant
+
+For a jointly defeated enemy or encounter:
+
+```text
+each eligible participating player receives their own normal personal EXP
++ their own normal Class XP for the qualifying active class
++ their own eligible personal loot/Gold roll
+```
+
+**EXP/Class XP are not divided by party size.** Each receiver uses their own Lv/Class Rank and the existing encounter-level anti-farm modifier. Last hit and party leader status have no reward ownership value.
+
+Formal party membership alone never grants rewards; actual participation does. Detailed qualification/scaling/reconnect behavior lives in `PARTY_MULTIPLAYER.md`.
 
 Do not label multiplayer successful until tested with real clients.
 
