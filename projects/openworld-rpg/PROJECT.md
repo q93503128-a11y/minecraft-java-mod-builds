@@ -1,7 +1,7 @@
-# Anchorwake — Project Contract
+# Open-World RPG — Project Contract
 
 > Working project slug: `openworld-rpg`  
-> Player-facing title: **Anchorwake — locked in `BRANDING.md`**  
+> Player-facing title: **PRE-CODE BRANDING GATE — not yet locked; `Anchorwake` is an evaluated candidate only**  
 > Current phase: **DESIGN CANON LATE PRE-PRODUCTION / GAMEPLAY SOURCE BOOTSTRAP BLOCKED BY PRE-CODE GATES**
 
 ## 1. Repository / authority contract
@@ -17,7 +17,7 @@ This project follows, in order:
 7. explicitly indexed later refinement/content documents;
 8. historical audits and old chats only as evidence/history.
 
-When a current canon decision changes, update or replace the stale live wording. Git history is the archive. Do not preserve contradictory rules as if both were valid options.
+When a current canon decision changes, update or replace stale live wording. Git history is the archive. Do not preserve contradictory rules as if both were valid options.
 
 `DESIGN_COMPLETENESS_AUDIT.md` is the design-quality audit that found several historical conflicts, but its blocker list may lag behind later closure work. **The current pre-code gate list in §7 of this file is authoritative when a later dedicated canon has already closed an older audit blocker.**
 
@@ -38,7 +38,7 @@ When a current canon decision changes, update or replace the stale live wording.
 - planned initial JAR basename: `openworld-rpg-0.1.0-alpha.1.jar`
 - no gameplay source/save format exists yet
 
-The internal folder/mod/artifact identifiers remain stable production IDs. They are **not** player-facing branding and do not need to be renamed merely because the final display title is `Anchorwake`.
+The internal folder/mod/artifact identifiers remain stable production IDs. They are **not player-facing branding** and do not need to be renamed merely because the eventual display title differs.
 
 The internal artifact/version strings above are production identifiers. They are **not permission to display `alpha`, the slug or other development terminology inside normal gameplay UI/content.**
 
@@ -52,7 +52,7 @@ Do not silently upgrade/substitute pinned runtime dependencies during implementa
 
 ## 3. Product identity
 
-**Anchorwake** is a large authored open-world fantasy action RPG built on Minecraft, not vanilla-plus.
+This project is a large authored open-world fantasy action RPG built on Minecraft, not vanilla-plus.
 
 Minecraft supplies the block world, runtime, input base and hosting environment. Project-owned systems supply the player-facing RPG identity:
 
@@ -71,7 +71,7 @@ Minecraft supplies the block world, runtime, input base and hosting environment.
 
 The design goal is not feature count. It is one cohesive game whose systems reinforce exploration, combat, progression and world consequence.
 
-`BRANDING.md` owns the final player-facing title string and its presentation boundary. Exact logo/font/graphic bytes remain external-first visual assets and therefore stay inside the ordinary presentation/provenance gate.
+`BRANDING.md` owns title-candidate evaluation and the eventual player-facing title lock. `Anchorwake` is currently an evaluated candidate, **not final canon**. Exact logo/font/graphic bytes remain external-first visual assets and therefore stay inside the ordinary presentation/provenance gate.
 
 ---
 
@@ -98,7 +98,7 @@ Therefore:
 Primary gameplay/system canon:
 
 - `GAME_DESIGN.md`
-- `BRANDING.md` — final player-facing title `Anchorwake`, spelling/metadata rules and external-first logo boundary
+- `BRANDING.md` — title-candidate evaluation, final-title acceptance criteria and external-first logo boundary; final title is not locked yet
 - `COMBAT_BALANCE.md`
 - `CLASS_COMBAT_KITS.md`
 - `CLASS_PROGRESSION.md`
@@ -154,12 +154,12 @@ The implementation package owns a region's traversal/ecology/encounter/dungeon/s
 
 These are not new design options. They identify older live phrases that are already superseded by later canon and must be cleaned from their original documents during the final stale-text pass.
 
-- **The final player-facing title is `Anchorwake`.** Any older `PRE-CODE BRANDING GATE`, `TBD` or internal-slug-as-title wording is stale. `BRANDING.md` owns spelling and visual-logo boundary.
+- **The final player-facing title is NOT locked.** `Anchorwake` was researched and collision-screened but returned to candidate status after first-contact owner feedback showed that `Anchor` is not self-explanatory before the setting is learned. Any live wording that says `Anchorwake` is final is stale. `BRANDING.md` owns the current candidate evaluation.
 - **Alderford is the final player-facing R01 starting-settlement name.** Older wording saying the starting-settlement name/lore will be decided later is stale.
 - `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md` closes the global difficulty/assist, frequent-action input, subtitle/non-audio cue, camera/VFX comfort and audio/music **behavioral** contracts. Exact SFX/BGM files remain an asset-intake problem, not an open behavior-design problem.
 - `R11_AQUATIC_ACTION_MATRIX.md` closes the former R11 aquatic action-compatibility design blocker. Runtime retarget/render/playtest proof remains validation work.
 - **R03 Basalt Wyvern references in older class-progression prose are stale.** Basalt Wyvern belongs to R10. The live `CLASS_PROGRESSION.md` now uses current R03 collapsed-mine/lift-route/Griffin identities instead of resurrecting Basalt Wyvern or the obsolete `Rocky Roller` slot.
-- `R01_ASSET_INTAKE.md` integrates Pass 4 for River Scholar / Ironbound / Trail Skewers candidate identity. Pass 5 adds acquisition-source evidence: the preferred Wizard/Knight modular parts belong to the current broader Source-edition outfit content rather than being assumed to exist in the free Standard archive; Kenney Food Kit and several creator-uploaded CC0 Quaternius Standard archives now have direct acquisition locators. None is visually/Minecraft accepted yet; `R01 ASSET READY` remains `NO`.
+- `R01_ASSET_INTAKE.md` integrates Pass 4 for River Scholar / Ironbound / Trail Skewers candidate identity. Pass 5 adds acquisition-source evidence: the preferred Wizard/Knight modular parts belong to the current broader Source-edition outfit content rather than being assumed to exist in the free Standard archive; Kenney Food Kit and several creator-uploaded CC0 Quaternius Standard archives have direct acquisition locators. None is visually/Minecraft accepted yet; `R01 ASSET READY` remains `NO`.
 
 ---
 
@@ -201,22 +201,21 @@ Code does not silently become design authority.
 
 ## 7. Content-closed does not mean source-ready
 
-R01–R12 now have concrete regional content authoring, the cross-region main quest/rejoin structure is closed in `MAIN_QUEST_SCENE_PACKAGE.md`, and the final player-facing title string is closed as `Anchorwake`. The project is **not yet gameplay-source-ready**.
+R01–R12 now have concrete regional content authoring and the cross-region main quest/rejoin structure is closed in `MAIN_QUEST_SCENE_PACKAGE.md`, but the project is **not yet gameplay-source-ready**.
 
 Older package headers using `implementation-ready` must be interpreted narrowly as `the described mechanics/content flow no longer needs invention`. They do not waive these current pre-code gates:
 
-1. **exact external presentation binding and provenance** for unresolved models, outfits, items, structures, Anchor machinery, final logo/font/graphic, VFX, animations, SFX/BGM and local-only/dependency boundaries;
-2. **actual Azari spatial closure** — coordinates, footprints, sightlines, route joins, travel-time targets, POI/dungeon/boss placement and content-density validation;
-3. **asset-gated final encounter sheets** — exact player-facing guardian/boss names, anatomy-supported attacks/weak points/signature materials only after their accepted models are known;
-4. **final stale-document / hidden-choice audit** — remove obsolete alternatives and ensure no implementation-time gameplay decision remains hidden in older live text.
+1. **final player-facing title / branding string** — compare researched candidates for immediate readability, project specificity, open-world/narrative fit, collision risk and logo viability; do not expose the internal slug as the finished title;
+2. **exact external presentation binding and provenance** for unresolved models, outfits, items, structures, Anchor machinery, final logo/font/graphic, VFX, animations, SFX/BGM and local-only/dependency boundaries;
+3. **actual Azari spatial closure** — coordinates, footprints, sightlines, route joins, travel-time targets, POI/dungeon/boss placement and content-density validation;
+4. **asset-gated final encounter sheets** — exact player-facing guardian/boss names, anatomy-supported attacks/weak points/signature materials only after their accepted models are known;
+5. **final stale-document / hidden-choice audit** — remove obsolete alternatives and ensure no implementation-time gameplay decision remains hidden in older live text.
 
-The former separate **title / branding-string gate is CLOSED** by `BRANDING.md`. Final logo/title-screen visual assets are not a fifth gate; they are part of item 1.
-
-The global accessibility/difficulty/assist, subtitles/non-audio cues, frequent-action input map and audio/music state-behavior design are closed in `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md`. Exact music/SFX bytes remain part of the external-asset gate in item 1.
+The global accessibility/difficulty/assist, subtitles/non-audio cues, frequent-action input map and audio/music state-behavior design are closed in `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md`. Exact music/SFX bytes remain part of the external-asset gate in item 2.
 
 The R11 aquatic action/animation compatibility design is closed in `R11_AQUATIC_ACTION_MATRIX.md`. Runtime animation retarget/render validation remains required before R11 can be called tested or play-ready, but it is no longer a design blocker.
 
-The cross-region main-route region requirements, evidence counts, recurring-character scene functions, rejoin logic, sequence-break handling, finale handoff and personal ending commit behavior are closed in `MAIN_QUEST_SCENE_PACKAGE.md`. Exact scene locations/cameras/outfits/props/audio remain subject to gates 1–3 where applicable.
+The cross-region main-route region requirements, evidence counts, recurring-character scene functions, rejoin logic, sequence-break handling, finale handoff and personal ending commit behavior are closed in `MAIN_QUEST_SCENE_PACKAGE.md`. Exact scene locations/cameras/outfits/props/audio remain subject to gates 2–4 where applicable.
 
 Only after these remaining gates are closed should M0 create the gameplay source/resource/data layout.
 
