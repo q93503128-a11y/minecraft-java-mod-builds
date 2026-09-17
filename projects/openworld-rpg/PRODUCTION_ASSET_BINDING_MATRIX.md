@@ -7,6 +7,8 @@
 > Provenance registry: `EXTERNAL_SOURCES.md`  
 > R01 detailed intake: `R01_ASSET_INTAKE.md`  
 > R05–R08 boss-selection contract: `BOSS_REFERENCE_DESIGN_PASS_R05_R08_2026-09-17.md`  
+> R05/R06 targeted model intake: `R05_R06_GUARDIAN_MODEL_INTAKE_PASS1_2026-09-17.md`  
+> R07/R08 targeted model intake: `R07_R08_GUARDIAN_MODEL_INTAKE_PASS1_2026-09-17.md`  
 > Rule: this matrix does not redesign gameplay. It only records whether a player-facing visual/content slot already has a concrete external source, needs runtime acceptance, or still needs model selection.
 
 ---
@@ -80,6 +82,8 @@ project-owned stats/spawn/rewards/state = allowed through normal integration bou
 
 Any older live wording that flattens the continuation to `MIT` is stale for raw-byte reuse decisions. Runtime dependency use remains distinct from copying donor assets/code.
 
+The R07/R08 intake attempted to inspect the exact current Fabric 26.2 JAR, but the current inspection environment could resolve the distribution/version and not retrieve the Java archive bytes. Therefore no claim is made that current Armor of Desert / Moon Priest model JSON, animation files or hitboxes were directly inspected. That work remains `DEPENDENCY_VALIDATE`, not accepted runtime proof.
+
 ---
 
 # 4. Region-by-region major actor matrix
@@ -97,14 +101,14 @@ Any older live wording that flattens the continuation to `MIT` is stale for raw-
 | R04 | Ferox Iceworm | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | burrow/surface animation, hit volume, camera/readability |
 | R04 | Icebroodmother + Ice Weaver | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | boss/minion current-model quality, add readability, VFX/hitbox |
 | R05 | mature Earthloong field boss | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | current 26.2 quality + distinct mature encounter presentation |
-| R05 | root-vault / regulator dungeon guardian | ancient regulator construct with readable core + articulated control components | `OPEN_MODEL_SELECTION` | design/reference contract closed in `BOSS_REFERENCE_DESIGN_PASS_R05_R08_2026-09-17.md`; targeted exact-model search + 3D/license review only |
+| R05 | root-vault / regulator dungeon guardian | ancient regulator construct with readable core + articulated control components | `OPEN_MODEL_SELECTION` | Pass 1 leaves only `Pok` and OnlyPro `Forest Golem` worth direct 3D rejection/acceptance review; neither is accepted; see R05/R06 intake |
 | R06 | Hydra field boss | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | multi-head hit/readability, water combat behavior, authored basin integration |
-| R06 | Sunken Observatory dungeon guardian | hydromechanical/ceremonial flow guardian with directional components | `OPEN_MODEL_SELECTION` | design/reference contract closed; targeted exact-model search must support visible flow lanes and shallow-water arena readability |
+| R06 | Sunken Observatory dungeon guardian | hydromechanical/ceremonial flow guardian with directional components | `OPEN_MODEL_SELECTION` | Pass 1 rejected water-elemental/generic caster/mecha shortcuts; no exact candidate survives; search by directional hydromechanical anatomy |
 | R07 | Ferox Deathworm field boss | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | sand/burrow presentation, melee access, hitbox |
-| R07 | buried fortress/cistern dungeon guardian | armored infrastructure sentinel; Armor of Desert only if it passes direct review | `OPEN_MODEL_SELECTION` | design/reference contract closed; accept/reject Armor of Desert or choose replacement against visible armor/seam/pressure-state criteria |
+| R07 | buried fortress/cistern dungeon guardian | armored infrastructure sentinel; Armor of Desert only if it passes direct review | `OPEN_MODEL_SELECTION` | Armor of Desert remains `DEPENDENCY_VALIDATE` as a candidate only; current 26.2 binary/model evidence still required; screened generic desert/golem alternatives rejected |
 | R08 | Titan Rabbit ritual boss | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | current model/animation/hitbox, stomp/leap honesty, signature material visual |
-| R08 | Moonpriest / Knowledge Fairy authored identities | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | current presentation, density/readability, no donor progression leakage |
-| R08 | Glass-Root Archive final guardian | magical archive/regulator guardian with visible movable lens/ring/root/crystal components | `OPEN_MODEL_SELECTION` | design/reference contract closed; targeted exact-model search must support field redirection and visible reconfiguration |
+| R08 | Moonpriest / Knowledge Fairy authored identities | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | current presentation, density/readability, no donor progression leakage; Moonpriest remains normal/elite caster role only |
+| R08 | Glass-Root Archive final guardian | magical archive/regulator guardian with visible movable lens/ring/root/crystal components | `OPEN_MODEL_SELECTION` | Pass 1 rejects Moonpriest as final boss and generic crystal golem/automaton shortcuts; no exact final candidate survives |
 | R09 | Caravan Elephant | Alex's Mobs Continued | `DEPENDENCY_VALIDATE` | current 26.2 riding/charge/body-width behavior and project registration integration |
 | R09 | Executioner dungeon boss | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` with replace-if-fail rule | current animation/reach/poise quality; replace if boss bar exceeds presentation quality |
 | R09 | optional Lv49 dryland field boss | distinct heavy external creature not yet accepted | `OPEN_MODEL_SELECTION` | exact model/name/anatomy/signature material; no scaled Rhino placeholder |
@@ -147,10 +151,10 @@ Their next step is **actual current-version runtime/visual acceptance**, not ano
 
 The current large visible search queue is intentionally narrow:
 
-1. R05 root-vault dungeon guardian — reference/design contract closed; exact model open;
-2. R06 Sunken Observatory dungeon guardian — reference/design contract closed; exact model open;
-3. R07 buried fortress/cistern dungeon guardian — reference/design contract closed; exact model open;
-4. R08 Glass-Root Archive final guardian — reference/design contract closed; exact model open;
+1. R05 root-vault dungeon guardian — design contract closed; Pass 1 has two direct-review prospects but no accepted model;
+2. R06 Sunken Observatory dungeon guardian — design contract closed; Pass 1 found no surviving exact candidate;
+3. R07 buried fortress/cistern dungeon guardian — design contract closed; Armor of Desert is candidate-only pending current dependency inspection;
+4. R08 Glass-Root Archive final guardian — design contract closed; Moonpriest/generic crystal shortcuts rejected and no accepted model exists;
 5. R09 optional dryland field boss;
 6. R10 Inferno accept/replace decision;
 7. R11 Sea-Fort boss;
@@ -159,7 +163,20 @@ The current large visible search queue is intentionally narrow:
 
 R02/R03 already have concrete external candidates and therefore belong to acquisition/conversion review, not broad discovery.
 
-For R05–R08, do not restart generic boss ideation. Candidate selection must use `BOSS_REFERENCE_DESIGN_PASS_R05_R08_2026-09-17.md`.
+For R05–R08, do not restart generic boss ideation or repeat the rejected broad material/biome searches. Apply, in order:
+
+1. `BOSS_REFERENCE_DESIGN_PASS_R05_R08_2026-09-17.md`;
+2. `R05_R06_GUARDIAN_MODEL_INTAKE_PASS1_2026-09-17.md`;
+3. `R07_R08_GUARDIAN_MODEL_INTAKE_PASS1_2026-09-17.md`.
+
+The first intake pass established several reusable rejection rules:
+
+- `water creature` is not automatically a flow-control guardian;
+- `desert enemy` is not automatically a pressure sentinel;
+- `crystal creature` is not automatically a magical regulator;
+- high animation count does not compensate for the wrong body topology;
+- dependency presence does not prove boss-quality presentation;
+- material/color fit does not replace a real open/reconfiguration/phase state.
 
 ---
 
@@ -221,11 +238,12 @@ OPEN_MODEL_SELECTION
 
 The next implementation-prep work should therefore prioritize:
 
-1. true `OPEN_MODEL_SELECTION` slots using their already-closed design/reference criteria;
-2. actual Azari spatial closure in parallel;
-3. acquisition/conversion/hash work for already-selected external candidates;
-4. runtime visual/hitbox acceptance for dependency actors;
-5. final stale-document cleanup after accepted bindings propagate.
+1. actual Azari spatial closure immediately if the world archive becomes available;
+2. direct artifact/3D rejection-or-acceptance review for the surviving R05 prospects;
+3. current-version binary/model/animation/hitbox acceptance for dependency candidates such as Armor of Desert where the exact actor matters;
+4. shape/function-based R06/R07/R08 search without repeating material/biome-only candidates already rejected;
+5. acquisition/conversion/hash work for already-selected external candidates;
+6. final stale-document cleanup after accepted bindings propagate.
 
 Brand/title exploration is not required to block these jobs.
 
@@ -235,8 +253,8 @@ Brand/title exploration is not required to block these jobs.
 
 ```text
 DESIGN/CANON REVIEWED: YES
-EXTERNAL SOURCE REVIEWED: YES for classifications already supported by project evidence
-LICENSE/PROVENANCE REVIEWED: PARTIAL — exact acquisition artifacts/hashes remain incomplete
+EXTERNAL SOURCE REVIEWED: YES for classifications and targeted R05–R08 Pass-1 screening already supported by project evidence
+LICENSE/PROVENANCE REVIEWED: PARTIAL — exact acquisition artifacts/hashes remain incomplete; Threateningly continuation storefront conflict remains unresolved
 CODE REVIEWED: N/A
 TESTED: NO
 BUILD VERIFIED: NO
@@ -245,4 +263,4 @@ PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
 ```
 
-Docs-only classification work does not justify a build/CI run.
+Docs-only classification/research work does not justify a build/CI run.
