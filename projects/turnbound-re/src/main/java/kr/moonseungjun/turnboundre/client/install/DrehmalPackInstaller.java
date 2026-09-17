@@ -223,10 +223,19 @@ public final class DrehmalPackInstaller {
     }
 
     private static void finishInstall(Path world, Path cache) throws IOException {
-        snapshot = new Snapshot(Phase.FINALIZING, "TURNBOUND 월드 마무리", 0, 1, 0.4D, "");
+        snapshot = new Snapshot(Phase.FINALIZING, "26.2 월드 호환성 적용", 0, 1, 0.25D, "");
         if (!Files.isRegularFile(world.resolve("level.dat")) || !DrehmalInstallFiles.resourcePackReady(world)) {
             throw new IOException("TURNBOUND world did not reach the ready state");
         }
+
+        Drehmal26_2DatapackMigrator.MigrationReport migration = Drehmal26_2DatapackMigrator.migrate(world);
+        if (!Drehmal26_2DatapackMigrator.compatibilityMarkerMatches(world)) {
+            throw new IOException("Drehmal 26.2 compatibility migration did not reach the ready state");
+        }
+        TurnboundRe.LOGGER.info(
+                "Applied Drehmal 26.2 compatibility migration: {} biome files, {} dimension-type files",
+                migration.biomeFilesChanged(),
+                migration.dimensionTypeFilesChanged());
 
         // This is the trust boundary used by the server-side external-world binder.
         DrehmalInstallFiles.writeProfileMarker(world);
@@ -324,6 +333,9 @@ public final class DrehmalPackInstaller {
         }
         if (lower.contains("verification") || lower.contains("hash") || lower.contains("readable zip")) {
             return "받은 월드 파일의 검증에 실패했습니다. 다시 시도하면 손상된 파일만 다시 받습니다.";
+        }
+        if (lower.contains("compatibility") || lower.contains("datapack") || lower.contains("registry")) {
+            return "월드의 26.2 호환 데이터를 준비하지 못했습니다. 원본 데이터팩 백업은 보존했습니다.";
         }
         return "월드를 준비하는 중 문제가 발생했습니다. 다시 시도해 주세요.";
     }

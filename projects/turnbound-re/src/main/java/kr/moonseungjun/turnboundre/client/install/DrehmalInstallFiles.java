@@ -137,6 +137,7 @@ public final class DrehmalInstallFiles {
         Path world = worldDirectory(gameDirectory);
         return Files.isRegularFile(world.resolve("level.dat"))
                 && profileMarkerMatches(world)
+                && Drehmal26_2DatapackMigrator.compatibilityMarkerMatches(world)
                 && resourcePackReady(world);
     }
 
