@@ -2,7 +2,6 @@
 import argparse
 import hashlib
 import json
-import os
 import re
 import sys
 import urllib.parse
@@ -33,11 +32,18 @@ def forgecdn_url(file_id: int, filename: str) -> str:
     )
 
 
+def resolve_download_url(dep):
+    explicit = dep.get("downloadUrl")
+    if explicit:
+        return explicit, "explicit"
+    return forgecdn_url(int(dep["curseforgeFileId"]), dep["expectedFilename"]), "curseforge-cdn"
+
+
 def download(url: str, dest: Path):
     req = urllib.request.Request(
         url,
         headers={
-            "User-Agent": "Mozilla/5.0 moba-arena-m0-audit/1.0",
+            "User-Agent": "Mozilla/5.0 moba-arena-m0-audit/1.1",
             "Accept": "*/*",
         },
     )
@@ -92,11 +98,12 @@ def main():
     for dep in required:
         file_id = int(dep["curseforgeFileId"])
         filename = dep["expectedFilename"]
-        url = forgecdn_url(file_id, filename)
+        url, url_kind = resolve_download_url(dep)
         dest = download_dir / filename
         print(f"::group::download {dep['id']}")
         print(f"source_page={dep['source']}")
-        print(f"cdn_url={url}")
+        print(f"download_url={url}")
+        print(f"download_url_kind={url_kind}")
         download(url, dest)
         print(f"downloaded={dest} bytes={dest.stat().st_size}")
         print("::endgroup::")
@@ -107,6 +114,8 @@ def main():
             "expectedFilename": filename,
             "curseforgeProjectId": dep.get("curseforgeProjectId"),
             "curseforgeFileId": file_id,
+            "downloadUrlKind": url_kind,
+            "downloadUrl": url,
             "sizeBytes": dest.stat().st_size,
             "sha256": sha256(dest),
             "zipReadable": False,

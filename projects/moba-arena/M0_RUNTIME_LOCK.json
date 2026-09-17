@@ -56,6 +56,8 @@
       "id": "pehkui",
       "requiredFor": "M0",
       "source": "https://www.curseforge.com/minecraft/mc-mods/pehkui/files/5393090",
+      "officialRelease": "https://github.com/Virtuoel/Pehkui/releases/tag/3.8.2-1.19.2-forge",
+      "downloadUrl": "https://github.com/Virtuoel/Pehkui/releases/download/3.8.2-1.19.2-forge/Pehkui-3.8.2%2B1.19.2-forge.jar",
       "curseforgeProjectId": 319596,
       "curseforgeFileId": 5393090,
       "version": "3.8.2+1.19.2-forge",
@@ -65,7 +67,7 @@
       "sha256": null,
       "bytesAcquired": false,
       "compatibilityTested": false,
-      "notes": "Source file page reports last successful test on Minecraft 1.19.2 / Forge 43.3.13."
+      "notes": "CurseForge file 5393090 has third-party sharing disabled, so M0 CI must use the author's official GitHub release asset. The source file page reports last successful test on Minecraft 1.19.2 / Forge 43.3.13."
     },
     {
       "id": "kleiders_custom_renderer_api",
