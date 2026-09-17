@@ -141,7 +141,7 @@ Primary visual/behavior source:
 
 The original design is a large rideable creature capable of carrying up to four passengers and operating in lava/water contexts. This is strong enough to preserve as a specialized multiplayer traversal identity rather than redesigning it.
 
-The project removes its dependency on vanilla Nether progression: authored R10/R11 placement and project stable/tack rules own access.
+The project removes its dependency on vanilla Nether progression: **launch acquisition belongs to R11 Inner Sea only**, with project stable/tack rules owning access.
 
 ## Late permanent flying mount — Sky Drake
 
@@ -406,24 +406,25 @@ Storage:
 
 Visual/behavior source: Alex's Mobs Continued Elephant dependency.
 
-## 7.4 Laviathan — R10/R11 hazard and multiplayer ferry
+## 7.4 Laviathan — R11 Inner Sea hazard travel / multiplayer ferry
 
 Role:
 
-- late specialist for large bodies of water and lava/volcanic routes;
+- late specialist for large bodies of water and lava/volcanic-route crossings where relevant;
 - multiplayer group transport;
 - not a universal land-speed replacement.
 
 Unlock:
 
-- authored R10 volcanic or R11 deep-route quest/encounter;
-- approximately Lv58–64 progression context;
-- project tack/registration fee: **3,000 Gold**;
+- **R11 Tidecross Freeport / Inner Sea authored handler and route trial only**;
+- launch acquisition is not available from R10;
+- progression context: open-sea/deep-route play in the R11 Lv44–64 layers;
+- project tack/registration fee after qualification: **3,000 Gold**;
 - no Nether visit or vanilla dimension progression required.
 
 Passengers:
 
-- target maximum: **4 riders**, preserving the creature's proven source identity;
+- target maximum: **4 riders**, preserving the creature's proven source identity and matching the launch formal-party cap;
 - one rider is the controller;
 - remaining seats are passengers;
 - server owns seat/control assignment;
@@ -557,7 +558,7 @@ Current baseline registration:
 | Trail Stag | early R01 stable/road quest | free |
 | Jungle Komodo | R05 ecology/handler quest | 600 Gold |
 | Caravan Elephant | R09 caravan/handler quest | 1,500 Gold |
-| Laviathan | R10/R11 hazard-route quest | 3,000 Gold |
+| Laviathan | **R11 Inner Sea handler/route trial** | 3,000 Gold |
 | Sky Drake | R12 dragon/rift traversal quest | 6,000 Gold |
 
 These fees are balance data and can move only after playtest evidence; implementation must not invent separate prices.
@@ -693,7 +694,7 @@ This file locks:
 - first R01 Trail Stag source, unlock timing and balance;
 - R05 Jungle Komodo source and movement role;
 - R09 Caravan Elephant source, charge and toughness role;
-- R10/R11 Laviathan multi-passenger hazard-travel role;
+- **R11-only Laviathan** multi-passenger hazard-travel role;
 - R12 Sky Drake CC0 visual source, flight stamina, cruise/climb/dive behavior;
 - stable prices and acquisition philosophy;
 - multiplayer seat/authority rules;
