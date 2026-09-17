@@ -27,8 +27,6 @@ public final class TurnboundMenuScreen extends Screen {
 
     @Override
     protected void init() {
-        // Keep the hub useful as a status surface instead of a two-button launcher.
-        // The snapshot remains server-authored; this screen only presents it.
         if (!progressRequested) {
             ProgressionClientState.clear();
             ClientPacketDistributor.sendToServer(new ProgressionNetworkPayloads.RequestProgressC2S());
@@ -74,6 +72,13 @@ public final class TurnboundMenuScreen extends Screen {
                 party(),
                 Component.literal(partyLabel),
                 new ItemStack(Items.PLAYER_HEAD),
+                mouseX, mouseY);
+
+        renderChoice(
+                graphics,
+                guide(),
+                Component.translatable("screen.turnbound_re.menu.guide"),
+                new ItemStack(Items.BOOK),
                 mouseX, mouseY);
 
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
@@ -133,9 +138,7 @@ public final class TurnboundMenuScreen extends Screen {
 
         int iconX = bounds.x() + UiLayoutMetrics.SPACE_8;
         int iconY = bounds.y() + Math.max(0, (bounds.height() - 16) / 2);
-        if (icon != null && !icon.isEmpty()) {
-            graphics.item(icon, iconX, iconY);
-        }
+        if (icon != null && !icon.isEmpty()) graphics.item(icon, iconX, iconY);
 
         int contentX = bounds.x() + 32;
         int contentWidth = Math.max(1, bounds.right() - UiLayoutMetrics.SPACE_8 - contentX);
@@ -157,12 +160,16 @@ public final class TurnboundMenuScreen extends Screen {
                 openParty();
                 return true;
             }
+            if (contains(guide(), mouseX, mouseY)) {
+                this.minecraft.gui.setScreen(new TurnboundGuideScreen(this));
+                return true;
+            }
         }
         return super.mouseClicked(event, doubleClick);
     }
 
     private void openExpeditions() {
-        ExpeditionJournalClientState.clear();
+        ExpeditionJournalClientState.clearView();
         this.minecraft.gui.setScreen(new ExpeditionJournalScreen(this));
         ClientPacketDistributor.sendToServer(new ExpeditionNetworkPayloads.RequestJournalC2S());
     }
@@ -174,7 +181,7 @@ public final class TurnboundMenuScreen extends Screen {
 
     private UiLayoutMetrics.Rect root() {
         int width = Math.min(420, Math.max(260, this.width - UiLayoutMetrics.SPACE_16 * 2));
-        int height = 168;
+        int height = 210;
         int x = Math.max(0, (this.width - width) / 2);
         int y = Math.max(UiLayoutMetrics.SPACE_8, this.height / 2 - height / 2);
         return new UiLayoutMetrics.Rect(x, y, width, height);
@@ -182,17 +189,20 @@ public final class TurnboundMenuScreen extends Screen {
 
     private UiLayoutMetrics.Rect expeditions() {
         UiLayoutMetrics.Rect root = root();
-        return new UiLayoutMetrics.Rect(
-                root.x() + UiLayoutMetrics.SPACE_8,
-                root.y() + 80,
-                root.width() - UiLayoutMetrics.SPACE_16,
-                34);
+        return new UiLayoutMetrics.Rect(root.x() + UiLayoutMetrics.SPACE_8, root.y() + 80,
+                root.width() - UiLayoutMetrics.SPACE_16, 34);
     }
 
     private UiLayoutMetrics.Rect party() {
         UiLayoutMetrics.Rect first = expeditions();
         return new UiLayoutMetrics.Rect(first.x(), first.y() + first.height() + UiLayoutMetrics.SPACE_8,
                 first.width(), first.height());
+    }
+
+    private UiLayoutMetrics.Rect guide() {
+        UiLayoutMetrics.Rect second = party();
+        return new UiLayoutMetrics.Rect(second.x(), second.y() + second.height() + UiLayoutMetrics.SPACE_8,
+                second.width(), second.height());
     }
 
     static boolean contains(UiLayoutMetrics.Rect rect, int x, int y) {
