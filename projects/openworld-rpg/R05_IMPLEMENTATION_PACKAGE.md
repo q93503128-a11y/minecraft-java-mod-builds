@@ -1,6 +1,6 @@
 # Open-World RPG — R05 Jungle Greenbelt Implementation Package
 
-> Status: **DESIGN CANON — R05 world/story/traversal/service/reward flow is implementation-ready; exact dungeon-boss visual/attack binding remains an explicit external-asset gate**  
+> Status: **DESIGN CANON — R05 world/story/traversal/service/reward flow is content/mechanics-closed; exact dungeon-boss visual/attack binding remains an explicit external-asset gate**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Story spine: `WORLD_STORY_CANON.md`  
 > Region graph: `REGIONS.md`  
@@ -8,7 +8,7 @@
 > Loot/equipment: `LOOT_ECONOMY.md`, `EQUIPMENT_BALANCE.md`  
 > Mounts: `MOUNTS.md`  
 > Field systems: `GATHERING_FISHING_CAMP_HOUSING.md`, `FISHING_COLLECTION_HOUSING_MARKET.md`  
-> Quest/state: `QUEST_WORLD_STATE.md`  
+> Quest/state: `QUEST_WORLD_STATE.md`, `PARTY_MULTIPLAYER.md`  
 > Quality contract: `DESIGN_COMPLETENESS_AUDIT.md`  
 > External provenance: `EXTERNAL_SOURCES.md`  
 > Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins.
@@ -639,7 +639,7 @@ Working behavior:
 yield: 1
 personal respawn: 10–14 active min
 tool: Harvest Knife / Sickle
-locations: wet root shelves / thermal? no — humid shade, river islands, temple fringe
+locations: humid shade, river islands, temple fringe
 ```
 
 Final name/model waits external intake.
@@ -784,14 +784,14 @@ Working role:
 ```text
 Lv: 26
 role: optional field/world boss
-HP target: ~15,500–17,000
+HP target: ~14,000–15,500
 Defense: ~70
 MR: ~55
 Poise: 225
 solo active TTK target: ~200–225 s
 ```
 
-Final HP moves after donor mobility/burrow/downtime review.
+The HP band is aligned to the canonical `BenchmarkDPS(L) × target active TTK` rule. Final HP may move after donor mobility/uptime review, but any excessive burrow/reposition downtime is fixed first rather than converted into more health.
 
 ## 15.1 Arena
 
@@ -1138,6 +1138,7 @@ Later multiplayer tests must include:
 - one player's shared channel/bridge restoration does not erase another player's personal evidence interaction;
 - late join sees regional route outcome but can still complete personal story;
 - two players on different quest steps can share Earthloong/dungeon encounters safely;
+- **one valid hit or one valid heal/protection/support/control action is sufficient for combat reward/kill-objective eligibility under `PARTY_MULTIPLAYER.md`**;
 - Komodo registration remains personal;
 - any Anaconda/grab behavior is server-authoritative and escapable/consistent;
 - dungeon water/route state remains coherent after disconnect/chunk unload;
