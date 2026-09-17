@@ -19,7 +19,7 @@ This project follows, in order:
 
 When a current canon decision changes, update or replace the stale live wording. Git history is the archive. Do not preserve contradictory rules as if both were valid options.
 
-`DESIGN_COMPLETENESS_AUDIT.md` is the current pre-code closure audit and records detected stale text/balance drift. It does not invent a second game design; it is used to identify and remove contradictions from the active canon.
+`DESIGN_COMPLETENESS_AUDIT.md` is the design-quality audit that found several historical conflicts, but its blocker list may lag behind later closure work. **The current pre-code gate list in §7 of this file is authoritative when a later dedicated canon has already closed an older audit blocker.**
 
 ---
 
@@ -114,6 +114,7 @@ Primary gameplay/system canon:
 World/story/regional canon:
 
 - `WORLD_STORY_CANON.md`
+- `MAIN_QUEST_SCENE_PACKAGE.md` — cross-region main-route requirements, recurring-character functions, evidence counting, rejoin points, sequence-break handling, personal finale choice and multiplayer story ownership
 - `REGION_CROSS_AUDIT.md`
 - `REGIONS.md` — current concise region index, not an archive of old candidates
 - `R01_VERTICAL_SLICE.md`
@@ -137,9 +138,21 @@ Quality/intake:
 
 The implementation package owns a region's traversal/ecology/encounter/dungeon/system contract. The later matching content bible closes settlement name, named cast, exact quests/scenes/rewards/reconnect state and story handoff. If an old package contains a working placeholder superseded by its content bible, the later content bible wins for that explicitly refined point.
 
+`MAIN_QUEST_SCENE_PACKAGE.md` owns only the cross-region main investigation and its rejoin/state rules. It does not overwrite local regional quests/rewards/aftermath already owned by the matching content bible.
+
 `PARTY_MULTIPLAYER.md` is a subordinate refinement of `GAME_DESIGN.md` §23, `QUEST_WORLD_STATE.md`, `COMBAT_BALANCE.md` and `CLASS_PROGRESSION.md`. It does not replace their solo rules; it closes the missing co-op reward/party behavior details.
 
 `R11_AQUATIC_ACTION_MATRIX.md` is the dedicated refinement/audit required by the older R11 package wording. It closes the aquatic action-compatibility design gate; runtime retarget/render/playtest proof remains validation work rather than a reason to invent a second underwater combat system.
+
+### 5.1 Current canon-sync corrections
+
+These are not new design options. They identify older live phrases that are already superseded by later canon and must be cleaned from their original documents during the final stale-text pass.
+
+- **Alderford is the final player-facing R01 starting-settlement name.** Older `GAME_DESIGN.md` wording saying the starting-settlement name/lore will be decided later is stale.
+- `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md` closes the global difficulty/assist, frequent-action input, subtitle/non-audio cue, camera/VFX comfort and audio/music **behavioral** contracts. Exact SFX/BGM files remain an asset-intake problem, not an open behavior-design problem.
+- `R11_AQUATIC_ACTION_MATRIX.md` closes the former R11 aquatic action-compatibility design blocker. Runtime retarget/render/playtest proof remains validation work.
+- **R03 Basalt Wyvern references in older `CLASS_PROGRESSION.md` world-skill/Hidden-Technique/Insight prose are stale.** Basalt Wyvern belongs to R10. R03 uses Griffin as its optional flying major encounter plus the current accepted/asset-gated highland and dungeon challenge identities; Rock Golem remains the current dungeon-boss candidate. No R03 class challenge may require Basalt Wyvern or resurrect the obsolete `Rocky Roller` slot merely because old text still mentions it.
+- `R01_ASSET_PHASE_B_PASS4_EVIDENCE_2026-09-17.md` supersedes Pass-3 candidate status for three intake rows: River Scholar Garb now has an exact Wizard modular candidate family, Ironbound Guard has an exact Knight modular candidate family, and Trail Skewers has a Kenney Food Kit `skewerVegetables` editable-base candidate. None is visually/Minecraft accepted yet; `R01 ASSET READY` remains `NO`.
 
 ---
 
@@ -181,19 +194,21 @@ Code does not silently become design authority.
 
 ## 7. Content-closed does not mean source-ready
 
-R01–R12 now have concrete regional content authoring, but the project is **not yet gameplay-source-ready**.
+R01–R12 now have concrete regional content authoring and the cross-region main quest/rejoin structure is closed in `MAIN_QUEST_SCENE_PACKAGE.md`, but the project is **not yet gameplay-source-ready**.
 
 Older package headers using `implementation-ready` must be interpreted narrowly as `the described mechanics/content flow no longer needs invention`. They do not waive these current pre-code gates:
 
-1. final player-facing game title/branding;
-2. exact external model/outfit/item/structure/VFX/animation/audio binding and provenance;
-3. actual Azari coordinates, sightlines, route joins, travel-time and content-density validation;
-4. exact asset-gated boss names/anatomy-supported attacks/weak points/signature materials;
-5. final stale-document/hidden-choice audit.
+1. **final player-facing game title / branding**;
+2. **exact external presentation binding and provenance** for unresolved models, outfits, items, structures, Anchor machinery, VFX, animations, SFX/BGM and local-only/dependency boundaries;
+3. **actual Azari spatial closure** — coordinates, footprints, sightlines, route joins, travel-time targets, POI/dungeon/boss placement and content-density validation;
+4. **asset-gated final encounter sheets** — exact player-facing guardian/boss names, anatomy-supported attacks/weak points/signature materials only after their accepted models are known;
+5. **final stale-document / hidden-choice audit** — remove obsolete alternatives and ensure no implementation-time gameplay decision remains hidden in older live text.
 
 The global accessibility/difficulty/assist, subtitles/non-audio cues, frequent-action input map and audio/music state-behavior design are closed in `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md`. Exact music/SFX bytes remain part of the external-asset gate in item 2.
 
 The R11 aquatic action/animation compatibility design is closed in `R11_AQUATIC_ACTION_MATRIX.md`. Runtime animation retarget/render validation remains required before R11 can be called tested or play-ready, but it is no longer a design blocker.
+
+The cross-region main-route region requirements, evidence counts, recurring-character scene functions, rejoin logic, sequence-break handling, finale handoff and personal ending commit behavior are closed in `MAIN_QUEST_SCENE_PACKAGE.md`. Exact scene locations/cameras/outfits/props/audio remain subject to gates 2–4 where applicable.
 
 Only after these remaining gates are closed should M0 create the gameplay source/resource/data layout.
 
@@ -317,16 +332,3 @@ Use these states literally:
 - `MULTIPLAYER TESTED`
 
 A build does not prove combat feel, UI quality, traversal quality or multiplayer correctness.
-
-Current project status before M0:
-
-```text
-DESIGN/CANON REVIEWED: YES
-GAMEPLAY SOURCE: NONE
-CODE REVIEWED: N/A
-TESTED: NO
-BUILD VERIFIED: NO
-JAR PRODUCED: NO
-PLAYTESTED: NO
-MULTIPLAYER TESTED: NO
-```
