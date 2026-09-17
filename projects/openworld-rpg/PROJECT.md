@@ -1,8 +1,8 @@
 # Open-World RPG — Project Contract
 
 > Working project slug: `openworld-rpg`  
-> Player-facing title: **PRE-CODE BRANDING GATE — not yet locked; `Anchorwake` is an evaluated candidate only**  
-> Current phase: **DESIGN CANON LATE PRE-PRODUCTION / GAMEPLAY SOURCE BOOTSTRAP BLOCKED BY PRE-CODE GATES**
+> Player-facing title: **WORKING / CANDIDATE ONLY — not yet locked, and NOT a gameplay-source-bootstrap gate; `Anchorwake` is an evaluated candidate only**  
+> Current phase: **DESIGN CANON LATE PRE-PRODUCTION / GAMEPLAY SOURCE BOOTSTRAP BLOCKED BY ASSET, SPATIAL, FINAL-ENCOUNTER AND STALE-CANON GATES**
 
 ## 1. Repository / authority contract
 
@@ -20,6 +20,20 @@ This project follows, in order:
 When a current canon decision changes, update or replace stale live wording. Git history is the archive. Do not preserve contradictory rules as if both were valid options.
 
 `DESIGN_COMPLETENESS_AUDIT.md` is the design-quality audit that found several historical conflicts, but its blocker list may lag behind later closure work. **The current pre-code gate list in §7 of this file is authoritative when a later dedicated canon has already closed an older audit blocker.**
+
+### 1.1 Git workflow
+
+Routine project work is **direct `main` only**.
+
+- do not create temporary branches;
+- do not create feature branches;
+- do not create PR branches merely to perform normal project work;
+- do not force-push;
+- update `main` only by normal fast-forward commits on top of the current remote `main`;
+- never reset or rewrite unrelated projects in this shared repository;
+- branch creation requires an explicit user request for that specific branch/workflow.
+
+A tool offering `create_branch` is not permission to use it automatically.
 
 ---
 
@@ -71,7 +85,7 @@ Minecraft supplies the block world, runtime, input base and hosting environment.
 
 The design goal is not feature count. It is one cohesive game whose systems reinforce exploration, combat, progression and world consequence.
 
-`BRANDING.md` owns title-candidate evaluation and the eventual player-facing title lock. `Anchorwake` is currently an evaluated candidate, **not final canon**. Exact logo/font/graphic bytes remain external-first visual assets and therefore stay inside the ordinary presentation/provenance gate.
+`BRANDING.md` owns title-candidate evaluation and the eventual player-facing title lock. `Anchorwake` is currently an evaluated candidate, **not final canon**. Title selection is intentionally lightweight and does **not** block gameplay source bootstrap. Exact logo/font/graphic bytes remain external-first visual assets and therefore stay inside the ordinary presentation/provenance gate.
 
 ---
 
@@ -89,7 +103,7 @@ Therefore:
 - no DRM/paywall/access-control bypass and no paid-asset piracy;
 - a future public release requires a fresh provenance audit.
 
-`EXTERNAL_SOURCES.md` and the asset-intake manifests own detailed provenance.
+`EXTERNAL_SOURCES.md`, `PRODUCTION_ASSET_BINDING_MATRIX.md` and the asset-intake manifests own detailed provenance/binding state.
 
 ---
 
@@ -98,7 +112,7 @@ Therefore:
 Primary gameplay/system canon:
 
 - `GAME_DESIGN.md`
-- `BRANDING.md` — title-candidate evaluation, final-title acceptance criteria and external-first logo boundary; final title is not locked yet
+- `BRANDING.md` — title-candidate evaluation and eventual player-facing title; branding is not a gameplay-source-bootstrap blocker
 - `COMBAT_BALANCE.md`
 - `CLASS_COMBAT_KITS.md`
 - `CLASS_PROGRESSION.md`
@@ -139,6 +153,7 @@ Quality/intake:
 
 - `DESIGN_COMPLETENESS_AUDIT.md`
 - `EXTERNAL_SOURCES.md`
+- `PRODUCTION_ASSET_BINDING_MATRIX.md` — cross-region binding state, true model-selection queue, dependency-validation queue and the no-temporary-player-facing-design production rule; explicit status corrections here supersede older broad source-status summaries where they directly conflict
 - `R01_ASSET_INTAKE.md` and evidence snapshots where applicable;
 - `R01_ASSET_PHASE_B_PASS5_ACQUISITION_EVIDENCE_2026-09-17.md` — creator-controlled direct ZIP locators, current Standard/Source boundary correction and honest binary/hash limitation.
 
@@ -150,16 +165,19 @@ The implementation package owns a region's traversal/ecology/encounter/dungeon/s
 
 `R11_AQUATIC_ACTION_MATRIX.md` is the dedicated refinement/audit required by the older R11 package wording. It closes the aquatic action-compatibility design gate; runtime retarget/render/playtest proof remains validation work rather than a reason to invent a second underwater combat system.
 
+`PRODUCTION_ASSET_BINDING_MATRIX.md` is the dedicated cross-region visual/source triage. A row marked `DEPENDENCY_VALIDATE` must not trigger another broad model search; a row marked `OPEN_MODEL_SELECTION` is a true visual pre-code gate. Its Threateningly Mobs Continued storefront-license conflict rule overrides stale `MIT` shorthand for raw-byte reuse decisions until exact upstream licensing is resolved.
+
 ### 5.1 Current canon-sync corrections
 
 These are not new design options. They identify older live phrases that are already superseded by later canon and must be cleaned from their original documents during the final stale-text pass.
 
-- **The final player-facing title is NOT locked.** `Anchorwake` was researched and collision-screened but returned to candidate status after first-contact owner feedback showed that `Anchor` is not self-explanatory before the setting is learned. Any live wording that says `Anchorwake` is final is stale. `BRANDING.md` owns the current candidate evaluation.
+- **The final player-facing title is NOT locked, but it is NOT a gameplay-source-bootstrap blocker.** `Anchorwake` was researched and collision-screened but returned to candidate status after first-contact owner feedback showed that `Anchor` is not self-explanatory before the setting is learned. `BRANDING.md` owns lightweight later finalization.
 - **Alderford is the final player-facing R01 starting-settlement name.** Older wording saying the starting-settlement name/lore will be decided later is stale.
 - `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md` closes the global difficulty/assist, frequent-action input, subtitle/non-audio cue, camera/VFX comfort and audio/music **behavioral** contracts. Exact SFX/BGM files remain an asset-intake problem, not an open behavior-design problem.
 - `R11_AQUATIC_ACTION_MATRIX.md` closes the former R11 aquatic action-compatibility design blocker. Runtime retarget/render/playtest proof remains validation work.
 - **R03 Basalt Wyvern references in older class-progression prose are stale.** Basalt Wyvern belongs to R10. The live `CLASS_PROGRESSION.md` now uses current R03 collapsed-mine/lift-route/Griffin identities instead of resurrecting Basalt Wyvern or the obsolete `Rocky Roller` slot.
 - `R01_ASSET_INTAKE.md` integrates Pass 4 for River Scholar / Ironbound / Trail Skewers candidate identity. Pass 5 adds acquisition-source evidence: the preferred Wizard/Knight modular parts belong to the current broader Source-edition outfit content rather than being assumed to exist in the free Standard archive; Kenney Food Kit and several creator-uploaded CC0 Quaternius Standard archives have direct acquisition locators. None is visually/Minecraft accepted yet; `R01 ASSET READY` remains `NO`.
+- Older `Threateningly Mobs Continued = MIT` shorthand is not sufficient for raw-byte reuse. Current storefront metadata conflicts; use dependency-only handling until the exact canonical upstream license is resolved as recorded in `PRODUCTION_ASSET_BINDING_MATRIX.md`.
 
 ---
 
@@ -201,23 +219,26 @@ Code does not silently become design authority.
 
 ## 7. Content-closed does not mean source-ready
 
-R01–R12 now have concrete regional content authoring and the cross-region main quest/rejoin structure is closed in `MAIN_QUEST_SCENE_PACKAGE.md`, but the project is **not yet gameplay-source-ready**.
+R01–R12 now have concrete regional content authoring and the cross-region main quest/rejoin structure is closed in `MAIN_QUEST_SCENE_PACKAGE.md`, but the project is **not yet fully gameplay-source-ready**.
 
 Older package headers using `implementation-ready` must be interpreted narrowly as `the described mechanics/content flow no longer needs invention`. They do not waive these current pre-code gates:
 
-1. **final player-facing title / branding string** — compare researched candidates for immediate readability, project specificity, open-world/narrative fit, collision risk and logo viability; do not expose the internal slug as the finished title;
-2. **exact external presentation binding and provenance** for unresolved models, outfits, items, structures, Anchor machinery, final logo/font/graphic, VFX, animations, SFX/BGM and local-only/dependency boundaries;
-3. **actual Azari spatial closure** — coordinates, footprints, sightlines, route joins, travel-time targets, POI/dungeon/boss placement and content-density validation;
-4. **asset-gated final encounter sheets** — exact player-facing guardian/boss names, anatomy-supported attacks/weak points/signature materials only after their accepted models are known;
-5. **final stale-document / hidden-choice audit** — remove obsolete alternatives and ensure no implementation-time gameplay decision remains hidden in older live text.
+1. **exact external presentation binding and provenance** for unresolved models, outfits, items, structures, Anchor machinery, final logo/font/graphic, VFX, animations, SFX/BGM and local-only/dependency boundaries;
+2. **actual Azari spatial closure** — coordinates, footprints, sightlines, route joins, travel-time targets, POI/dungeon/boss placement and content-density validation;
+3. **asset-gated final encounter sheets** — exact player-facing guardian/boss names, anatomy-supported attacks/weak points/signature materials only after their accepted models are known;
+4. **final stale-document / hidden-choice audit** — remove obsolete alternatives and ensure no implementation-time gameplay decision remains hidden in older live text.
 
-The global accessibility/difficulty/assist, subtitles/non-audio cues, frequent-action input map and audio/music state-behavior design are closed in `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md`. Exact music/SFX bytes remain part of the external-asset gate in item 2.
+**Player-facing title selection is not one of these gates.** It may remain a lightweight working decision while gameplay source is prepared, provided internal slug/version/development strings are not exposed as finished player-facing branding. Final title/logo packaging is closed before the finished player-facing release/presentation pass.
+
+The global accessibility/difficulty/assist, subtitles/non-audio cues, frequent-action input map and audio/music state-behavior design are closed in `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md`. Exact music/SFX bytes remain part of the external-asset gate in item 1.
 
 The R11 aquatic action/animation compatibility design is closed in `R11_AQUATIC_ACTION_MATRIX.md`. Runtime animation retarget/render validation remains required before R11 can be called tested or play-ready, but it is no longer a design blocker.
 
-The cross-region main-route region requirements, evidence counts, recurring-character scene functions, rejoin logic, sequence-break handling, finale handoff and personal ending commit behavior are closed in `MAIN_QUEST_SCENE_PACKAGE.md`. Exact scene locations/cameras/outfits/props/audio remain subject to gates 2–4 where applicable.
+The cross-region main-route region requirements, evidence counts, recurring-character scene functions, rejoin logic, sequence-break handling, finale handoff and personal ending commit behavior are closed in `MAIN_QUEST_SCENE_PACKAGE.md`. Exact scene locations/cameras/outfits/props/audio remain subject to gates 1–3 where applicable.
 
-Only after these remaining gates are closed should M0 create the gameplay source/resource/data layout.
+`PRODUCTION_ASSET_BINDING_MATRIX.md` narrows gate 1: already-selected dependency actors proceed to runtime acceptance, concrete external candidates proceed to acquisition/conversion review, and only `OPEN_MODEL_SELECTION` rows require new visual search.
+
+Only after these remaining gates are closed should M0 create the full gameplay source/resource/data layout. Narrow technical/bootstrap work that does not lock an unresolved player-facing presentation may proceed when useful, but it must not create placeholders that later become de facto canon.
 
 ---
 
@@ -245,6 +266,20 @@ This applies especially to:
 - structures/workstations/important props;
 - UI screens/icons/branding visuals;
 - animation/VFX/audio.
+
+### 8.1 No temporary player-facing design
+
+The first production-facing implementation must already use the accepted external visual direction.
+
+- UI is not first implemented as generic black panels/vanilla buttons and reskinned later;
+- important actors are not first implemented as vanilla stand-ins and replaced later;
+- signature attacks are not first presented as generic particle clouds and treated as acceptable until polish;
+- settlements/dungeons are not first authored as temporary vanilla shells that quietly become permanent;
+- placeholder icons/frames/models/VFX/SFX are not part of the player-facing production path.
+
+If the exact external visual is unresolved, leave that visible slot gated and work on another closed unit. **Do not create temporary design debt merely to make a feature look implemented.**
+
+External designs/assets may be adapted, recomposed, retargeted or integrated to fit the game's canon and technical constraints. This does not authorize improvised AI visual language that competes with the selected external art direction.
 
 A missing exact source is a pre-code gate for that visible content, not permission for a vanilla/AI placeholder to become the final answer.
 
