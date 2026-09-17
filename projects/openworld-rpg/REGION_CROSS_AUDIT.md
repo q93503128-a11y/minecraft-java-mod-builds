@@ -1,6 +1,6 @@
 # Open-World RPG — R01–R12 Cross-Region Quality Audit
 
-> Date: 2026-09-16  
+> Date: 2026-09-17  
 > Status: **DESIGN CANON — cross-region anti-repetition / identity / pacing contract**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Story spine: `WORLD_STORY_CANON.md`  
@@ -560,7 +560,7 @@ At implementation planning, each region needs at least:
 - signature boss treatment when importance warrants it;
 - enough silence/breathing room that telegraphs and environmental sound remain readable.
 
-Exact global music system remains a later queued design batch.
+Global audio-state behavior, dynamic music rules, subtitle/non-audio cue requirements and telegraph priority are now **closed at design level** in `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md`. Remaining audio work is exact BGM/SFX source binding, provenance, mix implementation and real-client listening/playtest validation.
 
 ---
 
@@ -587,48 +587,49 @@ If several answers are `no`, do not solve it by adding more content. Change the 
 
 The older `DESIGN_COMPLETENESS_AUDIT.md` maturity snapshot was written **before** `WORLD_STORY_CANON.md` and the full R03–R12 package pass. Its quality model and gates remain valid, but its old `later regions/narrative are largely absent` snapshot is no longer current.
 
-Current post-region-pass estimate:
+Current post-closure view:
 
 | Area | Current design maturity | Main remaining blocker |
 |---|---|---|
-| core systems/combat/progression/economy | D4 | implementation/playtest rather than design |
-| quest/world-state framework | D4 | actual scene/dialogue content |
-| world story / ending structure | D3–D4 | exact scene package, proper nouns, final guardian binding |
+| core systems/combat/progression/economy | D4 | implementation/playtest rather than missing design |
+| quest/world-state framework | D4 | implementation/runtime scene scripting and reconciliation testing |
+| world story / ending structure | D4 design | exact presentation, final guardian asset binding, implementation/playtest |
 | R01 route/content | D4 design | exact asset intake/client validation |
-| R02–R11 regional structure | D3–D4 | exact asset bindings, placement and some boss identities |
-| R12 structure/finale role | D3 | exact final guardian/model/mechanics and final encounter pass |
+| R02–R11 regional structure | D3–D4 | exact asset bindings, placement and selected asset-gated boss identities |
+| R12 structure/finale role | D3–D4 | exact final guardian/model binding, spatial closure and final encounter implementation proof |
 | whole-world spatial density | D1–D2 | Azari import / coordinates / measured traversal |
 | external asset closure | D2–D3 | exact files/hashes/visual acceptance across regions |
-| global audio/music | D1–D2 | whole-game system/source binding |
-| accessibility/difficulty/keybinds | D1–D2 | final control/assist decisions after real combat feel tests |
+| global audio/music behavior | D4 design | exact BGM/SFX source binding, mix implementation and listening/playtest validation |
+| accessibility/difficulty/keybind behavior | D4 design | real-client feel, conflict and assist validation rather than missing design choices |
 | save migration/recovery + open-world QA harness | D1–D2 | implementation-specific design/telemetry plan |
 
-Practical whole-project planning maturity is now roughly **80–85%**, not the earlier ~70% snapshot.
+Do not use the older `80–85%` whole-project number as a current production metric. Later audits deliberately separate paper authoring, production binding and play-proven completeness instead of averaging them into one misleading percentage.
 
-This still does **not** mean the game is 80–85% complete.
-
-It means:
+Current meaning:
 
 ```text
 most core rules: closed
-most regional fantasy/flow: closed
-whole story structure: closed enough to write scenes
-exact assets/world placement/audio/accessibility/final encounter: still open
+regional fantasy/flow: substantially closed
+cross-region story/scene structure: closed at design level
+accessibility/input/audio behavior: closed at design level
+R11 aquatic compatibility: closed at design level
+exact assets/world placement: still open
 actual implementation and play quality: not proven
 ```
 
 ---
 
-# 17. Next design work after this audit
+# 17. Next production-design work after this audit
 
 Priority order:
 
-1. **Exact external asset intake expansion** — finish R01 unresolved bindings, then region-critical bosses/resources/architecture/VFX/audio, including the R12 final guardian.
-2. **Main quest / recurring-character scene package** — turn the already-locked story spine into actual scene/quest beats without forcing all regions.
-3. **Azari terrain import / coordinate audit when technically available** — only then lock exact POI counts, roads, shrine positions and measured travel cadence.
-4. **Global audio/music direction** — use external licensed/usable sources and define mix/crossfade/telegraph priority.
-5. **Accessibility/difficulty/control closure** — finalize only after combat/UI can be judged in a real client where feel-sensitive decisions can be tested.
-6. **Pre-bootstrap closure audit** — verify remaining TBDs are genuine asset/terrain/implementation gates rather than hidden game-design invention.
+1. **Finish stale-canon cleanup in the original live files** — remove superseded blockers/queues and point older subsystem documents at their later dedicated authorities. Do not create another parallel master document.
+2. **Exact external asset intake expansion** — finish unresolved R01 bindings, then region-critical bosses/resources/architecture/animation/VFX/audio, including the R12 final guardian.
+3. **Azari terrain import / spatial closure** — lock coordinates, roads, shrine positions, sightlines, encounter volumes and measured travel cadence only from the real world.
+4. **Asset-gated encounter closure** — after exact model acceptance, close anatomy-supported boss names/attacks/weak points/signature materials where packages deliberately remain gated.
+5. **Pre-bootstrap closure audit** — verify remaining TBDs are genuine asset/terrain/production gates rather than hidden gameplay invention; then move the R01 vertical slice into implementation and empirical play validation.
+
+`MAIN_QUEST_SCENE_PACKAGE.md`, `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md` and `R11_AQUATIC_ACTION_MATRIX.md` are already closed at design-contract level and must not reappear in this queue as unwritten systems.
 
 No new side system should jump ahead of these simply because it is easy to invent.
 
