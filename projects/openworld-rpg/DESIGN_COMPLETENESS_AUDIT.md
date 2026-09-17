@@ -1,15 +1,18 @@
 # Open-World RPG — Design Completeness & Game Quality Audit
 
-> Date: 2026-09-16  
+> Date: 2026-09-17  
 > Status: **CURRENT DESIGN AUDIT / PRE-CODE QUALITY GATE**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Project contract: `PROJECT.md`  
+> Main quest: `WORLD_STORY_CANON.md`, `MAIN_QUEST_SCENE_PACKAGE.md`  
 > Region canon: `REGIONS.md`, `REGION_CROSS_AUDIT.md`, `R01_VERTICAL_SLICE.md`, `R02_CONTENT_BIBLE.md` through `R12_CONTENT_BIBLE.md`  
-> Rule: this document reports current closure, detected conflicts and pre-code blockers. It does not override `GAME_DESIGN.md`.
+> Global presentation: `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md`  
+> Aquatic compatibility: `R11_AQUATIC_ACTION_MATRIX.md`  
+> Rule: this document reports current closure, detected conflicts and pre-code blockers. It does not override `GAME_DESIGN.md` or `PROJECT.md`.
 
 This audit replaces the earlier snapshot that still described the main story, R03–R12 and the ending as mostly unwritten. Those statements are obsolete. Git history is the archive; they are not alternate current plans.
 
-The project is now in **late pre-production**: the reusable gameplay systems and all twelve regional content packages are substantially authored, but gameplay source bootstrap remains blocked by exact presentation, spatial and technical gates. `design written` is not the same as `implementation-ready`, `playtested` or `finished`.
+The project is now in **late pre-production**: the reusable gameplay systems, main quest route package and all twelve regional content packages are substantially authored. Gameplay source bootstrap remains blocked by exact presentation binding, actual Azari placement, asset-dependent boss closure, branding and final canon cleanup. `design written` is not the same as `source-ready`, `playtested` or `finished`.
 
 ---
 
@@ -21,8 +24,9 @@ The current active design corpus was cross-read against:
 - the Minecraft high-quality playbook;
 - `GAME_DESIGN.md`, `PROJECT.md`, `README.md`;
 - combat/class/status/equipment/loot/recovery/field-system/mount/UI/quest-state documents;
-- `WORLD_STORY_CANON.md`, `REGION_CROSS_AUDIT.md`, `REGIONS.md`;
-- R01 vertical-slice/asset work and R02–R12 implementation-package + content-bible pairs.
+- `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md` and `R11_AQUATIC_ACTION_MATRIX.md`;
+- `WORLD_STORY_CANON.md`, `MAIN_QUEST_SCENE_PACKAGE.md`, `REGION_CROSS_AUDIT.md`, `REGIONS.md`;
+- R01 vertical-slice/asset work through Phase-B Pass 4 and R02–R12 implementation-package + content-bible pairs.
 
 The audit specifically searched for:
 
@@ -37,6 +41,7 @@ region repetition
 player-facing development terminology
 asset/license assumptions
 world-placement gaps
+closed gates still incorrectly listed as open
 ```
 
 Historical evidence snapshots remain evidence snapshots. They do not become gameplay authority merely because they still exist in the repository.
@@ -62,7 +67,10 @@ These areas are sufficiently specified that coding should implement their rules 
 - mount roster and economy;
 - quest personal/shared/encounter-state ownership and idempotent reward delivery;
 - Anchor main story, recurring cast functions, Act structure and Restore / Release / Partition endings;
+- cross-region main-quest route, scene/rejoin ownership and sequence-break handling in `MAIN_QUEST_SCENE_PACKAGE.md`;
 - R01–R12 settlement identities, named casts, regional quest chains, rewards, reconnect rules, story evidence and aftermath;
+- World Challenge, personal assists, frequent-action input map, subtitles/captions, non-audio cues, camera/VFX comfort and dynamic music/audio behavior;
+- R11 aquatic action compatibility, including `AQUATIC_NATIVE / AQUATIC_ADAPTED / AQUATIC_DISABLED_WITH_FALLBACK` classification and swim-base layering strategy;
 - server-authority requirements and the rule that real multiplayer testing is still required.
 
 ## 2.2 Genuine pre-code blockers
@@ -70,14 +78,25 @@ These areas are sufficiently specified that coding should implement their rules 
 Source bootstrap is still blocked by work that an implementer must not improvise:
 
 1. **final player-facing title / branding string** — the production slug may remain `openworld-rpg`, but a player-visible build must not ship `TBD` or the internal slug as an accidental title;
-2. **exact external asset binding** — unresolved boss/creature models, NPC outfits, weapon/item families, structures, Anchor machinery, important VFX, animation, SFX/BGM and exact provenance/hash records;
+2. **exact external asset binding** — unresolved boss/creature models, NPC outfits, weapon/item families, structures, Anchor machinery, important VFX, animation, SFX/BGM and exact provenance/hash records; R01 Pass 4 narrows several candidates but does not equal visual/Minecraft acceptance;
 3. **Azari spatial closure** — actual coordinates, route relationships, sightlines, settlement/POI/dungeon/boss placement, travel times and content-density validation;
-4. **R11 aquatic presentation matrix** — every frequent action tagged `AQUATIC_NATIVE`, `AQUATIC_ADAPTED` or `AQUATIC_DISABLED_WITH_FALLBACK`, with accepted locomotion/attack/cast/guard animations;
-5. **global presentation/comfort contract** — final key map, accessibility, subtitles/non-audio cues, difficulty/assist behavior and complete music/audio-state coverage;
-6. **asset-gated final boss sheets** — exact player-facing names, anatomy-supported attacks/weak points and signature materials after model acceptance where regional documents explicitly gate them;
-7. **final stale-document cleanup** — older package wording must not offer obsolete alternatives to later content bibles.
+4. **asset-gated boss/final-guardian sheets** — exact player-facing names, anatomy-supported attacks/weak points and signature materials after model acceptance where regional documents explicitly gate them;
+5. **final stale-document / hidden-choice cleanup** — active files must not retain obsolete alternatives, already-closed blockers or implementation-time gameplay choices.
 
 These are pre-code gates, not permission to `decide during coding`.
+
+The following former blockers are now **closed at design-contract level** and must not be re-listed as open merely because runtime validation has not happened yet:
+
+```text
+R11 aquatic action/animation compatibility — CLOSED in R11_AQUATIC_ACTION_MATRIX.md
+accessibility / difficulty / assist behavior — CLOSED
+subtitles / non-audio cues / camera comfort — CLOSED
+frequent-action input map — CLOSED
+music/audio state behavior — CLOSED
+cross-region main quest route/rejoin package — CLOSED in MAIN_QUEST_SCENE_PACKAGE.md
+```
+
+Exact music/SFX files still belong to blocker 2. Aquatic retarget/render quality still requires implementation/playtest validation, but neither is a missing gameplay-design decision.
 
 ---
 
@@ -92,13 +111,16 @@ The previous version of this file still described:
 - R03–R12 as mostly broad regional direction;
 - whole-project planning around 65–75%.
 
-That was true before `WORLD_STORY_CANON.md`, the later regional packages and R02–R12 content bibles. It is false on current `main` and has been removed.
+That was true before `WORLD_STORY_CANON.md`, the later regional packages, R02–R12 content bibles and the cross-region main-quest package. It is false on current `main` and is not a current alternative.
 
 Current state is better represented as:
 
 ```text
 system rules: substantially closed
 regional/narrative authoring: substantially closed
+cross-region main quest flow: substantially closed
+accessibility/input/audio behavior: closed at design level
+R11 aquatic compatibility: closed at design level
 exact presentation binding: incomplete
 actual world placement: incomplete
 source implementation: not started
@@ -119,9 +141,11 @@ No package-level `implementation-ready` phrase overrides the project-wide pre-co
 
 ## 3.3 Region index had stale encounter assignments
 
-The old `REGIONS.md` still listed R03 Basalt Wyvern/Rocky Roller direction even after later canon moved Basalt Wyvern to R10 and established Griffin + Rock Golem direction for R03. It also still called the region levels `working targets` pending a later EXP pass even though the EXP pass has already happened and retained the region progression.
+The old `REGIONS.md` listed R03 Basalt Wyvern/Rocky Roller direction even after later canon moved Basalt Wyvern to R10 and established Griffin + Rock Golem direction for R03. It also called region levels `working targets` pending a later EXP pass even though the EXP pass had already happened and retained the progression.
 
-`REGIONS.md` must therefore be treated as a current index, not a reservoir of old candidates. Its refreshed version removes those conflicts.
+`REGIONS.md` is now treated as a current index, not a reservoir of old candidates.
+
+The same stale R03 identities later survived in `CLASS_PROGRESSION.md` as Seismic Lunge/Hidden Technique/Insight sources. The 2026-09-17 cleanup replaces those references with the current R03 collapsed-mine/lift-route/Griffin package and removes `wyvern defense` residue. This is a canon alignment, not a class redesign.
 
 ## 3.4 Laviathan placement is closed
 
@@ -157,6 +181,48 @@ This keeps R01 crafting non-circular and reserves meaningful tool gating for lat
 ```
 
 The recovery document is the dedicated authority and the combat document must align to **0.40%**. This remains deliberately slow: normal recovery tools are still materially faster.
+
+## 3.7 Main-quest spine versus implementation package
+
+`WORLD_STORY_CANON.md` correctly owns the premise, acts, recurring roles and ending philosophy, but its older wording still listed exact quest-by-quest scripting as later work.
+
+`MAIN_QUEST_SCENE_PACKAGE.md` now closes the implementation-level route/rejoin structure without turning every regional quest into a duplicate main quest:
+
+```text
+R01 common opening
+→ R02 or R03: at least one Act-I evidence route
+→ any two of R04–R07
+→ R08 or R09
+→ R10 or the authored late-R11 investigation
+→ R12 Central Anchor finale
+→ personal Restore / Release / Partition choice
+```
+
+Unchosen regions remain fully playable and supply optional evidence, relationships, progression and epilogue state. Already-completed eligible regional content resolves by checking durable evidence/state rather than forcing a fake replay.
+
+## 3.8 R01 asset intake Pass 4 is candidate closure, not acceptance
+
+The main R01 intake now incorporates Phase-B Pass 4:
+
+- River Scholar Garb: exact Wizard modular candidate family pinned;
+- Ironbound Guard: exact Knight armor/pauldron candidate family pinned;
+- Trail Skewers: Kenney Food Kit `skewerVegetables` editable-base candidate pinned;
+- revive/help-up and Trail Stag mount/dismount: deliberately remain `NEEDS_EXTERNAL_CLIP`.
+
+This reduces unknown-source risk but does **not** permit `R01 ASSET READY = YES` until acquisition/hash, 3D review, conversion/retarget and actual Minecraft acceptance happen.
+
+## 3.9 Closed design versus runtime proof
+
+A design gate being closed means the implementer no longer chooses the gameplay behavior while coding. It does not mean the feature is proven good in-game.
+
+Examples:
+
+- the input map is closed, but conflict/readability must still be tested in the real client;
+- R11 aquatic layering is closed, but animation quality must still be retargeted and viewed in Minecraft;
+- dynamic audio state behavior is closed, but actual clips/mix require listening;
+- boss TTK budgets are authored baselines, not playtested truth.
+
+This distinction must remain explicit in all completion claims.
 
 ---
 
@@ -278,7 +344,7 @@ Public production material supports the project's current direction:
 - Guerrilla's Horizon quest-system material emphasizes non-linearity and a robust quest-state language; this project already has explicit personal/shared/encounter ownership, late join, split-party progress and idempotent rewards in `QUEST_WORLD_STATE.md`.
 - Bethesda's Skyrim/Fallout production material emphasizes plan → implement → test → polish for huge quantities of open-world content. The project therefore must not confuse completed documents with proven gameplay.
 - CD Projekt RED's Witcher/Cyberpunk quest-design lessons emphasize engagement, brevity, fun, emotional impact, consequences, novelty and production effectiveness; the regional bibles deliberately avoid a repeated `town → three chores → boss → ancient device` grammar and specify visible aftermath.
-- the publicly documented Van Buren Denver package is an 83-page area design covering places, characters and quests. The project's package+bible pairs are now in the same **kind** of production-document territory: named people, exact objective conditions, rewards, state and aftermath exist. However the project is still behind a true production-ready area package in one important respect: **actual Azari spatial placement, sightlines, travel time and accepted final assets are not yet bound.**
+- the publicly documented Van Buren Denver package is an 83-page area design covering places, characters and quests. The project's package+bible pairs plus `MAIN_QUEST_SCENE_PACKAGE.md` are now in the same **kind** of production-document territory: named people, objective conditions, route/rejoin behavior, rewards, state and aftermath exist. However the project is still behind a true production-ready area package in one important respect: **actual Azari spatial placement, sightlines, travel time and accepted final assets are not yet bound.**
 
 This comparison means the next useful work is not adding more systems. It is binding the already-authored design to the actual world and actual presentation sources.
 
@@ -334,25 +400,38 @@ This rule applies to UI, quests, dialogue, tooltips, item descriptions, loading 
 
 Do not begin gameplay source bootstrap until the remaining blockers are explicitly closed or scoped to a technically unavoidable bootstrap-only tooling choice.
 
-Required pre-code exit condition:
+Required remaining pre-code exit condition:
 
 ```text
-all active player-facing rules have one current authority
-no unresolved gameplay-affecting TBD / decide-later option
-all gated visible content has an accepted external source direction/binding
-Azari major content has spatial coordinates + route/sightline/travel targets
-R11 aquatic action compatibility is bound
-accessibility / input / audio global contracts are closed
-stale conflicting design text is removed or explicitly historical
+final player-facing title/branding is locked
+all gated visible content has an accepted external source direction/binding + provenance boundary
+Azari major content has spatial coordinates + route/sightline/travel/content-density targets
+asset-dependent boss/final-guardian identities and anatomy-supported kits are closed after model acceptance
+stale conflicting design text / hidden implementation-time gameplay choices are removed
 ```
 
-After source exists, implementation still proceeds iteratively. A document cannot prove combat feel, UI readability, traversal comfort, performance or multiplayer correctness.
+Already-satisfied design conditions that remain runtime validation work rather than blockers:
+
+```text
+main quest route/rejoin package exists
+R11 aquatic action compatibility is bound at design level
+accessibility / difficulty / assist contract is closed
+frequent-action input map is closed
+subtitles / non-audio cues / camera comfort are closed
+audio/music state behavior is closed
+```
+
+After source exists, implementation still proceeds iteratively. A document cannot prove combat feel, UI readability, traversal comfort, performance, animation quality, audio mix or multiplayer correctness.
 
 Verification state for this audit:
 
 ```text
 DESIGN/CANON REVIEWED: YES
 EXTERNAL PRODUCTION/BALANCE REFERENCES REVIEWED: YES
+R01 ASSET INTAKE PASS 4 INTEGRATED: YES
+MAIN QUEST ROUTE PACKAGE: DESIGN CLOSED
+R11 AQUATIC DESIGN GATE: CLOSED
+ACCESSIBILITY / INPUT / AUDIO BEHAVIOR DESIGN GATE: CLOSED
 CODE REVIEWED: N/A — gameplay source does not exist
 TESTED: NO
 BUILD VERIFIED: NO
