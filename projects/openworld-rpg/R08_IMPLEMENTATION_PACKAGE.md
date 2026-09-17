@@ -1,6 +1,6 @@
 # Open-World RPG — R08 Bloomveil Implementation Package
 
-> Status: **DESIGN CANON — R08 world/story/traversal/service/combat/reward flow is implementation-ready; exact dungeon-boss and several magical-flora bindings remain external-intake gates**  
+> Status: **DESIGN CANON — R08 world/story/traversal/service/combat/reward flow is content/mechanics-closed; exact dungeon-boss and several magical-flora bindings remain external-intake gates**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Story spine: `WORLD_STORY_CANON.md`  
 > Region graph: `REGIONS.md`  
@@ -654,14 +654,14 @@ Working role:
 ```text
 Lv: 49
 role: optional ritual field/world boss
-HP target: ~33,000–38,000
+HP target: ~25,500–29,500
 Defense: ~120
 MR: ~82
 Poise: 255
 solo active TTK target: ~210–245 s
 ```
 
-Final values move after current 26.2 dependency inspection.
+This HP band is aligned to the canonical `BenchmarkDPS(L) × target active TTK` authoring rule. Final values may still move after current 26.2 dependency inspection and real model uptime review, but do not restore the older 33,000–38,000 band merely to make the boss feel larger.
 
 ## Invocation
 
