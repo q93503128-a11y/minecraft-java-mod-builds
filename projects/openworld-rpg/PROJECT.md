@@ -1,7 +1,7 @@
-# Open-World RPG — Project Contract
+# Anchorwake — Project Contract
 
 > Working project slug: `openworld-rpg`  
-> Player-facing title: **PRE-CODE BRANDING GATE — must be locked before the first player-visible build; never expose `TBD` or the internal slug as the finished title**  
+> Player-facing title: **Anchorwake — locked in `BRANDING.md`**  
 > Current phase: **DESIGN CANON LATE PRE-PRODUCTION / GAMEPLAY SOURCE BOOTSTRAP BLOCKED BY PRE-CODE GATES**
 
 ## 1. Repository / authority contract
@@ -38,6 +38,8 @@ When a current canon decision changes, update or replace the stale live wording.
 - planned initial JAR basename: `openworld-rpg-0.1.0-alpha.1.jar`
 - no gameplay source/save format exists yet
 
+The internal folder/mod/artifact identifiers remain stable production IDs. They are **not** player-facing branding and do not need to be renamed merely because the final display title is `Anchorwake`.
+
 The internal artifact/version strings above are production identifiers. They are **not permission to display `alpha`, the slug or other development terminology inside normal gameplay UI/content.**
 
 Pinned dependency ownership/version boundaries are canonical in `M0_DEPENDENCY_AUDIT.md`.
@@ -50,7 +52,7 @@ Do not silently upgrade/substitute pinned runtime dependencies during implementa
 
 ## 3. Product identity
 
-This is a large authored open-world fantasy action RPG built on Minecraft, not vanilla-plus.
+**Anchorwake** is a large authored open-world fantasy action RPG built on Minecraft, not vanilla-plus.
 
 Minecraft supplies the block world, runtime, input base and hosting environment. Project-owned systems supply the player-facing RPG identity:
 
@@ -68,6 +70,8 @@ Minecraft supplies the block world, runtime, input base and hosting environment.
 - Anchor-network story and personal endings.
 
 The design goal is not feature count. It is one cohesive game whose systems reinforce exploration, combat, progression and world consequence.
+
+`BRANDING.md` owns the final player-facing title string and its presentation boundary. Exact logo/font/graphic bytes remain external-first visual assets and therefore stay inside the ordinary presentation/provenance gate.
 
 ---
 
@@ -94,6 +98,7 @@ Therefore:
 Primary gameplay/system canon:
 
 - `GAME_DESIGN.md`
+- `BRANDING.md` — final player-facing title `Anchorwake`, spelling/metadata rules and external-first logo boundary
 - `COMBAT_BALANCE.md`
 - `CLASS_COMBAT_KITS.md`
 - `CLASS_PROGRESSION.md`
@@ -134,7 +139,8 @@ Quality/intake:
 
 - `DESIGN_COMPLETENESS_AUDIT.md`
 - `EXTERNAL_SOURCES.md`
-- `R01_ASSET_INTAKE.md` and evidence snapshots where applicable.
+- `R01_ASSET_INTAKE.md` and evidence snapshots where applicable;
+- `R01_ASSET_PHASE_B_PASS5_ACQUISITION_EVIDENCE_2026-09-17.md` — creator-controlled direct ZIP locators, current Standard/Source boundary correction and honest binary/hash limitation.
 
 The implementation package owns a region's traversal/ecology/encounter/dungeon/system contract. The later matching content bible closes settlement name, named cast, exact quests/scenes/rewards/reconnect state and story handoff. If an old package contains a working placeholder superseded by its content bible, the later content bible wins for that explicitly refined point.
 
@@ -148,11 +154,12 @@ The implementation package owns a region's traversal/ecology/encounter/dungeon/s
 
 These are not new design options. They identify older live phrases that are already superseded by later canon and must be cleaned from their original documents during the final stale-text pass.
 
-- **Alderford is the final player-facing R01 starting-settlement name.** Older `GAME_DESIGN.md` wording saying the starting-settlement name/lore will be decided later is stale.
+- **The final player-facing title is `Anchorwake`.** Any older `PRE-CODE BRANDING GATE`, `TBD` or internal-slug-as-title wording is stale. `BRANDING.md` owns spelling and visual-logo boundary.
+- **Alderford is the final player-facing R01 starting-settlement name.** Older wording saying the starting-settlement name/lore will be decided later is stale.
 - `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md` closes the global difficulty/assist, frequent-action input, subtitle/non-audio cue, camera/VFX comfort and audio/music **behavioral** contracts. Exact SFX/BGM files remain an asset-intake problem, not an open behavior-design problem.
 - `R11_AQUATIC_ACTION_MATRIX.md` closes the former R11 aquatic action-compatibility design blocker. Runtime retarget/render/playtest proof remains validation work.
-- **R03 Basalt Wyvern references in older `CLASS_PROGRESSION.md` world-skill/Hidden-Technique/Insight prose are stale.** Basalt Wyvern belongs to R10. R03 uses Griffin as its optional flying major encounter plus the current accepted/asset-gated highland and dungeon challenge identities; Rock Golem remains the current dungeon-boss candidate. No R03 class challenge may require Basalt Wyvern or resurrect the obsolete `Rocky Roller` slot merely because old text still mentions it.
-- `R01_ASSET_PHASE_B_PASS4_EVIDENCE_2026-09-17.md` supersedes Pass-3 candidate status for three intake rows: River Scholar Garb now has an exact Wizard modular candidate family, Ironbound Guard has an exact Knight modular candidate family, and Trail Skewers has a Kenney Food Kit `skewerVegetables` editable-base candidate. None is visually/Minecraft accepted yet; `R01 ASSET READY` remains `NO`.
+- **R03 Basalt Wyvern references in older class-progression prose are stale.** Basalt Wyvern belongs to R10. The live `CLASS_PROGRESSION.md` now uses current R03 collapsed-mine/lift-route/Griffin identities instead of resurrecting Basalt Wyvern or the obsolete `Rocky Roller` slot.
+- `R01_ASSET_INTAKE.md` integrates Pass 4 for River Scholar / Ironbound / Trail Skewers candidate identity. Pass 5 adds acquisition-source evidence: the preferred Wizard/Knight modular parts belong to the current broader Source-edition outfit content rather than being assumed to exist in the free Standard archive; Kenney Food Kit and several creator-uploaded CC0 Quaternius Standard archives now have direct acquisition locators. None is visually/Minecraft accepted yet; `R01 ASSET READY` remains `NO`.
 
 ---
 
@@ -194,21 +201,22 @@ Code does not silently become design authority.
 
 ## 7. Content-closed does not mean source-ready
 
-R01–R12 now have concrete regional content authoring and the cross-region main quest/rejoin structure is closed in `MAIN_QUEST_SCENE_PACKAGE.md`, but the project is **not yet gameplay-source-ready**.
+R01–R12 now have concrete regional content authoring, the cross-region main quest/rejoin structure is closed in `MAIN_QUEST_SCENE_PACKAGE.md`, and the final player-facing title string is closed as `Anchorwake`. The project is **not yet gameplay-source-ready**.
 
 Older package headers using `implementation-ready` must be interpreted narrowly as `the described mechanics/content flow no longer needs invention`. They do not waive these current pre-code gates:
 
-1. **final player-facing game title / branding**;
-2. **exact external presentation binding and provenance** for unresolved models, outfits, items, structures, Anchor machinery, VFX, animations, SFX/BGM and local-only/dependency boundaries;
-3. **actual Azari spatial closure** — coordinates, footprints, sightlines, route joins, travel-time targets, POI/dungeon/boss placement and content-density validation;
-4. **asset-gated final encounter sheets** — exact player-facing guardian/boss names, anatomy-supported attacks/weak points/signature materials only after their accepted models are known;
-5. **final stale-document / hidden-choice audit** — remove obsolete alternatives and ensure no implementation-time gameplay decision remains hidden in older live text.
+1. **exact external presentation binding and provenance** for unresolved models, outfits, items, structures, Anchor machinery, final logo/font/graphic, VFX, animations, SFX/BGM and local-only/dependency boundaries;
+2. **actual Azari spatial closure** — coordinates, footprints, sightlines, route joins, travel-time targets, POI/dungeon/boss placement and content-density validation;
+3. **asset-gated final encounter sheets** — exact player-facing guardian/boss names, anatomy-supported attacks/weak points/signature materials only after their accepted models are known;
+4. **final stale-document / hidden-choice audit** — remove obsolete alternatives and ensure no implementation-time gameplay decision remains hidden in older live text.
 
-The global accessibility/difficulty/assist, subtitles/non-audio cues, frequent-action input map and audio/music state-behavior design are closed in `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md`. Exact music/SFX bytes remain part of the external-asset gate in item 2.
+The former separate **title / branding-string gate is CLOSED** by `BRANDING.md`. Final logo/title-screen visual assets are not a fifth gate; they are part of item 1.
+
+The global accessibility/difficulty/assist, subtitles/non-audio cues, frequent-action input map and audio/music state-behavior design are closed in `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md`. Exact music/SFX bytes remain part of the external-asset gate in item 1.
 
 The R11 aquatic action/animation compatibility design is closed in `R11_AQUATIC_ACTION_MATRIX.md`. Runtime animation retarget/render validation remains required before R11 can be called tested or play-ready, but it is no longer a design blocker.
 
-The cross-region main-route region requirements, evidence counts, recurring-character scene functions, rejoin logic, sequence-break handling, finale handoff and personal ending commit behavior are closed in `MAIN_QUEST_SCENE_PACKAGE.md`. Exact scene locations/cameras/outfits/props/audio remain subject to gates 2–4 where applicable.
+The cross-region main-route region requirements, evidence counts, recurring-character scene functions, rejoin logic, sequence-break handling, finale handoff and personal ending commit behavior are closed in `MAIN_QUEST_SCENE_PACKAGE.md`. Exact scene locations/cameras/outfits/props/audio remain subject to gates 1–3 where applicable.
 
 Only after these remaining gates are closed should M0 create the gameplay source/resource/data layout.
 
@@ -236,7 +244,7 @@ This applies especially to:
 - weapons/armor/outfits/accessories;
 - ores/herbs/resource nodes;
 - structures/workstations/important props;
-- UI screens/icons;
+- UI screens/icons/branding visuals;
 - animation/VFX/audio.
 
 A missing exact source is a pre-code gate for that visible content, not permission for a vanilla/AI placeholder to become the final answer.
