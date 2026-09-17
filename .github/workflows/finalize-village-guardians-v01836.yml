@@ -57,7 +57,6 @@ jobs:
             .github/workflows/finalize-village-guardians-v01836.yml
 
           git commit -m "Restore Village Guardians occluded raid readability"
-          git pull --rebase origin main
           git push origin HEAD:main
           SOURCE_SHA=$(git rev-parse HEAD)
 
@@ -73,5 +72,4 @@ jobs:
           EOF
           git add projects/village-guardians/.ci/v01836-final.txt
           git commit -m "Record Village Guardians 0.18.36 acceptance"
-          git pull --rebase origin main
           git push origin HEAD:main
