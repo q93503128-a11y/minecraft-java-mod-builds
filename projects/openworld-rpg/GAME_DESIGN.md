@@ -1,7 +1,7 @@
 # Open-World RPG — Master Game Design Canon
 
 > Status: DESIGN CANON / continuously maintained  
-> Final game title: **PRE-CODE BRANDING GATE — not yet locked; the internal `openworld-rpg` slug is never the finished player-facing title**  
+> Final game title: **WORKING / CANDIDATE ONLY — not yet locked; not a gameplay-source-bootstrap gate; the internal `openworld-rpg` slug is never the finished player-facing title**  
 > Canon priority: current GitHub `main` > `PROJECT.md` > this file > subordinate project docs > older conversations
 
 This file is the single source of truth for gameplay/design decisions below the project-level contract. Do not create a competing master design document. When a decision changes, edit the existing section instead of leaving contradictory versions behind.
@@ -1642,20 +1642,21 @@ Completed/advanced design work that should **not** be restarted from zero:
 - R01 asset intake evidence through Phase-B Pass 4, including Wizard River Scholar, Knight Ironbound and Kenney Trail Skewers exact candidate families while preserving unresolved acceptance gates;
 - finished-game quality model and current design-completeness audit criteria.
 
-The remaining pre-code gates are exactly the project-level gates in `PROJECT.md` / `DESIGN_COMPLETENESS_AUDIT.md`:
+The remaining gameplay-source-bootstrap gates are exactly the current project-level gates in `PROJECT.md`:
 
-1. **Final title / branding** — lock the actual player-facing game name; the internal slug is not a release title.
-2. **Exact external asset binding / provenance** — finish R01 acceptance and expand to production-critical creature/boss/NPC/outfit/item/structure/Anchor machinery/VFX/animation/SFX/BGM sources, including acquisition/license/hash and required 3D/Minecraft acceptance.
-3. **Azari spatial closure** — bind settlements, roads, route joins, shrines, POIs, dungeon entrances/exits, boss arenas, landmarks/sightlines and travel/content-density targets to actual coordinates; compress/reroute empty scale instead of filling it with copy-paste.
-4. **Asset-gated boss / final-guardian closure** — after accepted models exist, lock exact player-facing identities, anatomy-supported attacks, weak points, signature materials and presentation for still-gated regional bosses and the R12 systemic final guardian.
-5. **Final stale-document / hidden-choice audit** — remove obsolete alternatives and any remaining gameplay-affecting `decide during coding` choice, then run the pre-bootstrap acceptance check once.
+1. **Exact external asset binding / provenance** — finish R01 acceptance and expand to production-critical creature/boss/NPC/outfit/item/structure/Anchor machinery/VFX/animation/SFX/BGM sources, including acquisition/license/hash and required 3D/Minecraft acceptance.
+2. **Azari spatial closure** — bind settlements, roads, route joins, shrines, POIs, dungeon entrances/exits, boss arenas, landmarks/sightlines and travel/content-density targets to actual coordinates; compress/reroute empty scale instead of filling it with copy-paste.
+3. **Asset-gated boss / final-guardian closure** — after accepted models exist, lock exact player-facing identities, anatomy-supported attacks, weak points, signature materials and presentation for still-gated regional bosses and the R12 systemic final guardian.
+4. **Final stale-document / hidden-choice audit** — remove obsolete alternatives and any remaining gameplay-affecting `decide during coding` choice, then run the pre-bootstrap acceptance check once.
+
+**Final player-facing title selection is not one of these gameplay-source-bootstrap gates.** `BRANDING.md` owns the later title lock, while logo/font/graphic bytes remain part of the ordinary external-presentation/provenance gate.
 
 Recommended next batches therefore are:
 
-1. **External asset intake completion, beginning with R01** — perform acquisition/hash + actual 3D review for the already narrowed candidates rather than restarting broad scouting; continue only the genuinely unresolved revive/help-up and Trail Stag mount/dismount search, then potion/weapon/VFX/audio acceptance.
+1. **External asset intake completion, beginning with R01** — perform acquisition/hash + actual 3D review for the already narrowed candidates rather than restarting broad scouting; continue only genuinely unresolved motion/model slots, then potion/weapon/VFX/audio acceptance.
 2. **Azari spatial closure** — import/audit the real terrain and author the coordinate/sightline/travel-density package. Use the existing POI cadence targets rather than arbitrary icon quotas.
 3. **Asset-gated boss/final guardian completion** — bind boss anatomy and mechanics to accepted visuals instead of designing attacks the model cannot express.
-4. **Final canon/stale audit and source-bootstrap decision** — once gates 1–4 are closed, perform one final hidden-choice pass and only then create the gameplay source/resource/data skeleton.
+4. **Final canon/stale audit and source-bootstrap decision** — once gates 1–3 are materially closed, perform one final hidden-choice/stale-text pass and only then create the gameplay source/resource/data skeleton.
 
 Exact music/SFX file selection remains part of the external-asset gate; the audio **behavior** contract is already closed. R11 animation retarget quality remains implementation/visual-validation work; the aquatic **design** contract is already closed. Do not reopen either as generic design work.
 
