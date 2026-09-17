@@ -23,8 +23,14 @@ public final class ExpeditionJournalClientState {
 
     public static synchronized long generation() { return generation; }
 
-    public static synchronized void clear() {
+    /** Clears only the cached journal view. Route tracking intentionally survives menu refreshes. */
+    public static synchronized void clearView() {
         latest = null;
         generation++;
+    }
+
+    /** Compatibility alias retained for older callers/tests. */
+    public static synchronized void clear() {
+        clearView();
     }
 }
