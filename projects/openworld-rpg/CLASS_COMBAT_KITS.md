@@ -2,10 +2,11 @@
 
 > Status: **DESIGN CANON — root-class combat kits and first specialization branches locked before implementation**  
 > Master gameplay canon: `GAME_DESIGN.md`  
+> Deeper class progression authority: `CLASS_PROGRESSION.md`  
 > Combat math/timing: `COMBAT_BALANCE.md`  
 > Runtime boundaries: `M0_DEPENDENCY_AUDIT.md`  
 > Visual/UI rules: `UI_DIRECTION.md`  
-> Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins.
+> Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins. Later progression details explicitly closed in `CLASS_PROGRESSION.md` supersede this file's former future-work notes.
 
 This document closes the class decisions that must not be invented while coding. It defines the five root classes, their root mechanic, four starting actives, one root ultimate, passive identity, exact costs/cooldowns/action coefficients/poise values, class-specific ultimate-charge rules, first specialization branches, and external animation/VFX/icon directions.
 
@@ -2016,7 +2017,7 @@ For every class before claiming multiplayer success:
 
 # 19. What this pass closes
 
-Closed for implementation:
+Closed for implementation in this root/first-specialization document:
 
 - all five root-class starting combat identities;
 - exact root class mechanic for Warrior/Hunter/Cleric/Mage/Guardian;
@@ -2037,14 +2038,19 @@ Closed for implementation:
 - external animation/VFX/icon source families and adoption rules;
 - data schema and first implementation acceptance criteria.
 
-Still intentionally separate future design work:
+Closed by later dedicated canon and therefore **not future design work here**:
 
-- class advancement stages **after** the first specialization (stages 3–5 and hidden/special advancements);
-- full passive-tree node layouts and point economy;
-- exact class-progression/mastery curve and advancement unlock conditions;
-- additional optional skills discovered through exploration/bosses/quests;
-- complete global elemental/status roster beyond the statuses required here;
-- final keybind audit after all frequent actions are known;
-- actual exact external asset filenames/hashes during asset intake.
+- Rank 20/32/44/50 advancement stages and milestone rules — `CLASS_PROGRESSION.md`;
+- passive-tree layouts, Passive Point economy, World Insight points and respec — `CLASS_PROGRESSION.md`;
+- Class Rank / Class XP / catch-up / branch-switch progression and unlock conditions — `CLASS_PROGRESSION.md`;
+- world-discovered optional skills and Hidden Techniques — `CLASS_PROGRESSION.md`;
+- frequent-action keybind map and input-conflict policy — `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md`.
 
-Those remaining tasks are not permission to redesign the root kits during coding. Implementation must use this file as the class-combat baseline.
+Still separate production/content work:
+
+- global enemy/world status roster beyond the statuses explicitly required here, only where later dedicated status/encounter canon has not already closed the interaction;
+- exact external animation/VFX/icon/SFX filenames, hashes, provenance and Minecraft-scale bindings during asset intake;
+- runtime tuning of timings/costs/coefficients when real play demonstrates a feel or balance problem;
+- actual client and multiplayer validation.
+
+Those remaining production tasks are not permission to redesign the root kits during coding. Implementation must use this file together with `CLASS_PROGRESSION.md` as the class-combat baseline.
