@@ -55,27 +55,29 @@ public final class FishingHud {
         int found = CollectionRewards.discoveredCount(ClientFishingState.records(), location);
         int total = CollectionRewards.speciesCount(location);
 
-        graphics.text(minecraft.font, "FISHING", x + 8, y + 7, FishingUiTheme.TEXT_PRIMARY, false);
+        String locationText = ClientFishingState.locationName().isBlank()
+                ? location.displayName()
+                : ClientFishingState.locationName();
+        String discoveryText = found + "/" + total;
+        int discoveryX = x + hud.width() - 8 - minecraft.font.width(discoveryText);
+        graphics.text(minecraft.font, locationText, x + 8, y + 6, FishingUiTheme.ACCENT, false);
         graphics.text(
                 minecraft.font,
-                ClientFishingState.locationName() + " " + found + "/" + total,
-                x + 58,
-                y + 7,
+                discoveryText,
+                discoveryX,
+                y + 6,
                 found >= total ? FishingUiTheme.MONEY : FishingUiTheme.SUCCESS,
                 false
         );
-        graphics.fill(x + 7, y + 20, x + hud.width() - 7, y + 21, FishingUiTheme.BORDER);
-        graphics.text(minecraft.font, "코인 " + ClientFishingState.coins(), x + 8, y + 26, FishingUiTheme.MONEY, false);
-        graphics.text(
-                minecraft.font,
-                "가방 " + ClientFishingState.catches().size() + "/" + PlayerFishingProfile.BAG_CAPACITY,
-                x + 82,
-                y + 26,
-                FishingUiTheme.TEXT_PRIMARY,
-                false
-        );
-        graphics.text(minecraft.font, "낚싯대 " + rod.displayName(), x + 8, y + 39, FishingUiTheme.ACCENT, false);
-        graphics.text(minecraft.font, "B 가방 · J 도감 · M 이동", x + 8, y + 52, FishingUiTheme.TEXT_SECONDARY, false);
+
+        graphics.fill(x + 7, y + 17, x + hud.width() - 7, y + 18, FishingUiTheme.BORDER);
+
+        String coinText = ClientFishingState.coins() + " C";
+        String bagText = "가방 " + ClientFishingState.catches().size() + "/" + PlayerFishingProfile.BAG_CAPACITY;
+        int bagX = x + hud.width() - 8 - minecraft.font.width(bagText);
+        graphics.text(minecraft.font, coinText, x + 8, y + 22, FishingUiTheme.MONEY, false);
+        graphics.text(minecraft.font, bagText, bagX, y + 22, FishingUiTheme.TEXT_PRIMARY, false);
+        graphics.text(minecraft.font, rod.displayName(), x + 8, y + 34, FishingUiTheme.TEXT_SECONDARY, false);
 
         int width = graphics.guiWidth();
         int height = graphics.guiHeight();

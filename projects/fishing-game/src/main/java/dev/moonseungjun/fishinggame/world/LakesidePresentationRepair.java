@@ -6,6 +6,9 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.item.FallingBlockEntity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -15,6 +18,7 @@ public final class LakesidePresentationRepair {
     private static final BlockPos BASE_BUILD_MARKER = new BlockPos(0, 58, 27);
     private static final BlockPos QUALITY_MARKER_ALPHA20 = new BlockPos(0, 40, 27);
     private static final BlockPos QUALITY_MARKER_ALPHA21 = new BlockPos(1, 40, 27);
+    private static final BlockPos QUALITY_MARKER_ALPHA22 = new BlockPos(2, 40, 27);
     private static final int WATER_Y = 63;
     private static final int LAND_Y = 64;
     private static final int ORIGINAL_OUTER_X = 44;
@@ -24,6 +28,7 @@ public final class LakesidePresentationRepair {
     private static final int SCENIC_X = 76;
     private static final int SCENIC_Z = 68;
     private static final AABB AMBIENT_MOB_BOUNDS = new AABB(-78.0, 48.0, -70.0, 78.0, 100.0, 70.0);
+    private static final AABB LAKE_DEBRIS_BOUNDS = new AABB(-24.0, 54.0, -20.0, 24.0, 72.0, 20.0);
     private static int maintenanceTicks;
 
     private LakesidePresentationRepair() {
@@ -52,6 +57,15 @@ public final class LakesidePresentationRepair {
                 set(lakeside, QUALITY_MARKER_ALPHA21, Blocks.DIAMOND_BLOCK);
             }
 
+            if (lakeside.getBlockState(BASE_BUILD_MARKER).is(Blocks.LODESTONE)
+                    && !lakeside.getBlockState(QUALITY_MARKER_ALPHA22).is(Blocks.GOLD_BLOCK)) {
+                FishingGameMod.LOGGER.info("Applying alpha.22 Cheongram Lakeside debris cleanup");
+                cleanupLakeDebris(lakeside);
+                removeFloatingLakeDebris(lakeside);
+                set(lakeside, QUALITY_MARKER_ALPHA22, Blocks.GOLD_BLOCK);
+            }
+
+            removeFloatingLakeDebris(lakeside);
             removeAmbientMobs(lakeside);
         });
     }
@@ -67,7 +81,7 @@ public final class LakesidePresentationRepair {
         for (int x = -LAKE_X; x <= LAKE_X; x++) {
             for (int z = -LAKE_Z; z <= LAKE_Z; z++) {
                 double lake = ellipse(x, z, LAKE_X, LAKE_Z);
-                if (lake > 0.94) continue;
+                if (lake > 0.97) continue;
 
                 int bedY = lakeBedY(lake);
                 for (int y = bedY + 1; y <= WATER_Y; y++) {
@@ -85,6 +99,22 @@ public final class LakesidePresentationRepair {
                     }
                 }
             }
+        }
+    }
+
+    private static void removeFloatingLakeDebris(ServerLevel level) {
+        for (ItemEntity itemEntity : level.getEntitiesOfClass(
+                ItemEntity.class,
+                LAKE_DEBRIS_BOUNDS,
+                itemEntity -> itemEntity.getItem().getItem() instanceof BlockItem
+        )) {
+            itemEntity.discard();
+        }
+        for (FallingBlockEntity fallingBlock : level.getEntitiesOfClass(
+                FallingBlockEntity.class,
+                LAKE_DEBRIS_BOUNDS
+        )) {
+            fallingBlock.discard();
         }
     }
 

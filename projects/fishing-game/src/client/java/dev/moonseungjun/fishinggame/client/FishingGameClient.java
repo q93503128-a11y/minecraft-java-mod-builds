@@ -16,6 +16,7 @@ import dev.moonseungjun.fishinggame.client.fish.TallEncounterFishModel;
 import dev.moonseungjun.fishinggame.entity.FishingEntities;
 import dev.moonseungjun.fishinggame.fishing.CastChargeMath;
 import dev.moonseungjun.fishinggame.network.CastReleasePayload;
+import dev.moonseungjun.fishinggame.network.CastStartPayload;
 import dev.moonseungjun.fishinggame.network.FishingStatePayload;
 import dev.moonseungjun.fishinggame.network.ProfileSnapshotPayload;
 import dev.moonseungjun.fishinggame.network.ReelInputPayload;
@@ -96,14 +97,18 @@ public final class FishingGameClient implements ClientModInitializer {
             boolean useDown = client.options.keyUse.isDown();
             boolean fishing = client.player.fishing != null;
             if (!fishing) {
-                boolean holdingRod = client.player.getMainHandItem().is(Items.FISHING_ROD)
-                        || client.player.getOffhandItem().is(Items.FISHING_ROD);
+                boolean mainHandRod = client.player.getMainHandItem().is(Items.FISHING_ROD);
+                boolean offHandRod = client.player.getOffhandItem().is(Items.FISHING_ROD);
+                boolean holdingRod = mainHandRod || offHandRod;
                 boolean bagHasSpace = ClientFishingState.catches().size() < PlayerFishingProfile.BAG_CAPACITY;
                 boolean canCharge = holdingRod && bagHasSpace && client.gui.screen() == null;
 
                 if (!castCharging && useDown && !previousUseDown && canCharge) {
-                    castCharging = true;
-                    castChargeTicks = 0;
+                    boolean offHand = !mainHandRod && offHandRod;
+                    if (sendCastStart(offHand)) {
+                        castCharging = true;
+                        castChargeTicks = 0;
+                    }
                 }
 
                 if (castCharging) {
@@ -149,6 +154,12 @@ public final class FishingGameClient implements ClientModInitializer {
 
     public static float castChargeProgress() {
         return CastChargeMath.normalizedCharge(castChargeTicks);
+    }
+
+    private static boolean sendCastStart(boolean offHand) {
+        if (!ClientPlayNetworking.canSend(CastStartPayload.TYPE)) return false;
+        ClientPlayNetworking.send(new CastStartPayload(offHand));
+        return true;
     }
 
     private static void sendCastRelease(boolean cancelled) {

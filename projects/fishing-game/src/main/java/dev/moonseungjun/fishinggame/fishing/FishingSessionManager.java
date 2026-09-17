@@ -54,12 +54,7 @@ public final class FishingSessionManager {
 
             FishingSession session = SESSIONS.get(serverPlayer.getUUID());
             if (session == null) {
-                if (serverPlayer.fishing != null) return InteractionResult.PASS;
-                if (FishingProfiles.get(serverPlayer).bagFull()) {
-                    sendIdle(serverPlayer, "어획 가방이 가득 찼습니다. B에서 판매해 주세요.");
-                    return InteractionResult.SUCCESS;
-                }
-                CAST_CHARGES.putIfAbsent(serverPlayer.getUUID(), new CastCharge(level.getGameTime(), hand));
+                startCastCharge(serverPlayer, hand == InteractionHand.OFF_HAND);
                 return InteractionResult.SUCCESS;
             }
 
@@ -77,6 +72,19 @@ public final class FishingSessionManager {
             FishingSession session = SESSIONS.remove(player.getUUID());
             discardVisualFish(session);
         });
+    }
+
+    public static void startCastCharge(ServerPlayer player, boolean offHand) {
+        if (SESSIONS.containsKey(player.getUUID()) || player.fishing != null) return;
+
+        InteractionHand hand = offHand ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
+        if (!player.getItemInHand(hand).is(Items.FISHING_ROD)) return;
+        if (FishingProfiles.get(player).bagFull()) {
+            sendIdle(player, "어획 가방이 가득 찼습니다. B에서 판매해 주세요.");
+            return;
+        }
+
+        CAST_CHARGES.putIfAbsent(player.getUUID(), new CastCharge(player.level().getGameTime(), hand));
     }
 
     public static void finishCastCharge(ServerPlayer player, boolean cancelled) {

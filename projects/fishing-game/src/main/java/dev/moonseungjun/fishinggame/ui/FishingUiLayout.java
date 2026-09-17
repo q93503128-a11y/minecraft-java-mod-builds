@@ -9,8 +9,8 @@ public final class FishingUiLayout {
 
     public static Size hud(int guiWidth, int guiHeight) {
         return new Size(
-                fit(guiWidth, 174, 8),
-                fit(guiHeight, 62, 8)
+                fit(guiWidth, 138, 8),
+                fit(guiHeight, 46, 8)
         );
     }
 
