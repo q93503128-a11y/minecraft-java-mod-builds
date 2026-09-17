@@ -1,0 +1,115 @@
+name: M0 MOBA donor audit
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/moba-m0-donor-audit.yml'
+      - 'projects/moba-arena/M0_RUNTIME_LOCK.json'
+      - 'projects/moba-arena/tools/m0-ci-audit.py'
+
+permissions:
+  contents: read
+
+jobs:
+  donor-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Download and fingerprint pinned donor JARs
+        shell: bash
+        run: |
+          set -euo pipefail
+          MODS_DIR="$RUNNER_TEMP/moba-m0/mods"
+          REPORT_DIR="$RUNNER_TEMP/moba-m0/report"
+          python3 projects/moba-arena/tools/m0-ci-audit.py \
+            --download-dir "$MODS_DIR" \
+            --report-dir "$REPORT_DIR"
+          echo '### M0 donor fingerprints' >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          cat "$REPORT_DIR/M0_CI_FINGERPRINTS.json" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo '### Anime Assembly symbol candidate sample' >> "$GITHUB_STEP_SUMMARY"
+          echo '```text' >> "$GITHUB_STEP_SUMMARY"
+          head -n 120 "$REPORT_DIR/ANIME_ASSEMBLY_SYMBOL_CANDIDATES.txt" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install Forge 1.19.2-43.3.13 dedicated server
+        shell: bash
+        run: |
+          set -euo pipefail
+          SERVER_DIR="$RUNNER_TEMP/moba-m0/server"
+          mkdir -p "$SERVER_DIR"
+          cd "$SERVER_DIR"
+          curl -fL --retry 3 --retry-delay 2 \
+            -o forge-installer.jar \
+            'https://maven.minecraftforge.net/net/minecraftforge/forge/1.19.2-43.3.13/forge-1.19.2-43.3.13-installer.jar'
+          java -jar forge-installer.jar --installServer
+          mkdir -p mods
+          cp "$RUNNER_TEMP/moba-m0/mods/"*.jar mods/
+          printf 'eula=true\n' > eula.txt
+
+      - name: Dedicated-server donor smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          SERVER_DIR="$RUNNER_TEMP/moba-m0/server"
+          cd "$SERVER_DIR"
+          chmod +x run.sh
+          : > server-console.log
+          bash run.sh nogui > server-console.log 2>&1 &
+          PID=$!
+          STARTED=0
+          EXITED=0
+
+          for _ in $(seq 1 90); do
+            if grep -Eq 'Done \([0-9.]+s\)!|Done \([0-9.]+s\)! For help' server-console.log logs/latest.log 2>/dev/null; then
+              STARTED=1
+              break
+            fi
+            if ! kill -0 "$PID" 2>/dev/null; then
+              EXITED=1
+              break
+            fi
+            sleep 2
+          done
+
+          if kill -0 "$PID" 2>/dev/null; then
+            kill "$PID" || true
+            sleep 2
+            kill -9 "$PID" 2>/dev/null || true
+          fi
+          wait "$PID" 2>/dev/null || true
+
+          echo '===== server-console.log ====='
+          cat server-console.log || true
+          echo '===== logs/latest.log ====='
+          cat logs/latest.log 2>/dev/null || true
+
+          echo '### Dedicated-server donor smoke test' >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$STARTED" -eq 1 ]]; then
+            echo '- Forge server reached the Done state with all five pinned M0 donor JARs.' >> "$GITHUB_STEP_SUMMARY"
+            echo '- This proves dedicated-server startup only; client gameplay/map/multiplayer behavior is still untested.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '- Forge server did not reach the Done state with the pinned donor stack.' >> "$GITHUB_STEP_SUMMARY"
+            echo '- Inspect this job log for the first real mod-loading/dependency failure.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - name: Assert no third-party JAR is published
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'Third-party JARs were used only inside RUNNER_TEMP.'
+          echo 'No upload-artifact step exists in this workflow.'
