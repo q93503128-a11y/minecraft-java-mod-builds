@@ -11,7 +11,7 @@
 > Quest/state: `QUEST_WORLD_STATE.md`  
 > Quality contract: `DESIGN_COMPLETENESS_AUDIT.md`  
 > External provenance: `EXTERNAL_SOURCES.md`  
-> Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins.
+> Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins. Later exact quest/reward/service values closed in `R11_CONTENT_BIBLE.md` are incorporated here and must not be reopened during coding.
 
 R11 is not one flat `ocean biome`. It is a **three-layer major region** that grows with the player across the campaign:
 
@@ -466,15 +466,13 @@ instead of shipping a bad boat system.
 
 ## 7.3 Laviathan — canonical R11 unlock
 
-R11 is now the **primary launch unlock region** for the Laviathan.
-
-R10 may foreshadow its lava utility, but R11 owns the actual acquisition because the creature's strongest identity is broad water/lava traversal and multiplayer ferrying.
+R11 is the **launch unlock region** for the Laviathan. R10 may foreshadow its lava utility, but it cannot grant the mount.
 
 Preserve `MOUNTS.md` values:
 
 ```text
-unlock context: roughly Lv58–64
-registration/tack after quest: 3,000 Gold
+unlock context: R11 open-sea/deep-route progression, approximately Lv44–64
+registration/tack after authored handler/route trial: 3,000 Gold
 water/lava cruise: 8.8 b/s
 land cruise: 4.6 b/s
 max riders: 4
@@ -485,8 +483,10 @@ Authored unlock shape:
 
 ```text
 meet/observe large aquatic transport ecology
-→ solve one route/creature interaction with the handler
-→ prove control around reefs/open water
+→ work with harbor handler / reef warden
+→ reach a safe broad-water interaction area
+→ demonstrate steering / passenger / large-body handling
+→ solve one ecological/route encounter
 → register persistent Laviathan
 ```
 
@@ -498,26 +498,32 @@ The Laviathan does not enter the abyss temple or trivialize authored deep-interi
 
 # 8. Permanent deep-dive utility
 
-R11 deep content needs a late-game **Dive Utility** because vanilla underwater movement/breath friction is not the intended challenge.
+Final player-facing equipment/service name: **Deep-Dive Harness**.
 
-Production/internal role name:
-
-```text
-Deep-Dive Harness
-```
-
-Final player-facing name/model waits for external asset intake.
+The Harness is a permanent traversal apparatus/state, not a consumable oxygen tank and not a normal 12-slot combat-equipment replacement.
 
 Design:
 
-- permanent personal utility unlock, not a normal 12-slot combat equipment item;
-- visually represented with accepted external fantasy/diver apparatus where appropriate;
+- permanent personal utility unlock;
+- visually represented with an accepted external fantasy/diver apparatus;
 - automatically activates in authored deep-water state / underwater traversal;
 - no durability;
 - no fuel;
 - no oxygen consumables;
 - no separate upgrade tree;
 - server owns unlock state.
+
+Exact unlock service recipe:
+
+```text
+6 Silver Ore
++ 4 Volcanic Glass
++ 4 accepted R11 reef-fiber/reagent materials
++ 1,200 Gold
+→ Deep-Dive Harness
+```
+
+The exact player-facing identity/model of the local reef material is a pre-code asset binding; the quantity and mechanical requirement are already fixed.
 
 Baseline functional targets after unlock:
 
@@ -885,14 +891,14 @@ Working project role:
 ```text
 Lv: 51
 role: optional open-sea field boss
-HP target: ~28,000–33,000
+HP target: ~24,500–28,500
 Defense: ~118
 MR: ~83
 Poise: ~235
 solo active TTK target: ~195–225 s
 ```
 
-Exact stats wait for current 26.2 model/movement inspection.
+This HP band is aligned to `BenchmarkDPS(L) × target active TTK`. Exact values still wait for current 26.2 model/movement inspection, but extended unreachable swimming must be fixed as movement behavior rather than paid for with extra HP.
 
 Arena/route:
 
@@ -966,7 +972,7 @@ Rewards:
 
 # 18. Laviathan unlock chain
 
-Working sequence:
+Canonical sequence:
 
 ```text
 open-sea route problem / large-creature observation
@@ -974,6 +980,7 @@ open-sea route problem / large-creature observation
 → reach a safe broad-water interaction area
 → demonstrate steering / passenger / large-body handling
 → solve one ecological/route encounter
+→ registration access unlocked
 → register persistent Laviathan for 3,000 Gold
 ```
 
@@ -983,7 +990,7 @@ Rules:
 - no repeated feeding stack;
 - no breeding;
 - no mount level;
-- one handler sequence, then permanent unlock;
+- one handler sequence, then permanent unlock eligibility;
 - multiplayer registration state personal;
 - up to 4 riders with server-owned controller seat.
 
@@ -993,26 +1000,36 @@ The unlock should occur **before** the player begins routine abyss travel so R11
 
 # 19. Deep-dive unlock chain
 
-The Deep-Dive Harness role is introduced through the Reef Warden/Diver and old pressure-route investigation.
+The Deep-Dive Harness is introduced through the Reef Warden/Diver and old pressure-route investigation.
 
-Working sequence:
+Canonical sequence:
 
 ```text
 find evidence below normal comfortable dive depth
 → inspect one shallow old pressure station / wreck
-→ acquire/assemble accepted permanent dive apparatus through ordinary regional materials + service
+→ return with recorded pressure data
+→ fit/craft Deep-Dive Harness through the authored service
 → test movement at trench lip
-→ unlock deep route
+→ permanent deep-dive state commits
 ```
 
-Economic rule:
+Exact service recipe:
 
-- cost/material requirement should be meaningful but modest for Lv60+;
+```text
+6 Silver Ore
++ 4 Volcanic Glass
++ 4 accepted R11 reef-fiber/reagent materials
++ 1,200 Gold
+→ Deep-Dive Harness
+```
+
+Rules:
+
 - no rare boss RNG gate;
 - no consumable refill;
-- no second upgrade tree.
-
-Exact recipe waits for accepted model/material catalog.
+- no second upgrade tree;
+- transaction and permanent unlock are server-authoritative/idempotent;
+- the exact reef material's final model/name is an asset-intake gate, not an implementation-time quantity/mechanics choice.
 
 This is equipment-readiness gating through the world, not an invisible `Lv64 required` wall.
 
@@ -1092,14 +1109,14 @@ Working project target:
 ```text
 Lv: 69
 role: late major dungeon / Act-III boss
-HP target: ~55,000–65,000
+HP target: ~40,500–50,000
 Defense: ~150
 MR: ~140
 Poise: ~285
 solo active TTK target: ~235–290 s
 ```
 
-Exact values depend on current model scale, movement speed and vulnerable uptime.
+This HP band is aligned to the canonical active-TTK benchmark. Exact values depend on current model scale, movement speed and vulnerable uptime; if the boss spends too long outside useful player range, fix that movement/uptime rather than inflating the health bar.
 
 ## 3D arena contract
 
@@ -1368,7 +1385,7 @@ Required multiplayer tests later:
 - Abyss Fang giant-body charge/devour sync for multiple players;
 - deep dungeon current state identical for all clients;
 - no altar/reward duplication on relog;
-- support contribution qualifies underwater.
+- **one valid underwater hit or one valid heal/protection/support action is sufficient for personal combat-reward eligibility under `PARTY_MULTIPLAYER.md`**.
 
 `MULTIPLAYER TESTED` remains NO until real-client verification.
 
