@@ -7,7 +7,7 @@
 > Combat authority: `COMBAT_BALANCE.md`  
 > Class progression: `CLASS_PROGRESSION.md`  
 > Loot/economy: `LOOT_ECONOMY.md`  
-> Rule: this file closes multiplayer/party details that the existing master and quest-state canon already imply. It does not grant party leaders progression authority and does not override personal quest/end-state rules.
+> Rule: this file closes multiplayer/party details that the existing master and quest-state canon already imply. For **combat reward participation thresholds**, this file is the later explicit refinement: one valid combat/support contribution is sufficient. It does not grant party leaders progression authority and does not override personal quest/end-state ownership.
 
 The multiplayer goal is **play together without turning cooperation into reward competition or host-owned progression**.
 
@@ -22,11 +22,15 @@ Formal party membership is a convenience layer over the server-authoritative wor
 Launch baseline:
 
 ```text
+valid formal party size: 2–4 players
 formal party size cap: 4 players
+solo play: fully supported
 party membership required for normal co-op: NO
 party leader progression authority: NONE
 party friendly fire: OFF
 ```
+
+**Four players is the maximum party size, not the required size.** Two-player and three-player parties are ordinary supported configurations. A player may also play solo without creating a party.
 
 Players outside the same formal party may still participate in public/authored encounters when the encounter permits it. Reward eligibility always comes from actual participation, not from the party roster alone.
 
@@ -112,52 +116,71 @@ It is not divided by party size.
 
 Existing anti-swap ownership remains:
 
-- combat/event Class XP goes to the class active during the eligible contribution;
+- combat/event Class XP goes to the class active during the qualifying contribution;
 - changing class just before the enemy dies does not steal the reward onto the new class;
-- dungeon/quest majority-participation rules remain as defined in `CLASS_PROGRESSION.md`.
+- dungeon/quest majority-participation rules remain as defined in `CLASS_PROGRESSION.md` for their non-combat completion portions.
 
-Support-oriented classes can qualify through real support contribution and receive the same personal Class-XP entitlement as a damage build.
+Support-oriented classes can qualify through one valid support contribution and receive the same personal Class-XP entitlement as a damage build.
 
 ---
 
-# 4. Combat reward eligibility
+# 4. Combat reward eligibility — one valid action is enough
 
-Party membership by itself never grants combat EXP/loot.
+Party membership by itself never grants combat EXP/loot. However, once a player makes **one valid contribution** to the current enemy/encounter, that player is eligible for the encounter's normal personal combat rewards.
 
-The server keeps an encounter-participation ledger.
+There is no percentage-damage threshold and no hidden minimum contribution score.
 
-Valid participation can include:
+## 4.1 Damage contribution
 
-- direct effective damage;
-- poise/stagger contribution;
-- effective healing to an engaged eligible ally;
-- barrier/protection that actually absorbs or prevents hostile damage;
-- authored control/debuff/support that materially affects the engaged target;
-- successful revive during the encounter;
-- required encounter/objective interaction.
+A player qualifies after **one legitimate damaging hit** accepted by the server against the enemy/encounter.
 
-## Ordinary common enemies
+This applies to:
 
-Eligibility is intentionally lenient.
+- common enemies;
+- elites;
+- minibosses;
+- field/world bosses;
+- dungeon bosses;
+- combat portions of world events.
 
-A player qualifies through either:
+The hit may be small. It does not need to meet a damage-share percentage and it does not need to be the last hit.
 
-- at least one legitimate damaging hit; or
-- one meaningful encounter-linked support contribution to an ally who is actively fighting that enemy.
+## 4.2 Support contribution
 
-Reason: two friends should not fight over tags on a 3-second common mob.
+A player also qualifies after **one legitimate encounter-linked support action** involving an ally who is actively engaged in that encounter.
 
-## Elite / miniboss / boss / world event
+Qualifying examples:
 
-Use a broader participation window and threshold so that:
+- one heal that restores actual missing HP;
+- one barrier/protection effect that is validly applied to an engaged ally;
+- one authored support buff applied to an engaged ally;
+- one control/debuff/support effect successfully applied to the engaged enemy;
+- one successful revive during the encounter;
+- one authored encounter-support/objective interaction explicitly marked as participation.
 
-- a support player can qualify without damage racing;
-- one token hit at the final 1% does not automatically grant a major first-clear reward;
-- late arrivals can still earn normal eligible rewards when they genuinely join the fight before it is effectively over.
+A support action does not need to be repeated and does not need to compete with DPS contribution.
 
-Exact weights are data-driven by encounter role, but **DPS share is never the sole qualifier**.
+Zero-effect spam does not qualify where the action objectively did nothing—for example, repeatedly casting a pure heal on a full-HP ally solely to manufacture participation. A legitimate support buff/protection action may qualify on application even before it later prevents damage if that effect is a real combat contribution rather than a no-op animation.
 
-AFK proximity, following a party around without contributing, or standing outside the fight gives no combat reward.
+## 4.3 Eligibility persistence
+
+Once the server records one valid contribution for an encounter instance:
+
+```text
+eligible = true
+```
+
+That eligibility remains for the remainder of that encounter instance.
+
+- being Downed later does not erase it;
+- doing less damage than another player does not erase it;
+- moving to another part of the same boss arena does not erase it;
+- a brief disconnect does not erase a committed participation record;
+- one valid hit/support action near the end of a fight still counts.
+
+This generosity is intentional for private co-op. The project prioritizes friends being able to jump into a fight over policing contribution percentages.
+
+AFK proximity with **zero** valid actions still gives nothing.
 
 ---
 
@@ -169,13 +192,12 @@ Reward handling:
 
 - becoming Downed does not erase participation already earned;
 - a player who is revived and continues fighting retains one continuous participation record;
-- a player who is defeated but remains in the encounter/revive context can still receive a major encounter reward if the threshold was already legitimately met;
-- voluntarily leaving the encounter and remaining inactive long enough may expire normal participation eligibility;
+- a player who is defeated after qualifying keeps eligibility for the current encounter's normal personal resolution;
 - reconnect never duplicates a committed reward.
 
-For major bosses/dungeons/events, if a player met reward eligibility before a brief disconnect and the server resolves the encounter while their reward transaction is pending, the idempotent personal reward may be delivered on reconnect.
+For major bosses/dungeons/events, if a player qualified before a brief disconnect and the server resolves the encounter while their reward transaction is pending, the idempotent personal reward may be delivered on reconnect.
 
-Ordinary common-enemy kill EXP is not queued indefinitely for an offline player.
+Ordinary common-enemy kill EXP is not queued indefinitely for a player who was never present for the kill resolution; major encounter transactions may be reconnect-safe because their state is explicit and persistent.
 
 ---
 
@@ -218,6 +240,8 @@ A friend exploring on the other side of the map must not make the local boss tan
 
 An inactive/AFK party member must not count toward encounter scaling.
 
+For scaling purposes, `engaged` should use actual encounter presence/engagement state rather than only the one-action reward flag. A player who tags a boss and then travels far away should not keep the boss scaled up for everyone else indefinitely.
+
 When an additional player legitimately joins an active scalable encounter, scaling may increase at an authored safe synchronization point rather than instantly healing/warping the boss in an unreadable way. The exact controller transition must not delete already-dealt damage percentage unfairly.
 
 ---
@@ -229,6 +253,7 @@ Quest progression remains personal.
 If party members share the same objective:
 
 - one physical encounter may credit each qualifying player;
+- for combat objectives, one valid damage/support contribution is sufficient unless the objective itself requires a distinct authored action beyond defeating the enemy;
 - each player's logical quest step advances separately;
 - reward transactions remain personal.
 
@@ -316,21 +341,24 @@ This is required for Essential-hosted/private co-op to remain coherent when frie
 
 Do not declare multiplayer successful until actual multi-client play covers at least:
 
-1. two same-Lv players kill one common enemy and **both independently receive full normal personal EXP/Class XP**;
-2. mixed-Lv players kill one enemy and each receives reward from their own level/modifier calculation;
-3. a support-heavy player qualifies through healing/barrier/control without damage racing;
-4. AFK nearby party member receives nothing;
-5. last hit changes no reward ownership;
-6. two players on the same quest step both gain valid combat credit;
-7. players on different quest steps do not incorrectly sync/skip prerequisites;
-8. helper without the quest receives normal encounter rewards but not quest completion;
-9. boss scales from actually engaged players, not remote party roster;
-10. Downed → revive → boss clear preserves eligibility correctly;
-11. eligible boss participant briefly disconnects/rejoins without duplicate/lost committed reward;
-12. personal loot/signature drops do not steal another player's roll;
-13. personal gathering/fishing/merchant state cannot be consumed by a friend;
-14. split party can explore separate regions without changing each other's ordinary enemy HP;
-15. independent R12 ending selections coexist in the same shared postgame world.
+1. **2-player party**: both hit one common enemy at least once and both independently receive full normal personal EXP/Class XP;
+2. **3-player and 4-player parties** form normally; 4 is confirmed as the cap, not a required size;
+3. mixed-Lv players kill one enemy and each receives reward from their own level/modifier calculation;
+4. a player lands only **one valid hit** on an elite/boss and still receives their normal eligible personal combat rewards when it dies;
+5. a healer performs only **one valid heal** on an engaged injured ally and qualifies;
+6. a support build performs only **one valid protection/buff/control contribution** and qualifies;
+7. AFK nearby party member with zero valid contribution receives nothing;
+8. last hit changes no reward ownership;
+9. two players on the same quest step both gain valid combat credit;
+10. players on different quest steps do not incorrectly sync/skip prerequisites;
+11. helper without the quest receives normal encounter rewards but not quest completion;
+12. boss scales from actually engaged players, not remote party roster or stale reward eligibility;
+13. Downed → revive → boss clear preserves eligibility correctly;
+14. eligible boss participant briefly disconnects/rejoins without duplicate/lost committed reward;
+15. personal loot/signature drops do not steal another player's roll;
+16. personal gathering/fishing/merchant state cannot be consumed by a friend;
+17. split party can explore separate regions without changing each other's ordinary enemy HP;
+18. independent R12 ending selections coexist in the same shared postgame world.
 
 Verification labels remain strict:
 
