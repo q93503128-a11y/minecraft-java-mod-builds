@@ -3,13 +3,14 @@
 > Status: **DESIGN CANON — quest state, objective credit, dialogue choices, dynamic events, shared-world boundaries and co-op progression locked before implementation**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Project contract: `PROJECT.md`  
+> Party/co-op refinement: `PARTY_MULTIPLAYER.md`  
 > Opening: `R01_VERTICAL_SLICE.md`  
 > Combat/rewards: `COMBAT_BALANCE.md`, `LOOT_ECONOMY.md`  
 > Gathering/camp/housing: `GATHERING_FISHING_CAMP_HOUSING.md`  
 > UI: `UI_DIRECTION.md`  
-> Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins.
+> Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins. `PARTY_MULTIPLAYER.md` is the later explicit authority for combat-reward participation thresholds: **one valid damage or support action is enough**.
 
-This document closes the rules that should not be invented while implementing R01 quests or multiplayer saves.
+This document closes the rules that should not be invented while implementing quests or multiplayer saves.
 
 The goal is not to make a Minecraft MMO quest log. The goal is to let players discover and complete meaningful regional content together or separately without kill stealing, host-owned progression, duplicated rewards, forced NPC errand chains or a permanently crowded HUD.
 
@@ -182,7 +183,7 @@ The journal may hold many known entries, but the normal free-roam HUD shows at m
 
 World events may temporarily show one compact event tracker while the player is actively participating.
 
-This preserves the existing opening rule of low foreground quest density and prevents an MMO checklist wall.
+This preserves low foreground quest density and prevents an MMO checklist wall.
 
 The player can pin/unpin eligible objectives freely. Pin state is presentation, not progression state.
 
@@ -192,28 +193,32 @@ The player can pin/unpin eligible objectives freely. Pin state is presentation, 
 
 The server awards objective progress from explicit authored actions. There is no generic `nearby party member did something, therefore everyone progressed` rule.
 
-## 5.1 Combat objectives
+## 5.1 Combat objectives — one valid action qualifies
 
-For a kill/elite/boss objective, progress is granted to each eligible player who meaningfully participated.
+For a kill/elite/miniboss/boss combat objective, each player qualifies after **one valid encounter-linked action**.
 
-Meaningful participation can be established by one or more of:
+Any one of these is sufficient:
 
-- direct damage;
-- poise/stagger contribution;
-- healing/barrier/protection applied to an engaged eligible ally;
-- successful revive during the encounter;
-- authored control/support effects;
-- required event-objective interaction.
+- one server-accepted damaging hit against the objective enemy;
+- one valid poise/stagger/control/debuff action against it;
+- one heal that restores actual missing HP to an ally actively engaged with it;
+- one valid barrier/protection/support buff applied to an ally actively engaged with it;
+- one successful revive during the encounter;
+- one authored encounter-support/objective interaction explicitly marked as combat participation.
 
 Rules:
 
 - last hit has no special ownership;
-- standing nearby while inactive is not enough;
-- contribution thresholds are data-driven by encounter type;
-- support roles must be able to qualify without racing a damage dealer;
-- a player who arrives after the encounter is already effectively over does not gain first-clear/quest credit from proximity alone.
+- there is **no damage-share percentage threshold**;
+- there is **no minimum contribution score after the first valid action**;
+- one small legitimate hit is enough even on an elite or boss;
+- one legitimate heal/support action is enough for a healer/support build;
+- arriving near the end is fine if the player actually performs one valid action before resolution;
+- zero-action proximity is not enough;
+- no-op abuse such as pure healing a full-HP ally solely to manufacture participation does not count as a valid heal, while a real support buff/protection effect may count on valid application as defined in `PARTY_MULTIPLAYER.md`;
+- once granted, participation eligibility persists for the remainder of that encounter instance even if the player is later Downed.
 
-For ordinary small quest enemies, the eligibility threshold should remain deliberately lenient so two friends do not fight over tags.
+This intentionally favors frictionless private co-op over contribution policing.
 
 ## 5.2 Gathering / collection objectives
 
@@ -242,11 +247,13 @@ Players are allowed to be on different steps of the same quest.
 
 ## 6.1 Matching step
 
-If two players have the same quest step active:
+If players have the same combat quest step active:
 
-- shared physical kills/events can credit both if each meets eligibility;
+- one shared physical kill/event can credit every player who performs at least one valid contribution under §5.1;
 - personal interactions/gathering still record separately where appropriate;
 - party leader has no extra progression authority.
+
+Formal parties support **2–4 players**, with 4 as the maximum rather than a required size. Solo remains fully supported. Exact party UX/reward rules live in `PARTY_MULTIPLAYER.md`.
 
 ## 6.2 Different steps
 
@@ -396,19 +403,18 @@ Events do not require every nearby player to click `Accept`.
 
 ## 10.2 Participation
 
-On meaningful contribution, the player becomes a participant.
+Combat participation uses the same generous one-action rule as §5.1 and `PARTY_MULTIPLAYER.md`:
 
-Participation recognizes:
+- one legitimate hit; or
+- one valid heal/protection/buff/control/revive/support interaction
 
-- damage;
-- protection/healing/support;
-- revive;
-- objective interaction;
-- carrying/repair/rescue or another authored event mechanic.
+is enough to qualify for the combat/event reward layer for that encounter instance.
 
-Inactivity eventually removes active eligibility so AFK proximity is not rewarded.
+For non-combat events, one successful authored objective action such as a repair/carry/rescue/interaction may establish participation where the event defines it.
 
-Exact score weights and timeout are event data, not hard-coded globally; R01 event acceptance tests must prove both damage and support roles can qualify reliably.
+Zero-action proximity gives no reward. A reward-eligible player does not lose eligibility merely for becoming inactive later in the same short encounter, but **boss/event scaling** may stop counting someone who is no longer actually engaged so one tagged-and-departed player cannot keep the encounter inflated.
+
+There is no hidden participation score used to reduce personal reward after qualification.
 
 ## 10.3 Scaling
 
@@ -421,9 +427,12 @@ Event scaling may adjust:
 
 Do **not** increase outgoing boss damage just because more players joined; this remains consistent with the existing combat multiplayer contract.
 
+Reward eligibility and scaling engagement are separate states: a player may retain their earned reward eligibility while no longer counting toward live scaling after genuinely leaving the encounter.
+
 ## 10.4 Rewards
 
 - personal to each eligible participant;
+- combat EXP/Class XP is not split between participants;
 - no shared floor-loot race;
 - first-discovery/first-clear bonuses remain personal one-time state;
 - repeat rewards use the event's repeat table;
@@ -482,7 +491,7 @@ For a dungeon/boss:
 - encounter controller owns current shared run state;
 - every eligible player has separate `first_clear`, reward-claim and quest-step state;
 - a helper who already cleared may fight again without receiving duplicate deterministic first-clear rewards;
-- a player joining too late must satisfy normal participation requirements;
+- **one valid damage/support contribution is sufficient for encounter reward eligibility even if the player joined late**;
 - first-clear choice rewards are committed atomically before the UI is considered complete;
 - disconnect/reopen cannot create a second choice reward.
 
@@ -501,10 +510,10 @@ State: personal Main objective with shared physical world actors.
 The local objective has five authored useful-action categories:
 
 1. recover one lost cargo interaction;
-2. meaningfully participate in clearing the authored Meadow Viper threat;
+2. participate in clearing the authored Meadow Viper threat under the one-action combat-credit rule;
 3. inspect the damaged wagon/road marker;
 4. personally gather one relevant nearby R01 node;
-5. meaningfully participate in the small local road event if it is active.
+5. participate in the small local road event if it is active.
 
 Completion requires:
 
@@ -592,7 +601,7 @@ State: personal Main objective + shared dungeon discovery/encounter.
 
 State: personal Contract revealed by Steelboar sighting/evidence.
 
-Kill credit requires meaningful encounter participation, not last hit.
+Kill credit uses the global one-action rule: one valid hit or one valid encounter-linked heal/protection/support/control action is sufficient. Last hit has no special ownership.
 
 ## 13.7 `The Crowned Trail`
 
@@ -648,7 +657,7 @@ Rules:
 - do not use client toast appearance as proof that a reward was committed;
 - save personal progression at meaningful mutations rather than only graceful logout;
 - malformed/missing optional presentation data must not silently erase canonical progression;
-- save migration/versioning begins before the first public test world that the project intends to preserve.
+- save migration/versioning begins before the first preserved long-term test world.
 
 ---
 
@@ -660,9 +669,10 @@ Already committed objective/step progress survives reconnect.
 
 ## Active event
 
-- the player's live participation status may expire while disconnected;
-- reconnecting before event end does not automatically restore reward eligibility without renewed meaningful participation unless the specific event records a safe authored checkpoint;
-- already committed event reward remains committed.
+- once a valid encounter participation action is recorded, that encounter's reward eligibility remains recorded through a brief disconnect where the encounter supports reconnect-safe reward transactions;
+- reconnect does not require a second hit/support action merely to re-earn already-recorded eligibility;
+- already committed event reward remains committed;
+- ordinary common-enemy rewards are not queued indefinitely for someone who is offline at resolution.
 
 ## Dialogue / reward choice
 
@@ -674,7 +684,8 @@ Already committed objective/step progress survives reconnect.
 
 - personal first-clear/quest state survives;
 - current shared encounter may reset according to dungeon controller rules if nobody remains;
-- reconnect does not grant completion for a boss that died while the player was absent unless the player had already met the explicit eligibility rule and the encounter's reward-commit transaction includes them.
+- reconnect-safe major encounter rewards may resolve for a player whose one-action eligibility was already recorded before disconnect;
+- reconnect never duplicates completion or rewards.
 
 ---
 
@@ -718,7 +729,7 @@ The quest system does not automatically promote every objective to GPS precision
 ## Event tracker
 
 - appears only while event is relevant/nearby/participated;
-- disappears cleanly after leaving/inactivity/completion;
+- disappears cleanly after leaving/completion;
 - shows the real event objective, not a generic progress bar when the action itself is readable in-world.
 
 ---
@@ -730,30 +741,37 @@ The quest system does not automatically promote every objective to GPS precision
 - shared event state is one controller per authored event instance/area, not one duplicated world simulation per player;
 - personal progress lookup uses indexed quest/objective IDs rather than scanning full journal history on every combat hit;
 - map marker recalculation occurs on relevant progress/discovery mutations, not continuously every tick;
-- dialogue clients receive only the authoritative branch/state needed for the interaction.
+- dialogue clients receive only the authoritative branch/state needed for the interaction;
+- combat participation records use compact per-encounter eligible-player state and are cleared/reset with the encounter lifecycle.
 
 Profiler/playtest determines whether a specific large event needs stronger optimization.
 
 ---
 
-# 18. R01 acceptance tests before calling this system complete
+# 18. Multiplayer acceptance tests before calling this system complete
 
 At minimum test:
 
-1. two players on the same R01 objective both receive combat credit without last-hit competition;
-2. support/heal/guard/revive contribution can qualify for an authored group event/boss reward;
-3. a nearby AFK player does not receive event/boss first-clear credit;
-4. two players can gather the same physical herb node independently and progress their own contract;
-5. a player ahead in `Roots Below Stone` cannot drag a new player past missing prerequisites merely by partying;
-6. a previously-cleared helper can assist Earthloong without duplicating deterministic first-clear rewards;
-7. disconnect during earned-but-unselected dungeon reward preserves exactly one pending choice;
-8. `Dust on the Quarry Road` completes from any valid 3-of-5 category combination;
-9. `The Crowned Trail` accepts any 2-of-3 clues and still permits finding Regalhart first;
-10. Trail Stag shared cooperation grants only each incomplete eligible player's personal unlock;
-11. dialogue choices by player A do not silently select player B's personal response;
-12. permanent shared world-state changes remain safe for a late-joining player;
-13. quest HUD never exceeds the intended 1 Main + 2 pinned optional foreground density outside temporary event context;
-14. relog/reopen cannot duplicate Gold, EXP, item, mount or first-clear rewards.
+1. a **2-player party** forms normally; both hit one enemy once and both receive full independent combat EXP/Class XP;
+2. 3-player and 4-player parties work; 4 is the maximum, not a required size;
+3. one player hitting an elite/boss exactly once qualifies for personal combat reward and relevant kill-objective credit;
+4. one valid heal on an engaged injured ally qualifies the healer;
+5. one valid protection/buff/control action qualifies the support player;
+6. a nearby AFK player with zero valid action receives no event/boss reward;
+7. last hit changes no reward ownership;
+8. two players can gather the same physical herb node independently and progress their own contract;
+9. a player ahead in `Roots Below Stone` cannot drag a new player past missing prerequisites merely by partying;
+10. a previously-cleared helper can assist Earthloong without duplicating deterministic first-clear rewards;
+11. disconnect during earned-but-unselected dungeon reward preserves exactly one pending choice;
+12. `Dust on the Quarry Road` completes from any valid 3-of-5 category combination;
+13. `The Crowned Trail` accepts any 2-of-3 clues and still permits finding Regalhart first;
+14. Trail Stag shared cooperation grants only each incomplete eligible player's personal unlock;
+15. dialogue choices by player A do not silently select player B's personal response;
+16. permanent shared world-state changes remain safe for a late-joining player;
+17. quest HUD never exceeds the intended 1 Main + 2 pinned optional foreground density outside temporary event context;
+18. relog/reopen cannot duplicate Gold, EXP, item, mount or first-clear rewards;
+19. a player who tags a scalable boss once and then leaves the encounter keeps earned reward eligibility only as authored, but no longer inflates live boss scaling indefinitely;
+20. split parties can pursue separate regions/quest steps without remote progression or ordinary-enemy scaling interference.
 
 `MULTIPLAYER TESTED` remains **NO** until these are exercised with real separate clients.
 
@@ -766,7 +784,8 @@ This document closes design-time rules for:
 - personal vs shared vs encounter quest/world state;
 - main/regional/contract/discovery/world-event categories;
 - quest acceptance and HUD density;
-- combat/support/gather/investigate/location objective credit;
+- one-action combat/support objective credit;
+- gather/investigate/location objective credit;
 - split-party progression and helper behavior;
 - dialogue and irreversible personal choices;
 - return-to-NPC versus remote completion;
@@ -780,4 +799,4 @@ This document closes design-time rules for:
 - journal/map/event UI information rules;
 - multiplayer acceptance tests.
 
-Remaining work is primarily **R01 asset/presentation acceptance, exact dialogue/content writing, implementation data authoring, and real multiplayer playtesting**, not permission to invent a host-owned or kill-steal quest architecture during coding.
+Remaining work is primarily **presentation/asset acceptance, implementation data authoring, and real multiplayer playtesting**, not permission to invent a host-owned, kill-steal or contribution-percentage quest architecture during coding.
