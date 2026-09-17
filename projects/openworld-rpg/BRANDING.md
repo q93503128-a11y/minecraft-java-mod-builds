@@ -139,4 +139,4 @@ BUILD VERIFIED: NO
 PLAYTESTED: NO
 ```
 
-The **final player-facing title / branding string** remains a pre-code design gate.
+The **final player-facing title string itself is not a gameplay-source-bootstrap gate**. It can remain a working decision while gameplay source is prepared. Final title/logo/font/graphic presentation must still be locked before the finished player-facing release/presentation pass, and exact visual bytes remain subject to the normal external-presentation/provenance gate.
