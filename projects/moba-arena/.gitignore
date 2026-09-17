@@ -1,0 +1,8 @@
+# Local-only donor runtime, restricted maps, generated fingerprints/logs
+local/
+
+# IDE/runtime scratch if this project later receives source
+run/
+.gradle/
+build/
+out/
