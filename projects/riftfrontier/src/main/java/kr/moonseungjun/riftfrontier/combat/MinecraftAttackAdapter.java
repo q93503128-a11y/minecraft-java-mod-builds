@@ -7,6 +7,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -188,7 +189,24 @@ public final class MinecraftAttackAdapter {
                 bounds,
                 candidate -> MinecraftCombatAuthority.isEligibleTarget(level, attacker, candidate)
             );
-            return targets;
+            if (!targets.isEmpty()) {
+                return targets;
+            }
+
+            // addFreshEntity makes a server entity authoritative immediately, while the spatial
+            // section index can become query-visible on the following level tick. An attack whose
+            // ACTIVE boundary lands in that same tick must not silently miss an already-authoritative
+            // target. The bounded fallback scans only when the indexed query found nothing and
+            // applies the exact same authority and AABB predicates.
+            List<LivingEntity> sameTickTargets = new ArrayList<>();
+            for (var entity : level.getAllEntities()) {
+                if (entity instanceof LivingEntity candidate
+                    && candidate.getBoundingBox().intersects(bounds)
+                    && MinecraftCombatAuthority.isEligibleTarget(level, attacker, candidate)) {
+                    sameTickTargets.add(candidate);
+                }
+            }
+            return sameTickTargets;
         }
     }
 
