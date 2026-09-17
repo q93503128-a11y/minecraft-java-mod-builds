@@ -1,15 +1,16 @@
 # Open-World RPG — Master Game Design Canon
 
 > Status: DESIGN CANON / continuously maintained  
-> Final game title: TBD  
-> Canon priority: current GitHub `main` > this file > subordinate project docs > older conversations
+> Final game title: **PRE-CODE BRANDING GATE — not yet locked; the internal `openworld-rpg` slug is never the finished player-facing title**  
+> Canon priority: current GitHub `main` > `PROJECT.md` > this file > subordinate project docs > older conversations
 
-This file is the single source of truth for gameplay/design decisions. Do not create a competing master design document. When a decision changes, edit the existing section instead of leaving contradictory versions behind.
+This file is the single source of truth for gameplay/design decisions below the project-level contract. Do not create a competing master design document. When a decision changes, edit the existing section instead of leaving contradictory versions behind.
 
 Subordinate references currently indexed by this canon:
 
 - `REGIONS.md` — regional expansion/content details for Azari.
 - `UI_DIRECTION.md` — selected external UI family, screen architecture and visual acceptance rules.
+- `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md` — closed World Challenge, personal-assist, frequent-action input, subtitles/captions, non-audio cue, camera/VFX comfort and dynamic audio/music behavior contract.
 - `LOOT_ECONOMY.md` — equipment grades, affixes, drop rates, target farming, first-clear protection and signature-material rules.
 - `EQUIPMENT_BALANCE.md` — Item-Lv/base-stat curves, exact affix ranges, forge/reforge rules and R01 equipment/resource catalog.
 - `MOUNTS.md` — non-vanilla mount roster, traversal balance, summon/combat rules and external visual sources.
@@ -18,18 +19,21 @@ Subordinate references currently indexed by this canon:
 - `CLASS_COMBAT_KITS.md` — five root-class combat kits, first specialization branches and external animation/VFX/icon direction.
 - `CLASS_PROGRESSION.md` — Class Rank/XP, advancement beats, passive economy, deeper branch mechanics and world-discovered skills.
 - `STATUS_AND_R01_ENCOUNTERS.md` — element/status rules and concrete R01 ecology/elite/field-boss/first-dungeon combat kits.
-- `R01_VERTICAL_SLICE.md` — opening settlement, external player-motion bindings and first 55–75 minute playable R01 route.
+- `R01_VERTICAL_SLICE.md` — Alderford opening settlement, external player-motion bindings and first 55–75 minute playable R01 route.
 - `RECOVERY_PRODUCTION_APPEARANCE.md` — recovery belt, potions, food, alchemy/cooking, light profession mastery and external-first armor/apparel/Wardrobe rules.
-- `R01_ASSET_INTAKE.md` — current R01 exact asset/provenance intake state and unresolved presentation gates.
+- `R01_ASSET_INTAKE.md` — current R01 exact asset/provenance intake state and unresolved presentation gates; Phase-B Pass 4 evidence is integrated but R01 is not asset-ready.
 - `GATHERING_FISHING_CAMP_HOUSING.md` — Tool Pouch, gathering mastery/timing, fishing, reusable Field Camp Kit, housing/storage/furnishing and authority rules.
 - `FISHING_COLLECTION_HOUSING_MARKET.md` — Fish Codex/records/trophy loop and the authoritative one-residence-at-a-time housing trade-up refinement.
 - `QUEST_WORLD_STATE.md` — personal/shared quest state, objective credit, dialogue, dynamic events, late join, idempotent rewards and multiplayer quest authority.
-- `DESIGN_COMPLETENESS_AUDIT.md` — design-completeness and finished-game-quality audit with external open-world RPG production lessons and quality gates.
+- `PARTY_MULTIPLAYER.md` — formal party UX, participation, personal reward ownership, co-op scaling and multiplayer acceptance rules.
+- `DESIGN_COMPLETENESS_AUDIT.md` — design-completeness and finished-game-quality audit with external open-world RPG production lessons and current five pre-code gates.
 - `REGION_CROSS_AUDIT.md` — R01–R12 anti-repetition and regional-identity audit covering encounter/dungeon/evidence/service/resource/travel grammar; later explicit refinements in this file govern older regional-package details unless the master canon says otherwise.
 - `WORLD_STORY_CANON.md` — customizable protagonist frame, Anchor-network premise, factions/recurring roles, non-linear acts, regional evidence structure, three personal endings and postgame state.
-- `R02_IMPLEMENTATION_PACKAGE.md` through `R12_IMPLEMENTATION_PACKAGE.md` — implementation-ready regional packages that turn the broad region graph into concrete settlement, traversal, ecology, encounter, dungeon, reward, story-evidence and external-asset gates.
+- `MAIN_QUEST_SCENE_PACKAGE.md` — cross-region main-quest route, scene/rejoin ownership, sequence-break handling and multiplayer-safe major-story progression.
+- `R11_AQUATIC_ACTION_MATRIX.md` — closed R11 aquatic action compatibility, swim-base layering, 3D targeting and `AQUATIC_NATIVE / AQUATIC_ADAPTED / AQUATIC_DISABLED_WITH_FALLBACK` behavior.
+- `R02_IMPLEMENTATION_PACKAGE.md` through `R12_IMPLEMENTATION_PACKAGE.md` — content/mechanics-closed regional packages that turn the broad region graph into concrete settlement, traversal, ecology, encounter, dungeon, reward, story-evidence and external-asset gates. Their older `implementation-ready` wording never waives project-wide pre-code asset/spatial gates.
 
-If a subordinate reference conflicts with this file, this file wins.
+If a subordinate reference conflicts with this file, this file wins unless the higher-priority `PROJECT.md` explicitly records a later project-level correction.
 
 ---
 
@@ -424,10 +428,12 @@ Exact combat math/timing lives in `COMBAT_BALANCE.md`; class action kits live in
 # 8. Input policy
 
 All project actions are rebindable.
-Default bindings must not conflict with important Minecraft or Essential controls.
-Low-value vanilla bindings may be repurposed if their original action is irrelevant and the user can rebind it.
+The default frequent-action map, retired vanilla quick actions, Essential-safe collision policy, hold/toggle options and abstract action-ID requirements are **already locked** in `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md`.
 
-Before locking defaults, audit current Minecraft defaults, Essential defaults, required companion-mod defaults and the project's complete action list.
+- do not re-invent default keys during coding;
+- low-value vanilla `Drop Item` / quick off-hand swap behavior follows the project control-profile rules there;
+- future dependency updates that create a collision are adapter/rebind integration work, not permission to silently change the project gameplay layout;
+- UI prompts always show the player's current binding rather than hard-coded key text.
 
 ---
 
@@ -838,19 +844,17 @@ Early difficulty direction:
 - major difficulty spikes begin with elites, dangerous POIs, minibosses, field bosses and dungeons;
 - high-Lv areas are never blocked by invisible walls or arbitrary story gates merely because the player is under-levelled.
 
-## Starting settlement
+## Starting settlement — Alderford
 
-The game has a memorable starting village/settlement as the first safe social/service hub.
-Its final name and lore are decided later; do not use a generic vanilla village as the finished result.
+The game's first safe social/service hub is **Alderford**. Its player-facing name, functional identity and opening topology are locked in `R01_VERTICAL_SLICE.md`; do not reopen the name during implementation and do not substitute a generic vanilla village as the finished result.
 
-The starting settlement is a real long-term hub, not a disposable tutorial town.
-Its buildings exist coherently from the beginning; progression primarily unlocks advanced services or access rather than making arbitrary buildings appear out of nowhere.
+Alderford is a real long-term hub, not a disposable tutorial town. Its buildings exist coherently from the beginning; progression primarily unlocks advanced services or access rather than making arbitrary buildings appear out of nowhere.
 
 ### Opening / first reveal
 
 - start on an approach road or settlement outskirts rather than spawning directly in the central plaza;
 - use a short roughly 2–4 minute playable approach/encounter to establish movement/combat/context without a long forced tutorial;
-- reaching the gate/entrance gives the first clear reveal of the settlement and safe hub;
+- reaching the gate/entrance gives the first clear reveal of Alderford and the safe hub;
 - do not turn the opening into a chain of NPC errands before the player is allowed to explore.
 
 The detailed first 55–75 minute opening route is locked in `R01_VERTICAL_SLICE.md`.
@@ -913,7 +917,7 @@ Exact Trail Stag and later mount rules live in `MOUNTS.md`.
 
 ### Housing
 
-- starting-settlement homes may be inspected and purchased from the beginning;
+- Alderford homes may be inspected and purchased from the beginning;
 - there is **no story, boss-clear or reputation permission gate for the right to buy the first home**;
 - normal price/economy is the gate: starting funds do not trivially buy a home;
 - the first normal starter home costs **2,400 Gold** at baseline;
@@ -929,7 +933,7 @@ Exact housing-market, furnishing, storage and external-system direction lives in
 
 ### Exits / open-world signal
 
-The settlement should connect to at least three meaningful directions when the selected external map permits it:
+Alderford should connect to at least three meaningful directions when the selected external map permits it:
 
 1. a main road toward first-region core content;
 2. a secondary route toward gathering/small POIs/exploration;
@@ -942,7 +946,7 @@ Avoid stitching together unrelated building styles when a coherent pack/source e
 
 ## R01 — first-region content package
 
-`R01` is an internal production identifier. Final player-facing names wait until the actual Azari terrain is imported and lore naming is coherent with the world.
+`R01` is an internal production identifier. Alderford is already locked as the starting settlement name; broader player-facing region naming/terrain placement follows the current region canon and actual Azari spatial closure rather than being invented during implementation.
 
 ### Terrain / role
 
@@ -1193,7 +1197,21 @@ Canonical protagonist/story structure:
 - multiplayer players keep their own story choice/ending state rather than a host choosing the moral result for everyone;
 - postgame preserves a stable explorable world and continues through bosses, dungeons, Mythics, hidden techniques, collection/fishing/housing and difficult regional content rather than rolling the save back before the ending.
 
-Quest/world-state ownership, objective credit, split-party behavior, dynamic events, dialogue and idempotent rewards are defined in `QUEST_WORLD_STATE.md`; the full story spine and recurring roles are defined in `WORLD_STORY_CANON.md`.
+The cross-region main route is locked as:
+
+```text
+R01 common opening
+→ at least one of R02 / R03
+→ any two major evidence packages from R04–R07
+→ one of R08 / R09
+→ R10 or the authored late-R11 investigation
+→ R12 Central Anchor finale
+→ personal Restore / Release / Partition choice
+```
+
+The regions not used as mandatory main-route evidence remain complete playable regions with their own progression, rewards, optional evidence and epilogue consequences. Completing eligible regional content before the main quest formally asks for it must be recognized from durable state rather than forcing a fake replay.
+
+Quest/world-state ownership, objective credit, split-party behavior, dynamic events, dialogue and idempotent rewards are defined in `QUEST_WORLD_STATE.md`; the story premise/acts/recurring roles are defined in `WORLD_STORY_CANON.md`; the implementation-level cross-region route, sequence-break and rejoin behavior is defined in `MAIN_QUEST_SCENE_PACKAGE.md`.
 
 ---
 
@@ -1321,7 +1339,9 @@ Resource gathering is also personal per player at the node-availability level.
 
 Players can travel together or pursue separate exploration/content and regroup later. Ordinary progression must not require constant party proximity.
 
-Do not claim multiplayer quality until actually tested.
+Formal party UX, participation eligibility, per-player reward ownership, co-op encounter scaling, reconnect behavior and exploit cases are closed in `PARTY_MULTIPLAYER.md`.
+
+Do not claim multiplayer quality until actually tested with real clients.
 
 ---
 
@@ -1483,18 +1503,21 @@ Canonical direction:
 - no generic black translucent panel phase, no unrelated UI-pack collage, no temporary vanilla buttons;
 - real Minecraft-client screenshot review at multiple GUI scales/resolutions is required before a screen is visually accepted.
 
+Accessibility, World Challenge, personal assists, final frequent-action defaults, subtitles/captions, non-audio cues, camera/VFX comfort and dynamic audio behavior are closed in `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md`. Exact audio files and real-client usability remain external-asset/validation work, not open UI design decisions.
+
 Backend/UI-library candidates are not visual canon. Current candidates include a current 26.2 Fabric accessory backend such as Trinkets Updated where it fits; older RPG Inventory architecture remains reference/code material unless 26.2 compatibility is established.
 
 ---
 
 # 27. Current locked decisions
 
-Major locked decisions as of **2026-09-16**:
+Major locked decisions as of **2026-09-17**:
 
 - private-use large open-world fantasy action RPG with very low vanilla progression dependence;
 - core identity is exploration + fast action combat + character/build growth across a large authored regional world rather than vanilla survival or an MMO chore list;
 - protagonist is customizable in name/appearance/class with only a light shared outsider/adventurer starting frame; no strongly fixed chosen-one identity;
 - main story centers on the ancient Anchor network and three legitimate long-term stewardship directions rather than one obvious good/evil answer;
+- cross-region main route is R01 → at least one of R02/R03 → any two of R04–R07 → R08 or R09 → R10 or late-R11 investigation → R12, with already-completed eligible regional evidence recognized rather than replay-forced;
 - launch ending choice is personal **Restore / Release / Partition** after the immediate Central Anchor crisis is contained; multiplayer players may choose independently and postgame remains explorable;
 - ordinary universal terms stay readable; primary currency is **Gold**, while distinctive naming effort goes to regions/factions/bosses/signature materials/gear;
 - Fabric is the locked mod loader for this project unless a future hard technical blocker forces a deliberate migration review;
@@ -1503,6 +1526,8 @@ Major locked decisions as of **2026-09-16**:
 - player/NPC armor, robes, clothing and profession outfits use accepted external 3D model/design families rather than recolored vanilla armor/flat-skin substitutes;
 - player locomotion/combat/work/mount motions including dash/dodge/roll are external-first and must match actual server movement/hit/i-frame timing;
 - UI visual language is the free CC0 Foozle Lucifer RPG UI + Lucifer Equipment family, with Kenney Fantasy UI Borders/Adventure only as supporting scalable/control primitives; details live in `UI_DIRECTION.md`;
+- World Challenge, personal assists, frequent-action input defaults, subtitles/captions, non-audio combat information, camera/VFX comfort and music/audio state behavior are closed at design level in `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md`;
+- R11 aquatic action compatibility is closed at design level in `R11_AQUATIC_ACTION_MATRIX.md`; runtime retarget/render/playtest remains validation work rather than a second underwater design pass;
 - no temporary player-facing design;
 - dead/superseded/duplicate code removed after safe replacement;
 - `EXP` / `Lv` notation and removal of vanilla XP progression/drop loop;
@@ -1542,10 +1567,11 @@ Major locked decisions as of **2026-09-16**:
 - medium damage/status complexity with direct conditions plus bounded Poison/Bleed/Frostbite/Shock buildup and repeat resistance;
 - five-rank light smithing/alchemy/cooking mastery is non-grindy and advances through distinct recipe/order/technique experiences rather than mass-crafting one cheap recipe;
 - roughly 12 major regions with **one suggested-entry Lv plus local encounter Lv**, peer regions allowed at equal difficulty, no universal scaling, no level-gate walls;
-- R02–R12 now each have dedicated implementation-ready regional packages tying world problem/NPC roles/traversal/POIs/ecology/resources/dungeon/boss/reward/story evidence together rather than leaving them as biome lists;
+- R02–R12 each have content/mechanics-closed regional packages tying world problem/NPC roles/traversal/POIs/ecology/resources/dungeon/boss/reward/story evidence together rather than leaving them as biome lists; exact gated presentation/spatial placement still follows `PROJECT.md` pre-code gates;
 - R01–R12 are governed by `REGION_CROSS_AUDIT.md` anti-repetition rules so later implementation must vary evidence delivery, dungeon grammar, settlement identity, signature-encounter discovery and resource/reward mechanics rather than merely reskinning one regional formula;
 - discovered POIs and shrine/major-hub fast travel;
 - starting region suggested entry Lv 1, with local early encounter pressure rising roughly through Lv 8 rather than treating 1–8 as a broad region recommendation band;
+- **Alderford** is the final player-facing starting settlement name and its opening topology/named cast/service order are locked in `R01_VERTICAL_SLICE.md`;
 - R01 has concrete Louxia/Meadow Viper/Cave Centipede/Bison/Grizzly/Steelboar/Nature Spirit/Regalhart/Earthloong combat/ecology roles and first-dungeon boss numbers;
 - starting region is approachable while elites/POIs/bosses provide the first major difficulty spikes;
 - high-Lv regions remain physically enterable rather than being blocked by invisible/story walls; R12 exploration can be entered early while only the deep Central Anchor finale requires main-investigation state;
@@ -1589,13 +1615,16 @@ Do not re-decide the locked systems above. Continue from here without asking the
 
 Completed/advanced design work that should **not** be restarted from zero:
 
-- broad R01–R12 region graph plus implementation-ready R02–R12 regional content packages;
+- broad R01–R12 region graph plus content/mechanics-closed R02–R12 regional packages;
 - world/protagonist/Anchor story spine, regional evidence structure, recurring-role framework and Restore/Release/Partition endings;
-- quest/world-state/multiplayer progression authority;
+- cross-region main-quest scene/rejoin route in `MAIN_QUEST_SCENE_PACKAGE.md`;
+- quest/world-state/multiplayer progression authority and formal party/reward rules;
 - gathering tools/mastery/node loop, fishing loop/Fish Codex direction, reusable camp and one-residence housing market;
-- R01–R12 cross-region anti-repetition/density/settlement/dungeon/evidence audit and its R02 guardian-discovery refinement;
+- R01–R12 cross-region anti-repetition/density/settlement/dungeon/evidence audit and its later regional refinements;
 - regional creature/ecology sourcing and no-vanilla spawn architecture;
 - external UI family selection and screen-language direction;
+- World Challenge, accessibility/assist behavior, frequent-action input defaults, subtitles/non-audio cues, camera/VFX comfort and dynamic audio/music behavior;
+- R11 aquatic action compatibility and swim-base combat/cast/guard adaptation matrix;
 - global Lv 80 curve and fast ~3x reward benchmark with no-rescale confirmation for current region entry levels;
 - Gold economy, class-switch cost, automatic death penalty, housing trade-up anchors and 10-minute merchant refresh/pricing structure;
 - inventory capacity, Material Pouch/Vault, Key Items and stack-cap rules;
@@ -1609,15 +1638,25 @@ Completed/advanced design work that should **not** be restarted from zero:
 - R01 opening vertical slice from approach road through first Trail Stag and Earthloong clear;
 - external-first player motion rule including dash/dodge/roll/work/mount actions;
 - four-dose Recovery Belt, baseline R01 potions, food, alchemy/cooking and five-rank light profession mastery;
-- external-first armor/apparel/NPC-clothing pipeline, R01 outfit family, Armor Model API direction and lightweight Wardrobe rules;
-- finished-game quality model and design-completeness audit criteria.
+- external-first armor/apparel/NPC-clothing pipeline, Armor Model API direction and lightweight Wardrobe rules;
+- R01 asset intake evidence through Phase-B Pass 4, including Wizard River Scholar, Knight Ironbound and Kenney Trail Skewers exact candidate families while preserving unresolved acceptance gates;
+- finished-game quality model and current design-completeness audit criteria.
 
-Recommended next batches:
+The remaining pre-code gates are exactly the project-level gates in `PROJECT.md` / `DESIGN_COMPLETENESS_AUDIT.md`:
 
-1. **Exact external asset intake expansion** — finish R01 unresolved intake first, then bind each region's production-critical creatures/bosses/resources/settlement/dungeon/VFX/audio to exact acceptable sources; resolve the R12 final-guardian model rather than inventing a placeholder.
-2. **Main-quest and recurring-character scene package** — convert the story spine into actual major quest beats/dialogue encounters/rejoin points with external NPC/animation/structure direction while preserving open-world route freedom.
-3. **World density / content-count budget** — after Azari terrain import/coordinate audit, place major/minor POI, settlement, shrine, dungeon, boss and event cadence so 30k terrain never relies on size alone; use travel-time targets from the quality audit rather than arbitrary icon counts.
-4. **Global audio/music, accessibility/difficulty and final keybind pass** — select external audio/music direction, close subtitles/camera/motion/GUI/readability options and difficulty/accessibility rules, then audit the complete frequent-action key list against Minecraft/Essential/companion-mod defaults.
-5. **Pre-bootstrap canon closure** — re-run design completeness against `PROJECT.md` acceptance rules and begin gameplay source bootstrap only when remaining player-facing TBDs are genuine asset/terrain integration gates rather than design decisions.
+1. **Final title / branding** — lock the actual player-facing game name; the internal slug is not a release title.
+2. **Exact external asset binding / provenance** — finish R01 acceptance and expand to production-critical creature/boss/NPC/outfit/item/structure/Anchor machinery/VFX/animation/SFX/BGM sources, including acquisition/license/hash and required 3D/Minecraft acceptance.
+3. **Azari spatial closure** — bind settlements, roads, route joins, shrines, POIs, dungeon entrances/exits, boss arenas, landmarks/sightlines and travel/content-density targets to actual coordinates; compress/reroute empty scale instead of filling it with copy-paste.
+4. **Asset-gated boss / final-guardian closure** — after accepted models exist, lock exact player-facing identities, anatomy-supported attacks, weak points, signature materials and presentation for still-gated regional bosses and the R12 systemic final guardian.
+5. **Final stale-document / hidden-choice audit** — remove obsolete alternatives and any remaining gameplay-affecting `decide during coding` choice, then run the pre-bootstrap acceptance check once.
+
+Recommended next batches therefore are:
+
+1. **External asset intake completion, beginning with R01** — perform acquisition/hash + actual 3D review for the already narrowed candidates rather than restarting broad scouting; continue only the genuinely unresolved revive/help-up and Trail Stag mount/dismount search, then potion/weapon/VFX/audio acceptance.
+2. **Azari spatial closure** — import/audit the real terrain and author the coordinate/sightline/travel-density package. Use the existing POI cadence targets rather than arbitrary icon quotas.
+3. **Asset-gated boss/final guardian completion** — bind boss anatomy and mechanics to accepted visuals instead of designing attacks the model cannot express.
+4. **Final canon/stale audit and source-bootstrap decision** — once gates 1–4 are closed, perform one final hidden-choice pass and only then create the gameplay source/resource/data skeleton.
+
+Exact music/SFX file selection remains part of the external-asset gate; the audio **behavior** contract is already closed. R11 animation retarget quality remains implementation/visual-validation work; the aquatic **design** contract is already closed. Do not reopen either as generic design work.
 
 When design direction becomes unclear, research real open-world RPGs, open-source RPGs and large Minecraft RPG mods before inventing filler systems.
