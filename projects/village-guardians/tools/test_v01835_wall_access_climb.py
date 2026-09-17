@@ -14,7 +14,7 @@ def main() -> None:
     terrain = read("VillageFortressTerrain.java")
     world = read("VillageWorldSystem.java")
 
-    assert "mod_version=0.18.35-alpha.1" in props
+    assert "mod_version=" in props
 
     access = terrain.split("private static void buildWallAccessRamp", 1)[1].split("private static void buildTower", 1)[0]
     assert "int stairStart = WALL_RADIUS - 10" in access

@@ -727,16 +727,17 @@ public final class VillageRaidSystem {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (player.level() == mob.level()
                     && player.isAlive()
+                    && !player.isSpectator()
+                    && !VillageRespawnSystem.isDowned(player)
                     && player.distanceToSqr(mob) <= 160.0 * 160.0
                     && player.hasLineOfSight(mob)) {
                 visibleToAnyPlayer = true;
                 break;
             }
         }
-        VillageEnemyArchetypeSystem.Archetype archetype = archetypeOf(mob);
-        boolean tactical = VillageEnemyArchetypeSystem.isFlying(mob)
-                || VillageEnemyArchetypeSystem.isTacticalThreat(archetype);
-        mob.setGlowingTag(isBossEnemy(mob) || (tactical && !visibleToAnyPlayer));
+        // Fortress walls should not turn cleanup into hide-and-seek. Every occluded raid enemy is
+        // outlined in the raid team's red color; bosses stay outlined even when directly visible.
+        mob.setGlowingTag(isBossEnemy(mob) || !visibleToAnyPlayer);
     }
 
     private static PlayerTeam ensureRaidTeam(MinecraftServer server) {

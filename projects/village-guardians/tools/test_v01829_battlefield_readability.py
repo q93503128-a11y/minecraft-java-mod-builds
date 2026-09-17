@@ -54,15 +54,17 @@ def main() -> None:
     assert "shouldShowEnemyNameplate(server, mob)" in health
     assert "22.0 * 22.0" in health
     assert "mob.setCustomNameVisible(true);" not in health
-    assert "(tactical && !visibleToAnyPlayer)" in raid
-    assert "isBossEnemy(mob) || !visibleToAnyPlayer" not in raid
+    assert "isBossEnemy(mob) || !visibleToAnyPlayer" in raid
+    assert "(tactical && !visibleToAnyPlayer)" not in raid
+    assert "!player.isSpectator()" in raid
+    assert "!VillageRespawnSystem.isDowned(player)" in raid
 
     print("[PASS] aerial warning lifetime follows each role's actual dodge window")
     print("[PASS] aerial player warning ring follows the exact role damage radius")
     print("[PASS] raider/bombardier/harrier telegraphs have distinct procedural languages")
     print("[PASS] ground front scouting and arrival markers exclude wall-bypassing aerial units")
     print("[PASS] tactical nameplates remain persistent while generic wave text is proximity-bounded")
-    print("[PASS] cover outlines no longer reveal every generic enemy through fortress walls")
+    print("[PASS] occluded raid enemies use red cover outlines while directly visible generic enemies stay clean")
     print("[PASS] historical v0.18.28 regression is version-independent")
     print("[PASS] v0.18.29 battlefield readability integrity contract complete")
 
