@@ -260,12 +260,12 @@ No bonus duplicates boss/signature materials; mastery cannot bypass tool tier.
 
 # 6. R01 node behavior
 
-| Resource | Base yield | Personal respawn |
-|---|---:|---:|
-| Iron Ore | 2–4 | 7 active min |
-| Hardwood | 2–3 | 5 active min |
-| Healing Herb | 1–2 | 4 active min |
-| Verdant Crystal | 1 | 18 active min |
+| Resource | Base yield | Personal respawn | Required tool |
+|---|---:|---:|---|
+| Iron Ore | 2–4 | 7 active min | Field Pick |
+| Hardwood | 2–3 | 5 active min | Field Axe |
+| Healing Herb | 1–2 | 4 active min | Field Harvest Knife / Sickle |
+| Verdant Crystal | 1 | 18 active min | **Field Pick** |
 
 Rules:
 
@@ -274,8 +274,8 @@ Rules:
 - one player cannot deny another's harvest;
 - relog/dimension change does not reset;
 - server-authoritative save state;
-- ordinary nodes use Field tools;
-- if Verdant Crystal later requires Refined Pick for ordinary nodes, the first scripted/required R01 progression access remains non-softlocking and is documented before implementation.
+- **R01 ordinary Verdant Crystal is deliberately Field-Pick accessible. Do not move the ordinary R01 node to Refined Pick during implementation.** The crystal already feeds the canonical early Superior forge path, so a Refined-Pick requirement here would create an unnecessary progression/crafting ambiguity;
+- Refined/Masterwork Pick gating begins only on later dense/high-tier nodes that explicitly author it.
 
 ---
 
@@ -847,7 +847,7 @@ Closed as design:
 - gathering timing/cancellation;
 - three tool tiers;
 - five-rank non-grindy gathering/fishing mastery;
-- R01 node timing;
+- R01 node timing and Field-tool access, including Verdant Crystal;
 - fishing spot/cast/hook/tension loop;
 - reusable Field Camp Kit and server authority;
 - **one residence at a time**;
