@@ -1,0 +1,77 @@
+name: Finalize Village Guardians v0.18.36 Verified Source
+
+on:
+  push:
+    paths:
+      - 'projects/village-guardians/.v01836-finalize-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Apply already-verified v0.18.36 patch
+        run: python3 projects/village-guardians/tools/apply_v01836_playtest_readability.py
+
+      - name: Verify exact source contracts only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          cd projects/village-guardians
+          python3 tools/test_v01829_battlefield_readability.py
+          python3 tools/test_v01836_playtest_readability_audit.py
+
+      - name: Commit verified source to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          rm -f projects/village-guardians/.v01836-readability-trigger
+          rm -f projects/village-guardians/.v01836-finalize-trigger
+          rm -f projects/village-guardians/tools/apply_v01836_playtest_readability.py
+          rm -f .github/workflows/validate-village-guardians-v01836-readability.yml
+          rm -f .github/workflows/finalize-village-guardians-v01836.yml
+
+          git add \
+            projects/village-guardians/src/main/java/kr/moonseungjun/villageguardians/VillageRaidSystem.java \
+            projects/village-guardians/gradle.properties \
+            projects/village-guardians/README.md \
+            projects/village-guardians/tools/test_v01829_battlefield_readability.py \
+            projects/village-guardians/tools/test_v01835_wall_access_climb.py \
+            projects/village-guardians/tools/test_v01836_playtest_readability_audit.py \
+            projects/village-guardians/.v01836-readability-trigger \
+            projects/village-guardians/.v01836-finalize-trigger \
+            projects/village-guardians/tools/apply_v01836_playtest_readability.py \
+            .github/workflows/validate-village-guardians-v01836-readability.yml \
+            .github/workflows/finalize-village-guardians-v01836.yml
+
+          git commit -m "Restore Village Guardians occluded raid readability"
+          git pull --rebase origin main
+          git push origin HEAD:main
+          SOURCE_SHA=$(git rev-parse HEAD)
+
+          mkdir -p projects/village-guardians/.ci
+          cat > projects/village-guardians/.ci/v01836-final.txt <<EOF
+          version=0.18.36-alpha.1
+          run_id=35205771404
+          source_sha=$SOURCE_SHA
+          jar_name=villageguardians-0.18.36-alpha.1.jar
+          jar_sha256=379c047878f55cc3c8067bc4da29abbc2607d9727c4ab515a98184ab734bc6f4
+          jar_size=862790
+          audit=occluded-raid-readability-and-core-gameplay-regression
+          EOF
+          git add projects/village-guardians/.ci/v01836-final.txt
+          git commit -m "Record Village Guardians 0.18.36 acceptance"
+          git pull --rebase origin main
+          git push origin HEAD:main
