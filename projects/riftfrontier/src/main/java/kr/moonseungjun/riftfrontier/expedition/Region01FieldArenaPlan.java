@@ -24,6 +24,13 @@ public final class Region01FieldArenaPlan {
         new SpawnCell(4, -2)
     );
     private static final SpawnCell ELITE_SPAWN = new SpawnCell(0, 2);
+    private static final List<SpawnCell> SALVAGE_NODES = List.of(
+        new SpawnCell(-3, -3),
+        new SpawnCell(3, -3),
+        new SpawnCell(-3, 3),
+        new SpawnCell(3, 3),
+        new SpawnCell(0, 0)
+    );
 
     private Region01FieldArenaPlan() {}
 
@@ -68,6 +75,18 @@ public final class Region01FieldArenaPlan {
             new CoverPillar(3, 0, 2),
             new CoverPillar(3, 1, 2)
         );
+    }
+
+    /**
+     * Five field nodes intentionally exceed the three-unit contract objective. The extra two are an existing
+     * risk/reward choice: a player may extract as soon as the contract is satisfied or stay exposed to patrol
+     * pressure and rift drag to carry more salvage home. Keeping the positions in the pure plan prevents the
+     * materializer and player feedback from silently drifting apart.
+     */
+    public static List<SpawnCell> salvageNodes() { return SALVAGE_NODES; }
+
+    public static int remainingSalvageNodes(int recovered) {
+        return Math.max(0, SALVAGE_NODES.size() - Math.max(0, recovered));
     }
 
     /**
