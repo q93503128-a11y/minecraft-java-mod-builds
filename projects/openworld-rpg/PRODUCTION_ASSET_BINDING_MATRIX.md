@@ -9,6 +9,7 @@
 > R05–R08 boss-selection contract: `BOSS_REFERENCE_DESIGN_PASS_R05_R08_2026-09-17.md`  
 > R05/R06 targeted model intake: `R05_R06_GUARDIAN_MODEL_INTAKE_PASS1_2026-09-17.md`  
 > R07/R08 targeted model intake: `R07_R08_GUARDIAN_MODEL_INTAKE_PASS1_2026-09-17.md`  
+> R09–R12 targeted major-model intake: `R09_R12_MAJOR_MODEL_INTAKE_PASS1_2026-09-18.md`  
 > Rule: this matrix does not redesign gameplay. It only records whether a player-facing visual/content slot already has a concrete external source, needs runtime acceptance, or still needs model selection.
 
 ---
@@ -111,18 +112,18 @@ The R07/R08 intake attempted to inspect the exact current Fabric 26.2 JAR, but t
 | R08 | Glass-Root Archive final guardian | magical archive/regulator guardian with visible movable lens/ring/root/crystal components | `OPEN_MODEL_SELECTION` | Pass 1 rejects Moonpriest as final boss and generic crystal golem/automaton shortcuts; no exact final candidate survives |
 | R09 | Caravan Elephant | Alex's Mobs Continued | `DEPENDENCY_VALIDATE` | current 26.2 riding/charge/body-width behavior and project registration integration |
 | R09 | Executioner dungeon boss | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` with replace-if-fail rule | current animation/reach/poise quality; replace if boss bar exceeds presentation quality |
-| R09 | optional Lv49 dryland field boss | distinct heavy external creature not yet accepted | `OPEN_MODEL_SELECTION` | exact model/name/anatomy/signature material; no scaled Rhino placeholder |
+| R09 | optional Lv49 dryland field boss | direct-review shortlist: Fab `Brimstone Behemoth` / ArtStation `Fantasy Creature - Combat Rhino` | `OPEN_MODEL_SELECTION` | compare both in 3D/animation first; accept only if silhouette is more than a scaled common animal and Southstone art direction survives |
 | R10 | Basalt Wyvern | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | flight uptime/melee access, dive tell, camera/hitbox |
 | R10 | Scorch Golem | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | current model/attack quality and forge-space readability |
-| R10 | Inferno / final forge guardian | Threateningly Inferno is candidate, not automatically accepted | `OPEN_MODEL_SELECTION` | direct current review → accept Inferno or bind stronger volcanic guardian; then exact boss name/attack sheet |
+| R10 | Inferno / final forge guardian | Threateningly Inferno is candidate, not automatically accepted | `OPEN_MODEL_SELECTION` | **current 26.2 Inferno runtime review first**; reopen replacement search only if model/animation/melee-readability/cascade presentation fails |
 | R11 | Jungle/sea transition mount: Laviathan | Alex's Mobs Continued | `DEPENDENCY_VALIDATE` | current multipart stability, seats/controller, project registration and R11 handling course |
 | R11 | Riptooth | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | fair surface/open-water uptime, charge/breach readability |
 | R11 | Abyss Fang | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | giant multipart/hitbox/camera, Charge/Devour fairness, 3D arena telegraphs |
 | R11 | Giant Squid / Cachalot and other large aquatic actors | Alex's Mobs Continued | `DEPENDENCY_VALIDATE` | current 26.2 multipart regression/smoke test before regional admission |
-| R11 | Sea-Fort / Freebooter Keep final boss | corsair/armored humanoid or distinct fort guardian | `OPEN_MODEL_SELECTION` | exact final external model + weapon/reach animations |
+| R11 | Sea-Fort / Freebooter Keep final boss | strong direct-review prospect: CGTrader `Pirate Captain Gameready with animations` (22 animations, sword+pistol, paid/local-only intake) | `OPEN_MODEL_SELECTION` | preview/acquire only if paid local-only candidate is acceptable; verify grounded fort-commander tone, melee reach, projectile tells and Minecraft retarget quality |
 | R12 | Terradragon optional world boss | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | current ultra-boss model/animation/hitbox/airtime and project-authored no-grief behavior |
 | R12 | Sky Drake | Quaternius animated Dragon direction | `EXTERNAL_CANDIDATE_VALIDATE` | exact artifact/license evidence, conversion, flight/mount animation review |
-| R12 | final systemic guardian | current inspected Magic Construct / Steel Guardian candidates rejected | `OPEN_MODEL_SELECTION` | select a genuinely systemic/segmented final visual; only then final name/anatomy/attack binding |
+| R12 | final systemic guardian | generic arcane/crystal/steampunk/humanoid guardian candidates rejected; no surviving Pass-1 direct-review model | `OPEN_MODEL_SELECTION` | search only segmented/reconfigurable/multi-part topology able to express Network Link / Cascade / Partition / Reconfiguration physically |
 | R12 | low-density anomaly creatures | candidate Farseer/Murmur/Reaper identities not verified | `OPEN_MODEL_SELECTION` | verify current dependency visuals or choose stronger external actors; keep roster sparse |
 
 ---
@@ -155,10 +156,10 @@ The current large visible search queue is intentionally narrow:
 2. R06 Sunken Observatory dungeon guardian — design contract closed; Pass 1 found no surviving exact candidate;
 3. R07 buried fortress/cistern dungeon guardian — design contract closed; Armor of Desert is candidate-only pending current dependency inspection;
 4. R08 Glass-Root Archive final guardian — design contract closed; Moonpriest/generic crystal shortcuts rejected and no accepted model exists;
-5. R09 optional dryland field boss;
-6. R10 Inferno accept/replace decision;
-7. R11 Sea-Fort boss;
-8. R12 final systemic guardian;
+5. R09 optional dryland field boss — direct-review shortlist now exists; compare `Brimstone Behemoth` vs `Fantasy Creature - Combat Rhino` before new search;
+6. R10 Inferno accept/replace decision — inspect current 26.2 Inferno first, no broad replacement search yet;
+7. R11 Sea-Fort boss — animated Pirate Captain is current strong paid/local-only prospect pending preview/acquisition decision;
+8. R12 final systemic guardian — no accepted prospect; continue only segmented/reconfigurable topology search;
 9. R12 low-density anomaly roster only where current dependency candidates fail.
 
 R02/R03 already have concrete external candidates and therefore belong to acquisition/conversion review, not broad discovery.
@@ -240,10 +241,11 @@ The next implementation-prep work should therefore prioritize:
 
 1. actual Azari spatial closure immediately if the world archive becomes available;
 2. direct artifact/3D rejection-or-acceptance review for the surviving R05 prospects;
-3. current-version binary/model/animation/hitbox acceptance for dependency candidates such as Armor of Desert where the exact actor matters;
-4. shape/function-based R06/R07/R08 search without repeating material/biome-only candidates already rejected;
-5. acquisition/conversion/hash work for already-selected external candidates;
-6. final stale-document cleanup after accepted bindings propagate.
+3. current-version binary/model/animation/hitbox acceptance for dependency candidates such as Armor of Desert and **R10 Inferno** where the exact actor matters;
+4. direct-review the new R09 and R11 shortlisted candidates before any broader search;
+5. shape/function-based R06/R07/R08 and R12 search without repeating material/biome-only candidates already rejected;
+6. acquisition/conversion/hash work for already-selected external candidates;
+7. final stale-document cleanup after accepted bindings propagate.
 
 Brand/title exploration is not required to block these jobs.
 
