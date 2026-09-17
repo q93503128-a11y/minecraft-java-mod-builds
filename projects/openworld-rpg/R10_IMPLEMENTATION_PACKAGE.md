@@ -1,6 +1,6 @@
 # Open-World RPG — R10 Cinderfall Implementation Package
 
-> Status: **DESIGN CANON — R10 world/story/traversal/service/combat/reward flow is implementation-ready; exact Inferno/current volcanic-creature quality and several resource bindings remain external-intake gates**  
+> Status: **DESIGN CANON — R10 world/story/traversal/service/combat/reward flow is content/mechanics-closed; exact Inferno/current volcanic-creature quality and several resource bindings remain external-intake gates**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Story spine: `WORLD_STORY_CANON.md`  
 > Region graph: `REGIONS.md`  
@@ -596,14 +596,14 @@ Working role:
 ```text
 Lv: 63
 role: optional field boss
-HP target: ~42,000–48,000
+HP target: ~32,000–37,500
 Defense: ~145
 MR: ~105
 Poise: ~265
 solo active TTK target: ~205–240 s
 ```
 
-Exact values depend on current model/flight profile.
+This HP band is aligned to the canonical `BenchmarkDPS(L) × target active TTK` rule. Final values may move after current model/flight uptime review, but routine flight downtime must not be compensated by restoring an oversized HP bar.
 
 ## Arena
 
@@ -724,12 +724,14 @@ Working target **only if current 26.2 presentation passes**:
 ```text
 Lv: 64
 role: major dungeon/main-story boss
-HP target: ~48,000–58,000
+HP target: ~35,000–43,000
 Defense: ~150
 MR: ~125
 Poise: ~280
 solo active TTK target: ~220–270 s
 ```
+
+This HP band follows the same canonical active-TTK authoring rule as other bosses. If the accepted boss has significant untargetable spectacle or movement, reduce that downtime first rather than inflating HP.
 
 Required encounter properties:
 
@@ -827,19 +829,16 @@ No volcanic currency.
 
 # 22. Laviathan progression connection
 
-`MOUNTS.md` allows Laviathan unlock through R10 or R11.
+Launch Laviathan acquisition is **R11 Inner Sea only**, as locked in `MOUNTS.md` and `R11_CONTENT_BIBLE.md`.
 
-R10 may **introduce** the idea through hazardous water/lava transport lore/creature sightings, but the exact unlock region is chosen during R10/R11 asset/playflow integration.
+R10 may foreshadow the creature or its hazardous-water/lava traversal niche through sightings, trade talk or route lore, but:
 
-If R10 unlock is used:
+- R10 does not unlock/register Laviathan;
+- no R10 quest may silently grant it;
+- the canonical 3,000 Gold registration occurs after the authored R11 handler/route trial;
+- R10 progression and the caldera dungeon never depend on owning Laviathan.
 
-- it must be a dedicated authored route/creature interaction;
-- no Nether requirement;
-- 3,000 Gold registration after quest remains canonical;
-- role stays water/lava specialist, slow on land;
-- does not bypass the R10 dungeon or caldera before intended discovery.
-
-Do not force the unlock into R10 merely because lava exists if R11 provides a better high-quality encounter.
+This removes the older `R10 or R11` ambiguity entirely.
 
 ---
 
@@ -929,7 +928,7 @@ R10 is not asset-ready until:
 9. lava/steam/ash/fire VFX sources;
 10. forge/volcanic ambience/music/sound sources;
 11. Wyvern/Inferno trophy/signature material models;
-12. Laviathan R10-vs-R11 unlock decision after direct playflow/asset review.
+12. any R10 Laviathan foreshadowing asset is optional only; **R11 owns the actual launch Laviathan acquisition/binding flow**.
 
 No Blaze, Magma Cube, scaled vanilla dragon substitute or particle-only Inferno is accepted as finished presentation.
 
