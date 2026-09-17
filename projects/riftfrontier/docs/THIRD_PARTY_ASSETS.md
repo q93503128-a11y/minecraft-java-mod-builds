@@ -86,13 +86,21 @@ This study exists to replace the current Zombie/Skeleton/Ravager **behaviour pro
 - Status: `CANDIDATE`
 - Author: Quaternius
 - Family source: https://quaternius.com/packs/ultimatemonsters.html
+- Creator distribution: https://drive.google.com/drive/folders/18m4KpzpEzhC9wl7jzr6dUc0N8Jozr79C
+- Creator file ID: `1rWF4Jo_G7-odDa5LfkQ0e2d9_p9pxb3W`
 - Individual cross-check: https://poly.pizza/m/sUTLXji0aL
-- License: CC0 / public domain. The creator family page currently advertises 50 fully animated monsters in FBX/OBJ/Blend/glTF and marks the pack CC0; the individual Poly Pizza entry identifies `Alien` as Public Domain (CC0), animated, FBX/GLTF.
-- Source date re-verified: 2026-09-15
+- License: CC0 1.0 / public domain dedication.
+- Exact source file: `Big/glTF/Alien.gltf`
+- Exact source size: `1295881` bytes
+- Exact source SHA-256: `e6fec42f9d4db3c3177da9027c5cdb2c4abd71cb934ea4f4788aea155f267124`
+- Direct source inspection: glTF 2.0; 1 mesh, 1 skin, 1 material, 1 embedded PNG image, 45 nodes, 4,227 vertices, 7,676 triangles; source extent approximately 4.6491 × 3.5468 × 1.4879 units.
+- Source clips: `Death`, `Duck`, `HitReact`, `Idle`, `Jump`, `Jump_Idle`, `Jump_Land`, `No`, `Punch`, `Run`, `Walk`, `Wave`, `Weapon`, `Yes`.
 - Intended use: **visual/rig candidate for the Region 01 Hunter role**, replacing the Zombie silhouette while preserving the already-settled close pursuit behaviour contract.
-- Why it fits: non-humanoid hostile silhouette, same already-approved creator/source family as Dragon Evolved, animated source, and a substantially clearer separation from vanilla undead than re-skinning the Zombie proxy.
-- Not yet approved: exact upstream bytes/hash, source clip inventory, Minecraft scale/hitbox alignment, material treatment, role animation semantics and actual field readability still require intake/review before `SELECTED`.
-- Do not ship the Poly Pizza page preview or silently reuse the source material as final Riftfrontier art.
+- Why it fits: non-humanoid hostile silhouette, same already-approved creator/source family as Dragon Evolved, and inspected locomotion/melee/lifecycle clips (`Idle`, `Walk`, `Run`, `Punch`, `HitReact`, `Death`) that cover the current Hunter presentation needs without changing role semantics.
+- Concrete review path: exact inspected source is available through the isolated `/summon riftfrontier:region_01_hunter_field_review` actor and the project's skinned-mesh path. This actor is review-only and is not wired into natural Region 01 encounters.
+- Canonical evidence: `docs/provenance/region01_hunter_alien_source_inspection.json`, `docs/provenance/region01_hunter_alien_field_review_build.json`, `docs/provenance/region01_hunter_alien_localized_field_review_build.json`.
+- Still not approved for production: `selected_for_production = false` and `human_visual_acceptance = false`. Human Minecraft review must establish player-relative scale, facing, ground alignment, UV/texture integrity, near/combat/medium-distance silhouette and deformation/readability of the required clips before this entry can become `SELECTED` or replace the authoritative Hunter proxy.
+- Do not redo candidate search, exact-source intake/hash/clip inventory, or field-review plumbing. Do not ship the Poly Pizza preview as source evidence.
 
 #### Quaternius — Ultimate Monsters / Armabee
 
