@@ -766,11 +766,11 @@ Closed before source bootstrap:
 - journal hierarchy and player-facing investigation presentation;
 - explicit boundary between regional quests and the cross-region main quest.
 
-Still separate pre-code work:
+Still separate production/closure work:
 
-- exact external presentation bindings/provenance for the gated visible content above;
-- actual Azari coordinates, scene locations, sightlines and travel-time validation;
-- final branding/title;
-- stale-document cleanup where older files still describe already-superseded alternatives.
+- **gameplay-source-bootstrap blocker:** exact external presentation bindings/provenance for the gated visible content above;
+- **gameplay-source-bootstrap blocker:** actual Azari coordinates, scene locations, sightlines and travel-time validation;
+- **gameplay-source-bootstrap blocker:** stale-document cleanup where older files still describe already-superseded alternatives;
+- **not a gameplay-source-bootstrap blocker:** final branding/title string; it must be closed before player-facing branded release/presentation, while the internal production slug may remain during gameplay bootstrap.
 
 `MAIN QUEST SCENE PACKAGE = DESIGN CLOSED` does **not** mean the quest has been implemented, visually accepted or playtested.
