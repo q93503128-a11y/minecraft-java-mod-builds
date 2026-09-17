@@ -108,6 +108,7 @@ Primary gameplay/system canon:
 - `PARTY_MULTIPLAYER.md` — formal party UX, participation eligibility, non-split personal EXP/Class XP, personal loot/Gold, co-op scaling, friendly-fire baseline and multiplayer acceptance matrix
 - `UI_DIRECTION.md`
 - `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md` — world challenge presets, personal accessibility assists, final frequent-action input map, Essential-safe defaults, subtitles/captions, non-audio combat cues, camera/VFX comfort and dynamic audio/music state behavior
+- `R11_AQUATIC_ACTION_MATRIX.md` — closes R11 frequent-action `AQUATIC_NATIVE / AQUATIC_ADAPTED / AQUATIC_DISABLED_WITH_FALLBACK` classification, accepted UAL swim/combat/cast/guard motion strategy, 3D targeting, fallback ownership and server-authority rules
 - `M0_DEPENDENCY_AUDIT.md`
 
 World/story/regional canon:
@@ -137,6 +138,8 @@ Quality/intake:
 The implementation package owns a region's traversal/ecology/encounter/dungeon/system contract. The later matching content bible closes settlement name, named cast, exact quests/scenes/rewards/reconnect state and story handoff. If an old package contains a working placeholder superseded by its content bible, the later content bible wins for that explicitly refined point.
 
 `PARTY_MULTIPLAYER.md` is a subordinate refinement of `GAME_DESIGN.md` §23, `QUEST_WORLD_STATE.md`, `COMBAT_BALANCE.md` and `CLASS_PROGRESSION.md`. It does not replace their solo rules; it closes the missing co-op reward/party behavior details.
+
+`R11_AQUATIC_ACTION_MATRIX.md` is the dedicated refinement/audit required by the older R11 package wording. It closes the aquatic action-compatibility design gate; runtime retarget/render/playtest proof remains validation work rather than a reason to invent a second underwater combat system.
 
 ---
 
@@ -186,10 +189,11 @@ Older package headers using `implementation-ready` must be interpreted narrowly 
 2. exact external model/outfit/item/structure/VFX/animation/audio binding and provenance;
 3. actual Azari coordinates, sightlines, route joins, travel-time and content-density validation;
 4. exact asset-gated boss names/anatomy-supported attacks/weak points/signature materials;
-5. R11 aquatic animation/action compatibility matrix;
-6. final stale-document/hidden-choice audit.
+5. final stale-document/hidden-choice audit.
 
-The global accessibility/difficulty/assist, subtitles/non-audio cues, frequent-action input map and audio/music state-behavior design are now closed in `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md`. Exact music/SFX bytes remain part of the external-asset gate in item 2.
+The global accessibility/difficulty/assist, subtitles/non-audio cues, frequent-action input map and audio/music state-behavior design are closed in `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md`. Exact music/SFX bytes remain part of the external-asset gate in item 2.
+
+The R11 aquatic action/animation compatibility design is closed in `R11_AQUATIC_ACTION_MATRIX.md`. Runtime animation retarget/render validation remains required before R11 can be called tested or play-ready, but it is no longer a design blocker.
 
 Only after these remaining gates are closed should M0 create the gameplay source/resource/data layout.
 
