@@ -1334,9 +1334,17 @@ When an R01 important reward is automatically routed to Alderford Vault because 
 
 > Backpack full. Reward sent to Alderford Vault.
 
-When both backpack and Alderford Personal Storage lack room:
+When both backpack and the 36-slot Alderford Personal Storage lack legal room:
 
 > Backpack and Vault full. Reward waiting to be claimed.
+
+Pending-reward action:
+
+> Claim reward
+
+No-space pending state:
+
+> Make room in your backpack or Alderford Vault.
 
 For an ordinary world-ground item that is not auto-routed:
 
