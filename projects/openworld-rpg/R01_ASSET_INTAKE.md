@@ -922,18 +922,19 @@ Current state after Phase-B Pass 5 fish-provenance narrowing:
 - `EXTERNAL SOURCE REVIEWED`: YES
 - `LICENSE METADATA REVIEWED`: YES, with Quaternius handled source/package-specifically rather than by blanket family assumption
 - `PHASE-B PASS-4 EVIDENCE DOC RECORDED`: YES
+- `PHASE-E APPAREL/POTION/MOTION EXACT-FILE REVIEW RECORDED`: YES — `R01_ASSET_PHASE_E_APPAREL_POTION_MOTION_EXACT_REVIEW_2026-09-18.md`
 - `R01 FISH CREATOR-SOURCE CC0 PROVENANCE NARROWED`: YES — Quaternius OpenGameArt snapshot + exact CC0 freshwater candidate pages identified
 - `EXACT PUBLIC-SAFE KAYKIT PATHS PINNED`: YES for listed Adventurers + Restaurant Bits evidence
 - `KAYKIT WORK/FISHING CLIP NAMES PINNED`: YES
 - `KAYKIT WEAPON/TOOLS CANDIDATE FILENAMES PINNED`: YES as tree evidence; authoritative archive SHA-256/final visual selection pending
 - `QUATERNIUS STANDARD CC0 SNAPSHOT SOURCES IDENTIFIED`: YES for Fantasy Props + Medieval Village; project-local archive hashing pending
-- `RIVER SCHOLAR EXACT WIZARD CANDIDATE FAMILY PINNED`: YES; visual/Minecraft acceptance pending
-- `IRONBOUND GUARD EXACT KNIGHT CANDIDATE FAMILY PINNED`: YES; visual/Minecraft acceptance pending
-- `WAYFARER RANGER / PEASANT STANDARD PART NAMES PINNED`: YES; visual acceptance pending
+- `RIVER SCHOLAR EXACT WIZARD CANDIDATE FAMILY PINNED`: YES; Phase E directly corroborated extracted Wizard glTF/BIN/texture structure + 65-joint skin + geometry metrics; creator archive/visual/Minecraft acceptance pending
+- `IRONBOUND GUARD EXACT KNIGHT CANDIDATE FAMILY PINNED`: YES; Phase E directly corroborated extracted Knight body/round-pauldron glTF/BIN/texture structure + 65-joint skin + geometry metrics; creator archive/visual/Minecraft acceptance pending
+- `WAYFARER RANGER / PEASANT STANDARD PART NAMES PINNED`: YES; Phase E directly corroborated Ranger body/pauldron glTF structure + 65-joint skin; visual/Minecraft acceptance pending
 - `TRAIL SKEWERS EXACT EXTERNAL CANDIDATE PINNED`: YES — Kenney Food Kit `skewerVegetables` editable base; adaptation/review pending
-- `POTION MODEL CANDIDATE FILENAMES PINNED`: YES — `Potion_1..4`; final three-model assignment pending
-- `EAT EXTERNAL CLIP CANDIDATE PINNED`: YES — UAL2 `Consume`; source acquisition/visual acceptance pending
-- `DRINK EXTERNAL CLIP CANDIDATE PINNED`: YES — UAL1 `Drink`; source acquisition/visual acceptance pending
+- `POTION MODEL CANDIDATE FILENAMES PINNED`: YES — `Potion_1..4`; Phase E directly measured all four geometry payloads and confirmed they are not identical color-only clones; final three-model assignment still pending direct visual/hand-pivot/Minecraft review
+- `EAT EXTERNAL CLIP CANDIDATE PINNED`: YES — UAL2 `Consume`; Phase E newer-integration evidence corroborates exact mapping, but creator-current archive/clip-duration/retarget/visual acceptance remain pending
+- `DRINK EXTERNAL CLIP CANDIDATE PINNED`: YES — UAL1 `Drink`; Phase E proved the 2025-06-10 46-clip Standard mirror does not contain `Drink`, while a newer UAL integration corroborates the exact mapping; creator-current archive/clip-duration/retarget/visual acceptance remain pending
 - `REVIVE/MOUNT EXTERNAL CANDIDATES IDENTIFIED`: YES; not accepted
 - `MEDIEVAL VILLAGE MODULE CANDIDATE NAMES PINNED`: YES for a useful Standard subset; service compositions not accepted
 - `KENNEY VFX/AUDIO SOURCE FAMILIES REVALIDATED 2026-09-18`: YES — Particle Pack 80, Smoke Particles 70, RPG Audio 50, Impact Sounds 130, UI Audio 50, Interface Sounds 100; all current official pages CC0; exact sprite/clip selection still pending
@@ -953,5 +954,19 @@ Current state after Phase-B Pass 5 fish-provenance narrowing:
 - `JAR PRODUCED`: NO
 - `PLAYTESTED`: NO
 - `MULTIPLAYER TESTED`: NO
+
+
+## Phase E exact-file intake delta — 2026-09-18
+
+Phase E did not select new gameplay or reopen broad scouting. It converted several previously filename-only rows into directly inspected technical evidence:
+
+- Wizard / Ranger / Knight extracted glTF files at pinned downstream commit `6f12ffb2f924af86d910ade13e6e2ba3df8cd3df` were parsed for mesh counts, triangle counts, bounds, texture references, external BIN payloads and skin joints;
+- all selected apparel components use a 65-joint humanoid skin and coherent authored texture families, increasing confidence in retarget/conversion viability without granting visual acceptance;
+- `Potion_1..4` were all parsed as distinct geometry payloads (roughly 500–800 triangles), removing the color-only-clone uncertainty while deliberately leaving the canonical three-potion assignment open;
+- the historical 2025-06-10 UAL1 Standard mirror was parsed and contains 46 animations but no exact `Drink`, so it is explicitly insufficient as current `Drink` proof;
+- a newer downstream UAL integration at pinned commit `f8a783b1f6a5387652e99ec12823bb2ae7600f30` corroborates exact `Drink` and `Consume` mappings, with `Consume` explicitly treated as a UAL2 emote;
+- creator-current archive acquisition, project-local SHA-256, clip timing/root-motion inspection, 3D visual acceptance and Minecraft acceptance remain open.
+
+Authoritative evidence details and all exact blob identities/geometry metrics live in `R01_ASSET_PHASE_E_APPAREL_POTION_MOTION_EXACT_REVIEW_2026-09-18.md`.
 
 Do not upgrade these labels merely because a pack page, filename, candidate clip or source model exists.
