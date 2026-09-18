@@ -446,7 +446,7 @@ Service screen:
 
 - uses the existing Lucifer-family project UI grammar;
 - lists known recipes, output, owned ingredients and resulting belt/recovery category clearly;
-- consumes eligible materials directly from Material Pouch;
+- consumes eligible materials from **Material Pouch first, then same-player Material Vault for any remainder** when used at a settlement alchemy service; portable/non-settlement alchemy uses Material Pouch only;
 - supports `Craft 1`, `Craft 5` where affordable, and `Craft Max` with a confirmation summary;
 - never requires moving ingredients one-by-one into arbitrary cauldron slots merely to simulate crafting labor.
 
@@ -466,7 +466,7 @@ Cooking is available through:
 Rules:
 
 - known recipes are selected directly;
-- materials come from Material Pouch;
+- settlement cooking consumes eligible materials from **Material Pouch first, then same-player Material Vault for any remainder**; home/camp/portable cooking uses Material Pouch only;
 - batch cooking is allowed;
 - no timing minigame at baseline;
 - no chance to burn/fail ordinary food;
