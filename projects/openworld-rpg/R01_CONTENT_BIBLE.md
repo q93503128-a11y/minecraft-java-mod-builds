@@ -206,6 +206,234 @@ If median playtest progression misses the band by more than about two levels, re
 
 No additional R01 board contract is added before playtest proves a real dead zone.
 
+## 4.1 Substantial exploration POIs
+
+R01 uses exactly four substantial non-hub/non-boss exploration complexes in addition to the Quarry dungeon and Regalhart encounter.
+
+### Greenwater Ford
+
+Existing Trail Stag/fishing/gathering space.
+
+Required identity:
+- wide readable ford;
+- damaged harness/cart route for A Stag at the Ford;
+- Healing Herb bank;
+- two of the five ordinary R01 fishing spots;
+- one visible route back toward Alderford stables.
+
+No separate chest is added; the mount/event/fishing/gathering loops are already the reward.
+
+### Mosswheel Mill
+
+Final player-facing name: **Mosswheel Mill**.
+
+An abandoned watermill on a Greenwater branch, visibly old but not Anchor-era.
+
+Purpose:
+- memorable non-combat exploration;
+- early vertical/interior movement without a dungeon;
+- ordinary local history so every old structure is not part of the Anchor mystery.
+
+Interaction:
+1. discover exterior mill;
+2. enter through the broken wheel-side lower door or loft route;
+3. reach the dry upper loft;
+4. open one personal one-time mill cache.
+
+Discovery reward:
+~~~text
+EXP: 7% current next-Lv requirement
+Gold: 20
+~~~
+
+Personal mill cache:
+~~~text
+Gold: 30
+Hardwood x3
+normal authored-treasure equipment roll: 25%
+~~~
+
+The cache uses the R01 meadow/road treasure pool in §4.4.
+
+No combat is required and no quest entry is created.
+
+### Rootshade Grove
+
+Existing dangerous optional pocket.
+
+Required identity:
+- darker forest-fringe silhouette;
+- 2 Verdant Crystal nodes;
+- Nature Spirit/Steelboar pressure under ecology caps;
+- one Regalhart clue/start-boundary relationship;
+- route sightline that makes deeper danger readable before entry.
+
+The grove itself grants:
+~~~text
+first discovery EXP: 7% current next-Lv requirement
+~~~
+
+No generic grove chest is added.
+
+### Quarry Surface Works
+
+Existing Old Quarry Road → overlook → lower entrance complex.
+
+Required identity:
+- surface ore/loading structures;
+- quarry overlook discovery;
+- Quarry Waystone;
+- root-split lower entrance;
+- visible relationship to the physical dungeon below.
+
+Its rewards remain owned by Roots Below Stone / dungeon content; no duplicate POI reward is added.
+
+## 4.2 Minor discoveries / landmarks — exact six
+
+These six are normal first-visit discoveries. None receives an undiscovered map pin.
+
+Each discovery grants:
+~~~text
+EXP: 5% current next-Lv requirement
+one-time per player
+~~~
+
+### Bent Roadwatch
+
+Small ruined road/watch shelter between Alderford and the quarry road.
+
+Additional personal cache:
+~~~text
+Gold 15
+Healing Potion x1
+~~~
+
+### Shepherd's Overlook
+
+A meadow rise with a strong Alderford/ford/quarry-direction sightline.
+
+No chest. Its value is orientation + discovery EXP.
+
+### Twin-Willow Bend
+
+Distinct river bend framed by two large willow silhouettes.
+
+- hosts one ordinary fishing spot;
+- no additional chest;
+- after discovery the name can appear on the map.
+
+### Drover's Rest
+
+Old livestock/trader rest shelter near a secondary road.
+
+Personal one-time pickup:
+~~~text
+Trail Skewers x1
+~~~
+
+### Quarrymen's Memorial
+
+Small carved memorial outside the active quarry works.
+
+- no loot;
+- one short environmental inscription about ordinary quarry workers;
+- does not mention Anchors or foreshadow the full network before the quarry evidence.
+
+### Root-Split Cairn
+
+Old local waystone/cairn at the safer edge of Rootshade Grove, visibly split by newer root growth.
+
+Personal one-time pickup:
+~~~text
+Healing Herb x2
+~~~
+
+It provides a visual transition into the dangerous grove but is not an Anchor artifact.
+
+## 4.3 Exact R01 resource-node counts
+
+Coordinates remain SPATIAL_BINDING; counts and subregion ownership are HARD_RULE starting content.
+
+| Subregion | Iron Ore | Hardwood | Healing Herb | Verdant Crystal |
+|---|---:|---:|---:|---:|
+| Alderford Approach | 0 | 0 | 1 | 0 |
+| Greenwater Ford | 0 | 2 | 6 | 0 |
+| Alder Meadow | 0 | 2 | 3 | 0 |
+| Riverwood Edge | 0 | 7 | 3 | 0 |
+| Old Quarry Road | 3 | 2 | 1 | 0 |
+| Rootshade Grove | 0 | 3 | 2 | 2 |
+| Quarry Surface Works | 4 | 0 | 0 | 0 |
+| Quarry dungeon | 4 | 0 | 0 | 2 |
+| **R01 total** | **11** | **16** | **16** | **4** |
+
+Rules:
+- all use personal availability/cooldowns from gathering canon;
+- decorative ore/log/herb meshes that are not gatherable must be visually distinguished by interaction highlighting only when targeted, not by giant beams;
+- quest-specific personal herb availability for Riverbank Remedies uses these real Greenwater/nearby nodes rather than spawning a separate fake quest herb set;
+- the two dungeon Verdant Crystal nodes are separate from the Root-Breached one-time side-cache reward.
+
+## 4.4 R01 source-specific ordinary equipment pools
+
+The global grade/affix tables still apply. This table only locks which ordinary R01 base families belong to each source.
+
+### Meadow / road authored treasure
+
+- Heartland Arming Sword
+- Wayfarer Daggers
+- Riverwood Bow
+- Wayfarer Leathers
+- River Scholar Garb
+- Roadworn Band
+- Wayfarer's Token
+
+### Quarry treasure
+
+- Quarry Maul
+- River Pike
+- Watch Buckler
+- Ironbound Guard
+- Apprentice Focus
+- Quarry Seal
+
+### Steelboar equipment roll
+
+- Quarry Maul
+- River Pike
+- Watch Buckler
+- Ironbound Guard
+
+### Nature Spirit equipment roll
+
+- Initiate Staff
+- Initiate Wand
+- Apprentice Focus
+- River Scholar Garb
+- Greenwater Pendant
+
+### Regalhart normal equipment roll
+
+- River Pike
+- Riverwood Bow
+- Wayfarer Daggers
+- Wayfarer Leathers
+- Greenwater Pendant
+- Wayfarer's Token
+
+The separate Hartcrown Spear signature roll is unchanged.
+
+### Earthloong normal equipment roll
+
+- Quarry Maul
+- Watch Buckler
+- Ironbound Guard
+- Initiate Staff
+- Apprentice Focus
+- Quarry Seal
+
+The separate Rootquake Maul / Earthscale Ward signature pool and deterministic first-clear choice remain unchanged.
+
+No source falls back to a global bag containing every R01 item.
+
 ---
 
 # 5. Contextual combat teaching — exact trigger
@@ -1286,6 +1514,10 @@ Regalhart/Earthloong farming must remain attractive for their known drops withou
 | Is the starter furnishing package 700 or 800 Gold? | exactly 750 Gold |
 | What does the package contain? | exact seven-line package in §15.3 |
 | What individual R01 furniture can be bought? | exact 12-item Household catalogue in §15.4 |
+| Which substantial R01 POIs exist? | exact four in §4.1 |
+| Which minor discoveries exist? | exact six in §4.2 |
+| How many R01 resource nodes exist? | exact counts in §4.3 |
+| Which ordinary items can each elite/boss/treasure source roll? | exact source pools in §4.4 |
 | What Gold does each R01 combat actor award? | exact combat Gold table in §22 |
 | When does the Camp recipe appear? | first owned Hardwood + Tough Hide |
 | Is the Camp Kit consumable/tradeable? | permanent personal utility unlock, no |
@@ -1354,7 +1586,8 @@ R01 planning is not called source-ready until all of these are true:
 - no merchant/service leaves stock/price behavior to implementation;
 - no repeat boss/dungeon leaves reset timing to implementation;
 - no first-session contextual tutorial leaves trigger behavior to implementation;
-- no house/camp/fishing/profession rule leaves a gameplay choice to implementation.
+- no house/camp/fishing/profession rule leaves a gameplay choice to implementation;
+- substantial/minor POI roster, R01 resource-node counts and ordinary equipment source pools are fixed.
 
 ## Presentation
 
