@@ -243,7 +243,7 @@ Rarity does **not** automatically mean:
 
 # 5. Fish size and personal records
 
-Every catch receives a server-authoritative size roll inside that species' authored range.
+Every catch receives a server-authoritative size roll inside that species' authored range. **For R01, `R01_CONTENT_BIBLE.md` §14.4–§14.8 is the exact refinement for candidate seeding/reroll protection, piecewise size distribution, Trophy threshold, value interpolation, Hook timing and tension behavior.** The broader shape below remains the cross-game rule for later regional fish authoring until their own exact data closes it.
 
 Each species data entry defines at least:
 
