@@ -8,7 +8,7 @@ Large Minecraft Java open-world action RPG project with very low dependence on v
 
 No implementation exists yet. Do not treat the project as buildable until M0 explicitly creates the loader/toolchain/source layout.
 
-The major gameplay systems, Lv 1–80 progression, class/combat framework, equipment/economy, world-state model, main story spine, mounts, field systems, party/co-op rules and R01–R12 regional packages are already specified. **R01–R12 now all have concrete named-NPC, exact quest-condition, scene/dialogue, reconnect/reward-state and story-evidence authoring locked.** Remaining pre-bootstrap work is no longer regional content invention. It is primarily exact external-asset binding, Azari spatial placement/travel-time validation, global audio/accessibility/input closure and the final cross-document design-closure audit.
+The major gameplay systems, Lv 1–80 progression, class/combat framework, equipment/economy, world-state model, main story spine, mounts, field systems, party/co-op rules and R01–R12 regional packages are already specified. **R01–R12 now all have concrete named-NPC, exact quest-condition, scene/dialogue, reconnect/reward-state and story-evidence authoring locked.** Remaining pre-bootstrap work is no longer regional content invention. It is primarily exact external-asset binding, actual Azari spatial placement/travel-time validation and final stale-canon cleanup. Accessibility/difficulty/input/audio behavior is already design-closed; exact audio/UI/VFX assets remain part of presentation binding. The external-mod integration architecture is also now closed in `M0_INTEGRATION_ARCHITECTURE.md`.
 
 ## Canon priority / stale-document rule
 
@@ -41,6 +41,8 @@ When touching a stale section during future work, update or remove the obsolete 
 2. [`PROJECT.md`](./PROJECT.md) — technical/build/project contracts
 3. [`PARTY_MULTIPLAYER.md`](./PARTY_MULTIPLAYER.md) — party/co-op reward, participation, scaling, friendly-fire and multiplayer acceptance rules
 4. [`EXTERNAL_SOURCES.md`](./EXTERNAL_SOURCES.md) — external code/assets/UI/maps/structures provenance and adoption status
+5. [`M0_DEPENDENCY_AUDIT.md`](./M0_DEPENDENCY_AUDIT.md) — Fabric 26.2 dependency/version/ownership boundaries
+6. [`M0_INTEGRATION_ARCHITECTURE.md`](./M0_INTEGRATION_ARCHITECTURE.md) — how external mods are composed through adapters/data overlays/tags without surrendering project authority
 5. [`WORLD_STORY_CANON.md`](./WORLD_STORY_CANON.md) — protagonist/story/faction/ending spine
 6. [`REGION_CROSS_AUDIT.md`](./REGION_CROSS_AUDIT.md) — R01–R12 anti-repetition and regional-identity contract
 7. [`R01_VERTICAL_SLICE.md`](./R01_VERTICAL_SLICE.md) — Alderford opening and exact first-session content
@@ -119,14 +121,15 @@ Player-facing text and presentation must never expose the development process. D
 - launch formal party target is 4 players, with personal progression/rewards and no host/leader progression ownership;
 - eligible co-op combat rewards are personal and **not divided by party size**;
 - data-driven content and explicit performance budgets are required;
+- external mods are treated as components behind project adapters/data overlays/tags; their useful presentation/runtime primitives may be retained, but project damage/progression/loot/quest/economy/world-state authority remains singular;
 - dead/superseded/duplicate implementation or documentation is removed/updated after safe replacement rather than kept as a competing rule set.
 
 ## Current pre-bootstrap design queue
 
-1. **Exact external-asset intake closure** — resolve all remaining boss/creature models, NPC outfits, weapons/items, structures, Anchor machinery, VFX, UI bindings, animation, SFX/BGM and source/license/hash records. Important open gates include R05/R06/R07/R08/R09 dungeon/field-boss identities, R10 final guardian accept/replace, R11 sea-fort/deep combat assets and R12 final guardian.
-2. **Azari spatial closure** — inspect the actual terrain and lock every major settlement/POI/road/dungeon/boss/route/depth band with coordinates, sightlines, travel-time and content-density targets. Confirm R11 depth bands and R12 flight/no-fly volumes here.
-3. **Global presentation/comfort closure** — final music/sound-state coverage, accessibility, difficulty options, subtitles/cues, HUD comfort, party HUD/ping readability and final key/input mapping.
-4. **Final pre-bootstrap closure audit** — remove remaining stale direct contradictions, especially combat/recovery numeric residue, old mount-placement wording, obsolete `next work` blocks and boss HP ranges that disagree with their stated TTK formula.
-5. **M0 source bootstrap only after the above gates** — create the Fabric 26.2 / Java 25 toolchain/source/data/resource layout and begin implementation from the canon instead of redesigning during coding.
+1. **Exact external-asset intake closure** — resolve the remaining player-facing model/outfit/item/structure/Anchor-machinery/VFX/UI/animation/SFX/BGM bindings and source/license/hash records. Important open gates remain the true `OPEN_MODEL_SELECTION` / runtime-acceptance rows in `PRODUCTION_ASSET_BINDING_MATRIX.md`.
+2. **Azari spatial closure** — load the actual world and lock every major settlement/POI/road/dungeon/boss/route/depth band with coordinates, sightlines, travel-time and content-density targets. Confirm R11 depth bands and R12 flight/no-fly volumes from the real map, not the overhead render.
+3. **Final stale-canon cleanup** — remove obsolete queues/status text and any remaining live contradiction. Do not reopen already-closed accessibility/input/audio behavior, class/combat design, R11 aquatic compatibility or external-mod composition.
+4. **M0 source bootstrap after those gates** — create the Fabric 26.2 / Java 25 source/data/resource skeleton, implement the integration-module/data-registry/validation boundaries from `M0_INTEGRATION_ARCHITECTURE.md`, then prove the dependency stack with the M0 acceptance matrix.
+5. **R01 vertical-slice implementation** — use R01 to prove the complete pipeline (external assets → adapters/data → server authority → UI/presentation → save/rejoin → real spatial placement → performance/playtest) before scaling the same architecture across R02–R12.
 
-Do not reopen already-closed class topology, weapon/resource fundamentals, party reward ownership, R01–R12 quest/story ownership, ending structure or regional macro direction unless implementation/playtest evidence exposes a real problem.
+Do not reopen already-closed class topology, weapon/resource fundamentals, party reward ownership, R01–R12 quest/story ownership, ending structure, accessibility/input behavior, aquatic action design or regional macro direction unless implementation/playtest evidence exposes a real problem.
