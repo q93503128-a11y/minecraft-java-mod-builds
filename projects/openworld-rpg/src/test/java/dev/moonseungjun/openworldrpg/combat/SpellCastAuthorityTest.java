@@ -8,6 +8,7 @@ import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellTransactionPol
 import dev.moonseungjun.openworldrpg.combat.authority.SpellCastAuthority;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatStateStore;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 class SpellCastAuthorityTest {
@@ -84,6 +85,39 @@ class SpellCastAuthorityTest {
                 SpellCastAuthority.ImpactDecision.rejected(),
                 authority.onImpact(player, spec.id(), 5, 42, 7.5, 1.0)
         );
+    }
+
+    @Test
+    void projectileImpactCanArriveAfterSpellCastCompletionWithoutReusingResourceToken() {
+        SpellCastAuthority authority = new SpellCastAuthority("openworld_rpg");
+        PlayerCombatStateStore states = new PlayerCombatStateStore();
+        ProjectSpellSpec spec = ProjectSpellSpec.arcBolt();
+        AtomicInteger impacts = new AtomicInteger();
+        authority.registerPolicy(
+                spec.id(),
+                new ProjectSpellTransactionPolicy(
+                        spec,
+                        states,
+                        (registeredSpec, context) -> {
+                            assertEquals(spec, registeredSpec);
+                            assertEquals(1.20, registeredSpec.actionCoefficient(), 0.0001);
+                            assertEquals(0.50, registeredSpec.poiseCoefficient(), 0.0001);
+                            impacts.incrementAndGet();
+                            return SpellCastAuthority.ImpactDecision.accepted(false);
+                        }
+                )
+        );
+
+        UUID player = UUID.randomUUID();
+        authority.commitAcceptedCast(player, spec.id(), 200);
+        authority.onEngineCastCompleted(player, spec.id(), 200, "RELEASE", 1.0F);
+
+        assertEquals(
+                SpellCastAuthority.ImpactDecision.accepted(false),
+                authority.onImpact(player, spec.id(), 208, 77, 9.0, 1.0)
+        );
+        assertEquals(1, impacts.get());
+        assertEquals(88.0, states.getOrCreate(player, 208).mana(208), 0.0001);
     }
 
     @Test
