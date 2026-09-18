@@ -168,7 +168,12 @@ public final class SpellEngineAuthorityAdapter {
             return null;
         }
 
-        String spellId = spellId(invokeAccessor(eventArgs, "spell"));
+        Object spellEntry = invokeAccessor(eventArgs, "spell");
+        String spellId = spellId(spellEntry);
+        if (AUTHORITY.owns(spellId) && !readDonorCostContract(spellEntry).isNeutralForProjectAuthority()) {
+            return invokeStatic(attemptNone);
+        }
+
         long gameTick = player.level().getGameTime();
         SpellCastAuthority.AttemptDecision decision = acceptedStage
                 ? AUTHORITY.commitAcceptedCast(player.getUUID(), spellId, gameTick)
@@ -301,6 +306,43 @@ public final class SpellEngineAuthorityAdapter {
                 total.doubleValue()
         );
         return impactResultConstructor.newInstance(decision.accepted(), decision.critical());
+    }
+
+    private static SpellEngineDonorCostContract readDonorCostContract(Object spellEntry)
+            throws ReflectiveOperationException {
+        Object spell = invokeAccessor(spellEntry, "value");
+        Object cost = spell.getClass().getField("cost").get(spell);
+        if (cost == null) {
+            throw new IllegalStateException("Project Spell Engine spell has no cost object.");
+        }
+
+        boolean batching = cost.getClass().getField("batching").getBoolean(cost);
+        double exhaust = ((Number) cost.getClass().getField("exhaust").get(cost)).doubleValue();
+        int durability = ((Number) cost.getClass().getField("durability").get(cost)).intValue();
+        boolean hasEffectCost = cost.getClass().getField("effect_id").get(cost) != null;
+        boolean hasItemCost = cost.getClass().getField("item").get(cost) != null;
+
+        Object cooldown = cost.getClass().getField("cooldown").get(cost);
+        if (cooldown == null) {
+            throw new IllegalStateException("Project Spell Engine spell has no cooldown object.");
+        }
+
+        boolean hasCooldownGroup = cooldown.getClass().getField("group").get(cooldown) != null;
+        double attemptCooldownSeconds =
+                ((Number) cooldown.getClass().getField("attempt_duration").get(cooldown)).doubleValue();
+        double cooldownSeconds =
+                ((Number) cooldown.getClass().getField("duration").get(cooldown)).doubleValue();
+
+        return new SpellEngineDonorCostContract(
+                batching,
+                exhaust,
+                durability,
+                hasEffectCost,
+                hasItemCost,
+                hasCooldownGroup,
+                attemptCooldownSeconds,
+                cooldownSeconds
+        );
     }
 
     private static void registerListener(
