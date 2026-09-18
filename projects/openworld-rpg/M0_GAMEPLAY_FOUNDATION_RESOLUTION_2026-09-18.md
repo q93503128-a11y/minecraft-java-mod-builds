@@ -2,6 +2,7 @@
 
 > Date: **2026-09-18**  
 > Scope: **primary JAR availability only — not full runtime integration**  
+> Historical gate: later `M0_GAMEPLAY_RUNTIME_BOOT_2026-09-18.md` supersedes the runtime-status/next-step lines here; MobFilter was later added as the tenth foundation/safety JAR and the full pinned dependency set now co-loads in the `gameplay` server profile.  
 > Successful commit: `067e47500d1f71e77f4c97907f0257a5214a21dc`  
 > Workflow: **Build Openworld RPG**  
 > Successful run: **35310816215**
