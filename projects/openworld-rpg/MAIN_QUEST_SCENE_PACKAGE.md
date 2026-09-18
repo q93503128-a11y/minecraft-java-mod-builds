@@ -204,12 +204,13 @@ The evidence must be visibly tied to the physical site: machinery/record/measure
 
 Location preference: Alderford / Wayfarers' Hall or another already-authored safe service space, not a bespoke menu room.
 
-Participants:
+Participants — exact R01 interpretation scene:
 
 - Mara Venn;
 - Ilyan Voss;
-- Sera Wren where appropriate;
-- Daren Holt where machinery damage/material evidence is relevant.
+- Daren Holt.
+
+Sera Wren is **not** a required participant in this R01 scene; her route/ecology reaction is delivered through the already-authored post-briefing world-state dialogue. Do not add or remove a scene participant during implementation merely because the NPC is nearby.
 
 Scene purpose:
 
