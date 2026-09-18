@@ -209,14 +209,7 @@ Rules:
 - each major region may have approximately one rare/signature/trophy chase fish where the external model pool supports a genuinely distinct identity;
 - exact species names are not locked until the external model/icon candidate exists.
 
-R01 target before implementation:
-
-```text
-3 ordinary/recognizable early catches
-+ 1 uncommon/rare regional catch
-```
-
-Do not invent the four final names before the actual model set is visually reviewed.
+R01 uses exactly **four mechanical fish identities** before final visual naming: two Common, one Uncommon and one Rare. Their size ranges, values, spot pools and 5+1+1 spot counts are locked in `R01_CONTENT_BIBLE.md`. Do not invent the four final player-facing species names before the actual external model/icon set is visually reviewed; those names are ASSET_BINDING and must be closed before gameplay source for the fish slots is authored.
 
 ---
 
@@ -499,10 +492,7 @@ Keep the existing economy bands but turn them into clear physical property tiers
 
 Exact individual shells may vary around their tier when location/layout justifies it, but do not create wildly different prices for visually equivalent houses.
 
-The starting settlement should contain multiple authored empty houses, including at least:
-
-- **3–4 Small Cottage-class vacancies** for the intended small multiplayer group;
-- at least one visibly larger future-upgrade house even if it is unaffordable at first.
+The R01 starting-settlement roster is now exact in `R01_CONTENT_BIBLE.md`: **4 Small Cottage vacancies** and **1 Town House** visible/purchasable from the beginning. Later settlements provide their own property counts.
 
 Later settlements supply additional tier/architecture choices.
 
@@ -538,7 +528,7 @@ pay full property price
 ```
 
 The baseline Small Cottage remains 2,400 Gold.
-The existing optional starter furnishing package remains approximately **750 Gold**.
+The R01 optional starter furnishing package is exactly **750 Gold** and uses the item/value breakdown in `R01_CONTENT_BIBLE.md`.
 
 ## 13.2 Moving to a larger/different home
 
