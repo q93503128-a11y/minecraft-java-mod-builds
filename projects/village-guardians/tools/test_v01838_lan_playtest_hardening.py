@@ -40,9 +40,9 @@ def main() -> None:
     role_skill = read("VillageRoleSkillSystem.java")
     guardians = read("VillageGuardians.java")
 
-    assert "mod_version=0.18.38-alpha.1" in props
-    assert "현재 소스 버전 `0.18.38-alpha.1`" in readme
-    assert "villageguardians-0.18.38-alpha.1.jar" in readme
+    assert "mod_version=0.18.39-alpha.1" in props
+    assert "현재 소스 버전 `0.18.39-alpha.1`" in readme
+    assert "villageguardians-0.18.39-alpha.1.jar" in readme
 
     # Wall traffic contract: stairs, pads and ranger posts must use independent lanes.
     assert "SIDE_REAR_ACCESS_LANE = 52" in terrain
@@ -137,13 +137,16 @@ def main() -> None:
     incoming = section(guardians, "public void onIncomingDamage", "public void onFinalDamage")
     assert "VillageMercenarySystem.blockFriendlyFire(event)" in incoming
 
-    # Final-wave inaccessible stragglers cannot leave the raid permanently locked.
-    assert "FINAL_STRAGGLER_RECOVERY_TICKS = 20 * 35" in raid
-    assert "recoverFinalStragglers(server)" in raid
-    recovery = section(raid, "private static void recoverFinalStragglers", "private static ServerPlayer nearestAnyCombatPlayer")
+    # Final-wave recovery must repair actual frozen AI state, not guess from distance/LOS.
+    assert "FINAL_ENEMY_STALL_TICKS = 20 * 12" in raid
+    assert "repairInvalidEnemyFlags(server)" in raid
+    assert "recoverFrozenFinalEnemies(server)" in raid
+    recovery = section(raid, "private static void recoverFrozenFinalEnemies", "private static boolean shouldRecoverStalledEnemy")
     assert "ACTIVE_ENEMIES.size() > 2" in recovery
     assert "VillageWorldSystem.northInnerApproach()" in recovery
-    assert "잔존 적 유도" in recovery
+    assert "전투 상태 복구" in recovery
+    assert "distanceToSqr(nearest) > 24.0 * 24.0" not in recovery
+    assert "!nearest.hasLineOfSight(mob)" not in recovery
     assert "포탑 안내" in raid
 
     # Party-wide investments consume shared supplies; personal loadout/progression may still use coins elsewhere.
@@ -230,7 +233,7 @@ def main() -> None:
     print("[PASS] early sapper movement, health and structure pressure are reduced without deleting its role")
     print("[PASS] frontline mercenaries predeploy outside and raid mobs can genuinely engage them")
     print("[PASS] player/bastion taunts override objective routing while friendly arrows and damage ignore mercenaries")
-    print("[PASS] final-wave inaccessible stragglers are recovered and zero-turret nights explain where to build")
+    print("[PASS] final-wave frozen combat state is repaired without distance/LOS misclassification and zero-turret nights explain where to build")
     print("[PASS] shared defenses use shared supplies and turret confirmation rechecks capacity atomically")
     print("[PASS] storehouse supply conversion, daytime hunger lock and bounded retry support are wired")
     print("[PASS] frozen night participants receive raid rewards by UUID despite disconnect timing")

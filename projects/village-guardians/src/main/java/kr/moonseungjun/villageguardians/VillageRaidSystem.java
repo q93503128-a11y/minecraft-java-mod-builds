@@ -37,11 +37,12 @@ public final class VillageRaidSystem {
     private static final Map<UUID, VillageEnemyArchetypeSystem.AerialRole> ACTIVE_AERIAL_ROLES = new HashMap<>();
     private static final Map<UUID, AerialStrike> AERIAL_STRIKES = new HashMap<>();
     private static final Map<UUID, TauntState> FORCED_TAUNTS = new HashMap<>();
+    private static final Map<UUID, EnemyProgress> FINAL_ENEMY_PROGRESS = new HashMap<>();
     private static final int FIRST_WAVE_COUNTDOWN_TICKS = 240;
     private static final int BETWEEN_WAVE_TICKS = 120;
     private static final int FORCED_NEXT_WAVE_TICKS = 20 * 60;
-    private static final int FINAL_STRAGGLER_RECOVERY_TICKS = 20 * 35;
-    private static final int FINAL_STRAGGLER_RECOVERY_INTERVAL = 20 * 15;
+    private static final int FINAL_ENEMY_STALL_TICKS = 20 * 12;
+    private static final double FINAL_ENEMY_PROGRESS_DISTANCE_SQR = 0.25 * 0.25;
     private static final int MAX_ACTIVE_ENEMIES = 100;
     private static final int STRUCTURE_ATTACK_INTERVAL = 30;
     private static final int AERIAL_ASSAULT_CADENCE = 90;
@@ -97,6 +98,7 @@ public final class VillageRaidSystem {
         if (!active) return;
 
         purgeMissingEnemies(server);
+        repairInvalidEnemyFlags(server);
         directEnemies(server);
         if (VillageProgressionSystem.isGameOver()) return;
         waveElapsedTicks++;
@@ -105,7 +107,7 @@ public final class VillageRaidSystem {
             if (ACTIVE_ENEMIES.isEmpty()) {
                 finishVictory(server);
             } else {
-                recoverFinalStragglers(server);
+                recoverFrozenFinalEnemies(server);
             }
             return;
         }
@@ -346,6 +348,10 @@ public final class VillageRaidSystem {
             applyScaling(mob, spawned.archetype(), day, wave, boss);
             VillageEnemyArchetypeSystem.configure(
                     level, mob, spawned.archetype(), currentTrait, day, wave, boss);
+            // Raid enemies are always interactive combat actors. A frozen/invulnerable flag is never
+            // an authored raid state and must not survive spawn or runtime recovery.
+            mob.setNoAi(false);
+            mob.setInvulnerable(false);
             if (VillageEnemyArchetypeSystem.isFlying(mob)) {
                 VillageEnemyArchetypeSystem.AerialRole aerialRole =
                         VillageEnemyArchetypeSystem.aerialRole(day, wave, index, currentTrait);
@@ -879,32 +885,123 @@ public final class VillageRaidSystem {
         return team;
     }
 
-    private static void recoverFinalStragglers(MinecraftServer server) {
-        if (waveElapsedTicks < FINAL_STRAGGLER_RECOVERY_TICKS
-                || ACTIVE_ENEMIES.size() > 2
-                || Math.floorMod(waveElapsedTicks - FINAL_STRAGGLER_RECOVERY_TICKS,
-                        FINAL_STRAGGLER_RECOVERY_INTERVAL) != 0) return;
+    private static void repairInvalidEnemyFlags(MinecraftServer server) {
         ServerLevel level = server.overworld();
-        BlockPos rally = VillageWorldSystem.northInnerApproach();
-        boolean moved = false;
         for (UUID id : new HashSet<>(ACTIVE_ENEMIES)) {
             Entity entity = level.getEntity(id);
             if (!(entity instanceof Mob mob) || !mob.isAlive()) continue;
-            ServerPlayer nearest = nearestAnyCombatPlayer(server, mob);
-            boolean inaccessible = nearest == null
-                    || mob.distanceToSqr(nearest) > 24.0 * 24.0
-                    || !nearest.hasLineOfSight(mob);
-            if (!inaccessible) continue;
-            mob.snapTo(rally.getX() + 0.5 + (moved ? 2.0 : -2.0),
-                    rally.getY(), rally.getZ() + 0.5);
+            boolean hadNoAi = mob.isNoAi();
+            boolean hadInvulnerable = mob.isInvulnerable();
+            if (!hadNoAi && !hadInvulnerable) continue;
+
+            // No raid archetype intentionally uses NoAI or vanilla invulnerability. If either flag
+            // appears, the entity has entered an invalid combat state: clear it before routing.
+            mob.setNoAi(false);
+            mob.setInvulnerable(false);
             mob.getNavigation().stop();
-            mob.setTarget(nearest);
-            moved = true;
+            ServerPlayer nearest = nearestAnyCombatPlayer(server, mob);
+            if (nearest != null) {
+                mob.setTarget(nearest);
+                mob.getNavigation().moveTo(nearest, 1.16);
+            }
+            FINAL_ENEMY_PROGRESS.put(id,
+                    new EnemyProgress(mob.position(), mob.getHealth(), waveElapsedTicks));
+            VillageGuardians.LOGGER.warn(
+                    "Repaired invalid raid enemy state: uuid={}, type={}, hadNoAi={}, hadInvulnerable={}",
+                    id, mob.getType(), hadNoAi, hadInvulnerable);
         }
-        if (moved) {
+    }
+
+    private static void recoverFrozenFinalEnemies(MinecraftServer server) {
+        if (ACTIVE_ENEMIES.size() > 2) {
+            FINAL_ENEMY_PROGRESS.clear();
+            return;
+        }
+
+        ServerLevel level = server.overworld();
+        Set<UUID> activeNow = new HashSet<>(ACTIVE_ENEMIES);
+        FINAL_ENEMY_PROGRESS.keySet().removeIf(id -> !activeNow.contains(id));
+        BlockPos villageCenter = VillageCouncilState.villageCenter().orElse(null);
+        BlockPos rally = VillageWorldSystem.northInnerApproach();
+        boolean repaired = false;
+        int offsetIndex = 0;
+
+        for (UUID id : activeNow) {
+            Entity entity = level.getEntity(id);
+            if (!(entity instanceof Mob mob) || !mob.isAlive()) continue;
+
+            EnemyProgress previous = FINAL_ENEMY_PROGRESS.get(id);
+            if (previous == null) {
+                FINAL_ENEMY_PROGRESS.put(id,
+                        new EnemyProgress(mob.position(), mob.getHealth(), waveElapsedTicks));
+                continue;
+            }
+
+            boolean moved = mob.position().distanceToSqr(previous.position())
+                    > FINAL_ENEMY_PROGRESS_DISTANCE_SQR;
+            boolean healthChanged = Math.abs(mob.getHealth() - previous.health()) > 0.01f;
+            if (moved || healthChanged) {
+                FINAL_ENEMY_PROGRESS.put(id,
+                        new EnemyProgress(mob.position(), mob.getHealth(), waveElapsedTicks));
+                continue;
+            }
+            if (waveElapsedTicks - previous.lastProgressTick() < FINAL_ENEMY_STALL_TICKS) continue;
+
+            VillageEnemyArchetypeSystem.Archetype archetype = ACTIVE_ARCHETYPES.getOrDefault(
+                    id, VillageEnemyArchetypeSystem.Archetype.GRUNT);
+            if (!shouldRecoverStalledEnemy(mob, archetype, villageCenter)) continue;
+
+            double xOffset = offsetIndex++ == 0 ? -2.0 : 2.0;
+            mob.setNoAi(false);
+            mob.setInvulnerable(false);
+            mob.snapTo(rally.getX() + 0.5 + xOffset, rally.getY(), rally.getZ() + 0.5);
+            mob.getNavigation().stop();
+            ServerPlayer nearest = nearestAnyCombatPlayer(server, mob);
+            if (nearest != null) {
+                mob.setTarget(nearest);
+                mob.getNavigation().moveTo(nearest, 1.16);
+            } else {
+                mob.setTarget(null);
+            }
+            FINAL_ENEMY_PROGRESS.put(id,
+                    new EnemyProgress(mob.position(), mob.getHealth(), waveElapsedTicks));
+            repaired = true;
+        }
+
+        if (repaired) {
             server.getPlayerList().broadcastSystemMessage(Component.literal(
-                    "§e[잔존 적 유도] §f마지막 적이 전장에서 고립되어 북문 안쪽 전선으로 재진입했습니다."), false);
+                    "§e[전투 상태 복구] §f마지막 적의 AI 진행이 멈춰 북문 전선에서 다시 교전시켰습니다."), false);
         }
+    }
+
+    private static boolean shouldRecoverStalledEnemy(
+            Mob mob,
+            VillageEnemyArchetypeSystem.Archetype archetype,
+            BlockPos villageCenter) {
+        if (!mob.getNavigation().isDone()) return false;
+
+        LivingEntity target = mob.getTarget();
+        if (target != null && target.isAlive()) {
+            if (!isMeleePursuer(archetype)) return false;
+            return mob.distanceToSqr(target) > 4.5 * 4.5;
+        }
+
+        if (villageCenter == null) return true;
+        boolean fortressAccess = VillageAttackPlanSystem.hasInteriorAccess(mob.getUUID(), mob.blockPosition())
+                || VillageWorldSystem.isNorthGatePassable((ServerLevel) mob.level())
+                || !VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.WALLS);
+        VillageProgressionSystem.Building building = chooseTarget(
+                villageCenter, mob.blockPosition(), fortressAccess, archetype);
+        return building == null || !VillageFortressBuildings.isTouchingStructure(
+                villageCenter, building, mob.blockPosition());
+    }
+
+    private static boolean isMeleePursuer(VillageEnemyArchetypeSystem.Archetype archetype) {
+        return switch (archetype) {
+            case GRUNT, RUSHER, BULWARK, SAPPER, SHIELDBREAKER,
+                    SIEGE_BEAST, IRON_WARLORD, DREAD_KNIGHT -> true;
+            default -> false;
+        };
     }
 
     private static ServerPlayer nearestAnyCombatPlayer(MinecraftServer server, Mob mob) {
@@ -994,6 +1091,7 @@ public final class VillageRaidSystem {
         ACTIVE_AERIAL_ROLES.remove(uuid);
         AERIAL_STRIKES.remove(uuid);
         FORCED_TAUNTS.remove(uuid);
+        FINAL_ENEMY_PROGRESS.remove(uuid);
         VillageAttackPlanSystem.forget(uuid);
         VillageEnemyEliteSystem.forget(uuid);
         VillageSiegeBossSystem.forget(uuid);
@@ -1008,6 +1106,8 @@ public final class VillageRaidSystem {
     }
 
     private record TauntState(UUID target, long untilGameTime) {}
+
+    private record EnemyProgress(Vec3 position, float health, int lastProgressTick) {}
 
     private record AerialStrike(
             Vec3 point, VillageProgressionSystem.Building building, int impactTick,
@@ -1025,6 +1125,7 @@ public final class VillageRaidSystem {
         ACTIVE_AERIAL_ROLES.clear();
         AERIAL_STRIKES.clear();
         FORCED_TAUNTS.clear();
+        FINAL_ENEMY_PROGRESS.clear();
         VillageAttackPlanSystem.clearRaidState();
         VillageEnemyEliteSystem.clearRaidState();
         VillageSiegeBossSystem.clearRaidState();

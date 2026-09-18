@@ -1,0 +1,71 @@
+name: Validate Village Guardians v0.18.39 Frozen Enemy Hotfix
+
+on:
+  push:
+    paths:
+      - 'projects/village-guardians/.v01839-frozen-enemy-trigger'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    env:
+      PROJECT_DIR: projects/village-guardians
+      EXPECTED_JAR: villageguardians-0.18.39-alpha.1.jar
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle 9.2.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Run every regression contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PROJECT_DIR"
+          count=0
+          for test in tools/test_*.py; do
+            count=$((count + 1))
+            echo "=== $test ==="
+            python3 "$test"
+          done
+          echo "Executed $count regression files"
+
+      - name: Clean Java 25 NeoForge build
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PROJECT_DIR"
+          gradle --no-daemon --no-configuration-cache clean build --stacktrace --console=plain
+
+      - name: Verify JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PROJECT_DIR"
+          test -f "build/libs/$EXPECTED_JAR"
+          python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR"
+          sha256sum "build/libs/$EXPECTED_JAR"
+          stat -c 'size=%s' "build/libs/$EXPECTED_JAR"
+
+      - name: Upload verified JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: villageguardians-0.18.39-alpha.1-frozen-enemy-hotfix
+          path: projects/village-guardians/build/libs/villageguardians-0.18.39-alpha.1.jar
+          if-no-files-found: error
+          retention-days: 30
