@@ -40,7 +40,7 @@ The player should be able to ignore most optional content and still follow the m
 
 | Region | Confirmed non-main authored content examples | Regional function |
 |---|---|---|
-| **R01 Alderford** | `Riverbank Remedies`, `Signs in the Meadow`, `Steel in the Grass`, optional Regalhart hunt | gathering/healing, ecology/tracking, optional hunt discovery, early open-world choice |
+| **R01 Alderford** | `Riverbank Remedies`, `Signs in the Meadow`, `Steel in the Grass`, repeatable `Roadside Trouble`, optional Regalhart hunt | gathering/healing, ecology/tracking, spontaneous road assistance, optional hunt discovery, early open-world choice |
 | **R02 Rillcross** | `The Last Survey`, `River Ledger`, `Under the Eaves`, optional Grovebound Warden route/hunt | rescue without escort drag, fishing introduction, local supplies, forest disturbance side branch |
 | **R03 Cairnwatch** | `The Long Way Holds`, `Silver Cut`, Whitecrest Griffin hunt | alternate conventional route, mining/tool payoff, optional apex hunt |
 | **R04 Hearthspring** | `Shelter in the Storm`, `Dark Water, Bright Scale`, Ferox Iceworm hunt | authored whiteout navigation, cold-water fishing, optional field boss |
