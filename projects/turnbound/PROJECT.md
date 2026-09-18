@@ -113,7 +113,34 @@ Production UI must be based on verified external UI/game references and reusable
 - external assets tracked in `EXTERNAL_ASSETS.md`
 - keep asset paths shallow and predictable
 
-See `UI_DESIGN_SYSTEM.md`.
+See `UI_DESIGN_SYSTEM.md` and `ASSET_PIPELINE_v1.md`.
+
+## External asset import contract
+
+TURNBOUND follows the same separation used by mature Minecraft UI/resource projects:
+
+- Java owns gameplay/state/input authority.
+- Visual skins, fonts, icons and portraits live under the mod resource namespace.
+- imported third-party assets keep source/license metadata separate from runtime code.
+- licenses that require notices keep those notices with the imported asset set and in the project notice catalog.
+- unknown or unclear redistribution rights mean reference-only: do not vendor the bytes.
+- only runtime-used derivatives are shipped; raw source packs are not copied into the JAR without a reason.
+- UI rendering must allow future resource-pack overrides rather than baking every visual into code constants.
+
+## Player-facing copy contract
+
+Development vocabulary never appears in normal gameplay UI, chat feedback, objective text or results.
+
+Forbidden examples:
+- P0/P1/P2/P3/P4
+- alpha / prototype / temporary / debug / developer / legacy
+- TODO / CANON_GAP / IMPLEMENTATION_BRIDGE / FALLBACK
+- TURN_READY / pulse / schema / internal IDs
+- raw Java exception messages
+
+Internal IDs remain valid in code/save/network state, but the presentation boundary converts them to authored player language or shows nothing.
+
+Operator-only maintenance commands may exist, but they must not dump stack traces, profile IDs, internal state names or development-stage wording into game chat.
 
 ## World contract
 

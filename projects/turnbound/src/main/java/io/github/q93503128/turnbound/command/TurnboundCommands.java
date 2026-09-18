@@ -3,7 +3,7 @@ package io.github.q93503128.turnbound.command;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import io.github.q93503128.turnbound.combat.P0Scenario;
+import io.github.q93503128.turnbound.content.CanonicalData;
 import io.github.q93503128.turnbound.progression.GachaService;
 import io.github.q93503128.turnbound.progression.PlayerProfile;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
@@ -23,11 +23,6 @@ public final class TurnboundCommands {
 
     public static void register(RegisterCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("turnbound")
-                .then(Commands.literal("field").executes(context -> {
-                    context.getSource().sendFailure(Component.literal(
-                            "TURNBOUND FIELD · legacy Aster March field entry is disabled during external-world rebinding."));
-                    return 0;
-                }))
                 .then(Commands.literal("status").executes(context -> {
                     var player = context.getSource().getPlayerOrException();
                     FieldSessionManager.sendStatus(player);
@@ -42,35 +37,36 @@ public final class TurnboundCommands {
                         .then(Commands.literal("single").executes(context -> summon(context.getSource(), 1, false)))
                         .then(Commands.literal("ten").executes(context -> summon(context.getSource(), 10, false)))
                         .then(Commands.literal("starter").executes(context -> summon(context.getSource(), 10, true))))
-                .then(Commands.literal("test")
-                        .then(Commands.literal("give")
-                                .then(currencyNode("gold", PlayerProfile.Currency.GOLD))
-                                .then(currencyNode("crystal", PlayerProfile.Currency.SUMMON_CRYSTAL))
-                                .then(currencyNode("essence", PlayerProfile.Currency.STAR_ESSENCE))
-                                .then(currencyNode("core", PlayerProfile.Currency.AWAKENING_CORE))))
-                .then(Commands.literal("p0").executes(context -> {
-                    String result = P0Scenario.runAutoDiagnostic(160);
-                    context.getSource().sendSuccess(() -> Component.literal("TURNBOUND P0: " + result), false);
-                    return Command.SINGLE_SUCCESS;
-                }))
-                .then(Commands.literal("battle").executes(context -> {
-                    var player = context.getSource().getPlayerOrException();
-                    BattleSessionManager.start(player);
-                    return Command.SINGLE_SUCCESS;
-                }))
-                .then(Commands.literal("leave").executes(context -> {
-                    var player = context.getSource().getPlayerOrException();
-                    BattleSessionManager.end(player);
-                    return Command.SINGLE_SUCCESS;
-                })));
+                .then(Commands.literal("grant")
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .then(currencyNode("gold", PlayerProfile.Currency.GOLD))
+                        .then(currencyNode("crystal", PlayerProfile.Currency.SUMMON_CRYSTAL))
+                        .then(currencyNode("essence", PlayerProfile.Currency.STAR_ESSENCE))
+                        .then(currencyNode("core", PlayerProfile.Currency.AWAKENING_CORE)))
+                .then(Commands.literal("battle")
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .executes(context -> {
+                            var player = context.getSource().getPlayerOrException();
+                            BattleSessionManager.start(player);
+                            return Command.SINGLE_SUCCESS;
+                        }))
+                .then(Commands.literal("leave")
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .executes(context -> {
+                            var player = context.getSource().getPlayerOrException();
+                            BattleSessionManager.end(player);
+                            return Command.SINGLE_SUCCESS;
+                        })));
     }
 
     private static int worldStatus(CommandSourceStack source) throws CommandSyntaxException {
         var player = source.getPlayerOrException();
         var server = player.level().getServer();
-        String status = DrehmalWorldBinding.status(server);
-        source.sendSuccess(() -> Component.literal("TURNBOUND WORLD · " + status), false);
-        return DrehmalWorldBinding.isBound(server) ? Command.SINGLE_SUCCESS : 0;
+        boolean bound = DrehmalWorldBinding.isBound(server);
+        source.sendSuccess(() -> Component.literal(bound
+                ? "세계 연결이 완료되어 있습니다."
+                : "Drehmal 세계 연결이 필요합니다."), false);
+        return bound ? Command.SINGLE_SUCCESS : 0;
     }
 
     private static int bindDrehmal(CommandSourceStack source) throws CommandSyntaxException {
@@ -78,15 +74,23 @@ public final class TurnboundCommands {
         try {
             DrehmalWorldBinding.bindManual(player);
             ExternalWorldBootstrap.initialize(player);
-            var hub = DrehmalWorldBinding.hubSeed();
-            source.sendSuccess(() -> Component.literal(
-                    "TURNBOUND WORLD · Drehmal profile bound without rebuilding terrain. Hub seed "
-                            + hub.getX() + " " + hub.getY() + " " + hub.getZ()), false);
+            source.sendSuccess(() -> Component.literal("Drehmal 세계 연결을 완료했습니다."), false);
             return Command.SINGLE_SUCCESS;
         } catch (RuntimeException exception) {
-            source.sendFailure(Component.literal("TURNBOUND WORLD · binding rejected: " + exception.getMessage()));
+            source.sendFailure(Component.literal("세계 연결을 완료하지 못했습니다. " + bindFailureText(exception)));
             return 0;
         }
+    }
+
+    private static String bindFailureText(RuntimeException exception) {
+        String message = exception.getMessage();
+        if (message == null) return "현재 세계 상태를 확인해 주세요.";
+        if (message.contains("stand near")) return "New Drabyel 근처에서 다시 시도해 주세요.";
+        if (message.contains("dimension")) return "오버월드에서 다시 시도해 주세요.";
+        if (message.contains("different TURNBOUND profile")) return "이미 다른 세계 연결 정보가 존재합니다.";
+        if (message.contains("write TURNBOUND")) return "세계 연결 정보를 저장하지 못했습니다.";
+        if (message.contains("server unavailable")) return "현재 세계에 연결할 수 없습니다.";
+        return "설치된 Drehmal 세계와 위치를 확인해 주세요.";
     }
 
     private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> currencyNode(
@@ -142,7 +146,7 @@ public final class TurnboundCommands {
         CampaignPersistence.save(player);
         MetaNetwork.sync(player);
         long total = CampaignProgressStore.currency(player.getUUID(), currency);
-        source.sendSuccess(() -> Component.literal("TURNBOUND TEST · " + currencyLabel(currency)
+        source.sendSuccess(() -> Component.literal(currencyLabel(currency)
                 + " +" + amount + " → " + total), false);
         return Command.SINGLE_SUCCESS;
     }
@@ -172,15 +176,21 @@ public final class TurnboundCommands {
     }
 
     private static String summarize(GachaService.BatchResult result, boolean starter) {
-        StringBuilder out = new StringBuilder(starter ? "Starter Archive: " : "Standard Archive: ");
+        StringBuilder out = new StringBuilder(starter ? "초기 소환: " : "소환 결과: ");
         for (int i = 0; i < result.pulls().size(); i++) {
             GachaService.PullResult pull = result.pulls().get(i);
             if (i > 0) out.append(" / ");
-            out.append('★').append(pull.nativeStars()).append(' ').append(pull.characterId());
+            String name;
+            try {
+                name = CanonicalData.definition(pull.characterId()).name();
+            } catch (RuntimeException ignored) {
+                name = "알 수 없는 인물";
+            }
+            out.append('★').append(pull.nativeStars()).append(' ').append(name);
             if (pull.newlyOwned()) out.append(" 신규");
             else out.append(" +Essence ").append(pull.starEssenceGranted());
         }
-        out.append(" | -Crystal ").append(result.crystalSpent());
+        out.append(" | Crystal -").append(result.crystalSpent());
         return out.toString();
     }
 }

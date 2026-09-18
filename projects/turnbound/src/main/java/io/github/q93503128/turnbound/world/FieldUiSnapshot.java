@@ -115,7 +115,7 @@ public record FieldUiSnapshot(
                 "MQ_C05_01 ", "MQ_C05_02 ", "MQ_C05_03 ")) {
             text = text.replace(token, "");
         }
-        return text
+        text = text
                 .replace("BATTLE_B01", "들이받는 왕 그라울")
                 .replace("BATTLE_B02", "가시어미 베르나")
                 .replace("BATTLE_B03", "수문관리기 ORO-7")
@@ -160,6 +160,28 @@ public record FieldUiSnapshot(
                 .replace("Chapter 3", "제3장")
                 .replace("Chapter 4", "제4장")
                 .replace("Chapter 5", "제5장");
+        return containsDevelopmentMarker(text) ? "" : text;
+    }
+
+    private static boolean containsDevelopmentMarker(String text) {
+        if (text == null || text.isBlank()) return false;
+        String lower = text.toLowerCase(java.util.Locale.ROOT);
+        return lower.contains("debug")
+                || lower.contains("developer")
+                || lower.contains("prototype")
+                || lower.contains("temporary")
+                || lower.contains("legacy")
+                || lower.contains("alpha")
+                || text.contains("TODO")
+                || text.contains("IMPLEMENTATION_BRIDGE")
+                || text.contains("FALLBACK")
+                || text.contains("TURN_READY")
+                || text.contains("pulse=")
+                || text.contains("P0 ")
+                || text.contains("P1 ")
+                || text.contains("P2 ")
+                || text.contains("P3 ")
+                || text.contains("P4 ");
     }
 
     /** Compatibility constructor for normal field snapshots. */

@@ -1,13 +1,90 @@
-# TURNBOUND external asset / UI reference lock
+# TURNBOUND External Assets / References
 
-- Kenney UI Pack: RPG Expansion — CC0. The alpha.4 large framed battle skin was retired in alpha.6. Kenney remains a low-level frame/button skin source only; TURNBOUND's house style is defined by its own color tokens, spacing, information hierarchy, selection/marker shapes and world-first layout. Do not mix random Kenney families per-screen.
-- BetterQuesting (`Funwayguy/BetterQuesting`, MIT) — alpha.15+ UI design reference for compact nested frames, bounded quest surfaces, tab/header hierarchy, dense readable information and clearly shaped selected states. No BetterQuesting pixels or source code are vendored.
-- Roughly Enough Items / REI — alpha.15+ design reference for compact framed controls, repeated grid rhythm, dense layouts and tooltip hierarchy. No REI pixels or source code are vendored.
-- UI Lib 21.1.1 — Apache-2.0, API/reference only.
-- GeckoLib 5.5.3 — animation/runtime dependency reserved for authored character models.
+이 문서는 현재 TURNBOUND가 조사했거나 사용할 수 있는 외부 디자인/자산의 상태표다.
+실제 import 규칙은 `ASSET_PIPELINE_v1.md`를 따른다.
 
-The user-supplied reference-game screenshots are used only for spatial hierarchy: world-dominant field/battle view, party on the lower edge, small contextual actions, world-space HP, and a clear arrow over the selected 3D target. Do not copy proprietary textures, icons, fonts or exact UI assets.
+## Directly usable candidates
 
-`UI_DESIGN_SYSTEM.md` is the TURNBOUND project-level design lock. Shared frame/button renderers should preserve source texture corner/border proportions rather than stretching complete textures across arbitrary rectangles. Map marker type and feedback state should use shape/text as well as color.
+### Foozle RPG UI Set 1
+- Type: direct_asset / editable_base
+- License: CC0
+- Source: https://foozlecc.itch.io/rpg-ui-set-1
+- Intended use: RPG meta menu/frame 후보
+- Status: candidate; production skin 미확정
 
-Temporary ArmorStand actors remain non-final and must later be replaced by authored character models/animations.
+### Kenney Fantasy UI Borders
+- Type: direct_asset / editable_base
+- License: CC0
+- Source: https://kenney.nl/assets/fantasy-ui-borders
+- Intended use: 9-slice frame / compact controls 후보
+- Status: candidate
+
+### Kenney UI Pack / RPG Expansion
+- Type: direct_asset / editable_base
+- License: CC0
+- Source: https://kenney.nl/assets/ui-pack
+- Source: https://kenney.nl/assets/ui-pack-rpg-expansion
+- Intended use: button/utility component 후보
+- Status: 일부 기존 조각 존재. 새 v1 UI에서 자동 채택하지 않음.
+
+### Pretendard
+- Type: direct_asset candidate
+- License: SIL Open Font License 1.1
+- Source: https://github.com/orioncactus/pretendard
+- Intended use: Korean UI typography
+- Status: Minecraft 26.2 font-provider/runtime 검증 전
+
+## Reference projects — asset workflow
+
+### MCUI
+- Type: reference / code architecture
+- License: GPL-3.0
+- Source: https://github.com/Bluexin/mcui
+- Lesson: resource-pack driven GUI/HUD theming. Visual layer can change without rewriting gameplay logic.
+
+### CustomGUI
+- Type: reference / code architecture
+- License: CC0-1.0
+- Source: https://github.com/omoflop/CustomGUI
+- Lesson: resource pack can own GUI texture customization rather than hardcoding artwork.
+
+### Modern UI for Minecraft
+- Type: reference / optional library investigation
+- Source: https://github.com/BloCamLimb/ModernUI-MC
+- Lesson: third-party fonts are credited separately from code and original license/copyright notices are retained.
+
+### Wheel of Creation
+- Type: reference
+- Source: https://github.com/HormigaDev/wheel-of-creation-addon
+- Lesson: reused visual resources are kept under a distinct folder with the upstream LICENSE next to them.
+
+### RealisticCraft Reimagined
+- Type: reference
+- Source: https://github.com/RishonDev/RealisticCraft-Reimagined
+- Lesson: an unlicensed/uncleared bundled visual pack was replaced with an explicitly licensed alternative instead of assuming redistribution rights.
+
+## Design references only
+
+- BetterQuesting: compact nested quest surfaces and clear selected-state hierarchy. MIT source project; no pixels copied by default.
+- Roughly Enough Items (REI): dense framed controls, predictable grid rhythm, tooltip hierarchy.
+- user-supplied RPG screenshots: spatial hierarchy only; no proprietary pixels/fonts/icons copied.
+
+## Runtime / model dependency
+
+### GeckoLib
+- Type: code_library
+- Version currently used: 5.5.3
+- Purpose: authored character/enemy model animation runtime
+
+## External authored world
+
+### Drehmal: APOTHEOSIS v2.2.2f
+- Type: separate-install external world
+- Original world/resource pack is not vendored by TURNBOUND.
+- TURNBOUND stores only its own binding/profile/semantic gameplay metadata.
+- map/wiki visuals are not copied into TURNBOUND assets unless their use permission is independently confirmed.
+
+## Rule
+
+Unknown-license files are reference-only until verified.
+A file appearing on GitHub, Modrinth, CurseForge, Planet Minecraft, itch.io or a wiki does not itself prove redistribution permission.

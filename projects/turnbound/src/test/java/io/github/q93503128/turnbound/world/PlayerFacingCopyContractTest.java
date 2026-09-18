@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -21,6 +22,25 @@ final class PlayerFacingCopyContractTest {
         assertTrue(shown.contains("용암굴착수"));
         assertTrue(shown.contains("총괄관 아이븐"));
         assertTrue(shown.contains("균열문"));
+    }
+
+    @Test
+    void developmentStageAndLogCopyIsDroppedAtPresentationBoundary() {
+        for (String raw : List.of(
+                "DEBUG battle camera",
+                "developer note",
+                "prototype UI",
+                "temporary route",
+                "legacy map",
+                "alpha build",
+                "TODO actor",
+                "IMPLEMENTATION_BRIDGE",
+                "FALLBACK",
+                "TURN_READY pulse=120",
+                "P0 diagnostic",
+                "P4 content gate")) {
+            assertEquals("", FieldUiSnapshot.playerFacingText(raw), () -> "development copy leaked: " + raw);
+        }
     }
 
     @Test

@@ -15,6 +15,7 @@ final class TurnboundUiText {
     static Component playerFacingLabel(Component source) {
         if (source == null) return Component.empty();
         String raw = source.getString();
+        if (containsDevelopmentMarker(raw)) return Component.empty();
         String translated = switch (raw) {
             case "PARTY" -> "파티";
             case "CHARACTERS" -> "캐릭터";
@@ -61,6 +62,27 @@ final class TurnboundUiText {
             return Component.literal("잠김 · " + raw.substring("LOCK · ".length()));
         }
         return source;
+    }
+
+    private static boolean containsDevelopmentMarker(String text) {
+        if (text == null || text.isBlank()) return false;
+        String lower = text.toLowerCase(java.util.Locale.ROOT);
+        return lower.contains("debug")
+                || lower.contains("developer")
+                || lower.contains("prototype")
+                || lower.contains("temporary")
+                || lower.contains("legacy")
+                || lower.contains("alpha")
+                || text.contains("TODO")
+                || text.contains("IMPLEMENTATION_BRIDGE")
+                || text.contains("FALLBACK")
+                || text.contains("TURN_READY")
+                || text.contains("pulse=")
+                || text.contains("P0 ")
+                || text.contains("P1 ")
+                || text.contains("P2 ")
+                || text.contains("P3 ")
+                || text.contains("P4 ");
     }
 
     private static String roleLabel(String value) {
