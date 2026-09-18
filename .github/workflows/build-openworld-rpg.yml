@@ -41,6 +41,9 @@ jobs:
           java -version
           ./gradlew --version
 
+      - name: Resolve pinned gameplay foundation artifacts
+        run: ./gradlew --no-daemon verifyGameplayFoundationDependencies --stacktrace
+
       - name: Test and build M0 core
         run: ./gradlew --no-daemon clean test build --stacktrace
 
@@ -96,11 +99,12 @@ jobs:
           - Fabric API: 0.160.0+26.2
           - Gradle: 9.5.1
           - Loom: 1.17.20
+          - gameplay foundation artifact resolution: PASS
           - unit tests: PASS
           - clean build: PASS
           - bootstrap JAR verify: PASS
           - dedicated server core-profile boot: PASS
-          - full dev-gameplay dependency stack: NOT TESTED
+          - full dev-gameplay dependency runtime: NOT TESTED
           - external creature runtime binding: NOT TESTED
           - Better Combat integration: NOT IMPLEMENTED
           - Spell Engine integration: NOT IMPLEMENTED

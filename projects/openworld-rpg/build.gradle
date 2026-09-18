@@ -1,3 +1,5 @@
+import java.security.MessageDigest
+
 plugins {
     id 'net.fabricmc.fabric-loom' version "${loom_version}"
     id 'maven-publish'
@@ -20,6 +22,47 @@ loom {
 
 repositories {
     mavenCentral()
+
+    maven {
+        name = 'Modrinth'
+        url = 'https://api.modrinth.com/maven'
+        content {
+            includeGroup 'maven.modrinth'
+        }
+    }
+
+    maven {
+        name = 'RedlanceMinecraft'
+        url = 'https://repo.redlance.org/public'
+        content {
+            includeGroup 'com.zigythebird.playeranim'
+        }
+    }
+
+    maven {
+        name = 'Shedaniel'
+        url = 'https://maven.shedaniel.me/'
+        content {
+            includeGroup 'me.shedaniel.cloth'
+        }
+    }
+
+    maven {
+        name = 'GeckoLib'
+        url = 'https://maven.cloudsmith.io/geckolib3/geckolib/'
+        content {
+            includeGroup 'com.geckolib'
+        }
+    }
+}
+
+configurations {
+    gameplayFoundation {
+        canBeConsumed = false
+        canBeResolved = true
+        visible = false
+        description = 'Pinned M0 gameplay foundation artifacts; resolution-only, not part of core runtime.'
+    }
 }
 
 dependencies {
@@ -27,8 +70,73 @@ dependencies {
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
+    gameplayFoundation("maven.modrinth:5sy6g3kz:${project.better_combat_version_id}") {
+        transitive = false
+    }
+    gameplayFoundation("com.zigythebird.playeranim:PlayerAnimationLibFabric:${project.player_anim_version}") {
+        transitive = false
+    }
+    gameplayFoundation("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}") {
+        transitive = false
+    }
+    gameplayFoundation("maven.modrinth:spell-engine:${project.spell_engine_version}") {
+        transitive = false
+    }
+    gameplayFoundation("maven.modrinth:spell-power:${project.spell_power_version}-fabric") {
+        transitive = false
+    }
+    gameplayFoundation("maven.modrinth:ranged-weapon-api:${project.ranged_weapon_api_version}-fabric") {
+        transitive = false
+    }
+    gameplayFoundation("maven.modrinth:armor-model-api:${project.armor_model_api_version}-fabric") {
+        transitive = false
+    }
+    gameplayFoundation("maven.modrinth:XaT8sLP6:${project.trinkets_version_id}") {
+        transitive = false
+    }
+    gameplayFoundation("com.geckolib:geckolib-fabric-26.2:${project.geckolib_version}") {
+        transitive = false
+    }
+
     testImplementation 'org.junit.jupiter:junit-jupiter:5.12.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.12.2'
+}
+
+tasks.register('verifyGameplayFoundationDependencies') {
+    group = 'verification'
+    description = 'Resolves and hashes the pinned M0 gameplay foundation JARs without adding them to the core runtime.'
+
+    doLast {
+        def resolved = configurations.gameplayFoundation.resolve().toList().sort { a, b -> a.name <=> b.name }
+        if (resolved.size() != 9) {
+            throw new GradleException("Expected 9 pinned gameplay foundation artifacts, resolved ${resolved.size()}: ${resolved*.name}")
+        }
+
+        def output = layout.buildDirectory.file('reports/m0/gameplay-foundation-artifacts.txt').get().asFile
+        output.parentFile.mkdirs()
+        output.text = ''
+
+        resolved.each { file ->
+            if (!file.isFile() || file.length() <= 0L) {
+                throw new GradleException("Resolved gameplay foundation artifact is missing or empty: ${file}")
+            }
+
+            MessageDigest digest = MessageDigest.getInstance('SHA-256')
+            file.withInputStream { input ->
+                byte[] buffer = new byte[8192]
+                int read
+                while ((read = input.read(buffer)) != -1) {
+                    digest.update(buffer, 0, read)
+                }
+            }
+            def sha256 = digest.digest().encodeHex().toString()
+            def line = "${file.name}\t${file.length()}\t${sha256}"
+            println "M0_FOUNDATION_ARTIFACT ${line}"
+            output << line << System.lineSeparator()
+        }
+
+        println "M0_GAMEPLAY_FOUNDATION_RESOLUTION_PASS count=${resolved.size()} report=${output}"
+    }
 }
 
 processResources {

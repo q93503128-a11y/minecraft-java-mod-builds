@@ -44,7 +44,7 @@
     {
       "logicalId": "trinkets-updated",
       "modId": "trinkets_updated",
-      "expectedVersion": "4.1.0+26.2",
+      "expectedVersion": "4.1.0-rc.1+26.2",
       "enforceVersion": false,
       "requiredProfiles": ["gameplay", "essential"],
       "integrationModule": "trinkets",
@@ -54,7 +54,7 @@
     {
       "logicalId": "better-combat",
       "modId": "bettercombat",
-      "expectedVersion": "3.2.2",
+      "expectedVersion": "3.2.2+26.2",
       "enforceVersion": false,
       "requiredProfiles": ["gameplay", "essential"],
       "integrationModule": "bettercombat",
