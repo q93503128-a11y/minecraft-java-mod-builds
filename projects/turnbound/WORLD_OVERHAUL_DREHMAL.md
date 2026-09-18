@@ -273,22 +273,23 @@ safe connector:
 
 숫자는 geography를 무시하고 맞추는 목표가 아니다.
 
-## 17. 첫 플레이 구간 설계 순서
+## 17. 첫 플레이 구간 — Capital Valley → Drabyel
 
-아직 실제 장소 검증 전이므로 이름/좌표를 임의 확정하지 않는다.
+공식 Drehmal 지형 조사로 첫 route topology는 확정한다.
 
-역할만 먼저 정의:
-1. 첫 거점
-2. 거점 외곽 안전 도로
-3. 첫 조우 zone
-4. 첫 갈림길/선택 POI
-5. 첫 Elite
-6. 첫 소형 던전
-7. 첫 boss
-8. 첫 summon unlock
-9. 다음 지역 연결
+큰 흐름:
+1. Stasis Facility 지상 출구 직후의 기존 roadhead에서 TURNBOUND 시작
+2. Primal Caverns를 첫 world landmark로 읽음
+3. 버려진 예배당을 지나 첫 visible encounter
+4. Capital Valley Tower를 중간 landmark로 사용
+5. Tower 남서쪽 warning cave를 optional Elite 후보로 사용
+6. Explorer's Guide camp를 rest/information beat로 사용
+7. New Drabyel을 첫 safe hub로 사용
+8. 이후 Av'Sal을 첫 대형 위험 목적지 후보로 사용
 
-New Drabyel은 첫 거점 후보지만 실제 26.2 survey 후 확정한다.
+정확한 block/NPC/enemy/battle coordinates는 26.2 world 직접 검수 전까지 고정하지 않는다.
+
+상세 정본: `FIRST_ROUTE_CAPITAL_VALLEY_v1.md`.
 
 ## 18. 미니맵
 

@@ -22,8 +22,9 @@
 4. `03_CHARACTER_DESIGN_v1.md`
 5. `UI_DESIGN_SYSTEM.md`
 6. `WORLD_OVERHAUL_DREHMAL.md`
-7. `OVERHAUL_ROADMAP_v1.md`
-8. current source/resources
+7. `FIRST_ROUTE_CAPITAL_VALLEY_v1.md`
+8. `OVERHAUL_ROADMAP_v1.md`
+9. current source/resources
 
 Old v0.4 Aster March physical-world canon and alpha-by-alpha deltas are superseded.
 Git history is the archive.

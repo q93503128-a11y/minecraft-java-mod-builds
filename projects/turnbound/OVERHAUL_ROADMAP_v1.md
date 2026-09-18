@@ -23,11 +23,23 @@
 
 ## 2. Map Survey
 
-코드보다 먼저:
-- 첫 거점 후보
-- 첫 2~3 route
-- 첫 dungeon/boss 후보
-를 실제 26.2 world에서 조사.
+첫 route topology는 `FIRST_ROUTE_CAPITAL_VALLEY_v1.md`에서 다음처럼 고정됨:
+- Stasis surface roadhead
+- Primal Caverns
+- abandoned chapel
+- Capital Valley Tower
+- warning cave optional danger
+- Explorer's Guide camp
+- New Drabyel first hub
+- Av'Sal next-major-route candidate
+
+다음 survey는 코드보다 먼저 실제 26.2 world에서:
+- exact player spawn block
+- first 2 mandatory encounter footprints
+- warning cave
+- Drabyel entrance/service positions
+- first Av'Sal approach
+를 확인한다.
 
 산출:
 - semantic location data
@@ -36,6 +48,7 @@
 - camera risk
 - NPC placement
 - encounter placement
+- `verifiedIn26_2` state
 
 ## 3. Combat Foundation
 

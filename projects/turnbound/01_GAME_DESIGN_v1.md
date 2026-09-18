@@ -388,6 +388,10 @@ Awakening은 캐릭터 개인 사건/퀘스트와 연결한다. 별도 “각성
 
 현재의 “실제 플레이 중 하나씩 배우는 방식”은 유지한다.
 
+첫 route의 실제 공간 정본은 `FIRST_ROUTE_CAPITAL_VALLEY_v1.md`.
+
+시작 위치는 Drabyel 내부나 원본 Stasis pod가 아니라 **Stasis 지상 출구 직후 Capital Valley 기존 길의 안전한 roadhead**로 한다. 이 결정은 원본 Stasis 스토리 강제 없이 첫 world reveal과 Drabyel 도착감을 모두 살리기 위한 것이다. 정확한 블록은 26.2 지형 검수 후 고정한다.
+
 ### 단계
 1. 이동/상호작용
 2. 첫 NPC
