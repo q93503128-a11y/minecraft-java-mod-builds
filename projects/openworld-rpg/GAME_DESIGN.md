@@ -14,7 +14,8 @@ Subordinate references currently indexed by this canon:
 - `LOOT_ECONOMY.md` — equipment grades, affixes, drop rates, target farming, first-clear protection and signature-material rules.
 - `EQUIPMENT_BALANCE.md` — Item-Lv/base-stat curves, exact affix ranges, forge/reforge rules and R01 equipment/resource catalog.
 - `MOUNTS.md` — non-vanilla mount roster, traversal balance, summon/combat rules and external visual sources.
-- `M0_DEPENDENCY_AUDIT.md` — pinned Fabric 26.2 toolchain/dependency/integration boundaries.
+- `M0_DEPENDENCY_AUDIT.md` — pinned Fabric 26.2 toolchain/dependency boundaries.
+- `M0_INTEGRATION_ARCHITECTURE.md` — external-mod composition model: project authority firewall, adapters, data overlays, semantic tags, normalized events, validation and server/client data-sync rules.
 - `COMBAT_BALANCE.md` — combat formulas, dodge/guard/parry timing, poise, TTK, encounter damage and multiplayer scaling.
 - `CLASS_COMBAT_KITS.md` — five root-class combat kits, first specialization branches and external animation/VFX/icon direction.
 - `CLASS_PROGRESSION.md` — Class Rank/XP, advancement beats, passive economy, deeper branch mechanics and world-discovered skills.
@@ -126,6 +127,43 @@ Therefore:
 After a replacement is appropriately verified, remove superseded dead, duplicate, prototype and unused compatibility code immediately unless still required for save migration, active compatibility or a live feature.
 
 Git history is the archive; the active source tree is not.
+
+## 2.4 External mods strengthen the game; they do not create parallel games
+
+Openworld RPG may use many external mods/libraries when they materially improve final quality.
+
+That does **not** mean accepting each dependency's full progression/economy/UI/content loop.
+
+Adoption rule:
+
+```text
+keep strong primitive / presentation / content
+→ adapt it through the project integration layer
+→ suppress conflicting donor rules
+→ feed the existing Openworld core loop
+```
+
+Good uses:
+
+- proven melee/cast/animation infrastructure;
+- strong creature models/animation/selected behavior;
+- stable equipment/storage/rendering backends;
+- high-quality external presentation/assets;
+- narrowly reusable code patterns whose license permits reuse.
+
+Bad uses:
+
+- a second class tree because one dependency includes it;
+- a second damage formula;
+- a second rarity/loot economy;
+- another regional currency;
+- another quest log or inventory UI shown beside the project UI;
+- donor worldgen/spawn/recipes leaking into authored regions without review;
+- importing an entire overhaul only to obtain one small mechanic.
+
+When two external mods provide overlapping systems, choose one primary foundation or isolate them behind project adapters. Do not ask the player to understand which mod owns which rule.
+
+Technical composition details are canonical in `PROJECT.md`, `M0_DEPENDENCY_AUDIT.md` and `M0_INTEGRATION_ARCHITECTURE.md`.
 
 ---
 
