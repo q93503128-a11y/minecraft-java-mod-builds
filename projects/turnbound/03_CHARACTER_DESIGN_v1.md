@@ -50,12 +50,14 @@ Signature: `Duel Focus 0~3`
 - 다른 대상을 직접 공격하면 기존 Focus 정리
 - Focus는 피해뿐 아니라 스킬의 행동 방식도 바꾼다
 
-### Kit 방향
-- Basic: 가벼운 접근 베기. Focus 유지/증가.
-- Active A: Focus를 소비하지 않는 강한 단일기. Focus가 높을수록 추가 hit/방어 관통 등 명확한 변화.
-- Active B: 기존 무피해 “결투 고정” 폐기. 대상에게 실제 공격/간파 동작을 하며 Focus 전환 손실을 줄이고 다음 상호작용을 만든다.
-- Passive: 같은 대상과의 장기전에서 공격이 단순 수치가 아니라 리듬/추가 베기/간파로 확장.
-- Awakening: 최대 Focus에서 Basic/Active animation과 추가 행동이 확장되되 기존 플레이를 제거하지 않음.
+### v1 확정 Kit
+- Basic · **추적 베기**: 단일 95%. 첫 직접 공격/대상 전환 시 Focus 1, 같은 대상이면 Focus +1.
+- Active A · **파쇄 일격**: CD2, 단일 175%. 같은 결투 대상에 Focus 2면 추가 30%, Focus 3이면 추가 50% 베기. Focus는 소비하지 않는다.
+- Active B · **간파 베기**: CD3, 단일 110% + 자신의 Gauge +100. 공격과 동시에 결투 대상을 확정하고 Focus +1.
+- Passive · **집요한 추적**: Focus 1당 현재 결투 대상에게 주는 직접 피해 +5%. Focus 3에서 Basic은 25% 추가 베기로 동작 방식이 확장된다.
+- Awakening · **끝나지 않는 칼끝**: Focus 3 Basic 추가 베기가 45%로 강화된다. Focus 3 상태로 적을 쓰러뜨리면 다음 결투 대상은 Focus 2에서 시작한다.
+
+Focus 보너스는 현재 `focusTarget`에게만 적용한다. 다른 적에게 옛 Focus 피해 보너스를 들고 가는 것은 금지한다.
 
 Role: Single DPS / Duel / Boss pressure.
 

@@ -9,10 +9,17 @@ public final class PrototypeRoster {
 
     public static CombatantDefinition kyren() {
         return new CombatantDefinition("P01", "카이렌", new BattleStats(900, 120, 85, 105), "p01_chase_slash", List.of(
-                new SkillDefinition("p01_chase_slash", "추적 베기", TargetRule.ENEMY_SINGLE, 0, List.of(SkillEffect.damage(1.00))),
-                new SkillDefinition("p01_breaker_strike", "파쇄 일격", TargetRule.ENEMY_SINGLE, 2, List.of(SkillEffect.damage(2.20))),
-                new SkillDefinition("p01_duel_lock", "결투 고정", TargetRule.ENEMY_SINGLE, 3, List.of(SkillEffect.selfGaugeAdd(120)))),
-                4, List.of("P01_FOCUS"), Map.of("focusMax", 3.0, "focusDamagePer", 0.15));
+                new SkillDefinition("p01_chase_slash", "추적 베기", TargetRule.ENEMY_SINGLE, 0, List.of(SkillEffect.damage(0.95))),
+                new SkillDefinition("p01_breaker_strike", "파쇄 일격", TargetRule.ENEMY_SINGLE, 2, List.of(SkillEffect.damage(1.75))),
+                new SkillDefinition("p01_duel_lock", "간파 베기", TargetRule.ENEMY_SINGLE, 3,
+                        List.of(SkillEffect.damage(1.10), SkillEffect.selfGaugeAdd(100)))),
+                4, List.of("P01_FOCUS"), Map.of(
+                        "focusMax", 3.0,
+                        "focusDamagePer", 0.05,
+                        "basicFocusFollowup", 0.25,
+                        "breakerFocus2Followup", 0.30,
+                        "breakerFocus3Followup", 0.50,
+                        "awakenBasicFollowup", 0.45));
     }
 
     public static CombatantDefinition lumea() {

@@ -86,6 +86,11 @@ Skill Gauge +180은 내부적으로 `180 × GAUGE_SCALE`을 더한다.
 
 UI용 별도 근사 공식을 만들지 않는다.
 
+구현 바인딩:
+- runtime과 HUD preview는 `TurnScheduler`를 공유한다.
+- `CombatantState`는 내부 micro-Gauge를 보존하고 외부/UI에는 표시 Gauge 단위를 투영한다.
+- Turn ready event에 옛 `pulse=` 진단 문자열을 넣지 않는다.
+
 ## 3. SPD 밸런스
 
 외부 턴제 RPG에서도 SPD/Action Value는 행동 횟수와 직접 연결되므로 매우 높은 가치의 스탯이다.

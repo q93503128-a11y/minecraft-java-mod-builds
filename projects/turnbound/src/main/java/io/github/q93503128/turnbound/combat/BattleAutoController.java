@@ -37,15 +37,21 @@ public final class BattleAutoController {
 
     private static void chooseKyren(BattleEngine engine, BattleState state, CombatantState actor, List<CombatantState> enemies) {
         CombatantState focus = state.find(actor.ref("focusTarget"));
-        if (focus != null && !focus.downed() && actor.cooldown("p01_breaker_strike") == 0 && actor.counter("focus") >= 2) { engine.useSkill(actor.instanceId(), "p01_breaker_strike", focus.instanceId()); return; }
         if (focus == null || focus.downed()) {
             CombatantState target = priorityEnemy(enemies);
             if (actor.cooldown("p01_duel_lock") == 0) engine.useSkill(actor.instanceId(), "p01_duel_lock", target.instanceId());
             else engine.useSkill(actor.instanceId(), "p01_chase_slash", target.instanceId());
             return;
         }
-        if (actor.cooldown("p01_breaker_strike") == 0) engine.useSkill(actor.instanceId(), "p01_breaker_strike", focus.instanceId());
-        else engine.useSkill(actor.instanceId(), "p01_chase_slash", focus.instanceId());
+
+        int focusValue = actor.counter("focus");
+        if (focusValue >= 2 && actor.cooldown("p01_breaker_strike") == 0) {
+            engine.useSkill(actor.instanceId(), "p01_breaker_strike", focus.instanceId());
+        } else if (focusValue < 2 && actor.cooldown("p01_duel_lock") == 0) {
+            engine.useSkill(actor.instanceId(), "p01_duel_lock", focus.instanceId());
+        } else {
+            engine.useSkill(actor.instanceId(), "p01_chase_slash", focus.instanceId());
+        }
     }
 
     private static void chooseLumea(BattleEngine engine, BattleState state, CombatantState actor, List<CombatantState> allies, List<CombatantState> enemies) {

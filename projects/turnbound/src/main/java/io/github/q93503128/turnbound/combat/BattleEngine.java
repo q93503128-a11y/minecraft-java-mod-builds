@@ -228,8 +228,8 @@ public final class BattleEngine {
         double potency = base;
         String id = actor.definition().id();
         if (id.equals("P01")) {
-            potency *= 1.0 + actor.definition().param("focusDamagePer", 0.15) * focusBefore;
-            if (skill.id().equals("p01_breaker_strike")) potency *= 1.0 + skill.param("focusBonusPer", 0.10) * focusBefore;
+            int duelFocus = target.instanceId().equals(actor.ref("focusTarget")) ? focusBefore : 0;
+            potency *= 1.0 + actor.definition().param("focusDamagePer", 0.05) * duelFocus;
         } else if (id.equals("P05") && skill.id().equals("p05_piercing_shot")) {
             potency += skill.param("exposureBonus", 0.30) * exposure(target, actor);
         } else if (id.equals("P06")) {
@@ -482,22 +482,46 @@ public final class BattleEngine {
     }
 
     private void postKyren(CombatantState actor, SkillDefinition skill, List<CombatantState> targets, boolean direct, int focusBefore) {
-        if (skill.id().equals("p01_duel_lock")) {
-            CombatantState target = targets.getFirst();
-            if (!target.instanceId().equals(actor.ref("focusTarget"))) { actor.setRef("focusTarget", target.instanceId()); actor.setCounter("focus", 0); }
-            actor.incrementCounter("focus", 1, actor.definition().intParam("focusMax", 3));
-            return;
-        }
         if (!direct || targets.size() != 1) return;
         CombatantState target = targets.getFirst();
-        if (target.instanceId().equals(actor.ref("focusTarget"))) actor.incrementCounter("focus", 1, actor.definition().intParam("focusMax", 3));
-        else { actor.setRef("focusTarget", target.instanceId()); actor.setCounter("focus", actor.flag("p01_carry_focus") ? 1 : 0); actor.clearFlag("p01_carry_focus"); }
-        if (actor.definition().hasRule("AWAKENED") && skill.id().equals("p01_chase_slash") && focusBefore >= 3 && !target.downed()) {
-            reactions.addLast(new Reaction(actor.instanceId(), target.instanceId(), actor.definition().param("awakenBasicFollowup", 0.45), "P01_AWAKEN_FOLLOWUP", 1));
+        boolean sameTarget = target.instanceId().equals(actor.ref("focusTarget"));
+        int duelFocusBefore = sameTarget ? focusBefore : 0;
+        int focusMax = actor.definition().intParam("focusMax", 3);
+
+        if (skill.id().equals("p01_duel_lock")) {
+            if (!sameTarget) {
+                actor.setRef("focusTarget", target.instanceId());
+                actor.setCounter("focus", 1);
+            } else {
+                actor.incrementCounter("focus", 1, focusMax);
+            }
+        } else if (sameTarget) {
+            actor.incrementCounter("focus", 1, focusMax);
+        } else {
+            actor.setRef("focusTarget", target.instanceId());
+            actor.setCounter("focus", actor.flag("p01_carry_focus") ? Math.min(2, focusMax) : 1);
+            actor.clearFlag("p01_carry_focus");
         }
+
+        if (!target.downed() && skill.id().equals("p01_breaker_strike") && duelFocusBefore >= 2) {
+            double followup = duelFocusBefore >= 3
+                    ? actor.definition().param("breakerFocus3Followup", 0.50)
+                    : actor.definition().param("breakerFocus2Followup", 0.30);
+            reactions.addLast(new Reaction(actor.instanceId(), target.instanceId(), followup, "P01_BREAKER_FOLLOWUP", 1));
+        }
+
+        if (!target.downed() && skill.id().equals("p01_chase_slash") && duelFocusBefore >= 3) {
+            double followup = actor.definition().hasRule("AWAKENED")
+                    ? actor.definition().param("awakenBasicFollowup", 0.45)
+                    : actor.definition().param("basicFocusFollowup", 0.25);
+            reactions.addLast(new Reaction(actor.instanceId(), target.instanceId(), followup,
+                    actor.definition().hasRule("AWAKENED") ? "P01_AWAKEN_FOLLOWUP" : "P01_FOCUS_FOLLOWUP", 1));
+        }
+
         if (target.downed()) {
-            if (actor.definition().hasRule("AWAKENED") && focusBefore >= 3) actor.setFlag("p01_carry_focus");
-            actor.setRef("focusTarget", null); actor.setCounter("focus", 0);
+            if (actor.definition().hasRule("AWAKENED") && duelFocusBefore >= 3) actor.setFlag("p01_carry_focus");
+            actor.setRef("focusTarget", null);
+            actor.setCounter("focus", 0);
         }
     }
 
