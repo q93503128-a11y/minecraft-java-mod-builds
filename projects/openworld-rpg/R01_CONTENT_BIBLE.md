@@ -1103,6 +1103,35 @@ Ownership:
 
 No separate camp tutorial quest is added.
 
+## 12.1 Exact R01 Camp placement
+
+R01 uses the following exact placement-rule set:
+
+```text
+horizontal footprint: 5.0 x 5.0 blocks
+maximum support-surface height variance across footprint: 0.75 block
+minimum distance from activated shrine or authored major-service-center anchor: 24 blocks
+minimum distance from any other active player camp anchor: 12 blocks
+minimum distance from active boss-arena boundary: 24 blocks
+```
+
+Additional legality:
+- owner must be out of combat;
+- footprint may not intersect settlement/dungeon/event/protected/no-camp volumes;
+- footprint may not intersect liquid or unsupported air columns needed by the camp's solid footprint;
+- at least **80% of the 5x5 support sample area** must resolve to stable walkable support; the remaining uneven edge may be handled by the accepted visual ground dressing but cannot float the functional camp;
+- camp entrance/service interaction side must have a **1.5-block-wide** clear approach lane;
+- no R01 party-camp spacing exception exists: formal party members still use the same 12-block minimum;
+- roads/critical navigation use authored no-camp volumes rather than an expensive runtime full-road scan.
+
+Redeploy is atomic:
+1. validate new position while old camp remains authoritative;
+2. commit new camp position/service state;
+3. remove old camp presentation;
+4. on failure, old camp remains untouched.
+
+The final accepted camp asset/composition must fit this rule set. Asset binding does not get to silently enlarge the gameplay footprint.
+
 First legal deployment uses the normal world placement preview and one compact contextual explanation of rest/cooking/redeploy behavior.
 
 ---
@@ -1477,6 +1506,33 @@ Rules:
 - declining the package does not remove later access to the individual catalogue;
 - furnishing purchases go directly to the owned residence's Home Storage/furnishing inventory;
 - beds, chairs, benches, cabinets, wardrobe and hearth use their real accepted external interaction/model presentation rather than decorative fake blocks.
+
+## 15.5 Exact R01 furnishing placement
+
+R01 placement intentionally stays simpler than a construction game.
+
+Position:
+- horizontal anchor snaps to a **0.25-block grid**;
+- vertical position snaps to the validated supporting surface;
+- rotation is exactly **0° / 90° / 180° / 270°**;
+- no free-angle/finer rotation in R01.
+
+Surface classes:
+- Alderford Bed / Storage Cabinet / Plain Table / Chairs / Wardrobe / Cooking Hearth / Bench / Side Table / Trophy Stand → floor-supported;
+- Iron Lantern → floor/table/shelf-supported;
+- Woven Rug → floor-surface only;
+- Wall Shelf → authored wall-surface only.
+
+Validation:
+- furniture's accepted placement collision box, inflated horizontally by **0.05 block**, must remain inside the owned furnishing volume;
+- solid placement collision may not overlap another solid furnishing or protected shell collision;
+- decorative non-solid extents may visually approach walls only where the accepted model's authored placement box permits it;
+- authored doorway/critical-interaction clearance volumes are no-furniture volumes;
+- a functional furnishing must preserve its authored interaction approach point.
+
+Move remains atomic: original placement is not removed until the new placement validates/commits.
+
+No R01 furnishing uses physics stacking, freeform scaling or arbitrary RGB recoloring.
 
 ---
 
