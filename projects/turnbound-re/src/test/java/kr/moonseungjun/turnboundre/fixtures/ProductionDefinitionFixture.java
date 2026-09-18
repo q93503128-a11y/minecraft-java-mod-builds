@@ -18,7 +18,8 @@ public final class ProductionDefinitionFixture {
             "vertical_characters.json",
             "vertical_encounters.json",
             "vertical_equipment.json",
-            "world_regions.json"
+            "world_regions.json",
+            "external_world_profiles.json"
     };
 
     private ProductionDefinitionFixture() {}
