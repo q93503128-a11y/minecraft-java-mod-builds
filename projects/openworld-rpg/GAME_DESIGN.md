@@ -696,7 +696,10 @@ Crafting/gathering materials use a dedicated **Material Pouch** from the start.
 - the pouch is a category/catalog keyed by material type rather than a small fixed grid that fills with different material IDs;
 - pouch contents do not consume general-backpack slots;
 - field capacity is **999 of each material type**;
-- crafting, forge, alchemy, cooking and other valid service UIs may consume directly from the pouch without forcing manual withdrawal;
+- field/mobile crafting and valid portable services consume directly from the Material Pouch without forcing manual withdrawal;
+- **settlement services** such as forge, alchemy and cooking resolve material cost atomically from the player's **Material Pouch first, then same-player Material Vault for any remainder**;
+- settlement service UI shows one combined owned count and may additionally show the `Pouch + Vault` split in detail; the player never withdraws materials merely to use a town service;
+- Field Camp and other remote/mobile services **cannot** spend directly from Material Vault; returning to town remains meaningful and portable storage does not become remote banking;
 - players can manually withdraw/deposit for trade or organization where relevant;
 - if a material reaches 999 in the field pouch, additional copies can enter the general backpack instead of being silently deleted;
 - settlement bank/storage provides a Material Vault baseline of **9,999 per material type** and a `Deposit Materials` action, preserving a reason to return to town without constant sorting chores;
