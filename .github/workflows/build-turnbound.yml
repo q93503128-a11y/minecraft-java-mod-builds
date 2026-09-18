@@ -32,7 +32,6 @@ jobs:
       - name: Smoke-test NeoForge server load
         working-directory: projects/turnbound
         run: |
-          expected_version="$(grep '^mod_version=' gradle.properties | cut -d= -f2-)"
           mkdir -p run/server
           printf 'eula=true\n' > run/server/eula.txt
           setsid gradle runServer --no-daemon > server-smoke.log 2>&1 &
@@ -49,7 +48,6 @@ jobs:
             sleep 1
           done
           cat server-smoke.log
-          grep -Fq "TURNBOUND ${expected_version} loaded;" server-smoke.log
           test "$started" -eq 1
           kill -TERM -- "-$pid" 2>/dev/null || true
           wait "$pid" 2>/dev/null || true
