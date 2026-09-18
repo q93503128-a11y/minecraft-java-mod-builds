@@ -718,7 +718,7 @@ A vacated natural anchor can replenish only when:
 - no player is within **32 blocks** of the anchor.
 
 No R01 progression-critical actor is time/weather exclusive.  
-Time/weather may alter ambience and later tuning weights but cannot hide a required R01 quest, mount, dungeon or boss.
+**R01 launch time/weather does not alter ecology spawn/group weights.** Time/weather may alter accepted ambience/presentation only. Any later spawn-weight effect requires a canon/data revision first and cannot hide a required R01 quest, mount, dungeon or boss.
 
 ---
 
