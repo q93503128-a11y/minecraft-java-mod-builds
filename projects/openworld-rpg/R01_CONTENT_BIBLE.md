@@ -797,7 +797,7 @@ First legal deployment uses the normal world placement preview and one compact c
 
 # 13. R01 profession and gathering progression
 
-## 12.1 Smithing Mastery Insight — R01 maximum 4
+## 13.1 Smithing Mastery Insight — R01 maximum 4
 
 R01 can award exactly these Smithing Insight flags:
 
@@ -808,7 +808,7 @@ R01 can award exactly these Smithing Insight flags:
 
 Crafting more baseline copies gives no extra Insight.
 
-## 12.2 Alchemy Mastery Insight — R01 maximum 3
+## 13.2 Alchemy Mastery Insight — R01 maximum 3
 
 1. first Healing Potion craft;
 2. first Focus Draught craft;
@@ -816,14 +816,14 @@ Crafting more baseline copies gives no extra Insight.
 
 `Riverbank Remedies` itself does not award a separate Alchemy Insight because it teaches gathering rather than potion production.
 
-## 12.3 Cooking Mastery Insight — R01 maximum 4
+## 13.3 Cooking Mastery Insight — R01 maximum 4
 
 1. first Herbed Louxia Roast;
 2. first Trail Skewers;
 3. first Glow Broth;
 4. first Grilled Catch.
 
-## 12.4 Gathering Mastery exact R01 contract bonuses
+## 13.4 Gathering Mastery exact R01 contract bonuses
 
 Normal gather XP remains global.
 
@@ -846,7 +846,7 @@ The final player-facing fish names are ASSET_BINDING because the project refuses
 
 **Everything except final name/model/icon binding is closed here.**
 
-## 13.1 R01 fish identities
+## 14.1 R01 fish identities
 
 | Internal content slot | Rarity | Habitat | Min | Normal band | Max | Base sell | Grillable | Catch role |
 |---|---|---|---:|---:|---:|---:|---|---|
@@ -857,7 +857,7 @@ The final player-facing fish names are ASSET_BINDING because the project refuses
 
 For each slot, final accepted external fish model determines the ordinary player-facing species name before gameplay source for that slot is authored.
 
-## 13.2 Spot count
+## 14.2 Spot count
 
 Spatial closure must place exactly:
 
@@ -883,7 +883,7 @@ Rare spot:
 18 active-minute personal respawn
 ```
 
-## 13.3 Species pool
+## 14.3 Species pool
 
 Ordinary spot:
 ```text
@@ -918,7 +918,7 @@ The low raw sale values are intentional: fishing supports collection/cooking/eco
 
 Alderford contains exactly **5 authored purchasable residential shells** at launch.
 
-## 14.1 Small Cottage vacancies — 4
+## 15.1 Small Cottage vacancies — 4
 
 All four:
 
@@ -937,7 +937,7 @@ Final player-facing property labels:
 
 Exact shell model/coordinates are ASSET_BINDING + SPATIAL_BINDING.
 
-## 14.2 Visible upgrade home — 1
+## 15.2 Visible upgrade home — 1
 
 Final player-facing property label: **Market House**.
 
@@ -952,7 +952,7 @@ It is not story-gated.
 
 Alderford has no Large Residence or Prestige Estate property at launch; later settlements provide those tiers.
 
-## 14.3 Exact starter furnishing package — 750 Gold
+## 15.3 Exact starter furnishing package — 750 Gold
 
 | Furnishing | Package value |
 |---|---:|
@@ -969,7 +969,7 @@ The package is optional.
 
 Buying the package grants the furnishing items into the house's Home Storage/Moving-safe furnishing inventory; it does not auto-place them into an arbitrary layout.
 
-## 14.4 Exact R01 furnishing catalogue
+## 15.4 Exact R01 furnishing catalogue
 
 R01 does not leave a generic “add furniture later” catalogue to implementation.
 
@@ -1017,7 +1017,7 @@ Evening: 18:00–22:00
 Night: 22:00–06:00
 ```
 
-## 15.1 Named presence
+## 16.1 Named presence
 
 - **Mara Venn** — gate/route activity in Morning, Wayfarers' Hall Day, Copper Kettle/Wayfarers interior Evening/Night;
 - **Elian Rook** — Wayfarers' Hall all bands, with different work/sit anchors;
@@ -1031,7 +1031,7 @@ Night: 22:00–06:00
 - **Ilyan Voss** — pre-clear Copper Kettle guest anchor; post-clear Wayfarers' Hall Day and Copper Kettle Evening;
 - **Kest Arden** — event/hunt-owned only; never loops visibly around Alderford as a service NPC.
 
-## 15.2 Unnamed population
+## 16.2 Unnamed population
 
 Logical R01 settlement population additionally includes:
 
@@ -1284,15 +1284,15 @@ Regalhart/Earthloong farming must remain attractive for their known drops withou
 | What is the undefined road event? | `Roadside Trouble`, §6 |
 | How many R01 property vacancies? | 4 Small + 1 Town House |
 | Is the starter furnishing package 700 or 800 Gold? | exactly 750 Gold |
-| What does the package contain? | exact seven-line package in §14 |
-| What individual R01 furniture can be bought? | exact 12-item Household catalogue in §14.4 |
-| What Gold does each R01 combat actor award? | exact combat Gold table in §21 |
+| What does the package contain? | exact seven-line package in §15.3 |
+| What individual R01 furniture can be bought? | exact 12-item Household catalogue in §15.4 |
+| What Gold does each R01 combat actor award? | exact combat Gold table in §22 |
 | When does the Camp recipe appear? | first owned Hardwood + Tough Hide |
 | Is the Camp Kit consumable/tradeable? | permanent personal utility unlock, no |
 | How many rotating market slots? | 5 |
 | Can R01 merchant sell Mythics? | no |
 | What grades/Item Lv does normal R01 rotation use? | exact table in §10 |
-| Where do early profession Insights come from? | exact flags in §12 |
+| Where do early profession Insights come from? | exact flags in §13 |
 | Does R01 require weather/time fishing? | no |
 | How many R01 fishing spots? | 5 ordinary + 1 uncommon + 1 rare |
 | What happens after quarry death? | §8 |
@@ -1301,7 +1301,7 @@ Regalhart/Earthloong farming must remain attractive for their known drops withou
 | How long until Regalhart can return? | 20 active-world min + empty-territory condition |
 | Do shops close at night? | no |
 | How many extra ambient Alderford NPCs? | 2 guards + 4 townsfolk |
-| Does Earthloong clear delete R01 activity? | no; exact aftermath in §17 |
+| Does Earthloong clear delete R01 activity? | no; exact aftermath in §18 |
 
 ---
 
