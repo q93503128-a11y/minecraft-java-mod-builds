@@ -7,7 +7,7 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 
 /**
  * TURNBOUND worlds do not use live vanilla Mob entities as gameplay actors.
- * Vanilla entity ids remain catalog/archetype metadata for CharacterDefinitions and client previews only.
+ * Vanilla entity ids remain catalog/archetype metadata for CharacterDefinitions and client previews, except for\n * explicitly tagged invulnerable encounter actors that exist only as visible world interaction surfaces.
  */
 public final class VanillaMobWorldPolicy {
     public void register(IEventBus bus) {
@@ -18,6 +18,7 @@ public final class VanillaMobWorldPolicy {
     private void onEntityJoinLevel(EntityJoinLevelEvent event) {
         if (event.getLevel().isClientSide()) return;
         if (!(event.getEntity() instanceof Mob)) return;
+        if (event.getEntity().entityTags().contains(WorldEncounterAnchorResolver.VISIBLE_ACTOR_TAG)) return;
         var id = BuiltInRegistries.ENTITY_TYPE.getKey(event.getEntity().getType());
         if (id != null && "minecraft".equals(id.getNamespace())) event.setCanceled(true);
     }
