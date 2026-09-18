@@ -807,9 +807,9 @@ Craft Max opens one confirmation summarizing exact output count/materials/Gold.
 
 ## 12.2 Buy
 
-Fixed three-item stock, exact prices.
+Fixed three-item **unlimited** stock, exact prices.
 
-No rotating timer.
+No stock counter, sold-out state or rotating timer.
 
 ---
 
@@ -844,9 +844,9 @@ Buttons:
 
 ## 13.2 Prepared Meals
 
-Exact Brin fixed prices.
+Exact Brin fixed prices with **unlimited** R01 prepared-meal availability.
 
-No random daily menu.
+No stock counter, sold-out state or random daily menu.
 
 ---
 
