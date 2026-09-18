@@ -7,6 +7,7 @@
 > Shared visual grammar: UI_DIRECTION.md
 > Accessibility/input: ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md
 > R01 content: R01_VERTICAL_SLICE.md, R01_CONTENT_BIBLE.md
+> Exact player-facing wording: R01_PLAYER_TEXT_SPEC.md
 > Quest/state: QUEST_WORLD_STATE.md
 > Class: CLASS_COMBAT_KITS.md, CLASS_PROGRESSION.md
 > Equipment/economy: LOOT_ECONOMY.md, EQUIPMENT_BALANCE.md
