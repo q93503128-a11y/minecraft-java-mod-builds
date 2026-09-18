@@ -191,8 +191,8 @@ tasks.register('inspectGameplayFoundationMetadata') {
 
     doLast {
         def resolved = configurations.gameplayFoundation.resolve().toList().sort { a, b -> a.name <=> b.name }
-        if (resolved.size() != 9) {
-            throw new GradleException("Expected 9 gameplay foundation artifacts, resolved ${resolved.size()}: ${resolved*.name}")
+        if (resolved.size() != 10) {
+            throw new GradleException("Expected 10 gameplay foundation artifacts, resolved ${resolved.size()}: ${resolved*.name}")
         }
 
         def output = layout.buildDirectory.file('reports/m0/gameplay-foundation-metadata.txt').get().asFile
