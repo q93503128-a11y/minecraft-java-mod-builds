@@ -231,6 +231,7 @@ Examples:
 - Fish Codex first discovery;
 - location discovered;
 - mastery rank increase;
+- Class Insight discovery / Passive Point gain;
 - route lead opened.
 
 Maximum visible toasts: **3**.
