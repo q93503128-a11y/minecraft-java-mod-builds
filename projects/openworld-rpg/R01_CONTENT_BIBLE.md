@@ -946,6 +946,36 @@ The package is optional.
 
 Buying the package grants the furnishing items into the house's Home Storage/Moving-safe furnishing inventory; it does not auto-place them into an arbitrary layout.
 
+## 14.4 Exact R01 furnishing catalogue
+
+R01 does not leave a generic “add furniture later” catalogue to implementation.
+
+Nessa Bell exposes a fixed **Household** catalogue to players who own a residence. This catalogue does **not** use the 10-minute equipment rotation.
+
+| Furnishing | Price | Function |
+|---|---:|---|
+| Alderford Bed | 180 Gold | home rest access |
+| Storage Cabinet | 140 Gold | Home Storage access point only; does not add capacity |
+| Plain Table | 90 Gold | decor / placement surface |
+| Alderford Chair | 60 Gold | sittable |
+| Iron Lantern | 35 Gold | interior light |
+| Wall Shelf | 60 Gold | decor/display surface |
+| Trophy Stand | 90 Gold | one eligible trophy/display |
+| Wardrobe | 160 Gold | Wardrobe/appearance access |
+| Cooking Hearth | 220 Gold | enables home cooking service |
+| Woven Rug | 70 Gold | decor |
+| Wooden Bench | 85 Gold | sittable decor |
+| Side Table | 50 Gold | decor / placement surface |
+
+Rules:
+
+- this is the **entire baseline purchasable R01 furniture catalogue**; implementation does not add random extra functional furniture;
+- accepted external models/material variants may supply visual variants, but variants do not change price/function unless canon is revised first;
+- the 750-Gold starter package is a one-time purchase option attached to the first successful residence purchase and grants exactly its listed pieces;
+- declining the package does not remove later access to the individual catalogue;
+- furnishing purchases go directly to the owned residence's Home Storage/furnishing inventory;
+- beds, chairs, benches, cabinets, wardrobe and hearth use their real accepted external interaction/model presentation rather than decorative fake blocks.
+
 ---
 
 # 15. Alderford NPC presence contract
@@ -1170,7 +1200,37 @@ All progression/economy ownership is server-authoritative.
 
 ---
 
-# 21. R01 economy sanity targets
+# 21. R01 combat Gold table
+
+R01 combat Gold is deliberately small compared with authored objective/dungeon income. These are HARD_RULE starting values.
+
+Gold is granted as a server-owned combat reward transaction; implementation does not need to render literal coin items inside animal bodies.
+
+| Encounter | Gold |
+|---|---:|
+| Louxia | 0 |
+| Meadow Viper | 2 Gold at 60% |
+| Cave Centipede | 3 Gold at 70% |
+| Bison | 0 |
+| Grizzly | 0 |
+| Steelboar | 18 Gold guaranteed |
+| Nature Spirit | 20 Gold guaranteed |
+| Regalhart — first eligible defeat | 70 Gold |
+| Regalhart — repeat eligible defeat | 35 Gold |
+| Earthloong — first eligible dungeon clear | **180 Gold total**, already owned by dungeon completion; no extra boss Gold |
+| Earthloong — repeat clear | 90 Gold |
+
+Rules:
+
+- passive/neutral wildlife is not the best direct Gold farm;
+- no ordinary R01 creature drops random potions at baseline;
+- material sale value remains separate from the combat Gold transaction;
+- first-clear quest/objective Gold is not duplicated by the table above;
+- if playtest shows common-mob farming beating authored R01 play, reduce common combat Gold before increasing housing/consumable prices.
+
+---
+
+# 22. R01 economy sanity targets
 
 These are TUNEABLE_SEED acceptance bands.
 
@@ -1193,7 +1253,7 @@ Regalhart/Earthloong farming must remain attractive for their known drops withou
 
 ---
 
-# 22. R01 hidden-choice closure table
+# 23. R01 hidden-choice closure table
 
 | Question an implementer must not answer | Canonical answer |
 |---|---|
@@ -1202,6 +1262,8 @@ Regalhart/Earthloong farming must remain attractive for their known drops withou
 | How many R01 property vacancies? | 4 Small + 1 Town House |
 | Is the starter furnishing package 700 or 800 Gold? | exactly 750 Gold |
 | What does the package contain? | exact seven-line package in §14 |
+| What individual R01 furniture can be bought? | exact 12-item Household catalogue in §14.4 |
+| What Gold does each R01 combat actor award? | exact combat Gold table in §21 |
 | When does the Camp recipe appear? | first owned Hardwood + Tough Hide |
 | Is the Camp Kit consumable/tradeable? | permanent personal utility unlock, no |
 | How many rotating market slots? | 5 |
@@ -1220,7 +1282,7 @@ Regalhart/Earthloong farming must remain attractive for their known drops withou
 
 ---
 
-# 23. Remaining gates that are not design discretion
+# 24. Remaining gates that are not design discretion
 
 After this content-bible pass, the remaining R01 blockers are deliberately narrow.
 
@@ -1258,7 +1320,7 @@ If either gate exposes a hard conflict, update canon **before** coding the affec
 
 ---
 
-# 24. R01 content-closure acceptance
+# 25. R01 content-closure acceptance
 
 R01 planning is not called source-ready until all of these are true:
 
