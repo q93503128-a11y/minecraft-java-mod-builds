@@ -1222,6 +1222,173 @@ ford_rare 35%
 
 R01 has no weather-only or midnight-only fish required for the four-species regional set.
 
+## 14.4 Catch RNG / reroll protection
+
+Each personal fishing spot maintains:
+
+```text
+spot_cycle_index
+catch_ordinal_in_cycle
+pending_candidate | null
+```
+
+Candidate RNG is deterministic server-side from:
+
+```text
+world_seed
++ player_uuid
++ authored_spot_id
++ spot_cycle_index
++ catch_ordinal_in_cycle
+```
+
+The candidate contains species + size roll and is created when the first valid cast at that catch ordinal reaches bite generation.
+
+Rules:
+- reopening UI, chunk unload or reconnect does not reroll the pending candidate;
+- missing the Hook window does **not** consume the spot charge and does **not** replace the pending candidate;
+- cancelling/reeling in before a bite does not consume the charge and does not create a new candidate;
+- a **successful Hook commit consumes one personal spot charge immediately**;
+- after a successful Hook, tension failure/disconnect yields no fish and the consumed charge remains consumed;
+- after resolution, increment catch ordinal and clear pending candidate;
+- spot respawn starts a new spot cycle only after the authored active-time cooldown.
+
+This removes intentional miss/relog fishing rerolls.
+
+## 14.5 Exact R01 size distribution
+
+Generate a base uniform percentile `u` in [0, 1).
+
+Map it piecewise:
+
+```text
+u 0.00–0.10:
+  linear min_size → normal_size_low
+
+u 0.10–0.90:
+  linear normal_size_low → normal_size_high
+
+u 0.90–1.00:
+  linear normal_size_high → max_size
+```
+
+Therefore 80% of baseline R01 catches land inside the authored normal band while true extremes remain uncommon.
+
+Fishing Mastery Rank V:
+- generate **one additional independent size percentile** from the same candidate seed using a separate sub-roll;
+- keep the larger resulting size;
+- species does not reroll;
+- this is the exact meaning of the global “one extra bounded trophy-size/value roll”.
+
+Trophy threshold:
+
+```text
+trophy_threshold =
+  max_size - 0.05 * (max_size - min_size)
+```
+
+A fish is Trophy if `size >= trophy_threshold`.
+
+This defines the upper 5% **size band**, not a guaranteed 5% catch probability.
+
+## 14.6 Exact R01 sale-value multiplier
+
+For non-Trophy catches, linearly interpolate by these size anchors:
+
+```text
+min_size                 → 0.85x
+normal_size_low          → 0.95x
+midpoint(normal band)    → 1.00x
+normal_size_high         → 1.10x
+trophy_threshold         → 1.25x
+```
+
+Trophy:
+```text
+1.50x
+```
+
+Final raw-fish sale value:
+
+```text
+max(1, round(base_sell_value * size_multiplier))
+```
+
+The Trophy 1.50x replaces the non-Trophy interpolation rather than stacking on top of 1.25x.
+
+## 14.7 Exact R01 bite / Hook timing
+
+Bite delay uses a uniform server-side roll:
+
+```text
+min: 1.50 s
+base max: 5.00 s
+```
+
+Fishing Mastery:
+- Rank II: max = 4.60 s;
+- Rank IV+: max = 4.25 s.
+
+Hook windows:
+- Common: 0.90 s;
+- Uncommon: 0.75 s;
+- Rare: 0.65 s;
+- Trophy candidate: 0.55 s;
+- Rank III+: add +0.08 s to the applicable window.
+
+The server already knows whether the pending candidate is Trophy; the client receives only the appropriate readable bite presentation/window, not hidden size data.
+
+## 14.8 Exact R01 catch resolution
+
+Common non-Trophy:
+- successful Hook → **1.20 s** accepted reel/catch presentation → reward;
+- no tension minigame.
+
+Any Trophy candidate, plus all Uncommon/Rare:
+- enter tension.
+
+Normalized tension:
+```text
+range: 0.00–1.00
+start: 0.45
+baseline valid zone: 0.25–0.75
+Rank V valid zone: 0.225–0.775
+```
+
+Fish pull per second:
+```text
+Uncommon: +0.08
+Rare: +0.12
+Trophy: +0.16
+```
+
+Player input:
+```text
+Hold / reel: +0.28 tension per second
+Release:     -0.32 tension per second
+```
+
+Net tension movement = fish pull + current player-input term.
+
+Catch progress:
+- increases at 1.0 progress-second per real second **only while Hold is active and current tension is inside the valid zone**;
+- pauses outside the valid zone;
+- never becomes negative.
+
+Required catch progress:
+```text
+Uncommon non-Trophy: 3.2 s
+Rare non-Trophy:     4.4 s
+Any Trophy:          5.8 s
+```
+
+Failure:
+- tension >=0.95 continuously for 0.40 s → line breaks;
+- tension <=0.05 continuously for 0.60 s → fish escapes;
+- either failure ends the already-consumed hooked attempt with no fish reward.
+
+The values are TUNEABLE_SEED only after real Minecraft fishing feel evidence exists; implementation begins exactly here.
+
 The low raw sale values are intentional: fishing supports collection/cooking/economy but must not beat meaningful quest/dungeon income.
 
 ---
