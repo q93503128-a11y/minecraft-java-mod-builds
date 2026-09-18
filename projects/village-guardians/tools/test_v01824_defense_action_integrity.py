@@ -67,7 +67,7 @@ def main() -> None:
     assert 'maxHp(upgradedBase), true' not in upgrade
 
     assert segment.count('String blocked = VillageMaintenanceRules.blockReason(') >= 2
-    assert '현재 손상분은 유지' in ui
+    assert '현재 손상분 유지' in ui
 
     print('[PASS] siege mutation packets revalidate physical wall-command locality server-side')
     print('[PASS] persistent wall/turret maintenance is day-only and game-over safe')
