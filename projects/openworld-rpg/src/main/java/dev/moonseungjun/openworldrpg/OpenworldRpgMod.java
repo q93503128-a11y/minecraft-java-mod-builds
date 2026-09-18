@@ -1,0 +1,19 @@
+package dev.moonseungjun.openworldrpg;
+
+import dev.moonseungjun.openworldrpg.integration.bootstrap.IntegrationBootstrap;
+import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
+import net.fabricmc.api.ModInitializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public final class OpenworldRpgMod implements ModInitializer {
+    public static final String MOD_ID = "openworld_rpg";
+    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+
+    @Override
+    public void onInitialize() {
+        RuntimeProfile profile = RuntimeProfile.current();
+        IntegrationBootstrap.bootstrap(profile, LOGGER);
+        LOGGER.info("Openworld RPG M0 core bootstrap loaded with profile {}.", profile.id());
+    }
+}

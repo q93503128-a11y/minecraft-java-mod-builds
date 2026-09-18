@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "openworld_rpg",
+  "version": "${version}",
+  "name": "Open-World RPG",
+  "description": "An authored open-world fantasy action RPG built on Minecraft Java.",
+  "authors": ["MoonSeungJun"],
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.moonseungjun.openworldrpg.OpenworldRpgMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~26.2",
+    "java": ">=25",
+    "fabric-api": ">=0.160.0"
+  }
+}

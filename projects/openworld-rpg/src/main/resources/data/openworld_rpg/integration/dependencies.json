@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "dependencies": [
+    {
+      "logicalId": "player-animation-library",
+      "modId": "player_animation_library",
+      "expectedVersion": "1.2.6+26.2",
+      "enforceVersion": false,
+      "requiredProfiles": ["gameplay", "essential"],
+      "integrationModule": "player_animation",
+      "licenseBoundary": "MIT_RUNTIME_API",
+      "verification": "RESOLVED"
+    },
+    {
+      "logicalId": "geckolib",
+      "modId": "geckolib",
+      "expectedVersion": "5.5.5",
+      "enforceVersion": false,
+      "requiredProfiles": ["gameplay", "essential"],
+      "integrationModule": "geckolib",
+      "licenseBoundary": "MIT_RUNTIME_API",
+      "verification": "RESOLVED"
+    },
+    {
+      "logicalId": "armor-model-api",
+      "modId": "armor_model_api",
+      "expectedVersion": "1.1.0+26.2",
+      "enforceVersion": false,
+      "requiredProfiles": ["gameplay", "essential"],
+      "integrationModule": "armor_model",
+      "licenseBoundary": "MIT_RUNTIME_API",
+      "verification": "RESOLVED"
+    },
+    {
+      "logicalId": "ranged-weapon-api",
+      "modId": "ranged_weapon_api",
+      "expectedVersion": "4.0.0+26.2",
+      "enforceVersion": false,
+      "requiredProfiles": ["gameplay", "essential"],
+      "integrationModule": "ranged_weapon",
+      "licenseBoundary": "MIT_RUNTIME_API",
+      "verification": "RESOLVED"
+    },
+    {
+      "logicalId": "trinkets-updated",
+      "modId": "trinkets_updated",
+      "expectedVersion": "4.1.0+26.2",
+      "enforceVersion": false,
+      "requiredProfiles": ["gameplay", "essential"],
+      "integrationModule": "trinkets",
+      "licenseBoundary": "RUNTIME_BACKEND",
+      "verification": "RESOLVED"
+    },
+    {
+      "logicalId": "better-combat",
+      "modId": "bettercombat",
+      "expectedVersion": "3.2.2",
+      "enforceVersion": false,
+      "requiredProfiles": ["gameplay", "essential"],
+      "integrationModule": "bettercombat",
+      "licenseBoundary": "ARR_DEPENDENCY_ONLY",
+      "verification": "RESOLVED"
+    },
+    {
+      "logicalId": "spell-engine",
+      "modId": "spell_engine",
+      "expectedVersion": "1.10.5+26.2",
+      "enforceVersion": false,
+      "requiredProfiles": ["gameplay", "essential"],
+      "integrationModule": "spellengine",
+      "licenseBoundary": "GPL_DEPENDENCY_ONLY",
+      "verification": "RESOLVED"
+    },
+    {
+      "logicalId": "spell-power-attributes",
+      "modId": "spell_power",
+      "expectedVersion": "1.6.2+26.2",
+      "enforceVersion": false,
+      "requiredProfiles": ["gameplay", "essential"],
+      "integrationModule": "spellengine",
+      "licenseBoundary": "LGPL_DEPENDENCY_ONLY",
+      "verification": "RESOLVED"
+    },
+    {
+      "logicalId": "cloth-config",
+      "modId": "cloth-config",
+      "expectedVersion": "26.2.155",
+      "enforceVersion": false,
+      "requiredProfiles": ["gameplay", "essential"],
+      "integrationModule": "common",
+      "licenseBoundary": "LGPL_DEPENDENCY_ONLY",
+      "verification": "RESOLVED"
+    },
+    {
+      "logicalId": "mob-filter",
+      "modId": "mobfilter",
+      "expectedVersion": "0.28.0+26.2",
+      "enforceVersion": false,
+      "requiredProfiles": ["gameplay", "essential"],
+      "integrationModule": "ecology/mobfilter",
+      "licenseBoundary": "MIT_RUNTIME_API",
+      "verification": "RESOLVED"
+    },
+    {
+      "logicalId": "alexs-mobs-continued",
+      "modId": null,
+      "expectedVersion": "2.1.13",
+      "enforceVersion": false,
+      "requiredProfiles": ["gameplay", "essential"],
+      "integrationModule": "ecology/alexs_mobs",
+      "licenseBoundary": "DEPENDENCY_ONLY_PENDING_CANONICAL_LICENSE_AND_MOD_ID",
+      "verification": "PENDING_RUNTIME_ID_VERIFICATION"
+    },
+    {
+      "logicalId": "codxlib",
+      "modId": null,
+      "expectedVersion": "1.6.0",
+      "enforceVersion": false,
+      "requiredProfiles": ["gameplay", "essential"],
+      "integrationModule": "ecology/alexs_mobs",
+      "licenseBoundary": "DEPENDENCY_ONLY_PENDING_CANONICAL_LICENSE_AND_MOD_ID",
+      "verification": "PENDING_RUNTIME_ID_VERIFICATION"
+    },
+    {
+      "logicalId": "threateningly-mobs-continued",
+      "modId": null,
+      "expectedVersion": "1.1.1+fabric.26.2",
+      "enforceVersion": false,
+      "requiredProfiles": ["gameplay", "essential"],
+      "integrationModule": "ecology/threateningly",
+      "licenseBoundary": "DEPENDENCY_ONLY_STOREFRONT_LICENSE_CONFLICT",
+      "verification": "PENDING_RUNTIME_ID_VERIFICATION"
+    }
+  ]
+}
