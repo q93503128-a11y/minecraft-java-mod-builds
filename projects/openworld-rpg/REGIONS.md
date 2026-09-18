@@ -7,7 +7,7 @@
 > Terrain basis: Azari 30k × 30k candidate  
 > Rule: implementation-package + matching content-bible detail wins over obsolete historical wording in older region snapshots; `GAME_DESIGN.md` remains master conflict authority.
 
-This file is intentionally an **index**, not a second copy of every regional package. Detailed encounters, quests, rewards, state ownership, audio, performance and asset gates live in `R01_VERTICAL_SLICE.md` and the R02–R12 package+bible pairs.
+This file is intentionally an **index**, not a second copy of every regional package. Detailed R01 opening/first-session logic lives in `R01_VERTICAL_SLICE.md`, while full-region R01 repeat/service/side-loop/aftermath detail lives in `R01_CONTENT_BIBLE.md`; R02–R12 use their package+bible pairs.
 
 Exact Azari coordinates are still a pre-code spatial gate. Region identity, branching progression and the canonical encounter/story roles below must survive coordinate refinement.
 
