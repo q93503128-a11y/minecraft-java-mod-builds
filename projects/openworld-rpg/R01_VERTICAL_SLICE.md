@@ -369,9 +369,13 @@ This is a usability grant, not a class weapon lock.
 
 # 7. Opening timeline and authored content
 
-Normal first play should usually reach Earthloong first clear in roughly **55–75 minutes**. Optional exploration, Regalhart, gathering, housing browsing or experimentation can extend the first session toward 90+ minutes.
+Normal first play should usually reach Earthloong first clear in roughly **55–75 minutes**. This benchmark assumes the player follows the main route **and naturally completes roughly 2–4 nearby optional/discovery activities** that the route exposes (for example one early Contract, Trail Stag, a landmark/POI or comparable field interaction). It is not a pure main-quest speedrun benchmark.
 
-R01's one-time quest/milestone rewards are deliberately more generous than later regional baseline percentages. This is the first-region progression ramp required to make the locked Lv1 start, Lv8 dungeon threat and 55–75 minute route coexist without mob grinding. Repeat content and ordinary combat stay on the normal global reward baseline.
+A player who deliberately beelines Dust → quarry with almost all nearby content ignored can reach the dungeon earlier and noticeably under the ordinary Lv band. That sequence break remains legal, but the Suggested Lv warning is expected to matter and the 55–75 minute ordinary-first-clear target does not apply to that beeline.
+
+Optional Regalhart, deeper gathering/fishing, housing browsing or broader experimentation can extend the first session toward 90+ minutes.
+
+R01's one-time quest/milestone rewards are deliberately more generous than later regional baseline percentages. This is the first-region progression ramp required to make the locked Lv1 start, Lv8 dungeon threat and 55–75 minute ordinary route coexist without mob grinding. Repeat content and ordinary combat stay on the normal global reward baseline.
 
 This is a pacing target, not a mission timer.
 
