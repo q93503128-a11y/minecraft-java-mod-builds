@@ -12,7 +12,7 @@
 > Equipment/economy: `LOOT_ECONOMY.md`, `EQUIPMENT_BALANCE.md`  
 > Recovery/food: `RECOVERY_PRODUCTION_APPEARANCE.md`  
 > Mounts: `MOUNTS.md`  
-> UI: `UI_DIRECTION.md`  
+> UI: `UI_DIRECTION.md`, `R01_UI_PRODUCTION_SPEC.md`  
 > External provenance: `EXTERNAL_SOURCES.md`, `R01_ASSET_INTAKE.md`  
 > Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins. `R01_CONTENT_BIBLE.md` is the later full-region content-bible authority for the repeat/service/side-loop/aftermath details it explicitly refines; this file remains authoritative for the opening/first-session spine.
 
