@@ -55,17 +55,50 @@ public final class BattleAutoController {
     }
 
     private static void chooseLumea(BattleEngine engine, BattleState state, CombatantState actor, List<CombatantState> allies, List<CombatantState> enemies) {
-        CombatantState reviver = allies.stream().filter(unit -> unit.definition().id().equals("P04")).findFirst().orElse(null);
-        if (!state.downed(CombatantSide.ALLY).isEmpty() && reviver != null && actor.cooldown("p02_time_leap") == 0 && reviver != actor) {
-            engine.useSkill(actor.instanceId(), "p02_time_leap", reviver.instanceId()); return;
+        List<CombatantState> projected = state.timelinePreview(6);
+        List<CombatantState> future = !projected.isEmpty() && projected.getFirst() == actor
+                ? projected.subList(1, projected.size()) : projected;
+
+        CombatantState reviver = allies.stream()
+                .filter(unit -> unit != actor && unit.definition().id().equals("P04"))
+                .findFirst().orElse(null);
+        if (!state.downed(CombatantSide.ALLY).isEmpty() && reviver != null
+                && actor.cooldown("p02_time_leap") == 0 && futureRank(future, reviver) >= 2) {
+            engine.useSkill(actor.instanceId(), "p02_time_leap", reviver.instanceId());
+            return;
         }
-        if (enemies.stream().filter(e -> e.gauge() >= 800).count() >= 2 && actor.cooldown("p02_delay_field") == 0) {
-            engine.useSkill(actor.instanceId(), "p02_delay_field"); return;
+
+        CombatantState imminentEnemy = future.stream().limit(2)
+                .filter(unit -> unit.side() == CombatantSide.ENEMY && !unit.downed())
+                .findFirst().orElse(null);
+        if (imminentEnemy != null && actor.cooldown("p02_delay_field") == 0) {
+            engine.useSkill(actor.instanceId(), "p02_delay_field", imminentEnemy.instanceId());
+            return;
         }
-        CombatantState best = allies.stream().filter(unit -> unit != actor)
-                .max(Comparator.comparingInt(CombatantState::attack).thenComparingLong(unit -> -unit.gauge())).orElse(actor);
-        if (best != actor && actor.cooldown("p02_time_leap") == 0 && best.gauge() < BattleEngine.TURN_THRESHOLD / 2) engine.useSkill(actor.instanceId(), "p02_time_leap", best.instanceId());
-        else engine.useSkill(actor.instanceId(), "p02_accelerate", best.instanceId());
+
+        List<CombatantState> otherAllies = allies.stream()
+                .filter(unit -> unit != actor && !unit.definition().summon()).toList();
+        if (otherAllies.isEmpty()) {
+            engine.useSkill(actor.instanceId(), "p02_accelerate", actor.instanceId());
+            return;
+        }
+
+        CombatantState best = otherAllies.stream().max(
+                Comparator.comparingInt((CombatantState unit) -> unit.speed() < actor.speed() ? 1 : 0)
+                        .thenComparingInt(unit -> futureRank(future, unit))
+                        .thenComparingInt(CombatantState::attack))
+                .orElseThrow();
+        int rank = futureRank(future, best);
+        if (actor.cooldown("p02_time_leap") == 0 && rank >= 2 && best.gauge() < 700) {
+            engine.useSkill(actor.instanceId(), "p02_time_leap", best.instanceId());
+        } else {
+            engine.useSkill(actor.instanceId(), "p02_accelerate", best.instanceId());
+        }
+    }
+
+    private static int futureRank(List<CombatantState> future, CombatantState target) {
+        int index = future.indexOf(target);
+        return index < 0 ? 99 : index;
     }
 
     private static void chooseBram(BattleEngine engine, CombatantState actor, List<CombatantState> allies, List<CombatantState> enemies) {

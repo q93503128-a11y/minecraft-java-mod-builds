@@ -23,12 +23,17 @@ public final class PrototypeRoster {
     }
 
     public static CombatantDefinition lumea() {
-        return new CombatantDefinition("P02", "루메아", new BattleStats(780, 90, 75, 125), "p02_accelerate", List.of(
-                new SkillDefinition("p02_accelerate", "가속", TargetRule.ALLY_SINGLE, 0, List.of(SkillEffect.gaugeAdd(180))),
-                new SkillDefinition("p02_time_leap", "시간 도약", TargetRule.ALLY_SINGLE, 4, List.of(SkillEffect.gaugeAtLeast(1000)),
-                        "자신을 제외한 아군의 Gauge를 최소 1000으로 만듭니다.", List.of("SELF_FORBIDDEN"), Map.of()),
-                new SkillDefinition("p02_delay_field", "지연장", TargetRule.ENEMY_ALL, 3, List.of(SkillEffect.gaugeAdd(-120)))),
-                5, List.of("P02_LATE_WAIT"), Map.of("slowAllyTurnGauge", 60.0));
+        return new CombatantDefinition("P02", "루메아", new BattleStats(780, 90, 75, 114), "p02_accelerate", List.of(
+                new SkillDefinition("p02_accelerate", "가속", TargetRule.ALLY_SINGLE, 0, List.of(SkillEffect.gaugeAdd(120)),
+                        "다른 아군의 Gauge +120. 자신보다 느린 아군은 +40 추가.", List.of("OTHER_ALLY_IF_AVAILABLE"), Map.of()),
+                new SkillDefinition("p02_time_leap", "시간 도약", TargetRule.ALLY_SINGLE, 4, List.of(SkillEffect.gaugeAdd(300)),
+                        "다른 아군의 Gauge +300. 자신보다 느린 아군은 +60 추가.", List.of("SELF_FORBIDDEN"), Map.of()),
+                new SkillDefinition("p02_delay_field", "시차 봉쇄", TargetRule.ENEMY_SINGLE, 3,
+                        List.of(SkillEffect.damage(0.85), SkillEffect.gaugeAdd(-180)))),
+                5, List.of("P02_TEMPO_WINDOW"), Map.of(
+                        "slowBasicBonus", 40.0,
+                        "slowLeapBonus", 60.0,
+                        "awakenPreciseGauge", 60.0));
     }
 
     public static CombatantDefinition bram() {

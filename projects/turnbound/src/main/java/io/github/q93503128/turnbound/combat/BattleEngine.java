@@ -51,6 +51,10 @@ public final class BattleEngine {
 
         List<CombatantState> targets = resolveTargets(actor, skill, requestedTargetIds);
         if (skill.hasRule("SELF_FORBIDDEN") && targets.contains(actor)) throw new IllegalArgumentException("Skill cannot target self");
+        if (skill.hasRule("OTHER_ALLY_IF_AVAILABLE") && targets.contains(actor)
+                && state.living(actor.side()).stream().anyMatch(unit -> unit != actor && !unit.definition().summon())) {
+            throw new IllegalArgumentException("Skill requires another ally while one is available");
+        }
 
         reactions.clear();
         reactionExecutionsThisAction = 0;
@@ -64,13 +68,17 @@ public final class BattleEngine {
         state.addEvent(new BattleEvent("ACTION", actorId,
                 String.join(",", targets.stream().map(CombatantState::instanceId).toList()), 0, skillId));
 
+        List<String> futureBefore = actor.definition().id().equals("P02") && actor.definition().hasRule("AWAKENED")
+                ? TurnScheduler.previewFuture(state, 4).stream().map(CombatantState::instanceId).toList()
+                : List.of();
+
         boolean direct = skill.effects().stream().anyMatch(e -> e.type() == EffectType.DAMAGE);
         int focusBefore = actor.definition().id().equals("P01") ? actor.counter("focus") : 0;
         for (SkillEffect effect : skill.effects()) {
             applyEffect(actor, skill, targets, effect, focusBefore, direct);
             resolveReactions();
         }
-        postRules(actor, skill, targets, direct, focusBefore);
+        postRules(actor, skill, targets, direct, focusBefore, futureBefore);
         resolveReactions();
         cleanupKyrenFocusAfterAction(actor);
 
@@ -78,7 +86,6 @@ public final class BattleEngine {
         resolveOwnerEndEffects(actor);
         afterRegularAction(actor, skill);
         actor.tickStatusesOnOwnTurn();
-        triggerLumeaPassive(actor);
         processPendingMorwenReturns();
         refreshBossPackRules();
         state.setCurrentActorId(null);
@@ -449,14 +456,15 @@ public final class BattleEngine {
         if (reactionExecutionsThisAction >= MAX_REACTIONS_PER_ACTION) reactions.clear();
     }
 
-    private void postRules(CombatantState actor, SkillDefinition skill, List<CombatantState> targets, boolean direct, int focusBefore) {
+    private void postRules(CombatantState actor, SkillDefinition skill, List<CombatantState> targets,
+                           boolean direct, int focusBefore, List<String> futureBefore) {
         String id = actor.definition().id();
         if (id.equals("E003") && skill.id().equals("e003_explode")) {
             actor.removeStatus("e003_armed");
             forceDown(actor, actor, "e003_self_explosion");
         }
         if (id.equals("P01")) postKyren(actor, skill, targets, direct, focusBefore);
-        else if (id.equals("P02")) postLumea(actor, skill, targets);
+        else if (id.equals("P02")) postLumea(actor, skill, targets, futureBefore);
         else if (id.equals("P05")) postLynette(actor, skill, targets);
         else if (id.equals("P06") && skill.id().equals("p06_funeral_order") && !targets.isEmpty() && targets.getFirst().downed()) {
             int gauge = skill.intParam("killGauge", 200); actor.addGauge(gauge);
@@ -533,13 +541,45 @@ public final class BattleEngine {
         actor.setCounter("focus", 0);
     }
 
-    private void postLumea(CombatantState actor, SkillDefinition skill, List<CombatantState> targets) {
-        if (!actor.definition().hasRule("AWAKENED") || (!skill.id().equals("p02_accelerate") && !skill.id().equals("p02_time_leap"))) return;
-        for (CombatantState target : targets) {
-            int turns = target == actor ? 2 : 1;
-            target.putStatus(new StatusInstance("time_echo", actor.instanceId(), turns, actor.definition().intParam("awakenEchoGauge", 100)));
-            state.addEvent(new BattleEvent("STATUS", actor.instanceId(), target.instanceId(), turns, "time_echo"));
+    private void postLumea(CombatantState actor, SkillDefinition skill, List<CombatantState> targets,
+                           List<String> futureBefore) {
+        if (targets.isEmpty()) return;
+        CombatantState target = targets.getFirst();
+
+        if (target.side() == actor.side() && target != actor && target.speed() < actor.speed()) {
+            int bonus = skill.id().equals("p02_time_leap")
+                    ? actor.definition().intParam("slowLeapBonus", 60)
+                    : skill.id().equals("p02_accelerate")
+                    ? actor.definition().intParam("slowBasicBonus", 40)
+                    : 0;
+            if (bonus > 0) applyGauge(actor, target, bonus, "P02_SLOW_ALLY_BONUS");
         }
+
+        if (!actor.definition().hasRule("AWAKENED")
+                || skill.isBasic()
+                || (!skill.id().equals("p02_time_leap") && !skill.id().equals("p02_delay_field"))) {
+            return;
+        }
+
+        List<String> futureAfter = TurnScheduler.previewFuture(state, 4).stream()
+                .map(CombatantState::instanceId).toList();
+        int before = orderIndex(futureBefore, target.instanceId());
+        int after = orderIndex(futureAfter, target.instanceId());
+
+        boolean preciseAdvance = skill.id().equals("p02_time_leap")
+                && (before < 0 || before >= 2) && after >= 0 && after < 2;
+        boolean preciseDelay = skill.id().equals("p02_delay_field")
+                && before >= 0 && before < 2 && (after < 0 || after >= 2);
+        if (preciseAdvance || preciseDelay) {
+            int refund = actor.definition().intParam("awakenPreciseGauge", 60);
+            actor.addGauge(refund);
+            state.addEvent(new BattleEvent("PASSIVE_GAUGE", actor.instanceId(), actor.instanceId(), refund,
+                    "P02_TEMPO_WINDOW"));
+        }
+    }
+
+    private static int orderIndex(List<String> order, String targetId) {
+        return order == null || targetId == null ? -1 : order.indexOf(targetId);
     }
 
     private void postLynette(CombatantState actor, SkillDefinition skill, List<CombatantState> targets) {
@@ -625,10 +665,6 @@ public final class BattleEngine {
                 state.addEvent(new BattleEvent("DOT", status.sourceId(), actor.instanceId(), result.hpLost(), "DOT_MAX_HP"));
                 resolveApplied(source == null ? actor : source, result, 0, false, "DOT_MAX_HP");
                 if (actor.downed()) break;
-            } else if (status.id().equals("time_echo") && status.remainingOwnerTurns() <= 1) {
-                int gauge = Math.max(0, (int)Math.round(status.magnitude())); actor.addGauge(gauge);
-                actor.removeStatus("time_echo", status.sourceId());
-                state.addEvent(new BattleEvent("PASSIVE_GAUGE", status.sourceId(), actor.instanceId(), gauge, "P02_TIME_ECHO"));
             }
         }
     }
@@ -651,15 +687,6 @@ public final class BattleEngine {
                 morwen.setFlag("p06_return_first_direct");
             }
             state.addEvent(new BattleEvent("SELF_REVIVE", morwen.instanceId(), morwen.instanceId(), hp, "P06_LAST_PAGE"));
-        }
-    }
-
-    private void triggerLumeaPassive(CombatantState actor) {
-        for (CombatantState lumea : state.living(actor.side())) {
-            if (lumea != actor && lumea.definition().id().equals("P02") && actor.speed() < lumea.speed()) {
-                int gauge = lumea.definition().intParam("slowAllyTurnGauge", 60); lumea.addGauge(gauge);
-                state.addEvent(new BattleEvent("PASSIVE_GAUGE", lumea.instanceId(), lumea.instanceId(), gauge, "P02_WAIT_FOR_SLOW"));
-            }
         }
     }
 

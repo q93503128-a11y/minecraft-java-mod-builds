@@ -128,6 +128,13 @@ Gauge 조작은 곧 행동 경제 조작이다.
 
 보스는 단순 면역 대신 감소 효율 cap이나 phase-specific resistance를 쓴다.
 
+루메아 v1 기준점:
+- 소형 단일 advance: +120, 느린 아군 보너스 적용 시 +160
+- premium 단일 advance: +300, 느린 아군 보너스 적용 시 +360
+- 단일 공격+delay: -180
+- 정확한 turn-order 편집에 대한 각성 보상: 자기 Gauge +60
+- 즉시 Gauge 1000 효과와 무조건적 자기 Gauge 루프는 사용하지 않는다.
+
 ## 5. 캐릭터 power budget
 
 캐릭터 강함은 다음 다섯 축으로 본다.

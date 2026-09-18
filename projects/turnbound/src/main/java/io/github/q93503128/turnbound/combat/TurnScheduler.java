@@ -62,6 +62,23 @@ public final class TurnScheduler {
         return List.copyOf(out);
     }
 
+    public static List<CombatantState> previewFuture(BattleState state, int count) {
+        if (count <= 0) return List.of();
+        List<Node> nodes = state.combatants().stream()
+                .filter(unit -> !unit.downed())
+                .map(Node::new)
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        if (nodes.isEmpty()) return List.of();
+
+        List<CombatantState> out = new ArrayList<>(count);
+        while (out.size() < count && !nodes.isEmpty()) {
+            Step step = advance(nodes);
+            out.add(step.selected.combatant);
+            step.selected.gaugeMicro = Math.max(0L, step.selected.gaugeMicro - TURN_THRESHOLD_MICRO);
+        }
+        return List.copyOf(out);
+    }
+
     public static long toGaugeMicro(long gaugeUnits) {
         return Math.multiplyExact(gaugeUnits, GAUGE_SCALE);
     }
