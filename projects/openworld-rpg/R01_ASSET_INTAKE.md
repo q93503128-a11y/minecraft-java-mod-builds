@@ -10,6 +10,7 @@
 > Phase-B evidence: `R01_ASSET_PHASE_B_EVIDENCE_2026-09-15.md`  
 > Pass-3 evidence: `R01_ASSET_PHASE_B_PASS3_EVIDENCE_2026-09-15.md`  
 > Pass-4 evidence: `R01_ASSET_PHASE_B_PASS4_EVIDENCE_2026-09-17.md`  
+> Phase-C exact-file evidence: `R01_ASSET_PHASE_C_EXACT_FILE_AUDIT_2026-09-18.md`  
 > Rule: gameplay canon still wins. For **R01 asset-admission/license decisions**, this file records the newest verified evidence and supersedes older subordinate notes whose license label or candidate state has become stale.
 
 This file converts the project's external-first rule from a pack-level intention into an intake manifest. It is deliberately conservative: an asset is not considered production-ready merely because a web page looks good or because a previous conversation called a pack CC0.
@@ -258,6 +259,8 @@ Repository:
 Observed license: CC0 1.0 Universal.
 
 These are exact existing source locators, not guessed filenames.
+
+**2026-09-18 Phase-C byte audit:** the selected Adventurers rows below were re-fetched from pinned upstream commit `672074b73ba276876a19e8816ecdc5241817ab47`. Exact glTF/BIN bytes, SHA-256, accessor counts/bounds and shared texture bytes are recorded in `R01_ASSET_PHASE_C_EXACT_FILE_AUDIT_2026-09-18.md`. For those audited rows, filename/source-byte identity is no longer an open question. **Blockbench/Minecraft scale/pivot/clipping acceptance is still open.**
 
 | Intake ID | R01 / project use | Exact source locator | Status |
 |---|---|---|---|
@@ -515,9 +518,9 @@ Current Phase-B mapping:
 
 | Meal | Exact observed candidate | Status |
 |---|---|---|
-| Herbed Louxia Roast | `addons/kaykit_restaurant_bits/Assets/gltf/food_dinner.gltf` | candidate filename pinned; 3D appearance review pending |
+| Herbed Louxia Roast | `addons/kaykit_restaurant_bits/Assets/gltf/food_dinner.gltf` | **exact upstream glTF/BIN bytes + SHA-256 + source geometry verified** at pinned commit `153c8a7`; recipe-fit/Minecraft visual review pending |
 | Trail Skewers | Kenney Food Kit `skewerVegetables` editable-base candidate; source trees also expose generic `skewer` geometry | exact external candidate pinned; `READY_PUBLIC` candidate under CC0, but official archive acquisition/hash + visual adaptation/Minecraft review still required |
-| Glow Broth | `addons/kaykit_restaurant_bits/Assets/gltf/food_stew.gltf`; compare `stew_bowl.gltf` | candidate filename pinned; final visual selection pending |
+| Glow Broth | `addons/kaykit_restaurant_bits/Assets/gltf/food_stew.gltf`; compare `stew_bowl.gltf` | **both exact upstream candidates byte/hash/geometry verified** at pinned commit `153c8a7`; final visual serving-state/Minecraft review pending |
 
 Kenney Food Kit tree evidence includes format variants such as:
 
@@ -938,7 +941,8 @@ Current state after Phase-B Pass 5 fish-provenance narrowing:
 - `R01 FISH PRIORITY FRESHWATER SHORTLIST`: YES — broad discovery stopped; alternates only if one of the four roles fails
 - `R01 FISH EXACT FINAL MODEL ROSTER`: NO — binary 3D/animation/Minecraft review still required
 - `R01 FISH FINAL PLAYER-FACING SPECIES NAMES`: NO — intentionally blocked until final model roster is accepted
-- `PROJECT-LOCAL SOURCE SHA-256 COMPLETE`: NO
+- `AUDITED KAYKIT ADVENTURERS / RESTAURANT EXACT FILE SHA-256`: YES for the rows in `R01_ASSET_PHASE_C_EXACT_FILE_AUDIT_2026-09-18.md`
+- `PROJECT-LOCAL SOURCE SHA-256 COMPLETE`: NO — remaining non-GitHub archives/fish/apparel/VFX/audio are not fully acquired
 - `ALL R01 EXACT ASSET FILENAMES PINNED`: NO
 - `R01 ASSET READY`: NO
 - `BLOCKBENCH / CONVERSION TESTED`: NO
