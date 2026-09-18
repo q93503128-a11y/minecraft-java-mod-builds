@@ -44,7 +44,8 @@ def main():
 
     fortress = read("VillageFortressTerrain.java")
     assert "buildDefenderGalleries" in fortress
-    assert "murderHole" in fortress
+    assert "murderHole" not in fortress
+    assert fortress.count("Blocks.STONE_BRICK_WALL") >= 4
     assert "isFiringBayOffset" in fortress and "phase == 0 || phase == 1 || phase == 11" in fortress
     assert "firingBay && y >= 3 && y <= 4" in fortress
 
