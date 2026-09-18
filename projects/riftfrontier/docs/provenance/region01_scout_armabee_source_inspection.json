@@ -1,0 +1,58 @@
+{
+  "asset": "Armabee",
+  "variant": "Flying/glTF",
+  "author": "Quaternius",
+  "family": "Ultimate Monsters",
+  "creator_pack_page": "https://quaternius.com/packs/ultimatemonsters.html",
+  "creator_distribution_folder": "https://drive.google.com/drive/folders/18m4KpzpEzhC9wl7jzr6dUc0N8Jozr79C",
+  "creator_file_id": "1k7LbRse-00nyMQhTdJMvebPp8B-05hcG",
+  "license": "CC0 1.0 / public domain dedication",
+  "source_relative_path": "Flying/glTF/Armabee.gltf",
+  "byte_size": 297261,
+  "sha256": "10ca05955ab7f7f6e2f9bd8fd85f28ed1351c945e390b1fd0fa84428b43a5916",
+  "gltf_asset_version": "2.0",
+  "mesh_count": 1,
+  "skin_count": 1,
+  "material_count": 1,
+  "image_count": 1,
+  "node_count": 15,
+  "vertex_count": 1260,
+  "triangle_count": 2280,
+  "source_bounds_min": [-2.1519534587860107, 1.1897464990615845, -1.37824547290802],
+  "source_bounds_max": [2.1519534587860107, 3.0759084224700928, 0.6809333562850952],
+  "source_extent": [4.3039069175720215, 1.8861619234085083, 2.0591788291931152],
+  "embedded_buffer": true,
+  "embedded_image": true,
+  "image_mime_type": "image/png",
+  "image_name": "Atlas_Monsters",
+  "animation_clips": [
+    {"name": "Death", "duration_seconds": 0.667},
+    {"name": "Fast_Flying", "duration_seconds": 0.833},
+    {"name": "Flying_Idle", "duration_seconds": 1.167},
+    {"name": "Headbutt", "duration_seconds": 1.167},
+    {"name": "HitReact", "duration_seconds": 0.467},
+    {"name": "No", "duration_seconds": 1.167},
+    {"name": "Punch", "duration_seconds": 1.167},
+    {"name": "Yes", "duration_seconds": 1.167}
+  ],
+  "technical_role_assessment": {
+    "scout_role_candidate": true,
+    "reasons": [
+      "Exact creator-distribution glTF is a compact single-skinned-mesh actor compatible with the existing review renderer direction",
+      "Flying_Idle and Fast_Flying provide authored locomotion vocabulary for visual review",
+      "HitReact and Death cover baseline combat lifecycle presentation",
+      "Headbutt and Punch can be reviewed as source motion vocabulary without changing the established Scout ranged-pressure gameplay role"
+    ],
+    "constraints": [
+      "Winged source presentation does not authorize flight gameplay; preserve the established Scout ranged-pressure semantics until field evidence supports a deliberate gameplay change",
+      "No authored walk/run clip exists, so grounded proxy locomotion must not be silently mapped to a misleading production animation",
+      "Source-space geometry begins above Y=1.18; Minecraft field review must establish root transform, ground alignment, player-relative scale, facing and hitbox",
+      "Source Atlas material is CC0 source presentation; final Region 01 art/material acceptance remains human-gated",
+      "Do not replace the natural Scout proxy until an isolated field-review actor is build-verified and human role/readability review accepts it"
+    ]
+  },
+  "field_review_candidate": true,
+  "selected_for_production": false,
+  "human_visual_acceptance": false,
+  "inspection_method": "Exact creator-distribution bytes downloaded from the public Quaternius Ultimate Monsters Google Drive folder and parsed locally; counts/bounds/animation durations are derived from glTF accessors and animation sampler inputs."
+}
