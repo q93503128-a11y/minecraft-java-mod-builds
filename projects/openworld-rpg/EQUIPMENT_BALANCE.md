@@ -600,7 +600,18 @@ Implementation must adapt the source silhouettes to the chosen Minecraft armor r
 
 ## 11.3 Accessories
 
-R01 ordinary Necklace / Ring / Charm / Relic visuals use `Lucifer - Equipment` CC0 equipment sprites where a suitable readable icon exists. If a 3D world presentation is required, use a compact external CC0 jewelry/prop model, but do not create a separate unrelated icon design.
+R01 ordinary accessory base identities are exact:
+
+| Base | Slot | Visual direction | Source role |
+|---|---|---|---|
+| **Greenwater Pendant** | Necklace | restrained river-stone / simple pendant icon | market, exploration, Nature-Spirit-side loot |
+| **Roadworn Band** | Ring | plain travel-worn metal ring | market, road/treasure |
+| **Wayfarer's Token** | Charm | compact route/guild-token silhouette | guild/road/hunt rewards |
+| **Quarry Seal** | Relic | small carved stone/metal seal | quarry/dungeon/treasure |
+
+These are ordinary affix-bearing bases, not named Mythics and not extra currencies.
+
+Visuals use `Lucifer - Equipment` CC0 equipment sprites where a suitable readable icon exists. If a 3D world presentation is required, use a compact external CC0 jewelry/prop model, but do not create a separate unrelated icon design.
 
 R01 accessories remain mechanically modest compared with later named Relics; their job is to introduce build affixes without making early inventory management dense.
 
