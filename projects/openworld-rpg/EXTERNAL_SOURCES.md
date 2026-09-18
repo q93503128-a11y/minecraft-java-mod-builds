@@ -557,6 +557,111 @@ Full evidence: `R01_ASSET_PHASE_F_KENNEY_EXACT_SHORTLIST_2026-09-18.md`.
 
 ---
 
+# Architecture / large-mod integration precedents — 2026-09-18
+
+These sources informed `M0_INTEGRATION_ARCHITECTURE.md`.
+
+They are **architecture precedents**, not blanket runtime-adoption or code-copy authorization.
+
+## All The Mods 10
+
+- repo: `https://github.com/AllTheMods/ATM-10`
+- reviewed snapshot: `ab6f65e07b88423cdae1724864ba42a573ba758a`
+- role: modpack-level integration architecture reference
+- observed useful patterns:
+  - per-mod KubeJS integration folders;
+  - tag/recipe/loot unification;
+  - startup registry additions/aliases;
+  - cross-mod deny/blacklist tags;
+  - conditional integration when a mod is present.
+- boundary: inspected scripts carry All Rights Reserved notices; **REFERENCE_ONLY**.
+- project adoption: reproduce the architecture with Fabric/Java + datapack/data registries; do not copy ATM scripts.
+
+## Mine & Slash Rework
+
+- repo: `https://github.com/RobertSkalko/Mine-And-Slash-Rework`
+- reviewed branch/snapshot: `1.20-Forge` / `13dab4218dbcfc7a4f93b51ca6f1ec5274977507`
+- role: overhaul compatibility / canonical-damage-pipeline reference
+- observed useful patterns:
+  - explicit compatibility modes;
+  - central damage conversion/override layer;
+  - datapackable RPG content;
+  - one damage authority instead of adding unrelated RPG damage models together.
+- boundary: architecture reference in this pass; exact file-level license must be checked before any code reuse.
+
+## Spell Engine
+
+- repo: `https://github.com/ZsoltMolnarrr/SpellEngine`
+- reviewed snapshot: `76cd9e128468ebe005463c729ec73eff7de5fb68`
+- role: existing project runtime dependency + engine/content-separation precedent
+- useful pattern:
+  - generic cast/target/delivery/sync engine beneath data-defined content;
+  - project progression/balance stays separate.
+- license/boundary remains the dedicated `M0_DEPENDENCY_AUDIT.md` rule: GPL dependency is not copied wholesale into this public repository.
+
+## Cobblemon
+
+- repo: `https://github.com/Cobblemon-Global/Cobblemon`
+- reviewed snapshot: `75bb1a6c2fe92ef54951fb68d16d21f290a9ee88`
+- license observed: MPL-2.0
+- role: data-registry / addon / overlay / event / synchronization architecture reference
+- reviewed source families:
+  - `JsonDataRegistry`;
+  - `SpeciesAdditions`;
+  - `CobblemonEvents`;
+  - data-registry synchronization packets.
+- useful pattern:
+  - target existing content with additive/override files instead of replacing donor base files;
+  - use unique namespaces;
+  - expose stable event surfaces;
+  - keep server data canonical and sync client-required data intentionally.
+- project adoption: project-owned external-actor overlays and normalized integration events. Cobblemon itself is **NOT BASELINE**.
+
+## FTB Quests
+
+- repo: `https://github.com/FTBTeam/FTB-Quests`
+- reviewed snapshot: `622091bbe07bc5bce151c8bb4ba99b81f6f7c312`
+- license observed from current project metadata: All Rights Reserved
+- role: typed quest-object / server-progression architecture reference
+- reviewed source families:
+  - `TaskType`;
+  - `RewardType`;
+  - `TeamData`;
+  - `ServerQuestFile`.
+- useful pattern:
+  - reusable objective/reward type registries;
+  - separate progress/claim/repeat state;
+  - server persistence + explicit client synchronization.
+- boundary: **REFERENCE_ONLY / NOT BASELINE**. Openworld RPG keeps its own quest state, narrative rules and UI.
+
+## Create
+
+- repo: `https://github.com/Creators-of-Create/Create`
+- reviewed snapshot: `fc9535d82a29419164a1e9dc9c678bdcddeab30d`
+- role: addon API / encapsulation / tag architecture reference
+- useful pattern:
+  - public addon/developer surfaces;
+  - useful semantic tags;
+  - explicit warning against external code reaching into certain internal registrars when a callback/API exists.
+- project adoption: prefer public API → registry/tag/data → event/callback → config → narrow shim; donor-internal mixin/reflection is last resort.
+- boundary: reference-only unless an exact file/license review later authorizes reuse.
+
+## KubeJS version boundary
+
+Current public 26.x KubeJS distribution observed on 2026-09-18 is NeoForge 26.1.2, while the publicly listed Fabric line remains on older Minecraft generations.
+
+References:
+
+- `https://www.curseforge.com/minecraft/mc-mods/kubejs/files/all`
+- `https://github.com/kube-mods/kubejs/tree/2601`
+
+Decision:
+
+- **KubeJS = NOT BASELINE for Fabric 26.2**;
+- its value here is the integration-layer pattern demonstrated by large modpacks, not the runtime itself.
+
+---
+
 # Selection policy
 
 ## UI / HUD
@@ -573,7 +678,11 @@ Important enemies do not ship as vanilla recolors. Prioritize models that suppor
 
 ## Code
 
-Do not import an entire mod tree for one mechanic. Adapt only necessary architecture when terms permit, preserve required notices, and remove unrelated/dead code. After replacement is verified, delete duplicate/prototype implementations.
+Do not import an entire mod tree for one mechanic. Prefer a dependency's documented public API, registry IDs/tags/data and events before touching internals. Keep donor-specific code inside the integration layer defined by `M0_INTEGRATION_ARCHITECTURE.md`.
+
+Adapt or copy code only when the exact source/file license permits it, preserve required notices, and keep the imported surface as small as practical. After replacement is verified, delete duplicate/prototype implementations.
+
+Visible source is not a license. Architecture ideas may be learned from reference-only projects without copying their code.
 
 ---
 
