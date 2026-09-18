@@ -3,6 +3,7 @@
 > Status: **DESIGN CANON — opening settlement, named cast, first-session quest/scene flow, first mount, first dungeon, state/recovery behavior and player-facing text locked before implementation**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Project contract: `PROJECT.md`  
+> Full-region content bible: `R01_CONTENT_BIBLE.md`  
 > Region: `REGIONS.md`  
 > Story: `WORLD_STORY_CANON.md`  
 > Quest/state: `QUEST_WORLD_STATE.md`  
@@ -13,7 +14,7 @@
 > Mounts: `MOUNTS.md`  
 > UI: `UI_DIRECTION.md`  
 > External provenance: `EXTERNAL_SOURCES.md`, `R01_ASSET_INTAKE.md`  
-> Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins.
+> Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins. `R01_CONTENT_BIBLE.md` is the later full-region content-bible authority for the repeat/service/side-loop/aftermath details it explicitly refines; this file remains authoritative for the opening/first-session spine.
 
 This file turns the already-designed R01 systems into one implementation-ready first-session content package. The objective is that an implementer does **not** invent the opening route, settlement/service order, named cast, quest conditions, dialogue beats, reward flow, failure recovery, first mount timing, first dungeon sequence or R01-to-Act-I handoff while coding.
 
@@ -280,7 +281,7 @@ These names and functions are final player-facing R01 canon. Asset intake may al
 | **Ilyan Voss** | Anchor scholar | Copper Kettle guest table before clear; Wayfarers' Hall after clear | recurring Anchor Scholar; interprets quarry evidence without knowing everything in advance |
 | **Kest Arden** | rival wanderer | optional field appearances | recurring Rival Wanderer; optional R01 hunt encounter; no companion AI |
 
-Daytime target remains **8–12 functional/service/guard NPCs + 4–8 ambient townsfolk**. The named roster does not imply all eleven characters pathfind simultaneously around the square.
+R01 logical settlement population is now exact: **11 named characters + 2 Alderford Watch guards + 4 ambient townsfolk**. At most **15 pathfinding humanoid NPCs** may be active in Alderford's loaded core at once; off-duty actors use the schedule/cap rules in `R01_CONTENT_BIBLE.md`. The named roster does not imply all eleven characters pathfind simultaneously around the square.
 
 Behavior rules:
 
@@ -378,7 +379,7 @@ Sequence:
 1. player begins on the Alderford approach road as an independent traveler;
 2. Louxia/gazelle-style ecology is visible before combat;
 3. one authored Meadow Viper threatens the road;
-4. the first committed bite may trigger one compact contextual **Dodge** prompt;
+4. the first committed Coil Bite uses the exact one-time contextual **Dodge** trigger/state contract in `R01_CONTENT_BIBLE.md` §5;
 5. player may defeat, guard, dodge or retreat from the Viper;
 6. the ridge/road bend reveals Alderford;
 7. the gate shrine activates on legitimate approach interaction.
@@ -389,7 +390,7 @@ No forced `press W`, `press space`, `talk to three NPCs` corridor.
 
 ### Mara's gate line
 
-After the player reaches the gate following the road disturbance, Mara may deliver this short world line without locking the camera:
+After the player reaches the gate following the road disturbance, Mara delivers this short world line **once per character** without locking the camera. If another higher-priority presentation owns the moment, queue it until the first safe non-combat moment on the gate → Wayfarers' Hall approach; do not drop it and do not replay it after its committed presentation state:
 
 > “You picked a lively road to arrive on. If you're looking for work, the Wayfarers' Hall is ahead. Quarry carts have stopped coming back on time.”
 
@@ -657,7 +658,7 @@ External model direction: accepted Quaternius Stag candidate from the appropriat
 ### Failure / reconnect
 
 - player defeat before registration resets only that player's incomplete logical step;
-- event-owned Stag/hazard state may reset after 60 seconds with no active incomplete participant in the event volume;
+- event-owned Stag/hazard state resets after 60 seconds with no active incomplete participant in the event volume;
 - disconnect before registration resumes at `FORD_DISCOVERED` or `STAG_CALMED` only if the corresponding server commit occurred;
 - permanent unlock/reward is atomic and cannot be farmed by replaying the physical event.
 
@@ -1227,11 +1228,16 @@ The spatial pass must record, at minimum:
 - Alderford center/gate/shrine/service-building coordinates;
 - approach-road start and settlement reveal sightline;
 - quarry overlook/entrance/chamber coordinates;
+- Quarry Waystone coordinate, lower-entrance reveal relationship and retry route;
+- Roadside Trouble event volume and wagon/interaction anchors;
 - ford event volume and stable-return route;
 - Riverbank Remedies gather-area bounds;
 - Signs in the Meadow evidence-site coordinates;
 - Steelboar discovery/hunt territory;
-- Regalhart clue/search/boss territory;
+- Regalhart clue/search/boss territory plus the 3 repeat-controller start anchors;
+- the 5 ordinary + 1 uncommon + 1 rare R01 fishing-spot coordinates;
+- Gate/Paddock/Riverside/Quarry-Road Cottage and Market House coordinates/footprints;
+- authored ecology-anchor coordinates/counts matching `R01_CONTENT_BIBLE.md`;
 - R02/R03 outgoing road/visual lead directions;
 - measured ordinary first-play travel times between major R01 beats.
 
@@ -1260,7 +1266,7 @@ The spatial pass may move a POI to fit terrain, sightlines and pacing. It may **
 12. Trail Stag normally unlocks around 25–40 minutes and is free;
 13. Regalhart can be found/fought without clue completion and never gates quarry;
 14. first quarry run lasts roughly 15–25 minutes;
-15. shortcut prevents a full trash rerun after boss failure;
+15. Quarry Waystone + in-run shortcut prevent a full trash rerun after boss failure;
 16. Earthloong first clear normally lands around 55–75 minutes;
 17. post-quarry scene opens both R02/R03 Act-I leads without pretending one is mandatory;
 18. first-session fixed Gold does not trivialize the 2,400-Gold starter home.
@@ -1311,7 +1317,8 @@ This pass closes for implementation **as design**, not merely as a concept:
 - Earthloong-to-Act-I handoff;
 - exact R01 persistent state expectations;
 - player-facing developer-language prohibition;
-- exact distinction between design decisions and remaining pre-code asset/spatial gates.
+- exact distinction between design decisions and remaining pre-code asset/spatial gates;
+- full-region R01 repeat controllers, market/service stock, housing roster, Camp acquisition, fishing mechanical slots, profession opportunities, NPC presence and post-clear state through `R01_CONTENT_BIBLE.md`.
 
 Still required **before gameplay source bootstrap for the relevant R01 content**:
 
