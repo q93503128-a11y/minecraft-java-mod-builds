@@ -48,8 +48,8 @@ public final class VillageDefenseResearchSystem {
         int current = level(branch);
         if (current >= MAX_LEVEL) return branch.displayName() + " 연구가 최고 단계입니다.";
         int cost = upgradeCost(branch);
-        if (!VillageProgressionSystem.spendCoins(player, cost)) {
-            return "수호 주화가 부족합니다. 필요 " + cost + ", 현재 " + VillageProgressionSystem.coins(player);
+        if (!VillageProgressionSystem.spendSupplies(cost)) {
+            return "공동 보급품이 부족합니다. 필요 " + cost + ", 현재 " + VillageProgressionSystem.supplies();
         }
         String before = branch.description(current);
         float previousTowerDurability = branch == Branch.TOWER ? towerDurabilityMultiplier() : 1.0f;
