@@ -35,8 +35,8 @@ def main() -> None:
     assert "open_funding" not in buttons and "open_tower_control" not in buttons
     assert "int h = 27" in buttons and "available / 2" in buttons
     layout = town.split("private Layout layout()", 1)[1].split("private void parse", 1)[0]
-    assert "Math.min(940" in layout and "panelWidth * 31 / 100" in layout
-    assert "contentTop" in layout and "gap = 10" in layout
+    assert "Math.min(720" in layout and "panelWidth * 30 / 100" in layout
+    assert "contentTop" in layout and "gap = 8" in layout
 
     dashboard = controller.split("public static void openDashboard", 1)[1].split("public static void openRoleAssignment", 1)[0]
     assert '"role"' not in dashboard and "select_role:" not in dashboard
@@ -78,13 +78,13 @@ def main() -> None:
     assert "center.below(9)).is(Blocks.GOLD_BLOCK)" in world
     assert "center.below(9), Blocks.GOLD_BLOCK" in world
 
-    # Mirror the town-hall width arithmetic for representative logical GUI widths.
+    # Mirror the compact town-hall width arithmetic for representative logical GUI widths.
     for safe_width in (320, 426, 640, 840, 960, 1280):
-        panel = min(940, max(1, safe_width))
-        content = max(1, panel - 28 - 10)
-        list_width = max(150, min(280, panel * 31 // 100))
+        panel = min(720, max(1, safe_width - 10))
+        content = max(1, panel - 24 - 8)
+        list_width = max(150, min(224, panel * 30 // 100))
         list_width = min(list_width, max(90, content - 170))
-        detail_width = panel - 28 - 10 - list_width
+        detail_width = panel - 24 - 8 - list_width
         assert list_width >= 90
         assert detail_width >= 1
         if detail_width >= 260:
