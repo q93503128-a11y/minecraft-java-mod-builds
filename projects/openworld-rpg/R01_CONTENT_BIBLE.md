@@ -170,14 +170,14 @@ These are observation targets, not hard gates.
 
 | Moment | Expected ordinary first-play Lv |
 |---|---:|
-| reach Alderford | 1–2 |
-| complete `Dust on the Quarry Road` | **2–3** |
-| ordinary Trail Stag timing | **3–4** |
-| inspect lower quarry entrance | **4–6** |
-| enter Earthloong chamber | **5–7** |
-| finish first Earthloong clear | **6–8** |
+| reach Alderford | **1** |
+| complete `Dust on the Quarry Road` | **1–2** |
+| ordinary Trail Stag timing | **2–3** |
+| inspect lower quarry entrance | **3–5** |
+| enter Earthloong chamber | **4–6** |
+| finish first Earthloong clear | **5–7** |
 
-A player outside the band is not blocked. **Suggested Lv 8** at the quarry is a safety/readability recommendation, not a claim that every ordinary player must already be Lv8 before entering; a broad-path player is expected to approach Lv6–8 by the first clear, while a completionist route can arrive closer to the upper edge.
+A player outside the band is not blocked. **Suggested Lv 8** at the quarry is a safety/readability recommendation, not a claim that every ordinary player must already be Lv8 before entering; a normal broad-path player is expected to finish around Lv5–7, while a completionist R01 route with Regalhart/Steelboar/discoveries can approach Lv7–8.
 
 R01 intentionally front-loads **one-time** EXP/Class-XP rewards above later-region baseline percentages so the opening actually reaches these bands. Repeat events, repeat bosses and ordinary combat do not inherit that uplift.
 
