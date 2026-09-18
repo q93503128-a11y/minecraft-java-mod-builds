@@ -505,6 +505,56 @@ Newer integration snapshot:
 
 Full evidence: `R01_ASSET_PHASE_E_APPAREL_POTION_MOTION_EXACT_REVIEW_2026-09-18.md`.
 
+
+## Kenney exact-file corroboration snapshots — R01 Phase F
+
+These snapshots are **filename/byte/timing corroboration only**. Official Kenney asset pages remain the intended acquisition/license authority.
+
+### Image-library mirror
+
+- repository: `shorepine/kenney`;
+- pinned commit: `3694c6879e487c108f55677be7dd2ca75b07cc3b`;
+- used only to read exact Kenney all-in-one paths and selected PNG bytes;
+- Phase-F selected image inputs: `circle_03.png`, `spark_04.png`, `slash_01.png`, `light_03.png`, `magic_03.png`, `whitePuff06.png`, `gas04.png`, `flash04.png`;
+- direct SHA-256 and dimensions are recorded in `R01_ASSET_PHASE_F_KENNEY_EXACT_SHORTLIST_2026-09-18.md`.
+
+### Impact Sounds mirror
+
+- repository: `Boyquotes/kenney-impact-sounds-for-godot`;
+- pinned commit: `999dd1684873f8b020a3aa5b26e713da21688924`;
+- exact Ogg candidates directly read: `impact_mining_002.ogg`, `impact_metal_heavy_001.ogg`, `impact_punch_medium_000.ogg`, `impact_soft_heavy_000.ogg`;
+- direct SHA-256, sample rate and duration recorded;
+- audio audition remains pending.
+
+### RPG Audio mirror
+
+- repository: `Boyquotes/kenney-rpg-audio-for-godot`;
+- pinned commit: `22eb79bb843bbcadcaa6ed119353a33265ffad11`;
+- exact Ogg candidates directly read: `metal_click.ogg`, `creak_2.ogg`;
+- direct SHA-256, sample rate and duration recorded;
+- audio audition remains pending.
+
+### Interface Sounds mirror
+
+- repository: `Calinou/kenney-interface-sounds`;
+- pinned commit: `4596a49eaf5a533948d49a47467f606bcdea70ff`;
+- mirror README links the official Kenney Interface Sounds pack, identifies 100 interface sounds and states that the original Ogg files were converted to WAV for Godot;
+- directly read mirror WAV candidates: `confirmation_001.wav`, `error_001.wav`, `select_001.wav`;
+- recorded SHA-256 values identify the mirror WAV binaries, **not** the original official Ogg archive bytes.
+
+### Signature-layer boundary
+
+No Phase-F Kenney candidate closes:
+
+- Earthloong electrical charge/strike sound;
+- Earthloong body-anchored electrical arcs;
+- final shaped Burning VFX;
+- final shaped Frostbite VFX.
+
+Generic files may support those composites, but cannot be promoted to complete signature presentation without actual Minecraft visual/audio acceptance.
+
+Full evidence: `R01_ASSET_PHASE_F_KENNEY_EXACT_SHORTLIST_2026-09-18.md`.
+
 ---
 
 # Selection policy
