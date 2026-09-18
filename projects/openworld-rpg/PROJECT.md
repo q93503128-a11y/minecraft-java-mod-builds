@@ -136,7 +136,7 @@ World/story/regional canon:
 - `MAIN_QUEST_SCENE_PACKAGE.md` — cross-region main-route requirements, recurring-character functions, evidence counting, rejoin points, sequence-break handling, personal finale choice and multiplayer story ownership
 - `REGION_CROSS_AUDIT.md`
 - `REGIONS.md` — current concise region index, not an archive of old candidates
-- `R01_VERTICAL_SLICE.md` + `R01_CONTENT_BIBLE.md`
+- `R01_VERTICAL_SLICE.md` + `R01_CONTENT_BIBLE.md` + `R01_UI_PRODUCTION_SPEC.md`
 - `R02_IMPLEMENTATION_PACKAGE.md` + `R02_CONTENT_BIBLE.md`
 - `R03_IMPLEMENTATION_PACKAGE.md` + `R03_CONTENT_BIBLE.md`
 - `R04_IMPLEMENTATION_PACKAGE.md` + `R04_CONTENT_BIBLE.md`
