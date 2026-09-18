@@ -757,7 +757,7 @@ Shows known R01 recipes only.
 Each row:
 - output model/icon;
 - grade/Item Lv;
-- owned/required materials;
+- combined owned/required materials from **Material Pouch + Material Vault**;
 - Gold.
 
 Unavailable learned recipes show exact missing requirement.
@@ -805,7 +805,7 @@ Detail shows:
 - actual effect;
 - belt eligibility;
 - use time/shared Recovery lockout;
-- owned/required ingredients;
+- combined owned/required ingredients from **Material Pouch + Material Vault**;
 - service fee.
 
 Buttons:
@@ -820,6 +820,8 @@ Craft Max opens one confirmation summarizing exact output count/materials/Gold.
 Fixed three-item **unlimited** stock, exact prices.
 
 No stock counter, sold-out state or rotating timer.
+
+Settlement service cost detail may expand an owned count into `Pouch N + Vault M`; the player is never required to withdraw materials before crafting.
 
 ---
 
@@ -840,7 +842,7 @@ R01:
 - Grilled Catch when a grillable fish is owned/known.
 
 Detail:
-- ingredients;
+- combined settlement-owned ingredients from **Material Pouch + Material Vault**;
 - immediate out-of-combat heal;
 - Nourishment effect/duration where applicable;
 - currently active meal and replacement warning.
