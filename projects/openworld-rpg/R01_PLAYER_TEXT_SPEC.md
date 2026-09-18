@@ -1310,7 +1310,33 @@ Not allowed in player-facing builds:
 
 ---
 
-# 25. Main-story handoff text
+# 25. R01 Class Insight text
+
+Class Insights are discovered through play, not accepted from a quest board.
+
+Completion header:
+
+> Class Insight discovered — <Insight Name>
+
+R01 names:
+
+- Warrior — **Break the Charge**
+- Hunter — **Crowned Mark**
+- Cleric — **Balanced Grace**
+- Mage — **Complete the Weave**
+- Guardian — **Hold the Storm**
+
+If the Insight grants one of the class's first five Insight Passive Points:
+
+> Passive Point +1
+
+Class-XP toast follows the ordinary Class-XP presentation; do not print `8%` as raw design math unless the global XP UI already exposes exact earned XP.
+
+No R01 Class Insight creates a new map marker or quest-log entry. The class screen records the completed Insight and its short success condition.
+
+---
+
+# 26. Main-story handoff text
 
 Post-Earthloong return scene remains exactly the four canonical lines already in R01_VERTICAL_SLICE.md.
 
@@ -1344,7 +1370,7 @@ Neither lead is labeled primary, safer, correct or recommended.
 
 ---
 
-# 26. System/result text used in R01
+# 27. System/result text used in R01
 
 ## Quest acceptance
 
@@ -1426,7 +1452,7 @@ Do not show networking/internal error text.
 
 ---
 
-# 27. Text state ownership
+# 28. Text state ownership
 
 At minimum, R01 text selection reads authoritative state for:
 
@@ -1450,7 +1476,7 @@ Client presentation can choose timing only within the owning UI rules. It cannot
 
 ---
 
-# 28. R01 player-text acceptance
+# 29. R01 player-text acceptance
 
 R01 player-facing text is not implementation-ready unless:
 
