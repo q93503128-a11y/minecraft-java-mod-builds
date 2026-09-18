@@ -1,28 +1,25 @@
 package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.Turnbound;
-import io.github.q93503128.turnbound.session.BattleSessionManager;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.Vec3;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 /**
  * Production world gate for the TURNBOUND overhaul.
  *
- * <p>Legacy Aster March builders are intentionally not called here. A verified/bound external world is used as-is;
- * this bootstrap only opens TURNBOUND runtime state and performs a one-time per-world player arrival at the selected
- * authored hub seed.</p>
+ * <p>Legacy Aster March builders are intentionally not called here. A verified/bound external world is used as-is.
+ * Current Drehmal coordinates are integration seeds, not yet 26.2-playtested safe arrivals, so this bootstrap never
+ * teleports a player or changes authored terrain. Safe arrival promotion belongs to the migrated-world inspection
+ * gate.</p>
  */
 public final class ExternalWorldBootstrap {
     private static final Set<UUID> ACTIVE = new LinkedHashSet<>();
-    private static final float HUB_YAW = 180.0F;
 
     private ExternalWorldBootstrap() {}
 
@@ -36,14 +33,13 @@ public final class ExternalWorldBootstrap {
         }
 
         ACTIVE.add(player.getUUID());
-        FieldNetwork.close(player);
+        FieldNetwork.syncExternal(player, explorationSnapshot());
 
         ExternalWorldSavedData saved = ExternalWorldSavedData.get(server);
-        if (!saved.initialized(player.getUUID()) && !BattleSessionManager.exists(player)) {
-            placeAtHub(player, server.overworld());
+        if (!saved.initialized(player.getUUID())) {
             saved.markInitialized(player.getUUID());
             Turnbound.LOGGER.info(
-                    "TURNBOUND external-world first arrival: {} -> {}",
+                    "TURNBOUND external-world runtime opened for {}. Safe hub arrival remains pending terrain validation; hub seed={}",
                     player.getUUID(),
                     DrehmalWorldBinding.hubSeed());
         }
@@ -76,21 +72,20 @@ public final class ExternalWorldBootstrap {
         ACTIVE.clear();
     }
 
-    private static void placeAtHub(ServerPlayer player, ServerLevel overworld) {
-        BlockPos hub = DrehmalWorldBinding.hubSeed();
-        overworld.getChunkAt(hub);
-        player.stopRiding();
-        player.setNoGravity(false);
-        player.fallDistance = 0.0F;
-        player.setDeltaMovement(Vec3.ZERO);
-        player.teleportTo(
-                overworld,
-                hub.getX() + 0.5D,
-                hub.getY(),
-                hub.getZ() + 0.5D,
-                Set.of(),
-                HUB_YAW,
-                0.0F,
-                false);
+    private static FieldUiSnapshot explorationSnapshot() {
+        return new FieldUiSnapshot(
+                true,
+                FieldUiSnapshot.Mode.NONE,
+                0,
+                0,
+                false,
+                false,
+                0,
+                0,
+                "",
+                "",
+                FieldUiSnapshot.Reward.none(),
+                List.of(),
+                List.of());
     }
 }
