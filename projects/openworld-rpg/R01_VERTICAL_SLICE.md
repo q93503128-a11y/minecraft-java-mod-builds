@@ -276,7 +276,7 @@ These names and functions are final player-facing R01 canon. Asset intake may al
 | **Lysa Fen** | healer / alchemist | Greenwater Remedies | recovery/alchemy introduction; `Riverbank Remedies` |
 | **Toma Reed** | stable keeper | Fordside Stables | Trail Stag introduction and registration |
 | **Brin Hale** | innkeeper / cook | The Copper Kettle | rest, food/cooking service, grounded settlement life |
-| **Nessa Bell** | market merchant | market square | early consumable/material buy/sell service |
+| **Nessa Bell** | market merchant | market square | rotating equipment market, Household catalogue and item/material sell service |
 | **Oren Quill** | vault keeper | Alderford Vault | storage / Material Vault explanation on first use only |
 | **Sera Wren** | cartographer / ranger | route board / west edge | recurring Cartographer/Ranger role; `Signs in the Meadow`; route/ecology perspective |
 | **Ilyan Voss** | Anchor scholar | Copper Kettle guest table before clear; Wayfarers' Hall after clear | recurring Anchor Scholar; interprets quarry evidence without knowing everything in advance |
@@ -371,6 +371,8 @@ This is a usability grant, not a class weapon lock.
 
 Normal first play should usually reach Earthloong first clear in roughly **55–75 minutes**. Optional exploration, Regalhart, gathering, housing browsing or experimentation can extend the first session toward 90+ minutes.
 
+R01's one-time quest/milestone rewards are deliberately more generous than later regional baseline percentages. This is the first-region progression ramp required to make the locked Lv1 start, Lv8 dungeon threat and 55–75 minute route coexist without mob grinding. Repeat content and ordinary combat stay on the normal global reward baseline.
+
 This is a pacing target, not a mission timer.
 
 ## Phase A — 0:00–0:04 — approach road / first reveal
@@ -439,7 +441,7 @@ The road area contains five authored **distinct evidence/action categories**:
 2. defeat or meaningfully participate against the authored Meadow Viper road threat;
 3. inspect the broken quarry-road marker;
 4. gather one valid nearby R01 field resource from Iron Ore / Hardwood / Healing Herb;
-5. meaningfully participate in the small road-assistance event if it is active.
+5. meaningfully participate in the repeatable **Roadside Trouble** event if it is active.
 
 The quest completes after **any 3 distinct categories** are credited.
 
@@ -454,9 +456,9 @@ Rules:
 Reward on server-authoritative completion:
 
 ```text
-EXP: 35% of current next-Lv requirement
+EXP: **70%** of current next-Lv requirement
 Gold: 90
-Class XP: 25% of current Class Rank requirement
+Class XP: **50%** of current Class Rank requirement
 ```
 
 Mara's completion line:
@@ -507,9 +509,9 @@ Trade-acquired herbs do not satisfy this first teaching contract; the objective 
 Reward:
 
 ```text
-EXP: 20% of current next-Lv requirement
+EXP: **40%** of current next-Lv requirement
 Gold: 60
-Class XP: 15% of current Class Rank requirement
+Class XP: **30%** of current Class Rank requirement
 Healing Potion x1
 ```
 
@@ -528,7 +530,7 @@ Repeatability: once per player.
 
 Sera's accept line:
 
-> “Big tracks don't mean ‘go kill the biggest thing nearby.’ Learn what made them first. Check the damaged cart and the meadow edge.”
+> “Big tracks don't mean ‘go kill the biggest thing nearby.’ Learn what made them first. Check the broken trough and the meadow edge.”
 
 Authored sites:
 
@@ -547,9 +549,9 @@ This contract teaches territorial ecology and foreshadows Steelboar/Regalhart. I
 Reward:
 
 ```text
-EXP: 20% of current next-Lv requirement
+EXP: **40%** of current next-Lv requirement
 Gold: 70
-Class XP: 15% of current Class Rank requirement
+Class XP: **30%** of current Class Rank requirement
 ```
 
 Sera's completion line:
@@ -622,7 +624,7 @@ Toma's hint line:
 Event sequence:
 
 1. enter the authored ford event volume;
-2. locate the frightened Trail Stag near the damaged harness/cart route;
+2. locate the frightened Trail Stag near a **snapped tether post and broken ford gate**, clearly distinct from the quarry-road carts;
 3. clear the event hazard pack — solo baseline **2 Meadow Vipers**, adding **+1 Meadow Viper per additional active participant up to 4 total Vipers**;
 4. perform the accepted calming interaction animation at close range after combat state ends;
 5. mount the Stag;
@@ -637,8 +639,8 @@ Reward:
 ```text
 Trail Stag permanent unlock
 Gold: 60
-EXP: 25% of current next-Lv requirement
-Class XP: 20% of current Class Rank requirement
+EXP: **50%** of current next-Lv requirement
+Class XP: **40%** of current Class Rank requirement
 ```
 
 Toma's completion line:
@@ -649,7 +651,7 @@ Movement remains `MOUNTS.md`:
 
 ```text
 cruise: 6.4 b/s
-forgiving steering
+exact acceleration / steering / fixed-hop / summon / safe-dismount controller: `MOUNTS.md`
 no mount Stamina drain
 no mount attack
 ```
@@ -688,9 +690,9 @@ Exact pre-dungeon stages:
 Milestone reward after personal inspection of the lower entrance:
 
 ```text
-EXP: 40% of current next-Lv requirement
+EXP: **80%** of current next-Lv requirement
 Gold: 120
-Class XP: 25% of current Class Rank requirement
+Class XP: **50%** of current Class Rank requirement
 ```
 
 No hard Lv8 gate exists. A skilled under-level player may enter.
@@ -716,9 +718,9 @@ Sera's offer line:
 Reward beyond normal elite reward:
 
 ```text
-EXP: 30% of current next-Lv requirement
+EXP: **60%** of current next-Lv requirement
 Gold: 100
-Class XP: 15% of current Class Rank requirement
+Class XP: **30%** of current Class Rank requirement
 ```
 
 ## 12.2 The Crowned Trail — Regalhart discovery
@@ -862,8 +864,8 @@ Canonical first-clear package:
 - guaranteed Superior+ normal boss gear;
 - 15% direct Mythic roll from `Rootquake Maul / Earthscale Ward` pool;
 - deterministic completion choice: `Ironroot Longsword / Riverthorn Bow / Lumenwood Staff`;
-- completion EXP: 50% current next-Lv requirement + boss contribution;
-- completion Class XP: 32% + boss contribution;
+- completion EXP: **100%** current next-Lv requirement + exact Earthloong boss contribution;
+- completion Class XP: **64%** current Class Rank requirement + exact Earthloong boss contribution;
 - Gold: 180.
 
 Reward choice uses accepted Lucifer-family reward UI and real accepted item previews, not a vanilla chest GUI.
