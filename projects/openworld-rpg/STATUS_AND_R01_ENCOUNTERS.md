@@ -1369,7 +1369,8 @@ Dungeon-completion layer:
 
 - choose one Superior Item Lv8: `Ironroot Longsword / Riverthorn Bow / Lumenwood Staff`;
 - EXP: **50%** current next-Lv requirement from completion + boss contribution;
-- Class XP: **32%** from completion + boss contribution.
+- Class XP: **32%** from completion + boss contribution;
+- Gold: **180 total first-clear Gold**; no separate extra Earthloong kill Gold.
 
 Repeat:
 
