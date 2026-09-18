@@ -9,6 +9,8 @@ import io.github.q93503128.turnbound.progression.PlayerProfile;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
+import io.github.q93503128.turnbound.world.DrehmalWorldBinding;
+import io.github.q93503128.turnbound.world.ExternalWorldBootstrap;
 import io.github.q93503128.turnbound.world.FieldSessionManager;
 import io.github.q93503128.turnbound.world.MetaNetwork;
 import net.minecraft.commands.CommandSourceStack;
@@ -30,6 +32,10 @@ public final class TurnboundCommands {
                     FieldSessionManager.sendStatus(player);
                     return Command.SINGLE_SUCCESS;
                 }))
+                .then(Commands.literal("world")
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .then(Commands.literal("status").executes(context -> worldStatus(context.getSource())))
+                        .then(Commands.literal("bind_drehmal").executes(context -> bindDrehmal(context.getSource()))))
                 .then(Commands.literal("profile").executes(context -> profile(context.getSource())))
                 .then(Commands.literal("archive")
                         .then(Commands.literal("single").executes(context -> summon(context.getSource(), 1, false)))
@@ -56,6 +62,30 @@ public final class TurnboundCommands {
                     BattleSessionManager.end(player);
                     return Command.SINGLE_SUCCESS;
                 })));
+    }
+
+    private static int worldStatus(CommandSourceStack source) throws CommandSyntaxException {
+        var player = source.getPlayerOrException();
+        var server = player.level().getServer();
+        String status = DrehmalWorldBinding.status(server);
+        source.sendSuccess(() -> Component.literal("TURNBOUND WORLD · " + status), false);
+        return DrehmalWorldBinding.isBound(server) ? Command.SINGLE_SUCCESS : 0;
+    }
+
+    private static int bindDrehmal(CommandSourceStack source) throws CommandSyntaxException {
+        var player = source.getPlayerOrException();
+        try {
+            DrehmalWorldBinding.bindManual(player);
+            ExternalWorldBootstrap.initialize(player);
+            var hub = DrehmalWorldBinding.hubSeed();
+            source.sendSuccess(() -> Component.literal(
+                    "TURNBOUND WORLD · Drehmal profile bound without rebuilding terrain. Hub seed "
+                            + hub.getX() + " " + hub.getY() + " " + hub.getZ()), false);
+            return Command.SINGLE_SUCCESS;
+        } catch (RuntimeException exception) {
+            source.sendFailure(Component.literal("TURNBOUND WORLD · binding rejected: " + exception.getMessage()));
+            return 0;
+        }
     }
 
     private static int worldStatus(CommandSourceStack source) throws CommandSyntaxException {
