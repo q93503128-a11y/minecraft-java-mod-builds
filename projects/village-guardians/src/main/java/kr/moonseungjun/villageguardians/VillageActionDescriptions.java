@@ -50,7 +50,7 @@ final class VillageActionDescriptions {
         if (action.startsWith("consumable:")) {
             return label + "\n수호 주화로 전투 소모품을 구매합니다. 전투 중 우클릭해 사용하며 종류별 재사용 대기시간이 있습니다.";
         }
-        if (action.startsWith("hire_mercenary:")) {
+        if (action.startsWith("hire_mercenary:") || action.startsWith("merc_hire:")) {
             return label + "\n공동 보급품으로 영구 용병을 고용합니다. 병영 강화는 고용비를 단계적으로 할인합니다.";
         }
         if (action.startsWith("retire_mercenary:")) {
@@ -131,6 +131,7 @@ final class VillageActionDescriptions {
                 || action.equals("skill_learn")
                 || action.equals("train")
                 || action.startsWith("hire_mercenary:")
+                || action.startsWith("merc_hire:")
                 || action.startsWith("retire_mercenary:")
                 || action.equals("return_village")
                 || action.startsWith("restart_");
@@ -148,7 +149,7 @@ final class VillageActionDescriptions {
         if (action.startsWith("upgrade:")) return "시설 강화";
         if (action.startsWith("tower_branch:")) return "분기 적용";
         if (action.startsWith("tower_upgrade:")) return "분기 강화";
-        if (action.startsWith("hire_mercenary:")) return "용병 고용";
+        if (action.startsWith("hire_mercenary:") || action.startsWith("merc_hire:")) return "용병 고용";
         if (action.startsWith("retire_mercenary:")) return "용병 퇴역";
         if (action.startsWith("gear:")) return "장비 구매";
         if (action.startsWith("forge_enhance:")) return "장비 강화";
