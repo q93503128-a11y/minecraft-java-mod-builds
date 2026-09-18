@@ -1017,6 +1017,81 @@ Do not multiply boss damage and HP at the same time just to claim co-op is harde
 
 ---
 
+# 21.4 AI threat / target-selection baseline
+
+This baseline is required because Guardian skills/passives already modify AI threat. Implementation must not invent an unrelated aggro formula per enemy.
+
+Every engaged AI-controlled hostile maintains a server-authoritative `ThreatScore` per eligible player.
+
+## Threat generation
+
+Damage:
+```text
+DamageThreat = 100 * PostMitigationDamage / TargetMaxHP
+```
+
+Effective healing performed on another currently engaged participant within the encounter:
+```text
+HealThreat = 35 * EffectiveHealing / HealedTargetMaxHP
+```
+
+Effective barrier granted to an engaged participant:
+```text
+BarrierThreat = 25 * EffectiveBarrierGranted / RecipientMaxHP
+```
+
+Guarding a hostile hit:
+```text
+GuardThreat = 20 * PreventedHPDamage / GuardianMaxHP
+```
+
+Perfect guard additionally adds:
+```text
++4 flat Threat
+```
+
+No-op overheal, unused barrier, misses and cosmetic support generate no threat.
+
+Class/passive threat-generation modifiers multiply the generated amount before it is stored. Guardian modifiers in `CLASS_COMBAT_KITS.md` therefore have a concrete baseline to modify.
+
+## Initial engagement
+
+When an AI enters combat without existing threat:
+
+- the legitimate triggering player receives **10 initial Threat**;
+- another eligible player who independently damages/supports the encounter begins earning normal threat immediately;
+- mere party membership or distant proximity generates no threat.
+
+## Target choice
+
+At an attack-decision boundary, the AI evaluates valid visible/reachable participants.
+
+Effective selection value:
+```text
+SelectionThreat = StoredThreat * ProvokedOrScriptWeight
+```
+
+`Provoked` uses the exact x4 common/elite and x2 miniboss/boss weighting already owned by class canon.
+
+Target-switch hysteresis:
+
+- retain current valid target unless another target reaches **>=1.25x** the current target's SelectionThreat;
+- switch immediately if current target is invalid, outside encounter bounds, unreachable for 2.0 s, defeated/downed when the encounter does not intentionally target Downed players, or explicitly replaced by a scripted mechanic;
+- do not switch target in the middle of a committed attack/telegraph.
+
+Threat decay:
+
+- no decay while a player has generated threat within the last **6 s**;
+- after that, stored threat decays at **10% of its current value per second**;
+- threat cannot decay below 10 while the player is still legitimately engaged;
+- leaving the encounter and losing engagement clears that player's threat after the encounter controller's normal disengage grace.
+
+Boss mechanics that intentionally select a random/distant/specific target may override ordinary threat only where the encounter sheet says so. The override lasts only for that authored action; ordinary target selection resumes afterward.
+
+This is gameplay canon, not an implementation suggestion.
+
+---
+
 # 22. Multiplayer down / revive timing
 
 Master canon already requires down/revive. Baseline numbers:
