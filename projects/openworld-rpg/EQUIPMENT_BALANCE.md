@@ -621,7 +621,7 @@ R01 accessories remain mechanically modest compared with later named Relics; the
 
 # 12. R01 deterministic first-dungeon choice
 
-The first root-overgrown quarry dungeon boss is currently Earthloong at local Lv ~8. The first eligible clear gives one **Superior Item Lv 8** choice among the following three accepted visual directions.
+The first root-overgrown quarry dungeon boss is **Earthloong** at local Lv ~8. The first eligible clear gives one **Superior Item Lv 8** choice among the following three accepted visual directions.
 
 All three have fixed affix identities and deterministic **85th-percentile** affix values so the reward is reliably useful.
 
@@ -725,7 +725,7 @@ Internal cooldown: 10.0 s.
 
 Craft path: 4 Earthloong Scales + MythicCraftFee(ItemLv).
 
-Earthloong therefore has a two-item known signature pool. The direct 15% signature roll chooses between those two at equal baseline weight unless future visual/playtest evidence justifies changing that specific boss pool.
+Earthloong therefore has an exact two-item R01 launch signature pool: **Rootquake Maul / Earthscale Ward**. The direct 15% signature roll chooses between those two at equal baseline weight. A later balance revision must update canon/data first rather than silently altering the pool in code.
 
 ---
 
