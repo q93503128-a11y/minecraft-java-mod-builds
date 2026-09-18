@@ -53,6 +53,7 @@ public final class VillageGuardians {
         VillageConsumableSystem.resetTransientState();
         VillageRpgSystem.resetTransientState();
         VillageWorldSystem.resetTransientState();
+        VillageNetwork.resetTransientState();
         VillageDefenseSystem.reset();
         VillageRespawnSystem.reset();
         VillageStructureHud.reset();
@@ -86,6 +87,7 @@ public final class VillageGuardians {
             VillageRpgSystem.refreshPlayerPassive(player);
             VillageRespawnSystem.onLogin(player);
             VillageRelicSystem.openChoice(player);
+            if (server != null) VillageCouncilState.onPlayerJoined(player);
             if (VillageProgressionSystem.isGameOver() && server != null) VillageUiService.openGameOverForAll(server);
         }
     }
@@ -93,7 +95,8 @@ public final class VillageGuardians {
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         var server = event.getEntity().level().getServer();
-        if (server != null) VillageCouncilState.onPlayerListChanged(server);
+        if (server != null) VillageCouncilState.onPlayerLoggedOut(server, event.getEntity().getUUID());
+        VillageNetwork.forgetPlayer(event.getEntity().getUUID());
     }
 
     @SubscribeEvent
