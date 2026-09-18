@@ -1,10 +1,11 @@
 # Open-World RPG — M0 Fabric 26.2 Dependency Audit
 
-> Status: **M0 TECHNICAL STACK CANON — dependency boundaries locked before source bootstrap**  
-> Audit date: 2026-09-15  
+> Status: **M0 TECHNICAL STACK CANON — dependency boundaries and composition strategy locked before source bootstrap**  
+> Audit date: 2026-09-18  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Project contract: `PROJECT.md`  
-> Rule: this file owns technical dependency boundaries; it does not override gameplay rules.
+> Integration architecture: `M0_INTEGRATION_ARCHITECTURE.md`  
+> Rule: this file owns technical dependency selection/boundaries. `M0_INTEGRATION_ARCHITECTURE.md` owns the adapter/data-overlay/validation structure. Neither overrides gameplay rules.
 
 The purpose of M0 is not to maximize the mod count. It is to choose the smallest proven external stack that materially improves game quality, define exactly what each dependency is allowed to own, and prevent implementation from silently inheriting another mod's progression, balance, UI, loot, worldgen or authority model.
 
@@ -329,6 +330,33 @@ Acceptance rule:
 
 Remain **REFERENCE / CODE CANDIDATE** for ownership, controls and riding QoL. Visible mount identity and project mount state remain defined by `MOUNTS.md`.
 
+## KubeJS
+
+**NOT BASELINE for the current Fabric 26.2 project.**
+
+The 2026-09-18 architecture review found current public 26.x KubeJS builds on NeoForge 26.1.2, while the public Fabric line shown by the current distribution pages remains on older Minecraft generations. Do not switch loader or add an unsupported scripting layer merely to imitate a modpack.
+
+All The Mods 10 remains a useful **architecture precedent** for:
+
+- per-mod integration folders;
+- recipe/tag/loot unification;
+- startup-time registry additions/aliases;
+- blacklist/deny-tag reuse;
+- conditional integration when a dependency is loaded.
+
+Openworld RPG implements those ideas with Fabric/Java project code + datapack/data registries instead of making KubeJS a baseline dependency.
+
+## FTB Quests / Cobblemon / Create / Mine & Slash
+
+These are **ARCHITECTURE REFERENCES, NOT BASELINE DEPENDENCIES**.
+
+- FTB Quests: typed task/reward composition and server-owned progression/sync;
+- Cobblemon: JSON data registries, additive overlay files, event surfaces and server→client data synchronization;
+- Create: stable addon/public-API boundary, useful tags and explicit encapsulation of internal registrars;
+- Mine & Slash: compatibility modes and one canonical damage pipeline when multiple combat/spell sources exist.
+
+Exact adoption rules and reviewed snapshots live in `M0_INTEGRATION_ARCHITECTURE.md`. Their presence in that research does not authorize copying source or adding their runtime systems.
+
 ---
 
 # 8. Runtime dependency graph
@@ -365,6 +393,20 @@ Do not install both GeckoLib and AzureLib merely for project-owned content. If a
 ---
 
 # 9. Project-owned authority map
+
+Detailed composition, adapter, overlay, semantic-tag and validation rules are canonical in `M0_INTEGRATION_ARCHITECTURE.md`.
+
+The summary rule here is:
+
+```text
+external action/content
+→ integration adapter/data overlay
+→ project domain request
+→ server validation/transaction
+→ client presentation sync
+```
+
+A dependency callback or donor entity state is never sufficient proof of a permanent project result.
 
 ## Server-owned canonical state
 
@@ -469,28 +511,57 @@ Recommended package boundary:
 
 ```text
 openworld_rpg/
-  core/                 # project gameplay domain; no donor-mod assumptions
-  network/              # project packets/server validation
+  core/                 # gameplay domain; no donor-mod assumptions
   combat/               # project damage/stamina/guard/poise state
   progression/          # Lv/class/quests/economy
   inventory/            # backpack/pouch/key-item/project slots
-  content/              # data-backed project registries
+  content/
+    registry/           # data-backed project registries
+    loader/
+    validation/
+  network/
+    c2s/
+    s2c/
+    sync/
+  presentation/
+    animation/
+    vfx/
+    audio/
+    ui/
   integration/
+    api/                # project-facing integration contracts
+    common/             # normalized helpers; no one donor owns this layer
     bettercombat/
     spellengine/
     trinkets/
     ranged/
     armormodel/
-    geckolib/
     ecology/
       alexs_mobs/
       threateningly/
       mobfilter/
+  diagnostics/
+    compatibility/
+    data/
+    authority/
 ```
 
 Core gameplay classes must not directly scatter third-party class names everywhere. Integrations translate between external runtime state and project domain state.
 
-Creature integration should use registry/tag IDs and data/config where possible. This lowers update risk and avoids tying the project core to external implementation internals.
+External creature/content customization should normally target registry IDs through project-owned overlays/tags rather than copying and editing donor files. The overlay/policy contract is defined in `M0_INTEGRATION_ARCHITECTURE.md`.
+
+Prefer, in order:
+
+```text
+public API
+→ registry/tag/data
+→ published event/callback
+→ supported config
+→ narrow compatibility shim
+→ donor-internal mixin/reflection only as a documented last resort
+```
+
+This lowers update risk and makes dependency replacement local to its adapter instead of game-wide.
 
 ---
 
@@ -549,6 +620,14 @@ Required checks at that checkpoint:
 11. **Donor override** — at least one Alex/TMC creature proves that project spawn/stat/loot ownership can replace donor defaults without forking the whole mod.
 12. **Essential profile** — host/join smoke test when multiplayer testing becomes available; gameplay result remains server-owned.
 13. **No-Essential profile** — the same world still runs through normal singleplayer/dedicated/LAN development without Essential.
+14. **Compatibility manifest** — required mod/version/registry contracts are checked from one bounded manifest/validation layer rather than scattered string checks.
+15. **Data registry** — one project JSON registry loads valid content and rejects malformed required content with a useful error.
+16. **External overlay** — one dependency actor is targeted by project-owned overlay data without editing the donor JAR/files.
+17. **Donor suppression** — that actor proves donor random spawn/loot/progression behavior can be suppressed or overridden where canon requires.
+18. **Semantic tags** — shared boss/no-capture/no-duplicate/no-random-spawn rules use project tags rather than duplicated per-mod ID lists.
+19. **Server→client data sync** — one client-required project registry subset synchronizes from the server without making the client authoritative.
+20. **Optional isolation** — an absent optional integration disables cleanly; a missing required target fails clearly and never becomes a vanilla placeholder.
+21. **Core isolation** — a focused source review confirms ordinary core/domain classes are not importing creature/spell/combat donor implementation classes directly.
 
 Do not call this `PLAYTESTED` merely because the dependency stack boots.
 
@@ -612,13 +691,20 @@ This audit closes implementation-time uncertainty about:
 - RPG Series not being the project progression baseline;
 - which external code may only be reference;
 - project/server ownership boundaries;
+- external-mod composition through adapters/data overlays/tags instead of donor-file forks;
 - public-repository dependency/license discipline.
 
 The next planning work must **not** reopen these selections from zero unless a bootstrap test finds a hard blocker or a dependency's 26.2 support materially changes.
 
-Recommended next design batch before broad gameplay coding:
+The old queue that still called for combat-formula design, five root-class design and frequent-action/keybind design is obsolete. Those are already closed in the later combat/class/accessibility canon.
 
-1. exact combat formulas/state timings — damage, Defense/MR, stagger/poise, dodge i-frames, guard/parry windows, stamina costs, revive/down-state combat interactions — benchmarked against proven action RPGs and current Minecraft combat mods;
-2. then the five root-class launch kits and advancement nodes using those locked combat primitives;
-3. continue R02–R12 external-first resource/equipment/encounter catalogs;
-4. final frequent-action/keybind audit only after the complete action list exists.
+Current production sequence:
+
+1. keep `M0_INTEGRATION_ARCHITECTURE.md` as the source-bootstrap composition contract;
+2. finish the remaining exact asset and actual-Azari spatial gates required by `PROJECT.md`;
+3. remove remaining stale live-document contradictions;
+4. bootstrap the Fabric source/data/resource skeleton with the integration/registry/validation boundaries already defined;
+5. prove the stack with the M0 acceptance matrix above;
+6. implement R01 as the first full vertical-slice proof before scaling the same architecture across later regions.
+
+Do not add another complete RPG/progression mod to shorten implementation. Reuse strong primitives/content, but keep one project authority.
