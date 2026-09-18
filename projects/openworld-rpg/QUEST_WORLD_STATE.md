@@ -8,7 +8,7 @@
 > Combat/rewards: `COMBAT_BALANCE.md`, `LOOT_ECONOMY.md`  
 > Gathering/camp/housing: `GATHERING_FISHING_CAMP_HOUSING.md`  
 > UI: `UI_DIRECTION.md`  
-> Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins. `PARTY_MULTIPLAYER.md` is the later explicit authority for combat-reward participation thresholds: **one valid damage or support action is enough**.
+> Rule: if this file conflicts with `GAME_DESIGN.md`, the master canon wins. `PARTY_MULTIPLAYER.md` is the later explicit authority for combat-reward participation thresholds: **one valid damage or support action is enough**. `R01_PLAYER_TEXT_SPEC.md` owns exact R01 board/HUD/journal wording without changing the state/credit rules in this file.
 
 This document closes the rules that should not be invented while implementing quests or multiplayer saves.
 
