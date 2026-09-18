@@ -1328,11 +1328,35 @@ Major threat:
 
 > Not enough Gold.
 
-## Inventory full for ordinary item result
+## Backpack / reward destination full
 
-> Backpack full. The item was moved to your pending pickup/storage-safe result according to the owning system.
+When an R01 important reward is automatically routed to Alderford Vault because the backpack lacks space:
 
-The final implementation must use the system's actual safe destination name. It must not delete the item.
+> Backpack full. Reward sent to Alderford Vault.
+
+When both backpack and Alderford Personal Storage lack room:
+
+> Backpack and Vault full. Reward waiting to be claimed.
+
+For an ordinary world-ground item that is not auto-routed:
+
+> Backpack full.
+
+No player-facing string uses generic wording such as `pending pickup/storage-safe result`.
+
+## Contract abandonment
+
+Riverbank Remedies:
+
+> Abandon Riverbank Remedies? Gather progress will reset.
+
+Signs in the Meadow:
+
+> Abandon Signs in the Meadow? Contract inspection progress will reset; discovered sites remain known.
+
+Steel in the Grass:
+
+> Abandon Steel in the Grass? A future reacceptance will require a new qualifying Steelboar defeat.
 
 ## Interaction in combat
 
