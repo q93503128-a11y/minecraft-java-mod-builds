@@ -137,9 +137,19 @@ public final class VillagePlacedTurretSystem {
                     + "입니다. 같은 블록을 다시 우클릭해 확정하세요."));
             return true;
         }
+        synchronized (VillagePlacedTurretSystem.class) {
+            if (TURRETS.size() >= capacity()) {
+                PENDING.remove(player.getUUID());
+                player.sendSystemMessage(Component.literal(
+                        "§c포탑 설치 한도가 다른 작업으로 먼저 채워졌습니다. 현재 " + TURRETS.size()
+                                + " / " + capacity() + " · 배치 모드를 취소했습니다."));
+                return true;
+            }
+        }
         int cost = pending.type().installCost();
-        if (!VillageProgressionSystem.spendCoins(player, cost)) {
-            player.sendSystemMessage(Component.literal("§c설치 주화가 부족합니다. 필요 " + cost));
+        if (!VillageProgressionSystem.spendSupplies(cost)) {
+            player.sendSystemMessage(Component.literal(
+                    "§c공동 보급품이 부족합니다. 설치 필요 " + cost + ", 현재 " + VillageProgressionSystem.supplies()));
             return true;
         }
         int id = Math.max(1, VillageSiegePersistence.getInt("next_turret_id", 1));
@@ -153,7 +163,7 @@ public final class VillagePlacedTurretSystem {
                 Vec3.atCenterOf(state.pos()).add(0.0, -0.45, 0.0), state.type());
         PENDING.remove(player.getUUID());
         player.sendSystemMessage(Component.literal("§6[포탑 설치] §f" + pending.type().displayName()
-                + " #" + id + " 설치 완료 · 주화 " + cost + " 사용"));
+                + " #" + id + " 설치 완료 · 공동 보급품 " + cost + " 사용"));
         return true;
     }
 
@@ -193,8 +203,10 @@ public final class VillagePlacedTurretSystem {
         if (state == null) return "해당 포탑을 찾을 수 없습니다.";
         int maximum = maxHp(state);
         if (state.hp() >= maximum && state.active()) return "이미 완전한 상태입니다.";
-        int cost = Math.max(30, (maximum - Math.max(0, state.hp()) + 5) / 6);
-        if (!VillageProgressionSystem.spendCoins(player, cost)) return "수리 주화가 부족합니다. 필요 " + cost;
+        int cost = repairCost(state);
+        if (!VillageProgressionSystem.spendSupplies(cost)) {
+            return "공동 보급품이 부족합니다. 수리 필요 " + cost + ", 현재 " + VillageProgressionSystem.supplies();
+        }
         TurretState repaired = new TurretState(id, state.type(), state.pos(), state.level(), maximum, true);
         TURRETS.put(id, repaired); persist(repaired);
         if (player.level() instanceof ServerLevel level) {
@@ -202,7 +214,8 @@ public final class VillagePlacedTurretSystem {
             VillageDefenseEffectSystem.turretRepairPulse(level,
                     Vec3.atCenterOf(repaired.pos()).add(0.0, -0.35, 0.0));
         }
-        return state.type().displayName() + " #" + id + " 수리 완료 · HP " + maximum + "/" + maximum;
+        return state.type().displayName() + " #" + id + " 수리 완료 · 공동 보급품 " + cost
+                + " 사용 · HP " + maximum + "/" + maximum;
     }
 
     public static synchronized String upgrade(ServerPlayer player, int id) {
@@ -215,8 +228,10 @@ public final class VillagePlacedTurretSystem {
         if (state == null) return "해당 포탑을 찾을 수 없습니다.";
         if (!state.active()) return "파괴된 포탑은 먼저 수리해야 합니다.";
         if (state.level() >= 5) return "포탑이 최고 레벨입니다.";
-        int cost = 130 + state.level() * 110;
-        if (!VillageProgressionSystem.spendCoins(player, cost)) return "강화 주화가 부족합니다. 필요 " + cost;
+        int cost = upgradeCost(state);
+        if (!VillageProgressionSystem.spendSupplies(cost)) {
+            return "공동 보급품이 부족합니다. 강화 필요 " + cost + ", 현재 " + VillageProgressionSystem.supplies();
+        }
         int oldMaximum = maxHp(state);
         int missingHp = Math.max(0, oldMaximum - Math.min(oldMaximum, state.hp()));
         int newLevel = state.level() + 1;
@@ -231,7 +246,8 @@ public final class VillagePlacedTurretSystem {
             VillageDefenseEffectSystem.turretUpgradePulse(level,
                     Vec3.atCenterOf(upgraded.pos()).add(0.0, -0.35, 0.0), newLevel);
         }
-        return state.type().displayName() + " #" + id + " Lv." + newLevel + " 강화 완료 · HP "
+        return state.type().displayName() + " #" + id + " Lv." + newLevel
+                + " 강화 완료 · 공동 보급품 " + cost + " 사용 · HP "
                 + newHp + "/" + newMaximum + " (기존 손상 유지)";
     }
 
@@ -247,8 +263,9 @@ public final class VillagePlacedTurretSystem {
         DISABLED_TICKS.remove(id);
         if (player.level() instanceof ServerLevel level) clearVisual(level, state);
         int refund = Math.max(20, state.type().installCost() / 3 + (state.level() - 1) * 25);
-        VillageProgressionSystem.addCoins(player, refund, "포탑 철거 환급");
-        return state.type().displayName() + " #" + id + " 철거 완료 · 주화 " + refund + " 환급";
+        MinecraftServer server = player.level().getServer();
+        if (server != null) VillageProgressionSystem.addSupplies(server, refund, "포탑 철거 환급");
+        return state.type().displayName() + " #" + id + " 철거 완료 · 공동 보급품 " + refund + " 환급";
     }
 
     public static synchronized String repairAll(ServerPlayer player) {
@@ -262,9 +279,9 @@ public final class VillagePlacedTurretSystem {
         List<TurretState> damaged = TURRETS.values().stream()
                 .filter(state -> !state.active() || state.hp() < maxHp(state)).toList();
         for (TurretState state : damaged) {
-            int cost = Math.max(30, (maxHp(state) - Math.max(0, state.hp()) + 5) / 6);
-            if (VillageProgressionSystem.coins(player) < cost) break;
-            VillageProgressionSystem.spendCoins(player, cost);
+            int cost = repairCost(state);
+            if (VillageProgressionSystem.supplies() < cost) break;
+            VillageProgressionSystem.spendSupplies(cost);
             TurretState fixed = new TurretState(state.id(), state.type(), state.pos(), state.level(), maxHp(state), true);
             TURRETS.put(state.id(), fixed); persist(fixed);
             if (player.level() instanceof ServerLevel level) {
@@ -274,8 +291,19 @@ public final class VillagePlacedTurretSystem {
             }
             totalCost += cost; repaired++;
         }
-        return repaired == 0 ? "수리할 포탑이 없거나 주화가 부족합니다."
-                : "손상 포탑 " + repaired + "기 일괄 수리 · 주화 " + totalCost + " 사용";
+        return repaired == 0 ? "수리할 포탑이 없거나 공동 보급품이 부족합니다."
+                : "손상 포탑 " + repaired + "기 일괄 수리 · 공동 보급품 " + totalCost + " 사용";
+    }
+
+    static int repairCost(TurretState state) {
+        if (state == null) return 0;
+        int missing = maxHp(state) - Math.max(0, state.hp());
+        return missing <= 0 && state.active() ? 0 : Math.max(30, (missing + 5) / 6);
+    }
+
+    static int upgradeCost(TurretState state) {
+        if (state == null || state.level() >= 5) return 0;
+        return 130 + state.level() * 110;
     }
 
     public static void tick(MinecraftServer server) {
