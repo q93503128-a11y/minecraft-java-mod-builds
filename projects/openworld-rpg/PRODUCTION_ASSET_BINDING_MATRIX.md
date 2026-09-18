@@ -263,11 +263,32 @@ Brand/title exploration is not required to block these jobs.
 
 ---
 
+
+## R01 Phase E exact-file delta — 2026-09-18
+
+The R01 rows below have stronger **technical exact-file evidence** but are not production-accepted yet:
+
+| R01 binding | Phase E evidence | Binding state after Phase E |
+|---|---|---|
+| River Scholar Garb | Wizard male/female body glTF parsed; 65-joint skin; 2.9k–5.3k tris body range; Wizard BaseColor/Normal/ORM family | `EXACT_CANDIDATE_TECHNICALLY_CORROBORATED`; creator archive + visual/Minecraft acceptance pending |
+| Wayfarer Leathers | Ranger male/female body + pauldron glTF parsed; shared 65-joint skin; coherent Ranger texture family | `EXACT_CANDIDATE_TECHNICALLY_CORROBORATED`; visual/Minecraft acceptance pending |
+| Ironbound Guard | Knight male/female body armor + round pauldrons parsed; shared 65-joint skin; coherent Knight texture family | `EXACT_CANDIDATE_TECHNICALLY_CORROBORATED`; visual/Minecraft acceptance pending |
+| Potion family | `Potion_1..4` all parsed as distinct geometry payloads, about 500–800 tris each | `EXACT_CANDIDATE_TECHNICALLY_CORROBORATED`; Healing/Focus/Cleansing assignment still blocked on direct visual + hand-pivot review |
+| potion drink | historical 2025 UAL1 Standard parsed: 46 clips and no `Drink`; newer pinned integration maps exact `Drink` | `EXACT_CLIP_NAME_CORROBORATED`; current creator archive/timing/retarget/Minecraft acceptance pending |
+| meal eat | newer pinned integration maps exact `Consume` and explicitly treats consume as UAL2-resolved | `EXACT_CLIP_NAME_CORROBORATED`; current creator archive/timing/retarget/Minecraft acceptance pending |
+| revive/help-up | no stronger accepted source in Phase E | `NEEDS_EXTERNAL_CLIP` |
+| Trail Stag mount/dismount | no stronger accepted source in Phase E | `NEEDS_EXTERNAL_CLIP` |
+| four-role fish queue | binary acquisition remained blocked; no broad search reopened | unchanged; final model roster still not accepted |
+
+Evidence document: `R01_ASSET_PHASE_E_APPAREL_POTION_MOTION_EXACT_REVIEW_2026-09-18.md`.
+
+The downstream Git repositories used here are **corroboration snapshots**, not automatic raw-asset admission sources. Creator-controlled acquisition + project-local SHA-256 remain mandatory before production admission.
+
 # 9. Verification state
 
 ```text
 DESIGN/CANON REVIEWED: YES
-EXTERNAL SOURCE REVIEWED: YES for classifications and targeted R05–R08 Pass-1 screening already supported by project evidence
+EXTERNAL SOURCE REVIEWED: YES for existing classifications/targeted R05–R08 screening plus R01 Phase-E apparel/potion/motion exact-file corroboration
 LICENSE/PROVENANCE REVIEWED: PARTIAL — exact acquisition artifacts/hashes remain incomplete; Threateningly continuation storefront conflict remains unresolved
 CODE REVIEWED: N/A
 TESTED: NO
