@@ -35,7 +35,7 @@ def main() -> None:
     assert "arrowRainField" in effects
     assert "spawnVisualLightning" in abilities
     assert "setVisualOnly(true)" in abilities
-    assert "double radius = 20.0 + specialRank * 2.0" in abilities
+    assert "double radius = 30.0 + specialRank * 3.0" in abilities
     assert "AreaKind.TORNADO" in abilities and "8.5" in abilities
     assert "VillageEquipmentShop.roleSkillMultiplier(player)" in read("VillageRoleSkillSystem.java")
 
