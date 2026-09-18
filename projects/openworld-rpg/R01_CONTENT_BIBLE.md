@@ -1454,7 +1454,35 @@ All progression/economy ownership is server-authoritative.
 
 ---
 
-# 22. R01 combat Gold table
+# 22. R01 material sell values
+
+These direct values override the generic material-percentage rule because most R01 field/signature materials have no ordinary unlimited merchant buy price.
+
+| Material | Sell value / unit |
+|---|---:|
+| Iron Ore | 5 Gold |
+| Hardwood | 4 Gold |
+| Healing Herb | 5 Gold |
+| Verdant Crystal | 24 Gold |
+| Louxia Meat | 3 Gold |
+| Louxia Glow | 8 Gold |
+| Tough Hide | 6 Gold |
+| Regalhart Antler | 45 Gold |
+| Earthloong Scale | 45 Gold |
+
+Rules:
+
+- materials can be sold directly from Material Pouch through Nessa's Sell → Materials view;
+- selling Regalhart Antler or Earthloong Scale always requires a confirmation showing current held amount and known signature-craft requirement;
+- bulk-sell never includes boss signature materials;
+- quest-reserved Healing Herbs for an active Riverbank Remedies completion transaction are not consumed by a bulk sale;
+- there is no merchant who sells unlimited Verdant Crystal, Regalhart Antler or Earthloong Scale back to the player.
+
+The values keep surplus gathering useful without making passive wildlife/resource loops the dominant early Gold route.
+
+---
+
+# 23. R01 combat Gold table
 
 R01 combat Gold is deliberately small compared with authored objective/dungeon income. These are HARD_RULE starting values.
 
@@ -1484,7 +1512,7 @@ Rules:
 
 ---
 
-# 23. R01 economy sanity targets
+# 24. R01 economy sanity targets
 
 These are TUNEABLE_SEED acceptance bands.
 
@@ -1507,7 +1535,7 @@ Regalhart/Earthloong farming must remain attractive for their known drops withou
 
 ---
 
-# 24. R01 hidden-choice closure table
+# 25. R01 hidden-choice closure table
 
 | Question an implementer must not answer | Canonical answer |
 |---|---|
@@ -1521,7 +1549,8 @@ Regalhart/Earthloong farming must remain attractive for their known drops withou
 | Which minor discoveries exist? | exact six in §4.2 |
 | How many R01 resource nodes exist? | exact counts in §4.3 |
 | Which ordinary items can each elite/boss/treasure source roll? | exact source pools in §4.4 |
-| What Gold does each R01 combat actor award? | exact combat Gold table in §22 |
+| What does each R01 material sell for? | exact table in §22 |
+| What Gold does each R01 combat actor award? | exact combat Gold table in §23 |
 | When does the Camp recipe appear? | first owned Hardwood + Tough Hide |
 | Is the Camp Kit consumable/tradeable? | permanent personal utility unlock, no |
 | How many rotating market slots? | 5 |
@@ -1540,7 +1569,7 @@ Regalhart/Earthloong farming must remain attractive for their known drops withou
 
 ---
 
-# 25. Remaining gates that are not design discretion
+# 26. Remaining gates that are not design discretion
 
 After this content-bible pass, the remaining R01 blockers are deliberately narrow.
 
@@ -1578,7 +1607,7 @@ If either gate exposes a hard conflict, update canon **before** coding the affec
 
 ---
 
-# 26. R01 content-closure acceptance
+# 27. R01 content-closure acceptance
 
 R01 planning is not called source-ready until all of these are true:
 
