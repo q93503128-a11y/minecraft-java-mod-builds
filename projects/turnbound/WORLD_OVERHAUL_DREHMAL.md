@@ -90,7 +90,7 @@ Implemented in the first overhaul unit:
 - data-driven Drehmal profile resource
 - exact profile marker detection
 - operator manual bind command
-- separate world SavedData for one-time hub arrival
+- separate world SavedData for per-player external-world runtime initialization
 - production server tick no longer calls Aster March terrain builders/sanitizers/spawn guard
 - old Aster March minimap is no longer registered on the production client
 - unbound arbitrary worlds fail closed instead of being rewritten
@@ -117,10 +117,10 @@ The next world work must not revive the old ribbon-map pattern. It should:
 ## Validation state of this checkpoint
 
 - CODE REVIEWED: YES
-- TESTED: NO
-- BUILD VERIFIED: NO
-- JAR PRODUCED: NO
+- TESTED: YES — Gradle test suite + NeoForge server smoke, Build TURNBOUND #754
+- BUILD VERIFIED: YES — Build TURNBOUND #754, commit `47cd25027fe26ea27f1ce5688372ab7102f7da18`
+- JAR PRODUCED: YES — workflow artifact `turnbound-v04-workbranch`
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
 
-No build or runtime claim is implied by this document.
+Automated build/server-load validation is recorded above. External-world client play, terrain-safe arrival, camera behavior and multiplayer remain unverified.
