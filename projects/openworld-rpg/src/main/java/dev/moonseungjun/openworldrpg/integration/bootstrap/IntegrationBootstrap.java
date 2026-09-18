@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.integration.bootstrap;
 
+import dev.moonseungjun.openworldrpg.integration.bettercombat.BetterCombatAuthorityAdapter;
 import org.slf4j.Logger;
 
 public final class IntegrationBootstrap {
@@ -19,6 +20,8 @@ public final class IntegrationBootstrap {
                             + ". See the log for the exact dependency/data contract error."
             );
         }
+
+        BetterCombatAuthorityAdapter.initialize(profile, logger);
 
         logger.info(
                 "Openworld RPG integration manifest schema {} accepted ({} dependency contracts, profile {}).",
