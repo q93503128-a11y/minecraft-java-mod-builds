@@ -103,33 +103,33 @@
     },
     {
       "logicalId": "alexs-mobs-continued",
-      "modId": null,
+      "modId": "alexsmobs",
       "expectedVersion": "2.1.13",
       "enforceVersion": false,
       "requiredProfiles": ["gameplay", "essential"],
       "integrationModule": "ecology/alexs_mobs",
-      "licenseBoundary": "DEPENDENCY_ONLY_PENDING_CANONICAL_LICENSE_AND_MOD_ID",
-      "verification": "PENDING_RUNTIME_ID_VERIFICATION"
+      "licenseBoundary": "DEPENDENCY_ONLY_CANONICAL_LICENSE_CONFLICT",
+      "verification": "RESOLVED"
     },
     {
       "logicalId": "codxlib",
-      "modId": null,
+      "modId": "codxlib",
       "expectedVersion": "1.6.0",
       "enforceVersion": false,
       "requiredProfiles": ["gameplay", "essential"],
       "integrationModule": "ecology/alexs_mobs",
-      "licenseBoundary": "DEPENDENCY_ONLY_PENDING_CANONICAL_LICENSE_AND_MOD_ID",
-      "verification": "PENDING_RUNTIME_ID_VERIFICATION"
+      "licenseBoundary": "DEPENDENCY_ONLY_CANONICAL_LICENSE_CONFLICT",
+      "verification": "RESOLVED"
     },
     {
       "logicalId": "threateningly-mobs-continued",
-      "modId": null,
+      "modId": "threateningly_mobs",
       "expectedVersion": "1.1.1+fabric.26.2",
       "enforceVersion": false,
       "requiredProfiles": ["gameplay", "essential"],
       "integrationModule": "ecology/threateningly",
       "licenseBoundary": "DEPENDENCY_ONLY_STOREFRONT_LICENSE_CONFLICT",
-      "verification": "PENDING_RUNTIME_ID_VERIFICATION"
+      "verification": "RESOLVED"
     }
   ]
 }
