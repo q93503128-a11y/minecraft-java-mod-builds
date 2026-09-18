@@ -117,6 +117,8 @@ def main() -> None:
     assert "spendCoins" not in hire
     turret_place = section(turret, "public static boolean handlePlacementClick", "public static String cancelPlacement")
     assert "TURRETS.size() >= capacity()" in turret_place
+    assert "TURRETS.size() < capacity()" in turret_place
+    assert "포탑 설치 경쟁 환불" in turret_place
     assert "spendSupplies(cost)" in turret_place
     assert "spendCoins" not in turret_place
     turret_maintenance = section(turret, "public static synchronized String repair(ServerPlayer player, int id)", "public static void tick")
