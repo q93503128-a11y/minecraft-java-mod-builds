@@ -130,15 +130,15 @@ For a normally played first class:
 
 | Rank span | Target active time / rank |
 |---|---:|
-| 1–10 | **18–25 min** |
-| 11–20 | 7–10 min |
-| 21–32 | 9–12 min |
-| 33–44 | 12–16 min |
-| 45–50 | 16–20 min |
+| 1–10 | **16–22 min** |
+| 11–20 | **11–15 min** |
+| 21–32 | **10–14 min** |
+| 33–44 | **12–16 min** |
+| 45–50 | **15–20 min** |
 
-A focused first class should normally reach deep Rank-50 mastery in roughly **10–13 active hours**, long before every open-world objective is exhausted.
+A focused first class should normally reach deep Rank-50 mastery in roughly **10–14 active hours**, long before every open-world objective is exhausted.
 
-Ranks 1–10 are intentionally slower than the old benchmark because the complete root kit is already available at Rank 1. The first specialization should not arrive inside the opening hour before the player has learned the root mechanic. R01's boosted one-time Class-XP values are authored to land an ordinary first clear around the early Rank 3–5 range, while broader post-R01 content increases Class-XP opportunity density. This is a pacing correction, not a new grind layer.
+Ranks 1–10 are intentionally slower than the old benchmark because the complete root kit is already available at Rank 1. The first specialization should not arrive inside the opening hour before the player has learned the root mechanic. R01's boosted one-time Class-XP values are authored to land an ordinary first clear around the early Rank 3–5 range. Rank 11–32 can then progress somewhat faster per rank because the wider world supplies more simultaneous class-relevant bosses, contracts and Insights; late ranks rise again as mastery challenges become more deliberate. This is a pacing correction, not a new grind layer.
 
 This intentionally lets a normal 20–30 hour first playthrough fully develop one class and substantially train another rather than forcing the entire playthrough into one permanent choice.
 
