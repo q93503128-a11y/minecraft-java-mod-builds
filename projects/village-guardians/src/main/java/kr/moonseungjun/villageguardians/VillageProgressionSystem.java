@@ -534,6 +534,7 @@ public final class VillageProgressionSystem {
         int retrySupport = 0;
         VillageRaidSystem.resetAfterRestart(server);
         VillageSkillTestSystem.clearAll(server);
+        VillageRespawnSystem.recoverAfterGameRestart(server);
         if (fromStart) {
             PENDING_NEW_GAME_RESETS.clear();
             PENDING_NEW_GAME_RESETS.addAll(COINS.keySet());
