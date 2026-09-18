@@ -40,13 +40,12 @@ Operator diagnostics:
 
 ## Validation
 
-Last verified code checkpoint:
-- Build TURNBOUND #754
-- code commit: `47cd25027fe26ea27f1ce5688372ab7102f7da18`
+Current verified overhaul foundation:
+- Build TURNBOUND #758
+- code/workflow commit: `fe816b1222e13755dac3a9926d99a0db338c0e35`
 - Gradle tests: PASS
 - NeoForge server smoke: PASS
 - JAR verify: PASS
-
-Current v1 planning rewrite is docs-only.
+- artifact: `turnbound-v04-workbranch`
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
