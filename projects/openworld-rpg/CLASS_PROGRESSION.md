@@ -935,13 +935,94 @@ Source: R10 Scorch-Golem/volcanic defense challenge.
 
 # 19. Class Insight challenge sets
 
-Exact coordinates wait for Azari import, but the challenge identities/regions are fixed enough that implementation is not allowed to invent a generic checklist later.
+Exact coordinates wait for Azari import, but challenge identity and success conditions are gameplay canon. Implementation is not allowed to invent a generic checklist later.
 
 Only the first five completed Insights per root class grant Passive Points.
 
-## Warrior candidate Insights
+## 19.1 Exact R01 Class Insights
 
-1. R01 Steelboar impact/poise challenge.
+R01 exposes **one optional Class Insight opportunity for every root class** so first-class choice does not change the number of early Passive-Point opportunities.
+
+Common rules:
+
+- only actions performed while that root class is active count;
+- challenge progress is personal even when the physical encounter is shared;
+- current-attempt flags belong to the specific encounter instance and do not carry into a later fresh encounter;
+- reconnect to the **same still-active encounter instance** restores already committed personal challenge flags;
+- completed Insight state is permanent per class and cannot be farmed;
+- completion always grants **8% of the active Class Rank requirement as Class XP**;
+- if this is among that root class's first five completed Insights, also grant **1 Passive Point**;
+- no board quest, map marker or mandatory tutorial is created; the class screen reveals the completed Insight after the player proves it through play.
+
+### Warrior — Break the Charge
+
+Qualifying encounter: Steelboar.
+
+Complete in one Steelboar encounter:
+
+1. successfully resolve **Iron Rush** with either the universal perfect guard or Warrior **Iron Counter**;
+2. after that guard/counter in the same encounter, the Warrior personally causes one Steelboar **poise break** before disengage/reset.
+
+The poise break may occur on any later legal Warrior hit in that encounter. Another player's poise break does not satisfy the personal condition.
+
+### Hunter — Crowned Mark
+
+Qualifying encounter: Regalhart.
+
+Complete in one Regalhart encounter:
+
+1. Regalhart is the Hunter's current **Quarry**;
+2. reach **3 Focus**;
+3. consume that 3-Focus state with a Hunter **Focus-spender** whose committed hit lands on Regalhart's authored **head/antler weak point**.
+
+The insight commits on the valid weak-point hit; Regalhart does not need to die in that attempt.
+
+### Cleric — Balanced Grace
+
+Qualifying encounter: any R01 elite/boss — Steelboar, Nature Spirit, Regalhart or Earthloong.
+
+Within one encounter:
+
+1. gain at least one Grace pip from a **damaging Cleric active**;
+2. gain at least one Grace pip from **effective healing** or a Cleric barrier that is actually consumed by hostile damage;
+3. reach **3 Grace**;
+4. consume the 3-Grace state with a valid **Grace-spender** before the encounter disengages/resets.
+
+Self-healing after real damage is valid, so the challenge remains solo-completable. Overheal/no-op barrier application does not count.
+
+### Mage — Complete the Weave
+
+Qualifying encounter: any R01 elite/boss — Steelboar, Nature Spirit, Regalhart or Earthloong.
+
+Within one encounter:
+
+1. build a valid **3-distinct-skill Arcane Weave**;
+2. gain `Weave Ready`;
+3. consume `Weave Ready` with a damaging Mage active whose committed damage hits the qualifying elite/boss.
+
+Phase Step can contribute one distinct sigil exactly as normal class canon says, but Phase Step alone cannot finish the Insight because the consuming event must deal valid damage.
+
+### Guardian — Hold the Storm
+
+Qualifying encounter: Earthloong.
+
+Within one eligible Earthloong run:
+
+1. reach **3 Resolve** at least once through the normal Guardian mechanic;
+2. successfully perfect-guard at least one Earthloong attack tagged `perfect_guardable` using either the universal perfect guard or **Counterwall**;
+3. remain encounter-eligible through an Earthloong clear in that same run.
+
+A party member's guard does not satisfy the personal condition. The clear may be first or repeat; the Insight itself grants only once.
+
+These five R01 Insights are **HARD_RULE**, not examples.
+
+## 19.2 World Insight pool
+
+The eight-entry launch pool for each root class is authored below. The R01 entries use the exact conditions above; later-region entries are closed by their own regional/class refinement before those regions enter implementation.
+
+## Warrior authored Insights
+
+1. **R01 Break the Charge** — exact §19.1 condition.
 2. R03 collapsed-mine break challenge.
 3. R03 Griffin highland duel.
 4. R07 Armor of Desert guard-break challenge.
@@ -950,9 +1031,9 @@ Only the first five completed Insights per root class grant Passive Points.
 7. R10 Scorch Golem poise challenge.
 8. R12 Terradragon-tier mastery encounter.
 
-## Hunter candidate Insights
+## Hunter authored Insights
 
-1. R01 Regalhart weak-point hunt.
+1. **R01 Crowned Mark** — exact §19.1 condition.
 2. R02 forest guardian tracking challenge.
 3. R04 Iceworm hunt.
 4. R05 jungle predator/Komodo tracking challenge.
@@ -961,31 +1042,31 @@ Only the first five completed Insights per root class grant Passive Points.
 7. R11 abyssal hunt.
 8. R12 Farseer/anomaly target challenge.
 
-## Cleric candidate Insights
+## Cleric authored Insights
 
-1. R02 Lich cleanse/sanctum objective.
-2. R04 expedition rescue objective.
-3. R06 Hydra-region field support event.
-4. R08 Moonpriest encounter.
-5. R08 sanctuary protection discovery.
+1. **R01 Balanced Grace** — exact §19.1 condition.
+2. R02 Lich cleanse/sanctum objective.
+3. R04 expedition rescue objective.
+4. R06 Hydra-region field support event.
+5. R08 Moonpriest encounter.
 6. R10 volcanic refugee/protection event.
 7. R11 maritime rescue event.
 8. R12 Reaper-Lich/anomaly purification objective.
 
-## Mage candidate Insights
+## Mage authored Insights
 
-1. R02 ruined-sanctum arcane discovery.
-2. R04 frost phenomenon research.
-3. R05 mature Earthloong elemental interaction.
-4. R06 Hydra multi-element encounter.
-5. R08 Moonpriest magical archive.
-6. R10 Inferno/volcanic spell challenge.
-7. R11 abyssal magic discovery.
+1. **R01 Complete the Weave** — exact §19.1 condition.
+2. R02 ruined-sanctum arcane discovery.
+3. R04 frost phenomenon research.
+4. R05 mature Earthloong elemental interaction.
+5. R06 Hydra multi-element encounter.
+6. R08 Moonpriest magical archive.
+7. R10 Inferno/volcanic spell challenge.
 8. R12 Farseer anomaly research.
 
-## Guardian candidate Insights
+## Guardian authored Insights
 
-1. R01 Earthloong defensive clear.
+1. **R01 Hold the Storm** — exact §19.1 condition.
 2. R03 highland convoy/lift defense.
 3. R04 expedition rescue holdout.
 4. R06 flooded-shrine defense event.
