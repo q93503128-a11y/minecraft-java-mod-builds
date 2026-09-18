@@ -26,7 +26,7 @@ public final class VillageSiegeCommandUi {
                 + VillagePlacedTurretSystem.count() + "/" + VillagePlacedTurretSystem.capacity()
                 + " · 개별 수리·강화·철거");
         actions.add("siege_turret_repair_all");
-        labels.add("손상 포탑 일괄 수리|파괴·손상 포탑을 보유 주화 범위에서 순차 복구");
+        labels.add("손상 포탑 일괄 수리|파괴·손상 포탑을 공동 보급품 범위에서 순차 복구");
         actions.add("open_wave_intel");
         labels.add("다음 밤 정찰|주공·별동대·병과·수량·공성 병력·보스·전장 상황 확인");
         send(player, "management", "공성 방어 지휘", "성벽은 구역별 HP를 가지며 0이 된 위치에만 실제 돌파구가 생깁니다.\n"
@@ -49,7 +49,16 @@ public final class VillageSiegeCommandUi {
         labels.add("국소 손상 수리|" + (missing <= 0 ? "현재 완전함" : "예상 비용 " + repairCost
                 + " · 손상된 위치만 복원하며 블록 아이템은 드롭하지 않음"));
         actions.add("siege_segment_upgrade:" + segment.id());
-        labels.add("방어 구역 강화|현재 강화 " + VillageSiegeSegmentSystem.upgradeLevel(segment)
+        int upgradeLevel = VillageSiegeSegmentSystem.upgradeLevel(segment);
+        int upgradeCost = segment == VillageSiegeSegmentSystem.Segment.NORTH_GATE
+                ? (VillageProgressionSystem.level(VillageProgressionSystem.Building.WALLS)
+                    >= VillageProgressionSystem.MAX_BUILDING_LEVEL ? 0
+                    : VillageProgressionSystem.upgradeCost(
+                            VillageProgressionSystem.level(VillageProgressionSystem.Building.WALLS)))
+                : (upgradeLevel >= 3 ? 0 : 150 + upgradeLevel * 180);
+        labels.add("방어 구역 강화|현재 강화 " + upgradeLevel
+                + (upgradeCost <= 0 ? " · 최고 단계"
+                : " → 다음 " + (upgradeLevel + 1) + "단계 · 공동 보급품 " + upgradeCost)
                 + " · 최대 HP와 피해 경감 증가");
         actions.add("siege_command");
         labels.add("성벽·포탑 목록|공성 방어 지휘로 돌아가기");
@@ -63,7 +72,7 @@ public final class VillageSiegeCommandUi {
         List<String> labels = new ArrayList<>();
         for (VillagePlacedTurretSystem.TurretType type : VillagePlacedTurretSystem.TurretType.values()) {
             actions.add("siege_turret_select:" + type.id());
-            labels.add(type.displayName() + " · 주화 " + type.installCost()
+            labels.add(type.displayName() + " · 공동 보급품 " + type.installCost()
                     + "|" + type.role() + " · 피해 " + type.damage() + " · 사거리 " + type.range()
                     + " · 기본 HP " + type.baseHp());
         }
@@ -88,7 +97,7 @@ public final class VillageSiegeCommandUi {
             labels.add("아직 설치된 포탑이 없습니다|새 포탑 계열을 선택해 첫 방어 거점을 배치");
         } else {
             actions.add("siege_turret_repair_all");
-            labels.add("손상 포탑 일괄 수리|보유 주화 범위에서 파괴·손상 포탑 순차 복구");
+            labels.add("손상 포탑 일괄 수리|공동 보급품 범위에서 파괴·손상 포탑 순차 복구");
             actions.add("siege_turret_catalog");
             labels.add("새 포탑 배치|추가 방어 거점 설치");
         }
@@ -106,10 +115,16 @@ public final class VillageSiegeCommandUi {
         if (state == null) { openTurretList(player); return; }
         List<String> actions = List.of("siege_turret_repair:" + id, "siege_turret_upgrade:" + id,
                 "siege_turret_dismantle:" + id, "siege_turret_list");
+        int repairCost = VillagePlacedTurretSystem.repairCost(state);
+        int upgradeCost = VillagePlacedTurretSystem.upgradeCost(state);
         List<String> labels = List.of(
-                "수리|HP 0의 잔해도 다시 가동 상태로 복구",
-                "강화|Lv.5까지 HP·피해·사거리·공격 주기 강화 · 현재 손상분은 유지",
-                "철거|블록 드롭 없이 철거하고 일부 주화 환급",
+                "수리|" + (repairCost <= 0 ? "현재 완전함"
+                        : "공동 보급품 " + repairCost + " · HP 0의 잔해도 다시 가동 상태로 복구"),
+                "강화|" + (upgradeCost <= 0 ? "Lv.5 최고 단계"
+                        : "Lv." + state.level() + " → Lv." + (state.level() + 1)
+                        + " · 공동 보급품 " + upgradeCost
+                        + " · HP·피해·사거리·공격 주기 강화 · 현재 손상분 유지"),
+                "철거|블록 드롭 없이 철거하고 일부 공동 보급품 환급",
                 "설치 포탑 목록|다른 포탑 관리로 돌아가기");
         send(player, "tower_detail", state.type().displayName() + " #" + id,
                 state.summary() + "\n역할: " + state.type().role() + " · 피해 " + state.type().damage()
