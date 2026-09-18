@@ -6,13 +6,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Project-owned admission seam for Spell Engine casts.
- *
- * <p>Spell Engine remains execution infrastructure. A spell in the {@code openworld_rpg} namespace
- * is not allowed to execute on the server until the project has registered an explicit authority
- * policy for that spell. This prevents a future project spell from silently inheriting donor
- * resource, cooldown, progression or reward ownership while those domain systems are still being
- * implemented.</p>
+ * Project-owned admission and impact seam for Spell Engine.
  */
 public final class SpellCastAuthority {
     public enum AttemptDecision {
@@ -22,11 +16,15 @@ public final class SpellCastAuthority {
     }
 
     public interface Policy {
-        boolean authorizeAttempt(UUID playerId, String spellId);
+        boolean preflight(CastContext context);
 
-        void onEngineCostConsumed(UUID playerId, String spellId);
+        boolean commitAcceptedCast(CastContext context);
 
-        void onEngineCastCompleted(UUID playerId, String spellId, String action, float progress);
+        void onEngineCostConsumed(CastContext context);
+
+        void onEngineCastCompleted(CastCompletion context);
+
+        ImpactDecision onImpact(ImpactContext context);
     }
 
     private final String ownedNamespace;
@@ -49,32 +47,71 @@ public final class SpellCastAuthority {
         }
     }
 
-    public AttemptDecision authorizeAttempt(UUID playerId, String spellId) {
-        Objects.requireNonNull(playerId, "playerId");
+    public AttemptDecision preflightAttempt(UUID playerId, String spellId, long gameTick) {
         String normalized = normalizeSpellId(spellId);
         if (!isOwned(normalized)) {
             return AttemptDecision.PASS_THROUGH;
         }
-
         Policy policy = policies.get(normalized);
         if (policy == null) {
             return AttemptDecision.BLOCK;
         }
-        return policy.authorizeAttempt(playerId, normalized)
-                ? AttemptDecision.ALLOW
-                : AttemptDecision.BLOCK;
+        CastContext context = new CastContext(Objects.requireNonNull(playerId, "playerId"), normalized, gameTick);
+        return policy.preflight(context) ? AttemptDecision.ALLOW : AttemptDecision.BLOCK;
     }
 
-    public void onEngineCostConsumed(UUID playerId, String spellId) {
-        policyForCommittedProjectSpell(spellId).onEngineCostConsumed(playerId, normalizeSpellId(spellId));
+    public AttemptDecision commitAcceptedCast(UUID playerId, String spellId, long gameTick) {
+        String normalized = normalizeSpellId(spellId);
+        if (!isOwned(normalized)) {
+            return AttemptDecision.PASS_THROUGH;
+        }
+        Policy policy = policies.get(normalized);
+        if (policy == null) {
+            return AttemptDecision.BLOCK;
+        }
+        CastContext context = new CastContext(Objects.requireNonNull(playerId, "playerId"), normalized, gameTick);
+        return policy.commitAcceptedCast(context) ? AttemptDecision.ALLOW : AttemptDecision.BLOCK;
     }
 
-    public void onEngineCastCompleted(UUID playerId, String spellId, String action, float progress) {
+    public void onEngineCostConsumed(UUID playerId, String spellId, long gameTick) {
+        String normalized = normalizeSpellId(spellId);
+        policyForCommittedProjectSpell(normalized).onEngineCostConsumed(
+                new CastContext(playerId, normalized, gameTick)
+        );
+    }
+
+    public void onEngineCastCompleted(
+            UUID playerId,
+            String spellId,
+            long gameTick,
+            String action,
+            float progress
+    ) {
         if (!Float.isFinite(progress) || progress < 0.0F || progress > 1.0F) {
             throw new IllegalArgumentException("Spell cast progress must be finite and inside [0, 1].");
         }
-        policyForCommittedProjectSpell(spellId)
-                .onEngineCastCompleted(playerId, normalizeSpellId(spellId), Objects.requireNonNull(action, "action"), progress);
+        String normalized = normalizeSpellId(spellId);
+        policyForCommittedProjectSpell(normalized).onEngineCastCompleted(
+                new CastCompletion(playerId, normalized, gameTick, Objects.requireNonNull(action, "action"), progress)
+        );
+    }
+
+    public ImpactDecision onImpact(
+            UUID playerId,
+            String spellId,
+            long gameTick,
+            int targetEntityId,
+            double enginePower,
+            double deliveryMultiplier
+    ) {
+        if (!Double.isFinite(enginePower) || enginePower < 0.0
+                || !Double.isFinite(deliveryMultiplier) || deliveryMultiplier < 0.0) {
+            throw new IllegalArgumentException("Impact inputs must be finite and non-negative.");
+        }
+        String normalized = normalizeSpellId(spellId);
+        return policyForCommittedProjectSpell(normalized).onImpact(
+                new ImpactContext(playerId, normalized, gameTick, targetEntityId, enginePower, deliveryMultiplier)
+        );
     }
 
     public boolean owns(String spellId) {
@@ -86,13 +123,12 @@ public final class SpellCastAuthority {
     }
 
     private Policy policyForCommittedProjectSpell(String spellId) {
-        String normalized = normalizeSpellId(spellId);
-        requireOwned(normalized);
-        Policy policy = policies.get(normalized);
+        requireOwned(spellId);
+        Policy policy = policies.get(spellId);
         if (policy == null) {
             throw new IllegalStateException(
                     "Spell Engine reached a committed project-spell stage without a registered authority policy: "
-                            + normalized
+                            + spellId
             );
         }
         return policy;
@@ -118,5 +154,37 @@ public final class SpellCastAuthority {
             throw new IllegalArgumentException("Invalid spell id: " + spellId);
         }
         return normalized;
+    }
+
+    public record CastContext(UUID playerId, String spellId, long gameTick) {
+    }
+
+    public record CastCompletion(
+            UUID playerId,
+            String spellId,
+            long gameTick,
+            String action,
+            float progress
+    ) {
+    }
+
+    public record ImpactContext(
+            UUID playerId,
+            String spellId,
+            long gameTick,
+            int targetEntityId,
+            double enginePower,
+            double deliveryMultiplier
+    ) {
+    }
+
+    public record ImpactDecision(boolean accepted, boolean critical) {
+        public static ImpactDecision accepted(boolean critical) {
+            return new ImpactDecision(true, critical);
+        }
+
+        public static ImpactDecision rejected() {
+            return new ImpactDecision(false, false);
+        }
     }
 }
