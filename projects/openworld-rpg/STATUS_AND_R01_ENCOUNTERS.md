@@ -815,7 +815,7 @@ recovery after miss: 0.80 s
 Use canonical Tough Hide sourcing:
 
 - Tough Hide 1–2 at 70%;
-- ordinary creature food only if accepted by later cooking catalog;
+- no ordinary food drop in R01; Louxia remains the intended early creature-food source;
 - no equipment drop.
 
 ---
@@ -918,10 +918,11 @@ Rules:
 
 ## Low-HP behavior
 
-Below 35% HP, once per 14 s maximum:
+Below 35% HP, `Furious Route` is deterministic rather than an implementation-chosen random chance:
 
-- Steelboar may perform a two-charge `Furious Route`;
+- when its 14 s Furious Route cooldown is ready, the **next** otherwise-valid `Iron Rush` opportunity at 6–12 blocks with a clear committed line becomes a two-charge `Furious Route`;
 - second charge receives its own >=0.60 s pivot/tell;
+- if a second legal charge line cannot be established after the pivot tell, the sequence ends after charge one and still consumes the Furious Route cooldown;
 - after the second charge, recovery is 1.40 s;
 - no permanent attack-speed/damage steroid.
 
@@ -1071,7 +1072,7 @@ guardable/perfect_guardable: true
 recovery: 0.40 s
 ```
 
-May chain a second mirrored sweep with a visible body turn; total two-hit combo budget stays <=22% benchmark HP.
+Antler Sweep follow-up is deterministic: above 40% HP, **every third** Antler Sweep chains a second mirrored sweep when the target remains in a legal follow-up arc; at <=40% HP, **every second** Antler Sweep does so. A skipped follow-up because no legal target exists still advances the sequence counter. Total two-hit combo budget stays <=22% benchmark HP.
 
 ## Attack 2 — Crown Charge
 
@@ -1126,7 +1127,8 @@ ordinary damage reduction during transition: 50% only
 After transition:
 
 - movement speed +10%;
-- `Crown Charge` may chain one second charge;
+- every **second** Sovereign-state `Crown Charge` attempts one second charge when a legal >=6-block committed line exists after the pivot;
+- if no legal line exists, the chain is skipped but the sequence counter still advances;
 - second charge has its own >=0.65 s turn/tell;
 - chained charge ends with 1.40 s recovery;
 - Antler Sweep follow-up timing becomes slightly tighter, but no hidden damage multiplier is added.
@@ -1309,7 +1311,8 @@ The point is to dodge **out of the line**, not iframe one event while standing i
 
 ### Lightning Furrow phase-2 change
 
-- may use 4 lanes instead of 3;
+- the **first** phase-2 Lightning Furrow uses 4 lanes;
+- later phase-2 uses alternate **3 lanes → 4 lanes → 3 lanes → 4 lanes**;
 - lane width/damage do not increase;
 - recovery remains a real punish window;
 - overlapping-lane single-wave hit cap remains.
