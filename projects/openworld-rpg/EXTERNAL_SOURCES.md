@@ -76,9 +76,11 @@ R01-specific evidence is recorded in `R01_ASSET_PHASE_B_EVIDENCE_2026-09-15.md`.
 | KayKit Restaurant Bits | food / kitchen props | CC0; official public GitHub tree inspected at commit `153c8a7535b48237854cb54ff6890679f8c574d1` | R01 meal/ingredient family; exact roast/stew candidates pinned, Trail Skewers still unresolved |
 | KayKit Character Animations 1.1 | humanoid animation | current authoritative itch page CC0; 161 clips; exact 1.1 work/fishing names published | primary public-safe motion pool; eating/drinking are still described as planned, not shipped |
 | Kenney Fantasy Town Kit | town/building family | CC0 candidate | alternate coherent town/building visual family |
-| Quaternius Animated Fish — OpenGameArt creator snapshot | R01 fish model family | creator-uploaded OpenGameArt page/file explicitly CC0; exact ZIP `Animated Fish Pack by @Quaternius.zip`; project-local hash pending | direct-review the 3 generic Fish meshes only; reject Dolphin/Shark/Whale/Manta for grounded R01 river slots |
+| Quaternius Animated Fish — OpenGameArt creator snapshot | historical fish source family / provenance | creator-uploaded OpenGameArt page/file explicitly CC0; exact ZIP `Animated Fish Pack by @Quaternius.zip`; project-local hash pending | old Poly Pizza-visible Fish entries reviewed for R01 and rejected as clownfish/Sea-Life/tuna identity; retain source as provenance/reference, not current R01 finalist |
 | CDmir Esox - Animated Fish | R01 freshwater Rare candidate | OpenGameArt creator upload CC0; exact `esox.zip` | strong direct-review priority: freshwater predator silhouette, 1,632 tris, Idle/Slow Swim/Fast Swim |
 | CDmir Fish (Animated) | R01 Common/Uncommon candidate | OpenGameArt creator upload CC0; exact `fish.zip` | rigged/animated/game-ready candidate; style compatibility must be checked in 3D/Minecraft |
+| Quaternius Armored Catfish | R01 freshwater Common/Uncommon candidate | Poly Pizza model `mtd9QK5yCe`; Public Domain / CC0; FBX/GLTF; Animated | priority direct-review candidate because it keeps the broader Quaternius low-poly family while reading freshwater; binary animation/scale review pending |
+| Quaternius Goldfish | fish reference / possible later pond content | Poly Pizza model `qS6CgsWFAh`; Public Domain / CC0; Animated | `REJECTED_R01_BASELINE` for current river/ford catches; ornamental/domesticated read is wrong for Heartland baseline |
 | gfroad 3d low poly catfish | R01 freshwater alternate | OpenGameArt creator upload CC0; exact `catfish.zip` / `catfish_obj.zip` | distinct freshwater silhouette; animation conversion/source-format risk before acceptance |
 | joyfulsquirrel Fish | R01 lightweight Common alternate | OpenGameArt creator upload CC0; exact `fish.zip` | 328-triangle rigged Swim candidate; accept only if visual quality matches R01 |
 | Planet Minecraft schematics | inns / blacksmiths / villages / shrines / castles / dungeons | VERIFY; creator terms vary | primary pool for private/local structure use |
@@ -441,6 +443,8 @@ Current policy:
 
 - these are **candidate sources**, not final four R01 species;
 - R01 never uses Dolphin/Shark/Whale/Manta merely to fill the early river roster;
+- the three old individually reviewed Quaternius `Fish` entries are also out of the R01 queue: clownfish visual (`BEcU9rjiAq`), Sea-Life deep-bodied fish (`Ymu8ftrmuT`), and Tuna/Sea-Life (`XWl86YFtpF`);
+- current priority freshwater direct review is CDmir Esox + CDmir Fish + Quaternius Armored Catfish;
 - final player-facing species names are written only after exact accepted model inspection;
 - exact archive bytes and project-local SHA-256 remain mandatory before raw asset admission;
 - icons derive from accepted models rather than unrelated fish illustrations.
