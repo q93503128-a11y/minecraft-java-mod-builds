@@ -755,6 +755,8 @@ Early Superior recipes unlock after the first player encounters Verdant Crystal 
 
 These are HARD_RULE starting costs. Real playtest may revise the canon if the entire R01 economy is demonstrably off; implementation does not choose its own rounded 2.5x value.
 
+At a settlement forge, material availability and consumption follow the global town-service sourcing rule: **Material Pouch first, then same-player Material Vault for any remainder, atomically**. Field/portable crafting has no remote Vault access.
+
 Do not require the player to craft these items to progress. They are a reliable gap-filling path beside loot/merchants/quests.
 
 ---
