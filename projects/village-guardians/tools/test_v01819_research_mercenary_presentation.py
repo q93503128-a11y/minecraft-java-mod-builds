@@ -61,7 +61,8 @@ def main():
     assert "* VillageDefenseResearchSystem.towerRangeMultiplier()" in turret
     assert "VillageDefenseResearchSystem.towerDurabilityMultiplier()" in turret
     assert "maxHp(upgradedBase)" in turret
-    assert "state = new TurretState(id, state.type(), state.pos(), state.level(), maxHp(state), true);" in turret
+    assert "TurretState base = new TurretState(id, pending.type(), candidate.immutable(), 1," in turret
+    assert "state = new TurretState(id, base.type(), base.pos(), base.level(), maxHp(base), true);" in turret
     assert "RESEARCH_DURABILITY_MIGRATION" in turret and "migrateLegacyResearchDurability()" in turret
     assert turret.count("migrateLegacyResearchDurability();") >= 2
     assert "applyResearchDurabilityUpgrade(ServerLevel level, float previousMultiplier)" in turret
