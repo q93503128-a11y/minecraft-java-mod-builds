@@ -278,6 +278,16 @@ There is no random percentage roll.
 
 A small trade wagon has thrown a wheel and spilled cargo at a bend.
 
+Driver start bark:
+
+> “Wheel's gone, and the grass started moving. Clear them out and give me a hand.”
+
+Completion bark:
+
+> “That's enough. We'll get moving before the road finds another problem for us.”
+
+These are ambient event lines, not a dialogue tree.
+
 Required world actors:
 
 - one stranded wagon;
@@ -537,7 +547,9 @@ A cleared quarry run can reset in either way:
 Reset Quarry:
 - requires no player currently inside the dungeon;
 - requires no active quarry encounter;
-- resets room enemies, room caches marked repeatable, lift shortcut and Earthloong controller;
+- resets room enemies, lift shortcut and Earthloong controller;
+- **R01 has no repeatable authored treasure cache**: the Upper Mining Gallery and Root-Breached Workings side caches are personal one-time rewards and never reset;
+- ordinary resource nodes use their own personal cooldown state and may naturally be available again;
 - does not reset personal first-clear/story evidence;
 - does not duplicate one-time treasure/discovery rewards.
 
@@ -734,7 +746,18 @@ Those materials must retain world-source value.
 
 ---
 
-# 11. Field Camp Kit — exact R01 acquisition
+# 11. R01 tool-tier boundary
+
+R01 starts and ends with the **Field** tier for Pick, Axe, Harvest Knife/Sickle and Fishing Rod.
+
+- no Refined or Masterwork gathering-tool upgrade recipe is sold, crafted or rewarded in R01;
+- all ordinary R01 nodes, including Verdant Crystal, are intentionally Field-tool accessible;
+- later regions may introduce the first Refined upgrade only through their own explicit regional canon;
+- implementation must not invent an Alderford “better pickaxe” shop because three global tool tiers exist.
+
+---
+
+# 12. Field Camp Kit — exact R01 acquisition
 
 The Field Camp Kit is not a starter item and not a quest reward.
 
@@ -772,7 +795,7 @@ First legal deployment uses the normal world placement preview and one compact c
 
 ---
 
-# 12. R01 profession and gathering progression
+# 13. R01 profession and gathering progression
 
 ## 12.1 Smithing Mastery Insight — R01 maximum 4
 
@@ -817,7 +840,7 @@ No mastery reward is duplicated by relogging.
 
 ---
 
-# 13. R01 fishing package — mechanics locked before final model naming
+# 14. R01 fishing package — mechanics locked before final model naming
 
 The final player-facing fish names are ASSET_BINDING because the project refuses to name species first and force weak mismatched models afterward.
 
@@ -825,12 +848,12 @@ The final player-facing fish names are ASSET_BINDING because the project refuses
 
 ## 13.1 R01 fish identities
 
-| Internal content slot | Rarity | Habitat | Size range | Base sell | Catch role |
-|---|---|---|---|---:|---|
-| `r01_river_common_a` | Common | moving river / ford | 16–42 cm | 4 Gold | easiest first catch |
-| `r01_river_common_b` | Common | riverbank / slow bend | 12–34 cm | 5 Gold | small ordinary catch |
-| `r01_pool_uncommon` | Uncommon | deeper slow pool / Riverwood edge | 24–54 cm | 7 Gold | longer tension introduction |
-| `r01_ford_rare` | Rare | authored quiet/deep R01 spot | 32–76 cm | 14 Gold | R01 record/trophy chase |
+| Internal content slot | Rarity | Habitat | Min | Normal band | Max | Base sell | Grillable | Catch role |
+|---|---|---|---:|---:|---:|---:|---|---|
+| `r01_river_common_a` | Common | moving river / ford | 16 cm | 24–34 cm | 42 cm | 4 Gold | yes | easiest first catch |
+| `r01_river_common_b` | Common | riverbank / slow bend | 12 cm | 18–28 cm | 34 cm | 5 Gold | yes | small ordinary catch |
+| `r01_pool_uncommon` | Uncommon | deeper slow pool / Riverwood edge | 24 cm | 32–46 cm | 54 cm | 7 Gold | yes | longer tension introduction |
+| `r01_ford_rare` | Rare | authored quiet/deep R01 spot | 32 cm | 44–64 cm | 76 cm | 14 Gold | yes | R01 record/trophy chase |
 
 For each slot, final accepted external fish model determines the ordinary player-facing species name before gameplay source for that slot is authored.
 
@@ -891,7 +914,7 @@ The low raw sale values are intentional: fishing supports collection/cooking/eco
 
 ---
 
-# 14. Alderford housing roster
+# 15. Alderford housing roster
 
 Alderford contains exactly **5 authored purchasable residential shells** at launch.
 
@@ -978,7 +1001,7 @@ Rules:
 
 ---
 
-# 15. Alderford NPC presence contract
+# 16. Alderford NPC presence contract
 
 NPC schedules are presentation, not service lockouts.
 
@@ -1023,7 +1046,7 @@ No vanilla villager/golem fills population gaps.
 
 ---
 
-# 16. Required first-use service lines
+# 17. Required first-use service lines
 
 These lines are player-facing canon. They may be localized, but implementation must not invent substitute exposition.
 
@@ -1063,7 +1086,7 @@ No mandatory “talk to every service NPC” objective is created.
 
 ---
 
-# 17. Post-Earthloong R01 aftermath
+# 18. Post-Earthloong R01 aftermath
 
 Earthloong first clear changes R01 presentation without deleting its repeatable content.
 
@@ -1101,7 +1124,7 @@ Quarry Relay Evidence is never granted again as a duplicate inventory object.
 
 ---
 
-# 18. R01 UI state inventory
+# 19. R01 UI state inventory
 
 R01 may use only the already-selected Lucifer-family visual grammar.
 
@@ -1134,7 +1157,7 @@ Exact art-piece file bindings and final pixel-perfect screenshot acceptance rema
 
 ---
 
-# 19. R01 state additions
+# 20. R01 state additions
 
 The following logical states are now required in addition to existing vertical-slice states:
 
@@ -1169,7 +1192,7 @@ All progression/economy ownership is server-authoritative.
 
 ---
 
-# 20. Reconnect / idempotency additions
+# 21. Reconnect / idempotency additions
 
 ## Roadside Trouble
 
@@ -1200,7 +1223,7 @@ All progression/economy ownership is server-authoritative.
 
 ---
 
-# 21. R01 combat Gold table
+# 22. R01 combat Gold table
 
 R01 combat Gold is deliberately small compared with authored objective/dungeon income. These are HARD_RULE starting values.
 
@@ -1230,7 +1253,7 @@ Rules:
 
 ---
 
-# 22. R01 economy sanity targets
+# 23. R01 economy sanity targets
 
 These are TUNEABLE_SEED acceptance bands.
 
@@ -1253,7 +1276,7 @@ Regalhart/Earthloong farming must remain attractive for their known drops withou
 
 ---
 
-# 23. R01 hidden-choice closure table
+# 24. R01 hidden-choice closure table
 
 | Question an implementer must not answer | Canonical answer |
 |---|---|
@@ -1282,7 +1305,7 @@ Regalhart/Earthloong farming must remain attractive for their known drops withou
 
 ---
 
-# 24. Remaining gates that are not design discretion
+# 25. Remaining gates that are not design discretion
 
 After this content-bible pass, the remaining R01 blockers are deliberately narrow.
 
@@ -1320,7 +1343,7 @@ If either gate exposes a hard conflict, update canon **before** coding the affec
 
 ---
 
-# 25. R01 content-closure acceptance
+# 26. R01 content-closure acceptance
 
 R01 planning is not called source-ready until all of these are true:
 
