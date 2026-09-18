@@ -185,6 +185,62 @@ tasks.register('verifyGameplayFoundationDependencies') {
     }
 }
 
+tasks.register('inspectGameplayFoundationMetadata') {
+    group = 'verification'
+    description = 'Records actual Fabric metadata for the nine pinned gameplay-foundation JARs.'
+
+    doLast {
+        def resolved = configurations.gameplayFoundation.resolve().toList().sort { a, b -> a.name <=> b.name }
+        if (resolved.size() != 9) {
+            throw new GradleException("Expected 9 gameplay foundation artifacts, resolved ${resolved.size()}: ${resolved*.name}")
+        }
+
+        def output = layout.buildDirectory.file('reports/m0/gameplay-foundation-metadata.txt').get().asFile
+        output.parentFile.mkdirs()
+        output.text = ''
+
+        resolved.each { file ->
+            def zip = new java.util.zip.ZipFile(file)
+            try {
+                def entry = zip.getEntry('fabric.mod.json')
+                if (entry == null) {
+                    throw new GradleException("Gameplay foundation artifact has no fabric.mod.json: ${file.name}")
+                }
+                def meta = new groovy.json.JsonSlurper().parseText(zip.getInputStream(entry).getText('UTF-8'))
+                def id = meta.id?.toString()
+                def versionValue = meta.version?.toString()
+                def depends = meta.depends instanceof Map
+                        ? meta.depends.collect { key, value -> "${key}=${value}" }.sort().join(", ")
+                        : String.valueOf(meta.depends)
+                def recommends = meta.recommends instanceof Map
+                        ? meta.recommends.collect { key, value -> "${key}=${value}" }.sort().join(", ")
+                        : String.valueOf(meta.recommends)
+                def suggests = meta.suggests instanceof Map
+                        ? meta.suggests.collect { key, value -> "${key}=${value}" }.sort().join(", ")
+                        : String.valueOf(meta.suggests)
+                def nested = meta.jars instanceof List
+                        ? meta.jars.collect { it instanceof Map ? it.file : it.toString() }.findAll { it }.sort().join(', ')
+                        : ''
+                def line = [
+                        "file=${file.name}",
+                        "id=${id}",
+                        "version=${versionValue}",
+                        "environment=${meta.environment}",
+                        "depends=${depends}",
+                        "recommends=${recommends}",
+                        "suggests=${suggests}",
+                        "nested=${nested}"
+                ].join('\t')
+                println "M0_GAMEPLAY_METADATA ${line}"
+                output << line << System.lineSeparator()
+            } finally {
+                zip.close()
+            }
+        }
+
+        println "M0_GAMEPLAY_FOUNDATION_METADATA_PASS count=${resolved.size()} report=${output}"
+    }
+}
 tasks.register('inspectCreatureFoundationDependencies') {
     group = 'verification'
     description = 'Resolves the pinned creature JARs and records their actual Fabric metadata without loading them into the core runtime.'
