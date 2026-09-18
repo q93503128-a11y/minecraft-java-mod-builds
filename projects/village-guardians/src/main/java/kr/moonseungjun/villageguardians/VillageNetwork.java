@@ -9,8 +9,22 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
+
 public final class VillageNetwork {
+    private static final Map<UUID, ActionStamp> LAST_MUTATION = new LinkedHashMap<>();
+
     private VillageNetwork() {}
+
+    public static synchronized void resetTransientState() {
+        LAST_MUTATION.clear();
+    }
+
+    public static synchronized void forgetPlayer(UUID playerId) {
+        if (playerId != null) LAST_MUTATION.remove(playerId);
+    }
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
         var registrar = event.registrar("5");
@@ -21,16 +35,53 @@ public final class VillageNetwork {
         registrar.playToClient(MainHudPayload.TYPE, MainHudPayload.STREAM_CODEC);
         registrar.playToServer(VillageUiActionPayload.TYPE, VillageUiActionPayload.STREAM_CODEC,
                 (payload, context) -> {
-                    if (context.player() instanceof ServerPlayer player
-                            && !VillageLocalActionSystem.handle(player, payload.action())
-                            && !VillageUiController.handleAction(player, payload.action())) {
-                        VillageUiService.handleAction(player, payload.action());
+                    if (context.player() instanceof ServerPlayer player) {
+                        String action = payload.action();
+                        if (!acceptAction(player, action)) return;
+                        if (!VillageLocalActionSystem.handle(player, action)
+                                && !VillageUiController.handleAction(player, action)) {
+                            VillageUiService.handleAction(player, action);
+                        }
                     }
                 });
         registrar.playToServer(RequestPlayerStatusPayload.TYPE, RequestPlayerStatusPayload.STREAM_CODEC,
                 (payload, context) -> {
                     if (context.player() instanceof ServerPlayer player) sendPlayerStatus(player);
                 });
+    }
+
+    private static synchronized boolean acceptAction(ServerPlayer player, String action) {
+        if (player == null || action == null || action.isBlank() || !isMutationAction(action)) return true;
+        long now = player.level().getGameTime();
+        ActionStamp previous = LAST_MUTATION.get(player.getUUID());
+        if (previous != null && previous.action().equals(action)
+                && now >= previous.gameTime() && now - previous.gameTime() <= 4L) {
+            return false;
+        }
+        LAST_MUTATION.put(player.getUUID(), new ActionStamp(action, now));
+        return true;
+    }
+
+    private static boolean isMutationAction(String action) {
+        return action.equals("vote_yes") || action.equals("vote_no")
+                || action.equals("buy_arrows") || action.equals("claim_bread")
+                || action.equals("sell_loot") || action.equals("exchange_supplies")
+                || action.startsWith("repair:") || action.startsWith("upgrade:")
+                || action.startsWith("gear:") || action.startsWith("consumable:")
+                || action.startsWith("sell_item:") || action.startsWith("forge_enhance:")
+                || action.startsWith("fusion_combine:")
+                || action.startsWith("role_node:") || action.startsWith("skill_node:")
+                || action.startsWith("research_skill_unlock:")
+                || action.startsWith("defense_research:")
+                || action.startsWith("merc_hire:") || action.startsWith("retire_mercenary:")
+                || action.startsWith("merc_deploy:")
+                || action.startsWith("siege_segment_repair:")
+                || action.startsWith("siege_segment_upgrade:")
+                || action.startsWith("siege_turret_repair:")
+                || action.startsWith("siege_turret_upgrade:")
+                || action.startsWith("siege_turret_dismantle:")
+                || action.equals("siege_turret_repair_all")
+                || action.startsWith("restart_");
     }
 
     public static void open(ServerPlayer player, OpenVillageUiPayload payload) {
@@ -156,6 +207,8 @@ public final class VillageNetwork {
         @Override
         public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
+
+    private record ActionStamp(String action, long gameTime) {}
 
     public record PlayerStatusPayload(
             String progress,
