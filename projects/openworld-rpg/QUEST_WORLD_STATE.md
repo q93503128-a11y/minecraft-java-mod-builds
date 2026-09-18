@@ -504,6 +504,8 @@ Run-scoped shortcut state can reset with the encounter cycle without deleting th
 
 This section closes the first-region implementation rules already outlined by `R01_VERTICAL_SLICE.md`.
 
+R01 uses deliberately elevated **one-time** EXP/Class-XP rewards during the opening progression ramp. The exact R01 values below override the ordinary later-region percentage bands for these first-completion objectives; repeats and ordinary combat keep the global baseline.
+
 ## 13.1 `Dust on the Quarry Road`
 
 State: personal Main objective with shared physical world actors.
@@ -529,9 +531,9 @@ If `Roadside Trouble` is not active, the other four categories are sufficient. T
 Reward stays canonical:
 
 ```text
-EXP ~35% current next-Lv requirement
+EXP **70%** current next-Lv requirement
 Gold 90
-Class XP ~25% current Class Rank requirement
+Class XP **50%** current Class Rank requirement
 ```
 
 Completion is remote/self-evident; no mandatory walk back to the guild just to claim the numeric reward.
@@ -553,9 +555,9 @@ gather 3 Healing Herb units from valid R01 herb nodes
 Reward stays:
 
 ```text
-EXP ~20%
+EXP **40%**
 Gold 60
-Class XP ~15%
+Class XP **30%**
 ```
 
 No forced potion-crafting follow-up.
@@ -566,7 +568,7 @@ State: personal optional Contract / discovery bridge.
 
 Objective:
 
-- investigate the damaged cart site;
+- inspect the overturned **stone water trough** site;
 - inspect one additional authored large-creature territory sign nearby.
 
 Completion records the region's large-creature warning knowledge and can seed later Steelboar/Regalhart discovery context.
@@ -574,9 +576,9 @@ Completion records the region's large-creature warning knowledge and can seed la
 Reward remains:
 
 ```text
-EXP ~20%
+EXP **40%**
 Gold 70
-Class XP ~15%
+Class XP **30%**
 ```
 
 ## 13.4 `A Stag at the Ford`
