@@ -95,6 +95,7 @@ The R07/R08 intake attempted to inspect the exact current Fabric 26.2 JAR, but t
 | R01 | Regalhart / major field identity | Threateningly lineage/dependency direction already in R01 canon | `DEPENDENCY_VALIDATE` | current presentation and hitbox acceptance |
 | R01 | Trail Stag | Quaternius animated Stag source direction | `EXTERNAL_CANDIDATE_VALIDATE` | exact artifact/license-at-acquisition, conversion, mount/dismount rider motion, Minecraft review |
 | R01 | player outfits / weapons / tools / food / settlement / potions | Quaternius/KayKit/Kenney families pinned in `R01_ASSET_INTAKE.md` | `ASSET_INTAKE_ACTIVE` | acquisition hashes, exact variant choice, 3D/Minecraft acceptance |
+| R01 | four Heartland catchable fish identities + Fish Codex icons | Quaternius OpenGameArt historical CC0 snapshot + CDmir Esox/Fish + CC0 catfish/light-fish direct-review shortlist | `ASSET_INTAKE_ACTIVE` | acquire/hash exact archives; inspect Quaternius generic Fish + freshwater alternates in 3D; reject marine filler; bind 4 models; only then lock species names/icons |
 | R02 | Grovebound Warden | Quaternius `Goleling Evolved` direction | `EXTERNAL_CANDIDATE_VALIDATE` | exact source artifact, clips, scale/silhouette, final binding |
 | R02 | Edras, Last Curator | Threateningly Lich dependency direction | `DEPENDENCY_VALIDATE` | current 26.2 presentation, reinforcement animation/readability |
 | R03 | Whitecrest Griffin | VitSh `Griffin Animated` | `EXTERNAL_CANDIDATE_VALIDATE` | downloadable artifact, attribution/hash, flight/landing clips, weak-point viability |
@@ -145,6 +146,8 @@ Do not waste another research pass looking for replacement models merely because
 - R12 Terradragon.
 
 Their next step is **actual current-version runtime/visual acceptance**, not another broad web search.
+
+R01 fish are also **not a broad-discovery problem anymore**: `R01_ASSET_INTAKE.md` §3.4 now owns a source-specific CC0 direct-review shortlist. The next action is binary acquisition + 3D comparison, not another generic fish search.
 
 ---
 
