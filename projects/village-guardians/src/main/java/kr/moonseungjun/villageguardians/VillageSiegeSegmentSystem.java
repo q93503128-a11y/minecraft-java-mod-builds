@@ -111,13 +111,13 @@ public final class VillageSiegeSegmentSystem {
         if (current >= maximum) return segment.displayName() + "은(는) 이미 완전합니다.";
         int missing = maximum - current;
         int cost = Math.max(35, (missing + 8) / 9);
-        if (!VillageProgressionSystem.spendCoins(player, cost)) {
-            return "수리 주화가 부족합니다. 필요 " + cost + ", 현재 " + VillageProgressionSystem.coins(player);
+        if (!VillageProgressionSystem.spendSupplies(cost)) {
+            return "공동 보급품이 부족합니다. 수리 필요 " + cost + ", 현재 " + VillageProgressionSystem.supplies();
         }
         VillageSiegePersistence.putInt("segment_hp_" + segment.id(), maximum);
         int axis = VillageSiegePersistence.getInt("segment_breach_" + segment.id(), nominalAxis(segment));
         if (player.level() instanceof ServerLevel level) restoreLocalWall(level, segment, axis);
-        return segment.displayName() + " 국소 손상 복구 완료 · 주화 " + cost + " 사용";
+        return segment.displayName() + " 국소 손상 복구 완료 · 공동 보급품 " + cost + " 사용";
     }
 
     public static String upgrade(ServerPlayer player, Segment segment) {
@@ -133,8 +133,8 @@ public final class VillageSiegeSegmentSystem {
         int current = upgradeLevel(segment);
         if (current >= 3) return segment.displayName() + " 구역 강화가 최고 단계입니다.";
         int cost = 150 + current * 180;
-        if (!VillageProgressionSystem.spendCoins(player, cost)) {
-            return "강화 주화가 부족합니다. 필요 " + cost + ", 현재 " + VillageProgressionSystem.coins(player);
+        if (!VillageProgressionSystem.spendSupplies(cost)) {
+            return "공동 보급품이 부족합니다. 강화 필요 " + cost + ", 현재 " + VillageProgressionSystem.supplies();
         }
         int oldMax = maxHp(segment);
         VillageSiegePersistence.putInt("segment_upgrade_" + segment.id(), current + 1);
@@ -142,7 +142,8 @@ public final class VillageSiegeSegmentSystem {
         VillageSiegePersistence.putInt("segment_hp_" + segment.id(),
                 Math.min(newMax, currentHp(segment) + Math.max(0, newMax - oldMax)));
         return segment.displayName() + " 구역 강화 " + (current + 1)
-                + "단계 완료 · 최대 HP " + newMax + " · 방어 등급 " + defenseGrade(segment);
+                + "단계 완료 · 공동 보급품 " + cost + " 사용 · 최대 HP " + newMax
+                + " · 방어 등급 " + defenseGrade(segment);
     }
 
     public static BlockPos attackPoint(Segment segment, BlockPos attacker) {
