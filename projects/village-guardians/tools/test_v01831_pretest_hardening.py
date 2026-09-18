@@ -27,7 +27,8 @@ def main() -> None:
         "private static void buildTower", 1)[0]
     assert "buildWallAccessRamp" in access
     assert "new int[]{-25, 25}" in access
-    assert "new int[]{-34, 34}" in access
+    assert "SIDE_REAR_ACCESS_LANE = 52" in terrain
+    assert "new int[]{-SIDE_REAR_ACCESS_LANE, SIDE_REAR_ACCESS_LANE}" in access
     for direction in ("Direction.NORTH", "Direction.SOUTH", "Direction.WEST", "Direction.EAST"):
         assert direction in access
     assert "Blocks.STONE_BRICK_STAIRS.defaultBlockState().setValue(StairBlock.FACING, outward)" in access
@@ -35,11 +36,10 @@ def main() -> None:
     assert "width = -3; width <= 3" in access
     assert "clearY <= 3" in access
 
-    assert "isSideRearStairOpening(offset)" in enhancements
-    assert "Math.abs(Math.abs(offset) - WALL_EMPLACEMENT_LANE) <= 3" in enhancements
-    assert "placeRailing(level, new BlockPos(x, railY, southOuter));" in enhancements
-    assert "placeRailing(level, new BlockPos(westOuter, railY, z));" in enhancements
-    assert "placeRailing(level, new BlockPos(eastOuter, railY, z));" in enhancements
+    reinforcement = enhancements.split("static void reinforceWallRailings", 1)[1].split(
+        "/** True only for the authored 3x3", 1)[0]
+    assert "buildWallTopEmplacements(level, center)" in reinforcement
+    assert "placeRailing" not in reinforcement
 
     assert "rallyPoint(center, zone, kind, golem.getUUID())" in deployment
     assert "private static BlockPos rangerWallPost" in deployment
@@ -61,8 +61,8 @@ def main() -> None:
     assert "center.below(8), Blocks.DIAMOND_BLOCK" in world
     assert "성벽 4면 접근 계단" in world
 
-    print("[PASS] north access is preserved while south/east/west walls gain direct five-wide stairs")
-    print("[PASS] side/rear inner parapets open only at authored stair landings while outer fall protection remains")
+    print("[PASS] north access is preserved while south/east/west five-wide stairs use the dedicated ±52 traffic lane")
+    print("[PASS] the enhancement pass no longer duplicates full-wall railings; it owns emplacement-local rails only")
     print("[PASS] ranger WALL deployment now targets the physical north-wall walk instead of the old elevated air/ramp coordinate")
     print("[PASS] ranger wall posts use ten stable UUID slots and failed long paths stage at the matching stair foot")
     print("[PASS] ranger ranged combat keeps physical LOS and flying-threat priority from the accepted air-defense pass")
