@@ -371,7 +371,15 @@ The first in-game UI implementation should already use this selected visual lang
 
 ---
 
-# 12. Next UI implementation checkpoint
+# 12. R01 production-screen authority
+
+`R01_UI_PRODUCTION_SPEC.md` is the dedicated R01 refinement of this global visual grammar. It closes the first-region HUD placement, class-select/board/journal/map/market/service/property/fishing/reward flows, transaction confirmations, pending-choice behavior and error/reconnect presentation. Those interaction decisions are not left for source implementation.
+
+This file still owns the cross-game visual family and global screen architecture. Exact external UI sprite/font/icon bindings and real-client scale correction remain pre-code/visual-validation work.
+
+---
+
+# 13. Next UI implementation checkpoint
 
 Before source bootstrap or immediately at M0:
 
