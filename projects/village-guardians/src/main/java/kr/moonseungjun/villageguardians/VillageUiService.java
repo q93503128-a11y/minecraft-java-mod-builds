@@ -44,13 +44,14 @@ public final class VillageUiService {
 
     public static void openGameOverForAll(MinecraftServer server) {
         String body = "§c마을 회관이 파괴되어 방어에 실패했습니다.\n\n"
-                + "§f전투 전 낮으로 돌아가면 시설 내구도와 용병을 야간 시작 시점으로 복구하고, "
-                + "같은 웨이브 편성을 다시 상대합니다. 주화·보급품·획득 아이템은 되돌리지 않습니다.\n"
+                + "§f전투 전 낮으로 돌아가면 시설 내구도·성벽·포탑·용병을 야간 시작 시점으로 복구하고, "
+                + "같은 인원수 기준 웨이브를 다시 상대합니다. 획득한 주화·아이템·개인 성장은 유지됩니다.\n"
+                + "§6같은 날 첫 3회 재도전에는 전투 분석에 따른 공동 보급품 지원이 점차 줄어들며 지급됩니다.\n"
                 + "§f처음부터 다시를 선택하면 마을·직업·레벨·성장·유물·용병·장비를 초기화합니다.";
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             send(player, "game_over", "마을 방어 실패", body,
                     List.of("restart_previous", "restart_start"),
-                    List.of("전투 전 낮으로 돌아가기|시설·용병 복구 · 같은 밤 재도전",
+                    List.of("전투 전 낮으로 돌아가기|전투 상태 복구 · 성장 유지 · 제한된 재도전 보급 지원",
                             "처음부터 완전히 다시|마을·개인 성장·보유품 전체 초기화"));
         }
     }
