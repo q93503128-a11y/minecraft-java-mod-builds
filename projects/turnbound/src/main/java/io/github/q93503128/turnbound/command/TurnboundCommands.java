@@ -89,30 +89,6 @@ public final class TurnboundCommands {
         }
     }
 
-    private static int worldStatus(CommandSourceStack source) throws CommandSyntaxException {
-        var player = source.getPlayerOrException();
-        var server = player.level().getServer();
-        String status = DrehmalWorldBinding.status(server);
-        source.sendSuccess(() -> Component.literal("TURNBOUND WORLD · " + status), false);
-        return DrehmalWorldBinding.isBound(server) ? Command.SINGLE_SUCCESS : 0;
-    }
-
-    private static int bindDrehmal(CommandSourceStack source) throws CommandSyntaxException {
-        var player = source.getPlayerOrException();
-        try {
-            DrehmalWorldBinding.bindManual(player);
-            ExternalWorldBootstrap.initialize(player);
-            var hub = DrehmalWorldBinding.hubSeed();
-            source.sendSuccess(() -> Component.literal(
-                    "TURNBOUND WORLD · Drehmal profile bound without rebuilding terrain. Hub seed "
-                            + hub.getX() + " " + hub.getY() + " " + hub.getZ()), false);
-            return Command.SINGLE_SUCCESS;
-        } catch (RuntimeException exception) {
-            source.sendFailure(Component.literal("TURNBOUND WORLD · binding rejected: " + exception.getMessage()));
-            return 0;
-        }
-    }
-
     private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> currencyNode(
             String literal, PlayerProfile.Currency currency) {
         return Commands.literal(literal)
