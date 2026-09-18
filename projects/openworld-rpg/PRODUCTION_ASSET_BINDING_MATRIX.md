@@ -1,7 +1,7 @@
 # Open-World RPG — Production Asset Binding Matrix
 
 > Status: **ACTIVE CANON — production-facing visual/source binding triage before source bootstrap**  
-> Date: 2026-09-17  
+> Date: 2026-09-18  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Project contract: `PROJECT.md`  
 > Provenance registry: `EXTERNAL_SOURCES.md`  
@@ -91,10 +91,10 @@ The R07/R08 intake attempted to inspect the exact current Fabric 26.2 JAR, but t
 
 | Region | Player-facing slot | Current external direction | Status | What actually remains |
 |---|---|---|---|---|
-| R01 | Earthloong dungeon boss | Threateningly Mobs Continued | `DEPENDENCY_VALIDATE` | current 26.2 model/animation/hit volume, project attack/VFX alignment |
-| R01 | Regalhart / major field identity | Threateningly lineage/dependency direction already in R01 canon | `DEPENDENCY_VALIDATE` | current presentation and hitbox acceptance |
+| R01 | Earthloong dungeon boss | Threateningly Mobs Continued — exact Fabric 26.2 target `1.1.1+fabric.26.2`, Version ID `Bdd8lkUM` | `DEPENDENCY_VALIDATE` | artifact identity is pinned; materialize current JAR, inspect model/animation/hit volume, then align project attacks/VFX |
+| R01 | Regalhart / major field identity | Threateningly lineage/dependency direction; same pinned Fabric 26.2 artifact `Bdd8lkUM` | `DEPENDENCY_VALIDATE` | materialize current JAR, inspect current presentation/animation/hitbox, then accept/reject integration |
 | R01 | Trail Stag | Quaternius animated Stag source direction | `EXTERNAL_CANDIDATE_VALIDATE` | exact artifact/license-at-acquisition, conversion, mount/dismount rider motion, Minecraft review |
-| R01 | player outfits / weapons / tools / food / settlement / potions | Quaternius/KayKit/Kenney families pinned in `R01_ASSET_INTAKE.md` | `ASSET_INTAKE_ACTIVE` | acquisition hashes, exact variant choice, 3D/Minecraft acceptance |
+| R01 | player outfits / weapons / tools / food / settlement / potions | Quaternius/KayKit/Kenney families pinned in `R01_ASSET_INTAKE.md`; selected KayKit starter/equipment + Restaurant rows now exact-byte/SHA/geometry audited in Phase C | `ASSET_INTAKE_ACTIVE` | **do not rediscover audited KayKit filenames**; remaining work is visual conversion/pivot/Minecraft acceptance plus unresolved apparel/potion/settlement/variant artifacts |
 | R01 | four Heartland catchable fish identities + Fish Codex icons | four-role direct-review set: Small Fish Common Minnow / CDmir Fish / Quaternius Armored Catfish / CDmir Esox; gfroad Catfish + joyfulsquirrel Fish alternates only | `ASSET_INTAKE_ACTIVE` | old marine candidates rejected and broad search stopped; pin Common Minnow exact package locator, acquire/hash binaries, inspect mesh/animation/scale/style, then lock final species names/icons |
 | R02 | Grovebound Warden | Quaternius `Goleling Evolved` direction | `EXTERNAL_CANDIDATE_VALIDATE` | exact source artifact, clips, scale/silhouette, final binding |
 | R02 | Edras, Last Curator | Threateningly Lich dependency direction | `DEPENDENCY_VALIDATE` | current 26.2 presentation, reinforcement animation/readability |
@@ -195,6 +195,15 @@ Canon visual family remains:
 - Kenney `Fantasy UI Borders` / `UI Pack - Adventure` only as support primitives.
 
 Status: `BOUND_DIRECTION`.
+
+Exact official acquisition targets pinned on 2026-09-18:
+
+```text
+Lucifer RPG UI: Foozle_UI_0002_Lucifer_RPG_UI_Pixel_Art.zip — 29 MB — CC0
+Lucifer Equipment: Foozle_2DS0005_Lucifer_Equipment_Pixel_Art.zip — 81 kB — CC0
+```
+
+Raw ZIP bytes/SHA-256 and real Minecraft GUI-scale screenshot acceptance remain open; UI-family selection does not.
 
 Implementation rule: the first player-facing HUD/inventory/skill/service screen must already use the accepted Lucifer-family visual language. Do not first build a generic Minecraft/black-panel screen and promise to skin it later.
 
