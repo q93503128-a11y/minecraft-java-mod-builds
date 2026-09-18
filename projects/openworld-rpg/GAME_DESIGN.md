@@ -229,13 +229,15 @@ These are ordinary mixed-play targets, not speedrun/grind-route guarantees:
 
 | Lv span | Typical active time per Lv |
 |---|---:|
-| 1–10 | 4–6 min |
+| 1–10 | **9–13 min** |
 | 11–25 | 6–9 min |
 | 26–45 | 9–13 min |
 | 46–65 | 13–18 min |
 | 66–80 | 17–24 min |
 
-Pure leveling time is therefore much shorter than before. A player who actually explores, travels, manages gear, visits towns and completes varied content should typically approach Lv 80 after roughly **20–30 hours** of a substantial first playthrough. Completionist play can be much longer. The intended route must never require repetitive mob grinding just to stay on the region curve.
+Pure leveling time is therefore much shorter than the old benchmark while still leaving room for authored exploration. A player who actually explores, travels, manages gear, visits towns and completes varied content should typically approach Lv 80 after roughly **20–30 hours** of a substantial first playthrough.
+
+**R01 opening exception:** the first region deliberately uses larger **one-time** quest/discovery/first-clear EXP percentages than the normal regional bands below. The old R01 values could supply only roughly three levels even when a player cleared most authored content, which contradicted the locked Lv8 first-dungeon danger/readability and 55–75 minute opening target. R01's exact boosted first-time values live in its regional canon. Repeat events, repeat bosses and ordinary combat remain on the normal baseline so the opening bonus cannot become a farming loop. Completionist play can be much longer. The intended route must never require repetitive mob grinding just to stay on the region curve.
 
 ### EXP reward calibration
 
@@ -1283,8 +1285,8 @@ Use readable ordinary names for ordinary materials and save invented names for m
 
 Examples of naming shape, not a locked R01 item list:
 
-- ordinary: Iron Ore, Hardwood, River Herb, Louxia Meat, Tough Hide;
-- source-linked: Regalhart Antler, Earthloong Core, Frost Crystal, Moon Pollen;
+- ordinary: Iron Ore, Hardwood, Healing Herb, Louxia Meat, Tough Hide;
+- source-linked: Regalhart Antler, Earthloong Scale, Frost Crystal, Moon Pollen;
 - avoid generic development language such as `Region Material A` or unnecessary extra currency tokens.
 
 ## Multiplayer ownership
@@ -1475,7 +1477,7 @@ Target affordability relative to same-tier gross income:
 - strong rotating higher-grade gear: roughly 30–60 minutes;
 - rare/signature merchant item: roughly 1.5–3 hours and therefore a deliberate savings target.
 
-R01 starting anchors before the later loot-economy pass:
+R01 starting economic anchors (kept for broad scale; exact R01 service/catalog values are refined by `R01_CONTENT_BIBLE.md`):
 
 - food/basic utility consumable: ~10–25 Gold;
 - basic potion: ~25–40 Gold;
@@ -1681,7 +1683,7 @@ Completed/advanced design work that should **not** be restarted from zero:
 - external-first player motion rule including dash/dodge/roll/work/mount actions;
 - four-dose Recovery Belt, baseline R01 potions, food, alchemy/cooking and five-rank light profession mastery;
 - external-first armor/apparel/NPC-clothing pipeline, Armor Model API direction and lightweight Wardrobe rules;
-- R01 asset intake evidence through Phase-B Pass 4, including Wizard River Scholar, Knight Ironbound and Kenney Trail Skewers exact candidate families while preserving unresolved acceptance gates;
+- R01 asset intake has advanced beyond the older Pass-4 snapshot: River Scholar / Ironbound / Trail Skewers candidates remain, and the current four-role fish direct-review queue is Common Minnow / CDmir Fish / Armored Catfish / CDmir Esox; unresolved archive/hash/3D/Minecraft acceptance gates remain;
 - finished-game quality model and current design-completeness audit criteria.
 
 The remaining gameplay-source-bootstrap gates are exactly the current project-level gates in `PROJECT.md`:
