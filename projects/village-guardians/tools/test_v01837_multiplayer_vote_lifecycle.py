@@ -28,13 +28,25 @@ def main() -> None:
     assert "진행 중인 시간 투표를 다시 열었습니다." in propose
     assert 'new Proposal(' in propose and "proposer.getGameProfile().name()" in propose
 
-    evaluate = section(council, "private static void evaluateProposal", "private static void advanceTime")
-    assert "int online = Math.max(1, server.getPlayerList().getPlayerCount())" in evaluate
-    assert "int remainingVotes = Math.max(0, online - yesVotes - noVotes)" in evaluate
+    evaluate = section(council, "private static void evaluateProposal(MinecraftServer server)", "private static void advanceTime")
+    assert "evaluateProposal(server, null)" in evaluate
+    assert "effectiveOnlineCount(server, departingPlayer)" in evaluate
     assert "yesVotes + remainingVotes < required" in evaluate
-    assert "noVotes >= required" not in evaluate
     assert evaluate.count("VillageUiService.closeVoteForAll(server)") == 2
     assert "activeProposal = null" in evaluate
+
+    joined = section(council, "public static synchronized void onPlayerJoined", "public static synchronized void onPlayerLoggedOut")
+    assert "evaluateProposal(server)" in joined
+    assert "VillageUiService.openVote(player, activeProposal.proposerName())" in joined
+
+    left = section(council, "public static synchronized void onPlayerLoggedOut", "/** Compatibility hook")
+    assert "departingPlayer.equals(activeProposal.proposer())" in left
+    assert "activeProposal.votes().remove(departingPlayer)" in left
+    assert "evaluateProposal(server, departingPlayer)" in left
+
+    vote = section(council, "public static synchronized String vote", "public static synchronized ExperienceResult grantExperience")
+    assert "activeProposal.votes().containsKey(player.getUUID())" in vote
+    assert "이미 이 안건에 투표했습니다." in vote
 
     assert "private record Proposal(String id, UUID proposer, String proposerName, Map<UUID, Boolean> votes)" in council
     assert "public static void openVote(ServerPlayer player, String proposerName)" in service
@@ -56,7 +68,8 @@ def main() -> None:
     print("[PASS] multiplayer rejection resolves when a yes majority becomes mathematically impossible")
     print("[PASS] vote screens close after casting and close for remaining viewers on resolution")
     print("[PASS] a still-active vote can be reopened after the player manually closes its screen")
-    print("[PASS] v0.18.37 multiplayer vote lifecycle contract complete")
+    print("[PASS] active votes absorb joins, cancel on proposer logout, and ignore duplicate casts")
+    print("[PASS] v0.18.37 multiplayer vote lifecycle contract remains extended by later LAN hardening")
 
 
 if __name__ == "__main__":
