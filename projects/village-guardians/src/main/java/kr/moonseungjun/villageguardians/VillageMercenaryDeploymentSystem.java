@@ -35,7 +35,7 @@ public final class VillageMercenaryDeploymentSystem {
         for (VillageMercenarySystem.MercenaryClass kind : VillageMercenarySystem.MercenaryClass.values()) {
             actions.add("merc_class:" + kind.id());
             labels.add(kind.displayName() + " · " + deployment(kind).displayName()
-                    + "|" + kind.description() + " · 고용비 " + VillageMercenarySystem.hireCost(kind));
+                    + "|" + kind.description() + " · 고용비 공동 보급품 " + VillageMercenarySystem.hireCost(kind));
         }
         send(player, "management", "용병 배치 지휘", VillageMercenarySystem.status(player.level().getServer())
                 + "\n전투 전 병과별 거점만 지정합니다. 전투 중에는 각 병과 AI가 자동으로 우선 목표를 처리합니다.", actions, labels);
@@ -50,7 +50,7 @@ public final class VillageMercenaryDeploymentSystem {
         java.util.ArrayList<String> actions = new java.util.ArrayList<>();
         java.util.ArrayList<String> labels = new java.util.ArrayList<>();
         actions.add("merc_hire:" + kind.id());
-        labels.add("새 " + kind.displayName() + " 고용|주화 " + VillageMercenarySystem.hireCost(kind) + " · 정원 내에서 지속 성장");
+        labels.add("새 " + kind.displayName() + " 고용|공동 보급품 " + VillageMercenarySystem.hireCost(kind) + " · 정원 내에서 지속 성장");
         for (Deployment zone : Deployment.values()) {
             if (!allowed(kind, zone)) continue;
             actions.add("merc_deploy:" + kind.id() + ":" + zone.id());
@@ -80,6 +80,14 @@ public final class VillageMercenaryDeploymentSystem {
         MinecraftServer server = player.level().getServer();
         if (server != null) moveMercenaries(server, VillageMercenarySystem.loadedMercenaries(server.overworld()), kind, zone, true);
         return kind.displayName() + " 배치를 " + zone.displayName() + "(으)로 지정했습니다.";
+    }
+
+    public static void prepareNightDeployment(MinecraftServer server) {
+        if (server == null) return;
+        List<IronGolem> loaded = VillageMercenarySystem.loadedMercenaries(server.overworld());
+        for (VillageMercenarySystem.MercenaryClass kind : VillageMercenarySystem.MercenaryClass.values()) {
+            moveMercenaries(server, loaded, kind, deployment(kind), true);
+        }
     }
 
     public static Deployment deployment(VillageMercenarySystem.MercenaryClass kind) {
@@ -121,7 +129,13 @@ public final class VillageMercenaryDeploymentSystem {
             boolean returningToRally = force || !VillageRaidSystem.isActive()
                     || golem.blockPosition().distSqr(rally) > leash * leash;
             if (returningToRally) {
-                boolean accepted = golem.getNavigation().moveTo(rally.getX() + 0.5, rally.getY(), rally.getZ() + 0.5,
+                if (force && zone == Deployment.GATE_FRONT) {
+                    golem.stopRiding();
+                    golem.snapTo(rally.getX() + 0.5, rally.getY(), rally.getZ() + 0.5);
+                    golem.getNavigation().stop();
+                }
+                boolean accepted = force && zone == Deployment.GATE_FRONT
+                        || golem.getNavigation().moveTo(rally.getX() + 0.5, rally.getY(), rally.getZ() + 0.5,
                         kind == VillageMercenarySystem.MercenaryClass.STRIKER ? 1.18 : 1.02);
                 if (!accepted && zone == Deployment.WALL) {
                     BlockPos staging = rangerWallStagingPoint(center, golem.getUUID());
@@ -146,7 +160,7 @@ public final class VillageMercenaryDeploymentSystem {
     private static BlockPos rallyPoint(
             BlockPos center, Deployment zone, VillageMercenarySystem.MercenaryClass kind, UUID mercenaryId) {
         return switch (zone) {
-            case GATE_FRONT -> center.offset(kind == VillageMercenarySystem.MercenaryClass.STRIKER ? 9 : -9, 0, -58);
+            case GATE_FRONT -> center.offset(kind == VillageMercenarySystem.MercenaryClass.STRIKER ? 12 : -12, 0, -84);
             case INNER -> center.offset(kind.ordinal() * 4 - 6, 0, -18);
             case WALL -> rangerWallPost(center, mercenaryId);
         };
@@ -185,7 +199,7 @@ public final class VillageMercenaryDeploymentSystem {
     }
 
     public enum Deployment {
-        GATE_FRONT("front", "성문 전방", "수호병·공격병이 주공을 먼저 저지하는 전선"),
+        GATE_FRONT("front", "성문 전방", "수호병·공격병이 밤 시작 전에 북문 밖 전선으로 전개되어 주공을 먼저 저지"),
         INNER("inner", "성 내부", "의무병과 예비대가 시설·플레이어를 지원하는 안전 거점"),
         WALL("wall", "성벽", "궁수 중심의 고지 원거리 지원 거점");
         private final String id, displayName, description;
