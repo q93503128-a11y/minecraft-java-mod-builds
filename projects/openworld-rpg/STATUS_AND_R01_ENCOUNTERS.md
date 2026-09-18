@@ -1151,14 +1151,16 @@ This is the project adaptation of the donor's low-HP special behavior: more patt
 
 ## Rewards
 
+R01 first-defeat boss EXP/Class-XP is intentionally elevated above the later-region baseline as part of the one-time opening progression ramp. Repeat rewards stay on the normal global band.
+
 First eligible defeat:
 
 - 2 Regalhart Antlers;
 - guaranteed Superior+ normal gear;
 - 15% direct Mythic roll from the exact one-item R01 launch signature pool: `Hartcrown Spear`;
 - Gold: **70**;
-- EXP ~20% current next-Lv requirement;
-- Class XP ~15% current Class Rank requirement.
+- EXP **40%** current next-Lv requirement;
+- Class XP **30%** current Class Rank requirement.
 
 Repeat:
 
@@ -1356,6 +1358,8 @@ Earthloong is **not immune** to its own element's status system by a hidden blan
 
 ## Rewards
 
+The first Earthloong clear uses the R01 one-time progression ramp. Repeat clears use ordinary repeat percentages.
+
 First eligible dungeon clear:
 
 Boss kill layer:
@@ -1363,13 +1367,14 @@ Boss kill layer:
 - guaranteed Superior+ normal gear;
 - Earthloong Scale x2;
 - 15% direct Mythic roll from `Rootquake Maul / Earthscale Ward` pool;
-- boss Class XP ~10% current Class Rank requirement.
+- boss EXP **40%** current next-Lv requirement;
+- boss Class XP **20%** current Class Rank requirement.
 
 Dungeon-completion layer:
 
 - choose one Superior Item Lv8: `Ironroot Longsword / Riverthorn Bow / Lumenwood Staff`;
-- EXP: **50%** current next-Lv requirement from completion + boss contribution;
-- Class XP: **32%** from completion + boss contribution;
+- EXP: **100%** current next-Lv requirement from completion + the exact 40% boss layer above;
+- Class XP: **64%** current Class Rank requirement from completion + the exact 20% boss layer above;
 - Gold: **180 total first-clear Gold**; no separate extra Earthloong kill Gold.
 
 Repeat:
@@ -1378,8 +1383,8 @@ Repeat:
 - boss 60% additional normal gear;
 - Earthloong Scale x1;
 - 15% Mythic roll;
-- repeat completion EXP **22%** + boss contribution;
-- Class XP **15%** completion + ~6% boss;
+- repeat completion EXP **22%** + **7%** boss contribution;
+- Class XP **15%** completion + **6%** boss;
 - Gold: **90**.
 
 These values remain subject to actual playtest feel, but implementation starts from these numbers rather than inventing them.
