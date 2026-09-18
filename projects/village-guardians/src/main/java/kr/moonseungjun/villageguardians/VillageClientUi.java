@@ -15,7 +15,15 @@ public final class VillageClientUi {
         event.register(VillageNetwork.OpenVillageUiPayload.TYPE,
                 (rawPayload, context) -> {
                     VillageNetwork.OpenVillageUiPayload payload = resolve(rawPayload);
-                    Minecraft.getInstance().gui.setScreen(
+                    Minecraft minecraft = Minecraft.getInstance();
+                    if ("close_vote".equals(payload.screenId())) {
+                        if (minecraft.gui.screen() instanceof VillageActionDetailScreen screen
+                                && screen.isVoteScreen()) {
+                            minecraft.gui.setScreen(null);
+                        }
+                        return;
+                    }
+                    minecraft.gui.setScreen(
                             switch (payload.screenId()) {
                                 case "skill_tree" -> new VillageSkillTreeScreen(payload);
                                 case "role_progress", "role_skills" -> new VillageRoleProgressScreen(payload);
