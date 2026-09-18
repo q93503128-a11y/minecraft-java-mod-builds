@@ -22,6 +22,7 @@ import java.util.Set;
  */
 public final class WorldEncounterAnchorResolver {
     public static final String TAG_PREFIX = "turnbound_re:anchor=";
+    public static final String VISIBLE_ACTOR_TAG = "turnbound_re:visible_encounter_actor";
     public static final double MAX_CONFIRM_DISTANCE_SQR = 36.0D;
 
     public record Resolved(
@@ -55,7 +56,7 @@ public final class WorldEncounterAnchorResolver {
             Entity entity,
             String dimensionId
     ) {
-        if (entity == null || entity.getType() != EntityTypes.INTERACTION) return Optional.empty();
+        if (!isAnchorCarrier(entity)) return Optional.empty();
         return locatorFromTags(entity.entityTags()).flatMap(locator -> resolve(registry, locator, dimensionId));
     }
 
@@ -90,8 +91,13 @@ public final class WorldEncounterAnchorResolver {
 
     public static boolean matchesEntity(Entity entity, java.util.UUID entityId, String locator) {
         if (entity == null || entityId == null || locator == null || locator.isBlank()) return false;
-        if (!entityId.equals(entity.getUUID()) || entity.getType() != EntityTypes.INTERACTION) return false;
+        if (!entityId.equals(entity.getUUID()) || !isAnchorCarrier(entity)) return false;
         return locatorFromTags(entity.entityTags()).filter(locator::equals).isPresent();
+    }
+
+    private static boolean isAnchorCarrier(Entity entity) {
+        return entity != null && (entity.getType() == EntityTypes.INTERACTION
+                || entity.entityTags().contains(VISIBLE_ACTOR_TAG));
     }
 
     public static boolean withinConfirmRange(double distanceSqr) {

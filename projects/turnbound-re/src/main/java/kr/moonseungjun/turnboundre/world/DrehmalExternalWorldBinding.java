@@ -6,8 +6,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Interaction;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.storage.LevelData;
 import net.minecraft.world.level.storage.LevelResource;
 
@@ -156,6 +159,10 @@ public final class DrehmalExternalWorldBinding {
             UUID id = deterministicAnchorId(profile.id(), anchor);
             spawnOrRetagAnchor(overworld, id, pos, tag);
             entityIds.add(id);
+            if (ExternalWorldProfileDefinition.ENCOUNTER.equals(anchor.kind())) {
+                entityIds.addAll(spawnOrRefreshEncounterActors(
+                        overworld, profile, anchor, definitions));
+            }
         }
 
         // Binding is server setup, not player progression. Do not mark any player as having discovered the Hub.
@@ -187,6 +194,89 @@ public final class DrehmalExternalWorldBinding {
     private static UUID deterministicAnchorId(String profileId, ExternalWorldProfileDefinition.Anchor anchor) {
         String key = profileId + "|" + anchor.kind() + "|" + anchor.locator();
         return UUID.nameUUIDFromBytes(key.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static List<UUID> spawnOrRefreshEncounterActors(
+            ServerLevel level,
+            ExternalWorldProfileDefinition profile,
+            ExternalWorldProfileDefinition.Anchor anchor,
+            DefinitionRegistry definitions
+    ) {
+        WorldEncounterAnchorResolver.Resolved resolved = WorldEncounterAnchorResolver
+                .resolve(definitions, anchor.locator(), profile.dimension())
+                .orElse(null);
+        if (resolved == null) return List.of();
+
+        List<String> sources = WorldEncounterAnchorResolver.enemySourceEntities(definitions, resolved.encounter());
+        List<UUID> actorIds = new ArrayList<>();
+        double[][] offsets = {
+                {-1.5D, 0.0D, 0.8D},
+                {1.5D, 0.0D, 0.8D},
+                {0.0D, 0.0D, -1.5D},
+                {0.0D, 0.0D, 1.8D}
+        };
+        BlockPos base = position(anchor);
+
+        for (int index = 0; index < sources.size(); index++) {
+            String source = sources.get(index);
+            Mob candidate = createEncounterActor(level, source);
+            if (candidate == null) {
+                kr.moonseungjun.turnboundre.TurnboundRe.LOGGER.warn(
+                        "No visible external-world encounter actor mapping for {}", source);
+                continue;
+            }
+
+            UUID id = UUID.nameUUIDFromBytes(
+                    (profile.id() + "|" + anchor.locator() + "|actor|" + index + "|" + source)
+                            .getBytes(StandardCharsets.UTF_8));
+            double[] offset = offsets[Math.min(index, offsets.length - 1)];
+            Entity existing = level.getEntity(id);
+            Mob actor;
+            if (existing instanceof Mob existingMob && existing.getType() == candidate.getType()) {
+                actor = existingMob;
+            } else {
+                if (existing != null) existing.discard();
+                actor = candidate;
+                actor.setUUID(id);
+                configureEncounterActor(actor, anchor.locator(), base, offset);
+                level.addFreshEntity(actor);
+                actorIds.add(id);
+                continue;
+            }
+
+            configureEncounterActor(actor, anchor.locator(), base, offset);
+            actorIds.add(id);
+        }
+        return List.copyOf(actorIds);
+    }
+
+    private static Mob createEncounterActor(ServerLevel level, String sourceEntity) {
+        Entity entity = switch (sourceEntity) {
+            case "minecraft:zombie" -> EntityTypes.ZOMBIE.create(level, EntitySpawnReason.EVENT);
+            case "minecraft:skeleton" -> EntityTypes.SKELETON.create(level, EntitySpawnReason.EVENT);
+            case "minecraft:spider" -> EntityTypes.SPIDER.create(level, EntitySpawnReason.EVENT);
+            default -> null;
+        };
+        return entity instanceof Mob mob ? mob : null;
+    }
+
+    private static void configureEncounterActor(
+            Mob actor,
+            String locator,
+            BlockPos base,
+            double[] offset
+    ) {
+        actor.setNoAi(true);
+        actor.setInvulnerable(true);
+        actor.setSilent(true);
+        actor.setPersistenceRequired();
+        actor.entityTags().add(WorldEncounterAnchorResolver.tagFor(locator));
+        actor.entityTags().add(WorldEncounterAnchorResolver.VISIBLE_ACTOR_TAG);
+        actor.entityTags().add(EXTERNAL_WORLD_ENTITY_TAG);
+        actor.setPos(
+                base.getX() + 0.5D + offset[0],
+                base.getY() + offset[1],
+                base.getZ() + 0.5D + offset[2]);
     }
 
     private static void spawnOrRetagAnchor(ServerLevel level, UUID id, BlockPos pos, String semanticTag) {

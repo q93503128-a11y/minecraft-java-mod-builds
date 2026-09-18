@@ -237,5 +237,10 @@
   "hud.turnbound_re.status.detail.turns": "%s · %s턴",
   "marker.turnbound_re.target.eligible": "대상",
   "marker.turnbound_re.target.hovered": "지정 중",
-  "marker.turnbound_re.target.selected": "선택됨"
+  "marker.turnbound_re.target.selected": "선택됨",
+  "screen.turnbound_re.expedition.tracking_short": "추적 중",
+  "screen.turnbound_re.expedition.route_tracking": "추적 · %s · X %s / Z %s",
+  "hud.turnbound_re.expedition.route": "추적 · %s · %s · 약 %sm",
+  "hud.turnbound_re.expedition.near": "목적지 부근 · %s · 보이는 순찰과 상호작용",
+  "hud.turnbound_re.expedition.other_dimension": "추적 · %s · 대상 차원 %s"
 }

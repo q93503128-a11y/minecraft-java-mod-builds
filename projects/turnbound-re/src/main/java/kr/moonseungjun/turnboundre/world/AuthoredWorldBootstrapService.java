@@ -15,7 +15,7 @@ import java.util.Set;
 /**
  * Production entry point for TURNBOUND: RE's external authored-world base.
  *
- * <p>The recommended Prism distribution downloads the pinned official external world on first launch and writes a
+ * <p>The recommended Modrinth distribution downloads the pinned official external world on first launch and writes a
  * verified profile marker. That trusted pack world self-binds on the first player login. Manual external-world
  * installs remain operator-confirmed and never cause arbitrary saves to be rewritten as TURNBOUND worlds.</p>
  */
@@ -23,6 +23,7 @@ public final class AuthoredWorldBootstrapService {
     private static final float HUB_FACING_YAW = -90.0F;
     private final DefinitionRepository definitions;
     private final FirstExpeditionQuestService firstExpedition;
+    private MinecraftServer reconciledTrustedServer;
 
     public AuthoredWorldBootstrapService(
             DefinitionRepository definitions,
@@ -58,30 +59,33 @@ public final class AuthoredWorldBootstrapService {
         }
 
         FastTravelSavedData saved = FastTravelSavedData.get(server);
-        if (needsWorldInstall(saved.anchorsSnapshot())) {
-            if (!DrehmalExternalWorldBinding.hasTrustedPackMarker(server)) {
-                TurnboundRe.LOGGER.warn(
-                        "TURNBOUND production world is not bound. Use the TURNBOUND Prism distribution, or install "
-                                + "the official external world manually and bind it near New Drabyel.");
-                return;
-            }
+        boolean trustedPackWorld = DrehmalExternalWorldBinding.hasTrustedPackMarker(server);
+        boolean missingWaypoints = needsWorldInstall(saved.anchorsSnapshot());
 
+        if (trustedPackWorld && (reconciledTrustedServer != server || missingWaypoints)) {
             try {
                 DrehmalExternalWorldBinding.Result result =
                         DrehmalExternalWorldBinding.installTrustedPackWorld(server, registry);
+                reconciledTrustedServer = server;
                 TurnboundRe.LOGGER.info(
-                        "TURNBOUND verified pack world bound automatically: Hub {} / Region {}",
+                        "TURNBOUND verified Modrinth world reconciled: Hub {} / Region {} / semantic entities {}",
                         result.hubArrival(),
-                        result.regionArrival());
+                        result.regionArrival(),
+                        result.anchorEntityIds().size());
             } catch (RuntimeException exception) {
-                TurnboundRe.LOGGER.error("TURNBOUND verified pack world could not be bound", exception);
+                TurnboundRe.LOGGER.error("TURNBOUND verified pack world could not be reconciled", exception);
                 return;
             }
+        } else if (missingWaypoints) {
+            TurnboundRe.LOGGER.warn(
+                    "TURNBOUND production world is not bound. Use the TURNBOUND Modrinth pack, or install "
+                            + "the official external world manually and bind it near New Drabyel.");
+            return;
+        }
 
-            if (needsWorldInstall(saved.anchorsSnapshot())) {
-                TurnboundRe.LOGGER.error("TURNBOUND pack binding completed without both canonical fast-travel anchors");
-                return;
-            }
+        if (needsWorldInstall(saved.anchorsSnapshot())) {
+            TurnboundRe.LOGGER.error("TURNBOUND pack binding completed without both canonical fast-travel anchors");
+            return;
         }
 
         if (needsInitialHubArrival(saved.discovered(player.getUUID()))) {

@@ -56,8 +56,8 @@
           "x": 325,
           "y": 71,
           "z": 290,
-          "enabled": false,
-          "sourceNote": "Candidate only: Hunter's Crypt, an existing early Capital Valley dungeon with skeleton/zombie combat context. No TURNBOUND replacement ruin is built."
+          "enabled": true,
+          "sourceNote": "Hunter's Crypt real-client placement gate. Enabled for the first integrated patrol route; TURNBOUND adds semantic encounter actors only and does not replace the authored dungeon."
         },
         {
           "kind": "ENCOUNTER",

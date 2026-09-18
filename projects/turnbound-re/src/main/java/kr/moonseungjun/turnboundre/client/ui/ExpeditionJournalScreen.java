@@ -16,8 +16,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Read-only authored expedition reference reached from the unified menu.
- * Actual combat entry is world-first and happens only through validated encounter anchors.
+ * Authored expedition route reference reached from the unified menu.
+ * Rows only select a world route; actual combat entry remains world-first through validated encounter actors.
  */
 public final class ExpeditionJournalScreen extends Screen {
     private static final int ENCOUNTER_ROW_HEIGHT = 38;
@@ -82,9 +82,18 @@ public final class ExpeditionJournalScreen extends Screen {
 
         if (view != null) {
             for (int i = 0; i < view.encounters().size(); i++) {
-                renderEncounterRow(graphics, view.encounters().get(i), encounterRow(i));
+                renderEncounterRow(graphics, view.encounters().get(i), encounterRow(i), mouseX, mouseY);
             }
         }
+
+        ExpeditionJournalClientState.trackedRoute().ifPresent(route -> {
+            String tracking = Component.translatable(
+                    "screen.turnbound_re.expedition.route_tracking",
+                    encounterName(route.id()).getString(), route.x(), route.z()).getString();
+            graphics.text(this.font, Component.literal(fit(tracking, root.width() - UiLayoutMetrics.SPACE_16)),
+                    root.x() + UiLayoutMetrics.SPACE_8, root.y() + 132,
+                    UiVisualLanguage.TEXT_SUCCESS, true);
+        });
 
         UiLayoutMetrics.Rect party = partyButton();
         UiVisualLanguage.FrameState partyState = TurnboundMenuScreen.contains(party, mouseX, mouseY)
@@ -114,9 +123,17 @@ public final class ExpeditionJournalScreen extends Screen {
     private void renderEncounterRow(
             GuiGraphicsExtractor graphics,
             ExpeditionNetworkPayloads.EncounterView encounter,
-            UiLayoutMetrics.Rect row
+            UiLayoutMetrics.Rect row,
+            int mouseX,
+            int mouseY
     ) {
-        UiVisualLanguage.frame(graphics, row.x(), row.y(), row.width(), row.height(), UiVisualLanguage.FrameState.IDLE);
+        boolean tracking = ExpeditionJournalClientState.isTracking(encounter.locator());
+        UiVisualLanguage.FrameState rowState = tracking
+                ? UiVisualLanguage.FrameState.SUCCESS
+                : TurnboundMenuScreen.contains(row, mouseX, mouseY)
+                        ? UiVisualLanguage.FrameState.FOCUS
+                        : UiVisualLanguage.FrameState.IDLE;
+        UiVisualLanguage.frame(graphics, row.x(), row.y(), row.width(), row.height(), rowState);
 
         List<String> sources = encounter.enemySourceEntities();
         int previewCount = Math.min(MAX_ENEMY_PREVIEWS, sources.size());
@@ -151,6 +168,9 @@ public final class ExpeditionJournalScreen extends Screen {
         String danger = Component.translatable("screen.turnbound_re.anchor.danger", encounter.difficulty()).getString();
         String enemies = Component.translatable("screen.turnbound_re.anchor.enemies", encounter.enemyCount()).getString();
         String meta = danger + " · " + enemies;
+        if (tracking) {
+            meta += " · " + Component.translatable("screen.turnbound_re.expedition.tracking_short").getString();
+        }
         graphics.text(this.font, Component.literal(fit(meta, textWidth)),
                 textX, row.bottom() - this.font.lineHeight - 5, UiVisualLanguage.TEXT_SECONDARY, true);
         graphics.disableScissor();
@@ -161,6 +181,14 @@ public final class ExpeditionJournalScreen extends Screen {
         if (event.button() == 0) {
             int mouseX = (int) Math.floor(event.x());
             int mouseY = (int) Math.floor(event.y());
+            if (view != null) {
+                for (int i = 0; i < view.encounters().size(); i++) {
+                    if (TurnboundMenuScreen.contains(encounterRow(i), mouseX, mouseY)) {
+                        ExpeditionJournalClientState.toggleTracking(view.encounters().get(i));
+                        return true;
+                    }
+                }
+            }
             if (TurnboundMenuScreen.contains(partyButton(), mouseX, mouseY)) {
                 openParty();
                 return true;

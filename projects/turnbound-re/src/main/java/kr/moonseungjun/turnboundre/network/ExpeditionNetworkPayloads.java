@@ -25,7 +25,12 @@ public final class ExpeditionNetworkPayloads {
             int difficulty,
             int enemyCount,
             boolean repeatable,
-            List<String> enemySourceEntities
+            List<String> enemySourceEntities,
+            String locator,
+            String dimension,
+            int x,
+            int y,
+            int z
     ) {
         public EncounterView {
             if (id == null || id.isBlank()) throw new IllegalArgumentException("encounter id required");
@@ -37,6 +42,20 @@ public final class ExpeditionNetworkPayloads {
             if (enemySourceEntities.stream().anyMatch(value -> value == null || value.isBlank())) {
                 throw new IllegalArgumentException("encounter visual identity must not be blank");
             }
+            locator = locator == null ? "" : locator;
+            dimension = dimension == null ? "" : dimension;
+            if (locator.isBlank() != dimension.isBlank()) {
+                throw new IllegalArgumentException("expedition route locator/dimension must be present together");
+            }
+        }
+
+        public boolean hasWorldRoute() {
+            return !locator.isBlank() && !dimension.isBlank();
+        }
+
+        /** Compatibility constructor for older callers and legacy 5-field snapshots. */
+        public EncounterView(String id, int difficulty, int enemyCount, boolean repeatable, List<String> enemySourceEntities) {
+            this(id, difficulty, enemyCount, repeatable, enemySourceEntities, "", "", 0, 0, 0);
         }
 
         /** Compatibility constructor for older callers and legacy 4-field snapshots. */
@@ -78,7 +97,12 @@ public final class ExpeditionNetworkPayloads {
                             + "\t" + encounter.difficulty()
                             + "\t" + encounter.enemyCount()
                             + "\t" + encounter.repeatable()
-                            + "\t" + packList(encounter.enemySourceEntities()))
+                            + "\t" + packList(encounter.enemySourceEntities())
+                            + "\t" + encounter.locator()
+                            + "\t" + encounter.dimension()
+                            + "\t" + encounter.x()
+                            + "\t" + encounter.y()
+                            + "\t" + encounter.z())
                     .toList();
             return new JournalSnapshotS2C(
                     packList(view.party()) + "|" + packList(rows) + "|" + pack(view.resultCode()) + "|" + pack(view.resultDetail()));
@@ -90,16 +114,30 @@ public final class ExpeditionNetworkPayloads {
             List<EncounterView> encounters = new ArrayList<>();
             for (String row : unpackList(parts[1])) {
                 String[] fields = row.split("\\t", -1);
-                if (fields.length != 4 && fields.length != 5) {
+                if (fields.length != 4 && fields.length != 5 && fields.length != 10) {
                     throw new IllegalArgumentException("invalid expedition encounter row");
                 }
-                List<String> enemySourceEntities = fields.length == 5 ? unpackList(fields[4]) : List.of();
-                encounters.add(new EncounterView(
-                        fields[0],
-                        Integer.parseInt(fields[1]),
-                        Integer.parseInt(fields[2]),
-                        Boolean.parseBoolean(fields[3]),
-                        enemySourceEntities));
+                List<String> enemySourceEntities = fields.length >= 5 ? unpackList(fields[4]) : List.of();
+                if (fields.length == 10) {
+                    encounters.add(new EncounterView(
+                            fields[0],
+                            Integer.parseInt(fields[1]),
+                            Integer.parseInt(fields[2]),
+                            Boolean.parseBoolean(fields[3]),
+                            enemySourceEntities,
+                            fields[5],
+                            fields[6],
+                            Integer.parseInt(fields[7]),
+                            Integer.parseInt(fields[8]),
+                            Integer.parseInt(fields[9])));
+                } else {
+                    encounters.add(new EncounterView(
+                            fields[0],
+                            Integer.parseInt(fields[1]),
+                            Integer.parseInt(fields[2]),
+                            Boolean.parseBoolean(fields[3]),
+                            enemySourceEntities));
+                }
             }
             return new JournalView(unpackList(parts[0]), encounters, unpack(parts[2]), unpack(parts[3]));
         }

@@ -20,16 +20,17 @@ class M6ExpeditionWorldFirstContractTest {
 
         List<ExpeditionNetworkPayloads.EncounterView> views = ExpeditionJournalProjection.encounters(definitions);
 
-        assertEquals(List.of(
-                "turnbound_re:debug_overworld_patrol",
-                "turnbound_re:debug_rift_elite"),
+        assertEquals(List.of("turnbound_re:debug_overworld_patrol"),
                 views.stream().map(ExpeditionNetworkPayloads.EncounterView::id).toList());
-        assertEquals(views.size(), views.stream().map(ExpeditionNetworkPayloads.EncounterView::id).distinct().count());
         assertTrue(views.stream().allMatch(view -> view.difficulty() > 0 && view.enemyCount() > 0));
         assertEquals(List.of("minecraft:zombie", "minecraft:skeleton", "minecraft:spider"),
-                views.get(0).enemySourceEntities());
-        assertEquals(List.of("minecraft:creeper", "minecraft:blaze", "minecraft:witch", "minecraft:enderman"),
-                views.get(1).enemySourceEntities());
+                views.getFirst().enemySourceEntities());
+        assertTrue(views.getFirst().hasWorldRoute());
+        assertEquals("turnbound_re:region_01/overworld_patrol", views.getFirst().locator());
+        assertEquals("minecraft:overworld", views.getFirst().dimension());
+        assertEquals(325, views.getFirst().x());
+        assertEquals(71, views.getFirst().y());
+        assertEquals(290, views.getFirst().z());
     }
 
     @Test

@@ -237,5 +237,10 @@
   "hud.turnbound_re.status.detail.turns": "%s · %sT",
   "marker.turnbound_re.target.eligible": "TARGET",
   "marker.turnbound_re.target.hovered": "FOCUS",
-  "marker.turnbound_re.target.selected": "SELECTED"
+  "marker.turnbound_re.target.selected": "SELECTED",
+  "screen.turnbound_re.expedition.tracking_short": "TRACKING",
+  "screen.turnbound_re.expedition.route_tracking": "Tracking · %s · X %s / Z %s",
+  "hud.turnbound_re.expedition.route": "Track · %s · %s · ~%sm",
+  "hud.turnbound_re.expedition.near": "Route area · %s · interact with the visible patrol",
+  "hud.turnbound_re.expedition.other_dimension": "Track · %s · target dimension %s"
 }
