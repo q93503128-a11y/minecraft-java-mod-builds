@@ -679,6 +679,8 @@ Avoid updating Better Combat, Spell Engine, animation APIs and custom combat cod
 
 # 15.1 Verified M0 core bootstrap checkpoint — 2026-09-18
 
+> Historical checkpoint. Later §15.3 supersedes its unresolved-ID/runtime-status lines.
+
 The first narrow source bootstrap now exists at commit `b98ab3650b6e594693df3c1170d1de1e1ea169f2`.
 
 Implemented in this checkpoint:
@@ -717,6 +719,8 @@ This checkpoint proves the architecture can compile and boot. It does **not** cl
 ---
 
 # 15.2 Verified gameplay-foundation artifact resolution — 2026-09-18
+
+> Historical checkpoint for the initial nine-JAR resolution gate. Later §15.3 adds MobFilter, resolves all creature IDs and verifies the actual gameplay dependency runtime.
 
 The nine non-creature M0 gameplay-foundation artifacts are now independently resolvable in CI without placing them on the `core` runtime classpath.
 
@@ -760,6 +764,75 @@ This closes **artifact availability for the nine foundation JARs**, not their ru
 
 ---
 
+# 15.3 Verified gameplay dependency runtime boot — 2026-09-18
+
+The pinned dependency stack is now admitted to an isolated Fabric 26.2 `gameplay` development runtime and dedicated-server co-load verified.
+
+Canonical evidence:
+
+- `M0_GAMEPLAY_RUNTIME_BOOT_2026-09-18.md`
+- successful code state: `d35658c21bde609001e6d440ef0089be058b74b7`
+- successful workflow: **Build Openworld RPG**, run `35313724183`
+
+Current verified runtime contract:
+
+```text
+FOUNDATION / SAFETY PRIMARY JARS: RESOLVED + HASHED — 10/10
+CURATED CREATURE PRIMARY JARS: RESOLVED + METADATA INSPECTED — 3/3
+DEPENDENCY MANIFEST RUNTIME IDS: RESOLVED — 13/13
+GAMEPLAY-PROFILE DEDICATED SERVER BOOT: PASS
+PINNED TOP-LEVEL DEPENDENCY CO-LOAD: PASS
+SERVER READY STATE: PASS
+```
+
+Verified curated creature IDs:
+
+```text
+Alex's Mobs Continued 2.1.13 → alexsmobs
+CodxLib 1.6.0 → codxlib
+Threateningly Mobs Continued 1.1.1+fabric.26.2 → threateningly_mobs
+```
+
+The 10 foundation/safety set includes MobFilter `0.28.0+26.2` in addition to the earlier nine foundation JARs.
+
+The successful gameplay server reported the expected current runtime families together:
+
+- Better Combat;
+- Player Animation Library;
+- GeckoLib;
+- Armor Model API;
+- Ranged Weapon API;
+- Trinkets Updated;
+- Spell Engine;
+- Spell Power Attributes;
+- Cloth Config/runtime support;
+- MobFilter;
+- Alex's Mobs Continued;
+- CodxLib;
+- Threateningly Mobs Continued;
+- Fabric API/Loader and nested runtime libraries required by those JARs.
+
+Important limitation:
+
+> **dependency co-load is not an authority adapter.**
+
+Still open:
+
+```text
+BETTER COMBAT → PROJECT DAMAGE AUTHORITY: NOT IMPLEMENTED
+SPELL ENGINE → PROJECT MANA/CD/IMPACT AUTHORITY: NOT IMPLEMENTED
+MOBFILTER PROJECT ECOLOGY RULES: NOT IMPLEMENTED
+ALEX/TMC PROJECT SPAWN-STAT-LOOT OVERRIDES: NOT IMPLEMENTED
+CLIENT RUNTIME: NOT TESTED
+R01 PLAYER-FACING IMPLEMENTATION: NOT STARTED
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
+```
+
+The next M0 technical gate is one bounded authority bridge at a time, beginning with Better Combat and Spell Engine. Do not add another broad RPG runtime before those bridges are proven.
+
+---
+
 # 16. What M0 closes
 
 This audit closes implementation-time uncertainty about:
@@ -784,10 +857,10 @@ The old queue that still called for combat-formula design, five root-class desig
 Current production sequence:
 
 1. keep `M0_INTEGRATION_ARCHITECTURE.md` as the source-bootstrap composition contract;
-2. finish the remaining exact asset and actual-Azari spatial gates required by `PROJECT.md`;
-3. remove remaining stale live-document contradictions;
-4. bootstrap the Fabric source/data/resource skeleton with the integration/registry/validation boundaries already defined;
-5. prove the stack with the M0 acceptance matrix above;
-6. implement R01 as the first full vertical-slice proof before scaling the same architecture across later regions.
+2. continue the already-booting M0 stack with bounded authority adapters — Better Combat first, then Spell Engine, then one real external-creature overlay;
+3. in parallel, finish the remaining exact asset and actual-Azari spatial gates required before player-facing R01 implementation;
+4. remove stale live-document contradictions as encountered;
+5. implement R01 as the first full vertical-slice proof only after its asset/spatial gates close;
+6. scale the proven architecture across later regions rather than redesigning the stack.
 
 Do not add another complete RPG/progression mod to shorten implementation. Reuse strong primitives/content, but keep one project authority.
