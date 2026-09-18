@@ -697,7 +697,8 @@ Crafting/gathering materials use a dedicated **Material Pouch** from the start.
 - crafting, forge, alchemy, cooking and other valid service UIs may consume directly from the pouch without forcing manual withdrawal;
 - players can manually withdraw/deposit for trade or organization where relevant;
 - if a material reaches 999 in the field pouch, additional copies can enter the general backpack instead of being silently deleted;
-- settlement bank/storage provides a Material Vault baseline of **9,999 per material type** and a `Deposit Materials` action, preserving a reason to return to town without constant sorting chores.
+- settlement bank/storage provides a Material Vault baseline of **9,999 per material type** and a `Deposit Materials` action, preserving a reason to return to town without constant sorting chores;
+- **Alderford Vault starts with 36 ordinary Personal Storage slots per player** for non-material items. This is separate from Home Storage and the Material Vault. Later settlements/upgrades may expand ordinary bank storage only through explicit canon.
 
 The pouch is for materials, not a hidden second general inventory. Equipment, normal consumables and arbitrary miscellaneous items cannot be stuffed into it.
 
@@ -735,7 +736,19 @@ The final inventory supports:
 
 Portable-container nesting cannot create infinite storage. Project backpacks/pouches cannot be placed inside equivalent portable storage recursively.
 
-Important rewards are never silently deleted because the general backpack is full. Quest/key items bypass it; deterministic boss/dungeon/progression rewards remain claimable through their reward interaction until space exists or use a small non-storage overflow handoff. The overflow mechanism must not become a free second permanent backpack.
+Important rewards are never silently deleted because the general backpack is full.
+
+R01 delivery order for server-owned item reward transactions is exact:
+
+1. deliver to legal backpack stack/slot when space exists;
+2. otherwise deliver to the player's **36-slot Alderford Personal Storage** when legal space exists;
+3. otherwise keep the reward as a **Pending Reward Claim** transaction until either destination has legal space.
+
+Pending Reward Claim is not inventory: the player cannot equip, consume, trade, sell, sort or use an item while it is pending. It stores the already-earned reward transaction only. Claiming re-runs destination validation atomically.
+
+Quest/key progression state bypasses backpack/storage entirely. Ordinary unclaimed world-ground loot is not silently converted into a pending reward merely because the player refused inventory management; its normal world-loot lifecycle applies. Deterministic quest/dungeon/progression rewards and server-owned signature/guaranteed equipment transactions use the safe delivery order above.
+
+The overflow mechanism is therefore loss protection, not a free portable second backpack.
 
 ## Durability
 
