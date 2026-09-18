@@ -8,7 +8,7 @@ Recovery aid only. Reconstruct canonical truth from current GitHub `main`, `/AGE
 
 Priority remains a genuinely playable, polished Region 01 vertical slice. Do not grow speculative authority/lifecycle infrastructure or expand region count while visible gameplay/presentation remains incomplete.
 
-## Latest verified checkpoint
+## Latest verified gameplay checkpoint
 
 Latest build-verified Riftfrontier gameplay checkpoint is `e81ccb44bccc3906d7e03639fe8a5da4de809cfe` (`fix(riftfrontier): resolve same-tick spawned combat targets`). `Build Riftfrontier` workflow run `35172934294` completed **SUCCESS** on 2026-09-17.
 
@@ -56,6 +56,16 @@ Do not redo Alien candidate search, exact-source intake, source hash inspection,
 
 Human review must inspect player-relative scale, facing, ground alignment, UV/texture integrity, near/combat/medium-distance silhouette and Idle/Walk/Run/Punch/HitReact/Death deformation/readability.
 
+## Scout production-creature checkpoint — Armabee review runtime is build-verified; source bytes still missing from runtime resources
+
+Quaternius CC0 `Ultimate Monsters` `Flying/glTF/Armabee.gltf` has passed exact creator-source inspection. Canonical evidence is `docs/provenance/region01_scout_armabee_source_inspection.json`. Exact source is 297,261 bytes, SHA-256 `10ca05955ab7f7f6e2f9bd8fd85f28ed1351c945e390b1fd0fa84428b43a5916`, 1 mesh / 1 skin / 1 material / 1 embedded PNG, 1,260 vertices / 2,280 triangles. Source clips are `Death`, `Fast_Flying`, `Flying_Idle`, `Headbutt`, `HitReact`, `No`, `Punch`, `Yes`.
+
+`Region01ScoutArmabeeRuntimeAsset` locks the exact hash, geometry counts and animation vocabulary. A review-only entity, render state and skinned-mesh renderer are registered at `/summon riftfrontier:region_01_scout_field_review`; commit `cdf7c88468a49e15081d759dff8a97bdd7294201` completed `Build Riftfrontier` run `35327292631` successfully on 2026-09-18. The renderer cycles `Flying_Idle -> Fast_Flying -> Punch -> Headbutt -> HitReact -> Death` and remains isolated from natural Scout spawning and authoritative Scout encounter semantics.
+
+Important distinction: that successful build verifies the review runtime plumbing, not visible Armabee rendering. The exact Armabee glTF/embedded texture bytes are not yet vendored under `src/main/resources`, so the renderer intentionally fails closed when the source resource is absent. Do not report the Armabee as Minecraft visually reviewed, selected, production-wired, or naturally spawned until exact creator bytes are vendored and human field review actually occurs.
+
+Do not redo Armabee candidate search, creator-source discovery, exact hash/geometry/clip inspection, runtime contract, entity registration or renderer plumbing. The next Armabee implementation boundary is exact creator-byte runtime intake plus embedded-texture extraction/integrity verification, followed by a field-review JAR. Preserve the existing server-authoritative ranged-pressure Scout role. The source has no Walk/Run clip, and its winged silhouette does not authorize flight gameplay.
+
 ## Region 01 boss presentation — human gates remain open
 
 - Selected rig/geometry: Quaternius CC0 `Dragon Evolved`.
@@ -70,8 +80,8 @@ Do not restart boss model/material search merely because human acceptance is pen
 
 ## Next useful development boundary
 
-Contract connection, the first dynamic event, blackout technical readability, the real five-node optional-salvage choice, and the same-tick combat regression are build-verified. Do not churn these paths or add speculative siblings just to increase feature count.
+Contract connection, the first dynamic event, blackout technical readability, the real five-node optional-salvage choice, the same-tick combat regression, and the isolated Armabee Scout review runtime are build-verified. Do not churn these paths or add speculative siblings just to increase feature count.
 
-Human field play is required to approve or reject the Alien Hunter render and boss Dark Rock presentation, but development is not globally blocked on those gates. While those reviews are pending, prioritize remaining visible production gaps that do not require unapproved numeric tuning. For production creatures, do not start another open-ended search: Scout `Armabee` and Elite Anchor `Goleling Evolved` are already recorded Quaternius CC0 role candidates in `THIRD_PARTY_ASSETS.md`. Advance only one when the work produces a concrete exact-source inspection and/or isolated Minecraft field-review result. Preserve Scout ranged-pressure semantics; do not add flight merely because Armabee is winged. Preserve Elite observable counterplay; do not delete Ravager shield-stun behaviour until a verified replacement deliberately preserves or replaces it.
+Human field play is required to approve or reject the Alien Hunter render and boss Dark Rock presentation, but development is not globally blocked on those gates. For Armabee, finish exact creator-byte runtime intake before asking for visual review. Do not substitute Poly Pizza preview/mirror bytes for the inspected creator source. After that, the remaining already-recorded production-creature candidate is Elite Anchor `Goleling Evolved`; advance it only through concrete exact-source inspection/field-review work, while preserving Ravager shield-stun/counterplay until a verified replacement deliberately preserves or replaces it.
 
-The next human field-play package should use the verified `e81ccb44...` CI deliverable and cover the full commandless loop: obtain a rig at the hub, deploy by lodestone, recover salvage 1 then salvage 2, verify the one-shot visibility-collapse cue occurs and the technical field projection remains legible during Darkness, reach salvage 3, verify the extract-vs-patrol-vs-optional-salvage choice is understandable, optionally recover salvage 4/5, extract, and verify returned resources feed the next preparation cycle. Separately use `/summon riftfrontier:region_01_hunter_field_review` and `/riftfrontier boss fieldtest spawn` for the pending presentation gates. Record actual observations; never report `PLAYTESTED` or `MULTIPLAYER TESTED` from automated gates alone.
+The next human field-play package should cover the full commandless loop: obtain a rig at the hub, deploy by lodestone, recover salvage 1 then salvage 2, verify the one-shot visibility-collapse cue occurs and the technical field projection remains legible during Darkness, reach salvage 3, verify the extract-vs-patrol-vs-optional-salvage choice is understandable, optionally recover salvage 4/5, extract, and verify returned resources feed the next preparation cycle. Separately use `/summon riftfrontier:region_01_hunter_field_review` and `/riftfrontier boss fieldtest spawn` for the currently renderable presentation gates. Once Armabee exact runtime bytes are vendored into a verified JAR, add `/summon riftfrontier:region_01_scout_field_review` to the same package. Record actual observations; never report `PLAYTESTED` or `MULTIPLAYER TESTED` from automated gates alone.
