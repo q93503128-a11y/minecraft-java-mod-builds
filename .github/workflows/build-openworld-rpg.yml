@@ -44,6 +44,9 @@ jobs:
       - name: Resolve pinned gameplay foundation artifacts
         run: ./gradlew --no-daemon verifyGameplayFoundationDependencies --stacktrace
 
+      - name: Inspect pinned creature dependency metadata
+        run: ./gradlew --no-daemon inspectCreatureFoundationDependencies --stacktrace
+
       - name: Test and build M0 core
         run: ./gradlew --no-daemon clean test build --stacktrace
 
@@ -100,6 +103,7 @@ jobs:
           - Gradle: 9.5.1
           - Loom: 1.17.20
           - gameplay foundation artifact resolution: PASS
+          - creature dependency artifact/metadata inspection: PASS
           - unit tests: PASS
           - clean build: PASS
           - bootstrap JAR verify: PASS
