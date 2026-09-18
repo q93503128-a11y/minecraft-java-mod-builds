@@ -15,6 +15,8 @@ class DependencyManifestTest {
         assertFalse(manifest.validateStructure().hasErrors());
         assertTrue(manifest.dependencies().stream().anyMatch(dep -> "bettercombat".equals(dep.modId())));
         assertTrue(manifest.dependencies().stream().anyMatch(dep -> "spell_engine".equals(dep.modId())));
-        assertTrue(manifest.dependencies().stream().anyMatch(dep -> !dep.registryIdResolved()));
+        assertTrue(manifest.dependencies().stream().allMatch(dep -> dep.registryIdResolved()));
+        assertTrue(manifest.dependencies().stream().anyMatch(dep -> "alexsmobs".equals(dep.modId())));
+        assertTrue(manifest.dependencies().stream().anyMatch(dep -> "threateningly_mobs".equals(dep.modId())));
     }
 }
