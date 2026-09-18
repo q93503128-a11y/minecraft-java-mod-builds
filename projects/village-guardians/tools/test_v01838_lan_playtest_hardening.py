@@ -159,7 +159,8 @@ def main() -> None:
     assert "MAX_RETRY_SUPPORT_CLAIMS = 3" in progression
     assert "int[] percent = {100, 60, 35}" in retry
     assert "supplies += granted" in retry
-    assert "resetForNewGame" not in restart
+    assert "if (fromStart)" in restart and "else {" in restart
+    assert "VillageMercenarySystem.restoreNightSnapshot(server)" in restart
     assert "첫 3회 재도전" in ui_service
 
     # LAN vote lifecycle handles joins/leaves and duplicate casts; mutation packets get a short replay guard.
