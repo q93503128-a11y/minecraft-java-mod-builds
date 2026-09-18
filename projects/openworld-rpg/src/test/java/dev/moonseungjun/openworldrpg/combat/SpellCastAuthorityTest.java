@@ -78,10 +78,11 @@ class SpellCastAuthorityTest {
 
         UUID player = UUID.randomUUID();
         authority.commitAcceptedCast(player, spec.id(), 0);
+        authority.onEngineCastCompleted(player, spec.id(), 0, "RELEASE", 1.0F);
 
         assertEquals(
                 SpellCastAuthority.ImpactDecision.rejected(),
-                authority.onImpact(player, spec.id(), 0, 42, 7.5, 1.0)
+                authority.onImpact(player, spec.id(), 5, 42, 7.5, 1.0)
         );
     }
 

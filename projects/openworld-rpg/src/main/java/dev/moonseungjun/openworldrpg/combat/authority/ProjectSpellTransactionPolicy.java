@@ -78,7 +78,13 @@ public final class ProjectSpellTransactionPolicy implements SpellCastAuthority.P
 
     @Override
     public SpellCastAuthority.ImpactDecision onImpact(SpellCastAuthority.ImpactContext context) {
-        requireCommittedCast(context.playerId(), context.spellId());
+        /*
+         * Do not require the short-lived accepted-cast token here. Spell Engine considers
+         * PROJECTILE/METEOR delivery complete when the projectile is launched, so SPELL_CAST can
+         * legitimately fire before the later projectile impact. Impact authority is therefore
+         * validated by the registered project spell policy + impact port rather than by the
+         * resource-transaction token.
+         */
         return impactPort.apply(spec, context);
     }
 
