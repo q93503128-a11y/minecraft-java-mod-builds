@@ -187,7 +187,7 @@ tasks.register('verifyGameplayFoundationDependencies') {
 
 tasks.register('inspectGameplayFoundationMetadata') {
     group = 'verification'
-    description = 'Records actual Fabric metadata for the nine pinned gameplay-foundation JARs.'
+    description = 'Records actual Fabric metadata for the ten pinned gameplay-foundation JARs.'
 
     doLast {
         def resolved = configurations.gameplayFoundation.resolve().toList().sort { a, b -> a.name <=> b.name }

@@ -109,6 +109,8 @@ jobs:
           fi
 
           grep -q 'Openworld RPG M0 core bootstrap loaded with profile gameplay' build/logs/server-gameplay.log
+          grep -q 'Openworld RPG Better Combat authority adapter armed for profile gameplay' build/logs/server-gameplay.log
+          grep -q 'Openworld RPG Spell Engine authority gate armed for profile gameplay' build/logs/server-gameplay.log
           grep -Eq 'Done \([0-9.]+s\)! For help, type "help"' build/logs/server-gameplay.log
           if grep -Eqi 'ModResolutionException|Could not execute entrypoint|NoClassDefFoundError|ClassNotFoundException' build/logs/server-gameplay.log; then
             echo 'Gameplay-profile dependency integration error detected.'
@@ -141,7 +143,7 @@ jobs:
           - full transitive dependency graph: VERIFIED BY RUNTIME BOOT OF PINNED TOP-LEVEL JARS
           - external creature runtime binding: NOT TESTED
           - Better Combat authority seam: IMPLEMENTED (real-hit runtime execution NOT TESTED)
-          - Spell Engine integration: NOT IMPLEMENTED
+          - Spell Engine cast-gate seam: IMPLEMENTED (project Mana/cooldown/impact transaction NOT IMPLEMENTED)
           - player-facing R01 content: NOT IMPLEMENTED
           - playtest: NOT RUN
           - multiplayer test: NOT RUN

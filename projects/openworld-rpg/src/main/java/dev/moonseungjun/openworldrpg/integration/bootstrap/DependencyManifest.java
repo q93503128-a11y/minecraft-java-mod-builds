@@ -29,6 +29,14 @@ public record DependencyManifest(int schemaVersion, List<DependencyContract> dep
             if (dependency.integrationModule() == null || dependency.integrationModule().isBlank()) {
                 report.add(ValidationSeverity.ERROR, "manifest.integration_module", "Missing integrationModule for " + dependency.logicalId());
             }
+            if (dependency.enforceVersion()
+                    && (dependency.expectedVersion() == null || dependency.expectedVersion().isBlank())) {
+                report.add(
+                        ValidationSeverity.ERROR,
+                        "manifest.expected_version",
+                        "Version enforcement requires expectedVersion for " + dependency.logicalId()
+                );
+            }
             if (dependency.registryIdResolved() && !resolvedModIds.add(dependency.modId())) {
                 report.add(ValidationSeverity.ERROR, "manifest.mod_id_duplicate", "Duplicate resolved modId: " + dependency.modId());
             }
