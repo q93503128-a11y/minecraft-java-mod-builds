@@ -370,9 +370,10 @@ No quest-specific token currency is added merely to hand out rewards.
 
 ## Contracts
 
-- may be abandoned and reaccepted unless explicitly authored as a timed world event;
+- may be abandoned and reaccepted unless a regional/content canon explicitly gives a different rule;
 - abandonment clears only that player's active contract state, not global world objects;
-- reaccepting cannot duplicate already-claimed one-time rewards.
+- reaccepting cannot duplicate already-claimed one-time rewards;
+- **R01 exact behavior is owned by `R01_CONTENT_BIBLE.md`: Riverbank Remedies, Signs in the Meadow and Steel in the Grass have explicit reset/reinspection/re-defeat semantics, while R01 Main/Regional/Discovery/World-Event entries are not turned into abandonable contracts.**
 
 ## World events
 
