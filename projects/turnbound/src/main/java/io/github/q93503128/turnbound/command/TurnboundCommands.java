@@ -24,8 +24,9 @@ public final class TurnboundCommands {
     public static void register(RegisterCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("turnbound")
                 .then(Commands.literal("field").executes(context -> {
-                    var player = context.getSource().getPlayerOrException();
-                    return FieldSessionManager.enter(player) ? Command.SINGLE_SUCCESS : 0;
+                    context.getSource().sendFailure(Component.literal(
+                            "TURNBOUND FIELD · legacy Aster March field entry is disabled during external-world rebinding."));
+                    return 0;
                 }))
                 .then(Commands.literal("status").executes(context -> {
                     var player = context.getSource().getPlayerOrException();
