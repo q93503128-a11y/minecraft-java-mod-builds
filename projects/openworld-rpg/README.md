@@ -4,9 +4,9 @@ Large Minecraft Java open-world action RPG project with very low dependence on v
 
 ## Current status
 
-`M0 CORE SOURCE BOOTSTRAP BUILD VERIFIED / R01 PLAYER-FACING IMPLEMENTATION NOT STARTED`
+`M0 CORE BOOTSTRAP + GAMEPLAY FOUNDATION ARTIFACT RESOLUTION VERIFIED / R01 PLAYER-FACING IMPLEMENTATION NOT STARTED`
 
-The narrow M0 technical implementation now exists: Fabric 26.2 / Java 25 toolchain, mod entrypoint, integration dependency manifest, runtime profiles, validation/overlay primitives, unit tests and CI. Commit `b98ab3650b6e594693df3c1170d1de1e1ea169f2` passed clean test/build, JAR verification and dedicated-server core-profile boot. This is **not** R01 gameplay implementation and does not make unresolved asset/spatial gates complete.
+The narrow M0 technical implementation now exists: Fabric 26.2 / Java 25 toolchain, mod entrypoint, integration dependency manifest, runtime profiles, validation/overlay primitives, unit tests and CI. Commit `b98ab3650b6e594693df3c1170d1de1e1ea169f2` passed clean test/build, JAR verification and dedicated-server core-profile boot. The nine non-creature gameplay-foundation primary JARs were then independently resolved and SHA-256 recorded in workflow run `35310816215` (`067e47500d1f71e77f4c97907f0257a5214a21dc`). They are **not yet loaded as a full gameplay runtime**. This is not R01 gameplay implementation and does not make unresolved asset/spatial gates complete.
 
 The major gameplay systems, Lv 1–80 progression, class/combat framework, equipment/economy, world-state model, main story spine, mounts, field systems, party/co-op rules and R01–R12 regional packages are already specified. **R01–R12 now all have concrete named-NPC, exact quest-condition, scene/dialogue, reconnect/reward-state and story-evidence authoring locked.** Remaining pre-bootstrap work is no longer regional content invention. It is primarily exact external-asset binding, actual Azari spatial placement/travel-time validation and final stale-canon cleanup. Accessibility/difficulty/input/audio behavior is already design-closed; exact audio/UI/VFX assets remain part of presentation binding. The external-mod integration architecture is also now closed in `M0_INTEGRATION_ARCHITECTURE.md`.
 

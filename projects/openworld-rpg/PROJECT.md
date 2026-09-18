@@ -2,7 +2,7 @@
 
 > Working project slug: `openworld-rpg`  
 > Player-facing title: **WORKING / CANDIDATE ONLY — not yet locked, and NOT a gameplay-source-bootstrap gate; `Anchorwake` is an evaluated candidate only**  
-> Current phase: **M0 CORE SOURCE BOOTSTRAP BUILD VERIFIED / R01 GAMEPLAY + CONTENT DESIGN CLOSED / PLAYER-FACING R01 IMPLEMENTATION STILL BLOCKED BY ASSET + AZARI SPATIAL BINDING; LATER-REGION FINAL-ENCOUNTER GATES REMAIN**
+> Current phase: **M0 CORE BOOTSTRAP + GAMEPLAY-FOUNDATION ARTIFACT RESOLUTION VERIFIED / R01 GAMEPLAY + CONTENT DESIGN CLOSED / PLAYER-FACING R01 IMPLEMENTATION STILL BLOCKED BY ASSET + AZARI SPATIAL BINDING; LATER-REGION FINAL-ENCOUNTER GATES REMAIN**
 
 ## 1. Repository / authority contract
 
@@ -51,6 +51,7 @@ A tool offering `create_branch` is not permission to use it automatically.
 - initial internal artifact version: `0.1.0-alpha.1`
 - initial JAR basename: `openworld-rpg-0.1.0-alpha.1.jar`
 - M0 core bootstrap source exists and is build/server-smoke verified at commit `b98ab3650b6e594693df3c1170d1de1e1ea169f2`
+- nine non-creature gameplay-foundation primary JARs are resolution/hash verified at commit `067e47500d1f71e77f4c97907f0257a5214a21dc`, workflow run `35310816215`; they are not yet admitted to the full gameplay runtime
 - no player gameplay implementation or persistent project save format exists yet
 
 The internal folder/mod/artifact identifiers remain stable production IDs. They are **not player-facing branding** and do not need to be renamed merely because the eventual display title differs.
@@ -266,7 +267,7 @@ The cross-region main-route region requirements, evidence counts, recurring-char
 
 `PRODUCTION_ASSET_BINDING_MATRIX.md` narrows gate 1: already-selected dependency actors proceed to runtime acceptance, concrete external candidates proceed to acquisition/conversion review, and only `OPEN_MODEL_SELECTION` rows require new visual search.
 
-The narrow M0 core source/bootstrap layer now exists: Fabric toolchain, mod entrypoint, integration dependency manifest, runtime profiles, validation primitives, integration registry, actor-overlay schema/validation, unit tests and project CI. That checkpoint is **BUILD VERIFIED** and reached a dedicated Fabric server ready state.
+The narrow M0 core source/bootstrap layer now exists: Fabric toolchain, mod entrypoint, integration dependency manifest, runtime profiles, validation primitives, integration registry, actor-overlay schema/validation, unit tests and project CI. That checkpoint is **BUILD VERIFIED** and reached a dedicated Fabric server ready state. The nine non-creature gameplay-foundation primary artifacts are also independently resolution/hash verified; see `M0_GAMEPLAY_FOUNDATION_RESOLUTION_2026-09-18.md`. Full dependency runtime loading and adapters remain separate later gates.
 
 This does **not** waive the remaining gates above. Broad player-facing R01 implementation still waits for exact asset/spatial closure. Narrow technical work that does not lock unresolved presentation may continue, but it must not create placeholders that later become de facto canon.
 

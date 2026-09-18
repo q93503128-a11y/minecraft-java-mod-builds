@@ -77,7 +77,7 @@ Technically usable but rejected from the default stack because it duplicates ano
 | GeckoLib | `5.5.5` Fabric 26.2 | MIT | REQUIRED API/RUNTIME | project-owned animated entities, mounts and selected animated props |
 | Armor Model API | `1.1.0+26.2` | MIT | REQUIRED API/RUNTIME | project-owned Bedrock/Gecko-style armor geometry through vanilla armor rendering |
 | Ranged Weapon API | `4.0.0+26.2` | MIT | REQUIRED API/RUNTIME | bow/crossbow construction, pull/velocity/render fundamentals |
-| Trinkets Updated | `4.1.0+26.2` | MIT | REQUIRED API/RUNTIME | backend storage/equipment state for Ring/Charm/Relic-style accessory slots |
+| Trinkets Updated | `4.1.0-rc.1+26.2` | MIT | REQUIRED API/RUNTIME | backend storage/equipment state for Ring/Charm/Relic-style accessory slots |
 
 ### Animation-engine rule
 
@@ -158,7 +158,7 @@ Because Spell Engine is GPL, do not copy its source into this repository. Keep d
 
 ## 3.3 Inventory / equipment backend
 
-Trinkets Updated `4.1.0+26.2` is now a stable 26.2 release and replaces the earlier RC assumption.
+Trinkets Updated **`4.1.0-rc.1+26.2`** is the currently verified 26.2 baseline. The earlier live wording that promoted this to stable `4.1.0+26.2` was incorrect. Spell Engine's maintained 26.2 branch pins the same RC build. Do not rewrite this as stable until an exact stable 26.2 artifact is deliberately admitted and revalidated.
 
 Use it for:
 
@@ -371,7 +371,7 @@ openworld_rpg
 ├─ GeckoLib 5.5.5
 ├─ Armor Model API 1.1.0+26.2
 ├─ Ranged Weapon API 4.0.0+26.2
-├─ Trinkets Updated 4.1.0+26.2
+├─ Trinkets Updated 4.1.0-rc.1+26.2
 ├─ Better Combat 3.2.2+26.2
 │  └─ Cloth Config / Player Animation dependencies
 ├─ Spell Engine 1.10.5+26.2
@@ -713,6 +713,50 @@ MULTIPLAYER TESTED: NO
 The dependency manifest intentionally leaves the runtime mod IDs for Alex's Mobs Continued, CodxLib and Threateningly Mobs Continued unresolved instead of guessing them. The `core` profile can boot without those content dependencies; the future `gameplay` profile must fail clearly until the pinned artifacts/IDs are verified and installed.
 
 This checkpoint proves the architecture can compile and boot. It does **not** close the full M0 acceptance matrix in §13.
+
+---
+
+# 15.2 Verified gameplay-foundation artifact resolution — 2026-09-18
+
+The nine non-creature M0 gameplay-foundation artifacts are now independently resolvable in CI without placing them on the `core` runtime classpath.
+
+Implementation:
+
+- `build.gradle` owns a resolvable-only `gameplayFoundation` configuration;
+- `verifyGameplayFoundationDependencies` resolves exactly nine pinned primary artifacts with transitive resolution disabled for this gate;
+- each resolved JAR is checked non-empty and SHA-256 hashed;
+- the core server profile remains isolated, so this gate cannot accidentally make a dependency part of gameplay authority merely by resolving it.
+
+Verified commit / workflow:
+
+```text
+IMPLEMENTATION COMMITS:
+  979e674dedaa276b086b76c1ed53a2bb2d4eca95
+  067e47500d1f71e77f4c97907f0257a5214a21dc
+
+SUCCESSFUL WORKFLOW:
+  Build Openworld RPG
+  run 35310816215
+
+GAMEPLAY FOUNDATION ARTIFACT RESOLUTION: PASS
+UNIT TESTS: PASS
+CLEAN BUILD: PASS
+BOOTSTRAP JAR VERIFY: PASS
+DEDICATED SERVER CORE-PROFILE BOOT: PASS
+FULL GAMEPLAY RUNTIME: NOT TESTED
+TRANSITIVE RUNTIME GRAPH: NOT YET ADMITTED
+BETTER COMBAT ADAPTER: NOT IMPLEMENTED
+SPELL ENGINE ADAPTER: NOT IMPLEMENTED
+CREATURE DEPENDENCY RUNTIME IDS: STILL OPEN WHERE MARKED
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
+```
+
+The first resolution attempt (workflow run `35310725627`) failed only because GeckoLib's creator Cloudsmith endpoint returned HTTP 401 to the CI runner. The exact pinned Fabric 5.5.5 file was then changed to public CurseMaven coordinate `curse.maven:geckolib-388172:8819017`. No gameplay code or version pin changed.
+
+Exact resolved filenames, byte sizes and SHA-256 hashes are recorded in `M0_GAMEPLAY_FOUNDATION_RESOLUTION_2026-09-18.md`.
+
+This closes **artifact availability for the nine foundation JARs**, not their runtime integration. The next M0 gate is exact creature artifact/runtime-ID inspection plus an actual `gameplay` profile with explicit dependency graph and bounded adapters.
 
 ---
 

@@ -930,7 +930,7 @@ The correct next step is **not** another broad search for a complete RPG mod to 
 
 The narrow M0 core integration skeleton is now implemented and verified at commit `b98ab3650b6e594693df3c1170d1de1e1ea169f2`. It includes the Fabric entrypoint, dependency manifest/runtime profiles, integration-policy/module primitives, actor-overlay schema validation, unit tests and a dedicated CI/server-smoke workflow.
 
-The next M0 work is not another skeleton rewrite. It is to verify the exact pinned runtime artifacts/IDs, wire the `gameplay` profile, and prove real Better Combat / Spell Engine / creature adapters against the acceptance gates below. Player-facing R01 implementation still waits for the remaining asset/spatial gates.
+The nine non-creature gameplay-foundation JARs are now independently resolved and hashed by CI (`Build Openworld RPG` run `35310816215`), with evidence in `M0_GAMEPLAY_FOUNDATION_RESOLUTION_2026-09-18.md`. This does **not** mean they are loaded into the gameplay runtime. The next M0 work is exact creature artifact/runtime-ID inspection, explicit transitive/runtime graph admission, then a real `gameplay` profile and bounded Better Combat / Spell Engine / creature adapters against the acceptance gates below. Player-facing R01 implementation still waits for the remaining asset/spatial gates.
 
 Verification state for this document:
 
@@ -938,6 +938,8 @@ Verification state for this document:
 EXTERNAL ARCHITECTURE SOURCES REVIEWED: YES
 PROJECT INTEGRATION CONTRACT CLOSED: YES
 M0 CORE INTEGRATION SKELETON IMPLEMENTED: YES
+GAMEPLAY FOUNDATION PRIMARY ARTIFACTS RESOLVED: YES — 9/9
+FULL DEV-GAMEPLAY RUNTIME LOADED: NO
 FULL DEV-GAMEPLAY INTEGRATIONS IMPLEMENTED: NO
 CODE REVIEWED: YES — narrow bootstrap scope
 TESTED: YES — unit tests + dedicated server core profile
