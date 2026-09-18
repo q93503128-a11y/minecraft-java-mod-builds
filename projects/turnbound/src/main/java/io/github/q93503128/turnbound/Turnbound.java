@@ -8,16 +8,13 @@ import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
 import io.github.q93503128.turnbound.session.BattleInteractionGuard;
 import io.github.q93503128.turnbound.session.BattleNetwork;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
-import io.github.q93503128.turnbound.world.AsterMarchVanillaSpawnGuard;
-import io.github.q93503128.turnbound.world.AsterMarchWorldSanitizer;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
+import io.github.q93503128.turnbound.world.ExternalWorldBootstrap;
 import io.github.q93503128.turnbound.world.FieldInteractionGuard;
 import io.github.q93503128.turnbound.world.FieldNetwork;
 import io.github.q93503128.turnbound.world.MetaNetwork;
-import io.github.q93503128.turnbound.world.OpeningReadabilityService;
 import io.github.q93503128.turnbound.world.PlayerShellRules;
-import io.github.q93503128.turnbound.world.StarterSliceBootstrap;
 import io.github.q93503128.turnbound.world.TurnboundAttachments;
 import io.github.q93503128.turnbound.world.WorldSessionRouter;
 import net.minecraft.server.level.ServerPlayer;
@@ -44,7 +41,6 @@ public final class Turnbound {
         modEventBus.addListener(FieldNetwork::register);
         modEventBus.addListener(MetaNetwork::register);
         NeoForge.EVENT_BUS.addListener(TurnboundCommands::register);
-        NeoForge.EVENT_BUS.addListener(AsterMarchVanillaSpawnGuard::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(this::tick);
         NeoForge.EVENT_BUS.addListener(this::login);
         NeoForge.EVENT_BUS.addListener(this::logout);
@@ -64,18 +60,19 @@ public final class Turnbound {
     }
 
     private void tick(PlayerTickEvent.Post event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            if (CampaignPersistence.blocked(player)) return;
-            PlayerShellRules.maintain(player);
-            StarterSliceBootstrap.tick(player);
-            // Do not build/sync authored world content until the destructive foundation pass is complete.
-            if (StarterSliceBootstrap.building(player)) return;
-            WorldSessionRouter.tick(player);
-            AsterMarchWorldSanitizer.tick(player);
-            OpeningReadabilityService.tick(player);
-            BattleSessionManager.tick(player);
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (CampaignPersistence.blocked(player)) return;
+
+        // Production gameplay is fail-closed onto the selected authored world. Installing TURNBOUND in an arbitrary
+        // save must never rebuild Aster March, erase terrain, cancel native spawns or apply the RPG player shell.
+        if (!ExternalWorldBootstrap.tick(player)) {
             CampaignPersistence.autosave(player);
+            return;
         }
+
+        PlayerShellRules.maintain(player);
+        BattleSessionManager.tick(player);
+        CampaignPersistence.autosave(player);
     }
 
     private void login(PlayerEvent.PlayerLoggedInEvent event) {
@@ -85,10 +82,12 @@ public final class Turnbound {
                 LOGGER.warn("TURNBOUND resumed retained in-memory battle state for {} after a failed lifecycle flush", player.getUUID());
             } else {
                 LOGGER.warn("TURNBOUND resumed retained in-memory campaign state for {} after a failed lifecycle flush", player.getUUID());
+                ExternalWorldBootstrap.initialize(player);
             }
             return;
         }
         CampaignPersistence.load(player);
+        ExternalWorldBootstrap.initialize(player);
     }
 
     private void logout(PlayerEvent.PlayerLoggedOutEvent event) {
@@ -100,8 +99,7 @@ public final class Turnbound {
         }
         if (releaseRuntime || CampaignPersistence.blocked(player)) {
             CampaignProgressStore.removeRuntime(player.getUUID());
-            StarterSliceBootstrap.remove(player);
-            OpeningReadabilityService.remove(player);
+            ExternalWorldBootstrap.remove(player);
             WorldSessionRouter.remove(player);
         } else {
             LOGGER.error("TURNBOUND retained unsaved in-memory state for {} so a same-server reconnect can retry persistence", player.getUUID());
@@ -117,8 +115,7 @@ public final class Turnbound {
                 LOGGER.error("TURNBOUND could not flush campaign state for {} before server shutdown", player.getUUID());
             }
         }
-        StarterSliceBootstrap.clearAll(players);
-        OpeningReadabilityService.clear();
+        ExternalWorldBootstrap.clear();
         WorldSessionRouter.clearAll(players);
         CampaignProgressStore.clearRuntime();
     }
