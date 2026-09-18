@@ -40,7 +40,7 @@ public final class VillageRaidSystem {
     private static final int FIRST_WAVE_COUNTDOWN_TICKS = 240;
     private static final int BETWEEN_WAVE_TICKS = 120;
     private static final int FORCED_NEXT_WAVE_TICKS = 20 * 60;
-    private static final int FINAL_STRAGGLER_RECOVERY_TICKS = 20 * 60;
+    private static final int FINAL_STRAGGLER_RECOVERY_TICKS = 20 * 35;
     private static final int FINAL_STRAGGLER_RECOVERY_INTERVAL = 20 * 15;
     private static final int MAX_ACTIVE_ENEMIES = 100;
     private static final int STRUCTURE_ATTACK_INTERVAL = 30;
