@@ -1155,7 +1155,7 @@ First eligible defeat:
 
 - 2 Regalhart Antlers;
 - guaranteed Superior+ normal gear;
-- 15% direct Mythic roll from known Regalhart signature pool (`Hartcrown Spear` currently);
+- 15% direct Mythic roll from the exact one-item R01 launch signature pool: `Hartcrown Spear`;
 - Gold: **70**;
 - EXP ~20% current next-Lv requirement;
 - Class XP ~15% current Class Rank requirement.
