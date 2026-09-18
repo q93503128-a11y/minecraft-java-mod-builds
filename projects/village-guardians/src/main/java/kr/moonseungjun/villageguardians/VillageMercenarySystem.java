@@ -112,13 +112,14 @@ public final class VillageMercenarySystem {
         int current = rosterCount();
         if (current >= cap) return "용병 정원이 가득 찼습니다. 현재 " + current + " / " + cap;
         int cost = hireCost(kind);
-        if (!VillageProgressionSystem.spendCoins(player, cost)) {
-            return "수호 주화가 부족합니다. 필요 " + cost + ", 현재 " + VillageProgressionSystem.coins(player);
+        if (!VillageProgressionSystem.spendSupplies(cost)) {
+            return "공동 보급품이 부족합니다. 필요 " + cost + ", 현재 " + VillageProgressionSystem.supplies();
         }
+        MinecraftServer server = level.getServer();
         IronGolem mercenary = EntityTypes.IRON_GOLEM.create(level, EntitySpawnReason.EVENT);
         if (mercenary == null) {
-            VillageProgressionSystem.addCoins(player, cost, "용병 고용 실패 환불");
-            return "용병을 배치하지 못해 주화를 돌려드렸습니다.";
+            if (server != null) VillageProgressionSystem.addSupplies(server, cost, "용병 고용 실패 환불");
+            return "용병을 배치하지 못해 공동 보급품을 돌려드렸습니다.";
         }
         BlockPos origin = VillageWorldSystem.buildingCenter(VillageProgressionSystem.Building.BARRACKS);
         BlockPos spawn = safeSpawn(level, origin);
@@ -135,8 +136,8 @@ public final class VillageMercenarySystem {
         if (!level.addFreshEntity(mercenary)) {
             unregister(mercenary.getUUID());
             VillageWorldSystem.unmarkAllowedGameMob(mercenary.getUUID());
-            VillageProgressionSystem.addCoins(player, cost, "용병 배치 실패 환불");
-            return "용병 배치에 실패해 주화를 돌려드렸습니다.";
+            if (server != null) VillageProgressionSystem.addSupplies(server, cost, "용병 배치 실패 환불");
+            return "용병 배치에 실패해 공동 보급품을 돌려드렸습니다.";
         }
         VillageMercenaryPresentationSystem.ensure(level, mercenary, kind, 1);
         return kind.displayName() + " 고용 완료 · Lv.1 · 현재 " + (current + 1) + " / " + cap
@@ -263,6 +264,24 @@ public final class VillageMercenarySystem {
             if (entity instanceof IronGolem golem && golem.isAlive()) result.add(golem);
         }
         return List.copyOf(result);
+    }
+
+    public static synchronized boolean isCombatMercenary(Mob mob) {
+        return mob instanceof IronGolem golem && golem.isAlive() && CLASSES.containsKey(golem.getUUID());
+    }
+
+    public static synchronized IronGolem nearestCombatMercenary(ServerLevel level, Mob enemy, double range) {
+        if (level == null || enemy == null || range <= 0.0) return null;
+        IronGolem chosen = null;
+        double chosenDistance = range * range;
+        for (IronGolem golem : loadedMercenaries(level)) {
+            double distance = enemy.distanceToSqr(golem);
+            if (distance <= chosenDistance && enemy.hasLineOfSight(golem)) {
+                chosenDistance = distance;
+                chosen = golem;
+            }
+        }
+        return chosen;
     }
 
     public static synchronized List<RosterEntry> rosterEntries(MinecraftServer server) {
