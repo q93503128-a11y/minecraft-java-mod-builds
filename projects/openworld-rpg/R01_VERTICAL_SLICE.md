@@ -622,7 +622,7 @@ Event sequence:
 
 1. enter the authored ford event volume;
 2. locate the frightened Trail Stag near the damaged harness/cart route;
-3. clear the event hazard pack — solo baseline **2 Meadow Vipers**, adding **+1 Viper-equivalent threat per additional active participant up to 4 total threats**;
+3. clear the event hazard pack — solo baseline **2 Meadow Vipers**, adding **+1 Meadow Viper per additional active participant up to 4 total Vipers**;
 4. perform the accepted calming interaction animation at close range after combat state ends;
 5. mount the Stag;
 6. ride the short authored ford-to-stable road segment;
@@ -791,14 +791,22 @@ Do not stitch unrelated downloaded rooms together.
 
 - abandoned quarry identity;
 - Iron Ore / mining props;
-- one short Cave Centipede/small-threat group;
+- solo encounter: **4 Cave Centipedes** in two staggered pairs;
+- the second pair activates only after the player crosses the authored ore-cart/deeper-gallery threshold, so all four do not dog-pile the entrance;
+- co-op: add **+1 Cave Centipede per additional engaged player**, added to the second activation, maximum **7 total** at four players;
+- Cave Centipedes keep ordinary-enemy HP; do not apply boss HP scaling to them;
 - one visible optional side ledge/cache;
+- personal one-time side-cache reward: **30 Gold + Iron Ore x4 + one normal authored-treasure equipment roll at 25%**;
+- the side cache never duplicates through dungeon reset/relog;
 - active combat target 45–75 seconds.
 
 ### 2. Collapsed Hoist Chamber
 
 - compact traversal around broken platforms/hoist;
-- vertical centipede pressure;
+- solo encounter: **3 Cave Centipedes** on authored wall/ceiling anchors so vertical awareness matters;
+- co-op: add **+1 Cave Centipede per additional engaged player**, maximum **6 total** at four players;
+- added Centipedes use separate authored anchors; do not spawn directly behind a player or on the lift control;
+- Cave Centipedes keep ordinary-enemy HP;
 - nearby mechanism opens a persistent-in-run lift shortcut toward entrance;
 - no required Hardwood/material sacrifice;
 - room target 2–4 minutes.
@@ -806,8 +814,11 @@ Do not stitch unrelated downloaded rooms together.
 ### 3. Root-Breached Workings
 
 - visual transition into fantasy ecology and old masonry;
-- one Nature Spirit elite using canonical Living Shell/melee identity;
-- Verdant Crystal/herb side cache;
+- exactly **1 Nature Spirit elite** using canonical Living Shell/melee identity;
+- no trash add spawns during this elite encounter;
+- Nature Spirit uses the canonical authored-elite multiplayer HP/poise scaling from `COMBAT_BALANCE.md`;
+- personal one-time side cache: **Verdant Crystal x1 + Healing Herb x2**;
+- the side cache never duplicates through dungeon reset/relog;
 - no repeated copies of the same elite;
 - active combat target 15–25 seconds, room total 2–4 minutes.
 
