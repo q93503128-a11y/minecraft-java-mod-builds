@@ -48,10 +48,10 @@ repositories {
     }
 
     maven {
-        name = 'GeckoLib'
-        url = 'https://maven.cloudsmith.io/geckolib3/geckolib/'
+        name = 'CurseMaven'
+        url = 'https://cursemaven.com'
         content {
-            includeGroup 'com.geckolib'
+            includeGroup 'curse.maven'
         }
     }
 }
@@ -94,7 +94,7 @@ dependencies {
     gameplayFoundation("maven.modrinth:XaT8sLP6:${project.trinkets_version_id}") {
         transitive = false
     }
-    gameplayFoundation("com.geckolib:geckolib-fabric-26.2:${project.geckolib_version}") {
+    gameplayFoundation("curse.maven:geckolib-388172:8819017") {
         transitive = false
     }
 
