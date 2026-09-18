@@ -152,12 +152,29 @@ public final class VillagePlacedTurretSystem {
                     "§c공동 보급품이 부족합니다. 설치 필요 " + cost + ", 현재 " + VillageProgressionSystem.supplies()));
             return true;
         }
-        int id = Math.max(1, VillageSiegePersistence.getInt("next_turret_id", 1));
-        VillageSiegePersistence.putInt("next_turret_id", id + 1);
-        TurretState state = new TurretState(id, pending.type(), candidate.immutable(), 1,
-                pending.type().baseHp(), true);
-        state = new TurretState(id, state.type(), state.pos(), state.level(), maxHp(state), true);
-        synchronized (VillagePlacedTurretSystem.class) { TURRETS.put(id, state); persist(state); }
+        int id = -1;
+        TurretState state = null;
+        synchronized (VillagePlacedTurretSystem.class) {
+            // Recheck after payment as well: two players may have previewed the last slot before
+            // either confirmation arrived. Only one commit may claim that final capacity.
+            if (TURRETS.size() < capacity()) {
+                id = Math.max(1, VillageSiegePersistence.getInt("next_turret_id", 1));
+                VillageSiegePersistence.putInt("next_turret_id", id + 1);
+                TurretState base = new TurretState(id, pending.type(), candidate.immutable(), 1,
+                        pending.type().baseHp(), true);
+                state = new TurretState(id, base.type(), base.pos(), base.level(), maxHp(base), true);
+                TURRETS.put(id, state);
+                persist(state);
+            }
+        }
+        if (state == null) {
+            MinecraftServer server = level.getServer();
+            if (server != null) VillageProgressionSystem.addSupplies(server, cost, "포탑 설치 경쟁 환불");
+            PENDING.remove(player.getUUID());
+            player.sendSystemMessage(Component.literal(
+                    "§c포탑 설치 한도가 직전에 채워져 공동 보급품을 전액 돌려드렸습니다."));
+            return true;
+        }
         buildVisual(level, state);
         VillageDefenseEffectSystem.turretDeployPulse(level,
                 Vec3.atCenterOf(state.pos()).add(0.0, -0.45, 0.0), state.type());
