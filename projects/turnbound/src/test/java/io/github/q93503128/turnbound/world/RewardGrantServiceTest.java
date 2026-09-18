@@ -2,7 +2,7 @@ package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.BattleState;
-import io.github.q93503128.turnbound.combat.P0Scenario;
+import io.github.q93503128.turnbound.combat.TrainingBattleFactory;
 import io.github.q93503128.turnbound.progression.PlayerProfile;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +21,7 @@ class RewardGrantServiceTest {
         try {
             CampaignProgressStore.ensureNewGame(playerId);
             CampaignProgressStore.markClean(playerId);
-            BattleState state = P0Scenario.create();
+            BattleState state = TrainingBattleFactory.create();
             long goldBefore = CampaignProgressStore.currency(playerId, PlayerProfile.Currency.GOLD);
 
             RewardGrantService.Result first = RewardGrantService.commit(
@@ -49,7 +49,7 @@ class RewardGrantServiceTest {
         try {
             CampaignProgressStore.ensureNewGame(playerId);
             CampaignProgressStore.markClean(playerId);
-            BattleState state = P0Scenario.create();
+            BattleState state = TrainingBattleFactory.create();
 
             RewardGrantService.Result first = RewardGrantService.commit(
                     playerId, "tx-old", "ENC_M01", state, BattleOutcome.ALLY_VICTORY, () -> { });
@@ -86,7 +86,7 @@ class RewardGrantServiceTest {
             CampaignProgressStore.Snapshot before = CampaignProgressStore.snapshot(playerId);
 
             assertThrows(IllegalStateException.class, () -> RewardGrantService.commit(
-                    playerId, "tx-save-fail", "ENC_M01", P0Scenario.create(), BattleOutcome.ALLY_VICTORY,
+                    playerId, "tx-save-fail", "ENC_M01", TrainingBattleFactory.create(), BattleOutcome.ALLY_VICTORY,
                     () -> { throw new IOException("forced"); }));
 
             assertEquals(before, CampaignProgressStore.snapshot(playerId));
@@ -104,7 +104,7 @@ class RewardGrantServiceTest {
             CampaignProgressStore.ensureNewGame(playerId);
             CampaignProgressStore.markClean(playerId);
             CampaignProgressStore.Snapshot before = CampaignProgressStore.snapshot(playerId);
-            BattleState state = P0Scenario.create();
+            BattleState state = TrainingBattleFactory.create();
 
             assertThrows(IllegalStateException.class, () -> RewardGrantService.commit(
                     playerId, "tx-outer", "ENC_M01", state, BattleOutcome.ALLY_VICTORY,
@@ -128,7 +128,7 @@ class RewardGrantServiceTest {
             CampaignProgressStore.ensureNewGame(playerB);
             CampaignProgressStore.markClean(playerA);
             CampaignProgressStore.markClean(playerB);
-            BattleState state = P0Scenario.create();
+            BattleState state = TrainingBattleFactory.create();
             long goldABefore = CampaignProgressStore.currency(playerA, PlayerProfile.Currency.GOLD);
             long goldBBefore = CampaignProgressStore.currency(playerB, PlayerProfile.Currency.GOLD);
 

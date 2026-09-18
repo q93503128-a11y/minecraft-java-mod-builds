@@ -1,7 +1,7 @@
 package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.combat.BattleOutcome;
-import io.github.q93503128.turnbound.combat.P0Scenario;
+import io.github.q93503128.turnbound.combat.TrainingBattleFactory;
 import io.github.q93503128.turnbound.progression.PlayerProfile;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -32,7 +32,7 @@ class RewardTransactionJournalTest {
             long goldBefore = CampaignProgressStore.currency(playerId, PlayerProfile.Currency.GOLD);
 
             RewardGrantService.SettlementException failure = assertThrows(RewardGrantService.SettlementException.class,
-                    () -> RewardGrantService.commit(playerId, "tx-recover", "ENC_M01", P0Scenario.create(), BattleOutcome.ALLY_VICTORY,
+                    () -> RewardGrantService.commit(playerId, "tx-recover", "ENC_M01", TrainingBattleFactory.create(), BattleOutcome.ALLY_VICTORY,
                             snapshot -> RewardTransactionJournal.prepare(primary, "tx-recover", snapshot),
                             () -> { throw new IOException("forced primary failure"); },
                             () -> RewardTransactionJournal.clear(primary)));
@@ -66,7 +66,7 @@ class RewardTransactionJournalTest {
             CampaignProgressStore.markClean(playerId);
 
             RewardGrantService.Result result = RewardGrantService.commit(
-                    playerId, "tx-ack", "ENC_M01", P0Scenario.create(), BattleOutcome.ALLY_VICTORY,
+                    playerId, "tx-ack", "ENC_M01", TrainingBattleFactory.create(), BattleOutcome.ALLY_VICTORY,
                     snapshot -> RewardTransactionJournal.prepare(primary, "tx-ack", snapshot),
                     () -> CampaignSaveFiles.save(primary, CampaignProgressStore.snapshot(playerId)),
                     () -> { });
@@ -91,7 +91,7 @@ class RewardTransactionJournalTest {
         try {
             CampaignProgressStore.ensureNewGame(playerId);
             CampaignProgressStore.markClean(playerId);
-            RewardGrantService.commit(playerId, "tx-stale", "ENC_M01", P0Scenario.create(), BattleOutcome.ALLY_VICTORY, () -> { });
+            RewardGrantService.commit(playerId, "tx-stale", "ENC_M01", TrainingBattleFactory.create(), BattleOutcome.ALLY_VICTORY, () -> { });
             CampaignProgressStore.Snapshot committed = CampaignProgressStore.snapshot(playerId);
             RewardTransactionJournal.prepare(primary, "tx-stale", committed);
             CampaignSaveFiles.save(primary, committed);
