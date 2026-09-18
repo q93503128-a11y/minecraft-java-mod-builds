@@ -1,126 +1,167 @@
-# TURNBOUND World Overhaul — Drehmal production binding
+# TURNBOUND World Canon — Drehmal Binding v1
 
-## Status
+## 1. 현재 production world
 
-This document is the production world-layer canon for the TURNBOUND overhaul that began after the alpha.17 Aster March playtest.
+- Base world: Drehmal: APOTHEOSIS v2.2.2f
+- Public target: Minecraft Java 1.20.1
+- TURNBOUND target: Minecraft Java 26.2 / NeoForge
+- TURNBOUND profile: `turnbound:drehmal_apotheosis_2_2_2f`
+- 원본 world/resource-pack bytes는 TURNBOUND repository에 vendoring하지 않는다.
+- 공식 배포본을 별도로 설치하고 TURNBOUND는 자체 marker, semantic anchors, gameplay state만 관리한다.
 
-The combat, party, progression, reward, save/WAL and multiplayer-authority systems are retained. The former hand-authored Aster March physical map is no longer a production target.
+TURNBOUND: RE 프로젝트는 현재 정본이 아니며 의존하지 않는다. 과거에 확인한 구현이 좋은 기술적 참고였더라도 앞으로는 TURNBOUND 자체 요구사항과 현재 코드로 판단한다.
 
-Current external base:
+## 2. 가장 중요한 규칙
 
-- Source: Drehmal Team
-- World: Drehmal: APOTHEOSIS v2.2.2f
-- Public target version: Minecraft Java 1.20.1
-- TURNBOUND target: Minecraft Java 26.2 / NeoForge 26.2.0.62
-- Profile id: `turnbound:drehmal_apotheosis_2_2_2f`
-- Original world/resource-pack assets: **not vendored in this repository**
-- TURNBOUND binding data: semantic coordinates and source notes only
+Drehmal 위에 Aster March를 다시 만들지 않는다.
 
-The official project provides a downloadable world and installation paths for singleplayer/multiplayer/server use, but this repository does not assume redistribution permission for the original map or resource pack. Users install the official distribution separately. TURNBOUND only stores its own profile marker, semantic anchors and gameplay state.
+금지:
+- 대형 terrain flatten
+- TURNBOUND 전용 긴 인공 도로 생성
+- 옛 Aster 구조물 복원
+- 임시 평지 arena를 map에 permanent 생성
+- map을 “새 좌표가 있는 선형 corridor”로 재해석
 
-## Production boundary
+허용:
+- 기존 지형을 읽고 semantic role 부여
+- gameplay entity/NPC/encounter 배치
+- 비파괴 marker/interaction
+- 안전한 runtime battle formation
+- TURNBOUND 자체 save data
 
-### Preserve
+## 3. binding 안전성
 
-These systems remain authoritative unless a later explicit overhaul changes them:
+- arbitrary save 자동 변환 금지
+- 정확한 profile marker 없으면 gameplay shell fail-closed
+- marker는 TURNBOUND metadata만 기록
+- binding이 terrain/entity/resource pack을 임의 수정하지 않음
+- 자동 설치/마이그레이션을 추가한다면 official source/hash/version을 검증한 뒤에만 marker 생성
 
-- `combat/*`: Turn Gauge threshold 1000, BattleEngine/BattleState, action/status logic
-- `session/BattleSession*`: encounter lifecycle, private battle presentation and server battle authority
-- `progression/*`: character ownership, growth, gacha, equipment and currencies
-- `CampaignProgressStore`, `CampaignPersistence`, reward journal/WAL and reward settlement
-- battle/network payloads and server-authoritative command handling
-- character/enemy/reward canonical data
-- battle result flow and the field-return contract
-- shared progression semantics that are independent of physical Aster March blocks
+현재 integration seeds:
+- New Drabyel: 502 67 1801
+- Stasis Facility: 778 31 668
 
-### Legacy world layer — retained only as migration/reference code
+이 값은 **map 조사 시작점**이지 즉시 player-facing safe anchor가 아니다.
 
-The following classes are no longer called by the production tick path and must not be treated as current world canon:
+## 4. Map Survey가 콘텐츠보다 먼저
 
-- `StarterSliceBootstrap`
-- `AsterMarchFoundationBuilder`
-- `AsterMarchWorldShell`
-- `AsterMarchContentOrchestrator`
-- `AsterMarchWorldSanitizer`
-- `AsterMarchVanillaSpawnGuard`
-- `RadiaSafeSpawn`
-- `StarterSliceWorld`
-- `SouthgateChapterWorld`
-- `GloamwoodChapterWorld`
-- `BrokenAqueductChapterWorld`
-- `EmberQuarryChapterWorld`
-- `OldRelayStationWorld`
-- old fixed-coordinate seam/gate/transit logic in `WorldSessionRouter`
-- `AsterMarchMapData` / `AsterMarchMapScreen` / `AsterMarchMinimapLayer`
-- old fixed-coordinate fast-travel projection
+NPC/적/퀘스트/fast travel을 넣기 전에 실제 migrated 26.2 world를 조사한다.
 
-Do not delete these mechanically until their game-system dependencies have been migrated. They are quarantined from production first, then removed when callers have been replaced.
+각 route/settlement/POI는 `data/turnbound/world/locations/*.json` 형태의 semantic record로 정리할 수 있다.
 
-### Mixed classes — migrate, do not delete wholesale
+권장 필드:
+- id
+- sourceLocationName
+- type
+- center
+- entrances
+- roadLinks
+- safeNpcSpots
+- encounterZones
+- battleCandidateZones
+- cameraRisks
+- nearbyPoi
+- discoveryRule
+- notes
+- verifiedIn26_2
 
-- `WorldSessionRouter`: battle-return/progression hooks are useful; physical seam routing is not.
-- `FieldSessionManager` and chapter session managers: encounter/progression logic is useful; calls that build or confine players to authored Aster March geometry are not.
-- `TurnboundWorldSavedData`: shared progression is useful; physical block-gate writes are legacy.
-- `FieldNetwork` / `FieldUiSnapshot`: keep protocol/UI state; replace Aster March coordinate projection.
-- `BattleCameraController`: keep battle UX contract, replace terrain-dependent player-centered camera assumptions.
+`verifiedIn26_2=false`인 anchor는 자동 teleport/quest critical route에 사용하지 않는다.
 
-## External-world binding contract
+## 5. 배치 순서
 
-TURNBOUND adopts the validated TURNBOUND: RE pattern rather than inventing another world integration system.
+1. 실제 지도/위키로 큰 지역과 POI 후보 파악
+2. Minecraft 26.2 migrated world에서 직접 지형 확인
+3. 길을 실제로 걸어서 travel time/시야/분기 확인
+4. NPC 역할 배치
+5. encounter zone 배치
+6. battle candidate footprint 검사
+7. quest objective 연결
+8. minimap/worldmap discovery 연결
+9. 실제 플레이로 이동 리듬 검사
 
-1. An arbitrary save is never auto-converted into a TURNBOUND world.
-2. Production runtime activates only when the world contains `.turnbound_world_profile` with the exact profile id.
-3. Manual binding is operator-only and requires the operator to stand within 192 blocks of the configured New Drabyel integration seed.
-4. Binding writes only TURNBOUND metadata. It does not flatten terrain, place roads, erase structures or copy Drehmal assets.
-5. A future packaged first-run installer may write the same marker only after verifying the pinned official download and completing the required 26.2 compatibility migration.
-6. Per-player first arrival is stored in separate `ExternalWorldSavedData`; existing character/progression save formats are untouched.
-7. Old Aster March spawn suppression and loose-item sanitizer are disabled from the production runtime because they would destructively alter the external authored world.
+좌표 표를 먼저 채우고 나중에 지형을 보는 순서를 금지한다.
 
-Current enabled integration seeds:
+## 6. NPC
 
-- Hub / New Drabyel: `502 67 1801`
-- First-region seed / Stasis Facility: `778 31 668`
+NPC spawn point는:
+- 발판 안정성
+- 머리 공간
+- 문/계단/울타리 충돌
+- 플레이어 접근
+- 원본 NPC/오브젝트와 겹침
+- 주변 동선
+을 확인한다.
 
-These are **binding seeds**, not final safe gameplay anchors. Terrain, headroom, route quality, nearby structures and encounter suitability must be inspected in the migrated 26.2 world before any seed becomes a player-facing destination.
+NPC는 실제 역할에 맞는 위치를 가져야 한다.
 
-## First implementation checkpoint
+## 7. Encounter
 
-Implemented in the first overhaul unit:
+Encounter는 점 하나가 아니라 zone/route를 가진다.
 
-- data-driven Drehmal profile resource
-- exact profile marker detection
-- operator manual bind command
-- separate world SavedData for per-player external-world runtime initialization
-- production server tick no longer calls Aster March terrain builders/sanitizers/spawn guard
-- old Aster March minimap is no longer registered on the production client
-- unbound arbitrary worlds fail closed instead of being rewritten
-- combat/progression/save code remains in place
+- patrol polyline
+- alert radius
+- disengage boundary
+- engage point
+- optional ambush trigger
+- nearby safe battle candidate set
 
-Operator harness:
+필드 모델과 실제 BattleDefinition은 같은 적 구성을 가리킨다.
 
-- `/turnbound world status`
-- `/turnbound world bind_drehmal`
+## 8. Terrain-aware battle selection
 
-The bind command must be run from the separately installed Drehmal Overworld near the New Drabyel integration seed.
+조우 위치를 그대로 arena center로 쓰지 않는다.
 
-## Next implementation boundary
+후보 공간마다:
+- 4 ally + 최대5 enemy formation
+- ground height variance
+- water/lava
+- wall/tree obstruction
+- ceiling
+- cliff/drop
+- camera rear/side arc
+를 검사한다.
 
-The next world work must not revive the old ribbon-map pattern. It should:
+가장 가까운 적합 후보를 선택하고, 적합 공간이 없으면 encounter를 강제로 시작하지 않는다.
 
-1. port/adapt the validated TURNBOUND: RE v2.2.2f download/hash/26.2 migration path without redistributing the original map;
-2. inspect the migrated world and promote only verified terrain-safe hub/route/encounter anchors;
-3. replace `FieldSessionManager`'s `StarterSliceWorld.build` / `SouthgateChapterWorld.build` dependency with external-world semantic anchors;
-4. add terrain-aware battlefield selection around encounters;
-5. make battle return restore the real external-world position/session;
-6. only then retire the old Aster March builders and coordinate routers physically.
+전투가 끝나면 실제 필드의 안전한 원래 위치/세션으로 복귀한다.
 
-## Validation state of this checkpoint
+## 9. 기존 Aster code 처리
 
+production tick에서 이미 끊긴 old Aster builders/map/sanitizer/spawn guard는 gameplay dependency를 추출한 뒤 삭제한다.
+
+남겨야 할 것은:
+- 전투 결과
+- 진행/보상
+- save/network authority
+- encounter lifecycle
+
+버릴 것은:
+- Aster 좌표
+- block gate write
+- terrain shell/build
+- fixed relay route
+- old minimap image/data
+- old quest guide coordinates
+
+## 10. 지도/미니맵
+
+Drehmal 원본 지도를 무단 복제하지 않는다.
+
+선택지:
+- runtime terrain 기반 local map
+- 사용 허가가 확인된 map asset
+- TURNBOUND가 직접 기록한 discovered road/landmark overlay
+
+실제 source/license가 확인되기 전에는 외부 wiki 지도 image를 게임 asset으로 넣지 않는다.
+
+## 11. 현재 검증 상태
+
+기존 코드 checkpoint:
 - CODE REVIEWED: YES
-- TESTED: YES — Gradle test suite + NeoForge server smoke, Build TURNBOUND #754
-- BUILD VERIFIED: YES — Build TURNBOUND #754, commit `47cd25027fe26ea27f1ce5688372ab7102f7da18`
-- JAR PRODUCED: YES — workflow artifact `turnbound-v04-workbranch`
+- TESTED: YES — Gradle tests + NeoForge server smoke, Build TURNBOUND #754
+- BUILD VERIFIED: YES — code checkpoint 47cd25027fe26ea27f1ce5688372ab7102f7da18
+- JAR PRODUCED: YES
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
 
-Automated build/server-load validation is recorded above. External-world client play, terrain-safe arrival, camera behavior and multiplayer remain unverified.
+이번 v1 문서 대격변은 문서 작업이며 위 code verification 상태를 새 gameplay 검증으로 간주하지 않는다.

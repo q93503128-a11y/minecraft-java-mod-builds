@@ -1,208 +1,252 @@
-# TURNBOUND UI Design System
+# TURNBOUND UI / UX Design System v1
 
-TURNBOUND의 화면이 서로 다른 미니게임처럼 보이지 않도록 유지하기 위한 프로젝트 전용 UI 계약이다.
-공용 기준은 `/docs/QUALITY_STANDARD.md`, 세부 게임 규칙은 `PROJECT.md`와 v0.4 정본 문서를 우선한다.
+> 상태: 대격변 production 정본.
+> 이전 “현재 UI를 조금 polish” 단계는 종료했다. TURNBOUND의 UI는 전면 재설계 대상이다.
 
 ## 1. 목표
 
-TURNBOUND는 Minecraft의 3D 월드를 배경으로 하는 독립형 3D 파티 턴 RPG다.
-따라서 UI는 정보를 제공하되 월드와 캐릭터를 가리는 거대한 카드 벽이 되면 안 된다.
+TURNBOUND UI는 Minecraft 기본 메뉴를 장식한 화면이 아니라 **3D 턴제 RPG의 정보 구조**를 Minecraft 안에서 구현한다.
 
-핵심 우선순위:
+우선순위:
+1. 읽기 쉬움
+2. 현재 행동을 빠르게 찾음
+3. 캐릭터/월드를 가리지 않음
+4. 동일한 입력/상태 표현
+5. 외부 검증 UI asset과 실제 게임 사례를 활용
+6. GUI Scale/해상도 대응
 
-1. 월드/캐릭터/전투 연출
-2. 현재 행동과 목표
-3. HP/게이지/상태 등 즉시 판단 정보
-4. 보조 조작
-5. 상세 설명과 관리 기능
+## 2. 외부 자산 우선
 
-## 2. 참고 방식
+AI가 즉흥적으로 패널을 그리는 것은 마지막 수단이다.
 
-### BetterQuesting에서 참고
+현재 production 후보:
+- **Foozle RPG UI Set 1** — CC0. Dark/Fantasy RPG meta/menu 프레임 후보.
+- **Kenney Fantasy UI Borders / RPG UI Pack** — CC0. 9-slice, button, utility frame 후보.
+- 한국어 UI font 후보: **Pretendard** — SIL OFL 1.1.
 
-- 하나의 명확한 bounded surface 안에서 정보 계층을 만든다.
-- 선택 상태를 색 하나만이 아니라 위치/윤곽/형태로도 구분한다.
-- 화면 전체를 작은 카드 수십 개로 쪼개지 않는다.
-- 퀘스트/탐색처럼 정보량이 큰 화면은 내비게이션과 본문 영역을 분리한다.
+한 화면에 서로 다른 pack style을 임의 혼합하지 않는다.
 
-### REI에서 참고
+실제 Minecraft mockup에서:
+- 글자 대비
+- 9-slice 품질
+- 16:9/16:10/4:3
+- GUI Scale
+를 비교한 뒤 primary skin 하나를 고른다.
 
-- 작은 컨트롤을 일정한 간격과 반복 리듬으로 배치한다.
-- 자주 쓰는 조작은 항상 같은 위치에서 찾을 수 있게 한다.
-- 상세 정보는 tooltip/보조 영역으로 미루고 기본 화면은 밀도 있게 유지한다.
-- 클릭 가능/불가능 상태를 즉시 구분한다.
+자산을 실제 repository에 넣을 때 `EXTERNAL_ASSETS.md`에 source/license/modified/used-in을 기록한다.
 
-### TURNBOUND 고유 규칙
+## 3. Typography
 
-- 전투는 world-first. 거대한 상단/측면 패널을 만들지 않는다.
-- 아군은 하단, 스킬은 하단 우측, 타임라인은 상단 중앙의 얇은 정보만 유지한다.
-- 적 HP/선택/위험 신호는 가능한 한 실제 3D 대상에 붙인다.
-- 필드 HUD는 화면 중앙 시야를 비운다.
-- 관리 메뉴는 같은 프레임, 탭 높이, 버튼 상태, 여백 체계를 공유한다.
+Minecraft 기본 폰트를 production 본문 기본값으로 고정하지 않는다.
 
-## 3. Color tokens
+한국어 기준:
+- body는 작은 GUI Scale에서도 획이 뭉개지지 않아야 함
+- 제목과 본문의 weight 차이를 사용
+- 긴 설명을 좁은 폭에 우겨넣지 않음
+- 자동 말줄임표는 이름/짧은 라벨에만 제한
+- 스킬 설명은 wrap + tooltip/detail panel
+- 숫자는 정렬이 빨라야 함
 
-코드 정본: `TurnboundUiTokens.java`
+최소 글자 크기는 실제 360p/720p급 logical viewport 테스트 후 결정한다.
 
-- Background: `#0A0D12`
-- Surface: `#151A22`
-- Elevated Surface: `#0F141B`
-- Primary: `#6DC6FF`
-- Accent / Warning: `#FFC857`
-- Success: `#62D39A`
-- Danger: `#FF6B6B`
-- Disabled: `#707987`
-- Primary Text: `#F4F0E6`
-- Secondary Text: `#B7B2AA`
-- Muted Text: `#7B8088`
-- Border: `#8B694A`
+## 4. Layout token
 
-화면마다 비슷한 파랑/금색/회색을 새로 만들지 않는다.
-게임 데이터 자체의 의미 색상(HP, 지역 지형색 등)은 예외다.
+새 화면은 arbitrary absolute pixel을 늘리지 않는다.
 
-## 4. Spacing
+기본 spacing scale:
+- XS 4
+- S 8
+- M 12
+- L 16
+- XL 24
 
-새 일반 UI의 기본 간격은 아래 다섯 단계에서 고른다.
+다만 외부 UI asset의 실제 9-slice/픽셀 grid가 다른 단위를 요구하면 asset grid를 우선하고 전 화면에 통일한다.
 
-- XS = 4
-- S = 8
-- M = 12
-- L = 16
-- XL = 24
+## 5. Portrait system
 
-특별한 픽셀 정렬 이유가 없으면 7, 11, 13 같은 새 간격을 추가하지 않는다.
-기존 화면을 한 번에 전부 리팩터링하지는 않되 수정하는 화면부터 이 체계에 맞춘다.
+품질 좋은 hero portrait가 확보되면 가장 중요한 공용 component로 쓴다.
 
-## 5. Typography
+`PortraitId = CharacterId`
 
-Minecraft 기본 폰트를 기준으로 한다.
+공용 사용:
+- Party Slot
+- Turn Order token
+- Battle party HP
+- Character list
+- Result
+- Gacha result
 
-- 화면 제목: Primary Text + bold
-- 섹션 제목: Primary/Accent + bold
-- 본문: Primary Text
-- 보조 설명: Secondary Text
-- 비활성/낮은 우선순위: Muted Text
-- 경고: Danger 또는 Warning + 짧은 명시적 문구
-- 수치: 정렬과 가독성을 우선하고 장식적인 색 남발 금지
+상태:
+- normal
+- current actor
+- selected target
+- downed
+- disabled/not owned
 
-중요한 문구를 모두 bold 처리하지 않는다.
-작은 글씨를 더 줄이는 대신 필요하면 정보량을 접거나 tooltip으로 보낸다.
+색만으로 구분하지 않고 frame/shape/opacity/marker를 함께 사용한다.
 
-## 6. Components
+## 6. Battle HUD
 
-### Panel
+### 6.1 공간
 
-- Kenney 패널 텍스처는 전체 이미지를 고무처럼 stretch하지 않는다.
-- shared renderer에서 slice 처리하여 모서리와 테두리 두께를 보존한다.
-- 큰 패널 안에 또 큰 패널을 반복 중첩하지 않는다.
+중앙 전장은 비운다.
 
-### Button
+- Turn Order: 상단/측면의 얇은 rail
+- Party: 하단 가장자리
+- Skill actions: 우하단
+- AUTO / speed / flee: skill보다 낮은 visual priority의 control strip
+- Enemy HP/상태: 가능한 한 실제 3D 적과 공간적으로 연결
 
-필수 상태:
+### 6.2 Turn Order rail
 
-- Default
-- Hover/focus
-- Selected
-- Disabled
+텍스트 이름 목록 대신 portrait token을 우선한다.
 
-Selected는 색뿐 아니라 accent rail/corner mark로도 표시한다.
-Disabled는 회색 스킨 + 낮은 대비로 표시하며 클릭 명령도 보내지 않는다.
+표현:
+- 현재 actor
+- 다음 예측 6~10 actions
+- 연속 행동이면 같은 portrait가 반복될 수 있음
+- Gauge push/delay로 순서가 바뀌면 즉시 재배치
+- hover 시 SPD / 남은 Gauge 또는 Action Time 상세
 
-### Feedback toast
+예측은 UI 자체 계산이 아니라 server-authoritative snapshot과 공용 TurnScheduler simulation을 기반으로 한다.
 
-- 성공: `✓` + Success
-- 오류: `!` + Danger
-- 색 하나만으로 성공/오류를 전달하지 않는다.
-- 관리 화면이 열려 있어도 가려지지 않는 위치에 둔다.
+### 6.3 Skill action
 
-### Map marker
+버튼에 상시 긴 설명을 넣지 않는다.
 
-종류마다 색 + 형태를 같이 쓴다.
+기본:
+- icon
+- skill name
+- cooldown
+- target hint
 
-- 시설: 사각형
-- 사냥터: 십자/표식
-- 계전소: 링
-- 보스: X/위험 표식
+hover/focus:
+- 정확한 수치
+- 상태/조건
+- 현재 대상에서 실제 예상 효과
 
-미니맵과 월드 지도는 같은 marker renderer를 공유한다.
+말줄임표로 핵심 효과를 숨기지 않는다.
 
-## 7. Screen contracts
+### 6.4 Targeting
 
-### Battle
+- 실제 3D model click primary
+- Tab/keyboard fallback
+- world marker + HUD marker same target ID
+- invalid/downed target는 선택 후보에서 제외
+- single-target는 첫 대상을 몰래 자동 확정하지 않음
 
-가장 먼저 보여야 하는 것:
+## 7. Party / Character UI
 
-1. 실제 3D 캐릭터와 적
-2. 현재 행동 주체/선택 대상
-3. 선택 가능한 스킬
-4. HP/상태
-5. AUTO/배속/도주
+한 화면에서 가장 자주 하는 일:
+- 4명 편성
+- 캐릭터 교체
+- 현재 역할/레벨/장비 확인
 
-금지:
+따라서:
+- 좌측/하단 compact roster
+- 중앙/우측 선택 캐릭터 detail
+- portrait, 역할, 핵심 mechanic을 먼저
+- 상세 lore/긴 스킬 설명은 별도 tab/tooltip
+- 같은 캐릭터 정보를 카드 여러 장에 반복하지 않음
 
-- 전장을 덮는 불투명 전체 패널
-- 적 목록을 별도 거대 우측 패널로 복제
-- 선택 대상과 실제 3D 모델이 시각적으로 분리되는 UI
+## 8. Minimap / World Map
 
-### Field
+목표는 “작은 Aster image”가 아니다.
 
-- 목표는 우상단, 미니맵은 좌상단을 기본으로 하여 중앙을 비운다.
-- 목표 방향 안내는 짧고 화면 중앙 상단에 제한한다.
-- 미니맵/월드맵 marker 의미는 동일해야 한다.
+Minimap:
+- 주변 도로/지형
+- 발견 landmark
+- 목표 방향
+- 알려진 facility/NPC
+- 위험 marker
 
-### Meta menu
+World Map:
+- 발견한 지역만 명확히
+- fast travel
+- quest filter
+- dungeon/boss 상태
+- 중요 NPC/상점 filter
 
-- 최상단: 자원과 현재 섹션
-- 그 아래: 탭
-- 본문: 현재 탭의 핵심 작업
-- 하단: 페이지/확정 등 보조 조작
+marker semantics는 한 renderer/data model을 공유한다.
 
-카드 개수를 늘려 디자인을 해결하지 않는다.
-목록 밀도와 선택 상세 영역의 역할을 분리한다.
+## 9. Gacha / Summon UI
 
-### Result
+결과를 2D 카드 10장으로 바로 보여주는 화면은 최종 목표가 아니다.
 
-- 승패와 핵심 보상을 먼저 본다.
-- 파티 성장/세부 획득은 그 다음이다.
-- 전투 화면보다 결과창이 더 큰 시각적 비중을 갖지 않는다.
+3D reveal이 가능한 경우:
+- 전용 camera scene 또는 안전한 presentation layer
+- character 3D model
+- rarity-specific lighting/VFX/SFX
+- 고유 pose
+- 짧은 nameplate
+- 10-pull 최종 summary만 2D
 
-## 8. Asset rule
+SKIP:
+- 첫 프레임부터 가능
+- skip해도 이미 확정된 결과/보상은 동일
 
-Kenney는 저수준 프레임/버튼 원천이다.
-TURNBOUND의 house style 자체는 아래 조합으로 정의한다.
+## 10. Feedback
 
-- 색 token
-- spacing
-- 정보 계층
-- world-first 배치
-- marker/selection shape
-- 일관된 상태 표현
+- click: 시각 + 짧은 sound
+- disabled: 이유를 즉시 알 수 있음
+- error: ! + 짧은 문구
+- success: icon/animation + 짧은 문구
+- 중요한 자원 획득: 숫자만 chat에 찍지 않음
+- 위험 skill: actor 근처 telegraph
 
-따라서 새 화면을 만든다는 이유로 다른 Kenney 스타일, 다른 아이콘 팩, 다른 프레임을 임의 혼합하지 않는다.
-새 외부 자산은 `EXTERNAL_ASSETS.md`에 기록한다.
+과도한 screen shake/glow는 정보가 아니다.
 
-## 9. 현재 polish 단계 판정
+## 11. 경로/코드 구조
 
-이번 단계는 대형 UI 재설계가 아니다.
-테스트 전에 전체 인상을 조금 더 정돈하는 목적이며 다음만 우선한다.
+자산 경로를 얕고 예측 가능하게 유지한다.
 
-- shared frame/button의 비율 왜곡 제거
-- 공용 token 도입
-- 성공/오류의 비색상 신호 추가
-- map marker 형태 차등
-- 기존 전투/필드/메타 정보 구조 보존
+권장:
+```
+assets/turnbound/ui/
+  common/
+  battle/
+  party/
+  map/
+  summon/
+  icons/
+  portraits/
+  fonts/
+```
 
-목업이 필요한 대형 개편은 실제 플레이 스크린샷에서 구조 문제가 확인된 뒤 진행한다.
+외부 pack 원본은 production에서 쓰는 조각만 import하고, 필요하면 `third_party/` source note에서 출처를 기록한다. 화면별로 서로 다른 깊은 폴더 구조를 만들지 않는다.
 
-## 10. 다음 실제 플레이 시 시각 체크
+UI code도:
+- layout
+- renderer
+- state/view-model
+- input
+을 분리한다.
 
-- GUI Scale 변경 시 패널 테두리/모서리가 찌그러지지 않는가
-- 전투 중앙 시야가 UI 때문에 막히지 않는가
-- 스킬 selected/disabled가 즉시 구분되는가
-- 목표/미니맵이 서로 시야를 잡아먹지 않는가
-- 지도에서 시설/사냥/계전/보스를 색 없이도 대략 구분할 수 있는가
-- 성공/실패 피드백이 화면에 남고 의미가 분명한가
-- 긴 한국어 이름/설명이 잘리는 방식이 자연스러운가
-- Meta menu에서 한 화면에 너무 많은 카드가 생기지 않는가
+## 12. 금지
 
-실제 스크린샷에서 문제가 보이면 코드상 정상이어도 수정한다.
+- 검은 반투명 사각형 남발
+- 모든 정보 카드화
+- 임의 neon/glow/gradient
+- 화면마다 다른 padding
+- 8px 이하로 축소해 해결
+- 문자열을 계속 잘라 `...` 처리
+- 색만으로 selected/disabled 표현
+- 기본 Minecraft 버튼을 계획 없이 나열
+- 장식이 캐릭터보다 큰 화면
+- fixed 1920×1080 좌표 전제
+- external pack 여러 개를 스타일 확인 없이 혼합
+
+## 13. 실제 검수
+
+UI 완료는 compile이 아니다.
+
+지원 해상도/GUI Scale에서:
+- 글씨 잘림
+- 겹침
+- 버튼 hitbox
+- portrait 선명도
+- skill tooltip 위치
+- turn rail update
+- 카메라와 HUD 충돌
+- map marker 과밀
+을 실제 client screenshot으로 확인한다.
