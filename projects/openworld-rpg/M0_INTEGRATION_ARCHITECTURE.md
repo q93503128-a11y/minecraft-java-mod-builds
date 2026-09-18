@@ -930,7 +930,7 @@ The correct next step is **not** another broad search for a complete RPG mod to 
 
 The narrow M0 core integration skeleton is now implemented and verified at commit `b98ab3650b6e594693df3c1170d1de1e1ea169f2`. It includes the Fabric entrypoint, dependency manifest/runtime profiles, integration-policy/module primitives, actor-overlay schema validation, unit tests and a dedicated CI/server-smoke workflow.
 
-The nine non-creature gameplay-foundation JARs are now independently resolved and hashed by CI (`Build Openworld RPG` run `35310816215`), with evidence in `M0_GAMEPLAY_FOUNDATION_RESOLUTION_2026-09-18.md`. This does **not** mean they are loaded into the gameplay runtime. The next M0 work is exact creature artifact/runtime-ID inspection, explicit transitive/runtime graph admission, then a real `gameplay` profile and bounded Better Combat / Spell Engine / creature adapters against the acceptance gates below. Player-facing R01 implementation still waits for the remaining asset/spatial gates.
+The dependency runtime gate is now materially further: the 10 foundation/safety JARs plus the three curated creature JARs co-load in the isolated `gameplay` development profile on a Fabric 26.2 dedicated server. All 13 dependency-manifest runtime IDs are resolved and the server reaches ready state. Canonical evidence is `M0_GAMEPLAY_RUNTIME_BOOT_2026-09-18.md` (workflow run `35313724183`). This proves compatibility/co-load, **not** authority routing. The next M0 work is bounded Better Combat / Spell Engine / creature-overlay adapters against the acceptance gates below. Player-facing R01 implementation still waits for the remaining asset/spatial gates.
 
 Verification state for this document:
 
@@ -938,13 +938,19 @@ Verification state for this document:
 EXTERNAL ARCHITECTURE SOURCES REVIEWED: YES
 PROJECT INTEGRATION CONTRACT CLOSED: YES
 M0 CORE INTEGRATION SKELETON IMPLEMENTED: YES
-GAMEPLAY FOUNDATION PRIMARY ARTIFACTS RESOLVED: YES — 9/9
-FULL DEV-GAMEPLAY RUNTIME LOADED: NO
+FOUNDATION / SAFETY PRIMARY ARTIFACTS RESOLVED: YES — 10/10
+CURATED CREATURE PRIMARY ARTIFACTS RESOLVED: YES — 3/3
+DEPENDENCY MANIFEST RUNTIME IDS RESOLVED: YES — 13/13
+DEV-GAMEPLAY DEPENDENCY RUNTIME LOADED: YES — dedicated server co-load, run 35313724183
+BETTER COMBAT AUTHORITY ADAPTER: NO
+SPELL ENGINE AUTHORITY ADAPTER: NO
+EXTERNAL CREATURE OVERRIDE ADAPTER: NO
 FULL DEV-GAMEPLAY INTEGRATIONS IMPLEMENTED: NO
-CODE REVIEWED: YES — narrow bootstrap scope
-TESTED: YES — unit tests + dedicated server core profile
-BUILD VERIFIED: YES — workflow run 35309048646
+CODE REVIEWED: YES — bootstrap/runtime-profile scope
+TESTED: YES — unit tests + core/gameplay dedicated-server profiles
+BUILD VERIFIED: YES
 JAR PRODUCED: YES
+CLIENT RUNTIME TESTED: NO
 PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
 ```
