@@ -1448,8 +1448,10 @@ R01 starting anchors before the later loot-economy pass:
 Sell-back baselines:
 
 - equipment: **25%** of standard buy value;
-- materials: **35%**;
+- materials with a defined standard buy value: **35%**;
 - consumables: **20%**.
+
+Percentage-derived sell values use **floor to whole Gold, minimum 1 Gold for an otherwise sellable item**. A regional canon may instead assign a direct material sell value when no meaningful standard buy price exists; that direct value overrides the percentage formula.
 
 Specific authored trade goods may override these values, but buy/sell tables must never permit deterministic merchant-to-merchant arbitrage.
 
