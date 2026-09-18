@@ -154,7 +154,10 @@ public final class VillageRaidSystem {
         double radiusSquared = radius * radius;
         int maximum = Math.max(1, limit);
         long until = level.getGameTime() + durationTicks;
+        boolean mercenaryTaunter = taunter instanceof Mob taunterMob
+                && VillageMercenarySystem.isCombatMercenary(taunterMob);
         List<Mob> candidates = activeEnemies(level).stream()
+                .filter(mob -> !mercenaryTaunter || !VillageEnemyArchetypeSystem.isFlying(mob))
                 .filter(mob -> mob.position().distanceToSqr(center) <= radiusSquared)
                 .sorted(Comparator.comparingDouble(mob -> mob.position().distanceToSqr(center)))
                 .limit(maximum)
@@ -436,7 +439,7 @@ public final class VillageRaidSystem {
             if (tauntTarget != null) {
                 mob.setTarget(tauntTarget);
                 if (VillageEnemyArchetypeSystem.isFlying(mob)) {
-                    directTauntedFlyingEnemy(level, mob, tauntTarget);
+                    directTauntedFlyingEnemy(server, level, mob, tauntTarget);
                 } else {
                     mob.getNavigation().moveTo(tauntTarget, 1.22);
                 }
@@ -556,16 +559,39 @@ public final class VillageRaidSystem {
         return target;
     }
 
-    private static void directTauntedFlyingEnemy(ServerLevel level, Mob mob, LivingEntity target) {
+    private static void directTauntedFlyingEnemy(
+            MinecraftServer server, ServerLevel level, Mob mob, LivingEntity target) {
+        UUID id = mob.getUUID();
+        VillageEnemyArchetypeSystem.AerialRole role =
+                Optional.ofNullable(aerialRoleOf(mob)).orElse(VillageEnemyArchetypeSystem.AerialRole.RAIDER);
+        AerialStrike strike = AERIAL_STRIKES.get(id);
+        if (strike != null) {
+            if (abilityTicks < strike.impactTick()) {
+                Vec3 dive = strike.point().add(0.0, 3.0, 0.0);
+                moveFlyingToward(mob, strike.point(), dive, aerialDiveSpeed(role));
+                return;
+            }
+            if (!strike.resolved()) {
+                resolveAerialStrike(server, level, mob, strike);
+                strike = strike.resolvedCopy();
+                AERIAL_STRIKES.put(id, strike);
+            }
+            if (abilityTicks < strike.recoveryUntilTick()) {
+                Vec3 recover = strike.point().add(0.0, 9.0, 0.0);
+                moveFlyingToward(mob, strike.point(), recover, aerialRecoverySpeed(role));
+                return;
+            }
+            AERIAL_STRIKES.remove(id);
+        }
+
         Vec3 targetPoint = target.position().add(0.0, Math.max(1.0, target.getBbHeight() * 0.55), 0.0);
-        double angle = abilityTicks * 0.080 + Math.floorMod(mob.getUUID().hashCode(), 360) * Math.PI / 180.0;
+        double angle = abilityTicks * 0.080 + Math.floorMod(id.hashCode(), 360) * Math.PI / 180.0;
         Vec3 cruise = targetPoint.add(Math.cos(angle) * 4.5, 5.0, Math.sin(angle) * 4.5);
         int cadence = 54;
-        if (Math.floorMod(abilityTicks + mob.getUUID().hashCode(), cadence) == 0
+        if (target instanceof ServerPlayer
+                && Math.floorMod(abilityTicks + id.hashCode(), cadence) == 0
                 && mob.position().distanceToSqr(targetPoint) <= 18.0 * 18.0) {
-            beginAerialStrike(level, mob,
-                    Optional.ofNullable(aerialRoleOf(mob)).orElse(VillageEnemyArchetypeSystem.AerialRole.RAIDER),
-                    target.position(), null);
+            beginAerialStrike(level, mob, role, target.position(), null);
             return;
         }
         moveFlyingToward(mob, targetPoint, cruise, 1.42);
