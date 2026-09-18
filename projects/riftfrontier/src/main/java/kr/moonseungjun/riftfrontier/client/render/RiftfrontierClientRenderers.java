@@ -15,5 +15,6 @@ public final class RiftfrontierClientRenderers {
     public static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(RiftfrontierEntityTypes.REGION_01_BOSS.get(), Region01BossRenderer::new);
         event.registerEntityRenderer(RiftfrontierEntityTypes.REGION_01_HUNTER_FIELD_REVIEW.get(), Region01HunterFieldReviewRenderer::new);
+        event.registerEntityRenderer(RiftfrontierEntityTypes.REGION_01_SCOUT_FIELD_REVIEW.get(), Region01ScoutFieldReviewRenderer::new);
     }
 }
