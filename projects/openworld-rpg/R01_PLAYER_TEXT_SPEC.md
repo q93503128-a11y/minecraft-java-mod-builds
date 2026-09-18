@@ -1209,7 +1209,29 @@ Package description:
 
 ---
 
-# 21. Field Camp text
+# 21. Trail Stag summon / dismount feedback
+
+Summon failure — insufficient legal space:
+
+> Need more open ground.
+
+Dismount failure:
+
+> No room to dismount.
+
+Combat-lock summon:
+
+> You can't call your mount while under attack.
+
+No-mount authored volume:
+
+> Your mount can't be called here.
+
+These are short feedback lines, not modal warnings.
+
+---
+
+# 22. Field Camp text
 
 Recipe discovery toast:
 
@@ -1233,7 +1255,7 @@ No resource cost is shown because redeployment is reusable.
 
 ---
 
-# 22. Fishing R01 generic text before final species binding
+# 23. Fishing R01 generic text before final species binding
 
 Final fish species names remain ASSET_BINDING. Until those names are selected, internal slot IDs are never rendered.
 
@@ -1262,7 +1284,7 @@ Not allowed in player-facing builds:
 
 ---
 
-# 23. Main-story handoff text
+# 24. Main-story handoff text
 
 Post-Earthloong return scene remains exactly the four canonical lines already in R01_VERTICAL_SLICE.md.
 
@@ -1296,7 +1318,7 @@ Neither lead is labeled primary, safer, correct or recommended.
 
 ---
 
-# 24. System/result text used in R01
+# 25. System/result text used in R01
 
 ## Quest acceptance
 
@@ -1378,7 +1400,7 @@ Do not show networking/internal error text.
 
 ---
 
-# 25. Text state ownership
+# 26. Text state ownership
 
 At minimum, R01 text selection reads authoritative state for:
 
@@ -1402,7 +1424,7 @@ Client presentation can choose timing only within the owning UI rules. It cannot
 
 ---
 
-# 26. R01 player-text acceptance
+# 27. R01 player-text acceptance
 
 R01 player-facing text is not implementation-ready unless:
 
