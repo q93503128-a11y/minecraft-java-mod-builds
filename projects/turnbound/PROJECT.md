@@ -180,9 +180,9 @@ Docs/visual-only changes do not trigger build merely to create a green badge.
 
 Current combat-overhaul checkpoint:
 - CODE REVIEWED: YES
-- TESTED: YES — fixed-point scheduler + Kyren v1 runtime regression suite, Build TURNBOUND #762
-- BUILD VERIFIED: YES — Build TURNBOUND #762, code commit `fbe6a3d7eb7844ff576c433b131fe4550737b165`
+- TESTED: YES — fixed-point scheduler + Kyren v1 + Lumea v1 runtime regression suite, Build TURNBOUND #764
+- BUILD VERIFIED: YES — Build TURNBOUND #764, code commit `fb54674f290521c6ae765bef8f00147b6eccd5fd`
 - SERVER SMOKE: YES — NeoForge 26.2 dedicated server reached ready state
-- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`, artifact id `10550609484`
+- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`, artifact id `10552255748`, SHA-256 `4d92b7c02f6b233a2fe02476184d4810079d92160522cf3d332eebf9faaf1734`
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO

@@ -41,13 +41,14 @@ Operator diagnostics:
 ## Validation
 
 Current verified combat-overhaul checkpoint:
-- Build TURNBOUND #762
-- code commit: `fbe6a3d7eb7844ff576c433b131fe4550737b165`
+- Build TURNBOUND #764
+- code commit: `fb54674f290521c6ae765bef8f00147b6eccd5fd`
 - fixed-point TurnScheduler tests: PASS
 - Kyren v1 duel-loop tests: PASS
+- Lumea v1 tempo-control tests: PASS
 - Gradle tests: PASS
 - NeoForge server smoke: PASS
 - JAR verify: PASS
-- artifact: `turnbound-v04-workbranch` (id `10550609484`)
+- artifact: `turnbound-v04-workbranch` (id `10552255748`, SHA-256 `4d92b7c02f6b233a2fe02476184d4810079d92160522cf3d332eebf9faaf1734`)
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
