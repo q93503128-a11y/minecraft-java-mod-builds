@@ -1401,6 +1401,223 @@ Additional R01 teaching goals:
 
 R01 must not introduce all endgame mechanics at once.
 
+## 21.1 Exact R01 action-selection controller
+
+R01 attack lists are not a bag of moves for implementation to choose arbitrarily. The server owns action selection.
+
+At the end of an attack/recovery state:
+
+1. wait **0.10 s** decision delay;
+2. validate current target through `COMBAT_BALANCE.md` threat rules;
+3. build only the actions whose range/angle/cooldown/terrain conditions are legal;
+4. apply the actor rules below;
+5. when more than one weighted action remains, choose through deterministic server RNG seeded by `encounter_or_spawn_instance_id + actor_id + action_counter`;
+6. increment `action_counter` once after a committed action.
+
+General anti-repeat rule:
+
+- the same ordinary attack cannot be selected more than **2 committed actions in a row** when another legal attack exists;
+- a signature movement/space-control action cannot be chosen twice in a row unless the second use is an explicitly authored combo/follow-up;
+- if only one legal attack exists, it may repeat;
+- a committed telegraph is never cancelled merely because another action became preferable.
+
+Distance checks use horizontal target distance unless an attack explicitly requires vertical geometry.
+
+### Meadow Viper
+
+Only `Coil Bite` exists.
+
+- if target is inside the 3.5-block warning zone but outside 2.2-block bite reach, Viper faces/holds/coils and closes only enough to establish legal bite reach;
+- after >=0.45 s warning and legal <=2.2-block reach, Coil Bite commits;
+- after recovery, Viper creates the authored ~2-block spacing before another bite decision;
+- no random alternate attack is invented.
+
+### Cave Centipede
+
+Cooldown:
+```text
+Ceiling Drop: 8.0 s
+```
+
+Eligibility/weight:
+
+| Condition | Action | Weight |
+|---|---|---:|
+| physically above target on valid climb geometry, horizontal distance <=2.3, Ceiling Drop ready | Ceiling Drop | 100 |
+| ground/wall melee distance <=2.3 | Scuttle Bite | 60 |
+| ground/wall distance <=3.2 | Body Rake | 40 |
+
+If Ceiling Drop is legal, its row joins the weighted set rather than teleporting/forcing an invalid drop. If no attack is legal, the Centipede navigates to a legal local attack position.
+
+### Bison
+
+Cooldown:
+```text
+Herd Charge: 7.0 s
+```
+
+- <=2.6 blocks: Headbutt;
+- 4.0–10.0 blocks + clear committed line + Charge ready: Herd Charge;
+- between these bands or while Charge is unavailable: close/reposition;
+- a Bison does not circle-strafe or repeatedly back away to manufacture charge distance.
+
+### Grizzly
+
+On first territorial engagement:
+
+- if aggression began only from territory violation, perform Warning Roar once before the first damaging attack;
+- if the player directly damaged the Grizzly first, Warning Roar is skipped for that engagement.
+
+Melee selection <=3.2 blocks:
+
+```text
+Paw Swipe: weight 65
+Maul Sequence: weight 35
+```
+
+Maul Sequence:
+- cooldown **5.0 s**;
+- cannot be chosen twice consecutively.
+
+Outside 3.2 blocks the Grizzly closes distance; it does not gain an unlisted leap/charge.
+
+### Steelboar
+
+Cooldowns:
+```text
+Iron Rush: 7.0 s
+Shoulder Hook: 3.0 s
+Furious Route override: 14.0 s as already defined
+```
+
+Selection:
+
+- 5.5–12.0 blocks + clear line + Iron Rush ready: Iron Rush has priority over ordinary melee;
+- <=3.0 blocks:
+  - Iron Tusk weight 60;
+  - Shoulder Hook weight 40 when ready;
+- 3.0–5.5 blocks with no legal Rush: close/reposition.
+
+Below 35% HP, the existing Furious Route rule replaces the next legal Iron Rush when its override cooldown is ready. It does not create a separate random roll.
+
+### Nature Spirit
+
+Living Shell trigger is exact:
+
+```text
+if Living Shell reuse ready
+AND (
+  received >=20% MaxHP as hostile post-mitigation damage during the previous 4.0 s
+  OR current Poise <=40% PoiseMax
+)
+→ next legal decision enters Living Shell
+```
+
+Living Shell lasts **2.5 s** unless poise-broken earlier.
+
+After a natural 2.5 s Living Shell end:
+- if an eligible target is within 4.0 blocks, the next action is Bloom Quake;
+- otherwise normal selection resumes.
+
+Cooldowns:
+```text
+Living Shell reuse: 12.0 s
+Bloom Quake after non-Shell use: 8.0 s
+Earthen Ram: 4.0 s
+```
+
+Normal selection:
+
+| Condition | Action | Weight |
+|---|---|---:|
+| <=3.2 blocks | Rooted Swipe | 60 |
+| 2.5–5.0 blocks + Ram ready | Earthen Ram | 40 |
+| <=4.0 blocks + Bloom Quake ready and not forced by Shell exit | Bloom Quake | 20 |
+
+If Bloom Quake is selected, it cannot be the next action again even if only its cooldown was externally reset.
+
+### Regalhart
+
+Cooldowns:
+```text
+Rear Kick: 3.0 s
+Crown Charge: 7.0 s
+Royal Bound: 9.0 s
+```
+
+Rear protection:
+- target inside validated rear attack arc and <=3.5 blocks + Rear Kick ready → Rear Kick has priority.
+
+Front/side close:
+- <=4.5 blocks → Antler Sweep unless rear-protection rule owns the action.
+
+Mid/far selection when both are geometrically legal:
+
+| Target distance | Crown Charge | Royal Bound |
+|---|---:|---:|
+| 4.5–7.0 | 45 | 55 |
+| 7.0–12.0 | 60 | 40 |
+| 12.0–16.0 | 75 | 25 |
+
+An unavailable/cooling action is removed and weights are renormalized.
+
+Royal Bound requires a legal landing volume within its authored movement envelope. Crown Charge requires a clear committed path. If neither is legal, Regalhart closes/repositions instead of teleporting.
+
+Sovereign-state internal second-charge and Antler-Sweep follow-up counters remain the deterministic rules already defined above; they are combo internals and do not roll a second action choice.
+
+### Earthloong — shared cooldowns
+
+```text
+Quarry Rush: 7.0 s
+Lightning Furrow: 8.0 s
+Root Breaker: 9.0 s
+Forked Heaven: 10.0 s
+Earthline Surge: 7.0 s
+```
+
+Root Breaker becomes eligible when either:
+- at least 2 engaged players are within 4.5 blocks; or
+- the current target has remained within 3.0 blocks continuously for >=2.0 s.
+
+Phase 1 weighted set:
+
+| Legal condition | Action | Weight |
+|---|---|---:|
+| front/side <=3.5 | Claw Sweep | 50 |
+| validated rear/side arc <=4.5 | Tail Scythe | 55 |
+| 5.0–9.0 + clear line + ready | Quarry Rush | 45 |
+| 5.0–12.0 + ready | Lightning Furrow | 35 |
+| Root Breaker condition + ready | Root Breaker | 45 |
+
+Phase 2 keeps all legal Phase-1 actions and adds:
+
+| Legal condition | Action | Weight |
+|---|---|---:|
+| at least one engaged player 4.0–12.0 + ready | Forked Heaven | 40 |
+| current target 3.0–9.0 + legal visible line + ready | Earthline Surge | 45 |
+
+Space-control class:
+```text
+Lightning Furrow
+Root Breaker
+Forked Heaven
+Earthline Surge
+```
+
+Anti-spam:
+- after **2 consecutive** space-control-class actions, the next committed attack must be Claw Sweep, Tail Scythe or Quarry Rush if one is legal;
+- if no physical action is legal, Earthloong repositions until one becomes legal rather than chaining a third full hazard cast;
+- phase transition does not reset attack cooldowns or anti-repeat history;
+- Lightning Furrow 3/4-lane phase-2 alternation remains exactly as defined above.
+
+Forked Heaven impact ownership:
+- 1 engaged player: all 3 authored markers are arranged around that player, but same-cast hit cap remains 1 unless the player intentionally enters a later marker;
+- 2 players: marker distribution 2 / 1, with the second marker assigned to the higher current SelectionThreat player;
+- 3+ players: first 3 valid participants by current SelectionThreat each receive one marker;
+- no marker targets a Downed/invalid/out-of-arena player.
+
+These selection rules are HARD_RULE initial behavior. Real playtest may revise canon if a pattern is unfair/repetitive; gameplay code does not invent different weights/cooldowns first.
+
 ---
 
 # 22. Spawn / performance constraints
@@ -1594,6 +1811,7 @@ Closed for implementation:
 - Regalhart field-boss phase/reward baseline;
 - Earthloong first-dungeon boss phases/weak point/reward baseline;
 - R01 external dependency/license boundaries;
+- exact R01 server-side action-selection weights/cooldowns/anti-repeat rules;
 - first implementation acceptance checks.
 
 Still intentionally requires later design/asset work:
