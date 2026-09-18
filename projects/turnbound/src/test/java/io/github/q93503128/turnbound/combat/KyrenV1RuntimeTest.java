@@ -60,7 +60,7 @@ final class KyrenV1RuntimeTest {
         CombatantState kyren = new CombatantState("kyren",
                 CanonicalData.definition("P01", 1, 4, true), CombatantSide.ALLY, 0);
         CombatantState target = new CombatantState("target",
-                PrototypeRoster.trainingEnemy("TARGET", "target", 220, 1, 0, 90),
+                PrototypeRoster.trainingEnemy("TARGET", "target", 170, 1, 0, 90),
                 CombatantSide.ENEMY, 1);
         BattleState state = new BattleState(List.of(kyren, target));
         BattleEngine engine = new BattleEngine(state);
