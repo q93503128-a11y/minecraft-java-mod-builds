@@ -301,8 +301,11 @@ public final class VillageShopCatalogScreen extends Screen {
             } else if (p.length >= 2 && "shop_utility".equals(p[0])) {
                 String effect = action.equals("sell_loot")
                         ? "판매용 잡템만 안전하게 한 번에 정산"
+                        : action.equals("exchange_supplies")
+                        ? (p.length >= 3 ? plain(p[2]) : "수호 주화 25 → 공동 보급품 50")
                         : "보유품을 직접 확인하고 하나씩 선택 판매";
-                offers.add(new OfferCard(action, Category.SALE, plain(p[1]), "", effect,
+                Category utilityCategory = action.equals("exchange_supplies") ? Category.CONSUMABLE : Category.SALE;
+                offers.add(new OfferCard(action, utilityCategory, plain(p[1]), "", effect,
                         "이용 가능", true));
             }
         }
