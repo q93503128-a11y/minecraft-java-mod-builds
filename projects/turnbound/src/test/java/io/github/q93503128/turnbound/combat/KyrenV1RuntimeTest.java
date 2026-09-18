@@ -56,6 +56,28 @@ final class KyrenV1RuntimeTest {
     }
 
     @Test
+    void maxFocusFollowupKillClearsDeadTargetAndAwakeningCarriesMomentum() {
+        CombatantState kyren = new CombatantState("kyren",
+                CanonicalData.definition("P01", 1, 4, true), CombatantSide.ALLY, 0);
+        CombatantState target = new CombatantState("target",
+                PrototypeRoster.trainingEnemy("TARGET", "target", 220, 1, 0, 90),
+                CombatantSide.ENEMY, 1);
+        BattleState state = new BattleState(List.of(kyren, target));
+        BattleEngine engine = new BattleEngine(state);
+        kyren.setRef("focusTarget", "target");
+        kyren.setCounter("focus", 3);
+        kyren.setGauge(1000);
+
+        engine.nextReady();
+        engine.useSkill("kyren", "p01_chase_slash", "target");
+
+        assertTrue(target.downed());
+        assertEquals(null, kyren.ref("focusTarget"));
+        assertEquals(0, kyren.counter("focus"));
+        assertTrue(kyren.flag("p01_carry_focus"));
+    }
+
+    @Test
     void maxFocusChangesBreakerBehaviorWithAVisibleFollowupHit() {
         CombatantState kyren = kyren();
         CombatantState target = enemy("target", 1);

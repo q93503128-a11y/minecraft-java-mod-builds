@@ -72,6 +72,7 @@ public final class BattleEngine {
         }
         postRules(actor, skill, targets, direct, focusBefore);
         resolveReactions();
+        cleanupKyrenFocusAfterAction(actor);
 
         tickCooldowns(actor, skill.id());
         resolveOwnerEndEffects(actor);
@@ -518,11 +519,18 @@ public final class BattleEngine {
                     actor.definition().hasRule("AWAKENED") ? "P01_AWAKEN_FOLLOWUP" : "P01_FOCUS_FOLLOWUP", 1));
         }
 
-        if (target.downed()) {
-            if (actor.definition().hasRule("AWAKENED") && duelFocusBefore >= 3) actor.setFlag("p01_carry_focus");
-            actor.setRef("focusTarget", null);
-            actor.setCounter("focus", 0);
+    }
+
+    private void cleanupKyrenFocusAfterAction(CombatantState actor) {
+        if (!actor.definition().id().equals("P01")) return;
+        CombatantState focusTarget = state.find(actor.ref("focusTarget"));
+        if (focusTarget == null || !focusTarget.downed()) return;
+        if (actor.definition().hasRule("AWAKENED")
+                && actor.counter("focus") >= actor.definition().intParam("focusMax", 3)) {
+            actor.setFlag("p01_carry_focus");
         }
+        actor.setRef("focusTarget", null);
+        actor.setCounter("focus", 0);
     }
 
     private void postLumea(CombatantState actor, SkillDefinition skill, List<CombatantState> targets) {
