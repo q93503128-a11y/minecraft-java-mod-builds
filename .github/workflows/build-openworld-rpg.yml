@@ -87,6 +87,31 @@ jobs:
             exit 1
           fi
 
+      - name: Gameplay-profile dependency server smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run-gameplay
+          mkdir -p run-gameplay build/logs
+          printf 'eula=true\n' > run-gameplay/eula.txt
+
+          set +e
+          timeout --kill-after=10s 60s ./gradlew --no-daemon -PopenworldGameplayRuntime=true runGameplayServer --stacktrace 2>&1 | tee build/logs/server-gameplay.log
+          status=${PIPESTATUS[0]}
+          set -e
+
+          if [[ $status -ne 0 && $status -ne 124 && $status -ne 137 ]]; then
+            echo "runGameplayServer exited unexpectedly with status $status"
+            exit "$status"
+          fi
+
+          grep -q 'Openworld RPG M0 core bootstrap loaded with profile gameplay' build/logs/server-gameplay.log
+          grep -Eq 'Done \([0-9.]+s\)! For help, type "help"' build/logs/server-gameplay.log
+          if grep -Eqi 'ModResolutionException|Could not execute entrypoint|NoClassDefFoundError|ClassNotFoundException' build/logs/server-gameplay.log; then
+            echo 'Gameplay-profile dependency integration error detected.'
+            exit 1
+          fi
+
       - name: Write M0 build report
         shell: bash
         run: |
@@ -108,7 +133,8 @@ jobs:
           - clean build: PASS
           - bootstrap JAR verify: PASS
           - dedicated server core-profile boot: PASS
-          - full dev-gameplay dependency runtime: NOT TESTED
+          - gameplay-profile top-level dependency server boot: PASS
+          - full transitive dependency graph: VERIFIED BY RUNTIME BOOT OF PINNED TOP-LEVEL JARS
           - external creature runtime binding: NOT TESTED
           - Better Combat integration: NOT IMPLEMENTED
           - Spell Engine integration: NOT IMPLEMENTED
