@@ -309,7 +309,7 @@ public final class VillageRaidSystem {
             BlockPos spawn = origin.offset(spread * 2, 0, -row * 3);
             mob.snapTo(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
             mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawn), EntitySpawnReason.EVENT, null);
-            applyScaling(mob, day, wave, boss);
+            applyScaling(mob, spawned.archetype(), day, wave, boss);
             VillageEnemyArchetypeSystem.configure(
                     level, mob, spawned.archetype(), currentTrait, day, wave, boss);
             if (VillageEnemyArchetypeSystem.isFlying(mob)) {
@@ -347,11 +347,17 @@ public final class VillageRaidSystem {
                         + "\n§b대응: " + currentTrait.counterHint()), false);
     }
 
-    private static void applyScaling(Mob mob, int day, int currentWave, boolean boss) {
+    private static void applyScaling(
+            Mob mob, VillageEnemyArchetypeSystem.Archetype archetype, int day, int currentWave, boolean boss) {
         int duration = 20 * 60 * 30;
+        boolean sapper = archetype == VillageEnemyArchetypeSystem.Archetype.SAPPER;
         int healthTier = Math.min(9, Math.max(0, (day - 1) / 3 + currentWave / 4
                 + Math.max(0, day - 20) / 8));
         int strengthTier = Math.min(5, Math.max(0, (day - 1) / 5 + Math.max(0, day - 25) / 10));
+        if (sapper) {
+            healthTier = Math.max(0, healthTier - 2);
+            strengthTier = Math.max(0, strengthTier - 2);
+        }
         if (healthTier > 0 || boss) {
             mob.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST, duration,
                     Math.min(11, healthTier + (boss ? 3 : 0))));
@@ -360,7 +366,7 @@ public final class VillageRaidSystem {
             mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, duration,
                     Math.min(6, strengthTier + (boss ? 1 : 0))));
         }
-        if (day >= 5) {
+        if (day >= 5 && !sapper) {
             mob.addEffect(new MobEffectInstance(MobEffects.SPEED, duration,
                     Math.min(3, Math.max(0, (day - 3) / 4))));
         }
@@ -415,6 +421,24 @@ public final class VillageRaidSystem {
                     mob.setTarget(null);
                     mob.getLookControl().setLookAt(turretCenter.x, turretCenter.y + 1.0, turretCenter.z);
                     mob.getNavigation().moveTo(turretCenter.x, turretCenter.y, turretCenter.z, 1.14);
+                    continue;
+                }
+            }
+
+            if (mob.getTarget() instanceof net.minecraft.world.entity.animal.golem.IronGolem mercenary
+                    && VillageMercenarySystem.isCombatMercenary(mercenary)
+                    && mob.distanceToSqr(mercenary) <= 24.0 * 24.0) {
+                mob.getNavigation().moveTo(mercenary, 1.10);
+                continue;
+            }
+            boolean objectiveLocked = archetype == VillageEnemyArchetypeSystem.Archetype.SAPPER
+                    || archetype == VillageEnemyArchetypeSystem.Archetype.TOWER_HUNTER;
+            if (!objectiveLocked) {
+                net.minecraft.world.entity.animal.golem.IronGolem mercenary =
+                        VillageMercenarySystem.nearestCombatMercenary(level, mob, 18.0);
+                if (mercenary != null) {
+                    mob.setTarget(mercenary);
+                    mob.getNavigation().moveTo(mercenary, 1.10);
                     continue;
                 }
             }
@@ -773,10 +797,12 @@ public final class VillageRaidSystem {
 
         clearState();
         VillageProgressionSystem.addSupplies(server, supplies, "제 " + day + "일 방어 성공");
+        java.util.Set<UUID> participants = VillageProgressionSystem.nightParticipants(server);
         VillageProgressionSystem.awardRaidCoins(server, coins);
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            VillageCouncilState.grantExperience(player, xp);
-            VillageRpgSystem.refreshPlayerPassive(player);
+        for (UUID playerId : participants) {
+            VillageCouncilState.grantExperience(server, playerId, xp);
+            ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+            if (player != null) VillageRpgSystem.refreshPlayerPassive(player);
         }
         VillageProgressionSystem.healRaidParty(server, true);
         VillageCouncilState.completeRaid(server);
