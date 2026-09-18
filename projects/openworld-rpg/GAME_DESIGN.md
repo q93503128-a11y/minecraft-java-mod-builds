@@ -1106,9 +1106,21 @@ Use a middle-ground discovery model:
 - detailed POIs, dungeons, shrines, special bosses and discoveries are revealed through exploration;
 - minimap does not reveal every enemy or undiscovered reward.
 
-Fast travel is available between discovered **shrines and major settlements/hubs**.
-Ordinary camps and minor POIs are not universal teleport nodes.
-Combat prevents fast travel.
+Fast travel is a **node-to-node network**, not an anywhere-on-map teleport.
+
+Baseline:
+- destination must be an activated/discovered shrine, Waystone or authored major-hub travel anchor;
+- initiation requires the player to be within **6 blocks** of an activated travel anchor they personally own/know;
+- combat, Downed state, incompatible committed actions and mounted state prevent initiation;
+- baseline Gold cost: **0**;
+- baseline cooldown: **0** after a successful arrival;
+- travel channel/fade: **1.0 s**;
+- taking hostile damage or entering combat during the channel cancels travel with no penalty;
+- server validates destination and arrival collision before commit;
+- if the primary arrival point is transiently obstructed, try up to four authored safe fallback arrival anchors for that node; if all are invalid, abort travel and leave the player at origin;
+- fast travel is personal and never drags party members automatically.
+
+Ordinary camps and minor POIs are not universal teleport nodes. The map may show a known destination while the player is in the field, but the Travel action remains unavailable until the player reaches a legal origin anchor.
 
 Minimap/world-map visuals use the selected project UI language documented in `UI_DIRECTION.md`.
 
