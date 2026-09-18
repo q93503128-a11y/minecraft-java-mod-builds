@@ -278,7 +278,7 @@ Baseline shield-family factors:
 - standard shield: `1.00` — balanced;
 - tower/heavy shield: `1.25` — strongest guard, slower defensive handling where animation supports it.
 
-Exact stamina damage from blocked attacks is resolved by the combat formula later, but shield item data supplies this `GuardRating` directly.
+Blocked-hit Stamina damage is already resolved by the canonical guard formula in `COMBAT_BALANCE.md` §12.3; shield item data supplies this `GuardRating` directly. This line is not a future balance decision.
 
 ---
 
@@ -729,15 +729,18 @@ These initial recipes give materials immediate purpose without turning gathering
 | Initiate Staff | Refined Item Lv 4 Initiate Staff | 4 Hardwood + 2 Louxia Glow | 60 | fixed INT + 1 random valid |
 | Watch Buckler | Refined Item Lv 4 Watch Buckler | 4 Hardwood + 3 Iron Ore | 50 | fixed Guard Strength + 1 random valid |
 
-Early Superior recipes unlock after the first player encounters Verdant Crystal rather than via arbitrary menu level gates. A baseline Superior R01 recipe uses:
+Early Superior recipes unlock after the first player encounters Verdant Crystal rather than via arbitrary menu level gates. They reuse the exact normal Refined materials, add **2 Verdant Crystal**, and use the following exact R01 Gold costs:
 
-```text
-normal Refined recipe materials
-+ 2 Verdant Crystal
-+ approximately 2.5x the Refined recipe Gold cost
-```
+| Superior output | Refined materials reused | Verdant Crystal | Gold | Affix rule |
+|---|---|---:|---:|---|
+| Superior Item Lv6 Heartland Arming Sword | 6 Iron Ore + 2 Hardwood | 2 | **150** | fixed STR + 2 random valid |
+| Superior Item Lv6 Quarry Maul | 8 Iron Ore + 2 Hardwood | 2 | **180** | fixed Physical Power + 2 random valid |
+| Superior Item Lv6 River Pike | 5 Iron Ore + 3 Hardwood | 2 | **150** | fixed END + 2 random valid |
+| Superior Item Lv6 Riverwood Bow | 4 Hardwood + 2 Tough Hide | 2 | **130** | fixed DEX + 2 random valid |
+| Superior Item Lv6 Initiate Staff | 4 Hardwood + 2 Louxia Glow | 2 | **150** | fixed INT + 2 random valid |
+| Superior Item Lv6 Watch Buckler | 4 Hardwood + 3 Iron Ore | 2 | **130** | fixed Guard Strength + 2 random valid |
 
-and outputs the same base at Item Lv 6 with one fixed thematic affix + two random valid affixes.
+These are HARD_RULE starting costs. Real playtest may revise the canon if the entire R01 economy is demonstrably off; implementation does not choose its own rounded 2.5x value.
 
 Do not require the player to craft these items to progress. They are a reliable gap-filling path beside loot/merchants/quests.
 
