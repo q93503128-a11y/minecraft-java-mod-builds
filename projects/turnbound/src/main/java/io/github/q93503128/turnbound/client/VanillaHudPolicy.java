@@ -23,6 +23,6 @@ public final class VanillaHudPolicy {
         boolean hotbar = rpgSession && name.equals(VanillaGuiLayers.HOTBAR);
         // Field exploration keeps a crosshair for entity/facility interaction. Battle targeting owns its own cursor.
         boolean battleCrosshair = ClientBattleState.snapshot().active() && name.equals(VanillaGuiLayers.CROSSHAIR);
-        if (survivalShell || hotbar || battleCrosshair) event.setCanceled(true);
+        if ((rpgSession && survivalShell) || hotbar || battleCrosshair) event.setCanceled(true);
     }
 }
