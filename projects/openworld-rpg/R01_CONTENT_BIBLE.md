@@ -1,6 +1,6 @@
 # Open-World RPG — R01 Heartland Content Bible
 
-> Status: **DESIGN CANON — full-region R01 content, repeat controllers, services, side loops, regional aftermath and implementation-time hidden choices closed before gameplay source bootstrap**  
+> Status: **R01 GAMEPLAY / CONTENT DESIGN CLOSED — implementation-time gameplay choices are locked; exact ASSET_BINDING + SPATIAL_BINDING remain pre-code production gates**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Project contract: `PROJECT.md`  
 > Opening/first-session package: `R01_VERTICAL_SLICE.md`  
@@ -1894,31 +1894,58 @@ Regalhart/Earthloong farming must remain attractive for their known drops withou
 |---|---|
 | Does the first Viper always show dodge help? | Only under the exact one-time trigger in §5 |
 | What is the undefined road event? | `Roadside Trouble`, §6 |
-| How many R01 property vacancies? | 4 Small + 1 Town House |
-| Is the starter furnishing package 700 or 800 Gold? | exactly 750 Gold |
-| What does the package contain? | exact seven-line package in §15.3 |
-| What individual R01 furniture can be bought? | exact 12-item Household catalogue in §15.4 |
 | Which substantial R01 POIs exist? | exact four in §4.1 |
 | Which minor discoveries exist? | exact six in §4.2 |
 | How many R01 resource nodes exist? | exact counts in §4.3 |
 | Which ordinary items can each elite/boss/treasure source roll? | exact source pools in §4.4 |
-| What does each R01 material sell for? | exact table in §22 |
-| What Gold does each R01 combat actor award? | exact combat Gold table in §23 |
+| How are R01 enemy/boss attacks selected? | exact cooldown / legality / weight / anti-repeat controller in `STATUS_AND_R01_ENCOUNTERS.md` |
+| How does Guardian threat actually affect AI targets? | exact server-side threat + 1.25x switch hysteresis in `COMBAT_BALANCE.md` |
+| How many rotating Nessa slots? | exactly 5, one personal item each |
+| When does Nessa refresh? | every 10 active-world min from personal Alderford shrine epoch |
+| Can relog/UI reopen reroll Nessa? | no; deterministic world/player/merchant/cycle seed |
+| Can one favorable Nessa item be bought repeatedly? | no; one purchase marks that personal slot SOLD until next cycle |
+| Can a Nessa cycle contain several Superior items? | no; at most 1 |
+| Can R01 merchant sell Mythics? | no |
+| What grades/Item Lv does normal R01 rotation use? | exact table/controller in §10.1 |
+| Are Lysa/Brin basics finite stock? | no; unlimited fixed R01 stock, Gold + legal storage are constraints |
+| What does each R01 material sell for? | exact table in §23 |
+| What Gold does each R01 combat actor award? | exact combat Gold table in §24 |
+| How much ordinary Alderford bank storage exists? | 36 Personal Storage slots/player + 9,999/material Material Vault |
+| What happens when an important reward has no backpack room? | backpack → Alderford Personal Storage → Pending Reward Claim |
+| Can Pending Reward Claim act as free storage? | no; item unusable/tradeable until legally claimed |
+| How do optional contracts behave after Abandon/Reaccept? | exact reset/reinspection/new-defeat semantics in §18 |
 | When does the Camp recipe appear? | first owned Hardwood + Tough Hide |
 | Is the Camp Kit consumable/tradeable? | permanent personal utility unlock, no |
-| How many rotating market slots? | 5 |
-| Can R01 merchant sell Mythics? | no |
-| What grades/Item Lv does normal R01 rotation use? | exact table in §10 |
+| What exact R01 Camp footprint/rules are used? | 5×5 footprint, 0.75 height variance, 24-block shrine/service, 12-block camp spacing, §12.1 |
+| Can party members ignore Camp spacing? | no in R01 |
+| How does R01 furniture snap/rotate? | 0.25-block position grid + 90° rotations only, §15.5 |
+| How many R01 property vacancies? | 4 Small Cottage + 1 Town House |
+| Is the starter furnishing package 700 or 800 Gold? | exactly 750 Gold |
+| What does the package contain? | exact seven-line package in §15.3 |
+| What individual R01 furniture can be bought? | exact 12-item Household catalogue in §15.4 |
 | Where do early profession Insights come from? | exact flags in §13 |
 | Does R01 require weather/time fishing? | no |
+| Do R01 time/weather conditions alter launch spawn weights? | no; ambience/presentation only |
 | How many R01 fishing spots? | 5 ordinary + 1 uncommon + 1 rare |
+| Can missed hook/relog reroll the fish candidate? | no; deterministic pending candidate in §14.4 |
+| What is the R01 fish-size distribution? | exact piecewise 10% / 80% / 10% distribution in §14.5 |
+| What is Trophy threshold/value? | upper 5% size band; exact interpolation/Trophy multiplier in §14.5–14.6 |
+| What are Hook/tension values? | exact windows/pull/reel/progress/failure seeds in §14.7–14.8 |
+| What are the four final fish species names? | **not gameplay discretion**; blocked until the four accepted external models are bound |
+| How is Trail Stag summoned/dismounted? | exact candidate-position search + safe dismount controller in `MOUNTS.md` |
+| What are Trail Stag steering/jump seeds? | exact R01 TUNEABLE_SEED values in `MOUNTS.md`; revise only from real play evidence |
+| Is fast travel anywhere-on-map? | no; node-to-node only |
+| What is R01 fast-travel cost/cooldown/channel? | free / 0 cooldown / 1.0 s channel; requires legal origin anchor within 6 blocks |
+| Does fast travel drag the party? | no; personal action |
 | What happens after quarry death? | §8 |
 | Does the whole dungeon reset on Earthloong wipe? | no |
 | How does a repeat quarry reset? | 90 s empty or explicit exterior Reset Quarry |
 | How long until Regalhart can return? | 20 active-world min + empty-territory condition |
 | Do shops close at night? | no |
 | How many extra ambient Alderford NPCs? | 2 guards + 4 townsfolk |
-| Does Earthloong clear delete R01 activity? | no; exact aftermath in §18 |
+| Who writes HUD/objective/board/NPC fallback text? | exact R01 wording/state authority is `R01_PLAYER_TEXT_SPEC.md`; implementation does not improvise it |
+| Who decides R01 screen flow/confirm/commit behavior? | `R01_UI_PRODUCTION_SPEC.md` |
+| Does Earthloong clear delete R01 activity? | no; exact aftermath in §19 |
 
 ---
 
@@ -1962,7 +1989,22 @@ If either gate exposes a hard conflict, update canon **before** coding the affec
 
 # 28. R01 content-closure acceptance
 
-R01 planning is not called source-ready until all of these are true:
+The R01 **gameplay/content design** is closed. This does **not** mean source-ready or play-proven.
+
+Use the following status split:
+
+```text
+R01 GAMEPLAY / CONTENT DESIGN CLOSED: YES
+R01 IMPLEMENTATION-TIME GAMEPLAY CHOICES REMAIN: NO
+R01 ASSET_BINDING COMPLETE: NO
+R01 SPATIAL_BINDING COMPLETE: NO
+R01 SOURCE READY: NO
+R01 IMPLEMENTED: NO
+R01 PLAYTESTED: NO
+R01 MULTIPLAYER TESTED: NO
+```
+
+R01 becomes source-ready only when the external presentation and actual-world spatial gates below are also true:
 
 ## Content
 
