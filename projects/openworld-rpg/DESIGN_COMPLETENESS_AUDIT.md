@@ -388,6 +388,52 @@ This is a strong anti-repetition foundation. Actual Azari placement must preserv
 
 ---
 
+## 8.1 R01 closure re-audit — 2026-09-18
+
+A full R01 re-read after the content-bible/UI/text closure found several issues that were not visible from a document-count or checklist-only review. They are now corrected in live canon.
+
+### Corrected contradictions
+
+- **early global EXP pacing:** the old Lv1–10 target of 4–6 min/Lv was mathematically incompatible with the authored reward percentages and a finite 20–30 hour first playthrough; current target is **9–13 min/Lv**;
+- **R01 first-dungeon progression:** the old one-time R01 reward budget could not plausibly move a Lv1 character near the documented first-dungeon band without grinding. R01 now uses an explicit one-time opening progression ramp while repeat rewards keep normal percentages;
+- **ordinary R01 first-clear expectation:** current observation target is roughly **Lv6–8** on a normal broad-path first clear. Suggested Lv8 remains guidance, not a hard gate;
+- **55–75 minute route meaning:** this is now explicitly a normal route with roughly 2–4 naturally encountered optional/discovery activities, not a Dust→quarry speedrun. A pure beeline remains legal but intentionally underprepared;
+- **early Class Rank pacing:** the former 5–7 min/rank target would unlock the first specialization before the root kit had enough learning time. The current Rank curve is slower in 1–10, then broadens as more class-relevant content appears;
+- **all five R01 Class Insights:** each root class now has one exact optional R01 challenge with personal/server-authoritative success conditions rather than generic candidate wording.
+
+### Corrected UX / repetition problems
+
+- Signs in the Meadow no longer reuses another damaged-cart visual; its first site is an overturned stone water trough;
+- A Stag at the Ford now uses a snapped tether post / broken ford gate rather than another cart scene;
+- Roadside Trouble remains the wagon-repair event, so the wagon visual grammar now has one clear authored owner instead of recurring across unrelated activities;
+- service-NPC schedules are explicitly presentation-only: service/quest relevance overrides ambient schedule so players do not hunt for a shop NPC;
+- settlement forge/alchemy/cooking consume **Material Pouch first, then same-player Material Vault**, while remote/camp services remain Pouch-only. This preserves town value without manual withdraw busywork.
+
+### Corrected canon hygiene
+
+- R01 interpretation-scene cast is exactly Mara / Ilyan / Daren; Sera's reaction remains world-state dialogue rather than an implementation-time optional scene role;
+- stale River Herb, Earthloong Core, old Pass-4-only asset wording and old road-event wording were removed or superseded;
+- R01 text-spec numbering and the Verdant-Crystal line were cleaned so no internal R01 wording can leak player-facing;
+- merchant/fishing/service/contract/pending-reward persistent-state requirements are now represented in the R01 state contract;
+- later concurrent R01 Class-Insight closure is synchronized into UI/text/content state.
+
+### Current R01 verdict after re-audit
+
+```text
+R01 GAMEPLAY / CONTENT DESIGN CLOSED: YES
+R01 IMPLEMENTATION-TIME GAMEPLAY CHOICES REMAIN: NO
+R01 INTERNAL CANON CONTRADICTIONS FOUND IN THIS PASS: FIXED
+R01 ASSET_BINDING COMPLETE: NO
+R01 SPATIAL_BINDING COMPLETE: NO
+R01 SOURCE READY: NO
+R01 PLAYTESTED: NO
+R01 MULTIPLAYER TESTED: NO
+```
+
+This verdict is still **design-reviewed, not play-proven**. The next legitimate R01 work is exact external-asset acceptance and real Azari spatial closure, followed by implementation and empirical pacing/feel adjustment. Do not reopen the fixed gameplay design merely because those production gates remain.
+
+---
+
 # 9. Player-facing development-language audit
 
 Production documents may use internal identifiers, gates, status labels and test terminology.
