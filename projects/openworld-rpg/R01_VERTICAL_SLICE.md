@@ -606,7 +606,7 @@ Quest/event owner: **Toma Reed**.
 Category: Regional discovery/event.  
 Target local Lv: 3–4.  
 Normal timing: 25–40 minutes.  
-Repeatability: unlock/reward once per player; physical rescue encounter may reset for incomplete players.
+Repeatability: unlock/reward once per player; the physical rescue encounter resets for incomplete players only under the exact 60-second no-participant rule below.
 
 Availability:
 
@@ -940,7 +940,7 @@ Optional: Signs in the Meadow
 During first session:
 
 - normal free-roam HUD shows at most 1 main + 2 manually pinned optional objectives;
-- no more than about four unresolved R01 board/guild hooks are foregrounded by default;
+- at most **4** unresolved R01 board/guild hooks are foregrounded by default;
 - `A Stag at the Ford`, `Steel in the Grass`, `The Crowned Trail` arise from progress/discovery rather than all appearing at time zero;
 - dungeon entrance gets an exact map marker only after personal lower-entrance inspection;
 - optional boss exploration uses broad search areas where appropriate;
