@@ -471,7 +471,17 @@ Resource nodes are **not** globally revealed by default simply because one node 
 
 ## 6.3 Fast travel
 
-Selecting an activated legal shrine/Waystone exposes Travel.
+Selecting an activated legal shrine/Waystone exposes Travel **only while the player is within 6 blocks of a personally activated origin travel anchor**.
+
+If the player opens the map from ordinary field space, known travel nodes remain visible but Travel is disabled with `Reach a shrine or Waystone to fast travel.`
+
+Travel cost shown in R01: **Free**.
+
+On selection:
+1. confirm destination once;
+2. begin the 1.0 s travel fade/channel;
+3. hostile damage/combat cancels cleanly;
+4. server commits arrival only after collision-safe destination validation.
 
 Ordinary camp does not expose Travel.
 
