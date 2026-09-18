@@ -18,6 +18,8 @@ public final class PlayerShellRules {
     }
 
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player && ExternalWorldBootstrap.active(player)) {\n            event.setCanceled(true);\n        }
+        if (event.getEntity() instanceof ServerPlayer player && ExternalWorldBootstrap.active(player)) {
+            event.setCanceled(true);
+        }
     }
 }
