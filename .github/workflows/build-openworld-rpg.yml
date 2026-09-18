@@ -140,7 +140,7 @@ jobs:
           - gameplay-profile top-level dependency server boot: PASS
           - full transitive dependency graph: VERIFIED BY RUNTIME BOOT OF PINNED TOP-LEVEL JARS
           - external creature runtime binding: NOT TESTED
-          - Better Combat integration: NOT IMPLEMENTED
+          - Better Combat authority seam: IMPLEMENTED (real-hit runtime execution NOT TESTED)
           - Spell Engine integration: NOT IMPLEMENTED
           - player-facing R01 content: NOT IMPLEMENTED
           - playtest: NOT RUN

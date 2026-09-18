@@ -419,16 +419,16 @@ threateningly_mobs 1.1.1+fabric.26.2
 
 The latest regression therefore removes the remaining ambiguity around top-level runtime IDs and declared hard dependencies.
 
-It still does **not** promote dependency callbacks to project authority. The next implementation gate remains:
+At this metadata-only checkpoint, dependency callbacks still had not been promoted to project authority. The Better Combat gate described below was subsequently implemented and verified in §11:
 
 ```text
 Better Combat presentation/cadence
-→ project-owned server damage request
-→ exactly one canonical damage transaction
-→ no duplicate donor/vanilla damage
+→ project-owned server damage decision
+→ one primary damage application
+→ vanilla sweep damage suppressed during the Better Combat attack
 ```
 
-followed by the equivalent Spell Engine resource/cooldown/impact bridge.
+The current next implementation gate is the Spell Engine resource/cooldown/impact bridge.
 
 
 ---
