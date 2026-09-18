@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "profileId": "turnbound:drehmal_apotheosis_2_2_2f",
+  "sourceVersion": "Drehmal: APOTHEOSIS v2.2.2f / Minecraft Java 1.20.1 public distribution",
+  "dimension": "minecraft:overworld",
+  "anchors": [
+    {
+      "kind": "HUB",
+      "locator": "turnbound:hub/new_drabyel",
+      "x": 502,
+      "y": 67,
+      "z": 1801,
+      "enabled": true,
+      "sourceNote": "New Drabyel integration seed inherited from the validated TURNBOUND: RE profile. Treat as a binding seed, not a guaranteed safe arrival until Minecraft 26.2 play inspection."
+    },
+    {
+      "kind": "REGION",
+      "locator": "turnbound:region/stasis_facility",
+      "x": 778,
+      "y": 31,
+      "z": 668,
+      "enabled": true,
+      "sourceNote": "Stasis Facility integration seed inherited from TURNBOUND: RE. Terrain-aware arrival and encounter placement must be verified before this becomes a player-facing travel destination."
+    },
+    {
+      "kind": "ENCOUNTER_CANDIDATE",
+      "locator": "turnbound:encounter/hunters_crypt",
+      "x": 325,
+      "y": 71,
+      "z": 290,
+      "enabled": false,
+      "sourceNote": "Candidate only. Must be inspected in the migrated 26.2 world before binding any TURNBOUND encounter."
+    },
+    {
+      "kind": "LANDMARK_CANDIDATE",
+      "locator": "turnbound:landmark/ruins_of_ihted",
+      "x": 1062,
+      "y": 65,
+      "z": 1097,
+      "enabled": false,
+      "sourceNote": "Candidate only. No TURNBOUND-authored geometry may be placed here."
+    }
+  ]
+}
