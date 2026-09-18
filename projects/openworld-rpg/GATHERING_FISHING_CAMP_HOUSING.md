@@ -428,10 +428,7 @@ Housing is a physical settlement property system, not an instanced menu room and
 - optional trusted/guest permissions do not create co-ownership of the property economy;
 - authored shell is protected from destructive structural edits.
 
-Starting settlement target:
-
-- at least **3–4 Small Cottage-class vacancies** for intended small multiplayer;
-- at least one visibly larger future-upgrade residence.
+R01 exact starting-settlement roster is owned by `R01_CONTENT_BIBLE.md`: **4 Small Cottage vacancies + 1 Town House**. Later settlements may use different counts according to their own regional bibles.
 
 No story/reputation permission gate for the first residence; Gold is the practical gate.
 
@@ -444,7 +441,7 @@ No story/reputation permission gate for the first residence; Gold is the practic
 | Large Residence | **25,000 Gold** | major furnishing/trophy space |
 | Prestige Estate | **65,000+ Gold** | optional late luxury/collection sink |
 
-Equivalent shells should not have wildly different prices. The optional first furnishing package remains approximately **750 Gold**.
+Equivalent shells should not have wildly different prices. The R01 optional starter furnishing package is exactly **750 Gold** with the seven-item/value breakdown in `R01_CONTENT_BIBLE.md`; later regional packages may define their own coherent furnishing bundles.
 
 ## 9.3 One residence / moving
 
@@ -601,7 +598,7 @@ Owner may not freely delete:
 
 ## 11.3 Starter furnishing package
 
-~750 Gold target, coherent minimal set:
+R01 exact 750-Gold coherent minimal set (individual values/identity are owned by `R01_CONTENT_BIBLE.md`):
 
 - bed/rest point;
 - Home Storage access chest/cabinet;
