@@ -24,11 +24,21 @@ public final class VillageUiService {
     }
 
     public static void openVoteForAll(MinecraftServer server, String proposerName) {
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            openVote(player, proposerName);
+        }
+    }
+
+    public static void openVote(ServerPlayer player, String proposerName) {
         String body = proposerName + " 님이 다음 시간 단계 진행을 제안했습니다.\n현재 제 "
                 + VillageCouncilState.currentDay() + "일 " + VillageCouncilState.currentPhase().koreanName() + "입니다.";
+        send(player, "vote", "시간 진행 투표", body,
+                List.of("vote_yes", "vote_no"), List.of("찬성|다음 시간 단계 진행", "반대|현재 시간 유지"));
+    }
+
+    public static void closeVoteForAll(MinecraftServer server) {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            send(player, "vote", "시간 진행 투표", body,
-                    List.of("vote_yes", "vote_no"), List.of("찬성|다음 시간 단계 진행", "반대|현재 시간 유지"));
+            send(player, "close_vote", "", "", List.of(), List.of());
         }
     }
 
