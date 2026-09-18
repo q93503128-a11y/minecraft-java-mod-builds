@@ -534,7 +534,7 @@ Sera's accept line:
 
 Authored sites:
 
-1. damaged cart with broad impact/hoof evidence;
+1. overturned **stone water trough** with a broad low impact and hoof drag marks;
 2. churned meadow edge near a territorial route;
 3. broken fence/tree scoring closer to the grove boundary.
 
