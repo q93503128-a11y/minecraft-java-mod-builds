@@ -1,6 +1,6 @@
 # Open-World RPG — R01 External Asset Intake Manifest
 
-> Status: **ASSET INTAKE PHASE B / EVIDENCE PASS 4 COMPLETE — NOT ASSET READY**  
+> Status: **ASSET INTAKE PHASE B / PASS 5 R01 FISH PROVENANCE NARROWING COMPLETE — NOT ASSET READY**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Project contract: `PROJECT.md`  
 > Opening: `R01_VERTICAL_SLICE.md`  
@@ -147,6 +147,93 @@ Phase-B pass 3 establishes exact candidate clip names:
 - UAL2 also covers chop/mine/fish/farm/carry/sleep and therefore is a useful cross-check against KayKit for motions that clip less with the selected Quaternius body/outfit family.
 
 Because current central Quaternius licensing has drifted, actual project adoption still records the exact UAL/UAL2 source edition, acquisition-time license evidence and source hash. Do not infer raw-repo safety from the family name alone.
+
+## 3.4 R01 fish model intake — source-specific CC0 shortlist
+
+R01 fishing gameplay is already closed in `R01_CONTENT_BIBLE.md`: two Common fish, one Uncommon fish and one Rare fish, with exact size/value/spot/tension behavior. **Final species names remain blocked until the selected 3D models are visually inspected.**
+
+### Quaternius historical creator snapshot
+
+Creator-uploaded OpenGameArt source:
+
+```text
+page: https://opengameart.org/content/animated-fish
+author: quaternius
+published: 2018-04-05
+license on this source page: CC0
+file: Animated Fish Pack by @Quaternius.zip
+published size: 1 MB
+formats stated by author: Blend / OBJ / FBX
+```
+
+This is a source-specific CC0 snapshot and therefore is handled as an exception to the current central Quaternius/QAL uncertainty in §2 **if the project acquires this exact OpenGameArt artifact and hashes the bytes actually used**.
+
+Poly Pizza separately exposes the Quaternius Animated Fish Bundle as CC0/Public Domain with **7 models**:
+
+```text
+Fish
+Fish
+Fish
+Dolphin
+Shark
+Whale
+Manta ray
+```
+
+Useful conclusion:
+
+- the three generic `Fish` models are direct-review candidates;
+- Dolphin / Shark / Whale / Manta ray are **rejected for R01 Heartland catch slots** because they read as marine/large-ocean identities and conflict with the grounded river/ford opening;
+- downstream archive-name evidence has reported `clownfish / fish1 / fish2 / shark / whale / dolphin / mantaray`, but that tree evidence is not an authoritative project binding and does not prove what `fish1` / `fish2` look like;
+- do **not** name an R01 species from `fish1` or `fish2` until the actual mesh/texture is inspected.
+
+Current state:
+
+```text
+exact OpenGameArt creator ZIP identified: YES
+source-specific CC0 evidence: YES
+project-local ZIP acquired: NO
+project-local SHA-256: NO
+fish1/fish2/clownfish mesh inspected: NO
+R01 final binding: NO
+```
+
+### Freshwater public-safe direct-review candidates
+
+| Candidate | Source / exact file evidence | License evidence | Useful verified properties | R01 status |
+|---|---|---|---|---|
+| **CDmir Esox - Animated Fish** | OpenGameArt `esox.zip` | CC0 on creator upload | 826 faces / 1,632 tris; albedo/normal/roughness/spec textures; Idle + Slow Swim + Fast Swim | **DIRECT_REVIEW_PRIORITY** for Rare / predatory freshwater silhouette |
+| **CDmir Fish (Animated)** | OpenGameArt `fish.zip` (2.9 MB) | CC0 on creator upload | rigged, animated, diffuse texture, described ready for game use | **DIRECT_REVIEW_PRIORITY** for Common/Uncommon if style matches |
+| **gfroad 3d low poly catfish** | OpenGameArt `catfish.zip` + `catfish_obj.zip` | CC0 on creator upload | 284 polygons / 151 verts; swim + jump animations documented in source MAX version | **DIRECT_REVIEW_ALT**; animation conversion/source-format risk must be checked |
+| **joyfulsquirrel Fish** | OpenGameArt `fish.zip` (131.3 KB) | CC0 on creator upload | Blend; 328 triangles; rigged; Tpose + Swim | **DIRECT_REVIEW_ALT** for a very light Common fish if visual quality survives Minecraft scale |
+
+Admission rule:
+
+1. inspect Quaternius generic Fish models first because they are closest to the project's broader low-poly Quaternius visual family;
+2. inspect CDmir Esox and CDmir Fish next because their freshwater/game-ready identity is stronger than forcing a marine Quaternius model into R01;
+3. use Catfish / joyfulsquirrel only if their 3D style can be normalized without becoming visibly unrelated to the rest of R01;
+4. reject a candidate if its silhouette only works as a marine/tropical fish, if its animation is visibly stiff at Minecraft scale, or if texture/render style cannot coexist with the accepted R01 creature family;
+5. do not create four palette swaps of one mesh merely to close the roster.
+
+### R01 fish icon rule
+
+The Fish Codex/inventory icon for an accepted R01 fish is rendered from the **same accepted 3D fish model** and adapted into the Lucifer pixel/UI grammar. Do not bind an unrelated fish illustration that disagrees with the caught model.
+
+### Binary-review limitation of this pass
+
+The current research environment verified the source pages, license metadata, published archive names and candidate technical summaries but did **not** successfully acquire the OpenGameArt/Poly Pizza binary archives into the project working environment.
+
+Therefore:
+
+```text
+archive SHA-256 = NOT RECORDED
+Blockbench/Blender/3D-viewer mesh review = NOT DONE
+animation playback review = NOT DONE
+Minecraft scale/render review = NOT DONE
+final four R01 species names = NOT LOCKED
+```
+
+This pass narrows the real acquisition queue. It does not upgrade any fish model to production-ready.
 
 ---
 
@@ -804,7 +891,8 @@ Still required:
 9. resolve licensing/acquisition/retarget quality for teammate revive/help-up and Trail Stag mount/dismount, or replace those candidates;
 10. visually inspect and select exact Kenney VFX sprites;
 11. actually audition and select exact Kenney audio clips;
-12. run Blockbench/3D-viewer intake, then actual Minecraft visual review for the accepted set.
+12. acquire/hash and directly compare the R01 fish shortlist in §3.4, then bind four model identities and only then lock final player-facing species names;
+13. run Blockbench/3D-viewer intake, then actual Minecraft visual review for the accepted set.
 
 Until those rows are resolved, `R01 ASSET READY = NO`. Phase B is active and materially advanced, but not complete.
 
@@ -812,12 +900,13 @@ Until those rows are resolved, `R01 ASSET READY = NO`. Phase B is active and mat
 
 # 15. Verification state
 
-Current state after Phase-B evidence pass 4:
+Current state after Phase-B Pass 5 fish-provenance narrowing:
 
 - `DESIGN REVIEWED`: YES
 - `EXTERNAL SOURCE REVIEWED`: YES
 - `LICENSE METADATA REVIEWED`: YES, with Quaternius handled source/package-specifically rather than by blanket family assumption
 - `PHASE-B PASS-4 EVIDENCE DOC RECORDED`: YES
+- `R01 FISH CREATOR-SOURCE CC0 PROVENANCE NARROWED`: YES — Quaternius OpenGameArt snapshot + exact CC0 freshwater candidate pages identified
 - `EXACT PUBLIC-SAFE KAYKIT PATHS PINNED`: YES for listed Adventurers + Restaurant Bits evidence
 - `KAYKIT WORK/FISHING CLIP NAMES PINNED`: YES
 - `KAYKIT WEAPON/TOOLS CANDIDATE FILENAMES PINNED`: YES as tree evidence; authoritative archive SHA-256/final visual selection pending
@@ -832,6 +921,8 @@ Current state after Phase-B evidence pass 4:
 - `REVIVE/MOUNT EXTERNAL CANDIDATES IDENTIFIED`: YES; not accepted
 - `MEDIEVAL VILLAGE MODULE CANDIDATE NAMES PINNED`: YES for a useful Standard subset; service compositions not accepted
 - `KENNEY VFX/AUDIO CANDIDATE FILENAME FAMILIES PINNED`: YES; visual/audition acceptance pending
+- `R01 FISH EXACT FINAL MODEL ROSTER`: NO — direct 3D/archive review still required
+- `R01 FISH FINAL PLAYER-FACING SPECIES NAMES`: NO — intentionally blocked until final model roster is accepted
 - `PROJECT-LOCAL SOURCE SHA-256 COMPLETE`: NO
 - `ALL R01 EXACT ASSET FILENAMES PINNED`: NO
 - `R01 ASSET READY`: NO
