@@ -963,7 +963,9 @@ Those materials must retain world-source value.
 ## 10.5 Oren Quill — vault
 
 - Material Vault access: free;
-- ordinary storage access: free;
+- ordinary Personal Storage access: free;
+- R01 Personal Storage capacity: **36 ordinary slots per player**;
+- important reward overflow uses backpack → Personal Storage → Pending Reward Claim as defined in `GAME_DESIGN.md`;
 - no deposit/withdraw fee.
 
 ## 10.6 Elian Rook — class service
