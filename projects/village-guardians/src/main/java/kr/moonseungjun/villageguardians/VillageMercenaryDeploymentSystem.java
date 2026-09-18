@@ -120,6 +120,12 @@ public final class VillageMercenaryDeploymentSystem {
         for (IronGolem golem : loaded) {
             if (VillageMercenarySystem.classOf(golem) != kind) continue;
             BlockPos rally = rallyPoint(center, zone, kind, golem.getUUID());
+            if (!VillageRaidSystem.isActive() && insideBarracks(center, golem.blockPosition())) {
+                BlockPos yard = VillageMercenarySystem.barracksYardSpawn(level, golem.getUUID());
+                golem.stopRiding();
+                golem.snapTo(yard.getX() + 0.5, yard.getY(), yard.getZ() + 0.5);
+                golem.getNavigation().stop();
+            }
             double leash = switch (kind) {
                 case BASTION -> 18.0;
                 case STRIKER -> 34.0;
@@ -181,6 +187,16 @@ public final class VillageMercenaryDeploymentSystem {
         int slot = Math.floorMod(mercenaryId == null ? 0 : mercenaryId.hashCode(), 10);
         int lane = slot < 5 ? -25 : 25;
         return center.offset(lane, 0, -62);
+    }
+
+    private static boolean insideBarracks(BlockPos villageCenter, BlockPos pos) {
+        VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(VillageProgressionSystem.Building.BARRACKS);
+        int x0 = villageCenter.getX() + spec.dx();
+        int z0 = villageCenter.getZ() + spec.dz();
+        return pos.getX() >= x0 && pos.getX() < x0 + spec.width()
+                && pos.getZ() >= z0 && pos.getZ() < z0 + spec.depth()
+                && pos.getY() >= villageCenter.getY() - 1
+                && pos.getY() <= villageCenter.getY() + spec.height() + 1;
     }
 
     private static boolean allowed(VillageMercenarySystem.MercenaryClass kind, Deployment zone) {

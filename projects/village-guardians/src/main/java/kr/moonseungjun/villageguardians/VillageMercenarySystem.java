@@ -123,8 +123,7 @@ public final class VillageMercenarySystem {
             if (server != null) VillageProgressionSystem.addSupplies(server, cost, "용병 고용 실패 환불");
             return "용병을 배치하지 못해 공동 보급품을 돌려드렸습니다.";
         }
-        BlockPos origin = VillageWorldSystem.buildingCenter(VillageProgressionSystem.Building.BARRACKS);
-        BlockPos spawn = safeSpawn(level, origin);
+        BlockPos spawn = barracksYardSpawn(level, mercenary.getUUID());
         mercenary.snapTo(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
         mercenary.setPlayerCreated(true);
         mercenary.setPersistenceRequired();
@@ -492,8 +491,22 @@ public final class VillageMercenarySystem {
 
     private record MercenarySnapshot(MercenaryClass kind, int level, int kills) {}
 
+    static BlockPos barracksYardSpawn(ServerLevel level, UUID mercenaryId) {
+        BlockPos center = VillageCouncilState.villageCenter().orElse(null);
+        if (center == null) return safeSpawn(level,
+                VillageWorldSystem.buildingCenter(VillageProgressionSystem.Building.BARRACKS));
+        VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(VillageProgressionSystem.Building.BARRACKS);
+        BlockPos origin = center.offset(spec.dx(), 0, spec.dz());
+        BlockPos entrance = VillageBuildingCatalog.entrance(level, origin, spec);
+        Direction outward = spec.entranceFacing();
+        Direction sideways = outward.getClockWise();
+        int slot = Math.floorMod(mercenaryId == null ? 0 : mercenaryId.hashCode(), 5) - 2;
+        BlockPos yard = entrance.relative(outward, 4).relative(sideways, slot * 2);
+        return safeSpawn(level, yard);
+    }
+
     private static BlockPos safeSpawn(ServerLevel level, BlockPos origin) {
-        for (int radius = 2; radius <= 8; radius++) {
+        for (int radius = 0; radius <= 8; radius++) {
             for (int dx = -radius; dx <= radius; dx++) {
                 for (int dz = -radius; dz <= radius; dz++) {
                     BlockPos pos = origin.offset(dx, 0, dz);

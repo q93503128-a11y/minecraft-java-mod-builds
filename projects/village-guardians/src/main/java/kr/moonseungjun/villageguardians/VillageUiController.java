@@ -33,7 +33,7 @@ public final class VillageUiController {
             int upgradeCost = canUpgrade ? VillageProgressionSystem.upgradeCost(level) : 0;
             String nextEffect = canUpgrade ? managementEffect(building, level + 1, server) : "";
             String levelText = building == VillageProgressionSystem.Building.TOWN_HALL
-                    ? "회관 본체" : "Lv." + level + " / " + VillageProgressionSystem.MAX_BUILDING_LEVEL;
+                    ? "회관 본체" : level + "단계 / " + VillageProgressionSystem.MAX_BUILDING_LEVEL + "단계";
             actions.add("facility_card:" + building.id());
             labels.add(String.join("|", "facility", building.id(), building.displayName(), levelText,
                     Integer.toString(current), Integer.toString(maximum), managementEffect(building, level, server),

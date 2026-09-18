@@ -71,14 +71,13 @@ public final class VillageTownHallGridScreen extends Screen {
         int bodyWidth = Math.max(80, closeX - x - 10);
         List<FormattedCharSequence> lines = font.split(Component.literal(body.replace('\n', ' ')), bodyWidth);
         int bodyY = layout.top() + 27;
-        for (int i = 0; i < Math.min(2, lines.size()); i++) {
-            graphics.text(font, lines.get(i), x, bodyY, MUTED, false);
-            bodyY += 11;
+        if (!lines.isEmpty()) {
+            graphics.text(font, lines.getFirst(), x, bodyY, MUTED, false);
         }
         boolean close = inside(mouseX, mouseY, closeX, layout.top() + 8, 24, 24);
         graphics.fill(closeX, layout.top() + 8, closeX + 24, layout.top() + 32, close ? 0xFF71353A : PANEL_3);
         graphics.centeredText(font, "×", closeX + 12, layout.top() + 15, close ? TEXT : MUTED);
-        graphics.fill(layout.left() + 14, layout.top() + 52, layout.right() - 14, layout.top() + 53, LINE);
+        graphics.fill(layout.left() + 14, layout.top() + 44, layout.right() - 14, layout.top() + 45, LINE);
     }
 
     private void drawList(GuiGraphicsExtractor graphics, Pane pane, int mouseX, int mouseY) {
@@ -145,12 +144,14 @@ public final class VillageTownHallGridScreen extends Screen {
 
         if (f.current() <= 0) {
             y = section(graphics, "시설 상태", "파괴됨 · 기능 정지", x, right, y, RED);
-            section(graphics, "복구", "회관에서 완전 수리하면 건물과 기능이 즉시 복구됩니다.", x, right, y, GOLD);
+            section(graphics, "복구", "완전 수리 시 건물과 고유 기능이 즉시 복구됩니다.", x, right, y, GOLD);
         } else {
             y = section(graphics, "현재 효과", f.effect(), x, right, y, CYAN);
             if (!f.nextEffect().isBlank() && f.upgradeCost() > 0) {
-                y = section(graphics, "다음 단계", f.nextEffect(), x, right, y, GREEN);
-                section(graphics, "강화 비용", "공동 보급품 " + f.upgradeCost(), x, right, y, GOLD);
+                section(graphics, "다음 강화",
+                        f.nextEffect() + " · 필요 공동 보급품 " + f.upgradeCost(), x, right, y, GREEN);
+            } else {
+                section(graphics, "다음 강화", "최고 단계에 도달했습니다.", x, right, y, MUTED);
             }
         }
         graphics.disableScissor();
@@ -163,14 +164,19 @@ public final class VillageTownHallGridScreen extends Screen {
     private int section(GuiGraphicsExtractor graphics, String title, String value,
                         int left, int right, int y, int color) {
         if (value == null || value.isBlank()) return y;
-        graphics.text(font, title, left, y, color, false);
-        int lineY = y + 13;
-        List<FormattedCharSequence> lines = font.split(Component.literal(value), Math.max(70, right - left));
-        for (int i = 0; i < Math.min(2, lines.size()); i++) {
-            graphics.text(font, lines.get(i), left, lineY, MUTED, false);
+        int innerWidth = Math.max(70, right - left - 20);
+        List<FormattedCharSequence> lines = font.split(Component.literal(value), innerWidth);
+        int shown = Math.min(2, lines.size());
+        int cardHeight = 24 + shown * 11;
+        graphics.fill(left - 2, y, right, y + cardHeight, 0xB7132026);
+        graphics.fill(left - 2, y, left + 1, y + cardHeight, color);
+        graphics.text(font, title, left + 7, y + 6, color, false);
+        int lineY = y + 18;
+        for (int i = 0; i < shown; i++) {
+            graphics.text(font, lines.get(i), left + 7, lineY, MUTED, false);
             lineY += 11;
         }
-        return lineY + 5;
+        return y + cardHeight + 6;
     }
 
     private List<ButtonSpec> facilityButtons(Pane pane, FacilityCard f) {
@@ -178,8 +184,8 @@ public final class VillageTownHallGridScreen extends Screen {
         boolean usable = f.current() > 0;
         boolean repair = f.current() < f.maximum() && f.repairCost() > 0;
         boolean upgrade = usable && f.upgradeCost() > 0 && !f.nextEffect().isBlank();
-        String repairLabel = repair ? "건물 수리 · " + f.repairCost() : "수리 불필요";
-        String upgradeLabel = upgrade ? "건물 강화 · " + f.upgradeCost() : "강화 완료";
+        String repairLabel = repair ? "수리 · 보급 " + f.repairCost() : "수리 불필요";
+        String upgradeLabel = upgrade ? "강화 · 보급 " + f.upgradeCost() : "강화 완료";
 
         int gap = 7;
         int left = pane.left() + 14;
@@ -261,20 +267,20 @@ public final class VillageTownHallGridScreen extends Screen {
 
     private Layout layout() {
         VillageUiSafeArea.Rect safe = VillageUiSafeArea.screen(width, height);
-        int panelWidth = Math.min(940, Math.max(1, safe.width()));
-        int panelHeight = Math.min(500, Math.max(1, safe.height()));
+        int panelWidth = Math.min(720, Math.max(1, safe.width() - 10));
+        int panelHeight = Math.min(360, Math.max(1, safe.height() - 10));
         int left = safe.centerX() - panelWidth / 2;
         int top = safe.top() + Math.max(0, (safe.height() - panelHeight) / 2);
         int right = left + panelWidth;
         int bottom = top + panelHeight;
-        int contentTop = Math.min(bottom - 1, top + 60);
-        int contentBottom = Math.max(contentTop + 1, bottom - 12);
-        int gap = 10;
-        int contentWidth = Math.max(1, panelWidth - 28 - gap);
-        int listWidth = clamp(panelWidth * 31 / 100, 150, 280);
+        int contentTop = Math.min(bottom - 1, top + 51);
+        int contentBottom = Math.max(contentTop + 1, bottom - 10);
+        int gap = 8;
+        int contentWidth = Math.max(1, panelWidth - 24 - gap);
+        int listWidth = clamp(panelWidth * 30 / 100, 150, 224);
         listWidth = Math.min(listWidth, Math.max(90, contentWidth - 170));
-        Pane list = new Pane(left + 14, contentTop, left + 14 + listWidth, contentBottom);
-        Pane detail = new Pane(Math.min(right - 15, list.right() + gap), contentTop, right - 14, contentBottom);
+        Pane list = new Pane(left + 12, contentTop, left + 12 + listWidth, contentBottom);
+        Pane detail = new Pane(Math.min(right - 13, list.right() + gap), contentTop, right - 12, contentBottom);
         return new Layout(left, top, right, bottom, list, detail);
     }
 

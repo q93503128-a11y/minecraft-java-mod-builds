@@ -18,9 +18,9 @@ def main() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     raid = read("VillageRaidSystem.java")
 
-    assert "mod_version=0.18.39-alpha.1" in props
-    assert "현재 소스 버전 `0.18.39-alpha.1`" in readme
-    assert "villageguardians-0.18.39-alpha.1.jar" in readme
+    assert "mod_version=0.18.40-alpha.1" in props
+    assert "현재 소스 버전 `0.18.40-alpha.1`" in readme
+    assert "villageguardians-0.18.40-alpha.1.jar" in readme
 
     # Spawned raid actors must never begin as static/invulnerable entities.
     spawn = section(raid, "private static void spawnWave", "private static void applyScaling")
