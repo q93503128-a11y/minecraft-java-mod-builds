@@ -124,16 +124,27 @@ public final class VillageCouncilState {
     public static synchronized String proposeAdvanceTime(ServerPlayer proposer) {
         if (VillageProgressionSystem.isGameOver()) return "게임 오버 상태에서는 재시작을 먼저 선택해야 합니다.";
         if (VillageRaidSystem.isRaidLocked()) return "습격이 끝날 때까지 시간을 진행할 수 없습니다.";
-        if (activeProposal != null) return "이미 진행 중인 안건이 있습니다.";
 
         MinecraftServer server = proposer.level().getServer();
         if (server == null) return "서버 상태를 확인할 수 없습니다.";
+        if (activeProposal != null) {
+            evaluateProposal(server);
+            if (activeProposal != null) {
+                VillageUiService.openVote(proposer, activeProposal.proposerName());
+                return "진행 중인 시간 투표를 다시 열었습니다.";
+            }
+            return "기존 시간 투표가 처리되었습니다.";
+        }
         if (server.getPlayerList().getPlayerCount() <= 1) {
             advanceTime(server);
             return "혼자 플레이 중이므로 투표 없이 " + timePhase.koreanName() + "으로 진행했습니다.";
         }
 
-        activeProposal = new Proposal("advance_time", proposer.getUUID(), new LinkedHashMap<>());
+        activeProposal = new Proposal(
+                "advance_time",
+                proposer.getUUID(),
+                proposer.getGameProfile().name(),
+                new LinkedHashMap<>());
         activeProposal.votes().put(proposer.getUUID(), true);
         VillageUiService.openVoteForAll(server, proposer.getGameProfile().name());
         broadcast(server, "§e[마을 투표] §f" + proposer.getGameProfile().name() + " 님이 시간 진행 투표를 열었습니다.");
@@ -240,15 +251,19 @@ public final class VillageCouncilState {
 
     private static void evaluateProposal(MinecraftServer server) {
         if (activeProposal == null) return;
+        int online = Math.max(1, server.getPlayerList().getPlayerCount());
         int required = majority(server);
         int yesVotes = countVotes(server, true);
         int noVotes = countVotes(server, false);
+        int remainingVotes = Math.max(0, online - yesVotes - noVotes);
         if (yesVotes >= required) {
             activeProposal = null;
+            VillageUiService.closeVoteForAll(server);
             advanceTime(server);
             broadcast(server, "§a[투표 통과] §f시간 진행이 실행되었습니다.");
-        } else if (noVotes >= required) {
+        } else if (yesVotes + remainingVotes < required) {
             activeProposal = null;
+            VillageUiService.closeVoteForAll(server);
             broadcast(server, "§c[투표 부결] §f시간 진행이 취소되었습니다.");
         }
     }
@@ -326,5 +341,5 @@ public final class VillageCouncilState {
     }
 
     public record ExperienceResult(int awardedExperience, RpgProgress previous, RpgProgress current, int levelsGained) {}
-    private record Proposal(String id, UUID proposer, Map<UUID, Boolean> votes) {}
+    private record Proposal(String id, UUID proposer, String proposerName, Map<UUID, Boolean> votes) {}
 }
