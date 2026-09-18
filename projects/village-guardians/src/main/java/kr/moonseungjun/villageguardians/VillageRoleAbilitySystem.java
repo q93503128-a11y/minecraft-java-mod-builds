@@ -871,12 +871,13 @@ public final class VillageRoleAbilitySystem {
     private static void tauntShout(ServerLevel level, ServerPlayer player,
                                    float damage, int duration, int specialRank) {
         player.swing(InteractionHand.OFF_HAND, true);
-        double radius = 20.0 + specialRank * 2.0;
-        for (Mob target : targetsNear(level, player, player.position(), radius, 60 + specialRank * 5)) {
+        double radius = 30.0 + specialRank * 3.0;
+        int tauntDuration = Math.max(100, Math.min(240, duration + 40));
+        VillageRaidSystem.tauntEnemies(level, player, player.position(), radius, tauntDuration, 120);
+        for (Mob target : targetsNear(level, player, player.position(), radius, 120)) {
             hurt(level, target, damage);
-            target.setTarget(player);
             target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS,
-                    Math.min(180, duration), 1 + Math.min(2, specialRank / 2), false, false, true));
+                    Math.min(200, duration + 20), 1 + Math.min(2, specialRank / 2), false, false, true));
         }
         player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,
                 Math.min(180, duration), 1 + Math.min(1, specialRank / 4), false, false, true));
