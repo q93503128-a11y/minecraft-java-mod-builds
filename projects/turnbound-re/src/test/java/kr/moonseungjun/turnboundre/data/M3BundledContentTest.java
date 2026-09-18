@@ -27,7 +27,7 @@ class M3BundledContentTest {
         assertEquals(1, registry.progressions().size());
         assertEquals(3, registry.equipment().size());
         assertEquals(2, registry.regions().size());
-        assertEquals(7, parsed.resourceIds().size());
+        assertEquals(8, parsed.resourceIds().size());
 
         assertTrue(registry.characters().keySet().containsAll(Set.of(
                 "turnbound_re:zombie", "turnbound_re:skeleton", "turnbound_re:spider", "turnbound_re:creeper",
