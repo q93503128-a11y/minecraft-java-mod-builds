@@ -220,10 +220,15 @@ Project code should prefer registry IDs/tags/configuration adapters over importi
 ## Threateningly Mobs Continued
 
 - baseline: `1.1.1+fabric.26.2`;
-- MIT listing observed;
+- exact Modrinth project ID: `JXjyo7k6`;
+- exact current Fabric 26.2 Version ID verified 2026-09-18: `Bdd8lkUM`;
+- exact Modrinth Maven coordinate: `maven.modrinth:JXjyo7k6:Bdd8lkUM`;
+- Modrinth project/version listing reports MIT, while the separate storefront conflict recorded in `PRODUCTION_ASSET_BINDING_MATRIX.md` still prevents assuming raw-byte redistribution rights;
 - classification: **REQUIRED PLAYABLE CONTENT DEPENDENCY**.
 
 Use its fantasy roster for approved regional creature/boss identities. Project region rules remain authoritative. Default structures, drops, recipes, equipment progression and spawn tables are not automatically accepted merely because the dependency supplies them.
+
+The exact dependency artifact to inspect for R01 Earthloong/Regalhart runtime acceptance is now pinned by Version ID. The current research environment still has not materialized that JAR, so model JSON/animation/hitbox inspection remains **NOT DONE** rather than being inferred from an older release.
 
 ---
 
