@@ -551,7 +551,15 @@ Alderford Vault is a world service with two tabs:
 
 ## 8.1 Personal Storage
 
-Standard grid/storage interaction.
+Exact R01 capacity: **36 ordinary slots per player**.
+
+Rules:
+- equipment/consumables/trade goods may be stored;
+- Material Pouch materials belong in Material Vault unless manually withdrawn as ordinary stacks for a valid reason;
+- Key Items never consume these slots;
+- no Gold fee;
+- important reward overflow may route here automatically under GAME_DESIGN.md;
+- automatic overflow never evicts or rearranges locked/favorited stored items.
 
 ## 8.2 Material Vault
 
@@ -571,6 +579,26 @@ Actions:
 Deposit All never moves Key Items or non-material gear.
 
 No Gold fee.
+
+## 8.3 Pending Reward Claims
+
+If both backpack and Alderford Personal Storage lack legal room for an important server-owned item reward, the Vault exposes a compact **Pending Rewards** section.
+
+Each row shows:
+- reward source;
+- item preview;
+- grade / relevant key data;
+- Earned status;
+- Claim button.
+
+Rules:
+- the pending item cannot be equipped/sold/moved/traded from this view;
+- Claim revalidates backpack first, then Personal Storage;
+- if neither has room, Claim remains unavailable with `Make room in your backpack or Alderford Vault`;
+- clearing inventory space does not auto-claim while another blocking modal owns input;
+- reconnect preserves the transaction exactly once.
+
+Journal may also expose `Claim pending reward`, opening this same claim action rather than duplicating another storage surface.
 
 ---
 
