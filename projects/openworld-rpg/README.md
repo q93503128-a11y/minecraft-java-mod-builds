@@ -4,9 +4,9 @@ Large Minecraft Java open-world action RPG project with very low dependence on v
 
 ## Current status
 
-`DESIGN CANON LATE PRE-PRODUCTION / NO SOURCE BOOTSTRAP YET`
+`M0 CORE SOURCE BOOTSTRAP BUILD VERIFIED / R01 PLAYER-FACING IMPLEMENTATION NOT STARTED`
 
-No implementation exists yet. Do not treat the project as buildable until M0 explicitly creates the loader/toolchain/source layout.
+The narrow M0 technical implementation now exists: Fabric 26.2 / Java 25 toolchain, mod entrypoint, integration dependency manifest, runtime profiles, validation/overlay primitives, unit tests and CI. Commit `b98ab3650b6e594693df3c1170d1de1e1ea169f2` passed clean test/build, JAR verification and dedicated-server core-profile boot. This is **not** R01 gameplay implementation and does not make unresolved asset/spatial gates complete.
 
 The major gameplay systems, Lv 1–80 progression, class/combat framework, equipment/economy, world-state model, main story spine, mounts, field systems, party/co-op rules and R01–R12 regional packages are already specified. **R01–R12 now all have concrete named-NPC, exact quest-condition, scene/dialogue, reconnect/reward-state and story-evidence authoring locked.** Remaining pre-bootstrap work is no longer regional content invention. It is primarily exact external-asset binding, actual Azari spatial placement/travel-time validation and final stale-canon cleanup. Accessibility/difficulty/input/audio behavior is already design-closed; exact audio/UI/VFX assets remain part of presentation binding. The external-mod integration architecture is also now closed in `M0_INTEGRATION_ARCHITECTURE.md`.
 
@@ -129,7 +129,7 @@ Player-facing text and presentation must never expose the development process. D
 1. **Exact external-asset intake closure** — resolve the remaining player-facing model/outfit/item/structure/Anchor-machinery/VFX/UI/animation/SFX/BGM bindings and source/license/hash records. Important open gates remain the true `OPEN_MODEL_SELECTION` / runtime-acceptance rows in `PRODUCTION_ASSET_BINDING_MATRIX.md`.
 2. **Azari spatial closure** — load the actual world and lock every major settlement/POI/road/dungeon/boss/route/depth band with coordinates, sightlines, travel-time and content-density targets. Confirm R11 depth bands and R12 flight/no-fly volumes from the real map, not the overhead render.
 3. **Final stale-canon cleanup** — remove obsolete queues/status text and any remaining live contradiction. Do not reopen already-closed accessibility/input/audio behavior, class/combat design, R11 aquatic compatibility or external-mod composition.
-4. **M0 source bootstrap after those gates** — create the Fabric 26.2 / Java 25 source/data/resource skeleton, implement the integration-module/data-registry/validation boundaries from `M0_INTEGRATION_ARCHITECTURE.md`, then prove the dependency stack with the M0 acceptance matrix.
+4. **Continue M0 integration proof without player-facing placeholders** — the Fabric 26.2 / Java 25 core source/data/resource skeleton now exists and is build/server-smoke verified. Next resolve exact runtime IDs/artifacts and wire the `dev-gameplay` dependency profile, then prove real external-mod adapters against the M0 acceptance matrix.
 5. **R01 vertical-slice implementation** — use R01 to prove the complete pipeline (external assets → adapters/data → server authority → UI/presentation → save/rejoin → real spatial placement → performance/playtest) before scaling the same architecture across R02–R12.
 
 Do not reopen already-closed class topology, weapon/resource fundamentals, party reward ownership, R01–R12 quest/story ownership, ending structure, accessibility/input behavior, aquatic action design or regional macro direction unless implementation/playtest evidence exposes a real problem.
