@@ -21,7 +21,7 @@ Minecraft Java 26.2 / NeoForge 26.2.0.62 기반 3D 캐릭터 수집형 파티 �
 - `/turnbound world status`
 - `/turnbound world bind_drehmal` — 별도 설치한 Drehmal Overworld의 New Drabyel seed 근처에서 OP 권한으로 실행
 
-현재는 **world-binding architecture checkpoint**이며 완성된 외부 월드 vertical slice라고 주장하지 않는다. 설치 자동화, 26.2 migration, terrain-safe encounter/battle anchor와 카메라 개편은 후속 단위다. 자세한 경계는 `WORLD_OVERHAUL_DREHMAL.md`.
+현재는 **world-binding architecture checkpoint**이며 완성된 외부 월드 vertical slice라고 주장하지 않는다. integration seed는 아직 자동 텔레포트에 사용하지 않으며, 설치 자동화·26.2 migration·terrain-safe arrival/encounter/battle anchor·카메라 개편은 후속 단위다. Build TURNBOUND #754에서 test/build/server smoke/JAR 검증까지 통과했다. 자세한 경계는 `WORLD_OVERHAUL_DREHMAL.md`.
 
 ## 전투 UX
 - 카메라 피벗은 전체 인원 평균이 아니라 `아군 중심 ↔ 적군 중심`의 정확한 중점
