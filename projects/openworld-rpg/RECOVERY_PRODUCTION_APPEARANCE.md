@@ -216,7 +216,7 @@ R01 and all ordinary settlements reliably stock the basic Healing Potion.
 restore: 35% MaxHP
 heal timing: at 0.72 s drink resolution
 critical: no
-price target R01: 30 Gold
+R01 price: **30 Gold**
 stack cap in backpack: 20
 quick-belt eligible: yes
 ```
@@ -246,7 +246,7 @@ Role: controlled Mana recovery for skill-heavy builds.
 restore: 40% MaxMana total
 25% MaxMana at resolution
 + 15% MaxMana over the following 3.0 s
-price target R01: 35 Gold
+R01 price: **35 Gold**
 stack cap: 20
 quick-belt eligible: yes
 ```
@@ -269,7 +269,7 @@ Role: active answer to R01 poison/burn/bleed/control without creating one antido
 ```text
 on resolution: remove all currently active statuses tagged minor_dispellable
 major statuses: unaffected
-price target R01: 40 Gold
+R01 price: **40 Gold**
 stack cap: 20
 quick-belt eligible: yes
 ```
@@ -941,7 +941,7 @@ Still intentionally later:
 - R02+ regional meals/potions/outfit families;
 - exact drink/eat animation filename after asset intake;
 - higher-region profession recipes;
-- camp deployment material recipe/placement restrictions beyond the already-canonical camp concept;
-- housing furnishing catalog;
 - later named cosmetic rewards;
 - actual tuning after client playtest.
+
+R01 Camp acquisition/deployment and the baseline Alderford furnishing catalogue are **not later design work anymore**: `GATHERING_FISHING_CAMP_HOUSING.md` + `R01_CONTENT_BIBLE.md` own those exact rules. Remaining Camp/furniture work is external model binding, world placement, implementation and playtest.
