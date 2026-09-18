@@ -1,319 +1,642 @@
 # TURNBOUND Character Design v1
 
-> 역할: 대격변 이후 플레이어블 캐릭터의 역할/컨셉/스킬 방향 정본.
-> 아래 수치는 concept budget이며 최종 계수는 `02_BALANCE_RULES_v1.md`의 simulator pass 이후 고정한다.
-
-## 1. 캐릭터 설계 규칙
-
-모든 정식 캐릭터는 최소한 다음 질문에 답해야 한다.
-
-- 한 문장으로 무엇을 하는 캐릭터인가?
-- 플레이어가 이 캐릭터를 넣으면 전투 방식이 무엇이 달라지는가?
-- 대표 mechanic을 화면에서 어떻게 알아보는가?
-- 어떤 파티와 강한가?
-- 어떤 전투에서 약한가?
-- Auto가 이 캐릭터를 망치지 않고 최소한의 역할을 수행할 수 있는가?
-- 외형/무기/애니메이션이 역할을 말해주는가?
-
-단순 `ATK +10%` passive만으로 정체성을 만들지 않는다.
-
-## 2. 희귀도
-
-정식 플레이어블 희귀도는 ★3~★5.
-
-- ★3: 규칙이 단순하고 좁은 전문성이 강함
-- ★4: 한 가지 완성된 signature loop
-- ★5: 높은 ceiling 또는 복합적인 선택지를 가질 수 있음
-
-★5가 ★3의 상위호환이 되는 구조를 목표로 하지 않는다.
-
-F01~F04의 기존 “재료형” 분류는 폐기한다.
-
-## 3. P01 카이렌 — 결투 흐름을 쌓는 추적 검사
-
-### 유지할 좋은 점
-- 한 대상을 오래 압박하는 단일 딜러
-- Focus를 쌓고 큰 공격으로 연결하는 직관적인 목표
-- 보스/엘리트에 강하고 잦은 타겟 변경에 약한 정체성
-
-### 현재 문제
-- 기존 Active 2가 피해 없이 “대상 지정 + Focus + Gauge”만 수행해 버튼 감각이 약하다.
-- Focus가 단순 누적 피해 보너스로만 읽히면 조작 재미가 작다.
-- 스킬 2 runtime 문제까지 겹쳐 핵심 루프가 체감되지 않는다.
-
-### v1 컨셉
-**“같은 적의 공격 흐름을 읽고 점점 더 깊게 파고드는 결투가.”**
-
-Signature: `Duel Focus 0~3`
-
-- 같은 대상에게 직접 행동을 이어갈수록 Focus 증가
-- 다른 대상을 직접 공격하면 기존 Focus 정리
-- Focus는 피해뿐 아니라 스킬의 행동 방식도 바꾼다
-
-### v1 확정 Kit
-- Basic · **추적 베기**: 단일 95%. 첫 직접 공격/대상 전환 시 Focus 1, 같은 대상이면 Focus +1.
-- Active A · **파쇄 일격**: CD2, 단일 175%. 같은 결투 대상에 Focus 2면 추가 30%, Focus 3이면 추가 50% 베기. Focus는 소비하지 않는다.
-- Active B · **간파 베기**: CD3, 단일 110% + 자신의 Gauge +100. 공격과 동시에 결투 대상을 확정하고 Focus +1.
-- Passive · **집요한 추적**: Focus 1당 현재 결투 대상에게 주는 직접 피해 +5%. Focus 3에서 Basic은 25% 추가 베기로 동작 방식이 확장된다.
-- Awakening · **끝나지 않는 칼끝**: Focus 3 Basic 추가 베기가 45%로 강화된다. Focus 3 상태로 적을 쓰러뜨리면 다음 결투 대상은 Focus 2에서 시작한다.
-
-Focus 보너스는 현재 `focusTarget`에게만 적용한다. 다른 적에게 옛 Focus 피해 보너스를 들고 가는 것은 금지한다.
-
-Role: Single DPS / Duel / Boss pressure.
-
-## 4. P02 루메아 — 행동 순서를 편집하는 템포 지휘자
-
-### 유지할 좋은 점
-- TURNBOUND의 Turn Gauge 정체성을 가장 잘 보여주는 캐릭터
-- 느린 강캐의 턴을 끌어오고 위험한 적을 지연시키는 역할
-
-### 현재 문제
-- “Gauge를 바로 1000” 효과는 행동 경제상 지나치게 강해지기 쉽다.
-- Basic까지 높은 Gauge 공급이면 본인 피해/생존 기여 없이도 거의 모든 파티의 정답이 될 위험.
-- SPD가 제대로 적용되지 않는 현재 엔진에서는 캐릭터 가치 자체가 왜곡됨.
-
-### v1 컨셉
-**“턴을 생성하는 것이 아니라, 가장 가치 있는 순간에 팀의 시간을 재배치한다.”**
-
-Signature: `Tempo Window`
-
-- 아군 행동 순서를 앞당기거나 적을 늦추지만 연속 남발은 불가
-- 느린 아군을 도울 때 효율이 더 좋고 이미 곧 행동할 대상에는 효율이 낮다
-
-### v1 확정 Kit
-- SPD: **114**. 템포 조작 자체가 높은 가치이므로 옛 125는 유지하지 않는다.
-- Basic · **가속**: 다른 아군 Gauge +120. 대상이 루메아보다 느리면 +40 추가. 다른 아군이 모두 쓰러진 경우에만 자기 자신에게 사용할 수 있다.
-- Active A · **시간 도약**: CD4, 다른 아군 Gauge +300. 대상이 루메아보다 느리면 +60 추가. Gauge를 즉시 1000으로 만드는 옛 효과는 폐기한다.
-- Active B · **시차 봉쇄**: CD3, 적 1명에게 ATK 85% 피해 + Gauge -180. 옛 적 전체 -120 구조를 폐기해 ‘지금 늦춰야 할 적’을 고르는 기술로 바꾼다.
-- Passive · **Tempo Window**: 느린 아군에게 action advance를 걸 때 추가 효율을 얻는다. “느린 아군이 행동할 때마다 루메아가 자기 Gauge를 받는” 옛 자동 루프는 폐기한다.
-- Awakening · **정확한 시차**: 시간 도약으로 대상을 다음 2행동 안에 넣거나, 시차 봉쇄로 다음 2행동 안의 적을 밖으로 밀어냈을 때 루메아 Gauge +60. 실제 `TurnScheduler` 미래 순서가 조건 판정의 정본이다.
-
-Role: Tempo Support / Gauge Control.
-
-## 5. P03 브람 — 피해를 가로채 반격 자원으로 바꾸는 수호자
-
-### 유지할 좋은 점
-- Redirect + Counter가 매우 읽기 쉬운 탱커 정체성
-- 단일 강공/암살형 적에 강하고 AoE에 약한 구조
-
-### 현재 문제
-- Basic이 자기 Barrier만 반복하면 자기 턴이 “준비만 하는 턴”으로 느껴질 수 있다.
-- Counter가 무조건 자동으로만 나오면 플레이어가 설계했다는 감각이 약함.
-
-### v1 컨셉
-**“아군 대신 맞고 그 충격을 저장했다가 전열을 밀어낸다.”**
-
-Signature: `Guard 0~100`
-
-- Redirect/직접 피해로 Guard 축적
-- Guard가 쌓일수록 반격 또는 방패 기술이 강화
-
-### Kit 방향
-- Basic: 짧은 방패 타격 + 소형 Barrier 또는 Guard gain.
-- Active A: 한 아군 보호/redirect.
-- Active B: Guard를 활용한 압박/도발/게이지 지연.
-- Passive: 보호 중 받은 직접 공격에 counter.
-- Awakening: Guard가 가득 찼을 때 한 번의 강한 team protection/retaliation window.
-
-Role: Tank / Redirect / Counter.
-
-## 6. P04 엘리시아 — 위험 상태를 회복 창으로 바꾸는 구조 치료사
-
-### 유지할 좋은 점
-- 초보자에게 필요한 안정적인 healer/revive
-- “실수 한두 번을 복구”하는 역할
-
-### 현재 문제
-- Basic heal + AoE heal + Revive만으로는 다른 RPG의 일반 힐러와 차이가 약하다.
-- heal 수치만 올리는 캐릭터가 되기 쉽다.
-
-### v1 컨셉
-**“큰 피해가 들어오기 전에 회복 지점을 준비하고, 무너진 아군을 다시 전선에 세운다.”**
-
-Signature: `Sanctuary Mark`
-
-- 아군에게 짧은 보호/회복 표식을 남김
-- 표식 대상이 큰 피해를 받거나 위험 HP에 진입하면 저장된 회복/피해완화가 발동
-
-### Kit 방향
-- Basic: 작은 즉시 회복 + Sanctuary 준비.
-- Active A: 위기 아군을 즉시 안정화하는 강한 단일 구조.
-- Active B: 팀 전체 회복은 유지하되 표식 대상과 상호작용.
-- Revive: 캐릭터 핵심 identity는 유지하되 premium CD.
-- Passive: “처음 30% 이하” 자동 heal 같은 1회성 응급 구조를 Sanctuary 시스템과 통합.
-- Awakening: revive 직후 바로 다시 쓰러지는 문제를 보호막/DR/turn support로 해결.
-
-Role: Heal / Rescue / Revive.
-
-## 7. P05 리네트 — 팀 공격 사이에 끼어드는 추격 사수
-
-### 유지할 좋은 점
-- Follow-up이 파티 조합을 바꾸는 좋은 mechanic
-- 빠른 파티/다단 행동과 자연스럽게 시너지
-
-### 현재 문제
-- Expose stack + Hunt Target + follow-up 제한이 동시에 있어 bookkeeping이 늘어난다.
-- 화면에서 어떤 적이 추격 가능한지 즉시 읽히기 어려울 수 있다.
-
-### v1 컨셉
-**“한 명을 조준하면 동료의 공격을 사격 기회로 바꾸는 spotter.”**
-
-Signature: `Sightline`
-
-- 동시에 한 적만 명확하게 표시
-- 아군이 Sightline 대상을 공격하면 Shot Window가 쌓임
-- 일정 조건에서 Lynette follow-up
-
-### Kit 방향
-- Basic: Sightline 지정/유지 + 경량 사격.
-- Active A: 축적한 Shot Window를 쓰는 관통 단일기.
-- Active B: Sightline을 즉시 새 대상에 설정하고 일정 시간 follow-up 강화.
-- Passive: allied direct hit를 제한된 follow-up으로 변환.
-- Awakening: 두 번째/세 번째 팀 행동에 리듬 보너스.
-
-Role: Follow-up / Single DPS / Team synergy.
-
-## 8. P06 모르웬 — 전투의 사건을 기록해 마무리에 쓰는 집행자
-
-### 유지할 좋은 점
-- “죽음을 기록”하는 컨셉은 강한 캐릭터성
-- 고난도전/역전 상황에서 강해지는 구조
-
-### 현재 문제
-- 아무도 죽지 않는 짧고 깔끔한 전투에서는 mechanic이 사실상 비어 있음.
-- 캐릭터가 잘 굴러가려면 아군 사망을 바라야 하는 역설이 생길 수 있음.
-
-### v1 컨셉
-**“죽음뿐 아니라 전투의 결정적 사건을 기록하고, 죽음은 가장 큰 기록이 된다.”**
-
-Signature: `Records`
-
-기록 후보:
-- 적 최초 처치
-- Elite/Boss phase break
-- 아군 최초 위험 HP 진입
-- 부활
-- 실제 사망
-
-죽음은 가장 많은 Records를 주지만 필수 조건은 아니다.
-
-### Kit 방향
-- Basic: Records에 따라 조금 강화.
-- Active A: Records 일부를 소비하는 안정적 burst.
-- Active B: 낮은 HP 적을 마무리하면 Records/게이지 회수.
-- Passive: 사건 기록.
-- 자가부활은 캐릭터의 고유 comeback으로 유지하되 전투당 1회.
-- Awakening: 부활/마무리 이후 짧은 execution window.
-
-Role: Event Resource / Execute / Comeback.
-
-## 9. P07 마리온 — 계약수와 한 몸처럼 싸우는 동반자 소환술사
-
-### 유지할 좋은 점
-- 소환물이 캐릭터 정체성 절반인 강한 시각/게임플레이 컨셉
-- extra body와 utility 가능
-
-### 현재 문제
-- 독립 Turn Gauge 소환물은 사실상 파티에 추가 정규 행동권을 하나 더 주므로 power budget이 매우 큼.
-- 전투원 수/타임라인/UI가 복잡해짐.
-- 첫 몇 턴을 “소환부터 하기”에 쓰면 캐릭터 재미가 늦게 시작됨.
-
-### v1 컨셉
-**“계약수는 처음부터 전장에 있고, 마리온의 행동에 반응하는 partner.”**
-
-Signature: `Bond`
-
-- 계약수는 기본적으로 별도 full regular turn을 갖지 않는다.
-- Marion의 Basic/Active/특정 ally action에 Reaction/Command로 움직임
-- Bond가 쌓이면 강한 합동 행동 가능
-
-### Kit 방향
-- 전투 시작: 계약수 자동 동반.
-- Basic: 계약수 command attack.
-- Active A: 계약수 방어/위치/utility stance 전환.
-- Active B: Bond를 소비하는 합동 공격.
-- Passive: 계약수가 피해를 대신 받거나 down되면 Marion의 kit 변화.
-- Awakening: 계약수의 second form 또는 한 번의 자동 복귀.
-
-Role: Summon Partner / Utility / Combo.
-
-## 10. P08 라제 — 자기 몸을 연료로 속도를 올리는 난전 광전사
-
-### 유지할 좋은 점
-- 위험 관리
-- 낮은 희귀도에서 높은 공격 ceiling
-- HP self-cost라는 즉시 이해되는 테마
-
-### 현재 문제
-- “HP 낮으면 ATK 증가”만으로는 전형적인 berserker에서 벗어나기 어렵다.
-- 과도한 heal과 상충하는데 이를 재미있는 선택으로 바꾸는 장치가 적음.
-
-### v1 컨셉
-**“피해를 주고 받으며 Fury를 올리고, 원하는 순간에 과열한다.”**
-
-Signature: `Fury 0~100`
-
-- 자신이 피해를 주거나 받거나 HP cost를 지불하면 Fury 증가
-- Fury 구간에 따라 attack animation/추가효과 변화
-- 낮은 HP는 Fury 효율을 높이는 보조 조건이지 유일한 mechanic이 아님
-
-### Kit 방향
-- Basic: Fury 수급.
-- Active A: HP cost + 큰 Fury/공격.
-- Active B: Fury를 소비해 일정 기간 폭주.
-- Passive: 저HP에서 Fury 효율/생존 tradeoff.
-- Awakening: 전투당 1회 lethal survival은 유지 가능하되 Fury loop와 연결.
-
-Role: Risk DPS / Fury / Burst.
-
-## 11. F01~F04 처리
+> P01~P08의 대격변 이후 정본.
+> ID는 save continuity 때문에 유지할 수 있지만 옛 kit/수치는 자동 계승하지 않는다.
+> 모든 캐릭터는 한 문장 역할, signature mechanic, 강점, 약점, 시각 표현을 가져야 한다.
+
+## 1. 공통 설계 규칙
+
+정식 캐릭터는:
+- 한 문장으로 역할 설명 가능
+- signature mechanic 1개
+- 강한 조합 1개 이상
+- 실제 약점 1개 이상
+- Auto가 최소 역할 수행 가능
+- 모델/무기/animation으로 역할이 읽힘
+- 다른 캐릭터의 단순 상위호환이 아님
+
+정식 희귀도:
+- ★3: 단순/전문
+- ★4: 완성된 signature loop
+- ★5: 더 높은 선택지/ceiling
+
+★1~2 fodder 체계는 폐기.
+
+---
+
+## 2. P01 카이렌 — 결투 추적 검사
+
+**한 문장:** 같은 적을 계속 압박할수록 공격 흐름을 읽어 추가 베기를 만들어내는 단일 결투 DPS.
+
+Rarity: ★4  
+Role: Single DPS / Duel / Boss pressure  
+SPD target: 105  
+Signature: **Focus 0~3**
+
+### 강점
+- boss/elite 단일 대상
+- 같은 적 장기 압박
+- Focus 3에서 높은 action value
+
+### 약점
+- 잦은 target swap
+- 다수전
+- setup 전에 적이 빨리 죽는 전투
+
+### Kit
+**Basic · 추적 베기**
+- 단일 ATK 95%
+- 새 대상이면 Focus 1
+- 같은 대상이면 Focus +1
+- Focus 3이면 25% 추가 베기
+
+**Active A · 파쇄 일격**
+- CD2
+- 단일 175%
+- 같은 결투 대상 Focus 2: +30% follow-up
+- Focus 3: +50% follow-up
+- Focus 소비 없음
+
+**Active B · 간파 베기**
+- CD3
+- 단일 110%
+- 결투 대상 지정/유지
+- Focus +1
+- 자신 Gauge +100
+
+**Passive · 집요한 추적**
+- 현재 focusTarget에게 Focus 1당 직접 피해 +5%
+- 다른 대상에는 보너스 없음
+
+**Awakening · 끝나지 않는 칼끝**
+- Focus 3 Basic 추가 베기 25% → 45%
+- Focus 3으로 적 처치 시 다음 결투 대상 Focus 2 시작
+
+### 시각
+- 빠른 한손검/세검 계열
+- Focus 단계가 자세/검광/표식으로 읽혀야 함
+- target 위 작은 결투 표식
+- Focus 3 추가타는 별도 animation beat
+
+---
+
+## 3. P02 루메아 — 템포 지휘자
+
+**한 문장:** 턴을 생성하는 대신 가장 가치 있는 순간에 아군과 적의 행동 순서를 재배치하는 support.
+
+Rarity: ★5  
+Role: Tempo Support / Gauge Control  
+SPD target: 114  
+Signature: **Tempo Window**
+
+### 강점
+- 느린 강캐 지원
+- 위험한 적 순서 지연
+- revive/heal timing 보정
+
+### 약점
+- raw damage 낮음
+- 이미 빠른 파티에서는 효율 감소
+- 자동으로 막 눌러서는 ceiling이 나오지 않음
+
+### Kit
+**Basic · 가속**
+- 다른 아군 Gauge +120
+- 대상 SPD < 루메아 SPD이면 +40 추가
+- 다른 일반 아군이 모두 쓰러진 경우만 self-target 허용
+
+**Active A · 시간 도약**
+- CD4
+- 다른 아군 Gauge +300
+- 대상이 루메아보다 느리면 +60 추가
+- 즉시 1000은 사용하지 않음
+
+**Active B · 시차 봉쇄**
+- CD3
+- 적 1명 85%
+- Gauge -180
+
+**Passive · Tempo Window**
+- 느린 아군을 당길 때 추가 효율
+- 옛 “느린 아군 행동마다 루메아 자기 Gauge” 자동 루프 폐기
+
+**Awakening · 정확한 시차**
+- 시간 도약으로 대상이 다음 2행동 안에 들어옴
+- 또는 시차 봉쇄로 다음 2행동 안 적이 밖으로 밀림
+- 실제 TurnScheduler 결과가 위 조건이면 루메아 Gauge +60
+
+### 시각
+- clock/tempo cliché보다 지휘/시간 절단 motif
+- 스킬 사용 시 Turn Order rail이 즉시 재배치되는 것이 연출 핵심
+- 캐릭터 주변 시계 HUD를 남발하지 않음
+
+---
+
+## 4. P03 브람 — 충격을 저장하는 수호자
+
+**한 문장:** 아군 대신 피해를 받아 Guard를 쌓고, 저장한 충격을 적의 템포를 무너뜨리는 반격으로 되돌리는 tank.
+
+Rarity: ★4  
+Role: Tank / Redirect / Counter  
+SPD target: 84  
+Signature: **Guard 0~100**
+
+### 강점
+- 단일 강공/암살형 적
+- 취약한 아군 보호
+- enemy tempo 방해
+
+### 약점
+- 광역 지속 피해
+- 보호 대상을 잘못 고르면 낮은 효율
+- 느린 SPD
+
+### Guard 획득
+- Basic: +15
+- 자신이 직접 피해를 받음: +10, 적 행동당 1회
+- redirect 피해를 받음: +20, 적 행동당 1회
+- 최대 100
+
+### Kit
+**Basic · 방패 강타**
+- 단일 80%
+- Guard +15
+- 자신에게 MaxHP 4% Barrier
+
+**Active A · 보호 전환**
+- CD3
+- 다른 아군 1명에게 2회의 해당 아군 regular action 동안 보호
+- 대상에게 들어오는 단일 직접 피해 65%를 브람이 대신 받음
+- redirect 발생 시 Guard +20
+- self-target 불가
+
+**Active B · 진동 방패**
+- CD2
+- 적 1명 90%
+- Gauge -100
+- Guard 50 이상이면 Guard 50 소비:
+  - 피해 130%
+  - Gauge -180
+  - 자신 MaxHP 8% Barrier
+
+**Passive · 되받는 방벽**
+- 보호 전환으로 redirect가 실제 발생하면 공격자에게 45% counter
+- 적 행동 하나당 최대 1회
+- counter가 다시 counter를 유발하지 않음
+
+**Awakening · 불굴의 전열**
+- Guard 100 도달 후 다음 redirect를 처리할 때:
+  - Guard 전부 소비
+  - 그 redirect 피해 추가 30% 감소
+  - 파티 전체에 브람 MaxHP 6% Barrier
+- 전투당 반복 가능하되 Guard를 다시 100까지 쌓아야 함
+
+### 시각
+- 큰 방패와 낮은 무게중심
+- Guard가 쌓일수록 방패 표면/자세 변화
+- redirect는 순간이동보다 실제 방패를 끼워 넣는 짧은 이동/방어 animation
+
+---
+
+## 5. P04 엘리시아 — 구조 치료사
+
+**한 문장:** 위기가 발생한 뒤 숫자를 채우는 힐러가 아니라, 미리 Sanctuary를 준비해 치명적인 순간을 구조하는 healer.
+
+Rarity: ★4  
+Role: Heal / Rescue / Revive  
+SPD target: 96  
+Signature: **Sanctuary Mark**
+
+### 강점
+- 초보 파티 안정성
+- 급격한 단일 피해
+- revive 후 재사망 방지
+
+### 약점
+- 지속적인 압도적 광역 피해
+- 딜 기여 낮음
+- Sanctuary를 잘못 분배하면 낭비
+
+### Sanctuary
+- 동시에 여러 아군에게 존재 가능
+- 각 대상별 1회 trigger
+- 2 대상 regular action 동안 유지
+- 대상이 HP 35% 이하로 내려가면 소비
+
+### Kit
+**Basic · 안식의 손길**
+- 아군 1명 ATK 50% 회복
+- Sanctuary Mark 부여/갱신
+
+**Active A · 안식의 빛**
+- CD3
+- 아군 전체 ATK 55% 회복
+- 이미 Sanctuary가 있는 대상은 추가 ATK 20% 회복
+- 새 Sanctuary를 전원에게 뿌리지는 않음
+
+**Active B · 되돌아온 숨**
+- CD5
+- 전투불능 아군 1명 MaxHP 30%로 부활
+- Gauge +150
+- Sanctuary Mark 부여
+
+**Passive · 미리 남긴 빛**
+- Sanctuary 대상이 35% 이하 진입:
+  - 즉시 ATK 45% Reaction heal
+  - Mark 소비
+- 같은 damage event에 중복 발동 금지
+
+**Awakening · 돌아온 사람의 보호**
+- 부활한 대상:
+  - MaxHP 15% Barrier
+  - 다음 regular action까지 받는 피해 -20%
+
+### 시각
+- 흰빛 폭발 반복보다 작고 명확한 표식
+- Sanctuary가 있는 대상은 발밑/어깨 주변의 낮은 강도 symbol
+- revive는 캐릭터 모델의 실제 기상 animation과 연결
+
+---
+
+## 6. P05 리네트 — 추격 사수
+
+**한 문장:** 한 적을 Sightline으로 지정하고 동료의 공격을 자신의 사격 기회로 바꾸는 follow-up DPS.
+
+Rarity: ★4  
+Role: Follow-up / Single DPS / Team synergy  
+SPD target: 108  
+Signature: **Sightline + Shot**
+
+### 강점
+- 빠른 파티
+- 단일 집중 공격
+- 팀 전체 direct hit가 많은 조합
+
+### 약점
+- target swap
+- 혼자 남았을 때
+- 광역전에 낮은 효율
+
+### Sightline
+- 동시에 적 1명
+- 새 대상 지정 시 이전 해제
+- allied direct hit가 Sightline 대상에 적중하면 Shot +1
+- 리네트 자신의 direct hit는 Shot 생성하지 않음
+- Shot 최대 2
+- 리네트 regular action 사이 follow-up 최대 1회
+
+### Kit
+**Basic · 조준 사격**
+- Sightline 대상 지정/유지
+- 단일 90%
+- 이미 같은 Sightline이면 Shot +1은 생성하지 않지만 다음 ally trigger를 유지
+
+**Active A · 관통 사격**
+- CD2
+- 단일 165%
+- Shot 1 이상이면 전부 소비
+- Shot 1: +35%
+- Shot 2: +70%
+
+**Active B · 사냥 신호**
+- CD3
+- 적 1명을 Sightline으로 즉시 지정
+- 단일 100%
+- Shot +1
+- 기존 Sightline 대상 교체 가능
+
+**Passive · 교차 사격**
+- 다른 아군이 Sightline 대상에게 direct damage:
+  - Shot +1
+- Shot 2가 되면 50% follow-up 발동 후 Shot 0
+- 리네트 regular action 사이 1회 제한
+
+**Awakening · 두 번째 탄도**
+- 교차 사격 follow-up이 발동할 때:
+  - 대상 Gauge -60
+  - 다음 관통 사격의 Shot 2 bonus를 +70% → +90%로 강화
+- 이 강화는 1회 사용 후 소멸
+
+### 시각
+- Sightline은 적 머리 위 작은 조준 표식
+- Shot 0/1/2는 portrait 주변 작은 탄창 indicator
+- follow-up은 과한 camera cut 없이 전장 흐름 속 짧은 사격
+
+---
+
+## 7. P06 모르웬 — 사건 기록 집행자
+
+**한 문장:** 전투의 중요한 사건을 Records로 저장하고 마무리 순간에 소비하는 execute/comeback DPS.
+
+Rarity: ★5  
+Role: Event Resource / Execute / Comeback  
+SPD target: 98  
+Signature: **Records 0~5**
+
+### 강점
+- 긴 전투
+- boss phase
+- 위기/역전 상황
+- 마무리
+
+### 약점
+- 매우 짧고 완벽하게 끝나는 전투
+- 초반 burst
+- Records가 쌓이기 전 평범한 성능
+
+### Records 획득
+- 적 최초 처치: +1
+- 각 아군이 전투 중 처음 HP 30% 이하 진입: +1
+- 아군 revive 발생: +2
+- 실제 아군 사망: +2
+- boss phase 전환: +1
+- 같은 사건 중복 farming 금지
+- 최대 5
+
+### Kit
+**Basic · 잔향**
+- 단일 90%
+- Record 1당 피해 +5%
+- Record 소비 없음
+
+**Active A · 조문**
+- CD2
+- 단일 150%
+- 최대 Record 3개 소비
+- 소비 1개당 +30%p
+- 3개 소비 시 총 240%
+
+**Active B · 장송 명령**
+- CD3
+- 단일 130%
+- 대상 HP 30% 이하이면 205%
+- 처치 시:
+  - Record +1
+  - Gauge +150
+
+**Passive · 전투 기록**
+- 위 사건들을 Records로 변환
+
+**Passive · 마지막 페이지**
+- 전투당 1회
+- 모르웬 전투불능 후 다른 unit regular action 2회가 끝나면 MaxHP 35%로 자가 부활
+- Records 유지
+
+**Awakening · 다시 쓰는 결말**
+- 자가 부활 시:
+  - Record +2
+  - Gauge +350
+  - 다음 Active는 Record를 소비하지 않고 보너스만 계산
+- 전투당 1회
+
+### 시각
+- Records를 화면 전체 카드로 만들지 않음
+- portrait 옆 작은 5칸 기록 indicator
+- 사건 발생 시 짧은 glyph 하나가 기록으로 흡수
+- 부활은 어두운 페이지/잉크 motif를 3D VFX로 단순화
+
+---
+
+## 8. P07 마리온 — 계약수 동반자
+
+**한 문장:** 별도 full turn을 하나 더 얻는 소환사가 아니라, 계약수가 마리온의 행동에 반응하며 공격과 보호를 수행하는 partner controller.
+
+Rarity: ★4  
+Role: Partner / Utility / Combo  
+SPD target: 100  
+Signature: **Bond 0~100**
+
+### 핵심 원칙
+- 계약수는 전투 시작부터 존재
+- 별도 regular Turn Gauge를 갖지 않음
+- 마리온 action/reaction에만 행동
+- targetable companion으로 둘 수 있지만 scheduler actor가 아님
+- 별도 full action body를 통해 파티 행동권을 공짜로 늘리지 않음
+
+### 계약수 baseline
+- HP: 마리온 MaxHP 45%
+- ATK: 마리온 ATK 70%
+- DEF: 마리온 DEF 80%
+- down 가능
+- down 중 partner attack/guard 불가
+
+### Bond 획득
+- Basic command: +15
+- partner가 damage를 대신 받음: +20
+- Active utility 성공: +20
+- 최대 100
+
+### Kit
+**Basic · 공명 명령**
+- 마리온 단일 80%
+- 계약수 생존 시 계약수 55% follow-up
+- Bond +15
+
+**Active A · 수호 명령**
+- CD2
+- 다른 아군 1명
+- 계약수가 대상의 다음 단일 direct hit 50%를 대신 받음
+- 계약수에게 자신의 MaxHP 10% Barrier
+- redirect가 실제 발생하면 Bond +20
+
+**Active B · 합동 돌진**
+- CD3
+- 마리온 110%
+- 계약수 생존 시 계약수 90% follow-up
+- Bond 50 이상이면 50 소비:
+  - 계약수 follow-up 90% → 130%
+- 계약수 down이면 마리온 단독 145%
+
+**Passive · 끊기지 않은 계약**
+- 전투 시작 시 계약수 자동 생성
+- 별도 소환 버튼 없음
+
+**Awakening · 두 번째 계약**
+- 계약수 전투불능 시 전투당 1회
+- 마리온의 다음 regular action 종료 후 계약수 HP 50%로 복귀
+- Bond 50 획득
+
+### 시각
+- 계약수는 별도 캐릭터만큼 중요한 모델/animation 필요
+- 항상 마리온 근처 같은 위치에 붙어 있지 않고 formation 내 partner anchor 사용
+- follow-up/guard 시 실제 이동
+
+---
+
+## 9. P08 라제 — 과열 광전사
+
+**한 문장:** HP를 깎고 피해를 주고받아 Fury를 올린 뒤 짧은 폭주 구간을 만드는 저희귀도 risk DPS.
+
+Rarity: ★3  
+Role: Risk DPS / Fury / Burst  
+SPD target: 103  
+Signature: **Fury 0~100**
+
+### 강점
+- ★3 중 높은 공격 ceiling
+- healer/guard와의 조합
+- 짧은 burst
+
+### 약점
+- 안정성
+- HP 관리 실패
+- 장기 폭주 유지 불가
+
+### Fury 획득
+- Basic hit: +15
+- 피의 돌진 사용: +30
+- 적 direct hit를 받음: +10, 적 행동당 1회
+- HP 50% 이하에서 위 획득 +5 추가
+- 최대 100
+
+### Kit
+**Basic · 난격**
+- 단일 95%
+- Fury +15
+- Fury 80 이상이면 20% 추가 hit
+
+**Active A · 피의 돌진**
+- CD2
+- 현재 HP 10% 소모, 최소 1
+- 단일 180%
+- Fury +30
+
+**Active B · 과열**
+- CD3
+- Fury 60 소비
+- 2 regular action 동안:
+  - ATK +20%
+  - SPD +10%
+  - DEF -15%
+- Fury 60 미만이면 사용 불가
+
+**Passive · 전투열**
+- direct hit를 주고받으며 Fury 획득
+- HP 50% 이하에서 Fury gain 증가
+- 단순 “저HP ATK +30%” 상시 passive는 사용하지 않음
+
+**Awakening · 죽지 않는 난전**
+- 전투당 1회 lethal damage를 HP 1로 버팀
+- Fury 100
+- Gauge +250
+- 다음 regular action 종료까지 받는 heal 효과 -30%
+  - 즉시 완전 복구로 위험 구조가 사라지는 것을 방지
+
+### 시각
+- Fury 0~100을 빨간 화면 vignette로 표현하지 않음
+- 자세/무기 motion/짧은 열기 VFX로 단계 읽힘
+- Overheat는 이동/공격 animation 속도감이 실제로 변함
+
+---
+
+## 10. F01~F04 처리
+
+### F01 민병 견습생
+- 가챠 filler에서 제거
+- 튜토리얼/지역 NPC companion 후보
+- 정식 캐릭터 승격 시 이름/외형/signature mechanic 새 설계 필요
+
+### F02 야전 견습생
+- 동일
+- 단순 Basic healer를 정식 roster에 남기지 않음
 
 ### F03 변경 사냥꾼
-- 정식 이름/외형을 가진 ★3 field recruit 후보.
-- 단순하지만 “표적 약점/첫타/정찰” 같은 좁은 전문성 부여.
+- ★3 정식 field recruit 후보
+- 역할: 첫타/정찰/약점 표식 전문
+- P05의 하위호환이 되지 않게 별도 niche 필요
 
 ### F04 방패 용병
-- ★3 field recruit 후보.
-- Bram의 하위호환이 아니라 짧은 자기 방어 + 파티 한 번 보호 같은 저비용 specialist.
+- ★3 정식 field recruit 후보
+- 자기 방어 + 1회 ally protection specialist
+- P03처럼 장기 Guard resource를 사용하지 않음
 
-### F01 민병 견습생 / F02 야전 견습생
-- 가챠 filler로는 제거.
-- 필요하면 튜토리얼/지역 NPC companion으로 재설계.
-- 정식 캐릭터로 승격하려면 이름, 외형, 역할, signature mechanic을 새로 받아야 함.
+---
 
-## 12. 캐릭터 얼굴/portrait
+## 11. Party synergy 예시
 
-목표:
-- 파티창
-- 전투 하단 파티 상태
-- Turn Order rail
-- 결과창
-- 캐릭터 상세
-에서 같은 portrait를 사용한다.
+### 느린 강공 파티
+브람 + 루메아 + 카이렌 + 엘리시아
+- 브람/카이렌의 중요한 턴을 루메아가 당김
+- 브람이 엘리시아/루메아 보호
+- 카이렌이 boss 집중
+
+### 빠른 추격 파티
+리네트 + 라제 + 루메아 + 엘리시아
+- 잦은 direct hit로 Sightline follow-up
+- 라제 위험을 엘리시아가 구조
+- 루메아가 폭주 turn을 앞당김
+
+### 장기 boss 파티
+카이렌 + 모르웬 + 브람 + 엘리시아
+- Focus 장기 누적
+- Records 자연 축적
+- 브람/엘리시아가 comeback 시간을 확보
+
+### partner tempo
+마리온 + 리네트 + 루메아 + 브람
+- partner follow-up은 별도 full turn이 아님
+- 리네트 Shot trigger의 허용 source 여부는 simulator에서 별도 제한
+- 무료 reaction 연쇄가 과도해지면 partner hit는 Sightline trigger에서 제외
+
+---
+
+## 12. 캐릭터 외형
+
+외부 디자인/모델을 적극 조사한다.
+
+분류:
+- reference
+- editable base
+- direct asset
+- code library
+- unknown-license
+
+주요 캐릭터를:
+- vanilla player skin
+- 색만 바꾼 갑옷
+- particle만 다른 스킬
+로 끝내지 않는다.
+
+필수 animation 후보:
+- idle
+- ready
+- basic
+- active A
+- active B
+- hit
+- down
+- revive
+- victory
+
+중요 캐릭터는 GeckoLib 또는 적합한 authored animation pipeline을 사용한다.
+
+## 13. Portrait
 
 우선순위:
-1. 실제 최종 3D 모델을 고정 조명/카메라로 offscreen render해서 portrait cache 생성
-2. 모델 head bone/texture 구조가 안정적이면 얼굴 영역을 authored icon으로 제작
-3. 품질/라이선스가 해결되지 않으면 상징 icon 사용
+1. 최종 3D 모델을 고정 light/camera로 offscreen render
+2. head/upper-body preset
+3. 캐릭터별 pose override
+4. atlas/cache 생성
 
-자동 crop이 얼굴을 잘라먹거나 캐릭터마다 구도가 달라지는 상태를 production으로 사용하지 않는다.
+자동 crop 품질이 나쁘면 사용하지 않는다.
 
-## 13. 외형 제작 원칙
+같은 portrait를:
+- party
+- battle HUD
+- Turn Order
+- character
+- result
+- summon summary
+에 공용한다.
 
-- 외부 캐릭터 디자인/모델을 적극 조사
-- 직접 사용 가능 asset은 라이선스 확인 후 수정/결합 가능
-- reference-only 디자인은 실루엣/색 분배/장비 구조 원리를 참고하고 그대로 복제하지 않음
-- 바닐라 스킨 + 작은 장식 수준으로 주요 영웅을 끝내지 않음
-- 스킬의 보이는 범위와 실제 판정 일치
-- 각 캐릭터의 idle/ready/basic/active/hit/down/revive/victory motion을 역할에 맞춤
+## 14. 밸런스 확정 전 확인
 
-## 14. 수치 확정 전 금지
-
-대격변 동안 기존 v0.4 계수를 “새 정본”이라고 그대로 복사하지 않는다.
-
-먼저:
-- fixed-point TurnScheduler
-- 전투 simulator
-- P01~P08 concept prototype
-- 표준 적/보스 baseline
-을 맞춘 뒤 최종 HP/ATK/DEF/SPD/skill potency를 갱신한다.
+P01~P08 모두:
+- 10/20 action 성과
+- 팀 contribution
+- free reaction 기대값
+- Gauge value
+- single/multi/boss
+- Auto behavior
+- low rarity niche
+를 simulator로 비교한 뒤 최종 수치를 고정한다.

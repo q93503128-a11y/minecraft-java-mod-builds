@@ -16,173 +16,158 @@
 
 ## Canon authority
 
-Current overhaul canon:
 1. latest explicit user decisions
 2. `01_GAME_DESIGN_v1.md`
 3. `02_BALANCE_RULES_v1.md`
 4. `03_CHARACTER_DESIGN_v1.md`
 5. `UI_DESIGN_SYSTEM.md`
 6. `WORLD_OVERHAUL_DREHMAL.md`
-7. current source/resources
+7. `OVERHAUL_ROADMAP_v1.md`
+8. current source/resources
 
-The old v0.4 Aster March physical-world canon and alpha-by-alpha design deltas are superseded.
-Historical intent remains available in Git history; they are not current production authority.
+Old v0.4 Aster March physical-world canon and alpha-by-alpha deltas are superseded.
+Git history is the archive.
 
-## Game identity
+## Current identity
 
-TURNBOUND is not Minecraft survival with turn combat added.
-It is an independent 3D party turn-based RPG hosted inside Minecraft.
+TURNBOUND is an independent 3D party turn-based RPG hosted inside Minecraft.
 
-Core loop:
+Core:
 world exploration → NPC/event/visible encounter → 4-person turn battle → reward/growth → new route/character/content.
 
-## Combat contract
+## Combat
 
 Preserve:
-- max 4 allies / normal max 5 enemies
-- Turn Gauge threshold 1000
+- max 4 allies
+- normal max 5 enemies
+- Gauge 1000
 - action subtracts 1000, overflow survives
-- player decision time does not advance logical combat time
-- cooldowns tick on owner's later regular actions, not reactions
-- Basic cooldown 0
-- server-authoritative combat
-- AUTO and 1x/2x do not alter logical results
+- player decision time stops logical battle time
+- cooldowns tick on owner regular actions
+- Basic CD0
+- server authority
+- 1x/2x presentation only
 
 Overhaul:
-- current whole-integer pulse scheduler is superseded by deterministic fixed-point logical time
-- actual next actor and UI timeline must share one TurnScheduler
-- SPD is action-frequency power, not cosmetic ordering
-- Gauge/Speed buffs, revive gauge and action-advance use the same scheduler semantics
+- deterministic fixed-point TurnScheduler
+- runtime/HUD/AUTO share scheduler
+- SPD is action frequency
+- Gauge manipulation uses common semantics
+- P01~P08 follow `03_CHARACTER_DESIGN_v1.md`
 
-## Battle camera contract
+## Camera
 
-Camera pivot is the **battle center**, never an arbitrary player-shell coordinate.
-
-Battle center is derived from terrain-resolved ally/enemy formation anchors.
-Skill cameras may temporarily move, then return to the battle-center view.
+Camera pivot = battle center.
 
 Required:
 - terrain-aware footprint
-- slope/wall/cliff/camera collision handling
-- no Aster-specific authored yaw/coordinate assumptions
-- 4v5 must remain readable
-- player camera state restored after battle
+- ally/enemy centroid
+- wall/cliff fallback
+- skill camera then center return
+- no Aster-specific yaw/coordinate
+- camera state restoration on every end path
 
-## Battle UX contract
+## Characters
 
-- 3D battlefield remains dominant.
-- 3D model click is primary target input; keyboard/HUD are fallbacks.
-- single-target skill never silently commits first target.
-- current actor, target and next-order must be immediately readable.
-- portrait-based Turn Order is preferred when final portrait quality is available.
-- skill details use tooltip/detail state instead of permanent dense text.
-- AUTO/speed/flee have lower visual priority than actions.
+- ★3~★5 only for formal roster
+- no fodder character design
+- one readable signature mechanic
+- duplicate copies never required for core kit
+- models/animations/VFX/SFX are part of completion
+- portrait uses final model when quality permits
 
-## Character contract
+## Economy
 
-P01~P08 IDs may be retained for save continuity, but old kits/numbers are not automatically canonical.
-The v1 character document defines concept direction.
-
-- no deliberate fodder playable characters
-- ★3~★5 all have a usable niche
-- one readable signature mechanic per hero
-- no duplicate requirement for core functionality
-- models/animations/VFX are part of character completion
-
-## Economy contract
-
-Core currencies are kept small:
+Long-term core currencies:
 - Gold
 - Summon Crystal
 - Star Essence
 
+The old global Awakening Core currency is superseded by character quest + level + Gold + fixed quest item where necessary.
+
 No equipment gacha.
-No real-money purchases.
-No time-limited FOMO banners in the initial game.
-Old v0.4 summon rates and ★1~2 filler pool are superseded.
+No real-money purchase.
+No time-limited FOMO banner in initial game.
 
-## UI contract
+## UI
 
-Production UI must be based on verified external UI/game references and reusable assets, not improvised black rectangles.
-
-- redesign typography/readability
-- minimize truncation
-- support GUI Scale changes
-- shared portrait/icon system
+Production UI:
+- external verified asset/reference first
+- Korean readability
+- portrait-based party/Turn Order where quality allows
 - redesigned minimap/world map
-- external assets tracked in `EXTERNAL_ASSETS.md`
-- keep asset paths shallow and predictable
+- shallow resource paths
+- SOURCE/LICENSE tracking
+- no improvised black-panel production UI
 
 See `UI_DESIGN_SYSTEM.md` and `ASSET_PIPELINE_v1.md`.
 
-## External asset import contract
+## World
 
-TURNBOUND follows the same separation used by mature Minecraft UI/resource projects:
+Production base:
+Drehmal: APOTHEOSIS v2.2.2f, separately installed.
 
-- Java owns gameplay/state/input authority.
-- Visual skins, fonts, icons and portraits live under the mod resource namespace.
-- imported third-party assets keep source/license metadata separate from runtime code.
-- licenses that require notices keep those notices with the imported asset set and in the project notice catalog.
-- unknown or unclear redistribution rights mean reference-only: do not vendor the bytes.
-- only runtime-used derivatives are shipped; raw source packs are not copied into the JAR without a reason.
-- UI rendering must allow future resource-pack overrides rather than baking every visual into code constants.
+- TURNBOUND: RE is not dependency/canon
+- do not vendor original world/resource pack without permission
+- map survey precedes NPC/encounter/quest
+- verified 26.2 terrain before critical anchor
+- no Aster reconstruction
+- semantic world data only after actual inspection
 
-## Player-facing copy contract
+## Player-facing copy
 
-Development vocabulary never appears in normal gameplay UI, chat feedback, objective text or results.
+Normal gameplay never exposes:
+- internal IDs
+- development-stage labels
+- debug/log
+- raw exceptions
+- implementation terminology
 
-Forbidden examples:
-- P0/P1/P2/P3/P4
-- alpha / prototype / temporary / debug / developer / legacy
-- TODO / CANON_GAP / IMPLEMENTATION_BRIDGE / FALLBACK
-- TURN_READY / pulse / schema / internal IDs
-- raw Java exception messages
+Player sees only authored game/world language.
 
-Internal IDs remain valid in code/save/network state, but the presentation boundary converts them to authored player language or shows nothing.
+## Cleanup
 
-Operator-only maintenance commands may exist, but they must not dump stack traces, profile IDs, internal state names or development-stage wording into game chat.
+When replacement completes:
+- obsolete Aster builders/routers/maps removed
+- dead UI removed
+- duplicate helpers consolidated
+- old filler character data removed
+- superseded global Awakening Core path removed/migrated
+- compatibility code kept only for real save/network reason
 
-## World contract
+## Planning / validation policy
 
-Production base is separately installed Drehmal: APOTHEOSIS v2.2.2f.
+**Design-document work does not run build/CI/JAR verification.**
 
-- TURNBOUND: RE is not a current project dependency/canon.
-- do not vendor original world/resource pack without confirmed permission.
-- arbitrary saves fail closed.
-- map survey precedes NPC/encounter/quest binding.
-- do not flatten/build an Aster replacement.
-- semantic anchors are promoted only after actual 26.2 terrain inspection.
+For:
+- design docs
+- balance docs
+- character kit planning
+- world placement planning
+- UI planning
+use docs-only commits with `[skip ci]`.
 
-See `WORLD_OVERHAUL_DREHMAL.md`.
+Build/test starts only when source/runtime work resumes and a meaningful implementation chunk is complete.
 
-## Cleanup contract
-
-When replacement is complete:
-- obsolete Aster builders/routers/maps are removed
-- dead UI implementations are removed
-- duplicate helpers are consolidated
-- historical design delta docs are not accumulated
-- compatibility/migration code remains only when an active save/network compatibility reason exists
-
-Git history is the archive.
-
-## Validation
-
-Validation labels must remain distinct:
+Validation labels stay distinct:
 - CODE REVIEWED
 - TESTED
 - BUILD VERIFIED
 - JAR PRODUCED
+- CLIENT RUNTIME TESTED
 - PLAYTESTED
 - MULTIPLAYER TESTED
 
-Docs/visual-only changes do not trigger build merely to create a green badge.
+## Last verified implementation checkpoint
 
-Current combat-overhaul checkpoint:
+Before this docs-only planning expansion:
 - CODE REVIEWED: YES
-- TESTED: YES — fixed-point scheduler + Kyren v1 + Lumea v1 runtime regression suite, Build TURNBOUND #764
-- BUILD VERIFIED: YES — Build TURNBOUND #764, code commit `fb54674f290521c6ae765bef8f00147b6eccd5fd`
-- SERVER SMOKE: YES — NeoForge 26.2 dedicated server reached ready state
-- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`, artifact id `10552255748`, SHA-256 `4d92b7c02f6b233a2fe02476184d4810079d92160522cf3d332eebf9faaf1734`
+- TESTED: YES — fixed-point scheduler + Kyren v1 + Lumea v1 runtime regression suite
+- BUILD VERIFIED: YES — Build TURNBOUND #764
+- verified code commit: `fb54674f290521c6ae765bef8f00147b6eccd5fd`
+- SERVER SMOKE: YES
+- JAR PRODUCED: YES
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
+
+This planning rewrite does not change those implementation validation labels.

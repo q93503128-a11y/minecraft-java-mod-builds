@@ -1,167 +1,358 @@
-# TURNBOUND World Canon — Drehmal Binding v1
+# TURNBOUND World Canon — Drehmal v1
 
-## 1. 현재 production world
+## 1. Production world
 
-- Base world: Drehmal: APOTHEOSIS v2.2.2f
-- Public target: Minecraft Java 1.20.1
+- Base: Drehmal: APOTHEOSIS v2.2.2f
+- Original target: Minecraft Java 1.20.1
 - TURNBOUND target: Minecraft Java 26.2 / NeoForge
-- TURNBOUND profile: `turnbound:drehmal_apotheosis_2_2_2f`
-- 원본 world/resource-pack bytes는 TURNBOUND repository에 vendoring하지 않는다.
-- 공식 배포본을 별도로 설치하고 TURNBOUND는 자체 marker, semantic anchors, gameplay state만 관리한다.
+- Profile: `turnbound:drehmal_apotheosis_2_2_2f`
+- 원본 world/resource pack은 TURNBOUND repository에 vendoring하지 않는다.
+- 별도 설치 후 TURNBOUND gameplay metadata만 bind한다.
 
-TURNBOUND: RE 프로젝트는 현재 정본이 아니며 의존하지 않는다. 과거에 확인한 구현이 좋은 기술적 참고였더라도 앞으로는 TURNBOUND 자체 요구사항과 현재 코드로 판단한다.
+TURNBOUND: RE는 현재 정본이 아니다.
 
-## 2. 가장 중요한 규칙
+## 2. 기본 원칙
 
-Drehmal 위에 Aster March를 다시 만들지 않는다.
+Drehmal을 배경으로 쓰는 것이 아니라 **실제 장소를 플레이 규칙에 연결**한다.
 
 금지:
-- 대형 terrain flatten
-- TURNBOUND 전용 긴 인공 도로 생성
-- 옛 Aster 구조물 복원
-- 임시 평지 arena를 map에 permanent 생성
-- map을 “새 좌표가 있는 선형 corridor”로 재해석
-
-허용:
-- 기존 지형을 읽고 semantic role 부여
-- gameplay entity/NPC/encounter 배치
-- 비파괴 marker/interaction
-- 안전한 runtime battle formation
-- TURNBOUND 자체 save data
+- Aster March 재건
+- 대규모 terrain flatten
+- 임시 arena permanent 생성
+- 좌표 먼저, 장소 확인 나중
+- 동일 간격 NPC/적 배치
+- 원본 map image 무단 복제
 
 ## 3. binding 안전성
 
-- arbitrary save 자동 변환 금지
-- 정확한 profile marker 없으면 gameplay shell fail-closed
-- marker는 TURNBOUND metadata만 기록
-- binding이 terrain/entity/resource pack을 임의 수정하지 않음
-- 자동 설치/마이그레이션을 추가한다면 official source/hash/version을 검증한 뒤에만 marker 생성
+- arbitrary save auto-convert 금지
+- 정확한 profile marker 없으면 fail-closed
+- marker는 TURNBOUND metadata만
+- binding이 지형/원본 resource를 임의 수정하지 않음
+- installer/migrator가 생기면 official source/hash/version 확인 후 marker
 
-현재 integration seeds:
+현재 seed:
 - New Drabyel: 502 67 1801
 - Stasis Facility: 778 31 668
 
-이 값은 **map 조사 시작점**이지 즉시 player-facing safe anchor가 아니다.
+이 좌표는 조사 시작점일 뿐 gameplay anchor로 자동 확정하지 않는다.
 
-## 4. Map Survey가 콘텐츠보다 먼저
+## 4. Map Survey가 모든 배치보다 먼저
 
-NPC/적/퀘스트/fast travel을 넣기 전에 실제 migrated 26.2 world를 조사한다.
+각 후보 장소를 실제 migrated 26.2 world에서 확인한다.
 
-각 route/settlement/POI는 `data/turnbound/world/locations/*.json` 형태의 semantic record로 정리할 수 있다.
-
-권장 필드:
-- id
+기록:
 - sourceLocationName
-- type
 - center
 - entrances
+- exits
 - roadLinks
+- height range
+- visibility
 - safeNpcSpots
 - encounterZones
 - battleCandidateZones
 - cameraRisks
+- water/lava/cliff
 - nearbyPoi
+- travelTimeToNeighbors
 - discoveryRule
-- notes
+- originalContentConflict
 - verifiedIn26_2
+- notes
 
-`verifiedIn26_2=false`인 anchor는 자동 teleport/quest critical route에 사용하지 않는다.
+`verifiedIn26_2=false`이면:
+- 메인 퀘스트 목적지
+- 자동 teleport
+- boss arena
+- 필수 NPC
+로 사용하지 않는다.
 
-## 5. 배치 순서
+## 5. 실제 조사 절차
 
-1. 실제 지도/위키로 큰 지역과 POI 후보 파악
-2. Minecraft 26.2 migrated world에서 직접 지형 확인
-3. 길을 실제로 걸어서 travel time/시야/분기 확인
-4. NPC 역할 배치
-5. encounter zone 배치
-6. battle candidate footprint 검사
-7. quest objective 연결
-8. minimap/worldmap discovery 연결
-9. 실제 플레이로 이동 리듬 검사
+1. wiki/map으로 큰 후보만 찾음
+2. 26.2 월드 직접 진입
+3. 입구→출구를 실제로 걸음
+4. 화면 녹화/스크린샷 또는 좌표 메모
+5. 길의 시야 변화 확인
+6. NPC가 자연스러운 지점 표시
+7. 적이 자연스러운 지점 표시
+8. 전투 candidate 2~4곳 확인
+9. 카메라 후방/측면 충돌 확인
+10. 주변 POI 연결
+11. 역할 부여
+12. quest/minimap 연결
 
-좌표 표를 먼저 채우고 나중에 지형을 보는 순서를 금지한다.
+## 6. Route sheet
 
-## 6. NPC
+각 주요 길은 하나의 route sheet를 가진다.
 
-NPC spawn point는:
-- 발판 안정성
-- 머리 공간
-- 문/계단/울타리 충돌
-- 플레이어 접근
-- 원본 NPC/오브젝트와 겹침
-- 주변 동선
-을 확인한다.
+필드:
+- route id
+- 시작/끝
+- 실제 이동시간
+- 안전/위험 구간
+- 갈림길
+- landmark
+- npc beat
+- encounter beat
+- optional detour
+- rest beat
+- destination payoff
 
-NPC는 실제 역할에 맞는 위치를 가져야 한다.
+목표는 길을 몬스터 복도로 만들지 않는 것.
 
-## 7. Encounter
+## 7. Settlement sheet
 
-Encounter는 점 하나가 아니라 zone/route를 가진다.
+거점마다:
+- 입구
+- 중심 landmark
+- service cluster
+- narrative NPC
+- ambient NPC zone
+- summon access 여부
+- equipment/shop
+- rest
+- fast travel
+- 연결 route
+를 기록한다.
 
+기능 NPC를 같은 광장에 메뉴처럼 일렬 배치하지 않는다.
+
+## 8. NPC placement
+
+### 서비스
+상인/여관/장비:
+- 플레이어가 찾기 쉬움
+- 실제 장소 기능과 맞음
+- 너무 멀리 분산하지 않음
+
+### 스토리
+- landmark 근처
+- 시야/동선에서 놓치지 않음
+- 그러나 문 앞을 막지 않음
+
+### 캐릭터 사건
+- 해당 캐릭터 테마와 장소가 연결
+- 개인 quest는 generic marker보다 실제 장소 의미를 우선
+
+### ambient
+- 분위기를 만들되 interaction spam 금지
+- 같은 대사 반복 NPC 대량 배치 금지
+
+## 9. NPC 움직임
+
+중요 NPC는 필요하면:
+- 작은 patrol
+- 근처 object interaction
+- 낮/밤 위치 변화
+를 가진다.
+
+단, quest-critical NPC가 pathfinding 때문에 사라지거나 절벽에서 떨어지지 않도록 anchor/range 제한.
+
+## 10. Encounter zone
+
+조우는 point가 아니라 zone/route.
+
+필드:
+- spawn set
 - patrol polyline
 - alert radius
 - disengage boundary
 - engage point
-- optional ambush trigger
-- nearby safe battle candidate set
+- ambush condition
+- respawn policy
+- nearby battle candidate
+- encounter composition
+- elite chance/variant 여부
 
-필드 모델과 실제 BattleDefinition은 같은 적 구성을 가리킨다.
+필드 모델과 BattleDefinition은 같은 composition을 가리킨다.
 
-## 8. Terrain-aware battle selection
+## 11. 조우 archetype
 
-조우 위치를 그대로 arena center로 쓰지 않는다.
+### 순찰
+도로 일부를 왕복.
+멀리서 실루엣 읽힘.
 
-후보 공간마다:
-- 4 ally + 최대5 enemy formation
-- ground height variance
+### 매복
+시야가 좁아지는 지형.
+사전 흔적/소리 사용.
+
+### 점거
+폐허/캠프/건물.
+처치 후 장소가 안전해질 수 있음.
+
+### 둥지
+동굴/숲.
+지역 생태와 연결.
+
+### 이동 강적
+넓은 route.
+회피 가능.
+
+### 사건
+NPC/수레/보급대 등 실제 상황과 연결.
+
+## 12. Respawn
+
+모든 적을 무한 즉시 respawn시키지 않는다.
+
+초기 원칙:
+- 일반 patrol: 지역 이탈/시간 후 재생성 가능
+- quest encounter: 상태 저장, 완료 후 변경
+- elite: 느린 respawn 또는 완료 flag
+- boss: first clear 후 repeat 방식 별도
+
+플레이어가 뒤돌면 같은 적이 바로 다시 생기는 느낌 금지.
+
+## 13. Terrain-aware battle candidate
+
+조우 위치 = 전투 center가 아니다.
+
+후보 검사:
+- ally4 + enemy5 formation 가능
+- ground slope
+- 높이 차
 - water/lava
-- wall/tree obstruction
+- foliage/wall
 - ceiling
 - cliff/drop
-- camera rear/side arc
-를 검사한다.
+- camera rear arc
+- camera side arc
+- escape/return point
+- 원본 interactive object 충돌
 
-가장 가까운 적합 후보를 선택하고, 적합 공간이 없으면 encounter를 강제로 시작하지 않는다.
+적합 후보가 없으면:
+- 다른 candidate
+- 전투 시작 유예
+- 조우 자체 위치 수정
+중 하나.
 
-전투가 끝나면 실제 필드의 안전한 원래 위치/세션으로 복귀한다.
+강제로 벽 속 전투를 시작하지 않는다.
 
-## 9. 기존 Aster code 처리
+## 14. battle center
 
-production tick에서 이미 끊긴 old Aster builders/map/sanitizer/spawn guard는 gameplay dependency를 추출한 뒤 삭제한다.
+선택된 candidate에서:
+- ally centroid
+- enemy centroid
+- midpoint
+을 battle center로 사용.
 
-남겨야 할 것은:
-- 전투 결과
-- 진행/보상
-- save/network authority
-- encounter lifecycle
+카메라/formation/UI는 이 center를 기준으로 한다.
 
-버릴 것은:
-- Aster 좌표
+## 15. 전투 종료 복귀
+
+보존:
+- 원 필드 position
+- facing
+- dimension
+- encounter id
+- multiplayer party state
+
+종료 후:
+- 안전한 nearby return point
+- encounter defeated state
+- reward
+- quest update
+
+옛 Aster fixed-return 좌표 사용 금지.
+
+## 16. Route pacing baseline
+
+일반 route:
+- 의미 있는 visual/interaction 변화: 45~90초
+- 필수 전투: 2~3분당 1회 이하
+- 선택 전투/POI는 더 자주 가능
+
+danger route:
+- 1~2분 단위 압박 가능
+
+safe connector:
+- 2~4분 정도 전투 없는 구간 가능
+- 대신 landmark/환경 변화 필요
+
+숫자는 geography를 무시하고 맞추는 목표가 아니다.
+
+## 17. 첫 플레이 구간 설계 순서
+
+아직 실제 장소 검증 전이므로 이름/좌표를 임의 확정하지 않는다.
+
+역할만 먼저 정의:
+1. 첫 거점
+2. 거점 외곽 안전 도로
+3. 첫 조우 zone
+4. 첫 갈림길/선택 POI
+5. 첫 Elite
+6. 첫 소형 던전
+7. 첫 boss
+8. 첫 summon unlock
+9. 다음 지역 연결
+
+New Drabyel은 첫 거점 후보지만 실제 26.2 survey 후 확정한다.
+
+## 18. 미니맵
+
+원본 Drehmal map image 무단 복제 금지.
+
+우선순위:
+1. runtime terrain local map
+2. TURNBOUND discovered road/landmark overlay
+3. 허가된 external map asset
+
+marker:
+- settlement
+- service
+- quest
+- dungeon
+- boss
+- danger
+- fast travel
+- character event
+
+미발견 marker 기본 숨김.
+
+## 19. Fast travel
+
+unlock 조건:
+- 실제 발견
+- landmark activation 또는 거점 도달
+
+배치:
+- 큰 settlement
+- 주요 transit landmark
+- 일부 dungeon entrance
+
+모든 2분 거리를 teleport로 줄이지 않는다.
+
+## 20. World cleanup
+
+대체 후 삭제 대상:
+- Aster terrain builders
 - block gate write
-- terrain shell/build
 - fixed relay route
 - old minimap image/data
-- old quest guide coordinates
+- old quest coordinate tables
+- Aster-specific camera assumptions
+- 더 이상 참조되지 않는 sanitizer/spawn guard
 
-## 10. 지도/미니맵
+보존:
+- encounter lifecycle
+- reward/save
+- server authority
+- generic battle transition
+- reusable NPC/quest infrastructure
 
-Drehmal 원본 지도를 무단 복제하지 않는다.
+## 21. 완료 기준
 
-선택지:
-- runtime terrain 기반 local map
-- 사용 허가가 확인된 map asset
-- TURNBOUND가 직접 기록한 discovered road/landmark overlay
+월드 한 구간은:
+- 실제 지형 확인
+- NPC 위치 검수
+- encounter route 검수
+- battle candidate 검수
+- camera risk 검수
+- minimap marker
+- quest flow
+- 복귀 위치
+가 연결되어야 완료다.
 
-실제 source/license가 확인되기 전에는 외부 wiki 지도 image를 게임 asset으로 넣지 않는다.
-
-## 11. 현재 검증 상태
-
-기존 코드 checkpoint:
-- CODE REVIEWED: YES
-- TESTED: YES — Gradle tests + NeoForge server smoke, Build TURNBOUND #754
-- BUILD VERIFIED: YES — code checkpoint 47cd25027fe26ea27f1ce5688372ab7102f7da18
-- JAR PRODUCED: YES
-- PLAYTESTED: NO
-- MULTIPLAYER TESTED: NO
-
-이번 v1 문서 대격변은 문서 작업이며 위 code verification 상태를 새 gameplay 검증으로 간주하지 않는다.
+좌표 JSON만 채운 상태는 완료가 아니다.

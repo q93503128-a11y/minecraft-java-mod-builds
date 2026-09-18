@@ -1,364 +1,466 @@
-# TURNBOUND Balance / Rules v1
+# TURNBOUND Balance / Economy Rules v1
 
-> 역할: 대격변 이후 전투 수치, 행동 경제, 성장, 재화, 소환의 수치 설계 정본.
-> 아직 실제 simulator/playtest가 끝나지 않은 값은 “초기 목표 범위”로 표시하며, 옛 v0.4 수치를 자동 계승하지 않는다.
+> 전투 수치, 행동 경제, 성장, 장비, 재화, 소환의 정본.
+> 외부 턴제 RPG의 action economy / pity / 저희귀도 활용 원리를 참고하되 TURNBOUND의 실제 전투 길이와 비과금 구조에 맞춰 변형한다.
+> simulator/playtest 전 값은 “초기 production target”이다.
 
-## 1. 전투 전역 규칙
+## 1. 전투 전역
 
 | 항목 | v1 |
 |---|---:|
 | 아군 최대 | 4 |
 | 일반 적 권장 | 1~4 |
 | 일반 적 상한 | 5 |
-| Turn Gauge 기준 | 1000 |
-| 전투 속도 | 1.0x / 2.0x presentation only |
-| 플레이어 선택 중 논리시간 | 정지 |
-| 공통 MP/AP | 없음 |
+| Turn Gauge | 1000 |
+| 선택 중 논리시간 | 정지 |
 | Basic CD | 0 |
-| 속성 상성표 | 사용하지 않음 |
+| 공통 MP/AP | 없음 |
 | 전투 중 파티 교체 | 기본 불가 |
-| 정식 플레이어블 희귀도 | ★3~★5 |
+| 플레이어블 희귀도 | ★3~★5 |
 | 레벨 상한 | 60 |
+| 전투 속도 | 1x / 2x presentation only |
 
-★1~2 “재료 캐릭터”는 v1 수집 체계에서 폐기한다.
-
-## 2. SPD / Turn Gauge — 가장 먼저 고칠 기반 규칙
+## 2. TurnScheduler
 
 ### 2.1 의미
+SPD는 선공만이 아니라 **단위 시간당 행동 횟수**를 결정한다.
 
-SPD는 단순 선공 스탯이 아니라 **시간당 정규 행동 횟수**를 결정한다.
+- Gauge >= 1000 → 행동 가능
+- 행동 후 1000 차감
+- overflow 보존
+- 자연 SPD 연속 행동 허용
+- 플레이어 선택 중 Gauge 정지
 
-Gauge는 행동까지 남은 거리/진행을 표현한다.
-
-- Gauge >= 1000: 행동 가능
-- 행동 완료: Gauge -= 1000
-- 초과 Gauge: 보존
-- 자연 SPD 차이로 생기는 연속 행동: 허용
-- 플레이어가 생각하는 동안 Gauge: 진행하지 않음
-
-### 2.2 현재 integer pulse 방식 폐기
-
-현재 구현처럼:
-
-`ceil((1000 - gauge) / SPD)`
-
-을 정수 pulse로 만든 뒤 `pulse × SPD`를 더하는 방식은 SPD 차이를 같은 pulse 구간으로 양자화한다.
-
-v1에서는 사용하지 않는다.
-
-### 2.3 deterministic fixed-point scheduler
-
-구현 목표:
-
+### 2.2 fixed-point
 - `GAUGE_SCALE = 1,000,000`
-- 내부 Gauge: `gaugeMicro = displayedGauge × GAUGE_SCALE`
-- threshold: `1,000 × GAUGE_SCALE`
-- 논리시간 최소 단위: 1 micro-time
-- 1 micro-time 진행 시 각 전투원의 `gaugeMicro += FinalSPD`
+- 내부 gauge = 표시 Gauge × scale
+- runtime / HUD preview / AUTO가 동일 `TurnScheduler` 사용
 
-Ready가 없을 때 전투원 i:
+정수 pulse 근사 공식은 정본이 아니다.
 
-`timeToReadyMicro_i = ceil((thresholdMicro - gaugeMicro_i) / FinalSPD_i)`
+## 3. SPD
 
-`delta = min(timeToReadyMicro_i)`
+초기 캐릭터 범위:
+- 매우 느림: 80~86
+- 느림: 87~94
+- 표준: 95~103
+- 빠름: 104~110
+- 매우 빠름: 111~116
 
-모든 살아있는 전투원:
+117 이상은 특별한 설계 이유 없이 사용하지 않는다.
 
-`gaugeMicro += delta × FinalSPD`
+SPD는 action economy이므로 ATK +10%와 동일한 값으로 평가하지 않는다.
 
-이 방식은 부동소수점에 의존하지 않고 현재 whole-pulse 방식보다 1,000,000배 미세한 시간 해상도를 가진다.
-
-Skill Gauge +180은 내부적으로 `180 × GAUGE_SCALE`을 더한다.
-
-행동 후 `1000 × GAUGE_SCALE`만 뺀다.
-
-### 2.4 하나의 scheduler
-
-다음은 반드시 동일한 `TurnScheduler` 계산 경로를 사용한다.
-
-- 실제 next actor
-- HUD Turn Order preview
-- SPD buff/debuff 반영
-- Gauge push/pull
-- revive Gauge
-- extra turn / action advance
-- AUTO 판단에서 사용하는 미래 순서
-
-UI용 별도 근사 공식을 만들지 않는다.
-
-구현 바인딩:
-- runtime과 HUD preview는 `TurnScheduler`를 공유한다.
-- `CombatantState`는 내부 micro-Gauge를 보존하고 외부/UI에는 표시 Gauge 단위를 투영한다.
-- Turn ready event에 옛 `pulse=` 진단 문자열을 넣지 않는다.
-
-## 3. SPD 밸런스
-
-외부 턴제 RPG에서도 SPD/Action Value는 행동 횟수와 직접 연결되므로 매우 높은 가치의 스탯이다.
-
-TURNBOUND v1 초기 설계 범위:
-
-- 대부분의 영웅: 90~110
-- 명확한 느린 캐릭터: 80대 가능
-- 명확한 빠른 캐릭터: 110대 가능
-- 75 이하 / 120 이상은 강한 역할 비용 또는 전용 기믹 없이 사용하지 않는다
-
-SPD +10%를 ATK +10%와 같은 가격의 단순 옵션으로 취급하지 않는다.
-
-장비에서 SPD가 등장한다면:
+장비 SPD:
 - flat 소량
-- 슬롯/티어별 상한
-- 무작위 고SPD 부옵으로 행동 횟수를 폭발시키지 않음
+- Accessory 중심
+- 높은 random roll 없음
+- 한 캐릭터가 장비만으로 역할을 바꿀 정도의 SPD 폭증 금지
 
-## 4. Gauge 조작의 power budget
+## 4. Gauge 조작 budget
 
-Gauge 조작은 곧 행동 경제 조작이다.
+초기 범위:
+- 소형 단일 advance: +100~160
+- 큰 단일 advance: +250~360
+- 소형 단일 delay: -80~-140
+- 공격+강한 단일 delay: 약 -160~-200
+- 광역 delay: 단일보다 낮게
+- 즉시 Ready: 특별한 mechanic 외 기본적으로 사용하지 않음
 
-따라서:
-- 단일 대상 소폭 당김/밀림: 일반 utility
-- 아군 전체 당김: 고가치
-- 적 전체 지연: 고가치
-- Gauge를 즉시 1000 이상으로 만드는 효과: premium effect
-- 즉시행동 + 쿨감 + 큰 피해를 한 스킬에 동시에 넣지 않는다
-
-초기 튜닝 범위:
-- 소형 단일 push: +100~180
-- 소형 단일 delay: -80~-150
-- 광역 delay: 개별 수치가 단일보다 낮아야 함
-- “즉시 Ready”: CD/조건/자기 행동 기회비용 중 최소 하나가 커야 함
-
-보스는 단순 면역 대신 감소 효율 cap이나 phase-specific resistance를 쓴다.
-
-루메아 v1 기준점:
-- 소형 단일 advance: +120, 느린 아군 보너스 적용 시 +160
-- premium 단일 advance: +300, 느린 아군 보너스 적용 시 +360
-- 단일 공격+delay: -180
-- 정확한 turn-order 편집에 대한 각성 보상: 자기 Gauge +60
-- 즉시 Gauge 1000 효과와 무조건적 자기 Gauge 루프는 사용하지 않는다.
+루메아 기준:
+- Basic +120, 느린 아군이면 총 +160
+- Time Leap +300, 느린 아군이면 총 +360
+- 단일 공격 + delay -180
+- 정확한 미래 순서 편집 각성 보상: 자기 Gauge +60
 
 ## 5. 캐릭터 power budget
 
-캐릭터 강함은 다음 다섯 축으로 본다.
-
+다섯 축:
 1. 직접 피해
 2. 생존 기여
 3. 행동 경제
 4. 제어/디버프
-5. 파티 시너지/유틸리티
+5. 파티 시너지
 
-한 캐릭터가 다섯 축 모두 상위권이면 안 된다.
+한 캐릭터가 모든 축 상위권이면 안 된다.
 
-높은 희귀도는:
-- 더 많은 스탯
-이 아니라
-- 더 넓은 선택지
-- 더 안정적인 signature loop
-- 높은 ceiling
-을 줄 수 있다.
+평가:
+- 10 regular actions
+- 20 regular actions
+- 실전 follow-up 기대 횟수
+- 생성/삭제한 Gauge 가치
+- 회복/방어량
+- setup에 필요한 own turn
+- single / multi / boss / short / long
+- Auto 손실
 
-★3도 좁은 상황에서는 ★5보다 좋은 선택이 될 수 있어야 한다.
-
-## 6. Skill potency 초기 범위
-
-실제 simulator로 조정하기 전의 출발 범위다.
+## 6. Skill potency
 
 ### Basic
-- 단일 damage: 약 0.85x~1.05x ATK
-- utility Basic은 피해를 포기하는 만큼 실제 action economy/회복/방어 가치가 있어야 함
+- 일반 단일: ATK 85~105%
+- utility Basic: raw damage를 낮추고 실제 utility를 제공
 
-### CD2 공격 Active
-- 약 1.55x~2.10x
-- 조건부 setup/consume가 있으면 상단을 넘을 수 있음
+### CD2 공격
+- 대체로 150~200%
+- setup 조건이 있으면 상단 초과 가능
 
-### CD3~4 고가치 Active
-- 강한 AoE / revive / premium Gauge / 팀 보호 같은 전투 흐름 변화 효과
-- 단순 “Basic보다 수치만 큼”으로 쓰지 않음
+### CD3~4
+- 강한 AoE
+- premium Gauge
+- revive
+- team protection
+- signature loop payoff
 
-### Reaction / Follow-up
-- 정규 행동을 소비하지 않는 만큼 potency를 낮게 시작
-- trigger frequency를 포함한 기대 피해로 평가
-- 같은 Reaction이 다른 Reaction을 무한 재귀시키지 않음
+단순 “Basic보다 숫자가 큼”만으로 CD3~4를 만들지 않는다.
 
-## 7. 전투 길이 목표
+### Reaction
+Reaction은 무료 행동이므로:
+- raw potency를 낮게 시작
+- trigger frequency 포함 기대값으로 평가
+- Reaction→Reaction 무한 재귀 금지
+- per-action trigger cap 필요
 
-난이도를 HP 스펀지로 만들지 않는다.
+## 7. 초기 P01~P08 전투 역할 baseline
+
+| ID | 역할 | Rarity | SPD target | 핵심 자원 |
+|---|---|---:|---:|---|
+| P01 카이렌 | 단일 결투 DPS | ★4 | 105 | Focus 0~3 |
+| P02 루메아 | Tempo Support | ★5 | 114 | Turn Order |
+| P03 브람 | Redirect/Counter Tank | ★4 | 84 | Guard 0~100 |
+| P04 엘리시아 | Rescue Healer | ★4 | 96 | Sanctuary |
+| P05 리네트 | Follow-up DPS | ★4 | 108 | Sightline / Shot |
+| P06 모르웬 | Event/Execute | ★5 | 98 | Records 0~5 |
+| P07 마리온 | Partner Summoner | ★4 | 100 | Bond 0~100 |
+| P08 라제 | Risk/Fury DPS | ★3 | 103 | Fury 0~100 |
+
+희귀도는 정체성/복잡도/ceiling 차이이지 단순 stat tier가 아니다.
+
+## 8. 전투 길이
 
 초기 목표:
-- 약한 필드전: 파티 정규 행동 3~6회 안에서 승부 윤곽
-- 표준 필드전: 파티 정규 행동 6~12회
-- Elite: 10~18회
-- Boss phase 포함: 18~30회 수준에서 mechanic을 여러 번 경험
+- 약한 필드전: 파티 regular action 3~6
+- 표준 필드전: 6~12
+- Elite: 10~18
+- Boss: phase 포함 18~30
 
-실제 시간보다 “의미 있는 선택 횟수”를 먼저 본다. 2x 사용 시 animation만 빨라지고 행동 수는 동일해야 한다.
+HP sponge로 난이도를 만들지 않는다.
 
-## 8. 성장 구조 단순화
-
-v0.4의 태생 별과 현재 별을 동시에 올리는 이중 성급 구조는 폐기한다.
-
-v1:
-- **Native Rarity ★3~★5**: 수집 희귀도, 변하지 않음
-- **Level 1~60**: 기본 수치 성장
-- **Equipment 3 slots**: 빌드/파밍
-- **Signature 1 slot**: 캐릭터별 선택적 특화, 캐릭터 본체의 필수 기능은 아님
-- **Awakening 1회**: 후반 mechanical expansion
-
-캐릭터 승급용 별 개수 반복은 없다.
-
-모든 희귀도는 Lv60까지 성장 가능하다.
+Boss는:
+- 행동 패턴
+- 타깃 우선순위
+- Gauge/position pressure
+- phase 변화
+로 난이도를 만든다.
 
 ## 9. 레벨 성장
 
-기존 `1 + 0.045 × (L-1)`을 자동 계승하지 않는다.
+Level 1~60.
 
-새 목표:
-- Lv1→60 총 스탯 성장폭이 장비/캐릭터 기믹을 압도하지 않을 것
-- 레벨이 부족하면 어렵지만 캐릭터 조합이 무의미해질 정도의 격차는 만들지 않을 것
-- SPD는 레벨로 자동 성장하지 않음
+원칙:
+- SPD는 레벨로 증가하지 않음
+- 레벨이 장비/kit를 압도하지 않음
+- 레벨 부족이 즉사/무딜만 만드는 hard wall이 되지 않음
 
-새 growth curve는 전투 simulator로:
-- 표준 필드 TTK
-- boss action count
-- heal/guard 가치
-- 장비 강화 가치
-를 동시에 맞춘 뒤 고정한다.
+초기 target:
+- Lv1→60 HP/ATK/DEF 총 성장: 약 2.1~2.5배 범위
+- 실제 곡선은 초반 빠르고 후반 완만
+- 지역 권장 레벨 차 5~8 정도는 조합/장비로 극복 가능
+- 15 이상 차이는 고난도 선택 영역
 
-## 10. 장비
+정확한 curve는 simulator에서 확정한다.
 
-장비 가챠는 없다.
+## 10. 성장 축
 
-기본 슬롯:
+### 10.1 Level
+XP로만 증가.
+Gold 요구 없음.
+
+### 10.2 Equipment
+3 slots:
 - Weapon
 - Armor
 - Accessory
 
-원칙:
-- 옵션은 예측 가능
-- 강화는 Gold
-- 실패/파괴 없음
-- 무작위 부옵 리롤 노동 없음
-- 장비가 캐릭터 signature mechanic을 대체하지 않음
+### 10.3 Signature
+캐릭터 개인 특화 슬롯.
+없어도 캐릭터 핵심 기능은 완성되어 있어야 한다.
 
-장비는 “ATK 높은 것 하나”가 아니라 공격/생존/tempo 중 선택을 만들 수 있어야 한다.
+획득:
+- 개인 퀘스트
+- 특정 boss
+- 깊은 탐험
+중 하나.
 
-## 11. 재화 — core 3개 원칙
+### 10.4 Awakening
+캐릭터당 1회.
+단순 stat +20%가 아니라 mechanic 확장.
 
-재화 수를 먼저 늘리지 않는다.
+조건:
+- 캐릭터 개인 사건 완료
+- 일정 레벨
+- Gold
+- 필요하면 고정 quest item 1개
+
+전역 “Awakening Core” 화폐는 v1 장기 정본에서 폐기한다.
+
+## 11. 장비
+
+### 11.1 등급
+초기 4단계:
+- 일반
+- 희귀
+- 영웅
+- 유물
+
+등급 수를 더 늘리지 않는다.
+
+### 11.2 구성
+장비마다:
+- main stat 1개
+- trait 최대 1개
+- 강화 +0~+10
+
+random substat 4줄 구조는 사용하지 않는다.
+
+### 11.3 강화
+- Gold만 소모
+- 실패 없음
+- 파괴 없음
+- 강화 이전 가능성을 우선 검토
+- +10까지 단순한 main stat 증가
+
+초기 main stat 강화:
+- +1마다 base main stat의 약 4%
+- +10 총 약 +40%
+
+trait는 강화로 반복 상승하지 않거나 특정 milestone에서 1회만 강화한다.
+
+### 11.4 장비 Gold cost baseline
+아이템 등급별 +0→+10 총비용 초기 target:
+- 일반: 4,000
+- 희귀: 9,000
+- 영웅: 18,000
+- 유물: 35,000
+
+정확값은 지역 수입량과 같이 시뮬레이션한다.
+
+## 12. 재화
+
+전역 core currency는 3개.
 
 ### Gold
 용도:
 - 장비 강화
 - 상점 구매
-- 일부 고정 성장 비용
+- Awakening 비용 일부
 
-주요 획득:
+획득:
 - 전투
 - 퀘스트
-- 탐험 보상
+- 상자
 - 던전
+- boss
 
 ### Summon Crystal
 용도:
 - 캐릭터 소환만
 
-주요 획득:
+획득:
 - 메인/사이드 퀘스트
 - 첫 클리어
-- 발견/탐험 milestone
-- 보스/도전
+- 발견 milestone
+- boss
+- 큰 탐험 보상
 
 ### Star Essence
 용도:
-- 중복 캐릭터 변환
-- 장기 수집 보상/선택권 교환
-- 제한된 late-game 성장 보조
+- 중복 캐릭터 환원
+- 영구 선택권/수집 교환
 
-“지역별 토큰”, “강화석”, “승급석”, “스킬책”을 이유 없이 추가하지 않는다. 필요하면 어떤 선택을 만드는지 먼저 증명한다.
+핵심 캐릭터 기능 unlock 비용으로 사용하지 않는다.
 
-## 12. 소환 경제 v1
+## 13. Gold economy baseline
 
-현금 결제 없음, 기간 한정 FOMO 없음.
+초기 지역 수입 목표:
+- 일반 필드전: 80~160
+- Elite: 350~700
+- 지역 quest: 500~1,500
+- dungeon first clear: 1,500~3,000
+- boss first clear: 3,000~6,000
 
-기존 v0.4의 300/3000 비용과 ★1~5 확률표는 정본에서 폐기한다.
+초반 30~60분 안에:
+- 희귀 장비 1~2개 구매/강화
+- Gold 부족 때문에 진행이 막히지 않음
+을 목표로 한다.
 
-초기 v1 tuning target:
+후반 Gold sink는:
+- 고등급 장비 강화
+- 상점 구매
+- Awakening
+정도로 충분하게 만든다.
+
+## 14. 상점
+
+상점은 무작위 새로고침 노동을 만들지 않는다.
+
+- 거점별 theme inventory
+- 진행에 따라 자동 확장
+- 일반 consumable 남발 금지
+- 장비/utility 중심
+- manual refresh currency 없음
+
+가격 초기 target:
+- 일반 장비: 800~1,500
+- 희귀: 2,500~5,000
+- 영웅: 8,000~15,000
+- 유물: 상점 일반 판매보다 boss/탐험 중심
+
+## 15. Summon economy
+
+### 15.1 비용
 - 1회: 300 Crystal
-- 10회: 3000 Crystal
-- ★5 base: 2%
+- 10회: 3,000 Crystal
+
+10회 할인은 넣지 않는다. 계산 단순성을 유지한다.
+
+### 15.2 확률 baseline
+- ★5: 2%
 - ★4: 15%
 - ★3: 83%
-- 10회 안에 최소 ★4 1명
-- ★5 soft pity: 45부터 점진 상승
-- ★5 hard pity: 60
-- pity는 banner/풀 변경으로 사라지지 않음
-- 정식 limited 50/50 구조는 초기 버전에서 사용하지 않음
 
-이 수치는 “완료 수치”가 아니라 첫 economy simulation baseline이다.
+10회 내 최소 ★4 1명 보장.
 
-### 획득 속도 목표
+### 15.3 pity
+- soft pity: 45회부터
+- hard pity: 60회
+- pity는 pool 확장/게임 종료/세션 변경으로 사라지지 않음
+- 초기 버전에서 50/50, weapon banner, 기간 한정 pity 분리 없음
 
-오프라인/개인 플레이 RPG이므로 모바일 과금게임보다 훨씬 관대하게 설계한다.
+### 15.4 수급 속도
+비과금 게임이므로 상업 gacha보다 관대하게 설계한다.
 
-- 초반 30~45분 내 첫 10회 소환
-- 새 콘텐츠를 정상적으로 탐험하는 플레이에서 대략 2~3시간마다 추가 10회 수준을 첫 목표로 측정
-- 메인 진행에 특정 가챠 캐릭터를 요구하지 않음
-- 천장 이전에도 파티 선택지가 충분히 늘어날 수 있게 ★3/★4 모두 실전 가치 보유
+목표:
+- 초반 30~45분 안에 첫 10회
+- 정상적인 새 콘텐츠 플레이 시 대략 2~3시간마다 추가 10회
+- 메인 스토리에 특정 소환 캐릭터 요구 없음
 
-## 13. 중복 캐릭터
+## 16. 중복 캐릭터
 
-중복은 캐릭터의 핵심 기능을 잠그는 열쇠가 아니다.
+첫 획득:
+- 캐릭터 unlock
 
-- 첫 획득: 캐릭터 unlock
-- 중복: Star Essence 중심 변환
-- 중복으로 skill 자체를 해금하지 않음
-- 중복 횟수가 없으면 캐릭터가 미완성인 구조 금지
+중복:
+- Star Essence로 변환
 
-필요하다면 소량의 multiplier bonus를 별도 실험할 수 있지만, 기본 방향은 **중복 = 다른 선택권으로 환원**이다.
+초기 변환값:
+- ★3: 15 Essence
+- ★4: 60 Essence
+- ★5: 250 Essence
 
-## 14. 보상 설계
+중복으로:
+- 스킬 해금
+- 별 승급
+- 핵심 passive
+를 잠그지 않는다.
 
-필드전:
-- Gold + XP 기본
-- 장비/재료는 적 테마에 맞게
+## 17. Star Essence 교환
 
-첫 클리어/발견:
-- Crystal 비중 증가
-- 지도/빠른 이동/상점/새 의뢰 같은 access reward 가능
+영구 교환소.
+기간 한정 rotation 없음.
 
-Boss:
-- 큰 XP/Gold
-- 보장 장비/선택 보상
+초기 target:
+- 150 Essence → 300 Crystal
+- 450 Essence → 보유/해금된 ★4 선택권
+- 1,200 Essence → 보유/해금된 ★5 선택권
+
+선택권 pool은 스토리상 아직 등장하지 않은 캐릭터를 미리 공개하지 않는다.
+
+## 18. 초기 roster 획득
+
+메인 진행에서 초기 4인 파티를 확보 가능하게 한다.
+
+소환은:
+- 파티 다양성
+- 다른 archetype
+- 수집
+을 위한 확장 수단이다.
+
+“가챠에서 healer를 못 뽑아서 진행 불가” 같은 구조 금지.
+
+## 19. 보상
+
+### 일반 필드전
+- XP
+- Gold
+- 낮은 확률의 장비/지역 loot
+
+### Elite
+- 높은 Gold/XP
+- 장비 보정
+- 첫 처치 bonus
+
+### 탐험/발견
 - Crystal
-- 새 지역/캐릭터/시스템 access
+- 지도 marker
+- shortcut
+- 빠른 이동
+- NPC/상점 access
 
-반복 사냥이 메인 퀘스트보다 항상 더 효율적이지 않게 한다.
+### Boss
+- 큰 XP/Gold
+- 보장 장비
+- Crystal
+- 진행 access
+- Signature/Awakening 연결 가능
 
-## 15. 밸런스 검증 방식
+## 20. 반복 사냥 제한
 
-캐릭터를 “DPS 1위” 한 줄로 평가하지 않는다.
+반복 필드 사냥이 모든 면에서 최고 효율이면 안 된다.
 
-각 캐릭터마다:
-- 10-action damage
-- 20-action damage
-- 받은 피해 감소/회복량
-- 생성/소모한 Gauge 가치
-- Reaction 기대 횟수
-- setup에 필요한 own turns
-- Auto 손실
-- 단일/다수/보스/짧은전/긴전
-을 비교한다.
+첫 발견/첫 클리어/퀘스트 보상 비중을 높이고,
+반복 전투는:
+- Gold
+- XP
+- 일반 장비
+정도에 강하게 한다.
 
-SPD/Gauge 캐릭터는 raw damage가 아니라 **추가로 만든 팀 행동의 가치**까지 계산한다.
+## 21. AUTO 밸런스
 
-수치는 외부 게임에서 비율/설계 원리를 참고하되 TURNBOUND simulator와 실제 플레이 결과로 최종 고정한다.
+AUTO는 편의 기능이지 최적 플레이 bot이 아니다.
 
-## 16. 구현 불변조건
+목표:
+- 표준 필드전 80~90% 효율
+- boss mechanic 완벽 대응 안 함
+- character identity를 파괴하는 행동은 피함
+- revive/heal/tempo 같은 명확한 긴급 조건은 처리
 
-1. Presentation 시간이 전투 결과를 바꾸지 않는다.
-2. 플레이어 선택 중 논리시간 정지.
-3. Gauge overflow 보존.
-4. 자연 SPD 연속 행동을 임의 cap으로 자르지 않음.
-5. Reaction과 정규 행동 구분.
-6. Reaction은 기본적으로 자신의 regular-action cooldown을 줄이지 않음.
-7. 1x/2x 동일 입력 → 동일 논리 결과.
-8. 서버 권위.
-9. UI timeline = 실제 scheduler의 미래 시뮬레이션.
-10. 동일 seed/state/input에서 결과가 deterministic.
+수동 플레이가 더 좋은 판단을 할 수 있어야 한다.
+
+## 22. 보스 Gauge 저항
+
+보스 blanket immunity는 피한다.
+
+초기 rule:
+- 일반 boss: Gauge delay 60~75% 효율
+- phase 중 특정 state: 30~50%
+- 완전 면역은 mechanic상 명확한 이유가 있을 때만
+
+UI에서 저항을 숨기지 않는다.
+
+## 23. 밸런스 완료 조건
+
+캐릭터/경제 수치는 다음을 함께 확인한 뒤 확정한다.
+
+- 캐릭터별 10/20 action 성과
+- SPD 변화에 따른 실제 행동 횟수
+- reaction 기대 횟수
+- healing/guard 가치
+- boss turn denial 위험
+- Gold 수입/지출
+- 장비 강화 속도
+- 첫 10-pull 시점
+- hard pity 도달 시간
+- duplicate Essence 환원 속도
+- Auto와 manual 차이
+
+“숫자가 보기 좋아서” 확정하지 않는다.
