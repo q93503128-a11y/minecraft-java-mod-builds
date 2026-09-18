@@ -113,6 +113,9 @@ dependencies {
     gameplayFoundation("curse.maven:geckolib-388172:8819017") {
         transitive = false
     }
+    gameplayFoundation("maven.modrinth:${project.mobfilter_project_id}:${project.mobfilter_version_id}") {
+        transitive = false
+    }
 
     creatureFoundation("curse.maven:alexs-mobs-continued-1635121:${project.alexs_mobs_curse_file}") {
         transitive = false
@@ -134,6 +137,7 @@ dependencies {
         add("localRuntime", "maven.modrinth:armor-model-api:${project.armor_model_api_version}-fabric") { transitive = false }
         add("localRuntime", "maven.modrinth:XaT8sLP6:${project.trinkets_version_id}") { transitive = false }
         add("localRuntime", "curse.maven:geckolib-388172:8819017") { transitive = false }
+        add("localRuntime", "maven.modrinth:${project.mobfilter_project_id}:${project.mobfilter_version_id}") { transitive = false }
 
         add("localRuntime", "curse.maven:alexs-mobs-continued-1635121:${project.alexs_mobs_curse_file}") { transitive = false }
         add("localRuntime", "curse.maven:codxlib-1633207:${project.codxlib_curse_file}") { transitive = false }
@@ -150,8 +154,8 @@ tasks.register('verifyGameplayFoundationDependencies') {
 
     doLast {
         def resolved = configurations.gameplayFoundation.resolve().toList().sort { a, b -> a.name <=> b.name }
-        if (resolved.size() != 9) {
-            throw new GradleException("Expected 9 pinned gameplay foundation artifacts, resolved ${resolved.size()}: ${resolved*.name}")
+        if (resolved.size() != 10) {
+            throw new GradleException("Expected 10 pinned gameplay foundation artifacts, resolved ${resolved.size()}: ${resolved*.name}")
         }
 
         def output = layout.buildDirectory.file('reports/m0/gameplay-foundation-artifacts.txt').get().asFile
