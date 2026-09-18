@@ -203,16 +203,17 @@ R01 common opening
 
 Unchosen regions remain fully playable and supply optional evidence, relationships, progression and epilogue state. Already-completed eligible regional content resolves by checking durable evidence/state rather than forcing a fake replay.
 
-## 3.8 R01 asset intake Pass 4 is candidate closure, not acceptance
+## 3.8 R01 asset intake is narrowed, not accepted
 
-The main R01 intake now incorporates Phase-B Pass 4:
+The current R01 intake has advanced beyond the older Pass-4 snapshot:
 
 - River Scholar Garb: exact Wizard modular candidate family pinned;
 - Ironbound Guard: exact Knight armor/pauldron candidate family pinned;
 - Trail Skewers: Kenney Food Kit `skewerVegetables` editable-base candidate pinned;
-- revive/help-up and Trail Stag mount/dismount: deliberately remain `NEEDS_EXTERNAL_CLIP`.
+- fish broad search is stopped at the four-role direct-review set: **Small Fish Common Minnow / CDmir Fish / Quaternius Armored Catfish / CDmir Esox**; old clownfish/Sea-Life/tuna candidates are explicitly rejected for Heartland;
+- revive/help-up and Trail Stag mount/dismount still require accepted external clip/runtime review.
 
-This reduces unknown-source risk but does **not** permit `R01 ASSET READY = YES` until acquisition/hash, 3D review, conversion/retarget and actual Minecraft acceptance happen.
+This reduces unknown-source risk but does **not** permit `R01 ASSET READY = YES` until exact acquisition/hash, 3D review, conversion/retarget and actual Minecraft acceptance happen.
 
 ## 3.9 Closed design versus runtime proof
 
