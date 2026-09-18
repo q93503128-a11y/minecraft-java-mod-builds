@@ -34,6 +34,8 @@ def main() -> None:
     detail = read("VillageActionDetailScreen.java")
     shop = read("VillageShopCatalogScreen.java")
     ui_service = read("VillageUiService.java")
+    respawn = read("VillageRespawnSystem.java")
+    relic = read("VillageRelicSystem.java")
 
     assert "mod_version=0.18.38-alpha.1" in props
     assert "현재 소스 버전 `0.18.38-alpha.1`" in readme
@@ -151,6 +153,8 @@ def main() -> None:
     assert "for (UUID playerId : nightParticipants(server))" in award
     assert "COINS.put(playerId, coins(playerId) + granted)" in award
     assert "VillageCouncilState.grantExperience(server, playerId, xp)" in raid
+    assert "for (UUID playerId : VillageProgressionSystem.nightParticipants(server))" in relic
+    assert "server.getPlayerList().getPlayer(playerId)" in relic
 
     # Same-day retry provides bounded diminishing shared support instead of resetting accumulated growth.
     restart = section(progression, "public static synchronized void resetForRestart", "private static int claimRetrySupport")
@@ -161,6 +165,9 @@ def main() -> None:
     assert "supplies += granted" in retry
     assert "if (fromStart)" in restart and "else {" in restart
     assert "VillageMercenarySystem.restoreNightSnapshot(server)" in restart
+    assert "VillageRespawnSystem.recoverAfterGameRestart(server)" in restart
+    assert "public static void recoverAfterGameRestart" in respawn
+    assert "RESPAWN_AT.clear()" in respawn
     assert "첫 3회 재도전" in ui_service
 
     # LAN vote lifecycle handles joins/leaves and duplicate casts; mutation packets get a short replay guard.
