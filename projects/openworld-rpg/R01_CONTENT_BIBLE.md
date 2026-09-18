@@ -181,6 +181,8 @@ A player outside the band is not blocked. **Suggested Lv 8** at the quarry is a 
 
 R01 intentionally front-loads **one-time** EXP/Class-XP rewards above later-region baseline percentages so the opening actually reaches these bands. Repeat events, repeat bosses and ordinary combat do not inherit that uplift.
 
+Expected active first-class Rank at ordinary Earthloong first clear: **Rank 3–5**. This is an observation target, not a gate. All five root classes also have exactly one optional R01 Class Insight opportunity with success conditions locked in `CLASS_PROGRESSION.md` §19.1.
+
 If median playtest progression misses the band by more than about two levels, retune rewards/content density before changing region identity.
 
 ---
@@ -1952,6 +1954,7 @@ Regalhart/Earthloong farming must remain attractive for their known drops withou
 | What does the package contain? | exact seven-line package in §15.3 |
 | What individual R01 furniture can be bought? | exact 12-item Household catalogue in §15.4 |
 | Where do early profession Insights come from? | exact flags in §13 |
+| Does every root class have an equal R01 Class Insight opportunity? | yes; one each, exact personal success conditions in `CLASS_PROGRESSION.md` §19.1 |
 | Does R01 require weather/time fishing? | no |
 | Do R01 time/weather conditions alter launch spawn weights? | no; ambience/presentation only |
 | How many R01 fishing spots? | 5 ordinary + 1 uncommon + 1 rare |
