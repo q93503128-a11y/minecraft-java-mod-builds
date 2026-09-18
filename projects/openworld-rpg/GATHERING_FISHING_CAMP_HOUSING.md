@@ -316,6 +316,8 @@ personal respawn: 15–20 active min or authored condition
 5. invalid landing returns line without consuming spot;
 6. ordinary fishing uses no bait.
 
+R01's exact 5+1+1 spot cooldowns and catch-controller behavior are refined by `R01_CONTENT_BIBLE.md` §14.2–§14.8. In R01, those exact values override the broader ranges below where they differ.
+
 ## 7.3 Bite / hook
 
 ```text
