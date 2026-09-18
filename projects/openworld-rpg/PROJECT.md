@@ -136,7 +136,7 @@ World/story/regional canon:
 - `MAIN_QUEST_SCENE_PACKAGE.md` — cross-region main-route requirements, recurring-character functions, evidence counting, rejoin points, sequence-break handling, personal finale choice and multiplayer story ownership
 - `REGION_CROSS_AUDIT.md`
 - `REGIONS.md` — current concise region index, not an archive of old candidates
-- `R01_VERTICAL_SLICE.md`
+- `R01_VERTICAL_SLICE.md` + `R01_CONTENT_BIBLE.md`
 - `R02_IMPLEMENTATION_PACKAGE.md` + `R02_CONTENT_BIBLE.md`
 - `R03_IMPLEMENTATION_PACKAGE.md` + `R03_CONTENT_BIBLE.md`
 - `R04_IMPLEMENTATION_PACKAGE.md` + `R04_CONTENT_BIBLE.md`
@@ -157,7 +157,7 @@ Quality/intake:
 - `R01_ASSET_INTAKE.md` and evidence snapshots where applicable;
 - `R01_ASSET_PHASE_B_PASS5_ACQUISITION_EVIDENCE_2026-09-17.md` — creator-controlled direct ZIP locators, current Standard/Source boundary correction and honest binary/hash limitation.
 
-The implementation package owns a region's traversal/ecology/encounter/dungeon/system contract. The later matching content bible closes settlement name, named cast, exact quests/scenes/rewards/reconnect state and story handoff. If an old package contains a working placeholder superseded by its content bible, the later content bible wins for that explicitly refined point.
+The implementation package owns a region's traversal/ecology/encounter/dungeon/system contract. The later matching content bible closes settlement name, named cast, exact quests/scenes/rewards/reconnect state and story handoff. **R01 uses `R01_VERTICAL_SLICE.md` as its opening/system package and `R01_CONTENT_BIBLE.md` as the later full-region content-bible refinement.** If an old package contains a working placeholder superseded by its content bible, the later content bible wins for that explicitly refined point.
 
 `MAIN_QUEST_SCENE_PACKAGE.md` owns only the cross-region main investigation and its rejoin/state rules. It does not overwrite local regional quests/rewards/aftermath already owned by the matching content bible.
 
