@@ -646,7 +646,14 @@ Without residence:
 
 ## 10.3 Sell
 
-Shows sellable carried items.
+Two subviews:
+
+- Items
+- Materials
+
+### Items
+
+Shows sellable carried equipment/consumables.
 
 Actions:
 - Sell Selected;
@@ -658,6 +665,34 @@ A sale confirmation is required for:
 - Superior+ gear;
 - currently equipped gear;
 - named/signature gear.
+
+### Materials
+
+Reads directly from Material Pouch; no manual withdraw chore is required.
+
+Each row shows:
+- material;
+- held amount;
+- exact sell value per unit;
+- quantity selector;
+- total Gold.
+
+Actions:
+- Sell Selected Amount;
+- Sell Ordinary Surplus.
+
+Sell Ordinary Surplus excludes:
+- Regalhart Antler;
+- Earthloong Scale;
+- any quest-reserved quantity;
+- favorite/protected material entries.
+
+Selling Regalhart Antler or Earthloong Scale always opens a confirmation showing:
+- quantity being sold;
+- remaining quantity;
+- known signature-craft requirement of 4.
+
+Direct R01 material sell values come from R01_CONTENT_BIBLE.md.
 
 ---
 
