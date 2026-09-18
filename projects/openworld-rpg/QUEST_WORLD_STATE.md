@@ -513,7 +513,7 @@ The local objective has five authored useful-action categories:
 2. participate in clearing the authored Meadow Viper threat under the one-action combat-credit rule;
 3. inspect the damaged wagon/road marker;
 4. personally gather one relevant nearby R01 node;
-5. participate in the small local road event if it is active.
+5. participate in the repeatable **`Roadside Trouble`** world event defined in `R01_CONTENT_BIBLE.md` if it is active.
 
 Completion requires:
 
@@ -523,7 +523,7 @@ Completion requires:
 
 No category can be spammed repeatedly for extra quest progress.
 
-If the optional road event is not active, the other four categories are sufficient.
+If `Roadside Trouble` is not active, the other four categories are sufficient. The event's activation, participation, reward, abandon and repeat cycle are owned by `R01_CONTENT_BIBLE.md`; this quest file does not invent a second event definition.
 
 Reward stays canonical:
 
