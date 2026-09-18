@@ -601,7 +601,7 @@ The counts and initial weights below are TUNEABLE_SEED values.
 | Raccoon | 1 |
 | Crow | 1–3 |
 | Bison | 3–5 |
-| Meadow Viper | 1; 20% of valid danger anchors may produce 2 |
+| Meadow Viper | 1; **20%** of valid danger-anchor cycles produce 2 |
 | Grizzly | 1 |
 | Steelboar | 1 |
 | Nature Spirit | 1 |
@@ -708,6 +708,8 @@ Within any 128-block local play area:
 - event-owned threats do not cause ordinary anchors to immediately backfill additional threats.
 
 ## 7.5 Replenishment
+
+Anchor actor/group selection uses deterministic server RNG seeded from `world_seed + authored_anchor_id + respawn_cycle_index`. The same committed cycle cannot reroll because a client reconnects, unloads a chunk or reopens a UI.
 
 A vacated natural anchor can replenish only when:
 
@@ -1318,7 +1320,56 @@ No mandatory “talk to every service NPC” objective is created.
 
 ---
 
-# 18. Post-Earthloong R01 aftermath
+# 18. R01 contract abandonment / reaccept
+
+R01 one-shot optional contracts follow the global ability to abandon, but their exact behavior is closed here.
+
+## Riverbank Remedies
+
+On Abandon:
+- active contract tracking clears;
+- any quest-reserved Healing Herb quantity is released back to ordinary material ownership;
+- already claimed reward/completion can never be reset.
+
+On Reaccept before completion:
+- gather counter starts at **0 / 3**;
+- only valid Healing Herbs gathered after the reaccept commit count toward the renewed contract;
+- older inventory herbs may still be used normally, but do not retroactively satisfy the teaching objective.
+
+## Signs in the Meadow
+
+On Abandon:
+- active contract counter clears;
+- world discovery knowledge remains.
+
+On Reaccept:
+- counter starts at **0 / 2**;
+- the three authored sites become legally re-inspectable for contract credit even if their discovery text was seen before;
+- each site can credit the renewed contract once.
+
+## Steel in the Grass
+
+On Abandon:
+- active hunt contract clears;
+- Steelboar/world discovery knowledge remains.
+
+On Reaccept:
+- the player must meaningfully participate in a **new qualifying Steelboar defeat after the reaccept commit**;
+- an older defeat never retroactively completes the renewed contract.
+
+## Content that does not use Abandon
+
+- Dust on the Quarry Road — Main;
+- Roots Below Stone / Lines Beneath the Land — Main;
+- A Stag at the Ford — Regional discovery/unlock;
+- The Crowned Trail — Discovery/Hunt record;
+- Roadside Trouble — World Event.
+
+These may be unpinned/ignored where UI permits, but they are not converted into abandon/reaccept contracts.
+
+---
+
+# 19. Post-Earthloong R01 aftermath
 
 Earthloong first clear changes R01 presentation without deleting its repeatable content.
 
@@ -1356,7 +1407,7 @@ Quarry Relay Evidence is never granted again as a duplicate inventory object.
 
 ---
 
-# 19. R01 UI state inventory
+# 20. R01 UI state inventory
 
 R01 may use only the already-selected Lucifer-family visual grammar.
 
@@ -1389,7 +1440,7 @@ Exact art-piece file bindings and final pixel-perfect screenshot acceptance rema
 
 ---
 
-# 20. R01 state additions
+# 21. R01 state additions
 
 The following logical states are now required in addition to existing vertical-slice states:
 
@@ -1424,7 +1475,7 @@ All progression/economy ownership is server-authoritative.
 
 ---
 
-# 21. Reconnect / idempotency additions
+# 22. Reconnect / idempotency additions
 
 ## Roadside Trouble
 
@@ -1455,7 +1506,7 @@ All progression/economy ownership is server-authoritative.
 
 ---
 
-# 22. R01 material sell values
+# 23. R01 material sell values
 
 These direct values override the generic material-percentage rule because most R01 field/signature materials have no ordinary unlimited merchant buy price.
 
@@ -1483,7 +1534,7 @@ The values keep surplus gathering useful without making passive wildlife/resourc
 
 ---
 
-# 23. R01 combat Gold table
+# 24. R01 combat Gold table
 
 R01 combat Gold is deliberately small compared with authored objective/dungeon income. These are HARD_RULE starting values.
 
@@ -1513,7 +1564,7 @@ Rules:
 
 ---
 
-# 24. R01 economy sanity targets
+# 25. R01 economy sanity targets
 
 These are TUNEABLE_SEED acceptance bands.
 
@@ -1536,7 +1587,7 @@ Regalhart/Earthloong farming must remain attractive for their known drops withou
 
 ---
 
-# 25. R01 hidden-choice closure table
+# 26. R01 hidden-choice closure table
 
 | Question an implementer must not answer | Canonical answer |
 |---|---|
@@ -1570,7 +1621,7 @@ Regalhart/Earthloong farming must remain attractive for their known drops withou
 
 ---
 
-# 26. Remaining gates that are not design discretion
+# 27. Remaining gates that are not design discretion
 
 After this content-bible pass, the remaining R01 blockers are deliberately narrow.
 
@@ -1608,7 +1659,7 @@ If either gate exposes a hard conflict, update canon **before** coding the affec
 
 ---
 
-# 27. R01 content-closure acceptance
+# 28. R01 content-closure acceptance
 
 R01 planning is not called source-ready until all of these are true:
 
