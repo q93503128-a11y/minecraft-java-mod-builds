@@ -1,6 +1,5 @@
 package io.github.q93503128.turnbound;
 
-import io.github.q93503128.turnbound.client.AsterMarchMinimapLayer;
 import io.github.q93503128.turnbound.client.BattleCameraController;
 import io.github.q93503128.turnbound.client.BattlePlayerRenderPolicy;
 import io.github.q93503128.turnbound.client.BattleStatusLayer;
@@ -30,7 +29,6 @@ public final class TurnboundClient {
         modEventBus.addListener(ClientAudioNetwork::register);
         modEventBus.addListener((RegisterGuiLayersEvent event) -> {
             event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "quest_guide"), new QuestGuideLayer());
-            event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "aster_minimap"), new AsterMarchMinimapLayer());
             event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "battle_status"), new BattleStatusLayer());
             event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "ui_feedback"), new ClientUiFeedbackLayer());
         });
