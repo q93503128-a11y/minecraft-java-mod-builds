@@ -129,6 +129,7 @@ Primary gameplay/system canon:
 - `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md` — world challenge presets, personal accessibility assists, final frequent-action input map, Essential-safe defaults, subtitles/captions, non-audio combat cues, camera/VFX comfort and dynamic audio/music state behavior
 - `R11_AQUATIC_ACTION_MATRIX.md` — closes R11 frequent-action `AQUATIC_NATIVE / AQUATIC_ADAPTED / AQUATIC_DISABLED_WITH_FALLBACK` classification, accepted UAL swim/combat/cast/guard motion strategy, 3D targeting, fallback ownership and server-authority rules
 - `M0_DEPENDENCY_AUDIT.md`
+- `M0_INTEGRATION_ARCHITECTURE.md` — external-mod composition contract: adapter/data-overlay/tag/event boundaries, authority firewall, validation/sync rules and anti-fork/update-containment strategy
 
 World/story/regional canon:
 
@@ -182,6 +183,7 @@ These are not new design options. They identify older live phrases that are alre
 - Phase E exact-file review now adds technical corroboration for the selected Wizard/Ranger/Knight apparel families (shared 65-joint humanoid skin, real BIN/texture payloads), confirms `Potion_1..4` are distinct geometry payloads, and corrects the UAL evidence boundary: the 2025-06-10 46-clip UAL1 Standard mirror has no `Drink`, while a newer pinned integration corroborates exact `Drink`/`Consume` names. Creator-current archive acquisition, project-local SHA-256, direct visual/retarget/Minecraft acceptance remain open, so `R01 ASSET_BINDING COMPLETE` and `R01 SOURCE READY` remain `NO`.
 - Phase F Kenney binding now pins exact ordinary baseline sprite/audio candidates and direct candidate hashes/timing. This stops generic filename discovery for those baseline roles, but **does not** close Earthloong electrical signature presentation, final Burning/Frostbite shapes, audio audition, spatial mix, Low-VFX review or Minecraft composition. `R01 ASSET_BINDING COMPLETE` and `R01 SOURCE READY` therefore remain `NO`.
 - Older `Threateningly Mobs Continued = MIT` shorthand is not sufficient for raw-byte reuse. Current storefront metadata conflicts; use dependency-only handling until the exact canonical upstream license is resolved as recorded in `PRODUCTION_ASSET_BINDING_MATRIX.md`.
+- `M0_INTEGRATION_ARCHITECTURE.md` closes the former open question of how multiple large external mods are combined: dependencies stay isolated behind project adapters/data overlays/tags, while project state remains authoritative. KubeJS/FTB Quests/Cobblemon/Create/Mine & Slash are architecture references unless separately admitted as runtime dependencies; this does not reopen the Fabric loader choice or import a second RPG progression stack.
 
 ---
 
@@ -307,6 +309,49 @@ If the exact external visual is unresolved, leave that visible slot gated and wo
 External designs/assets may be adapted, recomposed, retargeted or integrated to fit the game's canon and technical constraints. This does not authorize improvised AI visual language that competes with the selected external art direction.
 
 A missing exact source is a pre-code gate for that visible content, not permission for a vanilla/AI placeholder to become the final answer.
+
+### 8.2 External-mod composition contract
+
+External mods are treated as **components**, not as independent games that retain final authority inside Openworld RPG.
+
+The canonical composition shape is:
+
+```text
+external runtime/content
+→ project integration adapter / data overlay / semantic tags
+→ project domain request/state
+→ server-authoritative validation/transaction
+→ project presentation sync
+```
+
+Project core code should not scatter donor implementation classes across combat, quests, loot, progression or world state.
+
+For an external dependency, prefer in this order:
+
+```text
+documented public API
+→ registry/resource ID
+→ tag/datapack/data registry
+→ published event/callback
+→ supported config
+→ narrow compatibility shim
+→ donor-internal mixin/reflection only as a documented last resort
+```
+
+An accepted dependency actor/system gets explicit policy by dimension rather than a vague `use this mod` decision. The detailed policy vocabulary (`PASS_THROUGH / ADAPT / OVERRIDE / SUPPRESS / REFERENCE_ONLY`), overlay schema, integration-module contract, startup validation and server→client data-sync rules live in `M0_INTEGRATION_ARCHITECTURE.md`.
+
+Invariants:
+
+- external presentation/animation/AI primitives may be retained when they improve quality;
+- project spawn/stat/damage/loot/progression/world-state rules override donor defaults where canon requires;
+- no donor recipe/loot/worldgen/progression is accepted merely because the mod is installed;
+- external actor changes should normally target registry IDs through project overlay data rather than editing/forking donor files;
+- required integration failure is explicit during development, never silently replaced by a vanilla stand-in;
+- optional integrations disable cleanly;
+- one dependency update should normally require changes in its adapter/binding layer, not in unrelated project gameplay systems;
+- the project does not install another complete RPG/class/economy/quest system merely to obtain one useful primitive.
+
+The point of using many good mods is to reduce low-value reinvention while still shipping **one coherent game**.
 
 ---
 
