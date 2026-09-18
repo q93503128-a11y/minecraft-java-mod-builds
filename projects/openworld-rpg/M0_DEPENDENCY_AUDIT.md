@@ -816,11 +816,12 @@ Important limitation:
 
 > **dependency co-load is not an authority adapter.**
 
-Still open:
+Current authority state:
 
 ```text
-BETTER COMBAT → PROJECT DAMAGE AUTHORITY: NOT IMPLEMENTED
-SPELL ENGINE → PROJECT MANA/CD/IMPACT AUTHORITY: NOT IMPLEMENTED
+BETTER COMBAT → PROJECT DAMAGE AUTHORITY SEAM: IMPLEMENTED / STARTUP VERIFIED / REAL HIT NOT TESTED
+SPELL ENGINE → PROJECT CAST-ADMISSION EVENT SEAM: IMPLEMENTED / STARTUP VERIFIED
+SPELL ENGINE → PROJECT MANA/CD/IMPACT TRANSACTION: NOT IMPLEMENTED
 MOBFILTER PROJECT ECOLOGY RULES: NOT IMPLEMENTED
 ALEX/TMC PROJECT SPAWN-STAT-LOOT OVERRIDES: NOT IMPLEMENTED
 CLIENT RUNTIME: NOT TESTED
@@ -829,7 +830,7 @@ PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
 ```
 
-The next M0 technical gate is one bounded authority bridge at a time, beginning with Better Combat and Spell Engine. Do not add another broad RPG runtime before those bridges are proven.
+All 13 pinned gameplay/creature dependency contracts now enforce their actual distributed runtime versions. The next M0 technical gate remains bounded: complete one real project Spell Engine resource/cooldown/impact transaction, then prove one real external-creature overlay. Do not add another broad RPG runtime before those bridges are proven.
 
 ---
 
@@ -857,7 +858,7 @@ The old queue that still called for combat-formula design, five root-class desig
 Current production sequence:
 
 1. keep `M0_INTEGRATION_ARCHITECTURE.md` as the source-bootstrap composition contract;
-2. continue the already-booting M0 stack with bounded authority adapters — Better Combat first, then Spell Engine, then one real external-creature overlay;
+2. continue the already-booting M0 stack with bounded authority adapters — Better Combat damage seam is in place; finish the real Spell Engine Mana/cooldown/impact transaction, then prove one real external-creature overlay;
 3. in parallel, finish the remaining exact asset and actual-Azari spatial gates required before player-facing R01 implementation;
 4. remove stale live-document contradictions as encountered;
 5. implement R01 as the first full vertical-slice proof only after its asset/spatial gates close;

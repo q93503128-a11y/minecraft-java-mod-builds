@@ -528,3 +528,55 @@ BETTER COMBAT REAL-HIT TRANSACTION TESTED: NO
 ```
 
 The next implementation gate is the Spell Engine resource/cooldown/impact authority bridge, followed by one real external-creature spawn/stat/loot overlay.
+
+
+---
+
+# 12. Spell Engine cast-admission seam + exact dependency version enforcement — 2026-09-18
+
+Verified implementation commits:
+
+```text
+267e69f1a967da5620240733aa64a98d99eca7a3
+openworld-rpg: gate project spells through authority
+
+2566170d51b00557dbf000fdd6c34607707902b9
+openworld-rpg: enforce pinned integration contracts
+```
+
+Verification workflow:
+
+```text
+Build Openworld RPG
+run 35329917184
+conclusion: SUCCESS
+```
+
+What changed:
+
+- `ActorIntegrationOverlayValidator` now requires every canonical external-actor ownership dimension, including presentation, animation, movement/combat AI, recipes, worldgen and capture/duplication policy instead of validating only the combat/economy subset;
+- all 13 runtime dependency contracts enforce the exact versions read from the pinned distributed JAR metadata;
+- Better Combat `3.2.2` and Player Animation Library `1.2.6+mc.26.2` use their actual `fabric.mod.json` version strings rather than artifact/display shorthand;
+- Spell Engine is bound through a reflection-isolated event adapter using `CASTING_ATTEMPT.PRE`, `COST_CONSUME` and `SPELL_CAST`;
+- server-side `openworld_rpg:*` spells are fail-closed until a real `SpellCastAuthority.Policy` exists;
+- non-project Spell Engine spells are not silently claimed as Openworld RPG progression content;
+- the CI gameplay smoke now requires explicit Better Combat and Spell Engine adapter activation logs.
+
+The exact verification state is:
+
+```text
+ACTOR OVERLAY FULL OWNERSHIP VALIDATION: IMPLEMENTED + UNIT TESTED
+DEPENDENCY EXACT VERSION VALIDATION: IMPLEMENTED + GAMEPLAY SERVER TESTED
+SPELL ENGINE EVENT API BINDING: IMPLEMENTED + GAMEPLAY SERVER STARTUP TESTED
+PROJECT SPELL WITHOUT AUTHORITY POLICY: FAIL-CLOSED BY CODE + UNIT TESTED
+
+PROJECT MANA TRANSACTION THROUGH SPELL ENGINE: NOT IMPLEMENTED
+PROJECT COOLDOWN TRANSACTION THROUGH SPELL ENGINE: NOT IMPLEMENTED
+PROJECT SPELL IMPACT/DAMAGE TRANSACTION: NOT IMPLEMENTED
+REAL PLAYER SPELL CAST EXECUTED: NO
+CLIENT RUNTIME: NOT TESTED
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
+```
+
+Therefore this pass closes the **cast-admission/event boundary**, not the full Spell Engine authority milestone. The next Spell Engine gate must use the real project resource/cooldown/combat state rather than a temporary Mana ledger or donor cost system.
