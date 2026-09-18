@@ -166,11 +166,11 @@ public final class VillageTownHallGridScreen extends Screen {
         graphics.text(font, title, left, y, color, false);
         int lineY = y + 13;
         List<FormattedCharSequence> lines = font.split(Component.literal(value), Math.max(70, right - left));
-        for (int i = 0; i < Math.min(3, lines.size()); i++) {
+        for (int i = 0; i < Math.min(2, lines.size()); i++) {
             graphics.text(font, lines.get(i), left, lineY, MUTED, false);
             lineY += 11;
         }
-        return lineY + 8;
+        return lineY + 5;
     }
 
     private List<ButtonSpec> facilityButtons(Pane pane, FacilityCard f) {
