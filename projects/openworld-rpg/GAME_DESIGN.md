@@ -20,11 +20,11 @@ Subordinate references currently indexed by this canon:
 - `CLASS_PROGRESSION.md` — Class Rank/XP, advancement beats, passive economy, deeper branch mechanics and world-discovered skills.
 - `STATUS_AND_R01_ENCOUNTERS.md` — element/status rules and concrete R01 ecology/elite/field-boss/first-dungeon combat kits.
 - `R01_VERTICAL_SLICE.md` — Alderford opening settlement, external player-motion bindings and first 55–75 minute playable R01 route.
-- `R01_CONTENT_BIBLE.md` — full-region R01 content authority for subregions, dynamic event, ecology-density seed, quarry/Regalhart repeat controllers, exact service stock, Camp acquisition, profession opportunities, fishing mechanical slots, Alderford property roster, NPC presence and post-clear state.
+- `R01_CONTENT_BIBLE.md` — full-region R01 content authority and current closure record. R01 gameplay/content design is CLOSED there; implementation-time gameplay choices are not left open. Exact asset/spatial binding remains pre-code.
 - `R01_UI_PRODUCTION_SPEC.md` — exact R01 HUD/screen hierarchy, first-class/board/journal/merchant/service/housing/fishing/reward interaction flow, commit points, reconnect/error states and real-client visual acceptance.
 - `R01_PLAYER_TEXT_SPEC.md` — exact R01 board-card copy, HUD/journal objective wording, discovery text, named-NPC state dialogue, ambient barks and post-clear world-state lines.
 - `RECOVERY_PRODUCTION_APPEARANCE.md` — recovery belt, potions, food, alchemy/cooking, light profession mastery and external-first armor/apparel/Wardrobe rules.
-- `R01_ASSET_INTAKE.md` — current R01 exact asset/provenance intake state and unresolved presentation gates; Phase-B Pass 4 evidence is integrated but R01 is not asset-ready.
+- `R01_ASSET_INTAKE.md` — current R01 exact asset/provenance intake state and unresolved presentation gates; the later fish pass narrows the current four-role freshwater direct-review queue to Common Minnow / CDmir Fish / Armored Catfish / CDmir Esox. R01 is not asset-ready until actual binary/hash/3D/Minecraft acceptance.
 - `GATHERING_FISHING_CAMP_HOUSING.md` — Tool Pouch, gathering mastery/timing, fishing, reusable Field Camp Kit, housing/storage/furnishing and authority rules.
 - `FISHING_COLLECTION_HOUSING_MARKET.md` — Fish Codex/records/trophy loop and the authoritative one-residence-at-a-time housing trade-up refinement.
 - `QUEST_WORLD_STATE.md` — personal/shared quest state, objective credit, dialogue, dynamic events, late join, idempotent rewards and multiplayer quest authority.
@@ -963,6 +963,18 @@ Avoid stitching together unrelated building styles when a coherent pack/source e
 ## R01 — first-region content package
 
 `R01` is an internal production identifier. Alderford is already locked as the starting settlement name; broader player-facing region naming/terrain placement follows the current region canon and actual Azari spatial closure rather than being invented during implementation.
+
+Current closure split:
+
+```text
+R01 GAMEPLAY / CONTENT DESIGN CLOSED: YES
+R01 IMPLEMENTATION-TIME GAMEPLAY CHOICES REMAIN: NO
+R01 ASSET_BINDING COMPLETE: NO
+R01 SPATIAL_BINDING COMPLETE: NO
+R01 SOURCE READY: NO
+```
+
+Implementation therefore consumes R01 canon; it does not redesign it. Asset/spatial/playtest evidence may justify a canon revision later, but source code does not choose substitute values first.
 
 ### Terrain / role
 
