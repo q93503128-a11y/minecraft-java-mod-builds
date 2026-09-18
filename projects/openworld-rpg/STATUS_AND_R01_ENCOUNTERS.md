@@ -642,7 +642,8 @@ Behavior:
 Drops remain `EQUIPMENT_BALANCE.md`:
 
 - Louxia Meat 1–2 guaranteed per eligible kill;
-- Louxia Glow 35%.
+- Louxia Glow 35%;
+- Gold: 0.
 
 No equipment drop.
 
@@ -701,7 +702,8 @@ healing received: -20%
 
 - normal common-enemy EXP target ~1% of current next-Lv requirement;
 - Class XP ~0.8% current Class Rank requirement;
-- ordinary low Gold/consumable table only;
+- Gold: **2 at 60%**;
+- no random consumable drop at baseline;
 - **no new venom material** is invented solely because the snake exists.
 
 ---
@@ -774,6 +776,7 @@ No teleport-to-ceiling behavior is invented; the attack requires a physically va
 - no ordinary equipment roll;
 - common/sturdy EXP target ~1% current Lv requirement;
 - Class XP ~0.8%;
+- Gold: **3 at 70%**;
 - donor `Cave Centipede Leg` is **not** automatically admitted into project loot. It remains disabled from the project-normalized loot table unless later alchemy design gives it a real non-overlapping use and the dependency/license boundary is rechecked.
 
 ---
@@ -816,6 +819,7 @@ Use canonical Tough Hide sourcing:
 
 - Tough Hide 1–2 at 70%;
 - no ordinary food drop in R01; Louxia remains the intended early creature-food source;
+- Gold: 0;
 - no equipment drop.
 
 ---
@@ -859,6 +863,7 @@ recovery: 0.75 s
 Drops:
 
 - Tough Hide 2–3 guaranteed;
+- Gold: 0;
 - no normal equipment roll.
 
 ---
@@ -940,6 +945,7 @@ Apply elite loot canon:
 - 30% one ordinary equipment roll;
 - Iron Ore 1–3 at 60%;
 - Tough Hide 1 at 35%;
+- Gold: **18 guaranteed**;
 - EXP ~6% current next-Lv requirement;
 - Class XP ~5% current Class Rank requirement.
 
@@ -1023,6 +1029,7 @@ The server hit area must match the visible external ground decal/ring. This is a
 - elite 30% gear roll;
 - Healing Herb 1–2 at 60%;
 - Verdant Crystal 1 at 35%;
+- Gold: **20 guaranteed**;
 - EXP ~6%;
 - Class XP ~5%.
 
@@ -1149,6 +1156,7 @@ First eligible defeat:
 - 2 Regalhart Antlers;
 - guaranteed Superior+ normal gear;
 - 15% direct Mythic roll from known Regalhart signature pool (`Hartcrown Spear` currently);
+- Gold: **70**;
 - EXP ~20% current next-Lv requirement;
 - Class XP ~15% current Class Rank requirement.
 
@@ -1158,6 +1166,7 @@ Repeat:
 - guaranteed normal gear;
 - 25% second normal gear roll;
 - 15% direct Mythic roll;
+- Gold: **35**;
 - EXP ~7%;
 - Class XP ~6%.
 
@@ -1369,7 +1378,8 @@ Repeat:
 - Earthloong Scale x1;
 - 15% Mythic roll;
 - repeat completion EXP **22%** + boss contribution;
-- Class XP **15%** completion + ~6% boss.
+- Class XP **15%** completion + ~6% boss;
+- Gold: **90**.
 
 These values remain subject to actual playtest feel, but implementation starts from these numbers rather than inventing them.
 
