@@ -22,7 +22,7 @@ def main() -> None:
     assert 'assert "mod_version=0.18.23-alpha.1" in props' not in v23
 
     # Client actions are untrusted strings; mutations must be re-authorized server-side at packet execution time.
-    assert "VillageUiActionPayload" in network and "VillageLocalActionSystem.handle(player, payload.action())" in network
+    assert "VillageUiActionPayload" in network and "VillageLocalActionSystem.handle(player, action)" in network
     assert "isSiegeCommandAction(action)" in local
     assert "VillageProgressionSystem.Building.WALLS" in local
     for token in (
