@@ -60,7 +60,7 @@ def main() -> None:
     assert "height / 11" in safe_source and "38, 56" in safe_source
     assert "panelWidth = Math.min(940" in town and "panelHeight = Math.min(500" in town
     assert "panelWidth * 31 / 100" in town and "gap = 10" in town
-    assert "panelWidth = Math.min(760" in action and "panelHeight = Math.min(360" in action
+    assert "panelWidth = Math.min(760" in action and "panelHeight = Math.min(420" in action
     assert "VillageUiSafeArea.screen" in victory
     assert "drawSignalLabel" in quick_source
     assert "VanillaGuiLayers.CHAT" in suppressor and "VanillaGuiLayers.HOTBAR" in suppressor
