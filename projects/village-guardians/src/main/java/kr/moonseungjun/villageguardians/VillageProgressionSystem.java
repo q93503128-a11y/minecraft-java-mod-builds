@@ -303,10 +303,18 @@ public final class VillageProgressionSystem {
         player.sendSystemMessage(Component.literal("§e+" + granted + " 수호 주화 §7(" + reason + ")"));
     }
 
-    public static void awardRaidCoins(MinecraftServer server, int amount) {
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            addCoins(player, amount, "습격 방어 보상");
+    public static synchronized void awardRaidCoins(MinecraftServer server, int amount) {
+        int granted = Math.max(0, amount);
+        if (server == null || granted <= 0) return;
+        for (UUID playerId : nightParticipants(server)) {
+            COINS.put(playerId, coins(playerId) + granted);
+            ServerPlayer online = server.getPlayerList().getPlayer(playerId);
+            if (online != null) {
+                online.sendSystemMessage(Component.literal(
+                        "§e+" + granted + " 수호 주화 §7(습격 방어 보상)"));
+            }
         }
+        persist();
     }
 
     public static synchronized String claimDailyBread(ServerPlayer player) {
