@@ -20,7 +20,7 @@ Implementation must be checked against:
 2. `02_수치규칙위키_v0.4`
 3. `03_캐릭터설계위키_v0.4`
 
-Later explicit user decisions override older implementation assumptions. Alpha delta docs describe implementation state but do not silently erase v0.4 world/content canon.
+Later explicit user decisions override older implementation assumptions. `WORLD_OVERHAUL_DREHMAL.md` is the current production world-layer override: v0.4 combat/content canon remains authoritative, while the former physical Aster March map/coordinates are legacy migration reference rather than production world canon.
 
 ## Combat contract
 - Turn threshold 1000; action subtracts 1000 rather than resetting Gauge.
@@ -98,23 +98,23 @@ TURNBOUND is not a survival game.
 - Survival HUD is hidden.
 - Combat HP belongs only to CombatantState.
 
-## Current playable world slice — alpha.15 baseline retained while alpha.17 v0.4 integration proceeds
-- Normal play does not require `/turnbound` commands.
-- After entering a new Overworld, TURNBOUND automatically starts after the initial load delay.
-- Default Superflat is supported without a custom preset; the starter slice samples the actual surface Y before authoring itself.
-- Current intentionally small test scope is `peaceful starter village 64×64 → south gate → first field 64×64`.
-- The village has no combat enemies. It contains the scout NPC and relay/travel object.
-- The first field contains visible M01/M02 patrol encounters separated enough to be avoided before engagement.
-- This small vertical slice is the active playtest shell while alpha.17 integrates the larger v0.4 systems; it does not delete the v0.4 Aster March/Southgate content plan.
-- Future expansion may repeat `safe village/hub → combat field → safe village/hub → next field` where it improves pacing.
-- PvP/team battle is a future extension candidate, not current P2 scope.
+## Production world contract — external authored world overhaul
+
+- Production base: separately installed Drehmal: APOTHEOSIS v2.2.2f.
+- TURNBOUND does not vendor or redistribute the original world/resource-pack bytes.
+- Production runtime is fail-closed: arbitrary saves without the exact TURNBOUND external-world marker do not run world-authoring/gameplay shell logic.
+- New production code must bind semantic gameplay anchors onto existing geography; it must not flatten terrain, build replacement roads, generate temporary arenas or restore the old ribbon-map topology.
+- Current integration seeds are New Drabyel `(502,67,1801)` and Stasis Facility `(778,31,668)`. They are binding seeds until migrated-26.2 terrain inspection promotes them to safe gameplay anchors.
+- Legacy Aster March builders/session coordinates remain only for migration/reference until their mixed gameplay dependencies are extracted.
+- See `WORLD_OVERHAUL_DREHMAL.md` for the code-level preserve/quarantine boundary and migration order.
 
 ## Required validation
 - Java 25 clean test/build green.
 - NeoForge real server boot smoke green.
 - JAR metadata/classes/resources verified.
 - Runtime version, NeoForge metadata version and JAR manifest version must match `mod_version`.
-- Automatic starter-slice entry must remain command-free on Overworld/Superflat.
+- Arbitrary Overworld/Superflat saves must remain untouched unless explicitly bound to the production external-world profile.
+- External-world binding must not author, flatten or repair Drehmal terrain.
 - HUD rectangles must remain inside the viewport and party/skills/control strip must not overlap at supported test resolutions.
 - Live-camera direct targeting, double-click commit, battlefield centering and hover tooltip regressions remain green.
-- Later restoration/extension of the full Southgate route must preserve v0.4 quest/encounter/boss canon unless explicitly changed.
+- Rebinding Southgate/Chapter content onto Drehmal must preserve v0.4 quest/encounter/boss gameplay canon unless explicitly changed; old Aster March coordinates are not preserved for their own sake.
