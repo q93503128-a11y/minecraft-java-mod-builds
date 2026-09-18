@@ -1,6 +1,7 @@
 package dev.moonseungjun.openworldrpg.integration.bootstrap;
 
 import dev.moonseungjun.openworldrpg.integration.bettercombat.BetterCombatAuthorityAdapter;
+import dev.moonseungjun.openworldrpg.integration.spellengine.SpellEngineAuthorityAdapter;
 import org.slf4j.Logger;
 
 public final class IntegrationBootstrap {
@@ -22,6 +23,7 @@ public final class IntegrationBootstrap {
         }
 
         BetterCombatAuthorityAdapter.initialize(profile, logger);
+        SpellEngineAuthorityAdapter.initialize(profile, logger);
 
         logger.info(
                 "Openworld RPG integration manifest schema {} accepted ({} dependency contracts, profile {}).",
