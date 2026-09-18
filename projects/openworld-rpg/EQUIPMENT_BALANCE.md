@@ -289,10 +289,10 @@ This section closes the actual value ranges.
 
 ## 8.1 Roll procedure
 
-For an affix with allowed `[min, max]` and grade percentile floor `f`:
+For an affix with allowed `[min, max]` and grade percentile floor `f`, use a **continuous uniform server-side roll**:
 
 ```text
-r = random(f, 1.0)
+r = uniform_random(f, 1.0)
 value = lerp(min, max, r)
 ```
 
@@ -523,6 +523,8 @@ Do not add salvage just because other ARPGs have it. Add salvage only if a futur
 ---
 
 # 10. R01 production resource catalog
+
+Unless a specific row says otherwise, any R01 integer yield written as `A–B` uses a **discrete uniform server-side roll over every integer in [A, B]**. Example: `2–4` means 2/3/4 each have equal baseline probability before mastery/secondary modifiers. Implementation does not choose a hidden triangular or weighted distribution.
 
 This is the first region's canonical resource set. It is intentionally small.
 
