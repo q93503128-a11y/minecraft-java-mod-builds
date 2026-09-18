@@ -107,12 +107,22 @@ This study exists to replace the current Zombie/Skeleton/Ravager **behaviour pro
 - Status: `CANDIDATE`
 - Author: Quaternius
 - Family source: https://quaternius.com/packs/ultimatemonsters.html
+- Creator distribution: https://drive.google.com/drive/folders/18m4KpzpEzhC9wl7jzr6dUc0N8Jozr79C
+- Creator file ID: `1k7LbRse-00nyMQhTdJMvebPp8B-05hcG`
 - Individual cross-check: https://poly.pizza/m/42djT5zJnx
-- License: CC0 / public domain. The individual Poly Pizza entry identifies `Armabee` as Public Domain (CC0), animated, FBX/GLTF.
-- Source date re-verified: 2026-09-15
+- License: CC0 1.0 / public domain dedication.
+- Exact source file: `Flying/glTF/Armabee.gltf`
+- Exact source size: `297261` bytes
+- Exact source SHA-256: `10ca05955ab7f7f6e2f9bd8fd85f28ed1351c945e390b1fd0fa84428b43a5916`
+- Direct source inspection: glTF 2.0; 1 mesh, 1 skin, 1 material, 1 embedded PNG image, 15 nodes, 1,260 vertices, 2,280 triangles; source extent approximately 4.3039 × 1.8862 × 2.0592 units.
+- Source clips: `Death`, `Fast_Flying`, `Flying_Idle`, `Headbutt`, `HitReact`, `No`, `Punch`, `Yes`.
 - Intended use: **visual/rig candidate for the Region 01 Scout role**, replacing the Skeleton silhouette while preserving the already-settled ranged-pressure role.
-- Why it fits: aerial/insectoid silhouette is immediately distinct from the ground Hunter and gives ranged pressure a readable spatial identity without changing the server-authoritative role contract.
-- Not yet approved: exact upstream bytes/hash, animation vocabulary, ranged presentation fit, flight/grounding requirements, hitbox and Minecraft field readability must be inspected before selection. Do not add flight mechanics merely because the source silhouette can fly; gameplay semantics remain authoritative.
+- Why it fits: aerial/insectoid silhouette is immediately distinct from the ground Hunter and gives ranged pressure a readable spatial identity without changing the server-authoritative role contract; exact inspection confirms a compact single-skinned-mesh actor with authored idle/fast-flight and combat lifecycle vocabulary.
+- Runtime review contract: `Region01ScoutArmabeeRuntimeAsset` locks the exact source hash, geometry counts and animation vocabulary. `FIELD_REVIEW_SEQUENCE` is `Flying_Idle → Fast_Flying → Punch → Headbutt → HitReact → Death`; this is review vocabulary, not permission to change gameplay semantics.
+- Canonical evidence: `docs/provenance/region01_scout_armabee_source_inspection.json` plus `Region01ScoutArmabeeRuntimeAssetTest`.
+- Important constraint: the exact source has no `Walk` or `Run` clip. Grounded locomotion must not be fabricated or silently mapped to misleading source motion, and the winged silhouette does **not** authorize flight gameplay. Preserve the existing server-authoritative Scout ranged-pressure contract.
+- Still not approved for production: `selected_for_production = false` and `human_visual_acceptance = false`. The exact source bytes are not yet vendored as a runtime resource and no isolated Minecraft Scout field-review actor has been build-verified. Before selection, prove root transform/ground alignment, player-relative scale/facing, texture/UV integrity, hitbox and near/combat/medium-distance readability in Minecraft.
+- Do not redo Armabee candidate search, creator-source discovery, exact-source hash/geometry/clip inspection or runtime-contract semantics unless evidence regresses them.
 
 #### Quaternius — Goleling Evolved, reconsidered only as elite-role candidate
 
