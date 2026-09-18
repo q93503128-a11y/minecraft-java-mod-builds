@@ -11,6 +11,7 @@
 > Pass-3 evidence: `R01_ASSET_PHASE_B_PASS3_EVIDENCE_2026-09-15.md`  
 > Pass-4 evidence: `R01_ASSET_PHASE_B_PASS4_EVIDENCE_2026-09-17.md`  
 > Phase-C exact-file evidence: `R01_ASSET_PHASE_C_EXACT_FILE_AUDIT_2026-09-18.md`  
+> Phase-D fish/VFX/audio source evidence: `R01_ASSET_PHASE_D_FISH_VFX_SOURCE_REVIEW_2026-09-18.md`  
 > Rule: gameplay canon still wins. For **R01 asset-admission/license decisions**, this file records the newest verified evidence and supersedes older subordinate notes whose license label or candidate state has become stale.
 
 This file converts the project's external-first rule from a pack-level intention into an intake manifest. It is deliberately conservative: an asset is not considered production-ready merely because a web page looks good or because a previous conversation called a pack CC0.
@@ -207,13 +208,13 @@ R01 final binding: NO
 
 | Candidate | Source / exact file evidence | License evidence | Useful verified properties | R01 status |
 |---|---|---|---|---|
-| **CDmir Esox - Animated Fish** | OpenGameArt `esox.zip` | CC0 on creator upload | 826 faces / 1,632 tris; albedo/normal/roughness/spec textures; Idle + Slow Swim + Fast Swim | **DIRECT_REVIEW_PRIORITY** for Rare / predatory freshwater silhouette |
-| **CDmir Fish (Animated)** | OpenGameArt `fish.zip` (2.9 MB) | CC0 on creator upload | rigged, animated, diffuse texture, described ready for game use | **DIRECT_REVIEW_PRIORITY** for Common/Uncommon if style matches |
-| **Quaternius Armored Catfish** | Poly Pizza model `mtd9QK5yCe` | Public Domain / CC0 on model page | Low Poly, Animated, FBX/GLTF; visibly distinct catfish-like armored silhouette in the same broader Quaternius low-poly family | **DIRECT_REVIEW_PRIORITY** for Uncommon/Common freshwater slot; animation/scale/texture still requires binary review |
+| **CDmir Esox - Animated Fish** | OpenGameArt `esox.zip`; exact direct URL now pinned in Phase D | CC0 on creator upload | 826 faces / 1,632 tris; albedo/normal/roughness/spec textures; Idle + Slow Swim + Fast Swim | **DIRECT_REVIEW_PRIORITY** for Rare; binary materialization/3D review still open |
+| **CDmir Fish (Animated)** | OpenGameArt `fish.zip` (2.9 MB); exact direct URL now pinned in Phase D | CC0 on creator upload | rigged, animated, diffuse texture, described ready for game use | **DIRECT_REVIEW_PRIORITY** for ordinary Common; binary materialization/visual review still open |
+| **Quaternius Armored Catfish** | Poly Pizza model `mtd9QK5yCe` | Public Domain / CC0 on model page | Low Poly, Animated, FBX/GLTF; Phase-D direct preview confirms a broad blunt armored-catfish silhouette with strong role separation; preview material is very dark | **DIRECT_REVIEW_PRIORITY / VISIBLE_ROLE_PASS** for Uncommon; underwater readability + binary/animation review still required |
 | **gfroad 3d low poly catfish** | OpenGameArt `catfish.zip` + `catfish_obj.zip` | CC0 on creator upload | 284 polygons / 151 verts; swim + jump animations documented in source MAX version | **DIRECT_REVIEW_ALT**; animation conversion/source-format risk must be checked |
 | **joyfulsquirrel Fish** | OpenGameArt `fish.zip` (131.3 KB) | CC0 on creator upload | Blend; 328 triangles; rigged; Tpose + Swim | **DIRECT_REVIEW_ALT** for a very light Common fish if visual quality survives Minecraft scale |
 | **Quaternius Goldfish** | Poly Pizza model `qS6CgsWFAh` | Public Domain / CC0 on model page | Low Poly, Animated, FBX/GLTF | **REJECTED_R01_BASELINE** for current river/ford slots; reads as ornamental/domesticated rather than ordinary Heartland river ecology |
-| **Small Fish — Common Minnow** | s&box `Small Fish` asset collection; Common Minnow asset listed at 5 MB | asset listing explicitly marks Common Minnow **CC0**; collection states fish are handmade from real-world references | exact small streamlined freshwater morphology needed for the second Common slot; collection assets are described as fish ragdoll models, so **mesh direct review is priority but project swim animation/rig adaptation is expected** | **DIRECT_REVIEW_PRIORITY** for `r01_river_common_a/b` small-stream morphology; exact individual package locator/hash and Minecraft-style review pending |
+| **Small Fish — Common Minnow** | s&box `Small Fish` asset collection; Common Minnow listed as released CC0 5 MB; Phase D revalidated collection provenance | listing explicitly marks **CC0**; Fish Models collection says models are handmade from real-world fish identities and are ragdoll models | exact small streamlined freshwater morphology needed for Common A; clean project swim rig/animation is expected | **DIRECT_REVIEW_PRIORITY**; exact individual package/file locator + binary/Minecraft review still pending |
 
 Admission rule:
 
@@ -935,9 +936,11 @@ Current state after Phase-B Pass 5 fish-provenance narrowing:
 - `DRINK EXTERNAL CLIP CANDIDATE PINNED`: YES — UAL1 `Drink`; source acquisition/visual acceptance pending
 - `REVIVE/MOUNT EXTERNAL CANDIDATES IDENTIFIED`: YES; not accepted
 - `MEDIEVAL VILLAGE MODULE CANDIDATE NAMES PINNED`: YES for a useful Standard subset; service compositions not accepted
-- `KENNEY VFX/AUDIO CANDIDATE FILENAME FAMILIES PINNED`: YES; visual/audition acceptance pending
+- `KENNEY VFX/AUDIO SOURCE FAMILIES REVALIDATED 2026-09-18`: YES — Particle Pack 80, Smoke Particles 70, RPG Audio 50, Impact Sounds 130, UI Audio 50, Interface Sounds 100; all current official pages CC0; exact sprite/clip selection still pending
 - `OLD QUATERNIUS 7-MODEL FISH BUNDLE R01 SURVIVORS`: NONE among the three directly reviewed Poly Pizza Fish entries; marine large species also rejected
 - `R01 FISH FOUR-ROLE DIRECT-REVIEW SHORTLIST`: YES — Small Fish Common Minnow + CDmir Fish + Quaternius Armored Catfish + CDmir Esox
+- `CDMIR FISH DIRECT ZIP LOCATORS PINNED`: YES — exact OpenGameArt direct file URLs recorded in Phase D; workspace binary download failed
+- `ARMORED CATFISH FIRST DIRECT VISUAL ROLE REVIEW`: PASS — role/silhouette retained; dark-water readability pending
 - `R01 FISH PRIORITY FRESHWATER SHORTLIST`: YES — broad discovery stopped; alternates only if one of the four roles fails
 - `R01 FISH EXACT FINAL MODEL ROSTER`: NO — binary 3D/animation/Minecraft review still required
 - `R01 FISH FINAL PLAYER-FACING SPECIES NAMES`: NO — intentionally blocked until final model roster is accepted
