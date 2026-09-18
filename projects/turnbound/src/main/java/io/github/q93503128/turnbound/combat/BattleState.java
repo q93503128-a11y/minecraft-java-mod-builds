@@ -1,14 +1,13 @@
 package io.github.q93503128.turnbound.combat;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 public final class BattleState {
     private final List<CombatantState> combatants;
     private final List<BattleEvent> events = new ArrayList<>();
     private String currentActorId;
-    private long logicalPulse;
+    private long logicalTimeMicro;
 
     public BattleState(List<CombatantState> combatants) {
         this.combatants = new ArrayList<>(combatants);
@@ -18,9 +17,14 @@ public final class BattleState {
     public List<CombatantState> combatants() { return List.copyOf(combatants); }
     public List<BattleEvent> events() { return List.copyOf(events); }
     public String currentActorId() { return currentActorId; }
-    public long logicalPulse() { return logicalPulse; }
+    public long logicalTimeMicro() { return logicalTimeMicro; }
+    /** Compatibility accessor for older internal callers. Value is now fixed-point logical micro-time. */
+    @Deprecated
+    public long logicalPulse() { return logicalTimeMicro; }
     void setCurrentActorId(String id) { currentActorId = id; }
-    void addLogicalPulse(long p) { logicalPulse += p; }
+    void addLogicalTimeMicro(long delta) { logicalTimeMicro = Math.addExact(logicalTimeMicro, Math.max(0L, delta)); }
+    @Deprecated
+    void addLogicalPulse(long delta) { addLogicalTimeMicro(delta); }
     void addEvent(BattleEvent e) { events.add(e); }
 
     public void addCombatant(CombatantState combatant) {
@@ -83,25 +87,6 @@ public final class BattleState {
     }
 
     public List<CombatantState> timelinePreview(int count) {
-        record N(CombatantState c, long[] g) {}
-        List<N> nodes = combatants.stream().filter(c -> !c.downed()).map(c -> new N(c, new long[]{c.gauge()})).toList();
-        List<CombatantState> out = new ArrayList<>();
-        while (out.size() < count && !nodes.isEmpty()) {
-            long p = nodes.stream().mapToLong(n -> pulses(n.c(), n.g()[0])).min().orElse(0);
-            for (N n : nodes) n.g()[0] += p * n.c().speed();
-            N selected = nodes.stream().filter(n -> n.g()[0] >= BattleEngine.TURN_THRESHOLD)
-                    .max(Comparator.comparingLong((N n) -> n.g()[0])
-                            .thenComparingInt(n -> n.c().speed())
-                            .thenComparingInt(n -> -n.c().initiativeSeed())).orElseThrow();
-            out.add(selected.c());
-            selected.g()[0] -= BattleEngine.TURN_THRESHOLD;
-        }
-        return List.copyOf(out);
-    }
-
-    private static long pulses(CombatantState c, long gauge) {
-        if (gauge >= BattleEngine.TURN_THRESHOLD) return 0;
-        long missing = BattleEngine.TURN_THRESHOLD - gauge;
-        return (missing + c.speed() - 1L) / c.speed();
+        return TurnScheduler.preview(this, count);
     }
 }

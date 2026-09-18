@@ -13,7 +13,7 @@ public final class CombatantState {
     private final int initiativeSeed;
     private int hp;
     private int barrier;
-    private long gauge;
+    private long gaugeMicro;
     private boolean downed;
     private final Map<String, Integer> cooldowns = new HashMap<>();
     private final Map<String, Integer> counters = new HashMap<>();
@@ -66,12 +66,24 @@ public final class CombatantState {
     public double damageTakenModifier() { return clamp(statusMagnitude("damage_taken_multiplier"), -0.60, 0.60); }
     public double healingReceivedModifier() { return clamp(statusMagnitude("healing_received_multiplier"), -0.60, 0.60); }
     public int barrier() { return barrier; }
-    public long gauge() { return gauge; }
+    /** Player/data-facing Gauge units. Internal scheduling retains sub-unit fixed-point precision. */
+    public long gauge() { return TurnScheduler.displayGauge(gaugeMicro); }
+    long gaugeMicro() { return gaugeMicro; }
     public boolean downed() { return downed; }
 
-    public void setGauge(long value) { gauge = Math.max(0L, value); }
-    public void addGauge(long value) { setGauge(gauge + value); }
-    public void spendTurnGauge() { gauge = Math.max(0L, gauge - BattleEngine.TURN_THRESHOLD); }
+    public void setGauge(long value) { gaugeMicro = TurnScheduler.toGaugeMicro(Math.max(0L, value)); }
+    void setGaugeMicro(long value) { gaugeMicro = Math.max(0L, value); }
+    public void addGauge(long value) { addGaugeMicro(TurnScheduler.toGaugeMicro(value)); }
+    void addGaugeMicro(long delta) {
+        long next = Math.addExact(gaugeMicro, delta);
+        gaugeMicro = Math.max(0L, next);
+    }
+    public void setGaugeAtLeast(long value) {
+        gaugeMicro = Math.max(gaugeMicro, TurnScheduler.toGaugeMicro(Math.max(0L, value)));
+    }
+    public void spendTurnGauge() {
+        gaugeMicro = Math.max(0L, gaugeMicro - TurnScheduler.TURN_THRESHOLD_MICRO);
+    }
 
     public void setCooldown(String skillId, int value) {
         String exactId = definition.skill(skillId).id();
@@ -189,7 +201,7 @@ public final class CombatantState {
         if (!downed) return 0;
         hp = Math.max(1, (int)Math.floor(maxHp() * ratio));
         barrier = 0;
-        gauge = 0;
+        gaugeMicro = 0;
         downed = false;
         statuses.clear();
         return hp;

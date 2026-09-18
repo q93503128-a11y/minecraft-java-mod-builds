@@ -13,7 +13,7 @@ import java.util.Set;
 
 /** Server-authoritative v0.4 battle interaction resolver. Numeric definitions remain data-driven. */
 public final class BattleEngine {
-    public static final long TURN_THRESHOLD = 1000L;
+    public static final long TURN_THRESHOLD = TurnScheduler.TURN_THRESHOLD;
     public static final int MAX_REACTION_DEPTH = 3;
     public static final int MAX_REACTIONS_PER_ACTION = 3;
     private static final int NORMAL_GAUGE_REDUCTION_CAP = -500;
@@ -31,28 +31,14 @@ public final class BattleEngine {
 
     public CombatantState nextReady() {
         if (state.outcome() != BattleOutcome.RUNNING) throw new IllegalStateException("Battle is over");
-        if (state.currentActorId() != null) return state.combatant(state.currentActorId());
-        List<CombatantState> living = state.combatants().stream().filter(c -> !c.downed()).toList();
-        long pulses = living.stream().mapToLong(this::pulsesUntilReady).min().orElseThrow();
-        if (pulses > 0) {
-            for (CombatantState c : living) c.addGauge(pulses * c.speed());
-            state.addLogicalPulse(pulses);
+        CombatantState ready = TurnScheduler.nextReady(state);
+        if (state.events().isEmpty()
+                || !"TURN_READY".equals(state.events().getLast().type())
+                || !ready.instanceId().equals(state.events().getLast().sourceId())) {
+            state.addEvent(new BattleEvent("TURN_READY", ready.instanceId(), ready.instanceId(),
+                    (int)Math.min(Integer.MAX_VALUE, ready.gauge()), ""));
         }
-        CombatantState ready = living.stream().filter(c -> c.gauge() >= TURN_THRESHOLD)
-                .max(Comparator.comparingLong(CombatantState::gauge)
-                        .thenComparingInt(CombatantState::speed)
-                        .thenComparingInt(c -> -c.initiativeSeed()))
-                .orElseThrow();
-        state.setCurrentActorId(ready.instanceId());
-        state.addEvent(new BattleEvent("TURN_READY", ready.instanceId(), ready.instanceId(),
-                (int)Math.min(Integer.MAX_VALUE, ready.gauge()), "pulse=" + state.logicalPulse()));
         return ready;
-    }
-
-    private long pulsesUntilReady(CombatantState c) {
-        if (c.gauge() >= TURN_THRESHOLD) return 0;
-        long missing = TURN_THRESHOLD - c.gauge();
-        return (missing + c.speed() - 1L) / c.speed();
     }
 
     public void useSkill(String actorId, String skillId, String... requestedTargetIds) {
@@ -150,8 +136,9 @@ public final class BattleEngine {
             case GAUGE_AT_LEAST -> {
                 for (CombatantState target : targets) {
                     long before = target.gauge();
-                    target.setGauge(Math.max(target.gauge(), effect.flatValue()));
-                    state.addEvent(new BattleEvent("GAUGE", actor.instanceId(), target.instanceId(), (int)(target.gauge() - before), skill.id()));
+                    target.setGaugeAtLeast(effect.flatValue());
+                    state.addEvent(new BattleEvent("GAUGE", actor.instanceId(), target.instanceId(),
+                            (int)(target.gauge() - before), skill.id()));
                 }
             }
             case GUARD_REDIRECT -> {
