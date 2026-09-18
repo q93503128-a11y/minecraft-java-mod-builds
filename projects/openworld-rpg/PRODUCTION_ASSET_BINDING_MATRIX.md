@@ -284,12 +284,41 @@ Evidence document: `R01_ASSET_PHASE_E_APPAREL_POTION_MOTION_EXACT_REVIEW_2026-09
 
 The downstream Git repositories used here are **corroboration snapshots**, not automatic raw-asset admission sources. Creator-controlled acquisition + project-local SHA-256 remain mandatory before production admission.
 
+
+## R01 Phase F Kenney baseline delta — 2026-09-18
+
+The already-approved Kenney source families now have a small exact-file shortlist for ordinary R01 presentation. This is **not** a signature-boss closure and **not** an audition pass.
+
+| R01 presentation role | Phase F exact candidate(s) | State |
+|---|---|---|
+| ordinary ground ring/decal mask | `circle_03.png` | `EXACT_BASELINE_SHORTLISTED`; Minecraft composite review pending |
+| ordinary spark/contact support | `spark_04.png` | `EXACT_BASELINE_SHORTLISTED`; not a replacement for body-anchored Shock arcs |
+| melee contact accent | `slash_01.png` | `EXACT_BASELINE_SHORTLISTED` |
+| generic heal/cast support | `light_03.png`, `magic_03.png` | `EXACT_BASELINE_SHORTLISTED`; no signature spell closed |
+| Trail Stag/heavy landing dust | `whitePuff06.png` | `EXACT_BASELINE_SHORTLISTED` |
+| Poison support | `gas04.png` | `EXACT_BASELINE_SHORTLISTED`; final composite pending |
+| impact flash | `flash04.png` | `EXACT_BASELINE_SHORTLISTED` |
+| quarry/stone/root support impact | `impact_mining_002.ogg` | `EXACT_BASELINE_SHORTLISTED`; audition pending |
+| heavy metal/guard contact | `impact_metal_heavy_001.ogg` | `EXACT_BASELINE_SHORTLISTED`; audition pending |
+| body impact | `impact_punch_medium_000.ogg` | `EXACT_BASELINE_SHORTLISTED`; audition pending |
+| heavy body/landing support | `impact_soft_heavy_000.ogg` | `EXACT_BASELINE_SHORTLISTED`; audition pending |
+| small metal/tack interaction | `metal_click.ogg` | `EXACT_BASELINE_SHORTLISTED`; audition pending |
+| quarry timber creak | `creak_2.ogg` | `EXACT_BASELINE_SHORTLISTED`; audition pending |
+| UI success/failure/select | Interface Sounds `confirmation_001` / `error_001` / `select_001` | `EXACT_BASELINE_SHORTLISTED`; audition pending |
+| Earthloong electrical charge/strike/body arcs | none | `OPEN_SIGNATURE_LAYER` |
+| Burning final shaped VFX | none | `OPEN_SIGNATURE_LAYER` |
+| Frostbite final shaped VFX | none | `OPEN_SIGNATURE_LAYER` |
+
+Direct candidate hashes, dimensions and durations are in `R01_ASSET_PHASE_F_KENNEY_EXACT_SHORTLIST_2026-09-18.md`.
+
+Important boundary: a Kenney filename can close ordinary baseline discovery, but **Earthloong / boss / shaped-status presentation is not allowed to collapse into one generic Kenney sprite or one generic impact sound**.
+
 # 9. Verification state
 
 ```text
 DESIGN/CANON REVIEWED: YES
 EXTERNAL SOURCE REVIEWED: YES for existing classifications/targeted R05–R08 screening plus R01 Phase-E apparel/potion/motion exact-file corroboration
-LICENSE/PROVENANCE REVIEWED: PARTIAL — exact acquisition artifacts/hashes remain incomplete; Threateningly continuation storefront conflict remains unresolved
+LICENSE/PROVENANCE REVIEWED: PARTIAL — Phase F exact Kenney baseline candidate hashes are recorded, but official archive-local hashes/audition/Minecraft composite acceptance remain incomplete; Threateningly continuation storefront conflict remains unresolved
 CODE REVIEWED: N/A
 TESTED: NO
 BUILD VERIFIED: NO
