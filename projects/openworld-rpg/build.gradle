@@ -125,19 +125,19 @@ dependencies {
     }
 
     if ((findProperty('openworldGameplayRuntime') ?: 'false').toString().toBoolean()) {
-        add("modLocalRuntime", "maven.modrinth:5sy6g3kz:${project.better_combat_version_id}") { transitive = false }
-        add("modLocalRuntime", "com.zigythebird.playeranim:PlayerAnimationLibFabric:${project.player_anim_version}") { transitive = false }
-        add("modLocalRuntime", "me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}") { transitive = false }
-        add("modLocalRuntime", "maven.modrinth:spell-engine:${project.spell_engine_version}") { transitive = false }
-        add("modLocalRuntime", "maven.modrinth:spell-power:${project.spell_power_version}-fabric") { transitive = false }
-        add("modLocalRuntime", "maven.modrinth:ranged-weapon-api:${project.ranged_weapon_api_version}-fabric") { transitive = false }
-        add("modLocalRuntime", "maven.modrinth:armor-model-api:${project.armor_model_api_version}-fabric") { transitive = false }
-        add("modLocalRuntime", "maven.modrinth:XaT8sLP6:${project.trinkets_version_id}") { transitive = false }
-        add("modLocalRuntime", "curse.maven:geckolib-388172:8819017") { transitive = false }
+        add("localRuntime", "maven.modrinth:5sy6g3kz:${project.better_combat_version_id}") { transitive = false }
+        add("localRuntime", "com.zigythebird.playeranim:PlayerAnimationLibFabric:${project.player_anim_version}") { transitive = false }
+        add("localRuntime", "me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}") { transitive = false }
+        add("localRuntime", "maven.modrinth:spell-engine:${project.spell_engine_version}") { transitive = false }
+        add("localRuntime", "maven.modrinth:spell-power:${project.spell_power_version}-fabric") { transitive = false }
+        add("localRuntime", "maven.modrinth:ranged-weapon-api:${project.ranged_weapon_api_version}-fabric") { transitive = false }
+        add("localRuntime", "maven.modrinth:armor-model-api:${project.armor_model_api_version}-fabric") { transitive = false }
+        add("localRuntime", "maven.modrinth:XaT8sLP6:${project.trinkets_version_id}") { transitive = false }
+        add("localRuntime", "curse.maven:geckolib-388172:8819017") { transitive = false }
 
-        add("modLocalRuntime", "curse.maven:alexs-mobs-continued-1635121:${project.alexs_mobs_curse_file}") { transitive = false }
-        add("modLocalRuntime", "curse.maven:codxlib-1633207:${project.codxlib_curse_file}") { transitive = false }
-        add("modLocalRuntime", "maven.modrinth:${project.threateningly_mobs_project_id}:${project.threateningly_mobs_version_id}") { transitive = false }
+        add("localRuntime", "curse.maven:alexs-mobs-continued-1635121:${project.alexs_mobs_curse_file}") { transitive = false }
+        add("localRuntime", "curse.maven:codxlib-1633207:${project.codxlib_curse_file}") { transitive = false }
+        add("localRuntime", "maven.modrinth:${project.threateningly_mobs_project_id}:${project.threateningly_mobs_version_id}") { transitive = false }
     }
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.12.2'
