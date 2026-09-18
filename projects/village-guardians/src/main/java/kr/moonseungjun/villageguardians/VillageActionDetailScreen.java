@@ -31,6 +31,7 @@ public final class VillageActionDetailScreen extends Screen {
     private static final int ROW_HEIGHT = 39;
     private static final int ROW_GAP = 3;
 
+    private final String screenId;
     private final String heading;
     private final String body;
     private final List<ActionCard> actions = new ArrayList<>();
@@ -39,10 +40,15 @@ public final class VillageActionDetailScreen extends Screen {
 
     public VillageActionDetailScreen(VillageNetwork.OpenVillageUiPayload payload) {
         super(Component.literal(payload.title()));
+        screenId = payload.screenId();
         heading = plain(payload.title());
         body = plain(payload.body());
         parse(payload);
         selected = actions.isEmpty() ? -1 : 0;
+    }
+
+    boolean isVoteScreen() {
+        return "vote".equals(screenId);
     }
 
     @Override public boolean isPauseScreen() { return false; }
@@ -215,6 +221,9 @@ public final class VillageActionDetailScreen extends Screen {
                     VillageActionDescriptions.describe(action, card.title())));
         } else {
             ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(action));
+            if (("vote_yes".equals(action) || "vote_no".equals(action)) && minecraft != null) {
+                minecraft.gui.setScreen(null);
+            }
         }
     }
 
