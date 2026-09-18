@@ -178,11 +178,11 @@ Validation labels must remain distinct:
 
 Docs/visual-only changes do not trigger build merely to create a green badge.
 
-Current overhaul foundation checkpoint:
+Current combat-overhaul checkpoint:
 - CODE REVIEWED: YES
-- TESTED: YES — Gradle test suite, Build TURNBOUND #758
-- BUILD VERIFIED: YES — Build TURNBOUND #758, code/workflow commit `fe816b1222e13755dac3a9926d99a0db338c0e35`
+- TESTED: YES — fixed-point scheduler + Kyren v1 runtime regression suite, Build TURNBOUND #762
+- BUILD VERIFIED: YES — Build TURNBOUND #762, code commit `fbe6a3d7eb7844ff576c433b131fe4550737b165`
 - SERVER SMOKE: YES — NeoForge 26.2 dedicated server reached ready state
-- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`
+- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`, artifact id `10550609484`
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
