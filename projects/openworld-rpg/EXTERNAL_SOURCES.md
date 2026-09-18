@@ -456,6 +456,55 @@ Current policy:
 - 160 files; source license CC0.
 - Alternate coherent town/building family candidate.
 
+
+## Quaternius downstream exact-file corroboration snapshots — R01 Phase E
+
+These entries are **technical corroboration only**. They do not replace creator-controlled acquisition and they do not authorize raw-byte admission into this repository by themselves.
+
+### Modular Character Outfits extracted snapshot
+
+- downstream repository: `dustinc555/mygame`
+- pinned commit: `6f12ffb2f924af86d910ade13e6e2ba3df8cd3df`
+- inspected path: `assets/vendor/quaternius/modular_character_outfits_fantasy/modular_parts/`
+- directly parsed in Phase E: Wizard, Ranger and Knight selected glTF parts;
+- observed structure: 65-joint humanoid skins, external BIN payloads, authored BaseColor/Normal/ORM texture families, low-thousands triangle counts;
+- authoritative acquisition remains: Quaternius creator page / current intended archive;
+- project-local archive SHA-256: pending.
+
+### Fantasy Props extracted snapshot
+
+- downstream repository: `dustinc555/mygame`
+- pinned commit: `6f12ffb2f924af86d910ade13e6e2ba3df8cd3df`
+- inspected path: `assets/vendor/quaternius/fantasy_props_megakit/gltf/`
+- directly parsed: `Potion_1.gltf`, `Potion_2.gltf`, `Potion_3.gltf`, `Potion_4.gltf` and their external BIN references;
+- Phase E confirms four distinct geometry payloads rather than four color-only aliases;
+- authoritative acquisition remains the creator Fantasy Props MegaKit / creator OpenGameArt Standard snapshot;
+- final R01 three-potion assignment remains a visual/hand-pivot/Minecraft acceptance decision.
+
+### Universal Animation Library corroboration
+
+Historical snapshot:
+
+- repository: `J-Ponzo/gltf-universal-animation-library`;
+- stated distribution date: 2025-06-10;
+- glTF blob: `d9e132ad1d41089f8f96488775829d220a4beb05`;
+- parsed animation count: 46;
+- exact `Drink`: absent;
+- consequence: this old Standard mirror is not valid proof for the current UAL1 `Drink` candidate.
+
+Newer integration snapshot:
+
+- repository: `DyingStar-game/DyingStar`;
+- pinned commit: `f8a783b1f6a5387652e99ec12823bb2ae7600f30`;
+- `UAL1_Standard.glb` Git blob: `473e59080288428d0b6da826ba19324d07b191f0`, 7,618,436 bytes;
+- `UAL1.glb` Git blob: `df3d91e3ec69cd2ac61a91f83c8cf81f1bd44c22`, 21,378,992 bytes;
+- `UAL2.glb` Git blob: `bb3d392ebbc07363eca57e76ef4f4e6853bb37b9`, 20,717,364 bytes;
+- its animation mapping source explicitly maps `emote_drink -> "Drink"` and `emote_consume -> "Consume"`;
+- its emote catalog explicitly classifies consume among UAL2-resolved emotes;
+- current creator archive acquisition and direct clip timing/root-motion/retarget review remain pending.
+
+Full evidence: `R01_ASSET_PHASE_E_APPAREL_POTION_MOTION_EXACT_REVIEW_2026-09-18.md`.
+
 ---
 
 # Selection policy
