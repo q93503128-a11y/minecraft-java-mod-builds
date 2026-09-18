@@ -36,6 +36,9 @@ public final class ProjectSpellTransactionPolicy implements SpellCastAuthority.P
         if (isReentry(active, context)) {
             return true;
         }
+        if (isCompetingAcceptedCast(active, context)) {
+            return false;
+        }
         expireOldCast(context.playerId(), active, context.gameTick());
 
         return !state.isCoolingDown(spec.id(), context.gameTick())
@@ -48,6 +51,9 @@ public final class ProjectSpellTransactionPolicy implements SpellCastAuthority.P
         ActiveCast active = activeCasts.get(context.playerId());
         if (isReentry(active, context)) {
             return true;
+        }
+        if (isCompetingAcceptedCast(active, context)) {
+            return false;
         }
         expireOldCast(context.playerId(), active, context.gameTick());
 
@@ -95,6 +101,12 @@ public final class ProjectSpellTransactionPolicy implements SpellCastAuthority.P
     private boolean isReentry(ActiveCast active, SpellCastAuthority.CastContext context) {
         return active != null
                 && active.spellId().equals(context.spellId())
+                && context.gameTick() <= active.reentryUntilTick();
+    }
+
+    private boolean isCompetingAcceptedCast(ActiveCast active, SpellCastAuthority.CastContext context) {
+        return active != null
+                && !active.spellId().equals(context.spellId())
                 && context.gameTick() <= active.reentryUntilTick();
     }
 
