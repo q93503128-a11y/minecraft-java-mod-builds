@@ -18,6 +18,17 @@ License: CC0 1.0 Universal
 Cost: free / name-your-own-price with a `$0` download path  
 Assets: pixel-art HUD, panels, buttons, font and 100+ skill icons; editable `.ase` source files are included.
 
+Exact official acquisition target verified 2026-09-18:
+
+```text
+archive: Foozle_UI_0002_Lucifer_RPG_UI_Pixel_Art.zip
+published size: 29 MB
+license on official itch page: CC0 1.0 Universal
+status: ACQUISITION_TARGET_PINNED / raw bytes + SHA-256 still pending
+```
+
+Do not search for a replacement UI family merely because the ZIP has not yet been materialized; the remaining job is acquisition, pixel/source inspection and Minecraft GUI-scale acceptance.
+
 Project role: **primary visual base**.
 
 Why it fits:
@@ -37,6 +48,15 @@ Source: https://foozlecc.itch.io/lucifer-equipment
 License: CC0 1.0 Universal  
 Cost: free / name-your-own-price with a `$0` download path  
 Assets: 50+ equipment sprites, rarity backgrounds and editable `.ase` source.
+
+Exact official acquisition target verified 2026-09-18:
+
+```text
+archive: Foozle_2DS0005_Lucifer_Equipment_Pixel_Art.zip
+published size: 81 kB
+license on official itch page: CC0 1.0 Universal
+status: ACQUISITION_TARGET_PINNED / raw bytes + SHA-256 still pending
+```
 
 Project role: **equipment-slot / rarity / inventory visual companion**.
 
