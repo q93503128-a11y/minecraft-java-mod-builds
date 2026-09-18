@@ -180,12 +180,15 @@ Whale
 Manta ray
 ```
 
-Useful conclusion:
+Useful conclusion after direct Poly Pizza preview review:
 
-- the three generic `Fish` models are direct-review candidates;
-- Dolphin / Shark / Whale / Manta ray are **rejected for R01 Heartland catch slots** because they read as marine/large-ocean identities and conflict with the grounded river/ford opening;
-- downstream archive-name evidence has reported `clownfish / fish1 / fish2 / shark / whale / dolphin / mantaray`, but that tree evidence is not an authoritative project binding and does not prove what `fish1` / `fish2` look like;
-- do **not** name an R01 species from `fish1` or `fish2` until the actual mesh/texture is inspected.
+- **Poly Pizza model `BEcU9rjiAq` — REJECTED_R01.** The visible model is an orange/white/black clownfish silhouette; it is a tropical/marine identity, not a grounded Heartland river catch.
+- **Poly Pizza model `Ymu8ftrmuT` — REJECTED_R01.** The visible deep-bodied blue/beige silhouette is catalogued under Sea Life and reads as a marine/tropical stylized fish.
+- **Poly Pizza model `XWl86YFtpF` — REJECTED_R01.** Poly Pizza explicitly tags it `Tuna / Sea Life`.
+- Dolphin / Shark / Whale / Manta ray remain **REJECTED_R01** for the same grounded-river reason.
+- downstream archive-name evidence has reported `clownfish / fish1 / fish2 / shark / whale / dolphin / mantaray`, but that tree evidence is not used to equate archive filenames with the Poly Pizza model IDs unless the actual archive proves the mapping.
+- therefore **no visually reviewed model from the old 7-model Quaternius Animated Fish bundle currently survives as an R01 final candidate**.
+- the historical creator ZIP remains useful provenance/source evidence, but R01 selection now moves to freshwater-specific candidates instead of forcing one of those marine models into the region.
 
 Current state:
 
@@ -194,7 +197,8 @@ exact OpenGameArt creator ZIP identified: YES
 source-specific CC0 evidence: YES
 project-local ZIP acquired: NO
 project-local SHA-256: NO
-fish1/fish2/clownfish mesh inspected: NO
+old Poly Pizza 3-model visible identity reviewed: YES — all three rejected for R01
+freshwater shortlist binary mesh/animation reviewed: NO
 R01 final binding: NO
 ```
 
@@ -204,16 +208,19 @@ R01 final binding: NO
 |---|---|---|---|---|
 | **CDmir Esox - Animated Fish** | OpenGameArt `esox.zip` | CC0 on creator upload | 826 faces / 1,632 tris; albedo/normal/roughness/spec textures; Idle + Slow Swim + Fast Swim | **DIRECT_REVIEW_PRIORITY** for Rare / predatory freshwater silhouette |
 | **CDmir Fish (Animated)** | OpenGameArt `fish.zip` (2.9 MB) | CC0 on creator upload | rigged, animated, diffuse texture, described ready for game use | **DIRECT_REVIEW_PRIORITY** for Common/Uncommon if style matches |
+| **Quaternius Armored Catfish** | Poly Pizza model `mtd9QK5yCe` | Public Domain / CC0 on model page | Low Poly, Animated, FBX/GLTF; visibly distinct catfish-like armored silhouette in the same broader Quaternius low-poly family | **DIRECT_REVIEW_PRIORITY** for Uncommon/Common freshwater slot; animation/scale/texture still requires binary review |
 | **gfroad 3d low poly catfish** | OpenGameArt `catfish.zip` + `catfish_obj.zip` | CC0 on creator upload | 284 polygons / 151 verts; swim + jump animations documented in source MAX version | **DIRECT_REVIEW_ALT**; animation conversion/source-format risk must be checked |
 | **joyfulsquirrel Fish** | OpenGameArt `fish.zip` (131.3 KB) | CC0 on creator upload | Blend; 328 triangles; rigged; Tpose + Swim | **DIRECT_REVIEW_ALT** for a very light Common fish if visual quality survives Minecraft scale |
+| **Quaternius Goldfish** | Poly Pizza model `qS6CgsWFAh` | Public Domain / CC0 on model page | Low Poly, Animated, FBX/GLTF | **REJECTED_R01_BASELINE** for current river/ford slots; reads as ornamental/domesticated rather than ordinary Heartland river ecology |
 
 Admission rule:
 
-1. inspect Quaternius generic Fish models first because they are closest to the project's broader low-poly Quaternius visual family;
-2. inspect CDmir Esox and CDmir Fish next because their freshwater/game-ready identity is stronger than forcing a marine Quaternius model into R01;
-3. use Catfish / joyfulsquirrel only if their 3D style can be normalized without becoming visibly unrelated to the rest of R01;
-4. reject a candidate if its silhouette only works as a marine/tropical fish, if its animation is visibly stiff at Minecraft scale, or if texture/render style cannot coexist with the accepted R01 creature family;
-5. do not create four palette swaps of one mesh merely to close the roster.
+1. do **not** spend another R01 pass trying to rescue the already-reviewed old Quaternius marine/tropical Fish models;
+2. inspect CDmir Esox, CDmir Fish and Quaternius Armored Catfish first as the current three priority freshwater candidates;
+3. inspect gfroad Catfish / joyfulsquirrel Fish only if one of the priority candidates fails quality/style/animation review or if the fourth distinct silhouette is still missing;
+4. reject a candidate if its silhouette only works as a marine/tropical/ornamental fish, if its animation is visibly stiff at Minecraft scale, or if texture/render style cannot coexist with the accepted R01 creature family;
+5. do not create four palette swaps of one mesh merely to close the roster;
+6. after three strong silhouettes survive, search only for the **missing morphological role** needed for the fourth slot rather than reopening a broad fish search.
 
 ### R01 fish icon rule
 
@@ -921,7 +928,9 @@ Current state after Phase-B Pass 5 fish-provenance narrowing:
 - `REVIVE/MOUNT EXTERNAL CANDIDATES IDENTIFIED`: YES; not accepted
 - `MEDIEVAL VILLAGE MODULE CANDIDATE NAMES PINNED`: YES for a useful Standard subset; service compositions not accepted
 - `KENNEY VFX/AUDIO CANDIDATE FILENAME FAMILIES PINNED`: YES; visual/audition acceptance pending
-- `R01 FISH EXACT FINAL MODEL ROSTER`: NO — direct 3D/archive review still required
+- `OLD QUATERNIUS 7-MODEL FISH BUNDLE R01 SURVIVORS`: NONE among the three directly reviewed Poly Pizza Fish entries; marine large species also rejected
+- `R01 FISH PRIORITY FRESHWATER SHORTLIST`: YES — CDmir Esox + CDmir Fish + Quaternius Armored Catfish
+- `R01 FISH EXACT FINAL MODEL ROSTER`: NO — binary 3D/animation/Minecraft review still required
 - `R01 FISH FINAL PLAYER-FACING SPECIES NAMES`: NO — intentionally blocked until final model roster is accepted
 - `PROJECT-LOCAL SOURCE SHA-256 COMPLETE`: NO
 - `ALL R01 EXACT ASSET FILENAMES PINNED`: NO
