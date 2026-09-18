@@ -142,7 +142,7 @@ public final class VillageEnemyArchetypeSystem {
 
     public static float structureDamageMultiplier(Archetype archetype) {
         return switch (archetype) {
-            case SAPPER -> 2.30f;
+            case SAPPER -> 1.72f;
             case SHIELDBREAKER -> 1.72f;
             case TOWER_HUNTER -> 1.28f;
             case SIEGE_BEAST -> 2.15f;
@@ -419,6 +419,15 @@ public final class VillageEnemyArchetypeSystem {
             if (attack != null) attack.setBaseValue(Math.min(4.0, 1.5 + Math.max(0, day - 1) * 0.12));
             var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
             if (speed != null) speed.setBaseValue(0.19);
+        } else if (archetype == Archetype.SAPPER) {
+            // Sappers keep their small, urgent silhouette but are a readable objective threat,
+            // not a day-one stat check. Baby-zombie movement still gives them some urgency.
+            var health = mob.getAttribute(Attributes.MAX_HEALTH);
+            if (health != null) health.setBaseValue(Math.min(16.0, 8.5 + Math.max(0, day - 1) * 0.45));
+            var attack = mob.getAttribute(Attributes.ATTACK_DAMAGE);
+            if (attack != null) attack.setBaseValue(Math.min(3.0, 1.25 + Math.max(0, day - 1) * 0.08));
+            var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
+            if (speed != null) speed.setBaseValue(0.14);
         }
     }
 
@@ -429,7 +438,7 @@ public final class VillageEnemyArchetypeSystem {
                 mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, LONG_EFFECT_TICKS, 1));
                 mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, LONG_EFFECT_TICKS, 0));
             }
-            case SAPPER -> mob.addEffect(new MobEffectInstance(MobEffects.SPEED, LONG_EFFECT_TICKS, 1));
+            case SAPPER -> { }
             case SHIELDBREAKER -> mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, LONG_EFFECT_TICKS, 1));
             case WAR_CHANTER -> mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, LONG_EFFECT_TICKS, 0));
             case NECROMANCER -> mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, LONG_EFFECT_TICKS, 1));
