@@ -29,16 +29,18 @@ public final class VillageRelicSystem {
     }
 
     public static synchronized void offerToParty(MinecraftServer server) {
+        if (server == null) return;
         int day = VillageCouncilState.currentDay();
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            List<Relic> choices = choicesFor(player, day);
+        for (UUID playerId : VillageProgressionSystem.nightParticipants(server)) {
+            List<Relic> choices = choicesFor(playerId, day);
             if (choices.isEmpty()) continue;
             String encoded = choices.stream().map(Relic::id)
                     .reduce((first, second) -> first + "," + second).orElse("");
-            String previous = PENDING.getOrDefault(player.getUUID(), "");
-            PENDING.put(player.getUUID(), previous.isBlank() ? encoded : previous + OFFER_SEP + encoded);
+            String previous = PENDING.getOrDefault(playerId, "");
+            PENDING.put(playerId, previous.isBlank() ? encoded : previous + OFFER_SEP + encoded);
             persist();
-            if (previous.isBlank()) openChoice(player);
+            ServerPlayer online = server.getPlayerList().getPlayer(playerId);
+            if (previous.isBlank() && online != null) openChoice(online);
         }
     }
 
@@ -179,16 +181,16 @@ public final class VillageRelicSystem {
         return Math.max(0, Math.round(value * 100.0f));
     }
 
-    private static List<Relic> choicesFor(ServerPlayer player, int day) {
+    private static List<Relic> choicesFor(UUID playerId, int day) {
         List<Relic> available = new ArrayList<>();
-        int mask = OWNED.getOrDefault(player.getUUID(), 0);
-        java.util.Set<Relic> reserved = pendingRelics(player.getUUID());
+        int mask = OWNED.getOrDefault(playerId, 0);
+        java.util.Set<Relic> reserved = pendingRelics(playerId);
         for (Relic relic : Relic.values()) {
             if ((mask & relic.bit()) == 0 && !reserved.contains(relic)) available.add(relic);
         }
         if (available.isEmpty()) return List.of();
         List<Relic> result = new ArrayList<>();
-        int seed = player.getUUID().hashCode() * 31 + day * 17
+        int seed = playerId.hashCode() * 31 + day * 17
                 + Integer.bitCount(mask) * 13 + reserved.size() * 19;
         while (!available.isEmpty() && result.size() < 3) {
             int index = Math.floorMod(seed + result.size() * 37, available.size());
