@@ -16,6 +16,7 @@
 > Asset intake: `R01_ASSET_INTAKE.md`  
 > Spatial gate: `AZARI_SPATIAL_CLOSURE_PASS1.md`  
 > R01 UI flow: `R01_UI_PRODUCTION_SPEC.md`  
+> R01 player-facing text: `R01_PLAYER_TEXT_SPEC.md`  
 > Rule: this file is the later R01 **content-bible authority** for details it explicitly closes. It does not reopen the locked first-session spine in `R01_VERTICAL_SLICE.md`. If this file and the vertical-slice file differ on a point explicitly refined here, this file wins for that refinement; `GAME_DESIGN.md` and `PROJECT.md` remain higher authority.
 
 This file exists so R01 is not handed to implementation as “a strong opening plus a collection of ranges and ideas.”  
