@@ -20,10 +20,15 @@ class ActorIntegrationOverlayTest {
                   "policy": {
                     "presentation": "PASS_THROUGH",
                     "animation": "ADAPT",
+                    "movement_ai": "ADAPT",
+                    "combat_ai": "OVERRIDE",
                     "spawn": "OVERRIDE",
                     "stats": "OVERRIDE",
                     "damage": "OVERRIDE",
                     "loot": "OVERRIDE",
+                    "recipes": "SUPPRESS",
+                    "worldgen": "SUPPRESS",
+                    "capture_or_duplication": "SUPPRESS",
                     "progression": "OVERRIDE",
                     "save_ownership": "OVERRIDE"
                   },
@@ -54,5 +59,37 @@ class ActorIntegrationOverlayTest {
 
         ActorIntegrationOverlay overlay = ActorIntegrationOverlayLoader.parse(new StringReader(json));
         assertTrue(ActorIntegrationOverlayValidator.validate(overlay).hasErrors());
+    }
+
+    @Test
+    void missingNonCombatOwnershipDimensionFailsValidation() {
+        String json = """
+                {
+                  "target": "example_mod:boss",
+                  "role": "integration_contract_test",
+                  "required": true,
+                  "policy": {
+                    "presentation": "PASS_THROUGH",
+                    "animation": "ADAPT",
+                    "movement_ai": "ADAPT",
+                    "combat_ai": "OVERRIDE",
+                    "spawn": "OVERRIDE",
+                    "stats": "OVERRIDE",
+                    "damage": "OVERRIDE",
+                    "loot": "OVERRIDE",
+                    "recipes": "SUPPRESS",
+                    "worldgen": "SUPPRESS",
+                    "progression": "OVERRIDE",
+                    "save_ownership": "OVERRIDE"
+                  }
+                }
+                """;
+
+        ActorIntegrationOverlay overlay = ActorIntegrationOverlayLoader.parse(new StringReader(json));
+        var report = ActorIntegrationOverlayValidator.validate(overlay);
+
+        assertTrue(report.hasErrors());
+        assertTrue(report.issues().stream()
+                .anyMatch(issue -> "overlay.policy.capture_or_duplication".equals(issue.code())));
     }
 }

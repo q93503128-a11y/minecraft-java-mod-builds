@@ -8,10 +8,17 @@ import java.util.regex.Pattern;
 public final class ActorIntegrationOverlayValidator {
     private static final Pattern RESOURCE_ID = Pattern.compile("[a-z0-9_.-]+:[a-z0-9_./-]+");
     private static final Set<String> REQUIRED_POLICIES = Set.of(
+            "presentation",
+            "animation",
+            "movement_ai",
+            "combat_ai",
             "spawn",
             "stats",
             "damage",
             "loot",
+            "recipes",
+            "worldgen",
+            "capture_or_duplication",
             "progression",
             "save_ownership"
     );
