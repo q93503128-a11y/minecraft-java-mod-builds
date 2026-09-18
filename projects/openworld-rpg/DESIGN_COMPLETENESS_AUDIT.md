@@ -26,7 +26,7 @@ The current active design corpus was cross-read against:
 - combat/class/status/equipment/loot/recovery/field-system/mount/UI/quest-state documents;
 - `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md` and `R11_AQUATIC_ACTION_MATRIX.md`;
 - `WORLD_STORY_CANON.md`, `MAIN_QUEST_SCENE_PACKAGE.md`, `REGION_CROSS_AUDIT.md`, `REGIONS.md`;
-- R01 vertical-slice/asset work through Phase-B Pass 4 and R02–R12 implementation-package + content-bible pairs.
+- R01 vertical-slice/content-bible/UI/player-text work plus the later R01 asset-intake narrowing and R02–R12 implementation-package + content-bible pairs.
 
 The audit specifically searched for:
 
@@ -77,7 +77,7 @@ These areas are sufficiently specified that coding should implement their rules 
 
 Source bootstrap is still blocked by work that an implementer must not improvise:
 
-1. **exact external asset binding** — unresolved boss/creature models, NPC outfits, weapon/item families, structures, Anchor machinery, important VFX, animation, SFX/BGM and exact provenance/hash records; R01 Pass 4 narrows several candidates but does not equal visual/Minecraft acceptance;
+1. **exact external asset binding** — unresolved boss/creature models, NPC outfits, weapon/item families, structures, Anchor machinery, important VFX, animation, SFX/BGM and exact provenance/hash records; later R01 intake has narrowed the fish queue and several outfit/prop candidates but none of that equals binary/hash/3D/Minecraft acceptance;
 2. **Azari spatial closure** — actual coordinates, route relationships, sightlines, settlement/POI/dungeon/boss placement, travel times and content-density validation;
 3. **asset-gated boss/final-guardian sheets** — exact player-facing names, anatomy-supported attacks/weak points and signature materials after model acceptance where regional documents explicitly gate them;
 4. **final stale-document / hidden-choice cleanup** — active files must not retain obsolete alternatives, already-closed blockers or implementation-time gameplay choices.
@@ -277,16 +277,28 @@ Important conclusion:
 
 # 5. Progression / EXP audit
 
-The global EXP design is internally coherent:
+The **curve itself** remains internally coherent:
 
 ```text
 EXP_to_next(L) = round_to_10(100 + 50L + 4L^2)
 launch cap = 80
 ```
 
-The documented mixed-play target of roughly **20–30 hours** to approach Lv80 is plausible because combat is only one contribution source and regional/main/dungeon rewards are authored as percentages of the receiving player's next-level requirement.
+However, the later R01 closure audit found a real pacing contradiction that this earlier audit had missed.
 
-Current reward hierarchy is healthy:
+Old R01 authored one-time EXP budget was only roughly **284% of a current-level requirement before ordinary combat and the previously-undefined Earthloong boss layer**, yet the same canon expected a Lv1 character to approach a Suggested-Lv8 first dungeon/boss inside 55–75 minutes. Because the rewards are expressed as percentages of the receiver's current next-level requirement, the absolute quadratic curve cannot solve that mismatch: roughly seven level gains still require roughly seven level-equivalents of reward.
+
+The correction now in canon is deliberately narrow:
+
+- keep the global Lv1–80 EXP curve;
+- correct the mixed-play Lv1–10 target from the impossible 4–6 min/Lv to **9–13 min/Lv**;
+- front-load **R01 one-time** quest/discovery/first-boss/first-dungeon percentages;
+- keep repeat events, repeat bosses and ordinary combat on the normal global percentage family;
+- revise the ordinary R01 first-clear expectation to roughly **Lv6–8**, with Suggested Lv8 remaining a safety/readability recommendation rather than a hard gate.
+
+The corrected R01 one-time authored budget is now large enough that a broad-path player can reach the first dungeon without mob grinding, while a completionist route approaches the upper end of the band.
+
+Current later-region reward hierarchy remains healthy:
 
 ```text
 ordinary kill: small
@@ -297,17 +309,18 @@ first dungeon clear: very large
 field/world boss first clear: large
 ```
 
-Public Guild Wars 2 tables provide a useful structural comparison: successful dynamic events award about 7% of a same-level progression requirement, storyline instances about 27%, and dungeon story/explorable completions much larger. The project intentionally runs somewhat more generous regional/main/dungeon percentages because it targets a finite authored 20–30 hour action-RPG progression rather than an MMO leveling ecosystem.
+Public Guild Wars 2 tables remain a useful structural comparison: successful dynamic events award a small fraction of same-level progression, story instances more, and dungeon completions substantially more. The project uses a stronger **opening-region exception** because R01 must establish the whole combat/class/equipment loop quickly without grinding; this exception must not leak into repeat farming or become a blanket multiplier for R02+.
 
 Audit rule:
 
-- ordinary event/discovery rewards should stay around the existing 5–10% family;
-- normal regional/main steps generally stay around 35–45%;
-- major regional climax steps may reach roughly 45–55% when they replace several smaller objectives;
-- a dungeon first clear + boss may be a substantial level fraction, but repeated farming must fall back to repeat rewards and anti-overlevel rules;
-- do not increase every later-region percentage merely because the absolute EXP requirement is larger; the percentage model already scales.
+- ordinary repeat event/discovery rewards generally stay around the existing 5–10% family;
+- later normal regional/main steps generally stay around their existing authored bands;
+- R01 first-completion values are an explicit onboarding exception and are written directly in the R01 canon rather than inferred during coding;
+- a dungeon first clear + boss may grant more than one level-equivalent in R01 only because it is a one-time opening climax;
+- repeated farming always falls back to repeat rewards and anti-overlevel rules;
+- do not increase every later-region percentage merely because the absolute EXP requirement is larger.
 
-No global EXP curve change is recommended before playtesting.
+No global EXP-curve change is recommended before playtesting.
 
 ---
 
