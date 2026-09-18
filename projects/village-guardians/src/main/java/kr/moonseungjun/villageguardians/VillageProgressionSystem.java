@@ -23,16 +23,21 @@ public final class VillageProgressionSystem {
     public static final int MAX_PERSONAL_RANK = 5;
     public static final int STARTING_COINS = 120;
     private static final String PENDING_RESET_PREFIX = "$pending_player_reset_";
+    private static final String NIGHT_PLAYER_PREFIX = "$night_player_";
+    private static final int MAX_RETRY_SUPPORT_CLAIMS = 3;
 
     private static final Map<UUID, Integer> CLAIM_DAYS = new LinkedHashMap<>();
     private static final Map<UUID, Integer> COINS = new LinkedHashMap<>();
     private static final Map<UUID, Integer> SKILL_RANKS = new LinkedHashMap<>();
     private static final Set<UUID> PENDING_NEW_GAME_RESETS = new HashSet<>();
+    private static final Set<UUID> NIGHT_PARTICIPANTS = new HashSet<>();
     private static final EnumMap<Building, Integer> DURABILITY = new EnumMap<>(Building.class);
     private static final EnumMap<Building, Integer> NIGHT_START_DURABILITY = new EnumMap<>(Building.class);
     private static int nightPlanDay;
     private static int nightPlanPlayers = 1;
     private static boolean retryPlanLocked;
+    private static int retrySupportDay;
+    private static int retrySupportClaims;
 
     private static VillageProgressionData savedData;
     private static int supplies = 180;
@@ -68,14 +73,19 @@ public final class VillageProgressionSystem {
         NIGHT_START_DURABILITY.clear();
         Map<String, Integer> loadedDurability = savedData.buildingDurability();
         PENDING_NEW_GAME_RESETS.clear();
+        NIGHT_PARTICIPANTS.clear();
         loadedDurability.forEach((key, value) -> {
             if (value > 0 && key.startsWith(PENDING_RESET_PREFIX)) {
                 parseUuid(key.substring(PENDING_RESET_PREFIX.length()), PENDING_NEW_GAME_RESETS::add);
+            } else if (value > 0 && key.startsWith(NIGHT_PLAYER_PREFIX)) {
+                parseUuid(key.substring(NIGHT_PLAYER_PREFIX.length()), NIGHT_PARTICIPANTS::add);
             }
         });
         nightPlanDay = Math.max(0, loadedDurability.getOrDefault("$night_plan_day", 0));
         nightPlanPlayers = Math.max(1, loadedDurability.getOrDefault("$night_plan_players", 1));
         retryPlanLocked = loadedDurability.getOrDefault("$retry_plan_locked", 0) > 0;
+        retrySupportDay = Math.max(0, loadedDurability.getOrDefault("$retry_support_day", 0));
+        retrySupportClaims = Math.max(0, loadedDurability.getOrDefault("$retry_support_claims", 0));
         for (Building building : Building.values()) {
             int loaded = loadedDurability.getOrDefault(building.id(), maxDurability(building));
             DURABILITY.put(building, Math.max(0, Math.min(maxDurability(building), loaded)));
@@ -121,9 +131,18 @@ public final class VillageProgressionSystem {
         if (!(retryPlanLocked && nightPlanDay == day)) {
             nightPlanDay = day;
             nightPlanPlayers = Math.max(1, server.getPlayerList().getPlayerCount());
+            NIGHT_PARTICIPANTS.clear();
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                NIGHT_PARTICIPANTS.add(player.getUUID());
+            }
+        }
+        if (retrySupportDay != day) {
+            retrySupportDay = day;
+            retrySupportClaims = 0;
         }
         retryPlanLocked = false;
         VillageMercenarySystem.captureNightSnapshot(server);
+        VillageMercenaryDeploymentSystem.prepareNightDeployment(server);
         persist();
     }
     public static synchronized int plannedRaidPlayerCount(MinecraftServer server) {
@@ -136,12 +155,25 @@ public final class VillageProgressionSystem {
         return Math.max(1, server.getPlayerList().getPlayerCount());
     }
 
+    public static synchronized Set<UUID> nightParticipants(MinecraftServer server) {
+        if (nightPlanDay == VillageCouncilState.currentDay() && !NIGHT_PARTICIPANTS.isEmpty()) {
+            return Set.copyOf(NIGHT_PARTICIPANTS);
+        }
+        Set<UUID> fallback = new HashSet<>();
+        if (server != null) for (ServerPlayer player : server.getPlayerList().getPlayers()) fallback.add(player.getUUID());
+        return Set.copyOf(fallback);
+    }
+
     public static synchronized int supplies() {
         return supplies;
     }
 
     public static synchronized int coins(ServerPlayer player) {
-        return COINS.getOrDefault(player.getUUID(), STARTING_COINS);
+        return player == null ? STARTING_COINS : coins(player.getUUID());
+    }
+
+    public static synchronized int coins(UUID playerId) {
+        return playerId == null ? STARTING_COINS : COINS.getOrDefault(playerId, STARTING_COINS);
     }
 
     public static synchronized int skillRank(ServerPlayer player) {
@@ -359,10 +391,16 @@ public final class VillageProgressionSystem {
     }
 
     public static void tickInfirmary(MinecraftServer server) {
-        if (!isOperational(Building.INFIRMARY)) return;
+        boolean daytime = isDaytime();
+        boolean infirmary = isOperational(Building.INFIRMARY);
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            if (!player.isAlive() || !VillageCouncilState.isInsideVillage(player)) continue;
-            if (isDaytime()) player.setHealth(player.getMaxHealth());
+            if (!player.isAlive()) continue;
+            if (daytime && !VillageRespawnSystem.isDowned(player)) {
+                player.getFoodData().setFoodLevel(20);
+                player.getFoodData().setSaturation(5.0f);
+            }
+            if (!infirmary || !VillageCouncilState.isInsideVillage(player)) continue;
+            if (daytime) player.setHealth(player.getMaxHealth());
             applyInfirmaryBuffs(player);
         }
     }
@@ -485,6 +523,7 @@ public final class VillageProgressionSystem {
     public static synchronized void resetForRestart(MinecraftServer server, boolean fromStart) {
         if (!gameOver) return;
         gameOver = false;
+        int retrySupport = 0;
         VillageRaidSystem.resetAfterRestart(server);
         VillageSkillTestSystem.clearAll(server);
         if (fromStart) {
@@ -495,7 +534,9 @@ public final class VillageProgressionSystem {
             supplies = 180; wallLevel = 0; smithyLevel = 0; infirmaryLevel = 0;
             storehouseLevel = 0; barracksLevel = 0; skillHallLevel = 0;
             CLAIM_DAYS.clear(); SKILL_RANKS.clear(); COINS.clear();
-            NIGHT_START_DURABILITY.clear(); nightPlanDay = 0; nightPlanPlayers = 1; retryPlanLocked = false;
+            NIGHT_START_DURABILITY.clear(); NIGHT_PARTICIPANTS.clear();
+            nightPlanDay = 0; nightPlanPlayers = 1; retryPlanLocked = false;
+            retrySupportDay = 0; retrySupportClaims = 0;
             VillageSkillTreeSystem.resetForNewGame();
             VillageRoleSkillSystem.resetForNewGame();
             VillageDefenseResearchSystem.resetForNewGame();
@@ -507,6 +548,7 @@ public final class VillageProgressionSystem {
             }
         } else {
             retryPlanLocked = true;
+            retrySupport = claimRetrySupport();
             VillageMercenarySystem.restoreNightSnapshot(server);
         }
         DURABILITY.clear();
@@ -520,6 +562,31 @@ public final class VillageProgressionSystem {
         VillageWorldSystem.forceRebuild(server);
         if (fromStart) for (ServerPlayer player : server.getPlayerList().getPlayers())
             VillageStarterKit.resetForNewGame(player);
+        if (!fromStart) {
+            if (retrySupport > 0) {
+                server.getPlayerList().broadcastSystemMessage(Component.literal(
+                        "§6[재도전 보급] §f전투 분석 지원으로 공동 보급품 +" + retrySupport
+                                + " · 같은 날 지원 " + retrySupportClaims + "/" + MAX_RETRY_SUPPORT_CLAIMS), false);
+            } else {
+                server.getPlayerList().broadcastSystemMessage(Component.literal(
+                        "§7[재도전 보급] 오늘의 추가 지원은 모두 사용했습니다. 전리품과 개인 성장은 그대로 유지됩니다."), false);
+            }
+        }
+    }
+
+    private static int claimRetrySupport() {
+        int day = VillageCouncilState.currentDay();
+        if (retrySupportDay != day) {
+            retrySupportDay = day;
+            retrySupportClaims = 0;
+        }
+        if (retrySupportClaims >= MAX_RETRY_SUPPORT_CLAIMS) return 0;
+        int[] percent = {100, 60, 35};
+        int base = 80 + day * 18;
+        int granted = Math.max(20, base * percent[retrySupportClaims] / 100);
+        retrySupportClaims++;
+        supplies += granted;
+        return granted;
     }
 
     public static int upgradeCost(int currentLevel) {
@@ -527,14 +594,44 @@ public final class VillageProgressionSystem {
     }
 
     public static synchronized boolean spendCoins(ServerPlayer player, int amount) {
+        if (player == null) return false;
         int current = coins(player);
         int cost = Math.max(0, amount);
-        if (current < cost) {
-            return false;
-        }
+        if (current < cost) return false;
         COINS.put(player.getUUID(), current - cost);
         persist();
         return true;
+    }
+
+    public static synchronized boolean spendSupplies(int amount) {
+        int cost = Math.max(0, amount);
+        if (supplies < cost) return false;
+        supplies -= cost;
+        persist();
+        return true;
+    }
+
+    public static synchronized String exchangeCoinsForSupplies(ServerPlayer player) {
+        if (player == null || !VillageLocationRules.isNear(player, Building.STOREHOUSE)) {
+            return "보급 전환은 상점·보급소 단말기 근처에서만 가능합니다.";
+        }
+        String blocked = VillageMaintenanceRules.blockReason("보급 전환");
+        if (blocked != null) return blocked;
+        if (!isOperational(Building.STOREHOUSE)) return "상점·보급소가 파괴되어 보급 전환을 사용할 수 없습니다.";
+        int coinCost = 25;
+        int supplyGain = 50;
+        if (!spendCoins(player, coinCost)) {
+            return "수호 주화가 부족합니다. 필요 " + coinCost + ", 현재 " + coins(player);
+        }
+        supplies += supplyGain;
+        persist();
+        MinecraftServer server = player.level().getServer();
+        if (server != null) {
+            server.getPlayerList().broadcastSystemMessage(Component.literal(
+                    "§6[공동 보급] §f" + player.getGameProfile().name() + " 님이 수호 주화 " + coinCost
+                            + "를 공동 보급품 " + supplyGain + "로 전환했습니다. 현재 " + supplies), false);
+        }
+        return "수호 주화 " + coinCost + " → 공동 보급품 " + supplyGain + " 전환 완료";
     }
 
     private static void setLevel(Building building, int value) {
@@ -561,6 +658,9 @@ public final class VillageProgressionSystem {
         encodedDurability.put("$night_plan_day", nightPlanDay);
         encodedDurability.put("$night_plan_players", Math.max(1, nightPlanPlayers));
         encodedDurability.put("$retry_plan_locked", retryPlanLocked ? 1 : 0);
+        encodedDurability.put("$retry_support_day", retrySupportDay);
+        encodedDurability.put("$retry_support_claims", retrySupportClaims);
+        NIGHT_PARTICIPANTS.forEach(uuid -> encodedDurability.put(NIGHT_PLAYER_PREFIX + uuid, 1));
         PENDING_NEW_GAME_RESETS.forEach(uuid ->
                 encodedDurability.put(PENDING_RESET_PREFIX + uuid, 1));
         savedData.replaceState(
