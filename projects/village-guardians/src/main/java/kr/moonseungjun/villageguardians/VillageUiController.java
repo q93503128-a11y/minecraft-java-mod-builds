@@ -209,6 +209,8 @@ public final class VillageUiController {
                     "주화 " + VillageConsumableSystem.effectiveCost(consumable), consumable.description(),
                     VillageConsumableSystem.status(consumable), available);
         }
+        actions.add("exchange_supplies");
+        labels.add("shop_utility|공동 보급 전환|수호 주화 25 → 공동 보급품 50 · 파티 방어 투자");
         actions.add("open_item_sell");
         labels.add("shop_utility|보유품 선택 판매");
         actions.add("sell_loot");
@@ -416,10 +418,10 @@ public final class VillageUiController {
             int cost = VillageDefenseResearchSystem.upgradeCost(branch);
             actions.add("defense_research:" + branch.id());
             String detail = "Lv." + level + "/" + VillageDefenseResearchSystem.MAX_LEVEL
-                    + "\n현재 수치: " + branch.description(level)
+                    + "\n현재: " + branch.description(level)
                     + (level >= VillageDefenseResearchSystem.MAX_LEVEL ? "\n최고 단계"
-                    : "\n강화 후 수치: " + branch.description(level + 1)
-                    + "\n다음 단계 비용: 주화 " + cost);
+                    : "\n다음: " + branch.description(level + 1)
+                    + "\n비용: 공동 보급품 " + cost);
             labels.add(branch.displayName() + "|" + detail);
         }
         send(player, "building", "마을 방어 연구", "용병·포탑·전리품 운용을 연구합니다.", actions, labels);
@@ -690,6 +692,14 @@ public final class VillageUiController {
                 } else {
                     openResult(player, "화살 구매 결과", VillageProgressionSystem.buyArrows(player),
                             "open_equipment_shop");
+                }
+            }
+            case "exchange_supplies" -> {
+                if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.STOREHOUSE)) {
+                    player.sendSystemMessage(Component.literal("§c보급 전환은 창고 단말기 근처에서만 가능합니다."));
+                } else {
+                    openResult(player, "공동 보급 전환",
+                            VillageProgressionSystem.exchangeCoinsForSupplies(player), "open_equipment_shop");
                 }
             }
             case "claim_bread" -> {
