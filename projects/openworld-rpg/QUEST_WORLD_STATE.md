@@ -514,7 +514,7 @@ The local objective has five authored useful-action categories:
 
 1. recover one lost cargo interaction;
 2. participate in clearing the authored Meadow Viper threat under the one-action combat-credit rule;
-3. inspect the damaged wagon/road marker;
+3. inspect the broken quarry-road marker;
 4. personally gather one relevant nearby R01 node;
 5. participate in the repeatable **`Roadside Trouble`** world event defined in `R01_CONTENT_BIBLE.md` if it is active.
 
