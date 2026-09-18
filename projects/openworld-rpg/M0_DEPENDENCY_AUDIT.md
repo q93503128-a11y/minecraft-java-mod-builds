@@ -677,6 +677,45 @@ Avoid updating Better Combat, Spell Engine, animation APIs and custom combat cod
 
 ---
 
+# 15.1 Verified M0 core bootstrap checkpoint — 2026-09-18
+
+The first narrow source bootstrap now exists at commit `b98ab3650b6e594693df3c1170d1de1e1ea169f2`.
+
+Implemented in this checkpoint:
+
+- Fabric 26.2 / Java 25 / Loader 0.19.5 / Fabric API 0.160.0+26.2 / Loom 1.17.20 project skeleton;
+- `openworld_rpg` mod entrypoint;
+- machine-readable dependency manifest with `core / gameplay / essential` runtime profiles;
+- structural dependency validation through Fabric Loader metadata;
+- integration-policy vocabulary and module registry;
+- actor-integration overlay schema/validator;
+- JUnit coverage for manifest, overlay and module-registry contracts;
+- dedicated Openworld RPG GitHub Actions workflow.
+
+Verification:
+
+```text
+COMMIT: b98ab3650b6e594693df3c1170d1de1e1ea169f2
+WORKFLOW: Build Openworld RPG
+RUN: 35309048646
+UNIT TESTS: PASS
+CLEAN BUILD: PASS
+BOOTSTRAP JAR VERIFY: PASS
+DEDICATED SERVER CORE-PROFILE BOOT: PASS
+FULL DEV-GAMEPLAY DEPENDENCY STACK: NOT TESTED
+BETTER COMBAT ADAPTER: NOT IMPLEMENTED
+SPELL ENGINE ADAPTER: NOT IMPLEMENTED
+EXTERNAL CREATURE RUNTIME BINDING: NOT TESTED
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
+```
+
+The dependency manifest intentionally leaves the runtime mod IDs for Alex's Mobs Continued, CodxLib and Threateningly Mobs Continued unresolved instead of guessing them. The `core` profile can boot without those content dependencies; the future `gameplay` profile must fail clearly until the pinned artifacts/IDs are verified and installed.
+
+This checkpoint proves the architecture can compile and boot. It does **not** close the full M0 acceptance matrix in §13.
+
+---
+
 # 16. What M0 closes
 
 This audit closes implementation-time uncertainty about:
