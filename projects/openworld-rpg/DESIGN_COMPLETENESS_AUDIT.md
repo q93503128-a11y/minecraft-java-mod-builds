@@ -295,7 +295,7 @@ The correction now in canon is deliberately narrow:
 - correct the mixed-play Lv1–10 target from the impossible 4–6 min/Lv to **9–13 min/Lv**;
 - front-load **R01 one-time** quest/discovery/first-boss/first-dungeon percentages;
 - keep repeat events, repeat bosses and ordinary combat on the normal global percentage family;
-- revise the ordinary R01 first-clear expectation to roughly **Lv6–8**, with Suggested Lv8 remaining a safety/readability recommendation rather than a hard gate.
+- revise the ordinary R01 first-clear expectation to roughly **Lv5–7**, with a completionist route approaching Lv7–8 and Suggested Lv8 remaining a safety/readability recommendation rather than a hard gate.
 
 The corrected R01 one-time authored budget is now large enough that a broad-path player can reach the first dungeon without mob grinding, while a completionist route approaches the upper end of the band.
 
@@ -396,7 +396,7 @@ A full R01 re-read after the content-bible/UI/text closure found several issues 
 
 - **early global EXP pacing:** the old Lv1–10 target of 4–6 min/Lv was mathematically incompatible with the authored reward percentages and a finite 20–30 hour first playthrough; current target is **9–13 min/Lv**;
 - **R01 first-dungeon progression:** the old one-time R01 reward budget could not plausibly move a Lv1 character near the documented first-dungeon band without grinding. R01 now uses an explicit one-time opening progression ramp while repeat rewards keep normal percentages;
-- **ordinary R01 first-clear expectation:** current observation target is roughly **Lv6–8** on a normal broad-path first clear. Suggested Lv8 remains guidance, not a hard gate;
+- **ordinary R01 first-clear expectation:** current observation target is roughly **Lv5–7** on a normal broad-path first clear; a completionist R01 route can approach Lv7–8. Suggested Lv8 remains guidance, not a hard gate;
 - **55–75 minute route meaning:** this is now explicitly a normal route with roughly 2–4 naturally encountered optional/discovery activities, not a Dust→quarry speedrun. A pure beeline remains legal but intentionally underprepared;
 - **early Class Rank pacing:** the former 5–7 min/rank target would unlock the first specialization before the root kit had enough learning time. The current Rank curve is slower in 1–10, then broadens as more class-relevant content appears;
 - **all five R01 Class Insights:** each root class now has one exact optional R01 challenge with personal/server-authoritative success conditions rather than generic candidate wording.
