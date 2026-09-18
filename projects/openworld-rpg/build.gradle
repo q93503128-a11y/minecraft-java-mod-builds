@@ -63,6 +63,13 @@ configurations {
         visible = false
         description = 'Pinned M0 gameplay foundation artifacts; resolution-only, not part of core runtime.'
     }
+
+    creatureFoundation {
+        canBeConsumed = false
+        canBeResolved = true
+        visible = false
+        description = 'Pinned curated creature dependency artifacts; inspected without admitting them to gameplay runtime.'
+    }
 }
 
 dependencies {
@@ -95,6 +102,16 @@ dependencies {
         transitive = false
     }
     gameplayFoundation("curse.maven:geckolib-388172:8819017") {
+        transitive = false
+    }
+
+    creatureFoundation("curse.maven:alexs-mobs-continued-1635121:${project.alexs_mobs_curse_file}") {
+        transitive = false
+    }
+    creatureFoundation("curse.maven:codxlib-1633207:${project.codxlib_curse_file}") {
+        transitive = false
+    }
+    creatureFoundation("maven.modrinth:${project.threateningly_mobs_project_id}:${project.threateningly_mobs_version_id}") {
         transitive = false
     }
 
@@ -139,6 +156,82 @@ tasks.register('verifyGameplayFoundationDependencies') {
     }
 }
 
+tasks.register('inspectCreatureFoundationDependencies') {
+    group = 'verification'
+    description = 'Resolves the pinned creature JARs and records their actual Fabric metadata without loading them into the core runtime.'
+
+    doLast {
+        def resolved = configurations.creatureFoundation.resolve().toList().sort { a, b -> a.name <=> b.name }
+        if (resolved.size() != 3) {
+            throw new GradleException("Expected 3 pinned creature artifacts, resolved ${resolved.size()}: ${resolved*.name}")
+        }
+
+        def output = layout.buildDirectory.file('reports/m0/creature-foundation-metadata.txt').get().asFile
+        output.parentFile.mkdirs()
+        output.text = ''
+
+        resolved.each { file ->
+            if (!file.isFile() || file.length() <= 0L) {
+                throw new GradleException("Resolved creature artifact is missing or empty: ${file}")
+            }
+
+            MessageDigest digest = MessageDigest.getInstance('SHA-256')
+            file.withInputStream { input ->
+                byte[] buffer = new byte[8192]
+                int read
+                while ((read = input.read(buffer)) != -1) {
+                    digest.update(buffer, 0, read)
+                }
+            }
+            def sha256 = digest.digest().encodeHex().toString()
+
+            def zip = new java.util.zip.ZipFile(file)
+            try {
+                def entry = zip.getEntry('fabric.mod.json')
+                if (entry == null) {
+                    throw new GradleException("Creature artifact has no fabric.mod.json: ${file.name}")
+                }
+
+                def jsonText = zip.getInputStream(entry).getText('UTF-8')
+                def meta = new groovy.json.JsonSlurper().parseText(jsonText)
+                def id = meta.id?.toString()
+                def versionValue = meta.version?.toString()
+                if (!id || !versionValue) {
+                    throw new GradleException("Creature artifact is missing id/version in fabric.mod.json: ${file.name}")
+                }
+
+                def depends = meta.depends instanceof Map
+                        ? meta.depends.collect { key, value -> "${key}=${value}" }.sort().join(", ")
+                        : String.valueOf(meta.depends)
+                def breaks = meta.breaks instanceof Map
+                        ? meta.breaks.collect { key, value -> "${key}=${value}" }.sort().join(", ")
+                        : String.valueOf(meta.breaks)
+                def nested = meta.jars instanceof List
+                        ? meta.jars.collect { it instanceof Map ? it.file : it.toString() }.findAll { it }.sort().join(', ')
+                        : ''
+
+                def line = [
+                        "file=${file.name}",
+                        "bytes=${file.length()}",
+                        "sha256=${sha256}",
+                        "id=${id}",
+                        "version=${versionValue}",
+                        "environment=${meta.environment}",
+                        "depends=${depends}",
+                        "breaks=${breaks}",
+                        "nested=${nested}"
+                ].join('\t')
+
+                println "M0_CREATURE_METADATA ${line}"
+                output << line << System.lineSeparator()
+            } finally {
+                zip.close()
+            }
+        }
+
+        println "M0_CREATURE_FOUNDATION_INSPECTION_PASS count=${resolved.size()} report=${output}"
+    }
+}
 processResources {
     inputs.property 'version', project.version
     filesMatching('fabric.mod.json') {
