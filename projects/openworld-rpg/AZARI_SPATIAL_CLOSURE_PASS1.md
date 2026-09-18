@@ -15,6 +15,22 @@ Current public page:
 
 `https://www.planetminecraft.com/project/azari-30k-x-30k-world-painter-map/`
 
+Current exact acquisition locators verified on 2026-09-18:
+
+```text
+Planet Minecraft latest page update: 2026-06-18
+PMC free-download mirror path:
+/project/azari-30k-x-30k-world-painter-map/download/mirror/746230/
+
+creator-linked updated build landing page:
+https://vmbiemc.gumroad.com/l/azarimap
+
+creator instruction:
+put $0 / FREE for the free download
+```
+
+The current research/browser environment can reach the Gumroad landing page but cannot complete the $0 checkout/download transaction or materialize the world archive bytes. Therefore this pass still has **no world ZIP hash and no local world load**. The acquisition path is now pinned; the remaining blocker is obtaining the archive bytes, not finding the map again.
+
 Publicly stated facts relevant to this project:
 
 - 30,000 × 30,000 WorldPainter world;
@@ -273,7 +289,7 @@ Coordinates are not accepted by looking at the map image alone.
 
 # 10. Actual-world inspection sequence
 
-When the current Azari world archive is available locally:
+When the current Azari world archive is available locally (use the creator-linked 2026-06-18 updated build unless a newer verified update supersedes it):
 
 1. preserve archive/source/version/date and hash;
 2. load an untouched inspection copy;
@@ -321,6 +337,8 @@ Verification:
 ```text
 DESIGN/SPATIAL CRITERIA REVIEWED: YES
 PUBLIC OVERHEAD REVIEWED: YES
+AZARI LATEST DOWNLOAD LOCATOR PINNED: YES
+AZARI WORLD ARCHIVE BYTES ACQUIRED IN THIS WORKSPACE: NO
 ACTUAL AZARI WORLD LOADED: NO
 EXACT COORDINATES VERIFIED: NO
 TRAVEL TIMES MEASURED IN WORLD: NO
