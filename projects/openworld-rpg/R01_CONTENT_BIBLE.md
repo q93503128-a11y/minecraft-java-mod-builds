@@ -856,6 +856,23 @@ deterministic personal merchant cycle
 relog/UI reopen does not reroll
 ```
 
+The personal merchant epoch starts when the player's Alderford gate shrine first commits. Merchant active time advances only while that player is legitimately loaded in the server world; offline time does not generate extra refreshes.
+
+```text
+cycle_index = floor((personal_active_world_time - alderford_shrine_activation_time) / 10 active minutes)
+```
+
+Cycle RNG is deterministic server-side from:
+
+```text
+world_seed
++ player_uuid
++ merchant_id("nessa_bell")
++ cycle_index
+```
+
+Implementation may choose a stable hash/PRNG primitive, but the same inputs must reproduce the same cycle and client reconnect/UI reopen cannot reroll it.
+
 Slots:
 
 1. weapon;
@@ -864,25 +881,11 @@ Slots:
 4. armor;
 5. accessory.
 
-R01 rotating grade weights:
+### Exact slot-base generation
 
-```text
-Standard: 50%
-Refined: 40%
-Superior: 10%
-Exalted: 0%
-Mythic: 0%
-```
+**Slot 1 — Weapon**
 
-Fixed R01 Item Lv by generated grade:
-
-```text
-Standard: Item Lv2
-Refined: Item Lv4
-Superior: Item Lv6
-```
-
-### Weapon pool
+Equal-weight one base from:
 
 - Heartland Arming Sword
 - Wayfarer Daggers
@@ -892,20 +895,93 @@ Superior: Item Lv6
 - Initiate Staff
 - Initiate Wand
 
-### Off-hand pool
+**Slot 2 — Weapon / Off-hand**
 
+First choose category:
+
+```text
+weapon: 50%
+off-hand: 50%
+```
+
+If weapon, choose equal-weight from the seven Slot-1 weapon bases **excluding Slot 1's exact base**.
+
+If off-hand, choose equal-weight:
 - Watch Buckler
 - Apprentice Focus
 
-### Armor pool
+**Slots 3 and 4 — Armor**
 
-- River Scholar Garb — five normal equipment slots;
-- Wayfarer Leathers — five normal equipment slots;
-- Ironbound Guard — five normal equipment slots.
+First choose two **distinct** armor equipment slots from:
 
-### Accessory pool
+```text
+Head
+Chest
+Legs
+Gloves
+Boots
+```
 
-R01 ordinary Ring / Necklace / Charm / Relic bases from the accepted Lucifer-equipment binding family.
+All 10 unordered slot pairs are equal-weight.
+
+For each chosen slot, choose one armor family equal-weight:
+
+```text
+River Scholar Garb
+Wayfarer Leathers
+Ironbound Guard
+```
+
+Therefore Slots 3 and 4 can never be the exact same armor piece in one cycle.
+
+**Slot 5 — Accessory**
+
+Equal-weight:
+- Greenwater Pendant — Necklace
+- Roadworn Band — Ring
+- Wayfarer's Token — Charm
+- Quarry Seal — Relic
+
+### Grade generation
+
+R01 rotating grade weights per generated slot:
+
+```text
+Standard: 50%
+Refined: 40%
+Superior: 10%
+Exalted: 0%
+Mythic: 0%
+```
+
+At most **1 Superior** appears in a five-slot cycle.
+
+Generation is evaluated in slot order 1 → 5:
+- the first Superior result is kept;
+- if a later slot also rolls Superior, reroll that later grade using only Standard/Refined at normalized 5:4 weight.
+
+Fixed R01 Item Lv by generated grade:
+
+```text
+Standard: Item Lv2
+Refined: Item Lv4
+Superior: Item Lv6
+```
+
+Affix identities/values are generated once from the same cycle + slot seed and persist for that entire cycle.
+
+### Purchase state
+
+Each slot is a **single personal stock item per cycle**.
+
+- one successful purchase marks that slot SOLD for that player until the next cycle;
+- selling the purchased item back does not restore the merchant slot;
+- reconnect does not restore SOLD stock;
+- a cycle refresh replaces all unpurchased/sold slots with the next deterministic cycle;
+- if the 10-minute boundary passes while the market UI is open, the server rejects any stale old-cycle Buy request and the client refreshes to the new cycle;
+- there is no paid/manual reroll.
+
+This prevents infinite duplicate purchases from one favorable roll while preserving the intended frequent early stock refresh.
 
 ### R01 merchant base prices
 
