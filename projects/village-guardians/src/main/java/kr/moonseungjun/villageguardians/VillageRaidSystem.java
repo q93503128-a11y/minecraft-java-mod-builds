@@ -10,6 +10,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.AABB;
@@ -35,9 +36,12 @@ public final class VillageRaidSystem {
     private static final Map<UUID, Integer> ACTIVE_WAVES = new HashMap<>();
     private static final Map<UUID, VillageEnemyArchetypeSystem.AerialRole> ACTIVE_AERIAL_ROLES = new HashMap<>();
     private static final Map<UUID, AerialStrike> AERIAL_STRIKES = new HashMap<>();
+    private static final Map<UUID, TauntState> FORCED_TAUNTS = new HashMap<>();
     private static final int FIRST_WAVE_COUNTDOWN_TICKS = 240;
     private static final int BETWEEN_WAVE_TICKS = 120;
     private static final int FORCED_NEXT_WAVE_TICKS = 20 * 60;
+    private static final int FINAL_STRAGGLER_RECOVERY_TICKS = 20 * 60;
+    private static final int FINAL_STRAGGLER_RECOVERY_INTERVAL = 20 * 15;
     private static final int MAX_ACTIVE_ENEMIES = 100;
     private static final int STRUCTURE_ATTACK_INTERVAL = 30;
     private static final int AERIAL_ASSAULT_CADENCE = 90;
@@ -98,7 +102,11 @@ public final class VillageRaidSystem {
         waveElapsedTicks++;
 
         if (wave >= maxWaves) {
-            if (ACTIVE_ENEMIES.isEmpty()) finishVictory(server);
+            if (ACTIVE_ENEMIES.isEmpty()) {
+                finishVictory(server);
+            } else {
+                recoverFinalStragglers(server);
+            }
             return;
         }
 
@@ -138,6 +146,24 @@ public final class VillageRaidSystem {
 
     public static boolean isActiveEnemy(UUID uuid) {
         return ACTIVE_ENEMIES.contains(uuid);
+    }
+
+    public static int tauntEnemies(
+            ServerLevel level, LivingEntity taunter, Vec3 center, double radius, int durationTicks, int limit) {
+        if (level == null || taunter == null || center == null || radius <= 0.0 || durationTicks <= 0) return 0;
+        double radiusSquared = radius * radius;
+        int maximum = Math.max(1, limit);
+        long until = level.getGameTime() + durationTicks;
+        List<Mob> candidates = activeEnemies(level).stream()
+                .filter(mob -> mob.position().distanceToSqr(center) <= radiusSquared)
+                .sorted(Comparator.comparingDouble(mob -> mob.position().distanceToSqr(center)))
+                .limit(maximum)
+                .toList();
+        for (Mob enemy : candidates) {
+            FORCED_TAUNTS.put(enemy.getUUID(), new TauntState(taunter.getUUID(), until));
+            enemy.setTarget(taunter);
+        }
+        return candidates.size();
     }
 
     public static boolean isRaidEnemy(Entity entity) {
@@ -281,6 +307,11 @@ public final class VillageRaidSystem {
                         + "\n§f12초 뒤 북쪽 외곽에서 " + maxWaves
                         + "개 웨이브가 접근합니다. 각 웨이브는 늦어도 60초 뒤 이어집니다."
                         + (milestone.isBlank() ? "" : "\n§6" + milestone)), false);
+        if (VillagePlacedTurretSystem.count() == 0) {
+            server.getPlayerList().broadcastSystemMessage(Component.literal(
+                    "§6[포탑 안내] §f현재 설치 포탑이 0기입니다. 낮에 북문 성벽 지휘 레버 → 새 포탑 배치에서 "
+                            + "계열을 선택한 뒤 지정 포좌 또는 마을 지면을 두 번 우클릭해 설치할 수 있습니다."), false);
+        }
     }
 
     private static void spawnWave(MinecraftServer server) {
@@ -401,6 +432,17 @@ public final class VillageRaidSystem {
                 VillageBossAspectSystem.tick(level, server, mob, abilityTicks);
             }
 
+            LivingEntity tauntTarget = activeTauntTarget(level, mob);
+            if (tauntTarget != null) {
+                mob.setTarget(tauntTarget);
+                if (VillageEnemyArchetypeSystem.isFlying(mob)) {
+                    directTauntedFlyingEnemy(level, mob, tauntTarget);
+                } else {
+                    mob.getNavigation().moveTo(tauntTarget, 1.22);
+                }
+                continue;
+            }
+
             if (VillageEnemyArchetypeSystem.isFlying(mob)) {
                 directFlyingEnemy(server, level, mob, archetype, villageCenter);
                 continue;
@@ -488,6 +530,45 @@ public final class VillageRaidSystem {
                 VillageEnemyArchetypeSystem.onStructureHit(level, mob, archetype);
             }
         }
+    }
+
+    private static LivingEntity activeTauntTarget(ServerLevel level, Mob enemy) {
+        TauntState state = FORCED_TAUNTS.get(enemy.getUUID());
+        if (state == null) return null;
+        if (level.getGameTime() > state.untilGameTime()) {
+            FORCED_TAUNTS.remove(enemy.getUUID());
+            return null;
+        }
+        Entity entity = level.getEntity(state.target());
+        if (!(entity instanceof LivingEntity target) || !target.isAlive()) {
+            FORCED_TAUNTS.remove(enemy.getUUID());
+            return null;
+        }
+        if (target instanceof ServerPlayer player
+                && (player.isSpectator() || VillageRespawnSystem.isDowned(player))) {
+            FORCED_TAUNTS.remove(enemy.getUUID());
+            return null;
+        }
+        if (target instanceof Mob mercenary && !VillageMercenarySystem.isCombatMercenary(mercenary)) {
+            FORCED_TAUNTS.remove(enemy.getUUID());
+            return null;
+        }
+        return target;
+    }
+
+    private static void directTauntedFlyingEnemy(ServerLevel level, Mob mob, LivingEntity target) {
+        Vec3 targetPoint = target.position().add(0.0, Math.max(1.0, target.getBbHeight() * 0.55), 0.0);
+        double angle = abilityTicks * 0.080 + Math.floorMod(mob.getUUID().hashCode(), 360) * Math.PI / 180.0;
+        Vec3 cruise = targetPoint.add(Math.cos(angle) * 4.5, 5.0, Math.sin(angle) * 4.5);
+        int cadence = 54;
+        if (Math.floorMod(abilityTicks + mob.getUUID().hashCode(), cadence) == 0
+                && mob.position().distanceToSqr(targetPoint) <= 18.0 * 18.0) {
+            beginAerialStrike(level, mob,
+                    Optional.ofNullable(aerialRoleOf(mob)).orElse(VillageEnemyArchetypeSystem.AerialRole.RAIDER),
+                    target.position(), null);
+            return;
+        }
+        moveFlyingToward(mob, targetPoint, cruise, 1.42);
     }
 
     private static void directFlyingEnemy(
@@ -772,6 +853,49 @@ public final class VillageRaidSystem {
         return team;
     }
 
+    private static void recoverFinalStragglers(MinecraftServer server) {
+        if (waveElapsedTicks < FINAL_STRAGGLER_RECOVERY_TICKS
+                || ACTIVE_ENEMIES.size() > 2
+                || Math.floorMod(waveElapsedTicks - FINAL_STRAGGLER_RECOVERY_TICKS,
+                        FINAL_STRAGGLER_RECOVERY_INTERVAL) != 0) return;
+        ServerLevel level = server.overworld();
+        BlockPos rally = VillageWorldSystem.northInnerApproach();
+        boolean moved = false;
+        for (UUID id : new HashSet<>(ACTIVE_ENEMIES)) {
+            Entity entity = level.getEntity(id);
+            if (!(entity instanceof Mob mob) || !mob.isAlive()) continue;
+            ServerPlayer nearest = nearestAnyCombatPlayer(server, mob);
+            boolean inaccessible = nearest == null
+                    || mob.distanceToSqr(nearest) > 24.0 * 24.0
+                    || !nearest.hasLineOfSight(mob);
+            if (!inaccessible) continue;
+            mob.snapTo(rally.getX() + 0.5 + (moved ? 2.0 : -2.0),
+                    rally.getY(), rally.getZ() + 0.5);
+            mob.getNavigation().stop();
+            mob.setTarget(nearest);
+            moved = true;
+        }
+        if (moved) {
+            server.getPlayerList().broadcastSystemMessage(Component.literal(
+                    "§e[잔존 적 유도] §f마지막 적이 전장에서 고립되어 북문 안쪽 전선으로 재진입했습니다."), false);
+        }
+    }
+
+    private static ServerPlayer nearestAnyCombatPlayer(MinecraftServer server, Mob mob) {
+        ServerPlayer chosen = null;
+        double chosenDistance = Double.MAX_VALUE;
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (player.level() != mob.level() || !player.isAlive() || player.isSpectator()
+                    || VillageRespawnSystem.isDowned(player)) continue;
+            double distance = player.distanceToSqr(mob);
+            if (distance < chosenDistance) {
+                chosenDistance = distance;
+                chosen = player;
+            }
+        }
+        return chosen;
+    }
+
     private static void purgeMissingEnemies(MinecraftServer server) {
         Iterator<UUID> iterator = ACTIVE_ENEMIES.iterator();
         while (iterator.hasNext()) {
@@ -843,6 +967,7 @@ public final class VillageRaidSystem {
         ACTIVE_WAVES.remove(uuid);
         ACTIVE_AERIAL_ROLES.remove(uuid);
         AERIAL_STRIKES.remove(uuid);
+        FORCED_TAUNTS.remove(uuid);
         VillageAttackPlanSystem.forget(uuid);
         VillageEnemyEliteSystem.forget(uuid);
         VillageSiegeBossSystem.forget(uuid);
@@ -855,6 +980,8 @@ public final class VillageRaidSystem {
             if (team != null) server.getScoreboard().removePlayerFromTeam(entity.getScoreboardName(), team);
         }
     }
+
+    private record TauntState(UUID target, long untilGameTime) {}
 
     private record AerialStrike(
             Vec3 point, VillageProgressionSystem.Building building, int impactTick,
@@ -871,6 +998,7 @@ public final class VillageRaidSystem {
         ACTIVE_WAVES.clear();
         ACTIVE_AERIAL_ROLES.clear();
         AERIAL_STRIKES.clear();
+        FORCED_TAUNTS.clear();
         VillageAttackPlanSystem.clearRaidState();
         VillageEnemyEliteSystem.clearRaidState();
         VillageSiegeBossSystem.clearRaidState();
