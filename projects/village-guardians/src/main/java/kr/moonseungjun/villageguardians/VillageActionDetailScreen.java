@@ -142,27 +142,34 @@ public final class VillageActionDetailScreen extends Screen {
         }
 
         ActionCard card = actions.get(selected);
+        Button button = actionButton(pane);
+        int textBottom = button.y() - 8;
         int y = pane.top() + 14;
         graphics.text(font, fit(font, card.title(), Math.max(60, right - left)), left, y, GOLD, false);
         y += 19;
+
+        // Payload detail contains the authoritative current/next values and cost. Render it first
+        // and allow it to consume the space above the action button before generic help text.
         if (!card.subtitle().isBlank()) {
             for (FormattedCharSequence line : font.split(Component.literal(card.subtitle()), Math.max(70, right - left))) {
-                if (y > pane.bottom() - 86) break;
+                if (y + 10 > textBottom) break;
                 graphics.text(font, line, left, y, TEXT, false);
                 y += 12;
             }
         }
-        y += 5;
-        graphics.fill(left, y, right, y + 1, BORDER);
-        y += 11;
+
         String description = VillageActionDescriptions.describe(card.action(), card.title());
-        for (FormattedCharSequence line : font.split(Component.literal(description), Math.max(70, right - left))) {
-            if (y > pane.bottom() - 58) break;
-            graphics.text(font, line, left, y, MUTED, false);
-            y += 11;
+        if (!description.isBlank() && y + 24 <= textBottom) {
+            y += 3;
+            graphics.fill(left, y, right, y + 1, BORDER);
+            y += 9;
+            for (FormattedCharSequence line : font.split(Component.literal(description), Math.max(70, right - left))) {
+                if (y + 10 > textBottom) break;
+                graphics.text(font, line, left, y, MUTED, false);
+                y += 11;
+            }
         }
 
-        Button button = actionButton(pane);
         boolean confirm = confirmationRequired(card.action());
         boolean hover = inside(mouseX, mouseY, button.x(), button.y(), button.w(), button.h());
         int edge = hover ? TEXT : confirm ? GOLD : accent();
@@ -254,7 +261,7 @@ public final class VillageActionDetailScreen extends Screen {
     private Layout layout() {
         VillageUiSafeArea.Rect safe = VillageUiSafeArea.screen(width, height);
         int panelWidth = Math.min(760, Math.max(280, safe.width() - 24));
-        int panelHeight = Math.min(360, Math.max(210, safe.height() - 16));
+        int panelHeight = Math.min(420, Math.max(210, safe.height() - 16));
         panelWidth = Math.min(panelWidth, safe.width());
         panelHeight = Math.min(panelHeight, safe.height());
         int left = safe.centerX() - panelWidth / 2;
