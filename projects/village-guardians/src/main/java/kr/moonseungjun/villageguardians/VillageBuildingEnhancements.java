@@ -73,39 +73,8 @@ final class VillageBuildingEnhancements {
     }
 
     static void reinforceWallRailings(ServerLevel level, BlockPos center) {
-        int railY = center.getY() - 1 + WALL_TOP_Y + 1;
-        int northOuter = center.getZ() - WALL_RADIUS;
-        int northInner = northOuter + 4;
-        int southOuter = center.getZ() + WALL_RADIUS;
-        int southInner = southOuter - 4;
-        int westOuter = center.getX() - WALL_RADIUS;
-        int westInner = westOuter + 4;
-        int eastOuter = center.getX() + WALL_RADIUS;
-        int eastInner = eastOuter - 4;
-
-        for (int offset = -WALL_RADIUS; offset <= WALL_RADIUS; offset++) {
-            int x = center.getX() + offset;
-            if (Math.abs(offset) > 15) {
-                placeRailing(level, new BlockPos(x, railY, northOuter));
-                if (!isNorthStairOpening(offset)) {
-                    placeRailing(level, new BlockPos(x, railY, northInner));
-                }
-            }
-            placeRailing(level, new BlockPos(x, railY, southOuter));
-            if (!isSideRearStairOpening(offset)) {
-                placeRailing(level, new BlockPos(x, railY, southInner));
-            }
-
-            int z = center.getZ() + offset;
-            placeRailing(level, new BlockPos(westOuter, railY, z));
-            if (!isSideRearStairOpening(offset)) {
-                placeRailing(level, new BlockPos(westInner, railY, z));
-            }
-            placeRailing(level, new BlockPos(eastOuter, railY, z));
-            if (!isSideRearStairOpening(offset)) {
-                placeRailing(level, new BlockPos(eastInner, railY, z));
-            }
-        }
+        // VillageFortressTerrain owns the courtyard crenellation and the single exterior safety
+        // rail. This pass only authors the eight combat emplacements and their local U-rails.
         buildWallTopEmplacements(level, center);
     }
 
@@ -356,13 +325,6 @@ final class VillageBuildingEnhancements {
         };
     }
 
-    private static boolean isNorthStairOpening(int offset) {
-        return Math.abs(Math.abs(offset) - 25) <= 3;
-    }
-
-    private static boolean isSideRearStairOpening(int offset) {
-        return Math.abs(Math.abs(offset) - WALL_EMPLACEMENT_LANE) <= 3;
-    }
 
     private static void placeRailing(ServerLevel level, BlockPos pos) {
         set(level, pos, Blocks.STONE_BRICK_WALL);
