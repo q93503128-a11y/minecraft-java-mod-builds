@@ -9,7 +9,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 /**
  * Identifies a TURNBOUND production save without modifying the authored map.
@@ -22,6 +25,8 @@ import java.util.List;
 public final class DrehmalWorldBinding {
     public static final String PROFILE_MARKER_FILE = ".turnbound_world_profile";
     private static final double MANUAL_BIND_DISTANCE_SQR = 192.0D * 192.0D;
+    private static final Map<MinecraftServer, Boolean> BOUND_CACHE =
+            Collections.synchronizedMap(new WeakHashMap<>());
 
     private DrehmalWorldBinding() {}
 
@@ -29,16 +34,18 @@ public final class DrehmalWorldBinding {
         return DrehmalWorldProfile.validate();
     }
 
+    /**
+     * World marker I/O is intentionally cached per live server. The profile marker is immutable during normal play;
+     * manual binding updates the cache in the same operation that writes it.
+     */
     public static boolean isBound(MinecraftServer server) {
         if (server == null || !validate().isEmpty()) return false;
-        Path marker = marker(server);
-        try {
-            return Files.isRegularFile(marker)
-                    && DrehmalWorldProfile.PROFILE_ID.equals(
-                            Files.readString(marker, StandardCharsets.UTF_8).trim());
-        } catch (IOException ignored) {
-            return false;
-        }
+        Boolean cached = BOUND_CACHE.get(server);
+        if (cached != null) return cached;
+
+        boolean bound = readMarker(server);
+        BOUND_CACHE.put(server, bound);
+        return bound;
     }
 
     public static BlockPos hubSeed() {
@@ -85,6 +92,7 @@ public final class DrehmalWorldBinding {
                     marker,
                     DrehmalWorldProfile.PROFILE_ID + System.lineSeparator(),
                     StandardCharsets.UTF_8);
+            BOUND_CACHE.put(server, true);
         } catch (IOException exception) {
             throw new IllegalStateException("could not write TURNBOUND external-world marker", exception);
         }
@@ -96,6 +104,21 @@ public final class DrehmalWorldBinding {
         return isBound(server)
                 ? "bound · " + DrehmalWorldProfile.PROFILE_ID
                 : "not bound · waiting for verified/manual Drehmal world binding";
+    }
+
+    public static void forget(MinecraftServer server) {
+        if (server != null) BOUND_CACHE.remove(server);
+    }
+
+    private static boolean readMarker(MinecraftServer server) {
+        Path marker = marker(server);
+        try {
+            return Files.isRegularFile(marker)
+                    && DrehmalWorldProfile.PROFILE_ID.equals(
+                            Files.readString(marker, StandardCharsets.UTF_8).trim());
+        } catch (IOException ignored) {
+            return false;
+        }
     }
 
     private static DrehmalWorldProfile.Anchor required(String locator) {
