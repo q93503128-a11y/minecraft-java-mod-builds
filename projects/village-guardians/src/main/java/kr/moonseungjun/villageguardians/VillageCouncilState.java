@@ -152,6 +152,28 @@ public final class VillageCouncilState {
         return "시간 진행 투표를 열었습니다.";
     }
 
+    public static synchronized void onPlayerJoined(ServerPlayer player) {
+        MinecraftServer server = player == null ? null : player.level().getServer();
+        if (server == null || activeProposal == null) return;
+        evaluateProposal(server);
+        if (activeProposal != null) {
+            VillageUiService.openVote(player, activeProposal.proposerName());
+        }
+    }
+
+    public static synchronized void onPlayerLoggedOut(MinecraftServer server, UUID departingPlayer) {
+        if (server == null || activeProposal == null || departingPlayer == null) return;
+        if (departingPlayer.equals(activeProposal.proposer())) {
+            activeProposal = null;
+            VillageUiService.closeVoteForAll(server);
+            broadcast(server, "§c[투표 취소] §f제안자가 접속을 종료해 시간 진행 투표가 취소되었습니다.");
+            return;
+        }
+        activeProposal.votes().remove(departingPlayer);
+        evaluateProposal(server, departingPlayer);
+    }
+
+    /** Compatibility hook for non-event callers that only know the current player list. */
     public static synchronized void onPlayerListChanged(MinecraftServer server) {
         if (server != null && activeProposal != null) evaluateProposal(server);
     }
@@ -161,6 +183,9 @@ public final class VillageCouncilState {
         if (server == null) return "서버 상태를 확인할 수 없습니다.";
         if (server.getPlayerList().getPlayerCount() <= 1) return "혼자 플레이 중에는 투표가 필요하지 않습니다.";
         if (activeProposal == null) return "현재 진행 중인 안건이 없습니다.";
+        if (activeProposal.votes().containsKey(player.getUUID())) {
+            return "이미 이 안건에 투표했습니다.";
+        }
         activeProposal.votes().put(player.getUUID(), yes);
         String result = player.getGameProfile().name() + "님이 " + (yes ? "찬성" : "반대") + "에 투표했습니다.";
         broadcast(server, result);
@@ -169,10 +194,17 @@ public final class VillageCouncilState {
     }
 
     public static synchronized ExperienceResult grantExperience(ServerPlayer player, int requestedAmount) {
+        MinecraftServer server = player == null ? null : player.level().getServer();
+        return grantExperience(server, player == null ? null : player.getUUID(), requestedAmount);
+    }
+
+    public static synchronized ExperienceResult grantExperience(
+            MinecraftServer server, UUID playerId, int requestedAmount) {
+        if (playerId == null) return new ExperienceResult(0, RpgProgress.initial(), RpgProgress.initial(), 0);
         int baseAmount = Math.max(0, requestedAmount);
         int amount = Math.max(0, Math.round(baseAmount
                 * VillageProgressionSystem.experienceMultiplierPercent() / 100.0f));
-        RpgProgress previous = progressOf(player.getUUID());
+        RpgProgress previous = progressOf(playerId);
         int level = previous.level();
         int experience = previous.experience();
         int levelsGained = 0;
@@ -187,10 +219,11 @@ public final class VillageCouncilState {
             }
         }
         RpgProgress updated = new RpgProgress(level, experience);
-        RPG_PROGRESS.put(player.getUUID(), updated);
+        RPG_PROGRESS.put(playerId, updated);
         persist();
-        if (levelsGained > 0) {
-            broadcast(player.level().getServer(), "§d[성장] §f" + player.getGameProfile().name()
+        ServerPlayer online = server == null ? null : server.getPlayerList().getPlayer(playerId);
+        if (levelsGained > 0 && online != null) {
+            broadcast(server, "§d[성장] §f" + online.getGameProfile().name()
                     + " 님이 레벨 " + level + "에 도달했습니다.");
         }
         return new ExperienceResult(amount, previous, updated, levelsGained);
@@ -250,11 +283,15 @@ public final class VillageCouncilState {
     }
 
     private static void evaluateProposal(MinecraftServer server) {
+        evaluateProposal(server, null);
+    }
+
+    private static void evaluateProposal(MinecraftServer server, UUID departingPlayer) {
         if (activeProposal == null) return;
-        int online = Math.max(1, server.getPlayerList().getPlayerCount());
-        int required = majority(server);
-        int yesVotes = countVotes(server, true);
-        int noVotes = countVotes(server, false);
+        int online = effectiveOnlineCount(server, departingPlayer);
+        int required = online / 2 + 1;
+        int yesVotes = countVotes(server, true, departingPlayer);
+        int noVotes = countVotes(server, false, departingPlayer);
         int remainingVotes = Math.max(0, online - yesVotes - noVotes);
         if (yesVotes >= required) {
             activeProposal = null;
@@ -318,11 +355,25 @@ public final class VillageCouncilState {
     }
 
     private static int countVotes(MinecraftServer server, boolean value) {
+        return countVotes(server, value, null);
+    }
+
+    private static int countVotes(MinecraftServer server, boolean value, UUID departingPlayer) {
         if (activeProposal == null) return 0;
         return (int) activeProposal.votes().entrySet().stream()
+                .filter(entry -> departingPlayer == null || !departingPlayer.equals(entry.getKey()))
                 .filter(entry -> server.getPlayerList().getPlayer(entry.getKey()) != null)
                 .filter(entry -> entry.getValue() == value)
                 .count();
+    }
+
+    private static int effectiveOnlineCount(MinecraftServer server, UUID departingPlayer) {
+        int online = server == null ? 0 : server.getPlayerList().getPlayerCount();
+        if (server != null && departingPlayer != null
+                && server.getPlayerList().getPlayer(departingPlayer) != null) {
+            online--;
+        }
+        return Math.max(1, online);
     }
 
     private static long distanceSquared(BlockPos first, BlockPos second) {
