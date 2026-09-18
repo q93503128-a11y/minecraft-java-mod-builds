@@ -36,6 +36,9 @@ def main() -> None:
     ui_service = read("VillageUiService.java")
     respawn = read("VillageRespawnSystem.java")
     relic = read("VillageRelicSystem.java")
+    role_ability = read("VillageRoleAbilitySystem.java")
+    role_skill = read("VillageRoleSkillSystem.java")
+    guardians = read("VillageGuardians.java")
 
     assert "mod_version=0.18.38-alpha.1" in props
     assert "현재 소스 버전 `0.18.38-alpha.1`" in readme
@@ -110,6 +113,38 @@ def main() -> None:
     routing = section(raid, "private static void directEnemies", "private static void directFlyingEnemy")
     assert "VillageMercenarySystem.isCombatMercenary" in routing
     assert "VillageMercenarySystem.nearestCombatMercenary" in routing
+
+    # Player and bastion taunts are authoritative routing overrides, including objective-first archetypes.
+    assert "FORCED_TAUNTS" in raid
+    assert "public static int tauntEnemies" in raid
+    assert routing.index("activeTauntTarget") < routing.index("ownsExteriorRouting")
+    assert routing.index("activeTauntTarget") < routing.index("Archetype.TOWER_HUNTER")
+    taunt = section(role_ability, "private static void tauntShout", "private static void healLowestAlly")
+    assert "30.0 + specialRank * 3.0" in taunt
+    assert "VillageRaidSystem.tauntEnemies" in taunt
+    assert "시설·포탑을 우선 노리는 공성 병과도 도발" in role_skill
+    bastion = section(merc, "private static void bastionControl", "private static void strikerPressure")
+    assert "12.0 + Math.min(12.0, rank * 0.20)" in bastion
+    assert "VillageRaidSystem.tauntEnemies" in bastion
+
+    # Friendly projectiles pass through mercenaries and friendly damage is zeroed before RPG scaling.
+    assert "blockFriendlyFire" in merc
+    assert "event.setAmount(0.0f)" in merc
+    assert "onProjectileImpact(ProjectileImpactEvent event)" in guardians
+    projectile = section(guardians, "public void onProjectileImpact", "public void onIncomingDamage")
+    assert "VillageMercenarySystem.isCombatMercenary" in projectile
+    assert "event.setCanceled(true)" in projectile
+    incoming = section(guardians, "public void onIncomingDamage", "public void onFinalDamage")
+    assert "VillageMercenarySystem.blockFriendlyFire(event)" in incoming
+
+    # Final-wave inaccessible stragglers cannot leave the raid permanently locked.
+    assert "FINAL_STRAGGLER_RECOVERY_TICKS = 20 * 35" in raid
+    assert "recoverFinalStragglers(server)" in raid
+    recovery = section(raid, "private static void recoverFinalStragglers", "private static ServerPlayer nearestAnyCombatPlayer")
+    assert "ACTIVE_ENEMIES.size() > 2" in recovery
+    assert "VillageWorldSystem.northInnerApproach()" in recovery
+    assert "잔존 적 유도" in recovery
+    assert "포탑 안내" in raid
 
     # Party-wide investments consume shared supplies; personal loadout/progression may still use coins elsewhere.
     hire = section(merc, "public static synchronized String hire", "public static synchronized void captureNightSnapshot")
@@ -194,6 +229,8 @@ def main() -> None:
     print("[PASS] v0.18.37 saves receive geometry-only migration with segment/turret state reprojected")
     print("[PASS] early sapper movement, health and structure pressure are reduced without deleting its role")
     print("[PASS] frontline mercenaries predeploy outside and raid mobs can genuinely engage them")
+    print("[PASS] player/bastion taunts override objective routing while friendly arrows and damage ignore mercenaries")
+    print("[PASS] final-wave inaccessible stragglers are recovered and zero-turret nights explain where to build")
     print("[PASS] shared defenses use shared supplies and turret confirmation rechecks capacity atomically")
     print("[PASS] storehouse supply conversion, daytime hunger lock and bounded retry support are wired")
     print("[PASS] frozen night participants receive raid rewards by UUID despite disconnect timing")
