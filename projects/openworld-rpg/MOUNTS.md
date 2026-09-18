@@ -314,18 +314,91 @@ Unlock:
 - must occur before the player has exhausted most R01 exploration;
 - first registration is **free** after the event/quest. No early Gold grind blocks basic mount access.
 
-Movement:
+Movement — R01 starting values:
 
-- cruise 6.4 b/s;
-- high steering response;
+```text
+cruise speed: 6.4 b/s
+0 → 90% cruise: 1.0 s
+90% cruise → stop with no input: 0.75 s
+max authored step-up: 1.25 blocks
+full-speed yaw turn rate: 120 deg/s
+<=50% speed yaw turn rate: 180 deg/s
+```
+
+Rules:
 - no endurance drain for ordinary travel;
-- target step/terrain assistance: approximately 1.25-block step handling where the Minecraft movement backend allows it cleanly;
-- charged/intentional jump target: enough to clear roughly a 2-block obstacle/gap without becoming a vertical-cliff solver.
+- steering interpolation is continuous between the two turn-rate anchors;
+- ordinary steering does not strafe the Stag sideways like a player avatar;
+- step-up cannot climb a true 2-block wall.
 
-Combat:
+### Trail Stag jump
+
+Trail Stag uses one responsive fixed hop rather than a vanilla horse-style power-charge meter.
+
+On grounded Jump:
+
+```text
+jump apex target: 1.65 blocks above takeoff foot level
+horizontal velocity retained: 85%
+no air re-jump
+landing recovery: 0.15 s before another jump
+```
+
+At 6.4 b/s on level ground this is authored to clear about a 2-block ordinary gap without becoming a cliff solver.
+
+These movement numbers are **TUNEABLE_SEED** after real Minecraft animation/collision/Azari play evidence; source implementation begins with them exactly rather than inventing different values.
+
+### Trail Stag summon placement
+
+Global summon channel/combat-lock rules in §4 remain.
+
+After the 1.0 s channel, server checks candidate ground positions around the player in this order:
+
+1. 2.5 blocks behind-right;
+2. 2.5 blocks behind-left;
+3. 2.5 blocks directly behind;
+4. 2.5 blocks right;
+5. 2.5 blocks left;
+6. 3.5 blocks behind-right;
+7. 3.5 blocks behind-left;
+8. 3.5 blocks directly behind.
+
+Each candidate requires:
+- accepted Stag collision volume clear;
+- stable non-liquid support;
+- support-height variance <=0.75 block;
+- legal mount volume;
+- no entity collision that would spawn the mount intersecting another actor.
+
+If none pass, summon fails without cooldown/Resolve loss and shows the normal “Need more open ground” feedback.
+
+### Dismount safety
+
+Manual dismount searches safe rider positions:
+
+1. left of mount;
+2. right;
+3. behind-left;
+4. behind-right;
+5. directly behind.
+
+A legal rider position requires a normal player collision column + stable support.
+
+If none pass:
+- rider remains mounted;
+- Stag decelerates normally;
+- feedback: “No room to dismount.”
+
+After a legal ordinary dismount outside an authored event/stable interaction, the project Stag returns/despawns **1.0 s after the rider is safely separated**.
+
+### Combat boundary
 
 - no mount attack;
-- attempting player basic attack dismounts first.
+- player basic-attack input while mounted requests a safe dismount first;
+- if a safe dismount succeeds, buffer that one attack request for **0.10 s** and execute it after rider authority returns;
+- if no safe dismount exists, reject the attack and keep the rider mounted rather than clipping/suffocating the player.
+
+These rules do not add mounted class combat.
 
 Why it remains relevant:
 
