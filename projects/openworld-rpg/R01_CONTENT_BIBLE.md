@@ -171,13 +171,16 @@ These are observation targets, not hard gates.
 | Moment | Expected ordinary first-play Lv |
 |---|---:|
 | reach Alderford | 1–2 |
-| complete `Dust on the Quarry Road` | 3–4 |
-| ordinary Trail Stag timing | 4–6 |
-| inspect lower quarry entrance | 6–8 |
-| enter Earthloong chamber | 7–9 |
-| finish first Earthloong clear | 8–10 |
+| complete `Dust on the Quarry Road` | **2–3** |
+| ordinary Trail Stag timing | **3–4** |
+| inspect lower quarry entrance | **4–6** |
+| enter Earthloong chamber | **5–7** |
+| finish first Earthloong clear | **6–8** |
 
-A player outside the band is not blocked.  
+A player outside the band is not blocked. **Suggested Lv 8** at the quarry is a safety/readability recommendation, not a claim that every ordinary player must already be Lv8 before entering; a broad-path player is expected to approach Lv6–8 by the first clear, while a completionist route can arrive closer to the upper edge.
+
+R01 intentionally front-loads **one-time** EXP/Class-XP rewards above later-region baseline percentages so the opening actually reaches these bands. Repeat events, repeat bosses and ordinary combat do not inherit that uplift.
+
 If median playtest progression misses the band by more than about two levels, retune rewards/content density before changing region identity.
 
 ---
@@ -218,7 +221,7 @@ Existing Trail Stag/fishing/gathering space.
 
 Required identity:
 - wide readable ford;
-- damaged harness/cart route for A Stag at the Ford;
+- snapped tether post / broken ford gate route for A Stag at the Ford;
 - Healing Herb bank;
 - two of the five ordinary R01 fishing spots;
 - one visible route back toward Alderford stables.
@@ -244,7 +247,7 @@ Interaction:
 
 Discovery reward:
 ~~~text
-EXP: 7% current next-Lv requirement
+EXP: **14%** current next-Lv requirement
 Gold: 20
 ~~~
 
@@ -272,7 +275,7 @@ Required identity:
 
 The grove itself grants:
 ~~~text
-first discovery EXP: 7% current next-Lv requirement
+first discovery EXP: **14%** current next-Lv requirement
 ~~~
 
 No generic grove chest is added.
@@ -296,7 +299,7 @@ These six are normal first-visit discoveries. None receives an undiscovered map 
 
 Each discovery grants:
 ~~~text
-EXP: 5% current next-Lv requirement
+EXP: **10%** current next-Lv requirement
 one-time per player
 ~~~
 
@@ -503,7 +506,7 @@ Repeat eligibility after a completed/abandoned cycle:
 AND event volume currently has no active Roadside Trouble instance
 ```
 
-Entering the volume starts the event immediately when eligible.  
+Entering the volume starts the event immediately when eligible. If an eligible incomplete player entered before the 4-minute first-cycle threshold and remains inside, the controller performs one eligibility recheck when that threshold is crossed so the player is not forced to step out and back in.  
 There is no random percentage roll.
 
 ## 6.2 Physical scene
@@ -537,7 +540,7 @@ Solo baseline threat:
 Scaling:
 
 ```text
-+1 Viper-equivalent threat per additional active participant
++1 Meadow Viper per additional active participant
 maximum total event threat count: 4
 ```
 
@@ -1562,7 +1565,7 @@ Night: 22:00–06:00
 - **Brin Hale** — Copper Kettle all bands;
 - **Nessa Bell** — market stall Day, nearby stock/covered-market anchor Morning/Evening/Night;
 - **Oren Quill** — Vault all bands;
-- **Sera Wren** — route board Morning, Riverwood/road-edge authored field anchor Day, Copper Kettle/route board Evening, no forced Night field patrol;
+- **Sera Wren** — route board Morning, Riverwood/road-edge authored field anchor Day, Copper Kettle/route board Evening, no forced Night field patrol; **while an accepted Sera contract is in a return/turn-in state, quest relevance overrides the ambient schedule and Sera is available at the route board until that personal turn-in completes**;
 - **Ilyan Voss** — pre-clear Copper Kettle guest anchor; post-clear Wayfarers' Hall Day and Copper Kettle Evening;
 - **Kest Arden** — event/hunt-owned only; never loops visibly around Alderford as a service NPC.
 
@@ -1769,7 +1772,21 @@ r01_property_inspected[]
 r01_property_owner_state
 
 r01_profession_insight_flags
+
+r01_merchant_epoch_active_time
+r01_merchant_cycle_index
+r01_merchant_cycle_sold_slots[]
+
+r01_fishing_spot_cycle_index[]
+r01_fishing_catch_ordinal[]
+r01_fishing_pending_candidate[]
 r01_fish_discovery_flags
+
+r01_service_first_use_flags
+r01_npc_aftermath_comment_flags
+
+r01_contract_reaccept_generation[]
+r01_pending_reward_claim_ids[]
 ```
 
 All progression/economy ownership is server-authoritative.
