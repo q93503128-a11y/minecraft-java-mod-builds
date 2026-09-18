@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 class FieldScenarioTest {
     @Test
     void firstVisiblePatrolMatchesTheCanonicalSouthgateEnemyParty() {
-        BattleState state = P0Scenario.createFieldPatrol();
+        BattleState state = TrainingBattleFactory.createFieldPatrol();
         assertEquals(4, state.living(CombatantSide.ALLY).size());
         assertEquals(3, state.living(CombatantSide.ENEMY).size());
         assertEquals("E001", state.combatant("enemy_e001").definition().id());
@@ -25,10 +25,10 @@ class FieldScenarioTest {
 
     @Test
     void firstFieldEncounterResolvesUnderServerAuthoritativeAutoRules() {
-        BattleState state = P0Scenario.createFieldPatrol();
+        BattleState state = TrainingBattleFactory.createFieldPatrol();
         BattleEngine engine = new BattleEngine(state);
         int actions = 0;
-        while (state.outcome() == BattleOutcome.RUNNING && actions++ < 240) P0Scenario.chooseAutoAction(engine, state, engine.nextReady());
+        while (state.outcome() == BattleOutcome.RUNNING && actions++ < 240) BattleAutoController.chooseAutoAction(engine, state, engine.nextReady());
         assertNotEquals(BattleOutcome.RUNNING, state.outcome());
     }
 }

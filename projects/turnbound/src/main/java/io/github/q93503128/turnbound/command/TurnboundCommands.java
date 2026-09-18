@@ -104,13 +104,13 @@ public final class TurnboundCommands {
     private static int profile(CommandSourceStack source) throws CommandSyntaxException {
         var player = source.getPlayerOrException();
         var snapshot = CampaignProgressStore.snapshot(player.getUUID()).profile();
-        String text = "Gold " + snapshot.gold()
-                + " | Crystal " + snapshot.summonCrystal()
-                + " | Essence " + snapshot.starEssence()
-                + " | Core " + snapshot.awakeningCore()
-                + " | ★5 pity " + snapshot.fiveStarPity() + "/80"
-                + " | Starter " + (snapshot.starterArchiveUsed() ? "사용 완료" : snapshot.starterArchiveUnlocked() ? "사용 가능" : "잠김")
-                + " | 보유 " + snapshot.ownedCharacters().size();
+        String text = "골드 " + snapshot.gold()
+                + " | 소환 수정 " + snapshot.summonCrystal()
+                + " | 별의 정수 " + snapshot.starEssence()
+                + " | 각성 코어 " + snapshot.awakeningCore()
+                + " | ★5 천장 " + snapshot.fiveStarPity() + "/80"
+                + " | 초기 소환 " + (snapshot.starterArchiveUsed() ? "완료" : snapshot.starterArchiveUnlocked() ? "이용 가능" : "잠김")
+                + " | 보유 캐릭터 " + snapshot.ownedCharacters().size();
         source.sendSuccess(() -> Component.literal(text), false);
         return Command.SINGLE_SUCCESS;
     }
@@ -170,9 +170,17 @@ public final class TurnboundCommands {
             source.sendSuccess(() -> Component.literal(summarize(result, starter)), false);
             return Command.SINGLE_SUCCESS;
         } catch (IllegalStateException | IllegalArgumentException ex) {
-            source.sendFailure(Component.literal(ex.getMessage()));
+            source.sendFailure(Component.literal(summonFailureText(ex)));
             return 0;
         }
+    }
+
+    private static String summonFailureText(RuntimeException exception) {
+        String message = exception.getMessage();
+        if (message == null) return "현재 소환을 진행할 수 없습니다.";
+        if (message.contains("Not enough Summon Crystal")) return "소환 수정이 부족합니다.";
+        if (message.contains("Starter Archive is not available")) return "초기 소환을 이용할 수 없습니다.";
+        return "현재 소환을 진행할 수 없습니다.";
     }
 
     private static String summarize(GachaService.BatchResult result, boolean starter) {

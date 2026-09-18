@@ -2,7 +2,6 @@ package io.github.q93503128.turnbound;
 
 import com.mojang.logging.LogUtils;
 import io.github.q93503128.turnbound.command.TurnboundCommands;
-import io.github.q93503128.turnbound.combat.P0Scenario;
 import io.github.q93503128.turnbound.presentation.SignatureBattleActors;
 import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
 import io.github.q93503128.turnbound.session.BattleInteractionGuard;
@@ -56,7 +55,6 @@ public final class Turnbound {
         NeoForge.EVENT_BUS.addListener(FieldInteractionGuard::onEntityInteract);
         NeoForge.EVENT_BUS.addListener(FieldInteractionGuard::onLeftClickBlock);
         NeoForge.EVENT_BUS.addListener(FieldInteractionGuard::onAttackEntity);
-        LOGGER.info("TURNBOUND {} loaded; {}", VERSION, P0Scenario.runAutoDiagnostic(160));
     }
 
     private void tick(PlayerTickEvent.Post event) {

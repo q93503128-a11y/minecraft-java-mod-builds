@@ -9,7 +9,8 @@ import io.github.q93503128.turnbound.combat.CombatantSide;
 import io.github.q93503128.turnbound.combat.CombatantState;
 import io.github.q93503128.turnbound.combat.EffectType;
 import io.github.q93503128.turnbound.combat.EndgameEncounterCatalog;
-import io.github.q93503128.turnbound.combat.P0Scenario;
+import io.github.q93503128.turnbound.combat.BattleAutoController;
+import io.github.q93503128.turnbound.combat.TrainingBattleFactory;
 import io.github.q93503128.turnbound.combat.SkillDefinition;
 import io.github.q93503128.turnbound.combat.TargetRule;
 import io.github.q93503128.turnbound.presentation.HeroBattleBarks;
@@ -64,7 +65,7 @@ public final class BattleSession {
         BattleState initial;
         if(CampaignEncounterCatalog.contains(this.encounterId))initial=CampaignEncounterCatalog.createBattle(ownerId,this.encounterId);
         else if(EndgameEncounterCatalog.contains(this.encounterId))initial=EndgameEncounterCatalog.createBattle(ownerId,this.encounterId);
-        else initial=P0Scenario.create();
+        else initial=TrainingBattleFactory.create();
         engine=new BattleEngine(initial);returnPosition=player.position();returnYaw=player.getYRot();returnPitch=player.getXRot();playerWasInvisible=player.isInvisible();
         presentationCenter=arena.center();battleYaw=arena.facingYaw();player.setInvisible(true);
         presentation.spawn((ServerLevel)player.level(),presentationCenter,battleYaw,engine.state().combatants());
@@ -101,7 +102,7 @@ public final class BattleSession {
     void toggleSpeed(ServerPlayer player){if(finished||engine.state().outcome()!=BattleOutcome.RUNNING||!speedAllowed)return;speed=speed==1?2:1;BattleNetwork.sync(player,this);}
     void cleanup(ServerPlayer player){presentation.cleanup((ServerLevel)player.level());player.setInvisible(playerWasInvisible);player.setPos(returnPosition.x,returnPosition.y,returnPosition.z);player.setYRot(returnYaw);player.setXRot(returnPitch);player.setDeltaMovement(Vec3.ZERO);}
 
-    private int autoAct(ServerPlayer player,ServerLevel level,CombatantState actor){int eventStart=engine.state().events().size();try{P0Scenario.chooseAutoAction(engine,engine.state(),actor);}catch(RuntimeException ex){safeBasicFallback(actor);}int visualTicks=animateRecordedAction(player,level,actor,eventStart);presentation.presentEvents(level,engine.state(),eventStart);barkReactionEvents(player,eventStart);BattleAudioEmitter.emit(player,engine.state(),eventStart);return visualTicks;}
+    private int autoAct(ServerPlayer player,ServerLevel level,CombatantState actor){int eventStart=engine.state().events().size();try{BattleAutoController.chooseAutoAction(engine,engine.state(),actor);}catch(RuntimeException ex){safeBasicFallback(actor);}int visualTicks=animateRecordedAction(player,level,actor,eventStart);presentation.presentEvents(level,engine.state(),eventStart);barkReactionEvents(player,eventStart);BattleAudioEmitter.emit(player,engine.state(),eventStart);return visualTicks;}
 
     /** Sends the resolved HP/down state immediately, but keeps the client on the 3D battlefield until the outro finishes. */
     private void syncAfterResolution(ServerPlayer player){

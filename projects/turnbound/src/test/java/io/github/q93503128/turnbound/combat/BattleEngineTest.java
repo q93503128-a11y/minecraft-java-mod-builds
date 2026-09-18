@@ -23,6 +23,14 @@ final class BattleEngineTest {
         var bram=new CombatantState("b",PrototypeRoster.bram(),CombatantSide.ALLY,0);enemy=new CombatantState("e",unit("E",99999,1,999,1),CombatantSide.ENEMY,1);bram.setGauge(1000);enemy.setGauge(400);var pressure=new BattleEngine(new BattleState(List.of(bram,enemy)));pressure.nextReady();pressure.useSkill("b","p03_shield_pressure","e");assertEquals(280L,enemy.gauge());
     }
 
-    @Test void timelinePreviewDoesNotMutate(){BattleState s=P0Scenario.create();long[] before=s.combatants().stream().mapToLong(CombatantState::gauge).toArray();assertEquals(8,s.timelinePreview(8).size());assertArrayEquals(before,s.combatants().stream().mapToLong(CombatantState::gauge).toArray());}
-    @Test void p0DiagnosticTerminates(){String r=P0Scenario.runAutoDiagnostic(200);assertFalse(r.contains("outcome=RUNNING"),r);}
+    @Test void timelinePreviewDoesNotMutate(){BattleState s=TrainingBattleFactory.create();long[] before=s.combatants().stream().mapToLong(CombatantState::gauge).toArray();assertEquals(8,s.timelinePreview(8).size());assertArrayEquals(before,s.combatants().stream().mapToLong(CombatantState::gauge).toArray());}
+    @Test void deterministicAutoControllerTerminatesTrainingBattle(){
+        BattleState state=TrainingBattleFactory.create();
+        BattleEngine engine=new BattleEngine(state);
+        int actions=0;
+        while(state.outcome()==BattleOutcome.RUNNING && actions++<200){
+            BattleAutoController.chooseAutoAction(engine,state,engine.nextReady());
+        }
+        assertNotEquals(BattleOutcome.RUNNING,state.outcome());
+    }
 }
