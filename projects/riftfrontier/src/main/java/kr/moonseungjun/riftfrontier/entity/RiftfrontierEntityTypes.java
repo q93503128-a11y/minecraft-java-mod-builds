@@ -19,6 +19,9 @@ public final class RiftfrontierEntityTypes {
     /** Review-only; never part of natural expedition composition before human acceptance. */
     public static final DeferredHolder<EntityType<?>, EntityType<Region01HunterFieldReviewEntity>> REGION_01_HUNTER_FIELD_REVIEW =
         ENTITY_TYPES.registerEntityType("region_01_hunter_field_review", Region01HunterFieldReviewEntity::new, MobCategory.MONSTER);
+    /** Review-only; preserves the established ranged-pressure Scout role and does not authorize flight gameplay. */
+    public static final DeferredHolder<EntityType<?>, EntityType<Region01ScoutFieldReviewEntity>> REGION_01_SCOUT_FIELD_REVIEW =
+        ENTITY_TYPES.registerEntityType("region_01_scout_field_review", Region01ScoutFieldReviewEntity::new, MobCategory.MONSTER);
 
     private RiftfrontierEntityTypes() {}
     public static void register(IEventBus modEventBus) { ENTITY_TYPES.register(modEventBus); }
@@ -26,5 +29,6 @@ public final class RiftfrontierEntityTypes {
         AttributeSupplier bossAttributes = LivingEntity.createLivingAttributes().build();
         event.put(REGION_01_BOSS.get(), bossAttributes);
         event.put(REGION_01_HUNTER_FIELD_REVIEW.get(), Monster.createMonsterAttributes().build());
+        event.put(REGION_01_SCOUT_FIELD_REVIEW.get(), Monster.createMonsterAttributes().build());
     }
 }
