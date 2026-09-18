@@ -2,7 +2,7 @@
 
 > Working project slug: `openworld-rpg`  
 > Player-facing title: **WORKING / CANDIDATE ONLY — not yet locked, and NOT a gameplay-source-bootstrap gate; `Anchorwake` is an evaluated candidate only**  
-> Current phase: **DESIGN CANON LATE PRE-PRODUCTION / GAMEPLAY SOURCE BOOTSTRAP BLOCKED BY ASSET, SPATIAL, FINAL-ENCOUNTER AND STALE-CANON GATES**
+> Current phase: **R01 GAMEPLAY / CONTENT DESIGN CLOSED / GAMEPLAY SOURCE BOOTSTRAP STILL BLOCKED BY ASSET + AZARI SPATIAL BINDING; LATER-REGION FINAL-ENCOUNTER GATES REMAIN**
 
 ## 1. Repository / authority contract
 
@@ -176,7 +176,7 @@ These are not new design options. They identify older live phrases that are alre
 - `ACCESSIBILITY_DIFFICULTY_INPUT_AUDIO.md` closes the global difficulty/assist, frequent-action input, subtitle/non-audio cue, camera/VFX comfort and audio/music **behavioral** contracts. Exact SFX/BGM files remain an asset-intake problem, not an open behavior-design problem.
 - `R11_AQUATIC_ACTION_MATRIX.md` closes the former R11 aquatic action-compatibility design blocker. Runtime retarget/render/playtest proof remains validation work.
 - **R03 Basalt Wyvern references in older class-progression prose are stale.** Basalt Wyvern belongs to R10. The live `CLASS_PROGRESSION.md` now uses current R03 collapsed-mine/lift-route/Griffin identities instead of resurrecting Basalt Wyvern or the obsolete `Rocky Roller` slot.
-- `R01_ASSET_INTAKE.md` integrates Pass 4 for River Scholar / Ironbound / Trail Skewers candidate identity. Pass 5 adds acquisition-source evidence: the preferred Wizard/Knight modular parts belong to the current broader Source-edition outfit content rather than being assumed to exist in the free Standard archive; Kenney Food Kit and several creator-uploaded CC0 Quaternius Standard archives have direct acquisition locators. None is visually/Minecraft accepted yet; `R01 ASSET READY` remains `NO`.
+- `R01_ASSET_INTAKE.md` now includes the later R01 fish intake narrowing: old Quaternius clownfish/Sea-Life/tuna candidates are rejected for Heartland, and the current four-role direct-review queue is **Small Fish Common Minnow / CDmir Fish / Quaternius Armored Catfish / CDmir Esox**. Broad fish discovery is stopped unless one role fails direct review. None is yet binary-hashed/3D/Minecraft accepted; `R01 ASSET READY` remains `NO`.
 - Older `Threateningly Mobs Continued = MIT` shorthand is not sufficient for raw-byte reuse. Current storefront metadata conflicts; use dependency-only handling until the exact canonical upstream license is resolved as recorded in `PRODUCTION_ASSET_BINDING_MATRIX.md`.
 
 ---
@@ -214,6 +214,27 @@ stop affected implementation
 ```
 
 Code does not silently become design authority.
+
+---
+
+## 6.1 R01 design-closure status
+
+R01 now has a dedicated closure split:
+
+```text
+R01 GAMEPLAY / CONTENT DESIGN CLOSED: YES
+R01 IMPLEMENTATION-TIME GAMEPLAY CHOICES REMAIN: NO
+R01 ASSET_BINDING COMPLETE: NO
+R01 SPATIAL_BINDING COMPLETE: NO
+R01 SOURCE READY: NO
+R01 IMPLEMENTED: NO
+R01 PLAYTESTED: NO
+R01 MULTIPLAYER TESTED: NO
+```
+
+The current authoritative closure table is `R01_CONTENT_BIBLE.md` §26–§28.
+
+This means **do not reopen R01 systems, rewards, quest text, merchant logic, fish mechanics, mount behavior, Camp/furniture rules, fast travel or UI flow during coding.** If real asset/spatial/play evidence invalidates a value, revise canon first.
 
 ---
 
