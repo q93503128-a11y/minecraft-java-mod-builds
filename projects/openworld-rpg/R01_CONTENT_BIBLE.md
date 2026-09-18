@@ -1007,7 +1007,7 @@ Reliable purchase stock:
 | Focus Draught | 35 Gold |
 | Cleansing Tonic | 40 Gold |
 
-These do not rotate out.
+These do not rotate out and use **unlimited fixed personal purchase availability** in R01. There is no stock count, daily reset or buyout timer; Gold and legal destination space are the purchase constraints.
 
 Alchemy service recipes remain:
 
@@ -1027,7 +1027,7 @@ Reliable prepared-meal stock:
 | Trail Skewers | 20 Gold |
 | Glow Broth | 25 Gold |
 
-Cooking from owned ingredients remains available through the normal service and does not require buying prepared food.
+Prepared meals use **unlimited fixed personal purchase availability** in R01. There is no stock count/daily reset. Cooking from owned ingredients remains available through the normal service and does not require buying prepared food.
 
 ## 10.4 Daren Holt — forge
 
