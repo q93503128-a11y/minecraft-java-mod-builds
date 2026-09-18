@@ -15,6 +15,7 @@ final class VillageFortressTerrain {
     private static final int ROAD_HALF_WIDTH = 4;
     private static final int WALL_THICKNESS = 5;
     private static final int WALL_TOP_Y = 9;
+    static final int SIDE_REAR_ACCESS_LANE = 52;
     private static final int GATE_HALF_WIDTH = 9;
     private static final int GATE_HEIGHT = 8;
 
@@ -213,9 +214,9 @@ final class VillageFortressTerrain {
                 set(level, new BlockPos(center.getX() + dx, groundY + 1, stepZ), Blocks.STONE_BRICKS);
             }
             if (Math.floorMod(dx, 3) != 1) {
-                int outerZ = center.getZ() + (north ? startZ : startZ + WALL_THICKNESS - 1);
+                // The wall body owns only the courtyard-side crenellation. The defender gallery
+                // owns the single exterior fall-protection line, avoiding a doubled outer parapet.
                 int innerZ = center.getZ() + (north ? startZ + WALL_THICKNESS - 1 : startZ);
-                set(level, new BlockPos(center.getX() + dx, groundY + WALL_TOP_Y + 1, outerZ), Blocks.STONE_BRICKS);
                 set(level, new BlockPos(center.getX() + dx, groundY + WALL_TOP_Y + 1, innerZ), Blocks.STONE_BRICKS);
             }
         }
@@ -240,9 +241,7 @@ final class VillageFortressTerrain {
                 set(level, new BlockPos(stepX, groundY + 1, center.getZ() + dz), Blocks.STONE_BRICKS);
             }
             if (Math.floorMod(dz, 3) != 1) {
-                int outerX = center.getX() + (startX < 0 ? startX : startX + WALL_THICKNESS - 1);
                 int innerX = center.getX() + (startX < 0 ? startX + WALL_THICKNESS - 1 : startX);
-                set(level, new BlockPos(outerX, groundY + WALL_TOP_Y + 1, center.getZ() + dz), Blocks.STONE_BRICKS);
                 set(level, new BlockPos(innerX, groundY + WALL_TOP_Y + 1, center.getZ() + dz), Blocks.STONE_BRICKS);
             }
         }
@@ -256,9 +255,7 @@ final class VillageFortressTerrain {
     private static void buildDefenderGalleries(ServerLevel level, BlockPos center, int groundY) {
         int floorY = groundY + WALL_TOP_Y;
         for (int offset = -WALL_RADIUS; offset <= WALL_RADIUS; offset++) {
-            boolean murderHole = Math.floorMod(offset, 4) == 0;
             for (int outward = 0; outward <= 2; outward++) {
-                if (outward == 2 && murderHole) continue;
                 set(level, new BlockPos(center.getX() + offset, floorY,
                         center.getZ() - WALL_RADIUS - outward), Blocks.STONE_BRICKS);
                 set(level, new BlockPos(center.getX() + offset, floorY,
@@ -268,16 +265,16 @@ final class VillageFortressTerrain {
                 set(level, new BlockPos(center.getX() + WALL_RADIUS + outward, floorY,
                         center.getZ() + offset), Blocks.STONE_BRICKS);
             }
-            if (!murderHole) {
-                set(level, new BlockPos(center.getX() + offset, floorY + 1,
-                        center.getZ() - WALL_RADIUS - 2), Blocks.STONE_BRICK_WALL);
-                set(level, new BlockPos(center.getX() + offset, floorY + 1,
-                        center.getZ() + WALL_RADIUS + 2), Blocks.STONE_BRICK_WALL);
-                set(level, new BlockPos(center.getX() - WALL_RADIUS - 2, floorY + 1,
-                        center.getZ() + offset), Blocks.STONE_BRICK_WALL);
-                set(level, new BlockPos(center.getX() + WALL_RADIUS + 2, floorY + 1,
-                        center.getZ() + offset), Blocks.STONE_BRICK_WALL);
-            }
+            // One continuous exterior rail is enough for fall safety. Inner crenellations remain
+            // on the wall body, leaving the center walk and emplacement connectors visually open.
+            set(level, new BlockPos(center.getX() + offset, floorY + 1,
+                    center.getZ() - WALL_RADIUS - 2), Blocks.STONE_BRICK_WALL);
+            set(level, new BlockPos(center.getX() + offset, floorY + 1,
+                    center.getZ() + WALL_RADIUS + 2), Blocks.STONE_BRICK_WALL);
+            set(level, new BlockPos(center.getX() - WALL_RADIUS - 2, floorY + 1,
+                    center.getZ() + offset), Blocks.STONE_BRICK_WALL);
+            set(level, new BlockPos(center.getX() + WALL_RADIUS + 2, floorY + 1,
+                    center.getZ() + offset), Blocks.STONE_BRICK_WALL);
         }
     }
 
@@ -330,12 +327,13 @@ final class VillageFortressTerrain {
     }
 
     private static void buildWallAccess(ServerLevel level, BlockPos center, int groundY) {
-        // Preserve the original north-gate access lanes while giving the other three walls
-        // their own direct routes. Side/rear lanes align with the authored wall-top defense zones.
+        // Preserve the original north-gate access lanes. Side/rear ramps deliberately use a
+        // separate lane from the ±34 emplacement centers so stairs, landings and turret pads
+        // remain independent traffic surfaces.
         for (int lane : new int[]{-25, 25}) {
             buildWallAccessRamp(level, center, groundY, Direction.NORTH, lane);
         }
-        for (int lane : new int[]{-34, 34}) {
+        for (int lane : new int[]{-SIDE_REAR_ACCESS_LANE, SIDE_REAR_ACCESS_LANE}) {
             buildWallAccessRamp(level, center, groundY, Direction.SOUTH, lane);
             buildWallAccessRamp(level, center, groundY, Direction.WEST, lane);
             buildWallAccessRamp(level, center, groundY, Direction.EAST, lane);
