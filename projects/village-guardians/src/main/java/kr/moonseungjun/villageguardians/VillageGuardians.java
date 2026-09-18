@@ -12,6 +12,8 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
+import net.minecraft.world.phys.EntityHitResult;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
@@ -149,6 +151,15 @@ public final class VillageGuardians {
         double radius = VillageWorldSystem.BATTLEFIELD_RADIUS + 96.0;
         if (mob.blockPosition().distSqr(center) > radius * radius) return;
         if (!mob.isPersistenceRequired()) event.setCanceled(true);
+    }
+
+    @SubscribeEvent
+    public void onProjectileImpact(ProjectileImpactEvent event) {
+        if (!(event.getRayTraceResult() instanceof EntityHitResult hit)) return;
+        if (!(hit.getEntity() instanceof Mob target) || !VillageMercenarySystem.isCombatMercenary(target)) return;
+        if (event.getProjectile().getOwner() instanceof ServerPlayer) {
+            event.setCanceled(true);
+        }
     }
 
     @SubscribeEvent
