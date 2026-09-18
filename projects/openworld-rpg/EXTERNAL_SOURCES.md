@@ -83,6 +83,7 @@ R01-specific evidence is recorded in `R01_ASSET_PHASE_B_EVIDENCE_2026-09-15.md`.
 | Quaternius Goldfish | fish reference / possible later pond content | Poly Pizza model `qS6CgsWFAh`; Public Domain / CC0; Animated | `REJECTED_R01_BASELINE` for current river/ford catches; ornamental/domesticated read is wrong for Heartland baseline |
 | gfroad 3d low poly catfish | R01 freshwater alternate | OpenGameArt creator upload CC0; exact `catfish.zip` / `catfish_obj.zip` | distinct freshwater silhouette; animation conversion/source-format risk before acceptance |
 | joyfulsquirrel Fish | R01 lightweight Common alternate | OpenGameArt creator upload CC0; exact `fish.zip` | 328-triangle rigged Swim candidate; accept only if visual quality matches R01 |
+| Small Fish — Common Minnow | R01 small-stream Common direct-review candidate | s&box `Small Fish` listing marks Common Minnow CC0; collection says fish models are handmade from real-world references | exact fourth morphology target; collection is ragdoll-model based, so exact package locator + mesh/texture review + clean swim-rig adaptation remain required |
 | Planet Minecraft schematics | inns / blacksmiths / villages / shrines / castles / dungeons | VERIFY; creator terms vary | primary pool for private/local structure use |
 | Azari 30k x 30k | primary open-world terrain | free download; usage/redistribution terms not explicit; map uses some third-party assets | `VERIFY / LOCAL_ONLY` primary map candidate; use local world bytes only, derive 10–14 regions from its terrain, do not commit map bytes until permission is explicit |
 | external open-world RPG maps | terrain/region skeleton | VERIFY / REFERENCE or LOCAL_ONLY | Azari is current first choice; keep Theia/other free maps only as fallback if Azari import/terms fail |
@@ -444,7 +445,7 @@ Current policy:
 - these are **candidate sources**, not final four R01 species;
 - R01 never uses Dolphin/Shark/Whale/Manta merely to fill the early river roster;
 - the three old individually reviewed Quaternius `Fish` entries are also out of the R01 queue: clownfish visual (`BEcU9rjiAq`), Sea-Life deep-bodied fish (`Ymu8ftrmuT`), and Tuna/Sea-Life (`XWl86YFtpF`);
-- current priority freshwater direct review is CDmir Esox + CDmir Fish + Quaternius Armored Catfish;
+- current four-role R01 direct-review set is **Common Minnow + CDmir Fish + Quaternius Armored Catfish + CDmir Esox**; broad fish discovery stops here unless one role fails direct review;
 - final player-facing species names are written only after exact accepted model inspection;
 - exact archive bytes and project-local SHA-256 remain mandatory before raw asset admission;
 - icons derive from accepted models rather than unrelated fish illustrations.
