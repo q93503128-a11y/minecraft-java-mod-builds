@@ -96,6 +96,26 @@ public final class VillageRespawnSystem {
         }
     }
 
+    public static void recoverAfterGameRestart(MinecraftServer server) {
+        if (server == null) return;
+        java.util.Set<UUID> downed = new java.util.HashSet<>(RESPAWN_AT.keySet());
+        RESPAWN_AT.clear();
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (!downed.contains(player.getUUID())) continue;
+            teleportToVillage(player, server);
+            player.setGameMode(GameType.ADVENTURE);
+            player.setHealth(player.getMaxHealth());
+            player.setAbsorptionAmount(0.0f);
+            player.getFoodData().setFoodLevel(20);
+            player.getFoodData().setSaturation(5.0f);
+            player.setRemainingFireTicks(0);
+            player.setDeltaMovement(Vec3.ZERO);
+            VillageRpgSystem.refreshPlayerPassive(player);
+            player.sendSystemMessage(Component.literal(
+                    "§a[재정비] §f방어 재시작과 함께 전투 불능 상태가 해제되었습니다."));
+        }
+    }
+
     public static boolean reviveNow(ServerPlayer player, String source) {
         if (player == null || !isDowned(player)) return false;
         MinecraftServer server = player.level().getServer();
