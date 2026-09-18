@@ -218,6 +218,8 @@ Core categories:
 
 Weights are used when choosing an affix category, after invalid categories/affixes are filtered out.
 
+After the category is chosen, **eligible affix identities inside that category are equal-weight by default**. A specific affix may use a non-equal data weight only when its canonical data explicitly records that weight; implementation must not invent hidden rarity weights.
+
 | Item family | Primary | Offense | Defense | Resource | Utility |
 |---|---:|---:|---:|---:|---:|
 | normal weapon | 20 | 50 | 0 | 20 | 10 |
