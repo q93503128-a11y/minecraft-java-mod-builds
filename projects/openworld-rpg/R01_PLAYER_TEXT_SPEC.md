@@ -859,7 +859,37 @@ No minor landmark text mentions Anchors.
 
 ---
 
-# 15. Quarry Waystone text
+# 15. R01 fast travel text
+
+Field-map disabled action:
+
+> Reach a shrine or Waystone to fast travel.
+
+Destination cost:
+
+> Free
+
+Travel confirmation:
+
+> Travel to <Destination>?
+
+Combat-state rejection:
+
+> You can't fast travel while in combat.
+
+Mounted-state rejection:
+
+> Dismount before fast traveling.
+
+Blocked destination:
+
+> That travel point is obstructed right now.
+
+No party member is moved automatically.
+
+---
+
+# 16. Quarry Waystone text
 
 Discovery title:
 
@@ -881,7 +911,7 @@ No UI says Checkpoint Activated as a developer-style generic message when the pl
 
 ---
 
-# 16. Service NPC state dialogue
+# 17. Service NPC state dialogue
 
 These are fallback/repeat lines, not mandatory conversations. Service screens open immediately after the line when the interaction context calls for the service.
 
@@ -1073,7 +1103,7 @@ Kest offers no R01 service or mandatory quest.
 
 ---
 
-# 17. Post-Earthloong named-NPC aftermath lines
+# 18. Post-Earthloong named-NPC aftermath lines
 
 These lines become the primary one-time post-briefing world-state comments. After playing once, NPCs use their normal service/repeat pool.
 
@@ -1121,7 +1151,7 @@ No one tells the player to complete both R02 and R03.
 
 ---
 
-# 18. Unnamed Alderford guard barks
+# 19. Unnamed Alderford guard barks
 
 Guards are not quest dispensers.
 
@@ -1149,7 +1179,7 @@ No guard gives new gameplay information that the journal does not contain.
 
 ---
 
-# 19. Ambient Alderford townsfolk barks
+# 20. Ambient Alderford townsfolk barks
 
 Ambient townsfolk are optional atmosphere. They do not open a dialogue tree.
 
@@ -1179,7 +1209,7 @@ Ambient barks never mention internal mechanics, classes by tier or the player's 
 
 ---
 
-# 20. Housing/player-property text
+# 21. Housing/player-property text
 
 Vacant property interaction:
 
@@ -1209,7 +1239,7 @@ Package description:
 
 ---
 
-# 21. Trail Stag summon / dismount feedback
+# 22. Trail Stag summon / dismount feedback
 
 Summon failure — insufficient legal space:
 
@@ -1231,7 +1261,7 @@ These are short feedback lines, not modal warnings.
 
 ---
 
-# 22. Field Camp text
+# 23. Field Camp text
 
 Recipe discovery toast:
 
@@ -1255,7 +1285,7 @@ No resource cost is shown because redeployment is reusable.
 
 ---
 
-# 23. Fishing R01 generic text before final species binding
+# 24. Fishing R01 generic text before final species binding
 
 Final fish species names remain ASSET_BINDING. Until those names are selected, internal slot IDs are never rendered.
 
@@ -1284,7 +1314,7 @@ Not allowed in player-facing builds:
 
 ---
 
-# 24. Main-story handoff text
+# 25. Main-story handoff text
 
 Post-Earthloong return scene remains exactly the four canonical lines already in R01_VERTICAL_SLICE.md.
 
@@ -1318,7 +1348,7 @@ Neither lead is labeled primary, safer, correct or recommended.
 
 ---
 
-# 25. System/result text used in R01
+# 26. System/result text used in R01
 
 ## Quest acceptance
 
@@ -1400,7 +1430,7 @@ Do not show networking/internal error text.
 
 ---
 
-# 26. Text state ownership
+# 27. Text state ownership
 
 At minimum, R01 text selection reads authoritative state for:
 
@@ -1424,7 +1454,7 @@ Client presentation can choose timing only within the owning UI rules. It cannot
 
 ---
 
-# 27. R01 player-text acceptance
+# 28. R01 player-text acceptance
 
 R01 player-facing text is not implementation-ready unless:
 
