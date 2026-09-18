@@ -212,15 +212,20 @@ R01 final binding: NO
 | **gfroad 3d low poly catfish** | OpenGameArt `catfish.zip` + `catfish_obj.zip` | CC0 on creator upload | 284 polygons / 151 verts; swim + jump animations documented in source MAX version | **DIRECT_REVIEW_ALT**; animation conversion/source-format risk must be checked |
 | **joyfulsquirrel Fish** | OpenGameArt `fish.zip` (131.3 KB) | CC0 on creator upload | Blend; 328 triangles; rigged; Tpose + Swim | **DIRECT_REVIEW_ALT** for a very light Common fish if visual quality survives Minecraft scale |
 | **Quaternius Goldfish** | Poly Pizza model `qS6CgsWFAh` | Public Domain / CC0 on model page | Low Poly, Animated, FBX/GLTF | **REJECTED_R01_BASELINE** for current river/ford slots; reads as ornamental/domesticated rather than ordinary Heartland river ecology |
+| **Small Fish — Common Minnow** | s&box `Small Fish` asset collection; Common Minnow asset listed at 5 MB | asset listing explicitly marks Common Minnow **CC0**; collection states fish are handmade from real-world references | exact small streamlined freshwater morphology needed for the second Common slot; collection assets are described as fish ragdoll models, so **mesh direct review is priority but project swim animation/rig adaptation is expected** | **DIRECT_REVIEW_PRIORITY** for `r01_river_common_a/b` small-stream morphology; exact individual package locator/hash and Minecraft-style review pending |
 
 Admission rule:
 
 1. do **not** spend another R01 pass trying to rescue the already-reviewed old Quaternius marine/tropical Fish models;
-2. inspect CDmir Esox, CDmir Fish and Quaternius Armored Catfish first as the current three priority freshwater candidates;
-3. inspect gfroad Catfish / joyfulsquirrel Fish only if one of the priority candidates fails quality/style/animation review or if the fourth distinct silhouette is still missing;
-4. reject a candidate if its silhouette only works as a marine/tropical/ornamental fish, if its animation is visibly stiff at Minecraft scale, or if texture/render style cannot coexist with the accepted R01 creature family;
-5. do not create four palette swaps of one mesh merely to close the roster;
-6. after three strong silhouettes survive, search only for the **missing morphological role** needed for the fourth slot rather than reopening a broad fish search.
+2. direct-review the **four-role shortlist** instead of reopening broad search:
+   - small streamlined Common → Small Fish Common Minnow;
+   - ordinary-bodied Common → CDmir Fish;
+   - bottom/deeper-water Uncommon → Quaternius Armored Catfish;
+   - elongated predatory Rare → CDmir Esox;
+3. inspect gfroad Catfish / joyfulsquirrel Fish only if one of those four roles fails quality/style/technical review;
+4. reject a candidate if its silhouette only works as a marine/tropical/ornamental fish, if its presentation is visibly weak at Minecraft scale, or if texture/render style cannot coexist with the accepted R01 creature family;
+5. Common Minnow being a ragdoll-model source is acceptable only if its mesh/texture quality passes direct review and a clean project-owned swim rig/animation can be authored without changing its external visual identity;
+6. do not create four palette swaps of one mesh merely to close the roster.
 
 ### R01 fish icon rule
 
@@ -898,7 +903,7 @@ Still required:
 9. resolve licensing/acquisition/retarget quality for teammate revive/help-up and Trail Stag mount/dismount, or replace those candidates;
 10. visually inspect and select exact Kenney VFX sprites;
 11. actually audition and select exact Kenney audio clips;
-12. acquire/hash and directly compare the R01 fish shortlist in §3.4, then bind four model identities and only then lock final player-facing species names;
+12. acquire/hash and directly compare the four-role R01 fish shortlist in §3.4; Common Minnow first needs its exact individual s&box package locator/file, then bind four accepted model identities and only then lock final player-facing species names;
 13. run Blockbench/3D-viewer intake, then actual Minecraft visual review for the accepted set.
 
 Until those rows are resolved, `R01 ASSET READY = NO`. Phase B is active and materially advanced, but not complete.
@@ -929,7 +934,8 @@ Current state after Phase-B Pass 5 fish-provenance narrowing:
 - `MEDIEVAL VILLAGE MODULE CANDIDATE NAMES PINNED`: YES for a useful Standard subset; service compositions not accepted
 - `KENNEY VFX/AUDIO CANDIDATE FILENAME FAMILIES PINNED`: YES; visual/audition acceptance pending
 - `OLD QUATERNIUS 7-MODEL FISH BUNDLE R01 SURVIVORS`: NONE among the three directly reviewed Poly Pizza Fish entries; marine large species also rejected
-- `R01 FISH PRIORITY FRESHWATER SHORTLIST`: YES — CDmir Esox + CDmir Fish + Quaternius Armored Catfish
+- `R01 FISH FOUR-ROLE DIRECT-REVIEW SHORTLIST`: YES — Small Fish Common Minnow + CDmir Fish + Quaternius Armored Catfish + CDmir Esox
+- `R01 FISH PRIORITY FRESHWATER SHORTLIST`: YES — broad discovery stopped; alternates only if one of the four roles fails
 - `R01 FISH EXACT FINAL MODEL ROSTER`: NO — binary 3D/animation/Minecraft review still required
 - `R01 FISH FINAL PLAYER-FACING SPECIES NAMES`: NO — intentionally blocked until final model roster is accepted
 - `PROJECT-LOCAL SOURCE SHA-256 COMPLETE`: NO
