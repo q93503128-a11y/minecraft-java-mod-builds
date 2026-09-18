@@ -76,6 +76,11 @@ R01-specific evidence is recorded in `R01_ASSET_PHASE_B_EVIDENCE_2026-09-15.md`.
 | KayKit Restaurant Bits | food / kitchen props | CC0; official public GitHub tree inspected at commit `153c8a7535b48237854cb54ff6890679f8c574d1` | R01 meal/ingredient family; exact roast/stew candidates pinned, Trail Skewers still unresolved |
 | KayKit Character Animations 1.1 | humanoid animation | current authoritative itch page CC0; 161 clips; exact 1.1 work/fishing names published | primary public-safe motion pool; eating/drinking are still described as planned, not shipped |
 | Kenney Fantasy Town Kit | town/building family | CC0 candidate | alternate coherent town/building visual family |
+| Quaternius Animated Fish — OpenGameArt creator snapshot | R01 fish model family | creator-uploaded OpenGameArt page/file explicitly CC0; exact ZIP `Animated Fish Pack by @Quaternius.zip`; project-local hash pending | direct-review the 3 generic Fish meshes only; reject Dolphin/Shark/Whale/Manta for grounded R01 river slots |
+| CDmir Esox - Animated Fish | R01 freshwater Rare candidate | OpenGameArt creator upload CC0; exact `esox.zip` | strong direct-review priority: freshwater predator silhouette, 1,632 tris, Idle/Slow Swim/Fast Swim |
+| CDmir Fish (Animated) | R01 Common/Uncommon candidate | OpenGameArt creator upload CC0; exact `fish.zip` | rigged/animated/game-ready candidate; style compatibility must be checked in 3D/Minecraft |
+| gfroad 3d low poly catfish | R01 freshwater alternate | OpenGameArt creator upload CC0; exact `catfish.zip` / `catfish_obj.zip` | distinct freshwater silhouette; animation conversion/source-format risk before acceptance |
+| joyfulsquirrel Fish | R01 lightweight Common alternate | OpenGameArt creator upload CC0; exact `fish.zip` | 328-triangle rigged Swim candidate; accept only if visual quality matches R01 |
 | Planet Minecraft schematics | inns / blacksmiths / villages / shrines / castles / dungeons | VERIFY; creator terms vary | primary pool for private/local structure use |
 | Azari 30k x 30k | primary open-world terrain | free download; usage/redistribution terms not explicit; map uses some third-party assets | `VERIFY / LOCAL_ONLY` primary map candidate; use local world bytes only, derive 10–14 regions from its terrain, do not commit map bytes until permission is explicit |
 | external open-world RPG maps | terrain/region skeleton | VERIFY / REFERENCE or LOCAL_ONLY | Azari is current first choice; keep Theia/other free maps only as fallback if Azari import/terms fail |
@@ -418,6 +423,27 @@ The project now permits an **early black-powder firearm family** when it fits th
 - Restaurant Bits official repository: https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0 — CC0 public tree; observed commit `153c8a7535b48237854cb54ff6890679f8c574d1`; R01 candidate entries include `food_dinner.gltf` and `food_stew.gltf`; Trail Skewers remains unresolved.
 - Character Animations: https://kaylousberg.itch.io/kaykit-character-animations — CC0, 161 current animations; exact 1.1 `Hammer/Hammering`, `Pickaxe/Pickaxing`, `Work_*`, `Working_*` and fishing clip names are published. Current page still describes eating/drinking as planned rather than shipped.
 - Detailed R01 evidence: `R01_ASSET_PHASE_B_EVIDENCE_2026-09-15.md`.
+
+## R01 fish candidate pool
+
+The dedicated authoritative intake state is `R01_ASSET_INTAKE.md` §3.4.
+
+Creator/source-specific references:
+
+- Quaternius creator upload — https://opengameart.org/content/animated-fish — CC0; exact published ZIP `Animated Fish Pack by @Quaternius.zip`;
+- Quaternius Poly Pizza bundle — https://poly.pizza/bundle/Animated-Fish-Bundle-ZkGbjS8m8g — CC0/Public Domain; 3 generic Fish + Dolphin/Shark/Whale/Manta ray;
+- CDmir Esox — https://opengameart.org/content/esox-animated-fish — CC0; `esox.zip`;
+- CDmir Fish (Animated) — https://opengameart.org/content/fish-animated — CC0; `fish.zip`;
+- gfroad catfish — https://opengameart.org/content/3d-low-poly-catfish — CC0;
+- joyfulsquirrel Fish — https://opengameart.org/content/fish-1 — CC0.
+
+Current policy:
+
+- these are **candidate sources**, not final four R01 species;
+- R01 never uses Dolphin/Shark/Whale/Manta merely to fill the early river roster;
+- final player-facing species names are written only after exact accepted model inspection;
+- exact archive bytes and project-local SHA-256 remain mandatory before raw asset admission;
+- icons derive from accepted models rather than unrelated fish illustrations.
 
 ## Kenney Fantasy Town Kit
 
