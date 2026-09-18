@@ -22,6 +22,7 @@ Subordinate references currently indexed by this canon:
 - `R01_VERTICAL_SLICE.md` — Alderford opening settlement, external player-motion bindings and first 55–75 minute playable R01 route.
 - `R01_CONTENT_BIBLE.md` — full-region R01 content authority for subregions, dynamic event, ecology-density seed, quarry/Regalhart repeat controllers, exact service stock, Camp acquisition, profession opportunities, fishing mechanical slots, Alderford property roster, NPC presence and post-clear state.
 - `R01_UI_PRODUCTION_SPEC.md` — exact R01 HUD/screen hierarchy, first-class/board/journal/merchant/service/housing/fishing/reward interaction flow, commit points, reconnect/error states and real-client visual acceptance.
+- `R01_PLAYER_TEXT_SPEC.md` — exact R01 board-card copy, HUD/journal objective wording, discovery text, named-NPC state dialogue, ambient barks and post-clear world-state lines.
 - `RECOVERY_PRODUCTION_APPEARANCE.md` — recovery belt, potions, food, alchemy/cooking, light profession mastery and external-first armor/apparel/Wardrobe rules.
 - `R01_ASSET_INTAKE.md` — current R01 exact asset/provenance intake state and unresolved presentation gates; Phase-B Pass 4 evidence is integrated but R01 is not asset-ready.
 - `GATHERING_FISHING_CAMP_HOUSING.md` — Tool Pouch, gathering mastery/timing, fishing, reusable Field Camp Kit, housing/storage/furnishing and authority rules.
