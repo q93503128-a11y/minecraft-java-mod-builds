@@ -1,0 +1,7 @@
+version=0.18.37-alpha.1
+run_id=35328571661
+source_sha=0ca90ec953b3ca6f5fd4f8ccc694cbdbb8a294e9
+jar_name=villageguardians-0.18.37-alpha.1.jar
+jar_sha256=d15cc34c2747c81dac11f3f77bd6bffa3d36750b2ecce295eb72a9cfcd644241
+jar_size=863426
+audit=multiplayer-time-vote-lifecycle
