@@ -923,6 +923,7 @@ Current state after Phase-B Pass 5 fish-provenance narrowing:
 - `LICENSE METADATA REVIEWED`: YES, with Quaternius handled source/package-specifically rather than by blanket family assumption
 - `PHASE-B PASS-4 EVIDENCE DOC RECORDED`: YES
 - `PHASE-E APPAREL/POTION/MOTION EXACT-FILE REVIEW RECORDED`: YES — `R01_ASSET_PHASE_E_APPAREL_POTION_MOTION_EXACT_REVIEW_2026-09-18.md`
+- `PHASE-F KENNEY EXACT SHORTLIST RECORDED`: YES — `R01_ASSET_PHASE_F_KENNEY_EXACT_SHORTLIST_2026-09-18.md`; exact baseline VFX/SFX filenames + direct candidate SHA-256 recorded, audition/Minecraft composition still pending
 - `R01 FISH CREATOR-SOURCE CC0 PROVENANCE NARROWED`: YES — Quaternius OpenGameArt snapshot + exact CC0 freshwater candidate pages identified
 - `EXACT PUBLIC-SAFE KAYKIT PATHS PINNED`: YES for listed Adventurers + Restaurant Bits evidence
 - `KAYKIT WORK/FISHING CLIP NAMES PINNED`: YES
@@ -937,7 +938,7 @@ Current state after Phase-B Pass 5 fish-provenance narrowing:
 - `DRINK EXTERNAL CLIP CANDIDATE PINNED`: YES — UAL1 `Drink`; Phase E proved the 2025-06-10 46-clip Standard mirror does not contain `Drink`, while a newer UAL integration corroborates the exact mapping; creator-current archive/clip-duration/retarget/visual acceptance remain pending
 - `REVIVE/MOUNT EXTERNAL CANDIDATES IDENTIFIED`: YES; not accepted
 - `MEDIEVAL VILLAGE MODULE CANDIDATE NAMES PINNED`: YES for a useful Standard subset; service compositions not accepted
-- `KENNEY VFX/AUDIO SOURCE FAMILIES REVALIDATED 2026-09-18`: YES — Particle Pack 80, Smoke Particles 70, RPG Audio 50, Impact Sounds 130, UI Audio 50, Interface Sounds 100; all current official pages CC0; exact sprite/clip selection still pending
+- `KENNEY VFX/AUDIO SOURCE FAMILIES REVALIDATED 2026-09-18`: YES — Particle Pack 80, Smoke Particles 70, RPG Audio 50, Impact Sounds 130, UI Audio 50, Interface Sounds 100; all current official pages CC0; Phase F now pins an exact ordinary baseline shortlist with direct SHA-256/dimensions/durations, while audition/Minecraft composite acceptance and signature layers remain pending
 - `OLD QUATERNIUS 7-MODEL FISH BUNDLE R01 SURVIVORS`: NONE among the three directly reviewed Poly Pizza Fish entries; marine large species also rejected
 - `R01 FISH FOUR-ROLE DIRECT-REVIEW SHORTLIST`: YES — Small Fish Common Minnow + CDmir Fish + Quaternius Armored Catfish + CDmir Esox
 - `CDMIR FISH DIRECT ZIP LOCATORS PINNED`: YES — exact OpenGameArt direct file URLs recorded in Phase D; workspace binary download failed
@@ -968,5 +969,18 @@ Phase E did not select new gameplay or reopen broad scouting. It converted sever
 - creator-current archive acquisition, project-local SHA-256, clip timing/root-motion inspection, 3D visual acceptance and Minecraft acceptance remain open.
 
 Authoritative evidence details and all exact blob identities/geometry metrics live in `R01_ASSET_PHASE_E_APPAREL_POTION_MOTION_EXACT_REVIEW_2026-09-18.md`.
+
+
+## Phase F Kenney exact-shortlist delta — 2026-09-18
+
+Phase F did not reopen VFX/audio family discovery. It converted the already-selected Kenney families into a small exact-file shortlist and directly inspected candidate bytes:
+
+- exact PNG shortlist now includes `circle_03.png`, `spark_04.png`, `slash_01.png`, `light_03.png`, `magic_03.png`, `whitePuff06.png`, `gas04.png`, `flash04.png`;
+- exact ordinary audio shortlist now includes `impact_mining_002.ogg`, `impact_metal_heavy_001.ogg`, `impact_punch_medium_000.ogg`, `impact_soft_heavy_000.ogg`, `metal_click.ogg`, `creak_2.ogg`, plus the Interface Sounds `confirmation_001` / `error_001` / `select_001` families;
+- direct candidate SHA-256 was calculated for every Phase-F shortlist file; PNG dimensions and audio sample-rate/duration were read from the actual candidate bytes;
+- **audio audition was not performed**, so no filename is yet promoted to final event-to-clip binding;
+- Earthloong electrical charge/strike/body arcs, final Burning shape and final Frostbite shape remain intentionally open signature layers rather than being faked with one generic particle/sound.
+
+Full evidence and hashes: `R01_ASSET_PHASE_F_KENNEY_EXACT_SHORTLIST_2026-09-18.md`.
 
 Do not upgrade these labels merely because a pack page, filename, candidate clip or source model exists.
