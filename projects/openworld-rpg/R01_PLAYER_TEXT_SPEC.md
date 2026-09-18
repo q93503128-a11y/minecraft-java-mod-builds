@@ -331,7 +331,7 @@ Quest title:
 
 Sera accept line remains:
 
-> “Big tracks don't mean ‘go kill the biggest thing nearby.’ Learn what made them first. Check the damaged cart and the meadow edge.”
+> “Big tracks don't mean ‘go kill the biggest thing nearby.’ Learn what made them first. Check the broken trough and the meadow edge.”
 
 ## 6.1 Active
 
@@ -349,9 +349,9 @@ Journal explanation:
 
 Individual site text:
 
-Damaged cart:
+Overturned stone trough:
 
-> The impact is broad and low. Something heavy hit this while moving fast.
+> The impact is broad and low. Something heavy struck the trough and dragged its hooves through the mud.
 
 Churned meadow:
 
@@ -915,7 +915,7 @@ No UI says Checkpoint Activated as a developer-style generic message when the pl
 
 These are fallback/repeat lines, not mandatory conversations. Service screens open immediately after the line when the interaction context calls for the service.
 
-## 16.1 Nessa Bell
+## 17.1 Nessa Bell
 
 First use remains:
 
@@ -937,7 +937,7 @@ When player owns a residence first time opening Household:
 
 > “Got a house now? Then the useful things are under Household. Buy chairs because you want chairs, not because some ledger says you need six.”
 
-## 16.2 Oren Quill
+## 17.2 Oren Quill
 
 First use remains:
 
@@ -951,7 +951,7 @@ After Earthloong:
 
 > “I've marked the quarry pieces under your account. No need to carry proof in your pockets.”
 
-## 16.3 Brin Hale
+## 17.3 Brin Hale
 
 First use remains:
 
@@ -969,17 +969,13 @@ If active Nourishment exists:
 
 > “You've already got a meal working for you. A new one will replace it when you eat.”
 
-## 16.4 Daren Holt
+## 17.4 Daren Holt
 
 First use remains:
 
 > “If it's in your Material Pouch, I can work from it. Bring better material and you'll see better options.”
 
 Verdant Crystal first-known state:
-
-> “That green crystal's worth using where the base is already sound. I can open the better R01 recipes from here.”
-
-Player-facing localized version must not literally say R01. Final line is:
 
 > “That green crystal's worth using where the base is already sound. I can make better work from it.”
 
@@ -995,7 +991,7 @@ After briefing:
 
 > “Old machinery under a dead quarry is bad enough. Machinery tied to somewhere else is worse. Still—metal is metal. I can work with the part we understand.”
 
-## 16.5 Lysa Fen
+## 17.5 Lysa Fen
 
 First use remains:
 
@@ -1013,7 +1009,7 @@ Post-Earthloong:
 
 > “Lightning burns and poison bites need different answers. Keep the Belt loaded before you go chasing the next road.”
 
-## 16.6 Toma Reed
+## 17.6 Toma Reed
 
 Before Stag unlock remains:
 
@@ -1031,11 +1027,11 @@ Post-Earthloong:
 
 > “Longer roads next, by the sound of it. Good time to have something with four steady legs.”
 
-## 16.7 Elian Rook
+## 17.7 Elian Rook
 
 Use §2 lines.
 
-## 16.8 Sera Wren
+## 17.8 Sera Wren
 
 Before Signs accepted:
 
@@ -1061,7 +1057,7 @@ After Earthloong briefing:
 
 > “The western route disappears into forest cover. The high road advertises every bad decision from half a valley away. Pick the kind of problem you want first.”
 
-## 16.9 Ilyan Voss
+## 17.9 Ilyan Voss
 
 Pre-clear remains:
 
@@ -1081,11 +1077,11 @@ After briefing:
 
 No line says that an ending choice is already correct.
 
-## 16.10 Mara Venn
+## 17.10 Mara Venn
 
 Use §1.2 lines plus existing quest dialogue.
 
-## 16.11 Kest Arden
+## 17.11 Kest Arden
 
 First-search line remains:
 
