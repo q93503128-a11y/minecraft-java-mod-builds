@@ -434,6 +434,8 @@ The separate Rootquake Maul / Earthscale Ward signature pool and deterministic f
 
 No source falls back to a global bag containing every R01 item.
 
+For every R01 ordinary equipment roll, **eligible base families inside the source pool are equal-weight by default**. Grade/category/affix selection then follows the global loot/equipment rules. A future unequal base-family weight must be written into canon/data explicitly; implementation does not invent one.
+
 ---
 
 # 5. Contextual combat teaching — exact trigger
