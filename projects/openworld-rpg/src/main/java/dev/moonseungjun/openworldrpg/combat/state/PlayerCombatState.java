@@ -20,6 +20,8 @@ public final class PlayerCombatState {
     private long lastRefreshTick;
     private long lastManaSpendTick = Long.MIN_VALUE / 4;
     private long lastCombatActivityTick = Long.MIN_VALUE / 4;
+    private String acceptedSpellId;
+    private long acceptedSpellReentryUntilTick = Long.MIN_VALUE;
     private final Map<String, Long> cooldownEndTick = new HashMap<>();
 
     public PlayerCombatState(int will, long nowTick) {
@@ -114,6 +116,54 @@ public final class PlayerCombatState {
         }
         long current = cooldownEndTick.getOrDefault(actionId, nowTick);
         cooldownEndTick.put(actionId, Math.max(nowTick, current - ticks));
+    }
+
+    public boolean isAcceptedCastReentry(String spellId, long nowTick) {
+        expireAcceptedCast(nowTick);
+        return acceptedSpellId != null
+                && acceptedSpellId.equals(spellId)
+                && nowTick <= acceptedSpellReentryUntilTick;
+    }
+
+    public boolean hasCompetingAcceptedCast(String spellId, long nowTick) {
+        expireAcceptedCast(nowTick);
+        return acceptedSpellId != null
+                && !acceptedSpellId.equals(spellId)
+                && nowTick <= acceptedSpellReentryUntilTick;
+    }
+
+    public void beginAcceptedCast(String spellId, long reentryUntilTick, long nowTick) {
+        Objects.requireNonNull(spellId, "spellId");
+        expireAcceptedCast(nowTick);
+        if (acceptedSpellId != null
+                && !acceptedSpellId.equals(spellId)
+                && nowTick <= acceptedSpellReentryUntilTick) {
+            throw new IllegalStateException("Competing project spell cast is already accepted: " + acceptedSpellId);
+        }
+        acceptedSpellId = spellId;
+        acceptedSpellReentryUntilTick = reentryUntilTick;
+    }
+
+    public void requireAcceptedCast(String spellId, long nowTick) {
+        expireAcceptedCast(nowTick);
+        if (acceptedSpellId == null || !acceptedSpellId.equals(spellId)) {
+            throw new IllegalStateException("No accepted project spell transaction for " + spellId);
+        }
+    }
+
+    public void completeAcceptedCast(String spellId) {
+        if (acceptedSpellId == null || !acceptedSpellId.equals(spellId)) {
+            throw new IllegalStateException("Cannot complete missing project spell transaction: " + spellId);
+        }
+        acceptedSpellId = null;
+        acceptedSpellReentryUntilTick = Long.MIN_VALUE;
+    }
+
+    private void expireAcceptedCast(long nowTick) {
+        if (acceptedSpellId != null && nowTick > acceptedSpellReentryUntilTick) {
+            acceptedSpellId = null;
+            acceptedSpellReentryUntilTick = Long.MIN_VALUE;
+        }
     }
 
     private void refresh(long nowTick) {
