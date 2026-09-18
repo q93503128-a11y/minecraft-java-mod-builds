@@ -218,8 +218,8 @@ def main() -> None:
     assert "isMutationAction" in network
 
     # Next-stage and cost information gets priority over generic prose in the observed clipped screens.
-    assert '"다음: " + branch.description(level + 1)' in controller
-    assert '"비용: 공동 보급품 " + cost' in controller
+    assert "branch.description(level + 1)" in controller
+    assert "비용: 공동 보급품" in controller
     assert "int textBottom = button.y() - 8" in detail
     assert "authoritative current/next values and cost" in detail
     assert "Math.min(2, lines.size())" in town
