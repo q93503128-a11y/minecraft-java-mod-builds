@@ -1042,6 +1042,7 @@ Those materials must retain world-source value.
 ## 10.5 Oren Quill — vault
 
 - Material Vault access: free;
+- Alderford forge/alchemy/cooking may spend same-player Material Vault materials after Material Pouch quantities under the global atomic sourcing rule;
 - ordinary Personal Storage access: free;
 - R01 Personal Storage capacity: **36 ordinary slots per player**;
 - important reward overflow uses backpack → Personal Storage → Pending Reward Claim as defined in `GAME_DESIGN.md`;
@@ -1543,8 +1544,18 @@ No R01 furnishing uses physics stacking, freeform scaling or arbitrary RGB recol
 
 NPC schedules are presentation, not service lockouts.
 
-Service NPCs remain interactable in/around their service building at all times.  
-They may change idle/work/sit anchors, but shops do not close because the player arrived at night.
+**Service/quest relevance overrides ambient schedule.**
+
+Exact R01 rule:
+
+- if any player enters within **12 blocks** of a named NPC's primary service interaction anchor and that service is legally available, the NPC uses/returns to the authored on-duty service anchor;
+- if a personal accepted quest is in a return/turn-in state for that NPC, entering the settlement/service relevance volume also forces the NPC to the authored turn-in/service anchor;
+- the override persists until no relevant player remains for **20 s**, then ordinary ambient schedule may resume;
+- a committed authored story/event scene can temporarily supersede service position, but the service resumes immediately after the scene reaches its stable committed state;
+- service UI access never depends on guessing where an off-duty NPC wandered;
+- under the 15-pathfinder core cap, activation priority is **required scene/quest/service named NPC → Alderford Watch guards → other nearby named ambient NPC → unnamed townsfolk**. Lower-priority ambient actors yield their loaded pathfinder slot first.
+
+Thus Daren may visit The Copper Kettle, Lysa may work near herbs, Nessa may move under the covered market and Sera may patrol, but those ambient beats never turn normal service/turn-in into NPC hunting. Shops do not close because the player arrived at night.
 
 World time bands:
 
@@ -1578,7 +1589,7 @@ Logical R01 settlement population additionally includes:
 
 At most **15 pathfinding humanoid NPCs** may be active in Alderford's loaded core at once.
 
-If all logical named actors would exceed this cap, off-duty named actors outside a current quest/service relevance state use their authored off-core schedule state rather than spawning another pathfinder into the square.
+If all logical actors would exceed this cap, apply the relevance priority above. Unnamed townsfolk yield first; then non-relevant off-duty named ambient actors use their authored off-core schedule state. A required service/quest NPC is never removed merely to preserve ambient population.
 
 No vanilla villager/golem fills population gaps.
 
