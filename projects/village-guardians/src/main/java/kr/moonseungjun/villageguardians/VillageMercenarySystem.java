@@ -13,6 +13,8 @@ import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.golem.IronGolem;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
@@ -192,6 +194,9 @@ public final class VillageMercenarySystem {
         ServerLevel level = server.overworld();
         for (IronGolem mercenary : loadedMercenaries(level)) {
             recognize(mercenary);
+            if (mercenary.getTarget() != null && !VillageRaidSystem.isRaidEnemy(mercenary.getTarget())) {
+                mercenary.setTarget(null);
+            }
             MercenaryClass kind = mercenaryClass(mercenary);
             int rank = rank(mercenary);
             applyClassPassives(mercenary, kind, rank);
@@ -270,6 +275,21 @@ public final class VillageMercenarySystem {
         return mob instanceof IronGolem golem && golem.isAlive() && CLASSES.containsKey(golem.getUUID());
     }
 
+    public static boolean blockFriendlyFire(LivingIncomingDamageEvent event) {
+        if (!(event.getEntity() instanceof Mob target) || !isCombatMercenary(target)) return false;
+        var sourceEntity = event.getSource().getEntity();
+        var direct = event.getSource().getDirectEntity();
+        boolean friendly = sourceEntity instanceof ServerPlayer
+                || sourceEntity instanceof Mob sourceMob && isCombatMercenary(sourceMob)
+                || direct instanceof Projectile projectile && projectile.getOwner() instanceof ServerPlayer;
+        if (!friendly) return false;
+        event.setAmount(0.0f);
+        if (target.getTarget() != null && !VillageRaidSystem.isRaidEnemy(target.getTarget())) {
+            target.setTarget(null);
+        }
+        return true;
+    }
+
     public static synchronized IronGolem nearestCombatMercenary(ServerLevel level, Mob enemy, double range) {
         if (level == null || enemy == null || range <= 0.0) return null;
         IronGolem chosen = null;
@@ -320,8 +340,10 @@ public final class VillageMercenarySystem {
     }
 
     private static void bastionControl(ServerLevel level, IronGolem mercenary, int rank) {
-        double radius = 4.5 + Math.min(6.5, rank * 0.11);
-        int limit = 5 + Math.min(10, rank / 5);
+        double radius = 12.0 + Math.min(12.0, rank * 0.20);
+        int limit = 12 + Math.min(24, rank / 2);
+        VillageRaidSystem.tauntEnemies(level, mercenary, mercenary.position(), radius,
+                50 + Math.min(70, rank), limit);
         Vec3 eye = mercenary.position().add(0, 1.8, 0);
         boolean engaged = false;
         for (Mob enemy : VillageRaidSystem.activeEnemiesNear(level, mercenary.position(), radius, limit, null)) {
