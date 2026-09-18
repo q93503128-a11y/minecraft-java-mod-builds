@@ -928,17 +928,21 @@ closed gameplay canon
 
 The correct next step is **not** another broad search for a complete RPG mod to install.
 
-After the remaining asset/spatial gates and final stale-canon cleanup, M0 source bootstrap should implement this integration skeleton first, then use R01 as the first real vertical-slice proof.
+The narrow M0 core integration skeleton is now implemented and verified at commit `b98ab3650b6e594693df3c1170d1de1e1ea169f2`. It includes the Fabric entrypoint, dependency manifest/runtime profiles, integration-policy/module primitives, actor-overlay schema validation, unit tests and a dedicated CI/server-smoke workflow.
+
+The next M0 work is not another skeleton rewrite. It is to verify the exact pinned runtime artifacts/IDs, wire the `gameplay` profile, and prove real Better Combat / Spell Engine / creature adapters against the acceptance gates below. Player-facing R01 implementation still waits for the remaining asset/spatial gates.
 
 Verification state for this document:
 
 ```text
 EXTERNAL ARCHITECTURE SOURCES REVIEWED: YES
 PROJECT INTEGRATION CONTRACT CLOSED: YES
-RUNTIME IMPLEMENTED: NO
-CODE REVIEWED: N/A
-TESTED: NO
-BUILD VERIFIED: NO
+M0 CORE INTEGRATION SKELETON IMPLEMENTED: YES
+FULL DEV-GAMEPLAY INTEGRATIONS IMPLEMENTED: NO
+CODE REVIEWED: YES — narrow bootstrap scope
+TESTED: YES — unit tests + dedicated server core profile
+BUILD VERIFIED: YES — workflow run 35309048646
+JAR PRODUCED: YES
 PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
 ```
