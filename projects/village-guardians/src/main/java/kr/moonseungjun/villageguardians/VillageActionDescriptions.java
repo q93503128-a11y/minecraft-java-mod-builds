@@ -15,13 +15,13 @@ final class VillageActionDescriptions {
             return label + "\n해당 시설의 현장 기능을 이용합니다.";
         }
         if (action.startsWith("repair:")) {
-            return label + "\n공동 보급품을 사용해 시설 내구도를 최대치로 복구합니다. 보급품은 회관에서 개인 주화로 조달할 수 있습니다.";
+            return label + "\n공동 보급품을 사용해 시설 내구도를 최대치로 복구합니다. 부족하면 상점·보급소에서 개인 주화를 공동 보급품으로 전환할 수 있습니다.";
         }
         if (action.startsWith("upgrade:")) {
             return label + "\n공동 보급품을 사용해 시설 등급·최대 내구도·고유 효과를 강화합니다.";
         }
         if (action.startsWith("select_role:")) {
-            return label + "\n마을 회관에서 현재 직업을 변경합니다. 성장과 기술 관리는 기술 연구소에서 진행합니다.";
+            return label + "\n기술 연구소에서 현재 직업을 변경합니다. 성장과 기술 관리도 같은 연구소에서 진행합니다.";
         }
         if (action.startsWith("skill_node:")) {
             return label + "\n레벨당 1개씩 얻는 전술 포인트를 사용합니다. 비용은 단계에 따라 1~4P입니다.";
@@ -51,7 +51,7 @@ final class VillageActionDescriptions {
             return label + "\n수호 주화로 전투 소모품을 구매합니다. 전투 중 우클릭해 사용하며 종류별 재사용 대기시간이 있습니다.";
         }
         if (action.startsWith("hire_mercenary:")) {
-            return label + "\n선택한 병과의 영구 용병을 고용합니다. 병영 강화는 고용비를 올리지 않고 단계적으로 할인합니다.";
+            return label + "\n공동 보급품으로 영구 용병을 고용합니다. 병영 강화는 고용비를 단계적으로 할인합니다.";
         }
         if (action.startsWith("retire_mercenary:")) {
             return label + "\n현재 로드된 용병을 명부에서 영구 퇴역시킵니다. 고용비는 환불되지 않습니다.";
@@ -61,6 +61,9 @@ final class VillageActionDescriptions {
         }
         if (action.startsWith("tower_upgrade:")) {
             return label + "\n현재 방어탑 전문 분기의 위력·범위·특수 효과를 한 단계 강화합니다.";
+        }
+        if (action.startsWith("defense_research:")) {
+            return label + "\n파티 전체가 공유하는 용병·포탑·군수 효과이므로 공동 보급품으로 연구합니다.";
         }
         return switch (action) {
             case "open_status" -> "레벨·직업·재화·현재 장착 기술을 한 화면에서 확인합니다.";
@@ -81,6 +84,7 @@ final class VillageActionDescriptions {
             case "return_village" -> "전투 중이 아닐 때 마을 중앙 광장으로 귀환합니다.";
             case "claim_bread" -> "오늘의 무료 배급 식량을 받습니다. 일반 식량 구매는 이 배급으로 통합되었습니다.";
             case "buy_arrows" -> label + "\n수호 주화로 화살 묶음을 구매합니다.";
+            case "exchange_supplies" -> "수호 주화 25를 공동 보급품 50으로 전환합니다. 공동 시설·포탑·용병·방어 연구에 사용됩니다.";
             case "sell_loot" -> "판매용으로 표시된 잡템만 안전하게 일괄 정산합니다.";
             case "open_item_sell" -> "보유한 게임 전용 장비·소모품·잡템을 하나씩 선택해 판매합니다.";
             case "open_forge_enhancement" -> "보유한 등급 장비를 선택해 개별 강화합니다.";
@@ -119,6 +123,7 @@ final class VillageActionDescriptions {
                 || action.startsWith("role_skill_unlock:")
                 || action.startsWith("gear:")
                 || action.equals("buy_arrows")
+                || action.equals("exchange_supplies")
                 || action.equals("sell_loot")
                 || action.equals("forge_upgrade")
                 || action.equals("smithy_forge_upgrade")
@@ -154,6 +159,7 @@ final class VillageActionDescriptions {
         if (action.equals("smithy_forge_upgrade") || action.equals("forge_upgrade")) return "장비 강화";
         if (action.equals("forge_combine") || action.equals("open_fusion")) return "장비 합성";
         if (action.startsWith("open_")) return "열기";
+        if (action.equals("exchange_supplies")) return "보급 전환";
         if (action.startsWith("buy_") || action.startsWith("consumable:")) return "구매";
         if (action.equals("sell_loot")) return "판매";
         if (action.startsWith("restart_")) return "재시작";
