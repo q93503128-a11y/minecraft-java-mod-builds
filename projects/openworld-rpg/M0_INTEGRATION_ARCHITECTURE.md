@@ -930,7 +930,7 @@ The correct next step is **not** another broad search for a complete RPG mod to 
 
 The narrow M0 core integration skeleton is now implemented and verified at commit `b98ab3650b6e594693df3c1170d1de1e1ea169f2`. It includes the Fabric entrypoint, dependency manifest/runtime profiles, integration-policy/module primitives, actor-overlay schema validation, unit tests and a dedicated CI/server-smoke workflow.
 
-The dependency runtime gate is now materially further: the 10 foundation/safety JARs plus the three curated creature JARs co-load in the isolated `gameplay` development profile on a Fabric 26.2 dedicated server. All 13 dependency-manifest runtime IDs are resolved and the server reaches ready state. Canonical evidence is `M0_GAMEPLAY_RUNTIME_BOOT_2026-09-18.md` (workflow run `35313724183`). This proves compatibility/co-load, **not** authority routing. The next M0 work is bounded Better Combat / Spell Engine / creature-overlay adapters against the acceptance gates below. Player-facing R01 implementation still waits for the remaining asset/spatial gates.
+The dependency runtime gate is now materially further: the 10 foundation/safety JARs plus the three curated creature JARs co-load in the isolated `gameplay` development profile on a Fabric 26.2 dedicated server. All 13 dependency-manifest runtime IDs are resolved and the server reaches ready state. Better Combat now has the first project-owned authority seam at commit `579354c1154c8c60ad534fe3c6558a6a57d33e66`, verified by workflow run `35325649844`: exact runtime API binding succeeds, the mixin contract compiles/loads in both core and gameplay profiles, project code decides the one primary damage application, and vanilla sweep damage is suppressed during an active Better Combat attack. A real target hit has **not** yet been runtime-executed, so duplicate-damage behavior remains code-reviewed rather than playtested. The next M0 work is the bounded Spell Engine bridge and then one creature overlay. Player-facing R01 implementation still waits for the remaining asset/spatial gates.
 
 Verification state for this document:
 
@@ -942,7 +942,7 @@ FOUNDATION / SAFETY PRIMARY ARTIFACTS RESOLVED: YES — 10/10
 CURATED CREATURE PRIMARY ARTIFACTS RESOLVED: YES — 3/3
 DEPENDENCY MANIFEST RUNTIME IDS RESOLVED: YES — 13/13
 DEV-GAMEPLAY DEPENDENCY RUNTIME LOADED: YES — dedicated server co-load, run 35313724183
-BETTER COMBAT AUTHORITY ADAPTER: NO
+BETTER COMBAT AUTHORITY ADAPTER: YES — code/startup verified at 579354c / run 35325649844; real-hit runtime execution NOT TESTED
 SPELL ENGINE AUTHORITY ADAPTER: NO
 EXTERNAL CREATURE OVERRIDE ADAPTER: NO
 FULL DEV-GAMEPLAY INTEGRATIONS IMPLEMENTED: NO

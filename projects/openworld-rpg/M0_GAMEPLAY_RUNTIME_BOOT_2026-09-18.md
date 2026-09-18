@@ -302,7 +302,7 @@ GAMEPLAY-PROFILE DEPENDENCY SERVER BOOT: PASS
 PINNED TOP-LEVEL DEPENDENCY CO-LOAD: PASS
 SERVER READY STATE: PASS
 
-BETTER COMBAT PROJECT DAMAGE ADAPTER: NOT IMPLEMENTED
+BETTER COMBAT PROJECT DAMAGE ADAPTER: IMPLEMENTED — authority seam/startup verified; real-hit runtime execution NOT TESTED
 SPELL ENGINE PROJECT CAST/DAMAGE ADAPTER: NOT IMPLEMENTED
 TRINKETS / ARMOR / RANGED PROJECT ADAPTERS: NOT IMPLEMENTED
 MOBFILTER PROJECT ECOLOGY RULES: NOT IMPLEMENTED
@@ -429,3 +429,102 @@ Better Combat presentation/cadence
 ```
 
 followed by the equivalent Spell Engine resource/cooldown/impact bridge.
+
+
+---
+
+# 11. Better Combat authority seam — implemented 2026-09-18
+
+The first real M0 authority bridge is now in source.
+
+Verified implementation commit:
+
+```text
+579354c1154c8c60ad534fe3c6558a6a57d33e66
+openworld-rpg: add Better Combat authority seam
+```
+
+Verification workflow:
+
+```text
+Build Openworld RPG
+run 35325649844
+conclusion: SUCCESS
+```
+
+## 11.1 Exact boundary
+
+Better Combat 3.2.2 remains responsible for:
+
+- attack presentation and cadence;
+- its target-request flow and current-attack identity;
+- its existing dual-wield / weapon animation backend.
+
+Openworld RPG now owns the final server melee-damage admission seam:
+
+```text
+Better Combat active attack
+→ vanilla Player.attack damage proposal
+→ Openworld RPG CombatDamageAuthority decision
+→ one Entity.hurtOrSimulate primary application
+```
+
+The adapter resolves Better Combat's pinned runtime interfaces without adding a compile-time Better Combat dependency:
+
+```text
+net.bettercombat.api.EntityPlayer_BetterCombat
+net.bettercombat.logic.PlayerAttackProperties
+```
+
+If Better Combat is absent, the core profile remains pass-through. If Better Combat is loaded but those pinned interfaces cannot be resolved, startup fails clearly rather than silently dropping authority.
+
+Vanilla sweep damage is suppressed while a Better Combat attack is active. Better Combat's own selected-target loop therefore cannot be accompanied by an accidental second vanilla sweep-damage path.
+
+The current M0 amount policy is intentionally neutral: Better Combat/vanilla's server-rebuilt melee amount is treated as a **proposal** and accepted unchanged after finite/positive validation. This is not the final R01 stat/Defense/poise/status formula. The authority seam exists so that later project combat resolution can replace the policy without moving damage ownership back into Better Combat.
+
+## 11.2 Verification evidence
+
+Run `35325649844` proved:
+
+```text
+UNIT TESTS: PASS
+CLEAN BUILD: PASS
+BOOTSTRAP JAR VERIFY: PASS
+CORE-PROFILE DEDICATED SERVER: PASS
+GAMEPLAY-PROFILE DEDICATED SERVER: PASS
+BETTER COMBAT RUNTIME API PREFLIGHT: PASS
+SERVER READY STATE: PASS
+```
+
+Gameplay-server log evidence:
+
+```text
+Openworld RPG Better Combat authority adapter armed for profile gameplay
+using net.bettercombat.api.EntityPlayer_BetterCombat
+and net.bettercombat.logic.PlayerAttackProperties.
+
+Done (...)! For help, type "help"
+```
+
+The core-profile server also loaded with Better Combat absent and explicitly left the adapter inactive, proving that this seam does not turn Better Combat into a hard dependency of the core bootstrap.
+
+## 11.3 What this still does not prove
+
+```text
+REAL PLAYER → TARGET BETTER COMBAT HIT EXECUTED: NO
+EXACTLY-ONE DAMAGE OBSERVED IN RUNTIME: NO
+FINAL R01 DAMAGE / DEFENSE / POISE / STATUS FORMULA: NOT IMPLEMENTED
+CLIENT RUNTIME: NOT TESTED
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
+```
+
+Therefore the accurate status is:
+
+```text
+BETTER COMBAT AUTHORITY ADAPTER: IMPLEMENTED
+BETTER COMBAT API BINDING SERVER TESTED: YES
+BETTER COMBAT REAL-HIT TRANSACTION TESTED: NO
+```
+
+The next implementation gate is the Spell Engine resource/cooldown/impact authority bridge, followed by one real external-creature spawn/stat/loot overlay.
