@@ -340,3 +340,92 @@ The next technical gate should prove one real authority bridge at a time:
    - no donor source/JAR fork.
 
 Player-facing R01 content still waits for exact asset acceptance and real Azari spatial closure.
+
+
+---
+
+# 10. Follow-up exact metadata regression — 2026-09-18
+
+A later narrow regression pass added direct `fabric.mod.json` inspection for all ten foundation/safety primary JARs in addition to the three creature JARs.
+
+Verified code state:
+
+```text
+370e409bedffadac9c5d8671e27679510e6268ce
+```
+
+Workflow:
+
+```text
+Build Openworld RPG
+run 35315238440
+artifact openworld-rpg-m0-370e409bedffadac9c5d8671e27679510e6268ce
+artifact ID 10535410094
+artifact digest sha256:f2d59e3ba6be11ac27ccb1632e1108e5d3d7b932ca39a7d1e28d83d75cbc6cf2
+```
+
+Result:
+
+```text
+GAMEPLAY FOUNDATION RESOLUTION: PASS — 10/10
+GAMEPLAY FOUNDATION FABRIC METADATA INSPECTION: PASS — 10/10
+CREATURE FABRIC METADATA INSPECTION: PASS — 3/3
+UNIT TESTS: PASS
+CLEAN BUILD: PASS
+BOOTSTRAP JAR VERIFY: PASS
+CORE-PROFILE DEDICATED SERVER: PASS
+GAMEPLAY-PROFILE DEDICATED SERVER: PASS
+GAMEPLAY MANIFEST CONTRACTS ACCEPTED: 13/13
+SERVER READY STATE: PASS
+```
+
+Exact foundation metadata observed from the distributed JARs:
+
+| Project role | Actual mod id | Actual version | Required dependency highlights | Nested runtime JARs |
+|---|---|---|---|---|
+| Better Combat | `bettercombat` | `3.2.2` | Cloth Config, Fabric API, Player Animation Library >=1.2.5, Minecraft >=26.2 | Tiny Config 4.0.0 Fabric |
+| Player Animation Library | `player_animation_library` | `1.2.6+mc.26.2` | Fabric command/resource APIs, Loader >=0.19.3, Minecraft >=26.2 | Mochafloats 5.0.0, services 1.3.3 |
+| Trinkets Updated | `trinkets_updated` | `4.1.0-rc.1+26.2` | Fabric API, Loader >=0.19.0, Minecraft 26.2.x, Yumi MC Core >=1.1.0+26.2 | Yumi MC Foundation 1.1.1+26.2 |
+| Armor Model API | `armor_model_api` | `1.1.0+26.2` | Fabric rendering/resource APIs, Loader >=0.19.3, Java >=25, Minecraft >=26.2 | none |
+| Cloth Config | `cloth-config` | `26.2.155` | Loader >=0.14.0, Minecraft >=26.2- | basic-math 0.6.1 |
+| MobFilter | `mobfilter` | `0.28.0+26.2` | Loader >=0.15.0, Java >=25, Minecraft >=26.0 | none |
+| GeckoLib | `geckolib` | `5.5.5` | Fabric API >=0.152.1+26.2, Loader >=0.19, Java >=25, Minecraft >=26.2 | none |
+| Ranged Weapon API | `ranged_weapon_api` | `4.0.0+26.2` | Fabric API, Loader >=0.19.3, Java >=25, Minecraft >=26.2 | none |
+| Spell Engine | `spell_engine` | `1.10.5+26.2` | Cloth Config >=26.2.155, Fabric API, Player Animation Library, Spell Power >=1.6.1+26.2 | Tiny Config 4.0.1 Fabric |
+| Spell Power Attributes | `spell_power` | `1.6.2+26.2` | Fabric API, Loader >=0.19.3, Java >=25, Minecraft >=26.2 | Tiny Config 4.0.1 Fabric |
+
+Curated creature metadata remained unchanged and re-passed:
+
+```text
+alexsmobs 2.1.13
+  → codxlib >=1.6.0
+  → fabric-api >=0.155.2+26.2
+  → fabricloader >=0.18.4
+  → java >=25
+  → minecraft =26.2
+
+codxlib 1.6.0
+  → fabric-api >=0.155.2+26.2
+  → fabricloader >=0.18.4
+  → java >=25
+  → minecraft =26.2
+
+threateningly_mobs 1.1.1+fabric.26.2
+  → fabric-api
+  → fabricloader >=0.18.0
+  → java >=25
+  → minecraft ~26.2
+```
+
+The latest regression therefore removes the remaining ambiguity around top-level runtime IDs and declared hard dependencies.
+
+It still does **not** promote dependency callbacks to project authority. The next implementation gate remains:
+
+```text
+Better Combat presentation/cadence
+→ project-owned server damage request
+→ exactly one canonical damage transaction
+→ no duplicate donor/vanilla damage
+```
+
+followed by the equivalent Spell Engine resource/cooldown/impact bridge.
