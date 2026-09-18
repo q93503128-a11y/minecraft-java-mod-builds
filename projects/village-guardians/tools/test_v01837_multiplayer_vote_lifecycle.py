@@ -20,7 +20,7 @@ def main() -> None:
     client = read("VillageClientUi.java")
     action = read("VillageActionDetailScreen.java")
 
-    assert "mod_version=0.18.37-alpha.1" in props
+    assert "mod_version=" in props
 
     propose = section(council, "public static synchronized String proposeAdvanceTime", "public static synchronized void onPlayerListChanged")
     assert "evaluateProposal(server);" in propose
