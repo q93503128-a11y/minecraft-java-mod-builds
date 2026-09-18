@@ -59,7 +59,7 @@ def main() -> None:
 
     assert "center.below(8)).is(Blocks.DIAMOND_BLOCK)" in world
     assert "center.below(8), Blocks.DIAMOND_BLOCK" in world
-    assert "성벽 4면 접근 계단" in world
+    assert "성벽 4면 계단" in world
 
     print("[PASS] north access is preserved while south/east/west five-wide stairs use the dedicated ±52 traffic lane")
     print("[PASS] the enhancement pass no longer duplicates full-wall railings; it owns emplacement-local rails only")
