@@ -387,3 +387,19 @@ TURNBOUND application:
 - because first-route navigation is only authored from `verifiedIn26_2 && productionEnabled` route sites, the minimap cannot turn source-reference anchors into fake exact local markers;
 - an off-screen verified target remains described by label/distance without drawing a false on-map marker;
 - M opens the Drehmal world map and N toggles the Drehmal minimap.
+
+
+### Drehmal meta-surface isolation follow-up
+
+The management menu now projects only content that is valid for the current Drehmal production route instead of leaking retired Aster March progression assumptions.
+
+TURNBOUND application:
+- the quest surface uses a current first-route row for the Capital Valley → New Drabyel objective and no longer prepends retired Aster main/character quest rows while the external world is active;
+- old Aster region quests are not published in the Drehmal meta snapshot;
+- legacy Hard/Rift entries are not published in the Drehmal endgame list;
+- `START|` and `DEPLOY|` are denied at the runtime network gate before the legacy endgame briefing/deployment services can receive them;
+- world-specific challenges tied to E003, B01~B05 Hard and Rift F30 are hidden in Drehmal while generic combat challenges remain available;
+- the first New Drabyel shop publishes only the authored basic T1 inventory instead of deriving T2 access from retired chapter completion;
+- Accessory and Signature equip actions no longer require B02/B05 clears in the external world; the three normal equipment slots remain part of the base growth model, and Signature availability is governed by actually obtaining the item rather than an Aster boss gate;
+- enemy/boss codex rows in Drehmal are emitted only after discovery, and discovered entries do not depend on the retired MQ_C03_03 ORO-7 quest for detail visibility;
+- legacy quest/signature-trial encoders remain intact for compatibility runtime rather than being globally deleted.
