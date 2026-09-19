@@ -37,20 +37,27 @@ public final class PrototypeRoster {
     }
 
     public static CombatantDefinition bram() {
-        return new CombatantDefinition("P03", "브람", new BattleStats(1250, 88, 130, 75), "p03_guard_stance", List.of(
-                new SkillDefinition("p03_guard_stance", "방진", TargetRule.SELF, 0, List.of(SkillEffect.barrier(0.12))),
-                new SkillDefinition("p03_guard_transfer", "보호 전환", TargetRule.ALLY_SINGLE, 3, List.of(SkillEffect.guardRedirect(0.70, 2)),
-                        "다른 아군의 단일 직접 피해 70%를 대신 받습니다.", List.of("SELF_FORBIDDEN"), Map.of()),
-                new SkillDefinition("p03_shield_pressure", "방패 압박", TargetRule.ENEMY_SINGLE, 2, List.of(SkillEffect.damage(0.90), SkillEffect.gaugeAdd(-120)))),
-                4, List.of("P03_COUNTER"), Map.of("counterPotency", 0.65));
+        return new CombatantDefinition("P03", "브람", new BattleStats(1250, 88, 130, 84), "p03_guard_stance", List.of(
+                new SkillDefinition("p03_guard_stance", "방패 강타", TargetRule.ENEMY_SINGLE, 0, List.of(SkillEffect.damage(0.80))),
+                new SkillDefinition("p03_guard_transfer", "보호 전환", TargetRule.ALLY_SINGLE, 3, List.of(SkillEffect.guardRedirect(0.65, 2)),
+                        "다른 아군의 단일 직접 피해 65%를 대신 받습니다.", List.of("SELF_FORBIDDEN"), Map.of()),
+                new SkillDefinition("p03_shield_pressure", "진동 방패", TargetRule.ENEMY_SINGLE, 2,
+                        List.of(SkillEffect.damage(0.90), SkillEffect.gaugeAdd(-100)))),
+                4, List.of("P03_GUARD"), Map.of(
+                        "guardMax", 100.0, "basicBarrier", 0.04, "counterPotency", 0.45,
+                        "guardPressurePotency", 1.30, "guardPressureExtraDelay", -80.0,
+                        "guardPressureBarrier", 0.08, "awakenRedirectReduction", 0.30,
+                        "awakenPartyBarrier", 0.06));
     }
 
     public static CombatantDefinition elysia() {
-        return new CombatantDefinition("P04", "엘리시아", new BattleStats(820, 105, 70, 95), "p04_heal", List.of(
-                new SkillDefinition("p04_heal", "치유", TargetRule.ALLY_SINGLE, 0, List.of(SkillEffect.heal(0.70))),
+        return new CombatantDefinition("P04", "엘리시아", new BattleStats(820, 105, 70, 96), "p04_heal", List.of(
+                new SkillDefinition("p04_heal", "안식의 손길", TargetRule.ALLY_SINGLE, 0, List.of(SkillEffect.heal(0.50))),
                 new SkillDefinition("p04_returned_breath", "되돌아온 숨", TargetRule.DEAD_ALLY_SINGLE, 5, List.of(SkillEffect.revive(0.30))),
-                new SkillDefinition("p04_resting_light", "안식의 빛", TargetRule.ALLY_ALL, 3, List.of(SkillEffect.heal(0.90)))),
-                4, List.of("P04_LAST_TOUCH"), Map.of("emergencyHeal", 0.80));
+                new SkillDefinition("p04_resting_light", "안식의 빛", TargetRule.ALLY_ALL, 3, List.of(SkillEffect.heal(0.55)))),
+                4, List.of("P04_SANCTUARY"), Map.of(
+                        "sanctuaryTurns", 2.0, "sanctuaryHeal", 0.45, "markedAoeBonusHeal", 0.20,
+                        "reviveGauge", 150.0, "awakenReviveBarrier", 0.15, "awakenReviveDr", 0.20));
     }
 
     public static CombatantDefinition borderHunter() {

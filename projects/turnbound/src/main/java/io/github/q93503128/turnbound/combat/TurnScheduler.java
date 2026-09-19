@@ -21,7 +21,7 @@ public final class TurnScheduler {
         if (state.currentActorId() != null) return state.combatant(state.currentActorId());
 
         List<Node> nodes = state.combatants().stream()
-                .filter(unit -> !unit.downed())
+                .filter(unit -> !unit.downed() && !unit.definition().summon())
                 .map(Node::new)
                 .toList();
         if (nodes.isEmpty()) throw new IllegalStateException("No living combatants");
@@ -37,7 +37,7 @@ public final class TurnScheduler {
         if (count <= 0) return List.of();
 
         List<Node> nodes = state.combatants().stream()
-                .filter(unit -> !unit.downed())
+                .filter(unit -> !unit.downed() && !unit.definition().summon())
                 .map(Node::new)
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         if (nodes.isEmpty()) return List.of();
@@ -65,7 +65,7 @@ public final class TurnScheduler {
     public static List<CombatantState> previewFuture(BattleState state, int count) {
         if (count <= 0) return List.of();
         List<Node> nodes = state.combatants().stream()
-                .filter(unit -> !unit.downed())
+                .filter(unit -> !unit.downed() && !unit.definition().summon())
                 .map(Node::new)
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         if (nodes.isEmpty()) return List.of();

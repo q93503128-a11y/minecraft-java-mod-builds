@@ -38,23 +38,12 @@ public final class CombatantState {
 
     public int attack() {
         double statusMod = cappedStatMod("attack_multiplier", 0.60);
-        double passive = 0.0;
-        if (definition.id().equals("P06")) passive += definition.param("memoryAttackPer", 0.06) * counter("memory");
-        if (definition.id().equals("P08")) {
-            double ratio = hp / (double)maxHp();
-            if (ratio <= definition.param("midThreshold", 0.50)) passive += definition.param("midAtk", 0.15);
-            if (ratio <= definition.param("lowThreshold", 0.30)) passive += definition.param("lowExtraAtk", 0.15);
-        }
-        return Math.max(1, (int)Math.floor(definition.stats().attack() * Math.max(0.0, 1.0 + statusMod + passive)));
+        return Math.max(1, (int)Math.floor(definition.stats().attack() * Math.max(0.0, 1.0 + statusMod)));
     }
 
     public int defense() {
         double statusMod = cappedStatMod("defense_multiplier", 0.60);
-        double passive = 0.0;
-        if (definition.id().equals("P08") && hp / (double)maxHp() <= definition.param("lowThreshold", 0.30)) {
-            passive += definition.param("lowDef", -0.20);
-        }
-        return Math.max(0, (int)Math.floor(definition.stats().defense() * Math.max(0.0, 1.0 + statusMod + passive)));
+        return Math.max(0, (int)Math.floor(definition.stats().defense() * Math.max(0.0, 1.0 + statusMod)));
     }
 
     public int speed() {
@@ -171,8 +160,10 @@ public final class CombatantState {
             hp = 1;
             setFlag("p08_lethal_survival_used");
             setFlag("p08_lethal_just_triggered");
-            setFlag("p08_next_blood_free");
-            addGauge(definition.intParam("awakenLethalGauge", 500));
+            setCounter("fury", 100);
+            addGauge(definition.intParam("awakenLethalGauge", 250));
+            putStatus(new StatusInstance("healing_received_multiplier", instanceId, 1,
+                    definition.param("awakenHealPenalty", -0.30)));
             return hpBefore - hp;
         }
         hp = Math.max(0, hp - remaining);

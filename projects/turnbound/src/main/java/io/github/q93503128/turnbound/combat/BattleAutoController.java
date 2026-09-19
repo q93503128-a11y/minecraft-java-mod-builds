@@ -104,57 +104,90 @@ public final class BattleAutoController {
     private static void chooseBram(BattleEngine engine, CombatantState actor, List<CombatantState> allies, List<CombatantState> enemies) {
         CombatantState endangered = allies.stream().filter(unit -> unit != actor)
                 .min(Comparator.comparingDouble(unit -> unit.hp() / (double)unit.maxHp())).orElse(null);
-        if (endangered != null && endangered.hp() * 100 <= endangered.maxHp() * 55 && actor.cooldown("p03_guard_transfer") == 0) {
+        if (endangered != null && endangered.hp() * 100 <= endangered.maxHp() * 60
+                && actor.cooldown("p03_guard_transfer") == 0) {
             engine.useSkill(actor.instanceId(), "p03_guard_transfer", endangered.instanceId());
-        } else if (actor.cooldown("p03_shield_pressure") == 0 && !enemies.isEmpty()) {
+        } else if (actor.counter("guard") >= 50 && actor.cooldown("p03_shield_pressure") == 0) {
             engine.useSkill(actor.instanceId(), "p03_shield_pressure", highestGauge(enemies).instanceId());
         } else {
-            engine.useSkill(actor.instanceId(), "p03_guard_stance");
+            engine.useSkill(actor.instanceId(), "p03_guard_stance", priorityEnemy(enemies).instanceId());
         }
     }
-
     private static void chooseElysia(BattleEngine engine, BattleState state, CombatantState actor, List<CombatantState> allies) {
-        List<CombatantState> downed = state.downed(CombatantSide.ALLY).stream().filter(unit -> !unit.definition().summon()).toList();
-        if (!downed.isEmpty() && actor.cooldown("p04_returned_breath") == 0) { engine.useSkill(actor.instanceId(), "p04_returned_breath", downed.getFirst().instanceId()); return; }
-        long low = allies.stream().filter(unit -> unit.hp() * 100 <= unit.maxHp() * 55).count();
-        if (low >= 2 && actor.cooldown("p04_resting_light") == 0) engine.useSkill(actor.instanceId(), "p04_resting_light");
-        else engine.useSkill(actor.instanceId(), "p04_heal", weakest(allies).instanceId());
+        List<CombatantState> downed = state.downed(CombatantSide.ALLY).stream()
+                .filter(unit -> !unit.definition().summon()).toList();
+        if (!downed.isEmpty() && actor.cooldown("p04_returned_breath") == 0) {
+            engine.useSkill(actor.instanceId(), "p04_returned_breath", downed.getFirst().instanceId());
+            return;
+        }
+        long low = allies.stream().filter(unit -> unit.hp() * 100 <= unit.maxHp() * 60).count();
+        if (low >= 2 && actor.cooldown("p04_resting_light") == 0) {
+            engine.useSkill(actor.instanceId(), "p04_resting_light");
+        } else {
+            engine.useSkill(actor.instanceId(), "p04_heal", weakest(allies).instanceId());
+        }
     }
-
     private static void chooseLynette(BattleEngine engine, CombatantState actor, List<CombatantState> enemies) {
-        CombatantState exposed2 = enemies.stream().filter(target -> { StatusInstance s = target.status("exposed", actor.instanceId()); return s != null && s.stacks() >= 2; })
-                .min(Comparator.comparingDouble(unit -> unit.hp() / (double)unit.maxHp())).orElse(null);
-        if (exposed2 != null && actor.cooldown("p05_piercing_shot") == 0) { engine.useSkill(actor.instanceId(), "p05_piercing_shot", exposed2.instanceId()); return; }
-        CombatantState highHp = enemies.stream().max(Comparator.comparingInt(CombatantState::maxHp)).orElseThrow();
-        if (highHp.status("exposed", actor.instanceId()) == null && actor.cooldown("p05_hunt_signal") == 0) { engine.useSkill(actor.instanceId(), "p05_hunt_signal", highHp.instanceId()); return; }
-        CombatantState exposed = enemies.stream().filter(target -> target.status("exposed", actor.instanceId()) != null).findFirst().orElse(priorityEnemy(enemies));
-        engine.useSkill(actor.instanceId(), "p05_suppressive_shot", exposed.instanceId());
+        CombatantState sightline = enemies.stream()
+                .filter(target -> target.instanceId().equals(actor.ref("sightline")))
+                .findFirst().orElse(null);
+        if (sightline == null) {
+            CombatantState target = priorityEnemy(enemies);
+            if (actor.cooldown("p05_hunt_signal") == 0) engine.useSkill(actor.instanceId(), "p05_hunt_signal", target.instanceId());
+            else engine.useSkill(actor.instanceId(), "p05_suppressive_shot", target.instanceId());
+            return;
+        }
+        if (actor.counter("shot") >= 2 && actor.cooldown("p05_piercing_shot") == 0) {
+            engine.useSkill(actor.instanceId(), "p05_piercing_shot", sightline.instanceId());
+        } else if (actor.counter("shot") == 0 && actor.cooldown("p05_hunt_signal") == 0) {
+            engine.useSkill(actor.instanceId(), "p05_hunt_signal", sightline.instanceId());
+        } else {
+            engine.useSkill(actor.instanceId(), "p05_suppressive_shot", sightline.instanceId());
+        }
     }
-
     private static void chooseMorwen(BattleEngine engine, CombatantState actor, List<CombatantState> enemies) {
-        CombatantState execute = enemies.stream().filter(unit -> unit.hp() * 4 <= unit.maxHp()).min(Comparator.comparingInt(CombatantState::hp)).orElse(null);
-        if (execute != null && actor.cooldown("p06_funeral_order") == 0) engine.useSkill(actor.instanceId(), "p06_funeral_order", execute.instanceId());
-        else if (actor.flag("p06_ally_death") && actor.cooldown("p06_condolence") == 0) engine.useSkill(actor.instanceId(), "p06_condolence", priorityEnemy(enemies).instanceId());
-        else if (actor.cooldown("p06_condolence") == 0) engine.useSkill(actor.instanceId(), "p06_condolence", priorityEnemy(enemies).instanceId());
-        else engine.useSkill(actor.instanceId(), "p06_echo", priorityEnemy(enemies).instanceId());
+        CombatantState execute = enemies.stream()
+                .filter(unit -> unit.hp() * 100 <= unit.maxHp() * 30)
+                .min(Comparator.comparingInt(CombatantState::hp)).orElse(null);
+        if (execute != null && actor.cooldown("p06_funeral_order") == 0) {
+            engine.useSkill(actor.instanceId(), "p06_funeral_order", execute.instanceId());
+        } else if (actor.counter("records") >= 2 && actor.cooldown("p06_condolence") == 0) {
+            engine.useSkill(actor.instanceId(), "p06_condolence", priorityEnemy(enemies).instanceId());
+        } else {
+            engine.useSkill(actor.instanceId(), "p06_echo", priorityEnemy(enemies).instanceId());
+        }
     }
-
     private static void chooseMarion(BattleEngine engine, BattleState state, CombatantState actor, List<CombatantState> enemies) {
-        boolean summon = state.living(CombatantSide.ALLY).stream().anyMatch(unit -> unit.definition().summon() && actor.instanceId().equals(unit.ref("ownerId")));
+        CombatantState partner = state.living(CombatantSide.ALLY).stream()
+                .filter(unit -> unit.definition().summon() && actor.instanceId().equals(unit.ref("ownerId")))
+                .findFirst().orElse(null);
         CombatantState target = priorityEnemy(enemies);
-        if (!summon && actor.cooldown("p07_summon_toto") == 0) engine.useSkill(actor.instanceId(), "p07_summon_toto");
-        else if (summon && actor.cooldown("p07_joint_attack") == 0) engine.useSkill(actor.instanceId(), "p07_joint_attack", target.instanceId());
-        else engine.useSkill(actor.instanceId(), "p07_command", target.instanceId());
-    }
+        List<CombatantState> allies = state.living(CombatantSide.ALLY).stream()
+                .filter(unit -> !unit.definition().summon() && unit != actor).toList();
+        CombatantState endangered = allies.stream()
+                .min(Comparator.comparingDouble(unit -> unit.hp() / (double)unit.maxHp())).orElse(null);
 
+        if (partner != null && endangered != null && endangered.hp() * 100 <= endangered.maxHp() * 55
+                && actor.cooldown("p07_summon_toto") == 0) {
+            engine.useSkill(actor.instanceId(), "p07_summon_toto", endangered.instanceId());
+        } else if (actor.cooldown("p07_joint_attack") == 0 && (actor.counter("bond") >= 50 || partner == null)) {
+            engine.useSkill(actor.instanceId(), "p07_joint_attack", target.instanceId());
+        } else {
+            engine.useSkill(actor.instanceId(), "p07_command", target.instanceId());
+        }
+    }
     private static void chooseRaze(BattleEngine engine, CombatantState actor, List<CombatantState> enemies) {
-        double hp = actor.hp() / (double)actor.maxHp(); CombatantState target = priorityEnemy(enemies);
-        if (hp > 0.55 && actor.cooldown("p08_blood_charge") == 0) engine.useSkill(actor.instanceId(), "p08_blood_charge", target.instanceId());
-        else if (hp > 0.30 && hp <= 0.60 && actor.cooldown("p08_battle_mania") == 0) engine.useSkill(actor.instanceId(), "p08_battle_mania");
-        else if (hp <= 0.30 && actor.cooldown("p08_blood_charge") == 0) engine.useSkill(actor.instanceId(), "p08_blood_charge", target.instanceId());
-        else engine.useSkill(actor.instanceId(), "p08_frenzy", target.instanceId());
+        CombatantState target = priorityEnemy(enemies);
+        if (actor.counter("fury") >= 60 && !actor.hasStatus("attack_multiplier")
+                && actor.cooldown("p08_battle_mania") == 0) {
+            engine.useSkill(actor.instanceId(), "p08_battle_mania");
+        } else if (actor.hp() * 100 > actor.maxHp() * 45 && actor.counter("fury") < 80
+                && actor.cooldown("p08_blood_charge") == 0) {
+            engine.useSkill(actor.instanceId(), "p08_blood_charge", target.instanceId());
+        } else {
+            engine.useSkill(actor.instanceId(), "p08_frenzy", target.instanceId());
+        }
     }
-
     private static void chooseEnemy(BattleEngine engine, BattleState state, CombatantState actor) {
         List<CombatantState> allies = state.living(CombatantSide.ALLY);
         List<CombatantState> own = state.living(CombatantSide.ENEMY);

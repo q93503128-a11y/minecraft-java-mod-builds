@@ -56,24 +56,20 @@ class V04BattleRuntimeTest {
     }
 
     @Test
-    void marionSummonUsesSeparateFifthAllySlot() {
+    void marionPartnerStartsPresentButNeverOwnsARegularTurn() {
         CombatantState marion = new CombatantState("marion", CanonicalData.definition("P07", 1, 4, false), CombatantSide.ALLY, 0);
         CombatantState a2 = new CombatantState("a2", PrototypeRoster.kyren(), CombatantSide.ALLY, 1);
         CombatantState a3 = new CombatantState("a3", PrototypeRoster.bram(), CombatantSide.ALLY, 2);
         CombatantState a4 = new CombatantState("a4", PrototypeRoster.elysia(), CombatantSide.ALLY, 3);
         CombatantState enemy = new CombatantState("enemy", PrototypeRoster.trainingEnemy("ENEMY", "Enemy", 99999, 1, 0, 30), CombatantSide.ENEMY, 4);
         BattleState state = new BattleState(List.of(marion, a2, a3, a4, enemy));
-        BattleEngine engine = new BattleEngine(state);
-
-        marion.setGauge(1000);
-        assertEquals("marion", engine.nextReady().instanceId());
-        engine.useSkill("marion", "p07_summon_toto");
+        new BattleEngine(state);
 
         assertEquals(5, state.living(CombatantSide.ALLY).size());
         CombatantState summon = state.living(CombatantSide.ALLY).stream().filter(unit -> unit.definition().summon()).findFirst().orElse(null);
         assertNotNull(summon);
         assertEquals("marion", summon.ref("ownerId"));
-        assertEquals(85, summon.speed());
+        assertTrue(state.timelinePreview(20).stream().noneMatch(unit -> unit.definition().summon()));
     }
 
     @Test
