@@ -42,7 +42,7 @@ class DrehmalLocationBannerRulesTest {
         return new DrehmalFirstRouteCatalog.Site(
                 "turnbound:test/" + id,
                 kind,
-                DrehmalWorldProfile.PRIMAL_CAVERNS,
+                "turnbound:landmark/primal_caverns",
                 label,
                 new DrehmalFirstRouteCatalog.Position(x, 70, z),
                 safety,
