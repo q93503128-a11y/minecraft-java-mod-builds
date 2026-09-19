@@ -115,6 +115,7 @@ final class DrehmalVisibleEncounterService {
         private Vec3 pivot;
         private Vec3 facing = new Vec3(0.0D, 0.0D, -1.0D);
         private Vec3 returnTarget;
+        private Vec3 lastSafePivot;
         private int patrolIndex;
         private int patrolDwellTicks;
         private long roamSequence;
@@ -136,6 +137,7 @@ final class DrehmalVisibleEncounterService {
             this.spec = CampaignEncounterCatalog.spec(slot.combatEncounterId());
             this.pivot = vec(site.runtimePosition());
             this.returnTarget = pivot;
+            this.lastSafePivot = DrehmalFirstRouteRuntime.insideSafetyZone(pivot.x, pivot.z) ? null : pivot;
             this.patrolPoints = patrol == null ? List.of() : patrol.points().stream().map(DrehmalVisibleEncounterService::vec).toList();
             this.roamPoints = patrolPoints.stream().map(point -> new FieldRoamPlanner.Point(point.x, point.z)).toList();
             this.roamSequence = slot.locator().hashCode();
@@ -153,26 +155,43 @@ final class DrehmalVisibleEncounterService {
                 return;
             }
 
-            List<ServerPlayer> players = demanders(level);
-            if (players.isEmpty()) {
+            List<ServerPlayer> observers = observers(level);
+            if (observers.isEmpty()) {
                 discardActors(level);
                 resetToRoute();
                 return;
             }
 
             if (!ensureActors(level)) return;
-            ServerPlayer nearest = nearest(players);
             Entity lead = lead(level);
-            if (nearest == null || lead == null) return;
+            if (lead == null) return;
 
+            pivot = lead.position();
+            if (DrehmalFirstRouteRuntime.insideSafetyZone(pivot.x, pivot.z)) {
+                if (lastSafePivot != null) {
+                    boolean crossedWhilePatrolling = phase == FieldEncounterRules.Phase.PATROL;
+                    stopLeadNavigation(level);
+                    if (crossedWhilePatrolling) advancePatrolPoint();
+                    returnTarget = lastSafePivot;
+                    phase = FieldEncounterRules.Phase.RETURN;
+                }
+            } else {
+                lastSafePivot = pivot;
+            }
+
+            ServerPlayer nearest = nearestThreat(observers);
             if (graceTicks > 0) graceTicks--;
-            Vec3 flatPlayer = new Vec3(nearest.getX(), pivot.y, nearest.getZ());
-            double playerDistance = flatPlayer.distanceTo(pivot);
+            Vec3 flatPlayer = nearest == null ? pivot : new Vec3(nearest.getX(), pivot.y, nearest.getZ());
+            double playerDistance = nearest == null
+                    ? FieldEncounterRules.DISENGAGE_RADIUS + 1.0D
+                    : flatPlayer.distanceTo(pivot);
             // A patrol may be much longer than the combat leash. The return anchor is the exact place where this
             // group was patrolling when aggro began, not the first point of the whole route.
             if (phase == FieldEncounterRules.Phase.PATROL) returnTarget = pivot;
-            boolean sight = playerDistance <= 3.0D || nearest.hasLineOfSight(lead);
-            double sensedDistance = sight ? playerDistance : FieldEncounterRules.ALERT_RADIUS + 1.0D;
+            boolean sight = nearest != null && (playerDistance <= 3.0D || nearest.hasLineOfSight(lead));
+            double sensedDistance = nearest == null
+                    ? FieldEncounterRules.DISENGAGE_RADIUS + 1.0D
+                    : sight ? playerDistance : FieldEncounterRules.ALERT_RADIUS + 1.0D;
             double returnDistance = pivot.distanceTo(returnTarget);
 
             FieldEncounterRules.Phase previous = phase;
@@ -184,7 +203,7 @@ final class DrehmalVisibleEncounterService {
                 graceTicks = Math.max(graceTicks, FieldEncounterRules.RETURN_REAGGRO_GRACE_TICKS);
             }
 
-            if (sight && FieldEncounterRules.shouldEngage(phase, playerDistance, graceTicks)) {
+            if (nearest != null && sight && FieldEncounterRules.shouldEngage(phase, playerDistance, graceTicks)) {
                 if (startBattle(level, nearest)) return;
                 graceTicks = 40;
                 phase = FieldEncounterRules.Phase.RETURN;
@@ -220,23 +239,23 @@ final class DrehmalVisibleEncounterService {
             updateActors(level, walking);
         }
 
-        private List<ServerPlayer> demanders(ServerLevel level) {
+        private List<ServerPlayer> observers(ServerLevel level) {
             List<ServerPlayer> out = new ArrayList<>();
             double radiusSq = MATERIALIZE_RADIUS * MATERIALIZE_RADIUS;
             Vec3 center = vec(site.runtimePosition());
             for (ServerPlayer player : level.players()) {
                 if (!ExternalWorldBootstrap.active(player) || BattleSessionManager.exists(player) || player.isSpectator()) continue;
-                if (DrehmalFirstRouteRuntime.insideSafetyZone(player)) continue;
                 if (player.position().distanceToSqr(center) > radiusSq) continue;
                 out.add(player);
             }
             return out;
         }
 
-        private ServerPlayer nearest(List<ServerPlayer> players) {
+        private ServerPlayer nearestThreat(List<ServerPlayer> players) {
             ServerPlayer best = null;
             double distance = Double.MAX_VALUE;
             for (ServerPlayer player : players) {
+                if (DrehmalFirstRouteRuntime.insideSafetyZone(player)) continue;
                 double candidate = player.position().distanceToSqr(pivot);
                 if (candidate < distance) {
                     distance = candidate;
@@ -497,6 +516,7 @@ final class DrehmalVisibleEncounterService {
         private void resetToRoute() {
             pivot = vec(site.runtimePosition());
             returnTarget = pivot;
+            lastSafePivot = DrehmalFirstRouteRuntime.insideSafetyZone(pivot.x, pivot.z) ? null : pivot;
             patrolIndex = 0;
             patrolDwellTicks = patrol == null ? 0 : FieldRoamPlanner.dwellTicks(
                     patrol.dwellMinTicks(), patrol.dwellMaxTicks(), ++roamSequence);

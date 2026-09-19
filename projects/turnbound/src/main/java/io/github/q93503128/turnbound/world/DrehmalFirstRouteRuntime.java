@@ -33,17 +33,11 @@ public final class DrehmalFirstRouteRuntime {
     }
 
     public static boolean insideSafetyZone(ServerPlayer player) {
-        if (player == null) return false;
-        for (DrehmalFirstRouteCatalog.Site site : DrehmalFirstRouteCatalog.productionSites()) {
-            if (site.safetyRadius() <= 0 || site.runtimePosition() == null) continue;
-            double radius = site.safetyRadius();
-            var position = site.runtimePosition();
-            if (player.distanceToSqr(position.x() + 0.5D, position.y() + 0.5D, position.z() + 0.5D)
-                    <= radius * radius) {
-                return true;
-            }
-        }
-        return false;
+        return player != null && insideSafetyZone(player.getX(), player.getZ());
+    }
+
+    static boolean insideSafetyZone(double x, double z) {
+        return DrehmalRouteZoneRules.insideSafetyZone(DrehmalFirstRouteCatalog.productionSites(), x, z);
     }
 
     public static DrehmalFirstRouteCatalog.EncounterSlot encounterAt(ServerPlayer player) {

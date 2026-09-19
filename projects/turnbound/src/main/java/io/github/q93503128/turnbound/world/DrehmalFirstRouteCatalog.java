@@ -234,6 +234,15 @@ public final class DrehmalFirstRouteCatalog {
                     && (!patrol.verifiedIn26_2() || patrol.points().size() < 2)) {
                 errors.add("unverified production patrol " + patrol.locator());
             }
+            if (patrol.productionEnabled() && patrol.verifiedIn26_2()) {
+                for (Position point : patrol.points()) {
+                    if (DrehmalRouteZoneRules.insideSafetyZone(
+                            ROUTE.sites(), point.x() + 0.5D, point.z() + 0.5D)) {
+                        errors.add("production patrol enters a safety zone " + patrol.locator());
+                        break;
+                    }
+                }
+            }
         }
 
         for (EncounterSlot encounter : ROUTE.encounters()) {
