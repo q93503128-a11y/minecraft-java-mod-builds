@@ -120,6 +120,7 @@ final class DrehmalVisibleEncounterService {
         private long roamSequence;
         private long lastMoveCommandTick = FieldNavigationRules.NEVER;
         private Vec3 lastMoveTarget;
+        private long navigationStalledSinceTick = FieldNavigationRules.NEVER;
         private int graceTicks = 40;
         private long availableAt;
         private UUID claimedBy;
@@ -413,7 +414,8 @@ final class DrehmalVisibleEncounterService {
             Vec3 before = pivot;
             pivot = actor.position();
             Vec3 actualMovement = pivot.subtract(before);
-            if (actualMovement.horizontalDistanceSqr() > 0.0004D) {
+            boolean madeProgress = actualMovement.horizontalDistanceSqr() > 0.0004D;
+            if (madeProgress) {
                 facing = horizontalDirection(actualMovement, facing);
             }
 
@@ -421,11 +423,31 @@ final class DrehmalVisibleEncounterService {
                     ? Double.POSITIVE_INFINITY
                     : target.distanceToSqr(lastMoveTarget);
             long now = level.getGameTime();
+            boolean navigationDone = actor.fieldNavigationDone();
+            double targetDistanceSq = pivot.distanceToSqr(target);
+
+            if (madeProgress || targetShiftSq > 0.25D || targetDistanceSq <= FieldNavigationRules.ARRIVAL_DISTANCE_SQ) {
+                navigationStalledSinceTick = FieldNavigationRules.NEVER;
+            } else if (navigationDone && navigationStalledSinceTick == FieldNavigationRules.NEVER) {
+                navigationStalledSinceTick = now;
+            }
+
+            if (FieldNavigationRules.shouldSkipBlockedPatrolTarget(
+                    phase, now, navigationStalledSinceTick, navigationDone, targetDistanceSq)) {
+                stopLeadNavigation(level);
+                advancePatrolPoint();
+                patrolDwellTicks = patrol == null ? 0 : FieldRoamPlanner.dwellTicks(
+                        patrol.dwellMinTicks(), patrol.dwellMaxTicks(), ++roamSequence);
+                return false;
+            }
+
             if (FieldNavigationRules.shouldIssue(
-                    phase, now, lastMoveCommandTick, targetShiftSq, actor.fieldNavigationDone())) {
-                if (actor.moveFieldTo(target.x, target.y, target.z, speedModifier)) {
-                    lastMoveCommandTick = now;
-                    lastMoveTarget = target;
+                    phase, now, lastMoveCommandTick, targetShiftSq, navigationDone)) {
+                lastMoveCommandTick = now;
+                lastMoveTarget = target;
+                boolean accepted = actor.moveFieldTo(target.x, target.y, target.z, speedModifier);
+                if (!accepted && navigationStalledSinceTick == FieldNavigationRules.NEVER) {
+                    navigationStalledSinceTick = now;
                 }
             }
             return !actor.fieldNavigationDone();
@@ -439,6 +461,7 @@ final class DrehmalVisibleEncounterService {
             }
             lastMoveTarget = null;
             lastMoveCommandTick = FieldNavigationRules.NEVER;
+            navigationStalledSinceTick = FieldNavigationRules.NEVER;
         }
 
         private boolean actorsAlive(ServerLevel level) {
@@ -479,6 +502,7 @@ final class DrehmalVisibleEncounterService {
                     patrol.dwellMinTicks(), patrol.dwellMaxTicks(), ++roamSequence);
             lastMoveTarget = null;
             lastMoveCommandTick = FieldNavigationRules.NEVER;
+            navigationStalledSinceTick = FieldNavigationRules.NEVER;
             facing = patrolPoints.size() >= 2
                     ? horizontalDirection(patrolPoints.get(1).subtract(patrolPoints.get(0)), new Vec3(0, 0, -1))
                     : new Vec3(0.0D, 0.0D, -1.0D);
