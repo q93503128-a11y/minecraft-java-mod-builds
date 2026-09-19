@@ -14,7 +14,7 @@
     },
     {"kind":"loot_profile","id":"riftfrontier:loot/region_01_salvage","pools":["secured_field_salvage","regional_material"]},
     {"kind":"expedition_resource","id":"riftfrontier:resource/region_01_salvage","region":"riftfrontier:region/region_01","category":"salvage","carry_weight":2,"field_value":10},
-    {"kind":"extraction_result","id":"riftfrontier:extraction/region_01_secured_return","outcome":"secured_return","retained_percent":100,"threat_delta":-1,"world_consequence":"secured salvage reaches the hub and reduces unresolved expedition pressure"},
+    {"kind":"extraction_result","id":"riftfrontier:extraction/region_01_secured_return","outcome":"secured_return","retained_percent":100,"threat_delta":1,"world_consequence":"secured salvage reaches the hub while repeated recovery activity raises Region 01 pressure for the next expedition"},
     {
       "kind":"contract",
       "id":"riftfrontier:contract/region_01_salvage_recovery",
