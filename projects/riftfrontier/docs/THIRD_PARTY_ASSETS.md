@@ -121,7 +121,7 @@ This study exists to replace the current Zombie/Skeleton/Ravager **behaviour pro
 - Runtime review contract: `Region01ScoutArmabeeRuntimeAsset` locks the exact source hash, geometry counts and animation vocabulary. `FIELD_REVIEW_SEQUENCE` is `Flying_Idle → Fast_Flying → Punch → Headbutt → HitReact → Death`; this is review vocabulary, not permission to change gameplay semantics.
 - Canonical evidence: `docs/provenance/region01_scout_armabee_source_inspection.json` plus `Region01ScoutArmabeeRuntimeAssetTest`.
 - Important constraint: the exact source has no `Walk` or `Run` clip. Grounded locomotion must not be fabricated or silently mapped to misleading source motion, and the winged silhouette does **not** authorize flight gameplay. Preserve the existing server-authoritative Scout ranged-pressure contract.
-- Still not approved for production: `selected_for_production = false` and `human_visual_acceptance = false`. The exact source bytes are not yet vendored as a runtime resource and no isolated Minecraft Scout field-review actor has been build-verified. Before selection, prove root transform/ground alignment, player-relative scale/facing, texture/UV integrity, hitbox and near/combat/medium-distance readability in Minecraft.
+- Still not approved for production: `selected_for_production = false` and `human_visual_acceptance = false`. The isolated `region_01_scout_field_review` entity/renderer plumbing is build-verified at commit `cdf7c88468a49e15081d759dff8a97bdd7294201` / `Build Riftfrontier` run `35327292631`, but the exact Armabee source bytes and embedded texture are not yet vendored as runtime resources, so visible Armabee rendering is not verified. Before selection, prove root transform/ground alignment, player-relative scale/facing, texture/UV integrity, hitbox and near/combat/medium-distance readability in Minecraft.
 - Do not redo Armabee candidate search, creator-source discovery, exact-source hash/geometry/clip inspection or runtime-contract semantics unless evidence regresses them.
 
 #### Quaternius — Goleling Evolved, reconsidered only as elite-role candidate
@@ -186,6 +186,8 @@ If a later authored asset family actually requires GeckoLib, re-verify its Minec
 ## Bundle rule
 
 Before adding external bytes to `src/main/resources` or any distributable package:
+
+A redistribution-safe `CANDIDATE` may be vendored only in an explicitly isolated review-only path when provenance/hash/license are recorded, natural/production use remains disabled, and the runtime fails closed if the candidate is absent. This exception exists for field review and does not change `selected_for_production = false`.
 
 1. set the exact asset entry to `SELECTED`;
 2. record original author/source and license terms;
