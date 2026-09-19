@@ -60,7 +60,11 @@ public final class BattleCameraController {
         if (active) return;
         Minecraft minecraft = Minecraft.getInstance();
         previousCameraType = minecraft.options.getCameraType();
-        if (minecraft.player != null) {
+        if (Float.isFinite(snapshot.returnYaw()) && Float.isFinite(snapshot.returnPitch())) {
+            previousYaw = snapshot.returnYaw();
+            previousPitch = snapshot.returnPitch();
+        } else if (minecraft.player != null) {
+            // Compatibility fallback for an older/malformed snapshot that predates authoritative return-view data.
             previousYaw = minecraft.player.getYRot();
             previousPitch = minecraft.player.getXRot();
         }

@@ -71,26 +71,42 @@ public final class ClientBattleState {
             boolean autoAllowed, boolean speedAllowed, boolean fleeAllowed,
             List<Unit> units, List<String> timeline, List<Skill> skills, String message,
             double arenaX, double arenaY, double arenaZ, float arenaYaw,
+            float returnYaw, float returnPitch,
             Result result
     ) {
         public Snapshot { result = result == null ? Result.none() : result; }
+
+        /** Compatibility constructor matching the pre-return-view full snapshot shape. */
+        public Snapshot(boolean active, boolean auto, int speed, String outcome, String actorId, boolean finished,
+                        boolean autoAllowed, boolean speedAllowed, boolean fleeAllowed,
+                        List<Unit> units, List<String> timeline, List<Skill> skills, String message,
+                        double arenaX, double arenaY, double arenaZ, float arenaYaw,
+                        Result result) {
+            this(active, auto, speed, outcome, actorId, finished, autoAllowed, speedAllowed, fleeAllowed,
+                    units, timeline, skills, message, arenaX, arenaY, arenaZ, arenaYaw,
+                    Float.NaN, Float.NaN, result);
+        }
+
         public Snapshot(boolean active, boolean auto, int speed, String outcome, String actorId, boolean finished,
                         boolean autoAllowed, boolean speedAllowed, boolean fleeAllowed,
                         List<Unit> units, List<String> timeline, List<Skill> skills, String message,
                         double arenaX, double arenaY, double arenaZ, float arenaYaw) {
             this(active, auto, speed, outcome, actorId, finished, autoAllowed, speedAllowed, fleeAllowed,
-                    units, timeline, skills, message, arenaX, arenaY, arenaZ, arenaYaw, Result.none());
+                    units, timeline, skills, message, arenaX, arenaY, arenaZ, arenaYaw,
+                    Float.NaN, Float.NaN, Result.none());
         }
         public Snapshot(boolean active, boolean auto, int speed, String outcome, String actorId, boolean finished,
                         List<Unit> units, List<String> timeline, List<Skill> skills, String message) {
             this(active, auto, speed, outcome, actorId, finished, true, true, true,
-                    units, timeline, skills, message, 0.0, 0.0, 0.0, 0.0F, Result.none());
+                    units, timeline, skills, message, 0.0, 0.0, 0.0, 0.0F,
+                    Float.NaN, Float.NaN, Result.none());
         }
     }
 
     private static volatile Snapshot snapshot = new Snapshot(
             false, false, 1, "RUNNING", "", true, true, true, true,
-            List.of(), List.of(), List.of(), "", 0.0, 0.0, 0.0, 0.0F, Result.none());
+            List.of(), List.of(), List.of(), "", 0.0, 0.0, 0.0, 0.0F,
+            Float.NaN, Float.NaN, Result.none());
     private static volatile String encounterId = "";
     private static volatile List<ResultNotice> resultNotices = List.of();
     private static volatile long revision;
@@ -109,6 +125,7 @@ public final class ClientBattleState {
         String outcome = "RUNNING", actor = "", message = "", encounter = "";
         double arenaX = 0.0, arenaY = 0.0, arenaZ = 0.0;
         float arenaYaw = 0.0F;
+        float returnYaw = Float.NaN, returnPitch = Float.NaN;
         List<Unit> units = new ArrayList<>();
         List<String> timeline = new ArrayList<>();
         List<Skill> skills = new ArrayList<>();
@@ -138,6 +155,12 @@ public final class ClientBattleState {
                     case "A" -> {
                         arenaX = Double.parseDouble(p[1]); arenaY = Double.parseDouble(p[2]);
                         arenaZ = Double.parseDouble(p[3]); arenaYaw = Float.parseFloat(p[4]);
+                    }
+                    case "V" -> {
+                        if (p.length >= 3) {
+                            returnYaw = Float.parseFloat(p[1]);
+                            returnPitch = Float.parseFloat(p[2]);
+                        }
                     }
                     case "U" -> {
                         List<String> statuses = p.length > 13 && !p[13].isBlank() ? Arrays.asList(p[13].split(",")) : List.of();
@@ -178,7 +201,7 @@ public final class ClientBattleState {
                 List.copyOf(equipmentRewards), firstClear, partyXp);
         snapshot = new Snapshot(active, auto, speed, outcome, actor, finished, autoAllowed, speedAllowed, fleeAllowed,
                 List.copyOf(units), List.copyOf(timeline), List.copyOf(skills), message,
-                arenaX, arenaY, arenaZ, arenaYaw, result);
+                arenaX, arenaY, arenaZ, arenaYaw, returnYaw, returnPitch, result);
         encounterId = encounter;
         resultNotices = List.copyOf(notices);
         revision++;

@@ -170,6 +170,16 @@ public final class BattleSessionManager {
                             player.getUUID(), encounterId, ex);
                 }
             }
+            if (!lifecycle) {
+                try {
+                    // cleanup() has already restored the exact pre-battle position/yaw/pitch. Publish the field
+                    // snapshot from that restored pose now instead of waiting for the periodic exploration sync.
+                    ExternalWorldBootstrap.refreshAfterBattle(player);
+                } catch (RuntimeException ex) {
+                    Turnbound.LOGGER.error("TURNBOUND failed to refresh external field context for {} after battle",
+                            player.getUUID(), ex);
+                }
+            }
         }
         BattleNetwork.close(player);
         return true;

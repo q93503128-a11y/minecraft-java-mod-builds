@@ -78,7 +78,7 @@ public final class BattleSession {
     public BattleState state(){return engine.state();} public boolean auto(){return auto;} public int speed(){return speed;} public boolean finished(){return finished;}
     public boolean autoAllowed(){return autoAllowed;} public boolean speedAllowed(){return speedAllowed;} public boolean fleeAllowed(){return fleeAllowed;}
     public BattleResultSummary resultSummary(){return resultSummary;} String encounterId(){return encounterId;} String rewardTransactionId(){return rewardTransactionId;}
-    Vec3 battleAnchor(){return battleAnchor;} float battleYaw(){return battleYaw;} Vec3 combatantPosition(String id){return presentation.home(id);}
+    Vec3 battleAnchor(){return battleAnchor;} float battleYaw(){return battleYaw;} float returnYaw(){return returnYaw;} float returnPitch(){return returnPitch;} Vec3 combatantPosition(String id){return presentation.home(id);}
 
     void tick(ServerPlayer player){
         ServerLevel level=(ServerLevel)player.level();presentation.tick(level);syncPresentation(level);syncBarks(player);lock(player);

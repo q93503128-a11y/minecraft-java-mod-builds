@@ -92,6 +92,14 @@ public final class ExternalWorldBootstrap {
                 && DrehmalWorldBinding.isBound(player.level().getServer());
     }
 
+    public static void refreshAfterBattle(ServerPlayer player) {
+        if (!active(player)) return;
+        LAST_LOCATION.put(player.getUUID(), DrehmalFirstRouteRuntime.locationId(player));
+        LAST_INTERACTION.put(player.getUUID(), DrehmalFirstRouteRuntime.interactionId(player));
+        LAST_NAVIGATION.put(player.getUUID(), DrehmalFirstRouteRuntime.navigationId(player));
+        FieldNetwork.syncExternal(player, DrehmalFirstRouteRuntime.explorationSnapshot(player));
+    }
+
     public static boolean interactEntity(ServerPlayer player, net.minecraft.world.entity.Entity target) {
         return active(player) && DrabyelHubServiceRuntime.interact(player, target);
     }
