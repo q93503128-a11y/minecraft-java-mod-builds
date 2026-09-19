@@ -164,11 +164,11 @@ Validation labels stay distinct:
 ## Last verified implementation checkpoint
 
 - CODE REVIEWED: YES
-- TESTED: YES — fixed-point scheduler + P01~P08 v1 combat runtime + Drehmal first-route binding + battle-center camera + CV-A/B/C production enemies + Warning Cave Cavehorn Elite asset/AI/reward contract + Drabyel-road Hill Marksman two-step aim telegraph/retarget contract + shallow RPG quick-menu navigation + source-backed Drehmal world-map replacement + New Drabyel service-layout survey gate + external FableCraft merchant/blacksmith production visual bases + surveyed visible-encounter activation/claim/respawn rules
-- BUILD VERIFIED: YES — Build TURNBOUND #791
-- verified code commit: `e65c46b4d7795d9fd885f0653ff531893e913e9c`
+- TESTED: YES — fixed-point scheduler + P01~P08 v1 combat runtime + Drehmal first-route binding + battle-center camera + CV-A/B/C production enemies + Warning Cave Cavehorn Elite asset/AI/reward contract + Drabyel-road Hill Marksman two-step aim telegraph/retarget contract + shallow RPG quick-menu navigation + source-backed Drehmal world-map replacement + New Drabyel service-layout survey gate + external FableCraft merchant/blacksmith production visual bases + physical free-roam service NPC runtime + server-authoritative Drabyel facility gating + surveyed visible-encounter activation/claim/respawn rules
+- BUILD VERIFIED: YES — Build TURNBOUND #792
+- verified code commit: `6b6d2bf4236b1e706b4df97d0ddf491c7f1ceafb`
 - SERVER SMOKE: YES — NeoForge 26.2 dedicated server load
-- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`, id `10576538269`, SHA-256 `b0e12552464265a08f4e35b63935ef0b174308cbcc790db195167fedff2794f7`
+- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`, id `10576119553`, SHA-256 `d158e821700298ee99d514b2d21744c7eda7bfedb7b77a5964414cabc95f73d6`
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
