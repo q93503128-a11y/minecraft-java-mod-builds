@@ -10,6 +10,7 @@ import net.minecraft.world.phys.Vec3;
 final class BattleArenaLocator {
     record Arena(Vec3 center, float facingYaw) {}
 
+    private static final float PRIMARY_CAMERA_YAW_OFFSET = 22.0F;
     private static final double[][] FORMATION = {
             {-3.0, 4.0}, {-1.0, 4.0}, {1.0, 4.0}, {3.0, 4.0},
             {-4.0, -4.0}, {-2.0, -4.0}, {0.0, -4.0}, {2.0, -4.0}, {4.0, -4.0}
@@ -35,7 +36,7 @@ final class BattleArenaLocator {
             for (int lateralOffset : lateralOffsets) {
                 Vec3 raw = preferred.add(forward.scale(forwardOffset)).add(right.scale(lateralOffset));
                 Vec3 candidate = groundCenter(level, raw.x, raw.z);
-                int score = score(level, candidate, forward, right);
+                int score = score(level, candidate, yaw);
                 if (score < bestScore) { bestScore = score; best = candidate; }
                 if (score == 0) break outer;
             }
@@ -46,9 +47,7 @@ final class BattleArenaLocator {
 
     static Arena fixedIfOpen(ServerPlayer player, Vec3 center, float yaw) {
         ServerLevel level = (ServerLevel) player.level();
-        Vec3 forward = forward(yaw);
-        Vec3 right = new Vec3(-forward.z, 0.0, forward.x);
-        return score(level, center, forward, right) == 0 ? new Arena(center, yaw) : null;
+        return score(level, center, yaw) == 0 ? new Arena(center, yaw) : null;
     }
 
     static Vec3 forward(float yaw) {
@@ -70,7 +69,9 @@ final class BattleArenaLocator {
         return new Vec3(blockX + 0.5, y, blockZ + 0.5);
     }
 
-    private static int score(ServerLevel level, Vec3 center, Vec3 forward, Vec3 right) {
+    private static int score(ServerLevel level, Vec3 center, float yaw) {
+        Vec3 forward = forward(yaw);
+        Vec3 right = new Vec3(-forward.z, 0.0, forward.x);
         int score = pointPenalty(level, center, center.y);
         for (double[] local : FORMATION) {
             Vec3 raw = localToWorld(center, forward, right, local[0], local[1]);
@@ -82,8 +83,12 @@ final class BattleArenaLocator {
             Vec3 grounded = groundPosition(level, raw);
             score += pointPenalty(level, grounded, center.y) / 2;
         }
-        for (int i = 2; i <= 8; i++) {
-            Vec3 cameraSample = center.subtract(forward.scale(i)).add(0.0, 1.7 + i * 0.42, 0.0);
+
+        // The production camera opens on the allied-side three-quarter angle. Reject arenas whose default
+        // camera corridor is already embedded in terrain instead of relying on a clipped close-up.
+        Vec3 cameraForward = forward(yaw + PRIMARY_CAMERA_YAW_OFFSET);
+        for (int i = 2; i <= 12; i++) {
+            Vec3 cameraSample = center.subtract(cameraForward.scale(i)).add(0.0, 1.7 + i * 0.42, 0.0);
             BlockPos pos = BlockPos.containing(cameraSample);
             if (!level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()) score += 8;
             if (!level.getFluidState(pos).isEmpty()) score += 12;

@@ -22,7 +22,7 @@ public final class ClientBattleNetwork {
             ClientAudioDirector.onBattleSnapshot(snapshot);
 
             if (snapshot.active()) {
-                if (!wasActive) BattleCameraController.enter(snapshot.arenaYaw());
+                if (!wasActive) BattleCameraController.enter(snapshot);
                 else BattleCameraController.onSnapshotTransition(previousSnapshot, snapshot);
                 if (snapshot.finished()) {
                     if (!(minecraft.gui.screen() instanceof BattleResultScreen)) minecraft.gui.setScreen(new BattleResultScreen());
