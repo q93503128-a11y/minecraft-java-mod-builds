@@ -9,6 +9,7 @@ import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Server-side scene dispatcher for the custom mesh renderer.
@@ -82,6 +83,17 @@ public final class VillageSkillEffectSystem {
 
     public static void tick(MinecraftServer server) {
         // Custom effect entities own their lifetime and movement.
+    }
+
+    public static void clearOwnedKinds(
+            ServerLevel level, ServerPlayer owner, String... kinds) {
+        if (level == null || owner == null || kinds == null || kinds.length == 0) return;
+        Set<String> wanted = Set.of(kinds);
+        for (VillageSkillEffectEntity effect : level.getEntitiesOfClass(
+                VillageSkillEffectEntity.class, owner.getBoundingBox().inflate(64.0),
+                effect -> effect.ownerEntityId() == owner.getId() && wanted.contains(effect.kind()))) {
+            effect.discard();
+        }
     }
 
     public static void bladeWave(ServerLevel level, ServerPlayer player, Vec3 direction) {

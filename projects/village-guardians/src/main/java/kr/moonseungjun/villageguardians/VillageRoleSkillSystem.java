@@ -291,6 +291,11 @@ public final class VillageRoleSkillSystem {
         if (!(player.level() instanceof ServerLevel level)) {
             return "현재 월드에서는 기술을 사용할 수 없습니다.";
         }
+        if (!testing && (skill == ActiveSkill.WARDEN_FORMATION || skill == ActiveSkill.WARDEN_FIELD)
+                && VillageRoleAbilitySystem.cancelHeldShield(player, skill)) {
+            return skill.displayName() + " 해제";
+        }
+
         long now = System.currentTimeMillis();
         String cooldownKey = player.getUUID() + "|" + skill.id();
         if (!testing) {
@@ -571,8 +576,8 @@ public final class VillageRoleSkillSystem {
 
         WARDEN_TAUNT("warden_taunt", VillageRole.WARDEN, 0, "수호 돌진", 2, 70, 18, "방패를 앞세워 전방으로 돌진하고 접촉한 적에게 피해를 주며 강하게 밀어냅니다."),
         WARDEN_BASH("warden_bash", VillageRole.WARDEN, 1, "위압의 함성", 7, 190, 22, "넓은 범위의 적을 강제로 자신에게 돌립니다. 시설·포탑을 우선 노리는 공성 병과도 도발 지속시간 동안 수호자를 우선 추적합니다."),
-        WARDEN_FORMATION("warden_formation", VillageRole.WARDEN, 2, "거대 방패 태세", 13, 380, 32, "잠시 이동할 수 없는 대신 거대한 보호막과 피해 저항을 얻고 가까운 적을 계속 밀어냅니다."),
-        WARDEN_FIELD("warden_field", VillageRole.WARDEN, 3, "대수호 진군", 21, 680, 46, "전방에 거대한 반투명 에너지 방패를 전개하고 달리면 짧게 돌진하며 접촉한 적을 밀어냅니다.");
+        WARDEN_FORMATION("warden_formation", VillageRole.WARDEN, 2, "거대 방패 태세", 13, 380, 32, "이동을 멈추고 사방에서 받는 피해를 크게 줄이며 주변 적을 밀어내고 도발합니다. 유지 중 다시 사용하면 즉시 방패를 내립니다."),
+        WARDEN_FIELD("warden_field", VillageRole.WARDEN, 3, "대수호 진군", 21, 680, 46, "거대한 에너지 방패를 유지해 전방과 측면 압박을 버티고 주변 적을 밀어내며 도발합니다. 달리면 짧게 돌진하고, 유지 중 다시 사용하면 즉시 해제합니다.");
 
         private final String id;
         private final VillageRole role;

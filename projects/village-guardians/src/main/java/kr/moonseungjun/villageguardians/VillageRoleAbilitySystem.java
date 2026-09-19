@@ -332,18 +332,32 @@ public final class VillageRoleAbilitySystem {
                 SkillScale fortress = FORTRESS_SCALE.getOrDefault(id, SkillScale.DEFAULT);
                 player.setDeltaMovement(Vec3.ZERO);
                 player.hurtMarked = true;
-                if (now % 5L == 0L) {
-                    pushFront(level, player, 3.6 + fortress.specialRank() * 0.35,
-                            16 + fortress.specialRank() * 3,
-                            0.38 + fortress.specialRank() * 0.025, 0.04,
-                            0.55f * fortress.power());
+                if (now % 4L == 0L) {
+                    pushAround(level, player, 5.2 + fortress.specialRank() * 0.35,
+                            40 + fortress.specialRank() * 4,
+                            0.72 + fortress.specialRank() * 0.03, 0.06,
+                            0.65f * fortress.power());
+                }
+                if (now % 20L == 0L) {
+                    VillageRaidSystem.tauntEnemies(level, player, player.position(),
+                            36.0 + fortress.specialRank() * 2.0, 50, 160);
                 }
             } else if (AEGIS_UNTIL.getOrDefault(id, 0L) >= now) {
                 SkillScale aegis = AEGIS_SCALE.getOrDefault(id, SkillScale.DEFAULT);
                 if (now % 3L == 0L) pushFront(level, player,
-                        7.0 + aegis.specialRank() * 0.65, 30 + aegis.specialRank() * 4,
-                        0.7 + aegis.specialRank() * 0.035, 0.08,
-                        1.2f * aegis.power());
+                        8.5 + aegis.specialRank() * 0.7, 36 + aegis.specialRank() * 4,
+                        0.78 + aegis.specialRank() * 0.04, 0.08,
+                        1.35f * aegis.power());
+                if (now % 6L == 0L) {
+                    pushAround(level, player, 4.0 + aegis.specialRank() * 0.25,
+                            24 + aegis.specialRank() * 3,
+                            0.42 + aegis.specialRank() * 0.02, 0.04,
+                            0.45f * aegis.power());
+                }
+                if (now % 30L == 0L) {
+                    VillageRaidSystem.tauntEnemies(level, player, player.position(),
+                            42.0 + aegis.specialRank() * 2.0, 45, 160);
+                }
                 if (player.isSprinting() && now - LAST_AEGIS_DASH.getOrDefault(id, -100L) >= 14L) {
                     LAST_AEGIS_DASH.put(id, now);
                     Vec3 forward = horizontalLook(player);
@@ -697,6 +711,7 @@ public final class VillageRoleAbilitySystem {
 
         Long rapidUntil = RAPID_UNTIL.remove(id);
         SkillScale rapidScale = RAPID_SCALE.remove(id);
+        RAPID_DRAW_TICKS.remove(id);
         if (rapidUntil == null || rapidUntil < now) return;
         SkillScale scale = rapidScale == null ? SkillScale.DEFAULT : rapidScale;
         RAPID_ARROWS.put(arrow.getUUID(),
@@ -714,6 +729,32 @@ public final class VillageRoleAbilitySystem {
         }
     }
 
+    public static boolean cancelHeldShield(
+            ServerPlayer player, VillageRoleSkillSystem.ActiveSkill skill) {
+        if (player == null || skill == null || !(player.level() instanceof ServerLevel level)) return false;
+        UUID id = player.getUUID();
+        boolean active = switch (skill) {
+            case WARDEN_FORMATION -> FORTRESS_UNTIL.getOrDefault(id, 0L) >= level.getGameTime();
+            case WARDEN_FIELD -> AEGIS_UNTIL.getOrDefault(id, 0L) >= level.getGameTime();
+            default -> false;
+        };
+        if (!active) return false;
+        if (skill == VillageRoleSkillSystem.ActiveSkill.WARDEN_FORMATION) {
+            FORTRESS_UNTIL.remove(id);
+            FORTRESS_SCALE.remove(id);
+            VillageSkillEffectSystem.clearOwnedKinds(level, player, "warden_fortress");
+        } else {
+            AEGIS_UNTIL.remove(id);
+            AEGIS_SCALE.remove(id);
+            LAST_AEGIS_DASH.remove(id);
+            VillageSkillEffectSystem.clearOwnedKinds(level, player, "warden_aegis");
+        }
+        player.setDeltaMovement(Vec3.ZERO);
+        player.hurtMarked = true;
+        play(level, player.position(), SoundEvents.SHIELD_BLOCK.value(), 0.8f, 1.35f);
+        return true;
+    }
+
     public static void handleIncomingDamage(LivingIncomingDamageEvent event) {
         if (event.getSource().getEntity() instanceof ServerPlayer attacker) {
             VillageRole role = activeRole(attacker);
@@ -721,7 +762,7 @@ public final class VillageRoleAbilitySystem {
                 EmpoweredArrowState rapid = RAPID_ARROWS.remove(directArrow.getUUID());
                 if (rapid != null) event.setAmount(event.getAmount() * rapid.power());
                 if (role == VillageRole.RANGER && event.getEntity() instanceof Mob target
-                        && VillageEnemyArchetypeSystem.isFlying(target)) {
+                        && VillageRaidSystem.isAerialEnemy(target)) {
                     event.setAmount(event.getAmount() * 1.18f);
                 }
             }
@@ -750,7 +791,15 @@ public final class VillageRoleAbilitySystem {
         }
         if (event.getEntity() instanceof ServerPlayer defender && activeRole(defender) == VillageRole.WARDEN) {
             int passiveRank = VillageRoleSkillSystem.specialRank(defender, VillageRole.WARDEN);
-            event.setAmount(event.getAmount() * Math.max(0.68f, 0.82f - passiveRank * 0.018f));
+            float multiplier = Math.max(0.68f, 0.82f - passiveRank * 0.018f);
+            long now = defender.level().getGameTime();
+            UUID id = defender.getUUID();
+            if (FORTRESS_UNTIL.getOrDefault(id, 0L) >= now) {
+                multiplier *= 0.28f;
+            } else if (AEGIS_UNTIL.getOrDefault(id, 0L) >= now) {
+                multiplier *= 0.46f;
+            }
+            event.setAmount(event.getAmount() * multiplier);
         }
     }
 
@@ -1011,7 +1060,7 @@ public final class VillageRoleAbilitySystem {
         arrow.setPos(source.getX(), source.getY(), source.getZ());
         Vec3 velocity = rotateY(source.getDeltaMovement(), Math.toRadians(degrees));
         arrow.setDeltaMovement(velocity);
-        arrow.setBaseDamage(2.0);
+        arrow.setBaseDamage(Math.max(2.0, source.getBaseDamage()));
         RAPID_ARROWS.put(arrow.getUUID(), new EmpoweredArrowState(
                 level.getGameTime() + 160L, power, 0));
         arrow.pickup = AbstractArrow.Pickup.DISALLOWED;
@@ -1146,7 +1195,7 @@ public final class VillageRoleAbilitySystem {
                     double forward = Math.max(0.0, to.dot(look));
                     Vec3 closest = origin.add(look.scale(forward));
                     double miss = body.distanceToSqr(closest);
-                    double aerialBias = VillageEnemyArchetypeSystem.isFlying(target) ? -18.0 : 0.0;
+                    double aerialBias = VillageRaidSystem.isAerialEnemy(target) ? -18.0 : 0.0;
                     return miss * 6.5 + to.lengthSqr() * 0.010 + aerialBias;
                 }))
                 .orElse(null);
@@ -1177,6 +1226,15 @@ public final class VillageRoleAbilitySystem {
             if (horizontalKnockback > 0.0 || verticalKnockback > 0.0) {
                 knockFrom(center, target, horizontalKnockback, verticalKnockback);
             }
+        }
+    }
+
+    private static void pushAround(
+            ServerLevel level, ServerPlayer player, double radius, int limit,
+            double horizontal, double vertical, float damage) {
+        for (Mob target : targetsNear(level, player, player.position(), radius, limit)) {
+            if (damage > 0.0f) hurt(level, target, damage);
+            knockFrom(player.position(), target, horizontal, vertical);
         }
     }
 
@@ -1312,6 +1370,7 @@ public final class VillageRoleAbilitySystem {
         RICOCHET_SCALE.remove(id);
         ARROW_RAIN_READY.remove(id);
         MEGA_ARROW_READY.remove(id);
+        RAPID_DRAW_TICKS.remove(id);
     }
 
     private static VillageRole activeRole(ServerPlayer player) {
