@@ -103,12 +103,12 @@ public final class VillageRaidSystem {
         if (VillageProgressionSystem.isGameOver()) return;
         waveElapsedTicks++;
 
+        // A broken last actor can happen on any wave. Waiting until maxWaves let an unresponsive
+        // wave-2 mob survive into later waves and keep the entire night locked.
+        recoverFrozenFinalEnemies(server);
+
         if (wave >= maxWaves) {
-            if (ACTIVE_ENEMIES.isEmpty()) {
-                finishVictory(server);
-            } else {
-                recoverFrozenFinalEnemies(server);
-            }
+            if (ACTIVE_ENEMIES.isEmpty()) finishVictory(server);
             return;
         }
 
@@ -904,8 +904,7 @@ public final class VillageRaidSystem {
                 mob.setTarget(nearest);
                 mob.getNavigation().moveTo(nearest, 1.16);
             }
-            FINAL_ENEMY_PROGRESS.put(id,
-                    new EnemyProgress(mob.position(), mob.getHealth(), waveElapsedTicks));
+            FINAL_ENEMY_PROGRESS.put(id, progressSnapshot(mob, 0));
             VillageGuardians.LOGGER.warn(
                     "Repaired invalid raid enemy state: uuid={}, type={}, hadNoAi={}, hadInvulnerable={}",
                     id, mob.getType(), hadNoAi, hadInvulnerable);
@@ -932,17 +931,21 @@ public final class VillageRaidSystem {
 
             EnemyProgress previous = FINAL_ENEMY_PROGRESS.get(id);
             if (previous == null) {
-                FINAL_ENEMY_PROGRESS.put(id,
-                        new EnemyProgress(mob.position(), mob.getHealth(), waveElapsedTicks));
+                FINAL_ENEMY_PROGRESS.put(id, progressSnapshot(mob, 0));
                 continue;
             }
 
+            LivingEntity currentTarget = mob.getTarget();
+            UUID targetId = currentTarget == null ? null : currentTarget.getUUID();
+            float targetHealth = currentTarget == null ? -1.0f : currentTarget.getHealth();
             boolean moved = mob.position().distanceToSqr(previous.position())
                     > FINAL_ENEMY_PROGRESS_DISTANCE_SQR;
             boolean healthChanged = Math.abs(mob.getHealth() - previous.health()) > 0.01f;
-            if (moved || healthChanged) {
-                FINAL_ENEMY_PROGRESS.put(id,
-                        new EnemyProgress(mob.position(), mob.getHealth(), waveElapsedTicks));
+            boolean targetChanged = !java.util.Objects.equals(previous.targetId(), targetId);
+            boolean targetHealthChanged = !targetChanged && targetId != null
+                    && Math.abs(targetHealth - previous.targetHealth()) > 0.01f;
+            if (moved || healthChanged || targetChanged || targetHealthChanged) {
+                FINAL_ENEMY_PROGRESS.put(id, progressSnapshot(mob, 0));
                 continue;
             }
             if (waveElapsedTicks - previous.lastProgressTick() < FINAL_ENEMY_STALL_TICKS) continue;
@@ -954,8 +957,16 @@ public final class VillageRaidSystem {
             double xOffset = offsetIndex++ == 0 ? -2.0 : 2.0;
             mob.setNoAi(false);
             mob.setInvulnerable(false);
-            mob.snapTo(rally.getX() + 0.5 + xOffset, rally.getY(), rally.getZ() + 0.5);
+            mob.stopRiding();
             mob.getNavigation().stop();
+
+            // snapTo is suitable before addFreshEntity, but using it on an already tracked mob can
+            // leave the client looking at a stale body while the server moved the hitbox elsewhere.
+            // teleportTo emits an authoritative tracked-entity relocation.
+            mob.teleportTo(level,
+                    rally.getX() + 0.5 + xOffset, rally.getY(), rally.getZ() + 0.5,
+                    Set.of(), mob.getYRot(), mob.getXRot(), true);
+
             ServerPlayer nearest = nearestAnyCombatPlayer(server, mob);
             if (nearest != null) {
                 mob.setTarget(nearest);
@@ -963,8 +974,7 @@ public final class VillageRaidSystem {
             } else {
                 mob.setTarget(null);
             }
-            FINAL_ENEMY_PROGRESS.put(id,
-                    new EnemyProgress(mob.position(), mob.getHealth(), waveElapsedTicks));
+            FINAL_ENEMY_PROGRESS.put(id, progressSnapshot(mob, previous.recoveryAttempts() + 1));
             repaired = true;
         }
 
@@ -983,10 +993,13 @@ public final class VillageRaidSystem {
         LivingEntity target = mob.getTarget();
         if (target != null && target.isAlive()) {
             double distance = mob.distanceToSqr(target);
-            if (isMeleePursuer(archetype)) return distance > 4.5 * 4.5;
+            if (isMeleePursuer(archetype)) {
+                // We arrive here only after 12 seconds with no movement, no self-health change and
+                // no target-health change. "Close to a target" is therefore not proof of combat;
+                // this was exactly the state of the frozen baby-zombie/GRUNT seen in playtest.
+                return true;
+            }
             // A stationary ranged actor is legitimate only while it has a usable firing solution.
-            // Keeping any live target used to exempt wall-blocked/out-of-range marksmen forever,
-            // allowing the final wave to remain locked even though navigation had stopped.
             return distance > 48.0 * 48.0 || !mob.hasLineOfSight(target);
         }
 
@@ -1111,7 +1124,24 @@ public final class VillageRaidSystem {
 
     private record TauntState(UUID target, long untilGameTime) {}
 
-    private record EnemyProgress(Vec3 position, float health, int lastProgressTick) {}
+    private static EnemyProgress progressSnapshot(Mob mob, int recoveryAttempts) {
+        LivingEntity target = mob == null ? null : mob.getTarget();
+        return new EnemyProgress(
+                mob == null ? Vec3.ZERO : mob.position(),
+                mob == null ? 0.0f : mob.getHealth(),
+                target == null ? null : target.getUUID(),
+                target == null ? -1.0f : target.getHealth(),
+                waveElapsedTicks,
+                Math.max(0, recoveryAttempts));
+    }
+
+    private record EnemyProgress(
+            Vec3 position,
+            float health,
+            UUID targetId,
+            float targetHealth,
+            int lastProgressTick,
+            int recoveryAttempts) {}
 
     private record AerialStrike(
             Vec3 point, VillageProgressionSystem.Building building, int impactTick,

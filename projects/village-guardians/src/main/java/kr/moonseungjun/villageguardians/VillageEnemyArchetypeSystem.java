@@ -352,8 +352,12 @@ public final class VillageEnemyArchetypeSystem {
     }
 
     private static void equip(Mob mob, Archetype archetype) {
-        if ((archetype == Archetype.RUSHER || archetype == Archetype.SAPPER) && mob instanceof Zombie zombie) {
-            zombie.setBaby(true);
+        if (mob instanceof Zombie zombie) {
+            // finalizeSpawn may randomly turn an ordinary GRUNT into a vanilla baby/chicken-jockey.
+            // Raid silhouettes are authored, not random: only RUSHER/SAPPER are babies, and no raid
+            // zombie is allowed to retain a vanilla mount after finalizeSpawn.
+            zombie.stopRiding();
+            zombie.setBaby(archetype == Archetype.RUSHER || archetype == Archetype.SAPPER);
         }
         switch (archetype) {
             case GRUNT -> mob.setItemSlot(EquipmentSlot.MAINHAND, Items.STONE_SWORD.getDefaultInstance());

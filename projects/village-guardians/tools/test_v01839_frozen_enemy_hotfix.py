@@ -44,6 +44,7 @@ def main() -> None:
     recovery = section(raid, "private static void recoverFrozenFinalEnemies", "private static boolean shouldRecoverStalledEnemy")
     assert "previous.position()" in recovery
     assert "previous.health()" in recovery
+    assert "previous.targetHealth()" in recovery
     assert "lastProgressTick()" in recovery
     assert "distanceToSqr(nearest) > 24.0 * 24.0" not in recovery
     assert "!nearest.hasLineOfSight(mob)" not in recovery
@@ -53,6 +54,7 @@ def main() -> None:
     assert "mob.getNavigation().isDone()" in stalled
     assert "isMeleePursuer(archetype)" in stalled
     assert "VillageFortressBuildings.isTouchingStructure" in stalled
+    assert "if (isMeleePursuer(archetype))" in stalled
 
     # Runtime state is cleaned with the authoritative enemy lifecycle.
     release = section(raid, "private static void releaseEnemy", "private record TauntState")
