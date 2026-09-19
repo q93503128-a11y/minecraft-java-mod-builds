@@ -9,7 +9,7 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
-/** Physical Market Row shop. This screen is intentionally not reachable from the global E management menu. */
+/** Physical equipment shop. This screen is intentionally not reachable from the global E management menu. */
 final class FacilityMarketScreen extends Screen {
     private static final int TEXT = 0xFFF4F0E6;
     private static final int MUTED = 0xFF87909E;
@@ -19,7 +19,7 @@ final class FacilityMarketScreen extends Screen {
     private int left, top, panelWidth, panelHeight, page;
 
     FacilityMarketScreen() {
-        super(Component.literal("Market Row"));
+        super(Component.literal("장비 상점"));
     }
 
     void refreshSnapshot() {
@@ -89,10 +89,10 @@ final class FacilityMarketScreen extends Screen {
     @Override
     public void extractRenderState(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         TurnboundFrameStyle.frame(graphics, left, top, panelWidth, panelHeight, GOLD);
-        graphics.text(font, Component.literal("Market Row · 장비 상점"), left + 18, top + 18, TEXT, true);
+        graphics.text(font, Component.literal("장비 상점"), left + 18, top + 18, TEXT, true);
         graphics.text(font, Component.literal("보유 골드 " + ClientMetaState.snapshot().gold() + " · 장비는 목록에서 직접 구매"),
                 left + 18, top + 42, GOLD, false);
-        graphics.text(font, Component.literal("상점 기능은 라디아 Market Row에서만 이용할 수 있습니다."),
+        graphics.text(font, Component.literal("현재 상인과 대화 중일 때만 구매할 수 있습니다."),
                 left + 18, top + 59, GREEN, false);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }

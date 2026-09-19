@@ -39,7 +39,7 @@ public final class ClientMetaNetwork {
             else if (minecraft.gui.screen() instanceof MetaMenuScreen screen) screen.refreshSnapshot();
             else if (!(minecraft.gui.screen() instanceof EndgameBriefingScreen)) {
                 FacilityUiAccess.clear();
-                minecraft.gui.setScreen(new MetaMenuScreen(MetaMenuScreen.Tab.PARTY));
+                minecraft.gui.setScreen(new MetaMenuScreen(MetaMenuScreen.Tab.HOME));
             }
         });
     }
