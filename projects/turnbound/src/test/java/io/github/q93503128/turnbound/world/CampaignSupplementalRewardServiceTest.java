@@ -40,32 +40,18 @@ class CampaignSupplementalRewardServiceTest {
     }
 
     @Test
-    void warningCaveFirstClearLaunchesFirstTenPullAndGrantsEarlyHeroicEquivalentChoice() {
+    void warningCaveFirstClearGrantsOnePullAndOneEarlyHeroicEquivalentChoice() {
         UUID id = player();
         BattleResultSummary first = CampaignProgressStore.commit(id, "CV_WARNING_CAVE_ELITE", BattleOutcome.ALLY_VICTORY);
         assertTrue(first.firstClear());
         CampaignSupplementalRewardService.apply(id, "CV_WARNING_CAVE_ELITE", first);
-        assertEquals(3_000, CampaignProgressStore.currency(id, PlayerProfile.Currency.SUMMON_CRYSTAL));
+        assertEquals(300, CampaignProgressStore.currency(id, PlayerProfile.Currency.SUMMON_CRYSTAL));
         assertEquals(1, CampaignProgressStore.equipment(id).choiceTokens().getOrDefault("T2", 0));
 
         BattleResultSummary repeat = CampaignProgressStore.commit(id, "CV_WARNING_CAVE_ELITE", BattleOutcome.ALLY_VICTORY);
         assertFalse(repeat.firstClear());
         CampaignSupplementalRewardService.apply(id, "CV_WARNING_CAVE_ELITE", repeat);
-        assertEquals(3_000, CampaignProgressStore.currency(id, PlayerProfile.Currency.SUMMON_CRYSTAL));
-        assertEquals(1, CampaignProgressStore.equipment(id).choiceTokens().getOrDefault("T2", 0));
-    }
-
-    @Test
-    void drabyelRoadCanBeTheAlternativeFirstSummonMilestoneWithoutDoubleLaunchReward() {
-        UUID id = player();
-
-        BattleResultSummary road = CampaignProgressStore.commit(id, "CV_DRABYEL_ROAD", BattleOutcome.ALLY_VICTORY);
-        CampaignSupplementalRewardService.apply(id, "CV_DRABYEL_ROAD", road);
-        assertEquals(3_000, CampaignProgressStore.currency(id, PlayerProfile.Currency.SUMMON_CRYSTAL));
-
-        BattleResultSummary cave = CampaignProgressStore.commit(id, "CV_WARNING_CAVE_ELITE", BattleOutcome.ALLY_VICTORY);
-        CampaignSupplementalRewardService.apply(id, "CV_WARNING_CAVE_ELITE", cave);
-        assertEquals(3_300, CampaignProgressStore.currency(id, PlayerProfile.Currency.SUMMON_CRYSTAL));
+        assertEquals(300, CampaignProgressStore.currency(id, PlayerProfile.Currency.SUMMON_CRYSTAL));
         assertEquals(1, CampaignProgressStore.equipment(id).choiceTokens().getOrDefault("T2", 0));
     }
 

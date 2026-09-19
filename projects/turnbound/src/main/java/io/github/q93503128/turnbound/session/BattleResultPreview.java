@@ -10,7 +10,6 @@ import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import io.github.q93503128.turnbound.world.ChallengeService;
 import io.github.q93503128.turnbound.world.CharacterProgression;
 import io.github.q93503128.turnbound.world.EquipmentDropService;
-import io.github.q93503128.turnbound.world.DrehmalFirstRouteRewardRules;
 import io.github.q93503128.turnbound.world.QuestResultPreview;
 
 import java.util.ArrayList;
@@ -51,14 +50,6 @@ public final class BattleResultPreview {
         int essence = base.starEssence();
         ArrayList<String> equipment = new ArrayList<>(base.equipmentRewards());
         ArrayList<Notice> notices = new ArrayList<>();
-
-        int firstRouteCrystal = DrehmalFirstRouteRewardRules.supplementalCrystal(
-                canonical, base.firstClear(), CampaignProgressStore.snapshot(playerId).clearedEncounters());
-        crystal += firstRouteCrystal;
-        if (DrehmalFirstRouteRewardRules.unlocksSummonNow(
-                canonical, base.firstClear(), CampaignProgressStore.snapshot(playerId).clearedEncounters())) {
-            notices.add(new Notice("CONTENT_UNLOCKED", "콘텐츠 개방 · 소환 · 첫 10회 크리스탈 확보"));
-        }
 
         // Campaign boss supplemental rewards are committed after CampaignProgressStore.commit().
         if (base.firstClear() && canonical.matches("BATTLE_B0[1-5]")) {
