@@ -96,6 +96,7 @@ class CapitalValleyEnemyAiTest {
         BattleState state = new BattleState(List.of(weak, healthy, marksman));
         BattleEngine engine = new BattleEngine(state);
 
+        assertEquals(marksman, engine.nextReady());
         BattleAutoController.chooseAutoAction(engine, state, marksman);
         assertEquals(weak.instanceId(), marksman.ref("cv_c_aim_target"));
 
