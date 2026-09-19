@@ -2,10 +2,8 @@ package io.github.q93503128.turnbound.presentation;
 
 import com.geckolib.model.DefaultedEntityGeoModel;
 import com.geckolib.renderer.GeoEntityRenderer;
-import com.geckolib.renderer.layer.builtin.ItemInHandGeoLayer;
 import io.github.q93503128.turnbound.Turnbound;
 import net.minecraft.resources.Identifier;
-import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -226,13 +224,10 @@ public final class TurnboundBattleActors {
                 event.registerEntityRenderer(holder.get(), context -> {
                     var model = new DefaultedEntityGeoModel<BattleActorEntity>(modelRoot(id))
                             .withAltAnimations(animationRoot(id)).withAltTexture(textureRoot(id));
-                    GeoEntityRenderer<BattleActorEntity, LivingEntityRenderState> renderer =
-                            new GeoEntityRenderer<BattleActorEntity, LivingEntityRenderState>(context, model)
-                                    .withScale(renderScale(id));
                     if ("CV_B".equals(id) || "CV_C".equals(id)) {
-                        renderer.addRenderLayer(new ItemInHandGeoLayer<BattleActorEntity, Void, LivingEntityRenderState>(context, renderer));
+                        return new BattleActorHeldItemRenderer(context, model, renderScale(id));
                     }
-                    return renderer;
+                    return new GeoEntityRenderer<>(context, model).withScale(renderScale(id));
                 });
             }
         }
