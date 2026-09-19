@@ -78,7 +78,8 @@ def main() -> None:
     require("bombard can arc over cover while direct-fire turrets still require LOS",
             "List<Mob> nearby = VillageRaidSystem.activeEnemiesNear" in turret
             and "state.type() == TurretType.BOMBARD" in turret
-            and "nearby.stream().filter(mob -> VillageDefenseLineOfSight.hasLine" in turret)
+            and "nearby.stream().filter(mob ->" in turret
+            and "VillageDefenseLineOfSight.hasLine(level, turretMuzzle(state, mob), mob)" in turret)
 
     require("automated defense visuals use synchronized procedural mesh actors",
             "VillageSkillEffectEntity.spawn(level, null" in effects
