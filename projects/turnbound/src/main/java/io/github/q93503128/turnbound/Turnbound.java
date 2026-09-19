@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import io.github.q93503128.turnbound.command.TurnboundCommands;
 import io.github.q93503128.turnbound.presentation.SignatureBattleActors;
 import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
+import io.github.q93503128.turnbound.presentation.TurnboundVisualItems;
 import io.github.q93503128.turnbound.session.BattleInteractionGuard;
 import io.github.q93503128.turnbound.session.BattleNetwork;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
@@ -34,6 +35,7 @@ public final class Turnbound {
     public Turnbound(IEventBus modEventBus) {
         TurnboundAttachments.register(modEventBus);
         TurnboundSounds.SOUND_EVENTS.register(modEventBus);
+        TurnboundVisualItems.register(modEventBus);
         TurnboundBattleActors.register(modEventBus);
         SignatureBattleActors.register(modEventBus);
         modEventBus.addListener(BattleNetwork::register);

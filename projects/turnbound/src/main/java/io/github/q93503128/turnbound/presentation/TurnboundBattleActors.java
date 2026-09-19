@@ -2,10 +2,12 @@ package io.github.q93503128.turnbound.presentation;
 
 import com.geckolib.model.DefaultedEntityGeoModel;
 import com.geckolib.renderer.GeoEntityRenderer;
+import com.geckolib.renderer.layer.builtin.ItemInHandGeoLayer;
 import io.github.q93503128.turnbound.Turnbound;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
@@ -30,7 +32,7 @@ public final class TurnboundBattleActors {
     private static final List<String> IDS = List.of(
             "P01","P02","P03","P04","P05","P06","P07","P08","P07_SUMMON",
             "F01","F01_ALT","F02","F03","F04",
-            "CV_A",
+            "CV_A","CV_B","CV_C",
             "E001","E002","E003","E004","E005","E006","E007","E008","E009","E010","E011","E012","E013","E014",
             "EL01","EL02","EL03","EL04",
             "B01","B02","B03","B04","B05");
@@ -52,6 +54,8 @@ public final class TurnboundBattleActors {
 
     private static final Map<String, String> ENEMY_PATH = Map.ofEntries(
             Map.entry("CV_A", "cv_a_mossback_boar"),
+            Map.entry("CV_B", "cv_b_road_cutthroat"),
+            Map.entry("CV_C", "cv_c_hill_marksman"),
             Map.entry("E001", "e001_rotted_walker"), Map.entry("E002", "e002_bone_marksman"),
             Map.entry("E003", "e003_unstable_burster"), Map.entry("E004", "e004_road_bandit"),
             Map.entry("E005", "e005_field_medic"), Map.entry("E006", "e006_moss_boar"),
@@ -126,6 +130,11 @@ public final class TurnboundBattleActors {
         actor.setYRot(yaw);
         actor.setYHeadRot(yaw);
         actor.setYBodyRot(yaw);
+        if ("CV_B".equals(combatantId)) {
+            actor.setItemSlot(EquipmentSlot.MAINHAND, TurnboundVisualItems.CV_B_IRON_CLEAVER.get().getDefaultInstance());
+        } else if ("CV_C".equals(combatantId)) {
+            actor.setItemSlot(EquipmentSlot.MAINHAND, TurnboundVisualItems.CV_C_OAK_LONGBOW.get().getDefaultInstance());
+        }
         level.addFreshEntity(actor);
         return actor;
     }
@@ -216,7 +225,11 @@ public final class TurnboundBattleActors {
                 event.registerEntityRenderer(holder.get(), context -> {
                     var model = new DefaultedEntityGeoModel<BattleActorEntity>(modelRoot(id))
                             .withAltAnimations(animationRoot(id)).withAltTexture(textureRoot(id));
-                    return new GeoEntityRenderer<>(context, model).withScale(renderScale(id));
+                    var renderer = new GeoEntityRenderer<>(context, model).withScale(renderScale(id));
+                    if ("CV_B".equals(id) || "CV_C".equals(id)) {
+                        renderer.addRenderLayer(new ItemInHandGeoLayer<>(context, renderer));
+                    }
+                    return renderer;
                 });
             }
         }

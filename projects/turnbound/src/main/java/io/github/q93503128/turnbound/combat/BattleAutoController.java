@@ -192,6 +192,22 @@ public final class BattleAutoController {
         List<CombatantState> allies = state.living(CombatantSide.ALLY);
         List<CombatantState> own = state.living(CombatantSide.ENEMY);
         switch (actor.definition().id()) {
+            case "CV_A" -> engine.useSkill(actor.instanceId(),
+                    actor.cooldown("cv_a_charge") == 0 ? "cv_a_charge" : "cv_a_basic",
+                    distributedTarget(allies, actor).instanceId());
+            case "CV_B" -> {
+                CombatantState low = allies.stream()
+                        .filter(unit -> unit.hp() * 100 <= unit.maxHp() * 60)
+                        .min(Comparator.comparingInt(CombatantState::hp)).orElse(null);
+                if (low != null && actor.cooldown("cv_b_opportunist") == 0) {
+                    engine.useSkill(actor.instanceId(), "cv_b_opportunist", low.instanceId());
+                } else {
+                    engine.useSkill(actor.instanceId(), "cv_b_basic", distributedTarget(allies, actor).instanceId());
+                }
+            }
+            case "CV_C" -> engine.useSkill(actor.instanceId(),
+                    actor.cooldown("cv_c_aimed") == 0 ? "cv_c_aimed" : "cv_c_basic",
+                    weakest(allies).instanceId());
             case "E001" -> basicEnemy(engine, actor, allies);
             case "E002" -> engine.useSkill(actor.instanceId(), actor.cooldown("e002_aimed") == 0 ? "e002_aimed" : "e002_basic", weakest(allies).instanceId());
             case "E003" -> { if (actor.hasStatus("e003_armed")) engine.useSkill(actor.instanceId(), "e003_explode"); else if (actor.cooldown("e003_arm") == 0) engine.useSkill(actor.instanceId(), "e003_arm"); else engine.useSkill(actor.instanceId(), "e003_basic", distributedTarget(allies, actor).instanceId()); }

@@ -58,12 +58,60 @@ class CapitalValleyEnemyPresentationAssetContractTest {
     }
 
     @Test
+    void cvBAndCvCShipExternalBodyWeaponAnchorsAndProductionTextures() {
+        assertHumanoidAsset("cv_b_road_cutthroat", "geometry.turnbound.enemy_cv_b_road_cutthroat");
+        assertHumanoidAsset("cv_c_hill_marksman", "geometry.turnbound.enemy_cv_c_hill_marksman");
+        assertResource("assets/turnbound/textures/item/cv_b_iron_cleaver.png");
+        assertResource("assets/turnbound/textures/item/cv_c_oak_longbow.png");
+        assertResource("assets/turnbound/models/item/cv_b_iron_cleaver.json");
+        assertResource("assets/turnbound/models/item/cv_c_oak_longbow.json");
+        assertResource("assets/turnbound/items/cv_b_iron_cleaver.json");
+        assertResource("assets/turnbound/items/cv_c_oak_longbow.json");
+    }
+
+    @Test
+    void drabyelRoadEncounterUsesTwoCutthroatsAndOneMarksman() {
+        assertTrue(CanonicalData.contains("CV_B"));
+        assertTrue(CanonicalData.contains("CV_C"));
+        var encounter = CampaignEncounterCatalog.spec("CV_DRABYEL_ROAD");
+        assertEquals(2, encounter.level());
+        assertEquals(List.of("CV_B", "CV_B", "CV_C"), encounter.enemies());
+        assertTrue(!encounter.boss());
+    }
+
+    @Test
     void firstCapitalValleyEncounterUsesOnlyTheProductionCvAIdentity() {
         assertTrue(CanonicalData.contains("CV_A"));
         var encounter = CampaignEncounterCatalog.spec("CV_FIRST_COMMON");
         assertEquals(1, encounter.level());
         assertEquals(List.of("CV_A", "CV_A"), encounter.enemies());
         assertTrue(!encounter.boss());
+    }
+
+    private static void assertHumanoidAsset(String path, String geometryId) {
+        String model = "assets/turnbound/geckolib/models/entity/enemy/" + path + ".geo.json";
+        String animation = "assets/turnbound/geckolib/animations/entity/enemy/" + path + ".animation.json";
+        String texture = "assets/turnbound/textures/entity/enemy/" + path + ".png";
+
+        JsonObject geometry = loadJson(model).getAsJsonArray("minecraft:geometry").get(0).getAsJsonObject();
+        assertEquals(geometryId, geometry.getAsJsonObject("description").get("identifier").getAsString());
+        Set<String> bones = new HashSet<>();
+        for (var bone : geometry.getAsJsonArray("bones")) bones.add(bone.getAsJsonObject().get("name").getAsString());
+        assertTrue(bones.contains("RightHandItem"), path + " missing right-hand item anchor");
+        assertTrue(bones.contains("LeftHandItem"), path + " missing left-hand item anchor");
+
+        JsonObject animations = loadJson(animation).getAsJsonObject("animations");
+        for (String clip : REQUIRED_CLIPS) assertTrue(animations.has(clip), path + " missing " + clip);
+        assertResource(texture);
+    }
+
+    private static void assertResource(String resource) {
+        try (InputStream stream = CapitalValleyEnemyPresentationAssetContractTest.class.getClassLoader().getResourceAsStream(resource)) {
+            assertNotNull(stream, "Missing production resource " + resource);
+            assertTrue(stream.read() >= 0, "Empty production resource " + resource);
+        } catch (Exception ex) {
+            throw new AssertionError("Could not read production resource " + resource, ex);
+        }
     }
 
     private static JsonObject loadJson(String resource) {

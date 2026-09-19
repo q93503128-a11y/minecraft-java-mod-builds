@@ -153,7 +153,8 @@
       "patrolLocator": "turnbound:patrol/capital_valley/drabyel_approach",
       "playerLabel": "New Drabyel 진입로 순찰대",
       "verifiedIn26_2": false,
-      "productionEnabled": false
+      "productionEnabled": false,
+      "combatEncounterId": "CV_DRABYEL_ROAD"
     }
   ]
 }

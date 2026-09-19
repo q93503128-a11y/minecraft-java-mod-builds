@@ -59,6 +59,12 @@ class DrehmalFirstRouteCatalogTest {
                 .findFirst().orElseThrow();
         assertTrue(first.combatEncounterId().equals("CV_FIRST_COMMON"));
         assertFalse(first.productionEnabled(), "26.2 survey gate must still block spatial activation");
+
+        var road = DrehmalFirstRouteCatalog.route().encounters().stream()
+                .filter(encounter -> encounter.locator().equals("turnbound:encounter/capital_valley/drabyel_approach_patrol"))
+                .findFirst().orElseThrow();
+        assertTrue(road.combatEncounterId().equals("CV_DRABYEL_ROAD"));
+        assertFalse(road.productionEnabled(), "Drabyel road must also remain survey-gated");
     }
 
     @Test
