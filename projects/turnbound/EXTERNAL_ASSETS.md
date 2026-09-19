@@ -6,6 +6,15 @@
 ## Directly usable candidates
 
 
+### CV-B / CV-C Capital Valley humanoid production family
+- Type: direct_asset / editable_base
+- Model, texture, weapon and motion base: FableCraft
+- License: Apache-2.0
+- Intended use: Road Cutthroat (CV-B), Hill Marksman (CV-C)
+- Design rule: body + weapon share one upstream visual family; no temporary vanilla mob shell
+- Status: adopted production base
+- Tracking: `THIRD_PARTY/fablecraft_capital_valley/`
+
 ### CV-A Mossback Boar production base
 - Type: direct_asset / editable_base
 - Geometry + texture: Herbiary boar / wild swine
