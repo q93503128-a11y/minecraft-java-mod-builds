@@ -185,7 +185,13 @@ public final class VillageGuardians {
         boolean raidEnemy = VillageRaidSystem.isRaidEnemy(event.getEntity());
         boolean boss = event.getEntity() instanceof Mob mob && VillageRaidSystem.isBossEnemy(mob);
         var server = event.getEntity().level().getServer();
-        if (raidEnemy && server != null) {
+        if (raidEnemy && server != null && event.getEntity() instanceof Mob defeated) {
+            int sharedExperience = VillageRaidSystem.experienceForEnemy(defeated);
+            for (var playerId : VillageProgressionSystem.nightParticipants(server)) {
+                VillageCouncilState.grantExperience(server, playerId, sharedExperience);
+                ServerPlayer online = server.getPlayerList().getPlayer(playerId);
+                if (online != null) VillageRpgSystem.refreshPlayerPassive(online);
+            }
             if (event.getSource().getEntity() instanceof Mob killer) {
                 VillageMercenarySystem.awardKillExperience(killer);
             }
