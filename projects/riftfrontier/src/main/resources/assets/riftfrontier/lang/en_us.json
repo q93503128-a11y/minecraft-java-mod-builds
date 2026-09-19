@@ -40,7 +40,7 @@
   "riftfrontier.expedition.detail.deployed": "[Riftfrontier] Salvage Recovery contract deployed. Supply spent: %s. Region pressure: %s. Threats: %s (hunter=%s, scout=%s, elite=%s). Recover 3 salvage nodes and return the shipment through extraction.",
   "riftfrontier.expedition.detail.salvage": "[Riftfrontier] Salvage Recovery progress: %s/3. Active patrol threats=%s. Extraction unlocks at 3 salvage; two additional field nodes can be risked for extra retained salvage, and clearing the patrol secures +1 on extraction.",
   "riftfrontier.expedition.detail.relay_online": "[Riftfrontier] Extraction relay online at the far edge of the field cell. Complete the salvage objective, then right-click the field lodestone to extract.",
-  "riftfrontier.expedition.detail.relay_locked": "[Riftfrontier] Extraction relay locked: %s",
+  "riftfrontier.expedition.detail.relay_locked": "[Riftfrontier] Extraction relay locked. Salvage=%s/%s.",
   "riftfrontier.expedition.detail.hub_return_ready": "[Riftfrontier] Hub stations online: smithing table = provision, lodestone = deploy, grindstone/fletching table = combat rigs (sneak = Recovery Pivot).",
   "riftfrontier.expedition.detail.extracted": "[Riftfrontier] Salvage Recovery contract complete. Hub salvage +%s (base=%s, patrol bonus=%s, stored=%s). Region pressure is now %s; next expedition supply cost=%s.",
   "riftfrontier.expedition.detail.provisioned": "[Riftfrontier] Provisioned 2 expedition supply from 1 secured salvage. Storage=%s, supply=%s, next cost=%s.",
