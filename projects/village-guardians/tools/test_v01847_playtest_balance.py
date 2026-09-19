@@ -33,10 +33,10 @@ def main() -> None:
     assert "VillageRelicSystem.openPendingChoicesForParty(server)" in victory
     assert victory.index("VillageUiService.openRepairSummaryForAll(server)") < victory.index("VillageRelicSystem.openPendingChoicesForParty(server)")
 
-    # Player XP pace is roughly half the previous live-play payout.
+    # Early XP stays near the halved playtest pace while later days accelerate more strongly.
     xp = section(raid, "public static int experienceForEnemy", "public static VillageEnemyArchetypeSystem.AerialRole")
-    assert "Math.round(base * 0.59f)" in xp
-    assert "* campaignReward * 0.50f" in victory
+    assert "0.59f" in xp and "lateScale" in xp and "day - 8" in xp
+    assert "lateVictoryScale" in victory and "0.50f" in victory and "0.30f" in victory
 
     # Support-heavy wave identities remain, but sustain casters are sparse and weaker.
     selection = section(enemy, "private static Archetype select", "private static Archetype bossForDay")
@@ -57,21 +57,24 @@ def main() -> None:
     assert "MAX_STALL_RECOVERIES_PER_PASS" in recovery
     assert "mob.teleportTo(level" in recovery
 
-    # Persistent mercenaries have a larger survivability budget and recover between raids.
+    # Persistent mercenaries have a larger survivability budget and receive one bounded dawn recovery.
     assert "case BASTION -> 340.0" in merc
     assert "case STRIKER -> 250.0" in merc
     assert "case RANGER -> 215.0" in merc
     assert "case MEDIC -> 270.0" in merc
-    assert "mercenary.heal(Math.max(2.0f, mercenary.getMaxHealth() * 0.02f))" in merc
+    assert "public static synchronized void healAtDawn" in merc
+    assert "mercenary.getMaxHealth() * 0.30f" in merc
+    assert "mercenary.getMaxHealth() * 0.02f" not in merc
+    assert "MobEffects.INVISIBILITY" in merc
     assert "float damage = 5.2f * mercenaryPower(rank)" in merc
     assert "float amount = 2.8f * mercenaryPower(rank)" in merc
 
     print("[PASS] automated defenses preserve normal raid loot")
     print("[PASS] boss relic choices wait until the raid is over")
-    print("[PASS] player XP payout is approximately halved")
+    print("[PASS] early XP stays reduced while late-day XP ramps upward")
     print("[PASS] sustain casters are sparse and healing is reduced")
     print("[PASS] stuck raid actors recover during full waves with a bounded relocation budget")
-    print("[PASS] persistent mercenaries are tougher and recover between raids")
+    print("[PASS] persistent mercenaries are tougher and recover once at dawn")
 
 if __name__ == "__main__":
     main()

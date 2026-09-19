@@ -45,7 +45,7 @@ def main() -> None:
     # Party sharing keeps the health-based curve while the playtest tuning halves its payout.
     xp = section(raid, "public static int experienceForEnemy", "public static VillageEnemyArchetypeSystem.AerialRole")
     assert "Math.min(90, 7 + Math.round(mob.getMaxHealth() * 0.48f))" in xp
-    assert "Math.round(base * 0.59f)" in xp
+    assert "0.59f" in xp and "lateScale" in xp
     assert "case GRUNT, RUSHER -> 2" not in xp
     death = section(guardians, "public void onLivingDeath", "public void onArrowLoose")
     assert "VillageRaidSystem.experienceForEnemy(defeated)" in death
