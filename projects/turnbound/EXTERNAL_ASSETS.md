@@ -5,6 +5,18 @@
 
 ## Directly usable candidates
 
+
+### CV-A Mossback Boar production base
+- Type: direct_asset / editable_base
+- Geometry + texture: Herbiary boar / wild swine
+- Geometry/texture license: MIT (Avetharun)
+- Locomotion/attack motion base: Photosynthesis boar animation source
+- Animation-source license: MIT (Martin Floden)
+- Intended use: Capital Valley first mandatory visible encounter
+- Status: adopted production base
+- Tracking: `THIRD_PARTY/cv_a_mossback_boar/`
+
+
 ### Foozle RPG UI Set 1
 - Type: direct_asset / editable_base
 - License: CC0
