@@ -25,7 +25,7 @@ def main() -> None:
     taunt = section(ability, "private static void tauntShout", "private static void healLowestAlly")
     assert "Math.max(240, Math.min(400, duration + 120))" in taunt
     direct = section(raid, "private static void directEnemies", "private static net.minecraft.world.entity.animal.golem.IronGolem selectMercenaryTarget")
-    assert direct.index("activeTauntTarget(level, mob)") < direct.index("VillageEnemyArchetypeSystem.isFlying(mob)")
+    assert direct.index("activeTauntTarget(level, mob)") < direct.index("isAerialEnemy(mob)")
 
     aimed = section(ability, "private static Vec3 aimedGround", "private static void activateArrowRain")
     assert "fieldFloor(level" in aimed
