@@ -46,13 +46,14 @@ public final class VillageHudSystem {
                 .orElse("역할 없음");
         String threat = player.level() instanceof net.minecraft.server.level.ServerLevel level
                 ? VillageAttackPlanSystem.currentThreatHud(level) : "";
-        String base = "§6" + VillageCouncilState.currentDay() + "일 "
+        String economy = "§e" + VillageProgressionSystem.coins(player) + "주화"
+                + " §8· §6" + VillageProgressionSystem.supplies() + "보급";
+        if (!threat.isBlank()) economy = threat + " §8· " + economy;
+        return "§6" + VillageCouncilState.currentDay() + "일 "
                 + VillageCouncilState.currentPhase().koreanName()
                 + " §8│ §bLv." + progress.level() + " §7" + xp
                 + " §8│ §f" + role
-                + " §8│ §e" + VillageProgressionSystem.coins(player) + "주화"
-                + " §8· §6" + VillageProgressionSystem.supplies() + "보급";
-        return threat.isBlank() ? base : base + " §8│ " + threat;
+                + " §8│ " + economy;
     }
 
     private static String buildSkillText(ServerPlayer player) {

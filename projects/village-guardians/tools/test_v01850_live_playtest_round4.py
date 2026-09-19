@@ -49,7 +49,9 @@ def main():
     for label in ("↑북문", "↖북서", "↗북동", "←서", "동→", "✦공중"):
         assert label in attack
     assert "VillageAttackPlanSystem.currentThreatHud(level)" in hud
-    assert "third.isBlank() ? 35 : 49" in overlay
+    assert 'economy = threat + " §8· " + economy' in hud
+    assert "int maxWidth = Math.min(330" in overlay
+    assert "third.isBlank()" not in overlay
 
     print("[PASS] return uses 10s cooldown and five-second dealt/taken combat lock")
     print("[PASS] aerial raid actors have a dedicated authoritative tag")
