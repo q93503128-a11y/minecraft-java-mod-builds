@@ -70,6 +70,9 @@ public final class VillageRpgSystem {
             value *= projectile
                     ? VillageRelicSystem.projectileMultiplier(attacker)
                     : VillageRelicSystem.meleeMultiplier(attacker);
+            if (projectile && event.getEntity() instanceof Mob target) {
+                value *= VillageRelicSystem.projectileTargetMultiplier(attacker, target);
+            }
             if (event.getEntity() instanceof Monster monster) {
                 value *= VillageSkillTreeSystem.executionMultiplier(attacker, monster.getHealth(), monster.getMaxHealth());
                 value *= VillageRelicSystem.executionMultiplier(attacker, monster.getHealth(), monster.getMaxHealth());
@@ -80,6 +83,10 @@ public final class VillageRpgSystem {
             }
             float flatWeaponPower = VillageEquipmentRaritySystem.flatAttackBonus(attacker, projectile);
             event.setAmount((event.getAmount() + flatWeaponPower) * value);
+            if (!projectile) {
+                float lifeSteal = VillageRelicSystem.meleeLifeStealBonus(attacker);
+                if (lifeSteal > 0.0f) attacker.heal(Math.min(3.5f, event.getAmount() * lifeSteal));
+            }
         }
         if (event.getEntity() instanceof ServerPlayer defender) {
             float value = incomingDamageMultiplier(VillageCouncilState.levelOf(defender.getUUID()));

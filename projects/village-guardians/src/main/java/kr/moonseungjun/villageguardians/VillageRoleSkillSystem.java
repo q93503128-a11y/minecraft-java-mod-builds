@@ -307,7 +307,9 @@ public final class VillageRoleSkillSystem {
                 * VillageEquipmentShop.roleSkillMultiplier(player)
                 * VillageRelicSystem.skillMultiplier(player)
                 * VillageConsumableSystem.skillMultiplier(player);
-        float duration = durationMultiplier(player, role) * VillageProgressionSystem.skillHallDurationMultiplier();
+        float duration = durationMultiplier(player, role)
+                * VillageProgressionSystem.skillHallDurationMultiplier()
+                * VillageRelicSystem.skillDurationMultiplier(player);
         int special = specialRank(player, role);
         cast(level, player, skill, power, duration, special);
 
@@ -322,14 +324,15 @@ public final class VillageRoleSkillSystem {
     private static int effectiveCooldownSeconds(
             ServerPlayer player, VillageRole role, ActiveSkill skill) {
         int minimum = Math.max(2, Math.round(skill.baseCooldownSeconds() * 0.20f));
-        return Math.max(minimum,
-                skill.baseCooldownSeconds()
-                        - VillageProgressionSystem.skillCooldownReductionSeconds(player)
-                        - VillageSkillTreeSystem.cooldownReductionSeconds(player)
-                        - VillageSkillTreeSystem.mobilityCooldownReductionSeconds(player)
-                        - roleTreeCooldownReductionSeconds(player, role)
-                        - VillageEquipmentShop.cooldownReductionSeconds(player)
-                        - VillageRelicSystem.cooldownReductionSeconds(player));
+        int afterFlatReduction = skill.baseCooldownSeconds()
+                - VillageProgressionSystem.skillCooldownReductionSeconds(player)
+                - VillageSkillTreeSystem.cooldownReductionSeconds(player)
+                - VillageSkillTreeSystem.mobilityCooldownReductionSeconds(player)
+                - roleTreeCooldownReductionSeconds(player, role)
+                - VillageEquipmentShop.cooldownReductionSeconds(player);
+        int afterRelics = Math.round(Math.max(1, afterFlatReduction)
+                * VillageRelicSystem.cooldownMultiplier(player));
+        return Math.max(minimum, afterRelics);
     }
 
     public static synchronized void resetForNewGame() {

@@ -396,10 +396,18 @@ public final class VillagePlacedTurretSystem {
 
     private static void fire(ServerLevel level, TurretState state) {
         double range = effectiveRange(state.type(), state.level());
-        List<Mob> nearby = VillageRaidSystem.activeEnemiesNear(level, Vec3.atCenterOf(state.pos()), range, 12, null);
-        List<Mob> candidates = state.type() == TurretType.BOMBARD
+        int scanLimit = state.type() == TurretType.ANTI_AIR ? 96 : 12;
+        List<Mob> nearby = VillageRaidSystem.activeEnemiesNear(
+                level, Vec3.atCenterOf(state.pos()), range, scanLimit, null);
+        List<Mob> visible = state.type() == TurretType.BOMBARD
                 ? nearby
-                : nearby.stream().filter(mob -> VillageDefenseLineOfSight.hasLine(level, turretMuzzle(state, mob), mob)).toList();
+                : nearby.stream().filter(mob ->
+                        VillageDefenseLineOfSight.hasLine(level, turretMuzzle(state, mob), mob)).toList();
+        List<Mob> candidates = visible;
+        if (state.type() == TurretType.ANTI_AIR) {
+            List<Mob> aerial = visible.stream().filter(VillageRaidSystem::isAerialEnemy).toList();
+            if (!aerial.isEmpty()) candidates = aerial;
+        }
         if (candidates.isEmpty()) return;
         Mob target = selectTarget(level, state, candidates);
         if (target == null) return;
@@ -439,7 +447,7 @@ public final class VillagePlacedTurretSystem {
                 target.removeEffect(MobEffects.ABSORPTION);
             }
             case ANTI_AIR -> hit(level, state, target,
-                    damage * (VillageEnemyArchetypeSystem.isFlying(target) ? 1.65f : 0.72f), ParticleTypes.CRIT);
+                    damage * (VillageRaidSystem.isAerialEnemy(target) ? 1.80f : 0.65f), ParticleTypes.CRIT);
             default -> hit(level, state, target, damage, ParticleTypes.CRIT);
         }
     }
@@ -458,7 +466,7 @@ public final class VillagePlacedTurretSystem {
         float maxHealth = Math.max(1.0f, mob.getMaxHealth());
         float healthRatio = Math.max(0.0f, Math.min(1.0f, mob.getHealth() / maxHealth));
         int cluster = VillageRaidSystem.activeEnemiesNear(level, mob.position(), 6.0, 10, null).size();
-        boolean flying = VillageEnemyArchetypeSystem.isFlying(mob);
+        boolean flying = VillageRaidSystem.isAerialEnemy(mob);
         switch (state.type()) {
             case BALLISTA -> {
                 if (archetype != null && VillageEnemyArchetypeSystem.isBoss(archetype)) score += 120.0;
@@ -831,7 +839,7 @@ public final class VillagePlacedTurretSystem {
         CHAIN("chain", "연쇄 전격탑", 13, 36, 50, 260, 210, Blocks.END_ROD, "다중 연쇄"),
         BOMBARD("bombard", "광역 투석포", 32, 70, 55, 340, 250, Blocks.BLAST_FURNACE, "광역 포격"),
         NULLIFIER("nullifier", "마법 억제탑", 9, 40, 50, 280, 220, Blocks.AMETHYST_BLOCK, "강화 효과 제거"),
-        ANTI_AIR("anti_air", "대공 발사대", 19, 24, 72, 260, 220, Blocks.IRON_BARS, "고고도 우선 사격"),
+        ANTI_AIR("anti_air", "대공 발사대", 19, 24, 128, 260, 220, Blocks.IRON_BARS, "초장거리 공중 최우선 요격"),
         BEACON("beacon", "지원 봉화", 0, 60, 24, 320, 240, Blocks.BEACON, "주변 수호자 회복·저항");
 
         private final String id, displayName, role;

@@ -116,49 +116,80 @@ public final class VillageRelicSystem {
 
     public static float meleeMultiplier(ServerPlayer player) {
         float result = 1.0f;
-        if (has(player, Relic.WAR_SIGIL)) result *= 1.15f;
-        if (has(player, Relic.EXECUTION_EDGE)) result *= 1.10f;
-        if (has(player, Relic.BLOOD_CHALICE)) result *= 1.08f;
-        if (has(player, Relic.STORM_FEATHER)) result *= 1.05f;
+        if (has(player, Relic.WAR_SIGIL)) result *= 1.18f;
+        if (has(player, Relic.EXECUTION_EDGE)) result *= 1.08f;
+        if (has(player, Relic.BLOOD_CHALICE)) result *= 1.10f;
+        if (has(player, Relic.STORM_FEATHER)) result *= 1.06f;
         return result;
     }
 
     public static float projectileMultiplier(ServerPlayer player) {
         float result = 1.0f;
-        if (has(player, Relic.HUNTERS_EYE)) result *= 1.18f;
-        if (has(player, Relic.WAR_SIGIL)) result *= 1.08f;
-        if (has(player, Relic.STORM_FEATHER)) result *= 1.10f;
+        if (has(player, Relic.HUNTERS_EYE)) result *= 1.20f;
+        if (has(player, Relic.WAR_SIGIL)) result *= 1.10f;
+        if (has(player, Relic.STORM_FEATHER)) result *= 1.14f;
         return result;
+    }
+
+    public static float projectileTargetMultiplier(ServerPlayer player, net.minecraft.world.entity.Mob target) {
+        if (!has(player, Relic.HUNTERS_EYE) || target == null) return 1.0f;
+        VillageEnemyArchetypeSystem.Archetype archetype = VillageRaidSystem.archetypeOf(target);
+        return VillageRaidSystem.isAerialEnemy(target)
+                || VillageEnemyArchetypeSystem.isTacticalThreat(archetype) ? 1.20f : 1.0f;
     }
 
     public static float incomingMultiplier(ServerPlayer player) {
         float result = 1.0f;
-        if (has(player, Relic.WARD_STONE)) result *= 0.86f;
-        if (has(player, Relic.LAST_LIGHT)) result *= 0.92f;
-        if (has(player, Relic.BASTION_CORE)) result *= 0.90f;
-        if (has(player, Relic.STORM_FEATHER)) result *= 0.96f;
+        if (has(player, Relic.WARD_STONE)) result *= 0.82f;
+        if (has(player, Relic.LAST_LIGHT)) {
+            result *= 0.96f;
+            if (player != null && player.getHealth() <= player.getMaxHealth() * 0.35f) result *= 0.82f;
+        }
+        if (has(player, Relic.BASTION_CORE)) result *= 0.88f;
+        if (has(player, Relic.STORM_FEATHER)) result *= 0.95f;
         return result;
     }
 
     public static float skillMultiplier(ServerPlayer player) {
         float result = 1.0f;
-        if (has(player, Relic.ARCANE_HEART)) result *= 1.20f;
-        if (has(player, Relic.LAST_LIGHT)) result *= 1.08f;
-        if (has(player, Relic.DAWN_PRISM)) result *= 1.12f;
+        if (has(player, Relic.ARCANE_HEART)) result *= 1.28f;
+        if (has(player, Relic.LAST_LIGHT)) {
+            result *= 1.06f;
+            if (player != null && player.getHealth() <= player.getMaxHealth() * 0.35f) result *= 1.18f;
+        }
+        if (has(player, Relic.DAWN_PRISM)) result *= 1.15f;
         return result;
+    }
+
+    public static float skillDurationMultiplier(ServerPlayer player) {
+        return has(player, Relic.ARCANE_HEART) ? 1.15f : 1.0f;
     }
 
     public static float executionMultiplier(ServerPlayer player, float health, float maximumHealth) {
         if (!has(player, Relic.EXECUTION_EDGE) || maximumHealth <= 0.0f) return 1.0f;
-        return health <= maximumHealth * 0.30f ? 1.20f : 1.0f;
+        return health <= maximumHealth * 0.35f ? 1.35f : 1.0f;
     }
 
-    public static int cooldownReductionSeconds(ServerPlayer player) {
-        return has(player, Relic.CHRONO_SHARD) ? 4 : 0;
+    public static float cooldownMultiplier(ServerPlayer player) {
+        float result = 1.0f;
+        if (has(player, Relic.CHRONO_SHARD)) result *= 0.78f;
+        if (has(player, Relic.DAWN_PRISM)) result *= 0.90f;
+        if (has(player, Relic.STORM_FEATHER)) result *= 0.95f;
+        return result;
+    }
+
+    public static int cooldownReductionSeconds(ServerPlayer player) { return 0; }
+
+    public static float meleeLifeStealBonus(ServerPlayer player) {
+        return has(player, Relic.BLOOD_CHALICE) ? 0.03f : 0.0f;
     }
 
     public static float vanguardLifeStealBonus(ServerPlayer player) {
-        return has(player, Relic.BLOOD_CHALICE) ? 0.04f : 0.0f;
+        return has(player, Relic.BLOOD_CHALICE) ? 0.03f : 0.0f;
+    }
+
+    public static float tauntDurationMultiplier(ServerPlayer player) {
+        return has(player, Relic.BASTION_CORE) ? 1.35f : 1.0f;
     }
 
     public static synchronized String summary(ServerPlayer player) {
@@ -172,16 +203,20 @@ public final class VillageRelicSystem {
         int projectile = roundedPercent(projectileMultiplier(player) - 1.0f);
         int skill = roundedPercent(skillMultiplier(player) - 1.0f);
         int reduction = roundedPercent(1.0f - incomingMultiplier(player));
-        int cooldown = cooldownReductionSeconds(player);
-        int lifeSteal = Math.round(vanguardLifeStealBonus(player) * 100.0f);
+        int cooldown = Math.max(0, Math.round((1.0f - cooldownMultiplier(player)) * 100.0f));
+        int lifeSteal = Math.round(meleeLifeStealBonus(player) * 100.0f);
         List<String> effects = new ArrayList<>();
         if (melee > 0) effects.add("근접 +" + melee + "%");
         if (projectile > 0) effects.add("원거리 +" + projectile + "%");
         if (skill > 0) effects.add("기술 +" + skill + "%");
         if (reduction > 0) effects.add("피해 감소 " + reduction + "%");
-        if (cooldown > 0) effects.add("쿨다운 -" + cooldown + "초");
-        if (lifeSteal > 0) effects.add("선봉 흡혈 +" + lifeSteal + "%p");
-        if (has(player, Relic.EXECUTION_EDGE)) effects.add("체력 30% 이하 적 추가 피해 +20%");
+        if (cooldown > 0) effects.add("재사용 시간 -" + cooldown + "%");
+        if (lifeSteal > 0) effects.add("근접 흡혈 +" + lifeSteal + "%");
+        if (has(player, Relic.EXECUTION_EDGE)) effects.add("체력 35% 이하 적 추가 피해 +35%");
+        if (has(player, Relic.HUNTERS_EYE)) effects.add("공중·전술 표적 원거리 추가 피해 +20%");
+        if (has(player, Relic.ARCANE_HEART)) effects.add("기술 지속시간 +15%");
+        if (has(player, Relic.BASTION_CORE)) effects.add("도발 지속시간 +35%");
+        if (has(player, Relic.LAST_LIGHT)) effects.add("위기 체력에서 추가 방어·기술 강화");
         return effects.isEmpty() ? "현재 적용 중인 유물 효과 없음" : String.join(" · ", effects);
     }
 
@@ -270,17 +305,17 @@ public final class VillageRelicSystem {
     }
 
     public enum Relic {
-        WAR_SIGIL("war_sigil", "전쟁의 인장", "근접 피해 +15%, 원거리 피해 +8%"),
-        HUNTERS_EYE("hunters_eye", "추적자의 눈", "원거리 피해 +18%"),
-        WARD_STONE("ward_stone", "수호석", "받는 피해 14% 감소"),
-        ARCANE_HEART("arcane_heart", "비전 심장", "직업 기술 피해·치유 +20%"),
-        EXECUTION_EDGE("execution_edge", "처형의 칼날", "근접 피해 +10%, 체력 30% 이하 적에게 추가 피해 +20%"),
-        LAST_LIGHT("last_light", "마지막 등불", "받는 피해 8% 감소, 직업 기술 피해·치유 +8%"),
-        CHRONO_SHARD("chrono_shard", "시간균열 파편", "모든 직업 기술 재사용 대기시간 4초 감소"),
-        BLOOD_CHALICE("blood_chalice", "붉은 성배", "근접 피해 +8%, 선봉검사 흡혈 +4%p"),
-        BASTION_CORE("bastion_core", "성채의 심핵", "받는 피해 10% 감소"),
-        DAWN_PRISM("dawn_prism", "여명의 프리즘", "직업 기술 피해·치유 +12%"),
-        STORM_FEATHER("storm_feather", "폭풍매의 깃", "원거리 피해 +10%, 근접 피해 +5%, 받는 피해 4% 감소");
+        WAR_SIGIL("war_sigil", "전쟁의 인장", "근접 피해 +18%, 원거리 피해 +10%"),
+        HUNTERS_EYE("hunters_eye", "추적자의 눈", "원거리 피해 +20%, 공중·전술 표적에게 추가 +20%"),
+        WARD_STONE("ward_stone", "수호석", "받는 피해 18% 감소"),
+        ARCANE_HEART("arcane_heart", "비전 심장", "직업 기술 피해·치유 +28%, 지속시간 +15%"),
+        EXECUTION_EDGE("execution_edge", "처형의 칼날", "근접 피해 +8%, 체력 35% 이하 적에게 추가 피해 +35%"),
+        LAST_LIGHT("last_light", "마지막 등불", "평상시 소폭 방어·기술 강화, 체력 35% 이하에서 효과가 크게 증폭"),
+        CHRONO_SHARD("chrono_shard", "시간균열 파편", "직업 기술 재사용 시간을 22% 단축"),
+        BLOOD_CHALICE("blood_chalice", "붉은 성배", "근접 피해 +10%, 모든 근접 공격 흡혈 3%, 선봉검사 추가 흡혈 +3%p"),
+        BASTION_CORE("bastion_core", "성채의 심핵", "받는 피해 12% 감소, 도발 지속시간 +35%"),
+        DAWN_PRISM("dawn_prism", "여명의 프리즘", "직업 기술 피해·치유 +15%, 재사용 시간 10% 단축"),
+        STORM_FEATHER("storm_feather", "폭풍매의 깃", "원거리 +14%, 근접 +6%, 피해 감소 5%, 재사용 시간 5% 단축");
 
         private final String id;
         private final String displayName;
