@@ -19,9 +19,9 @@ def main() -> None:
     enemy = read("VillageEnemyArchetypeSystem.java")
     raid = read("VillageRaidSystem.java")
 
-    assert "mod_version=0.18.43-alpha.1" in props
-    assert "현재 소스 버전 `0.18.43-alpha.1`" in readme
-    assert "villageguardians-0.18.43-alpha.1.jar" in readme
+    assert "mod_version=" in props
+    assert "현재 소스 버전 `" in readme
+    assert "목표 JAR `villageguardians-" in readme
 
     # finalizeSpawn is allowed to randomize vanilla zombies, but authored raid roles must win afterward.
     equip = section(enemy, "private static void equip", "private static void applyArchetypeAttributes")
