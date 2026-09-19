@@ -95,7 +95,7 @@ public final class ExpeditionGameplayService {
         resolution = new ExpeditionLifecycle.Resolution(evidencedTerminal, resolution.resultProfile(), resolution.retainedResources(), resolution.worldConsequence());
         Region01EncounterRuntime.clearRun(overworld, TECHNICAL_REGION, run.sequence());
         returnToHub(player);
-        player.sendSystemMessage(Component.translatable("riftfrontier.expedition.detail.extracted", retainedSalvage, baseRetainedSalvage, patrolBonus, world.securedRegion01Salvage(), world.region01Pressure(), world.region01PreparationSupplyCost(), resolution.worldConsequence()));
+        player.sendSystemMessage(Component.translatable("riftfrontier.expedition.detail.extracted", retainedSalvage, baseRetainedSalvage, patrolBonus, world.securedRegion01Salvage(), world.region01Pressure(), world.region01PreparationSupplyCost()));
         return resolution;
     }
 
