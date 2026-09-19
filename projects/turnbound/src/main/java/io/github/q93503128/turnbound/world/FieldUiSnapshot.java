@@ -25,7 +25,9 @@ public record FieldUiSnapshot(
         List<Encounter> encounters,
         List<Travel> travels,
         String loadingStage,
-        int loadingPercent
+        int loadingPercent,
+        String locationId,
+        String locationTitle
 ) {
     public enum Mode { NONE, LOADING, QUEST, RESULT, TRAVEL }
 
@@ -100,6 +102,8 @@ public record FieldUiSnapshot(
         travels = List.copyOf(travels == null ? List.of() : travels);
         loadingStage = playerFacingText(loadingStage == null ? "" : loadingStage);
         loadingPercent = Math.max(0, Math.min(100, loadingPercent));
+        locationId = locationId == null ? "" : locationId.trim();
+        locationTitle = playerFacingText(locationTitle == null ? "" : locationTitle);
     }
 
     /** Final UI-boundary defense. Internal identifiers remain valid in logic/save data but not in authored copy. */
@@ -201,16 +205,38 @@ public record FieldUiSnapshot(
             List<Travel> travels
     ) {
         this(active, mode, patrolsCleared, patrolGoal, bossUnlocked, chapterCleared, earnedXp, earnedGold,
-                objective, dialogue, reward, encounters, travels, "", 0);
+                objective, dialogue, reward, encounters, travels, "", 0, "", "");
+    }
+
+    /** Compatibility constructor matching the pre-location-banner canonical shape. */
+    public FieldUiSnapshot(
+            boolean active,
+            Mode mode,
+            int patrolsCleared,
+            int patrolGoal,
+            boolean bossUnlocked,
+            boolean chapterCleared,
+            int earnedXp,
+            int earnedGold,
+            String objective,
+            String dialogue,
+            Reward reward,
+            List<Encounter> encounters,
+            List<Travel> travels,
+            String loadingStage,
+            int loadingPercent
+    ) {
+        this(active, mode, patrolsCleared, patrolGoal, bossUnlocked, chapterCleared, earnedXp, earnedGold,
+                objective, dialogue, reward, encounters, travels, loadingStage, loadingPercent, "", "");
     }
 
     public static FieldUiSnapshot loading(String stage, int percent) {
         return new FieldUiSnapshot(true, Mode.LOADING, 0, 0, false, false, 0, 0,
-                "", "", Reward.none(), List.of(), List.of(), stage, percent);
+                "", "", Reward.none(), List.of(), List.of(), stage, percent, "", "");
     }
 
     public static FieldUiSnapshot inactive() {
         return new FieldUiSnapshot(false, Mode.NONE, 0, 0, false, false, 0, 0,
-                "", "", Reward.none(), List.of(), List.of(), "", 0);
+                "", "", Reward.none(), List.of(), List.of(), "", 0, "", "");
     }
 }

@@ -21,6 +21,7 @@ public final class FieldUiCodec {
         out.append("O|").append(text(snapshot.objective())).append('\n');
         out.append("D|").append(text(snapshot.dialogue())).append('\n');
         out.append("L|").append(text(snapshot.loadingStage())).append('|').append(snapshot.loadingPercent()).append('\n');
+        out.append("A|").append(text(snapshot.locationId())).append('|').append(text(snapshot.locationTitle())).append('\n');
         FieldUiSnapshot.Reward reward = snapshot.reward();
         out.append("R|").append(text(reward.encounterLabel()))
                 .append('|').append(reward.xp())
@@ -57,6 +58,8 @@ public final class FieldUiCodec {
         String dialogue = "";
         String loadingStage = "";
         int loadingPercent = 0;
+        String locationId = "";
+        String locationTitle = "";
         FieldUiSnapshot.Reward reward = FieldUiSnapshot.Reward.none();
         List<FieldUiSnapshot.Encounter> encounters = new ArrayList<>();
         List<FieldUiSnapshot.Travel> travels = new ArrayList<>();
@@ -85,6 +88,12 @@ public final class FieldUiCodec {
                             loadingPercent = Integer.parseInt(parts[2]);
                         }
                     }
+                    case "A" -> {
+                        if (parts.length >= 3) {
+                            locationId = read(parts[1]);
+                            locationTitle = read(parts[2]);
+                        }
+                    }
                     case "R" -> {
                         if (parts.length >= 6) reward = new FieldUiSnapshot.Reward(
                                 read(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3]),
@@ -105,7 +114,7 @@ public final class FieldUiCodec {
             }
         }
         return new FieldUiSnapshot(active, mode, patrols, goal, bossUnlocked, chapterCleared, xp, gold,
-                objective, dialogue, reward, encounters, travels, loadingStage, loadingPercent);
+                objective, dialogue, reward, encounters, travels, loadingStage, loadingPercent, locationId, locationTitle);
     }
 
     private static int bit(boolean value) { return value ? 1 : 0; }

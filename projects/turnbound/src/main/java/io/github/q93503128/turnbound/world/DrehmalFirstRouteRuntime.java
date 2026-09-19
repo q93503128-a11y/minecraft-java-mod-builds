@@ -57,6 +57,7 @@ public final class DrehmalFirstRouteRuntime {
 
     public static FieldUiSnapshot explorationSnapshot(ServerPlayer player) {
         String objective = objective(player);
+        DrehmalFirstRouteCatalog.Site location = locationSite(player);
         return new FieldUiSnapshot(
                 true,
                 FieldUiSnapshot.Mode.NONE,
@@ -70,7 +71,22 @@ public final class DrehmalFirstRouteRuntime {
                 "",
                 FieldUiSnapshot.Reward.none(),
                 List.of(),
-                List.of());
+                List.of(),
+                "",
+                0,
+                location == null ? "" : location.locator(),
+                location == null ? "" : location.playerLabel());
+    }
+
+    static String locationId(ServerPlayer player) {
+        DrehmalFirstRouteCatalog.Site location = locationSite(player);
+        return location == null ? "" : location.locator();
+    }
+
+    private static DrehmalFirstRouteCatalog.Site locationSite(ServerPlayer player) {
+        if (player == null) return null;
+        return DrehmalLocationBannerRules.current(
+                DrehmalFirstRouteCatalog.productionSites(), player.getX(), player.getZ());
     }
 
     private static String objective(ServerPlayer player) {
