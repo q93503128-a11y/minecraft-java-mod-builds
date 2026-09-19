@@ -3,6 +3,7 @@ package kr.moonseungjun.villageguardians;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Mob;
@@ -55,8 +56,10 @@ public final class VillageRaidLootSystem {
         if (VillageSkillTestSystem.isTestDummy(event.getEntity())) { event.getDrops().clear(); return; }
         if (!VillageRaidSystem.isRaidEnemy(event.getEntity())) return;
         event.getDrops().clear();
-        if (!(event.getSource().getEntity() instanceof ServerPlayer killer)
-                || !(event.getEntity() instanceof Mob mob)) return;
+        if (!(event.getEntity() instanceof Mob mob)) return;
+        ServerPlayer recipient = rewardRecipient(mob,
+                event.getSource().getEntity() instanceof ServerPlayer player ? player : null);
+        if (recipient == null) return;
         RandomSource random = mob.getRandom();
         VillageEnemyArchetypeSystem.Archetype type = VillageRaidSystem.archetypeOf(mob);
         boolean boss = type != null && VillageEnemyArchetypeSystem.isBoss(type);
@@ -72,14 +75,32 @@ public final class VillageRaidLootSystem {
         if (loot != null && random.nextFloat() < chance) {
             ItemStack stack = named(loot);
             stack.setCount(boss ? 2 + random.nextInt(3) : 1 + random.nextInt(2));
-            give(killer, stack);
+            give(recipient, stack);
         }
         float equipmentChance = boss ? 1.0f : 0.045f
                 + VillageDefenseResearchSystem.equipmentDropBonus();
         if (random.nextFloat() < equipmentChance) {
-            give(killer, VillageExpandedEquipmentSystem.createRaidDrop(
+            give(recipient, VillageExpandedEquipmentSystem.createRaidDrop(
                     VillageCouncilState.currentDay(), boss, type, random));
         }
+    }
+
+    private static ServerPlayer rewardRecipient(Mob mob, ServerPlayer directKiller) {
+        if (directKiller != null) return directKiller;
+        MinecraftServer server = mob == null ? null : mob.level().getServer();
+        if (server == null) return null;
+        ServerPlayer nearest = null;
+        double nearestDistance = Double.MAX_VALUE;
+        for (java.util.UUID playerId : VillageProgressionSystem.nightParticipants(server)) {
+            ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+            if (player == null || player.level() != mob.level()) continue;
+            double distance = player.distanceToSqr(mob);
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearest = player;
+            }
+        }
+        return nearest;
     }
 
     private static ItemStack named(SaleLoot loot) {

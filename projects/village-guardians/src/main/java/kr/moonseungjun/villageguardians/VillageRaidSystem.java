@@ -42,6 +42,7 @@ public final class VillageRaidSystem {
     private static final int BETWEEN_WAVE_TICKS = 120;
     private static final int FORCED_NEXT_WAVE_TICKS = 20 * 60;
     private static final int FINAL_ENEMY_STALL_TICKS = 20 * 12;
+    private static final int MAX_STALL_RECOVERIES_PER_PASS = 4;
     private static final double FINAL_ENEMY_PROGRESS_DISTANCE_SQR = 0.25 * 0.25;
     private static final int MAX_ACTIVE_ENEMIES = 100;
     private static final int STRUCTURE_ATTACK_INTERVAL = 30;
@@ -192,10 +193,8 @@ public final class VillageRaidSystem {
 
     public static int experienceForEnemy(Mob mob) {
         if (mob == null) return 0;
-        // Keep the pre-party-share kill reward curve. The 0.18.44 archetype table (2~32 XP)
-        // made ordinary raid kills worth roughly one tenth of the previous progression pace.
         int base = Math.min(90, 7 + Math.round(mob.getMaxHealth() * 0.48f));
-        return Math.max(1, Math.round(base * 1.18f));
+        return Math.max(1, Math.round(base * 0.59f));
     }
 
     public static VillageEnemyArchetypeSystem.AerialRole aerialRoleOf(Mob mob) {
@@ -950,10 +949,7 @@ public final class VillageRaidSystem {
     }
 
     private static void recoverFrozenFinalEnemies(MinecraftServer server) {
-        if (ACTIVE_ENEMIES.size() > 2) {
-            FINAL_ENEMY_PROGRESS.clear();
-            return;
-        }
+        if (waveElapsedTicks % 20 != 0) return;
 
         ServerLevel level = server.overworld();
         Set<UUID> activeNow = new HashSet<>(ACTIVE_ENEMIES);
@@ -962,8 +958,10 @@ public final class VillageRaidSystem {
         BlockPos rally = VillageWorldSystem.northInnerApproach();
         boolean repaired = false;
         int offsetIndex = 0;
+        int recovered = 0;
 
         for (UUID id : activeNow) {
+            if (recovered >= MAX_STALL_RECOVERIES_PER_PASS) break;
             Entity entity = level.getEntity(id);
             if (!(entity instanceof Mob mob) || !mob.isAlive()) continue;
 
@@ -992,7 +990,9 @@ public final class VillageRaidSystem {
                     id, VillageEnemyArchetypeSystem.Archetype.GRUNT);
             if (!shouldRecoverStalledEnemy(mob, archetype, villageCenter)) continue;
 
-            double xOffset = offsetIndex++ == 0 ? -2.0 : 2.0;
+            int slot = offsetIndex++;
+            double xOffset = (slot - 1.5) * 2.0;
+            double zOffset = (slot & 1) == 0 ? 0.0 : 2.0;
             mob.setNoAi(false);
             mob.setInvulnerable(false);
             mob.stopRiding();
@@ -1002,7 +1002,7 @@ public final class VillageRaidSystem {
             // leave the client looking at a stale body while the server moved the hitbox elsewhere.
             // teleportTo emits an authoritative tracked-entity relocation.
             mob.teleportTo(level,
-                    rally.getX() + 0.5 + xOffset, rally.getY(), rally.getZ() + 0.5,
+                    rally.getX() + 0.5 + xOffset, rally.getY(), rally.getZ() + 0.5 + zOffset,
                     Set.of(), mob.getYRot(), mob.getXRot(), true);
 
             ServerPlayer nearest = nearestAnyCombatPlayer(server, mob);
@@ -1013,6 +1013,7 @@ public final class VillageRaidSystem {
                 mob.setTarget(null);
             }
             FINAL_ENEMY_PROGRESS.put(id, progressSnapshot(mob, previous.recoveryAttempts() + 1));
+            recovered++;
             repaired = true;
         }
 
@@ -1094,7 +1095,8 @@ public final class VillageRaidSystem {
         float campaignReward = VillageWarfrontSystem.rewardMultiplier(day);
         int supplies = Math.round((140 + day * 32)
                 * VillageProgressionSystem.raidRewardMultiplierPercent() / 100.0f * campaignReward);
-        int xp = Math.round((52 + day * 18 + VillageProgressionSystem.barracksLevel() * 10) * campaignReward);
+        int xp = Math.max(1, Math.round(
+                (52 + day * 18 + VillageProgressionSystem.barracksLevel() * 10) * campaignReward * 0.50f));
         int coins = Math.round((42 + day * 9) * campaignReward);
 
         clearState();
@@ -1109,6 +1111,7 @@ public final class VillageRaidSystem {
         VillageProgressionSystem.healRaidParty(server, true);
         VillageCouncilState.completeRaid(server);
         VillageUiService.openRepairSummaryForAll(server);
+        VillageRelicSystem.openPendingChoicesForParty(server);
     }
 
     public static boolean shouldDiscardStaleRaidEnemy(Mob mob) {

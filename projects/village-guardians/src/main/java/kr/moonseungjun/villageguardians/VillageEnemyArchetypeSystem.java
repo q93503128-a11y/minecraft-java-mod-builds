@@ -207,12 +207,12 @@ public final class VillageEnemyArchetypeSystem {
                 spawnAura(level, mob, archetype, 18);
             }
             case NECROMANCER -> {
-                if (!abilityReady(mob, globalTicks, 180)) return;
-                for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 10.0, 10, mob.getUUID())) {
-                    ally.heal(5.0f + VillageCouncilState.currentDay() * 0.18f);
-                    ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 100, 0));
+                if (!abilityReady(mob, globalTicks, 240)) return;
+                for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 10.0, 5, mob.getUUID())) {
+                    ally.heal(3.0f + VillageCouncilState.currentDay() * 0.08f);
+                    ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 80, 0));
                 }
-                spawnAura(level, mob, archetype, 24);
+                spawnAura(level, mob, archetype, 20);
             }
             case TOWER_HUNTER -> {
                 if (!abilityReady(mob, globalTicks, 180)) return;
@@ -237,12 +237,12 @@ public final class VillageEnemyArchetypeSystem {
                 spawnAura(level, mob, archetype, 26);
             }
             case PLAGUE_ARCHON -> {
-                if (!abilityReady(mob, globalTicks, 110)) return;
+                if (!abilityReady(mob, globalTicks, 150)) return;
                 damageAndDebuffPlayers(level, server, mob, 11.0, 3.5f, MobEffects.POISON);
-                for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 11.0, 14, mob.getUUID())) {
-                    ally.heal(7.0f);
+                for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 11.0, 8, mob.getUUID())) {
+                    ally.heal(4.0f);
                 }
-                spawnAura(level, mob, archetype, 30);
+                spawnAura(level, mob, archetype, 28);
             }
             case DREAD_KNIGHT -> {
                 if (!abilityReady(mob, globalTicks, 90)) return;
@@ -286,15 +286,18 @@ public final class VillageEnemyArchetypeSystem {
             return slot % 4 == 0 && day >= 7 ? Archetype.TOWER_HUNTER : Archetype.MARKSMAN;
         }
         if (trait == VillageWaveTrait.HEXED) {
-            if (day >= 9 && slot % 5 == 0) return Archetype.NECROMANCER;
-            return slot % 3 == 0 ? Archetype.WAR_CHANTER : Archetype.HEXER;
+            if (day >= 9 && slot == 0) return Archetype.NECROMANCER;
+            if (slot == 6 || slot == 18) return Archetype.WAR_CHANTER;
+            if (slot == 3 || slot == 15) return Archetype.HEXER;
+            return slot % 2 == 0 ? Archetype.BULWARK : Archetype.GRUNT;
         }
         if (trait == VillageWaveTrait.FRENZY) {
             return slot % 4 == 0 ? Archetype.WAR_CHANTER : Archetype.RUSHER;
         }
         if (trait == VillageWaveTrait.REGENERATING) {
-            if (day >= 9 && slot % 6 == 0) return Archetype.NECROMANCER;
-            return slot % 3 == 0 ? Archetype.HEXER : Archetype.BULWARK;
+            if (day >= 9 && slot == 0) return Archetype.NECROMANCER;
+            if (slot == 8 || slot == 16) return Archetype.HEXER;
+            return slot % 3 == 0 ? Archetype.GRUNT : Archetype.BULWARK;
         }
         if (trait == VillageWaveTrait.PHALANX) {
             if (slot % 6 == 0) return Archetype.WAR_CHANTER;
@@ -308,8 +311,9 @@ public final class VillageEnemyArchetypeSystem {
             return slot % 3 == 0 ? Archetype.HEXER : Archetype.MARKSMAN;
         }
         if (trait == VillageWaveTrait.RIFTED) {
-            if (slot % 6 == 0) return Archetype.NECROMANCER;
-            return slot % 3 == 0 ? Archetype.HEXER : Archetype.SHIELDBREAKER;
+            if (slot == 0) return Archetype.NECROMANCER;
+            if (slot == 8 || slot == 16) return Archetype.HEXER;
+            return slot % 3 == 0 ? Archetype.BULWARK : Archetype.SHIELDBREAKER;
         }
 
         if (day >= 11 && slot == 0) return Archetype.NECROMANCER;
@@ -446,7 +450,7 @@ public final class VillageEnemyArchetypeSystem {
             case SAPPER -> { }
             case SHIELDBREAKER -> mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, LONG_EFFECT_TICKS, 1));
             case WAR_CHANTER -> mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, LONG_EFFECT_TICKS, 0));
-            case NECROMANCER -> mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, LONG_EFFECT_TICKS, 1));
+            case NECROMANCER -> mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, LONG_EFFECT_TICKS, 0));
             case TOWER_HUNTER -> mob.addEffect(new MobEffectInstance(MobEffects.SPEED, LONG_EFFECT_TICKS, 1));
             case SIEGE_BEAST -> {
                 mob.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST, LONG_EFFECT_TICKS, 5));

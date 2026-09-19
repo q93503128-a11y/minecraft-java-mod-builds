@@ -40,7 +40,15 @@ public final class VillageRelicSystem {
             PENDING.put(playerId, previous.isBlank() ? encoded : previous + OFFER_SEP + encoded);
             persist();
             ServerPlayer online = server.getPlayerList().getPlayer(playerId);
-            if (previous.isBlank() && online != null) openChoice(online);
+            if (previous.isBlank() && online != null && !VillageRaidSystem.isRaidLocked()) openChoice(online);
+        }
+    }
+
+    public static synchronized void openPendingChoicesForParty(MinecraftServer server) {
+        if (server == null || VillageRaidSystem.isRaidLocked()) return;
+        for (UUID playerId : VillageProgressionSystem.nightParticipants(server)) {
+            ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+            if (player != null && hasPendingChoice(player)) openChoice(player);
         }
     }
 
