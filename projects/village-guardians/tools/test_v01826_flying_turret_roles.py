@@ -37,9 +37,11 @@ def main() -> None:
 
     assert "Mob target = selectTarget(level, state, candidates);" in turret
     assert "private static double targetScore" in turret
-    assert "VillageEnemyArchetypeSystem.isFlying(mob)" in turret
+    assert "VillageRaidSystem.isAerialEnemy(mob)" in turret
     assert "if (flying) score += 420.0" in turret
-    assert "VillageEnemyArchetypeSystem.isFlying(target) ? 1.65f : 0.72f" in turret
+    assert "visible.stream().filter(VillageRaidSystem::isAerialEnemy)" in turret
+    assert 'ANTI_AIR("anti_air", "대공 발사대", 19, 24, 128' in turret
+    assert "VillageRaidSystem.isAerialEnemy(target) ? 1.80f : 0.65f" in turret
     assert "cluster * 26.0" in turret and "cluster * 34.0" in turret
     assert "isArmoredThreat" in turret and "isSupportThreat" in turret
     for effect in ("STRENGTH", "REGENERATION", "SPEED", "RESISTANCE", "ABSORPTION"):

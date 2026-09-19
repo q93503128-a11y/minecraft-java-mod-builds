@@ -21,10 +21,10 @@ def main() -> None:
     assert "mod_version=" in props
 
     for token in [
-        "result *= 1.15f", "result *= 1.18f", "result *= 0.86f",
-        "result *= 1.20f", "return health <= maximumHealth * 0.30f ? 1.20f : 1.0f",
-        "return has(player, Relic.CHRONO_SHARD) ? 4 : 0",
-        "return has(player, Relic.BLOOD_CHALICE) ? 0.04f : 0.0f",
+        "result *= 1.18f", "result *= 1.20f", "result *= 0.82f",
+        "result *= 1.28f", "maximumHealth * 0.35f ? 1.35f : 1.0f",
+        "result *= 0.78f", "return has(player, Relic.BLOOD_CHALICE) ? 0.03f : 0.0f",
+        "projectileTargetMultiplier", "skillDurationMultiplier", "tauntDurationMultiplier",
     ]:
         assert token in relic, token
     assert "마무리 전투 강화" not in relic
@@ -34,9 +34,12 @@ def main() -> None:
     assert "VillageRelicSystem.meleeMultiplier(attacker)" in rpg
     assert "VillageRelicSystem.executionMultiplier(attacker" in rpg
     assert "VillageRelicSystem.incomingMultiplier(defender)" in rpg
+    assert "VillageRelicSystem.projectileTargetMultiplier(attacker, target)" in rpg
+    assert "VillageRelicSystem.meleeLifeStealBonus(attacker)" in rpg
     # Skill damage has one authoritative multiplier owner before the cast is delegated.
     assert role.count("VillageRelicSystem.skillMultiplier(player)") == 1
-    assert "VillageRelicSystem.cooldownReductionSeconds(player)" in role
+    assert "VillageRelicSystem.skillDurationMultiplier(player)" in role
+    assert "VillageRelicSystem.cooldownMultiplier(player)" in role
     assert "VillageRelicSystem.vanguardLifeStealBonus(attacker)" in read("VillageRoleAbilitySystem.java")
     print("[PASS] 근접·원거리·처형·방어·기술·쿨다운·흡혈 유물이 실제 전투 경로에 연결됩니다")
 

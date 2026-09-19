@@ -50,9 +50,11 @@ def main() -> None:
     assert "MobEffects.SLOWNESS, 45" in abilities
     assert "abilityReady(mob, globalTicks, 240)" in abilities
     assert "activeEnemiesNear(level, mob.position(), 10.0, 5" in abilities
-    assert "ally.heal(3.0f + VillageCouncilState.currentDay() * 0.08f)" in abilities
+    assert "supportHeal(ally, 2.5f + VillageCouncilState.currentDay() * 0.05f)" in abilities
     assert "abilityReady(mob, globalTicks, 150)" in abilities
-    assert "ally.heal(4.0f)" in abilities
+    assert "activeEnemiesNear(level, mob.position(), 11.0, 6" in abilities
+    assert "supportHeal(ally, 3.0f)" in abilities
+    assert "supportHeal(mob, Math.min(12.0f, drained))" in abilities
 
     # Stuck actors can be recovered even while a larger wave is still alive, with a bounded per-pass cap.
     recovery = section(raid, "private static void recoverFrozenFinalEnemies", "private static boolean shouldRecoverStalledEnemy")
