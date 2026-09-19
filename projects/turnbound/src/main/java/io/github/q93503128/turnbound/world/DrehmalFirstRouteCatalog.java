@@ -69,6 +69,7 @@ public final class DrehmalFirstRouteCatalog {
             String tier,
             String footprintLocator,
             String patrolLocator,
+            String combatEncounterId,
             String playerLabel,
             boolean verifiedIn26_2,
             boolean productionEnabled
@@ -205,6 +206,9 @@ public final class DrehmalFirstRouteCatalog {
                 errors.add("encounter references unknown patrol " + encounter.locator());
             }
             if (encounter.playerLabel().isBlank()) errors.add("blank encounter label " + encounter.locator());
+            if (encounter.productionEnabled() && encounter.combatEncounterId().isBlank()) {
+                errors.add("production encounter has no combat binding " + encounter.locator());
+            }
             if (encounter.productionEnabled()) {
                 if (!encounter.verifiedIn26_2()) errors.add("unverified production encounter " + encounter.locator());
                 if (site == null || !site.productionEnabled()) {
@@ -321,6 +325,7 @@ public final class DrehmalFirstRouteCatalog {
                         string(raw, "tier"),
                         string(raw, "footprintLocator"),
                         optionalString(raw, "patrolLocator"),
+                        optionalString(raw, "combatEncounterId"),
                         string(raw, "playerLabel"),
                         bool(raw, "verifiedIn26_2", false),
                         bool(raw, "productionEnabled", false)));

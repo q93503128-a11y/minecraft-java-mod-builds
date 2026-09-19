@@ -49,7 +49,12 @@ public final class TurnboundCommands {
                             var player = context.getSource().getPlayerOrException();
                             BattleSessionManager.start(player);
                             return Command.SINGLE_SUCCESS;
-                        }))
+                        })
+                        .then(Commands.literal("capital_valley").executes(context -> {
+                            var player = context.getSource().getPlayerOrException();
+                            BattleSessionManager.startEncounter(player, "CV_FIRST_COMMON", true, true);
+                            return Command.SINGLE_SUCCESS;
+                        })))
                 .then(Commands.literal("leave")
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .executes(context -> {

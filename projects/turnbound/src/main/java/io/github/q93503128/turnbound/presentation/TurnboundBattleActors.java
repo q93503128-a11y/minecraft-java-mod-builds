@@ -30,6 +30,7 @@ public final class TurnboundBattleActors {
     private static final List<String> IDS = List.of(
             "P01","P02","P03","P04","P05","P06","P07","P08","P07_SUMMON",
             "F01","F01_ALT","F02","F03","F04",
+            "CV_A",
             "E001","E002","E003","E004","E005","E006","E007","E008","E009","E010","E011","E012","E013","E014",
             "EL01","EL02","EL03","EL04",
             "B01","B02","B03","B04","B05");
@@ -50,6 +51,7 @@ public final class TurnboundBattleActors {
             "F02", "f02_field_apprentice", "F03", "f03_border_hunter", "F04", "f04_shield_mercenary");
 
     private static final Map<String, String> ENEMY_PATH = Map.ofEntries(
+            Map.entry("CV_A", "cv_a_mossback_boar"),
             Map.entry("E001", "e001_rotted_walker"), Map.entry("E002", "e002_bone_marksman"),
             Map.entry("E003", "e003_unstable_burster"), Map.entry("E004", "e004_road_bandit"),
             Map.entry("E005", "e005_field_medic"), Map.entry("E006", "e006_moss_boar"),
@@ -141,7 +143,7 @@ public final class TurnboundBattleActors {
             case "P05", "P06" -> 0.62F; case "P07" -> 0.60F; case "P08" -> 0.72F; case "P07_SUMMON" -> 0.82F;
             case "F01", "F01_ALT" -> 0.62F; case "F02" -> 0.59F; case "F03" -> 0.61F; case "F04" -> 0.70F;
             case "B01" -> 1.80F; case "B02" -> 1.65F; case "B03" -> 1.45F; case "B04" -> 1.70F; case "B05" -> 0.78F;
-            case "E006", "E010", "E012", "EL02" -> 1.10F; case "E003", "E014" -> 0.90F;
+            case "CV_A" -> 1.15F; case "E006", "E010", "E012", "EL02" -> 1.10F; case "E003", "E014" -> 0.90F;
             case "EL01" -> 0.85F; case "EL03" -> 0.90F; case "EL04" -> 1.17F; default -> 0.72F;
         };
     }
@@ -152,7 +154,7 @@ public final class TurnboundBattleActors {
             case "P05" -> 1.72F; case "P06" -> 1.77F; case "P07" -> 1.64F; case "P08" -> 1.88F; case "P07_SUMMON" -> 1.15F;
             case "F01", "F01_ALT" -> 1.76F; case "F02" -> 1.67F; case "F03" -> 1.75F; case "F04" -> 1.82F;
             case "B01" -> 2.30F; case "B02" -> 2.80F; case "B03" -> 3.10F; case "B04" -> 3.40F; case "B05" -> 2.05F;
-            case "E006", "E010", "E012", "EL02" -> 1.35F; case "E003", "E014" -> 2.15F;
+            case "CV_A" -> 1.20F; case "E006", "E010", "E012", "EL02" -> 1.35F; case "E003", "E014" -> 2.15F;
             case "EL01" -> 2.36F; case "EL03" -> 2.50F; case "EL04" -> 2.80F; default -> 2.0F;
         };
     }

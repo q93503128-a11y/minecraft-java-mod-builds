@@ -30,7 +30,11 @@ public final class EnemyPresentationProfile {
             Map.entry("f04_shield_push", skill(Motion.STRIKE, 14, true)),
             Map.entry("f04_endure", skill(Motion.CAST, 18, false)),
 
-            // Southgate / early-route enemies.
+            // Drehmal production first route.
+            Map.entry("cv_a_basic", skill(Motion.STRIKE, 16, true)),
+            Map.entry("cv_a_charge", skill(Motion.CHARGE, 22, true)),
+
+            // Retired Aster migration encounters retained until replacement work completes.
             Map.entry("e001_basic", skill(Motion.STRIKE, 14, true)),
             Map.entry("e002_basic", skill(Motion.STRIKE, 13, false)),
             Map.entry("e002_aimed", skill(Motion.CAST, 18, false)),

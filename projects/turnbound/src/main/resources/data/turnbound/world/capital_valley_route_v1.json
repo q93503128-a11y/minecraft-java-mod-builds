@@ -130,7 +130,8 @@
       "footprintLocator": "turnbound:footprint/capital_valley/first_common",
       "playerLabel": "첫 도로 조우",
       "verifiedIn26_2": false,
-      "productionEnabled": false
+      "productionEnabled": false,
+      "combatEncounterId": "CV_FIRST_COMMON"
     },
     {
       "locator": "turnbound:encounter/capital_valley/warning_cave_elite",
