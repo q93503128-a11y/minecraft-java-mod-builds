@@ -1060,7 +1060,7 @@ public final class VillageRoleAbilitySystem {
         arrow.setPos(source.getX(), source.getY(), source.getZ());
         Vec3 velocity = rotateY(source.getDeltaMovement(), Math.toRadians(degrees));
         arrow.setDeltaMovement(velocity);
-        arrow.setBaseDamage(Math.max(2.0, source.getBaseDamage()));
+        arrow.setBaseDamage(2.0);
         RAPID_ARROWS.put(arrow.getUUID(), new EmpoweredArrowState(
                 level.getGameTime() + 160L, power, 0));
         arrow.pickup = AbstractArrow.Pickup.DISALLOWED;

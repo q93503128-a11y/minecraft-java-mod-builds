@@ -33,7 +33,7 @@ def main() -> None:
     for token in [
         "SPIN_UNTIL", "player.swing", "EntityTypes.SNOWBALL", "ArrowLooseEvent", "spawnSideArrow",
         "RICOCHET_UNTIL", "ARROW_RAIN", "ENERGY_ARROW", "RAPID_DRAW_TICKS.remove",
-        "VillageRaidSystem.isAerialEnemy(target)", "source.getBaseDamage()", "AreaKind.FROST",
+        "VillageRaidSystem.isAerialEnemy(target)", "AreaKind.FROST",
         "AreaKind.TORNADO", "healLowestAlly", "cleanseAllies",
         "AreaKind.HEALING", "reviveNow", "LivingKnockBackEvent", "replayingEcho",
         "cancelHeldShield", "pushAround", "multiplier *= 0.28f", "multiplier *= 0.46f",
