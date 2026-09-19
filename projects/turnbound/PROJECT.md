@@ -165,11 +165,11 @@ Validation labels stay distinct:
 ## Last verified implementation checkpoint
 
 - CODE REVIEWED: YES
-- TESTED: YES — fixed-point scheduler + P01~P08 v1 combat runtime + Drehmal first-route binding + battle-center camera + CV-A/B/C production enemies + Warning Cave Cavehorn Elite asset/AI/reward contract + Drabyel-road Hill Marksman two-step aim telegraph/retarget contract + shallow RPG quick-menu navigation + source-backed Drehmal world-map replacement + New Drabyel physical service NPC runtime/facility gating + R_PG-derived single-representative field encounters + deterministic roam/dwell pacing + Minecraft terrain-aware PathfinderMob navigation with blocked-route recovery + horizontal Tower/camp/Drabyel safety-ring aggro exclusion and visible-enemy return behavior + R_PG-derived short in-world alert prelude + survey-gated transient location banners + close-range server-authored service prompts with no distant NPC nameplates/repeating auto-greetings
-- BUILD VERIFIED: YES — Build TURNBOUND #801
-- verified code commit: `ca219036a51517e4583460bfa91ace0b18a75a06`
+- TESTED: YES — fixed-point scheduler + P01~P08 v1 combat runtime + Drehmal first-route binding + battle-center camera + CV-A/B/C production enemies + Warning Cave Cavehorn Elite asset/AI/reward contract + Drabyel-road Hill Marksman two-step aim telegraph/retarget contract + shallow RPG quick-menu navigation + source-backed Drehmal world-map replacement + New Drabyel physical service NPC runtime/facility gating + R_PG-derived single-representative field encounters + deterministic roam/dwell pacing + Minecraft terrain-aware PathfinderMob navigation with blocked-route recovery + horizontal Tower/camp/Drabyel safety-ring aggro exclusion and visible-enemy return behavior + R_PG-derived short in-world alert prelude + survey-gated transient location banners + close-range server-authored service prompts + server-authored Drehmal first-route navigation with legacy Aster client coordinates removed
+- BUILD VERIFIED: YES — Build TURNBOUND #802
+- verified code commit: `b33e99fc18cd3c95c14a946318410fc9a0fd8ed8`
 - SERVER SMOKE: YES — NeoForge 26.2 dedicated server load
-- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`, id `10579280478`, SHA-256 `cc2af7d0c4e1afeb958da03c7c8a47f683311119b4c118d406d89396ba41fa69`
+- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`, id `10579436542`, SHA-256 `32b1eb47372637a5bab80dbaa33e4e6c84e94d6b1284282a935b9c1ff4882133`
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO

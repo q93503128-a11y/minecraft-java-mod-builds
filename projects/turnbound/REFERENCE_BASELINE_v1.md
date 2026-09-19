@@ -332,3 +332,17 @@ TURNBOUND application:
 - passive proximity no longer retriggers greeting animation every few seconds; greeting plays on actual interaction;
 - unsupported/unmaterialized service visuals cannot produce a ghost prompt;
 - all New Drabyel positions remain fail-closed until the 26.2 survey promotes them.
+
+
+### First-route navigation authority follow-up
+
+Legacy Aster March objective-coordinate inference has been removed from the exploration HUD.
+
+TURNBOUND application:
+- QuestGuide no longer maps quest text such as old boss/chapter names to hardcoded client coordinates;
+- navigation coordinates now come only from server-authored first-route sites that are both `verifiedIn26_2` and `productionEnabled`;
+- the first-route cue advances through the authored main-path waypoint order instead of drawing directly from legacy map data;
+- optional danger / Elite sites and candidate-only labels do not become mandatory route arrows;
+- if no surveyed production waypoint exists, no direction arrow is shown;
+- entering the active waypoint radius advances/clears the target and causes a change-only snapshot sync;
+- the direction cue uses the existing TURNBOUND/Kenney skin rather than a one-off raw black rectangle.
