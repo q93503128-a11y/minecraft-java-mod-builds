@@ -112,7 +112,8 @@ def main() -> None:
     assert "public static synchronized IronGolem nearestCombatMercenary" in merc
     routing = section(raid, "private static void directEnemies", "private static void directFlyingEnemy")
     assert "VillageMercenarySystem.isCombatMercenary" in routing
-    assert "VillageMercenarySystem.nearestCombatMercenary" in routing
+    assert "selectMercenaryTarget" in routing
+    assert "VillageMercenarySystem.aggroCapacity" in routing
 
     # Player and bastion taunts are authoritative routing overrides, including objective-first archetypes.
     assert "FORCED_TAUNTS" in raid
