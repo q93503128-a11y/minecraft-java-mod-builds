@@ -145,3 +145,60 @@ TURNBOUND 적용:
 
 reference-only 자료는 디자인 원리/정보 구조/밸런스 원리만 참고한다.
 directly usable asset은 실제 license를 `EXTERNAL_ASSETS.md`에 기록한 뒤 사용한다.
+
+
+## 8. UI navigation / menu ergonomics
+
+### Pokémon Scarlet / Violet
+Reference only.
+- https://bulbapedia.bulbagarden.net/wiki/Menu
+
+관찰:
+- 메인 메뉴와 현재 파티가 동시에 보인다.
+- 파티 정보를 별도 깊은 화면으로 숨기지 않는다.
+- 자주 쓰는 행동은 짧은 메뉴와 직접 shortcut으로 접근한다.
+
+TURNBOUND 적용:
+- Root quick menu에서 현재 4인 파티를 항상 같이 표시.
+- party portrait 선택 → Character Detail 직접 진입.
+- 별도 Characters 루트 메뉴를 추가하지 않고 전체 roster는 Party에서 관리.
+- routine action을 여러 계층으로 나누지 않음.
+
+### Honkai: Star Rail
+Reference only.
+- https://www.hoyolab.com/article/18161178
+
+관찰:
+- Character 화면에서 선택한 캐릭터의 문맥을 유지한 채 상세/장비/성장 계열 정보를 이동한다.
+- 캐릭터마다 반복해서 루트 메뉴로 돌아가는 구조를 피한다.
+
+TURNBOUND 적용:
+- Character Detail / Equipment / Growth에서 현재 CharacterId 유지.
+- 같은 화면 계열 안에서 캐릭터를 바로 전환.
+- Back 시 선택 캐릭터/tab/scroll 상태 복원.
+
+### OCTOPATH TRAVELER II
+Reference only.
+- https://note.com/nekono_miru/n/n7bb394ff7438
+
+관찰:
+- 장비 선택 시 stat 변화량을 같은 화면에서 비교할 수 있다.
+- equipment decision을 위해 status 화면을 반복 왕복할 필요를 줄인다.
+
+TURNBOUND 적용:
+- Equipment item highlight 시 현재 수치 → 장착 후 수치 delta를 즉시 표시.
+- 장착 자체는 reversible action이므로 불필요한 확인창을 만들지 않음.
+- Gold를 실제 소비하는 강화 등 irreversible/spend action만 final confirmation 사용.
+
+### TURNBOUND navigation rule
+
+위 UI를 시각적으로 복제하지 않는다.
+공통 원칙만 가져온다:
+
+1. party/context를 숨기지 않는다.
+2. 같은 대상(Character/Quest/Item)을 보면서 화면이 바뀌어도 context를 유지한다.
+3. 비교 정보는 같은 화면에 둔다.
+4. routine action은 1~3단계 안에 끝낸다.
+5. 시스템 코드 구조를 메뉴 구조로 그대로 노출하지 않는다.
+
+상세 path budget과 screen relation은 `UI_DESIGN_SYSTEM.md`가 정본이다.
