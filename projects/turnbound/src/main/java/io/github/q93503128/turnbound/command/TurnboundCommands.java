@@ -25,7 +25,15 @@ public final class TurnboundCommands {
         event.getDispatcher().register(Commands.literal("turnbound")
                 .then(Commands.literal("status").executes(context -> {
                     var player = context.getSource().getPlayerOrException();
-                    FieldSessionManager.sendStatus(player);
+                    if (ExternalWorldBootstrap.active(player)) {
+                        context.getSource().sendSuccess(() -> Component.literal(
+                                "Drehmal 연결 활성 · " + DrehmalWorldBinding.status(player.level().getServer())), false);
+                    } else if (io.github.q93503128.turnbound.world.WorldSessionRouter.active(player)) {
+                        FieldSessionManager.sendStatus(player);
+                    } else {
+                        context.getSource().sendSuccess(() -> Component.literal(
+                                "TURNBOUND 월드 런타임 비활성 · " + DrehmalWorldBinding.status(player.level().getServer())), false);
+                    }
                     return Command.SINGLE_SUCCESS;
                 }))
                 .then(Commands.literal("world")
@@ -34,6 +42,7 @@ public final class TurnboundCommands {
                         .then(Commands.literal("bind_drehmal").executes(context -> bindDrehmal(context.getSource()))))
                 .then(Commands.literal("profile").executes(context -> profile(context.getSource())))
                 .then(Commands.literal("archive")
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.literal("single").executes(context -> summon(context.getSource(), 1, false)))
                         .then(Commands.literal("ten").executes(context -> summon(context.getSource(), 10, false)))
                         .then(Commands.literal("starter").executes(context -> summon(context.getSource(), 10, true))))

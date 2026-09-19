@@ -44,6 +44,7 @@ public final class FieldEncounterPresentationBridge {
     }
 
     public static void tick(ServerPlayer player) {
+        if (!LegacyWorldRuntimeIsolation.allowed(ExternalWorldBootstrap.active(player), WorldSessionRouter.active(player))) return;
         if (!(player.level() instanceof ServerLevel level)) return;
         AABB scan = player.getBoundingBox().inflate(SCAN_RADIUS);
         for (ArmorStand marker : level.getEntitiesOfClass(ArmorStand.class, scan)) {

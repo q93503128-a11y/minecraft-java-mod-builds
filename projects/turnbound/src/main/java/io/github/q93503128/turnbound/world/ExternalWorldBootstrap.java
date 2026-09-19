@@ -37,6 +37,10 @@ public final class ExternalWorldBootstrap {
             return false;
         }
 
+        // A bound authored world and the retired generated shell are mutually exclusive runtimes.
+        // Clear any retained legacy session before the first external snapshot so no Aster writer can survive a
+        // same-server migration/binding or retained-runtime reconnect.
+        WorldSessionRouter.remove(player);
         ACTIVE.add(player.getUUID());
         LAST_LOCATION.put(player.getUUID(), DrehmalFirstRouteRuntime.locationId(player));
         LAST_INTERACTION.put(player.getUUID(), DrehmalFirstRouteRuntime.interactionId(player));

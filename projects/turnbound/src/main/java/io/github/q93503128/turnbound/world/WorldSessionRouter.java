@@ -43,6 +43,7 @@ public final class WorldSessionRouter {
     }
 
     public static void tick(ServerPlayer p) {
+        if (!LegacyWorldRuntimeIsolation.allowed(ExternalWorldBootstrap.active(p), active(p))) return;
         if (!(p.level() instanceof ServerLevel level)) return;
         try {
             AsterMarchWorldShell.build(level);
@@ -199,6 +200,7 @@ public final class WorldSessionRouter {
     }
 
     public static boolean interactEntity(ServerPlayer p, Entity e) {
+        if (!LegacyWorldRuntimeIsolation.allowed(ExternalWorldBootstrap.active(p), active(p))) return false;
         if (!(p.level() instanceof ServerLevel level)) return false;
         try {
             if (AsterMarchContentOrchestrator.interact(p, e)) return true;
@@ -215,6 +217,7 @@ public final class WorldSessionRouter {
     }
 
     public static void command(ServerPlayer p, String c) {
+        if (!LegacyWorldRuntimeIsolation.allowed(ExternalWorldBootstrap.active(p), active(p))) return;
         if (!(p.level() instanceof ServerLevel level)) return;
         try {
             if (handleCanonicalFastTravel(p, c)) return;
@@ -296,6 +299,7 @@ public final class WorldSessionRouter {
     }
 
     public static void onBattleEnded(ServerPlayer p, String id, BattleOutcome o) {
+        if (!LegacyWorldRuntimeIsolation.allowed(ExternalWorldBootstrap.active(p), active(p))) return;
         if (!(p.level() instanceof ServerLevel level)) return;
         try {
             if (RadiaHubSessionManager.active(p)) RadiaHubSessionManager.onBattleEnded(p, id, o);
