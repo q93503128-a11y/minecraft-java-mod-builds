@@ -71,6 +71,12 @@ public final class DrehmalFirstRouteCatalog {
         public Patrol {
             points = List.copyOf(points);
         }
+
+        /** Compatibility constructor for authored/tests that predate roaming metadata. */
+        public Patrol(String locator, String surveySeedSite, List<Position> points,
+                      boolean verifiedIn26_2, boolean productionEnabled) {
+            this(locator, surveySeedSite, "LOOP", 0, 0, points, verifiedIn26_2, productionEnabled);
+        }
     }
 
     public record EncounterSlot(
@@ -84,7 +90,15 @@ public final class DrehmalFirstRouteCatalog {
             int fieldVisibleCount,
             boolean verifiedIn26_2,
             boolean productionEnabled
-    ) {}
+    ) {
+        /** Compatibility constructor: one field representative was the historical implicit default. */
+        public EncounterSlot(String locator, String siteLocator, String tier, String footprintLocator,
+                             String patrolLocator, String combatEncounterId, String playerLabel,
+                             boolean verifiedIn26_2, boolean productionEnabled) {
+            this(locator, siteLocator, tier, footprintLocator, patrolLocator, combatEncounterId,
+                    playerLabel, 1, verifiedIn26_2, productionEnabled);
+        }
+    }
 
     public record Route(
             String id,
