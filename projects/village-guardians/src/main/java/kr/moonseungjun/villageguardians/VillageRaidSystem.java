@@ -190,6 +190,22 @@ public final class VillageRaidSystem {
         return mob == null ? null : ACTIVE_ARCHETYPES.get(mob.getUUID());
     }
 
+    public static int experienceForEnemy(Mob mob) {
+        VillageEnemyArchetypeSystem.Archetype archetype = archetypeOf(mob);
+        if (archetype == null) return 2;
+        return switch (archetype) {
+            case GRUNT, RUSHER -> 2;
+            case BULWARK, MARKSMAN -> 3;
+            case SAPPER, SHIELDBREAKER -> 4;
+            case HEXER, WAR_CHANTER -> 5;
+            case NECROMANCER, TOWER_HUNTER -> 6;
+            case SIEGE_BEAST -> 18;
+            case IRON_WARLORD -> 24;
+            case PLAGUE_ARCHON -> 28;
+            case DREAD_KNIGHT -> 32;
+        };
+    }
+
     public static VillageEnemyArchetypeSystem.AerialRole aerialRoleOf(Mob mob) {
         if (mob == null || !VillageEnemyArchetypeSystem.isFlying(mob)) return null;
         return ACTIVE_AERIAL_ROLES.getOrDefault(mob.getUUID(), VillageEnemyArchetypeSystem.AerialRole.RAIDER);
@@ -428,6 +444,7 @@ public final class VillageRaidSystem {
         BlockPos villageCenter = VillageCouncilState.villageCenter().orElse(null);
         boolean gatePassable = VillageWorldSystem.isNorthGatePassable(level)
                 || !VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.WALLS);
+        Map<UUID, Integer> mercenaryPressure = new HashMap<>();
 
         for (UUID id : new HashSet<>(ACTIVE_ENEMIES)) {
             Entity entity = level.getEntity(id);
@@ -479,15 +496,21 @@ public final class VillageRaidSystem {
             if (mob.getTarget() instanceof net.minecraft.world.entity.animal.golem.IronGolem mercenary
                     && VillageMercenarySystem.isCombatMercenary(mercenary)
                     && mob.distanceToSqr(mercenary) <= 24.0 * 24.0) {
-                mob.getNavigation().moveTo(mercenary, 1.10);
-                continue;
+                int currentPressure = mercenaryPressure.getOrDefault(mercenary.getUUID(), 0);
+                if (currentPressure < VillageMercenarySystem.aggroCapacity(mercenary)) {
+                    mercenaryPressure.put(mercenary.getUUID(), currentPressure + 1);
+                    mob.getNavigation().moveTo(mercenary, 1.10);
+                    continue;
+                }
+                mob.setTarget(null);
             }
             boolean objectiveLocked = archetype == VillageEnemyArchetypeSystem.Archetype.SAPPER
                     || archetype == VillageEnemyArchetypeSystem.Archetype.TOWER_HUNTER;
             if (!objectiveLocked) {
                 net.minecraft.world.entity.animal.golem.IronGolem mercenary =
-                        VillageMercenarySystem.nearestCombatMercenary(level, mob, 18.0);
+                        selectMercenaryTarget(level, mob, 18.0, mercenaryPressure);
                 if (mercenary != null) {
+                    mercenaryPressure.merge(mercenary.getUUID(), 1, Integer::sum);
                     mob.setTarget(mercenary);
                     mob.getNavigation().moveTo(mercenary, 1.10);
                     continue;
@@ -539,6 +562,29 @@ public final class VillageRaidSystem {
                 VillageEnemyArchetypeSystem.onStructureHit(level, mob, archetype);
             }
         }
+    }
+
+    private static net.minecraft.world.entity.animal.golem.IronGolem selectMercenaryTarget(
+            ServerLevel level, Mob enemy, double range, Map<UUID, Integer> pressure) {
+        if (level == null || enemy == null || range <= 0.0) return null;
+        double rangeSquared = range * range;
+        return VillageMercenarySystem.loadedMercenaries(level).stream()
+                .filter(mercenary -> enemy.distanceToSqr(mercenary) <= rangeSquared)
+                .filter(enemy::hasLineOfSight)
+                .filter(mercenary -> pressure.getOrDefault(mercenary.getUUID(), 0)
+                        < VillageMercenarySystem.aggroCapacity(mercenary))
+                .min(Comparator.comparingDouble(mercenary -> {
+                    double distance = enemy.distanceToSqr(mercenary);
+                    VillageMercenarySystem.MercenaryClass kind = VillageMercenarySystem.classOf(mercenary);
+                    double weight = switch (kind == null ? VillageMercenarySystem.MercenaryClass.STRIKER : kind) {
+                        case BASTION -> 0.52;
+                        case STRIKER -> 0.90;
+                        case RANGER -> 1.18;
+                        case MEDIC -> 1.38;
+                    };
+                    return distance * weight;
+                }))
+                .orElse(null);
     }
 
     private static LivingEntity activeTauntTarget(ServerLevel level, Mob enemy) {
