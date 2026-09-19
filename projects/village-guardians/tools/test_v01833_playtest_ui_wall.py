@@ -26,7 +26,7 @@ def main() -> None:
     render = town.split("public void extractRenderState", 1)[1].split("private void drawFrame", 1)[0]
     assert "drawTabs(" not in render
     listing = town.split("private void drawList", 1)[1].split("private void drawDetail", 1)[0]
-    assert "int rowHeight = 50" in listing
+    assert "int rowHeight = 43" in listing
     assert '"내구도 " + f.current() + " / " + f.maximum()' in listing
     assert 'f.meta() + " · " + f.current()' not in listing
     buttons = town.split("private List<ButtonSpec> facilityButtons", 1)[1].split("private String functionAction", 1)[0]
@@ -35,7 +35,7 @@ def main() -> None:
     assert "open_funding" not in buttons and "open_tower_control" not in buttons
     assert "int h = 27" in buttons and "available / 2" in buttons
     layout = town.split("private Layout layout()", 1)[1].split("private void parse", 1)[0]
-    assert "Math.min(720" in layout and "panelWidth * 30 / 100" in layout
+    assert "Math.min(620" in layout and "panelWidth * 28 / 100" in layout
     assert "contentTop" in layout and "gap = 8" in layout
 
     dashboard = controller.split("public static void openDashboard", 1)[1].split("public static void openRoleAssignment", 1)[0]
@@ -47,7 +47,7 @@ def main() -> None:
     select = controller.split('if (action.startsWith("select_role:"))', 1)[1].split('if (action.startsWith("skill_node:"))', 1)[0]
     assert "isNearSkillHall" in select and "requireTownHall" not in select
     assert '"open_role_assignment"' in controller
-    assert 'case TOWN_HALL -> "시설 수리·강화 지휘"' in controller
+    assert 'case TOWN_HALL -> "시설 수리·강화 · 성벽·포탑 지휘"' in controller
 
     wave_render = wave.split("public void extractRenderState", 1)[1].split("private void drawWaveList", 1)[0]
     assert "font.split" in wave_render and "Math.min(2, header.size())" in wave_render
@@ -80,9 +80,9 @@ def main() -> None:
 
     # Mirror the compact town-hall width arithmetic for representative logical GUI widths.
     for safe_width in (320, 426, 640, 840, 960, 1280):
-        panel = min(720, max(1, safe_width - 10))
+        panel = min(620, max(1, safe_width - 10))
         content = max(1, panel - 24 - 8)
-        list_width = max(150, min(224, panel * 30 // 100))
+        list_width = max(142, min(190, panel * 28 // 100))
         list_width = min(list_width, max(90, content - 170))
         detail_width = panel - 24 - 8 - list_width
         assert list_width >= 90

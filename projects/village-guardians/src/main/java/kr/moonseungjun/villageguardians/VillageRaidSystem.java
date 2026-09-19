@@ -982,8 +982,12 @@ public final class VillageRaidSystem {
 
         LivingEntity target = mob.getTarget();
         if (target != null && target.isAlive()) {
-            if (!isMeleePursuer(archetype)) return false;
-            return mob.distanceToSqr(target) > 4.5 * 4.5;
+            double distance = mob.distanceToSqr(target);
+            if (isMeleePursuer(archetype)) return distance > 4.5 * 4.5;
+            // A stationary ranged actor is legitimate only while it has a usable firing solution.
+            // Keeping any live target used to exempt wall-blocked/out-of-range marksmen forever,
+            // allowing the final wave to remain locked even though navigation had stopped.
+            return distance > 48.0 * 48.0 || !mob.hasLineOfSight(target);
         }
 
         if (villageCenter == null) return true;

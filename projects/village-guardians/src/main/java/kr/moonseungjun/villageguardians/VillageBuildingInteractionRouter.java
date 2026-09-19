@@ -7,7 +7,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
-/** Opens only the local function owned by a facility; repair and upgrade remain in the town hall. */
+/** Opens only the local function owned by a facility; the gate lever is never a facility terminal. */
 public final class VillageBuildingInteractionRouter {
     private VillageBuildingInteractionRouter() {}
 
@@ -20,7 +20,8 @@ public final class VillageBuildingInteractionRouter {
         if (center == null) return false;
         VillageProgressionSystem.Building building = VillageFortressBuildings.buildingAtTerminal(
                 level, center, event.getPos());
-        if (building == null || building == VillageProgressionSystem.Building.TOWN_HALL) return false;
+        if (building == null || building == VillageProgressionSystem.Building.TOWN_HALL
+                || building == VillageProgressionSystem.Building.WALLS) return false;
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
         VillageFacadeMigrationSystem.ensure(level);

@@ -209,7 +209,7 @@ def main() -> None:
     assert "VillageRaidSystem.isActive()" in debris and "event.setCanceled(true)" in debris
     assert "facility:walls" not in local
     assert "isSiegeCommandAction(action)" in local
-    assert "VillageProgressionSystem.Building.WALLS" in local
+    assert "VillageLocationRules.isNearDefenseCommand(player)" in local
     for obsolete in ("open_tower_control", "tower_status", "tower_open:", "tower_branch:", "tower_upgrade:"):
         assert obsolete in local
     legacy_guard = local.split("Compatibility guard:", 1)[1].split("if (action.equals(\"siege_command\")", 1)[0]

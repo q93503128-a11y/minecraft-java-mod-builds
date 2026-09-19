@@ -22,6 +22,8 @@ public final class VillageUiController {
         if (server == null) return;
         List<String> actions = new ArrayList<>();
         List<String> labels = new ArrayList<>();
+        actions.add("siege_command");
+        labels.add("포탑 지휘|새 포탑 배치 · 설치 포탑 수리·강화·철거 · 성벽 구역 관리");
         for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
             int level = VillageProgressionSystem.level(building);
             int current = VillageProgressionSystem.durability(building);
@@ -42,7 +44,7 @@ public final class VillageUiController {
         String body = "제 " + VillageCouncilState.currentDay() + "일 "
                 + VillageCouncilState.currentPhase().koreanName()
                 + " · 공동 보급품 " + VillageProgressionSystem.supplies()
-                + " · 회관에서는 시설 수리와 강화만 관리합니다.";
+                + " · 시설 유지보수와 포탑 지휘를 한곳에서 관리합니다.";
         send(player, "town_hall", "마을 회관", body, actions, labels);
     }
 
@@ -727,7 +729,7 @@ public final class VillageUiController {
                                          List<String> actions, List<String> labels) {
         switch (building) {
             case WALLS -> add(actions, labels,
-                    "siege_command", "성벽·포탑 지휘|성벽 구역 상태와 10계열 포탑 배치·수리·강화·철거",
+                    "siege_command", "회관 포탑 지휘|성벽 구역 상태와 10계열 포탑 배치·수리·강화·철거",
                     "open_wave_intel", "다음 웨이브 정찰|예상 병과·특성·보스 확인");
             case SMITHY -> add(actions, labels,
                     "open_forge_enhancement", "장비 선택 강화|보유한 등급 장비를 골라 개별 강화",
@@ -748,21 +750,21 @@ public final class VillageUiController {
 
     private static String localDescription(ServerPlayer player, VillageProgressionSystem.Building building) {
         return switch (building) {
-            case WALLS -> "북문 성벽 지휘 레버에서 정찰과 포탑 배치·수리·강화·철거를 관리합니다. 시설 내구도 수리·강화는 회관에서도 관리할 수 있습니다.";
+            case WALLS -> "북문 레버는 성문 개폐만 담당합니다. 성벽 정비와 포탑 배치·수리·강화·철거는 마을 회관 지휘대에서 관리합니다.";
             case SMITHY -> "등급 장비를 하나씩 선택해 강화하고, 같은 종류·등급·강화 단계 장비 세 개를 합성합니다.";
             case SKILL_HALL -> "직업 배치·직업 기술과 용병·포탑 방어 연구를 담당합니다. 연구소 레벨마다 기술 위력·지속시간이 +5% 상승하고 재사용 효율도 개선됩니다.";
             case INFIRMARY -> "낮 동안 마을 안 플레이어의 체력을 항상 완전히 회복하고, 레벨별 전투 버프를 제공합니다.";
             case BARRACKS -> "다음 밤 적 정찰과 용병 고용, 모든 경험치 획득량 증가 패시브를 담당합니다. 현재 XP +"
                     + (VillageProgressionSystem.experienceMultiplierPercent() - 100) + "%";
             case STOREHOUSE -> "일일 배급 식량·화살·전투 소모품·장비 구매와 전리품 판매를 담당합니다.";
-            case TOWN_HALL -> "모든 시설의 수리와 강화만 담당합니다. 각 시설의 고유 기능은 해당 건물에서 직접 사용합니다.";
+            case TOWN_HALL -> "모든 시설의 수리·강화와 성벽·포탑 지휘를 담당합니다. 다른 시설의 고유 기능은 해당 건물에서 직접 사용합니다.";
         };
     }
 
     private static String managementEffect(VillageProgressionSystem.Building building, int level, MinecraftServer server) {
         int safe = Math.max(0, Math.min(VillageProgressionSystem.MAX_BUILDING_LEVEL, level));
         return switch (building) {
-            case TOWN_HALL -> "시설 수리·강화 지휘";
+            case TOWN_HALL -> "시설 수리·강화 · 성벽·포탑 지휘";
             case WALLS -> "최대 내구도 " + (1200 + safe * 350) + " · 포탑 설치 단계 " + safe;
             case SMITHY -> "최대 내구도 " + (560 + safe * 120) + " · 마을 장비 공격 보정 +" + (safe * 4)
                     + "% · 개인 장비 강화·등급 합성";

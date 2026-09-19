@@ -14,8 +14,8 @@ public final class VillageLocalActionSystem {
         if (player == null || action == null) return false;
 
         if (isSiegeCommandAction(action)
-                && !VillageLocationRules.isNear(player, VillageProgressionSystem.Building.WALLS)) {
-            player.sendSystemMessage(Component.literal("§c성벽·포탑 지휘는 북문 성벽 지휘 레버 근처에서만 실행할 수 있습니다."));
+                && !VillageLocationRules.isNearDefenseCommand(player)) {
+            player.sendSystemMessage(Component.literal("§c성벽·포탑 지휘는 마을 회관 지휘대 근처에서만 실행할 수 있습니다."));
             return true;
         }
 

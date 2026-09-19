@@ -2,17 +2,48 @@
 
 - Project: Village Guardians — 마을지키기
 - Mod ID: `villageguardians`
-- Current source version: `0.18.34-alpha.1`
+- Current source version: `0.18.41-alpha.1`
 - Minecraft: `26.2`
 - NeoForge build dependency: `26.2.0.37-beta`
 - Java target: `25`
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
-- Target JAR: `villageguardians-0.18.34-alpha.1.jar`
-- Manual audit base: `96442b8e45e39da6cbb131e1163ab55f8fafb78f`
-- Local verification date: `2026-08-29 Asia/Seoul`
-- Final JAR SHA-256: `903804ae199f518b50528bc2443de4a3c0e98e1d7ba3adaba9dd4f160eea94f0`
-- Final JAR size: `862374` bytes
+- Target JAR: `villageguardians-0.18.41-alpha.1.jar`
+- Manual audit base: `36720441a4d897dac3f06d49df77fdf928ad1bcc`
+- Local verification date: `2026-09-19 Asia/Seoul`
+- Final JAR SHA-256: `eeafa1298a731d14395288f6dae2d1a6727e3ab104cf620e9d164724d1b5ffe0`
+- Final JAR size: `880830` bytes
+
+## 0.18.41 마을 회관 포탑 지휘 · 실플레이 결함 수동 감사
+
+### 확인한 원인과 수정
+
+- 성벽 시설 단말 좌표가 북문 성문 레버와 같았고, 우클릭 라우팅도 성문 처리를 먼저 수행해 같은 입력에 성문 개폐와 포탑 UI 책임이 겹쳤다. 북문 레버는 이제 성문 개폐만 담당하며, 성벽 구역과 포탑 배치·목록·수리·강화·철거·일괄 수리는 마을 회관의 항상 보이는 `포탑 지휘`에서만 시작한다. 모든 서버 leaf 작업도 회관 근접을 다시 검증한다.
+- 재도전 스냅샷 용병이 병영 중심에서 복원돼 문이나 실내에 갇힐 수 있었다. 신규 고용과 같은 UUID 기반 병영 외부 마당 안전 스폰을 사용하도록 통일했다.
+- NIGHT 진입 카운트다운 동안 raid active가 아직 false라 사전 배치 용병이 낮 복귀 로직으로 병영에 돌아갔다. 전투 단계와 실제 웨이브 활성을 분리해 야간 카운트다운에는 선택한 집결지를 유지한다.
+- 철 골렘 궁수가 성벽 계단 경로를 계속 거부하면 전투에 영구 합류하지 못했다. 계단 발치 staging을 우선하고, 반복 실패 16회와 staging 근접을 모두 만족할 때만 성벽 집결지로 1회 복구한다.
+- 마지막 원거리 적은 살아 있는 표적만 있으면 벽 뒤·사거리 밖·경로 종료 상태여도 정상 정지로 판정되어 웨이브를 잠글 수 있었다. 사거리 48블록과 시야를 모두 만족할 때만 정상 사격 대기로 인정한다.
+- 마을 회관 UI는 최대 620×320, 시설 열 28%/최대 190픽셀, 43픽셀 행으로 압축했다. 우측 설명의 중첩 카드 배경을 제거하고 얇은 구분선으로 정리했으며 닫기와 포탑 지휘를 헤더에 고정했다.
+- Windows 한글 프로젝트 경로 안에 Gradle 배포본을 두면 Gradle 배치 런처의 `APP_HOME`이 손상됐다. Windows 진입점을 `build.cmd`로 교체하고 Gradle 홈을 영문 `%LOCALAPPDATA%` 경로로 고정했으며 Windows 인증서 저장소를 사용하도록 했다.
+
+### 실행 결과
+
+- 수동 코드 감사: **PASS**. 상호작용 우선순위, 회관/성문 권한, 포탑 비용·단계·수용량 재검증, 용병 고용/배치/재도전, 웨이브 종료 회복, UI 작은 화면 치수를 추적했다.
+- `tools/test_*.py`: **PASS**, 66/66, 실패 0. 신규 `test_v01841_townhall_turret_lifecycle.py`와 기존 회귀 계약을 함께 실행했다.
+- `clean build`: **PASS**, Temurin `25.0.4.1`, Gradle `9.2.1`, Minecraft `26.2`, NeoForge `26.2.0.37-beta`. Java 컴파일과 리소스/JAR 패키징 성공.
+- Datagen: **PASS**. Village Guardians `0.18.41-alpha.1` 로딩 성공, provider 0개, 생성/삭제 파일 0개.
+- Dedicated server minimal boot: **PASS**. 레시피 1,585개, 발전과제 1,688개 로드 후 `Done (3.763s)!`까지 부팅하고 세 차원을 저장한 뒤 수동 종료했다.
+- GameTest: **NOT RUN**. 프로젝트에 GameTest 태스크가 없다.
+- Client gameplay: **NOT RUN**. 실제 Minecraft 그래픽 클라이언트 조작 세션을 실행하지 않았다.
+- Multiplayer gameplay: **NOT RUN**. 실제 LAN 2인 동시 조작은 실행하지 않았다.
+- JAR verifier: **PASS**. NeoForge 메타데이터, 현행 UI/전투 클래스, 자체 assets/data, 라이선스, 중복/소스/폐기 클래스 부재를 확인했다.
+- 최종 JAR: `villageguardians-0.18.41-alpha.1.jar`, `880830` bytes, SHA-256 `eeafa1298a731d14395288f6dae2d1a6727e3ab104cf620e9d164724d1b5ffe0`.
+
+### 남은 수동 검증
+
+- 실제 클라이언트에서 회관 포탑 지휘 → 배치 지점 이동 → 설치, 성문 레버 단독 개폐, 낮/야간 카운트다운 용병 위치, 재도전 복원, 벽 뒤 마지막 원거리 적의 회복을 확인해야 한다.
+- 1/2/4인에서 보급품 동시 지출, 10개 포탑과 다수 용병, 장기 웨이브의 MSPT/FPS와 밸런스는 실제 플레이 데이터가 필요하다.
+- 서버 로그의 OSHI/Windows Perflib 경고는 이 PC의 성능 카운터 레지스트리 문제이며 모드 로딩 실패는 아니지만, 배포 환경별 로그 노이즈 여부를 재확인할 수 있다.
 
 ## 0.18.33 대규모 수동 코드 감사·런타임 검증
 

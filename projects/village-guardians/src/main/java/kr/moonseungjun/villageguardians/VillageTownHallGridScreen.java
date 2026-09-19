@@ -13,8 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Compact command-table town hall. Nothing executes from the list itself: the left rail selects,
- * the right dossier explains, and the bottom actions expose repair and upgrade separately.
+ * Compact command-table town hall. The facility rail selects maintenance details, while the
+ * always-visible defense command opens wall/turret management without overloading the gate lever.
  */
 public final class VillageTownHallGridScreen extends Screen {
     private static final String SEP = "\u001F";
@@ -32,6 +32,8 @@ public final class VillageTownHallGridScreen extends Screen {
 
     private final String body;
     private final List<FacilityCard> facilities = new ArrayList<>();
+    private String defenseAction = "";
+    private String defenseLabel = "포탑 지휘";
     private int selectedFacility;
     private int listScroll;
 
@@ -67,12 +69,17 @@ public final class VillageTownHallGridScreen extends Screen {
     private void drawHeader(GuiGraphicsExtractor graphics, Layout layout, int mouseX, int mouseY) {
         int x = layout.left() + 17;
         int closeX = layout.right() - 34;
-        graphics.text(font, "지휘 회관 · 시설 유지보수", x, layout.top() + 10, GOLD, false);
-        int bodyWidth = Math.max(80, closeX - x - 10);
+        int defenseX = closeX - 98;
+        graphics.text(font, "마을 회관 · 유지보수", x, layout.top() + 10, GOLD, false);
+        int bodyWidth = Math.max(80, defenseX - x - 8);
         List<FormattedCharSequence> lines = font.split(Component.literal(body.replace('\n', ' ')), bodyWidth);
         int bodyY = layout.top() + 27;
         if (!lines.isEmpty()) {
             graphics.text(font, lines.getFirst(), x, bodyY, MUTED, false);
+        }
+        if (!defenseAction.isBlank()) {
+            drawButton(graphics, new Button(defenseX, layout.top() + 7, 90, 25), defenseLabel,
+                    true, CYAN, mouseX, mouseY);
         }
         boolean close = inside(mouseX, mouseY, closeX, layout.top() + 8, 24, 24);
         graphics.fill(closeX, layout.top() + 8, closeX + 24, layout.top() + 32, close ? 0xFF71353A : PANEL_3);
@@ -83,8 +90,8 @@ public final class VillageTownHallGridScreen extends Screen {
     private void drawList(GuiGraphicsExtractor graphics, Pane pane, int mouseX, int mouseY) {
         graphics.fill(pane.left(), pane.top(), pane.right(), pane.bottom(), PANEL_2);
         int count = facilities.size();
-        int rowHeight = 50;
-        int gap = 4;
+        int rowHeight = 43;
+        int gap = 3;
         int content = count <= 0 ? 0 : count * rowHeight + Math.max(0, count - 1) * gap;
         int maxScroll = Math.max(0, content - Math.max(1, pane.height() - 12));
         listScroll = clamp(listScroll, 0, maxScroll);
@@ -99,10 +106,10 @@ public final class VillageTownHallGridScreen extends Screen {
             int accent = facilityColor(f);
             graphics.fill(x, y, x + w, y + rowHeight, selected ? PANEL_3 : hover ? 0xE522333B : 0xD9111B21);
             graphics.fill(x, y, x + 3, y + rowHeight, accent);
-            graphics.text(font, fit(font, f.name(), w - 18), x + 10, y + 6, selected ? TEXT : MUTED, false);
-            graphics.text(font, fit(font, f.meta(), w - 18), x + 10, y + 20, MUTED, false);
+            graphics.text(font, fit(font, f.name(), w - 18), x + 10, y + 4, selected ? TEXT : MUTED, false);
+            graphics.text(font, fit(font, f.meta(), w - 18), x + 10, y + 16, MUTED, false);
             String durability = f.current() <= 0 ? "파괴됨" : "내구도 " + f.current() + " / " + f.maximum();
-            graphics.text(font, fit(font, durability, w - 18), x + 10, y + 34, accent, false);
+            graphics.text(font, fit(font, durability, w - 18), x + 10, y + 29, accent, false);
             y += rowHeight + gap;
         }
         graphics.disableScissor();
@@ -164,19 +171,18 @@ public final class VillageTownHallGridScreen extends Screen {
     private int section(GuiGraphicsExtractor graphics, String title, String value,
                         int left, int right, int y, int color) {
         if (value == null || value.isBlank()) return y;
-        int innerWidth = Math.max(70, right - left - 20);
+        int innerWidth = Math.max(70, right - left - 8);
         List<FormattedCharSequence> lines = font.split(Component.literal(value), innerWidth);
         int shown = Math.min(2, lines.size());
-        int cardHeight = 24 + shown * 11;
-        graphics.fill(left - 2, y, right, y + cardHeight, 0xB7132026);
-        graphics.fill(left - 2, y, left + 1, y + cardHeight, color);
-        graphics.text(font, title, left + 7, y + 6, color, false);
-        int lineY = y + 18;
+        int rowHeight = 17 + shown * 11;
+        graphics.text(font, title, left, y + 2, color, false);
+        int lineY = y + 14;
         for (int i = 0; i < shown; i++) {
-            graphics.text(font, lines.get(i), left + 7, lineY, MUTED, false);
+            graphics.text(font, lines.get(i), left, lineY, MUTED, false);
             lineY += 11;
         }
-        return y + cardHeight + 6;
+        graphics.fill(left, y + rowHeight, right, y + rowHeight + 1, 0x664F6873);
+        return y + rowHeight + 5;
     }
 
     private List<ButtonSpec> facilityButtons(Pane pane, FacilityCard f) {
@@ -227,15 +233,20 @@ public final class VillageTownHallGridScreen extends Screen {
             onClose();
             return true;
         }
+        if (!defenseAction.isBlank()
+                && inside(click.x(), click.y(), layout.right() - 132, layout.top() + 7, 90, 25)) {
+            ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(defenseAction));
+            return true;
+        }
 
         Pane list = layout.list();
         int y = list.top() + 6 - listScroll;
         for (int i = 0; i < facilities.size(); i++) {
-            if (inside(click.x(), click.y(), list.left() + 6, y, list.width() - 14, 50)) {
+            if (inside(click.x(), click.y(), list.left() + 6, y, list.width() - 14, 43)) {
                 selectedFacility = i;
                 return true;
             }
-            y += 54;
+            y += 46;
         }
 
         if (!facilities.isEmpty()) {
@@ -267,8 +278,8 @@ public final class VillageTownHallGridScreen extends Screen {
 
     private Layout layout() {
         VillageUiSafeArea.Rect safe = VillageUiSafeArea.screen(width, height);
-        int panelWidth = Math.min(720, Math.max(1, safe.width() - 10));
-        int panelHeight = Math.min(360, Math.max(1, safe.height() - 10));
+        int panelWidth = Math.min(620, Math.max(1, safe.width() - 10));
+        int panelHeight = Math.min(320, Math.max(1, safe.height() - 10));
         int left = safe.centerX() - panelWidth / 2;
         int top = safe.top() + Math.max(0, (safe.height() - panelHeight) / 2);
         int right = left + panelWidth;
@@ -277,7 +288,7 @@ public final class VillageTownHallGridScreen extends Screen {
         int contentBottom = Math.max(contentTop + 1, bottom - 10);
         int gap = 8;
         int contentWidth = Math.max(1, panelWidth - 24 - gap);
-        int listWidth = clamp(panelWidth * 30 / 100, 150, 224);
+        int listWidth = clamp(panelWidth * 28 / 100, 142, 190);
         listWidth = Math.min(listWidth, Math.max(90, contentWidth - 170));
         Pane list = new Pane(left + 12, contentTop, left + 12 + listWidth, contentBottom);
         Pane detail = new Pane(Math.min(right - 13, list.right() + gap), contentTop, right - 12, contentBottom);
@@ -294,6 +305,9 @@ public final class VillageTownHallGridScreen extends Screen {
                 facilities.add(new FacilityCard(plain(p[1]), plain(p[2]), plain(p[3]),
                         parseInt(p[4]), parseInt(p[5]), plain(p[6]), p.length > 7 ? plain(p[7]) : "",
                         p.length > 8 ? parseInt(p[8]) : 0, p.length > 9 ? parseInt(p[9]) : 0));
+            } else if ("siege_command".equals(actions[i])) {
+                defenseAction = actions[i];
+                defenseLabel = p.length > 0 && !plain(p[0]).isBlank() ? plain(p[0]) : "포탑 지휘";
             }
         }
     }

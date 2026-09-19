@@ -14,6 +14,14 @@ public final class VillageLocationRules {
         return isNear(player, VillageProgressionSystem.Building.TOWN_HALL);
     }
 
+    /**
+     * Shared defenses are commanded from the town-hall lectern. The north-gate lever is deliberately
+     * excluded: it has one job (opening and closing the gate) and must never double as a UI terminal.
+     */
+    public static boolean isNearDefenseCommand(ServerPlayer player) {
+        return isNearTownHall(player);
+    }
+
     public static boolean isNearSkillHall(ServerPlayer player) {
         return isNear(player, VillageProgressionSystem.Building.SKILL_HALL);
     }

@@ -154,12 +154,12 @@ public final class VillageMercenarySystem {
     public static synchronized void restoreNightSnapshot(MinecraftServer server) {
         discardCurrent(server); CLASSES.clear(); LEVELS.clear(); KILLS.clear();
         ServerLevel level = server.overworld();
-        BlockPos origin = VillageWorldSystem.buildingCenter(VillageProgressionSystem.Building.BARRACKS);
-        int index = 0;
         for (MercenarySnapshot snapshot : NIGHT_SNAPSHOT) {
             IronGolem mob = EntityTypes.IRON_GOLEM.create(level, EntitySpawnReason.EVENT);
             if (mob == null) continue;
-            BlockPos spawn = safeSpawn(level, origin.offset((index % 3) * 2, 0, (index / 3) * 2));
+            // Retry restoration must follow the same outside-yard contract as a new hire. Rebuilding
+            // around the barracks centre could put a fresh UUID back behind its closed doors.
+            BlockPos spawn = barracksYardSpawn(level, mob.getUUID());
             mob.snapTo(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
             mob.setPlayerCreated(true); mob.setPersistenceRequired();
             CLASSES.put(mob.getUUID(), snapshot.kind()); LEVELS.put(mob.getUUID(), snapshot.level());
@@ -170,7 +170,6 @@ public final class VillageMercenarySystem {
             } else {
                 VillageMercenaryPresentationSystem.ensure(level, mob, snapshot.kind(), snapshot.level());
             }
-            index++;
         }
         persist();
     }

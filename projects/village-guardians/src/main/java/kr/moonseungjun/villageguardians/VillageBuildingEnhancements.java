@@ -43,7 +43,10 @@ final class VillageBuildingEnhancements {
             BlockPos villageCenter,
             VillageProgressionSystem.Building building) {
         if (building == VillageProgressionSystem.Building.WALLS) {
-            return VillageFortressTerrain.gateControlPosition(villageCenter);
+            VillageBuildingCatalog.Spec hall = VillageBuildingCatalog.spec(
+                    VillageProgressionSystem.Building.TOWN_HALL);
+            BlockPos hallOrigin = villageCenter.offset(hall.dx(), 0, hall.dz());
+            return hallOrigin.offset(hall.width() / 2, 1, hall.depth() / 2 - 3);
         }
         VillageBuildingCatalog.Spec spec = VillageBuildingCatalog.spec(building);
         BlockPos origin = villageCenter.offset(spec.dx(), 0, spec.dz());
@@ -61,7 +64,8 @@ final class VillageBuildingEnhancements {
             BlockPos villageCenter,
             BlockPos clicked) {
         for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
-            if (building == VillageProgressionSystem.Building.TOWN_HALL) {
+            if (building == VillageProgressionSystem.Building.TOWN_HALL
+                    || building == VillageProgressionSystem.Building.WALLS) {
                 continue;
             }
             if (terminalPosition(level, villageCenter, building).equals(clicked)
@@ -321,7 +325,7 @@ final class VillageBuildingEnhancements {
             case STOREHOUSE -> Blocks.BARREL;
             case BARRACKS -> Blocks.TARGET;
             case TOWN_HALL -> Blocks.LECTERN;
-            case WALLS -> Blocks.LEVER;
+            case WALLS -> Blocks.LECTERN;
         };
     }
 

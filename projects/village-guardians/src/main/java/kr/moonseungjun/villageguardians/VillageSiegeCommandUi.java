@@ -6,13 +6,13 @@ import net.minecraft.server.level.ServerPlayer;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Wall-command surface for local segment and player-placed turret management. */
+/** Town-hall command surface for wall segments and player-placed turret management. */
 public final class VillageSiegeCommandUi {
     private static final String SEP = "\u001F";
     private VillageSiegeCommandUi() {}
 
     public static void open(ServerPlayer player) {
-        if (!nearWallCommand(player)) return;
+        if (!nearDefenseCommand(player)) return;
         List<String> actions = new ArrayList<>();
         List<String> labels = new ArrayList<>();
         for (VillageSiegeSegmentSystem.Segment segment : VillageSiegeSegmentSystem.Segment.values()) {
@@ -36,7 +36,7 @@ public final class VillageSiegeCommandUi {
     }
 
     public static void openSegment(ServerPlayer player, VillageSiegeSegmentSystem.Segment segment) {
-        if (!nearWallCommand(player) || segment == null) return;
+        if (!nearDefenseCommand(player) || segment == null) return;
         int current = VillageSiegeSegmentSystem.currentHp(segment);
         int maximum = VillageSiegeSegmentSystem.maxHp(segment);
         int missing = Math.max(0, maximum - current);
@@ -67,7 +67,7 @@ public final class VillageSiegeCommandUi {
     }
 
     public static void openTurretCatalog(ServerPlayer player) {
-        if (!nearWallCommand(player)) return;
+        if (!nearDefenseCommand(player)) return;
         List<String> actions = new ArrayList<>();
         List<String> labels = new ArrayList<>();
         for (VillagePlacedTurretSystem.TurretType type : VillagePlacedTurretSystem.TurretType.values()) {
@@ -85,7 +85,7 @@ public final class VillageSiegeCommandUi {
     }
 
     public static void openTurretList(ServerPlayer player) {
-        if (!nearWallCommand(player)) return;
+        if (!nearDefenseCommand(player)) return;
         List<String> actions = new ArrayList<>();
         List<String> labels = new ArrayList<>();
         for (VillagePlacedTurretSystem.TurretState state : VillagePlacedTurretSystem.states()) {
@@ -109,7 +109,7 @@ public final class VillageSiegeCommandUi {
     }
 
     public static void openTurret(ServerPlayer player, int id) {
-        if (!nearWallCommand(player)) return;
+        if (!nearDefenseCommand(player)) return;
         VillagePlacedTurretSystem.TurretState state = VillagePlacedTurretSystem.states().stream()
                 .filter(value -> value.id() == id).findFirst().orElse(null);
         if (state == null) { openTurretList(player); return; }
@@ -132,9 +132,9 @@ public final class VillageSiegeCommandUi {
                 actions, labels);
     }
 
-    private static boolean nearWallCommand(ServerPlayer player) {
-        if (VillageLocationRules.isNear(player, VillageProgressionSystem.Building.WALLS)) return true;
-        player.sendSystemMessage(Component.literal("§c성벽·포탑 지휘는 북문 성벽 지휘 레버 근처에서만 가능합니다."));
+    private static boolean nearDefenseCommand(ServerPlayer player) {
+        if (VillageLocationRules.isNearDefenseCommand(player)) return true;
+        player.sendSystemMessage(Component.literal("§c성벽·포탑 지휘는 마을 회관 지휘대 근처에서만 가능합니다."));
         return false;
     }
 

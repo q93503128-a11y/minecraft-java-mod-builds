@@ -24,7 +24,7 @@ def main() -> None:
     # Client actions are untrusted strings; mutations must be re-authorized server-side at packet execution time.
     assert "VillageUiActionPayload" in network and "VillageLocalActionSystem.handle(player, action)" in network
     assert "isSiegeCommandAction(action)" in local
-    assert "VillageProgressionSystem.Building.WALLS" in local
+    assert "VillageLocationRules.isNearDefenseCommand(player)" in local
     for token in (
         'action.equals("siege_turret_repair_all")',
         'action.startsWith("siege_segment_repair:")',
@@ -36,7 +36,7 @@ def main() -> None:
     ):
         assert token in local
 
-    # Persistent defense maintenance is day-only, game-over safe and owned by the physical wall command.
+    # Persistent defense maintenance is day-only, game-over safe and owned by the town-hall command post.
     assert 'public static String blockReason(String action)' in rules
     assert 'VillageProgressionSystem.isGameOver()' in rules
     assert 'VillageCouncilState.currentPhase() != VillageTimePhase.DAY' in rules
@@ -49,7 +49,7 @@ def main() -> None:
     ):
         chunk = placed.split(signature, 1)[1].split('\n    public static', 1)[0]
         assert 'VillageMaintenanceRules.blockReason(' in chunk
-        assert 'VillageProgressionSystem.Building.WALLS' in chunk
+        assert 'VillageLocationRules.isNearDefenseCommand(player)' in chunk
 
     confirm = placed.split('public static boolean handlePlacementClick', 1)[1].split(
         'public static String cancelPlacement', 1)[0]
@@ -69,7 +69,7 @@ def main() -> None:
     assert segment.count('String blocked = VillageMaintenanceRules.blockReason(') >= 2
     assert '현재 손상분 유지' in ui
 
-    print('[PASS] siege mutation packets revalidate physical wall-command locality server-side')
+    print('[PASS] siege mutation packets revalidate town-hall command locality server-side')
     print('[PASS] persistent wall/turret maintenance is day-only and game-over safe')
     print('[PASS] emergency field repair remains usable as a combat consumable')
     print('[PASS] turret upgrades preserve existing damage instead of granting a free full repair')

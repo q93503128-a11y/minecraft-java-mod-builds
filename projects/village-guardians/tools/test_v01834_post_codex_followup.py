@@ -50,26 +50,26 @@ def main() -> None:
     gate = section(local, "private static boolean isSiegeCommandAction", "private static int parseInt")
     for token in ("siege_command", "siege_turret_catalog", "siege_segment_open:", "siege_turret_open:", "tower_open:"):
         assert token in gate
-    assert "Building.WALLS" in local
+    assert "isNearDefenseCommand" in local
     assert "requiresSiegeCommandAccess" not in local
 
     terminal = section(enhance, "static VillageProgressionSystem.Building buildingAtTerminal", "static void reinforceWallRailings")
-    assert "Building.TOWN_HALL" in terminal
-    assert "Building.WALLS" not in terminal
+    assert "Building.TOWN_HALL" in terminal and "Building.WALLS" in terminal
+    assert "gateControlPosition" not in terminal
     assert "buildingAtTerminal" in router and "openBuilding(player, building)" in router
     wall_actions = section(controller, "private static void fillLocalActions", "private static String localDescription")
     assert 'case WALLS -> add(actions, labels,' in wall_actions and '"siege_command"' in wall_actions
     wall_desc = section(controller, "private static String localDescription", "private static String managementEffect")
-    assert "포탑 건설은 회관" not in wall_desc and "성벽 지휘 레버" in wall_desc
+    assert "북문 레버는 성문 개폐만" in wall_desc and "마을 회관 지휘대" in wall_desc
 
-    assert "Town-hall command surface" not in siege
-    assert "nearTownHall" not in siege
-    assert "nearWallCommand" in siege and "Building.WALLS" in siege
+    assert "Town-hall command surface" in siege
+    assert "nearDefenseCommand" in siege and "isNearDefenseCommand" in siege
+    assert "nearWallCommand" not in siege
     assert 'actions.add("open_dashboard")' not in siege
 
     segment_repair = section(segments, "public static String repair", "public static String upgrade")
     segment_upgrade = section(segments, "public static String upgrade", "public static BlockPos attackPoint")
-    assert "Building.WALLS" in segment_repair and "Building.WALLS" in segment_upgrade
+    assert "isNearDefenseCommand" in segment_repair and "isNearDefenseCommand" in segment_upgrade
 
     for start, end in (
         ("public static String selectPlacement", "public static boolean handlePlacementClick"),
@@ -78,15 +78,15 @@ def main() -> None:
         ("public static synchronized String dismantle(ServerPlayer player, int id)", "public static synchronized String repairAll"),
         ("public static synchronized String repairAll(ServerPlayer player)", "public static void tick"),
     ):
-        assert "Building.WALLS" in section(turrets, start, end)
+        assert "isNearDefenseCommand" in section(turrets, start, end)
     placement = section(turrets, "public static boolean handlePlacementClick", "public static String cancelPlacement")
     assert 'VillageMaintenanceRules.blockReason("포탑 배치")' in placement
     assert "PENDING.remove(player.getUUID())" in placement
 
     print("[PASS] town hall emits display-only facility cards and exposes only repair/upgrade actions")
     print("[PASS] mercenary ownership is barracks-only from UI entry through retirement/deployment leaves")
-    print("[PASS] wall command lever is the sole normal siege/turret command entry and legacy facility actions are rejected")
-    print("[PASS] segment/turret mutation leaves revalidate wall-command location")
+    print("[PASS] town hall is the sole normal siege/turret command entry and the gate lever remains gate-only")
+    print("[PASS] segment/turret mutation leaves revalidate town-hall command location")
     print("[PASS] turret placement confirmation revalidates daytime maintenance phase")
     print("[PASS] stale role guidance now points to the skill hall")
 

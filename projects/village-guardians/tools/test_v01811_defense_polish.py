@@ -52,7 +52,7 @@ def main() -> None:
     # All four classes now have active battlefield identity; ranged/medic do not drift into vanilla melee AI.
     assert "bastionControl" in merc and "strikerPressure" in merc and "rangedAttack" in merc and "healAllies" in merc
     assert "MercenaryClass.RANGER\n                    || kind == VillageMercenarySystem.MercenaryClass.MEDIC" in deploy
-    assert "if (!accepted && zone == Deployment.WALL)" in deploy
+    assert "zone == Deployment.WALL && (!accepted || wasStalled)" in deploy
 
     # Existing breadth is retained.
     for token in ("BALLISTA", "REPEATER", "PIERCER", "FLAME", "FROST", "CHAIN", "BOMBARD", "NULLIFIER", "ANTI_AIR", "BEACON"):

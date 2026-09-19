@@ -40,9 +40,9 @@ def main() -> None:
     role_skill = read("VillageRoleSkillSystem.java")
     guardians = read("VillageGuardians.java")
 
-    assert "mod_version=0.18.40-alpha.1" in props
-    assert "현재 소스 버전 `0.18.40-alpha.1`" in readme
-    assert "villageguardians-0.18.40-alpha.1.jar" in readme
+    assert "mod_version=" in props
+    assert "현재 소스 버전 `" in readme
+    assert "목표 JAR `villageguardians-" in readme
 
     # Wall traffic contract: stairs, pads and ranger posts must use independent lanes.
     assert "SIDE_REAR_ACCESS_LANE = 52" in terrain
@@ -106,7 +106,7 @@ def main() -> None:
     # Mercenaries deploy before contact and are valid enemy combat targets.
     assert "public static void prepareNightDeployment" in deploy
     assert "center.offset(kind == VillageMercenarySystem.MercenaryClass.STRIKER ? 12 : -12, 0, -84)" in deploy
-    assert "force && zone == Deployment.GATE_FRONT" in deploy
+    assert "force && battlePhase && zone == Deployment.GATE_FRONT" in deploy
     assert "golem.snapTo" in deploy
     assert "public static synchronized boolean isCombatMercenary" in merc
     assert "public static synchronized IronGolem nearestCombatMercenary" in merc

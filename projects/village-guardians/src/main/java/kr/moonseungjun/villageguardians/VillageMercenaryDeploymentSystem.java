@@ -9,16 +9,23 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.golem.IronGolem;
 
 import java.util.List;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 /** Lightweight pre-battle rally doctrine: choose a class rally point, then mercenaries auto-fight around it. */
 public final class VillageMercenaryDeploymentSystem {
     private static final String SEP = "\u001F";
+    private static final int WALL_PATH_RECOVERY_ATTEMPTS = 16;
+    private static final Map<UUID, Integer> WALL_PATH_FAILURES = new HashMap<>();
     private static int ticks;
     private VillageMercenaryDeploymentSystem() {}
 
-    public static void reset() { ticks = 0; }
+    public static void reset() {
+        ticks = 0;
+        WALL_PATH_FAILURES.clear();
+    }
 
     public static boolean canOpenAt(ServerPlayer player) {
         return player != null
@@ -117,11 +124,15 @@ public final class VillageMercenaryDeploymentSystem {
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
         if (center == null) return;
         ServerLevel level = server.overworld();
+        boolean raidActive = VillageRaidSystem.isActive();
+        boolean battlePhase = VillageCouncilState.currentPhase() == VillageTimePhase.NIGHT
+                && !VillageProgressionSystem.isGameOver();
         for (IronGolem golem : loaded) {
             if (VillageMercenarySystem.classOf(golem) != kind) continue;
-            BlockPos rally = rallyPoint(center, zone, kind, golem.getUUID());
-            if (!VillageRaidSystem.isActive() && insideBarracks(center, golem.blockPosition())) {
-                BlockPos yard = VillageMercenarySystem.barracksYardSpawn(level, golem.getUUID());
+            BlockPos selectedRally = rallyPoint(center, zone, kind, golem.getUUID());
+            BlockPos yard = VillageMercenarySystem.barracksYardSpawn(level, golem.getUUID());
+            BlockPos rally = battlePhase ? selectedRally : yard;
+            if (!battlePhase && insideBarracks(center, golem.blockPosition())) {
                 golem.stopRiding();
                 golem.snapTo(yard.getX() + 0.5, yard.getY(), yard.getZ() + 0.5);
                 golem.getNavigation().stop();
@@ -132,23 +143,39 @@ public final class VillageMercenaryDeploymentSystem {
                 case RANGER -> 22.0;
                 case MEDIC -> 15.0;
             };
-            boolean returningToRally = force || !VillageRaidSystem.isActive()
+            boolean returningToRally = force || !raidActive
                     || golem.blockPosition().distSqr(rally) > leash * leash;
             if (returningToRally) {
-                if (force && zone == Deployment.GATE_FRONT) {
+                if (force && battlePhase && zone == Deployment.GATE_FRONT) {
                     golem.stopRiding();
                     golem.snapTo(rally.getX() + 0.5, rally.getY(), rally.getZ() + 0.5);
                     golem.getNavigation().stop();
                 }
-                boolean accepted = force && zone == Deployment.GATE_FRONT
+                boolean wasStalled = golem.getNavigation().isDone()
+                        && golem.blockPosition().distSqr(rally) > 6L * 6L;
+                boolean accepted = force && battlePhase && zone == Deployment.GATE_FRONT
                         || golem.getNavigation().moveTo(rally.getX() + 0.5, rally.getY(), rally.getZ() + 0.5,
                         kind == VillageMercenarySystem.MercenaryClass.STRIKER ? 1.18 : 1.02);
-                if (!accepted && zone == Deployment.WALL) {
+                if (battlePhase && zone == Deployment.WALL && (!accepted || wasStalled)) {
                     BlockPos staging = rangerWallStagingPoint(center, golem.getUUID());
                     golem.getNavigation().moveTo(staging.getX() + 0.5, staging.getY(), staging.getZ() + 0.5, 1.0);
+                    int failures = WALL_PATH_FAILURES.merge(golem.getUUID(), 1, Integer::sum);
+                    // Iron golems are wider than players and can reject the authored stair path even
+                    // after reaching its foot. Recover only after repeated failures at that staging area.
+                    if (failures >= WALL_PATH_RECOVERY_ATTEMPTS
+                            && golem.blockPosition().distSqr(staging) <= 8L * 8L) {
+                        golem.stopRiding();
+                        golem.snapTo(rally.getX() + 0.5, rally.getY(), rally.getZ() + 0.5);
+                        golem.getNavigation().stop();
+                        WALL_PATH_FAILURES.remove(golem.getUUID());
+                    }
+                } else {
+                    WALL_PATH_FAILURES.remove(golem.getUUID());
                 }
+            } else {
+                WALL_PATH_FAILURES.remove(golem.getUUID());
             }
-            if (!VillageRaidSystem.isActive()) continue;
+            if (!raidActive) continue;
             if (kind == VillageMercenarySystem.MercenaryClass.BASTION) {
                 Mob target = VillageRaidSystem.nearestActiveEnemy(level, rally, 25.0);
                 if (target != null) golem.setTarget(target);

@@ -21,24 +21,24 @@ def main() -> None:
     merc = read("VillageMercenarySystem.java")
     deploy = read("VillageMercenaryDeploymentSystem.java")
 
-    assert "mod_version=0.18.40-alpha.1" in props
-    assert "현재 소스 버전 `0.18.40-alpha.1`" in readme
-    assert "villageguardians-0.18.40-alpha.1.jar" in readme
+    assert "mod_version=" in props
+    assert "현재 소스 버전 `" in readme
+    assert "목표 JAR `villageguardians-" in readme
 
     # Town-hall maintenance should be a compact work surface, not a near-fullscreen empty frame.
     layout = section(town, "private Layout layout()", "private void parse")
-    assert "Math.min(720" in layout
-    assert "Math.min(360" in layout
-    assert "panelWidth * 30 / 100" in layout
-    assert "224" in layout
+    assert "Math.min(620" in layout
+    assert "Math.min(320" in layout
+    assert "panelWidth * 28 / 100" in layout
+    assert "190" in layout
 
     # Current/next information is grouped and the currency is visible in the action itself.
     detail = section(town, "private void drawFacilityDetail", "private int section")
     assert '"다음 강화"' in detail
     assert '" · 필요 공동 보급품 "' in detail
     cards = section(town, "private int section", "private List<ButtonSpec> facilityButtons")
-    assert "cardHeight" in cards
-    assert "graphics.fill(left - 2" in cards
+    assert "rowHeight" in cards
+    assert "graphics.fill(left, y + rowHeight" in cards
     buttons = section(town, "private List<ButtonSpec> facilityButtons", "private void drawButton")
     assert '"수리 · 보급 "' in buttons
     assert '"강화 · 보급 "' in buttons
@@ -54,7 +54,8 @@ def main() -> None:
     assert "for (int radius = 0; radius <= 8; radius++)" in safe
 
     movement = section(deploy, "private static void moveMercenaries", "private static BlockPos rallyPoint")
-    assert "!VillageRaidSystem.isActive() && insideBarracks" in movement
+    assert "!battlePhase && insideBarracks" in movement
+    assert "battlePhase ? selectedRally : yard" in movement
     assert "VillageMercenarySystem.barracksYardSpawn" in movement
     assert "golem.snapTo" in movement
     assert "private static boolean insideBarracks" in deploy

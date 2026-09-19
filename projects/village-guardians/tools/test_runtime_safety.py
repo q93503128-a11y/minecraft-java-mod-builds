@@ -140,7 +140,8 @@ def main() -> None:
     local_body = controller.split("public static void openBuilding", 1)[1].split("public static void openMercenaryCommand", 1)[0]
     assert '"manage:"' not in local_body
     assert "openEquipmentShop(player)" in local_body
-    assert "성벽 지휘 레버" in controller
+    assert "북문 레버는 성문 개폐만" in controller
+    assert "마을 회관 지휘대" in controller
     assert '"siege_command"' in controller
     dashboard = controller.split("public static void openDashboard", 1)[1].split("public static void openRoleAssignment", 1)[0]
     assert "select_role:" not in dashboard and '"role"' not in dashboard

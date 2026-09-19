@@ -95,8 +95,8 @@ public final class VillagePlacedTurretSystem {
 
     public static String selectPlacement(ServerPlayer player, TurretType type) {
         if (type == null) return "알 수 없는 포탑 계열입니다.";
-        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.WALLS)) {
-            return "포탑 배치 지휘는 북문 성벽 지휘 레버 근처에서만 시작할 수 있습니다.";
+        if (!VillageLocationRules.isNearDefenseCommand(player)) {
+            return "포탑 배치 지휘는 마을 회관 지휘대 근처에서만 시작할 수 있습니다.";
         }
         String blocked = VillageMaintenanceRules.blockReason("포탑 배치");
         if (blocked != null) return blocked;
@@ -211,8 +211,8 @@ public final class VillagePlacedTurretSystem {
     }
 
     public static synchronized String repair(ServerPlayer player, int id) {
-        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.WALLS)) {
-            return "포탑 수리는 북문 성벽 지휘 레버 근처에서만 가능합니다.";
+        if (!VillageLocationRules.isNearDefenseCommand(player)) {
+            return "포탑 수리는 마을 회관 지휘대 근처에서만 가능합니다.";
         }
         String blocked = VillageMaintenanceRules.blockReason("포탑 수리");
         if (blocked != null) return blocked;
@@ -236,8 +236,8 @@ public final class VillagePlacedTurretSystem {
     }
 
     public static synchronized String upgrade(ServerPlayer player, int id) {
-        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.WALLS)) {
-            return "포탑 강화는 북문 성벽 지휘 레버 근처에서만 가능합니다.";
+        if (!VillageLocationRules.isNearDefenseCommand(player)) {
+            return "포탑 강화는 마을 회관 지휘대 근처에서만 가능합니다.";
         }
         String blocked = VillageMaintenanceRules.blockReason("포탑 강화");
         if (blocked != null) return blocked;
@@ -269,8 +269,8 @@ public final class VillagePlacedTurretSystem {
     }
 
     public static synchronized String dismantle(ServerPlayer player, int id) {
-        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.WALLS)) {
-            return "포탑 철거는 북문 성벽 지휘 레버 근처에서만 가능합니다.";
+        if (!VillageLocationRules.isNearDefenseCommand(player)) {
+            return "포탑 철거는 마을 회관 지휘대 근처에서만 가능합니다.";
         }
         String blocked = VillageMaintenanceRules.blockReason("포탑 철거");
         if (blocked != null) return blocked;
@@ -286,8 +286,8 @@ public final class VillagePlacedTurretSystem {
     }
 
     public static synchronized String repairAll(ServerPlayer player) {
-        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.WALLS)) {
-            return "포탑 일괄 수리는 북문 성벽 지휘 레버 근처에서만 가능합니다.";
+        if (!VillageLocationRules.isNearDefenseCommand(player)) {
+            return "포탑 일괄 수리는 마을 회관 지휘대 근처에서만 가능합니다.";
         }
         String blocked = VillageMaintenanceRules.blockReason("포탑 일괄 수리");
         if (blocked != null) return blocked;
