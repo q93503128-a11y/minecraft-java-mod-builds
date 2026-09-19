@@ -40,7 +40,7 @@
   "riftfrontier.expedition.detail.deployed": "[Riftfrontier] 회수 작전 계약 출정 완료. 소모 보급품: %s. 01구역 압력: %s. 위협 수: %s (헌터=%s, 스카우트=%s, 엘리트=%s). 회수품 3개를 확보해 철수로 화물을 복귀시키세요.",
   "riftfrontier.expedition.detail.salvage": "[Riftfrontier] 회수 작전 진행: %s/3. 남은 순찰 위협=%s. 3개에서 철수가 해금되며, 현장에 남은 선택 회수 노드 2개는 추가 회수품을 주지만 더 많은 위험을 감수해야 합니다. 순찰 전멸 시 철수 보너스 +1도 확보합니다.",
   "riftfrontier.expedition.detail.relay_online": "[Riftfrontier] 현장 구역 끝의 철수 중계기가 활성화되었습니다. 회수 목표를 완료한 뒤 현장 자철석을 우클릭해 철수하세요.",
-  "riftfrontier.expedition.detail.relay_locked": "[Riftfrontier] 철수 중계기가 잠겨 있습니다: %s",
+  "riftfrontier.expedition.detail.relay_locked": "[Riftfrontier] 철수 중계기가 잠겨 있습니다. 회수품=%s/%s.",
   "riftfrontier.expedition.detail.hub_return_ready": "[Riftfrontier] 거점 설비 준비 완료: 대장장이 작업대=보급, 자철석=출정, 숫돌/화살 작업대=전투 장비(웅크리기=회복 전환).",
   "riftfrontier.expedition.detail.extracted": "[Riftfrontier] 회수 작전 계약 완료. 거점 회수품 +%s (기본=%s, 순찰 보너스=%s, 저장량=%s). 01구역 압력은 %s, 다음 원정 보급 비용은 %s입니다.",
   "riftfrontier.expedition.detail.provisioned": "[Riftfrontier] 저장 회수품 1개를 사용해 원정 보급품 2개를 준비했습니다. 저장 회수품=%s, 보급품=%s, 다음 출정 비용=%s.",
