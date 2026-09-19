@@ -163,11 +163,11 @@ Validation labels stay distinct:
 ## Last verified implementation checkpoint
 
 - CODE REVIEWED: YES
-- TESTED: YES — fixed-point scheduler + P01~P08 v1 combat runtime regression suite
-- BUILD VERIFIED: YES — Build TURNBOUND #766
-- verified code commit: `e91853c111a14c488aa3a7e423c5cbffdacaf1e9`
+- TESTED: YES — fixed-point scheduler + P01~P08 v1 combat runtime + Drehmal first-route binding contracts + battle-center camera framing regression suite
+- BUILD VERIFIED: YES — Build TURNBOUND #768
+- verified code commit: `053ff85a881c3ebb5ce707cf7cfbdad76462de83`
 - SERVER SMOKE: YES — NeoForge 26.2 dedicated server load
-- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`, id `10573278986`, SHA-256 `b898758f4e7d3db4701d11e1dfb561da1b1f2780cd739240013505a39cf58f2e`
+- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`, id `10574736021`, SHA-256 `3de9fc9940c9efa76348650052de7e8b87c7a3b9335c4b9983c492cce631589f`
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
