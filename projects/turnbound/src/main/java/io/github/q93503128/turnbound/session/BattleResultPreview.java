@@ -9,6 +9,7 @@ import io.github.q93503128.turnbound.progression.CharacterGrowthRules;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import io.github.q93503128.turnbound.world.ChallengeService;
 import io.github.q93503128.turnbound.world.CharacterProgression;
+import io.github.q93503128.turnbound.world.DrehmalContentUnlocks;
 import io.github.q93503128.turnbound.world.EquipmentDropService;
 import io.github.q93503128.turnbound.world.QuestResultPreview;
 
@@ -50,6 +51,16 @@ public final class BattleResultPreview {
         int essence = base.starEssence();
         ArrayList<String> equipment = new ArrayList<>(base.equipmentRewards());
         ArrayList<Notice> notices = new ArrayList<>();
+
+        if (base.firstClear() && DrehmalContentUnlocks.summonMilestone(canonical) && base.crystal() > 0) {
+            notices.add(new Notice("CONTENT_UNLOCKED", "콘텐츠 개방 · 소환"));
+        }
+
+        // First-route Elite supplemental reward is settled beside the base milestone reward.
+        if (base.firstClear() && DrehmalContentUnlocks.WARNING_CAVE_ELITE.equals(canonical)) {
+            crystal += 300;
+            equipment.add("T2 장비 선택권 ×1");
+        }
 
         // Campaign boss supplemental rewards are committed after CampaignProgressStore.commit().
         if (base.firstClear() && canonical.matches("BATTLE_B0[1-5]")) {

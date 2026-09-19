@@ -20,6 +20,10 @@ public final class DrehmalContentUnlocks {
         return summonUnlocked(CampaignProgressStore.snapshot(playerId).clearedEncounters());
     }
 
+    public static boolean summonMilestone(String encounterId) {
+        return WARNING_CAVE_ELITE.equals(encounterId) || DRABYEL_ROAD.equals(encounterId);
+    }
+
     static boolean summonUnlocked(Set<String> clearedEncounters) {
         if (clearedEncounters == null || clearedEncounters.isEmpty()) return false;
         return clearedEncounters.contains(WARNING_CAVE_ELITE)

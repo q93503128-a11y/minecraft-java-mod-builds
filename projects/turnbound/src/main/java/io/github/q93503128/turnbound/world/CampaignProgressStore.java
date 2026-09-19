@@ -9,6 +9,7 @@ import io.github.q93503128.turnbound.content.V04Catalogs;
 import io.github.q93503128.turnbound.progression.CharacterGrowthRules;
 import io.github.q93503128.turnbound.progression.EquipmentInventory;
 import io.github.q93503128.turnbound.progression.EquipmentRules;
+import io.github.q93503128.turnbound.progression.GachaCatalog;
 import io.github.q93503128.turnbound.progression.GachaService;
 import io.github.q93503128.turnbound.progression.PlayerProfile;
 import io.github.q93503128.turnbound.progression.QuestProgress;
@@ -86,7 +87,12 @@ public final class CampaignProgressStore {
             return new BattleResultSummary.PartyXp(characterId, CanonicalData.definition(characterId).name(),
                     gain.before().level(), gain.before().xp(), gain.after().level(), gain.after().xp(), gain.xpToNextAfter());
         }).toList();
-        return new BattleResultSummary(xp, gold, firstClear, party);
+        int crystal = firstClear
+                && DrehmalContentUnlocks.summonMilestone(canonicalId)
+                && !progress.profile.starterArchiveAvailable()
+                ? GachaCatalog.TEN_COST
+                : 0;
+        return new BattleResultSummary(xp, gold, crystal, 0, List.of(), firstClear, party);
     }
 
     public static BattleResultSummary commit(UUID playerId, String encounterId, BattleOutcome outcome) {
@@ -99,6 +105,13 @@ public final class CampaignProgressStore {
         boolean firstClear = progress.clearedEncounters.add(canonicalId);
 
         progress.profile.grant(PlayerProfile.Currency.GOLD, preview.gold());
+        if (preview.crystal() > 0) {
+            progress.profile.grant(PlayerProfile.Currency.SUMMON_CRYSTAL, preview.crystal());
+        }
+        if (firstClear && DrehmalContentUnlocks.summonMilestone(canonicalId)
+                && !progress.profile.starterArchiveAvailable()) {
+            progress.profile.unlockStarterArchive();
+        }
         for (BattleResultSummary.PartyXp member : preview.party()) {
             progress.characters.put(member.characterId(), new CharacterProgression.State(member.levelAfter(), member.xpAfter()));
         }
@@ -115,7 +128,9 @@ public final class CampaignProgressStore {
         recordQuestEvent(progress, QuestProgress.Event.battleWin(canonicalId, Set.copyOf(encounter.enemies())));
         if (encounter.boss()) recordQuestEvent(progress, QuestProgress.Event.bossWin(encounter.enemies().getFirst()));
         progress.dirty = true;
-        return new BattleResultSummary(preview.xp(), preview.gold(), firstClear, preview.party());
+        return new BattleResultSummary(
+                preview.xp(), preview.gold(), preview.crystal(), preview.starEssence(),
+                preview.equipmentRewards(), firstClear, preview.party());
     }
 
     public static int gold(UUID playerId) { return Math.toIntExact(player(playerId).profile.currency(PlayerProfile.Currency.GOLD)); }
