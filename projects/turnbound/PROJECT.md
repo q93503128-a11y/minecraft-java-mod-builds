@@ -165,11 +165,11 @@ Validation labels stay distinct:
 ## Last verified implementation checkpoint
 
 - CODE REVIEWED: YES
-- TESTED: YES — fixed-point scheduler + P01~P08 v1 combat runtime + Drehmal first-route binding + battle-center camera + CV-A/B/C production enemies + Warning Cave Cavehorn Elite asset/AI/reward contract + Drabyel-road Hill Marksman two-step aim telegraph/retarget contract + shallow RPG quick-menu navigation + source-backed Drehmal world-map replacement + New Drabyel physical service NPC runtime/facility gating + R_PG-derived single-representative field encounters + deterministic roam/dwell pacing + Minecraft terrain-aware PathfinderMob navigation with throttled repath, rejected-path backoff, and blocked ROAM target recovery
-- BUILD VERIFIED: YES — Build TURNBOUND #796
-- verified code commit: `8462e4ec9a943447a405c82bfd840ec2578b82b5`
+- TESTED: YES — fixed-point scheduler + P01~P08 v1 combat runtime + Drehmal first-route binding + battle-center camera + CV-A/B/C production enemies + Warning Cave Cavehorn Elite asset/AI/reward contract + Drabyel-road Hill Marksman two-step aim telegraph/retarget contract + shallow RPG quick-menu navigation + source-backed Drehmal world-map replacement + New Drabyel physical service NPC runtime/facility gating + R_PG-derived single-representative field encounters + deterministic roam/dwell pacing + Minecraft terrain-aware PathfinderMob navigation with blocked-route recovery + horizontal Tower/camp/Drabyel safety-ring aggro exclusion and visible-enemy return behavior
+- BUILD VERIFIED: YES — Build TURNBOUND #797
+- verified code commit: `feb7c8c34efa31d8e3373e75feb4d4d2fb97bdc6`
 - SERVER SMOKE: YES — NeoForge 26.2 dedicated server load
-- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`, id `10578466255`, SHA-256 `a251246df4618b20888b75519daba8f98a95572e6e5331a4e3f7596ac5041536`
+- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`, id `10578521848`, SHA-256 `8ff4b14d9a8325c53592508b77fb55b801b8ca0932c8648c9b789046470143e7`
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
