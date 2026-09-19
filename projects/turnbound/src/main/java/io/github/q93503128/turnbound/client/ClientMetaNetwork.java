@@ -32,7 +32,10 @@ public final class ClientMetaNetwork {
             if (!hint.isBlank()) {
                 FacilityUiAccess.applyHint(hint);
                 if ("MARKET".equals(hint)) minecraft.gui.setScreen(new FacilityMarketScreen());
-                else minecraft.gui.setScreen(new MetaMenuScreen(tab(hint)));
+                else if ("MAP".equals(hint)) {
+                    FacilityUiAccess.clear();
+                    minecraft.gui.setScreen(new AsterMarchMapScreen());
+                } else minecraft.gui.setScreen(new MetaMenuScreen(tab(hint)));
                 return;
             }
             if (minecraft.gui.screen() instanceof FacilityMarketScreen market) market.refreshSnapshot();

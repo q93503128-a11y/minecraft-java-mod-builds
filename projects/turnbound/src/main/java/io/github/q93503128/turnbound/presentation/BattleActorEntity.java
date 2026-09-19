@@ -32,6 +32,8 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
     private static final RawAnimation BOSS_HIT_HEAVY = RawAnimation.begin().thenPlay("boss.hit_heavy");
     private static final RawAnimation FIELD_WALK = RawAnimation.begin().thenLoop("field.walk");
     private static final RawAnimation FIELD_IDLE = RawAnimation.begin().thenLoop("field.idle");
+    private static final RawAnimation SERVICE_GREET = RawAnimation.begin().thenPlay("field.greet");
+    private static final RawAnimation SERVICE_WORK = RawAnimation.begin().thenPlay("field.work");
 
     private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
     private boolean fieldModeInitialized;
@@ -54,8 +56,9 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         String prefix = TurnboundBattleActors.heroAnimationPrefix(getType());
         if (prefix == null) prefix = SignatureBattleActors.heroAnimationPrefix(getType());
-        boolean bossAnimations = prefix == null && TurnboundBattleActors.bossAnimationType(getType());
-        RawAnimation idle = prefix == null ? DefaultAnimations.IDLE : loop(prefix, "idle");
+        boolean serviceAnimations = prefix == null && DrabyelServiceActors.serviceAnimationType(getType());
+        boolean bossAnimations = prefix == null && !serviceAnimations && TurnboundBattleActors.bossAnimationType(getType());
+        RawAnimation idle = serviceAnimations ? FIELD_IDLE : prefix == null ? DefaultAnimations.IDLE : loop(prefix, "idle");
         RawAnimation ready = prefix == null ? READY : play(prefix, "turn_ready");
         RawAnimation basic = prefix == null ? DefaultAnimations.ATTACK_STRIKE : play(prefix, "basic");
         RawAnimation active1 = prefix == null ? CAST : play(prefix, "active_1");
@@ -99,7 +102,9 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
                 .triggerableAnim("phase", PHASE)
                 .triggerableAnim("stagger", BOSS_STAGGER)
                 .triggerableAnim("field_walk", fieldWalk)
-                .triggerableAnim("field_idle", fieldIdle));
+                .triggerableAnim("field_idle", fieldIdle)
+                .triggerableAnim("service_greet", SERVICE_GREET)
+                .triggerableAnim("service_work", SERVICE_WORK));
 
         if (bossAnimations) {
             controllers.add(new AnimationController<BattleActorEntity>("boss_phase", 3, test -> PlayState.STOP)
@@ -144,6 +149,8 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
     public void playTelegraph() { triggerAnim("combat", "telegraph"); }
     public void playCharge() { triggerAnim("combat", "charge"); }
     public void playSummon() { triggerAnim("combat", "summon"); }
+    public void playServiceGreeting() { triggerAnim("combat", "service_greet"); }
+    public void playServiceWork() { triggerAnim("combat", "service_work"); }
     public void playPhase() {
         if (TurnboundBattleActors.bossAnimationType(getType())) triggerAnim("boss_phase", "phase");
         else triggerAnim("combat", "phase");

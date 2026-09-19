@@ -61,6 +61,7 @@ public final class ExternalWorldBootstrap {
         if (!ACTIVE.contains(player.getUUID())) return initialize(player);
 
         DrehmalVisibleEncounterService.tick(player);
+        DrabyelHubServiceRuntime.tick(player);
         if (player.tickCount % 40 == 0) {
             FieldNetwork.syncExternal(player, DrehmalFirstRouteRuntime.explorationSnapshot(player));
         }
@@ -72,6 +73,14 @@ public final class ExternalWorldBootstrap {
                 && ACTIVE.contains(player.getUUID())
                 && player.level().dimension() == Level.OVERWORLD
                 && DrehmalWorldBinding.isBound(player.level().getServer());
+    }
+
+    public static boolean interactEntity(ServerPlayer player, net.minecraft.world.entity.Entity target) {
+        return active(player) && DrabyelHubServiceRuntime.interact(player, target);
+    }
+
+    public static boolean serviceActor(net.minecraft.world.entity.Entity target) {
+        return DrabyelHubServiceRuntime.serviceLocator(target) != null;
     }
 
     public static boolean onBattleEnded(ServerPlayer player, String encounterId, BattleOutcome outcome) {
@@ -87,6 +96,7 @@ public final class ExternalWorldBootstrap {
 
     public static void clear() {
         DrehmalVisibleEncounterService.clear();
+        DrabyelHubServiceRuntime.clear();
         ACTIVE.clear();
     }
 }

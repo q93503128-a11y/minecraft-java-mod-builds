@@ -12,11 +12,11 @@ public final class DrabyelHubServiceCatalog {
     private static final String RESOURCE="/data/turnbound/world/new_drabyel_services_v1.json";
     private static final Hub HUB=load();
     private static final Set<String> ROLES=Set.of("GREETER","TRAVEL","MARKET","BLACKSMITH","STORY","SUMMON");
-    private static final Set<String> HINTS=Set.of("","MAP","MARKET","FORGE","PARTY","ARCHIVE");
+    private static final Set<String> HINTS=Set.of("","MAP","MARKET","FORGE","ARCHIVE","QUESTS");
 
     public record Position(int x,int y,int z){}
     public record Service(String locator,String role,String playerLabel,String facilityHint,String zone,String visualAsset,
-                          Position runtimePosition,int interactionRadius,boolean verifiedIn26_2,boolean productionEnabled){}
+                          Position runtimePosition,Float runtimeYaw,int interactionRadius,boolean verifiedIn26_2,boolean productionEnabled){}
     public record Hub(String hubLocator,List<Service> services){public Hub{services=List.copyOf(services);}}
     private DrabyelHubServiceCatalog(){}
 
@@ -38,7 +38,8 @@ public final class DrabyelHubServiceCatalog {
             if(s.visualAsset().isBlank())errors.add("blank Drabyel service visual asset "+s.locator());
             if(s.interactionRadius()<2||s.interactionRadius()>8)errors.add("invalid Drabyel service interaction radius "+s.locator());
             if(!roles.add(s.role()))errors.add("duplicate Drabyel service role "+s.role());
-            if(s.productionEnabled()&&(!s.verifiedIn26_2()||s.runtimePosition()==null))errors.add("unverified Drabyel production service "+s.locator());
+            if(s.runtimeYaw()!=null&&(s.runtimeYaw()<-180.0F||s.runtimeYaw()>180.0F))errors.add("invalid Drabyel service yaw "+s.locator());
+            if(s.productionEnabled()&&(!s.verifiedIn26_2()||s.runtimePosition()==null||s.runtimeYaw()==null))errors.add("unverified Drabyel production service "+s.locator());
         }
         for(String required:List.of("GREETER","TRAVEL","MARKET","BLACKSMITH","STORY","SUMMON"))if(!roles.contains(required))errors.add("missing Drabyel service role "+required);
         return List.copyOf(errors);
@@ -53,7 +54,7 @@ public final class DrabyelHubServiceCatalog {
             List<Service> services=new ArrayList<>();
             JsonArray array=root.getAsJsonArray("services");if(array==null)throw new IllegalStateException("Missing Drabyel services");
             for(JsonElement element:array){JsonObject raw=element.getAsJsonObject();services.add(new Service(string(raw,"locator"),string(raw,"role"),string(raw,"playerLabel"),
-                    optionalString(raw,"facilityHint"),string(raw,"zone"),string(raw,"visualAsset"),position(raw),integer(raw,"interactionRadius",-1),
+                    optionalString(raw,"facilityHint"),string(raw,"zone"),string(raw,"visualAsset"),position(raw),decimal(raw,"yaw"),integer(raw,"interactionRadius",-1),
                     bool(raw,"verifiedIn26_2",false),bool(raw,"productionEnabled",false)));}
             return new Hub(string(root,"hubLocator"),services);
         }catch(Exception ex){if(ex instanceof RuntimeException runtime)throw runtime;throw new IllegalStateException("Failed loading New Drabyel service catalog",ex);}
@@ -61,6 +62,7 @@ public final class DrabyelHubServiceCatalog {
     private static Position position(JsonObject raw){if(raw==null||!raw.has("position")||!raw.get("position").isJsonObject())return null;JsonObject p=raw.getAsJsonObject("position");if(!p.has("x")||!p.has("y")||!p.has("z"))return null;return new Position(p.get("x").getAsInt(),p.get("y").getAsInt(),p.get("z").getAsInt());}
     private static String string(JsonObject o,String k){String v=optionalString(o,k);if(v.isBlank())throw new IllegalStateException("Missing Drabyel service field "+k);return v;}
     private static String optionalString(JsonObject o,String k){return o!=null&&o.has(k)&&o.get(k).isJsonPrimitive()?o.get(k).getAsString().trim():"";}
+    private static Float decimal(JsonObject o,String k){return o!=null&&o.has(k)&&o.get(k).isJsonPrimitive()?o.get(k).getAsFloat():null;}
     private static int integer(JsonObject o,String k,int f){return o!=null&&o.has(k)&&o.get(k).isJsonPrimitive()?o.get(k).getAsInt():f;}
     private static boolean bool(JsonObject o,String k,boolean f){return o!=null&&o.has(k)&&o.get(k).isJsonPrimitive()?o.get(k).getAsBoolean():f;}
 }

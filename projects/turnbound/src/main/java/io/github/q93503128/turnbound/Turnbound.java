@@ -2,6 +2,7 @@ package io.github.q93503128.turnbound;
 
 import com.mojang.logging.LogUtils;
 import io.github.q93503128.turnbound.command.TurnboundCommands;
+import io.github.q93503128.turnbound.presentation.DrabyelServiceActors;
 import io.github.q93503128.turnbound.presentation.SignatureBattleActors;
 import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
 import io.github.q93503128.turnbound.presentation.TurnboundVisualItems;
@@ -38,6 +39,7 @@ public final class Turnbound {
         TurnboundVisualItems.register(modEventBus);
         TurnboundBattleActors.register(modEventBus);
         SignatureBattleActors.register(modEventBus);
+        DrabyelServiceActors.register(modEventBus);
         modEventBus.addListener(BattleNetwork::register);
         modEventBus.addListener(FieldNetwork::register);
         modEventBus.addListener(MetaNetwork::register);

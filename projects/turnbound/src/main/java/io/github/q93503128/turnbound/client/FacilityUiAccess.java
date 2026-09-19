@@ -1,6 +1,6 @@
 package io.github.q93503128.turnbound.client;
 
-/** Client-only transient permission describing which physical Radia facility opened the current UI. */
+/** Client-only transient permission describing which physical service opened the current UI. */
 final class FacilityUiAccess {
     enum Mode { NONE, ARCHIVE, MARKET, FORGE }
 
