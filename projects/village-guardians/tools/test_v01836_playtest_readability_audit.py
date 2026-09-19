@@ -60,7 +60,7 @@ def main() -> None:
 
     # No regression in facility ownership or town hall simplification.
     assert 'action.startsWith("facility:") || action.startsWith("manage:")' in local
-    assert "구식 시설 바로가기" in local
+    assert "시설 기능은 각 시설 단말기에서 사용하세요" in local
     buttons = section(town, "private List<ButtonSpec> facilityButtons", "private void drawButton")
     assert '"repair:" + f.id()' in buttons and '"upgrade:" + f.id()' in buttons
     assert "siege_command" not in buttons and "open_mercenary_command" not in buttons
