@@ -346,3 +346,16 @@ TURNBOUND application:
 - if no surveyed production waypoint exists, no direction arrow is shown;
 - entering the active waypoint radius advances/clears the target and causes a change-only snapshot sync;
 - the direction cue uses the existing TURNBOUND/Kenney skin rather than a one-off raw black rectangle.
+
+
+### Battle-to-field continuity follow-up
+
+The direct R_PG capture resumes free traversal immediately after battle, so returning to the same world context is part of the encounter transition rather than an unrelated cleanup step.
+
+TURNBOUND application:
+- each battle session already captures the exact pre-battle player position, yaw and pitch and restores them during cleanup;
+- the pre-battle yaw/pitch are now also carried in the battle snapshot, preventing client packet order from accidentally treating the battle-arena view as the return view;
+- the client battle camera restores the server-authored pre-battle view while separately restoring the player's previous camera mode;
+- after normal battle exit, the external-world runtime immediately republishes location, interaction prompt and navigation context from the restored field position;
+- field HUD recovery no longer waits for the ordinary 40-tick exploration sync;
+- lifecycle shutdown/logout still avoids unnecessary client refresh traffic.
