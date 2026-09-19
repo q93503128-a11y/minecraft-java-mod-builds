@@ -41,11 +41,12 @@ def main() -> None:
             and "VillageDefenseHudFrame" not in all_java
             and "VillageDefenseUiTheme" not in all_java)
 
-    require("main HUD is restored to the compact pre-defense-pass two-line status card",
+    require("main HUD keeps the compact status card and only adds one low-profile live-threat row",
             "String text = \"\"" in main_hud
             and 'text.split(" §8│ ", -1)' in main_hud
             and "VillageQuickChatSafeScreen.drawDiamond" in main_hud
-            and "int maxWidth = Math.min(330" in main_hud
+            and "int maxWidth = Math.min(380" in main_hud
+            and "third.isBlank() ? 35 : 49" in main_hud
             and "renderFrontPressure" not in main_hud
             and "renderDefenseCard" not in main_hud)
 
