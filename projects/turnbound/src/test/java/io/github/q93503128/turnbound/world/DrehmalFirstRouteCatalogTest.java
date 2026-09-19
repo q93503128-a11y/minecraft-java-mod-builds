@@ -1,5 +1,6 @@
 package io.github.q93503128.turnbound.world;
 
+import io.github.q93503128.turnbound.combat.CampaignEncounterCatalog;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
@@ -43,6 +44,21 @@ class DrehmalFirstRouteCatalogTest {
         for (DrehmalFirstRouteCatalog.EncounterSlot encounter : DrehmalFirstRouteCatalog.route().encounters()) {
             if (encounter.productionEnabled()) assertTrue(encounter.verifiedIn26_2(), encounter.locator());
         }
+    }
+
+    @Test
+    void authoredCombatBindingsResolveBeforeSpatialPromotion() {
+        for (DrehmalFirstRouteCatalog.EncounterSlot encounter : DrehmalFirstRouteCatalog.route().encounters()) {
+            if (!encounter.combatEncounterId().isBlank()) {
+                assertTrue(CampaignEncounterCatalog.contains(encounter.combatEncounterId()),
+                        encounter.locator() + " -> " + encounter.combatEncounterId());
+            }
+        }
+        var first = DrehmalFirstRouteCatalog.route().encounters().stream()
+                .filter(encounter -> encounter.locator().equals("turnbound:encounter/capital_valley/first_common"))
+                .findFirst().orElseThrow();
+        assertTrue(first.combatEncounterId().equals("CV_FIRST_COMMON"));
+        assertFalse(first.productionEnabled(), "26.2 survey gate must still block spatial activation");
     }
 
     @Test
