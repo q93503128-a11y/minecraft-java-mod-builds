@@ -41,7 +41,7 @@ def main() -> None:
     assert "mob.setTarget(null);" in direct
 
     discover = elite.split("private static void discover", 1)[1].split("private static void grappler", 1)[0]
-    assert "VillageEnemyArchetypeSystem.isFlying(mob)" in discover and "continue;" in discover
+    assert "VillageRaidSystem.isAerialEnemy(mob)" in discover and "continue;" in discover
 
     assert "Map<VillageEnemyArchetypeSystem.AerialRole, Integer> aerialRoster" in intel
     assert "VillageEnemyArchetypeSystem.aerialRole(day, wave, index, trait)" in intel
