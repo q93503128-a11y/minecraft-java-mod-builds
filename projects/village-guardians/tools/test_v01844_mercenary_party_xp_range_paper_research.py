@@ -46,7 +46,7 @@ def main() -> None:
     assert "mercenary.setInvisible(true)" in merc
 
     passives = section(merc, "private static void applyClassPassives", "public static synchronized MercenaryClass classOf")
-    for value in ("260.0", "190.0", "165.0", "205.0",
+    for value in ("340.0", "250.0", "215.0", "270.0",
                   "Attributes.MAX_HEALTH", "Attributes.ARMOR"):
         assert value in passives
     assert "mercenaryDurabilityMultiplier()" in research

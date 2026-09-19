@@ -42,10 +42,10 @@ def main() -> None:
     assert "빠른 통신과 상태·성장·직업 성장 기능" in starter
     assert "player.setItemInHand(event.getHand(), ItemStack.EMPTY)" in starter
 
-    # Party sharing keeps the pre-share XP curve instead of the accidental 2~32 XP table.
+    # Party sharing keeps the health-based curve while the playtest tuning halves its payout.
     xp = section(raid, "public static int experienceForEnemy", "public static VillageEnemyArchetypeSystem.AerialRole")
     assert "Math.min(90, 7 + Math.round(mob.getMaxHealth() * 0.48f))" in xp
-    assert "Math.round(base * 1.18f)" in xp
+    assert "Math.round(base * 0.59f)" in xp
     assert "case GRUNT, RUSHER -> 2" not in xp
     death = section(guardians, "public void onLivingDeath", "public void onArrowLoose")
     assert "VillageRaidSystem.experienceForEnemy(defeated)" in death
@@ -53,7 +53,7 @@ def main() -> None:
 
     print("[PASS] facility confirmation compares current -> next effect and exact shared-supply cost")
     print("[PASS] obsolete tactical-sheet item is removed instead of reissued")
-    print("[PASS] shared raid XP uses the original per-kill progression curve for every participant")
+    print("[PASS] shared raid XP keeps the health-based curve at roughly half the previous payout")
 
 if __name__ == "__main__":
     main()

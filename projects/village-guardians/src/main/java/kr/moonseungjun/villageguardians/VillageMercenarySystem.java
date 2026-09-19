@@ -207,7 +207,10 @@ public final class VillageMercenarySystem {
             int rank = rank(mercenary);
             applyClassPassives(mercenary, kind, rank);
             VillageMercenaryPresentationSystem.ensure(level, mercenary, kind, rank);
-            if (!VillageRaidSystem.isActive()) continue;
+            if (!VillageRaidSystem.isActive()) {
+                mercenary.heal(Math.max(2.0f, mercenary.getMaxHealth() * 0.02f));
+                continue;
+            }
             if (kind == MercenaryClass.BASTION) bastionControl(level, mercenary, rank);
             else if (kind == MercenaryClass.STRIKER) strikerPressure(level, mercenary, rank);
             else if (kind == MercenaryClass.RANGER) rangedAttack(level, mercenary, rank);
@@ -383,7 +386,7 @@ public final class VillageMercenarySystem {
                         .thenComparingDouble(mercenary::distanceToSqr)).orElse(null);
         mercenary.setTarget(null);
         if (target == null) return;
-        float damage = 4.3f * mercenaryPower(rank) * VillageDefenseResearchSystem.mercenaryDamageMultiplier();
+        float damage = 5.2f * mercenaryPower(rank) * VillageDefenseResearchSystem.mercenaryDamageMultiplier();
         Vec3 end = target.position().add(0, target.getBbHeight() * 0.55, 0);
         VillageDefenseEffectSystem.mercenaryRangerShot(level, start, end);
         level.sendParticles(ParticleTypes.CRIT, end.x, end.y, end.z, 4, 0.14, 0.18, 0.14, 0.02);
@@ -391,7 +394,7 @@ public final class VillageMercenarySystem {
     }
 
     private static void healAllies(ServerLevel level, MinecraftServer server, IronGolem medic, int rank) {
-        float amount = 2.3f * mercenaryPower(rank) * VillageDefenseResearchSystem.mercenaryHealingMultiplier();
+        float amount = 2.8f * mercenaryPower(rank) * VillageDefenseResearchSystem.mercenaryHealingMultiplier();
         double radius = 8.0 + Math.min(13.0, rank * 0.22);
         double radiusSquared = radius * radius;
         for (IronGolem ally : loadedMercenaries(level)) {
@@ -449,22 +452,22 @@ public final class VillageMercenarySystem {
         int safeRank = Math.max(1, Math.min(MAX_LEVEL, rank));
         double durability = VillageDefenseResearchSystem.mercenaryDurabilityMultiplier();
         double maxHealth = (switch (kind) {
-            case BASTION -> 260.0 + (safeRank - 1) * 3.2;
-            case STRIKER -> 190.0 + (safeRank - 1) * 2.4;
-            case RANGER -> 165.0 + (safeRank - 1) * 1.9;
-            case MEDIC -> 205.0 + (safeRank - 1) * 2.2;
+            case BASTION -> 340.0 + (safeRank - 1) * 4.0;
+            case STRIKER -> 250.0 + (safeRank - 1) * 3.0;
+            case RANGER -> 215.0 + (safeRank - 1) * 2.4;
+            case MEDIC -> 270.0 + (safeRank - 1) * 2.8;
         }) * durability;
         double armor = switch (kind) {
-            case BASTION -> Math.min(22.0, 14.0 + safeRank * 0.12);
-            case STRIKER -> Math.min(16.0, 8.0 + safeRank * 0.09);
-            case RANGER -> Math.min(13.0, 6.0 + safeRank * 0.07);
-            case MEDIC -> Math.min(15.0, 8.0 + safeRank * 0.08);
+            case BASTION -> Math.min(24.0, 18.0 + safeRank * 0.10);
+            case STRIKER -> Math.min(18.0, 11.0 + safeRank * 0.09);
+            case RANGER -> Math.min(15.0, 9.0 + safeRank * 0.07);
+            case MEDIC -> Math.min(17.0, 11.0 + safeRank * 0.08);
         };
         double attack = switch (kind) {
-            case BASTION -> 10.0 + safeRank * 0.10;
-            case STRIKER -> 14.0 + safeRank * 0.18;
-            case RANGER -> 5.0 + safeRank * 0.05;
-            case MEDIC -> 6.0 + safeRank * 0.05;
+            case BASTION -> 11.5 + safeRank * 0.12;
+            case STRIKER -> 16.0 + safeRank * 0.20;
+            case RANGER -> 5.8 + safeRank * 0.06;
+            case MEDIC -> 7.0 + safeRank * 0.06;
         };
         double speed = switch (kind) {
             case BASTION -> 0.235;
