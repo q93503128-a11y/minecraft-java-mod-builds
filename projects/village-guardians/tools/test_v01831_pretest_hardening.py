@@ -54,7 +54,7 @@ def main() -> None:
     ranged = mercenary.split("private static void rangedAttack", 1)[1].split(
         "private static void healAllies", 1)[0]
     assert "VillageDefenseLineOfSight.hasLine(level, start, enemy)" in ranged
-    assert "VillageEnemyArchetypeSystem.isFlying(enemy) ? 0 : 1" in ranged
+    assert "VillageRaidSystem.isAerialEnemy(enemy) ? 0 : 1" in ranged
     assert "VillageRaidSystem.aerialThreatPriority(enemy)" in ranged
 
     assert "center.below(8)).is(Blocks.DIAMOND_BLOCK)" in world
