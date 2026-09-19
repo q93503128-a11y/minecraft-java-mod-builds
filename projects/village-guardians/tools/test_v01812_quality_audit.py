@@ -34,7 +34,7 @@ def main() -> None:
     old_anti_air = ("filter(mob -> mob.getY() > baseY + 6.0)" in turret
                     and ".min(Comparator.comparingDouble" in turret)
     role_aware_anti_air = ("private static double targetScore" in turret
-                           and "VillageEnemyArchetypeSystem.isFlying(mob)" in turret
+                           and "VillageRaidSystem.isAerialEnemy(mob)" in turret
                            and "if (flying) score += 420.0" in turret)
     require("anti-air targeting gives an explicit priority to airborne threats",
             old_anti_air or role_aware_anti_air)
