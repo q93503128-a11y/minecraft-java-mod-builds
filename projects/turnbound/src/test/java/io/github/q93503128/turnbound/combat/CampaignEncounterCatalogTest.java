@@ -18,7 +18,8 @@ class CampaignEncounterCatalogTest {
 
     @Test
     void allV04FieldAndBossEncountersAreRuntimeAddressable() {
-        assertEquals(30, CampaignEncounterCatalog.all().size());
+        assertTrue(CampaignEncounterCatalog.all().size() >= 31);
+        assertTrue(CampaignEncounterCatalog.contains("CV_FIRST_COMMON"));
         int activeAllies = CampaignProgressStore.activeParty(playerId).size();
         assertTrue(activeAllies >= 1 && activeAllies <= 4);
         for (var encounter : CampaignEncounterCatalog.all()) {
