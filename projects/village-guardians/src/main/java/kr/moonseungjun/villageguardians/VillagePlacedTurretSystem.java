@@ -91,6 +91,31 @@ public final class VillagePlacedTurretSystem {
                 + VillageDefenseResearchSystem.level(VillageDefenseResearchSystem.Branch.TOWER);
     }
 
+    static double effectiveRange(TurretType type, int level) {
+        if (type == null) return 0.0;
+        int safeLevel = Math.max(1, Math.min(5, level));
+        return (type.range() + (safeLevel - 1) * 2.5)
+                * VillageDefenseResearchSystem.towerRangeMultiplier();
+    }
+
+    static float effectiveDamage(TurretType type, int level) {
+        if (type == null) return 0.0f;
+        int safeLevel = Math.max(1, Math.min(5, level));
+        return (type.damage() + (safeLevel - 1) * type.damage() * 0.16f)
+                * VillageDefenseResearchSystem.towerDamageMultiplier();
+    }
+
+    static int effectiveInterval(TurretType type, int level) {
+        if (type == null) return 20;
+        int safeLevel = Math.max(1, Math.min(5, level));
+        return Math.max(8, type.interval() - (safeLevel - 1) * 2);
+    }
+
+    static int dismantleRefund(TurretState state) {
+        if (state == null) return 0;
+        return Math.max(20, state.type().installCost() / 3 + (state.level() - 1) * 25);
+    }
+
     public static synchronized List<TurretState> states() { return List.copyOf(TURRETS.values()); }
 
     public static String selectPlacement(ServerPlayer player, TurretType type) {
@@ -128,13 +153,15 @@ public final class VillagePlacedTurretSystem {
         }
         if (pending.preview() == null || !pending.preview().equals(candidate)) {
             PENDING.put(player.getUUID(), new PendingPlacement(pending.type(), candidate.immutable()));
+            double previewRange = effectiveRange(pending.type(), 1);
             VillageDefenseEffectSystem.turretPlacementPreview(level,
-                    Vec3.atCenterOf(candidate).add(0.0, -0.45, 0.0), pending.type());
+                    Vec3.atCenterOf(candidate).add(0.0, -0.45, 0.0), pending.type(), previewRange);
             BlockPos villageCenter = VillageCouncilState.villageCenter().orElse(null);
             boolean wallTop = VillageBuildingEnhancements.isWallTopEmplacement(villageCenter, candidate);
             player.sendSystemMessage(Component.literal("§a[배치 미리보기] §f"
                     + (wallTop ? "성벽 상부 포좌" : "유효한 지상 위치")
-                    + "입니다. 같은 블록을 다시 우클릭해 확정하세요."));
+                    + " · 최대 사거리 " + String.format(Locale.ROOT, "%.1f", previewRange)
+                    + "블록입니다. 바닥의 원형 사거리선을 확인한 뒤 같은 블록을 다시 우클릭해 확정하세요."));
             return true;
         }
         synchronized (VillagePlacedTurretSystem.class) {
@@ -279,7 +306,7 @@ public final class VillagePlacedTurretSystem {
         VillageSiegePersistence.removeString(PREFIX + id);
         DISABLED_TICKS.remove(id);
         if (player.level() instanceof ServerLevel level) clearVisual(level, state);
-        int refund = Math.max(20, state.type().installCost() / 3 + (state.level() - 1) * 25);
+        int refund = dismantleRefund(state);
         MinecraftServer server = player.level().getServer();
         if (server != null) VillageProgressionSystem.addSupplies(server, refund, "포탑 철거 환급");
         return state.type().displayName() + " #" + id + " 철거 완료 · 공동 보급품 " + refund + " 환급";
@@ -344,15 +371,14 @@ public final class VillagePlacedTurretSystem {
                 if (state.type() == TurretType.BEACON && combatTicks % 60 == 0) supportPulse(level, server, state);
                 continue;
             }
-            int interval = Math.max(8, state.type().interval() - (state.level() - 1) * 2);
+            int interval = effectiveInterval(state.type(), state.level());
             if (Math.floorMod(combatTicks + state.id() * 7, interval) != 0) continue;
             fire(level, state);
         }
     }
 
     private static void fire(ServerLevel level, TurretState state) {
-        double range = (state.type().range() + (state.level() - 1) * 2.5)
-                * VillageDefenseResearchSystem.towerRangeMultiplier();
+        double range = effectiveRange(state.type(), state.level());
         List<Mob> nearby = VillageRaidSystem.activeEnemiesNear(level, Vec3.atCenterOf(state.pos()), range, 12, null);
         List<Mob> candidates = state.type() == TurretType.BOMBARD
                 ? nearby
@@ -362,8 +388,7 @@ public final class VillagePlacedTurretSystem {
         if (target == null) return;
         VillageTurretPresentationSystem.aim(level, state,
                 target.position().add(0.0, target.getBbHeight() * 0.55, 0.0));
-        float damage = (state.type().damage() + (state.level() - 1) * state.type().damage() * 0.16f)
-                * VillageDefenseResearchSystem.towerDamageMultiplier();
+        float damage = effectiveDamage(state.type(), state.level());
         switch (state.type()) {
             case PIERCER -> hit(level, state, target, damage * piercingMultiplier(target), ParticleTypes.CRIT);
             case CHAIN -> {

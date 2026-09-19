@@ -101,7 +101,8 @@ public final class VillageSkillMeshLibrary {
             case "mercenary_presence_ranger" -> renderMercenaryPresence(pose, out, basis, age, state.extra, 2);
             case "mercenary_presence_medic" -> renderMercenaryPresence(pose, out, basis, age, state.extra, 3);
             case "siege_structure_impact" -> renderDefensePulse(pose, out, basis, age, progress, state.extra, 4);
-            case "turret_placement_preview" -> renderDefenseMaintenance(pose, out, basis, age, progress, 0);
+            case "turret_placement_preview" -> renderTurretPlacementPreview(
+                    pose, out, basis, age, progress, state.extra);
             case "turret_deploy_pulse" -> renderDefenseMaintenance(pose, out, basis, age, progress, 1);
             case "defense_repair_pulse" -> renderDefenseMaintenance(pose, out, basis, age, progress, 2);
             case "turret_upgrade_burst" -> renderDefenseMaintenance(pose, out, basis, age, progress, 3);
@@ -247,6 +248,48 @@ public final class VillageSkillMeshLibrary {
         } else {
             verticalPillar(pose, out, b, main ? 0.20 : 0.14, main ? 2.1 : 1.55,
                     withAlpha(primary, main ? 110 : 82));
+        }
+    }
+
+    private static void renderTurretPlacementPreview(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double age, double progress, String extra) {
+        int type = 0;
+        double range = 16.0;
+        if (extra != null && !extra.isBlank()) {
+            String[] parts = extra.split("\\|", -1);
+            try { type = Integer.parseInt(parts[0]); }
+            catch (NumberFormatException ignored) { }
+            if (parts.length >= 2) {
+                try { range = Math.max(1.0, Double.parseDouble(parts[1])); }
+                catch (NumberFormatException ignored) { }
+            }
+        }
+
+        double fade = Math.max(0.18, 1.0 - progress);
+        int primary = switch (Math.floorMod(type, 10)) {
+            case 3 -> rgba(255, 145, 82, (int) (210 * fade));
+            case 4 -> rgba(120, 218, 255, (int) (210 * fade));
+            case 5 -> rgba(176, 136, 255, (int) (210 * fade));
+            case 6 -> rgba(255, 196, 92, (int) (215 * fade));
+            case 7 -> rgba(212, 151, 255, (int) (210 * fade));
+            case 8 -> rgba(117, 224, 255, (int) (220 * fade));
+            case 9 -> rgba(122, 255, 173, (int) (205 * fade));
+            default -> rgba(82, 222, 197, (int) (210 * fade));
+        };
+        int secondary = withAlpha(primary, Math.max(36, (int) (125 * fade)));
+
+        // The large ring is the authoritative level-1 maximum range at the current tower-research level.
+        // Keep its radius fixed: animation belongs to the inner placement marker so the boundary never lies.
+        ring(pose, out, b, range, 0.055, 0.11, range >= 60.0 ? 128 : 96, primary, 0.0);
+        ring(pose, out, b, 0.86 + Math.sin(age * 0.20) * 0.05,
+                0.075, 0.07, 48, secondary, age * 0.035);
+        ring(pose, out, b, 1.35, 0.045, 0.035, 48,
+                withAlpha(primary, Math.max(28, (int) (95 * fade))), -age * 0.02);
+
+        for (int i = 0; i < 8; i++) {
+            double a = i * TAU / 8.0;
+            chevron(pose, out, b, a, Math.max(1.0, range - 0.45), 0.075, 0.34, primary);
         }
     }
 

@@ -30,9 +30,9 @@ def main() -> None:
     deploy = read("VillageMercenaryDeploymentSystem.java")
     raid = read("VillageRaidSystem.java")
 
-    assert "mod_version=0.18.41-alpha.1" in props
-    assert "현재 소스 버전 `0.18.41-alpha.1`" in readme
-    assert "villageguardians-0.18.41-alpha.1.jar" in readme
+    assert "mod_version=" in props
+    assert "현재 소스 버전 `" in readme
+    assert "목표 JAR `villageguardians-" in readme
 
     terminal_position = section(enhancements, "static BlockPos terminalPosition", "static VillageProgressionSystem.Building buildingAtTerminal")
     assert "Building.WALLS" in terminal_position

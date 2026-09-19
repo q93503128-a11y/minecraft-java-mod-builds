@@ -420,14 +420,15 @@ public final class VillageEnemyArchetypeSystem {
             var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
             if (speed != null) speed.setBaseValue(0.19);
         } else if (archetype == Archetype.SAPPER) {
-            // Sappers keep their small, urgent silhouette but are a readable objective threat,
-            // not a day-one stat check. Baby-zombie movement still gives them some urgency.
+            // Sappers stay below their old pre-0.18.38 rush speed, but the live-play 0.18.41 value
+            // felt too sluggish. A small base-speed lift keeps the objective threat readable without
+            // restoring the original day-one stat check. Baby-zombie movement still supplies urgency.
             var health = mob.getAttribute(Attributes.MAX_HEALTH);
             if (health != null) health.setBaseValue(Math.min(16.0, 8.5 + Math.max(0, day - 1) * 0.45));
             var attack = mob.getAttribute(Attributes.ATTACK_DAMAGE);
             if (attack != null) attack.setBaseValue(Math.min(3.0, 1.25 + Math.max(0, day - 1) * 0.08));
             var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
-            if (speed != null) speed.setBaseValue(0.14);
+            if (speed != null) speed.setBaseValue(0.15);
         }
     }
 

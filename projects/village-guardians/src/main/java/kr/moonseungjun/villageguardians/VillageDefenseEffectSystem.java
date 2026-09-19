@@ -85,9 +85,16 @@ public final class VillageDefenseEffectSystem {
 
     public static void turretPlacementPreview(
             ServerLevel level, Vec3 center, VillagePlacedTurretSystem.TurretType type) {
+        turretPlacementPreview(level, center, type,
+                VillagePlacedTurretSystem.effectiveRange(type, 1));
+    }
+
+    public static void turretPlacementPreview(
+            ServerLevel level, Vec3 center, VillagePlacedTurretSystem.TurretType type, double range) {
         if (level == null || center == null || type == null) return;
+        String encoded = type.ordinal() + "|" + String.format(Locale.ROOT, "%.2f", Math.max(1.0, range));
         VillageSkillEffectEntity.spawn(level, null, "turret_placement_preview", center,
-                new Vec3(0.0, 0.0, 1.0), 18, 0.0f, Integer.toString(type.ordinal()));
+                new Vec3(0.0, 0.0, 1.0), 70, 0.0f, encoded);
     }
 
     public static void turretDeployPulse(

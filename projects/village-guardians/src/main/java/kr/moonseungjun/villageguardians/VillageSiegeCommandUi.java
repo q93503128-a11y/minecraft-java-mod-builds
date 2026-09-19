@@ -5,6 +5,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /** Town-hall command surface for wall segments and player-placed turret management. */
 public final class VillageSiegeCommandUi {
@@ -32,7 +33,9 @@ public final class VillageSiegeCommandUi {
         send(player, "management", "공성 방어 지휘", "성벽은 구역별 HP를 가지며 0이 된 위치에만 실제 돌파구가 생깁니다.\n"
                 + "배치 포탑 " + VillagePlacedTurretSystem.activeCount() + "기 가동 · 설치 "
                 + VillagePlacedTurretSystem.count() + "/" + VillagePlacedTurretSystem.capacity()
-                + " · 기존 성루는 관측 구조물이며 실전 화력은 직접 배치 포탑이 담당합니다.", actions, labels);
+                + " · 설치 한도 = 기본 2 + 성벽 단계 " + VillageProgressionSystem.wallLevel()
+                + " + 포탑 공학 " + VillageDefenseResearchSystem.level(VillageDefenseResearchSystem.Branch.TOWER)
+                + "\n포탑은 폭파병·탑 사냥꾼·보스의 근접 압박으로 피해를 받고 파괴될 수 있습니다.", actions, labels);
     }
 
     public static void openSegment(ServerPlayer player, VillageSiegeSegmentSystem.Segment segment) {
@@ -73,14 +76,18 @@ public final class VillageSiegeCommandUi {
         for (VillagePlacedTurretSystem.TurretType type : VillagePlacedTurretSystem.TurretType.values()) {
             actions.add("siege_turret_select:" + type.id());
             labels.add(type.displayName() + " · 공동 보급품 " + type.installCost()
-                    + "|" + type.role() + " · 피해 " + type.damage() + " · 사거리 " + type.range()
-                    + " · 기본 HP " + type.baseHp());
+                    + "|" + type.role() + " · 현재 연구 기준 피해 "
+                    + String.format(Locale.ROOT, "%.1f", VillagePlacedTurretSystem.effectiveDamage(type, 1))
+                    + " · 최대 사거리 "
+                    + String.format(Locale.ROOT, "%.1f", VillagePlacedTurretSystem.effectiveRange(type, 1))
+                    + " · 주기 " + VillagePlacedTurretSystem.effectiveInterval(type, 1)
+                    + "틱 · 기본 HP " + type.baseHp());
         }
         actions.add("siege_turret_list");
         labels.add("설치 포탑 관리|이미 설치한 포탑의 HP·레벨·위치 확인");
         actions.add("siege_command");
         labels.add("성벽·포탑 지휘|이전 화면으로 돌아가기");
-        send(player, "tower_control", "새 포탑 배치", "계열 선택 → 월드 바닥 우클릭 미리보기 → 같은 위치 재클릭 확정.\n"
+        send(player, "tower_control", "새 포탑 배치", "계열 선택 → 월드 바닥 우클릭 미리보기 → 원형 최대 사거리 확인 → 같은 위치 재클릭 확정.\n"
                 + "통행로·건물 출입구·북문 전면·8블록 이내 중복 설치는 서버가 거부합니다.", actions, labels);
     }
 
@@ -117,18 +124,29 @@ public final class VillageSiegeCommandUi {
                 "siege_turret_dismantle:" + id, "siege_turret_list");
         int repairCost = VillagePlacedTurretSystem.repairCost(state);
         int upgradeCost = VillagePlacedTurretSystem.upgradeCost(state);
+        int refund = VillagePlacedTurretSystem.dismantleRefund(state);
+        int nextLevel = Math.min(5, state.level() + 1);
+        String currentStats = "현재 피해 "
+                + String.format(Locale.ROOT, "%.1f", VillagePlacedTurretSystem.effectiveDamage(state.type(), state.level()))
+                + " · 사거리 "
+                + String.format(Locale.ROOT, "%.1f", VillagePlacedTurretSystem.effectiveRange(state.type(), state.level()))
+                + " · 주기 " + VillagePlacedTurretSystem.effectiveInterval(state.type(), state.level()) + "틱";
+        String nextStats = "다음 피해 "
+                + String.format(Locale.ROOT, "%.1f", VillagePlacedTurretSystem.effectiveDamage(state.type(), nextLevel))
+                + " · 사거리 "
+                + String.format(Locale.ROOT, "%.1f", VillagePlacedTurretSystem.effectiveRange(state.type(), nextLevel))
+                + " · 주기 " + VillagePlacedTurretSystem.effectiveInterval(state.type(), nextLevel) + "틱";
         List<String> labels = List.of(
                 "수리|" + (repairCost <= 0 ? "현재 완전함"
                         : "공동 보급품 " + repairCost + " · HP 0의 잔해도 다시 가동 상태로 복구"),
                 "강화|" + (upgradeCost <= 0 ? "Lv.5 최고 단계"
-                        : "Lv." + state.level() + " → Lv." + (state.level() + 1)
-                        + " · 공동 보급품 " + upgradeCost
-                        + " · HP·피해·사거리·공격 주기 강화 · 현재 손상분 유지"),
-                "철거|블록 드롭 없이 철거하고 일부 공동 보급품 환급",
+                        : "Lv." + state.level() + " → Lv." + nextLevel
+                        + " · 공동 보급품 " + upgradeCost + " · " + nextStats + " · 현재 손상분 유지"),
+                "철거|블록 드롭 없이 철거 · 공동 보급품 " + refund + " 환급",
                 "설치 포탑 목록|다른 포탑 관리로 돌아가기");
         send(player, "tower_detail", state.type().displayName() + " #" + id,
-                state.summary() + "\n역할: " + state.type().role() + " · 피해 " + state.type().damage()
-                        + " · 기본 사거리 " + state.type().range() + " · 공격 주기 " + state.type().interval() + "틱",
+                state.summary() + "\n역할: " + state.type().role() + " · " + currentStats
+                        + "\n폭파병·탑 사냥꾼·보스가 가까이 붙으면 포탑도 피해를 받습니다.",
                 actions, labels);
     }
 

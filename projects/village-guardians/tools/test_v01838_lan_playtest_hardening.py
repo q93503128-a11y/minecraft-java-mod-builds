@@ -95,7 +95,7 @@ def main() -> None:
     effects = section(enemy, "private static void applyArchetypeEffects", "private static String displayName")
     assert "archetype == Archetype.SAPPER" in attributes
     assert "Math.min(16.0, 8.5" in attributes
-    assert "speed.setBaseValue(0.14)" in attributes
+    assert "speed.setBaseValue(0.15)" in attributes
     assert "case SAPPER -> { }" in effects
     assert "case SAPPER -> 1.72f" in enemy
     scaling = section(raid, "private static void applyScaling", "private static void directEnemies")

@@ -493,20 +493,36 @@ public final class VillageRoleSkillSystem {
 
         public String description(VillageRole role) {
             return switch (branch) {
-                case DURATION -> tier <= 3
-                        ? "모든 " + role.displayName() + " 기술의 강화·제어 지속시간이 단계당 16% 증가합니다."
-                        : "고급 지속 단계입니다. 지속시간 +11%, IV·V 단계마다 기술 재사용 대기시간도 1초 감소합니다.";
-                case POWER -> tier <= 3
-                        ? "모든 " + role.displayName() + " 기술의 피해 또는 치유량이 증가하며 3단계에서 추가 증폭됩니다."
-                        : "고급 위력 단계입니다. 기술 피해 또는 치유량이 단계당 추가 11% 증가합니다.";
-                case SPECIAL -> (switch (role) {
-                    case VANGUARD -> "기술 적중 시 흡혈, 약화, 낮은 체력 적 처형 보정을 순서대로 추가합니다.";
-                    case RANGER -> "사격 기술의 대상 수, 약화, 낮은 체력 적 마무리 능력을 강화합니다.";
-                    case ARCANIST -> "원소 기술의 대상 수와 약화 효과, 마무리 폭발력을 강화합니다.";
-                    case LUMINAR -> "치유 기술에 재생과 흡수 보호막을 추가하고 보호 강도를 높입니다.";
-                    case WARDEN -> "도발·방패 기술의 약화와 둔화, 아군 보호막을 강화합니다.";
-                }) + (tier >= 4 ? " 고급 단계에서는 대상 수와 효과 강도가 더 오르고 재사용 대기시간이 단계당 1초 감소합니다." : "");
+                case DURATION -> switch (tier) {
+                    case 1 -> "지속시간이 있는 " + role.displayName() + " 강화·제어 효과 +16%.";
+                    case 2 -> "지속 효과 추가 +16% · 이 가지 누적 +32%.";
+                    case 3 -> "지속 효과 추가 +16% · 이 가지 누적 +48%.";
+                    case 4 -> "지속 효과 +11% · 누적 +59% · 직업 기술 재사용 대기시간 -1초.";
+                    default -> "지속 효과 +11% · 누적 +70% · 이 가지의 재사용 감소 총 -2초.";
+                };
+                case POWER -> switch (tier) {
+                    case 1 -> "모든 " + role.displayName() + " 기술의 피해·치유량 +14%.";
+                    case 2 -> "기술 피해·치유량 추가 +14% · 이 가지 누적 +28%.";
+                    case 3 -> "3단계 추가 증폭 포함 · 이 가지 누적 피해·치유량 +50%.";
+                    case 4 -> "기술 피해·치유량 추가 +11% · 이 가지 누적 +61%.";
+                    default -> "기술 피해·치유량 추가 +11% · 이 가지 누적 +72%.";
+                };
+                case SPECIAL -> specialDescription(role, tier);
             };
+        }
+
+        private static String specialDescription(VillageRole role, int tier) {
+            String effect = switch (role) {
+                case VANGUARD -> "흡혈률과 공격 기술의 범위·타격수·밀어내기·약화/마무리 보정";
+                case RANGER -> "조준 보정, 도탄 수·범위, 강화 사격의 추가 화살과 마무리 효과";
+                case ARCANIST -> "마법 범위·사거리와 원소별 약화·연쇄·폭발 효과";
+                case LUMINAR -> "치유 기술의 재생·흡수 보호막·저항과 보호 강도";
+                case WARDEN -> "도발 범위, 받는 피해 감소, 약화·둔화·보호막·밀어내기";
+            };
+            String cooldown = tier == 4
+                    ? " · 이 노드로 직업 기술 재사용 대기시간 -1초"
+                    : tier >= 5 ? " · 특수 가지의 재사용 감소 총 -2초" : "";
+            return "특수 등급 " + tier + "/5 · " + effect + "를 단계에 맞게 강화합니다" + cooldown + ".";
         }
 
         public static Optional<RoleNode> parse(String value) {
