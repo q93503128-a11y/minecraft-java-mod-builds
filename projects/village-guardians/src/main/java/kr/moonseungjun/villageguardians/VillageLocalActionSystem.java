@@ -21,7 +21,7 @@ public final class VillageLocalActionSystem {
 
         if (action.startsWith("facility:") || action.startsWith("manage:")) {
             player.sendSystemMessage(Component.literal(
-                    "§c구식 시설 바로가기는 폐기되었습니다. 회관은 수리·강화만, 고유 기능은 각 시설 단말기에서 사용하세요."));
+                    "§c시설 기능은 각 시설 단말기에서 사용하세요. 회관에서는 시설 수리·강화만 관리합니다."));
             return true;
         }
 
@@ -153,7 +153,7 @@ public final class VillageLocalActionSystem {
             }
             case "train" -> {
                 VillageUiController.openResult(player, "병영 훈련",
-                        "전투 훈련은 패시브로 변경되었습니다. 현재 모든 경험치 획득량 +"
+                        "병영 훈련 효과가 적용 중입니다. 현재 모든 경험치 획득량 +"
                                 + (VillageProgressionSystem.experienceMultiplierPercent() - 100) + "%",
                         "open_dashboard");
                 return true;

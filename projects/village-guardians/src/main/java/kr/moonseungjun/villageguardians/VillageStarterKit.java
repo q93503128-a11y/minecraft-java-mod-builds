@@ -50,12 +50,12 @@ public final class VillageStarterKit {
         boolean firstSheetRetire = player.addTag(TACTICAL_SHEET_RETIRE_TAG);
         if (firstNotice || firstSheetRetire) {
             player.sendSystemMessage(Component.literal(
-                    "§6[수호단 조작] §f작전표·호출기 아이템은 폐지되었습니다. "
-                            + "인벤토리 화면의 빠른 통신 버튼과 상태·성장·직업 성장 버튼, 마을 회관 지휘대를 사용하세요. "
+                    "§6[수호단 조작] §f빠른 통신과 상태·성장·직업 성장 기능은 인벤토리와 단축키에서 사용할 수 있습니다. "
+                            + "마을 운영은 마을 회관 지휘대와 각 시설 단말기에서 진행합니다. "
                             + "현재 키는 설정 > 조작 > 마을 지키기에서 확인하거나 변경할 수 있습니다."));
         } else if (removedCaller || removedSheet) {
             player.sendSystemMessage(Component.literal(
-                    "§e구형 수호단 메뉴 아이템을 정리했습니다. 인벤토리 버튼과 회관 지휘대를 사용하세요."));
+                    "§e수호단 기능은 인벤토리 버튼과 마을 회관 지휘대에서 사용할 수 있습니다."));
         }
     }
 
@@ -81,7 +81,7 @@ public final class VillageStarterKit {
             event.setCancellationResult(InteractionResult.SUCCESS);
             player.setItemInHand(event.getHand(), ItemStack.EMPTY);
             player.sendSystemMessage(Component.literal(
-                    "§e수호단 작전표는 폐지되었습니다. 인벤토리 버튼 또는 마을 회관 지휘대를 사용하세요."));
+                    "§e수호단 기능은 인벤토리 버튼 또는 마을 회관 지휘대에서 사용할 수 있습니다."));
             return;
         }
         if (!isCaller(stack)) return;
@@ -89,7 +89,7 @@ public final class VillageStarterKit {
         event.setCancellationResult(InteractionResult.SUCCESS);
         player.setItemInHand(event.getHand(), ItemStack.EMPTY);
         player.sendSystemMessage(Component.literal(
-                "§e호출기 아이템은 폐지되었습니다. 인벤토리 버튼 또는 마을 회관 지휘대를 사용하세요."));
+                "§e수호단 기능은 인벤토리 버튼 또는 마을 회관 지휘대에서 사용할 수 있습니다."));
     }
 
     private static boolean isTacticalSheet(ItemStack stack) {

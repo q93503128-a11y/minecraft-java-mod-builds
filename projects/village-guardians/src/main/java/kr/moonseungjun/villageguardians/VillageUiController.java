@@ -459,7 +459,7 @@ public final class VillageUiController {
         }
         if (action.startsWith("manage:") || action.startsWith("facility:")) {
             player.sendSystemMessage(Component.literal(
-                    "§c구식 시설 바로가기는 폐기되었습니다. 각 시설의 고유 기능은 해당 시설 단말기에서 사용하세요."));
+                    "§c시설 기능은 각 시설 단말기에서 사용하세요. 회관에서는 시설 수리·강화만 관리합니다."));
             return true;
         }
         if (action.startsWith("select_role:")) {
