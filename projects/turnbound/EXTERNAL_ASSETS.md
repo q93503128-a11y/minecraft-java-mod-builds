@@ -6,6 +6,15 @@
 ## Directly usable candidates
 
 
+### Cavehorn Ravager production base
+- Type: direct_asset / editable_base
+- Model + texture + idle/walk base: Tolkien Tweaks - Mobs Edition goat
+- License: MIT
+- Intended use: Capital Valley Warning Cave optional Elite
+- Design rule: preserve the upstream horned quadruped identity; remove mount-only gear rather than rebuilding a temporary beast
+- Status: adopted production base
+- Tracking: `THIRD_PARTY/elite_cv_cavehorn_ravager/`
+
 ### CV-B / CV-C Capital Valley humanoid production family
 - Type: direct_asset / editable_base
 - Model, texture, weapon and motion base: FableCraft
