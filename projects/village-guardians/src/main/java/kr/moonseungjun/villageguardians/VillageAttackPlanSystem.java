@@ -62,7 +62,7 @@ public final class VillageAttackPlanSystem {
         ACTIVE_FRONTS.put(mob.getUUID(), front);
         Condition condition = condition(day, wave);
         applyCondition(mob, condition);
-        if (VillageEnemyArchetypeSystem.isFlying(mob)) {
+        if (VillageRaidSystem.isAerialEnemy(mob)) {
             BlockPos aerial = spawnOrigin(front, index).above(18 + Math.floorMod(index, 5) * 2);
             mob.snapTo(aerial.getX() + 0.5, aerial.getY(), aerial.getZ() + 0.5);
             return;
@@ -108,7 +108,8 @@ public final class VillageAttackPlanSystem {
                 ACTIVE_FRONTS.remove(id);
                 continue;
             }
-            if (VillageEnemyArchetypeSystem.isFlying(mob)) continue;
+            if (VillageRaidSystem.isAerialEnemy(mob)) continue;
+            if (VillageRaidSystem.hasActiveTaunt(level, mob)) continue;
             Front front = ACTIVE_FRONTS.getOrDefault(id, Front.NORTH);
             if (front == Front.NORTH) continue;
             VillageSiegeSegmentSystem.Segment segment = VillageSiegeSegmentSystem.primarySideFor(front);
@@ -181,6 +182,26 @@ public final class VillageAttackPlanSystem {
         Condition condition = condition(day, wave);
         return new AttackPlan(main, detachment, condition,
                 warStage(day), specialThreat(day, wave));
+    }
+
+    public static String currentThreatHud(ServerLevel level) {
+        if (level == null || !VillageRaidSystem.isActive()) return "";
+        Map<Front, Integer> counts = new java.util.EnumMap<>(Front.class);
+        int aerial = 0;
+        for (Mob mob : VillageRaidSystem.activeEnemies(level)) {
+            if (VillageRaidSystem.isAerialEnemy(mob)) {
+                aerial++;
+            } else {
+                counts.merge(frontOf(mob.getUUID()), 1, Integer::sum);
+            }
+        }
+        List<String> parts = new ArrayList<>();
+        for (Front front : Front.values()) {
+            int amount = counts.getOrDefault(front, 0);
+            if (amount > 0) parts.add(front.hudLabel() + " " + amount);
+        }
+        if (aerial > 0) parts.add("✦공중 " + aerial);
+        return parts.isEmpty() ? "" : "§c진입 §f" + String.join(" §8· §f", parts);
     }
 
     public static String scoutLine(int day, int wave, int count) {
@@ -281,10 +302,31 @@ public final class VillageAttackPlanSystem {
         if (level == null || count <= 0) return;
         Map<Front, Boolean> used = usedFronts(day, wave, count);
         AttackPlan plan = preview(day, wave, count);
+        level.getServer().getPlayerList().broadcastSystemMessage(
+                Component.literal("§c[진입 방향] §f" + previewThreatLine(day, wave, count)), false);
         for (Front front : used.keySet()) {
             BlockPos pos = safeSpawn(level, spawnOrigin(front, 0));
             VillageDefenseEffectSystem.raidFrontArrival(level, Vec3.atCenterOf(pos), front == plan.main());
         }
+    }
+
+    private static String previewThreatLine(int day, int wave, int count) {
+        Map<Front, Integer> counts = new java.util.EnumMap<>(Front.class);
+        int aerial = 0;
+        for (int i = 0; i < Math.max(0, count); i++) {
+            if (isGroundAssaultIndex(day, wave, count, i)) {
+                counts.merge(frontForIndex(day, wave, i), 1, Integer::sum);
+            } else {
+                aerial++;
+            }
+        }
+        List<String> parts = new ArrayList<>();
+        for (Front front : Front.values()) {
+            int amount = counts.getOrDefault(front, 0);
+            if (amount > 0) parts.add(front.hudLabel() + " " + amount);
+        }
+        if (aerial > 0) parts.add("✦공중 " + aerial);
+        return parts.isEmpty() ? "위협 없음" : String.join(" · ", parts);
     }
 
     private static Map<Front, Boolean> usedFronts(int day, int wave, int count) {
@@ -352,11 +394,13 @@ public final class VillageAttackPlanSystem {
     public record AttackPlan(Front main, String detachment, Condition condition, String stage, String specialThreat) {}
 
     public enum Front {
-        NORTH("북문 정면"), NORTH_WEST("북서 성벽"), NORTH_EAST("북동 성벽"),
-        WEST("서쪽 방벽"), EAST("동쪽 방벽"), SOUTH_WEST("후방 서측"), SOUTH_EAST("후방 동측");
+        NORTH("북문 정면", "↑북문"), NORTH_WEST("북서 성벽", "↖북서"), NORTH_EAST("북동 성벽", "↗북동"),
+        WEST("서쪽 방벽", "←서"), EAST("동쪽 방벽", "동→"), SOUTH_WEST("후방 서측", "↙후서"), SOUTH_EAST("후방 동측", "후동↘");
         private final String displayName;
-        Front(String displayName) { this.displayName = displayName; }
+        private final String hudLabel;
+        Front(String displayName, String hudLabel) { this.displayName = displayName; this.hudLabel = hudLabel; }
         public String displayName() { return displayName; }
+        public String hudLabel() { return hudLabel; }
     }
 
     public enum Condition {

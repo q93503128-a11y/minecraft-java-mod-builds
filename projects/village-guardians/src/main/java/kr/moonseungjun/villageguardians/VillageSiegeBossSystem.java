@@ -64,6 +64,12 @@ public final class VillageSiegeBossSystem {
                 DUEL_CASTS.remove(id);
                 continue;
             }
+            if (VillageRaidSystem.hasActiveTaunt(level, mob)) {
+                BREACH_CASTS.remove(id);
+                RITUAL_CASTS.remove(id);
+                DUEL_CASTS.remove(id);
+                continue;
+            }
             if (!PHASE_TWO.contains(id) && mob.getHealth() <= mob.getMaxHealth() * 0.50f) {
                 PHASE_TWO.add(id);
                 enterPhaseTwo(server, mob, ACTIVE.get(id));

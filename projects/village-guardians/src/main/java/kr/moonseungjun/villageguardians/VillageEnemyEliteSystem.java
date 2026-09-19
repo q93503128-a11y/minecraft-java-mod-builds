@@ -60,6 +60,13 @@ public final class VillageEnemyEliteSystem {
                 PLAGUE_CASTS.remove(id);
                 continue;
             }
+            if (VillageRaidSystem.hasActiveTaunt(level, mob)) {
+                GRAPPLE_MOTIONS.remove(id);
+                FIREBRAND_CASTS.remove(id);
+                PLAGUE_CASTS.remove(id);
+                mob.setNoGravity(false);
+                continue;
+            }
             GrappleMotion motion = GRAPPLE_MOTIONS.get(id);
             if (motion != null) {
                 tickGrapple(level, mob, motion);
@@ -94,7 +101,7 @@ public final class VillageEnemyEliteSystem {
             VillageEnemyArchetypeSystem.Archetype archetype = VillageRaidSystem.archetypeOf(mob);
             // Flying movement has a single authoritative owner in VillageRaidSystem. Ground elite
             // doctrines must never re-enable target/navigation AI on Phantom assault units.
-            if (VillageEnemyArchetypeSystem.isFlying(mob)) continue;
+            if (VillageRaidSystem.isAerialEnemy(mob)) continue;
             if (archetype == null || VillageEnemyArchetypeSystem.isBoss(archetype) || ACTIVE.containsKey(mob.getUUID())) continue;
             int divisor = VillageCouncilState.currentDay() >= 12 ? 5 : VillageCouncilState.currentDay() >= 9 ? 6 : 8;
             if (Math.floorMod(mob.getUUID().hashCode(), divisor) != 0) continue;
