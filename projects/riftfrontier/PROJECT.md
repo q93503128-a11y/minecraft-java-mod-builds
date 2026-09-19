@@ -98,7 +98,7 @@ Riftfrontier는 단순한 RPG 콘텐츠 팩이나 차원 추가 모드가 아니
 
 ## 현재 단계
 
-`M3 — PLAYER COMBAT BUILD VERIFIED / HUMAN FIELD PLAY + BOSS PRESENTATION NEXT`
+`M3 — CONNECTED REGION 01 TECHNICAL VERTICAL SLICE BUILD VERIFIED / PRODUCTION PRESENTATION + HUMAN PLAY NEXT`
 
 M0/M1의 content graph, validator, atomic runtime snapshot, persistence, GameTest/CI/JAR 기반은 완료된 생산 기반으로 취급한다. M2의 원정 vertical slice도 preparation supply → Region 01 진입 → salvage/전투 선택 → extraction/failure → hub 정산 → pressure/다음 원정 변화와 restart/owner 경계까지 자동 검증되어 있으며, 같은 authority/lifecycle 작업을 회귀 근거 없이 반복하지 않는다.
 
@@ -120,14 +120,14 @@ M3에서 현재까지 구축·검증된 production 경계:
 - server-authoritative boss semantic timeline → reviewed animation sample → skinned frame → Minecraft custom geometry submission 경로
 - client resource reload에서 geometry/animation/material publication generation을 분리·검증하는 presentation gate
 
-현재 플레이어 field-impact 검증 기준은 code commit `2d94c54cfddcb8d81d0ae7567a4d90adb0cd0dca`, GitHub Actions `Build Riftfrontier` run `34739314980`이다. 해당 run은 toolchain, asset-intake tests, `clean test build`, 9개 required native GameTests, dedicated-server smoke, Xvfb client initialization smoke, executable-JAR 검사와 artifact/report 업로드까지 성공했다.
+2026-09-20 수동 코드/리소스/정본 감사 및 연결 수직 구간 검증 기준은 code commit `14a2a0b3b317c465f11d242cbf4f73bba5062568`, GitHub Actions `Build Riftfrontier` run `35452759876`이다. 해당 run은 asset-intake tests, clean test/build, 9개 required native GameTests, dedicated-server smoke, Xvfb client initialization smoke, executable-JAR 검사와 artifact/report 업로드까지 성공했다.
 
 검증 executable JAR:
 
 - `riftfrontier-0.1.0-alpha.1.jar`
-- SHA-256 `310257a14a6e8d7c990aa21fb2bff314dd0cfea3234825c5379a1912fb80b8d1`
+- SHA-256 `2d8d15f6ba5fb1df0615066082241c19405402ce1d86d623c991f0bb3c79fb24`
 
-이 체크포인트의 정확한 상태는 `CODE REVIEWED / TESTED / BUILD VERIFIED / JAR PRODUCED`다. Human player combat field play와 multiplayer field play는 아직 `NOT TESTED`다.
+이 체크포인트에는 Region 01 extraction metadata와 authoritative pressure 증가 규칙의 정합, 철수 결과/잠금 메시지의 완전한 localization, 정상 플레이 문구의 개발 단계 표현 제거, Hunter/Scout 표시명 정리가 포함된다. production content regression test를 포함한 256개 JUnit 테스트가 실패 없이 통과했다. 정확한 상태는 `CODE REVIEWED / TESTED / BUILD VERIFIED / JAR PRODUCED`다. Human player combat/expedition field play와 multiplayer field play는 아직 `NOT TESTED`다.
 
 Region 01 boss는 geometry/rig/custom renderer 경로까지 준비됐지만 **final material/texture, attack-specific production animation authoring, VFX, sound, real hitbox/scale alignment, encounter integration과 human readability는 아직 승인·검수되지 않았다.** Source `Atlas`를 그대로 되살리거나 AI가 임의의 색/재질 언어를 발명해 이 게이트를 우회하지 않는다.
 
