@@ -8,6 +8,28 @@ Recovery aid only. Reconstruct canonical truth from current GitHub `main`, `/AGE
 
 Priority remains a genuinely playable, polished Region 01 vertical slice. Do not grow speculative authority/lifecycle infrastructure or expand region count while visible gameplay/presentation remains incomplete.
 
+## 2026-09-20 manual audit / audited JAR checkpoint
+
+A full manual code/resource/canon consistency pass was completed on current `main` before producing a fresh JAR. Runtime/content corrections are build-verified at code commit `14a2a0b3b317c465f11d242cbf4f73bba5062568`, `Build Riftfrontier` run `35452759876`.
+
+The audit found and corrected:
+- production Region 01 extraction metadata incorrectly claimed successful extraction reduced pressure while authoritative `RiftfrontierWorldData.settleRegion01Extraction` raises pressure by 1; production metadata now uses `threat_delta = 1` and matching consequence text, with `ProductionRegion01ExpeditionContentTest` locking the contract;
+- raw English domain consequence text could be appended to localized extraction feedback; player feedback now remains fully localization-key driven;
+- locked extraction could expose a raw English exception message; the relay now shows localized recovered/required salvage counts instead;
+- normal player-facing hub text and field-test labels exposed development/review terminology; these were removed from shipped localization strings;
+- Scout field-review entity localization was missing; EN/KO keys are now complete and placeholder arity matches across all 54 keys.
+
+Verification evidence:
+- 80 JUnit suites / 256 tests / 0 failures / 0 errors / 0 skipped;
+- 9 required native GameTests passed;
+- dedicated server smoke passed;
+- Xvfb client initialization smoke passed;
+- executable-JAR inspection passed;
+- audited JAR SHA-256: `2d8d15f6ba5fb1df0615066082241c19405402ce1d86d623c991f0bb3c79fb24`.
+
+This remains `NOT PLAYTESTED` and `NOT MULTIPLAYER TESTED`. The audit validates code/resource/canon consistency and runnable packaging, not combat feel, visual acceptance, audio quality or multiplayer experience.
+
+
 ## Latest verified gameplay checkpoint
 
 Latest build-verified Riftfrontier gameplay checkpoint is `e81ccb44bccc3906d7e03639fe8a5da4de809cfe` (`fix(riftfrontier): resolve same-tick spawned combat targets`). `Build Riftfrontier` workflow run `35172934294` completed **SUCCESS** on 2026-09-17.
