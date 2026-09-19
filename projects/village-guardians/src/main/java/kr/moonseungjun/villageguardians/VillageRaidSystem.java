@@ -53,6 +53,7 @@ public final class VillageRaidSystem {
     private static final double PLAYER_PRIORITY_RANGE = 16.0;
     private static final String RAID_TEAM_NAME = "vg_raid";
     private static final String RAID_ENEMY_TAG = "villageguardians_raid_enemy";
+    private static final String AERIAL_ENEMY_TAG = "villageguardians_aerial_enemy";
 
     private static boolean active;
     private static int wave;
@@ -156,13 +157,15 @@ public final class VillageRaidSystem {
     public static int tauntEnemies(
             ServerLevel level, LivingEntity taunter, Vec3 center, double radius, int durationTicks, int limit) {
         if (level == null || taunter == null || center == null || radius <= 0.0 || durationTicks <= 0) return 0;
-        double radiusSquared = radius * radius;
-        int maximum = Math.max(1, limit);
+        boolean playerTaunter = taunter instanceof ServerPlayer;
+        double effectiveRadius = playerTaunter ? Math.max(radius, 44.0) : radius;
+        double radiusSquared = effectiveRadius * effectiveRadius;
+        int maximum = playerTaunter ? Math.max(160, limit) : Math.max(1, limit);
         long until = level.getGameTime() + durationTicks;
         boolean mercenaryTaunter = taunter instanceof Mob taunterMob
                 && VillageMercenarySystem.isCombatMercenary(taunterMob);
         List<Mob> candidates = activeEnemies(level).stream()
-                .filter(mob -> !mercenaryTaunter || !VillageEnemyArchetypeSystem.isFlying(mob))
+                .filter(mob -> !mercenaryTaunter || !isAerialEnemy(mob))
                 .filter(mob -> mob.position().distanceToSqr(center) <= radiusSquared)
                 .sorted(Comparator.comparingDouble(mob -> mob.position().distanceToSqr(center)))
                 .limit(maximum)
@@ -172,6 +175,15 @@ public final class VillageRaidSystem {
             enemy.setTarget(taunter);
         }
         return candidates.size();
+    }
+
+    public static boolean isAerialEnemy(Entity entity) {
+        return entity != null && (entity.entityTags().contains(AERIAL_ENEMY_TAG)
+                || ACTIVE_AERIAL_ROLES.containsKey(entity.getUUID()));
+    }
+
+    public static boolean hasActiveTaunt(ServerLevel level, Mob mob) {
+        return level != null && mob != null && activeTauntTarget(level, mob) != null;
     }
 
     public static boolean isRaidEnemy(Entity entity) {
@@ -202,7 +214,7 @@ public final class VillageRaidSystem {
     }
 
     public static VillageEnemyArchetypeSystem.AerialRole aerialRoleOf(Mob mob) {
-        if (mob == null || !VillageEnemyArchetypeSystem.isFlying(mob)) return null;
+        if (mob == null || !isAerialEnemy(mob)) return null;
         return ACTIVE_AERIAL_ROLES.getOrDefault(mob.getUUID(), VillageEnemyArchetypeSystem.AerialRole.RAIDER);
     }
 
@@ -368,6 +380,7 @@ public final class VillageRaidSystem {
             mob.setNoAi(false);
             mob.setInvulnerable(false);
             if (VillageEnemyArchetypeSystem.isFlying(mob)) {
+                mob.addTag(AERIAL_ENEMY_TAG);
                 VillageEnemyArchetypeSystem.AerialRole aerialRole =
                         VillageEnemyArchetypeSystem.aerialRole(day, wave, index, currentTrait);
                 ACTIVE_AERIAL_ROLES.put(mob.getUUID(), aerialRole);
@@ -460,15 +473,15 @@ public final class VillageRaidSystem {
             LivingEntity tauntTarget = activeTauntTarget(level, mob);
             if (tauntTarget != null) {
                 mob.setTarget(tauntTarget);
-                if (VillageEnemyArchetypeSystem.isFlying(mob)) {
+                if (isAerialEnemy(mob)) {
                     directTauntedFlyingEnemy(server, level, mob, tauntTarget);
                 } else {
-                    mob.getNavigation().moveTo(tauntTarget, 1.22);
+                    directTauntedGroundEnemy(mob, tauntTarget);
                 }
                 continue;
             }
 
-            if (VillageEnemyArchetypeSystem.isFlying(mob)) {
+            if (isAerialEnemy(mob)) {
                 directFlyingEnemy(server, level, mob, archetype, villageCenter);
                 continue;
             }
@@ -608,6 +621,18 @@ public final class VillageRaidSystem {
             return null;
         }
         return target;
+    }
+
+    private static void directTauntedGroundEnemy(Mob mob, LivingEntity target) {
+        mob.setTarget(target);
+        mob.getLookControl().setLookAt(target, 45.0f, 45.0f);
+        mob.getNavigation().moveTo(target, 1.32);
+        Vec3 horizontal = new Vec3(target.getX() - mob.getX(), 0.0, target.getZ() - mob.getZ());
+        if (horizontal.lengthSqr() > 16.0) {
+            Vec3 push = horizontal.normalize().scale(0.055);
+            Vec3 current = mob.getDeltaMovement();
+            mob.setDeltaMovement(current.x * 0.78 + push.x, current.y, current.z * 0.78 + push.z);
+        }
     }
 
     private static void directTauntedFlyingEnemy(

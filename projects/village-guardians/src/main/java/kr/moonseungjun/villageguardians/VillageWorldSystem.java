@@ -12,6 +12,7 @@ import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
@@ -28,8 +29,8 @@ public final class VillageWorldSystem {
     public static final int ENEMY_SPAWN_DISTANCE = 112;
     public static final int BATTLEFIELD_RADIUS = ENEMY_SPAWN_DISTANCE + 80;
     private static final int MIGRATION_CLEAN_RADIUS = FORTRESS_RADIUS + 24;
-    private static final long RETURN_COOLDOWN_TICKS = 20L * 60L;
-    private static final long COMBAT_RETURN_LOCK_TICKS = 20L * 10L;
+    private static final long RETURN_COOLDOWN_TICKS = 20L * 10L;
+    private static final long COMBAT_RETURN_LOCK_TICKS = 20L * 5L;
     private static final Set<UUID> ALLOWED_GAME_MOBS = ConcurrentHashMap.newKeySet();
     private static final Map<UUID, Long> RETURN_READY_AT = new HashMap<>();
     private static final Map<UUID, Long> LAST_COMBAT_AT = new HashMap<>();
@@ -149,6 +150,10 @@ public final class VillageWorldSystem {
         if (event.getEntity() instanceof ServerPlayer defender) LAST_COMBAT_AT.put(defender.getUUID(), gameTime);
         Entity source = event.getSource().getEntity();
         if (source instanceof ServerPlayer attacker) LAST_COMBAT_AT.put(attacker.getUUID(), gameTime);
+        Entity direct = event.getSource().getDirectEntity();
+        if (direct instanceof Projectile projectile && projectile.getOwner() instanceof ServerPlayer attacker) {
+            LAST_COMBAT_AT.put(attacker.getUUID(), gameTime);
+        }
     }
 
     public static synchronized String returnToVillage(ServerPlayer player) {
@@ -169,7 +174,7 @@ public final class VillageWorldSystem {
         player.teleportTo(destination, target.getX() + 0.5, target.getY(), target.getZ() + 0.5,
                 Set.of(), player.getYRot(), player.getXRot(), true);
         RETURN_READY_AT.put(player.getUUID(), now + RETURN_COOLDOWN_TICKS);
-        return "마을 중앙 광장으로 귀환했습니다. 재사용 대기시간은 60초입니다.";
+        return "마을 중앙 광장으로 귀환했습니다. 재사용 대기시간은 10초입니다.";
     }
 
     public static boolean isAllowedGameMob(Mob mob) { return ALLOWED_GAME_MOBS.contains(mob.getUUID()); }
