@@ -108,6 +108,7 @@ final class DrehmalVisibleEncounterService {
         private final DrehmalFirstRouteCatalog.Footprint footprint;
         private final DrehmalFirstRouteCatalog.Patrol patrol;
         private final V04Catalogs.Encounter spec;
+        private final DrehmalFieldEncounterPolicy.Policy fieldPolicy;
         private final List<UUID> actors = new ArrayList<>();
         private final List<Vec3> patrolPoints;
         private final List<FieldRoamPlanner.Point> roamPoints;
@@ -123,6 +124,7 @@ final class DrehmalVisibleEncounterService {
         private Vec3 lastMoveTarget;
         private long navigationStalledSinceTick = FieldNavigationRules.NEVER;
         private int graceTicks = 40;
+        private int alertPreludeTicks;
         private long availableAt;
         private UUID claimedBy;
         private FieldEncounterRules.Phase phase = FieldEncounterRules.Phase.PATROL;
@@ -135,6 +137,7 @@ final class DrehmalVisibleEncounterService {
             this.footprint = requiredFootprint(slot.footprintLocator());
             this.patrol = slot.patrolLocator().isBlank() ? null : requiredPatrol(slot.patrolLocator());
             this.spec = CampaignEncounterCatalog.spec(slot.combatEncounterId());
+            this.fieldPolicy = DrehmalFieldEncounterPolicy.forEncounter(slot, site);
             this.pivot = vec(site.runtimePosition());
             this.returnTarget = pivot;
             this.lastSafePivot = DrehmalFirstRouteRuntime.insideSafetyZone(pivot.x, pivot.z) ? null : pivot;
@@ -198,27 +201,34 @@ final class DrehmalVisibleEncounterService {
             phase = FieldEncounterRules.nextPhase(phase, sensedDistance, returnDistance, graceTicks);
             if (previous == FieldEncounterRules.Phase.PATROL && phase == FieldEncounterRules.Phase.ALERT) {
                 returnTarget = pivot;
+                alertPreludeTicks = fieldPolicy.alertPreludeTicks();
             } else if (previous == FieldEncounterRules.Phase.RETURN && phase == FieldEncounterRules.Phase.PATROL) {
                 pivot = returnTarget;
                 graceTicks = Math.max(graceTicks, FieldEncounterRules.RETURN_REAGGRO_GRACE_TICKS);
+                alertPreludeTicks = 0;
+            } else if (previous == FieldEncounterRules.Phase.ALERT && phase != FieldEncounterRules.Phase.ALERT) {
+                alertPreludeTicks = 0;
             }
 
-            if (nearest != null && sight && FieldEncounterRules.shouldEngage(phase, playerDistance, graceTicks)) {
+            if (nearest != null && sight && FieldEncounterRules.shouldEngage(
+                    phase, playerDistance, Math.max(graceTicks, alertPreludeTicks))) {
                 if (startBattle(level, nearest)) return;
                 graceTicks = 40;
+                alertPreludeTicks = 0;
                 phase = FieldEncounterRules.Phase.RETURN;
             }
 
+            boolean alertPrelude = phase == FieldEncounterRules.Phase.ALERT && alertPreludeTicks > 0;
             boolean patrolPaused = phase == FieldEncounterRules.Phase.PATROL && patrolDwellTicks > 0;
             if (patrolPaused) patrolDwellTicks--;
 
             Vec3 target = switch (phase) {
-                case ALERT -> flatPlayer;
+                case ALERT -> alertPrelude ? pivot : flatPlayer;
                 case RETURN -> returnTarget;
                 case PATROL -> patrolPaused ? pivot : patrolTarget();
             };
             double speed = switch (phase) {
-                case ALERT -> 0.095D;
+                case ALERT -> alertPrelude ? 0.0D : 0.095D;
                 case RETURN -> 0.075D;
                 case PATROL -> !patrolPaused && patrolPoints.size() >= 2 ? 0.035D : 0.0D;
             };
@@ -237,6 +247,7 @@ final class DrehmalVisibleEncounterService {
                 stopLeadNavigation(level);
             }
             updateActors(level, walking);
+            if (phase == FieldEncounterRules.Phase.ALERT && alertPreludeTicks > 0) alertPreludeTicks--;
         }
 
         private List<ServerPlayer> observers(ServerLevel level) {
@@ -407,7 +418,7 @@ final class DrehmalVisibleEncounterService {
                     actor.setYBodyRot(yaw);
                 }
                 actor.setFieldWalking(walking);
-                if (i == 0 && phase == FieldEncounterRules.Phase.ALERT) {
+                if (i == 0 && phase == FieldEncounterRules.Phase.ALERT && alertPreludeTicks > 0) {
                     actor.setCustomName(Component.literal("!").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
                     actor.setCustomNameVisible(true);
                 } else {
@@ -527,6 +538,7 @@ final class DrehmalVisibleEncounterService {
                     ? horizontalDirection(patrolPoints.get(1).subtract(patrolPoints.get(0)), new Vec3(0, 0, -1))
                     : new Vec3(0.0D, 0.0D, -1.0D);
             graceTicks = 40;
+            alertPreludeTicks = 0;
             phase = FieldEncounterRules.Phase.PATROL;
         }
     }
