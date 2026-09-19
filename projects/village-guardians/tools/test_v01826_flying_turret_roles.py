@@ -26,10 +26,10 @@ def main() -> None:
     assert "VillageWaveTrait.STORMFRONT" in enemy and "VillageWaveTrait.HUNTERS" in enemy
     assert "하늘 약탈귀" in enemy
 
-    assert "VillageEnemyArchetypeSystem.isFlying(mob)" in attack
+    assert "VillageRaidSystem.isAerialEnemy(mob)" in attack
     assert "spawnOrigin(front, index).above(" in attack
     assert not (JAVA / "VillageGatePrioritySystem.java").exists()
-    assert "if (VillageEnemyArchetypeSystem.isFlying(mob))" in attack
+    assert "if (VillageRaidSystem.isAerialEnemy(mob))" in attack
     assert "directFlyingEnemy(server, level, mob, archetype, villageCenter)" in raid
     assert "mob.getMoveControl().setWantedPosition" in raid
     assert "chooseTarget(" in raid and "villageCenter, mob.blockPosition(), true, archetype" in raid
