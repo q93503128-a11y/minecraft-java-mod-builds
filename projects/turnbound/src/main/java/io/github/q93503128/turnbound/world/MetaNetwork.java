@@ -35,7 +35,7 @@ public final class MetaNetwork {
                         return;
                     }
 
-                    String denial = MetaActionGate.denial(player, raw);
+                    String denial = RuntimeMetaActionGate.denial(player, raw);
                     if (denial.isBlank()) denial = MetaFacilityActionGate.denial(player, raw);
                     if (!denial.isBlank()) {
                         feedback(player, denial);
