@@ -83,7 +83,8 @@ def main() -> None:
     assert 'TACTICAL_SHEET_NAME = "수호단 작전표"' in starter
     assert "removeTacticalSheetItems(player)" in starter
     assert "ensureTacticalSheet(player)" not in starter
-    assert "작전표·호출기 아이템은 폐지되었습니다" in starter
+    assert "작전표·호출기 아이템은 폐지되었습니다" not in starter
+    assert "빠른 통신과 상태·성장·직업 성장 기능" in starter
 
     assert "세 갈래 동시 성장 가능" in ui
     assert "지속·위력·특수는 서로 배타적이지 않음" in ui
