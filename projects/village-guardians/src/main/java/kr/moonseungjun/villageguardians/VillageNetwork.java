@@ -36,6 +36,7 @@ public final class VillageNetwork {
         registrar.playToServer(VillageUiActionPayload.TYPE, VillageUiActionPayload.STREAM_CODEC,
                 (payload, context) -> {
                     if (context.player() instanceof ServerPlayer player) {
+                        if (VillageRespawnSystem.isDowned(player) || !player.isAlive()) return;
                         String action = payload.action();
                         if (!acceptAction(player, action)) return;
                         if (!VillageLocalActionSystem.handle(player, action)
@@ -46,7 +47,10 @@ public final class VillageNetwork {
                 });
         registrar.playToServer(RequestPlayerStatusPayload.TYPE, RequestPlayerStatusPayload.STREAM_CODEC,
                 (payload, context) -> {
-                    if (context.player() instanceof ServerPlayer player) sendPlayerStatus(player);
+                    if (context.player() instanceof ServerPlayer player
+                            && !VillageRespawnSystem.isDowned(player) && player.isAlive()) {
+                        sendPlayerStatus(player);
+                    }
                 });
     }
 

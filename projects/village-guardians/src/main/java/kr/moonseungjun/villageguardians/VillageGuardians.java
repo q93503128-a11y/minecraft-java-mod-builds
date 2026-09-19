@@ -36,7 +36,6 @@ public final class VillageGuardians {
         VillageSkillEffectEntities.register(modEventBus);
         modEventBus.addListener(VillageNetwork::registerPayloads);
         NeoForge.EVENT_BUS.register(this);
-        LOGGER.info("Village Guardians siege phase 2, RPG, relic and defense systems loaded");
     }
 
     @SubscribeEvent
@@ -113,6 +112,11 @@ public final class VillageGuardians {
 
     @SubscribeEvent
     public void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        if (event.getEntity() instanceof ServerPlayer player
+                && (VillageRespawnSystem.isDowned(player) || !player.isAlive())) {
+            event.setCanceled(true);
+            return;
+        }
         if (VillageSkillTestSystem.handleManagementBox(event)) return;
         if (VillagePlacedTurretSystem.handlePlacementClick(event)) return;
         if (VillageWorldSystem.handleCentralBellInteraction(event)) return;
@@ -124,6 +128,11 @@ public final class VillageGuardians {
 
     @SubscribeEvent
     public void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
+        if (event.getEntity() instanceof ServerPlayer player
+                && (VillageRespawnSystem.isDowned(player) || !player.isAlive())) {
+            event.setCanceled(true);
+            return;
+        }
         if (VillageConsumableSystem.handleItemInteraction(event)) return;
         VillageStarterKit.handleItemInteraction(event);
     }

@@ -66,7 +66,8 @@ public final class VillageClientKeys {
     private static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player != null && minecraft.getConnection() != null) migrateBindings(minecraft);
-        if (minecraft.player == null || minecraft.getConnection() == null || minecraft.gui.screen() != null) {
+        if (minecraft.player == null || minecraft.getConnection() == null || minecraft.gui.screen() != null
+                || !minecraft.player.isAlive() || minecraft.player.isSpectator()) {
             for (KeyMapping mapping : mappings()) drain(mapping);
             skillTwoPending = false;
             skillTwoToolbarChord = false;

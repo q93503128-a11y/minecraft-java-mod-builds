@@ -272,6 +272,9 @@ public final class VillageRoleSkillSystem {
     }
 
     public static String useEquippedSkill(ServerPlayer player, int slot) {
+        if (player == null || !player.isAlive() || VillageRespawnSystem.isDowned(player)) {
+            return "전투 불능 상태에서는 기술을 사용할 수 없습니다.";
+        }
         boolean testing = VillageSkillTestSystem.isEnabled(player);
         VillageRole role = testing
                 ? VillageSkillTestSystem.selectedRole(player)
