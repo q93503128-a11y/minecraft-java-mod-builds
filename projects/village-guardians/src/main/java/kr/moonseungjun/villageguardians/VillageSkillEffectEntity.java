@@ -102,7 +102,9 @@ public final class VillageSkillEffectEntity extends Entity {
             }
             if (tracksOwnerLook()) {
                 Vec3 look = owner.getLookAngle();
-                if (kind().startsWith("warden_")) look = new Vec3(look.x, 0.0, look.z);
+                if (kind().startsWith("warden_") || kind().startsWith("mercenary_presence_")) {
+                    look = new Vec3(look.x, 0.0, look.z);
+                }
                 if (look.lengthSqr() > 1.0E-6) setDirection(look.normalize());
             }
             Vec3 target = switch (kind()) {

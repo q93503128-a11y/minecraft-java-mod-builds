@@ -207,10 +207,7 @@ public final class VillageMercenarySystem {
             int rank = rank(mercenary);
             applyClassPassives(mercenary, kind, rank);
             VillageMercenaryPresentationSystem.ensure(level, mercenary, kind, rank);
-            if (!VillageRaidSystem.isActive()) {
-                mercenary.heal(Math.max(2.0f, mercenary.getMaxHealth() * 0.02f));
-                continue;
-            }
+            if (!VillageRaidSystem.isActive()) continue;
             if (kind == MercenaryClass.BASTION) bastionControl(level, mercenary, rank);
             else if (kind == MercenaryClass.STRIKER) strikerPressure(level, mercenary, rank);
             else if (kind == MercenaryClass.RANGER) rangedAttack(level, mercenary, rank);
@@ -243,6 +240,18 @@ public final class VillageMercenarySystem {
         if (mob == null || !isMercenary(mob.getUUID())) return;
         if (mob.level() instanceof ServerLevel level) VillageMercenaryPresentationSystem.remove(level, mob.getUUID());
         unregister(mob.getUUID());
+    }
+
+    public static synchronized void healAtDawn(MinecraftServer server) {
+        if (server == null) return;
+        ServerLevel level = server.overworld();
+        for (IronGolem mercenary : loadedMercenaries(level)) {
+            recognize(mercenary);
+            float missing = Math.max(0.0f, mercenary.getMaxHealth() - mercenary.getHealth());
+            if (missing <= 0.0f) continue;
+            float recovery = Math.max(36.0f, mercenary.getMaxHealth() * 0.30f);
+            mercenary.heal(Math.min(missing, recovery));
+        }
     }
 
     public static String status(MinecraftServer server) {
@@ -425,6 +434,8 @@ public final class VillageMercenarySystem {
         applyClassAttributes(mercenary, kind, rank);
         mercenary.setInvisible(true);
         int duration = 20 * 60 * 60;
+        mercenary.addEffect(new MobEffectInstance(
+                MobEffects.INVISIBILITY, duration, 0, false, false));
         int healthTier = Math.min(4, Math.max(0, (rank - 1) / 12));
         if (healthTier > 0) {
             mercenary.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST, duration, healthTier - 1, false, false));

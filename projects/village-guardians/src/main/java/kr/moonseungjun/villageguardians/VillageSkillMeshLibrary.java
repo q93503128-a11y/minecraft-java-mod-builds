@@ -1073,14 +1073,13 @@ public final class VillageSkillMeshLibrary {
         renderExternalMercenary(pose, out, b, style, tier);
 
         if (style == 0) {
-            Vec3 shieldCenter = b.local(0.0, 1.10, 0.78 * scale);
-            curvedShield(pose, out, b, shieldCenter, 1.32 * scale, 1.72 * scale, 0.30,
-                    withAlpha(color, 92 + tier * 12));
-            shieldFrame(pose, out, b, shieldCenter.add(b.forward.scale(0.035)),
-                    1.32 * scale, 1.72 * scale, 0.30, color);
+            Vec3 shieldCenter = b.local(0.0, 0.96, 0.52 * scale);
+            shieldFrame(pose, out, b, shieldCenter,
+                    0.78 * scale, 1.08 * scale, 0.18, withAlpha(color, 185));
             for (int side : new int[]{-1, 1}) {
-                prism(pose, out, b.local(side * 0.58 * scale, 0.55, 0.15),
-                        b.local(side * 0.70 * scale, 1.65 * scale, 0.26), 0.075 + tier * 0.01, color);
+                prism(pose, out, b.local(side * 0.46 * scale, 0.64, 0.08),
+                        b.local(side * 0.50 * scale, 1.38 * scale, 0.15),
+                        0.045 + tier * 0.006, withAlpha(color, 150));
             }
         } else if (style == 1) {
             prism(pose, out, b.local(-0.62 * scale, 0.52, -0.06),
@@ -1127,16 +1126,16 @@ public final class VillageSkillMeshLibrary {
         if (model.empty()) return;
         double scale = 0.96 + Math.max(0, Math.min(3, tier)) * 0.035;
         int body = switch (style) {
-            case 0 -> rgba(82, 112, 145, 246);
-            case 1 -> rgba(137, 58, 52, 246);
-            case 2 -> rgba(78, 126, 83, 246);
-            default -> rgba(220, 207, 167, 246);
+            case 0 -> rgba(126, 132, 140, 246);
+            case 1 -> rgba(104, 72, 67, 246);
+            case 2 -> rgba(84, 111, 76, 246);
+            default -> rgba(181, 170, 143, 246);
         };
         int weapon = switch (style) {
-            case 0 -> rgba(225, 194, 106, 252);
-            case 1 -> rgba(208, 216, 224, 252);
-            case 2 -> rgba(128, 87, 51, 252);
-            default -> rgba(243, 210, 101, 252);
+            case 0 -> rgba(199, 205, 211, 252);
+            case 1 -> rgba(188, 194, 201, 252);
+            case 2 -> rgba(126, 91, 56, 252);
+            default -> rgba(205, 183, 105, 252);
         };
         for (int triangle = 0; triangle < model.triangleCount(); triangle++) {
             int ia = model.index(triangle, 0);

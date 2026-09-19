@@ -557,6 +557,29 @@ public final class VillageUiController {
             }
             return true;
         }
+        if (action.startsWith("role_skill_unlock:")) {
+            if (!VillageLocationRules.isNearSkillHall(player)) {
+                player.sendSystemMessage(Component.literal("§c직업 기술 습득은 기술 연구소에서만 가능합니다."));
+                return true;
+            }
+            player.sendSystemMessage(Component.literal("§b"
+                    + VillageRoleSkillSystem.unlockSkill(player,
+                    action.substring("role_skill_unlock:".length()))));
+            openRoleProgress(player);
+            return true;
+        }
+        if (action.startsWith("role_skill_equip:")) {
+            String[] parts = action.split(":", 3);
+            if (parts.length == 3) {
+                int slot;
+                try { slot = Integer.parseInt(parts[2]); }
+                catch (NumberFormatException ignored) { slot = 0; }
+                player.sendSystemMessage(Component.literal("§b"
+                        + VillageRoleSkillSystem.equipSkill(player, parts[1], slot)));
+                openRoleProgress(player);
+            }
+            return true;
+        }
         if (action.startsWith("research_skill_unlock:")) {
             if (!VillageLocationRules.isNearSkillHall(player)) {
                 player.sendSystemMessage(Component.literal("§c직업 기술 습득은 기술 연구소에서만 가능합니다."));

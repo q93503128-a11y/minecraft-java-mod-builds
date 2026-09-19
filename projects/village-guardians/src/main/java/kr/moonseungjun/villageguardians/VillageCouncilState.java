@@ -249,6 +249,7 @@ public final class VillageCouncilState {
         persist();
         freezeAndApplyTime(server);
         VillageWorldSystem.purgeDaytimeHostiles(server);
+        VillageMercenarySystem.healAtDawn(server);
         broadcast(server, "§b제 " + villageDay + "일 낮입니다. 손상된 시설을 정비하세요.");
         grantDailyFoodToOnlinePlayers(server);
     }
@@ -321,6 +322,7 @@ public final class VillageCouncilState {
         broadcast(server, "§b마을 시간이 제 " + villageDay + "일 " + timePhase.koreanName() + "으로 진행되었습니다.");
         if (timePhase == VillageTimePhase.DAY) {
             VillageWorldSystem.purgeDaytimeHostiles(server);
+            VillageMercenarySystem.healAtDawn(server);
             grantDailyFoodToOnlinePlayers(server);
         }
         VillageRaidSystem.onPhaseChanged(server, timePhase);
