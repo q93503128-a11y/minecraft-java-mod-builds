@@ -1,6 +1,7 @@
 package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.Turnbound;
+import io.github.q93503128.turnbound.combat.BattleOutcome;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
@@ -59,6 +60,7 @@ public final class ExternalWorldBootstrap {
         }
         if (!ACTIVE.contains(player.getUUID())) return initialize(player);
 
+        DrehmalVisibleEncounterService.tick(player);
         if (player.tickCount % 40 == 0) {
             FieldNetwork.syncExternal(player, DrehmalFirstRouteRuntime.explorationSnapshot(player));
         }
@@ -72,11 +74,19 @@ public final class ExternalWorldBootstrap {
                 && DrehmalWorldBinding.isBound(player.level().getServer());
     }
 
+    public static boolean onBattleEnded(ServerPlayer player, String encounterId, BattleOutcome outcome) {
+        if (!active(player)) return false;
+        return DrehmalVisibleEncounterService.onBattleEnded(player, encounterId, outcome);
+    }
+
     public static void remove(ServerPlayer player) {
-        if (player != null) ACTIVE.remove(player.getUUID());
+        if (player == null) return;
+        DrehmalVisibleEncounterService.onPlayerRemoved(player);
+        ACTIVE.remove(player.getUUID());
     }
 
     public static void clear() {
+        DrehmalVisibleEncounterService.clear();
         ACTIVE.clear();
     }
 }

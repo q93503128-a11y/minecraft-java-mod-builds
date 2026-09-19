@@ -6,6 +6,7 @@ import io.github.q93503128.turnbound.combat.CampaignEncounterCatalog;
 import io.github.q93503128.turnbound.combat.EndgameEncounterCatalog;
 import io.github.q93503128.turnbound.presentation.PersonalPresentationIsolation;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
+import io.github.q93503128.turnbound.world.ExternalWorldBootstrap;
 import io.github.q93503128.turnbound.world.RewardGrantService;
 import io.github.q93503128.turnbound.world.WorldSessionRouter;
 import net.minecraft.network.chat.Component;
@@ -161,7 +162,9 @@ public final class BattleSessionManager {
             }
             if (!deferredReward && !encounterId.isBlank() && CampaignEncounterCatalog.contains(encounterId)) {
                 try {
-                    WorldSessionRouter.onBattleEnded(player, encounterId, outcome);
+                    if (!ExternalWorldBootstrap.onBattleEnded(player, encounterId, outcome)) {
+                        WorldSessionRouter.onBattleEnded(player, encounterId, outcome);
+                    }
                 } catch (RuntimeException ex) {
                     Turnbound.LOGGER.error("TURNBOUND failed to restore field state for {} after encounter {}",
                             player.getUUID(), encounterId, ex);

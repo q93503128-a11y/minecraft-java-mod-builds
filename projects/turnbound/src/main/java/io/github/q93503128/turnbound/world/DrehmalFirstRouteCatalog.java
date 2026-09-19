@@ -41,15 +41,22 @@ public final class DrehmalFirstRouteCatalog {
             boolean productionEnabled
     ) {}
 
+    public record ArenaCandidate(Position center, float yaw) {}
+
     public record Footprint(
             String locator,
             String siteLocator,
             int radius,
             int allySlots,
             int enemySlots,
+            List<ArenaCandidate> candidates,
             boolean verifiedIn26_2,
             boolean productionEnabled
-    ) {}
+    ) {
+        public Footprint {
+            candidates = List.copyOf(candidates == null ? List.of() : candidates);
+        }
+    }
 
     public record Patrol(
             String locator,
@@ -109,6 +116,14 @@ public final class DrehmalFirstRouteCatalog {
         if (locator == null) return null;
         for (Footprint footprint : ROUTE.footprints()) {
             if (locator.equals(footprint.locator())) return footprint;
+        }
+        return null;
+    }
+
+    public static EncounterSlot encounterByCombatId(String encounterId) {
+        if (encounterId == null || encounterId.isBlank()) return null;
+        for (EncounterSlot encounter : ROUTE.encounters()) {
+            if (encounterId.equals(encounter.combatEncounterId())) return encounter;
         }
         return null;
     }
@@ -180,6 +195,9 @@ public final class DrehmalFirstRouteCatalog {
             }
             if (footprint.productionEnabled() && !footprint.verifiedIn26_2()) {
                 errors.add("unverified production footprint " + footprint.locator());
+            }
+            if (footprint.productionEnabled() && footprint.candidates().size() < 2) {
+                errors.add("production footprint needs two camera-safe arena candidates " + footprint.locator());
             }
         }
 
@@ -289,12 +307,22 @@ public final class DrehmalFirstRouteCatalog {
             List<Footprint> footprints = new ArrayList<>();
             for (JsonElement element : array(root, "footprints")) {
                 JsonObject raw = element.getAsJsonObject();
+                List<ArenaCandidate> candidates = new ArrayList<>();
+                if (raw.has("candidates") && raw.get("candidates").isJsonArray()) {
+                    for (JsonElement candidateElement : raw.getAsJsonArray("candidates")) {
+                        JsonObject candidate = candidateElement.getAsJsonObject();
+                        candidates.add(new ArenaCandidate(
+                                position(candidate, true),
+                                decimal(candidate, "yaw", 0.0F)));
+                    }
+                }
                 footprints.add(new Footprint(
                         string(raw, "locator"),
                         string(raw, "siteLocator"),
                         integer(raw, "radius", -1),
                         integer(raw, "allySlots", -1),
                         integer(raw, "enemySlots", -1),
+                        candidates,
                         bool(raw, "verifiedIn26_2", false),
                         bool(raw, "productionEnabled", false)));
             }
@@ -388,6 +416,12 @@ public final class DrehmalFirstRouteCatalog {
     private static boolean bool(JsonObject object, String key, boolean fallback) {
         return object != null && object.has(key) && object.get(key).isJsonPrimitive()
                 ? object.get(key).getAsBoolean()
+                : fallback;
+    }
+
+    private static float decimal(JsonObject object, String key, float fallback) {
+        return object != null && object.has(key) && object.get(key).isJsonPrimitive()
+                ? object.get(key).getAsFloat()
                 : fallback;
     }
 }

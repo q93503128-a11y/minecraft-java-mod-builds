@@ -92,7 +92,8 @@
       "allySlots": 4,
       "enemySlots": 2,
       "verifiedIn26_2": false,
-      "productionEnabled": false
+      "productionEnabled": false,
+      "candidates": []
     },
     {
       "locator": "turnbound:footprint/capital_valley/warning_cave",
@@ -101,7 +102,8 @@
       "allySlots": 4,
       "enemySlots": 3,
       "verifiedIn26_2": false,
-      "productionEnabled": false
+      "productionEnabled": false,
+      "candidates": []
     },
     {
       "locator": "turnbound:footprint/capital_valley/drabyel_approach",
@@ -110,7 +112,8 @@
       "allySlots": 4,
       "enemySlots": 3,
       "verifiedIn26_2": false,
-      "productionEnabled": false
+      "productionEnabled": false,
+      "candidates": []
     }
   ],
   "patrols": [
