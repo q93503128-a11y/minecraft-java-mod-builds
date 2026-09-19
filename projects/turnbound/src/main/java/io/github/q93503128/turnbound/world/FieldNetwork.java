@@ -35,6 +35,11 @@ public final class FieldNetwork {
         PacketDistributor.sendToPlayer(player, new FieldSnapshotPayload(FieldUiCodec.encode(snapshot)));
     }
 
+    /** Short ownership handoff: field HUD yields before the first battle snapshot arrives. */
+    public static void suspendForBattle(ServerPlayer player) {
+        syncExternal(player, FieldUiSnapshot.battleTransition());
+    }
+
     public static void close(ServerPlayer player) {
         syncExternal(player, FieldUiSnapshot.inactive());
     }

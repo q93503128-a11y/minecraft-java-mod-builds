@@ -33,7 +33,7 @@ public record FieldUiSnapshot(
         String interactionAction,
         Navigation navigation
 ) {
-    public enum Mode { NONE, LOADING, QUEST, RESULT, TRAVEL }
+    public enum Mode { NONE, LOADING, BATTLE_TRANSITION, QUEST, RESULT, TRAVEL }
 
     public record Reward(String encounterLabel, int xp, int gold, boolean firstClear, boolean chapterCleared) {
         public static Reward none() { return new Reward("", 0, 0, false, false); }
@@ -310,6 +310,11 @@ public record FieldUiSnapshot(
     public static FieldUiSnapshot loading(String stage, int percent) {
         return new FieldUiSnapshot(true, Mode.LOADING, 0, 0, false, false, 0, 0,
                 "", "", Reward.none(), List.of(), List.of(), stage, percent, "", "", "", "", "");
+    }
+
+    public static FieldUiSnapshot battleTransition() {
+        return new FieldUiSnapshot(true, Mode.BATTLE_TRANSITION, 0, 0, false, false, 0, 0,
+                "", "", Reward.none(), List.of(), List.of(), "", 0, "", "", "", "", "");
     }
 
     public static FieldUiSnapshot inactive() {

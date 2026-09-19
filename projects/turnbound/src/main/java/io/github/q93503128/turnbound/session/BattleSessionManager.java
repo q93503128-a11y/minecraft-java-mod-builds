@@ -7,6 +7,7 @@ import io.github.q93503128.turnbound.combat.EndgameEncounterCatalog;
 import io.github.q93503128.turnbound.presentation.PersonalPresentationIsolation;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
 import io.github.q93503128.turnbound.world.ExternalWorldBootstrap;
+import io.github.q93503128.turnbound.world.FieldNetwork;
 import io.github.q93503128.turnbound.world.RewardGrantService;
 import io.github.q93503128.turnbound.world.WorldSessionRouter;
 import net.minecraft.network.chat.Component;
@@ -25,6 +26,7 @@ public final class BattleSessionManager {
 
     public static void start(ServerPlayer player) {
         if (!endAndPersist(player, false)) return;
+        prepareClientTransition(player);
         BattleSession session = privateSession(player, () -> new BattleSession(player));
         SESSIONS.put(player.getUUID(), session);
         BattleNetwork.sync(player, session);
@@ -43,6 +45,7 @@ public final class BattleSessionManager {
         boolean resolvedAuto = endgame ? EndgameEncounterCatalog.autoAllowed(encounterId) : autoAllowed;
         boolean resolvedSpeed = endgame ? EndgameEncounterCatalog.speedAllowed(encounterId) : speedAllowed;
         boolean fleeAllowed = endgame ? EndgameEncounterCatalog.fleeAllowed(encounterId) : !CampaignEncounterCatalog.spec(encounterId).boss();
+        prepareClientTransition(player);
         BattleSession session = privateSession(player,
                 () -> new BattleSession(player, encounterId, resolvedAuto, resolvedSpeed, fleeAllowed));
         SESSIONS.put(player.getUUID(), session);
@@ -58,6 +61,7 @@ public final class BattleSessionManager {
         boolean resolvedAuto = endgame ? EndgameEncounterCatalog.autoAllowed(encounterId) : autoAllowed;
         boolean resolvedSpeed = endgame ? EndgameEncounterCatalog.speedAllowed(encounterId) : speedAllowed;
         boolean fleeAllowed = endgame ? EndgameEncounterCatalog.fleeAllowed(encounterId) : !CampaignEncounterCatalog.spec(encounterId).boss();
+        prepareClientTransition(player);
         BattleSession session = privateSession(player,
                 () -> new BattleSession(player, encounterId, resolvedAuto, resolvedSpeed, fleeAllowed, arena));
         SESSIONS.put(player.getUUID(), session);
@@ -192,6 +196,12 @@ public final class BattleSessionManager {
                 "TURNBOUND 전투 보상을 안전하게 저장하지 못했습니다. 잠시 후 다시 나가기를 시도해 주세요."));
         BattleNetwork.sync(player, session);
         return false;
+    }
+
+    private static void prepareClientTransition(ServerPlayer player) {
+        if (ExternalWorldBootstrap.active(player) || WorldSessionRouter.active(player)) {
+            FieldNetwork.suspendForBattle(player);
+        }
     }
 
     private static BattleSession privateSession(ServerPlayer player, Supplier<BattleSession> factory) {
