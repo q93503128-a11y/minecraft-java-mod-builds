@@ -11,6 +11,7 @@ import com.geckolib.util.GeckoLibUtil;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 
@@ -39,6 +40,7 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
     private boolean fieldModeInitialized;
     private boolean fieldWalking;
     private boolean fieldThreatAlerted;
+    private boolean fieldNavigationEnabled;
     private float fieldHomeYaw;
 
     public BattleActorEntity(EntityType<? extends BattleActorEntity> type, Level level) {
@@ -167,6 +169,32 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
         fieldModeInitialized = true;
         fieldWalking = walking;
         triggerAnim("combat", walking ? "field_walk" : "field_idle");
+    }
+
+    /**
+     * Enables ordinary Minecraft path navigation for a free-roaming field silhouette.
+     * Battle actors remain frozen/no-gravity by default; only the external-world encounter runtime opts into this.
+     */
+    public boolean moveFieldTo(double x, double y, double z, double speedModifier) {
+        if (!fieldNavigationEnabled) {
+            fieldNavigationEnabled = true;
+            setNoAi(false);
+            setNoGravity(false);
+            var speed = getAttribute(Attributes.MOVEMENT_SPEED);
+            if (speed != null) speed.setBaseValue(0.23D);
+        }
+        boolean accepted = getNavigation().moveTo(x, y, z, Math.max(0.05D, speedModifier));
+        setFieldWalking(accepted);
+        return accepted;
+    }
+
+    public void stopFieldNavigation() {
+        if (fieldNavigationEnabled) getNavigation().stop();
+        setFieldWalking(false);
+    }
+
+    public boolean fieldNavigationDone() {
+        return !fieldNavigationEnabled || getNavigation().isDone();
     }
 
     @Override

@@ -292,3 +292,17 @@ TURNBOUND use:
 - add authored idle dwell between patrol moves so field enemies look present in the world rather than conveyor-belted;
 - keep shared encounter movement server-authored and deterministic for multiplayer;
 - do not import the guard command/economy/tactics systems because they do not serve TURNBOUND's loop.
+
+
+### Terrain-aware field movement follow-up
+
+The R_PG-style roaming silhouette must not be implemented as per-tick coordinate sliding across a real Minecraft map.
+TURNBOUND field representatives now use Minecraft `PathfinderMob` navigation while roaming/chasing/returning.
+
+Applied rules:
+- no direct per-tick X/Z conveyor movement for the lead field actor;
+- ordinary path navigation owns slopes, corners and walkable terrain;
+- patrol path commands are throttled rather than reissued every tick;
+- ALERT may repath faster than static patrol because the player target moves;
+- battle actors stay frozen presentation entities unless the external-world field runtime explicitly enables navigation;
+- exact route viability is still a client-playtest concern after 26.2 survey.
