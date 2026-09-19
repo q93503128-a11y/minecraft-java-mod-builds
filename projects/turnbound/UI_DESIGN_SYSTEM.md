@@ -48,7 +48,131 @@
 
 실제 외부 9-slice grid가 있으면 pack grid를 우선하고 전 화면에 일관 적용.
 
-## 5. Battle HUD
+## 5. 화면 이동 구조 — 편의성 우선
+
+TURNBOUND의 메뉴 이동은 화면 수를 늘리는 방식이 아니라 **자주 하는 행동을 적은 단계로 끝내는 것**을 기준으로 설계한다.
+
+### 참고하는 상용 게임의 해결 방식
+
+- **Pokémon Scarlet / Violet**: 메인 메뉴를 열었을 때 현재 파티를 메뉴와 동시에 보여주고, 파티원을 별도 깊은 메뉴에 숨기지 않는다.
+- **Honkai: Star Rail**: 한 캐릭터를 선택한 뒤 캐릭터 문맥을 유지한 채 상세/장비/성장 계열 화면을 옮긴다. 캐릭터를 바꿀 때 루트 메뉴까지 되돌아갈 필요가 없다.
+- **OCTOPATH TRAVELER II**: 장비 선택 중 현재 수치와 변경 후 수치를 같은 화면에서 비교하게 하여 장착→뒤로가기→상태 확인 같은 왕복을 줄인다.
+
+이 게임들의 화면을 복제하지 않는다. **파티가 항상 보이고, 현재 대상 문맥을 유지하며, 비교 정보를 같은 화면에 둔다는 UX 원리**만 TURNBOUND에 적용한다.
+
+### 5.1 Root quick menu
+
+필드에서 RPG 메뉴를 열면 첫 화면은 복잡한 대시보드가 아니라 다음 두 영역만 가진다.
+
+- 좌측: 현재 파티 4명 portrait + HP/레벨/역할의 최소 정보
+- 우측: 자주 쓰는 5개 진입점
+  - Party
+  - Equipment
+  - Map
+  - Quests
+  - Summon
+
+현재 파티 portrait를 선택하면 바로 해당 캐릭터 상세로 간다.
+Characters라는 별도 최상위 메뉴를 하나 더 만들지 않는다. 전체 roster는 Party 화면에서 접근한다.
+
+### 5.2 Character detail
+
+캐릭터 상세는 최대 네 계층만 사용한다.
+
+1. Overview — 역할, 핵심 스탯, signature mechanic, 현재 장비
+2. Skills — Basic / Active / Passive의 정확한 수치
+3. Equipment — 같은 캐릭터의 장비 교체/강화
+4. Growth — Level / Awakening 및 필요한 비용
+
+Profile/lore는 Overview의 보조 정보로 두고 별도 최상위 탭을 만들지 않는다.
+Awakening도 별도 관리 메뉴로 분리하지 않는다.
+
+캐릭터 상세/장비/성장 화면에서는 **다른 캐릭터로 바로 전환**할 수 있어야 한다. 캐릭터 하나를 확인할 때마다 Party 화면으로 되돌아가는 흐름은 금지한다.
+
+### 5.3 Party
+
+한 화면에서:
+- 현재 4 slots
+- 전체 보유 roster
+- 선택 캐릭터의 역할/핵심 mechanic
+- 현재 장비 요약
+
+을 같이 본다.
+
+편성은 drag/drop 또는 slot 선택 → 캐릭터 선택 두 방식 중 하나로 처리한다.
+편성 변경은 되돌릴 수 있으므로 매 교체마다 확인창을 띄우지 않는다.
+
+### 5.4 Equipment
+
+장비 화면은 캐릭터와 슬롯을 동시에 유지한다.
+
+- 캐릭터 전환을 위해 화면을 닫지 않는다.
+- Weapon / Armor / Accessory / Signature를 한 화면에서 전환한다.
+- item highlight 시 현재 수치 → 장착 후 수치 delta를 즉시 표시한다.
+- 장착은 확인창 없이 적용 가능하다.
+- Gold를 실제 소비하는 강화만 최종 확인을 사용한다.
+
+캐릭터 → 장비 → 슬롯 → 아이템 → 뒤로 → 스탯 확인 → 다시 장비 같은 왕복 흐름은 실패로 본다.
+
+### 5.5 Map / Quest
+
+Map과 Quest는 서로 다른 데이터 복사본을 만들지 않는다.
+
+- Map에서 활성 Quest를 선택하면 해당 objective/region을 즉시 focus한다.
+- Quest 목록에서 지도에서 보기를 누르면 같은 Map 화면의 해당 위치로 이동한다.
+- 지도에서 발견한 landmark / fast travel / danger marker는 Quest UI와 같은 world marker data를 읽는다.
+
+Quest를 보기 위해 Map을 닫고 또 다른 3단계 메뉴를 거치는 구조를 만들지 않는다.
+
+### 5.6 Back / context preservation
+
+- Esc/Back: 항상 **정확히 한 단계 이전 화면**으로 간다.
+- Root quick menu에서만 Back이 메뉴 전체를 닫는다.
+- 이전 화면으로 돌아오면 선택 캐릭터, 선택 슬롯, 목록 scroll, filter, tab을 복원한다.
+- 화면 전환 때마다 첫 캐릭터/첫 아이템으로 focus를 초기화하지 않는다.
+- modal은 한 번에 하나만 띄운다.
+- irreversible action 또는 실제 재화 소비가 아니면 확인창을 만들지 않는다.
+
+### 5.7 Routine-task path budget
+
+일상적으로 반복하는 행동은 아래 상한을 목표로 한다. 메뉴 열기 자체는 단계 수에서 제외한다.
+
+| 행동 | 목표 최대 단계 |
+|---|---:|
+| 현재 파티 캐릭터 상세 보기 | 1 |
+| 캐릭터 간 전환 | 1 |
+| 파티원 한 명 교체 | 3 |
+| 장비 슬롯 확인/교체 | 3 |
+| 장비 강화 진입 | 3 |
+| 활성 퀘스트 위치를 지도에서 보기 | 2 |
+| 소환 화면 진입 | 1 |
+
+이 상한을 넘기면 기능을 더 추가하기 전에 navigation 구조를 다시 검토한다.
+
+### 5.8 Cross-link rule
+
+관련 화면 사이에는 직접 연결을 둔다.
+
+- Party → 선택 캐릭터 Detail
+- Character Detail → 동일 캐릭터 Equipment
+- Equipment → 동일 캐릭터 Growth/Detail 복귀
+- Quest → 해당 Map focus
+- Battle Result → 획득 장비/성장 대상 확인
+
+다만 같은 기능을 여러 화면에서 서로 다른 코드로 구현하지 않는다. 모든 진입점은 같은 screen state/router를 사용한다.
+
+### 5.9 금지되는 이동 구조
+
+- Main → Characters → Manage → Equipment → Slot → Inventory처럼 routine action이 4~6단계 깊어지는 구조
+- Back을 누르면 루트까지 한 번에 튕기는 구조
+- 같은 캐릭터를 보는데 화면마다 다시 선택해야 하는 구조
+- 정보 확인을 위해 여러 화면을 왕복해야 하는 구조
+- 편의를 이유로 모든 기능에 별도 메뉴/별도 키를 추가하는 구조
+- 개발자 관점의 시스템 모듈 구분을 그대로 플레이어 메뉴 구조로 노출하는 것
+
+UI 파일/클래스 구조보다 **플레이어가 몇 번 눌러야 원하는 행동을 끝내는지**가 먼저다.
+
+## 6. Battle HUD
 
 ### 상단 — Turn Order
 - portrait token
@@ -86,7 +210,7 @@
 
 전투 action보다 시각 우선순위 낮게.
 
-## 6. Targeting
+## 7. Targeting
 
 Primary:
 - 실제 3D model click
@@ -102,7 +226,7 @@ Fallback:
 
 single target skill은 첫 대상을 자동 확정하지 않는다.
 
-## 7. Character-specific HUD
+## 8. Character-specific HUD
 
 화면을 새 게이지로 가득 채우지 않는다.
 
@@ -115,7 +239,7 @@ single target skill은 첫 대상을 자동 확정하지 않는다.
 - P07 Bond: 0~100 compact meter + partner HP
 - P08 Fury: 0~100 compact meter
 
-## 8. Party screen
+## 9. Party screen
 
 목표:
 - 4명 편성
@@ -131,7 +255,7 @@ single target skill은 첫 대상을 자동 확정하지 않는다.
 
 같은 정보를 카드 3개에 반복하지 않는다.
 
-## 9. Character detail
+## 10. Character detail
 
 첫 화면에서 보여줄 것:
 - 이름
@@ -148,7 +272,7 @@ single target skill은 첫 대상을 자동 확정하지 않는다.
 - awakening
 - lore
 
-## 10. Equipment
+## 11. Equipment
 
 한 화면:
 - Weapon
@@ -164,7 +288,7 @@ single target skill은 첫 대상을 자동 확정하지 않는다.
 
 실패 확률/복잡한 재료 list 없음.
 
-## 11. Summon UI
+## 12. Summon UI
 
 ### 메타 화면
 - 보유 Crystal
@@ -184,7 +308,7 @@ single target skill은 첫 대상을 자동 확정하지 않는다.
 10회 결과만 compact grid.
 중복은 “중복”만 쓰지 않고 Star Essence 획득을 명확히 표시.
 
-## 12. Portrait system
+## 13. Portrait system
 
 `PortraitId = CharacterId`
 
@@ -198,7 +322,7 @@ single target skill은 첫 대상을 자동 확정하지 않는다.
 
 색만으로 상태를 구분하지 않는다.
 
-## 13. Minimap
+## 14. Minimap
 
 기본 위치는 실제 HUD 충돌 검토 후 결정하지만, 전투 HUD와 겹치지 않아야 한다.
 
@@ -213,7 +337,7 @@ single target skill은 첫 대상을 자동 확정하지 않는다.
 
 적 개체를 레이더처럼 전부 표시하지 않는다.
 
-## 14. World map
+## 15. World map
 
 filter:
 - quest
@@ -225,7 +349,7 @@ filter:
 
 미발견 content 기본 숨김.
 
-## 15. Dialogue
+## 16. Dialogue
 
 - portrait가 있으면 좌/우 작은 portrait
 - speaker name
@@ -233,7 +357,7 @@ filter:
 - 선택지는 충분한 hitbox
 - 모든 대화를 full-screen black panel로 만들지 않음
 
-## 16. Tutorial prompt
+## 17. Tutorial prompt
 
 - 짧은 1문장
 - 실제 해당 UI 근처
@@ -241,7 +365,7 @@ filter:
 - 이미 완료한 설명 반복 금지
 - 도움말에서 재확인 가능
 
-## 17. Feedback
+## 18. Feedback
 
 - click: 짧은 visual + SFX
 - disabled: 이유 즉시 표시
@@ -250,7 +374,7 @@ filter:
 - 큰 보상: 별도 reward presentation
 - chat에 숫자만 연속 출력하지 않음
 
-## 18. 개발자 문구 차단
+## 19. 개발자 문구 차단
 
 Normal gameplay UI/chat에는:
 - internal ID
@@ -262,7 +386,7 @@ Normal gameplay UI/chat에는:
 
 operator command도 가능하면 사람이 읽는 운영 문구로 변환.
 
-## 19. 경로
+## 20. 리소스 파일 경로
 
 ```
 assets/turnbound/ui/
@@ -281,7 +405,7 @@ assets/turnbound/ui/
 
 깊은 화면별 중첩 폴더를 만들지 않는다.
 
-## 20. 금지
+## 21. 금지
 
 - 검은 반투명 사각형 남발
 - 모든 정보 카드화
@@ -295,7 +419,7 @@ assets/turnbound/ui/
 - 외부 pack 무계획 혼합
 - UI가 캐릭터보다 더 눈에 띄는 구성
 
-## 21. 검수
+## 22. 검수
 
 compile이 UI 완료가 아니다.
 
