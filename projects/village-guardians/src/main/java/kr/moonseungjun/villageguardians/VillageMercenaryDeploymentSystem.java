@@ -177,10 +177,10 @@ public final class VillageMercenaryDeploymentSystem {
             }
             if (!raidActive) continue;
             if (kind == VillageMercenarySystem.MercenaryClass.BASTION) {
-                Mob target = VillageRaidSystem.nearestActiveEnemy(level, rally, 25.0);
+                Mob target = groundTarget(level, Vec3.atCenterOf(rally), 25.0);
                 if (target != null) golem.setTarget(target);
             } else if (kind == VillageMercenarySystem.MercenaryClass.STRIKER) {
-                Mob target = VillageRaidSystem.nearestActiveEnemy(level, golem.blockPosition(), 42.0);
+                Mob target = groundTarget(level, golem.position(), 42.0);
                 if (target != null) golem.setTarget(target);
             } else if (kind == VillageMercenarySystem.MercenaryClass.RANGER
                     || kind == VillageMercenarySystem.MercenaryClass.MEDIC) {
@@ -188,6 +188,13 @@ public final class VillageMercenaryDeploymentSystem {
                 if (!returningToRally) golem.getNavigation().stop();
             }
         }
+    }
+
+    private static Mob groundTarget(ServerLevel level, Vec3 origin, double range) {
+        return VillageRaidSystem.activeEnemiesNear(level, origin, range, 64, null).stream()
+                .filter(enemy -> !VillageEnemyArchetypeSystem.isFlying(enemy))
+                .min(java.util.Comparator.comparingDouble(enemy -> enemy.position().distanceToSqr(origin)))
+                .orElse(null);
     }
 
     private static BlockPos rallyPoint(

@@ -68,6 +68,7 @@ public final class VillageNetwork {
 
     private static boolean isMutationAction(String action) {
         return action.equals("vote_yes") || action.equals("vote_no")
+                || action.equals("return_village")
                 || action.equals("buy_arrows") || action.equals("claim_bread")
                 || action.equals("sell_loot") || action.equals("exchange_supplies")
                 || action.startsWith("repair:") || action.startsWith("upgrade:")

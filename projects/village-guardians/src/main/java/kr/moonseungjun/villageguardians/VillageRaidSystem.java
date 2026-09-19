@@ -115,6 +115,8 @@ public final class VillageRaidSystem {
 
         if (ACTIVE_ENEMIES.isEmpty()) {
             if (betweenWaveTicks <= 0) {
+                VillageProgressionSystem.awardRaidCoins(server,
+                        waveClearCoinReward(VillageCouncilState.currentDay(), wave));
                 betweenWaveTicks = BETWEEN_WAVE_TICKS;
                 server.getPlayerList().broadcastSystemMessage(
                         Component.literal("§e[습격] §f현재 웨이브 정리 완료. 다음 웨이브까지 6초입니다."), false);
@@ -289,6 +291,10 @@ public final class VillageRaidSystem {
         server.getPlayerList().broadcastSystemMessage(
                 Component.literal("§4[게임 오버] §f마을 회관이 파괴되었습니다."), false);
         VillageUiService.openGameOverForAll(server);
+    }
+
+    private static int waveClearCoinReward(int day, int clearedWave) {
+        return Math.max(6, 8 + Math.max(1, day) * 2 + Math.max(1, clearedWave) * 2);
     }
 
     public static int previewMaxWaves(int day) {
@@ -1118,7 +1124,7 @@ public final class VillageRaidSystem {
         int xp = Math.max(1, Math.round(
                 (52 + day * 18 + VillageProgressionSystem.barracksLevel() * 10)
                         * campaignReward * lateVictoryScale));
-        int coins = Math.round((42 + day * 9) * campaignReward);
+        int coins = Math.round((60 + day * 14) * campaignReward);
 
         clearState();
         VillageProgressionSystem.addSupplies(server, supplies, "제 " + day + "일 방어 성공");

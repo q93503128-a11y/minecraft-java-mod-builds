@@ -72,17 +72,20 @@ def main() -> None:
         and "U 빠른 통신" not in controller,
     )
     check(
-        "단축키 기능 의미가 V 통신·H 상태·J 공통 성장·K 현재 직업 성장으로 일치합니다",
+        "단축키 기능 의미가 V 통신·H 상태·J 공통 성장·K 직업 성장·R 귀환으로 일치합니다",
         'QUICK_COMMUNICATION = key("quick_communication", GLFW.GLFW_KEY_V)' in keys
         and 'STATUS = key("status", GLFW.GLFW_KEY_H)' in keys
         and 'GROWTH = key("personal_progress", GLFW.GLFW_KEY_J)' in keys
         and 'ROLE_PROGRESS = key("role_progress", GLFW.GLFW_KEY_K)' in keys
+        and 'RETURN_TO_VILLAGE = key("return_to_village", GLFW.GLFW_KEY_R)' in keys
         and 'consume(QUICK_COMMUNICATION, "open_quick_chat")' in keys
         and 'consume(STATUS, "open_status")' in keys
         and 'consume(GROWTH, "open_skill_tree")' in keys
         and 'consume(ROLE_PROGRESS, "open_role_progress_current")' in keys
+        and 'consume(RETURN_TO_VILLAGE, "return_village")' in keys
         and '"key.villageguardians.personal_progress": "공통 성장 열기"' in lang
-        and '"key.villageguardians.role_progress": "현재 직업 성장 열기"' in lang,
+        and '"key.villageguardians.role_progress": "현재 직업 성장 열기"' in lang
+        and '"key.villageguardians.return_to_village": "마을 중앙으로 귀환"' in lang,
     )
     check(
         "신속 삼연사 설명이 실제 자동 완충·발사 동작과 일치합니다",

@@ -30,7 +30,11 @@ public final class VillageWarfrontSystem {
     }
 
     public static int bonusBossCount(int day, int wave, int maxWaves) {
-        if (wave != maxWaves || day < 3) return 0;
+        if (wave != maxWaves || day < 4) return 0;
+        if (day < 10) {
+            if (isMilestoneDay(day)) return 1;
+            return day == 4 || day == 7 ? 1 : 0;
+        }
         int count = 1;
         if (isMilestoneDay(day)) count++;
         if (day >= 20) count += Math.min(2, endlessTier(day) / 2);
@@ -58,6 +62,6 @@ public final class VillageWarfrontSystem {
 
     public static String milestoneHint(int day) {
         if (!isMilestoneDay(day)) return "";
-        return "이번 밤은 대침공일입니다. 마지막 웨이브에 복수의 우두머리가 등장하며 보상이 증가합니다.";
+        return "이번 밤은 대침공일입니다. 마지막 웨이브에 우두머리 공세가 집중되며 보상이 증가합니다.";
     }
 }

@@ -195,25 +195,33 @@ public final class VillageAttackPlanSystem {
     public static Front frontForIndex(int day, int wave, int index) {
         int i = Math.max(0, index);
         if (day <= 4) return Front.NORTH;
+        int group = i / 4;
         if (day <= 7) {
             if (i % 5 != 0) return Front.NORTH;
-            return ((day + wave) & 1) == 0 ? Front.NORTH_WEST : Front.NORTH_EAST;
+            return detachmentFront(day, wave, group, true, false);
         }
         if (day <= 11) {
             if (i % 4 != 0) return Front.NORTH;
-            return ((day + wave) & 1) == 0 ? Front.WEST : Front.EAST;
+            return detachmentFront(day, wave, group, false, false);
         }
         if (day <= 15) {
-            int lane = i % 5;
-            if (lane == 0) return Front.WEST;
-            if (lane == 1) return Front.EAST;
-            return Front.NORTH;
+            int lane = i % 6;
+            if (lane >= 2) return Front.NORTH;
+            return detachmentFront(day, wave, i / 6, false, false);
         }
         int lane = i % 10;
-        if (lane == 0) return Front.SOUTH_WEST;
-        if (lane == 1) return Front.SOUTH_EAST;
-        if (lane == 2 || lane == 3) return ((wave + i) & 1) == 0 ? Front.WEST : Front.EAST;
-        return Front.NORTH;
+        if (lane >= 3) return Front.NORTH;
+        return detachmentFront(day, wave, i / 10, false, lane == 0);
+    }
+
+    private static Front detachmentFront(int day, int wave, int group, boolean diagonal, boolean rearAllowed) {
+        int seed = Math.floorMod(day * 37 + wave * 19 + group * 23 + group * group * 7, 100);
+        if (rearAllowed && day >= 16) {
+            if (seed < 24) return Front.SOUTH_WEST;
+            if (seed < 48) return Front.SOUTH_EAST;
+        }
+        if (diagonal) return seed < 50 ? Front.NORTH_WEST : Front.NORTH_EAST;
+        return seed < 50 ? Front.WEST : Front.EAST;
     }
 
     public static Condition condition(int day, int wave) {

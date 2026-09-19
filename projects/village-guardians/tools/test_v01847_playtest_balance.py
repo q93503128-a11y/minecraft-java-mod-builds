@@ -40,10 +40,14 @@ def main() -> None:
 
     # Support-heavy wave identities remain, but sustain casters are sparse and weaker.
     selection = section(enemy, "private static Archetype select", "private static Archetype bossForDay")
-    assert "if (slot == 6 || slot == 18) return Archetype.WAR_CHANTER" in selection
-    assert "if (slot == 3 || slot == 15) return Archetype.HEXER" in selection
-    assert "if (slot == 8 || slot == 16) return Archetype.HEXER" in selection
+    assert "if (slot == 5 || slot == 17) return Archetype.WAR_CHANTER" in selection
+    assert "if (slot == 11) return Archetype.HEXER" in selection
+    assert selection.count("if (slot == 12) return Archetype.HEXER") >= 2
+    assert "if (slot == 13) return Archetype.HEXER" in selection
     abilities = section(enemy, "public static void tickAbility", "public static void onStructureHit")
+    assert "trait == VillageWaveTrait.HEXED ? 180 : 220" in abilities
+    assert "MobEffects.WEAKNESS, 60" in abilities
+    assert "MobEffects.SLOWNESS, 45" in abilities
     assert "abilityReady(mob, globalTicks, 240)" in abilities
     assert "activeEnemiesNear(level, mob.position(), 10.0, 5" in abilities
     assert "ally.heal(3.0f + VillageCouncilState.currentDay() * 0.08f)" in abilities

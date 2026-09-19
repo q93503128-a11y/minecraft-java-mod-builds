@@ -200,7 +200,10 @@ public final class VillageMercenarySystem {
         ServerLevel level = server.overworld();
         for (IronGolem mercenary : loadedMercenaries(level)) {
             recognize(mercenary);
-            if (mercenary.getTarget() != null && !VillageRaidSystem.isRaidEnemy(mercenary.getTarget())) {
+            if (mercenary.getTarget() != null
+                    && (!VillageRaidSystem.isRaidEnemy(mercenary.getTarget())
+                    || mercenary.getTarget() instanceof Mob target
+                    && VillageEnemyArchetypeSystem.isFlying(target))) {
                 mercenary.setTarget(null);
             }
             MercenaryClass kind = mercenaryClass(mercenary);
@@ -365,7 +368,8 @@ public final class VillageMercenarySystem {
         Vec3 eye = mercenary.position().add(0, 1.8, 0);
         boolean engaged = false;
         for (Mob enemy : VillageRaidSystem.activeEnemiesNear(level, mercenary.position(), radius, limit, null)) {
-            if (!VillageDefenseLineOfSight.hasLine(level, eye, enemy)) continue;
+            if (VillageEnemyArchetypeSystem.isFlying(enemy)
+                    || !VillageDefenseLineOfSight.hasLine(level, eye, enemy)) continue;
             enemy.setTarget(mercenary);
             enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 28 + Math.min(90, rank * 2), 0));
             engaged = true;
@@ -375,8 +379,8 @@ public final class VillageMercenarySystem {
 
     private static void strikerPressure(ServerLevel level, IronGolem mercenary, int rank) {
         double range = 22.0 + Math.min(30.0, rank * 0.50);
-        Mob target = VillageRaidSystem.nearestActiveEnemy(level, mercenary.blockPosition(), range);
-        if (target == null || !VillageDefenseLineOfSight.hasLine(level, mercenary.position().add(0, 1.8, 0), target)) return;
+        Mob target = nearestGroundEnemy(level, mercenary.position(), range);
+        if (target == null || !VillageDefenseLineOfSight.hasLine(level, mercenary.getEyePosition(), target)) return;
         mercenary.setTarget(target);
         mercenary.getNavigation().moveTo(target, 1.18 + Math.min(0.35, rank * 0.006));
         VillageDefenseEffectSystem.mercenaryStrikerPressure(level, mercenary.position().add(0, 1.2, 0),
@@ -384,8 +388,8 @@ public final class VillageMercenarySystem {
     }
 
     private static void rangedAttack(ServerLevel level, IronGolem mercenary, int rank) {
-        Vec3 start = mercenary.position().add(0, 1.8, 0);
-        double range = 42.0 + Math.min(48.0, rank * 0.80);
+        Vec3 start = mercenary.getEyePosition();
+        double range = 50.0 + Math.min(52.0, rank * 0.85);
         Mob target = VillageRaidSystem.activeEnemiesNear(level, mercenary.position(), range,
                         18 + Math.min(18, rank / 3), null)
                 .stream().filter(enemy -> VillageDefenseLineOfSight.hasLine(level, start, enemy))
@@ -395,8 +399,9 @@ public final class VillageMercenarySystem {
                         .thenComparingDouble(mercenary::distanceToSqr)).orElse(null);
         mercenary.setTarget(null);
         if (target == null) return;
+        mercenary.getLookControl().setLookAt(target, 35.0f, 35.0f);
         float damage = 5.2f * mercenaryPower(rank) * VillageDefenseResearchSystem.mercenaryDamageMultiplier();
-        Vec3 end = target.position().add(0, target.getBbHeight() * 0.55, 0);
+        Vec3 end = target.position().add(0, target.getBbHeight() * 0.62, 0);
         VillageDefenseEffectSystem.mercenaryRangerShot(level, start, end);
         level.sendParticles(ParticleTypes.CRIT, end.x, end.y, end.z, 4, 0.14, 0.18, 0.14, 0.02);
         target.hurtServer(level, level.damageSources().mobAttack(mercenary), damage);
@@ -416,6 +421,13 @@ public final class VillageMercenarySystem {
         VillageDefenseEffectSystem.mercenaryHealPulse(level, medic.position(), radius);
         level.sendParticles(ParticleTypes.HEART, medic.getX(), medic.getY() + 1.4, medic.getZ(),
                 3 + Math.min(10, rank / 5), 0.55, 0.4, 0.55, 0.02);
+    }
+
+    private static Mob nearestGroundEnemy(ServerLevel level, Vec3 origin, double range) {
+        return VillageRaidSystem.activeEnemiesNear(level, origin, range, 64, null).stream()
+                .filter(enemy -> !VillageEnemyArchetypeSystem.isFlying(enemy))
+                .min(java.util.Comparator.comparingDouble(enemy -> enemy.position().distanceToSqr(origin)))
+                .orElse(null);
     }
 
     private static float mercenaryPower(int rank) {

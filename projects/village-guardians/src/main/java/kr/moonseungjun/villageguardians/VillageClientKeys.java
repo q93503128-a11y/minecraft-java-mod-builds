@@ -28,6 +28,7 @@ public final class VillageClientKeys {
     private static final KeyMapping STATUS = key("status", GLFW.GLFW_KEY_H);
     private static final KeyMapping GROWTH = key("personal_progress", GLFW.GLFW_KEY_J);
     private static final KeyMapping ROLE_PROGRESS = key("role_progress", GLFW.GLFW_KEY_K);
+    private static final KeyMapping RETURN_TO_VILLAGE = key("return_to_village", GLFW.GLFW_KEY_R);
 
     // X is deliberately omitted: vanilla's toolbar save/restore needs X + number,
     // while this mod consumes the standalone X click for skill slot 2.
@@ -79,6 +80,7 @@ public final class VillageClientKeys {
         consume(STATUS, "open_status");
         consume(GROWTH, "open_skill_tree");
         consume(ROLE_PROGRESS, "open_role_progress_current");
+        consume(RETURN_TO_VILLAGE, "return_village");
     }
 
     public static String skillOneKeyName() { return keyName(ROLE_SKILL_ONE); }
@@ -87,10 +89,12 @@ public final class VillageClientKeys {
     public static String statusKeyName() { return keyName(STATUS); }
     public static String growthKeyName() { return keyName(GROWTH); }
     public static String roleProgressKeyName() { return keyName(ROLE_PROGRESS); }
+    public static String returnToVillageKeyName() { return keyName(RETURN_TO_VILLAGE); }
 
     public static String compactSummary() {
         return quickCommunicationKeyName() + " 통신 · "
-                + skillOneKeyName() + "/" + skillTwoKeyName() + " 기술";
+                + skillOneKeyName() + "/" + skillTwoKeyName() + " 기술 · "
+                + returnToVillageKeyName() + " 귀환";
     }
 
     public static String resolveTokens(String value) {
@@ -101,12 +105,13 @@ public final class VillageClientKeys {
                 .replace("{QUICK}", quickCommunicationKeyName())
                 .replace("{STATUS}", statusKeyName())
                 .replace("{GROWTH}", growthKeyName())
-                .replace("{ROLE}", roleProgressKeyName());
+                .replace("{ROLE}", roleProgressKeyName())
+                .replace("{RETURN}", returnToVillageKeyName());
     }
 
     private static List<KeyMapping> mappings() {
         return List.of(ROLE_SKILL_ONE, ROLE_SKILL_TWO, QUICK_COMMUNICATION,
-                STATUS, GROWTH, ROLE_PROGRESS);
+                STATUS, GROWTH, ROLE_PROGRESS, RETURN_TO_VILLAGE);
     }
 
     private static String keyName(KeyMapping mapping) {
@@ -138,6 +143,7 @@ public final class VillageClientKeys {
         set(STATUS, GLFW.GLFW_KEY_H);
         set(GROWTH, GLFW.GLFW_KEY_J);
         set(ROLE_PROGRESS, GLFW.GLFW_KEY_K);
+        set(RETURN_TO_VILLAGE, GLFW.GLFW_KEY_R);
         KeyMapping.resetMapping();
         minecraft.options.save();
     }

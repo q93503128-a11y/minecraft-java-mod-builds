@@ -188,13 +188,13 @@ public final class VillageEnemyArchetypeSystem {
             Archetype archetype,
             VillageWaveTrait trait,
             int globalTicks) {
-        int cadence = trait == VillageWaveTrait.HEXED ? 120 : 160;
+        int cadence = trait == VillageWaveTrait.HEXED ? 180 : 220;
         switch (archetype) {
             case HEXER -> {
                 if (!abilityReady(mob, globalTicks, cadence)) return;
-                for (ServerPlayer player : nearbyPlayers(server, mob, 9.0)) {
-                    player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 90, 0));
-                    player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 70, 0));
+                for (ServerPlayer player : nearbyPlayers(server, mob, 8.0)) {
+                    player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 60, 0));
+                    player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 45, 0));
                 }
                 spawnAura(level, mob, archetype, 18);
             }
@@ -274,57 +274,77 @@ public final class VillageEnemyArchetypeSystem {
     private static Archetype select(int day, int wave, int index, VillageWaveTrait trait) {
         int slot = Math.floorMod(index + wave * 3 + day, 24);
         if (trait == VillageWaveTrait.SWARM) {
-            return slot % 3 == 0 ? Archetype.SAPPER : slot % 2 == 0 ? Archetype.RUSHER : Archetype.GRUNT;
+            return slot % 5 == 0 ? Archetype.SAPPER : slot % 2 == 0 ? Archetype.RUSHER : Archetype.GRUNT;
         }
         if (trait == VillageWaveTrait.IRONCLAD) {
-            return slot % 4 == 0 ? Archetype.SHIELDBREAKER : Archetype.BULWARK;
+            if (slot % 8 == 0) return Archetype.MARKSMAN;
+            return slot % 3 == 0 ? Archetype.SHIELDBREAKER : Archetype.BULWARK;
         }
         if (trait == VillageWaveTrait.SIEGE) {
-            return slot % 3 == 0 ? Archetype.SHIELDBREAKER : Archetype.SAPPER;
+            if (slot % 6 == 0) return Archetype.SAPPER;
+            if (slot % 4 == 0) return Archetype.SHIELDBREAKER;
+            return slot % 2 == 0 ? Archetype.BULWARK : Archetype.GRUNT;
         }
         if (trait == VillageWaveTrait.HUNTERS) {
-            return slot % 4 == 0 && day >= 7 ? Archetype.TOWER_HUNTER : Archetype.MARKSMAN;
+            if (day >= 7 && slot % 8 == 0) return Archetype.TOWER_HUNTER;
+            return slot % 3 == 0 ? Archetype.RUSHER : Archetype.MARKSMAN;
         }
         if (trait == VillageWaveTrait.HEXED) {
             if (day >= 9 && slot == 0) return Archetype.NECROMANCER;
-            if (slot == 6 || slot == 18) return Archetype.WAR_CHANTER;
-            if (slot == 3 || slot == 15) return Archetype.HEXER;
-            return slot % 2 == 0 ? Archetype.BULWARK : Archetype.GRUNT;
+            if (slot == 5 || slot == 17) return Archetype.WAR_CHANTER;
+            if (slot == 11) return Archetype.HEXER;
+            return lineMix(slot);
         }
         if (trait == VillageWaveTrait.FRENZY) {
-            return slot % 4 == 0 ? Archetype.WAR_CHANTER : Archetype.RUSHER;
+            if (slot % 7 == 0) return Archetype.WAR_CHANTER;
+            return slot % 3 == 0 ? Archetype.GRUNT : Archetype.RUSHER;
         }
         if (trait == VillageWaveTrait.REGENERATING) {
             if (day >= 9 && slot == 0) return Archetype.NECROMANCER;
-            if (slot == 8 || slot == 16) return Archetype.HEXER;
-            return slot % 3 == 0 ? Archetype.GRUNT : Archetype.BULWARK;
+            if (slot == 12) return Archetype.HEXER;
+            return slot % 4 == 0 ? Archetype.RUSHER : slot % 2 == 0 ? Archetype.BULWARK : Archetype.GRUNT;
         }
         if (trait == VillageWaveTrait.PHALANX) {
-            if (slot % 6 == 0) return Archetype.WAR_CHANTER;
+            if (slot % 8 == 0) return Archetype.WAR_CHANTER;
+            if (slot % 5 == 0) return Archetype.MARKSMAN;
             return slot % 3 == 0 ? Archetype.SHIELDBREAKER : Archetype.BULWARK;
         }
         if (trait == VillageWaveTrait.BLOOD_MOON) {
-            return slot % 5 == 0 ? Archetype.WAR_CHANTER : Archetype.RUSHER;
+            if (slot % 8 == 0) return Archetype.WAR_CHANTER;
+            if (slot % 6 == 0) return Archetype.SHIELDBREAKER;
+            return slot % 3 == 0 ? Archetype.GRUNT : Archetype.RUSHER;
         }
         if (trait == VillageWaveTrait.STORMFRONT) {
-            if (day >= 11 && slot % 5 == 0) return Archetype.TOWER_HUNTER;
-            return slot % 3 == 0 ? Archetype.HEXER : Archetype.MARKSMAN;
+            if (day >= 11 && slot == 0) return Archetype.TOWER_HUNTER;
+            if (slot == 13) return Archetype.HEXER;
+            return slot % 4 == 0 ? Archetype.RUSHER
+                    : slot % 3 == 0 ? Archetype.BULWARK : Archetype.MARKSMAN;
         }
         if (trait == VillageWaveTrait.RIFTED) {
             if (slot == 0) return Archetype.NECROMANCER;
-            if (slot == 8 || slot == 16) return Archetype.HEXER;
-            return slot % 3 == 0 ? Archetype.BULWARK : Archetype.SHIELDBREAKER;
+            if (slot == 12) return Archetype.HEXER;
+            if (slot % 5 == 0) return Archetype.MARKSMAN;
+            return slot % 3 == 0 ? Archetype.BULWARK
+                    : slot % 2 == 0 ? Archetype.SHIELDBREAKER : Archetype.RUSHER;
         }
 
         if (day >= 11 && slot == 0) return Archetype.NECROMANCER;
         if (day >= 9 && slot == 3) return Archetype.TOWER_HUNTER;
         if (day >= 8 && slot == 6) return Archetype.WAR_CHANTER;
-        if (day >= 6 && slot == 9) return Archetype.HEXER;
-        if (day >= 5 && slot == 12) return Archetype.SHIELDBREAKER;
-        if (day >= 4 && slot == 15) return Archetype.SAPPER;
-        if (day >= 3 && slot % 6 == 0) return Archetype.MARKSMAN;
-        if (day >= 2 && slot % 5 == 0) return Archetype.BULWARK;
-        return slot % 4 == 0 ? Archetype.RUSHER : Archetype.GRUNT;
+        if (day >= 6 && slot == 11) return Archetype.HEXER;
+        if (day >= 5 && slot == 14) return Archetype.SHIELDBREAKER;
+        if (day >= 4 && slot == 17) return Archetype.SAPPER;
+        return lineMix(slot);
+    }
+
+    private static Archetype lineMix(int slot) {
+        return switch (Math.floorMod(slot, 6)) {
+            case 0 -> Archetype.RUSHER;
+            case 1, 5 -> Archetype.GRUNT;
+            case 2 -> Archetype.BULWARK;
+            case 3 -> Archetype.MARKSMAN;
+            default -> Archetype.GRUNT;
+        };
     }
 
     private static Archetype bossForDay(int day) {

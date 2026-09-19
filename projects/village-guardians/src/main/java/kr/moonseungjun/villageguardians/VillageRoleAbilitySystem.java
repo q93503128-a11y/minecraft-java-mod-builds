@@ -872,7 +872,7 @@ public final class VillageRoleAbilitySystem {
                                    float damage, int duration, int specialRank) {
         player.swing(InteractionHand.OFF_HAND, true);
         double radius = 30.0 + specialRank * 3.0;
-        int tauntDuration = Math.max(100, Math.min(240, duration + 40));
+        int tauntDuration = Math.max(240, Math.min(400, duration + 120));
         VillageRaidSystem.tauntEnemies(level, player, player.position(), radius, tauntDuration, 120);
         for (Mob target : targetsNear(level, player, player.position(), radius, 120)) {
             hurt(level, target, damage);
@@ -1243,6 +1243,23 @@ public final class VillageRoleAbilitySystem {
 
     private static Vec3 aimedGround(ServerLevel level, ServerPlayer player, double distance) {
         Vec3 point = aimPoint(level, player, distance);
+        Vec3 forward = horizontalLook(player);
+        int anchorY = VillageCouncilState.villageCenter()
+                .map(BlockPos::getY).orElse(player.blockPosition().getY());
+
+        // A ray from inside the fortress often touches a wall face before the battlefield.
+        // Search forward across that obstruction for a real two-block-tall floor close to village ground level.
+        for (int step = 0; step <= 10; step++) {
+            Vec3 probe = point.add(forward.scale(step));
+            BlockPos floor = fieldFloor(level, probe.x, probe.z, anchorY);
+            if (floor != null) return Vec3.atBottomCenterOf(floor.above()).add(0.0, 0.02, 0.0);
+        }
+        for (int step = 1; step <= 5; step++) {
+            Vec3 probe = point.subtract(forward.scale(step));
+            BlockPos floor = fieldFloor(level, probe.x, probe.z, anchorY);
+            if (floor != null) return Vec3.atBottomCenterOf(floor.above()).add(0.0, 0.02, 0.0);
+        }
+
         Vec3 start = point.add(0.0, 12.0, 0.0);
         Vec3 end = point.add(0.0, -48.0, 0.0);
         var ground = level.clip(new net.minecraft.world.level.ClipContext(
@@ -1251,9 +1268,23 @@ public final class VillageRoleAbilitySystem {
                 net.minecraft.world.level.ClipContext.Fluid.NONE,
                 player));
         if (ground.getType() == net.minecraft.world.phys.HitResult.Type.MISS) {
-            return new Vec3(point.x, player.getY() + 0.02, point.z);
+            return new Vec3(point.x, anchorY + 0.02, point.z);
         }
         return ground.getLocation().add(0.0, 0.02, 0.0);
+    }
+
+    private static BlockPos fieldFloor(ServerLevel level, double x, double z, int anchorY) {
+        int blockX = (int) Math.floor(x);
+        int blockZ = (int) Math.floor(z);
+        for (int y = anchorY + 5; y >= anchorY - 10; y--) {
+            BlockPos feet = new BlockPos(blockX, y, blockZ);
+            BlockPos floor = feet.below();
+            if (!level.getBlockState(feet).isAir() || !level.getBlockState(feet.above()).isAir()) continue;
+            if (level.getBlockState(floor).isFaceSturdy(level, floor, net.minecraft.core.Direction.UP)) {
+                return floor;
+            }
+        }
+        return null;
     }
 
     private static void activateArrowRain(

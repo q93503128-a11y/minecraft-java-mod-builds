@@ -136,6 +136,12 @@ public final class VillageLocalActionSystem {
                 }
                 return true;
             }
+            case "exchange_supplies" -> {
+                player.sendSystemMessage(Component.literal("§b"
+                        + VillageProgressionSystem.exchangeCoinsForSupplies(player)));
+                VillageUiController.openEquipmentShop(player);
+                return true;
+            }
             case "buy_food" -> {
                 if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.STOREHOUSE)) {
                     player.sendSystemMessage(Component.literal("§c식량 구매는 창고 단말기 근처에서만 가능합니다."));
