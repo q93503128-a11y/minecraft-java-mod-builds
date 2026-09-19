@@ -78,7 +78,8 @@ public final class VillageRpgSystem {
                             attacker, monster.getHealth(), monster.getMaxHealth());
                 }
             }
-            event.setAmount(event.getAmount() * value);
+            float flatWeaponPower = VillageEquipmentRaritySystem.flatAttackBonus(attacker, projectile);
+            event.setAmount((event.getAmount() + flatWeaponPower) * value);
         }
         if (event.getEntity() instanceof ServerPlayer defender) {
             float value = incomingDamageMultiplier(VillageCouncilState.levelOf(defender.getUUID()));
@@ -105,9 +106,13 @@ public final class VillageRpgSystem {
         if (!(event.getEntity() instanceof Monster defeated)
                 || VillageSkillTestSystem.isTestDummy(defeated)
                 || !(event.getSource().getEntity() instanceof ServerPlayer killer)) return;
-        int base = Math.min(90, 7 + Math.round(defeated.getMaxHealth() * 0.48f));
-        int reward = VillageCouncilState.isInsideVillage(killer) ? Math.round(base * 1.18f) : base;
-        VillageCouncilState.ExperienceResult result = VillageCouncilState.grantExperience(killer, reward);
+        boolean raidEnemy = VillageRaidSystem.isRaidEnemy(defeated);
+        VillageCouncilState.ExperienceResult result = null;
+        if (!raidEnemy) {
+            int base = Math.min(90, 7 + Math.round(defeated.getMaxHealth() * 0.48f));
+            int reward = VillageCouncilState.isInsideVillage(killer) ? Math.round(base * 1.18f) : base;
+            result = VillageCouncilState.grantExperience(killer, reward);
+        }
         int baseCoins = Math.max(1, Math.round(defeated.getMaxHealth() / 12.0f));
         int coins = Math.max(1, Math.round(baseCoins * VillageSkillTreeSystem.coinRewardMultiplier(killer)));
         VillageProgressionSystem.addCoins(killer, coins, "적 처치");
@@ -124,10 +129,12 @@ public final class VillageRpgSystem {
         if (server != null && supplyChance > 0.0f && killer.getRandom().nextFloat() < supplyChance) {
             VillageProgressionSystem.addSupplies(server, 1, "공동 회수");
         }
-        killer.sendSystemMessage(Component.literal("§d+" + result.awardedExperience() + " XP"));
-        if (result.levelsGained() > 0) {
-            refreshPlayerPassive(killer);
-            killer.heal(Math.min(6.0f, 2.0f + result.levelsGained()));
+        if (result != null) {
+            killer.sendSystemMessage(Component.literal("§d+" + result.awardedExperience() + " XP"));
+            if (result.levelsGained() > 0) {
+                refreshPlayerPassive(killer);
+                killer.heal(Math.min(6.0f, 2.0f + result.levelsGained()));
+            }
         }
     }
 

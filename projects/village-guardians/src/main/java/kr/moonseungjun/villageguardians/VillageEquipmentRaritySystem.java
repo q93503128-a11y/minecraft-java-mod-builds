@@ -49,12 +49,17 @@ public final class VillageEquipmentRaritySystem {
                     day >= 6 ? Items.DIAMOND_CHESTPLATE : Items.IRON_CHESTPLATE);
         };
         Item item = pool.get(random.nextInt(pool.size()));
-        return createNamed(item, rollRarity(day, boss, random), displayName(item));
+        return createNamed(item, rollRarity(day, boss, random), displayName(item), combatTierForDay(day));
     }
 
     public static ItemStack createNamed(Item item, Rarity rarity, String name) {
+        return createNamed(item, rarity, name, defaultCombatTier(item));
+    }
+
+    public static ItemStack createNamed(Item item, Rarity rarity, String name, int combatTier) {
         ItemStack stack = item.getDefaultInstance();
         applyName(stack, rarity, name, 0);
+        VillageEquipmentIdentity.stampPowerTier(stack, combatTier);
         return stack;
     }
 
@@ -66,7 +71,7 @@ public final class VillageEquipmentRaritySystem {
             Rarity rarity = rarityOf(stack);
             if (rarity == null || rarity == Rarity.LEGENDARY) continue;
             int enhancement = enhancementLevel(stack);
-            String group = stack.getItem() + "@" + rarity.name() + "@" + enhancement;
+            String group = stack.getItem() + "@" + rarity.name() + "@" + enhancement + "@" + combatTier(stack);
             result.add(new FusionCandidate(slot, group, baseDisplayName(stack),
                     rarity.displayName() + (enhancement > 0 ? " · 강화 +" + enhancement : ""),
                     stack.getItem().toString()));
@@ -93,18 +98,20 @@ public final class VillageEquipmentRaritySystem {
         ItemStack third = player.getInventory().getItem(thirdSlot);
         Rarity rarity = rarityOf(first);
         int enhancement = enhancementLevel(first);
+        int combatTier = combatTier(first);
         if (rarity == null || rarity == Rarity.LEGENDARY
                 || rarityOf(second) != rarity || rarityOf(third) != rarity
                 || enhancementLevel(second) != enhancement || enhancementLevel(third) != enhancement
+                || combatTier(second) != combatTier || combatTier(third) != combatTier
                 || second.getItem() != first.getItem() || third.getItem() != first.getItem()) {
-            return "같은 종류·같은 등급·같은 강화 단계 장비 세 개를 선택해야 합니다.";
+            return "같은 종류·같은 전장 단계·같은 등급·같은 강화 단계 장비 세 개를 선택해야 합니다.";
         }
         Item item = first.getItem();
         String name = baseDisplayName(first);
         first.shrink(1);
         second.shrink(1);
         third.shrink(1);
-        ItemStack result = createNamed(item, rarity.next(), name);
+        ItemStack result = createNamed(item, rarity.next(), name, combatTier);
         applyName(result, rarity.next(), name, enhancement);
         if (!player.addItem(result)) player.drop(result, false);
         player.getInventory().setChanged();
@@ -207,6 +214,76 @@ public final class VillageEquipmentRaritySystem {
         int masterwork = Math.max(0, current - 10);
         return 70 + current * 90 + masterwork * masterwork * 9
                 + (rarity == null ? 0 : rarity.powerStep() * 30);
+    }
+
+    public static int combatTier(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return 1;
+        int stamped = VillageEquipmentIdentity.powerTier(stack);
+        if (stamped > 0) return stamped;
+        String offerId = VillageEquipmentIdentity.offer(stack);
+        VillageEquipmentShop.Offer offer = VillageEquipmentShop.Offer.parse(offerId).orElse(null);
+        if (offer != null) return offer.combatTier();
+        return defaultCombatTier(stack.getItem());
+    }
+
+    public static String combatTierName(ItemStack stack) {
+        return switch (combatTier(stack)) {
+            case 2 -> "II · 정예";
+            case 3 -> "III · 전쟁";
+            case 4 -> "IV · 종결";
+            default -> "I · 초전";
+        };
+    }
+
+    public static float flatAttackBonus(ServerPlayer player, boolean projectile) {
+        if (player == null) return 0.0f;
+        ItemStack stack;
+        if (projectile) {
+            ItemStack main = player.getMainHandItem();
+            ItemStack off = player.getOffhandItem();
+            stack = isProjectile(main.getItem()) ? main : off;
+        } else {
+            stack = player.getMainHandItem();
+        }
+        return flatAttackBonus(stack, projectile);
+    }
+
+    public static float flatAttackBonus(ItemStack stack, boolean projectile) {
+        if (stack == null || stack.isEmpty() || rarityOf(stack) == null) return 0.0f;
+        Item item = stack.getItem();
+        if (projectile && !isProjectile(item)) return 0.0f;
+        if (!projectile && !isMelee(item)) return 0.0f;
+        int tier = combatTier(stack);
+        return projectile ? switch (tier) {
+            case 2 -> 1.25f;
+            case 3 -> 2.50f;
+            case 4 -> 4.00f;
+            default -> 0.0f;
+        } : switch (tier) {
+            case 2 -> 1.50f;
+            case 3 -> 3.00f;
+            case 4 -> 5.00f;
+            default -> 0.0f;
+        };
+    }
+
+    public static int combatTierForDay(int day) {
+        int safe = Math.max(1, day);
+        if (safe >= 15) return 4;
+        if (safe >= 10) return 3;
+        if (safe >= 5) return 2;
+        return 1;
+    }
+
+    private static int defaultCombatTier(Item item) {
+        if (item == Items.NETHERITE_SWORD || item == Items.NETHERITE_AXE
+                || item == Items.NETHERITE_HELMET || item == Items.NETHERITE_CHESTPLATE
+                || item == Items.NETHERITE_LEGGINGS || item == Items.NETHERITE_BOOTS) return 3;
+        if (item == Items.DIAMOND_SWORD || item == Items.DIAMOND_AXE
+                || item == Items.DIAMOND_HELMET || item == Items.DIAMOND_CHESTPLATE
+                || item == Items.DIAMOND_LEGGINGS || item == Items.DIAMOND_BOOTS
+                || item == Items.TRIDENT || item == Items.MACE || item == Items.BLAZE_ROD) return 2;
+        return 1;
     }
 
     public static float meleeMultiplier(ItemStack stack) {

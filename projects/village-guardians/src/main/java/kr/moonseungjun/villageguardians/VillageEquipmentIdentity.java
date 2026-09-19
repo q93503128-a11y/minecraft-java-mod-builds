@@ -10,6 +10,7 @@ public final class VillageEquipmentIdentity {
     private static final String KEY_RARITY = "villageguardians_rarity";
     private static final String KEY_ENHANCEMENT = "villageguardians_enhancement";
     private static final String KEY_OFFER = "villageguardians_offer";
+    private static final String KEY_POWER_TIER = "villageguardians_power_tier";
 
     private VillageEquipmentIdentity() {}
 
@@ -27,6 +28,14 @@ public final class VillageEquipmentIdentity {
         CompoundTag tag = tagCopy(stack);
         tag.putBoolean(KEY_MARKER, true);
         tag.putString(KEY_OFFER, offerId == null ? "" : offerId);
+        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+    }
+
+    public static void stampPowerTier(ItemStack stack, int tier) {
+        if (stack == null || stack.isEmpty()) return;
+        CompoundTag tag = tagCopy(stack);
+        tag.putBoolean(KEY_MARKER, true);
+        tag.putInt(KEY_POWER_TIER, Math.max(1, Math.min(4, tier)));
         stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
     }
 
@@ -52,6 +61,12 @@ public final class VillageEquipmentIdentity {
         if (!stamped(stack)) return "";
         CustomData data = stack.get(DataComponents.CUSTOM_DATA);
         return data == null ? "" : data.copyTag().getStringOr(KEY_OFFER, "");
+    }
+
+    public static int powerTier(ItemStack stack) {
+        if (!stamped(stack)) return 0;
+        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        return data == null ? 0 : Math.max(0, Math.min(4, data.copyTag().getIntOr(KEY_POWER_TIER, 0)));
     }
 
     public static boolean canReadLegacyName(ItemStack stack) {

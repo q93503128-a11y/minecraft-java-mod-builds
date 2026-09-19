@@ -233,8 +233,15 @@ public final class VillageEquipmentShop {
             return VillageEquipmentRaritySystem.Rarity.COMMON;
         }
 
+        public int combatTier() {
+            if (requiredDay >= 10) return 4;
+            if (requiredDay >= 7) return 3;
+            if (requiredDay >= 4) return 2;
+            return 1;
+        }
+
         public ItemStack createStack() {
-            ItemStack stack = VillageEquipmentRaritySystem.createNamed(item, rarity(), displayName);
+            ItemStack stack = VillageEquipmentRaritySystem.createNamed(item, rarity(), displayName, combatTier());
             VillageEquipmentIdentity.stampOffer(stack, id);
             return stack;
         }

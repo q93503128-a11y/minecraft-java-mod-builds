@@ -23,6 +23,16 @@ public final class VillageEquipmentTooltipClient {
         int enhancement = VillageEquipmentRaritySystem.enhancementLevel(stack);
         event.getToolTip().add(Component.empty());
         event.getToolTip().add(Component.literal("마을 지키기 장비 효과").withStyle(ChatFormatting.AQUA));
+        float flatMelee = VillageEquipmentRaritySystem.flatAttackBonus(stack, false);
+        float flatProjectile = VillageEquipmentRaritySystem.flatAttackBonus(stack, true);
+        String flatText = flatMelee > 0.0f
+                ? String.format(java.util.Locale.ROOT, " · 기본 근접 피해 +%.1f", flatMelee)
+                : flatProjectile > 0.0f
+                ? String.format(java.util.Locale.ROOT, " · 기본 원거리 피해 +%.1f", flatProjectile)
+                : "";
+        event.getToolTip().add(Component.literal("• 전장 단계: "
+                + VillageEquipmentRaritySystem.combatTierName(stack) + flatText)
+                .withStyle(ChatFormatting.YELLOW));
         event.getToolTip().add(Component.literal("• "
                 + VillageEquipmentRaritySystem.enhancementEffectSummary(stack, enhancement))
                 .withStyle(ChatFormatting.GRAY));
@@ -37,7 +47,7 @@ public final class VillageEquipmentTooltipClient {
         event.getToolTip().add(Component.literal("• 등급: " + rarity.displayName()
                 + (enhancement > 0 ? "  ·  강화 +" + enhancement : ""))
                 .withStyle(rarity.formatting()));
-        event.getToolTip().add(Component.literal("높은 등급의 범용 성능이 세트·특화 효과보다 우선 적용됩니다.")
+        event.getToolTip().add(Component.literal("전장 단계는 기본 피해, 등급·강화는 배율을 올립니다. 같은 영웅 장비도 후반 단계가 더 강합니다.")
                 .withStyle(ChatFormatting.DARK_GRAY));
         event.getToolTip().add(Component.literal("다음 강화 수치와 가능 단계는 대장간에서 확인")
                 .withStyle(ChatFormatting.DARK_GRAY));
