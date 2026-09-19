@@ -403,3 +403,17 @@ TURNBOUND application:
 - Accessory and Signature equip actions no longer require B02/B05 clears in the external world; the three normal equipment slots remain part of the base growth model, and Signature availability is governed by actually obtaining the item rather than an Aster boss gate;
 - enemy/boss codex rows in Drehmal are emitted only after discovery, and discovered entries do not depend on the retired MQ_C03_03 ORO-7 quest for detail visibility;
 - legacy quest/signature-trial encoders remain intact for compatibility runtime rather than being globally deleted.
+
+
+### Legacy physical-runtime isolation follow-up
+
+The retired generated Aster shell remains available only as compatibility code, but it can no longer touch the production Drehmal runtime or an arbitrary unbound save through shared field/battle entry points.
+
+TURNBOUND application:
+- `WorldSessionRouter.tick`, `interactEntity`, `command`, and `onBattleEnded` now fail closed unless an actual legacy session is active and the external Drehmal runtime is not active;
+- this prevents the router's `finally` shared-world sync from becoming an accidental Aster terrain writer after an external battle or malformed field command;
+- external initialization explicitly clears any retained legacy session before publishing the first Drehmal field snapshot, so both world runtimes cannot remain authoritative for the same player;
+- the global legacy field-encounter presentation subscriber no longer scans ArmorStands in Drehmal or unrelated saves;
+- direct `/turnbound archive single|ten|starter` commands are operator-only test helpers; normal players must use the server-authoritative summon milestone and physical facility path;
+- `/turnbound status` now reports the current Drehmal binding/runtime state instead of silently querying only the retired Southgate field session;
+- the legacy implementation is preserved for compatibility rather than deleted or no-op'd.
