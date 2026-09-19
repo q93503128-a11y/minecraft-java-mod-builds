@@ -77,8 +77,7 @@ public final class VillageSiegeCommandUi {
         for (VillagePlacedTurretSystem.TurretType type : VillagePlacedTurretSystem.TurretType.values()) {
             actions.add("siege_turret_select:" + type.id());
             labels.add(type.displayName() + " · 공동 보급품 " + type.installCost()
-                    + "|" + type.role() + " · 현재 연구 기준 피해 "
-                    + String.format(Locale.ROOT, "%.1f", VillagePlacedTurretSystem.effectiveDamage(type, 1))
+                    + "|" + type.role() + " · " + damageSummary(type, 1)
                     + " · 최대 사거리 "
                     + String.format(Locale.ROOT, "%.1f", VillagePlacedTurretSystem.effectiveRange(type, 1))
                     + " · 주기 " + VillagePlacedTurretSystem.effectiveInterval(type, 1)
@@ -89,7 +88,8 @@ public final class VillageSiegeCommandUi {
         actions.add("siege_command");
         labels.add("성벽·포탑 지휘|이전 화면으로 돌아가기");
         send(player, "tower_control", "새 포탑 배치", "계열 선택 → 월드 바닥 우클릭 미리보기 → 원형 최대 사거리 확인 → 같은 위치 재클릭 확정.\n"
-                + "통행로·건물 출입구·북문 전면·8블록 이내 중복 설치는 서버가 거부합니다.", actions, labels);
+                + "피해 수치는 방어·저항 적용 전 기준이며 계열 고유 배율은 각 항목에 함께 표시됩니다.\n"
+                + "통행로·건물 출입구·북문 전면·8블록 이내 중복 설치는 허용되지 않습니다.", actions, labels);
     }
 
     public static void openTurretList(ServerPlayer player) {
@@ -127,13 +127,11 @@ public final class VillageSiegeCommandUi {
         int upgradeCost = VillagePlacedTurretSystem.upgradeCost(state);
         int refund = VillagePlacedTurretSystem.dismantleRefund(state);
         int nextLevel = Math.min(5, state.level() + 1);
-        String currentStats = "현재 피해 "
-                + String.format(Locale.ROOT, "%.1f", VillagePlacedTurretSystem.effectiveDamage(state.type(), state.level()))
+        String currentStats = damageSummary(state.type(), state.level())
                 + " · 사거리 "
                 + String.format(Locale.ROOT, "%.1f", VillagePlacedTurretSystem.effectiveRange(state.type(), state.level()))
                 + " · 주기 " + VillagePlacedTurretSystem.effectiveInterval(state.type(), state.level()) + "틱";
-        String nextStats = "다음 피해 "
-                + String.format(Locale.ROOT, "%.1f", VillagePlacedTurretSystem.effectiveDamage(state.type(), nextLevel))
+        String nextStats = damageSummary(state.type(), nextLevel)
                 + " · 사거리 "
                 + String.format(Locale.ROOT, "%.1f", VillagePlacedTurretSystem.effectiveRange(state.type(), nextLevel))
                 + " · 주기 " + VillagePlacedTurretSystem.effectiveInterval(state.type(), nextLevel) + "틱";
@@ -149,6 +147,23 @@ public final class VillageSiegeCommandUi {
                 state.summary() + "\n역할: " + state.type().role() + " · " + currentStats
                         + "\n폭파병·탑 사냥꾼·보스가 가까이 붙으면 포탑도 피해를 받습니다.",
                 actions, labels);
+    }
+
+    private static String damageSummary(VillagePlacedTurretSystem.TurretType type, int level) {
+        float base = VillagePlacedTurretSystem.effectiveDamage(type, level);
+        return switch (type) {
+            case PIERCER -> String.format(Locale.ROOT,
+                    "기본 피해 %.1f · 중장갑 %.1f~%.1f", base, base * 1.35f, base * 1.55f);
+            case CHAIN -> String.format(Locale.ROOT,
+                    "연쇄 개체당 %.1f · 최대 %d대", base * 0.78f, 2 + Math.max(1, level) / 2);
+            case BOMBARD -> String.format(Locale.ROOT,
+                    "범위 개체당 %.1f · 반경 %.1f", base * 0.72f, 4.5 + Math.max(1, level) * 0.15);
+            case ANTI_AIR -> String.format(Locale.ROOT,
+                    "공중 %.1f · 지상 %.1f", base * 1.65f, base * 0.72f);
+            case FLAME -> String.format(Locale.ROOT, "직격 %.1f + 화상", base);
+            case BEACON -> "공격 없음 · 주변 수호자 회복·저항";
+            default -> String.format(Locale.ROOT, "명중 피해 %.1f", base);
+        };
     }
 
     private static boolean nearDefenseCommand(ServerPlayer player) {

@@ -63,7 +63,7 @@ public final class VillageRelicSystem {
         }
         VillageNetwork.open(player, new VillageNetwork.OpenVillageUiPayload(
                 "relic_choice", "보스 유물 선택",
-                "보스를 쓰러뜨렸습니다. 세 유물 중 하나를 선택하면 이 플레이어에게 영구 적용됩니다.",
+                "세 유물 중 하나를 선택하면 영구 적용됩니다. 이미 보유했거나 선택 대기 중인 유물은 다시 제시되지 않습니다.",
                 String.join(SEP, actions), String.join(SEP, labels)));
     }
 
@@ -76,7 +76,7 @@ public final class VillageRelicSystem {
                     relic.displayName(), relic.description()));
         }
         String body = "보유 " + owned + " / " + Relic.values().length
-                + " · 보스 처치 후 3개 중 하나 선택 · 플레이어별 영구 적용\n"
+                + " · 보스 처치 후 3개 중 하나 선택 · 중복 획득 없음 · 플레이어별 영구 적용\n"
                 + aggregateSummary(player);
         VillageNetwork.open(player, new VillageNetwork.OpenVillageUiPayload(
                 "relic_collection", "획득 유물", body, "", String.join(SEP, labels)));

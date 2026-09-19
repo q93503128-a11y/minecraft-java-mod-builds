@@ -194,7 +194,9 @@ public final class VillageRaidSystem {
     public static int experienceForEnemy(Mob mob) {
         if (mob == null) return 0;
         int base = Math.min(90, 7 + Math.round(mob.getMaxHealth() * 0.48f));
-        return Math.max(1, Math.round(base * 0.59f));
+        int day = Math.max(1, VillageCouncilState.currentDay());
+        float lateScale = 0.59f + Math.min(0.55f, Math.max(0, day - 8) * 0.035f);
+        return Math.max(1, Math.round(base * lateScale));
     }
 
     public static VillageEnemyArchetypeSystem.AerialRole aerialRoleOf(Mob mob) {
@@ -290,7 +292,7 @@ public final class VillageRaidSystem {
     }
 
     public static int previewMaxWaves(int day) {
-        return Math.min(8, 3 + Math.max(0, day - 1) / 2);
+        return Math.min(7, 3 + Math.max(0, day - 1) / 4);
     }
 
     public static int previewWaveCount(int day, int previewWave, int players, VillageWaveTrait trait) {
@@ -670,6 +672,17 @@ public final class VillageRaidSystem {
             AERIAL_STRIKES.remove(id);
         }
 
+        double ingressRadius = Math.max(10.0, VillageWorldSystem.FORTRESS_RADIUS - 10.0);
+        double centerDx = mob.getX() - (villageCenter.getX() + 0.5);
+        double centerDz = mob.getZ() - (villageCenter.getZ() + 0.5);
+        if (centerDx * centerDx + centerDz * centerDz > ingressRadius * ingressRadius) {
+            Vec3 ingress = new Vec3(villageCenter.getX() + 0.5,
+                    villageCenter.getY() + 12.0, villageCenter.getZ() + 0.5);
+            moveFlyingToward(mob, ingress, ingress,
+                    role == VillageEnemyArchetypeSystem.AerialRole.HARRIER ? 1.55 : 1.38);
+            return;
+        }
+
         int phase = Math.floorMod(abilityTicks + id.hashCode(), aerialCadence(role));
         // Bombardiers deliberately ignore nearby defenders while an internal facility still exists.
         if (role == VillageEnemyArchetypeSystem.AerialRole.BOMBARDIER) {
@@ -835,6 +848,12 @@ public final class VillageRaidSystem {
     private static void moveFlyingToward(Mob mob, Vec3 lookAt, Vec3 wanted, double speed) {
         mob.getLookControl().setLookAt(lookAt.x, lookAt.y, lookAt.z, 45.0f, 45.0f);
         mob.getMoveControl().setWantedPosition(wanted.x, wanted.y, wanted.z, speed);
+        Vec3 delta = wanted.subtract(mob.position());
+        if (delta.lengthSqr() > 0.04) {
+            double steeringSpeed = 0.13 + Math.min(1.8, Math.max(0.5, speed)) * 0.045;
+            Vec3 steering = delta.normalize().scale(steeringSpeed);
+            mob.setDeltaMovement(mob.getDeltaMovement().scale(0.55).add(steering.scale(0.45)));
+        }
     }
 
     private static ServerPlayer nearestFlyingPriorityPlayer(MinecraftServer server, Mob mob, double range) {
@@ -1095,8 +1114,10 @@ public final class VillageRaidSystem {
         float campaignReward = VillageWarfrontSystem.rewardMultiplier(day);
         int supplies = Math.round((140 + day * 32)
                 * VillageProgressionSystem.raidRewardMultiplierPercent() / 100.0f * campaignReward);
+        float lateVictoryScale = 0.50f + Math.min(0.30f, Math.max(0, day - 8) * 0.02f);
         int xp = Math.max(1, Math.round(
-                (52 + day * 18 + VillageProgressionSystem.barracksLevel() * 10) * campaignReward * 0.50f));
+                (52 + day * 18 + VillageProgressionSystem.barracksLevel() * 10)
+                        * campaignReward * lateVictoryScale));
         int coins = Math.round((42 + day * 9) * campaignReward);
 
         clearState();
