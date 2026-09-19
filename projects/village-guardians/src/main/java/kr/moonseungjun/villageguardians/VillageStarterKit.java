@@ -83,7 +83,7 @@ public final class VillageStarterKit {
         event.setCancellationResult(InteractionResult.SUCCESS);
         player.setItemInHand(event.getHand(), ItemStack.EMPTY);
         player.sendSystemMessage(Component.literal(
-                "§e예전 호출기는 사용할 수 없습니다. 수호단 작전표 또는 인벤토리의 마을 메뉴를 사용하세요."));
+                "§e호출기 아이템은 폐지되었습니다. 수호단 작전표 또는 인벤토리의 마을 메뉴를 사용하세요."));
     }
 
     private static void ensureTacticalSheet(ServerPlayer player) {
