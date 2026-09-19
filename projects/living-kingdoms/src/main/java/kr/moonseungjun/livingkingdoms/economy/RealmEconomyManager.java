@@ -9,6 +9,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 /** Server-side façade for wallets, market prices and HUD synchronization. */
 public final class RealmEconomyManager {
+    private static final long HUD_CLOCK_SYNC_INTERVAL = 5L;
+
     private RealmEconomyManager() {
     }
 
@@ -50,7 +52,7 @@ public final class RealmEconomyManager {
         RealmEconomySavedData data = data(player);
         data.updateMarket(currentDay(player));
         data.account(player.getUUID());
-        if (player.level().getGameTime() % 20L == 0L) sync(player);
+        if (player.level().getGameTime() % HUD_CLOCK_SYNC_INTERVAL == 0L) sync(player);
     }
 
     public static void sync(ServerPlayer player) {
@@ -59,6 +61,7 @@ public final class RealmEconomyManager {
         RealmEconomySavedData.MarketState market = data.updateMarket(currentDay(player));
         int wanted = wanted(player);
         PacketDistributor.sendToPlayer(player, new FantasyHudStatePayload(
+                player.level().getGameTime(),
                 account.silver(), account.renown(), wanted, professionName(account.profession()),
                 market.grain(), market.metal(), market.herb(), market.labor()
         ));
