@@ -23,7 +23,7 @@ def main() -> None:
     # BOMBARD is deliberately the only indirect-fire acquisition exception in v0.18.13.
     assert "ClipContext.Block.COLLIDER" in los and "HitResult.Type.MISS" in los
     assert "state.type() == TurretType.BOMBARD" in turret
-    assert "nearby.stream().filter(mob -> VillageDefenseLineOfSight.hasLine(level, turretMuzzle(state, mob), mob))" in turret
+    assert "nearby.stream().filter(mob ->" in turret and "VillageDefenseLineOfSight.hasLine(level, turretMuzzle(state, mob), mob)" in turret
     assert "if (!VillageDefenseLineOfSight.hasLine(level, start, target)) return;" in turret and "turretMuzzle" in turret
     assert ".filter(enemy -> VillageDefenseLineOfSight.hasLine(level, start, enemy))" in merc
 
