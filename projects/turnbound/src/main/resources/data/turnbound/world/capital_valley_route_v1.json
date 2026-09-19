@@ -143,7 +143,8 @@
       "footprintLocator": "turnbound:footprint/capital_valley/warning_cave",
       "playerLabel": "경고 동굴의 강적",
       "verifiedIn26_2": false,
-      "productionEnabled": false
+      "productionEnabled": false,
+      "combatEncounterId": "CV_WARNING_CAVE_ELITE"
     },
     {
       "locator": "turnbound:encounter/capital_valley/drabyel_approach_patrol",

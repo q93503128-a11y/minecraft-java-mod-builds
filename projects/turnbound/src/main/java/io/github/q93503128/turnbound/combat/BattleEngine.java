@@ -283,6 +283,10 @@ public final class BattleEngine {
             potency *= 1.0 + actor.definition().param("bonus", 0.15);
         } else if (id.equals("EL02") && target.instanceId().equals(actor.ref("el02_last_target"))) {
             potency *= 1.0 + actor.definition().param("repeatBonus", 0.20);
+        } else if (id.equals("EL_CV01")
+                && (skill.id().equals("el_cv01_gore") || skill.id().equals("el_cv01_charge"))
+                && target.instanceId().equals(actor.ref("el_cv01_last_target"))) {
+            potency *= 1.0 + actor.definition().param("repeatBonus", 0.20);
         } else if (id.equals("B05") && target.status("serak_mark", actor.instanceId()) != null) {
             potency *= 1.30;
         }
@@ -825,6 +829,16 @@ public final class BattleEngine {
     private void postEnemyRules(CombatantState actor, SkillDefinition skill, List<CombatantState> targets) {
         String id = actor.definition().id();
         if (id.equals("EL02") && !targets.isEmpty()) actor.setRef("el02_last_target", targets.getFirst().instanceId());
+        if (id.equals("EL_CV01")) {
+            if ((skill.id().equals("el_cv01_gore") || skill.id().equals("el_cv01_charge")) && !targets.isEmpty()) {
+                actor.setRef("el_cv01_last_target", targets.getFirst().instanceId());
+            }
+            if (skill.id().equals("el_cv01_warn")) actor.setFlag("el_cv01_charge_ready");
+            if (skill.id().equals("el_cv01_charge")) {
+                actor.clearFlag("el_cv01_charge_ready");
+                actor.removeStatus("el_cv01_charge_warning");
+            }
+        }
         if (id.equals("B01") && skill.id().equals("b01_charge")) actor.removeStatus("b01_charge_warning");
         if (id.equals("B02") && skill.id().equals("b02_summon")) spawnBossAdd(actor, "E007");
         if (id.equals("B03") && actor.flag("b03_phase3")) {

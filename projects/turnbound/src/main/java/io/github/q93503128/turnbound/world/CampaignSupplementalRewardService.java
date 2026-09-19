@@ -14,11 +14,13 @@ public final class CampaignSupplementalRewardService {
         if (playerId == null || encounterId == null || result == null || !result.firstClear()) return;
 
         int crystal = switch (encounterId) {
+            case "CV_WARNING_CAVE_ELITE" -> 300;
             // B01's existing special bundle already contains its 1,200 boss Crystal + 1,800 tutorial Crystal.
             case "BATTLE_B02", "BATTLE_B03", "BATTLE_B04", "BATTLE_B05" -> 1_200;
             default -> 0;
         };
         String choiceTier = switch (encounterId) {
+            case "CV_WARNING_CAVE_ELITE" -> "T2";
             // T3 drops are explicitly unlocked by B03; B05 is the authored T4 first-clear source.
             case "BATTLE_B03", "BATTLE_B04" -> "T3";
             case "BATTLE_B05" -> "T4";

@@ -59,6 +59,11 @@ public final class TurnboundCommands {
                             var player = context.getSource().getPlayerOrException();
                             BattleSessionManager.startEncounter(player, "CV_DRABYEL_ROAD", true, true);
                             return Command.SINGLE_SUCCESS;
+                        }))
+                        .then(Commands.literal("warning_cave").executes(context -> {
+                            var player = context.getSource().getPlayerOrException();
+                            BattleSessionManager.startEncounter(player, "CV_WARNING_CAVE_ELITE", true, true);
+                            return Command.SINGLE_SUCCESS;
                         })))
                 .then(Commands.literal("leave")
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))

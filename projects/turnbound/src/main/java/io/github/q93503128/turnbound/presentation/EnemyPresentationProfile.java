@@ -37,6 +37,10 @@ public final class EnemyPresentationProfile {
             Map.entry("cv_b_opportunist", skill(Motion.STRIKE, 18, true)),
             Map.entry("cv_c_basic", skill(Motion.CAST, 16, false)),
             Map.entry("cv_c_aimed", skill(Motion.CAST, 22, false)),
+            Map.entry("el_cv01_gore", skill(Motion.STRIKE, 18, true)),
+            Map.entry("el_cv01_warn", skill(Motion.TELEGRAPH, 20, false)),
+            Map.entry("el_cv01_charge", skill(Motion.CHARGE, 26, true)),
+            Map.entry("el_cv01_stomp", skill(Motion.CAST, 23, false)),
 
             // Retired Aster migration encounters retained until replacement work completes.
             Map.entry("e001_basic", skill(Motion.STRIKE, 14, true)),

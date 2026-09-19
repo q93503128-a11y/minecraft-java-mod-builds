@@ -32,6 +32,7 @@ public final class TurnboundBattleActors {
             "P01","P02","P03","P04","P05","P06","P07","P08","P07_SUMMON",
             "F01","F01_ALT","F02","F03","F04",
             "CV_A","CV_B","CV_C",
+            "EL_CV01",
             "E001","E002","E003","E004","E005","E006","E007","E008","E009","E010","E011","E012","E013","E014",
             "EL01","EL02","EL03","EL04",
             "B01","B02","B03","B04","B05");
@@ -64,6 +65,7 @@ public final class TurnboundBattleActors {
             Map.entry("E013", "e013_cinder_adept"), Map.entry("E014", "e014_lava_driller"));
 
     private static final Map<String, String> ELITE_PATH = Map.of(
+            "EL_CV01", "elite_cv_cavehorn_ravager",
             "EL01", "el01_rot_captain", "EL02", "el02_briar_stag",
             "EL03", "el03_rusted_centurion", "EL04", "el04_magma_drill_king");
 
@@ -151,7 +153,7 @@ public final class TurnboundBattleActors {
             case "P05", "P06" -> 0.62F; case "P07" -> 0.60F; case "P08" -> 0.72F; case "P07_SUMMON" -> 0.82F;
             case "F01", "F01_ALT" -> 0.62F; case "F02" -> 0.59F; case "F03" -> 0.61F; case "F04" -> 0.70F;
             case "B01" -> 1.80F; case "B02" -> 1.65F; case "B03" -> 1.45F; case "B04" -> 1.70F; case "B05" -> 0.78F;
-            case "CV_A" -> 1.15F; case "E006", "E010", "E012", "EL02" -> 1.10F; case "E003", "E014" -> 0.90F;
+            case "CV_A" -> 1.15F; case "EL_CV01" -> 1.38F; case "E006", "E010", "E012", "EL02" -> 1.10F; case "E003", "E014" -> 0.90F;
             case "EL01" -> 0.85F; case "EL03" -> 0.90F; case "EL04" -> 1.17F; default -> 0.72F;
         };
     }
@@ -162,7 +164,7 @@ public final class TurnboundBattleActors {
             case "P05" -> 1.72F; case "P06" -> 1.77F; case "P07" -> 1.64F; case "P08" -> 1.88F; case "P07_SUMMON" -> 1.15F;
             case "F01", "F01_ALT" -> 1.76F; case "F02" -> 1.67F; case "F03" -> 1.75F; case "F04" -> 1.82F;
             case "B01" -> 2.30F; case "B02" -> 2.80F; case "B03" -> 3.10F; case "B04" -> 3.40F; case "B05" -> 2.05F;
-            case "CV_A" -> 1.20F; case "E006", "E010", "E012", "EL02" -> 1.35F; case "E003", "E014" -> 2.15F;
+            case "CV_A" -> 1.20F; case "EL_CV01" -> 2.18F; case "E006", "E010", "E012", "EL02" -> 1.35F; case "E003", "E014" -> 2.15F;
             case "EL01" -> 2.36F; case "EL03" -> 2.50F; case "EL04" -> 2.80F; default -> 2.0F;
         };
     }
@@ -173,7 +175,7 @@ public final class TurnboundBattleActors {
             case "P05" -> 0.935F; case "P06" -> 0.962F; case "P07" -> 0.891F; case "P08" -> 1.022F; case "P07_SUMMON" -> 0.720F;
             case "F01", "F01_ALT" -> 0.957F; case "F02" -> 0.908F; case "F03" -> 0.951F; case "F04" -> 0.989F;
             case "B01" -> 1.15F; case "B02" -> 1.20F; case "B03" -> 1.28F; case "B04" -> 1.35F; case "B05" -> 1.08F;
-            case "EL01" -> 1.18F; case "EL03" -> 1.25F; default -> 1.0F;
+            case "EL_CV01" -> 1.15F; case "EL01" -> 1.18F; case "EL03" -> 1.25F; default -> 1.0F;
         };
     }
 

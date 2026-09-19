@@ -208,6 +208,19 @@ public final class BattleAutoController {
             case "CV_C" -> engine.useSkill(actor.instanceId(),
                     actor.cooldown("cv_c_aimed") == 0 ? "cv_c_aimed" : "cv_c_basic",
                     weakest(allies).instanceId());
+            case "EL_CV01" -> {
+                CombatantState previous = state.find(actor.ref("el_cv01_last_target"));
+                CombatantState target = previous != null && !previous.downed() ? previous : weakest(allies);
+                if (actor.flag("el_cv01_charge_ready") && actor.cooldown("el_cv01_charge") == 0) {
+                    engine.useSkill(actor.instanceId(), "el_cv01_charge", target.instanceId());
+                } else if (actor.hp() * 2 <= actor.maxHp() && actor.cooldown("el_cv01_stomp") == 0) {
+                    engine.useSkill(actor.instanceId(), "el_cv01_stomp");
+                } else if (actor.cooldown("el_cv01_charge") == 0) {
+                    engine.useSkill(actor.instanceId(), "el_cv01_warn");
+                } else {
+                    engine.useSkill(actor.instanceId(), "el_cv01_gore", target.instanceId());
+                }
+            }
             case "E001" -> basicEnemy(engine, actor, allies);
             case "E002" -> engine.useSkill(actor.instanceId(), actor.cooldown("e002_aimed") == 0 ? "e002_aimed" : "e002_basic", weakest(allies).instanceId());
             case "E003" -> { if (actor.hasStatus("e003_armed")) engine.useSkill(actor.instanceId(), "e003_explode"); else if (actor.cooldown("e003_arm") == 0) engine.useSkill(actor.instanceId(), "e003_arm"); else engine.useSkill(actor.instanceId(), "e003_basic", distributedTarget(allies, actor).instanceId()); }
