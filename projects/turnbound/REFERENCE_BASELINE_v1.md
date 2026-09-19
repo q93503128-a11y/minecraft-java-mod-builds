@@ -373,3 +373,17 @@ TURNBOUND application:
 - New Drabyel shop/equipment/upgrade access is governed by the physical first-hub service context rather than retired Chapter 1 gates;
 - summoning remains intentionally locked on town entry and opens only after `CV_WARNING_CAVE_ELITE` or `CV_DRABYEL_ROAD`, matching the first-route onboarding canon;
 - the existing first-route reward table remains authoritative; summon milestones are progression signals and do not create a second duplicate reward table.
+
+
+### Drehmal map/minimap client-path follow-up
+
+The client map path now matches the production world authority instead of retaining live Aster March coordinate projection.
+
+TURNBOUND application:
+- the world-map screen and every live entry point now use the Drehmal-named map surface;
+- the retired Aster March map data, marker style and minimap classes were removed from the client path;
+- the exploration minimap is now actually registered as a GUI layer;
+- local terrain is still sampled from the currently loaded Minecraft world, but non-player markers are limited to the server-authored `FieldUiSnapshot.Navigation` target;
+- because first-route navigation is only authored from `verifiedIn26_2 && productionEnabled` route sites, the minimap cannot turn source-reference anchors into fake exact local markers;
+- an off-screen verified target remains described by label/distance without drawing a false on-map marker;
+- M opens the Drehmal world map and N toggles the Drehmal minimap.
