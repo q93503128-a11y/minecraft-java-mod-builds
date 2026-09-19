@@ -105,9 +105,11 @@ public final class ExpeditionFieldExtractionRelay {
             ExpeditionPlayerFeedback.extractionComplete(player);
             player.sendSystemMessage(Component.translatable("riftfrontier.expedition.detail.hub_return_ready"));
         } catch (IllegalStateException rejected) {
+            int recovered = active.get().recoveredResources().getOrDefault(ExpeditionGameplayService.RESOURCE_ID, 0);
             player.sendSystemMessage(Component.translatable(
                 "riftfrontier.expedition.detail.relay_locked",
-                rejected.getMessage()
+                recovered,
+                REQUIRED_SALVAGE
             ));
         }
         return true;
