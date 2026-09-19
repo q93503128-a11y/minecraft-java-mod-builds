@@ -873,6 +873,8 @@ public final class VillageRoleAbilitySystem {
         player.swing(InteractionHand.OFF_HAND, true);
         double radius = 30.0 + specialRank * 3.0;
         int tauntDuration = Math.max(240, Math.min(400, duration + 120));
+        tauntDuration = Math.min(600, Math.round(
+                tauntDuration * VillageRelicSystem.tauntDurationMultiplier(player)));
         VillageRaidSystem.tauntEnemies(level, player, player.position(), radius, tauntDuration, 120);
         for (Mob target : targetsNear(level, player, player.position(), radius, 120)) {
             hurt(level, target, damage);

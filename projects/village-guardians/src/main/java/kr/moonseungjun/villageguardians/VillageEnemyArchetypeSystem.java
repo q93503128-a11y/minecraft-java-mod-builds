@@ -15,7 +15,10 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.item.Items;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Creates combat roles from vanilla entity models and equipment. The readable
@@ -24,6 +27,7 @@ import java.util.List;
  */
 public final class VillageEnemyArchetypeSystem {
     private static final int LONG_EFFECT_TICKS = 20 * 60 * 30;
+    private static final Map<UUID, Float> SUPPORT_HEAL_BUDGET = new HashMap<>();
 
     private VillageEnemyArchetypeSystem() {}
 
@@ -137,6 +141,8 @@ public final class VillageEnemyArchetypeSystem {
             mob.setGlowingTag(true);
         }
         mob.setHealth(mob.getMaxHealth());
+        SUPPORT_HEAL_BUDGET.put(mob.getUUID(),
+                Math.max(6.0f, mob.getMaxHealth() * (boss ? 0.12f : 0.20f)));
         spawnAura(level, mob, archetype, boss ? 28 : 10);
     }
 
@@ -209,8 +215,9 @@ public final class VillageEnemyArchetypeSystem {
             case NECROMANCER -> {
                 if (!abilityReady(mob, globalTicks, 240)) return;
                 for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 10.0, 5, mob.getUUID())) {
-                    ally.heal(3.0f + VillageCouncilState.currentDay() * 0.08f);
-                    ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 80, 0));
+                    if (supportHeal(ally, 2.5f + VillageCouncilState.currentDay() * 0.05f) > 0.0f) {
+                        ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 60, 0));
+                    }
                 }
                 spawnAura(level, mob, archetype, 20);
             }
@@ -239,8 +246,8 @@ public final class VillageEnemyArchetypeSystem {
             case PLAGUE_ARCHON -> {
                 if (!abilityReady(mob, globalTicks, 150)) return;
                 damageAndDebuffPlayers(level, server, mob, 11.0, 3.5f, MobEffects.POISON);
-                for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 11.0, 8, mob.getUUID())) {
-                    ally.heal(4.0f);
+                for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 11.0, 6, mob.getUUID())) {
+                    supportHeal(ally, 3.0f);
                 }
                 spawnAura(level, mob, archetype, 28);
             }
@@ -253,7 +260,7 @@ public final class VillageEnemyArchetypeSystem {
                     player.hurtServer(level, level.damageSources().magic(), 4.5f);
                     drained += 3.0f;
                 }
-                if (drained > 0.0f) mob.heal(Math.min(16.0f, drained));
+                if (drained > 0.0f) supportHeal(mob, Math.min(12.0f, drained));
                 spawnAura(level, mob, archetype, 30);
             }
             default -> {
@@ -485,7 +492,7 @@ public final class VillageEnemyArchetypeSystem {
             case PLAGUE_ARCHON -> {
                 mob.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST, LONG_EFFECT_TICKS, 5));
                 mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, LONG_EFFECT_TICKS, 2));
-                mob.addEffect(new MobEffectInstance(MobEffects.REGENERATION, LONG_EFFECT_TICKS, 0));
+                mob.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 20 * 8, 1));
             }
             case DREAD_KNIGHT -> {
                 mob.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST, LONG_EFFECT_TICKS, 7));
@@ -527,6 +534,28 @@ public final class VillageEnemyArchetypeSystem {
         int safeCadence = Math.max(1, cadence);
         int phase = Math.floorMod(mob.getUUID().hashCode(), safeCadence);
         return Math.floorMod(globalTicks + phase, safeCadence) == 0;
+    }
+
+    public static void forget(UUID uuid) {
+        if (uuid != null) SUPPORT_HEAL_BUDGET.remove(uuid);
+    }
+
+    public static void resetRaidState() {
+        SUPPORT_HEAL_BUDGET.clear();
+    }
+
+    private static float supportHeal(Mob ally, float requested) {
+        if (ally == null || !ally.isAlive() || requested <= 0.0f) return 0.0f;
+        float missing = Math.max(0.0f, ally.getMaxHealth() - ally.getHealth());
+        if (missing <= 0.0f) return 0.0f;
+        float remaining = SUPPORT_HEAL_BUDGET.getOrDefault(
+                ally.getUUID(), Math.max(6.0f, ally.getMaxHealth() * 0.16f));
+        if (remaining <= 0.0f) return 0.0f;
+        float applied = Math.min(requested, Math.min(missing, remaining));
+        if (applied <= 0.0f) return 0.0f;
+        ally.heal(applied);
+        SUPPORT_HEAL_BUDGET.put(ally.getUUID(), Math.max(0.0f, remaining - applied));
+        return applied;
     }
 
     private static void damageAndDebuffPlayers(

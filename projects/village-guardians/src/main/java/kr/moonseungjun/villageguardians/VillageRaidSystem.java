@@ -1207,6 +1207,7 @@ public final class VillageRaidSystem {
         VillageEnemyEliteSystem.forget(uuid);
         VillageSiegeBossSystem.forget(uuid);
         VillageBossAspectSystem.forget(uuid);
+        VillageEnemyArchetypeSystem.forget(uuid);
         VillageWorldSystem.unmarkAllowedGameMob(uuid);
         VillageHealthDisplaySystem.forgetEnemy(uuid);
         if (entity != null) {
@@ -1258,6 +1259,7 @@ public final class VillageRaidSystem {
         VillageEnemyEliteSystem.clearRaidState();
         VillageSiegeBossSystem.clearRaidState();
         VillageBossAspectSystem.reset();
+        VillageEnemyArchetypeSystem.resetRaidState();
         active = false;
         wave = 0;
         maxWaves = 0;

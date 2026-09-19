@@ -29,14 +29,14 @@ public enum VillageWaveTrait {
     FRENZY("frenzy", "광란 돌격", "모든 적의 이동과 공격이 빨라집니다.",
             "빙결·둔화와 철벽수호자의 저항 기술이 핵심입니다.",
             1.08f, 0, 1, 2, 1.28f, 0.94f),
-    REGENERATING("regenerating", "불사 행렬", "적이 지속적으로 회복하고 치유병이 전열을 유지합니다.",
-            "한 대상을 집중 공격하고 화염·처형 효과로 회복을 끊으세요.",
+    REGENERATING("regenerating", "불사 행렬", "적이 진입 직후 짧게 재생하고 치유병이 제한된 회복으로 전열을 보조합니다.",
+            "치유병을 먼저 끊으면 적의 총 회복량에는 명확한 한계가 있습니다.",
             0.88f, 1, 0, 0, 1.08f, 1.16f),
     PHALANX("phalanx", "방진 행군", "방패병·파쇄병·전쟁 고수가 밀집 대형으로 전진합니다.",
             "광역 마법과 측후방 공격으로 대형을 무너뜨리세요.",
             0.82f, 2, 0, -1, 1.24f, 1.30f),
-    BLOOD_MOON("blood_moon", "혈월 습격", "광전사들이 강한 공격력과 재생을 지닌 채 몰려옵니다.",
-            "짧은 시간에 집중 화력을 쏟아 회복 전에 마무리하세요.",
+    BLOOD_MOON("blood_moon", "혈월 습격", "광전사들이 강한 공격력과 짧은 진입 재생을 지닌 채 몰려옵니다.",
+            "초기 재생이 끝난 뒤에는 지속 회복이 없으므로 전열을 끊어내세요.",
             1.12f, 0, 2, 1, 1.30f, 1.02f),
     STORMFRONT("stormfront", "폭풍 전선", "고속 원거리 병력과 주술사가 끊임없이 진형을 바꿉니다.",
             "엄폐와 추적 기술을 활용하고 후방 사수를 먼저 제거하세요.",
@@ -82,8 +82,10 @@ public enum VillageWaveTrait {
         if (healthBonus > 0) mob.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST, LONG_EFFECT_TICKS, healthBonus - 1));
         if (strengthBonus > 0) mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, LONG_EFFECT_TICKS, strengthBonus - 1));
         if (speedBonus > 0) mob.addEffect(new MobEffectInstance(MobEffects.SPEED, LONG_EFFECT_TICKS, speedBonus - 1));
-        if (this == REGENERATING || this == BLOOD_MOON) {
-            mob.addEffect(new MobEffectInstance(MobEffects.REGENERATION, LONG_EFFECT_TICKS, this == BLOOD_MOON ? 1 : 0));
+        if (this == REGENERATING) {
+            mob.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 20 * 5, 0));
+        } else if (this == BLOOD_MOON) {
+            mob.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 20 * 4, 1));
         }
         if (this == IRONCLAD || this == PHALANX) {
             mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, LONG_EFFECT_TICKS, this == PHALANX ? 1 : 0));
