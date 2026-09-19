@@ -39,6 +39,27 @@ TURNBOUND 적용:
 - unknown-license 자료는 reference-only.
 - 개인용 프로젝트라도 출처를 잃지 않는다.
 
+### 실사용 Minecraft 모드의 import/credit 패턴을 TURNBOUND에 적용
+
+공개 대형/장기 Minecraft 프로젝트를 확인했을 때 유용한 공통점:
+
+- Oritech는 외부 프로젝트에서 가져온 모델/텍스처/사운드를 **무엇을 가져왔는지 항목별로 적고**, “slightly modified / heavily modified”처럼 변형 정도도 같이 기록한다.
+- Twilight Forest / Create 계열은 code license와 asset license를 분리한다. 즉 repository가 MIT/GPL이라고 해서 `assets/`도 같은 권리라고 추정하지 않는다.
+- Botania는 외부에서 들어온 코드와 asset provider를 별도 credits / alternate-license 기록으로 유지한다.
+- MineClone 계열은 큰 외부 resource lineage를 쓸 때 원저작자, pack, 변형/추가 저작자를 모듈 단위로 계속 추적한다.
+
+TURNBOUND 적용:
+1. repository 최상위 LICENSE만 보고 자산 사용 가능 판정 금지.
+2. `assets/`, `resources/`, sound/model/texture 하위 경로에 별도 라이선스가 있는지 먼저 확인.
+3. upstream asset이 다시 다른 프로젝트에서 온 것이라면 **provenance chain을 원출처까지 따라간다**.
+4. 실제 사용한 파일만 가져오고 source path + immutable commit + blob SHA를 SOURCE.md에 남긴다.
+5. 수정한 파일은 수정 사실과 변환 내용을 명시한다. Apache-2.0처럼 modified-file notice를 요구하는 경우 반드시 표시한다.
+6. upstream NOTICE가 있으면 적용 범위를 확인하고 필요한 notice를 같이 보존한다.
+7. model/texture/animation/weapon처럼 한 캐릭터를 구성하는 자산은 가능하면 **동일 visual family**에서 가져온다. 여러 pack을 섞는 것은 품질상 이유가 있을 때만 한다.
+8. 전체 upstream pack을 통째로 vendor하지 않는다. runtime에 쓰는 조각 + 필요한 license/notice + provenance만 보존한다.
+9. external asset을 재사용한 사실 자체가 완성도를 보장하지 않는다. 실제 Minecraft camera/GUI scale에서 production 품질을 확인한다.
+
+
 ## 2. 자산 등급
 
 모든 외부 자료는 다음 중 하나다.
@@ -96,12 +117,17 @@ THIRD_PARTY/<asset-id>/
 - asset id
 - 원 출처 URL
 - 저작자/프로젝트
-- 원본 버전
+- 원본 버전 또는 immutable commit SHA
 - 분류(reference/editable_base/direct_asset/code_library)
-- license
+- license와 **license scope** (code / asset / path-specific 여부)
+- upstream NOTICE 존재 여부와 보존 필요 여부
 - 원본 파일명/경로
+- 가능하면 원본 blob SHA
+- upstream이 다른 asset을 재사용한 경우 원출처 provenance chain
 - TURNBOUND destination
-- 변경 사항(crop, recolor, 9-slice, atlas, format conversion 등)
+- unchanged / modified 구분
+- 변경 사항(crop, recolor, retarget, bone anchor, 9-slice, atlas, format conversion 등)
+- runtime에서 실제 사용되는 방식
 - 확인 날짜
 
 ## 6. UI import 절차
