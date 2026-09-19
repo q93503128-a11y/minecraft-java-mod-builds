@@ -829,6 +829,17 @@ public final class BattleEngine {
     private void postEnemyRules(CombatantState actor, SkillDefinition skill, List<CombatantState> targets) {
         String id = actor.definition().id();
         if (id.equals("EL02") && !targets.isEmpty()) actor.setRef("el02_last_target", targets.getFirst().instanceId());
+        if (id.equals("CV_C")) {
+            if (skill.id().equals("cv_c_take_aim") && !targets.isEmpty()) {
+                actor.setRef("cv_c_aim_target", targets.getFirst().instanceId());
+                actor.setFlag("cv_c_aim_ready");
+            } else if (skill.id().equals("cv_c_aimed")) {
+                CombatantState warnedTarget = state.find(actor.ref("cv_c_aim_target"));
+                if (warnedTarget != null) warnedTarget.removeStatus("cv_c_aimed_target");
+                actor.setRef("cv_c_aim_target", null);
+                actor.clearFlag("cv_c_aim_ready");
+            }
+        }
         if (id.equals("EL_CV01")) {
             if ((skill.id().equals("el_cv01_gore") || skill.id().equals("el_cv01_charge")) && !targets.isEmpty()) {
                 actor.setRef("el_cv01_last_target", targets.getFirst().instanceId());
