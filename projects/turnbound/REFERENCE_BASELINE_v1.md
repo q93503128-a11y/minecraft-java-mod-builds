@@ -359,3 +359,17 @@ TURNBOUND application:
 - after normal battle exit, the external-world runtime immediately republishes location, interaction prompt and navigation context from the restored field position;
 - field HUD recovery no longer waits for the ordinary 40-tick exploration sync;
 - lifecycle shutdown/logout still avoids unnecessary client refresh traffic.
+
+
+### Drehmal runtime authority isolation follow-up
+
+Production Drehmal no longer relies on retired Aster March routing/progression assumptions at shared packet and meta-menu boundaries.
+
+TURNBOUND application:
+- field commands are routed through a single runtime selector: bound Drehmal players are consumed by the external-world runtime before the legacy Aster March router can receive them;
+- current Drehmal field commands are fail-closed because first-route travel/services are physical-world interactions rather than legacy relay teleport commands;
+- meta mutations refresh the active Drehmal field snapshot instead of calling Radia hub progression refresh;
+- pure `MetaActionGate` remains Minecraft-free for unit tests, while a runtime wrapper selects Aster-vs-Drehmal progression rules;
+- New Drabyel shop/equipment/upgrade access is governed by the physical first-hub service context rather than retired Chapter 1 gates;
+- summoning remains intentionally locked on town entry and opens only after `CV_WARNING_CAVE_ELITE` or `CV_DRABYEL_ROAD`, matching the first-route onboarding canon;
+- the existing first-route reward table remains authoritative; summon milestones are progression signals and do not create a second duplicate reward table.
