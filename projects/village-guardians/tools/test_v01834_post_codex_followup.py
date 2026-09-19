@@ -46,7 +46,7 @@ def main() -> None:
     assert "기술 연구소에서 직업을 먼저 배치" in role
 
     legacy = section(local, 'if (action.startsWith("facility:")', "// Compatibility guard")
-    assert "구식 시설 바로가기" in legacy and "openBuilding" not in legacy and "VillageSiegeCommandUi.open" not in legacy
+    assert "시설 기능은 각 시설 단말기에서 사용하세요" in legacy and "openBuilding" not in legacy and "VillageSiegeCommandUi.open" not in legacy
     gate = section(local, "private static boolean isSiegeCommandAction", "private static int parseInt")
     for token in ("siege_command", "siege_turret_catalog", "siege_segment_open:", "siege_turret_open:", "tower_open:"):
         assert token in gate
