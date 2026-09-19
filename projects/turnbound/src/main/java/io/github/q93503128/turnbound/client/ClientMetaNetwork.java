@@ -34,7 +34,7 @@ public final class ClientMetaNetwork {
                 if ("MARKET".equals(hint)) minecraft.gui.setScreen(new FacilityMarketScreen());
                 else if ("MAP".equals(hint)) {
                     FacilityUiAccess.clear();
-                    minecraft.gui.setScreen(new AsterMarchMapScreen());
+                    minecraft.gui.setScreen(new DrehmalWorldMapScreen());
                 } else minecraft.gui.setScreen(new MetaMenuScreen(tab(hint)));
                 return;
             }
