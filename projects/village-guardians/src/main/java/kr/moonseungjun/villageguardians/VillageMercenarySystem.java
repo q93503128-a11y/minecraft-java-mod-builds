@@ -203,7 +203,7 @@ public final class VillageMercenarySystem {
             if (mercenary.getTarget() != null
                     && (!VillageRaidSystem.isRaidEnemy(mercenary.getTarget())
                     || mercenary.getTarget() instanceof Mob target
-                    && VillageEnemyArchetypeSystem.isFlying(target))) {
+                    && VillageRaidSystem.isAerialEnemy(target))) {
                 mercenary.setTarget(null);
             }
             MercenaryClass kind = mercenaryClass(mercenary);
@@ -368,7 +368,7 @@ public final class VillageMercenarySystem {
         Vec3 eye = mercenary.position().add(0, 1.8, 0);
         boolean engaged = false;
         for (Mob enemy : VillageRaidSystem.activeEnemiesNear(level, mercenary.position(), radius, limit, null)) {
-            if (VillageEnemyArchetypeSystem.isFlying(enemy)
+            if (VillageRaidSystem.isAerialEnemy(enemy)
                     || !VillageDefenseLineOfSight.hasLine(level, eye, enemy)) continue;
             enemy.setTarget(mercenary);
             enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 28 + Math.min(90, rank * 2), 0));
@@ -394,7 +394,7 @@ public final class VillageMercenarySystem {
                         18 + Math.min(18, rank / 3), null)
                 .stream().filter(enemy -> VillageDefenseLineOfSight.hasLine(level, start, enemy))
                 .min(java.util.Comparator
-                        .comparingInt((Mob enemy) -> VillageEnemyArchetypeSystem.isFlying(enemy) ? 0 : 1)
+                        .comparingInt((Mob enemy) -> VillageRaidSystem.isAerialEnemy(enemy) ? 0 : 1)
                         .thenComparingInt(enemy -> -VillageRaidSystem.aerialThreatPriority(enemy))
                         .thenComparingDouble(mercenary::distanceToSqr)).orElse(null);
         mercenary.setTarget(null);
@@ -425,7 +425,7 @@ public final class VillageMercenarySystem {
 
     private static Mob nearestGroundEnemy(ServerLevel level, Vec3 origin, double range) {
         return VillageRaidSystem.activeEnemiesNear(level, origin, range, 64, null).stream()
-                .filter(enemy -> !VillageEnemyArchetypeSystem.isFlying(enemy))
+                .filter(enemy -> !VillageRaidSystem.isAerialEnemy(enemy))
                 .min(java.util.Comparator.comparingDouble(enemy -> enemy.position().distanceToSqr(origin)))
                 .orElse(null);
     }

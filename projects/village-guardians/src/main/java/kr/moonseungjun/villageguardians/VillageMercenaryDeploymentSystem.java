@@ -193,7 +193,7 @@ public final class VillageMercenaryDeploymentSystem {
 
     private static Mob groundTarget(ServerLevel level, Vec3 origin, double range) {
         return VillageRaidSystem.activeEnemiesNear(level, origin, range, 64, null).stream()
-                .filter(enemy -> !VillageEnemyArchetypeSystem.isFlying(enemy))
+                .filter(enemy -> !VillageRaidSystem.isAerialEnemy(enemy))
                 .min(java.util.Comparator.comparingDouble(enemy -> enemy.position().distanceToSqr(origin)))
                 .orElse(null);
     }
