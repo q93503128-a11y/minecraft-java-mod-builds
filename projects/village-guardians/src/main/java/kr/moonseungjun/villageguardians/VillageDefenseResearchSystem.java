@@ -58,9 +58,16 @@ public final class VillageDefenseResearchSystem {
         if (branch == Branch.TOWER && player.level() instanceof ServerLevel level) {
             VillagePlacedTurretSystem.applyResearchDurabilityUpgrade(level, previousTowerDurability);
         }
-        String after = branch.description(current + 1);
-        return branch.displayName() + " Lv." + (current + 1) + " 연구 완료"
-                + "\n이전: " + before + "\n현재: " + after;
+        int upgradedLevel = current + 1;
+        String after = branch.description(upgradedLevel);
+        String next = upgradedLevel >= MAX_LEVEL
+                ? "\n다음 강화: 최고 단계"
+                : "\n다음 강화 Lv." + (upgradedLevel + 1) + ": " + branch.description(upgradedLevel + 1)
+                + "\n다음 비용: 공동 보급품 " + upgradeCost(branch);
+        return branch.displayName() + " Lv." + upgradedLevel + " 연구 완료"
+                + "\n이전 Lv." + current + ": " + before
+                + "\n현재 Lv." + upgradedLevel + ": " + after
+                + next;
     }
 
     private static float curve(int level, float firstFive, float masteryFive) {
@@ -76,6 +83,10 @@ public final class VillageDefenseResearchSystem {
 
     public static float mercenaryHealingMultiplier() {
         return 1.0f + curve(level(Branch.MERCENARY), 0.04f, 0.025f);
+    }
+
+    public static float mercenaryDurabilityMultiplier() {
+        return 1.0f + curve(level(Branch.MERCENARY), 0.06f, 0.03f);
     }
 
     public static int mercenaryTrainingProgressPerKill() {
@@ -158,6 +169,7 @@ public final class VillageDefenseResearchSystem {
             return switch (this) {
                 case MERCENARY -> "정원 +" + mercenaryCapacityAt(safe)
                         + " · 피해 +" + percent(1.0f + curve(safe, 0.12f, 0.05f)) + "%"
+                        + " · 생존 +" + percent(1.0f + curve(safe, 0.06f, 0.03f)) + "%"
                         + " · 치유 +" + percent(1.0f + curve(safe, 0.04f, 0.025f)) + "%"
                         + " · 처치 훈련 진척 ×" + (1 + safe / 4);
                 case TOWER -> "피해 +" + percent(1.0f + curve(safe, 0.10f, 0.04f)) + "%"
