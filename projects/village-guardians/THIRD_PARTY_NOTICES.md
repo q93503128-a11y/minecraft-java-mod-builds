@@ -21,3 +21,16 @@ Village Guardians contains selected third-party visual and structure assets. The
 - License URI: https://creativecommons.org/licenses/by-nc-sa/4.0/
 - Included material: six selected village structure NBT files
 - Changes: copied into the Village Guardians namespace, rotated and placed in the custom fortress, then supplemented with custom paths, signs, terminals, durability, repair, and gameplay logic. Towns and Towers world-generation configuration and code are not bundled.
+
+
+## Quaternius RPG Character Pack
+
+- Creator: Quaternius
+- Primary source: https://quaternius.com/packs/rpgcharacters.html
+- Pinned source mirror: https://github.com/mertgurgenyatagi/TurkeyWars
+- Pinned mirror revision: `e50f41492f5cc35cffa7990ddb998e860881bd41`
+- License: CC0 1.0 Universal / Public Domain Dedication
+- License URI: https://creativecommons.org/publicdomain/zero/1.0/
+- Included geometry: Warrior, Rogue, Ranger and Cleric OBJ meshes
+- Village Guardians mapping: 방벽 수호병=Warrior, 돌격 집행관=Rogue, 성루 명사수=Ranger, 전장 치유사=Cleric
+- Changes: geometry is normalized to Minecraft scale at runtime and rendered with Village Guardians class palettes and combat VFX. Gameplay hitboxes and server authority remain separate from the presentation mesh.
