@@ -160,6 +160,9 @@ final class DrehmalVisibleEncounterService {
             if (graceTicks > 0) graceTicks--;
             Vec3 flatPlayer = new Vec3(nearest.getX(), pivot.y, nearest.getZ());
             double playerDistance = flatPlayer.distanceTo(pivot);
+            // A patrol may be much longer than the combat leash. The return anchor is the exact place where this
+            // group was patrolling when aggro began, not the first point of the whole route.
+            if (phase == FieldEncounterRules.Phase.PATROL) returnTarget = pivot;
             boolean sight = playerDistance <= 3.0D || nearest.hasLineOfSight(lead);
             double sensedDistance = sight ? playerDistance : FieldEncounterRules.ALERT_RADIUS + 1.0D;
             double returnDistance = pivot.distanceTo(returnTarget);
