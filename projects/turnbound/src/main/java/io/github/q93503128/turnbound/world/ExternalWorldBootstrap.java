@@ -24,6 +24,7 @@ public final class ExternalWorldBootstrap {
     private static final Set<UUID> ACTIVE = new LinkedHashSet<>();
     private static final Map<UUID, String> LAST_LOCATION = new HashMap<>();
     private static final Map<UUID, String> LAST_INTERACTION = new HashMap<>();
+    private static final Map<UUID, String> LAST_NAVIGATION = new HashMap<>();
 
     private ExternalWorldBootstrap() {}
 
@@ -39,6 +40,7 @@ public final class ExternalWorldBootstrap {
         ACTIVE.add(player.getUUID());
         LAST_LOCATION.put(player.getUUID(), DrehmalFirstRouteRuntime.locationId(player));
         LAST_INTERACTION.put(player.getUUID(), DrehmalFirstRouteRuntime.interactionId(player));
+        LAST_NAVIGATION.put(player.getUUID(), DrehmalFirstRouteRuntime.navigationId(player));
         FieldNetwork.syncExternal(player, DrehmalFirstRouteRuntime.explorationSnapshot(player));
 
         ExternalWorldSavedData saved = ExternalWorldSavedData.get(server);
@@ -74,7 +76,10 @@ public final class ExternalWorldBootstrap {
         String interaction = DrehmalFirstRouteRuntime.interactionId(player);
         String previousInteraction = LAST_INTERACTION.put(player.getUUID(), interaction);
         boolean interactionChanged = previousInteraction == null || !previousInteraction.equals(interaction);
-        if (locationChanged || interactionChanged || player.tickCount % 40 == 0) {
+        String navigation = DrehmalFirstRouteRuntime.navigationId(player);
+        String previousNavigation = LAST_NAVIGATION.put(player.getUUID(), navigation);
+        boolean navigationChanged = previousNavigation == null || !previousNavigation.equals(navigation);
+        if (locationChanged || interactionChanged || navigationChanged || player.tickCount % 40 == 0) {
             FieldNetwork.syncExternal(player, DrehmalFirstRouteRuntime.explorationSnapshot(player));
         }
         return true;
@@ -106,6 +111,7 @@ public final class ExternalWorldBootstrap {
         ACTIVE.remove(player.getUUID());
         LAST_LOCATION.remove(player.getUUID());
         LAST_INTERACTION.remove(player.getUUID());
+        LAST_NAVIGATION.remove(player.getUUID());
     }
 
     public static void clear() {
@@ -114,5 +120,6 @@ public final class ExternalWorldBootstrap {
         ACTIVE.clear();
         LAST_LOCATION.clear();
         LAST_INTERACTION.clear();
+        LAST_NAVIGATION.clear();
     }
 }

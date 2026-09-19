@@ -30,7 +30,8 @@ public record FieldUiSnapshot(
         String locationTitle,
         String interactionId,
         String interactionLabel,
-        String interactionAction
+        String interactionAction,
+        Navigation navigation
 ) {
     public enum Mode { NONE, LOADING, QUEST, RESULT, TRAVEL }
 
@@ -96,6 +97,22 @@ public record FieldUiSnapshot(
 
     public record Travel(String id, String label, boolean unlocked, boolean current) {}
 
+    public record Navigation(String id, String label, double x, double z) {
+        public Navigation {
+            id = id == null ? "" : id.trim();
+            label = playerFacingText(label == null ? "" : label);
+            if (!Double.isFinite(x) || !Double.isFinite(z) || id.isBlank() || label.isBlank()) {
+                id = "";
+                label = "";
+                x = 0.0D;
+                z = 0.0D;
+            }
+        }
+
+        public boolean active() { return !id.isBlank() && !label.isBlank(); }
+        public static Navigation none() { return new Navigation("", "", 0.0D, 0.0D); }
+    }
+
     public FieldUiSnapshot {
         mode = mode == null ? Mode.NONE : mode;
         objective = playerFacingText(objective);
@@ -110,6 +127,7 @@ public record FieldUiSnapshot(
         interactionId = interactionId == null ? "" : interactionId.trim();
         interactionLabel = playerFacingText(interactionLabel == null ? "" : interactionLabel);
         interactionAction = playerFacingText(interactionAction == null ? "" : interactionAction);
+        navigation = navigation == null ? Navigation.none() : navigation;
     }
 
     /** Final UI-boundary defense. Internal identifiers remain valid in logic/save data but not in authored copy. */
@@ -259,6 +277,34 @@ public record FieldUiSnapshot(
         this(active, mode, patrolsCleared, patrolGoal, bossUnlocked, chapterCleared, earnedXp, earnedGold,
                 objective, dialogue, reward, encounters, travels, loadingStage, loadingPercent,
                 locationId, locationTitle, "", "", "");
+    }
+
+    /** Compatibility constructor matching the pre-navigation full field snapshot shape. */
+    public FieldUiSnapshot(
+            boolean active,
+            Mode mode,
+            int patrolsCleared,
+            int patrolGoal,
+            boolean bossUnlocked,
+            boolean chapterCleared,
+            int earnedXp,
+            int earnedGold,
+            String objective,
+            String dialogue,
+            Reward reward,
+            List<Encounter> encounters,
+            List<Travel> travels,
+            String loadingStage,
+            int loadingPercent,
+            String locationId,
+            String locationTitle,
+            String interactionId,
+            String interactionLabel,
+            String interactionAction
+    ) {
+        this(active, mode, patrolsCleared, patrolGoal, bossUnlocked, chapterCleared, earnedXp, earnedGold,
+                objective, dialogue, reward, encounters, travels, loadingStage, loadingPercent,
+                locationId, locationTitle, interactionId, interactionLabel, interactionAction, Navigation.none());
     }
 
     public static FieldUiSnapshot loading(String stage, int percent) {

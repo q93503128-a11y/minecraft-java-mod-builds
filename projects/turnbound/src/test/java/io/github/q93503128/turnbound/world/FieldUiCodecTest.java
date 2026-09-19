@@ -89,6 +89,41 @@ class FieldUiCodecTest {
     }
 
     @Test
+    void roundTripsServerAuthoredDrehmalNavigation() {
+        FieldUiSnapshot.Navigation navigation = new FieldUiSnapshot.Navigation(
+                "turnbound:site/capital_valley/tower",
+                "Capital Valley Tower",
+                557.5D,
+                1176.5D);
+        FieldUiSnapshot source = new FieldUiSnapshot(
+                true,
+                FieldUiSnapshot.Mode.NONE,
+                0,
+                0,
+                false,
+                false,
+                0,
+                0,
+                "길을 따라 New Drabyel을 찾으십시오.",
+                "",
+                FieldUiSnapshot.Reward.none(),
+                List.of(),
+                List.of(),
+                "",
+                0,
+                "",
+                "",
+                "",
+                "",
+                "",
+                navigation);
+
+        FieldUiSnapshot decoded = FieldUiCodec.decode(FieldUiCodec.encode(source));
+        assertTrue(decoded.navigation().active());
+        assertEquals(navigation, decoded.navigation());
+    }
+
+    @Test
     void malformedOptionalLineDoesNotDestroyHeaderState() {
         String encoded = "H|1|QUEST|2|5|0|0|75|130\nE|broken\n";
         FieldUiSnapshot decoded = FieldUiCodec.decode(encoded);

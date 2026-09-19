@@ -59,6 +59,7 @@ public final class DrehmalFirstRouteRuntime {
         String objective = objective(player);
         DrehmalFirstRouteCatalog.Site location = locationSite(player);
         DrabyelInteractionPromptRules.Prompt interaction = DrabyelHubServiceRuntime.prompt(player);
+        FieldUiSnapshot.Navigation navigation = navigation(player);
         return new FieldUiSnapshot(
                 true,
                 FieldUiSnapshot.Mode.NONE,
@@ -79,7 +80,8 @@ public final class DrehmalFirstRouteRuntime {
                 location == null ? "" : location.playerLabel(),
                 interaction.id(),
                 interaction.label(),
-                interaction.action());
+                interaction.action(),
+                navigation);
     }
 
     static String locationId(ServerPlayer player) {
@@ -89,6 +91,16 @@ public final class DrehmalFirstRouteRuntime {
 
     static String interactionId(ServerPlayer player) {
         return DrabyelHubServiceRuntime.prompt(player).id();
+    }
+
+    static String navigationId(ServerPlayer player) {
+        return navigation(player).id();
+    }
+
+    private static FieldUiSnapshot.Navigation navigation(ServerPlayer player) {
+        if (player == null) return FieldUiSnapshot.Navigation.none();
+        return DrehmalRouteNavigationRules.target(
+                DrehmalFirstRouteCatalog.productionSites(), player.getX(), player.getZ());
     }
 
     private static DrehmalFirstRouteCatalog.Site locationSite(ServerPlayer player) {

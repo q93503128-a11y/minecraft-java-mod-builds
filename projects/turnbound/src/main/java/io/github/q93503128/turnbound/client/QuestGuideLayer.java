@@ -91,11 +91,10 @@ public final class QuestGuideLayer implements GuiLayer {
         String text = arrow + "  " + target.label + " · " + distance + "m";
         int maxW = Math.min(220, graphics.guiWidth() / 2);
         text = UiTextLayout.fit(text, maxW - 16);
-        int w = minecraft.font.width(text) + 16;
+        int w = minecraft.font.width(text) + 18;
         int x = (graphics.guiWidth() - w) / 2, y = 7;
-        graphics.fill(x, y, x + w, y + 18, 0xB516181C);
-        graphics.fill(x, y + 17, x + w, y + 19, GOLD);
-        graphics.text(minecraft.font, Component.literal(text), x + 8, y + 5, GOLD, true);
+        TurnboundUiSkin.inset(graphics, x, y, w, 20);
+        graphics.text(minecraft.font, Component.literal(text), x + 9, y + 6, GOLD, true);
     }
 
     private static String directionArrow(double delta) {
@@ -126,42 +125,9 @@ public final class QuestGuideLayer implements GuiLayer {
     }
 
     private static Target target(FieldUiSnapshot snapshot) {
-        String raw = snapshot.objective();
-        if (raw == null) return null;
-        if (raw.contains("총괄관 아이븐") || raw.contains("Director Iven") || raw.contains("라디아 도착")) {
-            return new Target("총괄관 아이븐", 0.5, 6.5);
-        }
-        if (isPartyObjective(raw)) return null;
-        if (raw.contains("전투 훈련") || raw.contains("남문 개방")) {
-            int index = Math.max(0, Math.min(3, snapshot.patrolsCleared()));
-            if (index >= 3) return new Target("남문", 0, 104);
-            double z = index == 0 ? 49 : index == 1 ? 59 : 69;
-            return new Target("전투 훈련 " + (index + 1), 50, z);
-        }
-        if (chapter(raw, 1) || raw.contains("그라울")) {
-            if (Math.abs(minecraftPlayerX()) <= 128 && minecraftPlayerZ() <= 128) return new Target("남문", 0, 104);
-            return new Target("그라울", 355, 245);
-        }
-        if (chapter(raw, 2) || raw.contains("베르나")) return new Target("베르나", -35, -440);
-        if (chapter(raw, 3) || raw.contains("ORO-7")) return new Target("ORO-7", -430, 35);
-        if (chapter(raw, 4) || raw.contains("콜바크")) return new Target("콜바크", 65, 455);
-        if (raw.contains("중계소 열쇠") || raw.contains("Relay 조각") || raw.contains("계전소")) return new Target("라디아 계전소", 0, 24);
-        if (chapter(raw, 5) || raw.contains("세라크")) return new Target("세라크", 430, -350);
-        return null;
-    }
-
-    private static boolean chapter(String raw, int chapter) {
-        return raw.contains("제" + chapter + "장") || raw.contains("Chapter " + chapter);
-    }
-
-    private static double minecraftPlayerX() {
-        Minecraft m = Minecraft.getInstance();
-        return m.player == null ? 0 : m.player.getX();
-    }
-
-    private static double minecraftPlayerZ() {
-        Minecraft m = Minecraft.getInstance();
-        return m.player == null ? 0 : m.player.getZ();
+        FieldUiSnapshot.Navigation navigation = snapshot.navigation();
+        if (navigation == null || !navigation.active()) return null;
+        return new Target(navigation.label(), navigation.x(), navigation.z());
     }
 
     static String playerFacingObjective(String raw) {
