@@ -27,7 +27,10 @@ public record FieldUiSnapshot(
         String loadingStage,
         int loadingPercent,
         String locationId,
-        String locationTitle
+        String locationTitle,
+        String interactionId,
+        String interactionLabel,
+        String interactionAction
 ) {
     public enum Mode { NONE, LOADING, QUEST, RESULT, TRAVEL }
 
@@ -104,6 +107,9 @@ public record FieldUiSnapshot(
         loadingPercent = Math.max(0, Math.min(100, loadingPercent));
         locationId = locationId == null ? "" : locationId.trim();
         locationTitle = playerFacingText(locationTitle == null ? "" : locationTitle);
+        interactionId = interactionId == null ? "" : interactionId.trim();
+        interactionLabel = playerFacingText(interactionLabel == null ? "" : interactionLabel);
+        interactionAction = playerFacingText(interactionAction == null ? "" : interactionAction);
     }
 
     /** Final UI-boundary defense. Internal identifiers remain valid in logic/save data but not in authored copy. */
@@ -205,7 +211,7 @@ public record FieldUiSnapshot(
             List<Travel> travels
     ) {
         this(active, mode, patrolsCleared, patrolGoal, bossUnlocked, chapterCleared, earnedXp, earnedGold,
-                objective, dialogue, reward, encounters, travels, "", 0, "", "");
+                objective, dialogue, reward, encounters, travels, "", 0, "", "", "", "", "");
     }
 
     /** Compatibility constructor matching the pre-location-banner canonical shape. */
@@ -227,16 +233,41 @@ public record FieldUiSnapshot(
             int loadingPercent
     ) {
         this(active, mode, patrolsCleared, patrolGoal, bossUnlocked, chapterCleared, earnedXp, earnedGold,
-                objective, dialogue, reward, encounters, travels, loadingStage, loadingPercent, "", "");
+                objective, dialogue, reward, encounters, travels, loadingStage, loadingPercent, "", "", "", "", "");
+    }
+
+    /** Compatibility constructor matching the location-banner shape before service prompts were added. */
+    public FieldUiSnapshot(
+            boolean active,
+            Mode mode,
+            int patrolsCleared,
+            int patrolGoal,
+            boolean bossUnlocked,
+            boolean chapterCleared,
+            int earnedXp,
+            int earnedGold,
+            String objective,
+            String dialogue,
+            Reward reward,
+            List<Encounter> encounters,
+            List<Travel> travels,
+            String loadingStage,
+            int loadingPercent,
+            String locationId,
+            String locationTitle
+    ) {
+        this(active, mode, patrolsCleared, patrolGoal, bossUnlocked, chapterCleared, earnedXp, earnedGold,
+                objective, dialogue, reward, encounters, travels, loadingStage, loadingPercent,
+                locationId, locationTitle, "", "", "");
     }
 
     public static FieldUiSnapshot loading(String stage, int percent) {
         return new FieldUiSnapshot(true, Mode.LOADING, 0, 0, false, false, 0, 0,
-                "", "", Reward.none(), List.of(), List.of(), stage, percent, "", "");
+                "", "", Reward.none(), List.of(), List.of(), stage, percent, "", "", "", "", "");
     }
 
     public static FieldUiSnapshot inactive() {
         return new FieldUiSnapshot(false, Mode.NONE, 0, 0, false, false, 0, 0,
-                "", "", Reward.none(), List.of(), List.of(), "", 0, "", "");
+                "", "", Reward.none(), List.of(), List.of(), "", 0, "", "", "", "", "");
     }
 }

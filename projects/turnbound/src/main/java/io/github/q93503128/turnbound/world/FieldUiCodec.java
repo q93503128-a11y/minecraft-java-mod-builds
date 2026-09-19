@@ -22,6 +22,9 @@ public final class FieldUiCodec {
         out.append("D|").append(text(snapshot.dialogue())).append('\n');
         out.append("L|").append(text(snapshot.loadingStage())).append('|').append(snapshot.loadingPercent()).append('\n');
         out.append("A|").append(text(snapshot.locationId())).append('|').append(text(snapshot.locationTitle())).append('\n');
+        out.append("I|").append(text(snapshot.interactionId()))
+                .append('|').append(text(snapshot.interactionLabel()))
+                .append('|').append(text(snapshot.interactionAction())).append('\n');
         FieldUiSnapshot.Reward reward = snapshot.reward();
         out.append("R|").append(text(reward.encounterLabel()))
                 .append('|').append(reward.xp())
@@ -60,6 +63,9 @@ public final class FieldUiCodec {
         int loadingPercent = 0;
         String locationId = "";
         String locationTitle = "";
+        String interactionId = "";
+        String interactionLabel = "";
+        String interactionAction = "";
         FieldUiSnapshot.Reward reward = FieldUiSnapshot.Reward.none();
         List<FieldUiSnapshot.Encounter> encounters = new ArrayList<>();
         List<FieldUiSnapshot.Travel> travels = new ArrayList<>();
@@ -94,6 +100,13 @@ public final class FieldUiCodec {
                             locationTitle = read(parts[2]);
                         }
                     }
+                    case "I" -> {
+                        if (parts.length >= 4) {
+                            interactionId = read(parts[1]);
+                            interactionLabel = read(parts[2]);
+                            interactionAction = read(parts[3]);
+                        }
+                    }
                     case "R" -> {
                         if (parts.length >= 6) reward = new FieldUiSnapshot.Reward(
                                 read(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3]),
@@ -114,7 +127,8 @@ public final class FieldUiCodec {
             }
         }
         return new FieldUiSnapshot(active, mode, patrols, goal, bossUnlocked, chapterCleared, xp, gold,
-                objective, dialogue, reward, encounters, travels, loadingStage, loadingPercent, locationId, locationTitle);
+                objective, dialogue, reward, encounters, travels, loadingStage, loadingPercent,
+                locationId, locationTitle, interactionId, interactionLabel, interactionAction);
     }
 
     private static int bit(boolean value) { return value ? 1 : 0; }

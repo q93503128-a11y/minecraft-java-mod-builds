@@ -59,6 +59,36 @@ class FieldUiCodecTest {
     }
 
     @Test
+    void roundTripsCloseRangeServicePrompt() {
+        FieldUiSnapshot source = new FieldUiSnapshot(
+                true,
+                FieldUiSnapshot.Mode.NONE,
+                0,
+                0,
+                false,
+                false,
+                0,
+                0,
+                "New Drabyel에서 다음 여정을 준비하십시오.",
+                "",
+                FieldUiSnapshot.Reward.none(),
+                List.of(),
+                List.of(),
+                "",
+                0,
+                "turnbound:site/capital_valley/new_drabyel",
+                "New Drabyel",
+                "turnbound:service/new_drabyel/market",
+                "장비 상인",
+                "상점 열기");
+
+        FieldUiSnapshot decoded = FieldUiCodec.decode(FieldUiCodec.encode(source));
+        assertEquals("turnbound:service/new_drabyel/market", decoded.interactionId());
+        assertEquals("장비 상인", decoded.interactionLabel());
+        assertEquals("상점 열기", decoded.interactionAction());
+    }
+
+    @Test
     void malformedOptionalLineDoesNotDestroyHeaderState() {
         String encoded = "H|1|QUEST|2|5|0|0|75|130\nE|broken\n";
         FieldUiSnapshot decoded = FieldUiCodec.decode(encoded);

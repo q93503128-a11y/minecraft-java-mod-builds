@@ -23,6 +23,7 @@ import java.util.UUID;
 public final class ExternalWorldBootstrap {
     private static final Set<UUID> ACTIVE = new LinkedHashSet<>();
     private static final Map<UUID, String> LAST_LOCATION = new HashMap<>();
+    private static final Map<UUID, String> LAST_INTERACTION = new HashMap<>();
 
     private ExternalWorldBootstrap() {}
 
@@ -37,6 +38,7 @@ public final class ExternalWorldBootstrap {
 
         ACTIVE.add(player.getUUID());
         LAST_LOCATION.put(player.getUUID(), DrehmalFirstRouteRuntime.locationId(player));
+        LAST_INTERACTION.put(player.getUUID(), DrehmalFirstRouteRuntime.interactionId(player));
         FieldNetwork.syncExternal(player, DrehmalFirstRouteRuntime.explorationSnapshot(player));
 
         ExternalWorldSavedData saved = ExternalWorldSavedData.get(server);
@@ -69,7 +71,10 @@ public final class ExternalWorldBootstrap {
         String location = DrehmalFirstRouteRuntime.locationId(player);
         String previousLocation = LAST_LOCATION.put(player.getUUID(), location);
         boolean locationChanged = previousLocation == null || !previousLocation.equals(location);
-        if (locationChanged || player.tickCount % 40 == 0) {
+        String interaction = DrehmalFirstRouteRuntime.interactionId(player);
+        String previousInteraction = LAST_INTERACTION.put(player.getUUID(), interaction);
+        boolean interactionChanged = previousInteraction == null || !previousInteraction.equals(interaction);
+        if (locationChanged || interactionChanged || player.tickCount % 40 == 0) {
             FieldNetwork.syncExternal(player, DrehmalFirstRouteRuntime.explorationSnapshot(player));
         }
         return true;
@@ -100,6 +105,7 @@ public final class ExternalWorldBootstrap {
         DrehmalVisibleEncounterService.onPlayerRemoved(player);
         ACTIVE.remove(player.getUUID());
         LAST_LOCATION.remove(player.getUUID());
+        LAST_INTERACTION.remove(player.getUUID());
     }
 
     public static void clear() {
@@ -107,5 +113,6 @@ public final class ExternalWorldBootstrap {
         DrabyelHubServiceRuntime.clear();
         ACTIVE.clear();
         LAST_LOCATION.clear();
+        LAST_INTERACTION.clear();
     }
 }

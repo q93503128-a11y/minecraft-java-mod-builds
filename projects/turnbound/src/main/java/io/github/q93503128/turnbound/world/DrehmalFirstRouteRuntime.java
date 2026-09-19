@@ -58,6 +58,7 @@ public final class DrehmalFirstRouteRuntime {
     public static FieldUiSnapshot explorationSnapshot(ServerPlayer player) {
         String objective = objective(player);
         DrehmalFirstRouteCatalog.Site location = locationSite(player);
+        DrabyelInteractionPromptRules.Prompt interaction = DrabyelHubServiceRuntime.prompt(player);
         return new FieldUiSnapshot(
                 true,
                 FieldUiSnapshot.Mode.NONE,
@@ -75,12 +76,19 @@ public final class DrehmalFirstRouteRuntime {
                 "",
                 0,
                 location == null ? "" : location.locator(),
-                location == null ? "" : location.playerLabel());
+                location == null ? "" : location.playerLabel(),
+                interaction.id(),
+                interaction.label(),
+                interaction.action());
     }
 
     static String locationId(ServerPlayer player) {
         DrehmalFirstRouteCatalog.Site location = locationSite(player);
         return location == null ? "" : location.locator();
+    }
+
+    static String interactionId(ServerPlayer player) {
+        return DrabyelHubServiceRuntime.prompt(player).id();
     }
 
     private static DrehmalFirstRouteCatalog.Site locationSite(ServerPlayer player) {

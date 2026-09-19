@@ -29,7 +29,6 @@ final class DrabyelHubServiceRuntime {
     private static final String LOCATOR_PREFIX=COMMON_TAG+":";
     private static final double MATERIALIZE_RADIUS=96.0D;
     private static final Map<String,UUID> ACTORS=new HashMap<>();
-    private static final Map<String,Long> LAST_GREETING=new HashMap<>();
 
     private static ServerLevel boundLevel;
     private static long lastTick=Long.MIN_VALUE;
@@ -95,12 +94,19 @@ final class DrabyelHubServiceRuntime {
         return null;
     }
 
+    static DrabyelInteractionPromptRules.Prompt prompt(ServerPlayer player){
+        if(player==null||BattleSessionManager.exists(player)||player.isSpectator())return DrabyelInteractionPromptRules.none();
+        return DrabyelInteractionPromptRules.nearest(
+                DrabyelHubServiceCatalog.productionServices(),
+                player.getX(),player.getY(),player.getZ(),
+                DrabyelServiceActors::supports);
+    }
+
     static void clear(){
         if(boundLevel!=null){
             for(String locator:List.copyOf(ACTORS.keySet()))discard(boundLevel,locator);
         }
         ACTORS.clear();
-        LAST_GREETING.clear();
         boundLevel=null;
         lastTick=Long.MIN_VALUE;
     }
@@ -167,15 +173,13 @@ final class DrabyelHubServiceRuntime {
     private static void updatePresentation(ServerLevel level,DrabyelHubServiceCatalog.Service service,BattleActorEntity actor,long gameTime){
         ServerPlayer nearest=nearest(level,actor);
         double distance=nearest==null?Double.MAX_VALUE:Math.sqrt(actor.distanceToSqr(nearest));
-        actor.setCustomNameVisible(distance<=12.0D);
+
+        // R_PG-style field readability: service identity belongs to the close-range interaction prompt,
+        // not a nameplate floating over town NPCs from across the street.
+        actor.setCustomNameVisible(false);
 
         if(nearest!=null&&distance<=service.interactionRadius()+2.0D){
             face(actor,nearest);
-            long last=LAST_GREETING.getOrDefault(service.locator(),Long.MIN_VALUE/4);
-            if(gameTime-last>=160L){
-                LAST_GREETING.put(service.locator(),gameTime);
-                actor.playServiceGreeting();
-            }
             return;
         }
 
