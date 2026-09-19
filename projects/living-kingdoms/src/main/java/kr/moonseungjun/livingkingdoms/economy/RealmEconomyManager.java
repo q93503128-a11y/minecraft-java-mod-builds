@@ -50,7 +50,8 @@ public final class RealmEconomyManager {
         RealmEconomySavedData data = data(player);
         data.updateMarket(currentDay(player));
         data.account(player.getUUID());
-        if (player.level().getGameTime() % 20L == 0L) sync(player);
+        ServerLevel realm = realm(player);
+        if (realm != null && realm.getGameTime() % 10L == 0L) sync(player);
     }
 
     public static void sync(ServerPlayer player) {
@@ -58,9 +59,11 @@ public final class RealmEconomyManager {
         RealmEconomySavedData.Account account = data.account(player.getUUID());
         RealmEconomySavedData.MarketState market = data.updateMarket(currentDay(player));
         int wanted = wanted(player);
+        ServerLevel realm = realm(player);
+        long realmGameTime = realm == null ? 0L : realm.getGameTime();
         PacketDistributor.sendToPlayer(player, new FantasyHudStatePayload(
                 account.silver(), account.renown(), wanted, professionName(account.profession()),
-                market.grain(), market.metal(), market.herb(), market.labor()
+                market.grain(), market.metal(), market.herb(), market.labor(), realmGameTime
         ));
     }
 
@@ -72,14 +75,19 @@ public final class RealmEconomyManager {
     }
 
     private static int wanted(ServerPlayer player) {
-        ServerLevel realm = player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
+        ServerLevel realm = realm(player);
         if (realm == null) return 0;
         return realm.getDataStorage().computeIfAbsent(CrimeSavedData.TYPE)
                 .record(player.getUUID()).wanted();
     }
 
     private static long currentDay(ServerPlayer player) {
-        return Math.floorDiv(player.level().getGameTime(), 24_000L);
+        ServerLevel realm = realm(player);
+        return realm == null ? 0L : Math.floorDiv(realm.getGameTime(), 24_000L);
+    }
+
+    private static ServerLevel realm(ServerPlayer player) {
+        return player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
     }
 
     private static String professionName(String id) {

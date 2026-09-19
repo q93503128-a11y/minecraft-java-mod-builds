@@ -5,7 +5,6 @@ import kr.moonseungjun.livingkingdoms.network.RequestCodexPayload;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
@@ -36,12 +35,18 @@ public final class RealmCodexClient {
         while (STATUS_KEY.consumeClick()) request("overview");
     }
 
-    public static void onScreenInit(ScreenEvent.Init.Post event) {
-        if (!(event.getScreen() instanceof InventoryScreen screen)) return;
-        Panel p = panel(screen.width, screen.height);
-        invisible(event, p.x() + 7, p.y() + 24, 96, 19, () -> request("overview"));
-        invisible(event, p.x() + 7, p.y() + 46, 46, 19, () -> request("map"));
-        invisible(event, p.x() + 57, p.y() + 46, 46, 19, () -> request("skills"));
+    /**
+     * Inventory slots receive mouse input before ad-hoc transparent listeners reliably do. Intercept
+     * the visible codex panel before vanilla inventory handling and consume only its three real hit
+     * boxes, so a click can never fall through to a slot beneath the overlay.
+     */
+    public static void onMousePressed(ScreenEvent.MouseButtonPressed.Pre event) {
+        if (!(event.getScreen() instanceof InventoryScreen screen) || event.getButton() != 0) return;
+        String page = inventoryPanelAction(
+                screen.width, screen.height, event.getMouseX(), event.getMouseY());
+        if (page == null) return;
+        request(page);
+        event.setCanceled(true);
     }
 
     public static void onScreenRender(ScreenEvent.Render.Post event) {
@@ -64,10 +69,12 @@ public final class RealmCodexClient {
         customButton(g, p.x() + 57, p.y() + 46, 46, 19, "기술", inside(mx, my, p.x() + 57, p.y() + 46, 46, 19));
     }
 
-    private static void invisible(ScreenEvent.Init.Post event, int x, int y, int w, int h, Runnable action) {
-        Button button = Button.builder(Component.empty(), ignored -> action.run()).pos(x, y).size(w, h).build();
-        button.setAlpha(0.0F);
-        event.addListener(button);
+    static String inventoryPanelAction(int screenWidth, int screenHeight, double mouseX, double mouseY) {
+        Panel p = panel(screenWidth, screenHeight);
+        if (inside(mouseX, mouseY, p.x() + 7, p.y() + 24, 96, 19)) return "overview";
+        if (inside(mouseX, mouseY, p.x() + 7, p.y() + 46, 46, 19)) return "map";
+        if (inside(mouseX, mouseY, p.x() + 57, p.y() + 46, 46, 19)) return "skills";
+        return null;
     }
 
     private static void customButton(GuiGraphicsExtractor g, int x, int y, int w, int h, String text, boolean hover) {
@@ -87,7 +94,7 @@ public final class RealmCodexClient {
         return new Panel(x, y, 110, 70);
     }
 
-    private static boolean inside(int mx, int my, int x, int y, int w, int h) {
+    private static boolean inside(double mx, double my, int x, int y, int w, int h) {
         return mx >= x && my >= y && mx < x + w && my < y + h;
     }
 
