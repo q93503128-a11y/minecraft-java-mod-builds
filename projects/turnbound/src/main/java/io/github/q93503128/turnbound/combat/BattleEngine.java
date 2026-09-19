@@ -466,7 +466,7 @@ public final class BattleEngine {
                     target.counter("p06_return_wait"), "P06_LAST_PAGE"));
         }
         if (target.definition().summon()) {
-            CombatantState owner = p07Owner(target.side());
+            CombatantState owner = state.find(target.ref("ownerId"));
             if (owner != null && owner.definition().hasRule("AWAKENED") && !owner.flag("p07_awaken_resummon_used")) {
                 owner.setFlag("p07_awaken_resummon_used");
                 owner.setFlag("p07_awaken_resummon_pending");
@@ -575,7 +575,7 @@ public final class BattleEngine {
         }
         if (id.equals("P01")) postKyren(actor, skill, targets, direct, focusBefore);
         else if (id.equals("P02")) postLumea(actor, skill, targets, futureBefore);
-        else if (id.equals("P03")) postBram(actor, skill);
+        else if (id.equals("P03")) postBram(actor, skill, targets);
         else if (id.equals("P04")) postElysia(actor, skill, targets);
         else if (id.equals("P05")) postLynette(actor, skill, targets);
         else if (id.equals("P06")) postMorwen(actor, skill, targets);
@@ -691,14 +691,14 @@ public final class BattleEngine {
         return order == null || targetId == null ? -1 : order.indexOf(targetId);
     }
 
-    private void postBram(CombatantState actor, SkillDefinition skill) {
+    private void postBram(CombatantState actor, SkillDefinition skill, List<CombatantState> targets) {
         if (skill.id().equals("p03_guard_stance")) {
             gainBramGuard(actor, 15, "P03_BASIC_GUARD");
             int barrier = actor.addBarrier((int)Math.floor(actor.maxHp() * actor.definition().param("basicBarrier", 0.04)));
             state.addEvent(new BattleEvent("BARRIER", actor.instanceId(), actor.instanceId(), barrier, "P03_BASIC"));
-        } else if (skill.id().equals("p03_shield_pressure") && actor.counter("guard") >= 50) {
+        } else if (skill.id().equals("p03_shield_pressure") && actor.counter("guard") >= 50 && !targets.isEmpty()) {
             actor.incrementCounter("guard", -50, actor.definition().intParam("guardMax", 100));
-            applyGauge(actor, state.combatant(state.events().getLast().targetId()),
+            applyGauge(actor, targets.getFirst(),
                     actor.definition().intParam("guardPressureExtraDelay", -80), "P03_GUARD_PRESSURE");
             int barrier = actor.addBarrier((int)Math.floor(actor.maxHp() * actor.definition().param("guardPressureBarrier", 0.08)));
             state.addEvent(new BattleEvent("BARRIER", actor.instanceId(), actor.instanceId(), barrier, "P03_GUARD_PRESSURE"));

@@ -84,10 +84,10 @@ final class CharacterOverhaulRuntimeTest {
     void morwenRecordsDangerAndSpendsAtMostThreeRecords() {
         CombatantState morwen = new CombatantState("morwen", CanonicalData.definition("P06", 1, 5, false), CombatantSide.ALLY, 0);
         CombatantState ally = new CombatantState("ally", PrototypeRoster.kyren(), CombatantSide.ALLY, 1);
-        CombatantState foe = enemy("foe", 99999, 1000, 0, 80, 2);
+        CombatantState foe = enemy("foe", 99999, 180, 0, 80, 2);
         BattleEngine engine = new BattleEngine(new BattleState(List.of(morwen, ally, foe)));
 
-        ally.takeDamage((int)Math.floor(ally.maxHp() * 0.72));
+        ally.takeDamage((int)Math.floor(ally.maxHp() * 0.55));
         foe.setGauge(1000);
         engine.nextReady();
         engine.useSkill("foe", "foe_basic", "ally");
