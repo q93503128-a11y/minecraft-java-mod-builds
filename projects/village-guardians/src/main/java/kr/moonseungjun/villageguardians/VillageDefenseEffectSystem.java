@@ -97,6 +97,25 @@ public final class VillageDefenseEffectSystem {
                 new Vec3(0.0, 0.0, 1.0), 70, 0.0f, encoded);
     }
 
+    public static void turretRangeParticleRing(ServerLevel level, Vec3 center, double range) {
+        if (level == null || center == null || range <= 0.0) return;
+        int points = Math.max(64, Math.min(112, (int) Math.round(range * 1.55)));
+        for (int i = 0; i < points; i++) {
+            double angle = Math.PI * 2.0 * i / points;
+            double x = center.x + Math.cos(angle) * range;
+            double z = center.z + Math.sin(angle) * range;
+            level.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                    x, center.y + 0.035, z, 1, 0.0, 0.005, 0.0, 0.0);
+        }
+        for (int i = 0; i < 8; i++) {
+            double angle = Math.PI * 2.0 * i / 8.0;
+            double x = center.x + Math.cos(angle) * range;
+            double z = center.z + Math.sin(angle) * range;
+            level.sendParticles(ParticleTypes.END_ROD,
+                    x, center.y + 0.06, z, 1, 0.0, 0.01, 0.0, 0.0);
+        }
+    }
+
     public static void turretDeployPulse(
             ServerLevel level, Vec3 center, VillagePlacedTurretSystem.TurretType type) {
         if (level == null || center == null || type == null) return;
