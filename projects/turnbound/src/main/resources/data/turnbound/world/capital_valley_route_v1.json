@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "routeId": "turnbound:route/capital_valley_to_drabyel",
+  "profileId": "turnbound:drehmal_apotheosis_2_2_2f",
+  "sites": [
+    {
+      "locator": "turnbound:site/capital_valley/roadhead",
+      "kind": "START_CANDIDATE",
+      "surveySeedAnchor": "turnbound:landmark/primal_caverns",
+      "playerLabel": "Capital Valley 길머리",
+      "safetyRadius": 50,
+      "encounterRadius": 0,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:site/capital_valley/first_guide",
+      "kind": "GUIDE_CANDIDATE",
+      "surveySeedAnchor": "turnbound:landmark/primal_caverns",
+      "playerLabel": "첫 길잡이 후보 지점",
+      "safetyRadius": 36,
+      "encounterRadius": 0,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:site/capital_valley/first_common",
+      "kind": "ENCOUNTER_ZONE",
+      "surveySeedAnchor": "turnbound:landmark/capital_valley_tower",
+      "playerLabel": "탑 전방 첫 조우 후보",
+      "safetyRadius": 0,
+      "encounterRadius": 24,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:site/capital_valley/tower",
+      "kind": "BREATHING_ZONE",
+      "surveySeedAnchor": "turnbound:landmark/capital_valley_tower",
+      "playerLabel": "Capital Valley Tower",
+      "safetyRadius": 36,
+      "encounterRadius": 0,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:site/capital_valley/warning_cave",
+      "kind": "ELITE_ZONE",
+      "surveySeedAnchor": "turnbound:landmark/warning_cave",
+      "playerLabel": "경고 동굴",
+      "safetyRadius": 0,
+      "encounterRadius": 28,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:site/capital_valley/explorer_camp",
+      "kind": "REST_ZONE",
+      "surveySeedAnchor": "turnbound:landmark/explorers_guide_camp",
+      "playerLabel": "Explorer's Guide 야영지",
+      "safetyRadius": 24,
+      "encounterRadius": 0,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:site/capital_valley/drabyel_approach",
+      "kind": "PATROL_ZONE",
+      "surveySeedAnchor": "turnbound:hub/new_drabyel",
+      "playerLabel": "New Drabyel 진입로",
+      "safetyRadius": 0,
+      "encounterRadius": 26,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:site/capital_valley/new_drabyel",
+      "kind": "HUB_SAFE",
+      "surveySeedAnchor": "turnbound:hub/new_drabyel",
+      "playerLabel": "New Drabyel",
+      "safetyRadius": 64,
+      "encounterRadius": 0,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    }
+  ],
+  "footprints": [
+    {
+      "locator": "turnbound:footprint/capital_valley/first_common",
+      "siteLocator": "turnbound:site/capital_valley/first_common",
+      "radius": 13,
+      "allySlots": 4,
+      "enemySlots": 2,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:footprint/capital_valley/warning_cave",
+      "siteLocator": "turnbound:site/capital_valley/warning_cave",
+      "radius": 15,
+      "allySlots": 4,
+      "enemySlots": 3,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:footprint/capital_valley/drabyel_approach",
+      "siteLocator": "turnbound:site/capital_valley/drabyel_approach",
+      "radius": 14,
+      "allySlots": 4,
+      "enemySlots": 3,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    }
+  ],
+  "patrols": [
+    {
+      "locator": "turnbound:patrol/capital_valley/drabyel_approach",
+      "surveySeedSite": "turnbound:site/capital_valley/drabyel_approach",
+      "points": [],
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    }
+  ],
+  "encounters": [
+    {
+      "locator": "turnbound:encounter/capital_valley/first_common",
+      "siteLocator": "turnbound:site/capital_valley/first_common",
+      "tier": "COMMON",
+      "footprintLocator": "turnbound:footprint/capital_valley/first_common",
+      "playerLabel": "첫 도로 조우",
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:encounter/capital_valley/warning_cave_elite",
+      "siteLocator": "turnbound:site/capital_valley/warning_cave",
+      "tier": "ELITE",
+      "footprintLocator": "turnbound:footprint/capital_valley/warning_cave",
+      "playerLabel": "경고 동굴의 강적",
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:encounter/capital_valley/drabyel_approach_patrol",
+      "siteLocator": "turnbound:site/capital_valley/drabyel_approach",
+      "tier": "COMMON",
+      "footprintLocator": "turnbound:footprint/capital_valley/drabyel_approach",
+      "patrolLocator": "turnbound:patrol/capital_valley/drabyel_approach",
+      "playerLabel": "New Drabyel 진입로 순찰대",
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    }
+  ]
+}

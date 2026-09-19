@@ -6,7 +6,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -33,7 +32,7 @@ public final class ExternalWorldBootstrap {
         }
 
         ACTIVE.add(player.getUUID());
-        FieldNetwork.syncExternal(player, explorationSnapshot());
+        FieldNetwork.syncExternal(player, DrehmalFirstRouteRuntime.explorationSnapshot(player));
 
         ExternalWorldSavedData saved = ExternalWorldSavedData.get(server);
         if (!saved.initialized(player.getUUID())) {
@@ -48,12 +47,21 @@ public final class ExternalWorldBootstrap {
 
     public static boolean tick(ServerPlayer player) {
         if (player == null) return false;
+        if (player.level().dimension() != Level.OVERWORLD) {
+            if (ACTIVE.remove(player.getUUID())) FieldNetwork.close(player);
+            return false;
+        }
+
         MinecraftServer server = player.level().getServer();
         if (server == null || !DrehmalWorldBinding.isBound(server)) {
             if (ACTIVE.remove(player.getUUID())) FieldNetwork.close(player);
             return false;
         }
         if (!ACTIVE.contains(player.getUUID())) return initialize(player);
+
+        if (player.tickCount % 40 == 0) {
+            FieldNetwork.syncExternal(player, DrehmalFirstRouteRuntime.explorationSnapshot(player));
+        }
         return true;
     }
 
@@ -70,22 +78,5 @@ public final class ExternalWorldBootstrap {
 
     public static void clear() {
         ACTIVE.clear();
-    }
-
-    private static FieldUiSnapshot explorationSnapshot() {
-        return new FieldUiSnapshot(
-                true,
-                FieldUiSnapshot.Mode.NONE,
-                0,
-                0,
-                false,
-                false,
-                0,
-                0,
-                "",
-                "",
-                FieldUiSnapshot.Reward.none(),
-                List.of(),
-                List.of());
     }
 }

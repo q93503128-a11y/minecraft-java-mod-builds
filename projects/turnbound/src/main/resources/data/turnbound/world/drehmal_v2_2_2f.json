@@ -11,7 +11,7 @@
       "y": 67,
       "z": 1801,
       "enabled": true,
-      "sourceNote": "New Drabyel integration seed inherited from the validated TURNBOUND: RE profile. Treat as a binding seed, not a guaranteed safe arrival until Minecraft 26.2 play inspection."
+      "sourceNote": "Source-backed New Drabyel survey anchor. It is not a guaranteed safe arrival block until Minecraft 26.2 play inspection."
     },
     {
       "kind": "REGION",
@@ -20,7 +20,52 @@
       "y": 31,
       "z": 668,
       "enabled": true,
-      "sourceNote": "Stasis Facility integration seed inherited from TURNBOUND: RE. Terrain-aware arrival and encounter placement must be verified before this becomes a player-facing travel destination."
+      "sourceNote": "Source-backed Stasis Facility survey anchor. Terrain-aware arrival and encounter placement remain separate decisions."
+    },
+    {
+      "kind": "LANDMARK",
+      "locator": "turnbound:landmark/primal_caverns",
+      "x": 855,
+      "y": 65,
+      "z": 553,
+      "enabled": true,
+      "sourceNote": "Source-backed Primal Caverns survey anchor used to inspect the TURNBOUND roadhead and first-guide candidates."
+    },
+    {
+      "kind": "LANDMARK",
+      "locator": "turnbound:landmark/capital_valley_tower",
+      "x": 557,
+      "y": 129,
+      "z": 1176,
+      "enabled": true,
+      "sourceNote": "Source-backed Capital Valley Tower survey anchor. The tower itself stays non-destructive and is not a combat coordinate."
+    },
+    {
+      "kind": "LANDMARK",
+      "locator": "turnbound:landmark/warning_cave",
+      "x": 454,
+      "y": 73,
+      "z": 1252,
+      "enabled": true,
+      "sourceNote": "Source-backed warning-cave survey anchor. Elite placement must be promoted only after camera and footprint inspection."
+    },
+    {
+      "kind": "LANDMARK",
+      "locator": "turnbound:landmark/explorers_guide_camp",
+      "x": 581,
+      "y": 81,
+      "z": 1501,
+      "enabled": true,
+      "sourceNote": "Source-backed Explorer's Guide camp survey anchor for the first-route breathing/rest beat."
+    },
+    {
+      "kind": "REGION",
+      "locator": "turnbound:region/avsal",
+      "x": -242,
+      "y": 67,
+      "z": 1532,
+      "enabled": true,
+      "sourceNote": "Source-backed Av'Sal central-island survey anchor for the post-Drabyel route. No encounter is bound here yet."
     },
     {
       "kind": "ENCOUNTER_CANDIDATE",

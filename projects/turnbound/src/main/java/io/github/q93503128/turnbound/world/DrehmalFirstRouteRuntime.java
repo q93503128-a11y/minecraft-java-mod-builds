@@ -1,0 +1,92 @@
+package io.github.q93503128.turnbound.world;
+
+import net.minecraft.server.level.ServerPlayer;
+
+import java.util.List;
+
+/**
+ * Runtime projection of the first Drehmal route.
+ *
+ * <p>Only entries explicitly promoted after a Minecraft 26.2 survey can drive proximity gameplay. Until then this
+ * service provides authored exploration copy without teleporting, spawning or modifying the external world.</p>
+ */
+public final class DrehmalFirstRouteRuntime {
+    private DrehmalFirstRouteRuntime() {}
+
+    public static DrehmalFirstRouteCatalog.Site nearestProductionSite(ServerPlayer player) {
+        if (player == null) return null;
+        DrehmalFirstRouteCatalog.Site nearest = null;
+        double nearestDistance = Double.MAX_VALUE;
+        for (DrehmalFirstRouteCatalog.Site site : DrehmalFirstRouteCatalog.productionSites()) {
+            DrehmalFirstRouteCatalog.Position position = site.runtimePosition();
+            if (position == null) continue;
+            double distance = player.distanceToSqr(
+                    position.x() + 0.5D,
+                    position.y() + 0.5D,
+                    position.z() + 0.5D);
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearest = site;
+            }
+        }
+        return nearest;
+    }
+
+    public static boolean insideSafetyZone(ServerPlayer player) {
+        if (player == null) return false;
+        for (DrehmalFirstRouteCatalog.Site site : DrehmalFirstRouteCatalog.productionSites()) {
+            if (site.safetyRadius() <= 0 || site.runtimePosition() == null) continue;
+            double radius = site.safetyRadius();
+            var position = site.runtimePosition();
+            if (player.distanceToSqr(position.x() + 0.5D, position.y() + 0.5D, position.z() + 0.5D)
+                    <= radius * radius) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static DrehmalFirstRouteCatalog.EncounterSlot encounterAt(ServerPlayer player) {
+        if (player == null) return null;
+        for (DrehmalFirstRouteCatalog.EncounterSlot encounter : DrehmalFirstRouteCatalog.productionEncounters()) {
+            DrehmalFirstRouteCatalog.Site site = DrehmalFirstRouteCatalog.site(encounter.siteLocator());
+            if (site == null || site.runtimePosition() == null || site.encounterRadius() <= 0) continue;
+            double radius = site.encounterRadius();
+            var position = site.runtimePosition();
+            if (player.distanceToSqr(position.x() + 0.5D, position.y() + 0.5D, position.z() + 0.5D)
+                    <= radius * radius) {
+                return encounter;
+            }
+        }
+        return null;
+    }
+
+    public static FieldUiSnapshot explorationSnapshot(ServerPlayer player) {
+        String objective = objective(player);
+        return new FieldUiSnapshot(
+                true,
+                FieldUiSnapshot.Mode.NONE,
+                0,
+                0,
+                false,
+                false,
+                0,
+                0,
+                objective,
+                "",
+                FieldUiSnapshot.Reward.none(),
+                List.of(),
+                List.of());
+    }
+
+    private static String objective(ServerPlayer player) {
+        DrehmalFirstRouteCatalog.Site site = nearestProductionSite(player);
+        if (site == null) return "길을 따라 New Drabyel을 찾으십시오.";
+        return switch (site.kind()) {
+            case "HUB_SAFE" -> "New Drabyel에서 다음 여정을 준비하십시오.";
+            case "REST_ZONE" -> "야영지에서 길을 확인한 뒤 New Drabyel로 향하십시오.";
+            case "BREATHING_ZONE" -> "탑 주변을 살핀 뒤 길을 계속 따라가십시오.";
+            default -> "길을 따라 New Drabyel을 찾으십시오.";
+        };
+    }
+}

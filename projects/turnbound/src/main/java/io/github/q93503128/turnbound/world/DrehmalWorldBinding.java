@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +32,9 @@ public final class DrehmalWorldBinding {
     private DrehmalWorldBinding() {}
 
     public static List<String> validate() {
-        return DrehmalWorldProfile.validate();
+        List<String> errors = new ArrayList<>(DrehmalWorldProfile.validate());
+        errors.addAll(DrehmalFirstRouteCatalog.validate());
+        return List.copyOf(errors);
     }
 
     /**
