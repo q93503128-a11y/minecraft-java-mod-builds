@@ -61,6 +61,9 @@ public final class DrehmalFirstRouteCatalog {
     public record Patrol(
             String locator,
             String surveySeedSite,
+            String mode,
+            int dwellMinTicks,
+            int dwellMaxTicks,
             List<Position> points,
             boolean verifiedIn26_2,
             boolean productionEnabled
@@ -78,6 +81,7 @@ public final class DrehmalFirstRouteCatalog {
             String patrolLocator,
             String combatEncounterId,
             String playerLabel,
+            int fieldVisibleCount,
             boolean verifiedIn26_2,
             boolean productionEnabled
     ) {}
@@ -205,6 +209,13 @@ public final class DrehmalFirstRouteCatalog {
             if (!sites.containsKey(patrol.surveySeedSite())) {
                 errors.add("patrol references unknown survey site " + patrol.locator());
             }
+            if (!Set.of("LOOP", "ROAM").contains(patrol.mode())) {
+                errors.add("unknown patrol mode " + patrol.locator() + " -> " + patrol.mode());
+            }
+            if (patrol.dwellMinTicks() < 0 || patrol.dwellMaxTicks() < patrol.dwellMinTicks()
+                    || patrol.dwellMaxTicks() > 200) {
+                errors.add("invalid patrol dwell range " + patrol.locator());
+            }
             if (patrol.productionEnabled()
                     && (!patrol.verifiedIn26_2() || patrol.points().size() < 2)) {
                 errors.add("unverified production patrol " + patrol.locator());
@@ -224,6 +235,9 @@ public final class DrehmalFirstRouteCatalog {
                 errors.add("encounter references unknown patrol " + encounter.locator());
             }
             if (encounter.playerLabel().isBlank()) errors.add("blank encounter label " + encounter.locator());
+            if (encounter.fieldVisibleCount() < 1 || encounter.fieldVisibleCount() > 3) {
+                errors.add("invalid field visible count " + encounter.locator());
+            }
             if (encounter.productionEnabled() && encounter.combatEncounterId().isBlank()) {
                 errors.add("production encounter has no combat binding " + encounter.locator());
             }
@@ -339,6 +353,9 @@ public final class DrehmalFirstRouteCatalog {
                 patrols.add(new Patrol(
                         string(raw, "locator"),
                         string(raw, "surveySeedSite"),
+                        stringOr(raw, "mode", "LOOP"),
+                        integer(raw, "dwellMinTicks", 0),
+                        integer(raw, "dwellMaxTicks", 0),
                         points,
                         bool(raw, "verifiedIn26_2", false),
                         bool(raw, "productionEnabled", false)));
@@ -355,6 +372,7 @@ public final class DrehmalFirstRouteCatalog {
                         optionalString(raw, "patrolLocator"),
                         optionalString(raw, "combatEncounterId"),
                         string(raw, "playerLabel"),
+                        integer(raw, "fieldVisibleCount", 1),
                         bool(raw, "verifiedIn26_2", false),
                         bool(raw, "productionEnabled", false)));
             }
@@ -405,6 +423,11 @@ public final class DrehmalFirstRouteCatalog {
     private static String optionalString(JsonObject object, String key) {
         if (object == null || !object.has(key) || !object.get(key).isJsonPrimitive()) return "";
         return object.get(key).getAsString().trim();
+    }
+
+    private static String stringOr(JsonObject object, String key, String fallback) {
+        String value = optionalString(object, key);
+        return value.isBlank() ? fallback : value;
     }
 
     private static int integer(JsonObject object, String key, int fallback) {

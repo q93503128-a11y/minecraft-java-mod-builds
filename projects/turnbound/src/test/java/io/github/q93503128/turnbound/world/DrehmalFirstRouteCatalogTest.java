@@ -36,6 +36,8 @@ class DrehmalFirstRouteCatalogTest {
             if (footprint.productionEnabled()) assertTrue(footprint.verifiedIn26_2(), footprint.locator());
         }
         for (DrehmalFirstRouteCatalog.Patrol patrol : DrehmalFirstRouteCatalog.route().patrols()) {
+            assertTrue(Set.of("LOOP", "ROAM").contains(patrol.mode()), patrol.locator());
+            assertTrue(patrol.dwellMinTicks() >= 0 && patrol.dwellMaxTicks() >= patrol.dwellMinTicks(), patrol.locator());
             if (patrol.productionEnabled()) {
                 assertTrue(patrol.verifiedIn26_2(), patrol.locator());
                 assertTrue(patrol.points().size() >= 2, patrol.locator());
@@ -52,6 +54,9 @@ class DrehmalFirstRouteCatalogTest {
             if (!encounter.combatEncounterId().isBlank()) {
                 assertTrue(CampaignEncounterCatalog.contains(encounter.combatEncounterId()),
                         encounter.locator() + " -> " + encounter.combatEncounterId());
+                int combatSize = CampaignEncounterCatalog.spec(encounter.combatEncounterId()).enemies().size();
+                assertTrue(encounter.fieldVisibleCount() >= 1 && encounter.fieldVisibleCount() <= combatSize,
+                        encounter.locator() + " visible=" + encounter.fieldVisibleCount() + " combat=" + combatSize);
             }
         }
         var first = DrehmalFirstRouteCatalog.route().encounters().stream()

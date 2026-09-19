@@ -110,11 +110,14 @@ final class DrehmalVisibleEncounterService {
         private final V04Catalogs.Encounter spec;
         private final List<UUID> actors = new ArrayList<>();
         private final List<Vec3> patrolPoints;
+        private final List<FieldRoamPlanner.Point> roamPoints;
 
         private Vec3 pivot;
         private Vec3 facing = new Vec3(0.0D, 0.0D, -1.0D);
         private Vec3 returnTarget;
         private int patrolIndex;
+        private int patrolDwellTicks;
+        private long roamSequence;
         private int graceTicks = 40;
         private long availableAt;
         private UUID claimedBy;
@@ -131,6 +134,8 @@ final class DrehmalVisibleEncounterService {
             this.pivot = vec(site.runtimePosition());
             this.returnTarget = pivot;
             this.patrolPoints = patrol == null ? List.of() : patrol.points().stream().map(DrehmalVisibleEncounterService::vec).toList();
+            this.roamPoints = patrolPoints.stream().map(point -> new FieldRoamPlanner.Point(point.x, point.z)).toList();
+            this.roamSequence = slot.locator().hashCode();
         }
 
         private void tick(ServerLevel level) {
@@ -182,21 +187,27 @@ final class DrehmalVisibleEncounterService {
                 phase = FieldEncounterRules.Phase.RETURN;
             }
 
+            boolean patrolPaused = phase == FieldEncounterRules.Phase.PATROL && patrolDwellTicks > 0;
+            if (patrolPaused) patrolDwellTicks--;
+
             Vec3 target = switch (phase) {
                 case ALERT -> flatPlayer;
                 case RETURN -> returnTarget;
-                case PATROL -> patrolTarget();
+                case PATROL -> patrolPaused ? pivot : patrolTarget();
             };
             double speed = switch (phase) {
                 case ALERT -> 0.095D;
                 case RETURN -> 0.075D;
-                case PATROL -> patrolPoints.size() >= 2 ? 0.035D : 0.0D;
+                case PATROL -> !patrolPaused && patrolPoints.size() >= 2 ? 0.035D : 0.0D;
             };
 
             Vec3 delta = target.subtract(pivot);
             boolean walking = false;
-            if (phase == FieldEncounterRules.Phase.PATROL && patrolPoints.size() >= 2 && delta.lengthSqr() < 0.25D) {
-                patrolIndex = (patrolIndex + 1) % patrolPoints.size();
+            if (phase == FieldEncounterRules.Phase.PATROL && !patrolPaused
+                    && patrolPoints.size() >= 2 && delta.lengthSqr() < 0.25D) {
+                advancePatrolPoint();
+                patrolDwellTicks = patrol == null ? 0 : FieldRoamPlanner.dwellTicks(
+                        patrol.dwellMinTicks(), patrol.dwellMaxTicks(), ++roamSequence);
             } else if (delta.lengthSqr() > 0.0001D && speed > 0.0D) {
                 Vec3 movement = delta.normalize().scale(Math.min(speed, delta.length()));
                 pivot = pivot.add(movement);
@@ -240,7 +251,8 @@ final class DrehmalVisibleEncounterService {
                 return true;
             }
 
-            for (String defId : spec.enemies()) {
+            List<String> fieldIds = fieldEnemyIds();
+            for (String defId : fieldIds) {
                 if (TurnboundBattleActors.contains(defId)) continue;
                 if (!missingVisualWarned) {
                     Turnbound.LOGGER.error("TURNBOUND refused to materialize {} because {} has no production actor",
@@ -250,8 +262,8 @@ final class DrehmalVisibleEncounterService {
                 return false;
             }
 
-            for (int i = 0; i < spec.enemies().size(); i++) {
-                String defId = spec.enemies().get(i);
+            for (int i = 0; i < fieldIds.size(); i++) {
+                String defId = fieldIds.get(i);
                 Vec3 pos = formation(i, facing);
                 BattleActorEntity actor = TurnboundBattleActors.spawn(level, defId, pos, yawFor(facing));
                 if (actor == null) {
@@ -283,15 +295,16 @@ final class DrehmalVisibleEncounterService {
                 int index = slot(actor);
                 if (index < 0 || bySlot.putIfAbsent(index, actor) != null) actor.discard();
             }
-            if (bySlot.size() != spec.enemies().size()) {
+            List<String> fieldIds = fieldEnemyIds();
+            if (bySlot.size() != fieldIds.size()) {
                 for (BattleActorEntity actor : bySlot.values()) actor.discard();
                 return false;
             }
 
             actors.clear();
-            for (int i = 0; i < spec.enemies().size(); i++) {
+            for (int i = 0; i < fieldIds.size(); i++) {
                 BattleActorEntity actor = bySlot.get(i);
-                if (actor == null || !TurnboundBattleActors.contains(spec.enemies().get(i))) {
+                if (actor == null || !TurnboundBattleActors.contains(fieldIds.get(i))) {
                     for (BattleActorEntity adopted : bySlot.values()) adopted.discard();
                     actors.clear();
                     return false;
@@ -344,6 +357,21 @@ final class DrehmalVisibleEncounterService {
             return patrolPoints.get(patrolIndex);
         }
 
+        private void advancePatrolPoint() {
+            if (patrolPoints.size() < 2) return;
+            if (patrol != null && "ROAM".equals(patrol.mode())) {
+                patrolIndex = FieldRoamPlanner.nextIndex(
+                        roamPoints, patrolIndex, ++roamSequence, FieldRoamPlanner.DEFAULT_MIN_NEXT_DISTANCE_SQ);
+            } else {
+                patrolIndex = (patrolIndex + 1) % patrolPoints.size();
+            }
+        }
+
+        private List<String> fieldEnemyIds() {
+            int count = Math.max(1, Math.min(slot.fieldVisibleCount(), spec.enemies().size()));
+            return spec.enemies().subList(0, count);
+        }
+
         private void updateActors(ServerLevel level, boolean walking) {
             float yaw = yawFor(facing);
             for (int i = 0; i < actors.size(); i++) {
@@ -360,7 +388,7 @@ final class DrehmalVisibleEncounterService {
                     actor.setCustomNameVisible(true);
                 } else {
                     actor.setCustomName(Component.literal(CanonicalData.definition(
-                            spec.enemies().get(i), spec.level(), 0, false).name()));
+                            fieldEnemyIds().get(i), spec.level(), 0, false).name()));
                     actor.setCustomNameVisible(false);
                 }
             }
@@ -375,7 +403,7 @@ final class DrehmalVisibleEncounterService {
         }
 
         private boolean actorsAlive(ServerLevel level) {
-            if (actors.size() != spec.enemies().size()) return false;
+            if (actors.size() != fieldEnemyIds().size()) return false;
             for (UUID id : actors) if (!(level.getEntity(id) instanceof BattleActorEntity)) return false;
             return true;
         }
@@ -408,6 +436,8 @@ final class DrehmalVisibleEncounterService {
             pivot = vec(site.runtimePosition());
             returnTarget = pivot;
             patrolIndex = 0;
+            patrolDwellTicks = patrol == null ? 0 : FieldRoamPlanner.dwellTicks(
+                    patrol.dwellMinTicks(), patrol.dwellMaxTicks(), ++roamSequence);
             facing = patrolPoints.size() >= 2
                     ? horizontalDirection(patrolPoints.get(1).subtract(patrolPoints.get(0)), new Vec3(0, 0, -1))
                     : new Vec3(0.0D, 0.0D, -1.0D);

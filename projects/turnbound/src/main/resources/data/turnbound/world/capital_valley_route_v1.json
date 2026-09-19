@@ -122,7 +122,10 @@
       "surveySeedSite": "turnbound:site/capital_valley/drabyel_approach",
       "points": [],
       "verifiedIn26_2": false,
-      "productionEnabled": false
+      "productionEnabled": false,
+      "mode": "ROAM",
+      "dwellMinTicks": 30,
+      "dwellMaxTicks": 90
     }
   ],
   "encounters": [
@@ -134,7 +137,8 @@
       "playerLabel": "첫 도로 조우",
       "verifiedIn26_2": false,
       "productionEnabled": false,
-      "combatEncounterId": "CV_FIRST_COMMON"
+      "combatEncounterId": "CV_FIRST_COMMON",
+      "fieldVisibleCount": 1
     },
     {
       "locator": "turnbound:encounter/capital_valley/warning_cave_elite",
@@ -144,7 +148,8 @@
       "playerLabel": "경고 동굴의 강적",
       "verifiedIn26_2": false,
       "productionEnabled": false,
-      "combatEncounterId": "CV_WARNING_CAVE_ELITE"
+      "combatEncounterId": "CV_WARNING_CAVE_ELITE",
+      "fieldVisibleCount": 1
     },
     {
       "locator": "turnbound:encounter/capital_valley/drabyel_approach_patrol",
@@ -155,7 +160,8 @@
       "playerLabel": "New Drabyel 진입로 순찰대",
       "verifiedIn26_2": false,
       "productionEnabled": false,
-      "combatEncounterId": "CV_DRABYEL_ROAD"
+      "combatEncounterId": "CV_DRABYEL_ROAD",
+      "fieldVisibleCount": 1
     }
   ]
 }

@@ -33,6 +33,28 @@ TURNBOUND 적용:
 - UI sprite, 캐릭터, world asset은 복제하지 않음
 - 세부 navigation은 Pokémon / Honkai: Star Rail / OCTOPATH의 편의성 원칙을 함께 사용
 
+### 2026-09-19 direct gameplay capture
+
+User-provided 4m53s R_PG gameplay capture was reviewed frame-by-frame.
+
+Observed:
+- one controllable avatar freely traverses village, forest, snowfield, mine and desert spaces;
+- ordinary management windows stay compact enough that the 3D world remains visible behind them;
+- NPC interaction prompt appears only at close range;
+- a single visible field enemy can represent a battle that expands into a larger enemy composition;
+- enemy awareness is shown before battle with a concise exclamation-style alert;
+- encounter transition is short: field contact → battle party deployment, without a preparation-menu detour;
+- four allied battle characters occupy the 3D scene and the combat UI remains secondary;
+- after combat the player returns to free traversal;
+- major biome/area transitions use short location-name banners.
+
+TURNBOUND consequence:
+- common encounters default to one strong field representative unless a group silhouette materially improves readability;
+- battle composition and field visual count are separate data;
+- patrol movement should include pauses and varied destinations instead of mechanical point-by-point conveyor motion;
+- service NPCs belong in the physical town and use proximity interaction;
+- exploration remains the default screen state.
+
 ### Free-roam field rule
 
 R_PG 공식 설명은 플레이어가 마을에서 출발해 여행하며 오버월드에서 적/보스를 만나는 구조를 명시한다.
@@ -248,3 +270,25 @@ TURNBOUND 적용:
 5. 시스템 코드 구조를 메뉴 구조로 그대로 노출하지 않는다.
 
 상세 path budget과 screen relation은 `UI_DESIGN_SYSTEM.md`가 정본이다.
+
+
+## 9. External implementation reference — field roaming
+
+### GuardVillagersFabric — field patrol implementation
+
+Direct code reference / editable algorithm base.
+
+- https://github.com/ffggyyuufamily-tech/GuardVillagersFabric
+- inspected commit: `46f6893a7c97f3b1f49b5068bbd8ee12be4760c3`
+- license: CC0-1.0
+
+Relevant source:
+- `PerimeterPatrolGoal.java`: patrol destinations are varied instead of consumed in a rigid 0→1→2 loop, tiny next hops are rejected, and patrol state periodically changes.
+- `GuardNavigation.java`: move requests are not blindly reissued every tick; stalled movement has explicit recovery.
+- `GuardMovementSlotResolver.java`: multiple actors receive separated movement slots instead of collapsing onto one anchor.
+
+TURNBOUND use:
+- directly adapt the safe CC0 idea of varied patrol-point choice + minimum readable movement distance;
+- add authored idle dwell between patrol moves so field enemies look present in the world rather than conveyor-belted;
+- keep shared encounter movement server-authored and deterministic for multiplayer;
+- do not import the guard command/economy/tactics systems because they do not serve TURNBOUND's loop.
