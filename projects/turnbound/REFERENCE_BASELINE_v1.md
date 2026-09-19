@@ -1,5 +1,38 @@
 # TURNBOUND Reference Baseline v1
 
+## 0. Primary feel reference — Roblox R_PG / R_PG X
+
+Reference only.
+
+- https://www.roblox.com/games/10145990490/R-PG
+- https://www.roblox.com/games/15205405381/R-PG-X
+- Developer: 갓 스튜디오
+
+공식 설명에서 확인되는 중심 구조:
+- 마을에서 출발
+- 정령/캐릭터 수집
+- 오버월드 전투
+- 강력한 보스 전투
+- 시공간의 균열/무한 모드
+- PvP / 랭크전 / 보스레이드
+- 일일/서브 퀘스트와 이벤트 모드
+
+프로젝트에서 이전에 제공된 실제 플레이 스크린샷으로 고정한 presentation reference:
+- 화면 대부분을 3D 전장에 남김
+- 4인 파티와 적이 실제 공간에 배치됨
+- 얇은 HP/status 정보만 전장에 붙임
+- 선택 적은 즉시 알아보는 target marker를 사용
+- 스킬 선택은 상황형 compact menu
+- AUTO/도주 같은 보조 조작은 작게 유지
+- 전투 중 third-person orbit/zoom으로 캐릭터와 적을 직접 읽음
+
+TURNBOUND 적용:
+- overworld exploration → visible encounter → 4-person turn battle의 1차 감각 참고 게임
+- 전투 중앙 3D 장면을 UI가 덮지 않도록 유지
+- party/target/skill 정보를 필요한 순간에만 노출
+- UI sprite, 캐릭터, world asset은 복제하지 않음
+- 세부 navigation은 Pokémon / Honkai: Star Rail / OCTOPATH의 편의성 원칙을 함께 사용
+
 이 문서는 현재 대격변에서 재사용할 외부 설계/자산 참고를 한 곳에만 기록한다.
 옛 alpha별 reference/delta 문서를 계속 누적하지 않는다.
 
