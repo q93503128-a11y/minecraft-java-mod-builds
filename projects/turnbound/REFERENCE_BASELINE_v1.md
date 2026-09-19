@@ -318,3 +318,17 @@ TURNBOUND application:
 - Warning Cave-style optional danger receives a little more reading time than ordinary road pressure;
 - the prelude blocks immediate contact battle for that short beat, but does not add a preparation screen or menu;
 - exact feel still requires client playtest after 26.2 survey activation.
+
+
+### Direct-capture service interaction follow-up
+
+The reviewed R_PG capture keeps town interaction quiet until the player is actually close enough to use an NPC/service.
+
+TURNBOUND application:
+- service NPC identity is no longer broadcast as a floating nameplate from across the street;
+- the server selects only the nearest currently usable service inside its authored interaction radius;
+- the field HUD shows one compact action prompt and uses the player's current Minecraft use-key binding;
+- entering/leaving a prompt target causes an immediate field snapshot update without per-tick packet spam;
+- passive proximity no longer retriggers greeting animation every few seconds; greeting plays on actual interaction;
+- unsupported/unmaterialized service visuals cannot produce a ghost prompt;
+- all New Drabyel positions remain fail-closed until the 26.2 survey promotes them.
