@@ -20,7 +20,7 @@ public final class FieldNetwork {
                 FieldCommandPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player) {
-                        WorldSessionRouter.command(player, payload.command());
+                        FieldCommandRouter.command(player, payload.command());
                     }
                 }));
     }

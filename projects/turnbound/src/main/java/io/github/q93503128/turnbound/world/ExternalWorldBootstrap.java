@@ -92,12 +92,25 @@ public final class ExternalWorldBootstrap {
                 && DrehmalWorldBinding.isBound(player.level().getServer());
     }
 
-    public static void refreshAfterBattle(ServerPlayer player) {
+    public static void refreshFieldContext(ServerPlayer player) {
         if (!active(player)) return;
         LAST_LOCATION.put(player.getUUID(), DrehmalFirstRouteRuntime.locationId(player));
         LAST_INTERACTION.put(player.getUUID(), DrehmalFirstRouteRuntime.interactionId(player));
         LAST_NAVIGATION.put(player.getUUID(), DrehmalFirstRouteRuntime.navigationId(player));
         FieldNetwork.syncExternal(player, DrehmalFirstRouteRuntime.explorationSnapshot(player));
+    }
+
+    public static void refreshAfterBattle(ServerPlayer player) {
+        refreshFieldContext(player);
+    }
+
+    /**
+     * External authored-world field commands are fail-closed. Current Drehmal travel/services are physical-world or
+     * meta-surface interactions, so no legacy relay command is valid here.
+     */
+    public static void command(ServerPlayer player, String command) {
+        if (!active(player)) return;
+        refreshFieldContext(player);
     }
 
     public static boolean interactEntity(ServerPlayer player, net.minecraft.world.entity.Entity target) {

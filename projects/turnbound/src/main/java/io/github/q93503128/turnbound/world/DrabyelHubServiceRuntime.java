@@ -69,6 +69,12 @@ final class DrabyelHubServiceRuntime {
         Vec3 pos=vec(service.runtimePosition());
         if(player.position().distanceToSqr(pos)>radius*radius)return false;
 
+        if("SUMMON".equals(service.role())&&!DrehmalContentUnlocks.summonUnlocked(player.getUUID())){
+            player.sendSystemMessage(Component.literal("정령의 흔적은 아직 잠잠합니다. Capital Valley의 강적을 넘고 다시 찾아오세요.")
+                    .withStyle(ChatFormatting.GRAY));
+            return true;
+        }
+
         if(target instanceof BattleActorEntity actor)actor.playServiceGreeting();
         String hint=service.facilityHint();
         if(hint==null||hint.isBlank())hint="QUESTS";

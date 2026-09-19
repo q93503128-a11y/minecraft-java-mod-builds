@@ -8,6 +8,28 @@ import java.util.UUID;
 public final class MetaActionGate {
     private MetaActionGate() {}
 
+    /**
+     * Runtime-aware meta gate. Drehmal production must never inherit retired Aster chapter requirements simply
+     * because the underlying account/progression model is shared.
+     */
+    public static String denial(net.minecraft.server.level.ServerPlayer player, String rawCommand) {
+        if (player == null) return "";
+        if (!ExternalWorldBootstrap.active(player)) return denial(player.getUUID(), rawCommand);
+        if (rawCommand == null || rawCommand.isBlank()) return "";
+
+        String action = rawCommand.split("\\|", -1)[0];
+        if ("SUMMON1".equals(action) || "SUMMON10".equals(action) || "STARTER".equals(action)) {
+            return DrehmalContentUnlocks.summonUnlocked(player.getUUID())
+                    ? ""
+                    : "소환은 Capital Valley의 첫 강적 또는 New Drabyel 진입로 전투를 넘은 뒤 개방됩니다.";
+        }
+        if ("ENHANCE".equals(action)) {
+            // New Drabyel onboarding explicitly includes equipment/upgrade; the physical blacksmith gate remains.
+            return "";
+        }
+        return denial(player.getUUID(), rawCommand);
+    }
+
     /** Empty string means allowed; otherwise returns a player-facing denial reason. */
     public static String denial(UUID playerId, String rawCommand) {
         if (playerId == null || rawCommand == null || rawCommand.isBlank()) return "";

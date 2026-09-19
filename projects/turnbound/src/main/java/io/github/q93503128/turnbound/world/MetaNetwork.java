@@ -35,7 +35,7 @@ public final class MetaNetwork {
                         return;
                     }
 
-                    String denial = MetaActionGate.denial(player.getUUID(), raw);
+                    String denial = MetaActionGate.denial(player, raw);
                     if (denial.isBlank()) denial = MetaFacilityActionGate.denial(player, raw);
                     if (!denial.isBlank()) {
                         feedback(player, denial);
@@ -49,8 +49,10 @@ public final class MetaNetwork {
                         return;
                     }
                     MetaMenuService.command(player, raw);
-                    // Meta mutations can complete quests (notably the first-party tutorial). Keep the field guide in lockstep.
-                    RadiaHubSessionManager.refreshProgress(player);
+                    // Keep the active world's field projection in lockstep with meta mutations. External Drehmal
+                    // players must not touch the retired Radia session just because both modes share campaign data.
+                    if (ExternalWorldBootstrap.active(player)) ExternalWorldBootstrap.refreshFieldContext(player);
+                    else RadiaHubSessionManager.refreshProgress(player);
                 }));
     }
 
