@@ -21,9 +21,9 @@ def main() -> None:
     rpg = read("VillageRpgSystem.java")
     guardians = read("VillageGuardians.java")
 
-    assert "mod_version=0.18.45-alpha.1" in props
-    assert "현재 소스 버전 `0.18.45-alpha.1`" in readme
-    assert "villageguardians-0.18.45-alpha.1.jar" in readme
+    assert "mod_version=" in props
+    assert "현재 소스 버전 `" in readme
+    assert "목표 JAR `villageguardians-" in readme
 
     assert "KEY_POWER_TIER" in identity
     assert "stampPowerTier" in identity

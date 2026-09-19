@@ -256,7 +256,7 @@ public final class VillageTownHallGridScreen extends Screen {
                         spec.bounds().w(), spec.bounds().h())) continue;
                 if (VillageActionDescriptions.requiresConfirmation(spec.action()) && minecraft != null) {
                     minecraft.gui.setScreen(new VillageConfirmScreen(this, spec.action(), facility.name(),
-                            VillageActionDescriptions.describe(spec.action(), facility.name())));
+                            confirmationDetail(facility, spec.action())));
                 } else {
                     ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(spec.action()));
                 }
@@ -264,6 +264,36 @@ public final class VillageTownHallGridScreen extends Screen {
             }
         }
         return super.mouseClicked(click, doubled);
+    }
+
+    private static String confirmationDetail(FacilityCard facility, String action) {
+        if (facility == null) return VillageActionDescriptions.describe(action, "");
+        if (action != null && action.startsWith("upgrade:")) {
+            return "현재 · " + facility.meta() + "\n"
+                    + facility.effect() + "\n"
+                    + "다음 · " + nextStageLabel(facility.meta()) + "\n"
+                    + facility.nextEffect() + "\n"
+                    + "필요 공동 보급품 · " + facility.upgradeCost();
+        }
+        if (action != null && action.startsWith("repair:")) {
+            return "현재 내구도 · " + facility.current() + " / " + facility.maximum() + "\n"
+                    + "수리 후 · " + facility.maximum() + " / " + facility.maximum() + "\n"
+                    + "필요 공동 보급품 · " + facility.repairCost();
+        }
+        return VillageActionDescriptions.describe(action, facility.name());
+    }
+
+    private static String nextStageLabel(String meta) {
+        if (meta == null || meta.isBlank()) return "다음 단계";
+        int index = meta.indexOf("단계");
+        if (index <= 0) return "다음 단계";
+        try {
+            int current = Integer.parseInt(meta.substring(0, index).trim());
+            return Math.min(VillageProgressionSystem.MAX_BUILDING_LEVEL, current + 1)
+                    + "단계 / " + VillageProgressionSystem.MAX_BUILDING_LEVEL + "단계";
+        } catch (NumberFormatException ignored) {
+            return "다음 단계";
+        }
     }
 
     @Override

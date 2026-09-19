@@ -191,19 +191,11 @@ public final class VillageRaidSystem {
     }
 
     public static int experienceForEnemy(Mob mob) {
-        VillageEnemyArchetypeSystem.Archetype archetype = archetypeOf(mob);
-        if (archetype == null) return 2;
-        return switch (archetype) {
-            case GRUNT, RUSHER -> 2;
-            case BULWARK, MARKSMAN -> 3;
-            case SAPPER, SHIELDBREAKER -> 4;
-            case HEXER, WAR_CHANTER -> 5;
-            case NECROMANCER, TOWER_HUNTER -> 6;
-            case SIEGE_BEAST -> 18;
-            case IRON_WARLORD -> 24;
-            case PLAGUE_ARCHON -> 28;
-            case DREAD_KNIGHT -> 32;
-        };
+        if (mob == null) return 0;
+        // Keep the pre-party-share kill reward curve. The 0.18.44 archetype table (2~32 XP)
+        // made ordinary raid kills worth roughly one tenth of the previous progression pace.
+        int base = Math.min(90, 7 + Math.round(mob.getMaxHealth() * 0.48f));
+        return Math.max(1, Math.round(base * 1.18f));
     }
 
     public static VillageEnemyArchetypeSystem.AerialRole aerialRoleOf(Mob mob) {

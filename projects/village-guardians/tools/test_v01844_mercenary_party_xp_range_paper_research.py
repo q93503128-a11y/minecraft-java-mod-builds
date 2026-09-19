@@ -81,9 +81,9 @@ def main() -> None:
     assert "ParticleTypes.ELECTRIC_SPARK" in effects
 
     assert 'TACTICAL_SHEET_NAME = "수호단 작전표"' in starter
-    assert "Items.PAPER" in starter
-    assert "ensureTacticalSheet(player)" in starter
-    assert "VillageUiController.openDashboard(player)" in starter
+    assert "removeTacticalSheetItems(player)" in starter
+    assert "ensureTacticalSheet(player)" not in starter
+    assert "작전표·호출기 아이템은 폐지되었습니다" in starter
 
     assert "세 갈래 동시 성장 가능" in ui
     assert "지속·위력·특수는 서로 배타적이지 않음" in ui
@@ -97,7 +97,7 @@ def main() -> None:
     print("[PASS] mercenary durability and class-aware aggro caps prevent whole-wave dogpiles")
     print("[PASS] every raid death grants equal party XP regardless of player/mercenary/turret killer")
     print("[PASS] turret range preview has a persistent particle-circle fallback")
-    print("[PASS] tactical paper is restored and role/research progression is clearer")
+    print("[PASS] obsolete tactical paper is retired and role/research progression is clearer")
 
 
 if __name__ == "__main__":

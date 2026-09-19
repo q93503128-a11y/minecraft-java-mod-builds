@@ -14,6 +14,7 @@ public final class VillageStarterKit {
     private static final String CALLER_MIGRATION_TAG = "villageguardians_inventory_caller_v1";
     private static final String CALLER_NAME = "마을 수호단 호출기";
     private static final String TACTICAL_SHEET_NAME = "수호단 작전표";
+    private static final String TACTICAL_SHEET_RETIRE_TAG = "villageguardians_tactical_sheet_retired_v1";
 
     private VillageStarterKit() {}
 
@@ -41,18 +42,19 @@ public final class VillageStarterKit {
         VillageProgressionSystem.grantDailyBreadOnLogin(player);
     }
 
-    /** Compatibility name retained for old call sites. It also restores the lightweight tactical sheet. */
+    /** Compatibility name retained for old call sites. Legacy physical menu items are removed. */
     public static void grantCaller(ServerPlayer player) {
-        ensureTacticalSheet(player);
-        boolean removed = removeCallerItems(player);
+        boolean removedCaller = removeCallerItems(player);
+        boolean removedSheet = removeTacticalSheetItems(player);
         boolean firstNotice = player.addTag(CALLER_MIGRATION_TAG);
-        if (firstNotice) {
+        boolean firstSheetRetire = player.addTag(TACTICAL_SHEET_RETIRE_TAG);
+        if (firstNotice || firstSheetRetire) {
             player.sendSystemMessage(Component.literal(
-                    "§6[수호단 조작] §f인벤토리의 상태·성장·직업 성장·통신 버튼을 사용할 수 있습니다. "
-                            + "현재 단축키는 설정 > 조작 > 마을 지키기에서 확인하거나 변경하세요."));
-        } else if (removed) {
+                    "§6[수호단 조작] §f작전표·호출기 아이템은 폐지되었습니다. "
+                            + "인벤토리의 상태·성장·직업 성장·통신 버튼과 마을 회관 지휘대를 사용하세요."));
+        } else if (removedCaller || removedSheet) {
             player.sendSystemMessage(Component.literal(
-                    "§e기존 호출기 아이템을 제거했습니다. 인벤토리 화면의 빠른 통신 버튼을 사용하세요."));
+                    "§e구형 수호단 메뉴 아이템을 정리했습니다. 인벤토리 버튼과 회관 지휘대를 사용하세요."));
         }
     }
 
@@ -67,6 +69,7 @@ public final class VillageStarterKit {
         player.getEnderChestInventory().clearContent();
         player.removeTag(STARTER_KIT_TAG);
         player.removeTag(CALLER_MIGRATION_TAG);
+        player.removeTag(TACTICAL_SHEET_RETIRE_TAG);
     }
 
     public static void handleItemInteraction(PlayerInteractEvent.RightClickItem event) {
@@ -75,7 +78,9 @@ public final class VillageStarterKit {
         if (isTacticalSheet(stack)) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
-            VillageUiController.openDashboard(player);
+            player.setItemInHand(event.getHand(), ItemStack.EMPTY);
+            player.sendSystemMessage(Component.literal(
+                    "§e수호단 작전표는 폐지되었습니다. 인벤토리 버튼 또는 마을 회관 지휘대를 사용하세요."));
             return;
         }
         if (!isCaller(stack)) return;
@@ -83,24 +88,7 @@ public final class VillageStarterKit {
         event.setCancellationResult(InteractionResult.SUCCESS);
         player.setItemInHand(event.getHand(), ItemStack.EMPTY);
         player.sendSystemMessage(Component.literal(
-                "§e호출기 아이템은 폐지되었습니다. 수호단 작전표 또는 인벤토리의 마을 메뉴를 사용하세요."));
-    }
-
-    private static void ensureTacticalSheet(ServerPlayer player) {
-        if (player == null) return;
-        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
-            if (isTacticalSheet(player.getInventory().getItem(slot))) return;
-        }
-        ItemStack sheet = Items.PAPER.getDefaultInstance();
-        sheet.set(DataComponents.CUSTOM_NAME,
-                Component.literal(TACTICAL_SHEET_NAME).withStyle(ChatFormatting.AQUA));
-        if (player.getInventory().getContainerSize() > 1
-                && player.getInventory().getItem(1).isEmpty()) {
-            player.getInventory().setItem(1, sheet);
-            player.getInventory().setChanged();
-        } else {
-            giveOrDrop(player, sheet);
-        }
+                "§e호출기 아이템은 폐지되었습니다. 인벤토리 버튼 또는 마을 회관 지휘대를 사용하세요."));
     }
 
     private static boolean isTacticalSheet(ItemStack stack) {
@@ -108,6 +96,19 @@ public final class VillageStarterKit {
         Component customName = stack.get(DataComponents.CUSTOM_NAME);
         return customName != null
                 && TACTICAL_SHEET_NAME.equals(ChatFormatting.stripFormatting(customName.getString()));
+    }
+
+    private static boolean removeTacticalSheetItems(ServerPlayer player) {
+        boolean changed = false;
+        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+            ItemStack stack = player.getInventory().getItem(slot);
+            if (isTacticalSheet(stack)) {
+                player.getInventory().setItem(slot, ItemStack.EMPTY);
+                changed = true;
+            }
+        }
+        if (changed) player.getInventory().setChanged();
+        return changed;
     }
 
     private static boolean removeCallerItems(ServerPlayer player) {

@@ -39,7 +39,7 @@ public final class VillageConfirmScreen extends Screen {
     @Override
     protected void init() {
         int panelWidth = Math.min(430, Math.max(270, width - 30));
-        int panelHeight = Math.min(230, Math.max(176, height - 30));
+        int panelHeight = Math.min(260, Math.max(190, height - 30));
         int left = (width - panelWidth) / 2;
         int top = (height - panelHeight) / 2;
         int buttonY = top + panelHeight - 36;
@@ -65,7 +65,7 @@ public final class VillageConfirmScreen extends Screen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         int panelWidth = Math.min(430, Math.max(270, width - 30));
-        int panelHeight = Math.min(230, Math.max(176, height - 30));
+        int panelHeight = Math.min(260, Math.max(190, height - 30));
         int left = (width - panelWidth) / 2;
         int top = (height - panelHeight) / 2;
         int right = left + panelWidth;
@@ -78,7 +78,7 @@ public final class VillageConfirmScreen extends Screen {
         graphics.text(font, label, left + 18, top + 34, TEXT, false);
 
         int detailTop = top + 55;
-        int detailBottom = bottom - 50;
+        int detailBottom = bottom - 48;
         graphics.fill(left + 14, detailTop, right - 14, detailBottom, PANEL_SOFT);
         List<FormattedCharSequence> lines = font.split(
                 Component.literal(detail), Math.max(100, panelWidth - 54));
