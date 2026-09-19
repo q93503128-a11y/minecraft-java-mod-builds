@@ -6,6 +6,9 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CapitalValleyEnemyAiTest {
@@ -50,7 +53,7 @@ class CapitalValleyEnemyAiTest {
     }
 
     @Test
-    void marksmanAimedShotTargetsTheWeakestAlly() {
+    void marksmanTelegraphsBeforeItsAimedShotAndKeepsTheTarget() {
         CombatantState weak = ally("weak", 0);
         CombatantState healthy = ally("healthy", 1);
         CombatantState marksman = enemy("marksman", "CV_C", 2);
@@ -60,10 +63,49 @@ class CapitalValleyEnemyAiTest {
         int healthyBefore = healthy.hp();
         BattleState state = new BattleState(List.of(weak, healthy, marksman));
         BattleEngine engine = new BattleEngine(state);
+
         assertEquals(marksman, engine.nextReady());
         BattleAutoController.chooseAutoAction(engine, state, marksman);
+
+        assertEquals(weakBefore, weak.hp(), "aim turn must not deal damage");
+        assertEquals(healthyBefore, healthy.hp());
+        assertTrue(marksman.flag("cv_c_aim_ready"));
+        assertEquals(weak.instanceId(), marksman.ref("cv_c_aim_target"));
+        assertNotNull(weak.status("cv_c_aimed_target", marksman.instanceId()));
+        assertEquals(0, marksman.cooldown("cv_c_aimed"));
+
+        marksman.setGauge(1000);
+        BattleAutoController.chooseAutoAction(engine, state, marksman);
+
         assertTrue(weak.hp() < weakBefore);
         assertEquals(healthyBefore, healthy.hp());
         assertEquals(2, marksman.cooldown("cv_c_aimed"));
+        assertFalse(marksman.flag("cv_c_aim_ready"));
+        assertNull(marksman.ref("cv_c_aim_target"));
+        assertNull(weak.status("cv_c_aimed_target", marksman.instanceId()));
+    }
+
+    @Test
+    void marksmanRetargetsIfTheTelegraphedAllyFallsBeforeTheShot() {
+        CombatantState weak = ally("weak", 0);
+        CombatantState healthy = ally("healthy", 1);
+        CombatantState marksman = enemy("marksman", "CV_C", 2);
+        weak.takeDamage(100);
+        marksman.setGauge(1000);
+        BattleState state = new BattleState(List.of(weak, healthy, marksman));
+        BattleEngine engine = new BattleEngine(state);
+
+        BattleAutoController.chooseAutoAction(engine, state, marksman);
+        assertEquals(weak.instanceId(), marksman.ref("cv_c_aim_target"));
+
+        weak.takeDamage(weak.hp());
+        int healthyBefore = healthy.hp();
+        marksman.setGauge(1000);
+        BattleAutoController.chooseAutoAction(engine, state, marksman);
+
+        assertTrue(healthy.hp() < healthyBefore);
+        assertFalse(marksman.flag("cv_c_aim_ready"));
+        assertNull(marksman.ref("cv_c_aim_target"));
+        assertNull(weak.status("cv_c_aimed_target", marksman.instanceId()));
     }
 }
