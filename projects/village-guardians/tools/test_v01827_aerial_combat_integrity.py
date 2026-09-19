@@ -38,7 +38,7 @@ def main() -> None:
     assert 'case "raid_aerial_warning"' in mesh and 'case "raid_aerial_impact"' in mesh
     assert "renderAerialAssault" in mesh
     ranger = merc.split("private static void rangedAttack", 1)[1].split("private static void healAllies", 1)[0]
-    assert "VillageEnemyArchetypeSystem.isFlying(enemy) ? 0 : 1" in ranger
+    assert "VillageRaidSystem.isAerialEnemy(enemy) ? 0 : 1" in ranger
     assert "공중 위협을 우선 요격" in merc
     print("[PASS] real spawn and daytime intel share one deterministic flying predicate")
     print("[PASS] flying combat has one authored owner with fixed warning/dive/impact/recovery phases")

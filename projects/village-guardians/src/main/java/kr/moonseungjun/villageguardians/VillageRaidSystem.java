@@ -464,11 +464,6 @@ public final class VillageRaidSystem {
             VillageEnemyArchetypeSystem.Archetype archetype = ACTIVE_ARCHETYPES.getOrDefault(
                     id, VillageEnemyArchetypeSystem.Archetype.GRUNT);
             updateEnemyOutline(server, mob);
-            VillageEnemyArchetypeSystem.tickAbility(
-                    level, server, mob, archetype, currentTrait, abilityTicks);
-            if (VillageEnemyArchetypeSystem.isBoss(archetype)) {
-                VillageBossAspectSystem.tick(level, server, mob, abilityTicks);
-            }
 
             LivingEntity tauntTarget = activeTauntTarget(level, mob);
             if (tauntTarget != null) {
@@ -479,6 +474,12 @@ public final class VillageRaidSystem {
                     directTauntedGroundEnemy(mob, tauntTarget);
                 }
                 continue;
+            }
+
+            VillageEnemyArchetypeSystem.tickAbility(
+                    level, server, mob, archetype, currentTrait, abilityTicks);
+            if (VillageEnemyArchetypeSystem.isBoss(archetype)) {
+                VillageBossAspectSystem.tick(level, server, mob, abilityTicks);
             }
 
             if (isAerialEnemy(mob)) {

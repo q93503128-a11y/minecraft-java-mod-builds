@@ -52,15 +52,17 @@ public final class VillageMainHudOverlay {
         String level = sections.length > 1 ? plain(sections[1]) : "";
         String role = sections.length > 2 ? plain(sections[2]) : "";
         String economy = sections.length > 3 ? plain(sections[3]) : "";
+        String threat = sections.length > 4 ? plain(sections[4]) : "";
 
-        int maxWidth = Math.min(330, Math.max(150, graphics.guiWidth() - 34));
+        int maxWidth = Math.min(380, Math.max(150, graphics.guiWidth() - 34));
         String first = fit(font, join(day, level, "  ·  "), maxWidth - 24);
         String second = fit(font, join(role, economy, "  ·  "), maxWidth - 24);
-        int contentWidth = Math.max(font.width(first), font.width(second));
+        String third = fit(font, threat, maxWidth - 24);
+        int contentWidth = Math.max(Math.max(font.width(first), font.width(second)), font.width(third));
         int panelWidth = Math.min(maxWidth, Math.max(154, contentWidth + 28));
         int left = 10;
         int top = 10;
-        int bottom = top + 35;
+        int bottom = top + (third.isBlank() ? 35 : 49);
 
         graphics.fill(left, top, left + panelWidth, bottom, BACK);
         graphics.fill(left, top, left + 3, bottom, CYAN);
@@ -69,6 +71,7 @@ public final class VillageMainHudOverlay {
         VillageQuickChatSafeScreen.drawDiamondOutline(graphics, left + 12, top + 11, 4, CYAN);
         graphics.text(font, first, left + 22, top + 5, TEXT, true);
         graphics.text(font, second, left + 22, top + 19, MUTED, true);
+        if (!third.isBlank()) graphics.text(font, third, left + 22, top + 33, GOLD, true);
         int accent = Math.min(panelWidth - 8, Math.max(34, panelWidth * 38 / 100));
         graphics.fill(left + 4, bottom - 2, left + accent, bottom, GOLD);
     }

@@ -35,6 +35,7 @@ def main():
     assert "playerTaunter" in taunt and "Math.max(radius, 44.0)" in taunt
     direct = section(raid, "private static void directEnemies", "private static net.minecraft.world.entity.animal.golem.IronGolem selectMercenaryTarget")
     assert "directTauntedGroundEnemy" in direct
+    assert direct.index("activeTauntTarget(level, mob)") < direct.index("VillageEnemyArchetypeSystem.tickAbility")
     assert direct.index("activeTauntTarget(level, mob)") < direct.index("isAerialEnemy(mob)")
 
     assert "VillageRaidSystem.hasActiveTaunt(level, mob)" in attack
@@ -49,9 +50,10 @@ def main():
     for label in ("↑북문", "↖북서", "↗북동", "←서", "동→", "✦공중"):
         assert label in attack
     assert "VillageAttackPlanSystem.currentThreatHud(level)" in hud
-    assert 'economy = threat + " §8· " + economy' in hud
-    assert "int maxWidth = Math.min(330" in overlay
-    assert "third.isBlank()" not in overlay
+    assert 'base + " §8│ " + threat' in hud
+    assert "int maxWidth = Math.min(380" in overlay
+    assert "third.isBlank() ? 35 : 49" in overlay
+    assert "if (!third.isBlank()) graphics.text" in overlay
 
     print("[PASS] return uses 10s cooldown and five-second dealt/taken combat lock")
     print("[PASS] aerial raid actors have a dedicated authoritative tag")

@@ -33,10 +33,10 @@ def main() -> None:
     assert "isFaceSturdy" in aimed
 
     assert "nearestGroundEnemy" in merc
-    assert "VillageEnemyArchetypeSystem.isFlying(enemy)" in merc
+    assert "VillageRaidSystem.isAerialEnemy(enemy)" in merc
     assert "Vec3 start = mercenary.getEyePosition();" in merc
     assert "private static Mob groundTarget" in deploy
-    assert ".filter(enemy -> !VillageEnemyArchetypeSystem.isFlying(enemy))" in deploy
+    assert ".filter(enemy -> !VillageRaidSystem.isAerialEnemy(enemy))" in deploy
 
     front = section(attack, "public static Front frontForIndex", "public static Condition condition")
     assert "detachmentFront" in front

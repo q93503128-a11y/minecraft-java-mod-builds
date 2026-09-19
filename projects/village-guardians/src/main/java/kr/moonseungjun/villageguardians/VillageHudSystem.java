@@ -48,12 +48,12 @@ public final class VillageHudSystem {
                 ? VillageAttackPlanSystem.currentThreatHud(level) : "";
         String economy = "§e" + VillageProgressionSystem.coins(player) + "주화"
                 + " §8· §6" + VillageProgressionSystem.supplies() + "보급";
-        if (!threat.isBlank()) economy = threat + " §8· " + economy;
-        return "§6" + VillageCouncilState.currentDay() + "일 "
+        String base = "§6" + VillageCouncilState.currentDay() + "일 "
                 + VillageCouncilState.currentPhase().koreanName()
                 + " §8│ §bLv." + progress.level() + " §7" + xp
                 + " §8│ §f" + role
                 + " §8│ " + economy;
+        return threat.isBlank() ? base : base + " §8│ " + threat;
     }
 
     private static String buildSkillText(ServerPlayer player) {
