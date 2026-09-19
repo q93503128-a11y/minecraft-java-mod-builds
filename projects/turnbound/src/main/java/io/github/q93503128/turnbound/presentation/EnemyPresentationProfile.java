@@ -36,6 +36,7 @@ public final class EnemyPresentationProfile {
             Map.entry("cv_b_basic", skill(Motion.STRIKE, 15, true)),
             Map.entry("cv_b_opportunist", skill(Motion.STRIKE, 18, true)),
             Map.entry("cv_c_basic", skill(Motion.CAST, 16, false)),
+            Map.entry("cv_c_take_aim", skill(Motion.TELEGRAPH, 20, false)),
             Map.entry("cv_c_aimed", skill(Motion.CAST, 22, false)),
             Map.entry("el_cv01_gore", skill(Motion.STRIKE, 18, true)),
             Map.entry("el_cv01_warn", skill(Motion.TELEGRAPH, 20, false)),
