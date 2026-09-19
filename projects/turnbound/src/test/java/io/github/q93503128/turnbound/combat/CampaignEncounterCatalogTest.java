@@ -18,9 +18,10 @@ class CampaignEncounterCatalogTest {
 
     @Test
     void allV04FieldAndBossEncountersAreRuntimeAddressable() {
-        assertTrue(CampaignEncounterCatalog.all().size() >= 32);
+        assertTrue(CampaignEncounterCatalog.all().size() >= 33);
         assertTrue(CampaignEncounterCatalog.contains("CV_FIRST_COMMON"));
         assertTrue(CampaignEncounterCatalog.contains("CV_DRABYEL_ROAD"));
+        assertTrue(CampaignEncounterCatalog.contains("CV_WARNING_CAVE_ELITE"));
         int activeAllies = CampaignProgressStore.activeParty(playerId).size();
         assertTrue(activeAllies >= 1 && activeAllies <= 4);
         for (var encounter : CampaignEncounterCatalog.all()) {

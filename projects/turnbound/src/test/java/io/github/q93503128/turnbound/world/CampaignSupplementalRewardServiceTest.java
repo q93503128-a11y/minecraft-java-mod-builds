@@ -40,6 +40,22 @@ class CampaignSupplementalRewardServiceTest {
     }
 
     @Test
+    void warningCaveFirstClearGrantsOnePullAndOneEarlyHeroicEquivalentChoice() {
+        UUID id = player();
+        BattleResultSummary first = CampaignProgressStore.commit(id, "CV_WARNING_CAVE_ELITE", BattleOutcome.ALLY_VICTORY);
+        assertTrue(first.firstClear());
+        CampaignSupplementalRewardService.apply(id, "CV_WARNING_CAVE_ELITE", first);
+        assertEquals(300, CampaignProgressStore.currency(id, PlayerProfile.Currency.SUMMON_CRYSTAL));
+        assertEquals(1, CampaignProgressStore.equipment(id).choiceTokens().getOrDefault("T2", 0));
+
+        BattleResultSummary repeat = CampaignProgressStore.commit(id, "CV_WARNING_CAVE_ELITE", BattleOutcome.ALLY_VICTORY);
+        assertFalse(repeat.firstClear());
+        CampaignSupplementalRewardService.apply(id, "CV_WARNING_CAVE_ELITE", repeat);
+        assertEquals(300, CampaignProgressStore.currency(id, PlayerProfile.Currency.SUMMON_CRYSTAL));
+        assertEquals(1, CampaignProgressStore.equipment(id).choiceTokens().getOrDefault("T2", 0));
+    }
+
+    @Test
     void repeatClearDoesNotRepeatCrystalOrChoiceToken() {
         UUID id = player();
         BattleResultSummary first = CampaignProgressStore.commit(id, "BATTLE_B03", BattleOutcome.ALLY_VICTORY);

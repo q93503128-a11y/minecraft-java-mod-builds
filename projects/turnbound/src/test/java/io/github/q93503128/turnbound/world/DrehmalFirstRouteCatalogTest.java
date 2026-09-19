@@ -60,6 +60,12 @@ class DrehmalFirstRouteCatalogTest {
         assertTrue(first.combatEncounterId().equals("CV_FIRST_COMMON"));
         assertFalse(first.productionEnabled(), "26.2 survey gate must still block spatial activation");
 
+        var cave = DrehmalFirstRouteCatalog.route().encounters().stream()
+                .filter(encounter -> encounter.locator().equals("turnbound:encounter/capital_valley/warning_cave_elite"))
+                .findFirst().orElseThrow();
+        assertTrue(cave.combatEncounterId().equals("CV_WARNING_CAVE_ELITE"));
+        assertFalse(cave.productionEnabled(), "Warning Cave must remain survey-gated");
+
         var road = DrehmalFirstRouteCatalog.route().encounters().stream()
                 .filter(encounter -> encounter.locator().equals("turnbound:encounter/capital_valley/drabyel_approach_patrol"))
                 .findFirst().orElseThrow();
