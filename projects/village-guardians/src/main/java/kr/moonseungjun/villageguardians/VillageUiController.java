@@ -142,10 +142,10 @@ public final class VillageUiController {
                     Integer.toString(skill.requiredLevel()), Integer.toString(skill.coinCost()),
                     VillageRoleSkillSystem.skillStatus(player, skill), Integer.toString(slot)));
         }
-        String summary = "Lv." + VillageCouncilState.levelOf(player.getUUID())
+        String summary = "세 갈래 동시 성장 가능 · Lv." + VillageCouncilState.levelOf(player.getUUID())
                 + " · 주화 " + VillageProgressionSystem.coins(player)
                 + " · " + VillageRoleSkillSystem.loadoutSummary(player)
-                + " · 성장 노드는 어디서나 · 기술 습득은 연구소 · 장착은 어디서나";
+                + " · 지속·위력·특수는 서로 배타적이지 않음 · 기술 습득은 연구소";
         send(player, "role_progress", role.displayName() + " 성장",
                 role.id() + "|" + role.displayName() + "|" + summary, actions, labels);
     }
