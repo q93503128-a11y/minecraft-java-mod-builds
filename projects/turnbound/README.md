@@ -41,14 +41,21 @@ Operator diagnostics:
 ## Validation
 
 Current verified combat-overhaul checkpoint:
-- Build TURNBOUND #764
-- code commit: `fb54674f290521c6ae765bef8f00147b6eccd5fd`
+- Build TURNBOUND #766
+- code commit: `e91853c111a14c488aa3a7e423c5cbffdacaf1e9`
 - fixed-point TurnScheduler tests: PASS
-- Kyren v1 duel-loop tests: PASS
-- Lumea v1 tempo-control tests: PASS
+- P01 Kyren v1: PASS
+- P02 Lumea v1: PASS
+- P03 Bram Guard/Redirect: PASS
+- P04 Elysia Sanctuary/Revive: PASS
+- P05 Lynette Sightline/Shot: PASS
+- P06 Morwen Records/Return: PASS
+- P07 Marion no-turn partner/Bond: PASS
+- P08 Raze Fury/Overheat: PASS
 - Gradle tests: PASS
 - NeoForge server smoke: PASS
 - JAR verify: PASS
-- artifact: `turnbound-v04-workbranch` (id `10552255748`, SHA-256 `4d92b7c02f6b233a2fe02476184d4810079d92160522cf3d332eebf9faaf1734`)
+- artifact: `turnbound-v04-workbranch` (id `10573278986`, SHA-256 `b898758f4e7d3db4701d11e1dfb561da1b1f2780cd739240013505a39cf58f2e`)
+- CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO

@@ -162,14 +162,12 @@ Validation labels stay distinct:
 
 ## Last verified implementation checkpoint
 
-Before this docs-only planning expansion:
 - CODE REVIEWED: YES
-- TESTED: YES — fixed-point scheduler + Kyren v1 + Lumea v1 runtime regression suite
-- BUILD VERIFIED: YES — Build TURNBOUND #764
-- verified code commit: `fb54674f290521c6ae765bef8f00147b6eccd5fd`
-- SERVER SMOKE: YES
-- JAR PRODUCED: YES
+- TESTED: YES — fixed-point scheduler + P01~P08 v1 combat runtime regression suite
+- BUILD VERIFIED: YES — Build TURNBOUND #766
+- verified code commit: `e91853c111a14c488aa3a7e423c5cbffdacaf1e9`
+- SERVER SMOKE: YES — NeoForge 26.2 dedicated server load
+- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`, id `10573278986`, SHA-256 `b898758f4e7d3db4701d11e1dfb561da1b1f2780cd739240013505a39cf58f2e`
+- CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
-
-This planning rewrite does not change those implementation validation labels.
