@@ -35,6 +35,7 @@ public final class VillageSiegeCommandUi {
                 + VillagePlacedTurretSystem.count() + "/" + VillagePlacedTurretSystem.capacity()
                 + " · 설치 한도 = 기본 2 + 성벽 단계 " + VillageProgressionSystem.wallLevel()
                 + " + 포탑 공학 " + VillageDefenseResearchSystem.level(VillageDefenseResearchSystem.Branch.TOWER)
+                + "\n기존 성루는 관측 구조물이며 실전 화력은 직접 배치 포탑이 담당합니다."
                 + "\n포탑은 폭파병·탑 사냥꾼·보스의 근접 압박으로 피해를 받고 파괴될 수 있습니다.", actions, labels);
     }
 
