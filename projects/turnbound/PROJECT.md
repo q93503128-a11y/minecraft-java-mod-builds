@@ -165,11 +165,11 @@ Validation labels stay distinct:
 ## Last verified implementation checkpoint
 
 - CODE REVIEWED: YES
-- TESTED: YES — fixed-point scheduler + P01~P08 v1 combat runtime + Drehmal first-route binding + battle-center camera + CV-A/B/C production enemies + Warning Cave Cavehorn Elite asset/AI/reward contract + Drabyel-road Hill Marksman two-step aim telegraph/retarget contract + shallow RPG quick-menu navigation + source-backed Drehmal world-map replacement + New Drabyel physical service NPC runtime/facility gating + R_PG-derived single-representative field encounters + deterministic roam/dwell pacing + Minecraft terrain-aware PathfinderMob navigation with throttled repath commands
-- BUILD VERIFIED: YES — Build TURNBOUND #795
-- verified code commit: `52b54492db261bf050966d98aaf7fbe8134d52b6`
+- TESTED: YES — fixed-point scheduler + P01~P08 v1 combat runtime + Drehmal first-route binding + battle-center camera + CV-A/B/C production enemies + Warning Cave Cavehorn Elite asset/AI/reward contract + Drabyel-road Hill Marksman two-step aim telegraph/retarget contract + shallow RPG quick-menu navigation + source-backed Drehmal world-map replacement + New Drabyel physical service NPC runtime/facility gating + R_PG-derived single-representative field encounters + deterministic roam/dwell pacing + Minecraft terrain-aware PathfinderMob navigation with throttled repath, rejected-path backoff, and blocked ROAM target recovery
+- BUILD VERIFIED: YES — Build TURNBOUND #796
+- verified code commit: `8462e4ec9a943447a405c82bfd840ec2578b82b5`
 - SERVER SMOKE: YES — NeoForge 26.2 dedicated server load
-- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`, id `10579075304`, SHA-256 `2bb82a7bbf3b61f0c891e97fa860e53c9b40e19bcb637b4f8b9262ba435e52eb`
+- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`, id `10578466255`, SHA-256 `a251246df4618b20888b75519daba8f98a95572e6e5331a4e3f7596ac5041536`
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
