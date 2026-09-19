@@ -1070,6 +1070,7 @@ public final class VillageSkillMeshLibrary {
         };
         int pale = withAlpha(color, 92 + tier * 10);
         ring(pose, out, b, 0.78 * scale * pulse, 0.035, 0.038, 44, pale, age * 0.010);
+        renderExternalMercenary(pose, out, b, style, tier);
 
         if (style == 0) {
             Vec3 shieldCenter = b.local(0.0, 1.10, 0.78 * scale);
@@ -1117,6 +1118,34 @@ public final class VillageSkillMeshLibrary {
         if (tier >= 3) {
             crystal(pose, out, b.local(0.0, 1.50, 0.18), 0.34, 0.115,
                     withAlpha(color, 130));
+        }
+    }
+
+    private static void renderExternalMercenary(
+            PoseStack.Pose pose, VertexConsumer out, Basis b, int style, int tier) {
+        VillageExternalMercenaryMesh.Mesh model = VillageExternalMercenaryMesh.mesh(style);
+        if (model.empty()) return;
+        double scale = 0.96 + Math.max(0, Math.min(3, tier)) * 0.035;
+        int body = switch (style) {
+            case 0 -> rgba(82, 112, 145, 246);
+            case 1 -> rgba(137, 58, 52, 246);
+            case 2 -> rgba(78, 126, 83, 246);
+            default -> rgba(220, 207, 167, 246);
+        };
+        int weapon = switch (style) {
+            case 0 -> rgba(225, 194, 106, 252);
+            case 1 -> rgba(208, 216, 224, 252);
+            case 2 -> rgba(128, 87, 51, 252);
+            default -> rgba(243, 210, 101, 252);
+        };
+        for (int triangle = 0; triangle < model.triangleCount(); triangle++) {
+            int ia = model.index(triangle, 0);
+            int ib = model.index(triangle, 1);
+            int ic = model.index(triangle, 2);
+            Vec3 p0 = b.local(model.x(ia) * scale, model.y(ia) * scale, model.z(ia) * scale);
+            Vec3 p1 = b.local(model.x(ib) * scale, model.y(ib) * scale, model.z(ib) * scale);
+            Vec3 p2 = b.local(model.x(ic) * scale, model.y(ic) * scale, model.z(ic) * scale);
+            triangleTwoSided(pose, out, p0, p1, p2, model.weapon(triangle) ? weapon : body);
         }
     }
 
