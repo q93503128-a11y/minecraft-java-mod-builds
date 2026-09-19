@@ -19,6 +19,9 @@ final class RuntimeMetaActionGate {
         if (rawCommand == null || rawCommand.isBlank()) return "";
 
         String action = rawCommand.split("\\|", -1)[0];
+        if ("START".equals(action) || "DEPLOY".equals(action)) {
+            return "현재 지역에서는 이용할 수 없는 도전입니다.";
+        }
         if ("SUMMON1".equals(action) || "SUMMON10".equals(action) || "STARTER".equals(action)) {
             return DrehmalContentUnlocks.summonUnlocked(player.getUUID())
                     ? ""

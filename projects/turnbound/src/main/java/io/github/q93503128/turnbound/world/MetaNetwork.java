@@ -30,13 +30,19 @@ public final class MetaNetwork {
                     String raw = payload.command();
                     if (raw == null || raw.isBlank()) return;
 
+                    String denial = RuntimeMetaActionGate.denial(player, raw);
+                    if (!denial.isBlank()) {
+                        feedback(player, denial);
+                        sync(player);
+                        return;
+                    }
+
                     if (raw.startsWith("DEPLOY|")) {
                         EndgameDeploymentService.deploy(player, raw.substring("DEPLOY|".length()));
                         return;
                     }
 
-                    String denial = RuntimeMetaActionGate.denial(player, raw);
-                    if (denial.isBlank()) denial = MetaFacilityActionGate.denial(player, raw);
+                    denial = MetaFacilityActionGate.denial(player, raw);
                     if (!denial.isBlank()) {
                         feedback(player, denial);
                         sync(player);
@@ -68,8 +74,10 @@ public final class MetaNetwork {
     }
 
     private static void send(ServerPlayer player, String tabHint) {
-        String encoded = QuestMenuContentService.encode(player.getUUID())
-                + SignatureTrialMenuContentService.encode(player.getUUID())
+        boolean external = ExternalWorldBootstrap.active(player);
+        String encoded = (external
+                ? DrehmalQuestMenuContentService.encode(player)
+                : QuestMenuContentService.encode(player.getUUID()) + SignatureTrialMenuContentService.encode(player.getUUID()))
                 + MetaUiCodec.encode(MetaMenuService.snapshot(player));
         String feedback = FEEDBACK.remove(player.getUUID());
         if (feedback != null && !feedback.isBlank()) encoded = "F|" + feedback + "\n" + encoded;
