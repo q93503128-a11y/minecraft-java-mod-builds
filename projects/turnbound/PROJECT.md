@@ -165,11 +165,11 @@ Validation labels stay distinct:
 ## Last verified implementation checkpoint
 
 - CODE REVIEWED: YES
-- TESTED: YES — fixed-point scheduler + P01~P08 v1 combat runtime + Drehmal first-route binding + battle-center camera + CV-A/B/C production enemies + Warning Cave Cavehorn Elite asset/AI/reward contract + Drabyel-road Hill Marksman two-step aim telegraph/retarget contract + shallow RPG quick-menu navigation + source-backed Drehmal world-map replacement + New Drabyel service-layout survey gate + external FableCraft merchant/blacksmith production visual bases + physical free-roam service NPC runtime + server-authoritative Drabyel facility gating + R_PG-derived single-representative field encounters + deterministic roam/dwell patrol pacing adapted from CC0 GuardVillagersFabric + surveyed visible-encounter activation/claim/respawn rules
-- BUILD VERIFIED: YES — Build TURNBOUND #794
-- verified code commit: `9e4316dff20b39a8c2adf114295cd68ab356bbf3`
+- TESTED: YES — fixed-point scheduler + P01~P08 v1 combat runtime + Drehmal first-route binding + battle-center camera + CV-A/B/C production enemies + Warning Cave Cavehorn Elite asset/AI/reward contract + Drabyel-road Hill Marksman two-step aim telegraph/retarget contract + shallow RPG quick-menu navigation + source-backed Drehmal world-map replacement + New Drabyel physical service NPC runtime/facility gating + R_PG-derived single-representative field encounters + deterministic roam/dwell pacing + Minecraft terrain-aware PathfinderMob navigation with throttled repath commands
+- BUILD VERIFIED: YES — Build TURNBOUND #795
+- verified code commit: `52b54492db261bf050966d98aaf7fbe8134d52b6`
 - SERVER SMOKE: YES — NeoForge 26.2 dedicated server load
-- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`, id `10578535312`, SHA-256 `f8687d0f504ba29728fb9650e46c560306402050e44d4147fcc375e6e8257101`
+- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`, id `10579075304`, SHA-256 `2bb82a7bbf3b61f0c891e97fa860e53c9b40e19bcb637b4f8b9262ba435e52eb`
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
