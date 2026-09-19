@@ -37,3 +37,18 @@ Use in Village Guardians:
 Bundling note: no original Kenney sprite or model binaries from these sets are bundled in the JAR.
 
 All village buildings and fortress structures in v0.9 and later are generated from original Village Guardians code. No third-party structure NBT files are bundled.
+
+
+4. Quaternius RPG Character Pack
+Creator: Quaternius
+Primary source: https://quaternius.com/packs/rpgcharacters.html
+Pinned source mirror: https://github.com/mertgurgenyatagi/TurkeyWars
+Pinned mirror revision: e50f41492f5cc35cffa7990ddb998e860881bd41
+License: CC0 1.0 Universal / Public Domain Dedication
+License URI: https://creativecommons.org/publicdomain/zero/1.0/
+Included geometry:
+- Warrior OBJ -> 방벽 수호병
+- Rogue OBJ -> 돌격 집행관
+- Ranger OBJ -> 성루 명사수
+- Cleric OBJ -> 전장 치유사
+Changes: the original CC0 geometry is normalized to Minecraft scale at runtime and rendered with class-specific palettes and Village Guardians combat VFX. The invisible server-authoritative mercenary entity retains all collision, AI, health, save and multiplayer authority.
