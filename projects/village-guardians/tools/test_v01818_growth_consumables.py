@@ -37,7 +37,7 @@ def main():
     merc = read("VillageMercenarySystem.java")
     assert "MAX_LEVEL = 60" in merc
     assert "killsRequiredForLevel" in merc and "mercenaryPower" in merc
-    assert "42.0 + Math.min(48.0, rank * 0.80)" in merc
+    assert "50.0 + Math.min(52.0, rank * 0.85)" in merc
     assert "8.0 + Math.min(13.0, rank * 0.22)" in merc
     assert "Math.min(5, LEVELS.getOrDefault" not in merc
     assert "Math.min(MAX_LEVEL, LEVELS.getOrDefault(uuid, 1))" in merc
