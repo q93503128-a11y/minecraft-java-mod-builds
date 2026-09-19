@@ -75,6 +75,7 @@ class CapitalValleyEnemyAiTest {
         assertEquals(0, marksman.cooldown("cv_c_aimed"));
 
         marksman.setGauge(1000);
+        assertEquals(marksman, engine.nextReady());
         BattleAutoController.chooseAutoAction(engine, state, marksman);
 
         assertTrue(weak.hp() < weakBefore);
@@ -101,6 +102,7 @@ class CapitalValleyEnemyAiTest {
         weak.takeDamage(weak.hp());
         int healthyBefore = healthy.hp();
         marksman.setGauge(1000);
+        assertEquals(marksman, engine.nextReady());
         BattleAutoController.chooseAutoAction(engine, state, marksman);
 
         assertTrue(healthy.hp() < healthyBefore);
