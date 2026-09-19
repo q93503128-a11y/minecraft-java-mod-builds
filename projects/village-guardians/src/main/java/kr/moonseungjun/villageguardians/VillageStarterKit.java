@@ -51,7 +51,8 @@ public final class VillageStarterKit {
         if (firstNotice || firstSheetRetire) {
             player.sendSystemMessage(Component.literal(
                     "§6[수호단 조작] §f작전표·호출기 아이템은 폐지되었습니다. "
-                            + "인벤토리 화면의 빠른 통신 버튼과 상태·성장·직업 성장 버튼, 마을 회관 지휘대를 사용하세요."));
+                            + "인벤토리 화면의 빠른 통신 버튼과 상태·성장·직업 성장 버튼, 마을 회관 지휘대를 사용하세요. "
+                            + "현재 키는 설정 > 조작 > 마을 지키기에서 확인하거나 변경할 수 있습니다."));
         } else if (removedCaller || removedSheet) {
             player.sendSystemMessage(Component.literal(
                     "§e구형 수호단 메뉴 아이템을 정리했습니다. 인벤토리 버튼과 회관 지휘대를 사용하세요."));
