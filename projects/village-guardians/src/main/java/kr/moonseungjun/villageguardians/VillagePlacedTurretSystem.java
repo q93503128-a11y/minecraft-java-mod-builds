@@ -36,6 +36,7 @@ public final class VillagePlacedTurretSystem {
     private static final Map<Integer, Integer> DISABLED_TICKS = new HashMap<>();
     private static final List<PendingBombard> PENDING_BOMBARDS = new ArrayList<>();
     private static int combatTicks;
+    private static int presentationTicks;
 
     private VillagePlacedTurretSystem() {}
 
@@ -45,6 +46,7 @@ public final class VillagePlacedTurretSystem {
         DISABLED_TICKS.clear();
         PENDING_BOMBARDS.clear();
         combatTicks = 0;
+        presentationTicks = 0;
         VillageSiegePersistence.stringsWithPrefix(PREFIX).forEach((key, value) -> {
             try {
                 int id = Integer.parseInt(key.substring(PREFIX.length()));
@@ -70,6 +72,7 @@ public final class VillagePlacedTurretSystem {
         DISABLED_TICKS.clear();
         PENDING_BOMBARDS.clear();
         combatTicks = 0;
+        presentationTicks = 0;
         VillageSiegePersistence.stringsWithPrefix(PREFIX).forEach((key, value) -> {
             try {
                 int id = Integer.parseInt(key.substring(PREFIX.length()));
@@ -154,8 +157,10 @@ public final class VillagePlacedTurretSystem {
         if (pending.preview() == null || !pending.preview().equals(candidate)) {
             PENDING.put(player.getUUID(), new PendingPlacement(pending.type(), candidate.immutable()));
             double previewRange = effectiveRange(pending.type(), 1);
+            Vec3 previewCenter = Vec3.atCenterOf(candidate).add(0.0, -0.45, 0.0);
             VillageDefenseEffectSystem.turretPlacementPreview(level,
-                    Vec3.atCenterOf(candidate).add(0.0, -0.45, 0.0), pending.type(), previewRange);
+                    previewCenter, pending.type(), previewRange);
+            VillageDefenseEffectSystem.turretRangeParticleRing(level, previewCenter, previewRange);
             BlockPos villageCenter = VillageCouncilState.villageCenter().orElse(null);
             boolean wallTop = VillageBuildingEnhancements.isWallTopEmplacement(villageCenter, candidate);
             player.sendSystemMessage(Component.literal("§a[배치 미리보기] §f"
@@ -354,6 +359,8 @@ public final class VillagePlacedTurretSystem {
         if (server == null) return;
         tickDisruptions();
         ServerLevel level = server.overworld();
+        presentationTicks++;
+        if (presentationTicks % 8 == 0) refreshPlacementRangePreviews(level);
         VillageTurretPresentationSystem.tick(level, states());
         if (!VillageRaidSystem.isActive()) {
             PENDING_BOMBARDS.clear();
@@ -374,6 +381,16 @@ public final class VillagePlacedTurretSystem {
             int interval = effectiveInterval(state.type(), state.level());
             if (Math.floorMod(combatTicks + state.id() * 7, interval) != 0) continue;
             fire(level, state);
+        }
+    }
+
+    private static void refreshPlacementRangePreviews(ServerLevel level) {
+        if (level == null || PENDING.isEmpty()) return;
+        for (PendingPlacement pending : new ArrayList<>(PENDING.values())) {
+            if (pending == null || pending.type() == null || pending.preview() == null) continue;
+            double range = effectiveRange(pending.type(), 1);
+            Vec3 center = Vec3.atCenterOf(pending.preview()).add(0.0, -0.45, 0.0);
+            VillageDefenseEffectSystem.turretRangeParticleRing(level, center, range);
         }
     }
 
