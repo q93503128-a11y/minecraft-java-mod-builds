@@ -306,3 +306,15 @@ Applied rules:
 - ALERT may repath faster than static patrol because the player target moves;
 - battle actors stay frozen presentation entities unless the external-world field runtime explicitly enables navigation;
 - exact route viability is still a client-playtest concern after 26.2 survey.
+
+### Direct-capture alert transition follow-up
+
+The reviewed R_PG capture also showed that enemy awareness is a short world-space readability beat, not a long HUD state.
+
+TURNBOUND application:
+- first contact enters a brief stationary alert prelude before chase;
+- the red exclamation marker is visible only during that prelude instead of following the enemy throughout the whole pursuit;
+- roadside threat, road patrol and optional-danger/Elite encounters share the same fast field→battle flow but may use slightly different warning lengths;
+- Warning Cave-style optional danger receives a little more reading time than ordinary road pressure;
+- the prelude blocks immediate contact battle for that short beat, but does not add a preparation screen or menu;
+- exact feel still requires client playtest after 26.2 survey activation.
