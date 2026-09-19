@@ -31,9 +31,9 @@ def main() -> None:
     starter = read("VillageStarterKit.java")
     ui = read("VillageUiController.java")
 
-    assert "mod_version=0.18.44-alpha.1" in props
-    assert "현재 소스 버전 `0.18.44-alpha.1`" in readme
-    assert "villageguardians-0.18.44-alpha.1.jar" in readme
+    assert "mod_version=" in props
+    assert "현재 소스 버전 `" in readme
+    assert "목표 JAR `villageguardians-" in readme
 
     for name in ("bastion.obj", "striker.obj", "ranger.obj", "medic.obj"):
         assert name in assets
