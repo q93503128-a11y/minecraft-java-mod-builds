@@ -164,11 +164,11 @@ Validation labels stay distinct:
 ## Last verified implementation checkpoint
 
 - CODE REVIEWED: YES
-- TESTED: YES — fixed-point scheduler + P01~P08 v1 combat runtime + Drehmal route binding + battle-center camera + CV-A/B/C production asset contracts + Capital Valley enemy AI + surveyed visible-encounter activation/claim/respawn rules
-- BUILD VERIFIED: YES — Build TURNBOUND #778
-- verified code commit: `085f62881f04ab14b7744188bd3ddb32a3037628`
+- TESTED: YES — fixed-point scheduler + P01~P08 v1 combat runtime + Drehmal first-route binding + battle-center camera + CV-A/B/C production enemies + Warning Cave Cavehorn Elite asset/AI/reward contract + surveyed visible-encounter activation/claim/respawn rules
+- BUILD VERIFIED: YES — Build TURNBOUND #780
+- verified code commit: `c621006adb8de3db1a8e7e83fbb980033127192a`
 - SERVER SMOKE: YES — NeoForge 26.2 dedicated server load
-- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`, id `10575765658`, SHA-256 `592e25058f335aa9d0a0919cce98ee0104d197fcf4fe24332f56f3d1e16254cb`
+- JAR PRODUCED: YES — artifact `turnbound-v04-workbranch`, id `10575273834`, SHA-256 `48b348628d5a9df924689687881db6f4ee3aaa691a3d64a322da7aad191fd888`
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
