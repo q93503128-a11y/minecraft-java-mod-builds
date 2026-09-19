@@ -27,7 +27,8 @@ def main() -> None:
     consumables = read("VillageConsumableSystem.java")
 
     assert 'action.startsWith("facility:")' in local
-    assert "구식 시설 바로가기는 폐기되었습니다" in local
+    assert "시설 기능은 각 시설 단말기에서 사용하세요" in local
+    assert "구식 시설 바로가기는 폐기되었습니다" not in local
     assert "VillageUiController.openBuilding(player, building)" not in local
     assert "VillageUiController.openBuilding(player, building)" in building_router
     assert 'case "buy_arrows"' in local

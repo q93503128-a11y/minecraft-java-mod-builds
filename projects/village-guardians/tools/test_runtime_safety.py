@@ -49,6 +49,7 @@ def main() -> None:
     respawn = read("VillageRespawnSystem.java")
     raid = read("VillageRaidSystem.java")
     descriptions = read("VillageActionDescriptions.java")
+    role_skills = read("VillageRoleSkillSystem.java")
 
     assert guardians.count("VillageRaidSystem.onLivingDeath(event)") == 1
     assert "VillageDefenseResearchSystem.initializeServer" in guardians
@@ -59,6 +60,11 @@ def main() -> None:
     assert "VillageTowerResearchBonusSystem" not in guardians
     assert "VillageGlobalMobPurgeSystem.purge" in guardians
     assert "if (!mob.isPersistenceRequired()) event.setCanceled(true)" in guardians
+    assert guardians.count("VillageRespawnSystem.isDowned(player) || !player.isAlive()") >= 2
+    assert "Village Guardians siege phase 2, RPG, relic and defense systems loaded" not in guardians
+    assert "VillageRespawnSystem.isDowned(player) || !player.isAlive()" in network
+    assert "!minecraft.player.isAlive() || minecraft.player.isSpectator()" in keys
+    assert "전투 불능 상태에서는 기술을 사용할 수 없습니다." in role_skills
 
     # HUD collision contract: persistent status never uses vanilla action bar and the accepted
     # low-profile skill strip stays safely above the hotbar while modal screens own a safe viewport.
@@ -173,8 +179,13 @@ def main() -> None:
     assert "namedCaller" not in starter
     assert "giveOrDrop(player, Items.CLOCK" not in starter
     assert "giveOrDrop(player, Items.GOAT_HORN" not in starter
-    assert "호출기 아이템은 폐지" in starter
-    assert "인벤토리 화면의 빠른 통신 버튼" in starter
+    assert "호출기 아이템은 폐지" not in starter
+    assert "작전표·호출기 아이템은 폐지" not in starter
+    assert "빠른 통신과 상태·성장·직업 성장 기능" in starter
+    assert "현재 키는 설정 > 조작 > 마을 지키기" in starter
+    assert "구식 시설 바로가기는 폐기되었습니다" not in local_actions
+    assert "패시브로 변경되었습니다" not in local_actions
+    assert "구식 시설 바로가기는 폐기되었습니다" not in controller
 
     assert "combineSelected" in rarity and "fusionCandidates" in rarity
     assert "등급 하나로 합성했습니다" in rarity

@@ -35,10 +35,11 @@ def main() -> None:
     assert '"현재 내구도 · "' in compare and '"수리 후 · "' in compare
     assert "Math.min(260" in confirm
 
-    # Physical tactical paper is retired; old copies are removed during login migration.
+    # Old physical menu items are removed while player-facing guidance describes only current controls.
     assert "ensureTacticalSheet(player)" not in starter
     assert "removeTacticalSheetItems(player)" in starter
-    assert "작전표·호출기 아이템은 폐지되었습니다" in starter
+    assert "작전표·호출기 아이템은 폐지되었습니다" not in starter
+    assert "빠른 통신과 상태·성장·직업 성장 기능" in starter
     assert "player.setItemInHand(event.getHand(), ItemStack.EMPTY)" in starter
 
     # Party sharing keeps the pre-share XP curve instead of the accidental 2~32 XP table.
