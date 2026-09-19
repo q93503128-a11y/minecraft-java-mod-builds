@@ -472,6 +472,23 @@ Awakening은 캐릭터 개인 사건/퀘스트와 연결한다. 별도 “각성
 
 외부 고품질 UI/asset을 우선한다.
 
+### 21.1 임시 플레이어-facing 디자인 금지
+
+플레이어가 실제로 보게 되는 UI, 모델, 텍스처, 아이콘, 초상화, VFX 외형은
+**“일단 임시로 만들고 나중에 교체”하는 방식으로 구현하지 않는다.**
+
+첫 visible implementation부터 다음 중 하나를 사용한다.
+
+1. 라이선스와 출처가 확인된 `direct_asset`
+2. 수정 사용이 가능한 `editable_base`
+3. 검증된 외부 디자인을 기준으로 만든 final-quality original asset
+
+적절한 자산이 아직 없으면 임의의 AI 임시 디자인, 바닐라 대체 외형, 검정 패널, placeholder icon/model을
+normal gameplay에 먼저 넣는 대신 **시각 binding을 보류하고 자산을 먼저 확보한다.**
+
+예외는 플레이어에게 노출되지 않고 production runtime에서 비활성인 내부 로직/검증용 scaffold뿐이다.
+이 예외를 normal gameplay의 임시 외형으로 확대하지 않는다.
+
 - reference / editable base / direct asset / code library / unknown-license 구분
 - unknown-license bytes는 vendoring 금지
 - 외부 asset은 SOURCE/LICENSE 추적

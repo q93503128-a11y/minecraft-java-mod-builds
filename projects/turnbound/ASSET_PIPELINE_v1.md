@@ -49,7 +49,20 @@ TURNBOUND 적용:
 - `code_library`: 라이브러리/API 의존성.
 - `unknown_license`: 조사 전까지 runtime/repository에 넣지 않음.
 
-## 3. 경로 규칙
+## 3. No temporary visual pass
+
+TURNBOUND는 player-facing visual에 별도의 disposable placeholder 단계를 두지 않는다.
+
+- UI frame/button/icon은 첫 visible pass부터 검증된 외부 pack 또는 final-quality asset을 사용한다.
+- 캐릭터/적/NPC 모델은 vanilla entity, armor stand, 단색 skin 등을 “나중에 교체할 임시 외형”으로 먼저 배치하지 않는다.
+- texture/portrait/VFX도 최종 방향과 무관한 임시 이미지를 normal gameplay에 넣지 않는다.
+- 외부 자산을 직접 사용할 때는 같은 작업 단위에서 source/license를 기록한다.
+- 적합한 자산을 찾지 못했으면 해당 visual binding을 보류하고 조사/제작을 먼저 한다.
+- 기능 검증이 필요하면 플레이어에게 보이지 않고 production에서 비활성인 logic-only scaffold를 사용할 수 있다. 이것은 visual completion으로 계산하지 않는다.
+
+즉, **첫 player-visible 구현이 곧 production visual 방향이어야 한다.**
+
+## 4. 경로 규칙
 
 Runtime 자산은 얕게 유지한다.
 
@@ -78,7 +91,7 @@ THIRD_PARTY/<asset-id>/
 
 필요한 경우 원본 전체 pack을 보관하지 않고 사용한 조각의 출처/변환만 SOURCE.md에 기록한다.
 
-## 4. SOURCE.md 최소 항목
+## 5. SOURCE.md 최소 항목
 
 - asset id
 - 원 출처 URL
@@ -91,7 +104,7 @@ THIRD_PARTY/<asset-id>/
 - 변경 사항(crop, recolor, 9-slice, atlas, format conversion 등)
 - 확인 날짜
 
-## 5. UI import 절차
+## 6. UI import 절차
 
 1. 화면의 정보 구조를 먼저 확정한다.
 2. 후보 asset pack 1~3개만 비교한다.
@@ -108,7 +121,7 @@ THIRD_PARTY/<asset-id>/
 - license 기록을 나중으로 미루기
 - 임시 검정 패널을 production으로 굳히기
 
-## 6. Font import
+## 7. Font import
 
 폰트는 장식이 아니라 가독성 시스템이다.
 
@@ -121,7 +134,7 @@ THIRD_PARTY/<asset-id>/
 
 Pretendard는 현재 후보이며 실제 import는 runtime 검증 후 진행한다.
 
-## 7. Character model → portrait
+## 8. Character model → portrait
 
 portrait를 별도 그림으로 다시 그리는 것보다 최종 3D character source와 연결한다.
 
@@ -135,7 +148,7 @@ portrait를 별도 그림으로 다시 그리는 것보다 최종 3D character s
 
 자동 crop이 얼굴/머리를 자르거나 캐릭터마다 scale이 흔들리면 production 사용 금지.
 
-## 8. 3D summon presentation
+## 9. 3D summon presentation
 
 - 소환 결과는 서버에서 먼저 확정
 - presentation scene은 결과를 바꾸지 않음
@@ -145,14 +158,14 @@ portrait를 별도 그림으로 다시 그리는 것보다 최종 3D character s
 - SKIP 가능
 - 10회 결과 summary는 2D여도 됨
 
-## 9. Resource override
+## 10. Resource override
 
 TURNBOUND 자체 resource가 기본 skin을 제공하되 외부 resource pack으로 시각 요소를 override할 수 있는 구조를 우선한다.
 
 Java 코드에서 색/texture path를 화면마다 직접 복제하지 않는다.
 shared theme/token/renderer에서 읽는다.
 
-## 10. 완료 조건
+## 11. 완료 조건
 
 외부 디자인을 “가져왔다”의 기준:
 - 라이선스/출처 기록 완료

@@ -95,6 +95,7 @@ No time-limited FOMO banner in initial game.
 
 Production UI:
 - external verified asset/reference first
+- no temporary player-facing visual pass; first visible binding uses a vetted external/final-quality asset
 - Korean readability
 - portrait-based party/Turn Order where quality allows
 - redesigned minimap/world map
