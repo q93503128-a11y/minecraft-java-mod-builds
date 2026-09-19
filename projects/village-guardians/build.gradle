@@ -19,6 +19,7 @@ var pythonCommand = System.getProperty('os.name').startsWith('Windows') ? 'pytho
 var prepareLicensedAssets = tasks.register('prepareLicensedAssets', Exec) {
     inputs.file 'tools/prepare_licensed_assets.py'
     inputs.property 'defaultDarkModeCommit', 'c804cb546dc260a5ae98b0754d599e1337faf43a'
+    inputs.property 'quaterniusRpgMirrorCommit', 'e50f41492f5cc35cffa7990ddb998e860881bd41'
     outputs.dir licensedAssetsOutput
     commandLine pythonCommand,
             file('tools/prepare_licensed_assets.py').absolutePath,
