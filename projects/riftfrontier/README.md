@@ -4,13 +4,15 @@ Riftfrontier는 Minecraft Java/NeoForge 26.2에서 개발하는 대형 **차원 
 
 ## 현재 상태
 
-`M2-B — RESTART RECONCILIATION VERIFIED / FIELD PLAY NEXT`
+`M3 — CONNECTED REGION 01 TECHNICAL VERTICAL SLICE BUILD VERIFIED / PRODUCTION PRESENTATION + HUMAN PLAY NEXT`
 
-M0/M1의 빌드·runtime·content kernel, M2-A 원정 도메인, M2-B의 **원정 결과 → 거점 저장 → 보급 → 다음 원정 변화**, Region 01 encounter runtime, same-process edge hardening에 이어 **server restart reconciliation까지 자동 검증**했다.
+Region 01의 첫 수직 구간은 현재 `거점 준비 → 출정 → 전투/회수 → 3개 확보 후 철수 또는 4~5번째 선택 회수/순찰 보너스 → 철수 정산 → 보급 → 다음 원정 압력 변화`까지 하나의 서버 권위 루프로 연결되어 있다. Salvage Recovery 계약, Rift Blackout 사건, 두 전투 장비 계열과 Recovery Pivot, five-node risk/reward 선택, restart reconciliation도 자동 검증 경계에 포함된다.
 
-현재 authoritative persistence root는 schema `3`이다. encounter 묶음은 새 저장 schema를 만들지 않고 기존 `region_01_pressure`와 persisted expedition lifecycle을 권위 기준으로 사용한다.
+2026-09-20 수동 코드/리소스/정본 감사에서 production `region_01`의 extraction metadata가 실제 authoritative `region_01_pressure +1` 규칙과 반대로 적혀 있던 문제, 철수 결과/철수 잠금에서 raw English domain/exception 문자열이 한국어 UI에 섞일 수 있던 문제, 정상 플레이 문구의 개발 단계 표현과 Scout 번역 누락을 수정했다. 이 의미 계약은 production content test로 고정했다.
 
-현재 검증 기준 코드 커밋은 `eef82853220ba36aa1d6d2096293541fc5c92c41`, GitHub Actions `Build Riftfrontier` run `34109970161`이다. **clean/unit test/build, required native GameTests, dedicated server smoke, Xvfb client smoke, executable JAR 검사, report/artifact 단계가 모두 성공**했다. 검증 JAR SHA-256은 `f42cff32667fa5aab72fb31d196a3d03aff2c265746de8041eed4d169716d490`다.
+현재 검증 기준 코드는 `14a2a0b3b317c465f11d242cbf4f73bba5062568`, GitHub Actions `Build Riftfrontier` run `35452759876`이다. clean test/build, required native GameTests, dedicated-server smoke, Xvfb client smoke, executable-JAR 검사와 artifact 업로드가 모두 성공했다. 검증 JAR SHA-256은 `2d8d15f6ba5fb1df0615066082241c19405402ce1d86d623c991f0bb3c79fb24`다.
+
+자동화 검증과 실제 인간 플레이 검수는 구분한다. Hunter Alien, boss Dark Rock 및 실제 전투/원정 feel은 아직 사람의 Minecraft field play 승인이 없으며, Armabee Scout는 review runtime plumbing만 build-verified이고 exact creator bytes가 runtime resource에 아직 들어오지 않았다.
 
 ## 작업 시작 시 반드시 읽기
 
