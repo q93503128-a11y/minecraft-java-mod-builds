@@ -93,7 +93,7 @@ def main() -> None:
         and "int cooldownReductionSeconds" in shop
         and "VillageEquipmentShop.roleSkillMultiplier(player)" in role
         and "VillageEquipmentShop.cooldownReductionSeconds(player)" in role
-        and "VillageRelicSystem.cooldownReductionSeconds(player)" in role,
+        and "VillageRelicSystem.cooldownMultiplier(player)" in role,
     )
     check(
         "보스 변이가 생성·주기 행동·시설 피해·정리·정찰에 모두 연결됩니다",
