@@ -12,6 +12,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
@@ -64,9 +65,11 @@ public final class VillageMercenarySystem {
     }
 
     public static synchronized boolean recognize(Mob mob) {
-        if (!(mob instanceof IronGolem) || !CLASSES.containsKey(mob.getUUID())) return false;
+        if (!(mob instanceof IronGolem golem) || !CLASSES.containsKey(mob.getUUID())) return false;
         mob.setPersistenceRequired();
+        mob.setInvisible(true);
         VillageWorldSystem.markAllowedGameMob(mob);
+        applyClassPassives(golem, mercenaryClass(golem), rank(golem));
         refreshName(mob);
         return true;
     }
@@ -83,8 +86,10 @@ public final class VillageMercenarySystem {
         LEVELS.put(uuid, 1);
         KILLS.put(uuid, 0);
         mob.setPersistenceRequired();
+        mob.setInvisible(true);
         VillageWorldSystem.markAllowedGameMob(mob);
         applyClassPassives(golem, kind, 1);
+        mob.setHealth(mob.getMaxHealth());
         refreshName(mob);
         persist();
         return true;
@@ -127,11 +132,13 @@ public final class VillageMercenarySystem {
         mercenary.snapTo(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
         mercenary.setPlayerCreated(true);
         mercenary.setPersistenceRequired();
+        mercenary.setInvisible(true);
         CLASSES.put(mercenary.getUUID(), kind);
         LEVELS.put(mercenary.getUUID(), 1);
         KILLS.put(mercenary.getUUID(), 0);
         persist();
         applyClassPassives(mercenary, kind, 1);
+        mercenary.setHealth(mercenary.getMaxHealth());
         refreshName(mercenary);
         VillageWorldSystem.markAllowedGameMob(mercenary);
         if (!level.addFreshEntity(mercenary)) {
@@ -161,9 +168,10 @@ public final class VillageMercenarySystem {
             // around the barracks centre could put a fresh UUID back behind its closed doors.
             BlockPos spawn = barracksYardSpawn(level, mob.getUUID());
             mob.snapTo(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
-            mob.setPlayerCreated(true); mob.setPersistenceRequired();
+            mob.setPlayerCreated(true); mob.setPersistenceRequired(); mob.setInvisible(true);
             CLASSES.put(mob.getUUID(), snapshot.kind()); LEVELS.put(mob.getUUID(), snapshot.level());
             KILLS.put(mob.getUUID(), snapshot.kills()); applyClassPassives(mob, snapshot.kind(), snapshot.level());
+            mob.setHealth(mob.getMaxHealth());
             refreshName(mob); VillageWorldSystem.markAllowedGameMob(mob);
             if (!level.addFreshEntity(mob)) {
                 unregister(mob.getUUID()); VillageWorldSystem.unmarkAllowedGameMob(mob.getUUID());
@@ -411,6 +419,8 @@ public final class VillageMercenarySystem {
     }
 
     private static void applyClassPassives(IronGolem mercenary, MercenaryClass kind, int rank) {
+        applyClassAttributes(mercenary, kind, rank);
+        mercenary.setInvisible(true);
         int duration = 20 * 60 * 60;
         int healthTier = Math.min(4, Math.max(0, (rank - 1) / 12));
         if (healthTier > 0) {
@@ -433,6 +443,66 @@ public final class VillageMercenarySystem {
             mercenary.addEffect(new MobEffectInstance(MobEffects.REGENERATION, duration,
                     rank >= 30 ? 1 : 0, false, false));
         }
+    }
+
+    private static void applyClassAttributes(IronGolem mercenary, MercenaryClass kind, int rank) {
+        int safeRank = Math.max(1, Math.min(MAX_LEVEL, rank));
+        double durability = VillageDefenseResearchSystem.mercenaryDurabilityMultiplier();
+        double maxHealth = (switch (kind) {
+            case BASTION -> 260.0 + (safeRank - 1) * 3.2;
+            case STRIKER -> 190.0 + (safeRank - 1) * 2.4;
+            case RANGER -> 165.0 + (safeRank - 1) * 1.9;
+            case MEDIC -> 205.0 + (safeRank - 1) * 2.2;
+        }) * durability;
+        double armor = switch (kind) {
+            case BASTION -> Math.min(22.0, 14.0 + safeRank * 0.12);
+            case STRIKER -> Math.min(16.0, 8.0 + safeRank * 0.09);
+            case RANGER -> Math.min(13.0, 6.0 + safeRank * 0.07);
+            case MEDIC -> Math.min(15.0, 8.0 + safeRank * 0.08);
+        };
+        double attack = switch (kind) {
+            case BASTION -> 10.0 + safeRank * 0.10;
+            case STRIKER -> 14.0 + safeRank * 0.18;
+            case RANGER -> 5.0 + safeRank * 0.05;
+            case MEDIC -> 6.0 + safeRank * 0.05;
+        };
+        double speed = switch (kind) {
+            case BASTION -> 0.235;
+            case STRIKER -> 0.31;
+            case RANGER -> 0.28;
+            case MEDIC -> 0.27;
+        };
+        double knockback = switch (kind) {
+            case BASTION -> 0.72;
+            case STRIKER -> 0.38;
+            case RANGER -> 0.22;
+            case MEDIC -> 0.30;
+        };
+        setBaseAttribute(mercenary, Attributes.MAX_HEALTH, maxHealth);
+        setBaseAttribute(mercenary, Attributes.ARMOR, armor);
+        setBaseAttribute(mercenary, Attributes.ATTACK_DAMAGE, attack);
+        setBaseAttribute(mercenary, Attributes.MOVEMENT_SPEED, speed);
+        setBaseAttribute(mercenary, Attributes.KNOCKBACK_RESISTANCE, knockback);
+        if (mercenary.getHealth() > mercenary.getMaxHealth()) mercenary.setHealth(mercenary.getMaxHealth());
+    }
+
+    private static void setBaseAttribute(
+            IronGolem mercenary,
+            net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute> attribute,
+            double value) {
+        var instance = mercenary.getAttribute(attribute);
+        if (instance != null) instance.setBaseValue(value);
+    }
+
+    public static int aggroCapacity(IronGolem mercenary) {
+        if (mercenary == null) return 0;
+        int rank = rank(mercenary);
+        return switch (mercenaryClass(mercenary)) {
+            case BASTION -> Math.min(16, 9 + rank / 7);
+            case STRIKER -> Math.min(8, 4 + rank / 18);
+            case RANGER -> Math.min(5, 2 + rank / 24);
+            case MEDIC -> Math.min(4, 1 + rank / 24);
+        };
     }
 
     public static synchronized MercenaryClass classOf(Mob mob) {
@@ -554,10 +624,10 @@ public final class VillageMercenarySystem {
     public record RosterEntry(UUID uuid, MercenaryClass kind, int level, int kills, boolean loaded) {}
 
     public enum MercenaryClass {
-        BASTION("bastion", "방벽 수호병", "높은 생존력과 저지력으로 성문과 시설 앞을 버팁니다."),
-        STRIKER("striker", "돌격 집행관", "공격력과 기동성이 높아 전열을 빠르게 정리합니다."),
-        RANGER("ranger", "성루 명사수", "원거리에서 적을 자동 사격하며 공중 위협을 우선 요격합니다."),
-        MEDIC("medic", "전장 치유사", "주변 플레이어와 용병을 주기적으로 회복합니다.");
+        BASTION("bastion", "방벽 수호병", "중장갑 전열병. 많은 적을 받아내며 성문과 시설 앞을 버팁니다."),
+        STRIKER("striker", "돌격 집행관", "고기동 근접 전투원. 전열의 빈틈을 빠르게 파고들어 정리합니다."),
+        RANGER("ranger", "성루 명사수", "후방 원거리 전투원. 공중 위협을 우선 요격하고 집중 사격합니다."),
+        MEDIC("medic", "전장 치유사", "후방 지원 전투원. 주변 플레이어와 용병을 주기적으로 회복합니다.");
 
         private final String id;
         private final String displayName;
