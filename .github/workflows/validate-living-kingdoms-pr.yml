@@ -52,11 +52,12 @@ jobs:
           trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
           passed=0
           for attempt in $(seq 1 1400); do
-            if grep -Eq 'LK_REALM_DIAGNOSTIC_FAIL|Exception in server tick loop|watchdog|OutOfMemoryError|NoSuchMethodError|NoClassDefFoundError' ../../logs/pr-server.log; then
+            if grep -Eq 'LK_REALM_DIAGNOSTIC_FAIL|LK_REAL_PLAY_DIAGNOSTIC_FAIL|Exception in server tick loop|watchdog|OutOfMemoryError|NoSuchMethodError|NoClassDefFoundError' ../../logs/pr-server.log; then
               cat ../../logs/pr-server.log
               exit 1
             fi
             if grep -Fq 'LK_ERDEN_GAMEPLAY_RULES_LOCK revision=1 erden_only=true' ../../logs/pr-server.log \
+              && grep -Fq 'LK_REAL_PLAY_ENTRY_PASS' ../../logs/pr-server.log \
               && grep -Fq 'LK_ERDEN_REGIONAL_SETTLEMENT_PASS revision=1 settlements=6 buildings=60' ../../logs/pr-server.log \
               && grep -Fq 'LK_ERDEN_REGIONAL_SOCIETY_PASS revision=1 settlements=6 households=48 residents=144 workers=96 dependents=48' ../../logs/pr-server.log \
               && grep -Fq 'LK_ERDEN_REGIONAL_ECONOMY_PASS revision=1 settlements=6 households=48 markets=6' ../../logs/pr-server.log \
@@ -97,6 +98,14 @@ jobs:
             | grep -F 'scripted_spawns_preserved=true' \
             | grep -F 'initial_placement_teleport_only=true' \
             | grep -F 'multiplayer_world_shared=true'
+          grep -F 'LK_REAL_PLAY_ENTRY_PASS' ../../logs/pr-server.log \
+            | grep -F 'authored_tenement=true' \
+            | grep -F 'upper_room=true' \
+            | grep -F 'walkable=true' \
+            | grep -F 'staging=false' \
+            | grep -F 'synthetic_floor=false' \
+            | grep -F 'completion_requires_real_placement=true' \
+            | grep -F 'retry_while_staged=true'
           grep -F 'LK_ERDEN_REGIONAL_ECONOMY_PASS revision=1 settlements=6 households=48 markets=6' ../../logs/pr-server.log | grep -F 'physical_barrel=true' | grep -F 'player_inventory_authoritative=true' | grep -F 'local_reserve_first=true' | grep -F 'worker_linked=true' | grep -F 'household_consumption=true' | grep -F 'local_trade_escrow=true' | grep -F 'kingdom_supply_escrow=true' | grep -F 'unloaded_aggregate=true' | grep -F 'persistent_forced_chunks=false'
 
       - name: Graphical client audit
@@ -123,7 +132,9 @@ jobs:
           outcome=timeout
           for attempt in $(seq 1 240); do
             if grep -Fq 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true' "$log" \
+              && grep -Fq 'LK_CLIENT_CLOCK_DIAGNOSTIC_PASS server_authoritative=true delayed_sample_rewind=false monotonic=true' "$log" \
               && grep -Fq 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true' "$log" \
+              && grep -Fq 'LK_CLIENT_NOTEBOOK_INPUT_PASS' "$log" \
               && grep -Fq 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' "$log"; then outcome=pass; break; fi
             if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen|Missing textures in model livingkingdoms|Could not initialize GLFW|Failed to create window' "$log"; then outcome=fatal; break; fi
             if ! kill -0 "$launcher" 2>/dev/null; then outcome=client_exit; break; fi
@@ -134,10 +145,16 @@ jobs:
           kill -KILL -- "-$pgid" 2>/dev/null || true
           wait "$launcher" 2>/dev/null || true
           if grep -Fq 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true' "$log" \
+            && grep -Fq 'LK_CLIENT_CLOCK_DIAGNOSTIC_PASS server_authoritative=true delayed_sample_rewind=false monotonic=true' "$log" \
             && grep -Fq 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true' "$log" \
+            && grep -Fq 'LK_CLIENT_NOTEBOOK_INPUT_PASS' "$log" \
             && grep -Fq 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' "$log"; then outcome=pass; fi
           cat "$log"
           test "$outcome" = pass
+          grep -F 'LK_CLIENT_CLOCK_DIAGNOSTIC_PASS' "$log" | grep -F 'server_authoritative=true' | grep -F 'delayed_sample_rewind=false' | grep -F 'monotonic=true' | grep -F 'extrapolation_cap_ticks=20' | grep -F 'client_level_time_direct=false'
+          grep -F 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS' "$log" | grep -F 'staging_completion_guard=true'
+          grep -F 'LK_CLIENT_NOTEBOOK_INPUT_PASS' "$log" | grep -F 'overview=true' | grep -F 'map=true' | grep -F 'skills=true' | grep -F 'outside_rejected=true' | grep -F 'direct_mouse_dispatch=true' | grep -F 'transparent_widget=false'
+          grep -F 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS' "$log" | grep -F 'inventory_notebook_hitboxes=true' | grep -F 'direct_mouse_dispatch=true'
 
       - name: JAR verification
         working-directory: ${{ env.PROJECT_DIR }}
@@ -151,8 +168,12 @@ jobs:
           unzip -Z1 "${jars[0]}" > "$entries"
           test "$(sort "$entries" | uniq -d | wc -l)" -eq 0
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/FantasyWorldRules.class' "$entries"
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenRealPlayRegressionDiagnostics.class' "$entries"
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/SafeResidenceLocator.class' "$entries"
           grep -Fx 'kr/moonseungjun/livingkingdoms/foundation/PlayableOriginCatalog.class' "$entries"
           grep -Fx 'kr/moonseungjun/livingkingdoms/profile/StarterLoadoutManager.class' "$entries"
+          grep -Fx 'kr/moonseungjun/livingkingdoms/network/FantasyHudStatePayload.class' "$entries"
+          grep -Fx 'kr/moonseungjun/livingkingdoms/client/RealmCodexClient.class' "$entries"
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenFantasyEcologyManager.class' "$entries"
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenRegionalSocietyManager.class' "$entries"
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenRegionalEconomyManager.class' "$entries"
