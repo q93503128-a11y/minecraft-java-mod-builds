@@ -205,9 +205,17 @@ public final class BattleAutoController {
                     engine.useSkill(actor.instanceId(), "cv_b_basic", distributedTarget(allies, actor).instanceId());
                 }
             }
-            case "CV_C" -> engine.useSkill(actor.instanceId(),
-                    actor.cooldown("cv_c_aimed") == 0 ? "cv_c_aimed" : "cv_c_basic",
-                    weakest(allies).instanceId());
+            case "CV_C" -> {
+                CombatantState aimed = state.find(actor.ref("cv_c_aim_target"));
+                if (actor.flag("cv_c_aim_ready") && actor.cooldown("cv_c_aimed") == 0) {
+                    CombatantState target = aimed != null && !aimed.downed() ? aimed : weakest(allies);
+                    engine.useSkill(actor.instanceId(), "cv_c_aimed", target.instanceId());
+                } else if (actor.cooldown("cv_c_aimed") == 0) {
+                    engine.useSkill(actor.instanceId(), "cv_c_take_aim", weakest(allies).instanceId());
+                } else {
+                    engine.useSkill(actor.instanceId(), "cv_c_basic", weakest(allies).instanceId());
+                }
+            }
             case "EL_CV01" -> {
                 CombatantState previous = state.find(actor.ref("el_cv01_last_target"));
                 CombatantState target = previous != null && !previous.downed() ? previous : weakest(allies);
