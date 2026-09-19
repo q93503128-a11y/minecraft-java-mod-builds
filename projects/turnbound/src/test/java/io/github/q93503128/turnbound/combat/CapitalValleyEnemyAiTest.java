@@ -24,7 +24,9 @@ class CapitalValleyEnemyAiTest {
         target.setGauge(500);
         boar.setGauge(1000);
         BattleState state = new BattleState(List.of(target, boar));
-        BattleAutoController.chooseAutoAction(new BattleEngine(state), state, boar);
+        BattleEngine engine = new BattleEngine(state);
+        assertEquals(boar, engine.nextReady());
+        BattleAutoController.chooseAutoAction(engine, state, boar);
         assertEquals(440, target.gauge());
         assertEquals(2, boar.cooldown("cv_a_charge"));
     }
@@ -39,7 +41,9 @@ class CapitalValleyEnemyAiTest {
         int lowBefore = low.hp();
         int healthyBefore = healthy.hp();
         BattleState state = new BattleState(List.of(low, healthy, cutthroat));
-        BattleAutoController.chooseAutoAction(new BattleEngine(state), state, cutthroat);
+        BattleEngine engine = new BattleEngine(state);
+        assertEquals(cutthroat, engine.nextReady());
+        BattleAutoController.chooseAutoAction(engine, state, cutthroat);
         assertTrue(low.hp() < lowBefore);
         assertEquals(healthyBefore, healthy.hp());
         assertEquals(2, cutthroat.cooldown("cv_b_opportunist"));
@@ -55,7 +59,9 @@ class CapitalValleyEnemyAiTest {
         int weakBefore = weak.hp();
         int healthyBefore = healthy.hp();
         BattleState state = new BattleState(List.of(weak, healthy, marksman));
-        BattleAutoController.chooseAutoAction(new BattleEngine(state), state, marksman);
+        BattleEngine engine = new BattleEngine(state);
+        assertEquals(marksman, engine.nextReady());
+        BattleAutoController.chooseAutoAction(engine, state, marksman);
         assertTrue(weak.hp() < weakBefore);
         assertEquals(healthyBefore, healthy.hp());
         assertEquals(2, marksman.cooldown("cv_c_aimed"));
