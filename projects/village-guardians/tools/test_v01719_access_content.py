@@ -85,7 +85,7 @@ def main() -> None:
     assert "BALLISTA" in towers and "ANTI_AIR" in towers and "BEACON" in towers
     assert "VillageTowerSpecializationSystem" not in towers
     assert "The campaign never hard-ends" in warfront
-    assert "return Math.min(8, 3 + Math.max(0, day - 1) / 2);" in raid
+    assert "return Math.min(7, 3 + Math.max(0, day - 1) / 4);" in raid
     print("[PASS] 콘텐츠 감사: 장비 24, 적 14, 웨이브 특성 12, 액티브 기술 20, 현행 배치 포탑 10종")
 
     audit = (ROOT / "CONTENT-AUDIT-v0.18.0.md").read_text(encoding="utf-8")
