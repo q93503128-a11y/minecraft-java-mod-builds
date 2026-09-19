@@ -19,6 +19,8 @@ public final class EnemyBattleTelegraphs {
         if (level == null || skillId == null || source == null) return;
         Vec3 aim = target == null ? source : target;
         switch (skillId) {
+            case "cv_c_take_aim" -> aimedShot(level, source, aim);
+            case "cv_c_aimed" -> shotRelease(level, source, aim);
             case "e002_aimed" -> aimedShot(level, source, aim);
             case "e003_arm" -> bursterArm(level, source);
             case "e003_explode" -> bursterRelease(level, source);
@@ -46,6 +48,13 @@ public final class EnemyBattleTelegraphs {
         Vec3 to = target.add(0, 1.0, 0);
         dottedLine(level, ParticleTypes.END_ROD, from, to, 12, 2);
         ring(level, ParticleTypes.CRIT, target.add(0, .12, 0), .38, 10);
+    }
+
+    private static void shotRelease(ServerLevel level, Vec3 source, Vec3 target) {
+        Vec3 from = source.add(0, 1.45, 0);
+        Vec3 to = target.add(0, 1.0, 0);
+        dottedLine(level, ParticleTypes.CRIT, from, to, 14, 1);
+        ring(level, ParticleTypes.END_ROD, target.add(0, .12, 0), .30, 8);
     }
 
     private static void bursterArm(ServerLevel level, Vec3 source) {
