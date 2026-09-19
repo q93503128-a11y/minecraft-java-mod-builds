@@ -464,3 +464,44 @@ UI에서 저항을 숨기지 않는다.
 - Auto와 manual 차이
 
 “숫자가 보기 좋아서” 확정하지 않는다.
+
+
+## 24. Enemy rank baseline
+
+Enemy difficulty는 HP multiplier만으로 만들지 않는다.
+
+### Common
+- mechanic 1개 이하
+- 보통 1~3 unit composition의 구성원
+- 표준 field combat의 중심
+
+### Veteran
+- common보다 약 20~35% 높은 effective durability/damage budget
+- 추가 target rule/mechanic 1개
+- 실루엣 차이 필수
+
+### Elite
+초기 budget:
+- 동일 레벨 common 2~2.7명 정도의 total pressure
+- 혼자 또는 support 1~2명
+- 2개 이상 readable pattern
+- first-clear reward
+
+### Midboss
+- common 3~4명 이상의 threat를 단순 HP로 환산하지 않음
+- 2~3 pattern
+- phase/threshold 변화 1개 이상
+- route 또는 POI의 관문
+
+### Boss
+- 최소 2 phase/pattern shift
+- telegraph
+- action-economy pressure
+- 장소와 연결된 mechanic
+- add를 쓰더라도 무한 spawn 금지
+
+### World Boss
+- 메인 진행에 필수 아님
+- 해당 지역 권장 progression보다 높을 수 있음
+- 우회 가능
+- 발견/도전 자체가 선택

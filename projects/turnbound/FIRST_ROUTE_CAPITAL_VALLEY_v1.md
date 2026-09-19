@@ -398,3 +398,39 @@ Need actual 26.2 client survey for:
 - multiplayer spawn offsets
 
 Until then exact positions remain `verifiedIn26_2=false`.
+
+
+## 18. Road enemy binding
+
+첫 route는 길을 비워두지 않는다.
+
+- roadhead: safety
+- chapel 이후: first visible common encounter
+- Tower: breathing landmark
+- warning cave: optional Elite
+- camp: breathing/rest
+- Drabyel 직전: melee+ranged road patrol
+- Drabyel: safety
+
+상세 enemy composition, Elite/Midboss/Boss hierarchy와 Av'Sal 배치는 `ENCOUNTER_ENEMY_PLACEMENT_v1.md`를 따른다.
+
+Capital Valley Tower 주변은 source map의 no-hostile landmark 성격을 보존한다.
+
+## 19. Drabyel → Av'Sal combat route
+
+Drabyel 도착 이후 첫 본격 전투 축:
+
+```text
+Drabyel safety buffer
+→ road patrol
+→ Av'Sal occupation sign
+→ first Mihkmari patrol
+→ outer-ring encounters
+→ Salvage Captain Elite
+→ north-dock Midboss
+→ central-island encounters
+→ source named-warrior special encounter if safe
+→ TURNBOUND regional boss candidate
+```
+
+전투 수는 실제 travel time과 지형 검수 후 줄일 수 있다.

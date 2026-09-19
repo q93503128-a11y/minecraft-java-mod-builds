@@ -343,7 +343,19 @@ unlock 조건:
 - generic battle transition
 - reusable NPC/quest infrastructure
 
-## 21. 완료 기준
+## 21. 적 배치 authority
+
+적 위계/길 순찰/Capital Valley/Av'Sal encounter 정본은 `ENCOUNTER_ENEMY_PLACEMENT_v1.md`를 따른다.
+
+핵심:
+- road에도 enemy patrol을 둔다.
+- Tower/camp/town은 breathing zone을 보존한다.
+- Elite는 지형/POI와 연결한다.
+- Midboss는 route/dungeon 관문에 둔다.
+- Boss는 random spawn하지 않는다.
+- original Drehmal hostile entity와 TURNBOUND encounter를 중첩하지 않는다.
+
+## 22. 완료 기준
 
 월드 한 구간은:
 - 실제 지형 확인

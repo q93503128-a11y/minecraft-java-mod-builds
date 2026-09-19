@@ -109,15 +109,29 @@ visual 수정 중 매번 build하지 않는다.
 
 ## 7. World Content
 
+Enemy placement 정본: `ENCOUNTER_ENEMY_PLACEMENT_v1.md`.
+
 survey된 장소부터:
+- road patrol
+- common encounter
 - NPC
-- encounter
-- quest
-- elite
+- optional Elite
+- Midboss
 - dungeon
-- boss
+- regional Boss / optional World Boss
+- quest
 - map marker
 를 한 route 단위로 완성.
+
+첫 production survey 우선순위:
+1. Capital Valley roadhead → Drabyel
+2. Warning Cave Elite footprint
+3. Capital Valley optional world-boss meadow 후보
+4. Drabyel → Av'Sal road patrol anchors
+5. Av'Sal outer-ring Elite
+6. north-dock Midboss footprint
+7. central-island source named-warrior handling
+8. regional-boss arena candidate
 
 ## 8. Economy / Summon
 
