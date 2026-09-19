@@ -39,7 +39,7 @@ def main() -> None:
     assert "public static void openQuickChat" in service
     assert "VillageFundingSystem" not in service
     assert "VillageSiegeCommandUi.open(player)" in local
-    assert "자동 버프 건물" in local and "전투 훈련은 패시브" in local
+    assert "자동 버프 건물" in local and "병영 훈련 효과가 적용 중" in local
 
     # Retired monolithic town/facility screens are replaced by one safe-area detail-first surface.
     assert "VillageUiSafeArea.screen(width, height)" in detail
