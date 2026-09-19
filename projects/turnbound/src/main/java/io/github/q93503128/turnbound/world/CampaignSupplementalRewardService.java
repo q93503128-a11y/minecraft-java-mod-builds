@@ -13,12 +13,16 @@ public final class CampaignSupplementalRewardService {
     public static void apply(UUID playerId, String encounterId, BattleResultSummary result) {
         if (playerId == null || encounterId == null || result == null || !result.firstClear()) return;
 
-        int crystal = switch (encounterId) {
-            case "CV_WARNING_CAVE_ELITE" -> 300;
-            // B01's existing special bundle already contains its 1,200 boss Crystal + 1,800 tutorial Crystal.
-            case "BATTLE_B02", "BATTLE_B03", "BATTLE_B04", "BATTLE_B05" -> 1_200;
-            default -> 0;
-        };
+        CampaignProgressStore.Snapshot snapshot = CampaignProgressStore.snapshot(playerId);
+        int crystal = DrehmalFirstRouteRewardRules.supplementalCrystal(
+                encounterId, result.firstClear(), snapshot.clearedEncounters());
+        if (crystal == 0) {
+            crystal = switch (encounterId) {
+                // B01's existing special bundle already contains its 1,200 boss Crystal + 1,800 tutorial Crystal.
+                case "BATTLE_B02", "BATTLE_B03", "BATTLE_B04", "BATTLE_B05" -> 1_200;
+                default -> 0;
+            };
+        }
         String choiceTier = switch (encounterId) {
             case "CV_WARNING_CAVE_ELITE" -> "T2";
             // T3 drops are explicitly unlocked by B03; B05 is the authored T4 first-clear source.
@@ -28,7 +32,6 @@ public final class CampaignSupplementalRewardService {
         };
         if (crystal == 0 && choiceTier.isBlank()) return;
 
-        CampaignProgressStore.Snapshot snapshot = CampaignProgressStore.snapshot(playerId);
         PlayerProfile profile = PlayerProfile.restore(snapshot.profile());
         EquipmentInventory equipment = EquipmentInventory.restore(snapshot.equipment());
         if (crystal > 0) profile.grant(PlayerProfile.Currency.SUMMON_CRYSTAL, crystal);
