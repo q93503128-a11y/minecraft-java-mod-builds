@@ -143,7 +143,9 @@ def main() -> None:
     assert "repairInvalidEnemyFlags(server)" in raid
     assert "recoverFrozenFinalEnemies(server)" in raid
     recovery = section(raid, "private static void recoverFrozenFinalEnemies", "private static boolean shouldRecoverStalledEnemy")
-    assert "ACTIVE_ENEMIES.size() > 2" in recovery
+    assert "ACTIVE_ENEMIES.size() > 2" not in recovery
+    assert "MAX_STALL_RECOVERIES_PER_PASS" in recovery
+    assert "waveElapsedTicks % 20 != 0" in recovery
     assert "VillageWorldSystem.northInnerApproach()" in recovery
     assert "전투 상태 복구" in recovery
     assert "distanceToSqr(nearest) > 24.0 * 24.0" not in recovery
