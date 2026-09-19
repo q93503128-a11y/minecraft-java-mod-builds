@@ -62,6 +62,6 @@ class DrehmalEncounterActivationRulesTest {
     @Test
     void victoryUsesAuthoredRespawnWhileRetreatGetsShortRetryDelay() {
         assertEquals(1800, DrehmalEncounterActivationRules.respawnTicks(90, BattleOutcome.ALLY_VICTORY));
-        assertEquals(40, DrehmalEncounterActivationRules.respawnTicks(90, BattleOutcome.FLED));
+        assertEquals(40, DrehmalEncounterActivationRules.respawnTicks(90, BattleOutcome.RUNNING));
     }
 }
