@@ -331,7 +331,7 @@ public final class MetaMenuScreen extends Screen {
     private void rebuild(){clearWidgets();init();}
     private void switchTab(Tab value){if(value==tab)return;tab=value;page=0;selectedCharacterId="";selectedEquipmentId="";rebuild();}
     private void openCharacterFromHome(String id){tab=Tab.CHARACTERS;selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;page=0;rebuild();}
-    private void openMap(){Minecraft.getInstance().gui.setScreen(new AsterMarchMapScreen());}
+    private void openMap(){Minecraft.getInstance().gui.setScreen(new DrehmalWorldMapScreen());}
     private void toggleParty(String id){if(draftParty.contains(id)){if(draftParty.size()>1)draftParty.remove(id);}else if(draftParty.size()<4)draftParty.add(id);rebuild();}
     private void saveParty(){send("PARTY|"+String.join(",",draftParty));}
     private void openCharacter(String id){selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;page=0;rebuild();}

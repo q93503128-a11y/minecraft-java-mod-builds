@@ -22,16 +22,16 @@ public final class MetaMenuKeyHandler {
         }
         if (event.getKey() == GLFW.GLFW_KEY_N) {
             if (minecraft.gui.screen() != null || ClientBattleState.snapshot().active() || !ClientFieldState.snapshot().active()) return;
-            AsterMarchMinimapLayer.toggleVisible();
+            DrehmalMinimapLayer.toggleVisible();
             return;
         }
         if (event.getKey() == GLFW.GLFW_KEY_M) {
-            if (minecraft.gui.screen() instanceof AsterMarchMapScreen screen) {
+            if (minecraft.gui.screen() instanceof DrehmalWorldMapScreen screen) {
                 screen.onClose();
                 return;
             }
             if (minecraft.gui.screen() != null || ClientBattleState.snapshot().active() || !ClientFieldState.snapshot().active()) return;
-            minecraft.gui.setScreen(new AsterMarchMapScreen());
+            minecraft.gui.setScreen(new DrehmalWorldMapScreen());
             return;
         }
 

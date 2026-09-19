@@ -18,7 +18,7 @@ import java.util.List;
  * <p>Only source-backed enabled landmarks are drawn. Exact encounter footprints and unverified runtime positions
  * are deliberately not projected onto the player map.</p>
  */
-final class AsterMarchMapScreen extends Screen {
+final class DrehmalWorldMapScreen extends Screen {
     private static final int TEXT = TurnboundUiTokens.TEXT_PRIMARY;
     private static final int SECONDARY = TurnboundUiTokens.TEXT_SECONDARY;
     private static final int MUTED = TurnboundUiTokens.TEXT_MUTED;
@@ -29,7 +29,7 @@ final class AsterMarchMapScreen extends Screen {
     private int left, top, panelWidth, panelHeight;
     private double zoom = 1.0;
 
-    AsterMarchMapScreen() { super(Component.literal("월드 지도")); }
+    DrehmalWorldMapScreen() { super(Component.literal("월드 지도")); }
 
     @Override protected void init() {
         super.init();

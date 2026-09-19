@@ -12,6 +12,7 @@ import io.github.q93503128.turnbound.client.ClientUiFeedbackLayer;
 import io.github.q93503128.turnbound.client.ClientWorldLoadingBootstrap;
 import io.github.q93503128.turnbound.client.FieldInteractionPromptLayer;
 import io.github.q93503128.turnbound.client.FieldLocationBannerLayer;
+import io.github.q93503128.turnbound.client.DrehmalMinimapLayer;
 import io.github.q93503128.turnbound.client.MetaMenuKeyHandler;
 import io.github.q93503128.turnbound.client.QuestGuideLayer;
 import io.github.q93503128.turnbound.client.VanillaHudPolicy;
@@ -30,6 +31,7 @@ public final class TurnboundClient {
         modEventBus.addListener(ClientMetaNetwork::register);
         modEventBus.addListener(ClientAudioNetwork::register);
         modEventBus.addListener((RegisterGuiLayersEvent event) -> {
+            event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "exploration_minimap"), new DrehmalMinimapLayer());
             event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "location_banner"), new FieldLocationBannerLayer());
             event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "interaction_prompt"), new FieldInteractionPromptLayer());
             event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "quest_guide"), new QuestGuideLayer());

@@ -13,12 +13,18 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.neoforge.client.gui.GuiLayer;
 import org.jetbrains.annotations.NotNull;
 
-/** Terrain-readable exploration minimap. M opens the world map; N hides/shows this HUD map. */
-public final class AsterMarchMinimapLayer implements GuiLayer {
+/**
+ * Terrain-readable Drehmal exploration minimap.
+ *
+ * <p>Unlike the retired Aster map, this layer never projects authored source anchors as exact local positions.
+ * The only non-player marker is the server-authored navigation target, whose production rule already requires
+ * verified 26.2 coordinates.</p>
+ */
+public final class DrehmalMinimapLayer implements GuiLayer {
     private static final int TEXT = TurnboundUiTokens.TEXT_PRIMARY;
     private static final int MUTED = TurnboundUiTokens.TEXT_SECONDARY;
+    private static final int TARGET = TurnboundUiTokens.ACCENT;
 
-    // 48x48 was oversized at common GUI scale 3. Keep the same 4-block sampling radius with a denser 40x40 view.
     private static final int GRID = 40;
     private static final int CELL = 2;
     private static final int STEP = 4;
@@ -37,11 +43,12 @@ public final class AsterMarchMinimapLayer implements GuiLayer {
         Minecraft minecraft = Minecraft.getInstance();
         if (!visible || minecraft.player == null || minecraft.level == null || minecraft.gui.screen() != null) return;
         if (ClientBattleState.snapshot().active()) return;
-        var field = ClientFieldState.snapshot();
+
+        FieldUiSnapshot field = ClientFieldState.snapshot();
         if (!field.active() || field.mode() == FieldUiSnapshot.Mode.LOADING) return;
 
         int panelW = MAP_SIZE + 22;
-        int panelH = MAP_SIZE + 54;
+        int panelH = MAP_SIZE + 46;
         int x = TurnboundUiTokens.S;
         int y = TurnboundUiTokens.S;
         TurnboundUiSkin.panel(graphics, x, y, panelW, panelH);
@@ -61,38 +68,34 @@ public final class AsterMarchMinimapLayer implements GuiLayer {
         double px = minecraft.player.position().x;
         double pz = minecraft.player.position().z;
         double radius = GRID * STEP / 2.0;
-        for (AsterMarchMapData.Marker marker : AsterMarchMapData.MARKERS) {
-            double dx = marker.x() - px;
-            double dz = marker.z() - pz;
-            if (Math.abs(dx) > radius || Math.abs(dz) > radius) continue;
-            int sx = mapX + MAP_SIZE / 2 + (int)Math.round(dx / STEP * CELL);
-            int sy = mapY + MAP_SIZE / 2 + (int)Math.round(dz / STEP * CELL);
-            AsterMarchMarkerStyle.drawSmall(graphics, sx, sy, marker.kind());
+        DrehmalMinimapProjection.Marker target = DrehmalMinimapProjection.navigation(
+                field.navigation(), px, pz, radius);
+        if (target != null) {
+            int sx = mapX + MAP_SIZE / 2 + (int)Math.round(target.dx() / STEP * CELL);
+            int sy = mapY + MAP_SIZE / 2 + (int)Math.round(target.dz() / STEP * CELL);
+            drawTarget(graphics, sx, sy);
         }
 
         drawPlayerArrow(graphics, mapX + MAP_SIZE / 2, mapY + MAP_SIZE / 2, minecraft.player.getYRot());
         graphics.text(minecraft.font, Component.literal("N"), mapX + MAP_SIZE - 9, mapY + 3, 0xEFFFFFFF, true);
 
         int legendY = mapY + MAP_SIZE + 4;
-        drawLegend(graphics, minecraft, mapX, legendY, AsterMarchMapData.Kind.FACILITY, "시설");
-        drawLegend(graphics, minecraft, mapX + 42, legendY, AsterMarchMapData.Kind.HUNT, "사냥");
-        drawLegend(graphics, minecraft, mapX, legendY + 10, AsterMarchMapData.Kind.RELAY, "계전");
-        drawLegend(graphics, minecraft, mapX + 42, legendY + 10, AsterMarchMapData.Kind.BOSS, "보스");
+        drawTarget(graphics, mapX + 3, legendY + 4);
+        graphics.text(minecraft.font, Component.literal("추적 목표"), mapX + 10, legendY, MUTED, false);
 
-        AsterMarchMapData.Marker nearest = AsterMarchMapData.nearest(px, pz);
         String footer;
-        if (nearest == null) footer = "주변 탐색";
-        else {
-            int distance = (int)Math.round(Math.hypot(nearest.x() - px, nearest.z() - pz));
-            footer = nearest.label() + " · " + distance + "m";
+        if (target != null) {
+            footer = target.label() + " · " + target.distance() + "m";
+        } else if (!field.locationTitle().isBlank()) {
+            footer = field.locationTitle();
+        } else if (field.navigation().active()) {
+            int distance = (int)Math.round(Math.hypot(field.navigation().x() - px, field.navigation().z() - pz));
+            footer = field.navigation().label() + " · " + distance + "m";
+        } else {
+            footer = "주변 탐색";
         }
-        graphics.text(minecraft.font, Component.literal(fit(minecraft, footer, panelW - 14)), x + 7, y + panelH - 11, MUTED, false);
-    }
-
-    private static void drawLegend(GuiGraphicsExtractor graphics, Minecraft minecraft, int x, int y,
-                                   AsterMarchMapData.Kind kind, String label) {
-        AsterMarchMarkerStyle.drawSmall(graphics, x + 3, y + 4, kind);
-        graphics.text(minecraft.font, Component.literal(label), x + 9, y, MUTED, false);
+        graphics.text(minecraft.font, Component.literal(fit(minecraft, footer, panelW - 14)),
+                x + 7, y + panelH - 11, MUTED, false);
     }
 
     private static void refreshTerrain(Minecraft minecraft) {
@@ -142,6 +145,12 @@ public final class AsterMarchMinimapLayer implements GuiLayer {
         return 0xFF000000 | (r << 16) | (g << 8) | b;
     }
 
+    private static void drawTarget(GuiGraphicsExtractor graphics, int cx, int cy) {
+        graphics.fill(cx - 3, cy - 3, cx + 4, cy + 4, 0xDD111317);
+        graphics.fill(cx - 1, cy - 4, cx + 2, cy + 5, TARGET);
+        graphics.fill(cx - 4, cy - 1, cx + 5, cy + 2, TARGET);
+    }
+
     private static void drawPlayerArrow(GuiGraphicsExtractor graphics, int cx, int cy, float yaw) {
         graphics.fill(cx - 3, cy - 3, cx + 4, cy + 4, 0xCC111317);
         int dir = Math.floorMod(Math.round(yaw / 90.0F), 4);
@@ -155,6 +164,7 @@ public final class AsterMarchMinimapLayer implements GuiLayer {
     }
 
     private static int floorToStep(double value) { return Math.floorDiv((int)Math.floor(value), STEP) * STEP; }
+
     private static String fit(Minecraft minecraft, String value, int maxWidth) {
         if (minecraft.font.width(value) <= maxWidth) return value;
         int end = value.length();
