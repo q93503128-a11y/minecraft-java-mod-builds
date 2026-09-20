@@ -11,13 +11,16 @@ public final class ClientWorldLoadingBootstrap {
     private ClientWorldLoadingBootstrap() {}
 
     public static void onTick(ClientTickEvent.Post event) {
+        ClientPresentationTransition.tick();
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null) {
             if (lastLevel != null) ClientFieldState.beginWorld();
+            ClientPresentationTransition.reset();
             lastLevel = null;
             return;
         }
         if (minecraft.level != lastLevel) {
+            ClientPresentationTransition.reset();
             lastLevel = minecraft.level;
             // On a normal join no snapshot exists yet. If networking won the race and already supplied
             // the new field snapshot, do not erase it here and wait forever for a second packet.

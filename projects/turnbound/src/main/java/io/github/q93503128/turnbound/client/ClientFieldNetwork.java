@@ -16,6 +16,7 @@ public final class ClientFieldNetwork {
     private static void handle(FieldSnapshotPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             ClientFieldState.update(payload.snapshot());
+            ClientPresentationTransition.onFieldSnapshot(ClientFieldState.snapshot());
             Minecraft minecraft = Minecraft.getInstance();
             FieldUiSnapshot snapshot = ClientFieldState.snapshot();
             ClientAudioDirector.onFieldSnapshot(snapshot);
@@ -27,6 +28,15 @@ public final class ClientFieldNetwork {
             }
             if (snapshot.mode() == FieldUiSnapshot.Mode.LOADING) {
                 if (!(minecraft.gui.screen() instanceof WorldLoadingScreen)) minecraft.gui.setScreen(new WorldLoadingScreen());
+                return;
+            }
+            if (snapshot.mode() == FieldUiSnapshot.Mode.BATTLE_TRANSITION) {
+                if (minecraft.gui.screen() instanceof FieldPanelScreen
+                        || minecraft.gui.screen() instanceof DrehmalWorldMapScreen
+                        || minecraft.gui.screen() instanceof MetaMenuScreen
+                        || minecraft.gui.screen() instanceof WorldLoadingScreen) {
+                    minecraft.gui.setScreen(null);
+                }
                 return;
             }
             if (minecraft.gui.screen() instanceof WorldLoadingScreen) minecraft.gui.setScreen(null);

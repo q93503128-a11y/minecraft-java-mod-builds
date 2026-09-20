@@ -19,6 +19,7 @@ public final class ClientBattleNetwork {
             ClientBattleState.update(payload.snapshot());
             Minecraft minecraft = Minecraft.getInstance();
             var snapshot = ClientBattleState.snapshot();
+            ClientPresentationTransition.onBattleSnapshot(wasActive, snapshot);
             ClientAudioDirector.onBattleSnapshot(snapshot);
 
             if (snapshot.active()) {

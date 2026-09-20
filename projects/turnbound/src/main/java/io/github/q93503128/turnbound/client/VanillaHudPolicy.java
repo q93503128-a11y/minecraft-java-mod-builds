@@ -19,10 +19,11 @@ public final class VanillaHudPolicy {
                 || name.equals(VanillaGuiLayers.CONTEXTUAL_INFO_BAR)
                 || name.equals(VanillaGuiLayers.SELECTED_ITEM_NAME);
 
-        boolean rpgSession = ClientFieldState.snapshot().active() || ClientBattleState.snapshot().active();
+        boolean rpgSession = ClientPresentationTransition.rpgHudOwned();
         boolean hotbar = rpgSession && name.equals(VanillaGuiLayers.HOTBAR);
-        // Field exploration keeps a crosshair for entity/facility interaction. Battle targeting owns its own cursor.
-        boolean battleCrosshair = ClientBattleState.snapshot().active() && name.equals(VanillaGuiLayers.CROSSHAIR);
+        // Field exploration keeps a crosshair; battle handoff/targeting owns it.
+        boolean battleCrosshair = ClientPresentationTransition.battlePresentationOwned()
+                && name.equals(VanillaGuiLayers.CROSSHAIR);
         if ((rpgSession && survivalShell) || hotbar || battleCrosshair) event.setCanceled(true);
     }
 }

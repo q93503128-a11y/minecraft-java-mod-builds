@@ -48,7 +48,7 @@ public final class WorldLoadingScreen extends Screen {
         graphics.fill(x, y, x + 3, y + h, GAUGE);
 
         graphics.text(font, Component.literal("TURNBOUND"), x + 16, y + 14, TEXT, true);
-        graphics.text(font, Component.literal("ASTER MARCH · 월드 준비"), x + 16, y + 31, SECONDARY, true);
+        graphics.text(font, Component.literal("TURNBOUND · 월드 연결"), x + 16, y + 31, SECONDARY, true);
         String stage = waitingForSnapshot ? "세션 연결 중" : snapshot.loadingStage().isBlank() ? "월드 준비" : snapshot.loadingStage();
         graphics.text(font, Component.literal(stage), x + 16, y + 55, TEXT, true);
 
