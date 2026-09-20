@@ -29,6 +29,10 @@ public final class MetaNetwork {
                     if (!(context.player() instanceof ServerPlayer player)) return;
                     String raw = payload.command();
                     if (raw == null || raw.isBlank()) return;
+                    if ("GACHA_DONE".equals(raw)) {
+                        GachaPresentationActorService.finish(player);
+                        return;
+                    }
 
                     String denial = RuntimeMetaActionGate.denial(player, raw);
                     if (!denial.isBlank()) {

@@ -1,5 +1,6 @@
 package io.github.q93503128.turnbound.world;
 
+import io.github.q93503128.turnbound.Turnbound;
 import io.github.q93503128.turnbound.network.GachaPresentationPayload;
 import io.github.q93503128.turnbound.progression.GachaService;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
@@ -22,10 +23,13 @@ public final class GachaPresentationService {
                 default -> throw new IllegalStateException("Unsupported summon action");
             };
             CampaignPersistence.saveIfDirty(player);
+            GachaPresentationActorService.begin(player, result);
             PacketDistributor.sendToPlayer(player, new GachaPresentationPayload(encode(action, result)));
             MetaNetwork.sync(player);
         } catch (RuntimeException ex) {
-            player.sendSystemMessage(Component.literal("TURNBOUND · 소환 실패: " + ex.getMessage()));
+            GachaPresentationActorService.finish(player);
+            Turnbound.LOGGER.warn("Summon presentation/action failed for {}", player.getUUID(), ex);
+            player.sendSystemMessage(Component.literal("소환을 완료하지 못했습니다. 잠시 후 다시 시도해 주세요."));
             MetaNetwork.sync(player);
         }
         return true;
