@@ -623,3 +623,33 @@ Verification boundary:
 - NeoForge 26.2 dedicated-server smoke reached Done (4.971s).
 - Verified JAR SHA-256: `0aea6148af0236a70546f522bcaaa039488d2e5790fd723a3badacb49cafe168`.
 - This does **not** establish that 260 ms is the final best client feel, that fast consecutive Gauge changes never visually crowd each other, or that every GUI Scale keeps portrait motion readable. CLIENT RUNTIME TESTED / PLAYTESTED remain NO until the later 26.2 client pass.
+
+
+### authoritative signature payoff-beat follow-up
+
+Persistent resource pose and target-relation readability solved the "what state am I in?" question, but the highest-value signature moments still needed to read as authored character actions when the mechanic actually pays off.
+
+TURNBOUND application:
+- payoff presentation is recognized only from already-resolved authoritative `BattleEvent` records; it does not predict a proc or duplicate combat logic on the presentation side;
+- P01 Focus/Breaker follow-ups receive a short second-cut sword beat rather than looking like ordinary residual damage;
+- P03 redirect counter receives a shield-load / counter-impact beat tied to the authoritative `P03_REDIRECT_COUNTER` reaction;
+- P04 Sanctuary emergency healing now has a distinct Elysia-to-target support beat and is also handled by the existing buff feedback path;
+- P05 Cross Shot receives a dedicated launcher/sight snap and crossed projectile accent;
+- P06 Condolence now publishes a presentation `RESOURCE` event only when Records are actually consumed, so the paper-collapse beat is driven by the real spend; Last Page self-revive receives its own longer `signature_return` animation and revive VFX grammar;
+- P07 partner reactions use Toto's authored movement rather than a generic reaction only; Joint Attack also triggers Marion's contract-totem beat so the mechanic reads as a pair action;
+- P08 high-Fury follow-up and Overheat activation have separate axe/body payoff accents, while the persistent Overheat body-language loop remains responsible for the ongoing state;
+- payoff animation is on a dedicated additive GeckoLib controller, leaving the main combat controller responsible for Basic/Active/move/hit/death/revive/victory;
+- VFX origins use the current presentation-actor position when available, so reaction beats remain attached to lunging/returning actors instead of always snapping to formation-home coordinates;
+- the P07 Signature Toto visual previously pointed at the generic common animation path. It now uses the authored `toto` animation set and prefix, restoring parity for existing Toto body-language and the new payoff clip while preserving the Signature model attachment;
+- the only combat-runtime addition in this pass is the explicit P06 record-spend presentation event. It does not alter damage, Records spent, Gauge, target choice, cooldowns or authority.
+
+Contract coverage:
+- pure tests map authoritative event type/detail to the intended signature beat and reject ordinary damage;
+- hero asset tests require `signature_payoff` for P01/P03/P04/P05/P06/P07/P08/Toto and `signature_return` for P06;
+- the Morwen runtime test now proves a five-Record Condolence consumes three and publishes `P06_RECORD_SPEND=-3`.
+
+Verification boundary:
+- Build TURNBOUND #840 passed the complete test/build workflow at code commit `717f1cd1f219acf8f92992914b749e2d61e6974a`.
+- NeoForge 26.2 dedicated-server smoke reached Done (6.175s).
+- Verified JAR SHA-256: `627810952de822e0895f4dfb17fff8ce1b9d7ed1feb74b19ab2f0cb00e5ea11e`.
+- This does **not** prove final hit-stop feel, additive-animation amplitude/blending, VFX density, camera readability or audio/VFX timing in the real client. CLIENT RUNTIME TESTED / PLAYTESTED / MULTIPLAYER TESTED remain NO.
