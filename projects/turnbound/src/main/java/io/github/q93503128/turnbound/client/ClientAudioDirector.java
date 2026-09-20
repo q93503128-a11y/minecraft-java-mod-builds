@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Canonical v0.4 audio routing state.
+ * Production audio routing state.
  *
  * Owns the six production music roles, cross-fade state, and SFX concurrency budgets consumed by
  * {@link ClientAudioPlayback}. Resource filenames and license provenance are recorded in AUDIO_ASSETS.md.

@@ -20,7 +20,7 @@ Upstream license references:
 
 ## Sound effects
 
-All eleven SFX in this batch are copied from `lavenderdotpet/CC0-Public-Domain-Sounds`, whose repository license is CC0-1.0 and whose RPG SFX folder is explicitly distributed as `80-CC0-RPG-SFX`.
+The generic combat SFX and the eight core-hero action timbres are copied from `lavenderdotpet/CC0-Public-Domain-Sounds`, whose repository license is CC0-1.0 and whose RPG SFX folder is explicitly distributed as `80-CC0-RPG-SFX`. Core-hero action samples are only the wind-up/cast/swing layer; authoritative DAMAGE/HEAL/BARRIER/REVIVE events still add their separate impact/support layer at runtime.
 
 | Target | Source asset |
 |---|---|
@@ -35,6 +35,14 @@ All eleven SFX in this batch are copied from `lavenderdotpet/CC0-Public-Domain-S
 | `sounds/sfx/down.ogg` | `80-CC0-RPG-SFX/creature_die_01.ogg` |
 | `sounds/sfx/boss_phase.ogg` | `80-CC0-RPG-SFX/creature_roar_02.ogg` |
 | `sounds/sfx/spawn.ogg` | `80-CC0-RPG-SFX/spell_fire_03.ogg` |
+| `sounds/sfx/heroes/kyren.ogg` | `80-CC0-RPG-SFX/blade_02.ogg` |
+| `sounds/sfx/heroes/lumea.ogg` | `80-CC0-RPG-SFX/item_gem_03.ogg` |
+| `sounds/sfx/heroes/bram.ogg` | `80-CC0-RPG-SFX/metal_02.ogg` |
+| `sounds/sfx/heroes/elysia.ogg` | `80-CC0-RPG-SFX/item_gem_02.ogg` |
+| `sounds/sfx/heroes/lynette.ogg` | `80-CC0-RPG-SFX/lock_03.ogg` |
+| `sounds/sfx/heroes/morwen.ogg` | `80-CC0-RPG-SFX/book_03.ogg` |
+| `sounds/sfx/heroes/marion.ogg` | `80-CC0-RPG-SFX/item_wood_03.ogg` |
+| `sounds/sfx/heroes/raze.ogg` | `80-CC0-RPG-SFX/metal_03.ogg` |
 
 Upstream license reference:
 - `https://github.com/lavenderdotpet/CC0-Public-Domain-Sounds`
@@ -47,4 +55,4 @@ The filenames above are canonical. They must stay synchronized with:
 - `ClientAudioDirector`
 - `ClientAudioPlayback`
 
-The BGM files are streamed by Minecraft. The SFX files are non-streaming one-shots.
+The BGM files are streamed by Minecraft. The SFX files are non-streaming one-shots. P01~P08 keep one coherent timbre family each; Basic/Active A/Active B are separated by authored gain/pitch/priority rather than multiplying resource files, and resolved impacts remain a second event-driven layer.

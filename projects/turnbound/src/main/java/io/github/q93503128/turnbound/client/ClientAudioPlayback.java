@@ -1,6 +1,7 @@
 package io.github.q93503128.turnbound.client;
 
 import io.github.q93503128.turnbound.TurnboundSounds;
+import io.github.q93503128.turnbound.presentation.HeroSkillAudioStyle;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
@@ -21,6 +22,14 @@ public final class ClientAudioPlayback {
     private static final Map<ClientAudioDirector.MusicSlot, Supplier<SoundEvent>> MUSIC = new EnumMap<>(ClientAudioDirector.MusicSlot.class);
     private static final Map<String, Supplier<SoundEvent>> SFX = Map.ofEntries(
             Map.entry("skill", () -> TurnboundSounds.SFX_SKILL.get()),
+            Map.entry("hero_kyren", () -> TurnboundSounds.SFX_HERO_KYREN.get()),
+            Map.entry("hero_lumea", () -> TurnboundSounds.SFX_HERO_LUMEA.get()),
+            Map.entry("hero_bram", () -> TurnboundSounds.SFX_HERO_BRAM.get()),
+            Map.entry("hero_elysia", () -> TurnboundSounds.SFX_HERO_ELYSIA.get()),
+            Map.entry("hero_lynette", () -> TurnboundSounds.SFX_HERO_LYNETTE.get()),
+            Map.entry("hero_morwen", () -> TurnboundSounds.SFX_HERO_MORWEN.get()),
+            Map.entry("hero_marion", () -> TurnboundSounds.SFX_HERO_MARION.get()),
+            Map.entry("hero_raze", () -> TurnboundSounds.SFX_HERO_RAZE.get()),
             Map.entry("hit_light", () -> TurnboundSounds.SFX_HIT_LIGHT.get()),
             Map.entry("hit_heavy", () -> TurnboundSounds.SFX_HIT_HEAVY.get()),
             Map.entry("reaction_hit", () -> TurnboundSounds.SFX_REACTION_HIT.get()),
@@ -98,14 +107,16 @@ public final class ClientAudioPlayback {
         for (ClientAudioDirector.Cue cue : cues) {
             Supplier<SoundEvent> supplier = SFX.get(cue.id());
             if (supplier == null) continue;
-            float volume = switch (cue.group()) {
+            HeroSkillAudioStyle.Style heroStyle = HeroSkillAudioStyle.resolveCue(cue.id(), cue.detail());
+            float volume = heroStyle != null ? heroStyle.volume() : switch (cue.group()) {
                 case IMPACT -> cue.priority() >= 3 ? 0.92F : 0.72F;
                 case REACTION -> 0.88F;
                 case SUPPORT -> 0.68F;
                 case SYSTEM -> cue.priority() >= 3 ? 0.94F : 0.82F;
                 case SKILL -> 0.62F;
             };
-            float pitch = 0.96F + Math.min(3, Math.max(0, cue.priority())) * 0.025F;
+            float pitch = heroStyle != null ? heroStyle.pitch()
+                    : 0.96F + Math.min(3, Math.max(0, cue.priority())) * 0.025F;
             ClientBattleState.Unit unit = cueUnit(snapshot, cue);
             double x = unit != null ? unit.x() : minecraft.player.getX();
             double y = unit != null ? unit.y() : minecraft.player.getY();
@@ -116,7 +127,7 @@ public final class ClientAudioPlayback {
 
     private static ClientBattleState.Unit cueUnit(ClientBattleState.Snapshot snapshot, ClientAudioDirector.Cue cue) {
         if (snapshot == null || snapshot.units().isEmpty()) return null;
-        boolean sourceCentric = "skill".equals(cue.id()) || "boss_phase".equals(cue.id());
+        boolean sourceCentric = "skill".equals(cue.id()) || cue.id().startsWith("hero_") || "boss_phase".equals(cue.id());
         String preferred = sourceCentric ? cue.sourceId() : cue.targetId();
         String fallback = sourceCentric ? cue.targetId() : cue.sourceId();
         ClientBattleState.Unit unit = findUnit(snapshot, preferred);

@@ -4,6 +4,7 @@ import io.github.q93503128.turnbound.combat.BattleEvent;
 import io.github.q93503128.turnbound.combat.BattleState;
 import io.github.q93503128.turnbound.combat.CombatantState;
 import io.github.q93503128.turnbound.network.AudioCuePayload;
+import io.github.q93503128.turnbound.presentation.HeroSkillAudioStyle;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -27,10 +28,10 @@ final class BattleAudioEmitter {
         if (!cues.isEmpty()) PacketDistributor.sendToPlayer(player, new AudioCuePayload(String.join("\n", cues)));
     }
 
-    private static String cue(BattleState state, BattleEvent event) {
+    static String cue(BattleState state, BattleEvent event) {
         String type = event.type();
         return switch (type) {
-            case "ACTION" -> encode("skill", "SKILL", 2, event);
+            case "ACTION" -> actionCue(state, event);
             case "DAMAGE" -> encode(heavy(state, event) ? "hit_heavy" : "hit_light", "IMPACT", heavy(state, event) ? 3 : 1, event);
             case "REACTION_DAMAGE" -> encode("reaction_hit", "REACTION", 3, event);
             case "DOT" -> encode("dot_tick", "IMPACT", 1, event);
@@ -42,6 +43,15 @@ final class BattleAudioEmitter {
             case "SPAWN" -> encode("spawn", "SYSTEM", 2, event);
             default -> null;
         };
+    }
+
+    private static String actionCue(BattleState state, BattleEvent event) {
+        CombatantState source = state.find(event.sourceId());
+        HeroSkillAudioStyle.Style style = source == null ? null
+                : HeroSkillAudioStyle.resolve(source.definition().id(), event.detail());
+        return style == null
+                ? encode("skill", "SKILL", 2, event)
+                : encode(style.cueId(), "SKILL", style.priority(), event);
     }
 
     private static boolean heavy(BattleState state, BattleEvent event) {

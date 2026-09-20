@@ -19,6 +19,14 @@ public final class TurnboundSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> MUSIC_BATTLE_FINAL = register("music.battle_final");
 
     public static final DeferredHolder<SoundEvent, SoundEvent> SFX_SKILL = register("sfx.skill");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SFX_HERO_KYREN = register("sfx.hero.kyren");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SFX_HERO_LUMEA = register("sfx.hero.lumea");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SFX_HERO_BRAM = register("sfx.hero.bram");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SFX_HERO_ELYSIA = register("sfx.hero.elysia");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SFX_HERO_LYNETTE = register("sfx.hero.lynette");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SFX_HERO_MORWEN = register("sfx.hero.morwen");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SFX_HERO_MARION = register("sfx.hero.marion");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SFX_HERO_RAZE = register("sfx.hero.raze");
     public static final DeferredHolder<SoundEvent, SoundEvent> SFX_HIT_LIGHT = register("sfx.hit_light");
     public static final DeferredHolder<SoundEvent, SoundEvent> SFX_HIT_HEAVY = register("sfx.hit_heavy");
     public static final DeferredHolder<SoundEvent, SoundEvent> SFX_REACTION_HIT = register("sfx.reaction_hit");
