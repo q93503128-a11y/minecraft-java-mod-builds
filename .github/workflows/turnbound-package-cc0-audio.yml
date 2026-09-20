@@ -55,7 +55,8 @@ jobs:
           ROOT='projects/turnbound/src/main/resources/assets/turnbound/sounds'
           MUSIC="$ROOT/music"
           SFX="$ROOT/sfx"
-          mkdir -p "$MUSIC" "$SFX"
+          HERO="$SFX/heroes"
+          mkdir -p "$MUSIC" "$SFX" "$HERO"
 
           fetch() {
             local url="$1"
@@ -88,7 +89,16 @@ jobs:
           fetch "$S/creature_roar_02.ogg" "$SFX/boss_phase.ogg"
           fetch "$S/spell_fire_03.ogg" "$SFX/spawn.ogg"
 
-      - name: Validate all 17 audio files
+          fetch "$S/blade_02.ogg" "$HERO/kyren.ogg"
+          fetch "$S/item_gem_03.ogg" "$HERO/lumea.ogg"
+          fetch "$S/metal_02.ogg" "$HERO/bram.ogg"
+          fetch "$S/item_gem_02.ogg" "$HERO/elysia.ogg"
+          fetch "$S/lock_03.ogg" "$HERO/lynette.ogg"
+          fetch "$S/book_03.ogg" "$HERO/morwen.ogg"
+          fetch "$S/item_wood_03.ogg" "$HERO/marion.ogg"
+          fetch "$S/metal_03.ogg" "$HERO/raze.ogg"
+
+      - name: Validate all 25 audio files
         shell: bash
         run: |
           set -euo pipefail
@@ -111,9 +121,17 @@ jobs:
             sfx/down.ogg
             sfx/boss_phase.ogg
             sfx/spawn.ogg
+            sfx/heroes/kyren.ogg
+            sfx/heroes/lumea.ogg
+            sfx/heroes/bram.ogg
+            sfx/heroes/elysia.ogg
+            sfx/heroes/lynette.ogg
+            sfx/heroes/morwen.ogg
+            sfx/heroes/marion.ogg
+            sfx/heroes/raze.ogg
           )
 
-          test "${#expected[@]}" -eq 17
+          test "${#expected[@]}" -eq 25
           for rel in "${expected[@]}"; do
             path="$ROOT/$rel"
             test -s "$path"
@@ -131,8 +149,8 @@ jobs:
             printf '%-32s codec=%s duration=%ss size=%s\n' "$rel" "$codec" "$duration" "$(stat -c%s "$path")"
           done
 
-          count="$(find "$ROOT/music" "$ROOT/sfx" -maxdepth 1 -type f -name '*.ogg' | wc -l)"
-          test "$count" -eq 17
+          count="$(find "$ROOT/music" "$ROOT/sfx" -type f -name '*.ogg' | wc -l)"
+          test "$count" -eq 25
 
       - name: Validate sounds.json contract
         shell: bash
@@ -162,6 +180,14 @@ jobs:
               'sfx.down': 'sfx/down',
               'sfx.boss_phase': 'sfx/boss_phase',
               'sfx.spawn': 'sfx/spawn',
+              'sfx.hero.kyren': 'sfx/heroes/kyren',
+              'sfx.hero.lumea': 'sfx/heroes/lumea',
+              'sfx.hero.bram': 'sfx/heroes/bram',
+              'sfx.hero.elysia': 'sfx/heroes/elysia',
+              'sfx.hero.lynette': 'sfx/heroes/lynette',
+              'sfx.hero.morwen': 'sfx/heroes/morwen',
+              'sfx.hero.marion': 'sfx/heroes/marion',
+              'sfx.hero.raze': 'sfx/heroes/raze',
           }
           for event, suffix in expected.items():
               assert event in data, f'missing event: {event}'
@@ -170,7 +196,7 @@ jobs:
               name = entry['name'] if isinstance(entry, dict) else entry
               assert name == f'turnbound:{suffix}', (event, name)
               assert (root / 'sounds' / f'{suffix}.ogg').is_file(), suffix
-          print('sounds.json contract: OK (17/17)')
+          print('sounds.json contract: OK (25/25)')
           PY
 
       - name: Java 25 clean build
@@ -206,13 +232,41 @@ jobs:
             assets/turnbound/sounds/sfx/down.ogg
             assets/turnbound/sounds/sfx/boss_phase.ogg
             assets/turnbound/sounds/sfx/spawn.ogg
+            assets/turnbound/sounds/sfx/heroes/kyren.ogg
+            assets/turnbound/sounds/sfx/heroes/lumea.ogg
+            assets/turnbound/sounds/sfx/heroes/bram.ogg
+            assets/turnbound/sounds/sfx/heroes/elysia.ogg
+            assets/turnbound/sounds/sfx/heroes/lynette.ogg
+            assets/turnbound/sounds/sfx/heroes/morwen.ogg
+            assets/turnbound/sounds/sfx/heroes/marion.ogg
+            assets/turnbound/sounds/sfx/heroes/raze.ogg
           )
           jar tf "$JAR" > /tmp/turnbound-jar.txt
           for rel in "${expected[@]}"; do
             grep -Fxq "$rel" /tmp/turnbound-jar.txt
           done
-          test "$(grep -Ec '^assets/turnbound/sounds/(music|sfx)/.*\.ogg$' /tmp/turnbound-jar.txt)" -eq 17
-          echo 'JAR audio contract: OK (17/17)'
+          test "$(grep -Ec '^assets/turnbound/sounds/(music|sfx)/.*\.ogg
+
+      - name: Diff sanity
+        run: git diff --check
+
+      - name: Commit verified production audio
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/turnbound/src/main/resources/assets/turnbound/sounds/music \
+                  projects/turnbound/src/main/resources/assets/turnbound/sounds/sfx
+          if git diff --cached --quiet; then
+            echo 'Audio files already match the verified source set.'
+            exit 0
+          fi
+          git commit -m 'assets(turnbound): package verified CC0 production audio [skip ci]'
+          git pull --rebase origin turnbound-alpha17-full-v04
+          git push origin HEAD:turnbound-alpha17-full-v04
+ /tmp/turnbound-jar.txt)" -eq 25
+          echo 'JAR audio contract: OK (25/25)'
 
       - name: Diff sanity
         run: git diff --check
