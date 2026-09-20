@@ -11,16 +11,16 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class BattleAudioEmitterTest {
+class BattleAudioCueRoutingTest {
     @Test
     void coreHeroActionUsesHeroPaletteWhileEnemyKeepsGenericSkillCue() {
         CombatantState kyren = new CombatantState("kyren", CanonicalData.definition("P01"), CombatantSide.ALLY, 0);
         CombatantState enemy = new CombatantState("enemy", CanonicalData.definition("E001"), CombatantSide.ENEMY, 0);
         BattleState state = new BattleState(List.of(kyren, enemy));
 
-        String heroCue = BattleAudioEmitter.cue(state,
+        String heroCue = BattleAudioCueRouting.cue(state,
                 new BattleEvent("ACTION", kyren.instanceId(), enemy.instanceId(), 0, "p01_breaker_strike"));
-        String enemyCue = BattleAudioEmitter.cue(state,
+        String enemyCue = BattleAudioCueRouting.cue(state,
                 new BattleEvent("ACTION", enemy.instanceId(), kyren.instanceId(), 0, enemy.definition().basicSkillId()));
 
         assertTrue(heroCue.startsWith("hero_kyren|SKILL|3|"));
