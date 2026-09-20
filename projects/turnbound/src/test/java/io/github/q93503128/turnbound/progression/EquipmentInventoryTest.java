@@ -34,14 +34,15 @@ class EquipmentInventoryTest {
     void signatureRequiresCorrectOwnerButNotLegacyStarPromotionAndHasOneTenMilestone() {
         EquipmentInventory inventory = EquipmentInventory.empty();
         EquipmentInventory.Item signature = inventory.grant("sig_p01_unending_vow");
-        assertThrows(IllegalArgumentException.class, () -> inventory.equip("P03", signature.instanceId()));
-        inventory.equip("P01", signature.instanceId());
+        String signatureId = signature.instanceId();
+        assertThrows(IllegalArgumentException.class, () -> inventory.equip("P03", signatureId));
+        inventory.equip("P01", signatureId);
         assertTrue(inventory.fixedRules("P01").contains("FOCUS3_ACTIVE1_GAUGE_60"));
 
         PlayerProfile profile = PlayerProfile.restore(new PlayerProfile.Snapshot(
                 1_000_000, 0, 0, 0, Set.of("P01"), 0, false, false));
         for (int i = 0; i < GrowthRulesV1.maxEnhancement(); i++) {
-            signature = inventory.enhance(signature.instanceId(), profile);
+            signature = inventory.enhance(signatureId, profile);
         }
         assertTrue(inventory.fixedRules("P01").contains("FOCUS3_KILL_NEXT_FOCUS_PLUS_1"));
         assertFalse(inventory.fixedRules("P01").contains("ACTIVE1_FOCUS_KILL_CD_MINUS_1"));
