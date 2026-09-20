@@ -180,7 +180,31 @@ public final class VillageEquipmentShop {
         PHOENIX_CHEST("phoenix_chest", "불사조 수호흉갑", Category.ARMOR, Items.NETHERITE_CHESTPLATE, 12, 1320,
                 "받는 피해 13% 감소 · 기술 효과 +8%", 1.00f, 1.00f, 1.08f, 0.13f, 0),
         WAR_CROWN("war_crown", "끝없는 전쟁왕관", Category.ARMOR, Items.NETHERITE_HELMET, 14, 1580,
-                "받는 피해 10% 감소 · 기술 효과 +12% · 재사용 -1초", 1.00f, 1.00f, 1.12f, 0.10f, 1);
+                "받는 피해 10% 감소 · 기술 효과 +12% · 재사용 -1초", 1.00f, 1.00f, 1.12f, 0.10f, 1),
+        BLACKWALL_GREATSWORD("blackwall_greatsword", "흑벽 대검", Category.EQUIPMENT, Items.NETHERITE_SWORD, 20, 2100,
+                "근접 피해 +34% · 기술 효과 +8%", 1.34f, 1.00f, 1.08f, 0.00f, 0),
+        SKYWARD_CROSSBOW("skyward_crossbow", "천공 요격쇠뇌", Category.EQUIPMENT, Items.CROSSBOW, 25, 2450,
+                "원거리 피해 +38% · 기술 재사용 -1초", 1.00f, 1.38f, 1.00f, 0.00f, 1),
+        RIFT_AEGIS("rift_aegis", "균열 수호방패", Category.ARMOR, Items.SHIELD, 30, 2800,
+                "받는 피해 14% 감소 · 기술 효과 +8%", 1.00f, 1.00f, 1.08f, 0.14f, 0),
+        STORM_LONGBOW("storm_longbow", "폭풍추적 장궁", Category.EQUIPMENT, Items.BOW, 40, 3400,
+                "원거리 피해 +44% · 기술 효과 +8%", 1.00f, 1.44f, 1.08f, 0.00f, 0),
+        NECRO_BREAKER("necro_breaker", "사령파쇄 전투망치", Category.EQUIPMENT, Items.MACE, 50, 4100,
+                "근접 피해 +42% · 기술 효과 +12%", 1.42f, 1.00f, 1.12f, 0.00f, 0),
+        ECLIPSE_PLATE("eclipse_plate", "일식 성채흉갑", Category.ARMOR, Items.NETHERITE_CHESTPLATE, 55, 4450,
+                "받는 피해 16% 감소 · 기술 효과 +8%", 1.00f, 1.00f, 1.08f, 0.16f, 0),
+        WARCASTER_FOCUS("warcaster_focus", "전쟁비전 집중봉", Category.EQUIPMENT, Items.BLAZE_ROD, 60, 4900,
+                "직업 기술 효과 +42% · 기술 재사용 -2초", 1.00f, 1.00f, 1.42f, 0.00f, 2),
+        ABYSS_AXE("abyss_axe", "심연 집행도끼", Category.EQUIPMENT, Items.NETHERITE_AXE, 70, 5650,
+                "근접 피해 +50% · 기술 효과 +6%", 1.50f, 1.00f, 1.06f, 0.00f, 0),
+        BASTION_CROWN("bastion_crown", "불락 성채관", Category.ARMOR, Items.NETHERITE_HELMET, 75, 6100,
+                "받는 피해 15% 감소 · 기술 효과 +12%", 1.00f, 1.00f, 1.12f, 0.15f, 0),
+        DOOMSTAR_BOW("doomstar_bow", "멸망성 장궁", Category.EQUIPMENT, Items.BOW, 80, 6700,
+                "원거리 피해 +55% · 기술 효과 +10% · 재사용 -1초", 1.00f, 1.55f, 1.10f, 0.00f, 1),
+        LAST_GUARD_BLADE("last_guard_blade", "최후수호 절단검", Category.EQUIPMENT, Items.NETHERITE_SWORD, 90, 7600,
+                "근접 피해 +58% · 기술 효과 +12% · 재사용 -1초", 1.58f, 1.00f, 1.12f, 0.00f, 1),
+        CENTURY_AEGIS("century_aegis", "백일 결전방패", Category.ARMOR, Items.SHIELD, 100, 8800,
+                "받는 피해 18% 감소 · 기술 효과 +15% · 재사용 -1초", 1.00f, 1.00f, 1.15f, 0.18f, 1);
 
         private final String id;
         private final String displayName;
@@ -234,10 +258,7 @@ public final class VillageEquipmentShop {
         }
 
         public int combatTier() {
-            if (requiredDay >= 10) return 4;
-            if (requiredDay >= 7) return 3;
-            if (requiredDay >= 4) return 2;
-            return 1;
+            return VillageEquipmentRaritySystem.combatTierForDay(requiredDay);
         }
 
         public ItemStack createStack() {

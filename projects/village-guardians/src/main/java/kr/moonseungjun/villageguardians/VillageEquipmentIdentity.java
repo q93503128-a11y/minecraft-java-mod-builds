@@ -35,7 +35,7 @@ public final class VillageEquipmentIdentity {
         if (stack == null || stack.isEmpty()) return;
         CompoundTag tag = tagCopy(stack);
         tag.putBoolean(KEY_MARKER, true);
-        tag.putInt(KEY_POWER_TIER, Math.max(1, Math.min(4, tier)));
+        tag.putInt(KEY_POWER_TIER, Math.max(1, Math.min(10, tier)));
         stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
     }
 
@@ -66,7 +66,7 @@ public final class VillageEquipmentIdentity {
     public static int powerTier(ItemStack stack) {
         if (!stamped(stack)) return 0;
         CustomData data = stack.get(DataComponents.CUSTOM_DATA);
-        return data == null ? 0 : Math.max(0, Math.min(4, data.copyTag().getIntOr(KEY_POWER_TIER, 0)));
+        return data == null ? 0 : Math.max(0, Math.min(10, data.copyTag().getIntOr(KEY_POWER_TIER, 0)));
     }
 
     public static boolean canReadLegacyName(ItemStack stack) {

@@ -228,9 +228,15 @@ public final class VillageEquipmentRaritySystem {
 
     public static String combatTierName(ItemStack stack) {
         return switch (combatTier(stack)) {
-            case 2 -> "II · 정예";
+            case 2 -> "II · 숙련";
             case 3 -> "III · 전쟁";
-            case 4 -> "IV · 종결";
+            case 4 -> "IV · 공성";
+            case 5 -> "V · 정예";
+            case 6 -> "VI · 역전";
+            case 7 -> "VII · 대공세";
+            case 8 -> "VIII · 재앙";
+            case 9 -> "IX · 최후";
+            case 10 -> "X · 결전";
             default -> "I · 초전";
         };
     }
@@ -254,25 +260,28 @@ public final class VillageEquipmentRaritySystem {
         if (projectile && !isProjectile(item)) return 0.0f;
         if (!projectile && !isMelee(item)) return 0.0f;
         int tier = combatTier(stack);
-        return projectile ? switch (tier) {
-            case 2 -> 1.25f;
-            case 3 -> 2.50f;
-            case 4 -> 4.00f;
-            default -> 0.0f;
-        } : switch (tier) {
-            case 2 -> 1.50f;
-            case 3 -> 3.00f;
-            case 4 -> 5.00f;
-            default -> 0.0f;
-        };
+        return flatTierBonus(tier, projectile);
+    }
+
+    private static float flatTierBonus(int tier, boolean projectile) {
+        int safe = Math.max(1, Math.min(10, tier));
+        if (safe <= 1) return 0.0f;
+        if (projectile) {
+            if (safe == 2) return 1.25f;
+            if (safe == 3) return 2.50f;
+            if (safe == 4) return 4.00f;
+            float n = safe - 4;
+            return 4.00f + n * 2.05f + n * n * 0.12f;
+        }
+        if (safe == 2) return 1.50f;
+        if (safe == 3) return 3.00f;
+        if (safe == 4) return 5.00f;
+        float n = safe - 4;
+        return 5.00f + n * 2.25f + n * n * 0.14f;
     }
 
     public static int combatTierForDay(int day) {
-        int safe = Math.max(1, day);
-        if (safe >= 15) return 4;
-        if (safe >= 10) return 3;
-        if (safe >= 5) return 2;
-        return 1;
+        return VillageCampaignProgression.equipmentTierForDay(day);
     }
 
     private static int defaultCombatTier(Item item) {
