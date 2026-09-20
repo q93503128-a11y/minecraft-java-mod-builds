@@ -31,7 +31,8 @@ public final class VillageRpgSystem {
     public static void refreshPlayerPassive(ServerPlayer player) {
         VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
         int roleHealth = role == VillageRole.VANGUARD ? 8 : role == VillageRole.WARDEN ? 6 : 0;
-        int bonus = bonusHealthPoints(VillageCouncilState.levelOf(player.getUUID())) + roleHealth;
+        int bonus = bonusHealthPoints(VillageCouncilState.levelOf(player.getUUID())) + roleHealth
+                + VillageRolePromotionSystem.bonusHealthPoints(player, role);
         if (bonus > 0) {
             player.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST, 80, Math.max(0, bonus / 4 - 1)));
         }
@@ -60,6 +61,7 @@ public final class VillageRpgSystem {
             boolean projectile = event.getSource().getDirectEntity() instanceof AbstractArrow;
             float value = outgoingDamageMultiplier(VillageCouncilState.levelOf(attacker.getUUID()));
             value *= roleOutgoingMultiplier(attacker, projectile);
+            value *= VillageRolePromotionSystem.outgoingMultiplier(attacker, projectile);
             value *= VillageProgressionSystem.smithyDamageMultiplier(attacker);
             value *= VillageProgressionSystem.learnedSkillDamageMultiplier(attacker);
             value *= VillageSkillTreeSystem.outgoingDamageMultiplier(attacker);
@@ -71,8 +73,9 @@ public final class VillageRpgSystem {
             value *= projectile
                     ? VillageRelicSystem.projectileMultiplier(attacker)
                     : VillageRelicSystem.meleeMultiplier(attacker);
-            if (projectile && event.getEntity() instanceof Mob target) {
-                value *= VillageRelicSystem.projectileTargetMultiplier(attacker, target);
+            if (event.getEntity() instanceof Mob target) {
+                if (projectile) value *= VillageRelicSystem.projectileTargetMultiplier(attacker, target);
+                value *= VillageRolePromotionSystem.targetMultiplier(attacker, target, projectile);
             }
             if (event.getEntity() instanceof Monster monster) {
                 value *= VillageSkillTreeSystem.executionMultiplier(attacker, monster.getHealth(), monster.getMaxHealth());
@@ -85,13 +88,15 @@ public final class VillageRpgSystem {
             float flatWeaponPower = VillageEquipmentRaritySystem.flatAttackBonus(attacker, projectile);
             event.setAmount((event.getAmount() + flatWeaponPower) * value);
             if (!projectile) {
-                float lifeSteal = VillageRelicSystem.meleeLifeStealBonus(attacker);
-                if (lifeSteal > 0.0f) attacker.heal(Math.min(3.5f, event.getAmount() * lifeSteal));
+                float lifeSteal = VillageRelicSystem.meleeLifeStealBonus(attacker)
+                        + VillageRolePromotionSystem.meleeLifeStealBonus(attacker);
+                if (lifeSteal > 0.0f) attacker.heal(Math.min(6.0f, event.getAmount() * lifeSteal));
             }
         }
         if (event.getEntity() instanceof ServerPlayer defender) {
             float value = incomingDamageMultiplier(VillageCouncilState.levelOf(defender.getUUID()));
             value *= roleIncomingMultiplier(defender);
+            value *= VillageRolePromotionSystem.incomingMultiplier(defender);
             value *= VillageSkillTreeSystem.incomingDamageMultiplier(defender);
             value *= VillageSkillTreeSystem.lowHealthIncomingMultiplier(defender);
             value *= VillageSkillTreeSystem.sprintIncomingMultiplier(defender);

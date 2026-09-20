@@ -142,12 +142,18 @@ public final class VillageUiController {
                     Integer.toString(skill.requiredLevel()), Integer.toString(skill.coinCost()),
                     VillageRoleSkillSystem.skillStatus(player, skill), Integer.toString(slot)));
         }
-        String summary = "세 갈래 동시 성장 가능 · Lv." + VillageCouncilState.levelOf(player.getUUID())
+        int level = VillageCouncilState.levelOf(player.getUUID());
+        String promotedName = VillageRolePromotionSystem.displayName(role, level);
+        int promotionTier = VillageRolePromotionSystem.tier(level);
+        String summary = "세 갈래 동시 성장 가능 · Lv." + level
+                + " · " + VillageRolePromotionSystem.tierLabel(promotionTier)
+                + " · " + VillageRolePromotionSystem.passiveSummary(player, role)
+                + " · 전술 포인트 " + VillageSkillTreeSystem.availablePoints(player) + "P"
                 + " · 주화 " + VillageProgressionSystem.coins(player)
                 + " · " + VillageRoleSkillSystem.loadoutSummary(player)
-                + " · 지속·위력·특수는 서로 배타적이지 않음 · 기술 습득은 연구소";
-        send(player, "role_progress", role.displayName() + " 성장",
-                role.id() + "|" + role.displayName() + "|" + summary, actions, labels);
+                + " · 기본/1차/2차 기술은 전직 후에도 모두 장착 가능";
+        send(player, "role_progress", promotedName + " 성장",
+                role.id() + "|" + promotedName + "|" + summary, actions, labels);
     }
 
     public static void openRoleSkillResearch(ServerPlayer player) {
@@ -169,11 +175,14 @@ public final class VillageUiController {
                     Integer.toString(skill.requiredLevel()), Integer.toString(skill.coinCost()),
                     VillageRoleSkillSystem.skillStatus(player, skill), Integer.toString(slot)));
         }
-        String summary = "Lv." + VillageCouncilState.levelOf(player.getUUID())
+        int level = VillageCouncilState.levelOf(player.getUUID());
+        String promotedName = VillageRolePromotionSystem.displayName(role, level);
+        String summary = "Lv." + level
+                + " · " + VillageRolePromotionSystem.tierLabel(VillageRolePromotionSystem.tier(level))
                 + " · 주화 " + VillageProgressionSystem.coins(player)
-                + " · 습득은 연구소 · 습득 후 {SKILL1}/{SKILL2} 장착 변경";
+                + " · 기본/1차/2차 기술은 해금 후 계속 사용 가능 · {SKILL1}/{SKILL2} 장착 변경";
         send(player, "role_skills", "직업 기술 연구",
-                role.id() + "|" + role.displayName() + "|" + summary, actions, labels);
+                role.id() + "|" + promotedName + "|" + summary, actions, labels);
     }
 
     public static void openWaveIntel(ServerPlayer player) {
