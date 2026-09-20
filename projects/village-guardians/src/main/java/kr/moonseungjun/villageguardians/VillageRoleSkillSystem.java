@@ -162,6 +162,13 @@ public final class VillageRoleSkillSystem {
             return skill.displayName() + "은(는) 이미 습득했습니다.";
         }
         int level = VillageCouncilState.levelOf(player.getUUID());
+        int promotionTier = VillageRolePromotionSystem.tier(level);
+        if (promotionTier < skill.promotionTier()) {
+            int requiredPromotionLevel = skill.promotionTier() >= 2
+                    ? VillageRolePromotionSystem.SECOND_PROMOTION_LEVEL
+                    : VillageRolePromotionSystem.FIRST_PROMOTION_LEVEL;
+            return "레벨 " + requiredPromotionLevel + " 전직 후 습득할 수 있습니다. 현재 레벨 " + level;
+        }
         if (level < skill.requiredLevel()) {
             return "레벨 " + skill.requiredLevel() + "부터 습득할 수 있습니다. 현재 레벨 " + level;
         }
@@ -253,6 +260,9 @@ public final class VillageRoleSkillSystem {
             return slot >= 0 ? "장착 " + (slot + 1) : "습득";
         }
         int level = VillageCouncilState.levelOf(player.getUUID());
+        if (VillageRolePromotionSystem.tier(level) < skill.promotionTier()) {
+            return skill.promotionTier() >= 2 ? "2차 전직 필요" : "1차 전직 필요";
+        }
         if (level < skill.requiredLevel()) {
             return "Lv." + skill.requiredLevel() + " 필요";
         }
@@ -307,6 +317,7 @@ public final class VillageRoleSkillSystem {
         }
 
         float power = powerMultiplier(player, role)
+                * VillageRolePromotionSystem.skillPowerMultiplier(player, role)
                 * VillageProgressionSystem.learnedSkillDamageMultiplier(player)
                 * VillageProgressionSystem.skillHallPowerMultiplier()
                 * VillageEquipmentShop.roleSkillMultiplier(player)
@@ -334,6 +345,7 @@ public final class VillageRoleSkillSystem {
                 - VillageSkillTreeSystem.cooldownReductionSeconds(player)
                 - VillageSkillTreeSystem.mobilityCooldownReductionSeconds(player)
                 - roleTreeCooldownReductionSeconds(player, role)
+                - VillageRolePromotionSystem.cooldownReductionSeconds(player, role)
                 - VillageEquipmentShop.cooldownReductionSeconds(player);
         int afterRelics = Math.round(Math.max(1, afterFlatReduction)
                 * VillageRelicSystem.cooldownMultiplier(player));
@@ -351,28 +363,7 @@ public final class VillageRoleSkillSystem {
             float power,
             float durationMultiplier,
             int specialRank) {
-        switch (skill) {
-            case VANGUARD_WHIRLWIND -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-            case VANGUARD_BREAKER -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-            case VANGUARD_CRY -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-            case VANGUARD_STORM -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-            case RANGER_VOLLEY -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-            case RANGER_PIERCE -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-            case RANGER_RICOCHET -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-            case RANGER_FIRE_RAIN -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-            case ARCANIST_FIRE_ORB -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-            case ARCANIST_FROST_RING -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-            case ARCANIST_CHAIN -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-            case ARCANIST_NOVA -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-            case LUMINAR_HEAL -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-            case LUMINAR_CLEANSE -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-            case LUMINAR_VEIL -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-            case LUMINAR_SANCTUARY -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-            case WARDEN_TAUNT -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-            case WARDEN_BASH -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-            case WARDEN_FORMATION -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-            case WARDEN_FIELD -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
-        }
+        VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
     }
 
     private static void equipIntoFirstFreeSlot(ServerPlayer player, ActiveSkill skill) {
@@ -554,30 +545,70 @@ public final class VillageRoleSkillSystem {
     }
 
     public enum ActiveSkill {
-        VANGUARD_WHIRLWIND("vanguard_whirlwind", VillageRole.VANGUARD, 0, "회전 검무", 2, 70, 18, "가렌의 회전 공격처럼 몸을 돌리며 여러 차례 주변 적을 베고 이동할 수 있습니다."),
-        VANGUARD_BREAKER("vanguard_breaker", VillageRole.VANGUARD, 1, "전투 고양", 7, 190, 24, "검을 치켜들고 함성을 질러 자신과 주변 아군의 공격력·이동 속도를 강화합니다."),
-        VANGUARD_CRY("vanguard_cry", VillageRole.VANGUARD, 2, "검기 난무", 13, 380, 32, "자세를 잡고 검을 연속으로 휘둘러 전방에 여러 개의 실제 검기 투사체를 날립니다."),
-        VANGUARD_STORM("vanguard_storm", VillageRole.VANGUARD, 3, "천붕 강하", 21, 680, 42, "공중으로 도약한 뒤 지면을 내려찍어 바닥을 깨뜨리고 넓은 범위에 피해와 강한 충격을 줍니다."),
+        VANGUARD_WHIRLWIND("vanguard_whirlwind", VillageRole.VANGUARD, 0, "회전 검무", 2, 70, 18, "몸을 회전하며 여러 차례 주변 적을 베고 이동할 수 있습니다."),
+        VANGUARD_BREAKER("vanguard_breaker", VillageRole.VANGUARD, 1, "전투 고양", 7, 190, 24, "함성을 질러 자신과 주변 아군의 공격력·이동 속도를 강화합니다."),
+        VANGUARD_CRY("vanguard_cry", VillageRole.VANGUARD, 2, "검기 난무", 13, 380, 32, "자세를 잡고 여러 개의 실제 검기 투사체를 전방으로 연속 발사합니다."),
+        VANGUARD_STORM("vanguard_storm", VillageRole.VANGUARD, 3, "천붕 강하", 21, 680, 42, "공중으로 도약한 뒤 지면을 내려찍어 넓은 범위에 피해와 강한 충격을 줍니다."),
+        VANGUARD_FRONTLINE_REND("vanguard_frontline_rend", VillageRole.VANGUARD, 4, "전선 절개", 30, 1200, 22, "1차 전직 기술. 세 갈래 검기를 한꺼번에 뻗어 전열을 가르고 적을 밀어냅니다."),
+        VANGUARD_BLOOD_SPIRAL("vanguard_blood_spiral", VillageRole.VANGUARD, 5, "피의 회오리", 30, 1450, 28, "1차 전직 기술. 주변 적을 베어 피해를 주고 적중 수에 따라 자신의 체력을 회복합니다."),
+        VANGUARD_WAR_BANNER("vanguard_war_banner", VillageRole.VANGUARD, 6, "전투 깃발", 30, 1750, 36, "1차 전직 기술. 자신과 주변 수호자의 공격·방어·기동을 일정 시간 끌어올립니다."),
+        VANGUARD_BREACH_STRIKE("vanguard_breach_strike", VillageRole.VANGUARD, 7, "파성 일격", 30, 2150, 34, "1차 전직 기술. 전방의 중장갑·공성 병력을 강타해 약화시키고 뒤로 밀어냅니다."),
+        VANGUARD_SWORD_CHAIN("vanguard_sword_chain", VillageRole.VANGUARD, 8, "검성 연환", 60, 3300, 26, "2차 전직 기술. 다섯 갈래 검기를 부채꼴로 연속 전개해 넓은 전선을 쓸어냅니다."),
+        VANGUARD_LIFE_SEVER("vanguard_life_sever", VillageRole.VANGUARD, 9, "생명 절취", 60, 3900, 34, "2차 전직 기술. 주변의 부상당한 적을 베어 강한 피해를 주고 타격한 생명력을 흡수합니다."),
+        VANGUARD_ABSOLUTE_BREAK("vanguard_absolute_break", VillageRole.VANGUARD, 10, "절대 돌파", 60, 4700, 38, "2차 전직 기술. 전방으로 크게 돌진하며 경로의 적을 연속 타격하고 진형을 무너뜨립니다."),
+        VANGUARD_HEAVEN_SEVER("vanguard_heaven_sever", VillageRole.VANGUARD, 11, "천단참", 60, 5700, 52, "2차 전직 기술. 조준 지점에 거대한 검격을 떨어뜨려 넓은 범위를 한 번에 파쇄합니다."),
 
-        RANGER_VOLLEY("ranger_volley", VillageRole.RANGER, 0, "신속 삼연사", 2, 70, 16, "기술 사용 후 다음 활은 빠르게 자동 완충·발사되며, 다음 실제 활·석궁 발사 한 번이 세 갈래 화살로 강화됩니다."),
-        RANGER_PIERCE("ranger_pierce", VillageRole.RANGER, 1, "추적 도탄", 7, 190, 22, "기술 사용 후 다음 실제 활·석궁 한 발이 전방 표적을 추적합니다. 표적이 사라지면 비행 경로 전방의 새 적을 재포착하고, 적중 후에는 가까운 적을 중복 없이 순차 도탄합니다."),
-        RANGER_RICOCHET("ranger_ricochet", VillageRole.RANGER, 2, "천공 화살비", 13, 380, 30, "기술 사용 후 다음 실제 활·석궁 발사 시 조준한 바닥에 짧고 강한 화살비가 펼쳐져 지속 광역 피해를 줍니다."),
-        RANGER_FIRE_RAIN("ranger_fire_rain", VillageRole.RANGER, 3, "성멸 대궁", 21, 680, 40, "기술 사용 후 다음 실제 활·석궁 발사를 밝은 초록색 초대형 성멸 화살로 바꾸어 넓은 전방을 관통합니다."),
+        RANGER_VOLLEY("ranger_volley", VillageRole.RANGER, 0, "신속 삼연사", 2, 70, 16, "다음 실제 활·석궁 발사를 빠르게 완충하고 세 갈래 화살로 강화합니다."),
+        RANGER_PIERCE("ranger_pierce", VillageRole.RANGER, 1, "추적 도탄", 7, 190, 22, "다음 실제 활·석궁 발사가 표적을 추적하고 적중 후 가까운 적에게 연속 도탄합니다."),
+        RANGER_RICOCHET("ranger_ricochet", VillageRole.RANGER, 2, "천공 화살비", 13, 380, 30, "다음 실제 활·석궁 발사 지점에 강한 화살비를 펼쳐 지속 광역 피해를 줍니다."),
+        RANGER_FIRE_RAIN("ranger_fire_rain", VillageRole.RANGER, 3, "성멸 대궁", 21, 680, 40, "다음 실제 활·석궁 발사를 거대한 성멸 화살로 바꾸어 넓은 전방을 관통합니다."),
+        RANGER_HAWK_MARK("ranger_hawk_mark", VillageRole.RANGER, 4, "매의 징표", 30, 1200, 18, "1차 전직 기술. 조준한 고위협 표적을 드러내고 약화시켜 집중 사격의 기점을 만듭니다."),
+        RANGER_SPLIT_SHOT("ranger_split_shot", VillageRole.RANGER, 5, "분열 사격", 30, 1450, 22, "1차 전직 기술. 다섯 발의 에너지 화살을 부채꼴로 발사해 다수의 적을 동시에 압박합니다."),
+        RANGER_AA_INTERCEPT("ranger_aa_intercept", VillageRole.RANGER, 6, "대공 요격", 30, 1750, 28, "1차 전직 기술. 넓은 공역의 비행 적을 우선 포착해 연속 요격하고 움직임을 제한합니다."),
+        RANGER_DOWNPOUR("ranger_downpour", VillageRole.RANGER, 7, "폭우 사격", 30, 2150, 34, "1차 전직 기술. 조준 지점에 여러 차례 화살 폭우를 집중시켜 지역을 봉쇄합니다."),
+        RANGER_STAR_TRACKER("ranger_star_tracker", VillageRole.RANGER, 8, "별추적 화살", 60, 3300, 20, "2차 전직 기술. 위협도가 높은 여러 표적을 자동 포착해 추적 화살을 동시에 날립니다."),
+        RANGER_CONSTELLATION("ranger_constellation", VillageRole.RANGER, 9, "관통 성단", 60, 3900, 28, "2차 전직 기술. 굵은 관통 사격을 발사해 일렬의 적을 뚫고 강하게 밀어냅니다."),
+        RANGER_SKY_LOCK("ranger_sky_lock", VillageRole.RANGER, 10, "천공 봉쇄", 60, 4700, 38, "2차 전직 기술. 전장의 공중 적을 광범위하게 억제하고 대공 피해를 집중합니다."),
+        RANGER_METEOR_BOW("ranger_meteor_bow", VillageRole.RANGER, 11, "유성 대궁", 60, 5700, 50, "2차 전직 기술. 조준 지점에 초대형 사격을 꽂아 넓은 범위의 적을 폭발적으로 밀어냅니다."),
 
         ARCANIST_FIRE_ORB("arcanist_fire_orb", VillageRole.ARCANIST, 0, "홍염탄", 2, 70, 18, "실제 화염 구체를 전방으로 날려 충돌 지점에서 폭발시키고 적을 불태웁니다."),
-        ARCANIST_FROST_RING("arcanist_frost_ring", VillageRole.ARCANIST, 1, "빙결 지대", 7, 190, 24, "조준 위치에 지속되는 냉기 지대를 만들어 범위 안 적을 강하게 둔화하고 조금씩 피해를 줍니다."),
-        ARCANIST_CHAIN("arcanist_chain", VillageRole.ARCANIST, 2, "폭풍 회랑", 13, 380, 30, "전진하는 토네이도를 만들어 적을 끌어올리고 휩쓸며 낮은 피해와 강한 군중 제어를 가합니다."),
+        ARCANIST_FROST_RING("arcanist_frost_ring", VillageRole.ARCANIST, 1, "빙결 지대", 7, 190, 24, "조준 위치에 지속되는 냉기 지대를 만들어 적을 강하게 둔화하고 피해를 줍니다."),
+        ARCANIST_CHAIN("arcanist_chain", VillageRole.ARCANIST, 2, "폭풍 회랑", 13, 380, 30, "전진하는 토네이도로 적을 끌어올리고 휩쓸어 진형을 무너뜨립니다."),
         ARCANIST_NOVA("arcanist_nova", VillageRole.ARCANIST, 3, "천뢰 폭격", 21, 680, 44, "넓은 목표 지점에 번개가 연속으로 떨어져 다수의 적에게 강한 광역 피해를 줍니다."),
+        ARCANIST_LAVA_CORE("arcanist_lava_core", VillageRole.ARCANIST, 4, "용암핵", 30, 1200, 22, "1차 전직 기술. 커다란 고열 마력핵을 발사해 넓은 폭발과 장시간 화상을 일으킵니다."),
+        ARCANIST_FROST_PRISON("arcanist_frost_prison", VillageRole.ARCANIST, 5, "빙결 감옥", 30, 1450, 28, "1차 전직 기술. 넓은 지역을 얼려 적의 진군을 크게 늦추고 지속 피해를 줍니다."),
+        ARCANIST_LIGHTNING_CHAIN("arcanist_lightning_chain", VillageRole.ARCANIST, 6, "낙뢰 사슬", 30, 1750, 30, "1차 전직 기술. 표적 사이를 뛰는 번개로 여러 적을 연속 타격합니다."),
+        ARCANIST_GRAVITY_STORM("arcanist_gravity_storm", VillageRole.ARCANIST, 7, "중력 폭풍", 30, 2150, 38, "1차 전직 기술. 거대한 폭풍장을 전진시켜 적을 중심으로 끌어당기고 묶습니다."),
+        ARCANIST_SOLAR_CORE("arcanist_solar_core", VillageRole.ARCANIST, 8, "태양핵 폭발", 60, 3300, 30, "2차 전직 기술. 거대한 태양핵을 발사해 충돌 지점에 초대형 폭발을 일으킵니다."),
+        ARCANIST_ABSOLUTE_ZERO("arcanist_absolute_zero", VillageRole.ARCANIST, 9, "절대영도", 60, 3900, 38, "2차 전직 기술. 광범위한 적의 이동과 공격 흐름을 장시간 얼려 세웁니다."),
+        ARCANIST_HEAVEN_CHAIN("arcanist_heaven_chain", VillageRole.ARCANIST, 10, "천뢰 연쇄", 60, 4700, 42, "2차 전직 기술. 넓은 지역에 고밀도 낙뢰를 연속 유도해 전열을 붕괴시킵니다."),
+        ARCANIST_SINGULARITY("arcanist_singularity", VillageRole.ARCANIST, 11, "붕괴 특이점", 60, 5700, 56, "2차 전직 기술. 거대한 중력장을 만들어 적을 끌어모으고 반복 피해를 줍니다."),
 
         LUMINAR_HEAL("luminar_heal", VillageRole.LUMINAR, 0, "응급 성광", 2, 70, 16, "현재 체력 비율이 가장 낮은 아군 한 명을 찾아 큰 폭으로 즉시 회복시킵니다."),
         LUMINAR_CLEANSE("luminar_cleanse", VillageRole.LUMINAR, 1, "전군 정화", 7, 190, 24, "같은 전장에 있는 모든 아군의 해로운 효과를 제거하고 소량 회복시킵니다."),
-        LUMINAR_VEIL("luminar_veil", VillageRole.LUMINAR, 2, "치유 성역", 13, 380, 32, "주변에 오래 지속되는 회복 지대를 설치해 범위 안 아군을 반복해서 치유합니다."),
+        LUMINAR_VEIL("luminar_veil", VillageRole.LUMINAR, 2, "치유 성역", 13, 380, 32, "주변에 지속되는 회복 지대를 설치해 범위 안 아군을 반복해서 치유합니다."),
         LUMINAR_SANCTUARY("luminar_sanctuary", VillageRole.LUMINAR, 3, "기적의 대성역", 21, 680, 46, "전장 전체 아군을 크게 치유하고 보호막을 부여하며 전투 불능 아군을 즉시 부활시킵니다."),
+        LUMINAR_GUARDIAN_LIGHT("luminar_guardian_light", VillageRole.LUMINAR, 4, "수호의 빛", 30, 1200, 18, "1차 전직 기술. 가장 위급한 아군을 크게 치유하고 즉시 보호막을 씌웁니다."),
+        LUMINAR_HOLY_PURGE("luminar_holy_purge", VillageRole.LUMINAR, 5, "성역 정화", 30, 1450, 24, "1차 전직 기술. 주변 아군을 정화하고 회복하며 짧은 피해 저항을 부여합니다."),
+        LUMINAR_REVIVAL_WAVE("luminar_revival_wave", VillageRole.LUMINAR, 6, "회생 파동", 30, 1750, 30, "1차 전직 기술. 넓은 범위의 아군을 회복하고 재생·보호막으로 전선을 복구합니다."),
+        LUMINAR_JUDGEMENT("luminar_judgement", VillageRole.LUMINAR, 7, "심판광", 30, 2150, 34, "1차 전직 기술. 주변 적을 성광으로 타격하는 동시에 가까운 아군을 회복합니다."),
+        LUMINAR_HEAVENLY_BARRIER("luminar_heavenly_barrier", VillageRole.LUMINAR, 8, "천상의 방벽", 60, 3300, 32, "2차 전직 기술. 전장 아군에게 두꺼운 보호막과 피해 저항을 부여합니다."),
+        LUMINAR_RETURNING_LIGHT("luminar_returning_light", VillageRole.LUMINAR, 9, "회귀의 빛", 60, 3900, 30, "2차 전직 기술. 가장 위급한 아군을 즉시 전투선으로 복귀시킬 정도로 크게 회복합니다."),
+        LUMINAR_RESURRECTION_HYMN("luminar_resurrection_hymn", VillageRole.LUMINAR, 10, "부활 성가", 60, 4700, 58, "2차 전직 기술. 전투 불능 아군을 되살리고 살아 있는 아군에게 재생을 부여합니다."),
+        LUMINAR_LAST_MIRACLE("luminar_last_miracle", VillageRole.LUMINAR, 11, "최후의 기적", 60, 5700, 64, "2차 전직 기술. 아군을 치유·보호하면서 주변 적에게도 강한 성광 피해를 가합니다."),
 
         WARDEN_TAUNT("warden_taunt", VillageRole.WARDEN, 0, "수호 돌진", 2, 70, 18, "방패를 앞세워 전방으로 돌진하고 접촉한 적에게 피해를 주며 강하게 밀어냅니다."),
-        WARDEN_BASH("warden_bash", VillageRole.WARDEN, 1, "위압의 함성", 7, 190, 22, "넓은 범위의 적을 강제로 자신에게 돌립니다. 시설·포탑을 우선 노리는 공성 병과도 도발 지속시간 동안 수호자를 우선 추적합니다."),
+        WARDEN_BASH("warden_bash", VillageRole.WARDEN, 1, "위압의 함성", 7, 190, 22, "넓은 범위의 적을 강제로 자신에게 돌리고 약화시킵니다."),
         WARDEN_FORMATION("warden_formation", VillageRole.WARDEN, 2, "거대 방패 태세", 13, 380, 32, "이동을 멈추고 사방에서 받는 피해를 크게 줄이며 주변 적을 밀어내고 도발합니다. 유지 중 다시 사용하면 즉시 방패를 내립니다."),
-        WARDEN_FIELD("warden_field", VillageRole.WARDEN, 3, "대수호 진군", 21, 680, 46, "거대한 에너지 방패를 유지해 전방과 측면 압박을 버티고 주변 적을 밀어내며 도발합니다. 달리면 짧게 돌진하고, 유지 중 다시 사용하면 즉시 해제합니다.");
+        WARDEN_FIELD("warden_field", VillageRole.WARDEN, 3, "대수호 진군", 21, 680, 46, "거대한 에너지 방패로 전방과 측면 압박을 버티며 적을 밀어내고 도발합니다. 유지 중 다시 사용하면 즉시 해제합니다."),
+        WARDEN_GATE_IMPACT("warden_gate_impact", VillageRole.WARDEN, 4, "성문 충격", 30, 1200, 20, "1차 전직 기술. 전방을 방패로 찍어 적을 크게 밀어내고 강제로 자신에게 돌립니다."),
+        WARDEN_FORCED_CHALLENGE("warden_forced_challenge", VillageRole.WARDEN, 5, "강제 도전", 30, 1450, 26, "1차 전직 기술. 넓은 범위의 적을 장시간 도발하고 공격 능력을 약화시킵니다."),
+        WARDEN_GUARD_BARRIER("warden_guard_barrier", VillageRole.WARDEN, 6, "수호 결계", 30, 1750, 34, "1차 전직 기술. 자신과 주변 아군에게 피해 저항과 보호막을 부여합니다."),
+        WARDEN_IRON_PULSE("warden_iron_pulse", VillageRole.WARDEN, 7, "철벽 파동", 30, 2150, 32, "1차 전직 기술. 사방으로 충격파를 내보내 적을 밀치고 도발해 전선을 다시 세웁니다."),
+        WARDEN_UNBROKEN_WALL("warden_unbroken_wall", VillageRole.WARDEN, 8, "불락 방벽", 60, 3300, 34, "2차 전직 기술. 강력한 보호막과 저항을 얻고 주변 적의 공격을 자신에게 고정합니다."),
+        WARDEN_FORTRESS_CHARGE("warden_fortress_charge", VillageRole.WARDEN, 9, "성채 돌진", 60, 3900, 30, "2차 전직 기술. 긴 거리를 돌진하며 경로의 적을 강하게 밀어내고 피해를 줍니다."),
+        WARDEN_ABSOLUTE_FORMATION("warden_absolute_formation", VillageRole.WARDEN, 10, "절대 방진", 60, 4700, 46, "2차 전직 기술. 주변 아군 전체의 생존력을 크게 높이고 적을 자신에게 끌어옵니다."),
+        WARDEN_FORTRESS_DESCENT("warden_fortress_descent", VillageRole.WARDEN, 11, "성채 강림", 60, 5700, 58, "2차 전직 기술. 지면에 거대한 수호 충격을 일으켜 적 진형을 날리고 아군을 보호합니다.");
 
         private final String id;
         private final VillageRole role;
@@ -615,6 +646,8 @@ public final class VillageRoleSkillSystem {
         public int coinCost() { return coinCost; }
         public int baseCooldownSeconds() { return baseCooldownSeconds; }
         public String description() { return description; }
+        public int promotionTier() { return roleIndex >= 8 ? 2 : roleIndex >= 4 ? 1 : 0; }
+        public int promotionSlot() { return roleIndex < 4 ? roleIndex : (roleIndex - 4) % 4; }
 
         public static Optional<ActiveSkill> parse(String value) {
             if (value == null) return Optional.empty();
@@ -623,7 +656,7 @@ public final class VillageRoleSkillSystem {
         }
 
         public static int maxRoleSkillCount() {
-            return 4;
+            return 12;
         }
     }
 }
