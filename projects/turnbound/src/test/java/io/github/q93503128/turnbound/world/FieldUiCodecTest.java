@@ -124,6 +124,15 @@ class FieldUiCodecTest {
     }
 
     @Test
+    void roundTripsBattleTransitionOwnershipState() {
+        FieldUiSnapshot decoded = FieldUiCodec.decode(FieldUiCodec.encode(FieldUiSnapshot.battleTransition()));
+        assertTrue(decoded.active());
+        assertEquals(FieldUiSnapshot.Mode.BATTLE_TRANSITION, decoded.mode());
+        assertTrue(decoded.objective().isBlank());
+        assertFalse(decoded.navigation().active());
+    }
+
+    @Test
     void malformedOptionalLineDoesNotDestroyHeaderState() {
         String encoded = "H|1|QUEST|2|5|0|0|75|130\nE|broken\n";
         FieldUiSnapshot decoded = FieldUiCodec.decode(encoded);

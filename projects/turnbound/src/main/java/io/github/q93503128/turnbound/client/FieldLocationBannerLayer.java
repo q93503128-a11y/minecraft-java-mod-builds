@@ -24,7 +24,7 @@ public final class FieldLocationBannerLayer implements GuiLayer {
     public void render(@NotNull GuiGraphicsExtractor graphics, DeltaTracker tracker) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.level == null || minecraft.gui.screen() != null) return;
-        if (ClientBattleState.snapshot().active()) return;
+        if (ClientPresentationTransition.fieldPresentationSuppressed()) return;
 
         FieldUiSnapshot snapshot = ClientFieldState.snapshot();
         update(snapshot, System.currentTimeMillis());

@@ -42,7 +42,7 @@ public final class DrehmalMinimapLayer implements GuiLayer {
     public void render(@NotNull GuiGraphicsExtractor graphics, DeltaTracker tracker) {
         Minecraft minecraft = Minecraft.getInstance();
         if (!visible || minecraft.player == null || minecraft.level == null || minecraft.gui.screen() != null) return;
-        if (ClientBattleState.snapshot().active()) return;
+        if (ClientPresentationTransition.fieldPresentationSuppressed()) return;
 
         FieldUiSnapshot field = ClientFieldState.snapshot();
         if (!field.active() || field.mode() == FieldUiSnapshot.Mode.LOADING) return;

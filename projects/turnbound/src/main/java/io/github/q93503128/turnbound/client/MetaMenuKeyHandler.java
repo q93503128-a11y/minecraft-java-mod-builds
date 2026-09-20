@@ -16,12 +16,12 @@ public final class MetaMenuKeyHandler {
         if (minecraft.player == null || minecraft.level == null) return;
 
         if (event.getKey() == GLFW.GLFW_KEY_J) {
-            if (minecraft.gui.screen() != null || ClientBattleState.snapshot().active() || !ClientFieldState.snapshot().active()) return;
+            if (minecraft.gui.screen() != null || ClientPresentationTransition.fieldPresentationSuppressed() || !ClientFieldState.snapshot().active()) return;
             QuestGuideLayer.toggle();
             return;
         }
         if (event.getKey() == GLFW.GLFW_KEY_N) {
-            if (minecraft.gui.screen() != null || ClientBattleState.snapshot().active() || !ClientFieldState.snapshot().active()) return;
+            if (minecraft.gui.screen() != null || ClientPresentationTransition.fieldPresentationSuppressed() || !ClientFieldState.snapshot().active()) return;
             DrehmalMinimapLayer.toggleVisible();
             return;
         }
@@ -30,7 +30,7 @@ public final class MetaMenuKeyHandler {
                 screen.onClose();
                 return;
             }
-            if (minecraft.gui.screen() != null || ClientBattleState.snapshot().active() || !ClientFieldState.snapshot().active()) return;
+            if (minecraft.gui.screen() != null || ClientPresentationTransition.fieldPresentationSuppressed() || !ClientFieldState.snapshot().active()) return;
             minecraft.gui.setScreen(new DrehmalWorldMapScreen());
             return;
         }
@@ -41,7 +41,7 @@ public final class MetaMenuKeyHandler {
             screen.onClose();
             return;
         }
-        if (minecraft.gui.screen() != null || ClientBattleState.snapshot().active()) return;
+        if (minecraft.gui.screen() != null || ClientPresentationTransition.fieldPresentationSuppressed()) return;
         FacilityUiAccess.clear();
         ClientPacketDistributor.sendToServer(new MetaCommandPayload("OPEN"));
     }
