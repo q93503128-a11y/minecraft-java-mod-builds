@@ -22,22 +22,13 @@ final class SignatureTrialCatalogCanonGapTest {
     }
 
     @Test
-    void p04ThroughP07HaveCompleteObjectiveTelemetryButStillNeedEncounterRosters() {
-        for (String id : new String[]{"P04", "P05", "P06", "P07"}) {
+    void p04ThroughP08HaveCompleteObjectiveTelemetryButStillNeedEncounterRosters() {
+        for (String id : new String[]{"P04", "P05", "P06", "P07", "P08"}) {
             var spec = SignatureTrialCatalog.forCharacter(id);
             assertEquals(SignatureTrialCatalog.GapKind.ENCOUNTER_ROSTER, spec.gapKind(), id);
             assertTrue(spec.objectiveEvaluatorReady(), id);
             assertEquals(SignatureTrialCatalog.CanonState.RULES_READY_ROSTER_GAP, spec.canonState(), id);
             assertTrue(spec.authoringBlockReason().contains("목표 판정 로직 준비 완료"), id);
         }
-    }
-
-    @Test
-    void p08IsARealPrerequisiteContradictionNotAnEncounterAuthoringGap() {
-        var spec = SignatureTrialCatalog.forCharacter("P08");
-        assertEquals(SignatureTrialCatalog.CanonState.CANON_CONTRADICTION, spec.canonState());
-        assertEquals(SignatureTrialCatalog.GapKind.PREREQUISITE_CONTRADICTION, spec.gapKind());
-        assertFalse(spec.objectiveEvaluatorReady());
-        assertTrue(spec.authoringBlockReason().contains("선행조건"));
     }
 }

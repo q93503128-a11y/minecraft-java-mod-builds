@@ -1,6 +1,7 @@
 package io.github.q93503128.turnbound.client;
 
 import io.github.q93503128.turnbound.content.AwakeningRouteRules;
+import io.github.q93503128.turnbound.progression.GrowthRulesV1;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -27,7 +28,7 @@ public final class ClientSignatureTrialState {
     ) {
         public boolean progressionReady() {
             if (AwakeningRouteRules.canonGap(characterId)) return true;
-            return owned && endgameUnlocked && level == 60 && currentStar == 6 && characterQuestComplete && !firstClearClaimed;
+            return owned && endgameUnlocked && level == GrowthRulesV1.maxLevel() && characterQuestComplete && !firstClearClaimed;
         }
 
         public boolean canEnter() {

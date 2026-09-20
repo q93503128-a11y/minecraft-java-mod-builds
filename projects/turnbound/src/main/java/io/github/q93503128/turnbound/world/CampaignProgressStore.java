@@ -10,6 +10,7 @@ import io.github.q93503128.turnbound.progression.CharacterGrowthRules;
 import io.github.q93503128.turnbound.progression.EquipmentInventory;
 import io.github.q93503128.turnbound.progression.EquipmentRules;
 import io.github.q93503128.turnbound.progression.GachaService;
+import io.github.q93503128.turnbound.progression.GrowthRulesV1;
 import io.github.q93503128.turnbound.progression.PlayerProfile;
 import io.github.q93503128.turnbound.progression.QuestProgress;
 import io.github.q93503128.turnbound.session.BattleResultSummary;
@@ -210,18 +211,10 @@ public final class CampaignProgressStore {
     public static void recordKill(UUID playerId, String enemyId, int amount) { recordQuestEvent(player(playerId), QuestProgress.Event.kill(enemyId, amount)); }
     public static void recordLoot(UUID playerId, String lootId, int amount) { recordQuestEvent(player(playerId), QuestProgress.Event.loot(lootId, amount)); }
 
+    /** Compatibility entry point: v1 rarity is identity and cannot be promoted. */
     public static CharacterGrowthRules.State promote(UUID playerId, String characterId) {
-        PlayerProgress progress = player(playerId);
-        CharacterGrowthRules.State state = requireGrowth(progress, characterId);
-        if (state.currentStar() >= 6) throw new IllegalStateException("Character is already ★6");
-        int targetStar = state.currentStar() + 1;
-        if (targetStar == 6 && !b05Cleared(progress)) throw new IllegalStateException("★6 promotion unlocks after B05");
-        int cost = CharacterGrowthRules.promotionCost(state.currentStar());
-        if (!progress.profile.spend(PlayerProfile.Currency.STAR_ESSENCE, cost)) throw new IllegalStateException("Not enough Star Essence");
-        CharacterGrowthRules.State promoted = state.withStar(targetStar);
-        progress.growth.put(characterId, promoted);
-        progress.dirty = true;
-        return promoted;
+        requireGrowth(player(playerId), characterId);
+        throw new IllegalStateException("별 등급은 승급하지 않습니다.");
     }
 
     public static void completeCharacterQuest(UUID playerId, String characterId) {
@@ -236,11 +229,10 @@ public final class CampaignProgressStore {
         CharacterProgression.State level = requireCharacter(progress, characterId);
         if (!b05Cleared(progress)) throw new IllegalStateException("Signature Trial requires B05 clear");
         if (!state.characterQuestComplete()) throw new IllegalStateException("Character quest is not complete");
-        if (state.currentStar() != 6 || level.level() != 60) throw new IllegalStateException("Signature Trial requires Lv60 / ★6");
+        if (level.level() != GrowthRulesV1.maxLevel()) throw new IllegalStateException("Signature Trial requires Lv60");
         if (state.signatureTrialCleared()) throw new IllegalStateException("Signature Trial first-clear reward already claimed");
         String signatureId = V04Catalogs.signatureFor(characterId).id();
         EquipmentInventory.Item reward = progress.equipment.grantReward(signatureId);
-        progress.profile.grant(PlayerProfile.Currency.AWAKENING_CORE, 1);
         progress.growth.put(characterId, state.withSignatureTrialCleared());
         progress.dirty = true;
         return reward;
@@ -252,10 +244,12 @@ public final class CampaignProgressStore {
         CharacterGrowthRules.State state = requireGrowth(progress, characterId);
         CharacterProgression.State level = requireCharacter(progress, characterId);
         if (state.awakened()) return state;
-        if (state.currentStar() != 6 || level.level() != 60 || !state.signatureTrialCleared()) {
-            throw new IllegalStateException("Awakening requires Lv60 / ★6 / Signature Trial clear");
+        if (level.level() != GrowthRulesV1.maxLevel() || !state.characterQuestComplete()) {
+            throw new IllegalStateException("Awakening requires Lv60 and character quest completion");
         }
-        if (!progress.profile.spend(PlayerProfile.Currency.AWAKENING_CORE, 1)) throw new IllegalStateException("No Awakening Core");
+        if (!progress.profile.spend(PlayerProfile.Currency.GOLD, GrowthRulesV1.awakeningGoldCost())) {
+            throw new IllegalStateException("Not enough Gold for Awakening");
+        }
         CharacterGrowthRules.State awakened = state.withAwakened();
         progress.growth.put(characterId, awakened);
         progress.dirty = true;
@@ -285,7 +279,7 @@ public final class CampaignProgressStore {
 
     public static void equip(UUID playerId, String characterId, String instanceId) {
         PlayerProgress progress = player(playerId);
-        progress.equipment.equip(characterId, instanceId, requireGrowth(progress, characterId).currentStar());
+        progress.equipment.equip(characterId, instanceId);
         progress.dirty = true;
     }
 

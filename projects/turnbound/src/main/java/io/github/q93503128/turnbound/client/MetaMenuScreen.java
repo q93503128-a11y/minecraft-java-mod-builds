@@ -3,6 +3,7 @@ package io.github.q93503128.turnbound.client;
 import io.github.q93503128.turnbound.content.CanonicalData;
 import io.github.q93503128.turnbound.network.MetaCommandPayload;
 import io.github.q93503128.turnbound.progression.GachaCatalog;
+import io.github.q93503128.turnbound.progression.GrowthRulesV1;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -161,7 +162,7 @@ public final class MetaMenuScreen extends Screen {
         for(int i=start;i<end;i++){
             var row=rows.get(i);
             int local=i-start,xx=left+16+(local%cols)*(cardW+cardGap),yy=gridTop+(local/cols)*(rowH+4);
-            String state=row.owned()?(row.awakened()?"◆6":"★"+row.star())+" Lv."+row.level():"미보유 · 태생 ★"+row.nativeStar();
+            String state=row.owned()?(row.awakened()?"각성 · ":"")+"★"+row.nativeStar()+" Lv."+row.level():"미보유 · ★"+row.nativeStar();
             addRenderableWidget(new BattleHudButton(xx,yy,cardW,rowH,Component.literal(row.name()+" · "+state+" · "+primaryRoleLabel(row.primaryRole())),row.owned()?BLUE:MUTED,ignored->openCharacter(row.id())));
         }
         buildPager();
@@ -179,10 +180,10 @@ public final class MetaMenuScreen extends Screen {
         }
         if(detailTab==DetailTab.GROWTH&&row.owned()){
             int by=top+panelHeight-34;
-            if(row.star()<6)addRenderableWidget(new BattleHudButton(left+panelWidth-254,by,112,20,Component.literal("★ 승급"),GOLD,ignored->send("PROMOTE|"+row.id())));
             var trial=ClientSignatureTrialState.forCharacter(row.id());
             boolean ready=trial!=null&&trial.awakeningReady();
-            var b=new BattleHudButton(left+panelWidth-134,by,118,20,Component.literal(row.awakened()?"각성 완료":ready?"각성":"각성 잠김"),row.awakened()?GREEN:ready?BLUE:MUTED,ignored->send("AWAKEN|"+row.id()));
+            String label=row.awakened()?"각성 완료":ready?"각성 · "+GrowthRulesV1.awakeningGoldCost()+"G":"각성 잠김";
+            var b=new BattleHudButton(left+panelWidth-166,by,150,20,Component.literal(label),row.awakened()?GREEN:ready?BLUE:MUTED,ignored->send("AWAKEN|"+row.id()));
             b.active=!row.awakened()&&ready;
             addRenderableWidget(b);
         }
@@ -221,7 +222,7 @@ public final class MetaMenuScreen extends Screen {
         rw=Math.max(120,rw);
         int by=y+66;
         if(FacilityUiAccess.forge()){
-            addRenderableWidget(new BattleHudButton(rx,by,Math.min(108,rw),20,Component.literal(selected.enhancement()>=20?"+20 완료":"강화 +1"),GOLD,ignored->send("ENHANCE|"+selected.instanceId())));
+            addRenderableWidget(new BattleHudButton(rx,by,Math.min(108,rw),20,Component.literal(selected.enhancement()>=GrowthRulesV1.maxEnhancement()?"+10 완료":"강화 +1"),GOLD,ignored->send("ENHANCE|"+selected.instanceId())));
         }
         int targetY=by+(FacilityUiAccess.forge()?28:6);
         var owned=ClientMetaState.snapshot().characters().stream().filter(ClientMetaState.CharacterRow::owned).toList();
@@ -338,7 +339,7 @@ public final class MetaMenuScreen extends Screen {
     private void closeCharacter(){selectedCharacterId="";page=0;rebuild();}
     private void switchDetail(DetailTab d){detailTab=d;rebuild();}
     private void cycleOwnership(){ownershipFilter=OwnershipFilter.values()[(ownershipFilter.ordinal()+1)%OwnershipFilter.values().length];page=0;rebuild();}
-    private void cycleStar(){starFilter=(starFilter+1)%7;page=0;rebuild();}
+    private void cycleStar(){starFilter=switch(starFilter){case 0->3;case 3->4;case 4->5;default->0;};page=0;rebuild();}
     private void cycleLevel(){minimumLevel=minimumLevel==0?10:minimumLevel>=60?0:minimumLevel+10;page=0;rebuild();}
     private void cycleRole(){roleFilter=RoleFilter.values()[(roleFilter.ordinal()+1)%RoleFilter.values().length];page=0;rebuild();}
     private void cycleEquipSlot(){List<String>v=List.of("ALL","WEAPON","ARMOR","ACCESSORY","SIGNATURE");equipSlotFilter=v.get((v.indexOf(equipSlotFilter)+1)%v.size());page=0;rebuild();}
@@ -410,7 +411,7 @@ public final class MetaMenuScreen extends Screen {
         if(selectedCharacterId.isBlank())return;
         var r=character(selectedCharacterId);if(r==null)return;
         int x=left+16,y=contentTop()+30,w=panelWidth-32;
-        g.text(font,Component.literal(UiTextLayout.fit(r.name()+" · "+(r.owned()?(r.awakened()?"◆6":"★"+r.star())+" Lv."+r.level():"미보유 · 태생 ★"+r.nativeStar()),w)),x,y,r.owned()?TEXT:MUTED,true);
+        g.text(font,Component.literal(UiTextLayout.fit(r.name()+" · "+(r.owned()?(r.awakened()?"각성 · ":"")+"★"+r.nativeStar()+" Lv."+r.level():"미보유 · ★"+r.nativeStar()),w)),x,y,r.owned()?TEXT:MUTED,true);
         g.text(font,Component.literal(UiTextLayout.fit(r.role(),w)),x,y+15,SECONDARY,false);
         switch(detailTab){
             case OVERVIEW->{
@@ -438,7 +439,8 @@ public final class MetaMenuScreen extends Screen {
                 var trial=ClientSignatureTrialState.forCharacter(r.id());
                 String status=r.awakened()?"각성 완료":trial!=null&&trial.awakeningReady()?"각성 가능":"선행 조건 진행 중";
                 g.text(font,Component.literal(status),x,y+38,r.awakened()?GREEN:GOLD,true);
-                if(trial!=null)g.text(font,Component.literal(UiTextLayout.fit("전용 장비 시련 · "+trial.title()+" · "+trial.objective(),w)),x,y+58,SECONDARY,false);
+                g.text(font,Component.literal("각성 조건 · Lv60 · 개인 퀘스트 · "+GrowthRulesV1.awakeningGoldCost()+" Gold"),x,y+58,SECONDARY,false);
+                if(trial!=null)g.text(font,Component.literal(UiTextLayout.fit("전용 장비 시련 · "+trial.title()+" · "+trial.objective(),w)),x,y+76,SECONDARY,false);
             }
         }
     }
@@ -448,7 +450,7 @@ public final class MetaMenuScreen extends Screen {
         int listW=Math.min(420,Math.max(240,panelWidth/2-18)),x=left+26+listW,y=contentTop()+29,w=panelWidth-listW-58;
         g.text(font,Component.literal(UiTextLayout.fit(selected.tier()+" · "+selected.name()+" +"+selected.enhancement(),w)),x,y,tierColor(selected.tier()),true);
         g.text(font,Component.literal(UiTextLayout.fit(statTypeLabel(selected.mainType())+" "+stat(selected.mainValue())+" · "+statTypeLabel(selected.subType())+" "+stat(selected.subValue()),w)),x,y+18,TEXT,false);
-        g.text(font,Component.literal(UiTextLayout.fit("+20 · "+statTypeLabel(selected.mainType())+" "+stat(selected.mainAt20())+" / "+statTypeLabel(selected.subType())+" "+stat(selected.subAt20()),w)),x,y+36,GOLD,false);
+        g.text(font,Component.literal(UiTextLayout.fit("+10 · "+statTypeLabel(selected.mainType())+" "+stat(selected.mainAt20())+" / "+statTypeLabel(selected.subType())+" "+stat(selected.subAt20()),w)),x,y+36,GOLD,false);
     }
 
     private void drawArchive(GuiGraphicsExtractor g){
@@ -507,7 +509,7 @@ public final class MetaMenuScreen extends Screen {
         Comparator<ClientMetaState.CharacterRow> c=Comparator.comparingInt(ClientMetaState.CharacterRow::nativeStar).reversed().thenComparing(ClientMetaState.CharacterRow::id);
         return ClientMetaState.snapshot().characters().stream()
                 .filter(r->ownershipFilter==OwnershipFilter.ALL||(ownershipFilter==OwnershipFilter.OWNED)==r.owned())
-                .filter(r->starFilter==0||(r.owned()?r.star():r.nativeStar())==starFilter)
+                .filter(r->starFilter==0||r.nativeStar()==starFilter)
                 .filter(r->minimumLevel==0||(r.owned()&&r.level()>=minimumLevel))
                 .filter(r->roleFilter==RoleFilter.ALL||r.primaryRole().equals(roleFilter.name()))
                 .sorted(c).toList();

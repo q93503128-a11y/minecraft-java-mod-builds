@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Physical Signature/Awakening hall. Exact trial enemy rosters remain governed by the existing canon-safe authoring
+ * Physical Signature Equipment Trial hall. Exact trial enemy rosters remain governed by the existing canon-safe authoring
  * layer; this class only presents player readiness and sealed/cleared states without exposing authoring diagnostics.
  * Seal entities are world-shared while readiness/completion remains player-local.
  */
@@ -61,7 +61,7 @@ public final class SignatureTrialHall {
                 SignatureTrialProgressService.Status status = SignatureTrialProgressService.status(player.getUUID(), seal.characterId());
                 String title = status.title();
                 desired.add(new SharedAuxiliaryActors.Spec(key(seal), seal.pos(),
-                        Component.literal(CanonicalData.definition(seal.characterId()).name() + " · 각성 시련")
+                        Component.literal(CanonicalData.definition(seal.characterId()).name() + " · 전용 장비 시련")
                                 .withStyle(seal.color(), ChatFormatting.BOLD),
                         seal.item(), false, true,
                         List.of(title + " · 완료", title + " · 입장 가능", title + " · 봉인됨", title + " · 조건 미충족")));
@@ -84,7 +84,7 @@ public final class SignatureTrialHall {
         player.sendSystemMessage(Component.literal("목표 · " + playerObjective(status.objective())).withStyle(ChatFormatting.WHITE));
 
         if (status.firstClearClaimed()) {
-            player.sendSystemMessage(Component.literal("첫 클리어 완료 · 전용 장비와 각성 Core를 획득했습니다.")
+            player.sendSystemMessage(Component.literal("첫 클리어 완료 · 전용 장비를 획득했습니다.")
                     .withStyle(ChatFormatting.GREEN));
         } else if (!status.progressionReady()) {
             player.sendSystemMessage(Component.literal(status.blockReason()).withStyle(ChatFormatting.GRAY));

@@ -8,20 +8,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AwakeningRouteRulesTest {
     @Test
-    void coreHeroesUseTheEightAuthoredSignatureTrials() {
+    void coreHeroesUsePersonalQuestAwakeningInsteadOfSignatureTrialGate() {
         for (int i = 1; i <= 8; i++) {
             String id = "P0" + i;
-            assertEquals(AwakeningRouteRules.Route.SIGNATURE_TRIAL, AwakeningRouteRules.route(id), id);
+            assertEquals(AwakeningRouteRules.Route.PERSONAL_QUEST, AwakeningRouteRules.route(id), id);
+            assertFalse(AwakeningRouteRules.signatureTrialRoute(id), id);
             assertFalse(AwakeningRouteRules.canonGap(id), id);
         }
     }
 
     @Test
-    void materialCharactersStayBlockedAtTheCanonConflict() {
+    void legacyMaterialCharactersStayUnavailableWithPlayerFacingCopy() {
         for (int i = 1; i <= 4; i++) {
             String id = "F0" + i;
-            assertEquals(AwakeningRouteRules.Route.CANON_GAP, AwakeningRouteRules.route(id), id);
-            assertTrue(AwakeningRouteRules.blockReason(id).startsWith("CANON GAP"), id);
+            assertEquals(AwakeningRouteRules.Route.LEGACY_UNAVAILABLE, AwakeningRouteRules.route(id), id);
+            assertTrue(AwakeningRouteRules.canonGap(id), id);
+            assertEquals("현재 이 동료의 각성 경로는 열려 있지 않습니다.", AwakeningRouteRules.blockReason(id));
         }
     }
 

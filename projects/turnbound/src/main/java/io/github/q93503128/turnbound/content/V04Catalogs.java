@@ -8,6 +8,8 @@ import com.google.gson.JsonParser;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import io.github.q93503128.turnbound.progression.GrowthRulesV1;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -106,9 +108,7 @@ public final class V04Catalogs {
     }
 
     public static int enhanceCost(String tier, int fromLevel) {
-        if (fromLevel < 0 || fromLevel >= 20) throw new IllegalArgumentException("Enhancement source level must be 0..19");
-        double factor = switch (tier) { case "T1" -> 1.0; case "T2" -> 1.5; case "T3" -> 2.2; case "T4" -> 3.2; case "SIGNATURE" -> 4.0; default -> throw new IllegalArgumentException("Unknown tier " + tier); };
-        return (int)Math.round(50.0 * factor * Math.pow(fromLevel + 1, 1.55));
+        return GrowthRulesV1.enhancementCost(tier, fromLevel);
     }
 
     private static Map<String, Encounter> loadEncounters(String resource) {

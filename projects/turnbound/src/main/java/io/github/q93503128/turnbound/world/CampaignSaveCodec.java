@@ -20,9 +20,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Versioned JSON codec mirroring the canonical v0.4 player save schema. */
+/** Versioned campaign save codec with explicit v0.4 -> v1 compatibility migration. */
 public final class CampaignSaveCodec {
-    public static final int SCHEMA_VERSION = 4;
+    public static final int SCHEMA_VERSION = 5;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final List<String> DEFAULT_PARTY = List.of("P01", "P03", "P04", "P08");
 
@@ -46,7 +46,9 @@ public final class CampaignSaveCodec {
     public static CampaignProgressStore.Snapshot decode(String json) {
         JsonObject root = JsonParser.parseString(json).getAsJsonObject();
         int schema = root.has("schemaVersion") ? root.get("schemaVersion").getAsInt() : 1;
-        if (schema != 1 && schema != SCHEMA_VERSION) throw new IllegalStateException("Unsupported TURNBOUND campaign save schema " + schema);
+        if (schema != 1 && schema != 4 && schema != SCHEMA_VERSION) {
+            throw new IllegalStateException("Unsupported TURNBOUND campaign save schema " + schema);
+        }
 
         Set<String> orphanedCharacters = new LinkedHashSet<>();
         Set<String> orphanedEquipment = new LinkedHashSet<>();
@@ -61,8 +63,11 @@ public final class CampaignSaveCodec {
             growth.putIfAbsent(characterId, CharacterGrowthRules.initial(characterId));
         }
 
-        EquipmentInventory.Snapshot equipment = schema >= 4 && root.has("equipment")
-                ? decodeEquipment(root.getAsJsonObject("equipment"), orphanedEquipment) : EquipmentInventory.Snapshot.empty();
+        EquipmentDecode equipmentDecode = schema >= 4 && root.has("equipment")
+                ? decodeEquipment(root.getAsJsonObject("equipment"), orphanedEquipment, schema < SCHEMA_VERSION)
+                : new EquipmentDecode(EquipmentInventory.Snapshot.empty(), 0);
+        if (equipmentDecode.goldRefund() > 0) profile = withGoldRefund(profile, equipmentDecode.goldRefund());
+        EquipmentInventory.Snapshot equipment = equipmentDecode.snapshot();
         QuestProgress.Snapshot quests = schema >= 4 && root.has("quests")
                 ? decodeQuests(root.getAsJsonObject("quests")) : QuestProgress.Snapshot.empty();
         List<String> activeParty = decodeParty(optionalArray(root, "activeParty"), profile.snapshot(), orphanedCharacters);
@@ -242,14 +247,21 @@ public final class CampaignSaveCodec {
         return out;
     }
 
-    private static EquipmentInventory.Snapshot decodeEquipment(JsonObject raw, Set<String> orphaned) {
+    private static EquipmentDecode decodeEquipment(JsonObject raw, Set<String> orphaned, boolean legacySchema) {
         long nextSerial = optionalLong(raw, "nextSerial", 1);
+        long goldRefund = 0;
         Map<String, EquipmentInventory.Item> items = new LinkedHashMap<>();
         for (JsonElement element : optionalArray(raw, "items")) {
             JsonObject row = element.getAsJsonObject();
             String itemId = requiredString(row, "itemId");
             if (!knownEquipment(itemId)) { orphaned.add(itemId); continue; }
-            EquipmentInventory.Item item = new EquipmentInventory.Item(requiredString(row, "instanceId"), itemId, optionalInt(row, "enhancementLevel", 0));
+            int rawLevel = optionalInt(row, "enhancementLevel", 0);
+            int level = rawLevel;
+            if (legacySchema && rawLevel > io.github.q93503128.turnbound.progression.GrowthRulesV1.maxEnhancement()) {
+                goldRefund = Math.addExact(goldRefund, EquipmentInventory.legacyOverflowRefund(itemId, rawLevel));
+                level = io.github.q93503128.turnbound.progression.GrowthRulesV1.maxEnhancement();
+            }
+            EquipmentInventory.Item item = new EquipmentInventory.Item(requiredString(row, "instanceId"), itemId, level);
             items.put(item.instanceId(), item);
         }
         List<EquipmentInventory.Item> pendingRewards = new ArrayList<>();
@@ -271,7 +283,16 @@ public final class CampaignSaveCodec {
         }
         Map<String, Integer> choices = new LinkedHashMap<>();
         for (var entry : optionalObject(raw, "choiceTokens").entrySet()) choices.put(entry.getKey(), entry.getValue().getAsInt());
-        return new EquipmentInventory.Snapshot(nextSerial, items, loadouts, choices, pendingRewards);
+        return new EquipmentDecode(new EquipmentInventory.Snapshot(nextSerial, items, loadouts, choices, pendingRewards), goldRefund);
+    }
+
+    private static ProfileDecode withGoldRefund(ProfileDecode profile, long refund) {
+        PlayerProfile.Snapshot p = profile.snapshot();
+        PlayerProfile.Snapshot migrated = new PlayerProfile.Snapshot(
+                Math.addExact(p.gold(), refund), p.summonCrystal(), p.starEssence(), p.awakeningCore(),
+                p.ownedCharacters(), p.fiveStarPity(), p.starterArchiveUnlocked(), p.starterArchiveUsed(),
+                p.summonHistory(), p.partyPresets());
+        return new ProfileDecode(migrated, profile.orphanedCharacters());
     }
 
     private static JsonObject encodeQuests(QuestProgress.Snapshot snapshot) {
@@ -331,4 +352,5 @@ public final class CampaignSaveCodec {
     private static String optionalString(JsonObject object, String key, String fallback) { return object.has(key) ? object.get(key).getAsString() : fallback; }
     private static String requiredString(JsonObject object, String key) { if (!object.has(key)) throw new IllegalStateException("Missing string " + key); return object.get(key).getAsString(); }
     private record ProfileDecode(PlayerProfile.Snapshot snapshot, Set<String> orphanedCharacters) {}
+    private record EquipmentDecode(EquipmentInventory.Snapshot snapshot, long goldRefund) {}
 }

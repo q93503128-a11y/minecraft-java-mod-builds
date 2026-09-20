@@ -5,15 +5,11 @@ import io.github.q93503128.turnbound.content.SignatureTrialCatalog;
 import io.github.q93503128.turnbound.content.SignatureTrialEncounterAuthoring;
 import io.github.q93503128.turnbound.progression.CharacterGrowthRules;
 import io.github.q93503128.turnbound.progression.EquipmentInventory;
+import io.github.q93503128.turnbound.progression.GrowthRulesV1;
 
 import java.util.UUID;
 
-/**
- * Server-authoritative Signature Trial progression facade for the Hall/menu/world entry flow.
- *
- * <p>The service intentionally reports canon-blocked Trials instead of inventing encounter rosters.
- * Reward settlement accepts only an evaluator result that is both objectively clear and canon-ready.</p>
- */
+/** Server-authoritative Signature Equipment Trial progression. Awakening is a separate v1 growth axis. */
 public final class SignatureTrialProgressService {
     public record Status(
             String characterId,
@@ -29,7 +25,8 @@ public final class SignatureTrialProgressService {
             String blockReason
     ) {
         public boolean progressionReady() {
-            return owned && endgameUnlocked && level == 60 && currentStar == 6 && characterQuestComplete && !firstClearClaimed;
+            return owned && endgameUnlocked && level == GrowthRulesV1.maxLevel()
+                    && characterQuestComplete && !firstClearClaimed;
         }
 
         public boolean canEnter() { return progressionReady() && encounterCanonReady; }
@@ -75,10 +72,10 @@ public final class SignatureTrialProgressService {
     }
 
     private static String progressionBlock(boolean endgame, CharacterProgression.State level, CharacterGrowthRules.State growth) {
-        if (!endgame) return "B05 클리어 후 Signature Trial이 해금됩니다.";
+        if (!endgame) return "메인 여정을 더 진행하면 전용 장비 시련이 열립니다.";
         if (!growth.characterQuestComplete()) return "해당 캐릭터 개인 퀘스트를 먼저 완료해야 합니다.";
-        if (growth.currentStar() != 6 || level.level() != 60) return "Signature Trial은 Lv60 / ★6이 필요합니다.";
-        if (growth.signatureTrialCleared()) return "Signature Trial 첫 클리어 보상을 이미 획득했습니다.";
+        if (level.level() != GrowthRulesV1.maxLevel()) return "전용 장비 시련은 Lv60이 필요합니다.";
+        if (growth.signatureTrialCleared()) return "전용 장비 시련의 첫 보상을 이미 획득했습니다.";
         return "";
     }
 }

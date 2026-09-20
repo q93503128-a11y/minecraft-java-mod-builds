@@ -7,21 +7,26 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CharacterGrowthRulesTest {
     @Test
-    void canonicalPromotionCostsCapsAndCumulativeMultiplierAreStable() {
-        assertEquals(20, CharacterGrowthRules.promotionCost(1));
-        assertEquals(50, CharacterGrowthRules.promotionCost(2));
-        assertEquals(120, CharacterGrowthRules.promotionCost(3));
-        assertEquals(250, CharacterGrowthRules.promotionCost(4));
-        assertEquals(500, CharacterGrowthRules.promotionCost(5));
-        assertEquals(60, CharacterGrowthRules.levelCap(6));
-        assertEquals(1.232, CharacterGrowthRules.promotionMultiplier(4, 6), 0.000001);
+    void v1UsesOneToSixtyLevelAxisWithoutRepeatRarityPromotion() {
+        assertEquals(60, CharacterGrowthRules.levelCap(3));
+        assertEquals(60, CharacterGrowthRules.levelCap(4));
+        assertEquals(60, CharacterGrowthRules.levelCap(5));
+        assertEquals(5, CharacterGrowthRules.initial("P02").currentStar());
+        assertEquals(2, CharacterGrowthRules.initial("F03").currentStar());
+        assertEquals(1.0, CharacterGrowthRules.promotionMultiplier(4, 6), 0.000001);
+        assertThrows(UnsupportedOperationException.class, () -> CharacterGrowthRules.promotionCost(4));
     }
 
     @Test
-    void initialStateUsesNativeStarAndAwakeningCannotExistBelowSixStars() {
-        assertEquals(5, CharacterGrowthRules.initial("P02").currentStar());
-        assertEquals(2, CharacterGrowthRules.initial("F03").currentStar());
-        assertThrows(IllegalArgumentException.class,
-                () -> new CharacterGrowthRules.State(5, true, true, true));
+    void awakeningNoLongerRequiresLegacyStarSixState() {
+        var state = new CharacterGrowthRules.State(4, false, true, false).withAwakened();
+        assertEquals(4, state.currentStar());
+        assertEquals(true, state.awakened());
+    }
+
+    @Test
+    void dataDrivenLevelCurveHitsV1ProductionTarget() {
+        assertEquals(1.0, GrowthRulesV1.characterLevelMultiplier(1), 0.000001);
+        assertEquals(2.3, GrowthRulesV1.characterLevelMultiplier(60), 0.000001);
     }
 }

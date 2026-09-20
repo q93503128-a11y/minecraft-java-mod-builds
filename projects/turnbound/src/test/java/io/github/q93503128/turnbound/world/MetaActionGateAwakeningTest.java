@@ -5,20 +5,19 @@ import org.junit.jupiter.api.Test;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MetaActionGateAwakeningTest {
     @Test
-    void materialAwakeningCannotBypassTheCanonGap() {
+    void legacyMaterialAwakeningIsBlockedWithPlayerFacingCopy() {
         UUID playerId = UUID.randomUUID();
         for (int i = 1; i <= 4; i++) {
-            String denial = MetaActionGate.denial(playerId, "AWAKEN|F0" + i);
-            assertTrue(denial.startsWith("CANON GAP"), denial);
+            assertEquals("현재 이 동료의 각성 경로는 열려 있지 않습니다.",
+                    MetaActionGate.denial(playerId, "AWAKEN|F0" + i));
         }
     }
 
     @Test
-    void authoredHeroAwakeningContinuesToTheNormalServerValidation() {
+    void authoredHeroAwakeningContinuesToNormalServerValidation() {
         assertEquals("", MetaActionGate.denial(UUID.randomUUID(), "AWAKEN|P01"));
     }
 }

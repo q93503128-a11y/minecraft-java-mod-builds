@@ -1,17 +1,16 @@
 package io.github.q93503128.turnbound.content;
 
 /**
- * Canon-facing classifier for character Awakening routes.
+ * v1 Awakening route classifier.
  *
- * <p>P01~P08 have authored Signature Trials. F01~F04 explicitly have Awakening effects but no Signature
- * Equipment/Trial, while the numeric wiki still requires a Signature Trial for Awakening. Until that conflict
- * is resolved, the material-character route must stay blocked instead of inventing a replacement challenge.</p>
+ * <p>P01~P08 awaken through their personal character progression. Signature Equipment Trials are separate.
+ * F01~F04 are legacy save-compatible identities and remain unavailable until promoted into fully authored v1 roles.</p>
  */
 public final class AwakeningRouteRules {
-    public enum Route { SIGNATURE_TRIAL, CANON_GAP }
+    public enum Route { PERSONAL_QUEST, LEGACY_UNAVAILABLE }
 
-    private static final String MATERIAL_CANON_GAP =
-            "CANON GAP · 소재형 캐릭터의 각성 효과는 존재하지만, 전용 장비 시련 없이 각성을 여는 별도 조건은 아직 정해지지 않았습니다.";
+    private static final String LEGACY_UNAVAILABLE =
+            "현재 이 동료의 각성 경로는 열려 있지 않습니다.";
 
     private AwakeningRouteRules() { }
 
@@ -20,21 +19,22 @@ public final class AwakeningRouteRules {
     }
 
     public static Route route(String characterId) {
-        if (SignatureTrialCatalog.contains(characterId)) return Route.SIGNATURE_TRIAL;
-        if (materialCharacter(characterId)) return Route.CANON_GAP;
+        if (SignatureTrialCatalog.contains(characterId)) return Route.PERSONAL_QUEST;
+        if (materialCharacter(characterId)) return Route.LEGACY_UNAVAILABLE;
         throw new IllegalArgumentException("Unknown Awakening route for " + characterId);
     }
 
+    /** Retained for old callers; Signature Trial is no longer the Awakening prerequisite. */
     public static boolean signatureTrialRoute(String characterId) {
-        return route(characterId) == Route.SIGNATURE_TRIAL;
+        return false;
     }
 
     public static boolean canonGap(String characterId) {
-        return defined(characterId) && route(characterId) == Route.CANON_GAP;
+        return defined(characterId) && route(characterId) == Route.LEGACY_UNAVAILABLE;
     }
 
     public static String blockReason(String characterId) {
-        return canonGap(characterId) ? MATERIAL_CANON_GAP : "";
+        return canonGap(characterId) ? LEGACY_UNAVAILABLE : "";
     }
 
     private static boolean materialCharacter(String characterId) {

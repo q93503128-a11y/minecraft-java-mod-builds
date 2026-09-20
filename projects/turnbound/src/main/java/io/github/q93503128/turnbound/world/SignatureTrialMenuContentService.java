@@ -4,6 +4,7 @@ import io.github.q93503128.turnbound.content.AwakeningRouteRules;
 import io.github.q93503128.turnbound.content.CharacterMenuCatalog;
 import io.github.q93503128.turnbound.content.SignatureTrialCatalog;
 import io.github.q93503128.turnbound.content.V04Catalogs;
+import io.github.q93503128.turnbound.progression.GrowthRulesV1;
 
 import java.util.UUID;
 
@@ -24,7 +25,7 @@ public final class SignatureTrialMenuContentService {
         if (playerId == null) return "";
         var campaign = CampaignProgressStore.snapshot(playerId);
         var equipment = campaign.equipment();
-        long awakeningCore = campaign.profile().awakeningCore();
+        long awakeningCore = 0L; // wire-compatibility slot only; v1 does not expose a global Awakening Core.
         StringBuilder out = new StringBuilder();
 
         for (SignatureTrialCatalog.Spec spec : SignatureTrialCatalog.all()) {
@@ -37,8 +38,10 @@ public final class SignatureTrialMenuContentService {
             boolean signatureGranted = signatureInInventory || signaturePending;
             boolean awakened = status.owned() && campaign.growth().containsKey(spec.characterId())
                     && campaign.growth().get(spec.characterId()).awakened();
-            boolean awakeningReady = status.owned() && !awakened && status.level() == 60 && status.currentStar() == 6
-                    && status.firstClearClaimed() && awakeningCore > 0;
+            boolean awakeningReady = status.owned() && !awakened
+                    && status.level() == GrowthRulesV1.maxLevel()
+                    && status.characterQuestComplete()
+                    && campaign.profile().gold() >= GrowthRulesV1.awakeningGoldCost();
 
             append(out,
                     status.characterId(), status.title(), status.owned(), status.endgameUnlocked(),
@@ -60,7 +63,7 @@ public final class SignatureTrialMenuContentService {
 
             append(out,
                     characterId,
-                    "없음 · 소재형 각성 경로",
+                    "미개방 · 각성 경로",
                     owned,
                     CampaignContentUnlocks.endgame(playerId),
                     level,
@@ -73,7 +76,7 @@ public final class SignatureTrialMenuContentService {
                     awakeningCore,
                     awakened,
                     false,
-                    "전용 장비와 개인 퀘스트 없음 · 각성 효과만 정본에 정의됨",
+                    "아직 각성 경로가 열리지 않았습니다.",
                     AwakeningRouteRules.blockReason(characterId));
         }
         return out.toString();

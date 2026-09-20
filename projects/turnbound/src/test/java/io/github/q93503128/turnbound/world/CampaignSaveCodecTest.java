@@ -92,6 +92,42 @@ class CampaignSaveCodecTest {
     }
 
     @Test
+    void schemaFourPlusTwentyEquipmentMigratesToPlusTenAndRefundsRetiredSpend() {
+        String legacy = """
+                {
+                  "schemaVersion": 4,
+                  "profile": {
+                    "gold": 1000,
+                    "summonCrystal": 0,
+                    "starEssence": 0,
+                    "awakeningCore": 4,
+                    "ownedCharacters": ["P01"],
+                    "fiveStarPity": 0,
+                    "starterArchiveUnlocked": false,
+                    "starterArchiveUsed": false
+                  },
+                  "characters": {"P01":{"level":60,"xp":0}},
+                  "growth": {"P01":{"currentStar":6,"awakened":false,"characterQuestComplete":true,"signatureTrialCleared":false}},
+                  "equipment": {
+                    "nextSerial": 2,
+                    "items": [{"instanceId":"eq_00000001","itemId":"W01","enhancementLevel":20}],
+                    "pendingRewards": [],
+                    "loadouts": {},
+                    "choiceTokens": {}
+                  },
+                  "quests": {},
+                  "clearedEncounters": []
+                }
+                """;
+
+        CampaignProgressStore.Snapshot migrated = CampaignSaveCodec.decode(legacy);
+        assertEquals(10, migrated.equipment().items().get("eq_00000001").enhancementLevel());
+        assertEquals(1_000 + EquipmentInventory.legacyOverflowRefund("W01", 20), migrated.profile().gold());
+        assertEquals(4, migrated.profile().awakeningCore(), "legacy field is preserved but no longer active");
+        assertEquals(6, migrated.growth().get("P01").currentStar(), "legacy star data remains readable");
+    }
+
+    @Test
     void unknownSchemaIsRejectedInsteadOfSilentlyResettingProgress() {
         String json = CampaignSaveCodec.encode(new CampaignProgressStore.Snapshot(
                 new PlayerProfile.Snapshot(5_000, 0, 0, 0, Set.of("P01"), 0, false, false),
@@ -99,6 +135,6 @@ class CampaignSaveCodecTest {
                 Map.of("P01", CharacterGrowthRules.initial("P01")), EquipmentInventory.Snapshot.empty(), QuestProgress.Snapshot.empty(),
                 Set.of(), Set.of(), Set.of()));
         assertThrows(IllegalStateException.class,
-                () -> CampaignSaveCodec.decode(json.replace("\"schemaVersion\": 4", "\"schemaVersion\": 999")));
+                () -> CampaignSaveCodec.decode(json.replace("\"schemaVersion\": 5", "\"schemaVersion\": 999")));
     }
 }

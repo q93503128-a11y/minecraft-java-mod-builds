@@ -82,11 +82,10 @@ public final class SignatureTrialCatalog {
                     "Toto 1회 사망 후 재소환 · Marion 생존 상태로 승리",
                     GapKind.ENCOUNTER_ROSTER,
                     "Trial 적 편성이 v0.4에 지정되지 않음"),
-            new Spec("P08", "핏빛 손잡이의 시련",
+            gap("P08", "핏빛 손잡이의 시련",
                     "전투 중 HP 1 생존 패시브 발동 · 종료 HP 30% 이하 · 승리",
-                    CanonState.CANON_CONTRADICTION,
-                    GapKind.PREREQUISITE_CONTRADICTION,
-                    "v0.4에서 HP 1 치명 생존은 P08 Awakening 효과이지만 Signature Trial 클리어가 Awakening의 선행조건임")
+                    GapKind.ENCOUNTER_ROSTER,
+                    "Trial 적 편성이 v0.4에 지정되지 않음")
     );
     private static final Map<String, Spec> BY_CHARACTER = index();
 

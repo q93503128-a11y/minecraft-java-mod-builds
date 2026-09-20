@@ -137,12 +137,16 @@ final class SignatureTrialEvaluatorTest {
     }
 
     @Test
-    void p08CanonContradictionCanNeverSettle() {
-        BattleState state = victory(unit("p08", "P08", CombatantSide.ALLY));
+    void p08LethalSurvivalAndLowHpFinishAreEvaluableAfterAwakeningDecoupling() {
+        CombatantState p08 = unit("p08", "P08", CombatantSide.ALLY);
+        BattleState state = victory(p08);
+        p08.takeDamage(750);
+        state.addEvent(new BattleEvent("LETHAL_SURVIVE", p08.instanceId(), p08.instanceId(), 1, "P08_AWAKEN"));
+
         SignatureTrialEvaluator.Evaluation result = SignatureTrialEvaluator.evaluate("P08", state);
-        assertEquals(SignatureTrialEvaluator.ObjectiveState.NOT_EVALUABLE, result.objectiveState());
-        assertTrue(result.canonBlocked());
+        assertEquals(SignatureTrialEvaluator.ObjectiveState.MET, result.objectiveState());
+        assertTrue(result.objectiveMet());
+        assertTrue(result.canonBlocked(), "encounter roster is still unauthored");
         assertFalse(result.settlementEligible());
-        assertTrue(result.detail().contains("Awakening"));
     }
 }

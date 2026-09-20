@@ -20,7 +20,9 @@ public final class EquipmentInventory {
             if (instanceId == null || instanceId.isBlank() || itemId == null || itemId.isBlank()) {
                 throw new IllegalArgumentException("Blank equipment identity");
             }
-            if (enhancementLevel < 0 || enhancementLevel > 20) throw new IllegalArgumentException("Enhancement must be 0..20");
+            if (enhancementLevel < 0 || enhancementLevel > GrowthRulesV1.maxEnhancement()) {
+                throw new IllegalArgumentException("Enhancement must be 0.." + GrowthRulesV1.maxEnhancement());
+            }
         }
     }
 
@@ -177,9 +179,11 @@ public final class EquipmentInventory {
 
     public Item enhance(String instanceId, PlayerProfile profile) {
         Item item = item(instanceId);
-        if (item.enhancementLevel() >= 20) throw new IllegalStateException("Equipment is already +20");
+        if (item.enhancementLevel() >= GrowthRulesV1.maxEnhancement()) {
+            throw new IllegalStateException("Equipment is already +" + GrowthRulesV1.maxEnhancement());
+        }
         ItemSpec spec = spec(item.itemId());
-        int cost = V04Catalogs.enhanceCost(spec.signature ? "SIGNATURE" : spec.tier, item.enhancementLevel());
+        int cost = GrowthRulesV1.enhancementCost(spec.signature ? "SIGNATURE" : spec.tier, item.enhancementLevel());
         if (!profile.spend(PlayerProfile.Currency.GOLD, cost)) throw new IllegalStateException("Not enough Gold");
         Item upgraded = new Item(item.instanceId(), item.itemId(), item.enhancementLevel() + 1);
         items.put(instanceId, upgraded);
@@ -202,16 +206,20 @@ public final class EquipmentInventory {
         return price;
     }
 
-    public void equip(String characterId, String instanceId, int currentStar) {
+    public void equip(String characterId, String instanceId) {
         Item item = item(instanceId);
         ItemSpec spec = spec(item.itemId());
-        if (spec.signature) {
-            if (!spec.owner.equals(characterId)) throw new IllegalArgumentException("Signature equipment owner mismatch");
-            if (currentStar < 6) throw new IllegalStateException("Signature slot requires currentStar >= 6");
+        if (spec.signature && !spec.owner.equals(characterId)) {
+            throw new IllegalArgumentException("Signature equipment owner mismatch");
         }
         removeFromAllLoadouts(instanceId);
         Loadout current = loadouts.getOrDefault(characterId, Loadout.empty());
         loadouts.put(characterId, current.with(spec.slot, instanceId));
+    }
+
+    /** Binary/source compatibility for old internal callers; rarity no longer gates Signature equipment. */
+    public void equip(String characterId, String instanceId, int ignoredLegacyCurrentStar) {
+        equip(characterId, instanceId);
     }
 
     public void unequip(String characterId, Slot slot) {
@@ -250,24 +258,26 @@ public final class EquipmentInventory {
             Item item = item(instanceId);
             ItemSpec spec = spec(item.itemId());
             if (!spec.fixedRule.isBlank()) out.add(spec.fixedRule);
-            if (spec.signature) {
-                if (item.enhancementLevel() >= 10 && !spec.m10.isBlank()) out.add(spec.m10);
-                if (item.enhancementLevel() >= 20 && !spec.m20.isBlank()) out.add(spec.m20);
+            if (spec.signature && item.enhancementLevel() >= GrowthRulesV1.maxEnhancement() && !spec.m10.isBlank()) {
+                out.add(spec.m10);
             }
         }
         return List.copyOf(out);
     }
 
     public static double scaledMain(double base, int enhancementLevel) {
-        return base * (1.0 + 0.04 * enhancementLevel);
+        int safe = Math.max(0, Math.min(GrowthRulesV1.maxEnhancement(), enhancementLevel));
+        return base * (1.0 + 0.04 * safe);
     }
 
+    /** v1 enhancement grows the main stat only; the secondary line is no longer a repeated enhancement axis. */
     public static double scaledSub(double base, int enhancementLevel) {
-        double factor = enhancementLevel >= 20 ? 2.00
-                : enhancementLevel >= 15 ? 1.75
-                : enhancementLevel >= 10 ? 1.50
-                : enhancementLevel >= 5 ? 1.25 : 1.00;
-        return base * factor;
+        return base;
+    }
+
+    public static int legacyOverflowRefund(String itemId, int legacyEnhancementLevel) {
+        ItemSpec spec = spec(itemId);
+        return GrowthRulesV1.legacyOverflowRefund(spec.signature ? "SIGNATURE" : spec.tier, legacyEnhancementLevel);
     }
 
     private void validateReferences() {

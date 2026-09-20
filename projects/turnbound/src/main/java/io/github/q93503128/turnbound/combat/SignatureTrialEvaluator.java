@@ -13,9 +13,9 @@ import java.util.List;
  *     <li>Is canon complete enough to settle a first-clear reward?</li>
  * </ol>
  *
- * <p>The current v0.4 documents leave every Trial encounter roster unresolved, and P08 has a
- * prerequisite contradiction. Known objective constraints are still evaluated when they are decisive;
- * unresolved actor identities remain NOT_EVALUABLE instead of being fabricated.</p>
+ * <p>The current compatibility Trial data still leaves encounter rosters unresolved. Known objective
+ * constraints are evaluated when decisive; unresolved actor identities remain NOT_EVALUABLE instead of
+ * fabricating production content.</p>
  */
 public final class SignatureTrialEvaluator {
     public enum ObjectiveState { MET, NOT_MET, NOT_EVALUABLE }
@@ -57,7 +57,7 @@ public final class SignatureTrialEvaluator {
             case "P05" -> evaluateP05(spec, state);
             case "P06" -> evaluateP06(spec, state);
             case "P07" -> evaluateP07(spec, state);
-            case "P08" -> blocked(spec, ObjectiveState.NOT_EVALUABLE, spec.unresolvedReason());
+            case "P08" -> evaluateP08(spec, state);
             default -> throw new IllegalArgumentException("No Signature Trial evaluator for " + characterId);
         };
     }
@@ -169,9 +169,20 @@ public final class SignatureTrialEvaluator {
                         + ", marionAlive=" + marionAlive);
     }
 
+    private static Evaluation evaluateP08(SignatureTrialCatalog.Spec spec, BattleState state) {
+        CombatantState raze = hero(state, "P08");
+        if (raze == null) return blocked(spec, ObjectiveState.NOT_MET, "P08 is not present in the Trial party");
+        boolean lethalSurvived = state.events().stream().anyMatch(event ->
+                "LETHAL_SURVIVE".equals(event.type())
+                        && raze.instanceId().equals(event.sourceId()));
+        boolean lowHpFinish = !raze.downed() && raze.hp() * 100 <= raze.maxHp() * 30;
+        ObjectiveState result = lethalSurvived && lowHpFinish ? ObjectiveState.MET : ObjectiveState.NOT_MET;
+        return blocked(spec, result, "lethalSurvived=" + lethalSurvived + ", lowHpFinish=" + lowHpFinish);
+    }
+
     private static Evaluation blocked(SignatureTrialCatalog.Spec spec, ObjectiveState state, String detail) {
-        // Current v0.4 has no fully authored Signature Trial encounter. RULES_READY_ROSTER_GAP and
-        // CANON_CONTRADICTION are both hard settlement blocks until the canon itself is revised.
+        // No fully authored production Signature Trial encounter exists yet. Every unresolved authoring
+        // state remains a settlement block until its real encounter is bound.
         boolean canonBlocked = switch (spec.canonState()) {
             case RULES_READY_ROSTER_GAP, CANON_CONTRADICTION -> true;
         };

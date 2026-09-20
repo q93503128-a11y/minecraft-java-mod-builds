@@ -9,6 +9,7 @@ import io.github.q93503128.turnbound.combat.CombatantDefinition;
 import io.github.q93503128.turnbound.combat.EffectType;
 import io.github.q93503128.turnbound.combat.SkillDefinition;
 import io.github.q93503128.turnbound.combat.SkillEffect;
+import io.github.q93503128.turnbound.progression.GrowthRulesV1;
 import io.github.q93503128.turnbound.combat.TargetRule;
 
 import java.io.InputStream;
@@ -41,11 +42,14 @@ public final class CanonicalData {
         JsonObject stats = raw.getAsJsonObject("stats");
         int nativeStars = integer(raw, "nativeStars", 0);
         String rank = string(raw, "rank", nativeStars > 0 ? "PLAYABLE" : "NORMAL");
-        int safeLevel = Math.max(1, Math.min(60, level));
-        int safeStars = nativeStars == 0 ? 0 : Math.max(nativeStars, Math.min(6, currentStars));
+        int safeLevel = Math.max(1, Math.min(GrowthRulesV1.maxLevel(), level));
+        // v1 formal roster rarity is identity, not a repeat-promotion stat axis. Legacy currentStars is ignored.
+        int safeStars = nativeStars == 0 ? 0 : nativeStars;
 
-        double levelMultiplier = 1.0 + 0.045 * (safeLevel - 1);
-        double starMultiplier = nativeStars == 0 ? 1.0 : starMultiplier(nativeStars, safeStars);
+        double levelMultiplier = nativeStars > 0
+                ? GrowthRulesV1.characterLevelMultiplier(safeLevel)
+                : 1.0 + 0.045 * (safeLevel - 1);
+        double starMultiplier = 1.0;
         int hp;
         int attack;
         int defense;
@@ -85,19 +89,9 @@ public final class CanonicalData {
 
     public static double levelMultiplier(int level) { return 1.0 + 0.045 * (Math.max(1, Math.min(60, level)) - 1); }
 
+    /** Legacy API retained for old callers; repeated rarity promotion has no v1 stat multiplier. */
     public static double starMultiplier(int nativeStars, int currentStars) {
-        double value = 1.0;
-        for (int star = Math.max(1, nativeStars); star < Math.min(6, currentStars); star++) {
-            value *= switch (star) {
-                case 1 -> 1.06;
-                case 2 -> 1.07;
-                case 3 -> 1.08;
-                case 4 -> 1.10;
-                case 5 -> 1.12;
-                default -> 1.0;
-            };
-        }
-        return value;
+        return 1.0;
     }
 
     public static int levelCap(int stars) {
