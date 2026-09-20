@@ -602,3 +602,24 @@ Verification boundary:
 - NeoForge 26.2 dedicated-server smoke reached Done (5.026s).
 - Verified JAR SHA-256: `2ab174a90310ade4021f96855be2c8951be88471d88226c25537061ca2039f8d`.
 - This does **not** prove real-client marker apparent size, occlusion against tall bosses, color readability, two-marker spacing, animation speed, or whether the symbols remain visually quiet enough beside existing skill VFX. CLIENT RUNTIME TESTED / PLAYTESTED remain NO until the later 26.2 client pass.
+
+
+### authoritative Turn Order motion follow-up
+
+P02 Lumea's canonical signature is not a private resource meter. The Turn Order rail itself is the primary presentation of her value, so a correct scheduler that only snaps from one static list to another still undersells the mechanic.
+
+TURNBOUND application:
+- the top rail now animates from the previous authoritative ordering into the new authoritative ordering whenever the synced timeline changes;
+- the transition is presentation-only and never predicts, interpolates or modifies Gauge values; destination order always comes from the server snapshot;
+- matching uses an LCS first so ordinary turn consumption keeps repeated future portraits attached to the correct later occurrence instead of making a duplicate unit appear to teleport from its just-consumed slot;
+- unmatched identical entries are recovered by nearest-slot matching so a real Gauge reorder can visibly jump several positions rather than snapping directly to the destination;
+- large changes of more than one slot get a short restrained destination accent, while ordinary one-slot queue advance remains lower emphasis;
+- the motion uses a short 260 ms ease-out and the existing live-3D portrait tokens. No clock meter, extra P02 resource widget, floating text, or separate card layer was added;
+- this directly supports P02's 가속 / 시간 도약 / 시차 봉쇄 loop while also improving readability for every authoritative Gauge push/pull in the battle system;
+- pure tests cover duplicate occurrence continuity, genuine reorder recovery, clipping to the seven-token production rail, and easing bounds.
+
+Verification boundary:
+- Build TURNBOUND #838 passed the full test/build workflow.
+- NeoForge 26.2 dedicated-server smoke reached Done (4.971s).
+- Verified JAR SHA-256: `0aea6148af0236a70546f522bcaaa039488d2e5790fd723a3badacb49cafe168`.
+- This does **not** establish that 260 ms is the final best client feel, that fast consecutive Gauge changes never visually crowd each other, or that every GUI Scale keeps portrait motion readable. CLIENT RUNTIME TESTED / PLAYTESTED remain NO until the later 26.2 client pass.
