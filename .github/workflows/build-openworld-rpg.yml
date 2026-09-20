@@ -143,7 +143,7 @@ jobs:
           - full transitive dependency graph: VERIFIED BY RUNTIME BOOT OF PINNED TOP-LEVEL JARS
           - external creature runtime binding: NOT TESTED
           - Better Combat authority seam: IMPLEMENTED (real-hit runtime execution NOT TESTED)
-          - Spell Engine cast-gate seam: IMPLEMENTED (project Mana/cooldown/impact transaction NOT IMPLEMENTED)
+          - Spell Engine resource/cooldown transaction: IMPLEMENTED + UNIT/SERVER STARTUP VERIFIED; project impact/damage transaction remains fail-closed / NOT IMPLEMENTED
           - player-facing R01 content: NOT IMPLEMENTED
           - playtest: NOT RUN
           - multiplayer test: NOT RUN

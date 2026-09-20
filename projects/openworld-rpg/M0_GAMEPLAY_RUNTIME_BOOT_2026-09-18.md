@@ -580,3 +580,66 @@ MULTIPLAYER TESTED: NO
 ```
 
 Therefore this pass closes the **cast-admission/event boundary**, not the full Spell Engine authority milestone. The next Spell Engine gate must use the real project resource/cooldown/combat state rather than a temporary Mana ledger or donor cost system.
+
+
+---
+
+# 13. Canonical Spell Engine resource/cooldown transaction — 2026-09-18
+
+Implementation chain:
+
+```text
+1a7e82e499dbdcbd93d598714ec6654fe454147b
+38f4d1a2024fe72db0f62ea3ea26bc45539b5676
+32b6bc42b7ec9a61cf171a97912cc2d670efc2ff
+5d71c3ae0ee277aa048b65658067aeda45d1bbff
+b1f355779b8ebb6c703d0b23b28c4900fa06925d
+0e8daf36de59f5fc6fb6bc36ad9699870da309a7
+```
+
+Verified Openworld RPG workflow:
+
+```text
+Build Openworld RPG
+run 35332360900
+conclusion: SUCCESS
+```
+
+This closes the first real project-owned Spell Engine resource transaction without inventing a temporary second resource system.
+
+Implemented canonical rules:
+
+- Lv1/base WIL 5 initializes 100 Mana;
+- canonical WIL → MaxMana and base Mana regeneration formulas are executable domain rules;
+- Mana spending pauses natural regeneration for 20 ticks;
+- after 100 ticks without combat activity natural Mana regeneration is doubled;
+- project cooldowns are server-tick authoritative;
+- canonical Arc Bolt authority is 12 Mana / 60 ticks cooldown / ActionCoefficient 1.20 / PoiseCoefficient 0.50;
+- PRE admission has no resource side effects;
+- POST admission commits Mana and cooldown once;
+- same accepted cast re-entry does not double-spend;
+- different project spells share one per-player accepted-cast lock;
+- projectile/meteor impact lifetime is separate from the short resource transaction lifetime;
+- project Spell Engine data must neutralize donor exhaust, durability, item/effect costs and donor cooldowns;
+- a non-neutral donor cost contract causes the project cast to be rejected;
+- the project CUSTOM impact handler is registered, but the current Arc Bolt impact port is intentionally fail-closed.
+
+The last item is deliberate. The project still lacks production equipment/offensive-stat/Defense/Magic-Resistance/poise runtime state, so accepting Spell Engine built-in damage or inventing a temporary damage formula would violate the combat canon.
+
+Current exact status:
+
+```text
+PROJECT MANA DOMAIN STATE: IMPLEMENTED + UNIT TESTED
+PROJECT COOLDOWN DOMAIN STATE: IMPLEMENTED + UNIT TESTED
+SPELL ENGINE PRE/POST RESOURCE TRANSACTION: IMPLEMENTED
+CROSS-SPELL ACCEPTED-CAST SERIALIZATION: IMPLEMENTED
+DONOR SPELL COST ISOLATION: IMPLEMENTED
+DELAYED PROJECTILE IMPACT LIFETIME: COVERED
+SPELL ENGINE CUSTOM IMPACT REGISTRATION: IMPLEMENTED + SERVER STARTUP VERIFIED
+
+CANONICAL PROJECT SPELL IMPACT/DAMAGE TRANSACTION: NOT IMPLEMENTED — FAIL-CLOSED
+REAL PLAYER ARC BOLT CAST: NOT TESTED
+CLIENT RUNTIME: NOT TESTED
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
+```

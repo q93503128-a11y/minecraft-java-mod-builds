@@ -121,6 +121,39 @@ class SpellCastAuthorityTest {
     }
 
     @Test
+    void differentProjectSpellsShareOneAcceptedCastLockPerPlayer() {
+        SpellCastAuthority authority = new SpellCastAuthority("openworld_rpg");
+        PlayerCombatStateStore states = new PlayerCombatStateStore();
+        ProjectSpellSpec arcBolt = ProjectSpellSpec.arcBolt();
+        ProjectSpellSpec second = new ProjectSpellSpec(
+                "openworld_rpg:second_test_spell", 10.0, 40, 1.0, 0.2, 1
+        );
+        authority.registerPolicy(
+                arcBolt.id(),
+                new ProjectSpellTransactionPolicy(
+                        arcBolt, states, ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                )
+        );
+        authority.registerPolicy(
+                second.id(),
+                new ProjectSpellTransactionPolicy(
+                        second, states, ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                )
+        );
+
+        UUID player = UUID.randomUUID();
+        assertEquals(
+                SpellCastAuthority.AttemptDecision.ALLOW,
+                authority.commitAcceptedCast(player, arcBolt.id(), 300)
+        );
+        assertEquals(
+                SpellCastAuthority.AttemptDecision.BLOCK,
+                authority.commitAcceptedCast(player, second.id(), 300)
+        );
+        assertEquals(88.0, states.getOrCreate(player, 300).mana(300), 0.0001);
+    }
+
+    @Test
     void committedProjectStageWithoutTransactionFails() {
         SpellCastAuthority authority = new SpellCastAuthority("openworld_rpg");
         ProjectSpellSpec spec = ProjectSpellSpec.arcBolt();
