@@ -557,3 +557,24 @@ Verification boundary:
 - Build TURNBOUND #834 confirms the Minecraft 26.2 / NeoForge GUI entity-render API binding compiles and the existing unit/build suite passes.
 - Dedicated-server smoke also passes because preview rendering remains client-only.
 - This does **not** prove crop quality, lighting, apparent face size, portrait fatigue/performance, overlap at every GUI Scale, or whether every model's fixed camera preset looks good in the actual client. Those remain client-runtime/playtest checks and must not be reported as completed.
+
+
+### persistent live-3D signature body-language follow-up
+
+The v1 signature-resource HUD remains a useful exact-number fallback, but core combatants now also communicate their resource state through the authored 3D model itself instead of asking the player to read badges for every decision.
+
+TURNBOUND application:
+- P01 Focus 0~3 drives progressively more committed duel posture and sword readiness on Kyren's existing authored bones;
+- P03 Guard moves Bram from neutral stance toward a visibly closed shield posture, with the spend-ready and full states distinct;
+- P05 Shot 0~2 drives Lynette's sight extension and launcher-rotor readiness rather than adding another large HUD meter;
+- P06 Records spreads Morwen's existing record-paper family as the stored-event resource grows;
+- P07 Bond drives Marion's contract totem/seal posture and mirrors the same readiness tier onto Toto, preserving the pair as one mechanic instead of treating the partner as an unrelated actor;
+- P08 Fury increases Raze's forward/axe-loaded posture, while the actual three self-modifiers created by 과열 select a separate pulsing Overheat body-language loop even after Fury is spent;
+- these states use a dedicated additive GeckoLib controller, so Basic/Active/hit/revive/victory animation ownership remains with the combat controller instead of being replaced by a pose-only system;
+- presentation follows authoritative CombatantState and is change-driven; it does not mutate counters, statuses, damage, Gauge or server combat decisions;
+- downed heroes return the additive layer to neutral, and actor removal clears cached presentation state so a recreated Toto or battle actor cannot inherit stale readiness;
+- exact resource values, duel/Sightline markers and status badges remain available for precision, but the visual hierarchy now gives the model the first read and the HUD the exact read.
+
+Verification boundary:
+- Build TURNBOUND #835 passed the full test/build workflow, dedicated-server smoke reached Done (5.275s), and JAR verification produced SHA-256 `49ad37371c5f17a4ae59be0c0c8ac192ea9c80ccccbe189c188b9cf5b6b03648`.
+- This does **not** prove the additive pose amplitudes, silhouette readability, action-animation blending, P08 Overheat cadence or Toto/Marion visual pairing in the real client. Those remain CLIENT RUNTIME TESTED / PLAYTESTED = NO until the later 26.2 client pass.
