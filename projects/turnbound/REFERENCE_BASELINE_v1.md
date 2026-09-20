@@ -578,3 +578,27 @@ TURNBOUND application:
 Verification boundary:
 - Build TURNBOUND #835 passed the full test/build workflow, dedicated-server smoke reached Done (5.275s), and JAR verification produced SHA-256 `49ad37371c5f17a4ae59be0c0c8ac192ea9c80ccccbe189c188b9cf5b6b03648`.
 - This does **not** prove the additive pose amplitudes, silhouette readability, action-animation blending, P08 Overheat cadence or Toto/Marion visual pairing in the real client. Those remain CLIENT RUNTIME TESTED / PLAYTESTED = NO until the later 26.2 client pass.
+
+
+### live-3D target-relation sigil follow-up
+
+The previous target-relation read was still primarily textual. Duel/Sightline lived in world-space badge text, while Sanctuary and partner protection appeared as status labels. That is precise but too slow for the first visual read of a turn-based battlefield.
+
+TURNBOUND application:
+- P01 Duel now projects a dedicated warm crossed-blade 3D sigil over the enemy currently referenced by Kyren's authoritative `focusTarget`;
+- P05 Sightline projects a separate cool rotating bracket/crosshair sigil over Lynette's authoritative `sightline` target;
+- P04 Sanctuary projects a soft rotating halo/petal sigil over the ally who actually owns the `sanctuary` status from a living Elysia;
+- P07 partner protection projects a distinct shield/paired-node sigil over the ally who actually owns `partner_guard` from a living Marion;
+- these are registered GeckoLib presentation entities with their own geometry, texture and idle/entrance animation rather than text glyphs, vanilla held-item stand-ins or one-shot particle-only feedback;
+- relation projection is derived from the current authoritative `BattleState`; a dead source/target, cleared ref or expired status removes the corresponding sigil instead of leaving stale target information;
+- each sigil follows the real presentation actor every battle tick, including short attack lunges/returns, instead of remaining at the actor's formation-home coordinate;
+- Duel/Sanctuary and Sightline/partner-protection use separate vertical layers so the two relations that can legitimately share one target do not occupy exactly the same space;
+- battle cleanup now explicitly discards relation actors and clears the signature-pose cache as well, preventing relation/silhouette state from surviving a session teardown;
+- exact textual status/badge information remains available as a precision/accessibility fallback. The intended hierarchy is now 3D relation first, text confirmation second;
+- resource tests cover all four relation model/animation/texture families, and pure state tests cover ref/status projection plus dead-source invalidation.
+
+Verification boundary:
+- Build TURNBOUND #837 passed the full test/build workflow after the relation registry/runtime changes.
+- NeoForge 26.2 dedicated-server smoke reached Done (5.026s).
+- Verified JAR SHA-256: `2ab174a90310ade4021f96855be2c8951be88471d88226c25537061ca2039f8d`.
+- This does **not** prove real-client marker apparent size, occlusion against tall bosses, color readability, two-marker spacing, animation speed, or whether the symbols remain visually quiet enough beside existing skill VFX. CLIENT RUNTIME TESTED / PLAYTESTED remain NO until the later 26.2 client pass.
