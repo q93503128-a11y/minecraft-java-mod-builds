@@ -188,7 +188,7 @@ public final class VillageEnemyEliteSystem {
         double radius = 3.6;
         for (ServerPlayer player : nearbyPlayersAt(server, level, cast.impact(), radius)) {
             player.setRemainingFireTicks(Math.max(player.getRemainingFireTicks(), 70));
-            player.hurtServer(level, level.damageSources().magic(), 2.5f + VillageCouncilState.currentDay() * 0.12f);
+            player.hurtServer(level, level.damageSources().magic(), 2.5f + VillageCampaignProgression.effectiveCombatDay(VillageCouncilState.currentDay()) * 0.12f);
         }
         VillageEnemyEffectSystem.firebrandImpact(level, cast.impact(), radius);
     }

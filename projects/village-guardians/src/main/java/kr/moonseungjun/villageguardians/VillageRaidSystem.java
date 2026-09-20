@@ -207,10 +207,18 @@ public final class VillageRaidSystem {
 
     public static int experienceForEnemy(Mob mob) {
         if (mob == null) return 0;
-        int base = Math.min(90, 7 + Math.round(mob.getMaxHealth() * 0.48f));
         int day = Math.max(1, VillageCouncilState.currentDay());
-        float lateScale = 0.59f + Math.min(0.55f, Math.max(0, day - 8) * 0.035f);
-        return Math.max(1, Math.round(base * lateScale));
+        int targetLevel = Math.max(1, Math.min(RpgProgress.MAX_LEVEL - 1,
+                VillageCampaignProgression.targetPlayerLevel(day)));
+        int required = RpgProgress.experienceRequiredAtLevel(targetLevel);
+        float baseline = required * 0.72f / VillageCampaignProgression.expectedThreatsPerLevel(day);
+        float healthWeight = (float) Math.sqrt(Math.max(1.0f, mob.getMaxHealth()) / 24.0f);
+        healthWeight = Math.max(0.72f, Math.min(1.80f, healthWeight));
+        VillageEnemyArchetypeSystem.Archetype archetype = archetypeOf(mob);
+        float roleWeight = isBossEnemy(mob) ? 4.5f
+                : VillageEnemyEliteSystem.isElite(mob) ? 1.8f
+                : VillageEnemyArchetypeSystem.isTacticalThreat(archetype) ? 1.25f : 1.0f;
+        return Math.max(1, Math.round(baseline * healthWeight * roleWeight));
     }
 
     public static VillageEnemyArchetypeSystem.AerialRole aerialRoleOf(Mob mob) {
@@ -314,7 +322,8 @@ public final class VillageRaidSystem {
     }
 
     public static int previewWaveCount(int day, int previewWave, int players, VillageWaveTrait trait) {
-        int soloBase = 4 + previewWave * 2 + Math.min(30, day * 2) + VillageWarfrontSystem.countBonus(day);
+        int soloBase = 4 + previewWave * 2 + VillageCampaignProgression.rosterDayBonus(day)
+                + VillageWarfrontSystem.countBonus(day);
         int soloCount = trait.adjustedCount(soloBase);
         return VillageDifficultyTuning.scaleEnemyCount(soloCount, Math.max(1, players));
     }
@@ -419,9 +428,8 @@ public final class VillageRaidSystem {
             Mob mob, VillageEnemyArchetypeSystem.Archetype archetype, int day, int currentWave, boolean boss) {
         int duration = 20 * 60 * 30;
         boolean sapper = archetype == VillageEnemyArchetypeSystem.Archetype.SAPPER;
-        int healthTier = Math.min(9, Math.max(0, (day - 1) / 3 + currentWave / 4
-                + Math.max(0, day - 20) / 8));
-        int strengthTier = Math.min(5, Math.max(0, (day - 1) / 5 + Math.max(0, day - 25) / 10));
+        int healthTier = VillageCampaignProgression.enemyHealthTier(day, currentWave);
+        int strengthTier = VillageCampaignProgression.enemyStrengthTier(day, currentWave);
         if (sapper) {
             healthTier = Math.max(0, healthTier - 2);
             strengthTier = Math.max(0, strengthTier - 2);
@@ -434,13 +442,10 @@ public final class VillageRaidSystem {
             mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, duration,
                     Math.min(6, strengthTier + (boss ? 1 : 0))));
         }
-        if (day >= 5 && !sapper) {
-            mob.addEffect(new MobEffectInstance(MobEffects.SPEED, duration,
-                    Math.min(3, Math.max(0, (day - 3) / 4))));
-        }
-        if (day >= 18) {
+        // Movement speed is authored by enemy role and wave doctrine, never by raw campaign day.
+        if (day >= 30) {
             mob.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration,
-                    Math.min(4, (day - 15) / 8)));
+                    Math.min(2, Math.max(0, (day - 20) / 30))));
         }
         if (boss) {
             mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, duration, 1));
@@ -1146,10 +1151,10 @@ public final class VillageRaidSystem {
         float campaignReward = VillageWarfrontSystem.rewardMultiplier(day);
         int supplies = Math.round((140 + day * 32)
                 * VillageProgressionSystem.raidRewardMultiplierPercent() / 100.0f * campaignReward);
-        float lateVictoryScale = 0.50f + Math.min(0.30f, Math.max(0, day - 8) * 0.02f);
+        int targetLevel = Math.max(1, Math.min(RpgProgress.MAX_LEVEL - 1,
+                VillageCampaignProgression.targetPlayerLevel(day)));
         int xp = Math.max(1, Math.round(
-                (52 + day * 18 + VillageProgressionSystem.barracksLevel() * 10)
-                        * campaignReward * lateVictoryScale));
+                RpgProgress.experienceRequiredAtLevel(targetLevel) * 0.18f));
         int coins = Math.round((60 + day * 14) * campaignReward);
 
         clearState();

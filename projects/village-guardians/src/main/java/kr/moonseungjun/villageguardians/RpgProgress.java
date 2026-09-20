@@ -4,7 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 public record RpgProgress(int level, int experience) {
-    public static final int MAX_LEVEL = 30;
+    public static final int MAX_LEVEL = 100;
 
     public static final Codec<RpgProgress> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.INT.optionalFieldOf("level", 1).forGetter(RpgProgress::level),
@@ -27,6 +27,11 @@ public record RpgProgress(int level, int experience) {
         if (level >= MAX_LEVEL) {
             return 0;
         }
-        return 120 + level * 72 + level * level * 7;
+        return experienceRequiredAtLevel(level);
+    }
+
+    public static int experienceRequiredAtLevel(int level) {
+        int safe = Math.max(1, Math.min(MAX_LEVEL - 1, level));
+        return 120 + safe * 72 + safe * safe * 7;
     }
 }

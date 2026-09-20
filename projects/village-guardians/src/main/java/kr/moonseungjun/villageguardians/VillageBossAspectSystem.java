@@ -93,7 +93,7 @@ public final class VillageBossAspectSystem {
                 if (center == null) return;
                 float healed = 0.0f;
                 for (ServerPlayer player : nearbyPlayersAt(server, level, center, 11.0)) {
-                    player.hurtServer(level, level.damageSources().magic(), 3.5f + VillageCouncilState.currentDay() * 0.16f);
+                    player.hurtServer(level, level.damageSources().magic(), 3.5f + VillageCampaignProgression.effectiveCombatDay(VillageCouncilState.currentDay()) * 0.16f);
                     player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 70, 0));
                     healed += 4.0f;
                 }
@@ -128,7 +128,7 @@ public final class VillageBossAspectSystem {
                             || VillageRespawnSystem.isDowned(player)
                             || player.position().distanceToSqr(strike) > impactRadiusSquared) continue;
                     player.hurtServer(level, level.damageSources().magic(),
-                            4.5f + VillageCouncilState.currentDay() * 0.20f);
+                            4.5f + VillageCampaignProgression.effectiveCombatDay(VillageCouncilState.currentDay()) * 0.20f);
                 }
             }
             case WARLEADER -> {
