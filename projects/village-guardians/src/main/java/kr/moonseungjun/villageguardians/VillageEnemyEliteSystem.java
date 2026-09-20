@@ -111,7 +111,8 @@ public final class VillageEnemyEliteSystem {
             mob.setCustomName(Component.literal("§6[정예 · " + doctrine.displayName() + "] §f"
                     + (old == null ? "침공병" : old.getString())));
             mob.setCustomNameVisible(true);
-            if (doctrine == EliteDoctrine.SHOCK_RIDER || doctrine == EliteDoctrine.ASSASSIN) {
+            if ((doctrine == EliteDoctrine.SHOCK_RIDER || doctrine == EliteDoctrine.ASSASSIN)
+                    && !VillageEnemyArchetypeSystem.usesSiegePacing(archetype)) {
                 mob.addEffect(new MobEffectInstance(MobEffects.SPEED, 20 * 60 * 30, 1));
             }
             if (doctrine == EliteDoctrine.GRAPPLER) {

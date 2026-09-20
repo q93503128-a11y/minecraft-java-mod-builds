@@ -37,8 +37,8 @@ public final class VillageEnemyBestiary {
                     "정면 평타 교환보다 기술·원거리 화력으로 우회해 집중 공격하세요.");
             case SAPPER -> new Dossier(
                     "플레이어보다 시설 파괴를 우선하는 고속 폭파병입니다.",
-                    "이동 속도 II를 받고, 시설 공격 피해가 기본의 2.30배입니다.",
-                    threat(archetype, "매우 높음 · 시설 특화 2.30배"),
+                    "이동 속도 II를 받고, 시설 공격 피해가 기본의 1.72배입니다.",
+                    threat(archetype, "매우 높음 · 시설 특화 1.72배"),
                     "성문에 닿기 전에 최우선 표적으로 지정해 집중 사격하세요.");
             case MARKSMAN -> new Dossier(
                     "후방에서 화살을 쏘며 전열 뒤에 머무는 원거리 병과입니다.",

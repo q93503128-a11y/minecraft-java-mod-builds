@@ -132,6 +132,11 @@ public final class VillageEnemyArchetypeSystem {
         applyArchetypeAttributes(mob, archetype, day);
         applyArchetypeEffects(mob, archetype, day, wave);
         trait.applyLongEffects(mob);
+        // Siege actors must remain readable, interceptable threats. Campaign/wave haste must not
+        // turn structure-focused units or bosses into sprinting missiles.
+        if (usesSiegePacing(archetype)) {
+            mob.removeEffect(MobEffects.SPEED);
+        }
         String visibleName = isFlying(mob)
                 ? "§b웨이브 " + wave + " · 하늘 약탈귀 §8[성벽 우회 공중 급습]"
                 : displayName(archetype, trait, day, wave, boss);
@@ -174,6 +179,11 @@ public final class VillageEnemyArchetypeSystem {
         return archetype.ordinal() >= Archetype.SIEGE_BEAST.ordinal();
     }
 
+    public static boolean usesSiegePacing(Archetype archetype) {
+        return archetype == Archetype.SAPPER
+                || archetype == Archetype.SHIELDBREAKER
+                || isBoss(archetype);
+    }
 
     public static boolean isTacticalThreat(Archetype archetype) {
         if (archetype == null) return false;
@@ -208,7 +218,10 @@ public final class VillageEnemyArchetypeSystem {
                 if (!abilityReady(mob, globalTicks, 140)) return;
                 for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 9.0, 12, mob.getUUID())) {
                     ally.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 120, 0));
-                    ally.addEffect(new MobEffectInstance(MobEffects.SPEED, 120, 0));
+                    Archetype allyType = VillageRaidSystem.archetypeOf(ally);
+                    if (!usesSiegePacing(allyType)) {
+                        ally.addEffect(new MobEffectInstance(MobEffects.SPEED, 120, 0));
+                    }
                 }
                 spawnAura(level, mob, archetype, 18);
             }
@@ -455,15 +468,28 @@ public final class VillageEnemyArchetypeSystem {
             var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
             if (speed != null) speed.setBaseValue(0.19);
         } else if (archetype == Archetype.SAPPER) {
-            // Sappers stay below their old pre-0.18.38 rush speed, but the live-play 0.18.41 value
-            // felt too sluggish. A small base-speed lift keeps the objective threat readable without
-            // restoring the original day-one stat check. Baby-zombie movement still supplies urgency.
+            // Sappers stay threatening through objective priority, not raw sprint speed.
             var health = mob.getAttribute(Attributes.MAX_HEALTH);
             if (health != null) health.setBaseValue(Math.min(16.0, 8.5 + Math.max(0, day - 1) * 0.45));
             var attack = mob.getAttribute(Attributes.ATTACK_DAMAGE);
             if (attack != null) attack.setBaseValue(Math.min(3.0, 1.25 + Math.max(0, day - 1) * 0.08));
             var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
             if (speed != null) speed.setBaseValue(0.15);
+        } else if (archetype == Archetype.SHIELDBREAKER) {
+            var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
+            if (speed != null) speed.setBaseValue(0.19);
+        } else if (archetype == Archetype.SIEGE_BEAST) {
+            var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
+            if (speed != null) speed.setBaseValue(0.16);
+        } else if (archetype == Archetype.IRON_WARLORD) {
+            var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
+            if (speed != null) speed.setBaseValue(0.18);
+        } else if (archetype == Archetype.PLAGUE_ARCHON) {
+            var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
+            if (speed != null) speed.setBaseValue(0.17);
+        } else if (archetype == Archetype.DREAD_KNIGHT) {
+            var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
+            if (speed != null) speed.setBaseValue(0.20);
         }
     }
 
@@ -497,7 +523,6 @@ public final class VillageEnemyArchetypeSystem {
             case DREAD_KNIGHT -> {
                 mob.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST, LONG_EFFECT_TICKS, 7));
                 mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, LONG_EFFECT_TICKS, 3));
-                mob.addEffect(new MobEffectInstance(MobEffects.SPEED, LONG_EFFECT_TICKS, 1));
                 mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, LONG_EFFECT_TICKS, 2));
             }
             default -> {

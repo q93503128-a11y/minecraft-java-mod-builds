@@ -105,8 +105,6 @@ public final class VillageSiegeBossSystem {
             mob.setCustomNameVisible(true);
             if (doctrine == BossDoctrine.BREACH_COLOSSUS) {
                 mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 20 * 60 * 30, 1));
-            } else if (doctrine == BossDoctrine.BLACK_MARSHAL) {
-                mob.addEffect(new MobEffectInstance(MobEffects.SPEED, 20 * 60 * 30, 1));
             }
             VillageBossAspectSystem.Aspect aspect = VillageBossAspectSystem.aspectOf(mob);
             if (aspect != null) VillageBossEffectSystem.presence(level, mob, aspect, doctrine);
@@ -115,7 +113,6 @@ public final class VillageSiegeBossSystem {
 
     private static void enterPhaseTwo(MinecraftServer server, Mob mob, BossDoctrine doctrine) {
         mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 20 * 60 * 30, 1));
-        mob.addEffect(new MobEffectInstance(MobEffects.SPEED, 20 * 60 * 30, 1));
         if (mob.level() instanceof ServerLevel level) {
             VillageBossEffectSystem.phaseTwo(level, mob, doctrine);
         }
@@ -187,7 +184,7 @@ public final class VillageSiegeBossSystem {
                 .min(java.util.Comparator.comparingDouble(boss::distanceToSqr)).orElse(null);
         if (target != null) {
             boss.setTarget(target);
-            boss.getNavigation().moveTo(target, PHASE_TWO.contains(boss.getUUID()) ? 1.58 : 1.34);
+            boss.getNavigation().moveTo(target, PHASE_TWO.contains(boss.getUUID()) ? 1.28 : 1.16);
         }
         ServerLevel level = server.overworld();
         if (ticks % 105 == 70 && target != null) {

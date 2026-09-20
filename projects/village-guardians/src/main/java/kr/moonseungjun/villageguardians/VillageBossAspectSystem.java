@@ -51,16 +51,13 @@ public final class VillageBossAspectSystem {
         mob.setCustomName(Component.literal("§4[" + aspect.displayName() + "] §f"
                 + (base == null ? "우두머리" : base.getString())));
         switch (aspect) {
-            case BERSERKER -> {
-                mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, LONG, 2));
-                mob.addEffect(new MobEffectInstance(MobEffects.SPEED, LONG, 1));
-            }
+            case BERSERKER -> mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, LONG, 2));
             case BULWARK -> {
                 mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, LONG, 2));
                 mob.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, LONG, 4));
             }
             case BLOODBOUND -> mob.addEffect(new MobEffectInstance(MobEffects.REGENERATION, LONG, 1));
-            case STORMCALLER -> mob.addEffect(new MobEffectInstance(MobEffects.SPEED, LONG, 1));
+            case STORMCALLER -> { }
             case WARLEADER -> mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, LONG, 1));
             case WALLBREAKER -> mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, LONG, 1));
         }
@@ -74,7 +71,7 @@ public final class VillageBossAspectSystem {
         switch (aspect) {
             case BERSERKER -> {
                 if (globalTicks % 70 != 0) return;
-                mob.addEffect(new MobEffectInstance(MobEffects.SPEED, 60, 2));
+                mob.addEffect(new MobEffectInstance(MobEffects.SPEED, 60, 0));
                 mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 60, 3));
             }
             case BULWARK -> {
@@ -138,7 +135,10 @@ public final class VillageBossAspectSystem {
                 if (globalTicks % 120 != 0) return;
                 for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 13.0, 18, mob.getUUID())) {
                     ally.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 120, 1));
-                    ally.addEffect(new MobEffectInstance(MobEffects.SPEED, 120, 0));
+                    VillageEnemyArchetypeSystem.Archetype allyType = VillageRaidSystem.archetypeOf(ally);
+                    if (!VillageEnemyArchetypeSystem.usesSiegePacing(allyType)) {
+                        ally.addEffect(new MobEffectInstance(MobEffects.SPEED, 120, 0));
+                    }
                 }
             }
             case WALLBREAKER -> { }
