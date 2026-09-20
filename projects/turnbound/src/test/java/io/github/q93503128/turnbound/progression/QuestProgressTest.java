@@ -20,7 +20,7 @@ class QuestProgressTest {
         progress.complete(arrival);
 
         var party = QuestCatalog.quest("MQ_P00_02_first_party");
-        assertTrue(progress.apply(party, QuestProgress.Event.partyConfirm(Set.of("P01", "P03", "P04", "F03"))));
+        assertTrue(progress.apply(party, QuestProgress.Event.partyConfirm(Set.of("P01", "P03", "P04", "P08"))));
         assertTrue(progress.satisfied(party));
     }
 
