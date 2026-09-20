@@ -43,7 +43,28 @@ public enum VillageWaveTrait {
             0.98f, 0, 1, 2, 1.18f, 1.04f),
     RIFTED("rifted", "균열 군세", "사령술사와 정예병이 보호막을 두르고 혼합 편성으로 진군합니다.",
             "정화·폭발·관통 피해를 함께 운용해 보호막과 지원병을 동시에 끊으세요.",
-            0.86f, 1, 1, 1, 1.38f, 1.22f);
+            0.86f, 1, 1, 1, 1.38f, 1.22f),
+    BREACH_STORM("breach_storm", "파성 집중전", "폭파병과 파쇄병이 한 전선에 힘을 모아 방어구역을 끊어냅니다.",
+            "공병을 표시 즉시 끊고 수호자·빙결·집중 포격으로 접촉 시간을 줄이세요.",
+            0.88f, 1, 0, 0, 1.55f, 1.14f),
+    SKY_SIEGE("sky_siege", "천공 공성", "공중 병력 비중이 크게 늘고 지상 사수가 대공 대응을 방해합니다.",
+            "대공 발사대와 성루사수를 분산 배치하고 폭격 경고 지점을 즉시 비우세요.",
+            0.92f, 0, 0, 1, 1.16f, 1.06f),
+    HUNTER_NET("hunter_net", "사냥망", "탑 사냥꾼·사수·주술사가 방어 화력과 플레이어를 동시에 압박합니다.",
+            "포탑 교란병을 직접 끊고 원거리 대열에 돌진·관통 기술을 집중하세요.",
+            0.90f, 0, 1, 0, 1.20f, 1.08f),
+    DEATH_CHORUS("death_chorus", "사령 합창", "사령술사·전쟁 고수·주술사가 서로를 지원하며 전선을 오래 유지합니다.",
+            "회복과 강화의 연결고리를 먼저 끊고 한 구역을 빠르게 붕괴시키세요.",
+            0.82f, 1, 0, 0, 1.22f, 1.18f),
+    IRON_TIDE("iron_tide", "철의 파도", "중장갑과 파쇄병이 넓은 전선에서 느리지만 끊임없이 압박합니다.",
+            "관통·비전·후방 공격으로 방패 전열을 무너뜨리고 시설 접촉을 막으세요.",
+            0.78f, 2, 0, 0, 1.30f, 1.26f),
+    CATACLYSM("cataclysm", "재앙 혼성군", "공중·공성·지원 병과가 같은 웨이브에 섞여 우선순위를 흔듭니다.",
+            "한 종류의 포탑에 의존하지 말고 대공·관통·억제 화력을 함께 준비하세요.",
+            0.90f, 1, 1, 0, 1.38f, 1.20f),
+    FINAL_HOST("final_host", "종말 군세", "최후 전쟁의 정예 편성이 모든 전선을 동시에 시험합니다.",
+            "정찰 정보대로 병력을 나누고 지원병→공성병→전열 순으로 위협을 끊으세요.",
+            0.84f, 2, 1, 0, 1.48f, 1.26f);
 
     private static final int LONG_EFFECT_TICKS = 20 * 60 * 30;
 
@@ -87,11 +108,15 @@ public enum VillageWaveTrait {
         } else if (this == BLOOD_MOON) {
             mob.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 20 * 4, 1));
         }
-        if (this == IRONCLAD || this == PHALANX) {
-            mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, LONG_EFFECT_TICKS, this == PHALANX ? 1 : 0));
+        if (this == IRONCLAD || this == PHALANX || this == IRON_TIDE) {
+            int amplifier = this == PHALANX || this == IRON_TIDE ? 1 : 0;
+            mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, LONG_EFFECT_TICKS, amplifier));
         }
-        if (this == STORMFRONT) mob.addEffect(new MobEffectInstance(MobEffects.JUMP_BOOST, LONG_EFFECT_TICKS, 1));
+        if (this == STORMFRONT || this == SKY_SIEGE) {
+            mob.addEffect(new MobEffectInstance(MobEffects.JUMP_BOOST, LONG_EFFECT_TICKS, 1));
+        }
         if (this == RIFTED) mob.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, LONG_EFFECT_TICKS, 2));
+        if (this == FINAL_HOST) mob.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, LONG_EFFECT_TICKS, 1));
     }
 
     public static VillageWaveTrait select(int day, int wave) {
@@ -109,6 +134,13 @@ public enum VillageWaveTrait {
         if (day >= 10) unlocked.add(BLOOD_MOON);
         if (day >= 11) unlocked.add(STORMFRONT);
         if (day >= 12) unlocked.add(RIFTED);
+        if (day >= 20) unlocked.add(BREACH_STORM);
+        if (day >= 30) unlocked.add(SKY_SIEGE);
+        if (day >= 40) unlocked.add(HUNTER_NET);
+        if (day >= 50) unlocked.add(DEATH_CHORUS);
+        if (day >= 60) unlocked.add(IRON_TIDE);
+        if (day >= 75) unlocked.add(CATACLYSM);
+        if (day >= 90) unlocked.add(FINAL_HOST);
         int index = Math.floorMod(day * 37 + wave * 19 + day * wave * 3, unlocked.size());
         return unlocked.get(index);
     }

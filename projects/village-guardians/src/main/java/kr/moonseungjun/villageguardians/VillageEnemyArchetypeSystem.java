@@ -83,10 +83,14 @@ public final class VillageEnemyArchetypeSystem {
     public static AerialRole aerialRole(int day, int wave, int index, VillageWaveTrait trait) {
         if (day < 10) return AerialRole.RAIDER;
         int roll = Math.floorMod(day * 31 + wave * 17 + index * 13, 12);
-        if (day >= 13 && (trait == VillageWaveTrait.HUNTERS ? roll >= 6 : roll >= 10)) {
+        if (day >= 13 && (trait == VillageWaveTrait.HUNTERS || trait == VillageWaveTrait.SKY_SIEGE
+                || trait == VillageWaveTrait.CATACLYSM || trait == VillageWaveTrait.FINAL_HOST
+                ? roll >= 6 : roll >= 10)) {
             return AerialRole.HARRIER;
         }
-        if (trait == VillageWaveTrait.STORMFRONT ? roll >= 5 : roll >= 8) {
+        if (trait == VillageWaveTrait.STORMFRONT || trait == VillageWaveTrait.SKY_SIEGE
+                || trait == VillageWaveTrait.CATACLYSM || trait == VillageWaveTrait.FINAL_HOST
+                ? roll >= 5 : roll >= 8) {
             return AerialRole.BOMBARDIER;
         }
         return AerialRole.RAIDER;
@@ -96,6 +100,9 @@ public final class VillageEnemyArchetypeSystem {
         if (day < 7) return false;
         int cadence = trait == VillageWaveTrait.STORMFRONT ? 4 : day >= 13 ? 6 : 9;
         if (trait == VillageWaveTrait.HUNTERS) cadence = Math.min(cadence, 5);
+        if (trait == VillageWaveTrait.SKY_SIEGE) cadence = 3;
+        if (trait == VillageWaveTrait.CATACLYSM) cadence = Math.min(cadence, 4);
+        if (trait == VillageWaveTrait.FINAL_HOST) cadence = Math.min(cadence, 4);
         return Math.floorMod(index + wave * 2 + day, cadence) == 0;
     }
 
@@ -346,6 +353,48 @@ public final class VillageEnemyArchetypeSystem {
             if (slot % 5 == 0) return Archetype.MARKSMAN;
             return slot % 3 == 0 ? Archetype.BULWARK
                     : slot % 2 == 0 ? Archetype.SHIELDBREAKER : Archetype.RUSHER;
+        }
+        if (trait == VillageWaveTrait.BREACH_STORM) {
+            if (slot % 6 == 0) return Archetype.SAPPER;
+            if (slot % 3 == 0) return Archetype.SHIELDBREAKER;
+            return slot % 2 == 0 ? Archetype.BULWARK : Archetype.GRUNT;
+        }
+        if (trait == VillageWaveTrait.SKY_SIEGE) {
+            if (slot % 7 == 0) return Archetype.TOWER_HUNTER;
+            if (slot % 4 == 0) return Archetype.MARKSMAN;
+            return slot % 3 == 0 ? Archetype.BULWARK : Archetype.RUSHER;
+        }
+        if (trait == VillageWaveTrait.HUNTER_NET) {
+            if (slot % 6 == 0) return Archetype.TOWER_HUNTER;
+            if (slot == 11) return Archetype.HEXER;
+            return slot % 3 == 0 ? Archetype.RUSHER : Archetype.MARKSMAN;
+        }
+        if (trait == VillageWaveTrait.DEATH_CHORUS) {
+            if (slot == 0 || slot == 12) return Archetype.NECROMANCER;
+            if (slot % 5 == 0) return Archetype.WAR_CHANTER;
+            if (slot % 7 == 0) return Archetype.HEXER;
+            return lineMix(slot);
+        }
+        if (trait == VillageWaveTrait.IRON_TIDE) {
+            if (slot % 8 == 0) return Archetype.WAR_CHANTER;
+            if (slot % 4 == 0) return Archetype.SHIELDBREAKER;
+            return slot % 3 == 0 ? Archetype.MARKSMAN : Archetype.BULWARK;
+        }
+        if (trait == VillageWaveTrait.CATACLYSM) {
+            if (slot == 0) return Archetype.NECROMANCER;
+            if (slot == 5) return Archetype.TOWER_HUNTER;
+            if (slot == 11) return Archetype.HEXER;
+            if (slot % 6 == 0) return Archetype.SHIELDBREAKER;
+            return slot % 2 == 0 ? Archetype.MARKSMAN : Archetype.RUSHER;
+        }
+        if (trait == VillageWaveTrait.FINAL_HOST) {
+            if (slot == 0) return Archetype.NECROMANCER;
+            if (slot == 3) return Archetype.TOWER_HUNTER;
+            if (slot == 6) return Archetype.WAR_CHANTER;
+            if (slot == 9) return Archetype.HEXER;
+            if (slot % 5 == 0) return Archetype.SHIELDBREAKER;
+            if (slot % 4 == 0) return Archetype.SAPPER;
+            return slot % 2 == 0 ? Archetype.BULWARK : Archetype.MARKSMAN;
         }
 
         if (day >= 11 && slot == 0) return Archetype.NECROMANCER;
