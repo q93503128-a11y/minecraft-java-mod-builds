@@ -66,10 +66,9 @@ final class SignatureTrialEncounterAuthoringTest {
     }
 
     @Test
-    void p08RemainsBlockedEvenWithStructurallyFilledDraft() {
+    void p08DraftCanPassStructuralAuthoringNowThatAwakeningIsIndependent() {
         var result = SignatureTrialEncounterAuthoring.validate("P08",
                 new SignatureTrialEncounterAuthoring.EncounterSpec("P08", "SIG_P08", List.of("E_A"), "", "", ""));
-        assertFalse(result.ready());
-        assertTrue(result.blockReason().contains("PREREQUISITE_CONTRADICTION"));
+        assertTrue(result.ready());
     }
 }
