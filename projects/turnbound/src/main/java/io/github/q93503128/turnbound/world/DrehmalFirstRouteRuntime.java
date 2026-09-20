@@ -56,8 +56,8 @@ public final class DrehmalFirstRouteRuntime {
     }
 
     public static FieldUiSnapshot explorationSnapshot(ServerPlayer player) {
-        String objective = objective(player);
         DrehmalFirstRouteCatalog.Site location = locationSite(player);
+        DrehmalContextualOnboarding.Guidance guidance = guidance(player, location);
         DrabyelInteractionPromptRules.Prompt interaction = DrabyelHubServiceRuntime.prompt(player);
         FieldUiSnapshot.Navigation navigation = navigation(player);
         return new FieldUiSnapshot(
@@ -69,8 +69,8 @@ public final class DrehmalFirstRouteRuntime {
                 false,
                 0,
                 0,
-                objective,
-                "",
+                guidance.objective(),
+                guidance.hint(),
                 FieldUiSnapshot.Reward.none(),
                 List.of(),
                 List.of(),
@@ -97,6 +97,11 @@ public final class DrehmalFirstRouteRuntime {
         return navigation(player).id();
     }
 
+    static boolean insideHub(ServerPlayer player) {
+        DrehmalFirstRouteCatalog.Site location = locationSite(player);
+        return location != null && "HUB_SAFE".equals(location.kind());
+    }
+
     private static FieldUiSnapshot.Navigation navigation(ServerPlayer player) {
         if (player == null) return FieldUiSnapshot.Navigation.none();
         return DrehmalRouteNavigationRules.target(
@@ -109,14 +114,21 @@ public final class DrehmalFirstRouteRuntime {
                 DrehmalFirstRouteCatalog.productionSites(), player.getX(), player.getZ());
     }
 
-    private static String objective(ServerPlayer player) {
-        DrehmalFirstRouteCatalog.Site site = nearestProductionSite(player);
-        if (site == null) return "길을 따라 New Drabyel을 찾으십시오.";
-        return switch (site.kind()) {
-            case "HUB_SAFE" -> "New Drabyel에서 다음 여정을 준비하십시오.";
-            case "REST_ZONE" -> "야영지에서 길을 확인한 뒤 New Drabyel로 향하십시오.";
-            case "BREATHING_ZONE" -> "탑 주변을 살핀 뒤 길을 계속 따라가십시오.";
-            default -> "길을 따라 New Drabyel을 찾으십시오.";
-        };
+    private static DrehmalContextualOnboarding.Guidance guidance(
+            ServerPlayer player,
+            DrehmalFirstRouteCatalog.Site location
+    ) {
+        if (player == null) {
+            return DrehmalContextualOnboarding.resolve("", java.util.Set.of(), java.util.Set.of(), java.util.Set.of());
+        }
+        var server = player.level().getServer();
+        var flags = server == null
+                ? java.util.Set.<String>of()
+                : ExternalWorldSavedData.get(server).onboardingFlags(player.getUUID());
+        return DrehmalContextualOnboarding.resolve(
+                location == null ? "" : location.kind(),
+                CampaignProgressStore.snapshot(player.getUUID()).clearedEncounters(),
+                flags,
+                DrabyelHubServiceRuntime.availableRoles());
     }
 }

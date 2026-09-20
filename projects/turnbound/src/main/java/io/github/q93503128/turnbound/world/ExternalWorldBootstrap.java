@@ -118,7 +118,10 @@ public final class ExternalWorldBootstrap {
     }
 
     public static boolean interactEntity(ServerPlayer player, net.minecraft.world.entity.Entity target) {
-        return active(player) && DrabyelHubServiceRuntime.interact(player, target);
+        if (!active(player)) return false;
+        boolean handled = DrabyelHubServiceRuntime.interact(player, target);
+        if (handled) refreshFieldContext(player);
+        return handled;
     }
 
     public static boolean serviceActor(net.minecraft.world.entity.Entity target) {

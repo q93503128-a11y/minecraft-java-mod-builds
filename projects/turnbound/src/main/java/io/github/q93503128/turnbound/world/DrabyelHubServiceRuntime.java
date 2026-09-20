@@ -75,6 +75,12 @@ final class DrabyelHubServiceRuntime {
             return true;
         }
 
+        var server=player.level().getServer();
+        if(server!=null){
+            ExternalWorldSavedData.get(server).markOnboardingFlag(
+                    player.getUUID(),
+                    DrehmalContextualOnboarding.serviceFlag(service.role()));
+        }
         if(target instanceof BattleActorEntity actor)actor.playServiceGreeting();
         String hint=service.facilityHint();
         if(hint==null||hint.isBlank())hint="QUESTS";
@@ -106,6 +112,14 @@ final class DrabyelHubServiceRuntime {
                 DrabyelHubServiceCatalog.productionServices(),
                 player.getX(),player.getY(),player.getZ(),
                 DrabyelServiceActors::supports);
+    }
+
+    static Set<String> availableRoles(){
+        Set<String> roles=new HashSet<>();
+        for(var service:DrabyelHubServiceCatalog.productionServices()){
+            if(DrabyelServiceActors.supports(service.visualAsset()))roles.add(service.role());
+        }
+        return Set.copyOf(roles);
     }
 
     static void clear(){
