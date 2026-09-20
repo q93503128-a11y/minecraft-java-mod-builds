@@ -122,6 +122,17 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
             controllers.add(signatureState);
         }
 
+        if (heroSignaturePayoffAnimations(prefix)) {
+            AnimationController<BattleActorEntity> payoff =
+                    new AnimationController<BattleActorEntity>("hero_payoff", 1, test -> PlayState.STOP)
+                            .additiveAnimations()
+                            .triggerableAnim("payoff", play(prefix, "signature_payoff"));
+            if ("p06_morwen".equals(prefix)) {
+                payoff.triggerableAnim("return", play(prefix, "signature_return"));
+            }
+            controllers.add(payoff);
+        }
+
         if (bossAnimations) {
             controllers.add(new AnimationController<BattleActorEntity>("boss_phase", 3, test -> PlayState.STOP)
                     .additiveAnimations()
@@ -135,6 +146,17 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
     private static boolean heroSignatureStateAnimations(String prefix) {
         return "p01_kyren".equals(prefix)
                 || "p03_bram".equals(prefix)
+                || "p05_lynette".equals(prefix)
+                || "p06_morwen".equals(prefix)
+                || "p07_marion".equals(prefix)
+                || "p08_raze".equals(prefix)
+                || "toto".equals(prefix);
+    }
+
+    private static boolean heroSignaturePayoffAnimations(String prefix) {
+        return "p01_kyren".equals(prefix)
+                || "p03_bram".equals(prefix)
+                || "p04_elysia".equals(prefix)
                 || "p05_lynette".equals(prefix)
                 || "p06_morwen".equals(prefix)
                 || "p07_marion".equals(prefix)
@@ -166,6 +188,8 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
     public void playMovingActive1() { triggerAnim("combat", "moving_active_1"); }
     public void playMovingActive2() { triggerAnim("combat", "moving_active_2"); }
     public void playReaction() { triggerAnim("combat", "reaction"); }
+    public void playSignaturePayoff() { triggerAnim("hero_payoff", "payoff"); }
+    public void playSignatureReturn() { triggerAnim("hero_payoff", "return"); }
     public void playHit(boolean heavy) { triggerAnim("combat", heavy ? "hit_heavy" : "hit_light"); }
     public void playDeath() { triggerAnim("combat", "death"); }
     public void playRevive() { triggerAnim("combat", "revive"); }

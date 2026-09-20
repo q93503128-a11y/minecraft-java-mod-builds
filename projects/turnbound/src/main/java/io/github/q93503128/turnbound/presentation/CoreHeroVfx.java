@@ -194,6 +194,64 @@ final class CoreHeroVfx {
         }
     }
 
+    /** Readable payoff beats for signature mechanics; paired with authored additive model animation. */
+    static void payoff(ServerLevel level, HeroSignatureBeat.Kind kind, Vec3 source, Vec3 target) {
+        switch (kind) {
+            case KYREN_FOLLOWUP -> {
+                line(level, ParticleTypes.END_ROD, source.add(0, 1.16, 0), target.add(0, 1.02, 0), 12);
+                slashArc(level, ParticleTypes.CRIT, target.add(0, 1.02, 0), 0.76, 12);
+                slashArc(level, ParticleTypes.END_ROD, target.add(0, 1.16, 0), 0.96, 15);
+            }
+            case BRAM_REDIRECT_COUNTER -> {
+                ring(level, ParticleTypes.CLOUD, source.add(0, 0.22, 0), 0.88, 18);
+                line(level, ParticleTypes.END_ROD, source.add(0, 1.00, 0), target.add(0, 0.94, 0), 9);
+                burst(level, ParticleTypes.CRIT, target.add(0, 0.90, 0), 14, 0.46, 0.34, 0.46, 0.09);
+            }
+            case ELYSIA_SANCTUARY -> {
+                ring(level, ParticleTypes.ENCHANT, source.add(0, 0.84, 0), 0.62, 14);
+                line(level, ParticleTypes.END_ROD, source.add(0, 1.20, 0), target.add(0, 1.04, 0), 10);
+                inwardStrands(level, target.add(0, 1.02, 0), 0.72, 10);
+                ring(level, ParticleTypes.END_ROD, target.add(0, 0.30, 0), 0.74, 16);
+            }
+            case LYNETTE_CROSS_SHOT -> {
+                line(level, ParticleTypes.END_ROD, source.add(-0.10, 1.34, 0), target.add(0, 1.04, 0), 20);
+                line(level, ParticleTypes.CRIT, source.add(0.10, 1.28, 0), target.add(0, 0.96, 0), 16);
+                burst(level, ParticleTypes.CRIT, target.add(0, 1.00, 0), 12, 0.38, 0.30, 0.38, 0.08);
+            }
+            case MORWEN_RECORD_SPEND -> {
+                ring(level, ParticleTypes.SOUL, source.add(0, 0.88, 0), 0.72, 16);
+                ring(level, ParticleTypes.ENCHANT, source.add(0, 1.20, 0), 0.46, 12);
+                line(level, ParticleTypes.SOUL, source.add(0, 1.18, 0), target.add(0, 1.00, 0), 12);
+            }
+            case MORWEN_LAST_PAGE -> {
+                ring(level, ParticleTypes.SOUL, source.add(0, 0.18, 0), 1.05, 24);
+                ring(level, ParticleTypes.ENCHANT, source.add(0, 0.86, 0), 0.72, 18);
+                burst(level, ParticleTypes.END_ROD, source.add(0, 1.12, 0), 20, 0.55, 0.88, 0.55, 0.045);
+            }
+            case MARION_PARTNER_STRIKE -> {
+                line(level, ParticleTypes.ENCHANT, source.add(0, 0.72, 0), target.add(0, 0.90, 0), 10);
+                burst(level, ParticleTypes.CRIT, target.add(0, 0.86, 0), 9, 0.34, 0.26, 0.34, 0.07);
+            }
+            case MARION_JOINT_STRIKE -> {
+                ring(level, ParticleTypes.ENCHANT, source.add(0, 0.52, 0), 0.70, 15);
+                line(level, ParticleTypes.END_ROD, source.add(0, 0.78, 0), target.add(0, 0.96, 0), 15);
+                slashArc(level, ParticleTypes.CRIT, target.add(0, 0.92, 0), 0.94, 16);
+                burst(level, ParticleTypes.END_ROD, target.add(0, 1.02, 0), 10, 0.42, 0.42, 0.42, 0.07);
+            }
+            case RAZE_HIGH_FURY -> {
+                ring(level, ParticleTypes.FLAME, source.add(0, 0.20, 0), 0.86, 18);
+                line(level, ParticleTypes.CRIT, source.add(0, 1.20, 0), target.add(0, 0.96, 0), 11);
+                slashArc(level, ParticleTypes.FLAME, target.add(0, 0.94, 0), 1.08, 18);
+                burst(level, ParticleTypes.CRIT, target.add(0, 0.88, 0), 14, 0.58, 0.38, 0.58, 0.10);
+            }
+            case RAZE_OVERHEAT -> {
+                ring(level, ParticleTypes.FLAME, source.add(0, 0.18, 0), 1.18, 28);
+                burst(level, ParticleTypes.ASH, source.add(0, 1.05, 0), 18, 0.76, 0.78, 0.76, 0.035);
+                burst(level, ParticleTypes.FLAME, source.add(0, 1.00, 0), 12, 0.48, 0.62, 0.48, 0.06);
+            }
+        }
+    }
+
     /** Short state-change accent for signature resources; persistent readability lives in the world-space HUD. */
     static void resource(ServerLevel level, String heroId, Vec3 center, int value, int max) {
         double ratio = Math.max(0.0, Math.min(1.0, value / (double)Math.max(1, max)));

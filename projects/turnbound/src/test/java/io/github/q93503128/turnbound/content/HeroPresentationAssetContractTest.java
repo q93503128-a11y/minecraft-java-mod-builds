@@ -36,6 +36,15 @@ class HeroPresentationAssetContractTest {
             "P06", "p06_morwen",
             "P07", "p07_marion",
             "P08", "p08_raze");
+    private static final Map<String, String> SIGNATURE_PAYOFF_HEROES = Map.ofEntries(
+            Map.entry("P01", "p01_kyren"),
+            Map.entry("P03", "p03_bram"),
+            Map.entry("P04", "p04_elysia"),
+            Map.entry("P05", "p05_lynette"),
+            Map.entry("P06", "p06_morwen"),
+            Map.entry("P07", "p07_marion"),
+            Map.entry("P08", "p08_raze"),
+            Map.entry("P07_SUMMON", "toto"));
 
     @Test
     void everyCoreHeroShipsTheCanonicalFourteenClipMinimum() {
@@ -75,6 +84,19 @@ class HeroPresentationAssetContractTest {
         for (int stage = 0; stage <= 3; stage++) {
             assertTrue(toto.has("animation.toto.state_" + stage), "Toto must mirror Marion Bond body language");
         }
+    }
+
+    @Test
+    void signaturePayoffActorsShipDistinctAdditiveBeatClips() {
+        for (var entry : SIGNATURE_PAYOFF_HEROES.entrySet()) {
+            JsonObject animations = load("assets/turnbound/geckolib/animations/entity/hero/" + entry.getValue() + ".animation.json")
+                    .getAsJsonObject("animations");
+            String clip = "animation." + entry.getValue() + ".signature_payoff";
+            assertTrue(animations.has(clip), () -> entry.getKey() + " is missing signature payoff clip " + clip);
+        }
+        JsonObject morwen = load("assets/turnbound/geckolib/animations/entity/hero/p06_morwen.animation.json")
+                .getAsJsonObject("animations");
+        assertTrue(morwen.has("animation.p06_morwen.signature_return"));
     }
 
     @Test

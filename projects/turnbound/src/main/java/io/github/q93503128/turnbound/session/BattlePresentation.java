@@ -11,6 +11,7 @@ import io.github.q93503128.turnbound.presentation.BossBattleVfx;
 import io.github.q93503128.turnbound.presentation.EnemyBattleTelegraphs;
 import io.github.q93503128.turnbound.presentation.EnemyDefeatVfx;
 import io.github.q93503128.turnbound.presentation.EnemyPresentationProfile;
+import io.github.q93503128.turnbound.presentation.HeroSignatureBeat;
 import io.github.q93503128.turnbound.presentation.HeroSignaturePresentationState;
 import io.github.q93503128.turnbound.presentation.SignatureBattleActors;
 import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
@@ -240,6 +241,7 @@ final class BattlePresentation {
         Set<String> buffPlayed=new HashSet<>(),debuffPlayed=new HashSet<>();
         for(int i=eventStart;i<events.size();i++){
             BattleEvent event=events.get(i);
+            presentSignatureBeat(level,state,event);
             switch(event.type()){
                 case "REACTION_DAMAGE" -> {
                     Entity source=entity(level,event.sourceId());if(source instanceof BattleActorEntity a)a.playReaction();
@@ -250,7 +252,7 @@ final class BattlePresentation {
                     Entity guardian=entity(level,event.targetId());if(guardian instanceof BattleActorEntity a)a.playReaction();
                     playHitFor(level,state,event.targetId(),event.value());
                 }
-                case "HEAL","BARRIER","STATUS_CLEAR" -> playBuffFor(level,state,event.targetId(),buffPlayed);
+                case "HEAL","REACTION_HEAL","BARRIER","STATUS_CLEAR" -> playBuffFor(level,state,event.targetId(),buffPlayed);
                 case "STATUS" -> playStatusFor(level,state,event,buffPlayed,debuffPlayed);
                 case "GAUGE" -> {
                     if(event.value()>0)playBuffFor(level,state,event.targetId(),buffPlayed);
@@ -261,6 +263,28 @@ final class BattlePresentation {
                 default -> { }
             }
         }
+    }
+
+    private void presentSignatureBeat(ServerLevel level,BattleState state,BattleEvent event){
+        HeroSignatureBeat.Kind kind=HeroSignatureBeat.resolve(event);if(kind==null)return;
+        CombatantState source=state.find(event.sourceId());
+        Entity sourceActor=entity(level,event.sourceId());
+        Entity targetActor=entity(level,event.targetId());
+        Vec3 sourcePos=sourceActor!=null?sourceActor.position():homes.get(event.sourceId());
+        Vec3 targetPos=targetActor!=null?targetActor.position():homes.get(event.targetId());
+        if(sourcePos==null)return;
+
+        if(sourceActor instanceof BattleActorEntity animated){
+            if(kind==HeroSignatureBeat.Kind.MORWEN_LAST_PAGE)animated.playSignatureReturn();
+            else animated.playSignaturePayoff();
+        }
+
+        if(kind==HeroSignatureBeat.Kind.MARION_JOINT_STRIKE&&source!=null&&source.definition().summon()){
+            String ownerId=source.ref("ownerId");Entity ownerActor=entity(level,ownerId);
+            if(ownerActor instanceof BattleActorEntity animatedOwner)animatedOwner.playSignaturePayoff();
+        }
+
+        BattleVfx.signatureBeat(level,kind,sourcePos,targetPos==null?sourcePos:targetPos);
     }
 
     private void playStatusFor(ServerLevel level,BattleState state,BattleEvent event,Set<String> buffPlayed,Set<String> debuffPlayed){

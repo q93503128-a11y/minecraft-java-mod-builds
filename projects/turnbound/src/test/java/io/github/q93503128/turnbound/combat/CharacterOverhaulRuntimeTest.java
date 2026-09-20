@@ -98,6 +98,8 @@ final class CharacterOverhaulRuntimeTest {
         engine.nextReady();
         engine.useSkill("morwen", "p06_condolence", "foe");
         assertEquals(2, morwen.counter("records"));
+        assertTrue(engine.state().events().stream().anyMatch(e -> "P06_RECORD_SPEND".equals(e.detail())
+                && "RESOURCE".equals(e.type()) && e.value() == -3));
     }
 
     @Test

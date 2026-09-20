@@ -34,6 +34,12 @@ public final class BattleVfx {
         CoreHeroVfx.resource(level, combatantId, center, value, max);
     }
 
+    /** Distinct payoff accent for an already-resolved signature mechanic event. */
+    public static void signatureBeat(ServerLevel level, HeroSignatureBeat.Kind kind, Vec3 source, Vec3 target) {
+        if (level == null || kind == null || source == null) return;
+        CoreHeroVfx.payoff(level, kind, source, target == null ? source : target);
+    }
+
     public static void warning(ServerLevel level, String combatantId, Vec3 center) {
         ParticleOptions primary = switch (combatantId) {
             case "E003", "B04" -> ParticleTypes.FLAME;

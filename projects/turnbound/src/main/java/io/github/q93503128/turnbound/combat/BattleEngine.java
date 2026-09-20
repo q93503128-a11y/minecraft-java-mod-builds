@@ -758,6 +758,7 @@ public final class BattleEngine {
                 actor.clearFlag("p06_free_record_active");
             } else if (spend > 0) {
                 actor.incrementCounter("records", -spend, actor.definition().intParam("recordMax", 5));
+                state.addEvent(new BattleEvent("RESOURCE", actor.instanceId(), actor.instanceId(), -spend, "P06_RECORD_SPEND"));
             }
             actor.setCounter("p06_spend_pending", 0);
         } else if (skill.id().equals("p06_funeral_order") && !targets.isEmpty() && targets.getFirst().downed()) {
