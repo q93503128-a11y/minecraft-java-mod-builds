@@ -1,18 +1,24 @@
 package io.github.q93503128.turnbound.client;
 
 import io.github.q93503128.turnbound.content.CanonicalData;
-import io.github.q93503128.turnbound.content.CharacterMenuCatalog;
+import io.github.q93503128.turnbound.network.MetaCommandPayload;
+import io.github.q93503128.turnbound.progression.GachaCatalog;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
-/** Canon §130 Echo Archive summon presentation. Skip is available from the first frame. */
+/**
+ * World-first summon presentation. The server owns RNG and a private 3D hero actor in front of the player;
+ * this screen only overlays readable result information and the final ten-pull summary.
+ */
 public final class GachaPresentationScreen extends Screen {
     private static final int TEXT = 0xFFF4F0E6;
     private static final int SECONDARY = 0xFFAEB7C6;
@@ -21,7 +27,6 @@ public final class GachaPresentationScreen extends Screen {
     private static final int GREEN = 0xFF62D39A;
     private static final int GOLD = 0xFFFFC857;
     private static final int PURPLE = 0xFFC794FF;
-    private static final int PANEL = 0xED090C12;
 
     public record Pull(String characterId, int stars, boolean newlyOwned, int essence, int pityAfter) {}
     public record Batch(String action, int crystalSpent, List<Pull> pulls) {
@@ -29,14 +34,18 @@ public final class GachaPresentationScreen extends Screen {
     }
 
     private final Batch batch;
-    private final List<Pull> newPulls;
+    private final List<Pull> revealPulls;
     private int ticks;
     private boolean audioQueued;
+    private boolean finishing;
 
     public GachaPresentationScreen(Batch batch) {
-        super(Component.literal("Echo Archive"));
+        super(Component.literal("정령의 기록"));
         this.batch = batch == null ? new Batch("", 0, List.of()) : batch;
-        this.newPulls = this.batch.pulls().stream().filter(Pull::newlyOwned).toList();
+        List<Pull> newlyOwned = this.batch.pulls().stream().filter(Pull::newlyOwned).toList();
+        if (!newlyOwned.isEmpty()) this.revealPulls = newlyOwned;
+        else this.revealPulls = this.batch.pulls().stream()
+                .max(Comparator.comparingInt(Pull::stars)).map(List::of).orElseGet(List::of);
     }
 
     public static Batch decode(String raw) {
@@ -62,12 +71,12 @@ public final class GachaPresentationScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        addRenderableWidget(new BattleHudButton(width - 98, 18, 80, 22,
-                Component.literal("SKIP"), MUTED, ignored -> finish()));
+        addRenderableWidget(new BattleHudButton(width - 98, 16, 80, 22,
+                Component.literal("건너뛰기"), MUTED, ignored -> finish()));
         if (!audioQueued) {
             audioQueued = true;
-            boolean five = batch.pulls().stream().anyMatch(p -> p.stars() >= 5);
-            ClientAudioDirector.acceptBatch((five ? "gacha_five_star" : "gacha_reveal") + "|SYSTEM|3||||0");
+            int priority = batch.pulls().stream().anyMatch(p -> p.stars() >= 5) ? 3 : 2;
+            ClientAudioDirector.acceptBatch("spawn|SYSTEM|" + priority + "||||0");
         }
     }
 
@@ -79,11 +88,14 @@ public final class GachaPresentationScreen extends Screen {
     }
 
     private int totalDurationTicks() {
-        int base = batch.pulls().size() <= 1 ? 36 : 90;
-        return Math.max(base, newPulls.size() * 30 + (batch.pulls().size() <= 1 ? 6 : 36));
+        int reveal = Math.max(1, revealPulls.size()) * 30;
+        return reveal + (batch.pulls().size() <= 1 ? 38 : 86);
     }
 
     private void finish() {
+        if (finishing) return;
+        finishing = true;
+        ClientPacketDistributor.sendToServer(new MetaCommandPayload("GACHA_DONE"));
         if (minecraft != null) minecraft.gui.setScreen(new MetaMenuScreen(MetaMenuScreen.Tab.ARCHIVE));
     }
 
@@ -91,109 +103,90 @@ public final class GachaPresentationScreen extends Screen {
 
     @Override
     public void extractRenderState(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        graphics.fill(0, 0, width, height, PANEL);
-        int rail = batch.pulls().stream().anyMatch(p -> p.stars() >= 5) ? GOLD : BLUE;
-        graphics.fill(0, 0, width, 3, rail);
-        graphics.fill(0, height - 3, width, height, rail);
-        graphics.text(font, Component.literal("ECHO ARCHIVE"), 22, 20, TEXT, true);
-        graphics.text(font, Component.literal(batch.pulls().size() + "회 소환 · Crystal -" + batch.crystalSpent()), 22, 37, SECONDARY, false);
+        graphics.text(font, Component.literal("정령의 기록"), 18, 18, TEXT, true);
+        graphics.text(font, Component.literal(batch.pulls().size() + "회 소환 · 크리스탈 -" + batch.crystalSpent()),
+                18, 34, SECONDARY, false);
 
-        Pull newFocus = currentNewFocus();
-        if (newFocus != null) drawNewReveal(graphics, newFocus);
-        else if (batch.pulls().size() <= 1) drawSingle(graphics);
-        else drawTen(graphics);
+        Pull focus = currentReveal();
+        if (focus != null) drawWorldRevealOverlay(graphics, focus);
+        else if (batch.pulls().size() <= 1) drawSingleSummary(graphics);
+        else drawTenSummary(graphics);
 
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
-    private Pull currentNewFocus() {
-        if (newPulls.isEmpty()) return null;
+    private Pull currentReveal() {
+        if (revealPulls.isEmpty()) return null;
         int index = ticks / 30;
-        return index >= 0 && index < newPulls.size() ? newPulls.get(index) : null;
+        return index >= 0 && index < revealPulls.size() ? revealPulls.get(index) : null;
     }
 
-    private void drawNewReveal(GuiGraphicsExtractor graphics, Pull pull) {
-        int cardW = Math.min(470, width - 60), cardH = Math.min(286, height - 86);
-        int x = (width - cardW) / 2, y = (height - cardH) / 2 + 8;
+    private void drawWorldRevealOverlay(GuiGraphicsExtractor graphics, Pull pull) {
+        int w = Math.min(410, width - 44);
+        int h = 76;
+        int x = (width - w) / 2;
+        int y = Math.max(62, height - h - 34);
         int accent = starColor(pull.stars());
-        graphics.fill(x, y, x + cardW, y + cardH, 0xE7121720);
-        TurnboundFrameStyle.frame(graphics, x, y, cardW, cardH, accent);
-        graphics.fill(x, y, x + 5, y + cardH, accent);
-        graphics.fill(x + cardW - 5, y, x + cardW, y + cardH, accent);
-
-        String name = name(pull.characterId());
-        var profile = CharacterMenuCatalog.profile(pull.characterId());
-        graphics.text(font, Component.literal("NEW"), x + 24, y + 24, GREEN, true);
-        graphics.text(font, Component.literal(stars(pull.stars())), x + 24, y + 49, accent, true);
-        graphics.text(font, Component.literal(name), x + 24, y + 74, TEXT, true);
-        graphics.text(font, Component.literal(profile.role()), x + 24, y + 94, SECONDARY, false);
-        graphics.text(font, Component.literal("Weapon · " + profile.weapon()), x + 24, y + 112, SECONDARY, false);
-
-        int portraitX = x + cardW / 2 + 4;
-        int portraitY = y + 35;
-        int portraitW = cardW / 2 - 30;
-        int portraitH = cardH - 70;
-        graphics.fill(portraitX, portraitY, portraitX + portraitW, portraitY + portraitH, 0xAA151B25);
-        graphics.fill(portraitX, portraitY, portraitX + 4, portraitY + portraitH, accent);
-        graphics.fill(portraitX + portraitW - 4, portraitY, portraitX + portraitW, portraitY + portraitH, accent);
-        graphics.text(font, Component.literal(pull.characterId()), portraitX + 14, portraitY + 16, MUTED, true);
-        graphics.text(font, Component.literal(name), portraitX + 14, portraitY + portraitH - 27, accent, true);
+        TurnboundFrameStyle.frame(graphics, x, y, w, h, accent);
+        graphics.text(font, Component.literal(stars(pull.stars())), x + 18, y + 15, accent, true);
+        graphics.text(font, Component.literal(name(pull.characterId())), x + 18, y + 35, TEXT, true);
+        String result = pull.newlyOwned() ? "새로운 동료" : "별의 정수 +" + pull.essence();
+        graphics.text(font, Component.literal(result), x + 18, y + 54, pull.newlyOwned() ? GREEN : PURPLE, false);
+        if (pull.stars() >= 5) graphics.text(font, Component.literal("★5"), x + w - 48, y + 15, GOLD, true);
     }
 
-    private void drawSingle(GuiGraphicsExtractor graphics) {
+    private void drawSingleSummary(GuiGraphicsExtractor graphics) {
         if (batch.pulls().isEmpty()) return;
         Pull pull = batch.pulls().getFirst();
-        int w = Math.min(390, width - 50), h = Math.min(220, height - 80);
-        int x = (width - w) / 2, y = (height - h) / 2 + 8;
+        int w = Math.min(400, width - 44), h = 104;
+        int x = (width - w) / 2, y = Math.max(66, height - h - 28);
         int accent = starColor(pull.stars());
-        graphics.fill(x, y, x + w, y + h, 0xE7161B24);
         TurnboundFrameStyle.frame(graphics, x, y, w, h, accent);
-        graphics.fill(x, y, x + w, y + 4, accent);
-        graphics.text(font, Component.literal(stars(pull.stars())), x + 22, y + 26, accent, true);
-        graphics.text(font, Component.literal(name(pull.characterId())), x + 22, y + 52, TEXT, true);
-        graphics.text(font, Component.literal(pull.newlyOwned() ? "NEW" : "Star Essence +" + pull.essence()),
-                x + 22, y + 78, pull.newlyOwned() ? GREEN : PURPLE, true);
-        graphics.text(font, Component.literal("Pity · " + pull.pityAfter() + " / 80"), x + 22, y + 102, SECONDARY, false);
-        if (pull.stars() >= 5) graphics.text(font, Component.literal("★5"), x + w - 54, y + h - 35, GOLD, true);
+        graphics.text(font, Component.literal("소환 결과"), x + 18, y + 14, TEXT, true);
+        graphics.text(font, Component.literal(stars(pull.stars()) + " · " + name(pull.characterId())), x + 18, y + 38, accent, true);
+        graphics.text(font, Component.literal(pull.newlyOwned() ? "새로운 동료" : "별의 정수 +" + pull.essence()),
+                x + 18, y + 60, pull.newlyOwned() ? GREEN : PURPLE, false);
+        graphics.text(font, Component.literal("★5 천장 " + pull.pityAfter() + " / " + GachaCatalog.HARD_PITY),
+                x + 18, y + 80, SECONDARY, false);
     }
 
-    private void drawTen(GuiGraphicsExtractor graphics) {
-        int gap = 8;
-        int totalW = Math.min(760, width - 44);
+    private void drawTenSummary(GuiGraphicsExtractor graphics) {
+        int gap = 6;
+        int totalW = Math.min(760, width - 36);
         int cardW = (totalW - gap * 4) / 5;
-        int cardH = Math.min(126, Math.max(82, (height - 110 - gap) / 2));
+        int cardH = Math.min(108, Math.max(74, (height - 116 - gap) / 2));
         int startX = (width - totalW) / 2;
-        int startY = Math.max(72, (height - (cardH * 2 + gap)) / 2 + 14);
-        int visible = Math.min(batch.pulls().size(), Math.max(1, (ticks - newPulls.size() * 30) / 4 + 1));
+        int startY = Math.max(62, (height - (cardH * 2 + gap)) / 2 + 14);
+        int summaryTicks = Math.max(0, ticks - Math.max(1, revealPulls.size()) * 30);
+        int visible = Math.min(batch.pulls().size(), Math.max(1, summaryTicks / 4 + 1));
+
         for (int i = 0; i < batch.pulls().size() && i < 10; i++) {
             int x = startX + (i % 5) * (cardW + gap);
             int y = startY + (i / 5) * (cardH + gap);
             if (i >= visible) {
-                graphics.fill(x, y, x + cardW, y + cardH, 0xA40E1218);
-                TurnboundFrameStyle.frame(graphics, x, y, cardW, cardH, MUTED);
+                TurnboundFrameStyle.inset(graphics, x, y, cardW, cardH);
                 continue;
             }
             Pull pull = batch.pulls().get(i);
             int accent = starColor(pull.stars());
-            graphics.fill(x, y, x + cardW, y + cardH, 0xD9141922);
             TurnboundFrameStyle.frame(graphics, x, y, cardW, cardH, accent);
-            graphics.fill(x, y, x + cardW, y + 3, accent);
             graphics.text(font, Component.literal(stars(pull.stars())), x + 8, y + 10, accent, true);
-            graphics.text(font, Component.literal(shorten(name(pull.characterId()), 17)), x + 8, y + 31, TEXT, true);
-            String result = pull.newlyOwned() ? "NEW" : "Essence +" + pull.essence();
-            graphics.text(font, Component.literal(result), x + 8, y + cardH - 28, pull.newlyOwned() ? GREEN : PURPLE, false);
-            graphics.text(font, Component.literal("Pity " + pull.pityAfter()), x + 8, y + cardH - 14, SECONDARY, false);
+            graphics.text(font, Component.literal(shorten(name(pull.characterId()), 15)), x + 8, y + 31, TEXT, true);
+            String result = pull.newlyOwned() ? "신규" : "정수 +" + pull.essence();
+            graphics.text(font, Component.literal(result), x + 8, y + cardH - 27,
+                    pull.newlyOwned() ? GREEN : PURPLE, false);
+            graphics.text(font, Component.literal("천장 " + pull.pityAfter()), x + 8, y + cardH - 13, SECONDARY, false);
         }
     }
 
     private static String name(String id) {
         try { return CanonicalData.definition(id).name(); }
-        catch (RuntimeException ignored) { return id; }
+        catch (RuntimeException ignored) { return "알 수 없는 동료"; }
     }
 
     private static String stars(int count) { return "★".repeat(Math.max(1, Math.min(5, count))); }
     private static int starColor(int stars) {
-        return switch (stars) { case 5 -> GOLD; case 4 -> PURPLE; case 3 -> BLUE; case 2 -> GREEN; default -> SECONDARY; };
+        return switch (stars) { case 5 -> GOLD; case 4 -> PURPLE; case 3 -> BLUE; default -> SECONDARY; };
     }
     private static String shorten(String value, int max) { return value.length() <= max ? value : value.substring(0, max - 1) + "…"; }
 
