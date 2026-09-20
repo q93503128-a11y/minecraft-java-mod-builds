@@ -29,6 +29,7 @@ public final class BattleScreen extends Screen {
     private static final int DANGER = 0xFFFF5E57;
     private static final int GOLD = 0xFFFFC857;
     private static final long DOUBLE_COMMIT_MS = 560L;
+    private static final long TIMELINE_MOTION_MS = 260L;
 
     private final List<BattleHudButton> skillButtons = new ArrayList<>();
     private BattleHudButton autoButton;
@@ -45,6 +46,9 @@ public final class BattleScreen extends Screen {
     private long lastSkillClickAt;
     private int lastTargetClick = -1;
     private long lastTargetClickAt;
+    private List<String> lastTimeline = List.of();
+    private List<TurnOrderMotion.Move> timelineMotion = List.of();
+    private long timelineMotionStartedAt;
 
     public BattleScreen() { super(Component.literal("TURNBOUND Battle")); }
 
@@ -77,6 +81,14 @@ public final class BattleScreen extends Screen {
     private void refresh() {
         seen = ClientBattleState.revision();
         var snapshot = ClientBattleState.snapshot();
+        List<String> nextTimeline = List.copyOf(snapshot.timeline().subList(0, Math.min(7, snapshot.timeline().size())));
+        if (!lastTimeline.isEmpty() && !lastTimeline.equals(nextTimeline)) {
+            timelineMotion = TurnOrderMotion.plan(lastTimeline, nextTimeline, 7);
+            timelineMotionStartedAt = System.currentTimeMillis();
+        } else if (lastTimeline.isEmpty()) {
+            timelineMotion = List.of();
+        }
+        lastTimeline = nextTimeline;
         if (!Objects.equals(selectedActor, snapshot.actorId())) {
             selectedActor = snapshot.actorId();
             clearSelection(true);
@@ -366,19 +378,38 @@ public final class BattleScreen extends Screen {
         if (settingsOpen) drawSettings(graphics, current, snapshot);
     }
 
-    /** Turn-order tokens use the same production actor portrait as the rest of the UI. */
+    /**
+     * Turn-order tokens use the same production actor portrait as the rest of the UI.
+     * Gauge manipulation is shown as actual rail motion; large slot jumps get a short blue destination accent.
+     */
     private void drawTimeline(GuiGraphicsExtractor graphics, BattleHudLayout.Layout current, ClientBattleState.Snapshot snapshot) {
         var panel = current.timeline();
         int count = Math.min(7, snapshot.timeline().size());
         if (count == 0) return;
         graphics.fill(panel.x(), panel.y() + 1, panel.right(), panel.bottom(), 0x50080A0E);
         int tokenWidth = Math.max(10, panel.width() / count);
-        int x = panel.x();
+        long elapsed = Math.max(0L, System.currentTimeMillis() - timelineMotionStartedAt);
+        double progress = TurnOrderMotion.easedProgress(elapsed, TIMELINE_MOTION_MS);
+        boolean moving = elapsed < TIMELINE_MOTION_MS && !timelineMotion.isEmpty();
+
         for (int i = 0; i < count; i++) {
             ClientBattleState.Unit unit = findUnit(snapshot, snapshot.timeline().get(i));
-            if (unit == null) { x += tokenWidth; continue; }
+            if (unit == null) continue;
+
+            TurnOrderMotion.Move move = moving ? TurnOrderMotion.moveAt(timelineMotion, i) : null;
+            double slot = i;
+            if (move != null) slot = move.fromIndex() + (move.toIndex() - move.fromIndex()) * progress;
+            int x = panel.x() + (int)Math.round(slot * tokenWidth);
+            x = Math.max(panel.x(), Math.min(panel.right() - tokenWidth, x));
+
             int color = "ALLY".equals(unit.side()) ? GAUGE : DANGER;
             boolean actor = unit.id().equals(snapshot.actorId());
+            if (move != null && move.tempoJump()) {
+                int destinationX = panel.x() + i * tokenWidth;
+                graphics.fill(destinationX + 2, panel.y() + 1,
+                        Math.min(panel.right() - 1, destinationX + tokenWidth - 2), panel.y() + 3,
+                        (GAUGE & 0x00FFFFFF) | 0x70000000);
+            }
             if (actor) graphics.fill(x + 1, panel.y() + 1, x + tokenWidth - 1, panel.bottom() - 1, 0xA02A3442);
 
             int portrait = Math.max(9, Math.min(panel.height() - 3, tokenWidth - 4));
@@ -397,7 +428,6 @@ public final class BattleScreen extends Screen {
                 graphics.fill(x + 1, panel.y(), x + 2, panel.bottom(), GOLD);
                 graphics.fill(x + tokenWidth - 2, panel.y(), x + tokenWidth - 1, panel.bottom(), GOLD);
             }
-            x += tokenWidth;
         }
     }
 
