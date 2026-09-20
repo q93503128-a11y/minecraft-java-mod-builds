@@ -507,3 +507,30 @@ TURNBOUND application:
 - Marion's matching battle bark now describes Toto protecting the selected ally instead of calling the already-present partner into battle;
 - badge calculation was split from NeoForge GUI rendering into a pure presentation helper so signature-state contracts are directly unit-testable without a client GUI runtime;
 - this checkpoint confirms code/test/build/server packaging only. Actual 26.2 client readability, timing, animation feel, VFX density and multiplayer privacy remain unclaimed until real playtesting.
+
+
+### v1 core-hero role-prop and action-audio follow-up
+
+A production audit after the signature-resource pass confirmed that the hero models already carry their role-bearing equipment as authored GeckoLib geometry, so adding vanilla held-item stand-ins would reduce rather than improve fidelity.
+
+TURNBOUND application:
+- P01 Kyren retains authored sword/scabbard bones;
+- P02 Lumea retains the clock-core/rotor motif;
+- P03 Bram retains the large shield and hammer grip;
+- P04 Elysia retains staff/relic/medical-bag elements;
+- P05 Lynette retains the launcher body/rail/sight;
+- P06 Morwen retains record papers plus her weapon;
+- P07 Marion retains the contract totem/totem case, with Toto remaining a separate authored partner model;
+- P08 Raze retains the axe grip/edge;
+- resource-contract tests now fail if these role-bearing model elements disappear from the packaged hero assets.
+
+The main remaining audio weakness was that every core hero used the same generic action-start `skill.ogg`, even though impacts/support events already had separate event-driven layers.
+
+TURNBOUND application:
+- P01~P08 now each have one coherent CC0 action-timbre family: Kyren/blade, Lumea/gem-tempo, Bram/metal, Elysia/gem-support, Lynette/mechanical lock, Morwen/book/record, Marion/wood/totem, Raze/heavy metal;
+- all eight samples come from the already-adopted `lavenderdotpet/CC0-Public-Domain-Sounds` / `80-CC0-RPG-SFX` source and are recorded in `AUDIO_ASSETS.md`;
+- Basic / Active A / Active B keep the same character timbre while using authored gain/pitch/priority differences, avoiding 24 duplicated resource files;
+- action-start audio is only the wind-up/cast/swing layer. Authoritative DAMAGE / HEAL / BARRIER / REVIVE / REACTION events still emit their separate impact/support layer, so important skills do not collapse to a single one-shot sound;
+- semantic cue routing is pure/testable and independent from network transport; this prevents unit tests from needing client/network payload runtime classes;
+- the CC0 audio workflow now reproduces and validates all 25 production OGG files, including `sfx/heroes/`, checks Vorbis/duration plus the `sounds.json` contract, and no longer repeats a redundant clean Java build; Build TURNBOUND remains the single Java/JAR verification path;
+- no claim is made yet about final loudness balance, stereo feel or fatigue. Those require the later real 26.2 client playtest.
