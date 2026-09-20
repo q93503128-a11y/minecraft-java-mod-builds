@@ -466,3 +466,24 @@ TURNBOUND application:
 - ten-pulls focus newly acquired heroes in pull order before the summary; duplicate-only batches still give one highest-rarity 3D focus;
 - the client overlay is intentionally secondary so the actual 3D actor/world remains the presentation focus;
 - no client runtime or multiplayer visual claim is made until real 26.2 playtesting.
+
+
+### v1 growth-system migration follow-up
+
+The active growth runtime now follows the v1 design instead of exposing the retired v0.4 repeat-star/+20/Core stack.
+
+TURNBOUND application:
+- formal hero rarity remains the native ★3~★5 identity; old `currentStar` is retained only as a save-compatibility field and no longer increases stats, raises the level cap, or gates equipment;
+- the server-facing promotion entry point is fail-closed and the production UI no longer offers a repeat-star promotion action;
+- every formal hero uses Level 1~60, with a data-driven initial Lv60 HP/ATK/DEF target of 2.3×; SPD remains unchanged by level;
+- enemy level scaling was deliberately left on its existing path so this migration does not silently rebalance unrelated encounter difficulty;
+- equipment enhancement is +0~+10, Gold-only, failure-free; the active numeric enhancement scales the main stat by +4% per level while the old repeatedly-growing secondary line is no longer an enhancement axis;
+- initial +0→+10 Gold totals are data-driven at 4,000 / 9,000 / 18,000 / 35,000 for T1/T2/T3/T4; Signature currently uses the 35,000 target as an initial production value pending economy simulation/playtest;
+- schema-4 equipment above +10 migrates to +10 and refunds the exact retired +11~+20 spend calculated from the former v0.4 cost curve instead of deleting player investment;
+- save schema is now 5 while schema 1 and 4 remain readable; legacy promoted-star and Awakening Core fields remain readable/preserved for compatibility but are not active growth currencies;
+- Awakening is separate from Signature Equipment Trials and now requires Lv60 + the character's personal quest + Gold; the initial data-driven Awakening Gold target is 15,000 and is explicitly not a final locked balance value before economy simulation/playtest;
+- production runtime no longer grants or spends global Awakening Core, and current meta/trial payloads expose its compatibility slot as zero;
+- Signature Trials now serve the Signature-equipment route rather than being an Awakening prerequisite; this removes the old P08 circular prerequisite and makes its lethal-survival/low-HP objective evaluable;
+- actual Signature Trial encounter rosters remain unauthored and therefore canon-blocked until real content is bound; no enemy roster was invented to make the tests pass;
+- character/menu copy now presents native rarity, Lv, Awakening, +10 enhancement and “전용 장비 시련” without ★6 promotion, +20, Awakening Core, or developer-facing canon-gap wording;
+- this checkpoint is code/build/server verified only; client feel, visual hierarchy, balance feel and multiplayer remain for later real playtesting.
