@@ -43,7 +43,7 @@ public final class SignatureBattleActors {
             new Spec("P04_SIG","P04","sig_p04_last_ember_chalice","p04_elysia_signature","elysia","p04_elysia","p04_elysia",.63F,1.69F,.918F),
             new Spec("P05_SIG","P05","sig_p05_never_late_scope","p05_lynette_signature","lynette","p05_lynette","p05_lynette",.62F,1.72F,.935F),
             new Spec("P06_SIG","P06","sig_p06_unnamed_epitaph","p06_morwen_signature","morwen","p06_morwen","p06_morwen",.62F,1.77F,.962F),
-            new Spec("P07_SUMMON_SIG","P07_SUMMON","sig_p07_second_contract","p07_toto_signature","toto","common",null,.82F,1.15F,.720F),
+            new Spec("P07_SUMMON_SIG","P07_SUMMON","sig_p07_second_contract","p07_toto_signature","toto","toto","toto",.82F,1.15F,.720F),
             new Spec("P08_SIG","P08","sig_p08_blood_grip","p08_raze_signature","raze","p08_raze","p08_raze",.72F,1.88F,1.022F));
 
     public static final DeferredRegister.Entities ENTITIES = DeferredRegister.createEntities(Turnbound.MOD_ID);
@@ -89,7 +89,7 @@ public final class SignatureBattleActors {
         return combatantId;
     }
 
-    /** Same canonical animation prefix as the base hero; Toto intentionally keeps hero/common. */
+    /** Same canonical animation prefix as the base hero; Signature Toto keeps the authored Toto animation set too. */
     public static String heroAnimationPrefix(EntityType<?> type) {
         if (type == null) return null;
         for (var entry : ACTORS.entrySet()) {
