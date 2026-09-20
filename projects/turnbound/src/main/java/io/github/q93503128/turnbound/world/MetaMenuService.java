@@ -10,6 +10,7 @@ import io.github.q93503128.turnbound.content.RegionQuestCatalog;
 import io.github.q93503128.turnbound.content.V04Catalogs;
 import io.github.q93503128.turnbound.progression.EquipmentInventory;
 import io.github.q93503128.turnbound.progression.EquipmentRules;
+import io.github.q93503128.turnbound.progression.GachaCatalog;
 import io.github.q93503128.turnbound.progression.PlayerProfile;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
 import net.minecraft.server.level.ServerPlayer;
@@ -29,7 +30,9 @@ public final class MetaMenuService {
     public static MetaUiSnapshot snapshot(ServerPlayer player) {
         boolean external = ExternalWorldBootstrap.active(player);
         var id=player.getUUID();var campaign=CampaignProgressStore.snapshot(id);List<String> party=CampaignProgressStore.activeParty(id);Set<String> clears=campaign.clearedEncounters();Set<String> completedQuests=campaign.quests().completed();Set<String> challengeClears=ChallengeService.completed(id);int partyCp=party.stream().mapToInt(characterId->CampaignProgressStore.combatPower(id,characterId)).sum();
-        List<MetaUiSnapshot.CharacterRow> characters=CharacterMenuCatalog.all().stream().map(menu->{boolean owned=campaign.profile().ownedCharacters().contains(menu.id());var base=CanonicalData.definition(menu.id());int level=0,star=base.nativeStars(),cp=0;boolean awakened=false,active=false,profileUnlocked=!menu.profileQuest();BattleStats stats=base.stats();if(owned){var progress=CampaignProgressStore.character(id,menu.id());var growth=CampaignProgressStore.growth(id,menu.id());level=progress.level();star=growth.currentStar();awakened=growth.awakened();active=party.contains(menu.id());profileUnlocked=!menu.profileQuest()||growth.characterQuestComplete();cp=CampaignProgressStore.combatPower(id,menu.id());stats=CampaignProgressStore.finalStats(id,menu.id());}return new MetaUiSnapshot.CharacterRow(menu.id(),base.name(),owned,base.nativeStars(),level,star,awakened,cp,active,menu.role(),menu.primaryRole(),menu.difficulty(),profileUnlocked,stats.maxHp(),stats.attack(),stats.defense(),stats.speed());}).toList();
+        List<MetaUiSnapshot.CharacterRow> characters=CharacterMenuCatalog.all().stream()
+                .filter(menu->GachaCatalog.isSummonable(menu.id())||campaign.profile().ownedCharacters().contains(menu.id()))
+                .map(menu->{boolean owned=campaign.profile().ownedCharacters().contains(menu.id());var base=CanonicalData.definition(menu.id());int level=0,star=base.nativeStars(),cp=0;boolean awakened=false,active=false,profileUnlocked=!menu.profileQuest();BattleStats stats=base.stats();if(owned){var progress=CampaignProgressStore.character(id,menu.id());var growth=CampaignProgressStore.growth(id,menu.id());level=progress.level();star=growth.currentStar();awakened=growth.awakened();active=party.contains(menu.id());profileUnlocked=!menu.profileQuest()||growth.characterQuestComplete();cp=CampaignProgressStore.combatPower(id,menu.id());stats=CampaignProgressStore.finalStats(id,menu.id());}return new MetaUiSnapshot.CharacterRow(menu.id(),base.name(),owned,base.nativeStars(),level,star,awakened,cp,active,menu.role(),menu.primaryRole(),menu.difficulty(),profileUnlocked,stats.maxHp(),stats.attack(),stats.defense(),stats.speed());}).toList();
         List<MetaUiSnapshot.EquipmentRow> equipment=equipmentRows(campaign.equipment());List<MetaUiSnapshot.PendingEquipmentRow> pendingEquipment=pendingEquipmentRows(campaign.equipment());
         List<MetaUiSnapshot.EndgameRow> endgame=new ArrayList<>();
         boolean riftUnlocked=false;

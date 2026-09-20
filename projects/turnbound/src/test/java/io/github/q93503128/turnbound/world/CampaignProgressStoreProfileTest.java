@@ -23,22 +23,20 @@ class CampaignProgressStoreProfileTest {
     }
 
     @Test
-    void newCampaignUsesCanonicalStartingEconomyAndSmallStarterParty() {
+    void newCampaignUsesCanonicalStartingEconomyAndFourHeroStoryCore() {
         assertEquals(5_000, CampaignProgressStore.gold(playerId));
         assertEquals(0, CampaignProgressStore.currency(playerId, PlayerProfile.Currency.SUMMON_CRYSTAL));
-        assertEquals(Set.of("P01", "F03"), CampaignProgressStore.ownedCharacters(playerId));
-        assertEquals(List.of("P01", "F03"), CampaignProgressStore.activeParty(playerId));
+        assertEquals(Set.of("P01", "P03", "P04", "P08"), CampaignProgressStore.ownedCharacters(playerId));
+        assertEquals(List.of("P01", "P03", "P04", "P08"), CampaignProgressStore.activeParty(playerId));
     }
 
     @Test
-    void tutorialWinsRecruitBramAndElysiaIntoTheParty() {
+    void retiredTutorialRecruitHooksDoNotCreateDuplicateEssence() {
         CampaignProgressStore.commit(playerId, "TUTORIAL_1", BattleOutcome.ALLY_VICTORY);
-        assertTrue(CampaignProgressStore.ownedCharacters(playerId).contains("P03"));
-        assertEquals(List.of("P01", "F03", "P03"), CampaignProgressStore.activeParty(playerId));
-
         CampaignProgressStore.commit(playerId, "TUTORIAL_2", BattleOutcome.ALLY_VICTORY);
-        assertTrue(CampaignProgressStore.ownedCharacters(playerId).contains("P04"));
-        assertEquals(List.of("P01", "F03", "P03", "P04"), CampaignProgressStore.activeParty(playerId));
+        assertEquals(Set.of("P01", "P03", "P04", "P08"), CampaignProgressStore.ownedCharacters(playerId));
+        assertEquals(List.of("P01", "P03", "P04", "P08"), CampaignProgressStore.activeParty(playerId));
+        assertEquals(0, CampaignProgressStore.currency(playerId, PlayerProfile.Currency.STAR_ESSENCE));
     }
 
     @Test

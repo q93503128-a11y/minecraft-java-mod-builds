@@ -25,7 +25,7 @@ import java.util.random.RandomGenerator;
 
 /** Server-side campaign progression authority shared by combat, growth, equipment, quests, gacha and persistence. */
 public final class CampaignProgressStore {
-    private static final List<String> DEFAULT_PARTY = List.of("P01", "F03");
+    private static final List<String> DEFAULT_PARTY = List.of("P01", "P03", "P04", "P08");
 
     public record Snapshot(
             PlayerProfile.Snapshot profile,
@@ -68,7 +68,9 @@ public final class CampaignProgressStore {
     private static final GachaService GACHA = new GachaService(RandomGenerator.getDefault());
     private static final List<CharacterSpec> STARTER_PARTY = List.of(
             new CharacterSpec("P01", "카이렌"),
-            new CharacterSpec("F03", "변경 사냥꾼"));
+            new CharacterSpec("P03", "브람"),
+            new CharacterSpec("P04", "엘리시아"),
+            new CharacterSpec("P08", "라제"));
 
     private CampaignProgressStore() {}
 
@@ -354,13 +356,16 @@ public final class CampaignProgressStore {
 
     private static void applyB01FirstClear(PlayerProgress progress) {
         progress.profile.grant(PlayerProfile.Currency.SUMMON_CRYSTAL, 3_000);
-        PlayerProfile.Acquisition p08 = progress.profile.acquireCharacter("P08");
-        if (p08.newlyOwned()) initializeCharacter(progress, "P08");
+        if (!progress.profile.owns("P08")) {
+            PlayerProfile.Acquisition p08 = progress.profile.acquireCharacter("P08");
+            if (p08.newlyOwned()) initializeCharacter(progress, "P08");
+        }
         progress.equipment.grantChoiceToken("T2", 1);
         progress.profile.unlockStarterArchive();
     }
 
     private static void grantStoryRecruit(PlayerProgress progress, String characterId) {
+        if (progress.profile.owns(characterId)) return;
         PlayerProfile.Acquisition acquisition = progress.profile.acquireCharacter(characterId);
         if (!acquisition.newlyOwned()) return;
         initializeCharacter(progress, characterId);

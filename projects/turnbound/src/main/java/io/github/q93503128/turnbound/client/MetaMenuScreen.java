@@ -454,7 +454,7 @@ public final class MetaMenuScreen extends Screen {
     private void drawArchive(GuiGraphicsExtractor g){
         var s=ClientMetaState.snapshot();
         int y=contentTop()+35;
-        g.text(font,Component.literal("★5 천장 "+s.fiveStarPity()+" / "+GachaCatalog.HARD_PITY+" · ★5 3% · 10회 최소 ★4"),left+16,y-10,GOLD,false);
+        g.text(font,Component.literal("★5 천장 "+s.fiveStarPity()+" / "+GachaCatalog.HARD_PITY+" · ★5 "+Math.round(GachaCatalog.BASE_FIVE_STAR_RATE*100.0)+"% · 10회 최소 ★4"),left+16,y-10,GOLD,false);
         int start=page*currentPerPage,end=Math.min(s.archiveHistory().size(),start+currentPerPage),yy=y+8;
         for(int i=start;i<end;i++){
             var r=s.archiveHistory().get(i);
