@@ -24,6 +24,15 @@
 - Status: adopted production base
 - Tracking: `THIRD_PARTY/fablecraft_capital_valley/`
 
+### New Drabyel service NPC production family
+- Type: direct_asset / editable_base
+- Model + texture bases: FableCraft guard_bowerstone / villager_farmer / trader / villager_blacksmith / guildmaster / summoner
+- License: Apache-2.0
+- Intended use: New Drabyel entrance greeter, stables/travel, equipment merchant, blacksmith, central story NPC, summon keeper
+- Design rule: one coherent upstream visual family across the compact first hub; role silhouette must be readable without floating long-range nameplates
+- Status: adopted production bases; exact physical placement remains 26.2 survey-gated
+- Tracking: `THIRD_PARTY/drabyel_fablecraft_npcs/`
+
 ### CV-A Mossback Boar production base
 - Type: direct_asset / editable_base
 - Geometry + texture: Herbiary boar / wild swine

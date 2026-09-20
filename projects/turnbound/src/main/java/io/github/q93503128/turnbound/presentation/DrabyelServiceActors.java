@@ -29,8 +29,12 @@ public final class DrabyelServiceActors {
     private record Spec(String visualAsset,String entityId,String modelPath,String texturePath,float width,float height,float scale){}
 
     private static final List<Spec> SPECS=List.of(
-            new Spec("DRABYEL_MERCHANT","drabyel_merchant","npc/drabyel_merchant","npc/drabyel_merchant",0.64F,1.86F,1.0F),
-            new Spec("DRABYEL_BLACKSMITH","drabyel_blacksmith","npc/drabyel_blacksmith","npc/drabyel_blacksmith",0.68F,1.90F,1.04F)
+            new Spec("DRABYEL_GREETER","drabyel_greeter","npc/drabyel_greeter","npc/drabyel_greeter",0.72F,1.95F,1.05F),
+            new Spec("DRABYEL_STABLEMASTER","drabyel_stablemaster","npc/drabyel_stablemaster","npc/drabyel_stablemaster",0.66F,1.90F,1.00F),
+            new Spec("DRABYEL_MERCHANT","drabyel_merchant","npc/drabyel_merchant","npc/drabyel_merchant",0.64F,1.86F,1.00F),
+            new Spec("DRABYEL_BLACKSMITH","drabyel_blacksmith","npc/drabyel_blacksmith","npc/drabyel_blacksmith",0.68F,1.90F,1.04F),
+            new Spec("DRABYEL_STORYKEEPER","drabyel_storykeeper","npc/drabyel_storykeeper","npc/drabyel_storykeeper",0.68F,1.90F,1.00F),
+            new Spec("DRABYEL_SUMMONER","drabyel_summoner","npc/drabyel_summoner","npc/drabyel_summoner",0.68F,1.92F,1.05F)
     );
 
     public static final DeferredRegister.Entities ENTITIES=DeferredRegister.createEntities(Turnbound.MOD_ID);
