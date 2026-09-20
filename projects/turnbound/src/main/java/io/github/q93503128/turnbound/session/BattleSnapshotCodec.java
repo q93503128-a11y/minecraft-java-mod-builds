@@ -29,6 +29,8 @@ public final class BattleSnapshotCodec {
         out.append("C|").append(safe(session.encounterId())).append('\n');
         Vec3 arena=session.battleAnchor();out.append("A|").append(number(arena.x)).append('|').append(number(arena.y)).append('|').append(number(arena.z)).append('|').append(number(session.battleYaw())).append('\n');
         out.append("V|").append(number(session.returnYaw())).append('|').append(number(session.returnPitch())).append('\n');
+        BattleContextualGuidance.Cue guidance=BattleContextualGuidance.resolve(session.encounterId(),state);
+        out.append("M|").append(safe(guidance.text())).append('\n');
 
         for(CombatantState combatant:state.combatants()){
             Vec3 pos=session.combatantPosition(combatant.instanceId());if(pos==null)pos=arena;

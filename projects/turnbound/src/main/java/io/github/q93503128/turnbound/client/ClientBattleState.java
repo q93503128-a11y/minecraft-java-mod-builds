@@ -152,6 +152,7 @@ public final class ClientBattleState {
                         }
                     }
                     case "C" -> encounter = p.length > 1 ? p[1] : "";
+                    case "M" -> message = p.length > 1 ? p[1] : "";
                     case "A" -> {
                         arenaX = Double.parseDouble(p[1]); arenaY = Double.parseDouble(p[2]);
                         arenaZ = Double.parseDouble(p[3]); arenaYaw = Float.parseFloat(p[4]);

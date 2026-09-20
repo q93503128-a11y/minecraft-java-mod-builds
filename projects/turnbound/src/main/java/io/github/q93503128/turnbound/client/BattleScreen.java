@@ -518,12 +518,16 @@ public final class BattleScreen extends Screen {
         var rect = current.actionHeader();
         ClientBattleState.Skill selected = selectedSkill(snapshot);
         String rule = clientTargetRule(selected);
-        String hint = selected == null ? "스킬을 선택하세요"
+        String contextual = snapshot.message() == null ? "" : snapshot.message().trim();
+        boolean teaching = selected == null && !contextual.isBlank();
+        String hint = teaching ? contextual
+                : selected == null ? "스킬을 선택하세요"
                 : BattleActionRules.needsSingleTarget(rule) && selectedTarget < 0 ? "대상을 선택하세요"
                 : "한 번 더 클릭해 사용";
         String fitted = UiTextLayout.fit(hint, Math.max(12, rect.width() - 4));
         int x = rect.x() + Math.max(2, (rect.width() - font.width(fitted)) / 2);
-        graphics.text(font, Component.literal(fitted), x, rect.y() + 5, selected == null ? SECONDARY : TEXT, true);
+        graphics.text(font, Component.literal(fitted), x, rect.y() + 5,
+                teaching ? GOLD : selected == null ? SECONDARY : TEXT, true);
     }
 
     private void drawSkillTooltip(GuiGraphicsExtractor graphics, BattleHudLayout.Layout current, ClientBattleState.Snapshot snapshot, int mouseX, int mouseY) {
