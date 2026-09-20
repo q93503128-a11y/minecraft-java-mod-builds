@@ -417,3 +417,18 @@ TURNBOUND application:
 - direct `/turnbound archive single|ten|starter` commands are operator-only test helpers; normal players must use the server-authoritative summon milestone and physical facility path;
 - `/turnbound status` now reports the current Drehmal binding/runtime state instead of silently querying only the retired Southgate field session;
 - the legacy implementation is preserved for compatibility rather than deleted or no-op'd.
+
+
+### Battle/field presentation handoff follow-up
+
+The client and server now exchange explicit presentation ownership at the encounter boundary instead of relying on field and battle packets to happen to arrive on the same frame.
+
+TURNBOUND application:
+- starting a field-origin battle sends `FieldUiSnapshot.Mode.BATTLE_TRANSITION` immediately before the first battle snapshot;
+- that state carries no objective, navigation, interaction or travel presentation, so the field HUD yields without inventing a loading page;
+- the client uses one short presentation-ownership latch for entry and return, preventing vanilla hotbar/crosshair and field minimap/quest/location/service layers from flashing between packet arrivals;
+- J/N/M/E field shortcuts are also suppressed during battle handoff, so field UI cannot reopen between the transition snapshot and battle screen ownership;
+- the return latch clears as soon as a real post-battle field snapshot arrives, with a short timeout only as malformed/old-server fallback;
+- the world loading cover no longer exposes the retired Aster March name;
+- BattleSession already owns the 3D outcome outro (32 ticks for ordinary outcomes and longer authored boss collapse timing); BattleResultScreen therefore no longer stacks an additional 42-tick victory delay and instead uses only a 4-tick victory / 2-tick defeat UI handoff beat;
+- this remains code/build verified only until a real 26.2 client confirms that no one-frame vanilla/field flashes or camera discontinuities remain.
