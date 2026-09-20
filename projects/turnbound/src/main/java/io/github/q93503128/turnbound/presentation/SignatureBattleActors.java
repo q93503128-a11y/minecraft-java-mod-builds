@@ -10,6 +10,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -79,6 +80,15 @@ public final class SignatureBattleActors {
 
     public static boolean contains(String visualId) { return ACTORS.containsKey(visualId); }
 
+    /** Direct owner/signature lookup used by menu portraits; returns the base id when no visual attachment exists. */
+    public static String visualId(String combatantId, String signatureId) {
+        if (combatantId == null || signatureId == null || signatureId.isBlank()) return combatantId;
+        for (Spec spec : SPECS) {
+            if (spec.combatantId().equals(combatantId) && spec.signatureId().equals(signatureId)) return spec.visualId();
+        }
+        return combatantId;
+    }
+
     /** Same canonical animation prefix as the base hero; Toto intentionally keeps hero/common. */
     public static String heroAnimationPrefix(EntityType<?> type) {
         if (type == null) return null;
@@ -86,6 +96,18 @@ public final class SignatureBattleActors {
             if (entry.getValue().get() == type) return BY_VISUAL.get(entry.getKey()).animationPrefix();
         }
         return null;
+    }
+
+    /** Creates the exact signature visual actor for offscreen GUI portrait extraction without adding it to the level. */
+    public static BattleActorEntity preview(Level level, String visualId) {
+        if (level == null || visualId == null) return null;
+        DeferredHolder<EntityType<?>, EntityType<BattleActorEntity>> holder = ACTORS.get(visualId);
+        if (holder == null) return null;
+        BattleActorEntity actor = new BattleActorEntity(holder.get(), level);
+        actor.setNoAi(true);
+        actor.setNoGravity(true);
+        actor.setCustomNameVisible(false);
+        return actor;
     }
 
     public static BattleActorEntity spawn(ServerLevel level, String visualId, Vec3 pos, float yaw) {

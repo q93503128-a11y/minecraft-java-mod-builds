@@ -95,14 +95,13 @@ public final class MetaMenuScreen extends Screen {
         int partyW=Math.max(190,(panelWidth-gap*3)/2);
         int quickX=left+gap*2+partyW;
         int quickW=left+panelWidth-gap-quickX;
-        int cardH=31;
+        int cardH=42;
         int index=0;
         for(String id:snapshot.activeParty()){
             var row=character(id);
             if(row==null)continue;
             int yy=y+24+index*(cardH+5);
-            String status=(row.awakened()?"◆6":"★"+row.star())+" · Lv."+row.level()+" · CP "+row.cp();
-            addRenderableWidget(new BattleHudButton(left+gap,yy,partyW,cardH,Component.literal(row.name()+" · "+status),BLUE,ignored->openCharacterFromHome(row.id())));
+            addRenderableWidget(new BattleHudButton(left+gap,yy,partyW,cardH,Component.empty(),BLUE,ignored->openCharacterFromHome(row.id())));
             index++;
             if(index>=4)break;
         }
@@ -119,7 +118,7 @@ public final class MetaMenuScreen extends Screen {
 
     private void buildParty(){
         var owned=ClientMetaState.snapshot().characters().stream().filter(ClientMetaState.CharacterRow::owned).toList();
-        int gridTop=contentTop()+4,gap=3,cols=panelWidth>=820?4:panelWidth>=620?3:panelWidth>=440?2:1,cardH=20;
+        int gridTop=contentTop()+4,gap=3,cols=panelWidth>=820?4:panelWidth>=620?3:panelWidth>=440?2:1,cardH=34;
         int footerReserve=56;
         int rows=UiPaging.rowsThatFit(gridTop,top+panelHeight-footerReserve,cardH+3,2),per=cols*rows;
         setPaging(owned.size(),per);
@@ -128,8 +127,7 @@ public final class MetaMenuScreen extends Screen {
             var row=owned.get(i);
             int local=i-start,xx=left+16+(local%cols)*(cardW+gap),yy=gridTop+(local/cols)*(cardH+3);
             boolean selected=draftParty.contains(row.id());
-            String text=(selected?"● ":"○ ")+row.name()+" · "+(row.awakened()?"◆6":"★"+row.star())+" · Lv."+row.level()+" · "+row.cp();
-            addRenderableWidget(new BattleHudButton(xx,yy,cardW,cardH,Component.literal(text),selected?GREEN:MUTED,ignored->toggleParty(row.id())));
+            addRenderableWidget(new BattleHudButton(xx,yy,cardW,cardH,Component.empty(),selected?GREEN:MUTED,ignored->toggleParty(row.id())));
         }
         int py=top+panelHeight-50,px=left+16;
         for(int slot=1;slot<=3;slot++){
@@ -155,15 +153,14 @@ public final class MetaMenuScreen extends Screen {
         addRenderableWidget(new BattleHudButton(x,y,bw,CONTROL_H,Component.literal("역할 · "+roleLabel(roleFilter)),MUTED,ignored->cycleRole()));
 
         List<ClientMetaState.CharacterRow> rows=filteredCharacters();
-        int gridTop=y+27,cols=panelWidth>=860?4:panelWidth>=640?3:2,rowH=30,cardGap=4;
+        int gridTop=y+27,cols=panelWidth>=860?4:panelWidth>=640?3:2,rowH=40,cardGap=4;
         int visibleRows=UiPaging.rowsThatFit(gridTop,contentBottom(),rowH+4,2),per=cols*visibleRows;
         setPaging(rows.size(),per);
         int start=page*per,end=Math.min(rows.size(),start+per),cardW=(panelWidth-32-cardGap*(cols-1))/cols;
         for(int i=start;i<end;i++){
             var row=rows.get(i);
             int local=i-start,xx=left+16+(local%cols)*(cardW+cardGap),yy=gridTop+(local/cols)*(rowH+4);
-            String state=row.owned()?(row.awakened()?"각성 · ":"")+"★"+row.nativeStar()+" Lv."+row.level():"미보유 · ★"+row.nativeStar();
-            addRenderableWidget(new BattleHudButton(xx,yy,cardW,rowH,Component.literal(row.name()+" · "+state+" · "+primaryRoleLabel(row.primaryRole())),row.owned()?BLUE:MUTED,ignored->openCharacter(row.id())));
+            addRenderableWidget(new BattleHudButton(xx,yy,cardW,rowH,Component.empty(),row.owned()?BLUE:MUTED,ignored->openCharacter(row.id())));
         }
         buildPager();
     }
@@ -399,18 +396,73 @@ public final class MetaMenuScreen extends Screen {
         int quickX=left+gap*2+partyW;
         g.text(font,Component.literal("현재 파티"),left+gap,y,TEXT,true);
         g.text(font,Component.literal("바로가기"),quickX,y,TEXT,true);
+
+        int cardH=42,index=0;
+        for(String id:ClientMetaState.snapshot().activeParty()){
+            var row=character(id);
+            if(row==null)continue;
+            int yy=y+24+index*(cardH+5);
+            int portrait=Math.min(38,cardH-4);
+            TurnboundPortraitRenderer.extract(g,row.id(),left+gap+4,yy+2,left+gap+4+portrait,yy+2+portrait,false);
+            int tx=left+gap+portrait+9;
+            String status=(row.awakened()?"각성":"★"+row.nativeStar())+" · Lv."+row.level();
+            g.text(font,Component.literal(UiTextLayout.fit(row.name(),Math.max(20,partyW-portrait-14))),tx,yy+8,TEXT,true);
+            g.text(font,Component.literal(UiTextLayout.fit(status+" · CP "+row.cp(),Math.max(20,partyW-portrait-14))),tx,yy+23,SECONDARY,false);
+            index++;
+            if(index>=4)break;
+        }
         g.text(font,Component.literal("파티원을 선택하면 상세 정보로 바로 이동합니다."),left+gap,contentBottom()-14,SECONDARY,false);
     }
 
     private void drawParty(GuiGraphicsExtractor g){
         String hint="최대 4인 · 전투 참가 100% 경험치 · 대기 보유 캐릭터 20%";
         g.text(font,Component.literal(UiTextLayout.fit(hint,panelWidth-180)),left+132,top+75,SECONDARY,false);
+
+        var owned=ClientMetaState.snapshot().characters().stream().filter(ClientMetaState.CharacterRow::owned).toList();
+        int gridTop=contentTop()+4,gap=3,cols=panelWidth>=820?4:panelWidth>=620?3:panelWidth>=440?2:1,cardH=34;
+        int footerReserve=56;
+        int rows=UiPaging.rowsThatFit(gridTop,top+panelHeight-footerReserve,cardH+3,2),per=cols*rows;
+        int start=page*Math.max(1,per),end=Math.min(owned.size(),start+Math.max(1,per));
+        int cardW=(panelWidth-32-gap*(cols-1))/cols;
+        for(int i=start;i<end;i++){
+            var row=owned.get(i);
+            int local=i-start,xx=left+16+(local%cols)*(cardW+gap),yy=gridTop+(local/cols)*(cardH+3);
+            boolean selected=draftParty.contains(row.id());
+            int portrait=30;
+            TurnboundPortraitRenderer.extract(g,row.id(),xx+3,yy+2,xx+3+portrait,yy+2+portrait,false);
+            int tx=xx+portrait+7;
+            String state=(selected?"● ":"○ ")+row.name();
+            g.text(font,Component.literal(UiTextLayout.fit(state,Math.max(20,cardW-portrait-10))),tx,yy+5,selected?GREEN:TEXT,true);
+            String detail=(row.awakened()?"각성":"★"+row.nativeStar())+" · Lv."+row.level()+" · CP "+row.cp();
+            g.text(font,Component.literal(UiTextLayout.fit(detail,Math.max(20,cardW-portrait-10))),tx,yy+19,SECONDARY,false);
+        }
     }
 
     private void drawCharacters(GuiGraphicsExtractor g){
-        if(selectedCharacterId.isBlank())return;
+        if(selectedCharacterId.isBlank()){
+            List<ClientMetaState.CharacterRow> rows=filteredCharacters();
+            int y=contentTop(),gap=4;
+            int gridTop=y+27,cols=panelWidth>=860?4:panelWidth>=640?3:2,rowH=40,cardGap=4;
+            int visibleRows=UiPaging.rowsThatFit(gridTop,contentBottom(),rowH+4,2),per=cols*visibleRows;
+            int start=page*Math.max(1,per),end=Math.min(rows.size(),start+Math.max(1,per));
+            int cardW=(panelWidth-32-cardGap*(cols-1))/cols;
+            for(int i=start;i<end;i++){
+                var row=rows.get(i);
+                int local=i-start,xx=left+16+(local%cols)*(cardW+cardGap),yy=gridTop+(local/cols)*(rowH+4);
+                int portrait=36;
+                TurnboundPortraitRenderer.extract(g,row.id(),xx+3,yy+2,xx+3+portrait,yy+2+portrait,!row.owned());
+                int tx=xx+portrait+7;
+                String state=row.owned()?(row.awakened()?"각성":"★"+row.nativeStar())+" · Lv."+row.level():"미보유 · ★"+row.nativeStar();
+                g.text(font,Component.literal(UiTextLayout.fit(row.name(),Math.max(20,cardW-portrait-10))),tx,yy+7,row.owned()?TEXT:MUTED,true);
+                g.text(font,Component.literal(UiTextLayout.fit(state+" · "+primaryRoleLabel(row.primaryRole()),Math.max(20,cardW-portrait-10))),tx,yy+22,SECONDARY,false);
+            }
+            return;
+        }
         var r=character(selectedCharacterId);if(r==null)return;
-        int x=left+16,y=contentTop()+30,w=panelWidth-32;
+        int portraitX=left+18,portraitY=contentTop()+27,portraitW=Math.min(154,Math.max(112,panelWidth/5)),portraitH=Math.min(196,Math.max(132,contentBottom()-portraitY-6));
+        TurnboundFrameStyle.inset(g,portraitX,portraitY,portraitW,portraitH);
+        TurnboundPortraitRenderer.extract(g,r.id(),portraitX+4,portraitY+4,portraitX+portraitW-4,portraitY+portraitH-4,!r.owned());
+        int x=portraitX+portraitW+16,y=contentTop()+30,w=Math.max(80,left+panelWidth-18-x);
         g.text(font,Component.literal(UiTextLayout.fit(r.name()+" · "+(r.owned()?(r.awakened()?"각성 · ":"")+"★"+r.nativeStar()+" Lv."+r.level():"미보유 · ★"+r.nativeStar()),w)),x,y,r.owned()?TEXT:MUTED,true);
         g.text(font,Component.literal(UiTextLayout.fit(r.role(),w)),x,y+15,SECONDARY,false);
         switch(detailTab){

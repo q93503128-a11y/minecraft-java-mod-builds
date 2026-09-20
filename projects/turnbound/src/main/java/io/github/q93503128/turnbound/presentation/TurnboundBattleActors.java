@@ -11,6 +11,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -120,6 +121,18 @@ public final class TurnboundBattleActors {
         if (ELITE_PATH.containsKey(id)) return 2;
         if (ENEMY_PATH.containsKey(id)) return 1;
         return 0;
+    }
+
+    /** Creates a non-spawned client/menu preview using the exact registered production actor type. */
+    public static BattleActorEntity preview(Level level, String combatantId) {
+        if (level == null || combatantId == null) return null;
+        DeferredHolder<EntityType<?>, EntityType<BattleActorEntity>> holder = ACTORS.get(combatantId);
+        if (holder == null) return null;
+        BattleActorEntity actor = new BattleActorEntity(holder.get(), level);
+        actor.setNoAi(true);
+        actor.setNoGravity(true);
+        actor.setCustomNameVisible(false);
+        return actor;
     }
 
     public static BattleActorEntity spawn(ServerLevel level, String combatantId, Vec3 pos, float yaw) {

@@ -138,16 +138,19 @@ public final class GachaPresentationScreen extends Screen {
     private void drawSingleSummary(GuiGraphicsExtractor graphics) {
         if (batch.pulls().isEmpty()) return;
         Pull pull = batch.pulls().getFirst();
-        int w = Math.min(400, width - 44), h = 104;
+        int w = Math.min(420, width - 44), h = 112;
         int x = (width - w) / 2, y = Math.max(66, height - h - 28);
         int accent = starColor(pull.stars());
         TurnboundFrameStyle.frame(graphics, x, y, w, h, accent);
-        graphics.text(font, Component.literal("소환 결과"), x + 18, y + 14, TEXT, true);
-        graphics.text(font, Component.literal(stars(pull.stars()) + " · " + name(pull.characterId())), x + 18, y + 38, accent, true);
+        int portrait = Math.min(86, h - 14);
+        TurnboundPortraitRenderer.extract(graphics, pull.characterId(), x + 8, y + 7, x + 8 + portrait, y + 7 + portrait, false);
+        int tx = x + portrait + 18;
+        graphics.text(font, Component.literal("소환 결과"), tx, y + 14, TEXT, true);
+        graphics.text(font, Component.literal(stars(pull.stars()) + " · " + name(pull.characterId())), tx, y + 38, accent, true);
         graphics.text(font, Component.literal(pull.newlyOwned() ? "새로운 동료" : "별의 정수 +" + pull.essence()),
-                x + 18, y + 60, pull.newlyOwned() ? GREEN : PURPLE, false);
+                tx, y + 62, pull.newlyOwned() ? GREEN : PURPLE, false);
         graphics.text(font, Component.literal("★5 천장 " + pull.pityAfter() + " / " + GachaCatalog.HARD_PITY),
-                x + 18, y + 80, SECONDARY, false);
+                tx, y + 84, SECONDARY, false);
     }
 
     private void drawTenSummary(GuiGraphicsExtractor graphics) {
@@ -170,12 +173,16 @@ public final class GachaPresentationScreen extends Screen {
             Pull pull = batch.pulls().get(i);
             int accent = starColor(pull.stars());
             TurnboundFrameStyle.frame(graphics, x, y, cardW, cardH, accent);
-            graphics.text(font, Component.literal(stars(pull.stars())), x + 8, y + 10, accent, true);
-            graphics.text(font, Component.literal(shorten(name(pull.characterId()), 15)), x + 8, y + 31, TEXT, true);
+            graphics.text(font, Component.literal(stars(pull.stars())), x + 7, y + 6, accent, true);
+            int portraitTop = y + 15;
+            int portraitBottom = Math.max(portraitTop + 24, y + cardH - 35);
+            TurnboundPortraitRenderer.extract(graphics, pull.characterId(), x + 4, portraitTop, x + cardW - 4, portraitBottom, false);
+            graphics.text(font, Component.literal(shorten(name(pull.characterId()), 15)), x + 7, y + cardH - 31, TEXT, true);
             String result = pull.newlyOwned() ? "신규" : "정수 +" + pull.essence();
-            graphics.text(font, Component.literal(result), x + 8, y + cardH - 27,
+            graphics.text(font, Component.literal(result), x + 7, y + cardH - 18,
                     pull.newlyOwned() ? GREEN : PURPLE, false);
-            graphics.text(font, Component.literal("천장 " + pull.pityAfter()), x + 8, y + cardH - 13, SECONDARY, false);
+            graphics.text(font, Component.literal("천장 " + pull.pityAfter()), x + cardW - font.width("천장 " + pull.pityAfter()) - 6,
+                    y + cardH - 18, SECONDARY, false);
         }
     }
 

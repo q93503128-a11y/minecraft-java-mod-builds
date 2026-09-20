@@ -366,22 +366,37 @@ public final class BattleScreen extends Screen {
         if (settingsOpen) drawSettings(graphics, current, snapshot);
     }
 
-    /** Small queue tokens only; the top of the screen must not become a second HUD wall. */
+    /** Turn-order tokens use the same production actor portrait as the rest of the UI. */
     private void drawTimeline(GuiGraphicsExtractor graphics, BattleHudLayout.Layout current, ClientBattleState.Snapshot snapshot) {
         var panel = current.timeline();
         int count = Math.min(7, snapshot.timeline().size());
         if (count == 0) return;
-        graphics.fill(panel.x(), panel.y() + 2, panel.right(), panel.bottom() - 1, 0x50080A0E);
+        graphics.fill(panel.x(), panel.y() + 1, panel.right(), panel.bottom(), 0x50080A0E);
         int tokenWidth = Math.max(10, panel.width() / count);
         int x = panel.x();
         for (int i = 0; i < count; i++) {
             ClientBattleState.Unit unit = findUnit(snapshot, snapshot.timeline().get(i));
             if (unit == null) { x += tokenWidth; continue; }
             int color = "ALLY".equals(unit.side()) ? GAUGE : DANGER;
-            if (unit.id().equals(snapshot.actorId())) graphics.fill(x + 1, panel.y() + 2, x + tokenWidth - 1, panel.bottom() - 1, 0xA02A3442);
-            graphics.fill(x + 1, panel.bottom() - 3, x + tokenWidth - 1, panel.bottom() - 1, color);
-            String name = abbreviate(unit.name(), current.compact() ? 1 : 2);
-            graphics.text(font, Component.literal(name), x + Math.max(2, (tokenWidth - font.width(name)) / 2), panel.y() + 4, TEXT, true);
+            boolean actor = unit.id().equals(snapshot.actorId());
+            if (actor) graphics.fill(x + 1, panel.y() + 1, x + tokenWidth - 1, panel.bottom() - 1, 0xA02A3442);
+
+            int portrait = Math.max(9, Math.min(panel.height() - 3, tokenWidth - 4));
+            int px = x + Math.max(2, (tokenWidth - portrait) / 2);
+            int py = panel.y() + 1;
+            boolean rendered = TurnboundPortraitRenderer.extract(
+                    graphics, unit.defId(), px, py, px + portrait, py + portrait, unit.downed());
+            if (!rendered) {
+                String name = abbreviate(unit.name(), current.compact() ? 1 : 2);
+                graphics.text(font, Component.literal(name),
+                        x + Math.max(2, (tokenWidth - font.width(name)) / 2), panel.y() + 4, TEXT, true);
+            }
+            graphics.fill(x + 1, panel.bottom() - 2, x + tokenWidth - 1, panel.bottom(), color);
+            if (actor) {
+                graphics.fill(x + 1, panel.y(), x + tokenWidth - 1, panel.y() + 1, GOLD);
+                graphics.fill(x + 1, panel.y(), x + 2, panel.bottom(), GOLD);
+                graphics.fill(x + tokenWidth - 2, panel.y(), x + tokenWidth - 1, panel.bottom(), GOLD);
+            }
             x += tokenWidth;
         }
     }
@@ -395,23 +410,30 @@ public final class BattleScreen extends Screen {
         }
     }
 
-    /** Reference-style party status: name/value + thin HP bar, with almost no chrome. */
+    /** Compact party status with a shared live-3D portrait, HP and only the essential state. */
     private void drawPartyLine(GuiGraphicsExtractor graphics, BattleHudLayout.Rect rect, ClientBattleState.Unit unit, boolean selected, boolean actor) {
         int accent = selected ? GAUGE : actor ? GOLD : 0x884B5668;
         graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), 0x42080A0E);
         graphics.fill(rect.x(), rect.y(), rect.x() + 2, rect.bottom(), accent);
 
+        int portrait = Math.max(12, rect.height() - 3);
+        int portraitX = rect.x() + 3;
+        int portraitY = rect.y() + 1;
+        boolean rendered = TurnboundPortraitRenderer.extract(
+                graphics, unit.defId(), portraitX, portraitY, portraitX + portrait, portraitY + portrait, unit.downed());
+        int textX = rendered ? portraitX + portrait + 3 : rect.x() + 5;
+
         String hpText = unit.downed() ? "DOWN" : unit.hp() + "/" + unit.maxHp();
         int hpTextW = font.width(hpText);
-        int nameMax = Math.max(12, rect.width() - hpTextW - 14);
+        int nameMax = Math.max(12, rect.right() - hpTextW - 4 - textX - 4);
         String name = UiTextLayout.fit(unit.name(), nameMax);
-        graphics.text(font, Component.literal(name), rect.x() + 5, rect.y() + 2, unit.downed() ? MUTED : TEXT, true);
+        graphics.text(font, Component.literal(name), textX, rect.y() + 2, unit.downed() ? MUTED : TEXT, true);
         graphics.text(font, Component.literal(hpText), rect.right() - hpTextW - 4, rect.y() + 2,
                 unit.downed() ? MUTED : SECONDARY, false);
 
-        int barX = rect.x() + 4;
+        int barX = textX;
         int barY = rect.bottom() - 4;
-        int barW = rect.width() - 8;
+        int barW = Math.max(4, rect.right() - 4 - barX);
         graphics.fill(barX, barY, barX + barW, barY + 2, 0xD0080A0E);
         int hpW = unit.maxHp() <= 0 ? 0 : (int)Math.round(barW * Math.max(0, unit.hp()) / (double)unit.maxHp());
         if (hpW > 0) graphics.fill(barX, barY, barX + Math.min(barW, hpW), barY + 2, HP);

@@ -60,7 +60,7 @@ final class BattleHudLayout {
         Rect speed = inside(width, height, auto.right() + xs, controlsY, speedW, controlH);
 
         // Party state remains one low-profile strip instead of four cards.
-        int allyH = tiny ? 15 : compact ? 16 : 17;
+        int allyH = tiny ? 17 : compact ? 20 : 23;
         int allyGap = compact ? 3 : 4;
         int allyAreaRight = Math.max(margin + 4, controlsX - s);
         int allyAvailable = Math.max(4, allyAreaRight - margin);
@@ -80,7 +80,7 @@ final class BattleHudLayout {
 
         // Restrained top-center turn queue, slightly narrower than the previous playtest pass.
         int timelineW = Math.min(compact ? 164 : 214, Math.max(1, width - margin * 2));
-        int timelineH = tiny ? 12 : compact ? 13 : 14;
+        int timelineH = tiny ? 15 : compact ? 19 : 22;
         Rect timeline = inside(width, height, (width - timelineW) / 2, margin, timelineW, timelineH);
 
         // Current actor actions use one vertical scan path and leave more world visible than the older wide dock.
