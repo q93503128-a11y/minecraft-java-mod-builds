@@ -11,6 +11,7 @@ import io.github.q93503128.turnbound.presentation.BossBattleVfx;
 import io.github.q93503128.turnbound.presentation.EnemyBattleTelegraphs;
 import io.github.q93503128.turnbound.presentation.EnemyDefeatVfx;
 import io.github.q93503128.turnbound.presentation.EnemyPresentationProfile;
+import io.github.q93503128.turnbound.presentation.HeroSignaturePresentationState;
 import io.github.q93503128.turnbound.presentation.SignatureBattleActors;
 import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
 import net.minecraft.ChatFormatting;
@@ -192,6 +193,7 @@ final class BattlePresentation {
                     if(event.value()>0)playBuffFor(level,state,event.targetId(),buffPlayed);
                     else if(event.value()<0)playDebuffFor(level,state,event.targetId(),debuffPlayed);
                 }
+                case "RESOURCE","RECORD" -> presentSignatureResource(level,state,event.sourceId());
                 case "SUMMON_DOWN" -> presentSummonDown(level,state,event.sourceId());
                 default -> { }
             }
@@ -218,6 +220,13 @@ final class BattlePresentation {
     private static boolean isCoreHero(CombatantState target){
         if(target==null)return false;
         return switch(target.definition().id()){case "P01","P02","P03","P04","P05","P06","P07","P08"->true;default->false;};
+    }
+
+    private void presentSignatureResource(ServerLevel level,BattleState state,String sourceId){
+        CombatantState source=state.find(sourceId);if(source==null||source.downed())return;
+        HeroSignaturePresentationState.Resource resource=HeroSignaturePresentationState.resource(source);
+        Vec3 home=homes.get(sourceId);
+        if(resource!=null&&home!=null)BattleVfx.resource(level,source.definition().id(),home,resource.value(),resource.max());
     }
 
     private void presentSummonDown(ServerLevel level,BattleState state,String summonId){

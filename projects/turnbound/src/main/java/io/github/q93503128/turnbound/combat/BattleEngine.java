@@ -94,6 +94,11 @@ public final class BattleEngine {
         postRules(actor, skill, targets, direct, focusBefore, futureBefore);
         resolveReactions();
         cleanupKyrenFocusAfterAction(actor);
+        if (actor.definition().id().equals("P01") && actor.counter("focus") != focusBefore) {
+            String focusTarget = actor.ref("focusTarget");
+            state.addEvent(new BattleEvent("RESOURCE", actor.instanceId(), focusTarget == null ? "" : focusTarget,
+                    actor.counter("focus"), "P01_FOCUS"));
+        }
 
         tickCooldowns(actor, skill.id());
         resolveOwnerEndEffects(actor);

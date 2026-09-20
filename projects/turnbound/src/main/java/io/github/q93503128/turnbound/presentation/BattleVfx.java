@@ -28,6 +28,12 @@ public final class BattleVfx {
         }
     }
 
+    /** Presentation-only signature-resource accent for P01/P03/P05/P06/P07/P08. */
+    public static void resource(ServerLevel level, String combatantId, Vec3 center, int value, int max) {
+        if (level == null || center == null || combatantId == null) return;
+        CoreHeroVfx.resource(level, combatantId, center, value, max);
+    }
+
     public static void warning(ServerLevel level, String combatantId, Vec3 center) {
         ParticleOptions primary = switch (combatantId) {
             case "E003", "B04" -> ParticleTypes.FLAME;

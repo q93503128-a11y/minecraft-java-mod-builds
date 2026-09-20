@@ -6,7 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Map;
 
-/** Exact v0.4 character-wiki battle lines. Presentation only; never changes combat results. */
+/** Core-hero battle lines. Presentation only; never changes combat results. */
 public final class HeroBattleBarks {
     public enum Event { START, TURN, LOW_50, LOW_30, ALLY_DEATH, REVIVE, VICTORY, SPECIAL }
 
@@ -19,7 +19,7 @@ public final class HeroBattleBarks {
             Map.entry("P04",new Lines("엘리시아","무리하지 마, 고칠 수 있는 만큼만 다쳐.","상태 보여 줘.","","내 건 나중에.","잠깐만, 아직 데려갈 수 있어.","이번엔 내가 도움받았네.","좋아. 다들 숨 쉬고 있어.",Map.of("p04_returned_breath","아직 끝난 거 아니야."))),
             Map.entry("P05",new Lines("리네트","먼저 쏘는 건 양보할 수도 있어. 두 번째는 내 거고.","보인다.","","조준은 안 흔들려.","...농담할 때가 아니네.","이번 탄은 안 빗나가.","마지막 한 발은 아껴뒀는데.",Map.of("REACTION","거기."))),
             Map.entry("P06",new Lines("모르웬","오늘은 몇 줄이나 늘어날까.","다음 이름.","","내 이름도 칸은 있어.","기록했어. 돌아올 수 있으면 돌아와.","마침표를 잘못 찍었네.","살아 있는 사람부터 세자.",Map.of("MEMORY","잊지 않을게."))),
-            Map.entry("P07",new Lines("마리온","우리 둘이면 한 자리 더 있는 셈이야.","토토, 준비됐지?","","나보다 토토부터 봐 줘.","","나까지 불려올 줄은 몰랐네.","잘했어, 토토. ...나도? 고마워.",Map.of("p07_summon_toto","계약대로, 와 줘!","TOTO_DEATH","괜찮아. 다시 부를게."))),
+            Map.entry("P07",new Lines("마리온","우리 둘이면 한 자리 더 있는 셈이야.","토토, 준비됐지?","","나보다 토토부터 봐 줘.","","나까지 불려올 줄은 몰랐네.","잘했어, 토토. ...나도? 고마워.",Map.of("p07_summon_toto","토토, 저쪽을 지켜 줘.","TOTO_DEATH","괜찮아. 다시 부를게."))),
             Map.entry("P08",new Lines("라제","멀쩡할 때 끝내면 재미없잖아.","아직 덜 아파.","이제 좀 몸 풀리네.","그래, 이 정도지.","야. 거기 누워 있지 마.","죽은 줄 알았냐? 나도.","치료는... 조금만 해.",Map.of()))
     );
 

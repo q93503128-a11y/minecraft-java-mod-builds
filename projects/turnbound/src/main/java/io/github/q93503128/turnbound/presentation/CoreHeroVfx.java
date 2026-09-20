@@ -35,15 +35,17 @@ final class CoreHeroVfx {
                 burst(level, ParticleTypes.CRIT, target.add(0, 1.0, 0), 18, 0.58, 0.58, 0.58, 0.17);
             }
             case P01_DUEL_LOCK -> {
-                // Canon: no damage. Mark one enemy as the focus target and feed Kyren's gauge.
-                line(level, ParticleTypes.END_ROD, source.add(0, 1.10, 0), target.add(0, 1.05, 0), 10);
+                // v1: a real 110% cut that also establishes/advances the duel target and grants self Gauge.
+                line(level, ParticleTypes.END_ROD, source.add(0, 1.10, 0), target.add(0, 1.05, 0), 12);
+                slashArc(level, ParticleTypes.CRIT, target.add(0, 1.00, 0), 0.72, 11);
+                burst(level, ParticleTypes.CRIT, target.add(0, 0.98, 0), 7, 0.28, 0.28, 0.28, 0.05);
                 ring(level, ParticleTypes.CRIT, target.add(0, 0.24, 0), 0.82, 18);
                 ring(level, ParticleTypes.END_ROD, target.add(0, 1.02, 0), 0.46, 12);
                 ring(level, ParticleTypes.END_ROD, source.add(0, 0.28, 0), 0.58, 12);
             }
 
             case P02_ACCELERATE -> {
-                // Canon: ally Gauge +180. Lumea stays anchored; time flow moves around the target.
+                // v1: ally Gauge +120, with an extra +40 for an ally slower than Lumea. Lumea stays anchored.
                 line(level, ParticleTypes.END_ROD, source.add(0, 1.18, 0), target.add(0, 1.05, 0), 8);
                 ring(level, ParticleTypes.ELECTRIC_SPARK, target.add(0, 0.34, 0), 0.66, 16);
                 ring(level, ParticleTypes.END_ROD, target.add(0, 1.10, 0), 0.42, 12);
@@ -56,15 +58,18 @@ final class CoreHeroVfx {
                 burst(level, ParticleTypes.END_ROD, target.add(0, 1.15, 0), 14, 0.45, 0.60, 0.45, 0.06);
             }
             case P02_DELAY_FIELD -> {
-                // Canon: all enemies lose Gauge. Keep it a field/clock distortion, not an attack slash.
+                // v1: single-target 85% hit plus Gauge -180; distortion remains the primary read.
+                line(level, ParticleTypes.ELECTRIC_SPARK, source.add(0, 1.16, 0), target.add(0, 1.02, 0), 10);
                 ring(level, ParticleTypes.PORTAL, target.add(0, 0.24, 0), 1.08, 24);
                 ring(level, ParticleTypes.END_ROD, target.add(0, 0.92, 0), 0.72, 18);
-                burst(level, ParticleTypes.ELECTRIC_SPARK, target.add(0, 0.95, 0), 8, 0.44, 0.45, 0.44, 0.025);
+                burst(level, ParticleTypes.ELECTRIC_SPARK, target.add(0, 0.95, 0), 10, 0.44, 0.45, 0.44, 0.035);
             }
 
             case P03_GUARD_STANCE -> {
-                // Canon: self Barrier. No fake melee hit.
+                // v1 Shield Bash: visible 80% contact hit, then Guard +15 and a small self Barrier.
                 ring(level, ParticleTypes.CLOUD, source.add(0, 0.18, 0), 0.82, 18);
+                line(level, ParticleTypes.CRIT, source.add(0, 0.96, 0), target.add(0, 0.92, 0), 8);
+                burst(level, ParticleTypes.CRIT, target.add(0, 0.86, 0), 9, 0.38, 0.28, 0.38, 0.07);
                 ring(level, ParticleTypes.END_ROD, source.add(0, 0.86, 0), 0.64, 16);
                 burst(level, ParticleTypes.CLOUD, source.add(0, 0.72, 0), 10, 0.40, 0.45, 0.40, 0.03);
             }
@@ -117,8 +122,9 @@ final class CoreHeroVfx {
                 burst(level, ParticleTypes.END_ROD, target.add(0, 1.05, 0), 10, 0.32, 0.32, 0.32, 0.08);
             }
             case P05_HUNT_SIGNAL -> {
-                // Canon: no direct damage; immediately max Exposure and mark the hunt target.
-                line(level, ParticleTypes.END_ROD, source.add(0, 1.34, 0), target.add(0, 1.05, 0), 14);
+                // v1: 100% direct shot, switch Sightline immediately, and gain Shot +1.
+                line(level, ParticleTypes.END_ROD, source.add(0, 1.34, 0), target.add(0, 1.05, 0), 16);
+                burst(level, ParticleTypes.CRIT, target.add(0, 1.05, 0), 7, 0.28, 0.24, 0.28, 0.06);
                 ring(level, ParticleTypes.ENCHANT, target.add(0, 0.26, 0), 0.92, 22);
                 ring(level, ParticleTypes.END_ROD, target.add(0, 1.05, 0), 0.54, 14);
                 ring(level, ParticleTypes.CRIT, target.add(0, 1.05, 0), 0.28, 8);
@@ -151,10 +157,11 @@ final class CoreHeroVfx {
                 burst(level, ParticleTypes.CRIT, target.add(0, 0.85, 0), 7, 0.30, 0.25, 0.30, 0.06);
             }
             case P07_SUMMON_TOTO -> {
-                ring(level, ParticleTypes.ENCHANT, source.add(0, 0.75, 0), 0.82, 18);
-                ring(level, ParticleTypes.CRIT, source.add(0, 0.12, 0), 1.15, 28);
-                ring(level, ParticleTypes.END_ROD, source.add(0, 0.58, 0), 0.68, 16);
-                burst(level, ParticleTypes.END_ROD, source.add(0, 0.70, 0), 16, 0.70, 0.50, 0.70, 0.08);
+                // The legacy skill ID now means Guard Command: Toto already exists and protects the chosen ally.
+                line(level, ParticleTypes.END_ROD, source.add(0, 0.94, 0), target.add(0, 0.94, 0), 9);
+                ring(level, ParticleTypes.ENCHANT, target.add(0, 0.28, 0), 0.82, 18);
+                ring(level, ParticleTypes.END_ROD, target.add(0, 0.92, 0), 0.58, 14);
+                burst(level, ParticleTypes.CLOUD, target.add(0, 0.82, 0), 8, 0.42, 0.36, 0.42, 0.025);
             }
             case P07_JOINT_ATTACK -> {
                 ring(level, ParticleTypes.ENCHANT, source.add(0, 0.72, 0), 0.72, 16);
@@ -184,6 +191,40 @@ final class CoreHeroVfx {
             }
 
             case GENERIC -> generic(level, source, target, damaging);
+        }
+    }
+
+    /** Short state-change accent for signature resources; persistent readability lives in the world-space HUD. */
+    static void resource(ServerLevel level, String heroId, Vec3 center, int value, int max) {
+        double ratio = Math.max(0.0, Math.min(1.0, value / (double)Math.max(1, max)));
+        switch (heroId) {
+            case "P01" -> {
+                ring(level, ParticleTypes.CRIT, center.add(0, 0.34, 0), 0.46 + ratio * 0.18, 8 + (int)Math.round(ratio * 6));
+                if (ratio >= 0.99) ring(level, ParticleTypes.END_ROD, center.add(0, 1.05, 0), 0.42, 10);
+            }
+            case "P03" -> {
+                ring(level, ParticleTypes.CLOUD, center.add(0, 0.22, 0), 0.54 + ratio * 0.24, 10 + (int)Math.round(ratio * 8));
+                if (ratio >= 0.50) burst(level, ParticleTypes.END_ROD, center.add(0, 0.92, 0), 5, 0.34, 0.42, 0.34, 0.02);
+            }
+            case "P05" -> {
+                int shots = Math.max(0, Math.min(2, value));
+                burst(level, ParticleTypes.CRIT, center.add(0, 1.34, 0), 3 + shots * 3, 0.20, 0.16, 0.20, 0.03);
+                if (shots >= 2) ring(level, ParticleTypes.END_ROD, center.add(0, 1.16, 0), 0.34, 9);
+            }
+            case "P06" -> {
+                burst(level, ParticleTypes.SOUL, center.add(0, 1.18, 0), 3 + (int)Math.round(ratio * 7), 0.30, 0.42, 0.30, 0.018);
+                if (ratio >= 0.60) ring(level, ParticleTypes.ENCHANT, center.add(0, 0.42, 0), 0.52, 10);
+            }
+            case "P07" -> {
+                ring(level, ParticleTypes.ENCHANT, center.add(0, 0.30, 0), 0.50 + ratio * 0.20, 8 + (int)Math.round(ratio * 8));
+                if (ratio >= 0.50) burst(level, ParticleTypes.END_ROD, center.add(0, 0.92, 0), 6, 0.34, 0.38, 0.34, 0.025);
+            }
+            case "P08" -> {
+                burst(level, ratio >= 0.80 ? ParticleTypes.FLAME : ParticleTypes.ASH,
+                        center.add(0, 0.90, 0), 4 + (int)Math.round(ratio * 10), 0.38, 0.50, 0.38, 0.025 + ratio * 0.035);
+                if (ratio >= 0.80) ring(level, ParticleTypes.CRIT, center.add(0, 0.24, 0), 0.72, 14);
+            }
+            default -> { }
         }
     }
 

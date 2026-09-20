@@ -5,6 +5,7 @@ import io.github.q93503128.turnbound.combat.BattleState;
 import io.github.q93503128.turnbound.combat.CombatantState;
 import io.github.q93503128.turnbound.combat.SkillDefinition;
 import io.github.q93503128.turnbound.combat.StatusInstance;
+import io.github.q93503128.turnbound.presentation.HeroSignaturePresentationState;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
@@ -31,7 +32,7 @@ public final class BattleSnapshotCodec {
 
         for(CombatantState combatant:state.combatants()){
             Vec3 pos=session.combatantPosition(combatant.instanceId());if(pos==null)pos=arena;
-            String statuses=presentationStates(combatant).stream().collect(Collectors.joining(","));
+            String statuses=presentationStates(state,combatant).stream().collect(Collectors.joining(","));
             out.append("U|").append(combatant.instanceId()).append('|').append(combatant.definition().id()).append('|').append(combatant.side()).append('|').append(safe(combatant.definition().name())).append('|')
                     .append(combatant.hp()).append('|').append(combatant.maxHp()).append('|').append(combatant.barrier()).append('|').append(combatant.gauge()).append('|').append(combatant.downed()?1:0).append('|')
                     .append(number(pos.x)).append('|').append(number(pos.y)).append('|').append(number(pos.z)).append('|').append(statuses).append('\n');
@@ -46,22 +47,21 @@ public final class BattleSnapshotCodec {
         return out.toString();
     }
 
-    /** Preserve raw status IDs for client rules while adding HUD-only stack/duration/resource tokens. */
-    static List<String> presentationStates(CombatantState combatant){
+    /** Preserve raw status IDs for client rules while adding v1 signature-resource/target presentation tokens. */
+    static List<String> presentationStates(BattleState state,CombatantState combatant){
         List<String> out=new ArrayList<>();
         combatant.statusesView().values().stream().sorted(java.util.Comparator.comparing(StatusInstance::id).thenComparing(StatusInstance::sourceId)).forEach(status->{
             if(!out.contains(status.id()))out.add(status.id());
             out.add("@s:"+status.id()+":"+status.stacks()+":"+status.remainingOwnerTurns()+":"+number(status.magnitude()));
         });
-        String id=combatant.definition().id();
-        if("P01".equals(id))resource(out,"focus",combatant.counter("focus"),combatant.definition().intParam("focusMax",3));
-        else if("P06".equals(id))resource(out,"memory",combatant.counter("memory"),combatant.definition().intParam("memoryMax",5));
-        else if("P07".equals(id))resource(out,"contract",combatant.counter("contract_prep"),combatant.definition().intParam("prepMax",2));
-        else if("P05".equals(id)&&combatant.counter("p05_hunt_actions")>0)resource(out,"hunt",combatant.counter("p05_hunt_actions"),2);
+        out.addAll(HeroSignaturePresentationState.tokens(state,combatant));
         return List.copyOf(out);
     }
 
-    private static void resource(List<String> out,String id,int value,int max){if(value>0)out.add("@r:"+id+":"+value+":"+Math.max(1,max));}
+    /** Compatibility helper for focused unit tests that do not need cross-unit target markers. */
+    static List<String> presentationStates(CombatantState combatant){
+        return presentationStates(null,combatant);
+    }
     private static String safe(String value){return value==null?"":value.replace('|','/').replace('\n',' ').replace('\r',' ');}
     private static String number(double value){return String.format(Locale.ROOT,"%.3f",value);}
 }
