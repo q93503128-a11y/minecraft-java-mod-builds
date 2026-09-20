@@ -90,28 +90,36 @@ public final class VillagePlacedTurretSystem {
         return (int) TURRETS.values().stream().filter(TurretState::active).count();
     }
     public static int capacity() {
-        return 2 + VillageProgressionSystem.wallLevel()
-                + VillageDefenseResearchSystem.level(VillageDefenseResearchSystem.Branch.TOWER);
+        int research = VillageDefenseResearchSystem.level(VillageDefenseResearchSystem.Branch.TOWER);
+        int researchSlots = Math.min(10, research) + Math.max(0, research - 10) / 2;
+        return 2 + VillageProgressionSystem.wallLevel() + researchSlots;
     }
 
     static double effectiveRange(TurretType type, int level) {
         if (type == null) return 0.0;
-        int safeLevel = Math.max(1, Math.min(5, level));
-        return (type.range() + (safeLevel - 1) * 2.5)
+        int safeLevel = Math.max(1, Math.min(MAX_TURRET_LEVEL, level));
+        double foundation = Math.min(4, safeLevel - 1) * 2.5;
+        double mastery = Math.max(0, safeLevel - 5) * 1.6;
+        return (type.range() + foundation + mastery)
                 * VillageDefenseResearchSystem.towerRangeMultiplier();
     }
 
     static float effectiveDamage(TurretType type, int level) {
         if (type == null) return 0.0f;
-        int safeLevel = Math.max(1, Math.min(5, level));
-        return (type.damage() + (safeLevel - 1) * type.damage() * 0.16f)
+        int safeLevel = Math.max(1, Math.min(MAX_TURRET_LEVEL, level));
+        int foundation = Math.min(4, safeLevel - 1);
+        int mastery = Math.max(0, safeLevel - 5);
+        float levelMultiplier = 1.0f + foundation * 0.16f + mastery * 0.10f;
+        return type.damage() * levelMultiplier
                 * VillageDefenseResearchSystem.towerDamageMultiplier();
     }
 
     static int effectiveInterval(TurretType type, int level) {
         if (type == null) return 20;
-        int safeLevel = Math.max(1, Math.min(5, level));
-        return Math.max(8, type.interval() - (safeLevel - 1) * 2);
+        int safeLevel = Math.max(1, Math.min(MAX_TURRET_LEVEL, level));
+        int foundationReduction = Math.min(4, safeLevel - 1) * 2;
+        int masteryReduction = Math.max(0, safeLevel - 5) / 2;
+        return Math.max(7, type.interval() - foundationReduction - masteryReduction);
     }
 
     static int dismantleRefund(TurretState state) {
@@ -276,7 +284,7 @@ public final class VillagePlacedTurretSystem {
         TurretState state = TURRETS.get(id);
         if (state == null) return "해당 포탑을 찾을 수 없습니다.";
         if (!state.active()) return "파괴된 포탑은 먼저 수리해야 합니다.";
-        if (state.level() >= 5) return "포탑이 최고 레벨입니다.";
+        if (state.level() >= MAX_TURRET_LEVEL) return "포탑이 최고 레벨입니다.";
         int cost = upgradeCost(state);
         if (!VillageProgressionSystem.spendSupplies(cost)) {
             return "공동 보급품이 부족합니다. 강화 필요 " + cost + ", 현재 " + VillageProgressionSystem.supplies();
@@ -351,8 +359,9 @@ public final class VillagePlacedTurretSystem {
     }
 
     static int upgradeCost(TurretState state) {
-        if (state == null || state.level() >= 5) return 0;
-        return 130 + state.level() * 110;
+        if (state == null || state.level() >= MAX_TURRET_LEVEL) return 0;
+        int mastery = Math.max(0, state.level() - 5);
+        return 130 + state.level() * 110 + mastery * mastery * 55;
     }
 
     public static void tick(MinecraftServer server) {
@@ -728,7 +737,9 @@ public final class VillagePlacedTurretSystem {
     }
 
     private static int legacyBaseMaxHp(TurretState state) {
-        return state.type().baseHp() + (state.level() - 1) * 70;
+        int foundation = Math.min(4, Math.max(0, state.level() - 1));
+        int mastery = Math.max(0, state.level() - 5);
+        return state.type().baseHp() + foundation * 70 + mastery * 95;
     }
 
     private static int maxHp(TurretState state) {
@@ -814,7 +825,7 @@ public final class VillagePlacedTurretSystem {
         try {
             return new TurretState(id, type,
                     new BlockPos(Integer.parseInt(p[1]), Integer.parseInt(p[2]), Integer.parseInt(p[3])),
-                    Math.max(1, Math.min(5, Integer.parseInt(p[4]))), Math.max(0, Integer.parseInt(p[5])),
+                    Math.max(1, Math.min(MAX_TURRET_LEVEL, Integer.parseInt(p[4]))), Math.max(0, Integer.parseInt(p[5])),
                     "1".equals(p[6]));
         } catch (NumberFormatException ignored) { return null; }
     }

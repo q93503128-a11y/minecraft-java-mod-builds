@@ -9,7 +9,7 @@ import java.util.Locale;
 import java.util.Map;
 
 public final class VillageDefenseResearchSystem {
-    public static final int MAX_LEVEL = 10;
+    public static final int MAX_LEVEL = 20;
     private static final EnumMap<Branch, Integer> LEVELS = new EnumMap<>(Branch.class);
     private static VillageDefenseResearchData savedData;
 
@@ -97,7 +97,7 @@ public final class VillageDefenseResearchSystem {
         int safe = Math.max(0, Math.min(MAX_LEVEL, researchLevel));
         int foundation = Math.min(3, safe);
         int mastery = Math.max(0, safe - 4) / 2;
-        return Math.min(5, foundation + mastery);
+        return Math.min(8, foundation + mastery);
     }
 
     public static int mercenaryCapacityBonus() {

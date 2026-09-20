@@ -50,6 +50,8 @@ public final class VillageMercenaryPresentationSystem {
 
     static int visualTier(int rank) {
         int safe = Math.max(1, Math.min(VillageMercenarySystem.MAX_LEVEL, rank));
+        if (safe >= 100) return 5;
+        if (safe >= 80) return 4;
         if (safe >= 60) return 3;
         if (safe >= 40) return 2;
         if (safe >= 20) return 1;

@@ -27,7 +27,7 @@ import java.util.UUID;
 
 /** Persistent classed mercenaries backed by world SavedData rather than removed entity tag APIs. */
 public final class VillageMercenarySystem {
-    public static final int MAX_LEVEL = 60;
+    public static final int MAX_LEVEL = 100;
     private static final String LEGACY_MERCENARY_NAME = "마을 용병";
     private static final Map<UUID, MercenaryClass> CLASSES = new LinkedHashMap<>();
     private static final Map<UUID, Integer> LEVELS = new LinkedHashMap<>();
@@ -433,8 +433,9 @@ public final class VillageMercenarySystem {
     private static float mercenaryPower(int rank) {
         int safe = Math.max(1, Math.min(MAX_LEVEL, rank));
         int veteran = Math.min(19, safe - 1);
-        int elite = Math.max(0, safe - 20);
-        return 1.0f + veteran * 0.05f + elite * 0.025f;
+        int elite = Math.min(40, Math.max(0, safe - 20));
+        int master = Math.max(0, safe - 60);
+        return 1.0f + veteran * 0.05f + elite * 0.025f + master * 0.018f;
     }
 
     private static int killsRequiredForLevel(int level) {
@@ -448,26 +449,26 @@ public final class VillageMercenarySystem {
         int duration = 20 * 60 * 60;
         mercenary.addEffect(new MobEffectInstance(
                 MobEffects.INVISIBILITY, duration, 0, false, false));
-        int healthTier = Math.min(4, Math.max(0, (rank - 1) / 12));
+        int healthTier = Math.min(7, Math.max(0, (rank - 1) / 14));
         if (healthTier > 0) {
             mercenary.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST, duration, healthTier - 1, false, false));
         }
         if (kind == MercenaryClass.BASTION) {
             mercenary.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, duration,
-                    Math.min(2, rank / 20), false, false));
+                    Math.min(3, rank / 25), false, false));
             mercenary.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration,
-                    Math.min(3, Math.max(0, rank / 12)), false, false));
+                    Math.min(5, Math.max(0, rank / 18)), false, false));
         } else if (kind == MercenaryClass.STRIKER) {
             mercenary.addEffect(new MobEffectInstance(MobEffects.STRENGTH, duration,
-                    Math.min(2, rank / 20), false, false));
+                    Math.min(3, rank / 25), false, false));
             mercenary.addEffect(new MobEffectInstance(MobEffects.SPEED, duration,
-                    Math.min(1, rank / 30), false, false));
+                    Math.min(2, rank / 35), false, false));
         } else if (kind == MercenaryClass.RANGER) {
             mercenary.addEffect(new MobEffectInstance(MobEffects.SPEED, duration,
-                    rank >= 35 ? 1 : 0, false, false));
+                    rank >= 75 ? 2 : rank >= 35 ? 1 : 0, false, false));
         } else if (kind == MercenaryClass.MEDIC) {
             mercenary.addEffect(new MobEffectInstance(MobEffects.REGENERATION, duration,
-                    rank >= 30 ? 1 : 0, false, false));
+                    rank >= 75 ? 2 : rank >= 30 ? 1 : 0, false, false));
         }
     }
 

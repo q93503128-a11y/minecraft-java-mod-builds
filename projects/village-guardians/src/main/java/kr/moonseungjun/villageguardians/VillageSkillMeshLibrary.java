@@ -1058,7 +1058,7 @@ public final class VillageSkillMeshLibrary {
     private static void renderMercenaryPresence(
             PoseStack.Pose pose, VertexConsumer out, Basis b, double age, String encodedTier, int style) {
         int tier = 0;
-        try { tier = Math.max(0, Math.min(3, Integer.parseInt(encodedTier == null ? "0" : encodedTier))); }
+        try { tier = Math.max(0, Math.min(5, Integer.parseInt(encodedTier == null ? "0" : encodedTier))); }
         catch (NumberFormatException ignored) {}
         double scale = 1.0 + tier * 0.085;
         double pulse = 0.96 + 0.04 * Math.sin(age * 0.10);
@@ -1124,7 +1124,7 @@ public final class VillageSkillMeshLibrary {
             PoseStack.Pose pose, VertexConsumer out, Basis b, int style, int tier) {
         VillageExternalMercenaryMesh.Mesh model = VillageExternalMercenaryMesh.mesh(style);
         if (model.empty()) return;
-        double scale = 0.96 + Math.max(0, Math.min(3, tier)) * 0.035;
+        double scale = 0.96 + Math.max(0, Math.min(5, tier)) * 0.030;
         int body = switch (style) {
             case 0 -> rgba(126, 132, 140, 246);
             case 1 -> rgba(104, 72, 67, 246);

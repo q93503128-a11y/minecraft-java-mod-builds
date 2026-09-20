@@ -126,7 +126,7 @@ public final class VillageSiegeCommandUi {
         int repairCost = VillagePlacedTurretSystem.repairCost(state);
         int upgradeCost = VillagePlacedTurretSystem.upgradeCost(state);
         int refund = VillagePlacedTurretSystem.dismantleRefund(state);
-        int nextLevel = Math.min(5, state.level() + 1);
+        int nextLevel = Math.min(VillagePlacedTurretSystem.MAX_TURRET_LEVEL, state.level() + 1);
         String currentStats = damageSummary(state.type(), state.level())
                 + " · 사거리 "
                 + String.format(Locale.ROOT, "%.1f", VillagePlacedTurretSystem.effectiveRange(state.type(), state.level()))
@@ -138,7 +138,7 @@ public final class VillageSiegeCommandUi {
         List<String> labels = List.of(
                 "수리|" + (repairCost <= 0 ? "현재 완전함"
                         : "공동 보급품 " + repairCost + " · HP 0의 잔해도 다시 가동 상태로 복구"),
-                "강화|" + (upgradeCost <= 0 ? "Lv.5 최고 단계"
+                "강화|" + (upgradeCost <= 0 ? "Lv." + VillagePlacedTurretSystem.MAX_TURRET_LEVEL + " 최고 단계"
                         : "Lv." + state.level() + " → Lv." + nextLevel
                         + " · 공동 보급품 " + upgradeCost + " · " + nextStats + " · 현재 손상분 유지"),
                 "철거|블록 드롭 없이 철거 · 공동 보급품 " + refund + " 환급",
