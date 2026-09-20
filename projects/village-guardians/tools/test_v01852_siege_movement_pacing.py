@@ -46,7 +46,8 @@ def main() -> None:
     dread = enemy_effects.split("case DREAD_KNIGHT ->", 1)[1].split("default ->", 1)[0]
     assert "MobEffects.SPEED" not in dread
 
-    war_chant = section(enemy, "case WAR_CHANTER ->", "case NECROMANCER ->")
+    abilities = section(enemy, "public static void tickAbility", "public static void onStructureHit")
+    war_chant = section(abilities, "case WAR_CHANTER -> {", "case NECROMANCER -> {")
     assert "usesSiegePacing(allyType)" in war_chant
 
     elite_discover = section(elite, "private static void discover", "private static void grappler")
@@ -55,10 +56,11 @@ def main() -> None:
     aspect_config = section(aspect, "public static void configure", "public static void tick")
     assert "case BERSERKER -> mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH" in aspect_config
     assert "case STORMCALLER -> { }" in aspect_config
-    berserker_tick = section(aspect, "case BERSERKER ->", "case BULWARK ->")
+    aspect_tick = section(aspect, "public static void tick", "public static float structureMultiplier")
+    berserker_tick = section(aspect_tick, "case BERSERKER -> {", "case BULWARK -> {")
     assert "MobEffects.SPEED, 60, 0" in berserker_tick
     assert "MobEffects.SPEED, 60, 2" not in berserker_tick
-    warleader_tick = section(aspect, "case WARLEADER ->", "case WALLBREAKER ->")
+    warleader_tick = section(aspect_tick, "case WARLEADER -> {", "case WALLBREAKER -> {")
     assert "!VillageEnemyArchetypeSystem.usesSiegePacing(allyType)" in warleader_tick
 
     discover = section(boss, "private static void discover", "private static void enterPhaseTwo")
