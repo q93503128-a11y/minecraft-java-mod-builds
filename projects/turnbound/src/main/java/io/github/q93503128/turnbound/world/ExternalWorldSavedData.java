@@ -42,17 +42,7 @@ public final class ExternalWorldSavedData extends SavedData {
                 // A corrupt foreign UUID entry must not make the whole world unloadable.
             }
         }
-        for (String value : onboarding) {
-            int split = value == null ? -1 : value.indexOf('|');
-            if (split <= 0 || split >= value.length() - 1) continue;
-            try {
-                UUID playerId = UUID.fromString(value.substring(0, split));
-                String flag = cleanFlag(value.substring(split + 1));
-                if (!flag.isBlank()) data.onboardingEntries.add(entry(playerId, flag));
-            } catch (IllegalArgumentException ignored) {
-                // Malformed onboarding state is isolated instead of making the authored world unloadable.
-            }
-        }
+        data.onboardingEntries.addAll(DrehmalOnboardingFlags.decode(onboarding));
         return data;
     }
 
@@ -70,34 +60,14 @@ public final class ExternalWorldSavedData extends SavedData {
     }
 
     public boolean onboardingFlag(UUID playerId, String flag) {
-        String clean = cleanFlag(flag);
-        return playerId != null && !clean.isBlank() && onboardingEntries.contains(entry(playerId, clean));
+        return DrehmalOnboardingFlags.contains(onboardingEntries, playerId, flag);
     }
 
     public Set<String> onboardingFlags(UUID playerId) {
-        if (playerId == null) return Set.of();
-        String prefix = playerId + "|";
-        Set<String> out = new LinkedHashSet<>();
-        for (String value : onboardingEntries) {
-            if (value.startsWith(prefix) && value.length() > prefix.length()) {
-                out.add(value.substring(prefix.length()));
-            }
-        }
-        return Set.copyOf(out);
+        return DrehmalOnboardingFlags.forPlayer(onboardingEntries, playerId);
     }
 
     public void markOnboardingFlag(UUID playerId, String flag) {
-        String clean = cleanFlag(flag);
-        if (playerId != null && !clean.isBlank() && onboardingEntries.add(entry(playerId, clean))) setDirty();
-    }
-
-    private static String entry(UUID playerId, String flag) {
-        return playerId + "|" + flag;
-    }
-
-    private static String cleanFlag(String flag) {
-        String clean = flag == null ? "" : flag.trim();
-        if (clean.isBlank() || clean.length() > 64 || clean.indexOf('|') >= 0) return "";
-        return clean;
+        if (DrehmalOnboardingFlags.add(onboardingEntries, playerId, flag)) setDirty();
     }
 }
