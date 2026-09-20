@@ -432,3 +432,19 @@ TURNBOUND application:
 - the world loading cover no longer exposes the retired Aster March name;
 - BattleSession already owns the 3D outcome outro (32 ticks for ordinary outcomes and longer authored boss collapse timing); BattleResultScreen therefore no longer stacks an additional 42-tick victory delay and instead uses only a 4-tick victory / 2-tick defeat UI handoff beat;
 - this remains code/build verified only until a real 26.2 client confirms that no one-frame vanilla/field flashes or camera discontinuities remain.
+
+
+### Contextual first-route / New Drabyel onboarding follow-up
+
+The first-route objective layer no longer treats the nearest production site as progression authority.
+
+TURNBOUND application:
+- cleared route milestones outrank physical backtracking, so returning toward the Tower after clearing the Drabyel road does not rewind the authored objective;
+- Warning Cave copy explicitly presents the Elite as a detour that can be skipped while continuing toward New Drabyel;
+- the Explorer's Guide camp remains a breathing/rest beat instead of becoming a tutorial kiosk;
+- New Drabyel onboarding advances one useful action at a time instead of explaining party, equipment, shop, travel and summon together;
+- opening the root RPG menu inside the surveyed hub and successfully using a physical service record per-player onboarding milestones in external-world saved data;
+- service milestones persist across reconnects and are player-scoped;
+- objectives only point at services that are both survey-promoted and backed by a supported production actor, preventing ghost/tutorial targets;
+- summon never becomes a hub objective until the existing Warning Cave Elite or Drabyel-road clear milestone has actually unlocked it;
+- no route/service coordinate or `verifiedIn26_2` / `productionEnabled` flag is inferred or promoted by onboarding code.
