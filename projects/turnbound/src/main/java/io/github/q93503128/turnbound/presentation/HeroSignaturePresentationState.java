@@ -21,6 +21,18 @@ public final class HeroSignaturePresentationState {
         public String token() { return "@r:" + id + ":" + value + ":" + max; }
     }
 
+    /**
+     * Small authored body-language state used by the live battle model.
+     * Stage 0 is neutral; stages 1~3 increase signature readiness. Overheat is P08-only.
+     */
+    public record VisualState(int stage, boolean overheat) {
+        public VisualState {
+            stage = Math.max(0, Math.min(3, stage));
+        }
+
+        public String animationKey() { return overheat ? "overheat" : "state_" + stage; }
+    }
+
     private HeroSignaturePresentationState() {}
 
     public static Resource resource(CombatantState combatant) {
@@ -40,6 +52,35 @@ public final class HeroSignaturePresentationState {
                     combatant.definition().intParam("furyMax", 100));
             default -> null;
         };
+    }
+
+    public static VisualState visualState(CombatantState combatant) {
+        Resource resource = resource(combatant);
+        if (resource == null) return null;
+        if (combatant.downed()) return new VisualState(0, false);
+
+        int value = Math.min(resource.value(), resource.max());
+        return switch (combatant.definition().id()) {
+            case "P01" -> new VisualState(Math.min(3, value), false);
+            case "P03", "P07" -> new VisualState(
+                    value <= 0 ? 0 : value < 50 ? 1 : value < resource.max() ? 2 : 3, false);
+            case "P05" -> new VisualState(Math.min(2, value), false);
+            case "P06" -> new VisualState(
+                    value <= 0 ? 0 : value <= 2 ? 1 : value < resource.max() ? 2 : 3, false);
+            case "P08" -> new VisualState(
+                    value <= 0 ? 0 : value < 60 ? 1 : value < 80 ? 2 : 3, isRazeOverheated(combatant));
+            default -> null;
+        };
+    }
+
+    private static boolean isRazeOverheated(CombatantState combatant) {
+        String self = combatant.instanceId();
+        var attack = combatant.status("attack_multiplier", self);
+        var speed = combatant.status("speed_multiplier", self);
+        var defense = combatant.status("defense_multiplier", self);
+        return attack != null && attack.magnitude() > 0
+                && speed != null && speed.magnitude() > 0
+                && defense != null && defense.magnitude() < 0;
     }
 
     public static List<String> tokens(BattleState state, CombatantState combatant) {

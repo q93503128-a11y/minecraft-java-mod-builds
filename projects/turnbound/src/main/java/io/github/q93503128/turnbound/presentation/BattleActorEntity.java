@@ -108,6 +108,20 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
                 .triggerableAnim("service_greet", SERVICE_GREET)
                 .triggerableAnim("service_work", SERVICE_WORK));
 
+        if (heroSignatureStateAnimations(prefix)) {
+            AnimationController<BattleActorEntity> signatureState =
+                    new AnimationController<BattleActorEntity>("hero_state", 4, test -> PlayState.STOP)
+                            .additiveAnimations()
+                            .triggerableAnim("state_0", loop(prefix, "state_0"))
+                            .triggerableAnim("state_1", loop(prefix, "state_1"))
+                            .triggerableAnim("state_2", loop(prefix, "state_2"))
+                            .triggerableAnim("state_3", loop(prefix, "state_3"));
+            if ("p08_raze".equals(prefix)) {
+                signatureState.triggerableAnim("overheat", loop(prefix, "overheat"));
+            }
+            controllers.add(signatureState);
+        }
+
         if (bossAnimations) {
             controllers.add(new AnimationController<BattleActorEntity>("boss_phase", 3, test -> PlayState.STOP)
                     .additiveAnimations()
@@ -116,6 +130,16 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
                     .additiveAnimations()
                     .triggerableAnim("armor_break", BOSS_ARMOR_BREAK_HOLD));
         }
+    }
+
+    private static boolean heroSignatureStateAnimations(String prefix) {
+        return "p01_kyren".equals(prefix)
+                || "p03_bram".equals(prefix)
+                || "p05_lynette".equals(prefix)
+                || "p06_morwen".equals(prefix)
+                || "p07_marion".equals(prefix)
+                || "p08_raze".equals(prefix)
+                || "toto".equals(prefix);
     }
 
     private static RawAnimation play(String prefix, String clip) {
@@ -148,6 +172,16 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
     public void playVictory() { triggerAnim("combat", "victory"); }
     public void playBuff() { triggerAnim("combat", "buff"); }
     public void playDebuff() { triggerAnim("combat", "debuff"); }
+
+    /** Applies persistent additive body language without taking ownership away from combat/action clips. */
+    public void setHeroSignatureState(int stage, boolean overheat) {
+        String prefix = TurnboundBattleActors.heroAnimationPrefix(getType());
+        if (prefix == null) prefix = SignatureBattleActors.heroAnimationPrefix(getType());
+        if (!heroSignatureStateAnimations(prefix)) return;
+        int resolved = Math.max(0, Math.min(3, stage));
+        triggerAnim("hero_state", overheat && "p08_raze".equals(prefix) ? "overheat" : "state_" + resolved);
+    }
+
     public void playTelegraph() { triggerAnim("combat", "telegraph"); }
     public void playCharge() { triggerAnim("combat", "charge"); }
     public void playSummon() { triggerAnim("combat", "summon"); }

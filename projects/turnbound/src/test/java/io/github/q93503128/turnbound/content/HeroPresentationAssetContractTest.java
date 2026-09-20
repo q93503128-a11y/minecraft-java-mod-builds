@@ -14,7 +14,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Guards the v0.4 §38.8 minimum animation contract for all eight core heroes. */
+/** Guards the production hero animation minimum and v1 signature-state readability contract. */
 class HeroPresentationAssetContractTest {
     private static final Map<String, String> HERO_ANIMATIONS = Map.of(
             "P01", "p01_kyren",
@@ -29,6 +29,13 @@ class HeroPresentationAssetContractTest {
     private static final List<String> REQUIRED_CLIPS = List.of(
             "idle", "turn_ready", "move_attack", "basic", "active_1", "active_2",
             "hit_light", "hit_heavy", "buff", "debuff", "death", "revive", "victory", "field_idle");
+    private static final Map<String, String> SIGNATURE_STATE_HEROES = Map.of(
+            "P01", "p01_kyren",
+            "P03", "p03_bram",
+            "P05", "p05_lynette",
+            "P06", "p06_morwen",
+            "P07", "p07_marion",
+            "P08", "p08_raze");
 
     @Test
     void everyCoreHeroShipsTheCanonicalFourteenClipMinimum() {
@@ -45,6 +52,28 @@ class HeroPresentationAssetContractTest {
                 String fullName = "animation." + entry.getValue() + "." + clip;
                 assertTrue(names.contains(fullName), () -> entry.getKey() + " is missing required clip " + fullName);
             }
+        }
+    }
+
+    @Test
+    void signatureResourceHeroesShipPersistentBodyLanguageStates() {
+        for (var entry : SIGNATURE_STATE_HEROES.entrySet()) {
+            JsonObject animations = load("assets/turnbound/geckolib/animations/entity/hero/" + entry.getValue() + ".animation.json")
+                    .getAsJsonObject("animations");
+            for (int stage = 0; stage <= 3; stage++) {
+                String clip = "animation." + entry.getValue() + ".state_" + stage;
+                assertTrue(animations.has(clip), () -> entry.getKey() + " is missing signature-state clip " + clip);
+            }
+        }
+
+        JsonObject raze = load("assets/turnbound/geckolib/animations/entity/hero/p08_raze.animation.json")
+                .getAsJsonObject("animations");
+        assertTrue(raze.has("animation.p08_raze.overheat"));
+
+        JsonObject toto = load("assets/turnbound/geckolib/animations/entity/hero/toto.animation.json")
+                .getAsJsonObject("animations");
+        for (int stage = 0; stage <= 3; stage++) {
+            assertTrue(toto.has("animation.toto.state_" + stage), "Toto must mirror Marion Bond body language");
         }
     }
 

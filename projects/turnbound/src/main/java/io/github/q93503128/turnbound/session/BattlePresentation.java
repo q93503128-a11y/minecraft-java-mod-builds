@@ -45,6 +45,7 @@ final class BattlePresentation {
     private final Map<String, Boolean> downed = new LinkedHashMap<>();
     private final Map<String, Integer> barriers = new LinkedHashMap<>();
     private final Map<String, Integer> bossPhases = new LinkedHashMap<>();
+    private final Map<String, String> heroSignatureStates = new LinkedHashMap<>();
     private final Map<String, Integer> pendingRemovalTicks = new LinkedHashMap<>();
     /** Multiple actors may still be returning at 2x speed; never strand the previous attacker. */
     private final Map<String, Integer> returnTimers = new LinkedHashMap<>();
@@ -112,7 +113,7 @@ final class BattlePresentation {
 
     private void removeActor(ServerLevel level,String id){
         UUID uuid=actors.remove(id);Entity entity=uuid==null?null:level.getEntity(uuid);if(entity!=null)entity.discard();
-        homes.remove(id);homeYaws.remove(id);sides.remove(id);summons.remove(id);visualIds.remove(id);downed.remove(id);barriers.remove(id);bossPhases.remove(id);pendingRemovalTicks.remove(id);returnTimers.remove(id);
+        homes.remove(id);homeYaws.remove(id);sides.remove(id);summons.remove(id);visualIds.remove(id);downed.remove(id);barriers.remove(id);bossPhases.remove(id);heroSignatureStates.remove(id);pendingRemovalTicks.remove(id);returnTimers.remove(id);
     }
 
     private static Vec3 localToWorld(Vec3 center,Vec3 right,Vec3 forward,double x,double z){return center.add(right.scale(x)).subtract(forward.scale(z));}
@@ -129,7 +130,8 @@ final class BattlePresentation {
     }
 
     void syncStates(ServerLevel level,Iterable<CombatantState> combatants){
-        for(CombatantState unit:combatants){
+        List<CombatantState> units=new ArrayList<>();combatants.forEach(units::add);
+        for(CombatantState unit:units){
             String id=unit.instanceId();Boolean before=downed.get(id);
             if(before==null)downed.put(id,unit.downed());else if(before!=unit.downed()){
                 downed.put(id,unit.downed());Entity entity=entity(level,id);Vec3 home=homes.get(id);
@@ -157,6 +159,30 @@ final class BattlePresentation {
                 Vec3 home=homes.get(id);if(home!=null){BattleVfx.phase(level,unit.definition().id(),home,phase);BossBattleVfx.phaseAccent(level,unit.definition().id(),home,phase);}
             }else bossPhases.putIfAbsent(id,phase);
         }
+        syncHeroSignatureStates(level,units);
+    }
+
+    private void syncHeroSignatureStates(ServerLevel level,List<CombatantState> units){
+        for(CombatantState unit:units){
+            HeroSignaturePresentationState.VisualState state=HeroSignaturePresentationState.visualState(unit);
+            if(state==null)continue;
+            applyHeroSignatureState(level,unit.instanceId(),state);
+            if(!"P07".equals(unit.definition().id()))continue;
+            for(CombatantState partner:units){
+                if(partner.definition().summon()&&unit.instanceId().equals(partner.ref("ownerId"))){
+                    applyHeroSignatureState(level,partner.instanceId(),state);
+                }
+            }
+        }
+    }
+
+    private void applyHeroSignatureState(ServerLevel level,String actorId,HeroSignaturePresentationState.VisualState state){
+        String key=state.animationKey();
+        if(key.equals(heroSignatureStates.get(actorId)))return;
+        Entity entity=entity(level,actorId);
+        if(!(entity instanceof BattleActorEntity animated))return;
+        animated.setHeroSignatureState(state.stage(),state.overheat());
+        heroSignatureStates.put(actorId,key);
     }
 
     private static void playBossPhaseAnimation(BattleActorEntity actor,String visualId,int phase){
