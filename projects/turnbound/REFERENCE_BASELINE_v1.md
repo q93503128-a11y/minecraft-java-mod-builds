@@ -653,3 +653,27 @@ Verification boundary:
 - NeoForge 26.2 dedicated-server smoke reached Done (6.175s).
 - Verified JAR SHA-256: `627810952de822e0895f4dfb17fff8ce1b9d7ed1feb74b19ab2f0cb00e5ea11e`.
 - This does **not** prove final hit-stop feel, additive-animation amplitude/blending, VFX density, camera readability or audio/VFX timing in the real client. CLIENT RUNTIME TESTED / PLAYTESTED / MULTIPLAYER TESTED remain NO.
+
+
+### first real-battle contextual onboarding follow-up
+
+The first Capital Valley combat is supposed to teach the real battle UI in place, not send the player through a detached training room or a stack of modal tutorial cards.
+
+TURNBOUND application:
+- only `CV_FIRST_COMMON` receives this first-battle teaching layer; later encounters return to the normal compact battle HUD immediately;
+- the first three **ally** actions advance the teaching sequence, so enemy turns do not consume tutorial beats;
+- before the first player action the existing action-header line asks for target selection + Basic;
+- after the first ally action the same line points to the live portrait Turn Order rail and explains that it is the next-action order;
+- after the second ally action the same line asks for an Active and explains the owner-action CD rule;
+- after the third ally action the contextual copy disappears completely instead of becoming permanent HUD noise;
+- selecting a skill still gives priority to the normal immediate interaction hint (target selection / confirm), so tutorial copy never obscures the control needed to finish the action;
+- this reuses the existing action-header surface and established gold/secondary text hierarchy. No new black panel, blocking popup, tutorial card stack or developer-facing terminology was introduced;
+- the cue is generated server-side from authoritative battle history and transported through the existing optional snapshot message field; it cannot advance combat, choose a target, spend Gauge or alter cooldowns;
+- older snapshots without the optional message line remain client-compatible.
+
+Verification:
+- Build TURNBOUND #841 exposed a test-only package-access mistake in the newly added unit test; production source compiled. The test was corrected to exercise the guidance through real `BattleEngine` actions instead of widening `BattleState.addEvent` visibility.
+- Build TURNBOUND #842 then passed the full test/build workflow at `769da0b41c4b2c640dd7d2f2557d11b49655af63`.
+- NeoForge 26.2 dedicated-server smoke reached Done (5.739s).
+- Verified JAR SHA-256: `5e1bbc824fb2bfc8fd4e2483f89f81f361424e4e4d4282d36491458e7d96cbf8`.
+- CLIENT RUNTIME TESTED / PLAYTESTED / MULTIPLAYER TESTED remain NO; real-client width/readability and whether the three beats feel too slow/fast are intentionally deferred to the final client pass.
