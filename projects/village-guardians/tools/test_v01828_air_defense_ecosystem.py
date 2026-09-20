@@ -53,7 +53,7 @@ def main() -> None:
     assert "pendingBombardOverlapPenalty" in turret and "penalty += 190.0" in turret
     assert "-VillageRaidSystem.aerialThreatPriority(enemy)" in merc
 
-    assert "VillageEnemyArchetypeSystem.isFlying(target)" in ability
+    assert "VillageRaidSystem.isAerialEnemy(target)" in ability
     assert "event.getAmount() * 1.18f" in ability
     assert "aerialBias" in ability and "? -18.0 : 0.0" in ability
     assert "공중 적에게 화살 피해가 18% 증가" in role
