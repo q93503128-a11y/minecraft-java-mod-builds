@@ -448,3 +448,21 @@ TURNBOUND application:
 - objectives only point at services that are both survey-promoted and backed by a supported production actor, preventing ghost/tutorial targets;
 - summon never becomes a hub objective until the existing Warning Cave Elite or Drabyel-road clear milestone has actually unlocked it;
 - no route/service coordinate or `verifiedIn26_2` / `productionEnabled` flag is inferred or promoted by onboarding code.
+
+
+### v1 summon roster / presentation follow-up
+
+The production summon path now follows the current ★3~★5 collection canon instead of carrying forward the retired filler-character economy.
+
+TURNBOUND application:
+- the standard summon pool contains only P01~P08 and uses the v1 baseline rates: ★5 2%, ★4 15%, ★3 83%, soft pity from 45 and hard pity at 60;
+- duplicate conversion follows the v1 Star Essence values: ★3 15, ★4 60, ★5 250;
+- F01~F04 are removed from new summons and new-campaign roster acquisition, but remain recognized when loading old saves so compatibility data is not destroyed;
+- old 60~79 pity values migrate to an immediate next-pull hard-pity state instead of rejecting the save;
+- a new campaign starts with the four-hero story core P01/P03/P04/P08, and retired tutorial recruit hooks no longer pay duplicate Essence;
+- legacy Aster first-party quest/test data was aligned to the four-hero core without reviving F03 as a required production character;
+- the summon result presentation no longer covers the world with a black text-card reveal or exposes internal IDs;
+- server-authoritative summon results spawn a player-private existing P01~P08 GeckoLib actor in the world, use a short authored victory pose, and clean up on skip/close/logout/server stop;
+- ten-pulls focus newly acquired heroes in pull order before the summary; duplicate-only batches still give one highest-rarity 3D focus;
+- the client overlay is intentionally secondary so the actual 3D actor/world remains the presentation focus;
+- no client runtime or multiplayer visual claim is made until real 26.2 playtesting.
