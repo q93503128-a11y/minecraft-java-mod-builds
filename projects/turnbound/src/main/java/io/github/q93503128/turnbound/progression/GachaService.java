@@ -78,9 +78,7 @@ public final class GachaService {
         double nonFive = (roll - fiveRate) / (1.0 - fiveRate);
         double total = 1.0 - GachaCatalog.BASE_FIVE_STAR_RATE;
         if (nonFive < GachaCatalog.FOUR_STAR_RATE / total) return 4;
-        if (nonFive < (GachaCatalog.FOUR_STAR_RATE + GachaCatalog.THREE_STAR_RATE) / total) return 3;
-        if (nonFive < (GachaCatalog.FOUR_STAR_RATE + GachaCatalog.THREE_STAR_RATE + GachaCatalog.TWO_STAR_RATE) / total) return 2;
-        return 1;
+        return 3;
     }
 
     private int rollFourPlus(int pityBeforePull) {

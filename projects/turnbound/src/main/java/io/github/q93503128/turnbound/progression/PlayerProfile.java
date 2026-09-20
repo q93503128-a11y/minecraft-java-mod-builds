@@ -32,9 +32,12 @@ public final class PlayerProfile {
         }
         public Snapshot {
             if (gold < 0 || summonCrystal < 0 || starEssence < 0 || awakeningCore < 0) throw new IllegalArgumentException("Negative TURNBOUND currency");
-            if (fiveStarPity < 0 || fiveStarPity >= GachaCatalog.HARD_PITY) throw new IllegalArgumentException("Invalid five-star pity " + fiveStarPity);
+            if (fiveStarPity < 0) throw new IllegalArgumentException("Invalid five-star pity " + fiveStarPity);
+            // v0.4 saves could legitimately contain 60-79 pity. Preserve that progress by converting it to
+            // "next pull is hard pity" under the v1 hard-pity-60 contract instead of rejecting the save.
+            if (fiveStarPity >= GachaCatalog.HARD_PITY) fiveStarPity = GachaCatalog.HARD_PITY - 1;
             ownedCharacters = Set.copyOf(ownedCharacters);
-            for (String id : ownedCharacters) if (!GachaCatalog.isSummonable(id)) throw new IllegalArgumentException("Unknown owned character " + id);
+            for (String id : ownedCharacters) if (!GachaCatalog.isKnownCharacter(id)) throw new IllegalArgumentException("Unknown owned character " + id);
             if (starterArchiveUsed && !starterArchiveUnlocked) throw new IllegalArgumentException("Starter Archive cannot be used before unlock");
             summonHistory = List.copyOf(summonHistory == null ? List.of() : summonHistory);
             if (summonHistory.size() > GachaCatalog.HISTORY_LIMIT) {

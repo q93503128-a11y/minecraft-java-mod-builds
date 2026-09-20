@@ -14,10 +14,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class GachaServiceTest {
     @Test
     void canonicalSoftAndHardPityRatesAreStable() {
-        assertEquals(0.03, GachaService.effectiveFiveStarRate(63), 0.000001);
-        assertEquals(0.06, GachaService.effectiveFiveStarRate(64), 0.000001);
-        assertEquals(0.09, GachaService.effectiveFiveStarRate(65), 0.000001);
-        assertEquals(1.0, GachaService.effectiveFiveStarRate(79), 0.000001);
+        assertEquals(0.02, GachaService.effectiveFiveStarRate(43), 0.000001);
+        assertEquals(0.05, GachaService.effectiveFiveStarRate(44), 0.000001);
+        assertEquals(0.08, GachaService.effectiveFiveStarRate(45), 0.000001);
+        assertEquals(1.0, GachaService.effectiveFiveStarRate(59), 0.000001);
     }
 
     @Test
@@ -74,8 +74,36 @@ class GachaServiceTest {
         assertTrue(profile.acquireCharacter("P08").newlyOwned());
         PlayerProfile.Acquisition duplicate = profile.acquireCharacter("P08");
         assertFalse(duplicate.newlyOwned());
-        assertEquals(40, duplicate.starEssenceGranted());
-        assertEquals(40, profile.currency(PlayerProfile.Currency.STAR_ESSENCE));
+        assertEquals(15, duplicate.starEssenceGranted());
+        assertEquals(15, profile.currency(PlayerProfile.Currency.STAR_ESSENCE));
+    }
+
+    @Test
+    void productionSummonPoolContainsOnlyCanonicalThreeToFiveStarHeroes() {
+        Set<String> seen = new HashSet<>();
+        for (int stars : new int[]{3,4,5}) {
+            for (String id : GachaCatalog.standardPool(stars)) {
+                assertTrue(id.startsWith("P"), id);
+                assertEquals(stars, GachaCatalog.nativeStars(id));
+                assertTrue(GachaCatalog.isSummonable(id));
+                seen.add(id);
+            }
+        }
+        assertEquals(Set.of("P01","P02","P03","P04","P05","P06","P07","P08"), seen);
+        for (String legacy : Set.of("F01","F02","F03","F04")) {
+            assertFalse(GachaCatalog.isSummonable(legacy));
+            assertTrue(GachaCatalog.isKnownCharacter(legacy));
+        }
+    }
+
+    @Test
+    void legacyHighPitySaveMigratesToNextPullHardPity() {
+        PlayerProfile restored = PlayerProfile.restore(new PlayerProfile.Snapshot(
+                5_000, 300, 0, 0, Set.of("P01","F03"), 79, false, false));
+        assertEquals(59, restored.fiveStarPity());
+        var pull = new GachaService(new Random(4)).summonStandardSingle(restored).pulls().getFirst();
+        assertEquals(5, pull.nativeStars());
+        assertEquals(0, restored.fiveStarPity());
     }
 
     @Test
