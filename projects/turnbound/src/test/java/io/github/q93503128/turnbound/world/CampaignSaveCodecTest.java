@@ -42,8 +42,8 @@ class CampaignSaveCodecTest {
                 Map.of("MQ_C01_01_patrol", Set.of("ENC_M01")));
 
         List<PlayerProfile.SummonHistory> history = List.of(
-                new PlayerProfile.SummonHistory("P05", 5, true, 0, 0),
-                new PlayerProfile.SummonHistory("P01", 4, false, 100, 1));
+                new PlayerProfile.SummonHistory("P05", 4, true, 0, 0),
+                new PlayerProfile.SummonHistory("P01", 4, false, 60, 1));
         List<List<String>> presets = List.of(
                 List.of("P01", "P03", "P04", "F03"),
                 List.of("P05", "P08", "P03"),

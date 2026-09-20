@@ -20,7 +20,7 @@ class Chapter2ProgressionTest {
     void prologueChapterOneAndGloamwoodQuestChainReachB02Unlocks() {
         CampaignProgressStore.ensureNewGame(playerId);
         CampaignProgressStore.questInteract(playerId, "Director Iven");
-        CampaignProgressStore.setActiveParty(playerId, List.of("P01", "F03"));
+        CampaignProgressStore.setActiveParty(playerId, List.of("P01", "P03", "P04", "P08"));
         for (String id : List.of("TUTORIAL_1", "TUTORIAL_2", "TUTORIAL_3")) {
             CampaignProgressStore.commit(playerId, id, BattleOutcome.ALLY_VICTORY);
         }

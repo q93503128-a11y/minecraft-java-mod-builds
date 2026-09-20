@@ -18,7 +18,24 @@ class CampaignAwakeningAuthorityTest {
     }
 
     @Test
-    void directMaterialAwakeningCannotBypassCanonGap() {
+    void legacyMaterialAwakeningCannotBypassCanonGap() {
+        CampaignProgressStore.restore(playerId, CampaignSaveCodec.decode("""
+                {
+                  "schemaVersion": 1,
+                  "profile": {
+                    "gold": 5000,
+                    "summonCrystal": 0,
+                    "starEssence": 0,
+                    "awakeningCore": 0,
+                    "ownedCharacters": ["P01", "F03"],
+                    "fiveStarPity": 0,
+                    "starterArchiveUnlocked": false,
+                    "starterArchiveUsed": false
+                  },
+                  "characters": {"P01":{"level":1,"xp":0},"F03":{"level":1,"xp":0}},
+                  "clearedEncounters": []
+                }
+                """));
         IllegalStateException error = assertThrows(IllegalStateException.class,
                 () -> CampaignProgressStore.awaken(playerId, "F03"));
 

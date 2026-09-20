@@ -23,16 +23,16 @@ class TutorialEncounterBridgeTest {
     }
 
     @Test
-    void prologueStartsSmallRecruitsTwoHeroesAndUnlocksMeadowAfterThreeWins() {
+    void prologueStartsWithFourHeroCoreAndUnlocksMeadowAfterThreeWins() {
         UUID id = UUID.randomUUID();
         try {
             CampaignProgressStore.ensureNewGame(id);
-            assertEquals(List.of("P01", "F03"), CampaignProgressStore.activeParty(id));
-            assertEquals(java.util.Set.of("P01", "F03"), CampaignProgressStore.ownedCharacters(id));
+            assertEquals(List.of("P01", "P03", "P04", "P08"), CampaignProgressStore.activeParty(id));
+            assertEquals(java.util.Set.of("P01", "P03", "P04", "P08"), CampaignProgressStore.ownedCharacters(id));
 
             CampaignProgressStore.questInteract(id, "Director Iven");
             assertTrue(CampaignProgressStore.quests(id).completed().contains("MQ_P00_01_arrival"));
-            CampaignProgressStore.setActiveParty(id, List.of("P01", "F03"));
+            CampaignProgressStore.setActiveParty(id, List.of("P01", "P03", "P04", "P08"));
             assertTrue(CampaignProgressStore.quests(id).completed().contains("MQ_P00_02_first_party"));
 
             CampaignProgressStore.commit(id, "TUTORIAL_1", BattleOutcome.ALLY_VICTORY);

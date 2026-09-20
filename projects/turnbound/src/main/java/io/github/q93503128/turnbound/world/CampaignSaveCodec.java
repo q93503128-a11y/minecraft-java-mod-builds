@@ -24,7 +24,7 @@ import java.util.Set;
 public final class CampaignSaveCodec {
     public static final int SCHEMA_VERSION = 4;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final List<String> DEFAULT_PARTY = List.of("P01", "P03", "P04", "F03");
+    private static final List<String> DEFAULT_PARTY = List.of("P01", "P03", "P04", "P08");
 
     private CampaignSaveCodec() {}
 
@@ -106,13 +106,13 @@ public final class CampaignSaveCodec {
         Set<String> orphaned = new LinkedHashSet<>();
         for (JsonElement element : optionalArray(raw, "ownedCharacters")) {
             String id = element.getAsString();
-            if (GachaCatalog.isSummonable(id)) known.add(id); else orphaned.add(id);
+            if (GachaCatalog.isKnownCharacter(id)) known.add(id); else orphaned.add(id);
         }
         List<PlayerProfile.SummonHistory> history = new ArrayList<>();
         for (JsonElement element : optionalArray(raw, "summonHistory")) {
             JsonObject row = element.getAsJsonObject();
             String characterId = optionalString(row, "characterId", "");
-            if (!GachaCatalog.isSummonable(characterId)) { if (!characterId.isBlank()) orphaned.add(characterId); continue; }
+            if (!GachaCatalog.isKnownCharacter(characterId)) { if (!characterId.isBlank()) orphaned.add(characterId); continue; }
             int stars = optionalInt(row, "nativeStars", GachaCatalog.nativeStars(characterId));
             int pityAfter = Math.max(0, Math.min(GachaCatalog.HARD_PITY - 1, optionalInt(row, "pityAfter", 0)));
             history.add(new PlayerProfile.SummonHistory(characterId, stars,
@@ -143,7 +143,7 @@ public final class CampaignSaveCodec {
         LinkedHashSet<String> party = new LinkedHashSet<>();
         for (JsonElement element : raw) {
             String id = element.getAsString();
-            if (!GachaCatalog.isSummonable(id) || !profile.ownedCharacters().contains(id)) {
+            if (!GachaCatalog.isKnownCharacter(id) || !profile.ownedCharacters().contains(id)) {
                 orphaned.add(id);
                 continue;
             }
@@ -171,7 +171,7 @@ public final class CampaignSaveCodec {
     private static Map<String, CharacterProgression.State> decodeCharacters(JsonObject raw, Set<String> orphaned) {
         Map<String, CharacterProgression.State> out = new LinkedHashMap<>();
         for (var entry : raw.entrySet()) {
-            if (!GachaCatalog.isSummonable(entry.getKey())) { orphaned.add(entry.getKey()); continue; }
+            if (!GachaCatalog.isKnownCharacter(entry.getKey())) { orphaned.add(entry.getKey()); continue; }
             JsonObject state = entry.getValue().getAsJsonObject();
             out.put(entry.getKey(), new CharacterProgression.State(optionalInt(state, "level", 1), optionalInt(state, "xp", 0)));
         }
@@ -195,7 +195,7 @@ public final class CampaignSaveCodec {
         Map<String, CharacterGrowthRules.State> out = new LinkedHashMap<>();
         for (var entry : raw.entrySet()) {
             String id = entry.getKey();
-            if (!GachaCatalog.isSummonable(id)) { orphaned.add(id); continue; }
+            if (!GachaCatalog.isKnownCharacter(id)) { orphaned.add(id); continue; }
             JsonObject state = entry.getValue().getAsJsonObject();
             out.put(id, new CharacterGrowthRules.State(optionalInt(state, "currentStar", GachaCatalog.nativeStars(id)),
                     optionalBoolean(state, "awakened", false), optionalBoolean(state, "characterQuestComplete", false),
