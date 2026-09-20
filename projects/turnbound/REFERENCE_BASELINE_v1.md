@@ -534,3 +534,26 @@ TURNBOUND application:
 - semantic cue routing is pure/testable and independent from network transport; this prevents unit tests from needing client/network payload runtime classes;
 - the CC0 audio workflow now reproduces and validates all 25 production OGG files, including `sfx/heroes/`, checks Vorbis/duration plus the `sounds.json` contract, and no longer repeats a redundant clean Java build; Build TURNBOUND remains the single Java/JAR verification path;
 - no claim is made yet about final loudness balance, stereo feel or fatigue. Those require the later real 26.2 client playtest.
+
+
+### shared live-3D portrait pipeline follow-up
+
+The previous battle/meta UI still violated the v1 portrait contract even though production P01~P08 models already existed: Turn Order used abbreviated text, party rows were name/HP text only, character management did not expose the authored model, and summon/result summaries fell back to text cards.
+
+TURNBOUND application:
+- portrait identity remains `PortraitId = CharacterId`;
+- the UI does not maintain a second hand-painted or AI-generated portrait asset family;
+- `TurnboundPortraitRenderer` creates level-local, non-spawned preview entities from the exact production `TurnboundBattleActors` / `SignatureBattleActors` entity types and submits them through Minecraft 26.2's inventory-entity GUI renderer;
+- preview entities are never added to the world and therefore do not affect combat, pathfinding, multiplayer state or server authority;
+- equipped Signature items resolve to the same authored signature visual family already used by battle presentation for P01~P06/P08; P07 correctly keeps Marion's base portrait because her Signature attachment belongs to Toto;
+- one level-local preview object is cached per visual id and the cache is discarded on client-level change instead of constructing a fresh entity for every UI draw;
+- shared live-3D portrait extraction is now used by battle Turn Order, battle party status, root quick-menu party members, Party roster, character roster/detail, single/ten-pull summon result, and post-battle party growth rows;
+- Turn Order still caps itself to seven upcoming actions and the party strip remains low-profile; portrait addition did not convert the battlefield into a card wall;
+- unavailable/down states use an explicit visual overlay rather than color alone;
+- current actor selection remains encoded with border/edge treatment in addition to the portrait itself;
+- the v1 model files remain the visual source of truth. Existing role-bearing weapon/prop geometry and Signature variants therefore propagate automatically into the UI rather than being re-authored as separate icons.
+
+Verification boundary:
+- Build TURNBOUND #834 confirms the Minecraft 26.2 / NeoForge GUI entity-render API binding compiles and the existing unit/build suite passes.
+- Dedicated-server smoke also passes because preview rendering remains client-only.
+- This does **not** prove crop quality, lighting, apparent face size, portrait fatigue/performance, overlap at every GUI Scale, or whether every model's fixed camera preset looks good in the actual client. Those remain client-runtime/playtest checks and must not be reported as completed.
