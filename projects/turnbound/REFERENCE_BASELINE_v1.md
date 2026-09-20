@@ -487,3 +487,23 @@ TURNBOUND application:
 - actual Signature Trial encounter rosters remain unauthored and therefore canon-blocked until real content is bound; no enemy roster was invented to make the tests pass;
 - character/menu copy now presents native rarity, Lv, Awakening, +10 enhancement and “전용 장비 시련” without ★6 promotion, +20, Awakening Core, or developer-facing canon-gap wording;
 - this checkpoint is code/build/server verified only; client feel, visual hierarchy, balance feel and multiplayer remain for later real playtesting.
+
+
+### v1 core-hero presentation completeness follow-up
+
+A source-level production audit confirmed that P01~P08 already use their authored GeckoLib hero models and per-hero animation roots in battle rather than falling back to vanilla player silhouettes. Each core hero currently has bound idle, turn-ready, Basic, Active A, Active B, light/heavy hit, death, revive, victory, move-attack, buff/debuff and field idle/walk clips; P03/P05 also provide reaction clips, and Toto has its own authored model/animation set.
+
+The largest remaining source-level mismatch was therefore not missing animation files but the readability layer around each v1 signature mechanic.
+
+TURNBOUND application:
+- battle snapshots now project the real v1 runtime counters instead of retired v0.4 presentation keys: P01 Focus, P03 Guard, P05 Shot, P06 Records, P07 Bond and P08 Fury;
+- zero-value signature resources remain visible so a character's defining mechanic does not disappear until the first gain;
+- P01's current duel target and P05's current Sightline target are projected onto the affected enemy, while downed owners no longer leave stale target markers;
+- P04 Sanctuary and P07 partner protection receive authored player-facing labels in the existing world-space status layer;
+- the status layer reuses TURNBOUND UI tokens instead of adding a new one-off panel/palette, with readiness emphasis for full Focus/Shot, Guard/Bond spend thresholds and high Fury;
+- authoritative RESOURCE/RECORD events now drive short character-specific state-change accents on the existing custom 3D actors; these VFX are presentation-only and do not decide combat results;
+- P01 Focus now publishes a presentation RESOURCE event when it changes, without changing its combat authority or values;
+- stale v0.4 skill-presentation semantics were corrected: P01 간파 베기 visibly lands its real strike, P02 가속/시차 봉쇄 match their v1 target/effect shape, P03 방패 강타 visibly hits before its Guard/barrier feedback, P05 사냥 신호 shows its real damage plus Sightline mark, and P07's legacy internal `p07_summon_toto` id is presented as the current 수호 명령 rather than pretending Toto is newly summoned;
+- Marion's matching battle bark now describes Toto protecting the selected ally instead of calling the already-present partner into battle;
+- badge calculation was split from NeoForge GUI rendering into a pure presentation helper so signature-state contracts are directly unit-testable without a client GUI runtime;
+- this checkpoint confirms code/test/build/server packaging only. Actual 26.2 client readability, timing, animation feel, VFX density and multiplayer privacy remain unclaimed until real playtesting.
