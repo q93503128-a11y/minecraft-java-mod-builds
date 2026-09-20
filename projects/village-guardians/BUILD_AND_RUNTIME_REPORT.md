@@ -2,17 +2,47 @@
 
 - Project: Village Guardians — 마을지키기
 - Mod ID: `villageguardians`
-- Current source version: `0.18.41-alpha.1`
+- Current source version: `0.18.46-alpha.1`
 - Minecraft: `26.2`
 - NeoForge build dependency: `26.2.0.37-beta`
 - Java target: `25`
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
-- Target JAR: `villageguardians-0.18.41-alpha.1.jar`
-- Manual audit base: `36720441a4d897dac3f06d49df77fdf928ad1bcc`
-- Local verification date: `2026-09-19 Asia/Seoul`
-- Final JAR SHA-256: `eeafa1298a731d14395288f6dae2d1a6727e3ab104cf620e9d164724d1b5ffe0`
-- Final JAR size: `880830` bytes
+- Target JAR: `villageguardians-0.18.46-alpha.1.jar`
+- Manual audit base: `0f7597a300f8234244a8ec91ea72a0d4fbd44da7`
+- Local verification date: `2026-09-20 Asia/Seoul`
+- Final JAR SHA-256: `cbb204cec5eea97acf7764f3856cb06cbf73833064fcfa4f84abd3b0a48ad7ce`
+- Final JAR size: `1337678` bytes
+
+## 0.18.46 궁수·수호자 후속 정합 감사와 현재 acceptance
+
+### 후속 수동 확인
+
+- 궁수의 공중 적 판정은 실제 습격 시스템이 소유하는 `VillageRaidSystem.isAerialEnemy(...)`를 사용하도록 통일되어 있다. 공중 대상 피해 보너스, 자동 조준 bias, 용병/포탑 대공 우선순위가 서로 다른 비행 판정을 섞지 않는지 다시 추적했다.
+- 신속 삼연사의 파생 화살은 원본 화살에 이미 반영된 장비·직업·유물 계수를 다시 기본 피해에 복사하지 않는다. 이전 `source.getBaseDamage()` 복사는 파생 화살에서 강화 배율이 이중 적용될 수 있어 `2.0` 기본 피해 + 기존 강화 상태 구조로 되돌렸다.
+- 수호자의 거대 방패 태세와 대수호 진군은 모든 방향의 incoming damage 경로에서 추가 피해 감소를 적용하고, 주변 밀치기·권한 도발을 유지한다. 같은 스킬을 다시 사용하면 상태와 소유 VFX를 즉시 정리해 방패를 내린다.
+- 직업 수를 늘리지 않는 직선형 전직 계약을 `docs/ROLE_ADVANCEMENT_PLAN.md`에 고정했다. 현재 다섯 역할 ID를 유지하고 Lv.10/Lv.20의 2단 승급만 계획하며, 런타임 구현은 20일 이후 콘텐츠 확장 뒤로 보류한다.
+- 캠페인은 20일에 종료되지 않는다. 현재 수작업 챕터 전환은 1~19일과 20일의 `끝없는 전쟁` 진입까지이며, 20일 이후는 5일 단위 endless tier와 기존 병과·정예·보스 조합/스케일링이 중심이다. 다음 실플레이 전에 이 구간의 고유 공성 콘텐츠를 먼저 확장하기로 했다.
+- PROJECT 정본의 소스/JAR 버전을 0.18.46으로 맞추고, 실제 현행 성벽 접근로가 북문 좌우뿐 아니라 남·동·서 각 2개도 포함하도록 오래된 규격 문구를 수정했다.
+
+### acceptance 실패 원인과 수정
+
+- 첫 현재 acceptance run `35479007423`은 production regression이 아니라 `test_v01828_air_defense_ecosystem.py`의 역사적 assertion 하나가 구형 판정 `VillageEnemyArchetypeSystem.isFlying(target)`을 계속 요구해 실패했다.
+- 실제 production은 이미 authoritative raid aerial tag를 사용하고 있었으므로 소스 기능을 되돌리지 않았다. 해당 계약만 `VillageRaidSystem.isAerialEnemy(target)`을 요구하도록 수정한 commit이 `0f7597a300f8234244a8ec91ea72a0d4fbd44da7`이다.
+
+### 실행 결과
+
+- Current acceptance Actions run: `35479078783` — **PASS**.
+- `tools/test_*.py`: **PASS**, 76/76, 실패 0.
+- Java 25 / Gradle 9.2.1 / NeoForge 26.2 clean build: **PASS**.
+- JAR verifier: **PASS**.
+- JAR artifact upload: **PASS**.
+- 최종 JAR: `villageguardians-0.18.46-alpha.1.jar`, `1337678` bytes.
+- SHA-256: `cbb204cec5eea97acf7764f3856cb06cbf73833064fcfa4f84abd3b0a48ad7ce`.
+- Datagen: **NOT RUN** in this acceptance checkpoint.
+- Dedicated server minimal boot: **NOT RUN** in this acceptance checkpoint.
+- Client runtime/gameplay: **NOT RUN**. 사용자가 20일 이후 콘텐츠 확장 뒤 실플레이하기로 했다.
+- Multiplayer gameplay: **NOT RUN**.
 
 ## 0.18.41 마을 회관 포탑 지휘 · 실플레이 결함 수동 감사
 
