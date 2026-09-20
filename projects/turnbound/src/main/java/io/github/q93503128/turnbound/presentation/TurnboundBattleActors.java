@@ -29,8 +29,14 @@ import java.util.Map;
 
 /** Registry for authored v0.4 battle presentation entities. */
 public final class TurnboundBattleActors {
+    public static final String REL_DUEL = "REL_DUEL";
+    public static final String REL_SIGHTLINE = "REL_SIGHTLINE";
+    public static final String REL_SANCTUARY = "REL_SANCTUARY";
+    public static final String REL_PARTNER_GUARD = "REL_PARTNER_GUARD";
+
     private static final List<String> IDS = List.of(
             "P01","P02","P03","P04","P05","P06","P07","P08","P07_SUMMON",
+            REL_DUEL,REL_SIGHTLINE,REL_SANCTUARY,REL_PARTNER_GUARD,
             "F01","F01_ALT","F02","F03","F04",
             "CV_A","CV_B","CV_C",
             "EL_CV01",
@@ -76,6 +82,18 @@ public final class TurnboundBattleActors {
     private static final Map<String, String> SPECIAL_FILLER_ANIMATION = Map.of(
             "F02", "f02_field_apprentice", "F03", "f03_border_hunter", "F04", "f04_shield_mercenary");
 
+    private static final Map<String, String> RELATION_PATH = Map.of(
+            REL_DUEL, "duel",
+            REL_SIGHTLINE, "sightline",
+            REL_SANCTUARY, "sanctuary",
+            REL_PARTNER_GUARD, "partner_guard");
+
+    private static final Map<String, String> RELATION_ANIMATION = Map.of(
+            REL_DUEL, "relation_duel",
+            REL_SIGHTLINE, "relation_sightline",
+            REL_SANCTUARY, "relation_sanctuary",
+            REL_PARTNER_GUARD, "relation_partner_guard");
+
     public static final DeferredRegister.Entities ENTITIES = DeferredRegister.createEntities(Turnbound.MOD_ID);
     private static final Map<String, DeferredHolder<EntityType<?>, EntityType<BattleActorEntity>>> ACTORS = new LinkedHashMap<>();
 
@@ -105,6 +123,14 @@ public final class TurnboundBattleActors {
     public static String heroAnimationPrefix(EntityType<?> type) {
         String id = combatantId(type);
         return id == null ? null : HERO_ANIMATION.get(id);
+    }
+
+    /** Animation prefix for authored hero actors and non-combat relation sigils. */
+    public static String animationPrefix(EntityType<?> type) {
+        String id = combatantId(type);
+        if (id == null) return null;
+        String hero = HERO_ANIMATION.get(id);
+        return hero != null ? hero : RELATION_ANIMATION.get(id);
     }
 
     /** True only for the five authored boss actor types that provide boss.hit_light / boss.hit_heavy clips. */
@@ -164,6 +190,7 @@ public final class TurnboundBattleActors {
         return switch (id) {
             case "P01" -> 0.66F; case "P02" -> 0.61F; case "P03" -> 0.74F; case "P04" -> 0.63F;
             case "P05", "P06" -> 0.62F; case "P07" -> 0.60F; case "P08" -> 0.72F; case "P07_SUMMON" -> 0.82F;
+            case REL_DUEL,REL_SIGHTLINE,REL_SANCTUARY,REL_PARTNER_GUARD -> 0.18F;
             case "F01", "F01_ALT" -> 0.62F; case "F02" -> 0.59F; case "F03" -> 0.61F; case "F04" -> 0.70F;
             case "B01" -> 1.80F; case "B02" -> 1.65F; case "B03" -> 1.45F; case "B04" -> 1.70F; case "B05" -> 0.78F;
             case "CV_A" -> 1.15F; case "EL_CV01" -> 1.38F; case "E006", "E010", "E012", "EL02" -> 1.10F; case "E003", "E014" -> 0.90F;
@@ -175,6 +202,7 @@ public final class TurnboundBattleActors {
         return switch (id) {
             case "P01" -> 1.84F; case "P02" -> 1.66F; case "P03" -> 1.93F; case "P04" -> 1.69F;
             case "P05" -> 1.72F; case "P06" -> 1.77F; case "P07" -> 1.64F; case "P08" -> 1.88F; case "P07_SUMMON" -> 1.15F;
+            case REL_DUEL,REL_SIGHTLINE,REL_SANCTUARY,REL_PARTNER_GUARD -> 0.18F;
             case "F01", "F01_ALT" -> 1.76F; case "F02" -> 1.67F; case "F03" -> 1.75F; case "F04" -> 1.82F;
             case "B01" -> 2.30F; case "B02" -> 2.80F; case "B03" -> 3.10F; case "B04" -> 3.40F; case "B05" -> 2.05F;
             case "CV_A" -> 1.20F; case "EL_CV01" -> 2.18F; case "E006", "E010", "E012", "EL02" -> 1.35F; case "E003", "E014" -> 2.15F;
@@ -186,6 +214,7 @@ public final class TurnboundBattleActors {
         return switch (id) {
             case "P01" -> 1.000F; case "P02" -> 0.902F; case "P03" -> 1.049F; case "P04" -> 0.918F;
             case "P05" -> 0.935F; case "P06" -> 0.962F; case "P07" -> 0.891F; case "P08" -> 1.022F; case "P07_SUMMON" -> 0.720F;
+            case REL_DUEL,REL_SIGHTLINE,REL_SANCTUARY,REL_PARTNER_GUARD -> 0.76F;
             case "F01", "F01_ALT" -> 0.957F; case "F02" -> 0.908F; case "F03" -> 0.951F; case "F04" -> 0.989F;
             case "B01" -> 1.15F; case "B02" -> 1.20F; case "B03" -> 1.28F; case "B04" -> 1.35F; case "B05" -> 1.08F;
             case "EL_CV01" -> 1.15F; case "EL01" -> 1.18F; case "EL03" -> 1.25F; default -> 1.0F;
@@ -201,6 +230,7 @@ public final class TurnboundBattleActors {
     }
 
     private static Identifier modelRoot(String id) {
+        String relation = RELATION_PATH.get(id); if (relation != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "relation/" + relation);
         String hero = HERO_PATH.get(id); if (hero != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "hero/" + hero);
         String filler = FILLER_PATH.get(id); if (filler != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "filler/" + filler);
         String enemy = ENEMY_PATH.get(id); if (enemy != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "enemy/" + enemy);
@@ -210,6 +240,7 @@ public final class TurnboundBattleActors {
     }
 
     private static Identifier animationRoot(String id) {
+        String relation = RELATION_PATH.get(id); if (relation != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "relation/" + relation);
         String heroAnimation = HERO_ANIMATION.get(id);
         if (heroAnimation != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "hero/" + heroAnimation);
         if (HERO_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "hero/common");
@@ -222,6 +253,7 @@ public final class TurnboundBattleActors {
     }
 
     private static Identifier textureRoot(String id) {
+        String relation = RELATION_PATH.get(id); if (relation != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "relation/" + relation);
         String hero = HERO_PATH.get(id); if (hero != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "hero/" + hero);
         String filler = FILLER_PATH.get(id); if (filler != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "filler/" + filler);
         String enemy = ENEMY_PATH.get(id); if (enemy != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "enemy/" + enemy);

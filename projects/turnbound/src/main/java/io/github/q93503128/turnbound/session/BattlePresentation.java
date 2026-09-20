@@ -46,6 +46,7 @@ final class BattlePresentation {
     private final Map<String, Integer> barriers = new LinkedHashMap<>();
     private final Map<String, Integer> bossPhases = new LinkedHashMap<>();
     private final Map<String, String> heroSignatureStates = new LinkedHashMap<>();
+    private final Map<String, RelationMarker> relationMarkers = new LinkedHashMap<>();
     private final Map<String, Integer> pendingRemovalTicks = new LinkedHashMap<>();
     /** Multiple actors may still be returning at 2x speed; never strand the previous attacker. */
     private final Map<String, Integer> returnTimers = new LinkedHashMap<>();
@@ -183,6 +184,42 @@ final class BattlePresentation {
         if(!(entity instanceof BattleActorEntity animated))return;
         animated.setHeroSignatureState(state.stage(),state.overheat());
         heroSignatureStates.put(actorId,key);
+    }
+
+    void syncRelations(ServerLevel level,BattleState state){
+        Map<String,HeroSignaturePresentationState.Relation> desired=new LinkedHashMap<>();
+        for(HeroSignaturePresentationState.Relation relation:HeroSignaturePresentationState.relations(state))desired.put(relation.key(),relation);
+
+        for(String key:List.copyOf(relationMarkers.keySet())){
+            if(desired.containsKey(key))continue;
+            RelationMarker marker=relationMarkers.remove(key);
+            Entity entity=level.getEntity(marker.markerId());if(entity!=null)entity.discard();
+        }
+
+        for(var entry:desired.entrySet()){
+            if(relationMarkers.containsKey(entry.getKey()))continue;
+            HeroSignaturePresentationState.Relation relation=entry.getValue();
+            Entity target=entity(level,relation.targetId());if(target==null)continue;
+            String visualId=relationVisualId(relation.kind());
+            BattleActorEntity marker=TurnboundBattleActors.spawn(level,visualId,relationPosition(target,relation.kind()),0F);
+            if(marker==null)continue;
+            marker.setCustomNameVisible(false);marker.playReady();
+            relationMarkers.put(entry.getKey(),new RelationMarker(relation.targetId(),relation.kind(),marker.getUUID()));
+        }
+    }
+
+    private static String relationVisualId(HeroSignaturePresentationState.RelationKind kind){
+        return switch(kind){
+            case DUEL->TurnboundBattleActors.REL_DUEL;
+            case SIGHTLINE->TurnboundBattleActors.REL_SIGHTLINE;
+            case SANCTUARY->TurnboundBattleActors.REL_SANCTUARY;
+            case PARTNER_GUARD->TurnboundBattleActors.REL_PARTNER_GUARD;
+        };
+    }
+
+    private static Vec3 relationPosition(Entity target,HeroSignaturePresentationState.RelationKind kind){
+        double layer=switch(kind){case SIGHTLINE,PARTNER_GUARD->.64;default->.18;};
+        return target.position().add(0,target.getBbHeight()+.22+layer,0);
     }
 
     private static void playBossPhaseAnimation(BattleActorEntity actor,String visualId,int phase){
@@ -395,7 +432,19 @@ final class BattlePresentation {
     void lunge(ServerLevel level,String actorId,String visualId,String skillId,String targetId){performSkill(level,actorId,visualId,skillId,targetId,true);}
 
     void tick(ServerLevel level){
-        tickPendingRemovals(level);tickReturns(level);
+        tickPendingRemovals(level);tickReturns(level);tickRelationMarkers(level);
+    }
+
+    private void tickRelationMarkers(ServerLevel level){
+        for(String key:List.copyOf(relationMarkers.keySet())){
+            RelationMarker marker=relationMarkers.get(key);
+            Entity target=entity(level,marker.targetId());Entity visual=level.getEntity(marker.markerId());
+            if(target==null||visual==null){
+                if(visual!=null)visual.discard();relationMarkers.remove(key);continue;
+            }
+            Vec3 pos=relationPosition(target,marker.kind());
+            visual.setPos(pos.x,pos.y,pos.z);
+        }
     }
 
     private void tickReturns(ServerLevel level){
@@ -415,7 +464,11 @@ final class BattlePresentation {
     }
 
     void cleanup(ServerLevel level){clearFocus(level);clearDanger(level);cleanupActors(level);finishPlayed=false;}
-    private void cleanupActors(ServerLevel level){for(UUID id:actors.values()){Entity entity=level.getEntity(id);if(entity!=null)entity.discard();}actors.clear();homes.clear();homeYaws.clear();sides.clear();summons.clear();visualIds.clear();downed.clear();barriers.clear();bossPhases.clear();pendingRemovalTicks.clear();returnTimers.clear();}
+    private void cleanupActors(ServerLevel level){
+        for(UUID id:actors.values()){Entity entity=level.getEntity(id);if(entity!=null)entity.discard();}
+        for(RelationMarker marker:relationMarkers.values()){Entity entity=level.getEntity(marker.markerId());if(entity!=null)entity.discard();}
+        actors.clear();homes.clear();homeYaws.clear();sides.clear();summons.clear();visualIds.clear();downed.clear();barriers.clear();bossPhases.clear();heroSignatureStates.clear();relationMarkers.clear();pendingRemovalTicks.clear();returnTimers.clear();
+    }
     private Entity entity(ServerLevel level,String id){UUID uuid=actors.get(id);return uuid==null?null:level.getEntity(uuid);}
 
     private static void equipStandIn(ArmorStand stand,CombatantState combatant){
@@ -425,4 +478,6 @@ final class BattlePresentation {
         stand.setItemSlot(EquipmentSlot.HEAD,Items.IRON_HELMET.getDefaultInstance());switch(id){case"E002"->stand.setItemSlot(EquipmentSlot.MAINHAND,Items.BOW.getDefaultInstance());case"E003"->stand.setItemSlot(EquipmentSlot.MAINHAND,Items.TNT.getDefaultInstance());case"E005","E007","E011","E013"->stand.setItemSlot(EquipmentSlot.MAINHAND,Items.BLAZE_ROD.getDefaultInstance());case"B01","B04"->stand.setItemSlot(EquipmentSlot.MAINHAND,Items.IRON_AXE.getDefaultInstance());case"B05"->stand.setItemSlot(EquipmentSlot.MAINHAND,Items.DIAMOND_SWORD.getDefaultInstance());default->stand.setItemSlot(EquipmentSlot.MAINHAND,Items.IRON_SWORD.getDefaultInstance());}
     }
     private static void setSmall(ArmorStand stand){byte flags=stand.getEntityData().get(ArmorStand.DATA_CLIENT_FLAGS);stand.getEntityData().set(ArmorStand.DATA_CLIENT_FLAGS,(byte)(flags|ArmorStand.CLIENT_FLAG_SMALL));}
+
+    private record RelationMarker(String targetId,HeroSignaturePresentationState.RelationKind kind,UUID markerId){}
 }

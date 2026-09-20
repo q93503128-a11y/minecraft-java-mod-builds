@@ -78,6 +78,36 @@ class HeroSignaturePresentationStateTest {
     }
 
     @Test
+    void authoredRelationsProjectFromTheActualRefsAndTimedStatuses() {
+        CombatantState kyren = new CombatantState("kyren", CanonicalData.definition("P01"), CombatantSide.ALLY, 0);
+        CombatantState elysia = new CombatantState("elysia", CanonicalData.definition("P04"), CombatantSide.ALLY, 1);
+        CombatantState lynette = new CombatantState("lynette", CanonicalData.definition("P05"), CombatantSide.ALLY, 2);
+        CombatantState marion = new CombatantState("marion", CanonicalData.definition("P07"), CombatantSide.ALLY, 3);
+        CombatantState protectedAlly = new CombatantState("bram", CanonicalData.definition("P03"), CombatantSide.ALLY, 4);
+        CombatantState enemy = new CombatantState("enemy", CanonicalData.definition("E001"), CombatantSide.ENEMY, 0);
+
+        kyren.setRef("focusTarget", enemy.instanceId());
+        lynette.setRef("sightline", enemy.instanceId());
+        protectedAlly.putStatus(new StatusInstance("sanctuary", elysia.instanceId(), 3, 1.0));
+        protectedAlly.putStatus(new StatusInstance("partner_guard", marion.instanceId(), 3, 0.50));
+        BattleState state = new BattleState(List.of(kyren, elysia, lynette, marion, protectedAlly, enemy));
+
+        List<HeroSignaturePresentationState.Relation> relations = HeroSignaturePresentationState.relations(state);
+        assertTrue(relations.stream().anyMatch(r -> r.kind() == HeroSignaturePresentationState.RelationKind.DUEL
+                && r.targetId().equals(enemy.instanceId())));
+        assertTrue(relations.stream().anyMatch(r -> r.kind() == HeroSignaturePresentationState.RelationKind.SIGHTLINE
+                && r.targetId().equals(enemy.instanceId())));
+        assertTrue(relations.stream().anyMatch(r -> r.kind() == HeroSignaturePresentationState.RelationKind.SANCTUARY
+                && r.targetId().equals(protectedAlly.instanceId()) && r.sourceId().equals(elysia.instanceId())));
+        assertTrue(relations.stream().anyMatch(r -> r.kind() == HeroSignaturePresentationState.RelationKind.PARTNER_GUARD
+                && r.targetId().equals(protectedAlly.instanceId()) && r.sourceId().equals(marion.instanceId())));
+
+        marion.forceDown();
+        assertTrue(HeroSignaturePresentationState.relations(state).stream()
+                .noneMatch(r -> r.kind() == HeroSignaturePresentationState.RelationKind.PARTNER_GUARD));
+    }
+
+    @Test
     void duelAndSightlineMarkersProjectOntoTheActualEnemyTarget() {
         CombatantState kyren = new CombatantState("kyren", CanonicalData.definition("P01"), CombatantSide.ALLY, 0);
         CombatantState lynette = new CombatantState("lynette", CanonicalData.definition("P05"), CombatantSide.ALLY, 1);

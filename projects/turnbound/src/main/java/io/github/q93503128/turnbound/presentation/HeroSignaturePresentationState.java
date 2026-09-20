@@ -4,7 +4,9 @@ import io.github.q93503128.turnbound.combat.BattleState;
 import io.github.q93503128.turnbound.combat.CombatantState;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Pure projection of the v1 core-hero signature mechanics into presentation tokens.
@@ -31,6 +33,18 @@ public final class HeroSignaturePresentationState {
         }
 
         public String animationKey() { return overheat ? "overheat" : "state_" + stage; }
+    }
+
+    public enum RelationKind { DUEL, SIGHTLINE, SANCTUARY, PARTNER_GUARD }
+
+    public record Relation(RelationKind kind, String sourceId, String targetId) {
+        public Relation {
+            if (kind == null) throw new IllegalArgumentException("Missing relation kind");
+            if (sourceId == null || sourceId.isBlank()) throw new IllegalArgumentException("Missing relation source");
+            if (targetId == null || targetId.isBlank()) throw new IllegalArgumentException("Missing relation target");
+        }
+
+        public String key() { return kind.name() + "|" + targetId; }
     }
 
     private HeroSignaturePresentationState() {}
@@ -81,6 +95,44 @@ public final class HeroSignaturePresentationState {
         return attack != null && attack.magnitude() > 0
                 && speed != null && speed.magnitude() > 0
                 && defense != null && defense.magnitude() < 0;
+    }
+
+    public static List<Relation> relations(BattleState state) {
+        if (state == null) return List.of();
+        Map<String, Relation> out = new LinkedHashMap<>();
+
+        for (CombatantState source : state.combatants()) {
+            if (source.downed()) continue;
+            RelationKind kind = switch (source.definition().id()) {
+                case "P01" -> RelationKind.DUEL;
+                case "P05" -> RelationKind.SIGHTLINE;
+                default -> null;
+            };
+            if (kind == null) continue;
+            String targetId = "P01".equals(source.definition().id()) ? source.ref("focusTarget") : source.ref("sightline");
+            CombatantState target = state.find(targetId);
+            if (target == null || target.downed()) continue;
+            Relation relation = new Relation(kind, source.instanceId(), target.instanceId());
+            out.put(relation.key(), relation);
+        }
+
+        for (CombatantState target : state.combatants()) {
+            if (target.downed()) continue;
+            for (var status : target.statusesView().values()) {
+                RelationKind kind = switch (status.id()) {
+                    case "sanctuary" -> RelationKind.SANCTUARY;
+                    case "partner_guard" -> RelationKind.PARTNER_GUARD;
+                    default -> null;
+                };
+                if (kind == null) continue;
+                CombatantState source = state.find(status.sourceId());
+                String requiredSource = kind == RelationKind.SANCTUARY ? "P04" : "P07";
+                if (source == null || source.downed() || !requiredSource.equals(source.definition().id())) continue;
+                Relation relation = new Relation(kind, source.instanceId(), target.instanceId());
+                out.putIfAbsent(relation.key(), relation);
+            }
+        }
+        return List.copyOf(out.values());
     }
 
     public static List<String> tokens(BattleState state, CombatantState combatant) {
