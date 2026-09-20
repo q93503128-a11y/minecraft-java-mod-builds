@@ -597,11 +597,16 @@ b1f355779b8ebb6c703d0b23b28c4900fa06925d
 0e8daf36de59f5fc6fb6bc36ad9699870da309a7
 ```
 
-Verified Openworld RPG workflow:
+Verified Openworld RPG workflows:
 
 ```text
-Build Openworld RPG
+shared-state implementation:
 run 35332360900
+conclusion: SUCCESS
+
+final regression + canon sync:
+commit 7b831bb8cf87a598be515997bf6dfd1750066140
+run 35545779733
 conclusion: SUCCESS
 ```
 
@@ -618,7 +623,7 @@ Implemented canonical rules:
 - PRE admission has no resource side effects;
 - POST admission commits Mana and cooldown once;
 - same accepted cast re-entry does not double-spend;
-- different project spells share one per-player accepted-cast lock;
+- different project spells share one per-player accepted-cast lock, covered by an explicit cross-spell regression test;
 - projectile/meteor impact lifetime is separate from the short resource transaction lifetime;
 - project Spell Engine data must neutralize donor exhaust, durability, item/effect costs and donor cooldowns;
 - a non-neutral donor cost contract causes the project cast to be rejected;
