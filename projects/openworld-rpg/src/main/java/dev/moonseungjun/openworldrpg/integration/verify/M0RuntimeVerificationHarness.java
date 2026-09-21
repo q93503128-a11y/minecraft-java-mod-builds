@@ -10,6 +10,8 @@ import dev.moonseungjun.openworldrpg.integration.spellengine.SpellEngineAuthorit
 import java.util.UUID;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
@@ -43,7 +45,7 @@ public final class M0RuntimeVerificationHarness {
     }
 
     private static void verify(ServerLevel level, Logger logger) {
-        BlockPos spawn = level.getSharedSpawnPos().above(8);
+        BlockPos spawn = new BlockPos(0, 250, 0);
         Entity targetEntity = null;
         Entity attackerEntity = null;
 
@@ -53,7 +55,10 @@ public final class M0RuntimeVerificationHarness {
                     spawn,
                     ExternalActorCombatProfile.r01Earthloong().entityId()
             );
-            attackerEntity = EntityType.ARMOR_STAND.spawn(
+            EntityType<?> attackerType = BuiltInRegistries.ENTITY_TYPE
+                    .getOptional(Identifier.parse("minecraft:armor_stand"))
+                    .orElseThrow(() -> new IllegalStateException("Vanilla armor_stand registry entry is missing."));
+            attackerEntity = attackerType.spawn(
                     level,
                     spawn.offset(3, 0, 0),
                     EntitySpawnReason.COMMAND
