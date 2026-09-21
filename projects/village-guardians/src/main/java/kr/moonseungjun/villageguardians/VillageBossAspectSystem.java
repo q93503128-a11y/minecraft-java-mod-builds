@@ -170,7 +170,7 @@ public final class VillageBossAspectSystem {
     }
 
     public enum Aspect {
-        BERSERKER("광전", "짧은 주기로 공격력과 이동 속도가 폭증합니다."),
+        BERSERKER("광전", "짧은 주기로 공격력이 크게 오르고 잠시 추격 속도가 상승합니다."),
         BULWARK("철벽", "자신과 주변 병력에게 보호막과 저항을 반복 부여합니다."),
         BLOODBOUND("혈계", "주변 수호자의 생명력을 흡수해 스스로 회복합니다."),
         STORMCALLER("뇌광", "표시된 지점에 잠시 뒤 번개가 떨어집니다. 경고 지점에서 벗어나면 피할 수 있습니다."),
