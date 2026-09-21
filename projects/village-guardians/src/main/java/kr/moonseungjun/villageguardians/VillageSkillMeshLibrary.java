@@ -153,6 +153,19 @@ public final class VillageSkillMeshLibrary {
             case "boss_signature_plague_impact" -> renderBossSignature(pose, out, basis, age, progress, state.extra, 2, false);
             case "boss_signature_dread_warning" -> renderBossSignature(pose, out, basis, age, progress, state.extra, 3, true);
             case "boss_signature_dread_impact" -> renderBossSignature(pose, out, basis, age, progress, state.extra, 3, false);
+
+            case "boss_entrance_siege" -> renderBossLifecycle(pose, out, basis, age, progress, 0, 0);
+            case "boss_entrance_warlord" -> renderBossLifecycle(pose, out, basis, age, progress, 1, 0);
+            case "boss_entrance_plague" -> renderBossLifecycle(pose, out, basis, age, progress, 2, 0);
+            case "boss_entrance_dread" -> renderBossLifecycle(pose, out, basis, age, progress, 3, 0);
+            case "boss_transform_siege" -> renderBossLifecycle(pose, out, basis, age, progress, 0, 1);
+            case "boss_transform_warlord" -> renderBossLifecycle(pose, out, basis, age, progress, 1, 1);
+            case "boss_transform_plague" -> renderBossLifecycle(pose, out, basis, age, progress, 2, 1);
+            case "boss_transform_dread" -> renderBossLifecycle(pose, out, basis, age, progress, 3, 1);
+            case "boss_defeat_siege" -> renderBossLifecycle(pose, out, basis, age, progress, 0, 2);
+            case "boss_defeat_warlord" -> renderBossLifecycle(pose, out, basis, age, progress, 1, 2);
+            case "boss_defeat_plague" -> renderBossLifecycle(pose, out, basis, age, progress, 2, 2);
+            case "boss_defeat_dread" -> renderBossLifecycle(pose, out, basis, age, progress, 3, 2);
             default -> renderFallbackRune(pose, out, basis, age, progress);
         }
     }
@@ -1286,6 +1299,117 @@ public final class VillageSkillMeshLibrary {
         if (phaseTwo) {
             jaggedBolt(pose, out, b.local(-0.9, 0.18, 0.0), b.local(0.9, 2.55, 0.12),
                     8, 0.035, withAlpha(color, 190), (long) age / 3L + 551L);
+        }
+    }
+
+    private static void renderBossLifecycle(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double age, double progress, int style, int stage) {
+        int base = switch (style) {
+            case 0 -> rgba(255, 143, 59, 225);
+            case 1 -> rgba(238, 203, 115, 225);
+            case 2 -> rgba(104, 207, 88, 225);
+            case 3 -> rgba(201, 49, 67, 235);
+            default -> rgba(220, 220, 220, 220);
+        };
+        double enter = Math.min(1.0, progress * 2.4);
+        double leave = Math.max(0.0, 1.0 - progress);
+        double intensity = stage == 2 ? leave : Math.min(1.0, enter + 0.15);
+        int color = withAlpha(base, (int) (220 * Math.max(0.18, intensity)));
+
+        if (style == 0) {
+            // Siege Beast: mass, ground fractures and collapsing weight.
+            double radius = stage == 0 ? 1.2 + enter * 3.4
+                    : stage == 1 ? 2.0 + 0.45 * Math.sin(age * 0.20)
+                    : 4.8 * leave + 0.4;
+            ring(pose, out, b, radius, 0.06, stage == 1 ? 0.18 : 0.12, 72,
+                    color, age * (stage == 2 ? -0.018 : 0.014));
+            int teeth = stage == 2 ? 14 : 10;
+            for (int i = 0; i < teeth; i++) {
+                double a = i * TAU / teeth;
+                double outer = Math.max(0.9, radius);
+                Vec3 root = b.local(Math.cos(a) * outer * 0.50, 0.08, Math.sin(a) * outer * 0.50);
+                Vec3 tip = b.local(Math.cos(a) * outer, stage == 2 ? 0.16 + 0.55 * leave : 0.45 + enter,
+                        Math.sin(a) * outer);
+                spike(pose, out, root, tip, 0.055 + 0.025 * intensity, withAlpha(color, 185));
+            }
+            if (stage == 1) {
+                for (int side : new int[]{-1, 1}) {
+                    spike(pose, out, b.local(side * 0.72, 0.18, 0.10),
+                            b.local(side * 1.52, 2.10, 0.55), 0.12, withAlpha(color, 205));
+                }
+            }
+            return;
+        }
+
+        if (style == 1) {
+            // Iron Warlord: disciplined standards, armor bars and a command crown.
+            double crown = stage == 2 ? 1.8 * leave : 1.1 + 0.9 * enter;
+            ring(pose, out, b, crown, 2.25, 0.07, 64, color, -age * 0.018);
+            for (int i = 0; i < 4; i++) {
+                double a = i * TAU / 4.0 + Math.PI * 0.25;
+                double spread = stage == 2 ? 2.2 + progress * 1.8 : 1.45 + 0.35 * enter;
+                Vec3 basePt = b.local(Math.cos(a) * spread, 0.10, Math.sin(a) * spread);
+                double h = stage == 2 ? 2.8 * leave : 1.3 + 2.0 * enter;
+                prism(pose, out, basePt, basePt.add(0.0, h, 0.0), 0.085, color);
+                if (stage != 2) {
+                    Vec3 cross = basePt.add(b.right.scale((i % 2 == 0 ? 1 : -1) * 0.52))
+                            .add(0.0, h * 0.72, 0.0);
+                    prism(pose, out, basePt.add(0.0, h * 0.72, 0.0), cross, 0.055,
+                            withAlpha(color, 170));
+                }
+            }
+            if (stage == 1) {
+                shieldFrame(pose, out, b, b.local(0.0, 1.25, 0.35), 2.8, 2.1, 0.22,
+                        withAlpha(color, 165));
+            }
+            return;
+        }
+
+        if (style == 2) {
+            // Plague Archon: web bloom, hanging toxic nodes and a dissipating cocoon.
+            double webRadius = stage == 2 ? 3.8 * leave + 0.45 : 0.9 + 3.1 * enter;
+            int spokes = 8;
+            for (int i = 0; i < spokes; i++) {
+                double a = i * TAU / spokes + age * (stage == 2 ? -0.010 : 0.005);
+                Vec3 inner = b.local(Math.cos(a) * 0.28, 0.14, Math.sin(a) * 0.28);
+                Vec3 outer = b.local(Math.cos(a) * webRadius, 0.12, Math.sin(a) * webRadius);
+                prism(pose, out, inner, outer, 0.035, withAlpha(color, 155));
+                if (stage != 0 || progress > 0.35) {
+                    Vec3 node = b.local(Math.cos(a) * webRadius * 0.68,
+                            0.45 + 0.65 * Math.sin(age * 0.08 + i), Math.sin(a) * webRadius * 0.68);
+                    sphere(pose, out, node, 0.13 + 0.10 * intensity, 6, 8, withAlpha(color, 120));
+                }
+            }
+            for (double scale : new double[]{0.38, 0.62, 0.84}) {
+                ring(pose, out, b, webRadius * scale, 0.12, 0.032, 56,
+                        withAlpha(color, 120), age * (stage == 2 ? 0.014 : -0.008));
+            }
+            if (stage == 1) {
+                ringVertical(pose, out, b, 1.35, 1.25, 0.055, 56, withAlpha(color, 170), age * 0.020);
+            }
+            return;
+        }
+
+        // Dread Knight: mounted charge lines, blade halo and a final cross-shaped collapse.
+        double bladeRadius = stage == 2 ? 2.8 * leave + 0.35 : 0.9 + 1.3 * enter;
+        slashArc(pose, out, b, age * 0.032, bladeRadius, 1.02, 1.75, 0.095, color);
+        slashArc(pose, out, b, Math.PI - age * 0.028, bladeRadius, 1.42, 1.45, 0.075,
+                withAlpha(color, 190));
+        if (stage == 0) {
+            for (int side : new int[]{-1, 1}) {
+                prism(pose, out, b.local(side * 0.36, 0.22, -2.2 * (1.0 - enter)),
+                        b.local(side * 0.18, 0.78 + enter, 0.65), 0.055, withAlpha(color, 145));
+            }
+        } else if (stage == 1) {
+            horizontalSlash(pose, out, b, 4.6, 1.05, 0.12, 0.22, withAlpha(color, 205));
+            ring(pose, out, b, 2.15 + 0.18 * Math.sin(age * 0.22), 0.08, 0.09, 64,
+                    withAlpha(color, 160), -age * 0.025);
+        } else {
+            double width = Math.max(0.5, 4.8 * leave);
+            horizontalSlash(pose, out, b, width, 0.95, 0.11, 0.18, withAlpha(color, 200));
+            prism(pose, out, b.local(0.0, 0.10, -width * 0.48), b.local(0.0, 0.10, width * 0.48),
+                    0.07, withAlpha(color, 175));
         }
     }
 
