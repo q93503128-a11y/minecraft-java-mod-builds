@@ -54,35 +54,53 @@ public final class VillageCampaignProgression {
      * New enemy roles, wave doctrines, fronts and bosses provide most of the later difficulty.
      */
     public static int enemyHealthTier(int day, int wave) {
-        int safe = campaignDay(day);
-        int base = (safe - 1) / 8 + Math.max(0, wave - 1) / 6;
-        int lateBonus = safe <= 20 ? 0 : (safe - 20) / 20;
-        return Math.min(14, Math.max(0, base + lateBonus));
+        int safe = Math.max(1, day);
+        int authored = Math.min(CAMPAIGN_END_DAY, safe);
+        int base = (authored - 1) / 8 + Math.max(0, wave - 1) / 6;
+        int lateBonus = authored <= 20 ? 0 : (authored - 20) / 20;
+        int endlessBonus = safe <= CAMPAIGN_END_DAY
+                ? 0 : (int) Math.floor(Math.sqrt(safe - CAMPAIGN_END_DAY) / 4.0);
+        return Math.max(0, base + lateBonus + endlessBonus);
     }
 
     /**
-     * Raw enemy body durability keeps growing through day 100 instead of flattening when
-     * Health Boost tiers approach their cap. The opening twenty days remain unchanged.
+     * Raw enemy body durability has no hard stat ceiling. The authored campaign grows linearly
+     * to x2.0 at day 100; endless war keeps rising with a square-root tail so very long worlds
+     * continue progressing without turning each extra day into another large stat jump.
      */
     public static float enemyBaseHealthMultiplier(int day) {
-        int safe = campaignDay(day);
+        int safe = Math.max(1, day);
         if (safe <= 20) return 1.0f;
-        return 1.0f + (safe - 20) / 80.0f;
+        if (safe <= CAMPAIGN_END_DAY) return 1.0f + (safe - 20) / 80.0f;
+        return 2.0f + (float) Math.sqrt(safe - CAMPAIGN_END_DAY) * 0.05f;
     }
 
     public static int enemyStrengthTier(int day, int wave) {
-        int safe = campaignDay(day);
-        return Math.min(5, Math.max(0, (safe - 1) / 18 + Math.max(0, wave - 3) / 5));
+        int safe = Math.max(1, day);
+        int authored = Math.min(CAMPAIGN_END_DAY, safe);
+        int base = (authored - 1) / 18 + Math.max(0, wave - 3) / 5;
+        int endlessBonus = safe <= CAMPAIGN_END_DAY
+                ? 0 : (int) Math.floor(Math.sqrt(safe - CAMPAIGN_END_DAY) / 12.0);
+        return Math.max(0, base + endlessBonus);
     }
 
     /**
-     * Used for day-scaled special attacks. After day 20, eighty real days contribute only
-     * thirty-two extra effective days, keeping unavoidable-looking ability damage readable.
+     * Used for day-scaled special attacks. Day 21-100 keeps the authored 0.40x pace. Endless war
+     * remains uncapped but switches to a square-root tail so ability damage grows indefinitely
+     * without making late telegraphed attacks jump sharply from one night to the next.
      */
     public static float effectiveCombatDay(int day) {
-        int safe = campaignDay(day);
+        int safe = Math.max(1, day);
         if (safe <= 20) return safe;
-        return 20.0f + (safe - 20) * 0.40f;
+        if (safe <= CAMPAIGN_END_DAY) return 20.0f + (safe - 20) * 0.40f;
+        return 52.0f + (float) Math.sqrt(safe - CAMPAIGN_END_DAY) * 0.80f;
+    }
+
+    public static int enemyAbsorptionAmplifier(int day) {
+        int safe = Math.max(1, day);
+        if (safe < 30) return -1;
+        if (safe <= CAMPAIGN_END_DAY) return Math.max(0, (safe - 20) / 30);
+        return 2 + (int) Math.floor(Math.sqrt(safe - CAMPAIGN_END_DAY) / 10.0);
     }
 
     /**
