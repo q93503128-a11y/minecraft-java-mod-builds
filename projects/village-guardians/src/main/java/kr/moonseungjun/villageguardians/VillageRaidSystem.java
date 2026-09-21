@@ -148,6 +148,13 @@ public final class VillageRaidSystem {
         UUID uuid = event.getEntity().getUUID();
         if (!ACTIVE_ENEMIES.remove(uuid)) return;
         MinecraftServer server = event.getEntity().level().getServer();
+        if (server != null && event.getEntity() instanceof Mob mob) {
+            VillageEnemyArchetypeSystem.Archetype archetype = ACTIVE_ARCHETYPES.get(uuid);
+            if (archetype != null && VillageEnemyArchetypeSystem.isBoss(archetype)
+                    && mob.level() instanceof ServerLevel level) {
+                VillageBossEffectSystem.defeat(level, mob, archetype);
+            }
+        }
         if (server != null) releaseEnemy(server, uuid, event.getEntity());
     }
 
