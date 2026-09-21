@@ -94,14 +94,17 @@ def main() -> None:
     attributes = section(enemy, "private static void applyArchetypeAttributes", "private static void applyArchetypeEffects")
     effects = section(enemy, "private static void applyArchetypeEffects", "private static String displayName")
     assert "archetype == Archetype.SAPPER" in attributes
-    assert "Math.min(16.0, 8.5" in attributes
+    assert "Math.min(24.0, 8.5" in attributes
+    assert "VillageCampaignProgression.effectiveCombatDay(day)" in attributes
     assert "speed.setBaseValue(0.15)" in attributes
     assert "case SAPPER -> { }" in effects
     assert "case SAPPER -> 1.72f" in enemy
     scaling = section(raid, "private static void applyScaling", "private static void directEnemies")
     assert "boolean sapper" in scaling
     assert "healthTier - 2" in scaling and "strengthTier - 2" in scaling
-    assert "day >= 5 && !sapper" in scaling
+    assert "MobEffects.SPEED" not in scaling
+    assert "VillageCampaignProgression.enemyHealthTier(day, currentWave)" in scaling
+    assert "VillageCampaignProgression.enemyStrengthTier(day, currentWave)" in scaling
 
     # Mercenaries deploy before contact and are valid enemy combat targets.
     assert "public static void prepareNightDeployment" in deploy
