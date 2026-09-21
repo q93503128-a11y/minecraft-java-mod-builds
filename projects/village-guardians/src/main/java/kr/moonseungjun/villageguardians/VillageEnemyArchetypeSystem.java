@@ -592,6 +592,12 @@ public final class VillageEnemyArchetypeSystem {
         } else if (archetype == Archetype.SHIELDBREAKER) {
             var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
             if (speed != null) speed.setBaseValue(0.19);
+        } else if (archetype == Archetype.ZOGLIN_BREACHER) {
+            var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
+            if (speed != null) speed.setBaseValue(0.22);
+        } else if (archetype == Archetype.NETHER_REAVER) {
+            var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
+            if (speed != null) speed.setBaseValue(0.23);
         } else if (archetype == Archetype.SIEGE_BEAST) {
             var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
             if (speed != null) speed.setBaseValue(0.16);
@@ -619,6 +625,9 @@ public final class VillageEnemyArchetypeSystem {
             case WAR_CHANTER -> mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, LONG_EFFECT_TICKS, 0));
             case NECROMANCER -> mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, LONG_EFFECT_TICKS, 0));
             case TOWER_HUNTER -> mob.addEffect(new MobEffectInstance(MobEffects.SPEED, LONG_EFFECT_TICKS, 1));
+            case CAVE_STALKER -> mob.addEffect(new MobEffectInstance(MobEffects.SPEED, LONG_EFFECT_TICKS, 0));
+            case ZOGLIN_BREACHER -> mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, LONG_EFFECT_TICKS, 0));
+            case NETHER_REAVER -> mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, LONG_EFFECT_TICKS, 0));
             case SIEGE_BEAST -> {
                 mob.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST, LONG_EFFECT_TICKS, 5));
                 mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, LONG_EFFECT_TICKS, 2));
