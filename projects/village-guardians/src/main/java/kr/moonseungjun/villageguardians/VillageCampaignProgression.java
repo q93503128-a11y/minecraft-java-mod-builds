@@ -55,7 +55,19 @@ public final class VillageCampaignProgression {
      */
     public static int enemyHealthTier(int day, int wave) {
         int safe = campaignDay(day);
-        return Math.min(10, Math.max(0, (safe - 1) / 8 + Math.max(0, wave - 1) / 6));
+        int base = (safe - 1) / 8 + Math.max(0, wave - 1) / 6;
+        int lateBonus = safe <= 20 ? 0 : (safe - 20) / 20;
+        return Math.min(14, Math.max(0, base + lateBonus));
+    }
+
+    /**
+     * Raw enemy body durability keeps growing through day 100 instead of flattening when
+     * Health Boost tiers approach their cap. The opening twenty days remain unchanged.
+     */
+    public static float enemyBaseHealthMultiplier(int day) {
+        int safe = campaignDay(day);
+        if (safe <= 20) return 1.0f;
+        return 1.0f + (safe - 20) / 80.0f;
     }
 
     public static int enemyStrengthTier(int day, int wave) {
