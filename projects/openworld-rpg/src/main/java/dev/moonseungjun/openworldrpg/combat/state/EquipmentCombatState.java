@@ -17,7 +17,8 @@ public record EquipmentCombatState(
         double physicalPowerBonus,
         double magicPowerBonus,
         double weaponFamilyPowerBonus,
-        double poiseOutputBonus
+        double poiseOutputBonus,
+        double supplementalMagicWeaponPower
 ) {
     public EquipmentCombatState {
         Objects.requireNonNull(weaponFamily, "weaponFamily");
@@ -30,6 +31,11 @@ public record EquipmentCombatState(
         requireBonus("magicPowerBonus", magicPowerBonus);
         requireBonus("weaponFamilyPowerBonus", weaponFamilyPowerBonus);
         requireBonus("poiseOutputBonus", poiseOutputBonus);
+        if (!Double.isFinite(supplementalMagicWeaponPower) || supplementalMagicWeaponPower < 0.0) {
+            throw new IllegalArgumentException(
+                    "supplementalMagicWeaponPower must be finite and non-negative."
+            );
+        }
     }
 
     public static EquipmentCombatState weaponOnly(
@@ -40,6 +46,7 @@ public record EquipmentCombatState(
                 weaponFamily,
                 weaponItemLevel,
                 new EffectiveAttributes(0, 0, 0, 0, 0, 0),
+                0.0,
                 0.0,
                 0.0,
                 0.0,

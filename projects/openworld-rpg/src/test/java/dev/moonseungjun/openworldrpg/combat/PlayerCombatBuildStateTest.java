@@ -41,7 +41,8 @@ class PlayerCombatBuildStateTest {
                 0.0,
                 0.075,
                 0.10,
-                0.20
+                0.20,
+                0.0
         );
         var build = new PlayerCombatBuildState(
                 8,

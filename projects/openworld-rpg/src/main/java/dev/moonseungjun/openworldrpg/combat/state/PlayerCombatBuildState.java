@@ -50,6 +50,9 @@ public record PlayerCombatBuildState(
                         * ProjectCombatRules.gearScale(equipment.weaponItemLevel())
                         * family.powerFactor()
         );
+        if (school == ProjectImpactTransaction.DamageSchool.MAGIC) {
+            weaponPower += equipment.supplementalMagicWeaponPower();
+        }
         double weightedStat = family.weightedOffensiveStat(effectiveAttributes());
         double schoolPower = switch (school) {
             case PHYSICAL -> equipment.physicalPowerBonus();

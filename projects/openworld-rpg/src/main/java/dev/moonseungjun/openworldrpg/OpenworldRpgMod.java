@@ -1,6 +1,8 @@
 package dev.moonseungjun.openworldrpg;
 
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
+import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatBuildPublisher;
+import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentAttachments;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionAttachments;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.IntegrationBootstrap;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
@@ -17,8 +19,12 @@ public final class OpenworldRpgMod implements ModInitializer {
     public void onInitialize() {
         RuntimeProfile profile = RuntimeProfile.current();
         PlayerProgressionAttachments.initialize();
+        PlayerEquipmentAttachments.initialize();
         IntegrationBootstrap.bootstrap(profile, LOGGER);
 
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
+                PlayerCombatBuildPublisher.refresh(handler.getPlayer())
+        );
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
                 CombatStateServices.disconnect(handler.getPlayer().getUUID())
         );

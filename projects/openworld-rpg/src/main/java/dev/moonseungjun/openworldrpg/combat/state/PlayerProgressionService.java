@@ -47,6 +47,7 @@ public final class PlayerProgressionService {
             PlayerProgressionState state
     ) {
         player.setAttached(PlayerProgressionAttachments.COMBAT_PROGRESSION, state);
+        PlayerCombatBuildPublisher.refresh(player);
         return state;
     }
 }

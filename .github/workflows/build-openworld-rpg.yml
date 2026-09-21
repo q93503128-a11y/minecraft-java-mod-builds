@@ -188,12 +188,16 @@ jobs:
           - Spell Engine resource/cooldown continuation transaction: IMPLEMENTED + UNIT/SERVER STARTUP VERIFIED
           - project impact transaction core (damage/heal/status/poise + Defense/MR caps): IMPLEMENTED + UNIT TESTED
           - project direct-magic runtime bridge: IMPLEMENTED + UNIT/BUILD/STARTUP VERIFIED
-          - player combat build snapshot producer: IMPLEMENTED + UNIT/RUNTIME HARNESS VERIFIED (Lv + class allocation + equipment family/ItemLv/flat stats + physical/magic/family power + poise output)
+          - player combat build snapshot producer: IMPLEMENTED + UNIT/RUNTIME HARNESS VERIFIED
+          - persistent 12-slot equipped-loadout publisher: IMPLEMENTED + UNIT/BUILD VERIFIED (main weapon/off-hand/armor/accessories; project affix aggregation; wand+focus power; family-power cap)
+          - live combat-build refresh: IMPLEMENTED for join + project progression mutations + project equipment mutations
           - Earthloong canonical HP virtualization: IMPLEMENTED + RUNTIME VERIFIED (4900 -> 4871 from one canon-valid Lv8 Mage/ItemLv8 Staff Arc Bolt hit; vanilla health is proportional proxy)
           - exact Earthloong entity HP delta runtime harness: PASS (Arc Bolt 29 damage / 4.25 poise from produced snapshot; donor power ignored)
           - external actor non-project HP damage: FAIL-CLOSED by one-shot project damage authorization
-          - Earthloong runtime boss poise: IMPLEMENTED + UNIT/RUNTIME HARNESS VERIFIED (5 poise Arc Bolt, break +15% damage window, recovery/protection math)
-          - real player source snapshot producer / real Spell Engine player impact: NOT IMPLEMENTED / NOT TESTED
+          - Earthloong runtime boss poise: IMPLEMENTED + UNIT/RUNTIME HARNESS VERIFIED (4.25 poise Arc Bolt fixture, break +15% damage window, recovery/protection math)
+          - persistent combat progression: IMPLEMENTED + UNIT/BUILD VERIFIED
+          - real joined-player Spell Engine impact: NOT TESTED
+          - full backpack/loot-generation/equipment UI: NOT IMPLEMENTED
           - player-facing R01 content: NOT IMPLEMENTED
           - playtest: NOT RUN
           - multiplayer test: NOT RUN
