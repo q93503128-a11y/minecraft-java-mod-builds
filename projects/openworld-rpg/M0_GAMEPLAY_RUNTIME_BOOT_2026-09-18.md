@@ -723,3 +723,120 @@ Next bounded M0 gate:
 3. bind Earthloong runtime poise/recovery/break state and verify the same hit's poise pressure;
 4. then move to the authored encounter-controller/reward transaction, registry synchronization and quest save/reload/rejoin proof.
 
+
+
+---
+
+# 15. Earthloong canonical HP virtualization + runtime poise proof — 2026-09-21
+
+Implementation chain:
+
+```text
+51290f4d882b040fb83b89a09bd9d69b2273042b
+openworld-rpg: verify Earthloong runtime impact
+
+71a17c48d0deed409773cf6cce844e32293d8ead
+fix(openworld-rpg): use registry-safe M0 harness actors
+
+8ddba64613ee837f35c64c14df82e21f7bd4ef65
+openworld-rpg: virtualize canonical boss health
+```
+
+The first verification run exposed an important runtime fact rather than being treated as a false success:
+
+```text
+canonical design HP: 4900
+observed Minecraft MAX_HEALTH proxy: 1024
+```
+
+Minecraft's attribute clamp therefore made the earlier direct MAX_HEALTH binding insufficient for this boss.
+
+The corrected ownership model is now:
+
+```text
+ProjectHealthRuntimeState
+  canonical HP = 4900
+        ↓ proportional sync
+Minecraft LivingEntity health
+  proxy max = 1024 on the verified runtime
+```
+
+Rules:
+
+- canonical HP is combat authority;
+- vanilla health is only a proportional proxy used for entity life-cycle/hit presentation;
+- project final damage is converted to the corresponding proxy delta;
+- after Minecraft accepts the authorized hit, proxy health is re-synchronized to the exact canonical ratio;
+- external actor HP damage without the one-shot project authorization token is rejected at `LivingEntity#hurtServer`;
+- the token is consumed at method HEAD so recursive donor damage cannot inherit the authorization;
+- project canonical state can reconstruct from the saved proxy health fraction on reload/chunk re-entry, avoiding free full-heal from the 1024 clamp while dedicated save ownership is still a later gate.
+
+Runtime boss poise is also now executable:
+
+- recovery delay: 120 ticks / 6.0 s;
+- recovery rate: 12.5% PoiseMax/s;
+- Earthloong PoiseMax: 190;
+- break window: 48 ticks / 2.4 s;
+- direct damage taken while broken: 1.15x;
+- after break: refill to full and 30 ticks / 1.5 s of 0.50x poise-damage taken;
+- poise damage received during the active break does not recursively extend/stack another break.
+
+Final verification:
+
+```text
+Build Openworld RPG
+run 35557203570
+conclusion: SUCCESS
+code: 8ddba64613ee837f35c64c14df82e21f7bd4ef65
+artifact: openworld-rpg-m0-8ddba64613ee837f35c64c14df82e21f7bd4ef65
+artifact sha256: 54bb5a5d8cdfaf06a3576d26808f8eb52eb0a2f5cf7142892dbda76ca346b054
+```
+
+Observed gameplay-server line:
+
+```text
+OPENWORLD_RPG_M0_RUNTIME_IMPACT_PASS
+target=threateningly_mobs:the_earthloong
+canonicalHpBefore=4900.0
+canonicalHpAfter=4868.0
+proxyHpBefore=1024.0
+proxyHpAfter=1017.3127
+damage=32.0
+poiseBefore=190.0
+poiseAfterArcBolt=185.0
+breakDamageTakenMultiplier=1.15
+```
+
+Verification status:
+
+```text
+UNIT TESTS: PASS
+CLEAN BUILD: PASS
+JAR VERIFIED: PASS
+CORE DEDICATED SERVER: PASS
+GAMEPLAY DEPENDENCY SERVER: PASS
+EXACT EARTHLOONG ENTITY RUNTIME DAMAGE HARNESS: PASS
+CANONICAL 4900 HP AUTHORITY: RUNTIME VERIFIED
+VANILLA 1024 HP CLAMP: DETECTED + CONTAINED AS PROXY
+EXTERNAL ACTOR NON-PROJECT HP DAMAGE: FAIL-CLOSED
+EARTHLOONG RUNTIME POISE/RECOVERY/BREAK: IMPLEMENTED + UNIT/RUNTIME VERIFIED
+GAMEPLAY CLIENT STARTUP SMOKE: PASS
+
+REAL PLAYER COMBAT SNAPSHOT PRODUCER: NOT IMPLEMENTED
+REAL JOINED-PLAYER ARC BOLT CALLBACK/HIT: NOT TESTED
+REAL BETTER COMBAT PLAYER HIT: NOT TESTED
+EARTHLOONG AUTHORED ENCOUNTER CONTROLLER: NOT IMPLEMENTED
+PROJECT EARTHLOONG REWARD TRANSACTION: NOT IMPLEMENTED
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
+```
+
+The CI harness deliberately supplies a fixed canonical offensive source snapshot and a non-player living attacker only for verification. It does **not** install those values into production player state and therefore does not convert the missing progression/equipment system into a hidden placeholder.
+
+Next bounded gate:
+
+1. implement the real server-owned player Lv/attribute/equipment snapshot producer;
+2. bind it into actual joined-player Spell Engine and Better Combat execution;
+3. prove one real Arc Bolt → Earthloong hit and one real melee hit without duplicate/donor damage;
+4. then implement the authored Earthloong encounter-controller + project reward transaction;
+5. finish registry-sync and quest save/reload/rejoin proofs.
