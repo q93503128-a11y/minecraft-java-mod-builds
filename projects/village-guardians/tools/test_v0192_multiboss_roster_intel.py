@@ -15,7 +15,8 @@ def main() -> None:
     boss = read("VillageSiegeBossSystem.java")
     war = read("VillageWarfrontSystem.java")
 
-    assert "boss ? bossForSlot(day, index)" in enemy
+    assert "boss ? bossForWaveSlot(day, wave, index)" in enemy
+    assert "private static Archetype bossForWaveSlot(int day, int wave, int bossIndex)" in enemy
     assert "private static Archetype bossForSlot(int day, int bossIndex)" in enemy
     for archetype in ("SIEGE_BEAST", "IRON_WARLORD", "PLAGUE_ARCHON", "DREAD_KNIGHT"):
         assert f"Archetype.{archetype}" in enemy
@@ -27,11 +28,15 @@ def main() -> None:
     assert "public static String previewDoctrine(" in boss
     assert 'doctrine.displayName() + " · " + doctrine.description()' in boss
 
-    # Day 100 still requests four bosses, which now rotate through all four base boss archetypes.
-    assert "if (VillageCampaignProgression.isFinalSiege(day)) return Math.min(4" in war
+    # Day 100 preserves four total boss encounters, but stages one unique boss on waves 4-7.
+    assert "return wave >= 4 && wave <= 7 ? 1 : 0;" in war
+    assert "case 4 -> Archetype.PLAGUE_ARCHON;" in enemy
+    assert "case 5 -> Archetype.IRON_WARLORD;" in enemy
+    assert "case 6 -> Archetype.SIEGE_BEAST;" in enemy
+    assert "case 7 -> Archetype.DREAD_KNIGHT;" in enemy
 
     print("[PASS] single-boss days preserve the original day rotation through slot zero")
-    print("[PASS] multi-boss waves rotate across all four boss archetypes instead of cloning one base boss")
+    print("[PASS] day100 stages the four boss archetypes across waves 4-7 instead of stacking clones")
     print("[PASS] daytime intel previews each boss archetype, aspect and authoritative boss doctrine")
 
 
