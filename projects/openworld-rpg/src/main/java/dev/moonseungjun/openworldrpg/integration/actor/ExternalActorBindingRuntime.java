@@ -24,6 +24,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import org.slf4j.Logger;
@@ -89,6 +90,9 @@ public final class ExternalActorBindingRuntime {
             ensureHealthState(living, actorProfile.get(), healthFraction);
             ensurePoiseState(living, actorProfile.get(), level.getGameTime());
             living.addTag(NO_CAPTURE_TAG);
+            if (living instanceof Mob mob) {
+                mob.setPersistenceRequired();
+            }
         });
         ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) -> {
             HEALTH_STATES.remove(entity.getUUID());
@@ -203,6 +207,9 @@ public final class ExternalActorBindingRuntime {
         }
         entity.addTag(AUTHORED_SPAWN_TAG);
         entity.addTag(NO_CAPTURE_TAG);
+        if (entity instanceof Mob mob) {
+            mob.setPersistenceRequired();
+        }
         if (entity instanceof LivingEntity living) {
             double healthFraction = applyProjectCombatStats(living, profile);
             ensureHealthState(living, profile, healthFraction);
