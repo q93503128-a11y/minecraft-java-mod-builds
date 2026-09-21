@@ -22,6 +22,31 @@ def main() -> None:
     ):
         assert f"private static final VillageWaveTrait[] {pool}" in wave
     assert "return selectFromPool(pool, safeDay, safeWave);" in wave
+    assert "int stride = coprimeStride(pool.length, day);" in wave
+    assert "greatestCommonDivisor(stride, length) != 1" in wave
+
+    # Every authored late-campaign night must expose a broad doctrine spread instead of
+    # collapsing into one or two repeated traits through modular arithmetic resonance.
+    def gcd(left: int, right: int) -> int:
+        a, b = max(1, abs(left)), max(1, abs(right))
+        while b:
+            a, b = b, a % b
+        return a
+
+    def stride_for(length: int, day: int) -> int:
+        stride = 2 + day % (length - 1)
+        while gcd(stride, length) != 1:
+            stride += 1
+            if stride >= length:
+                stride = 1
+        return stride
+
+    for day in range(20, 100):
+        length = 7 if day >= 80 else 6
+        offset = (day * 31 + day // 10 * 7) % length
+        stride = stride_for(length, day)
+        sequence = [(offset + (wave_index - 1) * stride) % length for wave_index in range(1, 8)]
+        assert len(set(sequence)) >= 6, (day, sequence)
 
     # The hundredth day is a deliberate seven-wave climax rather than another pseudo-random roll.
     final_sequence = (
@@ -57,7 +82,7 @@ def main() -> None:
     assert "Twenty active skills" not in verify
 
     print("[PASS] days 1-19 retain their opening doctrine selector")
-    print("[PASS] days 20-99 use authored chapter doctrine pools without degenerate all-standard nights")
+    print("[PASS] days 20-99 traverse at least six chapter doctrines before repeating")
     print("[PASS] day 100 escalates through seven named doctrines and ends on FINAL_HOST")
     print("[PASS] late-campaign scout copy and JAR content acceptance match the current 100-day game")
 
