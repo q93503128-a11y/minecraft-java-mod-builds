@@ -48,16 +48,18 @@ def main() -> None:
     assert 'actions.add("skill_training:attack")' in controller
     assert "TrainingVisual" in screen and "renderTrainingPanel" in screen
 
-    # The repeatable ranks are authoritative basic stats, not tooltip-only bonuses.
+    # Health is a base attribute; attack training is an authoritative shared combat stat.
     assert "Attributes.MAX_HEALTH" in rpg
     assert "Attributes.ATTACK_DAMAGE" in rpg
     assert "20.0D + VillageSkillTreeSystem.healthTrainingBonus(player)" in rpg
-    assert "1.0D + VillageSkillTreeSystem.attackTrainingBonus(player)" in rpg
+    assert "attackDamage.setBaseValue(1.0D);" in rpg
+    assert "VillageSkillTreeSystem.attackTrainingBonus(attacker)" in rpg
+    assert "applySkillAttackTraining" in rpg
 
     print("[PASS] every level awards 1P, all five branches cost 110P, and superseded high costs are refunded")
     print("[PASS] Lv.300 can complete every branch and has 189P left for repeatable training")
     print("[PASS] any completed branch unlocks save-backed +0.25 health / +0.1 attack repeat training")
-    print("[PASS] repeat training is exposed in the current growth UI and applied to real attributes")
+    print("[PASS] repeat training is exposed in growth UI and attack training is shared by authoritative combat paths")
 
 
 if __name__ == "__main__":
