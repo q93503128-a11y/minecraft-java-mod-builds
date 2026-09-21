@@ -519,9 +519,9 @@ public final class VillageEnemyArchetypeSystem {
             case MAGMA_BRUTE -> EntityTypes.MAGMA_CUBE.create(level, EntitySpawnReason.EVENT);
             case NETHER_REAVER -> EntityTypes.ZOMBIFIED_PIGLIN.create(level, EntitySpawnReason.EVENT);
             case SIEGE_BEAST -> EntityTypes.RAVAGER.create(level, EntitySpawnReason.EVENT);
-            case IRON_WARLORD -> EntityTypes.VINDICATOR.create(level, EntitySpawnReason.EVENT);
-            case PLAGUE_ARCHON -> EntityTypes.EVOKER.create(level, EntitySpawnReason.EVENT);
-            case DREAD_KNIGHT -> EntityTypes.WITHER_SKELETON.create(level, EntitySpawnReason.EVENT);
+            case IRON_WARLORD -> EntityTypes.IRON_GOLEM.create(level, EntitySpawnReason.EVENT);
+            case PLAGUE_ARCHON -> EntityTypes.SPIDER.create(level, EntitySpawnReason.EVENT);
+            case DREAD_KNIGHT -> EntityTypes.ZOGLIN.create(level, EntitySpawnReason.EVENT);
         };
     }
 
@@ -572,19 +572,9 @@ public final class VillageEnemyArchetypeSystem {
                 mob.setItemSlot(EquipmentSlot.HEAD, Items.GOLDEN_HELMET.getDefaultInstance());
                 mob.setItemSlot(EquipmentSlot.CHEST, Items.GOLDEN_CHESTPLATE.getDefaultInstance());
             }
-            case IRON_WARLORD -> {
-                mob.setItemSlot(EquipmentSlot.MAINHAND, Items.DIAMOND_AXE.getDefaultInstance());
-                mob.setItemSlot(EquipmentSlot.HEAD, Items.NETHERITE_HELMET.getDefaultInstance());
-                mob.setItemSlot(EquipmentSlot.CHEST, Items.NETHERITE_CHESTPLATE.getDefaultInstance());
-            }
-            case PLAGUE_ARCHON -> {
-                mob.setItemSlot(EquipmentSlot.MAINHAND, Items.NETHER_STAR.getDefaultInstance());
-                mob.setItemSlot(EquipmentSlot.HEAD, Items.WITHER_SKELETON_SKULL.getDefaultInstance());
-            }
-            case DREAD_KNIGHT -> {
-                mob.setItemSlot(EquipmentSlot.MAINHAND, Items.NETHERITE_SWORD.getDefaultInstance());
-                mob.setItemSlot(EquipmentSlot.HEAD, Items.NETHERITE_HELMET.getDefaultInstance());
-                mob.setItemSlot(EquipmentSlot.CHEST, Items.NETHERITE_CHESTPLATE.getDefaultInstance());
+            case IRON_WARLORD, PLAGUE_ARCHON, DREAD_KNIGHT -> {
+                // Their visible weapons/armor belong to the presentation rider in
+                // VillageEnemyCompositionSystem. The authoritative owner is the large vanilla body.
             }
             default -> {
             }
@@ -638,12 +628,27 @@ public final class VillageEnemyArchetypeSystem {
             var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
             if (speed != null) speed.setBaseValue(0.16);
         } else if (archetype == Archetype.IRON_WARLORD) {
+            // Preserve the old Vindicator combat baseline while using an Iron Golem silhouette.
+            var health = mob.getAttribute(Attributes.MAX_HEALTH);
+            if (health != null) health.setBaseValue(24.0);
+            var attack = mob.getAttribute(Attributes.ATTACK_DAMAGE);
+            if (attack != null) attack.setBaseValue(5.0);
             var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
             if (speed != null) speed.setBaseValue(0.18);
         } else if (archetype == Archetype.PLAGUE_ARCHON) {
+            // Preserve the old Evoker health budget while the Spider body supplies readable locomotion.
+            var health = mob.getAttribute(Attributes.MAX_HEALTH);
+            if (health != null) health.setBaseValue(24.0);
+            var attack = mob.getAttribute(Attributes.ATTACK_DAMAGE);
+            if (attack != null) attack.setBaseValue(2.0);
             var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
             if (speed != null) speed.setBaseValue(0.17);
         } else if (archetype == Archetype.DREAD_KNIGHT) {
+            // Preserve the old Wither Skeleton combat baseline while the Zoglin carries the rider.
+            var health = mob.getAttribute(Attributes.MAX_HEALTH);
+            if (health != null) health.setBaseValue(20.0);
+            var attack = mob.getAttribute(Attributes.ATTACK_DAMAGE);
+            if (attack != null) attack.setBaseValue(4.0);
             var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
             if (speed != null) speed.setBaseValue(0.20);
         }
