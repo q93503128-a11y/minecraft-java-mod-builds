@@ -930,7 +930,7 @@ The correct next step is **not** another broad search for a complete RPG mod to 
 
 The narrow M0 core integration skeleton is now implemented and verified at commit `b98ab3650b6e594693df3c1170d1de1e1ea169f2`. It includes the Fabric entrypoint, dependency manifest/runtime profiles, integration-policy/module primitives, actor-overlay schema validation, unit tests and a dedicated CI/server-smoke workflow.
 
-The dependency runtime gate is now materially further: the 10 foundation/safety JARs plus the three curated creature JARs co-load in the isolated `gameplay` development profile on a Fabric 26.2 dedicated server. All 13 dependency-manifest runtime IDs are resolved, and commit `2566170d51b00557dbf000fdd6c34607707902b9` makes their distributed `fabric.mod.json` versions exact runtime requirements for the gameplay/Essential profiles. Better Combat retains the first project-owned damage seam from `579354c1154c8c60ad534fe3c6558a6a57d33e66`; a real target hit is still **NOT TESTED**. Spell Engine now has a project-owned resource/cooldown transaction layered on the earlier cast-admission seam. `PlayerCombatState` owns canonical Mana regeneration and cooldown timing, `ProjectSpellTransactionPolicy` performs side-effect-free PRE checks and one-time POST commits, accepted casts are serialized per player across different project spells, Spell Engine donor costs must be neutral, and projectile impact lifetime is explicitly decoupled from the short resource transaction. The registered `CUSTOM` impact route remains fail-closed until canonical project damage/heal/status/poise resolution can supply it. Run `35545779733` at commit `7b831bb8cf87a598be515997bf6dfd1750066140` verifies the finalized shared-state serialization and cross-spell regression on core/gameplay dedicated-server profiles. The next M0 work is the actual project impact transaction, then one external-creature override. Player-facing R01 implementation still waits for the remaining asset/spatial gates.
+The dependency runtime gate is now materially further: the 10 foundation/safety JARs plus the three curated creature JARs are pinned by exact admitted versions and SHA-256 and co-load in the Fabric 26.2 `gameplay` profile. Normal launch defaults to `gameplay`; `core` remains an explicit isolation profile. The full 13-dimension actor-overlay policy is structurally required. Better Combat retains the project-owned melee damage seam, is conditionally mixed in only when present, and has donor fallback weapon assignment/vanilla sweeping contained; a real target hit is still **NOT TESTED**. Spell Engine now has a project-owned resource/cooldown transaction with cast-process continuation identity, percentage-preserving WIL synchronization, combat-activity-aware Mana recovery and disconnect cleanup. Donor spell-book creation/unbinding, item/durability/exhaust costs, fallback weapon spell assignment and RPG-Series loot injection are disabled for the project runtime. MobFilter loads a project-managed rule that rejects ordinary natural/worldgen/spawner/structure/etc. random population channels, reserving explicit project-authored spawn paths. The registered `CUSTOM` impact route remains fail-closed until canonical project damage/heal/status/poise resolution supplies it. Workflow run `35549006979` at commit `f0f6c0d22ba564d7ed0ad92551889c7e209d0d8e` verifies dependency hashes, unit tests, clean build/JAR, core and gameplay dedicated-server boot, donor-containment checks and a headless gameplay-client render-thread startup smoke. The next M0 work is the actual project impact transaction, then one external-creature project spawn/stat/loot binding plus the remaining registry-sync and quest save/rejoin acceptance proofs. Player-facing R01 implementation still waits for the remaining asset/spatial gates.
 
 Verification state for this document:
 
@@ -942,16 +942,17 @@ FOUNDATION / SAFETY PRIMARY ARTIFACTS RESOLVED: YES — 10/10
 CURATED CREATURE PRIMARY ARTIFACTS RESOLVED: YES — 3/3
 DEPENDENCY MANIFEST RUNTIME IDS RESOLVED: YES — 13/13
 DEPENDENCY EXACT VERSION ENFORCEMENT: YES — 13/13, run 35329917184
-DEV-GAMEPLAY DEPENDENCY RUNTIME LOADED: YES — dedicated server co-load, latest verified run 35329917184
+DEV-GAMEPLAY DEPENDENCY RUNTIME LOADED: YES — dedicated server co-load, latest verified run 35549006979
+DONOR PROGRESSION / LOOT / RANDOM ECOLOGY CONTAINMENT: YES — startup verified in run 35549006979
 BETTER COMBAT AUTHORITY ADAPTER: YES — code/startup verified; real-hit runtime execution NOT TESTED
-SPELL ENGINE RESOURCE/COOLDOWN ADAPTER: YES — canonical Mana/cooldown transaction + donor-cost isolation implemented; project impact/damage transaction remains fail-closed / NOT IMPLEMENTED
-EXTERNAL CREATURE OVERRIDE ADAPTER: NO
+SPELL ENGINE RESOURCE/COOLDOWN ADAPTER: YES — canonical Mana/cooldown/continuation transaction + donor-cost isolation implemented; project impact/damage transaction remains fail-closed / NOT IMPLEMENTED
+EXTERNAL CREATURE PROJECT SPAWN/STAT/LOOT BINDING: NO
 FULL DEV-GAMEPLAY INTEGRATIONS IMPLEMENTED: NO
-CODE REVIEWED: YES — bootstrap/runtime-profile scope
-TESTED: YES — unit tests + core/gameplay dedicated-server profiles
-BUILD VERIFIED: YES
+CODE REVIEWED: YES — bootstrap/runtime-profile/containment scope
+TESTED: YES — unit tests + core/gameplay dedicated-server startup + gameplay client startup smoke
+BUILD VERIFIED: YES — run 35549006979
 JAR PRODUCED: YES
-CLIENT RUNTIME TESTED: NO
+CLIENT STARTUP SMOKE: YES — render thread reached; world join NOT TESTED
 PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
 ```
