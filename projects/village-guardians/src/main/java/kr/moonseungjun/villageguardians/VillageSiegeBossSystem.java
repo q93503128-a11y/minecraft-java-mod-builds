@@ -86,6 +86,12 @@ public final class VillageSiegeBossSystem {
         return "혼성 보스 교리 · 파성 거신 / 사령 결속자 / 검은 결투원수";
     }
 
+    public static String previewDoctrine(
+            int day, int wave, VillageEnemyArchetypeSystem.Archetype type) {
+        BossDoctrine doctrine = doctrineFor(day, wave, type);
+        return doctrine.displayName() + " · " + doctrine.description();
+    }
+
     private static BossDoctrine doctrineFor(
             int day, int wave, VillageEnemyArchetypeSystem.Archetype type) {
         int salt = type == null ? 0 : type.ordinal();
