@@ -66,7 +66,7 @@ def main() -> None:
     assert "aerialRole != null && day >= 30" in combo
     assert "case BOMBARDIER -> babyHusk" in combo
     assert "boss && archetype == VillageEnemyArchetypeSystem.Archetype.SIEGE_BEAST" in combo
-    assert "rider.startRiding(owner, true)" in combo
+    assert "rider.startRiding(owner)" in combo
 
     # Cosmetic riders never become independent reward actors: hits go to the authoritative owner
     # and the raid lifecycle removes rider entities with their owner / on restart.
