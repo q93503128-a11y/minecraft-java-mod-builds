@@ -118,7 +118,7 @@ public final class VillageUiController {
                     + "회|반복 투자 · 최대 체력 +1|" + status + "|1");
             actions.add("skill_training:attack");
             labels.add("공격 단련 " + VillageSkillTreeSystem.attackTraining(player)
-                    + "회|반복 투자 · 기본 공격력 +1|" + status + "|1");
+                    + "회|반복 투자 · 기본 공격력 +0.1|" + status + "|1");
         }
         String body = "사용 가능 " + VillageSkillTreeSystem.availablePoints(player)
                 + "P · 획득 " + VillageSkillTreeSystem.earnedPoints(player)
