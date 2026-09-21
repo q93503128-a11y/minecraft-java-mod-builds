@@ -7,6 +7,8 @@ import dev.moonseungjun.openworldrpg.combat.authority.SpellCastAuthority;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatStateStore;
+import dev.moonseungjun.openworldrpg.combat.state.RootClass;
+import dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import java.lang.reflect.Constructor;
@@ -358,9 +360,13 @@ public final class SpellEngineAuthorityAdapter {
             return impactResultConstructor.newInstance(false, false);
         }
 
-        var sourceSnapshot = CombatStateServices.combatSnapshots()
-                .snapshot(player.getUUID())
+        var build = CombatStateServices.combatBuilds()
+                .build(player.getUUID())
                 .orElse(null);
+        if (build == null || build.activeClass() != RootClass.MAGE) {
+            return impactResultConstructor.newInstance(false, false);
+        }
+        var sourceSnapshot = build.damageSource(ProjectImpactTransaction.DamageSchool.MAGIC);
         long gameTick = player.level().getGameTime();
         var targetSnapshot = ExternalActorBindingRuntime.projectTargetSnapshot(livingTarget, gameTick)
                 .orElse(null);

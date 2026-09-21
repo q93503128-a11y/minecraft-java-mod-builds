@@ -3,6 +3,11 @@ package dev.moonseungjun.openworldrpg.integration.verify;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellSpec;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
+import dev.moonseungjun.openworldrpg.combat.state.AttributeAllocation;
+import dev.moonseungjun.openworldrpg.combat.state.EquipmentCombatState;
+import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatBuildState;
+import dev.moonseungjun.openworldrpg.combat.state.ProjectWeaponFamily;
+import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorCombatProfile;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
@@ -23,8 +28,9 @@ import org.slf4j.Logger;
  * CI-only runtime verification. Never enabled in normal gameplay.
  *
  * <p>This uses production actor binding, project impact resolution, Minecraft final-damage
- * application and runtime poise state against the exact Earthloong registry entity. The source
- * snapshot is an explicit verification fixture and is never installed into player runtime state.</p>
+ * application and runtime poise state against the exact Earthloong registry entity. The offensive
+ * source is produced from a canon-valid Lv8 Mage build (7 earned points into INT + ItemLv8 Staff),
+ * not from a hand-written DamageSourceSnapshot, and is never installed into player runtime state.</p>
  */
 public final class M0RuntimeVerificationHarness {
     private static final String ENABLE_PROPERTY = "openworld_rpg.m0RuntimeVerification";
@@ -76,12 +82,14 @@ public final class M0RuntimeVerificationHarness {
             var poiseBefore = ExternalActorBindingRuntime.poiseSnapshot(target, gameTick)
                     .orElseThrow(() -> new IllegalStateException("Earthloong poise state was not initialized."));
 
-            var sourceSnapshot = new ProjectImpactTransaction.DamageSourceSnapshot(
+            var verificationBuild = new PlayerCombatBuildState(
                     8,
-                    30.0,
-                    20.0,
-                    0.0,
-                    1.0
+                    RootClass.MAGE,
+                    new AttributeAllocation(0, 0, 0, 0, 7, 0),
+                    EquipmentCombatState.weaponOnly(ProjectWeaponFamily.STAFF, 8)
+            );
+            var sourceSnapshot = verificationBuild.damageSource(
+                    ProjectImpactTransaction.DamageSchool.MAGIC
             );
             var targetSnapshot = ExternalActorBindingRuntime.projectTargetSnapshot(target, gameTick)
                     .orElseThrow(() -> new IllegalStateException("Earthloong project target snapshot was unavailable."));
@@ -98,8 +106,11 @@ public final class M0RuntimeVerificationHarness {
             );
 
             if (!decision.accepted()
-                    || Math.abs(decision.finalDamage() - 32.0) > 0.0001
-                    || Math.abs(decision.poiseDamage() - 5.0) > 0.0001) {
+                    || Math.abs(sourceSnapshot.weaponPower() - 30.0) > 0.0001
+                    || Math.abs(sourceSnapshot.weightedOffensiveStat() - 10.95) > 0.0001
+                    || Math.abs(sourceSnapshot.poiseOutputMultiplier() - 0.85) > 0.0001
+                    || Math.abs(decision.finalDamage() - 29.0) > 0.0001
+                    || Math.abs(decision.poiseDamage() - 4.25) > 0.0001) {
                 throw new IllegalStateException("Canonical Arc Bolt verification result changed: " + decision);
             }
 
@@ -117,7 +128,7 @@ public final class M0RuntimeVerificationHarness {
             double expectedCanonicalAfter = canonicalHpBefore.currentHealth() - decision.finalDamage();
             if (Math.abs(canonicalHpBefore.currentHealth() - 4900.0) > 0.0001
                     || Math.abs(canonicalHpAfter.currentHealth() - expectedCanonicalAfter) > 0.0001
-                    || Math.abs(expectedCanonicalAfter - 4868.0) > 0.0001) {
+                    || Math.abs(expectedCanonicalAfter - 4871.0) > 0.0001) {
                 throw new IllegalStateException(
                         "Project canonical HP delta mismatch: before=" + canonicalHpBefore
                                 + " expectedAfter=" + expectedCanonicalAfter
@@ -140,7 +151,7 @@ public final class M0RuntimeVerificationHarness {
                     decision.poiseDamage(),
                     gameTick
             ).orElseThrow(() -> new IllegalStateException("Earthloong poise application was unavailable."));
-            if (Math.abs(arcBoltPoise.remainingPoise() - 185.0) > 0.0001) {
+            if (Math.abs(arcBoltPoise.remainingPoise() - 185.75) > 0.0001) {
                 throw new IllegalStateException("Arc Bolt poise delta mismatch: " + arcBoltPoise);
             }
 
@@ -160,13 +171,16 @@ public final class M0RuntimeVerificationHarness {
 
             logger.info(
                     "OPENWORLD_RPG_M0_RUNTIME_IMPACT_PASS target={} canonicalHpBefore={} canonicalHpAfter={} "
-                            + "proxyHpBefore={} proxyHpAfter={} damage={} poiseBefore={} poiseAfterArcBolt={} "
+                            + "proxyHpBefore={} proxyHpAfter={} weaponPower={} weightedStat={} damage={} "
+                            + "poiseBefore={} poiseAfterArcBolt={} "
                             + "breakDamageTakenMultiplier={}",
                     ExternalActorCombatProfile.r01Earthloong().entityId(),
                     canonicalHpBefore.currentHealth(),
                     canonicalHpAfter.currentHealth(),
                     proxyHpBefore,
                     proxyHpAfter,
+                    sourceSnapshot.weaponPower(),
+                    sourceSnapshot.weightedOffensiveStat(),
                     decision.finalDamage(),
                     poiseBefore.currentPoise(),
                     arcBoltPoise.remainingPoise(),
