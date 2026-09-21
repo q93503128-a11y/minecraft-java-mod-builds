@@ -521,7 +521,13 @@ public final class VillageEnemyArchetypeSystem {
             case SIEGE_BEAST -> EntityTypes.RAVAGER.create(level, EntitySpawnReason.EVENT);
             case IRON_WARLORD -> EntityTypes.IRON_GOLEM.create(level, EntitySpawnReason.EVENT);
             case PLAGUE_ARCHON -> EntityTypes.SPIDER.create(level, EntitySpawnReason.EVENT);
-            case DREAD_KNIGHT -> EntityTypes.ZOGLIN.create(level, EntitySpawnReason.EVENT);
+            case DREAD_KNIGHT -> {
+                Mob dreadMount = EntityTypes.HOGLIN.create(level, EntitySpawnReason.EVENT);
+                if (dreadMount instanceof net.minecraft.world.entity.monster.hoglin.Hoglin hoglin) {
+                    hoglin.setImmuneToZombification(true);
+                }
+                yield dreadMount;
+            }
         };
     }
 
@@ -644,7 +650,7 @@ public final class VillageEnemyArchetypeSystem {
             var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
             if (speed != null) speed.setBaseValue(0.17);
         } else if (archetype == Archetype.DREAD_KNIGHT) {
-            // Preserve the old Wither Skeleton combat baseline while the Zoglin carries the rider.
+            // Preserve the old Wither Skeleton combat baseline while the zombification-proof Hoglin carries the rider.
             var health = mob.getAttribute(Attributes.MAX_HEALTH);
             if (health != null) health.setBaseValue(20.0);
             var attack = mob.getAttribute(Attributes.ATTACK_DAMAGE);
