@@ -33,10 +33,12 @@ def main() -> None:
     assert "VillageRelicSystem.openPendingChoicesForParty(server)" in victory
     assert victory.index("VillageUiService.openRepairSummaryForAll(server)") < victory.index("VillageRelicSystem.openPendingChoicesForParty(server)")
 
-    # Early XP stays near the halved playtest pace while later days accelerate more strongly.
+    # XP scales against the actual level requirement instead of flattening behind a fixed mob cap.
     xp = section(raid, "public static int experienceForEnemy", "public static VillageEnemyArchetypeSystem.AerialRole")
-    assert "0.59f" in xp and "lateScale" in xp and "day - 8" in xp
-    assert "lateVictoryScale" in victory and "0.50f" in victory and "0.30f" in victory
+    assert "RpgProgress.experienceRequiredAtLevel(targetLevel)" in xp
+    assert "VillageCampaignProgression.expectedThreatsPerLevel(day)" in xp
+    assert "VillageEnemyEliteSystem.isElite(mob)" in xp
+    assert "RpgProgress.experienceRequiredAtLevel(targetLevel) * 0.18f" in victory
 
     # Support-heavy wave identities remain, but sustain casters are sparse and weaker.
     selection = section(enemy, "private static Archetype select", "private static Archetype bossForDay")
@@ -50,7 +52,7 @@ def main() -> None:
     assert "MobEffects.SLOWNESS, 45" in abilities
     assert "abilityReady(mob, globalTicks, 240)" in abilities
     assert "activeEnemiesNear(level, mob.position(), 10.0, 5" in abilities
-    assert "supportHeal(ally, 2.5f + VillageCouncilState.currentDay() * 0.05f)" in abilities
+    assert "VillageCampaignProgression.effectiveCombatDay(VillageCouncilState.currentDay()) * 0.05f" in abilities
     assert "abilityReady(mob, globalTicks, 150)" in abilities
     assert "activeEnemiesNear(level, mob.position(), 11.0, 6" in abilities
     assert "supportHeal(ally, 3.0f)" in abilities
@@ -77,7 +79,7 @@ def main() -> None:
 
     print("[PASS] automated defenses preserve normal raid loot")
     print("[PASS] boss relic choices wait until the raid is over")
-    print("[PASS] early XP stays reduced while late-day XP ramps upward")
+    print("[PASS] raid XP tracks the long-campaign level requirement")
     print("[PASS] sustain casters are sparse and healing is reduced")
     print("[PASS] stuck raid actors recover during full waves with a bounded relocation budget")
     print("[PASS] persistent mercenaries are tougher and recover once at dawn")

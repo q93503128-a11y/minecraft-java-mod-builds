@@ -10,7 +10,7 @@ def read(name):
 
 
 def curve(level, first, mastery):
-    safe = max(0, min(10, level))
+    safe = max(0, min(20, level))
     return min(5, safe) * first + max(0, safe - 5) * mastery
 
 
@@ -18,7 +18,7 @@ def main():
     assert "mod_version=" in (ROOT / "gradle.properties").read_text(encoding="utf-8")
 
     research = read("VillageDefenseResearchSystem.java")
-    assert "MAX_LEVEL = 10" in research
+    assert "MAX_LEVEL = 20" in research
     assert "mastery = Math.max(0, current - 4)" in research
     for token in ("towerRangeMultiplier", "towerDurabilityMultiplier", "mercenaryHealingMultiplier",
                   "mercenaryTrainingProgressPerKill", "consumableCostMultiplier", "fieldRepairMultiplier"):
@@ -26,12 +26,19 @@ def main():
     # Foundation levels preserve v0.18.18 strength; mastery levels grow more slowly.
     assert abs((1 + curve(5, .12, .05)) - 1.60) < 1e-6
     assert abs((1 + curve(10, .12, .05)) - 1.85) < 1e-6
+    assert abs((1 + curve(20, .12, .05)) - 2.35) < 1e-6
     assert abs((1 + curve(5, .10, .04)) - 1.50) < 1e-6
     assert abs((1 + curve(10, .10, .04)) - 1.70) < 1e-6
-    # Capacity must not regress any v0.18.18 research level: 0/1/2/3/3/3, then mastery grows to 5.
-    capacity = lambda level: min(5, min(3, level) + max(0, level - 4) // 2)
+    assert abs((1 + curve(20, .10, .04)) - 2.10) < 1e-6
+    def capacity(level):
+        safe = max(0, min(20, level))
+        foundation = min(3, safe)
+        legacy_mastery = max(0, min(10, safe) - 4) // 2
+        legacy = min(5, foundation + legacy_mastery)
+        return min(8, legacy + max(0, safe - 10) // 3)
     assert [capacity(level) for level in range(0, 6)] == [0, 1, 2, 3, 3, 3]
     assert capacity(6) == 4 and capacity(8) == 5 and capacity(10) == 5
+    assert capacity(13) == 6 and capacity(16) == 7 and capacity(19) == 8
     assert "mercenaryCapacityAt" in research
 
     merc = read("VillageMercenarySystem.java")
@@ -46,7 +53,7 @@ def main():
     assert "VillageMercenaryPresentationSystem.reset();" in init_prefix
     for kind in ("bastion", "striker", "ranger", "medic"):
         assert '"mercenary_presence_" + kind.id()' in presentation
-    for milestone in ("safe >= 20", "safe >= 40", "safe >= 60"):
+    for milestone in ("safe >= 20", "safe >= 40", "safe >= 60", "safe >= 80", "safe >= 100"):
         assert milestone in presentation
 
     effect = read("VillageSkillEffectEntity.java")

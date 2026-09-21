@@ -30,9 +30,10 @@ def main() -> None:
     assert "public static int powerTier" in identity
 
     assert "combatTierForDay" in rarity
-    assert "safe >= 15" in rarity and "safe >= 10" in rarity and "safe >= 5" in rarity
-    assert "case 2 -> 1.50f" in rarity and "case 3 -> 3.00f" in rarity and "case 4 -> 5.00f" in rarity
-    assert "case 2 -> 1.25f" in rarity and "case 3 -> 2.50f" in rarity and "case 4 -> 4.00f" in rarity
+    assert "VillageCampaignProgression.equipmentTierForDay(day)" in rarity
+    assert "Math.min(10, tier)" in rarity
+    assert "4.00f + n * 2.05f" in rarity
+    assert "5.00f + n * 2.25f" in rarity
     assert "combatTier(second) != combatTier" in rarity
     assert "createNamed(item, rarity.next(), name, combatTier)" in rarity
     assert "combatTierForDay(safeDay)" in expanded
@@ -53,7 +54,7 @@ def main() -> None:
     assert "if (!raidEnemy)" in death
     assert "result = VillageCouncilState.grantExperience(killer, reward)" in death
 
-    print("[PASS] equipment has a separate I-IV combat tier that adds flat base weapon damage")
+    print("[PASS] equipment has a separate I-X combat tier that adds long-campaign base weapon power")
     print("[PASS] bows/crossbows gain real late-game base damage instead of relying only on percentage multipliers")
     print("[PASS] fusion preserves combat tier and tooltips expose tier/base damage")
     print("[PASS] raid kill XP is equal party XP with no extra player-killer XP path")

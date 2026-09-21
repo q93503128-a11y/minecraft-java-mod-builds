@@ -42,18 +42,19 @@ def main() -> None:
     assert "빠른 통신과 상태·성장·직업 성장 기능" in starter
     assert "player.setItemInHand(event.getHand(), ItemStack.EMPTY)" in starter
 
-    # Party sharing keeps the health-based curve while the playtest tuning halves its payout.
+    # Party sharing follows the target-level XP requirement so days 20-100 remain levelable.
     xp = section(raid, "public static int experienceForEnemy", "public static VillageEnemyArchetypeSystem.AerialRole")
-    assert "Math.min(90, 7 + Math.round(mob.getMaxHealth() * 0.48f))" in xp
-    assert "0.59f" in xp and "lateScale" in xp
-    assert "case GRUNT, RUSHER -> 2" not in xp
+    assert "VillageCampaignProgression.targetPlayerLevel(day)" in xp
+    assert "RpgProgress.experienceRequiredAtLevel(targetLevel)" in xp
+    assert "expectedThreatsPerLevel(day)" in xp
+    assert "VillageEnemyEliteSystem.isElite(mob)" in xp
     death = section(guardians, "public void onLivingDeath", "public void onArrowLoose")
     assert "VillageRaidSystem.experienceForEnemy(defeated)" in death
     assert "VillageProgressionSystem.nightParticipants(server)" in death
 
     print("[PASS] facility confirmation compares current -> next effect and exact shared-supply cost")
     print("[PASS] obsolete tactical-sheet item is removed instead of reissued")
-    print("[PASS] shared raid XP keeps the health-based curve at roughly half the previous payout")
+    print("[PASS] shared raid XP scales from the current campaign target-level requirement")
 
 if __name__ == "__main__":
     main()
