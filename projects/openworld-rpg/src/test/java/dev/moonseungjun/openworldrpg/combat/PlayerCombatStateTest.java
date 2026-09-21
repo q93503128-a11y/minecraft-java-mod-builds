@@ -33,6 +33,30 @@ class PlayerCombatStateTest {
     }
 
     @Test
+    void laterCombatActivityDelaysOutOfCombatManaBonus() {
+        PlayerCombatState state = new PlayerCombatState(5, 0);
+        assertTrue(state.spendMana(50, 0));
+        state.markCombatActivity(80);
+
+        assertEquals(66.0, state.mana(100), 0.0001);
+        assertEquals(82.0, state.mana(180), 0.0001);
+        assertEquals(90.0, state.mana(200), 0.0001);
+    }
+
+    @Test
+    void willSynchronizationPreservesManaPercentageInsteadOfRefilling() {
+        PlayerCombatState state = new PlayerCombatState(5, 0);
+        assertTrue(state.spendMana(50, 0));
+
+        state.synchronizeWill(30, 0);
+        assertEquals(163, state.maxMana());
+        assertEquals(81.5, state.mana(0), 0.0001);
+
+        state.synchronizeWill(5, 0);
+        assertEquals(50.0, state.mana(0), 0.0001);
+    }
+
+    @Test
     void cooldownUsesServerTicks() {
         PlayerCombatState state = new PlayerCombatState(5, 10);
         state.startCooldown("openworld_rpg:arc_bolt", 60, 10);

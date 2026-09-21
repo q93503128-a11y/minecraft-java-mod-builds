@@ -20,5 +20,20 @@
     "minecraft": "~26.2",
     "java": ">=25",
     "fabric-api": ">=0.160.0"
+  },
+  "recommends": {
+    "player_animation_library": "*",
+    "geckolib": "*",
+    "armor_model_api": "*",
+    "ranged_weapon_api": "*",
+    "trinkets_updated": "*",
+    "bettercombat": "*",
+    "spell_engine": "*",
+    "spell_power": "*",
+    "cloth-config": "*",
+    "mobfilter": "*",
+    "alexsmobs": "*",
+    "codxlib": "*",
+    "threateningly_mobs": "*"
   }
 }

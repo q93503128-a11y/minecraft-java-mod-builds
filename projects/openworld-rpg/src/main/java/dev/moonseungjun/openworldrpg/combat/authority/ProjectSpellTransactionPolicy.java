@@ -33,6 +33,9 @@ public final class ProjectSpellTransactionPolicy implements SpellCastAuthority.P
             if (state.isAcceptedCastReentry(context.spellId(), context.gameTick())) {
                 return true;
             }
+            if (context.engineContinuation() && state.isAcceptedCastContinuation(context.spellId())) {
+                return true;
+            }
             if (state.hasCompetingAcceptedCast(context.spellId(), context.gameTick())) {
                 return false;
             }
@@ -46,6 +49,9 @@ public final class ProjectSpellTransactionPolicy implements SpellCastAuthority.P
         PlayerCombatState state = states.getOrCreate(context.playerId(), context.gameTick());
         synchronized (state) {
             if (state.isAcceptedCastReentry(context.spellId(), context.gameTick())) {
+                return true;
+            }
+            if (context.engineContinuation() && state.isAcceptedCastContinuation(context.spellId())) {
                 return true;
             }
             if (state.hasCompetingAcceptedCast(context.spellId(), context.gameTick())) {
@@ -87,7 +93,7 @@ public final class ProjectSpellTransactionPolicy implements SpellCastAuthority.P
     public SpellCastAuthority.ImpactDecision onImpact(SpellCastAuthority.ImpactContext context) {
         /*
          * PROJECTILE/METEOR delivery completes at launch in Spell Engine. The later impact therefore
-         * cannot depend on the short-lived accepted-cast resource token.
+         * cannot depend on the resource transaction that ended when the cast completed.
          */
         return impactPort.apply(spec, context);
     }

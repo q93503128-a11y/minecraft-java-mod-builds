@@ -65,13 +65,13 @@ These are design inputs, not loose inspiration.
 
 | Use | Source | License/status | Project role |
 |---|---|---|---|
-| ordinary martial weapons / shields | Quaternius `Modular Weapons Pack` — https://quaternius.com/packs/medievalweapons.html | CC0 | primary R01 grounded weapon models |
+| ordinary martial weapons / shields | Quaternius `Modular Weapons Pack` — https://quaternius.com/packs/medievalweapons.html | package/acquisition-specific `VERIFY / LOCAL_ONLY` unless source-specific CC0 evidence is preserved; current central QAL v1.0 exists | primary R01 grounded weapon models |
 | additional fantasy weapons, staves, wands | KayKit `Fantasy Weapons Bits` — https://kaylousberg.itch.io/fantasy-weapons-bits | CC0 | primary R01 magic/fantasy weapon supplement |
 | resource chunks, logs, ores, crystals, textiles | KayKit `Resource Bits` — https://kaylousberg.itch.io/resource-bits | CC0 | primary R01 resource pickup/model family |
-| herbs / plants / rocks / nature nodes | Quaternius `Stylized Nature MegaKit` — https://quaternius.com/packs/stylizednaturemegakit.html | CC0 | primary R01 herb/node visual family |
+| herbs / plants / rocks / nature nodes | Quaternius `Stylized Nature MegaKit` — https://quaternius.com/packs/stylizednaturemegakit.html | package/acquisition-specific `VERIFY / LOCAL_ONLY` unless source-specific CC0 evidence is preserved; current central QAL v1.0 exists | primary R01 herb/node visual family |
 | fallback forest rocks/bushes/grass | KayKit `Forest Nature Pack` — https://kaylousberg.itch.io/kaykit-forest | CC0 | secondary R01 node/environment family |
-| light/medium/heavy player armor silhouettes | Quaternius `Modular Character Outfits - Fantasy` — https://quaternius.com/packs/modularcharacteroutfitsfantasy.html | CC0 | primary editable base for R01 worn armor families |
-| ordinary fantasy props / potions / smith props | Quaternius `Fantasy Props MegaKit` — https://quaternius.com/packs/fantasypropsmegakit.html | CC0 | consumable/forge/world-prop supplement |
+| light/medium/heavy player armor silhouettes | Quaternius `Modular Character Outfits - Fantasy` — https://quaternius.com/packs/modularcharacteroutfitsfantasy.html | package/acquisition-specific; preserve exact Standard/source snapshot and acquisition-time license evidence before public-repo admission | primary editable base for R01 worn armor families |
+| ordinary fantasy props / potions / smith props | Quaternius `Fantasy Props MegaKit` — https://quaternius.com/packs/fantasypropsmegakit.html | package/acquisition-specific; use source-specific CC0 snapshot only when that exact artifact is acquired/hashed, otherwise `VERIFY / LOCAL_ONLY` | consumable/forge/world-prop supplement |
 | equipment frame / rarity / inventory presentation | Foozle `Lucifer - Equipment` | CC0 | icon framing and rarity language |
 | inventory/tooltips/forge screen visual language | Foozle `Lucifer - RPG UI` | CC0 | shared screen grammar |
 | Louxia / Regalhart / Earthloong identity | `Threateningly Mobs Continued` 26.2 dependency | MIT/current dependency candidate | creature-derived visual/material basis |

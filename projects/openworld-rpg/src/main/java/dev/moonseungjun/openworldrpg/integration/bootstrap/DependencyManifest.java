@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.integration.bootstrap;
 
+import dev.moonseungjun.openworldrpg.integration.api.IntegrationModuleCatalog;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,6 +29,12 @@ public record DependencyManifest(int schemaVersion, List<DependencyContract> dep
             }
             if (dependency.integrationModule() == null || dependency.integrationModule().isBlank()) {
                 report.add(ValidationSeverity.ERROR, "manifest.integration_module", "Missing integrationModule for " + dependency.logicalId());
+            } else if (!IntegrationModuleCatalog.isKnown(dependency.integrationModule())) {
+                report.add(
+                        ValidationSeverity.ERROR,
+                        "manifest.integration_module_unknown",
+                        "Unknown integrationModule for " + dependency.logicalId() + ": " + dependency.integrationModule()
+                );
             }
             if (dependency.enforceVersion()
                     && (dependency.expectedVersion() == null || dependency.expectedVersion().isBlank())) {

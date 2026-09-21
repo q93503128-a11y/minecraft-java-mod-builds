@@ -4,6 +4,7 @@ import dev.moonseungjun.openworldrpg.OpenworldRpgMod;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellSpec;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellTransactionPolicy;
 import dev.moonseungjun.openworldrpg.combat.authority.SpellCastAuthority;
+import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatStateStore;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import java.lang.reflect.Constructor;
@@ -38,11 +39,16 @@ public final class SpellEngineAuthorityAdapter {
             "net.spell_engine.api.spell.event.SpellHandlers$ImpactResult";
     private static final String SPELL_CAST_ATTEMPT =
             "net.spell_engine.internals.casting.SpellCast$Attempt";
+    private static final String SPELL_CASTER_ENTITY =
+            "net.spell_engine.internals.casting.SpellCaster$Entity";
+    private static final String SPELL_CAST_PROCESS =
+            "net.spell_engine.internals.casting.SpellCast$Process";
     private static final String PROJECT_IMPACT_HANDLER = OpenworldRpgMod.MOD_ID + ":project_impact";
 
     private static final SpellCastAuthority AUTHORITY = new SpellCastAuthority(OpenworldRpgMod.MOD_ID);
-    private static final PlayerCombatStateStore COMBAT_STATES = new PlayerCombatStateStore();
+    private static final PlayerCombatStateStore COMBAT_STATES = CombatStateServices.states();
 
+    private static volatile ProcessBinding processBinding = ProcessBinding.disabled();
     private static volatile boolean initialized;
     private static volatile boolean canonicalPoliciesRegistered;
 
@@ -65,6 +71,7 @@ public final class SpellEngineAuthorityAdapter {
         registerCanonicalPolicies();
 
         if (!FabricLoader.getInstance().isModLoaded(MOD_ID)) {
+            processBinding = ProcessBinding.disabled();
             logger.info(
                     "Openworld RPG Spell Engine authority adapter inactive for profile {} because {} is not loaded.",
                     profile.id(),
@@ -84,9 +91,19 @@ public final class SpellEngineAuthorityAdapter {
             Class<?> spellHandlers = Class.forName(SPELL_HANDLERS, false, loader);
             Class<?> customImpact = Class.forName(CUSTOM_IMPACT, false, loader);
             Class<?> impactResult = Class.forName(IMPACT_RESULT, false, loader);
+            Class<?> spellCasterEntity = Class.forName(SPELL_CASTER_ENTITY, false, loader);
+            Class<?> spellCastProcess = Class.forName(SPELL_CAST_PROCESS, false, loader);
 
             Method attemptNone = spellCastAttempt.getMethod("none");
             Constructor<?> impactResultConstructor = impactResult.getDeclaredConstructor(boolean.class, boolean.class);
+            Method getSpellCastProcess = spellCasterEntity.getMethod("getSpellCastProcess");
+            Method processId = spellCastProcess.getMethod("id");
+            processBinding = new ProcessBinding(
+                    spellCasterEntity,
+                    spellCastProcess,
+                    getSpellCastProcess,
+                    processId
+            );
 
             Object stagedAttempt = spellEvents.getField("CASTING_ATTEMPT").get(null);
             Object preAttemptEvent = stagedAttempt.getClass().getField("PRE").get(stagedAttempt);
@@ -119,11 +136,12 @@ public final class SpellEngineAuthorityAdapter {
             initialized = true;
             logger.info(
                     "Openworld RPG Spell Engine authority gate armed for profile {} using CASTING_ATTEMPT.PRE/POST, "
-                            + "COST_CONSUME, SPELL_CAST and custom impact {}.",
+                            + "cast-process continuation identity, COST_CONSUME, SPELL_CAST and custom impact {}.",
                     profile.id(),
                     PROJECT_IMPACT_HANDLER
             );
         } catch (ReflectiveOperationException exception) {
+            processBinding = ProcessBinding.disabled();
             throw new IllegalStateException(
                     "Spell Engine is loaded, but the pinned Openworld RPG event/impact authority contract could not be resolved.",
                     exception
@@ -175,14 +193,49 @@ public final class SpellEngineAuthorityAdapter {
         }
 
         long gameTick = player.level().getGameTime();
+        boolean engineContinuation = isEngineContinuation(player, spellId);
         SpellCastAuthority.AttemptDecision decision = acceptedStage
-                ? AUTHORITY.commitAcceptedCast(player.getUUID(), spellId, gameTick)
-                : AUTHORITY.preflightAttempt(player.getUUID(), spellId, gameTick);
+                ? AUTHORITY.commitAcceptedCast(player.getUUID(), spellId, gameTick, engineContinuation)
+                : AUTHORITY.preflightAttempt(player.getUUID(), spellId, gameTick, engineContinuation);
 
         return switch (decision) {
             case PASS_THROUGH, ALLOW -> null;
             case BLOCK -> invokeStatic(attemptNone);
         };
+    }
+
+    private static boolean isEngineContinuation(Player player, String spellId)
+            throws ReflectiveOperationException {
+        ProcessBinding current = processBinding;
+        if (!current.enabled()) {
+            return false;
+        }
+        if (!current.spellCasterEntity().isInstance(player)) {
+            throw new IllegalStateException(
+                    "Spell Engine is loaded, but the server Player does not expose the pinned caster process interface."
+            );
+        }
+
+        Object process;
+        try {
+            process = current.getSpellCastProcess().invoke(player);
+        } catch (InvocationTargetException exception) {
+            throw unwrapInvocation(exception);
+        }
+        if (process == null) {
+            return false;
+        }
+        if (!current.spellCastProcess().isInstance(process)) {
+            throw new IllegalStateException("Spell Engine returned an unexpected cast process: " + process.getClass());
+        }
+
+        Object id;
+        try {
+            id = current.processId().invoke(process);
+        } catch (InvocationTargetException exception) {
+            throw unwrapInvocation(exception);
+        }
+        return spellId.equals(String.valueOf(id));
     }
 
     private static Object handleCostConsume(Object proxy, Method method, Object[] args)
@@ -460,5 +513,20 @@ public final class SpellEngineAuthorityAdapter {
             case "equals" -> proxy == (args == null || args.length == 0 ? null : args[0]);
             default -> throw new IllegalStateException("Unexpected Object method: " + method);
         };
+    }
+
+    private record ProcessBinding(
+            Class<?> spellCasterEntity,
+            Class<?> spellCastProcess,
+            Method getSpellCastProcess,
+            Method processId
+    ) {
+        private static ProcessBinding disabled() {
+            return new ProcessBinding(null, null, null, null);
+        }
+
+        private boolean enabled() {
+            return spellCasterEntity != null;
+        }
     }
 }

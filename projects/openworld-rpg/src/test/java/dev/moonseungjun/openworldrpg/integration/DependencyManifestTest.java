@@ -40,7 +40,7 @@ class DependencyManifestTest {
                         "",
                         true,
                         List.of("gameplay"),
-                        "example",
+                        "common",
                         "TEST",
                         "RESOLVED"
                 ))
@@ -51,5 +51,28 @@ class DependencyManifestTest {
         assertTrue(report.hasErrors());
         assertTrue(report.issues().stream()
                 .anyMatch(issue -> "manifest.expected_version".equals(issue.code())));
+    }
+
+    @Test
+    void unknownIntegrationModuleFailsStructureValidation() {
+        DependencyManifest manifest = new DependencyManifest(
+                1,
+                List.of(new DependencyContract(
+                        "unknown-module",
+                        "example_mod",
+                        "1.0.0",
+                        true,
+                        List.of("gameplay"),
+                        "not/a/real/module",
+                        "TEST",
+                        "RESOLVED"
+                ))
+        );
+
+        var report = manifest.validateStructure();
+
+        assertTrue(report.hasErrors());
+        assertTrue(report.issues().stream()
+                .anyMatch(issue -> "manifest.integration_module_unknown".equals(issue.code())));
     }
 }

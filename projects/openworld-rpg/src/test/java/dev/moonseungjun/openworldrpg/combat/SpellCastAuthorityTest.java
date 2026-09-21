@@ -34,19 +34,11 @@ class SpellCastAuthorityTest {
 
     @Test
     void arcBoltCommitsManaAndCooldownExactlyOnceAcrossSameTickReentry() {
-        SpellCastAuthority authority = new SpellCastAuthority("openworld_rpg");
-        PlayerCombatStateStore states = new PlayerCombatStateStore();
-        ProjectSpellSpec spec = ProjectSpellSpec.arcBolt();
-        authority.registerPolicy(
-                spec.id(),
-                new ProjectSpellTransactionPolicy(
-                        spec,
-                        states,
-                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
-                )
-        );
-
+        SpellCastAuthority authority = authorityWithArcBolt(new PlayerCombatStateStore());
         UUID player = UUID.randomUUID();
+        ProjectSpellSpec spec = ProjectSpellSpec.arcBolt();
+        PlayerCombatStateStore states = new PlayerCombatStateStore();
+        authority = authorityWithArcBolt(states);
 
         assertEquals(SpellCastAuthority.AttemptDecision.ALLOW, authority.preflightAttempt(player, spec.id(), 100));
         assertEquals(SpellCastAuthority.AttemptDecision.ALLOW, authority.commitAcceptedCast(player, spec.id(), 100));
@@ -61,6 +53,49 @@ class SpellCastAuthorityTest {
 
         assertEquals(SpellCastAuthority.AttemptDecision.BLOCK, authority.preflightAttempt(player, spec.id(), 101));
         assertEquals(SpellCastAuthority.AttemptDecision.ALLOW, authority.preflightAttempt(player, spec.id(), 160));
+    }
+
+    @Test
+    void timedCastContinuationSurvivesPastShortReentryWindowWithoutDoubleSpend() {
+        PlayerCombatStateStore states = new PlayerCombatStateStore();
+        SpellCastAuthority authority = authorityWithArcBolt(states);
+        ProjectSpellSpec spec = ProjectSpellSpec.arcBolt();
+        UUID player = UUID.randomUUID();
+
+        assertEquals(SpellCastAuthority.AttemptDecision.ALLOW, authority.preflightAttempt(player, spec.id(), 400));
+        assertEquals(SpellCastAuthority.AttemptDecision.ALLOW, authority.commitAcceptedCast(player, spec.id(), 400));
+        assertEquals(88.0, states.getOrCreate(player, 400).mana(400), 0.0001);
+
+        assertEquals(
+                SpellCastAuthority.AttemptDecision.ALLOW,
+                authority.preflightAttempt(player, spec.id(), 420, true)
+        );
+        assertEquals(
+                SpellCastAuthority.AttemptDecision.ALLOW,
+                authority.commitAcceptedCast(player, spec.id(), 420, true)
+        );
+        assertEquals(88.0, states.getOrCreate(player, 420).mana(420), 0.0001);
+
+        authority.onEngineCostConsumed(player, spec.id(), 420);
+        authority.onEngineCastCompleted(player, spec.id(), 420, "RELEASE", 1.0F);
+    }
+
+    @Test
+    void staleTransactionCannotBypassCooldownWithoutEngineContinuationProof() {
+        PlayerCombatStateStore states = new PlayerCombatStateStore();
+        SpellCastAuthority authority = authorityWithArcBolt(states);
+        ProjectSpellSpec spec = ProjectSpellSpec.arcBolt();
+        UUID player = UUID.randomUUID();
+
+        assertEquals(SpellCastAuthority.AttemptDecision.ALLOW, authority.commitAcceptedCast(player, spec.id(), 500));
+        assertEquals(
+                SpellCastAuthority.AttemptDecision.BLOCK,
+                authority.preflightAttempt(player, spec.id(), 510, false)
+        );
+        assertEquals(
+                SpellCastAuthority.AttemptDecision.ALLOW,
+                authority.preflightAttempt(player, spec.id(), 510, true)
+        );
     }
 
     @Test
@@ -170,5 +205,19 @@ class SpellCastAuthorityTest {
                 IllegalStateException.class,
                 () -> authority.onEngineCostConsumed(UUID.randomUUID(), spec.id(), 0)
         );
+    }
+
+    private static SpellCastAuthority authorityWithArcBolt(PlayerCombatStateStore states) {
+        SpellCastAuthority authority = new SpellCastAuthority("openworld_rpg");
+        ProjectSpellSpec spec = ProjectSpellSpec.arcBolt();
+        authority.registerPolicy(
+                spec.id(),
+                new ProjectSpellTransactionPolicy(
+                        spec,
+                        states,
+                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                )
+        );
+        return authority;
     }
 }

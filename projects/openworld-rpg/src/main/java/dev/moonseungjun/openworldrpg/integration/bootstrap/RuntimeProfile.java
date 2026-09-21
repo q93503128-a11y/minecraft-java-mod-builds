@@ -23,7 +23,7 @@ public enum RuntimeProfile {
             value = System.getenv("OPENWORLD_RPG_PROFILE");
         }
         if (value == null || value.isBlank()) {
-            return CORE;
+            return GAMEPLAY;
         }
         return fromId(value);
     }

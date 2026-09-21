@@ -2,8 +2,10 @@
   "required": true,
   "minVersion": "0.8",
   "package": "dev.moonseungjun.openworldrpg.mixin",
+  "plugin": "dev.moonseungjun.openworldrpg.mixin.OpenworldRpgMixinPlugin",
   "compatibilityLevel": "JAVA_25",
   "mixins": [
+    "LivingEntityCombatActivityMixin",
     "PlayerAttackAuthorityMixin"
   ],
   "injectors": {

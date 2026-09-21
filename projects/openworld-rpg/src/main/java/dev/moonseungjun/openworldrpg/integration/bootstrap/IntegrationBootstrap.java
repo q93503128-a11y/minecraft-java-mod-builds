@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.integration.bootstrap;
 
+import dev.moonseungjun.openworldrpg.integration.ExternalRuntimeContainment;
 import dev.moonseungjun.openworldrpg.integration.bettercombat.BetterCombatAuthorityAdapter;
 import dev.moonseungjun.openworldrpg.integration.spellengine.SpellEngineAuthorityAdapter;
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ public final class IntegrationBootstrap {
             );
         }
 
+        ExternalRuntimeContainment.initialize(profile, logger);
         BetterCombatAuthorityAdapter.initialize(profile, logger);
         SpellEngineAuthorityAdapter.initialize(profile, logger);
 

@@ -24,7 +24,7 @@ defaults:
 jobs:
   m0-core:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
 
     steps:
       - uses: actions/checkout@v5
@@ -41,13 +41,13 @@ jobs:
           java -version
           ./gradlew --version
 
-      - name: Resolve pinned gameplay foundation artifacts
+      - name: Verify pinned gameplay foundation artifacts
         run: ./gradlew --no-daemon verifyGameplayFoundationDependencies --stacktrace
 
       - name: Inspect pinned gameplay foundation metadata
         run: ./gradlew --no-daemon inspectGameplayFoundationMetadata --stacktrace
 
-      - name: Inspect pinned creature dependency metadata
+      - name: Verify pinned creature dependency metadata
         run: ./gradlew --no-daemon inspectCreatureFoundationDependencies --stacktrace
 
       - name: Test and build M0 core
@@ -63,6 +63,7 @@ jobs:
           jar tf "$JAR" | grep -q '^data/openworld_rpg/integration/dependencies.json$'
           jar tf "$JAR" | grep -q '^dev/moonseungjun/openworldrpg/OpenworldRpgMod.class$'
           jar tf "$JAR" | grep -q '^dev/moonseungjun/openworldrpg/integration/bootstrap/IntegrationBootstrap.class$'
+          jar tf "$JAR" | grep -q '^dev/moonseungjun/openworldrpg/integration/ExternalRuntimeContainment.class$'
           jar tf "$JAR" | grep -q '^dev/moonseungjun/openworldrpg/integration/overlay/ActorIntegrationOverlay.class$'
           sha256sum "$JAR" | tee "$JAR.sha256"
 
@@ -70,21 +71,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf run
-          mkdir -p run build/logs
-          printf 'eula=true\n' > run/eula.txt
+          rm -rf run-core
+          mkdir -p run-core build/logs
+          printf 'eula=true\n' > run-core/eula.txt
 
           set +e
-          timeout --kill-after=15s 150s ./gradlew --no-daemon runServer --stacktrace 2>&1 | tee build/logs/server-core.log
+          timeout --kill-after=15s 150s ./gradlew --no-daemon runCoreServer --stacktrace 2>&1 | tee build/logs/server-core.log
           status=${PIPESTATUS[0]}
           set -e
 
           if [[ $status -ne 0 && $status -ne 124 && $status -ne 137 ]]; then
-            echo "runServer exited unexpectedly with status $status"
+            echo "runCoreServer exited unexpectedly with status $status"
             exit "$status"
           fi
 
-          grep -q 'Openworld RPG M0 core bootstrap loaded with profile core' build/logs/server-core.log
+          grep -q 'Openworld RPG M0 integration bootstrap loaded with profile core' build/logs/server-core.log
           if grep -Eqi 'Could not execute entrypoint|ModResolutionException|NoClassDefFoundError.*openworldrpg|ClassNotFoundException.*openworldrpg' build/logs/server-core.log; then
             echo 'Openworld RPG M0 core integration error detected.'
             exit 1
@@ -99,7 +100,7 @@ jobs:
           printf 'eula=true\n' > run-gameplay/eula.txt
 
           set +e
-          timeout --kill-after=10s 60s ./gradlew --no-daemon -PopenworldGameplayRuntime=true runGameplayServer --stacktrace 2>&1 | tee build/logs/server-gameplay.log
+          timeout --kill-after=10s 80s ./gradlew --no-daemon -PopenworldGameplayRuntime=true runGameplayServer --stacktrace 2>&1 | tee build/logs/server-gameplay.log
           status=${PIPESTATUS[0]}
           set -e
 
@@ -108,12 +109,46 @@ jobs:
             exit "$status"
           fi
 
-          grep -q 'Openworld RPG M0 core bootstrap loaded with profile gameplay' build/logs/server-gameplay.log
+          grep -q 'Openworld RPG M0 integration bootstrap loaded with profile gameplay' build/logs/server-gameplay.log
+          grep -q 'Openworld RPG external runtime containment verified before gameplay server start' build/logs/server-gameplay.log
           grep -q 'Openworld RPG Better Combat authority adapter armed for profile gameplay' build/logs/server-gameplay.log
           grep -q 'Openworld RPG Spell Engine authority gate armed for profile gameplay' build/logs/server-gameplay.log
           grep -Eq 'Done \([0-9.]+s\)! For help, type "help"' build/logs/server-gameplay.log
+          grep -Eq '\[MobFilter\] [1-9][0-9]* rule\(s\) loaded' build/logs/server-gameplay.log
+
+          if grep -Eqi 'RPG Series loot config: failed to resolve itemList|\[MobFilter\] No rules configured|alexsmobs:gameplay/seal_reward' build/logs/server-gameplay.log; then
+            echo 'Donor progression/loot/ecology leakage warning detected.'
+            exit 1
+          fi
           if grep -Eqi 'ModResolutionException|Could not execute entrypoint|NoClassDefFoundError|ClassNotFoundException' build/logs/server-gameplay.log; then
             echo 'Gameplay-profile dependency integration error detected.'
+            exit 1
+          fi
+
+      - name: Gameplay-profile client startup smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run-client-gameplay
+          mkdir -p run-client-gameplay build/logs
+
+          set +e
+          xvfb-run -a timeout --kill-after=10s 90s ./gradlew --no-daemon -PopenworldGameplayRuntime=true runGameplayClient --stacktrace 2>&1 | tee build/logs/client-gameplay.log
+          status=${PIPESTATUS[0]}
+          set -e
+
+          if [[ $status -ne 0 && $status -ne 124 && $status -ne 137 ]]; then
+            echo "runGameplayClient exited unexpectedly with status $status"
+            exit "$status"
+          fi
+
+          grep -q 'Openworld RPG M0 integration bootstrap loaded with profile gameplay' build/logs/client-gameplay.log
+          grep -q 'Openworld RPG Better Combat authority adapter armed for profile gameplay' build/logs/client-gameplay.log
+          grep -q 'Openworld RPG Spell Engine authority gate armed for profile gameplay' build/logs/client-gameplay.log
+          grep -q 'Backend library: LWJGL' build/logs/client-gameplay.log
+
+          if grep -Eqi 'ModResolutionException|Could not execute entrypoint|NoClassDefFoundError|ClassNotFoundException|MixinApplyError|InvalidInjectionException' build/logs/client-gameplay.log; then
+            echo 'Gameplay-profile client integration error detected.'
             exit 1
           fi
 
@@ -123,7 +158,7 @@ jobs:
           JAR="build/libs/openworld-rpg-0.1.0-alpha.1.jar"
           SHA=$(cat "$JAR.sha256")
           cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # Openworld RPG — M0 Core Bootstrap Gate
+          # Openworld RPG — M0 External Runtime Containment Gate
 
           - Commit: $GITHUB_SHA
           - Minecraft: 26.2
@@ -132,18 +167,20 @@ jobs:
           - Fabric API: 0.160.0+26.2
           - Gradle: 9.5.1
           - Loom: 1.17.20
-          - gameplay foundation artifact resolution: PASS
+          - gameplay foundation artifact SHA-256 verification: PASS
           - gameplay foundation metadata inspection: PASS
-          - creature dependency artifact/metadata inspection: PASS
+          - creature dependency artifact SHA-256/metadata verification: PASS
           - unit tests: PASS
           - clean build: PASS
           - bootstrap JAR verify: PASS
           - dedicated server core-profile boot: PASS
           - gameplay-profile top-level dependency server boot: PASS
-          - full transitive dependency graph: VERIFIED BY RUNTIME BOOT OF PINNED TOP-LEVEL JARS
-          - external creature runtime binding: NOT TESTED
+          - donor weapon/loot/progression/ecology containment startup gate: PASS
+          - gameplay-profile client startup/render-thread smoke: PASS
+          - client world join: NOT RUN
+          - external creature authored stat/damage/loot binding: NOT TESTED
           - Better Combat authority seam: IMPLEMENTED (real-hit runtime execution NOT TESTED)
-          - Spell Engine resource/cooldown transaction: IMPLEMENTED + UNIT/SERVER STARTUP VERIFIED; project impact/damage transaction remains fail-closed / NOT IMPLEMENTED
+          - Spell Engine resource/cooldown continuation transaction: IMPLEMENTED + UNIT/SERVER STARTUP VERIFIED; project impact/damage transaction remains fail-closed / NOT IMPLEMENTED
           - player-facing R01 content: NOT IMPLEMENTED
           - playtest: NOT RUN
           - multiplayer test: NOT RUN

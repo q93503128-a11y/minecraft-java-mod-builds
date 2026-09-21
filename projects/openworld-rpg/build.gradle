@@ -20,17 +20,39 @@ loom {
     }
 
     runs {
+        coreServer {
+            server()
+            displayName = 'Openworld RPG Core Isolation Server'
+            systemProperties.put('openworld_rpg.profile', 'core')
+            runDirectory = file('run-core')
+        }
+
         gameplayServer {
             server()
             displayName = 'Openworld RPG Gameplay Server'
             systemProperties.put('openworld_rpg.profile', 'gameplay')
             runDirectory = file('run-gameplay')
         }
+
+        gameplayClient {
+            client()
+            displayName = 'Openworld RPG Gameplay Client'
+            systemProperties.put('openworld_rpg.profile', 'gameplay')
+            runDirectory = file('run-client-gameplay')
+        }
     }
 }
 
 repositories {
     mavenCentral()
+
+    maven {
+        name = 'Fabric'
+        url = 'https://maven.fabricmc.net/'
+        content {
+            includeGroup 'io.github.llamalad7'
+        }
+    }
 
     maven {
         name = 'Modrinth'
@@ -77,7 +99,7 @@ configurations {
         canBeConsumed = false
         canBeResolved = true
         visible = false
-        description = 'Pinned curated creature dependency artifacts; inspected without admitting them to gameplay runtime.'
+        description = 'Pinned curated creature dependency artifacts; inspected without admitting them to core runtime.'
     }
 }
 
@@ -85,6 +107,8 @@ dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    compileOnly "io.github.llamalad7:mixinextras-fabric:0.5.5"
+    annotationProcessor "io.github.llamalad7:mixinextras-fabric:0.5.5"
 
     gameplayFoundation("maven.modrinth:5sy6g3kz:${project.better_combat_version_id}") {
         transitive = false
@@ -148,9 +172,40 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.12.2'
 }
 
+def sha256Of = { File file ->
+    MessageDigest digest = MessageDigest.getInstance('SHA-256')
+    file.withInputStream { input ->
+        byte[] buffer = new byte[8192]
+        int read
+        while ((read = input.read(buffer)) != -1) {
+            digest.update(buffer, 0, read)
+        }
+    }
+    digest.digest().encodeHex().toString()
+}
+
+def expectedGameplayFoundationSha256 = [
+        '5sy6g3kz-enlZuzkJ.jar': 'cce827992f517b181bc25c4f6c35e2c75818d29fcdbea90c3838704364b04639',
+        'PlayerAnimationLibFabric-1.2.6+mc.26.2.jar': 'd7531e9ce2bdcf394f99a66cc79114f58c8c82ae7e723527ee27545c40619ff1',
+        'XaT8sLP6-r453A8nE.jar': 'bc0c41455373df0475173250912ad45f1592b55c1398913ad06941de6571058c',
+        'armor-model-api-1.1.0+26.2-fabric.jar': '406226390526a774db9bf83584b8e68a96068998541b3c044cda019c8d93c397',
+        'cloth-config-fabric-26.2.155.jar': 'def4be7639cd66704f7e304d658ea0f6bf490fb4a6eaa2dbf18ec2c3999d6349',
+        'gRn1FzwR-NYpKsGy3.jar': 'd0424ebf88e50793d5c17037b391373ea67480e0b4ceabeddd2747b15ec481d2',
+        'geckolib-388172-8819017.jar': '1cade267232b852fa3ea8f309cd88fc09a8f77b41915519e4d1873cbb39fdc59',
+        'ranged-weapon-api-4.0.0+26.2-fabric.jar': '87b84bea0ab193257a7666d40d098bb8de392735b736e3440f9553d52ffb27e1',
+        'spell-engine-1.10.5+26.2-fabric.jar': '247dc6b63c9f1df62862b39ec6345666a1cade22a1cda560e6ebde27059bf832',
+        'spell-power-1.6.2+26.2-fabric.jar': '5619b9f65134cce55284af0cb1e879a7bebdcab5d6099936ee1231cedbb89f90'
+]
+
+def expectedCreatureFoundationSha256 = [
+        'alexs-mobs-continued-1635121-8856579.jar': '00513b921071d033edc1a7fc0268e1f381da5e884dfcaad52f4ee44104593dd5',
+        'codxlib-1633207-8828221.jar': 'd6887454c1b4cab58b66bd4c0433ea0a76452084535686e7b91c7865ae721282',
+        'JXjyo7k6-Bdd8lkUM.jar': '95109d37c4ed674661e06ebe3724a5a1ec55a7d56171800d3da5251cd29a80be'
+]
+
 tasks.register('verifyGameplayFoundationDependencies') {
     group = 'verification'
-    description = 'Resolves and hashes the pinned M0 gameplay foundation JARs without adding them to the core runtime.'
+    description = 'Resolves, hashes and verifies the pinned M0 gameplay foundation JAR bytes.'
 
     doLast {
         def resolved = configurations.gameplayFoundation.resolve().toList().sort { a, b -> a.name <=> b.name }
@@ -167,21 +222,21 @@ tasks.register('verifyGameplayFoundationDependencies') {
                 throw new GradleException("Resolved gameplay foundation artifact is missing or empty: ${file}")
             }
 
-            MessageDigest digest = MessageDigest.getInstance('SHA-256')
-            file.withInputStream { input ->
-                byte[] buffer = new byte[8192]
-                int read
-                while ((read = input.read(buffer)) != -1) {
-                    digest.update(buffer, 0, read)
-                }
+            def expected = expectedGameplayFoundationSha256[file.name]
+            if (expected == null) {
+                throw new GradleException("No admitted SHA-256 exists for gameplay foundation artifact: ${file.name}")
             }
-            def sha256 = digest.digest().encodeHex().toString()
-            def line = "${file.name}\t${file.length()}\t${sha256}"
+            def actual = sha256Of(file)
+            if (!actual.equalsIgnoreCase(expected)) {
+                throw new GradleException("SHA-256 mismatch for ${file.name}: expected ${expected}, got ${actual}")
+            }
+
+            def line = "${file.name}\t${file.length()}\t${actual}"
             println "M0_FOUNDATION_ARTIFACT ${line}"
             output << line << System.lineSeparator()
         }
 
-        println "M0_GAMEPLAY_FOUNDATION_RESOLUTION_PASS count=${resolved.size()} report=${output}"
+        println "M0_GAMEPLAY_FOUNDATION_DIGEST_PASS count=${resolved.size()} report=${output}"
     }
 }
 
@@ -241,9 +296,10 @@ tasks.register('inspectGameplayFoundationMetadata') {
         println "M0_GAMEPLAY_FOUNDATION_METADATA_PASS count=${resolved.size()} report=${output}"
     }
 }
+
 tasks.register('inspectCreatureFoundationDependencies') {
     group = 'verification'
-    description = 'Resolves the pinned creature JARs and records their actual Fabric metadata without loading them into the core runtime.'
+    description = 'Resolves the pinned creature JARs and verifies their admitted bytes and Fabric metadata.'
 
     doLast {
         def resolved = configurations.creatureFoundation.resolve().toList().sort { a, b -> a.name <=> b.name }
@@ -260,15 +316,14 @@ tasks.register('inspectCreatureFoundationDependencies') {
                 throw new GradleException("Resolved creature artifact is missing or empty: ${file}")
             }
 
-            MessageDigest digest = MessageDigest.getInstance('SHA-256')
-            file.withInputStream { input ->
-                byte[] buffer = new byte[8192]
-                int read
-                while ((read = input.read(buffer)) != -1) {
-                    digest.update(buffer, 0, read)
-                }
+            def expected = expectedCreatureFoundationSha256[file.name]
+            if (expected == null) {
+                throw new GradleException("No admitted SHA-256 exists for creature foundation artifact: ${file.name}")
             }
-            def sha256 = digest.digest().encodeHex().toString()
+            def actual = sha256Of(file)
+            if (!actual.equalsIgnoreCase(expected)) {
+                throw new GradleException("SHA-256 mismatch for ${file.name}: expected ${expected}, got ${actual}")
+            }
 
             def zip = new java.util.zip.ZipFile(file)
             try {
@@ -298,7 +353,7 @@ tasks.register('inspectCreatureFoundationDependencies') {
                 def line = [
                         "file=${file.name}",
                         "bytes=${file.length()}",
-                        "sha256=${sha256}",
+                        "sha256=${actual}",
                         "id=${id}",
                         "version=${versionValue}",
                         "environment=${meta.environment}",
@@ -314,9 +369,10 @@ tasks.register('inspectCreatureFoundationDependencies') {
             }
         }
 
-        println "M0_CREATURE_FOUNDATION_INSPECTION_PASS count=${resolved.size()} report=${output}"
+        println "M0_CREATURE_FOUNDATION_DIGEST_PASS count=${resolved.size()} report=${output}"
     }
 }
+
 processResources {
     inputs.property 'version', project.version
     filesMatching('fabric.mod.json') {

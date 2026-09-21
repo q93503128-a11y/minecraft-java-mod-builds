@@ -46,6 +46,12 @@ public final class PlayerCombatState {
         return mana;
     }
 
+    /**
+     * Synchronizes effective WIL while preserving the current Mana percentage.
+     *
+     * <p>This prevents equipment/stat swaps from becoming an implicit Mana refill while still
+     * scaling the usable pool immediately when Max Mana changes.</p>
+     */
     public void synchronizeWill(int newWill, long nowTick) {
         if (newWill < 0) {
             throw new IllegalArgumentException("WIL must be non-negative.");
@@ -118,15 +124,24 @@ public final class PlayerCombatState {
         cooldownEndTick.put(actionId, Math.max(nowTick, current - ticks));
     }
 
+    /**
+     * Same-tick/short-window duplicate callback protection for one accepted cast.
+     */
     public boolean isAcceptedCastReentry(String spellId, long nowTick) {
-        expireAcceptedCast(nowTick);
         return acceptedSpellId != null
                 && acceptedSpellId.equals(spellId)
                 && nowTick <= acceptedSpellReentryUntilTick;
     }
 
+    /**
+     * Long-lived transaction identity used only when the external engine proves that it is
+     * continuing the same in-flight cast process.
+     */
+    public boolean isAcceptedCastContinuation(String spellId) {
+        return acceptedSpellId != null && acceptedSpellId.equals(spellId);
+    }
+
     public boolean hasCompetingAcceptedCast(String spellId, long nowTick) {
-        expireAcceptedCast(nowTick);
         return acceptedSpellId != null
                 && !acceptedSpellId.equals(spellId)
                 && nowTick <= acceptedSpellReentryUntilTick;
@@ -134,7 +149,6 @@ public final class PlayerCombatState {
 
     public void beginAcceptedCast(String spellId, long reentryUntilTick, long nowTick) {
         Objects.requireNonNull(spellId, "spellId");
-        expireAcceptedCast(nowTick);
         if (acceptedSpellId != null
                 && !acceptedSpellId.equals(spellId)
                 && nowTick <= acceptedSpellReentryUntilTick) {
@@ -145,9 +159,9 @@ public final class PlayerCombatState {
     }
 
     public void requireAcceptedCast(String spellId, long nowTick) {
-        expireAcceptedCast(nowTick);
+        Objects.requireNonNull(spellId, "spellId");
         if (acceptedSpellId == null || !acceptedSpellId.equals(spellId)) {
-            throw new IllegalStateException("No accepted project spell transaction for " + spellId);
+            throw new IllegalStateException("No accepted project spell transaction for " + spellId + " at tick " + nowTick);
         }
     }
 
@@ -157,13 +171,6 @@ public final class PlayerCombatState {
         }
         acceptedSpellId = null;
         acceptedSpellReentryUntilTick = Long.MIN_VALUE;
-    }
-
-    private void expireAcceptedCast(long nowTick) {
-        if (acceptedSpellId != null && nowTick > acceptedSpellReentryUntilTick) {
-            acceptedSpellId = null;
-            acceptedSpellReentryUntilTick = Long.MIN_VALUE;
-        }
     }
 
     private void refresh(long nowTick) {

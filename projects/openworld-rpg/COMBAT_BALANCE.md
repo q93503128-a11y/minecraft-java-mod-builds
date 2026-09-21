@@ -370,6 +370,7 @@ Rules:
 - high-impact non-ultimate skills may reach roughly **35–50 Mana**;
 - exact skill costs are authored during class-kit design;
 - outside combat for 5 s, natural Mana regeneration is doubled so exploration does not become waiting at zero Mana;
+- when effective WIL changes Max Mana, preserve the player's current Mana percentage (clamped) rather than granting free Mana through stat/equipment swapping;
 - inns/camps/shrines restore resources much faster than natural recovery.
 
 WIL also contributes to selected status/magical resilience through specific mechanics defined by the relevant status/class rather than a hidden universal damage-reduction multiplier.

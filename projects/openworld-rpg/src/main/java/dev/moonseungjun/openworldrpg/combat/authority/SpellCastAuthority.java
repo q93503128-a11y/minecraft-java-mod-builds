@@ -48,6 +48,15 @@ public final class SpellCastAuthority {
     }
 
     public AttemptDecision preflightAttempt(UUID playerId, String spellId, long gameTick) {
+        return preflightAttempt(playerId, spellId, gameTick, false);
+    }
+
+    public AttemptDecision preflightAttempt(
+            UUID playerId,
+            String spellId,
+            long gameTick,
+            boolean engineContinuation
+    ) {
         String normalized = normalizeSpellId(spellId);
         if (!isOwned(normalized)) {
             return AttemptDecision.PASS_THROUGH;
@@ -56,11 +65,25 @@ public final class SpellCastAuthority {
         if (policy == null) {
             return AttemptDecision.BLOCK;
         }
-        CastContext context = new CastContext(Objects.requireNonNull(playerId, "playerId"), normalized, gameTick);
+        CastContext context = new CastContext(
+                Objects.requireNonNull(playerId, "playerId"),
+                normalized,
+                gameTick,
+                engineContinuation
+        );
         return policy.preflight(context) ? AttemptDecision.ALLOW : AttemptDecision.BLOCK;
     }
 
     public AttemptDecision commitAcceptedCast(UUID playerId, String spellId, long gameTick) {
+        return commitAcceptedCast(playerId, spellId, gameTick, false);
+    }
+
+    public AttemptDecision commitAcceptedCast(
+            UUID playerId,
+            String spellId,
+            long gameTick,
+            boolean engineContinuation
+    ) {
         String normalized = normalizeSpellId(spellId);
         if (!isOwned(normalized)) {
             return AttemptDecision.PASS_THROUGH;
@@ -69,14 +92,19 @@ public final class SpellCastAuthority {
         if (policy == null) {
             return AttemptDecision.BLOCK;
         }
-        CastContext context = new CastContext(Objects.requireNonNull(playerId, "playerId"), normalized, gameTick);
+        CastContext context = new CastContext(
+                Objects.requireNonNull(playerId, "playerId"),
+                normalized,
+                gameTick,
+                engineContinuation
+        );
         return policy.commitAcceptedCast(context) ? AttemptDecision.ALLOW : AttemptDecision.BLOCK;
     }
 
     public void onEngineCostConsumed(UUID playerId, String spellId, long gameTick) {
         String normalized = normalizeSpellId(spellId);
         policyForCommittedProjectSpell(normalized).onEngineCostConsumed(
-                new CastContext(playerId, normalized, gameTick)
+                new CastContext(playerId, normalized, gameTick, true)
         );
     }
 
@@ -156,7 +184,12 @@ public final class SpellCastAuthority {
         return normalized;
     }
 
-    public record CastContext(UUID playerId, String spellId, long gameTick) {
+    public record CastContext(
+            UUID playerId,
+            String spellId,
+            long gameTick,
+            boolean engineContinuation
+    ) {
     }
 
     public record CastCompletion(

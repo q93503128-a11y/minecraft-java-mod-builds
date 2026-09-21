@@ -1,8 +1,10 @@
 package dev.moonseungjun.openworldrpg;
 
+import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.IntegrationBootstrap;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,6 +16,11 @@ public final class OpenworldRpgMod implements ModInitializer {
     public void onInitialize() {
         RuntimeProfile profile = RuntimeProfile.current();
         IntegrationBootstrap.bootstrap(profile, LOGGER);
-        LOGGER.info("Openworld RPG M0 core bootstrap loaded with profile {}.", profile.id());
+
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
+                CombatStateServices.disconnect(handler.getPlayer().getUUID())
+        );
+
+        LOGGER.info("Openworld RPG M0 integration bootstrap loaded with profile {}.", profile.id());
     }
 }
