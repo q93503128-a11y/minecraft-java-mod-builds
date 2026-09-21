@@ -281,7 +281,8 @@ public final class SpellEngineAuthorityAdapter {
         Object eventArgs = onlyArgument(method, args);
         Player player = requirePlayer(invokeAccessor(eventArgs, "caster"));
         if (!player.level().isClientSide()) {
-            String spellId = spellId(invokeAccessor(eventArgs, "spell"));
+            Object spellEntry = invokeAccessor(eventArgs, "spell");
+            String spellId = spellId(spellEntry);
             if (AUTHORITY.owns(spellId)) {
                 Object action = invokeAccessor(eventArgs, "action");
                 Object progressValue = invokeAccessor(eventArgs, "progress");
