@@ -160,9 +160,11 @@ public final class VillageUiController {
         String summary = "세 갈래 동시 성장 가능 · Lv." + level
                 + " · " + VillageRolePromotionSystem.tierLabel(promotionTier)
                 + " · " + VillageRolePromotionSystem.passiveSummary(player, role)
+                + " · " + VillageRoleMasterySystem.summary(player, role)
                 + " · 전술 포인트 " + VillageSkillTreeSystem.availablePoints(player) + "P"
                 + " · 주화 " + VillageProgressionSystem.coins(player)
                 + " · " + VillageRoleSkillSystem.loadoutSummary(player)
+                + " · 서로 다른 두 기술을 연계하면 Lv.90+ 전투 숙련이 발동"
                 + " · 기본/1차/2차 기술은 전직 후에도 모두 장착 가능";
         send(player, "role_progress", promotedName + " 성장",
                 role.id() + "|" + promotedName + "|" + summary, actions, labels);
@@ -191,6 +193,7 @@ public final class VillageUiController {
         String promotedName = VillageRolePromotionSystem.displayName(role, level);
         String summary = "Lv." + level
                 + " · " + VillageRolePromotionSystem.tierLabel(VillageRolePromotionSystem.tier(level))
+                + " · " + VillageRoleMasterySystem.summary(player, role)
                 + " · 주화 " + VillageProgressionSystem.coins(player)
                 + " · 기본/1차/2차 기술은 해금 후 계속 사용 가능 · {SKILL1}/{SKILL2} 장착 변경";
         send(player, "role_skills", "직업 기술 연구",
