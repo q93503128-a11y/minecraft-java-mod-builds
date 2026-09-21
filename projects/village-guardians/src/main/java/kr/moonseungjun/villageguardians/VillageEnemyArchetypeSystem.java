@@ -58,7 +58,7 @@ public final class VillageEnemyArchetypeSystem {
             boolean boss,
             VillageWaveTrait trait) {
         boolean flying = willSpawnFlying(day, wave, index, boss, trait);
-        Archetype archetype = boss ? bossForSlot(day, index)
+        Archetype archetype = boss ? bossForWaveSlot(day, wave, index)
                 : flying ? Archetype.MARKSMAN : select(day, wave, index, trait);
         Mob mob = flying ? EntityTypes.PHANTOM.create(level, EntitySpawnReason.EVENT) : createEntity(level, archetype);
         return mob == null ? null : new SpawnedEnemy(mob, archetype, boss);
@@ -66,7 +66,7 @@ public final class VillageEnemyArchetypeSystem {
 
     public static Archetype previewArchetype(
             int day, int wave, int index, boolean boss, VillageWaveTrait trait) {
-        return boss ? bossForSlot(day, index) : select(day, wave, index, trait);
+        return boss ? bossForWaveSlot(day, wave, index) : select(day, wave, index, trait);
     }
 
     public static boolean isFlying(Mob mob) {
@@ -421,6 +421,19 @@ public final class VillageEnemyArchetypeSystem {
             case 3 -> Archetype.MARKSMAN;
             default -> Archetype.GRUNT;
         };
+    }
+
+    private static Archetype bossForWaveSlot(int day, int wave, int bossIndex) {
+        if (VillageCampaignProgression.isFinalSiege(day)) {
+            return switch (wave) {
+                case 4 -> Archetype.PLAGUE_ARCHON;
+                case 5 -> Archetype.IRON_WARLORD;
+                case 6 -> Archetype.SIEGE_BEAST;
+                case 7 -> Archetype.DREAD_KNIGHT;
+                default -> bossForSlot(day, bossIndex);
+            };
+        }
+        return bossForSlot(day, bossIndex);
     }
 
     private static Archetype bossForSlot(int day, int bossIndex) {
