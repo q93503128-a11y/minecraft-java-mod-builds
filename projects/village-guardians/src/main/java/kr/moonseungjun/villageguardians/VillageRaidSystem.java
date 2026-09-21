@@ -1014,6 +1014,20 @@ public final class VillageRaidSystem {
         mob.setGlowingTag(isBossEnemy(mob) || !visibleToAnyPlayer);
     }
 
+    static void registerVisualCompanion(MinecraftServer server, Entity entity, boolean bossVisual) {
+        if (server == null || entity == null) return;
+        PlayerTeam team = ensureRaidTeam(server);
+        server.getScoreboard().addPlayerToTeam(entity.getScoreboardName(), team);
+        entity.setGlowingTag(bossVisual);
+    }
+
+    static void unregisterVisualCompanion(MinecraftServer server, Entity entity) {
+        if (server == null || entity == null) return;
+        entity.setGlowingTag(false);
+        PlayerTeam team = server.getScoreboard().getPlayerTeam(RAID_TEAM_NAME);
+        if (team != null) server.getScoreboard().removePlayerFromTeam(entity.getScoreboardName(), team);
+    }
+
     private static PlayerTeam ensureRaidTeam(MinecraftServer server) {
         PlayerTeam team = server.getScoreboard().getPlayerTeam(RAID_TEAM_NAME);
         if (team == null) team = server.getScoreboard().addPlayerTeam(RAID_TEAM_NAME);
