@@ -38,6 +38,10 @@ public final class VillageUiHudSuppressor {
 
     @SubscribeEvent
     public static void beforeGuiLayer(RenderGuiLayerEvent.Pre event) {
+        if (VanillaGuiLayers.PLAYER_HEALTH.equals(event.getName())) {
+            event.setCanceled(true);
+            return;
+        }
         Screen screen = Minecraft.getInstance().gui.screen();
         if (isVillageModal(screen) && BLOCKED.contains(event.getName())) {
             event.setCanceled(true);
