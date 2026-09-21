@@ -35,7 +35,7 @@ def main():
     assert "|| item == Items.MACE" in equipment and 'Items.MACE) return "공성 전투망치"' in equipment
 
     merc = read("VillageMercenarySystem.java")
-    assert "MAX_LEVEL = 60" in merc
+    assert "MAX_LEVEL = 100" in merc
     assert "killsRequiredForLevel" in merc and "mercenaryPower" in merc
     assert "50.0 + Math.min(52.0, rank * 0.85)" in merc
     assert "8.0 + Math.min(13.0, rank * 0.22)" in merc
@@ -69,7 +69,7 @@ def main():
 
     print("[PASS] v0.18.18 tactical consumables replace duplicate paid food")
     print("[PASS] endgame enhancement uses per-family caps and diminishing returns")
-    print("[PASS] research hall, wall combat galleries, and Lv.60 mercenary growth are wired")
+    print("[PASS] research hall, wall combat galleries, and long-campaign mercenary growth are wired")
 
 if __name__ == "__main__":
     main()

@@ -204,7 +204,7 @@ def main() -> None:
     assert "getTags()" not in mercenary
     assert "setPersistenceRequired" in mercenary
     assert "awardKillExperience" in mercenary
-    assert "MAX_LEVEL = 60" in mercenary
+    assert "MAX_LEVEL = 100" in mercenary
 
     assert "offerToParty" in relic
     assert "relic_select:" in relic

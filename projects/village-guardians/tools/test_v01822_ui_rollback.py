@@ -99,8 +99,8 @@ def main() -> None:
                 "turret_upgrade_burst", "defense_breach_alarm")))
 
     require("post-0.18.16 progression systems survive the rollback",
-            "MAX_LEVEL = 60" in merc
-            and "MAX_LEVEL = 10" in research
+            "MAX_LEVEL = 100" in merc
+            and "MAX_LEVEL = 20" in research
             and all(token in consumables for token in (
                 "BANDAGE", "CLEANSER", "STIMULANT", "AEGIS_TONIC", "ARCANE_CATALYST", "FIELD_REPAIR_KIT")))
 
