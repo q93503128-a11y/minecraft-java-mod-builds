@@ -67,6 +67,37 @@ public enum VillageWaveTrait {
             0.84f, 2, 1, 0, 1.48f, 1.26f);
 
     private static final int LONG_EFFECT_TICKS = 20 * 60 * 30;
+    private static final VillageWaveTrait[] BLACK_WAVE = {
+            BREACH_STORM, RIFTED, BLOOD_MOON, SIEGE, HEXED, PHALANX
+    };
+    private static final VillageWaveTrait[] SKY_INVASION = {
+            SKY_SIEGE, STORMFRONT, HUNTERS, BREACH_STORM, RIFTED, FRENZY
+    };
+    private static final VillageWaveTrait[] NECRO_SIEGE = {
+            DEATH_CHORUS, RIFTED, HEXED, REGENERATING, HUNTER_NET, BREACH_STORM
+    };
+    private static final VillageWaveTrait[] IRON_ECLIPSE = {
+            IRON_TIDE, PHALANX, IRONCLAD, BREACH_STORM, DEATH_CHORUS, HUNTER_NET
+    };
+    private static final VillageWaveTrait[] STORM_LEGION = {
+            STORMFRONT, SKY_SIEGE, HUNTER_NET, IRON_TIDE, BREACH_STORM, DEATH_CHORUS
+    };
+    private static final VillageWaveTrait[] ABYSS_MARCH = {
+            RIFTED, DEATH_CHORUS, CATACLYSM, IRON_TIDE, HUNTER_NET, SKY_SIEGE
+    };
+    private static final VillageWaveTrait[] DOOM_OFFENSIVE = {
+            CATACLYSM, DEATH_CHORUS, IRON_TIDE, SKY_SIEGE, BREACH_STORM, HUNTER_NET, RIFTED
+    };
+    private static final VillageWaveTrait[] FINAL_WAR = {
+            FINAL_HOST, CATACLYSM, DEATH_CHORUS, IRON_TIDE, SKY_SIEGE, BREACH_STORM, HUNTER_NET
+    };
+    private static final VillageWaveTrait[] FINAL_SIEGE = {
+            BREACH_STORM, SKY_SIEGE, HUNTER_NET, DEATH_CHORUS, IRON_TIDE, CATACLYSM, FINAL_HOST
+    };
+    private static final VillageWaveTrait[] ENDLESS_WAR = {
+            FINAL_HOST, CATACLYSM, IRON_TIDE, DEATH_CHORUS, SKY_SIEGE,
+            BREACH_STORM, HUNTER_NET, RIFTED, PHALANX, BLOOD_MOON
+    };
 
     private final String id;
     private final String displayName;
@@ -120,6 +151,24 @@ public enum VillageWaveTrait {
     }
 
     public static VillageWaveTrait select(int day, int wave) {
+        int safeDay = Math.max(1, day);
+        int safeWave = Math.max(1, wave);
+        if (safeDay <= 19) return selectOpening(safeDay, safeWave);
+        if (safeDay == VillageCampaignProgression.CAMPAIGN_END_DAY) return finalSiegeTrait(safeWave);
+
+        VillageWaveTrait[] pool = safeDay > VillageCampaignProgression.CAMPAIGN_END_DAY ? ENDLESS_WAR
+                : safeDay >= 90 ? FINAL_WAR
+                : safeDay >= 80 ? DOOM_OFFENSIVE
+                : safeDay >= 70 ? ABYSS_MARCH
+                : safeDay >= 60 ? STORM_LEGION
+                : safeDay >= 50 ? IRON_ECLIPSE
+                : safeDay >= 40 ? NECRO_SIEGE
+                : safeDay >= 30 ? SKY_INVASION
+                : BLACK_WAVE;
+        return selectFromPool(pool, safeDay, safeWave);
+    }
+
+    private static VillageWaveTrait selectOpening(int day, int wave) {
         if (day <= 1 && wave <= 1) return STANDARD;
         List<VillageWaveTrait> unlocked = new ArrayList<>();
         unlocked.add(STANDARD);
@@ -134,15 +183,19 @@ public enum VillageWaveTrait {
         if (day >= 10) unlocked.add(BLOOD_MOON);
         if (day >= 11) unlocked.add(STORMFRONT);
         if (day >= 12) unlocked.add(RIFTED);
-        if (day >= 20) unlocked.add(BREACH_STORM);
-        if (day >= 30) unlocked.add(SKY_SIEGE);
-        if (day >= 40) unlocked.add(HUNTER_NET);
-        if (day >= 50) unlocked.add(DEATH_CHORUS);
-        if (day >= 60) unlocked.add(IRON_TIDE);
-        if (day >= 75) unlocked.add(CATACLYSM);
-        if (day >= 90) unlocked.add(FINAL_HOST);
         int index = Math.floorMod(day * 37 + wave * 19 + day * wave * 3, unlocked.size());
         return unlocked.get(index);
+    }
+
+    private static VillageWaveTrait selectFromPool(VillageWaveTrait[] pool, int day, int wave) {
+        long seed = day * 31L + wave * 17L + (long) wave * wave * 7L + (long) day * wave * 3L;
+        int index = (int) Math.floorMod(seed, (long) pool.length);
+        return pool[index];
+    }
+
+    private static VillageWaveTrait finalSiegeTrait(int wave) {
+        int index = Math.max(0, Math.min(FINAL_SIEGE.length - 1, wave - 1));
+        return FINAL_SIEGE[index];
     }
 
     public static VillageWaveTrait fromId(String id) {
