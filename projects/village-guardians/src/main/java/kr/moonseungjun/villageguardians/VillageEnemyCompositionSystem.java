@@ -37,7 +37,31 @@ public final class VillageEnemyCompositionSystem {
         if (level == null || owner == null || archetype == null || !owner.isAlive()) return;
 
         Mob rider = null;
-        if (aerialRole != null && day >= 30) {
+        if (boss) {
+            rider = switch (archetype) {
+                case SIEGE_BEAST -> {
+                    Mob visual = EntityTypes.PILLAGER.create(level, EntitySpawnReason.EVENT);
+                    equip(visual, Items.CROSSBOW, Items.IRON_HELMET, Items.CHAINMAIL_CHESTPLATE);
+                    yield visual;
+                }
+                case IRON_WARLORD -> {
+                    Mob visual = EntityTypes.VINDICATOR.create(level, EntitySpawnReason.EVENT);
+                    equip(visual, Items.DIAMOND_AXE, Items.NETHERITE_HELMET, Items.NETHERITE_CHESTPLATE);
+                    yield visual;
+                }
+                case PLAGUE_ARCHON -> {
+                    Mob visual = EntityTypes.WITCH.create(level, EntitySpawnReason.EVENT);
+                    equip(visual, Items.NETHER_STAR, Items.WITHER_SKELETON_SKULL, null);
+                    yield visual;
+                }
+                case DREAD_KNIGHT -> {
+                    Mob visual = EntityTypes.WITHER_SKELETON.create(level, EntitySpawnReason.EVENT);
+                    equip(visual, Items.NETHERITE_SWORD, Items.NETHERITE_HELMET, Items.NETHERITE_CHESTPLATE);
+                    yield visual;
+                }
+                default -> null;
+            };
+        } else if (aerialRole != null && day >= 30) {
             rider = switch (aerialRole) {
                 case RAIDER -> babyZombie(level, Items.IRON_SWORD, Items.LEATHER_HELMET);
                 case BOMBARDIER -> babyHusk(level, Items.FIRE_CHARGE, Items.TNT);
@@ -49,9 +73,6 @@ public final class VillageEnemyCompositionSystem {
         } else if (archetype == VillageEnemyArchetypeSystem.Archetype.ZOGLIN_BREACHER) {
             rider = EntityTypes.ZOMBIFIED_PIGLIN.create(level, EntitySpawnReason.EVENT);
             equip(rider, Items.GOLDEN_AXE, Items.GOLDEN_HELMET);
-        } else if (boss && archetype == VillageEnemyArchetypeSystem.Archetype.SIEGE_BEAST) {
-            rider = EntityTypes.PILLAGER.create(level, EntitySpawnReason.EVENT);
-            equip(rider, Items.CROSSBOW, Items.IRON_HELMET);
         }
 
         if (rider == null) return;
@@ -118,13 +139,21 @@ public final class VillageEnemyCompositionSystem {
 
     private static void equip(Mob mob, net.minecraft.world.item.Item mainHand,
                               net.minecraft.world.item.Item head) {
+        equip(mob, mainHand, head, null);
+    }
+
+    private static void equip(Mob mob, net.minecraft.world.item.Item mainHand,
+                              net.minecraft.world.item.Item head,
+                              net.minecraft.world.item.Item chest) {
         if (mob == null) return;
         if (mainHand != null) mob.setItemSlot(EquipmentSlot.MAINHAND, mainHand.getDefaultInstance());
         if (head != null) mob.setItemSlot(EquipmentSlot.HEAD, head.getDefaultInstance());
+        if (chest != null) mob.setItemSlot(EquipmentSlot.CHEST, chest.getDefaultInstance());
     }
 
     private static void configureVisualRider(Mob rider) {
         rider.addTag(VISUAL_RIDER_TAG);
+        rider.setPersistenceRequired();
         rider.setNoAi(true);
         rider.setSilent(true);
         rider.setCanPickUpLoot(false);
