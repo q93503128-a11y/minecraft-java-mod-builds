@@ -162,18 +162,28 @@ jobs:
           NORMAL_JAR="build/libs/openworld-rpg-0.1.0-alpha.1.jar"
           PLAYTEST_JAR="build/libs/openworld-rpg-0.1.0-alpha.1-m0-playtest.jar"
           MARKER="data/openworld_rpg/integration/m0_player_verification.enabled"
+          PLAYTEST_JAR_ABS="$PWD/$PLAYTEST_JAR"
+          MARKER_ROOT="$PWD/build/m0-playtest-marker"
 
-          mkdir -p build/staging
-          cp "$NORMAL_JAR" build/staging/openworld-rpg-normal.jar
-
-          ./gradlew --no-daemon -PopenworldM0PlayerVerification=true processResources remapJar --stacktrace
-          cp "$NORMAL_JAR" "$PLAYTEST_JAR"
-
-          jar tf "$PLAYTEST_JAR" | grep -q "^$MARKER$"
-
-          cp build/staging/openworld-rpg-normal.jar "$NORMAL_JAR"
+          test -s "$NORMAL_JAR"
           if jar tf "$NORMAL_JAR" | grep -q "^$MARKER$"; then
             echo 'Normal Openworld RPG JAR unexpectedly contains the M0 player-verification marker.'
+            exit 1
+          fi
+
+          rm -rf "$MARKER_ROOT"
+          mkdir -p "$MARKER_ROOT/$(dirname "$MARKER")"
+          printf 'enabled\n' > "$MARKER_ROOT/$MARKER"
+
+          cp "$NORMAL_JAR" "$PLAYTEST_JAR"
+          (
+            cd "$MARKER_ROOT"
+            jar uf "$PLAYTEST_JAR_ABS" "$MARKER"
+          )
+
+          jar tf "$PLAYTEST_JAR" | grep -q "^$MARKER$"
+          if jar tf "$NORMAL_JAR" | grep -q "^$MARKER$"; then
+            echo 'Normal Openworld RPG JAR was modified while producing the playtest artifact.'
             exit 1
           fi
 

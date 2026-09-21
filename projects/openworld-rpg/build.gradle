@@ -374,22 +374,8 @@ tasks.register('inspectCreatureFoundationDependencies') {
 
 processResources {
     inputs.property 'version', project.version
-    inputs.property 'openworldM0PlayerVerification', openworldM0PlayerVerification
     filesMatching('fabric.mod.json') {
         expand 'version': project.version
-    }
-
-    doLast {
-        def marker = layout.buildDirectory
-                .file('resources/main/data/openworld_rpg/integration/m0_player_verification.enabled')
-                .get()
-                .asFile
-        if (openworldM0PlayerVerification.toBoolean()) {
-            marker.parentFile.mkdirs()
-            marker.text = 'enabled\n'
-        } else if (marker.exists()) {
-            marker.delete()
-        }
     }
 }
 
