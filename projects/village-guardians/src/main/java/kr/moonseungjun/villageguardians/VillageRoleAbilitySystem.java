@@ -509,7 +509,7 @@ public final class VillageRoleAbilitySystem {
                     if (tier >= 2 && VillageRespawnSystem.isDowned(ally)) {
                         VillageRespawnSystem.reviveNow(ally, "부활 성가");
                     }
-                    healScaled(ally, heal * (tier >= 2 ? 1.15f : 0.62f));
+                    healWithOverflowBarrier(ally, heal * (tier >= 2 ? 1.15f : 0.62f), specialRank);
                     ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION,
                             Math.max(100, duration), tier >= 2 ? 2 : 1, false, false, true));
                     ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,
@@ -524,7 +524,7 @@ public final class VillageRoleAbilitySystem {
                 damageRadius(level, player, player.position(), radius, 72, damage,
                         false, 0.45, 0.08);
                 for (ServerPlayer ally : allies(player, radius)) {
-                    healScaled(ally, heal * (tier >= 2 ? 0.92f : 0.45f));
+                    healWithOverflowBarrier(ally, heal * (tier >= 2 ? 0.92f : 0.45f), specialRank);
                     ally.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,
                             Math.max(100, duration), tier >= 2 ? 1 : 0, false, false, true));
                     ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,
@@ -892,7 +892,9 @@ public final class VillageRoleAbilitySystem {
                 case HEALING -> {
                     if (now % 20L == 0L) {
                         for (ServerPlayer ally : alliesAt(owner, area.center(), area.radius())) {
-                            healScaled(ally, (2.6f + area.specialRank() * 0.35f) * area.power());
+                            healWithOverflowBarrier(
+                                    ally, (2.6f + area.specialRank() * 0.35f) * area.power(),
+                                    area.specialRank());
                             ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 35, 0, false, false, true));
                         }
                         play(level, area.center(), SoundEvents.AMETHYST_BLOCK_CHIME, 0.55f, 1.15f);
@@ -1144,10 +1146,25 @@ public final class VillageRoleAbilitySystem {
 
     public static void handleDeath(LivingDeathEvent event) {
         if (!(event.getSource().getEntity() instanceof ServerPlayer killer)
-                || !isRangerContext(killer)
-                || !(event.getSource().getDirectEntity() instanceof AbstractArrow)
                 || VillageSkillTestSystem.isTestDummy(event.getEntity())) return;
-        killer.getInventory().add(new ItemStack(Items.ARROW));
+
+        VillageRole role = activeRole(killer);
+        if (role == VillageRole.VANGUARD
+                && !(event.getSource().getDirectEntity() instanceof AbstractArrow)
+                && event.getEntity() instanceof Mob defeated
+                && VillageRoleSkillSystem.specialRank(killer, VillageRole.VANGUARD) >= 5
+                && killer.level() instanceof ServerLevel level) {
+            for (Mob target : targetsNear(level, killer, defeated.position(), 6.0, 24)) {
+                target.addEffect(new MobEffectInstance(
+                        MobEffects.WEAKNESS, 70, 0, false, false, true));
+            }
+            play(level, defeated.position(), SoundEvents.PLAYER_ATTACK_SWEEP, 0.9f, 0.64f);
+        }
+
+        if (role == VillageRole.RANGER
+                && event.getSource().getDirectEntity() instanceof AbstractArrow) {
+            killer.getInventory().add(new ItemStack(Items.ARROW));
+        }
     }
 
     public static void handleKnockback(LivingKnockBackEvent event) {
@@ -1279,7 +1296,7 @@ public final class VillageRoleAbilitySystem {
         ServerPlayer target = allies(player, 24.0).stream()
                 .min(Comparator.comparingDouble(ally -> ally.getHealth() / Math.max(1.0f, ally.getMaxHealth())))
                 .orElse(player);
-        healScaled(target, amount);
+        healWithOverflowBarrier(target, amount, specialRank);
         target.addEffect(new MobEffectInstance(MobEffects.REGENERATION,
                 Math.max(60, duration / 2), Math.min(2, specialRank / 2), false, false, true));
         if (barrier || specialRank >= 2) {
@@ -1303,7 +1320,7 @@ public final class VillageRoleAbilitySystem {
             ally.removeEffect(MobEffects.HUNGER);
             ally.removeEffect(MobEffects.NAUSEA);
             ally.removeEffect(MobEffects.MINING_FATIGUE);
-            healScaled(ally, heal);
+            healWithOverflowBarrier(ally, heal, specialRank);
             ally.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,
                     Math.max(50, duration / 2), Math.min(1, specialRank / 3), false, false, true));
             if (specialRank >= 2) {
@@ -1335,6 +1352,19 @@ public final class VillageRoleAbilitySystem {
             play(level, player.position(), SoundEvents.BEACON_ACTIVATE, 1.4f, 0.82f);
             play(level, player.position(), SoundEvents.TOTEM_USE, 1.0f, 1.0f);
         }
+    }
+
+    private static void healWithOverflowBarrier(ServerPlayer target, float amount, int specialRank) {
+        float before = target.getHealth();
+        float maximum = Math.max(1.0f, target.getMaxHealth());
+        healScaled(target, amount);
+        if (specialRank < 5) return;
+
+        float overflow = Math.max(0.0f, amount - Math.max(0.0f, maximum - before));
+        if (overflow < 1.0f) return;
+        int amplifier = Math.min(3, Math.max(0, (int) Math.floor(overflow / 4.0f)));
+        target.addEffect(new MobEffectInstance(
+                MobEffects.ABSORPTION, 120, amplifier, false, false, true));
     }
 
     private static void healScaled(ServerPlayer target, float amount) {
