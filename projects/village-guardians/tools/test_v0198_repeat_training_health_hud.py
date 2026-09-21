@@ -45,13 +45,16 @@ def main() -> None:
     assert "renderHealthBar(graphics, minecraft, font);" in hud
     assert "minecraft.player.getHealth()" in hud
     assert "minecraft.player.getMaxHealth()" in hud
+    assert "minecraft.player.getAbsorptionAmount()" in hud
     assert '" / "' in hud
+    assert '"  +"' in hud
     assert "HEALTH_FILL" in hud and "HEALTH_BACK" in hud
+    assert "ABSORPTION_TRACK" in hud and "GOLD" in hud
 
     print("[PASS] all five tactical branches retain the original low-cost completion path")
     print("[PASS] a completed branch unlocks persistent repeatable +0.25 health / +0.1 attack training")
     print("[PASS] repeat health is an attribute while repeat attack is a shared melee/bow/skill combat stat")
-    print("[PASS] vanilla heart pips are replaced by a live current/max health bar")
+    print("[PASS] vanilla heart pips are replaced by a live current/max health bar with visible absorption")
 
 
 if __name__ == "__main__":
