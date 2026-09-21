@@ -22,6 +22,7 @@ public final class VillageRpgSystem {
     public static void resetTransientState() {
         VillageCombatTechniqueSystem.reset();
         VillageRoleSkillSystem.resetTransientState();
+        VillageRoleMasterySystem.reset();
         VillagePersonalCombatSystem.reset();
     }
 
@@ -85,6 +86,9 @@ public final class VillageRpgSystem {
             value *= projectile
                     ? VillageRelicSystem.projectileMultiplier(attacker)
                     : VillageRelicSystem.meleeMultiplier(attacker);
+            if (projectile && event.getEntity() instanceof Mob masteryTarget) {
+                value *= VillageRoleMasterySystem.consumeRangerProjectileMultiplier(attacker, masteryTarget);
+            }
             if (event.getEntity() instanceof Mob target) {
                 if (projectile) value *= VillageRelicSystem.projectileTargetMultiplier(attacker, target);
                 value *= VillageRolePromotionSystem.targetMultiplier(attacker, target, projectile);
