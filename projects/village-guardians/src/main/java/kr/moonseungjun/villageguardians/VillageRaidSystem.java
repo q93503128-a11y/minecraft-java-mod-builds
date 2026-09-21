@@ -211,13 +211,34 @@ public final class VillageRaidSystem {
         int targetLevel = Math.max(1, Math.min(RpgProgress.MAX_LEVEL - 1,
                 VillageCampaignProgression.targetPlayerLevel(day)));
         int required = RpgProgress.experienceRequiredAtLevel(targetLevel);
-        float baseline = required * 0.72f / VillageCampaignProgression.expectedThreatsPerLevel(day);
-        float healthWeight = (float) Math.sqrt(Math.max(1.0f, mob.getMaxHealth()) / 24.0f);
-        healthWeight = Math.max(0.72f, Math.min(1.80f, healthWeight));
         VillageEnemyArchetypeSystem.Archetype archetype = archetypeOf(mob);
-        float roleWeight = isBossEnemy(mob) ? 4.5f
-                : VillageEnemyEliteSystem.isElite(mob) ? 1.8f
-                : VillageEnemyArchetypeSystem.isTacticalThreat(archetype) ? 1.25f : 1.0f;
+
+        // Preserve the established Lv.1-30 opening curve. From day 21 onward the campaign has
+        // seven much larger waves, so XP is budgeted against the whole planned night instead of
+        // treating the old per-level threat count as if it were still one night's roster.
+        if (day <= 20) {
+            float baseline = required * 0.72f / VillageCampaignProgression.expectedThreatsPerLevel(day);
+            float healthWeight = (float) Math.sqrt(Math.max(1.0f, mob.getMaxHealth()) / 24.0f);
+            healthWeight = Math.max(0.72f, Math.min(1.80f, healthWeight));
+            float roleWeight = isBossEnemy(mob) ? 4.5f
+                    : VillageEnemyEliteSystem.isElite(mob) ? 1.8f
+                    : VillageEnemyArchetypeSystem.isTacticalThreat(archetype) ? 1.25f : 1.0f;
+            return Math.max(1, Math.round(baseline * healthWeight * roleWeight));
+        }
+
+        MinecraftServer server = mob.level().getServer();
+        int players = server == null ? 1 : VillageProgressionSystem.plannedRaidPlayerCount(server);
+        int expectedActors = previewTotalEnemyCount(day, players);
+        float baseline = required * 0.60f / Math.max(1, expectedActors);
+
+        // Late HP scaling already makes enemies slower to kill; it must not also double their XP.
+        // Keep a small durability premium, while preserving distinct rewards for tactical threats,
+        // elites and bosses without letting those multipliers break the day-100 level target.
+        float healthWeight = (float) Math.sqrt(Math.max(1.0f, mob.getMaxHealth()) / 24.0f);
+        healthWeight = Math.max(0.90f, Math.min(1.15f, healthWeight));
+        float roleWeight = isBossEnemy(mob) ? 3.0f
+                : VillageEnemyEliteSystem.isElite(mob) ? 1.35f
+                : VillageEnemyArchetypeSystem.isTacticalThreat(archetype) ? 1.12f : 1.0f;
         return Math.max(1, Math.round(baseline * healthWeight * roleWeight));
     }
 
@@ -331,6 +352,16 @@ public final class VillageRaidSystem {
     public static int previewBossCount(int day, int previewWave, int maximumWaves, int count) {
         return Math.min(Math.max(0, count),
                 VillageWarfrontSystem.bonusBossCount(day, previewWave, maximumWaves));
+    }
+
+    public static int previewTotalEnemyCount(int day, int players) {
+        int total = 0;
+        int maximumWaves = previewMaxWaves(day);
+        for (int previewWave = 1; previewWave <= maximumWaves; previewWave++) {
+            VillageWaveTrait trait = VillageWaveTrait.select(day, previewWave);
+            total += previewWaveCount(day, previewWave, players, trait);
+        }
+        return Math.max(1, total);
     }
 
     private static void scheduleRaid(MinecraftServer server) {
