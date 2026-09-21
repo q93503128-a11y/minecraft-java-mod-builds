@@ -189,6 +189,142 @@ jobs:
 
           sha256sum "$PLAYTEST_JAR" | tee "$PLAYTEST_JAR.sha256"
 
+      - name: Package importable M0 Modrinth playtest pack
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import glob
+          import hashlib
+          import json
+          import os
+          import shutil
+          import zipfile
+
+          project = os.getcwd()
+          cache = os.path.expanduser("~/.gradle/caches/modules-2/files-2.1")
+          out_dir = os.path.join(project, "build", "m0-mrpack")
+          overrides_mods = os.path.join(out_dir, "overrides", "mods")
+          os.makedirs(overrides_mods, exist_ok=True)
+
+          playtest_name = "openworld-rpg-0.1.0-alpha.1-m0-playtest.jar"
+          playtest_src = os.path.join(project, "build", "libs", playtest_name)
+          if not os.path.isfile(playtest_src):
+              raise SystemExit(f"missing playtest jar: {playtest_src}")
+          shutil.copy2(playtest_src, os.path.join(overrides_mods, playtest_name))
+
+          deps = [
+              ("fabric-api-0.160.0+26.2.jar",
+               "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.160.0+26.2/fabric-api-0.160.0+26.2.jar"),
+              ("5sy6g3kz-enlZuzkJ.jar",
+               "https://api.modrinth.com/maven/maven/modrinth/5sy6g3kz/enlZuzkJ/5sy6g3kz-enlZuzkJ.jar"),
+              ("ha1mEyJS-Hq1CwB9w.jar",
+               "https://api.modrinth.com/maven/maven/modrinth/ha1mEyJS/Hq1CwB9w/ha1mEyJS-Hq1CwB9w.jar"),
+              ("cloth-config-fabric-26.2.155.jar",
+               "https://maven.shedaniel.me/me/shedaniel/cloth/cloth-config-fabric/26.2.155/cloth-config-fabric-26.2.155.jar"),
+              ("spell-engine-1.10.5+26.2-fabric.jar",
+               "https://api.modrinth.com/maven/maven/modrinth/spell-engine/1.10.5+26.2-fabric/spell-engine-1.10.5+26.2-fabric.jar"),
+              ("spell-power-1.6.2+26.2-fabric.jar",
+               "https://api.modrinth.com/maven/maven/modrinth/spell-power/1.6.2+26.2-fabric/spell-power-1.6.2+26.2-fabric.jar"),
+              ("ranged-weapon-api-4.0.0+26.2-fabric.jar",
+               "https://api.modrinth.com/maven/maven/modrinth/ranged-weapon-api/4.0.0+26.2-fabric/ranged-weapon-api-4.0.0+26.2-fabric.jar"),
+              ("armor-model-api-1.1.0+26.2-fabric.jar",
+               "https://api.modrinth.com/maven/maven/modrinth/armor-model-api/1.1.0+26.2-fabric/armor-model-api-1.1.0+26.2-fabric.jar"),
+              ("XaT8sLP6-r453A8nE.jar",
+               "https://api.modrinth.com/maven/maven/modrinth/XaT8sLP6/r453A8nE/XaT8sLP6-r453A8nE.jar"),
+              ("geckolib-388172-8819017.jar",
+               "https://cursemaven.com/curse/maven/geckolib-388172/8819017/geckolib-388172-8819017.jar"),
+              ("gRn1FzwR-NYpKsGy3.jar",
+               "https://api.modrinth.com/maven/maven/modrinth/gRn1FzwR/NYpKsGy3/gRn1FzwR-NYpKsGy3.jar"),
+              ("alexs-mobs-continued-1635121-8856579.jar",
+               "https://cursemaven.com/curse/maven/alexs-mobs-continued-1635121/8856579/alexs-mobs-continued-1635121-8856579.jar"),
+              ("codxlib-1633207-8828221.jar",
+               "https://cursemaven.com/curse/maven/codxlib-1633207/8828221/codxlib-1633207-8828221.jar"),
+              ("JXjyo7k6-Bdd8lkUM.jar",
+               "https://api.modrinth.com/maven/maven/modrinth/JXjyo7k6/Bdd8lkUM/JXjyo7k6-Bdd8lkUM.jar"),
+          ]
+
+          files = []
+          for filename, url in deps:
+              matches = glob.glob(os.path.join(cache, "**", filename), recursive=True)
+              matches = [p for p in matches if os.path.isfile(p)]
+              if not matches:
+                  raise SystemExit(f"resolved dependency missing from Gradle cache: {filename}")
+              source = matches[0]
+              with open(source, "rb") as f:
+                  data = f.read()
+              files.append({
+                  "path": f"mods/{filename}",
+                  "hashes": {
+                      "sha1": hashlib.sha1(data).hexdigest(),
+                      "sha512": hashlib.sha512(data).hexdigest(),
+                  },
+                  "env": {"client": "required", "server": "required"},
+                  "downloads": [url],
+                  "fileSize": len(data),
+              })
+
+          index = {
+              "formatVersion": 1,
+              "game": "minecraft",
+              "versionId": "0.1.0-alpha.1-m0-playtest",
+              "name": "Openworld RPG M0 Arc Bolt Playtest",
+              "summary": "Minecraft 26.2 Fabric M0 integration playtest with pinned Openworld RPG runtime dependencies.",
+              "files": files,
+              "dependencies": {
+                  "minecraft": "26.2",
+                  "fabric-loader": "0.19.5",
+              },
+          }
+
+          with open(os.path.join(out_dir, "modrinth.index.json"), "w", encoding="utf-8") as f:
+              json.dump(index, f, ensure_ascii=False, indent=2)
+
+          readme = """Openworld RPG — M0 Arc Bolt Playtest
+
+Import this .mrpack into Modrinth App or another launcher that supports Modrinth packs.
+
+Pinned runtime:
+- Minecraft 26.2
+- Fabric Loader 0.19.5
+- Java 25
+- Fabric API 0.160.0+26.2
+- Openworld RPG 0.1.0-alpha.1 M0 playtest build
+- all pinned gameplay/creature dependencies from the project manifest
+
+This is a disposable integration-test pack, not the finished RPG.
+
+Test:
+1. Create a test world with cheats enabled.
+2. The M0 playtest build automatically prepares the joining player as Lv8 Mage, INT +7, ItemLv8 Staff project loadout.
+3. Give an Arc Bolt host item:
+   /give @s minecraft:wooden_sword[spell_engine:spell_container={access:MAGIC, spell_ids: ["openworld_rpg:arc_bolt"] }]
+4. Spawn Earthloong:
+   /summon threateningly_mobs:the_earthloong ~ ~ ~6
+5. Cast Arc Bolt and confirm the projectile lands normally.
+
+Do not mix this pack with an older Openworld RPG jar.
+"""
+          with open(os.path.join(out_dir, "overrides", "OPENWORLD_RPG_M0_PLAYTEST.txt"), "w", encoding="utf-8") as f:
+              f.write(readme)
+
+          pack_path = os.path.join(project, "build", "libs", "openworld-rpg-0.1.0-alpha.1-m0-playtest.mrpack")
+          with zipfile.ZipFile(pack_path, "w", compression=zipfile.ZIP_DEFLATED) as z:
+              z.write(os.path.join(out_dir, "modrinth.index.json"), "modrinth.index.json")
+              for root, _, names in os.walk(os.path.join(out_dir, "overrides")):
+                  for name in names:
+                      p = os.path.join(root, name)
+                      arc = os.path.relpath(p, out_dir).replace(os.sep, "/")
+                      z.write(p, arc)
+
+          with open(pack_path, "rb") as f:
+              pack_bytes = f.read()
+          sha256 = hashlib.sha256(pack_bytes).hexdigest()
+          with open(pack_path + ".sha256", "w", encoding="ascii") as f:
+              f.write(f"{sha256}  {os.path.basename(pack_path)}\n")
+          print(f"M0_MRPACK_READY path={pack_path} sha256={sha256} dependencies={len(files)}")
+          PY
+
       - name: Write M0 build report
         shell: bash
         run: |
@@ -231,6 +367,7 @@ jobs:
           - Earthloong runtime boss poise: IMPLEMENTED + UNIT/RUNTIME HARNESS VERIFIED (4.25 poise Arc Bolt fixture, break +15% damage window, recovery/protection math)
           - persistent combat progression: IMPLEMENTED + UNIT/BUILD VERIFIED
           - JVM-free joined-player Arc Bolt playtest artifact: BUILT + MARKER VERIFIED
+          - importable M0 Modrinth playtest pack: BUILT from pinned original-source downloads
           - real joined-player Spell Engine impact: NOT TESTED
           - full backpack/loot-generation/equipment UI: NOT IMPLEMENTED
           - player-facing R01 content: NOT IMPLEMENTED
@@ -247,6 +384,8 @@ jobs:
           path: |
             projects/openworld-rpg/build/libs/openworld-rpg-*.jar
             projects/openworld-rpg/build/libs/openworld-rpg-*.jar.sha256
+            projects/openworld-rpg/build/libs/openworld-rpg-*.mrpack
+            projects/openworld-rpg/build/libs/openworld-rpg-*.mrpack.sha256
             projects/openworld-rpg/build/BUILD_AND_RUNTIME_REPORT.md
             projects/openworld-rpg/build/reports/**
             projects/openworld-rpg/build/logs/**
