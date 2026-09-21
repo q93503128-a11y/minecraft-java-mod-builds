@@ -55,14 +55,28 @@ public final class ExternalActorBindingRuntime {
 
         Identifier earthloongId = Identifier.parse(earthloong.target());
         if (!BuiltInRegistries.ENTITY_TYPE.containsKey(earthloongId)) {
-            var installedThreateninglyEntityIds = BuiltInRegistries.ENTITY_TYPE.keySet().stream()
+            var externalActorCandidates = BuiltInRegistries.ENTITY_TYPE.keySet().stream()
                     .map(Object::toString)
-                    .filter(id -> id.startsWith("threateningly_mobs:"))
+                    .filter(id -> {
+                        String lower = id.toLowerCase();
+                        return lower.contains("earth")
+                                || lower.contains("loux")
+                                || lower.contains("regal")
+                                || lower.contains("steelboar")
+                                || lower.contains("nature_spirit")
+                                || lower.contains("ferox")
+                                || lower.contains("deathworm")
+                                || lower.contains("hydra")
+                                || lower.contains("riptooth")
+                                || lower.contains("abyss")
+                                || lower.contains("wyvern")
+                                || lower.contains("inferno");
+                    })
                     .sorted()
                     .toList();
             throw new IllegalStateException(
                     "Openworld RPG required R01 Earthloong registry target is missing: " + earthloongId
-                            + "; installed threateningly_mobs entity ids=" + installedThreateninglyEntityIds
+                            + "; installed actor-name candidates=" + externalActorCandidates
             );
         }
 
