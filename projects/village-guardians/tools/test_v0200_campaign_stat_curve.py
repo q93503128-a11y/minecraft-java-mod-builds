@@ -157,6 +157,9 @@ def main() -> None:
     assert "return 2.0f + (float) Math.sqrt(safe - CAMPAIGN_END_DAY) * 0.05f;" in campaign
     assert "return Math.max(0, base + endlessBonus);" in campaign
     assert "enemyAbsorptionAmplifier" in campaign
+    assert "bonusAbsorptionAmplifier" in campaign
+    assert "structureDamageDayContribution" in campaign
+    assert "aerialStructureDamageDayContribution" in campaign
     assert "healthTier + (boss ? 3 : 0)" in raid
     assert "strengthTier + (boss ? 1 : 0)" in raid
     assert "Math.min(17, healthTier" not in raid
@@ -169,6 +172,9 @@ def main() -> None:
     for old_cap in ("Math.min(52.0", "Math.min(9.0", "Math.min(18.0", "Math.min(5.0",
                     "Math.min(24.0", "Math.min(4.0"):
         assert old_cap not in enemies
+    assert "Math.min(3, day / 10)" not in enemies
+    assert "Math.min(24, day)" not in raid
+    assert "Math.min(16, day)" not in raid
 
     landmarks = {
         20: (30, 30, 2.415, 4, 5.00, 40, 2, 32),
@@ -213,7 +219,7 @@ def main() -> None:
     assert round(leftover_after_full_tree * 0.10, 1) == 18.9
 
     print("[PASS] day20 opening stats are preserved while enemy durability rises through day100")
-    print("[PASS] enemy health/strength/protection continue past day100 with uncapped square-root tails")
+    print("[PASS] enemy health/strength/protection and structure pressure continue past day100 without date plateaus")
     print("[PASS] rusher fragility comes from growth slope and tier offsets, not a fixed HP ceiling")
     print("[PASS] repeat training remains uncapped at +0.25 HP / +0.1 attack per rank")
 
