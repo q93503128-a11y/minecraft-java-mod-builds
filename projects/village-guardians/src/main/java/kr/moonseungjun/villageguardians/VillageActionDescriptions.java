@@ -67,6 +67,7 @@ final class VillageActionDescriptions {
         }
         return switch (action) {
             case "open_status" -> "레벨·직업·재화·현재 장착 기술을 한 화면에서 확인합니다.";
+            case "open_relic_collection" -> "선택 대기 중인 보스 유물이 있으면 선택을 이어가고, 없으면 보유 유물과 누적 효과를 확인합니다.";
             case "open_caller_menu", "open_manual" -> "인벤토리에서 여는 수호단 메뉴로 돌아갑니다.";
             case "open_skill_tree" -> "기술 연구소의 공용 전술 발전 화면을 엽니다.";
             case "open_role_progress_current" -> "현재 직업의 세 갈래 성장과 두 기술 슬롯을 관리합니다.";
