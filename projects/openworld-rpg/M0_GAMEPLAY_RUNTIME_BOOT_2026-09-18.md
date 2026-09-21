@@ -1179,3 +1179,96 @@ Next bounded gate:
 3. inspect Better Combat's exact attack-cycle coefficient/hit partition and replace its neutral donor proposal with project melee math;
 4. then implement Earthloong authored encounter/reward ownership;
 5. finish registry-sync and quest save/reload/rejoin proofs.
+
+---
+
+# 19. Packaged Arc Bolt + opt-in joined-player bootstrap — 2026-09-21
+
+Source commits:
+
+```text
+e027d2fede34cd6441c367881d7779323cc00698
+openworld-rpg: bind Arc Bolt runtime spell data
+
+8c74f8ca37b1a63a3f6bb280bb23943f8ba90136
+fix(openworld-rpg): call canonical class selection service
+```
+
+Verification:
+
+```text
+Build Openworld RPG
+run 35563533539
+conclusion: SUCCESS
+artifact: openworld-rpg-m0-8c74f8ca37b1a63a3f6bb280bb23943f8ba90136
+artifact sha256: bca5a3e7c3706a358ce6e955a4694ed4bffa20db6fc5655a5e2f5d3f60c7bbd7
+```
+
+`data/openworld_rpg/spell/arc_bolt.json` now exists and is covered by a resource-contract unit test.
+
+Locked project-owned values:
+
+- spell id `openworld_rpg:arc_bolt`;
+- range 22 blocks;
+- Mana cost 12 through project authority;
+- project cooldown 60 ticks / 3.0 s;
+- ActionCoefficient 1.20 magic;
+- PoiseCoefficient 0.50;
+- impact handler `openworld_rpg:project_impact`;
+- Spell Engine donor exhaust/durability/item/cooldown remain neutral.
+
+Previously unspecified initial delivery bindings:
+
+- cast duration 1.0 s;
+- projectile launch velocity 1.0 blocks/tick;
+- source: current Wizards 26.2 Arcane Bolt reference already named as the Mage presentation direction;
+- these two values may be changed after real playtest without changing project damage/resource authority.
+
+Player verification path:
+
+- JVM property `openworld_rpg.m0PlayerVerification=true` is OFF by default;
+- when explicitly enabled, a joining player is prepared as Lv8 Mage, +7 INT allocation, ItemLv8 Staff project loadout;
+- no permanent player-facing debug command is registered;
+- normal gameplay receives no fabricated class/loadout;
+- actual Spell Engine host item remains an explicit manual test action.
+
+`PlayerCombatBuildPublisher` now synchronizes effective WIL to the server-owned Mana state whenever a live build is published.
+
+Exact runtime regression proof remains:
+
+```text
+canonicalHpBefore=4900.0
+canonicalHpAfter=4871.0
+proxyHpBefore=1024.0
+proxyHpAfter=1017.9396
+weaponPower=30.0
+weightedStat=10.95
+damage=29.0
+poiseBefore=190.0
+poiseAfterArcBolt=185.75
+breakDamageTakenMultiplier=1.15
+```
+
+Better Combat 26.2 source audit completed for the next gate:
+
+- server attack uses `PlayerAttackHelper.getCurrentAttack(player, comboCount)`;
+- selected visible hit exposes `WeaponAttributes.Attack.damageMultiplier()`;
+- Better Combat adds combo multiplier and dual-wield/sweeping adjustments as temporary vanilla ATTACK_DAMAGE modifiers before `player.attack`;
+- project melee must not adopt that vanilla damage result as authority;
+- visible per-hit shares need to be normalized into the project family's `WeaponPower / basic cadence` cycle budget from `EQUIPMENT_BALANCE.md`.
+
+Status:
+
+```text
+ARC BOLT SPELL ENGINE DATA: IMPLEMENTED + RESOURCE TESTED + SERVER/CLIENT STARTUP VERIFIED
+ARC BOLT DONOR COST NEUTRALIZATION: TESTED
+OPT-IN REAL PLAYER BUILD BOOTSTRAP: IMPLEMENTED + BUILD VERIFIED
+EFFECTIVE WIL -> MANA STATE SYNC: IMPLEMENTED + BUILD VERIFIED
+
+REAL JOINED-PLAYER ARC BOLT HIT: NOT TESTED
+REAL BETTER COMBAT PROJECT MELEE HIT: NOT IMPLEMENTED / NOT TESTED
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
+```
+
+Manual acceptance is now executable without adding production debug residue.
