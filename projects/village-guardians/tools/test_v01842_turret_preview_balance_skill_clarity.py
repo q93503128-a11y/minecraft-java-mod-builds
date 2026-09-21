@@ -52,10 +52,12 @@ def main() -> None:
     assert "nextStats" in siege
     assert "effectiveDamage" in siege and "effectiveRange" in siege and "effectiveInterval" in siege
 
-    # Live feedback requested a small speed lift only; the 0.18.38 health/damage nerf remains.
+    # The 0.18.38 early-game sapper nerf remains, while the 100-day campaign may add only
+    # gradual health/damage mastery. Objective pressure must never be replaced by sprint scaling.
     attrs = section(enemy, "private static void applyArchetypeAttributes", "private static void applyArchetypeEffects")
-    assert "Math.min(16.0, 8.5" in attrs
-    assert "Math.min(3.0, 1.25" in attrs
+    assert "VillageCampaignProgression.effectiveCombatDay(day)" in attrs
+    assert "Math.min(24.0, 8.5" in attrs
+    assert "Math.min(4.0, 1.25" in attrs
     assert "speed.setBaseValue(0.15)" in attrs
     assert "case SAPPER -> 1.72f" in enemy
 
@@ -68,7 +70,7 @@ def main() -> None:
 
     print("[PASS] v0.18.42 turret placement shows the authoritative circular maximum-range preview")
     print("[PASS] turret capacity, damageability, upgrades and exact dismantle refund are visible in command UI")
-    print("[PASS] sapper speed receives only the requested small lift while prior survivability/damage nerfs remain")
+    print("[PASS] sapper keeps fixed readable speed and only gradual 100-day health/damage mastery")
     print("[PASS] role growth descriptions expose exact cumulative power/duration and special-tier cooldown effects")
 
 
