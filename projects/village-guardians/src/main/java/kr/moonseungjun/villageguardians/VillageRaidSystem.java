@@ -460,24 +460,27 @@ public final class VillageRaidSystem {
             Mob mob, VillageEnemyArchetypeSystem.Archetype archetype, int day, int currentWave, boolean boss) {
         int duration = 20 * 60 * 30;
         boolean sapper = archetype == VillageEnemyArchetypeSystem.Archetype.SAPPER;
+        boolean rusher = archetype == VillageEnemyArchetypeSystem.Archetype.RUSHER;
         int healthTier = VillageCampaignProgression.enemyHealthTier(day, currentWave);
         int strengthTier = VillageCampaignProgression.enemyStrengthTier(day, currentWave);
         if (sapper) {
             healthTier = Math.max(0, healthTier - 2);
             strengthTier = Math.max(0, strengthTier - 2);
+        } else if (rusher && day > 20) {
+            healthTier = Math.max(0, healthTier - 2);
         }
         if (healthTier > 0 || boss) {
             mob.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST, duration,
-                    Math.min(17, healthTier + (boss ? 3 : 0))));
+                    healthTier + (boss ? 3 : 0)));
         }
         if (strengthTier > 0 || boss) {
             mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, duration,
-                    Math.min(6, strengthTier + (boss ? 1 : 0))));
+                    strengthTier + (boss ? 1 : 0)));
         }
         // Movement speed is authored by enemy role and wave doctrine, never by raw campaign day.
-        if (day >= 30) {
-            mob.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration,
-                    Math.min(2, Math.max(0, (day - 20) / 30))));
+        int absorptionAmplifier = VillageCampaignProgression.enemyAbsorptionAmplifier(day);
+        if (absorptionAmplifier >= 0) {
+            mob.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration, absorptionAmplifier));
         }
         if (boss) {
             mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, duration, 1));
