@@ -16,6 +16,8 @@ public final class VillageSkillTreeSystem {
     private static final Map<UUID, Integer> SPENT_POINTS = new LinkedHashMap<>();
     private static final Map<UUID, Integer> HEALTH_TRAINING = new LinkedHashMap<>();
     private static final Map<UUID, Integer> ATTACK_TRAINING = new LinkedHashMap<>();
+    public static final double HEALTH_TRAINING_PER_RANK = 0.25D;
+    public static final double ATTACK_TRAINING_PER_RANK = 0.10D;
     private static VillageSkillTreeData savedData;
 
     private VillageSkillTreeSystem() {
@@ -71,6 +73,14 @@ public final class VillageSkillTreeSystem {
         return Math.max(0, ATTACK_TRAINING.getOrDefault(player.getUUID(), 0));
     }
 
+    public static double healthTrainingBonus(ServerPlayer player) {
+        return healthTraining(player) * HEALTH_TRAINING_PER_RANK;
+    }
+
+    public static double attackTrainingBonus(ServerPlayer player) {
+        return attackTraining(player) * ATTACK_TRAINING_PER_RANK;
+    }
+
     public static boolean trainingUnlocked(ServerPlayer player) {
         for (Branch branch : Branch.values()) {
             boolean complete = true;
@@ -106,7 +116,7 @@ public final class VillageSkillTreeSystem {
         if ("health".equals(normalized)) {
             int next = healthTraining(player) + 1;
             HEALTH_TRAINING.put(id, next);
-            result = "체력 단련 " + next + "회 · 최대 체력 +1";
+            result = "체력 단련 " + next + "회 · 최대 체력 +0.25";
         } else if ("attack".equals(normalized)) {
             int next = attackTraining(player) + 1;
             ATTACK_TRAINING.put(id, next);
