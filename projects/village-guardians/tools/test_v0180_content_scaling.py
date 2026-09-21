@@ -81,9 +81,9 @@ def main() -> None:
     trait_block = traits.split("enum VillageWaveTrait", 1)[1].split("private static final", 1)[0]
     trait_values = re.findall(r"^\s{4}([A-Z][A-Z0-9_]+)\(\"", trait_block, re.M)
     aspect_values = enum_constants(bosses, "Aspect", "private final String displayName")
-    check("상점 고유 장비가 10종에서 24종으로 확장되었습니다", len(offers) == 24)
+    check("상점 고유 장비가 장기 캠페인용 36종으로 확장되었습니다", len(offers) == 36)
     check("보스 유물이 6종에서 11종으로 확장되었습니다", len(relic_values) == 11)
-    check("웨이브 특성이 8종에서 12종으로 확장되었습니다", len(trait_values) == 12)
+    check("웨이브 특성이 후반 교리까지 19종으로 확장되었습니다", len(trait_values) == 19)
     check("기본 보스 네 종에 여섯 변이가 결합되는 24개 보스 조합이 존재합니다", len(aspect_values) == 6)
 
     check(
@@ -104,15 +104,18 @@ def main() -> None:
         and "VillageBossAspectSystem.reset" in raid
         and "VillageBossAspectSystem.previewText" in intel,
     )
-    for token in ["PHALANX", "BLOOD_MOON", "STORMFRONT", "RIFTED"]:
-        check(f"신규 웨이브 특성 {token}은 실제 병과 편성을 가집니다", token in enemies)
+    for token in ["PHALANX", "BLOOD_MOON", "STORMFRONT", "RIFTED",
+                  "BREACH_STORM", "SKY_SIEGE", "HUNTER_NET", "DEATH_CHORUS",
+                  "IRON_TIDE", "CATACLYSM", "FINAL_HOST"]:
+        check(f"확장 웨이브 특성 {token}은 실제 병과 편성을 가집니다", token in enemies)
 
     skill_enum = role.split("enum ActiveSkill", 1)[1].split("private final String id", 1)[0]
     skills = re.findall(r"^\s{8}([A-Z][A-Z0-9_]+)\(\"", skill_enum, re.M)
-    check("액티브 기술 수는 20종으로 유지됩니다", len(skills) == 20)
+    check("기본·1차·2차 액티브 기술이 총 60종입니다", len(skills) == 60)
     cast_block = role.split("private static void cast", 1)[1].split("private static void equipIntoFirstFreeSlot", 1)[0]
-    missing = [skill for skill in skills if f"case {skill} -> VillageRoleAbilitySystem.cast" not in cast_block]
-    check("20개 기술 모두 실제 성장 인수를 받는 시전 구현으로 연결됩니다", not missing)
+    check("60개 기술 모두 단일 서버 권한 시전 경로로 연결됩니다",
+          "VillageRoleAbilitySystem.cast(level, player, skill" in cast_block
+          and "promotionTier()" in role and "promotionSlot()" in role)
 
     concrete_markers = [
         "SPIN_SCALE", "RALLY_SCALE", "waveCount", "durationMultiplier(), slam.specialRank()",
@@ -141,7 +144,7 @@ def main() -> None:
         and "event.getAmount() * 0.72f * ricochetPower" not in ability,
     )
     check(
-        "콘텐츠 감사 문서가 현재 수량과 무한 캠페인 확장을 기록합니다",
+        "역사적 콘텐츠 감사 문서가 v0.18.0 당시 수량과 무한 진행 기준을 보존합니다",
         all(token in audit for token in [
             "상점 고유 장비 24종", "보스 변이 6종", "총 24개 보스 조합",
             "웨이브 특성 12종", "유물 11종", "고정 마지막 날은 없으며 무한 진행",

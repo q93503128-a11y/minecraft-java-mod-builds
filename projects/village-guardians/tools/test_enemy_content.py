@@ -27,7 +27,9 @@ def main() -> None:
 
     for trait in (
         "STANDARD", "SWARM", "IRONCLAD", "SIEGE", "HUNTERS", "HEXED", "FRENZY", "REGENERATING",
-        "PHALANX", "BLOOD_MOON", "STORMFRONT", "RIFTED"
+        "PHALANX", "BLOOD_MOON", "STORMFRONT", "RIFTED",
+        "BREACH_STORM", "SKY_SIEGE", "HUNTER_NET", "DEATH_CHORUS",
+        "IRON_TIDE", "CATACLYSM", "FINAL_HOST"
     ):
         assert trait + "(" in traits
     assert "counterHint" in traits and "select(int day, int wave)" in traits
@@ -101,12 +103,12 @@ def main() -> None:
     assert "CC0 1.0 Universal" in notices
     assert "no original Tiny Creatures sprite binaries are bundled" in notices
 
-    print("[PASS] Twelve readable wave traits include deterministic counters and previews")
+    print("[PASS] Nineteen readable wave traits include deterministic counters and previews")
     print("[PASS] Ten regular archetypes and four rotating bosses have distinct battlefield jobs")
     print("[PASS] Five-day milestone sieges and endless warfront tiers remain scalable")
     print("[PASS] Ten player-placed turret roles own production combat and tower research scaling")
     print("[PASS] Automated defenses and mercenaries use synchronized procedural-mesh feedback")
-    print("[PASS] Twenty active skills combine real gameplay with dedicated procedural-mesh scenes")
+    print("[PASS] Sixty active skills share real gameplay and synchronized procedural-mesh scenes")
     print("[PASS] CC0 fantasy visual references are documented without untracked binaries")
 
 
