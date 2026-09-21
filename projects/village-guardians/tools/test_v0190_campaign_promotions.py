@@ -28,7 +28,7 @@ def main() -> None:
     effects = read("VillageSkillEffectSystem.java")
     skill_tree = read("VillageSkillTreeSystem.java")
 
-    assert "MAX_LEVEL = 100" in progress
+    assert "MAX_LEVEL = 300" in progress
     assert "CAMPAIGN_END_DAY = 100" in campaign
     assert "return Math.min(RpgProgress.MAX_LEVEL" in campaign
     assert 'return "최종 대공성"' in war
@@ -85,15 +85,18 @@ def main() -> None:
 
     # Reuse the existing tactical-point economy and preserve pre-Lv.30 allocations.
     assert "Math.max(0, Math.min(30, level) - 1)" in skill_tree
-    assert "Math.max(0, level - 30) / 2" in skill_tree
+    assert "Math.max(0, level - 30) / 4" in skill_tree
     assert "SPENT_POINTS" in skill_tree
-    assert "레벨마다, 이후에는 2레벨마다 1P" in skill_tree
+    assert "레벨마다, 이후에는 4레벨마다 1P" in skill_tree
 
     print("[PASS] campaign and reward growth span authored progression through day 100")
     print("[PASS] enemy raw stat growth is slower and never reintroduces day-based speed escalation")
     print("[PASS] equipment, turrets, defense research and mercenaries retain long-campaign growth")
     print("[PASS] five roles have four base + four first-promotion + four second-promotion active skills")
-    print("[PASS] promotion passives and existing tactical points extend progression without a new currency")
+    assert "return Math.max(pacedTotal, spentPoints(player));" in skill_tree
+    assert "combatScalingLevel" in progress
+
+    print("[PASS] promotion passives and paced tactical points extend progression to Lv.300 without a new currency")
 
 if __name__ == "__main__":
     main()
