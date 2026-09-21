@@ -13,20 +13,26 @@ import org.slf4j.Logger;
 /**
  * Explicit local/manual M0 player bootstrap.
  *
- * <p>Disabled by default and never registered as player-facing gameplay. When the JVM verification
- * flag is enabled, a joining player in a disposable test world receives a canon-valid Lv8 Mage
- * combat profile and ItemLv8 Staff loadout so the real Spell Engine client flow can be exercised.
- * The physical held item/spell container is intentionally left to an explicit /give command, so
- * this path does not create a parallel inventory implementation.</p>
+ * <p>Disabled in normal builds and never registered as player-facing gameplay. A dedicated M0
+ * playtest artifact embeds a verification marker so a joining player in a disposable test world
+ * receives a canon-valid Lv8 Mage combat profile and ItemLv8 Staff loadout without requiring a JVM
+ * option. The legacy JVM flag remains available for local development. The physical held item/spell
+ * container is intentionally left to an explicit /give command, so this path does not create a
+ * parallel inventory implementation.</p>
  */
 public final class M0PlayerVerificationBootstrap {
     public static final String ENABLE_PROPERTY = "openworld_rpg.m0PlayerVerification";
+    public static final String EMBEDDED_MARKER =
+            "data/openworld_rpg/integration/m0_player_verification.enabled";
 
     private M0PlayerVerificationBootstrap() {
     }
 
     public static boolean enabled() {
-        return Boolean.parseBoolean(System.getProperty(ENABLE_PROPERTY, "false"));
+        if (Boolean.parseBoolean(System.getProperty(ENABLE_PROPERTY, "false"))) {
+            return true;
+        }
+        return M0PlayerVerificationBootstrap.class.getResource("/" + EMBEDDED_MARKER) != null;
     }
 
     public static void prepare(ServerPlayer player, Logger logger) {

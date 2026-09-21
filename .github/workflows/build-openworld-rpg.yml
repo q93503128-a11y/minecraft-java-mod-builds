@@ -155,6 +155,30 @@ jobs:
             exit 1
           fi
 
+      - name: Build JVM-free joined-player Arc Bolt playtest JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          NORMAL_JAR="build/libs/openworld-rpg-0.1.0-alpha.1.jar"
+          PLAYTEST_JAR="build/libs/openworld-rpg-0.1.0-alpha.1-m0-playtest.jar"
+          MARKER="data/openworld_rpg/integration/m0_player_verification.enabled"
+
+          mkdir -p build/staging
+          cp "$NORMAL_JAR" build/staging/openworld-rpg-normal.jar
+
+          ./gradlew --no-daemon -PopenworldM0PlayerVerification=true processResources remapJar --stacktrace
+          cp "$NORMAL_JAR" "$PLAYTEST_JAR"
+
+          jar tf "$PLAYTEST_JAR" | grep -q "^$MARKER$"
+
+          cp build/staging/openworld-rpg-normal.jar "$NORMAL_JAR"
+          if jar tf "$NORMAL_JAR" | grep -q "^$MARKER$"; then
+            echo 'Normal Openworld RPG JAR unexpectedly contains the M0 player-verification marker.'
+            exit 1
+          fi
+
+          sha256sum "$PLAYTEST_JAR" | tee "$PLAYTEST_JAR.sha256"
+
       - name: Write M0 build report
         shell: bash
         run: |
@@ -196,6 +220,7 @@ jobs:
           - external actor non-project HP damage: FAIL-CLOSED by one-shot project damage authorization
           - Earthloong runtime boss poise: IMPLEMENTED + UNIT/RUNTIME HARNESS VERIFIED (4.25 poise Arc Bolt fixture, break +15% damage window, recovery/protection math)
           - persistent combat progression: IMPLEMENTED + UNIT/BUILD VERIFIED
+          - JVM-free joined-player Arc Bolt playtest artifact: BUILT + MARKER VERIFIED
           - real joined-player Spell Engine impact: NOT TESTED
           - full backpack/loot-generation/equipment UI: NOT IMPLEMENTED
           - player-facing R01 content: NOT IMPLEMENTED
