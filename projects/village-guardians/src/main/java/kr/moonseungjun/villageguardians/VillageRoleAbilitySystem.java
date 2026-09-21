@@ -274,7 +274,7 @@ public final class VillageRoleAbilitySystem {
             int echoes = 0;
             float firstEchoChance = Math.min(0.58f, 0.30f + specialRank * 0.045f);
             float secondEchoChance = Math.min(0.32f, 0.12f + specialRank * 0.025f);
-            if (player.getRandom().nextFloat() < firstEchoChance) echoes++;
+            if (specialRank >= 5 || player.getRandom().nextFloat() < firstEchoChance) echoes++;
             if (player.getRandom().nextFloat() < secondEchoChance) echoes++;
             for (int i = 0; i < echoes; i++) {
                 SCHEDULED.add(new ScheduledAction(now + 8L + i * 8L, player.getUUID(), skill,
@@ -664,6 +664,12 @@ public final class VillageRoleAbilitySystem {
                 if (now % 20L == 0L) {
                     VillageRaidSystem.tauntEnemies(level, player, player.position(),
                             36.0 + fortress.specialRank() * 2.0, 50, 160);
+                    if (fortress.specialRank() >= 5) {
+                        for (ServerPlayer ally : allies(player, 10.0)) {
+                            ally.addEffect(new MobEffectInstance(
+                                    MobEffects.RESISTANCE, 35, 0, false, false, true));
+                        }
+                    }
                 }
             } else if (AEGIS_UNTIL.getOrDefault(id, 0L) >= now) {
                 SkillScale aegis = AEGIS_SCALE.getOrDefault(id, SkillScale.DEFAULT);
@@ -680,6 +686,12 @@ public final class VillageRoleAbilitySystem {
                 if (now % 30L == 0L) {
                     VillageRaidSystem.tauntEnemies(level, player, player.position(),
                             42.0 + aegis.specialRank() * 2.0, 45, 160);
+                    if (aegis.specialRank() >= 5) {
+                        for (ServerPlayer ally : allies(player, 12.0)) {
+                            ally.addEffect(new MobEffectInstance(
+                                    MobEffects.RESISTANCE, 45, 0, false, false, true));
+                        }
+                    }
                 }
                 if (player.isSprinting() && now - LAST_AEGIS_DASH.getOrDefault(id, -100L) >= 14L) {
                     LAST_AEGIS_DASH.put(id, now);
@@ -1046,6 +1058,10 @@ public final class VillageRoleAbilitySystem {
             if (scale.specialRank() >= 4) {
                 spawnSideArrow(level, player, arrow, -16.0, scale.power() * 0.82f);
                 spawnSideArrow(level, player, arrow, 16.0, scale.power() * 0.82f);
+            }
+            if (scale.specialRank() >= 5) {
+                spawnSideArrow(level, player, arrow, -24.0, scale.power() * 0.70f);
+                spawnSideArrow(level, player, arrow, 24.0, scale.power() * 0.70f);
             }
         } finally {
             spawningGeneratedArrow = false;
