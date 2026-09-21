@@ -178,7 +178,7 @@ def sha256Of = { File file ->
 
 def expectedGameplayFoundationSha256 = [
         '5sy6g3kz-enlZuzkJ.jar': 'cce827992f517b181bc25c4f6c35e2c75818d29fcdbea90c3838704364b04639',
-        'ha1mEyJS-Hq1CwB9w.jar': 'd7531e9ce2bdcf394f99a66cc79114f58c8c82ae7e723527ee27545c40619ff1',
+        'ha1mEyJS-Hq1CwB9w.jar': '97af3288dd39643bf3607bf9ff5c3293022793559236586a6783fe71dd66e6bd',
         'XaT8sLP6-r453A8nE.jar': 'bc0c41455373df0475173250912ad45f1592b55c1398913ad06941de6571058c',
         'armor-model-api-1.1.0+26.2-fabric.jar': '406226390526a774db9bf83584b8e68a96068998541b3c044cda019c8d93c397',
         'cloth-config-fabric-26.2.155.jar': 'def4be7639cd66704f7e304d658ea0f6bf490fb4a6eaa2dbf18ec2c3999d6349',
