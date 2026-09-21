@@ -25,6 +25,9 @@ public final class VillageMainHudOverlay {
     private static final int GOLD = 0xFFFFC65C;
     private static final int BACK = 0x76081218;
     private static final int EDGE = 0xB3436975;
+    private static final int HEALTH_BACK = 0xD3161114;
+    private static final int HEALTH_FILL = 0xFFE04F5F;
+    private static final int HEALTH_EDGE = 0xFF6F3139;
     private static String text = "";
     private static long lastUpdate;
 
@@ -43,10 +46,12 @@ public final class VillageMainHudOverlay {
 
     private static void render(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.gui.screen() != null || text.isBlank()) return;
-        if (System.currentTimeMillis() - lastUpdate > 3_000L) return;
+        if (minecraft.player == null || minecraft.gui.screen() != null) return;
 
         Font font = minecraft.font;
+        renderHealthBar(graphics, minecraft, font);
+
+        if (text.isBlank() || System.currentTimeMillis() - lastUpdate > 3_000L) return;
         String[] sections = text.split(" §8│ ", -1);
         String day = sections.length > 0 ? plain(sections[0]) : plain(text);
         String level = sections.length > 1 ? plain(sections[1]) : "";
@@ -74,6 +79,38 @@ public final class VillageMainHudOverlay {
         if (!third.isBlank()) graphics.text(font, third, left + 22, top + 33, GOLD, true);
         int accent = Math.min(panelWidth - 8, Math.max(34, panelWidth * 38 / 100));
         graphics.fill(left + 4, bottom - 2, left + accent, bottom, GOLD);
+    }
+
+    private static void renderHealthBar(GuiGraphicsExtractor graphics, Minecraft minecraft, Font font) {
+        if (minecraft.player == null || minecraft.player.isSpectator()) return;
+        float maximum = Math.max(1.0f, minecraft.player.getMaxHealth());
+        float current = Math.max(0.0f, Math.min(maximum, minecraft.player.getHealth()));
+        float ratio = current / maximum;
+
+        int barWidth = Math.min(112, Math.max(88, graphics.guiWidth() / 9));
+        int barHeight = 11;
+        int left = graphics.guiWidth() / 2 - 91;
+        int top = Math.max(8, graphics.guiHeight() - 41);
+        int right = left + barWidth;
+
+        graphics.fill(left - 1, top - 1, right + 1, top + barHeight + 1, HEALTH_EDGE);
+        graphics.fill(left, top, right, top + barHeight, HEALTH_BACK);
+        int filled = Math.round((barWidth - 2) * ratio);
+        if (filled > 0) {
+            graphics.fill(left + 1, top + 1, left + 1 + filled, top + barHeight - 1, HEALTH_FILL);
+        }
+
+        String label = compactHealth(current) + " / " + compactHealth(maximum);
+        int textX = left + Math.max(2, (barWidth - font.width(label)) / 2);
+        graphics.text(font, label, textX, top + 1, TEXT, true);
+    }
+
+    private static String compactHealth(float value) {
+        float rounded = Math.round(value * 10.0f) / 10.0f;
+        if (Math.abs(rounded - Math.round(rounded)) < 0.01f) {
+            return Integer.toString(Math.round(rounded));
+        }
+        return Float.toString(rounded);
     }
 
     private static String join(String a, String b, String separator) {
