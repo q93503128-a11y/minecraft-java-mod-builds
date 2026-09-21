@@ -28,7 +28,7 @@ def main() -> None:
     ):
         assert token in network
 
-    assert "Lv.30까지는 레벨마다, 이후에는 2레벨마다 얻는 전술 포인트" in descriptions
+    assert "Lv.30까지는 레벨마다, 이후에는 4레벨마다 얻는 전술 포인트" in descriptions
     assert "이동 속도가 폭증" not in aspect
     assert "잠시 추격 속도가 상승" in aspect
 
