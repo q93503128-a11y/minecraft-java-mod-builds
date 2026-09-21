@@ -28,6 +28,7 @@ public final class VillageMainHudOverlay {
     private static final int HEALTH_BACK = 0xD3161114;
     private static final int HEALTH_FILL = 0xFFE04F5F;
     private static final int HEALTH_EDGE = 0xFF6F3139;
+    private static final int ABSORPTION_TRACK = 0xB34A3C1C;
     private static String text = "";
     private static long lastUpdate;
 
@@ -85,22 +86,33 @@ public final class VillageMainHudOverlay {
         if (minecraft.player == null || minecraft.player.isSpectator()) return;
         float maximum = Math.max(1.0f, minecraft.player.getMaxHealth());
         float current = Math.max(0.0f, Math.min(maximum, minecraft.player.getHealth()));
+        float absorption = Math.max(0.0f, minecraft.player.getAbsorptionAmount());
         float ratio = current / maximum;
 
-        int barWidth = Math.min(112, Math.max(88, graphics.guiWidth() / 9));
-        int barHeight = 11;
+        String label = compactHealth(current) + " / " + compactHealth(maximum)
+                + (absorption > 0.0f ? "  +" + compactHealth(absorption) : "");
+        int barWidth = Math.min(126, Math.max(Math.max(88, graphics.guiWidth() / 9), font.width(label) + 12));
+        int barHeight = absorption > 0.0f ? 13 : 11;
         int left = graphics.guiWidth() / 2 - 91;
-        int top = Math.max(8, graphics.guiHeight() - 41);
+        int top = Math.max(8, graphics.guiHeight() - 39);
         int right = left + barWidth;
+        int healthBottom = top + barHeight - (absorption > 0.0f ? 3 : 1);
 
         graphics.fill(left - 1, top - 1, right + 1, top + barHeight + 1, HEALTH_EDGE);
         graphics.fill(left, top, right, top + barHeight, HEALTH_BACK);
         int filled = Math.round((barWidth - 2) * ratio);
         if (filled > 0) {
-            graphics.fill(left + 1, top + 1, left + 1 + filled, top + barHeight - 1, HEALTH_FILL);
+            graphics.fill(left + 1, top + 1, left + 1 + filled, healthBottom, HEALTH_FILL);
         }
 
-        String label = compactHealth(current) + " / " + compactHealth(maximum);
+        if (absorption > 0.0f) {
+            int shieldWidth = Math.max(2, Math.round((barWidth - 2)
+                    * Math.min(1.0f, absorption / maximum)));
+            int shieldTop = top + barHeight - 3;
+            graphics.fill(left + 1, shieldTop, right - 1, top + barHeight - 1, ABSORPTION_TRACK);
+            graphics.fill(left + 1, shieldTop, left + 1 + shieldWidth, top + barHeight - 1, GOLD);
+        }
+
         int textX = left + Math.max(2, (barWidth - font.width(label)) / 2);
         graphics.text(font, label, textX, top + 1, TEXT, true);
     }
