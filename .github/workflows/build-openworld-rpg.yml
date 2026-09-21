@@ -280,31 +280,33 @@ jobs:
           with open(os.path.join(out_dir, "modrinth.index.json"), "w", encoding="utf-8") as f:
               json.dump(index, f, ensure_ascii=False, indent=2)
 
-          readme = """Openworld RPG — M0 Arc Bolt Playtest
-
-Import this .mrpack into Modrinth App or another launcher that supports Modrinth packs.
-
-Pinned runtime:
-- Minecraft 26.2
-- Fabric Loader 0.19.5
-- Java 25
-- Fabric API 0.160.0+26.2
-- Openworld RPG 0.1.0-alpha.1 M0 playtest build
-- all pinned gameplay/creature dependencies from the project manifest
-
-This is a disposable integration-test pack, not the finished RPG.
-
-Test:
-1. Create a test world with cheats enabled.
-2. The M0 playtest build automatically prepares the joining player as Lv8 Mage, INT +7, ItemLv8 Staff project loadout.
-3. Give an Arc Bolt host item:
-   /give @s minecraft:wooden_sword[spell_engine:spell_container={access:MAGIC, spell_ids: ["openworld_rpg:arc_bolt"] }]
-4. Spawn Earthloong:
-   /summon threateningly_mobs:the_earthloong ~ ~ ~6
-5. Cast Arc Bolt and confirm the projectile lands normally.
-
-Do not mix this pack with an older Openworld RPG jar.
-"""
+          readme = "\n".join([
+              "Openworld RPG — M0 Arc Bolt Playtest",
+              "",
+              "Import this .mrpack into Modrinth App or another launcher that supports Modrinth packs.",
+              "",
+              "Pinned runtime:",
+              "- Minecraft 26.2",
+              "- Fabric Loader 0.19.5",
+              "- Java 25",
+              "- Fabric API 0.160.0+26.2",
+              "- Openworld RPG 0.1.0-alpha.1 M0 playtest build",
+              "- all pinned gameplay/creature dependencies from the project manifest",
+              "",
+              "This is a disposable integration-test pack, not the finished RPG.",
+              "",
+              "Test:",
+              "1. Create a test world with cheats enabled.",
+              "2. The M0 playtest build automatically prepares the joining player as Lv8 Mage, INT +7, ItemLv8 Staff project loadout.",
+              "3. Give an Arc Bolt host item:",
+              "   /give @s minecraft:wooden_sword[spell_engine:spell_container={access:MAGIC, spell_ids: [\\\"openworld_rpg:arc_bolt\\\"] }]",
+              "4. Spawn Earthloong:",
+              "   /summon threateningly_mobs:the_earthloong ~ ~ ~6",
+              "5. Cast Arc Bolt and confirm the projectile lands normally.",
+              "",
+              "Do not mix this pack with an older Openworld RPG jar.",
+              "",
+          ])
           with open(os.path.join(out_dir, "overrides", "OPENWORLD_RPG_M0_PLAYTEST.txt"), "w", encoding="utf-8") as f:
               f.write(readme)
 
