@@ -188,9 +188,37 @@ public enum VillageWaveTrait {
     }
 
     private static VillageWaveTrait selectFromPool(VillageWaveTrait[] pool, int day, int wave) {
-        long seed = day * 31L + wave * 17L + (long) wave * wave * 7L + (long) day * wave * 3L;
-        int index = (int) Math.floorMod(seed, (long) pool.length);
+        if (pool == null || pool.length == 0) return STANDARD;
+        int offset = Math.floorMod(day * 31 + day / 10 * 7, pool.length);
+        int stride = coprimeStride(pool.length, day);
+        int index = Math.floorMod(offset + Math.max(0, wave - 1) * stride, pool.length);
         return pool[index];
+    }
+
+    /**
+     * Walk the authored chapter pool without collapsing into one or two repeating traits.
+     * A stride coprime to the pool length visits every doctrine before repeating; day only
+     * changes the starting point and traversal order, keeping the schedule deterministic.
+     */
+    private static int coprimeStride(int length, int day) {
+        if (length <= 1) return 1;
+        int stride = 2 + Math.floorMod(day, length - 1);
+        while (greatestCommonDivisor(stride, length) != 1) {
+            stride++;
+            if (stride >= length) stride = 1;
+        }
+        return stride;
+    }
+
+    private static int greatestCommonDivisor(int left, int right) {
+        int a = Math.max(1, Math.abs(left));
+        int b = Math.max(1, Math.abs(right));
+        while (b != 0) {
+            int next = a % b;
+            a = b;
+            b = next;
+        }
+        return a;
     }
 
     private static VillageWaveTrait finalSiegeTrait(int wave) {
