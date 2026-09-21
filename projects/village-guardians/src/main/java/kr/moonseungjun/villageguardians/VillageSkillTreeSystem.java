@@ -32,8 +32,11 @@ public final class VillageSkillTreeSystem {
     public static int earnedPoints(ServerPlayer player) {
         int level = VillageCouncilState.levelOf(player.getUUID());
         int foundation = Math.max(0, Math.min(30, level) - 1);
-        int mastery = Math.max(0, level - 30) / 2;
-        return foundation + mastery;
+        int mastery = Math.max(0, level - 30) / 4;
+        int pacedTotal = foundation + mastery;
+        // Existing worlds may already have spent points earned under the former 2-level cadence.
+        // Never revoke or safety-lock a legitimate historical allocation.
+        return Math.max(pacedTotal, spentPoints(player));
     }
 
     public static int spentPoints(ServerPlayer player) {
@@ -74,7 +77,7 @@ public final class VillageSkillTreeSystem {
         int cost = node.pointCost();
         if (availablePoints(player) < cost) {
             return "전술 포인트가 부족합니다. 필요 " + cost + "P, 현재 " + availablePoints(player)
-                    + "P · Lv.30까지는 레벨마다, 이후에는 2레벨마다 1P를 얻습니다.";
+                    + "P · Lv.30까지는 레벨마다, 이후에는 4레벨마다 1P를 얻습니다.";
         }
         long mask = UNLOCKED_MASKS.getOrDefault(player.getUUID(), 0L);
         UNLOCKED_MASKS.put(player.getUUID(), mask | bit(node));
