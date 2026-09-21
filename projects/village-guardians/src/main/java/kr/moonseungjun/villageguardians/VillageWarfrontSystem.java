@@ -40,8 +40,11 @@ public final class VillageWarfrontSystem {
     }
 
     public static int bonusBossCount(int day, int wave, int maxWaves) {
+        if (VillageCampaignProgression.isFinalSiege(day)) {
+            if (maxWaves < 7) return 0;
+            return wave >= 4 && wave <= 7 ? 1 : 0;
+        }
         if (wave != maxWaves || day < 4) return 0;
-        if (VillageCampaignProgression.isFinalSiege(day)) return Math.min(4, Math.max(1, maxWaves));
         if (day < 10) {
             if (isMilestoneDay(day)) return 1;
             return day == 4 || day == 7 ? 1 : 0;
@@ -51,6 +54,19 @@ public final class VillageWarfrontSystem {
         if (day >= 80 && isMilestoneDay(day)) count++;
         if (day > 100) count += Math.min(1, endlessTier(day) / 4);
         return Math.min(4, count);
+    }
+
+    public static String finalSiegePhaseLabel(int day, int wave) {
+        if (!VillageCampaignProgression.isFinalSiege(day)) return "";
+        return switch (Math.max(1, wave)) {
+            case 1 -> "제1전선 · 파성 돌입";
+            case 2 -> "제2전선 · 천공 압박";
+            case 3 -> "제3전선 · 사냥망 전개";
+            case 4 -> "제4전선 · 사령 결전";
+            case 5 -> "제5전선 · 철갑 결전";
+            case 6 -> "제6전선 · 재앙 결전";
+            default -> "최종전 · 종말 군세";
+        };
     }
 
     public static int countBonus(int day) {
@@ -78,7 +94,7 @@ public final class VillageWarfrontSystem {
 
     public static String milestoneHint(int day) {
         if (VillageCampaignProgression.isFinalSiege(day)) {
-            return "제100일 결전입니다. 모든 전선과 우두머리 공세가 동시에 압박합니다.";
+            return "제100일 결전입니다. 7개 공세가 이어지며 4~7웨이브에서 서로 다른 우두머리가 차례로 출전합니다.";
         }
         if (!isMilestoneDay(day)) return "";
         return "이번 밤은 대침공일입니다. 마지막 웨이브의 우두머리 공세와 보상이 강화됩니다.";
