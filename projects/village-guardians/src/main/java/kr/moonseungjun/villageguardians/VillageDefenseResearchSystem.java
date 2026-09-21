@@ -96,8 +96,10 @@ public final class VillageDefenseResearchSystem {
     private static int mercenaryCapacityAt(int researchLevel) {
         int safe = Math.max(0, Math.min(MAX_LEVEL, researchLevel));
         int foundation = Math.min(3, safe);
-        int mastery = Math.max(0, safe - 4) / 2;
-        return Math.min(8, foundation + mastery);
+        int legacyMastery = Math.max(0, Math.min(10, safe) - 4) / 2;
+        int legacyCapacity = Math.min(5, foundation + legacyMastery);
+        int longCampaignBonus = Math.max(0, safe - 10) / 3;
+        return Math.min(8, legacyCapacity + longCampaignBonus);
     }
 
     public static int mercenaryCapacityBonus() {
