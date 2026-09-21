@@ -44,6 +44,11 @@ public final class VillageEnemyEliteSystem {
         PLAGUE_CASTS.remove(uuid);
     }
 
+    /** Authoritative runtime query used by reward weighting and other raid systems. */
+    public static boolean isElite(Mob mob) {
+        return mob != null && ACTIVE.containsKey(mob.getUUID());
+    }
+
     public static void tick(MinecraftServer server) {
         if (server == null || !VillageRaidSystem.isActive()) return;
         ticks++;
