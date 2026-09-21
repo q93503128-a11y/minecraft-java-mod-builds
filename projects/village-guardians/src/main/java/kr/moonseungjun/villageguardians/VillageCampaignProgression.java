@@ -103,6 +103,24 @@ public final class VillageCampaignProgression {
         return 2 + (int) Math.floor(Math.sqrt(safe - CAMPAIGN_END_DAY) / 10.0);
     }
 
+    public static int bonusAbsorptionAmplifier(int day) {
+        int safe = Math.max(1, day);
+        if (safe <= 30) return Math.max(0, safe / 10);
+        return 3 + (int) Math.floor(Math.sqrt(safe - 30) / 12.0);
+    }
+
+    public static float structureDamageDayContribution(int day) {
+        int safe = Math.max(1, day);
+        if (safe <= 24) return safe;
+        return 24.0f + (float) Math.sqrt(safe - 24) * 0.35f;
+    }
+
+    public static float aerialStructureDamageDayContribution(int day) {
+        int safe = Math.max(1, day);
+        if (safe <= 16) return safe * 0.45f;
+        return 7.2f + (float) Math.sqrt(safe - 16) * 0.08f;
+    }
+
     /**
      * Roster growth is intentionally bounded. Late difficulty comes from composition, fronts
      * and mechanics rather than hundreds of disposable entities.
