@@ -112,7 +112,7 @@ public final class VillageRoleAbilitySystem {
             float durationMultiplier,
             int specialRank) {
         long now = level.getGameTime();
-        int playerLevel = VillageCouncilState.levelOf(player.getUUID());
+        int playerLevel = RpgProgress.combatScalingLevel(VillageCouncilState.levelOf(player.getUUID()));
         int duration = Math.max(40, Math.round((120 + playerLevel * 3) * durationMultiplier));
         Vec3 forward = horizontalLook(player);
         Vec3 sight = lookDirection(player);
@@ -293,7 +293,7 @@ public final class VillageRoleAbilitySystem {
             int specialRank) {
         int tier = skill.promotionTier();
         int slot = skill.promotionSlot();
-        int playerLevel = VillageCouncilState.levelOf(player.getUUID());
+        int playerLevel = RpgProgress.combatScalingLevel(VillageCouncilState.levelOf(player.getUUID()));
         int duration = Math.max(80, Math.round((130 + playerLevel * 2) * durationMultiplier));
         Vec3 forward = horizontalLook(player);
         Vec3 sight = lookDirection(player);
