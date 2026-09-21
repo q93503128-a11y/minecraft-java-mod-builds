@@ -18,7 +18,7 @@ public final class VillageCampaignProgression {
 
     /**
      * Expected player level at the end of a day. The first twenty days preserve the old Lv.30
-     * destination; the remaining eighty days carry the player toward Lv.100.
+     * destination; the remaining eighty days accelerate visible progression toward Lv.300.
      */
     public static int targetPlayerLevel(int day) {
         int safe = campaignDay(day);
@@ -26,7 +26,17 @@ public final class VillageCampaignProgression {
             return 1 + Math.round((safe - 1) * 29.0f / 19.0f);
         }
         return Math.min(RpgProgress.MAX_LEVEL,
-                30 + Math.round((safe - 20) * 70.0f / 80.0f));
+                30 + Math.round((safe - 20) * 270.0f / 80.0f));
+    }
+
+    /**
+     * Number of visible levels the authored campaign expects to gain on this day.
+     * Day 21+ intentionally averages roughly three to four levels so level-ups remain frequent.
+     */
+    public static int targetLevelsForDay(int day) {
+        int safe = campaignDay(day);
+        if (safe <= 1) return 0;
+        return Math.max(1, targetPlayerLevel(safe) - targetPlayerLevel(safe - 1));
     }
 
     /**
