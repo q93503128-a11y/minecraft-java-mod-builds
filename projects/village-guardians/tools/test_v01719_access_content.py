@@ -75,7 +75,7 @@ def main() -> None:
     turret_types = re.findall(r"^\s{8}([A-Z][A-Z0-9_]+)\(\"", turret_block, re.M)
 
     assert len(offers) == 36, offers
-    assert len(archetypes) == 14, archetypes
+    assert len(archetypes) == 20, archetypes
     assert len(wave_traits) == 19, wave_traits
     assert len(active_skills) == 60, active_skills
     assert len(turret_types) == 10, turret_types
@@ -86,7 +86,7 @@ def main() -> None:
     assert "VillageTowerSpecializationSystem" not in towers
     assert "CAMPAIGN_END_DAY" in warfront and "최종 대공성" in warfront
     assert "return Math.min(7, 3 + Math.max(0, day - 1) / 4);" in raid
-    print("[PASS] 콘텐츠 감사: 장비 36, 적 14, 웨이브 특성 19, 액티브 기술 60, 현행 배치 포탑 10종")
+    print("[PASS] 콘텐츠 감사: 장비 36, 적 20, 웨이브 특성 19, 액티브 기술 60, 현행 배치 포탑 10종")
 
     audit = (ROOT / "CONTENT-AUDIT-v0.18.0.md").read_text(encoding="utf-8")
     for token in ["일반 적 병과 10종", "기본 보스 4종", "웨이브 특성 12종",
