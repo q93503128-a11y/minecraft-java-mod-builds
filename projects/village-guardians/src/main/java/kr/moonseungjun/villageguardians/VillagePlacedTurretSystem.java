@@ -29,7 +29,7 @@ import java.util.UUID;
 
 /** Player-placed, destructible defense emplacements. Fixed corner towers are no longer the combat ownership model. */
 public final class VillagePlacedTurretSystem {
-    private static final int MAX_TURRET_LEVEL = 10;
+    public static final int MAX_TURRET_LEVEL = 10;
     private static final String PREFIX = "turret_";
     private static final String RESEARCH_DURABILITY_MIGRATION = "v01819_turret_durability_migrated";
     private static final Map<Integer, TurretState> TURRETS = new LinkedHashMap<>();
