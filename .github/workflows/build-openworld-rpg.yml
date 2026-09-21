@@ -185,7 +185,8 @@ jobs:
           - Earthloong authored spawn utility: IMPLEMENTED; encounter-controller invocation NOT TESTED
           - Better Combat authority seam: IMPLEMENTED (real-hit runtime execution NOT TESTED)
           - Spell Engine resource/cooldown continuation transaction: IMPLEMENTED + UNIT/SERVER STARTUP VERIFIED
-          - project impact transaction core (damage/heal/status/poise + Defense/MR caps): IMPLEMENTED + UNIT TESTED; Spell Engine runtime impact application remains fail-closed until authoritative player combat snapshots are bound
+          - project impact transaction core (damage/heal/status/poise + Defense/MR caps): IMPLEMENTED + UNIT TESTED
+          - project direct-magic runtime bridge: IMPLEMENTED + UNIT/BUILD/STARTUP VERIFIED; no fallback player snapshot, so real Spell Engine damage remains fail-closed until progression/equipment binds authoritative source stats; runtime poise-state application remains pending
           - player-facing R01 content: NOT IMPLEMENTED
           - playtest: NOT RUN
           - multiplayer test: NOT RUN

@@ -627,7 +627,7 @@ Implemented canonical rules:
 - projectile/meteor impact lifetime is separate from the short resource transaction lifetime;
 - project Spell Engine data must neutralize donor exhaust, durability, item/effect costs and donor cooldowns;
 - a non-neutral donor cost contract causes the project cast to be rejected;
-- the project CUSTOM impact handler is registered, but the current Arc Bolt impact port is intentionally fail-closed.
+- the project CUSTOM impact handler was registered with a fail-closed Arc Bolt impact port at this historical checkpoint; this line is superseded by §14.
 
 The last item is deliberate. The project still lacks production equipment/offensive-stat/Defense/Magic-Resistance/poise runtime state, so accepting Spell Engine built-in damage or inventing a temporary damage formula would violate the combat canon.
 
@@ -642,9 +642,84 @@ DONOR SPELL COST ISOLATION: IMPLEMENTED
 DELAYED PROJECTILE IMPACT LIFETIME: COVERED
 SPELL ENGINE CUSTOM IMPACT REGISTRATION: IMPLEMENTED + SERVER STARTUP VERIFIED
 
-CANONICAL PROJECT SPELL IMPACT/DAMAGE TRANSACTION: NOT IMPLEMENTED — FAIL-CLOSED
+CANONICAL PROJECT SPELL IMPACT/DAMAGE TRANSACTION: NOT IMPLEMENTED — FAIL-CLOSED (historical checkpoint; superseded by §14)
 REAL PLAYER ARC BOLT CAST: NOT TESTED
 CLIENT RUNTIME: NOT TESTED
 PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
 ```
+
+
+---
+
+# 14. Project combat snapshot + direct-magic runtime bridge — 2026-09-21
+
+Implementation commit:
+
+```text
+836657164f35f0988ad665d7119ce570d41d3f3d
+openworld-rpg: bind project spell damage runtime
+```
+
+Verification workflow:
+
+```text
+Build Openworld RPG
+run 35555391230
+conclusion: SUCCESS
+artifact: openworld-rpg-m0-836657164f35f0988ad665d7119ce570d41d3f3d
+artifact sha256: 9688d95bc28105472f88234ce95bfbcdb5077ff419386eca2fe6a4b1ae8a0df1
+```
+
+This pass does **not** invent a temporary player progression/equipment model.
+
+Implemented:
+
+- fixed the canonical sub-5 offensive-stat contradiction: `x = S - 5` and the stated 0.70 floor now agree in docs and executable math;
+- added a server-owned `PlayerCombatSnapshotStore` with **no fallback snapshot**;
+- disconnect clears both transient Mana/cooldown state and any bound combat snapshot;
+- Arc Bolt's impact policy now resolves direct magic only from the project source snapshot + project target snapshot + canonical ActionCoefficient;
+- deliberately absurd donor `enginePower`/impact-total inputs do not change the project damage result in unit coverage;
+- Earthloong's DEF 45 / MR 35 / Poise 190 target snapshot feeds the resolver;
+- the policy returns canonical final damage plus canonical poise-pressure amount;
+- Minecraft-side final direct magic can be applied with the project `openworld_rpg:project_direct_magic` damage type;
+- that damage type bypasses vanilla armor, effects, enchantments, resistance, shield, hurt cooldown and vanilla knockback so already-resolved project damage is not processed by a second combat authority;
+- it intentionally does **not** bypass invulnerability/creative protections.
+
+Important fail-closed boundary:
+
+- no production progression/equipment subsystem binds a real player combat snapshot yet;
+- therefore a normal player's current Arc Bolt custom impact still rejects before HP application rather than borrowing donor or placeholder stats;
+- persistent runtime poise state/break windows are not yet applied even though the pure impact resolver computes the pressure amount;
+- no real player Arc Bolt has hit Earthloong in a joined world.
+
+Verification from run `35555391230`:
+
+```text
+UNIT TESTS: PASS
+CLEAN BUILD: PASS
+JAR VERIFY: PASS
+CORE DEDICATED SERVER: PASS
+GAMEPLAY DEPENDENCY SERVER: PASS
+GAMEPLAY CLIENT STARTUP SMOKE: PASS
+
+PLAYER COMBAT SNAPSHOT SEAM: IMPLEMENTED
+MISSING SNAPSHOT FAIL-CLOSED: UNIT TESTED
+PROJECT DIRECT-MAGIC RESOLUTION: IMPLEMENTED + UNIT TESTED
+DONOR ENGINE POWER AS DAMAGE AUTHORITY: REJECTED BY DESIGN + REGRESSION TEST
+MINECRAFT FINAL-DAMAGE APPLICATOR: IMPLEMENTED + BUILD/STARTUP VERIFIED
+REAL PLAYER SNAPSHOT PRODUCER: NOT IMPLEMENTED
+RUNTIME POISE STATE/APPLICATION: NOT IMPLEMENTED
+REAL PLAYER ARC BOLT HIT: NOT TESTED
+EXACTLY-ONE OBSERVED TARGET HP CHANGE: NOT TESTED
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
+```
+
+Next bounded M0 gate:
+
+1. bind the source snapshot from real project Lv/equipment/stat authority rather than a bootstrap constant;
+2. execute one real Arc Bolt against the bound Earthloong and verify exactly one expected HP delta;
+3. bind Earthloong runtime poise/recovery/break state and verify the same hit's poise pressure;
+4. then move to the authored encounter-controller/reward transaction, registry synchronization and quest save/reload/rejoin proof.
+
