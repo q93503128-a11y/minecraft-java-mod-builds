@@ -22,6 +22,7 @@ def main() -> None:
         'action.equals("skill_learn")',
         'action.equals("buy_food")',
         'action.startsWith("select_role:")',
+        'action.startsWith("skill_training:")',
         'action.startsWith("hire_mercenary:")',
         'action.startsWith("merc_hire:")',
         'action.startsWith("relic_select:")',
