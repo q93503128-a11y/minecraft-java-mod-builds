@@ -36,16 +36,17 @@ def main() -> None:
         assert old_cap not in merc
 
     for token in (
-        "double radius = 12.0 + 12.0 * mastery;",
-        "double range = 22.0 + 30.0 * mastery;",
-        "double range = 50.0 + 52.0 * mastery;",
-        "double radius = 8.0 + 13.0 * masteryProgress(rank);",
+        "double radius = (12.0 + 12.0 * mastery) * utility;",
+        "double range = (22.0 + 30.0 * mastery) * endlessUtilityAdaptation(rank);",
+        "double range = (50.0 + 52.0 * mastery) * endlessUtilityAdaptation(rank);",
+        "double radius = (8.0 + 13.0 * masteryProgress(rank)) * utility;",
         "case BASTION -> 18.0 + 6.0 * mastery;",
         "case STRIKER -> 11.0 + 7.0 * mastery;",
         "case RANGER -> 9.0 + 6.0 * mastery;",
         "case MEDIC -> 11.0 + 6.0 * mastery;",
     ):
         assert token in merc
+    assert "endlessUtilityAdaptation(rank)" in merc
 
     # The curve is monotonic and reaches the former Lv.100 endpoint without an early plateau.
     ranks = (1, 20, 40, 60, 80, 100)
