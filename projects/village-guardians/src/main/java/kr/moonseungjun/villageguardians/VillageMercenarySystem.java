@@ -361,37 +361,41 @@ public final class VillageMercenarySystem {
     }
 
     private static void bastionControl(ServerLevel level, IronGolem mercenary, int rank) {
-        double radius = 12.0 + Math.min(12.0, rank * 0.20);
-        int limit = 12 + Math.min(24, rank / 2);
+        double mastery = masteryProgress(rank);
+        double radius = 12.0 + 12.0 * mastery;
+        int limit = 12 + (int) Math.round(24.0 * mastery);
         VillageRaidSystem.tauntEnemies(level, mercenary, mercenary.position(), radius,
-                50 + Math.min(70, rank), limit);
+                50 + (int) Math.round(70.0 * mastery), limit);
         Vec3 eye = mercenary.position().add(0, 1.8, 0);
         boolean engaged = false;
         for (Mob enemy : VillageRaidSystem.activeEnemiesNear(level, mercenary.position(), radius, limit, null)) {
             if (VillageRaidSystem.isAerialEnemy(enemy)
                     || !VillageDefenseLineOfSight.hasLine(level, eye, enemy)) continue;
             enemy.setTarget(mercenary);
-            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 28 + Math.min(90, rank * 2), 0));
+            enemy.addEffect(new MobEffectInstance(
+                    MobEffects.SLOWNESS, 28 + (int) Math.round(90.0 * mastery), 0));
             engaged = true;
         }
         if (engaged) VillageDefenseEffectSystem.mercenaryGuardPulse(level, mercenary.position(), radius);
     }
 
     private static void strikerPressure(ServerLevel level, IronGolem mercenary, int rank) {
-        double range = 22.0 + Math.min(30.0, rank * 0.50);
+        double mastery = masteryProgress(rank);
+        double range = 22.0 + 30.0 * mastery;
         Mob target = nearestGroundEnemy(level, mercenary.position(), range);
         if (target == null || !VillageDefenseLineOfSight.hasLine(level, mercenary.getEyePosition(), target)) return;
         mercenary.setTarget(target);
-        mercenary.getNavigation().moveTo(target, 1.18 + Math.min(0.35, rank * 0.006));
+        mercenary.getNavigation().moveTo(target, 1.18 + 0.35 * mastery);
         VillageDefenseEffectSystem.mercenaryStrikerPressure(level, mercenary.position().add(0, 1.2, 0),
                 target.position().add(0, target.getBbHeight() * 0.5, 0));
     }
 
     private static void rangedAttack(ServerLevel level, IronGolem mercenary, int rank) {
         Vec3 start = mercenary.getEyePosition();
-        double range = 50.0 + Math.min(52.0, rank * 0.85);
+        double mastery = masteryProgress(rank);
+        double range = 50.0 + 52.0 * mastery;
         Mob target = VillageRaidSystem.activeEnemiesNear(level, mercenary.position(), range,
-                        18 + Math.min(18, rank / 3), null)
+                        18 + (int) Math.round(18.0 * mastery), null)
                 .stream().filter(enemy -> VillageDefenseLineOfSight.hasLine(level, start, enemy))
                 .min(java.util.Comparator
                         .comparingInt((Mob enemy) -> VillageRaidSystem.isAerialEnemy(enemy) ? 0 : 1)
@@ -409,7 +413,7 @@ public final class VillageMercenarySystem {
 
     private static void healAllies(ServerLevel level, MinecraftServer server, IronGolem medic, int rank) {
         float amount = 2.8f * mercenaryPower(rank) * VillageDefenseResearchSystem.mercenaryHealingMultiplier();
-        double radius = 8.0 + Math.min(13.0, rank * 0.22);
+        double radius = 8.0 + 13.0 * masteryProgress(rank);
         double radiusSquared = radius * radius;
         for (IronGolem ally : loadedMercenaries(level)) {
             if (ally.distanceToSqr(medic) <= radiusSquared) ally.heal(amount);
@@ -428,6 +432,11 @@ public final class VillageMercenarySystem {
                 .filter(enemy -> !VillageRaidSystem.isAerialEnemy(enemy))
                 .min(java.util.Comparator.comparingDouble(enemy -> enemy.position().distanceToSqr(origin)))
                 .orElse(null);
+    }
+
+    private static double masteryProgress(int rank) {
+        int safe = Math.max(1, Math.min(MAX_LEVEL, rank));
+        return Math.sqrt((safe - 1) / (double) (MAX_LEVEL - 1));
     }
 
     private static float mercenaryPower(int rank) {
@@ -449,7 +458,7 @@ public final class VillageMercenarySystem {
         int duration = 20 * 60 * 60;
         mercenary.addEffect(new MobEffectInstance(
                 MobEffects.INVISIBILITY, duration, 0, false, false));
-        int healthTier = Math.min(7, Math.max(0, (rank - 1) / 14));
+        int healthTier = Math.max(0, (rank - 1) / 14);
         if (healthTier > 0) {
             mercenary.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST, duration, healthTier - 1, false, false));
         }
@@ -481,11 +490,12 @@ public final class VillageMercenarySystem {
             case RANGER -> 215.0 + (safeRank - 1) * 2.4;
             case MEDIC -> 270.0 + (safeRank - 1) * 2.8;
         }) * durability;
+        double mastery = masteryProgress(safeRank);
         double armor = switch (kind) {
-            case BASTION -> Math.min(24.0, 18.0 + safeRank * 0.10);
-            case STRIKER -> Math.min(18.0, 11.0 + safeRank * 0.09);
-            case RANGER -> Math.min(15.0, 9.0 + safeRank * 0.07);
-            case MEDIC -> Math.min(17.0, 11.0 + safeRank * 0.08);
+            case BASTION -> 18.0 + 6.0 * mastery;
+            case STRIKER -> 11.0 + 7.0 * mastery;
+            case RANGER -> 9.0 + 6.0 * mastery;
+            case MEDIC -> 11.0 + 6.0 * mastery;
         };
         double attack = switch (kind) {
             case BASTION -> 11.5 + safeRank * 0.12;
@@ -524,11 +534,12 @@ public final class VillageMercenarySystem {
     public static int aggroCapacity(IronGolem mercenary) {
         if (mercenary == null) return 0;
         int rank = rank(mercenary);
+        double mastery = masteryProgress(rank);
         return switch (mercenaryClass(mercenary)) {
-            case BASTION -> Math.min(16, 9 + rank / 7);
-            case STRIKER -> Math.min(8, 4 + rank / 18);
-            case RANGER -> Math.min(5, 2 + rank / 24);
-            case MEDIC -> Math.min(4, 1 + rank / 24);
+            case BASTION -> 9 + (int) Math.round(7.0 * mastery);
+            case STRIKER -> 4 + (int) Math.round(4.0 * mastery);
+            case RANGER -> 2 + (int) Math.round(3.0 * mastery);
+            case MEDIC -> 1 + (int) Math.round(3.0 * mastery);
         };
     }
 
