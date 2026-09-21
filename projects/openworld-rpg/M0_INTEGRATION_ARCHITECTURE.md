@@ -951,7 +951,7 @@ EXTERNAL CREATURE PROJECT BINDING FOUNDATION: PARTIAL — Earthloong registry/ov
 FULL DEV-GAMEPLAY INTEGRATIONS IMPLEMENTED: NO
 CODE REVIEWED: YES — bootstrap/runtime-profile/containment scope
 TESTED: YES — unit tests + core/gameplay dedicated-server startup + gameplay client startup smoke
-BUILD VERIFIED: YES — run 35558098504
+BUILD VERIFIED: YES — run 35558638544
 JAR PRODUCED: YES
 CLIENT STARTUP SMOKE: YES — render thread reached; world join NOT TESTED
 PLAYTESTED: NO

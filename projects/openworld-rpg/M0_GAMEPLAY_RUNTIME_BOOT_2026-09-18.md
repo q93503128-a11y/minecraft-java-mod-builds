@@ -989,3 +989,84 @@ Next bounded gate:
 4. execute a real joined-player Arc Bolt against Earthloong;
 5. inspect Better Combat's exact attack-cycle/hit coefficient data before replacing its neutral proposal amount;
 6. then continue to Earthloong encounter/reward and save/rejoin proofs.
+
+
+---
+
+# 17. Persistent combat progression slice — 2026-09-21
+
+Implementation commit:
+
+```text
+eaed3b5fc2fd2ffddb4c5131f9cb0a91877d440f
+openworld-rpg: persist canonical combat progression
+```
+
+Verification:
+
+```text
+Build Openworld RPG
+run 35558638544
+conclusion: SUCCESS
+artifact: openworld-rpg-m0-eaed3b5fc2fd2ffddb4c5131f9cb0a91877d440f
+artifact sha256: c6c21f59e7d922ace4d0f8b66a3f1aba00db5538be49b4004723a9cef2aa0853
+```
+
+Implemented persistent player-owned combat progression:
+
+- Fabric persistent Data Attachment: `openworld_rpg:combat_progression`;
+- copy-on-death enabled;
+- global combat Lv 1..80;
+- optional active root class;
+- independent Warrior/Hunter/Cleric/Mage/Guardian Attribute allocations;
+- every allocation validated against `EarnedAttributePoints(L) = L - 1`;
+- pre-equipment individual stat cap of 60 remains enforced;
+- Codec round-trip is unit tested;
+- lowering Lv below already-spent points fails closed;
+- initialization does **not** invent/select a class.
+
+`PlayerProgressionService` is the server-owned mutation/read API. It can combine the persisted progression state with a validated `EquipmentCombatState` to produce the canonical `PlayerCombatBuildState`.
+
+The existing M0 runtime proof remains unchanged and still uses a legal build produced from canon:
+
+```text
+Lv8 Mage
++7 INT allocation
+ItemLv8 Staff
+
+WeaponPower=30.0
+WeightedStat=10.95
+damage=29.0
+poise=4.25
+
+Earthloong canonical HP 4900.0 -> 4871.0
+Earthloong proxy HP 1024.0 -> 1017.9396
+Earthloong Poise 190.0 -> 185.75
+break damage-taken multiplier=1.15
+```
+
+Exact remaining boundary:
+
+```text
+PERSISTENT COMBAT LV: IMPLEMENTED + UNIT/BUILD VERIFIED
+PERSISTENT ACTIVE ROOT CLASS: IMPLEMENTED + UNIT/BUILD VERIFIED
+PERSISTENT PER-CLASS ATTRIBUTE ALLOCATION: IMPLEMENTED + UNIT/BUILD VERIFIED
+CANONICAL BUILD -> DAMAGE SNAPSHOT: IMPLEMENTED + RUNTIME HARNESS VERIFIED
+
+REAL EQUIPMENT INVENTORY/AFFIX PUBLISHER: NOT IMPLEMENTED
+AUTOMATIC LIVE BUILD REFRESH ON JOIN/CLASS/STAT/EQUIPMENT CHANGE: NOT IMPLEMENTED
+REAL JOINED-PLAYER ARC BOLT: NOT TESTED
+REAL BETTER COMBAT PLAYER HIT: NOT TESTED
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
+```
+
+Do not describe this as full progression completion. Class Rank/XP/passives, player EXP leveling flow and the real equipment inventory/affix system remain later gameplay systems. This slice only closes the persistent combat-Lv / active-class / per-class Attribute state required for the M0 authority bridge.
+
+Next bounded gate:
+
+1. implement the minimal real project equipment combat-state publisher;
+2. rebuild/publish the live combat build on join and every relevant progression/equipment change;
+3. execute one real joined-player Arc Bolt against Earthloong;
+4. inspect and bind Better Combat's exact authored attack-cycle coefficient before replacing its remaining neutral donor proposal path;
+5. then continue to Earthloong encounter/reward and save/rejoin acceptance proofs.
