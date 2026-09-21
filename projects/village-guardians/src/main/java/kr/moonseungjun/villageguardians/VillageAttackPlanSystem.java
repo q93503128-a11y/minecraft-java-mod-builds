@@ -399,7 +399,7 @@ public final class VillageAttackPlanSystem {
         if (day < 90) return "재앙 혼성군 + 중장갑·공중·지원 동시 압박";
         if (day < 100) return "종말 군세 + 모든 후반 병과 혼성";
         if (day == VillageCampaignProgression.CAMPAIGN_END_DAY) {
-            return "7단계 최종 대공성 · 파성→공중→교란→사령→철갑→재앙→종말";
+            return "7단계 최종 대공성 · 파성→공중→교란→사령→철갑→재앙→종말 · 4~7웨이브 우두머리 연전";
         }
         return "끝없는 전쟁 · 후반 군세 재조합";
     }
