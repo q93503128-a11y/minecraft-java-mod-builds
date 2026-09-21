@@ -380,7 +380,8 @@ public final class VillageAttackPlanSystem {
         if (day <= 8) return "조직 전열";
         if (day <= 12) return "본격 공성";
         if (day <= 16) return "복합 침투전";
-        return "다전선 총공세";
+        if (day <= 19) return "다전선 총공세";
+        return VillageWarfrontSystem.chapterName(day);
     }
 
     private static String specialThreat(int day, int wave) {
@@ -388,7 +389,19 @@ public final class VillageAttackPlanSystem {
         if (day < 9) return "공병·파쇄병의 측면 압박 가능";
         if (day < 13) return "지원병·탑 사냥꾼·엘리트 혼성";
         if (day < 17) return "다전선 공성 + 침투 엘리트";
-        return "후방 침투 + 복합 공성 + 보스 지휘 효과";
+        if (day < 20) return "후방 침투 + 복합 공성 + 보스 지휘 효과";
+        if (day < 30) return "파성 집중 + 저주·균열 혼성";
+        if (day < 40) return "공중 공성 + 원거리 교란 + 파성 별동대";
+        if (day < 50) return "사령 지원망 + 포탑 사냥 + 파성 압박";
+        if (day < 60) return "중장갑 방진 + 파쇄 + 사령 지원 전열";
+        if (day < 70) return "폭풍·공중 기동 + 다전선 사격";
+        if (day < 80) return "균열·재앙 혼성 + 사령 지원";
+        if (day < 90) return "재앙 혼성군 + 중장갑·공중·지원 동시 압박";
+        if (day < 100) return "종말 군세 + 모든 후반 병과 혼성";
+        if (day == VillageCampaignProgression.CAMPAIGN_END_DAY) {
+            return "7단계 최종 대공성 · 파성→공중→교란→사령→철갑→재앙→종말";
+        }
+        return "끝없는 전쟁 · 후반 군세 재조합";
     }
 
     public record AttackPlan(Front main, String detachment, Condition condition, String stage, String specialThreat) {}
