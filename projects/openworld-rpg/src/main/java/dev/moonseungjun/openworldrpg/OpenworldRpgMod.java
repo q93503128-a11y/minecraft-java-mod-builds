@@ -22,6 +22,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         PlayerProgressionAttachments.initialize();
         PlayerEquipmentAttachments.initialize();
         IntegrationBootstrap.bootstrap(profile, LOGGER);
+        M0PlayerVerificationBootstrap.registerCommands();
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             PlayerCombatBuildPublisher.refresh(handler.getPlayer());
