@@ -229,7 +229,8 @@ public final class VillageRaidSystem {
         MinecraftServer server = mob.level().getServer();
         int players = server == null ? 1 : VillageProgressionSystem.plannedRaidPlayerCount(server);
         int expectedActors = previewTotalEnemyCount(day, players);
-        float baseline = required * 0.60f / Math.max(1, expectedActors);
+        int targetLevels = VillageCampaignProgression.targetLevelsForDay(day);
+        float baseline = required * 0.60f * targetLevels / Math.max(1, expectedActors);
 
         // Late HP scaling already makes enemies slower to kill; it must not also double their XP.
         // Keep a small durability premium, while preserving distinct rewards for tactical threats,
@@ -1185,8 +1186,9 @@ public final class VillageRaidSystem {
                 * VillageProgressionSystem.raidRewardMultiplierPercent() / 100.0f * campaignReward);
         int targetLevel = Math.max(1, Math.min(RpgProgress.MAX_LEVEL - 1,
                 VillageCampaignProgression.targetPlayerLevel(day)));
+        int targetLevels = VillageCampaignProgression.targetLevelsForDay(day);
         int xp = Math.max(1, Math.round(
-                RpgProgress.experienceRequiredAtLevel(targetLevel) * 0.18f));
+                RpgProgress.experienceRequiredAtLevel(targetLevel) * 0.18f * targetLevels));
         int coins = Math.round((60 + day * 14) * campaignReward);
 
         clearState();
