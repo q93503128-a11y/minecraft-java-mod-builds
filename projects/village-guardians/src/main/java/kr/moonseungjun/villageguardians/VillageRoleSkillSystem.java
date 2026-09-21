@@ -559,7 +559,7 @@ public final class VillageRoleSkillSystem {
         VANGUARD_HEAVEN_SEVER("vanguard_heaven_sever", VillageRole.VANGUARD, 11, "천단참", 60, 5700, 52, "2차 전직 기술. 조준 지점에 거대한 검격을 떨어뜨려 넓은 범위를 한 번에 파쇄합니다."),
 
         RANGER_VOLLEY("ranger_volley", VillageRole.RANGER, 0, "신속 삼연사", 2, 70, 16, "기술 사용 후 다음 활은 빠르게 자동 완충·발사되며, 다음 실제 활·석궁 발사 한 번이 세 갈래 화살로 강화됩니다."),
-        RANGER_PIERCE("ranger_pierce", VillageRole.RANGER, 1, "추적 도탄", 7, 190, 22, "다음 실제 활·석궁 발사가 표적을 추적하고 적중 후 가까운 적에게 연속 도탄합니다."),
+        RANGER_PIERCE("ranger_pierce", VillageRole.RANGER, 1, "추적 도탄", 7, 190, 22, "기술 사용 후 다음 실제 활·석궁 한 발이 전방 표적을 추적합니다. 표적이 사라지면 비행 경로 전방의 새 적을 재포착하고, 적중 후에는 가까운 적을 중복 없이 순차 도탄합니다."),
         RANGER_RICOCHET("ranger_ricochet", VillageRole.RANGER, 2, "천공 화살비", 13, 380, 30, "다음 실제 활·석궁 발사 지점에 강한 화살비를 펼쳐 지속 광역 피해를 줍니다."),
         RANGER_FIRE_RAIN("ranger_fire_rain", VillageRole.RANGER, 3, "성멸 대궁", 21, 680, 40, "다음 실제 활·석궁 발사를 거대한 성멸 화살로 바꾸어 넓은 전방을 관통합니다."),
         RANGER_HAWK_MARK("ranger_hawk_mark", VillageRole.RANGER, 4, "매의 징표", 30, 1200, 18, "1차 전직 기술. 조준한 고위협 표적을 드러내고 약화시켜 집중 사격의 기점을 만듭니다."),
