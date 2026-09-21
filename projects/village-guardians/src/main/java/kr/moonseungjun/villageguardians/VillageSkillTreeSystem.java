@@ -31,7 +31,15 @@ public final class VillageSkillTreeSystem {
         HEALTH_TRAINING.putAll(savedData.healthTraining());
         ATTACK_TRAINING.clear();
         ATTACK_TRAINING.putAll(savedData.attackTraining());
-        UNLOCKED_MASKS.forEach((uuid, mask) -> SPENT_POINTS.putIfAbsent(uuid, Long.bitCount(mask)));
+        UNLOCKED_MASKS.forEach((uuid, mask) -> {
+            int legacyFloor = Long.bitCount(mask);
+            int currentCost = currentNodeCost(mask)
+                    + Math.max(0, HEALTH_TRAINING.getOrDefault(uuid, 0))
+                    + Math.max(0, ATTACK_TRAINING.getOrDefault(uuid, 0));
+            SPENT_POINTS.compute(uuid, (ignored, stored) -> stored == null
+                    ? legacyFloor
+                    : Math.min(Math.max(0, stored), Math.max(legacyFloor, currentCost)));
+        });
         persist();
     }
 
@@ -383,6 +391,14 @@ public final class VillageSkillTreeSystem {
 
     private static long bit(Node node) {
         return 1L << node.ordinal();
+    }
+
+    private static int currentNodeCost(long mask) {
+        int total = 0;
+        for (Node node : Node.values()) {
+            if ((mask & bit(node)) != 0L) total += node.pointCost();
+        }
+        return total;
     }
 
     private static void persist() {
