@@ -101,11 +101,13 @@ public final class SpellEngineAuthorityAdapter {
             Method attemptNone = spellCastAttempt.getMethod("none");
             Constructor<?> impactResultConstructor = impactResult.getDeclaredConstructor(boolean.class, boolean.class);
             Method getSpellCastProcess = spellCasterEntity.getMethod("getSpellCastProcess");
+            Method getCooldownManager = spellCasterEntity.getMethod("getCooldownManager");
             Method processId = spellCastProcess.getMethod("id");
             processBinding = new ProcessBinding(
                     spellCasterEntity,
                     spellCastProcess,
                     getSpellCastProcess,
+                    getCooldownManager,
                     processId
             );
 
@@ -281,16 +283,72 @@ public final class SpellEngineAuthorityAdapter {
                 if (!(progressValue instanceof Number progress)) {
                     throw new IllegalStateException("Spell Engine cast progress is not numeric: " + progressValue);
                 }
+                long gameTick = player.level().getGameTime();
                 AUTHORITY.onEngineCastCompleted(
                         player.getUUID(),
                         spellId,
-                        player.level().getGameTime(),
+                        gameTick,
                         String.valueOf(action),
                         progress.floatValue()
                 );
+                mirrorRemainingProjectCooldown(player, spellEntry, spellId, gameTick);
             }
         }
         return null;
+    }
+
+    /**
+     * Mirrors only the remaining project cooldown after Spell Engine has cleared the completed
+     * cast process. PlayerCombatState stays authoritative; this external timer exists for client
+     * prediction and cooldown HUD only.
+     */
+    private static void mirrorRemainingProjectCooldown(
+            Player player,
+            Object spellEntry,
+            String spellId,
+            long gameTick
+    ) throws ReflectiveOperationException {
+        long remaining = COMBAT_STATES.getOrCreate(player.getUUID(), gameTick)
+                .cooldownRemainingTicks(spellId, gameTick);
+        if (remaining <= 0L) {
+            return;
+        }
+
+        ProcessBinding current = processBinding;
+        if (!current.enabled() || !current.spellCasterEntity().isInstance(player)) {
+            throw new IllegalStateException(
+                    "Spell Engine cooldown projection is unavailable for project spell " + spellId
+            );
+        }
+
+        Object manager;
+        try {
+            manager = current.getCooldownManager().invoke(player);
+        } catch (InvocationTargetException exception) {
+            throw unwrapInvocation(exception);
+        }
+        if (manager == null) {
+            throw new IllegalStateException("Spell Engine returned a null cooldown manager.");
+        }
+
+        Method setter = null;
+        for (Method candidate : manager.getClass().getMethods()) {
+            if (candidate.getName().equals("set")
+                    && candidate.getParameterCount() == 2
+                    && candidate.getParameterTypes()[1] == int.class) {
+                setter = candidate;
+                break;
+            }
+        }
+        if (setter == null) {
+            throw new NoSuchMethodException(manager.getClass().getName() + "#set(spellEntry, int)");
+        }
+
+        try {
+            setter.invoke(manager, spellEntry, (int) Math.min(Integer.MAX_VALUE, remaining));
+        } catch (InvocationTargetException exception) {
+            throw unwrapInvocation(exception);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -561,10 +619,11 @@ public final class SpellEngineAuthorityAdapter {
             Class<?> spellCasterEntity,
             Class<?> spellCastProcess,
             Method getSpellCastProcess,
+            Method getCooldownManager,
             Method processId
     ) {
         private static ProcessBinding disabled() {
-            return new ProcessBinding(null, null, null, null);
+            return new ProcessBinding(null, null, null, null, null);
         }
 
         private boolean enabled() {
