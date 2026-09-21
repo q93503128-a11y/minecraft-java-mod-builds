@@ -86,14 +86,17 @@ public final class VillageUiController {
                 + "마을  제 " + VillageCouncilState.currentDay() + "일 "
                 + VillageCouncilState.currentPhase().koreanName() + " · " + VillageRaidSystem.status() + "\n"
                 + "단축키  설정 > 조작 > 마을 지키기에서 현재 지정 키 확인·변경";
-        String relicLabel = "획득 유물 보기|보유 " + VillageRelicSystem.ownedCount(player)
+        String relicLabel = VillageRelicSystem.hasPendingChoice(player)
+                ? "보스 유물 선택|선택 대기 중인 보상이 있습니다."
+                : "획득 유물 보기|보유 " + VillageRelicSystem.ownedCount(player)
                 + " / " + VillageRelicSystem.Relic.values().length + " · 누적 효과 확인";
         send(player, "status", "수호자 상태", body,
                 List.of("open_relic_collection"), List.of(relicLabel));
     }
 
     public static void openRelicCollection(ServerPlayer player) {
-        VillageRelicSystem.openCollection(player);
+        if (VillageRelicSystem.hasPendingChoice(player)) VillageRelicSystem.openChoice(player);
+        else VillageRelicSystem.openCollection(player);
     }
 
     public static void openPersonalProgress(ServerPlayer player) {
