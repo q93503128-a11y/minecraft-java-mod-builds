@@ -78,6 +78,49 @@ public final class VillageSkillEffectSystem {
                     player.position(), forward, Math.max(120, calculatedDuration), 0.0f, "");
             case WARDEN_FIELD -> spawn(level, player, "warden_aegis",
                     player.position(), forward, Math.max(180, calculatedDuration * 2), 0.0f, "");
+            default -> promotionStartCast(level, player, skill, calculatedDuration, forward);
+        }
+    }
+
+    private static void promotionStartCast(
+            ServerLevel level,
+            ServerPlayer player,
+            VillageRoleSkillSystem.ActiveSkill skill,
+            int calculatedDuration,
+            Vec3 forward) {
+        int slot = skill.promotionSlot();
+        int tier = skill.promotionTier();
+        int duration = Math.max(26, Math.min(90, calculatedDuration / 2));
+        switch (skill.role()) {
+            case VANGUARD -> {
+                String kind = slot == 2 ? "vanguard_rally"
+                        : slot == 3 ? "vanguard_slam_charge"
+                        : slot == 1 ? "vanguard_spin" : "vanguard_blade_charge";
+                spawn(level, player, kind, player.position(), forward,
+                        slot == 1 ? Math.max(40, duration) : duration, 0.0f, "");
+            }
+            case RANGER -> {
+                String kind = slot == 0 ? "ranger_focus"
+                        : slot == 2 ? "ranger_lock"
+                        : slot == 3 ? "ranger_rain_field" : "ranger_energy_charge";
+                spawn(level, player, kind, player.position().add(0.0, slot == 2 ? 1.3 : 0.0, 0.0),
+                        forward, duration, 0.0f, slot == 3 ? meta(8.0 + tier * 2.0, tier + 2) : "");
+            }
+            case ARCANIST -> {
+                // Target/radius-aware field and projectile meshes are spawned by the gameplay cast.
+            }
+            case LUMINAR -> {
+                String kind = slot == 1 ? "luminar_cleanse_cast"
+                        : slot == 3 ? "luminar_miracle_cast" : "luminar_heal_cast";
+                spawn(level, player, kind, player.position(), forward,
+                        slot == 3 ? Math.max(60, duration) : duration, 0.0f, "");
+            }
+            case WARDEN -> {
+                String kind = slot == 1 ? "warden_charge_cast"
+                        : slot == 0 || slot == 3 ? "warden_taunt" : "warden_aegis";
+                spawn(level, player, kind, player.position(), forward,
+                        slot == 2 ? Math.max(100, calculatedDuration) : duration, 0.0f, "");
+            }
         }
     }
 

@@ -267,6 +267,7 @@ public final class VillageRoleAbilitySystem {
                         Math.min(5, 1 + Math.max(0, Math.round((power - 1.0f) * 4.0f))), false, false, true));
                 play(level, player.position(), SoundEvents.BEACON_ACTIVATE, 1.0f, 0.7f);
             }
+            default -> castPromotionSkill(level, player, skill, power, durationMultiplier, specialRank);
         }
 
         if (skill.role() == VillageRole.ARCANIST && !replayingEcho) {
@@ -281,6 +282,328 @@ public final class VillageRoleAbilitySystem {
                         player.position(), visualDirection));
             }
         }
+    }
+
+    private static void castPromotionSkill(
+            ServerLevel level,
+            ServerPlayer player,
+            VillageRoleSkillSystem.ActiveSkill skill,
+            float power,
+            float durationMultiplier,
+            int specialRank) {
+        int tier = skill.promotionTier();
+        int slot = skill.promotionSlot();
+        int playerLevel = VillageCouncilState.levelOf(player.getUUID());
+        int duration = Math.max(80, Math.round((130 + playerLevel * 2) * durationMultiplier));
+        Vec3 forward = horizontalLook(player);
+        Vec3 sight = lookDirection(player);
+
+        switch (skill.role()) {
+            case VANGUARD -> castPromotedVanguard(
+                    level, player, tier, slot, power, duration, specialRank, playerLevel, forward);
+            case RANGER -> castPromotedRanger(
+                    level, player, tier, slot, power, duration, specialRank, playerLevel, sight);
+            case ARCANIST -> castPromotedArcanist(
+                    level, player, tier, slot, power, duration, specialRank, playerLevel, sight);
+            case LUMINAR -> castPromotedLuminar(
+                    level, player, tier, slot, power, duration, specialRank, playerLevel);
+            case WARDEN -> castPromotedWarden(
+                    level, player, tier, slot, power, duration, specialRank, playerLevel, forward);
+        }
+    }
+
+    private static void castPromotedVanguard(
+            ServerLevel level, ServerPlayer player, int tier, int slot, float power,
+            int duration, int specialRank, int playerLevel, Vec3 forward) {
+        float base = (8.0f + playerLevel * 0.34f) * power * (tier >= 2 ? 1.16f : 1.0f);
+        switch (slot) {
+            case 0 -> {
+                int blades = tier >= 2 ? 5 : 3;
+                double spread = tier >= 2 ? 11.0 : 13.0;
+                for (int i = 0; i < blades; i++) {
+                    double degrees = (i - (blades - 1) / 2.0) * spread;
+                    Vec3 direction = rotateY(forward, Math.toRadians(degrees));
+                    VillageSkillEffectSystem.bladeWave(level, player, direction);
+                    launchMovingAt(level, player, MovingKind.BLADE, ItemStack.EMPTY,
+                            1.90 + tier * 0.12, 30 + tier * 6,
+                            base * (tier >= 2 ? 1.12f : 1.0f),
+                            1.65 + specialRank * 0.10, specialRank,
+                            player.position().add(0.0, 0.82, 0.0).add(direction), direction);
+                }
+                play(level, player.position(), SoundEvents.PLAYER_ATTACK_SWEEP, 1.25f, 0.72f);
+            }
+            case 1 -> {
+                double radius = 6.4 + tier * 1.5 + specialRank * 0.20;
+                List<Mob> targets = targetsNear(level, player, player.position(), radius, 56);
+                float healed = 0.0f;
+                for (Mob target : targets) {
+                    float damage = base * (target.getHealth() <= target.getMaxHealth() * 0.40f ? 1.22f : 1.0f);
+                    hurt(level, target, damage);
+                    knockFrom(player.position(), target, 0.58 + tier * 0.10, 0.08);
+                    healed += tier >= 2 ? 1.35f : 0.85f;
+                }
+                player.heal(Math.min(tier >= 2 ? 16.0f : 9.0f, healed));
+                VillageSkillEffectSystem.slamImpact(level, player, radius, specialRank + tier);
+                play(level, player.position(), SoundEvents.PLAYER_ATTACK_SWEEP, 1.3f, 0.60f);
+            }
+            case 2 -> {
+                int buff = tier >= 2 ? 2 : 1;
+                int buffDuration = Math.max(120, duration);
+                player.addEffect(new MobEffectInstance(MobEffects.STRENGTH, buffDuration, buff, false, false, true));
+                player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, buffDuration, tier >= 2 ? 1 : 0, false, false, true));
+                for (ServerPlayer ally : allies(player, 14.0 + tier * 2.0)) {
+                    ally.addEffect(new MobEffectInstance(MobEffects.STRENGTH, buffDuration, tier >= 2 ? 1 : 0, false, false, true));
+                    ally.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, buffDuration, 0, false, false, true));
+                    ally.addEffect(new MobEffectInstance(MobEffects.SPEED, buffDuration, 0, false, false, true));
+                }
+                play(level, player.position(), SoundEvents.RAVAGER_ROAR, 0.9f, 1.02f);
+            }
+            default -> {
+                Vec3 center = aimedGround(level, player, tier >= 2 ? 18.0 : 12.0);
+                double radius = tier >= 2 ? 9.5 : 6.5;
+                for (Mob target : targetsNear(level, player, center, radius, 64)) {
+                    VillageEnemyArchetypeSystem.Archetype archetype = VillageRaidSystem.archetypeOf(target);
+                    float tactical = VillageEnemyArchetypeSystem.isTacticalThreat(archetype) ? 1.24f : 1.0f;
+                    hurt(level, target, base * (tier >= 2 ? 2.05f : 1.55f) * tactical);
+                    target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS,
+                            90 + tier * 35, tier >= 2 ? 2 : 1, false, false, true));
+                    knockFrom(center, target, 1.0 + tier * 0.20, 0.24);
+                }
+                VillageSkillEffectSystem.slamImpact(level, player, radius, specialRank + tier);
+                play(level, center, SoundEvents.ANVIL_LAND, 1.3f, tier >= 2 ? 0.45f : 0.58f);
+            }
+        }
+    }
+
+    private static void castPromotedRanger(
+            ServerLevel level, ServerPlayer player, int tier, int slot, float power,
+            int duration, int specialRank, int playerLevel, Vec3 sight) {
+        float base = (9.0f + playerLevel * 0.38f) * power * (tier >= 2 ? 1.14f : 1.0f);
+        switch (slot) {
+            case 0 -> {
+                List<Mob> candidates = targetsNear(level, player, player.position(), tier >= 2 ? 82.0 : 58.0, 64);
+                candidates.sort(Comparator.comparingDouble(target ->
+                        player.distanceToSqr(target)
+                                - (VillageRaidSystem.isAerialEnemy(target) ? 1200.0 : 0.0)
+                                - (VillageEnemyArchetypeSystem.isTacticalThreat(VillageRaidSystem.archetypeOf(target)) ? 650.0 : 0.0)));
+                int limit = Math.min(tier >= 2 ? 4 : 1, candidates.size());
+                for (int i = 0; i < limit; i++) {
+                    Mob target = candidates.get(i);
+                    hurt(level, target, base * (tier >= 2 ? 1.15f : 0.72f));
+                    target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 160 + tier * 50, 0, false, false, true));
+                    target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100 + tier * 30, tier >= 2 ? 1 : 0, false, false, true));
+                    VillageSkillEffectSystem.trackingReticle(level, player, target.getEyePosition(),
+                            target.getEyePosition().subtract(player.getEyePosition()));
+                }
+                play(level, player.position(), SoundEvents.CROSSBOW_QUICK_CHARGE_3.value(), 1.0f, 1.32f);
+            }
+            case 1 -> {
+                int shots = tier >= 2 ? 7 : 5;
+                double step = tier >= 2 ? 5.5 : 7.0;
+                for (int i = 0; i < shots; i++) {
+                    double degrees = (i - (shots - 1) / 2.0) * step;
+                    Vec3 direction = rotateY(sight, Math.toRadians(degrees)).normalize();
+                    Vec3 origin = player.getEyePosition().add(direction.scale(1.0));
+                    VillageSkillEffectSystem.energyArrow(level, player, origin, direction);
+                    launchMovingAt(level, player, MovingKind.ENERGY_ARROW, ItemStack.EMPTY,
+                            2.8 + tier * 0.15, 58 + tier * 8,
+                            base * (tier >= 2 ? 1.38f : 1.05f),
+                            1.2 + specialRank * 0.08, specialRank, origin, direction);
+                }
+                play(level, player.position(), SoundEvents.ARROW_SHOOT, 1.1f, 1.40f);
+            }
+            case 2 -> {
+                List<Mob> targets = targetsNear(level, player, player.position(), tier >= 2 ? 104.0 : 78.0, 96);
+                int hits = 0;
+                for (Mob target : targets) {
+                    if (!VillageRaidSystem.isAerialEnemy(target)) continue;
+                    hurt(level, target, base * (tier >= 2 ? 1.75f : 1.20f));
+                    target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 120 + tier * 50,
+                            tier >= 2 ? 3 : 2, false, false, true));
+                    target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 150, 0, false, false, true));
+                    VillageSkillEffectSystem.trackingReticle(level, player, target.getEyePosition(),
+                            target.getEyePosition().subtract(player.getEyePosition()));
+                    if (++hits >= (tier >= 2 ? 12 : 7)) break;
+                }
+                play(level, player.position(), SoundEvents.CROSSBOW_SHOOT, 1.2f, 0.88f);
+            }
+            default -> {
+                Vec3 center = aimedGround(level, player, tier >= 2 ? 46.0 : 36.0);
+                int pulses = tier >= 2 ? 7 : 5;
+                float pulsePower = power * (tier >= 2 ? 1.22f : 1.0f);
+                for (int i = 0; i < pulses; i++) {
+                    SCHEDULED.add(new ScheduledAction(level.getGameTime() + 2L + i * 4L,
+                            player.getUUID(), skillForPromotion(VillageRole.RANGER, tier, slot),
+                            ActionKind.ARROW_RAIN, pulsePower, 1.0f, specialRank + tier,
+                            center, sight));
+                }
+                VillageSkillEffectSystem.arrowRainField(level, player, center,
+                        24 + pulses * 4, tier >= 2 ? 11.5 : 9.5, specialRank + tier);
+                play(level, center, SoundEvents.ARROW_SHOOT, 1.0f, 0.72f);
+            }
+        }
+    }
+
+    private static void castPromotedArcanist(
+            ServerLevel level, ServerPlayer player, int tier, int slot, float power,
+            int duration, int specialRank, int playerLevel, Vec3 sight) {
+        float base = (12.0f + playerLevel * 0.52f) * power * (tier >= 2 ? 1.18f : 1.0f);
+        Vec3 center;
+        switch (slot) {
+            case 0 -> launchFireOrb(level, player, tier >= 2 ? 1.12 : 1.28,
+                    tier >= 2 ? 150 : 125,
+                    base * (tier >= 2 ? 1.80f : 1.30f),
+                    tier >= 2 ? 8.2 : 6.2, specialRank + tier, sight);
+            case 1 -> {
+                center = aimedGround(level, player, tier >= 2 ? 42.0 : 32.0);
+                double radius = tier >= 2 ? 12.5 : 9.5;
+                int until = Math.max(tier >= 2 ? 240 : 180, duration + tier * 40);
+                AREAS.add(new AreaState(player.getUUID(), AreaKind.FROST, center,
+                        level.getGameTime() + until, radius, power * (tier >= 2 ? 1.22f : 1.0f),
+                        specialRank + tier, 0));
+                for (Mob target : targetsNear(level, player, center, radius, 72)) {
+                    target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 80 + tier * 60,
+                            tier >= 2 ? 5 : 4, false, false, true));
+                }
+                VillageSkillEffectSystem.frostField(level, player, center, until, radius, specialRank + tier);
+                play(level, center, SoundEvents.GLASS_PLACE, 1.25f, tier >= 2 ? 0.38f : 0.52f);
+            }
+            case 2 -> {
+                center = aimedGround(level, player, tier >= 2 ? 46.0 : 34.0);
+                double radius = tier >= 2 ? 16.0 : 11.5;
+                int until = Math.max(tier >= 2 ? 150 : 105, duration / 2);
+                AREAS.add(new AreaState(player.getUUID(), AreaKind.LIGHTNING, center,
+                        level.getGameTime() + until, radius, power * (tier >= 2 ? 1.35f : 1.05f),
+                        specialRank + tier, 1));
+                VillageSkillEffectSystem.lightningField(level, player, center, until, radius, specialRank + tier);
+                play(level, center, SoundEvents.LIGHTNING_BOLT_THUNDER, 1.0f, tier >= 2 ? 0.72f : 0.90f);
+            }
+            default -> {
+                center = aimedGround(level, player, tier >= 2 ? 38.0 : 30.0);
+                double radius = tier >= 2 ? 13.5 : 10.0;
+                int until = Math.max(tier >= 2 ? 210 : 160, duration);
+                AREAS.add(new AreaState(player.getUUID(), AreaKind.TORNADO, center,
+                        level.getGameTime() + until, radius, power * (tier >= 2 ? 1.25f : 1.0f),
+                        specialRank + tier, 0));
+                damageRadius(level, player, center, radius, 72, base * 0.62f,
+                        false, 0.0, 0.18);
+                VillageSkillEffectSystem.tornadoField(level, player, center, sight,
+                        until, radius, specialRank + tier);
+                play(level, center, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), 1.25f, 0.58f);
+            }
+        }
+    }
+
+    private static void castPromotedLuminar(
+            ServerLevel level, ServerPlayer player, int tier, int slot, float power,
+            int duration, int specialRank, int playerLevel) {
+        float heal = (9.0f + playerLevel * 0.42f) * power * (tier >= 2 ? 1.16f : 1.0f);
+        switch (slot) {
+            case 0 -> healLowestAlly(player, heal * (tier >= 2 ? 2.0f : 1.55f),
+                    duration, specialRank + tier, true);
+            case 1 -> cleanseAllies(player, heal * (tier >= 2 ? 0.52f : 0.34f),
+                    Math.max(100, duration), specialRank + tier);
+            case 2 -> {
+                List<ServerPlayer> affected = allies(player, tier >= 2 ? -1.0 : 18.0);
+                for (ServerPlayer ally : affected) {
+                    if (tier >= 2 && VillageRespawnSystem.isDowned(ally)) {
+                        VillageRespawnSystem.reviveNow(ally, "부활 성가");
+                    }
+                    healScaled(ally, heal * (tier >= 2 ? 1.15f : 0.62f));
+                    ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION,
+                            Math.max(100, duration), tier >= 2 ? 2 : 1, false, false, true));
+                    ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,
+                            Math.max(120, duration), tier >= 2 ? 4 : 2, false, false, true));
+                }
+                VillageSkillEffectSystem.miracle(level, player, affected);
+                play(level, player.position(), SoundEvents.TOTEM_USE, 1.0f, tier >= 2 ? 0.92f : 1.14f);
+            }
+            default -> {
+                double radius = tier >= 2 ? 15.0 : 11.0;
+                float damage = (8.0f + playerLevel * 0.38f) * power * (tier >= 2 ? 1.75f : 1.15f);
+                damageRadius(level, player, player.position(), radius, 72, damage,
+                        false, 0.45, 0.08);
+                for (ServerPlayer ally : allies(player, radius)) {
+                    healScaled(ally, heal * (tier >= 2 ? 0.92f : 0.45f));
+                    ally.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,
+                            Math.max(100, duration), tier >= 2 ? 1 : 0, false, false, true));
+                    ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,
+                            Math.max(100, duration), tier >= 2 ? 3 : 1, false, false, true));
+                }
+                VillageSkillEffectSystem.miracle(level, player, allies(player, radius));
+                play(level, player.position(), SoundEvents.BEACON_ACTIVATE, 1.25f, 1.05f);
+            }
+        }
+    }
+
+    private static void castPromotedWarden(
+            ServerLevel level, ServerPlayer player, int tier, int slot, float power,
+            int duration, int specialRank, int playerLevel, Vec3 forward) {
+        float damage = (6.0f + playerLevel * 0.30f) * power * (tier >= 2 ? 1.14f : 1.0f);
+        switch (slot) {
+            case 0 -> {
+                double radius = tier >= 2 ? 16.0 : 11.0;
+                VillageRaidSystem.tauntEnemies(level, player, player.position(), radius,
+                        tier >= 2 ? 520 : 360, 160);
+                player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,
+                        Math.max(140, duration), tier >= 2 ? 3 : 2, false, false, true));
+                player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,
+                        Math.max(160, duration), tier >= 2 ? 6 : 3, false, false, true));
+                pushFront(level, player, radius, 64, 1.0 + tier * 0.15, 0.14, damage);
+                play(level, player.position(), SoundEvents.SHIELD_BLOCK.value(), 1.4f, 0.62f);
+            }
+            case 1 -> {
+                double dash = tier >= 2 ? 1.55 : 1.15;
+                player.setDeltaMovement(forward.scale(dash).add(0.0, 0.08, 0.0));
+                player.hurtMarked = true;
+                int steps = tier >= 2 ? 9 : 6;
+                for (int i = 0; i < steps; i++) {
+                    Vec3 center = player.position().add(forward.scale(1.0 + i * 1.35));
+                    for (Mob target : targetsNear(level, player, center, 2.8 + tier * 0.25, 18)) {
+                        hurt(level, target, damage * (tier >= 2 ? 1.28f : 1.0f));
+                        knockFrom(player.position(), target, 1.30 + tier * 0.12, 0.16);
+                    }
+                }
+                VillageSkillEffectSystem.shieldCharge(level, player, forward);
+                play(level, player.position(), SoundEvents.SHIELD_BLOCK.value(), 1.2f, 0.80f);
+            }
+            case 2 -> {
+                double radius = tier >= 2 ? 19.0 : 14.0;
+                int buffDuration = Math.max(tier >= 2 ? 240 : 180, duration);
+                for (ServerPlayer ally : allies(player, radius)) {
+                    ally.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,
+                            buffDuration, tier >= 2 ? 2 : 1, false, false, true));
+                    ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,
+                            buffDuration, tier >= 2 ? 5 : 3, false, false, true));
+                }
+                VillageRaidSystem.tauntEnemies(level, player, player.position(), radius,
+                        tier >= 2 ? 460 : 300, 160);
+                play(level, player.position(), SoundEvents.BEACON_ACTIVATE, 1.1f, 0.72f);
+            }
+            default -> {
+                double radius = tier >= 2 ? 12.5 : 8.5;
+                damageRadius(level, player, player.position(), radius, 80,
+                        damage * (tier >= 2 ? 1.65f : 1.15f), false,
+                        1.15 + tier * 0.18, 0.24);
+                VillageRaidSystem.tauntEnemies(level, player, player.position(), radius + 8.0,
+                        tier >= 2 ? 420 : 280, 160);
+                for (ServerPlayer ally : allies(player, radius + 4.0)) {
+                    ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,
+                            Math.max(120, duration), tier >= 2 ? 4 : 2, false, false, true));
+                }
+                VillageSkillEffectSystem.slamImpact(level, player, radius, specialRank + tier);
+                play(level, player.position(), SoundEvents.ANVIL_LAND, 1.25f, 0.50f);
+            }
+        }
+    }
+
+    private static VillageRoleSkillSystem.ActiveSkill skillForPromotion(
+            VillageRole role, int tier, int slot) {
+        int index = (tier >= 2 ? 8 : 4) + Math.max(0, Math.min(3, slot));
+        return VillageRoleSkillSystem.skillsFor(role).stream()
+                .filter(skill -> skill.roleIndex() == index)
+                .findFirst()
+                .orElseThrow();
     }
 
     public static void tick(MinecraftServer server) {
