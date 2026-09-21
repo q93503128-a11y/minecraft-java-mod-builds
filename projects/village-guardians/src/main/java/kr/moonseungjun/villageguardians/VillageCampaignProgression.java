@@ -30,9 +30,9 @@ public final class VillageCampaignProgression {
     }
 
     /**
-     * How many ordinary-threat equivalents should roughly fund one target-level increase.
-     * Later campaigns contain more actors, so each individual mob does not need to carry the
-     * entire quadratic XP curve on its own.
+     * Opening-campaign threat budget retained for the established Lv.1-30 curve.
+     * Day 21+ XP is normalized against the whole planned night's roster in VillageRaidSystem
+     * so seven-wave late nights and multiplayer roster scaling do not accelerate leveling.
      */
     public static int expectedThreatsPerLevel(int day) {
         int safe = campaignDay(day);
