@@ -113,8 +113,9 @@ enemy = text("VillageEnemyArchetypeSystem.java")
 ability_block = re.search(r"public static void tickAbility.*?public static void onStructureHit", enemy, re.S).group(0)
 require("abilityReady(mob, globalTicks" in enemy and "globalTicks %" not in ability_block,
         "Enemy special abilities use per-entity phase offsets")
-require("Math.min(7.0f, VillageCouncilState.currentDay() * 0.22f)" in enemy,
-        "Endless unavoidable magic damage has a bounded day bonus")
+require("Math.min(7.0f," in enemy
+        and "VillageCampaignProgression.effectiveCombatDay(VillageCouncilState.currentDay()) * 0.16f" in enemy,
+        "Long-campaign unavoidable magic damage uses a bounded effective-day bonus")
 
 identity = text("VillageEquipmentIdentity.java")
 rarity = text("VillageEquipmentRaritySystem.java")
