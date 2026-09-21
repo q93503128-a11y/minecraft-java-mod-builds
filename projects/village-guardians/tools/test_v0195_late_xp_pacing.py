@@ -21,7 +21,8 @@ def main() -> None:
     # Day 21+ budgets XP against the entire deterministic night, including party roster scaling.
     assert "int players = server == null ? 1 : VillageProgressionSystem.plannedRaidPlayerCount(server);" in raid
     assert "int expectedActors = previewTotalEnemyCount(day, players);" in raid
-    assert "float baseline = required * 0.60f / Math.max(1, expectedActors);" in raid
+    assert "int targetLevels = VillageCampaignProgression.targetLevelsForDay(day);" in raid
+    assert "float baseline = required * 0.60f * targetLevels / Math.max(1, expectedActors);" in raid
     assert "public static int previewTotalEnemyCount(int day, int players)" in raid
     assert "total += previewWaveCount(day, previewWave, players, trait);" in raid
 
@@ -31,17 +32,16 @@ def main() -> None:
     assert "VillageEnemyEliteSystem.isElite(mob) ? 1.35f" in raid
     assert "VillageEnemyArchetypeSystem.isTacticalThreat(archetype) ? 1.12f" in raid
 
-    # Neutral late-night kills now fund 60% of the target-level bar in aggregate.
-    # The existing victory reward contributes another 18%; elite/boss premiums add texture
-    # without the old 2-3+ level bars per ordinary late night.
-    neutral_kill_budget = 0.60
-    victory_budget = 0.18
-    assert 0.75 <= neutral_kill_budget + victory_budget <= 0.85
+    # Each authored day's budget scales by that day's intended visible level gain.
+    # Day 21+ therefore supports roughly 3-4 level-ups per night instead of one.
+    assert "targetPlayerLevel(safe) - targetPlayerLevel(safe - 1)" in campaign
+    assert "270.0f / 80.0f" in campaign
+    assert "RpgProgress.experienceRequiredAtLevel(targetLevel) * 0.18f * targetLevels" in raid
 
     print("[PASS] Lv.1-30 keeps the accepted opening XP curve")
     print("[PASS] day21+ XP is normalized against the full planned night and party-scaled roster")
     print("[PASS] late HP growth no longer multiplies XP up to the old 1.80x reward weight")
-    print("[PASS] neutral late-night XP budget tracks the day100 level target instead of capping near day69")
+    print("[PASS] late-night XP budget scales with the authored 3-4 visible levels per day toward Lv.300")
 
 
 if __name__ == "__main__":
