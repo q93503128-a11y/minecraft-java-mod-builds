@@ -36,7 +36,7 @@ def main() -> None:
     assert "Attributes.MAX_HEALTH" in rpg
     assert "Attributes.ATTACK_DAMAGE" in rpg
     assert "20.0D + VillageSkillTreeSystem.healthTraining(player)" in rpg
-    assert "1.0D + VillageSkillTreeSystem.attackTraining(player)" in rpg
+    assert "1.0D + VillageSkillTreeSystem.attackTraining(player) * 0.10D" in rpg
 
     # Vanilla heart pips are replaced by a live numeric health bar.
     assert "VanillaGuiLayers.PLAYER_HEALTH.equals(event.getName())" in suppressor
@@ -47,7 +47,7 @@ def main() -> None:
     assert "HEALTH_FILL" in hud and "HEALTH_BACK" in hud
 
     print("[PASS] all five tactical branches retain the original low-cost completion path")
-    print("[PASS] a completed branch unlocks persistent repeatable +1 health / +1 attack training")
+    print("[PASS] a completed branch unlocks persistent repeatable +1 health / +0.1 attack training")
     print("[PASS] repeated stat training is server guarded and applied to real player attributes")
     print("[PASS] vanilla heart pips are replaced by a live current/max health bar")
 
