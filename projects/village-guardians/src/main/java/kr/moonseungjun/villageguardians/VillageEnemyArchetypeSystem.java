@@ -476,6 +476,12 @@ public final class VillageEnemyArchetypeSystem {
             case WAR_CHANTER -> EntityTypes.PILLAGER.create(level, EntitySpawnReason.EVENT);
             case NECROMANCER -> EntityTypes.EVOKER.create(level, EntitySpawnReason.EVENT);
             case TOWER_HUNTER -> EntityTypes.STRAY.create(level, EntitySpawnReason.EVENT);
+            case CAVE_STALKER -> EntityTypes.CAVE_SPIDER.create(level, EntitySpawnReason.EVENT);
+            case BOGGED_ARCHER -> EntityTypes.BOGGED.create(level, EntitySpawnReason.EVENT);
+            case ZOGLIN_BREACHER -> EntityTypes.ZOGLIN.create(level, EntitySpawnReason.EVENT);
+            case BREEZE_DISRUPTOR -> EntityTypes.BREEZE.create(level, EntitySpawnReason.EVENT);
+            case MAGMA_BRUTE -> EntityTypes.MAGMA_CUBE.create(level, EntitySpawnReason.EVENT);
+            case NETHER_REAVER -> EntityTypes.ZOMBIFIED_PIGLIN.create(level, EntitySpawnReason.EVENT);
             case SIEGE_BEAST -> EntityTypes.RAVAGER.create(level, EntitySpawnReason.EVENT);
             case IRON_WARLORD -> EntityTypes.VINDICATOR.create(level, EntitySpawnReason.EVENT);
             case PLAGUE_ARCHON -> EntityTypes.EVOKER.create(level, EntitySpawnReason.EVENT);
@@ -520,6 +526,15 @@ public final class VillageEnemyArchetypeSystem {
             case TOWER_HUNTER -> {
                 mob.setItemSlot(EquipmentSlot.MAINHAND, Items.CROSSBOW.getDefaultInstance());
                 mob.setItemSlot(EquipmentSlot.HEAD, Items.CHAINMAIL_HELMET.getDefaultInstance());
+            }
+            case BOGGED_ARCHER -> {
+                mob.setItemSlot(EquipmentSlot.MAINHAND, Items.BOW.getDefaultInstance());
+                mob.setItemSlot(EquipmentSlot.HEAD, Items.LEATHER_HELMET.getDefaultInstance());
+            }
+            case NETHER_REAVER -> {
+                mob.setItemSlot(EquipmentSlot.MAINHAND, Items.GOLDEN_AXE.getDefaultInstance());
+                mob.setItemSlot(EquipmentSlot.HEAD, Items.GOLDEN_HELMET.getDefaultInstance());
+                mob.setItemSlot(EquipmentSlot.CHEST, Items.GOLDEN_CHESTPLATE.getDefaultInstance());
             }
             case IRON_WARLORD -> {
                 mob.setItemSlot(EquipmentSlot.MAINHAND, Items.DIAMOND_AXE.getDefaultInstance());
