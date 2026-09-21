@@ -87,7 +87,7 @@ def main() -> None:
     assert "빠른 통신과 상태·성장·직업 성장 기능" in starter
 
     assert "세 갈래 동시 성장 가능" in ui
-    assert "지속·위력·특수는 서로 배타적이지 않음" in ui
+    assert "기본/1차/2차 기술은 전직 후에도 모두 장착 가능" in ui
     upgrade = section(research, "public static synchronized String upgrade", "private static float curve")
     assert "이전 Lv." in upgrade
     assert "현재 Lv." in upgrade
