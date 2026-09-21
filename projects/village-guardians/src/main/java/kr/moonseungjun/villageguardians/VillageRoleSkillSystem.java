@@ -316,25 +316,38 @@ public final class VillageRoleSkillSystem {
             }
         }
 
+        VillageRoleMasterySystem.MasteryProc mastery = testing
+                ? VillageRoleMasterySystem.MasteryProc.none()
+                : VillageRoleMasterySystem.prepareCast(player, role, skill);
         float power = powerMultiplier(player, role)
                 * VillageRolePromotionSystem.skillPowerMultiplier(player, role)
                 * VillageProgressionSystem.learnedSkillDamageMultiplier(player)
                 * VillageProgressionSystem.skillHallPowerMultiplier()
                 * VillageEquipmentShop.roleSkillMultiplier(player)
                 * VillageRelicSystem.skillMultiplier(player)
-                * VillageConsumableSystem.skillMultiplier(player);
+                * VillageConsumableSystem.skillMultiplier(player)
+                * mastery.powerMultiplier();
         float duration = durationMultiplier(player, role)
                 * VillageProgressionSystem.skillHallDurationMultiplier()
-                * VillageRelicSystem.skillDurationMultiplier(player);
+                * VillageRelicSystem.skillDurationMultiplier(player)
+                * mastery.durationMultiplier();
         int special = specialRank(player, role);
         cast(level, player, skill, power, duration, special);
+        if (!testing) {
+            VillageRoleMasterySystem.finishCast(
+                    level, player, role, skill, mastery, power, duration, special);
+        }
 
         if (testing) {
             return skill.displayName() + " 사용 완료 | 시험 모드 · 재사용 대기시간 없음";
         }
-        int cooldown = effectiveCooldownSeconds(player, role, skill);
+        int minimumCooldown = Math.max(2, Math.round(skill.baseCooldownSeconds() * 0.20f));
+        int cooldown = Math.max(
+                minimumCooldown,
+                effectiveCooldownSeconds(player, role, skill) - mastery.cooldownRefundSeconds());
         READY_AT.put(cooldownKey, now + cooldown * 1000L);
-        return skill.displayName() + " 사용 완료 | 재사용 " + cooldown + "초";
+        return skill.displayName() + " 사용 완료 | 재사용 " + cooldown + "초"
+                + (mastery.triggered() ? " · 숙련 연계" : "");
     }
 
     private static int effectiveCooldownSeconds(
