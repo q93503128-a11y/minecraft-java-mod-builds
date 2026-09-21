@@ -11,42 +11,51 @@ def read(name: str) -> str:
 
 def main() -> None:
     tree = read("VillageSkillTreeSystem.java")
+    data = read("VillageSkillTreeData.java")
+    controller = read("VillageUiController.java")
+    screen = read("VillageSkillTreeScreen.java")
     descriptions = read("VillageActionDescriptions.java")
+    rpg = read("VillageRpgSystem.java")
 
     assert "int naturalTotal = Math.max(0, level - 1);" in tree
     assert "return Math.max(naturalTotal, spentPoints(player));" in tree
     assert "레벨이 오를 때마다 전술 포인트 1P를 얻습니다." in tree
     assert "레벨이 오를 때마다 얻는 전술 포인트" in descriptions
 
-    expected = {
-        1: 1, 2: 1, 3: 1, 4: 2, 5: 2,
-        6: 5, 7: 8, 8: 12, 9: 18, 10: 25,
-    }
-    assert sum(expected.values()) == 75
-    assert sum(expected.values()) * 5 == 375
+    # Original low-cost branch price: 22P each, 110P for all five branches.
+    costs = [1, 1, 1, 2, 2, 2, 3, 3, 3, 4]
+    assert sum(costs) == 22
+    assert sum(costs) * 5 == 110
     assert 300 - 1 == 299
-    assert (300 - 1) < sum(expected.values()) * 5
+    assert (300 - 1) - sum(costs) * 5 == 189
+    assert "Math.max(1, Math.min(4, (tier + 2) / 3))" in tree
 
-    for token in (
-        "case 1, 2, 3 -> 1;",
-        "case 4, 5 -> 2;",
-        "case 6 -> 5;",
-        "case 7 -> 8;",
-        "case 8 -> 12;",
-        "case 9 -> 18;",
-        "default -> 25;",
-    ):
-        assert token in tree
+    # Completing any full branch unlocks repeatable 1P stat training.
+    assert "public static boolean trainingUnlocked" in tree
+    assert "public static synchronized String purchaseTraining" in tree
+    assert '"health".equals(normalized)' in tree
+    assert '"attack".equals(normalized)' in tree
+    assert "HEALTH_TRAINING.put(id, next);" in tree
+    assert "ATTACK_TRAINING.put(id, next);" in tree
+    assert "SPENT_POINTS.put(id, spentPoints(player) + 1);" in tree
 
-    # Current common tree stays at ten tiers per branch. Expanding past 63 total enum
-    # nodes would require a save-format migration because the authoritative mask is a long.
-    for branch in ("POWER", "GUARD", "SUPPORT", "RANGED", "MOBILITY"):
-        assert tree.count(branch + "_") >= 10
+    # Training ranks are save-backed and surfaced through the current growth screen.
+    assert '"health_training_v1"' in data
+    assert '"attack_training_v1"' in data
+    assert 'actions.add("skill_training:health")' in controller
+    assert 'actions.add("skill_training:attack")' in controller
+    assert "TrainingVisual" in screen and "renderTrainingPanel" in screen
 
-    print("[PASS] every player level awards one tactical point")
-    print("[PASS] tiers 6-10 cost 5/8/12/18/25P and the five-branch tree costs 375P")
-    print("[PASS] Lv.300 grants 299P, so max level preserves build choice")
-    print("[PASS] historical spent points remain grandfathered without a save lock")
+    # The repeatable ranks are authoritative basic stats, not tooltip-only bonuses.
+    assert "Attributes.MAX_HEALTH" in rpg
+    assert "Attributes.ATTACK_DAMAGE" in rpg
+    assert "20.0D + VillageSkillTreeSystem.healthTraining(player)" in rpg
+    assert "1.0D + VillageSkillTreeSystem.attackTraining(player)" in rpg
+
+    print("[PASS] every level awards 1P and all five tactical branches cost only 110P total")
+    print("[PASS] Lv.300 can complete every branch and has 189P left for repeatable training")
+    print("[PASS] any completed branch unlocks save-backed +1 health / +1 attack repeat training")
+    print("[PASS] repeat training is exposed in the current growth UI and applied to real attributes")
 
 
 if __name__ == "__main__":
