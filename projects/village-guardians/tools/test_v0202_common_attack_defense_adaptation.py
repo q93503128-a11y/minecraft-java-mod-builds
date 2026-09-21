@@ -46,7 +46,7 @@ def main() -> None:
     assert "Math.log1p(safe - CAMPAIGN_END_DAY) * 0.018f" in campaign
     assert "fullTowerMastery(safeLevel)" in turret
     assert "fullMercenaryMastery(rank)" in merc
-    assert "fullMercenaryMastery(safeRank)" in merc
+    assert "endlessDamageAdaptation(safeRank)" in merc
     assert "18 + VillageCouncilState.currentDay()" not in turret
     assert "VillageCampaignProgression.effectiveCombatDay" in turret
 
