@@ -58,7 +58,7 @@ public final class VillageEnemyCompositionSystem {
         configureVisualRider(rider);
         rider.snapTo(owner.getX(), owner.getY(), owner.getZ(), owner.getYRot(), owner.getXRot());
         if (!level.addFreshEntity(rider)) return;
-        if (!rider.startRiding(owner, true)) {
+        if (!rider.startRiding(owner)) {
             rider.discard();
             return;
         }
