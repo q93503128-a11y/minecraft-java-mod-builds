@@ -36,7 +36,7 @@ public final class VillageRpgSystem {
         }
         var attackDamage = player.getAttribute(Attributes.ATTACK_DAMAGE);
         if (attackDamage != null) {
-            attackDamage.setBaseValue(1.0D + VillageSkillTreeSystem.attackTraining(player));
+            attackDamage.setBaseValue(1.0D + VillageSkillTreeSystem.attackTraining(player) * 0.10D);
         }
 
         VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
