@@ -68,6 +68,7 @@ public final class VillageRaidSystem {
     private VillageRaidSystem() {}
 
     public static void resetTransientState(MinecraftServer server) {
+        VillageEnemyCompositionSystem.cleanupOrphans(server);
         discardTaggedRaidEnemies(server);
         clearState();
         ensureRaidTeam(server);
@@ -437,6 +438,9 @@ public final class VillageRaidSystem {
             ACTIVE_WAVES.put(mob.getUUID(), wave);
             if (level.addFreshEntity(mob)) {
                 ACTIVE_ENEMIES.add(mob.getUUID());
+                VillageEnemyCompositionSystem.attach(
+                        level, mob, spawned.archetype(), ACTIVE_AERIAL_ROLES.get(mob.getUUID()),
+                        day, wave, index, boss);
                 if (VillageEnemyArchetypeSystem.isFlying(mob)) flyingSpawned++;
             } else {
                 releaseEnemy(server, mob.getUUID(), mob);
@@ -1262,6 +1266,7 @@ public final class VillageRaidSystem {
         VillageWorldSystem.unmarkAllowedGameMob(uuid);
         VillageHealthDisplaySystem.forgetEnemy(uuid);
         if (entity != null) {
+            VillageEnemyCompositionSystem.remove(entity);
             entity.setGlowingTag(false);
             PlayerTeam team = server.getScoreboard().getPlayerTeam(RAID_TEAM_NAME);
             if (team != null) server.getScoreboard().removePlayerFromTeam(entity.getScoreboardName(), team);
