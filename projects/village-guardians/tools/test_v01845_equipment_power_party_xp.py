@@ -43,7 +43,8 @@ def main() -> None:
     assert "기본 근접 피해" in tooltip and "기본 원거리 피해" in tooltip
     incoming = section(rpg, "public static void handleIncomingDamage", "public static void handleDeath")
     assert "flatAttackBonus(attacker, projectile)" in incoming
-    assert "(event.getAmount() + flatWeaponPower) * value" in incoming
+    assert "(event.getAmount() + flatWeaponPower + attackTrainingPower * trainingCoefficient) * value" in incoming
+    assert "VillageSkillTreeSystem.attackTrainingBonus(attacker)" in incoming
 
     # Raid XP is granted once to every frozen night participant, regardless of killer.
     death_bus = section(guardians, "public void onLivingDeath", "public void onArrowLoose")
