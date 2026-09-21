@@ -68,7 +68,7 @@ def main() -> None:
     assert 'action.equals("buy_arrows")' in shop_ui and 'action.startsWith("consumable:")' in shop_ui
     assert 'action.equals("open_item_sell")' in shop_ui and 'action.equals("sell_loot")' in shop_ui
 
-    print("[PASS] Common tactical tree has 50 nodes, five branches and tier-scaled point costs")
+    print("[PASS] Common tactical tree has 50 nodes, five branches and late tier costs scaled for 299 earned points")
     print("[PASS] Five roles expose 75 ordered role-upgrade nodes without ordinal migration")
     print("[PASS] Emergency barrier, momentum and party recovery are wired into combat")
     print("[PASS] Defense research now provides 60 save-compatible long-term upgrades")
