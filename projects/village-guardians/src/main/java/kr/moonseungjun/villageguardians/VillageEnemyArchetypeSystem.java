@@ -601,7 +601,9 @@ public final class VillageEnemyArchetypeSystem {
             }
         }
         if (day >= 12 && !isBoss(archetype) && (wave + day) % 3 == 0) {
-            mob.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, LONG_EFFECT_TICKS, Math.min(3, day / 10)));
+            mob.addEffect(new MobEffectInstance(
+                    MobEffects.ABSORPTION, LONG_EFFECT_TICKS,
+                    VillageCampaignProgression.bonusAbsorptionAmplifier(day)));
         }
     }
 
