@@ -125,6 +125,23 @@ public final class VillageRoleAbilitySystem {
         return 1.0f;
     }
 
+    public static void scheduleMasteryEcho(
+            ServerLevel level,
+            ServerPlayer player,
+            VillageRoleSkillSystem.ActiveSkill skill,
+            float power,
+            float durationMultiplier,
+            int specialRank,
+            int delayTicks) {
+        if (level == null || player == null || skill == null || skill.role() != VillageRole.ARCANIST) return;
+        long now = level.getGameTime();
+        SCHEDULED.add(new ScheduledAction(
+                now + Math.max(4, delayTicks), player.getUUID(), skill,
+                ActionKind.ARCANE_ECHO, Math.max(0.01f, power), durationMultiplier, specialRank,
+                player.position(), skill == VillageRoleSkillSystem.ActiveSkill.ARCANIST_FIRE_ORB
+                        ? lookDirection(player) : horizontalLook(player)));
+    }
+
     public static void cast(
             ServerLevel level,
             ServerPlayer player,
