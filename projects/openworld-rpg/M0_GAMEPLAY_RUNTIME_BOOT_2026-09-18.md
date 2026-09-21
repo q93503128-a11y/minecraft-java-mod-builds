@@ -1070,3 +1070,112 @@ Next bounded gate:
 3. execute one real joined-player Arc Bolt against Earthloong;
 4. inspect and bind Better Combat's exact authored attack-cycle coefficient before replacing its remaining neutral donor proposal path;
 5. then continue to Earthloong encounter/reward and save/rejoin acceptance proofs.
+
+---
+
+# 18. Persistent 12-slot equipped-loadout publisher — 2026-09-21
+
+Implementation commit:
+
+```text
+a89c8393e5c4eafcc7397a67447eed65da9774af
+openworld-rpg: publish persistent equipped combat loadout
+```
+
+Verification:
+
+```text
+Build Openworld RPG
+run 35560853804
+conclusion: SUCCESS
+artifact: openworld-rpg-m0-a89c8393e5c4eafcc7397a67447eed65da9774af
+artifact sha256: 05771a797e564bdc402712d7376b6eb4f9359c177b8959be66b287b5b67e61dc
+```
+
+Implemented project-owned persistent equipped state for the canonical 12 slots:
+
+```text
+Main Weapon
+Off-hand
+Head
+Chest
+Legs
+Gloves
+Boots
+Necklace
+Ring 1
+Ring 2
+Charm
+Relic
+```
+
+Each equipped combat item persists project namespaced item id, canonical slot, ItemLv 1..80, active weapon family for Main Weapon, magical-focus identity for compatible Off-hand, and combat-source affixes consumed by the M0 publisher.
+
+Current combat-source affix aggregation covers VIT / END / STR / DEX / INT / WIL, Physical Power, Magic Power, matching weapon-family power, and authored poise-output bonus.
+
+Verified rules:
+
+- duplicate equipment slots fail closed;
+- no Main Weapon means no EquipmentCombatState;
+- weapon-family power only applies to the currently equipped family;
+- aggregate weapon-family power respects the canonical +60% gear cap;
+- primary-stat affixes require whole-number values;
+- a two-handed staff cannot simultaneously use a magical focus;
+- equipped loadout survives Codec round-trip;
+- wand + focus uses FocusPower = WeaponBudget(focus ItemLv) * 0.18;
+- at ItemLv8 the verified wand base is 25 WeaponPower and the ItemLv8 focus adds 5.4846 magic WeaponPower, producing 30.4846 for compatible magic damage while physical-source WeaponPower remains 25.
+
+Live build publication:
+
+- server JOIN rebuilds from persistent progression + persistent equipped loadout;
+- combat Lv change rebuilds;
+- active root-class change rebuilds;
+- per-class Attribute allocation change rebuilds;
+- project equip/unequip mutation rebuilds;
+- incomplete progression/equipment state removes the transient combat build;
+- disconnect removes the transient build as before.
+
+The existing exact-Earthloong gameplay-server proof remains:
+
+```text
+canonicalHpBefore=4900.0
+canonicalHpAfter=4871.0
+proxyHpBefore=1024.0
+proxyHpAfter=1017.9396
+weaponPower=30.0
+weightedStat=10.95
+damage=29.0
+poiseBefore=190.0
+poiseAfterArcBolt=185.75
+breakDamageTakenMultiplier=1.15
+```
+
+Exact status:
+
+```text
+PERSISTENT 12-SLOT EQUIPPED LOADOUT: IMPLEMENTED + CODEC/UNIT/BUILD VERIFIED
+COMBAT-RELEVANT EQUIPPED AFFIX AGGREGATION: IMPLEMENTED + UNIT TESTED
+WAND + FOCUS WEAPON POWER: IMPLEMENTED + UNIT TESTED
+LIVE COMBAT BUILD REFRESH ON JOIN: IMPLEMENTED + BUILD/STARTUP VERIFIED
+LIVE BUILD REFRESH ON PROJECT PROGRESSION MUTATION: IMPLEMENTED + UNIT/BUILD VERIFIED
+LIVE BUILD REFRESH ON PROJECT EQUIP/UNEQUIP: IMPLEMENTED + UNIT/BUILD VERIFIED
+
+FULL BACKPACK/STORAGE INVENTORY: NOT IMPLEMENTED
+LOOT GENERATION / ITEM ACQUISITION: NOT IMPLEMENTED
+EQUIPMENT UI: NOT IMPLEMENTED
+FULL NON-DAMAGE AFFIX RUNTIME: NOT IMPLEMENTED
+REAL JOINED-PLAYER ARC BOLT: NOT TESTED
+REAL BETTER COMBAT PLAYER HIT: NOT TESTED
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
+```
+
+This closes the M0 equipped combat-state publisher, not the whole RPG inventory system.
+
+Next bounded gate:
+
+1. provide a controlled real-player test/bootstrap path that creates a legal progression + equipped loadout without adding player-facing debug residue;
+2. join a world and execute Arc Bolt against exact Earthloong, verifying exactly one canonical HP/poise delta;
+3. inspect Better Combat's exact attack-cycle coefficient/hit partition and replace its neutral donor proposal with project melee math;
+4. then implement Earthloong authored encounter/reward ownership;
+5. finish registry-sync and quest save/reload/rejoin proofs.
