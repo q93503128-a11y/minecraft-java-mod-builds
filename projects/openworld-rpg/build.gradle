@@ -63,14 +63,6 @@ repositories {
     }
 
     maven {
-        name = 'RedlanceMinecraft'
-        url = 'https://repo.redlance.org/public'
-        content {
-            includeGroup 'com.zigythebird.playeranim'
-        }
-    }
-
-    maven {
         name = 'Shedaniel'
         url = 'https://maven.shedaniel.me/'
         content {
@@ -113,7 +105,7 @@ dependencies {
     gameplayFoundation("maven.modrinth:5sy6g3kz:${project.better_combat_version_id}") {
         transitive = false
     }
-    gameplayFoundation("com.zigythebird.playeranim:PlayerAnimationLibFabric:${project.player_anim_version}") {
+    gameplayFoundation("maven.modrinth:${project.player_anim_project_id}:${project.player_anim_version_id}") {
         transitive = false
     }
     gameplayFoundation("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}") {
@@ -153,7 +145,7 @@ dependencies {
 
     if ((findProperty('openworldGameplayRuntime') ?: 'false').toString().toBoolean()) {
         add("localRuntime", "maven.modrinth:5sy6g3kz:${project.better_combat_version_id}") { transitive = false }
-        add("localRuntime", "com.zigythebird.playeranim:PlayerAnimationLibFabric:${project.player_anim_version}") { transitive = false }
+        add("localRuntime", "maven.modrinth:${project.player_anim_project_id}:${project.player_anim_version_id}") { transitive = false }
         add("localRuntime", "me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}") { transitive = false }
         add("localRuntime", "maven.modrinth:spell-engine:${project.spell_engine_version}") { transitive = false }
         add("localRuntime", "maven.modrinth:spell-power:${project.spell_power_version}-fabric") { transitive = false }
@@ -186,7 +178,7 @@ def sha256Of = { File file ->
 
 def expectedGameplayFoundationSha256 = [
         '5sy6g3kz-enlZuzkJ.jar': 'cce827992f517b181bc25c4f6c35e2c75818d29fcdbea90c3838704364b04639',
-        'PlayerAnimationLibFabric-1.2.6+mc.26.2.jar': 'd7531e9ce2bdcf394f99a66cc79114f58c8c82ae7e723527ee27545c40619ff1',
+        'ha1mEyJS-Hq1CwB9w.jar': 'd7531e9ce2bdcf394f99a66cc79114f58c8c82ae7e723527ee27545c40619ff1',
         'XaT8sLP6-r453A8nE.jar': 'bc0c41455373df0475173250912ad45f1592b55c1398913ad06941de6571058c',
         'armor-model-api-1.1.0+26.2-fabric.jar': '406226390526a774db9bf83584b8e68a96068998541b3c044cda019c8d93c397',
         'cloth-config-fabric-26.2.155.jar': 'def4be7639cd66704f7e304d658ea0f6bf490fb4a6eaa2dbf18ec2c3999d6349',
@@ -222,11 +214,11 @@ tasks.register('verifyGameplayFoundationDependencies') {
                 throw new GradleException("Resolved gameplay foundation artifact is missing or empty: ${file}")
             }
 
+            def actual = sha256Of(file)
             def expected = expectedGameplayFoundationSha256[file.name]
             if (expected == null) {
-                throw new GradleException("No admitted SHA-256 exists for gameplay foundation artifact: ${file.name}")
+                throw new GradleException("No admitted SHA-256 exists for gameplay foundation artifact ${file.name}; observed ${actual}")
             }
-            def actual = sha256Of(file)
             if (!actual.equalsIgnoreCase(expected)) {
                 throw new GradleException("SHA-256 mismatch for ${file.name}: expected ${expected}, got ${actual}")
             }
