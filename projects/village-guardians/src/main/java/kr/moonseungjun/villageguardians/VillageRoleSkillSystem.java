@@ -514,6 +514,15 @@ public final class VillageRoleSkillSystem {
         }
 
         private static String specialDescription(VillageRole role, int tier) {
+            if (tier >= 5) {
+                return switch (role) {
+                    case VANGUARD -> "특수 5단계 완성 · 근접 처치가 주변 적을 약화시켜 다음 돌파를 열고, 흡혈·범위 보정이 최대치가 됩니다. · 특수 가지 재사용 감소 총 -2초.";
+                    case RANGER -> "특수 5단계 완성 · 신속 사격이 7발 부채꼴로 확장되고, 조준·도탄·추적 보정이 최대치가 됩니다. · 특수 가지 재사용 감소 총 -2초.";
+                    case ARCANIST -> "특수 5단계 완성 · 마법을 시전하면 첫 비전 메아리가 반드시 발생하고 추가 메아리 확률도 유지됩니다. · 특수 가지 재사용 감소 총 -2초.";
+                    case LUMINAR -> "특수 5단계 완성 · 초과 회복이 흡수 보호막으로 전환되어 체력이 찬 아군도 치유의 이득을 받습니다. · 특수 가지 재사용 감소 총 -2초.";
+                    case WARDEN -> "특수 5단계 완성 · 방패 태세와 대수호 진군 중 주변 아군에게 피해 저항 오라를 제공합니다. · 특수 가지 재사용 감소 총 -2초.";
+                };
+            }
             String effect = switch (role) {
                 case VANGUARD -> "흡혈률과 공격 기술의 범위·타격수·밀어내기·약화/마무리 보정";
                 case RANGER -> "조준 보정, 도탄 수·범위, 강화 사격의 추가 화살과 마무리 효과";
@@ -521,9 +530,7 @@ public final class VillageRoleSkillSystem {
                 case LUMINAR -> "치유 기술의 재생·흡수 보호막·저항과 보호 강도";
                 case WARDEN -> "도발 범위, 받는 피해 감소, 약화·둔화·보호막·밀어내기";
             };
-            String cooldown = tier == 4
-                    ? " · 이 노드로 직업 기술 재사용 대기시간 -1초"
-                    : tier >= 5 ? " · 특수 가지의 재사용 감소 총 -2초" : "";
+            String cooldown = tier == 4 ? " · 이 노드로 직업 기술 재사용 대기시간 -1초" : "";
             return "특수 등급 " + tier + "/5 · " + effect + "를 단계에 맞게 강화합니다" + cooldown + ".";
         }
 
