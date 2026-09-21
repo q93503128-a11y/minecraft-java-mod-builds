@@ -1,6 +1,8 @@
 package kr.moonseungjun.villageguardians;
 
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.Vec3;
@@ -23,9 +25,22 @@ public final class VillageBossEffectSystem {
                 aspect.name().toLowerCase(Locale.ROOT));
     }
 
+    public static void entrance(
+            ServerLevel level,
+            Mob boss,
+            VillageEnemyArchetypeSystem.Archetype archetype) {
+        if (level == null || boss == null || archetype == null) return;
+        String suffix = archetypeSuffix(archetype);
+        if (suffix.isBlank()) return;
+        VillageSkillEffectEntity.spawn(level, boss, "boss_entrance_" + suffix,
+                boss.position(), horizontal(boss.getLookAngle()), 48, 0.0f, "");
+        playLifecycleSound(level, boss, archetype, 0);
+    }
+
     public static void phaseTwo(
             ServerLevel level,
             Mob boss,
+            VillageEnemyArchetypeSystem.Archetype archetype,
             VillageSiegeBossSystem.BossDoctrine doctrine) {
         if (level == null || boss == null || doctrine == null) return;
         VillageBossAspectSystem.Aspect aspect = VillageBossAspectSystem.aspectOf(boss);
@@ -35,6 +50,25 @@ public final class VillageBossEffectSystem {
                 boss.position(), horizontal(boss.getLookAngle()), 20 * 60 * 30, 0.0f, aspectId);
         VillageSkillEffectEntity.spawn(level, null, "boss_phase_two_burst", boss.position(),
                 new Vec3(0.0, 0.0, 1.0), 28, 0.0f, "5.0");
+        String suffix = archetypeSuffix(archetype);
+        if (!suffix.isBlank()) {
+            VillageSkillEffectEntity.spawn(level, boss, "boss_transform_" + suffix,
+                    boss.position(), horizontal(boss.getLookAngle()), 44, 0.0f, "");
+            VillageEnemyCompositionSystem.animateRiderAttack(boss);
+            playLifecycleSound(level, boss, archetype, 1);
+        }
+    }
+
+    public static void defeat(
+            ServerLevel level,
+            Mob boss,
+            VillageEnemyArchetypeSystem.Archetype archetype) {
+        if (level == null || boss == null || archetype == null) return;
+        String suffix = archetypeSuffix(archetype);
+        if (suffix.isBlank()) return;
+        VillageSkillEffectEntity.spawn(level, null, "boss_defeat_" + suffix,
+                boss.position(), horizontal(boss.getLookAngle()), 56, 0.0f, "");
+        playLifecycleSound(level, boss, archetype, 2);
     }
 
     public static void breachWarning(ServerLevel level, Mob boss, Vec3 impact, int duration) {
@@ -130,6 +164,39 @@ public final class VillageBossEffectSystem {
         VillageSkillEffectEntity.spawn(level, null, "boss_storm_warning", center,
                 new Vec3(0.0, 0.0, 1.0), Math.max(10, duration), 0.0f,
                 String.format(Locale.ROOT, "%.2f", radius));
+    }
+
+    private static String archetypeSuffix(VillageEnemyArchetypeSystem.Archetype archetype) {
+        return switch (archetype) {
+            case SIEGE_BEAST -> "siege";
+            case IRON_WARLORD -> "warlord";
+            case PLAGUE_ARCHON -> "plague";
+            case DREAD_KNIGHT -> "dread";
+            default -> "";
+        };
+    }
+
+    private static void playLifecycleSound(
+            ServerLevel level,
+            Mob boss,
+            VillageEnemyArchetypeSystem.Archetype archetype,
+            int stage) {
+        float pitchOffset = stage == 0 ? 0.0f : stage == 1 ? -0.08f : -0.18f;
+        switch (archetype) {
+            case SIEGE_BEAST -> level.playSound(null, boss.getX(), boss.getY(), boss.getZ(),
+                    SoundEvents.RAVAGER_ROAR, SoundSource.HOSTILE, stage == 2 ? 1.45f : 1.20f,
+                    Math.max(0.50f, 0.82f + pitchOffset));
+            case IRON_WARLORD -> level.playSound(null, boss.getX(), boss.getY(), boss.getZ(),
+                    SoundEvents.IRON_GOLEM_ATTACK, SoundSource.HOSTILE, stage == 2 ? 1.35f : 1.10f,
+                    Math.max(0.50f, 0.78f + pitchOffset));
+            case PLAGUE_ARCHON -> level.playSound(null, boss.getX(), boss.getY(), boss.getZ(),
+                    SoundEvents.WITCH_CELEBRATE, SoundSource.HOSTILE, stage == 2 ? 1.25f : 1.05f,
+                    Math.max(0.50f, 0.74f + pitchOffset));
+            case DREAD_KNIGHT -> level.playSound(null, boss.getX(), boss.getY(), boss.getZ(),
+                    SoundEvents.WITHER_SKELETON_AMBIENT, SoundSource.HOSTILE, stage == 2 ? 1.40f : 1.15f,
+                    Math.max(0.45f, 0.66f + pitchOffset));
+            default -> { }
+        }
     }
 
     private static void pulse(ServerLevel level, String kind, Vec3 center, double radius, int duration) {
