@@ -36,7 +36,8 @@ public final class VillageWaveIntelSystem {
                         VillageEnemyArchetypeSystem.previewArchetype(day, wave, index, boss, trait);
                 roster.merge(archetype, 1, Integer::sum);
                 if (boss) bossLines.add(archetype.displayName() + " · "
-                        + VillageBossAspectSystem.previewText(day, wave, index));
+                        + VillageBossAspectSystem.previewText(day, wave, index) + " · "
+                        + VillageSiegeBossSystem.previewDoctrine(day, wave, archetype));
             }
             List<String> lines = new ArrayList<>();
             List<String> siege = new ArrayList<>();
