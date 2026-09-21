@@ -1,0 +1,26 @@
+{
+  "target": "threateningly_mobs:the_earthloong",
+  "role": "r01_dungeon_boss",
+  "required": true,
+  "policy": {
+    "presentation": "PASS_THROUGH",
+    "animation": "ADAPT",
+    "movement_ai": "ADAPT",
+    "combat_ai": "ADAPT",
+    "spawn": "OVERRIDE",
+    "stats": "OVERRIDE",
+    "damage": "OVERRIDE",
+    "loot": "OVERRIDE",
+    "recipes": "SUPPRESS",
+    "worldgen": "SUPPRESS",
+    "capture_or_duplication": "SUPPRESS",
+    "progression": "OVERRIDE",
+    "save_ownership": "OVERRIDE"
+  },
+  "tags": [
+    "openworld_rpg:actors/boss",
+    "openworld_rpg:actors/no_capture",
+    "openworld_rpg:actors/no_random_spawn"
+  ],
+  "encounter": "openworld_rpg:r01/earthloong"
+}
