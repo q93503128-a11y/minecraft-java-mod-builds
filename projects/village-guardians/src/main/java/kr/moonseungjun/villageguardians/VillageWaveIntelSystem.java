@@ -58,7 +58,9 @@ public final class VillageWaveIntelSystem {
                     : String.join(" / ", airLines) + " · 성벽 우회 · 대공 발사대/성루 명사수 권장";
             String elite = VillageEnemyEliteSystem.scoutSummary(day, Math.max(0, count - flyingCount));
             String bossDoctrine = bosses <= 0 ? "없음" : VillageSiegeBossSystem.previewBossMechanic(day);
-            String detail = "예상 총 " + count + "명" + (bosses > 0 ? " · 보스 " + bosses + "명" : "")
+            String finalPhase = VillageWarfrontSystem.finalSiegePhaseLabel(day, wave);
+            String detail = (finalPhase.isBlank() ? "" : "결전 단계: " + finalPhase + "\n")
+                    + "예상 총 " + count + "명" + (bosses > 0 ? " · 보스 " + bosses + "명" : "")
                     + "\n" + direction
                     + "\n공중 위협: " + air
                     + "\n공성 병과: " + (siege.isEmpty() ? "뚜렷한 전담 병과 없음" : String.join(" · ", siege))
