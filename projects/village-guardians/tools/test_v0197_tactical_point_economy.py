@@ -29,6 +29,8 @@ def main() -> None:
     assert 300 - 1 == 299
     assert (300 - 1) - sum(costs) * 5 == 189
     assert "Math.max(1, Math.min(4, (tier + 2) / 3))" in tree
+    assert "int currentCost = currentNodeCost(mask)" in tree
+    assert "Math.min(Math.max(0, stored), Math.max(legacyFloor, currentCost))" in tree
 
     # Completing any full branch unlocks repeatable 1P stat training.
     assert "public static boolean trainingUnlocked" in tree
@@ -52,7 +54,7 @@ def main() -> None:
     assert "20.0D + VillageSkillTreeSystem.healthTraining(player)" in rpg
     assert "1.0D + VillageSkillTreeSystem.attackTraining(player) * 0.10D" in rpg
 
-    print("[PASS] every level awards 1P and all five tactical branches cost only 110P total")
+    print("[PASS] every level awards 1P, all five branches cost 110P, and superseded high costs are refunded")
     print("[PASS] Lv.300 can complete every branch and has 189P left for repeatable training")
     print("[PASS] any completed branch unlocks save-backed +1 health / +0.1 attack repeat training")
     print("[PASS] repeat training is exposed in the current growth UI and applied to real attributes")
