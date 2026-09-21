@@ -115,7 +115,7 @@ public final class VillageUiController {
             String status = VillageSkillTreeSystem.availablePoints(player) >= 1 ? "습득 가능" : "1P 필요";
             actions.add("skill_training:health");
             labels.add("체력 단련 " + VillageSkillTreeSystem.healthTraining(player)
-                    + "회|반복 투자 · 최대 체력 +1|" + status + "|1");
+                    + "회|반복 투자 · 최대 체력 +0.25|" + status + "|1");
             actions.add("skill_training:attack");
             labels.add("공격 단련 " + VillageSkillTreeSystem.attackTraining(player)
                     + "회|반복 투자 · 기본 공격력 +0.1|" + status + "|1");
