@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import math
 
 ROOT = Path(__file__).resolve().parents[1]
 JAVA = ROOT / "src/main/java/kr/moonseungjun/villageguardians"
@@ -12,8 +13,8 @@ def read(name: str) -> str:
 def target(day: int) -> int:
     safe = max(1, min(100, day))
     if safe <= 20:
-        return 1 + round((safe - 1) * 29.0 / 19.0)
-    return min(300, 30 + round((safe - 20) * 270.0 / 80.0))
+        return 1 + math.floor((safe - 1) * 29.0 / 19.0 + 0.5)
+    return min(300, 30 + math.floor((safe - 20) * 270.0 / 80.0 + 0.5))
 
 
 def combat_level(level: int) -> int:
@@ -38,7 +39,7 @@ def main() -> None:
     assert target(30) == 64
     assert target(40) == 98
     assert target(60) == 165
-    assert target(80) == 232
+    assert target(80) == 233
     assert target(100) == 300
     assert all(3 <= target(day) - target(day - 1) <= 4 for day in range(21, 101))
 
