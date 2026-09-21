@@ -27,7 +27,7 @@ def main() -> None:
     assert common.count('(\"support_') == 10
     assert common.count('(\"ranged_') == 10
     assert "Math.max(0, Math.min(30, level) - 1)" in common
-    assert "Math.max(0, level - 30) / 2" in common
+    assert "Math.max(0, level - 30) / 4" in common
     assert common.count('(\"mobility_') == 10
     assert "pointCost()" in common
     assert "sharedSupplyChance" in common and "teamHealOnKillAmount" in common
