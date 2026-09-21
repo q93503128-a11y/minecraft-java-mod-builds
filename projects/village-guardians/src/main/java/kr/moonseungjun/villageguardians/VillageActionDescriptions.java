@@ -24,7 +24,7 @@ final class VillageActionDescriptions {
             return label + "\n기술 연구소에서 현재 직업을 변경합니다. 성장과 기술 관리도 같은 연구소에서 진행합니다.";
         }
         if (action.startsWith("skill_node:")) {
-            return label + "\nLv.30까지는 레벨마다, 이후에는 2레벨마다 얻는 전술 포인트를 사용합니다. 비용은 단계에 따라 1~4P입니다.";
+            return label + "\nLv.30까지는 레벨마다, 이후에는 4레벨마다 얻는 전술 포인트를 사용합니다. 비용은 단계에 따라 1~4P입니다.";
         }
         if (action.startsWith("role_node:")) {
             return label + "\n기술 연구소에서 요구 레벨과 수호 주화를 지불해 직업 성장 효과를 습득합니다.";
