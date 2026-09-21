@@ -6,6 +6,7 @@ import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentAttachments;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionAttachments;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.IntegrationBootstrap;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
+import dev.moonseungjun.openworldrpg.integration.verify.M0PlayerVerificationBootstrap;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import org.slf4j.Logger;
@@ -22,9 +23,10 @@ public final class OpenworldRpgMod implements ModInitializer {
         PlayerEquipmentAttachments.initialize();
         IntegrationBootstrap.bootstrap(profile, LOGGER);
 
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
-                PlayerCombatBuildPublisher.refresh(handler.getPlayer())
-        );
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            PlayerCombatBuildPublisher.refresh(handler.getPlayer());
+            M0PlayerVerificationBootstrap.prepare(handler.getPlayer(), LOGGER);
+        });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
                 CombatStateServices.disconnect(handler.getPlayer().getUUID())
         );

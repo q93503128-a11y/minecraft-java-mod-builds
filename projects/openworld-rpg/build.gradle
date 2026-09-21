@@ -14,6 +14,8 @@ base {
 
 def openworldM0RuntimeVerification =
         (findProperty('openworldM0RuntimeVerification') ?: 'false').toString()
+def openworldM0PlayerVerification =
+        (findProperty('openworldM0PlayerVerification') ?: 'false').toString()
 
 loom {
     mods {
@@ -42,6 +44,7 @@ loom {
             client()
             displayName = 'Openworld RPG Gameplay Client'
             systemProperties.put('openworld_rpg.profile', 'gameplay')
+            systemProperties.put('openworld_rpg.m0PlayerVerification', openworldM0PlayerVerification)
             runDirectory = file('run-client-gameplay')
         }
     }

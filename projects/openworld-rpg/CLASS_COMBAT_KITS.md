@@ -1147,6 +1147,14 @@ PoiseCoefficient: 0.50
 Weave consumer: yes
 ```
 
+Initial Spell Engine delivery binding:
+
+- cast duration: **1.0 s**;
+- projectile launch velocity: **1.0 blocks/tick**;
+- these two presentation/timing values were previously unspecified in project canon and are initially bound to the current Wizards 26.2 Arcane Bolt reference already named by this document;
+- damage, range, Mana, cooldown and Poise remain project-owned values above and do not inherit donor values;
+- these timing/presentation bindings may be changed by playtest without changing the locked damage-resource contract.
+
 Weave effect:
 
 - primary hit unchanged;

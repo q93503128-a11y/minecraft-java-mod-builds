@@ -22,7 +22,13 @@ public final class PlayerCombatBuildPublisher {
         );
 
         if (build.isPresent()) {
-            CombatStateServices.combatBuilds().bindAuthoritative(player.getUUID(), build.get());
+            PlayerCombatBuildState value = build.get();
+            CombatStateServices.combatBuilds().bindAuthoritative(player.getUUID(), value);
+            CombatStateServices.states().synchronizeWill(
+                    player.getUUID(),
+                    (int) Math.round(value.effectiveAttributes().wil()),
+                    player.level().getGameTime()
+            );
         } else {
             CombatStateServices.combatBuilds().remove(player.getUUID());
         }
