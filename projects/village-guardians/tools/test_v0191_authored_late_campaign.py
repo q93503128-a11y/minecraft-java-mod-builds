@@ -76,7 +76,7 @@ def main() -> None:
 
     # JAR acceptance must protect the current content counts rather than the old 12/20 era.
     assert "EXPECTED_ENUM_TOKENS" in verify
-    assert "Fourteen enemy archetypes and nineteen wave traits are bundled" in verify
+    assert "Twenty enemy archetypes and nineteen wave traits are bundled" in verify
     assert "Thirty-six equipment offers and sixty active role skills are bundled" in verify
     assert "twelve wave traits" not in verify
     assert "Twenty active skills" not in verify
