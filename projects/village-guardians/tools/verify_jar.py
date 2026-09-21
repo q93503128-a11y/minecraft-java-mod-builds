@@ -40,6 +40,12 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageSkillEffectRenderer.class",
     "kr/moonseungjun/villageguardians/VillageSkillEffectClient.class",
     "kr/moonseungjun/villageguardians/VillageSkillMeshLibrary.class",
+    "kr/moonseungjun/villageguardians/VillageCampaignProgression.class",
+    "kr/moonseungjun/villageguardians/VillageRolePromotionSystem.class",
+    "kr/moonseungjun/villageguardians/VillageDefenseResearchSystem.class",
+    "kr/moonseungjun/villageguardians/VillageMercenarySystem.class",
+    "kr/moonseungjun/villageguardians/VillageEnemyEliteSystem.class",
+    "kr/moonseungjun/villageguardians/VillageSiegeBossSystem.class",
     "kr/moonseungjun/villageguardians/VillageRespawnSystem.class",
     "kr/moonseungjun/villageguardians/VillageRaidLootSystem.class",
     "kr/moonseungjun/villageguardians/VillageLocationRules.class",
@@ -87,6 +93,159 @@ OBSOLETE_CLASSES = {
 }
 
 
+EXPECTED_ENUM_TOKENS = {
+    "kr/moonseungjun/villageguardians/VillageEquipmentShop$Offer.class": {
+        "WATCH_SWORD",
+        "HUNTER_BOW",
+        "WARD_SHIELD",
+        "SENTINEL_AXE",
+        "TWINSTRING_BOW",
+        "BULWARK_HELM",
+        "VETERAN_BLADE",
+        "SIEGE_CROSSBOW",
+        "WIND_BLADE",
+        "MARCH_BOOTS",
+        "ARCANE_FOCUS",
+        "BASTION_CHEST",
+        "EAGLE_CROSSBOW",
+        "FROST_FOCUS",
+        "RUNE_LEGGINGS",
+        "EXECUTIONER_AXE",
+        "TITAN_SHIELD",
+        "AEGIS_CHEST",
+        "DAWN_BLADE",
+        "STAR_BOW",
+        "DAWN_SCEPTER",
+        "RIFT_LONGBOW",
+        "PHOENIX_CHEST",
+        "WAR_CROWN",
+        "BLACKWALL_GREATSWORD",
+        "SKYWARD_CROSSBOW",
+        "RIFT_AEGIS",
+        "STORM_LONGBOW",
+        "NECRO_BREAKER",
+        "ECLIPSE_PLATE",
+        "WARCASTER_FOCUS",
+        "ABYSS_AXE",
+        "BASTION_CROWN",
+        "DOOMSTAR_BOW",
+        "LAST_GUARD_BLADE",
+        "CENTURY_AEGIS",
+    },
+    "kr/moonseungjun/villageguardians/VillageEnemyArchetypeSystem$Archetype.class": {
+        "GRUNT",
+        "RUSHER",
+        "BULWARK",
+        "SAPPER",
+        "MARKSMAN",
+        "SHIELDBREAKER",
+        "HEXER",
+        "WAR_CHANTER",
+        "NECROMANCER",
+        "TOWER_HUNTER",
+        "SIEGE_BEAST",
+        "IRON_WARLORD",
+        "PLAGUE_ARCHON",
+        "DREAD_KNIGHT",
+    },
+    "kr/moonseungjun/villageguardians/VillageWaveTrait.class": {
+        "STANDARD",
+        "SWARM",
+        "IRONCLAD",
+        "SIEGE",
+        "HUNTERS",
+        "HEXED",
+        "FRENZY",
+        "REGENERATING",
+        "PHALANX",
+        "BLOOD_MOON",
+        "STORMFRONT",
+        "RIFTED",
+        "BREACH_STORM",
+        "SKY_SIEGE",
+        "HUNTER_NET",
+        "DEATH_CHORUS",
+        "IRON_TIDE",
+        "CATACLYSM",
+        "FINAL_HOST",
+    },
+    "kr/moonseungjun/villageguardians/VillageRoleSkillSystem$ActiveSkill.class": {
+        "VANGUARD_WHIRLWIND",
+        "VANGUARD_BREAKER",
+        "VANGUARD_CRY",
+        "VANGUARD_STORM",
+        "VANGUARD_FRONTLINE_REND",
+        "VANGUARD_BLOOD_SPIRAL",
+        "VANGUARD_WAR_BANNER",
+        "VANGUARD_BREACH_STRIKE",
+        "VANGUARD_SWORD_CHAIN",
+        "VANGUARD_LIFE_SEVER",
+        "VANGUARD_ABSOLUTE_BREAK",
+        "VANGUARD_HEAVEN_SEVER",
+        "RANGER_VOLLEY",
+        "RANGER_PIERCE",
+        "RANGER_RICOCHET",
+        "RANGER_FIRE_RAIN",
+        "RANGER_HAWK_MARK",
+        "RANGER_SPLIT_SHOT",
+        "RANGER_AA_INTERCEPT",
+        "RANGER_DOWNPOUR",
+        "RANGER_STAR_TRACKER",
+        "RANGER_CONSTELLATION",
+        "RANGER_SKY_LOCK",
+        "RANGER_METEOR_BOW",
+        "ARCANIST_FIRE_ORB",
+        "ARCANIST_FROST_RING",
+        "ARCANIST_CHAIN",
+        "ARCANIST_NOVA",
+        "ARCANIST_LAVA_CORE",
+        "ARCANIST_FROST_PRISON",
+        "ARCANIST_LIGHTNING_CHAIN",
+        "ARCANIST_GRAVITY_STORM",
+        "ARCANIST_SOLAR_CORE",
+        "ARCANIST_ABSOLUTE_ZERO",
+        "ARCANIST_HEAVEN_CHAIN",
+        "ARCANIST_SINGULARITY",
+        "LUMINAR_HEAL",
+        "LUMINAR_CLEANSE",
+        "LUMINAR_VEIL",
+        "LUMINAR_SANCTUARY",
+        "LUMINAR_GUARDIAN_LIGHT",
+        "LUMINAR_HOLY_PURGE",
+        "LUMINAR_REVIVAL_WAVE",
+        "LUMINAR_JUDGEMENT",
+        "LUMINAR_HEAVENLY_BARRIER",
+        "LUMINAR_RETURNING_LIGHT",
+        "LUMINAR_RESURRECTION_HYMN",
+        "LUMINAR_LAST_MIRACLE",
+        "WARDEN_TAUNT",
+        "WARDEN_BASH",
+        "WARDEN_FORMATION",
+        "WARDEN_FIELD",
+        "WARDEN_GATE_IMPACT",
+        "WARDEN_FORCED_CHALLENGE",
+        "WARDEN_GUARD_BARRIER",
+        "WARDEN_IRON_PULSE",
+        "WARDEN_UNBROKEN_WALL",
+        "WARDEN_FORTRESS_CHARGE",
+        "WARDEN_ABSOLUTE_FORMATION",
+        "WARDEN_FORTRESS_DESCENT",
+    },
+    "kr/moonseungjun/villageguardians/VillagePlacedTurretSystem$TurretType.class": {
+        "BALLISTA",
+        "REPEATER",
+        "PIERCER",
+        "FLAME",
+        "FROST",
+        "CHAIN",
+        "BOMBARD",
+        "NULLIFIER",
+        "ANTI_AIR",
+        "BEACON",
+    },
+}
+
+
 def fail(message: str) -> None:
     print(f"[FAIL] {message}", file=sys.stderr)
     raise SystemExit(1)
@@ -128,6 +287,16 @@ def main() -> None:
             obsolete_classes = sorted(OBSOLETE_CLASSES & name_set)
             if obsolete_classes:
                 fail(f"Obsolete runtime classes are still bundled: {obsolete_classes}")
+
+            for class_name, expected_tokens in EXPECTED_ENUM_TOKENS.items():
+                if class_name not in name_set:
+                    fail(f"Missing current-content enum class: {class_name}")
+                payload = jar.read(class_name)
+                missing_tokens = sorted(
+                    token for token in expected_tokens if token.encode("ascii") not in payload
+                )
+                if missing_tokens:
+                    fail(f"Missing current-content enum tokens from {class_name}: {missing_tokens}")
             for asset in sorted(REQUIRED_ASSETS):
                 if asset.endswith(".png") and len(jar.read(asset)) < 32:
                     fail(f"Licensed runtime asset is unexpectedly empty: {asset}")
@@ -161,10 +330,10 @@ def main() -> None:
     print("[PASS] Facility repair and upgrade remain reachable from the town hall")
     print("[PASS] Early difficulty tuning, downed-state risk and raid debris suppression are bundled")
     print("[PASS] Roof signatures migrate to front-facing facade marks")
-    print("[PASS] Ten regular enemy roles, four bosses and twelve wave traits are present")
+    print("[PASS] Fourteen enemy archetypes and nineteen wave traits are bundled")
     print("[PASS] Endless warfront milestones and controlled overlapping waves are present")
     print("[PASS] Ten player-placed turret roles own production combat; retired fixed-tower specialization classes are absent")
-    print("[PASS] Twenty active skills use the non-particle custom-mesh effect engine")
+    print("[PASS] Thirty-six equipment offers and sixty active role skills are bundled")
     print("[PASS] Obsolete display and generic visual facades are not bundled")
     print("[PASS] CC0 visual references are documented without untracked binaries")
     print("[PASS] No third-party structure NBT files are bundled")
