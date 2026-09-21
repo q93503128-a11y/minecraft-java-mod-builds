@@ -769,7 +769,10 @@ public final class VillageEnemyArchetypeSystem {
             case SAPPER, SIEGE_BEAST -> ParticleTypes.SMOKE;
             case HEXER, NECROMANCER, PLAGUE_ARCHON -> ParticleTypes.WITCH;
             case WAR_CHANTER, IRON_WARLORD -> ParticleTypes.CRIT;
-            case TOWER_HUNTER, DREAD_KNIGHT -> ParticleTypes.SOUL_FIRE_FLAME;
+            case TOWER_HUNTER, DREAD_KNIGHT, NETHER_REAVER -> ParticleTypes.SOUL_FIRE_FLAME;
+            case CAVE_STALKER, BOGGED_ARCHER -> ParticleTypes.WITCH;
+            case ZOGLIN_BREACHER -> ParticleTypes.CRIT;
+            case MAGMA_BRUTE -> ParticleTypes.FLAME;
             case BULWARK, SHIELDBREAKER -> ParticleTypes.DAMAGE_INDICATOR;
             case MARKSMAN -> ParticleTypes.ENCHANT;
             default -> ParticleTypes.CLOUD;
@@ -789,6 +792,12 @@ public final class VillageEnemyArchetypeSystem {
         WAR_CHANTER("전쟁 고수", "§e"),
         NECROMANCER("리치 사제", "§d"),
         TOWER_HUNTER("탑 사냥꾼", "§3"),
+        CAVE_STALKER("동굴 추적자", "§2"),
+        BOGGED_ARCHER("늪 독궁병", "§2"),
+        ZOGLIN_BREACHER("조글린 파성수", "§6"),
+        BREEZE_DISRUPTOR("돌풍 교란병", "§b"),
+        MAGMA_BRUTE("마그마 투사", "§6"),
+        NETHER_REAVER("황금 약탈광", "§e"),
         SIEGE_BEAST("공성 거수", "§4"),
         IRON_WARLORD("철갑 전쟁군주", "§4"),
         PLAGUE_ARCHON("역병 대주술사", "§4"),
