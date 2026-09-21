@@ -468,7 +468,7 @@ public final class VillageRaidSystem {
         }
         if (healthTier > 0 || boss) {
             mob.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST, duration,
-                    Math.min(11, healthTier + (boss ? 3 : 0))));
+                    Math.min(17, healthTier + (boss ? 3 : 0))));
         }
         if (strengthTier > 0 || boss) {
             mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, duration,
