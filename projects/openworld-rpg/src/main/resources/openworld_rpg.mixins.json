@@ -10,6 +10,9 @@
     "ExternalActorDamageAuthorityMixin",
     "PlayerAttackAuthorityMixin"
   ],
+  "client": [
+    "SpellEngineSinglePressMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

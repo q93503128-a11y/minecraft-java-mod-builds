@@ -146,7 +146,7 @@ dependencies {
     creatureFoundation("curse.maven:codxlib-1633207:${project.codxlib_curse_file}") {
         transitive = false
     }
-    creatureFoundation("maven.modrinth:${project.threateningly_mobs_project_id}:${project.threateningly_mobs_version_id}") {
+    creatureFoundation("curse.maven:${project.threateningly_mobs_curse_project}:${project.threateningly_mobs_curse_file}") {
         transitive = false
     }
 
@@ -164,7 +164,7 @@ dependencies {
 
         add("localRuntime", "curse.maven:alexs-mobs-continued-1635121:${project.alexs_mobs_curse_file}") { transitive = false }
         add("localRuntime", "curse.maven:codxlib-1633207:${project.codxlib_curse_file}") { transitive = false }
-        add("localRuntime", "maven.modrinth:${project.threateningly_mobs_project_id}:${project.threateningly_mobs_version_id}") { transitive = false }
+        add("localRuntime", "curse.maven:${project.threateningly_mobs_curse_project}:${project.threateningly_mobs_curse_file}") { transitive = false }
     }
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.12.2'
@@ -199,7 +199,7 @@ def expectedGameplayFoundationSha256 = [
 def expectedCreatureFoundationSha256 = [
         'alexs-mobs-continued-1635121-8856579.jar': '00513b921071d033edc1a7fc0268e1f381da5e884dfcaad52f4ee44104593dd5',
         'codxlib-1633207-8828221.jar': 'd6887454c1b4cab58b66bd4c0433ea0a76452084535686e7b91c7865ae721282',
-        'JXjyo7k6-Bdd8lkUM.jar': '95109d37c4ed674661e06ebe3724a5a1ec55a7d56171800d3da5251cd29a80be'
+        'threateninglly-mobs-continued-1637799-8804647.jar': '0000000000000000000000000000000000000000000000000000000000000000'
 ]
 
 tasks.register('verifyGameplayFoundationDependencies') {

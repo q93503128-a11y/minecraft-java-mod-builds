@@ -689,3 +689,16 @@ Visible source is not a license. Architecture ideas may be learned from referenc
 # Public repository boundary
 
 Never commit paid/non-redistributable asset files, private-use-only ripped UI/textures/models, assets obtained through DRM/access-control bypass, or source code whose license forbids intended redistribution. The local private game may use separately obtained assets when their real terms permit private use; this registry must keep that boundary explicit.
+
+
+## M0 exact intake — Arc Bolt icon / Threateningly fixed Fabric 26.2
+
+- Arc Bolt HUD icon source: Game-icons.net `Lightning arc` by Lorc, CC BY 3.0.
+  - canonical source page: https://game-icons.net/1x1/lorc/lightning-arc.html
+  - source repository path: https://github.com/game-icons/icons/blob/master/lorc/lightning-arc.svg
+  - project derivative: recolored only for the current Arc Bolt HUD treatment; attribution/license retained here.
+  - project path: `src/main/resources/assets/openworld_rpg/textures/spell/arc_bolt.png`
+- Threateningly Mobs Continued 26.2 Fabric runtime:
+  - project-owned code does not copy/repackage the Earthloong implementation; it binds the dependency's registered `threateningly_mobs:the_earthloong` entity and overlays project combat/spawn/reward authority.
+  - current admitted runtime file: CurseForge file `8804647`, `threateningly_mobs-1.1.1+fabric.26.2(fixed).jar`, published 2026-09-04.
+  - the older Modrinth artifact `Bdd8lkUM` is no longer the admitted M0 runtime because a later fixed 26.2 Fabric build exists.
