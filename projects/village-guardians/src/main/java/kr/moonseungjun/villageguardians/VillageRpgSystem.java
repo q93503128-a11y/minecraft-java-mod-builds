@@ -66,6 +66,14 @@ public final class VillageRpgSystem {
     }
 
     public static void handleIncomingDamage(LivingIncomingDamageEvent event) {
+        if (VillageEnemyCompositionSystem.isVisualRider(event.getEntity())) {
+            Mob owner = VillageEnemyCompositionSystem.combatOwner(event.getEntity());
+            event.setCanceled(true);
+            if (owner != null && owner.level() instanceof ServerLevel level) {
+                owner.hurtServer(level, event.getSource(), event.getAmount());
+            }
+            return;
+        }
         boolean preScaledRicochet = event.getSource().getEntity() instanceof ServerPlayer ricochetOwner
                 && VillageRoleAbilitySystem.isPreScaledRicochetDamage(ricochetOwner, event.getEntity());
         if (!preScaledRicochet
