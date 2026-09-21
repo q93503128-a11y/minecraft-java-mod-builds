@@ -65,6 +65,26 @@ public final class VillageUiService {
         }
     }
 
+    public static void openCampaignVictoryForAll(MinecraftServer server) {
+        String body = "§6제100일 최종 대공성을 막아냈습니다.\n"
+                + "§f정식 100일 캠페인을 완주했습니다.\n"
+                + "§b제101일부터는 끝없는 전쟁입니다. 계속할 때만 시간 진행 투표로 다음 밤을 시작하세요.\n\n"
+                + durabilitySummary();
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (VillageRelicSystem.hasPendingChoice(player)) {
+                send(player, "victory", "100일 대공성 승리", body,
+                        List.of("open_relic_collection", "open_quick_chat"),
+                        List.of("보스 유물 선택|대기 중인 보스 유물 보상을 선택",
+                                "빠른 통신|수호단 신호 전송"));
+            } else {
+                send(player, "victory", "100일 대공성 승리", body,
+                        List.of("open_relic_collection", "open_quick_chat"),
+                        List.of("획득 유물 보기|보유 유물과 누적 효과 확인",
+                                "빠른 통신|수호단 신호 전송"));
+            }
+        }
+    }
+
     public static void handleAction(ServerPlayer player, String action) {
         MinecraftServer server = player == null ? null : player.level().getServer();
         if (server == null || action == null || action.isBlank()) return;
