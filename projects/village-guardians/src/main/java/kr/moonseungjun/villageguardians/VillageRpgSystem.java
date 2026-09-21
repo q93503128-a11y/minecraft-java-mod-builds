@@ -32,11 +32,11 @@ public final class VillageRpgSystem {
     public static void refreshPlayerPassive(ServerPlayer player) {
         var maxHealth = player.getAttribute(Attributes.MAX_HEALTH);
         if (maxHealth != null) {
-            maxHealth.setBaseValue(20.0D + VillageSkillTreeSystem.healthTraining(player));
+            maxHealth.setBaseValue(20.0D + VillageSkillTreeSystem.healthTrainingBonus(player));
         }
         var attackDamage = player.getAttribute(Attributes.ATTACK_DAMAGE);
         if (attackDamage != null) {
-            attackDamage.setBaseValue(1.0D + VillageSkillTreeSystem.attackTraining(player) * 0.10D);
+            attackDamage.setBaseValue(1.0D + VillageSkillTreeSystem.attackTrainingBonus(player));
         }
 
         VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
