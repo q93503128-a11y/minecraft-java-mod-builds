@@ -130,7 +130,8 @@ def main() -> None:
     assert "시설·포탑을 우선 노리는 공성 병과도 도발" in role_skill
     bastion = section(merc, "private static void bastionControl", "private static void strikerPressure")
     assert "double mastery = masteryProgress(rank);" in bastion
-    assert "double radius = 12.0 + 12.0 * mastery;" in bastion
+    assert "double utility = endlessUtilityAdaptation(rank);" in bastion
+    assert "double radius = (12.0 + 12.0 * mastery) * utility;" in bastion
     assert "VillageRaidSystem.tauntEnemies" in bastion
 
     # Friendly projectiles pass through mercenaries and friendly damage is zeroed before RPG scaling.
