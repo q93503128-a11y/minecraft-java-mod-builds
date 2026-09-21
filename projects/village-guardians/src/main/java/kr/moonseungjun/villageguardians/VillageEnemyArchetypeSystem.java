@@ -58,7 +58,7 @@ public final class VillageEnemyArchetypeSystem {
             boolean boss,
             VillageWaveTrait trait) {
         boolean flying = willSpawnFlying(day, wave, index, boss, trait);
-        Archetype archetype = boss ? bossForDay(day)
+        Archetype archetype = boss ? bossForSlot(day, index)
                 : flying ? Archetype.MARKSMAN : select(day, wave, index, trait);
         Mob mob = flying ? EntityTypes.PHANTOM.create(level, EntitySpawnReason.EVENT) : createEntity(level, archetype);
         return mob == null ? null : new SpawnedEnemy(mob, archetype, boss);
@@ -66,7 +66,7 @@ public final class VillageEnemyArchetypeSystem {
 
     public static Archetype previewArchetype(
             int day, int wave, int index, boolean boss, VillageWaveTrait trait) {
-        return boss ? bossForDay(day) : select(day, wave, index, trait);
+        return boss ? bossForSlot(day, index) : select(day, wave, index, trait);
     }
 
     public static boolean isFlying(Mob mob) {
@@ -416,14 +416,19 @@ public final class VillageEnemyArchetypeSystem {
         };
     }
 
-    private static Archetype bossForDay(int day) {
-        int cycle = Math.floorMod(Math.max(3, day) - 3, 4);
-        return switch (cycle) {
-            case 0 -> Archetype.SIEGE_BEAST;
-            case 1 -> Archetype.IRON_WARLORD;
-            case 2 -> Archetype.PLAGUE_ARCHON;
-            default -> Archetype.DREAD_KNIGHT;
+    private static Archetype bossForSlot(int day, int bossIndex) {
+        Archetype[] bosses = {
+                Archetype.SIEGE_BEAST,
+                Archetype.IRON_WARLORD,
+                Archetype.PLAGUE_ARCHON,
+                Archetype.DREAD_KNIGHT
         };
+        int first = Math.floorMod(Math.max(3, day) - 3, bosses.length);
+        return bosses[Math.floorMod(first + Math.max(0, bossIndex), bosses.length)];
+    }
+
+    private static Archetype bossForDay(int day) {
+        return bossForSlot(day, 0);
     }
 
     private static Mob createEntity(ServerLevel level, Archetype archetype) {
