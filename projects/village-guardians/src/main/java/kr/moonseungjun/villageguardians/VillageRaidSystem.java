@@ -1148,6 +1148,7 @@ public final class VillageRaidSystem {
 
     private static void finishVictory(MinecraftServer server) {
         int day = VillageCouncilState.currentDay();
+        boolean finalCampaignVictory = VillageCampaignProgression.isFinalSiege(day);
         float campaignReward = VillageWarfrontSystem.rewardMultiplier(day);
         int supplies = Math.round((140 + day * 32)
                 * VillageProgressionSystem.raidRewardMultiplierPercent() / 100.0f * campaignReward);
@@ -1168,8 +1169,12 @@ public final class VillageRaidSystem {
         }
         VillageProgressionSystem.healRaidParty(server, true);
         VillageCouncilState.completeRaid(server);
-        VillageUiService.openRepairSummaryForAll(server);
-        VillageRelicSystem.openPendingChoicesForParty(server);
+        if (finalCampaignVictory) {
+            VillageUiService.openCampaignVictoryForAll(server);
+        } else {
+            VillageUiService.openRepairSummaryForAll(server);
+            VillageRelicSystem.openPendingChoicesForParty(server);
+        }
     }
 
     public static boolean shouldDiscardStaleRaidEnemy(Mob mob) {
