@@ -517,26 +517,34 @@ public final class VillageEnemyArchetypeSystem {
         if (isFlying(mob)) {
             var health = mob.getAttribute(Attributes.MAX_HEALTH);
             float pacedDay = VillageCampaignProgression.effectiveCombatDay(day);
-            if (health != null) health.setBaseValue(Math.min(52.0, 18.0 + Math.max(0.0f, pacedDay - 7.0f) * 0.72));
+            if (health != null) health.setBaseValue(18.0 + Math.max(0.0f, pacedDay - 7.0f) * 0.72);
             var attack = mob.getAttribute(Attributes.ATTACK_DAMAGE);
-            if (attack != null) attack.setBaseValue(Math.min(9.0, 3.0 + Math.max(0.0f, pacedDay - 7.0f) * 0.11));
+            if (attack != null) attack.setBaseValue(3.0 + Math.max(0.0f, pacedDay - 7.0f) * 0.11);
             return;
         }
         if (archetype == Archetype.RUSHER) {
             var health = mob.getAttribute(Attributes.MAX_HEALTH);
             float pacedDay = VillageCampaignProgression.effectiveCombatDay(day);
-            if (health != null) health.setBaseValue(Math.min(18.0, 11.0 + Math.max(0.0f, pacedDay - 1.0f) * 0.34));
+            if (health != null) {
+                float progress = Math.max(0.0f, pacedDay - 1.0f);
+                float lateProgress = Math.max(0.0f, pacedDay - 20.0f);
+                health.setBaseValue(11.0 + progress * 0.34 - lateProgress * 0.27);
+            }
             var attack = mob.getAttribute(Attributes.ATTACK_DAMAGE);
-            if (attack != null) attack.setBaseValue(Math.min(5.0, 1.5 + Math.max(0.0f, pacedDay - 1.0f) * 0.065));
+            if (attack != null) {
+                float progress = Math.max(0.0f, pacedDay - 1.0f);
+                float lateProgress = Math.max(0.0f, pacedDay - 20.0f);
+                attack.setBaseValue(1.5 + progress * 0.065 - lateProgress * 0.020);
+            }
             var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
             if (speed != null) speed.setBaseValue(0.19);
         } else if (archetype == Archetype.SAPPER) {
             // Sappers stay threatening through objective priority, not raw sprint speed.
             var health = mob.getAttribute(Attributes.MAX_HEALTH);
             float pacedDay = VillageCampaignProgression.effectiveCombatDay(day);
-            if (health != null) health.setBaseValue(Math.min(24.0, 8.5 + Math.max(0.0f, pacedDay - 1.0f) * 0.24));
+            if (health != null) health.setBaseValue(8.5 + Math.max(0.0f, pacedDay - 1.0f) * 0.24);
             var attack = mob.getAttribute(Attributes.ATTACK_DAMAGE);
-            if (attack != null) attack.setBaseValue(Math.min(4.0, 1.25 + Math.max(0.0f, pacedDay - 1.0f) * 0.045));
+            if (attack != null) attack.setBaseValue(1.25 + Math.max(0.0f, pacedDay - 1.0f) * 0.045);
             var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
             if (speed != null) speed.setBaseValue(0.15);
         } else if (archetype == Archetype.SHIELDBREAKER) {
@@ -656,8 +664,8 @@ public final class VillageEnemyArchetypeSystem {
             net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect> effect) {
         for (ServerPlayer player : nearbyPlayers(server, mob, radius)) {
             player.addEffect(new MobEffectInstance(effect, 90, 1));
-            float endlessBonus = Math.min(7.0f,
-                    VillageCampaignProgression.effectiveCombatDay(VillageCouncilState.currentDay()) * 0.16f);
+            float endlessBonus =
+                    VillageCampaignProgression.effectiveCombatDay(VillageCouncilState.currentDay()) * 0.135f;
             player.hurtServer(level, level.damageSources().magic(), damage + endlessBonus);
         }
     }
