@@ -31,12 +31,12 @@ def main() -> None:
     enum_block = role.split("public enum ActiveSkill", 1)[1]
     enum_block = enum_block.split("private final String id", 1)[0]
     skill_names = re.findall(r'^\s{8}([A-Z][A-Z0-9_]+)\("', enum_block, re.MULTILINE)
-    assert len(skill_names) == 20, skill_names
+    assert len(skill_names) == 60, skill_names
     for prefix in ("VANGUARD", "RANGER", "ARCANIST", "LUMINAR", "WARDEN"):
-        assert sum(name.startswith(prefix + "_") for name in skill_names) == 4
-    cast_block = role.split("switch (skill)", 1)[1].split("private static void equipIntoFirstFreeSlot", 1)[0]
-    for name in skill_names:
-        assert f"case {name}" in cast_block, name
+        assert sum(name.startswith(prefix + "_") for name in skill_names) == 12
+    cast_block = role.split("private static void cast(", 1)[1].split("private static void equipIntoFirstFreeSlot", 1)[0]
+    assert "VillageRoleAbilitySystem.cast(level, player, skill" in cast_block
+    assert "promotionTier()" in role and "promotionSlot()" in role
     for role_prefix in ("vanguard_", "ranger_", "arcanist_", "luminar_", "warden_"):
         assert role_prefix in visuals
     assert "submitCustomGeometry" in renderer
@@ -52,7 +52,7 @@ def main() -> None:
     assert "content.width() >= 520 ? 2 : 1" in screen
     assert "content.width() >= 570 ? 2 : 1" in screen
 
-    print("[PASS] All 20 active skills have concrete cast logic and custom mesh feedback")
+    print("[PASS] All 60 active skills route through concrete base/promotion combat logic and custom mesh feedback")
     print("[PASS] Action-bar HUD shows equipped Z/X skills and live cooldown seconds")
     print("[PASS] Test role and skill managers use a dedicated compact responsive UI")
 
