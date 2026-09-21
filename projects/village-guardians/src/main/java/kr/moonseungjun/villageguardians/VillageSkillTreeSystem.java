@@ -14,6 +14,8 @@ import java.util.UUID;
 public final class VillageSkillTreeSystem {
     private static final Map<UUID, Long> UNLOCKED_MASKS = new LinkedHashMap<>();
     private static final Map<UUID, Integer> SPENT_POINTS = new LinkedHashMap<>();
+    private static final Map<UUID, Integer> HEALTH_TRAINING = new LinkedHashMap<>();
+    private static final Map<UUID, Integer> ATTACK_TRAINING = new LinkedHashMap<>();
     private static VillageSkillTreeData savedData;
 
     private VillageSkillTreeSystem() {
@@ -25,6 +27,10 @@ public final class VillageSkillTreeSystem {
         UNLOCKED_MASKS.putAll(savedData.masks());
         SPENT_POINTS.clear();
         SPENT_POINTS.putAll(savedData.spentPoints());
+        HEALTH_TRAINING.clear();
+        HEALTH_TRAINING.putAll(savedData.healthTraining());
+        ATTACK_TRAINING.clear();
+        ATTACK_TRAINING.putAll(savedData.attackTraining());
         UNLOCKED_MASKS.forEach((uuid, mask) -> SPENT_POINTS.putIfAbsent(uuid, Long.bitCount(mask)));
         persist();
     }
@@ -47,6 +53,62 @@ public final class VillageSkillTreeSystem {
 
     public static int availablePoints(ServerPlayer player) {
         return Math.max(0, earnedPoints(player) - spentPoints(player));
+    }
+
+    public static int healthTraining(ServerPlayer player) {
+        return Math.max(0, HEALTH_TRAINING.getOrDefault(player.getUUID(), 0));
+    }
+
+    public static int attackTraining(ServerPlayer player) {
+        return Math.max(0, ATTACK_TRAINING.getOrDefault(player.getUUID(), 0));
+    }
+
+    public static boolean trainingUnlocked(ServerPlayer player) {
+        for (Branch branch : Branch.values()) {
+            boolean complete = true;
+            for (Node node : Node.values()) {
+                if (node.branch() == branch && !has(player, node)) {
+                    complete = false;
+                    break;
+                }
+            }
+            if (complete) return true;
+        }
+        return false;
+    }
+
+    public static synchronized String purchaseTraining(ServerPlayer player, String type) {
+        if (!VillageLocationRules.isNearSkillHall(player)) {
+            return "기초 단련은 기술·마법 연구소 근처에서만 가능합니다.";
+        }
+        String blocked = VillageMaintenanceRules.blockReason("기초 단련");
+        if (blocked != null) return blocked;
+        if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.SKILL_HALL)) {
+            return "기술·마법 연구소가 파괴되어 기초 단련을 진행할 수 없습니다.";
+        }
+        if (!trainingUnlocked(player)) {
+            return "전술 갈래 하나를 10단계까지 완성하면 반복 단련이 해금됩니다.";
+        }
+        if (availablePoints(player) < 1) {
+            return "전술 포인트가 부족합니다. 레벨이 오를 때마다 1P를 얻습니다.";
+        }
+        UUID id = player.getUUID();
+        String normalized = type == null ? "" : type.toLowerCase(Locale.ROOT);
+        String result;
+        if ("health".equals(normalized)) {
+            int next = healthTraining(player) + 1;
+            HEALTH_TRAINING.put(id, next);
+            result = "체력 단련 " + next + "회 · 최대 체력 +1";
+        } else if ("attack".equals(normalized)) {
+            int next = attackTraining(player) + 1;
+            ATTACK_TRAINING.put(id, next);
+            result = "공격 단련 " + next + "회 · 기본 공격력 +1";
+        } else {
+            return "알 수 없는 기초 단련입니다.";
+        }
+        SPENT_POINTS.put(id, spentPoints(player) + 1);
+        persist();
+        return result + " · 남은 포인트 " + availablePoints(player) + "P";
     }
 
     public static synchronized boolean has(ServerPlayer player, Node node) {
@@ -305,6 +367,8 @@ public final class VillageSkillTreeSystem {
     public static synchronized void resetForNewGame() {
         UNLOCKED_MASKS.clear();
         SPENT_POINTS.clear();
+        HEALTH_TRAINING.clear();
+        ATTACK_TRAINING.clear();
         persist();
     }
 
@@ -322,7 +386,9 @@ public final class VillageSkillTreeSystem {
     }
 
     private static void persist() {
-        if (savedData != null) savedData.replace(UNLOCKED_MASKS, SPENT_POINTS);
+        if (savedData != null) {
+            savedData.replace(UNLOCKED_MASKS, SPENT_POINTS, HEALTH_TRAINING, ATTACK_TRAINING);
+        }
     }
 
     public enum Branch {
@@ -424,15 +490,7 @@ public final class VillageSkillTreeSystem {
         public int tier() { return tier; }
         public Node prerequisite() { return prerequisite; }
         public int pointCost() {
-            return switch (tier) {
-                case 1, 2, 3 -> 1;
-                case 4, 5 -> 2;
-                case 6 -> 5;
-                case 7 -> 8;
-                case 8 -> 12;
-                case 9 -> 18;
-                default -> 25;
-            };
+            return Math.max(1, Math.min(4, (tier + 2) / 3));
         }
 
         public static Optional<Node> parse(String value) {
