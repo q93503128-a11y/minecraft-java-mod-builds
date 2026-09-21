@@ -114,13 +114,15 @@ public final class VillageSiegeBossSystem {
             }
             VillageBossAspectSystem.Aspect aspect = VillageBossAspectSystem.aspectOf(mob);
             if (aspect != null) VillageBossEffectSystem.presence(level, mob, aspect, doctrine);
+            VillageBossEffectSystem.entrance(level, mob, type);
         }
     }
 
     private static void enterPhaseTwo(MinecraftServer server, Mob mob, BossDoctrine doctrine) {
         mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 20 * 60 * 30, 1));
         if (mob.level() instanceof ServerLevel level) {
-            VillageBossEffectSystem.phaseTwo(level, mob, doctrine);
+            VillageEnemyArchetypeSystem.Archetype archetype = VillageRaidSystem.archetypeOf(mob);
+            VillageBossEffectSystem.phaseTwo(level, mob, archetype, doctrine);
         }
         server.getPlayerList().broadcastSystemMessage(Component.literal(
                 "§4[보스 2페이즈] §f" + doctrine.displayName() + "의 전투 방식이 격화됩니다. · "
