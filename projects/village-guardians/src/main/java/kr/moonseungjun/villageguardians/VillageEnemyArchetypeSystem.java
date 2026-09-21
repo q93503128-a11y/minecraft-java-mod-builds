@@ -118,6 +118,12 @@ public final class VillageEnemyArchetypeSystem {
             case WAR_CHANTER -> "주변 적 공격·속도 강화";
             case NECROMANCER -> "회복·보호막 지원";
             case TOWER_HUNTER -> "포탑 교란 원거리";
+            case CAVE_STALKER -> "저상 독성 측면 침투";
+            case BOGGED_ARCHER -> "독화살 후방 저격";
+            case ZOGLIN_BREACHER -> "야수 돌진·구조물 압박";
+            case BREEZE_DISRUPTOR -> "도약·넉백 진형 교란";
+            case MAGMA_BRUTE -> "화염 내성 근접 압박";
+            case NETHER_REAVER -> "황금 도끼 중장 근접";
             case SIEGE_BEAST -> "대형 공성·충격파";
             case IRON_WARLORD -> "중장갑 지휘 보스";
             case PLAGUE_ARCHON -> "독·회복·교란 보스";
@@ -170,6 +176,9 @@ public final class VillageEnemyArchetypeSystem {
             case SAPPER -> 1.72f;
             case SHIELDBREAKER -> 1.72f;
             case TOWER_HUNTER -> 1.28f;
+            case ZOGLIN_BREACHER -> 1.58f;
+            case MAGMA_BRUTE -> 1.30f;
+            case NETHER_REAVER -> 1.18f;
             case SIEGE_BEAST -> 2.15f;
             case IRON_WARLORD -> 1.75f;
             case PLAGUE_ARCHON -> 1.32f;
@@ -186,6 +195,7 @@ public final class VillageEnemyArchetypeSystem {
         return archetype == Archetype.SAPPER
                 || archetype == Archetype.SHIELDBREAKER
                 || archetype == Archetype.TOWER_HUNTER
+                || archetype == Archetype.ZOGLIN_BREACHER
                 || archetype == Archetype.SIEGE_BEAST;
     }
 
@@ -196,13 +206,17 @@ public final class VillageEnemyArchetypeSystem {
     public static boolean usesSiegePacing(Archetype archetype) {
         return archetype == Archetype.SAPPER
                 || archetype == Archetype.SHIELDBREAKER
+                || archetype == Archetype.ZOGLIN_BREACHER
+                || archetype == Archetype.MAGMA_BRUTE
                 || isBoss(archetype);
     }
 
     public static boolean isTacticalThreat(Archetype archetype) {
         if (archetype == null) return false;
         return switch (archetype) {
-            case SAPPER, SHIELDBREAKER, HEXER, WAR_CHANTER, NECROMANCER, TOWER_HUNTER -> true;
+            case SAPPER, SHIELDBREAKER, HEXER, WAR_CHANTER, NECROMANCER, TOWER_HUNTER,
+                    CAVE_STALKER, BOGGED_ARCHER, ZOGLIN_BREACHER, BREEZE_DISRUPTOR,
+                    MAGMA_BRUTE, NETHER_REAVER -> true;
             default -> isBoss(archetype);
         };
     }
