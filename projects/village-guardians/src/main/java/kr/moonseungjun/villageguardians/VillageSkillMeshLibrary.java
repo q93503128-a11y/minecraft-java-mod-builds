@@ -145,6 +145,14 @@ public final class VillageSkillMeshLibrary {
             case "boss_bloodbound_warning" -> renderBossZone(pose, out, basis, age, progress, state.extra, 6);
             case "boss_bloodbound_impact" -> renderBossZone(pose, out, basis, age, progress, state.extra, 7);
             case "boss_storm_warning" -> renderBossZone(pose, out, basis, age, progress, state.extra, 8);
+            case "boss_signature_siege_warning" -> renderBossSignature(pose, out, basis, age, progress, state.extra, 0, true);
+            case "boss_signature_siege_impact" -> renderBossSignature(pose, out, basis, age, progress, state.extra, 0, false);
+            case "boss_signature_warlord_warning" -> renderBossSignature(pose, out, basis, age, progress, state.extra, 1, true);
+            case "boss_signature_warlord_impact" -> renderBossSignature(pose, out, basis, age, progress, state.extra, 1, false);
+            case "boss_signature_plague_warning" -> renderBossSignature(pose, out, basis, age, progress, state.extra, 2, true);
+            case "boss_signature_plague_impact" -> renderBossSignature(pose, out, basis, age, progress, state.extra, 2, false);
+            case "boss_signature_dread_warning" -> renderBossSignature(pose, out, basis, age, progress, state.extra, 3, true);
+            case "boss_signature_dread_impact" -> renderBossSignature(pose, out, basis, age, progress, state.extra, 3, false);
             default -> renderFallbackRune(pose, out, basis, age, progress);
         }
     }
@@ -1278,6 +1286,117 @@ public final class VillageSkillMeshLibrary {
         if (phaseTwo) {
             jaggedBolt(pose, out, b.local(-0.9, 0.18, 0.0), b.local(0.9, 2.55, 0.12),
                     8, 0.035, withAlpha(color, 190), (long) age / 3L + 551L);
+        }
+    }
+
+    private static void renderBossSignature(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double age, double progress, String encodedRadius, int style, boolean warning) {
+        double radius = 4.0;
+        try { radius = Double.parseDouble(encodedRadius); }
+        catch (NumberFormatException ignored) {}
+        radius = Math.max(0.8, radius);
+
+        int color = switch (style) {
+            case 0 -> rgba(255, 148, 66, warning ? 205 : 235);
+            case 1 -> rgba(244, 207, 112, warning ? 205 : 235);
+            case 2 -> rgba(116, 214, 97, warning ? 210 : 240);
+            case 3 -> rgba(214, 55, 72, warning ? 215 : 245);
+            default -> rgba(220, 220, 220, 220);
+        };
+        double fade = warning ? 1.0 : Math.max(0.0, 1.0 - progress);
+        double boundary = warning ? radius : 0.25 + radius * Math.min(1.0, progress * 2.4);
+        int visibleColor = withAlpha(color, (int) ((warning ? 180 : 235) * Math.max(0.22, fade)));
+
+        // Every warning draws the exact live gameplay radius. Decorative motion stays inside/outside
+        // the fixed boundary so the readable danger edge never lies to the player.
+        ring(pose, out, b, warning ? radius : boundary, 0.06,
+                warning ? 0.10 : 0.20, 80, visibleColor, age * (warning ? 0.010 : 0.022));
+
+        if (style == 0) {
+            // Siege Beast: grounded weight, inward-facing fracture teeth and a heavy expanding shock.
+            if (warning) {
+                for (int i = 0; i < 8; i++) {
+                    double a = i * TAU / 8.0;
+                    chevron(pose, out, b, a, radius * 0.86, 0.08, 0.58, withAlpha(color, 165));
+                }
+                ring(pose, out, b, radius * 0.42, 0.08, 0.08, 48,
+                        withAlpha(color, 120), -age * 0.028);
+            } else {
+                for (int i = 0; i < 12; i++) {
+                    double a = i * TAU / 12.0;
+                    Vec3 root = b.local(Math.cos(a) * boundary * 0.32, 0.12,
+                            Math.sin(a) * boundary * 0.32);
+                    Vec3 tip = b.local(Math.cos(a) * boundary, 0.28 + 0.12 * Math.sin(age * 0.18),
+                            Math.sin(a) * boundary);
+                    spike(pose, out, root, tip, 0.06 + boundary * 0.008, withAlpha(color, 190));
+                }
+            }
+            return;
+        }
+
+        if (style == 1) {
+            // Iron Warlord: standards and command spokes, deliberately vertical and ordered.
+            double standardRadius = Math.min(radius * 0.72, 4.8);
+            for (int i = 0; i < 4; i++) {
+                double a = i * TAU / 4.0 + Math.PI * 0.25;
+                Vec3 base = b.local(Math.cos(a) * standardRadius, 0.08, Math.sin(a) * standardRadius);
+                double height = warning ? 2.6 + 0.18 * Math.sin(age * 0.12 + i) : 1.4 + 1.6 * fade;
+                prism(pose, out, base, base.add(0.0, height, 0.0), 0.075, visibleColor);
+                if (warning) {
+                    Vec3 arm = base.add(b.right.scale((i % 2 == 0 ? 1 : -1) * 0.42)).add(0.0, height * 0.78, 0.0);
+                    prism(pose, out, base.add(0.0, height * 0.78, 0.0), arm, 0.05, withAlpha(color, 150));
+                }
+            }
+            if (!warning) {
+                for (int i = 0; i < 8; i++) {
+                    double a = i * TAU / 8.0;
+                    prism(pose, out, Vec3.ZERO.add(0.0, 0.12, 0.0),
+                            b.local(Math.cos(a) * boundary * 0.88, 0.16, Math.sin(a) * boundary * 0.88),
+                            0.045, withAlpha(color, 150));
+                }
+            }
+            return;
+        }
+
+        if (style == 2) {
+            // Plague Archon: readable spider-web lattice with toxic nodes.
+            int spokes = 8;
+            for (int i = 0; i < spokes; i++) {
+                double a = i * TAU / spokes + age * (warning ? 0.0015 : 0.006);
+                Vec3 inner = b.local(Math.cos(a) * radius * 0.18, 0.08, Math.sin(a) * radius * 0.18);
+                Vec3 outer = b.local(Math.cos(a) * (warning ? radius * 0.92 : boundary * 0.92),
+                        0.09, Math.sin(a) * (warning ? radius * 0.92 : boundary * 0.92));
+                prism(pose, out, inner, outer, 0.034, withAlpha(color, warning ? 135 : 175));
+            }
+            for (double scale : new double[]{0.35, 0.58, 0.80}) {
+                ring(pose, out, b, (warning ? radius : boundary) * scale, 0.09, 0.032,
+                        56, withAlpha(color, warning ? 115 : 160), -age * 0.008);
+            }
+            if (!warning) {
+                for (int i = 0; i < 6; i++) {
+                    double a = i * TAU / 6.0 + age * 0.01;
+                    Vec3 node = b.local(Math.cos(a) * boundary * 0.62, 0.16,
+                            Math.sin(a) * boundary * 0.62);
+                    sphere(pose, out, node, 0.18 + 0.08 * fade, 6, 8, withAlpha(color, 120));
+                }
+            }
+            return;
+        }
+
+        // Dread Knight: radial boundary remains honest, while crossing blade arcs sell the mounted execution.
+        double arcRadius = warning ? Math.min(radius * 0.48, 4.2) : Math.max(0.8, boundary * 0.62);
+        slashArc(pose, out, b, age * 0.030, arcRadius, 0.82, 1.55, 0.085, visibleColor);
+        slashArc(pose, out, b, Math.PI - age * 0.026, arcRadius, 1.28, 1.35, 0.070,
+                withAlpha(color, warning ? 145 : 205));
+        if (warning) {
+            for (int i = 0; i < 6; i++) {
+                double a = i * TAU / 6.0 + Math.PI / 6.0;
+                chevron(pose, out, b, a, radius * 0.90, 0.07, 0.50, withAlpha(color, 145));
+            }
+        } else {
+            horizontalSlash(pose, out, b, Math.max(2.6, boundary * 1.35), 0.95, 0.11, 0.18,
+                    withAlpha(color, 200));
         }
     }
 
