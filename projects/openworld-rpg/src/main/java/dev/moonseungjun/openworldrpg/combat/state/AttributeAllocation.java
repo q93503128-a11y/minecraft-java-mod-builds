@@ -1,5 +1,8 @@
 package dev.moonseungjun.openworldrpg.combat.state;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+
 /**
  * Player-spent attribute points for one active root-class profile.
  *
@@ -17,6 +20,21 @@ public record AttributeAllocation(
 ) {
     public static final int BASE_ATTRIBUTE = 5;
     public static final int MAX_PRE_EQUIPMENT_ATTRIBUTE = 60;
+    private static final Codec<Integer> ALLOCATION_CODEC = Codec.intRange(
+            0,
+            MAX_PRE_EQUIPMENT_ATTRIBUTE - BASE_ATTRIBUTE
+    );
+
+    public static final Codec<AttributeAllocation> CODEC = RecordCodecBuilder.create(instance ->
+            instance.group(
+                    ALLOCATION_CODEC.fieldOf("vit").forGetter(AttributeAllocation::vit),
+                    ALLOCATION_CODEC.fieldOf("end").forGetter(AttributeAllocation::end),
+                    ALLOCATION_CODEC.fieldOf("str").forGetter(AttributeAllocation::str),
+                    ALLOCATION_CODEC.fieldOf("dex").forGetter(AttributeAllocation::dex),
+                    ALLOCATION_CODEC.fieldOf("int").forGetter(AttributeAllocation::intel),
+                    ALLOCATION_CODEC.fieldOf("wil").forGetter(AttributeAllocation::wil)
+            ).apply(instance, AttributeAllocation::new)
+    );
 
     public AttributeAllocation {
         if (vit < 0 || end < 0 || str < 0 || dex < 0 || intel < 0 || wil < 0) {

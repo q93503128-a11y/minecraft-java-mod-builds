@@ -1,6 +1,7 @@
 package dev.moonseungjun.openworldrpg;
 
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
+import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionAttachments;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.IntegrationBootstrap;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import net.fabricmc.api.ModInitializer;
@@ -15,6 +16,7 @@ public final class OpenworldRpgMod implements ModInitializer {
     @Override
     public void onInitialize() {
         RuntimeProfile profile = RuntimeProfile.current();
+        PlayerProgressionAttachments.initialize();
         IntegrationBootstrap.bootstrap(profile, LOGGER);
 
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
