@@ -111,6 +111,15 @@ public final class VillageUiController {
             labels.add(node.title() + "|" + node.description() + "|"
                     + VillageSkillTreeSystem.nodeStatus(player, node) + "|" + node.pointCost());
         }
+        if (VillageSkillTreeSystem.trainingUnlocked(player)) {
+            String status = VillageSkillTreeSystem.availablePoints(player) >= 1 ? "습득 가능" : "1P 필요";
+            actions.add("skill_training:health");
+            labels.add("체력 단련 " + VillageSkillTreeSystem.healthTraining(player)
+                    + "회|반복 투자 · 최대 체력 +1|" + status + "|1");
+            actions.add("skill_training:attack");
+            labels.add("공격 단련 " + VillageSkillTreeSystem.attackTraining(player)
+                    + "회|반복 투자 · 기본 공격력 +1|" + status + "|1");
+        }
         String body = "사용 가능 " + VillageSkillTreeSystem.availablePoints(player)
                 + "P · 획득 " + VillageSkillTreeSystem.earnedPoints(player)
                 + "P · 드래그 이동 · 휠 확대/축소";
@@ -491,6 +500,14 @@ public final class VillageUiController {
                 return true;
             }
             player.sendSystemMessage(Component.literal("§b" + VillageSkillTreeSystem.purchase(player, action.substring(11))));
+            openSkillTree(player);
+            return true;
+        }
+        if (action.startsWith("skill_training:")) {
+            String result = VillageSkillTreeSystem.purchaseTraining(
+                    player, action.substring("skill_training:".length()));
+            VillageRpgSystem.refreshPlayerPassive(player);
+            player.sendSystemMessage(Component.literal("§b" + result));
             openSkillTree(player);
             return true;
         }
