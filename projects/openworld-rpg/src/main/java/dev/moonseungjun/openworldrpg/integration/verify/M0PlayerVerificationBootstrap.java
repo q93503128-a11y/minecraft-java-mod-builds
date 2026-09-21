@@ -35,7 +35,7 @@ public final class M0PlayerVerificationBootstrap {
         }
 
         PlayerProgressionService.setCombatLevel(player, 8);
-        PlayerProgressionService.setActiveClass(player, RootClass.MAGE);
+        PlayerProgressionService.selectClass(player, RootClass.MAGE);
         PlayerProgressionService.setAllocation(
                 player,
                 RootClass.MAGE,
