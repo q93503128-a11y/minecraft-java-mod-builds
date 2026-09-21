@@ -14,6 +14,7 @@ import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import dev.moonseungjun.openworldrpg.integration.spellengine.SpellEngineAuthorityAdapter;
 import java.util.UUID;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
@@ -24,18 +25,13 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import org.slf4j.Logger;
 
-/**
- * CI-only runtime verification. Never enabled in normal gameplay.
- *
- * <p>This uses production actor binding, project impact resolution, Minecraft final-damage
- * application and runtime poise state against the exact Earthloong registry entity. The offensive
- * source is produced from a canon-valid Lv8 Mage build (7 earned points into INT + ItemLv8 Staff),
- * not from a hand-written DamageSourceSnapshot, and is never installed into player runtime state.</p>
- */
+/** CI-only exact dependency runtime verification. Never enabled in normal gameplay. */
 public final class M0RuntimeVerificationHarness {
     private static final String ENABLE_PROPERTY = "openworld_rpg.m0RuntimeVerification";
+    private static final int EARTHLOONG_SURVIVAL_TICKS = 40;
     private static final UUID VERIFICATION_ACTOR_ID =
             UUID.fromString("2d35c0ee-0ee0-4f00-8f0f-000000000001");
+    private static VerificationSession activeSession;
 
     private M0RuntimeVerificationHarness() {
     }
@@ -46,33 +42,73 @@ public final class M0RuntimeVerificationHarness {
             return;
         }
 
-        ServerLifecycleEvents.SERVER_STARTED.register(server -> verify(server.overworld(), logger));
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> beginVerification(server.overworld(), logger));
+        ServerTickEvents.END_SERVER_TICK.register(server -> finishWhenReady(server.overworld(), logger));
         logger.info("Openworld RPG M0 runtime impact verification armed for gameplay server.");
     }
 
-    private static void verify(ServerLevel level, Logger logger) {
-        BlockPos spawn = new BlockPos(0, 250, 0);
-        Entity targetEntity = null;
-        Entity attackerEntity = null;
+    private static synchronized void beginVerification(ServerLevel level, Logger logger) {
+        if (activeSession != null) {
+            throw new IllegalStateException("M0 Earthloong verification session already exists.");
+        }
 
-        try {
-            targetEntity = ExternalActorBindingRuntime.spawnAuthored(
-                    level,
-                    spawn,
-                    ExternalActorCombatProfile.r01Earthloong().entityId()
+        BlockPos spawn = level.getSharedSpawnPos().above(4);
+        Entity targetEntity = ExternalActorBindingRuntime.spawnAuthored(
+                level,
+                spawn,
+                ExternalActorCombatProfile.r01Earthloong().entityId()
+        );
+        if (!(targetEntity instanceof LivingEntity target)) {
+            targetEntity.discard();
+            throw new IllegalStateException("M0 Earthloong verification target is not a living entity.");
+        }
+
+        long startTick = level.getGameTime();
+        activeSession = new VerificationSession(target, startTick, startTick + EARTHLOONG_SURVIVAL_TICKS);
+        logger.info(
+                "OPENWORLD_RPG_M0_EARTHLOONG_SURVIVAL_ARMED entityId={} startTick={} verifyTick={}",
+                target.getId(),
+                startTick,
+                startTick + EARTHLOONG_SURVIVAL_TICKS
+        );
+    }
+
+    private static synchronized void finishWhenReady(ServerLevel level, Logger logger) {
+        VerificationSession session = activeSession;
+        if (session == null || level.getGameTime() < session.verifyTick()) {
+            return;
+        }
+        activeSession = null;
+
+        LivingEntity target = session.target();
+        if (target.isRemoved() || !target.isAlive() || target.level() != level) {
+            throw new IllegalStateException(
+                    "Earthloong did not survive the authored spawn path for "
+                            + EARTHLOONG_SURVIVAL_TICKS + " server ticks."
             );
+        }
+
+        verifyImpactAfterSurvival(level, target, session.startTick(), logger);
+    }
+
+    private static void verifyImpactAfterSurvival(
+            ServerLevel level,
+            LivingEntity target,
+            long spawnTick,
+            Logger logger
+    ) {
+        Entity attackerEntity = null;
+        try {
             EntityType<?> attackerType = BuiltInRegistries.ENTITY_TYPE
                     .getOptional(Identifier.parse("minecraft:armor_stand"))
                     .orElseThrow(() -> new IllegalStateException("Vanilla armor_stand registry entry is missing."));
             attackerEntity = attackerType.spawn(
                     level,
-                    spawn.offset(3, 0, 0),
+                    target.blockPosition().offset(3, 0, 0),
                     EntitySpawnReason.COMMAND
             );
-
-            if (!(targetEntity instanceof LivingEntity target)
-                    || !(attackerEntity instanceof LivingEntity attacker)) {
-                throw new IllegalStateException("M0 verification actors did not spawn as living entities.");
+            if (!(attackerEntity instanceof LivingEntity attacker)) {
+                throw new IllegalStateException("M0 verification attacker did not spawn as a living entity.");
             }
 
             long gameTick = level.getGameTime();
@@ -88,9 +124,7 @@ public final class M0RuntimeVerificationHarness {
                     new AttributeAllocation(0, 0, 0, 0, 7, 0),
                     EquipmentCombatState.weaponOnly(ProjectWeaponFamily.STAFF, 8)
             );
-            var sourceSnapshot = verificationBuild.damageSource(
-                    ProjectImpactTransaction.DamageSchool.MAGIC
-            );
+            var sourceSnapshot = verificationBuild.damageSource(ProjectImpactTransaction.DamageSchool.MAGIC);
             var targetSnapshot = ExternalActorBindingRuntime.projectTargetSnapshot(target, gameTick)
                     .orElseThrow(() -> new IllegalStateException("Earthloong project target snapshot was unavailable."));
 
@@ -104,7 +138,6 @@ public final class M0RuntimeVerificationHarness {
                     sourceSnapshot,
                     targetSnapshot
             );
-
             if (!decision.accepted()
                     || Math.abs(sourceSnapshot.weaponPower() - 30.0) > 0.0001
                     || Math.abs(sourceSnapshot.weightedOffensiveStat() - 10.95) > 0.0001
@@ -114,11 +147,7 @@ public final class M0RuntimeVerificationHarness {
                 throw new IllegalStateException("Canonical Arc Bolt verification result changed: " + decision);
             }
 
-            if (!ProjectMinecraftDamageApplicator.applyDirectMagic(
-                    attacker,
-                    target,
-                    decision.finalDamage()
-            )) {
+            if (!ProjectMinecraftDamageApplicator.applyDirectMagic(attacker, target, decision.finalDamage())) {
                 throw new IllegalStateException("Minecraft rejected the project direct-magic verification hit.");
             }
 
@@ -136,8 +165,7 @@ public final class M0RuntimeVerificationHarness {
                 );
             }
 
-            double expectedProxyAfter =
-                    target.getMaxHealth() * canonicalHpAfter.fraction();
+            double expectedProxyAfter = target.getMaxHealth() * canonicalHpAfter.fraction();
             if (Math.abs(proxyHpAfter - expectedProxyAfter) > 0.01F) {
                 throw new IllegalStateException(
                         "Minecraft proxy HP is not synchronized to canonical HP: before=" + proxyHpBefore
@@ -172,8 +200,7 @@ public final class M0RuntimeVerificationHarness {
             logger.info(
                     "OPENWORLD_RPG_M0_RUNTIME_IMPACT_PASS target={} canonicalHpBefore={} canonicalHpAfter={} "
                             + "proxyHpBefore={} proxyHpAfter={} weaponPower={} weightedStat={} damage={} "
-                            + "poiseBefore={} poiseAfterArcBolt={} "
-                            + "breakDamageTakenMultiplier={}",
+                            + "poiseBefore={} poiseAfterArcBolt={} breakDamageTakenMultiplier={} survivalTicks={}",
                     ExternalActorCombatProfile.r01Earthloong().entityId(),
                     canonicalHpBefore.currentHealth(),
                     canonicalHpAfter.currentHealth(),
@@ -184,15 +211,17 @@ public final class M0RuntimeVerificationHarness {
                     decision.finalDamage(),
                     poiseBefore.currentPoise(),
                     arcBoltPoise.remainingPoise(),
-                    brokenSnapshot.authoredDamageTakenMultiplier()
+                    brokenSnapshot.authoredDamageTakenMultiplier(),
+                    gameTick - spawnTick
             );
         } finally {
             if (attackerEntity != null) {
                 attackerEntity.discard();
             }
-            if (targetEntity != null) {
-                targetEntity.discard();
-            }
+            target.discard();
         }
+    }
+
+    private record VerificationSession(LivingEntity target, long startTick, long verifyTick) {
     }
 }
