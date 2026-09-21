@@ -102,7 +102,7 @@ public final class VillageSkillTreeSystem {
         } else if ("attack".equals(normalized)) {
             int next = attackTraining(player) + 1;
             ATTACK_TRAINING.put(id, next);
-            result = "공격 단련 " + next + "회 · 기본 공격력 +1";
+            result = "공격 단련 " + next + "회 · 기본 공격력 +0.1";
         } else {
             return "알 수 없는 기초 단련입니다.";
         }
