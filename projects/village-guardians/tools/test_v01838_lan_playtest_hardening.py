@@ -94,7 +94,8 @@ def main() -> None:
     attributes = section(enemy, "private static void applyArchetypeAttributes", "private static void applyArchetypeEffects")
     effects = section(enemy, "private static void applyArchetypeEffects", "private static String displayName")
     assert "archetype == Archetype.SAPPER" in attributes
-    assert "Math.min(24.0, 8.5" in attributes
+    assert "health.setBaseValue(8.5 + Math.max(0.0f, pacedDay - 1.0f) * 0.24)" in attributes
+    assert "Math.min(24.0, 8.5" not in attributes
     assert "VillageCampaignProgression.effectiveCombatDay(day)" in attributes
     assert "speed.setBaseValue(0.15)" in attributes
     assert "case SAPPER -> { }" in effects
