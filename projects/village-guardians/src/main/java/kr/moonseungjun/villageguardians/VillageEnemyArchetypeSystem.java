@@ -5,6 +5,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntitySpawnReason;
@@ -290,28 +292,61 @@ public final class VillageEnemyArchetypeSystem {
                 spawnAura(level, mob, archetype, 18);
             }
             case SIEGE_BEAST -> {
-                if (!abilityReady(mob, globalTicks, 100)) return;
+                int phase = abilityPhase(mob, globalTicks, 100);
+                if (phase == 88) {
+                    VillageBossEffectSystem.signatureWarning(level, mob, archetype, 9.5, 12);
+                    return;
+                }
+                if (phase != 0) return;
+                VillageEnemyCompositionSystem.animateRiderAttack(mob);
                 damageAndDebuffPlayers(level, server, mob, 9.5, 4.0f, MobEffects.SLOWNESS);
+                VillageBossEffectSystem.signatureImpact(level, mob, archetype, 9.5);
+                level.playSound(null, mob.getX(), mob.getY(), mob.getZ(),
+                        SoundEvents.RAVAGER_ROAR, SoundSource.HOSTILE, 1.25f, 0.82f);
                 spawnAura(level, mob, archetype, 28);
             }
             case IRON_WARLORD -> {
-                if (!abilityReady(mob, globalTicks, 120)) return;
+                int phase = abilityPhase(mob, globalTicks, 120);
+                if (phase == 102) {
+                    VillageBossEffectSystem.signatureWarning(level, mob, archetype, 12.0, 18);
+                    return;
+                }
+                if (phase != 0) return;
+                VillageEnemyCompositionSystem.animateRiderAttack(mob);
                 for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 12.0, 18, mob.getUUID())) {
                     ally.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 140, 1));
                     ally.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 140, 0));
                 }
+                VillageBossEffectSystem.signatureImpact(level, mob, archetype, 12.0);
+                level.playSound(null, mob.getX(), mob.getY(), mob.getZ(),
+                        SoundEvents.IRON_GOLEM_ATTACK, SoundSource.HOSTILE, 1.10f, 0.78f);
                 spawnAura(level, mob, archetype, 26);
             }
             case PLAGUE_ARCHON -> {
-                if (!abilityReady(mob, globalTicks, 150)) return;
+                int phase = abilityPhase(mob, globalTicks, 150);
+                if (phase == 126) {
+                    VillageBossEffectSystem.signatureWarning(level, mob, archetype, 11.0, 24);
+                    return;
+                }
+                if (phase != 0) return;
+                VillageEnemyCompositionSystem.animateRiderAttack(mob);
                 damageAndDebuffPlayers(level, server, mob, 11.0, 3.5f, MobEffects.POISON);
                 for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 11.0, 6, mob.getUUID())) {
                     supportHeal(ally, 3.0f);
                 }
+                VillageBossEffectSystem.signatureImpact(level, mob, archetype, 11.0);
+                level.playSound(null, mob.getX(), mob.getY(), mob.getZ(),
+                        SoundEvents.WITCH_CELEBRATE, SoundSource.HOSTILE, 1.15f, 0.72f);
                 spawnAura(level, mob, archetype, 28);
             }
             case DREAD_KNIGHT -> {
-                if (!abilityReady(mob, globalTicks, 90)) return;
+                int phase = abilityPhase(mob, globalTicks, 90);
+                if (phase == 76) {
+                    VillageBossEffectSystem.signatureWarning(level, mob, archetype, 10.0, 14);
+                    return;
+                }
+                if (phase != 0) return;
+                VillageEnemyCompositionSystem.animateRiderAttack(mob);
                 float drained = 0.0f;
                 for (ServerPlayer player : nearbyPlayers(server, mob, 10.0)) {
                     player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 80, 0));
@@ -320,6 +355,9 @@ public final class VillageEnemyArchetypeSystem {
                     drained += 3.0f;
                 }
                 if (drained > 0.0f) supportHeal(mob, Math.min(12.0f, drained));
+                VillageBossEffectSystem.signatureImpact(level, mob, archetype, 10.0);
+                level.playSound(null, mob.getX(), mob.getY(), mob.getZ(),
+                        SoundEvents.WITHER_SKELETON_AMBIENT, SoundSource.HOSTILE, 1.20f, 0.62f);
                 spawnAura(level, mob, archetype, 30);
             }
             default -> {
@@ -728,9 +766,13 @@ public final class VillageEnemyArchetypeSystem {
     }
 
     private static boolean abilityReady(Mob mob, int globalTicks, int cadence) {
+        return abilityPhase(mob, globalTicks, cadence) == 0;
+    }
+
+    private static int abilityPhase(Mob mob, int globalTicks, int cadence) {
         int safeCadence = Math.max(1, cadence);
         int phase = Math.floorMod(mob.getUUID().hashCode(), safeCadence);
-        return Math.floorMod(globalTicks + phase, safeCadence) == 0;
+        return Math.floorMod(globalTicks + phase, safeCadence);
     }
 
     public static void forget(UUID uuid) {
