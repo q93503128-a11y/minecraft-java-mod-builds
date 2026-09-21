@@ -31,12 +31,10 @@ public final class VillageSkillTreeSystem {
 
     public static int earnedPoints(ServerPlayer player) {
         int level = VillageCouncilState.levelOf(player.getUUID());
-        int foundation = Math.max(0, Math.min(30, level) - 1);
-        int mastery = Math.max(0, level - 30) / 4;
-        int pacedTotal = foundation + mastery;
-        // Existing worlds may already have spent points earned under the former 2-level cadence.
-        // Never revoke or safety-lock a legitimate historical allocation.
-        return Math.max(pacedTotal, spentPoints(player));
+        int naturalTotal = Math.max(0, level - 1);
+        // Every visible level remains rewarding. Existing worlds may already contain allocations
+        // bought under older cheaper costs, so historical spending is always grandfathered.
+        return Math.max(naturalTotal, spentPoints(player));
     }
 
     public static int spentPoints(ServerPlayer player) {
@@ -77,7 +75,7 @@ public final class VillageSkillTreeSystem {
         int cost = node.pointCost();
         if (availablePoints(player) < cost) {
             return "전술 포인트가 부족합니다. 필요 " + cost + "P, 현재 " + availablePoints(player)
-                    + "P · Lv.30까지는 레벨마다, 이후에는 4레벨마다 1P를 얻습니다.";
+                    + "P · 레벨이 오를 때마다 전술 포인트 1P를 얻습니다.";
         }
         long mask = UNLOCKED_MASKS.getOrDefault(player.getUUID(), 0L);
         UNLOCKED_MASKS.put(player.getUUID(), mask | bit(node));
@@ -425,7 +423,17 @@ public final class VillageSkillTreeSystem {
         public Branch branch() { return branch; }
         public int tier() { return tier; }
         public Node prerequisite() { return prerequisite; }
-        public int pointCost() { return Math.max(1, Math.min(4, (tier + 2) / 3)); }
+        public int pointCost() {
+            return switch (tier) {
+                case 1, 2, 3 -> 1;
+                case 4, 5 -> 2;
+                case 6 -> 5;
+                case 7 -> 8;
+                case 8 -> 12;
+                case 9 -> 18;
+                default -> 25;
+            };
+        }
 
         public static Optional<Node> parse(String value) {
             if (value == null) return Optional.empty();
