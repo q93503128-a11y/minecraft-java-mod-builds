@@ -56,8 +56,10 @@ def main() -> None:
     # gradual health/damage mastery. Objective pressure must never be replaced by sprint scaling.
     attrs = section(enemy, "private static void applyArchetypeAttributes", "private static void applyArchetypeEffects")
     assert "VillageCampaignProgression.effectiveCombatDay(day)" in attrs
-    assert "Math.min(24.0, 8.5" in attrs
-    assert "Math.min(4.0, 1.25" in attrs
+    assert "health.setBaseValue(8.5 + Math.max(0.0f, pacedDay - 1.0f) * 0.24)" in attrs
+    assert "attack.setBaseValue(1.25 + Math.max(0.0f, pacedDay - 1.0f) * 0.045)" in attrs
+    assert "Math.min(24.0, 8.5" not in attrs
+    assert "Math.min(4.0, 1.25" not in attrs
     assert "speed.setBaseValue(0.15)" in attrs
     assert "case SAPPER -> 1.72f" in enemy
 
