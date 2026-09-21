@@ -78,6 +78,7 @@ public final class VillageNetwork {
                 || action.startsWith("fusion_combine:")
                 || action.startsWith("select_role:")
                 || action.startsWith("role_node:") || action.startsWith("skill_node:")
+                || action.startsWith("skill_training:")
                 || action.startsWith("role_skill_unlock:") || action.startsWith("role_skill_equip:")
                 || action.startsWith("research_skill_unlock:") || action.startsWith("research_skill_equip:")
                 || action.startsWith("defense_research:")
