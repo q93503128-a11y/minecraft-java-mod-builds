@@ -598,7 +598,7 @@ public final class VillageRoleSkillSystem {
         LUMINAR_LAST_MIRACLE("luminar_last_miracle", VillageRole.LUMINAR, 11, "최후의 기적", 60, 5700, 64, "2차 전직 기술. 아군을 치유·보호하면서 주변 적에게도 강한 성광 피해를 가합니다."),
 
         WARDEN_TAUNT("warden_taunt", VillageRole.WARDEN, 0, "수호 돌진", 2, 70, 18, "방패를 앞세워 전방으로 돌진하고 접촉한 적에게 피해를 주며 강하게 밀어냅니다."),
-        WARDEN_BASH("warden_bash", VillageRole.WARDEN, 1, "위압의 함성", 7, 190, 22, "넓은 범위의 적을 강제로 자신에게 돌리고 약화시킵니다."),
+        WARDEN_BASH("warden_bash", VillageRole.WARDEN, 1, "위압의 함성", 7, 190, 22, "넓은 범위의 적을 강제로 자신에게 돌립니다. 시설·포탑을 우선 노리는 공성 병과도 도발 지속시간 동안 수호자를 우선 추적합니다."),
         WARDEN_FORMATION("warden_formation", VillageRole.WARDEN, 2, "거대 방패 태세", 13, 380, 32, "이동을 멈추고 사방에서 받는 피해를 크게 줄이며 주변 적을 밀어내고 도발합니다. 유지 중 다시 사용하면 즉시 방패를 내립니다."),
         WARDEN_FIELD("warden_field", VillageRole.WARDEN, 3, "대수호 진군", 21, 680, 46, "거대한 에너지 방패로 전방과 측면 압박을 버티며 적을 밀어내고 도발합니다. 유지 중 다시 사용하면 즉시 해제합니다."),
         WARDEN_GATE_IMPACT("warden_gate_impact", VillageRole.WARDEN, 4, "성문 충격", 30, 1200, 20, "1차 전직 기술. 전방을 방패로 찍어 적을 크게 밀어내고 강제로 자신에게 돌립니다."),
