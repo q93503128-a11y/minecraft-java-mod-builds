@@ -22,7 +22,8 @@ def main() -> None:
     for branch in ("power", "guard", "support", "ranged", "mobility"):
         assert tree.count(f'("{branch}_') == 10
         assert f'{branch.upper()}_10' in tree
-    assert "Math.min(4, (tier + 2) / 3)" in tree
+    for token in ("case 6 -> 5;", "case 7 -> 8;", "case 8 -> 12;", "case 9 -> 18;", "default -> 25;"):
+        assert token in tree
     assert "전쟁신의 심장" in tree and "성채화" in tree
     assert "수호단 총지휘" in tree and "천궁 붕괴" in tree and "시간 절단 보법" in tree
     assert "POWER_10" in tree and "0.75f" in tree and "1.45f" in tree
