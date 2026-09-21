@@ -1,6 +1,7 @@
 package dev.moonseungjun.openworldrpg.combat.runtime;
 
 import dev.moonseungjun.openworldrpg.OpenworldRpgMod;
+import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -39,10 +40,26 @@ public final class ProjectMinecraftDamageApplicator {
             return false;
         }
 
-        float amount = (float) Math.min(finalDamage, Float.MAX_VALUE);
         var damageTypes = serverLevel.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE);
         var damageType = damageTypes.getOrThrow(PROJECT_DIRECT_MAGIC);
         DamageSource source = new DamageSource(damageType, attacker);
+
+        if (ExternalActorBindingRuntime.ownsDamageAuthority(target)) {
+            return ExternalActorBindingRuntime.applyProjectHealthDamage(
+                    target,
+                    finalDamage,
+                    proxyDamage -> ProjectDamageApplicationContext.authorizeNext(
+                            target,
+                            () -> target.hurtServer(
+                                    serverLevel,
+                                    source,
+                                    (float) Math.min(proxyDamage, Float.MAX_VALUE)
+                            )
+                    )
+            ).isPresent();
+        }
+
+        float amount = (float) Math.min(finalDamage, Float.MAX_VALUE);
         return target.hurtServer(serverLevel, source, amount);
     }
 }

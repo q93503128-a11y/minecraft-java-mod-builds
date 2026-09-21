@@ -1,6 +1,7 @@
 package dev.moonseungjun.openworldrpg.integration.actor;
 
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction;
+import dev.moonseungjun.openworldrpg.combat.state.ProjectHealthRuntimeState;
 import dev.moonseungjun.openworldrpg.combat.state.ProjectPoiseRuntimeState;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import dev.moonseungjun.openworldrpg.integration.overlay.ActorIntegrationOverlay;
@@ -13,6 +14,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.DoublePredicate;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.core.BlockPos;
@@ -33,6 +35,7 @@ public final class ExternalActorBindingRuntime {
     private static final String NO_CAPTURE_TAG = "openworld_rpg.no_capture";
 
     private static final Map<String, ExternalActorCombatProfile> COMBAT_PROFILES = new ConcurrentHashMap<>();
+    private static final Map<UUID, ProjectHealthRuntimeState> HEALTH_STATES = new ConcurrentHashMap<>();
     private static final Map<UUID, ProjectPoiseRuntimeState> POISE_STATES = new ConcurrentHashMap<>();
     private static volatile boolean initialized;
 
@@ -82,13 +85,15 @@ public final class ExternalActorBindingRuntime {
                 return;
             }
 
-            applyProjectCombatStats(living, actorProfile.get());
+            double healthFraction = applyProjectCombatStats(living, actorProfile.get());
+            ensureHealthState(living, actorProfile.get(), healthFraction);
             ensurePoiseState(living, actorProfile.get(), level.getGameTime());
             living.addTag(NO_CAPTURE_TAG);
         });
-        ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) ->
-                POISE_STATES.remove(entity.getUUID())
-        );
+        ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) -> {
+            HEALTH_STATES.remove(entity.getUUID());
+            POISE_STATES.remove(entity.getUUID());
+        });
 
         initialized = true;
         logger.info(
@@ -111,8 +116,47 @@ public final class ExternalActorBindingRuntime {
         return combatProfile(entity).isPresent();
     }
 
+    public static boolean ownsDamageAuthority(Entity entity) {
+        return combatProfile(entity).isPresent();
+    }
+
     public static boolean captureForbidden(Entity entity) {
         return combatProfile(entity).isPresent() || entity.entityTags().contains(NO_CAPTURE_TAG);
+    }
+
+    public static Optional<ProjectHealthRuntimeState.Snapshot> canonicalHealthSnapshot(
+            LivingEntity living
+    ) {
+        return combatProfile(living).map(profile ->
+                ensureHealthStateFromProxy(living, profile).snapshot()
+        );
+    }
+
+    public static Optional<ProjectHealthRuntimeState.Application> applyProjectHealthDamage(
+            LivingEntity living,
+            double canonicalDamage,
+            DoublePredicate proxyDamageApplier
+    ) {
+        return combatProfile(living).flatMap(profile -> {
+            ProjectHealthRuntimeState state = ensureHealthStateFromProxy(living, profile);
+            double canonicalApplied = state.previewAppliedDamage(canonicalDamage);
+            if (canonicalApplied <= 0.0) {
+                return Optional.empty();
+            }
+
+            double proxyMax = living.getMaxHealth();
+            double proxyDamage = proxyMax * canonicalApplied / profile.maxHealth();
+            if (!proxyDamageApplier.test(proxyDamage)) {
+                return Optional.empty();
+            }
+
+            ProjectHealthRuntimeState.Application result = state.applyDamage(canonicalDamage);
+            living.setHealth((float) Math.max(
+                    0.0,
+                    Math.min(proxyMax, proxyMax * result.fraction())
+            ));
+            return Optional.of(result);
+        });
     }
 
     public static Optional<ProjectImpactTransaction.DamageTargetSnapshot> projectTargetSnapshot(
@@ -160,10 +204,32 @@ public final class ExternalActorBindingRuntime {
         entity.addTag(AUTHORED_SPAWN_TAG);
         entity.addTag(NO_CAPTURE_TAG);
         if (entity instanceof LivingEntity living) {
-            applyProjectCombatStats(living, profile);
+            double healthFraction = applyProjectCombatStats(living, profile);
+            ensureHealthState(living, profile, healthFraction);
             ensurePoiseState(living, profile, level.getGameTime());
         }
         return entity;
+    }
+
+    private static ProjectHealthRuntimeState ensureHealthStateFromProxy(
+            LivingEntity living,
+            ExternalActorCombatProfile profile
+    ) {
+        float proxyMax = living.getMaxHealth();
+        float proxyHealth = living.getHealth();
+        double fraction = proxyMax > 0.0F ? proxyHealth / proxyMax : 1.0;
+        return ensureHealthState(living, profile, Math.max(0.0, Math.min(1.0, fraction)));
+    }
+
+    private static ProjectHealthRuntimeState ensureHealthState(
+            LivingEntity living,
+            ExternalActorCombatProfile profile,
+            double healthFraction
+    ) {
+        return HEALTH_STATES.computeIfAbsent(
+                living.getUUID(),
+                ignored -> ProjectHealthRuntimeState.atFraction(profile.maxHealth(), healthFraction)
+        );
     }
 
     private static ProjectPoiseRuntimeState ensurePoiseState(
@@ -224,7 +290,7 @@ public final class ExternalActorBindingRuntime {
         }
     }
 
-    private static void applyProjectCombatStats(
+    private static double applyProjectCombatStats(
             LivingEntity living,
             ExternalActorCombatProfile profile
     ) {
@@ -240,9 +306,11 @@ public final class ExternalActorBindingRuntime {
         double healthRatio = oldMax > 0.0F ? oldHealth / oldMax : 1.0;
 
         maxHealth.setBaseValue(profile.maxHealth());
+        float proxyMax = living.getMaxHealth();
         living.setHealth((float) Math.max(
                 0.0,
-                Math.min(profile.maxHealth(), profile.maxHealth() * healthRatio)
+                Math.min(proxyMax, proxyMax * healthRatio)
         ));
+        return Math.max(0.0, Math.min(1.0, healthRatio));
     }
 }

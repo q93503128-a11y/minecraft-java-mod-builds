@@ -70,7 +70,9 @@ public final class M0RuntimeVerificationHarness {
             }
 
             long gameTick = level.getGameTime();
-            float hpBefore = target.getHealth();
+            float proxyHpBefore = target.getHealth();
+            var canonicalHpBefore = ExternalActorBindingRuntime.canonicalHealthSnapshot(target)
+                    .orElseThrow(() -> new IllegalStateException("Earthloong canonical HP state was not initialized."));
             var poiseBefore = ExternalActorBindingRuntime.poiseSnapshot(target, gameTick)
                     .orElseThrow(() -> new IllegalStateException("Earthloong poise state was not initialized."));
 
@@ -109,13 +111,27 @@ public final class M0RuntimeVerificationHarness {
                 throw new IllegalStateException("Minecraft rejected the project direct-magic verification hit.");
             }
 
-            float hpAfter = target.getHealth();
-            float expectedHpAfter = hpBefore - (float) decision.finalDamage();
-            if (Math.abs(hpAfter - expectedHpAfter) > 0.001F) {
+            float proxyHpAfter = target.getHealth();
+            var canonicalHpAfter = ExternalActorBindingRuntime.canonicalHealthSnapshot(target)
+                    .orElseThrow(() -> new IllegalStateException("Earthloong canonical HP state disappeared."));
+            double expectedCanonicalAfter = canonicalHpBefore.currentHealth() - decision.finalDamage();
+            if (Math.abs(canonicalHpBefore.currentHealth() - 4900.0) > 0.0001
+                    || Math.abs(canonicalHpAfter.currentHealth() - expectedCanonicalAfter) > 0.0001
+                    || Math.abs(expectedCanonicalAfter - 4868.0) > 0.0001) {
                 throw new IllegalStateException(
-                        "Project direct-magic HP delta mismatch: before=" + hpBefore
-                                + " expectedAfter=" + expectedHpAfter
-                                + " actualAfter=" + hpAfter
+                        "Project canonical HP delta mismatch: before=" + canonicalHpBefore
+                                + " expectedAfter=" + expectedCanonicalAfter
+                                + " actualAfter=" + canonicalHpAfter
+                );
+            }
+
+            double expectedProxyAfter =
+                    target.getMaxHealth() * canonicalHpAfter.fraction();
+            if (Math.abs(proxyHpAfter - expectedProxyAfter) > 0.01F) {
+                throw new IllegalStateException(
+                        "Minecraft proxy HP is not synchronized to canonical HP: before=" + proxyHpBefore
+                                + " expectedAfter=" + expectedProxyAfter
+                                + " actualAfter=" + proxyHpAfter
                 );
             }
 
@@ -143,11 +159,14 @@ public final class M0RuntimeVerificationHarness {
             }
 
             logger.info(
-                    "OPENWORLD_RPG_M0_RUNTIME_IMPACT_PASS target={} hpBefore={} hpAfter={} "
-                            + "damage={} poiseBefore={} poiseAfterArcBolt={} breakDamageTakenMultiplier={}",
+                    "OPENWORLD_RPG_M0_RUNTIME_IMPACT_PASS target={} canonicalHpBefore={} canonicalHpAfter={} "
+                            + "proxyHpBefore={} proxyHpAfter={} damage={} poiseBefore={} poiseAfterArcBolt={} "
+                            + "breakDamageTakenMultiplier={}",
                     ExternalActorCombatProfile.r01Earthloong().entityId(),
-                    hpBefore,
-                    hpAfter,
+                    canonicalHpBefore.currentHealth(),
+                    canonicalHpAfter.currentHealth(),
+                    proxyHpBefore,
+                    proxyHpAfter,
                     decision.finalDamage(),
                     poiseBefore.currentPoise(),
                     arcBoltPoise.remainingPoise(),
