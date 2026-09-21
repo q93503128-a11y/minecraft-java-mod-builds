@@ -130,7 +130,9 @@ public final class SpellCastAuthority {
             long gameTick,
             int targetEntityId,
             double enginePower,
-            double deliveryMultiplier
+            double deliveryMultiplier,
+            ProjectImpactTransaction.DamageSourceSnapshot sourceSnapshot,
+            ProjectImpactTransaction.DamageTargetSnapshot targetSnapshot
     ) {
         if (!Double.isFinite(enginePower) || enginePower < 0.0
                 || !Double.isFinite(deliveryMultiplier) || deliveryMultiplier < 0.0) {
@@ -138,7 +140,16 @@ public final class SpellCastAuthority {
         }
         String normalized = normalizeSpellId(spellId);
         return policyForCommittedProjectSpell(normalized).onImpact(
-                new ImpactContext(playerId, normalized, gameTick, targetEntityId, enginePower, deliveryMultiplier)
+                new ImpactContext(
+                        playerId,
+                        normalized,
+                        gameTick,
+                        targetEntityId,
+                        enginePower,
+                        deliveryMultiplier,
+                        Objects.requireNonNull(sourceSnapshot, "sourceSnapshot"),
+                        Objects.requireNonNull(targetSnapshot, "targetSnapshot")
+                )
         );
     }
 
@@ -207,17 +218,38 @@ public final class SpellCastAuthority {
             long gameTick,
             int targetEntityId,
             double enginePower,
-            double deliveryMultiplier
+            double deliveryMultiplier,
+            ProjectImpactTransaction.DamageSourceSnapshot sourceSnapshot,
+            ProjectImpactTransaction.DamageTargetSnapshot targetSnapshot
     ) {
     }
 
-    public record ImpactDecision(boolean accepted, boolean critical) {
+    public record ImpactDecision(
+            boolean accepted,
+            boolean critical,
+            double finalDamage,
+            double poiseDamage
+    ) {
+        public ImpactDecision {
+            if (!Double.isFinite(finalDamage) || finalDamage < 0.0
+                    || !Double.isFinite(poiseDamage) || poiseDamage < 0.0) {
+                throw new IllegalArgumentException("Impact result values must be finite and non-negative.");
+            }
+            if (!accepted && (critical || finalDamage != 0.0 || poiseDamage != 0.0)) {
+                throw new IllegalArgumentException("Rejected impact cannot carry applied combat output.");
+            }
+        }
+
         public static ImpactDecision accepted(boolean critical) {
-            return new ImpactDecision(true, critical);
+            return new ImpactDecision(true, critical, 0.0, 0.0);
+        }
+
+        public static ImpactDecision accepted(boolean critical, double finalDamage, double poiseDamage) {
+            return new ImpactDecision(true, critical, finalDamage, poiseDamage);
         }
 
         public static ImpactDecision rejected() {
-            return new ImpactDecision(false, false);
+            return new ImpactDecision(false, false, 0.0, 0.0);
         }
     }
 }

@@ -112,5 +112,53 @@ public final class ProjectSpellTransactionPolicy implements SpellCastAuthority.P
         static SpellImpactPort failClosed() {
             return (spec, context) -> SpellCastAuthority.ImpactDecision.rejected();
         }
+
+        /**
+         * Canonical direct-magic resolver for project-owned spells.
+         *
+         * <p>Spell Engine's enginePower and impact-total values are deliberately not damage authority.
+         * The project source/target snapshots plus the project spell coefficient are the only inputs
+         * to canonical direct damage. Runtime application may still fail closed before reaching this
+         * port if either authoritative snapshot is unavailable.</p>
+         */
+        static SpellImpactPort directMagic() {
+            return (spec, context) -> {
+                ProjectImpactTransaction.DirectDamageResult damage =
+                        ProjectImpactTransaction.resolveDirectDamage(
+                                new ProjectImpactTransaction.DirectDamageRequest(
+                                        context.sourceSnapshot(),
+                                        context.targetSnapshot(),
+                                        ProjectImpactTransaction.DamageSchool.MAGIC,
+                                        spec.actionCoefficient(),
+                                        1.0,
+                                        1.0
+                                )
+                        );
+
+                if (damage.finalDamage() <= 0.0) {
+                    return SpellCastAuthority.ImpactDecision.rejected();
+                }
+
+                double poiseDamage = 0.0;
+                if (context.targetSnapshot().poiseMax() > 0.0) {
+                    poiseDamage = ProjectImpactTransaction.resolvePoise(
+                            new ProjectImpactTransaction.PoiseRequest(
+                                    context.targetSnapshot().poiseMax(),
+                                    context.targetSnapshot().poiseMax(),
+                                    context.sourceSnapshot().poiseOutputMultiplier(),
+                                    spec.poiseCoefficient(),
+                                    1.0,
+                                    1.0
+                            )
+                    ).poiseDamage();
+                }
+
+                return SpellCastAuthority.ImpactDecision.accepted(
+                        false,
+                        damage.finalDamage(),
+                        poiseDamage
+                );
+            };
+        }
     }
 }

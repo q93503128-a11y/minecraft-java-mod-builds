@@ -4,8 +4,10 @@ import dev.moonseungjun.openworldrpg.OpenworldRpgMod;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellSpec;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellTransactionPolicy;
 import dev.moonseungjun.openworldrpg.combat.authority.SpellCastAuthority;
+import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatStateStore;
+import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
@@ -160,7 +162,7 @@ public final class SpellEngineAuthorityAdapter {
                 new ProjectSpellTransactionPolicy(
                         arcBolt,
                         COMBAT_STATES,
-                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                        ProjectSpellTransactionPolicy.SpellImpactPort.directMagic()
                 )
         );
         canonicalPoliciesRegistered = true;
@@ -350,15 +352,42 @@ public final class SpellEngineAuthorityAdapter {
             throw new IllegalStateException("Spell Engine impact total is not numeric: " + totalValue);
         }
 
+        if (!(target instanceof LivingEntity livingTarget)
+                || livingTarget == player
+                || livingTarget.level() != player.level()) {
+            return impactResultConstructor.newInstance(false, false);
+        }
+
+        var sourceSnapshot = CombatStateServices.combatSnapshots()
+                .snapshot(player.getUUID())
+                .orElse(null);
+        var targetSnapshot = ExternalActorBindingRuntime.combatProfile(livingTarget)
+                .map(profile -> profile.projectTargetSnapshot())
+                .orElse(null);
+        if (sourceSnapshot == null || targetSnapshot == null) {
+            return impactResultConstructor.newInstance(false, false);
+        }
+
         SpellCastAuthority.ImpactDecision decision = AUTHORITY.onImpact(
                 player.getUUID(),
                 spellId,
                 player.level().getGameTime(),
-                target == null ? -1 : target.getId(),
+                livingTarget.getId(),
                 power.doubleValue(),
-                total.doubleValue()
+                total.doubleValue(),
+                sourceSnapshot,
+                targetSnapshot
         );
-        return impactResultConstructor.newInstance(decision.accepted(), decision.critical());
+        if (!decision.accepted()) {
+            return impactResultConstructor.newInstance(false, false);
+        }
+
+        boolean applied = ProjectMinecraftDamageApplicator.applyDirectMagic(
+                player,
+                livingTarget,
+                decision.finalDamage()
+        );
+        return impactResultConstructor.newInstance(applied, applied && decision.critical());
     }
 
     private static SpellEngineDonorCostContract readDonorCostContract(Object spellEntry)

@@ -7,6 +7,7 @@ import java.util.UUID;
  */
 public final class CombatStateServices {
     private static final PlayerCombatStateStore STATES = new PlayerCombatStateStore();
+    private static final PlayerCombatSnapshotStore COMBAT_SNAPSHOTS = new PlayerCombatSnapshotStore();
 
     private CombatStateServices() {
     }
@@ -15,11 +16,16 @@ public final class CombatStateServices {
         return STATES;
     }
 
+    public static PlayerCombatSnapshotStore combatSnapshots() {
+        return COMBAT_SNAPSHOTS;
+    }
+
     public static void markCombatActivity(UUID playerId, long gameTick) {
         STATES.getOrCreate(playerId, gameTick).markCombatActivity(gameTick);
     }
 
     public static void disconnect(UUID playerId) {
         STATES.remove(playerId);
+        COMBAT_SNAPSHOTS.remove(playerId);
     }
 }

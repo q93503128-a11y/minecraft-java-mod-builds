@@ -186,16 +186,19 @@ Weapons and damaging skills use weighted primary stats rather than raw class loc
 For weighted offensive stat `S`:
 
 ```text
-x = max(0, S - 5)
+x = S - 5
 
 AttributeDamageMultiplier(S) =
-  1
-  + 0.012 * min(x, 25)
-  + 0.008 * min(max(x - 25, 0), 30)
-  + 0.004 * max(x - 55, 0)
+  max(
+    0.70,
+    1
+    + 0.012 * min(x, 25)
+    + 0.008 * min(max(x - 25, 0), 30)
+    + 0.004 * max(x - 55, 0)
+  )
 ```
 
-If a debuff somehow lowers weighted `S` below 5, the multiplier can fall below 1 but is floored at **0.70**.
+For weighted `S < 5`, the same first-segment slope continues below 1.00 and the final **0.70** floor applies. The higher-stat segments remain inactive until their normal thresholds. This explicitly resolves the older contradictory wording where `x = max(0, S - 5)` made sub-5 values impossible despite the stated floor.
 
 Reference:
 

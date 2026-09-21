@@ -23,17 +23,12 @@ public final class ProjectCombatRules {
 
     public static double attributeDamageMultiplier(double weightedStat) {
         requireFinite("weightedStat", weightedStat);
-        if (weightedStat < 5.0) {
-            throw new IllegalArgumentException(
-                    "Weighted stat below 5 is fail-closed until the canon defines the below-5 curve explicitly."
-            );
-        }
-
         double x = weightedStat - 5.0;
-        return 1.0
+        double multiplier = 1.0
                 + 0.012 * Math.min(x, 25.0)
                 + 0.008 * Math.min(Math.max(x - 25.0, 0.0), 30.0)
                 + 0.004 * Math.max(x - 55.0, 0.0);
+        return Math.max(0.70, multiplier);
     }
 
     public static double defenseTakenMultiplier(int attackerLevel, double effectiveDefense) {

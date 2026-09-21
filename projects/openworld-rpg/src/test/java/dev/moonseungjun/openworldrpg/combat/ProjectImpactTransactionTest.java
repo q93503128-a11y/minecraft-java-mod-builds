@@ -11,6 +11,12 @@ import org.junit.jupiter.api.Test;
 
 class ProjectImpactTransactionTest {
     @Test
+    void offensiveStatBelowFiveUsesExplicitCanonicalFloorCurve() {
+        assertEquals(0.988, ProjectCombatRules.attributeDamageMultiplier(4.0), 0.0000001);
+        assertEquals(0.70, ProjectCombatRules.attributeDamageMultiplier(-100.0), 0.0000001);
+    }
+
+    @Test
     void directMagicDamageUsesCanonicalStatDefenseAndMitigationOrder() {
         var source = new ProjectImpactTransaction.DamageSourceSnapshot(8, 30.0, 20.0, 0.0, 1.0);
         var target = new ProjectImpactTransaction.DamageTargetSnapshot(45.0, 35.0, 1.0, 0.0, 190.0);
