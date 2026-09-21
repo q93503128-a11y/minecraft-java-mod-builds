@@ -26,8 +26,10 @@ def main() -> None:
     assert common.count('(\"guard_') == 10
     assert common.count('(\"support_') == 10
     assert common.count('(\"ranged_') == 10
-    assert "Math.max(0, Math.min(30, level) - 1)" in common
-    assert "Math.max(0, level - 30) / 4" in common
+    assert "int naturalTotal = Math.max(0, level - 1);" in common
+    assert "return Math.max(naturalTotal, spentPoints(player));" in common
+    for cost in ("case 6 -> 5;", "case 7 -> 8;", "case 8 -> 12;", "case 9 -> 18;", "default -> 25;"):
+        assert cost in common
     assert common.count('(\"mobility_') == 10
     assert "pointCost()" in common
     assert "sharedSupplyChance" in common and "teamHealOnKillAmount" in common
