@@ -9,6 +9,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.item.Items;
@@ -29,6 +30,15 @@ public final class VillageRpgSystem {
     }
 
     public static void refreshPlayerPassive(ServerPlayer player) {
+        var maxHealth = player.getAttribute(Attributes.MAX_HEALTH);
+        if (maxHealth != null) {
+            maxHealth.setBaseValue(20.0D + VillageSkillTreeSystem.healthTraining(player));
+        }
+        var attackDamage = player.getAttribute(Attributes.ATTACK_DAMAGE);
+        if (attackDamage != null) {
+            attackDamage.setBaseValue(1.0D + VillageSkillTreeSystem.attackTraining(player));
+        }
+
         VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
         int roleHealth = role == VillageRole.VANGUARD ? 8 : role == VillageRole.WARDEN ? 6 : 0;
         int bonus = bonusHealthPoints(VillageCouncilState.levelOf(player.getUUID())) + roleHealth
