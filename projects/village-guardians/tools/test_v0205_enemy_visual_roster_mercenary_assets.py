@@ -67,7 +67,7 @@ def main() -> None:
     assert "Archetype.ZOGLIN_BREACHER" in combo and "EntityTypes.ZOMBIFIED_PIGLIN" in combo
     assert "aerialRole != null && day >= 30" in combo
     assert "case BOMBARDIER -> babyHusk" in combo
-    assert "boss && archetype == VillageEnemyArchetypeSystem.Archetype.SIEGE_BEAST" in combo
+    assert "if (boss)" in combo and "case SIEGE_BEAST ->" in combo
     assert "rider.startRiding(owner)" in combo
 
     # Cosmetic riders never become independent reward actors: hits go to the authoritative owner
