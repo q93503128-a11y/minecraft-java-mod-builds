@@ -112,6 +112,7 @@ jobs:
           grep -q 'Openworld RPG M0 integration bootstrap loaded with profile gameplay' build/logs/server-gameplay.log
           grep -q 'Openworld RPG external runtime containment verified before gameplay server start' build/logs/server-gameplay.log
           grep -q 'Openworld RPG external actor binding armed for threateningly_mobs:the_earthloong' build/logs/server-gameplay.log
+          grep -q 'Openworld RPG external actor registry target verified at server start: threateningly_mobs:the_earthloong' build/logs/server-gameplay.log
           grep -q 'Openworld RPG Better Combat authority adapter armed for profile gameplay' build/logs/server-gameplay.log
           grep -q 'Openworld RPG Spell Engine authority gate armed for profile gameplay' build/logs/server-gameplay.log
           grep -Eq 'Done \([0-9.]+s\)! For help, type "help"' build/logs/server-gameplay.log
@@ -183,7 +184,8 @@ jobs:
           - Earthloong donor XP/loot suppression: IMPLEMENTED; project reward transaction NOT IMPLEMENTED
           - Earthloong authored spawn utility: IMPLEMENTED; encounter-controller invocation NOT TESTED
           - Better Combat authority seam: IMPLEMENTED (real-hit runtime execution NOT TESTED)
-          - Spell Engine resource/cooldown continuation transaction: IMPLEMENTED + UNIT/SERVER STARTUP VERIFIED; project impact/damage transaction remains fail-closed / NOT IMPLEMENTED
+          - Spell Engine resource/cooldown continuation transaction: IMPLEMENTED + UNIT/SERVER STARTUP VERIFIED
+          - project impact transaction core (damage/heal/status/poise + Defense/MR caps): IMPLEMENTED + UNIT TESTED; Spell Engine runtime impact application remains fail-closed until authoritative player combat snapshots are bound
           - player-facing R01 content: NOT IMPLEMENTED
           - playtest: NOT RUN
           - multiplayer test: NOT RUN

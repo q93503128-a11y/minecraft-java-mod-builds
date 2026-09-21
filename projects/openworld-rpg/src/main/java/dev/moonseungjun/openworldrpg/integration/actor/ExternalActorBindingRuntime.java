@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
@@ -53,33 +54,6 @@ public final class ExternalActorBindingRuntime {
             );
         }
 
-        Identifier earthloongId = Identifier.parse(earthloong.target());
-        if (!BuiltInRegistries.ENTITY_TYPE.containsKey(earthloongId)) {
-            var externalActorCandidates = BuiltInRegistries.ENTITY_TYPE.keySet().stream()
-                    .map(Object::toString)
-                    .filter(id -> {
-                        String lower = id.toLowerCase();
-                        return lower.contains("earth")
-                                || lower.contains("loux")
-                                || lower.contains("regal")
-                                || lower.contains("steelboar")
-                                || lower.contains("nature_spirit")
-                                || lower.contains("ferox")
-                                || lower.contains("deathworm")
-                                || lower.contains("hydra")
-                                || lower.contains("riptooth")
-                                || lower.contains("abyss")
-                                || lower.contains("wyvern")
-                                || lower.contains("inferno");
-                    })
-                    .sorted()
-                    .toList();
-            throw new IllegalStateException(
-                    "Openworld RPG required R01 Earthloong registry target is missing: " + earthloongId
-                            + "; installed actor-name candidates=" + externalActorCandidates
-            );
-        }
-
         ExternalActorCombatProfile profileData = ExternalActorCombatProfile.r01Earthloong();
         if (!profileData.entityId().equals(earthloong.target())) {
             throw new IllegalStateException(
@@ -88,6 +62,15 @@ public final class ExternalActorBindingRuntime {
             );
         }
         COMBAT_PROFILES.put(profileData.entityId(), profileData);
+
+        /*
+         * Fabric does not guarantee a dependency's ModInitializer runs before ours merely because the
+         * dependency is present. Validate the concrete registry target at SERVER_STARTING, after all
+         * common entrypoints have completed, while keeping profile/ownership hooks registered early.
+         */
+        ServerLifecycleEvents.SERVER_STARTING.register(server ->
+                validateRequiredRegistryTarget(profileData.entityId(), logger)
+        );
 
         ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> {
             Optional<ExternalActorCombatProfile> actorProfile = combatProfile(entity);
@@ -102,7 +85,8 @@ public final class ExternalActorBindingRuntime {
         initialized = true;
         logger.info(
                 "Openworld RPG external actor binding armed for {}: project HP/DEF/MR/Poise profile, "
-                        + "authored spawn path and donor progression suppression hooks ready.",
+                        + "authored spawn path and donor progression suppression hooks ready; "
+                        + "exact registry validation scheduled for server start.",
                 profileData.entityId()
         );
     }
@@ -141,6 +125,40 @@ public final class ExternalActorBindingRuntime {
             applyProjectCombatStats(living, profile);
         }
         return entity;
+    }
+
+    private static void validateRequiredRegistryTarget(String entityId, Logger logger) {
+        Identifier requiredId = Identifier.parse(entityId);
+        if (!BuiltInRegistries.ENTITY_TYPE.containsKey(requiredId)) {
+            var externalActorCandidates = BuiltInRegistries.ENTITY_TYPE.keySet().stream()
+                    .map(Object::toString)
+                    .filter(id -> {
+                        String lower = id.toLowerCase();
+                        return lower.contains("earth")
+                                || lower.contains("loux")
+                                || lower.contains("regal")
+                                || lower.contains("steelboar")
+                                || lower.contains("nature_spirit")
+                                || lower.contains("ferox")
+                                || lower.contains("deathworm")
+                                || lower.contains("hydra")
+                                || lower.contains("riptooth")
+                                || lower.contains("abyss")
+                                || lower.contains("wyvern")
+                                || lower.contains("inferno");
+                    })
+                    .sorted()
+                    .toList();
+            throw new IllegalStateException(
+                    "Openworld RPG required R01 Earthloong registry target is missing at server start: "
+                            + requiredId + "; installed actor-name candidates=" + externalActorCandidates
+            );
+        }
+
+        logger.info(
+                "Openworld RPG external actor registry target verified at server start: {}.",
+                requiredId
+        );
     }
 
     private static ActorIntegrationOverlay loadRequiredOverlay(String resourcePath) {
