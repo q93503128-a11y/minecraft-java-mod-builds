@@ -28,8 +28,8 @@ def main() -> None:
     assert common.count('(\"ranged_') == 10
     assert "int naturalTotal = Math.max(0, level - 1);" in common
     assert "return Math.max(naturalTotal, spentPoints(player));" in common
-    for cost in ("case 6 -> 5;", "case 7 -> 8;", "case 8 -> 12;", "case 9 -> 18;", "default -> 25;"):
-        assert cost in common
+    assert "Math.max(1, Math.min(4, (tier + 2) / 3))" in common
+    assert "healthTraining" in common and "attackTraining" in common
     assert common.count('(\"mobility_') == 10
     assert "pointCost()" in common
     assert "sharedSupplyChance" in common and "teamHealOnKillAmount" in common
@@ -70,7 +70,7 @@ def main() -> None:
     assert 'action.equals("buy_arrows")' in shop_ui and 'action.startsWith("consumable:")' in shop_ui
     assert 'action.equals("open_item_sell")' in shop_ui and 'action.equals("sell_loot")' in shop_ui
 
-    print("[PASS] Common tactical tree has 50 nodes, five branches and late tier costs scaled for 299 earned points")
+    print("[PASS] Common tactical tree has 50 nodes, five completable branches and repeatable stat sinks")
     print("[PASS] Five roles expose 75 ordered role-upgrade nodes without ordinal migration")
     print("[PASS] Emergency barrier, momentum and party recovery are wired into combat")
     print("[PASS] Defense research now provides 60 save-compatible long-term upgrades")
