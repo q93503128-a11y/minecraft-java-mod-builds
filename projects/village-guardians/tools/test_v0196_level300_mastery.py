@@ -54,18 +54,23 @@ def main() -> None:
         "RpgProgress.combatScalingLevel(VillageCouncilState.levelOf(player.getUUID()))"
     ) == 2
 
-    # 50-node tactical tree costs 110P total. Natural Lv.300 earns 96P, preserving build choice.
-    foundation = 29
-    mastery = (300 - 30) // 4
-    assert foundation + mastery == 96
-    assert "Math.max(0, level - 30) / 4" in tree
-    assert "return Math.max(pacedTotal, spentPoints(player));" in tree
-    assert "4레벨마다 1P" in tree
-    assert "4레벨마다 얻는 전술 포인트" in copy
+    # Every visible level grants 1P. Late-tier costs absorb the faster Lv.300 cadence.
+    natural_points = 300 - 1
+    per_branch_cost = 1 + 1 + 1 + 2 + 2 + 5 + 8 + 12 + 18 + 25
+    assert natural_points == 299
+    assert per_branch_cost == 75
+    assert per_branch_cost * 5 == 375
+    assert natural_points < per_branch_cost * 5
+    assert "int naturalTotal = Math.max(0, level - 1);" in tree
+    assert "return Math.max(naturalTotal, spentPoints(player));" in tree
+    for cost in ("case 6 -> 5;", "case 7 -> 8;", "case 8 -> 12;", "case 9 -> 18;", "default -> 25;"):
+        assert cost in tree
+    assert "레벨이 오를 때마다 전술 포인트 1P" in tree
+    assert "레벨이 오를 때마다 얻는 전술 포인트" in copy
 
     print("[PASS] visible player progression now spans Lv.1-300 with 3-4 levels per late campaign day")
     print("[PASS] raw combat scaling preserves Lv.1-100 and slows to 4:1 mastery scaling afterward")
-    print("[PASS] Lv.300 tactical points preserve build choice and grandfather historical allocations")
+    print("[PASS] Lv.300 grants 299 tactical points against a 375P tree and grandfathers historical allocations")
 
 
 if __name__ == "__main__":
