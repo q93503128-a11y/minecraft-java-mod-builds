@@ -122,6 +122,22 @@ public final class VillageCampaignProgression {
     }
 
     /**
+     * Fully mastered automated defenses keep a slow Endless War tail without new levels/currency.
+     * Damage follows sqrt so it broadly tracks enemy durability; utility grows only logarithmically.
+     */
+    public static float endlessDefenseDamageMultiplier(int day) {
+        int safe = Math.max(1, day);
+        if (safe <= CAMPAIGN_END_DAY) return 1.0f;
+        return 1.0f + (float) Math.sqrt(safe - CAMPAIGN_END_DAY) * 0.016f;
+    }
+
+    public static float endlessDefenseUtilityMultiplier(int day) {
+        int safe = Math.max(1, day);
+        if (safe <= CAMPAIGN_END_DAY) return 1.0f;
+        return 1.0f + (float) Math.log1p(safe - CAMPAIGN_END_DAY) * 0.018f;
+    }
+
+    /**
      * Roster growth is intentionally bounded. Late difficulty comes from composition, fronts
      * and mechanics rather than hundreds of disposable entities.
      */

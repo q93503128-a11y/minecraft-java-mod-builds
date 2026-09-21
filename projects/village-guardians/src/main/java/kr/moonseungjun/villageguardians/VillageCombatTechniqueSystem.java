@@ -3,6 +3,7 @@ package kr.moonseungjun.villageguardians;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
@@ -21,6 +22,28 @@ public final class VillageCombatTechniqueSystem {
     public static void reset() {
         NEXT_SWEEP_AT.clear();
         SECONDARY_DAMAGE.remove();
+    }
+
+    public static float attackTrainingPrimaryCoefficient(
+            ServerPlayer attacker, Entity target, boolean projectile) {
+        if (attacker == null || !(target instanceof Mob mob)
+                || !VillageRaidSystem.isActiveEnemy(mob.getUUID())) return 1.0f;
+        int playerLevel = VillageCouncilState.levelOf(attacker.getUUID());
+        int research = VillageProgressionSystem.skillRank(attacker);
+        if (projectile) {
+            int extraTargets = VillageSkillTreeSystem.extraRicochetTargets(attacker);
+            if (extraTargets <= 0 && (playerLevel < 10 || research < 2)) return 1.0f;
+            int limit = Math.max(2, extraTargets + (playerLevel >= 18 && research >= 4 ? 3 : 1));
+            float ratio = playerLevel >= 18 && research >= 4 ? 0.52f : 0.36f;
+            return 1.0f / (1.0f + limit * ratio);
+        }
+        if (!(attacker.level() instanceof ServerLevel level)
+                || !attacker.getMainHandItem().is(ItemTags.SWORDS)
+                || playerLevel < 8 || research < 2) return 1.0f;
+        if (NEXT_SWEEP_AT.getOrDefault(attacker.getUUID(), 0L) > level.getGameTime()) return 1.0f;
+        int limit = playerLevel >= 20 ? 7 : 4;
+        float ratio = 0.38f + research * 0.035f;
+        return 1.0f / (1.0f + limit * ratio);
     }
 
     public static void handleIncomingDamage(LivingIncomingDamageEvent event) {

@@ -36,7 +36,9 @@ public final class VillageRpgSystem {
         }
         var attackDamage = player.getAttribute(Attributes.ATTACK_DAMAGE);
         if (attackDamage != null) {
-            attackDamage.setBaseValue(1.0D + VillageSkillTreeSystem.attackTrainingBonus(player));
+            // Repeat attack training is a common combat stat, not a melee-only base-attribute patch.
+            // Keeping the vanilla base at 1.0 prevents melee from receiving the same training twice.
+            attackDamage.setBaseValue(1.0D);
         }
 
         VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
@@ -96,7 +98,14 @@ public final class VillageRpgSystem {
                 }
             }
             float flatWeaponPower = VillageEquipmentRaritySystem.flatAttackBonus(attacker, projectile);
-            event.setAmount((event.getAmount() + flatWeaponPower) * value);
+            float attackTrainingPower = (float) VillageSkillTreeSystem.attackTrainingBonus(attacker);
+            float trainingCoefficient = projectile ? 0.90f : 1.0f;
+            if (projectile && event.getSource().getDirectEntity() instanceof AbstractArrow arrow) {
+                trainingCoefficient *= VillageRoleAbilitySystem.projectileAttackTrainingCoefficient(attacker, arrow);
+            }
+            trainingCoefficient *= VillageCombatTechniqueSystem.attackTrainingPrimaryCoefficient(
+                    attacker, event.getEntity(), projectile);
+            event.setAmount((event.getAmount() + flatWeaponPower + attackTrainingPower * trainingCoefficient) * value);
             if (!projectile) {
                 float lifeSteal = VillageRelicSystem.meleeLifeStealBonus(attacker)
                         + VillageRolePromotionSystem.meleeLifeStealBonus(attacker);
@@ -201,6 +210,42 @@ public final class VillageRpgSystem {
         boolean nearWallLine = Math.abs(dx - VillageWorldSystem.FORTRESS_RADIUS) <= 7
                 || Math.abs(dz - VillageWorldSystem.FORTRESS_RADIUS) <= 7;
         return nearWallLine && relativeY >= 7 && relativeY <= 17;
+    }
+
+    public enum SkillAttackProfile {
+        SINGLE_TARGET(0.90f),
+        BURST_AREA(0.55f),
+        MULTI_HIT(0.30f),
+        PERSISTENT(0.16f);
+
+        private final float trainingCoefficient;
+
+        SkillAttackProfile(float trainingCoefficient) {
+            this.trainingCoefficient = trainingCoefficient;
+        }
+
+        float trainingCoefficient() {
+            return trainingCoefficient;
+        }
+    }
+
+    /**
+     * Converts the common flat attack-training stat into one bounded skill multiplier.
+     * Skills already own their level/role/equipment/relic scaling, so this factor is applied once
+     * to final custom-skill damage instead of adding the flat stat to every area or periodic hit.
+     */
+    public static float skillAttackTrainingMultiplier(ServerPlayer player, SkillAttackProfile profile) {
+        if (player == null || profile == null) return 1.0f;
+        float bonus = (float) VillageSkillTreeSystem.attackTrainingBonus(player);
+        if (bonus <= 0.0f) return 1.0f;
+        int combatLevel = RpgProgress.combatScalingLevel(VillageCouncilState.levelOf(player.getUUID()));
+        float referenceAttack = 16.0f + combatLevel * 0.36f;
+        return 1.0f + bonus / referenceAttack * profile.trainingCoefficient();
+    }
+
+    public static float applySkillAttackTraining(
+            ServerPlayer player, float damage, SkillAttackProfile profile) {
+        return damage * skillAttackTrainingMultiplier(player, profile);
     }
 
     public static float outgoingDamageMultiplier(int level) {

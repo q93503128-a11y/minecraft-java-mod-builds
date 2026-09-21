@@ -101,8 +101,12 @@ public final class VillagePlacedTurretSystem {
         int safeLevel = Math.max(1, Math.min(MAX_TURRET_LEVEL, level));
         double foundation = Math.min(4, safeLevel - 1) * 2.5;
         double mastery = Math.max(0, safeLevel - 5) * 1.6;
+        double endlessUtility = fullTowerMastery(safeLevel)
+                ? VillageCampaignProgression.endlessDefenseUtilityMultiplier(VillageCouncilState.currentDay())
+                : 1.0;
         return (type.range() + foundation + mastery)
-                * VillageDefenseResearchSystem.towerRangeMultiplier();
+                * VillageDefenseResearchSystem.towerRangeMultiplier()
+                * endlessUtility;
     }
 
     static float effectiveDamage(TurretType type, int level) {
@@ -111,8 +115,18 @@ public final class VillagePlacedTurretSystem {
         int foundation = Math.min(4, safeLevel - 1);
         int mastery = Math.max(0, safeLevel - 5);
         float levelMultiplier = 1.0f + foundation * 0.16f + mastery * 0.10f;
+        float endlessDamage = fullTowerMastery(safeLevel)
+                ? VillageCampaignProgression.endlessDefenseDamageMultiplier(VillageCouncilState.currentDay())
+                : 1.0f;
         return type.damage() * levelMultiplier
-                * VillageDefenseResearchSystem.towerDamageMultiplier();
+                * VillageDefenseResearchSystem.towerDamageMultiplier()
+                * endlessDamage;
+    }
+
+    private static boolean fullTowerMastery(int level) {
+        return level >= MAX_TURRET_LEVEL
+                && VillageDefenseResearchSystem.level(VillageDefenseResearchSystem.Branch.TOWER)
+                >= VillageDefenseResearchSystem.MAX_LEVEL;
     }
 
     static int effectiveInterval(TurretType type, int level) {
@@ -643,7 +657,9 @@ public final class VillagePlacedTurretSystem {
             if (type == VillageEnemyArchetypeSystem.Archetype.TOWER_HUNTER && distanceSquared <= 36.0 * 36.0) {
                 // Navigation ownership lives in VillageRaidSystem; this layer only resolves physical turret contact damage.
                 if (distanceSquared <= 7.5 * 7.5) {
-                    damage = Math.max(damage, 18 + VillageCouncilState.currentDay());
+                    int pacedPressure = Math.round(VillageCampaignProgression.effectiveCombatDay(
+                            VillageCouncilState.currentDay()));
+                    damage = Math.max(damage, 18 + pacedPressure);
                 }
             } else if (type == VillageEnemyArchetypeSystem.Archetype.SAPPER
                     && distanceSquared <= 6.0 * 6.0) {

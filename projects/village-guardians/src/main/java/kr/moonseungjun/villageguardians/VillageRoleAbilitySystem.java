@@ -104,6 +104,27 @@ public final class VillageRoleAbilitySystem {
         replayingEcho = false;
     }
 
+    /**
+     * Shares one flat attack-training budget across empowered real-arrow fan/ricochet paths.
+     * The returned value is only a budget share; the normal bow coefficient is owned by VillageRpgSystem.
+     */
+    public static float projectileAttackTrainingCoefficient(ServerPlayer owner, AbstractArrow arrow) {
+        if (owner == null || arrow == null) return 1.0f;
+        EmpoweredArrowState rapid = RAPID_ARROWS.get(arrow.getUUID());
+        if (rapid != null) {
+            int arrowCount = rapid.specialRank() >= 5 ? 7 : rapid.specialRank() >= 4 ? 5 : 3;
+            return 1.0f / arrowCount;
+        }
+        EmpoweredArrowState ricochet = RICOCHET_ARROWS.get(arrow.getUUID());
+        if (ricochet != null) {
+            int maximumChain = 4 + Math.min(4, Math.max(0, ricochet.specialRank()));
+            double falloffBudget = 0.0;
+            for (int i = 0; i < maximumChain; i++) falloffBudget += Math.pow(0.86, i);
+            return (float) (1.0 / (1.0 + 0.72 * falloffBudget));
+        }
+        return 1.0f;
+    }
+
     public static void cast(
             ServerLevel level,
             ServerPlayer player,
@@ -338,7 +359,7 @@ public final class VillageRoleAbilitySystem {
                 float healed = 0.0f;
                 for (Mob target : targets) {
                     float damage = base * (target.getHealth() <= target.getMaxHealth() * 0.40f ? 1.22f : 1.0f);
-                    hurt(level, target, damage);
+                    hurt(level, player, target, damage, VillageRpgSystem.SkillAttackProfile.BURST_AREA);
                     knockFrom(player.position(), target, 0.58 + tier * 0.10, 0.08);
                     healed += tier >= 2 ? 1.35f : 0.85f;
                 }
@@ -364,7 +385,8 @@ public final class VillageRoleAbilitySystem {
                 for (Mob target : targetsNear(level, player, center, radius, 64)) {
                     VillageEnemyArchetypeSystem.Archetype archetype = VillageRaidSystem.archetypeOf(target);
                     float tactical = VillageEnemyArchetypeSystem.isTacticalThreat(archetype) ? 1.24f : 1.0f;
-                    hurt(level, target, base * (tier >= 2 ? 2.05f : 1.55f) * tactical);
+                    hurt(level, player, target, base * (tier >= 2 ? 2.05f : 1.55f) * tactical,
+                            VillageRpgSystem.SkillAttackProfile.BURST_AREA);
                     target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS,
                             90 + tier * 35, tier >= 2 ? 2 : 1, false, false, true));
                     knockFrom(center, target, 1.0 + tier * 0.20, 0.24);
@@ -389,7 +411,8 @@ public final class VillageRoleAbilitySystem {
                 int limit = Math.min(tier >= 2 ? 4 : 1, candidates.size());
                 for (int i = 0; i < limit; i++) {
                     Mob target = candidates.get(i);
-                    hurt(level, target, base * (tier >= 2 ? 1.15f : 0.72f));
+                    hurt(level, player, target, base * (tier >= 2 ? 1.15f : 0.72f),
+                            VillageRpgSystem.SkillAttackProfile.BURST_AREA);
                     target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 160 + tier * 50, 0, false, false, true));
                     target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100 + tier * 30, tier >= 2 ? 1 : 0, false, false, true));
                     VillageSkillEffectSystem.trackingReticle(level, player, target.getEyePosition(),
@@ -417,7 +440,8 @@ public final class VillageRoleAbilitySystem {
                 int hits = 0;
                 for (Mob target : targets) {
                     if (!VillageRaidSystem.isAerialEnemy(target)) continue;
-                    hurt(level, target, base * (tier >= 2 ? 1.75f : 1.20f));
+                    hurt(level, player, target, base * (tier >= 2 ? 1.75f : 1.20f),
+                            VillageRpgSystem.SkillAttackProfile.BURST_AREA);
                     target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 120 + tier * 50,
                             tier >= 2 ? 3 : 2, false, false, true));
                     target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 150, 0, false, false, true));
@@ -560,7 +584,8 @@ public final class VillageRoleAbilitySystem {
                 for (int i = 0; i < steps; i++) {
                     Vec3 center = player.position().add(forward.scale(1.0 + i * 1.35));
                     for (Mob target : targetsNear(level, player, center, 2.8 + tier * 0.25, 18)) {
-                        hurt(level, target, damage * (tier >= 2 ? 1.28f : 1.0f));
+                        hurt(level, player, target, damage * (tier >= 2 ? 1.28f : 1.0f),
+                                VillageRpgSystem.SkillAttackProfile.MULTI_HIT);
                         knockFrom(player.position(), target, 1.30 + tier * 0.12, 0.16);
                     }
                 }
@@ -635,7 +660,8 @@ public final class VillageRoleAbilitySystem {
                     damageRadius(level, player, player.position(),
                             areaRadius(4.7, spin.specialRank()), 10 + spin.specialRank() * 2,
                             (2.4f + VillageCouncilState.levelOf(id) * 0.16f) * spin.power(),
-                            false, 0.32 + spin.specialRank() * 0.03, 0.05);
+                            false, 0.32 + spin.specialRank() * 0.03, 0.05,
+                            VillageRpgSystem.SkillAttackProfile.PERSISTENT);
                     play(level, player.position(), SoundEvents.PLAYER_ATTACK_SWEEP, 0.7f,
                             0.8f + (now % 4) * 0.05f);
                 }
@@ -859,7 +885,7 @@ public final class VillageRoleAbilitySystem {
                     }
                     spawnVisualLightning(level, strike);
                     for (Mob target : targetsNear(level, owner, strike, strikeRadius, 28)) {
-                        hurt(level, target, damage);
+                        hurt(level, owner, target, damage, VillageRpgSystem.SkillAttackProfile.PERSISTENT);
                         target.addEffect(new MobEffectInstance(
                                 MobEffects.SLOWNESS, 30, 1, false, false, true));
                     }
@@ -872,7 +898,10 @@ public final class VillageRoleAbilitySystem {
                 case FROST -> {
                     for (Mob target : targetsNear(level, owner, area.center(), area.radius(), 48)) {
                         target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 35, 3, false, false, true));
-                        if (now % 20L == 0L) hurt(level, target, 2.2f * area.power());
+                        if (now % 20L == 0L) {
+                            hurt(level, owner, target, 2.2f * area.power(),
+                                    VillageRpgSystem.SkillAttackProfile.PERSISTENT);
+                        }
                     }
                     if (now % 20L == 0L) play(level, area.center(), SoundEvents.GLASS_HIT, 0.55f, 0.62f);
                 }
@@ -885,7 +914,10 @@ public final class VillageRoleAbilitySystem {
                         if (horizontal.lengthSqr() > 0.01) horizontal = horizontal.normalize().scale(0.24);
                         target.push(horizontal.x, 0.20, horizontal.z);
                         target.hurtMarked = true;
-                        if (now % 15L == 0L) hurt(level, target, 1.8f * area.power());
+                        if (now % 15L == 0L) {
+                            hurt(level, owner, target, 1.8f * area.power(),
+                                    VillageRpgSystem.SkillAttackProfile.PERSISTENT);
+                        }
                     }
                     if (now % 15L == 0L) play(level, next, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), 0.8f, 0.78f);
                 }
@@ -940,7 +972,7 @@ public final class VillageRoleAbilitySystem {
                 case FIRE_ORB -> {
                     if (hits.isEmpty() && !expired) continue;
                     for (Mob target : targetsNear(level, owner, position, moving.radius(), 40)) {
-                        hurt(level, target, moving.damage());
+                        hurt(level, owner, target, moving.damage(), VillageRpgSystem.SkillAttackProfile.BURST_AREA);
                         target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(),
                                 120 + moving.specialRank() * 35));
                     }
@@ -950,7 +982,7 @@ public final class VillageRoleAbilitySystem {
                 case BLADE -> {
                     for (Mob target : hits) {
                         if (moving.hit().add(target.getUUID())) {
-                            hurt(level, target, moving.damage());
+                            hurt(level, owner, target, moving.damage(), VillageRpgSystem.SkillAttackProfile.MULTI_HIT);
                             knockFrom(position, target, 0.5, 0.05);
                         }
                     }
@@ -959,7 +991,7 @@ public final class VillageRoleAbilitySystem {
                 case ENERGY_ARROW -> {
                     for (Mob target : hits) {
                         if (moving.hit().add(target.getUUID())) {
-                            hurt(level, target, moving.damage());
+                            hurt(level, owner, target, moving.damage(), VillageRpgSystem.SkillAttackProfile.MULTI_HIT);
                             knockFrom(position, target, 1.35, 0.18);
                         }
                     }
@@ -1237,7 +1269,7 @@ public final class VillageRoleAbilitySystem {
         VillageSkillEffectSystem.arrowRainImpact(level, player, center, radius, specialRank);
         float damage = (3.3f + VillageCouncilState.levelOf(player.getUUID()) * 0.18f) * power;
         for (Mob target : targetsNear(level, player, center, radius, 48)) {
-            hurt(level, target, damage);
+            hurt(level, player, target, damage, VillageRpgSystem.SkillAttackProfile.PERSISTENT);
             if (specialRank >= 3) target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 40));
         }
         // Falling arrows are rendered by one short-lived synchronized mesh field.
@@ -1266,7 +1298,9 @@ public final class VillageRoleAbilitySystem {
         for (int i = 0; i < steps; i++) {
             Vec3 center = player.position().add(horizontalLook(player).scale(1.0 + i * 1.2));
             for (Mob target : targetsNear(level, player, center, contactRadius, 12 + specialRank * 3)) {
-                hurt(level, target, (5.5f + VillageCouncilState.levelOf(player.getUUID()) * 0.3f) * power);
+                hurt(level, player, target,
+                        (5.5f + VillageCouncilState.levelOf(player.getUUID()) * 0.3f) * power,
+                        VillageRpgSystem.SkillAttackProfile.MULTI_HIT);
                 knockFrom(player.position(), target, 1.15 + specialRank * 0.07, 0.12);
             }
         }
@@ -1282,7 +1316,7 @@ public final class VillageRoleAbilitySystem {
                 tauntDuration * VillageRelicSystem.tauntDurationMultiplier(player)));
         VillageRaidSystem.tauntEnemies(level, player, player.position(), radius, tauntDuration, 120);
         for (Mob target : targetsNear(level, player, player.position(), radius, 120)) {
-            hurt(level, target, damage);
+            hurt(level, player, target, damage, VillageRpgSystem.SkillAttackProfile.BURST_AREA);
             target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS,
                     Math.min(200, duration + 20), 1 + Math.min(2, specialRank / 2), false, false, true));
         }
@@ -1589,8 +1623,16 @@ public final class VillageRoleAbilitySystem {
     private static void damageRadius(
             ServerLevel level, ServerPlayer owner, Vec3 center, double radius, int limit,
             float damage, boolean fire, double horizontalKnockback, double verticalKnockback) {
+        damageRadius(level, owner, center, radius, limit, damage, fire,
+                horizontalKnockback, verticalKnockback, VillageRpgSystem.SkillAttackProfile.BURST_AREA);
+    }
+
+    private static void damageRadius(
+            ServerLevel level, ServerPlayer owner, Vec3 center, double radius, int limit,
+            float damage, boolean fire, double horizontalKnockback, double verticalKnockback,
+            VillageRpgSystem.SkillAttackProfile profile) {
         for (Mob target : targetsNear(level, owner, center, radius, limit)) {
-            hurt(level, target, damage);
+            hurt(level, owner, target, damage, profile);
             if (fire) target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 80));
             if (horizontalKnockback > 0.0 || verticalKnockback > 0.0) {
                 knockFrom(center, target, horizontalKnockback, verticalKnockback);
@@ -1602,7 +1644,9 @@ public final class VillageRoleAbilitySystem {
             ServerLevel level, ServerPlayer player, double radius, int limit,
             double horizontal, double vertical, float damage) {
         for (Mob target : targetsNear(level, player, player.position(), radius, limit)) {
-            if (damage > 0.0f) hurt(level, target, damage);
+            if (damage > 0.0f) {
+                hurt(level, player, target, damage, VillageRpgSystem.SkillAttackProfile.PERSISTENT);
+            }
             knockFrom(player.position(), target, horizontal, vertical);
         }
     }
@@ -1614,7 +1658,9 @@ public final class VillageRoleAbilitySystem {
         for (Mob target : targetsNear(level, player, player.position(), range + 2.0, limit)) {
             Vec3 to = target.position().subtract(player.position());
             if (to.lengthSqr() < 0.01 || to.normalize().dot(forward) < 0.20) continue;
-            if (damage > 0.0f) hurt(level, target, damage);
+            if (damage > 0.0f) {
+                hurt(level, player, target, damage, VillageRpgSystem.SkillAttackProfile.MULTI_HIT);
+            }
             target.push(forward.x * horizontal, vertical, forward.z * horizontal);
             target.hurtMarked = true;
         }
@@ -1629,8 +1675,11 @@ public final class VillageRoleAbilitySystem {
         target.hurtMarked = true;
     }
 
-    private static void hurt(ServerLevel level, Mob target, float damage) {
-        target.hurtServer(level, level.damageSources().magic(), Math.max(0.1f, damage));
+    private static void hurt(
+            ServerLevel level, ServerPlayer owner, Mob target, float damage,
+            VillageRpgSystem.SkillAttackProfile profile) {
+        float trained = VillageRpgSystem.applySkillAttackTraining(owner, damage, profile);
+        target.hurtServer(level, level.damageSources().magic(), Math.max(0.1f, trained));
     }
 
     public static boolean isPreScaledRicochetDamage(ServerPlayer owner, Entity target) {

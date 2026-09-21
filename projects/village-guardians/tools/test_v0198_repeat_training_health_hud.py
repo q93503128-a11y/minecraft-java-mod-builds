@@ -32,11 +32,13 @@ def main() -> None:
     assert 'action.startsWith("skill_training:")' in controller
     assert 'action.startsWith("skill_training:")' in network
 
-    # Repeat training applies to real base attributes.
+    # Health training is a real base attribute; attack training is a shared combat stat.
     assert "Attributes.MAX_HEALTH" in rpg
     assert "Attributes.ATTACK_DAMAGE" in rpg
     assert "20.0D + VillageSkillTreeSystem.healthTrainingBonus(player)" in rpg
-    assert "1.0D + VillageSkillTreeSystem.attackTrainingBonus(player)" in rpg
+    assert "attackDamage.setBaseValue(1.0D);" in rpg
+    assert "float attackTrainingPower = (float) VillageSkillTreeSystem.attackTrainingBonus(attacker);" in rpg
+    assert "applySkillAttackTraining" in rpg
 
     # Vanilla heart pips are replaced by a live numeric health bar.
     assert "VanillaGuiLayers.PLAYER_HEALTH.equals(event.getName())" in suppressor
@@ -48,7 +50,7 @@ def main() -> None:
 
     print("[PASS] all five tactical branches retain the original low-cost completion path")
     print("[PASS] a completed branch unlocks persistent repeatable +0.25 health / +0.1 attack training")
-    print("[PASS] repeated stat training is server guarded and applied to real player attributes")
+    print("[PASS] repeat health is an attribute while repeat attack is a shared melee/bow/skill combat stat")
     print("[PASS] vanilla heart pips are replaced by a live current/max health bar")
 
 

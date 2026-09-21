@@ -362,7 +362,8 @@ public final class VillageMercenarySystem {
 
     private static void bastionControl(ServerLevel level, IronGolem mercenary, int rank) {
         double mastery = masteryProgress(rank);
-        double radius = 12.0 + 12.0 * mastery;
+        double utility = endlessUtilityAdaptation(rank);
+        double radius = (12.0 + 12.0 * mastery) * utility;
         int limit = 12 + (int) Math.round(24.0 * mastery);
         VillageRaidSystem.tauntEnemies(level, mercenary, mercenary.position(), radius,
                 50 + (int) Math.round(70.0 * mastery), limit);
@@ -381,7 +382,7 @@ public final class VillageMercenarySystem {
 
     private static void strikerPressure(ServerLevel level, IronGolem mercenary, int rank) {
         double mastery = masteryProgress(rank);
-        double range = 22.0 + 30.0 * mastery;
+        double range = (22.0 + 30.0 * mastery) * endlessUtilityAdaptation(rank);
         Mob target = nearestGroundEnemy(level, mercenary.position(), range);
         if (target == null || !VillageDefenseLineOfSight.hasLine(level, mercenary.getEyePosition(), target)) return;
         mercenary.setTarget(target);
@@ -393,7 +394,7 @@ public final class VillageMercenarySystem {
     private static void rangedAttack(ServerLevel level, IronGolem mercenary, int rank) {
         Vec3 start = mercenary.getEyePosition();
         double mastery = masteryProgress(rank);
-        double range = 50.0 + 52.0 * mastery;
+        double range = (50.0 + 52.0 * mastery) * endlessUtilityAdaptation(rank);
         Mob target = VillageRaidSystem.activeEnemiesNear(level, mercenary.position(), range,
                         18 + (int) Math.round(18.0 * mastery), null)
                 .stream().filter(enemy -> VillageDefenseLineOfSight.hasLine(level, start, enemy))
@@ -404,7 +405,9 @@ public final class VillageMercenarySystem {
         mercenary.setTarget(null);
         if (target == null) return;
         mercenary.getLookControl().setLookAt(target, 35.0f, 35.0f);
-        float damage = 5.2f * mercenaryPower(rank) * VillageDefenseResearchSystem.mercenaryDamageMultiplier();
+        float damage = 5.2f * mercenaryPower(rank)
+                * VillageDefenseResearchSystem.mercenaryDamageMultiplier()
+                * endlessDamageAdaptation(rank);
         Vec3 end = target.position().add(0, target.getBbHeight() * 0.62, 0);
         VillageDefenseEffectSystem.mercenaryRangerShot(level, start, end);
         level.sendParticles(ParticleTypes.CRIT, end.x, end.y, end.z, 4, 0.14, 0.18, 0.14, 0.02);
@@ -412,8 +415,11 @@ public final class VillageMercenarySystem {
     }
 
     private static void healAllies(ServerLevel level, MinecraftServer server, IronGolem medic, int rank) {
-        float amount = 2.8f * mercenaryPower(rank) * VillageDefenseResearchSystem.mercenaryHealingMultiplier();
-        double radius = 8.0 + 13.0 * masteryProgress(rank);
+        double utility = endlessUtilityAdaptation(rank);
+        float amount = 2.8f * mercenaryPower(rank)
+                * VillageDefenseResearchSystem.mercenaryHealingMultiplier()
+                * (float) utility;
+        double radius = (8.0 + 13.0 * masteryProgress(rank)) * utility;
         double radiusSquared = radius * radius;
         for (IronGolem ally : loadedMercenaries(level)) {
             if (ally.distanceToSqr(medic) <= radiusSquared) ally.heal(amount);
@@ -432,6 +438,24 @@ public final class VillageMercenarySystem {
                 .filter(enemy -> !VillageRaidSystem.isAerialEnemy(enemy))
                 .min(java.util.Comparator.comparingDouble(enemy -> enemy.position().distanceToSqr(origin)))
                 .orElse(null);
+    }
+
+    private static boolean fullMercenaryMastery(int rank) {
+        return rank >= MAX_LEVEL
+                && VillageDefenseResearchSystem.level(VillageDefenseResearchSystem.Branch.MERCENARY)
+                >= VillageDefenseResearchSystem.MAX_LEVEL;
+    }
+
+    private static float endlessDamageAdaptation(int rank) {
+        return fullMercenaryMastery(rank)
+                ? VillageCampaignProgression.endlessDefenseDamageMultiplier(VillageCouncilState.currentDay())
+                : 1.0f;
+    }
+
+    private static double endlessUtilityAdaptation(int rank) {
+        return fullMercenaryMastery(rank)
+                ? VillageCampaignProgression.endlessDefenseUtilityMultiplier(VillageCouncilState.currentDay())
+                : 1.0;
     }
 
     private static double masteryProgress(int rank) {
@@ -497,12 +521,13 @@ public final class VillageMercenarySystem {
             case RANGER -> 9.0 + 6.0 * mastery;
             case MEDIC -> 11.0 + 6.0 * mastery;
         };
-        double attack = switch (kind) {
+        double attack = (switch (kind) {
             case BASTION -> 11.5 + safeRank * 0.12;
             case STRIKER -> 16.0 + safeRank * 0.20;
             case RANGER -> 5.8 + safeRank * 0.06;
             case MEDIC -> 7.0 + safeRank * 0.06;
-        };
+        }) * VillageDefenseResearchSystem.mercenaryDamageMultiplier()
+                * endlessDamageAdaptation(safeRank);
         double speed = switch (kind) {
             case BASTION -> 0.235;
             case STRIKER -> 0.31;
