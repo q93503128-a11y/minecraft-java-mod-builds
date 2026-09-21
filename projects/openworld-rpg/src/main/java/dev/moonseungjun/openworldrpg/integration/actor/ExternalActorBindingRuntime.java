@@ -1,5 +1,7 @@
 package dev.moonseungjun.openworldrpg.integration.actor;
 
+import dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction;
+import dev.moonseungjun.openworldrpg.combat.state.ProjectPoiseRuntimeState;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import dev.moonseungjun.openworldrpg.integration.overlay.ActorIntegrationOverlay;
 import dev.moonseungjun.openworldrpg.integration.overlay.ActorIntegrationOverlayLoader;
@@ -9,6 +11,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -30,6 +33,7 @@ public final class ExternalActorBindingRuntime {
     private static final String NO_CAPTURE_TAG = "openworld_rpg.no_capture";
 
     private static final Map<String, ExternalActorCombatProfile> COMBAT_PROFILES = new ConcurrentHashMap<>();
+    private static final Map<UUID, ProjectPoiseRuntimeState> POISE_STATES = new ConcurrentHashMap<>();
     private static volatile boolean initialized;
 
     private ExternalActorBindingRuntime() {
@@ -79,8 +83,12 @@ public final class ExternalActorBindingRuntime {
             }
 
             applyProjectCombatStats(living, actorProfile.get());
+            ensurePoiseState(living, actorProfile.get(), level.getGameTime());
             living.addTag(NO_CAPTURE_TAG);
         });
+        ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) ->
+                POISE_STATES.remove(entity.getUUID())
+        );
 
         initialized = true;
         logger.info(
@@ -107,6 +115,36 @@ public final class ExternalActorBindingRuntime {
         return combatProfile(entity).isPresent() || entity.entityTags().contains(NO_CAPTURE_TAG);
     }
 
+    public static Optional<ProjectImpactTransaction.DamageTargetSnapshot> projectTargetSnapshot(
+            LivingEntity living,
+            long gameTick
+    ) {
+        return combatProfile(living).map(profile -> {
+            ProjectPoiseRuntimeState.Snapshot poise =
+                    ensurePoiseState(living, profile, gameTick).snapshot(gameTick);
+            return profile.projectTargetSnapshot(poise.damageTakenMultiplier());
+        });
+    }
+
+    public static Optional<ProjectPoiseRuntimeState.Snapshot> poiseSnapshot(
+            LivingEntity living,
+            long gameTick
+    ) {
+        return combatProfile(living).map(profile ->
+                ensurePoiseState(living, profile, gameTick).snapshot(gameTick)
+        );
+    }
+
+    public static Optional<ProjectPoiseRuntimeState.Application> applyProjectPoiseDamage(
+            LivingEntity living,
+            double rawPoiseDamage,
+            long gameTick
+    ) {
+        return combatProfile(living).map(profile ->
+                ensurePoiseState(living, profile, gameTick).apply(rawPoiseDamage, gameTick)
+        );
+    }
+
     public static Entity spawnAuthored(ServerLevel level, BlockPos pos, String entityId) {
         ExternalActorCombatProfile profile = COMBAT_PROFILES.get(entityId);
         if (profile == null) {
@@ -123,8 +161,20 @@ public final class ExternalActorBindingRuntime {
         entity.addTag(NO_CAPTURE_TAG);
         if (entity instanceof LivingEntity living) {
             applyProjectCombatStats(living, profile);
+            ensurePoiseState(living, profile, level.getGameTime());
         }
         return entity;
+    }
+
+    private static ProjectPoiseRuntimeState ensurePoiseState(
+            LivingEntity living,
+            ExternalActorCombatProfile profile,
+            long gameTick
+    ) {
+        return POISE_STATES.computeIfAbsent(
+                living.getUUID(),
+                ignored -> ProjectPoiseRuntimeState.boss(profile.poiseMax(), gameTick)
+        );
     }
 
     private static void validateRequiredRegistryTarget(String entityId, Logger logger) {

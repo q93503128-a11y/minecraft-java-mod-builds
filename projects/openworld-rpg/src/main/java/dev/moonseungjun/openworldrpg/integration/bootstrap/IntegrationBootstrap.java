@@ -4,6 +4,7 @@ import dev.moonseungjun.openworldrpg.integration.ExternalRuntimeContainment;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.integration.bettercombat.BetterCombatAuthorityAdapter;
 import dev.moonseungjun.openworldrpg.integration.spellengine.SpellEngineAuthorityAdapter;
+import dev.moonseungjun.openworldrpg.integration.verify.M0RuntimeVerificationHarness;
 import org.slf4j.Logger;
 
 public final class IntegrationBootstrap {
@@ -28,6 +29,7 @@ public final class IntegrationBootstrap {
         ExternalActorBindingRuntime.initialize(profile, logger);
         BetterCombatAuthorityAdapter.initialize(profile, logger);
         SpellEngineAuthorityAdapter.initialize(profile, logger);
+        M0RuntimeVerificationHarness.initialize(profile, logger);
 
         logger.info(
                 "Openworld RPG integration manifest schema {} accepted ({} dependency contracts, profile {}).",

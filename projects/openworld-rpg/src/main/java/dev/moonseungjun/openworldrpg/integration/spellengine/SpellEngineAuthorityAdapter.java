@@ -361,8 +361,8 @@ public final class SpellEngineAuthorityAdapter {
         var sourceSnapshot = CombatStateServices.combatSnapshots()
                 .snapshot(player.getUUID())
                 .orElse(null);
-        var targetSnapshot = ExternalActorBindingRuntime.combatProfile(livingTarget)
-                .map(profile -> profile.projectTargetSnapshot())
+        long gameTick = player.level().getGameTime();
+        var targetSnapshot = ExternalActorBindingRuntime.projectTargetSnapshot(livingTarget, gameTick)
                 .orElse(null);
         if (sourceSnapshot == null || targetSnapshot == null) {
             return impactResultConstructor.newInstance(false, false);
@@ -371,7 +371,7 @@ public final class SpellEngineAuthorityAdapter {
         SpellCastAuthority.ImpactDecision decision = AUTHORITY.onImpact(
                 player.getUUID(),
                 spellId,
-                player.level().getGameTime(),
+                gameTick,
                 livingTarget.getId(),
                 power.doubleValue(),
                 total.doubleValue(),
@@ -387,6 +387,13 @@ public final class SpellEngineAuthorityAdapter {
                 livingTarget,
                 decision.finalDamage()
         );
+        if (applied && decision.poiseDamage() > 0.0) {
+            ExternalActorBindingRuntime.applyProjectPoiseDamage(
+                    livingTarget,
+                    decision.poiseDamage(),
+                    gameTick
+            );
+        }
         return impactResultConstructor.newInstance(applied, applied && decision.critical());
     }
 

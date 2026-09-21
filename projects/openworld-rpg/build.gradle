@@ -12,6 +12,9 @@ base {
     archivesName = project.archives_base_name
 }
 
+def openworldM0RuntimeVerification =
+        (findProperty('openworldM0RuntimeVerification') ?: 'false').toString()
+
 loom {
     mods {
         "openworld_rpg" {
@@ -31,6 +34,7 @@ loom {
             server()
             displayName = 'Openworld RPG Gameplay Server'
             systemProperties.put('openworld_rpg.profile', 'gameplay')
+            systemProperties.put('openworld_rpg.m0RuntimeVerification', openworldM0RuntimeVerification)
             runDirectory = file('run-gameplay')
         }
 

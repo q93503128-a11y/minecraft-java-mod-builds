@@ -100,7 +100,7 @@ jobs:
           printf 'eula=true\n' > run-gameplay/eula.txt
 
           set +e
-          timeout --kill-after=10s 80s ./gradlew --no-daemon -PopenworldGameplayRuntime=true runGameplayServer --stacktrace 2>&1 | tee build/logs/server-gameplay.log
+          timeout --kill-after=10s 80s ./gradlew --no-daemon -PopenworldGameplayRuntime=true -PopenworldM0RuntimeVerification=true runGameplayServer --stacktrace 2>&1 | tee build/logs/server-gameplay.log
           status=${PIPESTATUS[0]}
           set -e
 
@@ -115,6 +115,7 @@ jobs:
           grep -q 'Openworld RPG external actor registry target verified at server start: threateningly_mobs:the_earthloong' build/logs/server-gameplay.log
           grep -q 'Openworld RPG Better Combat authority adapter armed for profile gameplay' build/logs/server-gameplay.log
           grep -q 'Openworld RPG Spell Engine authority gate armed for profile gameplay' build/logs/server-gameplay.log
+          grep -q 'OPENWORLD_RPG_M0_RUNTIME_IMPACT_PASS target=threateningly_mobs:the_earthloong' build/logs/server-gameplay.log
           grep -Eq 'Done \([0-9.]+s\)! For help, type "help"' build/logs/server-gameplay.log
           grep -Eq '\[MobFilter\] [1-9][0-9]* rule\(s\) loaded' build/logs/server-gameplay.log
 
@@ -186,7 +187,10 @@ jobs:
           - Better Combat authority seam: IMPLEMENTED (real-hit runtime execution NOT TESTED)
           - Spell Engine resource/cooldown continuation transaction: IMPLEMENTED + UNIT/SERVER STARTUP VERIFIED
           - project impact transaction core (damage/heal/status/poise + Defense/MR caps): IMPLEMENTED + UNIT TESTED
-          - project direct-magic runtime bridge: IMPLEMENTED + UNIT/BUILD/STARTUP VERIFIED; no fallback player snapshot, so real Spell Engine damage remains fail-closed until progression/equipment binds authoritative source stats; runtime poise-state application remains pending
+          - project direct-magic runtime bridge: IMPLEMENTED + UNIT/BUILD/STARTUP VERIFIED
+          - exact Earthloong entity HP delta runtime harness: PASS (Arc Bolt canonical 32 damage; donor power ignored)
+          - Earthloong runtime boss poise: IMPLEMENTED + UNIT/RUNTIME HARNESS VERIFIED (5 poise Arc Bolt, break +15% damage window, recovery/protection math)
+          - real player source snapshot producer / real Spell Engine player impact: NOT IMPLEMENTED / NOT TESTED
           - player-facing R01 content: NOT IMPLEMENTED
           - playtest: NOT RUN
           - multiplayer test: NOT RUN

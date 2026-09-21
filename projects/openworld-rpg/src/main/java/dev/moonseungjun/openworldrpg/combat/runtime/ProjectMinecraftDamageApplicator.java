@@ -8,7 +8,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
 
 /**
  * Minecraft-side application of an already-resolved project damage amount.
@@ -28,7 +27,7 @@ public final class ProjectMinecraftDamageApplicator {
     }
 
     public static boolean applyDirectMagic(
-            Player attacker,
+            LivingEntity attacker,
             LivingEntity target,
             double finalDamage
     ) {

@@ -28,10 +28,16 @@ public record ExternalActorCombatProfile(
     }
 
     public ProjectImpactTransaction.DamageTargetSnapshot projectTargetSnapshot() {
+        return projectTargetSnapshot(1.0);
+    }
+
+    public ProjectImpactTransaction.DamageTargetSnapshot projectTargetSnapshot(
+            double authoredDamageTakenMultiplier
+    ) {
         return new ProjectImpactTransaction.DamageTargetSnapshot(
                 defense,
                 magicResistance,
-                1.0,
+                authoredDamageTakenMultiplier,
                 0.0,
                 poiseMax
         );
