@@ -45,6 +45,8 @@ public final class SpellEngineAuthorityAdapter {
             "net.spell_engine.internals.casting.SpellCast$Attempt";
     private static final String SPELL_CASTER_ENTITY =
             "net.spell_engine.internals.casting.SpellCaster$Entity";
+    private static final String SPELL_CASTER_PLAYER =
+            "net.spell_engine.internals.casting.SpellCaster$Player";
     private static final String SPELL_CAST_PROCESS =
             "net.spell_engine.internals.casting.SpellCast$Process";
     private static final String PROJECT_IMPACT_HANDLER = OpenworldRpgMod.MOD_ID + ":project_impact";
@@ -96,15 +98,17 @@ public final class SpellEngineAuthorityAdapter {
             Class<?> customImpact = Class.forName(CUSTOM_IMPACT, false, loader);
             Class<?> impactResult = Class.forName(IMPACT_RESULT, false, loader);
             Class<?> spellCasterEntity = Class.forName(SPELL_CASTER_ENTITY, false, loader);
+            Class<?> spellCasterPlayer = Class.forName(SPELL_CASTER_PLAYER, false, loader);
             Class<?> spellCastProcess = Class.forName(SPELL_CAST_PROCESS, false, loader);
 
             Method attemptNone = spellCastAttempt.getMethod("none");
             Constructor<?> impactResultConstructor = impactResult.getDeclaredConstructor(boolean.class, boolean.class);
             Method getSpellCastProcess = spellCasterEntity.getMethod("getSpellCastProcess");
-            Method getCooldownManager = spellCasterEntity.getMethod("getCooldownManager");
+            Method getCooldownManager = spellCasterPlayer.getMethod("getCooldownManager");
             Method processId = spellCastProcess.getMethod("id");
             processBinding = new ProcessBinding(
                     spellCasterEntity,
+                    spellCasterPlayer,
                     spellCastProcess,
                     getSpellCastProcess,
                     getCooldownManager,
@@ -315,7 +319,7 @@ public final class SpellEngineAuthorityAdapter {
         }
 
         ProcessBinding current = processBinding;
-        if (!current.enabled() || !current.spellCasterEntity().isInstance(player)) {
+        if (!current.enabled() || !current.spellCasterPlayer().isInstance(player)) {
             throw new IllegalStateException(
                     "Spell Engine cooldown projection is unavailable for project spell " + spellId
             );
@@ -617,13 +621,14 @@ public final class SpellEngineAuthorityAdapter {
 
     private record ProcessBinding(
             Class<?> spellCasterEntity,
+            Class<?> spellCasterPlayer,
             Class<?> spellCastProcess,
             Method getSpellCastProcess,
             Method getCooldownManager,
             Method processId
     ) {
         private static ProcessBinding disabled() {
-            return new ProcessBinding(null, null, null, null, null);
+            return new ProcessBinding(null, null, null, null, null, null);
         }
 
         private boolean enabled() {
