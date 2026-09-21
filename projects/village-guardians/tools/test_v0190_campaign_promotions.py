@@ -83,13 +83,13 @@ def main() -> None:
         assert method in ability
     assert "default -> promotionStartCast" in effects
 
-    # Every visible level grants one tactical point; late nodes absorb the faster Lv.300 cadence.
+    # Every visible level grants one tactical point; all five branches can be completed.
     assert "int naturalTotal = Math.max(0, level - 1);" in skill_tree
     assert "return Math.max(naturalTotal, spentPoints(player));" in skill_tree
     assert "SPENT_POINTS" in skill_tree
     assert "레벨이 오를 때마다 전술 포인트 1P" in skill_tree
-    for cost in ("case 6 -> 5;", "case 7 -> 8;", "case 8 -> 12;", "case 9 -> 18;", "default -> 25;"):
-        assert cost in skill_tree
+    assert "Math.max(1, Math.min(4, (tier + 2) / 3))" in skill_tree
+    assert "purchaseTraining" in skill_tree and "trainingUnlocked" in skill_tree
 
     print("[PASS] campaign and reward growth span authored progression through day 100")
     print("[PASS] enemy raw stat growth is slower and never reintroduces day-based speed escalation")
@@ -97,7 +97,7 @@ def main() -> None:
     print("[PASS] five roles have four base + four first-promotion + four second-promotion active skills")
     assert "combatScalingLevel" in progress
 
-    print("[PASS] promotion passives and per-level tactical points extend progression to Lv.300 without a new currency")
+    print("[PASS] per-level tactical points can complete all branches and flow into repeatable stat training")
 
 if __name__ == "__main__":
     main()
