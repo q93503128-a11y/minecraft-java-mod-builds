@@ -51,12 +51,12 @@ def main() -> None:
     # The repeatable ranks are authoritative basic stats, not tooltip-only bonuses.
     assert "Attributes.MAX_HEALTH" in rpg
     assert "Attributes.ATTACK_DAMAGE" in rpg
-    assert "20.0D + VillageSkillTreeSystem.healthTraining(player)" in rpg
-    assert "1.0D + VillageSkillTreeSystem.attackTraining(player) * 0.10D" in rpg
+    assert "20.0D + VillageSkillTreeSystem.healthTrainingBonus(player)" in rpg
+    assert "1.0D + VillageSkillTreeSystem.attackTrainingBonus(player)" in rpg
 
     print("[PASS] every level awards 1P, all five branches cost 110P, and superseded high costs are refunded")
     print("[PASS] Lv.300 can complete every branch and has 189P left for repeatable training")
-    print("[PASS] any completed branch unlocks save-backed +1 health / +0.1 attack repeat training")
+    print("[PASS] any completed branch unlocks save-backed +0.25 health / +0.1 attack repeat training")
     print("[PASS] repeat training is exposed in the current growth UI and applied to real attributes")
 
 
