@@ -83,6 +83,7 @@ public final class VillageEnemyCompositionSystem {
             rider.discard();
             return;
         }
+        VillageRaidSystem.registerVisualCompanion(level.getServer(), rider, boss);
         VillageWorldSystem.markAllowedGameMob(rider);
     }
 
@@ -101,6 +102,9 @@ public final class VillageEnemyCompositionSystem {
         for (Entity passenger : List.copyOf(owner.getPassengers())) {
             if (!isVisualRider(passenger)) continue;
             if (passenger instanceof Mob mob) VillageWorldSystem.unmarkAllowedGameMob(mob.getUUID());
+            if (owner.level().getServer() != null) {
+                VillageRaidSystem.unregisterVisualCompanion(owner.level().getServer(), passenger);
+            }
             passenger.stopRiding();
             passenger.discard();
         }
@@ -116,6 +120,7 @@ public final class VillageEnemyCompositionSystem {
         for (Mob mob : level.getEntitiesOfClass(
                 Mob.class, area, VillageEnemyCompositionSystem::isVisualRider)) {
             VillageWorldSystem.unmarkAllowedGameMob(mob.getUUID());
+            VillageRaidSystem.unregisterVisualCompanion(server, mob);
             mob.stopRiding();
             mob.discard();
         }
