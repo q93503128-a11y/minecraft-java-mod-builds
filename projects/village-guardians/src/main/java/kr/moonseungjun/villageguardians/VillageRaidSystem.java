@@ -447,11 +447,14 @@ public final class VillageRaidSystem {
         structureAttackTicks = 0;
         int spawned = ACTIVE_ENEMIES.size() - before;
         String capped = count < requested ? " §7(전장 개체 상한 적용)" : "";
+        String finalPhase = VillageWarfrontSystem.finalSiegePhaseLabel(day, wave);
         server.getPlayerList().broadcastSystemMessage(
                 Component.literal("§c[웨이브 " + wave + "/" + maxWaves + "] §f"
                         + currentTrait.displayName() + " · 신규 적 " + spawned
                         + "명 · 전장 총 " + ACTIVE_ENEMIES.size() + "명"
+                        + (bossCount > 0 ? " · §4우두머리 " + bossCount + "명§f" : "")
                         + (flyingSpawned > 0 ? " · §b공중 위협 " + flyingSpawned + "기§f" : "") + capped
+                        + (finalPhase.isBlank() ? "" : "\n§6" + finalPhase)
                         + "\n§7" + currentTrait.description()
                         + "\n§b대응: " + currentTrait.counterHint()), false);
     }
