@@ -137,6 +137,13 @@ public final class VillageEnemyArchetypeSystem {
         mob.setCanPickUpLoot(false);
         if (!isFlying(mob)) equip(mob, archetype);
         applyArchetypeAttributes(mob, archetype, day);
+        var maximumHealth = mob.getAttribute(Attributes.MAX_HEALTH);
+        if (maximumHealth != null && day > 20) {
+            float doctrineScale = trait == null ? 1.0f : trait.healthScale();
+            maximumHealth.setBaseValue(maximumHealth.getBaseValue()
+                    * VillageCampaignProgression.enemyBaseHealthMultiplier(day)
+                    * doctrineScale);
+        }
         applyArchetypeEffects(mob, archetype, day, wave);
         trait.applyLongEffects(mob);
         // Siege actors must remain readable, interceptable threats. Campaign/wave haste must not
@@ -518,7 +525,7 @@ public final class VillageEnemyArchetypeSystem {
         if (archetype == Archetype.RUSHER) {
             var health = mob.getAttribute(Attributes.MAX_HEALTH);
             float pacedDay = VillageCampaignProgression.effectiveCombatDay(day);
-            if (health != null) health.setBaseValue(Math.min(30.0, 11.0 + Math.max(0.0f, pacedDay - 1.0f) * 0.34));
+            if (health != null) health.setBaseValue(Math.min(18.0, 11.0 + Math.max(0.0f, pacedDay - 1.0f) * 0.34));
             var attack = mob.getAttribute(Attributes.ATTACK_DAMAGE);
             if (attack != null) attack.setBaseValue(Math.min(5.0, 1.5 + Math.max(0.0f, pacedDay - 1.0f) * 0.065));
             var speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
