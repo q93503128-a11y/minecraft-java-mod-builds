@@ -36,13 +36,13 @@ public final class VillageEquipmentRaritySystem {
         List<Item> pool;
         if (boss || archetype == null) pool = day >= 6 ? LATE_ITEMS : EARLY_ITEMS;
         else pool = switch (archetype) {
-            case RUSHER, GRUNT, SHIELDBREAKER -> List.of(
+            case RUSHER, GRUNT, SHIELDBREAKER, CAVE_STALKER, NETHER_REAVER -> List.of(
                     day >= 6 ? Items.DIAMOND_SWORD : Items.IRON_SWORD,
                     day >= 6 ? Items.DIAMOND_AXE : Items.IRON_AXE, Items.SHIELD);
-            case BULWARK, SIEGE_BEAST, IRON_WARLORD, DREAD_KNIGHT -> List.of(Items.SHIELD,
+            case BULWARK, ZOGLIN_BREACHER, MAGMA_BRUTE, SIEGE_BEAST, IRON_WARLORD, DREAD_KNIGHT -> List.of(Items.SHIELD,
                     day >= 6 ? Items.DIAMOND_CHESTPLATE : Items.IRON_CHESTPLATE,
                     day >= 6 ? Items.DIAMOND_HELMET : Items.IRON_HELMET);
-            case MARKSMAN, TOWER_HUNTER, WAR_CHANTER -> List.of(Items.BOW, Items.CROSSBOW,
+            case MARKSMAN, TOWER_HUNTER, WAR_CHANTER, BOGGED_ARCHER, BREEZE_DISRUPTOR -> List.of(Items.BOW, Items.CROSSBOW,
                     day >= 6 ? Items.DIAMOND_HELMET : Items.IRON_HELMET);
             case SAPPER -> List.of(Items.CROSSBOW, Items.IRON_AXE, Items.SHIELD);
             case HEXER, NECROMANCER, PLAGUE_ARCHON -> List.of(Items.BLAZE_ROD, Items.BOW,
