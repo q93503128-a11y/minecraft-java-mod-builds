@@ -50,6 +50,27 @@ jobs:
       - name: Verify pinned creature dependency metadata
         run: ./gradlew --no-daemon inspectCreatureFoundationDependencies --stacktrace
 
+      - name: Inspect pinned Earthloong bytecode surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR="$(find ~/.gradle/caches/modules-2/files-2.1 -type f -name 'threateninglly-mobs-continued-1637799-8804647.jar' | head -n1)"
+          test -n "$JAR"
+          mkdir -p build/reports/m0
+          jar tf "$JAR" | grep -Ei 'earth.?loong|loong' | tee build/reports/m0/earthloong-jar-entries.txt
+          : > build/reports/m0/earthloong-javap.txt
+          while IFS= read -r entry; do
+            case "$entry" in
+              *.class)
+                class="${entry%.class}"
+                class="${class//\//.}"
+                echo "===== $class =====" >> build/reports/m0/earthloong-javap.txt
+                javap -classpath "$JAR" -c -p "$class" >> build/reports/m0/earthloong-javap.txt 2>&1 || true
+                ;;
+            esac
+          done < build/reports/m0/earthloong-jar-entries.txt
+          grep -Ein 'discard|remove|despawn|tick|dimension|distance|peaceful|noActionTime|persistence|player' build/reports/m0/earthloong-javap.txt | head -n 300 || true
+
       - name: Test and build M0 core
         run: ./gradlew --no-daemon clean test build --stacktrace
 
