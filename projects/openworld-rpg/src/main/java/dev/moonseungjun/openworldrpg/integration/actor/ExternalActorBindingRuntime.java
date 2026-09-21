@@ -100,7 +100,7 @@ public final class ExternalActorBindingRuntime {
     }
 
     public static boolean captureForbidden(Entity entity) {
-        return combatProfile(entity).isPresent() || entity.getTags().contains(NO_CAPTURE_TAG);
+        return combatProfile(entity).isPresent() || entity.entityTags().contains(NO_CAPTURE_TAG);
     }
 
     public static Entity spawnAuthored(ServerLevel level, BlockPos pos, String entityId) {
