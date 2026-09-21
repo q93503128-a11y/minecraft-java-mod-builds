@@ -36,6 +36,7 @@ public final class VillageSkillTreeScreen extends Screen {
     private final String[] actions;
     private final String[] labels;
     private final List<NodeVisual> nodes = new ArrayList<>();
+    private final List<TrainingVisual> training = new ArrayList<>();
     private int selectedIndex = -1;
     private boolean dragging;
 
@@ -63,6 +64,7 @@ public final class VillageSkillTreeScreen extends Screen {
         renderCore(graphics, viewport);
         renderNodes(graphics, mouseX, mouseY, viewport);
         renderBubble(graphics, mouseX, mouseY, viewport);
+        renderTrainingPanel(graphics, mouseX, mouseY);
         renderHeader(graphics, mouseX, mouseY);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
@@ -172,6 +174,36 @@ public final class VillageSkillTreeScreen extends Screen {
                 hovered ? TEXT : MUTED);
     }
 
+    private void renderTrainingPanel(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+        if (training.isEmpty()) return;
+        int width = Math.min(188, Math.max(150, this.width / 4));
+        int left = this.width - width - 10;
+        int top = HEADER_HEIGHT + 8;
+        int rowHeight = 38;
+        int height = 24 + rowHeight * training.size();
+
+        graphics.fill(left, top, left + width, top + height, 0xE810171E);
+        graphics.fill(left, top, left + width, top + 1, GOLD);
+        graphics.text(font, "기초 단련", left + 9, top + 7, TEXT, false);
+
+        for (int i = 0; i < training.size(); i++) {
+            TrainingVisual item = training.get(i);
+            int y = top + 23 + i * rowHeight;
+            boolean available = "습득 가능".equals(item.status());
+            boolean hovered = inside(mouseX, mouseY, left + 7, y, width - 14, 31);
+            int border = available ? (hovered ? GOLD : ACCENT) : BORDER;
+            graphics.fill(left + 7, y, left + width - 7, y + 31, 0xFF121A21);
+            graphics.fill(left + 7, y, left + 9, y + 31, border);
+            graphics.text(font, fit(item.title(), width - 26), left + 14, y + 5,
+                    available ? TEXT : MUTED, false);
+            graphics.text(font, fit(item.description(), width - 26), left + 14, y + 17,
+                    MUTED, false);
+            String cost = available ? "1P" : item.status();
+            graphics.text(font, fit(cost, 38), left + width - 12 - font.width(fit(cost, 38)), y + 5,
+                    available ? GOLD : MUTED, false);
+        }
+    }
+
     private void renderBubble(GuiGraphicsExtractor graphics, int mouseX, int mouseY, Viewport viewport) {
         Bubble bubble = bubble(viewport);
         if (bubble == null) return;
@@ -260,6 +292,22 @@ public final class VillageSkillTreeScreen extends Screen {
             setZoom(savedZoom + 0.12, width / 2.0, height / 2.0); return true;
         }
 
+        if (!training.isEmpty()) {
+            int panelWidth = Math.min(188, Math.max(150, width / 4));
+            int panelLeft = width - panelWidth - 10;
+            int panelTop = HEADER_HEIGHT + 8;
+            for (int i = 0; i < training.size(); i++) {
+                int rowY = panelTop + 23 + i * 38;
+                TrainingVisual item = training.get(i);
+                if ("습득 가능".equals(item.status())
+                        && inside(click.x(), click.y(), panelLeft + 7, rowY, panelWidth - 14, 31)) {
+                    ClientPacketDistributor.sendToServer(
+                            new VillageNetwork.VillageUiActionPayload(item.action()));
+                    return true;
+                }
+            }
+        }
+
         Viewport viewport = viewport();
         Bubble bubble = bubble(viewport);
         if (bubble != null) {
@@ -340,6 +388,10 @@ public final class VillageSkillTreeScreen extends Screen {
             if (parts.length > 3) {
                 try { pointCost = Math.max(1, Integer.parseInt(parts[3])); }
                 catch (NumberFormatException ignored) { pointCost = 1; }
+            }
+            if (actions[index].startsWith("skill_training:")) {
+                training.add(new TrainingVisual(actions[index], title, description, status));
+                continue;
             }
             String id = actions[index].startsWith("skill_node:")
                     ? actions[index].substring(11) : actions[index];
@@ -532,6 +584,8 @@ public final class VillageSkillTreeScreen extends Screen {
     private record NodeVisual(String action, String id, String title, String description,
                               String status, Branch branch, int tier, int pointCost,
                               double worldX, double worldY) {}
+
+    private record TrainingVisual(String action, String title, String description, String status) {}
 
     private record Bubble(int x, int y, int width, int height,
                           int buttonX, int buttonY, int buttonWidth, int buttonHeight,
