@@ -97,6 +97,15 @@ public final class VillageEnemyCompositionSystem {
         return vehicle instanceof Mob mob && VillageRaidSystem.isRaidEnemy(mob) ? mob : null;
     }
 
+    public static void animateRiderAttack(Entity owner) {
+        if (owner == null) return;
+        for (Entity passenger : owner.getPassengers()) {
+            if (passenger instanceof Mob mob && isVisualRider(mob)) {
+                mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+            }
+        }
+    }
+
     public static void remove(Entity owner) {
         if (owner == null) return;
         for (Entity passenger : List.copyOf(owner.getPassengers())) {
