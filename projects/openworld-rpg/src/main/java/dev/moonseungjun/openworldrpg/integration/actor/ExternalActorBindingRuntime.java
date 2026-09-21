@@ -13,12 +13,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import org.slf4j.Logger;
 
@@ -53,7 +53,7 @@ public final class ExternalActorBindingRuntime {
             );
         }
 
-        ResourceLocation earthloongId = ResourceLocation.parse(earthloong.target());
+        Identifier earthloongId = Identifier.parse(earthloong.target());
         if (!BuiltInRegistries.ENTITY_TYPE.containsKey(earthloongId)) {
             throw new IllegalStateException(
                     "Openworld RPG required R01 Earthloong registry target is missing: " + earthloongId
@@ -88,7 +88,7 @@ public final class ExternalActorBindingRuntime {
     }
 
     public static Optional<ExternalActorCombatProfile> combatProfile(Entity entity) {
-        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        Identifier id = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
         if (id == null) {
             return Optional.empty();
         }
@@ -109,9 +109,9 @@ public final class ExternalActorBindingRuntime {
             throw new IllegalArgumentException("No project external-actor binding exists for: " + entityId);
         }
 
-        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getOptional(ResourceLocation.parse(entityId))
+        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getOptional(Identifier.parse(entityId))
                 .orElseThrow(() -> new IllegalStateException("Required external actor registry target vanished: " + entityId));
-        Entity entity = type.spawn(level, pos, MobSpawnType.COMMAND);
+        Entity entity = type.spawn(level, pos, EntitySpawnReason.COMMAND);
         if (entity == null) {
             throw new IllegalStateException("Failed to spawn authored external actor: " + entityId);
         }
