@@ -840,3 +840,152 @@ Next bounded gate:
 3. prove one real Arc Bolt → Earthloong hit and one real melee hit without duplicate/donor damage;
 4. then implement the authored Earthloong encounter-controller + project reward transaction;
 5. finish registry-sync and quest save/reload/rejoin proofs.
+
+
+---
+
+# 16. Canonical player combat build producer — 2026-09-21
+
+Implementation commit:
+
+```text
+0efbe653291c59228015ce445a33e696f8055e56
+openworld-rpg: produce canonical player combat snapshots
+```
+
+Verification:
+
+```text
+Build Openworld RPG
+run 35558098504
+conclusion: SUCCESS
+artifact: openworld-rpg-m0-0efbe653291c59228015ce445a33e696f8055e56
+artifact sha256: d9123d1df3048a9d4471de6596fb2f09a3e2450256e284aadcb4347d1f8362c7
+```
+
+This pass replaces the previous hand-authored M0 offensive source fixture with a canonical build producer.
+
+The server-domain input now includes:
+
+- combat Lv;
+- active root class;
+- per-class spent Attribute Points;
+- VIT / END / STR / DEX / INT / WIL;
+- equipped weapon family;
+- weapon Item Lv;
+- flat equipment attribute bonuses;
+- Physical Power;
+- Magic Power;
+- weapon-family power;
+- poise-output bonus.
+
+Validation:
+
+- every stat starts at 5;
+- maximum spent Attribute Points is `Lv - 1`;
+- unspent points are allowed;
+- pre-equipment stat value cannot exceed 60;
+- equipment bonuses remain separate and may push effective values above 60;
+- weapon ItemLv remains inside 1..80;
+- percentage bonus buckets must stay finite and keep their multipliers positive.
+
+The producer owns:
+
+```text
+WeaponPower =
+  round(22 * GearScale(ItemLv) * FamilyPowerFactor)
+
+WeightedStat =
+  canonical weapon-family attribute weights
+  applied to effective attributes
+
+AdditivePower =
+  applicable Physical/Magic Power
+  + weapon-family power
+
+PoiseOutputMultiplier =
+  WeaponFamilyPoiseMultiplier
+  * (1 + authored poise-output bonus)
+```
+
+Arc Bolt now obtains its source snapshot from the bound player combat build and requires active root class `MAGE`. Missing build state or a different active class rejects the runtime impact.
+
+No default weapon, default Mage selection or hidden bootstrap build is created. Production progression/equipment/save code must publish a valid build later.
+
+## 16.1 Runtime fixture correction
+
+The earlier `Lv8 / WP30 / WeightedStat20 / PoiseOutput1.0` fixture was valid for pure resolver testing but was **not proven to be a legal Lv8 player build**.
+
+The runtime fixture is now:
+
+```text
+Combat Lv: 8
+Active class: Mage
+Earned Attribute Points: 7
+Allocation: +7 INT
+Base attributes: all 5
+Weapon: Staff
+Weapon ItemLv: 8
+Equipment flat stats: 0
+Magic Power: 0
+weapon-family power: 0
+poise-output bonus: 0
+```
+
+Produced source:
+
+```text
+INT = 12
+WIL = 5
+WeaponPower = 30
+WeightedStat = 0.85*12 + 0.15*5 = 10.95
+PoiseOutputMultiplier = 0.85
+```
+
+Observed gameplay-server result:
+
+```text
+OPENWORLD_RPG_M0_RUNTIME_IMPACT_PASS
+target=threateningly_mobs:the_earthloong
+canonicalHpBefore=4900.0
+canonicalHpAfter=4871.0
+proxyHpBefore=1024.0
+proxyHpAfter=1017.9396
+weaponPower=30.0
+weightedStat=10.95
+damage=29.0
+poiseBefore=190.0
+poiseAfterArcBolt=185.75
+breakDamageTakenMultiplier=1.15
+```
+
+The verification callback still supplies deliberately absurd donor power/impact-total values. The produced project snapshot determines the result.
+
+Current exact status:
+
+```text
+PLAYER COMBAT BUILD DOMAIN: IMPLEMENTED + UNIT TESTED
+ATTRIBUTE-POINT BUDGET/CAP VALIDATION: IMPLEMENTED + UNIT TESTED
+WEAPON FAMILY POWER/WEIGHTS/POISE DATA: IMPLEMENTED
+BUILD -> DAMAGE SOURCE SNAPSHOT: IMPLEMENTED + UNIT/RUNTIME HARNESS VERIFIED
+SPELL ENGINE ARC BOLT BUILD CONSUMPTION: IMPLEMENTED
+MAGE ACTIVE-CLASS GATE: IMPLEMENTED
+EXACT EARTHLOONG PRODUCED-SOURCE RUNTIME HIT: PASS
+
+REAL PROGRESSION SAVE/PUBLISHER: NOT IMPLEMENTED
+REAL EQUIPMENT INVENTORY/AFFIX PUBLISHER: NOT IMPLEMENTED
+REAL JOINED-PLAYER ARC BOLT: NOT TESTED
+BETTER COMBAT CANONICAL MELEE COEFFICIENT BINDING: NOT IMPLEMENTED
+REAL BETTER COMBAT PLAYER HIT: NOT TESTED
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
+```
+
+Next bounded gate:
+
+1. implement persistent player combat progression state and per-root-class Attribute allocation;
+2. implement the minimal authoritative equipment combat state publisher from real project equipment;
+3. publish/rebuild the combat build on join, level/stat/class/equipment change;
+4. execute a real joined-player Arc Bolt against Earthloong;
+5. inspect Better Combat's exact attack-cycle/hit coefficient data before replacing its neutral proposal amount;
+6. then continue to Earthloong encounter/reward and save/rejoin proofs.
