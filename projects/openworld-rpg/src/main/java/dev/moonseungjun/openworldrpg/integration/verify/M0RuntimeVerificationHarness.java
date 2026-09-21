@@ -52,7 +52,7 @@ public final class M0RuntimeVerificationHarness {
             throw new IllegalStateException("M0 Earthloong verification session already exists.");
         }
 
-        BlockPos spawn = level.getSharedSpawnPos().above(4);
+        BlockPos spawn = new BlockPos(0, 250, 0);
         Entity targetEntity = ExternalActorBindingRuntime.spawnAuthored(
                 level,
                 spawn,
@@ -63,6 +63,7 @@ public final class M0RuntimeVerificationHarness {
             throw new IllegalStateException("M0 Earthloong verification target is not a living entity.");
         }
 
+        target.setNoGravity(true);
         long startTick = level.getGameTime();
         activeSession = new VerificationSession(target, startTick, startTick + EARTHLOONG_SURVIVAL_TICKS);
         logger.info(
