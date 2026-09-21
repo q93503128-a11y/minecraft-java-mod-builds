@@ -54,23 +54,25 @@ def main() -> None:
         "RpgProgress.combatScalingLevel(VillageCouncilState.levelOf(player.getUUID()))"
     ) == 2
 
-    # Every visible level grants 1P. Late-tier costs absorb the faster Lv.300 cadence.
+    # Every visible level grants 1P. The original low-cost tree can be fully completed,
+    # and remaining Lv.300 points flow into repeatable base-stat training.
     natural_points = 300 - 1
-    per_branch_cost = 1 + 1 + 1 + 2 + 2 + 5 + 8 + 12 + 18 + 25
+    per_branch_cost = 1 + 1 + 1 + 2 + 2 + 2 + 3 + 3 + 3 + 4
     assert natural_points == 299
-    assert per_branch_cost == 75
-    assert per_branch_cost * 5 == 375
-    assert natural_points < per_branch_cost * 5
+    assert per_branch_cost == 22
+    assert per_branch_cost * 5 == 110
+    assert natural_points > per_branch_cost * 5
+    assert natural_points - per_branch_cost * 5 == 189
     assert "int naturalTotal = Math.max(0, level - 1);" in tree
     assert "return Math.max(naturalTotal, spentPoints(player));" in tree
-    for cost in ("case 6 -> 5;", "case 7 -> 8;", "case 8 -> 12;", "case 9 -> 18;", "default -> 25;"):
-        assert cost in tree
+    assert "Math.max(1, Math.min(4, (tier + 2) / 3))" in tree
+    assert "purchaseTraining" in tree and "trainingUnlocked" in tree
     assert "레벨이 오를 때마다 전술 포인트 1P" in tree
     assert "레벨이 오를 때마다 얻는 전술 포인트" in copy
 
     print("[PASS] visible player progression now spans Lv.1-300 with 3-4 levels per late campaign day")
     print("[PASS] raw combat scaling preserves Lv.1-100 and slows to 4:1 mastery scaling afterward")
-    print("[PASS] Lv.300 grants 299 tactical points against a 375P tree and grandfathers historical allocations")
+    print("[PASS] Lv.300 grants 299P, completes the 110P tree and leaves 189P for repeatable training")
 
 
 if __name__ == "__main__":
