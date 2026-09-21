@@ -74,6 +74,45 @@ public final class VillageBossEffectSystem {
         pulse(level, "boss_duel_impact", target.position(), 2.2, 18);
     }
 
+    public static void signatureWarning(
+            ServerLevel level,
+            Mob boss,
+            VillageEnemyArchetypeSystem.Archetype archetype,
+            double radius,
+            int duration) {
+        if (level == null || boss == null || archetype == null) return;
+        String kind = switch (archetype) {
+            case SIEGE_BEAST -> "boss_signature_siege_warning";
+            case IRON_WARLORD -> "boss_signature_warlord_warning";
+            case PLAGUE_ARCHON -> "boss_signature_plague_warning";
+            case DREAD_KNIGHT -> "boss_signature_dread_warning";
+            default -> "";
+        };
+        if (kind.isBlank()) return;
+        VillageSkillEffectEntity.spawn(level, boss, kind, boss.position(),
+                horizontal(boss.getLookAngle()), Math.max(8, duration), 0.0f,
+                String.format(Locale.ROOT, "%.2f", Math.max(0.8, radius)));
+    }
+
+    public static void signatureImpact(
+            ServerLevel level,
+            Mob boss,
+            VillageEnemyArchetypeSystem.Archetype archetype,
+            double radius) {
+        if (level == null || boss == null || archetype == null) return;
+        String kind = switch (archetype) {
+            case SIEGE_BEAST -> "boss_signature_siege_impact";
+            case IRON_WARLORD -> "boss_signature_warlord_impact";
+            case PLAGUE_ARCHON -> "boss_signature_plague_impact";
+            case DREAD_KNIGHT -> "boss_signature_dread_impact";
+            default -> "";
+        };
+        if (kind.isBlank()) return;
+        VillageSkillEffectEntity.spawn(level, null, kind, boss.position(),
+                horizontal(boss.getLookAngle()), 24, 0.0f,
+                String.format(Locale.ROOT, "%.2f", Math.max(0.8, radius)));
+    }
+
     public static void bloodboundWarning(ServerLevel level, Vec3 center, double radius, int duration) {
         if (level == null || center == null) return;
         VillageSkillEffectEntity.spawn(level, null, "boss_bloodbound_warning", center,
