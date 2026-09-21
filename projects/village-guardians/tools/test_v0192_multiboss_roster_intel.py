@@ -25,7 +25,7 @@ def main() -> None:
     assert "VillageBossAspectSystem.previewText(day, wave, index)" in intel
     assert "VillageSiegeBossSystem.previewDoctrine(day, wave, archetype)" in intel
     assert "public static String previewDoctrine(" in boss
-    assert "doctrine.displayName() + " · " + doctrine.description()" in boss
+    assert 'doctrine.displayName() + " · " + doctrine.description()' in boss
 
     # Day 100 still requests four bosses, which now rotate through all four base boss archetypes.
     assert "if (VillageCampaignProgression.isFinalSiege(day)) return Math.min(4" in war
