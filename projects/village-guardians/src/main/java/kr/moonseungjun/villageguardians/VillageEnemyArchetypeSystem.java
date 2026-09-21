@@ -271,6 +271,24 @@ public final class VillageEnemyArchetypeSystem {
                         Component.literal("§5[포탑 교란] §f탑 사냥꾼이 배치 포탑 #" + disabledId
                                 + "의 사격 회로를 7초간 마비시켰습니다."), false);
             }
+            case CAVE_STALKER -> {
+                if (!abilityReady(mob, globalTicks, 180)) return;
+                for (ServerPlayer player : nearbyPlayers(server, mob, 4.0)) {
+                    player.addEffect(new MobEffectInstance(MobEffects.POISON, 55, 0));
+                    player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 40, 0));
+                }
+                spawnAura(level, mob, archetype, 12);
+            }
+            case ZOGLIN_BREACHER -> {
+                if (!abilityReady(mob, globalTicks, 120)) return;
+                damageAndDebuffPlayers(level, server, mob, 5.5, 2.0f, MobEffects.SLOWNESS);
+                spawnAura(level, mob, archetype, 18);
+            }
+            case MAGMA_BRUTE -> {
+                if (!abilityReady(mob, globalTicks, 150)) return;
+                damageAndDebuffPlayers(level, server, mob, 5.0, 2.5f, MobEffects.SLOWNESS);
+                spawnAura(level, mob, archetype, 18);
+            }
             case SIEGE_BEAST -> {
                 if (!abilityReady(mob, globalTicks, 100)) return;
                 damageAndDebuffPlayers(level, server, mob, 9.5, 4.0f, MobEffects.SLOWNESS);
@@ -369,6 +387,7 @@ public final class VillageEnemyArchetypeSystem {
                     : slot % 3 == 0 ? Archetype.BULWARK : Archetype.MARKSMAN;
         }
         if (trait == VillageWaveTrait.RIFTED) {
+            if (day >= 30 && slot == 4) return Archetype.CAVE_STALKER;
             if (slot == 0) return Archetype.NECROMANCER;
             if (slot == 12) return Archetype.HEXER;
             if (slot % 5 == 0) return Archetype.MARKSMAN;
@@ -381,27 +400,38 @@ public final class VillageEnemyArchetypeSystem {
             return slot % 2 == 0 ? Archetype.BULWARK : Archetype.GRUNT;
         }
         if (trait == VillageWaveTrait.SKY_SIEGE) {
+            if (day >= 35 && slot == 2) return Archetype.BREEZE_DISRUPTOR;
             if (slot % 7 == 0) return Archetype.TOWER_HUNTER;
             if (slot % 4 == 0) return Archetype.MARKSMAN;
             return slot % 3 == 0 ? Archetype.BULWARK : Archetype.RUSHER;
         }
         if (trait == VillageWaveTrait.HUNTER_NET) {
+            if (day >= 40 && slot == 8) return Archetype.BOGGED_ARCHER;
             if (slot % 6 == 0) return Archetype.TOWER_HUNTER;
             if (slot == 11) return Archetype.HEXER;
             return slot % 3 == 0 ? Archetype.RUSHER : Archetype.MARKSMAN;
         }
         if (trait == VillageWaveTrait.DEATH_CHORUS) {
+            if (slot == 8) return Archetype.BOGGED_ARCHER;
+            if (slot == 16) return Archetype.CAVE_STALKER;
             if (slot == 0 || slot == 12) return Archetype.NECROMANCER;
             if (slot % 5 == 0) return Archetype.WAR_CHANTER;
             if (slot % 7 == 0) return Archetype.HEXER;
             return lineMix(slot);
         }
         if (trait == VillageWaveTrait.IRON_TIDE) {
+            if (slot == 6) return Archetype.ZOGLIN_BREACHER;
+            if (slot == 10) return Archetype.NETHER_REAVER;
             if (slot % 8 == 0) return Archetype.WAR_CHANTER;
             if (slot % 4 == 0) return Archetype.SHIELDBREAKER;
             return slot % 3 == 0 ? Archetype.MARKSMAN : Archetype.BULWARK;
         }
         if (trait == VillageWaveTrait.CATACLYSM) {
+            if (slot == 2) return Archetype.MAGMA_BRUTE;
+            if (slot == 8) return Archetype.BREEZE_DISRUPTOR;
+            if (slot == 14) return Archetype.ZOGLIN_BREACHER;
+            if (slot == 18) return Archetype.BOGGED_ARCHER;
+            if (slot == 22) return Archetype.NETHER_REAVER;
             if (slot == 0) return Archetype.NECROMANCER;
             if (slot == 5) return Archetype.TOWER_HUNTER;
             if (slot == 11) return Archetype.HEXER;
@@ -409,6 +439,12 @@ public final class VillageEnemyArchetypeSystem {
             return slot % 2 == 0 ? Archetype.MARKSMAN : Archetype.RUSHER;
         }
         if (trait == VillageWaveTrait.FINAL_HOST) {
+            if (slot == 1) return Archetype.CAVE_STALKER;
+            if (slot == 2) return Archetype.MAGMA_BRUTE;
+            if (slot == 4) return Archetype.BREEZE_DISRUPTOR;
+            if (slot == 8) return Archetype.BOGGED_ARCHER;
+            if (slot == 12) return Archetype.ZOGLIN_BREACHER;
+            if (slot == 16) return Archetype.NETHER_REAVER;
             if (slot == 0) return Archetype.NECROMANCER;
             if (slot == 3) return Archetype.TOWER_HUNTER;
             if (slot == 6) return Archetype.WAR_CHANTER;
