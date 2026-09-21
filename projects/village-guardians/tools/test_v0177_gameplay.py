@@ -12,7 +12,7 @@ def main():
     test, role = read("VillageSkillTestSystem.java"), read("VillageRoleSkillSystem.java")
     assert "currentEffect" in rarity and "nextEffect" in rarity
     assert "현재 수치:" in ui and "강화 후 수치:" in ui
-    assert "Math.max(0, Math.min(30, level) - 1)" in common and "Math.max(0, level - 30) / 2" in common and common.count('("mobility_') == 10
+    assert "Math.max(0, Math.min(30, level) - 1)" in common and "Math.max(0, level - 30) / 4" in common and common.count('("mobility_') == 10
     assert "Codec.LONG" in data and "spent_points_v2" in data
     assert 'node.pointCost() + "P"' in tree_ui
     assert "isEnemyIgnoredElevation" in read("VillageLocationRules.java")
