@@ -607,7 +607,8 @@ public final class VillageRaidSystem {
                         * VillageBossAspectSystem.structureMultiplier(mob)
                         * VillageDifficultyTuning.earlyStructureMultiplier(day)
                         * VillageDifficultyTuning.defenderStateStructureMultiplier(server);
-                int damage = Math.max(1, Math.round((7 + wave * 2 + Math.min(24, day)
+                int damage = Math.max(1, Math.round((7 + wave * 2
+                        + VillageCampaignProgression.structureDamageDayContribution(day)
                         + (VillageEnemyArchetypeSystem.isBoss(archetype) ? 18 : 0)) * multiplier));
                 VillageProgressionSystem.damageBuilding(server, targetBuilding, damage);
                 VillageDefenseEffectSystem.structureImpact(level, Vec3.atCenterOf(target),
@@ -891,7 +892,8 @@ public final class VillageRaidSystem {
                     case HARRIER -> 0.58f;
                     case RAIDER -> 1.0f;
                 };
-                int damage = Math.max(1, Math.round((4 + wave + Math.min(16, day) * 0.45f)
+                int damage = Math.max(1, Math.round((4 + wave
+                        + VillageCampaignProgression.aerialStructureDamageDayContribution(day))
                         * multiplier * roleMultiplier));
                 VillageProgressionSystem.damageBuilding(server, building, damage);
             }
