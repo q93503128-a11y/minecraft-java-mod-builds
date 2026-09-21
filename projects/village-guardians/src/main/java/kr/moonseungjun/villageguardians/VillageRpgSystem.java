@@ -194,7 +194,7 @@ public final class VillageRpgSystem {
     }
 
     public static float outgoingDamageMultiplier(int level) {
-        int value = Math.max(1, Math.min(RpgProgress.MAX_LEVEL, level));
+        int value = RpgProgress.combatScalingLevel(level);
         int foundation = Math.min(29, value - 1);
         int mastery = Math.max(0, value - 30);
         return 1.0f
@@ -203,7 +203,7 @@ public final class VillageRpgSystem {
     }
 
     public static float incomingDamageMultiplier(int level) {
-        int value = Math.max(1, Math.min(RpgProgress.MAX_LEVEL, level));
+        int value = RpgProgress.combatScalingLevel(level);
         int foundation = Math.min(29, value - 1);
         int mastery = Math.max(0, value - 30);
         float result = 1.0f - foundation * 0.009f - (foundation / 5) * 0.025f
@@ -212,7 +212,7 @@ public final class VillageRpgSystem {
     }
 
     public static int bonusHealthPoints(int level) {
-        int value = Math.max(1, Math.min(RpgProgress.MAX_LEVEL, level));
+        int value = RpgProgress.combatScalingLevel(level);
         int foundation = (Math.min(30, value) - 1) / 5 * 4;
         int mastery = Math.max(0, value - 30) / 10 * 2;
         return foundation + mastery;
