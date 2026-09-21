@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.integration.actor;
 
+import dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction;
 import java.util.Objects;
 
 public record ExternalActorCombatProfile(
@@ -24,6 +25,16 @@ public record ExternalActorCombatProfile(
                 || poiseMax < 0.0) {
             throw new IllegalArgumentException("Invalid external actor combat profile: " + entityId);
         }
+    }
+
+    public ProjectImpactTransaction.DamageTargetSnapshot projectTargetSnapshot() {
+        return new ProjectImpactTransaction.DamageTargetSnapshot(
+                defense,
+                magicResistance,
+                1.0,
+                0.0,
+                poiseMax
+        );
     }
 
     public static ExternalActorCombatProfile r01Earthloong() {

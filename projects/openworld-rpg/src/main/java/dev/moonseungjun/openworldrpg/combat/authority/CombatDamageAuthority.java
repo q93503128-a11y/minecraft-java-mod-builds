@@ -19,6 +19,12 @@ public final class CombatDamageAuthority {
         return DamageDecision.accepted(proposedDamage);
     }
 
+    public static ProjectImpactTransaction.DirectDamageResult resolveProjectDirectDamage(
+            ProjectImpactTransaction.DirectDamageRequest request
+    ) {
+        return ProjectImpactTransaction.resolveDirectDamage(request);
+    }
+
     public record DamageDecision(boolean accepted, float amount) {
         public static DamageDecision accepted(float amount) {
             return new DamageDecision(true, amount);
