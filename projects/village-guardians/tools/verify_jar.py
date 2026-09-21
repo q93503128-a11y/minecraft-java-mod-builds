@@ -15,6 +15,10 @@ REQUIRED_ASSETS = {
     "META-INF/villageguardians/THIRD_PARTY_NOTICES.txt",
     "META-INF/villageguardians/licensed-gui-assets.txt",
     "assets/villageguardians/textures/effect/skill_mesh.png",
+    "assets/villageguardians/models/mercenary/bastion.obj",
+    "assets/villageguardians/models/mercenary/striker.obj",
+    "assets/villageguardians/models/mercenary/ranger.obj",
+    "assets/villageguardians/models/mercenary/medic.obj",
 }
 REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageSimpleBuildingBuilder.class",
@@ -143,6 +147,12 @@ EXPECTED_ENUM_TOKENS = {
         "WAR_CHANTER",
         "NECROMANCER",
         "TOWER_HUNTER",
+        "CAVE_STALKER",
+        "BOGGED_ARCHER",
+        "ZOGLIN_BREACHER",
+        "BREEZE_DISRUPTOR",
+        "MAGMA_BRUTE",
+        "NETHER_REAVER",
         "SIEGE_BEAST",
         "IRON_WARLORD",
         "PLAGUE_ARCHON",
@@ -298,8 +308,11 @@ def main() -> None:
                 if missing_tokens:
                     fail(f"Missing current-content enum tokens from {class_name}: {missing_tokens}")
             for asset in sorted(REQUIRED_ASSETS):
-                if asset.endswith(".png") and len(jar.read(asset)) < 32:
+                payload = jar.read(asset)
+                if asset.endswith(".png") and len(payload) < 32:
                     fail(f"Licensed runtime asset is unexpectedly empty: {asset}")
+                if asset.endswith(".obj") and len(payload) < 1024:
+                    fail(f"Bundled mercenary geometry is unexpectedly empty: {asset}")
 
             external_structures = [
                 name for name in names
@@ -315,6 +328,8 @@ def main() -> None:
                 fail("Third-party notice does not identify the licensed GUI source")
             if "Tiny Creatures" not in notice or "CC0 1.0 Universal" not in notice:
                 fail("CC0 fantasy enemy visual references are not documented")
+            if "Quaternius RPG Character Pack" not in notice or "Pinned mirror revision: e50f41492f5cc35cffa7990ddb998e860881bd41" not in notice:
+                fail("Pinned Quaternius mercenary geometry notice is missing")
             if "No third-party structure NBT files are bundled" not in notice:
                 fail("Third-party notice does not record the custom-building migration")
     except zipfile.BadZipFile as exc:
@@ -330,12 +345,12 @@ def main() -> None:
     print("[PASS] Facility repair and upgrade remain reachable from the town hall")
     print("[PASS] Early difficulty tuning, downed-state risk and raid debris suppression are bundled")
     print("[PASS] Roof signatures migrate to front-facing facade marks")
-    print("[PASS] Fourteen enemy archetypes and nineteen wave traits are bundled")
+    print("[PASS] Twenty enemy archetypes and nineteen wave traits are bundled")
     print("[PASS] Endless warfront milestones and controlled overlapping waves are present")
     print("[PASS] Ten player-placed turret roles own production combat; retired fixed-tower specialization classes are absent")
     print("[PASS] Thirty-six equipment offers and sixty active role skills are bundled")
     print("[PASS] Obsolete display and generic visual facades are not bundled")
-    print("[PASS] CC0 visual references are documented without untracked binaries")
+    print("[PASS] CC0 visual references and pinned Quaternius mercenary meshes are bundled with notices")
     print("[PASS] No third-party structure NBT files are bundled")
     print(f"[PASS] SHA-256: {digest}")
     print(f"[PASS] Checksum file: {checksum_path}")
