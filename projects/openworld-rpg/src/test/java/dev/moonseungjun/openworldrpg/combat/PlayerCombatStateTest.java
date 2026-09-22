@@ -57,6 +57,25 @@ class PlayerCombatStateTest {
     }
 
     @Test
+    void hostileHpActivityBlocksNaturalRecoveryForExactlyEightSeconds() {
+        PlayerCombatState state = new PlayerCombatState(5, 0);
+        state.markHostileHpActivity(40);
+
+        assertFalse(state.canNaturalHpRecover(199));
+        assertTrue(state.canNaturalHpRecover(200));
+    }
+
+    @Test
+    void laterCombatActivityAlsoPreventsNaturalHpRecoveryUntilCombatHasBeenQuiet() {
+        PlayerCombatState state = new PlayerCombatState(5, 0);
+        state.markHostileHpActivity(0);
+        state.markCombatActivity(100);
+
+        assertFalse(state.canNaturalHpRecover(259));
+        assertTrue(state.canNaturalHpRecover(260));
+    }
+
+    @Test
     void cooldownUsesServerTicks() {
         PlayerCombatState state = new PlayerCombatState(5, 10);
         state.startCooldown("openworld_rpg:arc_bolt", 60, 10);
