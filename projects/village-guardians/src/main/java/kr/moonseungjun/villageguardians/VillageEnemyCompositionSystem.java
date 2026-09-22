@@ -122,7 +122,7 @@ public final class VillageEnemyCompositionSystem {
 
     private static void styleEliteRider(Mob rider, VillageEnemyEliteSystem.EliteDoctrine doctrine) {
         switch (doctrine) {
-            case GRAPPLER -> equip(rider, Items.CHAIN, Items.CHAINMAIL_HELMET, Items.LEATHER_CHESTPLATE);
+            case GRAPPLER -> equip(rider, Items.LEAD, Items.CHAINMAIL_HELMET, Items.LEATHER_CHESTPLATE);
             case FIREBRAND -> equip(rider, Items.FIRE_CHARGE, Items.GOLDEN_HELMET, Items.LEATHER_CHESTPLATE);
             case ASSASSIN -> equip(rider, Items.IRON_SWORD, Items.LEATHER_HELMET, Items.CHAINMAIL_CHESTPLATE);
             case PLAGUE_WEAVER -> equip(rider, Items.SPIDER_EYE, Items.WITHER_SKELETON_SKULL, Items.LEATHER_CHESTPLATE);
