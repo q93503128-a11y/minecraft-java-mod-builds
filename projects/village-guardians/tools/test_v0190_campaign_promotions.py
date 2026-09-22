@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 JAVA = ROOT / "src/main/java/kr/moonseungjun/villageguardians"
@@ -78,10 +79,30 @@ def main() -> None:
     assert "VillageRolePromotionSystem.cooldownReductionSeconds" in role
 
     assert "default -> castPromotionSkill" in ability
-    for method in ("castPromotedVanguard", "castPromotedRanger", "castPromotedArcanist",
-                   "castPromotedLuminar", "castPromotedWarden"):
-        assert method in ability
     assert "default -> promotionStartCast" in effects
+    assert "promotion_skill_cast" in effects
+    assert "promotion_skill_projectile" in effects
+    assert "promotion_skill_field" in effects
+    assert "promotion_skill_impact" in effects
+    assert "renderPromotionSkill" in read("VillageSkillMeshLibrary.java")
+
+    promotion_entries = re.findall(
+        r'^        ([A-Z0-9_]+)\("([a-z0-9_]+)", VillageRole\.[A-Z]+, (?:[4-9]|1[01]),',
+        enum_block,
+        re.MULTILINE,
+    )
+    assert len(promotion_entries) == 40, len(promotion_entries)
+    mesh = read("VillageSkillMeshLibrary.java")
+    for constant, skill_id in promotion_entries:
+        assert f"case {constant} ->" in ability, constant
+        assert f'case "{skill_id}" ->' in mesh, skill_id
+    assert "castPromotedVanguard" not in ability
+    assert "castPromotedRanger" not in ability
+    assert "castPromotedArcanist" not in ability
+    assert "castPromotedLuminar" not in ability
+    assert "castPromotedWarden" not in ability
+    assert "1차 전직 기술." not in enum_block
+    assert "2차 전직 기술." not in enum_block
 
     # Every visible level grants one tactical point; all five branches can be completed.
     assert "int naturalTotal = Math.max(0, level - 1);" in skill_tree
@@ -95,6 +116,7 @@ def main() -> None:
     print("[PASS] enemy raw stat growth is slower and never reintroduces day-based speed escalation")
     print("[PASS] equipment, turrets, defense research and mercenaries retain long-campaign growth")
     print("[PASS] five roles have four base + four first-promotion + four second-promotion active skills")
+    print("[PASS] all 40 promotion skills have skill-specific gameplay branches and mesh designs")
     assert "combatScalingLevel" in progress
 
     print("[PASS] per-level tactical points can complete all branches and flow into repeatable stat training")
