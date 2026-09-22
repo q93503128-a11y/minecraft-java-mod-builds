@@ -166,6 +166,7 @@ public final class PlayerCombatState {
                     staminaRegenBlockedUntilTick,
                     nowTick + SPRINT_STOP_REGEN_DELAY_TICKS
             );
+            sprintingLastTick = false;
             return false;
         }
 
