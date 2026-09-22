@@ -132,7 +132,7 @@ class PlayerDefenseRuntimeStateTest {
     @Test
     void guardBreakDrainsRemainingStaminaHalvesAbsorptionAndLocksDefenseRestart() {
         PlayerCombatState resources = new PlayerCombatState(5, 0);
-        assertTrue(resources.spendStamina(95.0, 0, 0));
+        assertTrue(resources.spendStamina(95.0, 100, 0));
 
         PlayerDefenseRuntimeState active = new PlayerDefenseRuntimeState();
         var snapshot = PlayerDefenseAuthority.DefenseSnapshot.guarded(
