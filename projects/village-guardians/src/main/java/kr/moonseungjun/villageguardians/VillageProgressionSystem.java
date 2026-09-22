@@ -552,17 +552,15 @@ public final class VillageProgressionSystem {
         VillageRaidSystem.resetAfterRestart(server);
         VillageSkillTestSystem.clearAll(server);
         VillageRespawnSystem.recoverAfterGameRestart(server);
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            VillageRoleAbilitySystem.clearPlayerState(player);
+            player.removeAllEffects();
+            player.setAbsorptionAmount(0.0f);
+        }
         VillageRoleAbilitySystem.reset();
         VillageRpgSystem.resetTransientState();
         VillageConsumableSystem.resetTransientState();
         VillageNetwork.resetTransientState();
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            if (player.level() instanceof ServerLevel level) {
-                VillageSkillEffectSystem.clearOwned(level, player);
-            }
-            player.removeAllEffects();
-            player.setAbsorptionAmount(0.0f);
-        }
         if (fromStart) {
             PENDING_NEW_GAME_RESETS.clear();
             PENDING_NEW_GAME_RESETS.addAll(COINS.keySet());

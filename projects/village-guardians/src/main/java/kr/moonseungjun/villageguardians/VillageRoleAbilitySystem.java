@@ -133,6 +133,14 @@ public final class VillageRoleAbilitySystem {
                 }
                 iterator.remove();
             }
+            for (AbstractArrow arrow : level.getEntitiesOfClass(
+                    AbstractArrow.class, player.getBoundingBox().inflate(192.0),
+                    arrow -> arrow.getOwner() == player)) {
+                RAPID_ARROWS.remove(arrow.getUUID());
+                RICOCHET_ARROWS.remove(arrow.getUUID());
+                TRACKING_ARROWS.remove(arrow.getUUID());
+                arrow.discard();
+            }
             VillageSkillEffectSystem.clearOwned(level, player);
         }
     }
@@ -1269,6 +1277,11 @@ public final class VillageRoleAbilitySystem {
                 continue;
             }
 
+            if (area.kind() == AreaKind.TORNADO) {
+                Vec3 travel = area.direction().lengthSqr() > 1.0E-6
+                        ? area.direction() : horizontalLook(owner);
+                area.moveTo(area.center().add(travel.scale(0.24)));
+            }
             if (now % 5L != area.phase() % 5L) continue;
             switch (area.kind()) {
                 case FROST -> {
@@ -1282,10 +1295,7 @@ public final class VillageRoleAbilitySystem {
                     if (now % 20L == 0L) play(level, area.center(), SoundEvents.GLASS_HIT, 0.55f, 0.62f);
                 }
                 case TORNADO -> {
-                    Vec3 travel = area.direction().lengthSqr() > 1.0E-6
-                            ? area.direction() : horizontalLook(owner);
-                    Vec3 next = area.center().add(travel.scale(1.20));
-                    area.moveTo(next);
+                    Vec3 next = area.center();
                     for (Mob target : targetsNear(level, owner, next, area.radius(), 48)) {
                         Vec3 pull = next.subtract(target.position());
                         Vec3 horizontal = new Vec3(pull.x, 0.0, pull.z);
@@ -1451,7 +1461,7 @@ public final class VillageRoleAbilitySystem {
                         target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 200, 0, false, false, true));
                         VillageSkillEffectSystem.promotionImpact(level, owner, moving.promotionSkill(),
                                 target.position(), target.position().subtract(owner.position()), moving.radius());
-                        play(level, target.position(), SoundEvents.ARROW_HIT_PLAYER, 0.9f, 1.28f);
+                        play(level, target.position(), SoundEvents.ARROW_HIT, 0.9f, 1.28f);
                     }
                 }
             }

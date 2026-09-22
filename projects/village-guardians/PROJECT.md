@@ -2,8 +2,8 @@
 
 - Slug: `village-guardians`
 - Mod ID / namespace: `villageguardians`
-- Current source version: `0.18.46-alpha.1`
-- Target JAR: `villageguardians-0.18.46-alpha.1.jar`
+- Current source version: `0.18.47-alpha.1`
+- Target JAR: `villageguardians-0.18.47-alpha.1.jar`
 - Minecraft: `26.2`
 - Java: `25`
 - Loader: NeoForge `26.2.0.37-beta` 이상

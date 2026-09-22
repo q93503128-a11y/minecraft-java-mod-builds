@@ -219,7 +219,6 @@ public final class VillageSkillTestSystem {
             }
         }
         return "거리별 시험 표적 " + spawned + "개를 배치했습니다.";
-        return "시험 표적 " + spawned + "개를 시험장 중앙에 배치했습니다.";
     }
 
     public static String clearTargets(ServerPlayer player) {
