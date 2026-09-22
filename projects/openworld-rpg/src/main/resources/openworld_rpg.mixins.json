@@ -8,7 +8,8 @@
     "LivingEntityCombatActivityMixin",
     "ExternalActorProgressionMixin",
     "ExternalActorDamageAuthorityMixin",
-    "PlayerAttackAuthorityMixin"
+    "PlayerAttackAuthorityMixin",
+    "PlayerFoodSystemSuppressionMixin"
   ],
   "client": [
     "SpellEngineSinglePressMixin"
