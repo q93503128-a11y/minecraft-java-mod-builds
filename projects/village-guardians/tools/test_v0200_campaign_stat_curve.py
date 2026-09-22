@@ -149,6 +149,7 @@ def main() -> None:
     campaign = read("VillageCampaignProgression.java")
     enemies = read("VillageEnemyArchetypeSystem.java")
     raid = read("VillageRaidSystem.java")
+    attack = read("VillageAttackPlanSystem.java")
     tree = read("VillageSkillTreeSystem.java")
     rpg = read("VillageRpgSystem.java")
 
@@ -160,6 +161,8 @@ def main() -> None:
     assert "bonusAbsorptionAmplifier" in campaign
     assert "structureDamageDayContribution" in campaign
     assert "aerialStructureDamageDayContribution" in campaign
+    assert "VillageCampaignProgression.structureDamageDayContribution(day)" in attack
+    assert "day * 0.65f" not in attack
     assert "healthTier + (boss ? 3 : 0)" in raid
     assert "strengthTier + (boss ? 1 : 0)" in raid
     assert "Math.min(17, healthTier" not in raid
