@@ -58,7 +58,7 @@ public final class VillageEquipmentSetSystem {
                     EquipmentSet.NIGHT_HUNTER;
             case "arcane_focus", "frost_focus", "rune_leggings", "war_crown", "warcaster_focus" ->
                     EquipmentSet.ARCANE_RESONANCE;
-            case "dawn_scepter", "phoenix_chest" -> EquipmentSet.DAWN_COVENANT;
+            case "dawn_blade", "dawn_scepter", "phoenix_chest" -> EquipmentSet.DAWN_COVENANT;
             case "ward_shield", "bulwark_helm", "bastion_chest", "titan_shield", "aegis_chest",
                     "rift_aegis", "eclipse_plate", "bastion_crown", "century_aegis" ->
                     EquipmentSet.WALL_GUARDIAN;
