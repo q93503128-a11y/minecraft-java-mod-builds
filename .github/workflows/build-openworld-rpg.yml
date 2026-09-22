@@ -361,8 +361,8 @@ jobs:
           - Spell Engine resource/cooldown continuation transaction: IMPLEMENTED + UNIT/SERVER STARTUP VERIFIED
           - project cooldown client/HUD projection after completed cast: IMPLEMENTED + CLIENT STARTUP VERIFIED
           - project impact transaction core (damage/heal/status/poise + Defense/MR caps): IMPLEMENTED + UNIT TESTED
-          - player active-defense authority (dodge/guard/perfect-guard/guard-break + Stamina): IMPLEMENTED + UNIT TESTED; player-facing input/animation adapter NOT IMPLEMENTED
-          - normalized player incoming Defense/MR authority: IMPLEMENTED + UNIT TESTED; external donor incoming-hit normalization NOT IMPLEMENTED
+          - player active-defense authority (dodge/guard/perfect-guard/guard-break + Stamina): IMPLEMENTED + UNIT TESTED; perfect-guard-only committed attacks supported; player-facing input/animation adapter NOT IMPLEMENTED
+          - normalized player incoming Defense/MR authority: IMPLEMENTED + UNIT TESTED; explicit project-hit runtime bridge IMPLEMENTED; attack-specific encounter hit-event binding NOT IMPLEMENTED
           - project direct-magic runtime bridge: IMPLEMENTED + UNIT/BUILD/STARTUP VERIFIED
           - player combat build snapshot producer: IMPLEMENTED + UNIT/RUNTIME HARNESS VERIFIED
           - persistent 12-slot equipped-loadout publisher: IMPLEMENTED + UNIT/BUILD VERIFIED (main weapon/off-hand/armor/accessories; project affix aggregation; wand+focus power; family-power cap)
@@ -370,7 +370,7 @@ jobs:
           - live combat-build refresh: IMPLEMENTED for join + project progression mutations + project equipment mutations
           - Earthloong canonical HP virtualization: IMPLEMENTED + RUNTIME VERIFIED (4900 -> 4871 from one canon-valid Lv8 Mage/ItemLv8 Staff Arc Bolt hit; vanilla health is proportional proxy)
           - exact Earthloong entity HP delta runtime harness: PASS (Arc Bolt 29 damage / 4.25 poise from produced snapshot; donor power ignored)
-          - external actor non-project HP damage: FAIL-CLOSED by one-shot project damage authorization
+          - external actor non-project HP damage: FAIL-CLOSED by one-shot project damage authorization in both directions; bound external actors cannot apply donor-origin HP damage directly to players
           - Earthloong runtime boss poise: IMPLEMENTED + UNIT/RUNTIME HARNESS VERIFIED (4.25 poise Arc Bolt fixture, break +15% damage window, recovery/protection math)
           - persistent combat progression: IMPLEMENTED + UNIT/BUILD VERIFIED
           - JVM-free joined-player Arc Bolt playtest artifact: BUILT + MARKER VERIFIED
