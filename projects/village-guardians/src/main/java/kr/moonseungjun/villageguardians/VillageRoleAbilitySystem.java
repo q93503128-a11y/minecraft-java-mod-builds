@@ -1671,6 +1671,26 @@ public final class VillageRoleAbilitySystem {
         }
     }
 
+    private static void cleanseAlliesInRange(
+            ServerPlayer player, double radius, float heal, int duration, int specialRank) {
+        List<ServerPlayer> affected = allies(player, radius);
+        for (ServerPlayer ally : affected) {
+            for (MobEffectInstance effect : List.copyOf(ally.getActiveEffects())) {
+                if (effect.getEffect().value().getCategory()
+                        == net.minecraft.world.effect.MobEffectCategory.HARMFUL) {
+                    ally.removeEffect(effect.getEffect());
+                }
+            }
+            healWithOverflowBarrier(ally, heal, specialRank);
+            ally.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,
+                    Math.max(60, duration / 2), Math.min(1, specialRank / 3), false, false, true));
+            if (specialRank >= 2) {
+                ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,
+                        Math.max(100, duration), Math.min(4, specialRank), false, false, true));
+            }
+        }
+    }
+
     private static void cleanseAllies(ServerPlayer player, float heal, int duration, int specialRank) {
         List<ServerPlayer> affected = allies(player, -1.0);
         for (ServerPlayer ally : affected) {
