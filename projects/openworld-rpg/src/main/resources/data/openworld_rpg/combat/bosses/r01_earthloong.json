@@ -1,0 +1,62 @@
+{
+  "id": "openworld_rpg:r01/earthloong",
+  "contentLevel": 8,
+  "decisionDelayTicks": 2,
+  "phaseTwoHealthThreshold": 0.55,
+  "lightningFurrow": {
+    "phaseOneLaneCount": 3,
+    "phaseTwoFirstLaneCount": 4,
+    "phaseTwoAlternatingLaneCounts": [3, 4]
+  },
+  "actions": [
+    {
+      "id": "CLAW_SWEEP",
+      "minimumPhase": 1,
+      "weight": 50,
+      "cooldownTicks": 0,
+      "spaceControl": false
+    },
+    {
+      "id": "TAIL_SCYTHE",
+      "minimumPhase": 1,
+      "weight": 55,
+      "cooldownTicks": 0,
+      "spaceControl": false
+    },
+    {
+      "id": "QUARRY_RUSH",
+      "minimumPhase": 1,
+      "weight": 45,
+      "cooldownTicks": 140,
+      "spaceControl": false
+    },
+    {
+      "id": "LIGHTNING_FURROW",
+      "minimumPhase": 1,
+      "weight": 35,
+      "cooldownTicks": 160,
+      "spaceControl": true
+    },
+    {
+      "id": "ROOT_BREAKER",
+      "minimumPhase": 1,
+      "weight": 45,
+      "cooldownTicks": 180,
+      "spaceControl": true
+    },
+    {
+      "id": "FORKED_HEAVEN",
+      "minimumPhase": 2,
+      "weight": 40,
+      "cooldownTicks": 200,
+      "spaceControl": true
+    },
+    {
+      "id": "EARTHLINE_SURGE",
+      "minimumPhase": 2,
+      "weight": 45,
+      "cooldownTicks": 140,
+      "spaceControl": true
+    }
+  ]
+}
