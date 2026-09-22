@@ -86,8 +86,9 @@ def main() -> None:
     assert "작전표·호출기 아이템은 폐지되었습니다" not in starter
     assert "빠른 통신과 상태·성장·직업 성장 기능" in starter
 
-    assert "세 갈래 동시 성장 가능" in ui
-    assert "기본/1차/2차 기술은 전직 후에도 모두 장착 가능" in ui
+    assert 'String summary = "Lv." + level' in ui
+    assert '" · 포인트 " + VillageSkillTreeSystem.availablePoints(player) + "P"' in ui
+    assert '" · {SKILL1}/{SKILL2} 장착"' in ui
     upgrade = section(research, "public static synchronized String upgrade", "private static float curve")
     assert "이전 Lv." in upgrade
     assert "현재 Lv." in upgrade
