@@ -17,11 +17,12 @@ def main() -> None:
 
     # Four bosses own distinct entrance / phase-two / defeat channels.
     suffixes = ("siege", "warlord", "plague", "dread")
+    assert '"boss_entrance_" + suffix' in effects
+    assert '"boss_transform_" + suffix' in effects
+    assert '"boss_defeat_" + suffix' in effects
     for suffix in suffixes:
         for stage in ("entrance", "transform", "defeat"):
-            token = f"boss_{stage}_{suffix}"
-            assert token in effects or stage == "transform"
-            assert token in mesh
+            assert f"boss_{stage}_{suffix}" in mesh
 
     for archetype, suffix in (
         ("SIEGE_BEAST", "siege"),
