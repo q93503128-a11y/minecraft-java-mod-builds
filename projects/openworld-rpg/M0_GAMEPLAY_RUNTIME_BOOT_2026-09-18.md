@@ -1316,3 +1316,23 @@ GAMEPLAY CLIENT STARTUP SMOKE: PASS
 R01 JOINED-CLIENT COMBAT TESTED: NO
 PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
+
+
+---
+
+## Earthloong Root Breaker runtime delta — 2026-09-22
+
+Implemented from closed R01 canon:
+
+- Root Breaker eligibility: >=2 engaged players within 4.5 blocks OR current target continuously within 3.0 blocks for >=40 ticks;
+- 20-tick telegraph, one authoritative impact tick, 20-tick recovery;
+- horizontal 4.5-block hit radius;
+- 30% benchmark physical authoring, unguardable and not perfect-guardable;
+- donor SkillNumber 4 / woodlizard_roar remains a TECHNICAL presentation candidate only;
+- ground-radius technical tell uses rooted-dirt block fragments so the test hit area is visible without inventing a final signature asset;
+- only blocks in openworld_rpg:r01_earthloong_breakable_prop may be destroyed;
+- authored player-poise pressure 75 is passed to an explicit fail-closed project seam. It is NOT claimed applied until canonical partial-armor ArmorPoise publication is implemented.
+
+Lightning Furrow data now owns its closed 24-tick tell / 20-tick recovery / 1.4 lane width / 12-block length / Shock 35 and donor SkillNumber 3 technical candidate. Runtime hit geometry remains gated because the current canon does not specify exact lane-center offsets/spacing, and no final electrical signature layer is accepted yet.
+
+No arbitrary lane spacing, Shock-proc damage budget, or partial-armor poise share was invented in this pass.

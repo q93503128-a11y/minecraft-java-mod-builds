@@ -13,7 +13,8 @@ public record R01EarthloongEncounterData(
         LightningFurrowPattern lightningFurrow,
         List<ActionRule> actions,
         List<ImpactRule> impacts,
-        List<PhysicalBindingRule> physicalBindings
+        List<PhysicalBindingRule> physicalBindings,
+        List<SpaceControlBindingRule> spaceControlBindings
 ) {
     public R01EarthloongEncounterData {
         Objects.requireNonNull(id, "id");
@@ -22,6 +23,9 @@ public record R01EarthloongEncounterData(
         impacts = List.copyOf(Objects.requireNonNull(impacts, "impacts"));
         physicalBindings = List.copyOf(
                 Objects.requireNonNull(physicalBindings, "physicalBindings")
+        );
+        spaceControlBindings = List.copyOf(
+                Objects.requireNonNull(spaceControlBindings, "spaceControlBindings")
         );
     }
 
@@ -43,6 +47,19 @@ public record R01EarthloongEncounterData(
             if (previous != null) {
                 throw new IllegalStateException(
                         "Duplicate Earthloong impact rule: " + impact.action()
+                );
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    public Map<ActionId, SpaceControlBindingRule> spaceControlBindingsById() {
+        EnumMap<ActionId, SpaceControlBindingRule> result = new EnumMap<>(ActionId.class);
+        for (SpaceControlBindingRule binding : spaceControlBindings) {
+            SpaceControlBindingRule previous = result.put(binding.action(), binding);
+            if (previous != null) {
+                throw new IllegalStateException(
+                        "Duplicate Earthloong space-control binding: " + binding.action()
                 );
             }
         }
@@ -125,7 +142,11 @@ public record R01EarthloongEncounterData(
         public ImpactRule {
             Objects.requireNonNull(action, "action");
             Objects.requireNonNull(school, "school");
-            Objects.requireNonNull(guardPressure, "guardPressure");
+            if ((guardable || perfectGuardable) && guardPressure == null) {
+                throw new IllegalArgumentException(
+                        "Guardable Earthloong impact requires guard pressure: " + action
+                );
+            }
         }
 
         public dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority.IncomingHit
@@ -134,16 +155,27 @@ public record R01EarthloongEncounterData(
                     != dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction
                     .DamageSchool.PHYSICAL) {
                 throw new IllegalStateException(
-                        "Current Earthloong impact rule is not physical: " + action
+                        "Current Earthloong impact rule has no closed raw-damage authoring bridge: "
+                                + action
                 );
+            }
+            double rawDamage = dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules
+                    .rawEnemyPhysicalDamageFromBenchmarkShare(
+                            contentLevel,
+                            benchmarkDamageShare
+                    );
+            if (!guardable && !perfectGuardable) {
+                return dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority
+                        .IncomingHit.unguardable(
+                                rawDamage,
+                                school,
+                                contentLevel,
+                                true
+                        );
             }
             return dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority
                     .IncomingHit.baseline(
-                            dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules
-                                    .rawEnemyPhysicalDamageFromBenchmarkShare(
-                                            contentLevel,
-                                            benchmarkDamageShare
-                                    ),
+                            rawDamage,
                             school,
                             contentLevel,
                             guardPressure,
@@ -151,6 +183,30 @@ public record R01EarthloongEncounterData(
                             guardable,
                             perfectGuardable
                     );
+        }
+    }
+
+    public record SpaceControlBindingRule(
+            ActionId action,
+            int tellTicks,
+            int recoveryTicks,
+            double radius,
+            double laneWidth,
+            double laneLength,
+            double shockBuildup,
+            double playerPoisePressure,
+            Integer donorSkillNumber,
+            Integer donorAnimationTicks,
+            boolean technicalPresentationCandidate
+    ) {
+        public SpaceControlBindingRule {
+            Objects.requireNonNull(action, "action");
+        }
+
+        public boolean hasDonorPresentationCandidate() {
+            return technicalPresentationCandidate
+                    && donorSkillNumber != null
+                    && donorAnimationTicks != null;
         }
     }
 

@@ -38,17 +38,28 @@ public final class R01EarthloongDonorPresentationBridge {
             return PresentationApplication.rejected();
         }
 
-        var binding = DATA.physicalBindingsById().get(action);
-        if (binding == null || !binding.hasDonorPresentationCandidate()) {
+        var physical = DATA.physicalBindingsById().get(action);
+        if (physical != null && physical.hasDonorPresentationCandidate()) {
+            int skillNumber = physical.donorSkillNumber();
+            earthloong.getEntityData().set(resolveSkillAccessor(earthloong), skillNumber);
+            return new PresentationApplication(
+                    true,
+                    skillNumber,
+                    physical.donorAnimationTicks()
+            );
+        }
+
+        var spaceControl = DATA.spaceControlBindingsById().get(action);
+        if (spaceControl == null || !spaceControl.hasDonorPresentationCandidate()) {
             return PresentationApplication.rejected();
         }
 
-        int skillNumber = binding.donorSkillNumber();
+        int skillNumber = spaceControl.donorSkillNumber();
         earthloong.getEntityData().set(resolveSkillAccessor(earthloong), skillNumber);
         return new PresentationApplication(
                 true,
                 skillNumber,
-                binding.donorAnimationTicks()
+                spaceControl.donorAnimationTicks()
         );
     }
 

@@ -83,6 +83,14 @@
       "guardPressure": "HEAVY",
       "guardable": false,
       "perfectGuardable": true
+    },
+    {
+      "action": "ROOT_BREAKER",
+      "benchmarkDamageShare": 0.30,
+      "school": "PHYSICAL",
+      "guardPressure": null,
+      "guardable": false,
+      "perfectGuardable": false
     }
   ],
   "physicalBindings": [
@@ -126,6 +134,34 @@
       "forwardPathBlocks": 9.0,
       "donorSkillNumber": 2,
       "donorAnimationTicks": 40,
+      "technicalPresentationCandidate": true
+    }
+  ],
+  "spaceControlBindings": [
+    {
+      "action": "LIGHTNING_FURROW",
+      "tellTicks": 24,
+      "recoveryTicks": 20,
+      "radius": 0.0,
+      "laneWidth": 1.4,
+      "laneLength": 12.0,
+      "shockBuildup": 35.0,
+      "playerPoisePressure": 0.0,
+      "donorSkillNumber": 3,
+      "donorAnimationTicks": 25,
+      "technicalPresentationCandidate": true
+    },
+    {
+      "action": "ROOT_BREAKER",
+      "tellTicks": 20,
+      "recoveryTicks": 20,
+      "radius": 4.5,
+      "laneWidth": 0.0,
+      "laneLength": 0.0,
+      "shockBuildup": 0.0,
+      "playerPoisePressure": 75.0,
+      "donorSkillNumber": 4,
+      "donorAnimationTicks": 50,
       "technicalPresentationCandidate": true
     }
   ]

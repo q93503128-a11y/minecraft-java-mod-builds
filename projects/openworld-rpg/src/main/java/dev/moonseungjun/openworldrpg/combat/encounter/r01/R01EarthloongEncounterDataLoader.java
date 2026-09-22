@@ -118,7 +118,8 @@ public final class R01EarthloongEncounterDataLoader {
         Set<R01EarthloongEncounterData.ActionId> expectedImpacts = EnumSet.of(
                 R01EarthloongEncounterData.ActionId.CLAW_SWEEP,
                 R01EarthloongEncounterData.ActionId.TAIL_SCYTHE,
-                R01EarthloongEncounterData.ActionId.QUARRY_RUSH
+                R01EarthloongEncounterData.ActionId.QUARRY_RUSH,
+                R01EarthloongEncounterData.ActionId.ROOT_BREAKER
         );
         if (!impacts.keySet().equals(expectedImpacts)) {
             throw new IllegalArgumentException(
@@ -152,6 +153,42 @@ public final class R01EarthloongEncounterDataLoader {
                         .GuardPressureBand.HEAVY,
                 false,
                 true
+        );
+        requireImpact(
+                impacts,
+                R01EarthloongEncounterData.ActionId.ROOT_BREAKER,
+                0.30,
+                null,
+                false,
+                false
+        );
+
+        var spaceBindings = data.spaceControlBindingsById();
+        Set<R01EarthloongEncounterData.ActionId> expectedSpaceBindings = EnumSet.of(
+                R01EarthloongEncounterData.ActionId.LIGHTNING_FURROW,
+                R01EarthloongEncounterData.ActionId.ROOT_BREAKER
+        );
+        if (!spaceBindings.keySet().equals(expectedSpaceBindings)) {
+            throw new IllegalArgumentException(
+                    "R01 Earthloong Phase-1 space-control binding set drifted: "
+                            + spaceBindings.keySet()
+            );
+        }
+        requireSpaceControlBinding(
+                spaceBindings,
+                new R01EarthloongEncounterData.SpaceControlBindingRule(
+                        R01EarthloongEncounterData.ActionId.LIGHTNING_FURROW,
+                        24, 20, 0.0, 1.4, 12.0, 35.0, 0.0,
+                        3, 25, true
+                )
+        );
+        requireSpaceControlBinding(
+                spaceBindings,
+                new R01EarthloongEncounterData.SpaceControlBindingRule(
+                        R01EarthloongEncounterData.ActionId.ROOT_BREAKER,
+                        20, 20, 4.5, 0.0, 0.0, 0.0, 75.0,
+                        4, 50, true
+                )
         );
 
         var bindings = data.physicalBindingsById();
@@ -190,6 +227,39 @@ public final class R01EarthloongEncounterDataLoader {
                         true, 9.0, 2, 40, true
                 )
         );
+    }
+
+    private static void requireSpaceControlBinding(
+            java.util.Map<R01EarthloongEncounterData.ActionId,
+                    R01EarthloongEncounterData.SpaceControlBindingRule> bindings,
+            R01EarthloongEncounterData.SpaceControlBindingRule expected
+    ) {
+        var actual = bindings.get(expected.action());
+        if (!expected.equals(actual)) {
+            throw new IllegalArgumentException(
+                    "R01 Earthloong space-control binding drifted for " + expected.action()
+                            + ": expected=" + expected + ", actual=" + actual
+            );
+        }
+        if (actual.tellTicks() < 0
+                || actual.recoveryTicks() < 0
+                || actual.radius() < 0.0
+                || actual.laneWidth() < 0.0
+                || actual.laneLength() < 0.0
+                || actual.shockBuildup() < 0.0
+                || actual.playerPoisePressure() < 0.0) {
+            throw new IllegalArgumentException(
+                    "Invalid R01 Earthloong space-control binding: " + actual
+            );
+        }
+        if (actual.hasDonorPresentationCandidate()
+                && (actual.donorSkillNumber() < 1
+                || actual.donorSkillNumber() > 4
+                || actual.donorAnimationTicks() <= 0)) {
+            throw new IllegalArgumentException(
+                    "Invalid Earthloong space-control donor presentation candidate: " + actual
+            );
+        }
     }
 
     private static void requirePhysicalBinding(

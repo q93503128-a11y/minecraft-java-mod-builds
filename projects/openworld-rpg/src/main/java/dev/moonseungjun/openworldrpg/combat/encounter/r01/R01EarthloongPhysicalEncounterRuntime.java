@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.combat.encounter.r01;
 
+import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerPoisePressureRuntime;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import java.util.ArrayList;
@@ -13,6 +14,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
@@ -21,6 +24,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
@@ -131,6 +135,8 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         private final R01EarthloongThreatTable threat = new R01EarthloongThreatTable();
         private long nextDecisionTick = Long.MAX_VALUE;
         private CommittedAction committed;
+        private UUID closeTargetId;
+        private long closeTargetSinceTick = Long.MIN_VALUE / 4;
 
         private ActorState(LivingEntity actor, String encounterInstanceId) {
             this.actor = actor;
@@ -161,7 +167,8 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             ServerPlayer target = targetId == null ? null : playerById(validPlayers, targetId);
             if (target == null) return;
 
-            var decision = actions.select(currentPhase(), physicalLegality(level, target), gameTick);
+            updateRootBreakerProximity(target, gameTick);
+            var decision = actions.select(currentPhase(), actionLegality(level, target, gameTick), gameTick);
             if (decision.reposition()) {
                 R01EarthloongDonorPresentationBridge.resetTechnicalCandidate(actor);
                 if (actor instanceof Mob mob && !mob.isNoAi()) {
@@ -191,8 +198,8 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             }
         }
 
-        private R01EarthloongActionController.Legality physicalLegality(
-                ServerLevel level, ServerPlayer target) {
+        private R01EarthloongActionController.Legality actionLegality(
+                ServerLevel level, ServerPlayer target, long gameTick) {
             var bindings = DATA.physicalBindingsById();
             var claw = bindings.get(R01EarthloongEncounterData.ActionId.CLAW_SWEEP);
             var rush = bindings.get(R01EarthloongEncounterData.ActionId.QUARRY_RUSH);
@@ -204,15 +211,46 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                             actor.getBoundingBox().expandTowards(
                                     rushDirection.normalize().scale(rush.forwardPathBlocks())));
             var spatial = R01EarthloongSpatialAuthority.snapshot(actor, target, rushPathClear);
+            int engagedClose = 0;
+            for (ServerPlayer player : validPlayers(level)) {
+                if (horizontalDistance(actor, player) <= 4.5) {
+                    engagedClose++;
+                }
+            }
+            boolean targetCloseLongEnough = target.getUUID().equals(closeTargetId)
+                    && horizontalDistance(actor, target) <= 3.0
+                    && gameTick - closeTargetSinceTick >= 40L;
+            boolean rootBreakerLegal = engagedClose >= 2 || targetCloseLongEnough;
+
             return new R01EarthloongActionController.Legality(
                     R01EarthloongSpatialAuthority.isLegal(claw, spatial),
                     false,
                     R01EarthloongSpatialAuthority.isLegal(rush, spatial),
-                    false, false, false, false);
+                    false,
+                    rootBreakerLegal,
+                    false,
+                    false);
+        }
+
+        private void updateRootBreakerProximity(ServerPlayer target, long gameTick) {
+            if (horizontalDistance(actor, target) > 3.0) {
+                closeTargetId = null;
+                closeTargetSinceTick = Long.MIN_VALUE / 4;
+                return;
+            }
+            if (!target.getUUID().equals(closeTargetId)) {
+                closeTargetId = target.getUUID();
+                closeTargetSinceTick = gameTick;
+            }
         }
 
         private void commit(
                 R01EarthloongEncounterData.ActionId action, ServerPlayer target, long gameTick) {
+            if (action == R01EarthloongEncounterData.ActionId.ROOT_BREAKER) {
+                commitRootBreaker(gameTick);
+                return;
+            }
+
             var binding = DATA.physicalBindingsById().get(action);
             if (binding == null || !binding.hasDonorPresentationCandidate()) {
                 nextDecisionTick = gameTick + DATA.decisionDelayTicks();
@@ -249,13 +287,59 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             freezeHorizontalMotion();
         }
 
+        private void commitRootBreaker(long gameTick) {
+            var binding = DATA.spaceControlBindingsById().get(
+                    R01EarthloongEncounterData.ActionId.ROOT_BREAKER
+            );
+            if (binding == null || !binding.hasDonorPresentationCandidate()) {
+                nextDecisionTick = gameTick + DATA.decisionDelayTicks();
+                return;
+            }
+            var presentation = R01EarthloongDonorPresentationBridge.startTechnicalCandidate(
+                    actor,
+                    R01EarthloongEncounterData.ActionId.ROOT_BREAKER
+            );
+            if (!presentation.accepted()) {
+                nextDecisionTick = gameTick + DATA.decisionDelayTicks();
+                return;
+            }
+
+            boolean previousNoAi = false;
+            if (actor instanceof Mob mob) {
+                previousNoAi = mob.isNoAi();
+                mob.setTarget(null);
+                mob.getNavigation().stop();
+                mob.setNoAi(true);
+            }
+            committed = CommittedAction.rootBreaker(
+                    gameTick,
+                    new R01EarthloongPhysicalTimeline(
+                            binding.tellTicks(),
+                            1,
+                            binding.recoveryTicks()
+                    ),
+                    binding,
+                    previousNoAi
+            );
+            nextDecisionTick = Long.MAX_VALUE;
+            freezeHorizontalMotion();
+        }
+
         private void tickCommitted(ServerLevel level, long gameTick) {
             CommittedAction current = committed;
             long elapsed = gameTick - current.commitTick;
             freezeHorizontalMotion();
-            orientActor(current.lockedDirection);
+            if (current.lockedDirection != null) {
+                orientActor(current.lockedDirection);
+            }
 
-            switch (current.timeline.phaseAtElapsedTick(elapsed)) {
+            var phase = current.timeline.phaseAtElapsedTick(elapsed);
+            if (current.action == R01EarthloongEncounterData.ActionId.ROOT_BREAKER
+                    && phase == R01EarthloongPhysicalTimeline.Phase.TELEGRAPH) {
+                renderRootBreakerTell(level, current, elapsed);
+            }
+
+            switch (phase) {
                 case TELEGRAPH, RECOVERY -> {}
                 case ACTIVE -> {
                     int activeIndex = (int) (elapsed - current.timeline.tellTicks());
@@ -263,6 +347,9 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                         applyArcContact(level, current);
                     } else if (current.action == R01EarthloongEncounterData.ActionId.QUARRY_RUSH) {
                         moveRushAndApplyContact(level, current);
+                    } else if (current.action == R01EarthloongEncounterData.ActionId.ROOT_BREAKER
+                            && activeIndex == 0) {
+                        applyRootBreaker(level, current);
                     }
                 }
                 case COMPLETE -> finishCommitted(gameTick);
@@ -313,6 +400,85 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                     R01EarthloongImpactAuthority.applyConfirmedContact(actor, player, current.action);
                 }
             }
+        }
+
+        private void renderRootBreakerTell(
+                ServerLevel level,
+                CommittedAction current,
+                long elapsed
+        ) {
+            if (elapsed % 2L != 0L || current.spaceBinding == null) {
+                return;
+            }
+            double radius = current.spaceBinding.radius();
+            BlockParticleOption rootDust = new BlockParticleOption(
+                    ParticleTypes.BLOCK,
+                    Blocks.ROOTED_DIRT.defaultBlockState()
+            );
+            int samples = 28;
+            for (int i = 0; i < samples; i++) {
+                double angle = Math.PI * 2.0 * i / samples;
+                double x = actor.getX() + Math.cos(angle) * radius;
+                double z = actor.getZ() + Math.sin(angle) * radius;
+                level.sendParticles(
+                        rootDust,
+                        x,
+                        actor.getY() + 0.08,
+                        z,
+                        1,
+                        0.03,
+                        0.01,
+                        0.03,
+                        0.0
+                );
+            }
+        }
+
+        private void applyRootBreaker(ServerLevel level, CommittedAction current) {
+            var binding = Objects.requireNonNull(current.spaceBinding, "spaceBinding");
+            AABB search = actor.getBoundingBox().inflate(binding.radius() + 1.0, 3.0, binding.radius() + 1.0);
+            List<ServerPlayer> players = level.getEntitiesOfClass(
+                    ServerPlayer.class,
+                    search,
+                    player -> player.isAlive() && !player.isSpectator()
+            );
+            for (ServerPlayer player : players) {
+                if (horizontalDistance(actor, player) > binding.radius()
+                        || !current.hitPlayers.add(player.getUUID())) {
+                    continue;
+                }
+                R01EarthloongImpactAuthority.applyConfirmedContact(
+                        actor,
+                        player,
+                        current.action
+                );
+                ProjectPlayerPoisePressureRuntime.applyAuthoredPressure(
+                        player,
+                        binding.playerPoisePressure()
+                );
+            }
+
+            R01EarthloongArenaBreakAuthority.breakTaggedProps(
+                    level,
+                    actor,
+                    binding.radius()
+            );
+
+            BlockParticleOption rootDust = new BlockParticleOption(
+                    ParticleTypes.BLOCK,
+                    Blocks.ROOTED_DIRT.defaultBlockState()
+            );
+            level.sendParticles(
+                    rootDust,
+                    actor.getX(),
+                    actor.getY() + 0.15,
+                    actor.getZ(),
+                    70,
+                    binding.radius() * 0.55,
+                    0.18,
+                    binding.radius() * 0.55,
+                    0.12
+            );
         }
 
         private void finishCommitted(long gameTick) {
@@ -385,11 +551,16 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         return new Vec3(target.getX() - actor.getX(), 0.0, target.getZ() - actor.getZ());
     }
 
+    private static double horizontalDistance(LivingEntity a, LivingEntity b) {
+        return Math.hypot(b.getX() - a.getX(), b.getZ() - a.getZ());
+    }
+
     private static final class CommittedAction {
         private final R01EarthloongEncounterData.ActionId action;
         private final long commitTick;
         private final R01EarthloongPhysicalTimeline timeline;
         private final R01EarthloongEncounterData.PhysicalBindingRule binding;
+        private final R01EarthloongEncounterData.SpaceControlBindingRule spaceBinding;
         private final Vec3 lockedDirection;
         private final boolean previousNoAi;
         private final Set<UUID> hitPlayers = new HashSet<>();
@@ -406,8 +577,40 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             this.commitTick = commitTick;
             this.timeline = timeline;
             this.binding = binding;
+            this.spaceBinding = null;
             this.lockedDirection = lockedDirection;
             this.previousNoAi = previousNoAi;
+        }
+
+        private CommittedAction(
+                R01EarthloongEncounterData.ActionId action,
+                long commitTick,
+                R01EarthloongPhysicalTimeline timeline,
+                R01EarthloongEncounterData.SpaceControlBindingRule spaceBinding,
+                boolean previousNoAi
+        ) {
+            this.action = action;
+            this.commitTick = commitTick;
+            this.timeline = timeline;
+            this.binding = null;
+            this.spaceBinding = spaceBinding;
+            this.lockedDirection = null;
+            this.previousNoAi = previousNoAi;
+        }
+
+        private static CommittedAction rootBreaker(
+                long commitTick,
+                R01EarthloongPhysicalTimeline timeline,
+                R01EarthloongEncounterData.SpaceControlBindingRule spaceBinding,
+                boolean previousNoAi
+        ) {
+            return new CommittedAction(
+                    R01EarthloongEncounterData.ActionId.ROOT_BREAKER,
+                    commitTick,
+                    timeline,
+                    spaceBinding,
+                    previousNoAi
+            );
         }
     }
 }

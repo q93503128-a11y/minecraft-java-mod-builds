@@ -39,15 +39,17 @@ class R01EarthloongActionControllerTest {
         var data = R01EarthloongEncounterDataLoader.loadBundled();
         var impacts = data.impactRulesById();
 
-        assertEquals(3, impacts.size());
+        assertEquals(4, impacts.size());
 
         var claw = impacts.get(R01EarthloongEncounterData.ActionId.CLAW_SWEEP);
         var tail = impacts.get(R01EarthloongEncounterData.ActionId.TAIL_SCYTHE);
         var rush = impacts.get(R01EarthloongEncounterData.ActionId.QUARRY_RUSH);
+        var root = impacts.get(R01EarthloongEncounterData.ActionId.ROOT_BREAKER);
 
         assertEquals(0.10, claw.benchmarkDamageShare(), 0.000001);
         assertEquals(0.20, tail.benchmarkDamageShare(), 0.000001);
         assertEquals(0.24, rush.benchmarkDamageShare(), 0.000001);
+        assertEquals(0.30, root.benchmarkDamageShare(), 0.000001);
 
         assertTrue(claw.guardable());
         assertTrue(claw.perfectGuardable());
@@ -55,10 +57,13 @@ class R01EarthloongActionControllerTest {
         assertTrue(tail.perfectGuardable());
         assertFalse(rush.guardable());
         assertTrue(rush.perfectGuardable());
+        assertFalse(root.guardable());
+        assertFalse(root.perfectGuardable());
 
         assertEquals(19.0666666667, claw.toIncomingHit(8).rawDamage(), 0.000001);
         assertEquals(38.1333333333, tail.toIncomingHit(8).rawDamage(), 0.000001);
         assertEquals(45.76, rush.toIncomingHit(8).rawDamage(), 0.000001);
+        assertEquals(57.2, root.toIncomingHit(8).rawDamage(), 0.000001);
     }
 
     @Test
@@ -365,6 +370,30 @@ class R01EarthloongActionControllerTest {
                 repeat.action().orElseThrow()
         );
         assertEquals(2L, controller.actionCounter());
+    }
+
+    @Test
+    void phaseOneSpaceControlBindingsMatchClosedTimingAndRadiusData() {
+        var data = R01EarthloongEncounterDataLoader.loadBundled();
+        var bindings = data.spaceControlBindingsById();
+        assertEquals(2, bindings.size());
+
+        var furrow = bindings.get(R01EarthloongEncounterData.ActionId.LIGHTNING_FURROW);
+        assertEquals(24, furrow.tellTicks());
+        assertEquals(20, furrow.recoveryTicks());
+        assertEquals(1.4, furrow.laneWidth(), 0.000001);
+        assertEquals(12.0, furrow.laneLength(), 0.000001);
+        assertEquals(35.0, furrow.shockBuildup(), 0.000001);
+        assertEquals(3, furrow.donorSkillNumber());
+        assertEquals(25, furrow.donorAnimationTicks());
+
+        var root = bindings.get(R01EarthloongEncounterData.ActionId.ROOT_BREAKER);
+        assertEquals(20, root.tellTicks());
+        assertEquals(20, root.recoveryTicks());
+        assertEquals(4.5, root.radius(), 0.000001);
+        assertEquals(75.0, root.playerPoisePressure(), 0.000001);
+        assertEquals(4, root.donorSkillNumber());
+        assertEquals(50, root.donorAnimationTicks());
     }
 
 }
