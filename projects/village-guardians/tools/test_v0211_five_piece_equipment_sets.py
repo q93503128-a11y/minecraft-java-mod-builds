@@ -14,6 +14,7 @@ def main() -> None:
     rarity = read("VillageEquipmentRaritySystem.java")
     rpg = read("VillageRpgSystem.java")
     role = read("VillageRoleSkillSystem.java")
+    inventory = read("VillageInventoryPanel.java")
 
     assert 'KEY_SET = "villageguardians_set"' in identity
     assert "stampSet(ItemStack stack, String setId)" in identity
@@ -29,6 +30,13 @@ def main() -> None:
     assert "setForOfferId" in sets
     assert "setForRaidDrop" in sets
     assert "defaultSetForItem" in sets
+    import re
+    offer_ids = re.findall(r'^[ ]{8}[A-Z0-9_]+\("([^"]+)"', shop, re.MULTILINE)
+    assert len(offer_ids) >= 36
+    assert all(f'"{offer_id}"' in sets for offer_id in offer_ids)
+    assert "FRONTLINE_EXECUTOR" in inventory and "ARCANE_RESONANCE" in inventory
+    assert "DAWN_COVENANT" in inventory and "WALL_GUARDIAN" in inventory
+    assert "2/3/4/5" in inventory
 
     for item in ("Items.MACE", "Items.TRIDENT", "Items.BLAZE_ROD",
                  "Items.DIAMOND_LEGGINGS", "Items.DIAMOND_BOOTS"):
