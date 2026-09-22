@@ -53,7 +53,7 @@ public final class M0RuntimeVerificationHarness {
             throw new IllegalStateException("M0 Earthloong verification session already exists.");
         }
 
-        BlockPos worldSpawn = level.getSharedSpawnPos();
+        BlockPos worldSpawn = level.getServer().getRespawnData().pos();
         BlockPos spawn = new BlockPos(
                 worldSpawn.getX(),
                 Math.max(worldSpawn.getY() + 8, 80),
