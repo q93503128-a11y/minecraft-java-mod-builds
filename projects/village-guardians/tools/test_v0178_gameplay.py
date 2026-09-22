@@ -38,7 +38,7 @@ def main() -> None:
     assert "savedZoom = 0.50" in screen
     assert "node.tier() == 10" in screen
 
-    assert "ARENA_RADIUS = 16" in test_mode
+    assert "ARENA_RADIUS = 34" in test_mode
     assert "FORTRESS_RADIUS + 44" in test_mode
     assert "buildArena" in test_mode and "Blocks.SMOOTH_STONE" in test_mode
     assert "player.teleportTo" in test_mode and "RETURN_POINTS" in test_mode
