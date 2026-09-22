@@ -821,17 +821,26 @@ public final class VillageUiController {
         return switch (building) {
             case TOWN_HALL -> "시설 수리·강화 · 성벽·포탑 지휘";
             case WALLS -> "최대 내구도 " + (1200 + safe * 350) + " · 포탑 설치 단계 " + safe;
-            case SMITHY -> "최대 내구도 " + (560 + safe * 120) + " · 마을 장비 공격 보정 +" + (safe * 4)
+            case SMITHY -> "최대 내구도 " + (560 + safe * 120) + " · 마을 장비 공격 보정 +"
+                    + (Math.min(5, safe) * 4 + Math.max(0, safe - 5) * 2)
                     + "% · 개인 장비 강화·등급 합성";
-            case SKILL_HALL -> "최대 내구도 " + (520 + safe * 110) + " · 직업 배치 · 기술 위력 +" + (safe * 5) + "% · 지속 +" + (safe * 5) + "% · 재사용 효율 +" + safe + "초 · 마을 방어 연구";
+            case SKILL_HALL -> "최대 내구도 " + (520 + safe * 110) + " · 직업 배치 · 기술 위력/지속 +"
+                    + (Math.min(5, safe) * 5 + Math.max(0, safe - 5) * 2)
+                    + "% · 고단계 재사용 효율 · 마을 방어 연구";
             case INFIRMARY -> "최대 내구도 " + (520 + safe * 110) + " · 낮 동안 체력 완전 회복"
                     + (safe >= 1 ? " · 피해 저항" : "")
                     + (safe >= 2 ? " · 이동 속도" : "")
                     + (safe >= 3 ? " · 공격력" : "")
                     + (safe >= 4 ? " · 재생" : "")
-                    + (safe >= 5 ? " · 보호막" : "");
+                    + (safe >= 5 ? " · 보호막" : "")
+                    + (safe >= 6 ? " · 저항 II" : "")
+                    + (safe >= 7 ? " · 신속 II" : "")
+                    + (safe >= 8 ? " · 힘 II" : "")
+                    + (safe >= 9 ? " · 재생 II" : "")
+                    + (safe >= 10 ? " · 보호막 II" : "");
             case STOREHOUSE -> "최대 내구도 " + (560 + safe * 120) + " · 일일 배급·전투 소모품·상품·전리품 정산";
-            case BARRACKS -> "최대 내구도 " + (620 + safe * 130) + " · 모든 XP +" + (safe * 10)
+            case BARRACKS -> "최대 내구도 " + (620 + safe * 130) + " · 모든 XP +"
+                    + (Math.min(5, safe) * 10 + Math.max(0, safe - 5) * 5)
                     + "% · 용병 정원 " + (1 + safe / 2 + VillageDefenseResearchSystem.mercenaryCapacityBonus());
         };
     }
