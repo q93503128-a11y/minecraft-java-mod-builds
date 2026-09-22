@@ -364,13 +364,13 @@ jobs:
           - client world join: NOT RUN
           - R01 Earthloong registry/profile binding: STARTUP VERIFIED
           - Earthloong donor XP/loot suppression: IMPLEMENTED; project reward transaction NOT IMPLEMENTED
-          - Earthloong authored spawn utility: IMPLEMENTED + 40-TICK FORCED-CHUNK SERVER SURVIVAL VERIFIED; action controller implemented; spatial/animation encounter invocation NOT TESTED
+          - Earthloong authored spawn utility: IMPLEMENTED + 40-TICK FORCED-CHUNK SERVER SURVIVAL VERIFIED; action controller + Phase-1 physical start geometry implemented; Claw/Quarry donor presentation-state bridge RUNTIME VERIFIED; full attack-state scheduling/movement/contact invocation NOT IMPLEMENTED; Tail final presentation UNBOUND
           - Better Combat bound-actor canonical melee authority: IMPLEMENTED + UNIT/RUNTIME BRIDGE VERIFIED (donor damage ignored; exact real-player Better Combat network hit NOT TESTED)
           - Spell Engine resource/cooldown continuation transaction: IMPLEMENTED + UNIT/SERVER STARTUP VERIFIED
           - project cooldown client/HUD projection after completed cast: IMPLEMENTED + CLIENT STARTUP VERIFIED
           - project impact transaction core (damage/heal/status/poise + Defense/MR caps): IMPLEMENTED + UNIT TESTED
           - player active-defense authority (dodge/guard/perfect-guard/guard-break + Stamina): IMPLEMENTED + UNIT TESTED; perfect-guard-only committed attacks supported; player-facing input/animation adapter NOT IMPLEMENTED
-          - normalized player incoming Defense/MR authority: IMPLEMENTED + UNIT TESTED; explicit project-hit runtime bridge IMPLEMENTED; Earthloong Phase-1 Claw/Tail/Quarry canonical physical impact data + authority IMPLEMENTED; spatial/animation hit-event binding NOT IMPLEMENTED
+          - normalized player incoming Defense/MR authority: IMPLEMENTED + UNIT TESTED; explicit project-hit runtime bridge IMPLEMENTED; Earthloong Phase-1 Claw/Tail/Quarry canonical physical impact data + authority IMPLEMENTED; physical start geometry IMPLEMENTED + UNIT TESTED; full attack-state/contact binding NOT IMPLEMENTED
           - project direct-magic runtime bridge: IMPLEMENTED + UNIT/BUILD/STARTUP VERIFIED
           - player combat build snapshot producer: IMPLEMENTED + UNIT/RUNTIME HARNESS VERIFIED
           - persistent 12-slot equipped-loadout publisher: IMPLEMENTED + UNIT/BUILD VERIFIED (main weapon/off-hand/armor/accessories; project affix aggregation; wand+focus power; family-power cap)

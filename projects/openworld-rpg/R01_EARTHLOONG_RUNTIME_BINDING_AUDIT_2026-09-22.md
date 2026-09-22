@@ -97,13 +97,13 @@ The spatial binder, not this controller, owns whether an action is currently leg
 
 Static bytecode establishes available animation identities and lengths, but **does not prove visual hitbox agreement**.
 
-Initial technical candidates only:
+Current technical binding status:
 
-- Claw Sweep ↔ `woodlizard_attack`: timing candidate because 0.50 s source animation is close to the authored 0.45 s wind-up;
-- Quarry Rush ↔ `woodlizard_charge`: presentation candidate only; donor procedure semantics are not Quarry Rush;
-- Lightning Furrow ↔ `woodlizard_skill1`: candidate only;
-- Root Breaker ↔ `woodlizard_roar`: candidate only;
-- Tail Scythe: no dedicated donor tail-scythe animation was proven by the pinned class surface.
+- Claw Sweep ↔ donor `SkillNumber=1` / `woodlizard_attack`: dependency-only presentation-state bridge is runtime verified; project timing/hit authority remains separate;
+- Quarry Rush ↔ donor `SkillNumber=2` / `woodlizard_charge`: dependency-only presentation-state bridge is runtime verified; donor charging procedure semantics and damage are not used;
+- Lightning Furrow ↔ `woodlizard_skill1`: technical candidate only;
+- Root Breaker ↔ `woodlizard_roar`: technical candidate only;
+- Tail Scythe: no dedicated donor tail-scythe animation was proven by the pinned class surface, so presentation remains deliberately unbound.
 
 No candidate above is promoted to final player-facing binding until real Minecraft visual review confirms readable body motion, attack direction, model contact, camera scale and server hit area within the project acceptance rules.
 
@@ -116,8 +116,11 @@ DONOR SKILL STATE MAPPED: YES
 ANIMATION IDS/LENGTHS INSPECTED: YES
 PROJECT ACTION-SELECTION CONTROLLER: IMPLEMENTED + UNIT/BUILD/STARTUP VERIFIED
 PHASE-1 CLAW/TAIL/QUARRY CANONICAL IMPACT DATA/AUTHORITY: IMPLEMENTED + UNIT/BUILD/STARTUP VERIFIED
+PHASE-1 PHYSICAL START GEOMETRY: IMPLEMENTED + UNIT VERIFIED — Claw 0°..120° <=3.5, Tail 60°..180° <=4.5 with intentional flank overlap, Quarry 5.0..9.0 + clear committed line
+CLAW/QUARRY DONOR PRESENTATION STATE BRIDGE: IMPLEMENTED + RUNTIME VERIFIED — SkillNumber 1/2 set + reset; donor damage/procedures remain non-authoritative
+TAIL SCYTHE FINAL PRESENTATION: UNBOUND — no accepted dedicated donor animation exists on the pinned surface
 RUNTIME SMOKE CHUNK LIFETIME: VERIFIED — CI harness now force-loads the verification chunk; prior failure was `UNLOADED_TO_CHUNK` with full HP/tickCount 0, not a combat regression
-LATEST FULL OPENWORLD CI: 35688379194 — SUCCESS
+LATEST FULL OPENWORLD CI: 35689727920 — SUCCESS
 REAL CLIENT VISUAL ATTACK REVIEW: NO
 HITBOX-TO-ANIMATION ACCEPTANCE: NO
 PLAYER-FACING EARTHLOONG COMBAT PLAYTESTED: NO
