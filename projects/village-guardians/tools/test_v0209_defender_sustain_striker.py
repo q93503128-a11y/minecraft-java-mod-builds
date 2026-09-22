@@ -41,10 +41,10 @@ def main() -> None:
     assert "VillageMercenarySystem.applyOutgoingDamage(event)" in events
 
     assert "case RANGER -> projectile ? (isOnWallTop(player) ? 1.64f : 1.34f) : 0.92f;" in rpg
-    assert "public static float rangedSkillMultiplier" in sets
-    assert "궁수 공격 기술도 원거리 피해에 포함" in sets
-    assert "role == VillageRole.RANGER && skill.promotionTier() > 0" in role_skills
-    assert "VillageEquipmentSetSystem.rangedSkillMultiplier(player)" in role_skills
+    assert "case RANGER" in sets
+    assert "if (promotionTier <= 0) break;" in sets
+    assert "EquipmentSet.NIGHT_HUNTER" in sets
+    assert "VillageEquipmentSetSystem.roleSkillMultiplier(player, role, skill.promotionTier())" in role_skills
 
     print("[PASS] dawn fully restores surviving mercenaries")
     print("[PASS] bastion and warden taunts grant temporary health")
