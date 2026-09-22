@@ -37,6 +37,8 @@ MERCENARY_ASSETS = {
     "assets/villageguardians/models/mercenary/striker.obj": f"{QUATERNIUS_BASE}/OBJ/Rogue.obj",
     "assets/villageguardians/models/mercenary/ranger.obj": f"{QUATERNIUS_BASE}/OBJ/Ranger.obj",
     "assets/villageguardians/models/mercenary/medic.obj": f"{QUATERNIUS_BASE}/OBJ/Cleric.obj",
+    "assets/villageguardians/models/mercenary/warder.obj": f"{QUATERNIUS_BASE}/OBJ/Monk.obj",
+    "assets/villageguardians/models/mercenary/artillerist.obj": f"{QUATERNIUS_BASE}/OBJ/Wizard.obj",
 }
 QUATERNIUS_LICENSE = f"{QUATERNIUS_BASE}/License.txt"
 
