@@ -56,11 +56,11 @@ def main() -> None:
     assert "VillageRoleAbilitySystem.handleIncomingDamage" in guard
     assert "VillageRoleAbilitySystem.handleDeath" in guard
     assert "public static boolean reviveNow" in respawn
-    assert "근접 피해 일부를 체력으로 흡수" in role
-    assert "화살로 처치하면 사용 화살을 회수" in role
-    assert "최대 두 번 반복" in role
-    assert "체력이 낮을수록 치유량과 보호막량" in role
-    assert "모든 넉백을 무효화" in role
+    assert "근접 피해 흡혈" in role
+    assert "처치 시 화살 회수" in role
+    assert "최대 2회 추가 발동" in role
+    assert "체력이 낮은 아군일수록 치유·보호 효과 증가" in role
+    assert "넉백 면역" in role
     assert 'GLFW.GLFW_KEY_Z' in keys and 'GLFW.GLFW_KEY_V' in keys
     assert 'GLFW.GLFW_KEY_B' in keys and 'GLFW.GLFW_KEY_H' in keys
     assert 'GLFW.GLFW_KEY_J' in keys and 'GLFW.GLFW_KEY_K' in keys
