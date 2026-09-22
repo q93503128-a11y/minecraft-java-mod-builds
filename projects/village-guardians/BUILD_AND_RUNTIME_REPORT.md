@@ -9,12 +9,56 @@
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
 - Target JAR: `villageguardians-0.18.46-alpha.1.jar`
-- Manual audit base: `0f7597a300f8234244a8ec91ea72a0d4fbd44da7`
-- Local verification date: `2026-09-20 Asia/Seoul`
-- Final JAR SHA-256: `cbb204cec5eea97acf7764f3856cb06cbf73833064fcfa4f84abd3b0a48ad7ce`
-- Final JAR size: `1337678` bytes
+- Current manual-audit validated code head: `39109180857ee8a232aae070e8d0dfc5084fef6b`
+- Current verification date: `2026-09-22 Asia/Seoul`
+- Current verified JAR SHA-256: `d4690d016a6034545df87ef4f45ee09ba522ff52630a71c25b48be669b8ce3c5`
+- Current verified JAR size: `1415928` bytes
 
-## 0.18.46 궁수·수호자 후속 정합 감사와 현재 acceptance
+## 2026-09-22 전체 수동 정합 감사 · 세트/캠페인 현재 정본
+
+이번 감사는 빌드 통과 여부만 보지 않고 `PROJECT.md`, `README.md`, `docs/ROLE_ADVANCEMENT_PLAN.md`, `docs/CAMPAIGN_STAT_CURVE.md`, 현재 production source, 실제 습격 드랍 호출 경로, 세트 UI/전투 훅, 저장 호환 fallback, 서버 mutation 경계를 서로 대조했다.
+
+### 기획서 ↔ 런타임 대조
+
+- 정식 수작업 캠페인은 Day 100 최종 대공성까지이며 Day 101+만 끝없는 전쟁이다. 런타임의 `CAMPAIGN_END_DAY = 100`과 일치한다.
+- 플레이어 최대 Lv.300, 1차/2차 전직 Lv.30/Lv.60, 다섯 역할 각 12개 액티브로 총 60개, 전투 숙련 Lv.90/150/210/270/300을 소스에서 다시 확인했다.
+- 방어 연구 최대 Lv.20, 포탑 최대 Lv.10, 용병 최대 Lv.100이 현재 기획과 일치한다.
+- Day 100의 7개 고정 교리와 4~7웨이브 보스 연전, 후반 적 20개 아키타입, 정예 5종의 고유 전투 행동이 현행 런타임에 연결되어 있다.
+- 네트워크 UI 액션은 서버 플레이어를 기준으로 처리하며, 시설/포탑/상점/연구/용병 등 상태 변경 작업은 기존 leaf 검증의 위치·시설 가동·정비 시간·게임오버 경계를 유지한다.
+
+### 수동 감사에서 발견해 수정한 실제 결함
+
+- 실제 습격 전리품은 `VillageRaidLootSystem -> VillageExpandedEquipmentSystem.createRaidDrop` 경로를 사용하지만, 최초 5세트 패치는 사용되지 않는 보조 `VillageEquipmentRaritySystem.createRaidDrop`에만 출처별 세트 ID를 기록하고 있었다. 따라서 실제 드랍이 아이템 종류 fallback 세트로 귀속될 수 있었다. production 드랍 경로에서 적 아키타입/보스에 따라 명시적 세트 ID를 기록하고 장비 이름에도 세트 정체성을 표시하도록 수정했다.
+- 밤사냥꾼 5세트의 12블록 이상 표적 보너스와 전선 집행자 5세트의 마무리 보너스가 일반 화살/근접타에는 적용되지만 `VillageRoleAbilitySystem.hurt`를 사용하는 직접 피해형 직업 기술에는 빠져 있었다. 직접 기술 피해에도 동일 조건부 capstone을 한 번만 적용하도록 연결했다.
+- 장비 툴팁이 2/3/4/5세트 효과 전체를 한 줄에 이어 붙여 좁은 화면에서 과도하게 넓어질 수 있었다. 현재는 세트명과 착용 수를 먼저 보여주고 2·3·4·5세트 효과를 줄별로 분리하며, 조건부 5세트 완성 효과는 한 줄 더 분리한다.
+- README의 현재 장비 섹션이 폐기된 2종·2/3세트 설명을 유지하고 있었다. production의 다섯 세트와 2/3/4/5단계 설명으로 갱신했다.
+
+### 현재 세트 정본
+
+- `전선 집행자`: 근접 전투·전사 기술·마무리 화력
+- `밤사냥꾼`: 원거리·전직 궁수 기술·장거리 집중 사격
+- `비전 공명`: 비전 기술 위력·재사용 압축
+- `여명 성약`: 성광 기술·치유·생존 지원
+- `성벽 수호자`: 피해 경감·수호 기술·저체력 철벽
+- 새 상점 장비와 실제 습격 드랍은 명시적 세트 ID를 기록하고, 합성 결과는 세트를 보존한다. 과거 세이브의 세트 ID 없는 등급 장비만 아이템 계열 fallback으로 안전하게 호환한다.
+
+### 현재 acceptance
+
+- Validated code head: `39109180857ee8a232aae070e8d0dfc5084fef6b`
+- Current acceptance Actions run: `35675340671` — **PASS**
+- `tools/test_*.py`: **PASS, 100/100**
+- Java 25 / Gradle 9.2.1 / NeoForge 26.2 clean build: **PASS**
+- JAR verifier: **PASS**
+- JAR artifact upload: **PASS**
+- JAR: `villageguardians-0.18.46-alpha.1.jar`, `1415928` bytes
+- SHA-256: `d4690d016a6034545df87ef4f45ee09ba522ff52630a71c25b48be669b8ce3c5`
+- Client gameplay after this audit: **NOT RUN**
+- Multiplayer gameplay after this audit: **NOT RUN**
+- Max-load profiler pass after this audit: **NOT RUN**
+
+따라서 현재 소스는 기획/코드/회귀/빌드/JAR 기준으로 정합화되어 있지만, 프로젝트의 완료 기준상 최신 JAR의 실제 클라이언트 플레이와 멀티플레이·최대 부하 계측 없이 전체 게임을 `PLAYTESTED` 또는 `MULTIPLAYER TESTED`로 판정하지 않는다.
+
+## 이전 0.18.46 궁수·수호자 정합 체크포인트
 
 ### 후속 수동 확인
 
