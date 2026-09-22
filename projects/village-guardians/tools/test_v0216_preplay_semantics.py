@@ -55,7 +55,8 @@ def main() -> None:
     gravity = section(abilities, "case ARCANIST_GRAVITY_STORM -> {", "case ARCANIST_SOLAR_CORE -> {")
     assert "startDash(" in absolute and "for (int i = 0; i < 11; i++)" not in absolute
     assert "startDash(" in fortress and "for (int i = 0; i < 10; i++)" not in fortress
-    assert "MovingKind.TRACKING_ARROW" in tracker and "hurt(level, player, target" not in tracker
+    assert "launchPromotionTrackingAt(" in tracker and "hurt(level, player, target" not in tracker
+    assert "MovingKind.TRACKING_ARROW" in abilities
     assert "promotionMovingField" in gravity and "0.24f" in gravity
     assert "area.moveTo(area.center().add(travel.scale(0.24)))" in abilities
     assert "private record DashState" in abilities
