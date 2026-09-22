@@ -41,6 +41,34 @@ public final class VillageEnemyEffectSystem {
                 String.format(Locale.ROOT, "%.2f", Math.max(1.0, radius)));
     }
 
+    public static void assassinLunge(
+            ServerLevel level, Mob mob, Vec3 start, Vec3 end, int duration) {
+        if (level == null || mob == null || start == null || end == null) return;
+        VillageSkillEffectEntity.spawn(level, mob, "elite_assassin_lunge", start,
+                normalized(end.subtract(start)), Math.max(8, duration), 0.0f, encode(List.of(start, end)));
+    }
+
+    public static void assassinImpact(ServerLevel level, Vec3 center, double radius) {
+        if (level == null || center == null) return;
+        VillageSkillEffectEntity.spawn(level, null, "elite_assassin_impact", center,
+                new Vec3(0.0, 0.0, 1.0), 14, 0.0f,
+                String.format(Locale.ROOT, "%.2f", Math.max(1.0, radius)));
+    }
+
+    public static void shockCharge(
+            ServerLevel level, Mob mob, Vec3 start, Vec3 end, int duration) {
+        if (level == null || mob == null || start == null || end == null) return;
+        VillageSkillEffectEntity.spawn(level, mob, "elite_shock_charge", start,
+                normalized(end.subtract(start)), Math.max(8, duration), 0.0f, encode(List.of(start, end)));
+    }
+
+    public static void shockImpact(ServerLevel level, Vec3 center, double radius) {
+        if (level == null || center == null) return;
+        VillageSkillEffectEntity.spawn(level, null, "elite_shock_impact", center,
+                new Vec3(0.0, 0.0, 1.0), 18, 0.0f,
+                String.format(Locale.ROOT, "%.2f", Math.max(1.0, radius)));
+    }
+
     public static void plagueWarning(ServerLevel level, Mob mob, Vec3 center, double radius, int duration) {
         if (level == null || mob == null || center == null) return;
         VillageSkillEffectEntity.spawn(level, mob, "elite_plague_warning", center,

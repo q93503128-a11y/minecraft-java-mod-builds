@@ -21,6 +21,8 @@ public final class VillageEnemyEliteSystem {
     private static final Map<UUID, GrappleMotion> GRAPPLE_MOTIONS = new HashMap<>();
     private static final Map<UUID, FirebrandCast> FIREBRAND_CASTS = new HashMap<>();
     private static final Map<UUID, PlagueCast> PLAGUE_CASTS = new HashMap<>();
+    private static final Map<UUID, AssassinStrike> ASSASSIN_STRIKES = new HashMap<>();
+    private static final Map<UUID, ShockCharge> SHOCK_CHARGES = new HashMap<>();
     private static int ticks;
     private VillageEnemyEliteSystem() {}
 
@@ -33,6 +35,8 @@ public final class VillageEnemyEliteSystem {
         GRAPPLE_MOTIONS.clear();
         FIREBRAND_CASTS.clear();
         PLAGUE_CASTS.clear();
+        ASSASSIN_STRIKES.clear();
+        SHOCK_CHARGES.clear();
         ticks = 0;
     }
 
@@ -42,6 +46,8 @@ public final class VillageEnemyEliteSystem {
         GRAPPLE_MOTIONS.remove(uuid);
         FIREBRAND_CASTS.remove(uuid);
         PLAGUE_CASTS.remove(uuid);
+        ASSASSIN_STRIKES.remove(uuid);
+        SHOCK_CHARGES.remove(uuid);
     }
 
     /** Authoritative runtime query used by reward weighting and other raid systems. */
@@ -63,12 +69,16 @@ public final class VillageEnemyEliteSystem {
                 GRAPPLE_MOTIONS.remove(id);
                 FIREBRAND_CASTS.remove(id);
                 PLAGUE_CASTS.remove(id);
+                ASSASSIN_STRIKES.remove(id);
+                SHOCK_CHARGES.remove(id);
                 continue;
             }
             if (VillageRaidSystem.hasActiveTaunt(level, mob)) {
                 GRAPPLE_MOTIONS.remove(id);
                 FIREBRAND_CASTS.remove(id);
                 PLAGUE_CASTS.remove(id);
+                ASSASSIN_STRIKES.remove(id);
+                SHOCK_CHARGES.remove(id);
                 mob.setNoGravity(false);
                 continue;
             }
@@ -81,9 +91,9 @@ public final class VillageEnemyEliteSystem {
             switch (doctrine) {
                 case GRAPPLER -> grappler(level, mob);
                 case FIREBRAND -> firebrand(level, server, mob);
-                case ASSASSIN -> assassin(server, mob);
+                case ASSASSIN -> assassin(level, server, mob);
                 case PLAGUE_WEAVER -> plague(level, server, mob);
-                case SHOCK_RIDER -> shock(server, mob);
+                case SHOCK_RIDER -> shock(level, server, mob);
             }
         }
     }
@@ -123,6 +133,7 @@ public final class VillageEnemyEliteSystem {
             if (doctrine == EliteDoctrine.GRAPPLER) {
                 mob.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 20 * 60 * 30, 0));
             }
+            VillageEnemyCompositionSystem.attachElitePresentation(level, mob, doctrine);
             VillageEnemyEffectSystem.eliteAura(level, mob, doctrine);
         }
     }
@@ -140,6 +151,7 @@ public final class VillageEnemyEliteSystem {
         if (mob.position().distanceToSqr(end) <= 36.0) return;
         if (!level.getBlockState(inside).isAir() || !level.getBlockState(inside.above()).isAir()) return;
         if (phase == 88) {
+            VillageEnemyCompositionSystem.animateRiderAttack(mob);
             VillageEnemyEffectSystem.grappleLine(level, mob, mob.position().add(0.0, 1.0, 0.0),
                     end.add(0.0, 1.0, 0.0), 30);
             return;
@@ -184,6 +196,7 @@ public final class VillageEnemyEliteSystem {
             if (target == null) return;
             Vec3 impact = target.position();
             FIREBRAND_CASTS.put(mob.getUUID(), new FirebrandCast(impact, ticks + 18));
+            VillageEnemyCompositionSystem.animateRiderAttack(mob);
             VillageEnemyEffectSystem.firebrandThrow(level, mob, impact, 18);
             return;
         }
@@ -198,16 +211,53 @@ public final class VillageEnemyEliteSystem {
         VillageEnemyEffectSystem.firebrandImpact(level, cast.impact(), radius);
     }
 
-    private static void assassin(MinecraftServer server, Mob mob) {
-        if (ticks % 40 != 0) return;
-        if (VillageAttackPlanSystem.ownsExteriorRouting(mob.getUUID(), mob.blockPosition())) return;
+    private static void assassin(ServerLevel level, MinecraftServer server, Mob mob) {
+        UUID id = mob.getUUID();
+        AssassinStrike strike = ASSASSIN_STRIKES.get(id);
+        if (strike != null) {
+            ServerPlayer target = server.getPlayerList().getPlayer(strike.target());
+            if (target == null || !target.isAlive() || target.level() != level || VillageRespawnSystem.isDowned(target)) {
+                ASSASSIN_STRIKES.remove(id);
+                return;
+            }
+            if (ticks < strike.dashTick()) {
+                mob.getLookControl().setLookAt(target, 55.0f, 55.0f);
+                return;
+            }
+            if (ticks == strike.dashTick()) {
+                Vec3 delta = target.position().subtract(mob.position());
+                Vec3 horizontal = new Vec3(delta.x, 0.0, delta.z);
+                if (horizontal.lengthSqr() > 1.0E-6) {
+                    mob.getNavigation().stop();
+                    mob.setDeltaMovement(horizontal.normalize().scale(1.55).add(0.0, 0.10, 0.0));
+                }
+                VillageEnemyCompositionSystem.animateRiderAttack(mob);
+                return;
+            }
+            if (ticks < strike.impactTick()) return;
+            ASSASSIN_STRIKES.remove(id);
+            if (mob.distanceToSqr(target) > 25.0) return;
+            float damage = 3.4f + VillageCampaignProgression.effectiveCombatDay(
+                    VillageCouncilState.currentDay()) * 0.10f;
+            target.hurtServer(level, level.damageSources().mobAttack(mob), damage);
+            target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 55, 0));
+            VillageEnemyEffectSystem.assassinImpact(level, target.position(), 2.6);
+            return;
+        }
+
+        int offset = Math.floorMod(id.hashCode(), 90);
+        if (Math.floorMod(ticks - offset, 90) != 0) return;
+        if (VillageAttackPlanSystem.ownsExteriorRouting(id, mob.blockPosition())) return;
         ServerPlayer target = nearbyPlayers(server, mob, 28.0).stream()
                 .min(java.util.Comparator.comparingDouble(mob::distanceToSqr)).orElse(null);
-        if (target != null) {
-            mob.setTarget(target);
-            mob.getNavigation().moveTo(target, 1.48);
-            mob.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 45, 0));
-        }
+        if (target == null) return;
+        mob.setTarget(target);
+        mob.getNavigation().moveTo(target, 1.58);
+        mob.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 20, 0));
+        VillageEnemyEffectSystem.assassinLunge(level, mob,
+                mob.position().add(0.0, mob.getBbHeight() * 0.55, 0.0),
+                target.position().add(0.0, 0.9, 0.0), 16);
+        ASSASSIN_STRIKES.put(id, new AssassinStrike(target.getUUID(), ticks + 8, ticks + 16));
     }
 
     private static void plague(ServerLevel level, MinecraftServer server, Mob mob) {
@@ -217,6 +267,7 @@ public final class VillageEnemyEliteSystem {
         if (phase == 100) {
             Vec3 center = mob.position();
             PLAGUE_CASTS.put(mob.getUUID(), new PlagueCast(center, ticks + 20));
+            VillageEnemyCompositionSystem.animateRiderAttack(mob);
             VillageEnemyEffectSystem.plagueWarning(level, mob, center, radius, 20);
             return;
         }
@@ -230,16 +281,50 @@ public final class VillageEnemyEliteSystem {
         VillageEnemyEffectSystem.plagueImpact(level, cast.center(), radius);
     }
 
-    private static void shock(MinecraftServer server, Mob mob) {
-        if (ticks % 70 != Math.floorMod(mob.getUUID().hashCode(), 70)) return;
-        if (VillageAttackPlanSystem.ownsExteriorRouting(mob.getUUID(), mob.blockPosition())) return;
+    private static void shock(ServerLevel level, MinecraftServer server, Mob mob) {
+        UUID id = mob.getUUID();
+        ShockCharge charge = SHOCK_CHARGES.get(id);
+        if (charge != null) {
+            ServerPlayer target = server.getPlayerList().getPlayer(charge.target());
+            if (target != null && target.isAlive() && target.level() == level && !VillageRespawnSystem.isDowned(target)) {
+                mob.setTarget(target);
+                mob.getNavigation().moveTo(target, 1.72);
+            }
+            if (ticks < charge.impactTick()) return;
+            SHOCK_CHARGES.remove(id);
+            VillageEnemyCompositionSystem.animateRiderAttack(mob);
+            double radius = 5.2;
+            float damage = 2.5f + VillageCampaignProgression.effectiveCombatDay(
+                    VillageCouncilState.currentDay()) * 0.075f;
+            for (ServerPlayer player : nearbyPlayersAt(server, level, mob.position(), radius)) {
+                player.hurtServer(level, level.damageSources().mobAttack(mob), damage);
+                player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 45, 1));
+                Vec3 push = player.position().subtract(mob.position());
+                push = new Vec3(push.x, 0.0, push.z);
+                if (push.lengthSqr() > 1.0E-6) {
+                    push = push.normalize();
+                    player.setDeltaMovement(player.getDeltaMovement().add(push.x * 0.82, 0.26, push.z * 0.82));
+                    player.hurtMarked = true;
+                }
+            }
+            VillageEnemyEffectSystem.shockImpact(level, mob.position(), radius);
+            return;
+        }
+
+        int offset = Math.floorMod(id.hashCode(), 100);
+        if (Math.floorMod(ticks - offset, 100) != 0) return;
+        if (VillageAttackPlanSystem.ownsExteriorRouting(id, mob.blockPosition())) return;
         ServerPlayer target = nearbyPlayers(server, mob, 24.0).stream()
                 .min(java.util.Comparator.comparingDouble(mob::distanceToSqr)).orElse(null);
-        if (target != null) {
-            mob.setTarget(target);
-            mob.getNavigation().moveTo(target, 1.62);
-            mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 55, 1));
-        }
+        if (target == null) return;
+        mob.setTarget(target);
+        mob.getNavigation().moveTo(target, 1.68);
+        mob.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 45, 1));
+        VillageEnemyCompositionSystem.animateRiderAttack(mob);
+        VillageEnemyEffectSystem.shockCharge(level, mob,
+                mob.position().add(0.0, mob.getBbHeight() * 0.55, 0.0),
+                target.position().add(0.0, 0.8, 0.0), 18);
+        SHOCK_CHARGES.put(id, new ShockCharge(target.getUUID(), ticks + 18));
     }
 
     private static java.util.List<ServerPlayer> nearbyPlayers(MinecraftServer server, Mob mob, double radius) {
@@ -258,6 +343,8 @@ public final class VillageEnemyEliteSystem {
     private record GrappleMotion(Vec3 start, Vec3 end, int startTick, int duration) {}
     private record FirebrandCast(Vec3 impact, int dueTick) {}
     private record PlagueCast(Vec3 center, int dueTick) {}
+    private record AssassinStrike(UUID target, int dashTick, int impactTick) {}
+    private record ShockCharge(UUID target, int impactTick) {}
 
     public enum EliteDoctrine {
         GRAPPLER("갈고리병"), FIREBRAND("화염 투척병"), ASSASSIN("침투 암살자"),

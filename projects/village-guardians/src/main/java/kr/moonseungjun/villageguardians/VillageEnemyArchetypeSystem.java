@@ -286,10 +286,35 @@ public final class VillageEnemyArchetypeSystem {
                 damageAndDebuffPlayers(level, server, mob, 5.5, 2.0f, MobEffects.SLOWNESS);
                 spawnAura(level, mob, archetype, 18);
             }
+            case BREEZE_DISRUPTOR -> {
+                if (!abilityReady(mob, globalTicks, 110)) return;
+                for (ServerPlayer player : nearbyPlayers(server, mob, 6.5)) {
+                    player.hurtServer(level, level.damageSources().magic(),
+                            1.4f + VillageCampaignProgression.effectiveCombatDay(
+                                    VillageCouncilState.currentDay()) * 0.045f);
+                    Vec3 push = player.position().subtract(mob.position());
+                    push = new Vec3(push.x, 0.0, push.z);
+                    if (push.lengthSqr() > 1.0E-6) {
+                        push = push.normalize();
+                        player.setDeltaMovement(player.getDeltaMovement().add(push.x * 0.72, 0.24, push.z * 0.72));
+                        player.hurtMarked = true;
+                    }
+                }
+                level.playSound(null, mob.getX(), mob.getY(), mob.getZ(),
+                        SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), SoundSource.HOSTILE, 0.9f, 1.05f);
+                spawnAura(level, mob, archetype, 18);
+            }
             case MAGMA_BRUTE -> {
                 if (!abilityReady(mob, globalTicks, 150)) return;
                 damageAndDebuffPlayers(level, server, mob, 5.0, 2.5f, MobEffects.SLOWNESS);
                 spawnAura(level, mob, archetype, 18);
+            }
+            case NETHER_REAVER -> {
+                if (!abilityReady(mob, globalTicks, 130)) return;
+                VillageEnemyCompositionSystem.animateRiderAttack(mob);
+                damageAndDebuffPlayers(level, server, mob, 4.5, 2.8f, MobEffects.WEAKNESS);
+                mob.addEffect(new MobEffectInstance(MobEffects.SPEED, 35, 0));
+                spawnAura(level, mob, archetype, 16);
             }
             case SIEGE_BEAST -> {
                 int phase = abilityPhase(mob, globalTicks, 100);

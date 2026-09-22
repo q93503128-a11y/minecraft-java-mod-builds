@@ -133,6 +133,10 @@ public final class VillageSkillMeshLibrary {
             case "elite_firebrand_impact" -> renderEliteZone(pose, out, basis, age, progress, state.extra, 0);
             case "elite_plague_warning" -> renderEliteZone(pose, out, basis, age, progress, state.extra, 1);
             case "elite_plague_impact" -> renderEliteZone(pose, out, basis, age, progress, state.extra, 2);
+            case "elite_assassin_lunge" -> renderPath(pose, out, state, age, progress, 0xC46BFF, true);
+            case "elite_assassin_impact" -> renderEliteZone(pose, out, basis, age, progress, state.extra, 3);
+            case "elite_shock_charge" -> renderPath(pose, out, state, age, progress, 0x6DEBFF, true);
+            case "elite_shock_impact" -> renderEliteZone(pose, out, basis, age, progress, state.extra, 4);
 
             case "boss_phase_two_burst" -> renderBossZone(pose, out, basis, age, progress, state.extra, 0);
             case "boss_breach_warning" -> renderBossZone(pose, out, basis, age, progress, state.extra, 1);
@@ -1234,9 +1238,14 @@ public final class VillageSkillMeshLibrary {
         try { radius = Double.parseDouble(encodedRadius); }
         catch (NumberFormatException ignored) {}
         radius = Math.max(1.0, radius);
-        int color = style == 0
-                ? rgba(255, 86, 38, (int) (205 * (1.0 - progress * 0.75)))
-                : rgba(110, 214, 91, (int) ((style == 1 ? 155 : 210) * (1.0 - progress * 0.72)));
+        int color = switch (style) {
+            case 0 -> rgba(255, 86, 38, (int) (205 * (1.0 - progress * 0.75)));
+            case 1 -> rgba(110, 214, 91, (int) (155 * (1.0 - progress * 0.72)));
+            case 2 -> rgba(110, 214, 91, (int) (210 * (1.0 - progress * 0.72)));
+            case 3 -> rgba(196, 107, 255, (int) (220 * (1.0 - progress * 0.72)));
+            case 4 -> rgba(109, 235, 255, (int) (225 * (1.0 - progress * 0.72)));
+            default -> rgba(220, 220, 220, 190);
+        };
         double visibleRadius = style == 1 ? radius : 0.45 + radius * Math.min(1.0, progress * 2.2);
         ring(pose, out, b, visibleRadius, 0.045, style == 1 ? 0.11 : 0.18, 72, color, age * 0.012);
         if (style == 1) {
@@ -1245,8 +1254,13 @@ public final class VillageSkillMeshLibrary {
                 double a = i * TAU / 8.0 + age * 0.006;
                 chevron(pose, out, b, a, radius * 0.88, 0.06, 0.44, withAlpha(color, 120));
             }
-        } else if (style == 2) {
+        } else if (style == 2 || style == 3) {
             sphere(pose, out, Vec3.ZERO, Math.max(0.3, visibleRadius * 0.22), 8, 12, withAlpha(color, 80));
+        } else if (style == 4) {
+            ring(pose, out, b, Math.max(0.6, visibleRadius * 0.62), 0.07, 0.05,
+                    48, withAlpha(color, 135), -age * 0.055);
+            verticalPillar(pose, out, b, Math.max(0.16, visibleRadius * 0.07),
+                    1.4 + visibleRadius * 0.28, withAlpha(color, 105));
         }
     }
 

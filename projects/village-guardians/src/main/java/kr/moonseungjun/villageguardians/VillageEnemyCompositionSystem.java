@@ -87,6 +87,49 @@ public final class VillageEnemyCompositionSystem {
         VillageWorldSystem.markAllowedGameMob(rider);
     }
 
+    public static void attachElitePresentation(
+            ServerLevel level, Mob owner, VillageEnemyEliteSystem.EliteDoctrine doctrine) {
+        if (level == null || owner == null || doctrine == null || !owner.isAlive()) return;
+
+        Mob rider = owner.getPassengers().stream()
+                .filter(VillageEnemyCompositionSystem::isVisualRider)
+                .filter(Mob.class::isInstance)
+                .map(Mob.class::cast)
+                .findFirst().orElse(null);
+        if (rider == null) {
+            rider = switch (doctrine) {
+                case GRAPPLER -> EntityTypes.SKELETON.create(level, EntitySpawnReason.EVENT);
+                case FIREBRAND -> EntityTypes.HUSK.create(level, EntitySpawnReason.EVENT);
+                case ASSASSIN -> EntityTypes.VINDICATOR.create(level, EntitySpawnReason.EVENT);
+                case PLAGUE_WEAVER -> EntityTypes.WITCH.create(level, EntitySpawnReason.EVENT);
+                case SHOCK_RIDER -> EntityTypes.ZOMBIFIED_PIGLIN.create(level, EntitySpawnReason.EVENT);
+            };
+            if (rider == null) return;
+            configureVisualRider(rider);
+            styleEliteRider(rider, doctrine);
+            rider.snapTo(owner.getX(), owner.getY(), owner.getZ(), owner.getYRot(), owner.getXRot());
+            if (!level.addFreshEntity(rider)) return;
+            if (!rider.startRiding(owner)) {
+                rider.discard();
+                return;
+            }
+            VillageRaidSystem.registerVisualCompanion(level.getServer(), rider, false);
+            VillageWorldSystem.markAllowedGameMob(rider);
+            return;
+        }
+        styleEliteRider(rider, doctrine);
+    }
+
+    private static void styleEliteRider(Mob rider, VillageEnemyEliteSystem.EliteDoctrine doctrine) {
+        switch (doctrine) {
+            case GRAPPLER -> equip(rider, Items.CHAIN, Items.CHAINMAIL_HELMET, Items.LEATHER_CHESTPLATE);
+            case FIREBRAND -> equip(rider, Items.FIRE_CHARGE, Items.GOLDEN_HELMET, Items.LEATHER_CHESTPLATE);
+            case ASSASSIN -> equip(rider, Items.IRON_SWORD, Items.LEATHER_HELMET, Items.CHAINMAIL_CHESTPLATE);
+            case PLAGUE_WEAVER -> equip(rider, Items.SPIDER_EYE, Items.WITHER_SKELETON_SKULL, Items.LEATHER_CHESTPLATE);
+            case SHOCK_RIDER -> equip(rider, Items.GOLDEN_AXE, Items.GOLDEN_HELMET, Items.GOLDEN_CHESTPLATE);
+        }
+    }
+
     public static boolean isVisualRider(Entity entity) {
         return entity != null && entity.entityTags().contains(VISUAL_RIDER_TAG);
     }
