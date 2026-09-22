@@ -32,9 +32,11 @@ public final class PlayerVitalsRuntime {
         initialized = true;
     }
 
-    public static void synchronizeBuild(Player player, PlayerCombatBuildState build) {
+    public static void synchronizeMaxHealth(Player player, int canonicalMaxHealth) {
         Objects.requireNonNull(player, "player");
-        Objects.requireNonNull(build, "build");
+        if (canonicalMaxHealth <= 0) {
+            throw new IllegalArgumentException("canonicalMaxHealth must be positive.");
+        }
         if (player.level().isClientSide()) {
             throw new IllegalStateException("Player vital authority is server-only.");
         }
@@ -50,7 +52,7 @@ public final class PlayerVitalsRuntime {
                 ? Math.max(0.0, Math.min(1.0, oldHealth / oldMax))
                 : 1.0;
 
-        maxHealth.setBaseValue(build.maxHealth());
+        maxHealth.setBaseValue(canonicalMaxHealth);
         float projectedMax = player.getMaxHealth();
         player.setHealth((float) Math.max(
                 0.0,
