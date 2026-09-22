@@ -152,7 +152,7 @@ public final class PlayerDefenseRuntimeState {
         }
 
         double normalGuardCost = PlayerDefenseAuthority.guardStaminaCost(
-                hit.guardPressure(),
+                hit.guardPressure().orElseThrow(),
                 defense.guardRating(),
                 resources.endurance(),
                 hit.attackerLevel()

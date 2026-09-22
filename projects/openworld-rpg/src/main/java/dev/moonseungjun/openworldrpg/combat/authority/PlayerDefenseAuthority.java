@@ -98,7 +98,7 @@ public final class PlayerDefenseAuthority {
             double rawDamage,
             ProjectImpactTransaction.DamageSchool school,
             int attackerLevel,
-            GuardPressureBand guardPressure,
+            Optional<GuardPressureBand> guardPressure,
             boolean dodgeable,
             boolean guardable,
             boolean perfectGuardable,
@@ -110,6 +110,14 @@ public final class PlayerDefenseAuthority {
             Objects.requireNonNull(school, "school");
             Objects.requireNonNull(guardPressure, "guardPressure");
             ProjectCombatRules.gearScale(attackerLevel);
+            boolean guardInteraction = guardable || perfectGuardable;
+            if (guardInteraction != guardPressure.isPresent()) {
+                throw new IllegalArgumentException(
+                        guardInteraction
+                                ? "Guardable/perfect-guardable hits require a guard pressure band."
+                                : "Unguardable hits must not invent an unused guard pressure band."
+                );
+            }
             requireFinitePositive(
                     "authoredDamageTakenMultiplier",
                     authoredDamageTakenMultiplier
@@ -136,10 +144,29 @@ public final class PlayerDefenseAuthority {
                     rawDamage,
                     school,
                     attackerLevel,
-                    guardPressure,
+                    Optional.of(Objects.requireNonNull(guardPressure, "guardPressure")),
                     dodgeable,
                     guardable,
                     perfectGuardable,
+                    1.0,
+                    0.0
+            );
+        }
+
+        public static IncomingHit unguardable(
+                double rawDamage,
+                ProjectImpactTransaction.DamageSchool school,
+                int attackerLevel,
+                boolean dodgeable
+        ) {
+            return new IncomingHit(
+                    rawDamage,
+                    school,
+                    attackerLevel,
+                    Optional.empty(),
+                    dodgeable,
+                    false,
+                    false,
                     1.0,
                     0.0
             );

@@ -178,14 +178,11 @@ class PlayerDefenseRuntimeStateTest {
         var magic = active.resolveIncoming(
                 resources,
                 snapshot,
-                PlayerDefenseAuthority.IncomingHit.baseline(
+                PlayerDefenseAuthority.IncomingHit.unguardable(
                         100.0,
                         ProjectImpactTransaction.DamageSchool.MAGIC,
                         8,
-                        PlayerDefenseAuthority.GuardPressureBand.LIGHT,
-                        true,
-                        false,
-                        false
+                        true
                 ),
                 0
         );
@@ -211,13 +208,10 @@ class PlayerDefenseRuntimeStateTest {
         var unavoidable = active.resolveIncoming(
                 resources,
                 snapshot,
-                PlayerDefenseAuthority.IncomingHit.baseline(
+                PlayerDefenseAuthority.IncomingHit.unguardable(
                         50.0,
                         ProjectImpactTransaction.DamageSchool.PHYSICAL,
                         8,
-                        PlayerDefenseAuthority.GuardPressureBand.LIGHT,
-                        false,
-                        false,
                         false
                 ),
                 2
@@ -227,6 +221,20 @@ class PlayerDefenseRuntimeStateTest {
         assertEquals(0.0, dodgeable.finalDamage(), EPSILON);
         assertFalse(unavoidable.dodged());
         assertEquals(50.0, unavoidable.finalDamage(), EPSILON);
+    }
+
+    @Test
+    void unguardableHitCarriesNoInventedGuardPressure() {
+        var hit = PlayerDefenseAuthority.IncomingHit.unguardable(
+                50.0,
+                ProjectImpactTransaction.DamageSchool.MAGIC,
+                8,
+                true
+        );
+
+        assertTrue(hit.guardPressure().isEmpty());
+        assertFalse(hit.guardable());
+        assertFalse(hit.perfectGuardable());
     }
 
     private static PlayerDefenseAuthority.IncomingHit physicalHit(

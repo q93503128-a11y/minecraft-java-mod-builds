@@ -50,11 +50,15 @@ jobs:
       - name: Verify pinned creature dependency metadata
         run: ./gradlew --no-daemon inspectCreatureFoundationDependencies --stacktrace
 
-      - name: Inspect pinned Earthloong dependency surface
-        run: ./gradlew --no-daemon inspectEarthloongDependencySurface --stacktrace
-
       - name: Test and build M0 core
         run: ./gradlew --no-daemon clean test build --stacktrace
+
+      - name: Inspect pinned Earthloong dependency surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon inspectEarthloongDependencySurface --stacktrace
+          cat build/reports/m0/earthloong-dependency-surface.txt
 
       - name: Verify bootstrap JAR
         shell: bash
