@@ -135,6 +135,7 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         private final R01EarthloongThreatTable threat = new R01EarthloongThreatTable();
         private long nextDecisionTick = Long.MAX_VALUE;
         private CommittedAction committed;
+        private UUID currentThreatTargetId;
         private UUID closeTargetId;
         private long closeTargetSinceTick = Long.MIN_VALUE / 4;
 
@@ -144,6 +145,7 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         }
 
         private void tick(ServerLevel level, long gameTick) {
+            updateRootBreakerProximityEveryTick(level, gameTick);
             if (committed != null) {
                 tickCommitted(level, gameTick);
                 return;
@@ -165,9 +167,17 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             for (ServerPlayer player : validPlayers) ids.add(player.getUUID());
             UUID targetId = threat.selectTarget(ids, gameTick).orElse(null);
             ServerPlayer target = targetId == null ? null : playerById(validPlayers, targetId);
-            if (target == null) return;
+            if (target == null) {
+                currentThreatTargetId = null;
+                resetRootBreakerProximity();
+                return;
+            }
 
-            updateRootBreakerProximity(target, gameTick);
+            if (!target.getUUID().equals(currentThreatTargetId)) {
+                currentThreatTargetId = target.getUUID();
+                resetRootBreakerProximity();
+                updateRootBreakerProximityEveryTick(level, gameTick);
+            }
             var decision = actions.select(currentPhase(), actionLegality(level, target, gameTick), gameTick);
             if (decision.reposition()) {
                 R01EarthloongDonorPresentationBridge.resetTechnicalCandidate(actor);
@@ -232,16 +242,28 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                     false);
         }
 
-        private void updateRootBreakerProximity(ServerPlayer target, long gameTick) {
-            if (horizontalDistance(actor, target) > 3.0) {
-                closeTargetId = null;
-                closeTargetSinceTick = Long.MIN_VALUE / 4;
+        private void updateRootBreakerProximityEveryTick(ServerLevel level, long gameTick) {
+            if (currentThreatTargetId == null) {
+                resetRootBreakerProximity();
+                return;
+            }
+            Entity entity = level.getPlayerByUUID(currentThreatTargetId);
+            if (!(entity instanceof ServerPlayer target)
+                    || !target.isAlive()
+                    || target.isSpectator()
+                    || horizontalDistance(actor, target) > 3.0) {
+                resetRootBreakerProximity();
                 return;
             }
             if (!target.getUUID().equals(closeTargetId)) {
                 closeTargetId = target.getUUID();
                 closeTargetSinceTick = gameTick;
             }
+        }
+
+        private void resetRootBreakerProximity() {
+            closeTargetId = null;
+            closeTargetSinceTick = Long.MIN_VALUE / 4;
         }
 
         private void commit(
