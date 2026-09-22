@@ -17,7 +17,9 @@ final class VillageExternalMercenaryMesh {
             "/assets/villageguardians/models/mercenary/bastion.obj",
             "/assets/villageguardians/models/mercenary/striker.obj",
             "/assets/villageguardians/models/mercenary/ranger.obj",
-            "/assets/villageguardians/models/mercenary/medic.obj"
+            "/assets/villageguardians/models/mercenary/medic.obj",
+            "/assets/villageguardians/models/mercenary/warder.obj",
+            "/assets/villageguardians/models/mercenary/artillerist.obj"
     };
     private static final Mesh[] CACHE = new Mesh[RESOURCES.length];
 
