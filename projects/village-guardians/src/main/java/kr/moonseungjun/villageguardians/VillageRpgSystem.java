@@ -101,6 +101,7 @@ public final class VillageRpgSystem {
             if (event.getEntity() instanceof Mob target) {
                 if (projectile) value *= VillageRelicSystem.projectileTargetMultiplier(attacker, target);
                 value *= VillageRolePromotionSystem.targetMultiplier(attacker, target, projectile);
+                value *= VillageEquipmentSetSystem.targetMultiplier(attacker, target, projectile);
             }
             if (event.getEntity() instanceof Monster monster) {
                 value *= VillageSkillTreeSystem.executionMultiplier(attacker, monster.getHealth(), monster.getMaxHealth());

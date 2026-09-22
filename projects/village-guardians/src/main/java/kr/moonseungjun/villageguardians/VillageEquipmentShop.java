@@ -264,6 +264,8 @@ public final class VillageEquipmentShop {
         public ItemStack createStack() {
             ItemStack stack = VillageEquipmentRaritySystem.createNamed(item, rarity(), displayName, combatTier());
             VillageEquipmentIdentity.stampOffer(stack, id);
+            VillageEquipmentSetSystem.EquipmentSet set = VillageEquipmentSetSystem.setForOfferId(id);
+            if (set != null) VillageEquipmentIdentity.stampSet(stack, set.id());
             return stack;
         }
 

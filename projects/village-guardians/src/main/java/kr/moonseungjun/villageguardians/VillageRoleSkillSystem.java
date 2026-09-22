@@ -326,9 +326,7 @@ public final class VillageRoleSkillSystem {
                 * VillageEquipmentShop.roleSkillMultiplier(player)
                 * VillageRelicSystem.skillMultiplier(player)
                 * VillageConsumableSystem.skillMultiplier(player)
-                * (role == VillageRole.RANGER && skill.promotionTier() > 0
-                        ? VillageEquipmentSetSystem.rangedSkillMultiplier(player)
-                        : 1.0f)
+                * VillageEquipmentSetSystem.roleSkillMultiplier(player, role, skill.promotionTier())
                 * mastery.powerMultiplier();
         float duration = durationMultiplier(player, role)
                 * VillageProgressionSystem.skillHallDurationMultiplier()
@@ -362,7 +360,8 @@ public final class VillageRoleSkillSystem {
                 - VillageSkillTreeSystem.mobilityCooldownReductionSeconds(player)
                 - roleTreeCooldownReductionSeconds(player, role)
                 - VillageRolePromotionSystem.cooldownReductionSeconds(player, role)
-                - VillageEquipmentShop.cooldownReductionSeconds(player);
+                - VillageEquipmentShop.cooldownReductionSeconds(player)
+                - VillageEquipmentSetSystem.cooldownReductionSeconds(player, role);
         int afterRelics = Math.round(Math.max(1, afterFlatReduction)
                 * VillageRelicSystem.cooldownMultiplier(player));
         return Math.max(minimum, afterRelics);

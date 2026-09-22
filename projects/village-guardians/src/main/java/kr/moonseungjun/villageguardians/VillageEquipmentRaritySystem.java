@@ -23,7 +23,8 @@ public final class VillageEquipmentRaritySystem {
             Items.IRON_SWORD, Items.BOW, Items.SHIELD, Items.IRON_CHESTPLATE, Items.CROSSBOW);
     private static final List<Item> LATE_ITEMS = List.of(
             Items.DIAMOND_SWORD, Items.BOW, Items.SHIELD, Items.DIAMOND_CHESTPLATE, Items.CROSSBOW,
-            Items.DIAMOND_AXE, Items.DIAMOND_HELMET);
+            Items.DIAMOND_AXE, Items.DIAMOND_HELMET, Items.DIAMOND_LEGGINGS, Items.DIAMOND_BOOTS,
+            Items.TRIDENT, Items.MACE, Items.BLAZE_ROD);
 
     private VillageEquipmentRaritySystem() {}
 
@@ -49,7 +50,10 @@ public final class VillageEquipmentRaritySystem {
                     day >= 6 ? Items.DIAMOND_CHESTPLATE : Items.IRON_CHESTPLATE);
         };
         Item item = pool.get(random.nextInt(pool.size()));
-        return createNamed(item, rollRarity(day, boss, random), displayName(item), combatTierForDay(day));
+        ItemStack result = createNamed(item, rollRarity(day, boss, random), displayName(item), combatTierForDay(day));
+        VillageEquipmentIdentity.stampSet(result,
+                VillageEquipmentSetSystem.setForRaidDrop(archetype, boss, random).id());
+        return result;
     }
 
     public static ItemStack createNamed(Item item, Rarity rarity, String name) {
@@ -60,6 +64,7 @@ public final class VillageEquipmentRaritySystem {
         ItemStack stack = item.getDefaultInstance();
         applyName(stack, rarity, name, 0);
         VillageEquipmentIdentity.stampPowerTier(stack, combatTier);
+        VillageEquipmentIdentity.stampSet(stack, VillageEquipmentSetSystem.defaultSetForItem(item).id());
         return stack;
     }
 
@@ -71,7 +76,9 @@ public final class VillageEquipmentRaritySystem {
             Rarity rarity = rarityOf(stack);
             if (rarity == null || rarity == Rarity.LEGENDARY) continue;
             int enhancement = enhancementLevel(stack);
-            String group = stack.getItem() + "@" + rarity.name() + "@" + enhancement + "@" + combatTier(stack);
+            VillageEquipmentSetSystem.EquipmentSet set = VillageEquipmentSetSystem.setOf(stack);
+            String group = stack.getItem() + "@" + rarity.name() + "@" + enhancement + "@" + combatTier(stack)
+                    + "@" + (set == null ? "none" : set.id());
             result.add(new FusionCandidate(slot, group, baseDisplayName(stack),
                     rarity.displayName() + (enhancement > 0 ? " · 강화 +" + enhancement : ""),
                     stack.getItem().toString()));
@@ -99,12 +106,14 @@ public final class VillageEquipmentRaritySystem {
         Rarity rarity = rarityOf(first);
         int enhancement = enhancementLevel(first);
         int combatTier = combatTier(first);
-        if (rarity == null || rarity == Rarity.LEGENDARY
+        VillageEquipmentSetSystem.EquipmentSet set = VillageEquipmentSetSystem.setOf(first);
+        if (rarity == null || rarity == Rarity.LEGENDARY || set == null
                 || rarityOf(second) != rarity || rarityOf(third) != rarity
                 || enhancementLevel(second) != enhancement || enhancementLevel(third) != enhancement
                 || combatTier(second) != combatTier || combatTier(third) != combatTier
+                || VillageEquipmentSetSystem.setOf(second) != set || VillageEquipmentSetSystem.setOf(third) != set
                 || second.getItem() != first.getItem() || third.getItem() != first.getItem()) {
-            return "같은 종류·같은 전장 단계·같은 등급·같은 강화 단계 장비 세 개를 선택해야 합니다.";
+            return "같은 종류·세트·전장 단계·등급·강화 단계 장비 세 개를 선택해야 합니다.";
         }
         Item item = first.getItem();
         String name = baseDisplayName(first);
@@ -113,6 +122,7 @@ public final class VillageEquipmentRaritySystem {
         third.shrink(1);
         ItemStack result = createNamed(item, rarity.next(), name, combatTier);
         applyName(result, rarity.next(), name, enhancement);
+        VillageEquipmentIdentity.stampSet(result, set.id());
         if (!player.addItem(result)) player.drop(result, false);
         player.getInventory().setChanged();
         return name + " 세 개를 " + rarity.next().displayName() + " 등급 하나로 합성했습니다."
