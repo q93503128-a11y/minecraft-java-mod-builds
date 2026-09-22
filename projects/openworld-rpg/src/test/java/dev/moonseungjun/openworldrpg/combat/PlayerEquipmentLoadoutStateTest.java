@@ -137,6 +137,7 @@ class PlayerEquipmentLoadoutStateTest {
         ));
 
         assertTrue(loadout.aggregateCombatState().isEmpty());
+        assertEquals(2.0, loadout.aggregateFlatAttributeBonuses().intel(), 0.0001);
     }
 
     @Test
