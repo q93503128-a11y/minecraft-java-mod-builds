@@ -1101,7 +1101,8 @@ public final class VillageRoleAbilitySystem {
             double radius,
             double knockback,
             boolean weakness) {
-        Vec3 forward = horizontal(direction);
+        Vec3 planar = direction == null ? Vec3.ZERO : new Vec3(direction.x, 0.0, direction.z);
+        Vec3 forward = planar.lengthSqr() < 1.0E-6 ? horizontalLook(player) : planar.normalize();
         DashState dash = new DashState(skill, now + Math.max(1, ticks), forward,
                 speed, damage, radius, knockback, weakness, new HashSet<>());
         DASHES.put(player.getUUID(), dash);
