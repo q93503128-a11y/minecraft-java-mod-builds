@@ -1291,8 +1291,9 @@ Implemented:
 - Quarry Rush: authored 16-tick tell, clear-line 5..9-block start requirement, target-locked 9-block committed path, six active movement ticks from the audited donor charge duration, one contact per player per cast, 18-tick recovery;
 - a new obstruction after commit stops/clips the physical movement rather than teleporting through geometry;
 - donor navigation/AI is disabled only for the committed physical action and restored afterward;
+- donor Earthloong baseTick attack procedure is suppressed by clearing donor combat targets before entity ticking and again after project target sampling; project code alone writes the accepted SkillNumber presentation state;
 - ordinary attacks may repeat at most twice when another legal ordinary action exists;
-- signature movement/space-control actions cannot immediately repeat; if no other legal action exists the controller repositions instead;
+- signature movement/space-control actions cannot immediately repeat while another legal action exists; the global singleton-candidate exception still allows repetition when it is the only legal action;
 - project damage to Earthloong now feeds the Earthloong-local threat table.
 
 Still intentionally gated:

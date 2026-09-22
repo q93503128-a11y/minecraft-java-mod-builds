@@ -215,9 +215,11 @@ class R01EarthloongActionControllerTest {
                 R01EarthloongEncounterData.ActionId.QUARRY_RUSH,
                 150
         ));
-        var noImmediateSignatureRepeat =
-                controller.select(R01EarthloongEncounterData.Phase.ONE, onlyQuarry, 150);
-        assertTrue(noImmediateSignatureRepeat.reposition());
+        var ready = controller.select(R01EarthloongEncounterData.Phase.ONE, onlyQuarry, 150);
+        assertEquals(
+                R01EarthloongEncounterData.ActionId.QUARRY_RUSH,
+                ready.action().orElseThrow()
+        );
     }
 
     @Test
@@ -351,15 +353,18 @@ class R01EarthloongActionControllerTest {
     }
 
     @Test
-    void signatureActionCannotRepeatEvenWhenItIsTheOnlyLegalCandidate() {
+    void signatureActionMayRepeatWhenItIsTheOnlyLegalCandidate() {
         var controller = new R01EarthloongActionController(
                 R01EarthloongEncounterDataLoader.loadBundled(), "signature-only", ACTOR);
         var quarry = R01EarthloongActionController.Legality.only(
                 R01EarthloongEncounterData.ActionId.QUARRY_RUSH);
         controller.select(R01EarthloongEncounterData.Phase.ONE, quarry, 0);
         var repeat = controller.select(R01EarthloongEncounterData.Phase.ONE, quarry, 140);
-        assertTrue(repeat.reposition());
-        assertEquals(1L, controller.actionCounter());
+        assertEquals(
+                R01EarthloongEncounterData.ActionId.QUARRY_RUSH,
+                repeat.action().orElseThrow()
+        );
+        assertEquals(2L, controller.actionCounter());
     }
 
 }

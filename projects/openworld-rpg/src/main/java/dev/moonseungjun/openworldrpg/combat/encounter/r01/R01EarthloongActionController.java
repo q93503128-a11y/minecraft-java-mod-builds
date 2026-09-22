@@ -73,14 +73,11 @@ public final class R01EarthloongActionController {
             }
         }
 
-        if (lastCommittedAction != null) {
-            if (isSignatureAction(lastCommittedAction) && consecutiveSameActionCount >= 1) {
-                candidates.removeIf(rule -> rule.id() == lastCommittedAction);
-                if (candidates.isEmpty()) {
-                    return Decision.reposition(actionCounter);
-                }
-            } else if (consecutiveSameActionCount >= 2
-                    && candidates.stream().anyMatch(rule -> rule.id() != lastCommittedAction)) {
+        if (lastCommittedAction != null
+                && candidates.size() > 1
+                && candidates.stream().anyMatch(rule -> rule.id() != lastCommittedAction)) {
+            int repeatLimit = isSignatureAction(lastCommittedAction) ? 1 : 2;
+            if (consecutiveSameActionCount >= repeatLimit) {
                 candidates.removeIf(rule -> rule.id() == lastCommittedAction);
             }
         }
