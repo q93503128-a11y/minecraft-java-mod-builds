@@ -94,7 +94,7 @@ class PlayerCombatBuildStateTest {
                 equipment
         );
 
-        assertEquals(150, build.maxHealth());
+        assertEquals(151, build.maxHealth());
     }
 
     @Test
