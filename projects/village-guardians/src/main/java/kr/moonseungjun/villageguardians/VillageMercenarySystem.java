@@ -198,7 +198,8 @@ public final class VillageMercenarySystem {
     }
     public static synchronized void resetForNewGame(MinecraftServer server) {
         discardCurrent(server); CLASSES.clear(); LEVELS.clear(); KILLS.clear(); NIGHT_SNAPSHOT.clear();
-        tickCounter = 0; persist(); persistNightSnapshot();
+        reset();
+        persist(); persistNightSnapshot();
     }
     private static void discardCurrent(MinecraftServer server) {
         for (UUID uuid : new java.util.HashSet<>(CLASSES.keySet())) {
@@ -787,6 +788,10 @@ public final class VillageMercenarySystem {
         CLASSES.remove(uuid);
         LEVELS.remove(uuid);
         KILLS.remove(uuid);
+        STRIKER_TRACKED_TARGETS.remove(uuid);
+        STRIKER_OPENING_TARGETS.remove(uuid);
+        NEXT_WARD_PULSE.remove(uuid);
+        NEXT_ARTILLERY_CAST.remove(uuid);
         persist();
     }
 
