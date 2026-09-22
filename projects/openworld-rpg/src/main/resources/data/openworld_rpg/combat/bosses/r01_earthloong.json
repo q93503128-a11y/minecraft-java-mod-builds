@@ -58,5 +58,31 @@
       "cooldownTicks": 140,
       "spaceControl": true
     }
+  ],
+  "impacts": [
+    {
+      "action": "CLAW_SWEEP",
+      "benchmarkDamageShare": 0.10,
+      "school": "PHYSICAL",
+      "guardPressure": "MEDIUM",
+      "guardable": true,
+      "perfectGuardable": true
+    },
+    {
+      "action": "TAIL_SCYTHE",
+      "benchmarkDamageShare": 0.20,
+      "school": "PHYSICAL",
+      "guardPressure": "HEAVY",
+      "guardable": true,
+      "perfectGuardable": true
+    },
+    {
+      "action": "QUARRY_RUSH",
+      "benchmarkDamageShare": 0.24,
+      "school": "PHYSICAL",
+      "guardPressure": "HEAVY",
+      "guardable": false,
+      "perfectGuardable": true
+    }
   ]
 }

@@ -34,6 +34,49 @@ class R01EarthloongActionControllerTest {
     }
 
     @Test
+    void bundledPhaseOnePhysicalImpactRulesMatchCanon() {
+        var data = R01EarthloongEncounterDataLoader.loadBundled();
+        var impacts = data.impactRulesById();
+
+        assertEquals(3, impacts.size());
+
+        var claw = impacts.get(R01EarthloongEncounterData.ActionId.CLAW_SWEEP);
+        var tail = impacts.get(R01EarthloongEncounterData.ActionId.TAIL_SCYTHE);
+        var rush = impacts.get(R01EarthloongEncounterData.ActionId.QUARRY_RUSH);
+
+        assertEquals(0.10, claw.benchmarkDamageShare(), 0.000001);
+        assertEquals(0.20, tail.benchmarkDamageShare(), 0.000001);
+        assertEquals(0.24, rush.benchmarkDamageShare(), 0.000001);
+
+        assertTrue(claw.guardable());
+        assertTrue(claw.perfectGuardable());
+        assertTrue(tail.guardable());
+        assertTrue(tail.perfectGuardable());
+        assertFalse(rush.guardable());
+        assertTrue(rush.perfectGuardable());
+
+        assertEquals(19.0666666667, claw.toIncomingHit(8).rawDamage(), 0.000001);
+        assertEquals(38.1333333333, tail.toIncomingHit(8).rawDamage(), 0.000001);
+        assertEquals(45.76, rush.toIncomingHit(8).rawDamage(), 0.000001);
+    }
+
+    @Test
+    void benchmarkDamageAuthoringUsesLockedSameLevelHealthAnchors() {
+        assertEquals(100, dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules
+                .benchmarkPlayerHealth(1));
+        assertEquals(143, dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules
+                .benchmarkPlayerHealth(8));
+        assertEquals(223, dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules
+                .benchmarkPlayerHealth(20));
+        assertEquals(403, dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules
+                .benchmarkPlayerHealth(44));
+        assertEquals(575, dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules
+                .benchmarkPlayerHealth(64));
+        assertEquals(727, dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules
+                .benchmarkPlayerHealth(80));
+    }
+
+    @Test
     void sameEncounterActorAndCounterProduceSameWeightedDecision() {
         var data = R01EarthloongEncounterDataLoader.loadBundled();
         var legality = new R01EarthloongActionController.Legality(

@@ -3,6 +3,7 @@ package dev.moonseungjun.openworldrpg.integration.actor;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction;
 import dev.moonseungjun.openworldrpg.combat.state.ProjectHealthRuntimeState;
 import dev.moonseungjun.openworldrpg.combat.state.ProjectPoiseRuntimeState;
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongEncounterDataLoader;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import dev.moonseungjun.openworldrpg.integration.overlay.ActorIntegrationOverlay;
 import dev.moonseungjun.openworldrpg.integration.overlay.ActorIntegrationOverlayLoader;
@@ -71,6 +72,14 @@ public final class ExternalActorBindingRuntime {
         }
         COMBAT_PROFILES.put(profileData.entityId(), profileData);
 
+        var encounterData = R01EarthloongEncounterDataLoader.loadBundled();
+        if (encounterData.contentLevel() != profileData.contentLevel()) {
+            throw new IllegalStateException(
+                    "Earthloong encounter-data level does not match actor profile: "
+                            + encounterData.contentLevel() + " != " + profileData.contentLevel()
+            );
+        }
+
         /*
          * Fabric does not guarantee a dependency's ModInitializer runs before ours merely because the
          * dependency is present. Validate the concrete registry target at SERVER_STARTING, after all
@@ -102,8 +111,8 @@ public final class ExternalActorBindingRuntime {
         initialized = true;
         logger.info(
                 "Openworld RPG external actor binding armed for {}: project HP/DEF/MR/Poise profile, "
-                        + "authored spawn path and donor progression suppression hooks ready; "
-                        + "exact registry validation scheduled for server start.",
+                        + "authored spawn path, canonical encounter/impact data and donor progression "
+                        + "suppression hooks ready; exact registry validation scheduled for server start.",
                 profileData.entityId()
         );
     }

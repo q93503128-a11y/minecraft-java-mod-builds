@@ -53,6 +53,35 @@ public final class ProjectCombatRules {
         );
     }
 
+    public static int benchmarkVitality(int level) {
+        requireContentLevel(level);
+        return 5 + (int) Math.round(0.25 * (level - 1));
+    }
+
+    public static int benchmarkPlayerHealth(int level) {
+        return maxPlayerHealth(level, benchmarkVitality(level), 0.0);
+    }
+
+    /**
+     * Converts an authored post-mitigation benchmark share into raw physical enemy damage.
+     *
+     * <p>COMBAT_BALANCE.md locks physical enemy-damage authoring to a neutral same-level player
+     * with 25% expected physical mitigation. Runtime still applies the real target Defense.</p>
+     */
+    public static double rawEnemyPhysicalDamageFromBenchmarkShare(
+            int attackerLevel,
+            double benchmarkHpShare
+    ) {
+        requireContentLevel(attackerLevel);
+        requireFiniteNonNegative("benchmarkHpShare", benchmarkHpShare);
+        if (benchmarkHpShare > 1.0) {
+            throw new IllegalArgumentException(
+                    "benchmarkHpShare must be inside [0, 1]."
+            );
+        }
+        return benchmarkPlayerHealth(attackerLevel) * benchmarkHpShare / 0.75;
+    }
+
     public static double attributeDamageMultiplier(double weightedStat) {
         requireFinite("weightedStat", weightedStat);
         double x = weightedStat - 5.0;

@@ -113,6 +113,81 @@ public final class R01EarthloongEncounterDataLoader {
         requireRule(rules, R01EarthloongEncounterData.ActionId.ROOT_BREAKER, 1, 45, 180, true);
         requireRule(rules, R01EarthloongEncounterData.ActionId.FORKED_HEAVEN, 2, 40, 200, true);
         requireRule(rules, R01EarthloongEncounterData.ActionId.EARTHLINE_SURGE, 2, 45, 140, true);
+
+        var impacts = data.impactRulesById();
+        Set<R01EarthloongEncounterData.ActionId> expectedImpacts = EnumSet.of(
+                R01EarthloongEncounterData.ActionId.CLAW_SWEEP,
+                R01EarthloongEncounterData.ActionId.TAIL_SCYTHE,
+                R01EarthloongEncounterData.ActionId.QUARRY_RUSH
+        );
+        if (!impacts.keySet().equals(expectedImpacts)) {
+            throw new IllegalArgumentException(
+                    "R01 Earthloong canon-closed impact set drifted: " + impacts.keySet()
+            );
+        }
+
+        requireImpact(
+                impacts,
+                R01EarthloongEncounterData.ActionId.CLAW_SWEEP,
+                0.10,
+                dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority
+                        .GuardPressureBand.MEDIUM,
+                true,
+                true
+        );
+        requireImpact(
+                impacts,
+                R01EarthloongEncounterData.ActionId.TAIL_SCYTHE,
+                0.20,
+                dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority
+                        .GuardPressureBand.HEAVY,
+                true,
+                true
+        );
+        requireImpact(
+                impacts,
+                R01EarthloongEncounterData.ActionId.QUARRY_RUSH,
+                0.24,
+                dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority
+                        .GuardPressureBand.HEAVY,
+                false,
+                true
+        );
+    }
+
+    private static void requireImpact(
+            java.util.Map<R01EarthloongEncounterData.ActionId,
+                    R01EarthloongEncounterData.ImpactRule> impacts,
+            R01EarthloongEncounterData.ActionId action,
+            double benchmarkDamageShare,
+            dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority
+                    .GuardPressureBand guardPressure,
+            boolean guardable,
+            boolean perfectGuardable
+    ) {
+        var actual = impacts.get(action);
+        var expected = new R01EarthloongEncounterData.ImpactRule(
+                action,
+                benchmarkDamageShare,
+                dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction
+                        .DamageSchool.PHYSICAL,
+                guardPressure,
+                guardable,
+                perfectGuardable
+        );
+        if (!expected.equals(actual)) {
+            throw new IllegalArgumentException(
+                    "R01 Earthloong impact rule drifted for " + action
+                            + ": expected=" + expected + ", actual=" + actual
+            );
+        }
+
+        var hit = actual.toIncomingHit(8);
+        if (!Double.isFinite(hit.rawDamage()) || hit.rawDamage() <= 0.0) {
+            throw new IllegalArgumentException(
+                    "R01 Earthloong impact rule produced invalid raw damage: " + action
+            );
+        }
     }
 
     private static void requireRule(
