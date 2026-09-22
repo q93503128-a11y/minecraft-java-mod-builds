@@ -6,6 +6,8 @@ ROOT = Path(__file__).resolve().parents[1]
 JAVA = ROOT / "src/main/java/kr/moonseungjun/villageguardians"
 MESH = (JAVA / "VillageSkillMeshLibrary.java").read_text(encoding="utf-8")
 SKILLS = (JAVA / "VillageRoleSkillSystem.java").read_text(encoding="utf-8")
+EFFECTS = (JAVA / "VillageSkillEffectSystem.java").read_text(encoding="utf-8")
+CLIENT = (JAVA / "VillageSkillEffectClient.java").read_text(encoding="utf-8")
 
 PROMOTION = re.findall(
     r'^\s*([A-Z0-9_]+)\("([a-z0-9_]+)", VillageRole\.([A-Z]+), (\d+), "([^"]+)"',
@@ -101,9 +103,18 @@ def main() -> None:
     assert "ItemDisplay" not in MESH
     assert "BlockDisplay" not in MESH
 
+    assert '"promotion:" + skill.id()' in EFFECTS
+    assert 'motion.name.startsWith("promotion:")' in CLIENT
+    for skill_id in (
+        "vanguard_heaven_sever", "ranger_meteor_bow", "arcanist_singularity",
+        "luminar_last_miracle", "warden_fortress_descent",
+    ):
+        assert f'case "{skill_id}"' in CLIENT, skill_id
+
     print("[PASS] all 40 promotion skills retain individually authored silhouette branches")
     print("[PASS] all 20 second-promotion skills retain staged visual escalation")
     print("[PASS] signature skills retain bow, meteor, prison, sun, singularity, sanctuary and fortress motifs")
+    print("[PASS] promotion casts drive role body motion and five final skills keep stronger signature poses")
 
 
 if __name__ == "__main__":
