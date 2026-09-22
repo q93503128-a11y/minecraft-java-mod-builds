@@ -390,7 +390,7 @@ public final class VillageRaidSystem {
                         + (milestone.isBlank() ? "" : "\n§6" + milestone)), false);
         if (VillagePlacedTurretSystem.count() == 0) {
             server.getPlayerList().broadcastSystemMessage(Component.literal(
-                    "§6[포탑 안내] §f현재 설치 포탑이 0기입니다. 낮에 북문 성벽 지휘 레버 → 새 포탑 배치에서 "
+                    "§6[포탑 안내] §f현재 설치 포탑이 0기입니다. 낮에 마을 회관 지휘대 → 새 포탑 배치에서 "
                             + "계열을 선택한 뒤 지정 포좌 또는 마을 지면을 두 번 우클릭해 설치할 수 있습니다."), false);
         }
     }
