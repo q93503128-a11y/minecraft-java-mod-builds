@@ -447,7 +447,7 @@ public final class VillageRoleAbilitySystem {
                 SCHEDULED.add(new ScheduledAction(now + 10L, player.getUUID(), skill,
                         ActionKind.PROMOTION_STRIKE, damage, (float) radius, specialRank,
                         center, forward));
-                play(level, center, SoundEvents.TRIDENT_THUNDER.value(), 1.0f, 0.68f);
+                play(level, center, SoundEvents.LIGHTNING_BOLT_THUNDER, 1.0f, 0.68f);
             }
 
             case RANGER_HAWK_MARK -> {
@@ -658,7 +658,7 @@ public final class VillageRoleAbilitySystem {
                         (8.0f + playerLevel * 0.32f) * power,
                         false, 0.0, 0.10);
                 VillageSkillEffectSystem.promotionField(level, player, skill, center, sight, until, radius);
-                play(level, center, SoundEvents.PORTAL_TRAVEL, 0.55f, 0.60f);
+                play(level, center, SoundEvents.END_PORTAL_FRAME_FILL.value(), 0.55f, 0.60f);
             }
 
             case LUMINAR_GUARDIAN_LIGHT -> {
@@ -1138,6 +1138,9 @@ public final class VillageRoleAbilitySystem {
                         replayingEcho = false;
                     }
                 }
+                case PROMOTION_STRIKE -> promotionStrike(
+                        level, player, action.skill(), action.origin(), action.direction(),
+                        action.power(), action.durationMultiplier(), action.specialRank());
             }
         }
     }
@@ -1218,6 +1221,25 @@ public final class VillageRoleAbilitySystem {
                             ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 35, 0, false, false, true));
                         }
                         play(level, area.center(), SoundEvents.AMETHYST_BLOCK_CHIME, 0.55f, 1.15f);
+                    }
+                }
+                case GRAVITY -> {
+                    for (Mob target : targetsNear(level, owner, area.center(), area.radius(), 72)) {
+                        Vec3 pull = area.center().subtract(target.position());
+                        Vec3 horizontal = new Vec3(pull.x, 0.0, pull.z);
+                        if (horizontal.lengthSqr() > 0.01) {
+                            double strength = Math.min(0.42, 0.18 + horizontal.length() * 0.018);
+                            horizontal = horizontal.normalize().scale(strength);
+                            target.push(horizontal.x, 0.05, horizontal.z);
+                            target.hurtMarked = true;
+                        }
+                        if (now % 10L == 0L) {
+                            hurt(level, owner, target, 2.8f * area.power(),
+                                    VillageRpgSystem.SkillAttackProfile.PERSISTENT);
+                        }
+                    }
+                    if (now % 20L == 0L) {
+                        play(level, area.center(), SoundEvents.END_PORTAL_FRAME_FILL.value(), 0.65f, 0.55f);
                     }
                 }
                 case LIGHTNING -> { /* handled above */ }
@@ -2167,8 +2189,8 @@ public final class VillageRoleAbilitySystem {
         level.playSound(null, BlockPos.containing(position), sound, SoundSource.PLAYERS, volume, pitch);
     }
 
-    private enum ActionKind { BLADE_WAVE, ARROW_RAIN, ENERGY_ARROW, SHIELD_CHARGE, ARCANE_ECHO }
-    private enum AreaKind { FROST, TORNADO, LIGHTNING, HEALING }
+    private enum ActionKind { BLADE_WAVE, ARROW_RAIN, ENERGY_ARROW, SHIELD_CHARGE, ARCANE_ECHO, PROMOTION_STRIKE }
+    private enum AreaKind { FROST, TORNADO, LIGHTNING, HEALING, GRAVITY }
     private enum MovingKind { FIRE_ORB, BLADE, ENERGY_ARROW }
 
     private record ScheduledAction(
