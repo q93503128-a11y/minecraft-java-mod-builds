@@ -35,13 +35,9 @@ def main() -> None:
     assert "buildingCurve(skillHallLevel, 0.05f, 0.02f)" in progress
     assert "level >= 10 ? 1 : 0" in progress
     assert "veteran * veteran * 55" in progress
-    assert "case 6 -> 25;" in progress
-    assert "case 7 -> 40;" in progress
-    assert "case 8 -> 55;" in progress
-    assert "case 9 -> 75;" in progress
-    assert "default -> 90;" in progress
-    assert "VillageCouncilState.currentDay() < requiredDay" in progress
-    assert "requiredDayForBuildingLevel(level + 1)" in ui
+    assert "requiredDayForBuildingLevel" not in progress
+    assert "VillageCouncilState.currentDay() < requiredDay" not in progress
+    assert "해금 Day" not in ui
     assert "buildingLevel >= 6" in signatures
     assert "buildingLevel >= 8" in signatures
     assert "buildingLevel >= 10" in signatures
@@ -49,8 +45,9 @@ def main() -> None:
 
     for kind in ("WARDER", "ARTILLERIST"):
         assert kind in merc and kind in deploy
-    assert 'WARDER("warder", "결계 수도사", 25' in merc
-    assert 'ARTILLERIST("artillerist", "비전 포격병", 45' in merc
+    assert 'WARDER("warder", "결계 수도사",' in merc
+    assert 'ARTILLERIST("artillerist", "비전 포격병",' in merc
+    assert "requiredDay" not in merc
     assert "wardAllies" in merc and "artilleryAttack" in merc
     assert "mercenaryWardPulse" in effects and "mercenaryArtilleryBurst" in effects
     assert "mercenary_presence_warder" in mesh and "mercenary_presence_artillerist" in mesh
@@ -58,6 +55,12 @@ def main() -> None:
     assert "Monk.obj" in prep and "Wizard.obj" in prep
     assert "NEXT_WARD_PULSE.remove(uuid)" in merc
     assert "NEXT_ARTILLERY_CAST.remove(uuid)" in merc
+    assert "boolean cleansePulse" in merc
+    assert "now + 60L" in merc
+    assert "int duration = 60;" in merc
+    assert "clearHarmfulEffects" in merc
+    assert "MobEffectCategory.HARMFUL" in merc
+    assert "removeEffect(effect.getEffect())" in merc
 
     print("[PASS] Day 1-100 shop contains 72 explicit set-mapped combat equipment offers")
     print("[PASS] daily stock favors recent unlocks so late gear remains visible")
