@@ -81,7 +81,7 @@ def main() -> None:
     trait_block = traits.split("enum VillageWaveTrait", 1)[1].split("private static final", 1)[0]
     trait_values = re.findall(r"^\s{4}([A-Z][A-Z0-9_]+)\(\"", trait_block, re.M)
     aspect_values = enum_constants(bosses, "Aspect", "private final String displayName")
-    check("상점 고유 장비가 장기 캠페인용 36종으로 확장되었습니다", len(offers) == 36)
+    check("상점 고유 장비가 Day 100 장기 캠페인용 72종으로 확장되었습니다", len(offers) == 72)
     check("보스 유물이 6종에서 11종으로 확장되었습니다", len(relic_values) == 11)
     check("웨이브 특성이 후반 교리까지 19종으로 확장되었습니다", len(trait_values) == 19)
     check("기본 보스 네 종에 여섯 변이가 결합되는 24개 보스 조합이 존재합니다", len(aspect_values) == 6)
