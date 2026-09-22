@@ -58,21 +58,26 @@ def panel_layout(screen_width: int, screen_height: int):
     top = max(3, (screen_height - height) // 2)
     return (left, top, width, height, compact, inventory_left, inventory_right, use_left)
 
-def set_multiplier(wall: int, hunter: int, projectile: bool) -> tuple[float, float]:
+def set_multiplier(wall: int, hunter: int, projectile: bool, low_health: bool = False) -> tuple[float, float]:
     outgoing = 1.0
     incoming = 1.0
-    if wall >= 2:
-        outgoing *= 1.06
-        incoming *= 0.92
-    if wall >= 3:
-        outgoing *= 1.05
-        incoming *= 0.94
     if hunter >= 2 and projectile:
         outgoing *= 1.10
     if hunter >= 3:
-        outgoing *= 1.08 if projectile else 1.03
         incoming *= 0.96
-    return outgoing, max(0.78, incoming)
+    if hunter >= 4 and projectile:
+        outgoing *= 1.10
+    if hunter >= 5 and projectile:
+        outgoing *= 1.18
+    if wall >= 2:
+        incoming *= 0.94
+    if wall >= 4:
+        incoming *= 0.94
+    if wall >= 5:
+        incoming *= 0.90
+        if low_health:
+            incoming *= 0.82
+    return outgoing, max(0.68, incoming)
 
 def main() -> None:
     props = (ROOT / "gradle.properties").read_text(encoding="utf-8")
@@ -173,22 +178,26 @@ def main() -> None:
     assert "VillageSiegeBossSystem.previewBossMechanic" in intel
     assert "공성 병과:" in intel and "보스 전투 구조:" in intel
 
-    # Universal rarity power remains, with real combat-linked weapon and 2/3-piece set layers.
-    assert "WALL_GUARDIAN" in sets and "NIGHT_HUNTER" in sets
-    assert "wall >= 2" in sets and "wall >= 3" in sets and "hunter >= 2" in sets and "hunter >= 3" in sets
+    # Universal rarity power remains, with explicit 2/3/4/5-piece role set layers.
+    for token in ("FRONTLINE_EXECUTOR", "NIGHT_HUNTER", "ARCANE_RESONANCE", "DAWN_COVENANT", "WALL_GUARDIAN"):
+        assert token in sets
+    assert "wall >= 2" in sets and "wall >= 4" in sets and "wall >= 5" in sets
+    assert "hunter >= 2" in sets and "hunter >= 4" in sets and "hunter >= 5" in sets
     assert "VillageWeaponStyleSystem.outgoingMultiplier" in rpg
     assert "VillageEquipmentSetSystem.outgoingMultiplier" in rpg
     assert "VillageEquipmentSetSystem.incomingMultiplier" in rpg
     for token in ("LONGSWORD", "GREAT_AXE", "SPEAR", "WAR_HAMMER", "LONGBOW", "CROSSBOW"):
         assert token in weapon
     assert "세트:" in tooltip and "무기 계열:" in tooltip
-    assert "성벽 수호자" in inventory and "밤사냥꾼" in inventory
-    two_piece = set_multiplier(2, 0, False)
-    three_piece = set_multiplier(3, 0, False)
-    removed = set_multiplier(2, 0, False)
-    reequipped = set_multiplier(3, 0, False)
-    assert three_piece[0] > two_piece[0] and three_piece[1] < two_piece[1]
-    assert removed == two_piece and reequipped == three_piece
+    assert '"/5 · "' in sets and "2/3/4/5" in inventory
+    hunter_two = set_multiplier(0, 2, True)
+    hunter_four = set_multiplier(0, 4, True)
+    hunter_five = set_multiplier(0, 5, True)
+    wall_two = set_multiplier(2, 0, False)
+    wall_four = set_multiplier(4, 0, False)
+    wall_five_low = set_multiplier(5, 0, False, True)
+    assert hunter_four[0] > hunter_two[0] and hunter_five[0] > hunter_four[0]
+    assert wall_four[1] < wall_two[1] and wall_five_low[1] < wall_four[1]
 
     # Inventory safe-area arithmetic: never overlap the vanilla 176px inventory at narrow GUI scales.
     assert "MIN_SAFE_WIDTH" in inventory and "layout.compact()" in inventory and "Layout.hidden()" in inventory
