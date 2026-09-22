@@ -14,12 +14,14 @@ import java.util.Objects;
 public final class PlayerCombatState {
     private static final long MANA_REGEN_LOCK_TICKS = 20L;
     private static final long OUT_OF_COMBAT_BONUS_TICKS = 100L;
+    public static final long NATURAL_HP_RECOVERY_DELAY_TICKS = 160L;
 
     private int will;
     private double mana;
     private long lastRefreshTick;
     private long lastManaSpendTick = Long.MIN_VALUE / 4;
     private long lastCombatActivityTick = Long.MIN_VALUE / 4;
+    private long lastHostileHpActivityTick = Long.MIN_VALUE / 4;
     private String acceptedSpellId;
     private long acceptedSpellReentryUntilTick = Long.MIN_VALUE;
     private final Map<String, Long> cooldownEndTick = new HashMap<>();
@@ -95,6 +97,27 @@ public final class PlayerCombatState {
         if (nowTick > lastCombatActivityTick) {
             lastCombatActivityTick = nowTick;
         }
+    }
+
+    /**
+     * Marks hostile HP interaction by this player, either dealing or receiving it.
+     *
+     * <p>Authored DoT/status systems with no live attacking entity must call this explicitly when
+     * they deal HP damage. Ordinary fall/environment damage is not hostile combat activity.</p>
+     */
+    public void markHostileHpActivity(long nowTick) {
+        if (nowTick > lastHostileHpActivityTick) {
+            lastHostileHpActivityTick = nowTick;
+        }
+        markCombatActivity(nowTick);
+    }
+
+    public boolean canNaturalHpRecover(long nowTick) {
+        long blockedUntil = Math.max(
+                lastHostileHpActivityTick + NATURAL_HP_RECOVERY_DELAY_TICKS,
+                lastCombatActivityTick + NATURAL_HP_RECOVERY_DELAY_TICKS
+        );
+        return nowTick >= blockedUntil;
     }
 
     public boolean isCoolingDown(String actionId, long nowTick) {
