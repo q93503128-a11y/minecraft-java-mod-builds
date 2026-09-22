@@ -123,14 +123,8 @@ public final class R01EarthloongEncounterDataLoader {
         var impacts = data.impactRulesById();
         Set<R01EarthloongEncounterData.ActionId> expectedImpacts = EnumSet.of(
                 R01EarthloongEncounterData.ActionId.CLAW_SWEEP,
-                dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction
-                        .DamageSchool.PHYSICAL,
                 R01EarthloongEncounterData.ActionId.TAIL_SCYTHE,
-                dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction
-                        .DamageSchool.PHYSICAL,
                 R01EarthloongEncounterData.ActionId.QUARRY_RUSH,
-                dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction
-                        .DamageSchool.PHYSICAL,
                 R01EarthloongEncounterData.ActionId.LIGHTNING_FURROW,
                 R01EarthloongEncounterData.ActionId.ROOT_BREAKER
         );
@@ -144,6 +138,8 @@ public final class R01EarthloongEncounterDataLoader {
                 impacts,
                 R01EarthloongEncounterData.ActionId.CLAW_SWEEP,
                 0.10,
+                dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction
+                        .DamageSchool.PHYSICAL,
                 dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority
                         .GuardPressureBand.MEDIUM,
                 true,
@@ -153,6 +149,8 @@ public final class R01EarthloongEncounterDataLoader {
                 impacts,
                 R01EarthloongEncounterData.ActionId.TAIL_SCYTHE,
                 0.20,
+                dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction
+                        .DamageSchool.PHYSICAL,
                 dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority
                         .GuardPressureBand.HEAVY,
                 true,
@@ -162,6 +160,8 @@ public final class R01EarthloongEncounterDataLoader {
                 impacts,
                 R01EarthloongEncounterData.ActionId.QUARRY_RUSH,
                 0.24,
+                dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction
+                        .DamageSchool.PHYSICAL,
                 dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority
                         .GuardPressureBand.HEAVY,
                 false,
