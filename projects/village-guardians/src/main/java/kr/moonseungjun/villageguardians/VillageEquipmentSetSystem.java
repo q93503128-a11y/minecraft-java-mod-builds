@@ -52,15 +52,25 @@ public final class VillageEquipmentSetSystem {
         return switch (offerId.toLowerCase(Locale.ROOT)) {
             case "watch_sword", "sentinel_axe", "veteran_blade", "wind_blade", "march_boots",
                     "executioner_axe", "blackwall_greatsword", "necro_breaker", "abyss_axe",
-                    "last_guard_blade" -> EquipmentSet.FRONTLINE_EXECUTOR;
+                    "last_guard_blade", "frontier_mace", "breaker_helm", "warlord_chest",
+                    "breach_trident", "execution_leggings", "execution_boots", "cataclysm_mace",
+                    "century_greatblade" -> EquipmentSet.FRONTLINE_EXECUTOR;
             case "hunter_bow", "twinstring_bow", "siege_crossbow", "eagle_crossbow", "star_bow",
-                    "rift_longbow", "skyward_crossbow", "storm_longbow", "doomstar_bow" ->
+                    "rift_longbow", "skyward_crossbow", "storm_longbow", "doomstar_bow",
+                    "hawk_hood", "tracker_boots", "hunter_leggings", "hunter_chest",
+                    "comet_crossbow", "nightfall_bow", "century_longbow" ->
                     EquipmentSet.NIGHT_HUNTER;
-            case "arcane_focus", "frost_focus", "rune_leggings", "war_crown", "warcaster_focus" ->
+            case "arcane_focus", "frost_focus", "rune_leggings", "war_crown", "warcaster_focus",
+                    "spellweave_hood", "runic_boots", "arcane_chest", "astral_leggings",
+                    "void_focus", "archmage_crown", "century_focus" ->
                     EquipmentSet.ARCANE_RESONANCE;
-            case "dawn_blade", "dawn_scepter", "phoenix_chest" -> EquipmentSet.DAWN_COVENANT;
+            case "dawn_blade", "dawn_scepter", "phoenix_chest", "dawn_hood", "pilgrim_boots",
+                    "sanctuary_leggings", "covenant_chest", "sanctuary_shield", "seraph_scepter",
+                    "century_scepter" -> EquipmentSet.DAWN_COVENANT;
             case "ward_shield", "bulwark_helm", "bastion_chest", "titan_shield", "aegis_chest",
-                    "rift_aegis", "eclipse_plate", "bastion_crown", "century_aegis" ->
+                    "rift_aegis", "eclipse_plate", "bastion_crown", "century_aegis",
+                    "wall_boots", "wall_leggings", "citadel_helm", "citadel_chest",
+                    "tower_shield", "fortress_mace", "blackgate_plate" ->
                     EquipmentSet.WALL_GUARDIAN;
             default -> null;
         };
