@@ -91,7 +91,15 @@ public final class M0RuntimeVerificationHarness {
         if (target.isRemoved() || !target.isAlive() || target.level() != level) {
             throw new IllegalStateException(
                     "Earthloong did not survive the authored spawn path for "
-                            + EARTHLOONG_SURVIVAL_TICKS + " server ticks."
+                            + EARTHLOONG_SURVIVAL_TICKS
+                            + " server ticks: removed=" + target.isRemoved()
+                            + ", removalReason=" + target.getRemovalReason()
+                            + ", alive=" + target.isAlive()
+                            + ", health=" + target.getHealth()
+                            + ", maxHealth=" + target.getMaxHealth()
+                            + ", tickCount=" + target.tickCount
+                            + ", blockPos=" + target.blockPosition()
+                            + ", sameLevel=" + (target.level() == level)
             );
         }
 
