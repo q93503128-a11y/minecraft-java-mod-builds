@@ -56,7 +56,7 @@ def main() -> None:
     assert "VillageRaidSystem.isAerialEnemy(target)" in ability
     assert "event.getAmount() * 1.18f" in ability
     assert "aerialBias" in ability and "? -18.0 : 0.0" in ability
-    assert "공중 적에게 화살 피해가 18% 증가" in role
+    assert "대공 피해 +18%" in role
 
     print("[PASS] deterministic three-role aerial roster is shared by runtime and daytime intel")
     print("[PASS] ground elite AI can no longer steal flying movement ownership")
