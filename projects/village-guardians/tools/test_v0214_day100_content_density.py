@@ -35,6 +35,13 @@ def main() -> None:
     assert "buildingCurve(skillHallLevel, 0.05f, 0.02f)" in progress
     assert "level >= 10 ? 1 : 0" in progress
     assert "veteran * veteran * 55" in progress
+    assert "case 6 -> 25;" in progress
+    assert "case 7 -> 40;" in progress
+    assert "case 8 -> 55;" in progress
+    assert "case 9 -> 75;" in progress
+    assert "default -> 90;" in progress
+    assert "VillageCouncilState.currentDay() < requiredDay" in progress
+    assert "requiredDayForBuildingLevel(level + 1)" in ui
     assert "buildingLevel >= 6" in signatures
     assert "buildingLevel >= 8" in signatures
     assert "buildingLevel >= 10" in signatures
