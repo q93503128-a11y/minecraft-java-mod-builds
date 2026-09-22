@@ -29,6 +29,10 @@ public final class CombatStateServices {
         STATES.getOrCreate(playerId, gameTick).markCombatActivity(gameTick);
     }
 
+    public static void markHostileHpActivity(UUID playerId, long gameTick) {
+        STATES.getOrCreate(playerId, gameTick).markHostileHpActivity(gameTick);
+    }
+
     public static void disconnect(UUID playerId) {
         STATES.remove(playerId);
         COMBAT_SNAPSHOTS.remove(playerId);
