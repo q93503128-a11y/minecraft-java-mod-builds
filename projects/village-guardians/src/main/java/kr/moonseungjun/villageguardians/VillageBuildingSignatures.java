@@ -45,6 +45,22 @@ final class VillageBuildingSignatures {
             case BARRACKS -> buildCrossedBlades(level, anchor, sideways);
             case INFIRMARY, WALLS -> { }
         }
+        buildUpgradeTrim(level, anchor, sideways, VillageProgressionSystem.level(building));
+    }
+
+    private static void buildUpgradeTrim(ServerLevel level, BlockPos anchor, Direction side, int buildingLevel) {
+        if (buildingLevel >= 6) {
+            mark(level, anchor, side, -2, 0, Blocks.IRON_BLOCK);
+            mark(level, anchor, side, 2, 0, Blocks.IRON_BLOCK);
+        }
+        if (buildingLevel >= 8) {
+            mark(level, anchor, side, -2, 2, Blocks.GOLD_BLOCK);
+            mark(level, anchor, side, 2, 2, Blocks.GOLD_BLOCK);
+        }
+        if (buildingLevel >= 10) {
+            mark(level, anchor, side, -2, 1, Blocks.SEA_LANTERN);
+            mark(level, anchor, side, 2, 1, Blocks.SEA_LANTERN);
+        }
     }
 
     static void remove(ServerLevel level, BlockPos villageCenter, VillageProgressionSystem.Building building) {
