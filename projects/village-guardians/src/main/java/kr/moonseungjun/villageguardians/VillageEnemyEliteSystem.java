@@ -247,7 +247,7 @@ public final class VillageEnemyEliteSystem {
 
         int offset = Math.floorMod(id.hashCode(), 90);
         if (Math.floorMod(ticks - offset, 90) != 0) return;
-        if (VillageAttackPlanSystem.ownsExteriorRouting(id, mob.blockPosition())) return;
+        if (VillageAttackPlanSystem.ownsExteriorRouting(mob.getUUID(), mob.blockPosition())) return;
         ServerPlayer target = nearbyPlayers(server, mob, 28.0).stream()
                 .min(java.util.Comparator.comparingDouble(mob::distanceToSqr)).orElse(null);
         if (target == null) return;
@@ -313,7 +313,7 @@ public final class VillageEnemyEliteSystem {
 
         int offset = Math.floorMod(id.hashCode(), 100);
         if (Math.floorMod(ticks - offset, 100) != 0) return;
-        if (VillageAttackPlanSystem.ownsExteriorRouting(id, mob.blockPosition())) return;
+        if (VillageAttackPlanSystem.ownsExteriorRouting(mob.getUUID(), mob.blockPosition())) return;
         ServerPlayer target = nearbyPlayers(server, mob, 24.0).stream()
                 .min(java.util.Comparator.comparingDouble(mob::distanceToSqr)).orElse(null);
         if (target == null) return;
