@@ -1216,32 +1216,37 @@ It may **not** destroy arbitrary Azari terrain, player housing, storage or dunge
 ### Claw Sweep
 
 ```text
-wind-up: 0.45 s
+wind-up: 0.45 s / 9 ticks
 damage: 10%
 guard pressure: medium
 guardable/perfect_guardable: true
+horizontal attack arc: absolute facing angle 0°..120°
 ```
 
 ### Tail Scythe
 
 ```text
-wind-up: 0.65 s
+wind-up: 0.65 s / 13 ticks
 wide rear/side arc
 damage: 20%
 guard pressure: heavy
 guardable/perfect_guardable: true
-recovery: 0.65 s
+recovery: 0.65 s / 13 ticks
+horizontal attack arc: absolute facing angle 60°..180°
 ```
+
+Angle convention for these two physical arcs is horizontal: `0° = directly forward`, `90° = side`, `180° = directly rear`. The **60°..120° flank overlap is intentional**. On the side of the body both attacks may be spatially legal and the locked weighted selector decides which committed action occurs; there is no artificial angle seam where neither move is valid.
 
 ### Quarry Rush
 
 ```text
-pre-tell: 0.80 s
+pre-tell: 0.80 s / 16 ticks
 forward path: 9 blocks
+start legality: target 5.0..9.0 blocks + clear committed line
 damage: 24%
 guard pressure: heavy
 perfect_guardable: true
-recovery: 0.90 s
+recovery: 0.90 s / 18 ticks
 ```
 
 ### Lightning Furrow
@@ -1588,9 +1593,9 @@ Phase 1 weighted set:
 
 | Legal condition | Action | Weight |
 |---|---|---:|
-| front/side <=3.5 | Claw Sweep | 50 |
-| validated rear/side arc <=4.5 | Tail Scythe | 55 |
-| 5.0–9.0 + clear line + ready | Quarry Rush | 45 |
+| front/side <=3.5 + absolute facing angle 0°..120° | Claw Sweep | 50 |
+| validated rear/side arc <=4.5 + absolute facing angle 60°..180° | Tail Scythe | 55 |
+| 5.0–9.0 + clear committed line + ready | Quarry Rush | 45 |
 | 5.0–12.0 + ready | Lightning Furrow | 35 |
 | Root Breaker condition + ready | Root Breaker | 45 |
 

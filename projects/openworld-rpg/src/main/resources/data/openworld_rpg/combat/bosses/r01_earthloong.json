@@ -84,5 +84,49 @@
       "guardable": false,
       "perfectGuardable": true
     }
+  ],
+  "physicalBindings": [
+    {
+      "action": "CLAW_SWEEP",
+      "tellTicks": 9,
+      "recoveryTicks": 0,
+      "minimumRange": 0.0,
+      "maximumRange": 3.5,
+      "minimumAbsoluteAngleDegrees": 0.0,
+      "maximumAbsoluteAngleDegrees": 120.0,
+      "requiresClearLine": false,
+      "forwardPathBlocks": 0.0,
+      "donorSkillNumber": 1,
+      "donorAnimationTicks": 10,
+      "technicalPresentationCandidate": true
+    },
+    {
+      "action": "TAIL_SCYTHE",
+      "tellTicks": 13,
+      "recoveryTicks": 13,
+      "minimumRange": 0.0,
+      "maximumRange": 4.5,
+      "minimumAbsoluteAngleDegrees": 60.0,
+      "maximumAbsoluteAngleDegrees": 180.0,
+      "requiresClearLine": false,
+      "forwardPathBlocks": 0.0,
+      "donorSkillNumber": null,
+      "donorAnimationTicks": null,
+      "technicalPresentationCandidate": false
+    },
+    {
+      "action": "QUARRY_RUSH",
+      "tellTicks": 16,
+      "recoveryTicks": 18,
+      "minimumRange": 5.0,
+      "maximumRange": 9.0,
+      "minimumAbsoluteAngleDegrees": 0.0,
+      "maximumAbsoluteAngleDegrees": 180.0,
+      "requiresClearLine": true,
+      "forwardPathBlocks": 9.0,
+      "donorSkillNumber": 2,
+      "donorAnimationTicks": 40,
+      "technicalPresentationCandidate": true
+    }
   ]
 }

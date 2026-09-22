@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongActionController;
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongEncounterData;
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongEncounterDataLoader;
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongSpatialAuthority;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -58,6 +59,78 @@ class R01EarthloongActionControllerTest {
         assertEquals(19.0666666667, claw.toIncomingHit(8).rawDamage(), 0.000001);
         assertEquals(38.1333333333, tail.toIncomingHit(8).rawDamage(), 0.000001);
         assertEquals(45.76, rush.toIncomingHit(8).rawDamage(), 0.000001);
+    }
+
+    @Test
+    void phaseOnePhysicalSpatialBindingsMatchLockedRangesAnglesAndPresentationCandidates() {
+        var data = R01EarthloongEncounterDataLoader.loadBundled();
+        var bindings = data.physicalBindingsById();
+
+        assertEquals(3, bindings.size());
+
+        var claw = bindings.get(R01EarthloongEncounterData.ActionId.CLAW_SWEEP);
+        assertEquals(9, claw.tellTicks());
+        assertEquals(3.5, claw.maximumRange(), 0.000001);
+        assertEquals(120.0, claw.maximumAbsoluteAngleDegrees(), 0.000001);
+        assertEquals(1, claw.donorSkillNumber());
+        assertEquals(10, claw.donorAnimationTicks());
+        assertTrue(claw.hasDonorPresentationCandidate());
+
+        var tail = bindings.get(R01EarthloongEncounterData.ActionId.TAIL_SCYTHE);
+        assertEquals(13, tail.tellTicks());
+        assertEquals(13, tail.recoveryTicks());
+        assertEquals(60.0, tail.minimumAbsoluteAngleDegrees(), 0.000001);
+        assertEquals(180.0, tail.maximumAbsoluteAngleDegrees(), 0.000001);
+        assertFalse(tail.hasDonorPresentationCandidate());
+
+        var rush = bindings.get(R01EarthloongEncounterData.ActionId.QUARRY_RUSH);
+        assertEquals(16, rush.tellTicks());
+        assertEquals(18, rush.recoveryTicks());
+        assertEquals(5.0, rush.minimumRange(), 0.000001);
+        assertEquals(9.0, rush.maximumRange(), 0.000001);
+        assertTrue(rush.requiresClearLine());
+        assertEquals(9.0, rush.forwardPathBlocks(), 0.000001);
+        assertEquals(2, rush.donorSkillNumber());
+        assertEquals(40, rush.donorAnimationTicks());
+        assertTrue(rush.hasDonorPresentationCandidate());
+    }
+
+    @Test
+    void phaseOneSpatialAuthorityKeepsFlankOverlapAndClearLineRushGate() {
+        var bindings = R01EarthloongEncounterDataLoader.loadBundled().physicalBindingsById();
+        var claw = bindings.get(R01EarthloongEncounterData.ActionId.CLAW_SWEEP);
+        var tail = bindings.get(R01EarthloongEncounterData.ActionId.TAIL_SCYTHE);
+        var rush = bindings.get(R01EarthloongEncounterData.ActionId.QUARRY_RUSH);
+
+        var front = R01EarthloongSpatialAuthority.evaluate(
+                0.0, 0.0, 0.0, 1.0, 0.0, 3.0, true
+        );
+        assertTrue(R01EarthloongSpatialAuthority.isLegal(claw, front));
+        assertFalse(R01EarthloongSpatialAuthority.isLegal(tail, front));
+
+        var flank = R01EarthloongSpatialAuthority.evaluate(
+                0.0, 0.0, 0.0, 1.0, 3.0, 0.0, true
+        );
+        assertTrue(R01EarthloongSpatialAuthority.isLegal(claw, flank));
+        assertTrue(R01EarthloongSpatialAuthority.isLegal(tail, flank));
+
+        var rear = R01EarthloongSpatialAuthority.evaluate(
+                0.0, 0.0, 0.0, 1.0, 0.0, -4.0, true
+        );
+        assertFalse(R01EarthloongSpatialAuthority.isLegal(claw, rear));
+        assertTrue(R01EarthloongSpatialAuthority.isLegal(tail, rear));
+
+        var rushClear = R01EarthloongSpatialAuthority.evaluate(
+                0.0, 0.0, 1.0, 0.0, -6.0, 0.0, true
+        );
+        assertTrue(R01EarthloongSpatialAuthority.isLegal(rush, rushClear));
+
+        var rushBlocked = new R01EarthloongSpatialAuthority.SpatialSnapshot(
+                rushClear.horizontalDistance(),
+                rushClear.absoluteAngleDegrees(),
+                false
+        );
+        assertFalse(R01EarthloongSpatialAuthority.isLegal(rush, rushBlocked));
     }
 
     @Test

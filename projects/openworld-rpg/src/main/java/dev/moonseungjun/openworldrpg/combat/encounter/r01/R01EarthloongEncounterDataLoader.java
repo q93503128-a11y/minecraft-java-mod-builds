@@ -153,6 +153,78 @@ public final class R01EarthloongEncounterDataLoader {
                 false,
                 true
         );
+
+        var bindings = data.physicalBindingsById();
+        Set<R01EarthloongEncounterData.ActionId> expectedBindings = EnumSet.of(
+                R01EarthloongEncounterData.ActionId.CLAW_SWEEP,
+                R01EarthloongEncounterData.ActionId.TAIL_SCYTHE,
+                R01EarthloongEncounterData.ActionId.QUARRY_RUSH
+        );
+        if (!bindings.keySet().equals(expectedBindings)) {
+            throw new IllegalArgumentException(
+                    "R01 Earthloong physical binding set drifted: " + bindings.keySet()
+            );
+        }
+
+        requirePhysicalBinding(
+                bindings,
+                new R01EarthloongEncounterData.PhysicalBindingRule(
+                        R01EarthloongEncounterData.ActionId.CLAW_SWEEP,
+                        9, 0, 0.0, 3.5, 0.0, 120.0,
+                        false, 0.0, 1, 10, true
+                )
+        );
+        requirePhysicalBinding(
+                bindings,
+                new R01EarthloongEncounterData.PhysicalBindingRule(
+                        R01EarthloongEncounterData.ActionId.TAIL_SCYTHE,
+                        13, 13, 0.0, 4.5, 60.0, 180.0,
+                        false, 0.0, null, null, false
+                )
+        );
+        requirePhysicalBinding(
+                bindings,
+                new R01EarthloongEncounterData.PhysicalBindingRule(
+                        R01EarthloongEncounterData.ActionId.QUARRY_RUSH,
+                        16, 18, 5.0, 9.0, 0.0, 180.0,
+                        true, 9.0, 2, 40, true
+                )
+        );
+    }
+
+    private static void requirePhysicalBinding(
+            java.util.Map<R01EarthloongEncounterData.ActionId,
+                    R01EarthloongEncounterData.PhysicalBindingRule> bindings,
+            R01EarthloongEncounterData.PhysicalBindingRule expected
+    ) {
+        var actual = bindings.get(expected.action());
+        if (!expected.equals(actual)) {
+            throw new IllegalArgumentException(
+                    "R01 Earthloong physical binding drifted for " + expected.action()
+                            + ": expected=" + expected + ", actual=" + actual
+            );
+        }
+        if (actual.tellTicks() < 0
+                || actual.recoveryTicks() < 0
+                || actual.minimumRange() < 0.0
+                || actual.maximumRange() < actual.minimumRange()
+                || actual.minimumAbsoluteAngleDegrees() < 0.0
+                || actual.maximumAbsoluteAngleDegrees() > 180.0
+                || actual.maximumAbsoluteAngleDegrees()
+                        < actual.minimumAbsoluteAngleDegrees()
+                || actual.forwardPathBlocks() < 0.0) {
+            throw new IllegalArgumentException(
+                    "Invalid R01 Earthloong physical binding geometry/timing: " + actual
+            );
+        }
+        if (actual.hasDonorPresentationCandidate()
+                && (actual.donorSkillNumber() < 1
+                || actual.donorSkillNumber() > 4
+                || actual.donorAnimationTicks() <= 0)) {
+            throw new IllegalArgumentException(
+                    "Invalid Earthloong donor presentation candidate: " + actual
+            );
+        }
     }
 
     private static void requireImpact(

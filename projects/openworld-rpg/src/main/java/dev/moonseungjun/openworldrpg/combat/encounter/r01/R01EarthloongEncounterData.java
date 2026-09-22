@@ -12,13 +12,17 @@ public record R01EarthloongEncounterData(
         double phaseTwoHealthThreshold,
         LightningFurrowPattern lightningFurrow,
         List<ActionRule> actions,
-        List<ImpactRule> impacts
+        List<ImpactRule> impacts,
+        List<PhysicalBindingRule> physicalBindings
 ) {
     public R01EarthloongEncounterData {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(lightningFurrow, "lightningFurrow");
         actions = List.copyOf(Objects.requireNonNull(actions, "actions"));
         impacts = List.copyOf(Objects.requireNonNull(impacts, "impacts"));
+        physicalBindings = List.copyOf(
+                Objects.requireNonNull(physicalBindings, "physicalBindings")
+        );
     }
 
     public Map<ActionId, ActionRule> rulesById() {
@@ -39,6 +43,19 @@ public record R01EarthloongEncounterData(
             if (previous != null) {
                 throw new IllegalStateException(
                         "Duplicate Earthloong impact rule: " + impact.action()
+                );
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    public Map<ActionId, PhysicalBindingRule> physicalBindingsById() {
+        EnumMap<ActionId, PhysicalBindingRule> result = new EnumMap<>(ActionId.class);
+        for (PhysicalBindingRule binding : physicalBindings) {
+            PhysicalBindingRule previous = result.put(binding.action(), binding);
+            if (previous != null) {
+                throw new IllegalStateException(
+                        "Duplicate Earthloong physical binding: " + binding.action()
                 );
             }
         }
@@ -134,6 +151,31 @@ public record R01EarthloongEncounterData(
                             guardable,
                             perfectGuardable
                     );
+        }
+    }
+
+    public record PhysicalBindingRule(
+            ActionId action,
+            int tellTicks,
+            int recoveryTicks,
+            double minimumRange,
+            double maximumRange,
+            double minimumAbsoluteAngleDegrees,
+            double maximumAbsoluteAngleDegrees,
+            boolean requiresClearLine,
+            double forwardPathBlocks,
+            Integer donorSkillNumber,
+            Integer donorAnimationTicks,
+            boolean technicalPresentationCandidate
+    ) {
+        public PhysicalBindingRule {
+            Objects.requireNonNull(action, "action");
+        }
+
+        public boolean hasDonorPresentationCandidate() {
+            return technicalPresentationCandidate
+                    && donorSkillNumber != null
+                    && donorAnimationTicks != null;
         }
     }
 }

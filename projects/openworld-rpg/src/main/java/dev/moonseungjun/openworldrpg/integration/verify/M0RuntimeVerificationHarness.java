@@ -4,6 +4,8 @@ import dev.moonseungjun.openworldrpg.combat.authority.CombatDamageAuthority;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellSpec;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongDonorPresentationBridge;
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongEncounterData;
 import dev.moonseungjun.openworldrpg.combat.state.AttributeAllocation;
 import dev.moonseungjun.openworldrpg.combat.state.EquipmentCombatState;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatBuildState;
@@ -114,6 +116,7 @@ public final class M0RuntimeVerificationHarness {
                 );
             }
 
+            verifyDonorPresentationBridge(target, logger);
             verifyImpactAfterSurvival(level, target, session.startTick(), logger);
         } finally {
             level.setChunkForced(
@@ -122,6 +125,73 @@ public final class M0RuntimeVerificationHarness {
                     false
             );
         }
+    }
+
+    private static void verifyDonorPresentationBridge(
+            LivingEntity target,
+            Logger logger
+    ) {
+        var claw = R01EarthloongDonorPresentationBridge.startTechnicalCandidate(
+                target,
+                R01EarthloongEncounterData.ActionId.CLAW_SWEEP
+        );
+        if (!claw.accepted()
+                || claw.donorSkillNumber() != 1
+                || claw.donorAnimationTicks() != 10
+                || R01EarthloongDonorPresentationBridge.currentSkillNumber(target) != 1) {
+            throw new IllegalStateException(
+                    "Earthloong Claw Sweep donor presentation bridge changed: " + claw
+            );
+        }
+
+        if (!R01EarthloongDonorPresentationBridge.resetTechnicalCandidate(target)
+                || R01EarthloongDonorPresentationBridge.currentSkillNumber(target) != 0) {
+            throw new IllegalStateException(
+                    "Earthloong donor presentation reset failed after Claw Sweep."
+            );
+        }
+
+        var tail = R01EarthloongDonorPresentationBridge.startTechnicalCandidate(
+                target,
+                R01EarthloongEncounterData.ActionId.TAIL_SCYTHE
+        );
+        if (tail.accepted()
+                || R01EarthloongDonorPresentationBridge.currentSkillNumber(target) != 0) {
+            throw new IllegalStateException(
+                    "Earthloong Tail Scythe must remain presentation-unbound: " + tail
+            );
+        }
+
+        var rush = R01EarthloongDonorPresentationBridge.startTechnicalCandidate(
+                target,
+                R01EarthloongEncounterData.ActionId.QUARRY_RUSH
+        );
+        if (!rush.accepted()
+                || rush.donorSkillNumber() != 2
+                || rush.donorAnimationTicks() != 40
+                || R01EarthloongDonorPresentationBridge.currentSkillNumber(target) != 2) {
+            throw new IllegalStateException(
+                    "Earthloong Quarry Rush donor presentation bridge changed: " + rush
+            );
+        }
+
+        if (!R01EarthloongDonorPresentationBridge.resetTechnicalCandidate(target)
+                || R01EarthloongDonorPresentationBridge.currentSkillNumber(target) != 0) {
+            throw new IllegalStateException(
+                    "Earthloong donor presentation reset failed after Quarry Rush."
+            );
+        }
+
+        logger.info(
+                "OPENWORLD_RPG_M0_EARTHLOONG_PRESENTATION_BRIDGE_PASS clawSkill={} "
+                        + "clawAnimationTicks={} quarrySkill={} quarryAnimationTicks={} "
+                        + "tailPresentationBound={}",
+                claw.donorSkillNumber(),
+                claw.donorAnimationTicks(),
+                rush.donorSkillNumber(),
+                rush.donorAnimationTicks(),
+                tail.accepted()
+        );
     }
 
     private static void verifyImpactAfterSurvival(
