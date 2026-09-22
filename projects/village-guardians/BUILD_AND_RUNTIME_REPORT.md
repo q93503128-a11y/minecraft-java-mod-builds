@@ -2,17 +2,54 @@
 
 - Project: Village Guardians — 마을지키기
 - Mod ID: `villageguardians`
-- Current source version: `0.18.46-alpha.1`
+- Current source version: `0.18.47-alpha.1`
 - Minecraft: `26.2`
 - NeoForge build dependency: `26.2.0.37-beta`
 - Java target: `25`
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
-- Target JAR: `villageguardians-0.18.46-alpha.1.jar`
-- Current manual-audit validated code head: `568bbefadedca176f980a89ed020cf133bac0887`
-- Current verification date: `2026-09-22 Asia/Seoul`
-- Current verified JAR SHA-256: `9dae527424877fdd7272bb6c3bc57bf5beb678710d0dd751db48249597225d08`
-- Current verified JAR size: `1711379` bytes
+- Target JAR: `villageguardians-0.18.47-alpha.1.jar`
+- Current manual-audit validated code head: `bab1d2204704989e7a91787f9fd29fc3ea0a6072`
+- Current verification date: `2026-09-23 Asia/Seoul`
+- Current verified JAR SHA-256: `85076aa494c44ad7ad04eb454cff2fa6cfa6a00ee687fcd23e0dd73432f3bebc`
+- Current verified JAR size: `1737305` bytes
+
+## 2026-09-23 실플레이 전 수동감사 결함 수술 · 0.18.47 acceptance
+
+전직 스킬 재설계 뒤 실제 플레이에 들어가기 전에 기획·판정·VFX·UI·재도전 상태를 다시 수동 대조했고, 빌드 성공만으로 잡히지 않던 런타임 의미 오류를 정리했다.
+
+- 2차 전직의 장식용 tier/phase 배율이 field/impact의 실제 위험 반경까지 부풀리던 문제를 제거했다. 서버 판정 반경과 표시 경계가 같은 값을 사용한다.
+- 다중 검기·다중 화살의 각 projectile이 전체 부채꼴 메시를 다시 그리던 phase 중복을 분리했다. 이동 projectile은 한 발/한 검기만 표시하고 cast/impact/field가 각자 맡은 형상을 그린다.
+- 전직 cast는 현실 효과 시간과 무관하게 과도하게 남지 않도록 기술별 짧은 wind-up으로 제한하고 플레이어를 따라가게 했다. 대형 스킬 actor의 render bounds도 64×32로 확장했다.
+- 절대 돌파·성채 돌진·수호 돌진은 시전 순간 먼 경로를 선판정하지 않고 실제 이동 중 접촉한 적만 서버가 타격한다.
+- 별추적 화살은 표적에게 즉시 피해를 주고 장식 화살만 날리던 구조를 제거하고, 실제 추적 projectile이 표적에 도착했을 때 피해·impact를 발생시킨다.
+- 중력 폭풍은 서버 판정 중심과 동기화 VFX가 동일한 0.24블록/tick 속도로 같은 방향을 이동한다. 대공 요격 화살과 폭우 사격 화살의 위/아래 방향도 바로잡았다.
+- 일반 치유 대상에서는 전투 불능 spectator를 제외하고, 부활 기술만 별도 목록에서 downed 아군을 포함한다. 전군 정화는 모든 harmful category를 제거한다.
+- 과치유 보호막은 저체력 치유 보정이 반영된 실제 scaled heal을 기준으로 overflow를 계산한다.
+- 패배 재도전은 남은 장판·지연 행동·이동 projectile·돌진·화살 강화·숙련·소모품·네트워크 transient와 potion/absorption을 정리한다.
+- 기술 쿨다운과 Lv.90+ 숙련 연계 시간은 `System.currentTimeMillis()`가 아니라 서버 `gameTime` 기준으로 통일했다.
+- 기술 시험장은 반경 34로 확장하고 4/8/14/21/28블록 거리 표적을 제공한다. 직업/기술 교체와 종료 시 이전 시험 기술 상태와 소유 VFX를 정리한다.
+- 승리 보고서는 실제 payload 제목을 사용하며 작은 화면에서는 본문을 스크롤할 수 있다.
+- 소스/JAR 식별자를 `0.18.47-alpha.1`로 올려 재설계 전 0.18.46 JAR과 혼동되지 않게 했다.
+
+### 현재 acceptance
+
+- Validated acceptance head: `bab1d2204704989e7a91787f9fd29fc3ea0a6072`
+- Actions run: `35799810138` — **PASS**
+- `tools/test_*.py`: **PASS, 104/104**
+- Java 25 / Gradle 9.2.1 / NeoForge 26.2 clean build: **PASS**
+- JAR verifier: **PASS**
+- JAR artifact upload: **PASS**
+- JAR: `villageguardians-0.18.47-alpha.1.jar`, `1737305` bytes
+- JAR SHA-256: `85076aa494c44ad7ad04eb454cff2fa6cfa6a00ee687fcd23e0dd73432f3bebc`
+- Actions artifact ID: `10725621754`
+- Artifact name: `villageguardians-0.18.47-alpha.1-preplay-semantic-fix`
+- Artifact digest: `sha256:9e21282bc7685df47d62d27986bc47eed9841be2119eb137fdc9b7637e50a96a`
+- Client gameplay after this repair: **NOT RUN**
+- Multiplayer gameplay after this repair: **NOT RUN**
+- Max-load profiler pass after this repair: **NOT RUN**
+
+이 보고서 갱신은 acceptance 성공 뒤의 문서 전용 변경이며 검증된 런타임/JAR 바이트에는 영향을 주지 않는다.
 
 ## 2026-09-22 후속 전체 수동감사 결함 수정 · 현재 acceptance
 
