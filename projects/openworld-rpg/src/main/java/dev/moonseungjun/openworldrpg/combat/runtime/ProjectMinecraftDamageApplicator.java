@@ -13,15 +13,20 @@ import net.minecraft.world.entity.LivingEntity;
 /**
  * Minecraft-side application of an already-resolved project damage amount.
  *
- * <p>The backing damage type bypasses vanilla armor/effect/enchantment/resistance/shield/cooldown
- * layers so the amount is not mitigated a second time after project Defense/MR and authored
- * mitigation have already resolved. It intentionally does not bypass invulnerability/creative
- * protections.</p>
+ * <p>The backing project damage types bypass vanilla armor/effect/enchantment/resistance/shield/
+ * cooldown layers so an amount is not mitigated a second time after project Defense/MR and authored
+ * mitigation have already resolved. They also suppress damage-source knockback because the caller
+ * owns presentation/knockback exactly once (Better Combat for melee, spell delivery for magic).
+ * Creative/invulnerability protections remain intact.</p>
  */
 public final class ProjectMinecraftDamageApplicator {
     private static final ResourceKey<DamageType> PROJECT_DIRECT_MAGIC = ResourceKey.create(
             Registries.DAMAGE_TYPE,
             Identifier.fromNamespaceAndPath(OpenworldRpgMod.MOD_ID, "project_direct_magic")
+    );
+    private static final ResourceKey<DamageType> PROJECT_DIRECT_PHYSICAL = ResourceKey.create(
+            Registries.DAMAGE_TYPE,
+            Identifier.fromNamespaceAndPath(OpenworldRpgMod.MOD_ID, "project_direct_physical")
     );
 
     private ProjectMinecraftDamageApplicator() {
@@ -32,6 +37,23 @@ public final class ProjectMinecraftDamageApplicator {
             LivingEntity target,
             double finalDamage
     ) {
+        return applyResolved(attacker, target, finalDamage, PROJECT_DIRECT_MAGIC);
+    }
+
+    public static boolean applyDirectPhysical(
+            LivingEntity attacker,
+            LivingEntity target,
+            double finalDamage
+    ) {
+        return applyResolved(attacker, target, finalDamage, PROJECT_DIRECT_PHYSICAL);
+    }
+
+    private static boolean applyResolved(
+            LivingEntity attacker,
+            LivingEntity target,
+            double finalDamage,
+            ResourceKey<DamageType> damageTypeKey
+    ) {
         if (!(attacker.level() instanceof ServerLevel serverLevel)
                 || target.level() != serverLevel
                 || target == attacker
@@ -41,7 +63,7 @@ public final class ProjectMinecraftDamageApplicator {
         }
 
         var damageTypes = serverLevel.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE);
-        var damageType = damageTypes.getOrThrow(PROJECT_DIRECT_MAGIC);
+        var damageType = damageTypes.getOrThrow(damageTypeKey);
         DamageSource source = new DamageSource(damageType, attacker);
 
         if (ExternalActorBindingRuntime.ownsDamageAuthority(target)) {
