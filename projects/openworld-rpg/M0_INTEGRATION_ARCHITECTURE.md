@@ -930,7 +930,7 @@ The correct next step is **not** another broad search for a complete RPG mod to 
 
 The narrow M0 core integration skeleton is now implemented and verified at commit `b98ab3650b6e594693df3c1170d1de1e1ea169f2`. It includes the Fabric entrypoint, dependency manifest/runtime profiles, integration-policy/module primitives, actor-overlay schema validation, unit tests and a dedicated CI/server-smoke workflow.
 
-The dependency runtime gate now includes external-actor HP/poise authority, persistent combat progression, a persistent canonical equipped-loadout publisher, and packaged Spell Engine data for `openworld_rpg:arc_bolt`. The spell data uses project CUSTOM impact authority, 22-block range and donor-neutral cost; its previously unspecified cast/projectile timing is initially bound to the current Wizards 26.2 Arcane Bolt reference at 1.0 s / 1.0 blocks per tick. `M0PlayerVerificationBootstrap` is opt-in through `openworld_rpg.m0PlayerVerification=true` and prepares a joining real player with the same legal Lv8 Mage +7 INT + ItemLv8 Staff build used by CI, without registering a permanent debug command or assigning the spell to ordinary gameplay items. Live build publication also synchronizes effective WIL into project Mana state. Run `35563533539` at `8c74f8ca37b1a63a3f6bb280bb23943f8ba90136` passes unit/resource tests, clean build/JAR, core/gameplay server boot, exact Earthloong runtime proof and client startup smoke. Real joined-player Spell Engine impact remains a manual acceptance gate. Better Combat 26.2 source inspection confirms attack selection and visible cycle data come from `PlayerAttackHelper.getCurrentAttack` / `WeaponAttributes.Attack.damageMultiplier()`; however project damage must normalize those visible hit shares to `EQUIPMENT_BALANCE.md` family cadence/cycle budgets instead of trusting donor/vanilla attack damage.
+The dependency runtime gate now includes external-actor HP/poise authority, persistent combat progression, a persistent canonical equipped-loadout publisher, packaged Spell Engine data for `openworld_rpg:arc_bolt`, and a project-owned Better Combat melee transaction for bound actors. The dedicated M0 playtest artifact has been manually world-joined: authored Earthloong spawn, Arc Bolt cast/release, single-press behavior, cooldown presentation and a landed Arc Bolt impact are PLAYTESTED in that narrow scope. CI run `35670539791` verifies unit/resource tests, clean build/JAR, core/gameplay server boot, exact Earthloong Arc Bolt runtime proof, the direct-physical damage bridge, and a canonical Lv8 Sword/+7 STR melee fixture where donor proposal 9999 is ignored and the project applies 17 damage / 10 Poise (HP 4900→4883, Poise 190→180). Better Combat 26.2 still supplies attack presentation/hit candidates; project family cadence/cycle rules now determine canonical basic-hit damage. The remaining Better Combat gate is a real joined-player Better Combat network/presentation hit, not the server damage formula.
 
 Verification state for this document:
 
@@ -944,16 +944,16 @@ DEPENDENCY MANIFEST RUNTIME IDS RESOLVED: YES — 13/13
 DEPENDENCY EXACT VERSION ENFORCEMENT: YES — 13/13, run 35329917184
 DEV-GAMEPLAY DEPENDENCY RUNTIME LOADED: YES — dedicated server co-load, latest verified run 35549006979
 DONOR PROGRESSION / LOOT / RANDOM ECOLOGY CONTAINMENT: YES — startup verified in run 35549006979
-BETTER COMBAT AUTHORITY ADAPTER: YES — code/startup verified; real-hit runtime execution NOT TESTED
-SPELL ENGINE RESOURCE/COOLDOWN ADAPTER: YES — canonical Mana/cooldown/continuation transaction + donor-cost isolation implemented
-PROJECT DIRECT-MAGIC IMPACT BRIDGE: PARTIAL — canonical player-build snapshot producer + resolver + exact Earthloong HP/poise runtime application verified; real persisted player build publisher and real Spell Engine player hit remain
+BETTER COMBAT AUTHORITY ADAPTER: YES — canonical bound-actor damage/poise + direct-physical runtime bridge verified; real joined-player Better Combat network hit NOT TESTED
+SPELL ENGINE RESOURCE/COOLDOWN ADAPTER: YES — canonical Mana/cooldown/continuation transaction + donor-cost isolation implemented + real joined-player Arc Bolt path PLAYTESTED
+PROJECT DIRECT-MAGIC IMPACT BRIDGE: M0 VERIFIED — persisted player build publisher + exact Earthloong HP/poise runtime application + real joined-player Arc Bolt hit confirmed
 EXTERNAL CREATURE PROJECT BINDING FOUNDATION: PARTIAL — Earthloong registry/overlay/authored spawn/donor XP+loot suppression, canonical 4900 HP virtualization, DEF/MR and runtime Poise/break state verified; encounter invocation and project reward transaction remain
 FULL DEV-GAMEPLAY INTEGRATIONS IMPLEMENTED: NO
 CODE REVIEWED: YES — bootstrap/runtime-profile/containment scope
 TESTED: YES — unit tests + core/gameplay dedicated-server startup + gameplay client startup smoke
-BUILD VERIFIED: YES — run 35563533539
+BUILD VERIFIED: YES — run 35670539791
 JAR PRODUCED: YES
-CLIENT STARTUP SMOKE: YES — render thread reached; world join NOT TESTED
-PLAYTESTED: NO
+CLIENT STARTUP SMOKE: YES — CI render thread reached; real M0 world join also confirmed manually
+PLAYTESTED: YES — narrow M0 authored Earthloong + Arc Bolt/cooldown path only; R01 remains NOT PLAYTESTED
 MULTIPLAYER TESTED: NO
 ```
