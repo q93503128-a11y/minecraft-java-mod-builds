@@ -128,7 +128,7 @@ public final class VillageAttackPlanSystem {
                     && VillageSiegeSegmentSystem.touching(segment, mob.blockPosition())) {
                 VillageEnemyArchetypeSystem.Archetype archetype = VillageRaidSystem.archetypeOf(mob);
                 if (archetype == null) archetype = VillageEnemyArchetypeSystem.Archetype.GRUNT;
-                int raw = Math.max(1, Math.round((7.0f + day * 0.65f)
+                int raw = Math.max(1, Math.round((7.0f + VillageCampaignProgression.structureDamageDayContribution(day))
                         * VillageEnemyArchetypeSystem.structureDamageMultiplier(archetype)
                         * VillageWarfrontSystem.structureDamageMultiplier(day)
                         * VillageDifficultyTuning.earlyStructureMultiplier(day)
