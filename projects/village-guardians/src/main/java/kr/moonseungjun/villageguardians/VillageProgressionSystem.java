@@ -19,7 +19,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class VillageProgressionSystem {
-    public static final int MAX_BUILDING_LEVEL = 5;
+    public static final int MAX_BUILDING_LEVEL = 10;
     public static final int MAX_PERSONAL_RANK = 5;
     public static final int STARTING_COINS = 120;
     private static final String PENDING_RESET_PREFIX = "$pending_player_reset_";
@@ -245,12 +245,23 @@ public final class VillageProgressionSystem {
         return durability(building) + " / " + maxDurability(building);
     }
 
+    private static float buildingCurve(int level, float earlyPerLevel, float latePerLevel) {
+        int safe = Math.max(0, Math.min(MAX_BUILDING_LEVEL, level));
+        return Math.min(5, safe) * earlyPerLevel + Math.max(0, safe - 5) * latePerLevel;
+    }
+
+    private static int buildingCurveInt(int level, int earlyPerLevel, int latePerLevel) {
+        int safe = Math.max(0, Math.min(MAX_BUILDING_LEVEL, level));
+        return Math.min(5, safe) * earlyPerLevel + Math.max(0, safe - 5) * latePerLevel;
+    }
+
     public static synchronized float smithyDamageMultiplier(ServerPlayer player) {
-        return 1.0f + smithyLevel * 0.04f;
+        return 1.0f + buildingCurve(smithyLevel, 0.04f, 0.02f);
     }
 
     public static synchronized int experienceMultiplierPercent() {
-        return isOperational(Building.BARRACKS) ? 100 + barracksLevel * 10 : 100;
+        return isOperational(Building.BARRACKS)
+                ? 100 + buildingCurveInt(barracksLevel, 10, 5) : 100;
     }
 
     public static synchronized float learnedSkillDamageMultiplier(ServerPlayer player) {
@@ -258,7 +269,8 @@ public final class VillageProgressionSystem {
     }
 
     public static synchronized float skillHallPowerMultiplier() {
-        return isOperational(Building.SKILL_HALL) ? 1.0f + skillHallLevel * 0.05f : 1.0f;
+        return isOperational(Building.SKILL_HALL)
+                ? 1.0f + buildingCurve(skillHallLevel, 0.05f, 0.02f) : 1.0f;
     }
 
     public static synchronized float skillHallDurationMultiplier() {
@@ -269,17 +281,22 @@ public final class VillageProgressionSystem {
         if (!isOperational(Building.WALLS)) {
             return 1.0f;
         }
-        return Math.max(0.62f, 0.94f - wallLevel * 0.064f);
+        return Math.max(0.52f, 0.94f
+                - Math.min(5, wallLevel) * 0.064f
+                - Math.max(0, wallLevel - 5) * 0.020f);
     }
 
     public static synchronized int skillCooldownReductionSeconds(ServerPlayer player) {
-        int research = isOperational(Building.SKILL_HALL) ? skillHallLevel : 0;
-        int barracksSupport = isOperational(Building.BARRACKS) ? barracksLevel / 2 : 0;
-        return Math.min(7, research + barracksSupport + skillRank(player) / 2);
+        int research = isOperational(Building.SKILL_HALL)
+                ? Math.min(5, skillHallLevel) + Math.max(0, skillHallLevel - 5) / 2 : 0;
+        int barracksSupport = isOperational(Building.BARRACKS) ? barracksLevel / 3 : 0;
+        return Math.min(10, research + barracksSupport + skillRank(player) / 2);
     }
 
     public static synchronized int raidRewardMultiplierPercent() {
-        return 100 + storehouseLevel * 15 + barracksLevel * 5;
+        return 100
+                + buildingCurveInt(storehouseLevel, 15, 7)
+                + buildingCurveInt(barracksLevel, 5, 3);
     }
 
     public static synchronized void addSupplies(MinecraftServer server, int amount, String reason) {
@@ -326,7 +343,7 @@ public final class VillageProgressionSystem {
         if (lastClaimed >= day) {
             return "오늘의 배급 식량은 이미 받았습니다.";
         }
-        int count = 3 + storehouseLevel * 2;
+        int count = 3 + buildingCurveInt(storehouseLevel, 2, 1);
         ItemStack bread = Items.BREAD.getDefaultInstance();
         bread.setCount(count);
         bread.set(DataComponents.CUSTOM_NAME,
@@ -355,7 +372,7 @@ public final class VillageProgressionSystem {
         if (!isOperational(Building.STOREHOUSE)) {
             return "상점·보급소가 파괴되어 상점을 이용할 수 없습니다.";
         }
-        int count = 16 + storehouseLevel * 4;
+        int count = 16 + buildingCurveInt(storehouseLevel, 4, 2);
         int cost = 14;
         if (!spendCoins(player, cost)) {
             return "수호 주화가 부족합니다. 화살 " + count + "개 가격: " + cost;
@@ -419,11 +436,11 @@ public final class VillageProgressionSystem {
 
     private static void applyInfirmaryBuffs(ServerPlayer player) {
         int level = infirmaryLevel();
-        if (level >= 1) player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 60, 0, false, true, true));
-        if (level >= 2) player.addEffect(new MobEffectInstance(MobEffects.SPEED, 60, 0, false, true, true));
-        if (level >= 3) player.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 60, 0, false, true, true));
-        if (level >= 4) player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 60, 0, false, true, true));
-        if (level >= 5) player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 100, 0, false, true, true));
+        if (level >= 1) player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 60, level >= 6 ? 1 : 0, false, true, true));
+        if (level >= 2) player.addEffect(new MobEffectInstance(MobEffects.SPEED, 60, level >= 7 ? 1 : 0, false, true, true));
+        if (level >= 3) player.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 60, level >= 8 ? 1 : 0, false, true, true));
+        if (level >= 4) player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 60, level >= 9 ? 1 : 0, false, true, true));
+        if (level >= 5) player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 100, level >= 10 ? 1 : 0, false, true, true));
     }
 
     public static synchronized String upgrade(ServerPlayer player, Building building) {
@@ -599,7 +616,9 @@ public final class VillageProgressionSystem {
     }
 
     public static int upgradeCost(int currentLevel) {
-        return 120 + Math.max(0, currentLevel) * 140;
+        int safe = Math.max(0, currentLevel);
+        int veteran = Math.max(0, safe - 5);
+        return 120 + safe * 140 + veteran * veteran * 55;
     }
 
     public static synchronized boolean spendCoins(ServerPlayer player, int amount) {
