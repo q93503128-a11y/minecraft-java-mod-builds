@@ -21,6 +21,7 @@ def main() -> None:
     world = read("VillageWorldSystem.java")
     router = read("VillageBuildingInteractionRouter.java")
     controller = read("VillageUiController.java")
+    descriptions = read("VillageActionDescriptions.java")
     town = read("VillageTownHallGridScreen.java")
     local = read("VillageLocalActionSystem.java")
     siege = read("VillageSiegeCommandUi.java")
@@ -52,6 +53,13 @@ def main() -> None:
     for source in (local, siege, turret, segment):
         assert "isNearDefenseCommand" in source
         assert "북문 성벽 지휘 레버 근처" not in source
+    assert "북문 성벽 지휘 레버 → 새 포탑 배치" not in raid
+    assert "마을 회관 지휘대 → 새 포탑 배치" in raid
+    assert "마을 회관의 직업 배치와 시설 관리" not in descriptions
+    assert "네 종류 방어탑" not in descriptions
+    assert "4병과 용병" not in descriptions
+    assert "10계열 배치 포탑" in descriptions
+    assert "6병과 용병" in descriptions
 
     dashboard = section(controller, "public static void openDashboard", "public static void openRoleAssignment")
     assert 'actions.add("siege_command")' in dashboard
