@@ -194,350 +194,1062 @@ public final class VillageSkillMeshLibrary {
             catch (NumberFormatException ignored) {}
             skill = skill.substring(0, separator);
         }
+
         double fade = Math.max(0.12, 1.0 - progress);
-        double pulse = 0.92 + 0.08 * Math.sin(age * 0.24);
-        int red = rgba(255, 82, 66, (int) (225 * fade));
-        int gold = rgba(255, 201, 88, (int) (220 * fade));
-        int cyan = rgba(91, 224, 255, (int) (220 * fade));
-        int green = rgba(116, 238, 166, (int) (215 * fade));
-        int violet = rgba(180, 104, 255, (int) (225 * fade));
-        int frost = rgba(163, 231, 255, (int) (220 * fade));
-        int whiteGold = rgba(255, 242, 170, (int) (225 * fade));
-        int blue = rgba(105, 176, 255, (int) (225 * fade));
-        int pale = rgba(244, 250, 255, (int) (155 * fade));
+        double pulse = 0.90 + 0.10 * Math.sin(age * 0.24);
+        boolean second = isSecondPromotionSkill(skill);
+        double tierScale = second ? 1.24 : 1.0;
+        double phaseScale = switch (phase) {
+            case 1 -> 0.92;
+            case 2 -> 1.00;
+            case 3 -> 1.18;
+            default -> 0.86;
+        };
         double honestRadius = phase >= 2 ? radius : Math.min(radius, 4.5);
+        double readableRadius = Math.max(1.0, honestRadius * tierScale * phaseScale);
+
+        int red = rgba(255, 76, 61, (int) (230 * fade));
+        int darkRed = rgba(176, 34, 44, (int) (205 * fade));
+        int gold = rgba(255, 205, 82, (int) (230 * fade));
+        int cyan = rgba(83, 226, 255, (int) (225 * fade));
+        int green = rgba(108, 243, 163, (int) (220 * fade));
+        int violet = rgba(177, 92, 255, (int) (230 * fade));
+        int deepViolet = rgba(86, 34, 138, (int) (215 * fade));
+        int frost = rgba(164, 234, 255, (int) (230 * fade));
+        int whiteGold = rgba(255, 246, 184, (int) (232 * fade));
+        int blue = rgba(92, 166, 255, (int) (230 * fade));
+        int steel = rgba(178, 211, 255, (int) (205 * fade));
+        int pale = rgba(244, 250, 255, (int) (165 * fade));
 
         switch (skill) {
+            // Vanguard: blade geometry, forward pressure, standards and rupture.
             case "vanguard_frontline_rend" -> {
-                for (int i = -1; i <= 1; i++) {
-                    Vec3 root = b.local(i * 0.48, 0.52, phase == 1 ? -0.45 : 0.30);
-                    energyBlade(pose, out, root, root.add(b.forward.scale(2.5)).add(0.0, 0.35, 0.0),
-                            0.11, i == 0 ? gold : red);
+                bladeFan(pose, out, b, 3, 1.28, 3.15 * tierScale, 0.58, 0.12,
+                        gold, red);
+                if (phase == 3) {
+                    horizontalSlash(pose, out, b, readableRadius * 1.22, 0.86,
+                            0.18, 0.30, withAlpha(gold, 205));
+                    for (int i = -1; i <= 1; i++) {
+                        groundCrack(pose, out, b, -0.32 + i * 0.32,
+                                0.4, Math.max(3.0, readableRadius), 0.055, withAlpha(red, 145));
+                    }
                 }
-                horizontalSlash(pose, out, b, phase == 3 ? honestRadius * 1.5 : 3.4,
-                        0.92, 0.10, 0.24, withAlpha(gold, 165));
             }
             case "vanguard_blood_spiral" -> {
-                for (int i = 0; i < 4; i++) {
-                    slashArc(pose, out, b, age * 0.13 + i * TAU / 4.0,
-                            1.1 + i * 0.34, 0.74 + i * 0.18, 1.30, 0.09, red);
+                for (int i = 0; i < 3; i++) {
+                    double a = age * (0.11 + i * 0.018) + i * TAU / 3.0;
+                    slashArc(pose, out, b, a, 1.25 + i * 0.42,
+                            0.72 + i * 0.22, 1.42, 0.105, i == 1 ? darkRed : red);
                 }
-                ring(pose, out, b, Math.max(1.0, honestRadius * 0.78) * pulse,
-                        0.05, 0.08, 56, withAlpha(gold, 125), -age * 0.04);
+                siphonTendrils(pose, out, b, age, phase == 3 ? readableRadius * 0.80 : 2.2,
+                        phase == 3 ? 7 : 4, darkRed, gold);
             }
             case "vanguard_war_banner" -> {
-                verticalPillarAt(pose, out, b, b.local(0.0, 0.0, 0.16), 0.11, 3.2, gold);
-                for (int i = 0; i < 6; i++) {
-                    chevron(pose, out, b, i * TAU / 6.0 + age * 0.012,
-                            1.45 * pulse, 0.15 + (i % 2) * 0.20, 0.38, red);
+                battleStandard(pose, out, b, 3.8 * tierScale, 1.55 * tierScale,
+                        red, gold, phase == 2 || phase == 3);
+                if (phase >= 2) {
+                    ring(pose, out, b, readableRadius, 0.05, 0.09, 72,
+                            withAlpha(gold, 165), age * 0.01);
+                    for (int i = 0; i < 8; i++) {
+                        chevron(pose, out, b, i * TAU / 8.0,
+                                readableRadius * 0.82, 0.16, 0.38, withAlpha(red, 150));
+                    }
                 }
-                ring(pose, out, b, phase >= 2 ? honestRadius : 2.1, 0.04, 0.07, 56,
-                        withAlpha(gold, 150), 0.0);
             }
             case "vanguard_breach_strike" -> {
-                verticalBlade(pose, out, b, b.local(0.0, 0.08, 0.35), 3.4, 0.20, gold);
-                for (int i = 0; i < 7; i++) {
-                    groundCrack(pose, out, b, i * TAU / 7.0, 0.35,
-                            phase == 3 ? honestRadius : 3.3, 0.065, red);
+                batteringWedge(pose, out, b, phase == 3 ? readableRadius : 3.8,
+                        1.45 * tierScale, gold, red);
+                if (phase == 3) {
+                    for (int i = -2; i <= 2; i++) {
+                        groundCrack(pose, out, b, i * 0.18, 0.28,
+                                Math.max(3.3, readableRadius), 0.065,
+                                i == 0 ? gold : withAlpha(red, 150));
+                    }
                 }
-                horizontalSlash(pose, out, b, Math.max(3.0, honestRadius * 1.2), 0.22, 0.13, 0.14, red);
             }
             case "vanguard_sword_chain" -> {
+                bladeFan(pose, out, b, 5, 1.78, 3.45 * tierScale, 0.74, 0.105,
+                        gold, red);
                 for (int i = 0; i < 5; i++) {
-                    double a = -0.78 + i * 0.39 + Math.sin(age * 0.08) * 0.08;
-                    slashArc(pose, out, b, a, 1.55 + i * 0.16, 0.72 + i * 0.14,
-                            1.05, 0.085, i % 2 == 0 ? gold : red);
+                    double step = fract(progress * 2.2 + i * 0.16);
+                    Vec3 root = b.local((i - 2) * 0.32, 0.28 + step * 0.38, 0.25);
+                    Vec3 tip = root.add(b.forward.scale(1.2 + step * 2.3));
+                    prism(pose, out, root, tip, 0.035, withAlpha(i % 2 == 0 ? gold : red, 120));
                 }
-                ring(pose, out, b, 1.25, 0.06, 0.05, 48, withAlpha(gold, 120), age * 0.03);
             }
             case "vanguard_life_sever" -> {
-                slashArc(pose, out, b, age * 0.075, 1.45, 0.80, 1.70, 0.11, red);
-                slashArc(pose, out, b, Math.PI - age * 0.065, 1.72, 1.20, 1.45, 0.09, gold);
-                helixRibbon(pose, out, b, -age * 0.09, 0.72, 1.8, 20, withAlpha(red, 115));
-                ring(pose, out, b, Math.max(1.2, honestRadius * 0.68), 0.04, 0.075, 52,
-                        withAlpha(red, 145), age * 0.03);
+                crossedScythes(pose, out, b, 1.55 * tierScale, 0.92, red, gold);
+                siphonTendrils(pose, out, b, -age * 0.09,
+                        phase == 3 ? readableRadius * 0.78 : 2.6,
+                        second ? 8 : 6, darkRed, gold);
+                if (phase == 3) {
+                    ring(pose, out, b, readableRadius * 0.72, 0.12, 0.07, 64,
+                            withAlpha(darkRed, 170), -age * 0.03);
+                }
             }
             case "vanguard_absolute_break" -> {
-                curvedShield(pose, out, b, b.local(0.0, 0.95, 0.75), 1.55, 1.75, 0.28, withAlpha(gold, 145));
-                for (int side : new int[]{-1, 1}) {
-                    energyBlade(pose, out, b.local(side * 0.48, 0.45, 0.1),
-                            b.local(side * 0.30, 1.05, 4.8), 0.10, side < 0 ? red : gold);
+                armoredChargeWedge(pose, out, b, 4.6 * tierScale,
+                        2.1 * tierScale, blue, gold, red);
+                for (int i = -2; i <= 2; i++) {
+                    Vec3 a = b.local(i * 0.30, 0.12, -1.4 - progress * 1.8);
+                    Vec3 z = b.local(i * 0.16, 0.24, 3.8 + progress * 3.2);
+                    prism(pose, out, a, z, 0.05, withAlpha(i == 0 ? gold : red, 145));
                 }
-                for (int i = 0; i < 4; i++) {
-                    Vec3 a = b.local((i - 1.5) * 0.38, 0.10, -0.25);
-                    Vec3 z = b.local((i - 1.5) * 0.20, 0.30, 3.5 + progress * 2.0);
-                    prism(pose, out, a, z, 0.045, withAlpha(red, 120));
+                if (phase == 3) {
+                    horizontalSlash(pose, out, b, readableRadius * 1.3, 0.36,
+                            0.16, 0.18, withAlpha(gold, 205));
                 }
             }
             case "vanguard_heaven_sever" -> {
-                verticalBlade(pose, out, b, b.local(0.0, phase == 0 ? 0.6 : 0.05, 0.0),
-                        phase == 0 ? 4.8 : 6.8, phase == 0 ? 0.22 : 0.34, gold);
-                horizontalSlash(pose, out, b, Math.max(4.5, honestRadius * 1.55),
-                        0.14, 0.16, 0.26, red);
-                for (int i = 0; i < 8; i++) {
-                    groundCrack(pose, out, b, i * TAU / 8.0, 0.5,
-                            Math.max(3.0, honestRadius), 0.055, withAlpha(gold, 135));
+                giantSkyBlade(pose, out, b, phase == 0 ? 5.8 : 8.4,
+                        0.40 * tierScale, gold, red, progress, phase);
+                if (phase == 3) {
+                    for (int i = 0; i < 12; i++) {
+                        groundCrack(pose, out, b, i * TAU / 12.0, 0.45,
+                                Math.max(4.2, readableRadius), 0.07,
+                                i % 2 == 0 ? withAlpha(gold, 175) : withAlpha(red, 150));
+                    }
+                    ring(pose, out, b, readableRadius, 0.04, 0.16, 88,
+                            withAlpha(gold, 185), 0.0);
                 }
             }
 
+            // Ranger: bows, arrow formations, target symbols and sky trajectories.
             case "ranger_hawk_mark" -> {
-                ringVertical(pose, out, b, 0.92 * pulse, 1.08, 0.055, 48, green, age * 0.05);
-                for (int i = 0; i < 4; i++) reticleBracket(pose, out, b, i * TAU / 4.0, 0.82, 1.05, gold);
-                wing(pose, out, b, -1, 1.45, 1.15, withAlpha(green, 120));
-                wing(pose, out, b, 1, 1.45, 1.15, withAlpha(green, 120));
+                hawkCrest(pose, out, b, 1.55 * tierScale, 1.15, green, gold);
+                ringVertical(pose, out, b, 0.92 * pulse, 1.18, 0.05, 52,
+                        withAlpha(cyan, 185), age * 0.035);
+                for (int i = 0; i < 4; i++) {
+                    reticleBracket(pose, out, b, i * TAU / 4.0,
+                            0.82, 1.18, gold);
+                }
             }
             case "ranger_split_shot" -> {
-                for (int i = -2; i <= 2; i++) {
-                    Vec3 center = b.local(i * 0.26, 1.28 + Math.abs(i) * 0.08, 0.60);
-                    customArrow(pose, out, b, center, 1.55, 0.045, i == 0 ? gold : green);
-                }
-                ringVertical(pose, out, b, 0.68, 1.24, 0.035, 40, withAlpha(cyan, 125), -age * 0.04);
+                bowArc(pose, out, b, 1.55 * tierScale, 2.20 * tierScale,
+                        0.14, gold, green);
+                bladeFan(pose, out, b, 5, 1.95, 2.75 * tierScale,
+                        1.25, 0.055, green, gold);
             }
             case "ranger_aa_intercept" -> {
-                ring(pose, out, b, Math.max(2.0, honestRadius), 0.05, 0.075, 64, cyan, 0.0);
-                for (int i = 0; i < 6; i++) {
-                    double a = i * TAU / 6.0 + age * 0.02;
-                    customArrow(pose, out, b, b.local(Math.cos(a) * 1.45, 1.5 + (i % 3) * 0.32,
-                            Math.sin(a) * 1.45), 1.25, 0.04, green);
+                antiAirCrown(pose, out, b, phase >= 2 ? readableRadius : 2.6,
+                        7, cyan, green);
+                if (phase == 3) {
+                    for (int i = 0; i < 7; i++) {
+                        double a = i * TAU / 7.0;
+                        Vec3 p = b.local(Math.cos(a) * readableRadius * 0.72,
+                                0.1, Math.sin(a) * readableRadius * 0.72);
+                        verticalPillarAt(pose, out, b, p, 0.05, 3.6 + (i % 2) * 0.8,
+                                withAlpha(cyan, 125));
+                    }
                 }
-                verticalPillar(pose, out, b, 0.13, 3.5, withAlpha(cyan, 90));
             }
             case "ranger_downpour" -> {
-                runeDisc(pose, out, b, Math.max(2.3, honestRadius * 0.92), 3.8, age * 0.025, cyan);
-                for (int i = 0; i < 9; i++) {
-                    double a = i * TAU / 9.0 + age * 0.015;
-                    Vec3 p = b.local(Math.cos(a) * Math.min(2.5, honestRadius * 0.55), 2.2,
-                            Math.sin(a) * Math.min(2.5, honestRadius * 0.55));
-                    customArrow(pose, out, b, p, 1.05, 0.035, green);
+                arrowCanopy(pose, out, b, phase >= 2 ? readableRadius : 3.2,
+                        3.4 + (second ? 0.6 : 0.0), 11, cyan, green);
+                if (phase >= 2) {
+                    ring(pose, out, b, readableRadius, 0.04, 0.06, 72,
+                            withAlpha(cyan, 120), 0.0);
                 }
             }
             case "ranger_star_tracker" -> {
-                for (int i = 0; i < 4; i++) {
-                    double a = age * 0.06 + i * TAU / 4.0;
-                    Vec3 p = b.local(Math.cos(a) * 1.15, 1.25 + 0.18 * Math.sin(age * 0.12 + i),
-                            Math.sin(a) * 1.15);
-                    crystal(pose, out, p, 0.34, 0.11, i % 2 == 0 ? cyan : gold);
-                    customArrow(pose, out, b, p.add(0.0, 0.25, 0.0), 0.90, 0.032, green);
+                constellationWeb(pose, out, b, 5, 1.5 * tierScale,
+                        1.38, age * 0.045, cyan, gold, true);
+                if (phase == 1) {
+                    customArrow(pose, out, b, b.local(0.0, 1.25, 0.7),
+                            2.4, 0.065, gold);
                 }
-                ringVertical(pose, out, b, 1.22, 1.25, 0.035, 48, withAlpha(cyan, 110), age * 0.04);
             }
             case "ranger_constellation" -> {
-                customArrow(pose, out, b, b.local(0.0, 1.20, 0.9),
-                        phase == 1 ? 4.6 : 3.4, phase == 1 ? 0.12 : 0.085, gold);
-                braidedBeam(pose, out, b.local(0.0, 1.20, -1.5), b.local(0.0, 1.20, 5.2),
-                        age, 0.10, withAlpha(cyan, 130));
-                for (int i = 0; i < 5; i++) {
-                    double a = i * TAU / 5.0;
-                    crystal(pose, out, b.local(Math.cos(a) * 0.8, 1.20, Math.sin(a) * 0.8),
-                            0.24, 0.07, green);
-                }
+                stellarLance(pose, out, b, phase == 1 ? 5.8 : 4.2,
+                        0.16 * tierScale, cyan, gold, green);
+                constellationWeb(pose, out, b, 6, 0.92 * tierScale,
+                        1.22, -age * 0.032, cyan, green, false);
             }
             case "ranger_sky_lock" -> {
-                ring(pose, out, b, Math.max(3.0, honestRadius), 0.08, 0.10, 80, cyan, age * 0.01);
-                ringVertical(pose, out, b, 2.1, 2.5, 0.06, 64, green, -age * 0.025);
-                for (int i = 0; i < 8; i++) {
-                    double a = i * TAU / 8.0;
-                    verticalPillarAt(pose, out, b,
-                            b.local(Math.cos(a) * Math.min(3.0, honestRadius * 0.75), 0.0,
-                                    Math.sin(a) * Math.min(3.0, honestRadius * 0.75)),
-                            0.055, 3.4, withAlpha(cyan, 110));
+                skyCage(pose, out, b, phase >= 2 ? readableRadius : 3.4,
+                        4.2 * tierScale, 8, cyan, green);
+                if (phase >= 2) {
+                    ringVertical(pose, out, b, readableRadius * 0.62,
+                            2.2, 0.075, 72, withAlpha(green, 145), -age * 0.018);
                 }
             }
             case "ranger_meteor_bow" -> {
-                customArrow(pose, out, b, b.local(0.0, phase == 0 ? 2.5 : 5.2, 0.0),
-                        phase == 1 ? 6.0 : 4.2, 0.16, gold);
-                verticalPillar(pose, out, b, 0.28, 5.8, withAlpha(cyan, 115));
-                ring(pose, out, b, Math.max(2.5, honestRadius) * (phase == 3 ? 0.75 + progress * 0.45 : 0.55),
-                        0.04, 0.14, 72, green, -age * 0.02);
-            }
-
-            case "arcanist_lava_core" -> {
-                sphere(pose, out, b.local(0.0, 1.35, 0.45), 0.55 + 0.08 * pulse, 9, 14, red);
-                for (int i = 0; i < 3; i++) ringVertical(pose, out, b, 0.72 + i * 0.22,
-                        1.35, 0.04, 48, i % 2 == 0 ? gold : red, age * (0.05 + i * 0.02));
-            }
-            case "arcanist_frost_prison" -> {
-                ring(pose, out, b, Math.max(2.0, honestRadius), 0.04, 0.08, 64, frost, 0.0);
-                for (int i = 0; i < 8; i++) {
-                    double a = i * TAU / 8.0;
-                    Vec3 p = b.local(Math.cos(a) * Math.min(2.4, honestRadius * 0.82), 0.06,
-                            Math.sin(a) * Math.min(2.4, honestRadius * 0.82));
-                    crystal(pose, out, p, 2.2 + 0.25 * Math.sin(age * 0.08 + i), 0.16, frost);
+                if (phase == 0) {
+                    bowArc(pose, out, b, 2.9 * tierScale, 4.2 * tierScale,
+                            0.22, gold, cyan);
+                    meteorSpear(pose, out, b, b.local(0.0, 2.2, 0.35),
+                            4.8, 0.18, gold, cyan);
+                } else if (phase == 1) {
+                    meteorSpear(pose, out, b, b.local(0.0, 0.0, 0.0),
+                            6.4, 0.24, gold, cyan);
+                    helixRibbon(pose, out, b, age * 0.14, 0.50, 3.8, 30,
+                            withAlpha(cyan, 130));
+                } else {
+                    craterBurst(pose, out, b, readableRadius, gold, green, cyan);
                 }
             }
+
+            // Arcanist: distinct elemental volumes and field topology.
+            case "arcanist_lava_core" -> {
+                moltenCore(pose, out, b, 0.74 * tierScale, age, red, gold, darkRed);
+                if (phase == 3) craterBurst(pose, out, b, readableRadius, red, gold, darkRed);
+            }
+            case "arcanist_frost_prison" -> {
+                iceCage(pose, out, b, phase >= 2 ? readableRadius : 2.8,
+                        3.2 * tierScale, 10, frost, pale);
+                if (phase == 3) snowflakeSigil(pose, out, b, readableRadius * 0.72,
+                        0.08, frost, pale);
+            }
             case "arcanist_lightning_chain" -> {
-                runeDisc(pose, out, b, 1.35, 0.04, age * 0.035, violet);
-                for (int i = 0; i < 5; i++) {
-                    double a = i * TAU / 5.0 + age * 0.015;
-                    Vec3 end = b.local(Math.cos(a) * 2.2, 0.7 + (i % 2) * 0.8, Math.sin(a) * 2.2);
-                    jaggedBolt(pose, out, b.local(0.0, 1.35, 0.0), end, 7, 0.045, cyan,
-                            (long) age / 2L + i * 19L);
+                lightningNodeWeb(pose, out, b, 6, 2.2 * tierScale,
+                        1.1, age, violet, cyan);
+                if (phase == 3) {
+                    verticalPillar(pose, out, b, 0.18, 4.8 * tierScale,
+                            withAlpha(cyan, 150));
                 }
             }
             case "arcanist_gravity_storm" -> {
-                ring(pose, out, b, Math.max(2.2, honestRadius), 0.05, 0.10, 72, violet, -age * 0.045);
-                helixRibbon(pose, out, b, -age * 0.10, Math.min(2.2, honestRadius * 0.46), 3.4, 28,
-                        withAlpha(cyan, 130));
-                tornadoRibbon(pose, out, b, age * 0.08, 3.2, 30, withAlpha(violet, 120));
+                gravityFunnel(pose, out, b, phase >= 2 ? readableRadius : 3.0,
+                        3.8 * tierScale, age, violet, cyan, deepViolet);
             }
             case "arcanist_solar_core" -> {
-                sphere(pose, out, b.local(0.0, 1.55, 0.3), 0.78 + 0.12 * pulse, 10, 16, gold);
-                for (int i = 0; i < 12; i++) {
-                    double a = i * TAU / 12.0 + age * 0.025;
-                    spike(pose, out, b.local(Math.cos(a) * 0.82, 1.55, Math.sin(a) * 0.82),
-                            b.local(Math.cos(a) * 1.55, 1.55, Math.sin(a) * 1.55), 0.055, red);
+                sunCorona(pose, out, b, 0.95 * tierScale, 18, age,
+                        gold, red, whiteGold);
+                if (phase == 3) {
+                    ring(pose, out, b, readableRadius, 0.08, 0.18, 96,
+                            withAlpha(gold, 190), age * 0.02);
+                    sunRays(pose, out, b, readableRadius * 0.86, 16,
+                            0.08, gold, red);
                 }
-                ringVertical(pose, out, b, 1.30, 1.55, 0.055, 64, gold, -age * 0.04);
             }
             case "arcanist_absolute_zero" -> {
-                runeDisc(pose, out, b, Math.max(2.8, honestRadius), 0.035, -age * 0.018, frost);
-                for (int i = 0; i < 6; i++) {
-                    double a = i * TAU / 6.0;
-                    prism(pose, out, b.local(0.0, 0.08, 0.0),
-                            b.local(Math.cos(a) * Math.min(3.2, honestRadius), 0.08,
-                                    Math.sin(a) * Math.min(3.2, honestRadius)), 0.055, pale);
-                    crystal(pose, out, b.local(Math.cos(a) * Math.min(2.4, honestRadius * 0.72), 0.05,
-                            Math.sin(a) * Math.min(2.4, honestRadius * 0.72)), 1.8, 0.14, frost);
-                }
+                snowflakeSigil(pose, out, b, phase >= 2 ? readableRadius * 0.78 : 3.2,
+                        0.10, frost, pale);
+                iceBloom(pose, out, b, phase >= 2 ? readableRadius : 3.5,
+                        second ? 12 : 8, frost, pale, progress);
             }
             case "arcanist_heaven_chain" -> {
-                runeDisc(pose, out, b, Math.max(3.0, honestRadius), 0.04, age * 0.028, violet);
-                for (int i = 0; i < 8; i++) {
-                    double a = i * TAU / 8.0 + age * 0.018;
-                    Vec3 end = b.local(Math.cos(a) * Math.min(3.5, honestRadius * 0.72), 0.05,
-                            Math.sin(a) * Math.min(3.5, honestRadius * 0.72));
-                    jaggedBolt(pose, out, end.add(0.0, 5.5, 0.0), end, 8, 0.055,
-                            i % 2 == 0 ? cyan : violet, (long) age + i * 31L);
+                thunderLattice(pose, out, b, phase >= 2 ? readableRadius : 4.0,
+                        7.0 * tierScale, 9, age, cyan, violet);
+                if (phase == 3) {
+                    ring(pose, out, b, readableRadius, 0.06, 0.12, 88,
+                            withAlpha(violet, 165), 0.0);
                 }
             }
             case "arcanist_singularity" -> {
-                sphere(pose, out, b.local(0.0, 1.2, 0.0), 0.48 + 0.12 * pulse, 9, 14, violet);
-                for (int i = 0; i < 4; i++) {
-                    ringVertical(pose, out, b, 0.85 + i * 0.38, 1.2, 0.045, 56,
-                            i % 2 == 0 ? cyan : violet, -age * (0.05 + i * 0.015));
-                }
-                helixRibbon(pose, out, b, age * 0.11, Math.min(2.4, honestRadius * 0.42), 3.0, 30,
-                        withAlpha(violet, 105));
-                ring(pose, out, b, Math.max(2.5, honestRadius), 0.04, 0.08, 72, withAlpha(cyan, 120), 0.0);
+                singularityCore(pose, out, b, phase >= 2 ? readableRadius : 3.0,
+                        age, progress, deepViolet, violet, cyan);
             }
 
+            // Luminar: halos, sacred geometry, sanctuary and ascension.
             case "luminar_guardian_light" -> {
-                verticalPillar(pose, out, b, 0.28, 3.6, whiteGold);
-                wing(pose, out, b, -1, 1.55, 1.15, withAlpha(whiteGold, 145));
-                wing(pose, out, b, 1, 1.55, 1.15, withAlpha(whiteGold, 145));
-                ring(pose, out, b, 0.95 * pulse, 0.05, 0.065, 48, gold, age * 0.025);
+                guardianHalo(pose, out, b, 1.25 * tierScale, 1.65,
+                        age, whiteGold, gold);
+                wing(pose, out, b, -1, 1.48, 1.65 * tierScale, withAlpha(whiteGold, 150));
+                wing(pose, out, b, 1, 1.48, 1.65 * tierScale, withAlpha(whiteGold, 150));
             }
             case "luminar_holy_purge" -> {
-                runeDisc(pose, out, b, Math.max(2.0, honestRadius) * pulse, 0.035, age * 0.025, whiteGold);
-                ring(pose, out, b, Math.max(2.7, honestRadius), 0.06, 0.09, 64, withAlpha(cyan, 135), 0.0);
-                for (int i = 0; i < 6; i++) chevron(pose, out, b, i * TAU / 6.0,
-                        Math.min(2.4, honestRadius * 0.72), 0.16, 0.32, whiteGold);
+                holyCross(pose, out, b, b.local(0.0, 0.10, 0.0),
+                        1.6 * tierScale, 0.10, whiteGold);
+                if (phase >= 2) {
+                    expandingCrossWave(pose, out, b, readableRadius,
+                            progress, whiteGold, cyan);
+                }
             }
             case "luminar_revival_wave" -> {
-                for (int i = 0; i < 4; i++) ring(pose, out, b, 1.0 + i * 0.72 + progress * 1.2,
-                        0.08 + i * 0.35, 0.055, 56, withAlpha(whiteGold, 170 - i * 22), age * 0.012);
-                wing(pose, out, b, -1, 1.15, 1.5, withAlpha(gold, 120));
-                wing(pose, out, b, 1, 1.15, 1.5, withAlpha(gold, 120));
+                lifeWave(pose, out, b, phase >= 2 ? readableRadius : 3.0,
+                        age, progress, whiteGold, gold, cyan);
+                guardianHalo(pose, out, b, 1.1 * tierScale, 1.65,
+                        -age * 0.6, withAlpha(whiteGold, 175), withAlpha(gold, 150));
             }
             case "luminar_judgement" -> {
-                verticalPillar(pose, out, b, 0.38, 4.6, whiteGold);
-                runeDisc(pose, out, b, Math.max(2.0, honestRadius * 0.62), 0.04, -age * 0.025, gold);
-                for (int i = 0; i < 8; i++) {
-                    double a = i * TAU / 8.0;
-                    spike(pose, out, b.local(Math.cos(a) * 0.55, 0.08, Math.sin(a) * 0.55),
-                            b.local(Math.cos(a) * 2.1, 0.08, Math.sin(a) * 2.1), 0.05, whiteGold);
+                judgementMark(pose, out, b, phase == 3 ? readableRadius : 3.0,
+                        5.2 * tierScale, whiteGold, gold);
+                if (phase == 3) {
+                    sunRays(pose, out, b, readableRadius * 0.82, 10,
+                            0.07, whiteGold, gold);
                 }
             }
             case "luminar_heavenly_barrier" -> {
-                curvedShield(pose, out, b, b.local(0.0, 1.45, 0.45),
-                        Math.max(3.4, Math.min(7.0, honestRadius * 0.45)), 3.6, 0.72, withAlpha(whiteGold, 155));
-                wing(pose, out, b, -1, 2.05, 1.8, withAlpha(cyan, 105));
-                wing(pose, out, b, 1, 2.05, 1.8, withAlpha(cyan, 105));
-                ring(pose, out, b, Math.max(3.0, honestRadius), 0.04, 0.10, 72, whiteGold, 0.0);
+                sanctuaryDome(pose, out, b, phase >= 2 ? readableRadius : 3.8,
+                        3.8 * tierScale, 10, whiteGold, cyan);
+                guardianHalo(pose, out, b, Math.min(2.2, readableRadius * 0.28),
+                        2.45, age * 0.55, gold, whiteGold);
             }
             case "luminar_returning_light" -> {
-                verticalPillar(pose, out, b, 0.22, 4.2, whiteGold);
-                crystal(pose, out, b.local(0.0, 1.15, 0.0), 0.85, 0.26, gold);
-                for (int i = 0; i < 3; i++) ringVertical(pose, out, b, 0.62 + i * 0.27,
-                        1.35, 0.04, 48, withAlpha(whiteGold, 150 - i * 20), age * (0.03 + i * 0.012));
+                returnBeacon(pose, out, b, 4.8 * tierScale, age,
+                        whiteGold, gold, cyan);
             }
             case "luminar_resurrection_hymn" -> {
-                runeDisc(pose, out, b, Math.max(3.0, honestRadius), 0.035, age * 0.018, whiteGold);
-                for (int i = 0; i < 5; i++) {
-                    double a = i * TAU / 5.0;
-                    verticalPillarAt(pose, out, b, b.local(Math.cos(a) * 2.0, 0.0, Math.sin(a) * 2.0),
-                            0.11, 3.6 + (i % 2) * 0.8, withAlpha(gold, 135));
-                }
-                wing(pose, out, b, -1, 1.8, 2.0, withAlpha(whiteGold, 125));
-                wing(pose, out, b, 1, 1.8, 2.0, withAlpha(whiteGold, 125));
+                choirCrown(pose, out, b, phase >= 2 ? readableRadius : 3.8,
+                        5, 4.4 * tierScale, age, whiteGold, gold);
+                guardianHalo(pose, out, b, 2.0 * tierScale, 2.7,
+                        -age * 0.42, withAlpha(whiteGold, 185), withAlpha(gold, 160));
             }
             case "luminar_last_miracle" -> {
-                runeDisc(pose, out, b, Math.max(3.5, honestRadius), 0.04, -age * 0.025, gold);
-                verticalPillar(pose, out, b, 0.48, 6.0, whiteGold);
-                wing(pose, out, b, -1, 2.2, 2.4, withAlpha(whiteGold, 165));
-                wing(pose, out, b, 1, 2.2, 2.4, withAlpha(whiteGold, 165));
-                ring(pose, out, b, Math.max(3.0, honestRadius) * (0.72 + progress * 0.38),
-                        0.08, 0.14, 80, withAlpha(cyan, 140), age * 0.012);
+                sacredMandala(pose, out, b, phase >= 2 ? readableRadius : 4.2,
+                        age, whiteGold, gold, cyan);
+                holyCross(pose, out, b, b.local(0.0, 0.18, 0.0),
+                        2.4 * tierScale, 0.14, whiteGold);
+                wing(pose, out, b, -1, 2.3, 2.7 * tierScale, withAlpha(whiteGold, 160));
+                wing(pose, out, b, 1, 2.3, 2.7 * tierScale, withAlpha(whiteGold, 160));
+                if (phase == 3) {
+                    sunRays(pose, out, b, readableRadius * 0.88, 12,
+                            0.08, gold, cyan);
+                }
             }
 
+            // Warden: gates, walls, bastions and formations instead of shield bubbles.
             case "warden_gate_impact" -> {
-                curvedShield(pose, out, b, b.local(0.0, 1.0, 0.85), 2.4, 2.1, 0.48, blue);
-                horizontalSlash(pose, out, b, 3.2, 0.45, 0.14, 0.16, cyan);
-                for (int i = 0; i < 5; i++) groundCrack(pose, out, b,
-                        -0.8 + i * 0.4, 0.35, 3.3, 0.05, withAlpha(blue, 130));
+                gateFrame(pose, out, b, 3.6 * tierScale, 3.0 * tierScale,
+                        0.14, blue, steel);
+                shieldRam(pose, out, b, 2.4 * tierScale, 2.0 * tierScale,
+                        blue, cyan);
+                if (phase == 3) {
+                    for (int i = -2; i <= 2; i++) {
+                        groundCrack(pose, out, b, i * 0.22, 0.35,
+                                Math.max(3.2, readableRadius), 0.06, withAlpha(cyan, 135));
+                    }
+                }
             }
             case "warden_forced_challenge" -> {
-                ring(pose, out, b, Math.max(2.8, honestRadius), 0.06, 0.12, 72, blue, age * 0.022);
-                for (int i = 0; i < 10; i++) chevron(pose, out, b, i * TAU / 10.0,
-                        Math.max(2.0, honestRadius * 0.82), 0.18, 0.38, cyan);
-                verticalPillar(pose, out, b, 0.18, 3.0, withAlpha(blue, 105));
+                challengeCrown(pose, out, b, phase >= 2 ? readableRadius : 3.2,
+                        10, age, blue, cyan);
+                verticalPillar(pose, out, b, 0.16, 3.4 * tierScale,
+                        withAlpha(steel, 105));
             }
             case "warden_guard_barrier" -> {
-                curvedShield(pose, out, b, b.local(-1.05, 1.25, 0.30), 1.9, 2.8, 0.55, blue);
-                curvedShield(pose, out, b, b.local(1.05, 1.25, 0.30), 1.9, 2.8, 0.55, cyan);
-                ring(pose, out, b, Math.max(2.3, honestRadius), 0.05, 0.085, 64, withAlpha(pale, 135), 0.0);
+                fourWallBarrier(pose, out, b, phase >= 2 ? readableRadius * 0.68 : 2.6,
+                        2.8 * tierScale, blue, cyan);
+                if (phase >= 2) ring(pose, out, b, readableRadius, 0.05, 0.07, 72,
+                        withAlpha(steel, 105), 0.0);
             }
             case "warden_iron_pulse" -> {
-                ring(pose, out, b, Math.max(2.4, honestRadius) * (0.62 + progress * 0.42),
-                        0.08, 0.16, 72, blue, age * 0.02);
-                for (int i = 0; i < 8; i++) chevron(pose, out, b, i * TAU / 8.0,
-                        Math.max(1.8, honestRadius * 0.68), 0.12, 0.42, cyan);
-                curvedShield(pose, out, b, b.local(0.0, 1.1, 0.35), 1.8, 2.2, 0.42, withAlpha(blue, 120));
+                shieldPlateWave(pose, out, b, phase == 3 ? readableRadius : 3.0,
+                        progress, 8, blue, cyan);
+                if (phase == 3) {
+                    ring(pose, out, b, readableRadius, 0.06, 0.16, 80,
+                            withAlpha(blue, 175), 0.0);
+                }
             }
             case "warden_unbroken_wall" -> {
-                for (int i = -1; i <= 1; i++) {
-                    curvedShield(pose, out, b, b.local(i * 1.5, 1.45, 0.55),
-                            1.65, 3.0, 0.62, i == 0 ? blue : withAlpha(cyan, 175));
-                }
-                ring(pose, out, b, Math.max(3.0, honestRadius), 0.04, 0.10, 72, withAlpha(blue, 135), 0.0);
+                fortressWall(pose, out, b, phase >= 2 ? readableRadius * 0.72 : 4.0,
+                        3.3 * tierScale, 5, blue, steel, cyan);
             }
             case "warden_fortress_charge" -> {
-                curvedShield(pose, out, b, b.local(0.0, 1.05, 1.0), 2.5, 2.3, 0.52, blue);
-                for (int i = -2; i <= 2; i++) {
-                    Vec3 a = b.local(i * 0.32, 0.15, -1.4);
-                    Vec3 z = b.local(i * 0.18, 0.35, 4.4);
-                    prism(pose, out, a, z, 0.055, i == 0 ? cyan : withAlpha(blue, 125));
-                }
+                fortressRam(pose, out, b, 5.4 * tierScale,
+                        3.0 * tierScale, progress, blue, steel, cyan);
             }
             case "warden_absolute_formation" -> {
-                ring(pose, out, b, Math.max(3.5, honestRadius), 0.05, 0.12, 80, blue, age * 0.012);
-                for (int i = 0; i < 8; i++) {
-                    double a = i * TAU / 8.0;
-                    Vec3 p = b.local(Math.cos(a) * Math.min(3.6, honestRadius * 0.72), 0.0,
-                            Math.sin(a) * Math.min(3.6, honestRadius * 0.72));
-                    curvedShield(pose, out, b, p.add(0.0, 1.15, 0.0), 1.15, 2.25, 0.38,
-                            i % 2 == 0 ? blue : cyan);
-                }
+                phalanxRing(pose, out, b, phase >= 2 ? readableRadius * 0.72 : 4.0,
+                        10, 2.5 * tierScale, blue, cyan);
+                fortressKeep(pose, out, b, 1.5 * tierScale,
+                        2.9 * tierScale, withAlpha(steel, 135), withAlpha(blue, 145));
             }
             case "warden_fortress_descent" -> {
-                verticalPillar(pose, out, b, 0.55, 5.8, blue);
-                curvedShield(pose, out, b, b.local(0.0, 1.35, 0.45), 3.2, 3.3, 0.70, withAlpha(cyan, 160));
-                ring(pose, out, b, Math.max(3.0, honestRadius) * (0.62 + progress * 0.50),
-                        0.06, 0.17, 80, blue, -age * 0.018);
-                for (int i = 0; i < 8; i++) groundCrack(pose, out, b, i * TAU / 8.0,
-                        0.55, Math.max(3.2, honestRadius), 0.065, withAlpha(cyan, 120));
+                double drop = phase == 0 ? 4.5 - progress * 3.7 : 0.0;
+                fortressKeepAt(pose, out, b, b.local(0.0, drop, 0.0),
+                        3.2 * tierScale, 5.4 * tierScale, blue, steel);
+                if (phase == 3) {
+                    shieldPlateWave(pose, out, b, readableRadius, progress, 12, cyan, blue);
+                    for (int i = 0; i < 10; i++) {
+                        groundCrack(pose, out, b, i * TAU / 10.0, 0.5,
+                                Math.max(3.8, readableRadius), 0.07, withAlpha(cyan, 130));
+                    }
+                }
             }
             default -> renderFallbackRune(pose, out, b, age, progress);
+        }
+    }
+
+    private static boolean isSecondPromotionSkill(String skill) {
+        return switch (skill) {
+            case "vanguard_sword_chain", "vanguard_life_sever", "vanguard_absolute_break", "vanguard_heaven_sever",
+                    "ranger_star_tracker", "ranger_constellation", "ranger_sky_lock", "ranger_meteor_bow",
+                    "arcanist_solar_core", "arcanist_absolute_zero", "arcanist_heaven_chain", "arcanist_singularity",
+                    "luminar_heavenly_barrier", "luminar_returning_light", "luminar_resurrection_hymn", "luminar_last_miracle",
+                    "warden_unbroken_wall", "warden_fortress_charge", "warden_absolute_formation", "warden_fortress_descent" -> true;
+            default -> false;
+        };
+    }
+
+    private static void bladeFan(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            int count, double spread, double length, double y, double width,
+            int colorA, int colorB) {
+        int safe = Math.max(1, count);
+        for (int i = 0; i < safe; i++) {
+            double t = safe == 1 ? 0.5 : i / (double) (safe - 1);
+            double lateral = (t - 0.5) * spread;
+            Vec3 root = b.local(lateral * 0.45, y, 0.10);
+            Vec3 tip = b.local(lateral, y + 0.22 + 0.12 * Math.cos((t - 0.5) * Math.PI),
+                    length);
+            energyBlade(pose, out, root, tip, width, i % 2 == 0 ? colorA : colorB);
+        }
+    }
+
+    private static void battleStandard(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double height, double clothWidth, int clothColor, int trimColor,
+            boolean planted) {
+        Vec3 pole = b.local(0.0, 0.0, 0.0);
+        verticalPillarAt(pose, out, b, pole, 0.075, height, trimColor);
+        double top = height * 0.88;
+        Vec3 p0 = b.local(0.04, top, 0.02);
+        Vec3 p1 = b.local(clothWidth, top - 0.18, 0.02);
+        Vec3 p2 = b.local(clothWidth * 0.92, top - 1.10, 0.02);
+        Vec3 p3 = b.local(0.04, top - 0.86, 0.02);
+        quadTwoSided(pose, out, p0, p1, p2, p3, clothColor);
+        prism(pose, out, p1, p2, 0.035, trimColor);
+        if (planted) {
+            for (int i = 0; i < 4; i++) {
+                double a = Math.PI * 0.25 + i * Math.PI * 0.5;
+                Vec3 a0 = b.local(Math.cos(a) * 0.25, 0.05, Math.sin(a) * 0.25);
+                Vec3 z0 = b.local(Math.cos(a) * 0.85, 0.05, Math.sin(a) * 0.85);
+                prism(pose, out, a0, z0, 0.035, withAlpha(trimColor, 145));
+            }
+        }
+    }
+
+    private static void batteringWedge(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double length, double width, int edgeColor, int coreColor) {
+        Vec3 nose = b.local(0.0, 0.58, length);
+        Vec3 left = b.local(-width, 0.25, 0.25);
+        Vec3 right = b.local(width, 0.25, 0.25);
+        Vec3 crown = b.local(0.0, 1.58, 0.55);
+        prism(pose, out, left, nose, 0.085, edgeColor);
+        prism(pose, out, right, nose, 0.085, edgeColor);
+        prism(pose, out, crown, nose, 0.10, coreColor);
+        prism(pose, out, left, right, 0.06, withAlpha(coreColor, 150));
+    }
+
+    private static void crossedScythes(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, double y, int primary, int secondary) {
+        slashArc(pose, out, b, -0.62, radius, y, 1.9, 0.12, primary);
+        slashArc(pose, out, b, Math.PI + 0.62, radius * 1.08, y + 0.20, 1.9, 0.10, secondary);
+        energyBlade(pose, out, b.local(-0.85, y - 0.15, -0.15),
+                b.local(0.92, y + 0.38, 1.30), 0.065, withAlpha(primary, 165));
+        energyBlade(pose, out, b.local(0.85, y - 0.15, -0.15),
+                b.local(-0.92, y + 0.38, 1.30), 0.065, withAlpha(secondary, 150));
+    }
+
+    private static void siphonTendrils(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double age, double radius, int count, int primary, int secondary) {
+        for (int i = 0; i < count; i++) {
+            double a = i * TAU / count + age * 0.035;
+            Vec3 outer = b.local(Math.cos(a) * radius, 0.40 + (i % 3) * 0.20,
+                    Math.sin(a) * radius);
+            Vec3 mid = b.local(Math.cos(a + 0.45) * radius * 0.55, 0.80,
+                    Math.sin(a + 0.45) * radius * 0.55);
+            Vec3 core = b.local(0.0, 1.05, 0.0);
+            prism(pose, out, outer, mid, 0.035, i % 2 == 0 ? primary : secondary);
+            prism(pose, out, mid, core, 0.045, withAlpha(primary, 150));
+        }
+    }
+
+    private static void armoredChargeWedge(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double length, double width, int armor, int trim, int wake) {
+        Vec3 nose = b.local(0.0, 1.05, length);
+        Vec3 left = b.local(-width, 0.20, 0.0);
+        Vec3 right = b.local(width, 0.20, 0.0);
+        Vec3 upper = b.local(0.0, 2.05, 0.35);
+        quadTwoSided(pose, out, left, right, nose, nose, withAlpha(armor, 125));
+        prism(pose, out, left, nose, 0.12, armor);
+        prism(pose, out, right, nose, 0.12, armor);
+        prism(pose, out, upper, nose, 0.13, trim);
+        for (int i = -2; i <= 2; i++) {
+            Vec3 a = b.local(i * width * 0.22, 0.18, -0.8);
+            Vec3 z = b.local(i * width * 0.12, 0.28, length * 0.78);
+            prism(pose, out, a, z, 0.035, withAlpha(wake, 120));
+        }
+    }
+
+    private static void giantSkyBlade(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double height, double width, int bladeColor, int edgeColor,
+            double progress, int phase) {
+        double y = phase == 0 ? 1.5 + (1.0 - progress) * 2.0 : 0.05;
+        Vec3 root = b.local(0.0, y, 0.0);
+        verticalBlade(pose, out, b, root, height, width, bladeColor);
+        prism(pose, out, b.local(-width * 2.2, y + height * 0.14, 0.0),
+                b.local(width * 2.2, y + height * 0.14, 0.0), width * 0.18, edgeColor);
+        if (phase == 0) {
+            ringVertical(pose, out, b, width * 3.6, y + height * 0.62,
+                    0.05, 64, withAlpha(edgeColor, 135), progress * Math.PI);
+        }
+    }
+
+    private static void bowArc(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double width, double height, double thickness, int limbColor, int stringColor) {
+        int segments = 8;
+        Vec3 prevLeft = null;
+        Vec3 prevRight = null;
+        for (int i = 0; i <= segments; i++) {
+            double t = i / (double) segments;
+            double y = 0.35 + t * height;
+            double bend = Math.sin(t * Math.PI) * width * 0.34;
+            Vec3 left = b.local(-width + bend, y, 0.0);
+            Vec3 right = b.local(width - bend, y, 0.0);
+            if (prevLeft != null) {
+                prism(pose, out, prevLeft, left, thickness, limbColor);
+                prism(pose, out, prevRight, right, thickness, limbColor);
+            }
+            prevLeft = left;
+            prevRight = right;
+        }
+        Vec3 top = b.local(0.0, 0.35 + height, 0.0);
+        Vec3 bottom = b.local(0.0, 0.35, 0.0);
+        Vec3 nock = b.local(0.0, 0.35 + height * 0.5, -0.55);
+        prism(pose, out, top, nock, thickness * 0.38, stringColor);
+        prism(pose, out, bottom, nock, thickness * 0.38, stringColor);
+    }
+
+    private static void hawkCrest(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double span, double y, int wingColor, int beakColor) {
+        wing(pose, out, b, -1, y, span, withAlpha(wingColor, 165));
+        wing(pose, out, b, 1, y, span, withAlpha(wingColor, 165));
+        Vec3 head = b.local(0.0, y + 0.30, 0.15);
+        Vec3 beak = b.local(0.0, y + 0.18, 0.95);
+        spike(pose, out, head, beak, 0.08, beakColor);
+        prism(pose, out, b.local(-0.34, y + 0.42, 0.05),
+                b.local(0.34, y + 0.42, 0.05), 0.04, wingColor);
+    }
+
+    private static void antiAirCrown(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, int count, int primary, int secondary) {
+        for (int i = 0; i < count; i++) {
+            double a = i * TAU / count;
+            Vec3 base = b.local(Math.cos(a) * radius * 0.58, 0.20,
+                    Math.sin(a) * radius * 0.58);
+            Vec3 tip = b.local(Math.cos(a) * radius * 0.74, 2.5 + (i % 2) * 0.45,
+                    Math.sin(a) * radius * 0.74);
+            customArrow(pose, out, b, base.add(0.0, 0.65, 0.0), 1.35, 0.045,
+                    i % 2 == 0 ? primary : secondary);
+            prism(pose, out, base, tip, 0.035, withAlpha(primary, 120));
+        }
+    }
+
+    private static void arrowCanopy(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, double height, int count, int canopyColor, int arrowColor) {
+        ring(pose, out, b, radius * 0.82, height, 0.055, 72,
+                withAlpha(canopyColor, 135), 0.0);
+        for (int i = 0; i < count; i++) {
+            double a = i * TAU / count;
+            Vec3 p = b.local(Math.cos(a) * radius * 0.68,
+                    height - (i % 3) * 0.18, Math.sin(a) * radius * 0.68);
+            customArrow(pose, out, b, p, 1.15 + (i % 2) * 0.25, 0.038, arrowColor);
+            prism(pose, out, p, p.add(0.0, -height * 0.78, 0.0), 0.025,
+                    withAlpha(canopyColor, 95));
+        }
+    }
+
+    private static void constellationWeb(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            int count, double radius, double y, double phase,
+            int nodeColor, int lineColor, boolean arrows) {
+        Vec3[] nodes = new Vec3[count];
+        for (int i = 0; i < count; i++) {
+            double a = phase + i * TAU / count;
+            nodes[i] = b.local(Math.cos(a) * radius,
+                    y + 0.20 * Math.sin(a * 2.0), Math.sin(a) * radius);
+            crystal(pose, out, nodes[i], 0.30, 0.09, nodeColor);
+            if (arrows) customArrow(pose, out, b, nodes[i].add(0.0, 0.22, 0.0),
+                    0.92, 0.03, lineColor);
+        }
+        for (int i = 0; i < count; i++) {
+            prism(pose, out, nodes[i], nodes[(i + 2) % count], 0.025,
+                    withAlpha(lineColor, 115));
+        }
+    }
+
+    private static void stellarLance(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double length, double thickness, int core, int trim, int star) {
+        Vec3 a = b.local(0.0, 1.18, -1.0);
+        Vec3 z = b.local(0.0, 1.18, length);
+        braidedBeam(pose, out, a, z, length * 1.7, thickness, withAlpha(core, 155));
+        customArrow(pose, out, b, b.local(0.0, 1.18, length * 0.36),
+                length * 0.72, thickness * 0.72, trim);
+        for (int i = 0; i < 4; i++) {
+            double d = 0.7 + i * (length - 1.4) / 4.0;
+            crystal(pose, out, b.local((i % 2 == 0 ? -1 : 1) * 0.28,
+                    1.18, d), 0.24, 0.07, star);
+        }
+    }
+
+    private static void skyCage(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, double height, int bars, int primary, int secondary) {
+        ring(pose, out, b, radius, 0.08, 0.08, 80, withAlpha(primary, 165), 0.0);
+        ring(pose, out, b, radius * 0.72, height, 0.07, 72,
+                withAlpha(secondary, 145), 0.0);
+        for (int i = 0; i < bars; i++) {
+            double a = i * TAU / bars;
+            Vec3 base = b.local(Math.cos(a) * radius, 0.08, Math.sin(a) * radius);
+            Vec3 top = b.local(Math.cos(a) * radius * 0.72, height,
+                    Math.sin(a) * radius * 0.72);
+            prism(pose, out, base, top, 0.055, i % 2 == 0 ? primary : secondary);
+        }
+    }
+
+    private static void meteorSpear(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            Vec3 center, double length, double thickness, int core, int trail) {
+        customArrow(pose, out, b, center, length, thickness, core);
+        for (int i = 0; i < 4; i++) {
+            Vec3 a = center.add(b.right.scale((i - 1.5) * 0.16)).subtract(b.forward.scale(length * 0.30));
+            Vec3 z = center.add(b.right.scale((i - 1.5) * 0.08)).subtract(b.forward.scale(length * 0.95));
+            prism(pose, out, a, z, thickness * 0.22, withAlpha(trail, 130 - i * 12));
+        }
+    }
+
+    private static void craterBurst(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, int primary, int secondary, int tertiary) {
+        ring(pose, out, b, radius, 0.04, 0.15, 88, withAlpha(primary, 175), 0.0);
+        ring(pose, out, b, radius * 0.62, 0.10, 0.09, 64, withAlpha(secondary, 155), 0.0);
+        for (int i = 0; i < 12; i++) {
+            groundCrack(pose, out, b, i * TAU / 12.0, 0.32, radius,
+                    0.055, i % 3 == 0 ? tertiary : withAlpha(primary, 125));
+        }
+    }
+
+    private static void moltenCore(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, double age, int core, int hot, int crust) {
+        Vec3 center = b.local(0.0, 1.35, 0.35);
+        sphere(pose, out, center, radius, 10, 16, core);
+        for (int i = 0; i < 6; i++) {
+            double a = age * 0.035 + i * TAU / 6.0;
+            Vec3 p0 = center.add(Math.cos(a) * radius * 0.72,
+                    Math.sin(a * 2.0) * radius * 0.28, Math.sin(a) * radius * 0.72);
+            Vec3 p1 = center.add(Math.cos(a + 0.62) * radius * 1.18,
+                    Math.cos(a) * radius * 0.24, Math.sin(a + 0.62) * radius * 1.18);
+            prism(pose, out, p0, p1, 0.055, i % 2 == 0 ? hot : crust);
+        }
+        ringVertical(pose, out, b, radius * 1.35, 1.35, 0.05, 52,
+                withAlpha(hot, 150), age * 0.045);
+    }
+
+    private static void iceCage(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, double height, int bars, int primary, int secondary) {
+        ring(pose, out, b, radius, 0.03, 0.07, 72, withAlpha(primary, 150), 0.0);
+        for (int i = 0; i < bars; i++) {
+            double a = i * TAU / bars;
+            Vec3 root = b.local(Math.cos(a) * radius, 0.04, Math.sin(a) * radius);
+            crystal(pose, out, root, height * (0.78 + 0.22 * ((i % 3) / 2.0)),
+                    0.13 + (i % 2) * 0.025, i % 2 == 0 ? primary : secondary);
+        }
+    }
+
+    private static void lightningNodeWeb(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            int count, double radius, double y, double age, int primary, int secondary) {
+        Vec3[] nodes = new Vec3[count];
+        for (int i = 0; i < count; i++) {
+            double a = age * 0.018 + i * TAU / count;
+            nodes[i] = b.local(Math.cos(a) * radius, y + (i % 2) * 0.65,
+                    Math.sin(a) * radius);
+            crystal(pose, out, nodes[i], 0.34, 0.10, i % 2 == 0 ? primary : secondary);
+        }
+        for (int i = 0; i < count; i++) {
+            jaggedBolt(pose, out, nodes[i], nodes[(i + 1) % count],
+                    6, 0.04, i % 2 == 0 ? primary : secondary,
+                    (long) age + i * 37L);
+        }
+    }
+
+    private static void gravityFunnel(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, double height, double age, int primary, int secondary, int core) {
+        for (int layer = 0; layer < 4; layer++) {
+            double r = radius * (0.30 + layer * 0.18);
+            helixRibbon(pose, out, b, -age * (0.065 + layer * 0.012) + layer,
+                    r, height * (0.62 + layer * 0.12), 26,
+                    withAlpha(layer % 2 == 0 ? primary : secondary, 130));
+        }
+        sphere(pose, out, b.local(0.0, 1.10, 0.0),
+                Math.min(0.72, radius * 0.15), 8, 12, core);
+        for (int i = 0; i < 8; i++) {
+            double a = i * TAU / 8.0 + age * 0.02;
+            Vec3 outer = b.local(Math.cos(a) * radius, 0.55 + (i % 3) * 0.38,
+                    Math.sin(a) * radius);
+            Vec3 inner = b.local(Math.cos(a + 0.55) * radius * 0.30, 1.05,
+                    Math.sin(a + 0.55) * radius * 0.30);
+            prism(pose, out, outer, inner, 0.035, withAlpha(secondary, 110));
+        }
+    }
+
+    private static void sunCorona(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, int rays, double age, int core, int ray, int halo) {
+        Vec3 center = b.local(0.0, 1.55, 0.25);
+        sphere(pose, out, center, radius, 10, 18, core);
+        for (int i = 0; i < rays; i++) {
+            double a = i * TAU / rays + age * 0.012;
+            Vec3 root = center.add(Math.cos(a) * radius * 0.88, 0.0,
+                    Math.sin(a) * radius * 0.88);
+            Vec3 tip = center.add(Math.cos(a) * radius * 1.70, 0.0,
+                    Math.sin(a) * radius * 1.70);
+            spike(pose, out, root, tip, 0.045, i % 2 == 0 ? ray : halo);
+        }
+        ringVertical(pose, out, b, radius * 1.45, 1.55, 0.06, 64,
+                withAlpha(halo, 150), -age * 0.035);
+    }
+
+    private static void sunRays(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, int rays, double y, int primary, int secondary) {
+        for (int i = 0; i < rays; i++) {
+            double a = i * TAU / rays;
+            Vec3 root = b.local(Math.cos(a) * radius * 0.28, y, Math.sin(a) * radius * 0.28);
+            Vec3 tip = b.local(Math.cos(a) * radius, y + (i % 2) * 0.18,
+                    Math.sin(a) * radius);
+            spike(pose, out, root, tip, 0.045, i % 2 == 0 ? primary : secondary);
+        }
+    }
+
+    private static void snowflakeSigil(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, double y, int primary, int secondary) {
+        for (int i = 0; i < 6; i++) {
+            double a = i * TAU / 6.0;
+            Vec3 center = b.local(0.0, y, 0.0);
+            Vec3 tip = b.local(Math.cos(a) * radius, y, Math.sin(a) * radius);
+            prism(pose, out, center, tip, 0.045, primary);
+            Vec3 branch = b.local(Math.cos(a) * radius * 0.62, y, Math.sin(a) * radius * 0.62);
+            Vec3 left = b.local(Math.cos(a + 0.42) * radius * 0.82, y,
+                    Math.sin(a + 0.42) * radius * 0.82);
+            Vec3 right = b.local(Math.cos(a - 0.42) * radius * 0.82, y,
+                    Math.sin(a - 0.42) * radius * 0.82);
+            prism(pose, out, branch, left, 0.032, secondary);
+            prism(pose, out, branch, right, 0.032, secondary);
+        }
+    }
+
+    private static void iceBloom(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, int count, int primary, int secondary, double progress) {
+        for (int i = 0; i < count; i++) {
+            double a = i * TAU / count;
+            double r = radius * (0.42 + 0.50 * progress);
+            Vec3 root = b.local(Math.cos(a) * r, 0.04, Math.sin(a) * r);
+            crystal(pose, out, root,
+                    1.2 + 1.7 * (0.4 + 0.6 * progress) * (0.75 + (i % 3) * 0.12),
+                    0.10 + (i % 2) * 0.03, i % 2 == 0 ? primary : secondary);
+        }
+    }
+
+    private static void thunderLattice(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, double height, int count, double age, int primary, int secondary) {
+        Vec3[] sky = new Vec3[count];
+        for (int i = 0; i < count; i++) {
+            double a = i * TAU / count;
+            Vec3 ground = b.local(Math.cos(a) * radius * 0.72, 0.06,
+                    Math.sin(a) * radius * 0.72);
+            sky[i] = b.local(Math.cos(a + 0.24) * radius * 0.58,
+                    height - (i % 3) * 0.45, Math.sin(a + 0.24) * radius * 0.58);
+            jaggedBolt(pose, out, sky[i], ground, 8, 0.05,
+                    i % 2 == 0 ? primary : secondary, (long) age + i * 41L);
+        }
+        for (int i = 0; i < count; i++) {
+            jaggedBolt(pose, out, sky[i], sky[(i + 1) % count],
+                    5, 0.035, withAlpha(secondary, 135), (long) age + i * 17L);
+        }
+    }
+
+    private static void singularityCore(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, double age, double progress, int core, int primary, int secondary) {
+        sphere(pose, out, b.local(0.0, 1.20, 0.0),
+                0.58 + 0.10 * Math.sin(age * 0.21), 9, 14, core);
+        for (int layer = 0; layer < 4; layer++) {
+            double r = Math.min(radius * (0.30 + layer * 0.15), 1.0 + layer * 0.65);
+            ring(pose, out, b, r, 1.20 + (layer - 1.5) * 0.12,
+                    0.045 + layer * 0.006, 64,
+                    withAlpha(layer % 2 == 0 ? primary : secondary, 165 - layer * 15),
+                    -age * (0.05 + layer * 0.012));
+        }
+        for (int i = 0; i < 10; i++) {
+            double a = i * TAU / 10.0 + age * 0.025;
+            double r = radius * (0.72 + 0.18 * Math.sin(i));
+            Vec3 outer = b.local(Math.cos(a) * r, 0.45 + (i % 4) * 0.30,
+                    Math.sin(a) * r);
+            Vec3 inner = b.local(Math.cos(a + 0.70) * radius * 0.16,
+                    1.20, Math.sin(a + 0.70) * radius * 0.16);
+            prism(pose, out, outer, inner, 0.035, withAlpha(secondary, 105));
+        }
+        ring(pose, out, b, radius * (0.82 + progress * 0.12), 0.05,
+                0.08, 80, withAlpha(primary, 115), 0.0);
+    }
+
+    private static void guardianHalo(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, double y, double age, int primary, int secondary) {
+        ringVertical(pose, out, b, radius, y, 0.07, 72, primary, age * 0.025);
+        for (int i = 0; i < 6; i++) {
+            double a = i * TAU / 6.0 + age * 0.012;
+            chevron(pose, out, b, a, radius * 0.96, y, 0.26,
+                    i % 2 == 0 ? primary : secondary);
+        }
+    }
+
+    private static void holyCross(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            Vec3 center, double size, double thickness, int color) {
+        prism(pose, out, center.add(0.0, -size * 0.55, 0.0),
+                center.add(0.0, size * 0.55, 0.0), thickness, color);
+        prism(pose, out, center.add(b.right.scale(-size * 0.42)),
+                center.add(b.right.scale(size * 0.42)), thickness, color);
+    }
+
+    private static void expandingCrossWave(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, double progress, int primary, int secondary) {
+        double r = radius * (0.35 + 0.65 * progress);
+        ring(pose, out, b, r, 0.04, 0.075, 72, withAlpha(primary, 145), 0.0);
+        for (int i = 0; i < 4; i++) {
+            double a = i * Math.PI * 0.5;
+            Vec3 a0 = b.local(Math.cos(a) * r * 0.20, 0.05, Math.sin(a) * r * 0.20);
+            Vec3 z0 = b.local(Math.cos(a) * r, 0.05, Math.sin(a) * r);
+            prism(pose, out, a0, z0, 0.055, i % 2 == 0 ? primary : secondary);
+        }
+    }
+
+    private static void lifeWave(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, double age, double progress, int primary, int secondary, int accent) {
+        for (int i = 0; i < 4; i++) {
+            double p = fract(progress * 1.35 + i * 0.22);
+            double r = radius * (0.22 + p * 0.78);
+            ring(pose, out, b, r, 0.08 + i * 0.16, 0.055, 64,
+                    withAlpha(i % 2 == 0 ? primary : secondary, 175 - i * 18),
+                    age * 0.006 * (i + 1));
+        }
+        for (int i = 0; i < 6; i++) {
+            chevron(pose, out, b, i * TAU / 6.0 + age * 0.012,
+                    radius * 0.55, 0.32, 0.32, withAlpha(accent, 110));
+        }
+    }
+
+    private static void judgementMark(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, double height, int primary, int secondary) {
+        verticalPillar(pose, out, b, 0.32, height, withAlpha(primary, 175));
+        holyCross(pose, out, b, b.local(0.0, height * 0.58, 0.0),
+                1.45, 0.10, secondary);
+        ring(pose, out, b, radius * 0.72, 0.04, 0.09, 72,
+                withAlpha(primary, 150), 0.0);
+    }
+
+    private static void sanctuaryDome(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, double height, int ribs, int primary, int secondary) {
+        ring(pose, out, b, radius, 0.05, 0.08, 80, withAlpha(primary, 150), 0.0);
+        Vec3 apex = b.local(0.0, height, 0.0);
+        for (int i = 0; i < ribs; i++) {
+            double a = i * TAU / ribs;
+            Vec3 base = b.local(Math.cos(a) * radius, 0.06, Math.sin(a) * radius);
+            Vec3 mid = b.local(Math.cos(a) * radius * 0.55, height * 0.64,
+                    Math.sin(a) * radius * 0.55);
+            prism(pose, out, base, mid, 0.045, i % 2 == 0 ? primary : secondary);
+            prism(pose, out, mid, apex, 0.040, withAlpha(primary, 135));
+        }
+    }
+
+    private static void returnBeacon(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double height, double age, int primary, int secondary, int accent) {
+        verticalPillar(pose, out, b, 0.22, height, withAlpha(primary, 175));
+        crystal(pose, out, b.local(0.0, height * 0.48, 0.0),
+                0.92, 0.24, secondary);
+        for (int i = 0; i < 4; i++) {
+            double r = 0.70 + i * 0.36;
+            ringVertical(pose, out, b, r, height * 0.52,
+                    0.045, 56, withAlpha(i % 2 == 0 ? primary : accent, 155 - i * 18),
+                    age * (0.025 + i * 0.01));
+        }
+    }
+
+    private static void choirCrown(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, int voices, double height, double age,
+            int primary, int secondary) {
+        for (int i = 0; i < voices; i++) {
+            double a = i * TAU / voices + age * 0.006;
+            Vec3 p = b.local(Math.cos(a) * radius * 0.58, 0.0,
+                    Math.sin(a) * radius * 0.58);
+            verticalPillarAt(pose, out, b, p, 0.10,
+                    height * (0.78 + (i % 2) * 0.12), withAlpha(primary, 145));
+            ringVertical(pose, out, b, radius * (0.32 + i * 0.025),
+                    height * 0.68, 0.035, 48, withAlpha(secondary, 120), a);
+        }
+    }
+
+    private static void sacredMandala(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, double age, int primary, int secondary, int accent) {
+        runeDisc(pose, out, b, radius, 0.045, age * 0.018, primary);
+        ring(pose, out, b, radius * 0.72, 0.08, 0.08, 80,
+                withAlpha(secondary, 165), -age * 0.024);
+        for (int i = 0; i < 12; i++) {
+            double a = i * TAU / 12.0;
+            Vec3 a0 = b.local(Math.cos(a) * radius * 0.44, 0.10,
+                    Math.sin(a) * radius * 0.44);
+            Vec3 z0 = b.local(Math.cos(a) * radius * 0.88, 0.10,
+                    Math.sin(a) * radius * 0.88);
+            prism(pose, out, a0, z0, 0.035, i % 3 == 0 ? accent : primary);
+        }
+    }
+
+    private static void gateFrame(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double width, double height, double thickness, int primary, int trim) {
+        Vec3 left0 = b.local(-width * 0.5, 0.0, 0.2);
+        Vec3 left1 = b.local(-width * 0.5, height, 0.2);
+        Vec3 right0 = b.local(width * 0.5, 0.0, 0.2);
+        Vec3 right1 = b.local(width * 0.5, height, 0.2);
+        prism(pose, out, left0, left1, thickness, primary);
+        prism(pose, out, right0, right1, thickness, primary);
+        prism(pose, out, left1, right1, thickness * 1.12, trim);
+        prism(pose, out, b.local(-width * 0.38, height * 0.68, 0.2),
+                b.local(width * 0.38, height * 0.68, 0.2), thickness * 0.65,
+                withAlpha(trim, 145));
+    }
+
+    private static void shieldRam(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double width, double height, int primary, int trim) {
+        Vec3 center = b.local(0.0, height * 0.52, 1.0);
+        curvedShield(pose, out, b, center, width, height, 0.48, primary);
+        Vec3 tip = b.local(0.0, height * 0.58, 2.5);
+        prism(pose, out, center, tip, 0.16, trim);
+    }
+
+    private static void challengeCrown(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, int count, double age, int primary, int secondary) {
+        ring(pose, out, b, radius, 0.10, 0.085, 80, withAlpha(primary, 145), age * 0.014);
+        for (int i = 0; i < count; i++) {
+            double a = i * TAU / count + age * 0.006;
+            chevron(pose, out, b, a, radius * 0.92, 0.24,
+                    0.42, i % 2 == 0 ? primary : secondary);
+            Vec3 outer = b.local(Math.cos(a) * radius, 0.26, Math.sin(a) * radius);
+            Vec3 inner = b.local(Math.cos(a) * radius * 0.48, 0.42,
+                    Math.sin(a) * radius * 0.48);
+            prism(pose, out, outer, inner, 0.03, withAlpha(secondary, 105));
+        }
+    }
+
+    private static void fourWallBarrier(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, double height, int primary, int secondary) {
+        for (int i = 0; i < 4; i++) {
+            double a = i * Math.PI * 0.5;
+            wallPlate(pose, out, b, a, radius, 2.3, height,
+                    i % 2 == 0 ? primary : secondary);
+        }
+    }
+
+    private static void shieldPlateWave(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, double progress, int count, int primary, int secondary) {
+        double r = radius * (0.35 + 0.65 * progress);
+        for (int i = 0; i < count; i++) {
+            double a = i * TAU / count;
+            wallPlate(pose, out, b, a, r, 1.25, 1.45,
+                    i % 2 == 0 ? primary : secondary);
+        }
+    }
+
+    private static void fortressWall(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double width, double height, int segments, int primary, int secondary, int trim) {
+        double segmentWidth = width * 2.0 / segments;
+        for (int i = 0; i < segments; i++) {
+            double x = -width + segmentWidth * (i + 0.5);
+            Vec3 p0 = b.local(x - segmentWidth * 0.44, 0.05, 0.55);
+            Vec3 p1 = b.local(x + segmentWidth * 0.44, 0.05, 0.55);
+            Vec3 p2 = b.local(x + segmentWidth * 0.44, height * (i == segments / 2 ? 1.12 : 0.88), 0.55);
+            Vec3 p3 = b.local(x - segmentWidth * 0.44, height * (i == segments / 2 ? 1.12 : 0.88), 0.55);
+            quadTwoSided(pose, out, p0, p1, p2, p3, withAlpha(i % 2 == 0 ? primary : secondary, 145));
+            prism(pose, out, p0, p3, 0.055, trim);
+            prism(pose, out, p1, p2, 0.055, trim);
+        }
+    }
+
+    private static void fortressRam(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double length, double width, double progress, int primary, int secondary, int trim) {
+        batteringWedge(pose, out, b, length, width * 0.62, trim, primary);
+        for (int i = -2; i <= 2; i++) {
+            Vec3 a = b.local(i * width * 0.22, 0.10, -1.5 - progress * 2.0);
+            Vec3 z = b.local(i * width * 0.15, 0.38 + Math.abs(i) * 0.10, length * 0.84);
+            prism(pose, out, a, z, 0.055, i == 0 ? trim : withAlpha(secondary, 125));
+        }
+        gateFrame(pose, out, b, width * 1.35, 2.6, 0.10, primary, trim);
+    }
+
+    private static void phalanxRing(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double radius, int count, double height, int primary, int secondary) {
+        for (int i = 0; i < count; i++) {
+            double a = i * TAU / count;
+            wallPlate(pose, out, b, a, radius, 1.15, height,
+                    i % 2 == 0 ? primary : secondary);
+        }
+        ring(pose, out, b, radius * 0.88, 0.06, 0.07, 80,
+                withAlpha(primary, 115), 0.0);
+    }
+
+    private static void wallPlate(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double angle, double radius, double width, double height, int color) {
+        Vec3 center = b.local(Math.cos(angle) * radius, 0.0, Math.sin(angle) * radius);
+        Vec3 tangent = b.right.scale(-Math.sin(angle)).add(b.forward.scale(Math.cos(angle))).normalize();
+        Vec3 half = tangent.scale(width * 0.5);
+        Vec3 p0 = center.subtract(half).add(0.0, 0.08, 0.0);
+        Vec3 p1 = center.add(half).add(0.0, 0.08, 0.0);
+        Vec3 p2 = p1.add(0.0, height, 0.0);
+        Vec3 p3 = p0.add(0.0, height, 0.0);
+        quadTwoSided(pose, out, p0, p1, p2, p3, withAlpha(color, 145));
+        prism(pose, out, p0, p3, 0.045, color);
+        prism(pose, out, p1, p2, 0.045, color);
+    }
+
+    private static void fortressKeep(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double width, double height, int primary, int secondary) {
+        fortressKeepAt(pose, out, b, b.local(0.0, 0.0, 0.0), width, height, primary, secondary);
+    }
+
+    private static void fortressKeepAt(
+            PoseStack.Pose pose, VertexConsumer out, Basis b, Vec3 center,
+            double width, double height, int primary, int secondary) {
+        Vec3 l0 = center.add(b.right.scale(-width * 0.5)).add(0.0, 0.05, 0.0);
+        Vec3 r0 = center.add(b.right.scale(width * 0.5)).add(0.0, 0.05, 0.0);
+        Vec3 l1 = l0.add(0.0, height * 0.72, 0.0);
+        Vec3 r1 = r0.add(0.0, height * 0.72, 0.0);
+        quadTwoSided(pose, out, l0, r0, r1, l1, withAlpha(primary, 145));
+        prism(pose, out, l0, l1, 0.07, secondary);
+        prism(pose, out, r0, r1, 0.07, secondary);
+        Vec3 crown = center.add(0.0, height, 0.0);
+        prism(pose, out, l1, crown, 0.065, secondary);
+        prism(pose, out, r1, crown, 0.065, secondary);
+        for (int i = -1; i <= 1; i++) {
+            Vec3 tooth0 = center.add(b.right.scale(i * width * 0.28)).add(0.0, height * 0.72, 0.0);
+            Vec3 tooth1 = tooth0.add(0.0, height * 0.18, 0.0);
+            prism(pose, out, tooth0, tooth1, 0.06, secondary);
         }
     }
 
