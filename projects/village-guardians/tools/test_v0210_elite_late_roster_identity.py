@@ -38,7 +38,7 @@ def main() -> None:
     for entity in ("EntityTypes.SKELETON", "EntityTypes.HUSK", "EntityTypes.VINDICATOR",
                    "EntityTypes.WITCH", "EntityTypes.ZOMBIFIED_PIGLIN"):
         assert entity in presentation
-    for item in ("Items.CHAIN", "Items.FIRE_CHARGE", "Items.IRON_SWORD", "Items.SPIDER_EYE", "Items.GOLDEN_AXE"):
+    for item in ("Items.LEAD", "Items.FIRE_CHARGE", "Items.IRON_SWORD", "Items.SPIDER_EYE", "Items.GOLDEN_AXE"):
         assert item in presentation
 
     for kind in ("elite_assassin_lunge", "elite_assassin_impact", "elite_shock_charge", "elite_shock_impact"):
