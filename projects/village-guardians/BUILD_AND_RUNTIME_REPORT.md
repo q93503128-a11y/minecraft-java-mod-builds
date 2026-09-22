@@ -9,10 +9,38 @@
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
 - Target JAR: `villageguardians-0.18.46-alpha.1.jar`
-- Current manual-audit validated code head: `405f4f5ab59152366ff5f6218dd743925f229b65`
+- Current manual-audit validated code head: `568bbefadedca176f980a89ed020cf133bac0887`
 - Current verification date: `2026-09-22 Asia/Seoul`
-- Current verified JAR SHA-256: `54c8c85419fcda96636f2f1bde3f37130dd5ca783f235e53936de12c046e3fa1`
-- Current verified JAR size: `1416698` bytes
+- Current verified JAR SHA-256: `9dae527424877fdd7272bb6c3bc57bf5beb678710d0dd751db48249597225d08`
+- Current verified JAR size: `1711379` bytes
+
+## 2026-09-22 후속 전체 수동감사 결함 수정 · 현재 acceptance
+
+전체 기획/코드 수동 대조에서 확인된 현재 정본 불일치를 최소 수정으로 정리했다.
+
+- 측면·후방 다전선 성벽 공격이 `7.0 + day * 0.65`의 선형 날짜 피해를 별도로 사용하던 경로를 제거하고, 북문/시설과 동일한 `VillageCampaignProgression.structureDamageDayContribution(day)` 소프트 성장 곡선을 사용하도록 통일했다. Day 101+ 끝없는 전쟁에서 측후방 성벽만 선형 폭증하는 우회를 차단했다.
+- 회관 설명의 폐기된 직업 배치 문구, 4병과 용병, 네 종류 방어탑 문구를 현재 정본인 시설 유지보수·포탑 지휘, 6병과, 10계열 배치 포탑으로 갱신했다.
+- 습격 시작 시 설치 포탑 0기 안내가 폐기된 북문 성벽 지휘 레버를 가리키던 문구를 현재 authoritative 위치인 마을 회관 지휘대로 수정했다.
+- 실제 생성 코드와 fortress regression이 사용하는 북문 개폐 폭은 `GATE_HALF_WIDTH = 9`, 즉 19블록이다. 월드 구조를 17블록으로 축소하지 않고 `PROJECT.md`의 오래된 17블록 표기를 19블록으로 정정했다.
+- `test_v0200_campaign_stat_curve.py`에 측후방 성벽 피해가 공용 soft-growth 함수를 사용하는 계약을 추가했고, `test_v01841_townhall_turret_lifecycle.py`에 현행 회관 포탑 지휘/10계열/6병과 안내 계약을 추가했다. `test_fortress_layout.py`는 PROJECT 정본과 실제 19블록 북문 폭을 함께 고정한다.
+
+### 현재 acceptance
+
+- Validated acceptance head: `568bbefadedca176f980a89ed020cf133bac0887`
+- Actions run: `35689042397` — **PASS**
+- `tools/test_*.py`: **PASS, 102/102**
+- Java 25 / Gradle 9.2.1 / NeoForge 26.2 clean build: **PASS**
+- JAR verifier: **PASS**
+- JAR artifact upload: **PASS**
+- JAR: `villageguardians-0.18.46-alpha.1.jar`, `1711379` bytes
+- JAR SHA-256: `9dae527424877fdd7272bb6c3bc57bf5beb678710d0dd751db48249597225d08`
+- Actions artifact ID: `10677896982`
+- Artifact digest: `sha256:4bae47b19f5f389dd9403810627c86102d3206231c1d7f1838faf58674e61174`
+- Client gameplay after this repair: **NOT RUN**
+- Multiplayer gameplay after this repair: **NOT RUN**
+- Max-load profiler pass after this repair: **NOT RUN**
+
+이 보고서 갱신은 acceptance 성공 뒤의 문서 전용 변경이며 런타임/JAR에는 영향을 주지 않는다.
 
 ## 2026-09-22 전체 수동 정합 감사 · 세트/캠페인 현재 정본
 
