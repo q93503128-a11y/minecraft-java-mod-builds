@@ -79,14 +79,14 @@ public final class VillageRoleMasterySystem {
         if (player == null || role == null || skill == null || rank <= 0) return MasteryProc.none();
 
         UUID id = player.getUUID();
-        long now = System.currentTimeMillis();
+        long now = player.level().getGameTime();
         PairStyle style = pairStyle(player, role);
-        long windowMillis = (8L + rank + (style == PairStyle.MIXED ? 2L : 0L)) * 1000L;
+        long windowTicks = (8L + rank + (style == PairStyle.MIXED ? 2L : 0L)) * 20L;
         VillageRoleSkillSystem.ActiveSkill previous = LAST_SKILL.get(id);
         boolean alternating = previous != null
                 && previous.role() == role
                 && previous != skill
-                && now - LAST_CAST_AT.getOrDefault(id, 0L) <= windowMillis;
+                && now - LAST_CAST_AT.getOrDefault(id, 0L) <= windowTicks;
 
         if (!alternating) {
             return new MasteryProc(false, rank, style, 1.0f, 1.0f, 0, 1.0f);
@@ -113,7 +113,7 @@ public final class VillageRoleMasterySystem {
         if (player == null || skill == null) return;
         UUID id = player.getUUID();
         LAST_SKILL.put(id, skill);
-        LAST_CAST_AT.put(id, System.currentTimeMillis());
+        LAST_CAST_AT.put(id, player.level().getGameTime());
         if (level == null || role == null || proc == null || !proc.triggered()) return;
 
         int rank = proc.rank();
@@ -138,7 +138,7 @@ public final class VillageRoleMasterySystem {
         if (player == null || target == null) return 1.0f;
         RangerFocus focus = RANGER_FOCUS.get(player.getUUID());
         if (focus == null) return 1.0f;
-        if (System.currentTimeMillis() > focus.untilMillis()) {
+        if (player.level().getGameTime() > focus.untilGameTime()) {
             RANGER_FOCUS.remove(player.getUUID());
             return 1.0f;
         }
@@ -171,7 +171,7 @@ public final class VillageRoleMasterySystem {
 
     private static void armRangerFocus(ServerPlayer player, int rank, float effectScale) {
         float multiplier = 1.0f + (0.07f + rank * 0.025f) * effectScale;
-        long until = System.currentTimeMillis() + (6_000L + rank * 800L);
+        long until = player.level().getGameTime() + 120L + rank * 16L;
         RANGER_FOCUS.put(player.getUUID(), new RangerFocus(until, multiplier, rank));
     }
 
@@ -246,5 +246,5 @@ public final class VillageRoleMasterySystem {
         }
     }
 
-    private record RangerFocus(long untilMillis, float multiplier, int rank) {}
+    private record RangerFocus(long untilGameTime, float multiplier, int rank) {}
 }

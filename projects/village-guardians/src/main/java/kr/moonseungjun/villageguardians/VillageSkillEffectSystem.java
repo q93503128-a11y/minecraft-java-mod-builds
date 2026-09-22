@@ -88,11 +88,23 @@ public final class VillageSkillEffectSystem {
             VillageRoleSkillSystem.ActiveSkill skill,
             int calculatedDuration,
             Vec3 forward) {
-        int duration = Math.max(28, Math.min(96, calculatedDuration / 2));
+        int duration = promotionCastDuration(skill);
         spawn(level, player, "promotion_skill_cast", player.position(), forward,
                 duration, 0.0f, skill.id());
         VillageNetwork.sendSkillMotion(
-                level, player, "promotion:" + skill.id(), duration + 8);
+                level, player, "promotion:" + skill.id(), duration + 4);
+    }
+
+    private static int promotionCastDuration(VillageRoleSkillSystem.ActiveSkill skill) {
+        return switch (skill) {
+            case VANGUARD_HEAVEN_SEVER -> 14;
+            case RANGER_METEOR_BOW -> 22;
+            case RANGER_DOWNPOUR, ARCANIST_FROST_PRISON, ARCANIST_GRAVITY_STORM,
+                    ARCANIST_ABSOLUTE_ZERO, ARCANIST_HEAVEN_CHAIN, ARCANIST_SINGULARITY,
+                    LUMINAR_HEAVENLY_BARRIER, LUMINAR_RESURRECTION_HYMN,
+                    WARDEN_UNBROKEN_WALL, WARDEN_ABSOLUTE_FORMATION -> 18;
+            default -> 16;
+        };
     }
 
     public static void promotionImpact(
@@ -118,6 +130,32 @@ public final class VillageSkillEffectSystem {
         if (skill == null) return;
         spawn(level, player, "promotion_skill_field", center, horizontal(direction),
                 Math.max(24, duration), 0.0f, promotionMeta(skill, radius));
+    }
+
+    public static void promotionMovingField(
+            ServerLevel level,
+            ServerPlayer player,
+            VillageRoleSkillSystem.ActiveSkill skill,
+            Vec3 center,
+            Vec3 direction,
+            int duration,
+            double radius,
+            float speed) {
+        if (skill == null) return;
+        spawn(level, player, "promotion_skill_field", center, horizontal(direction),
+                Math.max(24, duration), Math.max(0.0f, speed), promotionMeta(skill, radius));
+    }
+
+    public static void promotionFollow(
+            ServerLevel level,
+            ServerPlayer player,
+            VillageRoleSkillSystem.ActiveSkill skill,
+            Vec3 direction,
+            int duration,
+            double radius) {
+        if (skill == null) return;
+        spawn(level, player, "promotion_skill_follow", player.position(), horizontal(direction),
+                Math.max(8, duration), 0.0f, promotionMeta(skill, radius));
     }
 
     public static VillageSkillEffectEntity promotionProjectile(
@@ -148,6 +186,15 @@ public final class VillageSkillEffectSystem {
         for (VillageSkillEffectEntity effect : level.getEntitiesOfClass(
                 VillageSkillEffectEntity.class, owner.getBoundingBox().inflate(64.0),
                 effect -> effect.ownerEntityId() == owner.getId() && wanted.contains(effect.kind()))) {
+            effect.discard();
+        }
+    }
+
+    public static void clearOwned(ServerLevel level, ServerPlayer owner) {
+        if (level == null || owner == null) return;
+        for (VillageSkillEffectEntity effect : level.getEntitiesOfClass(
+                VillageSkillEffectEntity.class, owner.getBoundingBox().inflate(192.0),
+                effect -> effect.ownerEntityId() == owner.getId())) {
             effect.discard();
         }
     }

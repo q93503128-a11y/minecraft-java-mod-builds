@@ -124,7 +124,7 @@ public final class VillageSkillEffectEntity extends Entity {
                 || kind().startsWith("boss_presence_") || kind().startsWith("boss_phase_two_")) return true;
         return switch (kind()) {
             case "ranger_focus", "ranger_energy_charge", "warden_charge_cast",
-                    "warden_fortress", "warden_aegis" -> true;
+                    "warden_fortress", "warden_aegis", "promotion_skill_cast" -> true;
             default -> false;
         };
     }
@@ -137,7 +137,8 @@ public final class VillageSkillEffectEntity extends Entity {
                     "vanguard_slam_charge", "ranger_rapid", "ranger_focus",
                     "ranger_energy_charge", "luminar_heal_cast", "luminar_cleanse_cast",
                     "luminar_miracle_cast",
-                    "warden_charge_cast", "warden_taunt", "warden_fortress", "warden_aegis" -> true;
+                    "warden_charge_cast", "warden_taunt", "warden_fortress", "warden_aegis",
+                    "promotion_skill_cast", "promotion_skill_follow" -> true;
             default -> false;
         };
     }

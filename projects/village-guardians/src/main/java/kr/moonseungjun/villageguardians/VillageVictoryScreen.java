@@ -25,6 +25,8 @@ public final class VillageVictoryScreen extends Screen {
 
     private final String body;
     private final List<Option> options = new ArrayList<>();
+    private int bodyScroll;
+    private int maxBodyScroll;
 
     public VillageVictoryScreen(VillageNetwork.OpenVillageUiPayload payload) {
         super(Component.literal(payload.title()));
@@ -50,7 +52,7 @@ public final class VillageVictoryScreen extends Screen {
         graphics.fill(b.x() - 2, b.y() - 2, b.right() + 2, b.bottom() + 2, LINE);
         graphics.fill(b.x(), b.y(), b.right(), b.bottom(), PANEL);
         graphics.fill(b.x(), b.y(), b.x() + 4, b.bottom(), GREEN);
-        graphics.centeredText(font, "◆  방어 성공  ◆", b.centerX(), b.y() + 12, GREEN);
+        graphics.centeredText(font, "◆  " + getTitle().getString() + "  ◆", b.centerX(), b.y() + 12, GREEN);
         graphics.fill(b.x() + 18, b.y() + 31, b.right() - 18, b.y() + 32, 0x8067A47F);
 
         int textLeft = b.x() + 22;
@@ -58,10 +60,15 @@ public final class VillageVictoryScreen extends Screen {
         int y = b.y() + 43;
         List<FormattedCharSequence> lines = font.split(Component.literal(body), Math.max(100, textRight - textLeft));
         int limitY = b.bottom() - (options.isEmpty() ? 18 : 48);
-        for (FormattedCharSequence line : lines) {
-            if (y > limitY - 10) break;
-            graphics.text(font, line, textLeft, y, y == b.y() + 43 ? TEXT : MUTED, false);
+        int visibleLines = Math.max(1, (limitY - y) / 12);
+        maxBodyScroll = Math.max(0, lines.size() - visibleLines);
+        bodyScroll = Math.max(0, Math.min(maxBodyScroll, bodyScroll));
+        for (int i = bodyScroll; i < Math.min(lines.size(), bodyScroll + visibleLines); i++) {
+            graphics.text(font, lines.get(i), textLeft, y, i == 0 ? TEXT : MUTED, false);
             y += 12;
+        }
+        if (maxBodyScroll > 0) {
+            graphics.text(font, "휠로 보고서 스크롤", textRight - 92, limitY - 9, MUTED, false);
         }
 
         if (!options.isEmpty()) {
@@ -99,6 +106,16 @@ public final class VillageVictoryScreen extends Screen {
             x += w + gap;
         }
         return super.mouseClicked(click, doubled);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
+        if (maxBodyScroll > 0 && vertical != 0.0) {
+            bodyScroll = Math.max(0, Math.min(maxBodyScroll,
+                    bodyScroll - (int) Math.signum(vertical) * 2));
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, horizontal, vertical);
     }
 
     private Bounds bounds() {

@@ -224,8 +224,8 @@ public final class VillageRoleSkillSystem {
         ActiveSkill skill = equippedSkill(player, slot).orElse(null);
         if (skill == null) return 0;
         long remaining = READY_AT.getOrDefault(player.getUUID() + "|" + skill.id(), 0L)
-                - System.currentTimeMillis();
-        return remaining <= 0L ? 0 : (int) Math.max(1L, (remaining + 999L) / 1000L);
+                - player.level().getGameTime();
+        return remaining <= 0L ? 0 : (int) Math.max(1L, (remaining + 19L) / 20L);
     }
 
     public static synchronized float cooldownProgress(ServerPlayer player, int slot) {
@@ -306,13 +306,13 @@ public final class VillageRoleSkillSystem {
             return skill.displayName() + " 해제";
         }
 
-        long now = System.currentTimeMillis();
+        long now = level.getGameTime();
         String cooldownKey = player.getUUID() + "|" + skill.id();
         if (!testing) {
             long readyAt = READY_AT.getOrDefault(cooldownKey, 0L);
             if (readyAt > now) {
                 return skill.displayName() + " 재사용까지 "
-                        + Math.max(1L, (readyAt - now + 999L) / 1000L) + "초";
+                        + Math.max(1L, (readyAt - now + 19L) / 20L) + "초";
             }
         }
 
@@ -346,7 +346,7 @@ public final class VillageRoleSkillSystem {
         int cooldown = Math.max(
                 minimumCooldown,
                 effectiveCooldownSeconds(player, role, skill) - mastery.cooldownRefundSeconds());
-        READY_AT.put(cooldownKey, now + cooldown * 1000L);
+        READY_AT.put(cooldownKey, now + cooldown * 20L);
         return skill.displayName() + " 사용 완료 | 재사용 " + cooldown + "초"
                 + (mastery.triggered() ? " · 숙련 연계" : "");
     }

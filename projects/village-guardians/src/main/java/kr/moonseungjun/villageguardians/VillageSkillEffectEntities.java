@@ -16,7 +16,7 @@ public final class VillageSkillEffectEntities {
                     VillageSkillEffectEntity::new,
                     MobCategory.MISC,
                     builder -> builder
-                            .sized(24.0f, 16.0f)
+                            .sized(64.0f, 32.0f)
                             .noSave()
                             .noSummon()
                             .clientTrackingRange(128)
