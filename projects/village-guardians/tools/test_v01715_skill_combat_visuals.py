@@ -39,7 +39,7 @@ def main() -> None:
     assert "AreaKind.TORNADO" in abilities and "8.5" in abilities
     assert "VillageEquipmentShop.roleSkillMultiplier(player)" in read("VillageRoleSkillSystem.java")
 
-    assert ".sized(24.0f, 16.0f)" in entities
+    assert ".sized(64.0f, 32.0f)" in entities
     assert "warden_fortress" in entity and "setDirection" in entity
     assert "ranger_lock" not in entity.split("private boolean followsOwner", 1)[1].split("public Entity ownerEntity", 1)[0]
 
