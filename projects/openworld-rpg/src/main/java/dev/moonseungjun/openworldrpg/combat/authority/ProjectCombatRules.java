@@ -21,6 +21,38 @@ public final class ProjectCombatRules {
         return Math.round(100.0 * gearScale(level));
     }
 
+    /**
+     * Canonical player MaxHP. The final value is rounded once after level scale and VIT scaling,
+     * matching the locked reference anchors in COMBAT_BALANCE.md (Lv8/VIT7=143, Lv80/VIT60=935).
+     */
+    public static int maxPlayerHealth(
+            int level,
+            double vitality,
+            double maxHealthPercentBonus
+    ) {
+        requireContentLevel(level);
+        requireFinite("vitality", vitality);
+        requireFinite("maxHealthPercentBonus", maxHealthPercentBonus);
+        if (vitality < 0.0) {
+            throw new IllegalArgumentException("vitality must be non-negative.");
+        }
+        if (1.0 + maxHealthPercentBonus <= 0.0) {
+            throw new IllegalArgumentException("MaxHP percent bonus must keep MaxHP positive.");
+        }
+
+        double x = Math.max(0.0, vitality - 5.0);
+        double vitalityMultiplier = 1.0
+                + 0.018 * Math.min(x, 25.0)
+                + 0.010 * Math.min(Math.max(x - 25.0, 0.0), 30.0)
+                + 0.005 * Math.max(x - 55.0, 0.0);
+        double unroundedBaseHp = 100.0 * gearScale(level);
+        return (int) Math.round(
+                unroundedBaseHp
+                        * vitalityMultiplier
+                        * (1.0 + maxHealthPercentBonus)
+        );
+    }
+
     public static double attributeDamageMultiplier(double weightedStat) {
         requireFinite("weightedStat", weightedStat);
         double x = weightedStat - 5.0;
