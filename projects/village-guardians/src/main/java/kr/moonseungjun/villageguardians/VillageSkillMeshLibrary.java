@@ -96,10 +96,14 @@ public final class VillageSkillMeshLibrary {
             case "merc_bastion_guard" -> renderDefensePulse(pose, out, basis, age, progress, state.extra, 2);
             case "merc_striker_pressure" -> renderDefenseShot(pose, out, state, age, progress, 9);
             case "merc_medic_pulse" -> renderDefensePulse(pose, out, basis, age, progress, state.extra, 3);
+            case "merc_ward_pulse" -> renderDefensePulse(pose, out, basis, age, progress, state.extra, 5);
+            case "merc_artillery_burst" -> renderDefensePulse(pose, out, basis, age, progress, state.extra, 6);
             case "mercenary_presence_bastion" -> renderMercenaryPresence(pose, out, basis, age, state.extra, 0);
             case "mercenary_presence_striker" -> renderMercenaryPresence(pose, out, basis, age, state.extra, 1);
             case "mercenary_presence_ranger" -> renderMercenaryPresence(pose, out, basis, age, state.extra, 2);
             case "mercenary_presence_medic" -> renderMercenaryPresence(pose, out, basis, age, state.extra, 3);
+            case "mercenary_presence_warder" -> renderMercenaryPresence(pose, out, basis, age, state.extra, 4);
+            case "mercenary_presence_artillerist" -> renderMercenaryPresence(pose, out, basis, age, state.extra, 5);
             case "siege_structure_impact" -> renderDefensePulse(pose, out, basis, age, progress, state.extra, 4);
             case "turret_placement_preview" -> renderTurretPlacementPreview(
                     pose, out, basis, age, progress, state.extra);
@@ -940,6 +944,8 @@ public final class VillageSkillMeshLibrary {
             case 2 -> rgba(108, 186, 255, (int) (210 * (1.0 - progress)));
             case 3 -> rgba(255, 223, 126, (int) (205 * (1.0 - progress)));
             case 4 -> rgba(255, 111, 67, (int) (220 * (1.0 - progress)));
+            case 5 -> rgba(115, 226, 218, (int) (210 * (1.0 - progress)));
+            case 6 -> rgba(184, 116, 255, (int) (225 * (1.0 - progress)));
             default -> rgba(255, 165, 72, (int) (220 * (1.0 - progress)));
         };
         ring(pose, out, b, radius, 0.06, style == 4 ? 0.18 : 0.11, 64, color, age * 0.015);
@@ -1091,7 +1097,9 @@ public final class VillageSkillMeshLibrary {
             case 0 -> rgba(112, 190, 255, 150 + tier * 12);
             case 1 -> rgba(255, 119, 72, 150 + tier * 12);
             case 2 -> rgba(137, 226, 156, 150 + tier * 12);
-            default -> rgba(255, 224, 135, 150 + tier * 12);
+            case 3 -> rgba(255, 224, 135, 150 + tier * 12);
+            case 4 -> rgba(117, 230, 213, 150 + tier * 12);
+            default -> rgba(185, 125, 255, 150 + tier * 12);
         };
         int pale = withAlpha(color, 92 + tier * 10);
         ring(pose, out, b, 0.78 * scale * pulse, 0.035, 0.038, 44, pale, age * 0.010);
@@ -1124,15 +1132,25 @@ public final class VillageSkillMeshLibrary {
                         0.86 + tier * 0.06, 0.035, color);
             }
             ringVertical(pose, out, b, 0.62 * scale, 1.12, 0.032, 42, pale, -age * 0.012);
-        } else {
+        } else if (style == 3) {
             verticalPillarAt(pose, out, b, b.local(0.56 * scale, 0.34, 0.02),
                     0.07 + tier * 0.008, 1.66 * scale, color);
             crystal(pose, out, b.local(0.56 * scale, 2.03 * scale, 0.02),
                     0.42 + tier * 0.06, 0.15 + tier * 0.015, color);
-            ring(pose, out, b, 0.66 * scale, 1.94 * scale, 0.038, 46,
-                    pale, age * 0.020);
-            if (tier >= 2) ring(pose, out, b, 0.46 * scale, 1.48 * scale, 0.028, 38,
-                    withAlpha(color, 78), -age * 0.026);
+            ring(pose, out, b, 0.66 * scale, 1.94 * scale, 0.038, 46, pale, age * 0.020);
+        } else if (style == 4) {
+            ring(pose, out, b, 0.82 * scale, 1.10, 0.055, 48, color, age * 0.032);
+            ringVertical(pose, out, b, 0.58 * scale, 1.12, 0.038, 40, pale, -age * 0.025);
+            for (int side : new int[]{-1, 1}) {
+                verticalPillarAt(pose, out, b, b.local(side * 0.52, 0.32, 0.08), 0.045, 1.38 * scale, pale);
+            }
+        } else {
+            for (int i = 0; i < 3; i++) {
+                double a = age * 0.045 + i * TAU / 3.0;
+                crystal(pose, out, b.local(Math.cos(a) * 0.62 * scale, 1.38 + i * 0.16,
+                        Math.sin(a) * 0.62 * scale), 0.42, 0.12, color);
+            }
+            ring(pose, out, b, 0.74 * scale, 1.86, 0.045, 50, pale, -age * 0.052);
         }
 
         if (tier >= 1) {
@@ -1154,13 +1172,17 @@ public final class VillageSkillMeshLibrary {
             case 0 -> rgba(126, 132, 140, 246);
             case 1 -> rgba(104, 72, 67, 246);
             case 2 -> rgba(84, 111, 76, 246);
-            default -> rgba(181, 170, 143, 246);
+            case 3 -> rgba(181, 170, 143, 246);
+            case 4 -> rgba(126, 151, 132, 246);
+            default -> rgba(102, 86, 146, 246);
         };
         int weapon = switch (style) {
             case 0 -> rgba(199, 205, 211, 252);
             case 1 -> rgba(188, 194, 201, 252);
             case 2 -> rgba(126, 91, 56, 252);
-            default -> rgba(205, 183, 105, 252);
+            case 3 -> rgba(205, 183, 105, 252);
+            case 4 -> rgba(190, 205, 188, 252);
+            default -> rgba(205, 172, 255, 252);
         };
         for (int triangle = 0; triangle < model.triangleCount(); triangle++) {
             int ia = model.index(triangle, 0);
