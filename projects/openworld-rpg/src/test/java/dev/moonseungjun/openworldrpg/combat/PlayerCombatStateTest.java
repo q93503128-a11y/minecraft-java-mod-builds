@@ -83,6 +83,17 @@ class PlayerCombatStateTest {
     }
 
     @Test
+    void sprintExhaustionUsesTheSameSevenTickStopDelayWithoutAnExtraTick() {
+        PlayerCombatState state = new PlayerCombatState(5, 0);
+        assertTrue(state.spendStamina(99.9, 0, 0));
+
+        assertFalse(state.updateSprinting(true, 0));
+        assertTrue(state.updateSprinting(false, 1));
+        assertEquals(0.1, state.stamina(7), 0.0001);
+        assertEquals(1.3, state.stamina(8), 0.0001);
+    }
+
+    @Test
     void enduranceSynchronizationPreservesStaminaPercentage() {
         PlayerCombatState state = new PlayerCombatState(5, 0);
         assertTrue(state.spendStamina(50.0, 12, 0));
