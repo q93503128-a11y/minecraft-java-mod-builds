@@ -157,6 +157,7 @@ public final class VillageUiController {
         int promotionTier = VillageRolePromotionSystem.tier(level);
         String summary = "Lv." + level
                 + " · " + VillageRolePromotionSystem.tierLabel(promotionTier)
+                + " · " + VillageRoleMasterySystem.summary(player, role)
                 + " · 포인트 " + VillageSkillTreeSystem.availablePoints(player) + "P"
                 + " · 주화 " + VillageProgressionSystem.coins(player)
                 + " · " + VillageRoleSkillSystem.loadoutSummary(player);
