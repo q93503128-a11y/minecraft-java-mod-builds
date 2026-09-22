@@ -118,7 +118,7 @@ public final class VillageSkillEffectSystem {
                 Math.max(24, duration), 0.0f, promotionMeta(skill, radius));
     }
 
-    public static void promotionProjectile(
+    public static VillageSkillEffectEntity promotionProjectile(
             ServerLevel level,
             ServerPlayer player,
             VillageRoleSkillSystem.ActiveSkill skill,
@@ -126,8 +126,8 @@ public final class VillageSkillEffectSystem {
             Vec3 direction,
             int duration,
             float speed) {
-        if (skill == null) return;
-        spawn(level, player, "promotion_skill_projectile", origin, normalized(direction),
+        if (skill == null) return null;
+        return spawn(level, player, "promotion_skill_projectile", origin, normalized(direction),
                 Math.max(12, duration), Math.max(0.0f, speed), skill.id());
     }
 
