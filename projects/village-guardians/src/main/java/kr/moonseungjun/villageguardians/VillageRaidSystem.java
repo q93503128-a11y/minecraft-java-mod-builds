@@ -647,7 +647,9 @@ public final class VillageRaidSystem {
                     double weight = switch (kind == null ? VillageMercenarySystem.MercenaryClass.STRIKER : kind) {
                         case BASTION -> 0.52;
                         case STRIKER -> 0.90;
+                        case WARDER -> 1.08;
                         case RANGER -> 1.18;
+                        case ARTILLERIST -> 1.26;
                         case MEDIC -> 1.38;
                     };
                     return distance * weight;
