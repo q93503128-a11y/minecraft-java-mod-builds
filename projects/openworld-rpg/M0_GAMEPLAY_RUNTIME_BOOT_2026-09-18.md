@@ -1272,3 +1272,42 @@ MULTIPLAYER TESTED: NO
 ```
 
 Manual acceptance is now executable without adding production debug residue.
+
+
+---
+
+## Earthloong Phase-1 physical runtime binding — 2026-09-22
+
+This implementation slice connects the canon-closed R01 Earthloong physical authority to the admitted dependency actor without restoring donor damage authority.
+
+Implemented:
+
+- server-owned idle/recovery -> 2-tick decision delay -> threat target -> spatial legality -> committed action -> telegraph -> contact/movement -> recovery cycle;
+- initial legitimate engagement threat 10;
+- damage threat = 100 * post-mitigation canonical damage / Earthloong MaxHP;
+- 1.25x target-switch hysteresis;
+- 6-second threat-decay grace, then 10% current threat loss per full second with engaged floor 10;
+- Claw Sweep: authored 9-tick tell, donor attack presentation candidate, locked facing, authored 0..120 degree / <=3.5-block contact, project defense/damage authority;
+- Quarry Rush: authored 16-tick tell, clear-line 5..9-block start requirement, target-locked 9-block committed path, six active movement ticks from the audited donor charge duration, one contact per player per cast, 18-tick recovery;
+- a new obstruction after commit stops/clips the physical movement rather than teleporting through geometry;
+- donor navigation/AI is disabled only for the committed physical action and restored afterward;
+- ordinary attacks may repeat at most twice when another legal ordinary action exists;
+- signature movement/space-control actions cannot immediately repeat; if no other legal action exists the controller repositions instead;
+- project damage to Earthloong now feeds the Earthloong-local threat table.
+
+Still intentionally gated:
+
+- Tail Scythe runtime selection remains disabled because no accepted tail-attack presentation binding exists;
+- Lightning Furrow and Root Breaker runtime presentation/contact remain disabled until their final shaped VFX/presentation layer is accepted; they must not ship as generic particle placeholders;
+- full common threat generation for effective healing, barriers, prevented guard damage, perfect guard and Provoked remains a later shared-combat authority step;
+- authored arena-bound disengage/reset ownership is not claimed by this slice;
+- no client-feel, multiplayer-sync or final animation-quality claim is made yet.
+
+Verification state for this slice:
+
+CODE REVIEWED: YES
+PURE SELECTOR/THREAT/TIMELINE TESTS: AUTHORED, CI RESULT NOT YET OBSERVED IN THIS SESSION
+BUILD VERIFIED: NOT YET CONFIRMED FOR THE LATEST COMMIT
+CLIENT RUNTIME TESTED: NO
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
