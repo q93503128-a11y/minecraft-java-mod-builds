@@ -33,10 +33,7 @@ public final class VillageUiController {
             boolean canUpgrade = building != VillageProgressionSystem.Building.TOWN_HALL
                     && level < VillageProgressionSystem.MAX_BUILDING_LEVEL;
             int upgradeCost = canUpgrade ? VillageProgressionSystem.upgradeCost(level) : 0;
-            String nextEffect = canUpgrade
-                    ? managementEffect(building, level + 1, server)
-                    + " · 해금 Day " + VillageProgressionSystem.requiredDayForBuildingLevel(level + 1)
-                    : "";
+            String nextEffect = canUpgrade ? managementEffect(building, level + 1, server) : "";
             String levelText = building == VillageProgressionSystem.Building.TOWN_HALL
                     ? "회관 본체" : level + "단계 / " + VillageProgressionSystem.MAX_BUILDING_LEVEL + "단계";
             actions.add("facility_card:" + building.id());
@@ -429,10 +426,7 @@ public final class VillageUiController {
         List<String> labels = new ArrayList<>();
         for (VillageMercenarySystem.MercenaryClass kind : VillageMercenarySystem.MercenaryClass.values()) {
             actions.add("hire_mercenary:" + kind.id());
-            boolean unlocked = VillageCouncilState.currentDay() >= kind.requiredDay();
-            labels.add(kind.displayName() + " · " + (unlocked
-                    ? "보급 " + VillageMercenarySystem.hireCost(kind)
-                    : "Day " + kind.requiredDay() + " 해금")
+            labels.add(kind.displayName() + " · 보급 " + VillageMercenarySystem.hireCost(kind)
                     + "|" + kind.description());
         }
         send(player, "building", "용병 지휘", VillageMercenarySystem.status(player.level().getServer()), actions, labels);
