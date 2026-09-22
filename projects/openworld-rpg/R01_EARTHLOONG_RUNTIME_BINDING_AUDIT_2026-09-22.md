@@ -123,7 +123,7 @@ ROOT BREAKER PROJECT RUNTIME: IMPLEMENTED + BUILD/SERVER/CLIENT-STARTUP VERIFIED
 ROOT BREAKER PLAYER-POISE 75: FAIL-CLOSED SEAM ONLY — canonical partial-armor ArmorPoise slot shares are now design-closed; runtime player-poise publisher/application remains to be implemented
 ROOT BREAKER FINAL PRESENTATION: NOT ACCEPTED — current rooted-dirt ring is a technical test telegraph, not production VFX
 LIGHTNING FURROW DATA BINDING: IMPLEMENTED — 24-tick tell, 20-tick recovery, phase lane counts, 1.4 width, 12 length, Shock 35, donor SkillNumber 3 technical candidate
-LIGHTNING FURROW RUNTIME HIT GEOMETRY: GATED — current canon lacks exact lane-center offsets/spacing/layout; enemy Shock proc raw budget is also not closed
+LIGHTNING FURROW RUNTIME HIT GEOMETRY: READY FOR IMPLEMENTATION, NOT YET IMPLEMENTED — exact lane offsets/spacing/ground projection and Earthloong Shock proc source budget are now canon-closed; final VFX/readability acceptance remains separate
 RUNTIME SMOKE CHUNK LIFETIME: VERIFIED — CI harness now force-loads the verification chunk; prior failure was `UNLOADED_TO_CHUNK` with full HP/tickCount 0, not a combat regression
 LATEST FULL OPENWORLD CI: 35698061263 — SUCCESS — commit 40961bc2c40373725108f31c32c1e18039d73415
 REAL CLIENT VISUAL ATTACK REVIEW: NO
