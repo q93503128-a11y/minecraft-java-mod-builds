@@ -81,6 +81,11 @@ public final class VillageSkillMeshLibrary {
             case "warden_fortress" -> renderFortress(pose, out, basis, age, progress, true);
             case "warden_aegis" -> renderFortress(pose, out, basis, age, progress, false);
 
+            case "promotion_skill_cast" -> renderPromotionSkill(pose, out, basis, age, progress, state.extra, 0);
+            case "promotion_skill_projectile" -> renderPromotionSkill(pose, out, basis, age, progress, state.extra, 1);
+            case "promotion_skill_field" -> renderPromotionSkill(pose, out, basis, age, progress, state.extra, 2);
+            case "promotion_skill_impact" -> renderPromotionSkill(pose, out, basis, age, progress, state.extra, 3);
+
             case "turret_ballista_shot" -> renderDefenseShot(pose, out, state, age, progress, 0);
             case "turret_repeater_shot" -> renderDefenseShot(pose, out, state, age, progress, 1);
             case "turret_piercer_shot" -> renderDefenseShot(pose, out, state, age, progress, 2);
@@ -175,6 +180,364 @@ public final class VillageSkillMeshLibrary {
             case "boss_defeat_plague" -> renderBossLifecycle(pose, out, basis, age, progress, 2, 2);
             case "boss_defeat_dread" -> renderBossLifecycle(pose, out, basis, age, progress, 3, 2);
             default -> renderFallbackRune(pose, out, basis, age, progress);
+        }
+    }
+
+    private static void renderPromotionSkill(
+            PoseStack.Pose pose, VertexConsumer out, Basis b,
+            double age, double progress, String extra, int phase) {
+        String skill = extra == null ? "" : extra;
+        double radius = 2.8;
+        int separator = skill.indexOf('|');
+        if (separator >= 0) {
+            try { radius = Math.max(0.6, Double.parseDouble(skill.substring(separator + 1))); }
+            catch (NumberFormatException ignored) {}
+            skill = skill.substring(0, separator);
+        }
+        double fade = Math.max(0.12, 1.0 - progress);
+        double pulse = 0.92 + 0.08 * Math.sin(age * 0.24);
+        int red = rgba(255, 82, 66, (int) (225 * fade));
+        int gold = rgba(255, 201, 88, (int) (220 * fade));
+        int cyan = rgba(91, 224, 255, (int) (220 * fade));
+        int green = rgba(116, 238, 166, (int) (215 * fade));
+        int violet = rgba(180, 104, 255, (int) (225 * fade));
+        int frost = rgba(163, 231, 255, (int) (220 * fade));
+        int whiteGold = rgba(255, 242, 170, (int) (225 * fade));
+        int blue = rgba(105, 176, 255, (int) (225 * fade));
+        int pale = rgba(244, 250, 255, (int) (155 * fade));
+        double honestRadius = phase >= 2 ? radius : Math.min(radius, 4.5);
+
+        switch (skill) {
+            case "vanguard_frontline_rend" -> {
+                for (int i = -1; i <= 1; i++) {
+                    Vec3 root = b.local(i * 0.48, 0.52, phase == 1 ? -0.45 : 0.30);
+                    energyBlade(pose, out, root, root.add(b.forward.scale(2.5)).add(0.0, 0.35, 0.0),
+                            0.11, i == 0 ? gold : red);
+                }
+                horizontalSlash(pose, out, b, phase == 3 ? honestRadius * 1.5 : 3.4,
+                        0.92, 0.10, 0.24, withAlpha(gold, 165));
+            }
+            case "vanguard_blood_spiral" -> {
+                for (int i = 0; i < 4; i++) {
+                    slashArc(pose, out, b, age * 0.13 + i * TAU / 4.0,
+                            1.1 + i * 0.34, 0.74 + i * 0.18, 1.30, 0.09, red);
+                }
+                ring(pose, out, b, Math.max(1.0, honestRadius * 0.78) * pulse,
+                        0.05, 0.08, 56, withAlpha(gold, 125), -age * 0.04);
+            }
+            case "vanguard_war_banner" -> {
+                verticalPillarAt(pose, out, b, b.local(0.0, 0.0, 0.16), 0.11, 3.2, gold);
+                for (int i = 0; i < 6; i++) {
+                    chevron(pose, out, b, i * TAU / 6.0 + age * 0.012,
+                            1.45 * pulse, 0.15 + (i % 2) * 0.20, 0.38, red);
+                }
+                ring(pose, out, b, phase >= 2 ? honestRadius : 2.1, 0.04, 0.07, 56,
+                        withAlpha(gold, 150), 0.0);
+            }
+            case "vanguard_breach_strike" -> {
+                verticalBlade(pose, out, b, b.local(0.0, 0.08, 0.35), 3.4, 0.20, gold);
+                for (int i = 0; i < 7; i++) {
+                    groundCrack(pose, out, b, i * TAU / 7.0, 0.35,
+                            phase == 3 ? honestRadius : 3.3, 0.065, red);
+                }
+                horizontalSlash(pose, out, b, Math.max(3.0, honestRadius * 1.2), 0.22, 0.13, 0.14, red);
+            }
+            case "vanguard_sword_chain" -> {
+                for (int i = 0; i < 5; i++) {
+                    double a = -0.78 + i * 0.39 + Math.sin(age * 0.08) * 0.08;
+                    slashArc(pose, out, b, a, 1.55 + i * 0.16, 0.72 + i * 0.14,
+                            1.05, 0.085, i % 2 == 0 ? gold : red);
+                }
+                ring(pose, out, b, 1.25, 0.06, 0.05, 48, withAlpha(gold, 120), age * 0.03);
+            }
+            case "vanguard_life_sever" -> {
+                slashArc(pose, out, b, age * 0.075, 1.45, 0.80, 1.70, 0.11, red);
+                slashArc(pose, out, b, Math.PI - age * 0.065, 1.72, 1.20, 1.45, 0.09, gold);
+                helixRibbon(pose, out, b, -age * 0.09, 0.72, 1.8, 20, withAlpha(red, 115));
+                ring(pose, out, b, Math.max(1.2, honestRadius * 0.68), 0.04, 0.075, 52,
+                        withAlpha(red, 145), age * 0.03);
+            }
+            case "vanguard_absolute_break" -> {
+                curvedShield(pose, out, b, b.local(0.0, 0.95, 0.75), 1.55, 1.75, 0.28, withAlpha(gold, 145));
+                for (int side : new int[]{-1, 1}) {
+                    energyBlade(pose, out, b.local(side * 0.48, 0.45, 0.1),
+                            b.local(side * 0.30, 1.05, 4.8), 0.10, side < 0 ? red : gold);
+                }
+                for (int i = 0; i < 4; i++) {
+                    Vec3 a = b.local((i - 1.5) * 0.38, 0.10, -0.25);
+                    Vec3 z = b.local((i - 1.5) * 0.20, 0.30, 3.5 + progress * 2.0);
+                    prism(pose, out, a, z, 0.045, withAlpha(red, 120));
+                }
+            }
+            case "vanguard_heaven_sever" -> {
+                verticalBlade(pose, out, b, b.local(0.0, phase == 0 ? 0.6 : 0.05, 0.0),
+                        phase == 0 ? 4.8 : 6.8, phase == 0 ? 0.22 : 0.34, gold);
+                horizontalSlash(pose, out, b, Math.max(4.5, honestRadius * 1.55),
+                        0.14, 0.16, 0.26, red);
+                for (int i = 0; i < 8; i++) {
+                    groundCrack(pose, out, b, i * TAU / 8.0, 0.5,
+                            Math.max(3.0, honestRadius), 0.055, withAlpha(gold, 135));
+                }
+            }
+
+            case "ranger_hawk_mark" -> {
+                ringVertical(pose, out, b, 0.92 * pulse, 1.08, 0.055, 48, green, age * 0.05);
+                for (int i = 0; i < 4; i++) reticleBracket(pose, out, b, i * TAU / 4.0, 0.82, 1.05, gold);
+                wing(pose, out, b, -1, 1.45, 1.15, withAlpha(green, 120));
+                wing(pose, out, b, 1, 1.45, 1.15, withAlpha(green, 120));
+            }
+            case "ranger_split_shot" -> {
+                for (int i = -2; i <= 2; i++) {
+                    Vec3 center = b.local(i * 0.26, 1.28 + Math.abs(i) * 0.08, 0.60);
+                    customArrow(pose, out, b, center, 1.55, 0.045, i == 0 ? gold : green);
+                }
+                ringVertical(pose, out, b, 0.68, 1.24, 0.035, 40, withAlpha(cyan, 125), -age * 0.04);
+            }
+            case "ranger_aa_intercept" -> {
+                ring(pose, out, b, Math.max(2.0, honestRadius), 0.05, 0.075, 64, cyan, 0.0);
+                for (int i = 0; i < 6; i++) {
+                    double a = i * TAU / 6.0 + age * 0.02;
+                    customArrow(pose, out, b, b.local(Math.cos(a) * 1.45, 1.5 + (i % 3) * 0.32,
+                            Math.sin(a) * 1.45), 1.25, 0.04, green);
+                }
+                verticalPillar(pose, out, b, 0.13, 3.5, withAlpha(cyan, 90));
+            }
+            case "ranger_downpour" -> {
+                runeDisc(pose, out, b, Math.max(2.3, honestRadius * 0.92), 3.8, age * 0.025, cyan);
+                for (int i = 0; i < 9; i++) {
+                    double a = i * TAU / 9.0 + age * 0.015;
+                    Vec3 p = b.local(Math.cos(a) * Math.min(2.5, honestRadius * 0.55), 2.2,
+                            Math.sin(a) * Math.min(2.5, honestRadius * 0.55));
+                    customArrow(pose, out, b, p, 1.05, 0.035, green);
+                }
+            }
+            case "ranger_star_tracker" -> {
+                for (int i = 0; i < 4; i++) {
+                    double a = age * 0.06 + i * TAU / 4.0;
+                    Vec3 p = b.local(Math.cos(a) * 1.15, 1.25 + 0.18 * Math.sin(age * 0.12 + i),
+                            Math.sin(a) * 1.15);
+                    crystal(pose, out, p, 0.34, 0.11, i % 2 == 0 ? cyan : gold);
+                    customArrow(pose, out, b, p.add(0.0, 0.25, 0.0), 0.90, 0.032, green);
+                }
+                ringVertical(pose, out, b, 1.22, 1.25, 0.035, 48, withAlpha(cyan, 110), age * 0.04);
+            }
+            case "ranger_constellation" -> {
+                customArrow(pose, out, b, b.local(0.0, 1.20, 0.9),
+                        phase == 1 ? 4.6 : 3.4, phase == 1 ? 0.12 : 0.085, gold);
+                braidedBeam(pose, out, b.local(0.0, 1.20, -1.5), b.local(0.0, 1.20, 5.2),
+                        age, 0.10, withAlpha(cyan, 130));
+                for (int i = 0; i < 5; i++) {
+                    double a = i * TAU / 5.0;
+                    crystal(pose, out, b.local(Math.cos(a) * 0.8, 1.20, Math.sin(a) * 0.8),
+                            0.24, 0.07, green);
+                }
+            }
+            case "ranger_sky_lock" -> {
+                ring(pose, out, b, Math.max(3.0, honestRadius), 0.08, 0.10, 80, cyan, age * 0.01);
+                ringVertical(pose, out, b, 2.1, 2.5, 0.06, 64, green, -age * 0.025);
+                for (int i = 0; i < 8; i++) {
+                    double a = i * TAU / 8.0;
+                    verticalPillarAt(pose, out, b,
+                            b.local(Math.cos(a) * Math.min(3.0, honestRadius * 0.75), 0.0,
+                                    Math.sin(a) * Math.min(3.0, honestRadius * 0.75)),
+                            0.055, 3.4, withAlpha(cyan, 110));
+                }
+            }
+            case "ranger_meteor_bow" -> {
+                customArrow(pose, out, b, b.local(0.0, phase == 0 ? 2.5 : 5.2, 0.0),
+                        phase == 1 ? 6.0 : 4.2, 0.16, gold);
+                verticalPillar(pose, out, b, 0.28, 5.8, withAlpha(cyan, 115));
+                ring(pose, out, b, Math.max(2.5, honestRadius) * (phase == 3 ? 0.75 + progress * 0.45 : 0.55),
+                        0.04, 0.14, 72, green, -age * 0.02);
+            }
+
+            case "arcanist_lava_core" -> {
+                sphere(pose, out, b.local(0.0, 1.35, 0.45), 0.55 + 0.08 * pulse, 9, 14, red);
+                for (int i = 0; i < 3; i++) ringVertical(pose, out, b, 0.72 + i * 0.22,
+                        1.35, 0.04, 48, i % 2 == 0 ? gold : red, age * (0.05 + i * 0.02));
+            }
+            case "arcanist_frost_prison" -> {
+                ring(pose, out, b, Math.max(2.0, honestRadius), 0.04, 0.08, 64, frost, 0.0);
+                for (int i = 0; i < 8; i++) {
+                    double a = i * TAU / 8.0;
+                    Vec3 p = b.local(Math.cos(a) * Math.min(2.4, honestRadius * 0.82), 0.06,
+                            Math.sin(a) * Math.min(2.4, honestRadius * 0.82));
+                    crystal(pose, out, p, 2.2 + 0.25 * Math.sin(age * 0.08 + i), 0.16, frost);
+                }
+            }
+            case "arcanist_lightning_chain" -> {
+                runeDisc(pose, out, b, 1.35, 0.04, age * 0.035, violet);
+                for (int i = 0; i < 5; i++) {
+                    double a = i * TAU / 5.0 + age * 0.015;
+                    Vec3 end = b.local(Math.cos(a) * 2.2, 0.7 + (i % 2) * 0.8, Math.sin(a) * 2.2);
+                    jaggedBolt(pose, out, b.local(0.0, 1.35, 0.0), end, 7, 0.045, cyan,
+                            (long) age / 2L + i * 19L);
+                }
+            }
+            case "arcanist_gravity_storm" -> {
+                ring(pose, out, b, Math.max(2.2, honestRadius), 0.05, 0.10, 72, violet, -age * 0.045);
+                helixRibbon(pose, out, b, -age * 0.10, Math.min(2.2, honestRadius * 0.46), 3.4, 28,
+                        withAlpha(cyan, 130));
+                tornadoRibbon(pose, out, b, age * 0.08, 3.2, 30, withAlpha(violet, 120));
+            }
+            case "arcanist_solar_core" -> {
+                sphere(pose, out, b.local(0.0, 1.55, 0.3), 0.78 + 0.12 * pulse, 10, 16, gold);
+                for (int i = 0; i < 12; i++) {
+                    double a = i * TAU / 12.0 + age * 0.025;
+                    spike(pose, out, b.local(Math.cos(a) * 0.82, 1.55, Math.sin(a) * 0.82),
+                            b.local(Math.cos(a) * 1.55, 1.55, Math.sin(a) * 1.55), 0.055, red);
+                }
+                ringVertical(pose, out, b, 1.30, 1.55, 0.055, 64, gold, -age * 0.04);
+            }
+            case "arcanist_absolute_zero" -> {
+                runeDisc(pose, out, b, Math.max(2.8, honestRadius), 0.035, -age * 0.018, frost);
+                for (int i = 0; i < 6; i++) {
+                    double a = i * TAU / 6.0;
+                    prism(pose, out, b.local(0.0, 0.08, 0.0),
+                            b.local(Math.cos(a) * Math.min(3.2, honestRadius), 0.08,
+                                    Math.sin(a) * Math.min(3.2, honestRadius)), 0.055, pale);
+                    crystal(pose, out, b.local(Math.cos(a) * Math.min(2.4, honestRadius * 0.72), 0.05,
+                            Math.sin(a) * Math.min(2.4, honestRadius * 0.72)), 1.8, 0.14, frost);
+                }
+            }
+            case "arcanist_heaven_chain" -> {
+                runeDisc(pose, out, b, Math.max(3.0, honestRadius), 0.04, age * 0.028, violet);
+                for (int i = 0; i < 8; i++) {
+                    double a = i * TAU / 8.0 + age * 0.018;
+                    Vec3 end = b.local(Math.cos(a) * Math.min(3.5, honestRadius * 0.72), 0.05,
+                            Math.sin(a) * Math.min(3.5, honestRadius * 0.72));
+                    jaggedBolt(pose, out, end.add(0.0, 5.5, 0.0), end, 8, 0.055,
+                            i % 2 == 0 ? cyan : violet, (long) age + i * 31L);
+                }
+            }
+            case "arcanist_singularity" -> {
+                sphere(pose, out, b.local(0.0, 1.2, 0.0), 0.48 + 0.12 * pulse, 9, 14, violet);
+                for (int i = 0; i < 4; i++) {
+                    ringVertical(pose, out, b, 0.85 + i * 0.38, 1.2, 0.045, 56,
+                            i % 2 == 0 ? cyan : violet, -age * (0.05 + i * 0.015));
+                }
+                helixRibbon(pose, out, b, age * 0.11, Math.min(2.4, honestRadius * 0.42), 3.0, 30,
+                        withAlpha(violet, 105));
+                ring(pose, out, b, Math.max(2.5, honestRadius), 0.04, 0.08, 72, withAlpha(cyan, 120), 0.0);
+            }
+
+            case "luminar_guardian_light" -> {
+                verticalPillar(pose, out, b, 0.28, 3.6, whiteGold);
+                wing(pose, out, b, -1, 1.55, 1.15, withAlpha(whiteGold, 145));
+                wing(pose, out, b, 1, 1.55, 1.15, withAlpha(whiteGold, 145));
+                ring(pose, out, b, 0.95 * pulse, 0.05, 0.065, 48, gold, age * 0.025);
+            }
+            case "luminar_holy_purge" -> {
+                runeDisc(pose, out, b, Math.max(2.0, honestRadius) * pulse, 0.035, age * 0.025, whiteGold);
+                ring(pose, out, b, Math.max(2.7, honestRadius), 0.06, 0.09, 64, withAlpha(cyan, 135), 0.0);
+                for (int i = 0; i < 6; i++) chevron(pose, out, b, i * TAU / 6.0,
+                        Math.min(2.4, honestRadius * 0.72), 0.16, 0.32, whiteGold);
+            }
+            case "luminar_revival_wave" -> {
+                for (int i = 0; i < 4; i++) ring(pose, out, b, 1.0 + i * 0.72 + progress * 1.2,
+                        0.08 + i * 0.35, 0.055, 56, withAlpha(whiteGold, 170 - i * 22), age * 0.012);
+                wing(pose, out, b, -1, 1.15, 1.5, withAlpha(gold, 120));
+                wing(pose, out, b, 1, 1.15, 1.5, withAlpha(gold, 120));
+            }
+            case "luminar_judgement" -> {
+                verticalPillar(pose, out, b, 0.38, 4.6, whiteGold);
+                runeDisc(pose, out, b, Math.max(2.0, honestRadius * 0.62), 0.04, -age * 0.025, gold);
+                for (int i = 0; i < 8; i++) {
+                    double a = i * TAU / 8.0;
+                    spike(pose, out, b.local(Math.cos(a) * 0.55, 0.08, Math.sin(a) * 0.55),
+                            b.local(Math.cos(a) * 2.1, 0.08, Math.sin(a) * 2.1), 0.05, whiteGold);
+                }
+            }
+            case "luminar_heavenly_barrier" -> {
+                curvedShield(pose, out, b, b.local(0.0, 1.45, 0.45),
+                        Math.max(3.4, Math.min(7.0, honestRadius * 0.45)), 3.6, 0.72, withAlpha(whiteGold, 155));
+                wing(pose, out, b, -1, 2.05, 1.8, withAlpha(cyan, 105));
+                wing(pose, out, b, 1, 2.05, 1.8, withAlpha(cyan, 105));
+                ring(pose, out, b, Math.max(3.0, honestRadius), 0.04, 0.10, 72, whiteGold, 0.0);
+            }
+            case "luminar_returning_light" -> {
+                verticalPillar(pose, out, b, 0.22, 4.2, whiteGold);
+                crystal(pose, out, b.local(0.0, 1.15, 0.0), 0.85, 0.26, gold);
+                for (int i = 0; i < 3; i++) ringVertical(pose, out, b, 0.62 + i * 0.27,
+                        1.35, 0.04, 48, withAlpha(whiteGold, 150 - i * 20), age * (0.03 + i * 0.012));
+            }
+            case "luminar_resurrection_hymn" -> {
+                runeDisc(pose, out, b, Math.max(3.0, honestRadius), 0.035, age * 0.018, whiteGold);
+                for (int i = 0; i < 5; i++) {
+                    double a = i * TAU / 5.0;
+                    verticalPillarAt(pose, out, b, b.local(Math.cos(a) * 2.0, 0.0, Math.sin(a) * 2.0),
+                            0.11, 3.6 + (i % 2) * 0.8, withAlpha(gold, 135));
+                }
+                wing(pose, out, b, -1, 1.8, 2.0, withAlpha(whiteGold, 125));
+                wing(pose, out, b, 1, 1.8, 2.0, withAlpha(whiteGold, 125));
+            }
+            case "luminar_last_miracle" -> {
+                runeDisc(pose, out, b, Math.max(3.5, honestRadius), 0.04, -age * 0.025, gold);
+                verticalPillar(pose, out, b, 0.48, 6.0, whiteGold);
+                wing(pose, out, b, -1, 2.2, 2.4, withAlpha(whiteGold, 165));
+                wing(pose, out, b, 1, 2.2, 2.4, withAlpha(whiteGold, 165));
+                ring(pose, out, b, Math.max(3.0, honestRadius) * (0.72 + progress * 0.38),
+                        0.08, 0.14, 80, withAlpha(cyan, 140), age * 0.012);
+            }
+
+            case "warden_gate_impact" -> {
+                curvedShield(pose, out, b, b.local(0.0, 1.0, 0.85), 2.4, 2.1, 0.48, blue);
+                horizontalSlash(pose, out, b, 3.2, 0.45, 0.14, 0.16, cyan);
+                for (int i = 0; i < 5; i++) groundCrack(pose, out, b,
+                        -0.8 + i * 0.4, 0.35, 3.3, 0.05, withAlpha(blue, 130));
+            }
+            case "warden_forced_challenge" -> {
+                ring(pose, out, b, Math.max(2.8, honestRadius), 0.06, 0.12, 72, blue, age * 0.022);
+                for (int i = 0; i < 10; i++) chevron(pose, out, b, i * TAU / 10.0,
+                        Math.max(2.0, honestRadius * 0.82), 0.18, 0.38, cyan);
+                verticalPillar(pose, out, b, 0.18, 3.0, withAlpha(blue, 105));
+            }
+            case "warden_guard_barrier" -> {
+                curvedShield(pose, out, b, b.local(-1.05, 1.25, 0.30), 1.9, 2.8, 0.55, blue);
+                curvedShield(pose, out, b, b.local(1.05, 1.25, 0.30), 1.9, 2.8, 0.55, cyan);
+                ring(pose, out, b, Math.max(2.3, honestRadius), 0.05, 0.085, 64, withAlpha(pale, 135), 0.0);
+            }
+            case "warden_iron_pulse" -> {
+                ring(pose, out, b, Math.max(2.4, honestRadius) * (0.62 + progress * 0.42),
+                        0.08, 0.16, 72, blue, age * 0.02);
+                for (int i = 0; i < 8; i++) chevron(pose, out, b, i * TAU / 8.0,
+                        Math.max(1.8, honestRadius * 0.68), 0.12, 0.42, cyan);
+                curvedShield(pose, out, b, b.local(0.0, 1.1, 0.35), 1.8, 2.2, 0.42, withAlpha(blue, 120));
+            }
+            case "warden_unbroken_wall" -> {
+                for (int i = -1; i <= 1; i++) {
+                    curvedShield(pose, out, b, b.local(i * 1.5, 1.45, 0.55),
+                            1.65, 3.0, 0.62, i == 0 ? blue : withAlpha(cyan, 175));
+                }
+                ring(pose, out, b, Math.max(3.0, honestRadius), 0.04, 0.10, 72, withAlpha(blue, 135), 0.0);
+            }
+            case "warden_fortress_charge" -> {
+                curvedShield(pose, out, b, b.local(0.0, 1.05, 1.0), 2.5, 2.3, 0.52, blue);
+                for (int i = -2; i <= 2; i++) {
+                    Vec3 a = b.local(i * 0.32, 0.15, -1.4);
+                    Vec3 z = b.local(i * 0.18, 0.35, 4.4);
+                    prism(pose, out, a, z, 0.055, i == 0 ? cyan : withAlpha(blue, 125));
+                }
+            }
+            case "warden_absolute_formation" -> {
+                ring(pose, out, b, Math.max(3.5, honestRadius), 0.05, 0.12, 80, blue, age * 0.012);
+                for (int i = 0; i < 8; i++) {
+                    double a = i * TAU / 8.0;
+                    Vec3 p = b.local(Math.cos(a) * Math.min(3.6, honestRadius * 0.72), 0.0,
+                            Math.sin(a) * Math.min(3.6, honestRadius * 0.72));
+                    curvedShield(pose, out, b, p.add(0.0, 1.15, 0.0), 1.15, 2.25, 0.38,
+                            i % 2 == 0 ? blue : cyan);
+                }
+            }
+            case "warden_fortress_descent" -> {
+                verticalPillar(pose, out, b, 0.55, 5.8, blue);
+                curvedShield(pose, out, b, b.local(0.0, 1.35, 0.45), 3.2, 3.3, 0.70, withAlpha(cyan, 160));
+                ring(pose, out, b, Math.max(3.0, honestRadius) * (0.62 + progress * 0.50),
+                        0.06, 0.17, 80, blue, -age * 0.018);
+                for (int i = 0; i < 8; i++) groundCrack(pose, out, b, i * TAU / 8.0,
+                        0.55, Math.max(3.2, honestRadius), 0.065, withAlpha(cyan, 120));
+            }
+            default -> renderFallbackRune(pose, out, b, age, progress);
         }
     }
 
