@@ -379,11 +379,7 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         }
 
         private void applyArcContact(ServerLevel level, CommittedAction current) {
-            List<ServerPlayer> players = level.getEntitiesOfClass(
-                    ServerPlayer.class,
-                    actor.getBoundingBox().inflate(current.binding.maximumRange() + 1.0),
-                    player -> player.isAlive() && !player.isSpectator());
-            for (ServerPlayer player : players) {
+            for (ServerPlayer player : validPlayers(level)) {
                 var snapshot = R01EarthloongSpatialAuthority.evaluate(
                         actor.getX(), actor.getZ(),
                         current.lockedDirection.x, current.lockedDirection.z,
@@ -458,13 +454,7 @@ public final class R01EarthloongPhysicalEncounterRuntime {
 
         private void applyRootBreaker(ServerLevel level, CommittedAction current) {
             var binding = Objects.requireNonNull(current.spaceBinding, "spaceBinding");
-            AABB search = actor.getBoundingBox().inflate(binding.radius() + 1.0, 3.0, binding.radius() + 1.0);
-            List<ServerPlayer> players = level.getEntitiesOfClass(
-                    ServerPlayer.class,
-                    search,
-                    player -> player.isAlive() && !player.isSpectator()
-            );
-            for (ServerPlayer player : players) {
+            for (ServerPlayer player : validPlayers(level)) {
                 if (horizontalDistance(actor, player) > binding.radius()
                         || !current.hitPlayers.add(player.getUUID())) {
                     continue;
