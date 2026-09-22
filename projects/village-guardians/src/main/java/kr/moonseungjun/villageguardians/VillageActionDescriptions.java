@@ -21,7 +21,7 @@ final class VillageActionDescriptions {
             return label + "\n공동 보급품을 사용해 시설 등급·최대 내구도·고유 효과를 강화합니다.";
         }
         if (action.startsWith("select_role:")) {
-            return label + "\n기술 연구소에서 현재 직업을 변경합니다. 성장과 기술 관리도 같은 연구소에서 진행합니다.";
+            return label + "\n직업을 변경합니다.";
         }
         if (action.startsWith("skill_node:")) {
             return label + "\n레벨이 오를 때마다 얻는 전술 포인트를 사용합니다. 비용은 단계에 따라 1~4P입니다.";
@@ -36,13 +36,13 @@ final class VillageActionDescriptions {
             return label + "\n습득한 기술을 어디서나 Z 또는 X 슬롯에 장착합니다.";
         }
         if (action.startsWith("test_role:")) {
-            return label + "\n시험 전용 직업만 바꾸며 실제 직업과 저장된 성장 상태는 유지합니다.";
+            return label + "\n시험장에서 사용할 직업을 선택합니다.";
         }
         if (action.startsWith("test_choose:")) {
-            return label + "\n이전 시험 UI 호환 경로로 Z 시험 슬롯에 장착합니다.";
+            return label + "\n선택한 기술을 첫 번째 시험 슬롯에 장착합니다.";
         }
         if (action.startsWith("test_equip:")) {
-            return label + "\n선택한 Z/X 시험 슬롯에 장착한 뒤 화면을 닫습니다. 화면이 닫힌 상태에서 Z/X를 눌러 시전합니다.";
+            return label + "\n선택한 시험 슬롯에 기술을 장착합니다.";
         }
         if (action.startsWith("gear:")) {
             return label + "\n수호 주화로 장비를 구매합니다. 강한 상품은 방어 일수에 따라 입고됩니다.";
@@ -70,9 +70,9 @@ final class VillageActionDescriptions {
             case "open_relic_collection" -> "선택 대기 중인 보스 유물이 있으면 선택을 이어가고, 없으면 보유 유물과 누적 효과를 확인합니다.";
             case "open_caller_menu", "open_manual" -> "인벤토리에서 여는 수호단 메뉴로 돌아갑니다.";
             case "open_skill_tree" -> "기술 연구소의 공용 전술 발전 화면을 엽니다.";
-            case "open_role_progress_current" -> "현재 직업의 세 갈래 성장과 두 기술 슬롯을 관리합니다.";
-            case "open_role_skill_research" -> "기술 연구소에서 현재 직업의 기술 습득과 Z/X 장착만 관리합니다.";
-            case "open_skill_test" -> "외부 시험장으로 이동해 분리된 직업·스킬 관리함에서 시험 설정을 관리합니다.";
+            case "open_role_progress_current" -> "현재 직업의 성장과 기술 슬롯을 관리합니다.";
+            case "open_role_skill_research" -> "직업 기술을 습득하고 두 기술 슬롯을 관리합니다.";
+            case "open_skill_test" -> "시험장으로 이동해 직업과 기술을 설정합니다.";
             case "open_skill_test_roles" -> "금색 바닥 직업 관리함을 엽니다.";
             case "open_skill_test_skills" -> "청금석 바닥 스킬 관리함을 엽니다.";
             case "test_spawn" -> "외부 시험장의 고정 표적 여섯 개를 다시 배치합니다.";
