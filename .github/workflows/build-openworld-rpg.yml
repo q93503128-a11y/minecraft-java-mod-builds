@@ -360,6 +360,8 @@ jobs:
           - Better Combat bound-actor canonical melee authority: IMPLEMENTED + UNIT/RUNTIME BRIDGE VERIFIED (donor damage ignored; exact real-player Better Combat network hit NOT TESTED)
           - Spell Engine resource/cooldown continuation transaction: IMPLEMENTED + UNIT/SERVER STARTUP VERIFIED\n          - project cooldown client/HUD projection after completed cast: IMPLEMENTED + CLIENT STARTUP VERIFIED
           - project impact transaction core (damage/heal/status/poise + Defense/MR caps): IMPLEMENTED + UNIT TESTED
+          - player active-defense authority (dodge/guard/perfect-guard/guard-break + Stamina): IMPLEMENTED + UNIT TESTED; player-facing input/animation adapter NOT IMPLEMENTED
+          - normalized player incoming Defense/MR authority: IMPLEMENTED + UNIT TESTED; external donor incoming-hit normalization NOT IMPLEMENTED
           - project direct-magic runtime bridge: IMPLEMENTED + UNIT/BUILD/STARTUP VERIFIED
           - player combat build snapshot producer: IMPLEMENTED + UNIT/RUNTIME HARNESS VERIFIED
           - persistent 12-slot equipped-loadout publisher: IMPLEMENTED + UNIT/BUILD VERIFIED (main weapon/off-hand/armor/accessories; project affix aggregation; wand+focus power; family-power cap)
