@@ -26,8 +26,8 @@ public final class VillageEquipmentShop {
     public static List<Offer> currentOffers(int day) {
         int safeDay = Math.max(1, day);
         List<Offer> result = new ArrayList<>();
-        result.addAll(rotatingOffers(Category.EQUIPMENT, safeDay, 4));
-        result.addAll(rotatingOffers(Category.ARMOR, safeDay, 3));
+        result.addAll(rotatingOffers(Category.EQUIPMENT, safeDay, 5));
+        result.addAll(rotatingOffers(Category.ARMOR, safeDay, 4));
         return List.copyOf(result);
     }
 
@@ -38,12 +38,18 @@ public final class VillageEquipmentShop {
     private static List<Offer> rotatingOffers(Category category, int day, int maximum) {
         List<Offer> eligible = Arrays.stream(Offer.values())
                 .filter(offer -> offer.category() == category && offer.requiredDay() <= day)
+                .sorted(java.util.Comparator.comparingInt(Offer::requiredDay))
                 .toList();
         if (eligible.isEmpty()) return List.of();
-        int count = Math.min(maximum, eligible.size());
-        int start = Math.floorMod(day * 3 - 3 + category.ordinal() * 5, eligible.size());
+        int recentFloor = Math.max(1, day - 28);
+        List<Offer> recent = eligible.stream()
+                .filter(offer -> offer.requiredDay() >= recentFloor)
+                .toList();
+        List<Offer> pool = recent.size() >= maximum ? recent : eligible;
+        int count = Math.min(maximum, pool.size());
+        int start = Math.floorMod(day * 3 - 3 + category.ordinal() * 5, pool.size());
         List<Offer> selected = new ArrayList<>();
-        for (int index = 0; index < count; index++) selected.add(eligible.get((start + index) % eligible.size()));
+        for (int index = 0; index < count; index++) selected.add(pool.get((start + index) % pool.size()));
         return List.copyOf(selected);
     }
 
@@ -203,6 +209,78 @@ public final class VillageEquipmentShop {
                 "원거리 피해 +55% · 기술 효과 +10% · 재사용 -1초", 1.00f, 1.55f, 1.10f, 0.00f, 1),
         LAST_GUARD_BLADE("last_guard_blade", "최후수호 절단검", Category.EQUIPMENT, Items.NETHERITE_SWORD, 90, 7600,
                 "근접 피해 +58% · 기술 효과 +12% · 재사용 -1초", 1.58f, 1.00f, 1.12f, 0.00f, 1),
+        FRONTIER_MACE("frontier_mace", "전선개척 전투망치", Category.EQUIPMENT, Items.MACE, 15, 1750,
+                "근접 피해 +32% · 기술 효과 +6%", 1.32f, 1.00f, 1.06f, 0.00f, 0),
+        HAWK_HOOD("hawk_hood", "매눈 추적두건", Category.ARMOR, Items.NETHERITE_HELMET, 15, 1680,
+                "받는 피해 9% 감소 · 기술 효과 +7%", 1.00f, 1.00f, 1.07f, 0.09f, 0),
+        SPELLWEAVE_HOOD("spellweave_hood", "주문직조 후드", Category.ARMOR, Items.NETHERITE_HELMET, 18, 1900,
+                "받는 피해 8% 감소 · 기술 효과 +14%", 1.00f, 1.00f, 1.14f, 0.08f, 0),
+        DAWN_HOOD("dawn_hood", "여명서약 후드", Category.ARMOR, Items.NETHERITE_HELMET, 18, 1940,
+                "받는 피해 9% 감소 · 기술 효과 +13%", 1.00f, 1.00f, 1.13f, 0.09f, 0),
+        WALL_BOOTS("wall_boots", "성벽 보행장화", Category.ARMOR, Items.NETHERITE_BOOTS, 20, 2060,
+                "받는 피해 10% 감소", 1.00f, 1.00f, 1.00f, 0.10f, 0),
+        BREAKER_HELM("breaker_helm", "파성 선봉투구", Category.ARMOR, Items.NETHERITE_HELMET, 25, 2480,
+                "받는 피해 9% 감소 · 기술 효과 +8%", 1.00f, 1.00f, 1.08f, 0.09f, 0),
+        TRACKER_BOOTS("tracker_boots", "장거리 추적장화", Category.ARMOR, Items.NETHERITE_BOOTS, 25, 2520,
+                "받는 피해 8% 감소 · 기술 재사용 -1초", 1.00f, 1.00f, 1.00f, 0.08f, 1),
+        RUNIC_BOOTS("runic_boots", "비전각인 장화", Category.ARMOR, Items.NETHERITE_BOOTS, 28, 2700,
+                "받는 피해 8% 감소 · 기술 효과 +15%", 1.00f, 1.00f, 1.15f, 0.08f, 0),
+        PILGRIM_BOOTS("pilgrim_boots", "성광 순례장화", Category.ARMOR, Items.NETHERITE_BOOTS, 28, 2740,
+                "받는 피해 9% 감소 · 기술 효과 +14%", 1.00f, 1.00f, 1.14f, 0.09f, 0),
+        WALL_LEGGINGS("wall_leggings", "성벽 중갑각반", Category.ARMOR, Items.NETHERITE_LEGGINGS, 30, 2920,
+                "받는 피해 12% 감소", 1.00f, 1.00f, 1.00f, 0.12f, 0),
+        WARLORD_CHEST("warlord_chest", "전선집행 흉갑", Category.ARMOR, Items.NETHERITE_CHESTPLATE, 35, 3250,
+                "받는 피해 11% 감소 · 기술 효과 +8%", 1.00f, 1.00f, 1.08f, 0.11f, 0),
+        HUNTER_LEGGINGS("hunter_leggings", "밤추적 사냥각반", Category.ARMOR, Items.NETHERITE_LEGGINGS, 35, 3290,
+                "받는 피해 10% 감소 · 기술 효과 +8%", 1.00f, 1.00f, 1.08f, 0.10f, 0),
+        ARCANE_CHEST("arcane_chest", "비전공명 전투복", Category.ARMOR, Items.NETHERITE_CHESTPLATE, 40, 3580,
+                "받는 피해 10% 감소 · 기술 효과 +18%", 1.00f, 1.00f, 1.18f, 0.10f, 0),
+        SANCTUARY_LEGGINGS("sanctuary_leggings", "여명성약 각반", Category.ARMOR, Items.NETHERITE_LEGGINGS, 40, 3620,
+                "받는 피해 11% 감소 · 기술 효과 +17%", 1.00f, 1.00f, 1.17f, 0.11f, 0),
+        CITADEL_HELM("citadel_helm", "성채수호 중투구", Category.ARMOR, Items.NETHERITE_HELMET, 40, 3650,
+                "받는 피해 13% 감소", 1.00f, 1.00f, 1.00f, 0.13f, 0),
+        BREACH_TRIDENT("breach_trident", "파성 돌격창", Category.EQUIPMENT, Items.TRIDENT, 45, 3900,
+                "근접 피해 +39% · 기술 효과 +9%", 1.39f, 1.00f, 1.09f, 0.00f, 0),
+        HUNTER_CHEST("hunter_chest", "밤사냥 추적흉갑", Category.ARMOR, Items.NETHERITE_CHESTPLATE, 45, 3980,
+                "받는 피해 11% 감소 · 기술 효과 +10%", 1.00f, 1.00f, 1.10f, 0.11f, 0),
+        ASTRAL_LEGGINGS("astral_leggings", "성좌비전 각반", Category.ARMOR, Items.NETHERITE_LEGGINGS, 52, 4380,
+                "받는 피해 11% 감소 · 기술 효과 +20%", 1.00f, 1.00f, 1.20f, 0.11f, 0),
+        COVENANT_CHEST("covenant_chest", "여명성약 성의", Category.ARMOR, Items.NETHERITE_CHESTPLATE, 52, 4420,
+                "받는 피해 13% 감소 · 기술 효과 +19%", 1.00f, 1.00f, 1.19f, 0.13f, 0),
+        CITADEL_CHEST("citadel_chest", "대성채 중흉갑", Category.ARMOR, Items.NETHERITE_CHESTPLATE, 52, 4460,
+                "받는 피해 16% 감소", 1.00f, 1.00f, 1.00f, 0.16f, 0),
+        EXECUTION_LEGGINGS("execution_leggings", "집행자의 전투각반", Category.ARMOR, Items.NETHERITE_LEGGINGS, 55, 4580,
+                "받는 피해 12% 감소 · 기술 효과 +10%", 1.00f, 1.00f, 1.10f, 0.12f, 0),
+        COMET_CROSSBOW("comet_crossbow", "혜성추적 쇠뇌", Category.EQUIPMENT, Items.CROSSBOW, 60, 5050,
+                "원거리 피해 +46% · 기술 효과 +9% · 재사용 -1초", 1.00f, 1.46f, 1.09f, 0.00f, 1),
+        EXECUTION_BOOTS("execution_boots", "집행 돌격장화", Category.ARMOR, Items.NETHERITE_BOOTS, 65, 5250,
+                "받는 피해 11% 감소 · 기술 효과 +10%", 1.00f, 1.00f, 1.10f, 0.11f, 0),
+        VOID_FOCUS("void_focus", "공허공명 집중봉", Category.EQUIPMENT, Items.BLAZE_ROD, 65, 5350,
+                "직업 기술 효과 +47% · 재사용 -2초", 1.00f, 1.00f, 1.47f, 0.00f, 2),
+        SANCTUARY_SHIELD("sanctuary_shield", "성역수호 방패", Category.ARMOR, Items.SHIELD, 65, 5280,
+                "받는 피해 15% 감소 · 기술 효과 +13%", 1.00f, 1.00f, 1.13f, 0.15f, 0),
+        TOWER_SHIELD("tower_shield", "거성벽 방패", Category.ARMOR, Items.SHIELD, 65, 5320,
+                "받는 피해 17% 감소", 1.00f, 1.00f, 1.00f, 0.17f, 0),
+        ARCHMAGE_CROWN("archmage_crown", "대비전술사 관", Category.ARMOR, Items.NETHERITE_HELMET, 80, 6620,
+                "받는 피해 12% 감소 · 기술 효과 +18% · 재사용 -1초", 1.00f, 1.00f, 1.18f, 0.12f, 1),
+        SERAPH_SCEPTER("seraph_scepter", "대성휘 성광홀", Category.EQUIPMENT, Items.BLAZE_ROD, 80, 6680,
+                "직업 기술 효과 +51% · 재사용 -2초", 1.00f, 1.00f, 1.51f, 0.00f, 2),
+        FORTRESS_MACE("fortress_mace", "불락수호 전투망치", Category.EQUIPMENT, Items.MACE, 80, 6600,
+                "근접 피해 +40% · 기술 효과 +16%", 1.40f, 1.00f, 1.16f, 0.00f, 0),
+        CATACLYSM_MACE("cataclysm_mace", "종말집행 전투망치", Category.EQUIPMENT, Items.MACE, 85, 7050,
+                "근접 피해 +55% · 기술 효과 +13%", 1.55f, 1.00f, 1.13f, 0.00f, 0),
+        NIGHTFALL_BOW("nightfall_bow", "밤몰락 추적장궁", Category.EQUIPMENT, Items.BOW, 85, 7100,
+                "원거리 피해 +57% · 기술 효과 +12% · 재사용 -1초", 1.00f, 1.57f, 1.12f, 0.00f, 1),
+        BLACKGATE_PLATE("blackgate_plate", "흑성문 중갑", Category.ARMOR, Items.NETHERITE_CHESTPLATE, 95, 8100,
+                "받는 피해 19% 감소 · 기술 효과 +10%", 1.00f, 1.00f, 1.10f, 0.19f, 0),
+        CENTURY_GREATBLADE("century_greatblade", "백일 집행대검", Category.EQUIPMENT, Items.NETHERITE_SWORD, 100, 8950,
+                "근접 피해 +61% · 기술 효과 +14% · 재사용 -1초", 1.61f, 1.00f, 1.14f, 0.00f, 1),
+        CENTURY_LONGBOW("century_longbow", "백일 추적장궁", Category.EQUIPMENT, Items.BOW, 100, 8950,
+                "원거리 피해 +61% · 기술 효과 +14% · 재사용 -1초", 1.00f, 1.61f, 1.14f, 0.00f, 1),
+        CENTURY_FOCUS("century_focus", "백일 비전핵", Category.EQUIPMENT, Items.BLAZE_ROD, 100, 9000,
+                "직업 기술 효과 +55% · 재사용 -2초", 1.00f, 1.00f, 1.55f, 0.00f, 2),
+        CENTURY_SCEPTER("century_scepter", "백일 성광성물", Category.EQUIPMENT, Items.BLAZE_ROD, 100, 9000,
+                "직업 기술 효과 +53% · 받는 피해 6% 감소 · 재사용 -2초", 1.00f, 1.00f, 1.53f, 0.06f, 2),
         CENTURY_AEGIS("century_aegis", "백일 결전방패", Category.ARMOR, Items.SHIELD, 100, 8800,
                 "받는 피해 18% 감소 · 기술 효과 +15% · 재사용 -1초", 1.00f, 1.00f, 1.15f, 0.18f, 1);
 
