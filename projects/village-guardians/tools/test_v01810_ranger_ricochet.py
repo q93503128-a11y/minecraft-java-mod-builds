@@ -58,8 +58,10 @@ def main() -> None:
     assert "PRE_SCALED_RICOCHET_DAMAGE.add(key)" in ability
     assert "PRE_SCALED_RICOCHET_DAMAGE.remove(key)" in ability
     assert "boolean preScaledRicochet" in rpg
-    assert "if (!preScaledRicochet" in rpg
-    assert "if (!preScaledRicochet) VillageCombatTechniqueSystem.handleIncomingDamage(event)" in rpg
+    assert "boolean preScaledPlayerDamage = isPreScaledPlayerDamage();" in rpg
+    assert "if (!preScaledPlayerDamage && !preScaledRicochet" in rpg
+    assert "if (!preScaledPlayerDamage && !preScaledRicochet) {" in rpg
+    assert "VillageCombatTechniqueSystem.handleIncomingDamage(event);" in rpg
     assert "SECONDARY_DAMAGE" in technique  # normal passive ricochet keeps its own recursion guard too.
 
     # Player-facing description must match runtime behaviour.
