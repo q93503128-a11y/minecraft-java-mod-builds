@@ -24,6 +24,7 @@ public final class PlayerCombatBuildPublisher {
                 .map(progression::allocation)
                 .orElseGet(AttributeAllocation::unspent);
         double effectiveVit = allocation.value(CombatAttribute.VIT) + gearAttributes.vit();
+        double effectiveEnd = allocation.value(CombatAttribute.END) + gearAttributes.end();
         double effectiveWil = allocation.value(CombatAttribute.WIL) + gearAttributes.wil();
         long gameTick = player.level().getGameTime();
 
@@ -33,6 +34,11 @@ public final class PlayerCombatBuildPublisher {
                 0.0
         );
         PlayerVitalsRuntime.synchronizeMaxHealth(player, maxHealth);
+        CombatStateServices.states().synchronizeEndurance(
+                player.getUUID(),
+                (int) Math.round(effectiveEnd),
+                gameTick
+        );
         CombatStateServices.states().synchronizeWill(
                 player.getUUID(),
                 (int) Math.round(effectiveWil),
