@@ -19,9 +19,9 @@ def main() -> None:
     raid = read("VillageRaidSystem.java")
     guardians = read("VillageGuardians.java")
 
-    assert "mod_version=0.18.46-alpha.1" in props
-    assert "현재 소스 버전 `0.18.46-alpha.1`" in readme
-    assert "villageguardians-0.18.46-alpha.1.jar" in readme
+    assert "mod_version=0.18.47-alpha.1" in props
+    assert "현재 소스 버전 `0.18.47-alpha.1`" in readme
+    assert "villageguardians-0.18.47-alpha.1.jar" in readme
 
     # Confirmation must compare authoritative current/next values rather than generic help prose.
     click = section(town, "public boolean mouseClicked", "private static String confirmationDetail")
