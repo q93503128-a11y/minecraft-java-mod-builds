@@ -73,6 +73,31 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
         );
     }
 
+    /**
+     * Aggregates the six primary-stat affixes across all 12 equipment slots independently of
+     * whether a main weapon is currently equipped. Vitals/resources must not disappear when the
+     * player unequips a weapon.
+     */
+    public EffectiveAttributes aggregateFlatAttributeBonuses() {
+        double vit = 0.0;
+        double end = 0.0;
+        double str = 0.0;
+        double dex = 0.0;
+        double intel = 0.0;
+        double wil = 0.0;
+
+        for (EquippedCombatItem item : equipped) {
+            for (EquipmentCombatAffix affix : item.affixes()) {
+                switch (affix.kind()) {
+                    default -> {
+                        // Non-primary combat affixes are aggregated by aggregateCombatState().
+                    }
+                }
+            }
+        }
+        return new EffectiveAttributes(vit, end, str, dex, intel, wil);
+    }
+
     public Optional<EquipmentCombatState> aggregateCombatState() {
         EquippedCombatItem main = item(ProjectEquipmentSlot.MAIN_WEAPON).orElse(null);
         if (main == null) {
@@ -80,12 +105,7 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
         }
 
         ProjectWeaponFamily family = main.weaponFamily().orElseThrow();
-        double vit = 0.0;
-        double end = 0.0;
-        double str = 0.0;
-        double dex = 0.0;
-        double intel = 0.0;
-        double wil = 0.0;
+        EffectiveAttributes flatAttributes = aggregateFlatAttributeBonuses();
         double physicalPower = 0.0;
         double magicPower = 0.0;
         double familyPower = 0.0;
@@ -126,7 +146,7 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
         return Optional.of(new EquipmentCombatState(
                 family,
                 main.itemLevel(),
-                new EffectiveAttributes(vit, end, str, dex, intel, wil),
+                flatAttributes,
                 physicalPower,
                 magicPower,
                 familyPower,
