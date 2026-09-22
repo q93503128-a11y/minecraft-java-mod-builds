@@ -53,7 +53,12 @@ public final class M0RuntimeVerificationHarness {
             throw new IllegalStateException("M0 Earthloong verification session already exists.");
         }
 
-        BlockPos spawn = new BlockPos(0, 250, 0);
+        BlockPos worldSpawn = level.getSharedSpawnPos();
+        BlockPos spawn = new BlockPos(
+                worldSpawn.getX(),
+                Math.max(worldSpawn.getY() + 8, 80),
+                worldSpawn.getZ()
+        );
         Entity targetEntity = ExternalActorBindingRuntime.spawnAuthored(
                 level,
                 spawn,
