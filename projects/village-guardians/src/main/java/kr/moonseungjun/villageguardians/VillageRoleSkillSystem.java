@@ -326,6 +326,9 @@ public final class VillageRoleSkillSystem {
                 * VillageEquipmentShop.roleSkillMultiplier(player)
                 * VillageRelicSystem.skillMultiplier(player)
                 * VillageConsumableSystem.skillMultiplier(player)
+                * (role == VillageRole.RANGER && skill.promotionTier() > 0
+                        ? VillageEquipmentSetSystem.rangedSkillMultiplier(player)
+                        : 1.0f)
                 * mastery.powerMultiplier();
         float duration = durationMultiplier(player, role)
                 * VillageProgressionSystem.skillHallDurationMultiplier()

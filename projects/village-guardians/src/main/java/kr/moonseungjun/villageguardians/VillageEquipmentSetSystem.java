@@ -41,6 +41,14 @@ public final class VillageEquipmentSetSystem {
         return value;
     }
 
+    public static float rangedSkillMultiplier(ServerPlayer player) {
+        int hunter = countEquipped(player, EquipmentSet.NIGHT_HUNTER);
+        float value = 1.0f;
+        if (hunter >= 2) value *= 1.10f;
+        if (hunter >= 3) value *= 1.08f;
+        return value;
+    }
+
     public static float incomingMultiplier(ServerPlayer player) {
         int wall = countEquipped(player, EquipmentSet.WALL_GUARDIAN);
         int hunter = countEquipped(player, EquipmentSet.NIGHT_HUNTER);
@@ -73,7 +81,7 @@ public final class VillageEquipmentSetSystem {
 
     public enum EquipmentSet {
         WALL_GUARDIAN("성벽 수호자", "2세트: 범용 피해 +6%, 받는 피해 -8% · 3세트: 범용 피해 추가 +5%, 받는 피해 추가 -6%"),
-        NIGHT_HUNTER("밤사냥꾼", "2세트: 원거리 피해 +10% · 3세트: 원거리 추가 +8%, 근접 +3%, 받는 피해 -4%");
+        NIGHT_HUNTER("밤사냥꾼", "2세트: 원거리 피해 +10% · 3세트: 원거리 추가 +8%, 근접 +3%, 받는 피해 -4% · 궁수 공격 기술도 원거리 피해에 포함");
         private final String displayName, effectText;
         EquipmentSet(String displayName, String effectText) { this.displayName = displayName; this.effectText = effectText; }
         public String displayName() { return displayName; }
