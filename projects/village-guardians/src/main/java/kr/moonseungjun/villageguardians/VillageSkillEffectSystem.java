@@ -91,6 +91,8 @@ public final class VillageSkillEffectSystem {
         int duration = Math.max(28, Math.min(96, calculatedDuration / 2));
         spawn(level, player, "promotion_skill_cast", player.position(), forward,
                 duration, 0.0f, skill.id());
+        VillageNetwork.sendSkillMotion(
+                level, player, "promotion:" + skill.id(), duration + 8);
     }
 
     public static void promotionImpact(
