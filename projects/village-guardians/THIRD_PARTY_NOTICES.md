@@ -30,6 +30,6 @@ Village Guardians contains selected third-party GUI and character-model assets. 
 - Pinned mirror revision: `e50f41492f5cc35cffa7990ddb998e860881bd41`
 - License: CC0 1.0 Universal / Public Domain Dedication
 - License URI: https://creativecommons.org/publicdomain/zero/1.0/
-- Included geometry: Warrior, Rogue, Ranger and Cleric OBJ meshes
-- Village Guardians mapping: 방벽 수호병=Warrior, 돌격 집행관=Rogue, 성루 명사수=Ranger, 전장 치유사=Cleric
+- Included geometry: Warrior, Rogue, Ranger, Cleric, Monk and Wizard OBJ meshes
+- Village Guardians mapping: 방벽 수호병=Warrior, 돌격 집행관=Rogue, 성루 명사수=Ranger, 전장 치유사=Cleric, 결계 수도사=Monk, 비전 포격병=Wizard
 - Changes: geometry is normalized to Minecraft scale at runtime and rendered with Village Guardians class palettes and combat VFX. Gameplay hitboxes and server authority remain separate from the presentation mesh.
