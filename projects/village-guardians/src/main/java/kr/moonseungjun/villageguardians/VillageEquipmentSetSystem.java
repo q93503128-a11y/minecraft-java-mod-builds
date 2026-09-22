@@ -129,6 +129,22 @@ public final class VillageEquipmentSetSystem {
         return value;
     }
 
+    public static float roleSkillTargetMultiplier(
+            ServerPlayer player, Mob target, VillageRole role) {
+        if (player == null || target == null || role == null) return 1.0f;
+        if (role == VillageRole.VANGUARD
+                && countEquipped(player, EquipmentSet.FRONTLINE_EXECUTOR) >= 5
+                && target.getHealth() <= target.getMaxHealth() * 0.40f) {
+            return 1.25f;
+        }
+        if (role == VillageRole.RANGER
+                && countEquipped(player, EquipmentSet.NIGHT_HUNTER) >= 5
+                && player.distanceToSqr(target) >= 144.0) {
+            return 1.20f;
+        }
+        return 1.0f;
+    }
+
     public static float roleSkillMultiplier(
             ServerPlayer player, VillageRole role, int promotionTier) {
         if (player == null || role == null) return 1.0f;
@@ -234,33 +250,80 @@ public final class VillageEquipmentSetSystem {
     public enum EquipmentSet {
         FRONTLINE_EXECUTOR(
                 "frontline_executor", "전선 집행자",
-                "2셋 근접 +8% · 3셋 전사 기술 +8% · 4셋 근접 +8%/피해감소 5% · 5셋 근접 +18%, 재사용 -1초, 체력 40%↓ 적에게 근접 +25%"),
+                "근접 피해 +8%",
+                "전사 기술 +8%",
+                "근접 피해 +8% · 받는 피해 -5%",
+                "근접 피해 +18% · 전사 기술 +15% · 재사용 -1초",
+                "적 HP 40% 이하: 근접 공격·전사 공격 기술 +25%"),
         NIGHT_HUNTER(
                 "night_hunter", "밤사냥꾼",
-                "2셋 원거리 +10% · 3셋 피해감소 4% · 4셋 원거리 +10%/전직 궁수 기술 +10% · 5셋 원거리 +18%, 전직 기술 +15%, 재사용 -1초, 12블록↑ 표적 +20%"),
+                "원거리 피해 +10%",
+                "받는 피해 -4%",
+                "원거리 피해 +10% · 전직 궁수 기술 +10%",
+                "원거리 피해 +18% · 전직 궁수 기술 +15% · 재사용 -1초",
+                "12블록 이상 표적: 원거리 공격·전직 궁수 공격 기술 +20%"),
         ARCANE_RESONANCE(
                 "arcane_resonance", "비전 공명",
-                "2셋 비전 기술 +12% · 3셋 재사용 -1초 · 4셋 비전 기술 +12% · 5셋 비전 기술 +20%, 재사용 추가 -1초"),
+                "비전 기술 +12%",
+                "기술 재사용 -1초",
+                "비전 기술 +12%",
+                "비전 기술 +20% · 재사용 추가 -1초",
+                ""),
         DAWN_COVENANT(
                 "dawn_covenant", "여명 성약",
-                "2셋 성광 기술·치유 +10% · 3셋 재사용 -1초 · 4셋 성광 기술·치유 +12% · 5셋 +18%, 재사용 추가 -1초, 받는 피해 -10%"),
+                "성광 기술·치유 +10%",
+                "기술 재사용 -1초",
+                "성광 기술·치유 +12%",
+                "성광 기술·치유 +18% · 재사용 추가 -1초 · 받는 피해 -10%",
+                ""),
         WALL_GUARDIAN(
                 "wall_guardian", "성벽 수호자",
-                "2셋 피해감소 6% · 3셋 수호 기술 +10% · 4셋 피해감소 추가 6% · 5셋 수호 기술 +18%, 재사용 -1초, 추가 피해감소 10% 및 체력 40%↓ 철벽");
+                "받는 피해 -6%",
+                "수호 기술 +10%",
+                "받는 피해 추가 -6%",
+                "수호 기술 +18% · 재사용 -1초 · 받는 피해 추가 -10%",
+                "HP 40% 이하: 받는 피해 추가 -18%");
 
         private final String id;
         private final String displayName;
-        private final String effectText;
+        private final String twoPiece;
+        private final String threePiece;
+        private final String fourPiece;
+        private final String fivePiece;
+        private final String capstoneText;
 
-        EquipmentSet(String id, String displayName, String effectText) {
+        EquipmentSet(
+                String id, String displayName, String twoPiece, String threePiece,
+                String fourPiece, String fivePiece, String capstoneText) {
             this.id = id;
             this.displayName = displayName;
-            this.effectText = effectText;
+            this.twoPiece = twoPiece;
+            this.threePiece = threePiece;
+            this.fourPiece = fourPiece;
+            this.fivePiece = fivePiece;
+            this.capstoneText = capstoneText;
         }
 
         public String id() { return id; }
         public String displayName() { return displayName; }
-        public String effectText() { return effectText; }
+
+        public String pieceEffect(int requiredPieces) {
+            return switch (requiredPieces) {
+                case 2 -> twoPiece;
+                case 3 -> threePiece;
+                case 4 -> fourPiece;
+                case 5 -> fivePiece;
+                default -> "";
+            };
+        }
+
+        public String capstoneText() { return capstoneText; }
+
+        public String effectText() {
+            return "2셋 " + twoPiece + " · 3셋 " + threePiece
+                    + " · 4셋 " + fourPiece + " · 5셋 " + fivePiece
+                    + (capstoneText.isBlank() ? "" : " · " + capstoneText);
+        }
 
         public static EquipmentSet parse(String value) {
             if (value == null || value.isBlank()) return null;
@@ -270,5 +333,4 @@ public final class VillageEquipmentSetSystem {
             }
             return null;
         }
-    }
-}
+    }}

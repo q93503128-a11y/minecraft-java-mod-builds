@@ -39,9 +39,14 @@ public final class VillageExpandedEquipmentSystem {
         }
         Item item = pool.get(random.nextInt(pool.size()));
         VillageEquipmentRaritySystem.Rarity rarity = rollRarity(safeDay, boss, random);
-        return VillageEquipmentRaritySystem.createNamed(
-                item, rarity, displayName(item, random),
+        VillageEquipmentSetSystem.EquipmentSet set =
+                VillageEquipmentSetSystem.setForRaidDrop(archetype, boss, random);
+        String baseName = displayName(item, random);
+        ItemStack result = VillageEquipmentRaritySystem.createNamed(
+                item, rarity, set.displayName() + " " + baseName,
                 VillageEquipmentRaritySystem.combatTierForDay(safeDay));
+        VillageEquipmentIdentity.stampSet(result, set.id());
+        return result;
     }
 
     private static VillageEquipmentRaritySystem.Rarity rollRarity(int day, boolean boss, RandomSource random) {

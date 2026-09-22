@@ -1699,6 +1699,8 @@ public final class VillageRoleAbilitySystem {
             ServerLevel level, ServerPlayer owner, Mob target, float damage,
             VillageRpgSystem.SkillAttackProfile profile) {
         float trained = VillageRpgSystem.applySkillAttackTraining(owner, damage, profile);
+        VillageRole role = VillageCouncilState.roleOf(owner.getUUID()).orElse(null);
+        trained *= VillageEquipmentSetSystem.roleSkillTargetMultiplier(owner, target, role);
         target.hurtServer(level, level.damageSources().magic(), Math.max(0.1f, trained));
     }
 

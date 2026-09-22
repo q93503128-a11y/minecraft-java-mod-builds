@@ -15,6 +15,9 @@ def main() -> None:
     rpg = read("VillageRpgSystem.java")
     role = read("VillageRoleSkillSystem.java")
     inventory = read("VillageInventoryPanel.java")
+    expanded = read("VillageExpandedEquipmentSystem.java")
+    abilities = read("VillageRoleAbilitySystem.java")
+    tooltip = read("VillageEquipmentTooltipClient.java")
 
     assert 'KEY_SET = "villageguardians_set"' in identity
     assert "stampSet(ItemStack stack, String setId)" in identity
@@ -43,6 +46,9 @@ def main() -> None:
         assert item in rarity
 
     assert "VillageEquipmentIdentity.stampSet(stack, set.id())" in shop
+    assert "VillageEquipmentSetSystem.setForRaidDrop(archetype, boss, random)" in expanded
+    assert "VillageEquipmentIdentity.stampSet(result, set.id())" in expanded
+    assert 'set.displayName() + " " + baseName' in expanded
     assert "VillageEquipmentIdentity.stampSet(result," in rarity
     assert "같은 종류·세트·전장 단계·등급·강화 단계" in rarity
     assert "VillageEquipmentIdentity.stampSet(result, set.id())" in rarity
@@ -50,6 +56,10 @@ def main() -> None:
     assert "VillageEquipmentSetSystem.targetMultiplier(attacker, target, projectile)" in rpg
     assert "VillageEquipmentSetSystem.roleSkillMultiplier(player, role, skill.promotionTier())" in role
     assert "VillageEquipmentSetSystem.cooldownReductionSeconds(player, role)" in role
+    assert "public static float roleSkillTargetMultiplier" in sets
+    assert "VillageEquipmentSetSystem.roleSkillTargetMultiplier(owner, target, role)" in abilities
+    assert 'new int[]{2, 3, 4, 5}' in tooltip
+    assert "set.pieceEffect(required)" in tooltip
 
     assert "target.getHealth() <= target.getMaxHealth() * 0.40f" in sets
     assert "player.distanceToSqr(target) >= 144.0" in sets

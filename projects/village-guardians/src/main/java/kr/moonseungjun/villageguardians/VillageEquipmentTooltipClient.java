@@ -40,9 +40,25 @@ public final class VillageEquipmentTooltipClient {
         if (!style.isBlank()) {
             event.getToolTip().add(Component.literal("• 무기 계열: " + style).withStyle(ChatFormatting.DARK_AQUA));
         }
-        String set = VillageEquipmentSetSystem.tooltipSummary(Minecraft.getInstance().player, stack);
-        if (!set.isBlank()) {
-            event.getToolTip().add(Component.literal("• 세트: " + set).withStyle(ChatFormatting.GOLD));
+        VillageEquipmentSetSystem.EquipmentSet set = VillageEquipmentSetSystem.setOf(stack);
+        if (set != null) {
+            var player = Minecraft.getInstance().player;
+            int count = player == null ? 0 : VillageEquipmentSetSystem.countEquipped(player, set);
+            event.getToolTip().add(Component.literal("• 세트: " + set.displayName() + " " + count + "/5")
+                    .withStyle(ChatFormatting.GOLD));
+            for (int required : new int[]{2, 3, 4, 5}) {
+                boolean active = count >= required;
+                ChatFormatting color = active
+                        ? required == 5 ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.YELLOW
+                        : ChatFormatting.DARK_GRAY;
+                event.getToolTip().add(Component.literal(
+                        "  " + (active ? "◆ " : "◇ ") + required + "셋 · " + set.pieceEffect(required))
+                        .withStyle(color));
+                if (required == 5 && !set.capstoneText().isBlank()) {
+                    event.getToolTip().add(Component.literal("      └ " + set.capstoneText())
+                            .withStyle(active ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.DARK_GRAY));
+                }
+            }
         }
         event.getToolTip().add(Component.literal("• 등급: " + rarity.displayName()
                 + (enhancement > 0 ? "  ·  강화 +" + enhancement : ""))
