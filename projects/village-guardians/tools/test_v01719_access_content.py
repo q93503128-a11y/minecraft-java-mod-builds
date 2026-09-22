@@ -74,19 +74,19 @@ def main() -> None:
     turret_block = towers.split("public enum TurretType", 1)[1].split("private final String id", 1)[0]
     turret_types = re.findall(r"^\s{8}([A-Z][A-Z0-9_]+)\(\"", turret_block, re.M)
 
-    assert len(offers) == 36, offers
+    assert len(offers) == 72, offers
     assert len(archetypes) == 20, archetypes
     assert len(wave_traits) == 19, wave_traits
     assert len(active_skills) == 60, active_skills
     assert len(turret_types) == 10, turret_types
     assert "Rarity.LEGENDARY" in rarity and "MAX_ENHANCEMENT = 30" in rarity
     assert relics.count("public static final Relic ") == 0 or "WAR_SIGIL" in relics
-    assert "BASTION" in mercenaries and "MEDIC" in mercenaries
+    assert all(token in mercenaries for token in ("BASTION", "MEDIC", "WARDER", "ARTILLERIST"))
     assert "BALLISTA" in towers and "ANTI_AIR" in towers and "BEACON" in towers
     assert "VillageTowerSpecializationSystem" not in towers
     assert "CAMPAIGN_END_DAY" in warfront and "최종 대공성" in warfront
     assert "return Math.min(7, 3 + Math.max(0, day - 1) / 4);" in raid
-    print("[PASS] 콘텐츠 감사: 장비 36, 적 20, 웨이브 특성 19, 액티브 기술 60, 현행 배치 포탑 10종")
+    print("[PASS] 콘텐츠 감사: 장비 72, 적 20, 웨이브 특성 19, 액티브 기술 60, 용병 6병과, 현행 배치 포탑 10종")
 
     audit = (ROOT / "CONTENT-AUDIT-v0.18.0.md").read_text(encoding="utf-8")
     for token in ["일반 적 병과 10종", "기본 보스 4종", "웨이브 특성 12종",
