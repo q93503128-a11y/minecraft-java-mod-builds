@@ -25,12 +25,16 @@ public abstract class LivingEntityCombatActivityMixin {
 
         LivingEntity target = (LivingEntity) (Object) this;
         long gameTick = level.getGameTime();
+        var sourceEntity = source.getEntity();
 
-        if (target instanceof Player player) {
-            CombatStateServices.markCombatActivity(player.getUUID(), gameTick);
+        if (target instanceof Player player
+                && sourceEntity instanceof LivingEntity attacker
+                && attacker != player) {
+            CombatStateServices.markHostileHpActivity(player.getUUID(), gameTick);
         }
-        if (source.getEntity() instanceof Player player) {
-            CombatStateServices.markCombatActivity(player.getUUID(), gameTick);
+
+        if (sourceEntity instanceof Player player && target != player) {
+            CombatStateServices.markHostileHpActivity(player.getUUID(), gameTick);
         }
     }
 }
