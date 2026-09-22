@@ -39,16 +39,18 @@ class R01EarthloongActionControllerTest {
         var data = R01EarthloongEncounterDataLoader.loadBundled();
         var impacts = data.impactRulesById();
 
-        assertEquals(4, impacts.size());
+        assertEquals(5, impacts.size());
 
         var claw = impacts.get(R01EarthloongEncounterData.ActionId.CLAW_SWEEP);
         var tail = impacts.get(R01EarthloongEncounterData.ActionId.TAIL_SCYTHE);
         var rush = impacts.get(R01EarthloongEncounterData.ActionId.QUARRY_RUSH);
+        var furrow = impacts.get(R01EarthloongEncounterData.ActionId.LIGHTNING_FURROW);
         var root = impacts.get(R01EarthloongEncounterData.ActionId.ROOT_BREAKER);
 
         assertEquals(0.10, claw.benchmarkDamageShare(), 0.000001);
         assertEquals(0.20, tail.benchmarkDamageShare(), 0.000001);
         assertEquals(0.24, rush.benchmarkDamageShare(), 0.000001);
+        assertEquals(0.26, furrow.benchmarkDamageShare(), 0.000001);
         assertEquals(0.30, root.benchmarkDamageShare(), 0.000001);
 
         assertTrue(claw.guardable());
@@ -57,12 +59,15 @@ class R01EarthloongActionControllerTest {
         assertTrue(tail.perfectGuardable());
         assertFalse(rush.guardable());
         assertTrue(rush.perfectGuardable());
+        assertFalse(furrow.guardable());
+        assertFalse(furrow.perfectGuardable());
         assertFalse(root.guardable());
         assertFalse(root.perfectGuardable());
 
         assertEquals(19.0666666667, claw.toIncomingHit(8).rawDamage(), 0.000001);
         assertEquals(38.1333333333, tail.toIncomingHit(8).rawDamage(), 0.000001);
         assertEquals(45.76, rush.toIncomingHit(8).rawDamage(), 0.000001);
+        assertEquals(43.9806738869, furrow.toIncomingHit(8).rawDamage(), 0.000001);
         assertEquals(57.2, root.toIncomingHit(8).rawDamage(), 0.000001);
     }
 
@@ -382,8 +387,16 @@ class R01EarthloongActionControllerTest {
         assertEquals(24, furrow.tellTicks());
         assertEquals(20, furrow.recoveryTicks());
         assertEquals(1.4, furrow.laneWidth(), 0.000001);
+        assertEquals(5.0, furrow.minimumTargetRange(), 0.000001);
+        assertEquals(12.0, furrow.maximumTargetRange(), 0.000001);
         assertEquals(12.0, furrow.laneLength(), 0.000001);
         assertEquals(35.0, furrow.shockBuildup(), 0.000001);
+        assertEquals(java.util.List.of(-2.5, 0.0, 2.5),
+                data.lightningFurrow().phaseOneLaneCenterOffsets());
+        assertEquals(java.util.List.of(-3.75, -1.25, 1.25, 3.75),
+                data.lightningFurrow().phaseTwoLaneCenterOffsets());
+        assertEquals(1.25, data.lightningFurrow().playerVerticalTolerance(), 0.000001);
+        assertEquals(1.5, data.lightningFurrow().maximumGroundStep(), 0.000001);
         assertEquals(3, furrow.donorSkillNumber());
         assertEquals(25, furrow.donorAnimationTicks());
 

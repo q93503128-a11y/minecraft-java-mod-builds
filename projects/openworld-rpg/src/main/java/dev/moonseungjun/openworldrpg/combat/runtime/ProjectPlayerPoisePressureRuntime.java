@@ -1,16 +1,10 @@
 package dev.moonseungjun.openworldrpg.combat.runtime;
 
+import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import java.util.Objects;
 import net.minecraft.server.level.ServerPlayer;
 
-/**
- * Explicit fail-closed seam for authored player-poise pressure.
- *
- * <p>COMBAT_BALANCE.md closes the max-poise formula and recovery rules, but the current persistent
- * equipment publisher does not yet publish the exact partial-armor ArmorPoise contribution. This
- * seam prevents authored pressure from being silently discarded or replaced with vanilla knockback.
- * It must become an accepting runtime only when that canonical snapshot exists.</p>
- */
+/** Server-authoritative application seam for authored player-poise pressure. */
 public final class ProjectPlayerPoisePressureRuntime {
     private ProjectPlayerPoisePressureRuntime() {
     }
@@ -20,9 +14,33 @@ public final class ProjectPlayerPoisePressureRuntime {
         if (!Double.isFinite(pressure) || pressure < 0.0) {
             throw new IllegalArgumentException("Player poise pressure must be finite and non-negative.");
         }
-        return new Application(false, pressure);
+
+        var state = CombatStateServices.playerPoiseStates().state(target.getUUID());
+        if (state.isEmpty()) {
+            return Application.rejected(pressure);
+        }
+
+        var result = state.orElseThrow().apply(pressure, target.level().getGameTime());
+        return new Application(
+                true,
+                pressure,
+                result.effectivePressure(),
+                result.remainingPoise(),
+                result.breakTriggered(),
+                result.postBreakImmune()
+        );
     }
 
-    public record Application(boolean applied, double authoredPressure) {
+    public record Application(
+            boolean applied,
+            double authoredPressure,
+            double effectivePressure,
+            double remainingPoise,
+            boolean breakTriggered,
+            boolean postBreakImmune
+    ) {
+        private static Application rejected(double authoredPressure) {
+            return new Application(false, authoredPressure, 0.0, 0.0, false, false);
+        }
     }
 }

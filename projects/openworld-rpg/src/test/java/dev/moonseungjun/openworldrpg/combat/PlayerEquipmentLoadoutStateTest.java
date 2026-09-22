@@ -374,4 +374,48 @@ class PlayerEquipmentLoadoutStateTest {
         ));
     }
 
+    @Test
+    void partialArmorPublishesCanonicalPlayerPoiseContributionAndResistanceCap() {
+        var loadout = new PlayerEquipmentLoadoutState(List.of(
+                EquippedCombatItem.armor(
+                        "openworld_rpg:medium_chest",
+                        ProjectEquipmentSlot.CHEST,
+                        8,
+                        ProjectArmorArchetype.MEDIUM,
+                        List.of(EquipmentCombatAffix.flat(
+                                EquipmentCombatAffixKind.POISE_STAGGER_RESISTANCE,
+                                0.15
+                        ))
+                ),
+                EquippedCombatItem.armor(
+                        "openworld_rpg:heavy_legs",
+                        ProjectEquipmentSlot.LEGS,
+                        8,
+                        ProjectArmorArchetype.HEAVY,
+                        List.of()
+                ),
+                EquippedCombatItem.gear(
+                        "openworld_rpg:poise_relic",
+                        ProjectEquipmentSlot.RELIC,
+                        8,
+                        List.of(EquipmentCombatAffix.flat(
+                                EquipmentCombatAffixKind.POISE_STAGGER_RESISTANCE,
+                                0.45
+                        ))
+                )
+        ));
+
+        assertEquals(13.70, loadout.aggregateArmorPoise(), 0.0001);
+        assertEquals(0.50, loadout.aggregatePoiseStaggerResistanceBonus(), 0.0001);
+        assertEquals(
+                74.55,
+                dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules.maxPlayerPoise(
+                        15.0,
+                        loadout.aggregateArmorPoise(),
+                        loadout.aggregatePoiseStaggerResistanceBonus()
+                ),
+                0.0001
+        );
+    }
+
 }

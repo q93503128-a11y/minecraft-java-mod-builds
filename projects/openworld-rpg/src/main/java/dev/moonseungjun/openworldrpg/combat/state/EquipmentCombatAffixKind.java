@@ -20,7 +20,8 @@ public enum EquipmentCombatAffixKind {
     POISE_OUTPUT,
     DEFENSE,
     MAGIC_RESISTANCE,
-    GUARD_STRENGTH;
+    GUARD_STRENGTH,
+    POISE_STAGGER_RESISTANCE;
 
     public static final Codec<EquipmentCombatAffixKind> CODEC = Codec.STRING.comapFlatMap(
             value -> {

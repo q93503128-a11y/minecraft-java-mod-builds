@@ -1,6 +1,7 @@
 package dev.moonseungjun.openworldrpg.combat.encounter.r01;
 
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerPoisePressureRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerShockRuntime;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import java.util.ArrayList;
@@ -14,6 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -27,6 +30,7 @@ import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.slf4j.Logger;
 
 public final class R01EarthloongPhysicalEncounterRuntime {
@@ -69,8 +73,8 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         initialized = true;
         logger.info(
                 "Openworld RPG R01 Earthloong physical encounter runtime armed: "
-                        + "Claw Sweep + Quarry Rush project scheduling/contact active; "
-                        + "Tail Scythe presentation and Phase-1 space-control actions remain gated.");
+                        + "Claw Sweep + Quarry Rush + Lightning Furrow + Root Breaker project "
+                        + "scheduling/contact active; Tail Scythe presentation remains gated.");
     }
 
     public static boolean recordProjectDamageThreat(
@@ -98,6 +102,13 @@ public final class R01EarthloongPhysicalEncounterRuntime {
 
     public static void clearPlayer(UUID playerId) {
         for (ActorState state : STATES.values()) state.threat.remove(playerId);
+    }
+
+    public static double incomingDamageMultiplier(LivingEntity target) {
+        ActorState state = STATES.get(target.getUUID());
+        return state != null && state.actor == target && state.isStormshedActive()
+                ? 0.50
+                : 1.0;
     }
 
     private static void suppressDonorCombatTargets(ServerLevel level) {
@@ -137,6 +148,10 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         private CommittedAction committed;
         private UUID currentThreatTargetId;
         private UUID closeTargetId;
+        private R01EarthloongEncounterData.Phase phase = R01EarthloongEncounterData.Phase.ONE;
+        private boolean stormShedPending;
+        private long stormShedStartTick = Long.MIN_VALUE / 4;
+        private boolean stormShedPreviousNoAi;
         private long closeTargetSinceTick = Long.MIN_VALUE / 4;
 
         private ActorState(LivingEntity actor, String encounterInstanceId) {
@@ -145,9 +160,19 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         }
 
         private void tick(ServerLevel level, long gameTick) {
+            observeStormshedThreshold();
             updateRootBreakerProximityEveryTick(level, gameTick);
+            if (isStormshedActive()) {
+                tickStormshed(level, gameTick);
+                return;
+            }
             if (committed != null) {
                 tickCommitted(level, gameTick);
+                return;
+            }
+
+            if (stormShedPending) {
+                beginStormshed(gameTick);
                 return;
             }
 
@@ -187,7 +212,7 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                 nextDecisionTick = gameTick + DATA.decisionDelayTicks();
                 return;
             }
-            commit(decision.action().orElseThrow(), target, gameTick);
+            commit(decision, target, level, gameTick);
         }
 
         private void seedInitialThreatFromMobTarget(long gameTick) {
@@ -231,12 +256,19 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                     && horizontalDistance(actor, target) <= 3.0
                     && gameTick - closeTargetSinceTick >= 40L;
             boolean rootBreakerLegal = engagedClose >= 2 || targetCloseLongEnough;
+            var furrow = DATA.spaceControlBindingsById().get(
+                    R01EarthloongEncounterData.ActionId.LIGHTNING_FURROW
+            );
+            double targetDistance = horizontalDistance(actor, target);
+            boolean lightningFurrowLegal = furrow != null
+                    && targetDistance >= furrow.minimumTargetRange()
+                    && targetDistance <= furrow.maximumTargetRange();
 
             return new R01EarthloongActionController.Legality(
                     R01EarthloongSpatialAuthority.isLegal(claw, spatial),
                     false,
                     R01EarthloongSpatialAuthority.isLegal(rush, spatial),
-                    false,
+                    lightningFurrowLegal,
                     rootBreakerLegal,
                     false,
                     false);
@@ -267,7 +299,21 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         }
 
         private void commit(
-                R01EarthloongEncounterData.ActionId action, ServerPlayer target, long gameTick) {
+                R01EarthloongActionController.Decision decision,
+                ServerPlayer target,
+                ServerLevel level,
+                long gameTick
+        ) {
+            R01EarthloongEncounterData.ActionId action = decision.action().orElseThrow();
+            if (action == R01EarthloongEncounterData.ActionId.LIGHTNING_FURROW) {
+                commitLightningFurrow(
+                        level,
+                        target,
+                        gameTick,
+                        decision.lightningFurrowLaneCount().orElseThrow()
+                );
+                return;
+            }
             if (action == R01EarthloongEncounterData.ActionId.ROOT_BREAKER) {
                 commitRootBreaker(gameTick);
                 return;
@@ -304,6 +350,64 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             committed = new CommittedAction(
                     action, gameTick, R01EarthloongPhysicalTimeline.from(binding),
                     binding, direction, previousNoAi);
+            nextDecisionTick = Long.MAX_VALUE;
+            orientActor(direction);
+            freezeHorizontalMotion();
+        }
+
+        private void commitLightningFurrow(
+                ServerLevel level,
+                ServerPlayer target,
+                long gameTick,
+                int laneCount
+        ) {
+            var binding = DATA.spaceControlBindingsById().get(
+                    R01EarthloongEncounterData.ActionId.LIGHTNING_FURROW
+            );
+            if (binding == null || !binding.hasDonorPresentationCandidate()) {
+                nextDecisionTick = gameTick + DATA.decisionDelayTicks();
+                return;
+            }
+
+            Vec3 direction = horizontalDirection(actor, target);
+            if (direction.lengthSqr() <= 1.0e-9) {
+                nextDecisionTick = gameTick + DATA.decisionDelayTicks();
+                return;
+            }
+            direction = direction.normalize();
+
+            var presentation = R01EarthloongDonorPresentationBridge.startTechnicalCandidate(
+                    actor,
+                    R01EarthloongEncounterData.ActionId.LIGHTNING_FURROW
+            );
+            if (!presentation.accepted()) {
+                nextDecisionTick = gameTick + DATA.decisionDelayTicks();
+                return;
+            }
+
+            List<FurrowLane> lanes = buildFurrowLanes(level, direction, laneCount, binding);
+            boolean previousNoAi = false;
+            if (actor instanceof Mob mob) {
+                previousNoAi = mob.isNoAi();
+                mob.setTarget(null);
+                mob.getNavigation().stop();
+                mob.setNoAi(true);
+            }
+            committed = CommittedAction.lightningFurrow(
+                    gameTick,
+                    new R01EarthloongPhysicalTimeline(
+                            binding.tellTicks(),
+                            1,
+                            binding.recoveryTicks()
+                    ),
+                    binding,
+                    direction,
+                    laneCount,
+                    lanes,
+                    actor.getX(),
+                    actor.getZ(),
+                    previousNoAi
+            );
             nextDecisionTick = Long.MAX_VALUE;
             orientActor(direction);
             freezeHorizontalMotion();
@@ -356,9 +460,13 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             }
 
             var phase = current.timeline.phaseAtElapsedTick(elapsed);
-            if (current.action == R01EarthloongEncounterData.ActionId.ROOT_BREAKER
-                    && phase == R01EarthloongPhysicalTimeline.Phase.TELEGRAPH) {
-                renderRootBreakerTell(level, current, elapsed);
+            if (phase == R01EarthloongPhysicalTimeline.Phase.TELEGRAPH) {
+                if (current.action == R01EarthloongEncounterData.ActionId.ROOT_BREAKER) {
+                    renderRootBreakerTell(level, current, elapsed);
+                } else if (current.action
+                        == R01EarthloongEncounterData.ActionId.LIGHTNING_FURROW) {
+                    renderLightningFurrowTell(level, current, elapsed);
+                }
             }
 
             switch (phase) {
@@ -372,6 +480,10 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                     } else if (current.action == R01EarthloongEncounterData.ActionId.ROOT_BREAKER
                             && activeIndex == 0) {
                         applyRootBreaker(level, current);
+                    } else if (current.action
+                            == R01EarthloongEncounterData.ActionId.LIGHTNING_FURROW
+                            && activeIndex == 0) {
+                        applyLightningFurrow(level, current);
                     }
                 }
                 case COMPLETE -> finishCommitted(gameTick);
@@ -418,6 +530,199 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                     R01EarthloongImpactAuthority.applyConfirmedContact(actor, player, current.action);
                 }
             }
+        }
+
+        private void renderLightningFurrowTell(
+                ServerLevel level,
+                CommittedAction current,
+                long elapsed
+        ) {
+            if (elapsed % 2L != 0L) {
+                return;
+            }
+            for (FurrowLane lane : current.furrowLanes) {
+                for (int i = 0; i < lane.samples().size(); i += 2) {
+                    FurrowGroundSample sample = lane.samples().get(i);
+                    level.sendParticles(
+                            ParticleTypes.ELECTRIC_SPARK,
+                            sample.x(),
+                            sample.groundY() + 0.10,
+                            sample.z(),
+                            1,
+                            0.03,
+                            0.02,
+                            0.03,
+                            0.0
+                    );
+                }
+            }
+        }
+
+        private void applyLightningFurrow(ServerLevel level, CommittedAction current) {
+            var binding = Objects.requireNonNull(current.spaceBinding, "spaceBinding");
+            double halfWidth = binding.laneWidth() * 0.5;
+            for (ServerPlayer player : validPlayers(level)) {
+                if (current.hitPlayers.contains(player.getUUID())
+                        || !furrowContainsPlayer(current, player, halfWidth, binding.laneLength())) {
+                    continue;
+                }
+
+                var direct = R01EarthloongImpactAuthority.applyConfirmedContact(
+                        actor,
+                        player,
+                        current.action
+                );
+                if (!direct.accepted()
+                        || !direct.minecraftDamageApplied()
+                        || direct.resolution().map(r -> r.dodged()).orElse(true)) {
+                    continue;
+                }
+
+                current.hitPlayers.add(player.getUUID());
+                ProjectPlayerShockRuntime.applyEarthloongBuildup(
+                        actor,
+                        player,
+                        binding.shockBuildup()
+                );
+            }
+        }
+
+        private boolean furrowContainsPlayer(
+                CommittedAction current,
+                ServerPlayer player,
+                double halfWidth,
+                double laneLength
+        ) {
+            var coordinates = R01EarthloongFurrowGeometry.coordinates(
+                    current.furrowOriginX,
+                    current.furrowOriginZ,
+                    current.lockedDirection.x,
+                    current.lockedDirection.z,
+                    player.getX(),
+                    player.getZ()
+            );
+            var pattern = DATA.lightningFurrow();
+            for (FurrowLane lane : current.furrowLanes) {
+                if (!R01EarthloongFurrowGeometry.insideLane(
+                        coordinates,
+                        lane.centerOffset(),
+                        halfWidth,
+                        laneLength
+                )) {
+                    continue;
+                }
+                FurrowGroundSample nearest = nearestSample(
+                        lane.samples(),
+                        coordinates.longitudinal()
+                );
+                if (nearest != null
+                        && Math.abs(player.getY() - nearest.groundY())
+                                <= pattern.playerVerticalTolerance()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static FurrowGroundSample nearestSample(
+                List<FurrowGroundSample> samples,
+                double longitudinal
+        ) {
+            FurrowGroundSample best = null;
+            double bestDelta = Double.MAX_VALUE;
+            for (FurrowGroundSample sample : samples) {
+                double delta = Math.abs(sample.longitudinal() - longitudinal);
+                if (delta < bestDelta) {
+                    best = sample;
+                    bestDelta = delta;
+                }
+            }
+            return bestDelta <= 0.35 ? best : null;
+        }
+
+        private List<FurrowLane> buildFurrowLanes(
+                ServerLevel level,
+                Vec3 direction,
+                int laneCount,
+                R01EarthloongEncounterData.SpaceControlBindingRule binding
+        ) {
+            List<FurrowLane> lanes = new ArrayList<>();
+            Vec3 lateral = new Vec3(-direction.z, 0.0, direction.x);
+            for (double offset : DATA.lightningFurrow().offsetsForLaneCount(laneCount)) {
+                List<FurrowGroundSample> samples = new ArrayList<>();
+                Double previousGroundY = null;
+                for (double longitudinal = 0.0;
+                        longitudinal <= binding.laneLength() + 1.0e-9;
+                        longitudinal += 0.50) {
+                    double x = actor.getX()
+                            + direction.x * longitudinal
+                            + lateral.x * offset;
+                    double z = actor.getZ()
+                            + direction.z * longitudinal
+                            + lateral.z * offset;
+                    Double groundY = projectLocalGround(
+                            level,
+                            x,
+                            z,
+                            previousGroundY == null ? actor.getY() : previousGroundY
+                    );
+                    if (groundY == null) {
+                        break;
+                    }
+                    if (previousGroundY != null
+                            && Math.abs(groundY - previousGroundY)
+                                    > DATA.lightningFurrow().maximumGroundStep()) {
+                        break;
+                    }
+
+                    AABB standingColumn = new AABB(
+                            x - 0.12,
+                            groundY + 0.05,
+                            z - 0.12,
+                            x + 0.12,
+                            groundY + 1.80,
+                            z + 0.12
+                    );
+                    if (!level.noBlockCollision(actor, standingColumn)) {
+                        break;
+                    }
+
+                    samples.add(new FurrowGroundSample(
+                            longitudinal,
+                            x,
+                            groundY,
+                            z
+                    ));
+                    previousGroundY = groundY;
+                }
+                lanes.add(new FurrowLane(offset, List.copyOf(samples)));
+            }
+            return List.copyOf(lanes);
+        }
+
+        private static Double projectLocalGround(
+                ServerLevel level,
+                double x,
+                double z,
+                double referenceY
+        ) {
+            BlockPos origin = BlockPos.containing(x, referenceY, z);
+            Double best = null;
+            double bestDelta = Double.MAX_VALUE;
+            for (int dy = 3; dy >= -4; dy--) {
+                BlockPos pos = origin.offset(0, dy, 0);
+                VoxelShape shape = level.getBlockState(pos).getCollisionShape(level, pos);
+                if (shape.isEmpty()) {
+                    continue;
+                }
+                double topY = pos.getY() + shape.max(Direction.Axis.Y);
+                double delta = Math.abs(topY - referenceY);
+                if (delta < bestDelta) {
+                    best = topY;
+                    bestDelta = delta;
+                }
+            }
+            return best;
         }
 
         private void renderRootBreakerTell(
@@ -496,7 +801,75 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         private void finishCommitted(long gameTick) {
             releaseActorControl();
             committed = null;
+            if (stormShedPending) {
+                beginStormshed(gameTick);
+            } else {
+                nextDecisionTick = gameTick + DATA.decisionDelayTicks();
+            }
+        }
+
+        private void observeStormshedThreshold() {
+            if (phase != R01EarthloongEncounterData.Phase.ONE
+                    || stormShedPending
+                    || isStormshedActive()) {
+                return;
+            }
+            double fraction = ExternalActorBindingRuntime.canonicalHealthSnapshot(actor)
+                    .map(snapshot -> snapshot.fraction())
+                    .orElse(1.0);
+            if (fraction <= DATA.phaseTwoHealthThreshold()) {
+                stormShedPending = true;
+            }
+        }
+
+        private void beginStormshed(long gameTick) {
+            if (!stormShedPending || isStormshedActive()) {
+                return;
+            }
+            stormShedStartTick = gameTick;
+            nextDecisionTick = Long.MAX_VALUE;
+            R01EarthloongDonorPresentationBridge.resetTechnicalCandidate(actor);
+            if (actor instanceof Mob mob) {
+                stormShedPreviousNoAi = mob.isNoAi();
+                mob.setTarget(null);
+                mob.getNavigation().stop();
+                mob.setNoAi(true);
+            }
+            freezeHorizontalMotion();
+        }
+
+        private void tickStormshed(ServerLevel level, long gameTick) {
+            long elapsed = gameTick - stormShedStartTick;
+            freezeHorizontalMotion();
+            if (elapsed < 28L) {
+                if (elapsed % 2L == 0L) {
+                    level.sendParticles(
+                            ParticleTypes.ELECTRIC_SPARK,
+                            actor.getX(),
+                            actor.getY() + actor.getBbHeight() * 0.65,
+                            actor.getZ(),
+                            8,
+                            Math.max(0.5, actor.getBbWidth() * 0.55),
+                            Math.max(0.5, actor.getBbHeight() * 0.35),
+                            Math.max(0.5, actor.getBbWidth() * 0.55),
+                            0.02
+                    );
+                }
+                return;
+            }
+
+            phase = R01EarthloongEncounterData.Phase.TWO;
+            stormShedPending = false;
+            stormShedStartTick = Long.MIN_VALUE / 4;
+            if (actor instanceof Mob mob) {
+                mob.setNoAi(stormShedPreviousNoAi);
+                mob.setTarget(null);
+            }
             nextDecisionTick = gameTick + DATA.decisionDelayTicks();
+        }
+
+        private boolean isStormshedActive() {
+            return stormShedStartTick > Long.MIN_VALUE / 8;
         }
 
         private void releaseActorControl() {
@@ -504,6 +877,9 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             if (actor instanceof Mob mob && committed != null) {
                 mob.setTarget(null);
                 mob.setNoAi(committed.previousNoAi);
+            } else if (actor instanceof Mob mob && isStormshedActive()) {
+                mob.setTarget(null);
+                mob.setNoAi(stormShedPreviousNoAi);
             }
         }
 
@@ -527,11 +903,7 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         }
 
         private R01EarthloongEncounterData.Phase currentPhase() {
-            double fraction = ExternalActorBindingRuntime.canonicalHealthSnapshot(actor)
-                    .map(snapshot -> snapshot.fraction()).orElse(1.0);
-            return fraction <= DATA.phaseTwoHealthThreshold()
-                    ? R01EarthloongEncounterData.Phase.TWO
-                    : R01EarthloongEncounterData.Phase.ONE;
+            return phase;
         }
 
         private List<ServerPlayer> validPlayers(ServerLevel level) {
@@ -567,6 +939,18 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         return Math.hypot(b.getX() - a.getX(), b.getZ() - a.getZ());
     }
 
+    private record FurrowGroundSample(
+            double longitudinal,
+            double x,
+            double groundY,
+            double z
+    ) {}
+
+    private record FurrowLane(
+            double centerOffset,
+            List<FurrowGroundSample> samples
+    ) {}
+
     private static final class CommittedAction {
         private final R01EarthloongEncounterData.ActionId action;
         private final long commitTick;
@@ -575,6 +959,10 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         private final R01EarthloongEncounterData.SpaceControlBindingRule spaceBinding;
         private final Vec3 lockedDirection;
         private final boolean previousNoAi;
+        private final int furrowLaneCount;
+        private final List<FurrowLane> furrowLanes;
+        private final double furrowOriginX;
+        private final double furrowOriginZ;
         private final Set<UUID> hitPlayers = new HashSet<>();
         private boolean pathBlocked;
 
@@ -592,6 +980,10 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             this.spaceBinding = null;
             this.lockedDirection = lockedDirection;
             this.previousNoAi = previousNoAi;
+            this.furrowLaneCount = 0;
+            this.furrowLanes = List.of();
+            this.furrowOriginX = 0.0;
+            this.furrowOriginZ = 0.0;
         }
 
         private CommittedAction(
@@ -608,6 +1000,58 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             this.spaceBinding = spaceBinding;
             this.lockedDirection = null;
             this.previousNoAi = previousNoAi;
+            this.furrowLaneCount = 0;
+            this.furrowLanes = List.of();
+            this.furrowOriginX = 0.0;
+            this.furrowOriginZ = 0.0;
+        }
+
+        private CommittedAction(
+                long commitTick,
+                R01EarthloongPhysicalTimeline timeline,
+                R01EarthloongEncounterData.SpaceControlBindingRule spaceBinding,
+                Vec3 lockedDirection,
+                int furrowLaneCount,
+                List<FurrowLane> furrowLanes,
+                double furrowOriginX,
+                double furrowOriginZ,
+                boolean previousNoAi
+        ) {
+            this.action = R01EarthloongEncounterData.ActionId.LIGHTNING_FURROW;
+            this.commitTick = commitTick;
+            this.timeline = timeline;
+            this.binding = null;
+            this.spaceBinding = spaceBinding;
+            this.lockedDirection = lockedDirection;
+            this.previousNoAi = previousNoAi;
+            this.furrowLaneCount = furrowLaneCount;
+            this.furrowLanes = List.copyOf(furrowLanes);
+            this.furrowOriginX = furrowOriginX;
+            this.furrowOriginZ = furrowOriginZ;
+        }
+
+        private static CommittedAction lightningFurrow(
+                long commitTick,
+                R01EarthloongPhysicalTimeline timeline,
+                R01EarthloongEncounterData.SpaceControlBindingRule spaceBinding,
+                Vec3 lockedDirection,
+                int laneCount,
+                List<FurrowLane> furrowLanes,
+                double furrowOriginX,
+                double furrowOriginZ,
+                boolean previousNoAi
+        ) {
+            return new CommittedAction(
+                    commitTick,
+                    timeline,
+                    spaceBinding,
+                    lockedDirection,
+                    laneCount,
+                    furrowLanes,
+                    furrowOriginX,
+                    furrowOriginZ,
+                    previousNoAi
+            );
         }
 
         private static CommittedAction rootBreaker(

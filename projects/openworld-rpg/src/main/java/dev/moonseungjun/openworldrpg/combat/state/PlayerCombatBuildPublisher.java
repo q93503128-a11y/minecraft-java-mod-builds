@@ -48,6 +48,16 @@ public final class PlayerCombatBuildPublisher {
                 player.getUUID(),
                 loadout.aggregateDefenseSnapshot()
         );
+        double maxPoise = ProjectCombatRules.maxPlayerPoise(
+                effectiveEnd,
+                loadout.aggregateArmorPoise(),
+                loadout.aggregatePoiseStaggerResistanceBonus()
+        );
+        CombatStateServices.playerPoiseStates().synchronize(
+                player.getUUID(),
+                maxPoise,
+                gameTick
+        );
 
         Optional<EquipmentCombatState> equipment = loadout.aggregateCombatState();
         Optional<PlayerCombatBuildState> build = equipment.flatMap(

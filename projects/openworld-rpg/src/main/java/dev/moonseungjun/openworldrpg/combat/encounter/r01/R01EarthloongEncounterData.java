@@ -107,7 +107,11 @@ public record R01EarthloongEncounterData(
     public record LightningFurrowPattern(
             int phaseOneLaneCount,
             int phaseTwoFirstLaneCount,
-            List<Integer> phaseTwoAlternatingLaneCounts
+            List<Integer> phaseTwoAlternatingLaneCounts,
+            List<Double> phaseOneLaneCenterOffsets,
+            List<Double> phaseTwoLaneCenterOffsets,
+            double playerVerticalTolerance,
+            double maximumGroundStep
     ) {
         public LightningFurrowPattern {
             phaseTwoAlternatingLaneCounts = List.copyOf(
@@ -116,6 +120,22 @@ public record R01EarthloongEncounterData(
                             "phaseTwoAlternatingLaneCounts"
                     )
             );
+            phaseOneLaneCenterOffsets = List.copyOf(
+                    Objects.requireNonNull(phaseOneLaneCenterOffsets, "phaseOneLaneCenterOffsets")
+            );
+            phaseTwoLaneCenterOffsets = List.copyOf(
+                    Objects.requireNonNull(phaseTwoLaneCenterOffsets, "phaseTwoLaneCenterOffsets")
+            );
+        }
+
+        public List<Double> offsetsForLaneCount(int laneCount) {
+            return switch (laneCount) {
+                case 3 -> phaseOneLaneCenterOffsets;
+                case 4 -> phaseTwoLaneCenterOffsets;
+                default -> throw new IllegalArgumentException(
+                        "Unsupported Earthloong Lightning Furrow lane count: " + laneCount
+                );
+            };
         }
     }
 
@@ -151,19 +171,18 @@ public record R01EarthloongEncounterData(
 
         public dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority.IncomingHit
         toIncomingHit(int contentLevel) {
-            if (school
-                    != dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction
-                    .DamageSchool.PHYSICAL) {
-                throw new IllegalStateException(
-                        "Current Earthloong impact rule has no closed raw-damage authoring bridge: "
-                                + action
-                );
-            }
-            double rawDamage = dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules
-                    .rawEnemyPhysicalDamageFromBenchmarkShare(
-                            contentLevel,
-                            benchmarkDamageShare
-                    );
+            double rawDamage = switch (school) {
+                case PHYSICAL -> dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules
+                        .rawEnemyPhysicalDamageFromBenchmarkShare(
+                                contentLevel,
+                                benchmarkDamageShare
+                        );
+                case MAGIC -> dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules
+                        .rawEnemyMagicDamageFromBenchmarkShare(
+                                contentLevel,
+                                benchmarkDamageShare
+                        );
+            };
             if (!guardable && !perfectGuardable) {
                 return dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority
                         .IncomingHit.unguardable(
@@ -191,6 +210,8 @@ public record R01EarthloongEncounterData(
             int tellTicks,
             int recoveryTicks,
             double radius,
+            double minimumTargetRange,
+            double maximumTargetRange,
             double laneWidth,
             double laneLength,
             double shockBuildup,

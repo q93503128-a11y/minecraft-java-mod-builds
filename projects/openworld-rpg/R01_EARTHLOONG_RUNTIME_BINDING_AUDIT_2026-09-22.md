@@ -120,10 +120,10 @@ PHASE-1 PHYSICAL START GEOMETRY: IMPLEMENTED + UNIT VERIFIED — Claw 0°..120°
 CLAW/QUARRY DONOR PRESENTATION STATE BRIDGE: IMPLEMENTED + RUNTIME VERIFIED — SkillNumber 1/2 set + reset; donor damage/procedures remain non-authoritative
 TAIL SCYTHE FINAL PRESENTATION: UNBOUND — no accepted dedicated donor animation exists on the pinned surface
 ROOT BREAKER PROJECT RUNTIME: IMPLEMENTED + BUILD/SERVER/CLIENT-STARTUP VERIFIED — exact 40-tick proximity legality tracking, 20-tick tell, horizontal 4.5-block radius, direct impact, 20-tick recovery, tagged arena-prop break
-ROOT BREAKER PLAYER-POISE 75: FAIL-CLOSED SEAM ONLY — canonical partial-armor ArmorPoise slot shares are now design-closed; runtime player-poise publisher/application remains to be implemented
+ROOT BREAKER PLAYER-POISE 75: IMPLEMENTED IN SOURCE — partial-armor ArmorPoise, END contribution, +50% poise-resistance gear cap, 1 s recovery delay, 45/s recovery and 0.35 s post-break immunity are project-owned; final hit-stagger presentation remains separate
 ROOT BREAKER FINAL PRESENTATION: NOT ACCEPTED — current rooted-dirt ring is a technical test telegraph, not production VFX
 LIGHTNING FURROW DATA BINDING: IMPLEMENTED — 24-tick tell, 20-tick recovery, phase lane counts, 1.4 width, 12 length, Shock 35, donor SkillNumber 3 technical candidate
-LIGHTNING FURROW RUNTIME HIT GEOMETRY: READY FOR IMPLEMENTATION, NOT YET IMPLEMENTED — exact lane offsets/spacing/ground projection and Earthloong Shock proc source budget are now canon-closed; final VFX/readability acceptance remains separate
+LIGHTNING FURROW PROJECT RUNTIME: IMPLEMENTED IN SOURCE — committed target axis, exact 3/4-lane offsets, local-ground projection, wall/step clipping, one-hit-per-wave, 26% benchmark magic impact and Shock 35 application are bound; final VFX/readability acceptance remains separate
 RUNTIME SMOKE CHUNK LIFETIME: VERIFIED — CI harness now force-loads the verification chunk; prior failure was `UNLOADED_TO_CHUNK` with full HP/tickCount 0, not a combat regression
 LATEST FULL OPENWORLD CI: 35698061263 — SUCCESS — commit 40961bc2c40373725108f31c32c1e18039d73415
 REAL CLIENT VISUAL ATTACK REVIEW: NO
@@ -145,3 +145,17 @@ The implementation pass exposed several values that were previously described as
 - exact 55% HP transition ownership: current committed action/recovery finishes, then 28-tick Stormshed, then Phase 2 eligibility.
 
 These are canon corrections/precision bindings, not evidence that the final Lightning Furrow VFX or real-client hitbox readability has been accepted.
+
+
+## 2026-09-22 Phase-1 space-control source binding
+
+Source now additionally contains:
+
+- shared same-Lv Medium-MR enemy magic authoring bridge;
+- persistent-loadout-derived player max-poise publication and transient player-poise recovery/break state;
+- shared player Shock threshold/decay/Conductive state;
+- Earthloong Shock proc fixed source budget and poise pressure;
+- Lightning Furrow commit-time lane geometry with local ground projection;
+- exact Stormshed pending/28-tick transition state and 50% project incoming-damage multiplier.
+
+This source state is not a final presentation acceptance claim. Tail Scythe remains presentation-unbound, and Lightning Furrow/Stormshed technical particles are not the accepted signature VFX layer.

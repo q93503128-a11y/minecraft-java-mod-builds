@@ -6,7 +6,11 @@
   "lightningFurrow": {
     "phaseOneLaneCount": 3,
     "phaseTwoFirstLaneCount": 4,
-    "phaseTwoAlternatingLaneCounts": [3, 4]
+    "phaseTwoAlternatingLaneCounts": [3, 4],
+    "phaseOneLaneCenterOffsets": [-2.5, 0.0, 2.5],
+    "phaseTwoLaneCenterOffsets": [-3.75, -1.25, 1.25, 3.75],
+    "playerVerticalTolerance": 1.25,
+    "maximumGroundStep": 1.5
   },
   "actions": [
     {
@@ -85,6 +89,14 @@
       "perfectGuardable": true
     },
     {
+      "action": "LIGHTNING_FURROW",
+      "benchmarkDamageShare": 0.26,
+      "school": "MAGIC",
+      "guardPressure": null,
+      "guardable": false,
+      "perfectGuardable": false
+    },
+    {
       "action": "ROOT_BREAKER",
       "benchmarkDamageShare": 0.30,
       "school": "PHYSICAL",
@@ -143,6 +155,8 @@
       "tellTicks": 24,
       "recoveryTicks": 20,
       "radius": 0.0,
+      "minimumTargetRange": 5.0,
+      "maximumTargetRange": 12.0,
       "laneWidth": 1.4,
       "laneLength": 12.0,
       "shockBuildup": 35.0,
@@ -156,6 +170,8 @@
       "tellTicks": 20,
       "recoveryTicks": 20,
       "radius": 4.5,
+      "minimumTargetRange": 0.0,
+      "maximumTargetRange": 0.0,
       "laneWidth": 0.0,
       "laneLength": 0.0,
       "shockBuildup": 0.0,

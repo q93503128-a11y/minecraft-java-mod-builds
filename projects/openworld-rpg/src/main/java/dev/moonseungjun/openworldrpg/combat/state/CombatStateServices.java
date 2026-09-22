@@ -12,6 +12,8 @@ public final class CombatStateServices {
     private static final PlayerDefenseStateStore DEFENSE_STATES = new PlayerDefenseStateStore();
     private static final PlayerDefenseSnapshotStore DEFENSE_SNAPSHOTS =
             new PlayerDefenseSnapshotStore();
+    private static final PlayerPoiseStateStore PLAYER_POISE_STATES = new PlayerPoiseStateStore();
+    private static final PlayerShockStateStore SHOCK_STATES = new PlayerShockStateStore();
 
     private CombatStateServices() {
     }
@@ -36,6 +38,14 @@ public final class CombatStateServices {
         return DEFENSE_SNAPSHOTS;
     }
 
+    public static PlayerPoiseStateStore playerPoiseStates() {
+        return PLAYER_POISE_STATES;
+    }
+
+    public static PlayerShockStateStore shockStates() {
+        return SHOCK_STATES;
+    }
+
     public static void markCombatActivity(UUID playerId, long gameTick) {
         STATES.getOrCreate(playerId, gameTick).markCombatActivity(gameTick);
     }
@@ -50,5 +60,7 @@ public final class CombatStateServices {
         COMBAT_BUILDS.remove(playerId);
         DEFENSE_STATES.remove(playerId);
         DEFENSE_SNAPSHOTS.remove(playerId);
+        PLAYER_POISE_STATES.remove(playerId);
+        SHOCK_STATES.remove(playerId);
     }
 }

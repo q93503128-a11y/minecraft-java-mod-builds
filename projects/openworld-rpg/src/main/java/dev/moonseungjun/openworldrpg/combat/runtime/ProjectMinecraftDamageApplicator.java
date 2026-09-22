@@ -70,9 +70,11 @@ public final class ProjectMinecraftDamageApplicator {
         DamageSource source = new DamageSource(damageType, attacker);
 
         if (ExternalActorBindingRuntime.ownsDamageAuthority(target)) {
+            double encounterAdjustedDamage = finalDamage
+                    * R01EarthloongPhysicalEncounterRuntime.incomingDamageMultiplier(target);
             var application = ExternalActorBindingRuntime.applyProjectHealthDamage(
                     target,
-                    finalDamage,
+                    encounterAdjustedDamage,
                     proxyDamage -> ProjectDamageApplicationContext.authorizeNext(
                             target,
                             () -> target.hurtServer(

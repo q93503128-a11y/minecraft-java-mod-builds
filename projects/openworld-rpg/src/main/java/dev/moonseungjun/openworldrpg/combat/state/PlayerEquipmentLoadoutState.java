@@ -18,6 +18,7 @@ import java.util.Optional;
 public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
     private static final double WEAPON_FAMILY_POWER_GEAR_CAP = 0.60;
     private static final double GUARD_STRENGTH_GEAR_CAP = 0.50;
+    private static final double POISE_STAGGER_RESISTANCE_GEAR_CAP = 0.50;
 
     public static final Codec<PlayerEquipmentLoadoutState> CODEC = RecordCodecBuilder.create(instance ->
             instance.group(
@@ -105,6 +106,44 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
         return new EffectiveAttributes(vit, end, str, dex, intel, wil);
     }
 
+    public double aggregateArmorPoise() {
+        double result = 0.0;
+        for (EquippedCombatItem item : equipped) {
+            if (item.armorArchetype().isEmpty()) {
+                continue;
+            }
+            double fullSet = switch (item.armorArchetype().orElseThrow()) {
+                case LIGHT -> 0.0;
+                case MEDIUM -> 15.0;
+                case HEAVY -> 35.0;
+            };
+            double share = switch (item.slot()) {
+                case HEAD -> 0.15;
+                case CHEST -> 0.33;
+                case LEGS -> 0.25;
+                case GLOVES -> 0.12;
+                case BOOTS -> 0.15;
+                default -> throw new IllegalStateException(
+                        "Armor archetype published from non-armor slot: " + item.slot()
+                );
+            };
+            result += fullSet * share;
+        }
+        return result;
+    }
+
+    public double aggregatePoiseStaggerResistanceBonus() {
+        double result = 0.0;
+        for (EquippedCombatItem item : equipped) {
+            for (EquipmentCombatAffix affix : item.affixes()) {
+                if (affix.kind() == EquipmentCombatAffixKind.POISE_STAGGER_RESISTANCE) {
+                    result += affix.value();
+                }
+            }
+        }
+        return Math.min(result, POISE_STAGGER_RESISTANCE_GEAR_CAP);
+    }
+
     /**
      * Publishes canonical equipped Defense/MR and shield guard authority even with no main weapon.
      *
@@ -134,6 +173,9 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
                     case DEFENSE -> defenseBonus += affix.value();
                     case MAGIC_RESISTANCE -> magicResistanceBonus += affix.value();
                     case GUARD_STRENGTH -> guardStrengthBonus += affix.value();
+                    case POISE_STAGGER_RESISTANCE -> {
+                        // Published independently by aggregatePoiseStaggerResistanceBonus().
+                    }
                     default -> {
                         // Owned by primary/offense publishers or a later dedicated runtime.
                     }
@@ -197,8 +239,9 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
                         }
                     }
                     case POISE_OUTPUT -> poiseOutput += affix.value();
-                    case DEFENSE, MAGIC_RESISTANCE, GUARD_STRENGTH -> {
-                        // Published independently by aggregateDefenseSnapshot().
+                    case DEFENSE, MAGIC_RESISTANCE, GUARD_STRENGTH,
+                            POISE_STAGGER_RESISTANCE -> {
+                        // Published independently by defensive/poise publishers.
                     }
                 }
             }

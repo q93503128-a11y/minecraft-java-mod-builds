@@ -74,7 +74,13 @@ public final class R01EarthloongEncounterDataLoader {
         var furrow = data.lightningFurrow();
         if (furrow.phaseOneLaneCount() != 3
                 || furrow.phaseTwoFirstLaneCount() != 4
-                || !furrow.phaseTwoAlternatingLaneCounts().equals(java.util.List.of(3, 4))) {
+                || !furrow.phaseTwoAlternatingLaneCounts().equals(java.util.List.of(3, 4))
+                || !furrow.phaseOneLaneCenterOffsets().equals(
+                        java.util.List.of(-2.5, 0.0, 2.5))
+                || !furrow.phaseTwoLaneCenterOffsets().equals(
+                        java.util.List.of(-3.75, -1.25, 1.25, 3.75))
+                || Double.compare(furrow.playerVerticalTolerance(), 1.25) != 0
+                || Double.compare(furrow.maximumGroundStep(), 1.5) != 0) {
             throw new IllegalArgumentException(
                     "R01 Earthloong Lightning Furrow lane contract drifted."
             );
@@ -117,8 +123,15 @@ public final class R01EarthloongEncounterDataLoader {
         var impacts = data.impactRulesById();
         Set<R01EarthloongEncounterData.ActionId> expectedImpacts = EnumSet.of(
                 R01EarthloongEncounterData.ActionId.CLAW_SWEEP,
+                dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction
+                        .DamageSchool.PHYSICAL,
                 R01EarthloongEncounterData.ActionId.TAIL_SCYTHE,
+                dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction
+                        .DamageSchool.PHYSICAL,
                 R01EarthloongEncounterData.ActionId.QUARRY_RUSH,
+                dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction
+                        .DamageSchool.PHYSICAL,
+                R01EarthloongEncounterData.ActionId.LIGHTNING_FURROW,
                 R01EarthloongEncounterData.ActionId.ROOT_BREAKER
         );
         if (!impacts.keySet().equals(expectedImpacts)) {
@@ -156,8 +169,20 @@ public final class R01EarthloongEncounterDataLoader {
         );
         requireImpact(
                 impacts,
+                R01EarthloongEncounterData.ActionId.LIGHTNING_FURROW,
+                0.26,
+                dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction
+                        .DamageSchool.MAGIC,
+                null,
+                false,
+                false
+        );
+        requireImpact(
+                impacts,
                 R01EarthloongEncounterData.ActionId.ROOT_BREAKER,
                 0.30,
+                dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction
+                        .DamageSchool.PHYSICAL,
                 null,
                 false,
                 false
@@ -178,7 +203,7 @@ public final class R01EarthloongEncounterDataLoader {
                 spaceBindings,
                 new R01EarthloongEncounterData.SpaceControlBindingRule(
                         R01EarthloongEncounterData.ActionId.LIGHTNING_FURROW,
-                        24, 20, 0.0, 1.4, 12.0, 35.0, 0.0,
+                        24, 20, 0.0, 5.0, 12.0, 1.4, 12.0, 35.0, 0.0,
                         3, 25, true
                 )
         );
@@ -186,7 +211,7 @@ public final class R01EarthloongEncounterDataLoader {
                 spaceBindings,
                 new R01EarthloongEncounterData.SpaceControlBindingRule(
                         R01EarthloongEncounterData.ActionId.ROOT_BREAKER,
-                        20, 20, 4.5, 0.0, 0.0, 0.0, 75.0,
+                        20, 20, 4.5, 0.0, 0.0, 0.0, 0.0, 0.0, 75.0,
                         4, 50, true
                 )
         );
@@ -244,6 +269,8 @@ public final class R01EarthloongEncounterDataLoader {
         if (actual.tellTicks() < 0
                 || actual.recoveryTicks() < 0
                 || actual.radius() < 0.0
+                || actual.minimumTargetRange() < 0.0
+                || actual.maximumTargetRange() < actual.minimumTargetRange()
                 || actual.laneWidth() < 0.0
                 || actual.laneLength() < 0.0
                 || actual.shockBuildup() < 0.0
@@ -302,6 +329,8 @@ public final class R01EarthloongEncounterDataLoader {
                     R01EarthloongEncounterData.ImpactRule> impacts,
             R01EarthloongEncounterData.ActionId action,
             double benchmarkDamageShare,
+            dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction
+                    .DamageSchool school,
             dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority
                     .GuardPressureBand guardPressure,
             boolean guardable,
@@ -311,8 +340,7 @@ public final class R01EarthloongEncounterDataLoader {
         var expected = new R01EarthloongEncounterData.ImpactRule(
                 action,
                 benchmarkDamageShare,
-                dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction
-                        .DamageSchool.PHYSICAL,
+                school,
                 guardPressure,
                 guardable,
                 perfectGuardable

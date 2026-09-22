@@ -73,13 +73,52 @@ public final class ProjectCombatRules {
             double benchmarkHpShare
     ) {
         requireContentLevel(attackerLevel);
-        requireFiniteNonNegative("benchmarkHpShare", benchmarkHpShare);
-        if (benchmarkHpShare > 1.0) {
+        requireBenchmarkShare(benchmarkHpShare);
+        return benchmarkPlayerHealth(attackerLevel) * benchmarkHpShare / 0.75;
+    }
+
+    public static double mediumBenchmarkMagicResistance(int level) {
+        requireContentLevel(level);
+        double scale = gearScale(level);
+        return Math.round(2.0 * scale)
+                + Math.round(4.0 * scale)
+                + Math.round(3.0 * scale)
+                + Math.round(2.0 * scale)
+                + Math.round(2.0 * scale);
+    }
+
+    public static double rawEnemyMagicDamageFromBenchmarkShare(
+            int attackerLevel,
+            double benchmarkHpShare
+    ) {
+        requireContentLevel(attackerLevel);
+        requireBenchmarkShare(benchmarkHpShare);
+        double mitigationK = 75.0 * gearScale(attackerLevel);
+        double benchmarkMr = mediumBenchmarkMagicResistance(attackerLevel);
+        double taken = mitigationK / (mitigationK + benchmarkMr);
+        return benchmarkPlayerHealth(attackerLevel) * benchmarkHpShare / taken;
+    }
+
+    public static double maxPlayerPoise(
+            double endurance,
+            double armorPoise,
+            double poiseStaggerResistanceBonus
+    ) {
+        requireFiniteNonNegative("endurance", endurance);
+        requireFiniteNonNegative("armorPoise", armorPoise);
+        requireFiniteNonNegative("poiseStaggerResistanceBonus", poiseStaggerResistanceBonus);
+        if (poiseStaggerResistanceBonus > 0.50) {
             throw new IllegalArgumentException(
-                    "benchmarkHpShare must be inside [0, 1]."
+                    "poiseStaggerResistanceBonus exceeds the canonical +50% gear cap."
             );
         }
-        return benchmarkPlayerHealth(attackerLevel) * benchmarkHpShare / 0.75;
+        double base = 30.0 + armorPoise + 0.6 * Math.max(0.0, endurance - 5.0);
+        return base * (1.0 + poiseStaggerResistanceBonus);
+    }
+
+    public static int playerAilmentThreshold(double will) {
+        requireFiniteNonNegative("will", will);
+        return (int) Math.round(100.0 + 0.70 * Math.max(0.0, will - 5.0));
     }
 
     public static double attributeDamageMultiplier(double weightedStat) {
@@ -122,6 +161,13 @@ public final class ProjectCombatRules {
     public static double roundFinal(double amount) {
         requireFiniteNonNegative("amount", amount);
         return Math.round(amount);
+    }
+
+    private static void requireBenchmarkShare(double benchmarkHpShare) {
+        requireFiniteNonNegative("benchmarkHpShare", benchmarkHpShare);
+        if (benchmarkHpShare > 1.0) {
+            throw new IllegalArgumentException("benchmarkHpShare must be inside [0, 1].");
+        }
     }
 
     private static void requireContentLevel(int level) {
