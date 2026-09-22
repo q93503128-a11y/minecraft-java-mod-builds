@@ -101,8 +101,8 @@ Current technical binding status:
 
 - Claw Sweep ↔ donor `SkillNumber=1` / `woodlizard_attack`: dependency-only presentation-state bridge is runtime verified; project timing/hit authority remains separate;
 - Quarry Rush ↔ donor `SkillNumber=2` / `woodlizard_charge`: dependency-only presentation-state bridge is runtime verified; donor charging procedure semantics and damage are not used;
-- Lightning Furrow ↔ `woodlizard_skill1`: technical candidate only;
-- Root Breaker ↔ `woodlizard_roar`: technical candidate only;
+- Lightning Furrow ↔ `woodlizard_skill1`: technical candidate only; closed timing/width/length/lanes/Shock values are data-bound, but runtime hit geometry remains gated because exact lane-center offsets/spacing/layout are not specified by current canon;
+- Root Breaker ↔ `woodlizard_roar`: technical candidate; project-owned 20-tick tell / 4.5-block horizontal radius / impact / 20-tick recovery / tagged-prop break runtime is implemented and startup verified, but final VFX/hitbox presentation acceptance remains open;
 - Tail Scythe: no dedicated donor tail-scythe animation was proven by the pinned class surface, so presentation remains deliberately unbound.
 
 No candidate above is promoted to final player-facing binding until real Minecraft visual review confirms readable body motion, attack direction, model contact, camera scale and server hit area within the project acceptance rules.
@@ -119,8 +119,13 @@ PHASE-1 CLAW/TAIL/QUARRY CANONICAL IMPACT DATA/AUTHORITY: IMPLEMENTED + UNIT/BUI
 PHASE-1 PHYSICAL START GEOMETRY: IMPLEMENTED + UNIT VERIFIED — Claw 0°..120° <=3.5, Tail 60°..180° <=4.5 with intentional flank overlap, Quarry 5.0..9.0 + clear committed line
 CLAW/QUARRY DONOR PRESENTATION STATE BRIDGE: IMPLEMENTED + RUNTIME VERIFIED — SkillNumber 1/2 set + reset; donor damage/procedures remain non-authoritative
 TAIL SCYTHE FINAL PRESENTATION: UNBOUND — no accepted dedicated donor animation exists on the pinned surface
+ROOT BREAKER PROJECT RUNTIME: IMPLEMENTED + BUILD/SERVER/CLIENT-STARTUP VERIFIED — exact 40-tick proximity legality tracking, 20-tick tell, horizontal 4.5-block radius, direct impact, 20-tick recovery, tagged arena-prop break
+ROOT BREAKER PLAYER-POISE 75: FAIL-CLOSED SEAM ONLY — canonical partial-armor ArmorPoise publication remains technically under-specified
+ROOT BREAKER FINAL PRESENTATION: NOT ACCEPTED — current rooted-dirt ring is a technical test telegraph, not production VFX
+LIGHTNING FURROW DATA BINDING: IMPLEMENTED — 24-tick tell, 20-tick recovery, phase lane counts, 1.4 width, 12 length, Shock 35, donor SkillNumber 3 technical candidate
+LIGHTNING FURROW RUNTIME HIT GEOMETRY: GATED — current canon lacks exact lane-center offsets/spacing/layout; enemy Shock proc raw budget is also not closed
 RUNTIME SMOKE CHUNK LIFETIME: VERIFIED — CI harness now force-loads the verification chunk; prior failure was `UNLOADED_TO_CHUNK` with full HP/tickCount 0, not a combat regression
-LATEST FULL OPENWORLD CI: 35689727920 — SUCCESS
+LATEST FULL OPENWORLD CI: 35698061263 — SUCCESS — commit 40961bc2c40373725108f31c32c1e18039d73415
 REAL CLIENT VISUAL ATTACK REVIEW: NO
 HITBOX-TO-ANIMATION ACCEPTANCE: NO
 PLAYER-FACING EARTHLOONG COMBAT PLAYTESTED: NO

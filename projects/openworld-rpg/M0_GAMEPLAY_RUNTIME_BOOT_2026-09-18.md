@@ -1299,7 +1299,8 @@ Implemented:
 Still intentionally gated:
 
 - Tail Scythe runtime selection remains disabled because no accepted tail-attack presentation binding exists;
-- Lightning Furrow and Root Breaker runtime presentation/contact remain disabled until their final shaped VFX/presentation layer is accepted; they must not ship as generic particle placeholders;
+- Lightning Furrow runtime hit geometry remains disabled until its exact lane layout and final shaped electrical presentation are closed;
+- Root Breaker project timing/radius/direct-damage/arena-prop runtime is implemented, but its current rooted-dirt ring is TECHNICAL TEST PRESENTATION ONLY and its authored 75 player-poise pressure remains fail-closed until the canonical player-poise publisher exists;
 - full common threat generation for effective healing, barriers, prevented guard damage, perfect guard and Provoked remains a later shared-combat authority step;
 - authored arena-bound disengage/reset ownership is not claimed by this slice;
 - no client-feel, multiplayer-sync or final animation-quality claim is made yet.
@@ -1336,3 +1337,23 @@ Implemented from closed R01 canon:
 Lightning Furrow data now owns its closed 24-tick tell / 20-tick recovery / 1.4 lane width / 12-block length / Shock 35 and donor SkillNumber 3 technical candidate. Runtime hit geometry remains gated because the current canon does not specify exact lane-center offsets/spacing, and no final electrical signature layer is accepted yet.
 
 No arbitrary lane spacing, Shock-proc damage budget, or partial-armor poise share was invented in this pass.
+
+
+Root Breaker verification update:
+
+CODE REVIEWED: YES
+ROOT BREAKER SELECTOR/TIMING/RADIUS/DIRECT DAMAGE: IMPLEMENTED
+ROOT BREAKER TAGGED ARENA PROP BREAK: IMPLEMENTED
+ROOT BREAKER PLAYER POISE 75: AUTHORED SEAM PRESENT / EFFECT NOT YET APPLIED
+ROOT BREAKER FINAL PRESENTATION: NOT ACCEPTED — technical preview only
+LIGHTNING FURROW CLOSED DATA: BOUND
+LIGHTNING FURROW FINAL LANE GEOMETRY: NOT CLOSED IN CANON
+LIGHTNING FURROW DAMAGE/SHOCK RUNTIME: NOT IMPLEMENTED
+BUILD VERIFIED: YES — Build Openworld RPG run 35698061263, commit 40961bc2c40373725108f31c32c1e18039d73415
+JAR PRODUCED: YES
+CORE DEDICATED SERVER SMOKE: PASS
+GAMEPLAY DEPENDENCY SERVER SMOKE: PASS
+GAMEPLAY CLIENT STARTUP SMOKE: PASS
+R01 JOINED-CLIENT COMBAT TESTED: NO
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
