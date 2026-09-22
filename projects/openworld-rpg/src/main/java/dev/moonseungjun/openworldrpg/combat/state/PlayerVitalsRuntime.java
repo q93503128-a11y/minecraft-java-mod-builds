@@ -75,6 +75,12 @@ public final class PlayerVitalsRuntime {
         long gameTick = player.level().getGameTime();
         PlayerCombatState state = CombatStateServices.states()
                 .getOrCreate(player.getUUID(), gameTick);
+
+        boolean sprintAllowed = state.updateSprinting(player.isSprinting(), gameTick);
+        if (!sprintAllowed && player.isSprinting()) {
+            player.setSprinting(false);
+        }
+
         if (!state.canNaturalHpRecover(gameTick)) {
             return;
         }
