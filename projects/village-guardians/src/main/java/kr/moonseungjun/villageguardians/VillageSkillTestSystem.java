@@ -29,7 +29,7 @@ import java.util.UUID;
 
 /** Password-gated outdoor arena for observing real role-skill motion. */
 public final class VillageSkillTestSystem {
-    private static final int ARENA_RADIUS = 16;
+    private static final int ARENA_RADIUS = 34;
     private static final Set<UUID> ENABLED = new HashSet<>();
     private static final Set<UUID> DUMMIES = new HashSet<>();
     private static final Map<UUID, UUID> OWNERS = new HashMap<>();
@@ -104,6 +104,7 @@ public final class VillageSkillTestSystem {
     }
 
     public static String disable(ServerPlayer player) {
+        VillageRoleAbilitySystem.clearPlayerState(player);
         String result = clearTargets(player);
         ENABLED.remove(player.getUUID());
         clearLoadout(player.getUUID());
@@ -130,6 +131,7 @@ public final class VillageSkillTestSystem {
         if (!isEnabled(player)) return "먼저 외부 기술 시험장을 활성화해야 합니다.";
         VillageRole role = VillageRole.parse(roleId).orElse(null);
         if (role == null) return "알 수 없는 시험 직업입니다.";
+        VillageRoleAbilitySystem.clearPlayerState(player);
         TEST_ROLES.put(player.getUUID(), role);
         clearLoadout(player.getUUID());
         ensureDefaultLoadout(player);
@@ -149,6 +151,7 @@ public final class VillageSkillTestSystem {
         if (skill.id().equals(TEST_LOADOUTS.get(loadoutKey(player.getUUID(), otherSlot)))) {
             TEST_LOADOUTS.remove(loadoutKey(player.getUUID(), otherSlot));
         }
+        VillageRoleAbilitySystem.clearPlayerState(player);
         TEST_LOADOUTS.put(loadoutKey(player.getUUID(), safeSlot), skill.id());
         return skill.displayName() + "을(를) 시험 슬롯 " + (safeSlot == 0 ? "Z" : "X")
                 + "에 임시 장착했습니다.";
@@ -178,25 +181,30 @@ public final class VillageSkillTestSystem {
         clearTargets(player);
 
         int spawned = 0;
-        for (int i = 0; i < 6; i++) {
+        int[][] offsets = {
+                {0, 4}, {-5, 8}, {5, 8},
+                {-10, 14}, {0, 14}, {10, 14},
+                {-16, 21}, {0, 21}, {16, 21},
+                {-22, 28}, {0, 28}, {22, 28}
+        };
+        for (int i = 0; i < offsets.length; i++) {
             var dummy = EntityTypes.HUSK.create(level, EntitySpawnReason.EVENT);
             if (dummy == null) continue;
-            int row = i / 3;
-            int column = i % 3 - 1;
-            BlockPos pos = arena.offset(column * 4, 0, 4 - row * 6);
+            BlockPos pos = arena.offset(offsets[i][0], 0, -offsets[i][1]);
             dummy.snapTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
             dummy.setNoAi(true);
             dummy.setCanPickUpLoot(false);
             dummy.setSilent(true);
 
             var hp = dummy.getAttribute(Attributes.MAX_HEALTH);
-            if (hp != null) hp.setBaseValue(240 + i * 80);
+            if (hp != null) hp.setBaseValue(240 + i * 70);
             var knockback = dummy.getAttribute(Attributes.KNOCKBACK_RESISTANCE);
-            if (knockback != null) knockback.setBaseValue(i < 3 ? 0.25 : 0.75);
+            if (knockback != null) knockback.setBaseValue(i < 6 ? 0.25 : 0.75);
             dummy.setHealth(dummy.getMaxHealth());
             dummy.setCustomName(Component.literal("기술 시험 표적 " + (i + 1)
+                    + " · 거리 " + offsets[i][1]
                     + " · 체력 " + Math.round(dummy.getMaxHealth())
-                    + " · 밀림 " + (i < 3 ? "큼" : "작음")));
+                    + " · 밀림 " + (i < 6 ? "큼" : "작음")));
             dummy.setCustomNameVisible(true);
 
             UUID id = dummy.getUUID();
@@ -210,6 +218,7 @@ public final class VillageSkillTestSystem {
                 VillageWorldSystem.unmarkAllowedGameMob(id);
             }
         }
+        return "거리별 시험 표적 " + spawned + "개를 배치했습니다.";
         return "시험 표적 " + spawned + "개를 시험장 중앙에 배치했습니다.";
     }
 

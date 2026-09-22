@@ -83,7 +83,8 @@ public final class VillageSkillMeshLibrary {
 
             case "promotion_skill_cast" -> renderPromotionSkill(pose, out, basis, age, progress, state.extra, 0);
             case "promotion_skill_projectile" -> renderPromotionSkill(pose, out, basis, age, progress, state.extra, 1);
-            case "promotion_skill_field" -> renderPromotionSkill(pose, out, basis, age, progress, state.extra, 2);
+            case "promotion_skill_field", "promotion_skill_follow" ->
+                    renderPromotionSkill(pose, out, basis, age, progress, state.extra, 2);
             case "promotion_skill_impact" -> renderPromotionSkill(pose, out, basis, age, progress, state.extra, 3);
 
             case "turret_ballista_shot" -> renderDefenseShot(pose, out, state, age, progress, 0);
@@ -206,7 +207,8 @@ public final class VillageSkillMeshLibrary {
             default -> 0.86;
         };
         double honestRadius = phase >= 2 ? radius : Math.min(radius, 4.5);
-        double readableRadius = Math.max(1.0, honestRadius * tierScale * phaseScale);
+        double readableRadius = Math.max(1.0,
+                phase >= 2 ? honestRadius : honestRadius * tierScale * phaseScale);
 
         int red = rgba(255, 76, 61, (int) (230 * fade));
         int darkRed = rgba(176, 34, 44, (int) (205 * fade));
@@ -224,14 +226,20 @@ public final class VillageSkillMeshLibrary {
         switch (skill) {
             // Vanguard: blade geometry, forward pressure, standards and rupture.
             case "vanguard_frontline_rend" -> {
-                bladeFan(pose, out, b, 3, 1.28, 3.15 * tierScale, 0.58, 0.12,
-                        gold, red);
-                if (phase == 3) {
-                    horizontalSlash(pose, out, b, readableRadius * 1.22, 0.86,
-                            0.18, 0.30, withAlpha(gold, 205));
-                    for (int i = -1; i <= 1; i++) {
-                        groundCrack(pose, out, b, -0.32 + i * 0.32,
-                                0.4, Math.max(3.0, readableRadius), 0.055, withAlpha(red, 145));
+                if (phase == 1) {
+                    energyBlade(pose, out, b, b.local(0.0, 0.58, -0.45),
+                            b.local(0.0, 0.82, 3.15 * tierScale), 0.12, gold);
+                } else if (phase == 0) {
+                    bladeFan(pose, out, b, 3, 1.28, 3.15 * tierScale, 0.58, 0.12,
+                            gold, red);
+                } else {
+                    horizontalSlash(pose, out, b, readableRadius * 0.92, 0.86,
+                            0.16, 0.26, withAlpha(gold, 205));
+                    if (phase == 3) {
+                        for (int i = -1; i <= 1; i++) {
+                            groundCrack(pose, out, b, -0.32 + i * 0.32,
+                                    0.4, Math.max(2.0, readableRadius * 0.92), 0.055, withAlpha(red, 145));
+                        }
                     }
                 }
             }
@@ -268,13 +276,15 @@ public final class VillageSkillMeshLibrary {
                 }
             }
             case "vanguard_sword_chain" -> {
-                bladeFan(pose, out, b, 5, 1.78, 3.45 * tierScale, 0.74, 0.105,
-                        gold, red);
-                for (int i = 0; i < 5; i++) {
-                    double step = fract(progress * 2.2 + i * 0.16);
-                    Vec3 root = b.local((i - 2) * 0.32, 0.28 + step * 0.38, 0.25);
-                    Vec3 tip = root.add(b.forward.scale(1.2 + step * 2.3));
-                    prism(pose, out, root, tip, 0.035, withAlpha(i % 2 == 0 ? gold : red, 120));
+                if (phase == 1) {
+                    energyBlade(pose, out, b, b.local(0.0, 0.70, -0.55),
+                            b.local(0.0, 0.95, 3.55 * tierScale), 0.105, gold);
+                } else if (phase == 0) {
+                    bladeFan(pose, out, b, 5, 1.78, 3.45 * tierScale, 0.74, 0.105,
+                            gold, red);
+                } else {
+                    slashArc(pose, out, b, age * 0.05, Math.max(1.0, readableRadius * 0.72),
+                            0.72, 1.15, 0.08, withAlpha(gold, 180));
                 }
             }
             case "vanguard_life_sever" -> {
@@ -325,10 +335,18 @@ public final class VillageSkillMeshLibrary {
                 }
             }
             case "ranger_split_shot" -> {
-                bowArc(pose, out, b, 1.55 * tierScale, 2.20 * tierScale,
-                        0.14, gold, green);
-                bladeFan(pose, out, b, 5, 1.95, 2.75 * tierScale,
-                        1.25, 0.055, green, gold);
+                if (phase == 0) {
+                    bowArc(pose, out, b, 1.55 * tierScale, 2.20 * tierScale,
+                            0.14, gold, green);
+                    bladeFan(pose, out, b, 5, 1.95, 2.75 * tierScale,
+                            1.25, 0.055, green, gold);
+                } else if (phase == 1) {
+                    customArrow(pose, out, b, b.local(0.0, 1.05, 0.45),
+                            2.6, 0.055, green);
+                } else {
+                    ring(pose, out, b, readableRadius * 0.82, 0.82, 0.045, 40,
+                            withAlpha(green, 150), age * 0.03);
+                }
             }
             case "ranger_aa_intercept" -> {
                 antiAirCrown(pose, out, b, phase >= 2 ? readableRadius : 2.6,
@@ -352,18 +370,29 @@ public final class VillageSkillMeshLibrary {
                 }
             }
             case "ranger_star_tracker" -> {
-                constellationWeb(pose, out, b, 5, 1.5 * tierScale,
-                        1.38, age * 0.045, cyan, gold, true);
-                if (phase == 1) {
-                    customArrow(pose, out, b, b.local(0.0, 1.25, 0.7),
-                            2.4, 0.065, gold);
+                if (phase == 0) {
+                    constellationWeb(pose, out, b, 5, 1.5 * tierScale,
+                            1.38, age * 0.045, cyan, gold, true);
+                } else if (phase == 1) {
+                    customArrow(pose, out, b, b.local(0.0, 1.25, 0.55),
+                            2.5, 0.07, gold);
+                    ringVertical(pose, out, b, 0.42, 1.25, 0.035, 28,
+                            withAlpha(cyan, 125), age * 0.08);
+                } else {
+                    ringVertical(pose, out, b, Math.min(readableRadius, 1.8),
+                            1.05, 0.055, 44, withAlpha(gold, 180), -age * 0.05);
                 }
             }
             case "ranger_constellation" -> {
-                stellarLance(pose, out, b, phase == 1 ? 5.8 : 4.2,
-                        0.16 * tierScale, cyan, gold, green);
-                constellationWeb(pose, out, b, 6, 0.92 * tierScale,
-                        1.22, -age * 0.032, cyan, green, false);
+                if (phase == 1) {
+                    stellarLance(pose, out, b, 5.8,
+                            0.16 * tierScale, cyan, gold, green);
+                } else {
+                    stellarLance(pose, out, b, 4.2,
+                            0.16 * tierScale, cyan, gold, green);
+                    constellationWeb(pose, out, b, 6, 0.92 * tierScale,
+                            1.22, -age * 0.032, cyan, green, false);
+                }
             }
             case "ranger_sky_lock" -> {
                 skyCage(pose, out, b, phase >= 2 ? readableRadius : 3.4,
@@ -401,11 +430,17 @@ public final class VillageSkillMeshLibrary {
                         0.08, frost, pale);
             }
             case "arcanist_lightning_chain" -> {
-                lightningNodeWeb(pose, out, b, 6, 2.2 * tierScale,
-                        1.1, age, violet, cyan);
-                if (phase == 3) {
-                    verticalPillar(pose, out, b, 0.18, 4.8 * tierScale,
-                            withAlpha(cyan, 150));
+                if (phase == 1) {
+                    jaggedBolt(pose, out, b.local(0.0, 1.05, -0.7),
+                            b.local(0.0, 1.15, 3.6), 9, 0.055,
+                            withAlpha(cyan, 205), (long) age + 91L);
+                } else {
+                    lightningNodeWeb(pose, out, b, 6, 2.2 * tierScale,
+                            1.1, age, violet, cyan);
+                    if (phase == 3) {
+                        verticalPillar(pose, out, b, 0.18, 4.8 * tierScale,
+                                withAlpha(cyan, 150));
+                    }
                 }
             }
             case "arcanist_gravity_storm" -> {
@@ -657,7 +692,7 @@ public final class VillageSkillMeshLibrary {
         Vec3 left = b.local(-width, 0.20, 0.0);
         Vec3 right = b.local(width, 0.20, 0.0);
         Vec3 upper = b.local(0.0, 2.05, 0.35);
-        quadTwoSided(pose, out, left, right, nose, nose, withAlpha(armor, 125));
+        triangleTwoSided(pose, out, left, right, nose, withAlpha(armor, 125));
         prism(pose, out, left, nose, 0.12, armor);
         prism(pose, out, right, nose, 0.12, armor);
         prism(pose, out, upper, nose, 0.13, trim);
@@ -686,27 +721,24 @@ public final class VillageSkillMeshLibrary {
     private static void bowArc(
             PoseStack.Pose pose, VertexConsumer out, Basis b,
             double width, double height, double thickness, int limbColor, int stringColor) {
-        int segments = 8;
-        Vec3 prevLeft = null;
-        Vec3 prevRight = null;
+        int segments = 12;
+        Vec3 previous = null;
+        double bottomY = 0.35;
         for (int i = 0; i <= segments; i++) {
             double t = i / (double) segments;
-            double y = 0.35 + t * height;
-            double bend = Math.sin(t * Math.PI) * width * 0.34;
-            Vec3 left = b.local(-width + bend, y, 0.0);
-            Vec3 right = b.local(width - bend, y, 0.0);
-            if (prevLeft != null) {
-                prism(pose, out, prevLeft, left, thickness, limbColor);
-                prism(pose, out, prevRight, right, thickness, limbColor);
-            }
-            prevLeft = left;
-            prevRight = right;
+            double y = bottomY + t * height;
+            double x = Math.sin(t * Math.PI) * width;
+            Vec3 current = b.local(x, y, 0.0);
+            if (previous != null) prism(pose, out, previous, current, thickness, limbColor);
+            previous = current;
         }
-        Vec3 top = b.local(0.0, 0.35 + height, 0.0);
-        Vec3 bottom = b.local(0.0, 0.35, 0.0);
-        Vec3 nock = b.local(0.0, 0.35 + height * 0.5, -0.55);
+        Vec3 bottom = b.local(0.0, bottomY, 0.0);
+        Vec3 top = b.local(0.0, bottomY + height, 0.0);
+        Vec3 nock = b.local(width * 0.18, bottomY + height * 0.5, -0.62);
         prism(pose, out, top, nock, thickness * 0.38, stringColor);
         prism(pose, out, bottom, nock, thickness * 0.38, stringColor);
+        prism(pose, out, b.local(width * 0.82, bottomY + height * 0.5, 0.0),
+                nock, thickness * 0.24, withAlpha(stringColor, 145));
     }
 
     private static void hawkCrest(
@@ -730,7 +762,8 @@ public final class VillageSkillMeshLibrary {
                     Math.sin(a) * radius * 0.58);
             Vec3 tip = b.local(Math.cos(a) * radius * 0.74, 2.5 + (i % 2) * 0.45,
                     Math.sin(a) * radius * 0.74);
-            customArrow(pose, out, b, base.add(0.0, 0.65, 0.0), 1.35, 0.045,
+            customArrow(pose, out, Basis.from(new Vec3(0.0, 1.0, 0.0)),
+                    base.add(0.0, 0.65, 0.0), 1.35, 0.045,
                     i % 2 == 0 ? primary : secondary);
             prism(pose, out, base, tip, 0.035, withAlpha(primary, 120));
         }
@@ -745,7 +778,8 @@ public final class VillageSkillMeshLibrary {
             double a = i * TAU / count;
             Vec3 p = b.local(Math.cos(a) * radius * 0.68,
                     height - (i % 3) * 0.18, Math.sin(a) * radius * 0.68);
-            customArrow(pose, out, b, p, 1.15 + (i % 2) * 0.25, 0.038, arrowColor);
+            customArrow(pose, out, Basis.from(new Vec3(0.0, -1.0, 0.0)),
+                    p, 1.15 + (i % 2) * 0.25, 0.038, arrowColor);
             prism(pose, out, p, p.add(0.0, -height * 0.78, 0.0), 0.025,
                     withAlpha(canopyColor, 95));
         }

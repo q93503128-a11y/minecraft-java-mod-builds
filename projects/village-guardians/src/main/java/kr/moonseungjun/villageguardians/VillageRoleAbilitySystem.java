@@ -68,6 +68,7 @@ public final class VillageRoleAbilitySystem {
     private static final List<ScheduledAction> SCHEDULED = new ArrayList<>();
     private static final List<AreaState> AREAS = new ArrayList<>();
     private static final Map<UUID, MovingSkill> MOVING = new LinkedHashMap<>();
+    private static final Map<UUID, DashState> DASHES = new HashMap<>();
     private static boolean spawningGeneratedArrow;
     private static boolean replayingEcho;
 
@@ -99,9 +100,41 @@ public final class VillageRoleAbilitySystem {
         SCHEDULED.clear();
         AREAS.clear();
         MOVING.clear();
+        DASHES.clear();
         VillageSkillEffectSystem.reset();
         spawningGeneratedArrow = false;
         replayingEcho = false;
+    }
+
+    public static void clearPlayerState(ServerPlayer player) {
+        if (player == null) return;
+        UUID id = player.getUUID();
+        SPIN_UNTIL.remove(id); SPIN_SCALE.remove(id); RALLY_SCALE.remove(id);
+        RAPID_UNTIL.remove(id); RAPID_SCALE.remove(id); RAPID_DRAW_TICKS.remove(id);
+        RICOCHET_UNTIL.remove(id); RICOCHET_SCALE.remove(id);
+        ARROW_RAIN_READY.remove(id); MEGA_ARROW_READY.remove(id);
+        FORTRESS_UNTIL.remove(id); FORTRESS_SCALE.remove(id);
+        AEGIS_UNTIL.remove(id); AEGIS_SCALE.remove(id);
+        CHARGE_UNTIL.remove(id); LAST_AEGIS_DASH.remove(id); SLAMS.remove(id); DASHES.remove(id);
+        SCHEDULED.removeIf(action -> action.owner().equals(id));
+        AREAS.removeIf(area -> area.owner().equals(id));
+        RICOCHET_HOPS.removeIf(hop -> hop.owner().equals(id));
+        PRE_SCALED_RICOCHET_DAMAGE.removeIf(key -> key.owner().equals(id));
+        if (player.level() instanceof ServerLevel level) {
+            Iterator<Map.Entry<UUID, MovingSkill>> iterator = MOVING.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<UUID, MovingSkill> entry = iterator.next();
+                if (!entry.getValue().owner().equals(id)) continue;
+                Entity projectile = level.getEntity(entry.getKey());
+                if (projectile != null) projectile.discard();
+                if (entry.getValue().effectId() != null) {
+                    Entity visual = level.getEntity(entry.getValue().effectId());
+                    if (visual != null) visual.discard();
+                }
+                iterator.remove();
+            }
+            VillageSkillEffectSystem.clearOwned(level, player);
+        }
     }
 
     /**
@@ -419,22 +452,10 @@ public final class VillageRoleAbilitySystem {
                 play(level, player.position(), SoundEvents.PLAYER_ATTACK_STRONG, 1.35f, 0.58f);
             }
             case VANGUARD_ABSOLUTE_BREAK -> {
-                player.setDeltaMovement(forward.scale(1.75).add(0.0, 0.08, 0.0));
-                player.hurtMarked = true;
                 float damage = (11.5f + playerLevel * 0.46f) * power;
-                Set<UUID> hit = new HashSet<>();
-                for (int i = 0; i < 11; i++) {
-                    Vec3 center = player.position().add(forward.scale(1.0 + i * 1.35));
-                    for (Mob target : targetsNear(level, player, center, 2.8, 24)) {
-                        if (!hit.add(target.getUUID())) continue;
-                        hurt(level, player, target, damage, VillageRpgSystem.SkillAttackProfile.MULTI_HIT);
-                        target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 80, 1, false, false, true));
-                        target.push(forward.x * 1.45, 0.18, forward.z * 1.45);
-                        target.hurtMarked = true;
-                    }
-                }
-                VillageSkillEffectSystem.promotionField(level, player, skill,
-                        player.position(), forward, 20, 11.0);
+                startDash(level, player, skill, now, forward, 10, 1.15,
+                        damage, 2.8, 1.45, true);
+                VillageSkillEffectSystem.promotionFollow(level, player, skill, forward, 14, 11.0);
                 play(level, player.position(), SoundEvents.ENDER_DRAGON_FLAP, 0.95f, 1.20f);
                 play(level, player.position(), SoundEvents.PLAYER_ATTACK_STRONG, 1.35f, 0.60f);
             }
@@ -515,13 +536,8 @@ public final class VillageRoleAbilitySystem {
                 int limit = Math.min(4, candidates.size());
                 for (int i = 0; i < limit; i++) {
                     Mob target = candidates.get(i);
-                    hurt(level, player, target, damage, VillageRpgSystem.SkillAttackProfile.BURST_AREA);
-                    target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 200, 0, false, false, true));
-                    Vec3 direction = target.getEyePosition().subtract(player.getEyePosition()).normalize();
-                    VillageSkillEffectSystem.promotionProjectile(level, player, skill,
-                            player.getEyePosition(), direction, 18, 3.2f);
-                    VillageSkillEffectSystem.promotionImpact(level, player, skill,
-                            target.position(), direction, 2.4);
+                    launchPromotionTrackingAt(level, player, skill, target,
+                            2.95, 72, damage, 1.45, specialRank + 1);
                 }
                 play(level, player.position(), SoundEvents.CROSSBOW_SHOOT, 1.15f, 1.20f);
             }
@@ -616,8 +632,9 @@ public final class VillageRoleAbilitySystem {
                 double radius = 10.5;
                 int until = Math.max(170, duration);
                 AREAS.add(new AreaState(player.getUUID(), AreaKind.TORNADO, center,
-                        now + until, radius, power, specialRank + 1, 0));
-                VillageSkillEffectSystem.promotionField(level, player, skill, center, sight, until, radius);
+                        now + until, radius, power, specialRank + 1, 0, sight));
+                VillageSkillEffectSystem.promotionMovingField(
+                        level, player, skill, center, sight, until, radius, 0.24f);
                 play(level, center, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), 1.25f, 0.60f);
             }
             case ARCANIST_SOLAR_CORE -> {
@@ -723,7 +740,7 @@ public final class VillageRoleAbilitySystem {
                 play(level, player.position(), SoundEvents.AMETHYST_BLOCK_CHIME, 1.15f, 1.35f);
             }
             case LUMINAR_RESURRECTION_HYMN -> {
-                List<ServerPlayer> affected = allies(player, -1.0);
+                List<ServerPlayer> affected = alliesIncludingDowned(player);
                 float heal = (11.0f + playerLevel * 0.42f) * power;
                 for (ServerPlayer ally : affected) {
                     if (VillageRespawnSystem.isDowned(ally)) {
@@ -811,21 +828,10 @@ public final class VillageRoleAbilitySystem {
                 play(level, player.position(), SoundEvents.SHIELD_BLOCK.value(), 1.5f, 0.56f);
             }
             case WARDEN_FORTRESS_CHARGE -> {
-                player.setDeltaMovement(forward.scale(1.60).add(0.0, 0.08, 0.0));
-                player.hurtMarked = true;
                 float damage = (10.0f + playerLevel * 0.40f) * power;
-                Set<UUID> hit = new HashSet<>();
-                for (int i = 0; i < 10; i++) {
-                    Vec3 center = player.position().add(forward.scale(1.0 + i * 1.40));
-                    for (Mob target : targetsNear(level, player, center, 3.0, 24)) {
-                        if (!hit.add(target.getUUID())) continue;
-                        hurt(level, player, target, damage, VillageRpgSystem.SkillAttackProfile.MULTI_HIT);
-                        target.push(forward.x * 1.55, 0.18, forward.z * 1.55);
-                        target.hurtMarked = true;
-                    }
-                }
-                VillageSkillEffectSystem.promotionField(level, player, skill,
-                        player.position(), forward, 20, 12.0);
+                startDash(level, player, skill, now, forward, 9, 1.08,
+                        damage, 3.0, 1.55, false);
+                VillageSkillEffectSystem.promotionFollow(level, player, skill, forward, 13, 12.0);
                 play(level, player.position(), SoundEvents.SHIELD_BLOCK.value(), 1.35f, 0.72f);
             }
             case WARDEN_ABSOLUTE_FORMATION -> {
@@ -892,6 +898,37 @@ public final class VillageRoleAbilitySystem {
                 damage, radius, specialRank, origin, visual == null ? null : visual.getUUID(), skill));
     }
 
+    private static void launchPromotionTrackingAt(
+            ServerLevel level,
+            ServerPlayer player,
+            VillageRoleSkillSystem.ActiveSkill skill,
+            Mob target,
+            double speed,
+            int maxAge,
+            float damage,
+            double radius,
+            int specialRank) {
+        if (target == null || !target.isAlive()) return;
+        Vec3 origin = player.getEyePosition();
+        Vec3 direction = target.getEyePosition().subtract(origin);
+        if (direction.lengthSqr() < 1.0E-6) direction = horizontalLook(player);
+        direction = direction.normalize();
+        var projectile = EntityTypes.SNOWBALL.create(level, EntitySpawnReason.EVENT);
+        if (projectile == null) return;
+        projectile.setOwner(player);
+        projectile.setItem(ItemStack.EMPTY);
+        projectile.setInvisible(true);
+        projectile.setPos(origin.x, origin.y, origin.z);
+        projectile.setNoGravity(true);
+        projectile.setDeltaMovement(direction.scale(speed));
+        if (!level.addFreshEntity(projectile)) return;
+        VillageSkillEffectEntity visual = VillageSkillEffectSystem.promotionProjectile(
+                level, player, skill, origin, direction, maxAge, 0.0f);
+        MOVING.put(projectile.getUUID(), new MovingSkill(player.getUUID(), MovingKind.TRACKING_ARROW,
+                maxAge, damage, radius, specialRank, origin,
+                visual == null ? null : visual.getUUID(), skill, target.getUUID(), speed));
+    }
+
     private static void promotionStrike(
             ServerLevel level,
             ServerPlayer player,
@@ -936,6 +973,7 @@ public final class VillageRoleAbilitySystem {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (!(player.level() instanceof ServerLevel level) || VillageRespawnSystem.isDowned(player)) continue;
             UUID id = player.getUUID();
+            tickDash(level, player, id, now);
             tickRapidBow(player, id, now);
             long spinUntil = SPIN_UNTIL.getOrDefault(id, 0L);
             if (spinUntil >= now) {
@@ -1041,6 +1079,52 @@ public final class VillageRoleAbilitySystem {
         // unlike only changing a duration value inside an item-use tick event.
         player.releaseUsingItem();
         RAPID_DRAW_TICKS.remove(id);
+    }
+
+    private static void startDash(
+            ServerLevel level,
+            ServerPlayer player,
+            VillageRoleSkillSystem.ActiveSkill skill,
+            long now,
+            Vec3 direction,
+            int ticks,
+            double speed,
+            float damage,
+            double radius,
+            double knockback,
+            boolean weakness) {
+        Vec3 forward = horizontal(direction);
+        DashState dash = new DashState(skill, now + Math.max(1, ticks), forward,
+                speed, damage, radius, knockback, weakness, new HashSet<>());
+        DASHES.put(player.getUUID(), dash);
+        player.setDeltaMovement(forward.scale(speed).add(0.0, 0.03, 0.0));
+        player.hurtMarked = true;
+    }
+
+    private static void tickDash(
+            ServerLevel level, ServerPlayer player, UUID id, long now) {
+        DashState dash = DASHES.get(id);
+        if (dash == null) return;
+        if (now > dash.until()) {
+            DASHES.remove(id);
+            return;
+        }
+        player.setDeltaMovement(dash.direction().scale(dash.speed()).add(0.0, 0.03, 0.0));
+        player.hurtMarked = true;
+        Vec3 center = player.position().add(dash.direction().scale(1.1));
+        for (Mob target : targetsNear(level, player, center, dash.radius(), 40)) {
+            if (!dash.hit().add(target.getUUID())) continue;
+            hurt(level, player, target, dash.damage(), VillageRpgSystem.SkillAttackProfile.MULTI_HIT);
+            if (dash.weakness()) {
+                target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 80, 1, false, false, true));
+            }
+            target.push(dash.direction().x * dash.knockback(), 0.16, dash.direction().z * dash.knockback());
+            target.hurtMarked = true;
+            if (dash.skill() != null && dash.skill().promotionTier() > 0) {
+                VillageSkillEffectSystem.promotionImpact(
+                        level, player, dash.skill(), target.position(), dash.direction(), dash.radius());
+            }
+        }
     }
 
     private static void tickTrackingArrows(MinecraftServer server, long now) {
@@ -1198,7 +1282,9 @@ public final class VillageRoleAbilitySystem {
                     if (now % 20L == 0L) play(level, area.center(), SoundEvents.GLASS_HIT, 0.55f, 0.62f);
                 }
                 case TORNADO -> {
-                    Vec3 next = area.center().add(horizontalLook(owner).scale(1.20));
+                    Vec3 travel = area.direction().lengthSqr() > 1.0E-6
+                            ? area.direction() : horizontalLook(owner);
+                    Vec3 next = area.center().add(travel.scale(1.20));
                     area.moveTo(next);
                     for (Mob target : targetsNear(level, owner, next, area.radius(), 48)) {
                         Vec3 pull = next.subtract(target.position());
@@ -1259,6 +1345,18 @@ public final class VillageRoleAbilitySystem {
                 continue;
             }
             Entity entity = level.getEntity(entry.getKey());
+            if (moving.kind() == MovingKind.TRACKING_ARROW && entity != null) {
+                Entity tracked = moving.trackingTarget() == null ? null : level.getEntity(moving.trackingTarget());
+                if (tracked instanceof Mob target && target.isAlive()) {
+                    Vec3 desired = target.getEyePosition().subtract(entity.position());
+                    if (desired.lengthSqr() > 1.0E-6) {
+                        entity.setDeltaMovement(desired.normalize().scale(moving.trackingSpeed()));
+                    }
+                } else {
+                    entity.discard();
+                }
+            }
+
             Vec3 previous = moving.lastPosition();
             Vec3 position = entity == null ? previous : entity.position();
             boolean blocked = false;
@@ -1275,10 +1373,33 @@ public final class VillageRoleAbilitySystem {
             }
             moving.lastPosition(position);
             moving.age(moving.age() + 1);
-            List<Mob> hits = moving.kind() == MovingKind.FIRE_ORB
-                    ? fireOrbContacts(level, owner, position, moving.specialRank(), 40)
-                    : targetsNear(level, owner, position, moving.radius(), 40);
+
+            if (moving.effectId() != null) {
+                Entity visualEntity = level.getEntity(moving.effectId());
+                if (visualEntity instanceof VillageSkillEffectEntity visual) {
+                    visual.setPos(position);
+                    if (entity != null && entity.getDeltaMovement().lengthSqr() > 1.0E-6) {
+                        visual.setDirection(entity.getDeltaMovement().normalize());
+                    }
+                }
+            }
+
+            List<Mob> hits;
+            if (moving.kind() == MovingKind.FIRE_ORB) {
+                hits = fireOrbContacts(level, owner, position, moving.specialRank(), 40);
+            } else if (moving.kind() == MovingKind.TRACKING_ARROW) {
+                Entity tracked = moving.trackingTarget() == null ? null : level.getEntity(moving.trackingTarget());
+                if (tracked instanceof Mob target && target.isAlive()
+                        && target.getEyePosition().distanceToSqr(position) <= moving.radius() * moving.radius()) {
+                    hits = List.of(target);
+                } else {
+                    hits = List.of();
+                }
+            } else {
+                hits = targetsNear(level, owner, position, moving.radius(), 40);
+            }
             boolean expired = entity == null || !entity.isAlive() || blocked || moving.age() >= moving.maxAge();
+
             switch (moving.kind()) {
                 case FIRE_ORB -> {
                     if (hits.isEmpty() && !expired) continue;
@@ -1322,6 +1443,17 @@ public final class VillageRoleAbilitySystem {
                     }
                     play(level, position, SoundEvents.GENERIC_EXPLODE.value(), 1.3f, 0.62f);
                 }
+                case TRACKING_ARROW -> {
+                    if (hits.isEmpty() && !expired) continue;
+                    if (!hits.isEmpty()) {
+                        Mob target = hits.getFirst();
+                        hurt(level, owner, target, moving.damage(), VillageRpgSystem.SkillAttackProfile.BURST_AREA);
+                        target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 200, 0, false, false, true));
+                        VillageSkillEffectSystem.promotionImpact(level, owner, moving.promotionSkill(),
+                                target.position(), target.position().subtract(owner.position()), moving.radius());
+                        play(level, target.position(), SoundEvents.ARROW_HIT_PLAYER, 0.9f, 1.28f);
+                    }
+                }
             }
             if (entity != null) entity.discard();
             if (moving.effectId() != null) {
@@ -1351,6 +1483,7 @@ public final class VillageRoleAbilitySystem {
         AEGIS_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
         AEGIS_SCALE.keySet().removeIf(id -> AEGIS_UNTIL.getOrDefault(id, 0L) < now);
         CHARGE_UNTIL.entrySet().removeIf(entry -> entry.getValue() < now);
+        DASHES.entrySet().removeIf(entry -> entry.getValue().until() < now);
     }
 
     public static void handleArrowLoose(ArrowLooseEvent event) {
@@ -1617,18 +1750,14 @@ public final class VillageRoleAbilitySystem {
     private static void shieldCharge(ServerLevel level, ServerPlayer player,
                                      float power, float durationMultiplier, int specialRank) {
         player.swing(InteractionHand.OFF_HAND, true);
-        VillageSkillEffectSystem.shieldCharge(level, player, horizontalLook(player));
-        int steps = 5 + Math.min(4, Math.max(0, Math.round((durationMultiplier - 1.0f) * 4.0f)));
+        Vec3 direction = horizontalLook(player);
+        VillageSkillEffectSystem.shieldCharge(level, player, direction);
+        int ticks = 5 + Math.min(4, Math.max(0, Math.round((durationMultiplier - 1.0f) * 4.0f)));
         double contactRadius = 2.3 + specialRank * 0.22;
-        for (int i = 0; i < steps; i++) {
-            Vec3 center = player.position().add(horizontalLook(player).scale(1.0 + i * 1.2));
-            for (Mob target : targetsNear(level, player, center, contactRadius, 12 + specialRank * 3)) {
-                hurt(level, player, target,
-                        (5.5f + VillageCouncilState.levelOf(player.getUUID()) * 0.3f) * power,
-                        VillageRpgSystem.SkillAttackProfile.MULTI_HIT);
-                knockFrom(player.position(), target, 1.15 + specialRank * 0.07, 0.12);
-            }
-        }
+        float damage = (5.5f + VillageCouncilState.levelOf(player.getUUID()) * 0.3f) * power;
+        startDash(level, player, VillageRoleSkillSystem.ActiveSkill.WARDEN_TAUNT,
+                level.getGameTime(), direction, ticks, 0.88,
+                damage, contactRadius, 1.15 + specialRank * 0.07, false);
         play(level, player.position(), SoundEvents.SHIELD_BLOCK.value(), 1.15f, 0.82f);
     }
 
@@ -1694,14 +1823,12 @@ public final class VillageRoleAbilitySystem {
     private static void cleanseAllies(ServerPlayer player, float heal, int duration, int specialRank) {
         List<ServerPlayer> affected = allies(player, -1.0);
         for (ServerPlayer ally : affected) {
-            ally.removeEffect(MobEffects.POISON);
-            ally.removeEffect(MobEffects.WITHER);
-            ally.removeEffect(MobEffects.WEAKNESS);
-            ally.removeEffect(MobEffects.SLOWNESS);
-            ally.removeEffect(MobEffects.BLINDNESS);
-            ally.removeEffect(MobEffects.HUNGER);
-            ally.removeEffect(MobEffects.NAUSEA);
-            ally.removeEffect(MobEffects.MINING_FATIGUE);
+            for (MobEffectInstance effect : List.copyOf(ally.getActiveEffects())) {
+                if (effect.getEffect().value().getCategory()
+                        == net.minecraft.world.effect.MobEffectCategory.HARMFUL) {
+                    ally.removeEffect(effect.getEffect());
+                }
+            }
             healWithOverflowBarrier(ally, heal, specialRank);
             ally.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,
                     Math.max(50, duration / 2), Math.min(1, specialRank / 3), false, false, true));
@@ -1721,11 +1848,13 @@ public final class VillageRoleAbilitySystem {
         if (server == null) return;
         List<ServerPlayer> affected = server.getPlayerList().getPlayers().stream()
                 .filter(ally -> ally.level() == player.level())
+                .filter(ally -> VillageRespawnSystem.isDowned(ally)
+                        || (ally.isAlive() && !ally.isSpectator()))
                 .toList();
         for (ServerPlayer ally : affected) {
+            int amplifier = lowHealthAmplifier(ally, 2 + Math.min(3, specialRank));
             if (VillageRespawnSystem.isDowned(ally)) VillageRespawnSystem.reviveNow(ally, "기적의 대성역");
             healScaled(ally, heal);
-            int amplifier = lowHealthAmplifier(ally, 2 + Math.min(3, specialRank));
             ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration, amplifier, false, false, true));
             ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION, duration, 1, false, false, true));
         }
@@ -1739,10 +1868,11 @@ public final class VillageRoleAbilitySystem {
     private static void healWithOverflowBarrier(ServerPlayer target, float amount, int specialRank) {
         float before = target.getHealth();
         float maximum = Math.max(1.0f, target.getMaxHealth());
-        healScaled(target, amount);
+        float scaled = scaledHealAmount(target, amount);
+        target.heal(scaled);
         if (specialRank < 5) return;
 
-        float overflow = Math.max(0.0f, amount - Math.max(0.0f, maximum - before));
+        float overflow = Math.max(0.0f, scaled - Math.max(0.0f, maximum - before));
         if (overflow < 1.0f) return;
         int amplifier = Math.min(3, Math.max(0, (int) Math.floor(overflow / 4.0f)));
         target.addEffect(new MobEffectInstance(
@@ -1750,13 +1880,16 @@ public final class VillageRoleAbilitySystem {
     }
 
     private static void healScaled(ServerPlayer target, float amount) {
+        target.heal(scaledHealAmount(target, amount));
+    }
+
+    private static float scaledHealAmount(ServerPlayer target, float amount) {
         float missing = 1.0f - target.getHealth() / Math.max(1.0f, target.getMaxHealth());
-        float multiplier = VillageCouncilState.roleOf(target.getUUID()).orElse(null) == VillageRole.LUMINAR
-                ? 1.0f : 1.0f;
-        if (missing >= 0.75f) multiplier *= 1.75f;
-        else if (missing >= 0.50f) multiplier *= 1.45f;
-        else if (missing >= 0.25f) multiplier *= 1.20f;
-        target.heal(amount * multiplier);
+        float multiplier = 1.0f;
+        if (missing >= 0.75f) multiplier = 1.75f;
+        else if (missing >= 0.50f) multiplier = 1.45f;
+        else if (missing >= 0.25f) multiplier = 1.20f;
+        return Math.max(0.0f, amount) * multiplier;
     }
 
     private static int lowHealthAmplifier(ServerPlayer target, int base) {
@@ -2055,7 +2188,19 @@ public final class VillageRoleAbilitySystem {
         double squared = radius < 0.0 ? Double.MAX_VALUE : radius * radius;
         return server.getPlayerList().getPlayers().stream()
                 .filter(ally -> ally.level() == player.level())
+                .filter(ServerPlayer::isAlive)
+                .filter(ally -> !ally.isSpectator() && !VillageRespawnSystem.isDowned(ally))
                 .filter(ally -> ally.distanceToSqr(player) <= squared)
+                .toList();
+    }
+
+    private static List<ServerPlayer> alliesIncludingDowned(ServerPlayer player) {
+        MinecraftServer server = player.level().getServer();
+        if (server == null) return List.of(player);
+        return server.getPlayerList().getPlayers().stream()
+                .filter(ally -> ally.level() == player.level())
+                .filter(ally -> VillageRespawnSystem.isDowned(ally)
+                        || (ally.isAlive() && !ally.isSpectator()))
                 .toList();
     }
 
@@ -2065,6 +2210,8 @@ public final class VillageRoleAbilitySystem {
         double squared = radius * radius;
         return server.getPlayerList().getPlayers().stream()
                 .filter(ally -> ally.level() == player.level())
+                .filter(ServerPlayer::isAlive)
+                .filter(ally -> !ally.isSpectator() && !VillageRespawnSystem.isDowned(ally))
                 .filter(ally -> ally.position().distanceToSqr(center) <= squared)
                 .toList();
     }
@@ -2225,7 +2372,7 @@ public final class VillageRoleAbilitySystem {
 
     private enum ActionKind { BLADE_WAVE, ARROW_RAIN, ENERGY_ARROW, SHIELD_CHARGE, ARCANE_ECHO, PROMOTION_STRIKE }
     private enum AreaKind { FROST, TORNADO, LIGHTNING, HEALING, GRAVITY }
-    private enum MovingKind { FIRE_ORB, BLADE, ENERGY_ARROW }
+    private enum MovingKind { FIRE_ORB, BLADE, ENERGY_ARROW, TRACKING_ARROW }
 
     private record ScheduledAction(
             long executeAt, UUID owner, VillageRoleSkillSystem.ActiveSkill skill,
@@ -2241,9 +2388,15 @@ public final class VillageRoleAbilitySystem {
         private final float power;
         private final int specialRank;
         private final int phase;
+        private final Vec3 direction;
 
         private AreaState(UUID owner, AreaKind kind, Vec3 center, long until,
                           double radius, float power, int specialRank, int phase) {
+            this(owner, kind, center, until, radius, power, specialRank, phase, Vec3.ZERO);
+        }
+
+        private AreaState(UUID owner, AreaKind kind, Vec3 center, long until,
+                          double radius, float power, int specialRank, int phase, Vec3 direction) {
             this.owner = owner;
             this.kind = kind;
             this.center = center;
@@ -2252,6 +2405,8 @@ public final class VillageRoleAbilitySystem {
             this.power = power;
             this.specialRank = specialRank;
             this.phase = phase;
+            Vec3 horizontal = direction == null ? Vec3.ZERO : new Vec3(direction.x, 0.0, direction.z);
+            this.direction = horizontal.lengthSqr() < 1.0E-6 ? Vec3.ZERO : horizontal.normalize();
         }
 
         UUID owner() { return owner; }
@@ -2263,6 +2418,7 @@ public final class VillageRoleAbilitySystem {
         float power() { return power; }
         int specialRank() { return specialRank; }
         int phase() { return phase; }
+        Vec3 direction() { return direction; }
     }
 
     private static final class MovingSkill {
@@ -2275,12 +2431,22 @@ public final class VillageRoleAbilitySystem {
         private final Set<UUID> hit = new HashSet<>();
         private final UUID effectId;
         private final VillageRoleSkillSystem.ActiveSkill promotionSkill;
+        private UUID trackingTarget;
+        private final double trackingSpeed;
         private Vec3 lastPosition;
         private int age;
 
         private MovingSkill(UUID owner, MovingKind kind, int maxAge, float damage,
                             double radius, int specialRank, Vec3 lastPosition, UUID effectId,
                             VillageRoleSkillSystem.ActiveSkill promotionSkill) {
+            this(owner, kind, maxAge, damage, radius, specialRank, lastPosition,
+                    effectId, promotionSkill, null, 0.0);
+        }
+
+        private MovingSkill(UUID owner, MovingKind kind, int maxAge, float damage,
+                            double radius, int specialRank, Vec3 lastPosition, UUID effectId,
+                            VillageRoleSkillSystem.ActiveSkill promotionSkill,
+                            UUID trackingTarget, double trackingSpeed) {
             this.owner = owner;
             this.kind = kind;
             this.maxAge = maxAge;
@@ -2290,6 +2456,8 @@ public final class VillageRoleAbilitySystem {
             this.lastPosition = lastPosition;
             this.effectId = effectId;
             this.promotionSkill = promotionSkill;
+            this.trackingTarget = trackingTarget;
+            this.trackingSpeed = trackingSpeed;
         }
 
         UUID owner() { return owner; }
@@ -2301,11 +2469,24 @@ public final class VillageRoleAbilitySystem {
         Set<UUID> hit() { return hit; }
         UUID effectId() { return effectId; }
         VillageRoleSkillSystem.ActiveSkill promotionSkill() { return promotionSkill; }
+        UUID trackingTarget() { return trackingTarget; }
+        double trackingSpeed() { return trackingSpeed; }
         Vec3 lastPosition() { return lastPosition; }
         void lastPosition(Vec3 value) { lastPosition = value; }
         int age() { return age; }
         void age(int value) { age = value; }
     }
+
+    private record DashState(
+            VillageRoleSkillSystem.ActiveSkill skill,
+            long until,
+            Vec3 direction,
+            double speed,
+            float damage,
+            double radius,
+            double knockback,
+            boolean weakness,
+            Set<UUID> hit) {}
 
     private record RicochetDamageKey(UUID owner, UUID target) {}
 
