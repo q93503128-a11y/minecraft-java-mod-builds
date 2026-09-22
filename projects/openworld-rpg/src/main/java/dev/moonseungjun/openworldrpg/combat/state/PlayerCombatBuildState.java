@@ -41,6 +41,14 @@ public record PlayerCombatBuildState(
         );
     }
 
+    public int maxHealth() {
+        return ProjectCombatRules.maxPlayerHealth(
+                combatLevel,
+                effectiveAttributes().vit(),
+                0.0
+        );
+    }
+
     public ProjectImpactTransaction.DamageSourceSnapshot damageSource(
             ProjectImpactTransaction.DamageSchool school
     ) {
