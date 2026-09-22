@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.integration.verify;
 
+import dev.moonseungjun.openworldrpg.combat.authority.CombatDamageAuthority;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellSpec;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
@@ -99,6 +100,7 @@ public final class M0RuntimeVerificationHarness {
             Logger logger
     ) {
         Entity attackerEntity = null;
+        LivingEntity meleeTarget = null;
         try {
             EntityType<?> attackerType = BuiltInRegistries.ENTITY_TYPE
                     .getOptional(Identifier.parse("minecraft:armor_stand"))
@@ -198,6 +200,79 @@ public final class M0RuntimeVerificationHarness {
                 );
             }
 
+            Entity meleeTargetEntity = ExternalActorBindingRuntime.spawnAuthored(
+                    level,
+                    target.blockPosition().offset(8, 0, 0),
+                    ExternalActorCombatProfile.r01Earthloong().entityId()
+            );
+            if (!(meleeTargetEntity instanceof LivingEntity livingMeleeTarget)) {
+                meleeTargetEntity.discard();
+                throw new IllegalStateException("M0 melee verification target is not a living entity.");
+            }
+            meleeTarget = livingMeleeTarget;
+            meleeTarget.setNoGravity(true);
+
+            var meleeBuild = new PlayerCombatBuildState(
+                    8,
+                    RootClass.WARRIOR,
+                    new AttributeAllocation(0, 0, 7, 0, 0, 0),
+                    EquipmentCombatState.weaponOnly(ProjectWeaponFamily.SWORD, 8)
+            );
+            var meleeTargetSnapshot = ExternalActorBindingRuntime.projectTargetSnapshot(meleeTarget, gameTick)
+                    .orElseThrow(() -> new IllegalStateException("M0 melee target snapshot was unavailable."));
+            var meleeDecision = CombatDamageAuthority.authorizeBetterCombatMelee(
+                    9999.0F,
+                    0,
+                    meleeBuild,
+                    meleeTargetSnapshot
+            );
+            if (!meleeDecision.accepted()
+                    || Math.abs(meleeDecision.finalDamage() - 17.0) > 0.0001
+                    || Math.abs(meleeDecision.poiseDamage() - 10.0) > 0.0001
+                    || Math.abs(meleeDecision.damageActionCoefficient() - 0.8) > 0.0001) {
+                throw new IllegalStateException(
+                        "Canonical Better Combat melee verification changed: " + meleeDecision
+                );
+            }
+
+            var meleeHpBefore = ExternalActorBindingRuntime.canonicalHealthSnapshot(meleeTarget)
+                    .orElseThrow(() -> new IllegalStateException("M0 melee canonical HP was unavailable."));
+            if (!ProjectMinecraftDamageApplicator.applyDirectPhysical(
+                    attacker,
+                    meleeTarget,
+                    meleeDecision.finalDamage()
+            )) {
+                throw new IllegalStateException("Minecraft rejected the project direct-physical verification hit.");
+            }
+            var meleeHpAfter = ExternalActorBindingRuntime.canonicalHealthSnapshot(meleeTarget)
+                    .orElseThrow(() -> new IllegalStateException("M0 melee canonical HP disappeared."));
+            var meleePoiseAfter = ExternalActorBindingRuntime.applyProjectPoiseDamage(
+                    meleeTarget,
+                    meleeDecision.poiseDamage(),
+                    gameTick
+            ).orElseThrow(() -> new IllegalStateException("M0 melee poise application was unavailable."));
+
+            if (Math.abs(meleeHpBefore.currentHealth() - 4900.0) > 0.0001
+                    || Math.abs(meleeHpAfter.currentHealth() - 4883.0) > 0.0001
+                    || Math.abs(meleePoiseAfter.remainingPoise() - 180.0) > 0.0001) {
+                throw new IllegalStateException(
+                        "M0 melee runtime delta mismatch: before=" + meleeHpBefore
+                                + " after=" + meleeHpAfter
+                                + " poise=" + meleePoiseAfter
+                );
+            }
+
+            logger.info(
+                    "OPENWORLD_RPG_M0_RUNTIME_MELEE_PASS target={} donorProposalIgnored=9999.0 "
+                            + "damage={} canonicalHpBefore={} canonicalHpAfter={} poiseAfter={} actionCoefficient={}",
+                    ExternalActorCombatProfile.r01Earthloong().entityId(),
+                    meleeDecision.finalDamage(),
+                    meleeHpBefore.currentHealth(),
+                    meleeHpAfter.currentHealth(),
+                    meleePoiseAfter.remainingPoise(),
+                    meleeDecision.damageActionCoefficient()
+            );
+
             logger.info(
                     "OPENWORLD_RPG_M0_RUNTIME_IMPACT_PASS target={} canonicalHpBefore={} canonicalHpAfter={} "
                             + "proxyHpBefore={} proxyHpAfter={} weaponPower={} weightedStat={} damage={} "
@@ -216,6 +291,9 @@ public final class M0RuntimeVerificationHarness {
                     gameTick - spawnTick
             );
         } finally {
+            if (meleeTarget != null) {
+                meleeTarget.discard();
+            }
             if (attackerEntity != null) {
                 attackerEntity.discard();
             }
