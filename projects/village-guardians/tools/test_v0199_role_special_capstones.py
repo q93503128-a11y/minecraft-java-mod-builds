@@ -39,7 +39,7 @@ def main() -> None:
 
     # Luminar: excess healing converts into absorption rather than being wasted.
     assert "healWithOverflowBarrier" in ability
-    assert "float overflow = Math.max(0.0f, amount - Math.max(0.0f, maximum - before));" in ability
+    assert "float overflow = Math.max(0.0f, scaled - Math.max(0.0f, maximum - before));" in ability
     assert "if (specialRank < 5) return;" in ability
     assert "MobEffects.ABSORPTION, 120, amplifier" in ability
 
