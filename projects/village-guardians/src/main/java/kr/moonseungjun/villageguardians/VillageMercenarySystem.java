@@ -7,10 +7,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.golem.IronGolem;
@@ -125,9 +127,6 @@ public final class VillageMercenarySystem {
         if (blocked != null) return blocked;
         if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.BARRACKS)) {
             return "병영이 파괴되어 용병을 고용할 수 없습니다.";
-        }
-        if (VillageCouncilState.currentDay() < kind.requiredDay()) {
-            return kind.displayName() + "은(는) Day " + kind.requiredDay() + "부터 고용할 수 있습니다.";
         }
         if (!(player.level() instanceof ServerLevel level)) return "현재 월드에서는 고용할 수 없습니다.";
         int cap = capacity();
@@ -491,30 +490,41 @@ public final class VillageMercenarySystem {
     private static void wardAllies(
             ServerLevel level, MinecraftServer server, IronGolem warder, int rank) {
         long now = level.getGameTime();
-        if (NEXT_WARD_PULSE.getOrDefault(warder.getUUID(), 0L) > now) return;
-        NEXT_WARD_PULSE.put(warder.getUUID(), now + Math.max(52L, 92L - rank / 2L));
+        boolean cleansePulse = NEXT_WARD_PULSE.getOrDefault(warder.getUUID(), 0L) <= now;
+        if (cleansePulse) NEXT_WARD_PULSE.put(warder.getUUID(), now + 60L);
+
         double utility = endlessUtilityAdaptation(rank);
         double radius = (7.5 + 7.5 * masteryProgress(rank)) * utility;
         double radiusSq = radius * radius;
-        int duration = 55 + rank;
+        // This method is called once per second. A 60-tick refresh keeps the aura continuous
+        // while the ally remains in range, without creating a one-shot permanent status.
+        int duration = 60;
         int absorption = rank >= 80 ? 2 : rank >= 40 ? 1 : 0;
         int resistance = rank >= 70 ? 1 : 0;
         for (IronGolem ally : loadedMercenaries(level)) {
             if (!ally.isAlive() || ally.distanceToSqr(warder) > radiusSq) continue;
             ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration, absorption, false, false, true));
             ally.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, duration, resistance, false, false, true));
-            ally.removeEffect(MobEffects.WEAKNESS);
-            ally.removeEffect(MobEffects.SLOWNESS);
+            if (cleansePulse) clearHarmfulEffects(ally);
         }
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (player.level() != level || !player.isAlive() || VillageRespawnSystem.isDowned(player)
                     || player.distanceToSqr(warder) > radiusSq) continue;
             player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration, absorption, false, false, true));
             player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, duration, resistance, false, false, true));
-            player.removeEffect(MobEffects.WEAKNESS);
-            player.removeEffect(MobEffects.SLOWNESS);
+            if (cleansePulse) clearHarmfulEffects(player);
         }
-        VillageDefenseEffectSystem.mercenaryWardPulse(level, warder.position(), radius);
+        if (cleansePulse) {
+            VillageDefenseEffectSystem.mercenaryWardPulse(level, warder.position(), radius);
+        }
+    }
+
+    private static void clearHarmfulEffects(LivingEntity entity) {
+        for (MobEffectInstance effect : List.copyOf(entity.getActiveEffects())) {
+            if (effect.getEffect().value().getCategory() == MobEffectCategory.HARMFUL) {
+                entity.removeEffect(effect.getEffect());
+            }
+        }
     }
 
     private static void artilleryAttack(ServerLevel level, IronGolem artillerist, int rank) {
@@ -823,28 +833,25 @@ public final class VillageMercenarySystem {
     public record RosterEntry(UUID uuid, MercenaryClass kind, int level, int kills, boolean loaded) {}
 
     public enum MercenaryClass {
-        BASTION("bastion", "방벽 수호병", 1, "중장갑 전열병. 많은 적을 받아내며 성문과 시설 앞을 버팁니다."),
-        STRIKER("striker", "돌격 집행관", 1, "고기동 근접 전투원. 새 표적을 추적해 첫 타에 큰 개시 피해를 줍니다."),
-        RANGER("ranger", "성루 명사수", 1, "후방 원거리 전투원. 공중 위협을 우선 요격하고 집중 사격합니다."),
-        MEDIC("medic", "전장 치유사", 1, "후방 지원 전투원. 주변 플레이어와 용병을 주기적으로 회복합니다."),
-        WARDER("warder", "결계 수도사", 25, "보호·정화 지원병. 주변 아군에게 흡수·저항을 부여하고 약화와 둔화를 걷어냅니다."),
-        ARTILLERIST("artillerist", "비전 포격병", 45, "후방 광역 화력병. 체력이 높은 위협을 골라 범위 포격으로 적 밀집을 압박합니다.");
+        BASTION("bastion", "방벽 수호병", "중장갑 전열병. 많은 적을 받아내며 성문과 시설 앞을 버팁니다."),
+        STRIKER("striker", "돌격 집행관", "고기동 근접 전투원. 새 표적을 추적해 첫 타에 큰 개시 피해를 줍니다."),
+        RANGER("ranger", "성루 명사수", "후방 원거리 전투원. 공중 위협을 우선 요격하고 집중 사격합니다."),
+        MEDIC("medic", "전장 치유사", "후방 지원 전투원. 주변 플레이어와 용병을 주기적으로 회복합니다."),
+        WARDER("warder", "결계 수도사", "보호·정화 지원병. 주변 아군의 흡수·저항을 유지하고 주기적으로 모든 해로운 효과를 제거합니다."),
+        ARTILLERIST("artillerist", "비전 포격병", "후방 광역 화력병. 체력이 높은 위협을 골라 범위 포격으로 적 밀집을 압박합니다.");
 
         private final String id;
         private final String displayName;
-        private final int requiredDay;
         private final String description;
 
-        MercenaryClass(String id, String displayName, int requiredDay, String description) {
+        MercenaryClass(String id, String displayName, String description) {
             this.id = id;
             this.displayName = displayName;
-            this.requiredDay = requiredDay;
             this.description = description;
         }
 
         public String id() { return id; }
         public String displayName() { return displayName; }
-        public int requiredDay() { return requiredDay; }
         public String description() { return description; }
 
         public static MercenaryClass fromId(String id) {
