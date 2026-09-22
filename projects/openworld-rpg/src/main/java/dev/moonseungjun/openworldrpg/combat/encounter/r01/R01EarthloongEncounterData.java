@@ -11,6 +11,8 @@ public record R01EarthloongEncounterData(
         int decisionDelayTicks,
         double phaseTwoHealthThreshold,
         LightningFurrowPattern lightningFurrow,
+        ForkedHeavenPattern forkedHeaven,
+        EarthlineSurgePattern earthlineSurge,
         List<ActionRule> actions,
         List<ImpactRule> impacts,
         List<PhysicalBindingRule> physicalBindings,
@@ -19,6 +21,8 @@ public record R01EarthloongEncounterData(
     public R01EarthloongEncounterData {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(lightningFurrow, "lightningFurrow");
+        Objects.requireNonNull(forkedHeaven, "forkedHeaven");
+        Objects.requireNonNull(earthlineSurge, "earthlineSurge");
         actions = List.copyOf(Objects.requireNonNull(actions, "actions"));
         impacts = List.copyOf(Objects.requireNonNull(impacts, "impacts"));
         physicalBindings = List.copyOf(
@@ -138,6 +142,36 @@ public record R01EarthloongEncounterData(
             };
         }
     }
+
+    public record ForkedHeavenPattern(
+            int markerCount,
+            int markerTellTicks,
+            int markerIntervalTicks,
+            int recoveryTicks,
+            double markerRadius,
+            double minimumTargetRange,
+            double maximumTargetRange,
+            double benchmarkDamageShare,
+            double shockBuildup,
+            double playerVerticalTolerance,
+            boolean runtimePresentationReady
+    ) {}
+
+    public record EarthlineSurgePattern(
+            int tellTicks,
+            int secondHitDelayTicks,
+            int recoveryTicks,
+            double minimumTargetRange,
+            double maximumTargetRange,
+            double lineWidth,
+            double lineLength,
+            double physicalBenchmarkDamageShare,
+            double lightningBenchmarkDamageShare,
+            double shockBuildup,
+            double playerVerticalTolerance,
+            double maximumGroundStep,
+            boolean runtimePresentationReady
+    ) {}
 
     public record ActionRule(
             ActionId id,

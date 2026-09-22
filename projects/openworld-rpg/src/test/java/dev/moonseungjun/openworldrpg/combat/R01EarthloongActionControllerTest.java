@@ -409,4 +409,31 @@ class R01EarthloongActionControllerTest {
         assertEquals(50, root.donorAnimationTicks());
     }
 
+    @Test
+    void phaseTwoPatternDataIsExactAndPresentationGated() {
+        var data = R01EarthloongEncounterDataLoader.loadBundled();
+        var forked = data.forkedHeaven();
+        assertEquals(3, forked.markerCount());
+        assertEquals(22, forked.markerTellTicks());
+        assertEquals(8, forked.markerIntervalTicks());
+        assertEquals(20, forked.recoveryTicks());
+        assertEquals(1.8, forked.markerRadius(), 0.000001);
+        assertEquals(4.0, forked.minimumTargetRange(), 0.000001);
+        assertEquals(12.0, forked.maximumTargetRange(), 0.000001);
+        assertEquals(0.18, forked.benchmarkDamageShare(), 0.000001);
+        assertEquals(25.0, forked.shockBuildup(), 0.000001);
+        assertFalse(forked.runtimePresentationReady());
+
+        var earthline = data.earthlineSurge();
+        assertEquals(16, earthline.tellTicks());
+        assertEquals(11, earthline.secondHitDelayTicks());
+        assertEquals(18, earthline.recoveryTicks());
+        assertEquals(1.8, earthline.lineWidth(), 0.000001);
+        assertEquals(9.0, earthline.lineLength(), 0.000001);
+        assertEquals(0.14, earthline.physicalBenchmarkDamageShare(), 0.000001);
+        assertEquals(0.16, earthline.lightningBenchmarkDamageShare(), 0.000001);
+        assertEquals(20.0, earthline.shockBuildup(), 0.000001);
+        assertFalse(earthline.runtimePresentationReady());
+    }
+
 }

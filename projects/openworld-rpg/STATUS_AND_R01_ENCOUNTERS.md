@@ -1389,13 +1389,30 @@ Phase-boundary ownership is exact:
 ### Forked Heaven
 
 ```text
-telegraph: 1.10 s per target marker
+telegraph: 1.10 s / 22 ticks per target marker
+marker radius: 1.8 blocks
+marker creation offsets: 0 / 8 / 16 ticks after cast commit
+impact offsets: 22 / 30 / 38 ticks after cast commit
+recovery after third impact: 1.00 s / 20 ticks
 3 lightning impacts distributed around engaged player positions
 damage per impact: 18%
 channel: magic/lightning
 Shock buildup: 25
 same-player same-cast hit cap: 1 unless the player intentionally moves into a later separately telegraphed marker
 ```
+
+Forked Heaven marker ownership/timing is exact:
+
+- marker assignments are chosen from valid engaged participants sorted by current SelectionThreat, with UUID lexical order only as the deterministic tie-break;
+- 1 player: assignment order `P1 / P1 / P1`;
+- 2 players: assignment order `higher threat / lower threat / higher threat`;
+- 3+ players: the first three current SelectionThreat players receive markers 1/2/3 respectively;
+- each marker samples its assigned player's current horizontal position **when that marker is created**, ground-projects there, and then stays fixed until impact;
+- a marker is not silently retargeted after creation;
+- if its assigned participant becomes invalid before that marker is created, choose the next currently valid participant by SelectionThreat; if none exists, skip that marker;
+- after a player was already hit by this cast, a later marker may hit them again only when they were outside that later marker when it was telegraphed and then moved into it before impact;
+- marker/player vertical tolerance is **1.25 blocks**;
+- the 20-tick recovery begins after the third authored impact time even when a marker was skipped.
 
 ### Earthline Surge
 
@@ -1405,11 +1422,30 @@ Two-part readable sequence:
 2. delayed lightning trace along the visible same line.
 
 ```text
+commit telegraph: 0.80 s / 16 ticks
+committed line width: 1.8 blocks
+committed line length: 9.0 blocks
+physical hit offset: tick 16
 physical hit: 14%
+physical guardable/perfect_guardable: false/false
+lightning follow-up offset: tick 27
 lightning follow-up: 16%
-second-hit delay: 0.55 s
+lightning guardable/perfect_guardable: false/false
+second-hit delay: 0.55 s / 11 ticks
 Shock buildup from lightning: 20
+recovery after lightning: 0.90 s / 18 ticks
 ```
+
+Earthline geometry is HARD_RULE:
+
+- commit one horizontal axis from Earthloong center toward the selected current target;
+- the target may move after commit; neither physical nor lightning line retargets;
+- the same visible/projected line owns both hit checks;
+- use the same local-ground projection rules as Lightning Furrow: 1.25-block player vertical tolerance and break the segment across >1.5-block floor discontinuity;
+- solid arena collision terminates the line beyond that obstruction;
+- both hits resolve their own dodge window; landing/dodging the first does not erase the delayed second hit;
+- Shock buildup is added only when the lightning follow-up itself produces an accepted contact;
+- there is no guard/perfect-guard shortcut for remaining inside the line.
 
 The point is to dodge **out of the line**, not iframe one event while standing in the hazard.
 
@@ -1710,7 +1746,7 @@ Anti-spam:
 
 Forked Heaven impact ownership:
 - 1 engaged player: all 3 authored markers are arranged around that player, but same-cast hit cap remains 1 unless the player intentionally enters a later marker;
-- 2 players: marker distribution 2 / 1, with the second marker assigned to the higher current SelectionThreat player;
+- 2 players: marker distribution is higher-threat / lower-threat / higher-threat;
 - 3+ players: first 3 valid participants by current SelectionThreat each receive one marker;
 - no marker targets a Downed/invalid/out-of-arena player.
 

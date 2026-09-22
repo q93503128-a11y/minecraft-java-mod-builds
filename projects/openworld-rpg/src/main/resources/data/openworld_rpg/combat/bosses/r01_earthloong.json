@@ -12,6 +12,34 @@
     "playerVerticalTolerance": 1.25,
     "maximumGroundStep": 1.5
   },
+  "forkedHeaven": {
+    "markerCount": 3,
+    "markerTellTicks": 22,
+    "markerIntervalTicks": 8,
+    "recoveryTicks": 20,
+    "markerRadius": 1.8,
+    "minimumTargetRange": 4.0,
+    "maximumTargetRange": 12.0,
+    "benchmarkDamageShare": 0.18,
+    "shockBuildup": 25.0,
+    "playerVerticalTolerance": 1.25,
+    "runtimePresentationReady": false
+  },
+  "earthlineSurge": {
+    "tellTicks": 16,
+    "secondHitDelayTicks": 11,
+    "recoveryTicks": 18,
+    "minimumTargetRange": 3.0,
+    "maximumTargetRange": 9.0,
+    "lineWidth": 1.8,
+    "lineLength": 9.0,
+    "physicalBenchmarkDamageShare": 0.14,
+    "lightningBenchmarkDamageShare": 0.16,
+    "shockBuildup": 20.0,
+    "playerVerticalTolerance": 1.25,
+    "maximumGroundStep": 1.5,
+    "runtimePresentationReady": false
+  },
   "actions": [
     {
       "id": "CLAW_SWEEP",

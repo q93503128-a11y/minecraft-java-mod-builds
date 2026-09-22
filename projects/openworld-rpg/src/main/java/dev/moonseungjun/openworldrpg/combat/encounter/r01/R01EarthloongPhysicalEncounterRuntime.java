@@ -264,14 +264,35 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                     && targetDistance >= furrow.minimumTargetRange()
                     && targetDistance <= furrow.maximumTargetRange();
 
+            var forked = DATA.forkedHeaven();
+            boolean forkedHeavenSpatiallyLegal = false;
+            for (ServerPlayer participant : validPlayers(level)) {
+                double distance = horizontalDistance(actor, participant);
+                if (distance >= forked.minimumTargetRange()
+                        && distance <= forked.maximumTargetRange()) {
+                    forkedHeavenSpatiallyLegal = true;
+                    break;
+                }
+            }
+            boolean forkedHeavenLegal = currentPhase() == R01EarthloongEncounterData.Phase.TWO
+                    && forked.runtimePresentationReady()
+                    && forkedHeavenSpatiallyLegal;
+
+            var earthline = DATA.earthlineSurge();
+            boolean earthlineSurgeLegal = currentPhase() == R01EarthloongEncounterData.Phase.TWO
+                    && earthline.runtimePresentationReady()
+                    && targetDistance >= earthline.minimumTargetRange()
+                    && targetDistance <= earthline.maximumTargetRange()
+                    && actor.hasLineOfSight(target);
+
             return new R01EarthloongActionController.Legality(
                     R01EarthloongSpatialAuthority.isLegal(claw, spatial),
                     false,
                     R01EarthloongSpatialAuthority.isLegal(rush, spatial),
                     lightningFurrowLegal,
                     rootBreakerLegal,
-                    false,
-                    false);
+                    forkedHeavenLegal,
+                    earthlineSurgeLegal);
         }
 
         private void updateRootBreakerProximityEveryTick(ServerLevel level, long gameTick) {

@@ -159,3 +159,15 @@ Source now additionally contains:
 - exact Stormshed pending/28-tick transition state and 50% project incoming-damage multiplier.
 
 This source state is not a final presentation acceptance claim. Tail Scythe remains presentation-unbound, and Lightning Furrow/Stormshed technical particles are not the accepted signature VFX layer.
+
+
+## 2026-09-23 Phase-2 precision/backend pass
+
+Phase-2 implementation choices are now closed and source-bound:
+
+- Forked Heaven: 1.8-block markers, creation offsets 0/8/16, impacts 22/30/38, 20-tick recovery, exact 1P/2P/3+ SelectionThreat distribution, later-marker re-hit rule and 1.25-block vertical tolerance;
+- Earthline Surge: 16-tick committed tell, 1.8 x 9.0 line, physical impact at tick 16, lightning at tick 27, 18-tick recovery, same ground-projected/obstruction-clipped line, both hits unguardable/perfect-unguardable and separately dodge-resolved;
+- pure deterministic Phase-2 pattern authority and SelectionThreat participant ranking are implemented and unit-covered;
+- runtime legality evaluates the exact Phase-2 range/LOS requirements but remains **presentation-gated** for Forked Heaven and Earthline Surge.
+
+`runtimePresentationReady=false` is intentional. No accepted signature animation/VFX binding exists yet for these two attacks, and project production rules forbid promoting a temporary particle-only boss attack into normal player-facing runtime.

@@ -86,6 +86,38 @@ public final class R01EarthloongEncounterDataLoader {
             );
         }
 
+        var forked = data.forkedHeaven();
+        if (forked.markerCount() != 3
+                || forked.markerTellTicks() != 22
+                || forked.markerIntervalTicks() != 8
+                || forked.recoveryTicks() != 20
+                || Double.compare(forked.markerRadius(), 1.8) != 0
+                || Double.compare(forked.minimumTargetRange(), 4.0) != 0
+                || Double.compare(forked.maximumTargetRange(), 12.0) != 0
+                || Double.compare(forked.benchmarkDamageShare(), 0.18) != 0
+                || Double.compare(forked.shockBuildup(), 25.0) != 0
+                || Double.compare(forked.playerVerticalTolerance(), 1.25) != 0
+                || forked.runtimePresentationReady()) {
+            throw new IllegalArgumentException("R01 Earthloong Forked Heaven contract drifted.");
+        }
+
+        var earthline = data.earthlineSurge();
+        if (earthline.tellTicks() != 16
+                || earthline.secondHitDelayTicks() != 11
+                || earthline.recoveryTicks() != 18
+                || Double.compare(earthline.minimumTargetRange(), 3.0) != 0
+                || Double.compare(earthline.maximumTargetRange(), 9.0) != 0
+                || Double.compare(earthline.lineWidth(), 1.8) != 0
+                || Double.compare(earthline.lineLength(), 9.0) != 0
+                || Double.compare(earthline.physicalBenchmarkDamageShare(), 0.14) != 0
+                || Double.compare(earthline.lightningBenchmarkDamageShare(), 0.16) != 0
+                || Double.compare(earthline.shockBuildup(), 20.0) != 0
+                || Double.compare(earthline.playerVerticalTolerance(), 1.25) != 0
+                || Double.compare(earthline.maximumGroundStep(), 1.5) != 0
+                || earthline.runtimePresentationReady()) {
+            throw new IllegalArgumentException("R01 Earthloong Earthline Surge contract drifted.");
+        }
+
         Set<R01EarthloongEncounterData.ActionId> seen =
                 EnumSet.noneOf(R01EarthloongEncounterData.ActionId.class);
         for (var rule : data.actions()) {

@@ -43,4 +43,14 @@ class R01EarthloongThreatTableTest {
         assertEquals(10.0, table.threatOf(B, 20), 0.000001);
     }
 
+    @Test
+    void rankedParticipantsUseCurrentThreatThenStableUuidTieBreak() {
+        var table = new R01EarthloongThreatTable();
+        table.engageInitial(A, 0);
+        table.engageInitial(B, 0);
+        assertEquals(List.of(A, B), table.rankedPlayers(List.of(B, A), 0));
+        table.addThreat(B, 5.0, 0);
+        assertEquals(List.of(B, A), table.rankedPlayers(List.of(A, B), 0));
+    }
+
 }
