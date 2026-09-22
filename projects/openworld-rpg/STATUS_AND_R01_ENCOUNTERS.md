@@ -192,6 +192,46 @@ Existing `specific implemented element/status output` affixes in `EQUIPMENT_BALA
 
 The existing +60% per-element/status gear-contribution cap remains.
 
+## 2.3 Status-power and status-poise reference
+
+A buildup ailment's proc magnitude must not depend on whichever hit happened to cross the threshold last.
+
+For **player-origin** Poisoned / Bleeding / Frostbite / Shocked damage, snapshot the strongest valid contributor from the existing previous-6-second contribution window and use that source's offensive snapshot:
+
+```text
+StatusWeightedStat =
+  the same authored primary-stat weighting used by the contributing source action
+
+StatusReferencePower =
+  WeaponPower
+  * AttributeDamageMultiplier(StatusWeightedStat)
+
+RawStatusDamage =
+  StatusReferencePower
+  * StatusCoefficient
+  * (1 + applicable specific Status Output bonuses)
+```
+
+Rules:
+
+- status damage does not crit unless the ailment explicitly says otherwise;
+- ordinary weak-point multipliers do not retroactively amplify a later status proc;
+- Element Output affects direct element-tagged damage as defined above; it does not automatically double-dip into status damage;
+- a named item/skill may explicitly say an element bonus also affects its status payload, but that is authored data rather than a global assumption;
+- Thermal Shock uses the triggering Fire source's offensive snapshot exactly as already specified;
+- if no valid offensive snapshot exists, a player-origin proc fails closed rather than inventing vanilla attack damage.
+
+Player-origin status poise uses a neutral status reference rather than a hidden weapon-family multiplier:
+
+```text
+StatusPoiseDamage =
+  10
+  * PoiseCoefficient
+  * (1 + applicable Poise Output bonuses)
+```
+
+For **enemy-origin** ailments, do not fabricate WeaponPower/primary stats. The encounter sheet supplies a fixed source-Lv status damage budget and, where needed, explicit player-poise pressure. Those fixed values still pass through the target's normal Defense/MR/status-duration/poise rules.
+
 ---
 
 # 3. Two status categories
@@ -1268,6 +1308,43 @@ recovery: 1.00 s
 
 A player cannot be hit by overlapping lanes from the same wave more than once.
 
+Exact Phase-1 lane geometry is HARD_RULE:
+
+```text
+commit forward axis:
+  horizontal normalized vector from Earthloong center to the selected current target
+  sampled once when Lightning Furrow commits
+
+3-lane lateral center offsets:
+  -2.50 / 0.00 / +2.50 blocks
+
+lane half-width:
+  0.70 blocks
+
+longitudinal hit interval:
+  0.00 .. 12.00 blocks from Earthloong horizontal center along the committed axis
+```
+
+The target may move after commit; the lane axis does **not** retarget.
+
+For the Phase-2 4-lane pattern, keep the same 2.50-block center spacing without adding a center lane:
+
+```text
+4-lane lateral center offsets:
+  -3.75 / -1.25 / +1.25 / +3.75 blocks
+```
+
+Ground-lane binding rules:
+
+- server hit geometry and visible ground decals use the same committed axis/offsets/width;
+- a solid arena wall/closed collision barrier terminates the lane beyond that obstruction; the damage rectangle does not pass invisibly through walls;
+- each visible lane segment is ground-projected to the local traversable arena surface;
+- a player is eligible for a lane hit only when their feet are within **1.25 blocks vertically** of that local projected surface;
+- a local floor discontinuity greater than **1.5 blocks** between adjacent projected samples breaks that segment rather than bridging a vertical cliff/ledge;
+- visual sampling may be finer than gameplay sampling, but it may not visually imply a safe gap where the server still damages.
+
+These values create real dodge corridors between 1.4-block lanes while preserving a compact first-boss arena pattern. Playtest may revise the canon values later, but source code does not choose different spacing first.
+
 ### Root Breaker
 
 ```text
@@ -1295,6 +1372,17 @@ damage reduction during transformation: 50%
 Visible lightning moves across the accepted Earthloong body anchors before phase-2 attacks become legal.
 
 No cinematic untargetable wait.
+
+Phase-boundary ownership is exact:
+
+- crossing <=55% HP during a committed attack does **not** cancel that attack, its impact or its recovery;
+- set a pending Stormshed transition immediately when the threshold is crossed;
+- after the current committed action reaches its normal recovery end, enter Stormshed before another attack decision;
+- Stormshed lasts exactly **28 ticks**;
+- no new attack is selected during those 28 ticks;
+- Earthloong remains targetable and takes the listed 50% damage reduction;
+- threat, cooldown clocks, `action_counter` and anti-repeat history continue and are not reset;
+- Phase 2 becomes attack-legal only after the 28th transition tick completes.
 
 ## Phase 2 additions
 

@@ -508,3 +508,93 @@ JAR PRODUCED: NO
 PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
 ```
+
+
+---
+
+# 11. Implementation-precision re-audit — 2026-09-22
+
+This pass re-read the active gameplay canon from an implementer's point of view and compared the document set against public professional production material.
+
+External comparison used in this pass:
+
+- Guerrilla / Horizon Forbidden West quest production: https://blog.playstation.com/2022/08/10/how-guerrilla-created-vegas-in-horizon-forbidden-west/
+- Guerrilla living-world/system integration: https://blog.playstation.com/2021/11/22/horizon-forbidden-west-an-authentic-world/
+- Van Buren Denver regional design document index/transcript: https://fallout.fandom.com/wiki/Denver_design_document
+- Max Nichols, former Destiny encounter designer, encounter-design breakdown: https://namelessquality.com/the-basics-of-destiny-encounter-design/
+- GDC Vault, The Design of Subnautica: https://www.gdcvault.com/play/1025745/The-Design-of-Subnautica
+- GDC Vault, The Living World of The Witcher: https://gdcvault.com/play/1023867/The-Living-World-of-The
+
+## 11.1 What the comparison confirms
+
+Openworld RPG is no longer weak in ordinary GDD coverage.
+
+Compared with the public examples above, current canon already has unusually strong coverage of:
+
+- system ownership and formulas;
+- named regional casts/quests/rewards;
+- personal/shared/reconnect state;
+- multiplayer authority/idempotency;
+- economy/progression interaction;
+- encounter action tables and timing;
+- UI state/failure/reconnect behavior;
+- external-asset provenance gates.
+
+The main professional gap is the same one visible in Horizon/Van Buren production flow: **real map/3D space and exact implementation geometry must become first-class artifacts, not prose-only assumptions**.
+
+Destiny's encounter-design material also reinforces a second point: authored encounter logic needs explicit space/attention/line-of-sight rules. A list of attack names and cooldowns is insufficient if exact hazard geometry, obstruction behavior and target attention are left implicit.
+
+Subnautica/Witcher comparisons reinforce that the current system count should not grow. Existing systems need prototype/play evidence and meaningful off-main-quest integration rather than another menu/currency/progression layer.
+
+## 11.2 Hidden implementation choices found and closed in this pass
+
+The previous `R01 IMPLEMENTATION-TIME GAMEPLAY CHOICES REMAIN: NO` verdict was directionally correct, but this implementation pass exposed several low-level values that were not actually closed enough for source work.
+
+Now closed in live canon:
+
+1. **enemy magic benchmark authoring** — exact same-Lv Medium-MR bridge for converting benchmark HP shares to raw enemy magic damage;
+2. **player-origin StatusPower** — exact offensive-snapshot reference for StatusCoefficient damage;
+3. **status poise reference** — exact neutral 10 * PoiseCoefficient baseline;
+4. **partial-set player ArmorPoise** — exact Head/Chest/Legs/Gloves/Boots slot shares;
+5. **Earthloong Shock proc payload** — fixed Lv8 source budget + explicit player-poise pressure rather than fabricated enemy WeaponPower;
+6. **Lightning Furrow lane geometry** — committed forward axis, exact 3/4-lane center offsets, width, obstruction and vertical ground-projection behavior;
+7. **Earthloong 55% phase boundary** — committed attacks finish normally, then exact 28-tick Stormshed transition owns the boundary;
+8. **save migration behavior** — explicit schema versions, sequential idempotent migration, backup/validation and unknown-newer-version fail-closed policy.
+
+These are not new feature ideas. They remove decisions that otherwise would have been made accidentally inside source code.
+
+## 11.3 Remaining genuine non-prose gates
+
+Do not attempt to close these with invented numbers:
+
+- actual Azari x/y/z, road joins, sightlines, route lengths and measured travel times;
+- final accepted Earthloong electrical/root signature VFX and audio;
+- Tail Scythe accepted presentation/anatomy binding;
+- exact external models/outfits/fish/UI sprites still blocked by binary/visual/Minecraft acceptance;
+- actual player attention/readability in the quarry arena at gameplay FOV;
+- actual latency/feel/tuning evidence for dodge/guard/boss timing;
+- later-region model-gated boss anatomy/weak points/attack substitutions explicitly marked by their packages.
+
+## 11.4 Quality risks that are not implementation blockers
+
+These remain worth addressing, but they should not be confused with missing source constants:
+
+- optional contracts remain the weakest authored content layer and can become checklist-like if every region presents them as equal-weight narrative quests;
+- repeated local-control successes still risk making the final Partition option feel empirically safer than Restore/Release unless late-game costs/coordination benefits remain visible;
+- many exact numbers are TUNEABLE_SEED values even when the rule/ownership is HARD_RULE;
+- current playtest/QA metrics are less mature than the paper design. R01 should record at least encounter duration, boss action frequency, damage-source deaths, dodge/guard outcomes, reset cause, reward transaction failures and route travel time during real play;
+- performance budgets should be measured from the real R01 slice before setting arbitrary global particle/entity/network caps.
+
+## 11.5 Current verdict
+
+```text
+CORE GAMEPLAY DESIGN: IMPLEMENTATION-GRADE
+R01 GAMEPLAY/CONTENT RULES: CLOSED AFTER PRECISION PASS
+R01 EXACT PRESENTATION: NOT CLOSED
+R01 ACTUAL AZARI SPATIAL BINDING: NOT CLOSED
+SAVE MIGRATION POLICY: CLOSED AT DESIGN CONTRACT LEVEL
+STATUS POWER / ENEMY MAGIC AUTHORING: CLOSED AT DESIGN CONTRACT LEVEL
+REAL PLAY/FEEL PROOF: NOT CLOSED
+```
+
+The next useful step is not another broad GDD rewrite. It is to implement from these closed contracts while continuing asset/spatial acceptance, then use measured play to revise TUNEABLE_SEED numbers rather than inventing more systems.

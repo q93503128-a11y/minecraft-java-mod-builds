@@ -733,7 +733,19 @@ Full-set ArmorPoise baseline:
 - Medium: +15;
 - Heavy: +35.
 
-Partial sets contribute proportional slot shares. Apply `Poise/Stagger Resistance` gear bonuses afterwards, respecting the existing +50% gear-contribution cap.
+Partial-set ArmorPoise uses one exact slot-share table so implementation does not invent a second armor weighting scheme:
+
+| Armor slot | ArmorPoise share |
+|---|---:|
+| Head | 15% |
+| Chest | 33% |
+| Legs | 25% |
+| Gloves | 12% |
+| Boots | 15% |
+
+These shares intentionally approximate the normalized protection budget already used by the current Light/Medium/Heavy slot baselines. For each equipped armor piece, multiply the archetype's full-set ArmorPoise by that slot share, sum equipped pieces, then apply `Poise/Stagger Resistance` gear bonuses afterwards. The existing +50% aggregate gear-contribution cap remains.
+
+Do not round per slot unless the runtime representation requires integer-only storage; the canonical calculation may keep fractional poise until final display/threshold comparison.
 
 Incoming attack stagger-pressure starting bands:
 
@@ -913,7 +925,29 @@ Reference benchmark HP:
 | 64 | 21 | 575 |
 | 80 | 25 | 727 |
 
-For raw attack-data generation, use **25% expected physical mitigation** as the neutral medium-armor benchmark, then let the real Defense formula determine actual received damage.
+For raw physical attack-data generation, use **25% expected physical mitigation** as the neutral medium-armor benchmark, then let the real Defense formula determine actual received damage.
+
+For magic enemy attacks, do not reuse the physical 25% assumption and do not treat the authored benchmark share as direct target-MaxHP damage. Use the current same-Lv Medium full-set Magic Resistance as the neutral authoring benchmark:
+
+```text
+MediumBenchmarkMR(L) =
+  sum(round(Lv1MediumSlotMR * GearScale(L)))
+  across Head/Chest/Legs/Gloves/Boots
+
+K(L) = 75 * GearScale(L)
+
+NeutralMagicTakenMultiplier(L) =
+  K(L) / (K(L) + MediumBenchmarkMR(L))
+
+RawEnemyMagicDamage(L, BenchmarkShare) =
+  BenchmarkHP(L)
+  * BenchmarkShare
+  / NeutralMagicTakenMultiplier(L)
+```
+
+The resulting raw magic value then goes through the real target's Magic Resistance, element susceptibility and later authored damage-taken modifiers. This gives Lightning Furrow/Forked Heaven/Earthline Surge and later enemy spells one deterministic authoring bridge instead of an implementation-time guess.
+
+Hybrid enemy attacks author physical and magic portions independently through their matching benchmark bridge before recombining the final result.
 
 Target **post-mitigation** damage share against that benchmark player:
 

@@ -101,7 +101,7 @@ Current technical binding status:
 
 - Claw Sweep ↔ donor `SkillNumber=1` / `woodlizard_attack`: dependency-only presentation-state bridge is runtime verified; project timing/hit authority remains separate;
 - Quarry Rush ↔ donor `SkillNumber=2` / `woodlizard_charge`: dependency-only presentation-state bridge is runtime verified; donor charging procedure semantics and damage are not used;
-- Lightning Furrow ↔ `woodlizard_skill1`: technical candidate only; closed timing/width/length/lanes/Shock values are data-bound, but runtime hit geometry remains gated because exact lane-center offsets/spacing/layout are not specified by current canon;
+- Lightning Furrow ↔ `woodlizard_skill1`: technical candidate only; timing/width/length/phase lane counts/Shock values plus exact 3/4-lane center offsets, committed axis, obstruction and vertical ground-projection rules are now canon-closed; runtime hit geometry/VFX binding remains implementation/presentation work;
 - Root Breaker ↔ `woodlizard_roar`: technical candidate; project-owned 20-tick tell / 4.5-block horizontal radius / impact / 20-tick recovery / tagged-prop break runtime is implemented and startup verified, but final VFX/hitbox presentation acceptance remains open;
 - Tail Scythe: no dedicated donor tail-scythe animation was proven by the pinned class surface, so presentation remains deliberately unbound.
 
@@ -120,7 +120,7 @@ PHASE-1 PHYSICAL START GEOMETRY: IMPLEMENTED + UNIT VERIFIED — Claw 0°..120°
 CLAW/QUARRY DONOR PRESENTATION STATE BRIDGE: IMPLEMENTED + RUNTIME VERIFIED — SkillNumber 1/2 set + reset; donor damage/procedures remain non-authoritative
 TAIL SCYTHE FINAL PRESENTATION: UNBOUND — no accepted dedicated donor animation exists on the pinned surface
 ROOT BREAKER PROJECT RUNTIME: IMPLEMENTED + BUILD/SERVER/CLIENT-STARTUP VERIFIED — exact 40-tick proximity legality tracking, 20-tick tell, horizontal 4.5-block radius, direct impact, 20-tick recovery, tagged arena-prop break
-ROOT BREAKER PLAYER-POISE 75: FAIL-CLOSED SEAM ONLY — canonical partial-armor ArmorPoise publication remains technically under-specified
+ROOT BREAKER PLAYER-POISE 75: FAIL-CLOSED SEAM ONLY — canonical partial-armor ArmorPoise slot shares are now design-closed; runtime player-poise publisher/application remains to be implemented
 ROOT BREAKER FINAL PRESENTATION: NOT ACCEPTED — current rooted-dirt ring is a technical test telegraph, not production VFX
 LIGHTNING FURROW DATA BINDING: IMPLEMENTED — 24-tick tell, 20-tick recovery, phase lane counts, 1.4 width, 12 length, Shock 35, donor SkillNumber 3 technical candidate
 LIGHTNING FURROW RUNTIME HIT GEOMETRY: GATED — current canon lacks exact lane-center offsets/spacing/layout; enemy Shock proc raw budget is also not closed
@@ -131,3 +131,17 @@ HITBOX-TO-ANIMATION ACCEPTANCE: NO
 PLAYER-FACING EARTHLOONG COMBAT PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
 ```
+
+
+## 2026-09-22 design-precision follow-up
+
+The implementation pass exposed several values that were previously described as design-closed but were not precise enough for deterministic source behavior. Live canon now closes:
+
+- exact partial-armor ArmorPoise slot shares in COMBAT_BALANCE.md;
+- player StatusPower / status-poise reference and enemy-origin fixed-budget rule in STATUS_AND_R01_ENCOUNTERS.md;
+- enemy magic benchmark-share -> raw-damage authoring bridge in COMBAT_BALANCE.md;
+- Lightning Furrow 3-lane offsets -2.50/0/+2.50 and 4-lane offsets -3.75/-1.25/+1.25/+3.75, committed target axis, wall termination and local ground-projection vertical tolerance;
+- Earthloong-origin Shock proc fixed Lv8 source budget and player-poise pressure;
+- exact 55% HP transition ownership: current committed action/recovery finishes, then 28-tick Stormshed, then Phase 2 eligibility.
+
+These are canon corrections/precision bindings, not evidence that the final Lightning Furrow VFX or real-client hitbox readability has been accepted.

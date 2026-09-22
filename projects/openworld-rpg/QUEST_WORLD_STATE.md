@@ -662,6 +662,30 @@ Rules:
 - malformed/missing optional presentation data must not silently erase canonical progression;
 - save migration/versioning begins before the first preserved long-term test world.
 
+## 14.1 Save schema / migration contract
+
+Long-term project saves use explicit monotonically increasing schema versions. At minimum persist:
+
+```text
+player_state_schema_version
+world_state_schema_version
+```
+
+Migration rules:
+
+1. migrations run **server-side before normal mutation** of the loaded project state;
+2. each migration is an explicit deterministic `N -> N+1` transform;
+3. transforms must be idempotent: retrying after an interrupted save cannot duplicate rewards, flags, items or Gold;
+4. stable namespaced IDs are migration keys; display text, list order and localized names are never identity;
+5. before the first write of a migrated preserved world/player record, retain a recoverable pre-migration backup/snapshot;
+6. validate required invariants after migration and before committing the new version;
+7. if validation fails, preserve the old record and fail closed with an operator/development error rather than saving a partially migrated state;
+8. an unknown **newer** schema version is never downgraded or overwritten by an older build;
+9. optional presentation-only fields may default when semantically safe; missing progression/reward/ownership fields may not be guessed;
+10. no in-place downgrade migration is supported at baseline.
+
+The first preserved long-term playtest world starts at schema version 1 even if earlier disposable M0 worlds existed. Schema bumps are required whenever a persisted meaning changes, not for ordinary transient runtime/cache changes.
+
 ---
 
 # 15. Disconnect / reconnect behavior
