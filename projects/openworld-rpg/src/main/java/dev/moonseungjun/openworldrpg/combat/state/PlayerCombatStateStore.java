@@ -22,6 +22,10 @@ public final class PlayerCombatStateStore {
         getOrCreate(playerId, nowTick).synchronizeWill(will, nowTick);
     }
 
+    public void synchronizeEndurance(UUID playerId, int endurance, long nowTick) {
+        getOrCreate(playerId, nowTick).synchronizeEndurance(endurance, nowTick);
+    }
+
     public void remove(UUID playerId) {
         states.remove(playerId);
     }
