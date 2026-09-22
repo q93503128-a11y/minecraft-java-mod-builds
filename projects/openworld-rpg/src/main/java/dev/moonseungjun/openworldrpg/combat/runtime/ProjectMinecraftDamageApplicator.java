@@ -1,11 +1,13 @@
 package dev.moonseungjun.openworldrpg.combat.runtime;
 
 import dev.moonseungjun.openworldrpg.OpenworldRpgMod;
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongPhysicalEncounterRuntime;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.LivingEntity;
@@ -68,7 +70,7 @@ public final class ProjectMinecraftDamageApplicator {
         DamageSource source = new DamageSource(damageType, attacker);
 
         if (ExternalActorBindingRuntime.ownsDamageAuthority(target)) {
-            return ExternalActorBindingRuntime.applyProjectHealthDamage(
+            var application = ExternalActorBindingRuntime.applyProjectHealthDamage(
                     target,
                     finalDamage,
                     proxyDamage -> ProjectDamageApplicationContext.authorizeNext(
@@ -79,7 +81,19 @@ public final class ProjectMinecraftDamageApplicator {
                                     (float) Math.min(proxyDamage, Float.MAX_VALUE)
                             )
                     )
-            ).isPresent();
+            );
+            if (application.isEmpty()) {
+                return false;
+            }
+            if (attacker instanceof ServerPlayer player) {
+                R01EarthloongPhysicalEncounterRuntime.recordProjectDamageThreat(
+                        target,
+                        player,
+                        application.orElseThrow().appliedDamage(),
+                        serverLevel.getGameTime()
+                );
+            }
+            return true;
         }
 
         float amount = (float) Math.min(finalDamage, Float.MAX_VALUE);

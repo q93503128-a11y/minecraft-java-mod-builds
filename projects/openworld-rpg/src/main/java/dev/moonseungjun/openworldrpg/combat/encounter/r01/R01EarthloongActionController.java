@@ -31,6 +31,8 @@ public final class R01EarthloongActionController {
     private long actionCounter;
     private int consecutiveSpaceControlActions;
     private int phaseTwoFurrowCastCount;
+    private R01EarthloongEncounterData.ActionId lastCommittedAction;
+    private int consecutiveSameActionCount;
 
     public R01EarthloongActionController(
             R01EarthloongEncounterData data,
@@ -71,6 +73,14 @@ public final class R01EarthloongActionController {
             }
         }
 
+        if (lastCommittedAction != null && candidates.size() > 1) {
+            int repeatLimit = repeatLimit(lastCommittedAction);
+            if (consecutiveSameActionCount >= repeatLimit
+                    && candidates.stream().anyMatch(rule -> rule.id() != lastCommittedAction)) {
+                candidates.removeIf(rule -> rule.id() == lastCommittedAction);
+            }
+        }
+
         if (candidates.isEmpty()) {
             return Decision.reposition(actionCounter);
         }
@@ -106,6 +116,13 @@ public final class R01EarthloongActionController {
         } else {
             consecutiveSpaceControlActions = 0;
         }
+
+        if (selected.id() == lastCommittedAction) {
+            consecutiveSameActionCount++;
+        } else {
+            lastCommittedAction = selected.id();
+            consecutiveSameActionCount = 1;
+        }
         actionCounter++;
 
         return Decision.attack(
@@ -137,6 +154,21 @@ public final class R01EarthloongActionController {
 
     public int phaseTwoFurrowCastCount() {
         return phaseTwoFurrowCastCount;
+    }
+
+    public Optional<R01EarthloongEncounterData.ActionId> lastCommittedAction() {
+        return Optional.ofNullable(lastCommittedAction);
+    }
+
+    public int consecutiveSameActionCount() {
+        return consecutiveSameActionCount;
+    }
+
+    private static int repeatLimit(R01EarthloongEncounterData.ActionId action) {
+        return switch (Objects.requireNonNull(action, "action")) {
+            case QUARRY_RUSH, LIGHTNING_FURROW, ROOT_BREAKER, FORKED_HEAVEN, EARTHLINE_SURGE -> 1;
+            case CLAW_SWEEP, TAIL_SCYTHE -> 2;
+        };
     }
 
     private OptionalInt lightningFurrowLaneCount(

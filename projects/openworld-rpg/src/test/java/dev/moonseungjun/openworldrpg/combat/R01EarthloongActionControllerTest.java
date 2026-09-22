@@ -305,4 +305,44 @@ class R01EarthloongActionControllerTest {
                 100
         ));
     }
+
+    @Test
+    void ordinaryPhysicalAttackCannotCommitThreeTimesWhenAnotherLegalAttackExists() {
+        var controller = new R01EarthloongActionController(
+                R01EarthloongEncounterDataLoader.loadBundled(), "ordinary-repeat", ACTOR);
+        var claw = R01EarthloongActionController.Legality.only(
+                R01EarthloongEncounterData.ActionId.CLAW_SWEEP);
+        controller.select(R01EarthloongEncounterData.Phase.ONE, claw, 0);
+        controller.select(R01EarthloongEncounterData.Phase.ONE, claw, 1);
+        assertEquals(2, controller.consecutiveSameActionCount());
+
+        var clawAndTail = new R01EarthloongActionController.Legality(
+                true, true, false, false, false, false, false);
+        var third = controller.select(
+                R01EarthloongEncounterData.Phase.ONE, clawAndTail, 2);
+        assertEquals(
+                R01EarthloongEncounterData.ActionId.TAIL_SCYTHE,
+                third.action().orElseThrow());
+    }
+
+    @Test
+    void signatureMovementCannotImmediatelyRepeatWhenAnotherLegalAttackExists() {
+        var controller = new R01EarthloongActionController(
+                R01EarthloongEncounterDataLoader.loadBundled(), "rush-repeat", ACTOR);
+        controller.select(
+                R01EarthloongEncounterData.Phase.ONE,
+                R01EarthloongActionController.Legality.only(
+                        R01EarthloongEncounterData.ActionId.QUARRY_RUSH),
+                0);
+
+        var next = controller.select(
+                R01EarthloongEncounterData.Phase.ONE,
+                new R01EarthloongActionController.Legality(
+                        true, false, true, false, false, false, false),
+                140);
+        assertEquals(
+                R01EarthloongEncounterData.ActionId.CLAW_SWEEP,
+                next.action().orElseThrow());
+    }
+
 }

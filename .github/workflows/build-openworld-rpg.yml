@@ -119,6 +119,7 @@ jobs:
           grep -q 'Openworld RPG M0 integration bootstrap loaded with profile gameplay' build/logs/server-gameplay.log
           grep -q 'Openworld RPG external runtime containment verified before gameplay server start' build/logs/server-gameplay.log
           grep -q 'Openworld RPG external actor binding armed for threateningly_mobs:the_earthloong' build/logs/server-gameplay.log
+          grep -q 'Openworld RPG R01 Earthloong physical encounter runtime armed' build/logs/server-gameplay.log
           grep -q 'Openworld RPG external actor registry target verified at server start: threateningly_mobs:the_earthloong' build/logs/server-gameplay.log
           grep -q 'Openworld RPG Better Combat authority adapter armed for profile gameplay' build/logs/server-gameplay.log
           grep -q 'Openworld RPG Spell Engine authority gate armed for profile gameplay' build/logs/server-gameplay.log
@@ -364,7 +365,7 @@ jobs:
           - client world join: NOT RUN
           - R01 Earthloong registry/profile binding: STARTUP VERIFIED
           - Earthloong donor XP/loot suppression: IMPLEMENTED; project reward transaction NOT IMPLEMENTED
-          - Earthloong authored spawn utility: IMPLEMENTED + 40-TICK FORCED-CHUNK SERVER SURVIVAL VERIFIED; action controller + Phase-1 physical start geometry implemented; Claw/Quarry donor presentation-state bridge RUNTIME VERIFIED; full attack-state scheduling/movement/contact invocation NOT IMPLEMENTED; Tail final presentation UNBOUND
+          - Earthloong authored spawn utility: IMPLEMENTED + 40-TICK FORCED-CHUNK SERVER SURVIVAL VERIFIED; action controller + Phase-1 physical start geometry implemented; Claw/Quarry donor presentation-state bridge RUNTIME VERIFIED; Claw/Quarry project-owned telegraph/action/recovery scheduling + Quarry 9-block committed movement + canonical contact invocation IMPLEMENTED; Tail final presentation UNBOUND/runtime-gated; Lightning Furrow/Root Breaker runtime NOT IMPLEMENTED
           - Better Combat bound-actor canonical melee authority: IMPLEMENTED + UNIT/RUNTIME BRIDGE VERIFIED (donor damage ignored; exact real-player Better Combat network hit NOT TESTED)
           - Spell Engine resource/cooldown continuation transaction: IMPLEMENTED + UNIT/SERVER STARTUP VERIFIED
           - project cooldown client/HUD projection after completed cast: IMPLEMENTED + CLIENT STARTUP VERIFIED

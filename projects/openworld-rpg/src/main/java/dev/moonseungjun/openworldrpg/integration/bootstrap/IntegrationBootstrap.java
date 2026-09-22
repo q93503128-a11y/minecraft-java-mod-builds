@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.integration.bootstrap;
 
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongPhysicalEncounterRuntime;
 import dev.moonseungjun.openworldrpg.integration.ExternalRuntimeContainment;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.integration.bettercombat.BetterCombatAuthorityAdapter;
@@ -27,6 +28,7 @@ public final class IntegrationBootstrap {
 
         ExternalRuntimeContainment.initialize(profile, logger);
         ExternalActorBindingRuntime.initialize(profile, logger);
+        R01EarthloongPhysicalEncounterRuntime.initialize(profile, logger);
         BetterCombatAuthorityAdapter.initialize(profile, logger);
         SpellEngineAuthorityAdapter.initialize(profile, logger);
         M0RuntimeVerificationHarness.initialize(profile, logger);
