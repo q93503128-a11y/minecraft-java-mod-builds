@@ -9,10 +9,10 @@
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
 - Target JAR: `villageguardians-0.18.46-alpha.1.jar`
-- Current manual-audit validated code head: `39109180857ee8a232aae070e8d0dfc5084fef6b`
+- Current manual-audit validated code head: `405f4f5ab59152366ff5f6218dd743925f229b65`
 - Current verification date: `2026-09-22 Asia/Seoul`
-- Current verified JAR SHA-256: `d4690d016a6034545df87ef4f45ee09ba522ff52630a71c25b48be669b8ce3c5`
-- Current verified JAR size: `1415928` bytes
+- Current verified JAR SHA-256: `54c8c85419fcda96636f2f1bde3f37130dd5ca783f235e53936de12c046e3fa1`
+- Current verified JAR size: `1416698` bytes
 
 ## 2026-09-22 전체 수동 정합 감사 · 세트/캠페인 현재 정본
 
@@ -32,6 +32,9 @@
 - 밤사냥꾼 5세트의 12블록 이상 표적 보너스와 전선 집행자 5세트의 마무리 보너스가 일반 화살/근접타에는 적용되지만 `VillageRoleAbilitySystem.hurt`를 사용하는 직접 피해형 직업 기술에는 빠져 있었다. 직접 기술 피해에도 동일 조건부 capstone을 한 번만 적용하도록 연결했다.
 - 장비 툴팁이 2/3/4/5세트 효과 전체를 한 줄에 이어 붙여 좁은 화면에서 과도하게 넓어질 수 있었다. 현재는 세트명과 착용 수를 먼저 보여주고 2·3·4·5세트 효과를 줄별로 분리하며, 조건부 5세트 완성 효과는 한 줄 더 분리한다.
 - README의 현재 장비 섹션이 폐기된 2종·2/3세트 설명을 유지하고 있었다. production의 다섯 세트와 2/3/4/5단계 설명으로 갱신했다.
+- 직업 기술과 공용 전투 기술의 직접/파생 피해가 무주체 `magic()` DamageSource를 사용해 기술 막타에서 개인 주화, 처치 회복, 킬 모멘텀, 처치 속도, 주변 아군 회복 등 플레이어 처치 트리거가 빠지는 결함을 확인했다. 피해 유형은 간접 마법 계열로 유지하면서 시전자를 causing entity로 기록하고, 이미 계산된 기술 피해에는 일반 공격 배율을 다시 적용하지 않는 pre-scaled 경계를 추가했다.
+- README의 과거 변경 기록 안에 현재 상태처럼 읽히는 `북문 성벽 지휘 레버가 포탑 지휘를 소유`, `연구 Lv.10`, `용병 Lv.60` 문구가 남아 있었다. 각 문장을 당시 버전의 역사 기록임을 명시하고 현재 정본인 회관 포탑 지휘·연구 Lv.20·용병 Lv.100과 구분했다.
+- 최종 재검증 첫 시도는 0.18.10 추적 도탄 회귀가 pre-scaled 예외가 오직 ricochet 하나뿐이라고 문자열을 고정해 실패했다. production 회귀가 아니므로 해당 계약을 새 player-owned pre-scaled 경계까지 허용하도록 갱신한 뒤 최종 acceptance를 다시 수행했다.
 
 ### 현재 세트 정본
 
@@ -44,14 +47,15 @@
 
 ### 현재 acceptance
 
-- Validated code head: `39109180857ee8a232aae070e8d0dfc5084fef6b`
-- Current acceptance Actions run: `35675340671` — **PASS**
-- `tools/test_*.py`: **PASS, 100/100**
+- Validated acceptance head: `405f4f5ab59152366ff5f6218dd743925f229b65`
+- Current acceptance Actions run: `35676448941` — **PASS**
+- `tools/test_*.py`: **PASS, 101/101**
 - Java 25 / Gradle 9.2.1 / NeoForge 26.2 clean build: **PASS**
 - JAR verifier: **PASS**
 - JAR artifact upload: **PASS**
-- JAR: `villageguardians-0.18.46-alpha.1.jar`, `1415928` bytes
-- SHA-256: `d4690d016a6034545df87ef4f45ee09ba522ff52630a71c25b48be669b8ce3c5`
+- JAR: `villageguardians-0.18.46-alpha.1.jar`, `1416698` bytes
+- SHA-256: `54c8c85419fcda96636f2f1bde3f37130dd5ca783f235e53936de12c046e3fa1`
+- Actions artifact ID: `10672879798`, artifact digest `sha256:90d4915abe83bda11d430eed4686c80917788e14e87571beee0b8384604f7393`
 - Client gameplay after this audit: **NOT RUN**
 - Multiplayer gameplay after this audit: **NOT RUN**
 - Max-load profiler pass after this audit: **NOT RUN**
