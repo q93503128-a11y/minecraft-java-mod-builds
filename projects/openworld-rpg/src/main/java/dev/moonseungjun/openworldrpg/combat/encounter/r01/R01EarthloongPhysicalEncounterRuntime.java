@@ -55,6 +55,9 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             ActorState removed = STATES.remove(entity.getUUID());
             if (removed != null) removed.releaseActorControl();
         });
+        ServerTickEvents.START_LEVEL_TICK.register(
+                R01EarthloongPhysicalEncounterRuntime::suppressDonorCombatTargets
+        );
         ServerTickEvents.END_LEVEL_TICK.register(R01EarthloongPhysicalEncounterRuntime::tickLevel);
         ServerPlayConnectionEvents.DISCONNECT.register(
                 (handler, server) -> clearPlayer(handler.getPlayer().getUUID()));
@@ -93,6 +96,14 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         for (ActorState state : STATES.values()) state.threat.remove(playerId);
     }
 
+    private static void suppressDonorCombatTargets(ServerLevel level) {
+        for (ActorState state : STATES.values()) {
+            if (state.actor.level() == level && state.actor instanceof Mob mob) {
+                mob.setTarget(null);
+            }
+        }
+    }
+
     private static void tickLevel(ServerLevel level) {
         List<UUID> remove = new ArrayList<>();
         for (Map.Entry<UUID, ActorState> entry : STATES.entrySet()) {
@@ -103,6 +114,7 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                 remove.add(entry.getKey());
             } else {
                 state.tick(level, level.getGameTime());
+                state.clearDonorCombatTarget();
             }
         }
         remove.forEach(STATES::remove);
@@ -149,17 +161,10 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             ServerPlayer target = targetId == null ? null : playerById(validPlayers, targetId);
             if (target == null) return;
 
-            if (actor instanceof Mob mob) {
-                mob.setNoAi(false);
-                mob.setTarget(target);
-            }
-
             var decision = actions.select(currentPhase(), physicalLegality(level, target), gameTick);
             if (decision.reposition()) {
                 R01EarthloongDonorPresentationBridge.resetTechnicalCandidate(actor);
-                if (actor instanceof Mob mob) {
-                    mob.setNoAi(false);
-                    mob.setTarget(target);
+                if (actor instanceof Mob mob && !mob.isNoAi()) {
                     mob.getNavigation().moveTo(target, 1.0);
                 }
                 nextDecisionTick = gameTick + DATA.decisionDelayTicks();
@@ -232,6 +237,7 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             boolean previousNoAi = false;
             if (actor instanceof Mob mob) {
                 previousNoAi = mob.isNoAi();
+                mob.setTarget(null);
                 mob.getNavigation().stop();
                 mob.setNoAi(true);
             }
@@ -318,7 +324,14 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         private void releaseActorControl() {
             R01EarthloongDonorPresentationBridge.resetTechnicalCandidate(actor);
             if (actor instanceof Mob mob && committed != null) {
+                mob.setTarget(null);
                 mob.setNoAi(committed.previousNoAi);
+            }
+        }
+
+        private void clearDonorCombatTarget() {
+            if (actor instanceof Mob mob) {
+                mob.setTarget(null);
             }
         }
 
