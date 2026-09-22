@@ -24,7 +24,8 @@ def main():
     assert 'Component.literal("마을 배급 식량")' in progression
     assert "skillHallPowerMultiplier" in progression and "skillHallDurationMultiplier" in progression
     assert "barracksLevel * 2 + skillRank(player)" not in progression
-    assert "Math.min(7, research + barracksSupport + skillRank(player) / 2)" in progression
+    assert "Math.min(10, research + barracksSupport + skillRank(player) / 2)" in progression
+    assert "Math.min(5, skillHallLevel) + Math.max(0, skillHallLevel - 5) / 2" in progression
 
     equipment = read("VillageEquipmentRaritySystem.java")
     assert "MAX_ENHANCEMENT = 30" in equipment
@@ -63,7 +64,7 @@ def main():
     assert '"consumable:" + consumable.id()' in controller
     assert 'case "buy_food"' not in controller
     assert 'case "claim_bread"' in controller
-    assert "기술 위력 +" in controller and "재사용 효율 +" in controller
+    assert "기술 위력/지속 +" in controller and "고단계 재사용 효율" in controller
 
     shop = read("VillageShopCatalogScreen.java")
     assert 'action.startsWith("consumable:")' in shop
