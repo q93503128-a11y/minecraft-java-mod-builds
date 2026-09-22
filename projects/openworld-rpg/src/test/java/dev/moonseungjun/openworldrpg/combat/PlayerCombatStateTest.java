@@ -57,6 +57,45 @@ class PlayerCombatStateTest {
     }
 
     @Test
+    void canonicalStaminaFormulaMatchesDesignAnchors() {
+        assertEquals(100, PlayerCombatState.maxStaminaForEndurance(5));
+        assertEquals(130, PlayerCombatState.maxStaminaForEndurance(30));
+        assertEquals(154, PlayerCombatState.maxStaminaForEndurance(60));
+        assertEquals(162, PlayerCombatState.maxStaminaForEndurance(80));
+
+        assertEquals(24.0, PlayerCombatState.baseStaminaRegenPerSecondForEndurance(5), 0.0001);
+        assertEquals(27.0, PlayerCombatState.baseStaminaRegenPerSecondForEndurance(30), 0.0001);
+        assertEquals(30.6, PlayerCombatState.baseStaminaRegenPerSecondForEndurance(60), 0.0001);
+        assertEquals(31.6, PlayerCombatState.baseStaminaRegenPerSecondForEndurance(80), 0.0001);
+    }
+
+    @Test
+    void sprintDrainsFiveStaminaPerSecondAndWaitsSevenTicksBeforeRegen() {
+        PlayerCombatState state = new PlayerCombatState(5, 0);
+        for (int tick = 0; tick < 20; tick++) {
+            assertTrue(state.updateSprinting(true, tick));
+        }
+        assertEquals(95.0, state.stamina(19), 0.0001);
+
+        assertTrue(state.updateSprinting(false, 20));
+        assertEquals(95.0, state.stamina(27), 0.0001);
+        assertEquals(96.2, state.stamina(28), 0.0001);
+    }
+
+    @Test
+    void enduranceSynchronizationPreservesStaminaPercentage() {
+        PlayerCombatState state = new PlayerCombatState(5, 0);
+        assertTrue(state.spendStamina(50.0, 12, 0));
+
+        state.synchronizeEndurance(30, 0);
+        assertEquals(130, state.maxStamina());
+        assertEquals(65.0, state.stamina(0), 0.0001);
+
+        state.synchronizeEndurance(5, 0);
+        assertEquals(50.0, state.stamina(0), 0.0001);
+    }
+
+    @Test
     void hostileHpActivityBlocksNaturalRecoveryForExactlyEightSeconds() {
         PlayerCombatState state = new PlayerCombatState(5, 0);
         state.markHostileHpActivity(40);
