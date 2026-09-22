@@ -1,7 +1,7 @@
-from pathlib import Path
-
 #!/usr/bin/env python3
 """Deterministic layout contract for the Village Guardians fortress."""
+
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
