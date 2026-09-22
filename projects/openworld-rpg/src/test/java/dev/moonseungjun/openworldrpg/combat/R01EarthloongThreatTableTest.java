@@ -33,4 +33,14 @@ class R01EarthloongThreatTableTest {
         assertEquals(16.2, table.threatOf(A, 160), 0.000001);
         assertEquals(10.0, table.threatOf(A, 2000), 0.000001);
     }
+    @Test
+    void newlyLegitimateTargetCanJoinAnExistingThreatTable() {
+        var table = new R01EarthloongThreatTable();
+        table.engageInitial(A, 0);
+        assertEquals(false, table.contains(B));
+        table.engageInitial(B, 20);
+        assertEquals(true, table.contains(B));
+        assertEquals(10.0, table.threatOf(B, 20), 0.000001);
+    }
+
 }

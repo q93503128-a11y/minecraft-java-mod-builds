@@ -169,9 +169,12 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         }
 
         private void seedInitialThreatFromMobTarget(long gameTick) {
-            if (!threat.isEmpty() || !(actor instanceof Mob mob)) return;
+            if (!(actor instanceof Mob mob)) return;
             if (mob.getTarget() instanceof ServerPlayer player
-                    && player.isAlive() && !player.isSpectator() && player.level() == actor.level()) {
+                    && player.isAlive()
+                    && !player.isSpectator()
+                    && player.level() == actor.level()
+                    && !threat.contains(player.getUUID())) {
                 threat.engageInitial(player.getUUID(), gameTick);
                 scheduleDecisionIfIdle(gameTick);
             }
@@ -314,8 +317,8 @@ public final class R01EarthloongPhysicalEncounterRuntime {
 
         private void releaseActorControl() {
             R01EarthloongDonorPresentationBridge.resetTechnicalCandidate(actor);
-            if (actor instanceof Mob mob) {
-                mob.setNoAi(committed != null && committed.previousNoAi);
+            if (actor instanceof Mob mob && committed != null) {
+                mob.setNoAi(committed.previousNoAi);
             }
         }
 

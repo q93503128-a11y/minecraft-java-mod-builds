@@ -211,11 +211,13 @@ class R01EarthloongActionControllerTest {
         assertTrue(blocked.reposition());
         assertEquals(1L, controller.actionCounter());
 
-        var ready = controller.select(R01EarthloongEncounterData.Phase.ONE, onlyQuarry, 150);
-        assertEquals(
+        assertEquals(0L, controller.cooldownRemainingTicks(
                 R01EarthloongEncounterData.ActionId.QUARRY_RUSH,
-                ready.action().orElseThrow()
-        );
+                150
+        ));
+        var noImmediateSignatureRepeat =
+                controller.select(R01EarthloongEncounterData.Phase.ONE, onlyQuarry, 150);
+        assertTrue(noImmediateSignatureRepeat.reposition());
     }
 
     @Test
@@ -230,7 +232,10 @@ class R01EarthloongActionControllerTest {
         );
 
         controller.select(R01EarthloongEncounterData.Phase.ONE, onlyFurrow, 0);
-        controller.select(R01EarthloongEncounterData.Phase.ONE, onlyFurrow, 160);
+        var onlyRoot = R01EarthloongActionController.Legality.only(
+                R01EarthloongEncounterData.ActionId.ROOT_BREAKER
+        );
+        controller.select(R01EarthloongEncounterData.Phase.ONE, onlyRoot, 180);
         assertEquals(2, controller.consecutiveSpaceControlActions());
 
         var forcedReposition =
@@ -343,6 +348,18 @@ class R01EarthloongActionControllerTest {
         assertEquals(
                 R01EarthloongEncounterData.ActionId.CLAW_SWEEP,
                 next.action().orElseThrow());
+    }
+
+    @Test
+    void signatureActionCannotRepeatEvenWhenItIsTheOnlyLegalCandidate() {
+        var controller = new R01EarthloongActionController(
+                R01EarthloongEncounterDataLoader.loadBundled(), "signature-only", ACTOR);
+        var quarry = R01EarthloongActionController.Legality.only(
+                R01EarthloongEncounterData.ActionId.QUARRY_RUSH);
+        controller.select(R01EarthloongEncounterData.Phase.ONE, quarry, 0);
+        var repeat = controller.select(R01EarthloongEncounterData.Phase.ONE, quarry, 140);
+        assertTrue(repeat.reposition());
+        assertEquals(1L, controller.actionCounter());
     }
 
 }

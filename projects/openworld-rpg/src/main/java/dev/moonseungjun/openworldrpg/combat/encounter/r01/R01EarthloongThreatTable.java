@@ -73,6 +73,10 @@ public final class R01EarthloongThreatTable {
         return entries.isEmpty();
     }
 
+    public boolean contains(UUID playerId) {
+        return entries.containsKey(Objects.requireNonNull(playerId, "playerId"));
+    }
+
     public void remove(UUID playerId) {
         Objects.requireNonNull(playerId, "playerId");
         entries.remove(playerId);

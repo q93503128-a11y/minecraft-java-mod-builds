@@ -73,9 +73,13 @@ public final class R01EarthloongActionController {
             }
         }
 
-        if (lastCommittedAction != null && candidates.size() > 1) {
-            int repeatLimit = repeatLimit(lastCommittedAction);
-            if (consecutiveSameActionCount >= repeatLimit
+        if (lastCommittedAction != null) {
+            if (isSignatureAction(lastCommittedAction) && consecutiveSameActionCount >= 1) {
+                candidates.removeIf(rule -> rule.id() == lastCommittedAction);
+                if (candidates.isEmpty()) {
+                    return Decision.reposition(actionCounter);
+                }
+            } else if (consecutiveSameActionCount >= 2
                     && candidates.stream().anyMatch(rule -> rule.id() != lastCommittedAction)) {
                 candidates.removeIf(rule -> rule.id() == lastCommittedAction);
             }
@@ -164,10 +168,10 @@ public final class R01EarthloongActionController {
         return consecutiveSameActionCount;
     }
 
-    private static int repeatLimit(R01EarthloongEncounterData.ActionId action) {
+    private static boolean isSignatureAction(R01EarthloongEncounterData.ActionId action) {
         return switch (Objects.requireNonNull(action, "action")) {
-            case QUARRY_RUSH, LIGHTNING_FURROW, ROOT_BREAKER, FORKED_HEAVEN, EARTHLINE_SURGE -> 1;
-            case CLAW_SWEEP, TAIL_SCYTHE -> 2;
+            case QUARRY_RUSH, LIGHTNING_FURROW, ROOT_BREAKER, FORKED_HEAVEN, EARTHLINE_SURGE -> true;
+            case CLAW_SWEEP, TAIL_SCYTHE -> false;
         };
     }
 
