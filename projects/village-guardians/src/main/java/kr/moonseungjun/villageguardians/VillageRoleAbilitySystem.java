@@ -591,9 +591,10 @@ public final class VillageRoleAbilitySystem {
                 Set<UUID> used = new HashSet<>();
                 Vec3 cursor = player.getEyePosition();
                 for (int hop = 0; hop < 6; hop++) {
+                    Vec3 cursorPoint = cursor;
                     Mob next = candidates.stream()
                             .filter(target -> !used.contains(target.getUUID()))
-                            .min(Comparator.comparingDouble(target -> target.position().distanceToSqr(cursor)))
+                            .min(Comparator.comparingDouble(target -> target.position().distanceToSqr(cursorPoint)))
                             .orElse(null);
                     if (next == null) break;
                     Vec3 targetPos = next.getEyePosition();
@@ -658,7 +659,7 @@ public final class VillageRoleAbilitySystem {
                         (8.0f + playerLevel * 0.32f) * power,
                         false, 0.0, 0.10);
                 VillageSkillEffectSystem.promotionField(level, player, skill, center, sight, until, radius);
-                play(level, center, SoundEvents.END_PORTAL_FRAME_FILL.value(), 0.55f, 0.60f);
+                play(level, center, SoundEvents.BEACON_POWER_SELECT, 0.55f, 0.60f);
             }
 
             case LUMINAR_GUARDIAN_LIGHT -> {
@@ -888,7 +889,7 @@ public final class VillageRoleAbilitySystem {
         VillageSkillEffectEntity visual = VillageSkillEffectSystem.promotionProjectile(
                 level, player, skill, origin, normalized, maxAge, (float) speed);
         MOVING.put(projectile.getUUID(), new MovingSkill(player.getUUID(), kind, maxAge,
-                damage, radius, specialRank, origin, visual == null ? null : visual.getUUID()));
+                damage, radius, specialRank, origin, visual == null ? null : visual.getUUID(), skill));
     }
 
     private static void promotionStrike(
@@ -1239,7 +1240,7 @@ public final class VillageRoleAbilitySystem {
                         }
                     }
                     if (now % 20L == 0L) {
-                        play(level, area.center(), SoundEvents.END_PORTAL_FRAME_FILL.value(), 0.65f, 0.55f);
+                        play(level, area.center(), SoundEvents.BEACON_POWER_SELECT, 0.65f, 0.55f);
                     }
                 }
                 case LIGHTNING -> { /* handled above */ }
@@ -1286,7 +1287,12 @@ public final class VillageRoleAbilitySystem {
                         target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(),
                                 120 + moving.specialRank() * 35));
                     }
-                    VillageSkillEffectSystem.fireImpact(level, owner, position, moving.radius());
+                    if (moving.promotionSkill() != null) {
+                        VillageSkillEffectSystem.promotionImpact(level, owner, moving.promotionSkill(),
+                                position, horizontalLook(owner), moving.radius());
+                    } else {
+                        VillageSkillEffectSystem.fireImpact(level, owner, position, moving.radius());
+                    }
                     play(level, position, SoundEvents.GENERIC_EXPLODE.value(), 1.05f, 1.08f);
                 }
                 case BLADE -> {
@@ -1297,6 +1303,10 @@ public final class VillageRoleAbilitySystem {
                         }
                     }
                     if (!expired) continue;
+                    if (moving.promotionSkill() != null) {
+                        VillageSkillEffectSystem.promotionImpact(level, owner, moving.promotionSkill(),
+                                position, horizontalLook(owner), Math.max(1.2, moving.radius()));
+                    }
                 }
                 case ENERGY_ARROW -> {
                     for (Mob target : hits) {
@@ -1306,6 +1316,10 @@ public final class VillageRoleAbilitySystem {
                         }
                     }
                     if (!expired) continue;
+                    if (moving.promotionSkill() != null) {
+                        VillageSkillEffectSystem.promotionImpact(level, owner, moving.promotionSkill(),
+                                position, horizontalLook(owner), Math.max(1.4, moving.radius()));
+                    }
                     play(level, position, SoundEvents.GENERIC_EXPLODE.value(), 1.3f, 0.62f);
                 }
             }
@@ -1751,7 +1765,7 @@ public final class VillageRoleAbilitySystem {
                 level, player, origin, normalized, maxAge, (float) speed, specialRank);
         MOVING.put(projectile.getUUID(), new MovingSkill(player.getUUID(), MovingKind.FIRE_ORB,
                 maxAge, damage, radius, specialRank, origin,
-                visual == null ? null : visual.getUUID()));
+                visual == null ? null : visual.getUUID(), null));
     }
 
     private static void launchMovingAt(
@@ -1768,7 +1782,7 @@ public final class VillageRoleAbilitySystem {
         projectile.setDeltaMovement(direction.normalize().scale(speed));
         if (!level.addFreshEntity(projectile)) return;
         MOVING.put(projectile.getUUID(), new MovingSkill(player.getUUID(), kind, maxAge,
-                damage, radius, specialRank, origin, null));
+                damage, radius, specialRank, origin, null, null));
     }
 
     private static void spawnSideArrow(ServerLevel level, ServerPlayer owner,
@@ -2240,11 +2254,13 @@ public final class VillageRoleAbilitySystem {
         private final int specialRank;
         private final Set<UUID> hit = new HashSet<>();
         private final UUID effectId;
+        private final VillageRoleSkillSystem.ActiveSkill promotionSkill;
         private Vec3 lastPosition;
         private int age;
 
         private MovingSkill(UUID owner, MovingKind kind, int maxAge, float damage,
-                            double radius, int specialRank, Vec3 lastPosition, UUID effectId) {
+                            double radius, int specialRank, Vec3 lastPosition, UUID effectId,
+                            VillageRoleSkillSystem.ActiveSkill promotionSkill) {
             this.owner = owner;
             this.kind = kind;
             this.maxAge = maxAge;
@@ -2253,6 +2269,7 @@ public final class VillageRoleAbilitySystem {
             this.specialRank = specialRank;
             this.lastPosition = lastPosition;
             this.effectId = effectId;
+            this.promotionSkill = promotionSkill;
         }
 
         UUID owner() { return owner; }
@@ -2263,6 +2280,7 @@ public final class VillageRoleAbilitySystem {
         int specialRank() { return specialRank; }
         Set<UUID> hit() { return hit; }
         UUID effectId() { return effectId; }
+        VillageRoleSkillSystem.ActiveSkill promotionSkill() { return promotionSkill; }
         Vec3 lastPosition() { return lastPosition; }
         void lastPosition(Vec3 value) { lastPosition = value; }
         int age() { return age; }
