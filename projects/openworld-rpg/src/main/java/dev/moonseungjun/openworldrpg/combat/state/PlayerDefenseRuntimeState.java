@@ -143,7 +143,9 @@ public final class PlayerDefenseRuntimeState {
         }
 
         var guardType = defense.guardType();
-        if (!guardHeld || !hit.guardable() || guardType.isEmpty()) {
+        if (!guardHeld
+                || guardType.isEmpty()
+                || (!hit.guardable() && !hit.perfectGuardable())) {
             return IncomingDefenseResult.unopposed(
                     ProjectCombatRules.roundFinal(mitigated)
             );
@@ -156,6 +158,11 @@ public final class PlayerDefenseRuntimeState {
                 hit.attackerLevel()
         );
 
+        /*
+         * perfect_guardable is intentionally independent from ordinary guardable. Canon contains
+         * committed charges such as Iron Rush / Crown Charge / Quarry Rush that can be just-guarded
+         * without granting a safe hold-block answer.
+         */
         if (hit.perfectGuardable() && isPerfectGuardWindow(nowTick)) {
             double perfectCost = Math.max(2.0, normalGuardCost * 0.25);
             if (resources.spendStamina(
@@ -173,6 +180,12 @@ public final class PlayerDefenseRuntimeState {
                         false
                 );
             }
+        }
+
+        if (!hit.guardable()) {
+            return IncomingDefenseResult.unopposed(
+                    ProjectCombatRules.roundFinal(mitigated)
+            );
         }
 
         double absorption = PlayerDefenseAuthority.guardAbsorption(

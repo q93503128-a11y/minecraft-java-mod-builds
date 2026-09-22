@@ -244,4 +244,58 @@ class PlayerDefenseRuntimeStateTest {
                 true
         );
     }
+    @Test
+    void perfectOnlyCommittedChargeCanBeJustGuardedButNotHeldBlocked() {
+        var snapshot = PlayerDefenseAuthority.DefenseSnapshot.guarded(
+                35.0,
+                18.0,
+                28.0,
+                PlayerDefenseAuthority.GuardType.STANDARD_SHIELD
+        );
+        var perfectOnlyCharge = PlayerDefenseAuthority.IncomingHit.baseline(
+                100.0,
+                ProjectImpactTransaction.DamageSchool.PHYSICAL,
+                8,
+                PlayerDefenseAuthority.GuardPressureBand.HEAVY,
+                true,
+                false,
+                true
+        );
+
+        PlayerCombatState perfectResources = new PlayerCombatState(5, 0);
+        PlayerDefenseRuntimeState perfectDefense = new PlayerDefenseRuntimeState();
+        assertTrue(perfectDefense.pressGuard(0).perfectWindowStarted());
+
+        var perfect = perfectDefense.resolveIncoming(
+                perfectResources,
+                snapshot,
+                perfectOnlyCharge,
+                0
+        );
+
+        assertTrue(perfect.guarded());
+        assertTrue(perfect.perfectGuarded());
+        assertEquals(0.0, perfect.finalDamage(), EPSILON);
+        assertTrue(perfect.staminaSpent() > 0.0);
+
+        PlayerCombatState lateResources = new PlayerCombatState(5, 0);
+        PlayerDefenseRuntimeState lateDefense = new PlayerDefenseRuntimeState();
+        assertTrue(lateDefense.pressGuard(0).perfectWindowStarted());
+
+        var late = lateDefense.resolveIncoming(
+                lateResources,
+                snapshot,
+                perfectOnlyCharge,
+                4
+        );
+
+        assertFalse(late.guarded());
+        assertFalse(late.perfectGuarded());
+        assertFalse(late.guardBroken());
+        assertEquals(75.0, late.finalDamage(), EPSILON);
+        assertEquals(0.0, late.staminaSpent(), EPSILON);
+        assertEquals(100.0, lateResources.stamina(4), EPSILON);
+    }
+
+
 }

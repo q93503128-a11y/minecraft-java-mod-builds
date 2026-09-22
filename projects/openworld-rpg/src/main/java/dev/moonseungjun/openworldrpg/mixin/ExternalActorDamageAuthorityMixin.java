@@ -5,14 +5,18 @@ import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRunti
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * External actors with project-owned damage authority fail closed for vanilla/donor HP damage.
- * Exactly one project applicator call receives a one-shot authorization token.
+ * Project-owned external-actor damage fails closed in both directions.
+ *
+ * <p>Bound actors cannot receive donor/vanilla HP damage, and their donor-origin outgoing damage
+ * cannot directly hit players. Exactly one project applicator call may cross either boundary with
+ * a one-shot authorization token.</p>
  */
 @Mixin(LivingEntity.class)
 public abstract class ExternalActorDamageAuthorityMixin {
@@ -24,10 +28,18 @@ public abstract class ExternalActorDamageAuthorityMixin {
             CallbackInfoReturnable<Boolean> cir
     ) {
         LivingEntity self = (LivingEntity) (Object) this;
-        if (!ExternalActorBindingRuntime.ownsDamageAuthority(self)) {
+
+        if (ExternalActorBindingRuntime.ownsDamageAuthority(self)) {
+            if (!ProjectDamageApplicationContext.consumeIfAuthorized(self)) {
+                cir.setReturnValue(false);
+            }
             return;
         }
-        if (!ProjectDamageApplicationContext.consumeIfAuthorized(self)) {
+
+        if (self instanceof Player
+                && source.getEntity() instanceof LivingEntity attacker
+                && ExternalActorBindingRuntime.ownsDamageAuthority(attacker)
+                && !ProjectDamageApplicationContext.consumeIfAuthorized(self)) {
             cir.setReturnValue(false);
         }
     }

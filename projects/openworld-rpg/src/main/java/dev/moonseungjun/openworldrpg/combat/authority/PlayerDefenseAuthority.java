@@ -110,11 +110,6 @@ public final class PlayerDefenseAuthority {
             Objects.requireNonNull(school, "school");
             Objects.requireNonNull(guardPressure, "guardPressure");
             ProjectCombatRules.gearScale(attackerLevel);
-            if (perfectGuardable && !guardable) {
-                throw new IllegalArgumentException(
-                        "A perfect-guardable hit must also be guardable."
-                );
-            }
             requireFinitePositive(
                     "authoredDamageTakenMultiplier",
                     authoredDamageTakenMultiplier

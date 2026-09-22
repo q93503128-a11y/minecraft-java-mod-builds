@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * Minecraft-side application of an already-resolved project damage amount.
@@ -82,6 +83,13 @@ public final class ProjectMinecraftDamageApplicator {
         }
 
         float amount = (float) Math.min(finalDamage, Float.MAX_VALUE);
+        if (target instanceof Player
+                && ExternalActorBindingRuntime.ownsDamageAuthority(attacker)) {
+            return ProjectDamageApplicationContext.authorizeNext(
+                    target,
+                    () -> target.hurtServer(serverLevel, source, amount)
+            );
+        }
         return target.hurtServer(serverLevel, source, amount);
     }
 }
