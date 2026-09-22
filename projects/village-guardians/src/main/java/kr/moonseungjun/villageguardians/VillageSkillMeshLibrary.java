@@ -227,7 +227,7 @@ public final class VillageSkillMeshLibrary {
             // Vanguard: blade geometry, forward pressure, standards and rupture.
             case "vanguard_frontline_rend" -> {
                 if (phase == 1) {
-                    energyBlade(pose, out, b, b.local(0.0, 0.58, -0.45),
+                    energyBlade(pose, out, b.local(0.0, 0.58, -0.45),
                             b.local(0.0, 0.82, 3.15 * tierScale), 0.12, gold);
                 } else if (phase == 0) {
                     bladeFan(pose, out, b, 3, 1.28, 3.15 * tierScale, 0.58, 0.12,
@@ -277,7 +277,7 @@ public final class VillageSkillMeshLibrary {
             }
             case "vanguard_sword_chain" -> {
                 if (phase == 1) {
-                    energyBlade(pose, out, b, b.local(0.0, 0.70, -0.55),
+                    energyBlade(pose, out, b.local(0.0, 0.70, -0.55),
                             b.local(0.0, 0.95, 3.55 * tierScale), 0.105, gold);
                 } else if (phase == 0) {
                     bladeFan(pose, out, b, 5, 1.78, 3.45 * tierScale, 0.74, 0.105,
