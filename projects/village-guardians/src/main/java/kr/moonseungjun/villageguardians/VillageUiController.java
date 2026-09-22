@@ -426,7 +426,10 @@ public final class VillageUiController {
         List<String> labels = new ArrayList<>();
         for (VillageMercenarySystem.MercenaryClass kind : VillageMercenarySystem.MercenaryClass.values()) {
             actions.add("hire_mercenary:" + kind.id());
-            labels.add(kind.displayName() + " · 주화 " + VillageMercenarySystem.hireCost(kind)
+            boolean unlocked = VillageCouncilState.currentDay() >= kind.requiredDay();
+            labels.add(kind.displayName() + " · " + (unlocked
+                    ? "보급 " + VillageMercenarySystem.hireCost(kind)
+                    : "Day " + kind.requiredDay() + " 해금")
                     + "|" + kind.description());
         }
         send(player, "building", "용병 지휘", VillageMercenarySystem.status(player.level().getServer()), actions, labels);
