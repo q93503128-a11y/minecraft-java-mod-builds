@@ -34,6 +34,8 @@ public final class VillageMercenarySystem {
     private static final Map<UUID, Integer> KILLS = new LinkedHashMap<>();
     private static final Map<UUID, UUID> STRIKER_TRACKED_TARGETS = new LinkedHashMap<>();
     private static final Map<UUID, UUID> STRIKER_OPENING_TARGETS = new LinkedHashMap<>();
+    private static final Map<UUID, Long> NEXT_WARD_PULSE = new LinkedHashMap<>();
+    private static final Map<UUID, Long> NEXT_ARTILLERY_CAST = new LinkedHashMap<>();
     private static VillageMercenaryData savedData;
     private static VillageMercenarySnapshotData snapshotData;
     private static final List<MercenarySnapshot> NIGHT_SNAPSHOT = new ArrayList<>();
@@ -50,6 +52,8 @@ public final class VillageMercenarySystem {
         KILLS.clear();
         STRIKER_TRACKED_TARGETS.clear();
         STRIKER_OPENING_TARGETS.clear();
+        NEXT_WARD_PULSE.clear();
+        NEXT_ARTILLERY_CAST.clear();
         savedData.classes().forEach((key, value) -> parseUuid(key, uuid -> {
             MercenaryClass kind = MercenaryClass.fromId(value);
             if (kind != null) CLASSES.put(uuid, kind);
@@ -68,6 +72,8 @@ public final class VillageMercenarySystem {
         tickCounter = 0;
         STRIKER_TRACKED_TARGETS.clear();
         STRIKER_OPENING_TARGETS.clear();
+        NEXT_WARD_PULSE.clear();
+        NEXT_ARTILLERY_CAST.clear();
     }
 
     public static synchronized boolean recognize(Mob mob) {
@@ -119,6 +125,9 @@ public final class VillageMercenarySystem {
         if (blocked != null) return blocked;
         if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.BARRACKS)) {
             return "병영이 파괴되어 용병을 고용할 수 없습니다.";
+        }
+        if (VillageCouncilState.currentDay() < kind.requiredDay()) {
+            return kind.displayName() + "은(는) Day " + kind.requiredDay() + "부터 고용할 수 있습니다.";
         }
         if (!(player.level() instanceof ServerLevel level)) return "현재 월드에서는 고용할 수 없습니다.";
         int cap = capacity();
@@ -221,6 +230,8 @@ public final class VillageMercenarySystem {
             else if (kind == MercenaryClass.STRIKER) strikerPressure(level, mercenary, rank);
             else if (kind == MercenaryClass.RANGER) rangedAttack(level, mercenary, rank);
             else if (kind == MercenaryClass.MEDIC) healAllies(level, server, mercenary, rank);
+            else if (kind == MercenaryClass.WARDER) wardAllies(level, server, mercenary, rank);
+            else if (kind == MercenaryClass.ARTILLERIST) artilleryAttack(level, mercenary, rank);
         }
     }
 
@@ -475,6 +486,66 @@ public final class VillageMercenarySystem {
                 3 + Math.min(10, rank / 5), 0.55, 0.4, 0.55, 0.02);
     }
 
+
+    private static void wardAllies(
+            ServerLevel level, MinecraftServer server, IronGolem warder, int rank) {
+        long now = level.getGameTime();
+        if (NEXT_WARD_PULSE.getOrDefault(warder.getUUID(), 0L) > now) return;
+        NEXT_WARD_PULSE.put(warder.getUUID(), now + Math.max(52L, 92L - rank / 2L));
+        double utility = endlessUtilityAdaptation(rank);
+        double radius = (7.5 + 7.5 * masteryProgress(rank)) * utility;
+        double radiusSq = radius * radius;
+        int duration = 55 + rank;
+        int absorption = rank >= 80 ? 2 : rank >= 40 ? 1 : 0;
+        int resistance = rank >= 70 ? 1 : 0;
+        for (IronGolem ally : loadedMercenaries(level)) {
+            if (!ally.isAlive() || ally.distanceToSqr(warder) > radiusSq) continue;
+            ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration, absorption, false, false, true));
+            ally.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, duration, resistance, false, false, true));
+            ally.removeEffect(MobEffects.WEAKNESS);
+            ally.removeEffect(MobEffects.SLOWNESS);
+        }
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (player.level() != level || !player.isAlive() || VillageRespawnSystem.isDowned(player)
+                    || player.distanceToSqr(warder) > radiusSq) continue;
+            player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration, absorption, false, false, true));
+            player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, duration, resistance, false, false, true));
+            player.removeEffect(MobEffects.WEAKNESS);
+            player.removeEffect(MobEffects.SLOWNESS);
+        }
+        VillageDefenseEffectSystem.mercenaryWardPulse(level, warder.position(), radius);
+    }
+
+    private static void artilleryAttack(ServerLevel level, IronGolem artillerist, int rank) {
+        long now = level.getGameTime();
+        if (NEXT_ARTILLERY_CAST.getOrDefault(artillerist.getUUID(), 0L) > now) return;
+        NEXT_ARTILLERY_CAST.put(artillerist.getUUID(), now + Math.max(46L, 72L - rank / 4L));
+        double mastery = masteryProgress(rank);
+        double range = (38.0 + 28.0 * mastery) * endlessUtilityAdaptation(rank);
+        List<Mob> candidates = VillageRaidSystem.activeEnemiesNear(
+                level, artillerist.position(), range, 40, null).stream()
+                .filter(enemy -> VillageDefenseLineOfSight.hasLine(level, artillerist.getEyePosition(), enemy))
+                .toList();
+        Mob target = candidates.stream()
+                .max(java.util.Comparator.comparingDouble(Mob::getMaxHealth)
+                        .thenComparingDouble(enemy -> -artillerist.distanceToSqr(enemy)))
+                .orElse(null);
+        artillerist.setTarget(null);
+        if (target == null) return;
+        artillerist.getLookControl().setLookAt(target, 35.0f, 35.0f);
+        double radius = 3.2 + 2.3 * mastery;
+        float damage = (4.4f + rank * 0.055f) * mercenaryPower(rank)
+                * VillageDefenseResearchSystem.mercenaryDamageMultiplier()
+                * endlessDamageAdaptation(rank);
+        for (Mob enemy : VillageRaidSystem.activeEnemiesNear(level, target.position(), radius, 18, null)) {
+            if (!enemy.isAlive()) continue;
+            enemy.hurtServer(level, level.damageSources().mobAttack(artillerist), damage);
+            enemy.addEffect(new MobEffectInstance(
+                    MobEffects.SLOWNESS, 30 + rank / 2, rank >= 75 ? 1 : 0, false, false, true));
+        }
+        VillageDefenseEffectSystem.mercenaryArtilleryBurst(level, target.position(), radius);
+    }
+
     private static Mob nearestGroundEnemy(ServerLevel level, Vec3 origin, double range) {
         return VillageRaidSystem.activeEnemiesNear(level, origin, range, 64, null).stream()
                 .filter(enemy -> !VillageRaidSystem.isAerialEnemy(enemy))
@@ -544,6 +615,12 @@ public final class VillageMercenarySystem {
         } else if (kind == MercenaryClass.MEDIC) {
             mercenary.addEffect(new MobEffectInstance(MobEffects.REGENERATION, duration,
                     rank >= 75 ? 2 : rank >= 30 ? 1 : 0, false, false));
+        } else if (kind == MercenaryClass.WARDER) {
+            mercenary.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, duration,
+                    rank >= 80 ? 2 : rank >= 35 ? 1 : 0, false, false));
+        } else if (kind == MercenaryClass.ARTILLERIST) {
+            mercenary.addEffect(new MobEffectInstance(MobEffects.SPEED, duration,
+                    rank >= 70 ? 1 : 0, false, false));
         }
     }
 
@@ -555,6 +632,8 @@ public final class VillageMercenarySystem {
             case STRIKER -> 250.0 + (safeRank - 1) * 3.0;
             case RANGER -> 215.0 + (safeRank - 1) * 2.4;
             case MEDIC -> 270.0 + (safeRank - 1) * 2.8;
+            case WARDER -> 300.0 + (safeRank - 1) * 3.2;
+            case ARTILLERIST -> 225.0 + (safeRank - 1) * 2.5;
         }) * durability;
         double mastery = masteryProgress(safeRank);
         double armor = switch (kind) {
@@ -562,12 +641,16 @@ public final class VillageMercenarySystem {
             case STRIKER -> 11.0 + 7.0 * mastery;
             case RANGER -> 9.0 + 6.0 * mastery;
             case MEDIC -> 11.0 + 6.0 * mastery;
+            case WARDER -> 14.0 + 7.0 * mastery;
+            case ARTILLERIST -> 8.0 + 5.0 * mastery;
         };
         double attack = (switch (kind) {
             case BASTION -> 11.5 + safeRank * 0.12;
             case STRIKER -> 16.0 + safeRank * 0.20;
             case RANGER -> 5.8 + safeRank * 0.06;
             case MEDIC -> 7.0 + safeRank * 0.06;
+            case WARDER -> 8.0 + safeRank * 0.08;
+            case ARTILLERIST -> 6.0 + safeRank * 0.07;
         }) * VillageDefenseResearchSystem.mercenaryDamageMultiplier()
                 * endlessDamageAdaptation(safeRank);
         double speed = switch (kind) {
@@ -575,12 +658,16 @@ public final class VillageMercenarySystem {
             case STRIKER -> 0.31;
             case RANGER -> 0.28;
             case MEDIC -> 0.27;
+            case WARDER -> 0.265;
+            case ARTILLERIST -> 0.275;
         };
         double knockback = switch (kind) {
             case BASTION -> 0.72;
             case STRIKER -> 0.38;
             case RANGER -> 0.22;
             case MEDIC -> 0.30;
+            case WARDER -> 0.48;
+            case ARTILLERIST -> 0.24;
         };
         setBaseAttribute(mercenary, Attributes.MAX_HEALTH, maxHealth);
         setBaseAttribute(mercenary, Attributes.ARMOR, armor);
@@ -607,6 +694,8 @@ public final class VillageMercenarySystem {
             case STRIKER -> 4 + (int) Math.round(4.0 * mastery);
             case RANGER -> 2 + (int) Math.round(3.0 * mastery);
             case MEDIC -> 1 + (int) Math.round(3.0 * mastery);
+            case WARDER -> 3 + (int) Math.round(4.0 * mastery);
+            case ARTILLERIST -> 2 + (int) Math.round(3.0 * mastery);
         };
     }
 
@@ -729,23 +818,28 @@ public final class VillageMercenarySystem {
     public record RosterEntry(UUID uuid, MercenaryClass kind, int level, int kills, boolean loaded) {}
 
     public enum MercenaryClass {
-        BASTION("bastion", "방벽 수호병", "중장갑 전열병. 많은 적을 받아내며 성문과 시설 앞을 버팁니다."),
-        STRIKER("striker", "돌격 집행관", "고기동 근접 전투원. 전열의 빈틈을 빠르게 파고들어 정리합니다."),
-        RANGER("ranger", "성루 명사수", "후방 원거리 전투원. 공중 위협을 우선 요격하고 집중 사격합니다."),
-        MEDIC("medic", "전장 치유사", "후방 지원 전투원. 주변 플레이어와 용병을 주기적으로 회복합니다.");
+        BASTION("bastion", "방벽 수호병", 1, "중장갑 전열병. 많은 적을 받아내며 성문과 시설 앞을 버팁니다."),
+        STRIKER("striker", "돌격 집행관", 1, "고기동 근접 전투원. 새 표적을 추적해 첫 타에 큰 개시 피해를 줍니다."),
+        RANGER("ranger", "성루 명사수", 1, "후방 원거리 전투원. 공중 위협을 우선 요격하고 집중 사격합니다."),
+        MEDIC("medic", "전장 치유사", 1, "후방 지원 전투원. 주변 플레이어와 용병을 주기적으로 회복합니다."),
+        WARDER("warder", "결계 수도사", 25, "보호·정화 지원병. 주변 아군에게 흡수·저항을 부여하고 약화와 둔화를 걷어냅니다."),
+        ARTILLERIST("artillerist", "비전 포격병", 45, "후방 광역 화력병. 체력이 높은 위협을 골라 범위 포격으로 적 밀집을 압박합니다.");
 
         private final String id;
         private final String displayName;
+        private final int requiredDay;
         private final String description;
 
-        MercenaryClass(String id, String displayName, String description) {
+        MercenaryClass(String id, String displayName, int requiredDay, String description) {
             this.id = id;
             this.displayName = displayName;
+            this.requiredDay = requiredDay;
             this.description = description;
         }
 
         public String id() { return id; }
         public String displayName() { return displayName; }
+        public int requiredDay() { return requiredDay; }
         public String description() { return description; }
 
         public static MercenaryClass fromId(String id) {
