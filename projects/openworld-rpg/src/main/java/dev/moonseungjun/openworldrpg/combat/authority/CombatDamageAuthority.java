@@ -1,22 +1,76 @@
 package dev.moonseungjun.openworldrpg.combat.authority;
 
+import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatBuildState;
+import java.util.Objects;
+
 /**
  * Server-owned decision point for melee damage that arrives through external presentation backends.
  *
- * <p>The M0 bridge deliberately treats Better Combat's already server-rebuilt vanilla melee amount as a proposal.
- * R01 stat/defense/poise/status resolution will replace the neutral amount policy behind this class without moving
- * the authority seam back into the dependency.</p>
+ * <p>Better Combat is a presentation/hit-candidate source only. For project-owned actors the donor's
+ * proposed vanilla damage is validated as a positive hit candidate and then discarded; canonical
+ * WeaponPower, family cadence, player attributes, target mitigation and poise determine the result.</p>
  */
 public final class CombatDamageAuthority {
     private CombatDamageAuthority() {
     }
 
-    public static DamageDecision authorizeBetterCombatMelee(float proposedDamage, int comboCount) {
-        if (comboCount < 0 || !Float.isFinite(proposedDamage) || proposedDamage <= 0.0F) {
-            return DamageDecision.rejected();
+    public static MeleeDamageDecision authorizeBetterCombatMelee(
+            float donorProposedDamage,
+            int comboCount,
+            PlayerCombatBuildState build,
+            ProjectImpactTransaction.DamageTargetSnapshot target
+    ) {
+        Objects.requireNonNull(build, "build");
+        Objects.requireNonNull(target, "target");
+
+        if (comboCount < 0
+                || !Float.isFinite(donorProposedDamage)
+                || donorProposedDamage <= 0.0F
+                || !ProjectBasicAttackRules.supportsBetterCombatMelee(build.equipment().weaponFamily())) {
+            return MeleeDamageDecision.rejected();
         }
 
-        return DamageDecision.accepted(proposedDamage);
+        ProjectBasicAttackRules.BasicHitProfile hit =
+                ProjectBasicAttackRules.hitProfile(build.equipment().weaponFamily(), comboCount);
+        ProjectImpactTransaction.DamageSourceSnapshot source =
+                build.damageSource(ProjectImpactTransaction.DamageSchool.PHYSICAL);
+
+        ProjectImpactTransaction.DirectDamageResult damage =
+                ProjectImpactTransaction.resolveDirectDamage(
+                        new ProjectImpactTransaction.DirectDamageRequest(
+                                source,
+                                target,
+                                ProjectImpactTransaction.DamageSchool.PHYSICAL,
+                                hit.damageActionCoefficient(),
+                                1.0,
+                                1.0
+                        )
+                );
+
+        ProjectImpactTransaction.PoiseResult poise =
+                ProjectImpactTransaction.resolvePoise(
+                        new ProjectImpactTransaction.PoiseRequest(
+                                target.poiseMax(),
+                                target.poiseMax(),
+                                source.poiseOutputMultiplier(),
+                                hit.poiseActionCoefficient(),
+                                1.0,
+                                1.0
+                        )
+                );
+
+        if (damage.finalDamage() <= 0.0 || poise.poiseDamage() < 0.0) {
+            return MeleeDamageDecision.rejected();
+        }
+
+        return new MeleeDamageDecision(
+                true,
+                damage.finalDamage(),
+                poise.poiseDamage(),
+                hit.damageActionCoefficient(),
+                hit.poiseActionCoefficient(),
+                hit.cycleFinisher()
+        );
     }
 
     public static ProjectImpactTransaction.DirectDamageResult resolveProjectDirectDamage(
@@ -25,13 +79,16 @@ public final class CombatDamageAuthority {
         return ProjectImpactTransaction.resolveDirectDamage(request);
     }
 
-    public record DamageDecision(boolean accepted, float amount) {
-        public static DamageDecision accepted(float amount) {
-            return new DamageDecision(true, amount);
-        }
-
-        public static DamageDecision rejected() {
-            return new DamageDecision(false, 0.0F);
+    public record MeleeDamageDecision(
+            boolean accepted,
+            double finalDamage,
+            double poiseDamage,
+            double damageActionCoefficient,
+            double poiseActionCoefficient,
+            boolean cycleFinisher
+    ) {
+        public static MeleeDamageDecision rejected() {
+            return new MeleeDamageDecision(false, 0.0, 0.0, 0.0, 0.0, false);
         }
     }
 }
