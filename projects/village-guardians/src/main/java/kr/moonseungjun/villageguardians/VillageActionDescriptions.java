@@ -80,8 +80,8 @@ final class VillageActionDescriptions {
             case "test_exit" -> "시험 표적과 임시 장착을 정리하고 원래 위치로 복귀합니다.";
             case "open_fusion" -> "대장간에서 같은 종류·같은 등급 장비 세 개를 직접 선택해 합성합니다.";
             case "open_quick_chat" -> "접속 중인 수호단에게 보낼 빠른 신호를 엽니다.";
-            case "open_dashboard", "open_mayor" -> "마을 회관의 직업 배치와 시설 관리 화면을 엽니다.";
-            case "open_tower_control" -> "마을 회관에서 성벽과 네 종류 방어탑을 관리합니다.";
+            case "open_dashboard", "open_mayor" -> "마을 회관의 시설 유지보수와 포탑 지휘 화면을 엽니다.";
+            case "open_tower_control" -> "마을 회관에서 성벽과 10계열 배치 포탑을 관리합니다.";
             case "return_village" -> "전투 중이 아닐 때 마을 중앙 광장으로 귀환합니다.";
             case "claim_bread" -> "오늘의 무료 배급 식량을 받습니다. 일반 식량 구매는 이 배급으로 통합되었습니다.";
             case "buy_arrows" -> label + "\n수호 주화로 화살 묶음을 구매합니다.";
@@ -94,7 +94,7 @@ final class VillageActionDescriptions {
             case "forge_combine" -> label + "\n같은 종류·같은 등급 장비 세 개를 직접 골라 상위 등급 하나로 합성합니다.";
             case "skill_learn" -> label + "\n수호 주화로 연구 단계를 높여 기술 피해와 재사용 효율을 강화합니다.";
             case "train" -> label + "\n병영 레벨에 따라 모든 경험치 획득량이 자동으로 증가합니다.";
-            case "open_mercenary_roster", "hire_mercenary" -> "4병과 용병의 고용 비용·현재 명부·레벨을 확인하고 퇴역을 관리합니다.";
+            case "open_mercenary_roster", "hire_mercenary" -> "6병과 용병의 고용 비용·현재 명부·레벨을 확인하고 퇴역을 관리합니다.";
             case "tower_status" -> "활성화된 방어탑 종류와 현재 용병 수·정원을 확인합니다.";
             case "wall_status_local" -> "현재 성벽 내구도를 확인합니다. 시설 수리·강화는 회관에서 진행합니다.";
             case "use_infirmary" -> "의무소는 낮 동안 체력을 완전히 회복하고 단계별 전투 버프를 자동 제공합니다.";
