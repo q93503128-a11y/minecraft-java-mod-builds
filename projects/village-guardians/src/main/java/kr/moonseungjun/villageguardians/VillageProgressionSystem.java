@@ -461,11 +461,6 @@ public final class VillageProgressionSystem {
         if (current >= MAX_BUILDING_LEVEL) {
             return building.displayName() + "은(는) 최고 레벨입니다.";
         }
-        int nextLevel = current + 1;
-        int requiredDay = requiredDayForBuildingLevel(nextLevel);
-        if (VillageCouncilState.currentDay() < requiredDay) {
-            return building.displayName() + " " + nextLevel + "단계는 Day " + requiredDay + "부터 강화할 수 있습니다.";
-        }
         int cost = upgradeCost(current);
         if (supplies < cost) {
             return "공동 보급품 부족: 필요 " + cost + ", 현재 " + supplies;
@@ -618,17 +613,6 @@ public final class VillageProgressionSystem {
         retrySupportClaims++;
         supplies += granted;
         return granted;
-    }
-
-    public static int requiredDayForBuildingLevel(int nextLevel) {
-        return switch (Math.max(1, nextLevel)) {
-            case 1, 2, 3, 4, 5 -> 1;
-            case 6 -> 25;
-            case 7 -> 40;
-            case 8 -> 55;
-            case 9 -> 75;
-            default -> 90;
-        };
     }
 
     public static int upgradeCost(int currentLevel) {
