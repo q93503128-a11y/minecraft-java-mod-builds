@@ -77,6 +77,20 @@ public final class VillageDefenseEffectSystem {
                 String.format(Locale.ROOT, "%.2f", Math.max(1.0, radius)));
     }
 
+    public static void mercenaryWardPulse(ServerLevel level, Vec3 center, double radius) {
+        if (level == null || center == null) return;
+        VillageSkillEffectEntity.spawn(level, null, "merc_ward_pulse", center,
+                new Vec3(0.0, 0.0, 1.0), 20, 0.0f,
+                String.format(Locale.ROOT, "%.2f", Math.max(1.0, radius)));
+    }
+
+    public static void mercenaryArtilleryBurst(ServerLevel level, Vec3 center, double radius) {
+        if (level == null || center == null) return;
+        VillageSkillEffectEntity.spawn(level, null, "merc_artillery_burst", center,
+                new Vec3(0.0, 0.0, 1.0), 18, 0.0f,
+                String.format(Locale.ROOT, "%.2f", Math.max(1.0, radius)));
+    }
+
     public static void structureImpact(ServerLevel level, Vec3 center, boolean heavy) {
         if (level == null || center == null) return;
         VillageSkillEffectEntity.spawn(level, null, "siege_structure_impact", center,
