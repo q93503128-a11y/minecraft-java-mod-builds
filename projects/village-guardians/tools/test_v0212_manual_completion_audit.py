@@ -16,6 +16,8 @@ def main() -> None:
     sets = read("VillageEquipmentSetSystem.java")
     tooltip = read("VillageEquipmentTooltipClient.java")
     abilities = read("VillageRoleAbilitySystem.java")
+    rpg = read("VillageRpgSystem.java")
+    techniques = read("VillageCombatTechniqueSystem.java")
     campaign = read("VillageCampaignProgression.java")
     progress = read("RpgProgress.java")
     promotion = read("VillageRolePromotionSystem.java")
@@ -46,6 +48,10 @@ def main() -> None:
     assert "targetMultiplier(ServerPlayer player, Mob target, boolean projectile)" in sets
     assert "roleSkillTargetMultiplier" in sets
     assert "VillageEquipmentSetSystem.roleSkillTargetMultiplier(owner, target, role)" in abilities
+    assert "VillageRpgSystem.dealPreScaledPlayerDamage(level, owner, target, trained)" in abilities
+    assert "damageSources().indirectMagic(owner, owner)" in rpg
+    assert "if (!preScaledPlayerDamage && !preScaledRicochet)" in rpg
+    assert "VillageRpgSystem.dealPreScaledPlayerDamage(level, attacker, target, damage)" in techniques
 
     # Current player-facing docs/UI no longer advertise the retired two-set/three-piece model.
     current_set_section = readme.split("## 장비·무기·세트", 1)[1].split("## 회관 지휘 UI", 1)[0]
@@ -59,6 +65,7 @@ def main() -> None:
     print("[PASS] canonical Day100/Lv300/promotion/mastery/defense caps agree with runtime")
     print("[PASS] actual raid loot path stamps source-derived explicit five-set identity")
     print("[PASS] five-piece conditional capstones reach direct role-skill damage as well as normal attacks")
+    print("[PASS] custom role skills and secondary combat techniques preserve player kill ownership without double scaling")
     print("[PASS] current README and equipment tooltip expose the production 2/3/4/5-piece model")
 
 if __name__ == "__main__":

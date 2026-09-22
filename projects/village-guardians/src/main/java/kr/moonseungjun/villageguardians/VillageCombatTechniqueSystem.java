@@ -77,7 +77,7 @@ public final class VillageCombatTechniqueSystem {
         float ratio = playerLevel >= 18 && research >= 4 ? 0.52f : 0.36f;
         List<Mob> targets = VillageRaidSystem.activeEnemiesNear(
                 level, primary.position(), 7.0 + research, limit, primary.getUUID());
-        secondaryDamage(level, targets, Math.max(1.0f, primaryDamage * ratio));
+        secondaryDamage(level, attacker, targets, Math.max(1.0f, primaryDamage * ratio));
     }
 
     private static void handleSwordTechnique(
@@ -95,14 +95,17 @@ public final class VillageCombatTechniqueSystem {
         int limit = playerLevel >= 20 ? 7 : 4;
         List<Mob> targets = VillageRaidSystem.activeEnemiesNear(
                 level, primary.position(), 4.5 + research * 0.35, limit, primary.getUUID());
-        secondaryDamage(level, targets, Math.max(1.0f, primaryDamage * (0.38f + research * 0.035f)));
+        secondaryDamage(level, attacker, targets, Math.max(1.0f, primaryDamage * (0.38f + research * 0.035f)));
     }
 
-    private static void secondaryDamage(ServerLevel level, List<Mob> targets, float damage) {
-        if (targets.isEmpty()) return;
+    private static void secondaryDamage(
+            ServerLevel level, ServerPlayer attacker, List<Mob> targets, float damage) {
+        if (attacker == null || targets.isEmpty()) return;
         SECONDARY_DAMAGE.set(true);
         try {
-            for (Mob target : targets) if (target.isAlive()) target.hurtServer(level, level.damageSources().magic(), damage);
+            for (Mob target : targets) {
+                if (target.isAlive()) VillageRpgSystem.dealPreScaledPlayerDamage(level, attacker, target, damage);
+            }
         } finally {
             SECONDARY_DAMAGE.set(false);
         }

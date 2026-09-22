@@ -1146,7 +1146,8 @@ public final class VillageRoleAbilitySystem {
     }
 
     public static void handleIncomingDamage(LivingIncomingDamageEvent event) {
-        if (event.getSource().getEntity() instanceof ServerPlayer attacker) {
+        if (!VillageRpgSystem.isPreScaledPlayerDamage()
+                && event.getSource().getEntity() instanceof ServerPlayer attacker) {
             VillageRole role = activeRole(attacker);
             if (event.getSource().getDirectEntity() instanceof AbstractArrow directArrow) {
                 EmpoweredArrowState rapid = RAPID_ARROWS.remove(directArrow.getUUID());
@@ -1701,7 +1702,7 @@ public final class VillageRoleAbilitySystem {
         float trained = VillageRpgSystem.applySkillAttackTraining(owner, damage, profile);
         VillageRole role = VillageCouncilState.roleOf(owner.getUUID()).orElse(null);
         trained *= VillageEquipmentSetSystem.roleSkillTargetMultiplier(owner, target, role);
-        target.hurtServer(level, level.damageSources().magic(), Math.max(0.1f, trained));
+        VillageRpgSystem.dealPreScaledPlayerDamage(level, owner, target, trained);
     }
 
     public static boolean isPreScaledRicochetDamage(ServerPlayer owner, Entity target) {

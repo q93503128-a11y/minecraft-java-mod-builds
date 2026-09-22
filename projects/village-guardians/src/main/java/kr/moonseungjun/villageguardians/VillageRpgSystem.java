@@ -18,9 +18,13 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 public final class VillageRpgSystem {
+    private static final ThreadLocal<Boolean> PRE_SCALED_PLAYER_DAMAGE =
+            ThreadLocal.withInitial(() -> false);
+
     private VillageRpgSystem() {}
 
     public static void resetTransientState() {
+        PRE_SCALED_PLAYER_DAMAGE.remove();
         VillageCombatTechniqueSystem.reset();
         VillageRoleSkillSystem.resetTransientState();
         VillageRoleMasterySystem.reset();
@@ -75,9 +79,10 @@ public final class VillageRpgSystem {
             }
             return;
         }
+        boolean preScaledPlayerDamage = isPreScaledPlayerDamage();
         boolean preScaledRicochet = event.getSource().getEntity() instanceof ServerPlayer ricochetOwner
                 && VillageRoleAbilitySystem.isPreScaledRicochetDamage(ricochetOwner, event.getEntity());
-        if (!preScaledRicochet
+        if (!preScaledPlayerDamage && !preScaledRicochet
                 && event.getSource().getEntity() instanceof ServerPlayer attacker
                 && !(event.getEntity() instanceof ServerPlayer)) {
             boolean projectile = event.getSource().getDirectEntity() instanceof AbstractArrow;
@@ -145,7 +150,29 @@ public final class VillageRpgSystem {
             event.setAmount(event.getAmount() * value);
         }
         VillagePersonalCombatSystem.handleIncomingDamage(event);
-        if (!preScaledRicochet) VillageCombatTechniqueSystem.handleIncomingDamage(event);
+        if (!preScaledPlayerDamage && !preScaledRicochet) {
+            VillageCombatTechniqueSystem.handleIncomingDamage(event);
+        }
+    }
+
+    static boolean isPreScaledPlayerDamage() {
+        return Boolean.TRUE.equals(PRE_SCALED_PLAYER_DAMAGE.get());
+    }
+
+    static void dealPreScaledPlayerDamage(
+            ServerLevel level, ServerPlayer owner, Mob target, float damage) {
+        if (level == null || owner == null || target == null || !target.isAlive()) return;
+        boolean previous = isPreScaledPlayerDamage();
+        PRE_SCALED_PLAYER_DAMAGE.set(true);
+        try {
+            // Keep skill/technique damage in the indirect-magic family while exposing the player as
+            // the causing entity. Death rewards and kill passives can now identify the real owner,
+            // and the pre-scaled marker prevents normal attack multipliers from being applied twice.
+            target.hurtServer(level, level.damageSources().indirectMagic(owner, owner), Math.max(0.1f, damage));
+        } finally {
+            if (previous) PRE_SCALED_PLAYER_DAMAGE.set(true);
+            else PRE_SCALED_PLAYER_DAMAGE.remove();
+        }
     }
 
     public static void handleDeath(LivingDeathEvent event) {
