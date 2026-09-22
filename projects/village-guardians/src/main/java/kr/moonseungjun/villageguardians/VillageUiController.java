@@ -33,7 +33,10 @@ public final class VillageUiController {
             boolean canUpgrade = building != VillageProgressionSystem.Building.TOWN_HALL
                     && level < VillageProgressionSystem.MAX_BUILDING_LEVEL;
             int upgradeCost = canUpgrade ? VillageProgressionSystem.upgradeCost(level) : 0;
-            String nextEffect = canUpgrade ? managementEffect(building, level + 1, server) : "";
+            String nextEffect = canUpgrade
+                    ? managementEffect(building, level + 1, server)
+                    + " · 해금 Day " + VillageProgressionSystem.requiredDayForBuildingLevel(level + 1)
+                    : "";
             String levelText = building == VillageProgressionSystem.Building.TOWN_HALL
                     ? "회관 본체" : level + "단계 / " + VillageProgressionSystem.MAX_BUILDING_LEVEL + "단계";
             actions.add("facility_card:" + building.id());
