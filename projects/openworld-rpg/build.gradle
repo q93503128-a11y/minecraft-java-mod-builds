@@ -372,6 +372,93 @@ tasks.register('inspectCreatureFoundationDependencies') {
     }
 }
 
+
+tasks.register('inspectEarthloongDependencySurface') {
+    group = 'verification'
+    description = 'Records the exact Earthloong class/resource surface from the pinned Threateningly Mobs JAR.'
+
+    doLast {
+        def file = configurations.creatureFoundation.resolve().find {
+            it.name == 'threateninglly-mobs-continued-1637799-8804647.jar'
+        }
+        if (file == null || !file.isFile()) {
+            throw new GradleException('Pinned Threateningly Mobs artifact was not resolved.')
+        }
+
+        def expected = expectedCreatureFoundationSha256[file.name]
+        def actual = sha256Of(file)
+        if (expected == null || !actual.equalsIgnoreCase(expected)) {
+            throw new GradleException(
+                    "Earthloong dependency byte mismatch for ${file.name}: expected ${expected}, got ${actual}"
+            )
+        }
+
+        def output = layout.buildDirectory.file('reports/m0/earthloong-dependency-surface.txt').get().asFile
+        output.parentFile.mkdirs()
+        output.text = "file=${file.name}\nsha256=${actual}\n"
+
+        def zip = new java.util.zip.ZipFile(file)
+        def matchingEntries
+        try {
+            matchingEntries = java.util.Collections.list(zip.entries())
+                    .collect { it.name }
+                    .findAll { it.toLowerCase(java.util.Locale.ROOT).contains('earthloong') }
+                    .sort()
+        } finally {
+            zip.close()
+        }
+
+        if (matchingEntries.isEmpty()) {
+            throw new GradleException('Pinned Threateningly Mobs JAR exposes no Earthloong-named entries.')
+        }
+
+        output << "\n[entries]\n"
+        matchingEntries.each {
+            println "EARTHLOONG_DEPENDENCY_ENTRY ${it}"
+            output << it << System.lineSeparator()
+        }
+
+        def classEntries = matchingEntries.findAll { it.endsWith('.class') }
+        if (classEntries.isEmpty()) {
+            throw new GradleException('Pinned Threateningly Mobs JAR exposes no Earthloong class entries.')
+        }
+
+        def javap = new File(System.getProperty('java.home'), 'bin/javap')
+        if (!javap.isFile()) {
+            throw new GradleException("javap not found in active Java toolchain: ${javap}")
+        }
+
+        output << "\n[javap]\n"
+        classEntries.each { entry ->
+            def className = entry.substring(0, entry.length() - '.class'.length()).replace('/', '.')
+            def process = new ProcessBuilder(
+                    javap.absolutePath,
+                    '-classpath',
+                    file.absolutePath,
+                    '-p',
+                    '-c',
+                    className
+            ).redirectErrorStream(true).start()
+            def disassembly = process.inputStream.getText('UTF-8')
+            def exitCode = process.waitFor()
+            if (exitCode != 0) {
+                throw new GradleException(
+                        "javap failed for ${className} with exit ${exitCode}: ${disassembly}"
+                )
+            }
+
+            println "EARTHLOONG_DEPENDENCY_CLASS ${className}"
+            output << "\n===== ${className} =====\n"
+            output << disassembly
+            if (!disassembly.endsWith(System.lineSeparator())) {
+                output << System.lineSeparator()
+            }
+        }
+
+        println "EARTHLOONG_DEPENDENCY_SURFACE_PASS classes=${classEntries.size()} report=${output}"
+    }
+}
+
 processResources {
     inputs.property 'version', project.version
     filesMatching('fabric.mod.json') {

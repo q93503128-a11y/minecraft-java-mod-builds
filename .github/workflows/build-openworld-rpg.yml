@@ -50,6 +50,9 @@ jobs:
       - name: Verify pinned creature dependency metadata
         run: ./gradlew --no-daemon inspectCreatureFoundationDependencies --stacktrace
 
+      - name: Inspect pinned Earthloong dependency surface
+        run: ./gradlew --no-daemon inspectEarthloongDependencySurface --stacktrace
+
       - name: Test and build M0 core
         run: ./gradlew --no-daemon clean test build --stacktrace
 
@@ -346,6 +349,7 @@ jobs:
           - gameplay foundation artifact SHA-256 verification: PASS
           - gameplay foundation metadata inspection: PASS
           - creature dependency artifact SHA-256/metadata verification: PASS
+          - pinned Earthloong dependency class/resource surface inspection: PASS
           - unit tests: PASS
           - clean build: PASS
           - bootstrap JAR verify: PASS
