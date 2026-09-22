@@ -57,13 +57,19 @@ public final class VillageInventoryPanel {
         graphics.fill(layout.left(), layout.top(), layout.left() + 3, layout.bottom(), ACCENT);
 
         var player = minecraft.player;
-        int wall = player == null ? 0 : VillageEquipmentSetSystem.countEquipped(player,
-                VillageEquipmentSetSystem.EquipmentSet.WALL_GUARDIAN);
+        int frontline = player == null ? 0 : VillageEquipmentSetSystem.countEquipped(player,
+                VillageEquipmentSetSystem.EquipmentSet.FRONTLINE_EXECUTOR);
         int hunter = player == null ? 0 : VillageEquipmentSetSystem.countEquipped(player,
                 VillageEquipmentSetSystem.EquipmentSet.NIGHT_HUNTER);
+        int arcane = player == null ? 0 : VillageEquipmentSetSystem.countEquipped(player,
+                VillageEquipmentSetSystem.EquipmentSet.ARCANE_RESONANCE);
+        int dawn = player == null ? 0 : VillageEquipmentSetSystem.countEquipped(player,
+                VillageEquipmentSetSystem.EquipmentSet.DAWN_COVENANT);
+        int wall = player == null ? 0 : VillageEquipmentSetSystem.countEquipped(player,
+                VillageEquipmentSetSystem.EquipmentSet.WALL_GUARDIAN);
 
         if (layout.compact()) {
-            renderCompact(graphics, minecraft, layout, progress, wall, hunter);
+            renderCompact(graphics, minecraft, layout, progress, frontline, hunter, arcane, dawn, wall);
             return;
         }
 
@@ -87,10 +93,14 @@ public final class VillageInventoryPanel {
         graphics.text(minecraft.font, fit(minecraft, VillageClientKeys.compactSummary(), layout.width() - 18),
                 layout.left() + 9, layout.top() + 70, MUTED, false);
 
-        graphics.text(minecraft.font, fit(minecraft, setLine("성벽 수호자", wall), layout.width() - 18),
-                layout.left() + 9, layout.top() + 82, wall >= 2 ? GOLD : MUTED, false);
-        graphics.text(minecraft.font, fit(minecraft, setLine("밤사냥꾼", hunter), layout.width() - 18),
-                layout.left() + 9, layout.top() + 93, hunter >= 2 ? ACCENT : MUTED, false);
+        graphics.text(minecraft.font,
+                fit(minecraft, setCountLine(frontline, hunter, arcane), layout.width() - 18),
+                layout.left() + 9, layout.top() + 82,
+                Math.max(frontline, Math.max(hunter, arcane)) >= 2 ? ACCENT : MUTED, false);
+        graphics.text(minecraft.font,
+                fit(minecraft, setCountLine(dawn, wall), layout.width() - 18),
+                layout.left() + 9, layout.top() + 93,
+                Math.max(dawn, wall) >= 2 ? GOLD : MUTED, false);
 
         int gap = 5;
         int buttonWidth = (layout.width() - 18 - gap) / 2;
@@ -105,26 +115,27 @@ public final class VillageInventoryPanel {
                 layout.left() + 9 + buttonWidth + gap, firstY + 21, buttonWidth, VillageClientKeys.quickCommunicationKeyName() + " 통신", GOLD);
     }
 
-    private static void renderCompact(GuiGraphicsExtractor graphics, Minecraft minecraft, Layout layout,
-                                      Progress progress, int wall, int hunter) {
+    private static void renderCompact(
+            GuiGraphicsExtractor graphics, Minecraft minecraft, Layout layout, Progress progress,
+            int frontline, int hunter, int arcane, int dawn, int wall) {
         int x = layout.left() + 6;
         int max = Math.max(1, layout.width() - 12);
         graphics.text(minecraft.font, fit(minecraft, "수호자 Lv." + progress.level(), max), x, layout.top() + 7, TEXT, false);
-        graphics.text(minecraft.font, fit(minecraft, compactSetLine("수호", wall), max),
-                x, layout.top() + 22, wall >= 2 ? GOLD : MUTED, false);
-        graphics.text(minecraft.font, fit(minecraft, compactSetLine("사냥", hunter), max),
-                x, layout.top() + 34, hunter >= 2 ? ACCENT : MUTED, false);
+        graphics.text(minecraft.font, fit(minecraft, setCountLine(frontline, hunter, arcane), max),
+                x, layout.top() + 22, Math.max(frontline, Math.max(hunter, arcane)) >= 2 ? ACCENT : MUTED, false);
+        graphics.text(minecraft.font, fit(minecraft, setCountLine(dawn, wall), max),
+                x, layout.top() + 34, Math.max(dawn, wall) >= 2 ? GOLD : MUTED, false);
         graphics.text(minecraft.font, fit(minecraft, "직업 " + status.role(), max), x, layout.top() + 49, MUTED, false);
         graphics.text(minecraft.font, fit(minecraft, "주화 " + economyValue(status.economy()), max), x, layout.top() + 61, GOLD, false);
         graphics.text(minecraft.font, fit(minecraft, VillageClientKeys.compactSummary(), max), x, layout.top() + 77, MUTED, false);
     }
 
-    private static String setLine(String name, int count) {
-        return name + " " + count + "/3  " + (count >= 2 ? "◆2" : "◇2") + " " + (count >= 3 ? "◆3" : "◇3");
+    private static String setCountLine(int frontline, int hunter, int arcane) {
+        return "세트 전" + frontline + "/5 사" + hunter + "/5 비" + arcane + "/5";
     }
 
-    private static String compactSetLine(String name, int count) {
-        return name + " " + count + "/3 " + (count >= 2 ? "◆2" : "◇2") + " " + (count >= 3 ? "◆3" : "◇3");
+    private static String setCountLine(int dawn, int wall) {
+        return "세트 성" + dawn + "/5 수" + wall + "/5 · 2/3/4/5";
     }
 
     private static void drawRow(GuiGraphicsExtractor graphics, Minecraft minecraft, Layout layout,
