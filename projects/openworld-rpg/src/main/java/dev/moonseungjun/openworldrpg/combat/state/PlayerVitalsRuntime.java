@@ -65,13 +65,6 @@ public final class PlayerVitalsRuntime {
             return;
         }
 
-        PlayerCombatBuildState build = CombatStateServices.combatBuilds()
-                .build(player.getUUID())
-                .orElse(null);
-        if (build == null) {
-            return;
-        }
-
         long gameTick = player.level().getGameTime();
         PlayerCombatState state = CombatStateServices.states()
                 .getOrCreate(player.getUUID(), gameTick);
