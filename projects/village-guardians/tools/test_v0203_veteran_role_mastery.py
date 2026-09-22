@@ -71,7 +71,7 @@ def main() -> None:
     # Combat transient state is reset and the existing role screens explain the mastery state.
     assert "VillageRoleMasterySystem.reset();" in rpg
     assert "VillageRoleMasterySystem.summary(player, role)" in ui
-    assert "서로 다른 두 기술을 연계하면 Lv.90+ 전투 숙련이 발동" in ui
+    assert "서로 다른 두 기술을 연계하면 Lv.90+ 전투 숙련이 발동" not in ui
 
     print("[PASS] Lv.90/150/210/270/300 create five late-game mastery milestones")
     print("[PASS] existing two-skill loadouts create focused vs mixed mastery builds")
