@@ -194,7 +194,7 @@ public final class VillageRpgSystem {
         if (role == null) return 1.0f;
         return switch (role) {
             case VANGUARD -> !projectile && player.getMainHandItem().is(ItemTags.SWORDS) ? 1.28f : 1.08f;
-            case RANGER -> projectile ? (isOnWallTop(player) ? 1.58f : 1.30f) : 0.92f;
+            case RANGER -> projectile ? (isOnWallTop(player) ? 1.64f : 1.34f) : 0.92f;
             case ARCANIST -> projectile ? 1.04f : 0.98f;
             case LUMINAR -> 0.94f;
             case WARDEN -> 0.96f;

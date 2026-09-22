@@ -32,6 +32,8 @@ public final class VillageMercenarySystem {
     private static final Map<UUID, MercenaryClass> CLASSES = new LinkedHashMap<>();
     private static final Map<UUID, Integer> LEVELS = new LinkedHashMap<>();
     private static final Map<UUID, Integer> KILLS = new LinkedHashMap<>();
+    private static final Map<UUID, UUID> STRIKER_TRACKED_TARGETS = new LinkedHashMap<>();
+    private static final Map<UUID, UUID> STRIKER_OPENING_TARGETS = new LinkedHashMap<>();
     private static VillageMercenaryData savedData;
     private static VillageMercenarySnapshotData snapshotData;
     private static final List<MercenarySnapshot> NIGHT_SNAPSHOT = new ArrayList<>();
@@ -46,6 +48,8 @@ public final class VillageMercenarySystem {
         CLASSES.clear();
         LEVELS.clear();
         KILLS.clear();
+        STRIKER_TRACKED_TARGETS.clear();
+        STRIKER_OPENING_TARGETS.clear();
         savedData.classes().forEach((key, value) -> parseUuid(key, uuid -> {
             MercenaryClass kind = MercenaryClass.fromId(value);
             if (kind != null) CLASSES.put(uuid, kind);
@@ -62,6 +66,8 @@ public final class VillageMercenarySystem {
 
     public static void reset() {
         tickCounter = 0;
+        STRIKER_TRACKED_TARGETS.clear();
+        STRIKER_OPENING_TARGETS.clear();
     }
 
     public static synchronized boolean recognize(Mob mob) {
@@ -241,6 +247,8 @@ public final class VillageMercenarySystem {
 
     public static synchronized void handleDeath(Mob mob) {
         if (mob == null || !isMercenary(mob.getUUID())) return;
+        STRIKER_TRACKED_TARGETS.remove(mob.getUUID());
+        STRIKER_OPENING_TARGETS.remove(mob.getUUID());
         if (mob.level() instanceof ServerLevel level) VillageMercenaryPresentationSystem.remove(level, mob.getUUID());
         unregister(mob.getUUID());
     }
@@ -250,10 +258,9 @@ public final class VillageMercenarySystem {
         ServerLevel level = server.overworld();
         for (IronGolem mercenary : loadedMercenaries(level)) {
             recognize(mercenary);
-            float missing = Math.max(0.0f, mercenary.getMaxHealth() - mercenary.getHealth());
-            if (missing <= 0.0f) continue;
-            float recovery = Math.max(36.0f, mercenary.getMaxHealth() * 0.30f);
-            mercenary.heal(Math.min(missing, recovery));
+            if (mercenary.getHealth() < mercenary.getMaxHealth()) {
+                mercenary.setHealth(mercenary.getMaxHealth());
+            }
         }
     }
 
@@ -377,18 +384,53 @@ public final class VillageMercenarySystem {
                     MobEffects.SLOWNESS, 28 + (int) Math.round(90.0 * mastery), 0));
             engaged = true;
         }
-        if (engaged) VillageDefenseEffectSystem.mercenaryGuardPulse(level, mercenary.position(), radius);
+        if (engaged) {
+            int barrierAmplifier = Math.min(6, 1 + rank / 18);
+            int barrierDuration = 70 + (int) Math.round(50.0 * mastery);
+            mercenary.addEffect(new MobEffectInstance(
+                    MobEffects.ABSORPTION, barrierDuration, barrierAmplifier, false, false, true));
+            VillageDefenseEffectSystem.mercenaryGuardPulse(level, mercenary.position(), radius);
+        }
     }
 
     private static void strikerPressure(ServerLevel level, IronGolem mercenary, int rank) {
         double mastery = masteryProgress(rank);
         double range = (22.0 + 30.0 * mastery) * endlessUtilityAdaptation(rank);
         Mob target = nearestGroundEnemy(level, mercenary.position(), range);
-        if (target == null || !VillageDefenseLineOfSight.hasLine(level, mercenary.getEyePosition(), target)) return;
+        UUID strikerId = mercenary.getUUID();
+        if (target == null || !VillageDefenseLineOfSight.hasLine(level, mercenary.getEyePosition(), target)) {
+            STRIKER_TRACKED_TARGETS.remove(strikerId);
+            STRIKER_OPENING_TARGETS.remove(strikerId);
+            return;
+        }
+        UUID targetId = target.getUUID();
+        UUID previousTarget = STRIKER_TRACKED_TARGETS.put(strikerId, targetId);
+        if (!targetId.equals(previousTarget)) {
+            STRIKER_OPENING_TARGETS.put(strikerId, targetId);
+        }
         mercenary.setTarget(target);
         mercenary.getNavigation().moveTo(target, 1.18 + 0.35 * mastery);
         VillageDefenseEffectSystem.mercenaryStrikerPressure(level, mercenary.position().add(0, 1.2, 0),
                 target.position().add(0, target.getBbHeight() * 0.5, 0));
+    }
+
+    public static void applyOutgoingDamage(LivingIncomingDamageEvent event) {
+        if (event == null
+                || !(event.getSource().getEntity() instanceof IronGolem mercenary)
+                || mercenaryClass(mercenary) != MercenaryClass.STRIKER
+                || !(event.getEntity() instanceof Mob target)
+                || !VillageRaidSystem.isRaidEnemy(target)) return;
+        UUID strikerId = mercenary.getUUID();
+        UUID openingTarget = STRIKER_OPENING_TARGETS.get(strikerId);
+        if (openingTarget == null || !openingTarget.equals(target.getUUID())) return;
+        STRIKER_OPENING_TARGETS.remove(strikerId);
+        float openingMultiplier = 2.20f + (float) (0.50 * masteryProgress(rank(mercenary)));
+        event.setAmount(event.getAmount() * openingMultiplier);
+        if (target.level() instanceof ServerLevel level) {
+            level.sendParticles(ParticleTypes.CRIT,
+                    target.getX(), target.getY() + target.getBbHeight() * 0.55, target.getZ(),
+                    10, 0.28, 0.34, 0.28, 0.05);
+        }
     }
 
     private static void rangedAttack(ServerLevel level, IronGolem mercenary, int rank) {

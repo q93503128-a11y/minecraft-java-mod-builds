@@ -1332,6 +1332,9 @@ public final class VillageRoleAbilitySystem {
         tauntDuration = Math.min(600, Math.round(
                 tauntDuration * VillageRelicSystem.tauntDurationMultiplier(player)));
         VillageRaidSystem.tauntEnemies(level, player, player.position(), radius, tauntDuration, 120);
+        int barrierAmplifier = 1 + Math.min(4, specialRank);
+        player.addEffect(new MobEffectInstance(
+                MobEffects.ABSORPTION, Math.min(200, tauntDuration), barrierAmplifier, false, false, true));
         for (Mob target : targetsNear(level, player, player.position(), radius, 120)) {
             hurt(level, player, target, damage, VillageRpgSystem.SkillAttackProfile.BURST_AREA);
             target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS,

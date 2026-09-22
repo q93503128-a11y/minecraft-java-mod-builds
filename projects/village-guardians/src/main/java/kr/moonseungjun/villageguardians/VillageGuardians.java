@@ -174,6 +174,7 @@ public final class VillageGuardians {
     @SubscribeEvent
     public void onIncomingDamage(LivingIncomingDamageEvent event) {
         if (VillageMercenarySystem.blockFriendlyFire(event)) return;
+        VillageMercenarySystem.applyOutgoingDamage(event);
         VillageWorldSystem.recordCombat(event);
         VillageRpgSystem.handleIncomingDamage(event);
         VillageRoleAbilitySystem.handleIncomingDamage(event);

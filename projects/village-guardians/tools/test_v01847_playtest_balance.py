@@ -65,14 +65,14 @@ def main() -> None:
     assert "MAX_STALL_RECOVERIES_PER_PASS" in recovery
     assert "mob.teleportTo(level" in recovery
 
-    # Persistent mercenaries have a larger survivability budget and receive one bounded dawn recovery.
+    # Persistent mercenaries have a larger survivability budget and fully recover at dawn.
     assert "case BASTION -> 340.0" in merc
     assert "case STRIKER -> 250.0" in merc
     assert "case RANGER -> 215.0" in merc
     assert "case MEDIC -> 270.0" in merc
     assert "public static synchronized void healAtDawn" in merc
-    assert "mercenary.getMaxHealth() * 0.30f" in merc
-    assert "mercenary.getMaxHealth() * 0.02f" not in merc
+    assert "mercenary.setHealth(mercenary.getMaxHealth())" in merc
+    assert "mercenary.getMaxHealth() * 0.30f" not in merc
     assert "MobEffects.INVISIBILITY" in merc
     assert "float damage = 5.2f * mercenaryPower(rank)" in merc
     assert "float amount = 2.8f * mercenaryPower(rank)" in merc
@@ -82,7 +82,7 @@ def main() -> None:
     print("[PASS] raid XP tracks the long-campaign level requirement")
     print("[PASS] sustain casters are sparse and healing is reduced")
     print("[PASS] stuck raid actors recover during full waves with a bounded relocation budget")
-    print("[PASS] persistent mercenaries are tougher and recover once at dawn")
+    print("[PASS] persistent mercenaries are tougher and fully recover at dawn")
 
 if __name__ == "__main__":
     main()
