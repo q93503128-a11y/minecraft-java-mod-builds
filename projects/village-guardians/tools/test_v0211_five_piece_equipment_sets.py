@@ -31,7 +31,7 @@ def main() -> None:
     assert "setForRaidDrop" in sets
     assert "defaultSetForItem" in sets
     import re
-    offer_ids = re.findall(r'^[ ]{8}[A-Z0-9_]+\("([^"]+)"', shop, re.MULTILINE)
+    offer_ids = re.findall(r'^[ ]{8}[A-Z0-9_]+\("([a-z0-9_]+)"', shop, re.MULTILINE)
     assert len(offer_ids) >= 36
     assert all(f'"{offer_id}"' in sets for offer_id in offer_ids)
     assert "FRONTLINE_EXECUTOR" in inventory and "ARCANE_RESONANCE" in inventory
