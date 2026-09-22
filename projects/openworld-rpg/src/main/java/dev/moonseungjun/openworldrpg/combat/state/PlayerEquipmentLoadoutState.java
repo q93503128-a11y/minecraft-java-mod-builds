@@ -89,6 +89,12 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
         for (EquippedCombatItem item : equipped) {
             for (EquipmentCombatAffix affix : item.affixes()) {
                 switch (affix.kind()) {
+                    case VIT -> vit += affix.value();
+                    case END -> end += affix.value();
+                    case STR -> str += affix.value();
+                    case DEX -> dex += affix.value();
+                    case INT -> intel += affix.value();
+                    case WIL -> wil += affix.value();
                     default -> {
                         // Non-primary combat affixes are aggregated by aggregateCombatState().
                     }
@@ -114,12 +120,9 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
         for (EquippedCombatItem item : equipped) {
             for (EquipmentCombatAffix affix : item.affixes()) {
                 switch (affix.kind()) {
-                    case VIT -> vit += affix.value();
-                    case END -> end += affix.value();
-                    case STR -> str += affix.value();
-                    case DEX -> dex += affix.value();
-                    case INT -> intel += affix.value();
-                    case WIL -> wil += affix.value();
+                    case VIT, END, STR, DEX, INT, WIL -> {
+                        // Already included in aggregateFlatAttributeBonuses().
+                    }
                     case PHYSICAL_POWER -> physicalPower += affix.value();
                     case MAGIC_POWER -> magicPower += affix.value();
                     case WEAPON_FAMILY_POWER -> {
