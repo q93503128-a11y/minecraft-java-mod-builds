@@ -59,6 +59,10 @@ public final class M0RuntimeVerificationHarness {
                 Math.max(worldSpawn.getY() + 8, 80),
                 worldSpawn.getZ()
         );
+        int verificationChunkX = spawn.getX() >> 4;
+        int verificationChunkZ = spawn.getZ() >> 4;
+        level.setChunkForced(verificationChunkX, verificationChunkZ, true);
+
         Entity targetEntity = ExternalActorBindingRuntime.spawnAuthored(
                 level,
                 spawn,
@@ -71,7 +75,13 @@ public final class M0RuntimeVerificationHarness {
 
         target.setNoGravity(true);
         long startTick = level.getGameTime();
-        activeSession = new VerificationSession(target, startTick, startTick + EARTHLOONG_SURVIVAL_TICKS);
+        activeSession = new VerificationSession(
+                target,
+                startTick,
+                startTick + EARTHLOONG_SURVIVAL_TICKS,
+                verificationChunkX,
+                verificationChunkZ
+        );
         logger.info(
                 "OPENWORLD_RPG_M0_EARTHLOONG_SURVIVAL_ARMED entityId={} startTick={} verifyTick={}",
                 target.getId(),
@@ -88,22 +98,30 @@ public final class M0RuntimeVerificationHarness {
         activeSession = null;
 
         LivingEntity target = session.target();
-        if (target.isRemoved() || !target.isAlive() || target.level() != level) {
-            throw new IllegalStateException(
-                    "Earthloong did not survive the authored spawn path for "
-                            + EARTHLOONG_SURVIVAL_TICKS
-                            + " server ticks: removed=" + target.isRemoved()
-                            + ", removalReason=" + target.getRemovalReason()
-                            + ", alive=" + target.isAlive()
-                            + ", health=" + target.getHealth()
-                            + ", maxHealth=" + target.getMaxHealth()
-                            + ", tickCount=" + target.tickCount
-                            + ", blockPos=" + target.blockPosition()
-                            + ", sameLevel=" + (target.level() == level)
+        try {
+            if (target.isRemoved() || !target.isAlive() || target.level() != level) {
+                throw new IllegalStateException(
+                        "Earthloong did not survive the authored spawn path for "
+                                + EARTHLOONG_SURVIVAL_TICKS
+                                + " server ticks: removed=" + target.isRemoved()
+                                + ", removalReason=" + target.getRemovalReason()
+                                + ", alive=" + target.isAlive()
+                                + ", health=" + target.getHealth()
+                                + ", maxHealth=" + target.getMaxHealth()
+                                + ", tickCount=" + target.tickCount
+                                + ", blockPos=" + target.blockPosition()
+                                + ", sameLevel=" + (target.level() == level)
+                );
+            }
+
+            verifyImpactAfterSurvival(level, target, session.startTick(), logger);
+        } finally {
+            level.setChunkForced(
+                    session.verificationChunkX(),
+                    session.verificationChunkZ(),
+                    false
             );
         }
-
-        verifyImpactAfterSurvival(level, target, session.startTick(), logger);
     }
 
     private static void verifyImpactAfterSurvival(
@@ -314,6 +332,12 @@ public final class M0RuntimeVerificationHarness {
         }
     }
 
-    private record VerificationSession(LivingEntity target, long startTick, long verifyTick) {
+    private record VerificationSession(
+            LivingEntity target,
+            long startTick,
+            long verifyTick,
+            int verificationChunkX,
+            int verificationChunkZ
+    ) {
     }
 }
