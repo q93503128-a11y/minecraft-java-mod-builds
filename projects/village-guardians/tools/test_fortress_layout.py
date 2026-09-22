@@ -1,5 +1,9 @@
+from pathlib import Path
+
 #!/usr/bin/env python3
 """Deterministic layout contract for the Village Guardians fortress."""
+
+ROOT = Path(__file__).resolve().parents[1]
 
 FORTRESS_RADIUS = 76
 ROAD_HALF_WIDTH = 4
@@ -72,6 +76,10 @@ def path_steps_to_road(spec: tuple[int, int, int, int, str]) -> int:
 
 
 def main() -> None:
+    project = (ROOT / "PROJECT.md").read_text(encoding="utf-8")
+    assert "- 북문 폭: 19블록" in project
+    assert GATE_HALF_WIDTH * 2 + 1 == 19
+
     for name, (dx, dz, width, depth, facing) in BUILDINGS.items():
         assert not intersects_main_avenue(dx, dz, width, depth), name
         assert dx >= -FORTRESS_RADIUS + 5, (name, dx)
