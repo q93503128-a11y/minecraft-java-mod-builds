@@ -4,6 +4,7 @@ import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatBuildPublisher;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentAttachments;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionAttachments;
+import dev.moonseungjun.openworldrpg.combat.state.PlayerVitalsRuntime;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.IntegrationBootstrap;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import dev.moonseungjun.openworldrpg.integration.verify.M0PlayerVerificationBootstrap;
@@ -21,6 +22,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         RuntimeProfile profile = RuntimeProfile.current();
         PlayerProgressionAttachments.initialize();
         PlayerEquipmentAttachments.initialize();
+        PlayerVitalsRuntime.initialize();
         IntegrationBootstrap.bootstrap(profile, LOGGER);
         M0PlayerVerificationBootstrap.registerCommands();
 
