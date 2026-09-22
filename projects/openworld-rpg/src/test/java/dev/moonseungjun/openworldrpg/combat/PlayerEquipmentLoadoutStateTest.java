@@ -12,7 +12,9 @@ import dev.moonseungjun.openworldrpg.combat.state.EquipmentCombatAffixKind;
 import dev.moonseungjun.openworldrpg.combat.state.EquippedCombatItem;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatBuildState;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentLoadoutState;
+import dev.moonseungjun.openworldrpg.combat.state.ProjectArmorArchetype;
 import dev.moonseungjun.openworldrpg.combat.state.ProjectEquipmentSlot;
+import dev.moonseungjun.openworldrpg.combat.state.ProjectShieldFamily;
 import dev.moonseungjun.openworldrpg.combat.state.ProjectWeaponFamily;
 import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import java.util.List;
@@ -199,4 +201,177 @@ class PlayerEquipmentLoadoutStateTest {
 
         assertEquals(original, decoded);
     }
+    @Test
+    void canonicalArmorReferenceTotalsUsePerSlotRoundedScaling() {
+        int[] levels = {1, 8, 20, 44, 64, 80};
+        int[][] light = {
+                {15, 21}, {22, 29}, {30, 42}, {51, 71}, {67, 92}, {81, 112}
+        };
+        int[][] medium = {
+                {25, 13}, {35, 19}, {50, 26}, {83, 44}, {112, 58}, {133, 70}
+        };
+        int[][] heavy = {
+                {33, 7}, {46, 9}, {66, 14}, {111, 23}, {147, 30}, {177, 37}
+        };
+
+        for (int i = 0; i < levels.length; i++) {
+            assertDefenseTotals(ProjectArmorArchetype.LIGHT, levels[i], light[i]);
+            assertDefenseTotals(ProjectArmorArchetype.MEDIUM, levels[i], medium[i]);
+            assertDefenseTotals(ProjectArmorArchetype.HEAVY, levels[i], heavy[i]);
+        }
+    }
+
+    @Test
+    void defenseAndMagicResistanceAffixesModifyCanonicalArmorTotals() {
+        var loadout = new PlayerEquipmentLoadoutState(List.of(
+                EquippedCombatItem.armor(
+                        "openworld_rpg:river_scholar_chest",
+                        ProjectEquipmentSlot.CHEST,
+                        8,
+                        ProjectArmorArchetype.LIGHT,
+                        List.of(
+                                EquipmentCombatAffix.flat(EquipmentCombatAffixKind.DEFENSE, 0.09),
+                                EquipmentCombatAffix.flat(EquipmentCombatAffixKind.MAGIC_RESISTANCE, 0.05)
+                        )
+                ),
+                EquippedCombatItem.gear(
+                        "openworld_rpg:greenwater_pendant",
+                        ProjectEquipmentSlot.NECKLACE,
+                        8,
+                        List.of(
+                                EquipmentCombatAffix.flat(EquipmentCombatAffixKind.DEFENSE, 0.03),
+                                EquipmentCombatAffix.flat(EquipmentCombatAffixKind.MAGIC_RESISTANCE, 0.04)
+                        )
+                )
+        ));
+
+        var defense = loadout.aggregateDefenseSnapshot();
+
+        assertEquals(7.84, defense.defense(), 0.0001);
+        assertEquals(10.90, defense.magicResistance(), 0.0001);
+        assertTrue(defense.guardType().isEmpty());
+        assertEquals(0.0, defense.guardRating(), 0.0001);
+        assertTrue(loadout.aggregateCombatState().isEmpty());
+    }
+
+    @Test
+    void equippedShieldPublishesCanonicalGuardRatingWithFiftyPercentGearCap() {
+        var loadout = new PlayerEquipmentLoadoutState(List.of(
+                EquippedCombatItem.shield(
+                        "openworld_rpg:earthscale_ward",
+                        8,
+                        ProjectShieldFamily.STANDARD,
+                        List.of(EquipmentCombatAffix.flat(
+                                EquipmentCombatAffixKind.GUARD_STRENGTH,
+                                0.40
+                        ))
+                ),
+                EquippedCombatItem.gear(
+                        "openworld_rpg:quarry_seal",
+                        ProjectEquipmentSlot.RELIC,
+                        8,
+                        List.of(EquipmentCombatAffix.flat(
+                                EquipmentCombatAffixKind.GUARD_STRENGTH,
+                                0.30
+                        ))
+                )
+        ));
+
+        var defense = loadout.aggregateDefenseSnapshot();
+
+        assertEquals(
+                dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority.GuardType.STANDARD_SHIELD,
+                defense.guardType().orElseThrow()
+        );
+        assertEquals(42.0, defense.guardRating(), 0.0001);
+        assertEquals(0.0, defense.defense(), 0.0001);
+        assertEquals(0.0, defense.magicResistance(), 0.0001);
+    }
+
+    @Test
+    void armorAndShieldMetadataSurviveCodecRoundTripWithoutInventingWeaponGuard() {
+        var original = new PlayerEquipmentLoadoutState(List.of(
+                EquippedCombatItem.armor(
+                        "openworld_rpg:ironbound_chest",
+                        ProjectEquipmentSlot.CHEST,
+                        8,
+                        ProjectArmorArchetype.HEAVY,
+                        List.of(EquipmentCombatAffix.flat(
+                                EquipmentCombatAffixKind.DEFENSE,
+                                0.07
+                        ))
+                ),
+                EquippedCombatItem.shield(
+                        "openworld_rpg:watch_buckler",
+                        4,
+                        ProjectShieldFamily.BUCKLER,
+                        List.of(EquipmentCombatAffix.flat(
+                                EquipmentCombatAffixKind.GUARD_STRENGTH,
+                                0.15
+                        ))
+                )
+        ));
+
+        var encoded = PlayerEquipmentLoadoutState.CODEC.encodeStart(JsonOps.INSTANCE, original)
+                .getOrThrow();
+        var decoded = PlayerEquipmentLoadoutState.CODEC.parse(JsonOps.INSTANCE, encoded)
+                .getOrThrow();
+
+        assertEquals(original, decoded);
+        assertEquals(21.85, decoded.aggregateDefenseSnapshot().guardRating(), 0.0001);
+    }
+
+    private static void assertDefenseTotals(
+            ProjectArmorArchetype archetype,
+            int itemLevel,
+            int[] expected
+    ) {
+        var defense = armorSet(archetype, itemLevel).aggregateDefenseSnapshot();
+        assertEquals(expected[0], defense.defense(), 0.0001);
+        assertEquals(expected[1], defense.magicResistance(), 0.0001);
+    }
+
+    private static PlayerEquipmentLoadoutState armorSet(
+            ProjectArmorArchetype archetype,
+            int itemLevel
+    ) {
+        return new PlayerEquipmentLoadoutState(List.of(
+                EquippedCombatItem.armor(
+                        "openworld_rpg:test_head",
+                        ProjectEquipmentSlot.HEAD,
+                        itemLevel,
+                        archetype,
+                        List.of()
+                ),
+                EquippedCombatItem.armor(
+                        "openworld_rpg:test_chest",
+                        ProjectEquipmentSlot.CHEST,
+                        itemLevel,
+                        archetype,
+                        List.of()
+                ),
+                EquippedCombatItem.armor(
+                        "openworld_rpg:test_legs",
+                        ProjectEquipmentSlot.LEGS,
+                        itemLevel,
+                        archetype,
+                        List.of()
+                ),
+                EquippedCombatItem.armor(
+                        "openworld_rpg:test_gloves",
+                        ProjectEquipmentSlot.GLOVES,
+                        itemLevel,
+                        archetype,
+                        List.of()
+                ),
+                EquippedCombatItem.armor(
+                        "openworld_rpg:test_boots",
+                        ProjectEquipmentSlot.BOOTS,
+                        itemLevel,
+                        archetype,
+                        List.of()
+                )
+        ));
+    }
+
 }

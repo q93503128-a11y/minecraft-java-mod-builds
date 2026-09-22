@@ -364,7 +364,7 @@ jobs:
           - normalized player incoming Defense/MR authority: IMPLEMENTED + UNIT TESTED; external donor incoming-hit normalization NOT IMPLEMENTED
           - project direct-magic runtime bridge: IMPLEMENTED + UNIT/BUILD/STARTUP VERIFIED
           - player combat build snapshot producer: IMPLEMENTED + UNIT/RUNTIME HARNESS VERIFIED
-          - persistent 12-slot equipped-loadout publisher: IMPLEMENTED + UNIT/BUILD VERIFIED (main weapon/off-hand/armor/accessories; project affix aggregation; wand+focus power; family-power cap)
+          - persistent 12-slot equipped-loadout publisher: IMPLEMENTED + UNIT/BUILD VERIFIED (main weapon/off-hand/armor/accessories; project affix aggregation; wand+focus power; family-power cap)\n          - persistent defensive equipment publisher: IMPLEMENTED + UNIT TESTED (per-slot-rounded armor DEF/MR; shield-family GuardRating; Defense/MR/Guard Strength affixes; Guard Strength +50% gear cap; no main weapon required; weapon-guard rating intentionally not invented)
           - live combat-build refresh: IMPLEMENTED for join + project progression mutations + project equipment mutations
           - Earthloong canonical HP virtualization: IMPLEMENTED + RUNTIME VERIFIED (4900 -> 4871 from one canon-valid Lv8 Mage/ItemLv8 Staff Arc Bolt hit; vanilla health is proportional proxy)
           - exact Earthloong entity HP delta runtime harness: PASS (Arc Bolt 29 damage / 4.25 poise from produced snapshot; donor power ignored)

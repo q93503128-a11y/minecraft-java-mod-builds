@@ -19,6 +19,8 @@ public record EquippedCombatItem(
         int itemLevel,
         Optional<ProjectWeaponFamily> weaponFamily,
         boolean magicalFocus,
+        Optional<ProjectArmorArchetype> armorArchetype,
+        Optional<ProjectShieldFamily> shieldFamily,
         List<EquipmentCombatAffix> affixes
 ) {
     public static final Codec<EquippedCombatItem> CODEC = RecordCodecBuilder.create(instance ->
@@ -33,16 +35,45 @@ public record EquippedCombatItem(
                             .forGetter(EquippedCombatItem::weaponFamily),
                     Codec.BOOL.optionalFieldOf("magical_focus", false)
                             .forGetter(EquippedCombatItem::magicalFocus),
+                    ProjectArmorArchetype.CODEC.optionalFieldOf("armor_archetype")
+                            .forGetter(EquippedCombatItem::armorArchetype),
+                    ProjectShieldFamily.CODEC.optionalFieldOf("shield_family")
+                            .forGetter(EquippedCombatItem::shieldFamily),
                     EquipmentCombatAffix.CODEC.listOf()
                             .optionalFieldOf("combat_affixes", List.of())
                             .forGetter(EquippedCombatItem::affixes)
             ).apply(instance, EquippedCombatItem::new)
     );
 
+    /**
+     * Backward-compatible source constructor for pre-defense M0 fixtures and persisted shape.
+     */
+    public EquippedCombatItem(
+            String itemId,
+            ProjectEquipmentSlot slot,
+            int itemLevel,
+            Optional<ProjectWeaponFamily> weaponFamily,
+            boolean magicalFocus,
+            List<EquipmentCombatAffix> affixes
+    ) {
+        this(
+                itemId,
+                slot,
+                itemLevel,
+                weaponFamily,
+                magicalFocus,
+                Optional.empty(),
+                Optional.empty(),
+                affixes
+        );
+    }
+
     public EquippedCombatItem {
         Objects.requireNonNull(itemId, "itemId");
         Objects.requireNonNull(slot, "slot");
         Objects.requireNonNull(weaponFamily, "weaponFamily");
+        Objects.requireNonNull(armorArchetype, "armorArchetype");
+        Objects.requireNonNull(shieldFamily, "shieldFamily");
         Objects.requireNonNull(affixes, "affixes");
 
         String normalizedId = itemId.trim();
@@ -55,9 +86,12 @@ public record EquippedCombatItem(
         affixes = List.copyOf(affixes);
 
         if (slot == ProjectEquipmentSlot.MAIN_WEAPON) {
-            if (weaponFamily.isEmpty() || magicalFocus) {
+            if (weaponFamily.isEmpty()
+                    || magicalFocus
+                    || armorArchetype.isPresent()
+                    || shieldFamily.isPresent()) {
                 throw new IllegalArgumentException(
-                        "Main Weapon requires a weapon family and cannot be a magical focus."
+                        "Main Weapon requires only a weapon family."
                 );
             }
         } else if (weaponFamily.isPresent()) {
@@ -68,6 +102,17 @@ public record EquippedCombatItem(
 
         if (magicalFocus && slot != ProjectEquipmentSlot.OFF_HAND) {
             throw new IllegalArgumentException("A magical focus may only occupy Off-hand.");
+        }
+        if (magicalFocus && shieldFamily.isPresent()) {
+            throw new IllegalArgumentException("Off-hand cannot be both a magical focus and a shield.");
+        }
+        if (shieldFamily.isPresent() && slot != ProjectEquipmentSlot.OFF_HAND) {
+            throw new IllegalArgumentException("A shield family may only occupy Off-hand.");
+        }
+        if (armorArchetype.isPresent() && !ProjectArmorArchetype.isArmorSlot(slot)) {
+            throw new IllegalArgumentException(
+                    "Armor archetype requires Head/Chest/Legs/Gloves/Boots."
+            );
         }
     }
 
@@ -83,6 +128,8 @@ public record EquippedCombatItem(
                 itemLevel,
                 Optional.of(family),
                 false,
+                Optional.empty(),
+                Optional.empty(),
                 affixes
         );
     }
@@ -98,6 +145,48 @@ public record EquippedCombatItem(
                 itemLevel,
                 Optional.empty(),
                 true,
+                Optional.empty(),
+                Optional.empty(),
+                affixes
+        );
+    }
+
+    public static EquippedCombatItem shield(
+            String itemId,
+            int itemLevel,
+            ProjectShieldFamily family,
+            List<EquipmentCombatAffix> affixes
+    ) {
+        return new EquippedCombatItem(
+                itemId,
+                ProjectEquipmentSlot.OFF_HAND,
+                itemLevel,
+                Optional.empty(),
+                false,
+                Optional.empty(),
+                Optional.of(Objects.requireNonNull(family, "family")),
+                affixes
+        );
+    }
+
+    public static EquippedCombatItem armor(
+            String itemId,
+            ProjectEquipmentSlot slot,
+            int itemLevel,
+            ProjectArmorArchetype archetype,
+            List<EquipmentCombatAffix> affixes
+    ) {
+        if (!ProjectArmorArchetype.isArmorSlot(slot)) {
+            throw new IllegalArgumentException("Armor item requires an armor equipment slot.");
+        }
+        return new EquippedCombatItem(
+                itemId,
+                slot,
+                itemLevel,
+                Optional.empty(),
+                false,
+                Optional.of(Objects.requireNonNull(archetype, "archetype")),
+                Optional.empty(),
                 affixes
         );
     }
@@ -117,6 +206,8 @@ public record EquippedCombatItem(
                 itemLevel,
                 Optional.empty(),
                 false,
+                Optional.empty(),
+                Optional.empty(),
                 affixes
         );
     }

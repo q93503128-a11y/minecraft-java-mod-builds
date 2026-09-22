@@ -237,16 +237,16 @@ MagicResistance = round(Lv1MR * GearScale(ItemLv))
 | Medium | 4 / 2 | 8 / 4 | 6 / 3 | 3 / 2 | 4 / 2 | **25 / 13** |
 | Heavy | 5 / 1 | 11 / 2 | 8 / 2 | 4 / 1 | 5 / 1 | **33 / 7** |
 
-Full-set reference totals after scaling:
+Full-set reference totals after scaling (sum of the five individually rounded slot values above):
 
 | Item Lv | Light DEF/MR | Medium DEF/MR | Heavy DEF/MR |
 |---:|---:|---:|---:|
 | 1 | 15 / 21 | 25 / 13 | 33 / 7 |
-| 8 | 21 / 29 | 35 / 18 | 46 / 10 |
-| 20 | 31 / 43 | 51 / 27 | 67 / 14 |
-| 44 | 50 / 71 | 84 / 44 | 111 / 24 |
-| 64 | 67 / 94 | 112 / 58 | 147 / 31 |
-| 80 | 80 / 112 | 134 / 69 | 176 / 37 |
+| 8 | 22 / 29 | 35 / 19 | 46 / 9 |
+| 20 | 30 / 42 | 50 / 26 | 66 / 14 |
+| 44 | 51 / 71 | 83 / 44 | 111 / 23 |
+| 64 | 67 / 92 | 112 / 58 | 147 / 30 |
+| 80 | 81 / 112 | 133 / 70 | 177 / 37 |
 
 Chest/legs carry most base protection so glove/boot upgrades do not feel as important as a full chest replacement.
 

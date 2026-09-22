@@ -5,7 +5,7 @@ import java.util.Optional;
 import net.minecraft.world.entity.player.Player;
 
 /**
- * Rebuilds transient combat/vital state from persistent project progression + equipped loadout.
+ * Rebuilds transient combat/vital/defense state from persistent project progression + equipment.
  */
 public final class PlayerCombatBuildPublisher {
     private PlayerCombatBuildPublisher() {
@@ -43,6 +43,10 @@ public final class PlayerCombatBuildPublisher {
                 player.getUUID(),
                 (int) Math.round(effectiveWil),
                 gameTick
+        );
+        CombatStateServices.defenseSnapshots().bindAuthoritative(
+                player.getUUID(),
+                loadout.aggregateDefenseSnapshot()
         );
 
         Optional<EquipmentCombatState> equipment = loadout.aggregateCombatState();

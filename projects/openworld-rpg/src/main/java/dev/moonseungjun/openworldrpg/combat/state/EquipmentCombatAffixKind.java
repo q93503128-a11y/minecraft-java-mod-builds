@@ -5,10 +5,7 @@ import com.mojang.serialization.DataResult;
 import java.util.Locale;
 
 /**
- * Combat-source affix identities currently consumed by the M0 build publisher.
- *
- * <p>Defense/resource/utility affixes remain valid equipment data but are not added here until
- * their corresponding project runtime owns those effects.</p>
+ * Combat-source affix identities currently consumed by project-owned runtime publishers.
  */
 public enum EquipmentCombatAffixKind {
     VIT,
@@ -20,7 +17,10 @@ public enum EquipmentCombatAffixKind {
     PHYSICAL_POWER,
     MAGIC_POWER,
     WEAPON_FAMILY_POWER,
-    POISE_OUTPUT;
+    POISE_OUTPUT,
+    DEFENSE,
+    MAGIC_RESISTANCE,
+    GUARD_STRENGTH;
 
     public static final Codec<EquipmentCombatAffixKind> CODEC = Codec.STRING.comapFlatMap(
             value -> {

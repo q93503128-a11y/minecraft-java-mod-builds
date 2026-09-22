@@ -2,6 +2,7 @@ package dev.moonseungjun.openworldrpg.combat.state;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -12,11 +13,11 @@ import java.util.Optional;
  * Persistent canonical equipped-item state for the 12-slot RPG loadout.
  *
  * <p>This is deliberately the equipped loadout only, not the backpack/storage/loot-generation
- * system. It is sufficient to publish authoritative combat stats without inventing those larger
- * systems during M0.</p>
+ * system. It publishes both offensive and defensive authority without inheriting donor item stats.</p>
  */
 public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
     private static final double WEAPON_FAMILY_POWER_GEAR_CAP = 0.60;
+    private static final double GUARD_STRENGTH_GEAR_CAP = 0.50;
 
     public static final Codec<PlayerEquipmentLoadoutState> CODEC = RecordCodecBuilder.create(instance ->
             instance.group(
@@ -96,12 +97,77 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
                     case INT -> intel += affix.value();
                     case WIL -> wil += affix.value();
                     default -> {
-                        // Non-primary combat affixes are aggregated by aggregateCombatState().
+                        // Non-primary combat affixes are aggregated by their owned publisher.
                     }
                 }
             }
         }
         return new EffectiveAttributes(vit, end, str, dex, intel, wil);
+    }
+
+    /**
+     * Publishes canonical equipped Defense/MR and shield guard authority even with no main weapon.
+     *
+     * <p>Armor slots are individually Item-Lv scaled and rounded before summation. Defense/MR
+     * affixes then modify those effective totals. Guard Strength affects only an actually equipped
+     * shield and respects the +50% aggregate gear-contribution cap.</p>
+     */
+    public PlayerDefenseAuthority.DefenseSnapshot aggregateDefenseSnapshot() {
+        double baseDefense = 0.0;
+        double baseMagicResistance = 0.0;
+        double defenseBonus = 0.0;
+        double magicResistanceBonus = 0.0;
+        double guardStrengthBonus = 0.0;
+
+        for (EquippedCombatItem item : equipped) {
+            if (item.armorArchetype().isPresent()) {
+                ProjectArmorArchetype archetype = item.armorArchetype().orElseThrow();
+                baseDefense += archetype.scaledDefense(item.slot(), item.itemLevel());
+                baseMagicResistance += archetype.scaledMagicResistance(
+                        item.slot(),
+                        item.itemLevel()
+                );
+            }
+
+            for (EquipmentCombatAffix affix : item.affixes()) {
+                switch (affix.kind()) {
+                    case DEFENSE -> defenseBonus += affix.value();
+                    case MAGIC_RESISTANCE -> magicResistanceBonus += affix.value();
+                    case GUARD_STRENGTH -> guardStrengthBonus += affix.value();
+                    default -> {
+                        // Owned by primary/offense publishers or a later dedicated runtime.
+                    }
+                }
+            }
+        }
+
+        double effectiveDefense = baseDefense * (1.0 + defenseBonus);
+        double effectiveMagicResistance =
+                baseMagicResistance * (1.0 + magicResistanceBonus);
+
+        EquippedCombatItem offhand = item(ProjectEquipmentSlot.OFF_HAND).orElse(null);
+        if (offhand == null || offhand.shieldFamily().isEmpty()) {
+            return PlayerDefenseAuthority.DefenseSnapshot.unguarded(
+                    effectiveDefense,
+                    effectiveMagicResistance
+            );
+        }
+
+        PlayerDefenseAuthority.GuardType guardType =
+                offhand.shieldFamily().orElseThrow().guardType();
+        double baseGuardRating = PlayerDefenseAuthority.shieldGuardRating(
+                offhand.itemLevel(),
+                guardType
+        );
+        double effectiveGuardRating = baseGuardRating
+                * (1.0 + Math.min(guardStrengthBonus, GUARD_STRENGTH_GEAR_CAP));
+
+        return PlayerDefenseAuthority.DefenseSnapshot.guarded(
+                effectiveDefense,
+                effectiveMagicResistance,
+                effectiveGuardRating,
+                guardType
+        );
     }
 
     public Optional<EquipmentCombatState> aggregateCombatState() {
@@ -131,6 +197,9 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
                         }
                     }
                     case POISE_OUTPUT -> poiseOutput += affix.value();
+                    case DEFENSE, MAGIC_RESISTANCE, GUARD_STRENGTH -> {
+                        // Published independently by aggregateDefenseSnapshot().
+                    }
                 }
             }
         }
