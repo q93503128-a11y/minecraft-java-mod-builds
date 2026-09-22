@@ -104,6 +104,8 @@ public final class VillageMercenaryDeploymentSystem {
             case STRIKER -> Deployment.GATE_FRONT;
             case RANGER -> Deployment.WALL;
             case MEDIC -> Deployment.INNER;
+            case WARDER -> Deployment.INNER;
+            case ARTILLERIST -> Deployment.WALL;
         };
         int ordinal = VillageSiegePersistence.getInt("merc_zone_" + kind.id(), fallback.ordinal());
         return Deployment.values()[Math.max(0, Math.min(Deployment.values().length - 1, ordinal))];
@@ -143,6 +145,8 @@ public final class VillageMercenaryDeploymentSystem {
                 case STRIKER -> 34.0;
                 case RANGER -> 22.0;
                 case MEDIC -> 15.0;
+                case WARDER -> 17.0;
+                case ARTILLERIST -> 22.0;
             };
             boolean returningToRally = force || !raidActive
                     || golem.blockPosition().distSqr(rally) > leash * leash;
@@ -184,7 +188,9 @@ public final class VillageMercenaryDeploymentSystem {
                 Mob target = groundTarget(level, golem.position(), 42.0);
                 if (target != null) golem.setTarget(target);
             } else if (kind == VillageMercenarySystem.MercenaryClass.RANGER
-                    || kind == VillageMercenarySystem.MercenaryClass.MEDIC) {
+                    || kind == VillageMercenarySystem.MercenaryClass.MEDIC
+                    || kind == VillageMercenarySystem.MercenaryClass.WARDER
+                    || kind == VillageMercenarySystem.MercenaryClass.ARTILLERIST) {
                 golem.setTarget(null);
                 if (!returningToRally) golem.getNavigation().stop();
             }
@@ -240,6 +246,8 @@ public final class VillageMercenaryDeploymentSystem {
             case STRIKER -> zone != Deployment.WALL;
             case RANGER -> true;
             case MEDIC -> zone != Deployment.WALL;
+            case WARDER -> zone != Deployment.WALL;
+            case ARTILLERIST -> true;
         };
     }
 
