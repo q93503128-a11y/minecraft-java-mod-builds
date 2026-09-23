@@ -115,8 +115,8 @@ class Drehmal26_2CompatMigratorTest {
 
         JsonObject basalt = json(datapack, "data/minecraft/worldgen/biome/basalt_deltas.json");
         JsonObject attributes = basalt.getAsJsonObject("attributes");
-        assertFalse(attributes.has("minecraft:audio/ambient_sounds"));
-        assertFalse(attributes.has("minecraft:audio/background_music"));
+        assertTrue(attributes == null || !attributes.has("minecraft:audio/ambient_sounds"));
+        assertTrue(attributes == null || !attributes.has("minecraft:audio/background_music"));
         assertTrue(Files.readString(world.resolve(Drehmal26_2CompatMigrator.MARKER_FILE))
                 .contains("compatVersion=2"));
     }
