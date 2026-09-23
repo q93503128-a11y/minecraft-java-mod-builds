@@ -30,11 +30,9 @@ final class DrehmalStartArrival {
 
     static boolean moveOutOfLegacySetupIfNeeded(ServerPlayer player, ExternalWorldSavedData saved) {
         if (player == null || saved == null) return false;
-        if (saved.onboardingFlag(player.getUUID(), ARRIVAL_FLAG)) return false;
 
-        // Do not mark this complete just because login began elsewhere. Drehmal's original datapack can
-        // teleport the host into the legacy setup terminal a tick or two after TURNBOUND's login hook.
-        // The flag is written only after TURNBOUND actually performs the outdoor arrival.
+        // Physical presence in Drehmal's setup terminal is stronger evidence than a previous arrival flag.
+        // The original bootstrap can move the host back after TURNBOUND already recorded an arrival.
         if (!legacySetupZone(player.getX(), player.getY(), player.getZ())) return false;
 
         BlockPos hub = DrehmalWorldBinding.hubSeed();
