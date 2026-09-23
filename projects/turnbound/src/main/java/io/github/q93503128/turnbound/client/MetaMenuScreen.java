@@ -97,39 +97,48 @@ public final class MetaMenuScreen extends Screen {
 
     private void buildHome(){
         var snapshot=ClientMetaState.snapshot();
-        int partyX=homePartyX(),partyY=homePartyY(),partyW=homePartyW();
-        int cardX=partyX+7,cardY=partyY+22,cardW=partyW-14,cardH=36,cardGap=3;
-        int index=0;
-        for(String id:snapshot.activeParty()){
-            var row=character(id);
+        int px=homePanelX(),py=homePanelY(),pw=homePanelW(),ph=homePanelH();
+        int leftW=Math.max(190,pw*58/100);
+        int partyX=px+22,partyY=py+38;
+        int partyAreaW=leftW-32;
+        int cardGap=8;
+        int cardW=Math.max(72,(partyAreaW-cardGap)/2);
+        int cardH=Math.max(68,Math.min(86,(ph-72-cardGap)/2));
+
+        List<String> party=snapshot.activeParty().stream().limit(4).toList();
+        for(int i=0;i<party.size();i++){
+            var row=character(party.get(i));
             if(row==null)continue;
-            int yy=cardY+index*(cardH+cardGap);
-            String detail=(row.awakened()?"각성":"★"+row.nativeStar())+" · Lv."+row.level()+" · CP "+row.cp();
-            addRenderableWidget(new PortraitCardButton(cardX,yy,cardW,cardH,row.id(),row.name(),detail,BLUE,false,false,
+            int col=i%2,rowIndex=i/2;
+            int x=partyX+col*(cardW+cardGap);
+            int y=partyY+rowIndex*(cardH+cardGap);
+            String detail=(row.awakened()?"각성":"★"+row.nativeStar())+" · Lv."+row.level();
+            addRenderableWidget(new FoozlePortraitButton(
+                    x,y,cardW,cardH,row.id(),row.name(),detail,false,
                     ignored->openCharacterFromHome(row.id())));
-            index++;
-            if(index>=4)break;
         }
-        if(index==0){
-            addRenderableWidget(new BattleHudButton(cardX,cardY,cardW,cardH,Component.literal("파티 편성"),MUTED,ignored->switchTab(Tab.PARTY)));
+        if(party.isEmpty()){
+            addRenderableWidget(new BattleHudButton(
+                    partyX,partyY,partyAreaW,30,Component.literal("파티 편성"),MUTED,
+                    ignored->switchTab(Tab.PARTY)));
         }
 
-        int menuX=homeMenuX(),menuY=homeMenuY(),menuW=homeMenuW();
-        int bx=menuX+7,by=menuY+23,bw=menuW-14,bh=27,gap=4;
-        addRenderableWidget(new BattleHudButton(bx,by,bw,bh,Component.literal("파티"),GREEN,ignored->switchTab(Tab.PARTY)));by+=bh+gap;
-        addRenderableWidget(new BattleHudButton(bx,by,bw,bh,Component.literal("장비"),GOLD,ignored->switchTab(Tab.EQUIPMENT)));by+=bh+gap;
-        addRenderableWidget(new BattleHudButton(bx,by,bw,bh,Component.literal("퀘스트"),SECONDARY,ignored->switchTab(Tab.QUESTS)));by+=bh+gap;
-        addRenderableWidget(new BattleHudButton(bx,by,bw,bh,Component.literal("소환"),BLUE,ignored->switchTab(Tab.ARCHIVE)));
+        int menuX=px+leftW+10;
+        int menuY=py+46;
+        int menuAreaW=pw-leftW-28;
+        int orbGap=6;
+        int orbSize=Math.max(50,Math.min(68,(menuAreaW-orbGap)/2));
+        int rowGap=8;
+        addRenderableWidget(new FoozleOrbButton(menuX,menuY,orbSize,"파티",ignored->switchTab(Tab.PARTY)));
+        addRenderableWidget(new FoozleOrbButton(menuX+orbSize+orbGap,menuY,orbSize,"장비",ignored->switchTab(Tab.EQUIPMENT)));
+        addRenderableWidget(new FoozleOrbButton(menuX,menuY+orbSize+rowGap,orbSize,"퀘스트",ignored->switchTab(Tab.QUESTS)));
+        addRenderableWidget(new FoozleOrbButton(menuX+orbSize+orbGap,menuY+orbSize+rowGap,orbSize,"소환",ignored->switchTab(Tab.ARCHIVE)));
     }
 
-    private int homePartyW(){return Math.min(198,Math.max(164,width*43/100));}
-    private int homeMenuW(){return Math.min(142,Math.max(116,width*29/100));}
-    private int homePartyH(){return Math.min(height-12,213);}
-    private int homeMenuH(){return Math.min(height-12,176);}
-    private int homePartyX(){return 6;}
-    private int homePartyY(){return Math.max(6,(height-homePartyH())/2);}
-    private int homeMenuX(){return Math.max(homePartyX()+homePartyW()+8,width-homeMenuW()-6);}
-    private int homeMenuY(){return Math.max(6,(height-homeMenuH())/2);}
+    private int homePanelW(){return Math.min(620,Math.max(320,width-16));}
+    private int homePanelH(){return Math.min(330,Math.max(210,height-12));}
+    private int homePanelX(){return (width-homePanelW())/2;}
+    private int homePanelY(){return (height-homePanelH())/2;}
 
     private void buildParty(){
         var owned=ClientMetaState.snapshot().characters().stream().filter(ClientMetaState.CharacterRow::owned).toList();
@@ -416,21 +425,20 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void drawHome(GuiGraphicsExtractor g){
-        int partyX=homePartyX(),partyY=homePartyY(),partyW=homePartyW(),partyH=homePartyH();
-        int menuX=homeMenuX(),menuY=homeMenuY(),menuW=homeMenuW(),menuH=homeMenuH();
+        int px=homePanelX(),py=homePanelY(),pw=homePanelW(),ph=homePanelH();
+        int leftW=Math.max(190,pw*58/100);
 
-        TurnboundFrameStyle.frame(g,partyX,partyY,partyW,partyH,BLUE);
-        g.text(font,Component.literal("현재 파티"),partyX+10,partyY+9,TEXT,true);
+        TurnboundUiSkin.panel(g,px,py,pw,ph);
+        g.text(font,Component.literal("TURNBOUND"),px+22,py+16,TEXT,true);
+        g.text(font,Component.literal("현재 파티"),px+22,py+30,SECONDARY,false);
+        g.text(font,Component.literal("여행 준비"),px+leftW+12,py+30,SECONDARY,false);
 
         var s=ClientMetaState.snapshot();
-        String resources="골드 "+s.gold()+" · 크리스탈 "+s.crystal()+" · 정수 "+s.essence();
-        g.text(font,Component.literal(UiTextLayout.fit(resources,partyW-18)),partyX+9,partyY+partyH-19,SECONDARY,false);
-        g.text(font,Component.literal("파티 CP "+s.partyCp()),partyX+9,partyY+partyH-9,MUTED,false);
-
-        TurnboundFrameStyle.frame(g,menuX,menuY,menuW,menuH,GOLD);
-        g.text(font,Component.literal("메뉴"),menuX+10,menuY+9,TEXT,true);
-        g.text(font,Component.literal("M 지도 · N 미니맵"),menuX+9,menuY+menuH-20,SECONDARY,false);
-        g.text(font,Component.literal("E 닫기"),menuX+9,menuY+menuH-10,MUTED,false);
+        String resources="골드 "+s.gold()+"  ·  크리스탈 "+s.crystal()+"  ·  별의 정수 "+s.essence()+"  ·  파티 CP "+s.partyCp();
+        g.text(font,Component.literal(UiTextLayout.fit(resources,pw-44)),
+                px+22,py+ph-22,SECONDARY,false);
+        g.text(font,Component.literal("M 지도  ·  N 미니맵  ·  E 닫기"),
+                px+pw-22-font.width("M 지도  ·  N 미니맵  ·  E 닫기"),py+16,MUTED,false);
     }
 
     private void drawParty(GuiGraphicsExtractor g){

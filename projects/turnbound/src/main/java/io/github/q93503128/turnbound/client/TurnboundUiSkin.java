@@ -5,21 +5,20 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.resources.Identifier;
 
 /**
- * Runtime skin primitives backed by Kenney UI Adventure Pack (CC0).
- * TURNBOUND owns information hierarchy, tokens and spacing; Kenney supplies low-level frame/button pixels.
+ * Production management/map skin backed directly by Foozle RPG UI Set 1 (CC0).
  *
- * <p>The source textures are now sliced rather than stretched wholesale. This preserves corner weight and
- * border thickness on wide PC panels/buttons and avoids the warped "rubber rectangle" look that the shared
- * quality standard explicitly warns against.</p>
+ * <p>TURNBOUND supplies data and navigation. The visible panel, button and orb chrome is external artwork,
+ * avoiding the Minecraft-button / AI-card look that failed the first real-client survey.</p>
  */
 final class TurnboundUiSkin {
-    private static final Identifier FRAME_IDLE = pixel("frame_idle.png");
-    private static final Identifier FRAME_FOCUS = pixel("frame_focus.png");
-    private static final Identifier FRAME_DISABLED = pixel("frame_disabled.png");
-    private static final Identifier FRAME_SUCCESS = pixel("frame_success.png");
-    private static final Identifier FRAME_WARNING = pixel("frame_warning.png");
-    private static final Identifier TITLE_SURFACE = pixel("title_surface.png");
-    private static final Identifier CHECK_BLUE = id("icon_check_blue.png");
+    private static final Identifier PANEL = foozle("panel_1.png");
+    private static final Identifier BUTTON = foozle("button.png");
+    private static final Identifier ORB_BASE = foozle("main_button_bg.png");
+    private static final Identifier ORB = foozle("main_button_overlay.png");
+    private static final Identifier ORB_LIGHT = foozle("main_button_overlay_light.png");
+    private static final Identifier ORB_DARK = foozle("main_button_overlay_dark.png");
+    private static final Identifier CHECK_BLUE = Identifier.fromNamespaceAndPath(
+            Turnbound.MOD_ID, "textures/gui/kenney/icon_check_blue.png");
 
     private static final int BATTLE_ACTION_GREEN = 0xFF39D353;
     private static final int BATTLE_ACTION_GREEN_SOFT = 0xFF76E58A;
@@ -27,63 +26,44 @@ final class TurnboundUiSkin {
     private TurnboundUiSkin() {}
 
     static void panel(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
-        graphics.fill(x + 5, y + 5, x + width - 5, y + height - 5, TurnboundUiTokens.SURFACE);
-        nineSlice(graphics, FRAME_IDLE, x, y, width, height, 7, 7, 0.22F, 0.78F, 0.22F, 0.78F);
+        nineSlice(graphics, PANEL, x, y, width, height, 18, 18, 0.12F, 0.88F, 0.16F, 0.84F);
     }
 
     static void inset(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
-        stretch(graphics, TITLE_SURFACE, x + 4, y + 4, Math.max(1, width - 8), Math.max(1, height - 8));
-        graphics.fill(x + 5, y + 5, x + width - 5, y + height - 5, 0xB8151A22);
-        nineSlice(graphics, FRAME_IDLE, x, y, width, height, 7, 7, 0.22F, 0.78F, 0.22F, 0.78F);
+        nineSlice(graphics, BUTTON, x, y, width, height, 8, 7, 0.18F, 0.82F, 0.22F, 0.78F);
     }
 
     static void button(GuiGraphicsExtractor graphics, int x, int y, int width, int height,
                        boolean active, boolean hovered, boolean selected, int accent) {
-        Identifier texture = !active ? FRAME_DISABLED
-                : selected ? (warm(accent) ? FRAME_WARNING : accent == TurnboundUiTokens.SUCCESS ? FRAME_SUCCESS : FRAME_FOCUS)
-                : hovered ? FRAME_FOCUS
-                : FRAME_IDLE;
-        graphics.fill(x + 5, y + 5, x + width - 5, y + height - 5,
-                active ? TurnboundUiTokens.ELEVATED_SURFACE : 0xE01B2028);
-        nineSlice(graphics, texture, x, y, width, height, 7, 7, 0.22F, 0.78F, 0.22F, 0.78F);
-        if (active && hovered) {
-            graphics.fill(x + 6, y + 6, x + width - 6, y + height - 6, 0x12FFFFFF);
-        }
-        if (selected) {
-            int stateColor = active ? accent : TurnboundUiTokens.DISABLED;
-            graphics.fill(x + 4, y + 3, x + 6, y + height - 3, stateColor);
-            graphics.fill(x + 6, y + height - 5, x + width - 5, y + height - 3, stateColor);
-            // Selection is communicated by both color and a geometric corner mark.
-            if (width >= 34 && height >= 16) {
-                int mx = x + width - 10, my = y + 5;
-                graphics.fill(mx, my, mx + 6, my + 2, stateColor);
-                graphics.fill(mx + 4, my, mx + 6, my + 7, stateColor);
-            }
+        nineSlice(graphics, BUTTON, x, y, width, height, 8, 7, 0.18F, 0.82F, 0.22F, 0.78F);
+        if (!active) {
+            graphics.fill(x + 5, y + 5, x + width - 5, y + height - 5, 0x72000000);
+        } else if (selected) {
+            graphics.fill(x + 5, y + 5, x + width - 5, y + height - 5, (accent & 0x00FFFFFF) | 0x36000000);
+        } else if (hovered) {
+            graphics.fill(x + 5, y + 5, x + width - 5, y + height - 5, 0x20FFFFFF);
         }
     }
 
-    /**
-     * Battle-only action row. The Kenney grey frame supplies a consistent authored edge, while the interior follows
-     * the supplied reference's dark-neutral list + one strong green selected state. This stays separate from generic
-     * menu buttons so management screens do not inherit combat-specific styling.
-     */
+    static void orbBase(GuiGraphicsExtractor graphics, int x, int y, int size) {
+        stretch(graphics, ORB_BASE, x, y, size, size);
+    }
+
+    static void orbOverlay(GuiGraphicsExtractor graphics, int x, int y, int size,
+                           boolean active, boolean hovered, boolean selected) {
+        Identifier texture = !active ? ORB_DARK : hovered || selected ? ORB_LIGHT : ORB;
+        stretch(graphics, texture, x, y, size, size);
+    }
+
     static void battleSkillButton(GuiGraphicsExtractor graphics, int x, int y, int width, int height,
                                   boolean active, boolean hovered, boolean selected) {
-        Identifier texture = !active ? FRAME_DISABLED : selected ? FRAME_SUCCESS : hovered ? FRAME_FOCUS : FRAME_IDLE;
-        int inner = !active ? 0xE0282B31 : selected ? 0xE01D4028 : 0xE014181D;
-        graphics.fill(x + 5, y + 5, x + width - 5, y + height - 5, inner);
-        nineSlice(graphics, texture, x, y, width, height, 7, 7, 0.22F, 0.78F, 0.22F, 0.78F);
-
-        int edge = !active ? 0xFF5C6168 : selected ? BATTLE_ACTION_GREEN_SOFT : 0xFF5B6570;
-        graphics.fill(x + 4, y + 3, x + 6, y + height - 3, edge);
-
+        nineSlice(graphics, BUTTON, x, y, width, height, 8, 7, 0.18F, 0.82F, 0.22F, 0.78F);
+        int inner = !active ? 0xA8000000 : selected ? 0x8020A43C : 0x38101418;
+        graphics.fill(x + 6, y + 6, x + width - 6, y + height - 6, inner);
         if (selected && active) {
-            graphics.fill(x + 6, y + 3, x + width - 4, y + 5, BATTLE_ACTION_GREEN);
-            graphics.fill(x + 6, y + height - 5, x + width - 4, y + height - 3, 0xFF2EBA49);
-        }
-        if (active && hovered) {
-            graphics.fill(x + 6, y + 5, x + width - 4, y + height - 5,
-                    selected ? 0x18FFFFFF : 0x1639D353);
+            graphics.fill(x + 7, y + height - 6, x + width - 7, y + height - 4, BATTLE_ACTION_GREEN);
+        } else if (active && hovered) {
+            graphics.fill(x + 7, y + 6, x + width - 7, y + 8, BATTLE_ACTION_GREEN_SOFT);
         }
     }
 
@@ -95,7 +75,7 @@ final class TurnboundUiSkin {
                                   int x, int y, int width, int height,
                                   int horizontalBorder, int verticalBorder,
                                   float uLeft, float uRight, float vTop, float vBottom) {
-        if (width < 8 || height < 8) {
+        if (width < 12 || height < 12) {
             stretch(graphics, texture, x, y, width, height);
             return;
         }
@@ -124,23 +104,13 @@ final class TurnboundUiSkin {
         graphics.blit(texture, x0, y0, x1, y1, u0, u1, v0, v1);
     }
 
-    private static void stretch(GuiGraphicsExtractor graphics, Identifier texture, int x, int y, int width, int height) {
-        // This normalized-UV overload takes x0/y0/x1/y1, not width/height.
+    private static void stretch(GuiGraphicsExtractor graphics, Identifier texture,
+                                int x, int y, int width, int height) {
+        if (width <= 0 || height <= 0) return;
         graphics.blit(texture, x, y, x + width, y + height, 0.0F, 1.0F, 0.0F, 1.0F);
     }
 
-    private static boolean warm(int accent) {
-        int r = (accent >>> 16) & 0xFF;
-        int g = (accent >>> 8) & 0xFF;
-        int b = accent & 0xFF;
-        return r > b + 20 && g > b - 10;
-    }
-
-    private static Identifier id(String file) {
-        return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "textures/gui/kenney/" + file);
-    }
-
-    private static Identifier pixel(String file) {
-        return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "textures/gui/kenney_pixel/" + file);
+    private static Identifier foozle(String file) {
+        return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "textures/gui/foozle/" + file);
     }
 }

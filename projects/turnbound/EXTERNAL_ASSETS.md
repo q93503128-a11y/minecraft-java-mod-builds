@@ -48,8 +48,11 @@
 - Type: direct_asset / editable_base
 - License: CC0
 - Source: https://foozlecc.itch.io/rpg-ui-set-1
-- Intended use: RPG meta menu/frame 후보
-- Status: candidate; production skin 미확정
+- Upstream license text: Creative Commons Zero 1.0; commercial use/modification allowed; attribution not required
+- Intended use: production management UI, map chrome, character portrait/menu controls
+- Status: adopted primary production skin
+- Imported pieces: Panel_1, Button, Main_Button_BG, Main_Button_Overlay (+ light/dark states)
+- Rule: visible management/map chrome comes from the pack; TURNBOUND code only supplies layout, text, state and live 3D content
 
 ### Kenney Fantasy UI Borders
 - Type: direct_asset / editable_base

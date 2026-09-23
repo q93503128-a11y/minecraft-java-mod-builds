@@ -1,0 +1,13 @@
+RPG UI Set 1 (1.0)
+Distributed by Foozle (www.foozle.io)
+
+License: Creative Commons Zero (CC0) 1.0 Universal
+https://creativecommons.org/publicdomain/zero/1.0/
+
+This content is free to use and modify for all projects, including commercial projects.
+Attribution is not required.
+
+Canonical source:
+https://foozlecc.itch.io/rpg-ui-set-1
+
+The imported PNGs in TURNBOUND are unmodified visual assets from the CC0 pack.

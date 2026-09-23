@@ -15,15 +15,20 @@
 
 ## 2. 외부 UI 자산
 
-후보:
-- Foozle RPG UI Set 1 — CC0
+Primary production skin:
+- **Foozle RPG UI Set 1 — CC0**
+- ornate dark-fantasy panel/button/orb artwork를 management/map UI의 실제 화면 베이스로 사용한다.
+- Minecraft 기본 버튼을 외부 테두리만 씌워 재현하는 방식은 금지한다.
+- 캐릭터 profile은 Foozle ornament frame 안의 큰 live 3D bust를 사용한다. 28~36px짜리 잘린 작은 얼굴을 production profile로 쓰지 않는다.
+
+Secondary/reference only:
 - Kenney Fantasy UI Borders — CC0
 - Kenney UI Pack/RPG Expansion — CC0
 - Pretendard — OFL 1.1, runtime 검증 전
 
 원칙:
-- 화면마다 다른 pack 혼합 금지
-- primary skin 1개를 먼저 결정
+- 같은 화면에서 서로 다른 pack의 장식을 섞지 않는다.
+- primary skin은 Foozle로 고정한다.
 - 필요한 조각만 import
 - SOURCE/LICENSE 기록
 - texture path를 Java 화면마다 하드코딩하지 않음
