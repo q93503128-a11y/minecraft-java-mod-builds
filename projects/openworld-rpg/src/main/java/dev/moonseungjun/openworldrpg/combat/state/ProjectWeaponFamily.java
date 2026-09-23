@@ -73,6 +73,14 @@ public enum ProjectWeaponFamily {
         return poiseMultiplier;
     }
 
+    public boolean usesBothHands() {
+        return switch (this) {
+            case DUAL_BLADES, GREATSWORD, SPEAR, HAMMER_MACE, BOW, CROSSBOW,
+                    MUSKET_HAND_CANNON, STAFF -> true;
+            case DAGGER, SWORD, AXE, BLACK_POWDER_PISTOL, WAND -> false;
+        };
+    }
+
     public double weightedOffensiveStat(EffectiveAttributes attributes) {
         return attributes.str() * strWeight
                 + attributes.dex() * dexWeight

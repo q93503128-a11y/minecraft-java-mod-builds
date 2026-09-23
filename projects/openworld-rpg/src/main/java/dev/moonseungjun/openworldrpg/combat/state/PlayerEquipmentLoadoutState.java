@@ -44,9 +44,11 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
         Optional<EquippedCombatItem> main = item(ProjectEquipmentSlot.MAIN_WEAPON, equipped);
         Optional<EquippedCombatItem> offhand = item(ProjectEquipmentSlot.OFF_HAND, equipped);
         if (main.isPresent()
-                && main.get().weaponFamily().orElseThrow() == ProjectWeaponFamily.STAFF
-                && offhand.map(EquippedCombatItem::magicalFocus).orElse(false)) {
-            throw new IllegalArgumentException("A two-handed staff cannot simultaneously use a magical focus.");
+                && main.get().weaponFamily().orElseThrow().usesBothHands()
+                && offhand.isPresent()) {
+            throw new IllegalArgumentException(
+                    "A two-handed weapon cannot simultaneously occupy Off-hand."
+            );
         }
     }
 

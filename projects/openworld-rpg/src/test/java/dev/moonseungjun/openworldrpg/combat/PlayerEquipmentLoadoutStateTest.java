@@ -181,6 +181,33 @@ class PlayerEquipmentLoadoutStateTest {
     }
 
     @Test
+    void allCanonicalTwoHandedFamiliesRejectOccupiedOffhand() {
+        for (ProjectWeaponFamily family : ProjectWeaponFamily.values()) {
+            if (!family.usesBothHands()) {
+                continue;
+            }
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> new PlayerEquipmentLoadoutState(List.of(
+                            EquippedCombatItem.weapon(
+                                    "openworld_rpg:test_two_handed",
+                                    8,
+                                    family,
+                                    List.of()
+                            ),
+                            EquippedCombatItem.shield(
+                                    "openworld_rpg:test_buckler",
+                                    8,
+                                    ProjectShieldFamily.BUCKLER,
+                                    List.of()
+                            )
+                    )),
+                    () -> "Expected two-handed family to reject Off-hand: " + family
+            );
+        }
+    }
+
+    @Test
     void equippedLoadoutSurvivesCodecRoundTrip() {
         var original = new PlayerEquipmentLoadoutState(List.of(
                 EquippedCombatItem.weapon(

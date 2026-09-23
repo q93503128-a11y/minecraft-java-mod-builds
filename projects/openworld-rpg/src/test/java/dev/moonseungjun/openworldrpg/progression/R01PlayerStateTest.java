@@ -24,6 +24,21 @@ class R01PlayerStateTest {
     }
 
     @Test
+    void openingLoadoutClaimIsIndependentAndIdempotent() {
+        var initial = R01PlayerState.initial();
+        var claimed = initial.markOpeningLoadoutClaimed(5);
+        var retried = claimed.markOpeningLoadoutClaimed(6);
+
+        assertFalse(initial.openingLoadoutClaimed());
+        assertTrue(claimed.openingLoadoutClaimed());
+        assertEquals(claimed, retried);
+        assertTrue(claimed.ledger().rewardClaimIds().contains(
+                R01PlayerState.OPENING_LOADOUT_CLAIM_ID
+        ));
+        assertEquals(R01MainStage.ARRIVAL_ROAD, claimed.opening().mainStage());
+    }
+
+    @Test
     void classAndStarterPackageTogetherOpenQuarryRoadWithoutDependingOnOrder() {
         var firstClassThenStarter = R01PlayerState.initial()
                 .markFirstShrineActivated(10)

@@ -21,6 +21,10 @@ public final class R01PlayerStateService {
         );
     }
 
+    public static R01PlayerState markOpeningLoadoutClaimed(ServerPlayer player) {
+        return replace(player, state(player).markOpeningLoadoutClaimed(gameTick(player)));
+    }
+
     public static R01PlayerState markFirstShrineActivated(ServerPlayer player) {
         return replace(player, state(player).markFirstShrineActivated(gameTick(player)));
     }

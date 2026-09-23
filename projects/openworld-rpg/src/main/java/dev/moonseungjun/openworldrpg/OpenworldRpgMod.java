@@ -9,9 +9,12 @@ import dev.moonseungjun.openworldrpg.economy.PlayerCurrencyAttachments;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.IntegrationBootstrap;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import dev.moonseungjun.openworldrpg.integration.verify.M0PlayerVerificationBootstrap;
+import dev.moonseungjun.openworldrpg.progression.r01.R01ClassStarterService;
+import dev.moonseungjun.openworldrpg.progression.r01.R01OpeningBootstrapService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerStateAttachments;
 import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionAttachments;
 import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionService;
+import dev.moonseungjun.openworldrpg.recovery.RecoveryBeltAttachments;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import org.slf4j.Logger;
@@ -29,11 +32,16 @@ public final class OpenworldRpgMod implements ModInitializer {
         R01PlayerStateAttachments.initialize();
         PlayerCurrencyAttachments.initialize();
         PlayerRewardTransactionAttachments.initialize();
+        RecoveryBeltAttachments.initialize();
         PlayerVitalsRuntime.initialize();
         IntegrationBootstrap.bootstrap(profile, LOGGER);
         M0PlayerVerificationBootstrap.registerCommands();
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            if (!M0PlayerVerificationBootstrap.enabled()) {
+                R01OpeningBootstrapService.ensureOpeningLoadout(handler.getPlayer());
+                R01ClassStarterService.reconcileInterruptedGrant(handler.getPlayer());
+            }
             PlayerRewardTransactionService.resumePending(handler.getPlayer());
             PlayerCombatBuildPublisher.refresh(handler.getPlayer());
             M0PlayerVerificationBootstrap.prepare(handler.getPlayer(), LOGGER);

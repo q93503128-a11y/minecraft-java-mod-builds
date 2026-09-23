@@ -78,6 +78,25 @@ public record R01PlayerState(
         );
     }
 
+    public static final String OPENING_LOADOUT_CLAIM_ID =
+            "openworld_rpg:r01/opening_loadout";
+
+    public boolean openingLoadoutClaimed() {
+        return ledger.rewardClaimIds().contains(OPENING_LOADOUT_CLAIM_ID);
+    }
+
+    public R01PlayerState markOpeningLoadoutClaimed(long worldTick) {
+        validateTick(worldTick);
+        return changed(
+                opening,
+                quarry,
+                worldLoops,
+                economy,
+                ledger.withRewardClaimId(OPENING_LOADOUT_CLAIM_ID),
+                worldTick
+        );
+    }
+
     public R01PlayerState markFirstShrineActivated(long worldTick) {
         validateTick(worldTick);
         OpeningState nextOpening = opening
