@@ -156,6 +156,7 @@ tasks.register('prepareOneClickPack') {
         project.copy {
             from geckolibJar
             into mods
+            rename { 'geckolib-neoforge-26.2-5.5.3.jar' }
         }
         project.copy {
             from file('THIRD_PARTY/geckolib_neoforge/LICENSE')
