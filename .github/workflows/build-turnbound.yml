@@ -28,7 +28,7 @@ jobs:
           gradle-version: '9.2.1'
       - name: Test and build TURNBOUND
         working-directory: projects/turnbound
-        run: gradle clean test build --stacktrace
+        run: gradle clean test build oneClickPack --stacktrace
       - name: Smoke-test NeoForge server load
         working-directory: projects/turnbound
         run: |
@@ -72,9 +72,36 @@ jobs:
           grep -q '^Implementation-Title: TURNBOUND' built-manifest.mf
           grep -Fq "Implementation-Version: ${expected_version}" built-manifest.mf
           sha256sum "$jar_file"
-      - name: Upload JAR
+      - name: Verify one-click Modrinth pack
+        working-directory: projects/turnbound
+        run: |
+          expected_version="$(grep '^mod_version=' gradle.properties | cut -d= -f2-)"
+          pack_file="build/distributions/TURNBOUND-oneclick-${expected_version}.mrpack"
+          test -f "$pack_file"
+          unzip -l "$pack_file" > mrpack-contents.txt
+          grep -q 'modrinth.index.json' mrpack-contents.txt
+          grep -q 'overrides/config/turnbound/one_click_drehmal.txt' mrpack-contents.txt
+          grep -q "overrides/mods/turnbound-${expected_version}.jar" mrpack-contents.txt
+          grep -Eq 'overrides/mods/.*geckolib.*\.jar' mrpack-contents.txt
+          grep -q 'overrides/licenses/GeckoLib-MIT.txt' mrpack-contents.txt
+          ! grep -Eq 'shard_[123]\.zip|resources\.zip' mrpack-contents.txt
+          unzip -p "$pack_file" modrinth.index.json > built-modrinth.index.json
+          python3 - <<'PY'
+          import json
+          with open('built-modrinth.index.json', encoding='utf-8') as f:
+              data=json.load(f)
+          assert data['formatVersion'] == 1
+          assert data['dependencies']['minecraft'] == '26.2'
+          assert data['dependencies']['neoforge'] == '26.2.0.62'
+          assert data['files'] == []
+          PY
+          echo "Verifying $pack_file"
+          sha256sum "$pack_file"
+      - name: Upload JAR and one-click pack
         uses: actions/upload-artifact@v4
         with:
           name: turnbound-v04-workbranch
-          path: projects/turnbound/build/libs/*.jar
+          path: |
+            projects/turnbound/build/libs/*.jar
+            projects/turnbound/build/distributions/*.mrpack
           if-no-files-found: error

@@ -112,3 +112,99 @@ jar {
 }
 
 idea { module { downloadSources = true; downloadJavadoc = true } }
+
+
+// Build the user-facing one-click Modrinth pack from the same verified JAR/runtime dependency graph.
+// The ARR Drehmal world/resource bytes are intentionally NOT bundled: the imported pack drops only
+// an opt-in marker, and TURNBOUND downloads/verifies the official upstream release on first launch.
+tasks.register('prepareOneClickPack') {
+    dependsOn tasks.named('jar')
+    inputs.file(tasks.named('jar').flatMap { it.archiveFile })
+    inputs.files(configurations.runtimeClasspath)
+    inputs.file(file('THIRD_PARTY/geckolib_neoforge/LICENSE'))
+    outputs.dir(layout.buildDirectory.dir('oneclick-pack'))
+
+    doLast {
+        File root = layout.buildDirectory.dir('oneclick-pack').get().asFile
+        project.delete(root)
+        File mods = new File(root, 'overrides/mods')
+        File config = new File(root, 'overrides/config/turnbound')
+        File licenses = new File(root, 'overrides/licenses')
+        mods.mkdirs()
+        config.mkdirs()
+        licenses.mkdirs()
+
+        File turnboundJar = tasks.named('jar', Jar).get().archiveFile.get().asFile
+        project.copy {
+            from turnboundJar
+            into mods
+            rename { "turnbound-${mod_version}.jar" }
+        }
+
+        File geckolibJar = configurations.runtimeClasspath.files.find {
+            it.name.toLowerCase(Locale.ROOT).contains('geckolib')
+                    && it.name.toLowerCase(Locale.ROOT).endsWith('.jar')
+        }
+        if (geckolibJar == null) {
+            throw new GradleException('Resolved GeckoLib runtime JAR was not found for one-click pack')
+        }
+        project.copy {
+            from geckolibJar
+            into mods
+        }
+        project.copy {
+            from file('THIRD_PARTY/geckolib_neoforge/LICENSE')
+            into licenses
+            rename { 'GeckoLib-MIT.txt' }
+        }
+
+        new File(config, 'one_click_drehmal.txt').setText(
+                'turnbound:drehmal_apotheosis_2_2_2f\nversion=2.2.2f\n',
+                'UTF-8')
+
+        String readme = '''TURNBOUND one-click test pack
+
+첫 설치:
+- 이 모드팩을 한 번만 새 인스턴스로 가져옵니다.
+- 첫 실행 시 TURNBOUND가 Drehmal: APOTHEOSIS 2.2.2f 공식 GitHub 배포 파일을 직접 다운로드/검증합니다.
+- 약 4.18 GB를 다운로드하며 설치/압축 해제를 위해 약 10 GB 여유 공간을 권장합니다.
+- 월드와 전용 resources.zip은 같은 인스턴스의 saves 폴더에 남습니다.
+- 수동 Drehmal 다운로드, saves 복사, /turnbound world bind_drehmal 입력은 필요하지 않습니다.
+
+이후 TURNBOUND 업데이트:
+- 새 모드팩 인스턴스를 만들지 않습니다.
+- 같은 인스턴스의 mods 폴더에서 기존 turnbound-*.jar만 새 JAR로 교체합니다.
+- 설치된 Drehmal 월드/리소스는 다시 다운로드하지 않습니다.
+- 맵 버전을 의도적으로 바꾸거나 필수 설치 파일을 삭제한 경우에만 다시 준비가 필요합니다.
+
+Drehmal 원본 맵/리소스는 이 mrpack 안에 포함되어 있지 않으며 공식 배포처에서 첫 실행에 직접 내려받습니다.
+GeckoLib 5.5.3 NeoForge 런타임은 MIT 라이선스로 모드팩에 포함됩니다.
+'''
+        new File(root, 'overrides/README-TURNBOUND.txt').setText(readme, 'UTF-8')
+
+        def index = [
+                formatVersion: 1,
+                game: 'minecraft',
+                versionId: mod_version,
+                name: "TURNBOUND ${mod_version} One-click Test",
+                summary: 'TURNBOUND 26.2 NeoForge test pack with first-run official Drehmal bootstrap',
+                files: [],
+                dependencies: [
+                        minecraft: minecraft_version,
+                        neoforge: neo_version
+                ]
+        ]
+        new File(root, 'modrinth.index.json').setText(
+                groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(index)),
+                'UTF-8')
+    }
+}
+
+tasks.register('oneClickPack', Zip) {
+    dependsOn tasks.named('prepareOneClickPack')
+    from layout.buildDirectory.dir('oneclick-pack')
+    destinationDirectory = layout.buildDirectory.dir('distributions')
+    archiveFileName = "TURNBOUND-oneclick-${mod_version}.mrpack"
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
