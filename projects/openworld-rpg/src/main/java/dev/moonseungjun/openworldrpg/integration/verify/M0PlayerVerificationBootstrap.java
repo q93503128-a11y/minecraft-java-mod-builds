@@ -1,6 +1,5 @@
 package dev.moonseungjun.openworldrpg.integration.verify;
 
-import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongEncounterData;
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongPhysicalEncounterRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.AttributeAllocation;
 import dev.moonseungjun.openworldrpg.combat.state.EquippedCombatItem;
@@ -33,12 +32,10 @@ public final class M0PlayerVerificationBootstrap {
     public static final String EMBEDDED_MARKER =
             "data/openworld_rpg/integration/m0_player_verification.enabled";
     private static final String EARTHLOONG_COMMAND = "owr_spawn_earthloong";
-    private static final String EARTHLOONG_TAIL_PREVIEW_COMMAND =
-            "owr_earthloong_preview_tail";
-    private static final String EARTHLOONG_FORKED_PREVIEW_COMMAND =
-            "owr_earthloong_preview_forked";
-    private static final String EARTHLOONG_EARTHLINE_PREVIEW_COMMAND =
-            "owr_earthloong_preview_earthline";
+    private static final String EARTHLOONG_MOTION_1_COMMAND = "owr_earthloong_motion_1";
+    private static final String EARTHLOONG_MOTION_2_COMMAND = "owr_earthloong_motion_2";
+    private static final String EARTHLOONG_MOTION_3_COMMAND = "owr_earthloong_motion_3";
+    private static final String EARTHLOONG_MOTION_4_COMMAND = "owr_earthloong_motion_4";
 
     private M0PlayerVerificationBootstrap() {
     }
@@ -60,28 +57,24 @@ public final class M0PlayerVerificationBootstrap {
                             .executes(context -> spawnEarthloongInFront(context.getSource().getEntity()))
             );
             dispatcher.register(
-                    Commands.literal(EARTHLOONG_TAIL_PREVIEW_COMMAND)
-                            .executes(context -> previewEarthloongAction(
-                                    context.getSource().getEntity(),
-                                    R01EarthloongEncounterData.ActionId.TAIL_SCYTHE,
-                                    "Tail Scythe"
-                            ))
+                    Commands.literal(EARTHLOONG_MOTION_1_COMMAND)
+                            .executes(context -> previewEarthloongMotion(
+                                    context.getSource().getEntity(), 1))
             );
             dispatcher.register(
-                    Commands.literal(EARTHLOONG_FORKED_PREVIEW_COMMAND)
-                            .executes(context -> previewEarthloongAction(
-                                    context.getSource().getEntity(),
-                                    R01EarthloongEncounterData.ActionId.FORKED_HEAVEN,
-                                    "Forked Heaven"
-                            ))
+                    Commands.literal(EARTHLOONG_MOTION_2_COMMAND)
+                            .executes(context -> previewEarthloongMotion(
+                                    context.getSource().getEntity(), 2))
             );
             dispatcher.register(
-                    Commands.literal(EARTHLOONG_EARTHLINE_PREVIEW_COMMAND)
-                            .executes(context -> previewEarthloongAction(
-                                    context.getSource().getEntity(),
-                                    R01EarthloongEncounterData.ActionId.EARTHLINE_SURGE,
-                                    "Earthline Surge"
-                            ))
+                    Commands.literal(EARTHLOONG_MOTION_3_COMMAND)
+                            .executes(context -> previewEarthloongMotion(
+                                    context.getSource().getEntity(), 3))
+            );
+            dispatcher.register(
+                    Commands.literal(EARTHLOONG_MOTION_4_COMMAND)
+                            .executes(context -> previewEarthloongMotion(
+                                    context.getSource().getEntity(), 4))
             );
         });
     }
@@ -114,17 +107,17 @@ public final class M0PlayerVerificationBootstrap {
         return 1;
     }
 
-    private static int previewEarthloongAction(
+    private static int previewEarthloongMotion(
             Entity commandEntity,
-            R01EarthloongEncounterData.ActionId action,
-            String displayName
+            int donorSkillNumber
     ) {
         if (!(commandEntity instanceof ServerPlayer player)) {
             return 0;
         }
-        boolean accepted =
-                R01EarthloongPhysicalEncounterRuntime.beginVerificationPreview(player, action);
-        return accepted ? 1 : 0;
+        return R01EarthloongPhysicalEncounterRuntime.beginVerificationMotionPreview(
+                player,
+                donorSkillNumber
+        ) ? 1 : 0;
     }
 
     public static void prepare(ServerPlayer player, Logger logger) {
