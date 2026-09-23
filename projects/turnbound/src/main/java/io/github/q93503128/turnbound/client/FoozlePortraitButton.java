@@ -17,15 +17,23 @@ final class FoozlePortraitButton extends Button {
     private final String name;
     private final String detail;
     private final boolean unavailable;
+    private final boolean selected;
 
     FoozlePortraitButton(int x, int y, int width, int height,
                          String combatantId, String name, String detail,
                          boolean unavailable, OnPress onPress) {
+        this(x, y, width, height, combatantId, name, detail, unavailable, false, onPress);
+    }
+
+    FoozlePortraitButton(int x, int y, int width, int height,
+                         String combatantId, String name, String detail,
+                         boolean unavailable, boolean selected, OnPress onPress) {
         super(x, y, width, height, Component.empty(), onPress, DEFAULT_NARRATION);
         this.combatantId = combatantId == null ? "" : combatantId;
         this.name = name == null ? "" : name;
         this.detail = detail == null ? "" : detail;
         this.unavailable = unavailable;
+        this.selected = selected;
     }
 
     @Override
@@ -53,7 +61,7 @@ final class FoozlePortraitButton extends Button {
                     oy + (orb - font.lineHeight) / 2,
                     TurnboundUiTokens.TEXT_PRIMARY, true);
         }
-        TurnboundUiSkin.orbOverlay(graphics, ox, oy, orb, active, isHoveredOrFocused(), false);
+        TurnboundUiSkin.orbOverlay(graphics, ox, oy, orb, active, isHoveredOrFocused(), selected);
 
         if (compact) {
             int tx = ox + orb + 5;

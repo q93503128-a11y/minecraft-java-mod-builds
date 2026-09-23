@@ -153,7 +153,7 @@ public final class MetaMenuScreen extends Screen {
             boolean selected=draftParty.contains(row.id());
             String detail=(row.awakened()?"각성":"★"+row.nativeStar())+" · Lv."+row.level()+" · CP "+row.cp();
             addRenderableWidget(new FoozlePortraitButton(
-                    xx,yy,cardW,cardH,row.id(),row.name(),detail,false,
+                    xx,yy,cardW,cardH,row.id(),row.name(),detail,false,selected,
                     ignored->toggleParty(row.id())));
         }
         int py=top+panelHeight-50,px=left+16;
