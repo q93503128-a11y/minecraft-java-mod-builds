@@ -280,3 +280,19 @@ The four pinned raw review durations remain:
 | 4 | `woodlizard_roar` | 50 ticks / 2.50 s |
 
 This is a verification workflow correction, **not** a new finalized Earthloong kit.
+
+### Pinned compiled-animation structural evidence
+
+The pinned 26.2 artifact does not expose these motions as Gecko animation JSON. Its exact JAR instead contains:
+
+`net/mcreator/threateninglymobs/client/model/animations/earthloongAnimation.class`
+
+whose compiled `AnimationDefinition` surface defines the same four review motions. Static keyframe inspection gives useful constraints before visual acceptance:
+
+- `woodlizard_attack` (0.50 s): head/neck/front-body chains move sharply during roughly 0.17–0.25 s; no authored `tail` or `body` animation channel is present in this definition. This further rejects the old Tail Scythe interpretation.
+- `woodlizard_charge` (2.00 s): body, neck and tail enter large opposed yaw rotations from roughly 0.38–0.50 s and hold/oscillate through most of the state. The definition contains rotation channels rather than a root-position dash. Combined with the donor charging procedure, this should be treated as a charge-up/coil candidate until real footage proves otherwise, not as a presumed locomotion animation.
+- `woodlizard_skill1` (1.25 s): neck and upper/lower body pitch strongly while head/tail also articulate. It is structurally compatible with a body/ground-directed special or cast, but the exact gameplay reading remains visually unaccepted.
+- `woodlizard_roar` (2.50 s): first enters a whole-body twist, then the head/neck pitches dramatically upward in the second half while the body segments pulse. It is structurally compatible with a roar/area/phase presentation, but exact hit ownership still requires footage.
+
+These are **static animation-structure observations**, not substitutes for Minecraft video review. No final production attack name, hitbox or role is locked by this section.
+
