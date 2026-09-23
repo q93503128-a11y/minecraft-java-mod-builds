@@ -35,8 +35,6 @@ import org.slf4j.Logger;
 
 public final class R01EarthloongPhysicalEncounterRuntime {
     private static final String EARTHLOONG_ID = "threateningly_mobs:the_earthloong";
-    private static final String VERIFICATION_FIXTURE_TAG =
-            "openworld_rpg.m0_earthloong_fixture";
     private static final R01EarthloongEncounterData DATA = R01EarthloongEncounterDataLoader.loadBundled();
     private static final Map<UUID, ActorState> STATES = new ConcurrentHashMap<>();
     private static volatile boolean initialized;
@@ -124,7 +122,6 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         if (!isEarthloong(earthloong) || !(earthloong.level() instanceof ServerLevel level)) {
             return false;
         }
-        earthloong.addTag(VERIFICATION_FIXTURE_TAG);
         ActorState state = STATES.computeIfAbsent(
                 earthloong.getUUID(),
                 ignored -> new ActorState(
@@ -224,10 +221,7 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         private ActorState(LivingEntity actor, String encounterInstanceId) {
             this.actor = actor;
             this.actions = new R01EarthloongActionController(DATA, encounterInstanceId, actor.getUUID());
-            this.verificationFixture = actor.getTags().contains(VERIFICATION_FIXTURE_TAG);
-            if (verificationFixture) {
-                holdVerificationFixtureIdle();
-            }
+            this.verificationFixture = false;
         }
 
         private void tick(ServerLevel level, long gameTick) {
@@ -319,7 +313,6 @@ public final class R01EarthloongPhysicalEncounterRuntime {
 
         private void armVerificationFixture() {
             verificationFixture = true;
-            actor.addTag(VERIFICATION_FIXTURE_TAG);
             currentThreatTargetId = null;
             resetRootBreakerProximity();
             nextDecisionTick = Long.MAX_VALUE;
