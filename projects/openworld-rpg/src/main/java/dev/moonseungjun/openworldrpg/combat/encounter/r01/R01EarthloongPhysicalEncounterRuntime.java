@@ -35,10 +35,11 @@ import org.slf4j.Logger;
 
 public final class R01EarthloongPhysicalEncounterRuntime {
     private static final String EARTHLOONG_ID = "threateningly_mobs:the_earthloong";
-    private static final List<R01EarthloongEncounterData.ActionId> VERIFICATION_SEQUENCE = List.of(
-            R01EarthloongEncounterData.ActionId.TAIL_SCYTHE,
-            R01EarthloongEncounterData.ActionId.FORKED_HEAVEN,
-            R01EarthloongEncounterData.ActionId.EARTHLINE_SURGE
+    private static final List<VerificationMotionSpec> VERIFICATION_SEQUENCE = List.of(
+            new VerificationMotionSpec(1, 10),
+            new VerificationMotionSpec(2, 40),
+            new VerificationMotionSpec(3, 25),
+            new VerificationMotionSpec(4, 50)
     );
     private static final R01EarthloongEncounterData DATA = R01EarthloongEncounterDataLoader.loadBundled();
     private static final Map<UUID, ActorState> STATES = new ConcurrentHashMap<>();
@@ -119,8 +120,9 @@ public final class R01EarthloongPhysicalEncounterRuntime {
     /**
      * Converts one authored Earthloong into a deterministic M0 presentation fixture.
      *
-     * <p>The fixture is isolated from both donor AI and the normal R01 action selector. Only an
-     * explicit verification-preview command may commit an action while this flag is present.</p>
+     * <p>The fixture is isolated from the normal R01 action selector. Idle donor locomotion remains
+     * visible, while the raw pinned donor SkillNumber 1..4 animation states can be reviewed without
+     * project attack geometry, VFX or damage being layered on top.</p>
      */
     public static boolean armVerificationFixture(
             LivingEntity earthloong,
@@ -185,6 +187,51 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         );
     }
 
+    /**
+     * Starts one raw pinned donor motion on the nearest armed verification fixture.
+     *
+     * <p>This is deliberately presentation-only: no project action ID, hit geometry, VFX, damage,
+     * status or arena effect is committed. It exists so attack roles can be designed from the
+     * observed Earthloong motion instead of the other way around.</p>
+     */
+    public static boolean beginVerificationMotionPreview(
+            ServerPlayer player,
+            int donorSkillNumber
+    ) {
+        Objects.requireNonNull(player, "player");
+        int animationTicks = switch (donorSkillNumber) {
+            case 1 -> 10;
+            case 2 -> 40;
+            case 3 -> 25;
+            case 4 -> 50;
+            default -> -1;
+        };
+        if (animationTicks <= 0) {
+            return false;
+        }
+
+        ActorState nearest = null;
+        double nearestDistanceSqr = 48.0 * 48.0;
+        for (ActorState state : STATES.values()) {
+            if (state.actor.level() != player.level()
+                    || state.actor.isRemoved()
+                    || !state.actor.isAlive()) {
+                continue;
+            }
+            double distanceSqr = state.actor.distanceToSqr(player);
+            if (distanceSqr <= nearestDistanceSqr) {
+                nearest = state;
+                nearestDistanceSqr = distanceSqr;
+            }
+        }
+        return nearest != null && nearest.beginVerificationMotionPreview(
+                player,
+                donorSkillNumber,
+                animationTicks,
+                player.level().getGameTime()
+        );
+    }
+
     private static void suppressDonorCombatTargets(ServerLevel level) {
         for (ActorState state : STATES.values()) {
             if (state.actor.level() == level && state.actor instanceof Mob mob) {
@@ -231,6 +278,7 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         private UUID verificationObserverId;
         private int verificationCycleIndex;
         private long verificationNextActionTick = Long.MAX_VALUE;
+        private VerificationMotion verificationMotion;
 
         private ActorState(LivingEntity actor, String encounterInstanceId) {
             this.actor = actor;
@@ -240,7 +288,9 @@ public final class R01EarthloongPhysicalEncounterRuntime {
 
         private void tick(ServerLevel level, long gameTick) {
             if (verificationFixture) {
-                if (committed != null) {
+                if (verificationMotion != null) {
+                    tickVerificationMotion(gameTick);
+                } else if (committed != null) {
                     tickCommitted(level, gameTick);
                 } else {
                     R01EarthloongDonorPresentationBridge.resetTechnicalCandidate(actor);
@@ -331,6 +381,7 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             verificationObserverId = observer.getUUID();
             verificationCycleIndex = 0;
             verificationNextActionTick = gameTick + 40L;
+            verificationMotion = null;
             currentThreatTargetId = observer.getUUID();
             threat.engageInitial(observer.getUUID(), gameTick);
             resetRootBreakerProximity();
@@ -355,23 +406,84 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                 return;
             }
 
-            threat.engageInitial(observer.getUUID(), gameTick);
-            currentThreatTargetId = observer.getUUID();
-            R01EarthloongEncounterData.ActionId action =
-                    VERIFICATION_SEQUENCE.get(verificationCycleIndex);
-            boolean started = switch (action) {
-                case TAIL_SCYTHE -> commitTailScytheVerification(observer, gameTick);
-                case FORKED_HEAVEN -> commitForkedHeavenVerification(level, gameTick);
-                case EARTHLINE_SURGE ->
-                        commitEarthlineSurgeVerification(level, observer, gameTick);
-                default -> false;
-            };
-            if (!started) {
+            VerificationMotionSpec motion = VERIFICATION_SEQUENCE.get(verificationCycleIndex);
+            if (!beginVerificationMotionPreview(
+                    observer,
+                    motion.donorSkillNumber(),
+                    motion.donorAnimationTicks(),
+                    gameTick
+            )) {
                 verificationNextActionTick = gameTick + 20L;
                 return;
             }
 
             verificationCycleIndex++;
+        }
+
+        private boolean beginVerificationMotionPreview(
+                ServerPlayer observer,
+                int donorSkillNumber,
+                int donorAnimationTicks,
+                long gameTick
+        ) {
+            if (!verificationFixture
+                    || verificationMotion != null
+                    || committed != null
+                    || isStormshedActive()
+                    || stormShedPending) {
+                return false;
+            }
+
+            var presentation = R01EarthloongDonorPresentationBridge.startVerificationCandidate(
+                    actor,
+                    donorSkillNumber,
+                    donorAnimationTicks
+            );
+            if (!presentation.accepted()) {
+                return false;
+            }
+
+            boolean previousNoAi = false;
+            if (actor instanceof Mob mob) {
+                previousNoAi = mob.isNoAi();
+                mob.setTarget(null);
+                mob.getNavigation().stop();
+                mob.setNoAi(true);
+            }
+
+            Vec3 towardObserver = horizontalDirection(actor, observer);
+            if (towardObserver.lengthSqr() > 1.0e-9) {
+                orientActor(towardObserver.normalize());
+            }
+            freezeHorizontalMotion();
+            verificationMotion = new VerificationMotion(
+                    donorSkillNumber,
+                    gameTick,
+                    donorAnimationTicks,
+                    previousNoAi
+            );
+            nextDecisionTick = Long.MAX_VALUE;
+            return true;
+        }
+
+        private void tickVerificationMotion(long gameTick) {
+            VerificationMotion motion = verificationMotion;
+            if (motion == null) {
+                return;
+            }
+            freezeHorizontalMotion();
+            if (gameTick - motion.startTick < motion.donorAnimationTicks) {
+                return;
+            }
+
+            R01EarthloongDonorPresentationBridge.resetTechnicalCandidate(actor);
+            if (actor instanceof Mob mob) {
+                mob.setTarget(null);
+                mob.setNoAi(motion.previousNoAi);
+            }
+            verificationMotion = null;
+            verificationNextActionTick = gameTick + 40L;
+            holdVerificationFixtureIdle();
         }
 
         private void holdVerificationFixtureIdle() {
@@ -1595,6 +1707,11 @@ public final class R01EarthloongPhysicalEncounterRuntime {
 
         private void releaseActorControl() {
             R01EarthloongDonorPresentationBridge.resetTechnicalCandidate(actor);
+            if (verificationMotion != null && actor instanceof Mob mob) {
+                mob.setTarget(null);
+                mob.setNoAi(verificationMotion.previousNoAi);
+                verificationMotion = null;
+            }
             if (verificationFixture) {
                 holdVerificationFixtureIdle();
             } else if (actor instanceof Mob mob && committed != null) {
@@ -1660,6 +1777,36 @@ public final class R01EarthloongPhysicalEncounterRuntime {
 
     private static double horizontalDistance(LivingEntity a, LivingEntity b) {
         return Math.hypot(b.getX() - a.getX(), b.getZ() - a.getZ());
+    }
+
+    private record VerificationMotionSpec(
+            int donorSkillNumber,
+            int donorAnimationTicks
+    ) {
+        private VerificationMotionSpec {
+            if (donorSkillNumber < 1 || donorSkillNumber > 4 || donorAnimationTicks <= 0) {
+                throw new IllegalArgumentException("Invalid Earthloong verification motion.");
+            }
+        }
+    }
+
+    private static final class VerificationMotion {
+        private final int donorSkillNumber;
+        private final long startTick;
+        private final int donorAnimationTicks;
+        private final boolean previousNoAi;
+
+        private VerificationMotion(
+                int donorSkillNumber,
+                long startTick,
+                int donorAnimationTicks,
+                boolean previousNoAi
+        ) {
+            this.donorSkillNumber = donorSkillNumber;
+            this.startTick = startTick;
+            this.donorAnimationTicks = donorAnimationTicks;
+            this.previousNoAi = previousNoAi;
+        }
     }
 
     private record FurrowGroundSample(
