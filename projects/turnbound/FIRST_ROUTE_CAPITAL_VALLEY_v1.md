@@ -434,3 +434,34 @@ Drabyel safety buffer
 ```
 
 전투 수는 실제 travel time과 지형 검수 후 줄일 수 있다.
+
+
+## 20. Runtime pacing checkpoint
+
+현재 코드에는 정확한 좌표와 분리된 첫 route 진행 상태가 들어가 있다.
+
+- Tower 도달
+- Explorer's Guide camp 도달
+- New Drabyel 진입로 도달
+- New Drabyel 도달
+
+위 milestone은 player별 SavedData에 누적된다. 뒤 landmark를 먼저 확인하면 앞 milestone도 함께 완료 처리하므로, 재접속·후진 이동·관리자 위치 이동 이후 HUD가 이미 지난 Tower/camp로 되감기지 않는다.
+
+현재 objective 흐름:
+
+```text
+첫 도로 조우
+→ Capital Valley Tower
+→ Warning Cave는 선택 / Explorer's Guide camp
+→ New Drabyel 진입로
+→ New Drabyel
+```
+
+중요:
+- Warning Cave는 계속 optional이다.
+- camp는 combat gate가 아니라 breathing/equipment-comparison beat다.
+- `CV_DRABYEL_ROAD` 승리 후에는 물리적으로 뒤로 이동해도 main navigation이 hub 이전 단계로 되돌아가지 않는다.
+- New Drabyel 도달 후 첫-route waypoint는 종료되고 hub onboarding으로 넘어간다.
+- 이 checkpoint는 **route pacing/state 구현**이며 좌표 검증 완료를 의미하지 않는다.
+
+다음 production gate는 그대로 실제 Minecraft 26.2 client survey다. roadhead, Tower, Warning Cave, camp, Drabyel approach/entrance 및 service spot의 스크린샷·동선·battle camera 검증 없이는 `verifiedIn26_2`와 `productionEnabled`를 true로 올리지 않는다.

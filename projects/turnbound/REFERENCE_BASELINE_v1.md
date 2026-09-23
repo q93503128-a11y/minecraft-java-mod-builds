@@ -677,3 +677,24 @@ Verification:
 - NeoForge 26.2 dedicated-server smoke reached Done (5.739s).
 - Verified JAR SHA-256: `5e1bbc824fb2bfc8fd4e2483f89f81f361424e4e4d4282d36491458e7d96cbf8`.
 - CLIENT RUNTIME TESTED / PLAYTESTED / MULTIPLAYER TESTED remain NO; real-client width/readability and whether the three beats feel too slow/fast are intentionally deferred to the final client pass.
+
+
+### first-route persistent pacing follow-up
+
+The first-route HUD previously used nearest-site geometry to choose its next waypoint. That was adequate for a static survey preview, but it could point a progressed player backward after backtracking. The route now treats landmark progress as durable player state while keeping every exact world coordinate behind the existing Minecraft 26.2 survey gate.
+
+TURNBOUND application:
+- reaching the verified Capital Valley Tower, Explorer's Guide camp, New Drabyel approach, and New Drabyel hub records cumulative per-player route milestones in external-world SavedData;
+- later landmarks imply earlier ones, so reconnect/admin relocation cannot create an impossible partially-rewound route state;
+- route navigation uses the durable floor: after Tower it cannot target roadhead/Tower again, after camp it targets the Drabyel approach, and after the road encounter clear it can target the hub even if the player physically walks backward;
+- entering the hub retires the first-route navigation arrow instead of continuing to point at an already-earned destination;
+- contextual objectives now follow the authored macro flow: first common encounter → Tower → optional Warning Cave choice / Explorer camp → Drabyel approach → hub;
+- the Warning Cave remains optional. Its copy explicitly communicates higher reward without turning it into a mandatory waypoint;
+- the camp remains a breathing/equipment-comparison beat rather than another combat gate or tutorial kiosk;
+- no terrain, NPC, spawn, patrol, arena, or service coordinate was promoted by this work. Unverified `capital_valley_route_v1.json` positions remain fail-closed.
+
+Verification boundary:
+- Build TURNBOUND #843 passed the full test/build workflow at code commit `e3d58249408bf70e02cfd4bb65a743ae79c9d432`.
+- NeoForge 26.2 dedicated-server smoke reached Done (4.236s).
+- Verified JAR SHA-256: `74cde0eda7a75788b70b282ad8803fde1f0cdfee1114e9fe56d695c932fc32fa`.
+- CLIENT RUNTIME TESTED / PLAYTESTED / MULTIPLAYER TESTED remain NO. Exact visual pacing still depends on the pending real 26.2 route survey.
