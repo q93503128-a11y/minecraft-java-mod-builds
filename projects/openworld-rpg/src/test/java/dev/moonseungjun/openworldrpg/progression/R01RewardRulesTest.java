@@ -16,11 +16,16 @@ class R01RewardRulesTest {
     }
 
     @Test
-    void earthloongProgressionRewardCombinesBossAndDungeonLayers() {
-        var rule = R01RewardRules.EARTHLOONG_FIRST_CLEAR_PROGRESSION;
+    void earthloongFirstClearPreservesSeparateBossAndDungeonLayers() {
+        var boss = R01RewardRules.EARTHLOONG_FIRST_BOSS_LAYER;
+        var completion = R01RewardRules.EARTHLOONG_FIRST_DUNGEON_COMPLETION;
 
-        assertEquals(1.40, rule.combatRequirementFraction(), 0.0001);
-        assertEquals(0.84, rule.classRequirementFraction(), 0.0001);
-        assertEquals(180L, rule.gold());
+        assertEquals(0.40, boss.combatRequirementFraction(), 0.0001);
+        assertEquals(0.20, boss.classRequirementFraction(), 0.0001);
+        assertEquals(0L, boss.gold());
+
+        assertEquals(1.00, completion.combatRequirementFraction(), 0.0001);
+        assertEquals(0.64, completion.classRequirementFraction(), 0.0001);
+        assertEquals(180L, completion.gold());
     }
 }
