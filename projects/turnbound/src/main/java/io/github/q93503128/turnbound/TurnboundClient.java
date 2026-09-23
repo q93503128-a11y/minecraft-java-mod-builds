@@ -27,6 +27,7 @@ import net.neoforged.neoforge.common.NeoForge;
 @Mod(value = Turnbound.MOD_ID, dist = Dist.CLIENT)
 public final class TurnboundClient {
     public TurnboundClient(IEventBus modEventBus) {
+        DrehmalAutoInstaller.repairExistingWorldBeforeResourceLoad();
         modEventBus.addListener(ClientBattleNetwork::register);
         modEventBus.addListener(ClientFieldNetwork::register);
         modEventBus.addListener(ClientMetaNetwork::register);
