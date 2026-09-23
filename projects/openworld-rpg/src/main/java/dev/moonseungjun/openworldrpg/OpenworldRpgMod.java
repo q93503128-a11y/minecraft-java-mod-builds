@@ -10,6 +10,8 @@ import dev.moonseungjun.openworldrpg.integration.bootstrap.IntegrationBootstrap;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import dev.moonseungjun.openworldrpg.integration.verify.M0PlayerVerificationBootstrap;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerStateAttachments;
+import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionAttachments;
+import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionService;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import org.slf4j.Logger;
@@ -26,11 +28,13 @@ public final class OpenworldRpgMod implements ModInitializer {
         PlayerEquipmentAttachments.initialize();
         R01PlayerStateAttachments.initialize();
         PlayerCurrencyAttachments.initialize();
+        PlayerRewardTransactionAttachments.initialize();
         PlayerVitalsRuntime.initialize();
         IntegrationBootstrap.bootstrap(profile, LOGGER);
         M0PlayerVerificationBootstrap.registerCommands();
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            PlayerRewardTransactionService.resumePending(handler.getPlayer());
             PlayerCombatBuildPublisher.refresh(handler.getPlayer());
             M0PlayerVerificationBootstrap.prepare(handler.getPlayer(), LOGGER);
         });
