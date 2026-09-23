@@ -38,6 +38,11 @@ class Drehmal26_2CompatMigratorTest {
         createLegacyDatapack(datapack);
         String originalHash = DrehmalInstallFiles.sha256(datapack);
 
+        Path randomSequences = world.resolve(Drehmal26_2CompatMigrator.RANDOM_SEQUENCES_RELATIVE);
+        Files.createDirectories(randomSequences.getParent());
+        byte[] randomSequenceBytes = new byte[]{9, 7, 5, 3, 1};
+        Files.write(randomSequences, randomSequenceBytes);
+
         Drehmal26_2CompatMigrator.Report first = Drehmal26_2CompatMigrator.migrate(world);
 
         assertTrue(first.changed());
@@ -47,6 +52,10 @@ class Drehmal26_2CompatMigratorTest {
         assertNotEquals(first.sourceHash(), first.migratedHash());
         assertTrue(Drehmal26_2CompatMigrator.isCurrent(world));
         assertArrayEquals(regionBytes, Files.readAllBytes(region.resolve("r.0.0.mca")));
+        assertFalse(Files.exists(randomSequences));
+        Path randomSequenceBackup = randomSequences.resolveSibling(
+                randomSequences.getFileName() + Drehmal26_2CompatMigrator.RANDOM_SEQUENCES_BACKUP_SUFFIX);
+        assertArrayEquals(randomSequenceBytes, Files.readAllBytes(randomSequenceBackup));
 
         Path backup = datapack.resolveSibling(datapack.getFileName() + Drehmal26_2CompatMigrator.BACKUP_SUFFIX);
         assertTrue(Files.isRegularFile(backup));
@@ -90,7 +99,7 @@ class Drehmal26_2CompatMigratorTest {
     }
 
     @Test
-    void upgradesCompatV1ArchiveAndKeepsExistingBackup() throws Exception {
+    void upgradesCompatV2ArchiveAndKeepsExistingBackups() throws Exception {
         Path world = temp.resolve("v1-world");
         Path datapacks = world.resolve("datapacks");
         Files.createDirectories(datapacks);
@@ -104,7 +113,7 @@ class Drehmal26_2CompatMigratorTest {
 
         Files.writeString(
                 world.resolve(Drehmal26_2CompatMigrator.MARKER_FILE),
-                "compatVersion=1\ntarget=26.2\n",
+                "compatVersion=2\ntarget=26.2\n",
                 StandardCharsets.UTF_8);
 
         Drehmal26_2CompatMigrator.Report report = Drehmal26_2CompatMigrator.migrate(world);
@@ -118,7 +127,7 @@ class Drehmal26_2CompatMigratorTest {
         assertTrue(attributes == null || !attributes.has("minecraft:audio/ambient_sounds"));
         assertTrue(attributes == null || !attributes.has("minecraft:audio/background_music"));
         assertTrue(Files.readString(world.resolve(Drehmal26_2CompatMigrator.MARKER_FILE))
-                .contains("compatVersion=2"));
+                .contains("compatVersion=3"));
     }
 
     private static void createLegacyDatapack(Path archive) throws Exception {
