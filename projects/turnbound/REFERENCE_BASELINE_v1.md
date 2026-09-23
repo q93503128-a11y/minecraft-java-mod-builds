@@ -231,6 +231,7 @@ TURNBOUND 적용:
 - party portrait 선택 → Character Detail 직접 진입.
 - 별도 Characters 루트 메뉴를 추가하지 않고 전체 roster는 Party에서 관리.
 - routine action을 여러 계층으로 나누지 않음.
+- World Map은 필드의 `M` 직접 입력을 정본으로 두고 Root menu에서 중복 노출하지 않음.
 
 ### Honkai: Star Rail
 Reference only.

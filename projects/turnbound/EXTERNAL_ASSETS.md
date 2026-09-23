@@ -66,6 +66,13 @@
 - Intended use: button/utility component 후보
 - Status: 일부 기존 조각 존재. 새 v1 UI에서 자동 채택하지 않음.
 
+### Kenney UI Pack — Pixel Adventure
+- Type: direct_asset / editable_base
+- License: CC0
+- Source: https://kenney.nl/assets/ui-pack-pixel-adventure
+- Intended use: TURNBOUND management/map panel frame, focus/disabled/success/warning state chrome
+- Status: adopted for the 26.2 client UI readability pass; external frame pixels only, navigation/layout remains TURNBOUND-specific
+
 ### Pretendard
 - Type: direct_asset candidate
 - License: SIL Open Font License 1.1
