@@ -375,7 +375,7 @@ tasks.register('inspectCreatureFoundationDependencies') {
 
 tasks.register('inspectEarthloongDependencySurface') {
     group = 'verification'
-    description = 'Records the exact Earthloong class/resource surface from the pinned Threateningly Mobs JAR.'
+    description = 'Records the exact Earthloong class/resource surface and summarizes pinned donor animation motion without copying raw asset data.'
 
     doLast {
         def file = configurations.creatureFoundation.resolve().find {
@@ -397,28 +397,142 @@ tasks.register('inspectEarthloongDependencySurface') {
         output.parentFile.mkdirs()
         output.text = "file=${file.name}\nsha256=${actual}\n"
 
+        def earthloongEntries = []
+        def woodlizardNamedEntries = []
+        def classEntries = []
+
+        def collectNumericVec3
+        collectNumericVec3 = { Object node, List<List<Double>> sink ->
+            if (node instanceof List) {
+                if (node.size() >= 3
+                        && node[0] instanceof Number
+                        && node[1] instanceof Number
+                        && node[2] instanceof Number) {
+                    sink << [
+                            ((Number) node[0]).doubleValue(),
+                            ((Number) node[1]).doubleValue(),
+                            ((Number) node[2]).doubleValue()
+                    ]
+                } else {
+                    node.each { collectNumericVec3(it, sink) }
+                }
+            } else if (node instanceof Map) {
+                node.values().each { collectNumericVec3(it, sink) }
+            }
+        }
+
         def zip = new java.util.zip.ZipFile(file)
-        def matchingEntries
         try {
-            matchingEntries = java.util.Collections.list(zip.entries())
+            def allEntries = java.util.Collections.list(zip.entries())
                     .collect { it.name }
-                    .findAll { it.toLowerCase(java.util.Locale.ROOT).contains('earthloong') }
                     .sort()
+            earthloongEntries = allEntries.findAll {
+                it.toLowerCase(java.util.Locale.ROOT).contains('earthloong')
+            }
+            woodlizardNamedEntries = allEntries.findAll {
+                it.toLowerCase(java.util.Locale.ROOT).contains('woodlizard')
+            }
+
+            if (earthloongEntries.isEmpty()) {
+                throw new GradleException('Pinned Threateningly Mobs JAR exposes no Earthloong-named entries.')
+            }
+
+            output << "\n[earthloong-entries]\n"
+            earthloongEntries.each {
+                println "EARTHLOONG_DEPENDENCY_ENTRY ${it}"
+                output << it << System.lineSeparator()
+            }
+
+            output << "\n[woodlizard-named-entries]\n"
+            if (woodlizardNamedEntries.isEmpty()) {
+                output << "(none)" << System.lineSeparator()
+            } else {
+                woodlizardNamedEntries.each {
+                    println "WOODLIZARD_DEPENDENCY_ENTRY ${it}"
+                    output << it << System.lineSeparator()
+                }
+            }
+
+            output << "\n[woodlizard-animation-summary]\n"
+            int matchedAnimations = 0
+            def animationJsonEntries = allEntries.findAll {
+                def lower = it.toLowerCase(java.util.Locale.ROOT)
+                lower.endsWith('.json') && lower.contains('animation')
+            }
+            animationJsonEntries.each { entryName ->
+                def entry = zip.getEntry(entryName)
+                if (entry == null || entry.isDirectory()) return
+                try {
+                    def parsed
+                    zip.getInputStream(entry).withCloseable { input ->
+                        parsed = new groovy.json.JsonSlurper().parse(input)
+                    }
+                    def animations = parsed instanceof Map ? parsed.animations : null
+                    if (!(animations instanceof Map)) return
+
+                    animations.each { animationName, animationBody ->
+                        if (!(animationName instanceof String)
+                                || !animationName.toLowerCase(java.util.Locale.ROOT).contains('woodlizard_')) {
+                            return
+                        }
+                        matchedAnimations++
+                        def length = animationBody instanceof Map ? animationBody.animation_length : null
+                        def loop = animationBody instanceof Map ? animationBody.loop : null
+                        def bones = animationBody instanceof Map ? animationBody.bones : null
+                        def boneNames = bones instanceof Map ? bones.keySet().collect { it.toString() }.sort() : []
+                        output << [
+                                'WOODLIZARD_ANIMATION',
+                                "source=${entryName}",
+                                "name=${animationName}",
+                                "length=${length}",
+                                "loop=${loop}",
+                                "bones=${boneNames.join(',')}"
+                        ].join('\t') << System.lineSeparator()
+
+                        if (!(bones instanceof Map)) return
+                        bones.each { boneName, boneBody ->
+                            if (!(boneBody instanceof Map)) return
+                            ['rotation', 'position', 'scale'].each { channelName ->
+                                if (!boneBody.containsKey(channelName)) return
+                                def samples = []
+                                collectNumericVec3(boneBody[channelName], samples)
+                                if (samples.isEmpty()) {
+                                    output << [
+                                            'WOODLIZARD_CHANNEL',
+                                            "animation=${animationName}",
+                                            "bone=${boneName}",
+                                            "channel=${channelName}",
+                                            'numericVec3Samples=0'
+                                    ].join('\t') << System.lineSeparator()
+                                    return
+                                }
+                                def mins = [0, 1, 2].collect { axis -> samples.collect { it[axis] }.min() }
+                                def maxs = [0, 1, 2].collect { axis -> samples.collect { it[axis] }.max() }
+                                def fmt = { double value -> String.format(java.util.Locale.ROOT, '%.3f', value) }
+                                output << [
+                                        'WOODLIZARD_CHANNEL',
+                                        "animation=${animationName}",
+                                        "bone=${boneName}",
+                                        "channel=${channelName}",
+                                        "numericVec3Samples=${samples.size()}",
+                                        "x=${fmt(mins[0])}..${fmt(maxs[0])}",
+                                        "y=${fmt(mins[1])}..${fmt(maxs[1])}",
+                                        "z=${fmt(mins[2])}..${fmt(maxs[2])}"
+                                ].join('\t') << System.lineSeparator()
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // Non-Gecko/foreign JSON is irrelevant to this narrow dependency audit.
+                }
+            }
+            output << "WOODLIZARD_ANIMATION_MATCH_COUNT=${matchedAnimations}" << System.lineSeparator()
+
+            classEntries = earthloongEntries.findAll { it.endsWith('.class') }
         } finally {
             zip.close()
         }
 
-        if (matchingEntries.isEmpty()) {
-            throw new GradleException('Pinned Threateningly Mobs JAR exposes no Earthloong-named entries.')
-        }
-
-        output << "\n[entries]\n"
-        matchingEntries.each {
-            println "EARTHLOONG_DEPENDENCY_ENTRY ${it}"
-            output << it << System.lineSeparator()
-        }
-
-        def classEntries = matchingEntries.findAll { it.endsWith('.class') }
         if (classEntries.isEmpty()) {
             throw new GradleException('Pinned Threateningly Mobs JAR exposes no Earthloong class entries.')
         }
