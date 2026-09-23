@@ -8,6 +8,7 @@ import dev.moonseungjun.openworldrpg.combat.state.PlayerVitalsRuntime;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.IntegrationBootstrap;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import dev.moonseungjun.openworldrpg.integration.verify.M0PlayerVerificationBootstrap;
+import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerStateAttachments;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         RuntimeProfile profile = RuntimeProfile.current();
         PlayerProgressionAttachments.initialize();
         PlayerEquipmentAttachments.initialize();
+        R01PlayerStateAttachments.initialize();
         PlayerVitalsRuntime.initialize();
         IntegrationBootstrap.bootstrap(profile, LOGGER);
         M0PlayerVerificationBootstrap.registerCommands();
