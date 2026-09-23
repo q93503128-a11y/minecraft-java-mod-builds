@@ -66,7 +66,7 @@ public final class TurnboundPortraitRenderer {
         int box = Math.max(1, Math.min(x1 - x0, y1 - y0));
         // Client playtest showed the former bust zoom cropping heroes into unrecognizable color blocks.
         // Keep the authored model readable as a head/torso silhouette instead of filling the frame with one bone.
-        float framing = bust ? 1.16F : 1.24F;
+        float framing = bust ? 0.88F : 0.76F;
         int size = Math.max(8, Math.round(box * framing * camera.scale()));
         InventoryScreen.renderEntityInInventoryFollowsAngle(
                 graphics, x0, y0, x1, y1, size, camera.offsetY(), camera.xAngle(), camera.yAngle(), actor);
