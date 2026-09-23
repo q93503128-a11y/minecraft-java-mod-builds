@@ -83,7 +83,7 @@ class DrehmalContextualOnboardingTest {
                 Set.of("CV_FIRST_COMMON"),
                 Set.of(),
                 Set.of());
-        assertTrue(tower.objective().contains("Tower"));
+        assertTrue(tower.objective().contains("캐피털 밸리 탑"));
 
         var camp = DrehmalContextualOnboarding.resolve(
                 "",
@@ -110,8 +110,8 @@ class DrehmalContextualOnboardingTest {
                         DrehmalFirstRouteProgress.CAMP_REACHED,
                         DrehmalFirstRouteProgress.APPROACH_REACHED),
                 Set.of());
-        assertTrue(hub.objective().contains("New Drabyel"));
-        assertFalse(hub.objective().contains("Tower"));
+        assertTrue(hub.objective().contains("뉴 드라비엘"));
+        assertFalse(hub.objective().contains("캐피털 밸리 탑"));
     }
 
     @Test
@@ -122,14 +122,14 @@ class DrehmalContextualOnboardingTest {
                 Set.of(),
                 Set.of());
         assertTrue(cave.hint().contains("피해"));
-        assertTrue(cave.objective().contains("New Drabyel"));
+        assertTrue(cave.objective().contains("뉴 드라비엘"));
 
         var afterRoad = DrehmalContextualOnboarding.resolve(
                 "BREATHING_ZONE",
                 Set.of(DrehmalContentUnlocks.DRABYEL_ROAD),
                 Set.of(),
                 Set.of());
-        assertTrue(afterRoad.objective().contains("New Drabyel로 들어가"));
-        assertFalse(afterRoad.objective().contains("Tower"));
+        assertTrue(afterRoad.objective().contains("뉴 드라비엘로 들어가"));
+        assertFalse(afterRoad.objective().contains("캐피털 밸리 탑"));
     }
 }
