@@ -89,11 +89,11 @@ final class DrehmalWorldMapScreen extends Screen {
         int availableH = top + panelHeight - bottomReserve - mapY;
         int mapSize = Math.max(64, Math.min(availableW, availableH));
 
-        graphics.fill(mapX - 2, mapY - 2, mapX + mapSize + 2, mapY + mapSize + 2, 0xFF8B7B60);
-        graphics.fill(mapX, mapY, mapX + mapSize, mapY + mapSize, 0xFF20262A);
+        drawMapSurface(graphics, mapX, mapY, mapSize);
 
         Bounds bounds = bounds(anchors, px, pz);
         Viewport view = viewport(bounds, px, pz);
+        drawRouteNetwork(graphics, mapX, mapY, mapSize, view, anchors);
 
         DrehmalWorldProfile.Anchor hovered = null;
         double hoveredDistance = Double.MAX_VALUE;
@@ -102,6 +102,10 @@ final class DrehmalWorldMapScreen extends Screen {
             int sx = mapX + worldToMap(anchor.x(), view.minX, view.span, mapSize);
             int sy = mapY + worldToMap(anchor.z(), view.minZ, view.span, mapSize);
             drawMarker(graphics, sx, sy, anchor.kind());
+            if (mapSize >= 220 && ("HUB".equals(anchor.kind()) || "REGION".equals(anchor.kind()))) {
+                String shortLabel = UiTextLayout.fit(label(anchor), 82);
+                graphics.text(font, Component.literal(shortLabel), sx + 7, sy - 4, markerColor(anchor.kind()), false);
+            }
             double dx = mouseX - sx, dy = mouseY - sy, distance = dx * dx + dy * dy;
             if (distance <= 100.0 && distance < hoveredDistance) {
                 hoveredDistance = distance;
@@ -112,10 +116,15 @@ final class DrehmalWorldMapScreen extends Screen {
         if (inside(px, pz, view)) {
             int psx = mapX + worldToMap(px, view.minX, view.span, mapSize);
             int psy = mapY + worldToMap(pz, view.minZ, view.span, mapSize);
-            graphics.fill(psx - 4, psy - 1, psx + 5, psy + 2, 0xFF101317);
-            graphics.fill(psx - 1, psy - 4, psx + 2, psy + 5, 0xFF101317);
-            graphics.fill(psx - 3, psy, psx + 4, psy + 1, 0xFFFFFFFF);
-            graphics.fill(psx, psy - 3, psx + 1, psy + 4, 0xFFFFFFFF);
+            float yaw = minecraft.player == null ? 0.0F : minecraft.player.getYRot();
+            drawMapArrow(graphics, psx, psy, yaw, 0xFFFFFFFF, true);
+        }
+
+        var navigation = ClientFieldState.snapshot().navigation();
+        if (navigation != null && navigation.active() && inside(navigation.x(), navigation.z(), view)) {
+            int nsx = mapX + worldToMap(navigation.x(), view.minX, view.span, mapSize);
+            int nsy = mapY + worldToMap(navigation.z(), view.minZ, view.span, mapSize);
+            drawObjectiveMarker(graphics, nsx, nsy);
         }
 
         DrehmalWorldProfile.Anchor focus = hovered != null ? hovered : nearest(anchors, px, pz);
@@ -245,6 +254,96 @@ final class DrehmalWorldMapScreen extends Screen {
             case "turnbound:region/avsal" -> "Drabyel 이후 이어지는 거대한 폐허";
             default -> "지도에 기록된 장소";
         };
+    }
+
+    private static void drawMapSurface(GuiGraphicsExtractor g, int x, int y, int size) {
+        g.fill(x - 2, y - 2, x + size + 2, y + size + 2, 0xFF8B7B60);
+        g.fill(x, y, x + size, y + size, 0xFF24251F);
+        for (int i = 1; i < 6; i++) {
+            int at = i * size / 6;
+            g.fill(x + at, y, x + at + 1, y + size, 0x553F4037);
+            g.fill(x, y + at, x + size, y + at + 1, 0x553F4037);
+        }
+        g.fill(x + size - 15, y + 5, x + size - 14, y + 17, 0xFFB6AA8B);
+        g.fill(x + size - 18, y + 8, x + size - 11, y + 9, 0xFFB6AA8B);
+    }
+
+    private static void drawRouteNetwork(
+            GuiGraphicsExtractor g,
+            int mapX,
+            int mapY,
+            int mapSize,
+            Viewport view,
+            List<DrehmalWorldProfile.Anchor> anchors
+    ) {
+        drawRoute(g, mapX, mapY, mapSize, view, anchors,
+                "turnbound:region/stasis_facility", "turnbound:landmark/primal_caverns", 0x887F745A);
+        drawRoute(g, mapX, mapY, mapSize, view, anchors,
+                "turnbound:landmark/primal_caverns", "turnbound:landmark/capital_valley_tower", 0xAA9D8458);
+        drawRoute(g, mapX, mapY, mapSize, view, anchors,
+                "turnbound:landmark/capital_valley_tower", "turnbound:landmark/explorers_guide_camp", 0xAA9D8458);
+        drawRoute(g, mapX, mapY, mapSize, view, anchors,
+                "turnbound:landmark/explorers_guide_camp", "turnbound:hub/new_drabyel", 0xAA9D8458);
+        drawRoute(g, mapX, mapY, mapSize, view, anchors,
+                "turnbound:landmark/capital_valley_tower", "turnbound:landmark/warning_cave", 0x777A604C);
+        drawRoute(g, mapX, mapY, mapSize, view, anchors,
+                "turnbound:hub/new_drabyel", "turnbound:region/avsal", 0x887F745A);
+    }
+
+    private static void drawRoute(
+            GuiGraphicsExtractor g,
+            int mapX,
+            int mapY,
+            int mapSize,
+            Viewport view,
+            List<DrehmalWorldProfile.Anchor> anchors,
+            String fromId,
+            String toId,
+            int color
+    ) {
+        DrehmalWorldProfile.Anchor from = anchor(anchors, fromId);
+        DrehmalWorldProfile.Anchor to = anchor(anchors, toId);
+        if (from == null || to == null || !inside(from.x(), from.z(), view) || !inside(to.x(), to.z(), view)) return;
+        int x0 = mapX + worldToMap(from.x(), view.minX, view.span, mapSize);
+        int y0 = mapY + worldToMap(from.z(), view.minZ, view.span, mapSize);
+        int x1 = mapX + worldToMap(to.x(), view.minX, view.span, mapSize);
+        int y1 = mapY + worldToMap(to.z(), view.minZ, view.span, mapSize);
+        int steps = Math.max(1, Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)));
+        for (int i = 0; i <= steps; i++) {
+            double t = i / (double)steps;
+            int x = (int)Math.round(x0 + (x1 - x0) * t);
+            int y = (int)Math.round(y0 + (y1 - y0) * t);
+            g.fill(x, y, x + 2, y + 2, color);
+        }
+    }
+
+    private static DrehmalWorldProfile.Anchor anchor(List<DrehmalWorldProfile.Anchor> anchors, String locator) {
+        for (DrehmalWorldProfile.Anchor anchor : anchors) if (locator.equals(anchor.locator())) return anchor;
+        return null;
+    }
+
+    private static void drawObjectiveMarker(GuiGraphicsExtractor g, int cx, int cy) {
+        g.fill(cx - 6, cy - 1, cx + 7, cy + 2, 0xEEFFC857);
+        g.fill(cx - 1, cy - 6, cx + 2, cy + 7, 0xEEFFC857);
+        g.fill(cx - 2, cy - 2, cx + 3, cy + 3, 0xFF24251F);
+    }
+
+    private static void drawMapArrow(GuiGraphicsExtractor g, int cx, int cy, float yaw, int color, boolean backdrop) {
+        if (backdrop) g.fill(cx - 5, cy - 5, cx + 6, cy + 6, 0xB8111317);
+        int dir = Math.floorMod(Math.round(yaw / 45.0F), 8);
+        int[] vx = {0, -1, -1, -1, 0, 1, 1, 1};
+        int[] vy = {1, 1, 0, -1, -1, -1, 0, 1};
+        int dx = vx[dir], dy = vy[dir];
+        for (int t = -2; t <= 2; t++) {
+            int x = cx + dx * t, y = cy + dy * t;
+            g.fill(x - 1, y - 1, x + 2, y + 2, color);
+        }
+        int hx = cx + dx * 4, hy = cy + dy * 4;
+        g.fill(hx - 1, hy - 1, hx + 2, hy + 2, color);
+        int px = -dy, py = dx;
+        int wingX = hx - dx * 2, wingY = hy - dy * 2;
+        g.fill(wingX + px - 1, wingY + py - 1, wingX + px + 2, wingY + py + 2, color);
+        g.fill(wingX - px - 1, wingY - py - 1, wingX - px + 2, wingY - py + 2, color);
     }
 
     private static int worldToMap(double value, double minimum, double span, int mapSize) {
