@@ -698,3 +698,38 @@ Verification boundary:
 - NeoForge 26.2 dedicated-server smoke reached Done (4.236s).
 - Verified JAR SHA-256: `74cde0eda7a75788b70b282ad8803fde1f0cdfee1114e9fe56d695c932fc32fa`.
 - CLIENT RUNTIME TESTED / PLAYTESTED / MULTIPLAYER TESTED remain NO. Exact visual pacing still depends on the pending real 26.2 route survey.
+
+
+### one-click test-pack / persistent-world update follow-up
+
+Manual Drehmal world installation is no longer the intended user test path.
+
+TURNBOUND application:
+- CI now produces a self-contained Modrinth `.mrpack` containing Minecraft 26.2 / NeoForge 26.2.0.62 metadata, the verified TURNBOUND JAR, GeckoLib 5.5.3 NeoForge runtime, its MIT license, and a small explicit one-click opt-in marker;
+- the ARR Drehmal map/resource bytes are **not** redistributed inside the pack;
+- only the one-click pack marker enables the multi-gigabyte bootstrap. Dropping the standalone TURNBOUND JAR into an arbitrary instance never starts a surprise map download;
+- on first title-screen launch, the client downloads Drehmal: APOTHEOSIS 2.2.2f shards and `resources.zip` directly from the official Drehmal GitHub release;
+- the three shard assets are checked by exact size and published GitHub SHA-256, then extracted into a temporary world using path-traversal rejection;
+- the assembled world is verified using the same recursive SHA-256 directory-hash semantics published by the official Drehmal installer, against official map hash `2e6232dc3e97c77eaa006b09e3ee09b246c46e3df68359dcc1495ce19d1e8053`;
+- only after verification succeeds does TURNBOUND add its own `.turnbound_world_profile` marker and move the temporary world into the instance's `saves/` directory;
+- the official resource pack is stored as the world's `resources.zip`, so no unrelated global resource-pack list needs to be rewritten;
+- partial shard downloads use HTTP Range when supported and survive a relaunch; a failed verification never promotes the temporary world;
+- successful installation removes the large download cache;
+- on later launches TURNBOUND finds the already-bound world and does not download the map again;
+- therefore normal TURNBOUND development updates are **same instance + same saves + replace only `turnbound-*.jar`**. Re-importing the modpack as a brand-new instance would create a new saves directory and therefore require first-install world preparation again;
+- intentional Drehmal-version migration, deleting the installed world/resource pack, or changing the base Minecraft/NeoForge dependency stack can still require a new pack/bootstrap cycle.
+
+Distribution:
+- GeckoLib 5.5.3 is bundled from TURNBOUND's exact Gradle-resolved Modrinth dependency. Its packaged JAR SHA-1 is `5e177d4523547e4641566a043fd19ae4de0127b5`; the upstream project is MIT and its license is included in the pack;
+- Build TURNBOUND #845 caught an initial packaging task that searched the resolved dependency by filename instead of its Maven module id;
+- Build #846 proved build/server/JAR and pack creation but caught a CI contract mismatch because the resolved Maven filename was not user-readable;
+- the dependency is now resolved by module id and normalized to `geckolib-neoforge-26.2-5.5.3.jar`;
+- Build TURNBOUND #847 passed test/build, dedicated-server smoke, JAR verification, one-click `.mrpack` structure verification and artifact upload at code commit `dc566d62a2db420a99f8cb7147df6059f8abd850`;
+- server smoke reached Done (4.337s);
+- JAR SHA-256: `9a85a7ee4ce1779fb4b54ed4eb95833e468da92ea311a0ba20dd9d337538960e`;
+- one-click pack SHA-256: `2c29fa7a7296b181830251c07e334f8e9d31771b27627a9e7ec8fda2a2182efd`.
+
+Verification boundary:
+- the downloader/hash/extraction helpers and generated pack structure are TESTED / BUILD VERIFIED;
+- the full ~4.18 GB download + extraction + Minecraft 26.2 conversion has **not** yet been executed in a real client instance;
+- CLIENT RUNTIME TESTED / PLAYTESTED / MULTIPLAYER TESTED therefore remain NO until the user performs the first one-click install.
