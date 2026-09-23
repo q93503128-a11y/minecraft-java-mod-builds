@@ -21,6 +21,7 @@ import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -35,6 +36,11 @@ import org.slf4j.Logger;
 
 public final class R01EarthloongPhysicalEncounterRuntime {
     private static final String EARTHLOONG_ID = "threateningly_mobs:the_earthloong";
+    private static final List<R01EarthloongEncounterData.ActionId> VERIFICATION_SEQUENCE = List.of(
+            R01EarthloongEncounterData.ActionId.TAIL_SCYTHE,
+            R01EarthloongEncounterData.ActionId.FORKED_HEAVEN,
+            R01EarthloongEncounterData.ActionId.EARTHLINE_SURGE
+    );
     private static final R01EarthloongEncounterData DATA = R01EarthloongEncounterDataLoader.loadBundled();
     private static final Map<UUID, ActorState> STATES = new ConcurrentHashMap<>();
     private static volatile boolean initialized;
@@ -117,9 +123,15 @@ public final class R01EarthloongPhysicalEncounterRuntime {
      * <p>The fixture is isolated from both donor AI and the normal R01 action selector. Only an
      * explicit verification-preview command may commit an action while this flag is present.</p>
      */
-    public static boolean armVerificationFixture(LivingEntity earthloong) {
+    public static boolean armVerificationFixture(
+            LivingEntity earthloong,
+            ServerPlayer observer
+    ) {
         Objects.requireNonNull(earthloong, "earthloong");
-        if (!isEarthloong(earthloong) || !(earthloong.level() instanceof ServerLevel level)) {
+        Objects.requireNonNull(observer, "observer");
+        if (!isEarthloong(earthloong)
+                || !(earthloong.level() instanceof ServerLevel level)
+                || observer.level() != level) {
             return false;
         }
         ActorState state = STATES.computeIfAbsent(
@@ -129,7 +141,7 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                         "r01-earthloong:" + level.dimension() + ":" + earthloong.getUUID()
                 )
         );
-        state.armVerificationFixture();
+        state.armVerificationFixture(observer, level.getGameTime());
         return true;
     }
 
@@ -217,6 +229,9 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         private boolean stormShedPreviousNoAi;
         private long closeTargetSinceTick = Long.MIN_VALUE / 4;
         private boolean verificationFixture;
+        private UUID verificationObserverId;
+        private int verificationCycleIndex;
+        private long verificationNextActionTick = Long.MAX_VALUE;
 
         private ActorState(LivingEntity actor, String encounterInstanceId) {
             this.actor = actor;
@@ -231,6 +246,7 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                 } else {
                     R01EarthloongDonorPresentationBridge.resetTechnicalCandidate(actor);
                     holdVerificationFixtureIdle();
+                    tickVerificationSequence(level, gameTick);
                 }
                 return;
             }
@@ -311,15 +327,67 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             }
         }
 
-        private void armVerificationFixture() {
+        private void armVerificationFixture(ServerPlayer observer, long gameTick) {
             verificationFixture = true;
-            currentThreatTargetId = null;
+            verificationObserverId = observer.getUUID();
+            verificationCycleIndex = 0;
+            verificationNextActionTick = gameTick + 40L;
+            currentThreatTargetId = observer.getUUID();
+            threat.engageInitial(observer.getUUID(), gameTick);
             resetRootBreakerProximity();
             nextDecisionTick = Long.MAX_VALUE;
             stormShedPending = false;
             stormShedStartTick = Long.MIN_VALUE / 4;
             R01EarthloongDonorPresentationBridge.resetTechnicalCandidate(actor);
             holdVerificationFixtureIdle();
+        }
+
+        private void tickVerificationSequence(ServerLevel level, long gameTick) {
+            if (verificationCycleIndex >= VERIFICATION_SEQUENCE.size()
+                    || verificationObserverId == null
+                    || gameTick < verificationNextActionTick) {
+                return;
+            }
+            Entity entity = level.getPlayerByUUID(verificationObserverId);
+            if (!(entity instanceof ServerPlayer observer)
+                    || !observer.isAlive()
+                    || observer.isSpectator()
+                    || observer.level() != level) {
+                return;
+            }
+
+            threat.engageInitial(observer.getUUID(), gameTick);
+            currentThreatTargetId = observer.getUUID();
+            R01EarthloongEncounterData.ActionId action =
+                    VERIFICATION_SEQUENCE.get(verificationCycleIndex);
+            boolean started = switch (action) {
+                case TAIL_SCYTHE -> commitTailScytheVerification(observer, gameTick);
+                case FORKED_HEAVEN -> commitForkedHeavenVerification(level, gameTick);
+                case EARTHLINE_SURGE ->
+                        commitEarthlineSurgeVerification(level, observer, gameTick);
+                default -> false;
+            };
+            if (!started) {
+                verificationNextActionTick = gameTick + 20L;
+                return;
+            }
+
+            verificationCycleIndex++;
+            observer.sendSystemMessage(Component.literal(
+                    "[M0] Auto preview " + verificationCycleIndex + "/"
+                            + VERIFICATION_SEQUENCE.size() + ": " + verificationDisplayName(action)
+            ));
+        }
+
+        private static String verificationDisplayName(
+                R01EarthloongEncounterData.ActionId action
+        ) {
+            return switch (action) {
+                case TAIL_SCYTHE -> "Tail Scythe";
+                case FORKED_HEAVEN -> "Forked Heaven";
+                case EARTHLINE_SURGE -> "Earthline Surge";
+                default -> action.name();
+            };
         }
 
         private void holdVerificationFixtureIdle() {
@@ -1470,6 +1538,7 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             committed = null;
             if (verificationFixture) {
                 nextDecisionTick = Long.MAX_VALUE;
+                verificationNextActionTick = gameTick + 40L;
                 holdVerificationFixtureIdle();
             } else if (stormShedPending) {
                 beginStormshed(gameTick);

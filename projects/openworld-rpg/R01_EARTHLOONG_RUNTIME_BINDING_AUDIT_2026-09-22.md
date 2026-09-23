@@ -205,3 +205,24 @@ Correction:
 - Commands now print explicit accepted/rejected feedback so a failed distance/LOS/busy gate cannot be mistaken for a visual no-op.
 
 This correction is verification-only. It does **not** claim the production donor-AI containment problem is fully closed; production still needs a dedicated authority pass so donor combat procedures cannot alter presentation/resource/movement state between project-owned ticks.
+
+
+## 2026-09-23 automatic preview pass
+
+Manual command-by-command activation is no longer the default player verification path.
+
+For the M0 playtest artifact, `/owr_spawn_earthloong` now:
+
+1. spawns the isolated Earthloong fixture about 7 blocks in front of the invoking player;
+2. holds donor AI and normal R01 action selection paused;
+3. waits 2 seconds;
+4. previews `Tail Scythe`;
+5. waits 2 seconds after the committed action finishes;
+6. previews `Forked Heaven`;
+7. waits 2 seconds after that action finishes;
+8. previews `Earthline Surge`;
+9. returns to isolated idle after the one-pass sequence.
+
+The three explicit preview commands remain available as fallback developer verification controls, but they are no longer required for the normal visual-review workflow.
+
+The automatic pass deliberately does not promote any candidate presentation into production. Tail remains an unaccepted donor-animation candidate, while Forked Heaven and Earthline Surge remain presentation-gated until real-client footage confirms readable signature presentation and visual/hit geometry agreement.

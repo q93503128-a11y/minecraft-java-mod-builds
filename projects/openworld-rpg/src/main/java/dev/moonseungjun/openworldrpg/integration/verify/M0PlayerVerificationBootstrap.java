@@ -97,9 +97,9 @@ public final class M0PlayerVerificationBootstrap {
         double forwardX = horizontal > 1.0e-6 ? look.x / horizontal : 0.0;
         double forwardZ = horizontal > 1.0e-6 ? look.z / horizontal : 1.0;
         BlockPos spawnPos = BlockPos.containing(
-                player.getX() + forwardX * 12.0,
+                player.getX() + forwardX * 7.0,
                 player.getY() + 1.0,
-                player.getZ() + forwardZ * 12.0
+                player.getZ() + forwardZ * 7.0
         );
 
         Entity spawned = ExternalActorBindingRuntime.spawnAuthored(
@@ -108,7 +108,7 @@ public final class M0PlayerVerificationBootstrap {
                 ExternalActorCombatProfile.r01Earthloong().entityId()
         );
         if (!(spawned instanceof net.minecraft.world.entity.LivingEntity living)
-                || !R01EarthloongPhysicalEncounterRuntime.armVerificationFixture(living)) {
+                || !R01EarthloongPhysicalEncounterRuntime.armVerificationFixture(living, player)) {
             spawned.discard();
             player.sendSystemMessage(Component.literal(
                     "[M0] Earthloong verification fixture failed to arm."
@@ -116,7 +116,8 @@ public final class M0PlayerVerificationBootstrap {
             return 0;
         }
         player.sendSystemMessage(Component.literal(
-                "[M0] Earthloong verification fixture ready. Automatic boss AI is paused."
+                "[M0] Earthloong verification fixture ready. Tail Scythe, Forked Heaven, "
+                        + "and Earthline Surge will preview automatically once each."
         ));
         return 1;
     }
