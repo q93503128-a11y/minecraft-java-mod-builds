@@ -77,6 +77,44 @@ class DrehmalContextualOnboardingTest {
     }
 
     @Test
+    void firstRouteGuidanceMovesFromTowerToCampToDrabyelApproach() {
+        var tower = DrehmalContextualOnboarding.resolve(
+                "",
+                Set.of("CV_FIRST_COMMON"),
+                Set.of(),
+                Set.of());
+        assertTrue(tower.objective().contains("Tower"));
+
+        var camp = DrehmalContextualOnboarding.resolve(
+                "",
+                Set.of("CV_FIRST_COMMON"),
+                Set.of(DrehmalFirstRouteProgress.TOWER_REACHED),
+                Set.of());
+        assertTrue(camp.objective().contains("야영지"));
+        assertTrue(camp.hint().contains("선택"));
+
+        var road = DrehmalContextualOnboarding.resolve(
+                "",
+                Set.of("CV_FIRST_COMMON"),
+                Set.of(
+                        DrehmalFirstRouteProgress.TOWER_REACHED,
+                        DrehmalFirstRouteProgress.CAMP_REACHED),
+                Set.of());
+        assertTrue(road.objective().contains("진입로"));
+
+        var hub = DrehmalContextualOnboarding.resolve(
+                "",
+                Set.of("CV_FIRST_COMMON"),
+                Set.of(
+                        DrehmalFirstRouteProgress.TOWER_REACHED,
+                        DrehmalFirstRouteProgress.CAMP_REACHED,
+                        DrehmalFirstRouteProgress.APPROACH_REACHED),
+                Set.of());
+        assertTrue(hub.objective().contains("New Drabyel"));
+        assertFalse(hub.objective().contains("Tower"));
+    }
+
+    @Test
     void warningCaveStaysOptionalAndRouteProgressDoesNotRewind() {
         var cave = DrehmalContextualOnboarding.resolve(
                 "ELITE_ZONE",

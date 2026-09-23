@@ -25,15 +25,32 @@ final class DrehmalRouteNavigationRules {
             double playerX,
             double playerZ
     ) {
+        return target(sites, playerX, playerZ, Set.of(), Set.of());
+    }
+
+    static FieldUiSnapshot.Navigation target(
+            List<DrehmalFirstRouteCatalog.Site> sites,
+            double playerX,
+            double playerZ,
+            Set<String> progressFlags,
+            Set<String> clearedEncounters
+    ) {
         if (sites == null || sites.isEmpty()) return FieldUiSnapshot.Navigation.none();
 
         List<DrehmalFirstRouteCatalog.Site> route = new ArrayList<>();
         for (var site : sites) if (eligible(site)) route.add(site);
         if (route.isEmpty()) return FieldUiSnapshot.Navigation.none();
 
-        int nearestIndex = 0;
+        Set<String> flags = progressFlags == null ? Set.of() : progressFlags;
+        Set<String> clears = clearedEncounters == null ? Set.of() : clearedEncounters;
+        if (DrehmalFirstRouteProgress.reached(flags, DrehmalFirstRouteProgress.HUB_REACHED)) {
+            return FieldUiSnapshot.Navigation.none();
+        }
+
+        int floorIndex = progressFloor(route, flags, clears);
+        int nearestIndex = floorIndex;
         double nearestDistanceSq = Double.MAX_VALUE;
-        for (int i = 0; i < route.size(); i++) {
+        for (int i = floorIndex; i < route.size(); i++) {
             var site = route.get(i);
             double distanceSq = horizontalDistanceSq(site, playerX, playerZ);
             if (distanceSq < nearestDistanceSq) {
@@ -45,6 +62,7 @@ final class DrehmalRouteNavigationRules {
         var nearest = route.get(nearestIndex);
         boolean reached = nearestDistanceSq <= advanceRadiusSq(nearest);
         int targetIndex = reached ? nearestIndex + 1 : nearestIndex;
+        if (targetIndex < floorIndex) targetIndex = floorIndex;
         if (targetIndex >= route.size()) return FieldUiSnapshot.Navigation.none();
 
         var target = route.get(targetIndex);
@@ -54,6 +72,30 @@ final class DrehmalRouteNavigationRules {
                 target.playerLabel(),
                 position.x() + 0.5D,
                 position.z() + 0.5D);
+    }
+
+    private static int progressFloor(
+            List<DrehmalFirstRouteCatalog.Site> route,
+            Set<String> flags,
+            Set<String> clears
+    ) {
+        int floor = 0;
+        if (DrehmalFirstRouteProgress.reached(flags, DrehmalFirstRouteProgress.TOWER_REACHED)) {
+            floor = Math.max(floor, indexOfKind(route, "REST_ZONE"));
+        }
+        if (DrehmalFirstRouteProgress.reached(flags, DrehmalFirstRouteProgress.CAMP_REACHED)) {
+            floor = Math.max(floor, indexOfKind(route, "PATROL_ZONE"));
+        }
+        if (DrehmalFirstRouteProgress.reached(flags, DrehmalFirstRouteProgress.APPROACH_REACHED)
+                || clears.contains(DrehmalContentUnlocks.DRABYEL_ROAD)) {
+            floor = Math.max(floor, indexOfKind(route, "HUB_SAFE"));
+        }
+        return Math.max(0, Math.min(floor, route.size() - 1));
+    }
+
+    private static int indexOfKind(List<DrehmalFirstRouteCatalog.Site> route, String kind) {
+        for (int i = 0; i < route.size(); i++) if (kind.equals(route.get(i).kind())) return i;
+        return 0;
     }
 
     static boolean eligible(DrehmalFirstRouteCatalog.Site site) {

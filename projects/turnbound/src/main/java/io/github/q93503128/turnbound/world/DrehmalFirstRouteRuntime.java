@@ -97,6 +97,16 @@ public final class DrehmalFirstRouteRuntime {
         return navigation(player).id();
     }
 
+    static void recordProgress(ServerPlayer player) {
+        if (player == null) return;
+        var server = player.level().getServer();
+        if (server == null) return;
+        DrehmalFirstRouteProgress.record(
+                ExternalWorldSavedData.get(server),
+                player.getUUID(),
+                locationSite(player));
+    }
+
     static boolean insideHub(ServerPlayer player) {
         DrehmalFirstRouteCatalog.Site location = locationSite(player);
         return location != null && "HUB_SAFE".equals(location.kind());
@@ -104,8 +114,13 @@ public final class DrehmalFirstRouteRuntime {
 
     private static FieldUiSnapshot.Navigation navigation(ServerPlayer player) {
         if (player == null) return FieldUiSnapshot.Navigation.none();
+        var server = player.level().getServer();
+        var flags = server == null
+                ? java.util.Set.<String>of()
+                : ExternalWorldSavedData.get(server).onboardingFlags(player.getUUID());
+        var clears = CampaignProgressStore.snapshot(player.getUUID()).clearedEncounters();
         return DrehmalRouteNavigationRules.target(
-                DrehmalFirstRouteCatalog.productionSites(), player.getX(), player.getZ());
+                DrehmalFirstRouteCatalog.productionSites(), player.getX(), player.getZ(), flags, clears);
     }
 
     private static DrehmalFirstRouteCatalog.Site locationSite(ServerPlayer player) {

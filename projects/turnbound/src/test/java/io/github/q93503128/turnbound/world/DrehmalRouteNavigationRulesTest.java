@@ -45,6 +45,36 @@ class DrehmalRouteNavigationRulesTest {
     }
 
     @Test
+    void durableProgressNeverPointsBackToTowerOrCamp() {
+        var roadhead = site("roadhead", "START_CANDIDATE", "Capital Valley 길머리", 0, 0, 40);
+        var tower = site("tower", "BREATHING_ZONE", "Capital Valley Tower", 100, 0, 36);
+        var camp = site("camp", "REST_ZONE", "Explorer's Guide 야영지", 200, 0, 24);
+        var approach = site("approach", "PATROL_ZONE", "New Drabyel 진입로", 300, 0, 26);
+        var hub = site("hub", "HUB_SAFE", "New Drabyel", 400, 0, 64);
+        var route = List.of(roadhead, tower, camp, approach, hub);
+
+        var afterCampWalkingBackward = DrehmalRouteNavigationRules.target(
+                route, 100.5D, 0.5D,
+                java.util.Set.of(
+                        DrehmalFirstRouteProgress.TOWER_REACHED,
+                        DrehmalFirstRouteProgress.CAMP_REACHED),
+                java.util.Set.of("CV_FIRST_COMMON"));
+        assertEquals(approach.locator(), afterCampWalkingBackward.id());
+
+        var afterRoadWinWalkingBackward = DrehmalRouteNavigationRules.target(
+                route, 100.5D, 0.5D,
+                java.util.Set.of(DrehmalFirstRouteProgress.TOWER_REACHED),
+                java.util.Set.of(DrehmalContentUnlocks.DRABYEL_ROAD));
+        assertEquals(hub.locator(), afterRoadWinWalkingBackward.id());
+
+        var afterHub = DrehmalRouteNavigationRules.target(
+                route, 200.5D, 0.5D,
+                java.util.Set.of(DrehmalFirstRouteProgress.HUB_REACHED),
+                java.util.Set.of());
+        assertFalse(afterHub.active());
+    }
+
+    @Test
     void unverifiedCoordinatesRemainCompletelyInvisibleToHudNavigation() {
         var hub = new DrehmalFirstRouteCatalog.Site(
                 "turnbound:test/hub",

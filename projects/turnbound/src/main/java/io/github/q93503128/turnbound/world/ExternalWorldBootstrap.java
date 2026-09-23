@@ -42,6 +42,7 @@ public final class ExternalWorldBootstrap {
         // same-server migration/binding or retained-runtime reconnect.
         WorldSessionRouter.remove(player);
         ACTIVE.add(player.getUUID());
+        DrehmalFirstRouteRuntime.recordProgress(player);
         LAST_LOCATION.put(player.getUUID(), DrehmalFirstRouteRuntime.locationId(player));
         LAST_INTERACTION.put(player.getUUID(), DrehmalFirstRouteRuntime.interactionId(player));
         LAST_NAVIGATION.put(player.getUUID(), DrehmalFirstRouteRuntime.navigationId(player));
@@ -74,6 +75,7 @@ public final class ExternalWorldBootstrap {
 
         DrehmalVisibleEncounterService.tick(player);
         DrabyelHubServiceRuntime.tick(player);
+        DrehmalFirstRouteRuntime.recordProgress(player);
         String location = DrehmalFirstRouteRuntime.locationId(player);
         String previousLocation = LAST_LOCATION.put(player.getUUID(), location);
         boolean locationChanged = previousLocation == null || !previousLocation.equals(location);
@@ -98,6 +100,7 @@ public final class ExternalWorldBootstrap {
 
     public static void refreshFieldContext(ServerPlayer player) {
         if (!active(player)) return;
+        DrehmalFirstRouteRuntime.recordProgress(player);
         LAST_LOCATION.put(player.getUUID(), DrehmalFirstRouteRuntime.locationId(player));
         LAST_INTERACTION.put(player.getUUID(), DrehmalFirstRouteRuntime.interactionId(player));
         LAST_NAVIGATION.put(player.getUUID(), DrehmalFirstRouteRuntime.navigationId(player));

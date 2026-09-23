@@ -50,14 +50,8 @@ final class DrehmalContextualOnboarding {
 
         if ("REST_ZONE".equals(kind)) {
             return new Guidance(
-                    "야영지에서 숨을 돌린 뒤 New Drabyel로 향하십시오.",
-                    "필요하면 장비를 확인하고, 준비가 되면 길을 이어가십시오.");
-        }
-
-        if ("BREATHING_ZONE".equals(kind)) {
-            return new Guidance(
-                    "Capital Valley Tower를 지나 New Drabyel로 향하십시오.",
-                    "경고 동굴은 선택입니다. 그대로 마을로 향해도 됩니다.");
+                    "야영지에서 장비를 한 번 비교한 뒤 New Drabyel로 향하십시오.",
+                    "여기서는 잠시 쉬어도 됩니다. 준비가 되면 진입로를 따라가십시오.");
         }
 
         if (!clears.contains(FIRST_COMMON)) {
@@ -69,11 +63,32 @@ final class DrehmalContextualOnboarding {
             return new Guidance("길을 따라 New Drabyel로 향하십시오.", "");
         }
 
+        if (!DrehmalFirstRouteProgress.reached(flags, DrehmalFirstRouteProgress.TOWER_REACHED)) {
+            return new Guidance(
+                    "Capital Valley Tower를 따라 길의 중간 지점을 확인하십시오.",
+                    "첫 전투가 끝났습니다. 이제 길의 큰 표식을 기준으로 이동하십시오.");
+        }
+
+        if ("BREATHING_ZONE".equals(kind)
+                || !DrehmalFirstRouteProgress.reached(flags, DrehmalFirstRouteProgress.CAMP_REACHED)) {
+            return new Guidance(
+                    "Explorer's Guide 야영지 쪽으로 길을 이어가십시오.",
+                    DrehmalContentUnlocks.summonUnlocked(clears)
+                            ? "경고 동굴의 강적은 선택입니다. 넘겼다면 정령의 흔적이 반응하기 시작합니다."
+                            : "경고 동굴의 강적은 보상이 크지만 선택입니다. 그대로 길을 이어가도 됩니다.");
+        }
+
+        if (!DrehmalFirstRouteProgress.reached(flags, DrehmalFirstRouteProgress.APPROACH_REACHED)) {
+            return new Guidance(
+                    "New Drabyel 진입로를 따라 마을로 향하십시오.",
+                    "진입로의 순찰대를 상대하거나 안전하게 지나갈 길을 살피십시오.");
+        }
+
         return new Guidance(
-                "Capital Valley Tower를 지나 New Drabyel로 향하십시오.",
+                "New Drabyel로 들어가 여정을 정비하십시오.",
                 DrehmalContentUnlocks.summonUnlocked(clears)
-                        ? "강적을 넘긴 뒤 정령의 흔적이 반응하기 시작했습니다."
-                        : "");
+                        ? "마을 안에서 정령의 흔적이 어디에 반응하는지 살펴보십시오."
+                        : "마을 안에서는 서두르지 않아도 됩니다.");
     }
 
     static String serviceFlag(String role) {
