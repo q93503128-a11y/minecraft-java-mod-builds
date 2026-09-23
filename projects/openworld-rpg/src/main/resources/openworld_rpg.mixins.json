@@ -5,6 +5,7 @@
   "plugin": "dev.moonseungjun.openworldrpg.mixin.OpenworldRpgMixinPlugin",
   "compatibilityLevel": "JAVA_25",
   "mixins": [
+    "BowShotAuthorityMixin",
     "LivingEntityCombatActivityMixin",
     "ExternalActorProgressionMixin",
     "ExternalActorDamageAuthorityMixin",

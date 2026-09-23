@@ -48,6 +48,25 @@ public final class ProjectBasicAttackRules {
         );
     }
 
+    /**
+     * Canonical bow basic scaled by the actual server-side BowItem shot power.
+     *
+     * <p>Ranged Weapon API already resolves custom pull time / draw speed before BowItem invokes
+     * shootProjectile. The project consumes that resulting 0..1 launch-power fraction and never
+     * reverse-engineers charge from donor damage at impact.</p>
+     */
+    public static BasicHitProfile bowDrawProfile(double drawPower) {
+        if (!Double.isFinite(drawPower) || drawPower <= 0.0 || drawPower > 1.0) {
+            throw new IllegalArgumentException("drawPower must be finite and inside (0, 1].");
+        }
+        ProjectWeaponFamily family = ProjectWeaponFamily.BOW;
+        return new BasicHitProfile(
+                drawPower / family.basicCadence(),
+                drawPower,
+                drawPower >= 1.0
+        );
+    }
+
     public static BasicHitProfile hitProfile(ProjectWeaponFamily family, int comboCount) {
         Objects.requireNonNull(family, "family");
         if (comboCount < 0) {

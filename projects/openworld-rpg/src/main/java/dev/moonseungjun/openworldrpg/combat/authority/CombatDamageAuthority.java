@@ -133,6 +133,66 @@ public final class CombatDamageAuthority {
         );
     }
 
+    public static RangedDamageDecision authorizeBowProjectileBasic(
+            float donorProposedDamage,
+            double drawPower,
+            PlayerCombatBuildState build,
+            ProjectImpactTransaction.DamageTargetSnapshot target
+    ) {
+        Objects.requireNonNull(build, "build");
+        Objects.requireNonNull(target, "target");
+
+        if (!Float.isFinite(donorProposedDamage)
+                || donorProposedDamage <= 0.0F
+                || build.equipment().weaponFamily() != ProjectWeaponFamily.BOW
+                || !Double.isFinite(drawPower)
+                || drawPower <= 0.0
+                || drawPower > 1.0) {
+            return RangedDamageDecision.rejected();
+        }
+
+        ProjectBasicAttackRules.BasicHitProfile hit =
+                ProjectBasicAttackRules.bowDrawProfile(drawPower);
+        ProjectImpactTransaction.DamageSourceSnapshot source =
+                build.damageSource(ProjectImpactTransaction.DamageSchool.PHYSICAL);
+
+        ProjectImpactTransaction.DirectDamageResult resolvedDamage =
+                ProjectImpactTransaction.resolveDirectDamage(
+                        new ProjectImpactTransaction.DirectDamageRequest(
+                                source,
+                                target,
+                                ProjectImpactTransaction.DamageSchool.PHYSICAL,
+                                hit.damageActionCoefficient(),
+                                1.0,
+                                1.0
+                        )
+                );
+
+        ProjectImpactTransaction.PoiseResult poise =
+                ProjectImpactTransaction.resolvePoise(
+                        new ProjectImpactTransaction.PoiseRequest(
+                                target.poiseMax(),
+                                target.poiseMax(),
+                                source.poiseOutputMultiplier(),
+                                hit.poiseActionCoefficient(),
+                                1.0,
+                                1.0
+                        )
+                );
+
+        if (resolvedDamage.finalDamage() <= 0.0 || poise.poiseDamage() < 0.0) {
+            return RangedDamageDecision.rejected();
+        }
+
+        return new RangedDamageDecision(
+                true,
+                resolvedDamage.finalDamage(),
+                poise.poiseDamage(),
+                hit.damageActionCoefficient(),
+                hit.poiseActionCoefficient()
+        );
+    }
+
     public static ProjectImpactTransaction.DirectDamageResult resolveProjectDirectDamage(
             ProjectImpactTransaction.DirectDamageRequest request
     ) {

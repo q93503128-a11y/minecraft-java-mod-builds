@@ -3,7 +3,9 @@ package dev.moonseungjun.openworldrpg.mixin;
 import dev.moonseungjun.openworldrpg.combat.authority.CombatDamageAuthority;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectDamageApplicationContext;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
+import dev.moonseungjun.openworldrpg.combat.runtime.ProjectRangedProjectileContext;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
+import dev.moonseungjun.openworldrpg.combat.state.ProjectWeaponFamily;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
@@ -52,12 +54,29 @@ public abstract class ExternalActorDamageAuthorityMixin {
                     return;
                 }
 
-                CombatDamageAuthority.RangedDamageDecision decision =
-                        CombatDamageAuthority.authorizeProjectileBasic(
-                                amount,
-                                build,
-                                targetSnapshot
-                        );
+                CombatDamageAuthority.RangedDamageDecision decision;
+                if (build.equipment().weaponFamily() == ProjectWeaponFamily.BOW) {
+                    var shot = ProjectRangedProjectileContext.bowShot(
+                            (AbstractArrow) source.getDirectEntity(),
+                            shooter
+                    ).orElse(null);
+                    if (shot == null) {
+                        cir.setReturnValue(false);
+                        return;
+                    }
+                    decision = CombatDamageAuthority.authorizeBowProjectileBasic(
+                            amount,
+                            shot.drawPower(),
+                            build,
+                            targetSnapshot
+                    );
+                } else {
+                    decision = CombatDamageAuthority.authorizeProjectileBasic(
+                            amount,
+                            build,
+                            targetSnapshot
+                    );
+                }
                 if (!decision.accepted()) {
                     cir.setReturnValue(false);
                     return;

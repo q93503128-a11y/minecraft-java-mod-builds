@@ -119,6 +119,65 @@ class CombatDamageAuthorityTest {
     }
 
     @Test
+    void bowUsesCapturedServerDrawPowerInsteadOfDonorDamage() {
+        var build = new PlayerCombatBuildState(
+                8,
+                RootClass.HUNTER,
+                new AttributeAllocation(0, 0, 0, 7, 0, 0),
+                EquipmentCombatState.weaponOnly(ProjectWeaponFamily.BOW, 8)
+        );
+
+        var halfDraw = CombatDamageAuthority.authorizeBowProjectileBasic(
+                2.0F,
+                0.50,
+                build,
+                EARTHLOONG
+        );
+        var fullDraw = CombatDamageAuthority.authorizeBowProjectileBasic(
+                9999.0F,
+                1.0,
+                build,
+                EARTHLOONG
+        );
+        var fullDrawWeakDonor = CombatDamageAuthority.authorizeBowProjectileBasic(
+                2.0F,
+                1.0,
+                build,
+                EARTHLOONG
+        );
+
+        assertTrue(halfDraw.accepted());
+        assertTrue(fullDraw.accepted());
+        assertEquals(0.50, halfDraw.damageActionCoefficient(), 0.0001);
+        assertEquals(0.50, halfDraw.poiseActionCoefficient(), 0.0001);
+        assertEquals(1.0, fullDraw.damageActionCoefficient(), 0.0001);
+        assertEquals(1.0, fullDraw.poiseActionCoefficient(), 0.0001);
+        assertTrue(fullDraw.finalDamage() > halfDraw.finalDamage());
+        assertTrue(fullDraw.poiseDamage() > halfDraw.poiseDamage());
+        assertEquals(fullDraw.finalDamage(), fullDrawWeakDonor.finalDamage(), 0.0001);
+        assertEquals(fullDraw.poiseDamage(), fullDrawWeakDonor.poiseDamage(), 0.0001);
+
+        // Bow damage must stay fail-closed if no launch-time draw context was captured.
+        assertFalse(CombatDamageAuthority.authorizeProjectileBasic(
+                5.0F,
+                build,
+                EARTHLOONG
+        ).accepted());
+        assertFalse(CombatDamageAuthority.authorizeBowProjectileBasic(
+                5.0F,
+                0.0,
+                build,
+                EARTHLOONG
+        ).accepted());
+        assertFalse(CombatDamageAuthority.authorizeBowProjectileBasic(
+                5.0F,
+                Double.NaN,
+                build,
+                EARTHLOONG
+        ).accepted());
+    }
+
+    @Test
     void rejectsInvalidDonorProposalOrNonMeleeProjectFamily() {
         var sword = new PlayerCombatBuildState(
                 8,
