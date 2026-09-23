@@ -29,7 +29,7 @@ import java.util.zip.ZipOutputStream;
  * and the live archive is replaced only after the temporary archive passes the 26.2 structural checks.</p>
  */
 final class Drehmal26_2CompatMigrator {
-    static final int COMPAT_VERSION = 1;
+    static final int COMPAT_VERSION = 2;
     static final String TARGET_VERSION = "26.2";
     static final String DATAPACK_RELATIVE = "datapacks/hi_drehmal.zip";
     static final String MARKER_FILE = ".turnbound_drehmal_26_2_compat";
@@ -38,6 +38,7 @@ final class Drehmal26_2CompatMigrator {
     private static final int EXPECTED_BIOMES = 48;
     private static final int EXPECTED_DIMENSION_TYPES = 1;
     private static final double MAX_CREATURE_SPAWN_PROBABILITY = 0.9999999D;
+    private static final String NULL_SOUND_ID = "minecraft:null";
     private static final Gson JSON = new GsonBuilder().setPrettyPrinting().create();
 
     record Report(
@@ -213,84 +214,171 @@ final class Drehmal26_2CompatMigrator {
 
     private static void migrateBiomePresentation(JsonObject root) {
         JsonObject effects = object(root.get("effects"));
-        if (effects == null) return;
-
         JsonObject attributes = object(root.get("attributes"));
-        boolean createdAttributes = false;
-        if (attributes == null) {
-            attributes = new JsonObject();
-            createdAttributes = true;
-        }
+        if (effects == null && attributes == null) return;
 
-        boolean changed = false;
-        changed |= moveColor(effects, attributes, "sky_color", "minecraft:visual/sky_color");
-        changed |= moveColor(effects, attributes, "fog_color", "minecraft:visual/fog_color");
-        changed |= moveColor(effects, attributes, "water_fog_color", "minecraft:visual/water_fog_color");
+        boolean createdAttributes = attributes == null;
+        if (attributes == null) attributes = new JsonObject();
 
-        JsonObject ambientSounds = object(attributes.get("minecraft:audio/ambient_sounds"));
-        if (ambientSounds == null) ambientSounds = new JsonObject();
-        boolean ambientChanged = false;
+        boolean changed = sanitizeAudioAttributes(attributes);
 
-        JsonElement ambient = effects.get("ambient_sound");
-        if (ambient != null && ambient.isJsonPrimitive() && !ambientSounds.has("loop")) {
-            ambientSounds.add("loop", ambient.deepCopy());
-            effects.remove("ambient_sound");
-            ambientChanged = true;
-        }
-        JsonElement mood = effects.get("mood_sound");
-        if (mood != null && mood.isJsonObject() && !ambientSounds.has("mood")) {
-            ambientSounds.add("mood", mood.deepCopy());
-            effects.remove("mood_sound");
-            ambientChanged = true;
-        }
-        JsonElement additions = effects.get("additions_sound");
-        if (additions != null && additions.isJsonObject() && !ambientSounds.has("additions")) {
-            ambientSounds.add("additions", additions.deepCopy());
-            effects.remove("additions_sound");
-            ambientChanged = true;
-        }
-        if (ambientChanged) {
-            attributes.add("minecraft:audio/ambient_sounds", ambientSounds);
-            changed = true;
-        }
+        if (effects != null) {
+            changed |= moveColor(effects, attributes, "sky_color", "minecraft:visual/sky_color");
+            changed |= moveColor(effects, attributes, "fog_color", "minecraft:visual/fog_color");
+            changed |= moveColor(effects, attributes, "water_fog_color", "minecraft:visual/water_fog_color");
 
-        JsonElement music = effects.get("music");
-        if (music != null && music.isJsonObject() && validMusic(music.getAsJsonObject())) {
-            JsonObject background = object(attributes.get("minecraft:audio/background_music"));
-            if (background == null) background = new JsonObject();
-            if (!background.has("default")) {
-                background.add("default", music.deepCopy());
-                attributes.add("minecraft:audio/background_music", background);
+            JsonObject ambientSounds = object(attributes.get("minecraft:audio/ambient_sounds"));
+            if (ambientSounds == null) ambientSounds = new JsonObject();
+            boolean ambientChanged = false;
+
+            JsonElement ambient = effects.get("ambient_sound");
+            if (ambient != null && ambient.isJsonPrimitive()) {
+                if (!ambientSounds.has("loop") && usableSoundReference(ambient)) {
+                    ambientSounds.add("loop", ambient.deepCopy());
+                    ambientChanged = true;
+                }
+                effects.remove("ambient_sound");
+                changed = true;
+            }
+
+            JsonElement mood = effects.get("mood_sound");
+            if (mood != null && mood.isJsonObject()) {
+                if (!ambientSounds.has("mood") && usableSoundObject(mood.getAsJsonObject())) {
+                    ambientSounds.add("mood", mood.deepCopy());
+                    ambientChanged = true;
+                }
+                effects.remove("mood_sound");
+                changed = true;
+            }
+
+            JsonElement additions = effects.get("additions_sound");
+            if (additions != null && additions.isJsonObject()) {
+                if (!ambientSounds.has("additions") && usableSoundObject(additions.getAsJsonObject())) {
+                    ambientSounds.add("additions", additions.deepCopy());
+                    ambientChanged = true;
+                }
+                effects.remove("additions_sound");
+                changed = true;
+            }
+
+            if (ambientChanged) {
+                attributes.add("minecraft:audio/ambient_sounds", ambientSounds);
+            }
+
+            JsonElement music = effects.get("music");
+            if (music != null && music.isJsonObject()) {
+                if (validMusic(music.getAsJsonObject())) {
+                    JsonObject background = object(attributes.get("minecraft:audio/background_music"));
+                    if (background == null) background = new JsonObject();
+                    if (!background.has("default")) {
+                        background.add("default", music.deepCopy());
+                        attributes.add("minecraft:audio/background_music", background);
+                    }
+                }
                 effects.remove("music");
                 changed = true;
             }
-        }
 
-        JsonElement particle = effects.get("particle");
-        if (particle != null && particle.isJsonObject() && !attributes.has("minecraft:visual/ambient_particles")) {
-            JsonObject legacy = particle.getAsJsonObject();
-            JsonObject options = object(legacy.get("options"));
-            JsonElement probability = legacy.get("probability");
-            if (options != null && probability != null && probability.isJsonPrimitive()) {
-                JsonObject migrated = new JsonObject();
-                migrated.add("particle", options.deepCopy());
-                migrated.add("probability", probability.deepCopy());
-                JsonArray particles = new JsonArray();
-                particles.add(migrated);
-                attributes.add("minecraft:visual/ambient_particles", particles);
-                effects.remove("particle");
-                changed = true;
+            JsonElement particle = effects.get("particle");
+            if (particle != null && particle.isJsonObject() && !attributes.has("minecraft:visual/ambient_particles")) {
+                JsonObject legacy = particle.getAsJsonObject();
+                JsonObject options = object(legacy.get("options"));
+                JsonElement probability = legacy.get("probability");
+                if (options != null && probability != null && probability.isJsonPrimitive()) {
+                    JsonObject migrated = new JsonObject();
+                    migrated.add("particle", options.deepCopy());
+                    migrated.add("probability", probability.deepCopy());
+                    JsonArray particles = new JsonArray();
+                    particles.add(migrated);
+                    attributes.add("minecraft:visual/ambient_particles", particles);
+                    effects.remove("particle");
+                    changed = true;
+                }
             }
         }
 
-        if (changed || (!createdAttributes && !attributes.isEmpty())) {
+        if (attributes.isEmpty()) {
+            if (!createdAttributes) {
+                root.remove("attributes");
+            }
+        } else if (changed || !createdAttributes) {
             root.add("attributes", attributes);
         }
     }
 
+    private static boolean sanitizeAudioAttributes(JsonObject attributes) {
+        boolean changed = false;
+
+        JsonObject ambientSounds = object(attributes.get("minecraft:audio/ambient_sounds"));
+        if (ambientSounds != null) {
+            changed |= removeNullSound(ambientSounds, "loop");
+            changed |= removeNullSound(ambientSounds, "mood");
+            changed |= removeNullSound(ambientSounds, "additions");
+            if (ambientSounds.isEmpty()) {
+                attributes.remove("minecraft:audio/ambient_sounds");
+                changed = true;
+            }
+        }
+
+        JsonObject background = object(attributes.get("minecraft:audio/background_music"));
+        if (background != null) {
+            changed |= removeNullSound(background, "default");
+            if (background.isEmpty()) {
+                attributes.remove("minecraft:audio/background_music");
+                changed = true;
+            }
+        }
+
+        return changed;
+    }
+
+    private static boolean removeNullSound(JsonObject parent, String key) {
+        JsonElement value = parent.get(key);
+        if (!hasNullSoundReference(value)) return false;
+        parent.remove(key);
+        return true;
+    }
+
+    private static boolean hasNullAudioSentinel(JsonObject attributes) {
+        JsonObject ambientSounds = object(attributes.get("minecraft:audio/ambient_sounds"));
+        if (ambientSounds != null
+                && (hasNullSoundReference(ambientSounds.get("loop"))
+                || hasNullSoundReference(ambientSounds.get("mood"))
+                || hasNullSoundReference(ambientSounds.get("additions")))) {
+            return true;
+        }
+
+        JsonObject background = object(attributes.get("minecraft:audio/background_music"));
+        return background != null && hasNullSoundReference(background.get("default"));
+    }
+
+    private static boolean hasNullSoundReference(JsonElement value) {
+        if (value == null || value.isJsonNull()) return false;
+        if (value.isJsonPrimitive()
+                && value.getAsJsonPrimitive().isString()) {
+            return NULL_SOUND_ID.equals(value.getAsString());
+        }
+        if (!value.isJsonObject()) return false;
+        JsonElement sound = value.getAsJsonObject().get("sound");
+        return sound != null
+                && sound.isJsonPrimitive()
+                && sound.getAsJsonPrimitive().isString()
+                && NULL_SOUND_ID.equals(sound.getAsString());
+    }
+
+    private static boolean usableSoundReference(JsonElement sound) {
+        return sound != null
+                && sound.isJsonPrimitive()
+                && sound.getAsJsonPrimitive().isString()
+                && !NULL_SOUND_ID.equals(sound.getAsString());
+    }
+
+    private static boolean usableSoundObject(JsonObject value) {
+        return value != null && usableSoundReference(value.get("sound"));
+    }
+
     private static boolean validMusic(JsonObject music) {
-        JsonElement sound = music.get("sound");
-        return sound != null && sound.isJsonPrimitive() && sound.getAsJsonPrimitive().isString();
+        return music != null && usableSoundReference(music.get("sound"));
     }
 
     private static boolean moveColor(
@@ -350,6 +438,10 @@ final class Drehmal26_2CompatMigrator {
                             && probability.getAsJsonPrimitive().isNumber()
                             && probability.getAsDouble() >= 1.0D) {
                         throw new IOException("Out-of-range creature_spawn_probability remains: " + entry.getName());
+                    }
+                    JsonObject attributes = object(root.get("attributes"));
+                    if (attributes != null && hasNullAudioSentinel(attributes)) {
+                        throw new IOException("Invalid minecraft:null sound reference remains: " + entry.getName());
                     }
                 } else {
                     dimensions++;
