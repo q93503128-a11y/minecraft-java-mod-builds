@@ -22,6 +22,32 @@ public final class ProjectBasicAttackRules {
         };
     }
 
+    /**
+     * Full-shot projectile basics that already have an unambiguous server-side release state.
+     *
+     * <p>Crossbow is admitted first because a fired bolt is already a committed full shot. Bow
+     * damage remains fail-closed here until draw fraction is bound without trusting donor damage.</p>
+     */
+    public static boolean supportsAuthoritativeProjectileBasic(ProjectWeaponFamily family) {
+        Objects.requireNonNull(family, "family");
+        return family == ProjectWeaponFamily.CROSSBOW;
+    }
+
+    public static BasicHitProfile projectileFullShotProfile(ProjectWeaponFamily family) {
+        Objects.requireNonNull(family, "family");
+        if (!supportsAuthoritativeProjectileBasic(family)) {
+            throw new IllegalArgumentException(
+                    "Weapon family does not have an authoritative full-shot projectile profile: "
+                            + family
+            );
+        }
+        return new BasicHitProfile(
+                1.0 / family.basicCadence(),
+                1.0,
+                true
+        );
+    }
+
     public static BasicHitProfile hitProfile(ProjectWeaponFamily family, int comboCount) {
         Objects.requireNonNull(family, "family");
         if (comboCount < 0) {

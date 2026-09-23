@@ -36,6 +36,9 @@ public final class M0PlayerVerificationBootstrap {
     private static final String EARTHLOONG_MOTION_2_COMMAND = "owr_earthloong_motion_2";
     private static final String EARTHLOONG_MOTION_3_COMMAND = "owr_earthloong_motion_3";
     private static final String EARTHLOONG_MOTION_4_COMMAND = "owr_earthloong_motion_4";
+    private static final String SWORD_PROFILE_COMMAND = "owr_test_sword";
+    private static final String CROSSBOW_PROFILE_COMMAND = "owr_test_crossbow";
+    private static final String MAGIC_PROFILE_COMMAND = "owr_test_magic";
 
     private M0PlayerVerificationBootstrap() {
     }
@@ -75,6 +78,21 @@ public final class M0PlayerVerificationBootstrap {
                     Commands.literal(EARTHLOONG_MOTION_4_COMMAND)
                             .executes(context -> previewEarthloongMotion(
                                     context.getSource().getEntity(), 4))
+            );
+            dispatcher.register(
+                    Commands.literal(SWORD_PROFILE_COMMAND)
+                            .executes(context -> prepareSwordProfile(
+                                    context.getSource().getEntity()))
+            );
+            dispatcher.register(
+                    Commands.literal(CROSSBOW_PROFILE_COMMAND)
+                            .executes(context -> prepareCrossbowProfile(
+                                    context.getSource().getEntity()))
+            );
+            dispatcher.register(
+                    Commands.literal(MAGIC_PROFILE_COMMAND)
+                            .executes(context -> prepareMagicProfile(
+                                    context.getSource().getEntity()))
             );
         });
     }
@@ -120,30 +138,84 @@ public final class M0PlayerVerificationBootstrap {
         ) ? 1 : 0;
     }
 
+    private static int prepareSwordProfile(Entity commandEntity) {
+        if (!(commandEntity instanceof ServerPlayer player)) {
+            return 0;
+        }
+        applyVerificationProfile(
+                player,
+                RootClass.WARRIOR,
+                new AttributeAllocation(0, 0, 7, 0, 0, 0),
+                ProjectWeaponFamily.SWORD,
+                "openworld_rpg:initiate_sword"
+        );
+        return 1;
+    }
+
+    private static int prepareCrossbowProfile(Entity commandEntity) {
+        if (!(commandEntity instanceof ServerPlayer player)) {
+            return 0;
+        }
+        applyVerificationProfile(
+                player,
+                RootClass.HUNTER,
+                new AttributeAllocation(0, 0, 0, 7, 0, 0),
+                ProjectWeaponFamily.CROSSBOW,
+                "openworld_rpg:initiate_crossbow"
+        );
+        return 1;
+    }
+
+    private static int prepareMagicProfile(Entity commandEntity) {
+        if (!(commandEntity instanceof ServerPlayer player)) {
+            return 0;
+        }
+        applyVerificationProfile(
+                player,
+                RootClass.MAGE,
+                new AttributeAllocation(0, 0, 0, 0, 7, 0),
+                ProjectWeaponFamily.STAFF,
+                "openworld_rpg:initiate_staff"
+        );
+        return 1;
+    }
+
+    private static void applyVerificationProfile(
+            ServerPlayer player,
+            RootClass rootClass,
+            AttributeAllocation allocation,
+            ProjectWeaponFamily weaponFamily,
+            String itemId
+    ) {
+        PlayerProgressionService.setCombatLevel(player, 8);
+        PlayerProgressionService.selectClass(player, rootClass);
+        PlayerProgressionService.setAllocation(player, rootClass, allocation);
+        PlayerEquipmentService.equip(
+                player,
+                EquippedCombatItem.weapon(
+                        itemId,
+                        8,
+                        weaponFamily,
+                        List.of()
+                )
+        );
+    }
+
     public static void prepare(ServerPlayer player, Logger logger) {
         if (!enabled()) {
             return;
         }
 
-        PlayerProgressionService.setCombatLevel(player, 8);
-        PlayerProgressionService.selectClass(player, RootClass.MAGE);
-        PlayerProgressionService.setAllocation(
+        applyVerificationProfile(
                 player,
-                RootClass.MAGE,
-                new AttributeAllocation(0, 0, 0, 0, 7, 0)
-        );
-        PlayerEquipmentService.equip(
-                player,
-                EquippedCombatItem.weapon(
-                        "openworld_rpg:initiate_staff",
-                        8,
-                        ProjectWeaponFamily.STAFF,
-                        List.of()
-                )
+                RootClass.WARRIOR,
+                new AttributeAllocation(0, 0, 7, 0, 0, 0),
+                ProjectWeaponFamily.SWORD,
+                "openworld_rpg:initiate_sword"
         );
 
         logger.info(
-                "OPENWORLD_RPG_M0_PLAYER_READY player={} level=8 class=MAGE intAllocation=7 weapon=STAFF itemLevel=8",
+                "OPENWORLD_RPG_M0_PLAYER_READY player={} level=8 class=WARRIOR strAllocation=7 weapon=SWORD itemLevel=8 profiles=sword,crossbow,magic",
                 player.getGameProfile().name()
         );
     }

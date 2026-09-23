@@ -90,6 +90,35 @@ class CombatDamageAuthorityTest {
     }
 
     @Test
+    void crossbowFullShotUsesProjectCadenceAndIgnoresDonorDamageMagnitude() {
+        var build = new PlayerCombatBuildState(
+                8,
+                RootClass.HUNTER,
+                new AttributeAllocation(0, 0, 0, 7, 0, 0),
+                EquipmentCombatState.weaponOnly(ProjectWeaponFamily.CROSSBOW, 8)
+        );
+
+        var weakDonor = CombatDamageAuthority.authorizeProjectileBasic(
+                2.0F,
+                build,
+                EARTHLOONG
+        );
+        var hugeDonor = CombatDamageAuthority.authorizeProjectileBasic(
+                9999.0F,
+                build,
+                EARTHLOONG
+        );
+
+        assertTrue(weakDonor.accepted());
+        assertTrue(weakDonor.finalDamage() > 0.0);
+        assertTrue(weakDonor.poiseDamage() > 0.0);
+        assertEquals(1.0 / 0.72, weakDonor.damageActionCoefficient(), 0.0001);
+        assertEquals(1.0, weakDonor.poiseActionCoefficient(), 0.0001);
+        assertEquals(weakDonor.finalDamage(), hugeDonor.finalDamage(), 0.0001);
+        assertEquals(weakDonor.poiseDamage(), hugeDonor.poiseDamage(), 0.0001);
+    }
+
+    @Test
     void rejectsInvalidDonorProposalOrNonMeleeProjectFamily() {
         var sword = new PlayerCombatBuildState(
                 8,
@@ -115,6 +144,12 @@ class CombatDamageAuthorityTest {
         ).accepted());
         assertFalse(CombatDamageAuthority.authorizeBetterCombatMelee(
                 5.0F, 0, staff, EARTHLOONG
+        ).accepted());
+        assertFalse(CombatDamageAuthority.authorizeProjectileBasic(
+                5.0F, staff, EARTHLOONG
+        ).accepted());
+        assertFalse(CombatDamageAuthority.authorizeProjectileBasic(
+                Float.NaN, sword, EARTHLOONG
         ).accepted());
     }
 }
