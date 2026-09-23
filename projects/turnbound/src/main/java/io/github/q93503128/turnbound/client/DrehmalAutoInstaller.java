@@ -80,32 +80,50 @@ public final class DrehmalAutoInstaller {
         return snapshot;
     }
 
+    public static void repairExistingWorldBeforeResourceLoad() {
+        try {
+            Path gameDir = Minecraft.getInstance().gameDirectory.toPath();
+            for (Path world : findInstalledWorlds(gameDir)) {
+                Path pack = world.resolve("resources.zip");
+                if (!Files.isRegularFile(pack) || !DrehmalInstallFiles.validResourcePack(pack)) continue;
+                if (Drehmal26_2ResourcePackMigrator.isCurrent(world)) continue;
+                Drehmal26_2ResourcePackMigrator.Report report = Drehmal26_2ResourcePackMigrator.migrate(world);
+                Turnbound.LOGGER.info(
+                        "TURNBOUND early Drehmal resource repair: world={}, changed={}, references={}, modelRenamed={}, sourceHash={}, migratedHash={}",
+                        world.getFileName(), report.changed(), report.referencesRewritten(), report.modelRenamed(),
+                        report.sourceHash(), report.migratedHash());
+            }
+        } catch (Throwable error) {
+            Turnbound.LOGGER.error("TURNBOUND early Drehmal resource compatibility repair failed", error);
+        }
+    }
+
     public static void onTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level != null) return;
 
         Path gameDir = minecraft.gameDirectory.toPath();
-        Optional<Path> existing = findInstalledWorld(gameDir);
+        List<Path> installedWorlds = findInstalledWorlds(gameDir);
         boolean optedIn = optedIn(gameDir);
 
-        // Existing verified TURNBOUND worlds must receive local compatibility repairs even when the original
-        // one-click opt-in marker is no longer present. Download permission and local migration are separate.
-        if (existing.isPresent()) {
-            Path world = existing.get();
-            if (resourcePackReady(world) && Drehmal26_2CompatMigrator.isCurrent(world)) {
+        if (!installedWorlds.isEmpty()) {
+            Optional<Path> pending = installedWorlds.stream()
+                    .filter(world -> !resourcePackReady(world) || !Drehmal26_2CompatMigrator.isCurrent(world))
+                    .findFirst();
+            if (pending.isEmpty()) {
                 if (snapshot.phase() != Phase.COMPLETE) {
                     snapshot = new Snapshot(Phase.COMPLETE, "TURNBOUND 준비 완료", "설치된 Drehmal 월드를 그대로 사용합니다.", 100, "");
                 }
                 return;
             }
 
+            Path world = pending.get();
             if (snapshot.phase() == Phase.FAILED) return;
             if (!STARTED.compareAndSet(false, true)) return;
             if (!(minecraft.gui.screen() instanceof TitleScreen parent)) {
                 STARTED.set(false);
                 return;
             }
-
             minecraft.gui.setScreen(new DrehmalInstallScreen(parent));
             Thread.ofVirtual().name("turnbound-drehmal-local-repair")
                     .start(() -> repairExistingWorld(gameDir, world, optedIn));
@@ -135,16 +153,21 @@ public final class DrehmalAutoInstaller {
         }
     }
 
-    static Optional<Path> findInstalledWorld(Path gameDir) {
+    static List<Path> findInstalledWorlds(Path gameDir) {
         Path saves = gameDir.resolve("saves");
-        if (!Files.isDirectory(saves)) return Optional.empty();
+        if (!Files.isDirectory(saves)) return List.of();
         try (var stream = Files.list(saves)) {
             return stream.filter(Files::isDirectory)
                     .filter(DrehmalAutoInstaller::validInstalledWorld)
-                    .findFirst();
+                    .sorted()
+                    .toList();
         } catch (IOException ignored) {
-            return Optional.empty();
+            return List.of();
         }
+    }
+
+    static Optional<Path> findInstalledWorld(Path gameDir) {
+        return findInstalledWorlds(gameDir).stream().findFirst();
     }
 
     private static boolean validInstalledWorld(Path world) {
@@ -467,6 +490,7 @@ public final class DrehmalAutoInstaller {
                 "Drehmal 2.2.2f는 이 인스턴스에 저장되었습니다. 다음부터는 다시 다운로드하지 않습니다.",
                 100,
                 "");
+        STARTED.set(false);
     }
 
     private static void update(Phase phase, String title, String detail, int percent) {
