@@ -5,12 +5,19 @@ public final class R01RewardRules {
     public static final RewardRule DUST_ON_QUARRY_ROAD =
             new RewardRule(0.70, 0.50, 90L);
 
+    /** Earthloong first-eligible boss-kill layer. */
+    public static final RewardRule EARTHLOONG_FIRST_BOSS_LAYER =
+            new RewardRule(0.40, 0.20, 0L);
+
     /**
-     * Earthloong first clear combines the boss layer (40% / 20%) and dungeon-completion layer
-     * (100% / 64%). Item/choice rewards remain separate until their item-authority path is bound.
+     * First quarry dungeon-completion layer after Earthloong.
+     *
+     * <p>This remains separate from the boss-kill layer so each canonical "current requirement"
+     * percentage is evaluated at the point that layer is committed. Item/choice rewards are
+     * separate until their item-authority path is bound.</p>
      */
-    public static final RewardRule EARTHLOONG_FIRST_CLEAR_PROGRESSION =
-            new RewardRule(1.40, 0.84, 180L);
+    public static final RewardRule EARTHLOONG_FIRST_DUNGEON_COMPLETION =
+            new RewardRule(1.00, 0.64, 180L);
 
     private R01RewardRules() {
     }
