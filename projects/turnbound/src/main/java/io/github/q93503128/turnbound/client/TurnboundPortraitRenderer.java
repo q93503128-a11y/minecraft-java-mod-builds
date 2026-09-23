@@ -11,6 +11,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Shared live-3D portrait bridge.
@@ -20,6 +21,7 @@ import java.util.Map;
  */
 public final class TurnboundPortraitRenderer {
     private static final Map<String, BattleActorEntity> PREVIEWS = new HashMap<>();
+    private static final AtomicInteger PREVIEW_ENTITY_IDS = new AtomicInteger(-1);
     private static ClientLevel previewLevel;
 
     private TurnboundPortraitRenderer() {}
@@ -77,9 +79,15 @@ public final class TurnboundPortraitRenderer {
     }
 
     private static BattleActorEntity createPreview(ClientLevel level, String visualId) {
-        if (SignatureBattleActors.contains(visualId)) return SignatureBattleActors.preview(level, visualId);
-        if (TurnboundBattleActors.contains(visualId)) return TurnboundBattleActors.preview(level, visualId);
-        return null;
+        BattleActorEntity preview = null;
+        if (SignatureBattleActors.contains(visualId)) preview = SignatureBattleActors.preview(level, visualId);
+        else if (TurnboundBattleActors.contains(visualId)) preview = TurnboundBattleActors.preview(level, visualId);
+        if (preview == null) return null;
+
+        // Minecraft 26.2 item render-state extraction reads a living entity's network id even for GUI previews.
+        // These preview actors never join the level, so assign a client-local negative id explicitly.
+        preview.setId(PREVIEW_ENTITY_IDS.getAndDecrement());
+        return preview;
     }
 
     public static void clear() {
