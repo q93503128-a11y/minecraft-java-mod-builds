@@ -49,6 +49,7 @@ public final class DrehmalAutoInstaller {
         DOWNLOADING_MAP,
         EXTRACTING_MAP,
         VERIFYING_MAP,
+        MIGRATING_MAP,
         DOWNLOADING_RESOURCES,
         FINALIZING,
         COMPLETE,
@@ -86,7 +87,9 @@ public final class DrehmalAutoInstaller {
         if (!optedIn(gameDir)) return;
 
         Optional<Path> existing = findInstalledWorld(gameDir);
-        if (existing.isPresent() && resourcePackReady(existing.get())) {
+        if (existing.isPresent()
+                && resourcePackReady(existing.get())
+                && Drehmal26_2CompatMigrator.isCurrent(existing.get())) {
             if (snapshot.phase() != Phase.COMPLETE) {
                 snapshot = new Snapshot(Phase.COMPLETE, "TURNBOUND 준비 완료", "설치된 Drehmal 월드를 그대로 사용합니다.", 100, "");
             }
@@ -157,6 +160,7 @@ public final class DrehmalAutoInstaller {
             Optional<Path> installedWorld = findInstalledWorld(gameDir);
             if (installedWorld.isPresent()) {
                 ensureResourcePackOnly(gameDir, installedWorld.get());
+                ensure26_2Compatibility(installedWorld.get());
                 complete();
                 return;
             }
@@ -181,6 +185,7 @@ public final class DrehmalAutoInstaller {
             downloadMapShards(downloads);
             extractMap(downloads, tempWorld);
             validateMap(tempWorld);
+            ensure26_2Compatibility(tempWorld);
 
             Path resourcePack = downloadResourcePack(downloads);
             Files.copy(resourcePack, tempWorld.resolve("resources.zip"), StandardCopyOption.REPLACE_EXISTING);
@@ -283,6 +288,22 @@ public final class DrehmalAutoInstaller {
         if (!DrehmalBootstrapManifest.WORLD_HASH.equals(actual)) {
             throw new IOException("Drehmal 월드 검증값이 공식 2.2.2f와 일치하지 않습니다.");
         }
+    }
+
+    private static void ensure26_2Compatibility(Path world) throws Exception {
+        update(
+                Phase.MIGRATING_MAP,
+                "Drehmal 월드 호환 준비",
+                "기존 지형과 저장 데이터를 유지하며 Minecraft 26.2 형식으로 맞추고 있습니다.",
+                92);
+        Drehmal26_2CompatMigrator.Report report = Drehmal26_2CompatMigrator.migrate(world);
+        Turnbound.LOGGER.info(
+                "TURNBOUND Drehmal 26.2 compatibility: changed={}, biomes={}, dimensions={}, sourceHash={}, migratedHash={}",
+                report.changed(),
+                report.biomes(),
+                report.dimensionTypes(),
+                report.sourceHash(),
+                report.migratedHash());
     }
 
     private static Path downloadResourcePack(Path downloads) throws Exception {
