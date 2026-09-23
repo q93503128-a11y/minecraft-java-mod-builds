@@ -13,11 +13,12 @@ import net.minecraft.resources.Identifier;
  * quality standard explicitly warns against.</p>
  */
 final class TurnboundUiSkin {
-    private static final Identifier PANEL_BROWN = id("panel_brown.png");
-    private static final Identifier PANEL_INSET = id("panel_inset_beige_light.png");
-    private static final Identifier BUTTON_BLUE = id("button_long_blue.png");
-    private static final Identifier BUTTON_BROWN = id("button_long_brown.png");
-    private static final Identifier BUTTON_GREY = id("button_long_grey.png");
+    private static final Identifier FRAME_IDLE = pixel("frame_idle.png");
+    private static final Identifier FRAME_FOCUS = pixel("frame_focus.png");
+    private static final Identifier FRAME_DISABLED = pixel("frame_disabled.png");
+    private static final Identifier FRAME_SUCCESS = pixel("frame_success.png");
+    private static final Identifier FRAME_WARNING = pixel("frame_warning.png");
+    private static final Identifier TITLE_SURFACE = pixel("title_surface.png");
     private static final Identifier CHECK_BLUE = id("icon_check_blue.png");
 
     private static final int BATTLE_ACTION_GREEN = 0xFF39D353;
@@ -26,30 +27,27 @@ final class TurnboundUiSkin {
     private TurnboundUiSkin() {}
 
     static void panel(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
-        nineSlice(graphics, PANEL_BROWN, x, y, width, height, 10, 10, 0.12F, 0.88F, 0.12F, 0.88F);
-        int inset = Math.min(TurnboundUiTokens.S, Math.max(4, Math.min(width, height) / 4));
-        if (width > inset * 2 && height > inset * 2) {
-            graphics.fill(x + inset, y + inset, x + width - inset, y + height - inset, 0xB80A0C10);
-        }
+        graphics.fill(x + 5, y + 5, x + width - 5, y + height - 5, TurnboundUiTokens.SURFACE);
+        nineSlice(graphics, FRAME_IDLE, x, y, width, height, 7, 7, 0.22F, 0.78F, 0.22F, 0.78F);
     }
 
     static void inset(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
-        nineSlice(graphics, PANEL_INSET, x, y, width, height, 8, 8, 0.11F, 0.89F, 0.11F, 0.89F);
-        int inset = Math.min(6, Math.max(3, Math.min(width, height) / 4));
-        if (width > inset * 2 && height > inset * 2) {
-            graphics.fill(x + inset, y + inset, x + width - inset, y + height - inset, 0xB0181614);
-        }
+        stretch(graphics, TITLE_SURFACE, x + 4, y + 4, Math.max(1, width - 8), Math.max(1, height - 8));
+        graphics.fill(x + 5, y + 5, x + width - 5, y + height - 5, 0xB8151A22);
+        nineSlice(graphics, FRAME_IDLE, x, y, width, height, 7, 7, 0.22F, 0.78F, 0.22F, 0.78F);
     }
 
     static void button(GuiGraphicsExtractor graphics, int x, int y, int width, int height,
                        boolean active, boolean hovered, boolean selected, int accent) {
-        Identifier texture = !active ? BUTTON_GREY : warm(accent) ? BUTTON_BROWN : BUTTON_BLUE;
-        nineSlice(graphics, texture, x, y, width, height, 9, 5, 0.09F, 0.91F, 0.20F, 0.80F);
-        if (!active) {
-            graphics.fill(x + 4, y + 4, x + width - 4, y + height - 4, 0x26000000);
-        } else if (hovered) {
-            graphics.fill(x + 4, y + 4, x + width - 4, y + height - 4, 0x22FFFFFF);
-            graphics.fill(x + 6, y + 3, x + width - 6, y + 4, 0x32FFFFFF);
+        Identifier texture = !active ? FRAME_DISABLED
+                : selected ? (warm(accent) ? FRAME_WARNING : accent == TurnboundUiTokens.SUCCESS ? FRAME_SUCCESS : FRAME_FOCUS)
+                : hovered ? FRAME_FOCUS
+                : FRAME_IDLE;
+        graphics.fill(x + 5, y + 5, x + width - 5, y + height - 5,
+                active ? TurnboundUiTokens.ELEVATED_SURFACE : 0xE01B2028);
+        nineSlice(graphics, texture, x, y, width, height, 7, 7, 0.22F, 0.78F, 0.22F, 0.78F);
+        if (active && hovered) {
+            graphics.fill(x + 6, y + 6, x + width - 6, y + height - 6, 0x12FFFFFF);
         }
         if (selected) {
             int stateColor = active ? accent : TurnboundUiTokens.DISABLED;
@@ -71,9 +69,10 @@ final class TurnboundUiSkin {
      */
     static void battleSkillButton(GuiGraphicsExtractor graphics, int x, int y, int width, int height,
                                   boolean active, boolean hovered, boolean selected) {
-        nineSlice(graphics, BUTTON_GREY, x, y, width, height, 9, 5, 0.09F, 0.91F, 0.20F, 0.80F);
-        int inner = !active ? 0xE0282B31 : selected ? 0xE01D9C3B : 0xE014181D;
-        graphics.fill(x + 4, y + 4, x + width - 4, y + height - 4, inner);
+        Identifier texture = !active ? FRAME_DISABLED : selected ? FRAME_SUCCESS : hovered ? FRAME_FOCUS : FRAME_IDLE;
+        int inner = !active ? 0xE0282B31 : selected ? 0xE01D4028 : 0xE014181D;
+        graphics.fill(x + 5, y + 5, x + width - 5, y + height - 5, inner);
+        nineSlice(graphics, texture, x, y, width, height, 7, 7, 0.22F, 0.78F, 0.22F, 0.78F);
 
         int edge = !active ? 0xFF5C6168 : selected ? BATTLE_ACTION_GREEN_SOFT : 0xFF5B6570;
         graphics.fill(x + 4, y + 3, x + 6, y + height - 3, edge);
@@ -139,5 +138,9 @@ final class TurnboundUiSkin {
 
     private static Identifier id(String file) {
         return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "textures/gui/kenney/" + file);
+    }
+
+    private static Identifier pixel(String file) {
+        return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "textures/gui/kenney_pixel/" + file);
     }
 }

@@ -32,10 +32,10 @@ final class DrehmalStartArrival {
         if (player == null || saved == null) return false;
         if (saved.onboardingFlag(player.getUUID(), ARRIVAL_FLAG)) return false;
 
-        if (!legacySetupZone(player.getX(), player.getY(), player.getZ())) {
-            saved.markOnboardingFlag(player.getUUID(), ARRIVAL_FLAG);
-            return false;
-        }
+        // Do not mark this complete just because login began elsewhere. Drehmal's original datapack can
+        // teleport the host into the legacy setup terminal a tick or two after TURNBOUND's login hook.
+        // The flag is written only after TURNBOUND actually performs the outdoor arrival.
+        if (!legacySetupZone(player.getX(), player.getY(), player.getZ())) return false;
 
         DrehmalWorldProfile.Anchor stasis = DrehmalWorldProfile.enabled(DrehmalWorldProfile.FIRST_REGION_LOCATOR);
         DrehmalWorldProfile.Anchor primal = DrehmalWorldProfile.enabled(PRIMAL_CAVERNS);

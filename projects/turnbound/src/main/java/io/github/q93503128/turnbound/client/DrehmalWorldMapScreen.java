@@ -35,7 +35,9 @@ final class DrehmalWorldMapScreen extends Screen {
         super.init();
         boolean compact = height < 330 || width < 520;
         int margin = compact ? 6 : 11;
-        panelWidth = Math.min(980, Math.max(1, width - margin * 2));
+        panelWidth = compact
+                ? Math.min(340, Math.max(1, width - margin * 2))
+                : Math.min(980, Math.max(1, width - margin * 2));
         panelHeight = Math.min(680, Math.max(1, height - margin * 2));
         left = (width - panelWidth) / 2;
         top = (height - panelHeight) / 2;
@@ -78,10 +80,10 @@ final class DrehmalWorldMapScreen extends Screen {
             graphics.text(font, Component.literal("알려진 거점과 랜드마크 · 세부 길은 탐험하며 확인"), left + 12, top + 27, SECONDARY, false);
         }
 
-        boolean wide = panelWidth >= 560 && panelHeight >= 320;
+        boolean wide = panelWidth >= 320 && panelHeight >= 190;
         int mapY = top + (showSubtitle ? 43 : 30);
         int mapX = left + 12;
-        int infoReserve = wide ? Math.min(210, Math.max(165, panelWidth / 3)) : 0;
+        int infoReserve = wide ? Math.min(132, Math.max(104, panelWidth / 3)) : 0;
         int bottomReserve = wide ? 12 : compact ? 68 : 108;
         int availableW = panelWidth - 24 - infoReserve - (wide ? 10 : 0);
         int availableH = top + panelHeight - bottomReserve - mapY;
