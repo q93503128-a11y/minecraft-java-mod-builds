@@ -21,7 +21,6 @@ import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -373,30 +372,13 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             }
 
             verificationCycleIndex++;
-            observer.sendSystemMessage(Component.literal(
-                    "[M0] Auto preview " + verificationCycleIndex + "/"
-                            + VERIFICATION_SEQUENCE.size() + ": " + verificationDisplayName(action)
-            ));
-        }
-
-        private static String verificationDisplayName(
-                R01EarthloongEncounterData.ActionId action
-        ) {
-            return switch (action) {
-                case TAIL_SCYTHE -> "Tail Scythe";
-                case FORKED_HEAVEN -> "Forked Heaven";
-                case EARTHLINE_SURGE -> "Earthline Surge";
-                default -> action.name();
-            };
         }
 
         private void holdVerificationFixtureIdle() {
             if (actor instanceof Mob mob) {
                 mob.setTarget(null);
-                mob.getNavigation().stop();
-                mob.setNoAi(true);
+                mob.setNoAi(false);
             }
-            freezeHorizontalMotion();
         }
 
         private boolean beginVerificationPreview(

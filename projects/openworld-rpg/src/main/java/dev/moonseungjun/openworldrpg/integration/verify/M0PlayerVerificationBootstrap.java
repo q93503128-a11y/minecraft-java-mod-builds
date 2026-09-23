@@ -14,7 +14,6 @@ import java.util.List;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -110,15 +109,8 @@ public final class M0PlayerVerificationBootstrap {
         if (!(spawned instanceof net.minecraft.world.entity.LivingEntity living)
                 || !R01EarthloongPhysicalEncounterRuntime.armVerificationFixture(living, player)) {
             spawned.discard();
-            player.sendSystemMessage(Component.literal(
-                    "[M0] Earthloong verification fixture failed to arm."
-            ));
             return 0;
         }
-        player.sendSystemMessage(Component.literal(
-                "[M0] Earthloong verification fixture ready. Tail Scythe, Forked Heaven, "
-                        + "and Earthline Surge will preview automatically once each."
-        ));
         return 1;
     }
 
@@ -132,17 +124,7 @@ public final class M0PlayerVerificationBootstrap {
         }
         boolean accepted =
                 R01EarthloongPhysicalEncounterRuntime.beginVerificationPreview(player, action);
-        if (accepted) {
-            player.sendSystemMessage(Component.literal(
-                    "[M0] Preview started: " + displayName
-            ));
-            return 1;
-        }
-        player.sendSystemMessage(Component.literal(
-                "[M0] Preview rejected: " + displayName
-                        + ". Check distance, line of sight, and wait for the previous preview to finish."
-        ));
-        return 0;
+        return accepted ? 1 : 0;
     }
 
     public static void prepare(ServerPlayer player, Logger logger) {

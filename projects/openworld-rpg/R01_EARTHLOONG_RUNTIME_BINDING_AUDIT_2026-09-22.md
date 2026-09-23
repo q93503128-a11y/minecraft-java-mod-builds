@@ -226,3 +226,19 @@ For the M0 playtest artifact, `/owr_spawn_earthloong` now:
 The three explicit preview commands remain available as fallback developer verification controls, but they are no longer required for the normal visual-review workflow.
 
 The automatic pass deliberately does not promote any candidate presentation into production. Tail remains an unaccepted donor-animation candidate, while Forked Heaven and Earthline Surge remain presentation-gated until real-client footage confirms readable signature presentation and visual/hit geometry agreement.
+
+
+## 2026-09-23 real-client follow-up — fixture locomotion and chat cleanup
+
+A second real-client recording exposed two verification-harness artifacts rather than production encounter behavior:
+
+- persistent `[M0]` chat messages were visible to the player;
+- the fixture was held `NoAI=true` while idle, which suppressed normal donor locomotion/idle behavior and left Earthloong in an unnatural frozen presentation between preview actions.
+
+Correction:
+
+- the M0 verification harness no longer emits player-facing chat messages;
+- idle verification state now leaves donor AI enabled while the project continues to clear combat targets;
+- each explicit preview action may still temporarily take movement control for its authored committed timeline, then returns AI to its prior enabled state.
+
+The recording was in Creative mode. Project damage intentionally preserves Minecraft Creative/invulnerability protection, so lack of HP loss in that recording is not evidence that authored contact is absent. Damage/guard/dodge/ailment acceptance still requires a Survival-mode playtest.
