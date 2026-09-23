@@ -1,5 +1,8 @@
 package dev.moonseungjun.openworldrpg.combat.encounter.r01;
 
+import dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority;
+import dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules;
+import dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerIncomingDamageRuntime;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import java.util.Objects;
@@ -45,6 +48,82 @@ public final class R01EarthloongImpactAuthority {
                 earthloong,
                 target,
                 impact.toIncomingHit(DATA.contentLevel())
+        );
+    }
+
+    public static ProjectPlayerIncomingDamageRuntime.IncomingApplication applyForkedHeavenContact(
+            LivingEntity earthloong,
+            ServerPlayer target
+    ) {
+        return applyPatternContact(
+                earthloong,
+                target,
+                DATA.forkedHeaven().benchmarkDamageShare(),
+                ProjectImpactTransaction.DamageSchool.MAGIC
+        );
+    }
+
+    public static ProjectPlayerIncomingDamageRuntime.IncomingApplication applyEarthlinePhysicalContact(
+            LivingEntity earthloong,
+            ServerPlayer target
+    ) {
+        return applyPatternContact(
+                earthloong,
+                target,
+                DATA.earthlineSurge().physicalBenchmarkDamageShare(),
+                ProjectImpactTransaction.DamageSchool.PHYSICAL
+        );
+    }
+
+    public static ProjectPlayerIncomingDamageRuntime.IncomingApplication applyEarthlineLightningContact(
+            LivingEntity earthloong,
+            ServerPlayer target
+    ) {
+        return applyPatternContact(
+                earthloong,
+                target,
+                DATA.earthlineSurge().lightningBenchmarkDamageShare(),
+                ProjectImpactTransaction.DamageSchool.MAGIC
+        );
+    }
+
+    private static ProjectPlayerIncomingDamageRuntime.IncomingApplication applyPatternContact(
+            LivingEntity earthloong,
+            ServerPlayer target,
+            double benchmarkDamageShare,
+            ProjectImpactTransaction.DamageSchool school
+    ) {
+        Objects.requireNonNull(earthloong, "earthloong");
+        Objects.requireNonNull(target, "target");
+        Objects.requireNonNull(school, "school");
+
+        var profile = ExternalActorBindingRuntime.combatProfile(earthloong);
+        if (profile.isEmpty()
+                || !EARTHLOONG_ENTITY_ID.equals(profile.orElseThrow().entityId())
+                || profile.orElseThrow().contentLevel() != DATA.contentLevel()) {
+            return ProjectPlayerIncomingDamageRuntime.IncomingApplication.rejected();
+        }
+
+        double rawDamage = switch (school) {
+            case PHYSICAL -> ProjectCombatRules.rawEnemyPhysicalDamageFromBenchmarkShare(
+                    DATA.contentLevel(),
+                    benchmarkDamageShare
+            );
+            case MAGIC -> ProjectCombatRules.rawEnemyMagicDamageFromBenchmarkShare(
+                    DATA.contentLevel(),
+                    benchmarkDamageShare
+            );
+        };
+        PlayerDefenseAuthority.IncomingHit hit = PlayerDefenseAuthority.IncomingHit.unguardable(
+                rawDamage,
+                school,
+                DATA.contentLevel(),
+                true
+        );
+        return ProjectPlayerIncomingDamageRuntime.applyProjectOwnedActorHit(
+                earthloong,
+                target,
+                hit
         );
     }
 

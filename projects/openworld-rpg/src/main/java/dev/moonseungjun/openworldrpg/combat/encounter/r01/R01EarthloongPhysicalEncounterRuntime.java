@@ -111,6 +111,47 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                 : 1.0;
     }
 
+    /**
+     * Starts an explicit M0-only presentation/runtime preview on the nearest authored Earthloong.
+     * Normal action selection remains gated by accepted production presentation.
+     */
+    public static boolean beginVerificationPreview(
+            ServerPlayer player,
+            R01EarthloongEncounterData.ActionId action
+    ) {
+        Objects.requireNonNull(player, "player");
+        Objects.requireNonNull(action, "action");
+        if (action != R01EarthloongEncounterData.ActionId.TAIL_SCYTHE
+                && action != R01EarthloongEncounterData.ActionId.FORKED_HEAVEN
+                && action != R01EarthloongEncounterData.ActionId.EARTHLINE_SURGE) {
+            return false;
+        }
+
+        ActorState nearest = null;
+        double nearestDistanceSqr = 48.0 * 48.0;
+        for (ActorState state : STATES.values()) {
+            if (state.actor.level() != player.level()
+                    || state.actor.isRemoved()
+                    || !state.actor.isAlive()) {
+                continue;
+            }
+            double distanceSqr = state.actor.distanceToSqr(player);
+            if (distanceSqr <= nearestDistanceSqr) {
+                nearest = state;
+                nearestDistanceSqr = distanceSqr;
+            }
+        }
+        if (nearest == null) {
+            return false;
+        }
+        return nearest.beginVerificationPreview(
+                (ServerLevel) player.level(),
+                player,
+                action,
+                player.level().getGameTime()
+        );
+    }
+
     private static void suppressDonorCombatTargets(ServerLevel level) {
         for (ActorState state : STATES.values()) {
             if (state.actor.level() == level && state.actor instanceof Mob mob) {
@@ -231,6 +272,160 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             if (committed == null && nextDecisionTick == Long.MAX_VALUE) {
                 nextDecisionTick = gameTick + DATA.decisionDelayTicks();
             }
+        }
+
+        private boolean beginVerificationPreview(
+                ServerLevel level,
+                ServerPlayer player,
+                R01EarthloongEncounterData.ActionId action,
+                long gameTick
+        ) {
+            if (committed != null || isStormshedActive() || stormShedPending) {
+                return false;
+            }
+            double distance = horizontalDistance(actor, player);
+            threat.engageInitial(player.getUUID(), gameTick);
+            currentThreatTargetId = player.getUUID();
+
+            return switch (action) {
+                case TAIL_SCYTHE -> distance <= 4.5
+                        && commitTailScytheVerification(player, gameTick);
+                case FORKED_HEAVEN -> distance >= DATA.forkedHeaven().minimumTargetRange()
+                        && distance <= DATA.forkedHeaven().maximumTargetRange()
+                        && commitForkedHeavenVerification(level, gameTick);
+                case EARTHLINE_SURGE -> distance >= DATA.earthlineSurge().minimumTargetRange()
+                        && distance <= DATA.earthlineSurge().maximumTargetRange()
+                        && actor.hasLineOfSight(player)
+                        && commitEarthlineSurgeVerification(level, player, gameTick);
+                default -> false;
+            };
+        }
+
+        private boolean commitTailScytheVerification(ServerPlayer target, long gameTick) {
+            var binding = DATA.physicalBindingsById().get(
+                    R01EarthloongEncounterData.ActionId.TAIL_SCYTHE
+            );
+            if (binding == null) {
+                return false;
+            }
+
+            Vec3 towardPlayer = horizontalDirection(actor, target);
+            if (towardPlayer.lengthSqr() <= 1.0e-9) {
+                return false;
+            }
+            Vec3 facingAway = towardPlayer.normalize().scale(-1.0);
+            var presentation = R01EarthloongDonorPresentationBridge.startVerificationCandidate(
+                    actor,
+                    1,
+                    10
+            );
+            if (!presentation.accepted()) {
+                return false;
+            }
+
+            boolean previousNoAi = false;
+            if (actor instanceof Mob mob) {
+                previousNoAi = mob.isNoAi();
+                mob.setTarget(null);
+                mob.getNavigation().stop();
+                mob.setNoAi(true);
+            }
+            committed = new CommittedAction(
+                    R01EarthloongEncounterData.ActionId.TAIL_SCYTHE,
+                    gameTick,
+                    R01EarthloongPhysicalTimeline.from(binding),
+                    binding,
+                    facingAway,
+                    previousNoAi
+            );
+            nextDecisionTick = Long.MAX_VALUE;
+            orientActor(facingAway);
+            freezeHorizontalMotion();
+            return true;
+        }
+
+        private boolean commitForkedHeavenVerification(ServerLevel level, long gameTick) {
+            List<ServerPlayer> players = validPlayers(level);
+            Set<UUID> ids = new HashSet<>();
+            for (ServerPlayer player : players) {
+                ids.add(player.getUUID());
+            }
+            List<UUID> ranked = threat.rankedPlayers(ids, gameTick);
+            List<UUID> assignments =
+                    R01EarthloongPhaseTwoPatternAuthority.forkedHeavenAssignments(ranked);
+            if (assignments.isEmpty()) {
+                return false;
+            }
+
+            var presentation = R01EarthloongDonorPresentationBridge.startVerificationCandidate(
+                    actor,
+                    3,
+                    25
+            );
+            if (!presentation.accepted()) {
+                return false;
+            }
+
+            boolean previousNoAi = false;
+            if (actor instanceof Mob mob) {
+                previousNoAi = mob.isNoAi();
+                mob.setTarget(null);
+                mob.getNavigation().stop();
+                mob.setNoAi(true);
+            }
+            committed = CommittedAction.forkedHeaven(
+                    gameTick,
+                    assignments,
+                    previousNoAi
+            );
+            nextDecisionTick = Long.MAX_VALUE;
+            freezeHorizontalMotion();
+            return true;
+        }
+
+        private boolean commitEarthlineSurgeVerification(
+                ServerLevel level,
+                ServerPlayer target,
+                long gameTick
+        ) {
+            Vec3 direction = horizontalDirection(actor, target);
+            if (direction.lengthSqr() <= 1.0e-9) {
+                return false;
+            }
+            direction = direction.normalize();
+            List<FurrowGroundSample> samples = buildEarthlineSamples(level, direction);
+            if (samples.isEmpty()) {
+                return false;
+            }
+
+            var presentation = R01EarthloongDonorPresentationBridge.startVerificationCandidate(
+                    actor,
+                    2,
+                    40
+            );
+            if (!presentation.accepted()) {
+                return false;
+            }
+
+            boolean previousNoAi = false;
+            if (actor instanceof Mob mob) {
+                previousNoAi = mob.isNoAi();
+                mob.setTarget(null);
+                mob.getNavigation().stop();
+                mob.setNoAi(true);
+            }
+            committed = CommittedAction.earthlineSurge(
+                    gameTick,
+                    direction,
+                    samples,
+                    actor.getX(),
+                    actor.getZ(),
+                    previousNoAi
+            );
+            nextDecisionTick = Long.MAX_VALUE;
+            orientActor(direction);
+            freezeHorizontalMotion();
+            return true;
         }
 
         private R01EarthloongActionController.Legality actionLegality(
@@ -480,6 +675,15 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                 orientActor(current.lockedDirection);
             }
 
+            if (current.action == R01EarthloongEncounterData.ActionId.FORKED_HEAVEN) {
+                tickForkedHeavenVerification(level, current, elapsed, gameTick);
+                return;
+            }
+            if (current.action == R01EarthloongEncounterData.ActionId.EARTHLINE_SURGE) {
+                tickEarthlineSurgeVerification(level, current, elapsed, gameTick);
+                return;
+            }
+
             var phase = current.timeline.phaseAtElapsedTick(elapsed);
             if (phase == R01EarthloongPhysicalTimeline.Phase.TELEGRAPH) {
                 if (current.action == R01EarthloongEncounterData.ActionId.ROOT_BREAKER) {
@@ -494,7 +698,9 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                 case TELEGRAPH, RECOVERY -> {}
                 case ACTIVE -> {
                     int activeIndex = (int) (elapsed - current.timeline.tellTicks());
-                    if (current.action == R01EarthloongEncounterData.ActionId.CLAW_SWEEP && activeIndex == 0) {
+                    if ((current.action == R01EarthloongEncounterData.ActionId.CLAW_SWEEP
+                            || current.action == R01EarthloongEncounterData.ActionId.TAIL_SCYTHE)
+                            && activeIndex == 0) {
                         applyArcContact(level, current);
                     } else if (current.action == R01EarthloongEncounterData.ActionId.QUARRY_RUSH) {
                         moveRushAndApplyContact(level, current);
@@ -508,6 +714,344 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                     }
                 }
                 case COMPLETE -> finishCommitted(gameTick);
+            }
+        }
+
+        private void tickForkedHeavenVerification(
+                ServerLevel level,
+                CommittedAction current,
+                long elapsed,
+                long gameTick
+        ) {
+            var pattern = DATA.forkedHeaven();
+            for (int markerIndex = 0; markerIndex < current.forkedMarkers.length; markerIndex++) {
+                ForkedMarkerState marker = current.forkedMarkers[markerIndex];
+                int spawnOffset =
+                        R01EarthloongPhaseTwoPatternAuthority.forkedMarkerSpawnOffsetTicks(
+                                pattern,
+                                markerIndex
+                        );
+                int impactOffset =
+                        R01EarthloongPhaseTwoPatternAuthority.forkedMarkerImpactOffsetTicks(
+                                pattern,
+                                markerIndex
+                        );
+
+                if (!marker.created && elapsed >= spawnOffset) {
+                    marker.created = true;
+                    ServerPlayer assigned = playerById(
+                            validPlayers(level),
+                            marker.preferredAssignment
+                    );
+                    if (assigned == null) {
+                        List<ServerPlayer> valid = validPlayers(level);
+                        Set<UUID> validIds = new HashSet<>();
+                        for (ServerPlayer player : valid) {
+                            validIds.add(player.getUUID());
+                        }
+                        List<UUID> ranked = threat.rankedPlayers(validIds, gameTick);
+                        assigned = ranked.isEmpty() ? null : playerById(valid, ranked.get(0));
+                    }
+                    if (assigned != null) {
+                        Double groundY = projectLocalGround(
+                                level,
+                                assigned.getX(),
+                                assigned.getZ(),
+                                assigned.getY()
+                        );
+                        if (groundY != null) {
+                            marker.center = new Vec3(
+                                    assigned.getX(),
+                                    groundY,
+                                    assigned.getZ()
+                            );
+                            for (ServerPlayer player : validPlayers(level)) {
+                                if (insideForkedMarker(player, marker.center, pattern)) {
+                                    marker.insideAtTelegraph.add(player.getUUID());
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (marker.created && !marker.impacted && marker.center != null
+                        && elapsed < impactOffset) {
+                    renderForkedMarkerTell(level, marker.center, pattern.markerRadius());
+                }
+
+                if (!marker.impacted && elapsed >= impactOffset) {
+                    marker.impacted = true;
+                    if (marker.center != null) {
+                        applyForkedMarker(level, current, marker);
+                        renderForkedMarkerImpact(level, marker.center);
+                    }
+                }
+            }
+
+            if (elapsed >= R01EarthloongPhaseTwoPatternAuthority
+                    .forkedCastCompleteOffsetTicks(pattern)) {
+                finishCommitted(gameTick);
+            }
+        }
+
+        private void applyForkedMarker(
+                ServerLevel level,
+                CommittedAction current,
+                ForkedMarkerState marker
+        ) {
+            var pattern = DATA.forkedHeaven();
+            for (ServerPlayer player : validPlayers(level)) {
+                if (!insideForkedMarker(player, marker.center, pattern)) {
+                    continue;
+                }
+                boolean alreadyHit = current.hitPlayers.contains(player.getUUID());
+                if (!R01EarthloongPhaseTwoPatternAuthority.forkedLaterMarkerMayHitAgain(
+                        alreadyHit,
+                        marker.insideAtTelegraph.contains(player.getUUID())
+                )) {
+                    continue;
+                }
+
+                var direct = R01EarthloongImpactAuthority.applyForkedHeavenContact(
+                        actor,
+                        player
+                );
+                if (!direct.accepted()
+                        || !direct.minecraftDamageApplied()
+                        || direct.resolution().map(r -> r.dodged()).orElse(true)) {
+                    continue;
+                }
+                current.hitPlayers.add(player.getUUID());
+                ProjectPlayerShockRuntime.applyEarthloongBuildup(
+                        actor,
+                        player,
+                        pattern.shockBuildup()
+                );
+            }
+        }
+
+        private static boolean insideForkedMarker(
+                ServerPlayer player,
+                Vec3 center,
+                R01EarthloongEncounterData.ForkedHeavenPattern pattern
+        ) {
+            return Math.hypot(player.getX() - center.x, player.getZ() - center.z)
+                    <= pattern.markerRadius()
+                    && Math.abs(player.getY() - center.y)
+                    <= pattern.playerVerticalTolerance();
+        }
+
+        private void renderForkedMarkerTell(
+                ServerLevel level,
+                Vec3 center,
+                double radius
+        ) {
+            int samples = 28;
+            for (int i = 0; i < samples; i++) {
+                double angle = Math.PI * 2.0 * i / samples;
+                level.sendParticles(
+                        ParticleTypes.ELECTRIC_SPARK,
+                        center.x + Math.cos(angle) * radius,
+                        center.y + 0.08,
+                        center.z + Math.sin(angle) * radius,
+                        1,
+                        0.015,
+                        0.01,
+                        0.015,
+                        0.0
+                );
+            }
+        }
+
+        private void renderForkedMarkerImpact(ServerLevel level, Vec3 center) {
+            for (double y = 0.15; y <= 4.5; y += 0.35) {
+                level.sendParticles(
+                        ParticleTypes.ELECTRIC_SPARK,
+                        center.x,
+                        center.y + y,
+                        center.z,
+                        3,
+                        0.16,
+                        0.08,
+                        0.16,
+                        0.025
+                );
+            }
+        }
+
+        private void tickEarthlineSurgeVerification(
+                ServerLevel level,
+                CommittedAction current,
+                long elapsed,
+                long gameTick
+        ) {
+            var pattern = DATA.earthlineSurge();
+            int physicalTick =
+                    R01EarthloongPhaseTwoPatternAuthority.earthlinePhysicalImpactOffsetTicks(
+                            pattern
+                    );
+            int lightningTick =
+                    R01EarthloongPhaseTwoPatternAuthority.earthlineLightningImpactOffsetTicks(
+                            pattern
+                    );
+
+            if (elapsed < physicalTick) {
+                renderEarthlinePhysicalTell(level, current);
+            } else if (elapsed < lightningTick) {
+                renderEarthlineLightningTell(level, current);
+            }
+
+            if (!current.primaryResolved && elapsed >= physicalTick) {
+                current.primaryResolved = true;
+                applyEarthlinePhysical(level, current);
+                renderEarthlinePhysicalImpact(level, current);
+            }
+            if (!current.secondaryResolved && elapsed >= lightningTick) {
+                current.secondaryResolved = true;
+                applyEarthlineLightning(level, current);
+                renderEarthlineLightningImpact(level, current);
+            }
+
+            if (elapsed >= R01EarthloongPhaseTwoPatternAuthority
+                    .earthlineCastCompleteOffsetTicks(pattern)) {
+                finishCommitted(gameTick);
+            }
+        }
+
+        private void applyEarthlinePhysical(ServerLevel level, CommittedAction current) {
+            for (ServerPlayer player : validPlayers(level)) {
+                if (!earthlineContainsPlayer(current, player)
+                        || !current.hitPlayers.add(player.getUUID())) {
+                    continue;
+                }
+                R01EarthloongImpactAuthority.applyEarthlinePhysicalContact(actor, player);
+            }
+        }
+
+        private void applyEarthlineLightning(ServerLevel level, CommittedAction current) {
+            for (ServerPlayer player : validPlayers(level)) {
+                if (!earthlineContainsPlayer(current, player)
+                        || !current.secondaryHitPlayers.add(player.getUUID())) {
+                    continue;
+                }
+                var direct = R01EarthloongImpactAuthority.applyEarthlineLightningContact(
+                        actor,
+                        player
+                );
+                if (!direct.accepted()
+                        || !direct.minecraftDamageApplied()
+                        || direct.resolution().map(r -> r.dodged()).orElse(true)) {
+                    continue;
+                }
+                ProjectPlayerShockRuntime.applyEarthloongBuildup(
+                        actor,
+                        player,
+                        DATA.earthlineSurge().shockBuildup()
+                );
+            }
+        }
+
+        private boolean earthlineContainsPlayer(
+                CommittedAction current,
+                ServerPlayer player
+        ) {
+            var pattern = DATA.earthlineSurge();
+            var coordinates = R01EarthloongFurrowGeometry.coordinates(
+                    current.furrowOriginX,
+                    current.furrowOriginZ,
+                    current.lockedDirection.x,
+                    current.lockedDirection.z,
+                    player.getX(),
+                    player.getZ()
+            );
+            if (!R01EarthloongFurrowGeometry.insideLane(
+                    coordinates,
+                    0.0,
+                    pattern.lineWidth() * 0.5,
+                    pattern.lineLength()
+            )) {
+                return false;
+            }
+            FurrowGroundSample nearest = nearestSample(
+                    current.earthlineSamples,
+                    coordinates.longitudinal()
+            );
+            return nearest != null
+                    && Math.abs(player.getY() - nearest.groundY())
+                    <= pattern.playerVerticalTolerance();
+        }
+
+        private void renderEarthlinePhysicalTell(ServerLevel level, CommittedAction current) {
+            BlockParticleOption dust = new BlockParticleOption(
+                    ParticleTypes.BLOCK,
+                    Blocks.ROOTED_DIRT.defaultBlockState()
+            );
+            for (int i = 0; i < current.earthlineSamples.size(); i += 2) {
+                FurrowGroundSample sample = current.earthlineSamples.get(i);
+                level.sendParticles(
+                        dust,
+                        sample.x(),
+                        sample.groundY() + 0.08,
+                        sample.z(),
+                        1,
+                        0.06,
+                        0.02,
+                        0.06,
+                        0.0
+                );
+            }
+        }
+
+        private void renderEarthlineLightningTell(ServerLevel level, CommittedAction current) {
+            for (int i = 0; i < current.earthlineSamples.size(); i += 2) {
+                FurrowGroundSample sample = current.earthlineSamples.get(i);
+                level.sendParticles(
+                        ParticleTypes.ELECTRIC_SPARK,
+                        sample.x(),
+                        sample.groundY() + 0.12,
+                        sample.z(),
+                        1,
+                        0.04,
+                        0.02,
+                        0.04,
+                        0.0
+                );
+            }
+        }
+
+        private void renderEarthlinePhysicalImpact(ServerLevel level, CommittedAction current) {
+            BlockParticleOption dust = new BlockParticleOption(
+                    ParticleTypes.BLOCK,
+                    Blocks.ROOTED_DIRT.defaultBlockState()
+            );
+            for (FurrowGroundSample sample : current.earthlineSamples) {
+                level.sendParticles(
+                        dust,
+                        sample.x(),
+                        sample.groundY() + 0.10,
+                        sample.z(),
+                        2,
+                        0.10,
+                        0.05,
+                        0.10,
+                        0.08
+                );
+            }
+        }
+
+        private void renderEarthlineLightningImpact(ServerLevel level, CommittedAction current) {
+            for (FurrowGroundSample sample : current.earthlineSamples) {
+                level.sendParticles(
+                        ParticleTypes.ELECTRIC_SPARK,
+                        sample.x(),
+                        sample.groundY() + 0.18,
+                        sample.z(),
+                        3,
+                        0.12,
+                        0.08,
+                        0.12,
+                        0.035
+                );
             }
         }
 
@@ -659,6 +1203,48 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                 }
             }
             return bestDelta <= 0.35 ? best : null;
+        }
+
+        private List<FurrowGroundSample> buildEarthlineSamples(
+                ServerLevel level,
+                Vec3 direction
+        ) {
+            var pattern = DATA.earthlineSurge();
+            List<FurrowGroundSample> samples = new ArrayList<>();
+            Double previousGroundY = null;
+            for (double longitudinal = 0.0;
+                    longitudinal <= pattern.lineLength() + 1.0e-9;
+                    longitudinal += 0.50) {
+                double x = actor.getX() + direction.x * longitudinal;
+                double z = actor.getZ() + direction.z * longitudinal;
+                Double groundY = projectLocalGround(
+                        level,
+                        x,
+                        z,
+                        previousGroundY == null ? actor.getY() : previousGroundY
+                );
+                if (groundY == null) {
+                    break;
+                }
+                if (previousGroundY != null
+                        && Math.abs(groundY - previousGroundY) > pattern.maximumGroundStep()) {
+                    break;
+                }
+                AABB standingColumn = new AABB(
+                        x - 0.12,
+                        groundY + 0.05,
+                        z - 0.12,
+                        x + 0.12,
+                        groundY + 1.80,
+                        z + 0.12
+                );
+                if (!level.noBlockCollision(actor, standingColumn)) {
+                    break;
+                }
+                samples.add(new FurrowGroundSample(longitudinal, x, groundY, z));
+                previousGroundY = groundY;
+            }
+            return List.copyOf(samples);
         }
 
         private List<FurrowLane> buildFurrowLanes(
@@ -972,6 +1558,21 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             List<FurrowGroundSample> samples
     ) {}
 
+    private static final class ForkedMarkerState {
+        private final UUID preferredAssignment;
+        private final Set<UUID> insideAtTelegraph = new HashSet<>();
+        private Vec3 center;
+        private boolean created;
+        private boolean impacted;
+
+        private ForkedMarkerState(UUID preferredAssignment) {
+            this.preferredAssignment = Objects.requireNonNull(
+                    preferredAssignment,
+                    "preferredAssignment"
+            );
+        }
+    }
+
     private static final class CommittedAction {
         private final R01EarthloongEncounterData.ActionId action;
         private final long commitTick;
@@ -985,6 +1586,11 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         private final double furrowOriginX;
         private final double furrowOriginZ;
         private final Set<UUID> hitPlayers = new HashSet<>();
+        private final Set<UUID> secondaryHitPlayers = new HashSet<>();
+        private List<FurrowGroundSample> earthlineSamples = List.of();
+        private ForkedMarkerState[] forkedMarkers = new ForkedMarkerState[0];
+        private boolean primaryResolved;
+        private boolean secondaryResolved;
         private boolean pathBlocked;
 
         private CommittedAction(
@@ -1073,6 +1679,67 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                     furrowOriginZ,
                     previousNoAi
             );
+        }
+
+        private CommittedAction(
+                R01EarthloongEncounterData.ActionId action,
+                long commitTick,
+                Vec3 lockedDirection,
+                double originX,
+                double originZ,
+                boolean previousNoAi
+        ) {
+            this.action = action;
+            this.commitTick = commitTick;
+            this.timeline = null;
+            this.binding = null;
+            this.spaceBinding = null;
+            this.lockedDirection = lockedDirection;
+            this.previousNoAi = previousNoAi;
+            this.furrowLaneCount = 0;
+            this.furrowLanes = List.of();
+            this.furrowOriginX = originX;
+            this.furrowOriginZ = originZ;
+        }
+
+        private static CommittedAction forkedHeaven(
+                long commitTick,
+                List<UUID> assignments,
+                boolean previousNoAi
+        ) {
+            CommittedAction result = new CommittedAction(
+                    R01EarthloongEncounterData.ActionId.FORKED_HEAVEN,
+                    commitTick,
+                    null,
+                    0.0,
+                    0.0,
+                    previousNoAi
+            );
+            result.forkedMarkers = new ForkedMarkerState[assignments.size()];
+            for (int i = 0; i < assignments.size(); i++) {
+                result.forkedMarkers[i] = new ForkedMarkerState(assignments.get(i));
+            }
+            return result;
+        }
+
+        private static CommittedAction earthlineSurge(
+                long commitTick,
+                Vec3 lockedDirection,
+                List<FurrowGroundSample> samples,
+                double originX,
+                double originZ,
+                boolean previousNoAi
+        ) {
+            CommittedAction result = new CommittedAction(
+                    R01EarthloongEncounterData.ActionId.EARTHLINE_SURGE,
+                    commitTick,
+                    lockedDirection,
+                    originX,
+                    originZ,
+                    previousNoAi
+            );
+            result.earthlineSamples = List.copyOf(samples);
+            return result;
         }
 
         private static CommittedAction rootBreaker(

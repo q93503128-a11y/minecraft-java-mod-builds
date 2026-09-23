@@ -1,5 +1,7 @@
 package dev.moonseungjun.openworldrpg.integration.verify;
 
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongEncounterData;
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongPhysicalEncounterRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.AttributeAllocation;
 import dev.moonseungjun.openworldrpg.combat.state.EquippedCombatItem;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentService;
@@ -31,6 +33,12 @@ public final class M0PlayerVerificationBootstrap {
     public static final String EMBEDDED_MARKER =
             "data/openworld_rpg/integration/m0_player_verification.enabled";
     private static final String EARTHLOONG_COMMAND = "owr_spawn_earthloong";
+    private static final String EARTHLOONG_TAIL_PREVIEW_COMMAND =
+            "owr_earthloong_preview_tail";
+    private static final String EARTHLOONG_FORKED_PREVIEW_COMMAND =
+            "owr_earthloong_preview_forked";
+    private static final String EARTHLOONG_EARTHLINE_PREVIEW_COMMAND =
+            "owr_earthloong_preview_earthline";
 
     private M0PlayerVerificationBootstrap() {
     }
@@ -46,12 +54,33 @@ public final class M0PlayerVerificationBootstrap {
         if (!enabled()) {
             return;
         }
-        CommandRegistrationCallback.EVENT.register((dispatcher, buildContext, selection) ->
-                dispatcher.register(
-                        Commands.literal(EARTHLOONG_COMMAND)
-                                .executes(context -> spawnEarthloongInFront(context.getSource().getEntity()))
-                )
-        );
+        CommandRegistrationCallback.EVENT.register((dispatcher, buildContext, selection) -> {
+            dispatcher.register(
+                    Commands.literal(EARTHLOONG_COMMAND)
+                            .executes(context -> spawnEarthloongInFront(context.getSource().getEntity()))
+            );
+            dispatcher.register(
+                    Commands.literal(EARTHLOONG_TAIL_PREVIEW_COMMAND)
+                            .executes(context -> previewEarthloongAction(
+                                    context.getSource().getEntity(),
+                                    R01EarthloongEncounterData.ActionId.TAIL_SCYTHE
+                            ))
+            );
+            dispatcher.register(
+                    Commands.literal(EARTHLOONG_FORKED_PREVIEW_COMMAND)
+                            .executes(context -> previewEarthloongAction(
+                                    context.getSource().getEntity(),
+                                    R01EarthloongEncounterData.ActionId.FORKED_HEAVEN
+                            ))
+            );
+            dispatcher.register(
+                    Commands.literal(EARTHLOONG_EARTHLINE_PREVIEW_COMMAND)
+                            .executes(context -> previewEarthloongAction(
+                                    context.getSource().getEntity(),
+                                    R01EarthloongEncounterData.ActionId.EARTHLINE_SURGE
+                            ))
+            );
+        });
     }
 
     private static int spawnEarthloongInFront(Entity commandEntity) {
@@ -75,6 +104,18 @@ public final class M0PlayerVerificationBootstrap {
                 ExternalActorCombatProfile.r01Earthloong().entityId()
         );
         return 1;
+    }
+
+    private static int previewEarthloongAction(
+            Entity commandEntity,
+            R01EarthloongEncounterData.ActionId action
+    ) {
+        if (!(commandEntity instanceof ServerPlayer player)) {
+            return 0;
+        }
+        return R01EarthloongPhysicalEncounterRuntime.beginVerificationPreview(player, action)
+                ? 1
+                : 0;
     }
 
     public static void prepare(ServerPlayer player, Logger logger) {

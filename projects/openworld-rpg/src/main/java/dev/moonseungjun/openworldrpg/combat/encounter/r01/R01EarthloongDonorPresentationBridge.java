@@ -63,6 +63,29 @@ public final class R01EarthloongDonorPresentationBridge {
         );
     }
 
+    /**
+     * Verification-only escape hatch for evaluating an audited donor animation state against an
+     * authored project action before that mapping is promoted into normal gameplay.
+     *
+     * <p>Normal encounter scheduling must continue to use {@link #startTechnicalCandidate}; this
+     * method exists only behind the explicit M0 player-verification command path.</p>
+     */
+    public static PresentationApplication startVerificationCandidate(
+            LivingEntity earthloong,
+            int donorSkillNumber,
+            int donorAnimationTicks
+    ) {
+        Objects.requireNonNull(earthloong, "earthloong");
+        if (!isEarthloong(earthloong)
+                || donorSkillNumber < 1
+                || donorSkillNumber > 4
+                || donorAnimationTicks <= 0) {
+            return PresentationApplication.rejected();
+        }
+        earthloong.getEntityData().set(resolveSkillAccessor(earthloong), donorSkillNumber);
+        return new PresentationApplication(true, donorSkillNumber, donorAnimationTicks);
+    }
+
     public static boolean resetTechnicalCandidate(LivingEntity earthloong) {
         Objects.requireNonNull(earthloong, "earthloong");
         if (!isEarthloong(earthloong)) {

@@ -171,3 +171,16 @@ Phase-2 implementation choices are now closed and source-bound:
 - runtime legality evaluates the exact Phase-2 range/LOS requirements but remains **presentation-gated** for Forked Heaven and Earthline Surge.
 
 `runtimePresentationReady=false` is intentional. No accepted signature animation/VFX binding exists yet for these two attacks, and project production rules forbid promoting a temporary particle-only boss attack into normal player-facing runtime.
+
+
+## 2026-09-23 verification-only presentation preview bridge
+
+A new explicit M0 player-verification path now exercises the three still-gated Earthloong actions without promoting temporary presentation into normal gameplay:
+
+- `/owr_earthloong_preview_tail` — forces canonical Tail Scythe geometry/timing with donor `SkillNumber=1` only as a visual candidate; normal Tail legality remains closed.
+- `/owr_earthloong_preview_forked` — executes the exact 0/8/16 marker creation and 22/30/38 impact backend, shared same-cast re-hit rule, project damage and Shock using technical marker/strike particles.
+- `/owr_earthloong_preview_earthline` — executes the canonical projected line, physical hit at tick 16, lightning follow-up at tick 27, separate dodge resolution and Shock-on-lightning-contact using technical ground/electric particles.
+
+These commands are registered only by the existing M0 player-verification bootstrap. Production action selection is unchanged: Tail Scythe is still illegal in normal selection, and Forked Heaven / Earthline Surge still require their `runtimePresentationReady` gates, which remain `false`.
+
+The temporary preview visuals are geometry/timing evidence only. They are not accepted Earthloong signature VFX and must not be used as the reason to flip production presentation gates.
