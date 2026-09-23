@@ -15,8 +15,10 @@ import net.minecraft.server.level.ServerPlayer;
 public final class R01RewardService {
     public static final String DUST_ON_QUARRY_ROAD_TRANSACTION =
             "openworld_rpg:r01/dust_on_quarry_road";
-    public static final String EARTHLOONG_FIRST_CLEAR_PROGRESSION_TRANSACTION =
-            "openworld_rpg:r01/earthloong_first_clear/progression";
+    public static final String EARTHLOONG_FIRST_BOSS_TRANSACTION =
+            "openworld_rpg:r01/earthloong_first_clear/boss";
+    public static final String EARTHLOONG_FIRST_DUNGEON_COMPLETION_TRANSACTION =
+            "openworld_rpg:r01/earthloong_first_clear/dungeon_completion";
 
     private R01RewardService() {
     }
@@ -33,15 +35,27 @@ public final class R01RewardService {
         );
     }
 
-    public static PlayerRewardTransactionService.RewardResult grantEarthloongFirstClearProgression(
+    public static PlayerRewardTransactionService.RewardResult grantEarthloongFirstBossLayer(
             ServerPlayer player,
             RootClass rewardClass
     ) {
         return grant(
                 player,
-                EARTHLOONG_FIRST_CLEAR_PROGRESSION_TRANSACTION,
+                EARTHLOONG_FIRST_BOSS_TRANSACTION,
                 rewardClass,
-                R01RewardRules.EARTHLOONG_FIRST_CLEAR_PROGRESSION
+                R01RewardRules.EARTHLOONG_FIRST_BOSS_LAYER
+        );
+    }
+
+    public static PlayerRewardTransactionService.RewardResult grantEarthloongFirstDungeonCompletion(
+            ServerPlayer player,
+            RootClass rewardClass
+    ) {
+        return grant(
+                player,
+                EARTHLOONG_FIRST_DUNGEON_COMPLETION_TRANSACTION,
+                rewardClass,
+                R01RewardRules.EARTHLOONG_FIRST_DUNGEON_COMPLETION
         );
     }
 
