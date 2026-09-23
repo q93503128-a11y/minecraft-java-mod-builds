@@ -118,11 +118,11 @@ public final class R01EarthloongPhysicalEncounterRuntime {
     }
 
     /**
-     * Converts one authored Earthloong into a deterministic M0 presentation fixture.
+     * Marks one authored Earthloong as an M0 donor-behavior review fixture.
      *
-     * <p>The fixture is isolated from the normal R01 action selector. Idle donor locomotion remains
-     * visible, while the raw pinned donor SkillNumber 1..4 animation states can be reviewed without
-     * project attack geometry, VFX or damage being layered on top.</p>
+     * <p>The fixture bypasses project target suppression so the pinned donor can keep its native
+     * targeting, locomotion, attack choice and animation flow. Project-owned damage authority remains
+     * separate; manual raw SkillNumber 1..4 motion commands are still available when needed.</p>
      */
     public static boolean armVerificationFixture(
             LivingEntity earthloong,
@@ -234,7 +234,9 @@ public final class R01EarthloongPhysicalEncounterRuntime {
 
     private static void suppressDonorCombatTargets(ServerLevel level) {
         for (ActorState state : STATES.values()) {
-            if (state.actor.level() == level && state.actor instanceof Mob mob) {
+            if (state.actor.level() == level
+                    && !state.verificationFixture
+                    && state.actor instanceof Mob mob) {
                 mob.setTarget(null);
             }
         }
@@ -290,12 +292,6 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             if (verificationFixture) {
                 if (verificationMotion != null) {
                     tickVerificationMotion(gameTick);
-                } else if (committed != null) {
-                    tickCommitted(level, gameTick);
-                } else {
-                    R01EarthloongDonorPresentationBridge.resetTechnicalCandidate(actor);
-                    holdVerificationFixtureIdle();
-                    tickVerificationSequence(level, gameTick);
                 }
                 return;
             }
@@ -379,8 +375,8 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         private void armVerificationFixture(ServerPlayer observer, long gameTick) {
             verificationFixture = true;
             verificationObserverId = observer.getUUID();
-            verificationCycleIndex = 0;
-            verificationNextActionTick = gameTick + 40L;
+            verificationCycleIndex = VERIFICATION_SEQUENCE.size();
+            verificationNextActionTick = Long.MAX_VALUE;
             verificationMotion = null;
             currentThreatTargetId = observer.getUUID();
             threat.engageInitial(observer.getUUID(), gameTick);
@@ -389,7 +385,10 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             stormShedPending = false;
             stormShedStartTick = Long.MIN_VALUE / 4;
             R01EarthloongDonorPresentationBridge.resetTechnicalCandidate(actor);
-            holdVerificationFixtureIdle();
+            if (actor instanceof Mob mob) {
+                mob.setNoAi(false);
+                mob.setTarget(observer);
+            }
         }
 
         private void tickVerificationSequence(ServerLevel level, long gameTick) {
@@ -488,7 +487,6 @@ public final class R01EarthloongPhysicalEncounterRuntime {
 
         private void holdVerificationFixtureIdle() {
             if (actor instanceof Mob mob) {
-                mob.setTarget(null);
                 mob.setNoAi(false);
             }
         }
@@ -1724,7 +1722,7 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         }
 
         private void clearDonorCombatTarget() {
-            if (actor instanceof Mob mob) {
+            if (!verificationFixture && actor instanceof Mob mob) {
                 mob.setTarget(null);
             }
         }
