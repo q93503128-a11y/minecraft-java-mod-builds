@@ -51,8 +51,8 @@ class PlayerProgressionStateTest {
         assertEquals(original, decoded);
         assertEquals(7, decoded.allocation(RootClass.MAGE).intel());
         assertEquals(0, decoded.allocation(RootClass.WARRIOR).spentPoints());
-        assertEquals(2, decoded.classProgress(RootClass.MAGE).rank());
-        assertEquals(180L, decoded.classProgress(RootClass.MAGE).classXp());
+        assertEquals(3, decoded.classProgress(RootClass.MAGE).rank());
+        assertEquals(30L, decoded.classProgress(RootClass.MAGE).classXp());
     }
 
     @Test
