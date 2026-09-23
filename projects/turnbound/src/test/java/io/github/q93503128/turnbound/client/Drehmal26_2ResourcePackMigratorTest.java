@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -66,6 +67,13 @@ class Drehmal26_2ResourcePackMigratorTest {
         Drehmal26_2ResourcePackMigrator.Report second = Drehmal26_2ResourcePackMigrator.migrate(world);
         assertFalse(second.changed());
         assertEquals(migratedHash, DrehmalInstallFiles.sha256(pack));
+
+        // A stale marker must never hide a restored/old resource archive.
+        Files.copy(backup, pack, StandardCopyOption.REPLACE_EXISTING);
+        assertFalse(Drehmal26_2ResourcePackMigrator.isCurrent(world));
+        Drehmal26_2ResourcePackMigrator.Report repaired = Drehmal26_2ResourcePackMigrator.migrate(world);
+        assertTrue(repaired.changed());
+        assertTrue(Drehmal26_2ResourcePackMigrator.isCurrent(world));
     }
 
     @Test

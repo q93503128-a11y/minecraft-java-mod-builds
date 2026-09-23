@@ -1,0 +1,140 @@
+package io.github.q93503128.turnbound.world;
+
+import io.github.q93503128.turnbound.Turnbound;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.Vec3;
+
+import java.util.Set;
+
+/**
+ * One-time escape from Drehmal's original 1.20.1 setup terminal into TURNBOUND's outdoor first-route topology.
+ *
+ * <p>The authored map is not edited. A safe surface block is selected at runtime between the source-backed Stasis
+ * Facility and Primal Caverns anchors, preferring existing path/road blocks. Players who are already elsewhere are
+ * never moved.</p>
+ */
+final class DrehmalStartArrival {
+    static final String ARRIVAL_FLAG = "DREHMAL_ROADHEAD_ENTRY_V1";
+    static final String PRIMAL_CAVERNS = "turnbound:landmark/primal_caverns";
+    private static final double LEGACY_SETUP_X = 26520.0;
+    private static final double LEGACY_SETUP_Z = -136.0;
+    private static final double LEGACY_SETUP_RADIUS_SQR = 220.0 * 220.0;
+
+    private DrehmalStartArrival() {}
+
+    static boolean moveOutOfLegacySetupIfNeeded(ServerPlayer player, ExternalWorldSavedData saved) {
+        if (player == null || saved == null) return false;
+        if (saved.onboardingFlag(player.getUUID(), ARRIVAL_FLAG)) return false;
+
+        if (!legacySetupZone(player.getX(), player.getY(), player.getZ())) {
+            saved.markOnboardingFlag(player.getUUID(), ARRIVAL_FLAG);
+            return false;
+        }
+
+        DrehmalWorldProfile.Anchor stasis = DrehmalWorldProfile.enabled(DrehmalWorldProfile.FIRST_REGION_LOCATOR);
+        DrehmalWorldProfile.Anchor primal = DrehmalWorldProfile.enabled(PRIMAL_CAVERNS);
+        if (stasis == null || primal == null) {
+            Turnbound.LOGGER.warn("TURNBOUND could not resolve source-backed first-route anchors for start arrival");
+            return false;
+        }
+
+        ServerLevel level = (ServerLevel) player.level();
+        int centerX = Math.round((stasis.x() + primal.x()) * 0.5F);
+        int centerZ = Math.round((stasis.z() + primal.z()) * 0.5F);
+        BlockPos destination = findSafeRoadhead(level, centerX, centerZ, 88);
+        if (destination == null) {
+            Turnbound.LOGGER.warn("TURNBOUND could not find a safe Capital Valley roadhead near {}, {}", centerX, centerZ);
+            return false;
+        }
+
+        BlockPos hub = DrehmalWorldBinding.hubSeed();
+        double dx = hub.getX() + 0.5D - (destination.getX() + 0.5D);
+        double dz = hub.getZ() + 0.5D - (destination.getZ() + 0.5D);
+        float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+        boolean teleported = player.teleportTo(
+                level,
+                destination.getX() + 0.5D,
+                destination.getY(),
+                destination.getZ() + 0.5D,
+                Set.of(),
+                yaw,
+                0.0F,
+                true);
+        if (!teleported) {
+            Turnbound.LOGGER.warn("TURNBOUND failed to move player from Drehmal's legacy setup terminal");
+            return false;
+        }
+
+        player.setDeltaMovement(Vec3.ZERO);
+        player.setOnGround(true);
+        saved.markOnboardingFlag(player.getUUID(), ARRIVAL_FLAG);
+        Turnbound.LOGGER.info(
+                "TURNBOUND moved {} from the legacy Drehmal setup terminal to outdoor first-route surface {}, {}, {}",
+                player.getUUID(), destination.getX(), destination.getY(), destination.getZ());
+        return true;
+    }
+
+    static boolean legacySetupZone(double x, double y, double z) {
+        double dx = x - LEGACY_SETUP_X;
+        double dz = z - LEGACY_SETUP_Z;
+        return y >= 120.0 && dx * dx + dz * dz <= LEGACY_SETUP_RADIUS_SQR;
+    }
+
+    private static BlockPos findSafeRoadhead(ServerLevel level, int centerX, int centerZ, int radius) {
+        BlockPos best = null;
+        long bestScore = Long.MAX_VALUE;
+        for (int dz = -radius; dz <= radius; dz++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                int distanceSq = dx * dx + dz * dz;
+                if (distanceSq > radius * radius) continue;
+                int x = centerX + dx;
+                int z = centerZ + dz;
+                int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+                BlockPos feet = new BlockPos(x, y, z);
+                if (!safeStandingColumn(level, feet)) continue;
+
+                int priority = surfacePriority(level.getBlockState(feet.below()));
+                long score = priority * 1_000_000L + distanceSq;
+                if (score < bestScore) {
+                    bestScore = score;
+                    best = feet;
+                }
+            }
+        }
+        return best;
+    }
+
+    private static boolean safeStandingColumn(ServerLevel level, BlockPos feet) {
+        BlockPos groundPos = feet.below();
+        BlockState ground = level.getBlockState(groundPos);
+        if (ground.isAir() || ground.is(BlockTags.LEAVES) || !ground.getFluidState().isEmpty()) return false;
+        BlockState body = level.getBlockState(feet);
+        BlockState head = level.getBlockState(feet.above());
+        return body.getFluidState().isEmpty()
+                && head.getFluidState().isEmpty()
+                && body.getCollisionShape(level, feet).isEmpty()
+                && head.getCollisionShape(level, feet.above()).isEmpty();
+    }
+
+    private static int surfacePriority(BlockState state) {
+        if (state.is(Blocks.DIRT_PATH)) return 0;
+        if (state.is(Blocks.GRAVEL)
+                || state.is(Blocks.COBBLESTONE)
+                || state.is(Blocks.STONE_BRICKS)
+                || state.is(Blocks.ANDESITE)
+                || state.is(Blocks.POLISHED_ANDESITE)
+                || state.is(Blocks.OAK_PLANKS)
+                || state.is(Blocks.SPRUCE_PLANKS)) return 1;
+        if (state.is(Blocks.GRASS_BLOCK)
+                || state.is(Blocks.PODZOL)
+                || state.is(Blocks.MOSS_BLOCK)
+                || state.is(Blocks.STONE)) return 2;
+        return 3;
+    }
+}

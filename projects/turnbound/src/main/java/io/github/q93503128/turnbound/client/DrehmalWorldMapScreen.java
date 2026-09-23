@@ -33,8 +33,10 @@ final class DrehmalWorldMapScreen extends Screen {
 
     @Override protected void init() {
         super.init();
-        panelWidth = Math.min(980, Math.max(360, width - 22));
-        panelHeight = Math.min(680, Math.max(300, height - 22));
+        boolean compact = height < 330 || width < 520;
+        int margin = compact ? 6 : 11;
+        panelWidth = Math.min(980, Math.max(1, width - margin * 2));
+        panelHeight = Math.min(680, Math.max(1, height - margin * 2));
         left = (width - panelWidth) / 2;
         top = (height - panelHeight) / 2;
     }
@@ -62,17 +64,28 @@ final class DrehmalWorldMapScreen extends Screen {
                 .toList();
 
         TurnboundFrameStyle.frame(graphics, left, top, panelWidth, panelHeight, BLUE);
-        graphics.text(font, Component.literal("월드 지도"), left + 16, top + 14, TEXT, true);
-        String help = "휠 확대/축소 · " + String.format(java.util.Locale.ROOT, "×%.1f", zoom) + "  /  M 또는 ESC 닫기";
-        graphics.text(font, Component.literal(help), left + panelWidth - 16 - font.width(help), top + 14, SECONDARY, false);
-        graphics.text(font, Component.literal("알려진 거점과 랜드마크 · 세부 길은 탐험하며 확인"), left + 16, top + 30, SECONDARY, false);
+        boolean compact = panelHeight < 300 || panelWidth < 520;
+        graphics.text(font, Component.literal("월드 지도"), left + 12, top + 11, TEXT, true);
+        String help = compact
+                ? String.format(java.util.Locale.ROOT, "×%.1f · M/ESC", zoom)
+                : "휠 확대/축소 · " + String.format(java.util.Locale.ROOT, "×%.1f", zoom) + " · M 또는 ESC 닫기";
+        int helpX = left + panelWidth - 12 - font.width(help);
+        if (helpX > left + 90) {
+            graphics.text(font, Component.literal(help), helpX, top + 11, SECONDARY, false);
+        }
+        boolean showSubtitle = !compact || panelHeight >= 285;
+        if (showSubtitle) {
+            graphics.text(font, Component.literal("알려진 거점과 랜드마크 · 세부 길은 탐험하며 확인"), left + 12, top + 27, SECONDARY, false);
+        }
 
-        boolean wide = panelWidth >= 500;
+        boolean wide = panelWidth >= 560 && panelHeight >= 320;
+        int mapY = top + (showSubtitle ? 43 : 30);
+        int mapX = left + 12;
         int infoReserve = wide ? Math.min(210, Math.max(165, panelWidth / 3)) : 0;
-        int mapSize = Math.min(panelHeight - (wide ? 64 : 126), panelWidth - 30 - infoReserve);
-        mapSize = Math.max(170, mapSize);
-        int mapX = left + 15;
-        int mapY = top + 47;
+        int bottomReserve = wide ? 12 : compact ? 68 : 108;
+        int availableW = panelWidth - 24 - infoReserve - (wide ? 10 : 0);
+        int availableH = top + panelHeight - bottomReserve - mapY;
+        int mapSize = Math.max(64, Math.min(availableW, availableH));
 
         graphics.fill(mapX - 2, mapY - 2, mapX + mapSize + 2, mapY + mapSize + 2, 0xFF8B7B60);
         graphics.fill(mapX, mapY, mapX + mapSize, mapY + mapSize, 0xFF20262A);
@@ -104,30 +117,34 @@ final class DrehmalWorldMapScreen extends Screen {
         }
 
         DrehmalWorldProfile.Anchor focus = hovered != null ? hovered : nearest(anchors, px, pz);
-        int infoX = wide ? mapX + mapSize + 13 : mapX;
-        int infoY = wide ? mapY : mapY + mapSize + 10;
-        int infoW = wide ? left + panelWidth - 15 - infoX : mapSize;
-        int infoH = wide ? mapSize : Math.max(60, top + panelHeight - 13 - infoY);
+        int infoX = wide ? mapX + mapSize + 10 : mapX;
+        int infoY = wide ? mapY : mapY + mapSize + 6;
+        int infoW = wide ? left + panelWidth - 12 - infoX : mapSize;
+        int infoH = wide ? mapSize : Math.max(40, top + panelHeight - 8 - infoY);
         TurnboundFrameStyle.inset(graphics, infoX, infoY, infoW, infoH);
 
         graphics.text(font, Component.literal("현재  X " + (int)Math.round(px) + " · Z " + (int)Math.round(pz)),
-                infoX + 9, infoY + 9, TEXT, true);
-        if (focus != null) {
-            graphics.text(font, Component.literal(UiTextLayout.fit(label(focus), infoW - 18)),
-                    infoX + 9, infoY + 29, markerColor(focus.kind()), true);
-            graphics.text(font, Component.literal(UiTextLayout.fit(description(focus), infoW - 18)),
-                    infoX + 9, infoY + 45, SECONDARY, false);
-            int distance = (int)Math.round(Math.hypot(focus.x() - px, focus.z() - pz));
-            graphics.text(font, Component.literal("약 " + distance + "m · " + kindLabel(focus.kind())),
-                    infoX + 9, infoY + 61, MUTED, false);
+                infoX + 7, infoY + 7, TEXT, true);
+        if (focus != null && infoH >= 38) {
+            graphics.text(font, Component.literal(UiTextLayout.fit(label(focus), infoW - 14)),
+                    infoX + 7, infoY + 23, markerColor(focus.kind()), true);
+            if (infoH >= 55) {
+                graphics.text(font, Component.literal(UiTextLayout.fit(description(focus), infoW - 14)),
+                        infoX + 7, infoY + 39, SECONDARY, false);
+            }
+            if (infoH >= 72) {
+                int distance = (int)Math.round(Math.hypot(focus.x() - px, focus.z() - pz));
+                graphics.text(font, Component.literal("약 " + distance + "m · " + kindLabel(focus.kind())),
+                        infoX + 7, infoY + 55, MUTED, false);
+            }
         }
 
-        if (infoH > 145) {
+        if (wide && infoH > 145) {
             graphics.text(font, Component.literal("◆ 거점"), infoX + 9, infoY + 92, GOLD, false);
             graphics.text(font, Component.literal("■ 지역"), infoX + 9, infoY + 109, BLUE, false);
             graphics.text(font, Component.literal("● 랜드마크"), infoX + 9, infoY + 126, GREEN, false);
         }
-        if (infoH > 190) {
+        if (wide && infoH > 190) {
             graphics.text(font, Component.literal("표시된 위치는 알려진 장소의 기준점입니다."), infoX + 9, infoY + 153, SECONDARY, false);
             graphics.text(font, Component.literal("전투 지점은 지도에 미리 노출하지 않습니다."), infoX + 9, infoY + 170, MUTED, false);
         }
@@ -136,12 +153,24 @@ final class DrehmalWorldMapScreen extends Screen {
     }
 
     private static Bounds bounds(List<DrehmalWorldProfile.Anchor> anchors, double px, double pz) {
-        double minX = px, maxX = px, minZ = pz, maxZ = pz;
+        if (anchors.isEmpty()) return new Bounds(px - 350.0, pz - 350.0, 700.0);
+        double minX = anchors.getFirst().x(), maxX = minX;
+        double minZ = anchors.getFirst().z(), maxZ = minZ;
+        double nearestPlayerDistance = Double.MAX_VALUE;
         for (DrehmalWorldProfile.Anchor anchor : anchors) {
             minX = Math.min(minX, anchor.x());
             maxX = Math.max(maxX, anchor.x());
             minZ = Math.min(minZ, anchor.z());
             maxZ = Math.max(maxZ, anchor.z());
+            nearestPlayerDistance = Math.min(nearestPlayerDistance, Math.hypot(anchor.x() - px, anchor.z() - pz));
+        }
+        // The original Drehmal setup terminal is ~25k blocks away from the actual campaign geography.
+        // Never let that staging room collapse the whole-world overview into an unreadable dot.
+        if (nearestPlayerDistance <= 3000.0) {
+            minX = Math.min(minX, px);
+            maxX = Math.max(maxX, px);
+            minZ = Math.min(minZ, pz);
+            maxZ = Math.max(maxZ, pz);
         }
         double centerX = (minX + maxX) * 0.5;
         double centerZ = (minZ + maxZ) * 0.5;
@@ -192,20 +221,20 @@ final class DrehmalWorldMapScreen extends Screen {
 
     private static String label(DrehmalWorldProfile.Anchor anchor) {
         return switch (anchor.locator()) {
-            case "turnbound:hub/new_drabyel" -> "New Drabyel";
-            case "turnbound:region/stasis_facility" -> "Stasis Facility";
-            case "turnbound:landmark/primal_caverns" -> "Primal Caverns";
-            case "turnbound:landmark/capital_valley_tower" -> "Capital Valley Tower";
+            case "turnbound:hub/new_drabyel" -> "뉴 드라비엘";
+            case "turnbound:region/stasis_facility" -> "스테이시스 시설";
+            case "turnbound:landmark/primal_caverns" -> "프라이멀 동굴";
+            case "turnbound:landmark/capital_valley_tower" -> "캐피털 밸리 탑";
             case "turnbound:landmark/warning_cave" -> "경고 동굴";
-            case "turnbound:landmark/explorers_guide_camp" -> "Explorer's Guide 야영지";
-            case "turnbound:region/avsal" -> "Av'Sal";
+            case "turnbound:landmark/explorers_guide_camp" -> "탐험가 안내서 야영지";
+            case "turnbound:region/avsal" -> "아브살";
             default -> "알려진 장소";
         };
     }
 
     private static String description(DrehmalWorldProfile.Anchor anchor) {
         return switch (anchor.locator()) {
-            case "turnbound:hub/new_drabyel" -> "Capital Valley의 첫 안전 거점";
+            case "turnbound:hub/new_drabyel" -> "캐피털 밸리의 첫 안전 거점";
             case "turnbound:region/stasis_facility" -> "Capital Valley 동쪽의 오래된 시설";
             case "turnbound:landmark/primal_caverns" -> "첫 여정의 지형 기준점";
             case "turnbound:landmark/capital_valley_tower" -> "Drabyel로 향하는 길의 큰 랜드마크";

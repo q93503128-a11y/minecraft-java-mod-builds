@@ -4,6 +4,7 @@ import io.github.q93503128.turnbound.Turnbound;
 import io.github.q93503128.turnbound.combat.BattleOutcome;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 
 import java.util.HashMap;
@@ -41,6 +42,12 @@ public final class ExternalWorldBootstrap {
         // Clear any retained legacy session before the first external snapshot so no Aster writer can survive a
         // same-server migration/binding or retained-runtime reconnect.
         WorldSessionRouter.remove(player);
+        ExternalWorldSavedData saved = ExternalWorldSavedData.get(server);
+        DrehmalStartArrival.moveOutOfLegacySetupIfNeeded(player, saved);
+        if (!player.isCreative() && !player.isSpectator()) {
+            player.setGameMode(GameType.ADVENTURE);
+        }
+
         ACTIVE.add(player.getUUID());
         DrehmalFirstRouteRuntime.recordProgress(player);
         LAST_LOCATION.put(player.getUUID(), DrehmalFirstRouteRuntime.locationId(player));
@@ -48,7 +55,6 @@ public final class ExternalWorldBootstrap {
         LAST_NAVIGATION.put(player.getUUID(), DrehmalFirstRouteRuntime.navigationId(player));
         FieldNetwork.syncExternal(player, DrehmalFirstRouteRuntime.explorationSnapshot(player));
 
-        ExternalWorldSavedData saved = ExternalWorldSavedData.get(server);
         if (!saved.initialized(player.getUUID())) {
             saved.markInitialized(player.getUUID());
             Turnbound.LOGGER.info(

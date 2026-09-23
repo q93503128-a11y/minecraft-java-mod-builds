@@ -8,6 +8,7 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -20,7 +21,7 @@ import java.util.zip.ZipOutputStream;
  * lowercasing that resource path (and its model entry when present) in the installed copy only.</p>
  */
 final class Drehmal26_2ResourcePackMigrator {
-    static final int COMPAT_VERSION = 1;
+    static final int COMPAT_VERSION = 2;
     static final String TARGET_VERSION = "26.2";
     static final String RESOURCE_PACK_RELATIVE = "resources.zip";
     static final String MARKER_FILE = ".turnbound_drehmal_resources_26_2_compat";
@@ -52,7 +53,28 @@ final class Drehmal26_2ResourcePackMigrator {
         try {
             String text = Files.readString(marker, StandardCharsets.UTF_8);
             return text.contains("compatVersion=" + COMPAT_VERSION)
-                    && text.contains("target=" + TARGET_VERSION);
+                    && text.contains("target=" + TARGET_VERSION)
+                    && archiveLooksMigrated(pack);
+        } catch (IOException ignored) {
+            return false;
+        }
+    }
+
+    private static boolean archiveLooksMigrated(Path archive) {
+        try (ZipFile zip = new ZipFile(archive.toFile())) {
+            if (zip.getEntry(LEGACY_SPAWN_EGG_MODEL) != null) return false;
+            for (String name : List.of(
+                    "assets/minecraft/models/item/bee_spawn_egg.json",
+                    "assets/minecraft/models/item/bat_spawn_egg.json",
+                    "assets/minecraft/models/item/zombie_spawn_egg.json")) {
+                ZipEntry entry = zip.getEntry(name);
+                if (entry == null) continue;
+                try (InputStream stream = zip.getInputStream(entry)) {
+                    String text = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+                    if (text.contains(LEGACY_SPAWN_EGG_PARENT)) return false;
+                }
+            }
+            return true;
         } catch (IOException ignored) {
             return false;
         }
