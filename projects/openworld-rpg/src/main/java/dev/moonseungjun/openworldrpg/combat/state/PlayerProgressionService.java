@@ -5,7 +5,7 @@ import java.util.Optional;
 import net.minecraft.world.entity.player.Player;
 
 /**
- * Server-owned mutation/read API for persistent combat Lv and per-class Attribute allocations.
+ * Server-owned mutation/read API for persistent combat Lv, XP, Class Rank/XP and Attributes.
  */
 public final class PlayerProgressionService {
     private PlayerProgressionService() {
@@ -35,6 +35,29 @@ public final class PlayerProgressionService {
         return replace(player, state(player).withAllocation(rootClass, allocation));
     }
 
+    public static PlayerProgressionState creditCombatXpOnce(
+            Player player,
+            String transactionId,
+            long amount
+    ) {
+        return replace(
+                player,
+                state(player).grantCombatXpOnce(transactionId, amount)
+        );
+    }
+
+    public static PlayerProgressionState creditClassXpOnce(
+            Player player,
+            String transactionId,
+            RootClass rewardClass,
+            long amount
+    ) {
+        return replace(
+                player,
+                state(player).grantClassXpOnce(transactionId, rewardClass, amount)
+        );
+    }
+
     public static Optional<PlayerCombatBuildState> buildWith(
             Player player,
             EquipmentCombatState equipment
@@ -44,10 +67,14 @@ public final class PlayerProgressionService {
 
     private static PlayerProgressionState replace(
             Player player,
-            PlayerProgressionState state
+            PlayerProgressionState next
     ) {
-        player.setAttached(PlayerProgressionAttachments.COMBAT_PROGRESSION, state);
+        PlayerProgressionState current = state(player);
+        if (current.equals(next)) {
+            return current;
+        }
+        player.setAttached(PlayerProgressionAttachments.COMBAT_PROGRESSION, next);
         PlayerCombatBuildPublisher.refresh(player);
-        return state;
+        return next;
     }
 }
