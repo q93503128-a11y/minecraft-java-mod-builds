@@ -141,9 +141,14 @@ tasks.register('prepareOneClickPack') {
             rename { "turnbound-${mod_version}.jar" }
         }
 
-        File geckolibJar = configurations.runtimeClasspath.files.find {
-            it.name.toLowerCase(Locale.ROOT).contains('geckolib')
-                    && it.name.toLowerCase(Locale.ROOT).endsWith('.jar')
+        File geckolibJar = configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.find {
+            it.moduleVersion.id.group == 'maven.modrinth' && it.name == '8BmcQJ2H'
+        }?.file
+        if (geckolibJar == null) {
+            geckolibJar = configurations.runtimeClasspath.files.find {
+                String name = it.name.toLowerCase(Locale.ROOT)
+                it.name.endsWith('.jar') && (name.contains('geckolib') || name.contains('8bmcqj2h'))
+            }
         }
         if (geckolibJar == null) {
             throw new GradleException('Resolved GeckoLib runtime JAR was not found for one-click pack')
