@@ -21,7 +21,7 @@ import java.util.zip.ZipOutputStream;
  * lowercasing that resource path (and its model entry when present) in the installed copy only.</p>
  */
 final class Drehmal26_2ResourcePackMigrator {
-    static final int COMPAT_VERSION = 3;
+    static final int COMPAT_VERSION = 4;
     static final String TARGET_VERSION = "26.2";
     static final String RESOURCE_PACK_RELATIVE = "resources.zip";
     static final String MARKER_FILE = ".turnbound_drehmal_resources_26_2_compat";
@@ -52,32 +52,23 @@ final class Drehmal26_2ResourcePackMigrator {
         if (!Files.isRegularFile(marker) || !Files.isRegularFile(pack)) return false;
         try {
             String text = Files.readString(marker, StandardCharsets.UTF_8);
-            return text.contains("compatVersion=" + COMPAT_VERSION)
-                    && text.contains("target=" + TARGET_VERSION)
-                    && archiveLooksMigrated(pack);
+            if (!text.contains("compatVersion=" + COMPAT_VERSION)
+                    || !text.contains("target=" + TARGET_VERSION)) return false;
+            validateArchive(pack);
+            String expectedHash = markerValue(text, "migratedHash");
+            return !expectedHash.isBlank() && expectedHash.equals(DrehmalInstallFiles.sha256(pack));
         } catch (IOException ignored) {
             return false;
         }
     }
 
-    private static boolean archiveLooksMigrated(Path archive) {
-        try (ZipFile zip = new ZipFile(archive.toFile())) {
-            if (zip.getEntry(LEGACY_SPAWN_EGG_MODEL) != null) return false;
-            for (String name : List.of(
-                    "assets/minecraft/models/item/bee_spawn_egg.json",
-                    "assets/minecraft/models/item/bat_spawn_egg.json",
-                    "assets/minecraft/models/item/zombie_spawn_egg.json")) {
-                ZipEntry entry = zip.getEntry(name);
-                if (entry == null) continue;
-                try (InputStream stream = zip.getInputStream(entry)) {
-                    String text = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
-                    if (text.contains(LEGACY_SPAWN_EGG_PARENT)) return false;
-                }
-            }
-            return true;
-        } catch (IOException ignored) {
-            return false;
+    private static String markerValue(String marker, String key) {
+        if (marker == null || marker.isBlank() || key == null || key.isBlank()) return "";
+        String prefix = key + "=";
+        for (String line : marker.lines().toList()) {
+            if (line.startsWith(prefix)) return line.substring(prefix.length()).trim();
         }
+        return "";
     }
 
     static Report migrate(Path world) throws IOException {
@@ -256,7 +247,7 @@ final class Drehmal26_2ResourcePackMigrator {
                     StandardCopyOption.ATOMIC_MOVE,
                     StandardCopyOption.REPLACE_EXISTING);
         } catch (AtomicMoveNotSupportedException error) {
-            throw new IOException("Atomic file replacement is not supported for Drehmal resource-pack migration", error);
+            Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
         }
     }
 }
