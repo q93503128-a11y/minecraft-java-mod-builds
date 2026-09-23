@@ -79,13 +79,10 @@ public final class ExternalWorldBootstrap {
         }
         if (!ACTIVE.contains(player.getUUID())) return initialize(player);
 
-        // The original Drehmal host bootstrap may move the player into its setup terminal after our login hook.
-        // Re-check until the TURNBOUND roadhead arrival has actually happened.
+        // Drehmal may move the host back into its setup terminal even after an earlier TURNBOUND arrival.
+        // Re-check the physical zone itself so a stale one-shot flag can never trap an existing save there.
         if (player.tickCount % 10 == 0) {
-            ExternalWorldSavedData saved = ExternalWorldSavedData.get(server);
-            if (!saved.onboardingFlag(player.getUUID(), DrehmalStartArrival.ARRIVAL_FLAG)) {
-                DrehmalStartArrival.moveOutOfLegacySetupIfNeeded(player, saved);
-            }
+            DrehmalStartArrival.moveOutOfLegacySetupIfNeeded(player, ExternalWorldSavedData.get(server));
         }
 
         DrehmalVisibleEncounterService.tick(player);
