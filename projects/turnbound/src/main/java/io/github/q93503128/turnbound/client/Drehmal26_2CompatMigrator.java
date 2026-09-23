@@ -29,11 +29,13 @@ import java.util.zip.ZipOutputStream;
  * and the live archive is replaced only after the temporary archive passes the 26.2 structural checks.</p>
  */
 final class Drehmal26_2CompatMigrator {
-    static final int COMPAT_VERSION = 2;
+    static final int COMPAT_VERSION = 3;
     static final String TARGET_VERSION = "26.2";
     static final String DATAPACK_RELATIVE = "datapacks/hi_drehmal.zip";
     static final String MARKER_FILE = ".turnbound_drehmal_26_2_compat";
     static final String BACKUP_SUFFIX = ".turnbound-1_20_1-backup";
+    static final String RANDOM_SEQUENCES_RELATIVE = "data/random_sequences.dat";
+    static final String RANDOM_SEQUENCES_BACKUP_SUFFIX = ".turnbound-1_20_1-backup";
 
     private static final int EXPECTED_BIOMES = 48;
     private static final int EXPECTED_DIMENSION_TYPES = 1;
@@ -80,6 +82,8 @@ final class Drehmal26_2CompatMigrator {
             return new Report(false, validation.biomes(), validation.dimensionTypes(), hash, hash);
         }
 
+        migrateLegacyRandomSequences(world);
+
         String sourceHash = DrehmalInstallFiles.sha256(source);
         Validation alreadyCompatible = tryValidate(source);
         if (alreadyCompatible != null) {
@@ -119,6 +123,34 @@ final class Drehmal26_2CompatMigrator {
             if (failure instanceof IOException io) throw io;
             throw new IOException("Drehmal 26.2 compatibility migration failed", failure);
         }
+    }
+
+    private static void migrateLegacyRandomSequences(Path world) throws IOException {
+        Path savedData = world.resolve(RANDOM_SEQUENCES_RELATIVE);
+        if (!Files.isRegularFile(savedData)) return;
+
+        Path backup = savedData.resolveSibling(savedData.getFileName() + RANDOM_SEQUENCES_BACKUP_SUFFIX);
+        if (!Files.exists(backup)) {
+            try {
+                Files.move(savedData, backup, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException unsupported) {
+                Files.move(savedData, backup);
+            }
+            return;
+        }
+
+        if (!Files.isRegularFile(backup)) {
+            throw new IOException("Drehmal random-sequence backup path is not a file");
+        }
+
+        String liveHash = DrehmalInstallFiles.sha256(savedData);
+        String backupHash = DrehmalInstallFiles.sha256(backup);
+        if (liveHash.equals(backupHash)) {
+            Files.delete(savedData);
+            return;
+        }
+
+        throw new IOException("Drehmal random-sequence backup differs from the legacy saved data");
     }
 
     private static Validation tryValidate(Path archive) {
