@@ -10,6 +10,7 @@ import io.github.q93503128.turnbound.client.ClientFieldNetwork;
 import io.github.q93503128.turnbound.client.ClientMetaNetwork;
 import io.github.q93503128.turnbound.client.ClientUiFeedbackLayer;
 import io.github.q93503128.turnbound.client.ClientWorldLoadingBootstrap;
+import io.github.q93503128.turnbound.client.DrehmalAutoInstaller;
 import io.github.q93503128.turnbound.client.FieldInteractionPromptLayer;
 import io.github.q93503128.turnbound.client.FieldLocationBannerLayer;
 import io.github.q93503128.turnbound.client.DrehmalMinimapLayer;
@@ -44,6 +45,7 @@ public final class TurnboundClient {
         NeoForge.EVENT_BUS.addListener(BattleCameraController::onFov);
         NeoForge.EVENT_BUS.addListener(BattlePlayerRenderPolicy::onRenderPlayer);
         NeoForge.EVENT_BUS.addListener(MetaMenuKeyHandler::onKey);
+        NeoForge.EVENT_BUS.addListener(DrehmalAutoInstaller::onTick);
         NeoForge.EVENT_BUS.addListener(ClientWorldLoadingBootstrap::onTick);
         NeoForge.EVENT_BUS.addListener(ClientAudioPlayback::onTick);
     }
