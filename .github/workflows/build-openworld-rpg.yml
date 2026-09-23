@@ -277,8 +277,8 @@ jobs:
               "formatVersion": 1,
               "game": "minecraft",
               "versionId": "0.1.0-alpha.1-m0-playtest",
-              "name": "Openworld RPG M0 Arc Bolt Playtest",
-              "summary": "Minecraft 26.2 Fabric M0 integration playtest with pinned Openworld RPG runtime dependencies.",
+              "name": "Openworld RPG M0 Earthloong Playtest",
+              "summary": "Minecraft 26.2 Fabric M0 integration and R01 Earthloong presentation-preview playtest with pinned runtime dependencies.",
               "files": files,
               "dependencies": {
                   "minecraft": "26.2",
@@ -290,7 +290,7 @@ jobs:
               json.dump(index, f, ensure_ascii=False, indent=2)
 
           readme = "\n".join([
-              "Openworld RPG — M0 Arc Bolt Playtest",
+              "Openworld RPG — M0 Earthloong Playtest",
               "",
               "Import this .mrpack into Modrinth App or another launcher that supports Modrinth packs.",
               "",
@@ -312,6 +312,12 @@ jobs:
               "4. Spawn Earthloong:",
               "   /owr_spawn_earthloong",
               "5. Cast Arc Bolt and confirm the projectile lands normally.",
+              "6. Earthloong preview commands (verification build only):",
+              "   /owr_earthloong_preview_tail",
+              "   /owr_earthloong_preview_forked",
+              "   /owr_earthloong_preview_earthline",
+              "7. Tail requires you to stand within 4.5 blocks. Forked requires 4–12 blocks. Earthline requires 3–9 blocks with line of sight.",
+              "8. Capture a short clip or screenshots of each preview before changing any production presentation gate.",
               "",
               "Do not mix this pack with an older Openworld RPG jar.",
               "",
@@ -365,13 +371,13 @@ jobs:
           - client world join: NOT RUN
           - R01 Earthloong registry/profile binding: STARTUP VERIFIED
           - Earthloong donor XP/loot suppression: IMPLEMENTED; project reward transaction NOT IMPLEMENTED
-          - Earthloong authored spawn utility: IMPLEMENTED + 40-TICK FORCED-CHUNK SERVER SURVIVAL VERIFIED; action controller + Phase-1 physical start geometry implemented; Claw/Quarry donor presentation-state bridge RUNTIME VERIFIED; Claw/Quarry project-owned telegraph/action/recovery scheduling + Quarry 9-block committed movement + canonical contact invocation IMPLEMENTED; Tail final presentation UNBOUND/runtime-gated; Lightning Furrow/Root Breaker runtime NOT IMPLEMENTED
+          - Earthloong authored spawn utility: IMPLEMENTED + 40-TICK FORCED-CHUNK SERVER SURVIVAL VERIFIED; Phase-1 Claw/Quarry/Lightning Furrow/Root Breaker project-owned scheduling/contact runtime IMPLEMENTED; Claw/Quarry donor presentation-state bridge RUNTIME VERIFIED; Tail final production presentation UNBOUND/runtime-gated; Forked Heaven/Earthline Surge exact backend + M0 verification-preview runtime IMPLEMENTED but production presentation gates remain CLOSED
           - Better Combat bound-actor canonical melee authority: IMPLEMENTED + UNIT/RUNTIME BRIDGE VERIFIED (donor damage ignored; exact real-player Better Combat network hit NOT TESTED)
           - Spell Engine resource/cooldown continuation transaction: IMPLEMENTED + UNIT/SERVER STARTUP VERIFIED
           - project cooldown client/HUD projection after completed cast: IMPLEMENTED + CLIENT STARTUP VERIFIED
           - project impact transaction core (damage/heal/status/poise + Defense/MR caps): IMPLEMENTED + UNIT TESTED
           - player active-defense authority (dodge/guard/perfect-guard/guard-break + Stamina): IMPLEMENTED + UNIT TESTED; perfect-guard-only committed attacks supported; player-facing input/animation adapter NOT IMPLEMENTED
-          - normalized player incoming Defense/MR authority: IMPLEMENTED + UNIT TESTED; explicit project-hit runtime bridge IMPLEMENTED; Earthloong Phase-1 Claw/Tail/Quarry canonical physical impact data + authority IMPLEMENTED; physical start geometry IMPLEMENTED + UNIT TESTED; full attack-state/contact binding NOT IMPLEMENTED
+          - normalized player incoming Defense/MR authority: IMPLEMENTED + UNIT TESTED; explicit project-hit runtime bridge IMPLEMENTED; Earthloong Phase-1 impact/runtime binding IMPLEMENTED for Claw/Quarry/Lightning Furrow/Root Breaker; Tail canonical impact/geometry exists but production presentation remains gated; Forked Heaven/Earthline Surge preview impact runtime IMPLEMENTED pending accepted production presentation
           - project direct-magic runtime bridge: IMPLEMENTED + UNIT/BUILD/STARTUP VERIFIED
           - player combat build snapshot producer: IMPLEMENTED + UNIT/RUNTIME HARNESS VERIFIED
           - persistent 12-slot equipped-loadout publisher: IMPLEMENTED + UNIT/BUILD VERIFIED (main weapon/off-hand/armor/accessories; project affix aggregation; wand+focus power; family-power cap)
