@@ -102,6 +102,6 @@ public final class R01PlayerStateService {
     }
 
     private static long gameTick(ServerPlayer player) {
-        return player.serverLevel().getGameTime();
+        return player.level().getGameTime();
     }
 }
