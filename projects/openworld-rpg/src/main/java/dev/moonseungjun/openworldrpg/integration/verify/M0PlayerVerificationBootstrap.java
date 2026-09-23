@@ -14,6 +14,7 @@ import java.util.List;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -63,21 +64,24 @@ public final class M0PlayerVerificationBootstrap {
                     Commands.literal(EARTHLOONG_TAIL_PREVIEW_COMMAND)
                             .executes(context -> previewEarthloongAction(
                                     context.getSource().getEntity(),
-                                    R01EarthloongEncounterData.ActionId.TAIL_SCYTHE
+                                    R01EarthloongEncounterData.ActionId.TAIL_SCYTHE,
+                                    "Tail Scythe"
                             ))
             );
             dispatcher.register(
                     Commands.literal(EARTHLOONG_FORKED_PREVIEW_COMMAND)
                             .executes(context -> previewEarthloongAction(
                                     context.getSource().getEntity(),
-                                    R01EarthloongEncounterData.ActionId.FORKED_HEAVEN
+                                    R01EarthloongEncounterData.ActionId.FORKED_HEAVEN,
+                                    "Forked Heaven"
                             ))
             );
             dispatcher.register(
                     Commands.literal(EARTHLOONG_EARTHLINE_PREVIEW_COMMAND)
                             .executes(context -> previewEarthloongAction(
                                     context.getSource().getEntity(),
-                                    R01EarthloongEncounterData.ActionId.EARTHLINE_SURGE
+                                    R01EarthloongEncounterData.ActionId.EARTHLINE_SURGE,
+                                    "Earthline Surge"
                             ))
             );
         });
@@ -98,24 +102,46 @@ public final class M0PlayerVerificationBootstrap {
                 player.getZ() + forwardZ * 12.0
         );
 
-        ExternalActorBindingRuntime.spawnAuthored(
+        Entity spawned = ExternalActorBindingRuntime.spawnAuthored(
                 (ServerLevel) player.level(),
                 spawnPos,
                 ExternalActorCombatProfile.r01Earthloong().entityId()
         );
+        if (!(spawned instanceof net.minecraft.world.entity.LivingEntity living)
+                || !R01EarthloongPhysicalEncounterRuntime.armVerificationFixture(living)) {
+            spawned.discard();
+            player.sendSystemMessage(Component.literal(
+                    "[M0] Earthloong verification fixture failed to arm."
+            ));
+            return 0;
+        }
+        player.sendSystemMessage(Component.literal(
+                "[M0] Earthloong verification fixture ready. Automatic boss AI is paused."
+        ));
         return 1;
     }
 
     private static int previewEarthloongAction(
             Entity commandEntity,
-            R01EarthloongEncounterData.ActionId action
+            R01EarthloongEncounterData.ActionId action,
+            String displayName
     ) {
         if (!(commandEntity instanceof ServerPlayer player)) {
             return 0;
         }
-        return R01EarthloongPhysicalEncounterRuntime.beginVerificationPreview(player, action)
-                ? 1
-                : 0;
+        boolean accepted =
+                R01EarthloongPhysicalEncounterRuntime.beginVerificationPreview(player, action);
+        if (accepted) {
+            player.sendSystemMessage(Component.literal(
+                    "[M0] Preview started: " + displayName
+            ));
+            return 1;
+        }
+        player.sendSystemMessage(Component.literal(
+                "[M0] Preview rejected: " + displayName
+                        + ". Check distance, line of sight, and wait for the previous preview to finish."
+        ));
+        return 0;
     }
 
     public static void prepare(ServerPlayer player, Logger logger) {

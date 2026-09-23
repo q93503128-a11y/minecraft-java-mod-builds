@@ -35,6 +35,8 @@ import org.slf4j.Logger;
 
 public final class R01EarthloongPhysicalEncounterRuntime {
     private static final String EARTHLOONG_ID = "threateningly_mobs:the_earthloong";
+    private static final String VERIFICATION_FIXTURE_TAG =
+            "openworld_rpg.m0_earthloong_fixture";
     private static final R01EarthloongEncounterData DATA = R01EarthloongEncounterDataLoader.loadBundled();
     private static final Map<UUID, ActorState> STATES = new ConcurrentHashMap<>();
     private static volatile boolean initialized;
@@ -109,6 +111,29 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         return state != null && state.actor == target && state.isStormshedActive()
                 ? 0.50
                 : 1.0;
+    }
+
+    /**
+     * Converts one authored Earthloong into a deterministic M0 presentation fixture.
+     *
+     * <p>The fixture is isolated from both donor AI and the normal R01 action selector. Only an
+     * explicit verification-preview command may commit an action while this flag is present.</p>
+     */
+    public static boolean armVerificationFixture(LivingEntity earthloong) {
+        Objects.requireNonNull(earthloong, "earthloong");
+        if (!isEarthloong(earthloong) || !(earthloong.level() instanceof ServerLevel level)) {
+            return false;
+        }
+        earthloong.addTag(VERIFICATION_FIXTURE_TAG);
+        ActorState state = STATES.computeIfAbsent(
+                earthloong.getUUID(),
+                ignored -> new ActorState(
+                        earthloong,
+                        "r01-earthloong:" + level.dimension() + ":" + earthloong.getUUID()
+                )
+        );
+        state.armVerificationFixture();
+        return true;
     }
 
     /**
@@ -194,13 +219,28 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         private long stormShedStartTick = Long.MIN_VALUE / 4;
         private boolean stormShedPreviousNoAi;
         private long closeTargetSinceTick = Long.MIN_VALUE / 4;
+        private boolean verificationFixture;
 
         private ActorState(LivingEntity actor, String encounterInstanceId) {
             this.actor = actor;
             this.actions = new R01EarthloongActionController(DATA, encounterInstanceId, actor.getUUID());
+            this.verificationFixture = actor.getTags().contains(VERIFICATION_FIXTURE_TAG);
+            if (verificationFixture) {
+                holdVerificationFixtureIdle();
+            }
         }
 
         private void tick(ServerLevel level, long gameTick) {
+            if (verificationFixture) {
+                if (committed != null) {
+                    tickCommitted(level, gameTick);
+                } else {
+                    R01EarthloongDonorPresentationBridge.resetTechnicalCandidate(actor);
+                    holdVerificationFixtureIdle();
+                }
+                return;
+            }
+
             observeStormshedThreshold();
             updateRootBreakerProximityEveryTick(level, gameTick);
             if (isStormshedActive()) {
@@ -269,9 +309,33 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         }
 
         private void scheduleDecisionIfIdle(long gameTick) {
+            if (verificationFixture) {
+                return;
+            }
             if (committed == null && nextDecisionTick == Long.MAX_VALUE) {
                 nextDecisionTick = gameTick + DATA.decisionDelayTicks();
             }
+        }
+
+        private void armVerificationFixture() {
+            verificationFixture = true;
+            actor.addTag(VERIFICATION_FIXTURE_TAG);
+            currentThreatTargetId = null;
+            resetRootBreakerProximity();
+            nextDecisionTick = Long.MAX_VALUE;
+            stormShedPending = false;
+            stormShedStartTick = Long.MIN_VALUE / 4;
+            R01EarthloongDonorPresentationBridge.resetTechnicalCandidate(actor);
+            holdVerificationFixtureIdle();
+        }
+
+        private void holdVerificationFixtureIdle() {
+            if (actor instanceof Mob mob) {
+                mob.setTarget(null);
+                mob.getNavigation().stop();
+                mob.setNoAi(true);
+            }
+            freezeHorizontalMotion();
         }
 
         private boolean beginVerificationPreview(
@@ -280,7 +344,10 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                 R01EarthloongEncounterData.ActionId action,
                 long gameTick
         ) {
-            if (committed != null || isStormshedActive() || stormShedPending) {
+            if (!verificationFixture
+                    || committed != null
+                    || isStormshedActive()
+                    || stormShedPending) {
                 return false;
             }
             double distance = horizontalDistance(actor, player);
@@ -1408,7 +1475,10 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         private void finishCommitted(long gameTick) {
             releaseActorControl();
             committed = null;
-            if (stormShedPending) {
+            if (verificationFixture) {
+                nextDecisionTick = Long.MAX_VALUE;
+                holdVerificationFixtureIdle();
+            } else if (stormShedPending) {
                 beginStormshed(gameTick);
             } else {
                 nextDecisionTick = gameTick + DATA.decisionDelayTicks();
@@ -1481,7 +1551,9 @@ public final class R01EarthloongPhysicalEncounterRuntime {
 
         private void releaseActorControl() {
             R01EarthloongDonorPresentationBridge.resetTechnicalCandidate(actor);
-            if (actor instanceof Mob mob && committed != null) {
+            if (verificationFixture) {
+                holdVerificationFixtureIdle();
+            } else if (actor instanceof Mob mob && committed != null) {
                 mob.setTarget(null);
                 mob.setNoAi(committed.previousNoAi);
             } else if (actor instanceof Mob mob && isStormshedActive()) {

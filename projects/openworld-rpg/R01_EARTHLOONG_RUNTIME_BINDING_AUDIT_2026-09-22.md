@@ -184,3 +184,24 @@ A new explicit M0 player-verification path now exercises the three still-gated E
 These commands are registered only by the existing M0 player-verification bootstrap. Production action selection is unchanged: Tail Scythe is still illegal in normal selection, and Forked Heaven / Earthline Surge still require their `runtimePresentationReady` gates, which remain `false`.
 
 The temporary preview visuals are geometry/timing evidence only. They are not accepted Earthloong signature VFX and must not be used as the reason to flip production presentation gates.
+
+
+## 2026-09-23 manual video finding — preview isolation defect
+
+The first real-client preview recording showed that the M0 preview fixture was not isolated enough to produce trustworthy visual evidence.
+
+Observed symptom:
+
+- Quarry-Rush-like straight movement and Lightning-Furrow-like ground spark lanes continued even when no preview command was being evaluated.
+- Tail / Forked Heaven / Earthline Surge commands therefore did not have a visually unique before/after state and could be rejected while the normal R01 controller already had a committed action.
+- The runtime previously cleared the donor mob target only at START/END level tick. Donor/vanilla AI may reacquire a target during the entity tick between those callbacks, and the project itself used that transient target in `seedInitialThreatFromMobTarget()`. This leaves a presentation/state contamination risk even though donor-origin HP damage remains blocked.
+
+Correction:
+
+- `/owr_spawn_earthloong` in the M0 verification build now arms the spawned Earthloong as a persistent verification fixture.
+- The fixture is held `NoAI=true`, targetless and horizontally stationary while idle.
+- The normal R01 action selector is bypassed for the fixture; only explicit Tail / Forked / Earthline preview commands may commit actions.
+- Preview completion returns to isolated idle rather than immediately scheduling a normal R01 action.
+- Commands now print explicit accepted/rejected feedback so a failed distance/LOS/busy gate cannot be mistaken for a visual no-op.
+
+This correction is verification-only. It does **not** claim the production donor-AI containment problem is fully closed; production still needs a dedicated authority pass so donor combat procedures cannot alter presentation/resource/movement state between project-owned ticks.
