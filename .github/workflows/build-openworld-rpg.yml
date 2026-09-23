@@ -312,12 +312,18 @@ jobs:
               "4. Spawn Earthloong:",
               "   /owr_spawn_earthloong",
               "5. Cast Arc Bolt and confirm the projectile lands normally.",
-              "6. Earthloong preview commands (verification build only):",
-              "   /owr_earthloong_preview_tail",
-              "   /owr_earthloong_preview_forked",
-              "   /owr_earthloong_preview_earthline",
-              "7. Tail requires you to stand within 4.5 blocks. Forked requires 4–12 blocks. Earthline requires 3–9 blocks with line of sight.",
-              "8. Capture a short clip or screenshots of each preview before changing any production presentation gate.",
+              "6. After spawn, the verification fixture automatically reviews the four raw pinned donor motion states in order:",
+              "   Skill 1 = woodlizard_attack (10 ticks)",
+              "   Skill 2 = woodlizard_charge (40 ticks)",
+              "   Skill 3 = woodlizard_skill1 (25 ticks)",
+              "   Skill 4 = woodlizard_roar (50 ticks)",
+              "7. These are raw motion reviews only: no Tail/Forked/Earthline role, project damage, attack hitbox or signature VFX is layered onto them.",
+              "8. To replay one motion manually:",
+              "   /owr_earthloong_motion_1",
+              "   /owr_earthloong_motion_2",
+              "   /owr_earthloong_motion_3",
+              "   /owr_earthloong_motion_4",
+              "9. Capture the whole automatic cycle from the side/front if possible before any production attack role is assigned.",
               "",
               "Do not mix this pack with an older Openworld RPG jar.",
               "",
@@ -371,7 +377,7 @@ jobs:
           - client world join: NOT RUN
           - R01 Earthloong registry/profile binding: STARTUP VERIFIED
           - Earthloong donor XP/loot suppression: IMPLEMENTED; project reward transaction NOT IMPLEMENTED
-          - Earthloong authored spawn utility: IMPLEMENTED + 40-TICK FORCED-CHUNK SERVER SURVIVAL VERIFIED; Phase-1 Claw/Quarry/Lightning Furrow/Root Breaker project-owned scheduling/contact runtime IMPLEMENTED; Claw/Quarry donor presentation-state bridge RUNTIME VERIFIED; Tail final production presentation UNBOUND/runtime-gated; Forked Heaven/Earthline Surge exact backend + M0 verification-preview runtime IMPLEMENTED but production presentation gates remain CLOSED
+          - Earthloong authored spawn utility: IMPLEMENTED + 40-TICK FORCED-CHUNK SERVER SURVIVAL VERIFIED; Phase-1 Claw/Quarry/Lightning Furrow/Root Breaker project-owned scheduling/contact runtime IMPLEMENTED; existing Claw/Quarry donor bridge remains technical-only pending animation-first redesign; Tail final production presentation UNBOUND/runtime-gated; Forked Heaven/Earthline Surge backend remains preserved but production presentation gates stay CLOSED; M0 fixture now reviews raw pinned donor SkillNumber 1..4 motions without project attack VFX/hit geometry
           - Better Combat bound-actor canonical melee authority: IMPLEMENTED + UNIT/RUNTIME BRIDGE VERIFIED (donor damage ignored; exact real-player Better Combat network hit NOT TESTED)
           - Spell Engine resource/cooldown continuation transaction: IMPLEMENTED + UNIT/SERVER STARTUP VERIFIED
           - project cooldown client/HUD projection after completed cast: IMPLEMENTED + CLIENT STARTUP VERIFIED
