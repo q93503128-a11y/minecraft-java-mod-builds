@@ -24,9 +24,10 @@ import java.util.zip.ZipOutputStream;
 /**
  * Version-pinned local migration for Drehmal: APOTHEOSIS 2.2.2f's hi_drehmal datapack.
  *
- * <p>The official 1.20.1 map is verified before this runs. Only the installed user's datapack copy is rewritten.
- * Region/chunk/NBT files are never opened. The original datapack is retained beside the migrated copy as a backup,
- * and the live archive is replaced only after the temporary archive passes the 26.2 structural checks.</p>
+ * <p>The official 1.20.1 map is verified before this runs. Only the installed user's compatibility-sensitive
+ * files are changed. Region/chunk files are never opened. The legacy random-sequence saved-data file is moved to a
+ * side-by-side backup so 26.2 can regenerate its newer schema, and the original datapack is retained beside the
+ * migrated copy before the live archive is atomically replaced.</p>
  */
 final class Drehmal26_2CompatMigrator {
     static final int COMPAT_VERSION = 3;
