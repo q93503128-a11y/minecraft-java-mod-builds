@@ -51,6 +51,7 @@ public final class DrehmalAutoInstaller {
         VERIFYING_MAP,
         MIGRATING_MAP,
         DOWNLOADING_RESOURCES,
+        MIGRATING_RESOURCES,
         FINALIZING,
         COMPLETE,
         FAILED
@@ -143,13 +144,9 @@ public final class DrehmalAutoInstaller {
 
     private static boolean resourcePackReady(Path world) {
         Path pack = world.resolve("resources.zip");
-        try {
-            return Files.isRegularFile(pack)
-                    && Files.size(pack) == DrehmalBootstrapManifest.RESOURCE_PACK.size()
-                    && DrehmalInstallFiles.validResourcePack(pack);
-        } catch (IOException ignored) {
-            return false;
-        }
+        return Files.isRegularFile(pack)
+                && DrehmalInstallFiles.validResourcePack(pack)
+                && Drehmal26_2ResourcePackMigrator.isCurrent(world);
     }
 
     private static void install(Path gameDir) {
@@ -189,6 +186,7 @@ public final class DrehmalAutoInstaller {
 
             Path resourcePack = downloadResourcePack(downloads);
             Files.copy(resourcePack, tempWorld.resolve("resources.zip"), StandardCopyOption.REPLACE_EXISTING);
+            ensureResourcePackCompatibility(tempWorld);
 
             update(Phase.FINALIZING, "TURNBOUND 월드 마무리", "검증된 월드를 게임에 등록하고 있습니다.", 96);
             Files.writeString(
@@ -222,12 +220,18 @@ public final class DrehmalAutoInstaller {
     }
 
     private static void ensureResourcePackOnly(Path gameDir, Path world) throws Exception {
-        if (resourcePackReady(world)) return;
+        Path installed = world.resolve("resources.zip");
+        if (Files.isRegularFile(installed) && DrehmalInstallFiles.validResourcePack(installed)) {
+            ensureResourcePackCompatibility(world);
+            return;
+        }
+
         Path cache = gameDir.resolve(".turnbound-installer").resolve("drehmal-" + DrehmalBootstrapManifest.VERSION);
         Path downloads = cache.resolve("downloads");
         Files.createDirectories(downloads);
         Path pack = downloadResourcePack(downloads);
-        Files.copy(pack, world.resolve("resources.zip"), StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(pack, installed, StandardCopyOption.REPLACE_EXISTING);
+        ensureResourcePackCompatibility(world);
         try {
             DrehmalInstallFiles.deleteTree(cache);
         } catch (IOException cleanupError) {
@@ -302,6 +306,22 @@ public final class DrehmalAutoInstaller {
                 report.changed(),
                 report.biomes(),
                 report.dimensionTypes(),
+                report.sourceHash(),
+                report.migratedHash());
+    }
+
+    private static void ensureResourcePackCompatibility(Path world) throws Exception {
+        update(
+                Phase.MIGRATING_RESOURCES,
+                "Drehmal 리소스 호환 준비",
+                "원본 디자인을 유지하며 Minecraft 26.2 리소스 형식으로 맞추고 있습니다.",
+                94);
+        Drehmal26_2ResourcePackMigrator.Report report = Drehmal26_2ResourcePackMigrator.migrate(world);
+        Turnbound.LOGGER.info(
+                "TURNBOUND Drehmal resource compatibility: changed={}, references={}, modelRenamed={}, sourceHash={}, migratedHash={}",
+                report.changed(),
+                report.referencesRewritten(),
+                report.modelRenamed(),
                 report.sourceHash(),
                 report.migratedHash());
     }
