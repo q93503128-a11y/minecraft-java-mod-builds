@@ -69,14 +69,19 @@ public final class DrehmalMinimapLayer implements GuiLayer {
         double pz = minecraft.player.position().z;
         double radius = GRID * STEP / 2.0;
         DrehmalMinimapProjection.Marker target = DrehmalMinimapProjection.navigation(
-                field.navigation(), px, pz, radius);
+                field.navigation(), px, pz, Math.max(STEP, radius - STEP * 4.0));
         if (target != null) {
             int sx = mapX + MAP_SIZE / 2 + (int)Math.round(target.dx() / STEP * CELL);
             int sy = mapY + MAP_SIZE / 2 + (int)Math.round(target.dz() / STEP * CELL);
-            drawTarget(graphics, sx, sy);
+            if (target.clamped()) {
+                float targetYaw = (float)Math.toDegrees(Math.atan2(-target.dx(), target.dz()));
+                drawArrow(graphics, sx, sy, targetYaw, TARGET, false);
+            } else {
+                drawTarget(graphics, sx, sy);
+            }
         }
 
-        drawPlayerArrow(graphics, mapX + MAP_SIZE / 2, mapY + MAP_SIZE / 2, minecraft.player.getYRot());
+        drawArrow(graphics, mapX + MAP_SIZE / 2, mapY + MAP_SIZE / 2, minecraft.player.getYRot(), 0xFFFFFFFF, true);
         graphics.text(minecraft.font, Component.literal("N"), mapX + MAP_SIZE - 9, mapY + 3, 0xEFFFFFFF, true);
 
         int legendY = mapY + MAP_SIZE + 4;
@@ -151,16 +156,22 @@ public final class DrehmalMinimapLayer implements GuiLayer {
         graphics.fill(cx - 4, cy - 1, cx + 5, cy + 2, TARGET);
     }
 
-    private static void drawPlayerArrow(GuiGraphicsExtractor graphics, int cx, int cy, float yaw) {
-        graphics.fill(cx - 3, cy - 3, cx + 4, cy + 4, 0xCC111317);
-        int dir = Math.floorMod(Math.round(yaw / 90.0F), 4);
-        graphics.fill(cx - 1, cy - 1, cx + 2, cy + 2, 0xFFFFFFFF);
-        switch (dir) {
-            case 0 -> { graphics.fill(cx - 2, cy + 2, cx + 3, cy + 3, 0xFFFFFFFF); graphics.fill(cx, cy + 3, cx + 1, cy + 5, 0xFFFFFFFF); }
-            case 1 -> { graphics.fill(cx - 3, cy - 2, cx - 2, cy + 3, 0xFFFFFFFF); graphics.fill(cx - 5, cy, cx - 3, cy + 1, 0xFFFFFFFF); }
-            case 2 -> { graphics.fill(cx - 2, cy - 3, cx + 3, cy - 2, 0xFFFFFFFF); graphics.fill(cx, cy - 5, cx + 1, cy - 3, 0xFFFFFFFF); }
-            default -> { graphics.fill(cx + 2, cy - 2, cx + 3, cy + 3, 0xFFFFFFFF); graphics.fill(cx + 3, cy, cx + 5, cy + 1, 0xFFFFFFFF); }
+    private static void drawArrow(GuiGraphicsExtractor graphics, int cx, int cy, float yaw, int color, boolean backdrop) {
+        if (backdrop) graphics.fill(cx - 5, cy - 5, cx + 6, cy + 6, 0xB8111317);
+        int dir = Math.floorMod(Math.round(yaw / 45.0F), 8);
+        int[] vx = {0, -1, -1, -1, 0, 1, 1, 1};
+        int[] vy = {1, 1, 0, -1, -1, -1, 0, 1};
+        int dx = vx[dir], dy = vy[dir];
+        for (int t = -2; t <= 2; t++) {
+            int x = cx + dx * t, y = cy + dy * t;
+            graphics.fill(x - 1, y - 1, x + 2, y + 2, color);
         }
+        int hx = cx + dx * 4, hy = cy + dy * 4;
+        graphics.fill(hx - 1, hy - 1, hx + 2, hy + 2, color);
+        int px = -dy, py = dx;
+        int wingX = hx - dx * 2, wingY = hy - dy * 2;
+        graphics.fill(wingX + px - 1, wingY + py - 1, wingX + px + 2, wingY + py + 2, color);
+        graphics.fill(wingX - px - 1, wingY - py - 1, wingX - px + 2, wingY - py + 2, color);
     }
 
     private static int floorToStep(double value) { return Math.floorDiv((int)Math.floor(value), STEP) * STEP; }
