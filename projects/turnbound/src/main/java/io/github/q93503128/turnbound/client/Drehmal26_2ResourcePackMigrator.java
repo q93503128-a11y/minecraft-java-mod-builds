@@ -21,7 +21,7 @@ import java.util.zip.ZipOutputStream;
  * lowercasing that resource path (and its model entry when present) in the installed copy only.</p>
  */
 final class Drehmal26_2ResourcePackMigrator {
-    static final int COMPAT_VERSION = 2;
+    static final int COMPAT_VERSION = 3;
     static final String TARGET_VERSION = "26.2";
     static final String RESOURCE_PACK_RELATIVE = "resources.zip";
     static final String MARKER_FILE = ".turnbound_drehmal_resources_26_2_compat";

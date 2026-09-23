@@ -20,7 +20,7 @@ import java.util.Set;
  * never moved.</p>
  */
 final class DrehmalStartArrival {
-    static final String ARRIVAL_FLAG = "DREHMAL_ROADHEAD_ENTRY_V1";
+    static final String ARRIVAL_FLAG = "DREHMAL_NEW_DRABYEL_ENTRY_V2";
     static final String PRIMAL_CAVERNS = "turnbound:landmark/primal_caverns";
     private static final double LEGACY_SETUP_X = 26520.0;
     private static final double LEGACY_SETUP_Z = -136.0;
@@ -37,25 +37,18 @@ final class DrehmalStartArrival {
         // The flag is written only after TURNBOUND actually performs the outdoor arrival.
         if (!legacySetupZone(player.getX(), player.getY(), player.getZ())) return false;
 
-        DrehmalWorldProfile.Anchor stasis = DrehmalWorldProfile.enabled(DrehmalWorldProfile.FIRST_REGION_LOCATOR);
-        DrehmalWorldProfile.Anchor primal = DrehmalWorldProfile.enabled(PRIMAL_CAVERNS);
-        if (stasis == null || primal == null) {
-            Turnbound.LOGGER.warn("TURNBOUND could not resolve source-backed first-route anchors for start arrival");
-            return false;
-        }
+        BlockPos hub = DrehmalWorldBinding.hubSeed();
+        BlockPos region = DrehmalWorldBinding.firstRegionSeed();
 
         ServerLevel level = (ServerLevel) player.level();
-        int centerX = Math.round((stasis.x() + primal.x()) * 0.5F);
-        int centerZ = Math.round((stasis.z() + primal.z()) * 0.5F);
-        BlockPos destination = findSafeRoadhead(level, centerX, centerZ, 88);
+        BlockPos destination = findSafeHubArrival(level, hub, 36);
         if (destination == null) {
-            Turnbound.LOGGER.warn("TURNBOUND could not find a safe Capital Valley roadhead near {}, {}", centerX, centerZ);
+            Turnbound.LOGGER.warn("TURNBOUND could not find a safe New Drabyel arrival near {}, {}, {}", hub.getX(), hub.getY(), hub.getZ());
             return false;
         }
 
-        BlockPos hub = DrehmalWorldBinding.hubSeed();
-        double dx = hub.getX() + 0.5D - (destination.getX() + 0.5D);
-        double dz = hub.getZ() + 0.5D - (destination.getZ() + 0.5D);
+        double dx = region.getX() + 0.5D - (destination.getX() + 0.5D);
+        double dz = region.getZ() + 0.5D - (destination.getZ() + 0.5D);
         float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
         boolean teleported = player.teleportTo(
                 level,
@@ -75,7 +68,7 @@ final class DrehmalStartArrival {
         player.setOnGround(true);
         saved.markOnboardingFlag(player.getUUID(), ARRIVAL_FLAG);
         Turnbound.LOGGER.info(
-                "TURNBOUND moved {} from the legacy Drehmal setup terminal to outdoor first-route surface {}, {}, {}",
+                "TURNBOUND moved {} from the legacy Drehmal setup terminal to New Drabyel arrival {}, {}, {}",
                 player.getUUID(), destination.getX(), destination.getY(), destination.getZ());
         return true;
     }
@@ -86,21 +79,40 @@ final class DrehmalStartArrival {
         return y >= 120.0 && dx * dx + dz * dz <= LEGACY_SETUP_RADIUS_SQR;
     }
 
-    private static BlockPos findSafeRoadhead(ServerLevel level, int centerX, int centerZ, int radius) {
+    private static BlockPos findSafeHubArrival(ServerLevel level, BlockPos seed, int radius) {
         BlockPos best = null;
         long bestScore = Long.MAX_VALUE;
+
+        // Prefer the authored hub's street-level neighborhood instead of a heightmap roof or a distant surface.
         for (int dz = -radius; dz <= radius; dz++) {
             for (int dx = -radius; dx <= radius; dx++) {
                 int distanceSq = dx * dx + dz * dz;
                 if (distanceSq > radius * radius) continue;
-                int x = centerX + dx;
-                int z = centerZ + dz;
+                for (int dy = -10; dy <= 10; dy++) {
+                    BlockPos feet = new BlockPos(seed.getX() + dx, seed.getY() + dy, seed.getZ() + dz);
+                    if (!safeStandingColumn(level, feet)) continue;
+                    int priority = surfacePriority(level.getBlockState(feet.below()));
+                    long score = priority * 1_000_000L + Math.abs(dy) * 4_000L + distanceSq;
+                    if (score < bestScore) {
+                        bestScore = score;
+                        best = feet;
+                    }
+                }
+            }
+        }
+        if (best != null) return best;
+
+        // Fallback only when the integration seed's local vertical band is obstructed after migration.
+        for (int dz = -radius; dz <= radius; dz++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                int distanceSq = dx * dx + dz * dz;
+                if (distanceSq > radius * radius) continue;
+                int x = seed.getX() + dx;
+                int z = seed.getZ() + dz;
                 int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
                 BlockPos feet = new BlockPos(x, y, z);
                 if (!safeStandingColumn(level, feet)) continue;
-
-                int priority = surfacePriority(level.getBlockState(feet.below()));
-                long score = priority * 1_000_000L + distanceSq;
+                long score = surfacePriority(level.getBlockState(feet.below())) * 1_000_000L + distanceSq;
                 if (score < bestScore) {
                     bestScore = score;
                     best = feet;

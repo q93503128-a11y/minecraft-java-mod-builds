@@ -44,6 +44,7 @@ public final class MetaMenuScreen extends Screen {
     private EquipSort equipSort=EquipSort.TIER;
     private String equipSlotFilter="ALL",selectedEquipmentId="",equipmentTargetCharacterId="";
     private String codexCategory="CHARACTERS",selectedEndgameId="";
+    private int selectedSkillIndex;
 
     public MetaMenuScreen(Tab tab){
         super(Component.literal("TURNBOUND"));
@@ -142,32 +143,38 @@ public final class MetaMenuScreen extends Screen {
 
     private void buildParty(){
         var owned=ClientMetaState.snapshot().characters().stream().filter(ClientMetaState.CharacterRow::owned).toList();
-        int gridTop=contentTop()+4,gap=3,cols=panelWidth>=820?4:panelWidth>=620?3:panelWidth>=440?2:1,cardH=34;
-        int footerReserve=56;
-        int rows=UiPaging.rowsThatFit(gridTop,top+panelHeight-footerReserve,cardH+3,2),per=cols*rows;
+        int gridTop=contentTop()+24,gap=4,cols=panelWidth>=820?4:panelWidth>=620?3:panelWidth>=440?2:1,cardH=48;
+        int footerTop=top+panelHeight-58;
+        int rows=UiPaging.rowsThatFit(gridTop,footerTop-4,cardH+4,1),per=cols*rows;
         setPaging(owned.size(),per);
         int start=page*per,end=Math.min(owned.size(),start+per),cardW=(panelWidth-32-gap*(cols-1))/cols;
         for(int i=start;i<end;i++){
             var row=owned.get(i);
-            int local=i-start,xx=left+16+(local%cols)*(cardW+gap),yy=gridTop+(local/cols)*(cardH+3);
+            int local=i-start,xx=left+16+(local%cols)*(cardW+gap),yy=gridTop+(local/cols)*(cardH+4);
             boolean selected=draftParty.contains(row.id());
             String detail=(row.awakened()?"각성":"★"+row.nativeStar())+" · Lv."+row.level()+" · CP "+row.cp();
             addRenderableWidget(new FoozlePortraitButton(
                     xx,yy,cardW,cardH,row.id(),row.name(),detail,false,selected,
                     ignored->toggleParty(row.id())));
         }
-        int py=top+panelHeight-50,px=left+16;
+
+        int gapFooter=4;
+        int savePartyW=Math.min(112,Math.max(88,panelWidth/4));
+        int available=panelWidth-32-savePartyW-gapFooter;
+        int presetW=Math.max(52,(available-gapFooter*2)/3);
+        int row1=footerTop,row2=footerTop+24;
         for(int slot=1;slot<=3;slot++){
             final int s=slot;
+            int x=left+16+(slot-1)*(presetW+gapFooter);
             var preset=ClientMetaState.snapshot().partyPresets().size()>=slot?ClientMetaState.snapshot().partyPresets().get(slot-1):List.<String>of();
-            int bw=Math.min(80,Math.max(60,(panelWidth-224)/7));
-            var load=new BattleHudButton(px,py,bw,20,Component.literal("P"+slot+" 불러오기"),preset.isEmpty()?MUTED:BLUE,ignored->send("PRESET_LOAD|"+s));
+            var load=new BattleHudButton(x,row1,presetW,20,Component.literal("P"+slot+" 불러오기"),preset.isEmpty()?MUTED:BLUE,ignored->send("PRESET_LOAD|"+s));
             load.active=!preset.isEmpty();
             addRenderableWidget(load);
-            addRenderableWidget(new BattleHudButton(px+bw+3,py,46,20,Component.literal("저장"),GREEN,ignored->send("PRESET_SAVE|"+s)));
-            px+=bw+52;
+            addRenderableWidget(new BattleHudButton(x,row2,presetW,20,Component.literal("P"+slot+" 저장"),GREEN,ignored->send("PRESET_SAVE|"+s)));
         }
-        addRenderableWidget(new BattleHudButton(left+panelWidth-128,py,112,20,Component.literal("편성 저장 "+draftParty.size()+"/4"),GREEN,ignored->saveParty()));
+        addRenderableWidget(new BattleHudButton(
+                left+panelWidth-16-savePartyW,row1,savePartyW,44,
+                Component.literal("편성 저장 "+draftParty.size()+"/4"),GREEN,ignored->saveParty()));
         buildPager();
     }
 
@@ -180,7 +187,7 @@ public final class MetaMenuScreen extends Screen {
         addRenderableWidget(new BattleHudButton(x,y,bw,CONTROL_H,Component.literal("역할 · "+roleLabel(roleFilter)),MUTED,ignored->cycleRole()));
 
         List<ClientMetaState.CharacterRow> rows=filteredCharacters();
-        int gridTop=y+27,cols=panelWidth>=860?4:panelWidth>=640?3:2,rowH=40,cardGap=4;
+        int gridTop=y+27,cols=panelWidth>=860?4:panelWidth>=640?3:2,rowH=50,cardGap=4;
         int visibleRows=UiPaging.rowsThatFit(gridTop,contentBottom(),rowH+4,2),per=cols*visibleRows;
         setPaging(rows.size(),per);
         int start=page*per,end=Math.min(rows.size(),start+per),cardW=(panelWidth-32-cardGap*(cols-1))/cols;
@@ -206,6 +213,29 @@ public final class MetaMenuScreen extends Screen {
             addRenderableWidget(new BattleHudButton(tx,y,tabW,CONTROL_H,Component.literal(detailLabel(value)),value==detailTab?BLUE:MUTED,ignored->switchDetail(value)));
             tx+=tabW+gap;
         }
+        if(detailTab==DetailTab.SKILLS){
+            var definition=CanonicalData.definition(row.id(),Math.max(1,row.level()),Math.max(1,row.star()),row.awakened());
+            var skills=definition.skills();
+            selectedSkillIndex=Math.max(0,Math.min(selectedSkillIndex,skills.size()-1));
+            if(!skills.isEmpty()){
+                int portraitSize=Math.min(150,Math.max(92,Math.min(panelWidth/4,contentBottom()-(contentTop()+27)-6)));
+                int sx=left+18+portraitSize+16;
+                int sw=Math.max(80,left+panelWidth-18-sx);
+                int gapSkill=3;
+                int bw=Math.max(46,(sw-gapSkill*(skills.size()-1))/Math.max(1,skills.size()));
+                int by=contentTop()+60;
+                for(int i=0;i<skills.size();i++){
+                    final int index=i;
+                    var skill=skills.get(i);
+                    addRenderableWidget(new BattleHudButton(
+                            sx+i*(bw+gapSkill),by,bw,20,
+                            Component.literal(skill.name()),
+                            i==selectedSkillIndex?(skill.isBasic()?GREEN:GOLD):MUTED,
+                            ignored->{selectedSkillIndex=index;rebuild();}));
+                }
+            }
+        }
+
         if(detailTab==DetailTab.GROWTH&&row.owned()){
             int by=top+panelHeight-34;
             var trial=ClientSignatureTrialState.forCharacter(row.id());
@@ -359,13 +389,13 @@ public final class MetaMenuScreen extends Screen {
     private void movePage(int delta){page=UiPaging.clampPage(page+delta,currentTotal,currentPerPage);rebuild();}
     private void rebuild(){clearWidgets();init();}
     private void switchTab(Tab value){if(value==tab)return;tab=value;page=0;selectedCharacterId="";selectedEquipmentId="";rebuild();}
-    private void openCharacterFromHome(String id){tab=Tab.CHARACTERS;selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;page=0;rebuild();}
+    private void openCharacterFromHome(String id){tab=Tab.CHARACTERS;selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;selectedSkillIndex=0;page=0;rebuild();}
     private void openMap(){Minecraft.getInstance().gui.setScreen(new DrehmalWorldMapScreen());}
     private void toggleParty(String id){if(draftParty.contains(id)){if(draftParty.size()>1)draftParty.remove(id);}else if(draftParty.size()<4)draftParty.add(id);rebuild();}
     private void saveParty(){send("PARTY|"+String.join(",",draftParty));}
-    private void openCharacter(String id){selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;page=0;rebuild();}
+    private void openCharacter(String id){selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;selectedSkillIndex=0;page=0;rebuild();}
     private void closeCharacter(){selectedCharacterId="";page=0;rebuild();}
-    private void switchDetail(DetailTab d){detailTab=d;rebuild();}
+    private void switchDetail(DetailTab d){detailTab=d;if(d==DetailTab.SKILLS)selectedSkillIndex=0;rebuild();}
     private void cycleOwnership(){ownershipFilter=OwnershipFilter.values()[(ownershipFilter.ordinal()+1)%OwnershipFilter.values().length];page=0;rebuild();}
     private void cycleStar(){starFilter=switch(starFilter){case 0->3;case 3->4;case 4->5;default->0;};page=0;rebuild();}
     private void cycleLevel(){minimumLevel=minimumLevel==0?10:minimumLevel>=60?0:minimumLevel+10;page=0;rebuild();}
@@ -445,9 +475,9 @@ public final class MetaMenuScreen extends Screen {
 
     private void drawParty(GuiGraphicsExtractor g){
         String hint="최대 4인 · 전투 참가 100% 경험치 · 대기 보유 캐릭터 20%";
-        int hintX=compactLayout?left+112:left+132;
-        int hintW=Math.max(80,left+panelWidth-16-hintX);
-        g.text(font,Component.literal(UiTextLayout.fit(hint,hintW)),hintX,contentTop()-13,SECONDARY,false);
+        int x=left+16,y=contentTop()+3,w=panelWidth-32;
+        TurnboundUiSkin.inset(g,x,y,w,17);
+        g.text(font,Component.literal(UiTextLayout.fit(hint,w-12)),x+6,y+5,SECONDARY,false);
     }
 
     private void drawCharacters(GuiGraphicsExtractor g){
@@ -473,10 +503,24 @@ public final class MetaMenuScreen extends Screen {
             }
             case SKILLS->{
                 var d=CanonicalData.definition(r.id(),Math.max(1,r.level()),Math.max(1,r.star()),r.awakened());
-                int yy=y+36;
-                for(var skill:d.skills()){
-                    g.text(font,Component.literal(UiTextLayout.fit(skill.name()+" · 쿨타임 "+skill.cooldown()+" · "+skill.description(),w)),x,yy,skill.isBasic()?SECONDARY:GOLD,false);
-                    yy+=19;
+                var skills=d.skills();
+                if(skills.isEmpty())break;
+                int index=Math.max(0,Math.min(selectedSkillIndex,skills.size()-1));
+                var skill=skills.get(index);
+                int panelY=y+58;
+                int panelH=Math.max(58,contentBottom()-panelY-3);
+                TurnboundUiSkin.inset(g,x,panelY,w,panelH);
+
+                String type=skill.isBasic()?"기본 공격":"액티브";
+                String meta=type+"  ·  "+(skill.cooldown()<=0?"쿨타임 없음":"쿨타임 "+skill.cooldown()+"턴");
+                g.text(font,Component.literal(skill.name()),x+8,panelY+7,skill.isBasic()?GREEN:GOLD,true);
+                g.text(font,Component.literal(UiTextLayout.fit(meta,w-16)),x+8,panelY+21,SECONDARY,false);
+
+                int lineY=panelY+37;
+                int maxLines=Math.max(1,(panelH-43)/11);
+                for(String line:UiTextLayout.wrap(skill.description(),w-16,maxLines)){
+                    g.text(font,Component.literal(line),x+8,lineY,TEXT,false);
+                    lineY+=11;
                 }
             }
             case EQUIPMENT->{

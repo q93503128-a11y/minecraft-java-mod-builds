@@ -49,11 +49,17 @@ final class FoozlePortraitButton extends Button {
 
         TurnboundUiSkin.orbBase(graphics, ox, oy, orb);
         int inset = Math.max(5, orb / 7);
-        boolean rendered = TurnboundPortraitRenderer.extractBust(
-                graphics, combatantId,
-                ox + inset, oy + inset,
-                ox + orb - inset, oy + orb - inset,
-                unavailable);
+        boolean rendered = compact
+                ? TurnboundPortraitRenderer.extract(
+                        graphics, combatantId,
+                        ox + inset, oy + inset,
+                        ox + orb - inset, oy + orb - inset,
+                        unavailable)
+                : TurnboundPortraitRenderer.extractBust(
+                        graphics, combatantId,
+                        ox + inset, oy + inset,
+                        ox + orb - inset, oy + orb - inset,
+                        unavailable);
         if (!rendered) {
             String initial = name.isBlank() ? "?" : name.substring(0, 1);
             graphics.text(font, Component.literal(initial),

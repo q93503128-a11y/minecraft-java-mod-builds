@@ -85,18 +85,34 @@ public final class DrehmalAutoInstaller {
         if (minecraft.level != null) return;
 
         Path gameDir = minecraft.gameDirectory.toPath();
-        if (!optedIn(gameDir)) return;
-
         Optional<Path> existing = findInstalledWorld(gameDir);
-        if (existing.isPresent()
-                && resourcePackReady(existing.get())
-                && Drehmal26_2CompatMigrator.isCurrent(existing.get())) {
-            if (snapshot.phase() != Phase.COMPLETE) {
-                snapshot = new Snapshot(Phase.COMPLETE, "TURNBOUND 준비 완료", "설치된 Drehmal 월드를 그대로 사용합니다.", 100, "");
+        boolean optedIn = optedIn(gameDir);
+
+        // Existing verified TURNBOUND worlds must receive local compatibility repairs even when the original
+        // one-click opt-in marker is no longer present. Download permission and local migration are separate.
+        if (existing.isPresent()) {
+            Path world = existing.get();
+            if (resourcePackReady(world) && Drehmal26_2CompatMigrator.isCurrent(world)) {
+                if (snapshot.phase() != Phase.COMPLETE) {
+                    snapshot = new Snapshot(Phase.COMPLETE, "TURNBOUND 준비 완료", "설치된 Drehmal 월드를 그대로 사용합니다.", 100, "");
+                }
+                return;
             }
+
+            if (snapshot.phase() == Phase.FAILED) return;
+            if (!STARTED.compareAndSet(false, true)) return;
+            if (!(minecraft.gui.screen() instanceof TitleScreen parent)) {
+                STARTED.set(false);
+                return;
+            }
+
+            minecraft.gui.setScreen(new DrehmalInstallScreen(parent));
+            Thread.ofVirtual().name("turnbound-drehmal-local-repair")
+                    .start(() -> repairExistingWorld(gameDir, world, optedIn));
             return;
         }
 
+        if (!optedIn) return;
         if (snapshot.phase() == Phase.FAILED) return;
         if (!STARTED.compareAndSet(false, true)) return;
         if (!(minecraft.gui.screen() instanceof TitleScreen parent)) {
@@ -147,6 +163,34 @@ public final class DrehmalAutoInstaller {
         return Files.isRegularFile(pack)
                 && DrehmalInstallFiles.validResourcePack(pack)
                 && Drehmal26_2ResourcePackMigrator.isCurrent(world);
+    }
+
+    private static void repairExistingWorld(Path gameDir, Path world, boolean allowDownload) {
+        try {
+            update(Phase.CHECKING, "TURNBOUND 월드 점검", "설치된 Drehmal 월드의 26.2 호환 상태를 확인하고 있습니다.", 0);
+
+            Path installedPack = world.resolve("resources.zip");
+            if (Files.isRegularFile(installedPack) && DrehmalInstallFiles.validResourcePack(installedPack)) {
+                ensureResourcePackCompatibility(world);
+            } else if (allowDownload) {
+                ensureResourcePackOnly(gameDir, world);
+            } else {
+                throw new IOException("설치된 Drehmal 리소스팩이 없어 로컬 호환 수리를 계속할 수 없습니다.");
+            }
+
+            ensure26_2Compatibility(world);
+            complete();
+        } catch (Throwable error) {
+            Turnbound.LOGGER.error("TURNBOUND existing Drehmal compatibility repair failed", error);
+            String message = error.getMessage();
+            if (message == null || message.isBlank()) message = error.getClass().getSimpleName();
+            snapshot = new Snapshot(
+                    Phase.FAILED,
+                    "월드 준비에 실패했습니다",
+                    "설치된 월드를 수정하지 못했습니다. 로그의 첫 오류를 확인해 주세요.",
+                    snapshot.percent(),
+                    message);
+        }
     }
 
     private static void install(Path gameDir) {
