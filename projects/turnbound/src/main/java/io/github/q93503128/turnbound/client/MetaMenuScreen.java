@@ -29,7 +29,7 @@ public final class MetaMenuScreen extends Screen {
     private static final int TEXT=0xFFF4F0E6, SECONDARY=0xFFAEB7C6, MUTED=0xFF707987;
     private static final int BLUE=0xFF6DC6FF, GREEN=0xFF62D39A, GOLD=0xFFFFC857, DANGER=0xFFFF6B6B;
     private static final int CONTENT_OFFSET=88, FOOTER_OFFSET=42, CONTROL_H=20;
-    private static final int COMPACT_CONTENT_OFFSET=66, COMPACT_FOOTER_OFFSET=24;
+    private static final int COMPACT_CONTENT_OFFSET=82, COMPACT_FOOTER_OFFSET=30;
 
     private Tab tab;
     private final List<String> draftParty=new ArrayList<>();
@@ -93,7 +93,7 @@ public final class MetaMenuScreen extends Screen {
 
     private void buildTabs(){
         if(tab==Tab.HOME)return;
-        addRenderableWidget(new BattleHudButton(left+14,top+49,92,CONTROL_H,Component.literal("← 빠른 메뉴"),MUTED,ignored->switchTab(Tab.HOME)));
+        addRenderableWidget(new BattleHudButton(left+14,top+51,94,CONTROL_H,Component.literal("← 빠른 메뉴"),MUTED,ignored->switchTab(Tab.HOME)));
     }
 
     private void buildHome(){
@@ -167,14 +167,15 @@ public final class MetaMenuScreen extends Screen {
             final int s=slot;
             int x=left+16+(slot-1)*(presetW+gapFooter);
             var preset=ClientMetaState.snapshot().partyPresets().size()>=slot?ClientMetaState.snapshot().partyPresets().get(slot-1):List.<String>of();
-            var load=new BattleHudButton(x,row1,presetW,20,Component.literal("P"+slot+" 불러오기"),preset.isEmpty()?MUTED:BLUE,ignored->send("PRESET_LOAD|"+s));
+            String loadLabel=preset.isEmpty()?"P"+slot+" 비어 있음":"P"+slot+" 불러오기";
+            var load=new BattleHudButton(x,row1,presetW,20,Component.literal(loadLabel),preset.isEmpty()?MUTED:BLUE,ignored->send("PRESET_LOAD|"+s));
             load.active=!preset.isEmpty();
             addRenderableWidget(load);
-            addRenderableWidget(new BattleHudButton(x,row2,presetW,20,Component.literal("P"+slot+" 저장"),GREEN,ignored->send("PRESET_SAVE|"+s)));
+            addRenderableWidget(new BattleHudButton(x,row2,presetW,20,Component.literal("P"+slot+"에 저장"),GREEN,ignored->send("PRESET_SAVE|"+s)));
         }
         addRenderableWidget(new BattleHudButton(
                 left+panelWidth-16-savePartyW,row1,savePartyW,44,
-                Component.literal("편성 저장 "+draftParty.size()+"/4"),GREEN,ignored->saveParty()));
+                Component.literal("편성 적용 "+draftParty.size()+"/4"),GREEN,ignored->saveParty()));
         buildPager();
     }
 
@@ -437,7 +438,9 @@ public final class MetaMenuScreen extends Screen {
         var s=ClientMetaState.snapshot();
         String resources="골드 "+s.gold()+"   크리스탈 "+s.crystal()+"   별의 정수 "+s.essence()+"   파티 CP "+s.partyCp();
         graphics.text(font,Component.literal(UiTextLayout.fit(resources,panelWidth-40)),left+20,top+33,SECONDARY,false);
-        graphics.text(font,Component.literal(title(tab)),left+16,contentTop()-13,TEXT,true);
+        int pageTitleX=left+116;
+        int pageTitleW=Math.max(48,panelWidth-132);
+        graphics.text(font,Component.literal(UiTextLayout.fit(title(tab),pageTitleW)),pageTitleX,top+56,TEXT,true);
         switch(tab){
             case HOME->{}
             case PARTY->drawParty(graphics);
