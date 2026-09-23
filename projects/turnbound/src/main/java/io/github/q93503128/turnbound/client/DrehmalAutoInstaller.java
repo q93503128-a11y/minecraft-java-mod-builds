@@ -3,6 +3,7 @@ package io.github.q93503128.turnbound.client;
 import io.github.q93503128.turnbound.Turnbound;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
+import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 import java.io.BufferedInputStream;
@@ -82,7 +83,7 @@ public final class DrehmalAutoInstaller {
 
     public static void repairExistingWorldBeforeResourceLoad() {
         try {
-            Path gameDir = Minecraft.getInstance().gameDirectory.toPath();
+            Path gameDir = FMLPaths.GAMEDIR.get();
             for (Path world : findInstalledWorlds(gameDir)) {
                 Path pack = world.resolve("resources.zip");
                 if (!Files.isRegularFile(pack) || !DrehmalInstallFiles.validResourcePack(pack)) continue;
