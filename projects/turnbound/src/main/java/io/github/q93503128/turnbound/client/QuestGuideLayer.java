@@ -50,7 +50,7 @@ public final class QuestGuideLayer implements GuiLayer {
         }
 
         String hint = playerFacingHint(snapshot.dialogue());
-        if (isPartyObjective(snapshot.objective())) hint = "E 메뉴 → 파티에서 편성 후 ‘편성 저장’을 누르세요.";
+        if (isPartyObjective(snapshot.objective())) hint = "E 메뉴 → 파티에서 편성 후 ‘편성 적용’을 누르세요.";
         if (target != null) {
             String location = targetLine(minecraft, target);
             hint = hint.isBlank() ? location : location + " · " + hint;
@@ -99,13 +99,13 @@ public final class QuestGuideLayer implements GuiLayer {
 
     private static String directionArrow(double delta) {
         if (delta >= -22.5 && delta < 22.5) return "↑";
-        if (delta >= 22.5 && delta < 67.5) return "↖";
-        if (delta >= 67.5 && delta < 112.5) return "←";
-        if (delta >= 112.5 && delta < 157.5) return "↙";
+        if (delta >= 22.5 && delta < 67.5) return "↗";
+        if (delta >= 67.5 && delta < 112.5) return "→";
+        if (delta >= 112.5 && delta < 157.5) return "↘";
         if (delta >= 157.5 || delta < -157.5) return "↓";
-        if (delta >= -157.5 && delta < -112.5) return "↘";
-        if (delta >= -112.5 && delta < -67.5) return "→";
-        return "↗";
+        if (delta >= -157.5 && delta < -112.5) return "↙";
+        if (delta >= -112.5 && delta < -67.5) return "←";
+        return "↖";
     }
 
     private static double wrapDegrees(double value) {
