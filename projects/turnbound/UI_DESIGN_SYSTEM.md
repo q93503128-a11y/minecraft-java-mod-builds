@@ -19,7 +19,9 @@ Primary production skin:
 - **Foozle RPG UI Set 1 — CC0**
 - ornate dark-fantasy panel/button/orb artwork를 management/map UI의 실제 화면 베이스로 사용한다.
 - Minecraft 기본 버튼을 외부 테두리만 씌워 재현하는 방식은 금지한다.
-- 캐릭터 profile은 Foozle ornament frame 안의 큰 live 3D bust를 사용한다. 28~36px짜리 잘린 작은 얼굴을 production profile로 쓰지 않는다.
+- 캐릭터 profile은 Foozle ornament frame 안의 live 3D bust를 사용한다.
+- Root/Party/Character list/detail이 같은 portrait family를 공유하고, 좁은 목록에서도 원형 ornament + 이름/상태의 가로형 profile로 축약한다.
+- 단순 사각형 안에 모델 일부만 잘라 넣거나 화면마다 다른 profile 비율을 쓰지 않는다.
 
 Secondary/reference only:
 - Kenney Fantasy UI Borders — CC0

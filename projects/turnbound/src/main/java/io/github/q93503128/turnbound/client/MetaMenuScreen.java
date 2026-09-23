@@ -152,8 +152,9 @@ public final class MetaMenuScreen extends Screen {
             int local=i-start,xx=left+16+(local%cols)*(cardW+gap),yy=gridTop+(local/cols)*(cardH+3);
             boolean selected=draftParty.contains(row.id());
             String detail=(row.awakened()?"각성":"★"+row.nativeStar())+" · Lv."+row.level()+" · CP "+row.cp();
-            addRenderableWidget(new PortraitCardButton(xx,yy,cardW,cardH,row.id(),row.name(),detail,
-                    selected?GREEN:BLUE,selected,false,ignored->toggleParty(row.id())));
+            addRenderableWidget(new FoozlePortraitButton(
+                    xx,yy,cardW,cardH,row.id(),row.name(),detail,false,
+                    ignored->toggleParty(row.id())));
         }
         int py=top+panelHeight-50,px=left+16;
         for(int slot=1;slot<=3;slot++){
@@ -188,8 +189,9 @@ public final class MetaMenuScreen extends Screen {
             int local=i-start,xx=left+16+(local%cols)*(cardW+cardGap),yy=gridTop+(local/cols)*(rowH+4);
             String detail=row.owned()?(row.awakened()?"각성":"★"+row.nativeStar())+" · Lv."+row.level()+" · "+primaryRoleLabel(row.primaryRole())
                     :"미보유 · ★"+row.nativeStar()+" · "+primaryRoleLabel(row.primaryRole());
-            addRenderableWidget(new PortraitCardButton(xx,yy,cardW,rowH,row.id(),row.name(),detail,
-                    row.owned()?BLUE:MUTED,false,!row.owned(),ignored->openCharacter(row.id())));
+            addRenderableWidget(new FoozlePortraitButton(
+                    xx,yy,cardW,rowH,row.id(),row.name(),detail,!row.owned(),
+                    ignored->openCharacter(row.id())));
         }
         buildPager();
     }
@@ -451,10 +453,17 @@ public final class MetaMenuScreen extends Screen {
     private void drawCharacters(GuiGraphicsExtractor g){
         if(selectedCharacterId.isBlank()) return;
         var r=character(selectedCharacterId);if(r==null)return;
-        int portraitX=left+18,portraitY=contentTop()+27,portraitW=Math.min(154,Math.max(112,panelWidth/5)),portraitH=Math.min(196,Math.max(132,contentBottom()-portraitY-6));
-        TurnboundFrameStyle.inset(g,portraitX,portraitY,portraitW,portraitH);
-        TurnboundPortraitRenderer.extract(g,r.id(),portraitX+4,portraitY+4,portraitX+portraitW-4,portraitY+portraitH-4,!r.owned());
-        int x=portraitX+portraitW+16,y=contentTop()+30,w=Math.max(80,left+panelWidth-18-x);
+        int portraitX=left+18,portraitY=contentTop()+27;
+        int portraitSize=Math.min(150,Math.max(92,Math.min(panelWidth/4,contentBottom()-portraitY-6)));
+        TurnboundUiSkin.orbBase(g,portraitX,portraitY,portraitSize);
+        int portraitInset=Math.max(10,portraitSize/7);
+        TurnboundPortraitRenderer.extractBust(
+                g,r.id(),
+                portraitX+portraitInset,portraitY+portraitInset,
+                portraitX+portraitSize-portraitInset,portraitY+portraitSize-portraitInset,
+                !r.owned());
+        TurnboundUiSkin.orbOverlay(g,portraitX,portraitY,portraitSize,r.owned(),false,false);
+        int x=portraitX+portraitSize+16,y=contentTop()+30,w=Math.max(80,left+panelWidth-18-x);
         g.text(font,Component.literal(UiTextLayout.fit(r.name()+" · "+(r.owned()?(r.awakened()?"각성 · ":"")+"★"+r.nativeStar()+" Lv."+r.level():"미보유 · ★"+r.nativeStar()),w)),x,y,r.owned()?TEXT:MUTED,true);
         g.text(font,Component.literal(UiTextLayout.fit(r.role(),w)),x,y+15,SECONDARY,false);
         switch(detailTab){

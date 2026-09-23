@@ -31,12 +31,16 @@ final class FoozlePortraitButton extends Button {
     @Override
     protected void extractContents(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         var font = Minecraft.getInstance().font;
-        int orb = Math.min(getWidth() - 4, Math.max(42, getHeight() - 24));
-        int ox = getX() + (getWidth() - orb) / 2;
-        int oy = getY();
+        boolean compact = getHeight() < 58;
+
+        int orb = compact
+                ? Math.max(24, Math.min(getHeight() - 4, 36))
+                : Math.min(getWidth() - 4, Math.max(42, getHeight() - 24));
+        int ox = compact ? getX() + 2 : getX() + (getWidth() - orb) / 2;
+        int oy = compact ? getY() + (getHeight() - orb) / 2 : getY();
 
         TurnboundUiSkin.orbBase(graphics, ox, oy, orb);
-        int inset = Math.max(7, orb / 7);
+        int inset = Math.max(5, orb / 7);
         boolean rendered = TurnboundPortraitRenderer.extractBust(
                 graphics, combatantId,
                 ox + inset, oy + inset,
@@ -50,6 +54,20 @@ final class FoozlePortraitButton extends Button {
                     TurnboundUiTokens.TEXT_PRIMARY, true);
         }
         TurnboundUiSkin.orbOverlay(graphics, ox, oy, orb, active, isHoveredOrFocused(), false);
+
+        if (compact) {
+            int tx = ox + orb + 5;
+            int tw = Math.max(12, getX() + getWidth() - 4 - tx);
+            String fitted = UiTextLayout.fit(name, tw);
+            graphics.text(font, Component.literal(fitted), tx, getY() + 6,
+                    unavailable ? TurnboundUiTokens.TEXT_MUTED : TurnboundUiTokens.TEXT_PRIMARY, true);
+            if (!detail.isBlank()) {
+                String detailFit = UiTextLayout.fit(detail, tw);
+                graphics.text(font, Component.literal(detailFit), tx, getY() + 20,
+                        TurnboundUiTokens.TEXT_SECONDARY, false);
+            }
+            return;
+        }
 
         int nameY = oy + orb - 1;
         String fitted = UiTextLayout.fit(name, getWidth() - 4);
