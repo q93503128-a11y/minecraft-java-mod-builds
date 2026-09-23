@@ -242,3 +242,41 @@ Correction:
 - each explicit preview action may still temporarily take movement control for its authored committed timeline, then returns AI to its prior enabled state.
 
 The recording was in Creative mode. Project damage intentionally preserves Minecraft Creative/invulnerability protection, so lack of HP loss in that recording is not evidence that authored contact is absent. Damage/guard/dodge/ailment acceptance still requires a Survival-mode playtest.
+
+
+## 2026-09-23 animation-first combat redesign gate
+
+Real-client review invalidated the old Tail Scythe presentation assumption. The pinned `woodlizard_attack` state did not read as a tail-scythe motion, and no dedicated tail-swing animation is proven on the pinned dependency surface.
+
+The Earthloong combat-presentation workflow is therefore changed:
+
+```text
+pinned donor model/animation motion
+-> observed body direction/contact/weight
+-> gameplay attack role
+-> server hit geometry/timeline
+-> signature VFX/SFX/camera/arena reaction
+-> new animation only when the accepted donor motion set is genuinely insufficient
+```
+
+Consequences:
+
+- `woodlizard_attack` is **not** accepted as Tail Scythe;
+- the existing seven project attack names are not preservation requirements;
+- existing project-owned geometry/timeline/damage code remains reusable implementation material, but does not dictate animation meaning;
+- Forked Heaven / Earthline Surge backend logic stays preserved while their production presentation gates remain closed;
+- the M0 Earthloong fixture now previews raw pinned donor `SkillNumber 1 -> 2 -> 3 -> 4` states in order, without Tail/Forked/Earthline hit geometry, damage or temporary signature VFX layered over the motion;
+- individual raw states can be replayed with verification-only `/owr_earthloong_motion_1` through `/owr_earthloong_motion_4`;
+- idle intervals restore donor locomotion so the review captures the model's normal stance/movement context as well as the isolated action motion;
+- no production action-role remap is accepted until real Minecraft footage is reviewed.
+
+The four pinned raw review durations remain:
+
+| SkillNumber | donor animation | duration |
+|---:|---|---:|
+| 1 | `woodlizard_attack` | 10 ticks / 0.50 s |
+| 2 | `woodlizard_charge` | 40 ticks / 2.00 s |
+| 3 | `woodlizard_skill1` | 25 ticks / 1.25 s |
+| 4 | `woodlizard_roar` | 50 ticks / 2.50 s |
+
+This is a verification workflow correction, **not** a new finalized Earthloong kit.
