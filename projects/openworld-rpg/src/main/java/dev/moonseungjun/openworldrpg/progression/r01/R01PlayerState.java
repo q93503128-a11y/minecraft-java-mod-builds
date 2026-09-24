@@ -80,6 +80,10 @@ public record R01PlayerState(
 
     public static final String OPENING_LOADOUT_CLAIM_ID =
             "openworld_rpg:r01/opening_loadout";
+    public static final String DUST_ON_QUARRY_ROAD_QUEST_ID =
+            "openworld_rpg:r01/dust_on_quarry_road";
+    public static final String ROOTS_BELOW_STONE_QUEST_ID =
+            "openworld_rpg:r01/roots_below_stone";
 
     public boolean openingLoadoutClaimed() {
         return ledger.rewardClaimIds().contains(OPENING_LOADOUT_CLAIM_ID);
@@ -117,6 +121,7 @@ public record R01PlayerState(
         TransactionLedger nextLedger = ledger.withChoiceFlag(
                 "openworld_rpg:r01/first_root_class_selected"
         );
+        nextLedger = reconcileQuarryRoadQuestLedger(nextOpening, nextLedger);
         return changed(nextOpening, quarry, worldLoops, economy, nextLedger, worldTick);
     }
 
@@ -127,6 +132,7 @@ public record R01PlayerState(
         TransactionLedger nextLedger = ledger.withRewardClaimId(
                 "openworld_rpg:r01/starter_package"
         );
+        nextLedger = reconcileQuarryRoadQuestLedger(nextOpening, nextLedger);
         return changed(nextOpening, quarry, worldLoops, economy, nextLedger, worldTick);
     }
 
@@ -173,9 +179,18 @@ public record R01PlayerState(
         );
 
         if (Integer.bitCount(nextBits) >= 3) {
-            nextLedger = nextLedger.withCompletedStepId(
-                    "openworld_rpg:r01/dust_on_quarry_road/complete"
-            );
+            nextLedger = nextLedger
+                    .withCompletedStepId(
+                            "openworld_rpg:r01/dust_on_quarry_road/complete"
+                    )
+                    .withQuestStepId(
+                            DUST_ON_QUARRY_ROAD_QUEST_ID,
+                            "completed"
+                    )
+                    .withQuestStepId(
+                            ROOTS_BELOW_STONE_QUEST_ID,
+                            "available"
+                    );
             nextOpening = nextOpening.withMainStage(
                     quarry.discovered()
                             ? R01MainStage.QUARRY_ENTRANCE_DISCOVERED
@@ -336,6 +351,20 @@ public record R01PlayerState(
                 nextLedger,
                 worldTick
         );
+    }
+
+    private TransactionLedger reconcileQuarryRoadQuestLedger(
+            OpeningState candidate,
+            TransactionLedger candidateLedger
+    ) {
+        if (candidate.mainStage().isAtLeast(R01MainStage.QUARRY_ROAD_ACTIVE)
+                && !candidate.mainStage().isAtLeast(R01MainStage.QUARRY_ROAD_COMPLETE)) {
+            return candidateLedger.withQuestStepId(
+                    DUST_ON_QUARRY_ROAD_QUEST_ID,
+                    "active"
+            );
+        }
+        return candidateLedger;
     }
 
     private OpeningState reconcileQuarryRoadActivation(OpeningState candidate) {

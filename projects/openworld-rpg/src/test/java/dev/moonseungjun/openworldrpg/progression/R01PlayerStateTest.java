@@ -51,6 +51,18 @@ class R01PlayerStateTest {
 
         assertEquals(R01MainStage.QUARRY_ROAD_ACTIVE, firstClassThenStarter.opening().mainStage());
         assertEquals(R01MainStage.QUARRY_ROAD_ACTIVE, starterThenClass.opening().mainStage());
+        assertEquals(
+                "active",
+                firstClassThenStarter.ledger().questStepIds().get(
+                        R01PlayerState.DUST_ON_QUARRY_ROAD_QUEST_ID
+                )
+        );
+        assertEquals(
+                "active",
+                starterThenClass.ledger().questStepIds().get(
+                        R01PlayerState.DUST_ON_QUARRY_ROAD_QUEST_ID
+                )
+        );
     }
 
     @Test
@@ -75,6 +87,18 @@ class R01PlayerStateTest {
         assertTrue(state.ledger().completedStepIds().contains(
                 "openworld_rpg:r01/dust_on_quarry_road/complete"
         ));
+        assertEquals(
+                "completed",
+                state.ledger().questStepIds().get(
+                        R01PlayerState.DUST_ON_QUARRY_ROAD_QUEST_ID
+                )
+        );
+        assertEquals(
+                "available",
+                state.ledger().questStepIds().get(
+                        R01PlayerState.ROOTS_BELOW_STONE_QUEST_ID
+                )
+        );
     }
 
     @Test
