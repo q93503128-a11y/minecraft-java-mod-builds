@@ -11,6 +11,7 @@ import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import dev.moonseungjun.openworldrpg.integration.verify.M0PlayerVerificationBootstrap;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryAttachments;
 import dev.moonseungjun.openworldrpg.progression.r01.R01ClassStarterService;
+import dev.moonseungjun.openworldrpg.progression.r01.R01MainQuestService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01OpeningBootstrapService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerStateAttachments;
 import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionAttachments;
@@ -45,6 +46,9 @@ public final class OpenworldRpgMod implements ModInitializer {
                 R01ClassStarterService.reconcileInterruptedGrant(handler.getPlayer());
             }
             PlayerRewardTransactionService.resumePending(handler.getPlayer());
+            if (!M0PlayerVerificationBootstrap.enabled()) {
+                R01MainQuestService.reconcileCommittedRewards(handler.getPlayer());
+            }
             PlayerCombatBuildPublisher.refresh(handler.getPlayer());
             M0PlayerVerificationBootstrap.prepare(handler.getPlayer(), LOGGER);
         });
