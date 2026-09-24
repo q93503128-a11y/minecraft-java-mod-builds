@@ -66,6 +66,17 @@ class R01PlayerStateTest {
     }
 
     @Test
+    void quarryRoadCreditFailsClosedBeforeMainObjectiveActivation() {
+        assertThrows(
+                IllegalStateException.class,
+                () -> R01PlayerState.initial().recordQuarryRoadAction(
+                        R01PlayerState.QuarryRoadAction.LOST_CARGO,
+                        1
+                )
+        );
+    }
+
+    @Test
     void quarryRoadRequiresThreeDistinctUsefulActionCategories() {
         var state = R01PlayerState.initial()
                 .markFirstRootClassSelected(1)

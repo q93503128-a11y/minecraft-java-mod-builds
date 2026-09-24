@@ -166,6 +166,11 @@ public record R01PlayerState(
     ) {
         Objects.requireNonNull(action, "action");
         validateTick(worldTick);
+        if (!opening.mainStage().isAtLeast(R01MainStage.QUARRY_ROAD_ACTIVE)) {
+            throw new IllegalStateException(
+                    "Dust on the Quarry Road action credit requires the active main objective."
+            );
+        }
 
         int nextBits = opening.quarryRoadActionBits() | action.mask();
         if (nextBits == opening.quarryRoadActionBits()) {
