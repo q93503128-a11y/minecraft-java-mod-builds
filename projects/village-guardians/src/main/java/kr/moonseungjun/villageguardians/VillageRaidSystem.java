@@ -63,6 +63,7 @@ public final class VillageRaidSystem {
     private static int waveElapsedTicks;
     private static int structureAttackTicks;
     private static int abilityTicks;
+    private static int scheduledStartWave = 1;
     private static VillageWaveTrait currentTrait = VillageWaveTrait.STANDARD;
 
     private VillageRaidSystem() {}
@@ -83,6 +84,14 @@ public final class VillageRaidSystem {
         clearState();
     }
 
+    public static void captureRetryWaveCheckpoint() {
+        VillageSiegePersistence.putInt("retry_wave", active ? Math.max(1, wave) : 1);
+    }
+
+    public static void clearRetryWaveCheckpoint() {
+        VillageSiegePersistence.putInt("retry_wave", 1);
+    }
+
     public static void onPhaseChanged(MinecraftServer server, VillageTimePhase phase) {
         if (phase == VillageTimePhase.NIGHT) scheduleRaid(server);
     }
@@ -93,7 +102,7 @@ public final class VillageRaidSystem {
             countdownTicks--;
             if (countdownTicks == 0) {
                 active = true;
-                wave = 1;
+                wave = Math.max(1, Math.min(maxWaves, scheduledStartWave));
                 spawnWave(server);
             }
             return;
@@ -165,10 +174,9 @@ public final class VillageRaidSystem {
     public static int tauntEnemies(
             ServerLevel level, LivingEntity taunter, Vec3 center, double radius, int durationTicks, int limit) {
         if (level == null || taunter == null || center == null || radius <= 0.0 || durationTicks <= 0) return 0;
-        boolean playerTaunter = taunter instanceof ServerPlayer;
-        double effectiveRadius = playerTaunter ? Math.max(radius, 44.0) : radius;
+        double effectiveRadius = radius;
         double radiusSquared = effectiveRadius * effectiveRadius;
-        int maximum = playerTaunter ? Math.max(160, limit) : Math.max(1, limit);
+        int maximum = Math.max(1, limit);
         long until = level.getGameTime() + durationTicks;
         boolean mercenaryTaunter = taunter instanceof Mob taunterMob
                 && VillageMercenarySystem.isCombatMercenary(taunterMob);
@@ -378,15 +386,20 @@ public final class VillageRaidSystem {
         int day = VillageCouncilState.currentDay();
         maxWaves = previewMaxWaves(day);
         countdownTicks = FIRST_WAVE_COUNTDOWN_TICKS;
-        wave = 0;
+        scheduledStartWave = Math.max(1, Math.min(maxWaves,
+                VillageSiegePersistence.getInt("retry_wave", 1)));
+        wave = scheduledStartWave - 1;
         betweenWaveTicks = 0;
         waveElapsedTicks = 0;
         currentTrait = VillageWaveTrait.STANDARD;
         String milestone = VillageWarfrontSystem.milestoneHint(day);
         server.getPlayerList().broadcastSystemMessage(
                 Component.literal("§c[야간 습격] §f제 " + day + "일 · " + VillageWarfrontSystem.dayTitle(day)
-                        + "\n§f12초 뒤 북쪽 외곽에서 " + maxWaves
-                        + "개 웨이브가 접근합니다. 각 웨이브는 늦어도 60초 뒤 이어집니다."
+                        + "\n§f12초 뒤 북쪽 외곽에서 "
+                        + (scheduledStartWave > 1
+                        ? "실패 지점인 " + scheduledStartWave + "웨이브부터 재개합니다. "
+                        : maxWaves + "개 웨이브가 접근합니다. ")
+                        + "각 웨이브는 늦어도 60초 뒤 이어집니다."
                         + (milestone.isBlank() ? "" : "\n§6" + milestone)), false);
         if (VillagePlacedTurretSystem.count() == 0) {
             server.getPlayerList().broadcastSystemMessage(Component.literal(
@@ -402,9 +415,12 @@ public final class VillageRaidSystem {
         int day = VillageCouncilState.currentDay();
         currentTrait = VillageWaveTrait.select(day, wave);
         int requested = previewWaveCount(day, wave, players, currentTrait);
-        int capacity = Math.max(0, MAX_ACTIVE_ENEMIES - ACTIVE_ENEMIES.size());
-        int count = Math.min(requested, capacity);
-        int bossCount = Math.min(count, VillageWarfrontSystem.bonusBossCount(day, wave, maxWaves));
+        int bossCount = Math.max(0, VillageWarfrontSystem.bonusBossCount(day, wave, maxWaves));
+        int normalRequested = Math.max(0, requested - bossCount);
+        int normalCapacity = Math.max(0, MAX_ACTIVE_ENEMIES - ACTIVE_ENEMIES.size());
+        int normalCount = Math.min(normalRequested, normalCapacity);
+        // Mandatory milestone/final-siege bosses may exceed the ordinary-enemy cap by a few actors.
+        int count = bossCount + normalCount;
         int before = ACTIVE_ENEMIES.size();
         int flyingSpawned = 0;
         PlayerTeam raidTeam = ensureRaidTeam(server);
@@ -457,7 +473,7 @@ public final class VillageRaidSystem {
         betweenWaveTicks = 0;
         structureAttackTicks = 0;
         int spawned = ACTIVE_ENEMIES.size() - before;
-        String capped = count < requested ? " §7(전장 개체 상한 적용)" : "";
+        String capped = normalCount < normalRequested ? " §7(일반 적 상한 적용 · 우두머리 보장)" : "";
         String finalPhase = VillageWarfrontSystem.finalSiegePhaseLabel(day, wave);
         server.getPlayerList().broadcastSystemMessage(
                 Component.literal("§c[웨이브 " + wave + "/" + maxWaves + "] §f"
@@ -1226,6 +1242,7 @@ public final class VillageRaidSystem {
                 RpgProgress.experienceRequiredAtLevel(targetLevel) * 0.18f * targetLevels));
         int coins = Math.round((60 + day * 14) * campaignReward);
 
+        clearRetryWaveCheckpoint();
         clearState();
         VillageProgressionSystem.addSupplies(server, supplies, "제 " + day + "일 방어 성공");
         java.util.Set<UUID> participants = VillageProgressionSystem.nightParticipants(server);
@@ -1347,6 +1364,7 @@ public final class VillageRaidSystem {
         waveElapsedTicks = 0;
         structureAttackTicks = 0;
         abilityTicks = 0;
+        scheduledStartWave = 1;
         currentTrait = VillageWaveTrait.STANDARD;
     }
 }

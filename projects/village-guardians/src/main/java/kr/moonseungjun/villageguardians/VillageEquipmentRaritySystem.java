@@ -77,8 +77,9 @@ public final class VillageEquipmentRaritySystem {
             if (rarity == null || rarity == Rarity.LEGENDARY) continue;
             int enhancement = enhancementLevel(stack);
             VillageEquipmentSetSystem.EquipmentSet set = VillageEquipmentSetSystem.setOf(stack);
+            String offerId = VillageEquipmentIdentity.offer(stack);
             String group = stack.getItem() + "@" + rarity.name() + "@" + enhancement + "@" + combatTier(stack)
-                    + "@" + (set == null ? "none" : set.id());
+                    + "@" + (set == null ? "none" : set.id()) + "@" + offerId;
             result.add(new FusionCandidate(slot, group, baseDisplayName(stack),
                     rarity.displayName() + (enhancement > 0 ? " · 강화 +" + enhancement : ""),
                     stack.getItem().toString()));
@@ -107,11 +108,14 @@ public final class VillageEquipmentRaritySystem {
         int enhancement = enhancementLevel(first);
         int combatTier = combatTier(first);
         VillageEquipmentSetSystem.EquipmentSet set = VillageEquipmentSetSystem.setOf(first);
+        String offerId = VillageEquipmentIdentity.offer(first);
         if (rarity == null || rarity == Rarity.LEGENDARY || set == null
                 || rarityOf(second) != rarity || rarityOf(third) != rarity
                 || enhancementLevel(second) != enhancement || enhancementLevel(third) != enhancement
                 || combatTier(second) != combatTier || combatTier(third) != combatTier
                 || VillageEquipmentSetSystem.setOf(second) != set || VillageEquipmentSetSystem.setOf(third) != set
+                || !offerId.equals(VillageEquipmentIdentity.offer(second))
+                || !offerId.equals(VillageEquipmentIdentity.offer(third))
                 || second.getItem() != first.getItem() || third.getItem() != first.getItem()) {
             return "같은 종류·세트·전장 단계·등급·강화 단계 장비 세 개를 선택해야 합니다.";
         }
@@ -123,6 +127,7 @@ public final class VillageEquipmentRaritySystem {
         ItemStack result = createNamed(item, rarity.next(), name, combatTier);
         applyName(result, rarity.next(), name, enhancement);
         VillageEquipmentIdentity.stampSet(result, set.id());
+        if (!offerId.isBlank()) VillageEquipmentIdentity.stampOffer(result, offerId);
         if (!player.addItem(result)) player.drop(result, false);
         player.getInventory().setChanged();
         return name + " 세 개를 " + rarity.next().displayName() + " 등급 하나로 합성했습니다."

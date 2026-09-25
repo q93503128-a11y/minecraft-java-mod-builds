@@ -63,7 +63,7 @@ public final class VillageRelicSystem {
         }
         VillageNetwork.open(player, new VillageNetwork.OpenVillageUiPayload(
                 "relic_choice", "보스 유물 선택",
-                "세 유물 중 하나를 선택하면 영구 적용됩니다. 이미 보유했거나 선택 대기 중인 유물은 다시 제시되지 않습니다.",
+                "세 유물 중 하나를 선택하면 영구 적용됩니다. 이미 보유한 유물은 제시되지 않으며 여러 보상이 대기할 수 있습니다.",
                 String.join(SEP, actions), String.join(SEP, labels)));
     }
 
@@ -227,14 +227,15 @@ public final class VillageRelicSystem {
     private static List<Relic> choicesFor(UUID playerId, int day) {
         List<Relic> available = new ArrayList<>();
         int mask = OWNED.getOrDefault(playerId, 0);
-        java.util.Set<Relic> reserved = pendingRelics(playerId);
         for (Relic relic : Relic.values()) {
-            if ((mask & relic.bit()) == 0 && !reserved.contains(relic)) available.add(relic);
+            if ((mask & relic.bit()) == 0) available.add(relic);
         }
         if (available.isEmpty()) return List.of();
         List<Relic> result = new ArrayList<>();
+        String pending = PENDING.getOrDefault(playerId, "");
+        int queuedOffers = pending.isBlank() ? 0 : pending.split(OFFER_SEP, -1).length;
         int seed = playerId.hashCode() * 31 + day * 17
-                + Integer.bitCount(mask) * 13 + reserved.size() * 19;
+                + Integer.bitCount(mask) * 13 + queuedOffers * 19;
         while (!available.isEmpty() && result.size() < 3) {
             int index = Math.floorMod(seed + result.size() * 37, available.size());
             result.add(available.remove(index));
@@ -247,10 +248,15 @@ public final class VillageRelicSystem {
         String raw = PENDING.getOrDefault(player.getUUID(), "");
         if (raw.isBlank()) return List.of();
         String first = raw.split(OFFER_SEP, 2)[0];
+        int mask = OWNED.getOrDefault(player.getUUID(), 0);
         List<Relic> result = new ArrayList<>();
         for (String id : first.split(",")) {
             Relic relic = Relic.fromId(id);
-            if (relic != null) result.add(relic);
+            if (relic != null && (mask & relic.bit()) == 0 && !result.contains(relic)) result.add(relic);
+        }
+        for (Relic relic : Relic.values()) {
+            if (result.size() >= 3) break;
+            if ((mask & relic.bit()) == 0 && !result.contains(relic)) result.add(relic);
         }
         return result;
     }
