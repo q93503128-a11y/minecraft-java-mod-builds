@@ -50,6 +50,8 @@ public final class VillageRespawnSystem {
         if (server == null) return false;
 
         event.setNewDamage(0.0f);
+        if (VillageSkillTestSystem.isRegistered(player)) VillageSkillTestSystem.disable(player);
+        else VillageRoleAbilitySystem.clearPlayerState(player);
         player.setAbsorptionAmount(0.0f);
         player.setHealth(1.0f);
         player.setRemainingFireTicks(0);

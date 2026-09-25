@@ -151,13 +151,6 @@ public final class VillageFusionSafeScreen extends Screen {
     public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
         if (click.button() != 0) return super.mouseClicked(click, doubled);
         Layout layout = layout();
-        if (selectedSlots.size() == 3
-                && insideDiamond(click.x(), click.y(), layout.safe().centerX(), layout.combineY(), 31)) {
-            String action = "fusion_combine:" + selectedSlots.get(0) + ","
-                    + selectedSlots.get(1) + "," + selectedSlots.get(2);
-            ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(action));
-            return true;
-        }
         for (int i = 0; i < 3; i++) {
             Candidate candidate = selectedCandidate(i);
             Socket socket = layout.sockets()[i];
@@ -172,10 +165,22 @@ public final class VillageFusionSafeScreen extends Screen {
             int col = index % grid.columns();
             int x = grid.left() + col * grid.cellWidth();
             int y = grid.top() + row * grid.rowHeight() - scroll;
-            if (inside(click.x(), click.y(), x, y, grid.cellWidth() - 6, grid.rowHeight() - 5)) {
+            int cellBottom = y + grid.rowHeight() - 5;
+            if (cellBottom <= grid.top() || y >= grid.bottom()) continue;
+            int visibleTop = Math.max(y, grid.top());
+            int visibleBottom = Math.min(cellBottom, grid.bottom());
+            if (inside(click.x(), click.y(), x, visibleTop,
+                    grid.cellWidth() - 6, Math.max(0, visibleBottom - visibleTop))) {
                 toggle(candidates.get(index));
                 return true;
             }
+        }
+        if (selectedSlots.size() == 3
+                && insideDiamond(click.x(), click.y(), layout.safe().centerX(), layout.combineY(), 31)) {
+            String action = "fusion_combine:" + selectedSlots.get(0) + ","
+                    + selectedSlots.get(1) + "," + selectedSlots.get(2);
+            ClientPacketDistributor.sendToServer(new VillageNetwork.VillageUiActionPayload(action));
+            return true;
         }
         return super.mouseClicked(click, doubled);
     }

@@ -549,6 +549,8 @@ public final class VillageProgressionSystem {
         if (!gameOver) return;
         gameOver = false;
         int retrySupport = 0;
+        if (fromStart) VillageRaidSystem.clearRetryWaveCheckpoint();
+        else VillageRaidSystem.captureRetryWaveCheckpoint();
         VillageRaidSystem.resetAfterRestart(server);
         VillageSkillTestSystem.clearAll(server);
         VillageRespawnSystem.recoverAfterGameRestart(server);
@@ -600,11 +602,11 @@ public final class VillageProgressionSystem {
         if (!fromStart) {
             if (retrySupport > 0) {
                 server.getPlayerList().broadcastSystemMessage(Component.literal(
-                        "§6[재도전 보급] §f전투 분석 지원으로 공동 보급품 +" + retrySupport
+                        "§6[재도전 보급] §f실패한 웨이브부터 재개 · 공동 보급품 +" + retrySupport
                                 + " · 같은 날 지원 " + retrySupportClaims + "/" + MAX_RETRY_SUPPORT_CLAIMS), false);
             } else {
                 server.getPlayerList().broadcastSystemMessage(Component.literal(
-                        "§7[재도전 보급] 오늘의 추가 지원은 모두 사용했습니다. 전리품과 개인 성장은 그대로 유지됩니다."), false);
+                        "§7[재도전] 실패한 웨이브부터 재개합니다. 이미 획득한 전리품과 개인 성장은 유지됩니다."), false);
             }
         }
     }

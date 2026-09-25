@@ -19,8 +19,10 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -31,6 +33,7 @@ import java.util.UUID;
 public final class VillageEnemyArchetypeSystem {
     private static final int LONG_EFFECT_TICKS = 20 * 60 * 30;
     private static final Map<UUID, Float> SUPPORT_HEAL_BUDGET = new HashMap<>();
+    private static final Set<UUID> SIGNATURE_WARNED = new HashSet<>();
 
     private VillageEnemyArchetypeSystem() {}
 
@@ -320,10 +323,11 @@ public final class VillageEnemyArchetypeSystem {
             case SIEGE_BEAST -> {
                 int phase = abilityPhase(mob, globalTicks, 100);
                 if (phase == 88) {
+                    SIGNATURE_WARNED.add(mob.getUUID());
                     VillageBossEffectSystem.signatureWarning(level, mob, archetype, 9.5, 12);
                     return;
                 }
-                if (phase != 0) return;
+                if (phase != 0 || !SIGNATURE_WARNED.remove(mob.getUUID())) return;
                 VillageEnemyCompositionSystem.animateRiderAttack(mob);
                 damageAndDebuffPlayers(level, server, mob, 9.5, 4.0f, MobEffects.SLOWNESS);
                 VillageBossEffectSystem.signatureImpact(level, mob, archetype, 9.5);
@@ -334,10 +338,11 @@ public final class VillageEnemyArchetypeSystem {
             case IRON_WARLORD -> {
                 int phase = abilityPhase(mob, globalTicks, 120);
                 if (phase == 102) {
+                    SIGNATURE_WARNED.add(mob.getUUID());
                     VillageBossEffectSystem.signatureWarning(level, mob, archetype, 12.0, 18);
                     return;
                 }
-                if (phase != 0) return;
+                if (phase != 0 || !SIGNATURE_WARNED.remove(mob.getUUID())) return;
                 VillageEnemyCompositionSystem.animateRiderAttack(mob);
                 for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 12.0, 18, mob.getUUID())) {
                     ally.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 140, 1));
@@ -351,10 +356,11 @@ public final class VillageEnemyArchetypeSystem {
             case PLAGUE_ARCHON -> {
                 int phase = abilityPhase(mob, globalTicks, 150);
                 if (phase == 126) {
+                    SIGNATURE_WARNED.add(mob.getUUID());
                     VillageBossEffectSystem.signatureWarning(level, mob, archetype, 11.0, 24);
                     return;
                 }
-                if (phase != 0) return;
+                if (phase != 0 || !SIGNATURE_WARNED.remove(mob.getUUID())) return;
                 VillageEnemyCompositionSystem.animateRiderAttack(mob);
                 damageAndDebuffPlayers(level, server, mob, 11.0, 3.5f, MobEffects.POISON);
                 for (Mob ally : VillageRaidSystem.activeEnemiesNear(level, mob.position(), 11.0, 6, mob.getUUID())) {
@@ -368,10 +374,11 @@ public final class VillageEnemyArchetypeSystem {
             case DREAD_KNIGHT -> {
                 int phase = abilityPhase(mob, globalTicks, 90);
                 if (phase == 76) {
+                    SIGNATURE_WARNED.add(mob.getUUID());
                     VillageBossEffectSystem.signatureWarning(level, mob, archetype, 10.0, 14);
                     return;
                 }
-                if (phase != 0) return;
+                if (phase != 0 || !SIGNATURE_WARNED.remove(mob.getUUID())) return;
                 VillageEnemyCompositionSystem.animateRiderAttack(mob);
                 float drained = 0.0f;
                 for (ServerPlayer player : nearbyPlayers(server, mob, 10.0)) {
@@ -802,11 +809,15 @@ public final class VillageEnemyArchetypeSystem {
     }
 
     public static void forget(UUID uuid) {
-        if (uuid != null) SUPPORT_HEAL_BUDGET.remove(uuid);
+        if (uuid != null) {
+            SUPPORT_HEAL_BUDGET.remove(uuid);
+            SIGNATURE_WARNED.remove(uuid);
+        }
     }
 
     public static void resetRaidState() {
         SUPPORT_HEAL_BUDGET.clear();
+        SIGNATURE_WARNED.clear();
     }
 
     private static float supportHeal(Mob ally, float requested) {

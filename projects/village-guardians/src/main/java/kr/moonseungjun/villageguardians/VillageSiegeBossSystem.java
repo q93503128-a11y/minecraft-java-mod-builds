@@ -64,12 +64,6 @@ public final class VillageSiegeBossSystem {
                 DUEL_CASTS.remove(id);
                 continue;
             }
-            if (VillageRaidSystem.hasActiveTaunt(level, mob)) {
-                BREACH_CASTS.remove(id);
-                RITUAL_CASTS.remove(id);
-                DUEL_CASTS.remove(id);
-                continue;
-            }
             if (!PHASE_TWO.contains(id) && mob.getHealth() <= mob.getMaxHealth() * 0.50f) {
                 PHASE_TWO.add(id);
                 enterPhaseTwo(server, mob, ACTIVE.get(id));
@@ -138,8 +132,11 @@ public final class VillageSiegeBossSystem {
             return;
         }
         {
-            mob.setTarget(null);
-            mob.getNavigation().moveTo(target.getX() + 0.5, target.getY(), target.getZ() + 0.5, 1.18);
+            boolean taunted = VillageRaidSystem.hasActiveTaunt(server.overworld(), mob);
+            if (!taunted) {
+                mob.setTarget(null);
+                mob.getNavigation().moveTo(target.getX() + 0.5, target.getY(), target.getZ() + 0.5, 1.18);
+            }
             boolean touching = VillageSiegeSegmentSystem.touching(segment, mob.blockPosition());
             boolean phaseTwo = PHASE_TWO.contains(mob.getUUID());
             int interval = phaseTwo ? 30 : 45;
@@ -190,7 +187,7 @@ public final class VillageSiegeBossSystem {
                 .filter(player -> player.level() == boss.level() && player.isAlive() && !player.isSpectator()
                         && !VillageRespawnSystem.isDowned(player) && player.distanceToSqr(boss) <= 42.0 * 42.0)
                 .min(java.util.Comparator.comparingDouble(boss::distanceToSqr)).orElse(null);
-        if (target != null) {
+        if (target != null && !VillageRaidSystem.hasActiveTaunt(server.overworld(), boss)) {
             boss.setTarget(target);
             boss.getNavigation().moveTo(target, PHASE_TWO.contains(boss.getUUID()) ? 1.28 : 1.16);
         }

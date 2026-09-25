@@ -206,7 +206,7 @@ public final class VillageSkillEffectSystem {
     public static void clearOwned(ServerLevel level, ServerPlayer owner) {
         if (level == null || owner == null) return;
         for (VillageSkillEffectEntity effect : level.getEntitiesOfClass(
-                VillageSkillEffectEntity.class, owner.getBoundingBox().inflate(192.0),
+                VillageSkillEffectEntity.class, owner.getBoundingBox().inflate(512.0),
                 effect -> effect.ownerEntityId() == owner.getId())) {
             effect.discard();
         }

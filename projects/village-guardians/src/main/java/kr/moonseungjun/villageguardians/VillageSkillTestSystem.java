@@ -57,12 +57,37 @@ public final class VillageSkillTestSystem {
         return true;
     }
 
-    public static boolean isEnabled(ServerPlayer player) {
+    public static boolean isRegistered(ServerPlayer player) {
         return player != null && ENABLED.contains(player.getUUID());
     }
 
+    public static boolean isEnabled(ServerPlayer player) {
+        return isRegistered(player) && validTestContext(player);
+    }
+
+    private static boolean validTestContext(ServerPlayer player) {
+        if (player == null || !(player.level() instanceof ServerLevel)) return false;
+        if (VillageCouncilState.currentPhase() != VillageTimePhase.DAY || VillageRaidSystem.isRaidLocked()) return false;
+        BlockPos arena = arenaCenter();
+        if (arena == null) return false;
+        BlockPos pos = player.blockPosition();
+        return Math.abs(pos.getX() - arena.getX()) <= ARENA_RADIUS + 4
+                && Math.abs(pos.getZ() - arena.getZ()) <= ARENA_RADIUS + 4
+                && Math.abs(pos.getY() - arena.getY()) <= 18;
+    }
+
+    public static void tick(MinecraftServer server) {
+        if (server == null || ENABLED.isEmpty()) return;
+        for (UUID id : new HashSet<>(ENABLED)) {
+            ServerPlayer player = server.getPlayerList().getPlayer(id);
+            if (player == null || validTestContext(player)) continue;
+            String result = disable(player);
+            player.sendSystemMessage(Component.literal("§e[기술 시험 종료] §f시험장 밖으로 이동해 시험 권한을 해제했습니다. " + result));
+        }
+    }
+
     public static boolean recoverStrandedAfterRestart(ServerPlayer player) {
-        if (player == null || isEnabled(player) || !(player.level() instanceof ServerLevel)) return false;
+        if (player == null || isRegistered(player) || !(player.level() instanceof ServerLevel)) return false;
         BlockPos arena = arenaCenter();
         if (arena == null) return false;
         BlockPos pos = player.blockPosition();

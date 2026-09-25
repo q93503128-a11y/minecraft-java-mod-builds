@@ -137,7 +137,7 @@ public final class VillageRoleAbilitySystem {
                 iterator.remove();
             }
             for (AbstractArrow arrow : level.getEntitiesOfClass(
-                    AbstractArrow.class, player.getBoundingBox().inflate(192.0),
+                    AbstractArrow.class, player.getBoundingBox().inflate(512.0),
                     arrow -> arrow.getOwner() == player)) {
                 RAPID_ARROWS.remove(arrow.getUUID());
                 RICOCHET_ARROWS.remove(arrow.getUUID());

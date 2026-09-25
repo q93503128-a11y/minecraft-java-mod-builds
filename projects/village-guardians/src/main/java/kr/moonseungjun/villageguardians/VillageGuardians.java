@@ -95,6 +95,10 @@ public final class VillageGuardians {
 
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            if (VillageSkillTestSystem.isRegistered(player)) VillageSkillTestSystem.disable(player);
+            else VillageRoleAbilitySystem.clearPlayerState(player);
+        }
         var server = event.getEntity().level().getServer();
         if (server != null) VillageCouncilState.onPlayerLoggedOut(server, event.getEntity().getUUID());
         VillageNetwork.forgetPlayer(event.getEntity().getUUID());
@@ -225,6 +229,7 @@ public final class VillageGuardians {
 
     @SubscribeEvent
     public void onServerTick(ServerTickEvent.Post event) {
+        VillageSkillTestSystem.tick(event.getServer());
         VillageRoleAbilitySystem.tick(event.getServer());
         VillageRaidSystem.tick(event.getServer());
         VillageAttackPlanSystem.tick(event.getServer());
