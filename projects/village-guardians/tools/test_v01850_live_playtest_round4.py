@@ -32,7 +32,7 @@ def main():
     assert "public static boolean hasActiveTaunt(ServerLevel level, Mob mob)" in raid
 
     taunt = section(raid, "public static int tauntEnemies", "public static boolean isAerialEnemy")
-    assert "playerTaunter" in taunt and "Math.max(radius, 44.0)" in taunt
+    assert "double effectiveRadius = radius" in taunt and "int maximum = Math.max(1, limit)" in taunt
     direct = section(raid, "private static void directEnemies", "private static net.minecraft.world.entity.animal.golem.IronGolem selectMercenaryTarget")
     assert "directTauntedGroundEnemy" in direct
     assert direct.index("activeTauntTarget(level, mob)") < direct.index("VillageEnemyArchetypeSystem.tickAbility")
