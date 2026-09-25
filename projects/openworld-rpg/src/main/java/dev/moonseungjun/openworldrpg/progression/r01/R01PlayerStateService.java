@@ -65,6 +65,31 @@ public final class R01PlayerStateService {
         return replace(player, state(player).recordQuarryRoadAction(action, gameTick(player)));
     }
 
+    public static R01PlayerState markRoadsideEventParticipation(
+            ServerPlayer player,
+            long cycle
+    ) {
+        return replace(
+                player,
+                state(player).markRoadsideEventParticipation(cycle, gameTick(player))
+        );
+    }
+
+    public static R01PlayerState markRoadsideEventEnded(
+            ServerPlayer player,
+            long cycle,
+            long sharedActiveWorldTime
+    ) {
+        return replace(
+                player,
+                state(player).markRoadsideEventEnded(
+                        cycle,
+                        sharedActiveWorldTime,
+                        gameTick(player)
+                )
+        );
+    }
+
     public static R01PlayerState markRegalhartClueSeen(
             ServerPlayer player,
             R01PlayerState.RegalhartClue clue

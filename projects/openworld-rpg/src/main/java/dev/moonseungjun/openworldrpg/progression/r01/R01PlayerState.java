@@ -206,6 +206,58 @@ public record R01PlayerState(
         return changed(nextOpening, quarry, worldLoops, economy, nextLedger, worldTick);
     }
 
+    public R01PlayerState markRoadsideEventParticipation(
+            long cycle,
+            long worldTick
+    ) {
+        validateTick(worldTick);
+        if (cycle <= 0L) {
+            throw new IllegalArgumentException("Roadside Trouble cycle must be positive.");
+        }
+        RepeatAndCampState nextRepeat =
+                worldLoops.repeatAndCamp().withRoadsideParticipation(cycle);
+        if (nextRepeat.equals(worldLoops.repeatAndCamp())) {
+            return this;
+        }
+        return changed(
+                opening,
+                quarry,
+                worldLoops.withRepeatAndCamp(nextRepeat),
+                economy,
+                ledger,
+                worldTick
+        );
+    }
+
+    public R01PlayerState markRoadsideEventEnded(
+            long cycle,
+            long sharedActiveWorldTime,
+            long worldTick
+    ) {
+        validateTick(worldTick);
+        if (cycle <= 0L || sharedActiveWorldTime < 0L) {
+            throw new IllegalArgumentException(
+                    "Roadside Trouble end requires positive cycle and non-negative active time."
+            );
+        }
+        RepeatAndCampState nextRepeat =
+                worldLoops.repeatAndCamp().withRoadsideEventEnded(
+                        cycle,
+                        sharedActiveWorldTime
+                );
+        if (nextRepeat.equals(worldLoops.repeatAndCamp())) {
+            return this;
+        }
+        return changed(
+                opening,
+                quarry,
+                worldLoops.withRepeatAndCamp(nextRepeat),
+                economy,
+                ledger,
+                worldTick
+        );
+    }
+
     public R01PlayerState markRegalhartClueSeen(RegalhartClue clue, long worldTick) {
         Objects.requireNonNull(clue, "clue");
         validateTick(worldTick);
@@ -773,6 +825,14 @@ public record R01PlayerState(
                     FishingServiceState.initial()
             );
         }
+
+        public WorldLoopState withRepeatAndCamp(RepeatAndCampState next) {
+            Objects.requireNonNull(next, "next");
+            if (repeatAndCamp.equals(next)) {
+                return this;
+            }
+            return new WorldLoopState(next, propertyProfession, fishingService);
+        }
     }
 
     public record RepeatAndCampState(
@@ -807,6 +867,66 @@ public record R01PlayerState(
                     roadsideEventParticipation,
                     "roadsideEventParticipation"
             );
+        }
+
+        public boolean participatedInRoadsideCycle(long cycle) {
+            if (cycle <= 0L) {
+                throw new IllegalArgumentException("Roadside Trouble cycle must be positive.");
+            }
+            return roadsideEventParticipation.contains(roadsideParticipationId(cycle));
+        }
+
+        public RepeatAndCampState withRoadsideParticipation(long cycle) {
+            if (cycle <= 0L) {
+                throw new IllegalArgumentException("Roadside Trouble cycle must be positive.");
+            }
+            if (cycle < roadsideEventCycle) {
+                return this;
+            }
+            String participationId = roadsideParticipationId(cycle);
+            if (cycle == roadsideEventCycle
+                    && roadsideEventParticipation.equals(Set.of(participationId))) {
+                return this;
+            }
+            return new RepeatAndCampState(
+                    cycle,
+                    Set.of(participationId),
+                    roadsideEventLastEndActiveTime,
+                    regalhartCycle,
+                    regalhartLastDefeatActiveTime,
+                    fieldCampRecipeKnown,
+                    fieldCampPermanentUnlock
+            );
+        }
+
+        public RepeatAndCampState withRoadsideEventEnded(
+                long cycle,
+                long sharedActiveWorldTime
+        ) {
+            if (cycle <= 0L || sharedActiveWorldTime < 0L) {
+                throw new IllegalArgumentException(
+                        "Roadside Trouble end requires positive cycle and non-negative active time."
+                );
+            }
+            if (cycle < roadsideEventCycle) {
+                return this;
+            }
+            Set<String> participation = cycle == roadsideEventCycle
+                    ? roadsideEventParticipation
+                    : Set.of();
+            return new RepeatAndCampState(
+                    cycle,
+                    participation,
+                    sharedActiveWorldTime,
+                    regalhartCycle,
+                    regalhartLastDefeatActiveTime,
+                    fieldCampRecipeKnown,
+                    fieldCampPermanentUnlock
+            );
+        }
+
+        private static String roadsideParticipationId(long cycle) {
+            return "openworld_rpg:r01/roadside_trouble/cycle/" + cycle;
         }
 
         public static RepeatAndCampState initial() {

@@ -15,6 +15,8 @@ import dev.moonseungjun.openworldrpg.progression.r01.R01MainQuestService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01OpeningBootstrapService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerStateAttachments;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerStateService;
+import dev.moonseungjun.openworldrpg.progression.r01.R01RoadsideTroubleController;
+import dev.moonseungjun.openworldrpg.progression.r01.R01SharedWorldAttachments;
 import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionAttachments;
 import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionService;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryBeltAttachments;
@@ -36,6 +38,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         PlayerProgressionAttachments.initialize();
         PlayerEquipmentAttachments.initialize();
         R01PlayerStateAttachments.initialize();
+        R01SharedWorldAttachments.initialize();
         PlayerCurrencyAttachments.initialize();
         PlayerRewardTransactionAttachments.initialize();
         PlayerInventoryAttachments.initialize();
@@ -44,9 +47,10 @@ public final class OpenworldRpgMod implements ModInitializer {
         PlayerVitalsRuntime.initialize();
         IntegrationBootstrap.bootstrap(profile, LOGGER);
         M0PlayerVerificationBootstrap.registerCommands();
-        ServerTickEvents.END_SERVER_TICK.register(
-                PlayerActiveWorldTimeService::tickLoadedPlayers
-        );
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            PlayerActiveWorldTimeService.tickLoadedPlayers(server);
+            R01RoadsideTroubleController.tickActiveWorld(server);
+        });
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             if (!M0PlayerVerificationBootstrap.enabled()) {
@@ -56,6 +60,9 @@ public final class OpenworldRpgMod implements ModInitializer {
             PlayerRewardTransactionService.resumePending(handler.getPlayer());
             if (!M0PlayerVerificationBootstrap.enabled()) {
                 R01PlayerStateService.reconcileActiveTimeEpochs(handler.getPlayer());
+                R01RoadsideTroubleController.reconcilePendingFinalization(
+                        handler.getPlayer()
+                );
                 R01MainQuestService.reconcileCommittedRewards(handler.getPlayer());
             }
             PlayerCombatBuildPublisher.refresh(handler.getPlayer());
