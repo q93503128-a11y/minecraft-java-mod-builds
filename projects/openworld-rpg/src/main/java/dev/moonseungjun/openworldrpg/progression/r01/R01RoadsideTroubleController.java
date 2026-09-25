@@ -52,7 +52,7 @@ public final class R01RoadsideTroubleController {
             int activeParticipantCount
     ) {
         Objects.requireNonNull(trigger, "trigger");
-        MinecraftServer server = trigger.getServer();
+        MinecraftServer server = trigger.level().getServer();
         if (server == null) {
             throw new IllegalStateException("Roadside Trouble requires a live server.");
         }
@@ -109,7 +109,7 @@ public final class R01RoadsideTroubleController {
      */
     public static boolean recordParticipation(ServerPlayer player) {
         Objects.requireNonNull(player, "player");
-        MinecraftServer server = player.getServer();
+        MinecraftServer server = player.level().getServer();
         if (server == null) {
             throw new IllegalStateException("Roadside Trouble requires a live server.");
         }
@@ -194,7 +194,7 @@ public final class R01RoadsideTroubleController {
      */
     public static boolean reconcilePendingFinalization(ServerPlayer player) {
         Objects.requireNonNull(player, "player");
-        MinecraftServer server = player.getServer();
+        MinecraftServer server = player.level().getServer();
         if (server == null) {
             return false;
         }
