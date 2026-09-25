@@ -71,9 +71,11 @@ ability = text("VillageRoleAbilitySystem.java")
 follow = re.search(r"private boolean followsOwner\(\).*?\n    \}", effect, re.S).group(0)
 require('"luminar_healing_field"' not in follow,
         "Healing sanctuary visual remains at the same fixed center as gameplay")
-require('"arcanist_tornado".equals(kind())' in effect
+base_tornado = ability.split("case ARCANIST_CHAIN -> {", 1)[1].split("case ARCANIST_NOVA -> {", 1)[0]
+require("specialRank, 0, forward" in base_tornado
+        and '"arcanist_tornado".equals(kind())' not in effect
         and "area.moveTo(area.center().add(travel.scale(0.24)))" in ability,
-        "Tornado visual and gameplay advance at the same 0.24-block-per-tick speed")
+        "Tornado visual and gameplay share the fixed cast direction and same 0.24-block-per-tick speed")
 
 require("Math.round(skill.baseCooldownSeconds() * 0.20f)" in roles,
         "Skill cooldown uses a per-skill 20 percent floor instead of universal 7 seconds")
