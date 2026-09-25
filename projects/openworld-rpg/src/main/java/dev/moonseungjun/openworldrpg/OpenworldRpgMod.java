@@ -14,10 +14,14 @@ import dev.moonseungjun.openworldrpg.progression.r01.R01ClassStarterService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01MainQuestService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01OpeningBootstrapService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerStateAttachments;
+import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerStateService;
 import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionAttachments;
 import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionService;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryBeltAttachments;
+import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeAttachments;
+import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeService;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,9 +40,13 @@ public final class OpenworldRpgMod implements ModInitializer {
         PlayerRewardTransactionAttachments.initialize();
         PlayerInventoryAttachments.initialize();
         RecoveryBeltAttachments.initialize();
+        PlayerActiveWorldTimeAttachments.initialize();
         PlayerVitalsRuntime.initialize();
         IntegrationBootstrap.bootstrap(profile, LOGGER);
         M0PlayerVerificationBootstrap.registerCommands();
+        ServerTickEvents.END_SERVER_TICK.register(
+                PlayerActiveWorldTimeService::tickLoadedPlayers
+        );
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             if (!M0PlayerVerificationBootstrap.enabled()) {
@@ -47,6 +55,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             }
             PlayerRewardTransactionService.resumePending(handler.getPlayer());
             if (!M0PlayerVerificationBootstrap.enabled()) {
+                R01PlayerStateService.reconcileActiveTimeEpochs(handler.getPlayer());
                 R01MainQuestService.reconcileCommittedRewards(handler.getPlayer());
             }
             PlayerCombatBuildPublisher.refresh(handler.getPlayer());

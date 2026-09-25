@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.progression.r01;
 
+import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeService;
 import java.util.Objects;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -26,7 +27,19 @@ public final class R01PlayerStateService {
     }
 
     public static R01PlayerState markFirstShrineActivated(ServerPlayer player) {
-        return replace(player, state(player).markFirstShrineActivated(gameTick(player)));
+        R01PlayerState next = replace(
+                player,
+                state(player).markFirstShrineActivated(gameTick(player))
+        );
+        PlayerActiveWorldTimeService.ensureAlderfordShrineEpoch(player);
+        return next;
+    }
+
+    public static void reconcileActiveTimeEpochs(ServerPlayer player) {
+        Objects.requireNonNull(player, "player");
+        if (state(player).opening().firstShrineActivated()) {
+            PlayerActiveWorldTimeService.ensureAlderfordShrineEpoch(player);
+        }
     }
 
     public static R01PlayerState markFirstRootClassSelected(ServerPlayer player) {
