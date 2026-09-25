@@ -328,6 +328,58 @@ public record PlayerProgressionState(
         );
     }
 
+    public PlayerProgressionState forgetCombatXpTransaction(String transactionId) {
+        requireTransactionId(transactionId);
+        if (!appliedCombatXpTransactionIds.contains(transactionId)) {
+            return this;
+        }
+        Set<String> next = new HashSet<>(appliedCombatXpTransactionIds);
+        next.remove(transactionId);
+        return copy(
+                combatLevel,
+                combatXp,
+                activeClass,
+                warrior,
+                hunter,
+                cleric,
+                mage,
+                guardian,
+                warriorProgress,
+                hunterProgress,
+                clericProgress,
+                mageProgress,
+                guardianProgress,
+                Set.copyOf(next),
+                appliedClassXpTransactionIds
+        );
+    }
+
+    public PlayerProgressionState forgetClassXpTransaction(String transactionId) {
+        requireTransactionId(transactionId);
+        if (!appliedClassXpTransactionIds.contains(transactionId)) {
+            return this;
+        }
+        Set<String> next = new HashSet<>(appliedClassXpTransactionIds);
+        next.remove(transactionId);
+        return copy(
+                combatLevel,
+                combatXp,
+                activeClass,
+                warrior,
+                hunter,
+                cleric,
+                mage,
+                guardian,
+                warriorProgress,
+                hunterProgress,
+                clericProgress,
+                mageProgress,
+                guardianProgress,
+                appliedCombatXpTransactionIds,
+                Set.copyOf(next)
+        );
+    }
+
     public Optional<PlayerCombatBuildState> buildWith(EquipmentCombatState equipment) {
         Objects.requireNonNull(equipment, "equipment");
         return activeClass.map(rootClass -> new PlayerCombatBuildState(

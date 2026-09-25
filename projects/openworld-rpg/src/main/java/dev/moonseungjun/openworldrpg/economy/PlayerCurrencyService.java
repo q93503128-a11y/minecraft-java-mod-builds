@@ -31,6 +31,18 @@ public final class PlayerCurrencyService {
         return new CreditResult(next, true);
     }
 
+    public static PlayerCurrencyState forgetCreditTransaction(
+            ServerPlayer player,
+            String transactionId
+    ) {
+        PlayerCurrencyState current = state(player);
+        PlayerCurrencyState next = current.forgetCreditTransaction(transactionId);
+        if (!current.equals(next)) {
+            player.setAttached(PlayerCurrencyAttachments.CURRENCY, next);
+        }
+        return next;
+    }
+
     public record CreditResult(
             PlayerCurrencyState state,
             boolean applied

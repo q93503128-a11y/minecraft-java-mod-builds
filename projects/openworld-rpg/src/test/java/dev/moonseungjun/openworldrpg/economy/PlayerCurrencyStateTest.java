@@ -57,6 +57,18 @@ class PlayerCurrencyStateTest {
     }
 
     @Test
+    void repeatableReceiptCleanupKeepsCreditedGold() {
+        var credited = PlayerCurrencyState.initial()
+                .creditOnce("openworld_rpg:r01/roadside_trouble/reward/3/gold", 20);
+        var cleaned = credited.forgetCreditTransaction(
+                "openworld_rpg:r01/roadside_trouble/reward/3/gold"
+        );
+
+        assertEquals(20L, cleaned.gold());
+        assertTrue(cleaned.appliedCreditTransactionIds().isEmpty());
+    }
+
+    @Test
     void currencySurvivesCodecRoundTrip() {
         var original = PlayerCurrencyState.initial()
                 .creditOnce("openworld_rpg:r01/dust_on_quarry_road/gold", 90);

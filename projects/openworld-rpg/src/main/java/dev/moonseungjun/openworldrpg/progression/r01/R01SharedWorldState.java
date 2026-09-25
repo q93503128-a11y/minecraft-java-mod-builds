@@ -1,10 +1,12 @@
 package dev.moonseungjun.openworldrpg.progression.r01;
 
+import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.OptionalLong;
 
 /** Persistent shared R01 world-loop state stored on the server Overworld. */
@@ -137,9 +139,11 @@ public record R01SharedWorldState(
 
     public R01SharedWorldState recordRoadsideParticipation(
             String playerUuid,
-            boolean dustQuestEligible
+            boolean dustQuestEligible,
+            Optional<RootClass> rewardClass
     ) {
         requireUuid(playerUuid);
+        rewardClass = Objects.requireNonNull(rewardClass, "rewardClass");
         if (!roadsideActive) {
             throw new IllegalStateException(
                     "Cannot record Roadside Trouble participation while event is inactive."
@@ -148,7 +152,8 @@ public record R01SharedWorldState(
 
         ParticipantSnapshot nextSnapshot = new ParticipantSnapshot(
                 roadsideCycle,
-                dustQuestEligible
+                dustQuestEligible,
+                rewardClass
         );
         ParticipantSnapshot current = roadsideParticipants.get(playerUuid);
         if (nextSnapshot.equals(current)) {
@@ -159,7 +164,8 @@ public record R01SharedWorldState(
         if (current != null && current.cycle() == roadsideCycle) {
             nextSnapshot = new ParticipantSnapshot(
                     roadsideCycle,
-                    current.dustQuestEligible() || dustQuestEligible
+                    current.dustQuestEligible() || dustQuestEligible,
+                    current.rewardClass()
             );
         }
         next.put(playerUuid, nextSnapshot);
@@ -388,14 +394,17 @@ public record R01SharedWorldState(
 
     public record ParticipantSnapshot(
             long cycle,
-            boolean dustQuestEligible
+            boolean dustQuestEligible,
+            Optional<RootClass> rewardClass
     ) {
         public static final Codec<ParticipantSnapshot> CODEC =
                 RecordCodecBuilder.create(instance -> instance.group(
                         Codec.LONG.fieldOf("cycle")
                                 .forGetter(ParticipantSnapshot::cycle),
                         Codec.BOOL.fieldOf("dust_quest_eligible")
-                                .forGetter(ParticipantSnapshot::dustQuestEligible)
+                                .forGetter(ParticipantSnapshot::dustQuestEligible),
+                        RootClass.CODEC.optionalFieldOf("reward_class")
+                                .forGetter(ParticipantSnapshot::rewardClass)
                 ).apply(instance, ParticipantSnapshot::new));
 
         public ParticipantSnapshot {
@@ -404,6 +413,7 @@ public record R01SharedWorldState(
                         "Roadside participant cycle must be positive."
                 );
             }
+            rewardClass = Objects.requireNonNull(rewardClass, "rewardClass");
         }
     }
 }

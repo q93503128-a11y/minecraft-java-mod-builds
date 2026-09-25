@@ -6,7 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.mojang.serialization.JsonOps;
+import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import dev.moonseungjun.openworldrpg.progression.r01.R01SharedWorldState;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +19,7 @@ class R01SharedWorldStateTest {
         var state = R01SharedWorldState.initial()
                 .advanceActiveWorld(5_000)
                 .startRoadside()
-                .recordRoadsideParticipation(player, true)
+                .recordRoadsideParticipation(player, true, Optional.of(RootClass.HUNTER))
                 .markRoadsideRequirement(
                         R01SharedWorldState.RoadsideRequirement.THREAT_PACK_DEFEATED
                 )
@@ -67,7 +69,7 @@ class R01SharedWorldStateTest {
         String player = UUID.randomUUID().toString();
         var completed = R01SharedWorldState.initial()
                 .startRoadside()
-                .recordRoadsideParticipation(player, false)
+                .recordRoadsideParticipation(player, false, Optional.empty())
                 .markRoadsideRequirement(
                         R01SharedWorldState.RoadsideRequirement.THREAT_PACK_DEFEATED
                 )
@@ -90,7 +92,7 @@ class R01SharedWorldStateTest {
         var original = R01SharedWorldState.initial()
                 .advanceActiveWorld(8_000)
                 .startRoadside()
-                .recordRoadsideParticipation(player, true)
+                .recordRoadsideParticipation(player, true, Optional.of(RootClass.HUNTER))
                 .markRoadsideRequirement(
                         R01SharedWorldState.RoadsideRequirement.WHEEL_BRACED
                 );

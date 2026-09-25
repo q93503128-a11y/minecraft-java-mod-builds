@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.progression.r01;
 
+import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionService;
 import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeService;
 import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeState;
 import java.util.ArrayList;
@@ -129,7 +130,8 @@ public final class R01RoadsideTroubleController {
 
         R01SharedWorldState next = shared.recordRoadsideParticipation(
                 uuid,
-                dustEligible
+                dustEligible,
+                PlayerProgressionService.state(player).activeClass()
         );
         replace(server, next);
         R01PlayerStateService.markRoadsideEventParticipation(
@@ -186,11 +188,9 @@ public final class R01RoadsideTroubleController {
     }
 
     /**
-     * Finalizes personal event metadata and Dust category after completion, including reconnect.
-     *
-     * <p>The repeatable Roadside Trouble EXP/Class XP/Gold reward is intentionally not paid here
-     * yet; its Class-XP owner is the class active during the qualifying contribution and that
-     * attribution is bound in the next reward layer rather than guessed from current class.</p>
+     * Finalizes the repeatable reward, personal event metadata and Dust category after completion,
+     * including reconnect. Class XP stays bound to the class captured on the first eligible
+     * contribution rather than whichever class happens to be active at reward resolution.
      */
     public static boolean reconcilePendingFinalization(ServerPlayer player) {
         Objects.requireNonNull(player, "player");
@@ -207,6 +207,11 @@ public final class R01RoadsideTroubleController {
             return false;
         }
 
+        R01RepeatRewardService.grantRoadsideTrouble(
+                player,
+                pending.cycle(),
+                pending.rewardClass()
+        );
         R01PlayerStateService.markRoadsideEventEnded(
                 player,
                 pending.cycle(),

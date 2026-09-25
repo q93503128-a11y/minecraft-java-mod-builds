@@ -58,6 +58,26 @@ public final class PlayerProgressionService {
         );
     }
 
+    public static PlayerProgressionState forgetCombatXpTransaction(
+            Player player,
+            String transactionId
+    ) {
+        return replace(
+                player,
+                state(player).forgetCombatXpTransaction(transactionId)
+        );
+    }
+
+    public static PlayerProgressionState forgetClassXpTransaction(
+            Player player,
+            String transactionId
+    ) {
+        return replace(
+                player,
+                state(player).forgetClassXpTransaction(transactionId)
+        );
+    }
+
     public static Optional<PlayerCombatBuildState> buildWith(
             Player player,
             EquipmentCombatState equipment

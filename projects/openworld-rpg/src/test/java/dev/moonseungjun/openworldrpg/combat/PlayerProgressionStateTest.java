@@ -123,6 +123,33 @@ class PlayerProgressionStateTest {
     }
 
     @Test
+    void repeatableReceiptCleanupKeepsEarnedProgress() {
+        var combat = PlayerProgressionState.initial()
+                .grantCombatXpOnce(
+                        "openworld_rpg:r01/roadside_trouble/reward/2/combat_xp",
+                        50
+                )
+                .grantClassXpOnce(
+                        "openworld_rpg:r01/roadside_trouble/reward/2/class_xp",
+                        RootClass.WARRIOR,
+                        40
+                );
+
+        var cleaned = combat
+                .forgetCombatXpTransaction(
+                        "openworld_rpg:r01/roadside_trouble/reward/2/combat_xp"
+                )
+                .forgetClassXpTransaction(
+                        "openworld_rpg:r01/roadside_trouble/reward/2/class_xp"
+                );
+
+        assertEquals(50L, cleaned.combatXp());
+        assertEquals(40L, cleaned.classProgress(RootClass.WARRIOR).classXp());
+        assertTrue(cleaned.appliedCombatXpTransactionIds().isEmpty());
+        assertTrue(cleaned.appliedClassXpTransactionIds().isEmpty());
+    }
+
+    @Test
     void loweringLevelBelowExistingAllocationFailsClosed() {
         var state = PlayerProgressionState.initial()
                 .withCombatLevel(8)

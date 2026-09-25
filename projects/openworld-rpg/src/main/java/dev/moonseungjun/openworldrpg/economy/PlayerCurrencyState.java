@@ -80,6 +80,20 @@ public record PlayerCurrencyState(
         );
     }
 
+    public PlayerCurrencyState forgetCreditTransaction(String transactionId) {
+        requireTransactionId(transactionId, "transactionId");
+        if (!appliedCreditTransactionIds.contains(transactionId)) {
+            return this;
+        }
+        Set<String> next = new HashSet<>(appliedCreditTransactionIds);
+        next.remove(transactionId);
+        return new PlayerCurrencyState(
+                schemaVersion,
+                gold,
+                Set.copyOf(next)
+        );
+    }
+
     public boolean hasAppliedCredit(String transactionId) {
         requireTransactionId(transactionId, "transactionId");
         return appliedCreditTransactionIds.contains(transactionId);
