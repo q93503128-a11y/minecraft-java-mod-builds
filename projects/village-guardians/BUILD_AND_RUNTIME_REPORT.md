@@ -2,17 +2,55 @@
 
 - Project: Village Guardians — 마을지키기
 - Mod ID: `villageguardians`
-- Current source version: `0.18.47-alpha.1`
+- Current source version: `0.18.48-alpha.1`
 - Minecraft: `26.2`
 - NeoForge build dependency: `26.2.0.37-beta`
 - Java target: `25`
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
-- Target JAR: `villageguardians-0.18.47-alpha.1.jar`
-- Current manual-audit validated code head: `bab1d2204704989e7a91787f9fd29fc3ea0a6072`
-- Current verification date: `2026-09-23 Asia/Seoul`
-- Current verified JAR SHA-256: `85076aa494c44ad7ad04eb454cff2fa6cfa6a00ee687fcd23e0dd73432f3bebc`
-- Current verified JAR size: `1737305` bytes
+- Target JAR: `villageguardians-0.18.48-alpha.1.jar`
+- Current manual-audit validated code head: `1e751a0c08e75d0939449f8124b65a6c23d545eb`
+- Current verification date: `2026-09-25 Asia/Seoul`
+- Current verified JAR SHA-256: `7a730f004186bb6bbf3923b57490e22d64a376a759010337669888de9b406726`
+- Current verified JAR size: `1742368` bytes
+
+## 2026-09-25 Codex 전체 수동감사 HIGH 수정 · 0.18.48 acceptance
+
+Codex가 현재 정본 319개 파일을 수동 대조해 보고한 HIGH 17건을 실제 source와 다시 대조하고, 확정되는 런타임 결함을 수정했다.
+
+- Day100 포함 수작업 우두머리는 일반 적 100기 상한 때문에 생략되지 않는다. 일반 증원만 상한에 걸리고 필수 우두머리는 별도로 보장한다.
+- 연속 보스 보상에서 아직 선택하지 않은 유물 후보가 다음 보상 풀 전체를 잠그지 않도록 했고, 앞선 대기 보상에서 이미 획득한 유물이 겹치면 현재 선택지를 아직 미보유 유물로 다시 채운다.
+- 장비 합성은 세트/전장 단계/등급/강화뿐 아니라 고유 offer ID도 동일해야 하며, 결과 장비에 해당 offer ID를 보존한다.
+- 후반 직접 스킬 피해 공식은 raw visible level을 쓰지 않고 `RpgProgress.combatScalingLevel(...)`을 거쳐 Lv.100+ 4:1 전투 환산을 따른다.
+- 신속 삼연사의 파생 화살도 실제 3/5/7발 구성에 맞는 special rank를 보존해 공격 단련 예산을 올바르게 분담한다.
+- 매의 징표는 조준 방향/LOS 안에서 고위협 표적을 고르며, 검성 연환·대공 요격·낙뢰 사슬은 같은 틱 일괄 처리 대신 실제 순차 실행 경로를 사용한다.
+- 폭우 사격·천공 봉쇄·유성 대궁·낙뢰 사슬·수호의 빛·회귀의 빛·강제 도전·불락 방벽의 VFX 반경·수명·수혜 위치·실제 실행 시간을 서버 행동과 맞췄다.
+- 기본 폭풍 회랑은 시전 당시 방향을 고정해 서버 장판과 VFX가 이후 시선 회전 때문에 갈라지지 않는다.
+- 플레이어 도발의 숨은 최소 44블록/160기 강제를 제거했다. 보스는 도발 타깃 라우팅은 따르되 고유 교리 자체가 봉인되지 않는다.
+- 우두머리 고유 공격은 실제 warning state가 먼저 기록된 경우에만 impact 단계로 진행한다.
+- 시험 모드는 낮/비습격/시험장 위치를 실제 context로 확인하며, logout/down/retry에서 시험 등록과 소유 전투 entity를 정리한다.
+- 패배 재도전은 이미 획득한 전리품·개인 성장을 유지하는 대신 실패한 웨이브부터 재개하도록 체크포인트를 저장한다.
+- 작은 합성 UI에서는 실제 보이는 재료 셀 hitbox를 먼저 처리하고 clipped 영역/합성 버튼 영역이 서로 클릭을 가로채지 않는다.
+- 위 변경을 `test_v0217_codex_manual_audit_highs.py`로 고정했고, 과거의 숨은 44블록 도발과 raw late-level 공식을 정상으로 보던 오래된 회귀계약도 현행 의미로 갱신했다.
+
+### 현재 acceptance
+
+- Validated acceptance head: `1e751a0c08e75d0939449f8124b65a6c23d545eb`
+- Actions run: `36122149796` — **PASS**
+- `tools/test_*.py`: **PASS, 105/105**
+- Java 25 / Gradle 9.2.1 / NeoForge 26.2 clean build: **PASS**
+- JAR verifier: **PASS**
+- JAR artifact upload: **PASS**
+- JAR: `villageguardians-0.18.48-alpha.1.jar`, `1742368` bytes
+- JAR SHA-256: `7a730f004186bb6bbf3923b57490e22d64a376a759010337669888de9b406726`
+- Actions artifact ID: `10858207585`
+- Artifact name: `villageguardians-0.18.48-alpha.1-codex-audit-high-fix`
+- Artifact digest: `sha256:df49bf5da6a0da4cd995900eeb1fec9e8ab3aac977dca87d0345044f963c573b`
+- Client gameplay after these repairs: **NOT RUN**
+- Multiplayer gameplay after these repairs: **NOT RUN**
+- Max-load profiler pass after these repairs: **NOT RUN**
+
+이번 acceptance는 Codex가 보고한 HIGH 17건의 정적/회귀/컴파일/JAR 경계를 닫는 검증이다. 실제 전투 감각, 40개 전직 VFX의 화면 품질, GUI scale별 체감, Day100 최대 부하는 클라이언트 playtest/profiler 단계에서 별도로 확인한다.
 
 ## 2026-09-23 실플레이 전 수동감사 결함 수술 · 0.18.47 acceptance
 
