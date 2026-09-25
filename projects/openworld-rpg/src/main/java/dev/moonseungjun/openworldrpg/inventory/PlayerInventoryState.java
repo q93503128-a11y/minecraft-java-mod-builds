@@ -185,6 +185,107 @@ public record PlayerInventoryState(
         );
     }
 
+    public boolean canAcceptMaterialInPouch(
+            String materialId,
+            int amount
+    ) {
+        requireStableId(materialId);
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Material amount must be positive.");
+        }
+        int current = materialPouch.getOrDefault(materialId, 0);
+        return amount <= MATERIAL_POUCH_CAP - current;
+    }
+
+    /**
+     * Idempotent full-amount material delivery used by reconnect-safe field transactions.
+     *
+     * <p>Capacity failure is all-or-nothing. The caller owns receipt cleanup after its durable
+     * source transaction has finalized.</p>
+     */
+    public MaterialDeliveryResult deliverMaterialToPouchOnce(
+            String transactionId,
+            String materialId,
+            int amount
+    ) {
+        requireStableId(transactionId);
+        requireStableId(materialId);
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Material amount must be positive.");
+        }
+        if (completedDeliveryIds.contains(transactionId)) {
+            return new MaterialDeliveryResult(
+                    this,
+                    MaterialDeliveryStatus.ALREADY_COMPLETED,
+                    0
+            );
+        }
+        if (!canAcceptMaterialInPouch(materialId, amount)) {
+            return new MaterialDeliveryResult(
+                    this,
+                    MaterialDeliveryStatus.CAPACITY_BLOCKED,
+                    0
+            );
+        }
+
+        Map<String, Integer> nextPouch = new HashMap<>(materialPouch);
+        nextPouch.put(materialId, nextPouch.getOrDefault(materialId, 0) + amount);
+        Set<String> nextCompleted = new HashSet<>(completedDeliveryIds);
+        nextCompleted.add(transactionId);
+
+        return new MaterialDeliveryResult(
+                copy(
+                        backpack,
+                        personalStorage,
+                        Map.copyOf(nextPouch),
+                        materialVault,
+                        keyItems,
+                        pendingItemRewards,
+                        Set.copyOf(nextCompleted)
+                ),
+                MaterialDeliveryStatus.DELIVERED,
+                amount
+        );
+    }
+
+    public PlayerInventoryState forgetCompletedDeliveryReceipt(String transactionId) {
+        requireStableId(transactionId);
+        if (!completedDeliveryIds.contains(transactionId)) {
+            return this;
+        }
+        Set<String> nextCompleted = new HashSet<>(completedDeliveryIds);
+        nextCompleted.remove(transactionId);
+        return copy(
+                backpack,
+                personalStorage,
+                materialPouch,
+                materialVault,
+                keyItems,
+                pendingItemRewards,
+                Set.copyOf(nextCompleted)
+        );
+    }
+
+    public PlayerInventoryState clearCompletedDeliveryIdsWithPrefix(String prefix) {
+        if (prefix == null || prefix.isBlank() || prefix.indexOf(':') <= 0) {
+            throw new IllegalArgumentException("Expected namespaced delivery-id prefix.");
+        }
+        Set<String> nextCompleted = new HashSet<>(completedDeliveryIds);
+        boolean changed = nextCompleted.removeIf(id -> id.startsWith(prefix));
+        if (!changed) {
+            return this;
+        }
+        return copy(
+                backpack,
+                personalStorage,
+                materialPouch,
+                materialVault,
+                keyItems,
+                pendingItemRewards,
+                Set.copyOf(nextCompleted)
+        );
+    }
+
     public MaterialConsumeResult consumeMaterial(
             String materialId,
             int amount,
@@ -464,6 +565,31 @@ public record PlayerInventoryState(
             Objects.requireNonNull(state, "state");
             if (transferred < 0) {
                 throw new IllegalArgumentException("transferred must be non-negative.");
+            }
+        }
+    }
+
+    public enum MaterialDeliveryStatus {
+        DELIVERED,
+        ALREADY_COMPLETED,
+        CAPACITY_BLOCKED
+    }
+
+    public record MaterialDeliveryResult(
+            PlayerInventoryState state,
+            MaterialDeliveryStatus status,
+            int delivered
+    ) {
+        public MaterialDeliveryResult {
+            Objects.requireNonNull(state, "state");
+            Objects.requireNonNull(status, "status");
+            if (delivered < 0) {
+                throw new IllegalArgumentException("delivered must be non-negative.");
+            }
+            if (status != MaterialDeliveryStatus.DELIVERED && delivered != 0) {
+                throw new IllegalArgumentException(
+                        "Non-delivered material transaction cannot report delivered quantity."
+                );
             }
         }
     }

@@ -48,6 +48,46 @@ public final class PlayerInventoryService {
         return result;
     }
 
+    public static boolean canAcceptMaterialInPouch(
+            ServerPlayer player,
+            String materialId,
+            int amount
+    ) {
+        return state(player).canAcceptMaterialInPouch(materialId, amount);
+    }
+
+    public static PlayerInventoryState.MaterialDeliveryResult deliverMaterialToPouchOnce(
+            ServerPlayer player,
+            String transactionId,
+            String materialId,
+            int amount
+    ) {
+        PlayerInventoryState.MaterialDeliveryResult result =
+                state(player).deliverMaterialToPouchOnce(transactionId, materialId, amount);
+        replace(player, result.state());
+        return result;
+    }
+
+    public static PlayerInventoryState forgetCompletedDeliveryReceipt(
+            ServerPlayer player,
+            String transactionId
+    ) {
+        return replace(
+                player,
+                state(player).forgetCompletedDeliveryReceipt(transactionId)
+        );
+    }
+
+    public static PlayerInventoryState clearCompletedDeliveryIdsWithPrefix(
+            ServerPlayer player,
+            String prefix
+    ) {
+        return replace(
+                player,
+                state(player).clearCompletedDeliveryIdsWithPrefix(prefix)
+        );
+    }
+
     public static PlayerInventoryState.MaterialConsumeResult consumeMaterial(
             ServerPlayer player,
             String materialId,

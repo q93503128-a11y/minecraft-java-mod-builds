@@ -9,6 +9,8 @@ import dev.moonseungjun.openworldrpg.economy.PlayerCurrencyAttachments;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.IntegrationBootstrap;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import dev.moonseungjun.openworldrpg.integration.verify.M0PlayerVerificationBootstrap;
+import dev.moonseungjun.openworldrpg.gathering.R01GatheringAttachments;
+import dev.moonseungjun.openworldrpg.gathering.R01GatheringService;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryAttachments;
 import dev.moonseungjun.openworldrpg.progression.r01.R01ClassStarterService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01MainQuestService;
@@ -46,6 +48,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         PlayerCurrencyAttachments.initialize();
         PlayerRewardTransactionAttachments.initialize();
         PlayerInventoryAttachments.initialize();
+        R01GatheringAttachments.initialize();
         RecoveryBeltAttachments.initialize();
         PlayerActiveWorldTimeAttachments.initialize();
         PlayerVitalsRuntime.initialize();
@@ -64,6 +67,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             PlayerRewardTransactionService.resumePending(handler.getPlayer());
             if (!M0PlayerVerificationBootstrap.enabled()) {
                 R01PlayerStateService.reconcileActiveTimeEpochs(handler.getPlayer());
+                R01GatheringService.reconcilePending(handler.getPlayer());
                 R01RoadsideTroubleController.reconcilePendingFinalization(
                         handler.getPlayer()
                 );
