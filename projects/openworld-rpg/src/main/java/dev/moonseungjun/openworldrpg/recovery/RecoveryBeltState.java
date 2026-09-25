@@ -79,7 +79,14 @@ public record RecoveryBeltState(
     }
 
     public Optional<RecoveryConsumable> selectedConsumable() {
-        return slots.get(selectedSlot).consumable();
+        return consumableAt(selectedSlot);
+    }
+
+    public Optional<RecoveryConsumable> consumableAt(int slot) {
+        if (slot < 0 || slot >= RecoveryActionRules.BELT_CAPACITY) {
+            throw new IllegalArgumentException("slot must be inside [0, 3].");
+        }
+        return slots.get(slot).consumable();
     }
 
     public int loadedCount() {
@@ -146,18 +153,35 @@ public record RecoveryBeltState(
     }
 
     public Resolution consumeSelectedAtResolution(long nowTick) {
+        RecoveryConsumable expected = selectedConsumable().orElseThrow(
+                () -> new IllegalStateException("Selected Recovery Belt slot is empty.")
+        );
+        return consumeSlotAtResolution(selectedSlot, expected, nowTick);
+    }
+
+    public Resolution consumeSlotAtResolution(
+            int slot,
+            RecoveryConsumable expectedConsumable,
+            long nowTick
+    ) {
+        Objects.requireNonNull(expectedConsumable, "expectedConsumable");
         if (nowTick < 0L) {
             throw new IllegalArgumentException("nowTick must be non-negative.");
         }
         if (isLockedOut(nowTick)) {
             throw new IllegalStateException("Recovery Belt is still in shared lockout.");
         }
-        RecoveryConsumable consumable = selectedConsumable().orElseThrow(
-                () -> new IllegalStateException("Selected Recovery Belt slot is empty.")
+        RecoveryConsumable actual = consumableAt(slot).orElseThrow(
+                () -> new IllegalStateException("Recovery Belt action slot is empty.")
         );
+        if (actual != expectedConsumable) {
+            throw new IllegalStateException(
+                    "Recovery Belt action payload changed before resolution."
+            );
+        }
 
         ArrayList<RecoveryBeltSlot> next = new ArrayList<>(slots);
-        next.set(selectedSlot, RecoveryBeltSlot.EMPTY);
+        next.set(slot, RecoveryBeltSlot.EMPTY);
         RecoveryBeltState state = new RecoveryBeltState(
                 schemaVersion,
                 next,
@@ -165,7 +189,7 @@ public record RecoveryBeltState(
                 Math.addExact(nowTick, RecoveryActionRules.SHARED_LOCKOUT_TICKS),
                 appliedLoadTransactionIds
         );
-        return new Resolution(state, consumable);
+        return new Resolution(state, actual);
     }
 
     public record Resolution(

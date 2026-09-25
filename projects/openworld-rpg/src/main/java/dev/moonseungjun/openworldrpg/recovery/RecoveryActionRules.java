@@ -6,6 +6,7 @@ public final class RecoveryActionRules {
     public static final int USE_DURATION_TICKS = 19;
     public static final int RESOLUTION_TICKS = 14;
     public static final int SHARED_LOCKOUT_TICKS = 120;
+    public static final int CLEANSING_BUILDUP_RESISTANCE_TICKS = 200;
     public static final double ACTION_MOVEMENT_MULTIPLIER = 0.65;
 
     public static final double HEALING_POTION_MAX_HP_FRACTION = 0.35;

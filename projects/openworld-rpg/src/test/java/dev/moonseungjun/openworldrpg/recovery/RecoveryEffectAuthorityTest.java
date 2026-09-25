@@ -34,7 +34,7 @@ class RecoveryEffectAuthorityTest {
     }
 
     @Test
-    void cleansingTonicPublishesStatusAuthorityRequestWithoutInventingStatusRuntime() {
+    void cleansingTonicPublishesTenSecondBuildupResistanceRequest() {
         var effect = RecoveryEffectAuthority.resolve(
                 RecoveryConsumable.CLEANSING_TONIC,
                 200.0,
@@ -42,7 +42,7 @@ class RecoveryEffectAuthorityTest {
         );
 
         assertTrue(effect.cleanseMinorDispellable());
-        assertEquals(60, effect.negativeBuildupResistanceTicks());
+        assertEquals(200, effect.negativeBuildupResistanceTicks());
     }
 
     @Test
@@ -50,6 +50,7 @@ class RecoveryEffectAuthorityTest {
         assertEquals(19, RecoveryActionRules.USE_DURATION_TICKS);
         assertEquals(14, RecoveryActionRules.RESOLUTION_TICKS);
         assertEquals(120, RecoveryActionRules.SHARED_LOCKOUT_TICKS);
+        assertEquals(200, RecoveryActionRules.CLEANSING_BUILDUP_RESISTANCE_TICKS);
         assertEquals(0.65, RecoveryActionRules.ACTION_MOVEMENT_MULTIPLIER, 0.0001);
     }
 }

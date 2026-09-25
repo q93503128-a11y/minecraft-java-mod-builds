@@ -51,6 +51,33 @@ class RecoveryBeltStateTest {
     }
 
     @Test
+    void actionConsumesTheOriginallyStartedSlotEvenIfSelectionChanges() {
+        var loaded = RecoveryBeltState.empty()
+                .loadCommittedReserveDoseOnce(
+                        "openworld_rpg:test/heal",
+                        RecoveryConsumable.HEALING_POTION
+                )
+                .loadCommittedReserveDoseOnce(
+                        "openworld_rpg:test/focus",
+                        RecoveryConsumable.FOCUS_DRAUGHT
+                )
+                .withSelectedSlot(1);
+
+        var resolved = loaded.consumeSlotAtResolution(
+                0,
+                RecoveryConsumable.HEALING_POTION,
+                200L
+        );
+
+        assertEquals(RecoveryConsumable.HEALING_POTION, resolved.consumable());
+        assertTrue(resolved.state().consumableAt(0).isEmpty());
+        assertEquals(
+                RecoveryConsumable.FOCUS_DRAUGHT,
+                resolved.state().selectedConsumable().orElseThrow()
+        );
+    }
+
+    @Test
     void beltStateSurvivesCodecRoundTrip() {
         var original = RecoveryBeltState.empty()
                 .loadCommittedReserveDoseOnce(

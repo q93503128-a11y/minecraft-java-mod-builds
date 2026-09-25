@@ -1,6 +1,7 @@
 package dev.moonseungjun.openworldrpg.combat.runtime;
 
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
+import dev.moonseungjun.openworldrpg.recovery.RecoveryUseRuntime;
 import java.util.Objects;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -20,7 +21,11 @@ public final class ProjectPlayerPoisePressureRuntime {
             return Application.rejected(pressure);
         }
 
-        var result = state.orElseThrow().apply(pressure, target.level().getGameTime());
+        long gameTick = target.level().getGameTime();
+        var result = state.orElseThrow().apply(pressure, gameTick);
+        if (result.breakTriggered()) {
+            RecoveryUseRuntime.cancelPreResolution(target, gameTick);
+        }
         return new Application(
                 true,
                 pressure,

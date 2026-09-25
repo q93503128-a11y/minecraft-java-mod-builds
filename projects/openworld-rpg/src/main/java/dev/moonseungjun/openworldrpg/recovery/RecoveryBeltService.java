@@ -46,6 +46,18 @@ public final class RecoveryBeltService {
         return resolution;
     }
 
+    public static RecoveryBeltState.Resolution consumeSlotAtResolution(
+            ServerPlayer player,
+            int slot,
+            RecoveryConsumable expectedConsumable,
+            long nowTick
+    ) {
+        RecoveryBeltState.Resolution resolution =
+                state(player).consumeSlotAtResolution(slot, expectedConsumable, nowTick);
+        replace(player, resolution.state());
+        return resolution;
+    }
+
     private static RecoveryBeltState replace(
             ServerPlayer player,
             RecoveryBeltState next

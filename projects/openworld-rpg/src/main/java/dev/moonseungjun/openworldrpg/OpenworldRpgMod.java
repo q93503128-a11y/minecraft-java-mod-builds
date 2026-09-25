@@ -24,6 +24,8 @@ import dev.moonseungjun.openworldrpg.progression.r01.R01SharedWorldAttachments;
 import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionAttachments;
 import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionService;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryBeltAttachments;
+import dev.moonseungjun.openworldrpg.recovery.RecoveryEffectRuntime;
+import dev.moonseungjun.openworldrpg.recovery.RecoveryUseRuntime;
 import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeAttachments;
 import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeService;
 import net.fabricmc.api.ModInitializer;
@@ -56,6 +58,8 @@ public final class OpenworldRpgMod implements ModInitializer {
         M0PlayerVerificationBootstrap.registerCommands();
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             PlayerActiveWorldTimeService.tickLoadedPlayers(server);
+            RecoveryEffectRuntime.tick(server);
+            RecoveryUseRuntime.tick(server);
             R01RoadsideTroubleController.tickActiveWorld(server);
         });
 
@@ -76,9 +80,12 @@ public final class OpenworldRpgMod implements ModInitializer {
             PlayerCombatBuildPublisher.refresh(handler.getPlayer());
             M0PlayerVerificationBootstrap.prepare(handler.getPlayer(), LOGGER);
         });
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
-                CombatStateServices.disconnect(handler.getPlayer().getUUID())
-        );
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            var playerId = handler.getPlayer().getUUID();
+            RecoveryUseRuntime.disconnect(playerId);
+            RecoveryEffectRuntime.disconnect(playerId);
+            CombatStateServices.disconnect(playerId);
+        });
 
         LOGGER.info("Openworld RPG M0 integration bootstrap loaded with profile {}.", profile.id());
     }

@@ -45,7 +45,7 @@ public final class RecoveryEffectAuthority {
                     0.0,
                     0,
                     true,
-                    60
+                    RecoveryActionRules.CLEANSING_BUILDUP_RESISTANCE_TICKS
             );
         };
     }
