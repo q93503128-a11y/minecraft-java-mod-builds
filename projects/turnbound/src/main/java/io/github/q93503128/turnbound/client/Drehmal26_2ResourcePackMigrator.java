@@ -45,18 +45,30 @@ final class Drehmal26_2ResourcePackMigrator {
 
     private Drehmal26_2ResourcePackMigrator() {}
 
-    static boolean isCurrent(Path world) {
+    static boolean hasCurrentMarker(Path world) {
         if (world == null) return false;
         Path marker = world.resolve(MARKER_FILE);
         Path pack = world.resolve(RESOURCE_PACK_RELATIVE);
         if (!Files.isRegularFile(marker) || !Files.isRegularFile(pack)) return false;
         try {
             String text = Files.readString(marker, StandardCharsets.UTF_8);
-            if (!text.contains("compatVersion=" + COMPAT_VERSION)
-                    || !text.contains("target=" + TARGET_VERSION)) return false;
+            return text.contains("compatVersion=" + COMPAT_VERSION)
+                    && text.contains("target=" + TARGET_VERSION)
+                    && !markerValue(text, "migratedHash").isBlank();
+        } catch (IOException ignored) {
+            return false;
+        }
+    }
+
+    static boolean isCurrent(Path world) {
+        if (!hasCurrentMarker(world)) return false;
+        Path marker = world.resolve(MARKER_FILE);
+        Path pack = world.resolve(RESOURCE_PACK_RELATIVE);
+        try {
+            String text = Files.readString(marker, StandardCharsets.UTF_8);
             validateArchive(pack);
             String expectedHash = markerValue(text, "migratedHash");
-            return !expectedHash.isBlank() && expectedHash.equals(DrehmalInstallFiles.sha256(pack));
+            return expectedHash.equals(DrehmalInstallFiles.sha256(pack));
         } catch (IOException ignored) {
             return false;
         }

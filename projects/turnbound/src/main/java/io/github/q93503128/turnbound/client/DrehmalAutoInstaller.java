@@ -102,6 +102,8 @@ public final class DrehmalAutoInstaller {
     public static void onTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level != null) return;
+        if (snapshot.phase() == Phase.COMPLETE) return;
+        if (STARTED.get()) return;
 
         Path gameDir = minecraft.gameDirectory.toPath();
         List<Path> installedWorlds = findInstalledWorlds(gameDir);
@@ -186,7 +188,7 @@ public final class DrehmalAutoInstaller {
         Path pack = world.resolve("resources.zip");
         return Files.isRegularFile(pack)
                 && DrehmalInstallFiles.validResourcePack(pack)
-                && Drehmal26_2ResourcePackMigrator.isCurrent(world);
+                && Drehmal26_2ResourcePackMigrator.hasCurrentMarker(world);
     }
 
     private static void repairExistingWorld(Path gameDir, Path world, boolean allowDownload) {
