@@ -168,7 +168,20 @@ public final class VillageSkillEffectSystem {
             float speed) {
         if (skill == null) return null;
         return spawn(level, player, "promotion_skill_projectile", origin, normalized(direction),
-                Math.max(12, duration), Math.max(0.0f, speed), skill.id());
+                Math.max(1, duration), Math.max(0.0f, speed), skill.id());
+    }
+
+    public static void promotionBeam(
+            ServerLevel level,
+            ServerPlayer player,
+            VillageRoleSkillSystem.ActiveSkill skill,
+            Vec3 origin,
+            Vec3 direction,
+            int duration,
+            double length) {
+        if (skill == null) return;
+        spawn(level, player, "promotion_skill_projectile", origin, normalized(direction),
+                Math.max(2, duration), 0.0f, promotionMeta(skill, length));
     }
 
     private static String promotionMeta(VillageRoleSkillSystem.ActiveSkill skill, double radius) {

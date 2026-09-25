@@ -431,8 +431,9 @@ public final class VillageSkillMeshLibrary {
             }
             case "arcanist_lightning_chain" -> {
                 if (phase == 1) {
-                    jaggedBolt(pose, out, b.local(0.0, 1.05, -0.7),
-                            b.local(0.0, 1.15, 3.6), 9, 0.055,
+                    double boltLength = Math.max(0.5, readableRadius);
+                    jaggedBolt(pose, out, b.local(0.0, 0.0, 0.0),
+                            b.local(0.0, 0.0, boltLength), 9, 0.055,
                             withAlpha(cyan, 205), (long) age + 91L);
                 } else {
                     lightningNodeWeb(pose, out, b, 6, 2.2 * tierScale,

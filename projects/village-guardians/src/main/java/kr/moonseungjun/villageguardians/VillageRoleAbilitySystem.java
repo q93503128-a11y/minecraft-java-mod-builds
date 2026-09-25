@@ -66,6 +66,7 @@ public final class VillageRoleAbilitySystem {
     private static final Map<UUID, Long> LAST_AEGIS_DASH = new HashMap<>();
     private static final Map<UUID, SlamState> SLAMS = new HashMap<>();
     private static final List<ScheduledAction> SCHEDULED = new ArrayList<>();
+    private static final List<PromotionSequenceAction> PROMOTION_SEQUENCE = new ArrayList<>();
     private static final List<AreaState> AREAS = new ArrayList<>();
     private static final Map<UUID, MovingSkill> MOVING = new LinkedHashMap<>();
     private static final Map<UUID, DashState> DASHES = new HashMap<>();
@@ -98,6 +99,7 @@ public final class VillageRoleAbilitySystem {
         LAST_AEGIS_DASH.clear();
         SLAMS.clear();
         SCHEDULED.clear();
+        PROMOTION_SEQUENCE.clear();
         AREAS.clear();
         MOVING.clear();
         DASHES.clear();
@@ -117,6 +119,7 @@ public final class VillageRoleAbilitySystem {
         AEGIS_UNTIL.remove(id); AEGIS_SCALE.remove(id);
         CHARGE_UNTIL.remove(id); LAST_AEGIS_DASH.remove(id); SLAMS.remove(id); DASHES.remove(id);
         SCHEDULED.removeIf(action -> action.owner().equals(id));
+        PROMOTION_SEQUENCE.removeIf(action -> action.owner().equals(id));
         AREAS.removeIf(area -> area.owner().equals(id));
         RICOCHET_HOPS.removeIf(hop -> hop.owner().equals(id));
         PRE_SCALED_RICOCHET_DAMAGE.removeIf(key -> key.owner().equals(id));
@@ -287,7 +290,7 @@ public final class VillageRoleAbilitySystem {
                 Vec3 center = aimedGround(level, player, maximumRange(30.0, specialRank));
                 int until = Math.max(120, duration);
                 AREAS.add(new AreaState(player.getUUID(), AreaKind.TORNADO, center,
-                        now + until, radius, power, specialRank, 0));
+                        now + until, radius, power, specialRank, 0, forward));
                 VillageSkillEffectSystem.tornadoField(level, player, center, forward, until, radius, specialRank);
                 play(level, center, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), 1.1f, 0.72f);
             }
@@ -437,9 +440,9 @@ public final class VillageRoleAbilitySystem {
                 for (int i = -2; i <= 2; i++) {
                     Vec3 direction = rotateY(forward, Math.toRadians(i * 10.5));
                     Vec3 origin = player.position().add(0.0, 0.90, 0.0).add(direction.scale(1.1));
-                    launchPromotionMovingAt(level, player, skill, MovingKind.BLADE,
-                            2.22, 42, damage, 1.95 + specialRank * 0.10,
-                            specialRank, origin, direction);
+                    SCHEDULED.add(new ScheduledAction(now + (i + 2L) * 2L,
+                            player.getUUID(), skill, ActionKind.PROMOTION_BLADE,
+                            damage, 1.0f, specialRank, origin, direction));
                 }
                 play(level, player.position(), SoundEvents.PLAYER_ATTACK_SWEEP, 1.4f, 0.66f);
             }
@@ -480,13 +483,8 @@ public final class VillageRoleAbilitySystem {
             }
 
             case RANGER_HAWK_MARK -> {
-                List<Mob> candidates = targetsNear(level, player, player.position(), 60.0, 64);
-                candidates.sort(Comparator.comparingDouble(target ->
-                        player.distanceToSqr(target)
-                                - (VillageRaidSystem.isAerialEnemy(target) ? 1200.0 : 0.0)
-                                - (VillageEnemyArchetypeSystem.isTacticalThreat(VillageRaidSystem.archetypeOf(target)) ? 800.0 : 0.0)));
-                if (!candidates.isEmpty()) {
-                    Mob target = candidates.getFirst();
+                Mob target = bestHawkMarkTarget(level, player, 60.0);
+                if (target != null) {
                     target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 220, 0, false, false, true));
                     target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 150, 1, false, false, true));
                     VillageSkillEffectSystem.promotionImpact(level, player, skill,
@@ -507,16 +505,15 @@ public final class VillageRoleAbilitySystem {
             }
             case RANGER_AA_INTERCEPT -> {
                 List<Mob> targets = targetsNear(level, player, player.position(), 82.0, 96);
-                int hits = 0;
                 float damage = (11.0f + playerLevel * 0.42f) * power;
+                int index = 0;
                 for (Mob target : targets) {
                     if (!VillageRaidSystem.isAerialEnemy(target)) continue;
-                    hurt(level, player, target, damage, VillageRpgSystem.SkillAttackProfile.BURST_AREA);
-                    target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 150, 2, false, false, true));
-                    target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 180, 0, false, false, true));
-                    VillageSkillEffectSystem.promotionImpact(level, player, skill,
-                            target.position(), target.position().subtract(player.position()), 2.2);
-                    if (++hits >= 7) break;
+                    PROMOTION_SEQUENCE.add(new PromotionSequenceAction(
+                            now + index * 3L, player.getUUID(), skill,
+                            PromotionSequenceKind.AA_INTERCEPT, target.getUUID(),
+                            player.getEyePosition(), damage, 2.2, specialRank));
+                    if (++index >= 7) break;
                 }
                 VillageSkillEffectSystem.promotionField(level, player, skill,
                         player.position(), sight, 26, 22.0);
@@ -524,7 +521,7 @@ public final class VillageRoleAbilitySystem {
             }
             case RANGER_DOWNPOUR -> {
                 Vec3 center = aimedGround(level, player, 38.0);
-                double radius = 10.0;
+                double radius = areaRadius(8.5, specialRank + 1);
                 for (int i = 0; i < 6; i++) {
                     SCHEDULED.add(new ScheduledAction(now + 2L + i * 4L,
                             player.getUUID(), skill, ActionKind.ARROW_RAIN,
@@ -559,7 +556,8 @@ public final class VillageRoleAbilitySystem {
                 play(level, player.position(), SoundEvents.ENDER_DRAGON_SHOOT, 1.3f, 0.86f);
             }
             case RANGER_SKY_LOCK -> {
-                List<Mob> targets = targetsNear(level, player, player.position(), 108.0, 120);
+                double radius = 28.0;
+                List<Mob> targets = targetsNear(level, player, player.position(), radius, 120);
                 float damage = (13.0f + playerLevel * 0.50f) * power;
                 int hits = 0;
                 for (Mob target : targets) {
@@ -570,15 +568,15 @@ public final class VillageRoleAbilitySystem {
                     if (++hits >= 12) break;
                 }
                 VillageSkillEffectSystem.promotionField(level, player, skill,
-                        player.position(), sight, 42, 28.0);
+                        player.position(), sight, 190, radius);
                 play(level, player.position(), SoundEvents.LIGHTNING_BOLT_THUNDER, 0.75f, 1.35f);
             }
             case RANGER_METEOR_BOW -> {
                 Vec3 center = aimedGround(level, player, 50.0);
-                Vec3 delta = center.add(0.0, 1.0, 0.0).subtract(player.getEyePosition());
-                double distance = Math.max(1.0, delta.length());
-                float speed = 3.35f;
-                int travel = Math.max(5, Math.min(22, (int) Math.ceil(distance / speed)));
+                Vec3 delta = center.subtract(player.getEyePosition());
+                double distance = Math.max(0.25, delta.length());
+                int travel = Math.max(1, Math.min(22, (int) Math.ceil(distance / 3.35)));
+                float speed = (float) (distance / travel);
                 double radius = 12.5;
                 float damage = (21.0f + playerLevel * 0.78f) * power;
                 VillageSkillEffectSystem.promotionProjectile(level, player, skill,
@@ -610,28 +608,24 @@ public final class VillageRoleAbilitySystem {
                 play(level, center, SoundEvents.GLASS_PLACE, 1.25f, 0.52f);
             }
             case ARCANIST_LIGHTNING_CHAIN -> {
-                List<Mob> candidates = targetsNear(level, player, player.position(), 42.0, 64);
                 float damage = (13.0f + playerLevel * 0.50f) * power;
                 Set<UUID> used = new HashSet<>();
                 Vec3 cursor = player.getEyePosition();
                 for (int hop = 0; hop < 6; hop++) {
+                    double searchRadius = hop == 0 ? 42.0 : 14.0;
                     Vec3 cursorPoint = cursor;
-                    Mob next = candidates.stream()
+                    Mob next = targetsNear(level, player, cursorPoint, searchRadius, 64).stream()
                             .filter(target -> !used.contains(target.getUUID()))
-                            .min(Comparator.comparingDouble(target -> target.position().distanceToSqr(cursorPoint)))
+                            .filter(target -> hasClearFlightPath(level, player, cursorPoint, target))
+                            .min(Comparator.comparingDouble(target -> target.getEyePosition().distanceToSqr(cursorPoint)))
                             .orElse(null);
                     if (next == null) break;
-                    Vec3 targetPos = next.getEyePosition();
-                    Vec3 direction = targetPos.subtract(cursor);
-                    hurt(level, player, next, damage * (float) Math.pow(0.88, hop),
-                            VillageRpgSystem.SkillAttackProfile.MULTI_HIT);
-                    next.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 55, 1, false, false, true));
-                    VillageSkillEffectSystem.promotionProjectile(level, player, skill,
-                            cursor, direction, 6, 3.8f);
-                    VillageSkillEffectSystem.promotionImpact(level, player, skill,
-                            next.position(), direction, 2.0);
+                    PROMOTION_SEQUENCE.add(new PromotionSequenceAction(
+                            now + hop * 4L, player.getUUID(), skill,
+                            PromotionSequenceKind.LIGHTNING_CHAIN, next.getUUID(),
+                            cursor, damage * (float) Math.pow(0.88, hop), 2.0, specialRank));
                     used.add(next.getUUID());
-                    cursor = targetPos;
+                    cursor = next.getEyePosition();
                 }
                 play(level, player.position(), SoundEvents.LIGHTNING_BOLT_IMPACT, 1.0f, 1.10f);
             }
@@ -688,10 +682,10 @@ public final class VillageRoleAbilitySystem {
             }
 
             case LUMINAR_GUARDIAN_LIGHT -> {
-                healLowestAlly(player, (15.0f + playerLevel * 0.58f) * power,
+                ServerPlayer target = healLowestAlly(player, (15.0f + playerLevel * 0.58f) * power,
                         duration, specialRank + 1, true);
                 VillageSkillEffectSystem.promotionImpact(level, player, skill,
-                        player.position(), forward, 4.0);
+                        target.position(), target.position().subtract(player.position()), 4.0);
             }
             case LUMINAR_HOLY_PURGE -> {
                 double radius = 20.0;
@@ -741,11 +735,11 @@ public final class VillageRoleAbilitySystem {
                 play(level, player.position(), SoundEvents.BEACON_ACTIVATE, 1.25f, 0.82f);
             }
             case LUMINAR_RETURNING_LIGHT -> {
-                healLowestAlly(player, (25.0f + playerLevel * 0.85f) * power,
+                ServerPlayer target = healLowestAlly(player, (25.0f + playerLevel * 0.85f) * power,
                         Math.max(160, duration), specialRank + 2, true);
                 VillageSkillEffectSystem.promotionImpact(level, player, skill,
-                        player.position(), forward, 5.0);
-                play(level, player.position(), SoundEvents.AMETHYST_BLOCK_CHIME, 1.15f, 1.35f);
+                        target.position(), target.position().subtract(player.position()), 5.0);
+                play(level, target.position(), SoundEvents.AMETHYST_BLOCK_CHIME, 1.15f, 1.35f);
             }
             case LUMINAR_RESURRECTION_HYMN -> {
                 List<ServerPlayer> affected = alliesIncludingDowned(player);
@@ -971,6 +965,7 @@ public final class VillageRoleAbilitySystem {
         tickTrackingArrows(server, now);
         tickRicochetHops(server, now);
         tickScheduled(server, now);
+        tickPromotionSequence(server, now);
         tickAreas(server, now);
         tickMoving(server, now);
         cleanupExpired(server, now);
@@ -1209,6 +1204,38 @@ public final class VillageRoleAbilitySystem {
         }
     }
 
+    private static void tickPromotionSequence(MinecraftServer server, long now) {
+        Iterator<PromotionSequenceAction> iterator = PROMOTION_SEQUENCE.iterator();
+        while (iterator.hasNext()) {
+            PromotionSequenceAction action = iterator.next();
+            if (action.executeAt() > now) continue;
+            iterator.remove();
+            ServerPlayer owner = server.getPlayerList().getPlayer(action.owner());
+            if (owner == null || !(owner.level() instanceof ServerLevel level)) continue;
+            Entity entity = level.getEntity(action.target());
+            if (!(entity instanceof Mob target) || !target.isAlive()) continue;
+            Vec3 direction = target.getEyePosition().subtract(action.origin());
+            switch (action.kind()) {
+                case AA_INTERCEPT -> {
+                    hurt(level, owner, target, action.damage(), VillageRpgSystem.SkillAttackProfile.BURST_AREA);
+                    target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 150, 2, false, false, true));
+                    target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 180, 0, false, false, true));
+                    VillageSkillEffectSystem.promotionImpact(
+                            level, owner, action.skill(), target.position(), direction, action.radius());
+                }
+                case LIGHTNING_CHAIN -> {
+                    double length = Math.max(0.5, direction.length());
+                    VillageSkillEffectSystem.promotionBeam(
+                            level, owner, action.skill(), action.origin(), direction, 4, length);
+                    hurt(level, owner, target, action.damage(), VillageRpgSystem.SkillAttackProfile.MULTI_HIT);
+                    target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 55, 1, false, false, true));
+                    VillageSkillEffectSystem.promotionImpact(
+                            level, owner, action.skill(), target.position(), direction, action.radius());
+                }
+            }
+        }
+    }
+
     private static void tickScheduled(MinecraftServer server, long now) {
         Iterator<ScheduledAction> iterator = SCHEDULED.iterator();
         while (iterator.hasNext()) {
@@ -1235,6 +1262,10 @@ public final class VillageRoleAbilitySystem {
                 case PROMOTION_STRIKE -> promotionStrike(
                         level, player, action.skill(), action.origin(), action.direction(),
                         action.power(), action.durationMultiplier(), action.specialRank());
+                case PROMOTION_BLADE -> launchPromotionMovingAt(
+                        level, player, action.skill(), MovingKind.BLADE,
+                        2.22, 42, action.power(), 1.95 + action.specialRank() * 0.10,
+                        action.specialRank(), action.origin(), action.direction());
             }
         }
     }
@@ -1793,8 +1824,8 @@ public final class VillageRoleAbilitySystem {
         play(level, player.position(), SoundEvents.RAVAGER_ROAR, 1.1f, 0.68f);
     }
 
-    private static void healLowestAlly(ServerPlayer player, float amount,
-                                       int duration, int specialRank, boolean barrier) {
+    private static ServerPlayer healLowestAlly(ServerPlayer player, float amount,
+                                               int duration, int specialRank, boolean barrier) {
         ServerPlayer target = allies(player, 24.0).stream()
                 .min(Comparator.comparingDouble(ally -> ally.getHealth() / Math.max(1.0f, ally.getMaxHealth())))
                 .orElse(player);
@@ -1809,6 +1840,7 @@ public final class VillageRoleAbilitySystem {
             VillageSkillEffectSystem.healLink(level, player, target);
             play(level, target.position(), SoundEvents.AMETHYST_BLOCK_CHIME, 1.0f, 1.28f);
         }
+        return target;
     }
 
     private static void cleanseAlliesInRange(
@@ -2072,6 +2104,30 @@ public final class VillageRoleAbilitySystem {
         Vec3 blended = velocity.normalize().scale(1.0 - safe).add(assisted.scale(safe)).normalize();
         arrow.setDeltaMovement(blended.scale(speed));
         arrow.hurtMarked = true;
+    }
+
+    private static Mob bestHawkMarkTarget(
+            ServerLevel level, ServerPlayer player, double range) {
+        Vec3 origin = player.getEyePosition();
+        Vec3 look = lookDirection(player);
+        return targetsNear(level, player, player.position(), range, 80).stream()
+                .filter(player::hasLineOfSight)
+                .filter(target -> {
+                    Vec3 body = target.position().add(0.0, target.getBbHeight() * 0.58, 0.0);
+                    Vec3 to = body.subtract(origin);
+                    return to.lengthSqr() > 1.0E-5 && to.normalize().dot(look) >= 0.70;
+                })
+                .min(Comparator.comparingDouble(target -> {
+                    Vec3 body = target.position().add(0.0, target.getBbHeight() * 0.58, 0.0);
+                    Vec3 to = body.subtract(origin);
+                    double forward = Math.max(0.0, to.dot(look));
+                    double miss = body.distanceToSqr(origin.add(look.scale(forward)));
+                    double threatBias = VillageEnemyArchetypeSystem.isTacticalThreat(
+                            VillageRaidSystem.archetypeOf(target)) ? -5.0 : 0.0;
+                    double aerialBias = VillageRaidSystem.isAerialEnemy(target) ? -2.5 : 0.0;
+                    return miss * 12.0 + to.lengthSqr() * 0.006 + threatBias + aerialBias;
+                }))
+                .orElse(null);
     }
 
     private static Mob bestAimTarget(
@@ -2381,9 +2437,15 @@ public final class VillageRoleAbilitySystem {
         level.playSound(null, BlockPos.containing(position), sound, SoundSource.PLAYERS, volume, pitch);
     }
 
-    private enum ActionKind { BLADE_WAVE, ARROW_RAIN, ENERGY_ARROW, SHIELD_CHARGE, ARCANE_ECHO, PROMOTION_STRIKE }
+    private enum ActionKind { BLADE_WAVE, ARROW_RAIN, ENERGY_ARROW, SHIELD_CHARGE, ARCANE_ECHO, PROMOTION_STRIKE, PROMOTION_BLADE }
     private enum AreaKind { FROST, TORNADO, LIGHTNING, HEALING, GRAVITY }
     private enum MovingKind { FIRE_ORB, BLADE, ENERGY_ARROW, TRACKING_ARROW }
+    private enum PromotionSequenceKind { AA_INTERCEPT, LIGHTNING_CHAIN }
+
+    private record PromotionSequenceAction(
+            long executeAt, UUID owner, VillageRoleSkillSystem.ActiveSkill skill,
+            PromotionSequenceKind kind, UUID target, Vec3 origin,
+            float damage, double radius, int specialRank) {}
 
     private record ScheduledAction(
             long executeAt, UUID owner, VillageRoleSkillSystem.ActiveSkill skill,

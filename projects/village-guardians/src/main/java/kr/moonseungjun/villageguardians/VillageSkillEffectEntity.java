@@ -90,11 +90,6 @@ public final class VillageSkillEffectEntity extends Entity {
             return;
         }
         Entity owner = ownerEntity();
-        if ("arcanist_tornado".equals(kind()) && owner != null && owner.isAlive()) {
-            Vec3 look = owner.getLookAngle();
-            Vec3 horizontal = new Vec3(look.x, 0.0, look.z);
-            if (horizontal.lengthSqr() > 1.0E-6) setDirection(horizontal.normalize());
-        }
         if (followsOwner()) {
             if (owner == null || !owner.isAlive()) {
                 discard();
