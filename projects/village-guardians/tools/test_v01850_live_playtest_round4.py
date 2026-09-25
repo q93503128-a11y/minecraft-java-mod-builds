@@ -40,7 +40,7 @@ def main():
 
     assert "VillageRaidSystem.hasActiveTaunt(level, mob)" in attack
     assert "VillageRaidSystem.hasActiveTaunt(level, mob)" in elite
-    assert "VillageRaidSystem.hasActiveTaunt(level, mob)" in boss
+    assert "VillageRaidSystem.hasActiveTaunt(server.overworld(), mob)" in boss
 
     assert "VillageRaidSystem.isAerialEnemy(enemy)" in merc
     assert "VillageRaidSystem.isAerialEnemy(enemy)" in deploy
