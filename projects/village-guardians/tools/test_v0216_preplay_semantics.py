@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pre-play semantic contracts for Village Guardians 0.18.47."""
+"""Pre-play semantic contracts for Village Guardians 0.18.48."""
 
 from pathlib import Path
 
@@ -78,13 +78,13 @@ def main() -> None:
     assert 'getTitle().getString()' in victory
     assert "maxBodyScroll" in victory and "mouseScrolled" in victory
 
-    assert "mod_version=0.18.47-alpha.1" in gradle
-    assert "0.18.47-alpha.1" in project and "0.18.47-alpha.1" in readme
+    assert "mod_version=0.18.48-alpha.1" in gradle
+    assert "0.18.48-alpha.1" in project and "0.18.48-alpha.1" in readme
 
     print("[PASS] pre-play combat clocks and retry transient state are server-tick authoritative")
     print("[PASS] promotion phase geometry, dash contact and tracking projectiles match live combat semantics")
     print("[PASS] support targeting/cleanse/overheal and expanded skill arena close manual-audit gaps")
-    print("[PASS] victory report and 0.18.47 identity are ready for client playtest")
+    print("[PASS] victory report and 0.18.48 identity are ready for client playtest")
 
 if __name__ == "__main__":
     main()
