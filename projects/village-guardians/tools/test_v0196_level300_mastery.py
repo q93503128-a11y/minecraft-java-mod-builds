@@ -52,7 +52,12 @@ def main() -> None:
     assert rpg.count("RpgProgress.combatScalingLevel(level)") == 3
     assert ability.count(
         "RpgProgress.combatScalingLevel(VillageCouncilState.levelOf(player.getUUID()))"
-    ) == 2
+    ) == 7
+    assert "RpgProgress.combatScalingLevel(VillageCouncilState.levelOf(owner.getUUID()))" in ability
+    assert "RpgProgress.combatScalingLevel(VillageCouncilState.levelOf(id))" in ability
+    assert "VillageCouncilState.levelOf(player.getUUID()) *" not in ability
+    assert "VillageCouncilState.levelOf(owner.getUUID()) *" not in ability
+    assert "VillageCouncilState.levelOf(id) *" not in ability
 
     # Every visible level grants 1P. The original low-cost tree can be fully completed,
     # and remaining Lv.300 points flow into repeatable base-stat training.
