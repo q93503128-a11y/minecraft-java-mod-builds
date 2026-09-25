@@ -43,8 +43,10 @@ def main() -> None:
     assert 'kind().startsWith("mercenary_presence_")' in effect_entity
 
     choices = section(relic, "private static List<Relic> choicesFor", "private static List<Relic> pendingChoices")
+    pending = section(relic, "private static List<Relic> pendingChoices", "private static java.util.Set<Relic> pendingRelics")
     assert "(mask & relic.bit()) == 0" in choices
-    assert "!reserved.contains(relic)" in choices
+    assert "!reserved.contains(relic)" not in choices
+    assert "result.size() >= 3" in pending and "(mask & relic.bit()) == 0" in pending
     assert "중복 획득 없음" in relic
 
     assert "private static String damageSummary" in siege
@@ -56,7 +58,7 @@ def main() -> None:
     print("[PASS] wave-count growth is slower and late XP scaling is stronger")
     print("[PASS] flying raid actors are forced into fortress airspace")
     print("[PASS] mercenary visuals stay upright and dawn heal is bounded")
-    print("[PASS] relic offers remain duplicate-free across owned and pending choices")
+    print("[PASS] queued relic rewards preserve choice count while owned relics remain duplicate-free")
     print("[PASS] turret UI reports contextual combat damage")
 
 if __name__ == "__main__":
