@@ -785,14 +785,15 @@ public final class VillageRoleAbilitySystem {
             }
             case WARDEN_FORCED_CHALLENGE -> {
                 double radius = 30.0;
-                VillageRaidSystem.tauntEnemies(level, player, player.position(), radius, 430, 180);
+                int challengeDuration = 430;
+                VillageRaidSystem.tauntEnemies(level, player, player.position(), radius, challengeDuration, 180);
                 for (Mob target : targetsNear(level, player, player.position(), radius, 120)) {
                     target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 170, 1, false, false, true));
                 }
                 player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE,
                         Math.max(160, duration), 2, false, false, true));
                 VillageSkillEffectSystem.promotionField(level, player, skill,
-                        player.position(), forward, 80, radius);
+                        player.position(), forward, challengeDuration, radius);
                 play(level, player.position(), SoundEvents.RAVAGER_ROAR, 1.15f, 0.65f);
             }
             case WARDEN_GUARD_BARRIER -> {
@@ -824,9 +825,10 @@ public final class VillageRoleAbilitySystem {
                         guardDuration, 3, false, false, true));
                 player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,
                         guardDuration, 6, false, false, true));
-                VillageRaidSystem.tauntEnemies(level, player, player.position(), radius, 560, 180);
+                int tauntDuration = 560;
+                VillageRaidSystem.tauntEnemies(level, player, player.position(), radius, tauntDuration, 180);
                 VillageSkillEffectSystem.promotionField(level, player, skill,
-                        player.position(), forward, guardDuration, radius);
+                        player.position(), forward, tauntDuration, radius);
                 play(level, player.position(), SoundEvents.SHIELD_BLOCK.value(), 1.5f, 0.56f);
             }
             case WARDEN_FORTRESS_CHARGE -> {
