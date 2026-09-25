@@ -22,6 +22,21 @@ public final class R01MainQuestService {
 
         R01PlayerState before = R01PlayerStateService.state(player);
         boolean wasComplete = dustCompleted(before);
+        boolean actionAlreadyCredited =
+                (before.opening().quarryRoadActionBits() & action.mask()) != 0;
+
+        if (!actionAlreadyCredited) {
+            RootClass contributionClass = PlayerProgressionService.state(player)
+                    .activeClass()
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Dust objective credit requires an active root class."
+                    ));
+            R01QuestAttributionService.recordDustAction(
+                    player,
+                    action,
+                    contributionClass
+            );
+        }
 
         R01PlayerState after = R01PlayerStateService.recordQuarryRoadAction(player, action);
         boolean nowComplete = dustCompleted(after);
@@ -49,11 +64,14 @@ public final class R01MainQuestService {
     }
 
     private static boolean grantDustRewardFromCommittedState(ServerPlayer player) {
-        RootClass rewardClass = PlayerProgressionService.state(player)
+        RootClass completionClass = PlayerProgressionService.state(player)
                 .activeClass()
                 .orElseThrow(() -> new IllegalStateException(
                         "Committed Dust completion requires an active root class."
                 ));
+        RootClass rewardClass = R01QuestAttributionService
+                .dustMajorityClass(player)
+                .orElse(completionClass);
         return R01RewardService.grantDustOnQuarryRoad(player, rewardClass).appliedNow();
     }
 

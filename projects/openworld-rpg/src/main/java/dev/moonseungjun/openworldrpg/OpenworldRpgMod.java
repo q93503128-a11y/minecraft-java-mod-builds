@@ -15,6 +15,7 @@ import dev.moonseungjun.openworldrpg.progression.r01.R01MainQuestService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01OpeningBootstrapService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerStateAttachments;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerStateService;
+import dev.moonseungjun.openworldrpg.progression.r01.R01QuestAttributionAttachments;
 import dev.moonseungjun.openworldrpg.progression.r01.R01RoadsideTroubleController;
 import dev.moonseungjun.openworldrpg.progression.r01.R01RepeatRewardAttachments;
 import dev.moonseungjun.openworldrpg.progression.r01.R01SharedWorldAttachments;
@@ -41,6 +42,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         R01PlayerStateAttachments.initialize();
         R01SharedWorldAttachments.initialize();
         R01RepeatRewardAttachments.initialize();
+        R01QuestAttributionAttachments.initialize();
         PlayerCurrencyAttachments.initialize();
         PlayerRewardTransactionAttachments.initialize();
         PlayerInventoryAttachments.initialize();
