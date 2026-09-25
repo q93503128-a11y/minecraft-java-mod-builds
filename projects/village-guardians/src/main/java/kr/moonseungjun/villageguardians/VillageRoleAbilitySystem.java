@@ -994,7 +994,7 @@ public final class VillageRoleAbilitySystem {
                 if (now % 3L == 0L) {
                     damageRadius(level, player, player.position(),
                             areaRadius(4.7, spin.specialRank()), 10 + spin.specialRank() * 2,
-                            (2.4f + VillageCouncilState.levelOf(id) * 0.16f) * spin.power(),
+                            (2.4f + RpgProgress.combatScalingLevel(VillageCouncilState.levelOf(id)) * 0.16f) * spin.power(),
                             false, 0.32 + spin.specialRank() * 0.03, 0.05,
                             VillageRpgSystem.SkillAttackProfile.PERSISTENT);
                     play(level, player.position(), SoundEvents.PLAYER_ATTACK_SWEEP, 0.7f,
@@ -1253,7 +1253,7 @@ public final class VillageRoleAbilitySystem {
             if (area.kind() == AreaKind.LIGHTNING) {
                 int cycle = (int) Math.floorMod(now + area.phase(), 10L);
                 if (cycle != 0 && cycle != 3 && cycle != 6) continue;
-                float damage = (7.0f + VillageCouncilState.levelOf(owner.getUUID()) * 0.42f)
+                float damage = (7.0f + RpgProgress.combatScalingLevel(VillageCouncilState.levelOf(owner.getUUID())) * 0.42f)
                         * area.power();
                 double strikeRadius = areaRadius(4.8, area.specialRank());
                 List<Mob> fieldTargets = targetsNear(level, owner, area.center(), area.radius(), 80);
@@ -1555,15 +1555,15 @@ public final class VillageRoleAbilitySystem {
                 new EmpoweredArrowState(now + 240L, scale.power(), scale.specialRank()));
         spawningGeneratedArrow = true;
         try {
-            spawnSideArrow(level, player, arrow, -8.0, scale.power());
-            spawnSideArrow(level, player, arrow, 8.0, scale.power());
+            spawnSideArrow(level, player, arrow, -8.0, scale.power(), scale.specialRank());
+            spawnSideArrow(level, player, arrow, 8.0, scale.power(), scale.specialRank());
             if (scale.specialRank() >= 4) {
-                spawnSideArrow(level, player, arrow, -16.0, scale.power() * 0.82f);
-                spawnSideArrow(level, player, arrow, 16.0, scale.power() * 0.82f);
+                spawnSideArrow(level, player, arrow, -16.0, scale.power() * 0.82f, scale.specialRank());
+                spawnSideArrow(level, player, arrow, 16.0, scale.power() * 0.82f, scale.specialRank());
             }
             if (scale.specialRank() >= 5) {
-                spawnSideArrow(level, player, arrow, -24.0, scale.power() * 0.70f);
-                spawnSideArrow(level, player, arrow, 24.0, scale.power() * 0.70f);
+                spawnSideArrow(level, player, arrow, -24.0, scale.power() * 0.70f, scale.specialRank());
+                spawnSideArrow(level, player, arrow, 24.0, scale.power() * 0.70f, scale.specialRank());
             }
         } finally {
             spawningGeneratedArrow = false;
@@ -1708,7 +1708,7 @@ public final class VillageRoleAbilitySystem {
         Vec3 origin = player.position().add(0.0, 0.82, 0.0).add(direction.scale(1.0));
         launchMovingAt(level, player, MovingKind.BLADE, ItemStack.EMPTY,
                 1.75 + specialRank * 0.035, 24 + specialRank * 2,
-                (5.4f + VillageCouncilState.levelOf(player.getUUID()) * 0.30f) * power,
+                (5.4f + RpgProgress.combatScalingLevel(VillageCouncilState.levelOf(player.getUUID())) * 0.30f) * power,
                 1.45 + specialRank * 0.12, specialRank, origin, direction);
         play(level, player.position(), SoundEvents.PLAYER_ATTACK_SWEEP, 1.0f,
                 0.78f + player.getRandom().nextFloat() * 0.18f);
@@ -1719,7 +1719,7 @@ public final class VillageRoleAbilitySystem {
         player.swing(InteractionHand.MAIN_HAND, true);
         double radius = areaRadius(8.5, specialRank);
         damageRadius(level, player, player.position(), radius, 40 + specialRank * 4,
-                (14.0f + VillageCouncilState.levelOf(player.getUUID()) * 0.72f) * power,
+                (14.0f + RpgProgress.combatScalingLevel(VillageCouncilState.levelOf(player.getUUID())) * 0.72f) * power,
                 false, 1.05 + specialRank * 0.05, 0.38);
         int fractureDuration = Math.max(40, Math.round(55 * durationMultiplier));
         for (Mob target : targetsNear(level, player, player.position(), radius, 48)) {
@@ -1736,7 +1736,7 @@ public final class VillageRoleAbilitySystem {
     private static void arrowRain(ServerLevel level, ServerPlayer player, Vec3 center, float power, int specialRank) {
         double radius = areaRadius(8.5, specialRank);
         VillageSkillEffectSystem.arrowRainImpact(level, player, center, radius, specialRank);
-        float damage = (3.3f + VillageCouncilState.levelOf(player.getUUID()) * 0.18f) * power;
+        float damage = (3.3f + RpgProgress.combatScalingLevel(VillageCouncilState.levelOf(player.getUUID())) * 0.18f) * power;
         for (Mob target : targetsNear(level, player, center, radius, 48)) {
             hurt(level, player, target, damage, VillageRpgSystem.SkillAttackProfile.PERSISTENT);
             if (specialRank >= 3) target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 40));
@@ -1752,7 +1752,7 @@ public final class VillageRoleAbilitySystem {
         Vec3 direction = lookDirection(player);
         Vec3 origin = player.getEyePosition().add(direction.scale(2.8));
         VillageSkillEffectSystem.energyArrow(level, player, origin, direction);
-        float damage = (31.0f + VillageCouncilState.levelOf(player.getUUID()) * 1.35f) * power;
+        float damage = (31.0f + RpgProgress.combatScalingLevel(VillageCouncilState.levelOf(player.getUUID())) * 1.35f) * power;
         launchMovingAt(level, player, MovingKind.ENERGY_ARROW, new ItemStack(Items.SPECTRAL_ARROW),
                 2.65, 55, damage, 5.0, specialRank, origin, direction);
         play(level, player.position(), SoundEvents.ENDER_DRAGON_SHOOT, 1.45f, 0.78f);
@@ -1765,7 +1765,7 @@ public final class VillageRoleAbilitySystem {
         VillageSkillEffectSystem.shieldCharge(level, player, direction);
         int ticks = 5 + Math.min(4, Math.max(0, Math.round((durationMultiplier - 1.0f) * 4.0f)));
         double contactRadius = 2.3 + specialRank * 0.22;
-        float damage = (5.5f + VillageCouncilState.levelOf(player.getUUID()) * 0.3f) * power;
+        float damage = (5.5f + RpgProgress.combatScalingLevel(VillageCouncilState.levelOf(player.getUUID())) * 0.3f) * power;
         startDash(level, player, VillageRoleSkillSystem.ActiveSkill.WARDEN_TAUNT,
                 level.getGameTime(), direction, ticks, 0.88,
                 damage, contactRadius, 1.15 + specialRank * 0.07, false);
@@ -1950,14 +1950,14 @@ public final class VillageRoleAbilitySystem {
     }
 
     private static void spawnSideArrow(ServerLevel level, ServerPlayer owner,
-                                       AbstractArrow source, double degrees, float power) {
+                                       AbstractArrow source, double degrees, float power, int specialRank) {
         Arrow arrow = new Arrow(level, owner, new ItemStack(Items.ARROW), new ItemStack(Items.BOW));
         arrow.setPos(source.getX(), source.getY(), source.getZ());
         Vec3 velocity = rotateY(source.getDeltaMovement(), Math.toRadians(degrees));
         arrow.setDeltaMovement(velocity);
         arrow.setBaseDamage(2.0);
         RAPID_ARROWS.put(arrow.getUUID(), new EmpoweredArrowState(
-                level.getGameTime() + 160L, power, 0));
+                level.getGameTime() + 160L, power, specialRank));
         arrow.pickup = AbstractArrow.Pickup.DISALLOWED;
         spawningGeneratedArrow = true;
         try { level.addFreshEntity(arrow); }
