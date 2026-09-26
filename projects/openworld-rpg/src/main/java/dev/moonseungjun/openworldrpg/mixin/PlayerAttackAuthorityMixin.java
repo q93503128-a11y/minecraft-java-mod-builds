@@ -3,14 +3,16 @@ package dev.moonseungjun.openworldrpg.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.moonseungjun.openworldrpg.combat.authority.CombatDamageAuthority;
-import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;\nimport dev.moonseungjun.openworldrpg.combat.runtime.R01EarthloongMythicRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
+import dev.moonseungjun.openworldrpg.combat.runtime.R01EarthloongMythicRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.integration.bettercombat.BetterCombatAuthorityAdapter;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.server.level.ServerPlayer;\nimport net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
