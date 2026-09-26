@@ -157,28 +157,22 @@ public final class DrehmalMinimapLayer implements GuiLayer {
     }
 
     private static void drawArrow(GuiGraphicsExtractor graphics, int cx, int cy, float yaw, int color, boolean backdrop) {
-        if (backdrop) graphics.fill(cx - 5, cy - 5, cx + 6, cy + 6, 0xB8111317);
         int dir = Math.floorMod(Math.round(yaw / 45.0F), 8);
         int[] vx = {0, -1, -1, -1, 0, 1, 1, 1};
         int[] vy = {1, 1, 0, -1, -1, -1, 0, 1};
         int dx = vx[dir], dy = vy[dir];
         int px = -dy, py = dx;
 
-        drawArrowPixel(graphics, cx, cy, color);
-        for (int along = 1; along <= 4; along++) {
-            int halfWidth = along == 1 ? 2 : along <= 3 ? 1 : 0;
-            for (int side = -halfWidth; side <= halfWidth; side++) {
-                drawArrowPixel(
-                        graphics,
-                        cx + dx * along + px * side,
-                        cy + dy * along + py * side,
-                        color);
-            }
-        }
+        // Minimal pointer: thin shaft + two head pixels. No black backdrop tile.
+        for (int t = -1; t <= 3; t++) drawArrowPixel(graphics, cx + dx * t, cy + dy * t, color);
+        int wingX = cx + dx;
+        int wingY = cy + dy;
+        drawArrowPixel(graphics, wingX + px, wingY + py, color);
+        drawArrowPixel(graphics, wingX - px, wingY - py, color);
     }
 
     private static void drawArrowPixel(GuiGraphicsExtractor graphics, int x, int y, int color) {
-        graphics.fill(x - 1, y - 1, x + 1, y + 1, color);
+        graphics.fill(x, y, x + 2, y + 2, color);
     }
 
     private static int floorToStep(double value) { return Math.floorDiv((int)Math.floor(value), STEP) * STEP; }

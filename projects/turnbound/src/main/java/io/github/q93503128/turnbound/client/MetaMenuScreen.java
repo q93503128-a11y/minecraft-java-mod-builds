@@ -100,9 +100,9 @@ public final class MetaMenuScreen extends Screen {
     private void buildHome(){
         var snapshot=ClientMetaState.snapshot();
         int px=homePanelX(),py=homePanelY(),pw=homePanelW(),ph=homePanelH();
-        int leftW=Math.max(190,pw*58/100);
-        int partyX=px+22,partyY=py+38;
-        int partyAreaW=leftW-32;
+        int leftW=Math.max(176,pw*54/100);
+        int partyX=px+18,partyY=py+38;
+        int partyAreaW=leftW-26;
         int cardGap=8;
         int cardW=Math.max(72,(partyAreaW-cardGap)/2);
         int cardH=Math.max(68,Math.min(86,(ph-72-cardGap)/2));
@@ -125,16 +125,24 @@ public final class MetaMenuScreen extends Screen {
                     ignored->switchTab(Tab.PARTY)));
         }
 
-        int menuX=px+leftW+10;
-        int menuY=py+46;
-        int menuAreaW=pw-leftW-28;
-        int orbGap=6;
-        int orbSize=Math.max(50,Math.min(68,(menuAreaW-orbGap)/2));
-        int rowGap=8;
-        addRenderableWidget(new FoozleOrbButton(menuX,menuY,orbSize,"파티",ignored->switchTab(Tab.PARTY)));
-        addRenderableWidget(new FoozleOrbButton(menuX+orbSize+orbGap,menuY,orbSize,"장비",ignored->switchTab(Tab.EQUIPMENT)));
-        addRenderableWidget(new FoozleOrbButton(menuX,menuY+orbSize+rowGap,orbSize,"퀘스트",ignored->switchTab(Tab.QUESTS)));
-        addRenderableWidget(new FoozleOrbButton(menuX+orbSize+orbGap,menuY+orbSize+rowGap,orbSize,"소환",ignored->switchTab(Tab.ARCHIVE)));
+        int menuX=px+leftW+8;
+        int menuY=py+42;
+        int menuAreaW=pw-leftW-22;
+        int orbGap=5;
+        int rowGap=5;
+        int orbSize=Math.max(38,Math.min(48,(menuAreaW-orbGap)/2));
+        Tab[] destinations={Tab.CHARACTERS,Tab.PARTY,Tab.EQUIPMENT,Tab.QUESTS,Tab.ARCHIVE,Tab.CODEX,Tab.SYSTEM};
+        String[] labels={"캐릭터","파티","장비","퀘스트","소환","도감","설정"};
+        for(int i=0;i<destinations.length;i++){
+            final Tab destination=destinations[i];
+            int col=i%2,row=i/2;
+            addRenderableWidget(new FoozleOrbButton(
+                    menuX+col*(orbSize+orbGap),
+                    menuY+row*(orbSize+rowGap),
+                    orbSize,
+                    labels[i],
+                    ignored->switchTab(destination)));
+        }
     }
 
     private int homePanelW(){return Math.min(620,Math.max(320,width-16));}
