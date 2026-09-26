@@ -12,6 +12,7 @@ import io.github.q93503128.turnbound.session.BattleSessionManager;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import io.github.q93503128.turnbound.world.ExternalWorldBootstrap;
+import io.github.q93503128.turnbound.world.DrehmalHubEntityPolicy;
 import io.github.q93503128.turnbound.world.FieldInteractionGuard;
 import io.github.q93503128.turnbound.world.FieldNetwork;
 import io.github.q93503128.turnbound.world.GachaPresentationActorService;
@@ -50,6 +51,7 @@ public final class Turnbound {
         NeoForge.EVENT_BUS.addListener(this::logout);
         NeoForge.EVENT_BUS.addListener(this::serverStopping);
         NeoForge.EVENT_BUS.addListener(PlayerShellRules::onIncomingDamage);
+        NeoForge.EVENT_BUS.addListener(DrehmalHubEntityPolicy::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(BattleInteractionGuard::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(BattleInteractionGuard::onRightClickItem);
         NeoForge.EVENT_BUS.addListener(BattleInteractionGuard::onEntityInteract);

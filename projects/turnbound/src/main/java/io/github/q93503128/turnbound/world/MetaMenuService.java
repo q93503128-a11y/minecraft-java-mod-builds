@@ -65,6 +65,7 @@ public final class MetaMenuService {
                     var server=player.level().getServer();
                     if(server!=null)ExternalWorldSavedData.get(server).markOnboardingFlag(
                             player.getUUID(),DrehmalContextualOnboarding.HUB_MENU_VIEWED);
+                    ExternalWorldBootstrap.refreshFieldContext(player);
                 }
                 MetaNetwork.sync(player);
             }

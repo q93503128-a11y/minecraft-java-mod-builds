@@ -103,22 +103,27 @@ public final class DrehmalFirstRouteRuntime {
         if (server == null) return;
         ExternalWorldSavedData data = ExternalWorldSavedData.get(server);
         DrehmalFirstRouteProgress.record(data, player.getUUID(), locationSite(player));
-        var hub = DrehmalWorldProfile.enabled(DrehmalWorldProfile.HUB_LOCATOR);
-        if (hub != null) {
-            double dx = player.getX() - (hub.x() + 0.5D);
-            double dz = player.getZ() - (hub.z() + 0.5D);
-            if (dx * dx + dz * dz <= 64.0D * 64.0D) {
-                data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.TOWER_REACHED);
-                data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.CAMP_REACHED);
-                data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.APPROACH_REACHED);
-                data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.HUB_REACHED);
-            }
+        if (insideHubCoordinates(player.getX(), player.getZ())) {
+            data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.TOWER_REACHED);
+            data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.CAMP_REACHED);
+            data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.APPROACH_REACHED);
+            data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.HUB_REACHED);
         }
     }
 
     static boolean insideHub(ServerPlayer player) {
+        if (player == null) return false;
         DrehmalFirstRouteCatalog.Site location = locationSite(player);
-        return location != null && "HUB_SAFE".equals(location.kind());
+        return (location != null && "HUB_SAFE".equals(location.kind()))
+                || insideHubCoordinates(player.getX(), player.getZ());
+    }
+
+    static boolean insideHubCoordinates(double x, double z) {
+        var hub = DrehmalWorldProfile.enabled(DrehmalWorldProfile.HUB_LOCATOR);
+        if (hub == null) return false;
+        double dx = x - (hub.x() + 0.5D);
+        double dz = z - (hub.z() + 0.5D);
+        return dx * dx + dz * dz <= 64.0D * 64.0D;
     }
 
     private static FieldUiSnapshot.Navigation navigation(ServerPlayer player) {

@@ -104,6 +104,7 @@ final class DrehmalContextualOnboarding {
                     "파티와 장비를 한 번 확인하십시오.",
                     "E 메뉴에서 현재 파티를 바로 확인할 수 있습니다.");
         }
+        if (roles.isEmpty()) return new Guidance("", "");
         if (needs("BLACKSMITH", flags, roles)) {
             return new Guidance(
                     "뉴 드라비엘의 대장간에서 장비를 점검하십시오.",

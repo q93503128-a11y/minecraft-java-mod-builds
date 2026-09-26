@@ -83,7 +83,7 @@ final class DrehmalWorldMapScreen extends Screen {
         boolean wide = panelWidth >= 320 && panelHeight >= 190;
         int mapY = top + (showSubtitle ? 43 : 30);
         int mapX = left + 12;
-        int infoReserve = wide ? Math.min(132, Math.max(104, panelWidth / 3)) : 0;
+        int infoReserve = wide ? Math.min(190, Math.max(150, panelWidth / 3)) : 0;
         int bottomReserve = wide ? 12 : compact ? 68 : 108;
         int availableW = panelWidth - 24 - infoReserve - (wide ? 10 : 0);
         int availableH = top + panelHeight - bottomReserve - mapY;
@@ -134,7 +134,8 @@ final class DrehmalWorldMapScreen extends Screen {
         int infoH = wide ? mapSize : Math.max(40, top + panelHeight - 8 - infoY);
         TurnboundFrameStyle.inset(graphics, infoX, infoY, infoW, infoH);
 
-        graphics.text(font, Component.literal("현재  X " + (int)Math.round(px) + " · Z " + (int)Math.round(pz)),
+        String coordinates = "현재  X " + (int)Math.round(px) + " · Z " + (int)Math.round(pz);
+        graphics.text(font, Component.literal(UiTextLayout.fit(coordinates, infoW - 14)),
                 infoX + 7, infoY + 7, TEXT, true);
         if (focus != null && infoH >= 38) {
             graphics.text(font, Component.literal(UiTextLayout.fit(label(focus), infoW - 14)),
@@ -145,7 +146,8 @@ final class DrehmalWorldMapScreen extends Screen {
             }
             if (infoH >= 72) {
                 int distance = (int)Math.round(Math.hypot(focus.x() - px, focus.z() - pz));
-                graphics.text(font, Component.literal("약 " + distance + "m · " + kindLabel(focus.kind())),
+                String distanceLine = "약 " + distance + "m · " + kindLabel(focus.kind());
+                graphics.text(font, Component.literal(UiTextLayout.fit(distanceLine, infoW - 14)),
                         infoX + 7, infoY + 55, MUTED, false);
             }
         }
@@ -156,8 +158,13 @@ final class DrehmalWorldMapScreen extends Screen {
             graphics.text(font, Component.literal("● 랜드마크"), infoX + 9, infoY + 126, GREEN, false);
         }
         if (wide && infoH > 190) {
-            graphics.text(font, Component.literal("표시된 위치는 알려진 장소의 기준점입니다."), infoX + 9, infoY + 153, SECONDARY, false);
-            graphics.text(font, Component.literal("전투 지점은 지도에 미리 노출하지 않습니다."), infoX + 9, infoY + 170, MUTED, false);
+            String note = "표시는 알려진 장소의 기준점입니다. 전투 위치는 탐험하기 전에는 숨겨집니다.";
+            int noteY = infoY + 153;
+            for (String line : UiTextLayout.wrap(note, infoW - 18, 4)) {
+                if (noteY + font.lineHeight >= infoY + infoH - 6) break;
+                graphics.text(font, Component.literal(line), infoX + 9, noteY, SECONDARY, false);
+                noteY += font.lineHeight + 2;
+            }
         }
 
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);

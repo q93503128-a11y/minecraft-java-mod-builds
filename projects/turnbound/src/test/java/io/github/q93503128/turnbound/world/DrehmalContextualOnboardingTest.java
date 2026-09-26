@@ -70,6 +70,17 @@ class DrehmalContextualOnboardingTest {
     }
 
     @Test
+    void menuStepClearsWhenNoSurveyedHubServicesAreAvailable() {
+        var completed = DrehmalContextualOnboarding.resolve(
+                "HUB_SAFE",
+                Set.of(),
+                Set.of(DrehmalContextualOnboarding.HUB_MENU_VIEWED),
+                Set.of());
+        assertTrue(completed.objective().isBlank());
+        assertTrue(completed.hint().isBlank());
+    }
+
+    @Test
     void lockedOrUnavailableServicesNeverBecomeMandatoryObjectives() {
         var lockedSummon = DrehmalContextualOnboarding.resolve(
                 "HUB_SAFE",

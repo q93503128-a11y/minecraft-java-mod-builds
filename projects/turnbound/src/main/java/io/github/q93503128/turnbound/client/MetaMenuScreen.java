@@ -145,7 +145,7 @@ public final class MetaMenuScreen extends Screen {
     private void buildParty(){
         var owned=ClientMetaState.snapshot().characters().stream().filter(ClientMetaState.CharacterRow::owned).toList();
         int gridTop=contentTop()+24,gap=4;
-        int cols=panelWidth>=760?4:panelWidth>=460?3:2;
+        int cols=panelWidth>=500?4:panelWidth>=360?3:2;
         int cardH=34;
         int footerTop=top+panelHeight-82;
         int rows=UiPaging.rowsThatFit(gridTop,footerTop-6,cardH+4,2),per=cols*rows;
@@ -170,11 +170,11 @@ public final class MetaMenuScreen extends Screen {
             final int s=slot;
             int x=left+16+(slot-1)*(presetW+gapFooter);
             var preset=ClientMetaState.snapshot().partyPresets().size()>=slot?ClientMetaState.snapshot().partyPresets().get(slot-1):List.<String>of();
-            String loadLabel=preset.isEmpty()?"P"+slot+" 없음":"P"+slot+" 불러오기";
+            String loadLabel=preset.isEmpty()?"프리셋 "+slot+" 없음":"프리셋 "+slot+" 불러오기";
             var load=new BattleHudButton(x,row1,presetW,18,Component.literal(loadLabel),preset.isEmpty()?MUTED:BLUE,ignored->send("PRESET_LOAD|"+s));
             load.active=!preset.isEmpty();
             addRenderableWidget(load);
-            addRenderableWidget(new BattleHudButton(x,row2,presetW,18,Component.literal("P"+slot+" 저장"),GREEN,ignored->send("PRESET_SAVE|"+s)));
+            addRenderableWidget(new BattleHudButton(x,row2,presetW,18,Component.literal("프리셋 "+slot+" 저장"),GREEN,ignored->send("PRESET_SAVE|"+s)));
         }
         addRenderableWidget(new BattleHudButton(
                 left+panelWidth-16-savePartyW,row1,savePartyW,40,
