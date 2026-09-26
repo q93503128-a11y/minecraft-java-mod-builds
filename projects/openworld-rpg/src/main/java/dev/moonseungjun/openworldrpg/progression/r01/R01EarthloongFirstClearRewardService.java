@@ -140,10 +140,8 @@ public final class R01EarthloongFirstClearRewardService {
         }
 
         R01PlayerStateService.markEarthloongScalesDelivered(player);
-        PlayerInventoryService.forgetCompletedDeliveryReceipt(
-                player,
-                SCALE_DELIVERY_TRANSACTION
-        );
+        // This is a single bounded first-clear transaction. Keep the inventory receipt so a
+        // save interruption can never turn a recovered R01 claim into duplicate scale delivery.
         return true;
     }
 
