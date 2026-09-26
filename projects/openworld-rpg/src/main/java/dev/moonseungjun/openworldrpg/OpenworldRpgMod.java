@@ -20,6 +20,7 @@ import dev.moonseungjun.openworldrpg.progression.r01.R01EarthloongEncounterServi
 import dev.moonseungjun.openworldrpg.progression.r01.R01EarthloongFirstClearRewardService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01MainQuestService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01OpeningBootstrapService;
+import dev.moonseungjun.openworldrpg.progression.r01.R01PostQuarryService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerStateAttachments;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerStateService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01QuestAttributionAttachments;
@@ -95,6 +96,9 @@ public final class OpenworldRpgMod implements ModInitializer {
                         handler.getPlayer()
                 );
                 R01EarthloongFirstClearRewardService.reconcilePending(handler.getPlayer());
+                R01PostQuarryService.reconcileImmediateAftermath(
+                        handler.getPlayer()
+                );
                 R01RoadsideTroubleController.reconcilePendingFinalization(
                         handler.getPlayer()
                 );

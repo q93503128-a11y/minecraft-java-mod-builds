@@ -416,6 +416,74 @@ public record R01PlayerState(
         );
     }
 
+    public R01PlayerState commitPostQuarryAftermath(long worldTick) {
+        validateTick(worldTick);
+        if (!quarry.firstClear()) {
+            throw new IllegalStateException(
+                    "Post-Quarry aftermath requires Earthloong first clear."
+            );
+        }
+
+        OpeningState nextOpening = opening.withMainStage(
+                R01MainStage.POST_QUARRY_BRIEFING_PENDING
+        );
+        TransactionLedger nextLedger = ledger
+                .withCompletedStepId(
+                        "openworld_rpg:r01/post_quarry_aftermath"
+                )
+                .withQuestStepId(
+                        "openworld_rpg:r01/lines_beneath_the_land",
+                        "return_to_alderford"
+                );
+
+        return changed(
+                nextOpening,
+                quarry,
+                worldLoops,
+                economy,
+                nextLedger,
+                worldTick
+        );
+    }
+
+    public R01PlayerState completePostQuarryBriefing(long worldTick) {
+        validateTick(worldTick);
+        if (!quarry.firstClear()
+                || !opening.mainStage().isAtLeast(
+                        R01MainStage.POST_QUARRY_BRIEFING_PENDING
+                )) {
+            throw new IllegalStateException(
+                    "Post-Quarry briefing requires committed chamber aftermath."
+            );
+        }
+
+        OpeningState nextOpening =
+                opening.withPostQuarryBriefingCompleted();
+        TransactionLedger nextLedger = ledger
+                .withCompletedStepId(
+                        "openworld_rpg:r01/post_quarry_briefing"
+                )
+                .withQuestStepId(
+                        "openworld_rpg:r01/lines_beneath_the_land",
+                        "act1_leads_open"
+                )
+                .withDiscoveryFlag(
+                        "openworld_rpg:r01/lead/western_relay"
+                )
+                .withDiscoveryFlag(
+                        "openworld_rpg:r01/lead/whitecrest_station"
+                );
+
+        return changed(
+                nextOpening,
+                quarry,
+                worldLoops,
+                economy,
+                nextLedger,
+                worldTick
+        );
+    }
+
     public Optional<String> earthloongRewardChoiceFlag() {
         String found = null;
         for (String flag : ledger.choiceFlags()) {
@@ -765,6 +833,35 @@ public record R01PlayerState(
             return copy(mainStage, firstShrineActivated, firstRootClassSelected, starterPackageClaimed,
                     quarryRoadActionBits, regalhartCluesSeenBits, true,
                     dodgeHintSeen, dodgeUsedOnce);
+        }
+
+        public OpeningState withPostQuarryBriefingCompleted() {
+            if (postQuarryBriefingSeen
+                    && act1WesternRelayLeadKnown
+                    && act1WhitecrestStationLeadKnown
+                    && mainStage.isAtLeast(R01MainStage.ACT1_LEADS_OPEN)) {
+                return this;
+            }
+            return new OpeningState(
+                    R01MainStage.furthest(
+                            mainStage,
+                            R01MainStage.ACT1_LEADS_OPEN
+                    ),
+                    firstShrineActivated,
+                    firstRootClassSelected,
+                    starterPackageClaimed,
+                    quarryRoadActionBits,
+                    optionalContractStates,
+                    trailStagState,
+                    trailStagUnlocked,
+                    regalhartCluesSeenBits,
+                    regalhartDiscovered,
+                    true,
+                    true,
+                    true,
+                    dodgeHintSeen,
+                    dodgeUsedOnce
+            );
         }
 
         public OpeningState withDodgeHintSeen() {

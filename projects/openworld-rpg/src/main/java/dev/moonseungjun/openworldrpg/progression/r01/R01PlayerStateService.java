@@ -164,6 +164,24 @@ public final class R01PlayerStateService {
         );
     }
 
+    public static R01PlayerState commitPostQuarryAftermath(
+            ServerPlayer player
+    ) {
+        return replace(
+                player,
+                state(player).commitPostQuarryAftermath(gameTick(player))
+        );
+    }
+
+    public static R01PlayerState completePostQuarryBriefing(
+            ServerPlayer player
+    ) {
+        return replace(
+                player,
+                state(player).completePostQuarryBriefing(gameTick(player))
+        );
+    }
+
     public static R01PlayerState commitEarthloongRewardChoice(
             ServerPlayer player,
             String choiceFlag

@@ -112,6 +112,7 @@ public final class R01EarthloongEncounterService {
         }
         R01QuarryRunAttributionService.reconcileFirstClearCompletion(player);
         R01EarthloongFirstClearRewardService.reconcilePending(player);
+        R01PostQuarryService.reconcileImmediateAftermath(player);
 
         replace(
                 server,
