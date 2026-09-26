@@ -32,7 +32,7 @@ import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionA
 import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionService;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryBeltAttachments;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryEffectRuntime;
-import dev.moonseungjun.openworldrpg.recovery.RecoveryUseRuntime;
+import dev.moonseungjun.openworldrpg.recovery.RecoveryUseRuntime;\nimport dev.moonseungjun.openworldrpg.combat.runtime.R01EarthloongMythicRuntime;
 import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeAttachments;
 import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeService;
 import net.fabricmc.api.ModInitializer;
@@ -100,6 +100,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             var playerId = handler.getPlayer().getUUID();
             RecoveryUseRuntime.disconnect(playerId);
             RecoveryEffectRuntime.disconnect(playerId);
+            R01EarthloongMythicRuntime.disconnect(playerId);
             CombatStateServices.disconnect(playerId);
         });
 

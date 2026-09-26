@@ -63,6 +63,27 @@ public final class ProjectPlayerIncomingDamageRuntime {
         );
         resources.markCombatActivity(gameTick);
 
+        var barrier = R01EarthloongMythicRuntime.absorbBarrier(
+                target,
+                resolution.finalDamage(),
+                gameTick
+        );
+        if (barrier.absorbedDamage() > 0.0) {
+            resolution = new PlayerDefenseRuntimeState.IncomingDefenseResult(
+                    resolution.mitigatedBeforeActiveDefense(),
+                    barrier.remainingDamage(),
+                    resolution.staminaSpent(),
+                    resolution.dodged(),
+                    resolution.guarded(),
+                    resolution.perfectGuarded(),
+                    resolution.guardBroken()
+            );
+        }
+
+        if (resolution.perfectGuarded()) {
+            R01EarthloongMythicRuntime.onPerfectGuard(target, gameTick);
+        }
+
         if (resolution.finalDamage() <= 0.0) {
             return IncomingApplication.accepted(false, resolution);
         }
