@@ -74,6 +74,46 @@ public final class R01QuarryRunAttributionService {
     }
 
     /**
+     * Replays a class captured by a shared room controller after the room cleared. This is allowed
+     * for the same personal run while it is still active or already marked cleared, so a brief
+     * disconnect at room completion cannot erase a canonical Quarry attribution unit.
+     */
+    public static boolean ensureCapturedContribution(
+            ServerPlayer player,
+            long runId,
+            R01QuarryRunContribution contribution,
+            RootClass owner
+    ) {
+        Objects.requireNonNull(player, "player");
+        Objects.requireNonNull(contribution, "contribution");
+        Objects.requireNonNull(owner, "owner");
+        if (runId <= 0L) {
+            throw new IllegalArgumentException("runId must be positive.");
+        }
+
+        R01PlayerState personal = R01PlayerStateService.state(player);
+        boolean sameRun = personal.quarry().runId() == runId;
+        boolean runEligible = personal.quarry().runState()
+                .map(value -> "active".equals(value) || "cleared".equals(value))
+                .orElse(false);
+        if (!sameRun || !runEligible) {
+            return false;
+        }
+
+        R01QuarryRunAttributionState current = state(player);
+        if (current.runId() != runId) {
+            current = beginRun(player, runId);
+        }
+        R01QuarryRunAttributionState next = current.record(
+                runId,
+                contribution,
+                owner
+        );
+        replace(player, current, next);
+        return true;
+    }
+
+    /**
      * Finalizes the canonical first-clear dungeon-completion numeric reward after personal
      * first-clear state has committed. The generic transaction persists exact percentages before
      * any domain mutation, so reconnect cannot reroll the current-requirement amounts.
