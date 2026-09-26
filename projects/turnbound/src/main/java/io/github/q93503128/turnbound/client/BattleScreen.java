@@ -319,13 +319,12 @@ public final class BattleScreen extends Screen {
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double deltaX, double deltaY) {
-        // Target selection owns pointer gestures while a skill is armed. Otherwise any ordinary empty-space drag
-        // can orbit the battle view, so camera control does not depend on discovering one exact mouse button.
-        boolean cameraButton = event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT
+        // Left drag stays reserved for target selection. Right/middle drag always orbit, even while a skill is armed.
+        boolean freeLeftDrag = event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT && selectedSkill.isBlank();
+        boolean cameraButton = freeLeftDrag
                 || event.button() == GLFW.GLFW_MOUSE_BUTTON_RIGHT
                 || event.button() == GLFW.GLFW_MOUSE_BUTTON_MIDDLE;
-        if (!settingsOpen && selectedSkill.isBlank() && cameraButton
-                && !isOverInteractiveHud(event.x(), event.y())) {
+        if (!settingsOpen && cameraButton && !isOverInteractiveHud(event.x(), event.y())) {
             BattleCameraController.orbit(deltaX, deltaY);
             return true;
         }

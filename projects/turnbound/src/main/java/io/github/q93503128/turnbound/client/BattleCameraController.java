@@ -173,12 +173,6 @@ public final class BattleCameraController {
     private static void refreshFraming(ClientBattleState.Snapshot snapshot) {
         BattleCameraFraming.Plan plan = BattleCameraFraming.plan(snapshot);
         applyBase(plan, false);
-        if (!manualAdjusted) {
-            targetYaw = baseYaw;
-            targetPitch = basePitch;
-            targetDistance = baseDistance;
-            targetFov = baseFov;
-        }
     }
 
     private static void applyBase(BattleCameraFraming.Plan plan, boolean snap) {
@@ -186,10 +180,14 @@ public final class BattleCameraController {
         basePitch = Mth.clamp(plan.pitch(), MIN_PITCH, MAX_PITCH);
         baseDistance = Mth.clamp(plan.distance(), MIN_DISTANCE, MAX_DISTANCE);
         baseFov = Mth.clamp(plan.fov(), 48.0F, 64.0F);
-        targetYaw = baseYaw;
-        targetPitch = basePitch;
-        targetDistance = baseDistance;
-        targetFov = baseFov;
+
+        // Snapshot refreshes update the authored baseline, but must not overwrite a player's manual orbit/zoom.
+        if (snap || !manualAdjusted) {
+            targetYaw = baseYaw;
+            targetPitch = basePitch;
+            targetDistance = baseDistance;
+            targetFov = baseFov;
+        }
         if (snap) {
             currentYaw = baseYaw;
             currentPitch = basePitch;

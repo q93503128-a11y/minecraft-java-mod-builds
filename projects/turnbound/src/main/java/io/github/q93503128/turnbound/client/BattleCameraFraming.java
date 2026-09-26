@@ -4,7 +4,7 @@ import java.util.List;
 
 /** Pure framing math for the battle-center camera. */
 final class BattleCameraFraming {
-    static final float THREE_QUARTER_OFFSET = 22.0F;
+    static final float THREE_QUARTER_OFFSET = 0.0F;
     private static final float MIN_DISTANCE = 8.5F;
     private static final float MAX_DISTANCE = 15.5F;
     private static final float MIN_PITCH = 18.0F;
