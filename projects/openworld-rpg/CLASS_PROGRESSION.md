@@ -175,6 +175,8 @@ Rules:
 
 - combat/event reward goes to the class active during that eligible contribution;
 - dungeon completion goes to the class used for the majority of tracked eligible combat/objective participation in that run;
+- each authored dungeon combat/objective participation unit counts at most once for class ownership; repeated hits, repeated interaction or idle time do not create extra votes;
+- if multiple classes tie for the highest tracked dungeon-participation count, the tied class owning the earliest canonical tracked contribution in that run receives the dungeon-completion Class XP; completion-time class switching never breaks the tie;
 - quest completion uses the class responsible for the majority of tracked objective progress when such progress exists; otherwise the class active at completion receives it;
 - simply switching class immediately before turning in a reward must not become the optimal power-level method.
 
