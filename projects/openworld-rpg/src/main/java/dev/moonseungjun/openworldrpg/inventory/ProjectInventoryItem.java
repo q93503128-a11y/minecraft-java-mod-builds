@@ -91,6 +91,30 @@ public record ProjectInventoryItem(
                 0L,
                 false,
                 false,
+                Optional.of(ProjectItemGrade.STANDARD),
+                Optional.of(item),
+                Optional.empty()
+        );
+    }
+
+    public static ProjectInventoryItem equipment(
+            EquippedCombatItem item,
+            ProjectItemGrade grade,
+            long unitSellValue
+    ) {
+        Objects.requireNonNull(item, "item");
+        Objects.requireNonNull(grade, "grade");
+        if (unitSellValue < 0L) {
+            throw new IllegalArgumentException("unitSellValue must be non-negative.");
+        }
+        return new ProjectInventoryItem(
+                item.itemId(),
+                1,
+                1,
+                false,
+                unitSellValue,
+                false,
+                false,
                 Optional.of(grade),
                 Optional.of(item),
                 Optional.empty()
