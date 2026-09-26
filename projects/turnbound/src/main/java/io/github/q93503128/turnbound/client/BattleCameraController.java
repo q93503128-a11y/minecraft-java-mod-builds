@@ -129,6 +129,13 @@ public final class BattleCameraController {
         targetDistance = Mth.clamp(targetDistance - (float)scrollY * WHEEL_DISTANCE_STEP, MIN_DISTANCE, MAX_DISTANCE);
     }
 
+    static void nudgeOrbit(float yawDegrees, float pitchDegrees) {
+        if (!active) return;
+        manualAdjusted = true;
+        targetYaw = Mth.wrapDegrees(targetYaw + yawDegrees);
+        targetPitch = Mth.clamp(targetPitch + pitchDegrees, MIN_PITCH, MAX_PITCH);
+    }
+
     static void resetView() {
         if (!active) return;
         manualAdjusted = false;

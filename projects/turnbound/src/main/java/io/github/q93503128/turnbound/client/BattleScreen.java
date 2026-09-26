@@ -290,6 +290,10 @@ public final class BattleScreen extends Screen {
             case GLFW.GLFW_KEY_X -> { toggleSpeed(); return true; }
             case GLFW.GLFW_KEY_R -> { flee(); return true; }
             case GLFW.GLFW_KEY_C -> { BattleCameraController.resetView(); return true; }
+            case GLFW.GLFW_KEY_LEFT -> { BattleCameraController.nudgeOrbit(-12.0F, 0.0F); return true; }
+            case GLFW.GLFW_KEY_RIGHT -> { BattleCameraController.nudgeOrbit(12.0F, 0.0F); return true; }
+            case GLFW.GLFW_KEY_UP -> { BattleCameraController.nudgeOrbit(0.0F, -4.0F); return true; }
+            case GLFW.GLFW_KEY_DOWN -> { BattleCameraController.nudgeOrbit(0.0F, 4.0F); return true; }
             default -> { }
         }
         return super.keyPressed(event);
@@ -315,8 +319,12 @@ public final class BattleScreen extends Screen {
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double deltaX, double deltaY) {
-        // A selected skill turns left-click into a pure targeting gesture; no accidental camera drift while aiming.
-        if (!settingsOpen && selectedSkill.isBlank() && event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT
+        // Target selection owns pointer gestures while a skill is armed. Otherwise any ordinary empty-space drag
+        // can orbit the battle view, so camera control does not depend on discovering one exact mouse button.
+        boolean cameraButton = event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT
+                || event.button() == GLFW.GLFW_MOUSE_BUTTON_RIGHT
+                || event.button() == GLFW.GLFW_MOUSE_BUTTON_MIDDLE;
+        if (!settingsOpen && selectedSkill.isBlank() && cameraButton
                 && !isOverInteractiveHud(event.x(), event.y())) {
             BattleCameraController.orbit(deltaX, deltaY);
             return true;
@@ -537,18 +545,55 @@ public final class BattleScreen extends Screen {
             if (current.skillButtons().get(i).contains(mouseX, mouseY)) { hovered = i; break; }
         }
         if (hovered < 0) return;
+
         ClientBattleState.Skill skill = snapshot.skills().get(hovered);
-        var area = current.tooltipArea();
-        List<String> lines = new ArrayList<>();
-        for (String source : BattleSkillTooltip.lines(skill)) lines.addAll(wrap(source, Math.max(48, area.width() - 14)));
-        int h = Math.min(area.height(), 10 + lines.size() * 11);
-        graphics.fill(area.x(), area.y(), area.right(), area.y() + h, DEEP);
-        TurnboundFrameStyle.frame(graphics, area.x(), area.y(), area.width(), h, GAUGE);
-        int y = area.y() + 6;
-        for (int i = 0; i < lines.size() && y + 9 <= area.y() + h; i++) {
-            graphics.text(font, Component.literal(lines.get(i)), area.x() + 7, y, i == 0 ? TEXT : SECONDARY, true);
-            y += 11;
+        var base = current.tooltipArea();
+        float textScale = current.compact() ? 0.86F : 0.90F;
+
+        int dockLeft = current.actionHeader().x();
+        int availableWidth = Math.max(base.width(), dockLeft - 10);
+        int expandedWidth = Math.min(current.compact() ? 220 : 300, availableWidth);
+        int panelWidth = base.width();
+
+        List<String> lines = tooltipLines(skill, panelWidth, textScale);
+        if (lines.size() > 5 && expandedWidth > panelWidth) {
+            panelWidth = expandedWidth;
+            lines = tooltipLines(skill, panelWidth, textScale);
         }
+
+        int topLimit = current.timeline().bottom() + 4;
+        int bottomLimit = Math.max(topLimit + 24, current.autoButton().y() - 5);
+        int maxHeight = Math.max(24, bottomLimit - topLimit);
+        int desiredHeight = 10 + (int)Math.ceil(lines.size() * 11.0F * textScale);
+        if (desiredHeight > maxHeight && !lines.isEmpty()) {
+            textScale = Math.max(0.80F, (maxHeight - 10.0F) / (lines.size() * 11.0F));
+            lines = tooltipLines(skill, panelWidth, textScale);
+            desiredHeight = 10 + (int)Math.ceil(lines.size() * 11.0F * textScale);
+        }
+
+        int panelHeight = Math.min(maxHeight, Math.max(base.height(), desiredHeight));
+        int panelX = Math.max(4, dockLeft - 6 - panelWidth);
+        int panelY = Math.max(topLimit, Math.min(base.y(), bottomLimit - panelHeight));
+
+        graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, DEEP);
+        TurnboundFrameStyle.frame(graphics, panelX, panelY, panelWidth, panelHeight, GAUGE);
+
+        graphics.pose().pushMatrix();
+        graphics.pose().translate(panelX + 7, panelY + 6);
+        graphics.pose().scale(textScale, textScale);
+        int localY = 0;
+        for (int i = 0; i < lines.size(); i++) {
+            graphics.text(font, Component.literal(lines.get(i)), 0, localY, i == 0 ? TEXT : SECONDARY, true);
+            localY += 11;
+        }
+        graphics.pose().popMatrix();
+    }
+
+    private List<String> tooltipLines(ClientBattleState.Skill skill, int panelWidth, float textScale) {
+        int logicalWidth = Math.max(48, (int)Math.floor((panelWidth - 14) / Math.max(0.01F, textScale)));
+        List<String> lines = new ArrayList<>();
+        for (String source : BattleSkillTooltip.lines(skill)) lines.addAll(wrap(source, logicalWidth));
+        return lines;
     }
 
     private List<String> wrap(String text, int maxWidth) {
@@ -584,7 +629,7 @@ public final class BattleScreen extends Screen {
         int x = panel.x() + 12;
         int y = panel.y() + 10;
         graphics.text(font, Component.literal("전투 조작"), x, y, TEXT, true);
-        graphics.text(font, Component.literal("빈 공간 드래그 회전 · 휠 줌 · C 카메라 초기화"), x, y + 18, SECONDARY, true);
+        graphics.text(font, Component.literal("빈 공간 드래그/방향키 회전 · 휠 줌 · C 초기화"), x, y + 18, SECONDARY, true);
         graphics.text(font, Component.literal("캐릭터/Tab 대상 · 같은 대상 2번 = 사용"), x, y + 34, SECONDARY, true);
         graphics.text(font, Component.literal("같은 스킬 2번 = 자동 대상 후 사용 · Enter 확정"), x, y + 50, SECONDARY, true);
         String controls = (snapshot.autoAllowed() ? "A 자동" : "A 자동 잠금") + " · "

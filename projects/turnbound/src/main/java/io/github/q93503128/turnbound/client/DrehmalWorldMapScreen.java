@@ -341,16 +341,23 @@ final class DrehmalWorldMapScreen extends Screen {
         int[] vx = {0, -1, -1, -1, 0, 1, 1, 1};
         int[] vy = {1, 1, 0, -1, -1, -1, 0, 1};
         int dx = vx[dir], dy = vy[dir];
-        for (int t = -2; t <= 2; t++) {
-            int x = cx + dx * t, y = cy + dy * t;
-            g.fill(x - 1, y - 1, x + 2, y + 2, color);
-        }
-        int hx = cx + dx * 4, hy = cy + dy * 4;
-        g.fill(hx - 1, hy - 1, hx + 2, hy + 2, color);
         int px = -dy, py = dx;
-        int wingX = hx - dx * 2, wingY = hy - dy * 2;
-        g.fill(wingX + px - 1, wingY + py - 1, wingX + px + 2, wingY + py + 2, color);
-        g.fill(wingX - px - 1, wingY - py - 1, wingX - px + 2, wingY - py + 2, color);
+
+        drawMapArrowPixel(g, cx, cy, color);
+        for (int along = 1; along <= 4; along++) {
+            int halfWidth = along == 1 ? 2 : along <= 3 ? 1 : 0;
+            for (int side = -halfWidth; side <= halfWidth; side++) {
+                drawMapArrowPixel(
+                        g,
+                        cx + dx * along + px * side,
+                        cy + dy * along + py * side,
+                        color);
+            }
+        }
+    }
+
+    private static void drawMapArrowPixel(GuiGraphicsExtractor g, int x, int y, int color) {
+        g.fill(x - 1, y - 1, x + 1, y + 1, color);
     }
 
     private static int worldToMap(double value, double minimum, double span, int mapSize) {
