@@ -1,6 +1,6 @@
 # Open-World RPG — Azari Spatial Closure Pass 1
 
-> Status: **OVERHEAD-RENDER TRIAGE COMPLETE / ACTUAL WORLD COORDINATE CLOSURE STILL REQUIRED**  
+> Status: **OVERHEAD-RENDER TRIAGE COMPLETE / LOCAL ARCHIVE INTAKE TOOLING READY / ACTUAL WORLD COORDINATE CLOSURE STILL REQUIRED**  
 > Date: 2026-09-17  
 > Spatial master: `REGIONS.md`  
 > Project contract: `PROJECT.md`  
@@ -289,7 +289,7 @@ Coordinates are not accepted by looking at the map image alone.
 
 # 10. Actual-world inspection sequence
 
-When the current Azari world archive is available locally (use the creator-linked 2026-06-18 updated build unless a newer verified update supersedes it):
+When the current Azari world archive is available locally (use the creator-linked 2026-06-18 updated build unless a newer verified update supersedes it), first run `tools/azari_world_intake.py` as defined in `AZARI_WORLD_INTAKE.md`, then:
 
 1. preserve archive/source/version/date and hash;
 2. load an untouched inspection copy;

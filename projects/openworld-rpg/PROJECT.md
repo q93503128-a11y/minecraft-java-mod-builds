@@ -254,7 +254,7 @@ R01–R12 now have concrete regional content authoring and the cross-region main
 Older package headers using `implementation-ready` must be interpreted narrowly as `the described mechanics/content flow no longer needs invention`. They do not waive these current pre-code gates:
 
 1. **exact external presentation binding and provenance** for unresolved models, outfits, items, structures, Anchor machinery, final logo/font/graphic, VFX, animations, SFX/BGM and local-only/dependency boundaries;
-2. **actual Azari spatial closure** — coordinates, footprints, sightlines, route joins, travel-time targets, POI/dungeon/boss placement and content-density validation;
+2. **actual Azari spatial closure** — local-only archive intake tooling is now ready in `tools/azari_world_intake.py` / `AZARI_WORLD_INTAKE.md`, but the creator archive bytes are still absent; once acquired, record the exact hash, load the untouched world, then lock coordinates, footprints, sightlines, route joins, travel-time targets, POI/dungeon/boss placement and content-density validation;
 3. **asset-gated final encounter sheets** — exact player-facing guardian/boss names, anatomy-supported attacks/weak points/signature materials only after their accepted models are known;
 4. **final stale-document / hidden-choice audit** — remove obsolete alternatives and ensure no implementation-time gameplay decision remains hidden in older live text.
 
