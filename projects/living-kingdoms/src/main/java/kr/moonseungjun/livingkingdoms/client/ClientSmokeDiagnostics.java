@@ -35,8 +35,15 @@ final class ClientSmokeDiagnostics {
             if (!diagnosticScreen.allRequiredControlsFit()) {
                 throw new IllegalStateException("Responsive origin controls extend outside the current client viewport");
             }
+            if (!RealmCodexClient.diagnosticNotebookRouting(diagnosticScreen.width, diagnosticScreen.height)) {
+                throw new IllegalStateException("Inventory notebook visible button regions do not map to their actions");
+            }
             LivingKingdoms.LOGGER.info(
                     "LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true rendered_window=true responsive=true viewport={}x{} controls_fit=true",
+                    diagnosticScreen.width, diagnosticScreen.height
+            );
+            LivingKingdoms.LOGGER.info(
+                    "LK_CLIENT_NOTEBOOK_INPUT_PASS routing=mouse_pressed_pre overview=true map=true skills=true gap_passthrough=true viewport={}x{}",
                     diagnosticScreen.width, diagnosticScreen.height
             );
         }
@@ -54,7 +61,7 @@ final class ClientSmokeDiagnostics {
                 throw new IllegalStateException("Realm loading screen extends outside the current client viewport");
             }
             LivingKingdoms.LOGGER.info(
-                    "LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true viewport={}x{} controls_fit=true",
+                    "LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true placement_confirmation_required=true viewport={}x{} controls_fit=true",
                     loadingScreen.width, loadingScreen.height
             );
         }
