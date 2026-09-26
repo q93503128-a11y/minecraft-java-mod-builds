@@ -26,11 +26,26 @@ public final class OriginProfileManager {
         FoundationCatalog.bootstrap();
         PlayableOriginCatalog.residences();
         savedData = server.overworld().getDataStorage().computeIfAbsent(LivingKingdomsSavedData.TYPE);
-        LivingKingdoms.LOGGER.info("Loaded {} Living Kingdoms player origin profile(s)", savedData.profileCount());
+        LivingKingdoms.LOGGER.info(
+                "Loaded {} Living Kingdoms player origin profile(s), verified residences={}",
+                savedData.profileCount(), savedData.residenceAssignmentCount());
     }
 
     public static synchronized Optional<OriginProfile> profile(UUID playerId) {
         return savedData == null ? Optional.empty() : savedData.profile(playerId);
+    }
+
+    public static synchronized Optional<ResidenceAssignment> residenceAssignment(UUID playerId) {
+        return savedData == null ? Optional.empty() : savedData.residenceAssignment(playerId);
+    }
+
+    public static synchronized boolean requiresResidenceAssignment(UUID playerId) {
+        return residenceAssignment(playerId).filter(ResidenceAssignment::current).isEmpty();
+    }
+
+    public static synchronized void putResidenceAssignment(UUID playerId, ResidenceAssignment assignment) {
+        if (savedData == null) throw new IllegalStateException("Player profile saved data is not initialized");
+        savedData.putResidenceAssignment(playerId, assignment);
     }
 
     public static synchronized boolean requiresSelection(UUID playerId) {
@@ -78,7 +93,7 @@ public final class OriginProfileManager {
                 profile.backgroundId(), profile.residenceId()
         );
         return new OriginSubmissionResultPayload(true,
-                "에르덴 시민 기록이 확정되었습니다. 왕도 준비가 끝나면 시민구 거주지로 이동합니다.");
+                "에르덴 시민 기록이 확정되었습니다. 실제 시민구 임대방을 확인한 뒤 이동합니다.");
     }
 
     private static boolean isSafeId(String value) {
