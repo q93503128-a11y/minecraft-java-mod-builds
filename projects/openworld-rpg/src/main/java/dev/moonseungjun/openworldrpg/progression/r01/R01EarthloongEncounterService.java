@@ -76,8 +76,8 @@ public final class R01EarthloongEncounterService {
      *
      * <p>The normal boss contribution is always personal for an eligible contributor. Main-story
      * first-clear state is committed only when that player personally has an active quarry run.
-     * The separate dungeon-completion Class-XP layer still waits for the canonical run-majority
-     * attribution connection instead of incorrectly assigning it to the last active class.</p>
+     * The separate dungeon-completion reward uses bounded whole-run class attribution rather than
+     * whichever class happens to be active when the boss dies.</p>
      */
     public static FinalizationResult reconcilePendingFinalization(ServerPlayer player) {
         Objects.requireNonNull(player, "player");
@@ -107,9 +107,10 @@ public final class R01EarthloongEncounterService {
                 && personal.quarry().runId() > 0L
                 && personal.quarry().runState().filter("active"::equals).isPresent()) {
             R01PlayerStateService.markEarthloongFirstClear(player);
-            R01EarthloongFirstClearRewardService.reconcilePending(player);
             firstClearCommitted = true;
         }
+        R01QuarryRunAttributionService.reconcileFirstClearCompletion(player);
+        R01EarthloongFirstClearRewardService.reconcilePending(player);
 
         replace(
                 server,
@@ -148,13 +149,19 @@ public final class R01EarthloongEncounterService {
         String playerUuid = player.getUUID().toString();
         R01EarthloongEncounterState current = state(server);
         boolean wasParticipant = current.hasParticipant(encounterId, playerUuid);
+        RootClass contributionClass = activeClass.orElseThrow();
         replace(
                 server,
                 current.recordParticipation(
                         encounterId,
                         playerUuid,
-                        activeClass.orElseThrow()
+                        contributionClass
                 )
+        );
+        R01QuarryRunAttributionService.recordContribution(
+                player,
+                R01QuarryRunContribution.EARTHLOONG_COMBAT,
+                contributionClass
         );
         return !wasParticipant;
     }

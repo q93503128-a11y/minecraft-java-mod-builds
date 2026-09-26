@@ -114,15 +114,43 @@ public final class R01PlayerStateService {
     }
 
     public static R01PlayerState beginQuarryRun(ServerPlayer player, long runId) {
-        return replace(player, state(player).beginQuarryRun(runId, gameTick(player)));
+        R01PlayerState next = replace(
+                player,
+                state(player).beginQuarryRun(runId, gameTick(player))
+        );
+        R01QuarryRunAttributionService.beginRun(player, runId);
+        return next;
     }
 
     public static R01PlayerState markQuarryLiftOpen(ServerPlayer player) {
-        return replace(player, state(player).markQuarryLiftOpen(gameTick(player)));
+        R01PlayerState before = state(player);
+        R01PlayerState next = replace(
+                player,
+                before.markQuarryLiftOpen(gameTick(player))
+        );
+        if (!before.quarry().liftOpen() && next.quarry().liftOpen()) {
+            R01QuarryRunAttributionService.recordCurrentClassContribution(
+                    player,
+                    R01QuarryRunContribution.LIFT_SHORTCUT
+            );
+        }
+        return next;
     }
 
     public static R01PlayerState markQuarryRelayEvidenceSeen(ServerPlayer player) {
-        return replace(player, state(player).markQuarryRelayEvidenceSeen(gameTick(player)));
+        R01PlayerState before = state(player);
+        R01PlayerState next = replace(
+                player,
+                before.markQuarryRelayEvidenceSeen(gameTick(player))
+        );
+        if (!before.quarry().relayEvidenceSeen()
+                && next.quarry().relayEvidenceSeen()) {
+            R01QuarryRunAttributionService.recordCurrentClassContribution(
+                    player,
+                    R01QuarryRunContribution.RELAY_EVIDENCE
+            );
+        }
+        return next;
     }
 
     public static R01PlayerState markEarthloongFirstClear(ServerPlayer player) {

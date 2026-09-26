@@ -21,6 +21,8 @@ import dev.moonseungjun.openworldrpg.progression.r01.R01OpeningBootstrapService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerStateAttachments;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerStateService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01QuestAttributionAttachments;
+import dev.moonseungjun.openworldrpg.progression.r01.R01QuarryRunAttributionAttachments;
+import dev.moonseungjun.openworldrpg.progression.r01.R01QuarryRunAttributionService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01RoadsideTroubleController;
 import dev.moonseungjun.openworldrpg.progression.r01.R01RepeatRewardAttachments;
 import dev.moonseungjun.openworldrpg.progression.r01.R01SharedWorldAttachments;
@@ -51,6 +53,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         R01EarthloongEncounterAttachments.initialize();
         R01RepeatRewardAttachments.initialize();
         R01QuestAttributionAttachments.initialize();
+        R01QuarryRunAttributionAttachments.initialize();
         PlayerCurrencyAttachments.initialize();
         PlayerRewardTransactionAttachments.initialize();
         PlayerInventoryAttachments.initialize();
@@ -77,6 +80,9 @@ public final class OpenworldRpgMod implements ModInitializer {
                 R01PlayerStateService.reconcileActiveTimeEpochs(handler.getPlayer());
                 R01GatheringService.reconcilePending(handler.getPlayer());
                 R01EarthloongEncounterService.reconcilePendingFinalization(handler.getPlayer());
+                R01QuarryRunAttributionService.reconcileFirstClearCompletion(
+                        handler.getPlayer()
+                );
                 R01EarthloongFirstClearRewardService.reconcilePending(handler.getPlayer());
                 R01RoadsideTroubleController.reconcilePendingFinalization(
                         handler.getPlayer()
