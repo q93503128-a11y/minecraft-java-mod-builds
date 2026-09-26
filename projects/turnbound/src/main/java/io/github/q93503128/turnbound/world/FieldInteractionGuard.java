@@ -3,7 +3,7 @@ package io.github.q93503128.turnbound.world;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.npc.AbstractVillager;
+import net.minecraft.world.entity.EntityType;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
@@ -39,7 +39,8 @@ public final class FieldInteractionGuard {
         }
         if(ExternalWorldBootstrap.active(player)
                 && DrehmalFirstRouteRuntime.insideHub(player)
-                && e.getTarget() instanceof AbstractVillager){
+                && (e.getTarget().getType() == EntityType.VILLAGER
+                || e.getTarget().getType() == EntityType.WANDERING_TRADER)){
             e.setCancellationResult(InteractionResult.SUCCESS);
             e.setCanceled(true);
             return;
