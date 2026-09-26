@@ -132,13 +132,25 @@ def transform(m, p):
     return v[0]/w, v[1]/w, v[2]/w
 
 def skip_primitive(doc, node, primitive, mesh, terms):
-    if not terms: return False
-    names = [str(node.get("name","")), str(mesh.get("name",""))]
+    if not terms:
+        return False
+
+    # Asset-level node names can legitimately contain phrases such as
+    # "Acoustic Guitar on a Stand". Only reject a node/mesh name when it
+    # names stand/rack geometry without also identifying the guitar itself.
+    def dedicated_fixture(name: str) -> bool:
+        lowered = name.lower()
+        return any(term in lowered for term in terms) and "guitar" not in lowered
+
+    if dedicated_fixture(str(node.get("name", ""))) or dedicated_fixture(str(mesh.get("name", ""))):
+        return True
+
     mi = primitive.get("material")
-    if mi is not None and mi < len(doc.get("materials",[])):
-        names.append(str(doc["materials"][mi].get("name","")))
-    haystack = " ".join(names).lower()
-    return any(term in haystack for term in terms)
+    if mi is not None and mi < len(doc.get("materials", [])):
+        material_name = str(doc["materials"][mi].get("name", "")).lower()
+        if any(term in material_name for term in terms):
+            return True
+    return False
 
 def glb_to_obj(data: bytes, label: str, target_height: float, skip_terms=()):
     doc, binary = parse_glb(data)
