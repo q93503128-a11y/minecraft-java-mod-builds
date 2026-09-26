@@ -15,13 +15,6 @@
   - 다음 순서: 직업/전직 구조 → 무기군/보정 → 전투 자원 타이밍 → 장비 슬롯 → 외부 UI 선택 → 외부 오픈월드 맵 선택 → 지역/몬스터/던전 설계 → M0 Build Bootstrap
   - 핵심 원칙: EXP/Lv 자체 성장, 바닐라 XP 제거, Mana/Stamina 액션 전투, 4 액티브 + 1 궁극, 깊은 다단 전직, 외부 최종 디자인/맵/던전 우선, 임시 플레이어-facing 디자인 금지, Essential 친화 멀티 목표, 대체 완료된 쓰레기/중복 코드 즉시 정리
 
-- [`earth-to-stars`](./earth-to-stars/) — EARTH TO STARS, SF 우주 개척 + 모듈식 함선 성장 + 협동 함선 운용
-  - 상태: `ALPHA.13 CLIENT MODEL/RESOURCE RESCUE BUILD + ACTUAL CLIENT RESOURCE LOAD VERIFIED / LIVE VISUAL ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`
-  - 현재 버전: `0.1.0-alpha.13`
-  - 정본 시작점: [`earth-to-stars/README.md`](./earth-to-stars/README.md)
-  - 개발 순서: M0 Build Bootstrap → P0 Ship/Space/Multiplayer Technical Gate → M1 Earth/Orbit Gameplay Slice → M2 Moon Vertical Slice → M3 Production Visual Gate → M4 Asteroid/Ship Growth → M5 Mars/Expedition Ship → M6 Belt/Multi-System Scale → M7+ Outer System/Deep Space
-  - 핵심 원칙: Overworld=Earth, Nether/End 비필수, B형 모듈식 함선, 서버 권한 멀티 구조, stable linked interior, 수동/자동 포탑, 중앙 power/ammo/sensor/propellant/oxygen simulation, 외부 reference 기반 SF 디자인
-
 - [`riftfrontier`](./riftfrontier/) — Riftfrontier / 균열 개척기, 차원 탐사 액션 RPG + 개척·물류 + 산업·연구 + 세력 시뮬레이션
   - 상태: `M0 CANON LOCKED / BUILD BOOTSTRAP NEXT`
   - 정본 시작점: [`riftfrontier/README.md`](./riftfrontier/README.md)
