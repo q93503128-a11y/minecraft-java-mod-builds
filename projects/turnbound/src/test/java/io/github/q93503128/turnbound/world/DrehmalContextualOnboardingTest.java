@@ -59,6 +59,17 @@ class DrehmalContextualOnboardingTest {
     }
 
     @Test
+    void hubReachedFlagUsesHubGuidanceEvenWhenRouteSiteIsNotPromoted() {
+        var guidance = DrehmalContextualOnboarding.resolve(
+                "",
+                Set.of(),
+                Set.of(DrehmalFirstRouteProgress.HUB_REACHED),
+                Set.of());
+        assertTrue(guidance.objective().contains("파티"));
+        assertFalse(guidance.objective().contains("길을 따라"));
+    }
+
+    @Test
     void lockedOrUnavailableServicesNeverBecomeMandatoryObjectives() {
         var lockedSummon = DrehmalContextualOnboarding.resolve(
                 "HUB_SAFE",

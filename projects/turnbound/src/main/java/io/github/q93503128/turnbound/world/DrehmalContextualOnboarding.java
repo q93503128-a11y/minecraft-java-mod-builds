@@ -34,7 +34,9 @@ final class DrehmalContextualOnboarding {
         Set<String> flags = onboardingFlags == null ? Set.of() : onboardingFlags;
         Set<String> roles = availableHubRoles == null ? Set.of() : availableHubRoles;
 
-        if ("HUB_SAFE".equals(kind)) return hubGuidance(clears, flags, roles);
+        if ("HUB_SAFE".equals(kind) || DrehmalFirstRouteProgress.reached(flags, DrehmalFirstRouteProgress.HUB_REACHED)) {
+            return hubGuidance(clears, flags, roles);
+        }
 
         if (clears.contains(DrehmalContentUnlocks.DRABYEL_ROAD)) {
             return new Guidance(

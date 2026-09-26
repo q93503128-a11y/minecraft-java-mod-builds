@@ -45,6 +45,7 @@ public final class MetaMenuScreen extends Screen {
     private String equipSlotFilter="ALL",selectedEquipmentId="",equipmentTargetCharacterId="";
     private String codexCategory="CHARACTERS",selectedEndgameId="";
     private int selectedSkillIndex;
+    private int skillDescriptionScroll;
 
     public MetaMenuScreen(Tab tab){
         super(Component.literal("TURNBOUND"));
@@ -143,9 +144,11 @@ public final class MetaMenuScreen extends Screen {
 
     private void buildParty(){
         var owned=ClientMetaState.snapshot().characters().stream().filter(ClientMetaState.CharacterRow::owned).toList();
-        int gridTop=contentTop()+24,gap=4,cols=panelWidth>=820?4:panelWidth>=620?3:panelWidth>=440?2:1,cardH=48;
-        int footerTop=top+panelHeight-58;
-        int rows=UiPaging.rowsThatFit(gridTop,footerTop-4,cardH+4,1),per=cols*rows;
+        int gridTop=contentTop()+24,gap=4;
+        int cols=panelWidth>=760?4:panelWidth>=460?3:2;
+        int cardH=34;
+        int footerTop=top+panelHeight-82;
+        int rows=UiPaging.rowsThatFit(gridTop,footerTop-6,cardH+4,2),per=cols*rows;
         setPaging(owned.size(),per);
         int start=page*per,end=Math.min(owned.size(),start+per),cardW=(panelWidth-32-gap*(cols-1))/cols;
         for(int i=start;i<end;i++){
@@ -159,22 +162,22 @@ public final class MetaMenuScreen extends Screen {
         }
 
         int gapFooter=4;
-        int savePartyW=Math.min(112,Math.max(88,panelWidth/4));
+        int savePartyW=Math.min(110,Math.max(88,panelWidth/5));
         int available=panelWidth-32-savePartyW-gapFooter;
-        int presetW=Math.max(52,(available-gapFooter*2)/3);
-        int row1=footerTop,row2=footerTop+24;
+        int presetW=Math.max(58,(available-gapFooter*2)/3);
+        int row1=footerTop,row2=footerTop+22;
         for(int slot=1;slot<=3;slot++){
             final int s=slot;
             int x=left+16+(slot-1)*(presetW+gapFooter);
             var preset=ClientMetaState.snapshot().partyPresets().size()>=slot?ClientMetaState.snapshot().partyPresets().get(slot-1):List.<String>of();
-            String loadLabel=preset.isEmpty()?"P"+slot+" 비어 있음":"P"+slot+" 불러오기";
-            var load=new BattleHudButton(x,row1,presetW,20,Component.literal(loadLabel),preset.isEmpty()?MUTED:BLUE,ignored->send("PRESET_LOAD|"+s));
+            String loadLabel=preset.isEmpty()?"P"+slot+" 없음":"P"+slot+" 불러오기";
+            var load=new BattleHudButton(x,row1,presetW,18,Component.literal(loadLabel),preset.isEmpty()?MUTED:BLUE,ignored->send("PRESET_LOAD|"+s));
             load.active=!preset.isEmpty();
             addRenderableWidget(load);
-            addRenderableWidget(new BattleHudButton(x,row2,presetW,20,Component.literal("P"+slot+"에 저장"),GREEN,ignored->send("PRESET_SAVE|"+s)));
+            addRenderableWidget(new BattleHudButton(x,row2,presetW,18,Component.literal("P"+slot+" 저장"),GREEN,ignored->send("PRESET_SAVE|"+s)));
         }
         addRenderableWidget(new BattleHudButton(
-                left+panelWidth-16-savePartyW,row1,savePartyW,44,
+                left+panelWidth-16-savePartyW,row1,savePartyW,40,
                 Component.literal("편성 적용 "+draftParty.size()+"/4"),GREEN,ignored->saveParty()));
         buildPager();
     }
@@ -219,20 +222,20 @@ public final class MetaMenuScreen extends Screen {
             var skills=definition.skills();
             selectedSkillIndex=Math.max(0,Math.min(selectedSkillIndex,skills.size()-1));
             if(!skills.isEmpty()){
-                int portraitSize=Math.min(150,Math.max(92,Math.min(panelWidth/4,contentBottom()-(contentTop()+27)-6)));
-                int sx=left+18+portraitSize+16;
+                int portraitSize=Math.min(116,Math.max(76,Math.min(panelWidth/5,contentBottom()-(contentTop()+27)-6)));
+                int sx=left+18+portraitSize+14;
                 int sw=Math.max(80,left+panelWidth-18-sx);
                 int gapSkill=3;
-                int bw=Math.max(46,(sw-gapSkill*(skills.size()-1))/Math.max(1,skills.size()));
-                int by=contentTop()+60;
+                int bw=Math.max(42,(sw-gapSkill*(skills.size()-1))/Math.max(1,skills.size()));
+                int by=contentTop()+58;
                 for(int i=0;i<skills.size();i++){
                     final int index=i;
                     var skill=skills.get(i);
                     addRenderableWidget(new BattleHudButton(
-                            sx+i*(bw+gapSkill),by,bw,20,
+                            sx+i*(bw+gapSkill),by,bw,18,
                             Component.literal(skill.name()),
                             i==selectedSkillIndex?(skill.isBasic()?GREEN:GOLD):MUTED,
-                            ignored->{selectedSkillIndex=index;rebuild();}));
+                            ignored->{selectedSkillIndex=index;skillDescriptionScroll=0;rebuild();}));
                 }
             }
         }
@@ -376,13 +379,17 @@ public final class MetaMenuScreen extends Screen {
     private void buildPager(){
         int pages=UiPaging.pageCount(currentTotal,currentPerPage);
         if(pages<=1)return;
-        int y=top+panelHeight-31,center=left+panelWidth/2;
+        int y=top+panelHeight-27,center=left+panelWidth/2;
         var prev=new BattleHudButton(center-100,y,62,19,Component.literal("< 이전"),MUTED,ignored->movePage(-1));prev.active=page>0;addRenderableWidget(prev);
         var next=new BattleHudButton(center+38,y,62,19,Component.literal("다음 >"),MUTED,ignored->movePage(1));next.active=page+1<pages;addRenderableWidget(next);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX,double mouseY,double scrollX,double scrollY){
+        if(!selectedCharacterId.isBlank()&&detailTab==DetailTab.SKILLS&&scrollY!=0){
+            skillDescriptionScroll=Math.max(0,skillDescriptionScroll+(scrollY>0?-1:1));
+            return true;
+        }
         if(currentTotal>currentPerPage&&scrollY!=0){movePage(scrollY>0?-1:1);return true;}
         return super.mouseScrolled(mouseX,mouseY,scrollX,scrollY);
     }
@@ -390,13 +397,13 @@ public final class MetaMenuScreen extends Screen {
     private void movePage(int delta){page=UiPaging.clampPage(page+delta,currentTotal,currentPerPage);rebuild();}
     private void rebuild(){clearWidgets();init();}
     private void switchTab(Tab value){if(value==tab)return;tab=value;page=0;selectedCharacterId="";selectedEquipmentId="";rebuild();}
-    private void openCharacterFromHome(String id){tab=Tab.CHARACTERS;selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;selectedSkillIndex=0;page=0;rebuild();}
+    private void openCharacterFromHome(String id){tab=Tab.CHARACTERS;selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;selectedSkillIndex=0;skillDescriptionScroll=0;page=0;rebuild();}
     private void openMap(){Minecraft.getInstance().gui.setScreen(new DrehmalWorldMapScreen());}
     private void toggleParty(String id){if(draftParty.contains(id)){if(draftParty.size()>1)draftParty.remove(id);}else if(draftParty.size()<4)draftParty.add(id);rebuild();}
     private void saveParty(){send("PARTY|"+String.join(",",draftParty));}
-    private void openCharacter(String id){selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;selectedSkillIndex=0;page=0;rebuild();}
-    private void closeCharacter(){selectedCharacterId="";page=0;rebuild();}
-    private void switchDetail(DetailTab d){detailTab=d;if(d==DetailTab.SKILLS)selectedSkillIndex=0;rebuild();}
+    private void openCharacter(String id){selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;selectedSkillIndex=0;skillDescriptionScroll=0;page=0;rebuild();}
+    private void closeCharacter(){selectedCharacterId="";skillDescriptionScroll=0;page=0;rebuild();}
+    private void switchDetail(DetailTab d){detailTab=d;skillDescriptionScroll=0;if(d==DetailTab.SKILLS)selectedSkillIndex=0;rebuild();}
     private void cycleOwnership(){ownershipFilter=OwnershipFilter.values()[(ownershipFilter.ordinal()+1)%OwnershipFilter.values().length];page=0;rebuild();}
     private void cycleStar(){starFilter=switch(starFilter){case 0->3;case 3->4;case 4->5;default->0;};page=0;rebuild();}
     private void cycleLevel(){minimumLevel=minimumLevel==0?10:minimumLevel>=60?0:minimumLevel+10;page=0;rebuild();}
@@ -487,22 +494,22 @@ public final class MetaMenuScreen extends Screen {
         if(selectedCharacterId.isBlank()) return;
         var r=character(selectedCharacterId);if(r==null)return;
         int portraitX=left+18,portraitY=contentTop()+27;
-        int portraitSize=Math.min(150,Math.max(92,Math.min(panelWidth/4,contentBottom()-portraitY-6)));
+        int portraitSize=Math.min(116,Math.max(76,Math.min(panelWidth/5,contentBottom()-portraitY-6)));
         TurnboundUiSkin.orbBase(g,portraitX,portraitY,portraitSize);
-        int portraitInset=Math.max(10,portraitSize/7);
+        int portraitInset=Math.max(8,portraitSize/8);
         TurnboundPortraitRenderer.extractBust(
                 g,r.id(),
                 portraitX+portraitInset,portraitY+portraitInset,
                 portraitX+portraitSize-portraitInset,portraitY+portraitSize-portraitInset,
                 !r.owned());
         TurnboundUiSkin.orbOverlay(g,portraitX,portraitY,portraitSize,r.owned(),false,false);
-        int x=portraitX+portraitSize+16,y=contentTop()+30,w=Math.max(80,left+panelWidth-18-x);
+        int x=portraitX+portraitSize+14,y=contentTop()+30,w=Math.max(80,left+panelWidth-18-x);
         g.text(font,Component.literal(UiTextLayout.fit(r.name()+" · "+(r.owned()?(r.awakened()?"각성 · ":"")+"★"+r.nativeStar()+" Lv."+r.level():"미보유 · ★"+r.nativeStar()),w)),x,y,r.owned()?TEXT:MUTED,true);
-        g.text(font,Component.literal(UiTextLayout.fit(r.role(),w)),x,y+15,SECONDARY,false);
+        g.text(font,Component.literal(UiTextLayout.fit(r.role(),w)),x,y+14,SECONDARY,false);
         switch(detailTab){
             case OVERVIEW->{
-                g.text(font,Component.literal("HP "+r.hp()+"   ATK "+r.attack()+"   DEF "+r.defense()+"   SPD "+r.speed()),x,y+38,GREEN,false);
-                g.text(font,Component.literal("전투력 "+r.cp()+" · "+primaryRoleLabel(r.primaryRole())+" · "+r.difficulty()),x,y+56,TEXT,false);
+                g.text(font,Component.literal("HP "+r.hp()+"   ATK "+r.attack()+"   DEF "+r.defense()+"   SPD "+r.speed()),x,y+34,GREEN,false);
+                g.text(font,Component.literal("전투력 "+r.cp()+" · "+primaryRoleLabel(r.primaryRole())+" · "+r.difficulty()),x,y+51,TEXT,false);
             }
             case SKILLS->{
                 var d=CanonicalData.definition(r.id(),Math.max(1,r.level()),Math.max(1,r.star()),r.awakened());
@@ -510,37 +517,45 @@ public final class MetaMenuScreen extends Screen {
                 if(skills.isEmpty())break;
                 int index=Math.max(0,Math.min(selectedSkillIndex,skills.size()-1));
                 var skill=skills.get(index);
-                int panelY=y+58;
-                int panelH=Math.max(58,contentBottom()-panelY-3);
+                int panelY=y+56;
+                int panelH=Math.max(72,contentBottom()-panelY-3);
                 TurnboundUiSkin.inset(g,x,panelY,w,panelH);
 
                 String type=skill.isBasic()?"기본 공격":"액티브";
-                String meta=type+"  ·  "+(skill.cooldown()<=0?"쿨타임 없음":"쿨타임 "+skill.cooldown()+"턴");
-                g.text(font,Component.literal(skill.name()),x+8,panelY+7,skill.isBasic()?GREEN:GOLD,true);
-                g.text(font,Component.literal(UiTextLayout.fit(meta,w-16)),x+8,panelY+21,SECONDARY,false);
+                String metaLine=type+"  ·  "+(skill.cooldown()<=0?"쿨타임 없음":"쿨타임 "+skill.cooldown()+"턴");
+                g.text(font,Component.literal(skill.name()),x+8,panelY+6,skill.isBasic()?GREEN:GOLD,true);
+                g.text(font,Component.literal(UiTextLayout.fit(metaLine,w-16)),x+8,panelY+19,SECONDARY,false);
 
-                int lineY=panelY+37;
-                int maxLines=Math.max(1,(panelH-43)/11);
-                for(String line:UiTextLayout.wrap(skill.description(),w-16,maxLines)){
-                    g.text(font,Component.literal(line),x+8,lineY,TEXT,false);
-                    lineY+=11;
+                var lines=UiTextLayout.wrap(skill.description(),w-16,128);
+                int lineY=panelY+33;
+                int maxLines=Math.max(1,(panelH-45)/10);
+                int maxScroll=Math.max(0,lines.size()-maxLines);
+                skillDescriptionScroll=Math.max(0,Math.min(skillDescriptionScroll,maxScroll));
+                int end=Math.min(lines.size(),skillDescriptionScroll+maxLines);
+                for(int i=skillDescriptionScroll;i<end;i++){
+                    g.text(font,Component.literal(lines.get(i)),x+8,lineY,TEXT,false);
+                    lineY+=10;
+                }
+                if(maxScroll>0){
+                    String scroll=(skillDescriptionScroll+1)+"-"+end+" / "+lines.size()+" · 휠";
+                    g.text(font,Component.literal(scroll),x+w-8-font.width(scroll),panelY+panelH-11,MUTED,false);
                 }
             }
             case EQUIPMENT->{
-                int yy=y+36;
+                int yy=y+34;
                 for(String slot:List.of("WEAPON","ARMOR","ACCESSORY","SIGNATURE")){
                     var item=ClientMetaState.snapshot().equipment().stream().filter(e->e.equippedCharacterId().equals(r.id())&&e.slot().equals(slot)).findFirst().orElse(null);
                     String text=slotLabel(slot)+" · "+(item==null?"비어 있음":item.name()+" +"+item.enhancement());
                     g.text(font,Component.literal(UiTextLayout.fit(text,w)),x,yy,item==null?MUTED:tierColor(item.tier()),false);
-                    yy+=19;
+                    yy+=18;
                 }
             }
             case GROWTH->{
                 var trial=ClientSignatureTrialState.forCharacter(r.id());
                 String status=r.awakened()?"각성 완료":trial!=null&&trial.awakeningReady()?"각성 가능":"선행 조건 진행 중";
-                g.text(font,Component.literal(status),x,y+38,r.awakened()?GREEN:GOLD,true);
-                g.text(font,Component.literal("각성 조건 · Lv60 · 개인 퀘스트 · "+GrowthRulesV1.awakeningGoldCost()+" Gold"),x,y+58,SECONDARY,false);
-                if(trial!=null)g.text(font,Component.literal(UiTextLayout.fit("전용 장비 시련 · "+trial.title()+" · "+trial.objective(),w)),x,y+76,SECONDARY,false);
+                g.text(font,Component.literal(status),x,y+34,r.awakened()?GREEN:GOLD,true);
+                g.text(font,Component.literal("각성 조건 · Lv60 · 개인 퀘스트 · "+GrowthRulesV1.awakeningGoldCost()+" Gold"),x,y+52,SECONDARY,false);
+                if(trial!=null)g.text(font,Component.literal(UiTextLayout.fit("전용 장비 시련 · "+trial.title()+" · "+trial.objective(),w)),x,y+69,SECONDARY,false);
             }
         }
     }

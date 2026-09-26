@@ -101,10 +101,19 @@ public final class DrehmalFirstRouteRuntime {
         if (player == null) return;
         var server = player.level().getServer();
         if (server == null) return;
-        DrehmalFirstRouteProgress.record(
-                ExternalWorldSavedData.get(server),
-                player.getUUID(),
-                locationSite(player));
+        ExternalWorldSavedData data = ExternalWorldSavedData.get(server);
+        DrehmalFirstRouteProgress.record(data, player.getUUID(), locationSite(player));
+        var hub = DrehmalWorldProfile.enabled(DrehmalWorldProfile.HUB_LOCATOR);
+        if (hub != null) {
+            double dx = player.getX() - (hub.x() + 0.5D);
+            double dz = player.getZ() - (hub.z() + 0.5D);
+            if (dx * dx + dz * dz <= 64.0D * 64.0D) {
+                data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.TOWER_REACHED);
+                data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.CAMP_REACHED);
+                data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.APPROACH_REACHED);
+                data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.HUB_REACHED);
+            }
+        }
     }
 
     static boolean insideHub(ServerPlayer player) {
@@ -118,6 +127,16 @@ public final class DrehmalFirstRouteRuntime {
         var flags = server == null
                 ? java.util.Set.<String>of()
                 : ExternalWorldSavedData.get(server).onboardingFlags(player.getUUID());
+        if (!DrehmalFirstRouteProgress.reached(flags, DrehmalFirstRouteProgress.HUB_REACHED)) {
+            var hub = DrehmalWorldProfile.enabled(DrehmalWorldProfile.HUB_LOCATOR);
+            if (hub != null) {
+                return new FieldUiSnapshot.Navigation(
+                        hub.locator(),
+                        "뉴 드라비엘",
+                        hub.x() + 0.5D,
+                        hub.z() + 0.5D);
+            }
+        }
         var clears = CampaignProgressStore.snapshot(player.getUUID()).clearedEncounters();
         return DrehmalRouteNavigationRules.target(
                 DrehmalFirstRouteCatalog.productionSites(), player.getX(), player.getZ(), flags, clears);
