@@ -107,6 +107,7 @@ public final class R01EarthloongEncounterService {
                 && personal.quarry().runId() > 0L
                 && personal.quarry().runState().filter("active"::equals).isPresent()) {
             R01PlayerStateService.markEarthloongFirstClear(player);
+            R01EarthloongBossLootPlanService.ensureFirstClearPlan(player);
             firstClearCommitted = true;
         }
         R01QuarryRunAttributionService.reconcileFirstClearCompletion(player);
