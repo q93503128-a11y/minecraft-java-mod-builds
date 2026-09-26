@@ -223,22 +223,41 @@ public final class DrehmalPackInstaller {
     }
 
     private static void finishInstall(Path world, Path cache) throws IOException {
-        snapshot = new Snapshot(Phase.FINALIZING, "26.2 월드 호환성 적용", 0, 1, 0.25D, "");
+        snapshot = new Snapshot(Phase.FINALIZING, "26.2 월드 호환성 적용", 0, 1, 0.15D, "");
         if (!Files.isRegularFile(world.resolve("level.dat")) || !DrehmalInstallFiles.resourcePackReady(world)) {
-            throw new IOException("TURNBOUND world did not reach the ready state");
+            throw new IOException("TURNBOUND world did not reach the pre-migration ready state");
         }
 
-        Drehmal26_2DatapackMigrator.MigrationReport migration = Drehmal26_2DatapackMigrator.migrate(world);
-        if (!Drehmal26_2DatapackMigrator.compatibilityMarkerMatches(world)) {
+        // An older installer may already have committed this marker. Remove it before repair so the server-side
+        // binder can never trust a partially migrated world if any compatibility step below fails.
+        Files.deleteIfExists(DrehmalInstallFiles.profileMarker(world));
+
+        Drehmal26_2DatapackMigrator.MigrationReport datapackMigration = Drehmal26_2DatapackMigrator.migrate(world);
+        snapshot = new Snapshot(Phase.FINALIZING, "26.2 저장 데이터 정리", 0, 1, 0.45D, "");
+        Drehmal26_2SavedDataMigrator.MigrationReport savedDataMigration = Drehmal26_2SavedDataMigrator.migrate(world);
+        snapshot = new Snapshot(Phase.FINALIZING, "26.2 리소스 호환성 적용", 0, 1, 0.72D, "");
+        Drehmal26_2ResourcePackMigrator.MigrationReport resourceMigration =
+                Drehmal26_2ResourcePackMigrator.migrate(world);
+
+        if (!DrehmalInstallFiles.migrationReady(world)) {
             throw new IOException("Drehmal 26.2 compatibility migration did not reach the ready state");
         }
-        TurnboundRe.LOGGER.info(
-                "Applied Drehmal 26.2 compatibility migration: {} biome files, {} dimension-type files",
-                migration.biomeFilesChanged(),
-                migration.dimensionTypeFilesChanged());
 
-        // This is the trust boundary used by the server-side external-world binder.
+        TurnboundRe.LOGGER.info(
+                "Applied Drehmal 26.2 compatibility migration: {} biome files, {} dimension-type files, "
+                        + "legacy random cache removed={}, {} resource JSON files",
+                datapackMigration.biomeFilesChanged(),
+                datapackMigration.dimensionTypeFilesChanged(),
+                savedDataMigration.legacyFileRemoved(),
+                resourceMigration.jsonFilesChanged());
+
+        // This is the trust boundary used by the server-side external-world binder. Commit it only after every
+        // compatibility step above has independently reached its exact migration marker.
         DrehmalInstallFiles.writeProfileMarker(world);
+        if (!DrehmalInstallFiles.profileMarkerMatches(world) || !DrehmalInstallFiles.migrationReady(world)) {
+            Files.deleteIfExists(DrehmalInstallFiles.profileMarker(world));
+            throw new IOException("TURNBOUND world profile commit did not reach the ready state");
+        }
         snapshot = new Snapshot(Phase.FINALIZING, "TURNBOUND 월드 마무리", 1, 1, 1.0D, "");
 
         try {

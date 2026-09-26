@@ -35,7 +35,8 @@ public final class Drehmal26_2SavedDataMigrator {
         Path marker = compatibilityMarker(worldDirectory);
         try {
             return Files.isRegularFile(marker)
-                    && MIGRATION_ID.equals(Files.readString(marker, StandardCharsets.UTF_8).trim());
+                    && MIGRATION_ID.equals(Files.readString(marker, StandardCharsets.UTF_8).trim())
+                    && !Files.isRegularFile(randomSequences(worldDirectory));
         } catch (IOException ignored) {
             return false;
         }

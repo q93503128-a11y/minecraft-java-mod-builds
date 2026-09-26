@@ -154,6 +154,7 @@ production authored Encounter를 직접 로드해 실제 data action 전투→�
 - fast travel은 client 좌표/unlock 입력을 신뢰하지 않고 definition/tag/dimension/range/current registered position/discovery/link를 서버가 재검증.
 - 전투 중 fast travel 차단, 낡은 prototype Interaction marker 위치 불일치 차단, 첫 two-point slice에서 다중 목적지면 이동 대신 selection-required로 중단.
 - production `rift_elite` anchor를 one-time 목표로 전환하고 `overworld_patrol`은 반복 파밍 Encounter로 유지.
+- Modrinth first-run installer의 final ready gate를 datapack + saved-data + resource-pack 26.2 migration 전체로 강화하고, repair 시작 전 기존 profile trust marker를 제거한 뒤 세 migration이 모두 검증된 경우에만 다시 commit하도록 연결.
 - 첫 임무 단계는 별도 quest save 없이 `FastTravelSavedData`의 개인 waypoint 발견 상태와 `PlayerProgress.completedEncounterLocators`에서 파생.
 - Hub waypoint 발견 → REGION_01 waypoint 직접 발견 → rift elite 도전 → reward/completion 저장 성공 → Hub 귀환 안내의 최소 quest hook 연결.
 - quest 안내는 실제 서버 waypoint 발견/성공한 reward settlement 뒤에만 발생하며 client가 quest stage를 제출하는 경로 없음.

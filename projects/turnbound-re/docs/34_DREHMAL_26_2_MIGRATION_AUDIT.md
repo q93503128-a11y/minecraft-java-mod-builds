@@ -163,6 +163,13 @@ New Drabyel / Stasis Facility의 migration 상태가 정상일 때만 다음을 
 1. 최근 M5/M6 visual/network 변경을 포함한 build + JUnit + production JAR verify checkpoint 1회 PASS.
 2. copied APOTHEOSIS v2.2.2f world가 Java 26.2 + NeoForge에서 실제 load되고 New Drabyel / Stasis Facility가 보존됨.
 
+Installer readiness는 별도 코드 gate로 다음 세 compatibility migration이 모두 exact marker 상태여야 한다.
+- datapack registry migration
+- obsolete 1.20.1 random-sequence saved-data cache cleanup
+- resource-pack identifier migration
+
+이 세 단계 중 하나라도 실패하면 기존 `.turnbound_re_profile` marker를 신뢰 상태로 남기지 않으며, 세 단계가 모두 검증된 뒤에만 profile marker를 다시 commit한다.
+
 그 뒤 실제 geography에 맞는 candidate만 enable/조정하고 다음 한 사이클을 플레이한다.
 
 `Hub → party/equipment → Region discovery → life activity → patrol → growth/gear choice → rift elite → reward/completion → fast travel return → save/reload`

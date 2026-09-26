@@ -54,6 +54,52 @@ final class DrehmalInstallFilesTest {
         assertFalse(DrehmalInstallFiles.profileMarkerMatches(world));
     }
 
+
+    @Test
+    void worldReadyRequiresProfileAndAllThreeCompatibilityMigrations() throws Exception {
+        Path world = DrehmalInstallFiles.worldDirectory(temp);
+        Files.createDirectories(world.resolve("datapacks"));
+        Files.writeString(world.resolve("level.dat"), "fixture", StandardCharsets.UTF_8);
+        DrehmalInstallFiles.writeProfileMarker(world);
+
+        Path datapack = Drehmal26_2DatapackMigrator.datapack(world);
+        try (ZipOutputStream output = new ZipOutputStream(Files.newOutputStream(datapack))) {
+            output.putNextEntry(new ZipEntry("fixture.txt"));
+            output.write("fixture".getBytes(StandardCharsets.UTF_8));
+            output.closeEntry();
+        }
+        Path resourcePack = DrehmalInstallFiles.worldResourcePack(world);
+        Files.createDirectories(resourcePack.getParent());
+        try (ZipOutputStream output = new ZipOutputStream(Files.newOutputStream(resourcePack))) {
+            output.putNextEntry(new ZipEntry("assets/example/keep.json"));
+            output.write("{\"ok\":true}".getBytes(StandardCharsets.UTF_8));
+            output.closeEntry();
+        }
+
+        assertFalse(DrehmalInstallFiles.worldReady(temp));
+
+        Files.writeString(
+                Drehmal26_2DatapackMigrator.compatibilityMarker(world),
+                Drehmal26_2DatapackMigrator.MIGRATION_ID + "\n",
+                StandardCharsets.UTF_8);
+        Files.writeString(
+                Drehmal26_2SavedDataMigrator.compatibilityMarker(world),
+                Drehmal26_2SavedDataMigrator.MIGRATION_ID + "\n",
+                StandardCharsets.UTF_8);
+        Files.writeString(
+                Drehmal26_2ResourcePackMigrator.compatibilityMarker(world),
+                Drehmal26_2ResourcePackMigrator.MIGRATION_ID + "\n",
+                StandardCharsets.UTF_8);
+
+        assertTrue(DrehmalInstallFiles.migrationReady(world));
+        assertTrue(DrehmalInstallFiles.resourcePackReady(world));
+        assertTrue(DrehmalInstallFiles.worldReady(temp));
+
+        Files.delete(Drehmal26_2SavedDataMigrator.compatibilityMarker(world));
+        assertFalse(DrehmalInstallFiles.migrationReady(world));
+        assertFalse(DrehmalInstallFiles.worldReady(temp));
+    }
+
     @Test
     void directoryHashMatchesOfficialRecursiveHexDigestAlgorithm() throws Exception {
         Path root = temp.resolve("hash-root");

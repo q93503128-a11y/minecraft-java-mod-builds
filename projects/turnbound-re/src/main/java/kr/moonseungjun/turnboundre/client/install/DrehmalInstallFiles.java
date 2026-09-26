@@ -121,7 +121,7 @@ public final class DrehmalInstallFiles {
         }
     }
 
-    public static boolean resourcePackReady(Path worldDirectory) {
+    public static boolean officialResourcePackReady(Path worldDirectory) {
         Path resourcePack = worldResourcePack(worldDirectory);
         try {
             return Files.isRegularFile(resourcePack)
@@ -132,13 +132,29 @@ public final class DrehmalInstallFiles {
         }
     }
 
+    /**
+     * Accepts either the pristine verified official archive or the locally migrated 26.2-compatible archive.
+     * The compatibility transform can change ZIP bytes/size, so post-migration readiness must not require the
+     * original release byte size.
+     */
+    public static boolean resourcePackReady(Path worldDirectory) {
+        return officialResourcePackReady(worldDirectory)
+                || Drehmal26_2ResourcePackMigrator.compatibilityMarkerMatches(worldDirectory);
+    }
+
+    public static boolean migrationReady(Path worldDirectory) {
+        return worldDirectory != null
+                && Drehmal26_2DatapackMigrator.compatibilityMarkerMatches(worldDirectory)
+                && Drehmal26_2SavedDataMigrator.compatibilityMarkerMatches(worldDirectory)
+                && Drehmal26_2ResourcePackMigrator.compatibilityMarkerMatches(worldDirectory);
+    }
+
     public static boolean worldReady(Path gameDirectory) {
         if (gameDirectory == null) return false;
         Path world = worldDirectory(gameDirectory);
         return Files.isRegularFile(world.resolve("level.dat"))
                 && profileMarkerMatches(world)
-                && Drehmal26_2DatapackMigrator.compatibilityMarkerMatches(world)
-                && resourcePackReady(world);
+                && migrationReady(world);
     }
 
     public static boolean verifiedDownload(Path path, DownloadSpec spec) throws IOException {

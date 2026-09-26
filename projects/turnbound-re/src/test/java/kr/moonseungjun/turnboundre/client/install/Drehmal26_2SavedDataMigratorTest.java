@@ -31,6 +31,21 @@ final class Drehmal26_2SavedDataMigratorTest {
         assertTrue(Drehmal26_2SavedDataMigrator.compatibilityMarkerMatches(world));
     }
 
+
+    @Test
+    void compatibilityMarkerBecomesInvalidIfLegacyCacheReappears() throws Exception {
+        Path world = temp.resolve("world-stale-marker");
+        Files.createDirectories(world);
+        Drehmal26_2SavedDataMigrator.migrate(world);
+        assertTrue(Drehmal26_2SavedDataMigrator.compatibilityMarkerMatches(world));
+
+        Path legacy = Drehmal26_2SavedDataMigrator.randomSequences(world);
+        Files.createDirectories(legacy.getParent());
+        Files.writeString(legacy, "stale", StandardCharsets.UTF_8);
+
+        assertFalse(Drehmal26_2SavedDataMigrator.compatibilityMarkerMatches(world));
+    }
+
     @Test
     void migrationIsSafeWhenLegacyCacheIsAlreadyAbsent() throws Exception {
         Path world = temp.resolve("world-empty");

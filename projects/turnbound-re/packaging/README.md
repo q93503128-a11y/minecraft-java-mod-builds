@@ -31,12 +31,13 @@ On first game launch, while the player is still at the title screen, TURNBOUND:
 5. merge-extracts shard 1 → 2 → 3 into the dedicated TURNBOUND save,
 6. reproduces the official Drehmal recursive directory SHA-256 algorithm and requires the pinned final map hash,
 7. downloads the official `resources.zip`, validates its published size and ZIP integrity, and installs it as the Minecraft 26.1+ world resource pack at `saves/<world>/resourcepacks/resources.zip`,
-8. writes `.turnbound_re_profile` only after the map and world resource pack are verified,
-9. removes temporary download cache after success.
+8. invalidates any older TURNBOUND profile marker before compatibility repair, then applies the pinned 26.2 datapack, saved-data, and resource-pack migrations,
+9. requires all three exact migration markers to validate before writing `.turnbound_re_profile`,
+10. removes temporary download cache after success.
 
 Interrupted TURNBOUND-owned installs are resumable/rebuildable. An unrelated save that merely has the same folder name is **not deleted or overwritten**; it must exactly match the pinned clean Drehmal map before TURNBOUND adopts it.
 
-The server-side external-world binder trusts only the exact profile marker. Once the prepared world is opened, the existing TURNBOUND bootstrap service registers the enabled semantic anchors and moves a new player to the Hub without a manual `/bind_drehmal` step.
+The server-side external-world binder trusts only the exact profile marker. The installer now removes an older marker before any compatibility repair and rewrites it only after datapack + saved-data + resource-pack migration readiness is complete. Once the prepared world is opened, the existing TURNBOUND bootstrap service registers the enabled semantic anchors and moves a new player to the Hub without a manual `/bind_drehmal` step.
 
 ## Current validation boundary
 
