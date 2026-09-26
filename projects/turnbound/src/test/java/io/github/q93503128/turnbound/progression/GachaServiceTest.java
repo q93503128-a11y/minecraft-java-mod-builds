@@ -14,10 +14,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class GachaServiceTest {
     @Test
     void canonicalSoftAndHardPityRatesAreStable() {
-        assertEquals(0.02, GachaService.effectiveFiveStarRate(43), 0.000001);
-        assertEquals(0.05, GachaService.effectiveFiveStarRate(44), 0.000001);
-        assertEquals(0.08, GachaService.effectiveFiveStarRate(45), 0.000001);
-        assertEquals(1.0, GachaService.effectiveFiveStarRate(59), 0.000001);
+        assertEquals(0.03, GachaService.effectiveFiveStarRate(63), 0.000001);
+        assertEquals(0.06, GachaService.effectiveFiveStarRate(64), 0.000001);
+        assertEquals(0.09, GachaService.effectiveFiveStarRate(65), 0.000001);
+        assertEquals(1.0, GachaService.effectiveFiveStarRate(79), 0.000001);
     }
 
     @Test
@@ -74,36 +74,51 @@ class GachaServiceTest {
         assertTrue(profile.acquireCharacter("P08").newlyOwned());
         PlayerProfile.Acquisition duplicate = profile.acquireCharacter("P08");
         assertFalse(duplicate.newlyOwned());
-        assertEquals(15, duplicate.starEssenceGranted());
-        assertEquals(15, profile.currency(PlayerProfile.Currency.STAR_ESSENCE));
+        assertEquals(40, duplicate.starEssenceGranted());
+        assertEquals(40, profile.currency(PlayerProfile.Currency.STAR_ESSENCE));
     }
 
     @Test
-    void productionSummonPoolContainsOnlyCanonicalThreeToFiveStarHeroes() {
+    void productionSummonPoolContainsCanonicalOneToFiveStarRoster() {
         Set<String> seen = new HashSet<>();
-        for (int stars : new int[]{3,4,5}) {
+        for (int stars : new int[]{1,2,3,4,5}) {
             for (String id : GachaCatalog.standardPool(stars)) {
-                assertTrue(id.startsWith("P"), id);
                 assertEquals(stars, GachaCatalog.nativeStars(id));
                 assertTrue(GachaCatalog.isSummonable(id));
                 seen.add(id);
             }
         }
-        assertEquals(Set.of("P01","P02","P03","P04","P05","P06","P07","P08"), seen);
-        for (String legacy : Set.of("F01","F02","F03","F04")) {
-            assertFalse(GachaCatalog.isSummonable(legacy));
-            assertTrue(GachaCatalog.isKnownCharacter(legacy));
-        }
+        assertEquals(Set.of(
+                "P01","P02","P03","P04","P05","P06","P07","P08",
+                "F01","F02","F03","F04"), seen);
     }
 
     @Test
-    void legacyHighPitySaveMigratesToNextPullHardPity() {
+    void pity79ForcesTheNextPullToFiveStar() {
         PlayerProfile restored = PlayerProfile.restore(new PlayerProfile.Snapshot(
                 5_000, 300, 0, 0, Set.of("P01","F03"), 79, false, false));
-        assertEquals(59, restored.fiveStarPity());
+        assertEquals(79, restored.fiveStarPity());
         var pull = new GachaService(new Random(4)).summonStandardSingle(restored).pulls().getFirst();
         assertEquals(5, pull.nativeStars());
         assertEquals(0, restored.fiveStarPity());
+    }
+
+    @Test
+    void canonicalRarityTableAndDuplicateEssenceMatchV04() {
+        assertEquals(0.03, GachaCatalog.baseRarityRate(5), 0.000001);
+        assertEquals(0.12, GachaCatalog.baseRarityRate(4), 0.000001);
+        assertEquals(0.35, GachaCatalog.baseRarityRate(3), 0.000001);
+        assertEquals(0.30, GachaCatalog.baseRarityRate(2), 0.000001);
+        assertEquals(0.20, GachaCatalog.baseRarityRate(1), 0.000001);
+        assertEquals(5, GachaCatalog.duplicateEssence(1));
+        assertEquals(15, GachaCatalog.duplicateEssence(2));
+        assertEquals(40, GachaCatalog.duplicateEssence(3));
+        assertEquals(100, GachaCatalog.duplicateEssence(4));
+        assertEquals(250, GachaCatalog.duplicateEssence(5));
+        assertEquals(Set.of("P02","P05","P06"), Set.copyOf(GachaCatalog.standardPool(5)));
+        assertEquals(Set.of("P01","P03","P04","P07"), Set.copyOf(GachaCatalog.standardPool(4)));
+        assertEquals(Set.of("F03","F04"), Set.copyOf(GachaCatalog.standardPool(2)));
+        assertEquals(Set.of("F01","F02"), Set.copyOf(GachaCatalog.standardPool(1)));
     }
 
     @Test

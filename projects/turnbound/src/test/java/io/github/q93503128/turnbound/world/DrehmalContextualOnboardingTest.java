@@ -70,14 +70,14 @@ class DrehmalContextualOnboardingTest {
     }
 
     @Test
-    void menuStepClearsWhenNoSurveyedHubServicesAreAvailable() {
+    void hubKeepsAUsefulObjectiveWhenNoSurveyedHubServicesAreAvailable() {
         var completed = DrehmalContextualOnboarding.resolve(
                 "HUB_SAFE",
                 Set.of(),
                 Set.of(DrehmalContextualOnboarding.HUB_MENU_VIEWED),
                 Set.of());
-        assertTrue(completed.objective().isBlank());
-        assertTrue(completed.hint().isBlank());
+        assertTrue(completed.objective().contains("다음 길"));
+        assertTrue(completed.hint().contains("M 지도"));
     }
 
     @Test

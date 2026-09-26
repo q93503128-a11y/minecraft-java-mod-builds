@@ -23,7 +23,7 @@ class BattleCameraFramingTest {
 
         BattleCameraFraming.Plan plan = BattleCameraFraming.plan(snapshot);
         assertEquals(0.0F, plan.axisYaw(), 0.01F);
-        assertEquals(22.0F, plan.yaw(), 0.01F);
+        assertEquals(0.0F, plan.yaw(), 0.01F);
         assertTrue(plan.distance() >= 11.5F && plan.distance() <= 12.5F);
         assertTrue(plan.pitch() > 22.0F);
     }
@@ -38,7 +38,7 @@ class BattleCameraFramingTest {
 
         BattleCameraFraming.Plan plan = BattleCameraFraming.plan(snapshot);
         assertEquals(90.0F, plan.axisYaw(), 0.01F);
-        assertEquals(112.0F, plan.yaw(), 0.01F);
+        assertEquals(90.0F, plan.yaw(), 0.01F);
     }
 
     @Test
@@ -61,7 +61,7 @@ class BattleCameraFramingTest {
         ClientBattleState.Snapshot snapshot = snapshot(-170.0F, List.of());
         BattleCameraFraming.Plan plan = BattleCameraFraming.plan(snapshot);
         assertEquals(-170.0F, plan.axisYaw(), 0.01F);
-        assertEquals(-148.0F, plan.yaw(), 0.01F);
+        assertEquals(-170.0F, plan.yaw(), 0.01F);
         assertEquals(10.5F, plan.distance(), 0.01F);
     }
 
