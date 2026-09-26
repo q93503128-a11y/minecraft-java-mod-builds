@@ -3,6 +3,7 @@ package dev.moonseungjun.openworldrpg.combat.runtime;
 import dev.moonseungjun.openworldrpg.OpenworldRpgMod;
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongPhysicalEncounterRuntime;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
+import dev.moonseungjun.openworldrpg.progression.r01.R01EarthloongEncounterService;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -87,13 +88,21 @@ public final class ProjectMinecraftDamageApplicator {
             if (application.isEmpty()) {
                 return false;
             }
+            var applied = application.orElseThrow();
             if (attacker instanceof ServerPlayer player) {
+                R01EarthloongEncounterService.recordDamageContribution(
+                        target,
+                        player
+                );
                 R01EarthloongPhysicalEncounterRuntime.recordProjectDamageThreat(
                         target,
                         player,
-                        application.orElseThrow().appliedDamage(),
+                        applied.appliedDamage(),
                         serverLevel.getGameTime()
                 );
+            }
+            if (applied.killed()) {
+                R01EarthloongEncounterService.resolveDefeat(target);
             }
             return true;
         }
