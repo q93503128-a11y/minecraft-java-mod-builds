@@ -1,3 +1,8 @@
 {
-  "variants": { "": { "model": "campfiresessions:block/wooden_chair" } }
+  "variants": {
+    "facing=north": { "model": "campfiresessions:block/wooden_chair", "y": 180 },
+    "facing=east":  { "model": "campfiresessions:block/wooden_chair", "y": 270 },
+    "facing=south": { "model": "campfiresessions:block/wooden_chair", "y": 0 },
+    "facing=west":  { "model": "campfiresessions:block/wooden_chair", "y": 90 }
+  }
 }

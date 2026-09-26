@@ -1,300 +1,249 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-
-import hashlib
-import io
-import json
-import struct
-import sys
-import urllib.request
-import zipfile
-import zlib
+import hashlib, json, struct, sys, urllib.parse, urllib.request, zlib
 from pathlib import Path
 
-GUITAR_URL = "https://opengameart.org/sites/default/files/voxelclassicalguitar.zip"
-CHAIR_URL = "https://opengameart.org/sites/default/files/chair_cc0.obj"
-MUSIC_URL = "https://lpc.opengameart.org/sites/default/files/Etirwer%20%28Looped%29_0.ogg"
-UI_URL = "https://opengameart.org/sites/default/files/kenney_ui-pack-adventure.zip"
-USER_AGENT = "CampfireSessions/0.1 (+https://github.com/q93503128-a11y/minecraft-java-mod-builds)"
-
+GUITAR_URL = "https://cdn.3dassets.dev/assets/33789/v1/model.glb"
+CHAIR_URL = "https://cdn.3dassets.dev/assets/38784/v1/model.glb"
+MUSIC = {
+    "etirwer": "https://lpc.opengameart.org/sites/default/files/Etirwer%20%28Looped%29_0.ogg",
+    "cozy_puzzle": "https://opengameart.org/sites/default/files/cozy_puzzle_in-game_3_bpm108_0.ogg",
+    "neon_circuit": "https://opengameart.org/sites/default/files/neon_sign_circuit_bpm145_0.ogg",
+    "underwater_pad": "https://opengameart.org/sites/default/files/Underwater-Ambient-Pad-isaiah658_0.ogg",
+}
+KENNEY_COMMIT = "3694c6879e487c108f55677be7dd2ca75b07cc3b"
+KENNEY_FILES = {
+    "glass_panel": "ui/UI Pack - Sci-fi/glassPanel.png",
+    "metal_panel": "ui/UI Pack - Sci-fi/metalPanel.png",
+    "metal_blue": "ui/UI Pack - Sci-fi/metalPanel_blue.png",
+    "metal_green": "ui/UI Pack - Sci-fi/metalPanel_green.png",
+    "metal_red": "ui/UI Pack - Sci-fi/metalPanel_red.png",
+    "metal_yellow": "ui/UI Pack - Sci-fi/metalPanel_yellow.png",
+}
+USER_AGENT = "CampfireSessions/0.2 (+https://github.com/q93503128-a11y/minecraft-java-mod-builds)"
 
 def download(url: str) -> bytes:
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=45) as response:
-        data = response.read()
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        data = r.read()
     if not data:
         raise RuntimeError(f"Downloaded empty asset: {url}")
     print(f"[licensed-assets] {url} -> {len(data)} bytes sha256={hashlib.sha256(data).hexdigest()}")
     return data
 
-
-def write_bytes(root: Path, relative: str, data: bytes) -> None:
+def write_bytes(root: Path, relative: str, data: bytes):
     path = root / relative
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(data)
 
-
-def write_text(root: Path, relative: str, text: str) -> None:
+def write_text(root: Path, relative: str, text: str):
     path = root / relative
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
 
-
-def png_rgba(width: int, height: int, pixels: list[tuple[int, int, int, int]]) -> bytes:
-    if len(pixels) != width * height:
-        raise ValueError("pixel count does not match dimensions")
-
-    def chunk(kind: bytes, data: bytes) -> bytes:
+def png_rgba(width: int, height: int, pixels):
+    def chunk(kind: bytes, data: bytes):
         payload = kind + data
         return struct.pack(">I", len(data)) + payload + struct.pack(">I", zlib.crc32(payload) & 0xFFFFFFFF)
-
     rows = []
     for y in range(height):
         row = pixels[y * width:(y + 1) * width]
-        rows.append(b"\x00" + b"".join(bytes((r, g, b, a)) for r, g, b, a in row))
+        rows.append(b"\x00" + b"".join(bytes(px) for px in row))
     raw = b"".join(rows)
-    return (
-        b"\x89PNG\r\n\x1a\n"
-        + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
-        + chunk(b"IDAT", zlib.compress(raw, 9))
-        + chunk(b"IEND", b"")
-    )
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b"")
 
+COMPONENTS = {
+    5120: ("b", 1), 5121: ("B", 1), 5122: ("h", 2),
+    5123: ("H", 2), 5125: ("I", 4), 5126: ("f", 4),
+}
+TYPE_SIZE = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4, "MAT4": 16}
 
-def parse_vox(data: bytes):
-    if len(data) < 8 or data[:4] != b"VOX ":
-        raise RuntimeError("Voxel guitar archive does not contain a valid MagicaVoxel VOX file")
+def parse_glb(data: bytes):
+    if len(data) < 20 or data[:4] != b"glTF":
+        raise RuntimeError("Asset is not a GLB file")
+    _magic, version, total = struct.unpack_from("<4sII", data, 0)
+    if version != 2 or total > len(data):
+        raise RuntimeError(f"Unsupported/truncated GLB version={version}")
+    pos, document, binary = 12, None, b""
+    while pos + 8 <= total:
+        length, kind = struct.unpack_from("<II", data, pos)
+        payload = data[pos + 8:pos + 8 + length]
+        pos += 8 + length
+        if kind == 0x4E4F534A:
+            document = json.loads(payload.rstrip(b"\x00 \t\r\n").decode("utf-8"))
+        elif kind == 0x004E4942:
+            binary = payload
+    if document is None or not binary:
+        raise RuntimeError("GLB is missing JSON or BIN chunk")
+    return document, binary
 
-    pos = 8
-    voxels = []
-    palette = None
+def normalized_component(value, component_type: int, normalized: bool):
+    if not normalized or component_type == 5126: return float(value)
+    if component_type == 5120: return max(float(value) / 127.0, -1.0)
+    if component_type == 5121: return float(value) / 255.0
+    if component_type == 5122: return max(float(value) / 32767.0, -1.0)
+    if component_type == 5123: return float(value) / 65535.0
+    if component_type == 5125: return float(value) / 4294967295.0
+    return float(value)
 
-    while pos + 12 <= len(data):
-        chunk_id = data[pos:pos + 4]
-        content_size, _children_size = struct.unpack_from("<II", data, pos + 4)
-        content_start = pos + 12
-        content_end = content_start + content_size
-        if content_end > len(data):
-            raise RuntimeError("Truncated VOX chunk")
+def read_accessor(doc, binary: bytes, index: int):
+    acc = doc["accessors"][index]
+    if "sparse" in acc:
+        raise RuntimeError("Sparse GLB accessors are not supported")
+    n = TYPE_SIZE[acc["type"]]
+    if "bufferView" not in acc:
+        return [(0.0,) * n for _ in range(acc["count"])]
+    component_type = acc["componentType"]
+    fmt, component_bytes = COMPONENTS[component_type]
+    view = doc["bufferViews"][acc["bufferView"]]
+    stride = view.get("byteStride", component_bytes * n)
+    base = view.get("byteOffset", 0) + acc.get("byteOffset", 0)
+    normalized = bool(acc.get("normalized", False))
+    out = []
+    for i in range(acc["count"]):
+        values = struct.unpack_from("<" + fmt * n, binary, base + i * stride)
+        out.append(tuple(normalized_component(v, component_type, normalized) for v in values))
+    return out
 
-        content = data[content_start:content_end]
-        if chunk_id == b"XYZI":
-            if len(content) < 4:
-                raise RuntimeError("Malformed XYZI chunk")
-            count = struct.unpack_from("<I", content, 0)[0]
-            expected = 4 + count * 4
-            if len(content) < expected:
-                raise RuntimeError("Malformed XYZI voxel data")
-            for i in range(count):
-                x, y, z, color = struct.unpack_from("<BBBB", content, 4 + i * 4)
-                voxels.append((x, y, z, color))
-        elif chunk_id == b"RGBA" and len(content) >= 1024:
-            palette = [(0, 0, 0, 0)]
-            for i in range(256):
-                palette.append(struct.unpack_from("<BBBB", content, i * 4))
-        pos = content_end
+def identity():
+    return [[1.0 if r == c else 0.0 for c in range(4)] for r in range(4)]
 
-    if not voxels:
-        raise RuntimeError("No voxels found in guitar model")
-    if palette is None:
-        palette = [(0, 0, 0, 0)] + [(i, i, i, 255) for i in range(1, 256)] + [(255, 255, 255, 255)]
-    return voxels, palette
+def mul(a, b):
+    return [[sum(a[r][k] * b[k][c] for k in range(4)) for c in range(4)] for r in range(4)]
 
+def trs(node):
+    if "matrix" in node:
+        m = node["matrix"]
+        return [[m[0],m[4],m[8],m[12]],[m[1],m[5],m[9],m[13]],[m[2],m[6],m[10],m[14]],[m[3],m[7],m[11],m[15]]]
+    tx,ty,tz = node.get("translation",[0,0,0])
+    sx,sy,sz = node.get("scale",[1,1,1])
+    x,y,z,w = node.get("rotation",[0,0,0,1])
+    xx,yy,zz,xy,xz,yz,wx,wy,wz = x*x,y*y,z*z,x*y,x*z,y*z,w*x,w*y,w*z
+    r = [[1-2*(yy+zz),2*(xy-wz),2*(xz+wy),0],[2*(xy+wz),1-2*(xx+zz),2*(yz-wx),0],[2*(xz-wy),2*(yz+wx),1-2*(xx+yy),0],[0,0,0,1]]
+    s = [[sx,0,0,0],[0,sy,0,0],[0,0,sz,0],[0,0,0,1]]
+    t = [[1,0,0,tx],[0,1,0,ty],[0,0,1,tz],[0,0,0,1]]
+    return mul(t, mul(r, s))
 
-def guitar_to_obj(voxels, palette):
-    occupied = {(x, y, z) for x, y, z, _ in voxels}
-    xs = [v[0] for v in voxels]
-    ys = [v[1] for v in voxels]
-    zs = [v[2] for v in voxels]
-    min_x, min_y, min_z = min(xs), min(ys), min(zs)
-    max_x, max_y, max_z = max(xs) + 1, max(ys) + 1, max(zs) + 1
-    width, depth, height = max_x - min_x, max_y - min_y, max_z - min_z
-    scale = 1.0 / max(width, depth, height)
-    cx = (min_x + max_x) / 2.0
-    cz = (min_y + max_y) / 2.0
+def transform(m, p):
+    x,y,z = p[:3]
+    q = [x,y,z,1.0]
+    v = [sum(m[r][c] * q[c] for c in range(4)) for r in range(4)]
+    w = v[3] if abs(v[3]) > 1e-9 else 1.0
+    return v[0]/w, v[1]/w, v[2]/w
 
-    faces = [
-        ((1, 0, 0), ((1,0,0),(1,1,0),(1,1,1),(1,0,1))),
-        ((-1, 0, 0), ((0,0,0),(0,0,1),(0,1,1),(0,1,0))),
-        ((0, 1, 0), ((0,1,0),(0,1,1),(1,1,1),(1,1,0))),
-        ((0, -1, 0), ((0,0,0),(1,0,0),(1,0,1),(0,0,1))),
-        ((0, 0, 1), ((0,0,1),(1,0,1),(1,1,1),(0,1,1))),
-        ((0, 0, -1), ((0,0,0),(0,1,0),(1,1,0),(1,0,0))),
-    ]
+def skip_primitive(doc, node, primitive, mesh, terms):
+    if not terms: return False
+    names = [str(node.get("name","")), str(mesh.get("name",""))]
+    mi = primitive.get("material")
+    if mi is not None and mi < len(doc.get("materials",[])):
+        names.append(str(doc["materials"][mi].get("name","")))
+    haystack = " ".join(names).lower()
+    return any(term in haystack for term in terms)
 
-    lines = [
-        "# Derived from MonoTone's CC0 Voxel Classical Guitar",
-        "mtllib acoustic_guitar.mtl",
-        "o AcousticGuitar",
-    ]
-    for i in range(256):
-        lines.append(f"vt {(i + 0.5) / 256.0:.8f} 0.50000000")
-    lines.append("usemtl guitar_palette")
+def glb_to_obj(data: bytes, label: str, target_height: float, skip_terms=()):
+    doc, binary = parse_glb(data)
+    materials = doc.get("materials",[])
+    primitives, skipped = [], []
+    def visit(node_i, parent):
+        node = doc["nodes"][node_i]
+        world = mul(parent, trs(node))
+        mesh_i = node.get("mesh")
+        if mesh_i is not None:
+            mesh = doc["meshes"][mesh_i]
+            for pi, primitive in enumerate(mesh.get("primitives",[])):
+                if primitive.get("mode",4) != 4: continue
+                if skip_primitive(doc,node,primitive,mesh,skip_terms):
+                    skipped.append(f"{node.get('name','')} / {mesh.get('name','')} / primitive {pi}")
+                    continue
+                attrs = primitive.get("attributes",{})
+                if "POSITION" not in attrs: continue
+                positions = [transform(world,p) for p in read_accessor(doc,binary,attrs["POSITION"])]
+                indices = [int(v[0]) for v in read_accessor(doc,binary,primitive["indices"])] if "indices" in primitive else list(range(len(positions)))
+                indices = indices[:len(indices) - (len(indices) % 3)]
+                primitives.append((positions,indices,int(primitive.get("material",-1))))
+        for child in node.get("children",[]): visit(child,world)
 
-    vertex_index = 1
-    for x, y, z, color in voxels:
-        uv = max(1, min(256, int(color)))
-        for (dx, dy, dz), corners in faces:
-            if (x + dx, y + dy, z + dz) in occupied:
-                continue
-            indices = []
-            for ox, oy, oz in corners:
-                px = ((x + ox) - cx) * scale
-                py = ((z + oz) - min_z) * scale
-                pz = ((y + oy) - cz) * scale
-                lines.append(f"v {px:.6f} {py:.6f} {pz:.6f}")
-                indices.append(vertex_index)
-                vertex_index += 1
-            a, b, c, d = indices
-            lines.append(f"f {a}/{uv} {b}/{uv} {c}/{uv}")
-            lines.append(f"f {a}/{uv} {c}/{uv} {d}/{uv}")
+    scenes = doc.get("scenes",[])
+    roots = scenes[doc.get("scene",0)].get("nodes",[]) if scenes else list(range(len(doc.get("nodes",[]))))
+    for root in roots: visit(root,identity())
+    if not primitives: raise RuntimeError(f"{label}: no triangle primitives")
 
-    mtl = """# CC0 guitar palette mapped through a generated texture
-newmtl guitar_palette
-Ka 1.000000 1.000000 1.000000
-Kd 1.000000 1.000000 1.000000
-Ks 0.000000 0.000000 0.000000
-d 1.000000
-illum 1
-map_Kd #palette
-"""
-    palette_pixels = []
-    for i in range(1, 257):
-        rgba = palette[i] if i < len(palette) else palette[-1]
-        palette_pixels.append(tuple(int(v) for v in rgba))
-    palette_pixels = palette_pixels + palette_pixels
-    return "\n".join(lines) + "\n", mtl, png_rgba(256, 2, palette_pixels)
+    points = [p for ps,_i,_m in primitives for p in ps]
+    xs,ys,zs = [p[0] for p in points],[p[1] for p in points],[p[2] for p in points]
+    minx,maxx,miny,maxy,minz,maxz = min(xs),max(xs),min(ys),max(ys),min(zs),max(zs)
+    if maxy-miny <= 1e-9: raise RuntimeError(f"{label}: zero model height")
+    scale = target_height / (maxy-miny)
+    cx,cz = (minx+maxx)/2.0,(minz+maxz)/2.0
 
+    used = sorted({m for _p,_i,m in primitives})
+    slots = {m:i for i,m in enumerate(used)}
+    palette = []
+    for m in used:
+        factor = [0.72,0.50,0.30,1.0]
+        if 0 <= m < len(materials):
+            factor = materials[m].get("pbrMetallicRoughness",{}).get("baseColorFactor",factor)
+        factor = (list(factor)+[1,1,1,1])[:4]
+        palette.append(tuple(max(0,min(255,round(float(c)*255))) for c in factor))
+    if not palette:
+        palette=[(180,130,80,255)]; slots[-1]=0
 
-def rewrite_face_token(token: str) -> str:
-    parts = token.split("/")
-    vertex = parts[0]
-    normal = parts[2] if len(parts) >= 3 and parts[2] else None
-    return f"{vertex}/1/{normal}" if normal else f"{vertex}/1"
+    lines=[f"# Converted from CC0 {label} GLB",f"mtllib {label}.mtl",f"o {label}"]
+    for i in range(len(palette)): lines.append(f"vt {(i+0.5)/len(palette):.8f} 0.50000000")
+    base,triangles=1,0
+    for positions,indices,mat in primitives:
+        slot=slots.get(mat,0); lines.append(f"usemtl material_{slot}")
+        for x,y,z in positions: lines.append(f"v {(x-cx)*scale:.7f} {(y-miny)*scale:.7f} {(z-cz)*scale:.7f}")
+        uv=slot+1
+        for i in range(0,len(indices),3):
+            a,b,c=indices[i:i+3]
+            lines.append(f"f {base+a}/{uv} {base+b}/{uv} {base+c}/{uv}"); triangles += 1
+        base += len(positions)
 
+    mtl=[f"# Material palette for {label}"]
+    for i in range(len(palette)):
+        mtl += [f"newmtl material_{i}","Ka 1.000000 1.000000 1.000000","Kd 1.000000 1.000000 1.000000",
+                "Ks 0.000000 0.000000 0.000000","d 1.000000","illum 1","map_Kd #palette",""]
+    print(f"[licensed-assets] {label}: triangles={triangles} materials={len(palette)} skipped={len(skipped)}")
+    for name in skipped: print(f"[licensed-assets] {label}: skipped {name}")
+    if skip_terms and not skipped:
+        print(f"[licensed-assets] WARNING {label}: no stand/rack-named primitive was found")
+    return "\n".join(lines)+"\n","\n".join(mtl)+"\n",png_rgba(len(palette),2,palette+palette)
 
-def normalize_chair_obj(text: str):
-    lines = text.replace("\r", "").split("\n")
-    vertices = []
-    for line in lines:
-        if line.startswith("v "):
-            parts = line.split()
-            if len(parts) >= 4:
-                vertices.append(tuple(float(value) for value in parts[1:4]))
-    if not vertices:
-        raise RuntimeError("Chair OBJ contained no vertices")
+def kenney_url(path: str):
+    return f"https://raw.githubusercontent.com/shorepine/kenney/{KENNEY_COMMIT}/{urllib.parse.quote(path,safe='/')}"
 
-    xs = [v[0] for v in vertices]
-    ys = [v[1] for v in vertices]
-    zs = [v[2] for v in vertices]
-    min_x, min_y, min_z = min(xs), min(ys), min(zs)
-    max_x, max_y, max_z = max(xs), max(ys), max(zs)
-    extent = max(max_x - min_x, max_y - min_y, max_z - min_z)
-    if extent <= 0:
-        raise RuntimeError("Chair OBJ has zero-sized bounds")
-    scale = 0.96 / extent
-    cx = (min_x + max_x) / 2.0
-    cz = (min_z + max_z) / 2.0
+def main():
+    if len(sys.argv) != 2: raise SystemExit("usage: prepare_licensed_assets.py <output-dir>")
+    out=Path(sys.argv[1]).resolve(); out.mkdir(parents=True,exist_ok=True)
+    manifest={}
 
-    output = ["# Geometry from Lyricsz '3D Lowpoly Chair', CC0", "mtllib wooden_chair.mtl", "o WoodenChair"]
-    face_lines = []
-    for line in lines:
-        if not line or line.startswith(("mtllib ", "usemtl ", "vt ", "o ")):
-            continue
-        if line.startswith("v "):
-            parts = line.split()
-            x, y, z = (float(value) for value in parts[1:4])
-            output.append(f"v {(x-cx)*scale:.6f} {(y-min_y)*scale:.6f} {(z-cz)*scale:.6f}")
-        elif line.startswith("f "):
-            face_lines.append(line)
-        else:
-            output.append(line)
+    guitar=download(GUITAR_URL)
+    obj,mtl,pal=glb_to_obj(guitar,"acoustic_guitar",1.00,("stand","rack"))
+    write_text(out,"assets/campfiresessions/models/item/acoustic_guitar.obj",obj)
+    write_text(out,"assets/campfiresessions/models/item/acoustic_guitar.mtl",mtl)
+    write_bytes(out,"assets/campfiresessions/textures/item/acoustic_guitar_palette.png",pal)
+    manifest["guitar"]={"source":GUITAR_URL,"sha256":hashlib.sha256(guitar).hexdigest()}
 
-    output.append("vt 0.500000 0.500000")
-    output.append("usemtl chair")
-    for line in face_lines:
-        tokens = [rewrite_face_token(token) for token in line.split()[1:]]
-        if len(tokens) < 3:
-            continue
-        for i in range(1, len(tokens) - 1):
-            output.append("f " + " ".join((tokens[0], tokens[i], tokens[i + 1])))
+    chair=download(CHAIR_URL)
+    obj,mtl,pal=glb_to_obj(chair,"wooden_chair",0.96)
+    write_text(out,"assets/campfiresessions/models/block/wooden_chair.obj",obj)
+    write_text(out,"assets/campfiresessions/models/block/wooden_chair.mtl",mtl)
+    write_bytes(out,"assets/campfiresessions/textures/block/wooden_chair_palette.png",pal)
+    manifest["chair"]={"source":CHAIR_URL,"sha256":hashlib.sha256(chair).hexdigest()}
 
-    mtl = """# Warm wood material over the original CC0 chair geometry
-newmtl chair
-Ka 1.000000 1.000000 1.000000
-Kd 1.000000 1.000000 1.000000
-Ks 0.000000 0.000000 0.000000
-d 1.000000
-illum 1
-map_Kd #wood
-"""
-    wood = [(142, 84, 42, 255)] * 4
-    return "\n".join(output) + "\n", mtl, png_rgba(2, 2, wood)
+    manifest["music"]={}
+    for track,url in MUSIC.items():
+        data=download(url)
+        if not data.startswith(b"OggS"): raise RuntimeError(f"{track}: not OGG")
+        write_bytes(out,f"assets/campfiresessions/sounds/music/{track}.ogg",data)
+        manifest["music"][track]={"source":url,"sha256":hashlib.sha256(data).hexdigest()}
 
+    manifest["ui"]={}
+    for asset,relative in KENNEY_FILES.items():
+        url=kenney_url(relative); data=download(url)
+        if not data.startswith(b"\x89PNG\r\n\x1a\n"): raise RuntimeError(f"{asset}: not PNG")
+        write_bytes(out,f"assets/campfiresessions/textures/gui/sprites/music/{asset}.png",data)
+        manifest["ui"][asset]={"source":url,"sha256":hashlib.sha256(data).hexdigest()}
+    write_text(out,"campfiresessions_asset_manifest.json",json.dumps(manifest,indent=2)+"\n")
 
-def zip_asset(archive: zipfile.ZipFile, basename: str) -> bytes:
-    wanted = basename.lower()
-    candidates = [name for name in archive.namelist() if Path(name).name.lower() == wanted]
-    if not candidates:
-        raise RuntimeError(f"Missing {basename} in Kenney UI archive")
-    candidates.sort(key=lambda name: ("png/default" not in name.lower().replace("\\", "/"), len(name)))
-    return archive.read(candidates[0])
-
-
-def main() -> None:
-    if len(sys.argv) != 2:
-        raise SystemExit("usage: prepare_licensed_assets.py <output-dir>")
-    out = Path(sys.argv[1]).resolve()
-    out.mkdir(parents=True, exist_ok=True)
-
-    guitar_zip = download(GUITAR_URL)
-    with zipfile.ZipFile(io.BytesIO(guitar_zip)) as archive:
-        vox_names = [name for name in archive.namelist() if name.lower().endswith(".vox")]
-        if not vox_names:
-            raise RuntimeError("No .vox file found in voxelclassicalguitar.zip")
-        voxels, palette = parse_vox(archive.read(vox_names[0]))
-    guitar_obj, guitar_mtl, guitar_texture = guitar_to_obj(voxels, palette)
-    write_text(out, "assets/campfiresessions/models/item/acoustic_guitar.obj", guitar_obj)
-    write_text(out, "assets/campfiresessions/models/item/acoustic_guitar.mtl", guitar_mtl)
-    write_bytes(out, "assets/campfiresessions/textures/item/acoustic_guitar_palette.png", guitar_texture)
-
-    chair_bytes = download(CHAIR_URL)
-    chair_obj, chair_mtl, chair_texture = normalize_chair_obj(chair_bytes.decode("utf-8", errors="replace"))
-    write_text(out, "assets/campfiresessions/models/block/wooden_chair.obj", chair_obj)
-    write_text(out, "assets/campfiresessions/models/block/wooden_chair.mtl", chair_mtl)
-    write_bytes(out, "assets/campfiresessions/textures/block/wooden_chair.png", chair_texture)
-
-    music = download(MUSIC_URL)
-    if not music.startswith(b"OggS"):
-        raise RuntimeError("Etirwer download is not an OGG/Vorbis stream")
-    write_bytes(out, "assets/campfiresessions/sounds/music/etirwer.ogg", music)
-
-    ui_zip = download(UI_URL)
-    with zipfile.ZipFile(io.BytesIO(ui_zip)) as archive:
-        for name in ("button_brown.png", "button_grey.png", "button_red.png"):
-            png = zip_asset(archive, name)
-            write_bytes(out, f"assets/campfiresessions/textures/gui/sprites/music/{name}", png)
-            metadata = {
-                "gui": {
-                    "scaling": {
-                        "type": "nine_slice",
-                        "width": 48,
-                        "height": 24,
-                        "border": {"left": 7, "right": 7, "top": 7, "bottom": 7},
-                        "stretch_inner": True,
-                    }
-                }
-            }
-            write_text(out, f"assets/campfiresessions/textures/gui/sprites/music/{name}.mcmeta", json.dumps(metadata, indent=2) + "\n")
-
-    manifest = {
-        "guitar": {"source": GUITAR_URL, "sha256": hashlib.sha256(guitar_zip).hexdigest()},
-        "chair": {"source": CHAIR_URL, "sha256": hashlib.sha256(chair_bytes).hexdigest()},
-        "music": {"source": MUSIC_URL, "sha256": hashlib.sha256(music).hexdigest()},
-        "ui": {"source": UI_URL, "sha256": hashlib.sha256(ui_zip).hexdigest()},
-    }
-    write_text(out, "campfiresessions_asset_manifest.json", json.dumps(manifest, indent=2) + "\n")
-
-
-if __name__ == "__main__":
-    main()
+if __name__=="__main__": main()

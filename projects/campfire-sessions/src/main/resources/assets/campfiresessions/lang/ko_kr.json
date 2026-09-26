@@ -1,15 +1,13 @@
 {
   "item.campfiresessions.acoustic_guitar": "어쿠스틱 기타",
-  "block.campfiresessions.wooden_chair": "나무 의자",
+  "block.campfiresessions.wooden_chair": "목재 다이닝 의자",
   "itemGroup.campfiresessions.main": "Campfire Sessions",
   "screen.campfiresessions.music.title": "Campfire Sessions",
-  "screen.campfiresessions.music.subtitle": "곡을 고르고 기타 연주를 시작합니다.",
-  "screen.campfiresessions.music.play": "재생",
-  "screen.campfiresessions.music.stop": "정지",
+  "screen.campfiresessions.music.subtitle_v2": "휠로 넘기고, 곡의 분위기에 따라 플레이어가 변합니다.",
+  "screen.campfiresessions.music.play_pause": "재생/정지",
   "screen.campfiresessions.music.close": "닫기",
-  "screen.campfiresessions.music.track_hint": "어쿠스틱 루프 · 첫 테스트 곡",
-  "screen.campfiresessions.music.playing": "♪ 재생 중",
-  "screen.campfiresessions.music.ready": "재생 준비",
-  "screen.campfiresessions.music.tip": "기타를 우클릭하면 이 화면을 다시 엽니다.",
-  "subtitles.campfiresessions.etirwer": "기타 음악이 흐른다"
+  "subtitles.campfiresessions.etirwer": "따뜻한 음악이 흐른다",
+  "subtitles.campfiresessions.cozy_puzzle": "편안한 어쿠스틱 음악이 흐른다",
+  "subtitles.campfiresessions.neon_circuit": "네온 신스 음악이 흐른다",
+  "subtitles.campfiresessions.underwater_pad": "물속 같은 앰비언트가 흐른다"
 }

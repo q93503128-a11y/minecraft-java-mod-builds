@@ -34,49 +34,43 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee build.log
-      - name: Verify packaged prototype assets
+      - name: Verify alpha2 packaged assets
         shell: bash
         run: |
           set -euo pipefail
           JAR="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' | head -n 1)"
           test -n "$JAR"
-          jar tf "$JAR" | grep -F 'kr/moonseungjun/campfiresessions/CampfireSessions.class'
-          jar tf "$JAR" | grep -F 'assets/campfiresessions/models/item/acoustic_guitar.obj'
-          jar tf "$JAR" | grep -F 'assets/campfiresessions/models/item/acoustic_guitar.mtl'
-          jar tf "$JAR" | grep -F 'assets/campfiresessions/textures/item/acoustic_guitar_palette.png'
-          jar tf "$JAR" | grep -F 'assets/campfiresessions/models/block/wooden_chair.obj'
-          jar tf "$JAR" | grep -F 'assets/campfiresessions/textures/block/wooden_chair.png'
-          jar tf "$JAR" | grep -F 'assets/campfiresessions/sounds/music/etirwer.ogg'
-          jar tf "$JAR" | grep -F 'assets/campfiresessions/textures/gui/sprites/music/panel.png'
-          jar tf "$JAR" | grep -F 'assets/campfiresessions/textures/gui/sprites/music/button_brown.png'
-          jar tf "$JAR" | grep -F 'assets/campfiresessions/textures/gui/sprites/music/button_grey.png'
-          jar tf "$JAR" | grep -F 'assets/campfiresessions/textures/gui/sprites/music/button_red.png'
+          for ENTRY in             'kr/moonseungjun/campfiresessions/CampfireSessions.class'             'kr/moonseungjun/campfiresessions/block/ChairBlock.class'             'kr/moonseungjun/campfiresessions/client/MusicTheme.class'             'kr/moonseungjun/campfiresessions/client/MusicCatalog.class'             'assets/campfiresessions/models/item/acoustic_guitar.obj'             'assets/campfiresessions/models/item/acoustic_guitar.mtl'             'assets/campfiresessions/textures/item/acoustic_guitar_palette.png'             'assets/campfiresessions/models/block/wooden_chair.obj'             'assets/campfiresessions/models/block/wooden_chair.mtl'             'assets/campfiresessions/textures/block/wooden_chair_palette.png'             'assets/campfiresessions/sounds/music/etirwer.ogg'             'assets/campfiresessions/sounds/music/cozy_puzzle.ogg'             'assets/campfiresessions/sounds/music/neon_circuit.ogg'             'assets/campfiresessions/sounds/music/underwater_pad.ogg'             'assets/campfiresessions/textures/gui/sprites/music/glass_panel.png'             'assets/campfiresessions/textures/gui/sprites/music/metal_panel.png'             'assets/campfiresessions/textures/gui/sprites/music/metal_blue.png'             'assets/campfiresessions/textures/gui/sprites/music/metal_green.png'             'assets/campfiresessions/textures/gui/sprites/music/metal_red.png'             'assets/campfiresessions/textures/gui/sprites/music/metal_yellow.png'
+          do
+            jar tf "$JAR" | grep -F "$ENTRY"
+          done
           sha256sum "$JAR" | tee "$JAR.sha256"
           {
             echo '# BUILD AND RUNTIME REPORT'
             echo
-            echo "- Commit: `${GITHUB_SHA}`"
+            echo "- Commit: `$GITHUB_SHA`"
+            echo '- Version: 0.2.0-alpha.1'
             echo '- Minecraft: 26.2'
             echo '- Java: 25'
             echo '- NeoForge: 26.2.0.87'
             echo '- clean build: SUCCESS'
-            echo '- JAR structure/resource inspection: SUCCESS'
-            echo '- Dedicated server smoke test: NOT RUN'
-            echo '- Client smoke test: NOT RUN'
-            echo '- In-game visual/audio/seat acceptance: NOT RUN — user test required'
+            echo '- replacement guitar/chair resources: PACKAGED'
+            echo '- four streamed CC0 tracks: PACKAGED'
+            echo '- themed Kenney sci-fi UI resources: PACKAGED'
+            echo '- in-game visual/seat acceptance: USER TEST REQUIRED'
           } > BUILD_AND_RUNTIME_REPORT.md
       - name: Upload build logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: campfire-sessions-alpha1-logs
+          name: campfire-sessions-alpha2-logs
           path: projects/campfire-sessions/build.log
           if-no-files-found: warn
-      - name: Upload deliverables
+      - name: Upload alpha2
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: campfire-sessions-alpha1
+          name: campfire-sessions-alpha2
           path: |
             projects/campfire-sessions/build/libs/*.jar
             projects/campfire-sessions/build/libs/*.sha256

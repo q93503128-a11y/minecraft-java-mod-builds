@@ -3,10 +3,10 @@ package kr.moonseungjun.campfiresessions.client;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.narration.NarratedElementType;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
@@ -27,26 +27,21 @@ public final class MusicTextureButton extends AbstractWidget {
 
     @Override
     public void onClick(MouseButtonEvent event, boolean doubled) {
-        if (this.active) this.action.onPress(this);
+        if (active) action.onPress(this);
     }
 
     @Override
     protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, this.sprite, getX(), getY(), getWidth(), getHeight());
-        if (!this.active) {
-            graphics.fill(getX(), getY(), getRight(), getBottom(), 0x66000000);
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, getX(), getY(), getWidth(), getHeight());
+        MusicTheme theme = CampfireMusicClient.selectedTrack().theme();
+        if (!active) {
+            graphics.fill(getX(), getY(), getRight(), getBottom(), 0x88000000);
         } else if (isHovered()) {
-            graphics.fill(getX() + 2, getY() + 2, getRight() - 2, getBottom() - 2, 0x18FFFFFF);
+            graphics.fill(getX() + 1, getY() + 1, getRight() - 1, getBottom() - 1, 0x2AFFFFFF);
         }
-        int color = this.active ? 0xFFF8EBD2 : 0xFF8B8172;
-        graphics.text(
-                Minecraft.getInstance().font,
-                getMessage(),
-                getX() + (getWidth() - Minecraft.getInstance().font.width(getMessage())) / 2,
-                getY() + (getHeight() - 8) / 2,
-                color,
-                true
-        );
+        var font = Minecraft.getInstance().font;
+        graphics.centeredText(font, getMessage(), getX() + getWidth() / 2,
+                getY() + (getHeight() - font.lineHeight) / 2, active ? theme.text() : 0xFF818181);
     }
 
     @Override

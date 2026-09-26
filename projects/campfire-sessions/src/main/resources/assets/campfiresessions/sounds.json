@@ -2,5 +2,17 @@
   "etirwer": {
     "subtitle": "subtitles.campfiresessions.etirwer",
     "sounds": [{ "name": "campfiresessions:music/etirwer", "stream": true }]
+  },
+  "cozy_puzzle": {
+    "subtitle": "subtitles.campfiresessions.cozy_puzzle",
+    "sounds": [{ "name": "campfiresessions:music/cozy_puzzle", "stream": true }]
+  },
+  "neon_circuit": {
+    "subtitle": "subtitles.campfiresessions.neon_circuit",
+    "sounds": [{ "name": "campfiresessions:music/neon_circuit", "stream": true }]
+  },
+  "underwater_pad": {
+    "subtitle": "subtitles.campfiresessions.underwater_pad",
+    "sounds": [{ "name": "campfiresessions:music/underwater_pad", "stream": true }]
   }
 }

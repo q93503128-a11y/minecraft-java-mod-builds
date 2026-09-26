@@ -14,7 +14,7 @@ import org.slf4j.Logger;
 @Mod(CampfireSessions.MOD_ID)
 public final class CampfireSessions {
     public static final String MOD_ID = "campfiresessions";
-    public static final String VERSION = "0.1.0-alpha.1";
+    public static final String VERSION = "0.2.0-alpha.1";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public CampfireSessions(IEventBus modEventBus) {
