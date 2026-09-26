@@ -22,7 +22,7 @@ public final class R01EarthloongMythicEffectState {
     private long barrierUntilTick = Long.MIN_VALUE / 4;
 
     public RootquakeTrigger tryRootquake(double weaponPower, long nowTick) {
-        ProjectCombatRules.requireFiniteNonNegative("weaponPower", weaponPower);
+        requireFiniteNonNegative("weaponPower", weaponPower);
         if (weaponPower <= 0.0 || nowTick < rootquakeReadyTick) {
             return RootquakeTrigger.rejected(rootquakeReadyTick);
         }
@@ -35,7 +35,7 @@ public final class R01EarthloongMythicEffectState {
     }
 
     public ReprieveTrigger tryEarthenReprieve(double maxHealth, long nowTick) {
-        ProjectCombatRules.requireFinitePositive("maxHealth", maxHealth);
+        requireFinitePositive("maxHealth", maxHealth);
         refreshBarrier(nowTick);
         if (nowTick < reprieveReadyTick) {
             return ReprieveTrigger.rejected(
@@ -57,7 +57,7 @@ public final class R01EarthloongMythicEffectState {
     }
 
     public BarrierApplication absorb(double incomingDamage, long nowTick) {
-        ProjectCombatRules.requireFiniteNonNegative("incomingDamage", incomingDamage);
+        requireFiniteNonNegative("incomingDamage", incomingDamage);
         refreshBarrier(nowTick);
         if (incomingDamage <= 0.0 || barrierAmount <= 0.0) {
             return new BarrierApplication(incomingDamage, 0.0, barrierAmount);
@@ -89,6 +89,18 @@ public final class R01EarthloongMythicEffectState {
         if (barrierAmount > 0.0 && nowTick >= barrierUntilTick) {
             barrierAmount = 0.0;
             barrierUntilTick = Long.MIN_VALUE / 4;
+        }
+    }
+
+    private static void requireFiniteNonNegative(String name, double value) {
+        if (!Double.isFinite(value) || value < 0.0) {
+            throw new IllegalArgumentException(name + " must be finite and non-negative.");
+        }
+    }
+
+    private static void requireFinitePositive(String name, double value) {
+        if (!Double.isFinite(value) || value <= 0.0) {
+            throw new IllegalArgumentException(name + " must be finite and positive.");
         }
     }
 
