@@ -5,8 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -37,17 +36,17 @@ public final class ChairSeatManager {
         BlockPos pos = event.getPos();
         if (isOccupied(level, pos)) return;
 
-        ArmorStand seat = EntityType.ARMOR_STAND.create(level, EntitySpawnReason.COMMAND);
-        if (seat == null) return;
-        seat.setPos(pos.getX() + 0.5, pos.getY() - 0.45, pos.getZ() + 0.5);
+        ArmorStand seat = new ArmorStand(EntityTypes.ARMOR_STAND, level);
+        // Minecraft 26.2 made ArmorStand#setMarker private. Keep the stand invisible/invulnerable
+        // and sink its normal passenger attachment below the chair so the rider lands at seat height.
+        seat.setPos(pos.getX() + 0.5, pos.getY() - 1.52, pos.getZ() + 0.5);
         seat.setInvisible(true);
-        seat.setMarker(true);
         seat.setNoGravity(true);
         seat.setInvulnerable(true);
         seat.addTag(SEAT_TAG);
         seat.addTag(POS_PREFIX + pos.asLong());
         if (!level.addFreshEntity(seat)) return;
-        if (!player.startRiding(seat, true)) seat.discard();
+        if (!player.startRiding(seat)) seat.discard();
     }
 
     public static void onServerTick(ServerTickEvent.Post event) {
