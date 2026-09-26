@@ -1,0 +1,15 @@
+{
+  "item.campfiresessions.acoustic_guitar": "어쿠스틱 기타",
+  "block.campfiresessions.wooden_chair": "나무 의자",
+  "itemGroup.campfiresessions.main": "Campfire Sessions",
+  "screen.campfiresessions.music.title": "Campfire Sessions",
+  "screen.campfiresessions.music.subtitle": "곡을 고르고 기타 연주를 시작합니다.",
+  "screen.campfiresessions.music.play": "재생",
+  "screen.campfiresessions.music.stop": "정지",
+  "screen.campfiresessions.music.close": "닫기",
+  "screen.campfiresessions.music.track_hint": "어쿠스틱 루프 · 첫 테스트 곡",
+  "screen.campfiresessions.music.playing": "♪ 재생 중",
+  "screen.campfiresessions.music.ready": "재생 준비",
+  "screen.campfiresessions.music.tip": "기타를 우클릭하면 이 화면을 다시 엽니다.",
+  "subtitles.campfiresessions.etirwer": "기타 음악이 흐른다"
+}

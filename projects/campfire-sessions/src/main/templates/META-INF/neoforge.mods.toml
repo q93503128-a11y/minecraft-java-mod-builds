@@ -1,0 +1,24 @@
+license="${mod_license}"
+issueTrackerURL="https://github.com/q93503128-a11y/minecraft-java-mod-builds/issues"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+displayURL="https://github.com/q93503128-a11y/minecraft-java-mod-builds"
+authors="문승준"
+description='''기타를 들고 곡을 고르고, 의자에 앉아 음악을 듣는 소형 Minecraft Java 음악 모드 프로토타입.'''
+
+[[dependencies.${mod_id}]]
+modId="neoforge"
+type="required"
+versionRange="[${neo_version},)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="minecraft"
+type="required"
+versionRange="${minecraft_version_range}"
+ordering="NONE"
+side="BOTH"

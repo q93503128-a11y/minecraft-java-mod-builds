@@ -1,0 +1,12 @@
+{
+  "loader": "neoforge:obj",
+  "model": "campfiresessions:models/item/acoustic_guitar.obj",
+  "automatic_culling": false,
+  "shade_quads": true,
+  "flip_v": false,
+  "display": {
+    "gui": { "rotation": [24, -38, 8], "translation": [0, -1, 0], "scale": [0.95, 0.95, 0.95] },
+    "firstperson_righthand": { "rotation": [0, 138, -28], "translation": [1.5, 2.2, 0.4], "scale": [1.55, 1.55, 1.55] },
+    "thirdperson_righthand": { "rotation": [4, 118, -34], "translation": [0, 2.5, 0], "scale": [1.25, 1.25, 1.25] }
+  }
+}

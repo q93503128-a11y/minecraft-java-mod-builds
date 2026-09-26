@@ -1,0 +1,15 @@
+{
+  "item.campfiresessions.acoustic_guitar": "Acoustic Guitar",
+  "block.campfiresessions.wooden_chair": "Wooden Chair",
+  "itemGroup.campfiresessions.main": "Campfire Sessions",
+  "screen.campfiresessions.music.title": "Campfire Sessions",
+  "screen.campfiresessions.music.subtitle": "Choose a song and start playing.",
+  "screen.campfiresessions.music.play": "Play",
+  "screen.campfiresessions.music.stop": "Stop",
+  "screen.campfiresessions.music.close": "Close",
+  "screen.campfiresessions.music.track_hint": "Acoustic loop · prototype track",
+  "screen.campfiresessions.music.playing": "♪ Now playing",
+  "screen.campfiresessions.music.ready": "Ready to play",
+  "screen.campfiresessions.music.tip": "Right-click the guitar to reopen this player.",
+  "subtitles.campfiresessions.etirwer": "Guitar music plays"
+}

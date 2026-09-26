@@ -4,6 +4,12 @@
 
 ## 활성 프로젝트
 
+- [`campfire-sessions`](./campfire-sessions/) — 기타·의자·선곡 UI를 결합한 소형 음악 연주 모드
+  - 상태: `ALPHA.1 TEST SLICE / CI BUILD PENDING`
+  - 현재 버전: `0.1.0-alpha.1`
+  - 정본 시작점: [`campfire-sessions/PROJECT.md`](./campfire-sessions/PROJECT.md)
+  - 현재 범위: CC0 기타 모델 1개 + CC0 의자 모델 1개 + CC0 곡 1개 + 외부 CC0 UI + 착석/재생 테스트
+
 - [`moba-arena`](./moba-arena/) — 외부 코드·맵·UI·아트 중심으로 조립하는 Minecraft MOBA
   - 상태: `DESIGN CANON + EXTERNAL SOURCE AUDIT / NO SOURCE BOOTSTRAP YET`
   - 정본 시작점: [`moba-arena/PROJECT.md`](./moba-arena/PROJECT.md), [`moba-arena/GAME_DESIGN.md`](./moba-arena/GAME_DESIGN.md)
