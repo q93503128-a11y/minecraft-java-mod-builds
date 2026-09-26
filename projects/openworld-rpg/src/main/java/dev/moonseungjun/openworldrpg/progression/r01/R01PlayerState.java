@@ -84,6 +84,12 @@ public record R01PlayerState(
             "openworld_rpg:r01/dust_on_quarry_road";
     public static final String ROOTS_BELOW_STONE_QUEST_ID =
             "openworld_rpg:r01/roots_below_stone";
+    public static final String EARTHLOONG_CHOICE_CLAIM_ID =
+            "openworld_rpg:r01/earthloong_first_clear_choice";
+    public static final String EARTHLOONG_SCALE_CLAIM_ID =
+            "openworld_rpg:r01/earthloong_first_clear_scales";
+    public static final String EARTHLOONG_CHOICE_FLAG_PREFIX =
+            "openworld_rpg:r01/earthloong_choice/";
 
     public boolean openingLoadoutClaimed() {
         return ledger.rewardClaimIds().contains(OPENING_LOADOUT_CLAIM_ID);
@@ -393,9 +399,9 @@ public record R01PlayerState(
                 .withFirstClear()
                 .withRun(quarry.runId(), Optional.of("cleared"))
                 .withRewardChoicePending();
-        EconomyState nextEconomy = economy.withPendingRewardClaimId(
-                "openworld_rpg:r01/earthloong_first_clear_choice"
-        );
+        EconomyState nextEconomy = economy
+                .withPendingRewardClaimId(EARTHLOONG_CHOICE_CLAIM_ID)
+                .withPendingRewardClaimId(EARTHLOONG_SCALE_CLAIM_ID);
         TransactionLedger nextLedger = ledger
                 .withFirstClearId("openworld_rpg:r01_quarry")
                 .withCompletedStepId("openworld_rpg:r01/earthloong_cleared");
@@ -406,6 +412,118 @@ public record R01PlayerState(
                 worldLoops,
                 nextEconomy,
                 nextLedger,
+                worldTick
+        );
+    }
+
+    public Optional<String> earthloongRewardChoiceFlag() {
+        String found = null;
+        for (String flag : ledger.choiceFlags()) {
+            if (!flag.startsWith(EARTHLOONG_CHOICE_FLAG_PREFIX)) {
+                continue;
+            }
+            if (found != null && !found.equals(flag)) {
+                throw new IllegalStateException(
+                        "Multiple Earthloong deterministic reward choices are committed."
+                );
+            }
+            found = flag;
+        }
+        return Optional.ofNullable(found);
+    }
+
+    public R01PlayerState reconcileEarthloongFirstClearClaims(long worldTick) {
+        validateTick(worldTick);
+        if (!quarry.firstClear()) {
+            return this;
+        }
+        EconomyState nextEconomy = economy;
+        if (!quarry.firstClearRewardClaimed()) {
+            nextEconomy = nextEconomy.withPendingRewardClaimId(EARTHLOONG_CHOICE_CLAIM_ID);
+        }
+        if (!ledger.rewardClaimIds().contains(EARTHLOONG_SCALE_CLAIM_ID)) {
+            nextEconomy = nextEconomy.withPendingRewardClaimId(EARTHLOONG_SCALE_CLAIM_ID);
+        }
+        if (nextEconomy.equals(economy)) {
+            return this;
+        }
+        return changed(opening, quarry, worldLoops, nextEconomy, ledger, worldTick);
+    }
+
+    public R01PlayerState commitEarthloongRewardChoice(
+            String choiceFlag,
+            long worldTick
+    ) {
+        validateTick(worldTick);
+        requireStableId(choiceFlag, "choiceFlag");
+        if (!choiceFlag.startsWith(EARTHLOONG_CHOICE_FLAG_PREFIX)) {
+            throw new IllegalArgumentException("Not an Earthloong deterministic reward choice flag.");
+        }
+
+        Optional<String> existing = earthloongRewardChoiceFlag();
+        if (existing.isPresent()) {
+            if (!existing.orElseThrow().equals(choiceFlag)) {
+                throw new IllegalStateException(
+                        "Earthloong deterministic reward choice is already committed."
+                );
+            }
+            return this;
+        }
+        if (!quarry.firstClear() || !quarry.rewardChoicePending()) {
+            throw new IllegalStateException(
+                    "Earthloong reward choice requires a pending eligible first clear."
+            );
+        }
+
+        return changed(
+                opening,
+                quarry,
+                worldLoops,
+                economy,
+                ledger.withChoiceFlag(choiceFlag),
+                worldTick
+        );
+    }
+
+    public R01PlayerState markEarthloongRewardChoiceDelivered(
+            String choiceFlag,
+            long worldTick
+    ) {
+        validateTick(worldTick);
+        requireStableId(choiceFlag, "choiceFlag");
+        Optional<String> existing = earthloongRewardChoiceFlag();
+        if (existing.isEmpty() || !existing.orElseThrow().equals(choiceFlag)) {
+            throw new IllegalStateException(
+                    "Cannot finalize an uncommitted Earthloong reward choice."
+            );
+        }
+        if (quarry.firstClearRewardClaimed()) {
+            return this;
+        }
+        return changed(
+                opening,
+                quarry.withRewardChoiceClaimed(),
+                worldLoops,
+                economy.withoutPendingRewardClaimId(EARTHLOONG_CHOICE_CLAIM_ID),
+                ledger.withRewardClaimId(EARTHLOONG_CHOICE_CLAIM_ID),
+                worldTick
+        );
+    }
+
+    public R01PlayerState markEarthloongScalesDelivered(long worldTick) {
+        validateTick(worldTick);
+        if (!quarry.firstClear()) {
+            throw new IllegalStateException("Earthloong scales require an eligible first clear.");
+        }
+        if (ledger.rewardClaimIds().contains(EARTHLOONG_SCALE_CLAIM_ID)) {
+            return this;
+        }
+        return changed(
+                opening,
+                quarry,
+                worldLoops,
+                economy.withoutPendingRewardClaimId(EARTHLOONG_SCALE_CLAIM_ID),
+                ledger.withRewardClaimId(EARTHLOONG_SCALE_CLAIM_ID),
                 worldTick
         );
     }
@@ -736,6 +854,11 @@ public record R01PlayerState(
             if (rewardChoicePending && !firstClear) {
                 throw new IllegalArgumentException("Reward choice cannot be pending before first clear.");
             }
+            if (firstClearRewardClaimed && rewardChoicePending) {
+                throw new IllegalArgumentException(
+                        "Claimed Earthloong reward choice cannot remain pending."
+                );
+            }
         }
 
         public static QuarryState initial() {
@@ -791,11 +914,24 @@ public record R01PlayerState(
 
         public QuarryState withRewardChoicePending() {
             if (rewardChoicePending) return this;
-            if (!firstClear) {
-                throw new IllegalStateException("Cannot pend Earthloong reward choice before first clear.");
+            if (!firstClear || firstClearRewardClaimed) {
+                throw new IllegalStateException(
+                        "Cannot pend Earthloong reward choice outside an unclaimed first clear."
+                );
             }
-            return new QuarryState(discovered, relayEvidenceSeen, firstClear, firstClearRewardClaimed,
+            return new QuarryState(discovered, relayEvidenceSeen, firstClear, false,
                     true, waystoneDiscovered, waystoneActivated, runId, runState, liftOpen);
+        }
+
+        public QuarryState withRewardChoiceClaimed() {
+            if (firstClearRewardClaimed && !rewardChoicePending) return this;
+            if (!firstClear) {
+                throw new IllegalStateException(
+                        "Cannot claim Earthloong reward choice before first clear."
+                );
+            }
+            return new QuarryState(discovered, relayEvidenceSeen, true, true,
+                    false, waystoneDiscovered, waystoneActivated, runId, runState, liftOpen);
         }
     }
 
@@ -1058,6 +1194,19 @@ public record R01PlayerState(
             if (pendingRewardClaimIds.contains(claimId)) return this;
             Set<String> next = new java.util.HashSet<>(pendingRewardClaimIds);
             next.add(claimId);
+            return new EconomyState(
+                    merchantEpochActiveTime,
+                    merchantCycleIndex,
+                    merchantCycleSoldSlots,
+                    Set.copyOf(next)
+            );
+        }
+
+        public EconomyState withoutPendingRewardClaimId(String claimId) {
+            requireStableId(claimId, "claimId");
+            if (!pendingRewardClaimIds.contains(claimId)) return this;
+            Set<String> next = new java.util.HashSet<>(pendingRewardClaimIds);
+            next.remove(claimId);
             return new EconomyState(
                     merchantEpochActiveTime,
                     merchantCycleIndex,

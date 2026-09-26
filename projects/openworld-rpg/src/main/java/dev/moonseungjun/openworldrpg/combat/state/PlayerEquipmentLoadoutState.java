@@ -241,6 +241,9 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
                         }
                     }
                     case POISE_OUTPUT -> poiseOutput += affix.value();
+                    case CRITICAL_CHANCE, ATTACK_SPEED, MAX_MANA -> {
+                        // Preserved in the item payload; dedicated crit/cadence/resource publishers own runtime use.
+                    }
                     case DEFENSE, MAGIC_RESISTANCE, GUARD_STRENGTH,
                             POISE_STAGGER_RESISTANCE -> {
                         // Published independently by defensive/poise publishers.

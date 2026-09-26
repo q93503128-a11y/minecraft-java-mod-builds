@@ -129,6 +129,43 @@ public final class R01PlayerStateService {
         return replace(player, state(player).markEarthloongFirstClear(gameTick(player)));
     }
 
+    public static R01PlayerState reconcileEarthloongFirstClearClaims(ServerPlayer player) {
+        return replace(
+                player,
+                state(player).reconcileEarthloongFirstClearClaims(gameTick(player))
+        );
+    }
+
+    public static R01PlayerState commitEarthloongRewardChoice(
+            ServerPlayer player,
+            String choiceFlag
+    ) {
+        return replace(
+                player,
+                state(player).commitEarthloongRewardChoice(choiceFlag, gameTick(player))
+        );
+    }
+
+    public static R01PlayerState markEarthloongRewardChoiceDelivered(
+            ServerPlayer player,
+            String choiceFlag
+    ) {
+        return replace(
+                player,
+                state(player).markEarthloongRewardChoiceDelivered(
+                        choiceFlag,
+                        gameTick(player)
+                )
+        );
+    }
+
+    public static R01PlayerState markEarthloongScalesDelivered(ServerPlayer player) {
+        return replace(
+                player,
+                state(player).markEarthloongScalesDelivered(gameTick(player))
+        );
+    }
+
     private static R01PlayerState replace(
             ServerPlayer player,
             R01PlayerState next

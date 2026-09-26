@@ -13,6 +13,7 @@ import dev.moonseungjun.openworldrpg.gathering.R01GatheringAttachments;
 import dev.moonseungjun.openworldrpg.gathering.R01GatheringService;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryAttachments;
 import dev.moonseungjun.openworldrpg.progression.r01.R01ClassStarterService;
+import dev.moonseungjun.openworldrpg.progression.r01.R01EarthloongFirstClearRewardService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01MainQuestService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01OpeningBootstrapService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerStateAttachments;
@@ -72,6 +73,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             if (!M0PlayerVerificationBootstrap.enabled()) {
                 R01PlayerStateService.reconcileActiveTimeEpochs(handler.getPlayer());
                 R01GatheringService.reconcilePending(handler.getPlayer());
+                R01EarthloongFirstClearRewardService.reconcilePending(handler.getPlayer());
                 R01RoadsideTroubleController.reconcilePendingFinalization(
                         handler.getPlayer()
                 );

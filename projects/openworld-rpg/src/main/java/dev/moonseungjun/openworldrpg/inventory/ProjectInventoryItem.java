@@ -22,6 +22,7 @@ public record ProjectInventoryItem(
         long unitSellValue,
         boolean favorite,
         boolean locked,
+        Optional<ProjectItemGrade> equipmentGrade,
         Optional<EquippedCombatItem> equipmentProjection,
         Optional<RecoveryConsumable> recoveryConsumable
 ) {
@@ -34,6 +35,8 @@ public record ProjectInventoryItem(
                     Codec.LONG.optionalFieldOf("unit_sell_value", 0L).forGetter(ProjectInventoryItem::unitSellValue),
                     Codec.BOOL.optionalFieldOf("favorite", false).forGetter(ProjectInventoryItem::favorite),
                     Codec.BOOL.optionalFieldOf("locked", false).forGetter(ProjectInventoryItem::locked),
+                    ProjectItemGrade.CODEC.optionalFieldOf("equipment_grade")
+                            .forGetter(ProjectInventoryItem::equipmentGrade),
                     EquippedCombatItem.CODEC.optionalFieldOf("equipment_projection")
                             .forGetter(ProjectInventoryItem::equipmentProjection),
                     RecoveryConsumable.CODEC.optionalFieldOf("recovery_consumable")
@@ -49,6 +52,7 @@ public record ProjectInventoryItem(
         if (unitSellValue < 0L) {
             throw new IllegalArgumentException("unitSellValue must be non-negative.");
         }
+        equipmentGrade = Objects.requireNonNull(equipmentGrade, "equipmentGrade");
         equipmentProjection = Objects.requireNonNull(equipmentProjection, "equipmentProjection");
         recoveryConsumable = Objects.requireNonNull(recoveryConsumable, "recoveryConsumable");
 
@@ -67,6 +71,10 @@ public record ProjectInventoryItem(
                         "Equipment inventory payload cannot also be a recovery consumable."
                 );
             }
+        } else if (equipmentGrade.isPresent()) {
+            throw new IllegalArgumentException(
+                    "Only equipment inventory payloads may carry an equipment grade."
+            );
         }
         if (recoveryConsumable.isPresent() && stackCap != 20) {
             throw new IllegalArgumentException("R01 recovery consumables use backpack stack cap 20.");
@@ -83,6 +91,7 @@ public record ProjectInventoryItem(
                 0L,
                 false,
                 false,
+                Optional.of(grade),
                 Optional.of(item),
                 Optional.empty()
         );
@@ -103,6 +112,7 @@ public record ProjectInventoryItem(
                 false,
                 false,
                 Optional.empty(),
+                Optional.empty(),
                 Optional.of(Objects.requireNonNull(consumable, "consumable"))
         );
     }
@@ -122,8 +132,16 @@ public record ProjectInventoryItem(
                 false,
                 false,
                 Optional.empty(),
+                Optional.empty(),
                 Optional.empty()
         );
+    }
+
+    public Optional<ProjectItemGrade> resolvedEquipmentGrade() {
+        if (equipmentProjection.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(equipmentGrade.orElse(ProjectItemGrade.STANDARD));
     }
 
     public ProjectInventoryItem withQuantity(int nextQuantity) {
@@ -138,6 +156,7 @@ public record ProjectInventoryItem(
                 unitSellValue,
                 favorite,
                 locked,
+                equipmentGrade,
                 equipmentProjection,
                 recoveryConsumable
         );
@@ -153,6 +172,7 @@ public record ProjectInventoryItem(
                 && unitSellValue == other.unitSellValue
                 && favorite == other.favorite
                 && locked == other.locked
+                && resolvedEquipmentGrade().equals(other.resolvedEquipmentGrade())
                 && recoveryConsumable.equals(other.recoveryConsumable);
     }
 
