@@ -8,9 +8,13 @@ on:
       - 'projects/campfire-sessions/**'
       - '.github/workflows/build-campfire-sessions.yml'
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: projects/campfire-sessions
@@ -18,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Java 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
@@ -26,19 +30,56 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
       - name: Clean build
-        run: ./gradlew clean build --stacktrace
-      - name: Verify packaged prototype assets
+        shell: bash
         run: |
+          set -o pipefail
+          ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee build.log
+      - name: Verify packaged prototype assets
+        shell: bash
+        run: |
+          set -euo pipefail
           JAR="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' | head -n 1)"
           test -n "$JAR"
+          jar tf "$JAR" | grep -F 'kr/moonseungjun/campfiresessions/CampfireSessions.class'
           jar tf "$JAR" | grep -F 'assets/campfiresessions/models/item/acoustic_guitar.obj'
+          jar tf "$JAR" | grep -F 'assets/campfiresessions/models/item/acoustic_guitar.mtl'
+          jar tf "$JAR" | grep -F 'assets/campfiresessions/textures/item/acoustic_guitar_palette.png'
           jar tf "$JAR" | grep -F 'assets/campfiresessions/models/block/wooden_chair.obj'
+          jar tf "$JAR" | grep -F 'assets/campfiresessions/textures/block/wooden_chair.png'
           jar tf "$JAR" | grep -F 'assets/campfiresessions/sounds/music/etirwer.ogg'
           jar tf "$JAR" | grep -F 'assets/campfiresessions/textures/gui/sprites/music/panel.png'
-          sha256sum "$JAR"
-      - name: Upload JAR
+          jar tf "$JAR" | grep -F 'assets/campfiresessions/textures/gui/sprites/music/button_brown.png'
+          jar tf "$JAR" | grep -F 'assets/campfiresessions/textures/gui/sprites/music/button_grey.png'
+          jar tf "$JAR" | grep -F 'assets/campfiresessions/textures/gui/sprites/music/button_red.png'
+          sha256sum "$JAR" | tee "$JAR.sha256"
+          {
+            echo '# BUILD AND RUNTIME REPORT'
+            echo
+            echo "- Commit: `${GITHUB_SHA}`"
+            echo '- Minecraft: 26.2'
+            echo '- Java: 25'
+            echo '- NeoForge: 26.2.0.87'
+            echo '- clean build: SUCCESS'
+            echo '- JAR structure/resource inspection: SUCCESS'
+            echo '- Dedicated server smoke test: NOT RUN'
+            echo '- Client smoke test: NOT RUN'
+            echo '- In-game visual/audio/seat acceptance: NOT RUN — user test required'
+          } > BUILD_AND_RUNTIME_REPORT.md
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: campfire-sessions-alpha1-logs
+          path: projects/campfire-sessions/build.log
+          if-no-files-found: warn
+      - name: Upload deliverables
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: campfire-sessions-alpha1
-          path: projects/campfire-sessions/build/libs/*.jar
+          path: |
+            projects/campfire-sessions/build/libs/*.jar
+            projects/campfire-sessions/build/libs/*.sha256
+            projects/campfire-sessions/BUILD_AND_RUNTIME_REPORT.md
+            projects/campfire-sessions/build/generated/licensedAssets/campfiresessions_asset_manifest.json
           if-no-files-found: error
