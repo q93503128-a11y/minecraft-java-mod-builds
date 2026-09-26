@@ -10,7 +10,7 @@ import net.minecraft.world.phys.Vec3;
 final class BattleArenaLocator {
     record Arena(Vec3 center, float facingYaw) {}
 
-    private static final float PRIMARY_CAMERA_YAW_OFFSET = 22.0F;
+    private static final float PRIMARY_CAMERA_YAW_OFFSET = 0.0F;
     private static final double[][] FORMATION = {
             {-3.0, 4.0}, {-1.0, 4.0}, {1.0, 4.0}, {3.0, 4.0},
             {-4.0, -4.0}, {-2.0, -4.0}, {0.0, -4.0}, {2.0, -4.0}, {4.0, -4.0}
