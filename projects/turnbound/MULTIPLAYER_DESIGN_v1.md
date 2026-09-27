@@ -76,13 +76,25 @@ VFX는 겹친 전투의 노이즈를 막기 위해 처음부터 전부 공유하
 
 구현:
 - server-authoritative player party membership foundation
+- invite / accept / decline / leave command path
+- party member position + battle-state snapshot
+- exploration minimap party marker
 - battle actor spectator visibility
 - owner-only helper marker isolation
 
 아직 미구현:
-- party UI
-- party minimap marker
+- full party management UI
 - shared PvE battle
 - duel battle
 - ranked
 - multiplayer playtest
+
+
+## 8. 현재 검증 상태
+
+- CODE REVIEWED: 부분 정적 검토
+- BUILD VERIFIED: 이번 작업에서는 실행하지 않음
+- CLIENT RUNTIME TESTED: NO
+- MULTIPLAYER TESTED: NO
+
+실제 멀티 테스트 전까지 파티 위치 동기화, 전투 관전 가시성, 재접속/이탈 동작을 성공으로 간주하지 않는다.

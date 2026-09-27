@@ -176,11 +176,12 @@ server authority 필수.
 ## 11. Multiplayer
 
 1차:
-- player party invite/accept/leave authority
-- party member world/minimap presence
-- encounter claim ownership
-- nearby player가 다른 사람의 battle actors를 볼 수 있음
-- private target/focus marker isolation
+- player party invite/accept/leave authority — 구현
+- party member minimap presence — 구현
+- nearby player가 다른 사람의 battle actors를 볼 수 있음 — 구현
+- private target/focus marker isolation — 구현
+- encounter claim ownership — 남음
+- full party management UI — 남음
 
 2차:
 - shared PvE battle session
