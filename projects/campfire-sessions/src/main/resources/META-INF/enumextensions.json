@@ -1,0 +1,13 @@
+{
+  "entries": [
+    {
+      "enum": "net/minecraft/client/model/HumanoidModel$ArmPose",
+      "name": "CAMPFIRESESSIONS_GUITAR",
+      "constructor": "(ZZLnet/neoforged/neoforge/client/IArmPoseTransformer;)V",
+      "parameters": {
+        "class": "kr/moonseungjun/campfiresessions/client/GuitarArmPoseParams",
+        "field": "GUITAR_POSE"
+      }
+    }
+  ]
+}

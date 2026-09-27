@@ -1,7 +1,6 @@
 package kr.moonseungjun.campfiresessions.client;
 
 import kr.moonseungjun.campfiresessions.registry.ModItems;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -9,8 +8,8 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 
 public final class MusicPlayerScreen extends Screen {
-    private static final double CARD_STEP = 43.0;
-    private static final double MAX_VISIBLE_DISTANCE = 2.15;
+    private static final double CARD_STEP = 45.0;
+    private static final double MAX_VISIBLE_DISTANCE = 2.30;
 
     private int panelX, panelY, panelWidth, panelHeight;
     private int wheelX, wheelY, wheelWidth, wheelHeight;
@@ -29,20 +28,20 @@ public final class MusicPlayerScreen extends Screen {
 
     @Override
     protected void init() {
-        panelWidth = Math.min(500, Math.max(320, width - 28));
+        panelWidth = Math.min(520, Math.max(320, width - 28));
         panelWidth = Math.min(panelWidth, Math.max(1, width - 8));
-        panelHeight = Math.min(270, Math.max(222, height - 30));
+        panelHeight = Math.min(282, Math.max(226, height - 30));
         panelHeight = Math.min(panelHeight, Math.max(1, height - 8));
         panelX = (width - panelWidth) / 2;
         panelY = (height - panelHeight) / 2;
 
-        infoWidth = Math.max(132, panelWidth / 3);
+        infoWidth = Math.max(136, panelWidth / 3);
         wheelX = panelX + 18;
         wheelY = panelY + 55;
         infoX = panelX + panelWidth - infoWidth - 18;
         infoY = wheelY;
-        wheelWidth = Math.max(138, infoX - wheelX - 15);
-        wheelHeight = Math.max(122, panelHeight - 108);
+        wheelWidth = Math.max(140, infoX - wheelX - 15);
+        wheelHeight = Math.max(126, panelHeight - 111);
         infoHeight = wheelHeight;
 
         carouselPosition = CampfireMusicClient.selectedIndex();
@@ -51,15 +50,15 @@ public final class MusicPlayerScreen extends Screen {
 
         int buttonY = panelY + panelHeight - 34;
         int gap = 6;
-        int prevW = 58;
-        int playW = 72;
-        int nextW = 64;
-        int repeatW = 58;
+        int prevW = 60;
+        int playW = 74;
+        int nextW = 62;
+        int repeatW = 66;
         int groupW = prevW + playW + nextW + repeatW + gap * 3;
         int startX = panelX + (panelWidth - groupW) / 2;
 
         addRenderableWidget(new MusicTextureButton(
-                startX, buttonY, prevW, 22, Component.literal("◀ PREV"),
+                startX, buttonY, prevW, 22, Component.literal("« PREV"),
                 MusicTextureButton.Style.SECONDARY, b -> nudge(-1)));
 
         playButton = addRenderableWidget(new MusicTextureButton(
@@ -67,11 +66,11 @@ public final class MusicPlayerScreen extends Screen {
                 MusicTextureButton.Style.PRIMARY, b -> CampfireMusicClient.toggleSelected()));
 
         addRenderableWidget(new MusicTextureButton(
-                startX + prevW + playW + gap * 2, buttonY, nextW, 22, Component.literal("NEXT ▶"),
+                startX + prevW + playW + gap * 2, buttonY, nextW, 22, Component.literal("NEXT »"),
                 MusicTextureButton.Style.SECONDARY, b -> nudge(1)));
 
         repeatButton = addRenderableWidget(new MusicTextureButton(
-                startX + prevW + playW + nextW + gap * 3, buttonY, repeatW, 22, Component.literal("↻ OFF"),
+                startX + prevW + playW + nextW + gap * 3, buttonY, repeatW, 22, Component.literal("↻ AUTO"),
                 MusicTextureButton.Style.SECONDARY, b -> CampfireMusicClient.toggleRepeatOne()));
 
         addRenderableWidget(new MusicTextureButton(
@@ -82,8 +81,8 @@ public final class MusicPlayerScreen extends Screen {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (inside(mouseX, mouseY, wheelX, wheelY, wheelWidth, wheelHeight) && scrollY != 0.0) {
-            scrollVelocity += -scrollY * 4.8;
-            scrollVelocity = Math.max(-10.0, Math.min(10.0, scrollVelocity));
+            scrollVelocity += -scrollY * 5.8;
+            scrollVelocity = Math.max(-14.0, Math.min(14.0, scrollVelocity));
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
@@ -92,7 +91,7 @@ public final class MusicPlayerScreen extends Screen {
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         if (event.button() == 0 && inside(event.x(), event.y(), wheelX, wheelY, wheelWidth, wheelHeight)) {
-            for (int i = 0; i < MusicCatalog.TRACKS.size(); i++) {
+            for (int i = 0; i < MusicCatalog.size(); i++) {
                 double diff = wrappedDifference(i);
                 if (Math.abs(diff) > MAX_VISIBLE_DISTANCE) continue;
                 CardBounds bounds = cardBounds(diff);
@@ -120,11 +119,12 @@ public final class MusicPlayerScreen extends Screen {
 
         if (Math.abs(scrollVelocity) > 0.035) {
             carouselPosition += scrollVelocity * dt;
-            scrollVelocity *= Math.exp(-7.2 * dt);
+            scrollVelocity *= Math.exp(-5.8 * dt);
         } else {
             scrollVelocity = 0.0;
             double target = Math.rint(carouselPosition);
-            carouselPosition += (target - carouselPosition) * Math.min(1.0, dt * 18.0);
+            double easing = 1.0 - Math.exp(-18.0 * dt);
+            carouselPosition += (target - carouselPosition) * easing;
             if (Math.abs(target - carouselPosition) < 0.002) carouselPosition = target;
         }
 
@@ -132,7 +132,7 @@ public final class MusicPlayerScreen extends Screen {
     }
 
     private double wrappedDifference(int index) {
-        int count = MusicCatalog.TRACKS.size();
+        int count = MusicCatalog.size();
         double normalized = carouselPosition % count;
         if (normalized < 0.0) normalized += count;
         double diff = index - normalized;
@@ -145,8 +145,8 @@ public final class MusicPlayerScreen extends Screen {
     private CardBounds cardBounds(double diff) {
         double distance = Math.abs(diff);
         double focus = Math.max(0.0, 1.0 - Math.min(1.0, distance));
-        int cardWidth = wheelWidth - (int) Math.round(Math.min(1.8, distance) * 24.0);
-        int cardHeight = 29 + (int) Math.round(focus * 10.0);
+        int cardWidth = wheelWidth - (int) Math.round(Math.min(1.9, distance) * 28.0);
+        int cardHeight = 27 + (int) Math.round(focus * 14.0);
         int x = wheelX + (wheelWidth - cardWidth) / 2;
         int centerY = wheelY + wheelHeight / 2;
         int y = centerY + (int) Math.round(diff * CARD_STEP) - cardHeight / 2;
@@ -156,7 +156,7 @@ public final class MusicPlayerScreen extends Screen {
     @Override
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         graphics.blurBeforeThisStratum();
-        graphics.fill(0, 0, width, height, 0x65000000);
+        graphics.fill(0, 0, width, height, 0x59000000);
     }
 
     @Override
@@ -167,24 +167,25 @@ public final class MusicPlayerScreen extends Screen {
         MusicTheme theme = selected.theme();
 
         playButton.setMessage(Component.literal(CampfireMusicClient.isPlayingSelected() ? "■ STOP" : "▶ PLAY"));
-        repeatButton.setMessage(Component.literal(CampfireMusicClient.isRepeatOne() ? "↻ ONE" : "↻ OFF"));
+        repeatButton.setMessage(Component.literal(CampfireMusicClient.isRepeatOne() ? "↻ ONE" : "↻ AUTO"));
 
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, theme.panelSprite(),
                 panelX, panelY, panelWidth, panelHeight);
-        // Keep the external UI art visible instead of covering it with a nearly opaque hand-drawn panel.
-        graphics.fill(panelX + 9, panelY + 9, panelX + panelWidth - 9, panelY + panelHeight - 9, 0x29000000);
+        graphics.fill(panelX + 9, panelY + 9, panelX + panelWidth - 9, panelY + panelHeight - 9, 0x18000000);
 
         graphics.text(font, "CAMPFIRE SESSIONS", panelX + 18, panelY + 15, theme.text(), true);
-        graphics.text(font, Component.translatable("screen.campfiresessions.music.subtitle_v5"),
+        graphics.text(font, Component.translatable("screen.campfiresessions.music.subtitle_v6"),
                 panelX + 18, panelY + 31, theme.muted(), false);
 
-        String mood = selected.theme().displayName().toUpperCase();
-        graphics.text(font, mood, panelX + panelWidth - 44 - font.width(mood), panelY + 16, theme.accent(), true);
+        String library = MusicCatalog.localTrackCount() > 0
+                ? MusicCatalog.builtInTrackCount() + " + " + MusicCatalog.localTrackCount() + " LOCAL"
+                : MusicCatalog.builtInTrackCount() + " TRACKS";
+        graphics.text(font, library, panelX + panelWidth - 44 - font.width(library), panelY + 16, theme.accent(), true);
 
         drawCarousel(graphics);
         drawInfo(graphics, selected, theme);
 
-        graphics.text(font, "B PREV  ·  N NEXT  ·  R REPEAT",
+        graphics.text(font, "WHEEL SELECT  ·  B PREV  ·  N NEXT  ·  R REPEAT",
                 panelX + 18, panelY + panelHeight - 49, 0xFFA9ADB0, false);
 
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
@@ -193,22 +194,22 @@ public final class MusicPlayerScreen extends Screen {
     private void drawCarousel(GuiGraphicsExtractor graphics) {
         int centerY = wheelY + wheelHeight / 2;
         MusicTheme selectedTheme = CampfireMusicClient.selectedTrack().theme();
-        graphics.fill(wheelX + 4, centerY - 22, wheelX + wheelWidth - 4, centerY - 21, 0x58FFFFFF);
-        graphics.fill(wheelX + 4, centerY + 21, wheelX + wheelWidth - 4, centerY + 22, selectedTheme.accent());
+        graphics.fill(wheelX + 4, centerY - 23, wheelX + wheelWidth - 4, centerY - 22, 0x48FFFFFF);
+        graphics.fill(wheelX + 4, centerY + 22, wheelX + wheelWidth - 4, centerY + 23, selectedTheme.accent());
 
-        for (int i = 0; i < MusicCatalog.TRACKS.size(); i++) {
+        for (int i = 0; i < MusicCatalog.size(); i++) {
             double diff = wrappedDifference(i);
             double distance = Math.abs(diff);
             if (distance > MAX_VISIBLE_DISTANCE) continue;
 
-            MusicTrack track = MusicCatalog.TRACKS.get(i);
+            MusicTrack track = MusicCatalog.get(i);
             MusicTheme cardTheme = track.theme();
             CardBounds b = cardBounds(diff);
             graphics.blitSprite(RenderPipelines.GUI_TEXTURED, cardTheme.cardSprite(),
                     b.x(), b.y(), b.width(), b.height());
 
             if (distance > 0.55) {
-                int alpha = Math.min(0x88, 0x28 + (int) (distance * 0x24));
+                int alpha = Math.min(0xA0, 0x30 + (int) (distance * 0x2B));
                 graphics.fill(b.x(), b.y(), b.x() + b.width(), b.y() + b.height(), alpha << 24);
             } else {
                 graphics.fill(b.x() + 4, b.y() + b.height() - 3, b.x() + b.width() - 4,
@@ -216,17 +217,17 @@ public final class MusicPlayerScreen extends Screen {
             }
 
             int duration = MusicMetadata.durationSeconds(track.id());
-            String time = formatTime(duration);
+            String time = formatDuration(duration);
             int timeW = font.width(time);
             int textX = b.x() + 12;
-            int titleY = b.y() + (distance < 0.55 ? 7 : 10);
+            int titleY = b.y() + (distance < 0.55 ? 7 : 9);
             int titleColor = distance < 0.55 ? cardTheme.text() : 0xFFD4D7D9;
             graphics.text(font, trim(track.title(), b.width() - 48 - timeW), textX, titleY, titleColor, distance < 0.55);
             graphics.text(font, time, b.x() + b.width() - 10 - timeW, titleY, cardTheme.muted(), false);
 
             if (distance < 0.55) {
                 graphics.text(font, trim(track.artist() + " · " + track.subtitle(), b.width() - 35),
-                        textX, b.y() + 21, cardTheme.muted(), false);
+                        textX, b.y() + 22, cardTheme.muted(), false);
             }
 
             if (CampfireMusicClient.playingIndex() == i) {
@@ -238,7 +239,7 @@ public final class MusicPlayerScreen extends Screen {
     private void drawInfo(GuiGraphicsExtractor graphics, MusicTrack selected, MusicTheme theme) {
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, theme.cardSprite(),
                 infoX, infoY, infoWidth, infoHeight);
-        graphics.fill(infoX + 6, infoY + 6, infoX + infoWidth - 6, infoY + infoHeight - 6, 0x25000000);
+        graphics.fill(infoX + 6, infoY + 6, infoX + infoWidth - 6, infoY + infoHeight - 6, 0x1A000000);
 
         int iconY = infoY + 13;
         graphics.item(ModItems.ACOUSTIC_GUITAR.get().getDefaultInstance(), infoX + 11, iconY);
@@ -252,7 +253,7 @@ public final class MusicPlayerScreen extends Screen {
 
         int duration = MusicMetadata.durationSeconds(selected.id());
         int elapsed = CampfireMusicClient.isPlayingSelected()
-                ? Math.min(duration, CampfireMusicClient.elapsedSeconds()) : 0;
+                ? Math.min(Math.max(duration, 0), CampfireMusicClient.elapsedSeconds()) : 0;
 
         int progressX = infoX + 10;
         int progressY = infoY + infoHeight - 42;
@@ -263,7 +264,7 @@ public final class MusicPlayerScreen extends Screen {
             graphics.fill(progressX, progressY, progressX + fill, progressY + 3, theme.accent());
         }
 
-        String timeText = formatTime(elapsed) + " / " + formatTime(duration);
+        String timeText = formatElapsed(elapsed) + " / " + formatDuration(duration);
         graphics.text(font, timeText, progressX, progressY + 7, theme.text(), false);
 
         String repeatText = CampfireMusicClient.isRepeatOne() ? "REPEAT ONE" : "AUTO NEXT";
@@ -298,7 +299,12 @@ public final class MusicPlayerScreen extends Screen {
         return out + suffix;
     }
 
-    private static String formatTime(int seconds) {
+    private static String formatElapsed(int seconds) {
+        int safe = Math.max(0, seconds);
+        return String.format("%d:%02d", safe / 60, safe % 60);
+    }
+
+    private static String formatDuration(int seconds) {
         if (seconds <= 0) return "--:--";
         return String.format("%d:%02d", seconds / 60, seconds % 60);
     }

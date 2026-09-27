@@ -7,7 +7,8 @@ version="${mod_version}"
 displayName="${mod_name}"
 displayURL="https://github.com/q93503128-a11y/minecraft-java-mod-builds"
 authors="문승준"
-description='''기타를 들고 곡을 고르고, 의자에 앉아 음악을 듣는 소형 Minecraft Java 음악 모드 프로토타입.'''
+enumExtensions="META-INF/enumextensions.json"
+description='''기타를 들고 곡을 고르고, 의자에 앉아 음악을 들으며 로컬 OGG까지 연주할 수 있는 Minecraft Java 음악 모드.'''
 
 [[dependencies.${mod_id}]]
 modId="neoforge"

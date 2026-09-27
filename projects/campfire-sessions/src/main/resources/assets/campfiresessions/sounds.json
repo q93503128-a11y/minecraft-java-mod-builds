@@ -1,42 +1,17 @@
 {
-  "etirwer": {
-    "subtitle": "subtitles.campfiresessions.etirwer",
-    "sounds": [{ "name": "campfiresessions:music/etirwer", "stream": true }]
-  },
-  "cozy_puzzle": {
-    "subtitle": "subtitles.campfiresessions.cozy_puzzle",
-    "sounds": [{ "name": "campfiresessions:music/cozy_puzzle", "stream": true }]
-  },
-  "neon_circuit": {
-    "subtitle": "subtitles.campfiresessions.neon_circuit",
-    "sounds": [{ "name": "campfiresessions:music/neon_circuit", "stream": true }]
-  },
-  "underwater_pad": {
-    "subtitle": "subtitles.campfiresessions.underwater_pad",
-    "sounds": [{ "name": "campfiresessions:music/underwater_pad", "stream": true }]
-  },
-  "cozy_puzzle_1": {
-    "subtitle": "subtitles.campfiresessions.cozy_puzzle_1",
-    "sounds": [{ "name": "campfiresessions:music/cozy_puzzle_1", "stream": true }]
-  },
-  "cozy_title": {
-    "subtitle": "subtitles.campfiresessions.cozy_title",
-    "sounds": [{ "name": "campfiresessions:music/cozy_title", "stream": true }]
-  },
-  "beach_stage": {
-    "subtitle": "subtitles.campfiresessions.beach_stage",
-    "sounds": [{ "name": "campfiresessions:music/beach_stage", "stream": true }]
-  },
-  "space_battle": {
-    "subtitle": "subtitles.campfiresessions.space_battle",
-    "sounds": [{ "name": "campfiresessions:music/space_battle", "stream": true }]
-  },
-  "jazzy_battle": {
-    "subtitle": "subtitles.campfiresessions.jazzy_battle",
-    "sounds": [{ "name": "campfiresessions:music/jazzy_battle", "stream": true }]
-  },
-  "desert_pink": {
-    "subtitle": "subtitles.campfiresessions.desert_pink",
-    "sounds": [{ "name": "campfiresessions:music/desert_pink", "stream": true }]
-  }
+  "etirwer": {"subtitle": "subtitles.campfiresessions.etirwer", "sounds": [{"name": "campfiresessions:music/etirwer", "stream": true}]},
+  "cozy_puzzle": {"subtitle": "subtitles.campfiresessions.cozy_puzzle", "sounds": [{"name": "campfiresessions:music/cozy_puzzle", "stream": true}]},
+  "neon_circuit": {"subtitle": "subtitles.campfiresessions.neon_circuit", "sounds": [{"name": "campfiresessions:music/neon_circuit", "stream": true}]},
+  "underwater_pad": {"subtitle": "subtitles.campfiresessions.underwater_pad", "sounds": [{"name": "campfiresessions:music/underwater_pad", "stream": true}]},
+  "cozy_puzzle_1": {"subtitle": "subtitles.campfiresessions.cozy_puzzle_1", "sounds": [{"name": "campfiresessions:music/cozy_puzzle_1", "stream": true}]},
+  "cozy_title": {"subtitle": "subtitles.campfiresessions.cozy_title", "sounds": [{"name": "campfiresessions:music/cozy_title", "stream": true}]},
+  "beach_stage": {"subtitle": "subtitles.campfiresessions.beach_stage", "sounds": [{"name": "campfiresessions:music/beach_stage", "stream": true}]},
+  "space_battle": {"subtitle": "subtitles.campfiresessions.space_battle", "sounds": [{"name": "campfiresessions:music/space_battle", "stream": true}]},
+  "jazzy_battle": {"subtitle": "subtitles.campfiresessions.jazzy_battle", "sounds": [{"name": "campfiresessions:music/jazzy_battle", "stream": true}]},
+  "desert_pink": {"subtitle": "subtitles.campfiresessions.desert_pink", "sounds": [{"name": "campfiresessions:music/desert_pink", "stream": true}]},
+  "nighttime_solitude": {"subtitle": "subtitles.campfiresessions.nighttime_solitude", "sounds": [{"name": "campfiresessions:music/nighttime_solitude", "stream": true}]},
+  "fairy_adventure": {"subtitle": "subtitles.campfiresessions.fairy_adventure", "sounds": [{"name": "campfiresessions:music/fairy_adventure", "stream": true}]},
+  "other_center": {"subtitle": "subtitles.campfiresessions.other_center", "sounds": [{"name": "campfiresessions:music/other_center", "stream": true}]},
+  "magic_puzzle_1": {"subtitle": "subtitles.campfiresessions.magic_puzzle_1", "sounds": [{"name": "campfiresessions:music/magic_puzzle_1", "stream": true}]},
+  "urban_boss_battle": {"subtitle": "subtitles.campfiresessions.urban_boss_battle", "sounds": [{"name": "campfiresessions:music/urban_boss_battle", "stream": true}]}
 }

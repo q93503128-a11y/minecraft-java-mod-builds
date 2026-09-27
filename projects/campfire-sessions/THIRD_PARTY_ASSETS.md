@@ -29,8 +29,20 @@ Campfire Sessions uses Minecraft-native open-source models, CC0 music, and CC0 U
 8. **Space Battle** — MintoDog — https://opengameart.org/content/space-battle
 9. **Jazzy Battle Theme** — MintoDog — https://opengameart.org/content/jazzy-battle-theme
 10. **Desert Pink and Navy Blue** — Some Weirdo — https://opengameart.org/content/desert-pink-and-navy-blue
+11. **Nighttime Solitude** — celestialghost8 — https://opengameart.org/content/nighttime-solitude
+12. **Fairy Adventure** — MintoDog — https://opengameart.org/content/fairy-adventure
+13. **Other Center** — zesona — https://opengameart.org/content/other-center
+14. **Magic Puzzle In-Game 1** — MintoDog — https://opengameart.org/content/magic-puzzle-in-game-1
+15. **Urban Boss Battle** — MintoDog — https://opengameart.org/content/urban-boss-battle
 
 The asset preparation script validates each OGG, derives its real duration from Ogg/Vorbis granule positions, and writes `track_metadata.json`.
+
+## Local Custom Music
+- No user-provided local audio is committed to this repository or packaged in the mod JAR.
+- The client scans `config/campfiresessions/music/` for OGG/Vorbis files on the player's own machine.
+- An optional same-name JSON file can define `title`, `artist`, `bpm`, and `theme`.
+- Local files are exposed to Minecraft through an always-active generated client resource pack under the same config directory.
+- Users are responsible for only adding audio they are allowed to use.
 
 ## UI
 - UI assets are from the Kenney CC0 asset collection mirrored at https://github.com/shorepine/kenney

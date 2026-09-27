@@ -23,13 +23,21 @@ public final class CampfireMusicClient {
     public static boolean isPlaying() { return current != null; }
     public static boolean isPlayingSelected() { return current != null && playingIndex == selectedIndex; }
     public static boolean isRepeatOne() { return repeatOne; }
+    public static int playingBpm() { return current != null && playingIndex >= 0 ? MusicCatalog.get(playingIndex).bpm() : selectedTrack().bpm(); }
+
+    static void catalogChanged() {
+        int size = MusicCatalog.size();
+        if (size <= 0) return;
+        selectedIndex = Math.floorMod(selectedIndex, size);
+        if (playingIndex >= size) stop();
+    }
 
     public static void previewSelect(int index) {
-        selectedIndex = Math.floorMod(index, MusicCatalog.TRACKS.size());
+        selectedIndex = Math.floorMod(index, MusicCatalog.size());
     }
 
     public static void select(int index) {
-        int next = Math.floorMod(index, MusicCatalog.TRACKS.size());
+        int next = Math.floorMod(index, MusicCatalog.size());
         boolean resume = isPlaying();
         selectedIndex = next;
         if (resume) playSelected();
@@ -53,7 +61,7 @@ public final class CampfireMusicClient {
 
     private static void playIndex(int index) {
         stop();
-        selectedIndex = Math.floorMod(index, MusicCatalog.TRACKS.size());
+        selectedIndex = Math.floorMod(index, MusicCatalog.size());
         MusicTrack track = selectedTrack();
         SoundInstance next = SimpleSoundInstance.forMusic(track.sound().get());
         Minecraft.getInstance().getSoundManager().play(next);
@@ -106,25 +114,28 @@ public final class CampfireMusicClient {
             return;
         }
 
+        int pulsesPerBeat = playing.bpm() >= 140 ? 2 : 1;
         double beat = elapsedSecondsExact() * playing.bpm() / 60.0;
-        long pulse = (long) Math.floor(beat * 2.0);
+        long pulse = (long) Math.floor(beat * pulsesPerBeat);
         if (pulse == lastParticlePulse) return;
         lastParticlePulse = pulse;
 
-        double phase = pulse * 0.72;
-        double radius = 0.36 + 0.05 * Math.sin(pulse * 0.8);
+        double phase = pulse * 0.78;
+        double energy = Math.min(1.0, Math.max(0.0, (playing.bpm() - 70.0) / 90.0));
+        double radius = 0.30 + energy * 0.12 + 0.04 * Math.sin(pulse * 0.9);
         double x = player.getX() + Math.cos(phase) * radius;
-        double y = player.getY() + 1.36 + ((pulse & 1L) == 0L ? 0.08 : 0.22);
+        double y = player.getY() + 1.42 + ((pulse & 1L) == 0L ? 0.05 : 0.16 + energy * 0.05);
         double z = player.getZ() + Math.sin(phase) * radius;
-        double noteColor = ((pulse * 3L) % 24L) / 24.0;
+        double noteColor = Math.floorMod(pulse * 5L + playing.bpm(), 24L) / 24.0;
         level.addParticle(ParticleTypes.NOTE, x, y, z, noteColor, 0.0, 0.0);
 
-        if (pulse % 4L == 0L) {
+        long downbeatInterval = 4L * pulsesPerBeat;
+        if (pulse % downbeatInterval == 0L) {
             level.addParticle(ParticleTypes.NOTE,
-                    player.getX() - Math.cos(phase) * 0.25,
-                    player.getY() + 1.68,
-                    player.getZ() - Math.sin(phase) * 0.25,
-                    (noteColor + 0.4) % 1.0, 0.0, 0.0);
+                    player.getX() - Math.cos(phase) * (0.20 + energy * 0.10),
+                    player.getY() + 1.66 + energy * 0.04,
+                    player.getZ() - Math.sin(phase) * (0.20 + energy * 0.10),
+                    (noteColor + 0.34) % 1.0, 0.0, 0.0);
         }
     }
 }

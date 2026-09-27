@@ -34,45 +34,108 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee build.log
-      - name: Verify alpha5 packaged assets
+      - name: Verify alpha6 packaged assets and contracts
         shell: bash
         run: |
           set -euo pipefail
           JAR="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' | head -n 1)"
           test -n "$JAR"
 
-          for ENTRY in             'kr/moonseungjun/campfiresessions/client/MusicPlayerScreen.class'             'kr/moonseungjun/campfiresessions/client/MusicMetadata.class'             'kr/moonseungjun/campfiresessions/client/GuitarClientEvents.class'             'assets/campfiresessions/music/track_metadata.json'             'assets/campfiresessions/sounds/music/etirwer.ogg'             'assets/campfiresessions/sounds/music/cozy_puzzle.ogg'             'assets/campfiresessions/sounds/music/neon_circuit.ogg'             'assets/campfiresessions/sounds/music/underwater_pad.ogg'             'assets/campfiresessions/sounds/music/cozy_puzzle_1.ogg'             'assets/campfiresessions/sounds/music/cozy_title.ogg'             'assets/campfiresessions/sounds/music/beach_stage.ogg'             'assets/campfiresessions/sounds/music/space_battle.ogg'             'assets/campfiresessions/sounds/music/jazzy_battle.ogg'             'assets/campfiresessions/sounds/music/desert_pink.ogg'             'assets/campfiresessions/textures/gui/sprites/music/theme/clean_panel.png'             'assets/campfiresessions/textures/gui/sprites/music/theme/neon_panel.png'             'assets/campfiresessions/textures/gui/sprites/music/theme/ocean_panel.png'             'assets/campfiresessions/textures/gui/sprites/music/theme/desert_panel.png'             'assets/campfiresessions/textures/gui/sprites/music/theme/rough_panel.png'
-          do
-            jar tf "$JAR" | grep -F "$ENTRY"
-          done
+          python3 - "$JAR" <<'PY'
+          import json
+          import pathlib
+          import sys
+          import zipfile
 
-          python3 - <<'PY'
-          import json, zipfile, glob
-          jar = [p for p in glob.glob('build/libs/*.jar') if not p.endswith('-sources.jar')][0]
+          jar = pathlib.Path(sys.argv[1])
+          expected = [
+              'etirwer', 'cozy_puzzle', 'neon_circuit', 'underwater_pad', 'cozy_puzzle_1',
+              'cozy_title', 'beach_stage', 'space_battle', 'jazzy_battle', 'desert_pink',
+              'nighttime_solitude', 'fairy_adventure', 'other_center', 'magic_puzzle_1',
+              'urban_boss_battle'
+          ]
+          required_classes = [
+              'kr/moonseungjun/campfiresessions/client/MusicPlayerScreen.class',
+              'kr/moonseungjun/campfiresessions/client/MusicMetadata.class',
+              'kr/moonseungjun/campfiresessions/client/GuitarClientEvents.class',
+              'kr/moonseungjun/campfiresessions/client/CampfireClientSetup.class',
+              'kr/moonseungjun/campfiresessions/client/LocalMusicLibrary.class',
+              'kr/moonseungjun/campfiresessions/client/GuitarArmPoseParams.class',
+              'META-INF/enumextensions.json',
+              'assets/campfiresessions/music/track_metadata.json',
+              'assets/campfiresessions/sounds.json',
+          ]
+          ui_keys = [
+              'clean_panel', 'clean_card', 'clean_button',
+              'neon_panel', 'neon_card', 'neon_button',
+              'ocean_panel', 'ocean_card', 'ocean_button',
+              'desert_panel', 'desert_card', 'desert_button',
+              'rough_panel', 'rough_card', 'rough_button',
+          ]
+
           with zipfile.ZipFile(jar) as z:
+              names = set(z.namelist())
+              for entry in required_classes:
+                  assert entry in names, entry
+              for track in expected:
+                  assert f'assets/campfiresessions/sounds/music/{track}.ogg' in names, track
+              for key in ui_keys:
+                  assert f'assets/campfiresessions/textures/gui/sprites/music/theme/{key}.png' in names, key
+              assert not any(name.startswith('assets/campfiresessions/sounds/local/') for name in names), 'local user audio leaked into JAR'
+
               meta = json.loads(z.read('assets/campfiresessions/music/track_metadata.json'))
-          assert len(meta) == 10, meta.keys()
-          for key, value in meta.items():
-              assert value['duration_seconds'] > 0, (key, value)
-              assert value['bpm'] > 0, (key, value)
-          print('track metadata:', {k: v['duration_seconds'] for k, v in meta.items()})
+              assert list(meta.keys()) == expected, (list(meta.keys()), expected)
+              for key, value in meta.items():
+                  assert value['duration_seconds'] > 0, (key, value)
+                  assert value['bpm'] > 0, (key, value)
+
+              sounds = json.loads(z.read('assets/campfiresessions/sounds.json'))
+              assert list(sounds.keys()) == expected, sounds.keys()
+              for key in expected:
+                  entries = sounds[key]['sounds']
+                  assert entries and entries[0]['stream'] is True, (key, entries)
+
+              enum_ext = json.loads(z.read('META-INF/enumextensions.json'))
+              arm_entries = [e for e in enum_ext['entries'] if e['name'] == 'CAMPFIRESESSIONS_GUITAR']
+              assert len(arm_entries) == 1, enum_ext
+              assert arm_entries[0]['constructor'] == '(ZZLnet/neoforged/neoforge/client/IArmPoseTransformer;)V'
+
+          source = pathlib.Path('src/main/java/kr/moonseungjun/campfiresessions')
+          mod_sounds = (source / 'registry/ModSounds.java').read_text(encoding='utf-8')
+          catalog = (source / 'client/MusicCatalog.java').read_text(encoding='utf-8')
+          local_music = (source / 'client/LocalMusicLibrary.java').read_text(encoding='utf-8')
+          controls = (source / 'client/GuitarClientEvents.java').read_text(encoding='utf-8')
+          music_client = (source / 'client/CampfireMusicClient.java').read_text(encoding='utf-8')
+          for track in expected:
+              assert f'"{track}"' in mod_sounds, track
+              assert f'"{track}"' in catalog, track
+          assert 'registerLocalSlots(32)' in mod_sounds
+          assert 'AddPackFindersEvent' in local_music and 'PathPackResources' in local_music
+          assert 'min_format' in local_music and 'max_format' in local_music
+          assert 'GLFW_KEY_B' in controls and 'GLFW_KEY_N' in controls and 'GLFW_KEY_R' in controls
+          assert 'repeatOne' in music_client and 'playIndex(playingIndex + 1)' in music_client
+          assert 'CROSSBOW_HOLD' not in controls
+          print('track durations:', {k: v['duration_seconds'] for k, v in meta.items()})
+          print('bundled tracks:', len(expected), 'local slots: 32', 'ui assets:', len(ui_keys))
           PY
 
           sha256sum "$JAR" | tee "$JAR.sha256"
           {
             echo '# BUILD AND RUNTIME REPORT'
             echo
-            echo "- Commit: `${GITHUB_SHA}`"
-            echo '- Version: 0.5.0-alpha.1'
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo '- Version: 0.6.0-alpha.1'
             echo '- Minecraft: 26.2'
             echo '- Java: 25'
             echo '- NeoForge: 26.2.0.87'
             echo '- clean build: SUCCESS'
-            echo '- 10 CC0 streamed tracks: PACKAGED'
+            echo '- 15 CC0 streamed tracks: PACKAGED'
             echo '- generated real OGG duration metadata: VERIFIED'
+            echo '- up to 32 local custom OGG slots: COMPILED'
+            echo '- local generated resource-pack bridge: COMPILED'
             echo '- BPM-driven note feedback: COMPILED'
             echo '- outside-UI PREV/NEXT/REPEAT key mappings: COMPILED'
-            echo '- third-person two-handed playing pose hook: COMPILED'
+            echo '- dedicated third-person guitar arm pose + strum: COMPILED'
             echo '- repeat-one + auto-next logic: COMPILED'
             echo '- external themed UI + inertial carousel: PACKAGED'
             echo '- in-game visual/audio acceptance: USER TEST REQUIRED'
@@ -81,14 +144,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: campfire-sessions-alpha5-logs
+          name: campfire-sessions-alpha6-logs
           path: projects/campfire-sessions/build.log
           if-no-files-found: warn
-      - name: Upload alpha5
+      - name: Upload alpha6
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: campfire-sessions-alpha5
+          name: campfire-sessions-alpha6
           path: |
             projects/campfire-sessions/build/libs/*.jar
             projects/campfire-sessions/build/libs/*.sha256

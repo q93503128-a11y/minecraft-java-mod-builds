@@ -4,17 +4,14 @@ import kr.moonseungjun.campfiresessions.CampfireSessions;
 import kr.moonseungjun.campfiresessions.registry.ModItems;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.HumanoidArm;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
-import net.neoforged.neoforge.client.event.RenderPlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import org.lwjgl.glfw.GLFW;
 
@@ -83,30 +80,9 @@ public final class GuitarClientEvents {
             if (holdingGuitar && minecraft.gui.screen() == null) {
                 CampfireMusicClient.toggleRepeatOne();
                 player.sendOverlayMessage(Component.literal(
-                        CampfireMusicClient.isRepeatOne() ? "♪ Repeat one: ON" : "♪ Repeat one: OFF"));
+                        CampfireMusicClient.isRepeatOne() ? "♪ Repeat one: ON" : "♪ Auto next: ON"));
             }
         }
-    }
-
-    @SubscribeEvent
-    public static void onRenderPlayer(RenderPlayerEvent.Pre<?> event) {
-        Minecraft minecraft = Minecraft.getInstance();
-        var player = minecraft.player;
-        if (player == null || !CampfireMusicClient.isPlaying()) return;
-
-        var state = event.getRenderState();
-        if (state.id != player.getId()) return;
-
-        boolean holdingGuitar = player.getMainHandItem().is(ModItems.ACOUSTIC_GUITAR.get())
-                || player.getOffhandItem().is(ModItems.ACOUSTIC_GUITAR.get());
-        if (!holdingGuitar) return;
-
-        if (state.mainArm == HumanoidArm.RIGHT) {
-            state.rightArmPose = HumanoidModel.ArmPose.CROSSBOW_HOLD;
-        } else {
-            state.leftArmPose = HumanoidModel.ArmPose.CROSSBOW_HOLD;
-        }
-        state.attackTime = 0.0F;
     }
 
     private static void showTrackMessage() {

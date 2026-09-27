@@ -20,6 +20,11 @@ MUSIC = {
     "space_battle": {"bpm": 130, "url": "https://opengameart.org/sites/default/files/space_battle_bpm130_0.ogg"},
     "jazzy_battle": {"bpm": 130, "url": "https://opengameart.org/sites/default/files/jazzy_battle_theme_bpm130_0.ogg"},
     "desert_pink": {"bpm": 90, "url": "https://opengameart.org/sites/default/files/desert_pink_and_navy_blue_0.ogg"},
+    "nighttime_solitude": {"bpm": 110, "url": "https://opengameart.org/sites/default/files/Nighttime%20Solitude%20%5BCC0%5D.ogg"},
+    "fairy_adventure": {"bpm": 140, "url": "https://opengameart.org/sites/default/files/fairy_adventure_bpm140_0.ogg"},
+    "other_center": {"bpm": 134, "url": "https://opengameart.org/sites/default/files/othercenter.ogg"},
+    "magic_puzzle_1": {"bpm": 110, "url": "https://opengameart.org/sites/default/files/magic_puzzle_in-game_1_bpm110_0.ogg"},
+    "urban_boss_battle": {"bpm": 135, "url": "https://opengameart.org/sites/default/files/urban_boss_battle_bpm135_0.ogg"},
 }
 
 KENNEY_COMMIT = "3694c6879e487c108f55677be7dd2ca75b07cc3b"
@@ -43,7 +48,7 @@ UI_ASSETS = {
     "rough_button": "ui/UI Pack - Adventure/button_brown.png",
 }
 
-USER_AGENT = "CampfireSessions/0.5 (+https://github.com/q93503128-a11y/minecraft-java-mod-builds)"
+USER_AGENT = "CampfireSessions/0.6 (+https://github.com/q93503128-a11y/minecraft-java-mod-builds)"
 
 
 def download(url: str) -> bytes:

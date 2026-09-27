@@ -7,15 +7,26 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class MusicMetadata {
     private static final String RESOURCE = "/assets/campfiresessions/music/track_metadata.json";
-    private static final Map<String, Integer> DURATIONS = loadDurations();
+    private static final Map<String, Integer> BUNDLED_DURATIONS = loadDurations();
+    private static final Map<String, Integer> RUNTIME_DURATIONS = new ConcurrentHashMap<>();
 
     private MusicMetadata() {}
 
     public static int durationSeconds(String id) {
-        return DURATIONS.getOrDefault(id, 0);
+        Integer runtime = RUNTIME_DURATIONS.get(id);
+        return runtime != null ? runtime : BUNDLED_DURATIONS.getOrDefault(id, 0);
+    }
+
+    static void clearRuntimeDurations() {
+        RUNTIME_DURATIONS.clear();
+    }
+
+    static void registerRuntimeDuration(String id, int durationSeconds) {
+        if (durationSeconds > 0) RUNTIME_DURATIONS.put(id, durationSeconds);
     }
 
     private static Map<String, Integer> loadDurations() {
@@ -28,7 +39,7 @@ public final class MusicMetadata {
                 result.put(entry.getKey(), track.get("duration_seconds").getAsInt());
             }
         } catch (Exception ignored) {
-            // UI falls back to "--:--" if generated metadata is unavailable.
+            // UI falls back to --:-- if generated bundled metadata is unavailable.
         }
         return result;
     }
