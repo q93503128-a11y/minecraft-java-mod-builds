@@ -24,10 +24,11 @@ public final class R01SpatialBindingRegistry {
         }
         data = R01SpatialBindingLoader.loadBundled();
         logger.info(
-                "Openworld RPG R01 Azari spatial candidates loaded: mapBuild={}, anchors={}, areas={}, routes={}, productionReady={}.",
+                "Openworld RPG R01 Azari spatial candidates loaded: mapBuild={}, anchors={}, areas={}, volumes={}, routes={}, productionReady={}.",
                 data.mapBuild(),
                 data.anchors().size(),
                 data.areas().size(),
+                data.volumes().size(),
                 data.routes().size(),
                 data.productionReady()
         );
@@ -52,6 +53,12 @@ public final class R01SpatialBindingRegistry {
             String areaId
     ) {
         return data().productionArea(areaId);
+    }
+
+    public static Optional<R01SpatialBindingData.Volume> productionVolume(
+            String volumeId
+    ) {
+        return data().productionVolume(volumeId);
     }
 
     public static boolean productionReady() {

@@ -12,7 +12,7 @@ class R01SpatialBindingDataTest {
     void bundledPass2DataLoadsButCannotActAsProductionAuthority() {
         var data = R01SpatialBindingLoader.loadBundled();
 
-        assertEquals(1, data.schemaVersion());
+        assertEquals(2, data.schemaVersion());
         assertEquals(
                 "openworld_rpg:r01/azari_spatial_candidates",
                 data.id()
@@ -55,6 +55,32 @@ class R01SpatialBindingDataTest {
         assertEquals(812.38, route.horizontalLengthBlocks(), 0.02);
     }
 
+    @Test
+    void quarryInteriorReviewVolumesStayCandidateAndNeverLeakAsProduction() {
+        var data = R01SpatialBindingLoader.loadBundled();
+
+        assertEquals(5, data.volumes().size());
+        assertTrue(data.productionVolume(
+                "openworld_rpg:r01/quarry/earthloong_chamber_review"
+        ).isEmpty());
+
+        var upper = data.volume(
+                "openworld_rpg:r01/quarry/upper_gallery_review"
+        ).orElseThrow();
+        assertEquals("natural_seam", upper.reviewMode());
+        assertEquals(-2576, upper.minX());
+        assertEquals(32, upper.minY());
+        assertEquals(4753, upper.maxZ());
+
+        var earthloong = data.volume(
+                "openworld_rpg:r01/quarry/earthloong_chamber_review"
+        ).orElseThrow();
+        assertEquals("solid_carve_probe", earthloong.reviewMode());
+        assertEquals(32, earthloong.maxX() - earthloong.minX() + 1);
+        assertEquals(12, earthloong.maxY() - earthloong.minY() + 1);
+        assertEquals(32, earthloong.maxZ() - earthloong.minZ() + 1);
+        assertEquals("candidate", earthloong.status());
+    }
     @Test
     void alderfordCoreAndQuarrySurfaceReviewBoxesRemainExplicitCandidates() {
         var data = R01SpatialBindingLoader.loadBundled();

@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "id": "openworld_rpg:r01/azari_spatial_candidates",
   "map_build": "AzariNEW4252026",
   "source_status": "actual_r01_slice_candidate",
@@ -98,21 +98,110 @@
       "role": "Quarry Waystone / overlook / lower-entrance terrain review box"
     }
   ],
+  "volumes": [
+    {
+      "id": "openworld_rpg:r01/quarry/upper_gallery_review",
+      "status": "candidate",
+      "min_x": -2576,
+      "max_x": -2541,
+      "min_y": 32,
+      "max_y": 47,
+      "min_z": 4722,
+      "max_z": 4753,
+      "review_mode": "natural_seam",
+      "role": "Upper Mining Gallery review shell around a real cave seam; sampled box is about 7.5% natural air with at least 20 blocks of overburden"
+    },
+    {
+      "id": "openworld_rpg:r01/quarry/collapsed_hoist_review",
+      "status": "candidate",
+      "min_x": -2612,
+      "max_x": -2573,
+      "min_y": 24,
+      "max_y": 47,
+      "min_z": 4770,
+      "max_z": 4809,
+      "review_mode": "natural_seam",
+      "role": "Collapsed Hoist review shell using a vertically irregular real cave seam; sampled box is about 6% natural air with at least 42 blocks of overburden"
+    },
+    {
+      "id": "openworld_rpg:r01/quarry/root_breached_review",
+      "status": "candidate",
+      "min_x": -2636,
+      "max_x": -2597,
+      "min_y": 22,
+      "max_y": 41,
+      "min_z": 4802,
+      "max_z": 4841,
+      "review_mode": "natural_seam",
+      "role": "Root-Breached review shell around the southern cave network; sampled box is about 7% natural air with at least 49 blocks of overburden"
+    },
+    {
+      "id": "openworld_rpg:r01/quarry/relay_gallery_review",
+      "status": "candidate",
+      "min_x": -2596,
+      "max_x": -2575,
+      "min_y": 22,
+      "max_y": 33,
+      "min_z": 4818,
+      "max_z": 4841,
+      "review_mode": "transition_probe",
+      "role": "Relay Gallery masonry transition probe between the Root-Breached seam and the boss pocket; sampled volume is effectively solid and has at least 63 blocks of overburden"
+    },
+    {
+      "id": "openworld_rpg:r01/quarry/earthloong_chamber_review",
+      "status": "candidate",
+      "min_x": -2586,
+      "max_x": -2555,
+      "min_y": 14,
+      "max_y": 25,
+      "min_z": 4818,
+      "max_z": 4849,
+      "review_mode": "solid_carve_probe",
+      "role": "Earthloong authored-chamber carve probe; this 32x12x32 sanity volume was fully solid in the extracted slice with at least 68 blocks of overburden and is not the final arena dimension"
+    }
+  ],
   "routes": [
     {
       "id": "openworld_rpg:r01/alderford_to_quarry_surface_candidate",
       "status": "candidate",
       "role": "raw-terrain Old Quarry Road skeleton; not a final road spline",
       "points": [
-        { "x": -2208, "z": 4000 },
-        { "x": -2260, "z": 4100 },
-        { "x": -2320, "z": 4200 },
-        { "x": -2380, "z": 4300 },
-        { "x": -2440, "z": 4400 },
-        { "x": -2500, "z": 4500 },
-        { "x": -2560, "z": 4600 },
-        { "x": -2560, "z": 4660 },
-        { "x": -2600, "z": 4700 }
+        {
+          "x": -2208,
+          "z": 4000
+        },
+        {
+          "x": -2260,
+          "z": 4100
+        },
+        {
+          "x": -2320,
+          "z": 4200
+        },
+        {
+          "x": -2380,
+          "z": 4300
+        },
+        {
+          "x": -2440,
+          "z": 4400
+        },
+        {
+          "x": -2500,
+          "z": 4500
+        },
+        {
+          "x": -2560,
+          "z": 4600
+        },
+        {
+          "x": -2560,
+          "z": 4660
+        },
+        {
+          "x": -2600,
+          "z": 4700
+        }
       ]
     }
   ]

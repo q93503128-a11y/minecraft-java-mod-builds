@@ -22,9 +22,10 @@ public record R01SpatialBindingData(
         @SerializedName("source_status") String sourceStatus,
         List<Anchor> anchors,
         List<Area> areas,
+        List<Volume> volumes,
         List<Route> routes
 ) {
-    public static final int CURRENT_SCHEMA_VERSION = 1;
+    public static final int CURRENT_SCHEMA_VERSION = 2;
     public static final String CANONICAL_ID =
             "openworld_rpg:r01/azari_spatial_candidates";
     public static final String CANONICAL_MAP_BUILD = "AzariNEW4252026";
@@ -32,6 +33,7 @@ public record R01SpatialBindingData(
     public R01SpatialBindingData {
         anchors = List.copyOf(Objects.requireNonNull(anchors, "anchors"));
         areas = List.copyOf(Objects.requireNonNull(areas, "areas"));
+        volumes = List.copyOf(Objects.requireNonNull(volumes, "volumes"));
         routes = List.copyOf(Objects.requireNonNull(routes, "routes"));
     }
 
@@ -53,6 +55,15 @@ public record R01SpatialBindingData(
         return area(areaId).filter(Area::production);
     }
 
+    public Optional<Volume> volume(String volumeId) {
+        Objects.requireNonNull(volumeId, "volumeId");
+        return volumes.stream().filter(volume -> volume.id().equals(volumeId)).findFirst();
+    }
+
+    public Optional<Volume> productionVolume(String volumeId) {
+        return volume(volumeId).filter(Volume::production);
+    }
+
     public Optional<Route> route(String routeId) {
         Objects.requireNonNull(routeId, "routeId");
         return routes.stream().filter(route -> route.id().equals(routeId)).findFirst();
@@ -61,9 +72,11 @@ public record R01SpatialBindingData(
     public boolean productionReady() {
         return !anchors.isEmpty()
                 && !areas.isEmpty()
+                && !volumes.isEmpty()
                 && !routes.isEmpty()
                 && anchors.stream().allMatch(Anchor::production)
                 && areas.stream().allMatch(Area::production)
+                && volumes.stream().allMatch(Volume::production)
                 && routes.stream().allMatch(Route::production);
     }
 
@@ -98,6 +111,29 @@ public record R01SpatialBindingData(
         public Area {
             Objects.requireNonNull(id, "id");
             Objects.requireNonNull(status, "status");
+            Objects.requireNonNull(role, "role");
+        }
+
+        public boolean production() {
+            return "production".equals(status);
+        }
+    }
+    public record Volume(
+            String id,
+            String status,
+            @SerializedName("min_x") int minX,
+            @SerializedName("max_x") int maxX,
+            @SerializedName("min_y") int minY,
+            @SerializedName("max_y") int maxY,
+            @SerializedName("min_z") int minZ,
+            @SerializedName("max_z") int maxZ,
+            @SerializedName("review_mode") String reviewMode,
+            String role
+    ) {
+        public Volume {
+            Objects.requireNonNull(id, "id");
+            Objects.requireNonNull(status, "status");
+            Objects.requireNonNull(reviewMode, "reviewMode");
             Objects.requireNonNull(role, "role");
         }
 
@@ -172,6 +208,10 @@ public record R01SpatialBindingData(
                 "area"
         );
         validateUniqueIds(
+                data.volumes().stream().map(Volume::id).toList(),
+                "volume"
+        );
+        validateUniqueIds(
                 data.routes().stream().map(Route::id).toList(),
                 "route"
         );
@@ -194,6 +234,23 @@ public record R01SpatialBindingData(
             missing.removeAll(actualAnchors);
             throw new IllegalArgumentException(
                     "R01 spatial candidate set is incomplete; missing=" + missing
+            );
+        }
+        Set<String> requiredVolumes = Set.of(
+                "openworld_rpg:r01/quarry/upper_gallery_review",
+                "openworld_rpg:r01/quarry/collapsed_hoist_review",
+                "openworld_rpg:r01/quarry/root_breached_review",
+                "openworld_rpg:r01/quarry/relay_gallery_review",
+                "openworld_rpg:r01/quarry/earthloong_chamber_review"
+        );
+        Set<String> actualVolumes = new HashSet<>(
+                data.volumes().stream().map(Volume::id).toList()
+        );
+        if (!actualVolumes.containsAll(requiredVolumes)) {
+            Set<String> missing = new HashSet<>(requiredVolumes);
+            missing.removeAll(actualVolumes);
+            throw new IllegalArgumentException(
+                    "R01 Quarry interior review-volume set is incomplete; missing=" + missing
             );
         }
 
@@ -236,6 +293,38 @@ public record R01SpatialBindingData(
             }
         }
 
+        for (Volume volume : data.volumes()) {
+            requireNamespacedId(volume.id(), "volume");
+            requireReviewStatus(volume.status(), "volume " + volume.id());
+            requireInsideExtractedSlice(volume.minX(), volume.minZ(), volume.id());
+            requireInsideExtractedSlice(volume.maxX(), volume.maxZ(), volume.id());
+            if (volume.minX() > volume.maxX()
+                    || volume.minY() > volume.maxY()
+                    || volume.minZ() > volume.maxZ()) {
+                throw new IllegalArgumentException(
+                        "R01 spatial volume bounds are inverted: " + volume
+                );
+            }
+            if (volume.minY() < -64 || volume.maxY() > 511) {
+                throw new IllegalArgumentException(
+                        "R01 spatial volume y outside accepted world envelope: " + volume
+                );
+            }
+            if (!Set.of(
+                    "natural_seam",
+                    "transition_probe",
+                    "solid_carve_probe"
+            ).contains(volume.reviewMode())) {
+                throw new IllegalArgumentException(
+                        "Unknown R01 spatial volume review mode: " + volume.reviewMode()
+                );
+            }
+            if (volume.role().isBlank()) {
+                throw new IllegalArgumentException(
+                        "R01 spatial volume role is blank: " + volume.id()
+                );
+            }
+        }
         for (Route route : data.routes()) {
             requireNamespacedId(route.id(), "route");
             requireReviewStatus(route.status(), "route " + route.id());
@@ -262,7 +351,7 @@ public record R01SpatialBindingData(
 
         if (data.productionReady()) {
             throw new IllegalArgumentException(
-                    "Bundled R01 Pass-2 data must not claim production readiness before client review."
+                    "Bundled R01 Pass-3 data must not claim production readiness before client review."
             );
         }
     }

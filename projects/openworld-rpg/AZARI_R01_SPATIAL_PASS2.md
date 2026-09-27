@@ -206,17 +206,9 @@ The exact entrance mouth, support structure, cart/hoist placement and camera-fac
 
 ## 6. Dungeon interior status
 
-Do **not** bind Upper Gallery / Collapsed Hoist / Root-Breached / Relay / Earthloong chamber coordinates yet.
+Pass 3 now supersedes the raw interior-open item in this section. See `AZARI_R01_QUARRY_INTERIOR_PASS3.md`.
 
-The surface route is now materially narrowed, but the interior still needs:
-
-1. actual cave/solid-volume inspection under the selected Quarry shoulder;
-2. room/corridor footprint check against creator underground structures;
-3. boss-camera clearance;
-4. multiplayer choke-width review;
-5. actual entrance-to-boss travel-time measurement.
-
-The already-implemented semantic room ids and encounter authority remain correct. This pass only chooses where their physical shell is likely to attach.
+Actual Quarry subsurface NBT has been scanned and five **candidate 3D review volumes** are now bundled for Upper Gallery / Collapsed Hoist / Root-Breached / Relay / Earthloong. They are not production room bounds. The natural caves are irregular seams rather than ready-made authored rooms, so the selected direction is to preserve useful real cave cuts while excavating authored quarry rooms into verified rock mass. Client camera, traversal, encounter-anchor and boss-arena acceptance remain required before promotion.
 
 ## 7. What is now closed vs still open
 
