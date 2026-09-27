@@ -157,22 +157,29 @@ public final class DrehmalMinimapLayer implements GuiLayer {
     }
 
     private static void drawArrow(GuiGraphicsExtractor graphics, int cx, int cy, float yaw, int color, boolean backdrop) {
-        int dir = Math.floorMod(Math.round(yaw / 45.0F), 8);
-        int[] vx = {0, -1, -1, -1, 0, 1, 1, 1};
-        int[] vy = {1, 1, 0, -1, -1, -1, 0, 1};
-        int dx = vx[dir], dy = vy[dir];
-        int px = -dy, py = dx;
-
-        // Minimal pointer: thin shaft + two head pixels. No black backdrop tile.
-        for (int t = -1; t <= 3; t++) drawArrowPixel(graphics, cx + dx * t, cy + dy * t, color);
-        int wingX = cx + dx;
-        int wingY = cy + dy;
-        drawArrowPixel(graphics, wingX + px, wingY + py, color);
-        drawArrowPixel(graphics, wingX - px, wingY - py, color);
+        Minecraft minecraft = Minecraft.getInstance();
+        String arrow = mapDirectionArrow(yaw);
+        graphics.text(
+                minecraft.font,
+                Component.literal(arrow),
+                cx - minecraft.font.width(arrow) / 2,
+                cy - minecraft.font.lineHeight / 2,
+                color,
+                true);
     }
 
-    private static void drawArrowPixel(GuiGraphicsExtractor graphics, int x, int y, int color) {
-        graphics.fill(x, y, x + 2, y + 2, color);
+    private static String mapDirectionArrow(float yaw) {
+        float wrapped = yaw % 360.0F;
+        if (wrapped < -180.0F) wrapped += 360.0F;
+        if (wrapped >= 180.0F) wrapped -= 360.0F;
+        if (wrapped >= -22.5F && wrapped < 22.5F) return "↓";
+        if (wrapped >= 22.5F && wrapped < 67.5F) return "↙";
+        if (wrapped >= 67.5F && wrapped < 112.5F) return "←";
+        if (wrapped >= 112.5F && wrapped < 157.5F) return "↖";
+        if (wrapped >= 157.5F || wrapped < -157.5F) return "↑";
+        if (wrapped >= -157.5F && wrapped < -112.5F) return "↗";
+        if (wrapped >= -112.5F && wrapped < -67.5F) return "→";
+        return "↘";
     }
 
     private static int floorToStep(double value) { return Math.floorDiv((int)Math.floor(value), STEP) * STEP; }

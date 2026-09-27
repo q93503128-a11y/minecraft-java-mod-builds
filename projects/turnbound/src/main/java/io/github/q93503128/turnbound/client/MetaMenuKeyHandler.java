@@ -31,6 +31,7 @@ public final class MetaMenuKeyHandler {
                 return;
             }
             if (minecraft.gui.screen() != null || ClientPresentationTransition.fieldPresentationSuppressed() || !ClientFieldState.snapshot().active()) return;
+            ClientPacketDistributor.sendToServer(new MetaCommandPayload("HUB_ROUTE_REVIEW"));
             minecraft.gui.setScreen(new DrehmalWorldMapScreen());
             return;
         }

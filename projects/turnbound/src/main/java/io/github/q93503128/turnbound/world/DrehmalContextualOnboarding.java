@@ -12,6 +12,7 @@ import java.util.Set;
  */
 final class DrehmalContextualOnboarding {
     static final String HUB_MENU_VIEWED = "HUB_MENU_VIEWED";
+    static final String HUB_ROUTE_REVIEWED = "HUB_ROUTE_REVIEWED";
     private static final String FIRST_COMMON = "CV_FIRST_COMMON";
 
     record Guidance(String objective, String hint) {
@@ -105,9 +106,10 @@ final class DrehmalContextualOnboarding {
                     "E 메뉴에서 현재 파티를 바로 확인할 수 있습니다.");
         }
         if (roles.isEmpty()) {
+            if (flags.contains(HUB_ROUTE_REVIEWED)) return new Guidance("", "");
             return new Guidance(
                     "뉴 드라비엘에서 파티와 장비를 정리하고 다음 길을 확인하십시오.",
-                    "E 메뉴에서 캐릭터와 장비를 정리한 뒤 M 지도에서 다음 경로를 확인하십시오.");
+                    "E 메뉴에서 필요한 정리를 마친 뒤 M 지도를 열어 다음 경로를 확인하십시오.");
         }
         if (needs("BLACKSMITH", flags, roles)) {
             return new Guidance(

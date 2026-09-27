@@ -34,7 +34,7 @@ public final class QuestGuideLayer implements GuiLayer {
         if (target != null) drawDirectionCue(graphics, minecraft, target);
 
         int width = expanded
-                ? Math.min(238, Math.max(202, graphics.guiWidth() / 4))
+                ? Math.min(320, Math.max(238, graphics.guiWidth() / 3))
                 : Math.min(220, Math.max(184, graphics.guiWidth() / 5));
         int x = graphics.guiWidth() - width - 7;
         int y = 7;
@@ -55,10 +55,13 @@ public final class QuestGuideLayer implements GuiLayer {
             String location = targetLine(minecraft, target);
             hint = hint.isBlank() ? location : location + " · " + hint;
         }
-        List<String> objectiveLines = wrap(minecraft, objective, width - 20, 4);
-        List<String> hintLines = hint.isBlank() ? List.of() : wrap(minecraft, hint, width - 20, 2);
+        int maxPanelHeight = Math.max(54, graphics.guiHeight() - 14);
+        int maxTextLines = Math.max(4, (maxPanelHeight - 34) / 9);
+        List<String> objectiveLines = wrap(minecraft, objective, width - 20, maxTextLines);
+        int remainingLines = Math.max(1, maxTextLines - objectiveLines.size());
+        List<String> hintLines = hint.isBlank() ? List.of() : wrap(minecraft, hint, width - 20, remainingLines);
         int height = 30 + objectiveLines.size() * 10 + (hintLines.isEmpty() ? 0 : 5 + hintLines.size() * 9);
-        height = Math.min(108, Math.max(44, height));
+        height = Math.min(maxPanelHeight, Math.max(44, height));
 
         TurnboundUiSkin.panel(graphics, x, y, width, height);
         graphics.text(minecraft.font, Component.literal("목표"), x + 10, y + 8, GOLD, true);

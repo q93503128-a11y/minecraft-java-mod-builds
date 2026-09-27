@@ -100,7 +100,7 @@ public final class MetaMenuScreen extends Screen {
     private void buildHome(){
         var snapshot=ClientMetaState.snapshot();
         int px=homePanelX(),py=homePanelY(),pw=homePanelW(),ph=homePanelH();
-        int leftW=Math.max(176,pw*54/100);
+        int leftW=Math.max(185,pw*57/100);
         int partyX=px+18,partyY=py+38;
         int partyAreaW=leftW-26;
         int cardGap=8;
@@ -126,13 +126,14 @@ public final class MetaMenuScreen extends Screen {
         }
 
         int menuX=px+leftW+8;
-        int menuY=py+42;
         int menuAreaW=pw-leftW-22;
-        int orbGap=5;
-        int rowGap=5;
-        int orbSize=Math.max(38,Math.min(48,(menuAreaW-orbGap)/2));
-        Tab[] destinations={Tab.CHARACTERS,Tab.PARTY,Tab.EQUIPMENT,Tab.QUESTS,Tab.ARCHIVE,Tab.CODEX,Tab.SYSTEM};
-        String[] labels={"캐릭터","파티","장비","퀘스트","소환","도감","설정"};
+        int orbGap=6;
+        int rowGap=7;
+        int orbSize=Math.max(44,Math.min(58,(menuAreaW-orbGap)/2));
+        int menuHeight=orbSize*3+rowGap*2;
+        int menuY=py+Math.max(38,(ph-menuHeight)/2);
+        Tab[] destinations={Tab.PARTY,Tab.EQUIPMENT,Tab.QUESTS,Tab.ARCHIVE,Tab.CODEX,Tab.SYSTEM};
+        String[] labels={"파티","장비","퀘스트","소환","도감","설정"};
         for(int i=0;i<destinations.length;i++){
             final Tab destination=destinations[i];
             int col=i%2,row=i/2;
@@ -476,7 +477,7 @@ public final class MetaMenuScreen extends Screen {
 
     private void drawHome(GuiGraphicsExtractor g){
         int px=homePanelX(),py=homePanelY(),pw=homePanelW(),ph=homePanelH();
-        int leftW=Math.max(190,pw*58/100);
+        int leftW=Math.max(185,pw*57/100);
 
         TurnboundUiSkin.panel(g,px,py,pw,ph);
         g.text(font,Component.literal("TURNBOUND"),px+22,py+16,TEXT,true);

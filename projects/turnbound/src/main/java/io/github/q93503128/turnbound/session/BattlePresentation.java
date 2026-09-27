@@ -34,9 +34,6 @@ import java.util.Set;
 import java.util.UUID;
 
 final class BattlePresentation {
-    private static final double[][] ALLY_FORMATION = {{-3.0,4.0},{-1.0,4.0},{1.0,4.0},{3.0,4.0}};
-    private static final double[][] ENEMY_FORMATION = {{-4.0,-4.0},{-2.0,-4.0},{0.0,-4.0},{2.0,-4.0},{4.0,-4.0}};
-
     private final Map<String, UUID> actors = new LinkedHashMap<>();
     private final Map<String, Vec3> homes = new LinkedHashMap<>();
     private final Map<String, Float> homeYaws = new LinkedHashMap<>();
@@ -63,13 +60,18 @@ final class BattlePresentation {
     void spawnMissing(ServerLevel level, Vec3 center, float facingYaw, Iterable<CombatantState> combatants) {
         List<CombatantState> units = new ArrayList<>(); combatants.forEach(units::add); removeMissing(level, units);
         Vec3 forward = BattleArenaLocator.forward(facingYaw); Vec3 right = new Vec3(-forward.z,0.0,forward.x);
+        int allyCount=(int)units.stream().filter(unit->!unit.definition().summon()&&unit.side()==CombatantSide.ALLY).count();
+        int enemyCount=(int)units.stream().filter(unit->!unit.definition().summon()&&unit.side()==CombatantSide.ENEMY).count();
         int allyIndex=0, enemyIndex=0;
         for (CombatantState combatant : units) {
             if (combatant.definition().summon()) continue;
-            boolean ally = combatant.side()==CombatantSide.ALLY; int index=ally?allyIndex++:enemyIndex++;
+            boolean ally = combatant.side()==CombatantSide.ALLY;
+            int index=ally?allyIndex++:enemyIndex++;
+            int count=ally?allyCount:enemyCount;
             if (actors.containsKey(combatant.instanceId())) continue;
-            double[][] formation=ally?ALLY_FORMATION:ENEMY_FORMATION; if(index>=formation.length) continue;
-            Vec3 raw=localToWorld(center,right,forward,formation[index][0],formation[index][1]);
+            double localX=(index-(count-1)/2.0)*2.0;
+            double localZ=ally?4.0:-4.0;
+            Vec3 raw=localToWorld(center,right,forward,localX,localZ);
             spawnActor(level,combatant,BattleArenaLocator.groundPosition(level,raw),facingYaw,combatant.definition().rules());
         }
         for (CombatantState combatant : units) {
