@@ -3,6 +3,7 @@ package io.github.q93503128.turnbound.client;
 import io.github.q93503128.turnbound.content.CanonicalData;
 import io.github.q93503128.turnbound.content.CharacterPassiveCatalog;
 import io.github.q93503128.turnbound.network.MetaCommandPayload;
+import io.github.q93503128.turnbound.network.PartyCommandPayload;
 import io.github.q93503128.turnbound.progression.GachaCatalog;
 import io.github.q93503128.turnbound.progression.GrowthRulesV1;
 import net.minecraft.client.Minecraft;
@@ -21,7 +22,7 @@ import java.util.Locale;
 
 /** Responsive management screen. Dense collections are paged and PC layouts favor information density. */
 public final class MetaMenuScreen extends Screen {
-    public enum Tab { HOME, PARTY, CHARACTERS, EQUIPMENT, ARCHIVE, QUESTS, CODEX, SYSTEM }
+    public enum Tab { HOME, PARTY, COOP, CHARACTERS, EQUIPMENT, ARCHIVE, QUESTS, CODEX, SYSTEM }
     private enum DetailTab { OVERVIEW, SKILLS, EQUIPMENT, GROWTH }
     private enum OwnershipFilter { ALL, OWNED, UNOWNED }
     private enum RoleFilter { ALL, DPS, SUPPORT, TANK, SUMMON }
@@ -49,11 +50,13 @@ public final class MetaMenuScreen extends Screen {
     private int skillDescriptionScroll;
     private boolean archiveLogOpen;
     private int archiveLogScroll;
+    private long seenPartyRevision=-1L;
 
     public MetaMenuScreen(Tab tab){
         super(Component.literal("TURNBOUND"));
         this.tab=tab==null?Tab.HOME:tab;
         draftParty.addAll(ClientMetaState.snapshot().activeParty());
+        seenPartyRevision=ClientMultiplayerPartyState.revision();
     }
 
     public Tab tab(){return tab;}
@@ -83,6 +86,7 @@ public final class MetaMenuScreen extends Screen {
         switch(tab){
             case HOME->buildHome();
             case PARTY->buildParty();
+            case COOP->buildCoop();
             case CHARACTERS->buildCharacters();
             case EQUIPMENT->buildEquipment();
             case ARCHIVE->buildArchive();
@@ -131,12 +135,13 @@ public final class MetaMenuScreen extends Screen {
         int menuX=px+leftW+8;
         int menuAreaW=pw-leftW-22;
         int orbGap=6;
-        int rowGap=7;
-        int orbSize=Math.max(44,Math.min(58,(menuAreaW-orbGap)/2));
-        int menuHeight=orbSize*3+rowGap*2;
-        int menuY=py+Math.max(38,(ph-menuHeight)/2);
-        Tab[] destinations={Tab.PARTY,Tab.EQUIPMENT,Tab.QUESTS,Tab.ARCHIVE,Tab.CODEX,Tab.SYSTEM};
-        String[] labels={"파티","장비","퀘스트","소환","도감","설정"};
+        int rowGap=6;
+        Tab[] destinations={Tab.PARTY,Tab.COOP,Tab.EQUIPMENT,Tab.QUESTS,Tab.ARCHIVE,Tab.CODEX,Tab.SYSTEM};
+        String[] labels={"편성","협동","장비","퀘스트","소환","도감","설정"};
+        int menuRows=(destinations.length+1)/2;
+        int orbSize=Math.max(32,Math.min(54,Math.min((menuAreaW-orbGap)/2,(ph-66-rowGap*(menuRows-1))/menuRows)));
+        int menuHeight=orbSize*menuRows+rowGap*(menuRows-1);
+        int menuY=py+Math.max(31,(ph-menuHeight)/2);
         for(int i=0;i<destinations.length;i++){
             final Tab destination=destinations[i];
             int col=i%2,row=i/2;
@@ -191,6 +196,57 @@ public final class MetaMenuScreen extends Screen {
         addRenderableWidget(new BattleHudButton(
                 left+panelWidth-16-savePartyW,row1,savePartyW,40,
                 Component.literal("편성 적용 "+draftParty.size()+"/4"),GREEN,ignored->saveParty()));
+        buildPager();
+    }
+
+
+    private void buildCoop(){
+        var party=ClientMultiplayerPartyState.snapshot();
+        int x=left+16,w=panelWidth-32;
+        int cursor=contentTop()+25;
+
+        if(party.size()>1){
+            addRenderableWidget(new BattleHudButton(
+                    x+w-62,contentTop()+1,62,18,Component.literal("파티 탈퇴"),DANGER,
+                    ignored->partyCommand("LEAVE")));
+        }
+
+        if(party.pendingInvite()!=null){
+            int actionW=Math.min(58,Math.max(46,w/7));
+            addRenderableWidget(new BattleHudButton(
+                    x+w-actionW*2-4,cursor+5,actionW,20,Component.literal("수락"),GREEN,
+                    ignored->partyCommand("ACCEPT")));
+            addRenderableWidget(new BattleHudButton(
+                    x+w-actionW,cursor+5,actionW,20,Component.literal("거절"),DANGER,
+                    ignored->partyCommand("DECLINE")));
+            cursor+=38;
+        }
+
+        int memberRowsY=cursor+14;
+        for(int i=0;i<party.members().size();i++){
+            var member=party.members().get(i);
+            if(party.localLeader()&&!member.self()){
+                addRenderableWidget(new BattleHudButton(
+                        x+w-56,memberRowsY+i*28+4,52,19,Component.literal("내보내기"),DANGER,
+                        ignored->partyCommand("KICK|"+member.id())));
+            }
+        }
+
+        int candidateHeaderY=memberRowsY+Math.max(1,party.members().size())*28+8;
+        int candidateRowsY=candidateHeaderY+14;
+        int available=Math.max(26,contentBottom()-candidateRowsY-2);
+        int per=Math.max(1,available/26);
+        setPaging(party.candidates().size(),per);
+        int start=page*per,end=Math.min(party.candidates().size(),start+per);
+        for(int i=start;i<end;i++){
+            var candidate=party.candidates().get(i);
+            int row=candidateRowsY+(i-start)*26;
+            var invite=new BattleHudButton(
+                    x+w-56,row+3,52,19,Component.literal(candidate.inBattle()?"전투 중":"초대"),candidate.inBattle()?MUTED:BLUE,
+                    ignored->partyCommand("INVITE|"+candidate.id()));
+            invite.active=!candidate.inBattle();
+            addRenderableWidget(invite);
+        }
         buildPager();
     }
 
@@ -450,6 +506,15 @@ public final class MetaMenuScreen extends Screen {
         return super.mouseScrolled(mouseX,mouseY,scrollX,scrollY);
     }
 
+    @Override
+    public void tick(){
+        super.tick();
+        if(tab==Tab.COOP&&seenPartyRevision!=ClientMultiplayerPartyState.revision()){
+            seenPartyRevision=ClientMultiplayerPartyState.revision();
+            rebuild();
+        }
+    }
+
     private void movePage(int delta){page=UiPaging.clampPage(page+delta,currentTotal,currentPerPage);rebuild();}
     private void openArchiveLog(){archiveLogOpen=true;archiveLogScroll=0;rebuild();}
     private void closeArchiveLog(){archiveLogOpen=false;archiveLogScroll=0;rebuild();}
@@ -475,6 +540,7 @@ public final class MetaMenuScreen extends Screen {
     private void selectCodex(String c){codexCategory=c;page=0;rebuild();}
     private void selectEndgame(String id){selectedEndgameId=id;rebuild();}
     private static void send(String command){ClientPacketDistributor.sendToServer(new MetaCommandPayload(command));}
+    private static void partyCommand(String command){ClientPacketDistributor.sendToServer(new PartyCommandPayload(command));}
 
     @Override
     public boolean keyPressed(KeyEvent event){
@@ -509,6 +575,7 @@ public final class MetaMenuScreen extends Screen {
         switch(tab){
             case HOME->{}
             case PARTY->drawParty(graphics);
+            case COOP->drawCoop(graphics);
             case CHARACTERS->drawCharacters(graphics);
             case EQUIPMENT->drawEquipment(graphics);
             case ARCHIVE->drawArchive(graphics);
@@ -546,6 +613,76 @@ public final class MetaMenuScreen extends Screen {
         int x=left+16,y=contentTop()+3,w=panelWidth-32;
         TurnboundUiSkin.inset(g,x,y,w,17);
         g.text(font,Component.literal(UiTextLayout.fit(hint,w-12)),x+6,y+5,SECONDARY,false);
+    }
+
+
+    private void drawCoop(GuiGraphicsExtractor g){
+        var party=ClientMultiplayerPartyState.snapshot();
+        int x=left+16,w=panelWidth-32;
+        int hintY=contentTop()+3;
+        TurnboundUiSkin.inset(g,x,hintY,w,17);
+        String leaderName=party.members().stream().filter(ClientMultiplayerPartyState.Member::leader)
+                .map(ClientMultiplayerPartyState.Member::name).findFirst().orElse("나");
+        String header="협동 파티 "+party.size()+"/"+party.maxPlayers()+" · 파티장 "+leaderName+" · 가까운 파티원만 필드 전투에 합류";
+        g.text(font,Component.literal(UiTextLayout.fit(header,w-(party.size()>1?72:12))),x+6,hintY+5,SECONDARY,false);
+
+        int cursor=contentTop()+25;
+        if(party.pendingInvite()!=null){
+            TurnboundUiSkin.inset(g,x,cursor,w,31);
+            String invite=party.pendingInvite().name()+"님의 협동 파티 초대";
+            g.text(font,Component.literal(UiTextLayout.fit(invite,Math.max(60,w-132))),x+8,cursor+11,GOLD,true);
+            cursor+=38;
+        }
+
+        g.text(font,Component.literal("파티원"),x,cursor+2,SECONDARY,true);
+        int memberRowsY=cursor+14;
+        if(party.members().isEmpty()){
+            g.text(font,Component.literal("파티 상태를 불러오는 중..."),x+6,memberRowsY+7,MUTED,false);
+        }else{
+            for(int i=0;i<party.members().size();i++){
+                var member=party.members().get(i);
+                int row=memberRowsY+i*28;
+                TurnboundUiSkin.inset(g,x,row,w,24);
+                int accent=member.self()?BLUE:member.leader()?GOLD:MUTED;
+                g.fill(x,row,x+2,row+24,accent);
+                String role=(member.self()?"나 · ":"")+(member.leader()?"파티장 · ":"");
+                String state=!member.online()?"오프라인":member.inBattle()?"전투 중":!member.sameLevel()?"다른 차원":"필드";
+                String location=member.sameLevel()?" · "+Math.round(member.x())+", "+Math.round(member.y())+", "+Math.round(member.z()):"";
+                int reserve=party.localLeader()&&!member.self()?64:8;
+                g.text(font,Component.literal(UiTextLayout.fit(role+member.name(),Math.max(50,w-reserve-170))),x+8,row+5,TEXT,true);
+                String status=state+location;
+                int sx=x+w-reserve-font.width(UiTextLayout.fit(status,150));
+                g.text(font,Component.literal(UiTextLayout.fit(status,150)),Math.max(x+90,sx),row+5,
+                        member.inBattle()?GOLD:member.online()?SECONDARY:MUTED,false);
+            }
+        }
+
+        int candidateHeaderY=memberRowsY+Math.max(1,party.members().size())*28+8;
+        g.text(font,Component.literal("같은 차원의 온라인 플레이어"),x,candidateHeaderY+2,SECONDARY,true);
+        int candidateRowsY=candidateHeaderY+14;
+        int start=page*currentPerPage;
+        int end=Math.min(party.candidates().size(),start+currentPerPage);
+        if(start>=end){
+            g.text(font,Component.literal(party.localLeader()&&party.size()<party.maxPlayers()
+                    ?"현재 초대할 수 있는 플레이어가 없습니다."
+                    :"파티장만 빈 자리가 있을 때 초대할 수 있습니다."),x+6,candidateRowsY+7,MUTED,false);
+        }else{
+            for(int i=start;i<end;i++){
+                var candidate=party.candidates().get(i);
+                int row=candidateRowsY+(i-start)*26;
+                TurnboundUiSkin.inset(g,x,row,w,22);
+                String location=Math.round(candidate.x())+", "+Math.round(candidate.y())+", "+Math.round(candidate.z());
+                g.text(font,Component.literal(UiTextLayout.fit(candidate.name(),Math.max(50,w-190))),x+8,row+5,TEXT,true);
+                String state=candidate.inBattle()?"전투 중":"좌표 "+location;
+                g.text(font,Component.literal(UiTextLayout.fit(state,120)),x+w-62-font.width(UiTextLayout.fit(state,120)),row+5,
+                        candidate.inBattle()?GOLD:SECONDARY,false);
+            }
+        }
+
+        if(!party.feedback().isBlank()){
+            String feedback=UiTextLayout.fit(party.feedback(),w);
+            g.text(font,Component.literal(feedback),x,contentBottom()-12,BLUE,false);
+        }
     }
 
     private void drawCharacters(GuiGraphicsExtractor g){
@@ -762,8 +899,8 @@ public final class MetaMenuScreen extends Screen {
     private String ownershipLabel(){return switch(ownershipFilter){case ALL->"전체";case OWNED->"보유";case UNOWNED->"미보유";};}
     private static String roleLabel(RoleFilter r){return switch(r){case ALL->"전체";case DPS->"공격";case SUPPORT->"지원";case TANK->"수호";case SUMMON->"소환";};}
     private static String sortLabel(EquipSort s){return switch(s){case TIER->"등급";case LEVEL->"강화";case STAT->"능력치";};}
-    private static String label(Tab t){return switch(t){case HOME->"빠른 메뉴";case PARTY->"파티";case CHARACTERS->"캐릭터";case EQUIPMENT->"장비";case ARCHIVE->"소환";case QUESTS->"퀘스트";case CODEX->"도감";case SYSTEM->"도전";};}
-    private static String title(Tab t){return switch(t){case HOME->"빠른 메뉴";case PARTY->"파티 편성";case CHARACTERS->"캐릭터";case EQUIPMENT->"장비";case ARCHIVE->"소환 / 기록";case QUESTS->"퀘스트";case CODEX->"도감";case SYSTEM->"도전 콘텐츠";};}
+    private static String label(Tab t){return switch(t){case HOME->"빠른 메뉴";case PARTY->"편성";case COOP->"협동";case CHARACTERS->"캐릭터";case EQUIPMENT->"장비";case ARCHIVE->"소환";case QUESTS->"퀘스트";case CODEX->"도감";case SYSTEM->"도전";};}
+    private static String title(Tab t){return switch(t){case HOME->"빠른 메뉴";case PARTY->"전투 파티 편성";case COOP->"협동 파티";case CHARACTERS->"캐릭터";case EQUIPMENT->"장비";case ARCHIVE->"소환 / 기록";case QUESTS->"퀘스트";case CODEX->"도감";case SYSTEM->"도전 콘텐츠";};}
     private static String detailLabel(DetailTab d){return switch(d){case OVERVIEW->"개요";case SKILLS->"스킬";case EQUIPMENT->"장비";case GROWTH->"성장";};}
     private static String primaryRoleLabel(String r){return switch(r){case"DPS"->"공격";case"SUPPORT"->"지원";case"TANK"->"수호";case"SUMMON"->"소환";default->r;};}
     private static String slotLabel(String s){return switch(s){case"WEAPON"->"무기";case"ARMOR"->"방어구";case"ACCESSORY"->"장신구";case"SIGNATURE"->"전용 장비";case"ALL"->"전체";default->s;};}
