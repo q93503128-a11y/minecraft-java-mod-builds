@@ -50,10 +50,19 @@ public final class CampaignEncounterCatalog {
      */
     static CombatantDefinition tempoAdjustedEnemy(CombatantDefinition base, V04Catalogs.Encounter encounter) {
         double hpScale;
-        if (encounter.id().startsWith("TUTORIAL_")) hpScale = 0.68;
-        else if (encounter.boss()) hpScale = 0.88;
-        else if (base.elite()) hpScale = 0.86;
-        else hpScale = 0.80;
+        hpScale = switch (encounter.id()) {
+            // Capital Valley is the player's first authored overworld route. Keep enemy offense/mechanics intact,
+            // but resolve its battles before repetition replaces decision-making.
+            case "CV_FIRST_COMMON" -> 0.25;
+            case "CV_DRABYEL_ROAD" -> 0.38;
+            case "CV_WARNING_CAVE_ELITE" -> 0.42;
+            default -> {
+                if (encounter.id().startsWith("TUTORIAL_")) yield 0.68;
+                if (encounter.boss()) yield 0.88;
+                if (base.elite()) yield 0.86;
+                yield 0.80;
+            }
+        };
         BattleStats stats = base.stats();
         BattleStats tuned = new BattleStats(Math.max(1, (int)Math.round(stats.maxHp() * hpScale)),
                 stats.attack(), stats.defense(), stats.speed());
