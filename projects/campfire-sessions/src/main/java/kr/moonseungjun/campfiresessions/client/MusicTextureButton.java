@@ -6,6 +6,7 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 
 public final class MusicTextureButton extends AbstractWidget {
@@ -31,32 +32,23 @@ public final class MusicTextureButton extends AbstractWidget {
     @Override
     protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         MusicTheme theme = CampfireMusicClient.selectedTrack().theme();
-        int border = switch (style) {
-            case PRIMARY -> theme.accent();
-            case DANGER -> 0xFFFF716B;
-            case SECONDARY -> 0xFF56616B;
-        };
-        int background = switch (style) {
-            case PRIMARY -> 0xD929333A;
-            case DANGER -> 0xD9342022;
-            case SECONDARY -> 0xC91A2026;
-        };
-        if (isHovered() && active) background = switch (style) {
-            case PRIMARY -> 0xEA35434B;
-            case DANGER -> 0xEA543034;
-            case SECONDARY -> 0xE1263038;
-        };
-        if (!active) background = 0xA014171A;
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, theme.buttonSprite(), getX(), getY(), getWidth(), getHeight());
 
-        graphics.fill(getX() + 1, getY(), getRight() - 1, getBottom(), border);
-        graphics.fill(getX(), getY() + 1, getRight(), getBottom() - 1, border);
-        graphics.fill(getX() + 2, getY() + 1, getRight() - 2, getBottom() - 1, background);
-        graphics.fill(getX() + 1, getY() + 2, getRight() - 1, getBottom() - 2, background);
+        if (!active) {
+            graphics.fill(getX(), getY(), getRight(), getBottom(), 0x85000000);
+        } else if (isHovered()) {
+            graphics.fill(getX() + 2, getY() + 2, getRight() - 2, getBottom() - 2,
+                    style == Style.DANGER ? 0x30FF5D51 : 0x28FFFFFF);
+        }
+
+        if (style == Style.PRIMARY) {
+            graphics.fill(getX() + 4, getBottom() - 2, getRight() - 4, getBottom() - 1, theme.accent());
+        }
 
         var font = Minecraft.getInstance().font;
+        int textColor = active ? theme.text() : 0xFF777C81;
         graphics.centeredText(font, getMessage(), getX() + getWidth() / 2,
-                getY() + (getHeight() - font.lineHeight) / 2,
-                active ? theme.text() : 0xFF777B80);
+                getY() + (getHeight() - font.lineHeight) / 2, textColor);
     }
 
     @Override

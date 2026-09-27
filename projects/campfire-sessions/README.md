@@ -2,16 +2,18 @@
 
 Minecraft Java 26.2 / NeoForge music-and-rest prototype.
 
-## v0.3 test flow
+## v0.4 test flow
 1. Remove older Campfire Sessions JARs and install only the new alpha.
-2. Open the Campfire Sessions creative tab.
-3. Take the Acoustic Guitar and Wooden Chair.
-4. Check the guitar in inventory, first person and third person. It now uses Minecraft-native model geometry from Musical Instruments Pack.
-5. Place the chair in all four directions and sit on it. It now uses chair geometry from Voxelized Furniture.
-6. Hold the guitar and right-click.
-7. Use the mouse wheel over the compact playlist and click different tracks.
-8. Confirm the UI uses a blurred/translucent player and theme accents for Clean / Neon / Ocean.
-9. Start a song, close the screen, keep holding the guitar and confirm music-note particles orbit the player.
-10. Switch away from the guitar and confirm playback stops.
+2. Hold the Acoustic Guitar and right-click.
+3. Put the pointer over the song wheel and use the mouse wheel repeatedly.
+4. Confirm the cards move with inertia, the center song is emphasized, and the wheel snaps to a song instead of showing a normal scrollbar.
+5. Confirm each song switches the actual UI asset set:
+   - Etirwer -> Clean
+   - Cozy Puzzle In-Game 3 -> Desert
+   - Neon sign Circuit -> Neon
+   - Underwater Ambient Pad -> Ocean
+6. Confirm the selected theme changes the outer frame, song cards and control buttons, not only colors.
+7. Start playback and close the screen. Music-note particles should continue around the player while the guitar remains held.
+8. Switch away from the guitar; playback should stop.
 
-The playlist currently contains four CC0 tracks. Desert and Rough visual themes remain available for later songs.
+A fifth Rough external UI set is packaged for the next matching track.

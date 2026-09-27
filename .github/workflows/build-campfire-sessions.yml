@@ -34,53 +34,46 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee build.log
-      - name: Verify alpha3 packaged assets
+      - name: Verify alpha4 packaged assets
         shell: bash
         run: |
           set -euo pipefail
           JAR="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' | head -n 1)"
           test -n "$JAR"
-          for ENTRY in             'kr/moonseungjun/campfiresessions/CampfireSessions.class'             'kr/moonseungjun/campfiresessions/block/ChairBlock.class'             'kr/moonseungjun/campfiresessions/client/MusicPlayerScreen.class'             'kr/moonseungjun/campfiresessions/client/MusicTheme.class'             'assets/campfiresessions/models/item/acoustic_guitar.json'             'assets/campfiresessions/models/block/wooden_chair.json'             'assets/campfiresessions/models/block/wooden_chair_geometry.json'             'assets/campfiresessions/sounds/music/etirwer.ogg'             'assets/campfiresessions/sounds/music/cozy_puzzle.ogg'             'assets/campfiresessions/sounds/music/neon_circuit.ogg'             'assets/campfiresessions/sounds/music/underwater_pad.ogg'
+
+          for ENTRY in             'kr/moonseungjun/campfiresessions/client/MusicPlayerScreen.class'             'kr/moonseungjun/campfiresessions/client/MusicTheme.class'             'assets/campfiresessions/sounds/music/etirwer.ogg'             'assets/campfiresessions/sounds/music/cozy_puzzle.ogg'             'assets/campfiresessions/sounds/music/neon_circuit.ogg'             'assets/campfiresessions/sounds/music/underwater_pad.ogg'             'assets/campfiresessions/textures/gui/sprites/music/theme/clean_panel.png'             'assets/campfiresessions/textures/gui/sprites/music/theme/clean_card.png'             'assets/campfiresessions/textures/gui/sprites/music/theme/clean_button.png'             'assets/campfiresessions/textures/gui/sprites/music/theme/neon_panel.png'             'assets/campfiresessions/textures/gui/sprites/music/theme/neon_card.png'             'assets/campfiresessions/textures/gui/sprites/music/theme/neon_button.png'             'assets/campfiresessions/textures/gui/sprites/music/theme/ocean_panel.png'             'assets/campfiresessions/textures/gui/sprites/music/theme/ocean_card.png'             'assets/campfiresessions/textures/gui/sprites/music/theme/ocean_button.png'             'assets/campfiresessions/textures/gui/sprites/music/theme/desert_panel.png'             'assets/campfiresessions/textures/gui/sprites/music/theme/desert_card.png'             'assets/campfiresessions/textures/gui/sprites/music/theme/desert_button.png'             'assets/campfiresessions/textures/gui/sprites/music/theme/rough_panel.png'             'assets/campfiresessions/textures/gui/sprites/music/theme/rough_card.png'             'assets/campfiresessions/textures/gui/sprites/music/theme/rough_button.png'
           do
             jar tf "$JAR" | grep -F "$ENTRY"
           done
-          if jar tf "$JAR" | grep -F 'assets/campfiresessions/models/item/acoustic_guitar.obj'; then
-            echo 'legacy generated guitar OBJ still packaged' >&2
-            exit 1
-          fi
-          if jar tf "$JAR" | grep -F 'assets/campfiresessions/models/block/wooden_chair.obj'; then
-            echo 'legacy generated chair OBJ still packaged' >&2
-            exit 1
-          fi
+
           sha256sum "$JAR" | tee "$JAR.sha256"
           {
             echo '# BUILD AND RUNTIME REPORT'
             echo
             echo "- Commit: `${GITHUB_SHA}`"
-            echo '- Version: 0.3.0-alpha.1'
+            echo '- Version: 0.4.0-alpha.1'
             echo '- Minecraft: 26.2'
             echo '- Java: 25'
             echo '- NeoForge: 26.2.0.87'
             echo '- clean build: SUCCESS'
-            echo '- Musical Instruments Pack guitar model: PACKAGED'
-            echo '- Voxelized Furniture chair model: PACKAGED'
-            echo '- four streamed CC0 tracks: PACKAGED'
-            echo '- blurred themed playlist UI: COMPILED'
-            echo '- client note-particle playback feedback: COMPILED'
-            echo '- in-game visual/seat acceptance: USER TEST REQUIRED'
+            echo '- five external CC0 UI theme sets: PACKAGED'
+            echo '- rhythm-game-style inertial carousel: COMPILED'
+            echo '- per-track theme switching: COMPILED'
+            echo '- note-particle playback feedback: COMPILED'
+            echo '- in-game visual acceptance: USER TEST REQUIRED'
           } > BUILD_AND_RUNTIME_REPORT.md
       - name: Upload build logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: campfire-sessions-alpha3-logs
+          name: campfire-sessions-alpha4-logs
           path: projects/campfire-sessions/build.log
           if-no-files-found: warn
-      - name: Upload alpha3
+      - name: Upload alpha4
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: campfire-sessions-alpha3
+          name: campfire-sessions-alpha4
           path: |
             projects/campfire-sessions/build/libs/*.jar
             projects/campfire-sessions/build/libs/*.sha256

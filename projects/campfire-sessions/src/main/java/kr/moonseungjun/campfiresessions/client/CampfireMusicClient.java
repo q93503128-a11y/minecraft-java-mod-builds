@@ -17,6 +17,10 @@ public final class CampfireMusicClient {
     public static MusicTrack selectedTrack() { return MusicCatalog.get(selectedIndex); }
     public static int selectedIndex() { return selectedIndex; }
 
+    public static void previewSelect(int index) {
+        selectedIndex = Math.floorMod(index, MusicCatalog.TRACKS.size());
+    }
+
     public static void select(int index) {
         int next = Math.floorMod(index, MusicCatalog.TRACKS.size());
         boolean resume = isPlaying();

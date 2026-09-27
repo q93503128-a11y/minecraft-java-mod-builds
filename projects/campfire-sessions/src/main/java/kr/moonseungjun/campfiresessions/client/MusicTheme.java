@@ -1,32 +1,38 @@
 package kr.moonseungjun.campfiresessions.client;
 
+import kr.moonseungjun.campfiresessions.CampfireSessions;
+import net.minecraft.resources.Identifier;
+
 public enum MusicTheme {
-    CLEAN("Clean", 0xEC111418, 0xD61D2228, 0xFFF0CF92, 0xFFF7F4EE, 0xFFA8A39A),
-    NEON("Neon", 0xEC080E18, 0xD6112034, 0xFF57DDF7, 0xFFF4FDFF, 0xFF88A9B7),
-    OCEAN("Ocean", 0xEC07171B, 0xD60D2C32, 0xFF66DCCB, 0xFFF1FFFC, 0xFF8DBBB5),
-    DESERT("Desert", 0xEC1B1209, 0xD63A2918, 0xFFFFBC5A, 0xFFFFF5E5, 0xFFD1B889),
-    ROUGH("Rough", 0xEC180D0F, 0xD6372022, 0xFFFF716B, 0xFFFFEFED, 0xFFC8A09E);
+    CLEAN("Clean", "clean", 0xFFF3F6F8, 0xFFB7C0C9),
+    NEON("Neon", "neon", 0xFF5CEBFF, 0xFF8CB7C4),
+    OCEAN("Ocean", "ocean", 0xFF7FE3F2, 0xFF9CC6CF),
+    DESERT("Desert", "desert", 0xFFFFCC7A, 0xFFD0B17D),
+    ROUGH("Rough", "rough", 0xFFFF836D, 0xFFC09A92);
 
     private final String displayName;
-    private final int background;
-    private final int surface;
+    private final String assetKey;
     private final int accent;
-    private final int text;
     private final int muted;
 
-    MusicTheme(String displayName, int background, int surface, int accent, int text, int muted) {
+    MusicTheme(String displayName, String assetKey, int accent, int muted) {
         this.displayName = displayName;
-        this.background = background;
-        this.surface = surface;
+        this.assetKey = assetKey;
         this.accent = accent;
-        this.text = text;
         this.muted = muted;
     }
 
     public String displayName() { return displayName; }
-    public int background() { return background; }
-    public int surface() { return surface; }
+    public String assetKey() { return assetKey; }
     public int accent() { return accent; }
-    public int text() { return text; }
+    public int text() { return 0xFFF7F9FA; }
     public int muted() { return muted; }
+
+    public Identifier panelSprite() { return sprite(assetKey + "_panel"); }
+    public Identifier cardSprite() { return sprite(assetKey + "_card"); }
+    public Identifier buttonSprite() { return sprite(assetKey + "_button"); }
+
+    private static Identifier sprite(String file) {
+        return Identifier.fromNamespaceAndPath(CampfireSessions.MOD_ID, "music/theme/" + file);
+    }
 }
