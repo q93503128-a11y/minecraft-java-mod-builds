@@ -1,6 +1,6 @@
 # Open-World RPG — Azari Spatial Closure Pass 1
 
-> Status: **OVERHEAD-RENDER TRIAGE COMPLETE / LOCAL ARCHIVE INTAKE TOOLING READY / ACTUAL WORLD COORDINATE CLOSURE STILL REQUIRED**  
+> Status: **OVERHEAD-RENDER TRIAGE COMPLETE / R01 ACTUAL-WORLD SLICE NOW PARSED IN PASS 2 / FULL FINAL COORDINATE CLOSURE STILL REQUIRED**  
 > Date: 2026-09-17  
 > Spatial master: `REGIONS.md`  
 > Project contract: `PROJECT.md`  
@@ -29,7 +29,7 @@ creator instruction:
 put $0 / FREE for the free download
 ```
 
-The current research/browser environment can reach the Gumroad landing page but cannot complete the $0 checkout/download transaction or materialize the world archive bytes. Therefore this pass still has **no world ZIP hash and no local world load**. The acquisition path is now pinned; the remaining blocker is obtaining the archive bytes, not finding the map again.
+The original Pass 1 environment could not complete the Gumroad checkout. That acquisition blocker is now partially superseded by `AZARI_R01_SPATIAL_PASS2.md`: the user acquired the creator build and supplied a real R01 world slice whose Anvil region/entity/POI bytes have been parsed. The full 19.2 GB creator ZIP is still not present/hashable in this workspace, and the world has not yet been opened in a real Minecraft client here.
 
 Publicly stated facts relevant to this project:
 
