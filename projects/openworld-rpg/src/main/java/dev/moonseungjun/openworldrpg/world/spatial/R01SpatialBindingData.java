@@ -71,7 +71,7 @@ public record R01SpatialBindingData(
             String id,
             String status,
             int x,
-            int y,
+            Integer y,
             int z,
             String role
     ) {
@@ -201,9 +201,15 @@ public record R01SpatialBindingData(
             requireNamespacedId(anchor.id(), "anchor");
             requireReviewStatus(anchor.status(), "anchor " + anchor.id());
             requireInsideExtractedSlice(anchor.x(), anchor.z(), anchor.id());
-            if (anchor.y() < -64 || anchor.y() > 511) {
+            if (anchor.y() != null && (anchor.y() < -64 || anchor.y() > 511)) {
                 throw new IllegalArgumentException(
                         "R01 spatial anchor y outside accepted world envelope: " + anchor
+                );
+            }
+            if (anchor.production() && anchor.y() == null) {
+                throw new IllegalArgumentException(
+                        "Production R01 spatial anchor requires a verified y coordinate: "
+                                + anchor.id()
                 );
             }
             if (anchor.role().isBlank()) {

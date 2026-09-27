@@ -24,7 +24,7 @@
       "id": "openworld_rpg:r01/broken_road_marker_probe",
       "status": "candidate",
       "x": -2380,
-      "y": 67,
+      "y": null,
       "z": 4300,
       "role": "Old Quarry Road first-disturbance review probe"
     },
@@ -32,7 +32,7 @@
       "id": "openworld_rpg:r01/roadside_trouble_probe",
       "status": "candidate",
       "x": -2440,
-      "y": 67,
+      "y": null,
       "z": 4400,
       "role": "Roadside Trouble volume-center review probe"
     },
@@ -40,7 +40,7 @@
       "id": "openworld_rpg:r01/lost_cargo_probe",
       "status": "candidate",
       "x": -2500,
-      "y": 67,
+      "y": null,
       "z": 4500,
       "role": "late-road cargo evidence review probe"
     },

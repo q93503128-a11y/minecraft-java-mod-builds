@@ -38,6 +38,16 @@ class R01SpatialBindingDataTest {
         assertEquals(96, quarryOverlook.y());
         assertEquals(4764, quarryOverlook.z());
 
+        assertTrue(data.anchor(
+                "openworld_rpg:r01/broken_road_marker_probe"
+        ).orElseThrow().y() == null);
+        assertTrue(data.anchor(
+                "openworld_rpg:r01/roadside_trouble_probe"
+        ).orElseThrow().y() == null);
+        assertTrue(data.anchor(
+                "openworld_rpg:r01/lost_cargo_probe"
+        ).orElseThrow().y() == null);
+
         var route = data.route(
                 "openworld_rpg:r01/alderford_to_quarry_surface_candidate"
         ).orElseThrow();
