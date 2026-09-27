@@ -89,14 +89,15 @@ No final coordinate may be inferred from the public overview render.
 
 ## Tool verification
 
-Before repository admission the original parser was tested against a synthetic Java-world ZIP spanning
-region coordinates `-29..29` on both axes. It correctly reported **30,208 × 30,208** block
-coverage and the expected region-file count.
+During this pass the existing region-filename regex was found to be over-escaped and therefore
+unable to match normal Anvil names such as `region/r.-8.12.mca`. The current tool fixes that parser
+bug and was re-tested rather than relying on the older verification note.
 
-The R01 review-save extension was additionally tested against a synthetic archive with the full
-`-8..4 × 0..12` terrain rectangle. It copied exactly **169** terrain regions, copied only present
-entity/POI regions and datapacks, refused an existing destination, and removed a partial destination
-when a required terrain region was missing.
+The corrected parser was tested against a synthetic Java-world ZIP spanning region coordinates
+`-29..29` on both axes. It reported **30,208 × 30,208** block coverage. The R01 review-save path
+was tested against a synthetic archive with the full `-8..4 × 0..12` terrain rectangle: it copied
+exactly **169** terrain regions, copied only present entity/POI regions and datapacks, refused an
+existing destination, and removed a partial destination when a required terrain region was missing.
 
 ```text
 AZARI CREATOR DOWNLOAD LOCATOR: VERIFIED
