@@ -82,8 +82,8 @@ public final class GuitarClientEvents {
         while (REPEAT_TRACK.consumeClick()) {
             if (holdingGuitar && minecraft.gui.screen() == null) {
                 CampfireMusicClient.toggleRepeatOne();
-                player.displayClientMessage(Component.literal(
-                        CampfireMusicClient.isRepeatOne() ? "♪ Repeat one: ON" : "♪ Repeat one: OFF"), true);
+                player.sendOverlayMessage(Component.literal(
+                        CampfireMusicClient.isRepeatOne() ? "♪ Repeat one: ON" : "♪ Repeat one: OFF"));
             }
         }
     }
@@ -113,8 +113,8 @@ public final class GuitarClientEvents {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) return;
         MusicTrack track = CampfireMusicClient.selectedTrack();
-        minecraft.player.displayClientMessage(Component.literal(
-                "♪ " + track.title() + " · " + track.bpm() + " BPM"), true);
+        minecraft.player.sendOverlayMessage(Component.literal(
+                "♪ " + track.title() + " · " + track.bpm() + " BPM"));
     }
 
     private static void openScreen() {
