@@ -16,6 +16,12 @@ final class PersonalPresentationActorCatalogTest {
     }
 
     @Test
+    void sharedAndPrivatePresentationTagsAreDistinct() {
+        assertEquals(PersonalPresentationActorCatalog.COMMON_TAG, PersonalPresentationActorCatalog.PRIVATE_TAG);
+        assertNotEquals(PersonalPresentationActorCatalog.PRIVATE_TAG, PersonalPresentationActorCatalog.SHARED_BATTLE_TAG);
+    }
+
+    @Test
     void malformedAndUnrelatedTagsAreRejected() {
         assertNull(PersonalPresentationActorCatalog.ownerFromTag(null));
         assertNull(PersonalPresentationActorCatalog.ownerFromTag(""));

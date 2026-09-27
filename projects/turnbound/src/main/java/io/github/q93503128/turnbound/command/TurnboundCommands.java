@@ -2,11 +2,13 @@ package io.github.q93503128.turnbound.command;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.LongArgumentType;
+import net.minecraft.commands.arguments.EntityArgument;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.github.q93503128.turnbound.content.CanonicalData;
 import io.github.q93503128.turnbound.progression.GachaService;
 import io.github.q93503128.turnbound.progression.PlayerProfile;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
+import io.github.q93503128.turnbound.session.MultiplayerPartyService;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import io.github.q93503128.turnbound.world.DrehmalWorldBinding;
@@ -41,6 +43,14 @@ public final class TurnboundCommands {
                         .then(Commands.literal("status").executes(context -> worldStatus(context.getSource())))
                         .then(Commands.literal("bind_drehmal").executes(context -> bindDrehmal(context.getSource()))))
                 .then(Commands.literal("profile").executes(context -> profile(context.getSource())))
+                .then(Commands.literal("party")
+                        .then(Commands.literal("status").executes(context -> partyStatus(context.getSource())))
+                        .then(Commands.literal("invite")
+                                .then(Commands.argument("player", EntityArgument.player())
+                                        .executes(context -> partyInvite(context.getSource(), EntityArgument.getPlayer(context, "player")))))
+                        .then(Commands.literal("accept").executes(context -> partyAccept(context.getSource())))
+                        .then(Commands.literal("decline").executes(context -> partyDecline(context.getSource())))
+                        .then(Commands.literal("leave").executes(context -> partyLeave(context.getSource()))))
                 .then(Commands.literal("archive")
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.literal("single").executes(context -> summon(context.getSource(), 1, false)))
@@ -115,6 +125,64 @@ public final class TurnboundCommands {
         if (message.contains("write TURNBOUND")) return "세계 연결 정보를 저장하지 못했습니다.";
         if (message.contains("server unavailable")) return "현재 세계에 연결할 수 없습니다.";
         return "설치된 Drehmal 세계와 위치를 확인해 주세요.";
+    }
+
+    private static int partyStatus(CommandSourceStack source) throws CommandSyntaxException {
+        var player = source.getPlayerOrException();
+        var snapshot = MultiplayerPartyService.snapshot(player.getUUID());
+        var server = player.level().getServer();
+        String names = snapshot.members().stream().map(id -> {
+            var member = server == null ? null : server.getPlayerList().getPlayer(id);
+            return member == null ? id.toString().substring(0, 8) : member.getGameProfile().name();
+        }).reduce((a,b) -> a + ", " + b).orElse(player.getGameProfile().name());
+        source.sendSuccess(() -> Component.literal("플레이어 파티 " + snapshot.members().size() + "/" + MultiplayerPartyService.MAX_PLAYERS
+                + " · " + names), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int partyInvite(CommandSourceStack source, ServerPlayer target) throws CommandSyntaxException {
+        var player = source.getPlayerOrException();
+        try {
+            MultiplayerPartyService.invite(player, target);
+            source.sendSuccess(() -> Component.literal(target.getGameProfile().name() + "에게 파티 초대를 보냈습니다."), false);
+            target.sendSystemMessage(Component.literal(player.getGameProfile().name()
+                    + "의 플레이어 파티 초대 · /turnbound party accept 또는 /turnbound party decline"));
+            return Command.SINGLE_SUCCESS;
+        } catch (RuntimeException ex) {
+            source.sendFailure(Component.literal(ex.getMessage() == null ? "파티 초대를 보낼 수 없습니다." : ex.getMessage()));
+            return 0;
+        }
+    }
+
+    private static int partyAccept(CommandSourceStack source) throws CommandSyntaxException {
+        var player = source.getPlayerOrException();
+        try {
+            var snapshot = MultiplayerPartyService.accept(player);
+            source.sendSuccess(() -> Component.literal("플레이어 파티에 참가했습니다. " + snapshot.members().size()
+                    + "/" + MultiplayerPartyService.MAX_PLAYERS), false);
+            return Command.SINGLE_SUCCESS;
+        } catch (RuntimeException ex) {
+            source.sendFailure(Component.literal(ex.getMessage() == null ? "파티에 참가할 수 없습니다." : ex.getMessage()));
+            return 0;
+        }
+    }
+
+    private static int partyDecline(CommandSourceStack source) throws CommandSyntaxException {
+        var player = source.getPlayerOrException();
+        MultiplayerPartyService.decline(player);
+        source.sendSuccess(() -> Component.literal("파티 초대를 거절했습니다."), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int partyLeave(CommandSourceStack source) throws CommandSyntaxException {
+        var player = source.getPlayerOrException();
+        if (BattleSessionManager.exists(player)) {
+            source.sendFailure(Component.literal("전투 중에는 플레이어 파티를 변경할 수 없습니다."));
+            return 0;
+        }
+        MultiplayerPartyService.leave(player);
+        source.sendSuccess(() -> Component.literal("플레이어 파티에서 나왔습니다."), false);
+        return Command.SINGLE_SUCCESS;
     }
 
     private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> currencyNode(

@@ -2,9 +2,13 @@ package io.github.q93503128.turnbound.presentation;
 
 import java.util.UUID;
 
-/** Pure identity contract for presentation entities that must only be visible to one player. */
+/** Identity tags for player-owned presentation entities. */
 public final class PersonalPresentationActorCatalog {
+    /** Legacy marker retained as the owner-private visibility tag. */
     public static final String COMMON_TAG = "turnbound_private_presentation";
+    public static final String PRIVATE_TAG = COMMON_TAG;
+    /** Battle actors carry this tag when they are intentionally spectator-visible. */
+    public static final String SHARED_BATTLE_TAG = "turnbound_shared_battle";
     public static final String OWNER_PREFIX = "turnbound_private_owner:";
 
     private PersonalPresentationActorCatalog() {}

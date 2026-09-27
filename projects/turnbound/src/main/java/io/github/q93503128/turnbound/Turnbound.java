@@ -9,6 +9,7 @@ import io.github.q93503128.turnbound.presentation.TurnboundVisualItems;
 import io.github.q93503128.turnbound.session.BattleInteractionGuard;
 import io.github.q93503128.turnbound.session.BattleNetwork;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
+import io.github.q93503128.turnbound.session.MultiplayerPartyService;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import io.github.q93503128.turnbound.world.ExternalWorldBootstrap;
@@ -99,6 +100,7 @@ public final class Turnbound {
     private void logout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         GachaPresentationActorService.finish(player);
+        MultiplayerPartyService.remove(player);
         boolean releaseRuntime = true;
         if (!CampaignPersistence.blocked(player)) {
             releaseRuntime = BattleSessionManager.endForLifecycle(player);
@@ -117,6 +119,7 @@ public final class Turnbound {
     private void serverStopping(ServerStoppingEvent event) {
         var players = event.getServer().getPlayerList().getPlayers();
         GachaPresentationActorService.clearAll();
+        MultiplayerPartyService.clear();
         BattleSessionManager.clearAll(players);
         for (ServerPlayer player : players) {
             if (!CampaignPersistence.saveIfDirtyForLifecycle(player)) {
