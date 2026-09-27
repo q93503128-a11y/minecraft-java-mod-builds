@@ -27,6 +27,10 @@ public final class BattleNetwork {
         PacketDistributor.sendToPlayer(player, new BattleSnapshotPayload(BattleSnapshotCodec.encode(player.getUUID(), session)));
     }
 
+    static void sync(ServerPlayer player, SharedBattleSession session) {
+        PacketDistributor.sendToPlayer(player, new BattleSnapshotPayload(SharedBattleSnapshotCodec.encode(player.getUUID(), session)));
+    }
+
     static void close(ServerPlayer player) {
         PacketDistributor.sendToPlayer(player, new BattleSnapshotPayload("H|0|0|1|RUNNING||1|1|1|1\n"));
     }

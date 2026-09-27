@@ -44,7 +44,7 @@ public final class HeroSignaturePresentationState {
             if (targetId == null || targetId.isBlank()) throw new IllegalArgumentException("Missing relation target");
         }
 
-        public String key() { return kind.name() + "|" + targetId; }
+        public String key() { return kind.name() + "|" + sourceId + "|" + targetId; }
     }
 
     private HeroSignaturePresentationState() {}

@@ -25,6 +25,7 @@ public final class BattleSessionManager {
     private BattleSessionManager() {}
 
     public static void start(ServerPlayer player) {
+        if (SharedBattleSessionManager.exists(player.getUUID())) return;
         if (!endAndPersist(player, false)) return;
         prepareClientTransition(player);
         BattleSession session = privateSession(player, () -> new BattleSession(player));
@@ -37,6 +38,7 @@ public final class BattleSessionManager {
     }
 
     public static void startEncounter(ServerPlayer player, String encounterId, boolean autoAllowed, boolean speedAllowed) {
+        if (SharedBattleSessionManager.exists(player.getUUID())) return;
         if (!endAndPersist(player, false)) return;
         boolean endgame = EndgameEncounterCatalog.contains(encounterId);
         if (endgame && !EndgameEncounterCatalog.unlocked(player.getUUID(), encounterId)) {
@@ -54,6 +56,7 @@ public final class BattleSessionManager {
 
     public static boolean startEncounterAt(ServerPlayer player, String encounterId, boolean autoAllowed, boolean speedAllowed,
                                            Vec3 center, float yaw) {
+        if (SharedBattleSessionManager.exists(player.getUUID())) return false;
         BattleArenaLocator.Arena arena = BattleArenaLocator.fixedIfOpen(player, center, yaw);
         if (arena == null || !endAndPersist(player, false)) return false;
         boolean endgame = EndgameEncounterCatalog.contains(encounterId);
@@ -69,18 +72,32 @@ public final class BattleSessionManager {
         return true;
     }
 
+    public static boolean startSharedEncounterAt(java.util.List<ServerPlayer> participants, UUID initiatorId,
+                                                 String encounterId, boolean autoAllowed, boolean speedAllowed,
+                                                 Vec3 center, float yaw) {
+        return SharedBattleSessionManager.startEncounterAt(participants, initiatorId, encounterId, autoAllowed, speedAllowed, center, yaw);
+    }
+
     public static boolean active(ServerPlayer player) {
-        BattleSession session = SESSIONS.get(player.getUUID());
+        if (SharedBattleSessionManager.active(player)) return true;
+        BattleSession session = player == null ? null : SESSIONS.get(player.getUUID());
         return session != null && !session.finished();
     }
 
-    public static boolean exists(ServerPlayer player) { return SESSIONS.containsKey(player.getUUID()); }
+    public static boolean exists(ServerPlayer player) { return player != null && exists(player.getUUID()); }
+    public static boolean exists(UUID playerId) {
+        return playerId != null && (SESSIONS.containsKey(playerId) || SharedBattleSessionManager.exists(playerId));
+    }
+    static boolean privateExists(UUID playerId) { return playerId != null && SESSIONS.containsKey(playerId); }
+
     public static boolean finished(ServerPlayer player) {
+        if (SharedBattleSessionManager.finished(player)) return true;
         BattleSession session = player == null ? null : SESSIONS.get(player.getUUID());
         return session != null && session.finished();
     }
 
     public static boolean resumeIfPresent(ServerPlayer player) {
+        if (SharedBattleSessionManager.resumeIfPresent(player)) return true;
         BattleSession session = SESSIONS.get(player.getUUID());
         if (session == null) return false;
         Vec3 anchor = session.battleAnchor();
@@ -93,6 +110,7 @@ public final class BattleSessionManager {
     }
 
     public static void tick(ServerPlayer player) {
+        if (SharedBattleSessionManager.tick(player)) return;
         BattleSession session = SESSIONS.get(player.getUUID());
         if (session != null) {
             PersonalPresentationIsolation.withPrivateActorOwner(player.getUUID(), () -> session.tick(player));
@@ -101,6 +119,7 @@ public final class BattleSessionManager {
     }
 
     public static void command(ServerPlayer player, String command) {
+        if (SharedBattleSessionManager.command(player, command)) return;
         BattleSession session = SESSIONS.get(player.getUUID());
         if (session == null || command == null) return;
         String[] parts = command.split("\\|", -1);
@@ -125,8 +144,16 @@ public final class BattleSessionManager {
         });
     }
 
-    public static void end(ServerPlayer player) { endAndPersist(player, false); }
-    public static boolean endForLifecycle(ServerPlayer player) { return endAndPersist(player, true); }
+    public static void end(ServerPlayer player) {
+        if (SharedBattleSessionManager.forceEnd(player)) return;
+        endAndPersist(player, false);
+    }
+    public static boolean endForLifecycle(ServerPlayer player) {
+        if (player != null && SharedBattleSessionManager.exists(player.getUUID())) {
+            return SharedBattleSessionManager.disconnectForLifecycle(player);
+        }
+        return endAndPersist(player, true);
+    }
 
     private static boolean endAndPersist(ServerPlayer player, boolean lifecycle) {
         BattleSession old = SESSIONS.get(player.getUUID());
@@ -198,7 +225,7 @@ public final class BattleSessionManager {
         return false;
     }
 
-    private static void prepareClientTransition(ServerPlayer player) {
+    static void prepareClientTransition(ServerPlayer player) {
         if (ExternalWorldBootstrap.active(player) || WorldSessionRouter.active(player)) {
             FieldNetwork.suspendForBattle(player);
         }
@@ -218,6 +245,7 @@ public final class BattleSessionManager {
     }
 
     public static void clearAll(Iterable<ServerPlayer> players) {
+        SharedBattleSessionManager.clearAll(players);
         for (ServerPlayer player : players) {
             if (!endForLifecycle(player)) {
                 Turnbound.LOGGER.error("TURNBOUND could not durably settle an in-memory battle while the server was stopping for {}",

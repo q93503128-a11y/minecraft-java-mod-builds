@@ -13,6 +13,7 @@ import io.github.q93503128.turnbound.presentation.EnemyDefeatVfx;
 import io.github.q93503128.turnbound.presentation.EnemyPresentationProfile;
 import io.github.q93503128.turnbound.presentation.HeroSignatureBeat;
 import io.github.q93503128.turnbound.presentation.HeroSignaturePresentationState;
+import io.github.q93503128.turnbound.presentation.PersonalPresentationIsolation;
 import io.github.q93503128.turnbound.presentation.SignatureBattleActors;
 import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
 import net.minecraft.ChatFormatting;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 
 final class BattlePresentation {
     private final Map<String, UUID> actors = new LinkedHashMap<>();
@@ -191,6 +193,10 @@ final class BattlePresentation {
     }
 
     void syncRelations(ServerLevel level,BattleState state){
+        syncRelations(level,state,ignored->null);
+    }
+
+    void syncRelations(ServerLevel level,BattleState state,Function<String,UUID> ownerResolver){
         Map<String,HeroSignaturePresentationState.Relation> desired=new LinkedHashMap<>();
         for(HeroSignaturePresentationState.Relation relation:HeroSignaturePresentationState.relations(state))desired.put(relation.key(),relation);
 
@@ -205,7 +211,10 @@ final class BattlePresentation {
             HeroSignaturePresentationState.Relation relation=entry.getValue();
             Entity target=entity(level,relation.targetId());if(target==null)continue;
             String visualId=relationVisualId(relation.kind());
-            BattleActorEntity marker=TurnboundBattleActors.spawn(level,visualId,relationPosition(target,relation.kind()),0F);
+            UUID owner=ownerResolver==null?null:ownerResolver.apply(relation.sourceId());
+            BattleActorEntity marker=owner==null
+                    ?TurnboundBattleActors.spawn(level,visualId,relationPosition(target,relation.kind()),0F)
+                    :PersonalPresentationIsolation.spawnPrivateActor(level,visualId,relationPosition(target,relation.kind()),0F,owner);
             if(marker==null)continue;
             marker.setCustomNameVisible(false);marker.playReady();
             relationMarkers.put(entry.getKey(),new RelationMarker(relation.targetId(),relation.kind(),marker.getUUID()));
