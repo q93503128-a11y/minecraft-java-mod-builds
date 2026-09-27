@@ -547,6 +547,9 @@ normal gameplay에 먼저 넣는 대신 **시각 binding을 보류하고 자산�
 - PvP는 강제 오픈월드 공격이 아니라 상호 동의 duel/ranked 전용 전투.
 - damage/action/reward/ranking/quest credit은 서버 권위.
 - 기존 single-owner BattleSession에 조건문을 누적하지 않고 shared/multi-owner session을 별도 설계.
+- Co-op PvE의 적 HP는 참가 플레이어 수만큼 선형 배율: 1p x1 / 2p x2 / 3p x3 / 4p x4.
+- 1인은 기존 1열 배치. 2인 이상은 플레이어별 4캐릭터를 2x2 블록으로 묶고 블록들을 좌우로 나열한다.
+- 2x2의 앞/뒤 행은 시각적 정리일 뿐 전투 규칙상 차이가 없다.
 
 ## 25. 완성 기준
 

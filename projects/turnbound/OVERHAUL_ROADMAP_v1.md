@@ -184,10 +184,12 @@ server authority 필수.
 - full party management UI — 남음
 
 2차:
-- shared PvE battle session
-- participant radius/join policy
-- disconnect/rejoin
-- per-player reward/quest credit
+- shared battle capacity / owner mapping / HP scaling / 2x2 block formation — 기반 구현
+- SharedBattleSession input routing — 남음
+- participant radius/join policy — 남음
+- field encounter shared-start binding — 남음
+- disconnect/rejoin — 남음
+- per-player reward/quest credit — 남음
 
 3차:
 - opt-in duel

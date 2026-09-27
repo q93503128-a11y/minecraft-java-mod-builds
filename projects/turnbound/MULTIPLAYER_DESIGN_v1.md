@@ -21,7 +21,8 @@
 - 파티장
 - 추후 미니맵/월드맵 파티원 표시
 
-플레이어 파티에 4명이 있다고 캐릭터 16명을 그대로 한 전투에 넣지 않는다.
+Co-op PvE에서는 각 참가자가 자신의 활성 캐릭터 파티(최대 4명)를 그대로 가져온다.
+따라서 2/3/4인 co-op은 최대 8/12/16명의 정규 아군 캐릭터가 같은 BattleState에 존재할 수 있다.
 
 ## 3. 필드 조우
 
@@ -52,10 +53,18 @@ VFX는 겹친 전투의 노이즈를 막기 위해 처음부터 전부 공유하
 현재 single-owner `BattleSession`을 다중 입력으로 땜질하지 않는다.
 별도 `SharedBattleSession` 계열이 필요하다.
 
-확정 필요:
-- 2/3/4인일 때 4개 전투 슬롯 배분
-- 행동 owner
-- AUTO
+확정:
+- 1인 전투는 기존처럼 아군이 한 줄로 선다.
+- 2인 이상은 **플레이어 1명당 자기 캐릭터 최대 4명을 2행 2열 사각형 블록**으로 배치한다.
+- 각 플레이어의 2x2 블록을 좌우로 나열한다.
+- 두 줄은 순수한 시각 배치다. 앞줄/뒷줄에 방어, 사거리, 타깃 우선도 차이를 두지 않는다.
+- 적 HP 배율은 참가 플레이어 수와 정확히 같다: 1인 x1 / 2인 x2 / 3인 x3 / 4인 x4.
+- HP 외 ATK/DEF/SPD는 이 인원 배율로 올리지 않는다.
+- 같은 캐릭터를 서로 다른 플레이어가 가져올 수 있으므로 actor instance는 owner별로 분리한다.
+
+남은 확정/구현:
+- 행동 owner와 client input routing
+- AUTO의 owner별/파티장 제어 규칙
 - disconnect/rejoin
 - reward/quest credit
 - wipe/flee
@@ -82,9 +91,17 @@ VFX는 겹친 전투의 노이즈를 막기 위해 처음부터 전부 공유하
 - battle actor spectator visibility
 - owner-only helper marker isolation
 
+구현 기반:
+- shared battle capacity: 최대 16 regular allies + 플레이어별 summon
+- shared encounter roster blueprint / actor owner map
+- player-count enemy HP scaling
+- 2x2 owner block battle formation
+- co-op 폭에 맞춘 battle camera framing 범위 확대
+
 아직 미구현:
 - full party management UI
-- shared PvE battle
+- SharedBattleSession input/reward lifecycle
+- field encounter → nearby party shared-battle start 연결
 - duel battle
 - ranked
 - multiplayer playtest

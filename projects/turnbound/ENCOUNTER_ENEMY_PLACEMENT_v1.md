@@ -623,6 +623,8 @@ Ambush만 예외적으로 짧은 warning.
 - focus/target/helper marker는 관전자에게 숨긴다.
 - 관전자는 battle actor를 공격하거나 BattleEngine state에 끼어들 수 없다.
 - co-op은 별도 shared session에서 참여자/보상/행동권을 서버가 관리한다.
+- field common은 길과 길가 patrol point를 오가며 보이고, Elite/Midboss는 제한된 territory를 가진다.
+- Boss/World Boss는 일반 road patrol에 섞지 않고 랜드마크/둥지/폐허/전용 공터처럼 장소 자체가 읽히는 위치에 둔다.
 
 ## 18. Battle candidate selection
 
