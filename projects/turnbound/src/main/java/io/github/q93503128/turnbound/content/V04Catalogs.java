@@ -78,6 +78,16 @@ public final class V04Catalogs {
 
     public static int battleGold(Encounter encounter) {
         if (tutorialBridge(encounter.id())) return 0;
+        int firstRoute = switch (encounter.id()) {
+            // First-route economy follows the v1 80~160 field / 350~700 Elite target instead of the legacy
+            // per-enemy formula. This keeps visible overworld battles rewarding without turning road patrols
+            // into the dominant Gold farm.
+            case "CV_FIRST_COMMON" -> 120;
+            case "CV_DRABYEL_ROAD" -> 160;
+            case "CV_WARNING_CAVE_ELITE" -> 600;
+            default -> -1;
+        };
+        if (firstRoute >= 0) return firstRoute;
         if (encounter.boss()) return switch (encounter.enemies().getFirst()) {
             case "B01" -> 12_000; case "B02" -> 18_000; case "B03" -> 24_000; case "B04" -> 32_000; case "B05" -> 50_000; default -> 0;
         };

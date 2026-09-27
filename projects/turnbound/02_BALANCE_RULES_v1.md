@@ -507,3 +507,40 @@ Enemy difficulty는 HP multiplier만으로 만들지 않는다.
 - 해당 지역 권장 progression보다 높을 수 있음
 - 우회 가능
 - 발견/도전 자체가 선택
+
+
+## 25. 외부 턴제 RPG 레퍼런스 적용 규칙
+
+TURNBOUND는 외부 게임의 수치표를 복사하지 않고 **플레이 감각과 검증된 전투 원리**를 번역한다.
+
+### R_PG에서 가져오는 축
+- 오버월드에서 적을 실제로 보고 접근하는 전투 진입 감각
+- 지역 탐험 → 일반 조우 → 강적/보스 → 반복 도전 콘텐츠로 이어지는 흐름
+- 수집 캐릭터가 단순 메뉴가 아니라 필드 여행과 전투에 연결되는 느낌
+
+그대로 가져오지 않는 것:
+- 일일 숙제/FOMO 구조
+- 단순 반복 사냥을 최종 성장의 최고 효율로 만드는 구조
+- Roblox UI/수치 구조의 직접 복제
+
+### 현대 턴제 RPG에서 가져오는 축
+- SPD/Turn Order가 실제 행동 빈도와 위협 판단에 영향을 주고 UI에서 읽혀야 한다.
+- 일반전은 적의 핵심 mechanic 1개를 빠르게 읽고 끝내며, Elite/Boss에서 패턴 수와 판단 깊이를 늘린다.
+- 강한 공격은 사전 예고와 대응 창을 주고, 난이도는 HP 증가보다 target priority / Gauge / phase 변화에서 만든다.
+- 첫 발견·첫 클리어 보상을 반복 사냥보다 강하게 두어 탐험을 전진시킨다.
+
+### TURNBOUND first-route 계측 계약
+AUTO는 최적 플레이가 아니라 회귀 감지용 deterministic probe로만 사용한다.
+
+초기 4인 파티 기준:
+- `CV_FIRST_COMMON`: 아군 regular action 3~6
+- `CV_DRABYEL_ROAD`: 6~12
+- `CV_WARNING_CAVE_ELITE`: 10~18
+- 실제 client playtest가 이 범위보다 체감상 길거나 짧으면 client feel을 우선한다.
+
+Capital Valley Gold:
+- 첫 visible common: 120
+- Drabyel 진입로 patrol: 160
+- Warning Cave Elite: 600
+
+이 값은 v1 경제 목표인 일반 필드전 80~160 / Elite 350~700 안에서 첫 루트의 탐험 템포를 맞추는 값이다.
