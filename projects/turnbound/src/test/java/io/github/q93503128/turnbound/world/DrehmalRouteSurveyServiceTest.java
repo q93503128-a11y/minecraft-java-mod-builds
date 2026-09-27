@@ -33,7 +33,7 @@ class DrehmalRouteSurveyServiceTest {
 
     @Test
     void routeSeedsRemainSurveyOnlyUntilCatalogGateChanges() {
-        assertFalse(DrehmalRouteSurveyService.routeSeedLines().isEmpty());
+        assertFalse(DrehmalRouteSurveyPlan.routeSeedLines().isEmpty());
         assertTrue(DrehmalFirstRouteCatalog.productionEncounters().isEmpty());
     }
 }

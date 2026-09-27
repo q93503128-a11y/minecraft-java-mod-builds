@@ -12,6 +12,7 @@ import io.github.q93503128.turnbound.session.MultiplayerPartyService;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import io.github.q93503128.turnbound.world.DrehmalWorldBinding;
+import io.github.q93503128.turnbound.world.DrehmalRouteSurveyPlan;
 import io.github.q93503128.turnbound.world.DrehmalRouteSurveyService;
 import io.github.q93503128.turnbound.world.ExternalWorldBootstrap;
 import io.github.q93503128.turnbound.world.FieldSessionManager;
@@ -101,7 +102,7 @@ public final class TurnboundCommands {
 
     private static int surveyRoute(CommandSourceStack source) {
         source.sendSuccess(() -> Component.literal("Capital Valley 26.2 조사 시드"), false);
-        for (String line : DrehmalRouteSurveyService.routeSeedLines()) {
+        for (String line : DrehmalRouteSurveyPlan.routeSeedLines()) {
             source.sendSuccess(() -> Component.literal(line), false);
         }
         return Command.SINGLE_SUCCESS;
