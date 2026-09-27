@@ -1,1 +1,28 @@
-{"schemaVersion":4,"definitions":[{"id":"P01_FOCUS","owner":"P01","name":"집요한 추적"},{"id":"P02_LATE_WAIT","owner":"P02","name":"늦은 자를 기다리며"},{"id":"P03_COUNTER","owner":"P03","name":"응징"},{"id":"P04_LAST_TOUCH","owner":"P04","name":"마지막 손길"},{"id":"P05_FOLLOW_UP","owner":"P05","name":"빈틈 포착"},{"id":"P06_MEMORY","owner":"P06","name":"죽음의 기록"},{"id":"P06_RETURN","owner":"P06","name":"마지막 장"},{"id":"P07_CONTRACT","owner":"P07","name":"끊어진 계약"},{"id":"P08_LOW_HP","owner":"P08","name":"벼랑 끝"},{"id":"F01_NONE","owner":"F01","name":"없음"},{"id":"F02_NONE","owner":"F02","name":"없음"},{"id":"F03_MATERIAL","owner":"F03","name":"소재형 규칙"},{"id":"F04_MATERIAL","owner":"F04","name":"소재형 규칙"},{"id":"E001_TENACITY","owner":"E001","name":"30% 최초 Barrier"},{"id":"E012_LOWER_GAUGE_BONUS","owner":"E012","name":"낮은 Gauge 추적"},{"id":"EL01_SUBORDINATE_DEATH","owner":"EL01","name":"부하 사망 Gauge"},{"id":"EL02_REPEAT","owner":"EL02","name":"연속 대상 보너스"},{"id":"EL03_BARRIER_COUNTER","owner":"EL03","name":"Barrier 반격"},{"id":"B01_PHASES","owner":"B01","name":"Graul Phase"},{"id":"B02_PHASES","owner":"B02","name":"Verna Phase"},{"id":"B03_PHASES","owner":"B03","name":"ORO-7 Phase"},{"id":"B04_PHASES","owner":"B04","name":"Kolvak Phase"},{"id":"B05_PHASES","owner":"B05","name":"Serak Phase"}]}
+{
+  "schemaVersion": 4,
+  "definitions": [
+    {"id":"P01_FOCUS","owner":"P01","name":"집요한 추적","description":"현재 결투 대상에게 Focus 1당 직접 피해 +5%. 다른 대상에는 적용되지 않습니다."},
+    {"id":"P02_TEMPO_WINDOW","owner":"P02","name":"Tempo Window","description":"루메아보다 느린 아군에게 가속 또는 시간 도약을 사용하면 추가 Gauge를 부여합니다."},
+    {"id":"P03_COUNTER","owner":"P03","name":"되받는 방벽","description":"보호 전환으로 실제 피해를 대신 받으면 공격자에게 45% 반격합니다. 적 행동 하나당 최대 1회입니다."},
+    {"id":"P04_SANCTUARY","owner":"P04","name":"미리 남긴 빛","description":"Sanctuary 대상이 HP 35% 이하로 내려가면 즉시 ATK 45%만큼 Reaction 회복하고 Mark를 소비합니다."},
+    {"id":"P05_CROSS_FIRE","owner":"P05","name":"교차 사격","description":"다른 아군이 Sightline 대상에게 직접 피해를 주면 Shot +1. Shot 2에서 50% 추격 사격 후 Shot이 0이 됩니다."},
+    {"id":"P06_RECORD","owner":"P06","name":"전투 기록","description":"처치, 아군 위기, 부활, 사망, 보스 페이즈 같은 중요한 사건을 Records로 저장합니다. 최대 5."},
+    {"id":"P06_LAST_PAGE","owner":"P06","name":"마지막 페이지","description":"전투당 1회, 전투불능 후 다른 유닛의 정규 행동 2회가 끝나면 MaxHP 35%로 자가 부활하며 Records를 유지합니다."},
+    {"id":"P07_CONTRACT","owner":"P07","name":"끊기지 않은 계약","description":"전투 시작 시 계약수가 자동 생성됩니다. 계약수는 별도 정규 턴 없이 마리온의 행동과 반응에 연계됩니다."},
+    {"id":"P08_FURY","owner":"P08","name":"전투열","description":"직접 피해를 주고받으며 Fury를 얻고, HP 50% 이하에서는 Fury 획득량이 증가합니다."},
+    {"id":"F01_LEGACY","owner":"F01","name":"이전 데이터","description":""},
+    {"id":"F02_LEGACY","owner":"F02","name":"이전 데이터","description":""},
+    {"id":"F03_LEGACY","owner":"F03","name":"이전 데이터","description":""},
+    {"id":"F04_LEGACY","owner":"F04","name":"이전 데이터","description":""},
+    {"id":"E001_TENACITY","owner":"E001","name":"30% 최초 Barrier","description":""},
+    {"id":"E012_LOWER_GAUGE_BONUS","owner":"E012","name":"낮은 Gauge 추적","description":""},
+    {"id":"EL01_SUBORDINATE_DEATH","owner":"EL01","name":"부하 사망 Gauge","description":""},
+    {"id":"EL02_REPEAT","owner":"EL02","name":"연속 대상 보너스","description":""},
+    {"id":"EL03_BARRIER_COUNTER","owner":"EL03","name":"Barrier 반격","description":""},
+    {"id":"B01_PHASES","owner":"B01","name":"Graul Phase","description":""},
+    {"id":"B02_PHASES","owner":"B02","name":"Verna Phase","description":""},
+    {"id":"B03_PHASES","owner":"B03","name":"ORO-7 Phase","description":""},
+    {"id":"B04_PHASES","owner":"B04","name":"Kolvak Phase","description":""},
+    {"id":"B05_PHASES","owner":"B05","name":"Serak Phase","description":""}
+  ]
+}

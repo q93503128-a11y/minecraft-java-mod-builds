@@ -1,6 +1,7 @@
 package io.github.q93503128.turnbound.client;
 
 import io.github.q93503128.turnbound.content.CanonicalData;
+import io.github.q93503128.turnbound.content.CharacterPassiveCatalog;
 import io.github.q93503128.turnbound.network.MetaCommandPayload;
 import io.github.q93503128.turnbound.progression.GachaCatalog;
 import io.github.q93503128.turnbound.progression.GrowthRulesV1;
@@ -21,7 +22,7 @@ import java.util.Locale;
 /** Responsive management screen. Dense collections are paged and PC layouts favor information density. */
 public final class MetaMenuScreen extends Screen {
     public enum Tab { HOME, PARTY, CHARACTERS, EQUIPMENT, ARCHIVE, QUESTS, CODEX, SYSTEM }
-    private enum DetailTab { OVERVIEW, SKILLS, EQUIPMENT, GROWTH }
+    private enum DetailTab { OVERVIEW, SKILLS, PASSIVES, EQUIPMENT, GROWTH }
     private enum OwnershipFilter { ALL, OWNED, UNOWNED }
     private enum RoleFilter { ALL, DPS, SUPPORT, TANK, SUMMON }
     private enum EquipSort { TIER, LEVEL, STAT }
@@ -46,6 +47,8 @@ public final class MetaMenuScreen extends Screen {
     private String codexCategory="CHARACTERS",selectedEndgameId="";
     private int selectedSkillIndex;
     private int skillDescriptionScroll;
+    private boolean archiveLogOpen;
+    private int archiveLogScroll;
 
     public MetaMenuScreen(Tab tab){
         super(Component.literal("TURNBOUND"));
@@ -315,18 +318,23 @@ public final class MetaMenuScreen extends Screen {
     private void buildArchive(){
         var s=ClientMetaState.snapshot();
         int y=contentTop();
+        if(archiveLogOpen){
+            addRenderableWidget(new BattleHudButton(left+16,y,96,22,Component.literal("← 소환"),MUTED,ignored->closeArchiveLog()));
+            currentTotal=0;currentPerPage=1;
+            return;
+        }
         boolean canSummon=FacilityUiAccess.archive();
         var one=new BattleHudButton(left+16,y,120,22,Component.literal("1회 소환 · 300"),canSummon?BLUE:MUTED,ignored->send("SUMMON1"));
         one.active=canSummon&&s.crystal()>=GachaCatalog.SINGLE_COST;addRenderableWidget(one);
         var ten=new BattleHudButton(left+142,y,136,22,Component.literal("10회 소환 · 3000"),canSummon?GOLD:MUTED,ignored->send("SUMMON10"));
         ten.active=canSummon&&s.crystal()>=GachaCatalog.TEN_COST;addRenderableWidget(ten);
+        int recordX=left+panelWidth-126;
+        addRenderableWidget(new BattleHudButton(recordX,y,110,22,Component.literal("소환 기록"),MUTED,ignored->openArchiveLog()));
         if(s.starterArchiveAvailable()){
             var starter=new BattleHudButton(left+284,y,154,22,Component.literal("초기 10회 · 3000"),canSummon?GREEN:MUTED,ignored->send("STARTER"));
             starter.active=canSummon&&s.crystal()>=GachaCatalog.TEN_COST;addRenderableWidget(starter);
         }
-        int listTop=y+34,rowH=18,per=UiPaging.rowsThatFit(listTop,contentBottom(),rowH,5);
-        setPaging(s.archiveHistory().size(),per);
-        buildPager();
+        currentTotal=0;currentPerPage=1;
     }
 
     private void buildQuests(){
@@ -343,6 +351,10 @@ public final class MetaMenuScreen extends Screen {
             addRenderableWidget(new BattleHudButton(x,y,w,CONTROL_H,Component.literal(codexLabel(category)),category.equals(codexCategory)?BLUE:MUTED,ignored->selectCodex(category)));
             x+=w+gap;
         }
+        if("CHARACTERS".equals(codexCategory)){
+            buildCodexCharacters(y+27);
+            return;
+        }
         List<ClientMetaState.CodexRow> rows=ClientMetaState.snapshot().codex().stream().filter(r->r.category().equals(codexCategory)).toList();
         int gridTop=y+27,cols=panelWidth>=860?4:panelWidth>=640?3:2,rowH=36,cardGap=4;
         int visible=UiPaging.rowsThatFit(gridTop,contentBottom(),rowH+4,2),per=cols*visible;
@@ -353,6 +365,30 @@ public final class MetaMenuScreen extends Screen {
             int local=i-start,xx=left+16+(local%cols)*(cardW+cardGap),yy=gridTop+(local/cols)*(rowH+4);
             String name=((row.category().equals("ENEMIES")||row.category().equals("BOSSES"))&&!row.discovered())?"???":row.name();
             addRenderableWidget(new BattleHudButton(xx,yy,cardW,rowH,Component.literal(name),row.detailUnlocked()?BLUE:row.discovered()?SECONDARY:MUTED,ignored->{}));
+        }
+        buildPager();
+    }
+
+    private void buildCodexCharacters(int y){
+        int gap=4,bw=(panelWidth-32-gap*3)/4,x=left+16;
+        addRenderableWidget(new BattleHudButton(x,y,bw,CONTROL_H,Component.literal("보유 · "+ownershipLabel()),BLUE,ignored->cycleOwnership()));x+=bw+gap;
+        addRenderableWidget(new BattleHudButton(x,y,bw,CONTROL_H,Component.literal("성급 · "+(starFilter==0?"전체":"★"+starFilter)),GOLD,ignored->cycleStar()));x+=bw+gap;
+        addRenderableWidget(new BattleHudButton(x,y,bw,CONTROL_H,Component.literal("레벨 · "+(minimumLevel==0?"전체":minimumLevel+"+")),GREEN,ignored->cycleLevel()));x+=bw+gap;
+        addRenderableWidget(new BattleHudButton(x,y,bw,CONTROL_H,Component.literal("역할 · "+roleLabel(roleFilter)),MUTED,ignored->cycleRole()));
+
+        List<ClientMetaState.CharacterRow> rows=filteredCharacters();
+        int gridTop=y+27,cols=panelWidth>=860?4:panelWidth>=640?3:2,rowH=50,cardGap=4;
+        int visibleRows=UiPaging.rowsThatFit(gridTop,contentBottom(),rowH+4,2),per=cols*visibleRows;
+        setPaging(rows.size(),per);
+        int start=page*per,end=Math.min(rows.size(),start+per),cardW=(panelWidth-32-cardGap*(cols-1))/cols;
+        for(int i=start;i<end;i++){
+            var row=rows.get(i);
+            int local=i-start,xx=left+16+(local%cols)*(cardW+cardGap),yy=gridTop+(local/cols)*(rowH+4);
+            String detail=row.owned()?(row.awakened()?"각성":"★"+row.nativeStar())+" · Lv."+row.level()+" · "+primaryRoleLabel(row.primaryRole())
+                    :"미보유 · ★"+row.nativeStar()+" · "+primaryRoleLabel(row.primaryRole());
+            addRenderableWidget(new FoozlePortraitButton(
+                    xx,yy,cardW,rowH,row.id(),row.name(),detail,!row.owned(),
+                    ignored->openCharacter(row.id())));
         }
         buildPager();
     }
@@ -395,6 +431,12 @@ public final class MetaMenuScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX,double mouseY,double scrollX,double scrollY){
+        if(tab==Tab.ARCHIVE&&archiveLogOpen&&scrollY!=0){
+            int visible=Math.max(1,(contentBottom()-(contentTop()+42))/18);
+            int max=Math.max(0,ClientMetaState.snapshot().archiveHistory().size()-visible);
+            archiveLogScroll=Math.max(0,Math.min(max,archiveLogScroll+(scrollY>0?-1:1)));
+            return true;
+        }
         if(!selectedCharacterId.isBlank()&&detailTab==DetailTab.SKILLS&&scrollY!=0){
             skillDescriptionScroll=Math.max(0,skillDescriptionScroll+(scrollY>0?-1:1));
             return true;
@@ -404,14 +446,16 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void movePage(int delta){page=UiPaging.clampPage(page+delta,currentTotal,currentPerPage);rebuild();}
+    private void openArchiveLog(){archiveLogOpen=true;archiveLogScroll=0;rebuild();}
+    private void closeArchiveLog(){archiveLogOpen=false;archiveLogScroll=0;rebuild();}
     private void rebuild(){clearWidgets();init();}
     private void switchTab(Tab value){if(value==tab)return;tab=value;page=0;selectedCharacterId="";selectedEquipmentId="";rebuild();}
     private void openCharacterFromHome(String id){tab=Tab.CHARACTERS;selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;selectedSkillIndex=0;skillDescriptionScroll=0;page=0;rebuild();}
     private void openMap(){Minecraft.getInstance().gui.setScreen(new DrehmalWorldMapScreen());}
     private void toggleParty(String id){if(draftParty.contains(id)){if(draftParty.size()>1)draftParty.remove(id);}else if(draftParty.size()<4)draftParty.add(id);rebuild();}
     private void saveParty(){send("PARTY|"+String.join(",",draftParty));}
-    private void openCharacter(String id){selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;selectedSkillIndex=0;skillDescriptionScroll=0;page=0;rebuild();}
-    private void closeCharacter(){selectedCharacterId="";skillDescriptionScroll=0;page=0;rebuild();}
+    private void openCharacter(String id){tab=Tab.CHARACTERS;selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;selectedSkillIndex=0;skillDescriptionScroll=0;page=0;rebuild();}
+    private void closeCharacter(){tab=Tab.CODEX;codexCategory="CHARACTERS";selectedCharacterId="";skillDescriptionScroll=0;page=0;rebuild();}
     private void switchDetail(DetailTab d){detailTab=d;skillDescriptionScroll=0;if(d==DetailTab.SKILLS)selectedSkillIndex=0;rebuild();}
     private void cycleOwnership(){ownershipFilter=OwnershipFilter.values()[(ownershipFilter.ordinal()+1)%OwnershipFilter.values().length];page=0;rebuild();}
     private void cycleStar(){starFilter=switch(starFilter){case 0->3;case 3->4;case 4->5;default->0;};page=0;rebuild();}
@@ -550,6 +594,27 @@ public final class MetaMenuScreen extends Screen {
                     g.text(font,Component.literal(scroll),x+w-8-font.width(scroll),panelY+panelH-11,MUTED,false);
                 }
             }
+            case PASSIVES->{
+                var passives=CharacterPassiveCatalog.forOwner(r.id());
+                int panelY=y+34;
+                if(passives.isEmpty()){
+                    g.text(font,Component.literal("고유 패시브 없음"),x,panelY,MUTED,false);
+                    break;
+                }
+                for(var passive:passives){
+                    var lines=UiTextLayout.wrap(passive.description(),w-16,8);
+                    int panelH=28+Math.max(1,lines.size())*10;
+                    if(panelY+panelH>contentBottom())break;
+                    TurnboundUiSkin.inset(g,x,panelY,w,panelH);
+                    g.text(font,Component.literal(passive.name()),x+8,panelY+6,GOLD,true);
+                    int ly=panelY+19;
+                    for(String line:lines){
+                        g.text(font,Component.literal(line),x+8,ly,TEXT,false);
+                        ly+=10;
+                    }
+                    panelY+=panelH+5;
+                }
+            }
             case EQUIPMENT->{
                 int yy=y+34;
                 for(String slot:List.of("WEAPON","ARMOR","ACCESSORY","SIGNATURE")){
@@ -579,14 +644,50 @@ public final class MetaMenuScreen extends Screen {
 
     private void drawArchive(GuiGraphicsExtractor g){
         var s=ClientMetaState.snapshot();
-        int y=contentTop()+35;
-        g.text(font,Component.literal("★5 천장 "+s.fiveStarPity()+" / "+GachaCatalog.HARD_PITY+" · ★5 "+Math.round(GachaCatalog.BASE_FIVE_STAR_RATE*100.0)+"% · 10회 최소 ★4"),left+16,y-10,GOLD,false);
-        int start=page*currentPerPage,end=Math.min(s.archiveHistory().size(),start+currentPerPage),yy=y+8;
-        for(int i=start;i<end;i++){
-            var r=s.archiveHistory().get(i);
-            String text="★"+r.nativeStars()+" · "+r.name()+(r.newlyOwned()?" · 신규":" · 별의 정수 +"+r.essenceGranted());
-            g.text(font,Component.literal(UiTextLayout.fit(text,panelWidth-32)),left+16,yy,r.newlyOwned()?GREEN:SECONDARY,false);
-            yy+=18;
+        if(archiveLogOpen){
+            int topY=contentTop()+34;
+            g.text(font,Component.literal("소환 기록 · 최신순"),left+16,topY-10,TEXT,true);
+            int visible=Math.max(1,(contentBottom()-(topY+8))/18);
+            int maxScroll=Math.max(0,s.archiveHistory().size()-visible);
+            archiveLogScroll=Math.max(0,Math.min(archiveLogScroll,maxScroll));
+            int yy=topY+8;
+            for(int row=0;row<visible;row++){
+                int index=s.archiveHistory().size()-1-(archiveLogScroll+row);
+                if(index<0)break;
+                var r=s.archiveHistory().get(index);
+                String text="★"+r.nativeStars()+" · "+r.name()+(r.newlyOwned()?" · 신규":" · 별의 정수 +"+r.essenceGranted());
+                g.text(font,Component.literal(UiTextLayout.fit(text,panelWidth-32)),left+16,yy,r.newlyOwned()?GREEN:SECONDARY,false);
+                yy+=18;
+            }
+            if(maxScroll>0){
+                String hint="휠 스크롤 · "+(archiveLogScroll+1)+" / "+(maxScroll+1);
+                g.text(font,Component.literal(hint),left+panelWidth-16-font.width(hint),contentBottom()-10,MUTED,false);
+            }
+            return;
+        }
+
+        int y=contentTop()+36;
+        String pity="★5 천장 "+s.fiveStarPity()+" / "+GachaCatalog.HARD_PITY
+                +" · Soft Pity "+GachaCatalog.SOFT_PITY_START+"회부터";
+        g.text(font,Component.literal(pity),left+16,y-8,GOLD,false);
+
+        int boxX=left+16,boxY=y+14,boxW=Math.min(420,panelWidth-32),boxH=108;
+        TurnboundUiSkin.inset(g,boxX,boxY,boxW,boxH);
+        g.text(font,Component.literal("Standard Archive 확률"),boxX+10,boxY+9,TEXT,true);
+        g.text(font,Component.literal("★5  2%"),boxX+10,boxY+29,GOLD,false);
+        g.text(font,Component.literal("★4  15%"),boxX+10,boxY+47,BLUE,false);
+        g.text(font,Component.literal("★3  83%"),boxX+10,boxY+65,SECONDARY,false);
+        g.text(font,Component.literal("10회 소환 · 최소 ★4 이상 1명 보장"),boxX+10,boxY+86,GREEN,false);
+
+        int infoX=boxX+boxW+16;
+        int infoW=left+panelWidth-16-infoX;
+        if(infoW>120){
+            TurnboundUiSkin.inset(g,infoX,boxY,infoW,boxH);
+            g.text(font,Component.literal("소환 규칙"),infoX+10,boxY+9,TEXT,true);
+            g.text(font,Component.literal("1회 300 Crystal"),infoX+10,boxY+29,SECONDARY,false);
+            g.text(font,Component.literal("10회 3000 Crystal"),infoX+10,boxY+47,SECONDARY,false);
+            g.text(font,Component.literal("중복 → Star Essence"),infoX+10,boxY+65,SECONDARY,false);
+            g.text(font,Component.literal("기간 한정 배너 없음"),infoX+10,boxY+83,MUTED,false);
         }
     }
 
@@ -612,6 +713,7 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void drawCodex(GuiGraphicsExtractor g){
+        if("CHARACTERS".equals(codexCategory))return;
         List<ClientMetaState.CodexRow> rows=ClientMetaState.snapshot().codex().stream().filter(r->r.category().equals(codexCategory)).toList();
         int start=page*currentPerPage,end=Math.min(rows.size(),start+currentPerPage),gridTop=contentTop()+27,cols=panelWidth>=860?4:panelWidth>=640?3:2,rowH=36,gap=4,cardW=(panelWidth-32-gap*(cols-1))/cols;
         for(int i=start;i<end;i++){
@@ -657,7 +759,7 @@ public final class MetaMenuScreen extends Screen {
     private static String sortLabel(EquipSort s){return switch(s){case TIER->"등급";case LEVEL->"강화";case STAT->"능력치";};}
     private static String label(Tab t){return switch(t){case HOME->"빠른 메뉴";case PARTY->"파티";case CHARACTERS->"캐릭터";case EQUIPMENT->"장비";case ARCHIVE->"소환";case QUESTS->"퀘스트";case CODEX->"도감";case SYSTEM->"도전";};}
     private static String title(Tab t){return switch(t){case HOME->"빠른 메뉴";case PARTY->"파티 편성";case CHARACTERS->"캐릭터";case EQUIPMENT->"장비";case ARCHIVE->"소환 / 기록";case QUESTS->"퀘스트";case CODEX->"도감";case SYSTEM->"도전 콘텐츠";};}
-    private static String detailLabel(DetailTab d){return switch(d){case OVERVIEW->"개요";case SKILLS->"스킬";case EQUIPMENT->"장비";case GROWTH->"성장";};}
+    private static String detailLabel(DetailTab d){return switch(d){case OVERVIEW->"개요";case SKILLS->"스킬";case PASSIVES->"패시브";case EQUIPMENT->"장비";case GROWTH->"성장";};}
     private static String primaryRoleLabel(String r){return switch(r){case"DPS"->"공격";case"SUPPORT"->"지원";case"TANK"->"수호";case"SUMMON"->"소환";default->r;};}
     private static String slotLabel(String s){return switch(s){case"WEAPON"->"무기";case"ARMOR"->"방어구";case"ACCESSORY"->"장신구";case"SIGNATURE"->"전용 장비";case"ALL"->"전체";default->s;};}
     private static String codexLabel(String c){return switch(c){case"CHARACTERS"->"캐릭터";case"ENEMIES"->"적";case"BOSSES"->"보스";case"EQUIPMENT"->"장비";default->"튜토리얼";};}
