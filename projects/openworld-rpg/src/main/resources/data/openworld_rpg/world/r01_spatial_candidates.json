@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "id": "openworld_rpg:r01/azari_spatial_candidates",
+  "map_build": "AzariNEW4252026",
+  "source_status": "actual_r01_slice_candidate",
+  "anchors": [
+    {
+      "id": "openworld_rpg:r01/alderford_center",
+      "status": "candidate",
+      "x": -2208,
+      "y": 67,
+      "z": 4000,
+      "role": "Alderford primary terrain candidate"
+    },
+    {
+      "id": "openworld_rpg:r01/alderford_gate_probe",
+      "status": "candidate",
+      "x": -2280,
+      "y": 69,
+      "z": 4080,
+      "role": "southwestern gate / first-shrine review probe"
+    },
+    {
+      "id": "openworld_rpg:r01/broken_road_marker_probe",
+      "status": "candidate",
+      "x": -2380,
+      "y": 67,
+      "z": 4300,
+      "role": "Old Quarry Road first-disturbance review probe"
+    },
+    {
+      "id": "openworld_rpg:r01/roadside_trouble_probe",
+      "status": "candidate",
+      "x": -2440,
+      "y": 67,
+      "z": 4400,
+      "role": "Roadside Trouble volume-center review probe"
+    },
+    {
+      "id": "openworld_rpg:r01/lost_cargo_probe",
+      "status": "candidate",
+      "x": -2500,
+      "y": 67,
+      "z": 4500,
+      "role": "late-road cargo evidence review probe"
+    },
+    {
+      "id": "openworld_rpg:r01/quarry_waystone_probe",
+      "status": "candidate",
+      "x": -2560,
+      "y": 67,
+      "z": 4660,
+      "role": "Quarry Waystone exterior checkpoint review probe"
+    },
+    {
+      "id": "openworld_rpg:r01/quarry_overlook_probe",
+      "status": "candidate",
+      "x": -2628,
+      "y": 96,
+      "z": 4764,
+      "role": "exposed calcite Quarry overlook review probe"
+    },
+    {
+      "id": "openworld_rpg:r01/quarry_lower_entrance_probe",
+      "status": "candidate",
+      "x": -2600,
+      "y": 64,
+      "z": 4700,
+      "role": "lower quarry entrance terrain review probe"
+    }
+  ],
+  "areas": [
+    {
+      "id": "openworld_rpg:r01/alderford_core_candidate",
+      "status": "candidate",
+      "min_x": -2288,
+      "max_x": -2112,
+      "min_z": 3968,
+      "max_z": 4080,
+      "role": "Alderford service/housing core terrain review box"
+    },
+    {
+      "id": "openworld_rpg:r01/quarry_road_evidence_belt_candidate",
+      "status": "candidate",
+      "min_x": -2536,
+      "max_x": -2344,
+      "min_z": 4264,
+      "max_z": 4544,
+      "role": "Old Quarry Road evidence/event review belt"
+    },
+    {
+      "id": "openworld_rpg:r01/quarry_surface_candidate",
+      "status": "candidate",
+      "min_x": -2688,
+      "max_x": -2528,
+      "min_z": 4624,
+      "max_z": 4832,
+      "role": "Quarry Waystone / overlook / lower-entrance terrain review box"
+    }
+  ],
+  "routes": [
+    {
+      "id": "openworld_rpg:r01/alderford_to_quarry_surface_candidate",
+      "status": "candidate",
+      "role": "raw-terrain Old Quarry Road skeleton; not a final road spline",
+      "points": [
+        { "x": -2208, "z": 4000 },
+        { "x": -2260, "z": 4100 },
+        { "x": -2320, "z": 4200 },
+        { "x": -2380, "z": 4300 },
+        { "x": -2440, "z": 4400 },
+        { "x": -2500, "z": 4500 },
+        { "x": -2560, "z": 4600 },
+        { "x": -2560, "z": 4660 },
+        { "x": -2600, "z": 4700 }
+      ]
+    }
+  ]
+}

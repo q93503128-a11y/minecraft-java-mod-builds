@@ -222,6 +222,8 @@ The already-implemented semantic room ids and encounter authority remain correct
 
 ### Closed enough to carry into in-game review
 
+The current Pass-2 candidates are now mirrored in the bundled data file `data/openworld_rpg/world/r01_spatial_candidates.json` and validated at mod startup. Every anchor/area/route remains `candidate`; normal gameplay accessors return no production coordinate until a later client-review pass explicitly promotes the affected entries. This prevents raw-world analysis coordinates from silently becoming live quest/spawn authority.
+
 - actual R01 world-slice bytes are available and parsed;
 - public-render-only placement is no longer the active method;
 - the old rough R01 center is no longer treated as a hub coordinate;
