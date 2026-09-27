@@ -12,6 +12,7 @@ import io.github.q93503128.turnbound.session.MultiplayerPartyService;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import io.github.q93503128.turnbound.world.DrehmalWorldBinding;
+import io.github.q93503128.turnbound.world.DrehmalRouteSurveyService;
 import io.github.q93503128.turnbound.world.ExternalWorldBootstrap;
 import io.github.q93503128.turnbound.world.FieldSessionManager;
 import io.github.q93503128.turnbound.world.MetaNetwork;
@@ -43,6 +44,10 @@ public final class TurnboundCommands {
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.literal("status").executes(context -> worldStatus(context.getSource())))
                         .then(Commands.literal("bind_drehmal").executes(context -> bindDrehmal(context.getSource()))))
+                .then(Commands.literal("survey")
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .then(Commands.literal("route").executes(context -> surveyRoute(context.getSource())))
+                        .then(Commands.literal("here").executes(context -> surveyHere(context.getSource()))))
                 .then(Commands.literal("profile").executes(context -> profile(context.getSource())))
                 .then(Commands.literal("party")
                         .then(Commands.literal("status").executes(context -> partyStatus(context.getSource())))
@@ -92,6 +97,31 @@ public final class TurnboundCommands {
                             BattleSessionManager.end(player);
                             return Command.SINGLE_SUCCESS;
                         })));
+    }
+
+    private static int surveyRoute(CommandSourceStack source) {
+        source.sendSuccess(() -> Component.literal("Capital Valley 26.2 조사 시드"), false);
+        for (String line : DrehmalRouteSurveyService.routeSeedLines()) {
+            source.sendSuccess(() -> Component.literal(line), false);
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int surveyHere(CommandSourceStack source) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        var inspection = DrehmalRouteSurveyService.inspect(player);
+        source.sendSuccess(() -> Component.literal("현재 위치 조사 · " + inspection.summary()), false);
+        source.sendSuccess(() -> Component.literal("site position: " + inspection.positionJson()), false);
+        source.sendSuccess(() -> Component.literal("arena candidate: " + inspection.arenaJson()), false);
+        if (!inspection.siteGeometryPass()) {
+            source.sendSuccess(() -> Component.literal(
+                    "이 위치는 site 후보로 바로 확정하지 말고 주변의 평탄하고 절벽이 없는 지점을 다시 확인하십시오."), false);
+        }
+        if (!inspection.fourPlayerArenaOpen()) {
+            source.sendSuccess(() -> Component.literal(
+                    "이 위치는 최대 4인 공유전투 formation/camera 검사에 실패했습니다. battle footprint 후보로 사용하지 마십시오."), false);
+        }
+        return Command.SINGLE_SUCCESS;
     }
 
     private static int worldStatus(CommandSourceStack source) throws CommandSyntaxException {

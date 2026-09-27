@@ -78,6 +78,12 @@ public final class BattleSessionManager {
         return SharedBattleSessionManager.startEncounterAt(participants, initiatorId, encounterId, autoAllowed, speedAllowed, center, yaw);
     }
 
+    /** Read-only production-survey probe. Never starts a battle or mutates encounter state. */
+    public static boolean surveyArenaOpen(ServerPlayer player, Vec3 center, float yaw, int playerCount) {
+        if (player == null || center == null || playerCount < 1 || playerCount > 4) return false;
+        return BattleArenaLocator.fixedIfOpen(player, center, yaw, playerCount) != null;
+    }
+
     public static boolean active(ServerPlayer player) {
         if (SharedBattleSessionManager.active(player)) return true;
         BattleSession session = player == null ? null : SESSIONS.get(player.getUUID());

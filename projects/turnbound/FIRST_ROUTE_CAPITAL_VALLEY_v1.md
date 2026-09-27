@@ -465,3 +465,31 @@ Drabyel safety buffer
 - 이 checkpoint는 **route pacing/state 구현**이며 좌표 검증 완료를 의미하지 않는다.
 
 다음 production gate는 그대로 실제 Minecraft 26.2 client survey다. roadhead, Tower, Warning Cave, camp, Drabyel approach/entrance 및 service spot의 스크린샷·동선·battle camera 검증 없이는 `verifiedIn26_2`와 `productionEnabled`를 true로 올리지 않는다.
+
+
+## 21. Minecraft 26.2 survey helper
+
+정확한 좌표를 외부 지도만 보고 production으로 승격하지 않는다.
+
+게임 내 운영자용 조사 명령:
+
+- `/turnbound survey route`
+  - 첫 route의 각 semantic site와 source-backed survey seed 좌표를 출력한다.
+  - `PENDING / VERIFIED / PRODUCTION` 상태를 함께 보여준다.
+- `/turnbound survey here`
+  - 현재 X/Y/Z와 yaw를 기록한다.
+  - 3×3 지면 안정성, 3-block headroom, fluid, 주변 급경사 위험을 검사한다.
+  - 현재 지점이 solo battle arena와 최대 4-player shared formation에서 모두 열려 있는지 검사한다.
+  - route JSON에 복붙 가능한 site `position`과 arena `candidate` JSON을 출력한다.
+
+자동 검사가 PASS여도 다음은 사람이 직접 확인해야 한다.
+
+- 실제 카메라 framing
+- 전투 전 적 silhouette 가시성
+- 원본 Drehmal NPC/trigger와 겹침 여부
+- 길을 막지 않는지
+- 도주/복귀 동선
+- 나무/풀/건물에 의한 체감 시야 방해
+- 멀티플레이에서 16 regular allies가 화면상 과밀하지 않은지
+
+따라서 survey command는 **후보 수집 도구**이며 `verifiedIn26_2` 또는 `productionEnabled`를 자동 변경하지 않는다.
