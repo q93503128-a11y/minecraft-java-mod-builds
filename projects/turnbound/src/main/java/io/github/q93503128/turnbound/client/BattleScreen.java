@@ -11,8 +11,11 @@ import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * World-first battle UI.  Reference-game hierarchy is deliberate:
@@ -30,6 +33,9 @@ public final class BattleScreen extends Screen {
     private static final int GOLD = 0xFFFFC857;
     private static final long DOUBLE_COMMIT_MS = 560L;
     private static final long TIMELINE_MOTION_MS = 260L;
+
+    private record SharedOwnerGroup(UUID ownerId, boolean local, List<Integer> unitIndices, BattleHudLayout.Rect rect) {}
+    private record SharedPartyCell(int unitIndex, BattleHudLayout.Rect rect) {}
 
     private final List<BattleHudButton> skillButtons = new ArrayList<>();
     private BattleHudButton autoButton;
@@ -343,7 +349,12 @@ public final class BattleScreen extends Screen {
         var current = currentLayout();
         if (current.actionHeader().contains(x, y)) return true;
         for (var rect : current.skillButtons()) if (rect.contains(x, y)) return true;
-        for (var rect : current.allyBars()) if (rect.contains(x, y)) return true;
+        List<SharedOwnerGroup> shared = sharedOwnerGroups(ClientBattleState.snapshot(), current);
+        if (!shared.isEmpty()) {
+            for (SharedOwnerGroup group : shared) if (group.rect().contains(x, y)) return true;
+        } else {
+            for (var rect : current.allyBars()) if (rect.contains(x, y)) return true;
+        }
         return current.autoButton().contains(x, y) || current.speedButton().contains(x, y) || current.fleeButton().contains(x, y);
     }
 
@@ -360,12 +371,27 @@ public final class BattleScreen extends Screen {
         ClientBattleState.Skill selected = selectedSkill(snapshot);
         String rule = clientTargetRule(selected);
         if (selected == null || !BattleActionRules.needsSingleTarget(rule)) return -1;
+
+        var current = currentLayout();
+        List<SharedOwnerGroup> shared = sharedOwnerGroups(snapshot, current);
+        if (!shared.isEmpty()) {
+            for (SharedOwnerGroup group : shared) {
+                for (SharedPartyCell cell : sharedPartyCells(group)) {
+                    if (cell.rect().contains(x, y)) {
+                        var unit = snapshot.units().get(cell.unitIndex());
+                        if (BattleTargeting.validTarget(rule, unit, snapshot.actorId())) return cell.unitIndex();
+                    }
+                }
+            }
+            return -1;
+        }
+
         int allySlot = 0;
         for (int i = 0; i < snapshot.units().size(); i++) {
             var unit = snapshot.units().get(i);
             if (!"ALLY".equals(unit.side())) continue;
             int slot = allySlot++;
-            if (slot < currentLayout().allyBars().size() && currentLayout().allyBars().get(slot).contains(x, y)
+            if (slot < current.allyBars().size() && current.allyBars().get(slot).contains(x, y)
                     && BattleTargeting.validTarget(rule, unit, snapshot.actorId())) return i;
         }
         return -1;
@@ -441,12 +467,129 @@ public final class BattleScreen extends Screen {
     }
 
     private void drawParty(GuiGraphicsExtractor graphics, BattleHudLayout.Layout current, ClientBattleState.Snapshot snapshot) {
+        List<SharedOwnerGroup> shared = sharedOwnerGroups(snapshot, current);
+        if (!shared.isEmpty()) {
+            drawSharedParty(graphics, snapshot, shared);
+            return;
+        }
         int slot = 0;
         for (int i = 0; i < snapshot.units().size(); i++) {
             var unit = snapshot.units().get(i);
             if (!"ALLY".equals(unit.side()) || slot >= current.allyBars().size()) continue;
             drawPartyLine(graphics, current.allyBars().get(slot++), unit, i == selectedTarget, unit.id().equals(snapshot.actorId()));
         }
+    }
+
+    private void drawSharedParty(GuiGraphicsExtractor graphics, ClientBattleState.Snapshot snapshot, List<SharedOwnerGroup> groups) {
+        for (SharedOwnerGroup group : groups) {
+            boolean actingGroup = group.unitIndices().stream().anyMatch(index -> snapshot.units().get(index).id().equals(snapshot.actorId()));
+            int accent = actingGroup ? GOLD : group.local() ? GAUGE : 0x884B5668;
+            var rect = group.rect();
+            graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), 0x52080A0E);
+            graphics.fill(rect.x(), rect.y(), rect.x() + 2, rect.bottom(), accent);
+
+            String owner = ownerLabel(group.ownerId());
+            if (group.local()) owner = "나 · " + owner;
+            String title = UiTextLayout.fit(owner, Math.max(18, rect.width() - 10));
+            graphics.text(font, Component.literal(title), rect.x() + 6, rect.y() + 3, actingGroup ? GOLD : group.local() ? TEXT : SECONDARY, true);
+
+            for (SharedPartyCell cell : sharedPartyCells(group)) {
+                var unit = snapshot.units().get(cell.unitIndex());
+                drawSharedPartyCell(graphics, cell.rect(), unit,
+                        cell.unitIndex() == selectedTarget, unit.id().equals(snapshot.actorId()));
+            }
+        }
+    }
+
+    private void drawSharedPartyCell(GuiGraphicsExtractor graphics, BattleHudLayout.Rect rect,
+                                     ClientBattleState.Unit unit, boolean selected, boolean actor) {
+        int accent = selected ? GAUGE : actor ? GOLD : unit.downed() ? MUTED : 0x553E4755;
+        graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), 0x36080A0E);
+        graphics.fill(rect.x(), rect.y(), rect.x() + 1, rect.bottom(), accent);
+
+        String name = unit.downed() ? "DOWN" : UiTextLayout.fit(unit.name(), Math.max(8, rect.width() - 5));
+        graphics.text(font, Component.literal(name), rect.x() + 3, rect.y() + 2,
+                unit.downed() ? MUTED : actor ? GOLD : TEXT, false);
+        int barX = rect.x() + 3;
+        int barW = Math.max(3, rect.width() - 6);
+        int barY = rect.bottom() - 3;
+        graphics.fill(barX, barY, barX + barW, barY + 2, 0xD0080A0E);
+        int hpW = unit.maxHp() <= 0 ? 0 : (int)Math.round(barW * Math.max(0, unit.hp()) / (double)unit.maxHp());
+        if (hpW > 0) graphics.fill(barX, barY, barX + Math.min(barW, hpW), barY + 2, HP);
+    }
+
+    private List<SharedOwnerGroup> sharedOwnerGroups(ClientBattleState.Snapshot snapshot, BattleHudLayout.Layout current) {
+        if (snapshot == null || current.allyBars().isEmpty() || !ClientBattleState.sharedBattle()) return List.of();
+        Map<String, ClientBattleState.ActorOwner> owners = ClientBattleState.actorOwners();
+        LinkedHashMap<UUID, List<Integer>> grouped = new LinkedHashMap<>();
+        LinkedHashMap<UUID, Boolean> local = new LinkedHashMap<>();
+
+        for (int i = 0; i < snapshot.units().size(); i++) {
+            var unit = snapshot.units().get(i);
+            if (!"ALLY".equals(unit.side())) continue;
+            var owner = owners.get(unit.id());
+            if (owner == null) continue;
+            grouped.computeIfAbsent(owner.playerId(), ignored -> new ArrayList<>()).add(i);
+            if (owner.local()) local.put(owner.playerId(), true);
+            else local.putIfAbsent(owner.playerId(), false);
+        }
+        if (grouped.size() <= 1) return List.of();
+
+        int areaLeft = current.allyBars().getFirst().x();
+        int areaRight = current.allyBars().getLast().right();
+        int count = grouped.size();
+        boolean grid = current.compact() && count > 2;
+        int cols = grid ? 2 : count;
+        int rows = grid ? 2 : 1;
+        int gap = 4;
+        int areaWidth = Math.max(1, areaRight - areaLeft);
+        int groupW = Math.max(38, Math.min(grid ? 120 : 150, (areaWidth - gap * (cols - 1)) / cols));
+        int groupH = current.compact() ? 40 : 48;
+        int totalH = rows * groupH + gap * (rows - 1);
+        int bottom = current.allyBars().getFirst().bottom();
+        int startY = Math.max(current.timeline().bottom() + 4, bottom - totalH);
+
+        List<SharedOwnerGroup> out = new ArrayList<>();
+        int index = 0;
+        for (var entry : grouped.entrySet()) {
+            int col = index % cols;
+            int row = index / cols;
+            int x = areaLeft + col * (groupW + gap);
+            int y = startY + row * (groupH + gap);
+            out.add(new SharedOwnerGroup(entry.getKey(), local.getOrDefault(entry.getKey(), false),
+                    List.copyOf(entry.getValue()), new BattleHudLayout.Rect(x, y, groupW, groupH)));
+            index++;
+        }
+        return List.copyOf(out);
+    }
+
+    private List<SharedPartyCell> sharedPartyCells(SharedOwnerGroup group) {
+        int count = group.unitIndices().size();
+        if (count == 0) return List.of();
+        int cols = count >= 5 ? 3 : count == 1 ? 1 : 2;
+        int rows = (count + cols - 1) / cols;
+        int gap = 1, headerH = 13;
+        int innerX = group.rect().x() + 4;
+        int innerY = group.rect().y() + headerH;
+        int innerW = Math.max(1, group.rect().width() - 7);
+        int innerH = Math.max(1, group.rect().height() - headerH - 3);
+        int cellW = Math.max(8, (innerW - gap * (cols - 1)) / cols);
+        int cellH = Math.max(8, (innerH - gap * (rows - 1)) / rows);
+        List<SharedPartyCell> out = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            int col = i % cols, row = i / cols;
+            out.add(new SharedPartyCell(group.unitIndices().get(i),
+                    new BattleHudLayout.Rect(innerX + col * (cellW + gap), innerY + row * (cellH + gap), cellW, cellH)));
+        }
+        return List.copyOf(out);
+    }
+
+    private static String ownerLabel(UUID ownerId) {
+        if (ownerId == null) return "동료";
+        return ClientMultiplayerPartyState.snapshot().members().stream()
+                .filter(member -> ownerId.equals(member.id()))
+                .map(ClientMultiplayerPartyState.Member::name)
+                .findFirst().orElse("동료 " + ownerId.toString().substring(0, 4));
     }
 
     /** Compact party status with a shared live-3D portrait, HP and only the essential state. */
@@ -523,8 +666,19 @@ public final class BattleScreen extends Screen {
 
     /** The reference leaves only a short targeting instruction above the action buttons. */
     private void drawActionHeader(GuiGraphicsExtractor graphics, BattleHudLayout.Layout current, ClientBattleState.Snapshot snapshot) {
-        if (!canChooseSkill(snapshot) || settingsOpen) return;
+        if (settingsOpen) return;
         var rect = current.actionHeader();
+        if (!canChooseSkill(snapshot)) {
+            var owner = ClientBattleState.ownerOf(snapshot.actorId());
+            ClientBattleState.Unit actor = findUnit(snapshot, snapshot.actorId());
+            if (owner != null && !owner.local() && actor != null && "ALLY".equals(actor.side())) {
+                String waiting = ownerLabel(owner.playerId()) + " · " + actor.name() + " 행동";
+                String fittedWaiting = UiTextLayout.fit(waiting, Math.max(12, rect.width() - 4));
+                int waitingX = rect.x() + Math.max(2, (rect.width() - font.width(fittedWaiting)) / 2);
+                graphics.text(font, Component.literal(fittedWaiting), waitingX, rect.y() + 5, GOLD, true);
+            }
+            return;
+        }
         ClientBattleState.Skill selected = selectedSkill(snapshot);
         String rule = clientTargetRule(selected);
         String contextual = snapshot.message() == null ? "" : snapshot.message().trim();

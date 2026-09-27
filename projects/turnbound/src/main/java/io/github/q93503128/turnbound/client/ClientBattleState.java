@@ -2,7 +2,10 @@ package io.github.q93503128.turnbound.client;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public final class ClientBattleState {
     public record Unit(
@@ -22,6 +25,8 @@ public final class ClientBattleState {
         }
         public boolean hasStatus(String id) { return statuses.contains(id); }
     }
+
+    public record ActorOwner(UUID playerId, boolean local) {}
 
     public record Skill(String id, String name, String targetRule, int baseCooldown, int remaining, String description) {
         public Skill(String id, String name, String targetRule, int baseCooldown, int remaining) {
@@ -108,12 +113,18 @@ public final class ClientBattleState {
             List.of(), List.of(), List.of(), "", 0.0, 0.0, 0.0, 0.0F,
             Float.NaN, Float.NaN, Result.none());
     private static volatile String encounterId = "";
+    private static volatile Map<String, ActorOwner> actorOwners = Map.of();
     private static volatile List<ResultNotice> resultNotices = List.of();
     private static volatile long revision;
 
     private ClientBattleState() {}
     public static Snapshot snapshot() { return snapshot; }
     public static String encounterId() { return encounterId; }
+    public static Map<String, ActorOwner> actorOwners() { return actorOwners; }
+    public static ActorOwner ownerOf(String actorId) { return actorId == null ? null : actorOwners.get(actorId); }
+    public static boolean sharedBattle() {
+        return actorOwners.values().stream().map(ActorOwner::playerId).distinct().limit(2).count() > 1;
+    }
     public static List<ResultNotice> resultNotices() { return resultNotices; }
     public static boolean hasResultNotice(String code) { return resultNotices.stream().anyMatch(notice -> notice.is(code)); }
     public static long revision() { return revision; }
@@ -129,6 +140,7 @@ public final class ClientBattleState {
         List<Unit> units = new ArrayList<>();
         List<String> timeline = new ArrayList<>();
         List<Skill> skills = new ArrayList<>();
+        Map<String, ActorOwner> owners = new LinkedHashMap<>();
         int resultXp = 0, resultGold = 0, resultCrystal = 0, resultEssence = 0;
         boolean firstClear = false;
         List<String> equipmentRewards = new ArrayList<>();
@@ -171,6 +183,11 @@ public final class ClientBattleState {
                                 p.length > 12 ? Double.parseDouble(p[11]) : 0.0,
                                 p.length > 12 ? Double.parseDouble(p[12]) : 0.0, statuses));
                     }
+                    case "O" -> {
+                        if (p.length >= 4 && !p[1].isBlank() && !p[2].isBlank()) {
+                            owners.put(p[1], new ActorOwner(UUID.fromString(p[2]), "1".equals(p[3])));
+                        }
+                    }
                     case "T" -> { if (p.length > 1 && !p[1].isBlank()) timeline.addAll(Arrays.asList(p[1].split(","))); }
                     case "S" -> skills.add(new Skill(p[1], p[2], p[3], Integer.parseInt(p[4]), Integer.parseInt(p[5]), p.length > 6 ? p[6] : ""));
                     case "R" -> {
@@ -204,6 +221,7 @@ public final class ClientBattleState {
                 List.copyOf(units), List.copyOf(timeline), List.copyOf(skills), message,
                 arenaX, arenaY, arenaZ, arenaYaw, returnYaw, returnPitch, result);
         encounterId = encounter;
+        actorOwners = Map.copyOf(owners);
         resultNotices = List.copyOf(notices);
         revision++;
     }
