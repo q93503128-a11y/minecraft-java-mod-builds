@@ -1,9 +1,9 @@
 package io.github.q93503128.turnbound.combat;
 
-import io.github.q93503128.turnbound.session.MultiplayerPartyService;
-
 /** Canonical co-op PvE scaling rules. */
 public final class SharedBattleRules {
+    public static final int MAX_PLAYERS = 4;
+
     private SharedBattleRules() {}
 
     /** 1 player=x1 HP, 2=x2, 3=x3, 4=x4. ATK/DEF/SPD stay unchanged. */
@@ -31,8 +31,8 @@ public final class SharedBattleRules {
     }
 
     public static void validatePlayerCount(int playerCount) {
-        if (playerCount < 1 || playerCount > MultiplayerPartyService.MAX_PLAYERS) {
-            throw new IllegalArgumentException("Shared battle player count must be 1.." + MultiplayerPartyService.MAX_PLAYERS);
+        if (playerCount < 1 || playerCount > MAX_PLAYERS) {
+            throw new IllegalArgumentException("Shared battle player count must be 1.." + MAX_PLAYERS);
         }
     }
 }

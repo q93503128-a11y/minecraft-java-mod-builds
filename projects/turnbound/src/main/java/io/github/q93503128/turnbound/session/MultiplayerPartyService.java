@@ -1,5 +1,7 @@
 package io.github.q93503128.turnbound.session;
 
+import io.github.q93503128.turnbound.combat.SharedBattleRules;
+
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.ArrayList;
@@ -14,7 +16,7 @@ import java.util.UUID;
  * Server-authoritative social player party, distinct from each player's four-character combat party.
  */
 public final class MultiplayerPartyService {
-    public static final int MAX_PLAYERS = 4;
+    public static final int MAX_PLAYERS = SharedBattleRules.MAX_PLAYERS;
 
     public record Snapshot(UUID leader, List<UUID> members) {
         public Snapshot { members = List.copyOf(members); }
