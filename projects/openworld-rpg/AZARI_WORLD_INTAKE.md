@@ -1,8 +1,10 @@
 # Open-World RPG — Azari World Intake
 
-> Status: **INTAKE TOOLING READY / R01 EXTRACTED WORLD SLICE ACQUIRED + PARSED / FULL CREATOR ARCHIVE HASH + CLIENT LOAD STILL REQUIRED**
+> Status: **INTAKE + LOCAL R01 REVIEW-SAVE TOOLING READY / R01 EXTRACTED WORLD SLICE ACQUIRED + PARSED / FULL CREATOR ARCHIVE LOCAL HASH + CLIENT LOAD STILL REQUIRED**
 >
 > Spatial master: `AZARI_SPATIAL_CLOSURE_PASS1.md`
+>
+> Client review: `AZARI_R01_CLIENT_REVIEW.md`
 >
 > The creator world archive is local-only unless redistribution is separately proven safe.
 
@@ -42,6 +44,32 @@ datapack/dimension presence.
 
 The 30k sanity band is not spatial proof. Final coordinates still require the real world loaded.
 
+## Local R01 client-review save
+
+The intake tool can now create a new local-only save containing only the R01 review rectangle while leaving the source archive untouched:
+
+```text
+region X = -8 .. 4
+region Z =  0 .. 12
+```
+
+Example from `projects/openworld-rpg/`:
+
+```powershell
+py tools\azari_world_intake.py `
+  ".local\azari\source\azari.zip" `
+  --output ".local\azari\intake\azari-world-report.json" `
+  --extract-r01-review "<YOUR_OPENWORLD_RPG_INSTANCE>\saves\Azari_R01_Review"
+```
+
+The destination must not already exist. The tool deliberately refuses to overwrite a world save.
+
+The review copy includes the 169 required overworld terrain region files, matching entity/POI region files that exist in the archive, `level.dat`, datapacks and a small set of optional world-level files. It does not copy creator playerdata or unrelated map regions.
+
+A missing terrain region makes extraction fail and removes the partial destination so Minecraft cannot silently generate substitute terrain inside the R01 review rectangle.
+
+Exact inspection order, `/tp` commands and evidence fields are in `AZARI_R01_CLIENT_REVIEW.md`.
+
 ## R01 spatial closure order
 
 Once the archive passes intake and an untouched inspection copy loads:
@@ -61,15 +89,21 @@ No final coordinate may be inferred from the public overview render.
 
 ## Tool verification
 
-Before repository admission the parser was tested against a synthetic Java-world ZIP spanning
+Before repository admission the original parser was tested against a synthetic Java-world ZIP spanning
 region coordinates `-29..29` on both axes. It correctly reported **30,208 × 30,208** block
 coverage and the expected region-file count.
 
+The R01 review-save extension was additionally tested against a synthetic archive with the full
+`-8..4 × 0..12` terrain rectangle. It copied exactly **169** terrain regions, copied only present
+entity/POI regions and datapacks, refused an existing destination, and removed a partial destination
+when a required terrain region was missing.
+
 ```text
 AZARI CREATOR DOWNLOAD LOCATOR: VERIFIED
-AZARI ARCHIVE ACQUIRED: NO
-INTAKE TOOL TESTED: YES
-ARCHIVE SHA-256 RECORDED: NO
-ACTUAL AZARI WORLD LOADED: NO
-R01 COORDINATES VERIFIED: NO
+AZARI R01 EXTRACTED SLICE ACQUIRED + PARSED: YES
+LOCAL REVIEW-SAVE TOOLING TESTED: YES
+FULL 19.2 GB CREATOR ZIP HASHED IN THIS CHAT WORKSPACE: NO
+ACTUAL AZARI WORLD LOADED IN MINECRAFT CLIENT: NO
+R01 SPATIAL_BINDING COMPLETE: NO
+PLAYTESTED: NO
 ```
