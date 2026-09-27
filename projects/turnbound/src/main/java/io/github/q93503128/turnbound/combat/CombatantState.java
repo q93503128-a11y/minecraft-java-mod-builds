@@ -15,6 +15,8 @@ public final class CombatantState {
     private int barrier;
     private long gaugeMicro;
     private boolean downed;
+    private int presentationGroup = -1;
+    private int presentationSlot = -1;
     private final Map<String, Integer> cooldowns = new HashMap<>();
     private final Map<String, Integer> counters = new HashMap<>();
     private final Map<String, String> refs = new HashMap<>();
@@ -59,6 +61,15 @@ public final class CombatantState {
     public long gauge() { return TurnScheduler.displayGauge(gaugeMicro); }
     long gaugeMicro() { return gaugeMicro; }
     public boolean downed() { return downed; }
+    public int presentationGroup() { return presentationGroup; }
+    public int presentationSlot() { return presentationSlot; }
+
+    /** Presentation metadata only. Row placement never grants front/back combat effects. */
+    public void setPresentationSlot(int group, int slot) {
+        if (group < 0 || slot < 0 || slot > 3) throw new IllegalArgumentException("Invalid presentation slot");
+        presentationGroup = group;
+        presentationSlot = slot;
+    }
 
     public void setGauge(long value) { gaugeMicro = TurnScheduler.toGaugeMicro(Math.max(0L, value)); }
     void setGaugeMicro(long value) { gaugeMicro = Math.max(0L, value); }

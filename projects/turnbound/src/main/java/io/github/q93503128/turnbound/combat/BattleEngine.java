@@ -1063,11 +1063,10 @@ public final class BattleEngine {
     }
 
     private void initializeP07Partners() {
-        if (state.combatants().stream().anyMatch(unit -> unit.definition().summon() && !unit.downed())) return;
-        CombatantState owner = state.combatants().stream()
-                .filter(unit -> unit.definition().id().equals("P07") && !unit.downed())
-                .findFirst().orElse(null);
-        if (owner != null) spawnP07Summon(owner, 1.0);
+        for (CombatantState owner : state.combatants().stream()
+                .filter(unit -> unit.definition().id().equals("P07") && !unit.downed()).toList()) {
+            if (livingP07Summon(owner) == null) spawnP07Summon(owner, 1.0);
+        }
     }
 
     private void spawnP07Summon(CombatantState owner, double healthRatio) {

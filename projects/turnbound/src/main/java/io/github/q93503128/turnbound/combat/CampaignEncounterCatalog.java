@@ -48,7 +48,7 @@ public final class CampaignEncounterCatalog {
      * Field battles should resolve briskly enough that turn decisions matter more than HP attrition.
      * This is encounter tuning only; canonical character/enemy data and formulas remain untouched.
      */
-    private static CombatantDefinition tempoAdjustedEnemy(CombatantDefinition base, V04Catalogs.Encounter encounter) {
+    static CombatantDefinition tempoAdjustedEnemy(CombatantDefinition base, V04Catalogs.Encounter encounter) {
         double hpScale;
         if (encounter.id().startsWith("TUTORIAL_")) hpScale = 0.68;
         else if (encounter.boss()) hpScale = 0.88;
@@ -61,7 +61,7 @@ public final class CampaignEncounterCatalog {
                 base.nativeStars(), base.rules(), base.params());
     }
 
-    private static CombatantDefinition campaignDefinition(UUID playerId, String characterId) {
+    static CombatantDefinition campaignDefinition(UUID playerId, String characterId) {
         var level = CampaignProgressStore.character(playerId, characterId);
         var growth = CampaignProgressStore.growth(playerId, characterId);
         CombatantDefinition base = CanonicalData.definition(characterId, level.level(), growth.currentStar(), growth.awakened());

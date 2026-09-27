@@ -62,16 +62,17 @@ final class BattlePresentation {
         Vec3 forward = BattleArenaLocator.forward(facingYaw); Vec3 right = new Vec3(-forward.z,0.0,forward.x);
         int allyCount=(int)units.stream().filter(unit->!unit.definition().summon()&&unit.side()==CombatantSide.ALLY).count();
         int enemyCount=(int)units.stream().filter(unit->!unit.definition().summon()&&unit.side()==CombatantSide.ENEMY).count();
+        int playerGroups=BattleFormationLayout.playerGroups(units);
         int allyIndex=0, enemyIndex=0;
         for (CombatantState combatant : units) {
             if (combatant.definition().summon()) continue;
             boolean ally = combatant.side()==CombatantSide.ALLY;
             int index=ally?allyIndex++:enemyIndex++;
-            int count=ally?allyCount:enemyCount;
             if (actors.containsKey(combatant.instanceId())) continue;
-            double localX=(index-(count-1)/2.0)*2.0;
-            double localZ=ally?4.0:-4.0;
-            Vec3 raw=localToWorld(center,right,forward,localX,localZ);
+            BattleFormationLayout.Local local=ally
+                    ? BattleFormationLayout.ally(combatant,index,allyCount,playerGroups)
+                    : BattleFormationLayout.enemy(index,enemyCount);
+            Vec3 raw=localToWorld(center,right,forward,local.x(),local.z());
             spawnActor(level,combatant,BattleArenaLocator.groundPosition(level,raw),facingYaw,combatant.definition().rules());
         }
         for (CombatantState combatant : units) {

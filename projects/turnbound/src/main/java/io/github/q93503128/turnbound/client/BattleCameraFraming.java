@@ -11,11 +11,11 @@ import java.util.List;
 final class BattleCameraFraming {
     static final float THREE_QUARTER_OFFSET = 0.0F;
     private static final float MIN_DISTANCE = 8.5F;
-    private static final float MAX_DISTANCE = 15.5F;
+    private static final float MAX_DISTANCE = 22.0F;
     private static final float MIN_PITCH = 18.0F;
     private static final float MAX_PITCH = 38.0F;
     private static final float MIN_FOV = 52.0F;
-    private static final float MAX_FOV = 58.0F;
+    private static final float MAX_FOV = 64.0F;
 
     record Plan(
             double pivotX, double pivotY, double pivotZ,
@@ -86,7 +86,7 @@ final class BattleCameraFraming {
 
         if (positioned == 0) return fallback(axisYaw, centerX, centerY, centerZ);
 
-        float distance = clamp((float)(8.4D + lateralRadius * 0.65D + depthRadius * 0.25D),
+        float distance = clamp((float)(8.4D + lateralRadius * 0.78D + depthRadius * 0.25D),
                 MIN_DISTANCE, MAX_DISTANCE);
         float heightSpread = (float)Math.max(0.0D, maxY - minY);
         float pitch = clamp(20.5F + (distance - MIN_DISTANCE) * 0.8F
