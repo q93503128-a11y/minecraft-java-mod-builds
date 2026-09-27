@@ -1,20 +1,24 @@
 # Third-party assets
 
-Every imported asset in this prototype is CC0 / public-domain dedicated. Source URLs are pinned or recorded so the build is reproducible and auditable.
+This prototype vendors Minecraft-native models from open-source Minecraft projects instead of converting generic 3D marketplace models.
 
-## Guitar
-- Acoustic Guitar on a Stand — 3DAssets.dev, Music Recording Studio and Instruments
-- Asset page: https://3dassets.dev/assets/music-recording-studio-and-instruments-acoustic-guitar-e49f4cfb
-- Model: https://cdn.3dassets.dev/assets/33789/v1/model.glb
-- License: CC0 1.0 Universal
-- Build conversion: GLB geometry/material colours are converted to Minecraft OBJ/MTL + palette PNG. Stand/rack named geometry is excluded when present.
+## Guitar model
+- Project: **Musical Instruments Pack** — Tchongas
+- Modrinth: https://modrinth.com/datapack/musical-instruments-pack
+- Source repository: https://github.com/Tchongas/datapacks
+- Pinned source commit: `0ff8ae11584f357129beec8cba145cf67b08f1ba`
+- Source model: `1.21/flute/assets/minecraft/models/item/guitar.json`
+- License: MIT
+- Use here: Blockbench/Minecraft model geometry and display transforms are retained. Texture slots are remapped to vanilla Minecraft oak/spruce/dark-oak textures; source texture PNGs are not redistributed.
 
-## Chair
-- Dining Chair Timber — 3DAssets.dev, Bedroom and Living Room Furniture
-- Asset page: https://3dassets.dev/assets/bedroom-and-living-room-furniture-dining-chair-timber-b8b614f7
-- Model: https://cdn.3dassets.dev/assets/38784/v1/model.glb
-- License: CC0 1.0 Universal
-- Build conversion: GLB geometry/material colours are converted to Minecraft OBJ/MTL + palette PNG.
+## Chair model
+- Project: **Voxelized Furniture** — okil6dev
+- Modrinth: https://modrinth.com/mod/voxelized-furniture
+- Source repository: https://github.com/okil6dev/Voxelized-Furniture
+- Pinned source commit: `e83c183de66c1b7114eb6b39a24f58bc87ab9d96`
+- Source model: `src/main/resources/assets/voxelized_furniture/models/custom/chair_oak.json`
+- License: MIT
+- Use here: model geometry is retained and mapped to vanilla `stripped_oak_log` texture. Blockstate rotation and collision were adapted for Campfire Sessions.
 
 ## Music
 - Etirwer (Looped) — Kistol — CC0
@@ -26,12 +30,4 @@ Every imported asset in this prototype is CC0 / public-domain dedicated. Source 
 - Underwater Ambient Pad — isaiah658 — CC0
   - https://opengameart.org/content/underwater-ambient-pad
 
-## UI
-- Kenney UI Pack - Sci-fi
-- Original publisher: https://kenney.nl/
-- Repository mirror: https://github.com/shorepine/kenney
-- Pinned mirror commit: 3694c6879e487c108f55677be7dd2ca75b07cc3b
-- License: CC0
-- Used files: glassPanel.png, metalPanel.png, metalPanel_blue.png, metalPanel_green.png, metalPanel_red.png, metalPanel_yellow.png.
-
-The asset preparation task logs SHA-256 hashes for downloaded models, songs and UI files.
+The music preparation task logs SHA-256 hashes for each downloaded OGG.

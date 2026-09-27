@@ -34,43 +34,53 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee build.log
-      - name: Verify alpha2 packaged assets
+      - name: Verify alpha3 packaged assets
         shell: bash
         run: |
           set -euo pipefail
           JAR="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' | head -n 1)"
           test -n "$JAR"
-          for ENTRY in             'kr/moonseungjun/campfiresessions/CampfireSessions.class'             'kr/moonseungjun/campfiresessions/block/ChairBlock.class'             'kr/moonseungjun/campfiresessions/client/MusicTheme.class'             'kr/moonseungjun/campfiresessions/client/MusicCatalog.class'             'assets/campfiresessions/models/item/acoustic_guitar.obj'             'assets/campfiresessions/models/item/acoustic_guitar.mtl'             'assets/campfiresessions/textures/item/acoustic_guitar_palette.png'             'assets/campfiresessions/models/block/wooden_chair.obj'             'assets/campfiresessions/models/block/wooden_chair.mtl'             'assets/campfiresessions/textures/block/wooden_chair_palette.png'             'assets/campfiresessions/sounds/music/etirwer.ogg'             'assets/campfiresessions/sounds/music/cozy_puzzle.ogg'             'assets/campfiresessions/sounds/music/neon_circuit.ogg'             'assets/campfiresessions/sounds/music/underwater_pad.ogg'             'assets/campfiresessions/textures/gui/sprites/music/glass_panel.png'             'assets/campfiresessions/textures/gui/sprites/music/metal_panel.png'             'assets/campfiresessions/textures/gui/sprites/music/metal_blue.png'             'assets/campfiresessions/textures/gui/sprites/music/metal_green.png'             'assets/campfiresessions/textures/gui/sprites/music/metal_red.png'             'assets/campfiresessions/textures/gui/sprites/music/metal_yellow.png'
+          for ENTRY in             'kr/moonseungjun/campfiresessions/CampfireSessions.class'             'kr/moonseungjun/campfiresessions/block/ChairBlock.class'             'kr/moonseungjun/campfiresessions/client/MusicPlayerScreen.class'             'kr/moonseungjun/campfiresessions/client/MusicTheme.class'             'assets/campfiresessions/models/item/acoustic_guitar.json'             'assets/campfiresessions/models/block/wooden_chair.json'             'assets/campfiresessions/models/block/wooden_chair_geometry.json'             'assets/campfiresessions/sounds/music/etirwer.ogg'             'assets/campfiresessions/sounds/music/cozy_puzzle.ogg'             'assets/campfiresessions/sounds/music/neon_circuit.ogg'             'assets/campfiresessions/sounds/music/underwater_pad.ogg'
           do
             jar tf "$JAR" | grep -F "$ENTRY"
           done
+          if jar tf "$JAR" | grep -F 'assets/campfiresessions/models/item/acoustic_guitar.obj'; then
+            echo 'legacy generated guitar OBJ still packaged' >&2
+            exit 1
+          fi
+          if jar tf "$JAR" | grep -F 'assets/campfiresessions/models/block/wooden_chair.obj'; then
+            echo 'legacy generated chair OBJ still packaged' >&2
+            exit 1
+          fi
           sha256sum "$JAR" | tee "$JAR.sha256"
           {
             echo '# BUILD AND RUNTIME REPORT'
             echo
-            echo "- Commit: `$GITHUB_SHA`"
-            echo '- Version: 0.2.0-alpha.1'
+            echo "- Commit: `${GITHUB_SHA}`"
+            echo '- Version: 0.3.0-alpha.1'
             echo '- Minecraft: 26.2'
             echo '- Java: 25'
             echo '- NeoForge: 26.2.0.87'
             echo '- clean build: SUCCESS'
-            echo '- replacement guitar/chair resources: PACKAGED'
+            echo '- Musical Instruments Pack guitar model: PACKAGED'
+            echo '- Voxelized Furniture chair model: PACKAGED'
             echo '- four streamed CC0 tracks: PACKAGED'
-            echo '- themed Kenney sci-fi UI resources: PACKAGED'
+            echo '- blurred themed playlist UI: COMPILED'
+            echo '- client note-particle playback feedback: COMPILED'
             echo '- in-game visual/seat acceptance: USER TEST REQUIRED'
           } > BUILD_AND_RUNTIME_REPORT.md
       - name: Upload build logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: campfire-sessions-alpha2-logs
+          name: campfire-sessions-alpha3-logs
           path: projects/campfire-sessions/build.log
           if-no-files-found: warn
-      - name: Upload alpha2
+      - name: Upload alpha3
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: campfire-sessions-alpha2
+          name: campfire-sessions-alpha3
           path: |
             projects/campfire-sessions/build/libs/*.jar
             projects/campfire-sessions/build/libs/*.sha256

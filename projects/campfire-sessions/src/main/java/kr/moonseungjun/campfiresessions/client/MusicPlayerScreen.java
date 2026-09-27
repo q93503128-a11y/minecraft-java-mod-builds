@@ -1,62 +1,58 @@
 package kr.moonseungjun.campfiresessions.client;
 
-import kr.moonseungjun.campfiresessions.CampfireSessions;
 import kr.moonseungjun.campfiresessions.registry.ModItems;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 
 public final class MusicPlayerScreen extends Screen {
-    private static final Identifier GLASS_PANEL = id("music/glass_panel");
-    private static final Identifier METAL_PANEL = id("music/metal_panel");
-    private static final Identifier METAL_BLUE = id("music/metal_blue");
-    private static final Identifier METAL_RED = id("music/metal_red");
-    private static final int ROW_HEIGHT = 40;
+    private static final int ROW_HEIGHT = 30;
     private static final int VISIBLE_ROWS = 3;
 
     private int panelX, panelY, panelWidth, panelHeight;
     private int listX, listY, listWidth, listHeight;
+    private int nowX, nowWidth;
     private int scrollRow;
 
     public MusicPlayerScreen() {
         super(Component.translatable("screen.campfiresessions.music.title"));
     }
 
-    private static Identifier id(String path) {
-        return Identifier.fromNamespaceAndPath(CampfireSessions.MOD_ID, path);
-    }
-
     @Override
     protected void init() {
-        panelWidth = Math.min(366, Math.max(300, width - 82));
-        panelHeight = Math.min(238, Math.max(206, height - 58));
+        panelWidth = Math.min(388, Math.max(320, width - 48));
+        panelHeight = Math.min(224, Math.max(196, height - 44));
         panelX = (width - panelWidth) / 2;
         panelY = (height - panelHeight) / 2;
 
-        int infoWidth = Math.max(106, panelWidth / 3);
+        int gap = 12;
+        nowWidth = Math.max(108, panelWidth / 3);
         listX = panelX + 16;
-        listY = panelY + 53;
-        listWidth = panelWidth - infoWidth - 44;
+        listY = panelY + 54;
+        nowX = panelX + panelWidth - nowWidth - 16;
+        listWidth = nowX - gap - listX;
         listHeight = ROW_HEIGHT * VISIBLE_ROWS;
 
-        int controlY = panelY + panelHeight - 36;
-        int buttonWidth = 54;
-        int gap = 5;
-        int controlsWidth = buttonWidth * 4 + gap * 3;
-        int controlX = panelX + (panelWidth - controlsWidth) / 2;
+        int controlsY = panelY + panelHeight - 34;
+        int controlW = 46;
+        int controlGap = 6;
+        int groupW = controlW * 3 + controlGap * 2;
+        int controlsX = listX + Math.max(0, (listWidth - groupW) / 2);
 
-        addRenderableWidget(new MusicTextureButton(controlX, controlY, buttonWidth, 22,
-                Component.literal("◀"), METAL_PANEL, b -> CampfireMusicClient.previous()));
-        addRenderableWidget(new MusicTextureButton(controlX + buttonWidth + gap, controlY, buttonWidth, 22,
-                Component.translatable("screen.campfiresessions.music.play_pause"), METAL_BLUE,
-                b -> CampfireMusicClient.toggleSelected()));
-        addRenderableWidget(new MusicTextureButton(controlX + (buttonWidth + gap) * 2, controlY, buttonWidth, 22,
-                Component.literal("▶"), METAL_PANEL, b -> CampfireMusicClient.next()));
-        addRenderableWidget(new MusicTextureButton(controlX + (buttonWidth + gap) * 3, controlY, buttonWidth, 22,
-                Component.translatable("screen.campfiresessions.music.close"), METAL_RED, b -> onClose()));
+        addRenderableWidget(new MusicTextureButton(
+                controlsX, controlsY, controlW, 22, Component.literal("◀"),
+                MusicTextureButton.Style.SECONDARY, b -> CampfireMusicClient.previous()));
+        addRenderableWidget(new MusicTextureButton(
+                controlsX + controlW + controlGap, controlsY, controlW, 22, Component.literal("▶"),
+                MusicTextureButton.Style.PRIMARY, b -> CampfireMusicClient.toggleSelected()));
+        addRenderableWidget(new MusicTextureButton(
+                controlsX + (controlW + controlGap) * 2, controlsY, controlW, 22, Component.literal("▶▶"),
+                MusicTextureButton.Style.SECONDARY, b -> CampfireMusicClient.next()));
+        addRenderableWidget(new MusicTextureButton(
+                panelX + panelWidth - 31, panelY + 11, 18, 18, Component.literal("×"),
+                MusicTextureButton.Style.DANGER, b -> onClose()));
         keepSelectedVisible();
     }
 
@@ -73,9 +69,9 @@ public final class MusicPlayerScreen extends Screen {
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         if (event.button() == 0 && inside(event.x(), event.y(), listX, listY, listWidth, listHeight)) {
-            int visibleIndex = ((int)event.y() - listY) / ROW_HEIGHT;
-            int index = scrollRow + visibleIndex;
-            if (visibleIndex >= 0 && visibleIndex < VISIBLE_ROWS && index < MusicCatalog.TRACKS.size()) {
+            int visible = ((int) event.y() - listY) / ROW_HEIGHT;
+            int index = scrollRow + visible;
+            if (visible >= 0 && visible < VISIBLE_ROWS && index < MusicCatalog.TRACKS.size()) {
                 CampfireMusicClient.select(index);
                 keepSelectedVisible();
                 return true;
@@ -98,9 +94,10 @@ public final class MusicPlayerScreen extends Screen {
 
     @Override
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        graphics.blurBeforeThisStratum();
+        graphics.fill(0, 0, width, height, 0x72000000);
         MusicTheme theme = CampfireMusicClient.selectedTrack().theme();
-        graphics.fill(0, 0, width, height, 0x76000000);
-        graphics.fill(0, 0, width, height, theme.background() & 0x55FFFFFF);
+        graphics.fill(0, 0, width, height, theme.background() & 0x33FFFFFF);
     }
 
     @Override
@@ -108,17 +105,27 @@ public final class MusicPlayerScreen extends Screen {
         MusicTrack selected = CampfireMusicClient.selectedTrack();
         MusicTheme theme = selected.theme();
 
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, GLASS_PANEL, panelX, panelY, panelWidth, panelHeight);
-        graphics.fill(panelX + 3, panelY + 3, panelX + panelWidth - 3, panelY + panelHeight - 3, theme.background());
-        graphics.fill(panelX + 3, panelY + 3, panelX + 6, panelY + panelHeight - 3, theme.accent());
+        drawPanel(graphics, panelX, panelY, panelWidth, panelHeight, 0xF00D1014, 0xFF343B43);
+        graphics.fill(panelX + 1, panelY + 1, panelX + panelWidth - 1, panelY + 3, theme.accent());
 
-        graphics.text(font, "CAMPFIRE SESSIONS", panelX + 16, panelY + 13, theme.text(), true);
-        graphics.text(font, Component.translatable("screen.campfiresessions.music.subtitle_v2"),
-                panelX + 16, panelY + 28, theme.muted(), false);
-        graphics.text(font, "PLAYLIST", listX, listY - 14, theme.accent(), true);
+        graphics.text(font, "Campfire Sessions", panelX + 16, panelY + 13, theme.text(), true);
+        graphics.text(font, Component.translatable("screen.campfiresessions.music.subtitle_v3"),
+                panelX + 16, panelY + 29, theme.muted(), false);
 
+        String mood = selected.theme().displayName().toUpperCase();
+        int moodW = font.width(mood) + 12;
+        int moodX = panelX + panelWidth - 43 - moodW;
+        graphics.fill(moodX, panelY + 12, moodX + moodW, panelY + 27, 0xAA171C21);
+        graphics.fill(moodX, panelY + 26, moodX + moodW, panelY + 27, theme.accent());
+        graphics.centeredText(font, mood, moodX + moodW / 2, panelY + 16, theme.accent());
+
+        graphics.text(font, "PLAYLIST", listX, listY - 13, theme.accent(), true);
         drawPlaylist(graphics, mouseX, mouseY, theme);
         drawNowPlaying(graphics, selected, theme);
+
+        graphics.text(font, (CampfireMusicClient.selectedIndex() + 1) + " / " + MusicCatalog.TRACKS.size(),
+                listX, panelY + panelHeight - 27, 0xFF737B83, false);
+
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
@@ -127,52 +134,78 @@ public final class MusicPlayerScreen extends Screen {
         for (int visible = 0; visible < VISIBLE_ROWS; visible++) {
             int index = scrollRow + visible;
             if (index >= MusicCatalog.TRACKS.size()) break;
+
             MusicTrack track = MusicCatalog.TRACKS.get(index);
+            MusicTheme rowTheme = track.theme();
             int rowY = listY + visible * ROW_HEIGHT;
             boolean selected = index == CampfireMusicClient.selectedIndex();
-            boolean hovered = inside(mouseX, mouseY, listX, rowY, listWidth, ROW_HEIGHT - 3);
+            boolean hovered = inside(mouseX, mouseY, listX, rowY, listWidth, ROW_HEIGHT - 4);
 
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, track.theme().rowSprite(),
-                    listX, rowY, listWidth, ROW_HEIGHT - 3);
-            graphics.fill(listX, rowY, listX + listWidth, rowY + ROW_HEIGHT - 3,
-                    selected ? 0x35FFFFFF : 0x1E000000);
-            if (hovered) graphics.fill(listX, rowY, listX + listWidth, rowY + ROW_HEIGHT - 3, 0x1FFFFFFF);
-            if (selected) graphics.fill(listX, rowY, listX + 3, rowY + ROW_HEIGHT - 3, activeTheme.accent());
+            int bg = selected ? activeTheme.surface() : (hovered ? 0xC51D2329 : 0xA914191E);
+            graphics.fill(listX + 1, rowY, listX + listWidth - 1, rowY + ROW_HEIGHT - 4, bg);
+            graphics.fill(listX, rowY + 1, listX + 1, rowY + ROW_HEIGHT - 5,
+                    selected ? activeTheme.accent() : 0xFF343B42);
 
-            String marker = CampfireMusicClient.playingIndex() == index ? "♪ " : "";
-            graphics.text(font, marker + track.title(), listX + 8, rowY + 7,
-                    selected ? activeTheme.text() : 0xFFE5E8EA, true);
-            graphics.text(font, track.artist() + " · " + track.theme().displayName(), listX + 8, rowY + 22,
-                    selected ? activeTheme.muted() : 0xFFAEB5BB, false);
+            int dot = rowTheme.accent();
+            graphics.fill(listX + 8, rowY + 9, listX + 12, rowY + 13, dot);
+            if (CampfireMusicClient.playingIndex() == index) {
+                graphics.text(font, "♪", listX + 7, rowY + 5, dot, true);
+            }
+
+            graphics.text(font, trim(track.title(), listWidth - 35), listX + 18, rowY + 5,
+                    selected ? activeTheme.text() : 0xFFE1E5E8, selected);
+            graphics.text(font, trim(track.artist() + " · " + track.theme().displayName(), listWidth - 35),
+                    listX + 18, rowY + 17, selected ? activeTheme.muted() : 0xFF7F8991, false);
         }
         graphics.disableScissor();
 
         if (MusicCatalog.TRACKS.size() > VISIBLE_ROWS) {
-            int trackX = listX + listWidth + 4;
+            int railX = listX + listWidth + 4;
             int max = MusicCatalog.TRACKS.size() - VISIBLE_ROWS;
-            int thumbHeight = Math.max(24, listHeight * VISIBLE_ROWS / MusicCatalog.TRACKS.size());
-            int travel = listHeight - thumbHeight;
+            int thumbH = Math.max(18, listHeight * VISIBLE_ROWS / MusicCatalog.TRACKS.size());
+            int travel = listHeight - thumbH;
             int thumbY = listY + (max == 0 ? 0 : travel * scrollRow / max);
-            graphics.fill(trackX, listY, trackX + 2, listY + listHeight, 0x663F4A52);
-            graphics.fill(trackX, thumbY, trackX + 2, thumbY + thumbHeight, activeTheme.accent());
+            graphics.fill(railX, listY, railX + 1, listY + listHeight, 0xFF303840);
+            graphics.fill(railX, thumbY, railX + 2, thumbY + thumbH, activeTheme.accent());
         }
     }
 
     private void drawNowPlaying(GuiGraphicsExtractor graphics, MusicTrack selected, MusicTheme theme) {
-        int infoX = listX + listWidth + 16;
-        int infoWidth = panelX + panelWidth - 16 - infoX;
-        int infoY = listY;
+        int top = listY;
+        drawPanel(graphics, nowX, top, nowWidth, listHeight, theme.surface(), 0xFF38434A);
+        graphics.fill(nowX + 1, top + 1, nowX + nowWidth - 1, top + 3, theme.accent());
 
-        graphics.fill(infoX, infoY, infoX + infoWidth, infoY + listHeight, theme.surface());
-        graphics.fill(infoX, infoY, infoX + infoWidth, infoY + 2, theme.accent());
-        graphics.text(font, "NOW", infoX + 9, infoY + 9, theme.accent(), true);
-        graphics.item(ModItems.ACOUSTIC_GUITAR.get().getDefaultInstance(), infoX + 8, infoY + 27);
-        graphics.text(font, trim(selected.title(), infoWidth - 18), infoX + 9, infoY + 52, theme.text(), true);
-        graphics.text(font, trim(selected.artist(), infoWidth - 18), infoX + 9, infoY + 66, theme.muted(), false);
-        graphics.text(font, selected.theme().displayName().toUpperCase(), infoX + 9, infoY + 84, theme.accent(), false);
-        graphics.text(font, CampfireMusicClient.isPlayingSelected() ? "♪ PLAYING" : "READY",
-                infoX + 9, infoY + 102,
-                CampfireMusicClient.isPlayingSelected() ? theme.accent() : theme.muted(), true);
+        int cover = Math.min(52, nowWidth - 28);
+        int coverX = nowX + (nowWidth - cover) / 2;
+        int coverY = top + 10;
+        graphics.fill(coverX, coverY, coverX + cover, coverY + cover, theme.background());
+        graphics.fill(coverX + 3, coverY + 3, coverX + cover - 3, coverY + cover - 3, theme.surface());
+        graphics.fill(coverX + 3, coverY + 3, coverX + cover - 3, coverY + 5, theme.accent());
+        graphics.item(ModItems.ACOUSTIC_GUITAR.get().getDefaultInstance(),
+                coverX + cover / 2 - 8, coverY + cover / 2 - 8);
+
+        int textX = nowX + 9;
+        int textY = coverY + cover + 7;
+        graphics.text(font, trim(selected.title(), nowWidth - 18), textX, textY, theme.text(), true);
+        graphics.text(font, trim(selected.artist(), nowWidth - 18), textX, textY + 12, theme.muted(), false);
+
+        int barsY = top + listHeight - 10;
+        long t = Minecraft.getInstance().level == null ? 0L : Minecraft.getInstance().level.getGameTime();
+        for (int i = 0; i < 7; i++) {
+            int h = CampfireMusicClient.isPlayingSelected() ? 2 + Math.abs((int)((t + i * 3) % 9L) - 4) : 2;
+            int x = nowX + 9 + i * 5;
+            graphics.fill(x, barsY - h, x + 2, barsY, theme.accent());
+        }
+        String state = CampfireMusicClient.isPlayingSelected() ? "PLAYING" : "READY";
+        graphics.text(font, state, nowX + nowWidth - 9 - font.width(state), barsY - 8,
+                CampfireMusicClient.isPlayingSelected() ? theme.accent() : theme.muted(), false);
+    }
+
+    private void drawPanel(GuiGraphicsExtractor graphics, int x, int y, int w, int h, int fill, int border) {
+        graphics.fill(x + 1, y, x + w - 1, y + h, border);
+        graphics.fill(x, y + 1, x + w, y + h - 1, border);
+        graphics.fill(x + 2, y + 1, x + w - 2, y + h - 1, fill);
+        graphics.fill(x + 1, y + 2, x + w - 1, y + h - 2, fill);
     }
 
     private String trim(String text, int maxWidth) {
@@ -189,7 +222,5 @@ public final class MusicPlayerScreen extends Screen {
     }
 
     @Override
-    public boolean isPauseScreen() {
-        return false;
-    }
+    public boolean isPauseScreen() { return false; }
 }

@@ -8,6 +8,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.tick.ClientTickEvent;
 
 @EventBusSubscriber(value = Dist.CLIENT, modid = CampfireSessions.MOD_ID)
 public final class GuitarClientEvents {
@@ -27,6 +28,11 @@ public final class GuitarClientEvents {
         openScreen();
         event.setCancellationResult(InteractionResult.SUCCESS);
         event.setCanceled(true);
+    }
+
+    @SubscribeEvent
+    public static void onClientTick(ClientTickEvent.Post event) {
+        CampfireMusicClient.clientTick();
     }
 
     private static void openScreen() {

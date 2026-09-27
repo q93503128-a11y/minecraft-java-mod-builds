@@ -1,9 +1,9 @@
 {
   "item.campfiresessions.acoustic_guitar": "어쿠스틱 기타",
-  "block.campfiresessions.wooden_chair": "목재 다이닝 의자",
+  "block.campfiresessions.wooden_chair": "목재 의자",
   "itemGroup.campfiresessions.main": "Campfire Sessions",
   "screen.campfiresessions.music.title": "Campfire Sessions",
-  "screen.campfiresessions.music.subtitle_v2": "휠로 넘기고, 곡의 분위기에 따라 플레이어가 변합니다.",
+  "screen.campfiresessions.music.subtitle_v3": "곡을 고르고, 분위기에 맞춰 천천히 넘겨보세요.",
   "screen.campfiresessions.music.play_pause": "재생/정지",
   "screen.campfiresessions.music.close": "닫기",
   "subtitles.campfiresessions.etirwer": "따뜻한 음악이 흐른다",
