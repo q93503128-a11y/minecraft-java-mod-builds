@@ -582,6 +582,17 @@ Signature: **Fury 0~100**
 
 ## 12. 캐릭터 외형
 
+현재 저해상도/저디테일 block-geometry 캐릭터는 **기능 연결 확인용 구현 상태일 뿐 최종 visual canon이 아니다**.
+형체, 직업, 무기, 성격이 한눈에 읽히지 않는 모델을 기준으로 신규 캐릭터를 계속 양산하지 않는다.
+
+핵심 영웅 visual replacement 순서:
+1. 역할/성격/무기에서 실루엣 키워드 고정
+2. 사용 가능한 외부 모델/텍스처/베이스 조사
+3. 캐릭터별 서로 다른 body proportion / costume silhouette / prop 확보
+4. idle/ready/basic/active/hit/down/victory를 실제 모델 기준으로 다시 맞춤
+5. portrait/summon/battle/model이 같은 최종 자산을 공유
+6. 실제 클라이언트에서 식별성 확인 후 visual canon 확정
+
 외부 디자인/모델을 적극 조사한다.
 
 분류:
