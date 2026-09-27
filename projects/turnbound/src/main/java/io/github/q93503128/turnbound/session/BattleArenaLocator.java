@@ -50,6 +50,14 @@ final class BattleArenaLocator {
         return score(level, center, yaw) == 0 ? new Arena(center, yaw) : null;
     }
 
+    static Arena fixedIfOpen(ServerPlayer player, Vec3 center, float yaw, int playerCount) {
+        if (playerCount <= 1) return fixedIfOpen(player, center, yaw);
+        if (playerCount > 4) return null;
+        ServerLevel level = (ServerLevel) player.level();
+        return score(level, center, yaw) + sharedFormationPenalty(level, center, yaw, playerCount) == 0
+                ? new Arena(center, yaw) : null;
+    }
+
     static Vec3 forward(float yaw) {
         double radians = Math.toRadians(yaw);
         return new Vec3(-Math.sin(radians), 0.0, Math.cos(radians));
@@ -94,6 +102,18 @@ final class BattleArenaLocator {
             if (!level.getFluidState(pos).isEmpty()) score += 12;
         }
         return score;
+    }
+
+    private static int sharedFormationPenalty(ServerLevel level, Vec3 center, float yaw, int playerCount) {
+        Vec3 forward = forward(yaw);
+        Vec3 right = new Vec3(-forward.z, 0.0, forward.x);
+        int penalty = 0;
+        for (BattleFormationLayout.Local local : BattleFormationLayout.sharedPartySlots(playerCount)) {
+            Vec3 raw = localToWorld(center, forward, right, local.x(), local.z());
+            Vec3 grounded = groundPosition(level, raw);
+            penalty += pointPenalty(level, grounded, center.y);
+        }
+        return penalty;
     }
 
     private static Vec3 localToWorld(Vec3 center, Vec3 forward, Vec3 right, double x, double z) {

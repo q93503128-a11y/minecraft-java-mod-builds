@@ -18,6 +18,13 @@ class BattleFormationLayoutTest {
         assertEquals(4.0,last.z(),0.001);
     }
 
+    @Test void fourPlayerValidationFootprintMatchesWideOwnerBlocks() {
+        var slots=BattleFormationLayout.sharedPartySlots(4);
+        assertEquals(16,slots.size());
+        assertEquals(-8.1,slots.stream().mapToDouble(BattleFormationLayout.Local::x).min().orElseThrow(),0.001);
+        assertEquals(8.1,slots.stream().mapToDouble(BattleFormationLayout.Local::x).max().orElseThrow(),0.001);
+    }
+
     @Test void eachMultiplayerOwnerGetsOwnTwoByTwoBlock() {
         CombatantState p1a=new CombatantState("p1a",PrototypeRoster.kyren(),CombatantSide.ALLY,0);
         CombatantState p1d=new CombatantState("p1d",PrototypeRoster.kyren(),CombatantSide.ALLY,1);

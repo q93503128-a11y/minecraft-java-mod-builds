@@ -143,7 +143,9 @@ public final class BattleScreen extends Screen {
     }
 
     private static boolean canChooseSkill(ClientBattleState.Snapshot snapshot) {
-        return !snapshot.finished() && !snapshot.auto() && snapshot.actorId().startsWith("ally_");
+        if (snapshot.finished() || snapshot.auto() || snapshot.actorId().isBlank()) return false;
+        return snapshot.units().stream().anyMatch(unit ->
+                unit.id().equals(snapshot.actorId()) && "ALLY".equals(unit.side()));
     }
 
     private ClientBattleState.Skill selectedSkill(ClientBattleState.Snapshot snapshot) {

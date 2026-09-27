@@ -8,6 +8,7 @@ import io.github.q93503128.turnbound.content.V04Catalogs;
 import io.github.q93503128.turnbound.presentation.BattleActorEntity;
 import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
+import io.github.q93503128.turnbound.session.MultiplayerPartyService;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -29,14 +30,16 @@ import java.util.UUID;
  * Shared visible-enemy runtime for the surveyed Drehmal route.
  *
  * <p>This service is deliberately dormant while route entries remain unverified. Once survey data is promoted,
- * one physical actor group is shared by all players; the server owns encounter claims and starts a private battle
- * only through one of the authored camera-safe arena candidates.</p>
+ * one physical actor group is shared by all players; the server owns encounter claims and starts either the normal
+ * solo session or one authoritative nearby-party shared battle through an authored camera-safe arena candidate.</p>
  */
 final class DrehmalVisibleEncounterService {
     private static final String COMMON_TAG = "turnbound_drehmal_field_enemy";
     private static final String ENCOUNTER_TAG_PREFIX = "turnbound_drehmal_encounter:";
     private static final String SLOT_TAG_PREFIX = "turnbound_drehmal_slot:";
     private static final double MATERIALIZE_RADIUS = 72.0D;
+    /** Party members farther than the encounter leash remain in field state; nobody is teleported in from afar. */
+    private static final double SHARED_PARTICIPANT_RADIUS = FieldEncounterRules.HOME_LEASH_RADIUS;
     private static final Map<String, SharedEncounter> ENCOUNTERS = new LinkedHashMap<>();
 
     private static ServerLevel boundLevel;
@@ -68,7 +71,9 @@ final class DrehmalVisibleEncounterService {
     static void onPlayerRemoved(ServerPlayer player) {
         if (player == null) return;
         for (SharedEncounter encounter : ENCOUNTERS.values()) {
-            if (player.getUUID().equals(encounter.claimedBy)) encounter.releaseAbandoned();
+            if (player.getUUID().equals(encounter.claimedBy) && !BattleSessionManager.exists(player.getUUID())) {
+                encounter.releaseAbandoned();
+            }
         }
     }
 
@@ -148,8 +153,7 @@ final class DrehmalVisibleEncounterService {
 
         private void tick(ServerLevel level) {
             if (claimedBy != null) {
-                ServerPlayer claimant = level.getServer().getPlayerList().getPlayer(claimedBy);
-                if (claimant == null || !BattleSessionManager.exists(claimant)) releaseAbandoned();
+                if (!BattleSessionManager.exists(claimedBy)) releaseAbandoned();
                 return;
             }
 
@@ -350,10 +354,16 @@ final class DrehmalVisibleEncounterService {
         }
 
         private boolean startBattle(ServerLevel level, ServerPlayer player) {
+            List<ServerPlayer> participants = sharedParticipants(level, player);
             for (DrehmalFirstRouteCatalog.ArenaCandidate candidate : footprint.candidates()) {
                 Vec3 center = vec(candidate.center());
-                if (!BattleSessionManager.startEncounterAt(
-                        player, slot.combatEncounterId(), false, false, center, candidate.yaw())) continue;
+                boolean started = participants.size() > 1
+                        ? BattleSessionManager.startSharedEncounterAt(
+                                participants, player.getUUID(), slot.combatEncounterId(), false, false,
+                                center, candidate.yaw())
+                        : BattleSessionManager.startEncounterAt(
+                                player, slot.combatEncounterId(), false, false, center, candidate.yaw());
+                if (!started) continue;
                 claimedBy = player.getUUID();
                 discardActors(level);
                 blockedArenaWarned = false;
@@ -366,6 +376,21 @@ final class DrehmalVisibleEncounterService {
                 blockedArenaWarned = true;
             }
             return false;
+        }
+
+        private List<ServerPlayer> sharedParticipants(ServerLevel level, ServerPlayer trigger) {
+            List<ServerPlayer> out = new ArrayList<>();
+            double radiusSq = SHARED_PARTICIPANT_RADIUS * SHARED_PARTICIPANT_RADIUS;
+            MultiplayerPartyService.Snapshot party = MultiplayerPartyService.snapshot(trigger.getUUID());
+            for (UUID memberId : party.members()) {
+                ServerPlayer member = level.getServer().getPlayerList().getPlayer(memberId);
+                if (member == null || member.level() != level || member.isSpectator()) continue;
+                if (!ExternalWorldBootstrap.active(member) || BattleSessionManager.exists(member)) continue;
+                if (member.position().distanceToSqr(trigger.position()) > radiusSq) continue;
+                out.add(member);
+            }
+            if (!out.contains(trigger)) out.add(0, trigger);
+            return List.copyOf(out);
         }
 
         private void resolve(ServerPlayer player, BattleOutcome outcome) {

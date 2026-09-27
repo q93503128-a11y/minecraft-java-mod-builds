@@ -2,6 +2,9 @@ package io.github.q93503128.turnbound.session;
 
 import io.github.q93503128.turnbound.combat.CombatantState;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /** Pure local-space formation math. Two-row placement is visual only and carries no front/back mechanics. */
 final class BattleFormationLayout {
     record Local(double x, double z) {}
@@ -26,6 +29,22 @@ final class BattleFormationLayout {
         double x = groupCenter + (col == 0 ? -BLOCK_HALF_WIDTH : BLOCK_HALF_WIDTH);
         double z = ALLY_CENTER_Z + (row == 0 ? -BLOCK_ROW_SPACING / 2.0D : BLOCK_ROW_SPACING / 2.0D);
         return new Local(x, z);
+    }
+
+    static List<Local> sharedPartySlots(int playerGroups) {
+        if (playerGroups <= 1) return List.of();
+        List<Local> out = new ArrayList<>();
+        for (int group = 0; group < playerGroups; group++) {
+            double groupCenter = (group - (playerGroups - 1) / 2.0D) * GROUP_STRIDE;
+            for (int slot = 0; slot < 4; slot++) {
+                int col = slot % 2;
+                int row = slot / 2;
+                double x = groupCenter + (col == 0 ? -BLOCK_HALF_WIDTH : BLOCK_HALF_WIDTH);
+                double z = ALLY_CENTER_Z + (row == 0 ? -BLOCK_ROW_SPACING / 2.0D : BLOCK_ROW_SPACING / 2.0D);
+                out.add(new Local(x, z));
+            }
+        }
+        return List.copyOf(out);
     }
 
     static Local enemy(int index, int enemyCount) {

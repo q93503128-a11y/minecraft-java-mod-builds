@@ -103,7 +103,7 @@ public final class Turnbound {
     private void logout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         GachaPresentationActorService.finish(player);
-        MultiplayerPartyService.remove(player);
+        MultiplayerPartyService.disconnect(player);
         boolean releaseRuntime = true;
         if (!CampaignPersistence.blocked(player)) {
             releaseRuntime = BattleSessionManager.endForLifecycle(player);

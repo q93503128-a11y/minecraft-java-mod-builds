@@ -68,6 +68,14 @@ public final class MultiplayerPartyService {
         if (player != null) removeMember(player.getUUID());
     }
 
+    /** Transient logout keeps social-party membership so a same-server reconnect can rejoin a shared battle. */
+    public static void disconnect(ServerPlayer player) {
+        if (player == null) return;
+        UUID id = player.getUUID();
+        PENDING_INVITE.remove(id);
+        PENDING_INVITE.entrySet().removeIf(entry -> entry.getValue().equals(id));
+    }
+
     public static void remove(ServerPlayer player) {
         if (player == null) return;
         UUID id = player.getUUID();
