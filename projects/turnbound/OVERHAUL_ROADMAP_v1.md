@@ -173,7 +173,40 @@ server authority 필수.
 
 “나중에” 폴더에 쌓아두지 않는다.
 
-## 11. Final Validation
+## 11. Multiplayer
+
+1차:
+- player party invite/accept/leave authority
+- party member world/minimap presence
+- encounter claim ownership
+- nearby player가 다른 사람의 battle actors를 볼 수 있음
+- private target/focus marker isolation
+
+2차:
+- shared PvE battle session
+- participant radius/join policy
+- disconnect/rejoin
+- per-player reward/quest credit
+
+3차:
+- opt-in duel
+- PvP-specific normalization/rules
+- ranked는 실제 duel 안정화 뒤 검토
+
+기존 single-owner BattleSession에 조건문을 누적해 co-op/PvP를 억지로 넣지 않는다.
+
+## 12. Quest content
+
+- main objective
+- authored side quest
+- character quest
+- optional repeatable regional contract
+- challenge
+
+반복 의뢰는 daily streak/FOMO 없이 선택형으로 설계한다.
+첫 구현은 Capital Valley / Drabyel / Av'Sal의 실제 장소와 encounter binding을 사용한다.
+
+## 13. Final Validation
 
 마지막 단계에서 구분:
 - CODE REVIEWED

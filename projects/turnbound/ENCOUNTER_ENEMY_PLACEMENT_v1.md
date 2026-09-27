@@ -571,6 +571,18 @@ Boss:
 - repeat는 명시적 challenge/replay로만
 - 길 걷다가 다시 살아나 있는 연출 금지
 
+### 15.1 Field movement role
+
+필드 배치는 고정 스폰 조각상이 아니다.
+
+- Common road patrol: 길/길가의 2개 이상 patrol point 사이를 천천히 이동하고 idle dwell을 둔다.
+- Roaming common: 읽히는 거리의 후보 point를 바꿔가며 이동한다.
+- Elite: 특정 위험 구역/동굴 입구/폐허를 지키거나 짧은 territory patrol.
+- Midboss: authored territory 안의 제한된 이동.
+- Boss / World Boss: 랜덤 도로 순찰 금지. 랜드마크/둥지/공터/유적 같은 고정 territory.
+- player 발견 시 alert → 추격 → disengage/원위치 복귀.
+- 필드 representative 수와 실제 battle composition 수는 분리한다. 필드 1마리 → 전투 2~5체 가능.
+
 ## 16. Encounter density
 
 ### Capital Valley first route
@@ -604,9 +616,13 @@ Ambush만 예외적으로 짧은 warning.
 
 멀티:
 - server가 encounter claim 결정
-- 같은 party가 같은 enemy를 두 번 lock하지 않음
+- 같은 플레이어 파티가 같은 enemy를 두 번 lock하지 않음
 - encounter에 참여할 party radius 정의
 - 멀리 떨어진 party member를 강제 teleport하지 않는 방향 우선
+- 다른 플레이어의 전투 actor/animation은 주변에서 볼 수 있게 한다.
+- focus/target/helper marker는 관전자에게 숨긴다.
+- 관전자는 battle actor를 공격하거나 BattleEngine state에 끼어들 수 없다.
+- co-op은 별도 shared session에서 참여자/보상/행동권을 서버가 관리한다.
 
 ## 18. Battle candidate selection
 

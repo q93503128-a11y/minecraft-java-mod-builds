@@ -25,8 +25,9 @@
 7. `DREHMAL_MAP_REFERENCE_v1.md`
 8. `FIRST_ROUTE_CAPITAL_VALLEY_v1.md`
 9. `ENCOUNTER_ENEMY_PLACEMENT_v1.md`
-10. `OVERHAUL_ROADMAP_v1.md`
-11. current source/resources
+10. `MULTIPLAYER_DESIGN_v1.md`
+11. `OVERHAUL_ROADMAP_v1.md`
+12. current source/resources
 
 Old v0.4 Aster March physical-world canon and alpha-by-alpha deltas are superseded.
 Git history is the archive.
