@@ -14,5 +14,29 @@
   "underwater_pad": {
     "subtitle": "subtitles.campfiresessions.underwater_pad",
     "sounds": [{ "name": "campfiresessions:music/underwater_pad", "stream": true }]
+  },
+  "cozy_puzzle_1": {
+    "subtitle": "subtitles.campfiresessions.cozy_puzzle_1",
+    "sounds": [{ "name": "campfiresessions:music/cozy_puzzle_1", "stream": true }]
+  },
+  "cozy_title": {
+    "subtitle": "subtitles.campfiresessions.cozy_title",
+    "sounds": [{ "name": "campfiresessions:music/cozy_title", "stream": true }]
+  },
+  "beach_stage": {
+    "subtitle": "subtitles.campfiresessions.beach_stage",
+    "sounds": [{ "name": "campfiresessions:music/beach_stage", "stream": true }]
+  },
+  "space_battle": {
+    "subtitle": "subtitles.campfiresessions.space_battle",
+    "sounds": [{ "name": "campfiresessions:music/space_battle", "stream": true }]
+  },
+  "jazzy_battle": {
+    "subtitle": "subtitles.campfiresessions.jazzy_battle",
+    "sounds": [{ "name": "campfiresessions:music/jazzy_battle", "stream": true }]
+  },
+  "desert_pink": {
+    "subtitle": "subtitles.campfiresessions.desert_pink",
+    "sounds": [{ "name": "campfiresessions:music/desert_pink", "stream": true }]
   }
 }

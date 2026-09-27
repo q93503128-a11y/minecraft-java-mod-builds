@@ -9,5 +9,6 @@ public record MusicTrack(
         String artist,
         String subtitle,
         MusicTheme theme,
+        int bpm,
         Supplier<SoundEvent> sound
 ) {}

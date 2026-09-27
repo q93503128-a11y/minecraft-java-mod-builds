@@ -16,6 +16,12 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> COZY_PUZZLE = register("cozy_puzzle");
     public static final DeferredHolder<SoundEvent, SoundEvent> NEON_CIRCUIT = register("neon_circuit");
     public static final DeferredHolder<SoundEvent, SoundEvent> UNDERWATER_PAD = register("underwater_pad");
+    public static final DeferredHolder<SoundEvent, SoundEvent> COZY_PUZZLE_1 = register("cozy_puzzle_1");
+    public static final DeferredHolder<SoundEvent, SoundEvent> COZY_TITLE = register("cozy_title");
+    public static final DeferredHolder<SoundEvent, SoundEvent> BEACH_STAGE = register("beach_stage");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SPACE_BATTLE = register("space_battle");
+    public static final DeferredHolder<SoundEvent, SoundEvent> JAZZY_BATTLE = register("jazzy_battle");
+    public static final DeferredHolder<SoundEvent, SoundEvent> DESERT_PINK = register("desert_pink");
 
     private ModSounds() {}
 

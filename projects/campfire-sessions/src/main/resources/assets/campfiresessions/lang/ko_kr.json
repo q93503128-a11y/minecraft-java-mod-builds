@@ -3,9 +3,19 @@
   "block.campfiresessions.wooden_chair": "목재 의자",
   "itemGroup.campfiresessions.main": "Campfire Sessions",
   "screen.campfiresessions.music.title": "Campfire Sessions",
-  "screen.campfiresessions.music.subtitle_v4": "휠을 굴리면 곡이 레일을 따라 흐르고 중앙에서 멈춥니다.",
+  "screen.campfiresessions.music.subtitle_v5": "휠로 선곡 · 재생 중 BPM에 맞춰 연주합니다.",
   "subtitles.campfiresessions.etirwer": "따뜻한 음악이 흐른다",
   "subtitles.campfiresessions.cozy_puzzle": "편안한 어쿠스틱 음악이 흐른다",
   "subtitles.campfiresessions.neon_circuit": "네온 신스 음악이 흐른다",
-  "subtitles.campfiresessions.underwater_pad": "물속 같은 앰비언트가 흐른다"
+  "subtitles.campfiresessions.underwater_pad": "물속 같은 앰비언트가 흐른다",
+  "subtitles.campfiresessions.cozy_puzzle_1": "밝은 퍼즐 음악이 흐른다",
+  "subtitles.campfiresessions.cozy_title": "아늑한 타이틀 음악이 흐른다",
+  "subtitles.campfiresessions.beach_stage": "바닷가 칩튠이 흐른다",
+  "subtitles.campfiresessions.space_battle": "우주 신스 음악이 흐른다",
+  "subtitles.campfiresessions.jazzy_battle": "재즈 연주가 흐른다",
+  "subtitles.campfiresessions.desert_pink": "넓은 사막 같은 앰비언트가 흐른다",
+  "key.category.campfiresessions.music": "Campfire Sessions",
+  "key.campfiresessions.previous_track": "이전 곡",
+  "key.campfiresessions.next_track": "다음 곡",
+  "key.campfiresessions.repeat_track": "한 곡 반복"
 }

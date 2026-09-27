@@ -2,18 +2,21 @@
 
 Minecraft Java 26.2 / NeoForge music-and-rest prototype.
 
-## v0.4 test flow
-1. Remove older Campfire Sessions JARs and install only the new alpha.
-2. Hold the Acoustic Guitar and right-click.
-3. Put the pointer over the song wheel and use the mouse wheel repeatedly.
-4. Confirm the cards move with inertia, the center song is emphasized, and the wheel snaps to a song instead of showing a normal scrollbar.
-5. Confirm each song switches the actual UI asset set:
-   - Etirwer -> Clean
-   - Cozy Puzzle In-Game 3 -> Desert
-   - Neon sign Circuit -> Neon
-   - Underwater Ambient Pad -> Ocean
-6. Confirm the selected theme changes the outer frame, song cards and control buttons, not only colors.
-7. Start playback and close the screen. Music-note particles should continue around the player while the guitar remains held.
-8. Switch away from the guitar; playback should stop.
+## v0.5 test flow
+1. Remove older Campfire Sessions JARs and install only `0.5.0-alpha.1`.
+2. Take the Acoustic Guitar and Wooden Chair from the Campfire Sessions creative tab.
+3. Right-click the guitar and scroll the rhythm-game-style selection rail.
+4. Confirm there are **10 tracks** and each selection shows its real duration and BPM.
+5. Confirm the bottom controls are distinct: **PREV / PLAY-STOP / NEXT / REPEAT ONE**.
+6. Start a song and confirm the progress bar and elapsed/total time update.
+7. Close the UI while still holding the guitar:
+   - `N`: next track
+   - `B`: previous track
+   - `R`: repeat-one toggle
+8. With a track playing, switch to third-person and confirm the player takes a two-handed guitar-holding pose.
+9. Confirm note particles pulse faster/slower according to each track BPM.
+10. Enable repeat-one and allow a track to end; it should restart instead of advancing.
+11. With repeat-one off, a finished track should advance automatically.
+12. Switch away from the guitar and confirm playback stops.
 
-A fifth Rough external UI set is packaged for the next matching track.
+The key bindings are normal Minecraft key mappings and can be rebound in Controls.

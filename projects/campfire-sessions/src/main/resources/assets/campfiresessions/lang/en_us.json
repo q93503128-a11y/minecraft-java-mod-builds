@@ -3,9 +3,19 @@
   "block.campfiresessions.wooden_chair": "Wooden Chair",
   "itemGroup.campfiresessions.main": "Campfire Sessions",
   "screen.campfiresessions.music.title": "Campfire Sessions",
-  "screen.campfiresessions.music.subtitle_v4": "Scroll the wheel: tracks glide along the rail and snap to the center.",
+  "screen.campfiresessions.music.subtitle_v5": "Scroll to choose · performance feedback follows each track's BPM.",
   "subtitles.campfiresessions.etirwer": "Warm music plays",
   "subtitles.campfiresessions.cozy_puzzle": "Relaxed acoustic music plays",
   "subtitles.campfiresessions.neon_circuit": "Neon synth music plays",
-  "subtitles.campfiresessions.underwater_pad": "Underwater ambience plays"
+  "subtitles.campfiresessions.underwater_pad": "Underwater ambience plays",
+  "subtitles.campfiresessions.cozy_puzzle_1": "Bright puzzle music plays",
+  "subtitles.campfiresessions.cozy_title": "A cozy title tune plays",
+  "subtitles.campfiresessions.beach_stage": "Beach chiptune plays",
+  "subtitles.campfiresessions.space_battle": "Space synth music plays",
+  "subtitles.campfiresessions.jazzy_battle": "Jazzy music plays",
+  "subtitles.campfiresessions.desert_pink": "Wide desert ambience plays",
+  "key.category.campfiresessions.music": "Campfire Sessions",
+  "key.campfiresessions.previous_track": "Previous Track",
+  "key.campfiresessions.next_track": "Next Track",
+  "key.campfiresessions.repeat_track": "Repeat One"
 }
