@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BattleCameraFramingTest {
     @Test
-    void standardFormationFramesFromBattleAxisInsteadOfPlayerView() {
+    void standardFormationPivotsBetweenTheTwoRows() {
         ClientBattleState.Snapshot snapshot = snapshot(0.0F, List.of(
                 unit("a1", "ALLY", -3.0, 64.0, -4.0),
                 unit("a2", "ALLY", -1.0, 64.0, -4.0),
@@ -22,6 +22,9 @@ class BattleCameraFramingTest {
                 unit("e5", "ENEMY", 4.0, 64.0, 4.0)));
 
         BattleCameraFraming.Plan plan = BattleCameraFraming.plan(snapshot);
+        assertEquals(0.0, plan.pivotX(), 0.01);
+        assertEquals(64.0, plan.pivotY(), 0.01);
+        assertEquals(0.0, plan.pivotZ(), 0.01);
         assertEquals(0.0F, plan.axisYaw(), 0.01F);
         assertEquals(0.0F, plan.yaw(), 0.01F);
         assertTrue(plan.distance() >= 11.5F && plan.distance() <= 12.5F);
@@ -29,7 +32,23 @@ class BattleCameraFramingTest {
     }
 
     @Test
-    void rotatedFormationRecoversItsOwnAxis() {
+    void unequalSideCountsDoNotBiasPivotTowardTheLargerSide() {
+        ClientBattleState.Snapshot snapshot = snapshot(0.0F, List.of(
+                unit("a1", "ALLY", -1.0, 64.0, -4.0),
+                unit("a2", "ALLY", 1.0, 64.0, -4.0),
+                unit("e1", "ENEMY", -4.0, 64.0, 4.0),
+                unit("e2", "ENEMY", -2.0, 64.0, 4.0),
+                unit("e3", "ENEMY", 0.0, 64.0, 4.0),
+                unit("e4", "ENEMY", 2.0, 64.0, 4.0),
+                unit("e5", "ENEMY", 4.0, 64.0, 4.0)));
+
+        BattleCameraFraming.Plan plan = BattleCameraFraming.plan(snapshot);
+        assertEquals(0.0, plan.pivotX(), 0.01);
+        assertEquals(0.0, plan.pivotZ(), 0.01);
+    }
+
+    @Test
+    void rotatedFormationRecoversItsOwnAxisAndMidpoint() {
         ClientBattleState.Snapshot snapshot = snapshot(-40.0F, List.of(
                 unit("a1", "ALLY", 4.0, 64.0, -2.0),
                 unit("a2", "ALLY", 4.0, 64.0, 2.0),
@@ -37,6 +56,8 @@ class BattleCameraFramingTest {
                 unit("e2", "ENEMY", -4.0, 64.0, 2.0)));
 
         BattleCameraFraming.Plan plan = BattleCameraFraming.plan(snapshot);
+        assertEquals(0.0, plan.pivotX(), 0.01);
+        assertEquals(0.0, plan.pivotZ(), 0.01);
         assertEquals(90.0F, plan.axisYaw(), 0.01F);
         assertEquals(90.0F, plan.yaw(), 0.01F);
     }
@@ -57,9 +78,12 @@ class BattleCameraFramingTest {
     }
 
     @Test
-    void degenerateSnapshotFallsBackToAuthoredArenaYaw() {
+    void degenerateSnapshotUsesArenaCenterAsCameraPivot() {
         ClientBattleState.Snapshot snapshot = snapshot(-170.0F, List.of());
         BattleCameraFraming.Plan plan = BattleCameraFraming.plan(snapshot);
+        assertEquals(120.0, plan.pivotX(), 0.01);
+        assertEquals(64.0, plan.pivotY(), 0.01);
+        assertEquals(-35.0, plan.pivotZ(), 0.01);
         assertEquals(-170.0F, plan.axisYaw(), 0.01F);
         assertEquals(-170.0F, plan.yaw(), 0.01F);
         assertEquals(10.5F, plan.distance(), 0.01F);
@@ -74,7 +98,7 @@ class BattleCameraFramingTest {
                 true, false, 1, "RUNNING", "a1", false,
                 true, true, true,
                 units, List.of(), List.of(), "",
-                0.0, 64.0, 0.0, arenaYaw,
+                120.0, 64.0, -35.0, arenaYaw,
                 ClientBattleState.Result.none());
     }
 }

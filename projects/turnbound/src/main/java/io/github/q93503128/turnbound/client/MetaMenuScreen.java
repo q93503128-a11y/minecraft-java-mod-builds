@@ -22,7 +22,7 @@ import java.util.Locale;
 /** Responsive management screen. Dense collections are paged and PC layouts favor information density. */
 public final class MetaMenuScreen extends Screen {
     public enum Tab { HOME, PARTY, CHARACTERS, EQUIPMENT, ARCHIVE, QUESTS, CODEX, SYSTEM }
-    private enum DetailTab { OVERVIEW, SKILLS, PASSIVES, EQUIPMENT, GROWTH }
+    private enum DetailTab { OVERVIEW, SKILLS, EQUIPMENT, GROWTH }
     private enum OwnershipFilter { ALL, OWNED, UNOWNED }
     private enum RoleFilter { ALL, DPS, SUPPORT, TANK, SUMMON }
     private enum EquipSort { TIER, LEVEL, STAT }
@@ -296,7 +296,12 @@ public final class MetaMenuScreen extends Screen {
         rw=Math.max(120,rw);
         int by=y+66;
         if(FacilityUiAccess.forge()){
-            addRenderableWidget(new BattleHudButton(rx,by,Math.min(108,rw),20,Component.literal(selected.enhancement()>=GrowthRulesV1.maxEnhancement()?"+10 완료":"강화 +1"),GOLD,ignored->send("ENHANCE|"+selected.instanceId())));
+            boolean maxed=selected.enhancement()>=GrowthRulesV1.maxEnhancement();
+            int cost=maxed?0:GrowthRulesV1.enhancementCost(selected.tier(),selected.enhancement());
+            String enhanceLabel=maxed?"+10 완료":"강화 +1 · "+cost+"G";
+            var enhance=new BattleHudButton(rx,by,Math.min(142,rw),20,Component.literal(enhanceLabel),maxed?MUTED:GOLD,ignored->send("ENHANCE|"+selected.instanceId()));
+            enhance.active=!maxed&&ClientMetaState.snapshot().gold()>=cost;
+            addRenderableWidget(enhance);
         }
         int targetY=by+(FacilityUiAccess.forge()?28:6);
         var owned=ClientMetaState.snapshot().characters().stream().filter(ClientMetaState.CharacterRow::owned).toList();
@@ -579,40 +584,27 @@ public final class MetaMenuScreen extends Screen {
                 g.text(font,Component.literal(skill.name()),x+8,panelY+6,skill.isBasic()?GREEN:GOLD,true);
                 g.text(font,Component.literal(UiTextLayout.fit(metaLine,w-16)),x+8,panelY+19,SECONDARY,false);
 
-                var lines=UiTextLayout.wrap(skill.description(),w-16,128);
+                List<String> lines=new ArrayList<>(UiTextLayout.wrap(skill.description(),w-16,128));
+                var passives=CharacterPassiveCatalog.forOwner(r.id());
+                for(var passive:passives){
+                    lines.add("");
+                    lines.add("패시브 · "+passive.name());
+                    lines.addAll(UiTextLayout.wrap(passive.description(),w-16,128));
+                }
                 int lineY=panelY+33;
                 int maxLines=Math.max(1,(panelH-45)/10);
                 int maxScroll=Math.max(0,lines.size()-maxLines);
                 skillDescriptionScroll=Math.max(0,Math.min(skillDescriptionScroll,maxScroll));
                 int end=Math.min(lines.size(),skillDescriptionScroll+maxLines);
                 for(int i=skillDescriptionScroll;i<end;i++){
-                    g.text(font,Component.literal(lines.get(i)),x+8,lineY,TEXT,false);
+                    String line=lines.get(i);
+                    int lineColor=line.startsWith("패시브 · ")?GOLD:TEXT;
+                    g.text(font,Component.literal(line),x+8,lineY,lineColor,false);
                     lineY+=10;
                 }
                 if(maxScroll>0){
                     String scroll=(skillDescriptionScroll+1)+"-"+end+" / "+lines.size()+" · 휠";
                     g.text(font,Component.literal(scroll),x+w-8-font.width(scroll),panelY+panelH-11,MUTED,false);
-                }
-            }
-            case PASSIVES->{
-                var passives=CharacterPassiveCatalog.forOwner(r.id());
-                int panelY=y+34;
-                if(passives.isEmpty()){
-                    g.text(font,Component.literal("고유 패시브 없음"),x,panelY,MUTED,false);
-                    break;
-                }
-                for(var passive:passives){
-                    var lines=UiTextLayout.wrap(passive.description(),w-16,8);
-                    int panelH=28+Math.max(1,lines.size())*10;
-                    if(panelY+panelH>contentBottom())break;
-                    TurnboundUiSkin.inset(g,x,panelY,w,panelH);
-                    g.text(font,Component.literal(passive.name()),x+8,panelY+6,GOLD,true);
-                    int ly=panelY+19;
-                    for(String line:lines){
-                        g.text(font,Component.literal(line),x+8,ly,TEXT,false);
-                        ly+=10;
-                    }
-                    panelY+=panelH+5;
                 }
             }
             case EQUIPMENT->{
@@ -627,9 +619,12 @@ public final class MetaMenuScreen extends Screen {
             case GROWTH->{
                 var trial=ClientSignatureTrialState.forCharacter(r.id());
                 String status=r.awakened()?"각성 완료":trial!=null&&trial.awakeningReady()?"각성 가능":"선행 조건 진행 중";
-                g.text(font,Component.literal(status),x,y+34,r.awakened()?GREEN:GOLD,true);
-                g.text(font,Component.literal("각성 조건 · Lv60 · 개인 퀘스트 · "+GrowthRulesV1.awakeningGoldCost()+" Gold"),x,y+52,SECONDARY,false);
-                if(trial!=null)g.text(font,Component.literal(UiTextLayout.fit("전용 장비 시련 · "+trial.title()+" · "+trial.objective(),w)),x,y+69,SECONDARY,false);
+                TurnboundUiSkin.inset(g,x,y+32,w,76);
+                g.text(font,Component.literal("레벨 · "+r.level()+" / "+GrowthRulesV1.maxLevel()),x+8,y+40,TEXT,true);
+                g.text(font,Component.literal("전투 경험치로 성장 · 성급 승급 없음"),x+8,y+56,SECONDARY,false);
+                g.text(font,Component.literal("각성 · "+status),x+8,y+74,r.awakened()?GREEN:GOLD,true);
+                g.text(font,Component.literal(UiTextLayout.fit("Lv60 + 개인 퀘스트 + "+GrowthRulesV1.awakeningGoldCost()+" Gold",w-16)),x+8,y+90,SECONDARY,false);
+                if(trial!=null)g.text(font,Component.literal(UiTextLayout.fit("전용 장비 시련 · "+trial.title()+" · "+trial.objective(),w)),x,y+116,SECONDARY,false);
             }
         }
     }
@@ -638,8 +633,18 @@ public final class MetaMenuScreen extends Screen {
         var selected=equipment(selectedEquipmentId);if(selected==null)return;
         int listW=Math.min(420,Math.max(240,panelWidth/2-18)),x=left+26+listW,y=contentTop()+29,w=panelWidth-listW-58;
         g.text(font,Component.literal(UiTextLayout.fit(selected.tier()+" · "+selected.name()+" +"+selected.enhancement(),w)),x,y,tierColor(selected.tier()),true);
-        g.text(font,Component.literal(UiTextLayout.fit(statTypeLabel(selected.mainType())+" "+stat(selected.mainValue())+" · "+statTypeLabel(selected.subType())+" "+stat(selected.subValue()),w)),x,y+18,TEXT,false);
-        g.text(font,Component.literal(UiTextLayout.fit("+10 · "+statTypeLabel(selected.mainType())+" "+stat(selected.mainAt20())+" / "+statTypeLabel(selected.subType())+" "+stat(selected.subAt20()),w)),x,y+36,GOLD,false);
+        String current=statTypeLabel(selected.mainType())+" "+stat(selected.mainValue())+" · "+statTypeLabel(selected.subType())+" "+stat(selected.subValue());
+        g.text(font,Component.literal(UiTextLayout.fit("현재 · "+current,w)),x,y+18,TEXT,false);
+        if(selected.enhancement()<GrowthRulesV1.maxEnhancement()){
+            double nextMain=selected.mainValue()/Math.max(0.0001,1.0+0.04*selected.enhancement())*(1.0+0.04*(selected.enhancement()+1));
+            String next="+"+(selected.enhancement()+1)+" · "+statTypeLabel(selected.mainType())+" "+stat(nextMain)
+                    +" · "+statTypeLabel(selected.subType())+" "+stat(selected.subValue());
+            g.text(font,Component.literal(UiTextLayout.fit(next,w)),x,y+36,GREEN,false);
+        }else{
+            g.text(font,Component.literal("강화 최대치"),x,y+36,GREEN,false);
+        }
+        g.text(font,Component.literal(UiTextLayout.fit("+10 최대 · "+statTypeLabel(selected.mainType())+" "+stat(selected.mainAt20())
+                +" · "+statTypeLabel(selected.subType())+" "+stat(selected.subAt20()),w)),x,y+54,GOLD,false);
     }
 
     private void drawArchive(GuiGraphicsExtractor g){
@@ -759,7 +764,7 @@ public final class MetaMenuScreen extends Screen {
     private static String sortLabel(EquipSort s){return switch(s){case TIER->"등급";case LEVEL->"강화";case STAT->"능력치";};}
     private static String label(Tab t){return switch(t){case HOME->"빠른 메뉴";case PARTY->"파티";case CHARACTERS->"캐릭터";case EQUIPMENT->"장비";case ARCHIVE->"소환";case QUESTS->"퀘스트";case CODEX->"도감";case SYSTEM->"도전";};}
     private static String title(Tab t){return switch(t){case HOME->"빠른 메뉴";case PARTY->"파티 편성";case CHARACTERS->"캐릭터";case EQUIPMENT->"장비";case ARCHIVE->"소환 / 기록";case QUESTS->"퀘스트";case CODEX->"도감";case SYSTEM->"도전 콘텐츠";};}
-    private static String detailLabel(DetailTab d){return switch(d){case OVERVIEW->"개요";case SKILLS->"스킬";case PASSIVES->"패시브";case EQUIPMENT->"장비";case GROWTH->"성장";};}
+    private static String detailLabel(DetailTab d){return switch(d){case OVERVIEW->"개요";case SKILLS->"스킬";case EQUIPMENT->"장비";case GROWTH->"성장";};}
     private static String primaryRoleLabel(String r){return switch(r){case"DPS"->"공격";case"SUPPORT"->"지원";case"TANK"->"수호";case"SUMMON"->"소환";default->r;};}
     private static String slotLabel(String s){return switch(s){case"WEAPON"->"무기";case"ARMOR"->"방어구";case"ACCESSORY"->"장신구";case"SIGNATURE"->"전용 장비";case"ALL"->"전체";default->s;};}
     private static String codexLabel(String c){return switch(c){case"CHARACTERS"->"캐릭터";case"ENEMIES"->"적";case"BOSSES"->"보스";case"EQUIPMENT"->"장비";default->"튜토리얼";};}

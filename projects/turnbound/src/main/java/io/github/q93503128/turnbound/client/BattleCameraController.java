@@ -3,15 +3,17 @@ package io.github.q93503128.turnbound.client;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.neoforged.neoforge.client.event.CalculateDetachedCameraDistanceEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 
 /**
- * Battle-center three-quarter camera.
+ * Battle-center orbit camera.
  *
- * <p>The default frame is derived from the actual ally/enemy formation rather than the player's pre-battle view.
- * Manual orbit and zoom remain correction tools for unusual terrain, while Minecraft's detached-camera ray cast
- * still performs the final wall collision clamp.</p>
+ * <p>The Minecraft player remains the field/session shell. During battle the render camera is attached to a
+ * client-local invisible anchor placed at the midpoint between the ally and enemy rows. Third-person distance,
+ * orbit and zoom therefore operate around the battlefield itself instead of around the player's hidden body.</p>
  */
 public final class BattleCameraController {
     private static final float MIN_DISTANCE = 7.0F;
@@ -23,12 +25,25 @@ public final class BattleCameraController {
     private static final float WHEEL_DISTANCE_STEP = 0.90F;
     private static final float VIEW_LERP = 0.66F;
     private static final float ZOOM_LERP = 0.38F;
+    private static final double PIVOT_LERP = 0.42D;
 
     private static boolean active;
     private static boolean manualAdjusted;
     private static CameraType previousCameraType = CameraType.FIRST_PERSON;
+    private static Entity previousCameraEntity;
+    private static ArmorStand cameraAnchor;
     private static float previousYaw;
     private static float previousPitch;
+
+    private static double basePivotX;
+    private static double basePivotY;
+    private static double basePivotZ;
+    private static double currentPivotX;
+    private static double currentPivotY;
+    private static double currentPivotZ;
+    private static double targetPivotX;
+    private static double targetPivotY;
+    private static double targetPivotZ;
 
     private static float baseYaw;
     private static float basePitch = 23.0F;
@@ -60,11 +75,11 @@ public final class BattleCameraController {
         if (active) return;
         Minecraft minecraft = Minecraft.getInstance();
         previousCameraType = minecraft.options.getCameraType();
+        previousCameraEntity = minecraft.getCameraEntity();
         if (Float.isFinite(snapshot.returnYaw()) && Float.isFinite(snapshot.returnPitch())) {
             previousYaw = snapshot.returnYaw();
             previousPitch = snapshot.returnPitch();
         } else if (minecraft.player != null) {
-            // Compatibility fallback for an older/malformed snapshot that predates authoritative return-view data.
             previousYaw = minecraft.player.getYRot();
             previousPitch = minecraft.player.getXRot();
         }
@@ -73,40 +88,52 @@ public final class BattleCameraController {
         applyBase(plan, true);
         manualAdjusted = false;
         clearImpulse();
+        attachBattleCenterCamera(minecraft);
         minecraft.options.setCameraType(CameraType.THIRD_PERSON_BACK);
         active = true;
-        applyPlayerView(minecraft);
+        applyCameraView(minecraft);
     }
 
-    /** Compatibility entry point for tests or older callers that only know the authored arena yaw. */
+    /** Compatibility entry point for older callers that only know the authored arena yaw. */
     public static void enter(float authoredArenaYaw) {
         if (active) return;
         Minecraft minecraft = Minecraft.getInstance();
         previousCameraType = minecraft.options.getCameraType();
+        previousCameraEntity = minecraft.getCameraEntity();
         if (minecraft.player != null) {
             previousYaw = minecraft.player.getYRot();
             previousPitch = minecraft.player.getXRot();
+            applyBase(BattleCameraFraming.fallback(
+                    authoredArenaYaw, minecraft.player.getX(), minecraft.player.getY(), minecraft.player.getZ()), true);
+        } else {
+            applyBase(BattleCameraFraming.fallback(authoredArenaYaw), true);
         }
 
-        applyBase(BattleCameraFraming.fallback(authoredArenaYaw), true);
         manualAdjusted = false;
         clearImpulse();
+        attachBattleCenterCamera(minecraft);
         minecraft.options.setCameraType(CameraType.THIRD_PERSON_BACK);
         active = true;
-        applyPlayerView(minecraft);
+        applyCameraView(minecraft);
     }
 
     public static void exit() {
         if (!active) return;
         Minecraft minecraft = Minecraft.getInstance();
+        Entity restore = previousCameraEntity;
+        if (restore == null || restore.level() != minecraft.level) restore = minecraft.player;
+        minecraft.setCameraEntity(restore);
         minecraft.options.setCameraType(previousCameraType);
         if (minecraft.player != null) {
             minecraft.player.setYRot(previousYaw);
             minecraft.player.setYHeadRot(previousYaw);
             minecraft.player.setXRot(previousPitch);
         }
+
         active = false;
         manualAdjusted = false;
+        previousCameraEntity = null;
+        cameraAnchor = null;
         baseDistance = 10.5F;
         baseFov = 52.0F;
         currentDistance = baseDistance;
@@ -143,6 +170,9 @@ public final class BattleCameraController {
         targetPitch = basePitch;
         targetDistance = baseDistance;
         targetFov = baseFov;
+        targetPivotX = basePivotX;
+        targetPivotY = basePivotY;
+        targetPivotZ = basePivotZ;
     }
 
     static void onSnapshotTransition(ClientBattleState.Snapshot before, ClientBattleState.Snapshot after) {
@@ -171,17 +201,23 @@ public final class BattleCameraController {
     }
 
     private static void refreshFraming(ClientBattleState.Snapshot snapshot) {
-        BattleCameraFraming.Plan plan = BattleCameraFraming.plan(snapshot);
-        applyBase(plan, false);
+        applyBase(BattleCameraFraming.plan(snapshot), false);
     }
 
     private static void applyBase(BattleCameraFraming.Plan plan, boolean snap) {
+        basePivotX = plan.pivotX();
+        basePivotY = plan.pivotY();
+        basePivotZ = plan.pivotZ();
         baseYaw = Mth.wrapDegrees(plan.yaw());
         basePitch = Mth.clamp(plan.pitch(), MIN_PITCH, MAX_PITCH);
         baseDistance = Mth.clamp(plan.distance(), MIN_DISTANCE, MAX_DISTANCE);
         baseFov = Mth.clamp(plan.fov(), 48.0F, 64.0F);
 
-        // Snapshot refreshes update the authored baseline, but must not overwrite a player's manual orbit/zoom.
+        targetPivotX = basePivotX;
+        targetPivotY = basePivotY;
+        targetPivotZ = basePivotZ;
+
+        // Formation changes may move the center, but they must not erase a player's chosen orbit/zoom.
         if (snap || !manualAdjusted) {
             targetYaw = baseYaw;
             targetPitch = basePitch;
@@ -189,11 +225,23 @@ public final class BattleCameraController {
             targetFov = baseFov;
         }
         if (snap) {
+            currentPivotX = basePivotX;
+            currentPivotY = basePivotY;
+            currentPivotZ = basePivotZ;
             currentYaw = baseYaw;
             currentPitch = basePitch;
             currentDistance = baseDistance;
             currentFov = baseFov;
         }
+    }
+
+    private static void attachBattleCenterCamera(Minecraft minecraft) {
+        if (minecraft.level == null) return;
+        cameraAnchor = new ArmorStand(minecraft.level, currentPivotX, currentPivotY, currentPivotZ);
+        cameraAnchor.setInvisible(true);
+        cameraAnchor.setNoGravity(true);
+        applyCameraView(minecraft);
+        minecraft.setCameraEntity(cameraAnchor);
     }
 
     private static ClientBattleState.Unit unit(ClientBattleState.Snapshot snapshot, String id) {
@@ -224,11 +272,14 @@ public final class BattleCameraController {
 
     public static void onCameraAngles(ViewportEvent.ComputeCameraAngles event) {
         if (!active) return;
+        currentPivotX += (targetPivotX - currentPivotX) * PIVOT_LERP;
+        currentPivotY += (targetPivotY - currentPivotY) * PIVOT_LERP;
+        currentPivotZ += (targetPivotZ - currentPivotZ) * PIVOT_LERP;
         currentYaw = Mth.wrapDegrees(currentYaw + Mth.wrapDegrees(targetYaw - currentYaw) * VIEW_LERP);
         currentPitch += (targetPitch - currentPitch) * VIEW_LERP;
         currentDistance += (targetDistance - currentDistance) * ZOOM_LERP;
         currentFov += (targetFov - currentFov) * ZOOM_LERP;
-        applyPlayerView(Minecraft.getInstance());
+        applyCameraView(Minecraft.getInstance());
 
         float phase = impactPhase++ * 0.92F;
         float yawWave = (float)Math.sin(phase);
@@ -271,7 +322,15 @@ public final class BattleCameraController {
         impactPhase = 0;
     }
 
-    private static void applyPlayerView(Minecraft minecraft) {
+    private static void applyCameraView(Minecraft minecraft) {
+        if (cameraAnchor != null) {
+            cameraAnchor.setPos(currentPivotX, currentPivotY, currentPivotZ);
+            cameraAnchor.setYRot(currentYaw);
+            cameraAnchor.setYHeadRot(currentYaw);
+            cameraAnchor.setYBodyRot(currentYaw);
+            cameraAnchor.setXRot(currentPitch);
+            return;
+        }
         if (minecraft.player == null) return;
         minecraft.player.setYRot(currentYaw);
         minecraft.player.setYHeadRot(currentYaw);
