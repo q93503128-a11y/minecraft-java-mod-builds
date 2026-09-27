@@ -63,11 +63,11 @@ class FirstRouteBalanceContractTest {
             totalActions++;
         }
 
+        String metrics = encounterId + " allyActions=" + allyActions + ", enemyActions=" + enemyActions
+                + ", totalActions=" + totalActions;
         assertEquals(BattleOutcome.ALLY_VICTORY, state.outcome(),
-                () -> encounterId + " did not resolve as an early-route victory; allyActions=" + allyActions
-                        + ", enemyActions=" + enemyActions + ", totalActions=" + totalActions);
+                metrics + " did not resolve as an early-route victory");
         assertTrue(allyActions >= minAllyActions && allyActions <= maxAllyActions,
-                () -> encounterId + " ally actions=" + allyActions + " outside " + minAllyActions + ".." + maxAllyActions
-                        + " (enemyActions=" + enemyActions + ", totalActions=" + totalActions + ")");
+                metrics + " outside ally target " + minAllyActions + ".." + maxAllyActions);
     }
 }
