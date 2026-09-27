@@ -133,8 +133,8 @@ public final class TurnboundCommands {
         var server = player.level().getServer();
         String names = snapshot.members().stream().map(id -> {
             var member = server == null ? null : server.getPlayerList().getPlayer(id);
-            return member == null ? id.toString().substring(0, 8) : member.getGameProfile().name();
-        }).reduce((a,b) -> a + ", " + b).orElse(player.getGameProfile().name());
+            return member == null ? id.toString().substring(0, 8) : member.getName().getString();
+        }).reduce((a,b) -> a + ", " + b).orElse(player.getName().getString());
         source.sendSuccess(() -> Component.literal("플레이어 파티 " + snapshot.members().size() + "/" + MultiplayerPartyService.MAX_PLAYERS
                 + " · " + names), false);
         return Command.SINGLE_SUCCESS;
@@ -144,8 +144,8 @@ public final class TurnboundCommands {
         var player = source.getPlayerOrException();
         try {
             MultiplayerPartyService.invite(player, target);
-            source.sendSuccess(() -> Component.literal(target.getGameProfile().name() + "에게 파티 초대를 보냈습니다."), false);
-            target.sendSystemMessage(Component.literal(player.getGameProfile().name()
+            source.sendSuccess(() -> Component.literal(target.getName().getString() + "에게 파티 초대를 보냈습니다."), false);
+            target.sendSystemMessage(Component.literal(player.getName().getString()
                     + "의 플레이어 파티 초대 · /turnbound party accept 또는 /turnbound party decline"));
             return Command.SINGLE_SUCCESS;
         } catch (RuntimeException ex) {

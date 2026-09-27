@@ -81,6 +81,7 @@ public final class DrehmalMinimapLayer implements GuiLayer {
             }
         }
 
+        drawPartyMembers(graphics, minecraft, mapX, mapY, px, pz, radius);
         drawArrow(graphics, mapX + MAP_SIZE / 2, mapY + MAP_SIZE / 2, minecraft.player.getYRot(), 0xFFFFFFFF, true);
         graphics.text(minecraft.font, Component.literal("N"), mapX + MAP_SIZE - 9, mapY + 3, 0xEFFFFFFF, true);
 
@@ -148,6 +149,36 @@ public final class DrehmalMinimapLayer implements GuiLayer {
         int g = Math.max(0, Math.min(255, ((color >>> 8) & 0xFF) + delta));
         int b = Math.max(0, Math.min(255, (color & 0xFF) + delta));
         return 0xFF000000 | (r << 16) | (g << 8) | b;
+    }
+
+    private static void drawPartyMembers(
+            GuiGraphicsExtractor graphics, Minecraft minecraft,
+            int mapX, int mapY, double playerX, double playerZ, double radius) {
+        double clampRadius = Math.max(STEP, radius - STEP * 3.0);
+        for (ClientMultiplayerPartyState.Member member : ClientMultiplayerPartyState.snapshot().members()) {
+            if (!member.online() || !member.sameLevel()) continue;
+            double dx = member.x() - playerX;
+            double dz = member.z() - playerZ;
+            double maxAxis = Math.max(Math.abs(dx), Math.abs(dz));
+            boolean clamped = maxAxis > clampRadius;
+            if (clamped) {
+                double scale = clampRadius / maxAxis;
+                dx *= scale;
+                dz *= scale;
+            }
+            int sx = mapX + MAP_SIZE / 2 + (int)Math.round(dx / STEP * CELL);
+            int sy = mapY + MAP_SIZE / 2 + (int)Math.round(dz / STEP * CELL);
+            drawPartyDot(graphics, sx, sy, member.inBattle());
+            if (!clamped && minecraft.font.width(member.name()) <= 42) {
+                graphics.text(minecraft.font, Component.literal(member.name()), sx + 4, sy - 4, MUTED, false);
+            }
+        }
+    }
+
+    private static void drawPartyDot(GuiGraphicsExtractor graphics, int cx, int cy, boolean inBattle) {
+        int color = inBattle ? 0xFFFFC857 : 0xFF6DC6FF;
+        graphics.fill(cx - 2, cy - 2, cx + 3, cy + 3, 0xDD111317);
+        graphics.fill(cx - 1, cy - 1, cx + 2, cy + 2, color);
     }
 
     private static void drawTarget(GuiGraphicsExtractor graphics, int cx, int cy) {

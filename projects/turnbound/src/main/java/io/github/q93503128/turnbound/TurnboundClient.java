@@ -8,6 +8,7 @@ import io.github.q93503128.turnbound.client.ClientAudioPlayback;
 import io.github.q93503128.turnbound.client.ClientBattleNetwork;
 import io.github.q93503128.turnbound.client.ClientFieldNetwork;
 import io.github.q93503128.turnbound.client.ClientMetaNetwork;
+import io.github.q93503128.turnbound.client.ClientMultiplayerPartyNetwork;
 import io.github.q93503128.turnbound.client.ClientUiFeedbackLayer;
 import io.github.q93503128.turnbound.client.ClientWorldLoadingBootstrap;
 import io.github.q93503128.turnbound.client.DrehmalAutoInstaller;
@@ -31,6 +32,7 @@ public final class TurnboundClient {
         modEventBus.addListener(ClientBattleNetwork::register);
         modEventBus.addListener(ClientFieldNetwork::register);
         modEventBus.addListener(ClientMetaNetwork::register);
+        modEventBus.addListener(ClientMultiplayerPartyNetwork::register);
         modEventBus.addListener(ClientAudioNetwork::register);
         modEventBus.addListener((RegisterGuiLayersEvent event) -> {
             event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "exploration_minimap"), new DrehmalMinimapLayer());

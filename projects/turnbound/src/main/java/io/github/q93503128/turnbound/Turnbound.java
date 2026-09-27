@@ -10,6 +10,7 @@ import io.github.q93503128.turnbound.session.BattleInteractionGuard;
 import io.github.q93503128.turnbound.session.BattleNetwork;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
 import io.github.q93503128.turnbound.session.MultiplayerPartyService;
+import io.github.q93503128.turnbound.session.MultiplayerPartyNetwork;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import io.github.q93503128.turnbound.world.ExternalWorldBootstrap;
@@ -46,6 +47,7 @@ public final class Turnbound {
         modEventBus.addListener(BattleNetwork::register);
         modEventBus.addListener(FieldNetwork::register);
         modEventBus.addListener(MetaNetwork::register);
+        modEventBus.addListener(MultiplayerPartyNetwork::register);
         NeoForge.EVENT_BUS.addListener(TurnboundCommands::register);
         NeoForge.EVENT_BUS.addListener(this::tick);
         NeoForge.EVENT_BUS.addListener(this::login);
@@ -79,6 +81,7 @@ public final class Turnbound {
 
         PlayerShellRules.maintain(player);
         BattleSessionManager.tick(player);
+        MultiplayerPartyNetwork.tick(player);
         CampaignPersistence.autosave(player);
     }
 
