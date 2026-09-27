@@ -65,7 +65,33 @@ public final class MultiplayerPartyService {
     }
 
     public static void leave(ServerPlayer player) {
-        if (player != null) removeMember(player.getUUID());
+        if (player == null) return;
+        if (BattleSessionManager.exists(player)) {
+            throw new IllegalStateException("전투 중에는 플레이어 파티를 변경할 수 없습니다.");
+        }
+        removeMember(player.getUUID());
+    }
+
+    public static void kick(ServerPlayer leader, UUID memberId) {
+        if (leader == null || memberId == null) throw new IllegalArgumentException("플레이어를 찾을 수 없습니다.");
+        UUID leaderId = leader.getUUID();
+        if (leaderId.equals(memberId)) throw new IllegalStateException("파티장은 자신을 추방할 수 없습니다.");
+        if (BattleSessionManager.exists(leaderId) || BattleSessionManager.exists(memberId)) {
+            throw new IllegalStateException("전투 중에는 플레이어 파티를 변경할 수 없습니다.");
+        }
+        Group group = GROUP_BY_MEMBER.get(leaderId);
+        if (group == null || !group.leader.equals(leaderId)) throw new IllegalStateException("파티장만 멤버를 추방할 수 있습니다.");
+        if (!group.members.contains(memberId)) throw new IllegalStateException("해당 플레이어는 파티원이 아닙니다.");
+        removeMember(memberId);
+        PENDING_INVITE.remove(memberId);
+    }
+
+    public static UUID pendingInviter(UUID playerId) {
+        return playerId == null ? null : PENDING_INVITE.get(playerId);
+    }
+
+    public static boolean isGrouped(UUID playerId) {
+        return playerId != null && GROUP_BY_MEMBER.containsKey(playerId);
     }
 
     /** Transient logout keeps social-party membership so a same-server reconnect can rejoin a shared battle. */
