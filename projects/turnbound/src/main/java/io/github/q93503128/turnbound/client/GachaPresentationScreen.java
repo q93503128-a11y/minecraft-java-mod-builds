@@ -127,6 +127,18 @@ public final class GachaPresentationScreen extends Screen {
         int x = (width - w) / 2;
         int y = Math.max(62, height - h - 34);
         int accent = starColor(pull.stars());
+
+        // The reveal is an actual production GeckoLib actor rendered live in 3D. Keep it unmistakably visible
+        // even when the world-space reveal actor is partly hidden by terrain or the player's previous camera angle.
+        int modelSize=Math.min(220,Math.max(138,Math.min(width/4,height/3)));
+        int modelCx=width/2;
+        int modelTop=Math.max(24,height/2-modelSize/2-34);
+        TurnboundPortraitRenderer.extractBust(
+                graphics,pull.characterId(),
+                modelCx-modelSize/2,modelTop,
+                modelCx+modelSize/2,modelTop+modelSize,
+                false);
+
         TurnboundFrameStyle.frame(graphics, x, y, w, h, accent);
         graphics.text(font, Component.literal(stars(pull.stars())), x + 18, y + 15, accent, true);
         graphics.text(font, Component.literal(name(pull.characterId())), x + 18, y + 35, TEXT, true);
