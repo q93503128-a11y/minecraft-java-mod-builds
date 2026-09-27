@@ -400,8 +400,12 @@ public final class MetaMenuScreen extends Screen {
 
     private void buildQuests(){
         var s=ClientMetaState.snapshot();
-        int y=contentTop()+4,paneGap=12;
-        int rows=UiPaging.rowsThatFit(y+20,contentBottom(),19,4);
+        int y=contentTop()+4;
+        boolean detailed=s.regionQuests().stream().anyMatch(q->q.objectiveSpecified()&&!q.chestRule().isBlank());
+        int questStep=detailed?32:19;
+        int questRows=UiPaging.rowsThatFit(y+20,contentBottom(),questStep,3);
+        int challengeRows=UiPaging.rowsThatFit(y+20,contentBottom(),19,4);
+        int rows=Math.max(1,Math.min(questRows,challengeRows));
         setPaging(Math.max(s.regionQuests().size(),s.challenges().size()),rows);
         buildPager();
     }
@@ -838,12 +842,18 @@ public final class MetaMenuScreen extends Screen {
         int y=contentTop()+4,paneGap=12,paneW=(panelWidth-44-paneGap)/2,leftX=left+16,rightX=leftX+paneW+paneGap;
         g.text(font,Component.literal("퀘스트"),leftX,y,TEXT,true);
         g.text(font,Component.literal("도전"),rightX,y,TEXT,true);
+        boolean detailed=s.regionQuests().stream().anyMatch(q->q.objectiveSpecified()&&!q.chestRule().isBlank());
+        int questStep=detailed?32:19;
         int start=page*currentPerPage,yy=y+20;
         for(int i=start;i<Math.min(s.regionQuests().size(),start+currentPerPage);i++){
             var q=s.regionQuests().get(i);
             String text=(q.completed()?"✓ ":"○ ")+q.region()+" · "+q.id();
             g.text(font,Component.literal(UiTextLayout.fit(text,paneW)),leftX,yy,q.completed()?GREEN:TEXT,false);
-            yy+=19;
+            if(detailed&&q.objectiveSpecified()&&!q.chestRule().isBlank()){
+                String detail=UiTextLayout.fit(q.chestRule(),Math.max(40,paneW-10));
+                g.text(font,Component.literal(detail),leftX+10,yy+13,q.completed()?MUTED:SECONDARY,false);
+            }
+            yy+=questStep;
         }
         yy=y+20;
         for(int i=start;i<Math.min(s.challenges().size(),start+currentPerPage);i++){

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "quests": [
+    {
+      "id": "turnbound:quest/drehmal/road_to_new_drabyel",
+      "kind": "MAIN",
+      "title": "뉴 드라비엘로 가는 길",
+      "regionLabel": "Capital Valley",
+      "objective": "캐피털 밸리의 길을 따라 뉴 드라비엘에 도착하십시오.",
+      "completionFlag": "ROUTE_DRABYEL_REACHED"
+    },
+    {
+      "id": "turnbound:quest/drehmal/warning_cave_elite",
+      "kind": "SIDE",
+      "title": "경고 동굴의 강적",
+      "regionLabel": "Capital Valley",
+      "objective": "경고 동굴 안의 강적을 조사하고 쓰러뜨리십시오.",
+      "activationFlag": "ROUTE_TOWER_REACHED",
+      "encounterId": "CV_WARNING_CAVE_ELITE",
+      "requiresProductionEncounter": true
+    },
+    {
+      "id": "turnbound:quest/drehmal/drabyel_approach_patrol",
+      "kind": "SIDE",
+      "title": "진입로 안전 확보",
+      "regionLabel": "New Drabyel",
+      "objective": "뉴 드라비엘 진입로의 순찰대를 정리하십시오.",
+      "activationFlag": "ROUTE_CAMP_REACHED",
+      "encounterId": "CV_DRABYEL_ROAD",
+      "requiresProductionEncounter": true
+    }
+  ]
+}
