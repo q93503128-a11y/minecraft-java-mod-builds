@@ -113,6 +113,8 @@ public final class Turnbound {
             CampaignProgressStore.removeRuntime(player.getUUID());
             ExternalWorldBootstrap.remove(player);
             WorldSessionRouter.remove(player);
+        } else if (BattleSessionManager.exists(player)) {
+            LOGGER.info("TURNBOUND retained shared battle authority for {} so a same-server reconnect can resume", player.getUUID());
         } else {
             LOGGER.error("TURNBOUND retained unsaved in-memory state for {} so a same-server reconnect can retry persistence", player.getUUID());
         }

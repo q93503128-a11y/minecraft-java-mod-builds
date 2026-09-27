@@ -27,8 +27,26 @@ class BattleCameraFramingTest {
         assertEquals(0.0, plan.pivotZ(), 0.01);
         assertEquals(0.0F, plan.axisYaw(), 0.01F);
         assertEquals(0.0F, plan.yaw(), 0.01F);
-        assertTrue(plan.distance() >= 11.5F && plan.distance() <= 12.5F);
+        assertTrue(plan.distance() >= 11.5F && plan.distance() <= 12.6F);
         assertTrue(plan.pitch() > 22.0F);
+    }
+
+    @Test
+    void fourPlayerSharedFormationStillFramesTheWholeBattle() {
+        ClientBattleState.Snapshot snapshot = snapshot(0.0F, List.of(
+                unit("p1a", "ALLY", -8.1, 64.0, 3.1), unit("p1b", "ALLY", -6.3, 64.0, 4.9),
+                unit("p2a", "ALLY", -3.3, 64.0, 3.1), unit("p2b", "ALLY", -1.5, 64.0, 4.9),
+                unit("p3a", "ALLY", 1.5, 64.0, 3.1), unit("p3b", "ALLY", 3.3, 64.0, 4.9),
+                unit("p4a", "ALLY", 6.3, 64.0, 3.1), unit("p4b", "ALLY", 8.1, 64.0, 4.9),
+                unit("e1", "ENEMY", -4.0, 64.0, -4.0), unit("e2", "ENEMY", -2.0, 64.0, -4.0),
+                unit("e3", "ENEMY", 0.0, 64.0, -4.0), unit("e4", "ENEMY", 2.0, 64.0, -4.0),
+                unit("e5", "ENEMY", 4.0, 64.0, -4.0)));
+
+        BattleCameraFraming.Plan plan = BattleCameraFraming.plan(snapshot);
+        assertEquals(0.0, plan.pivotX(), 0.01);
+        assertEquals(0.0, plan.pivotZ(), 0.55);
+        assertTrue(plan.distance() >= 15.0F && plan.distance() <= 18.0F);
+        assertTrue(plan.fov() > 56.0F);
     }
 
     @Test

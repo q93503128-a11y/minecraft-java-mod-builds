@@ -16,7 +16,7 @@ class SharedBattleRulesTest {
     }
 
     @Test void enemyScalingChangesOnlyHp() {
-        SkillDefinition basic = new SkillDefinition("basic","basic",TargetRule.ENEMY_SINGLE,0,List.of(SkillEffect.damage(1.0)),"");
+        SkillDefinition basic = new SkillDefinition("basic","basic",TargetRule.ENEMY_SINGLE,0,List.of(SkillEffect.damage(1.0)));
         CombatantDefinition base = new CombatantDefinition("E","Enemy",new BattleStats(100,20,30,40),
                 "basic",List.of(basic),0,List.of(),Map.of());
         CombatantDefinition scaled = SharedBattleRules.scaleEnemyHp(base,3);
