@@ -67,6 +67,94 @@
       "y": 64,
       "z": 4700,
       "role": "lower quarry entrance terrain review probe"
+    },
+    {
+      "id": "openworld_rpg:r01/greenwater_ford_crossing_probe",
+      "status": "candidate",
+      "x": -2440,
+      "y": 61,
+      "z": 4104,
+      "role": "Greenwater Ford shallow-crossing water-surface candidate; direct Anvil cross-section is about 16 blocks wide with mean water depth about 1.9 and maximum depth 3"
+    },
+    {
+      "id": "openworld_rpg:r01/alder_meadow_first_interaction_probe",
+      "status": "candidate",
+      "x": -2000,
+      "y": 68,
+      "z": 4150,
+      "role": "Alder Meadow first-meaningful-interaction terrain candidate; dry grass/cherry-grove shoulder about 256 horizontal blocks from Alderford center"
+    },
+    {
+      "id": "openworld_rpg:r01/riverwood_edge_probe",
+      "status": "candidate",
+      "x": -2060,
+      "y": 67,
+      "z": 4260,
+      "role": "Riverwood Edge tighter-ecology terrain candidate near the upper river branch; direct sampling shows mixed river-edge/cherry terrain without requiring a hard boundary"
+    },
+    {
+      "id": "openworld_rpg:r01/rootshade_grove_probe",
+      "status": "candidate",
+      "x": -2680,
+      "y": 68,
+      "z": 4240,
+      "role": "Rootshade Grove optional-pocket terrain candidate west of the main Quarry Road; direct sampling shows mostly dry cherry-grove terrain with higher trunk density than the open meadow candidate"
+    },
+    {
+      "id": "openworld_rpg:r01/fishing/ordinary_greenwater_ford",
+      "status": "candidate",
+      "x": -2440,
+      "y": 61,
+      "z": 4104,
+      "role": "ordinary fishing spot 1/5; Greenwater Ford shallow crossing, direct water depth 3"
+    },
+    {
+      "id": "openworld_rpg:r01/fishing/ordinary_greenwater_lower",
+      "status": "candidate",
+      "x": -2486,
+      "y": 61,
+      "z": 3992,
+      "role": "ordinary fishing spot 2/5; lower Greenwater branch, direct water depth 3"
+    },
+    {
+      "id": "openworld_rpg:r01/fishing/ordinary_twin_willow_bend",
+      "status": "candidate",
+      "x": -2140,
+      "y": 61,
+      "z": 3920,
+      "role": "ordinary fishing spot 3/5; Twin-Willow Bend spatial candidate, direct water depth 2"
+    },
+    {
+      "id": "openworld_rpg:r01/fishing/ordinary_mosswheel_branch",
+      "status": "candidate",
+      "x": -2394,
+      "y": 61,
+      "z": 4180,
+      "role": "ordinary fishing spot 4/5; Mosswheel branch edge, direct water depth 1"
+    },
+    {
+      "id": "openworld_rpg:r01/fishing/ordinary_riverwood_bank",
+      "status": "candidate",
+      "x": -2050,
+      "y": 61,
+      "z": 4230,
+      "role": "ordinary fishing spot 5/5; Riverwood bank candidate, direct water depth 1"
+    },
+    {
+      "id": "openworld_rpg:r01/fishing/uncommon_riverwood_pool",
+      "status": "candidate",
+      "x": -1900,
+      "y": 61,
+      "z": 4290,
+      "role": "uncommon/deeper pool spot 1/1; eastern Riverwood water candidate, direct water depth 5 and accessible bank within about 10 blocks"
+    },
+    {
+      "id": "openworld_rpg:r01/fishing/rare_deepwater_spot",
+      "status": "candidate",
+      "x": -1886,
+      "y": 61,
+      "z": 3886,
+      "role": "rare spot 1/1; quiet eastern deep-water candidate, direct water depth 10 with accessible sand bank within about 10 blocks"
     }
   ],
   "areas": [
@@ -105,6 +193,51 @@
       "min_z": 4368,
       "max_z": 4408,
       "role": "40x40 Roadside Trouble scene candidate around the wagon/event center; direct Anvil sampling is dry and predominantly grass with low local relief"
+    },
+    {
+      "id": "openworld_rpg:r01/greenwater_ford_candidate",
+      "status": "candidate",
+      "min_x": -2520,
+      "max_x": -2390,
+      "min_z": 3970,
+      "max_z": 4160,
+      "role": "Greenwater Ford river/gathering/mount candidate area around the shallow crossing and lower branch; direct sampling includes the two required ordinary fishing locations"
+    },
+    {
+      "id": "openworld_rpg:r01/alder_meadow_candidate",
+      "status": "candidate",
+      "min_x": -2080,
+      "max_x": -1900,
+      "min_z": 4080,
+      "max_z": 4320,
+      "role": "Alder Meadow open-ecology candidate area east/northeast of Alderford; predominantly dry grass/cherry terrain for early field interactions"
+    },
+    {
+      "id": "openworld_rpg:r01/riverwood_edge_candidate",
+      "status": "candidate",
+      "min_x": -2040,
+      "max_x": -1880,
+      "min_z": 4020,
+      "max_z": 4330,
+      "role": "Riverwood Edge transition candidate spanning tighter cherry/riverbank terrain and the deeper eastern pool; final ecology dressing remains authored"
+    },
+    {
+      "id": "openworld_rpg:r01/rootshade_grove_candidate",
+      "status": "candidate",
+      "min_x": -2760,
+      "max_x": -2600,
+      "min_z": 4160,
+      "max_z": 4340,
+      "role": "Rootshade Grove dangerous optional-pocket candidate west of the main Quarry Road, separated enough to avoid forcing Lv6-8 pressure onto the ordinary road line"
+    },
+    {
+      "id": "openworld_rpg:r01/mosswheel_mill_candidate",
+      "status": "candidate",
+      "min_x": -2400,
+      "max_x": -2360,
+      "min_z": 4160,
+      "max_z": 4200,
+      "role": "Mosswheel Mill footprint candidate spanning the Greenwater branch bank; exact accepted mill shell/orientation remains asset plus client-visual binding"
     }
   ],
   "volumes": [
