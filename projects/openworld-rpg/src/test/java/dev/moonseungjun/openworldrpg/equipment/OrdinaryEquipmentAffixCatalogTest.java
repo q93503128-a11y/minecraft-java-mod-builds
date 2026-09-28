@@ -16,7 +16,7 @@ class OrdinaryEquipmentAffixCatalogTest {
                 data.id()
         );
         assertEquals(29, data.affixes().size());
-        assertEquals(18, data.implementedDefinitions().size());
+        assertEquals(20, data.implementedDefinitions().size());
 
         var physical = data.affixes().stream()
                 .filter(value -> value.id().equals(
@@ -35,7 +35,15 @@ class OrdinaryEquipmentAffixCatalogTest {
                 .findFirst()
                 .orElseThrow();
         assertEquals("percent_tenth", critical.valueRule());
-        assertFalse(critical.runtimeImplemented());
+        assertTrue(critical.runtimeImplemented());
+
+        var criticalDamage = data.affixes().stream()
+                .filter(value -> value.id().equals(
+                        "openworld_rpg:affix/critical_damage"
+                ))
+                .findFirst()
+                .orElseThrow();
+        assertTrue(criticalDamage.runtimeImplemented());
 
         var maxMana = data.affixes().stream()
                 .filter(value -> value.id().equals(
