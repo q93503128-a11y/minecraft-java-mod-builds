@@ -194,7 +194,7 @@ Previously discussed candidate/reference sources:
 
 Final selection should emphasize:
 - seasonal appearance.
-- flower breeding/rare colors.
+- flower/color variety without requiring a dedicated breeding-genetics subsystem.
 - mushrooms.
 - fruit/crops.
 - decorative variety.
