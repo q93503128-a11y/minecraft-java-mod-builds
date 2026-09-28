@@ -55,6 +55,16 @@ public final class OrdinaryEquipmentRuntimeAffixAdapter {
                             EquipmentCombatAffixKind.MAGIC_POWER,
                             affix.value()
                     );
+            case "openworld_rpg:runtime_affix/critical_chance" ->
+                    percentage(
+                            EquipmentCombatAffixKind.CRITICAL_CHANCE,
+                            affix.value()
+                    );
+            case "openworld_rpg:runtime_affix/critical_damage" ->
+                    percentage(
+                            EquipmentCombatAffixKind.CRITICAL_DAMAGE,
+                            affix.value()
+                    );
             case "openworld_rpg:runtime_affix/defense" ->
                     percentage(
                             EquipmentCombatAffixKind.DEFENSE,
