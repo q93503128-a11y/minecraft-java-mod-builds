@@ -1,6 +1,7 @@
 package dev.moonseungjun.openworldrpg.housing;
 
 import dev.moonseungjun.openworldrpg.economy.PlayerCurrencyService;
+import dev.moonseungjun.openworldrpg.world.structure.R01AlderfordRuntimeBindingRegistry;
 import dev.moonseungjun.openworldrpg.world.structure.R01StructureBindingData;
 import dev.moonseungjun.openworldrpg.world.structure.R01StructureBindingLoader;
 import java.util.Objects;
@@ -59,8 +60,11 @@ public final class R01HousingService {
 
         R01StructureBindingData bindings =
                 R01StructureBindingLoader.loadBundled();
-        var target = bindings.productionProperty(targetPropertyId);
-        if (target.isEmpty()) {
+        var runtimeTarget =
+                R01AlderfordRuntimeBindingRegistry.productionProperty(
+                        targetPropertyId
+                );
+        if (runtimeTarget.isEmpty()) {
             return new MoveResult(
                     MoveStatus.PROPERTY_NOT_PRODUCTION,
                     "",
@@ -113,7 +117,9 @@ public final class R01HousingService {
                     );
                 })
                 .orElse(0L);
-        long purchasePrice = target.orElseThrow().purchasePrice();
+        R01StructureBindingData.PropertyBinding target =
+                runtimeTarget.orElseThrow().property();
+        long purchasePrice = target.purchasePrice();
         long goldDelta = purchasePrice - saleCredit;
 
         if (goldDelta > 0L
@@ -128,7 +134,7 @@ public final class R01HousingService {
         R01HousingPlayerState prepared = personal.prepareMove(
                 playerUuid,
                 targetPropertyId,
-                target.orElseThrow().storageCapacity(),
+                target.storageCapacity(),
                 purchasePrice,
                 saleCredit,
                 goldDelta
