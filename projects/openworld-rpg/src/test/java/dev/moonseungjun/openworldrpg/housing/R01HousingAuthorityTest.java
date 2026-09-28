@@ -62,19 +62,6 @@ class R01HousingAuthorityTest {
 
     @Test
     void oneReservationBlocksAnotherPlayerAndTransferIsIdempotent() {
-        var state = R01HousingWorldState.initial();
-
-        var first = state.reserve(GATE, PLAYER_A, "openworld_rpg:housing/a/1");
-        assertTrue(first.success());
-        state = first.state();
-
-        var second = state.reserve(GATE, PLAYER_B, "openworld_rpg:housing/b/1");
-        assertFalse(second.success());
-        assertEquals(
-                R01HousingWorldState.ReserveStatus.RESERVED,
-                second.status()
-        );
-
         var pending = R01HousingPlayerState.initial()
                 .prepareMove(
                         PLAYER_A,
@@ -85,6 +72,27 @@ class R01HousingAuthorityTest {
                         2400
                 )
                 .pendingMove().orElseThrow();
+
+        var state = R01HousingWorldState.initial();
+
+        var first = state.reserve(
+                GATE,
+                PLAYER_A,
+                pending.transactionId()
+        );
+        assertTrue(first.success());
+        state = first.state();
+
+        var second = state.reserve(
+                GATE,
+                PLAYER_B,
+                "openworld_rpg:housing/b/1"
+        );
+        assertFalse(second.success());
+        assertEquals(
+                R01HousingWorldState.ReserveStatus.RESERVED,
+                second.status()
+        );
 
         state = state.transferReserved(pending, PLAYER_A);
         assertEquals(PLAYER_A, state.owner(GATE).orElseThrow());
