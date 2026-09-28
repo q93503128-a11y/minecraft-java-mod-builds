@@ -478,6 +478,12 @@ BaseCritChance = 5%
 BaseCritMultiplier = 1.50x
 ```
 
+Applicability:
+
+- ordinary project-owned weapon basic hits are `crit_allowed=true`;
+- authored skills/attacks use their own `crit_allowed` field and do not inherit crit merely because they deal direct damage;
+- healing, status ticks and other sources explicitly marked non-critical never consume a critical roll.
+
 DEX contributes modest precision without turning every DEX build into automatic crit:
 
 ```text
