@@ -22,6 +22,14 @@ public record OrdinaryEquipmentAffixCatalogData(
             "implemented",
             "stored_only"
     );
+    private static final Set<String> LIVE_RESOURCE_AFFIX_IDS = Set.of(
+            "openworld_rpg:affix/max_hp",
+            "openworld_rpg:affix/max_mana",
+            "openworld_rpg:affix/max_stamina",
+            "openworld_rpg:affix/mana_recovery",
+            "openworld_rpg:affix/stamina_recovery",
+            "openworld_rpg:affix/skill_mana_cost_reduction"
+    );
 
     public OrdinaryEquipmentAffixCatalogData {
         primaryCurve = Objects.requireNonNull(primaryCurve, "primaryCurve");
@@ -71,6 +79,13 @@ public record OrdinaryEquipmentAffixCatalogData(
                         "Unknown ordinary affix id: " + affixId
                 ))
                 .runtimeImplemented();
+    }
+
+
+    public boolean resourceAuthorityReady() {
+        return LIVE_RESOURCE_AFFIX_IDS.stream().allMatch(
+                this::runtimeImplemented
+        );
     }
 
     public static void validate(
