@@ -18,6 +18,7 @@ public record EquipmentCombatState(
         double magicPowerBonus,
         double weaponFamilyPowerBonus,
         double poiseOutputBonus,
+        double maxHealthBonus,
         double supplementalMagicWeaponPower
 ) {
     public EquipmentCombatState {
@@ -31,6 +32,11 @@ public record EquipmentCombatState(
         requireBonus("magicPowerBonus", magicPowerBonus);
         requireBonus("weaponFamilyPowerBonus", weaponFamilyPowerBonus);
         requireBonus("poiseOutputBonus", poiseOutputBonus);
+        if (!Double.isFinite(maxHealthBonus) || maxHealthBonus < 0.0) {
+            throw new IllegalArgumentException(
+                    "maxHealthBonus must be finite and non-negative."
+            );
+        }
         if (!Double.isFinite(supplementalMagicWeaponPower) || supplementalMagicWeaponPower < 0.0) {
             throw new IllegalArgumentException(
                     "supplementalMagicWeaponPower must be finite and non-negative."
@@ -46,6 +52,7 @@ public record EquipmentCombatState(
                 weaponFamily,
                 weaponItemLevel,
                 new EffectiveAttributes(0, 0, 0, 0, 0, 0),
+                0.0,
                 0.0,
                 0.0,
                 0.0,
