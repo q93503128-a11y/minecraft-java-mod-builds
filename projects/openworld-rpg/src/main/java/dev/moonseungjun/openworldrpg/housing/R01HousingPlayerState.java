@@ -55,18 +55,19 @@ public record R01HousingPlayerState(
         residencePropertyId.ifPresent(
                 value -> requireStableId(value, "residencePropertyId")
         );
-        pendingMove.ifPresent(value -> {
-            if (value.sequence() != transactionSequence) {
+        PendingMove pending = pendingMove.orElse(null);
+        if (pending != null) {
+            if (pending.sequence() != transactionSequence) {
                 throw new IllegalArgumentException(
                         "Pending housing transaction sequence mismatch."
                 );
             }
-            if (!value.oldPropertyId().equals(residencePropertyId)) {
+            if (!pending.oldPropertyId().equals(residencePropertyId)) {
                 throw new IllegalArgumentException(
                         "Pending housing move must start from current residence."
                 );
             }
-        });
+        }
     }
 
     public static R01HousingPlayerState initial() {
