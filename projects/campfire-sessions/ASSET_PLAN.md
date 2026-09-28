@@ -105,6 +105,20 @@ No island roles are final until a real world file is inspected.
 
 Final buildings must use external authored builds/prefabs where possible.
 
+Accepted source forms can include:
+- downloadable Minecraft world saves/maps.
+- structure NBT.
+- schematic/litematic-style building files that can be lawfully obtained and converted.
+- directly downloadable build packs/prefabs.
+- structures sourced from compatible external mods when technically and visually appropriate.
+
+Minecraft block-built structures made by other creators are valid candidates.
+It is acceptable to combine buildings from different creators when scale, palette, silhouette and village style can be made coherent.
+Do not reject a strong building merely because another facility uses a different creator; reject it when the actual village would look incoherent or the asset cannot be directly obtained.
+
+Housing stage count should be selected **after** the usable external house set is acquired.
+Do not force an arbitrary six-stage sequence if the available high-quality houses support a cleaner progression with fewer or more meaningful stages.
+
 Needed categories:
 - resident services.
 - general store tiers.
@@ -272,9 +286,43 @@ Choose a coherent system and use it consistently.
 
 ## 14. Inventory / player model / camera candidate systems
 
+### Portable storage / tool access
+Specimen individuality makes portable storage a likely real need rather than an optional late concern.
+
+Verified current 26.2 NeoForge candidates to investigate further:
+
+**Sophisticated Backpacks**
+- Minecraft 26.2 NeoForge support confirmed.
+- client + server.
+- tiered portable storage.
+- wearable/placeable.
+- configurable upgrades.
+- advanced filters can distinguish item/mod/tag/NBT-style data.
+- individual features/upgrades can be disabled if they clash with the cozy game direction.
+- requires Sophisticated Core.
+- strong functional candidate, but final adoption still requires visual/integration testing.
+
+**Traveler Tool Belt**
+- Minecraft 26.2 NeoForge support confirmed.
+- client + server.
+- configurable quick-swap/radial tool access.
+- useful candidate for lifestyle-tool convenience if its presentation fits the final player model/UI.
+
+**Packed Up**
+- Minecraft 26.2 NeoForge support confirmed.
+- simpler backpack alternative worth comparing against Sophisticated Backpacks if the latter is too feature-heavy for the project.
+
+Dedicated portable fish/insect storage:
+- no sufficiently convincing 26.2 NeoForge external solution has been selected yet.
+- continue searching before writing a custom system.
+- if none is suitable, prefer the chosen external general-backpack framework plus a small Campfire-specific category/filter container layer over a complete custom inventory replacement.
+
+Display storage:
+- Better Fishtanks supports Minecraft 26.2 / NeoForge and is a candidate for home/museum aquarium presentation.
+- this is a display-system candidate, not a substitute for portable fish storage.
+
+### Other candidate systems
 Potential roles:
-- external tool-belt system for fast lifestyle-tool access.
-- optional backpack only if inventory pressure justifies it.
 - external player-model/clothing system such as Customizable Player Models if integration fits.
 - external camera/photo system if 26.2 compatibility remains stable.
 
