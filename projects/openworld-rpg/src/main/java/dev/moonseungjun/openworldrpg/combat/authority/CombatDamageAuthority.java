@@ -21,6 +21,22 @@ public final class CombatDamageAuthority {
             PlayerCombatBuildState build,
             ProjectImpactTransaction.DamageTargetSnapshot target
     ) {
+        return authorizeBetterCombatMelee(
+                donorProposedDamage,
+                comboCount,
+                build,
+                target,
+                Math.nextDown(1.0)
+        );
+    }
+
+    public static MeleeDamageDecision authorizeBetterCombatMelee(
+            float donorProposedDamage,
+            int comboCount,
+            PlayerCombatBuildState build,
+            ProjectImpactTransaction.DamageTargetSnapshot target,
+            double serverCriticalRoll
+    ) {
         Objects.requireNonNull(build, "build");
         Objects.requireNonNull(target, "target");
 
@@ -35,6 +51,10 @@ public final class CombatDamageAuthority {
                 ProjectBasicAttackRules.hitProfile(build.equipment().weaponFamily(), comboCount);
         ProjectImpactTransaction.DamageSourceSnapshot source =
                 build.damageSource(ProjectImpactTransaction.DamageSchool.PHYSICAL);
+        CriticalResult critical = resolveNormalCritical(
+                build,
+                serverCriticalRoll
+        );
 
         ProjectImpactTransaction.DirectDamageResult damage =
                 ProjectImpactTransaction.resolveDirectDamage(
@@ -44,7 +64,7 @@ public final class CombatDamageAuthority {
                                 ProjectImpactTransaction.DamageSchool.PHYSICAL,
                                 hit.damageActionCoefficient(),
                                 1.0,
-                                1.0
+                                critical.multiplier()
                         )
                 );
 
@@ -66,6 +86,7 @@ public final class CombatDamageAuthority {
 
         return new MeleeDamageDecision(
                 true,
+                critical.critical(),
                 damage.finalDamage(),
                 poise.poiseDamage(),
                 hit.damageActionCoefficient(),
@@ -78,6 +99,20 @@ public final class CombatDamageAuthority {
             float donorProposedDamage,
             PlayerCombatBuildState build,
             ProjectImpactTransaction.DamageTargetSnapshot target
+    ) {
+        return authorizeProjectileBasic(
+                donorProposedDamage,
+                build,
+                target,
+                Math.nextDown(1.0)
+        );
+    }
+
+    public static RangedDamageDecision authorizeProjectileBasic(
+            float donorProposedDamage,
+            PlayerCombatBuildState build,
+            ProjectImpactTransaction.DamageTargetSnapshot target,
+            double serverCriticalRoll
     ) {
         Objects.requireNonNull(build, "build");
         Objects.requireNonNull(target, "target");
@@ -96,6 +131,10 @@ public final class CombatDamageAuthority {
                 );
         ProjectImpactTransaction.DamageSourceSnapshot source =
                 build.damageSource(ProjectImpactTransaction.DamageSchool.PHYSICAL);
+        CriticalResult critical = resolveNormalCritical(
+                build,
+                serverCriticalRoll
+        );
 
         ProjectImpactTransaction.DirectDamageResult resolvedDamage =
                 ProjectImpactTransaction.resolveDirectDamage(
@@ -105,7 +144,7 @@ public final class CombatDamageAuthority {
                                 ProjectImpactTransaction.DamageSchool.PHYSICAL,
                                 hit.damageActionCoefficient(),
                                 1.0,
-                                1.0
+                                critical.multiplier()
                         )
                 );
 
@@ -127,6 +166,7 @@ public final class CombatDamageAuthority {
 
         return new RangedDamageDecision(
                 true,
+                critical.critical(),
                 resolvedDamage.finalDamage(),
                 poise.poiseDamage(),
                 hit.damageActionCoefficient(),
@@ -139,6 +179,22 @@ public final class CombatDamageAuthority {
             double drawPower,
             PlayerCombatBuildState build,
             ProjectImpactTransaction.DamageTargetSnapshot target
+    ) {
+        return authorizeBowProjectileBasic(
+                donorProposedDamage,
+                drawPower,
+                build,
+                target,
+                Math.nextDown(1.0)
+        );
+    }
+
+    public static RangedDamageDecision authorizeBowProjectileBasic(
+            float donorProposedDamage,
+            double drawPower,
+            PlayerCombatBuildState build,
+            ProjectImpactTransaction.DamageTargetSnapshot target,
+            double serverCriticalRoll
     ) {
         Objects.requireNonNull(build, "build");
         Objects.requireNonNull(target, "target");
@@ -156,6 +212,10 @@ public final class CombatDamageAuthority {
                 ProjectBasicAttackRules.bowDrawProfile(drawPower);
         ProjectImpactTransaction.DamageSourceSnapshot source =
                 build.damageSource(ProjectImpactTransaction.DamageSchool.PHYSICAL);
+        CriticalResult critical = resolveNormalCritical(
+                build,
+                serverCriticalRoll
+        );
 
         ProjectImpactTransaction.DirectDamageResult resolvedDamage =
                 ProjectImpactTransaction.resolveDirectDamage(
@@ -165,7 +225,7 @@ public final class CombatDamageAuthority {
                                 ProjectImpactTransaction.DamageSchool.PHYSICAL,
                                 hit.damageActionCoefficient(),
                                 1.0,
-                                1.0
+                                critical.multiplier()
                         )
                 );
 
@@ -187,6 +247,7 @@ public final class CombatDamageAuthority {
 
         return new RangedDamageDecision(
                 true,
+                critical.critical(),
                 resolvedDamage.finalDamage(),
                 poise.poiseDamage(),
                 hit.damageActionCoefficient(),
@@ -200,8 +261,30 @@ public final class CombatDamageAuthority {
         return ProjectImpactTransaction.resolveDirectDamage(request);
     }
 
+    private static CriticalResult resolveNormalCritical(
+            PlayerCombatBuildState build,
+            double serverCriticalRoll
+    ) {
+        double chance = build.criticalChance(0.0);
+        boolean critical = ProjectCombatRules.criticalRollSucceeds(
+                chance,
+                serverCriticalRoll
+        );
+        return new CriticalResult(
+                critical,
+                critical ? build.criticalMultiplier(0.0) : 1.0
+        );
+    }
+
+    private record CriticalResult(
+            boolean critical,
+            double multiplier
+    ) {
+    }
+
     public record MeleeDamageDecision(
             boolean accepted,
+            boolean critical,
             double finalDamage,
             double poiseDamage,
             double damageActionCoefficient,
@@ -209,19 +292,35 @@ public final class CombatDamageAuthority {
             boolean cycleFinisher
     ) {
         public static MeleeDamageDecision rejected() {
-            return new MeleeDamageDecision(false, 0.0, 0.0, 0.0, 0.0, false);
+            return new MeleeDamageDecision(
+                    false,
+                    false,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    false
+            );
         }
     }
 
     public record RangedDamageDecision(
             boolean accepted,
+            boolean critical,
             double finalDamage,
             double poiseDamage,
             double damageActionCoefficient,
             double poiseActionCoefficient
     ) {
         public static RangedDamageDecision rejected() {
-            return new RangedDamageDecision(false, 0.0, 0.0, 0.0, 0.0);
+            return new RangedDamageDecision(
+                    false,
+                    false,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0
+            );
         }
     }
 }
