@@ -131,7 +131,7 @@ class R01OrdinaryEquipmentBaseCatalogTest {
         assertTrue(weaponBlockers.contains(
                 "openworld_rpg:affix/weak_point_damage"
         ));
-        assertTrue(weaponBlockers.contains(
+        assertFalse(weaponBlockers.contains(
                 "openworld_rpg:affix/movement_speed"
         ));
         assertFalse(weaponBlockers.contains(
