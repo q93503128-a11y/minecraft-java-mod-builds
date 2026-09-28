@@ -14,6 +14,8 @@ import dev.moonseungjun.openworldrpg.integration.verify.M0PlayerVerificationBoot
 import dev.moonseungjun.openworldrpg.integration.verify.R01PlayerVerificationBootstrap;
 import dev.moonseungjun.openworldrpg.gathering.R01GatheringAttachments;
 import dev.moonseungjun.openworldrpg.gathering.R01GatheringService;
+import dev.moonseungjun.openworldrpg.housing.R01HousingAttachments;
+import dev.moonseungjun.openworldrpg.housing.R01HousingService;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryAttachments;
 import dev.moonseungjun.openworldrpg.progression.r01.R01ClassStarterService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01EarthloongBossLootPlanAttachments;
@@ -72,6 +74,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         PlayerInventoryAttachments.initialize();
         R01GatheringAttachments.initialize();
         R01FishingAttachments.initialize();
+        R01HousingAttachments.initialize();
         RecoveryBeltAttachments.initialize();
         PlayerActiveWorldTimeAttachments.initialize();
         PlayerVitalsRuntime.initialize();
@@ -97,6 +100,7 @@ public final class OpenworldRpgMod implements ModInitializer {
                 R01PlayerStateService.reconcileActiveTimeEpochs(handler.getPlayer());
                 R01GatheringService.reconcilePending(handler.getPlayer());
                 R01FishingService.reconcileInterruptedHooks(handler.getPlayer());
+                R01HousingService.reconcilePending(handler.getPlayer());
                 R01EarthloongEncounterService.reconcilePendingFinalization(handler.getPlayer());
                 R01EarthloongBossLootPlanService.ensureFirstClearPlan(handler.getPlayer());
                 R01QuarryRoomEncounterController.reconcilePendingAttributions(
