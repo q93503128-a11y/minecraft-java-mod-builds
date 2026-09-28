@@ -6,6 +6,7 @@ import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentAttachments;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionAttachments;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerVitalsRuntime;
 import dev.moonseungjun.openworldrpg.economy.PlayerCurrencyAttachments;
+import dev.moonseungjun.openworldrpg.equipment.OrdinaryEquipmentAffixCatalogRegistry;
 import dev.moonseungjun.openworldrpg.fishing.R01FishingAttachments;
 import dev.moonseungjun.openworldrpg.fishing.R01FishingService;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.IntegrationBootstrap;
@@ -72,6 +73,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         R01QuarryRunAttributionAttachments.initialize();
         R01QuarryRoomEncounterAttachments.initialize();
         PlayerCurrencyAttachments.initialize();
+        OrdinaryEquipmentAffixCatalogRegistry.initialize(LOGGER);
         PlayerRewardTransactionAttachments.initialize();
         PlayerInventoryAttachments.initialize();
         R01NessaMarketAttachments.initialize();
