@@ -7,9 +7,9 @@ import static org.junit.jupiter.api.Assertions.*;
 class DrehmalStartArrivalTest {
     @Test
     void onlyLegacyHubStateMigratesToTheFirstRoute() {
-        assertTrue(DrehmalStartArrival.shouldMigrateLegacyHubArrival(false,true,true));
-        assertFalse(DrehmalStartArrival.shouldMigrateLegacyHubArrival(true,true,true));
-        assertFalse(DrehmalStartArrival.shouldMigrateLegacyHubArrival(false,false,true));
-        assertFalse(DrehmalStartArrival.shouldMigrateLegacyHubArrival(false,true,false));
+        assertTrue(DrehmalStartMigrationRules.shouldMigrateLegacyHubArrival(false,true,true));
+        assertFalse(DrehmalStartMigrationRules.shouldMigrateLegacyHubArrival(true,true,true));
+        assertFalse(DrehmalStartMigrationRules.shouldMigrateLegacyHubArrival(false,false,true));
+        assertFalse(DrehmalStartMigrationRules.shouldMigrateLegacyHubArrival(false,true,false));
     }
 }

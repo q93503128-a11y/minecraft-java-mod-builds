@@ -36,7 +36,7 @@ final class DrehmalStartArrival {
         // Physical presence in Drehmal's setup terminal is stronger evidence than a previous arrival flag.
         // Older TURNBOUND builds sent some test saves directly to New Drabyel; migrate that state once.
         boolean setupTerminal = legacySetupZone(player.getX(), player.getY(), player.getZ());
-        boolean legacyHubArrival = shouldMigrateLegacyHubArrival(
+        boolean legacyHubArrival = DrehmalStartMigrationRules.shouldMigrateLegacyHubArrival(
                 saved.onboardingFlag(player.getUUID(), ARRIVAL_FLAG),
                 saved.onboardingFlag(player.getUUID(), LEGACY_DIRECT_HUB_FLAG)
                         || saved.onboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.HUB_REACHED),
@@ -95,10 +95,6 @@ final class DrehmalStartArrival {
                 "TURNBOUND moved {} into the Capital Valley first-route roadhead {}, {}, {}",
                 player.getUUID(), destination.getX(), destination.getY(), destination.getZ());
         return true;
-    }
-
-    static boolean shouldMigrateLegacyHubArrival(boolean hasCurrentArrival, boolean hasLegacyHubEvidence, boolean insideHub) {
-        return !hasCurrentArrival && hasLegacyHubEvidence && insideHub;
     }
 
     private static boolean legacyHubZone(double x, double z) {
