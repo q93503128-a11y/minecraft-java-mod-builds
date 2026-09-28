@@ -40,7 +40,9 @@ public final class R01NessaMarketService {
                 epoch.getAsLong()
         );
         R01NessaMarketState next = state(player).ensureCycle(
-                player.serverLevel().getSeed(),
+                Objects.requireNonNull(player.level().getServer())
+                        .overworld()
+                        .getSeed(),
                 player.getUUID().toString(),
                 cycleIndex
         );
