@@ -51,7 +51,7 @@ public final class PlayerMovementRuntime {
 
         movementSpeed.removeModifier(EQUIPMENT_MOVEMENT_SPEED_MODIFIER_ID);
         if (equipmentMovementSpeedBonus > 0.0) {
-            movementSpeed.addTransitiveModifier(
+            movementSpeed.addOrUpdateTransientModifier(
                     new AttributeModifier(
                             EQUIPMENT_MOVEMENT_SPEED_MODIFIER_ID,
                             equipmentMovementSpeedBonus,
