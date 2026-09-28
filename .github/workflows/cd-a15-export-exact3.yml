@@ -1,4 +1,4 @@
-name: RPG6 metadata probe
+name: RPG6 locator compatibility probe
 on:
   push:
     branches: [main]
@@ -6,20 +6,20 @@ on:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     steps:
-      - name: Probe two mods
+      - name: Probe LocatorBar releases
         shell: bash
         run: |
           set -euo pipefail
-          while IFS=$'\t' read -r path url; do
+          while IFS=$'\t' read -r ver url; do
             f=$(mktemp --suffix=.jar)
-            curl --fail --location --retry 4 "$url" -o "$f"
-            printf 'RPG6META\t%s\t%s\t%s\t%s\n' "$path" "$(sha1sum "$f"|awk '{print $1}')" "$(sha512sum "$f"|awk '{print $1}')" "$(stat -c%s "$f")"
-            echo "RPG6FABRICMOD $path"
-            unzip -p "$f" fabric.mod.json 2>/dev/null || true
+            curl --fail --location --retry 3 "$url" -o "$f"
+            echo "LOCATOR $ver $(sha1sum "$f"|awk '{print $1}') $(sha512sum "$f"|awk '{print $1}') $(stat -c%s "$f")"
+            unzip -p "$f" fabric.mod.json
             rm -f "$f"
           done <<'EOF'
-          mods/LocatorBar-fabric-1.2.2+1.21.1.jar	https://cdn.modrinth.com/data/BD7N7OcY/versions/zlyrzjUG/LocatorBar-fabric-1.2.2%2B1.21.1.jar
-          mods/NoChatRestrictions-Fabric-MC1.21.11-v1.0.2.jar	https://cdn.modrinth.com/data/z440MEwJ/versions/Wmvqt0wm/NoChatRestrictions-Fabric-MC1.21.11-v1.0.2.jar
+          1.2.1	https://cdn.modrinth.com/data/BD7N7OcY/versions/uV1wuVPV/LocatorBar-fabric-1.2.1%2B1.21.1.jar
+          1.1.2	https://cdn.modrinth.com/data/BD7N7OcY/versions/AelByFS6/LocatorBar-fabric-1.1.2%2B1.21.1.jar
+          1.1.1	https://cdn.modrinth.com/data/BD7N7OcY/versions/mtLlD9e5/LocatorBar-fabric-1.1.1%2B1.21.1.jar
+          1.1.0	https://cdn.modrinth.com/data/BD7N7OcY/versions/Tk7JNGyd/LocatorBar-fabric-1.1.0%2B1.21.1.jar
           EOF
