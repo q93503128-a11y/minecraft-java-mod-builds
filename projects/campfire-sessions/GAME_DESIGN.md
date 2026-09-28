@@ -424,6 +424,20 @@ Schedules react to:
 - hobbies.
 - current events.
 
+### Schedule strictness
+Resident scheduling should use broad authored time blocks and weighted activity choices rather than brittle minute-by-minute choreography.
+
+Examples:
+- morning.
+- daytime.
+- evening.
+- night.
+
+Within a time block, weather, hobby, season and current events can choose among valid destinations/activities.
+Important work shifts for staffed facilities may be more fixed.
+
+If pathing fails or a resident becomes badly desynchronized, recovery should prefer safe correction while the resident is not visibly being watched rather than obvious repeated teleporting in front of players.
+
 ## 11. Resident relationships and moving
 
 ### Player relationship
@@ -904,6 +918,17 @@ Include:
 - sea-creature collection.
 
 Diving can use visible shadows/movement to create pursuit gameplay.
+
+Do not add a separate stamina bar just for diving.
+Use Minecraft's existing air/breath concept as the base, tuned so early diving already gives enough time to explore without constant frustration.
+Dedicated diving gear/upgrades may improve:
+- breath duration.
+- swimming/diving control.
+- underwater movement speed.
+- visibility/presentation where suitable.
+
+Do not make basic underwater collecting require a long RPG equipment grind.
+
 Use external swimming/diving presentation assets where possible.
 
 ## 24. Fossils
@@ -1041,14 +1066,23 @@ Rare variants are desirable collection records but should not be required for or
 
 ## 29. Art and antiques
 
+Art/antiques are retained as a smaller museum-side collection rather than a primary collection pillar.
+
 A visiting vendor may sell:
 - paintings.
 - sculptures.
 - antiques.
 - unusual decor.
 
-Real/fake identification can exist, but must have clues.
+Real/fake identification can exist, but must have readable clues such as:
+- visible model/art differences.
+- descriptive details.
+- resident/curator/vendor dialogue.
+- provenance/context hints.
+
 Do not force blind guessing.
+
+Validated genuine pieces can be donated to the museum's art/antique area and may also remain desirable home decoration when obtained as duplicates or non-donation copies.
 
 External artwork/models are required; do not create throwaway custom art.
 
@@ -1126,8 +1160,21 @@ Combat rewards feed back into island life:
 - collection pieces.
 - special materials.
 
-## 32. Death
+## 32. Clinic and death
 
+### Clinic
+Retain a small village clinic/medical facility as a real but lightweight service building.
+
+Its role is limited to cozy-life support:
+- one possible safe return/recovery point after death.
+- basic treatment/recovery presentation.
+- removal/treatment of selected temporary negative status effects where useful.
+- a small amount of exploration-preparation utility if it fits the final external building/interior set.
+
+Do not turn the clinic into an RPG healer/progression tree or mandatory combat hub.
+Its exterior/interior should come from the same external-building-first workflow as other civic facilities.
+
+### Death
 Avoid vanilla full inventory-drop punishment.
 
 On death:
@@ -1229,6 +1276,17 @@ External 26.2-compatible player-model systems may be used if stable, but avoid e
 
 The café should be functional content rather than scenery.
 
+The café exists from early village life in a modest form rather than being absent until late progression.
+Progression can expand:
+- menu variety.
+- seating.
+- resident/visitor activity.
+- recipe discovery.
+- performance/music space.
+- special seasonal offerings.
+
+Whether the exterior itself changes tiers depends on the acquired external prefab set; do not force a building swap if one strong café exterior with an expandable interior is visually better.
+
 Possible interactions:
 - coffee.
 - tea.
@@ -1239,18 +1297,48 @@ Possible interactions:
 - recipe discovery.
 - music.
 
+Food/drink effects should be light lifestyle benefits rather than survival pressure or major combat buffs.
+Possible effects include:
+- short fishing/gathering convenience.
+- mild movement/travel comfort.
+- weather/cold comfort where appropriate.
+- small social/relationship interactions when sharing food/drink with residents.
+- event-specific presentation/effects.
+
 Use the existing music foundation for café ambience/performance.
 
 ## 38. Photography
 
-A 26.2-compatible external camera/photo system is preferred over writing a low-quality substitute.
+Photography is retained as real in-game lifestyle content because current external 26.2-compatible systems can already create persistent in-world photographs.
+
+Required gameplay capability:
+camera/viewfinder
+→ capture the actual rendered game scene
+→ create/share a photograph item or equivalent persistent photo record
+→ view it in-game
+→ place/display it in frames
+→ organize photos in an album/collection.
+
+Prefer a proven external camera/photo mod over writing a custom renderer/storage pipeline.
+
+Current strong candidates:
+- henkelmax Camera Mod: Minecraft 26.2, NeoForge, client+server; real captured images, photo items, albums, resizable image frames, copying, photographer/date metadata, multiplayer support, images stored in the world save.
+- Camerapture: Minecraft 26.2, NeoForge support; working camera, shareable pictures, wall display and albums.
+
+Final dependency choice requires direct compatibility/playtest with the project and verification of license/packaging constraints.
+Do not adopt both if one cleanly covers the feature.
 
 Use cases:
 - birthdays.
 - festivals.
 - rare species.
 - multiplayer memories.
-- home decoration/photo albums.
+- resident photo requests.
+- home decoration.
+- photo albums.
+- selected optional photography challenges.
+
+Photography should remain optional lifestyle content, not a mandatory progression gate.
 
 ## 39. Visitors and beach finds
 
@@ -1458,6 +1546,10 @@ During the festival:
 - visiting NPCs.
 - limited collectibles.
 - performances.
+
+Major festivals add activity on top of normal island life rather than shutting the game down for several in-game days.
+Core services such as essential shopping, museum access, housing/resident services and ordinary home use should remain available.
+NPCs may move to festival roles during certain time blocks, and shops may offer festival stock/presentation, but the player's ordinary life-sim loop remains usable.
 
 The final day can have a large performance/finale using the Campfire Sessions music foundation.
 
