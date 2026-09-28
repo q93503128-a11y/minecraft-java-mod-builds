@@ -294,6 +294,15 @@ public final class R01HousingService {
                 .canAccessPrivateStorage(propertyId, playerUuid);
     }
 
+    public static boolean canUseNonPrivateFurniture(
+            MinecraftServer server,
+            String propertyId,
+            String playerUuid
+    ) {
+        return worldState(server)
+                .canUseNonPrivateFurniture(propertyId, playerUuid);
+    }
+
     public static void setTrustedDecorator(
             ServerPlayer owner,
             String targetPlayerUuid,
