@@ -250,7 +250,13 @@ class OrdinaryEquipmentAffixRollerTest {
     ) {
         return OrdinaryEquipmentAffixRoller.AffixDefinition.primary(
                 "openworld_rpg:affix/" + id,
-                "openworld_rpg:runtime_affix/" + id
+                "openworld_rpg:runtime_affix/" + id,
+                new OrdinaryEquipmentAffixRoller.PrimaryCurve(
+                        1.0,
+                        0.045,
+                        1.0,
+                        2.5
+                )
         );
     }
 
