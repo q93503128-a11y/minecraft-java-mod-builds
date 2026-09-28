@@ -267,16 +267,17 @@ Rules:
 - after repayment, the player/household chooses whether to request the next expansion.
 - expansion uses a construction/upgrade flow.
 
-Provisional progression concept:
-tent / starter state
-→ small house
-→ larger main room
-→ additional room(s)
-→ larger layout
-→ second floor
-→ final large house.
+The exact number and shape of housing stages are deliberately **not fixed before the external house/prefab set is acquired**.
+Choose the final progression after inspecting actual usable buildings so each step is visually and spatially believable.
 
-Exact stage count and prices remain for economy balancing.
+It is acceptable to combine Minecraft block-built houses/prefabs from multiple creators when:
+- the actual downloadable world/schematic/structure file can be obtained directly.
+- usage conditions are acceptable for this private project.
+- material palette, scale and village style can be made coherent.
+- the upgrade sequence does not look like an absurd unrelated-building swap.
+
+The final progression does not need to copy Animal Crossing's exact room sequence.
+Use as many stages as the acquired buildings support cleanly without padding the loan loop with meaningless upgrades.
 
 House growth can unlock:
 - larger interiors.
@@ -505,6 +506,12 @@ Resident favors should match personality/hobbies where possible.
 
 Resident interiors should express character.
 
+### Home access
+Do not gate ordinary resident-home entry behind friendship levels.
+A player may enter whenever that resident home's door is currently **unlocked**.
+If the resident has locked the door for the current schedule/state, entry is blocked.
+The lock state—not an arbitrary relationship threshold—is the primary access rule.
+
 Examples:
 - fishing hobby → aquariums/fishing decor.
 - music hobby → instruments.
@@ -554,6 +561,17 @@ Do not copy their raw prices directly; use them to establish useful ratios betwe
 - rare/high-end furniture.
 
 Luxury/designer/high-end items should be meaningfully expensive and remain aspirational even after ordinary daily purchases become easy.
+
+### Shop hours
+The general store and comparable staffed shops stay open through most of the day and evening and close only during the **late-night/deep-night period**.
+
+When a shop is closed:
+- no buying.
+- no selling.
+- no after-hours kiosk that bypasses the closure.
+- no shop-based catalog ordering.
+
+Exact clock hours can be finalized with the 48-minute day pacing, but closure should be limited enough that ordinary play is not dominated by schedule frustration.
 
 ### Shop rotation
 Use:
@@ -616,8 +634,23 @@ External inventory/tool-belt/backpack solutions may be used if they fit 26.2 and
 
 Current direction:
 - tool-belt style convenience is desirable.
-- a backpack system should only be added if item volume proves it is actually needed.
+- portable extra storage is expected because specimen individuality can create many distinct stacks.
+- prefer a proven external 26.2 NeoForge backpack/storage system over replacing the Minecraft inventory.
+- sell useful portable storage through normal shops rather than treating it as debug/dev convenience.
+- desirable specialized containers include a general backpack, fish container and insect container.
+- if no strong external dedicated fish/insect container exists, use the selected external backpack system and add only the smallest Campfire-specific category/filter layer needed rather than building an entire parallel inventory framework.
 - house storage is a major separate storage solution.
+
+### Specimen stacking
+Collected fish, bugs, sea creatures and other individualized specimens carry gameplay-relevant specimen data.
+
+Stacking rule:
+- specimens with the **exact same stack-affecting specimen signature** may stack normally.
+- any difference in size, color, pattern, special variant or other collection-relevant trait makes them distinct inventory stacks.
+- do not attach irrelevant per-item timestamps/IDs to the stack signature when that would prevent otherwise identical specimens from stacking.
+- first-discovery date/history belongs in player save data rather than forcing every physical specimen item to be unique.
+
+Storage/container systems must preserve these distinctions and must never silently merge non-identical specimens.
 
 House storage:
 - private to the player/household.
@@ -714,10 +747,13 @@ snow melt
 Expand flora significantly using external mods/assets.
 
 ### Farming interaction
-Daily watering may exist as an early lifestyle interaction, but it must not become permanent click-heavy maintenance.
+Watering exists as a light lifestyle interaction, not a daily chore that consumes a large part of play.
+- base crops should not demand excessive watering frequency.
 - rain satisfies normal watering needs.
-- upgraded watering tools cover wider areas and reduce repeated actions.
-- later progression should make routine crop care faster rather than requiring the same number of clicks forever.
+- upgraded watering tools increase area/range.
+- higher tool tiers also reduce watering frequency by applying longer-lasting moisture/hydration, not merely a wider click area.
+- top-end routine crop care should require substantially fewer watering actions than early play.
+- exact moisture duration is finalized after the crop/tool asset and system choices are known.
 - farming remains useful but should not become an industrial automation-first economy.
 
 Expand flora significantly using external mods/assets.
@@ -854,7 +890,16 @@ Dinosaur/fossil models should be external high-quality assets.
 
 ## 25. Museum
 
-The museum is a major shared village facility.
+The museum is a major shared village facility and is **already a large, impressive building from the beginning**.
+Do not make the core museum fantasy depend on repeatedly replacing a tiny museum with larger exterior tiers.
+
+Museum progression comes primarily from watching initially empty/quiet exhibition spaces physically fill over time:
+- empty tanks gain donated fish and sea life.
+- insect spaces gain specimens.
+- fossil halls assemble skeletons piece by piece.
+- nature/art areas gain their actual exhibits.
+
+The pleasure is seeing a substantial building gradually become complete, not merely unlocking a bigger shell.
 
 Possible wings:
 - fish.
@@ -906,6 +951,9 @@ Some caught specimens can also have special variants:
 - giant mushroom form.
 - other species-appropriate variants.
 
+Physical specimens retain these traits.
+Two otherwise identical specimens may stack only when their stack-affecting specimen data is exactly identical; even a small meaningful size/appearance difference keeps them distinct.
+
 Therefore an inherently rare species can also have a rare variant, creating extremely desirable collector targets.
 
 Do NOT make rarity only a 0.001% blind drop chance.
@@ -944,6 +992,12 @@ Possible recorded facts:
 
 Encyclopedia progress is personal, including in a shared Household.
 Players may trade/gift valid specimens to help another player's personal encyclopedia.
+
+Do **not** create a separate top-level encyclopedia page for every size/color/pattern variant.
+The main encyclopedia has one species entry; opening that species shows a detailed record with a variant section for:
+- discovered colors/patterns/forms.
+- notable size records.
+- other species-specific special variants.
 
 Rare variants are desirable collection records but should not be required for ordinary 100% completion unless later explicitly decided.
 
@@ -1029,10 +1083,14 @@ Avoid vanilla full inventory-drop punishment.
 
 On death:
 - return to house/clinic/safe point.
-- keep core tools and money.
-- potentially lose only some temporary exploration loot.
+- keep money.
+- keep tools/equipment/clothing.
+- keep unique progression items.
+- keep rare/important collectible specimens and key fossil/quest items.
+- only some ordinary temporary exploration loot/materials may be lost.
 
-Exact penalty remains to be balanced.
+The exact ordinary-loot loss amount can be balanced later.
+Death should create some exploration tension without deleting hours of cozy-life collection progress.
 
 ## 33. Natural resource recovery
 
@@ -1138,6 +1196,16 @@ Use cases:
 
 ## 39. Visitors and beach finds
 
+Baseline visitor cadence is roughly **2–3 visiting-NPC appearances per 7-day season**, with room for special seasonal/event visits.
+
+Visitor selection is semi-random rather than pure RNG:
+- visitors absent for a long in-game period can gain selection weight.
+- some visitors can be season-specific.
+- event-linked visitors can be scheduled.
+- specific discoveries may unlock additional visitor types.
+
+This availability smoothing must not be reused as a hidden "play long enough and rare-species hints become easier" pity system.
+
 Visiting NPC types may include:
 - art dealer.
 - rare plant seller.
@@ -1192,11 +1260,21 @@ Players may decorate approved public areas with externally sourced props such as
 - sculptures.
 - picnic areas.
 
-Public projects use a shared funding model:
-- bridge.
-- civic decoration.
-- facility project.
-- other authored public works.
+Public projects use a shared funding model.
+
+The project pool should mix functional and decorative changes, for example:
+- bridges/movement improvements.
+- harbor/pier improvements.
+- plaza/performance-space improvements.
+- public garden.
+- lookout/coastal walk.
+- campfire/picnic area.
+- museum surroundings.
+- authored access improvements to selected natural areas.
+- civic decoration/facility projects.
+
+Only a limited subset should be mandatory progression.
+Most public projects should remain elective village-development goals so the game does not become one long linear infrastructure checklist.
 
 Single-player funds it alone.
 Multiplayer players contribute voluntarily.
@@ -1261,8 +1339,19 @@ Top placement should feel worthwhile, but a single missed contest should not per
 ## 44. Birthdays and seasonal events
 
 Residents have fixed authored birthdays on the 28-day four-season calendar.
-Birthday dates should be distributed across the roster so the full cast is not excessively clustered into a few days.
-Multiple residents may share a birthday; this is allowed and can create lively days rather than being forbidden.
+Birthday overlap is explicitly allowed; multiple residents may share the same date.
+
+### Player birthdays
+A player's birthday is **not** derived from the date they first arrive on the island.
+On first profile setup, each player chooses a birthday directly from the game's 28-day annual calendar.
+This prevents players who join together from automatically sharing the same birthday.
+
+Rules:
+- multiple players may intentionally choose the same birthday.
+- the birthday is stored in that player's profile.
+- birthday logic follows in-game calendar/world time, not real-world elapsed time.
+- if other players advance the world through a player's birthday while that player is offline, that player should not permanently lose the personal birthday content; their once-per-year personal celebration/gifts can be delivered on their next suitable login/active day.
+- changing/correcting a birthday must not allow duplicate birthday rewards within the same in-game year.
 
 Birthdays can include:
 - small parties.
