@@ -45,7 +45,7 @@ public record PlayerCombatBuildState(
         return ProjectCombatRules.maxPlayerHealth(
                 combatLevel,
                 effectiveAttributes().vit(),
-                0.0
+                equipment.maxHealthBonus()
         );
     }
 
