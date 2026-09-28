@@ -286,6 +286,19 @@ House growth can unlock:
 - more exterior variants.
 - more decoration capacity.
 
+### House exterior customization
+Player homes should not all remain visually identical once suitable external building variants are available.
+Keep the authored prefab shell protected, but allow curated exterior choices such as:
+- roof color/material variant.
+- door color/style.
+- wall/exterior palette.
+- mailbox.
+- house sign/name plate.
+- selected porch/trim/decor variants.
+
+Only expose variants that are actually supported by the acquired external house assets.
+Do not let players freely dismantle the protected prefab exterior block-by-block in the core village.
+
 ## 8. Household cohabitation
 
 Players may choose to live together as one Household.
@@ -437,6 +450,20 @@ Within a time block, weather, hobby, season and current events can choose among 
 Important work shifts for staffed facilities may be more fixed.
 
 If pathing fails or a resident becomes badly desynchronized, recovery should prefer safe correction while the resident is not visibly being watched rather than obvious repeated teleporting in front of players.
+
+### Dialogue repetition control
+Resident dialogue quality depends on avoiding obvious repetition.
+Use data-driven dialogue pools with context tags such as:
+- personality and individual traits.
+- relationship stage.
+- season/weather/time.
+- current location/activity.
+- nearby residents.
+- recent gifts/favors/events.
+- recent player activity where useful.
+
+Track a short recent-history window per resident/player pair and strongly suppress recently used lines.
+Do not solve repetition by generating uncontrolled free-form text at runtime; authored/curated lines and combinations remain the source of truth.
 
 ## 11. Resident relationships and moving
 
@@ -746,6 +773,21 @@ Season affects:
 Do not allow nonsensical weather such as normal summer snow.
 
 Examples:
+Weather should have several presentation/intensity states rather than only binary clear/rain:
+- clear/fair.
+- light rain or light snow.
+- normal rain/snow.
+- strong rain/storm where seasonally appropriate.
+
+Stronger weather may affect:
+- ambience, wind/wave/audio presentation.
+- resident schedules.
+- selected fish/bug/sea-creature conditions.
+- visibility and travel mood.
+- a small number of special collection opportunities.
+
+Do not make storms destroy buildings, permanently damage the village, or turn the game into disaster survival.
+
 spring:
 - more rain.
 - flowers/new growth.
@@ -883,7 +925,21 @@ Fish data may include:
 - size.
 - rarity.
 
-Record personal/household best sizes.
+Record personal best sizes.
+
+### Multiplayer catch contention
+Do not add artificial ownership locks merely because one player is approaching or attempting to catch a free-moving creature.
+
+Examples:
+- a butterfly that one player is chasing or swinging a net at remains catchable by another player until someone actually catches it.
+- players may compete for free-moving bugs/sea-life/world specimens.
+
+Protect only interactions where the target has already been logically bound to a specific active action and another player taking it would be physically nonsensical or corrupt the interaction.
+For example:
+- a fish currently hooked on Player A's fishing line belongs to that active fishing interaction.
+- another player's rod/net cannot steal that already-hooked fish out of the line state.
+
+Prefer simple authoritative interaction-state rules over generalized reservation timers.
 
 ## 22. Bugs and life cycles
 
@@ -980,6 +1036,15 @@ Displays are physical/3D:
 Museum has a dedicated curator NPC.
 
 Donation state is shared at village level.
+For the first accepted donation of a specific museum entry, record the donor player identity as historical presentation data where appropriate.
+This can appear subtly in exhibit/info text as a village-history detail.
+
+First-donor credit:
+- gives no ownership or governance privilege.
+- does not block later players from collecting the same entry.
+- does not alter the shared museum completion state.
+- should survive resident/player absence as part of museum history.
+
 Collection encyclopedia state is personal per player.
 Players can still help each other by transferring valid specimens/items, which can register to the recipient's encyclopedia.
 
@@ -1122,11 +1187,15 @@ Avoid RPG level gates.
 Boats are purchased with money.
 Do not build a complicated boat skill tree.
 
+Purchased boats are registered as persistent player/Household travel assets at the harbor rather than ordinary carry-around inventory items.
+This avoids accidental loss/duplication and lets the harbor visibly present owned vessels.
+
 Better boats can provide:
 - improved appearance.
 - improved travel presentation.
 - access to farther routes.
 
+Boat ownership must not give one Household control over another Household's travel.
 Actual boat models must come from external assets.
 
 ## 31. Exploration and combat
@@ -1159,6 +1228,18 @@ Combat rewards feed back into island life:
 - plants.
 - collection pieces.
 - special materials.
+
+### Authored caves/mining
+Important exploration caves/dungeons should not be permanently destroyed by unrestricted strip-mining.
+
+For authored exploration cave areas:
+- preserve core terrain, routes, landmarks and encounter spaces.
+- use renewable ore/resource nodes or controlled replaceable mining pockets.
+- regenerate ordinary mineable resources after suitable in-game intervals.
+- do not overwrite player-owned yard/home spaces.
+- keep mining useful without letting repeated excavation erase the authored level.
+
+Ordinary unrestricted wilderness mining, if retained outside these authored areas, remains a separate map-design decision.
 
 ## 32. Clinic and death
 
@@ -1482,7 +1563,32 @@ Rewards favor collectible items:
 
 Top placement should feel worthwhile, but a single missed contest should not permanently lock the player out of core progression.
 
-## 44. Birthdays and seasonal events
+## 44. Birthdays, schedule board and seasonal events
+
+### Village notice board / schedule
+The village has a physical notice board / community-board interaction point near the civic core.
+
+Do not plaster every full event description onto the board surface.
+The physical board's at-a-glance presentation shows only concise notices such as:
+- an upcoming event exists.
+- event name/category.
+- approximate date or urgency.
+- a small visual marker/icon where useful.
+
+Interacting with the board opens categorized information.
+A dedicated **Schedule** category shows upcoming dates for a useful forward window.
+Selecting a specific date/event reveals:
+- exact start time.
+- exact end time.
+- location.
+- event type.
+- participation notes/rules when relevant.
+- special closure or service changes, if any.
+
+Events do not need to last all day.
+Their true start/end times must be visible here so a player can plan around the 48-minute in-game day without memorizing hidden schedules.
+
+The board/calendar UI should use the project's external-UI-first rule, and the physical board model/build should also prefer an external asset/reference if a fitting one can be obtained.
 
 Residents have fixed authored birthdays on the 28-day four-season calendar.
 Birthday overlap is explicitly allowed; multiple residents may share the same date.
@@ -1510,6 +1616,10 @@ Seasonal events can include major themed days such as:
 - summer fireworks/fishing event.
 - autumn harvest event.
 - winter snow/festival event.
+
+Because the 7-day season and 48-minute day already provide meaningful planning time, do not add blanket catch-up/extension systems merely because an event can be missed.
+Players are expected to consult the visible schedule and choose what to attend.
+Important recurring seasonal content can return in future in-game years.
 
 Final event list should use external event decoration sets rather than improvised visuals.
 
