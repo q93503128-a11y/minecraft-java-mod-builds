@@ -17,6 +17,8 @@ class OrdinaryEquipmentAffixCatalogTest {
         );
         assertEquals(29, data.affixes().size());
         assertEquals(20, data.implementedDefinitions().size());
+        assertTrue(data.resourceAuthorityReady());
+        assertTrue(data.criticalAuthorityReady());
 
         var physical = data.affixes().stream()
                 .filter(value -> value.id().equals(
