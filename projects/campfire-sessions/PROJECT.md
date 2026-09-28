@@ -82,7 +82,7 @@ Server-authoritative state includes at minimum:
 - money.
 - loans.
 - household membership.
-- collection encyclopedia.
+- personal collection encyclopedia.
 - houses.
 - residents and moves.
 - donations.
@@ -129,4 +129,4 @@ Before implementation, finish the major unresolved items listed in `GAME_DESIGN.
 - resident model/rig set.
 - furniture/UI/tool/boat asset selections.
 - economy numbers.
-- save schema and Household edge cases.
+- concrete save serialization details and remaining Household implementation edge cases.
