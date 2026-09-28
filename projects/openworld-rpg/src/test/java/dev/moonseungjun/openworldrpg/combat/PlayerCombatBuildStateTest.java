@@ -44,6 +44,8 @@ class PlayerCombatBuildStateTest {
                 0.10,
                 0.20,
                 0.0,
+                0.0,
+                0.0,
                 0.0
         );
         var build = new PlayerCombatBuildState(
@@ -62,6 +64,37 @@ class PlayerCombatBuildStateTest {
         assertEquals(0.175, source.additivePowerBonus(), 0.0001);
         assertEquals(1.02, source.poiseOutputMultiplier(), 0.0001);
     }
+
+    @Test
+    void criticalChanceUsesBaseDexGearAndCanonicalCap() {
+        var equipment = new EquipmentCombatState(
+                ProjectWeaponFamily.BOW,
+                8,
+                new dev.moonseungjun.openworldrpg.combat.state.EffectiveAttributes(
+                        0, 0, 0, 5, 0, 0
+                ),
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.30,
+                0.15,
+                0.0,
+                0.0
+        );
+        var build = new PlayerCombatBuildState(
+                8,
+                RootClass.HUNTER,
+                new AttributeAllocation(0, 0, 0, 7, 0, 0),
+                equipment
+        );
+
+        assertEquals(0.3596, build.criticalChance(0.0), 0.000001);
+        assertEquals(1.65, build.criticalMultiplier(0.0), 0.000001);
+        assertEquals(0.60, build.criticalChance(0.50), 0.000001);
+        assertEquals(2.25, build.criticalMultiplier(1.0), 0.000001);
+    }
+
 
     @Test
     void canonicalMaxHealthFormulaMatchesLockedDesignAnchors() {
@@ -87,6 +120,8 @@ class PlayerCombatBuildStateTest {
                 0.0,
                 0.0,
                 0.0,
+                0.0,
+                0.0,
                 0.0
         );
         var build = new PlayerCombatBuildState(
@@ -107,6 +142,8 @@ class PlayerCombatBuildStateTest {
                 new dev.moonseungjun.openworldrpg.combat.state.EffectiveAttributes(
                         0, 0, 0, 0, 0, 0
                 ),
+                0.0,
+                0.0,
                 0.0,
                 0.0,
                 0.0,
