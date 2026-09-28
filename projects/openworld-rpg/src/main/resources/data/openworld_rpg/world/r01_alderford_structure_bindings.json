@@ -1,0 +1,369 @@
+{
+  "schema_version": 1,
+  "id": "openworld_rpg:r01/alderford_structure_bindings",
+  "map_build": "AzariNEW4252026",
+  "source_status": "family_bound_composition_gated",
+  "structures": [
+    {
+      "id": "openworld_rpg:r01/alderford/gate_watch",
+      "status": "candidate",
+      "kind": "gate",
+      "spatial_anchor_id": "openworld_rpg:r01/alderford_gate_probe",
+      "architecture_family_id": "openworld_rpg:asset_family/quaternius_medieval_village_standard",
+      "prop_family_ids": [
+        "openworld_rpg:asset_family/quaternius_fantasy_props_standard"
+      ],
+      "composition": {
+        "id": "openworld_rpg:r01/composition/alderford/gate_watch",
+        "state": "visual_review_gated",
+        "selection_mode": "authored_fixed",
+        "exact_prefab_id": null
+      },
+      "role": "Alderford gate/watch shell; shares the terrain candidate with the first shrine but retains a separate authored composition identity."
+    },
+    {
+      "id": "openworld_rpg:r01/alderford/gate_shrine",
+      "status": "candidate",
+      "kind": "shrine",
+      "spatial_anchor_id": "openworld_rpg:r01/alderford_gate_probe",
+      "architecture_family_id": "openworld_rpg:asset_family/quaternius_medieval_village_standard",
+      "prop_family_ids": [],
+      "composition": {
+        "id": "openworld_rpg:r01/composition/alderford/gate_shrine",
+        "state": "visual_review_gated",
+        "selection_mode": "authored_fixed",
+        "exact_prefab_id": null
+      },
+      "role": "First shrine/checkpoint composition beside the gate; exact shrine silhouette/detail source remains visually gated."
+    },
+    {
+      "id": "openworld_rpg:r01/alderford/copper_kettle",
+      "status": "candidate",
+      "kind": "service",
+      "spatial_anchor_id": "openworld_rpg:r01/alderford/copper_kettle_candidate",
+      "architecture_family_id": "openworld_rpg:asset_family/quaternius_medieval_village_standard",
+      "prop_family_ids": [
+        "openworld_rpg:asset_family/quaternius_fantasy_props_standard"
+      ],
+      "composition": {
+        "id": "openworld_rpg:r01/composition/alderford/copper_kettle",
+        "state": "visual_review_gated",
+        "selection_mode": "authored_fixed",
+        "exact_prefab_id": null
+      },
+      "role": "The Copper Kettle inn/tavern and cooking-service shell in the coherent Alderford architecture family."
+    },
+    {
+      "id": "openworld_rpg:r01/alderford/wayfarers_hall",
+      "status": "candidate",
+      "kind": "service",
+      "spatial_anchor_id": "openworld_rpg:r01/alderford/wayfarers_hall_candidate",
+      "architecture_family_id": "openworld_rpg:asset_family/quaternius_medieval_village_standard",
+      "prop_family_ids": [
+        "openworld_rpg:asset_family/quaternius_fantasy_props_standard"
+      ],
+      "composition": {
+        "id": "openworld_rpg:r01/composition/alderford/wayfarers_hall",
+        "state": "visual_review_gated",
+        "selection_mode": "authored_fixed",
+        "exact_prefab_id": null
+      },
+      "role": "Wayfarers' Hall guild/class facility shell."
+    },
+    {
+      "id": "openworld_rpg:r01/alderford/holt_forge",
+      "status": "candidate",
+      "kind": "service",
+      "spatial_anchor_id": "openworld_rpg:r01/alderford/holt_forge_candidate",
+      "architecture_family_id": "openworld_rpg:asset_family/quaternius_medieval_village_standard",
+      "prop_family_ids": [
+        "openworld_rpg:asset_family/quaternius_fantasy_props_standard",
+        "openworld_rpg:asset_family/kaykit_rpg_tools"
+      ],
+      "composition": {
+        "id": "openworld_rpg:r01/composition/alderford/holt_forge",
+        "state": "visual_review_gated",
+        "selection_mode": "authored_fixed",
+        "exact_prefab_id": null
+      },
+      "role": "Holt Forge smith/forge shell with the already-bound ordinary tool/forge prop families."
+    },
+    {
+      "id": "openworld_rpg:r01/alderford/alderford_vault",
+      "status": "candidate",
+      "kind": "service",
+      "spatial_anchor_id": "openworld_rpg:r01/alderford/vault_candidate",
+      "architecture_family_id": "openworld_rpg:asset_family/quaternius_medieval_village_standard",
+      "prop_family_ids": [
+        "openworld_rpg:asset_family/quaternius_fantasy_props_standard"
+      ],
+      "composition": {
+        "id": "openworld_rpg:r01/composition/alderford/alderford_vault",
+        "state": "visual_review_gated",
+        "selection_mode": "authored_fixed",
+        "exact_prefab_id": null
+      },
+      "role": "Alderford Vault storage/material-vault service shell."
+    },
+    {
+      "id": "openworld_rpg:r01/alderford/greenwater_remedies",
+      "status": "candidate",
+      "kind": "service",
+      "spatial_anchor_id": "openworld_rpg:r01/alderford/greenwater_remedies_candidate",
+      "architecture_family_id": "openworld_rpg:asset_family/quaternius_medieval_village_standard",
+      "prop_family_ids": [
+        "openworld_rpg:asset_family/quaternius_fantasy_props_standard"
+      ],
+      "composition": {
+        "id": "openworld_rpg:r01/composition/alderford/greenwater_remedies",
+        "state": "visual_review_gated",
+        "selection_mode": "authored_fixed",
+        "exact_prefab_id": null
+      },
+      "role": "Greenwater Remedies healer/alchemy service shell."
+    },
+    {
+      "id": "openworld_rpg:r01/alderford/fordside_stables",
+      "status": "candidate",
+      "kind": "service",
+      "spatial_anchor_id": "openworld_rpg:r01/alderford/fordside_stables_candidate",
+      "architecture_family_id": "openworld_rpg:asset_family/quaternius_medieval_village_standard",
+      "prop_family_ids": [
+        "openworld_rpg:asset_family/quaternius_fantasy_props_standard"
+      ],
+      "composition": {
+        "id": "openworld_rpg:r01/composition/alderford/fordside_stables",
+        "state": "visual_review_gated",
+        "selection_mode": "authored_fixed",
+        "exact_prefab_id": null
+      },
+      "role": "Fordside Stables shell on the outward-road side; exact stable/paddock prop layout remains visually gated."
+    },
+    {
+      "id": "openworld_rpg:r01/alderford/market",
+      "status": "candidate",
+      "kind": "market",
+      "spatial_anchor_id": "openworld_rpg:r01/alderford/market_candidate",
+      "architecture_family_id": "openworld_rpg:asset_family/quaternius_medieval_village_standard",
+      "prop_family_ids": [
+        "openworld_rpg:asset_family/quaternius_fantasy_props_standard"
+      ],
+      "composition": {
+        "id": "openworld_rpg:r01/composition/alderford/market",
+        "state": "visual_review_gated",
+        "selection_mode": "authored_fixed",
+        "exact_prefab_id": null
+      },
+      "role": "Nessa Bell market/basic merchant stall composition on the square edge."
+    },
+    {
+      "id": "openworld_rpg:r01/alderford/route_board",
+      "status": "candidate",
+      "kind": "board",
+      "spatial_anchor_id": "openworld_rpg:r01/alderford/route_board_candidate",
+      "architecture_family_id": null,
+      "prop_family_ids": [
+        "openworld_rpg:asset_family/quaternius_fantasy_props_standard"
+      ],
+      "composition": {
+        "id": "openworld_rpg:r01/composition/alderford/route_board",
+        "state": "visual_review_gated",
+        "selection_mode": "authored_fixed",
+        "exact_prefab_id": null
+      },
+      "role": "Guild/route board prop composition separated from nearby building-shell centers."
+    },
+    {
+      "id": "openworld_rpg:r01/alderford/housing/gate_cottage",
+      "status": "candidate",
+      "kind": "housing",
+      "spatial_anchor_id": "openworld_rpg:r01/housing/gate_cottage_candidate",
+      "architecture_family_id": "openworld_rpg:asset_family/quaternius_medieval_village_standard",
+      "prop_family_ids": [],
+      "composition": {
+        "id": "openworld_rpg:r01/composition/alderford/housing/gate_cottage",
+        "state": "visual_review_gated",
+        "selection_mode": "authored_fixed",
+        "exact_prefab_id": null
+      },
+      "role": "Gate Cottage authored Small Cottage shell identity."
+    },
+    {
+      "id": "openworld_rpg:r01/alderford/housing/paddock_cottage",
+      "status": "candidate",
+      "kind": "housing",
+      "spatial_anchor_id": "openworld_rpg:r01/housing/paddock_cottage_candidate",
+      "architecture_family_id": "openworld_rpg:asset_family/quaternius_medieval_village_standard",
+      "prop_family_ids": [],
+      "composition": {
+        "id": "openworld_rpg:r01/composition/alderford/housing/paddock_cottage",
+        "state": "visual_review_gated",
+        "selection_mode": "authored_fixed",
+        "exact_prefab_id": null
+      },
+      "role": "Paddock Cottage authored Small Cottage shell identity."
+    },
+    {
+      "id": "openworld_rpg:r01/alderford/housing/riverside_cottage",
+      "status": "candidate",
+      "kind": "housing",
+      "spatial_anchor_id": "openworld_rpg:r01/housing/riverside_cottage_candidate",
+      "architecture_family_id": "openworld_rpg:asset_family/quaternius_medieval_village_standard",
+      "prop_family_ids": [],
+      "composition": {
+        "id": "openworld_rpg:r01/composition/alderford/housing/riverside_cottage",
+        "state": "visual_review_gated",
+        "selection_mode": "authored_fixed",
+        "exact_prefab_id": null
+      },
+      "role": "Riverside Cottage authored Small Cottage shell identity."
+    },
+    {
+      "id": "openworld_rpg:r01/alderford/housing/quarry_road_cottage",
+      "status": "candidate",
+      "kind": "housing",
+      "spatial_anchor_id": "openworld_rpg:r01/housing/quarry_road_cottage_candidate",
+      "architecture_family_id": "openworld_rpg:asset_family/quaternius_medieval_village_standard",
+      "prop_family_ids": [],
+      "composition": {
+        "id": "openworld_rpg:r01/composition/alderford/housing/quarry_road_cottage",
+        "state": "visual_review_gated",
+        "selection_mode": "authored_fixed",
+        "exact_prefab_id": null
+      },
+      "role": "Quarry-Road Cottage authored Small Cottage shell identity."
+    },
+    {
+      "id": "openworld_rpg:r01/alderford/housing/market_house",
+      "status": "candidate",
+      "kind": "housing",
+      "spatial_anchor_id": "openworld_rpg:r01/housing/market_house_candidate",
+      "architecture_family_id": "openworld_rpg:asset_family/quaternius_medieval_village_standard",
+      "prop_family_ids": [],
+      "composition": {
+        "id": "openworld_rpg:r01/composition/alderford/housing/market_house",
+        "state": "visual_review_gated",
+        "selection_mode": "authored_fixed",
+        "exact_prefab_id": null
+      },
+      "role": "Market House authored Town House shell identity; final exterior must remain visibly larger/taller than Small Cottage compositions."
+    }
+  ],
+  "services": [
+    {
+      "id": "openworld_rpg:service/alderford/gate_shrine",
+      "status": "candidate",
+      "structure_id": "openworld_rpg:r01/alderford/gate_shrine",
+      "interaction_socket_id": "openworld_rpg:r01/socket/alderford/gate_shrine/checkpoint",
+      "role": "Gate shrine/checkpoint interaction; final world transform is owned by the accepted shrine composition socket, not the terrain-center anchor."
+    },
+    {
+      "id": "openworld_rpg:service/alderford/copper_kettle",
+      "status": "candidate",
+      "structure_id": "openworld_rpg:r01/alderford/copper_kettle",
+      "interaction_socket_id": "openworld_rpg:r01/socket/alderford/copper_kettle/service",
+      "role": "The Copper Kettle service interaction socket."
+    },
+    {
+      "id": "openworld_rpg:service/alderford/wayfarers_hall",
+      "status": "candidate",
+      "structure_id": "openworld_rpg:r01/alderford/wayfarers_hall",
+      "interaction_socket_id": "openworld_rpg:r01/socket/alderford/wayfarers_hall/service",
+      "role": "Wayfarers' Hall guild/class service interaction socket."
+    },
+    {
+      "id": "openworld_rpg:service/alderford/holt_forge",
+      "status": "candidate",
+      "structure_id": "openworld_rpg:r01/alderford/holt_forge",
+      "interaction_socket_id": "openworld_rpg:r01/socket/alderford/holt_forge/service",
+      "role": "Holt Forge service interaction socket."
+    },
+    {
+      "id": "openworld_rpg:service/alderford/alderford_vault",
+      "status": "candidate",
+      "structure_id": "openworld_rpg:r01/alderford/alderford_vault",
+      "interaction_socket_id": "openworld_rpg:r01/socket/alderford/alderford_vault/service",
+      "role": "Alderford Vault storage/material-vault service interaction socket."
+    },
+    {
+      "id": "openworld_rpg:service/alderford/greenwater_remedies",
+      "status": "candidate",
+      "structure_id": "openworld_rpg:r01/alderford/greenwater_remedies",
+      "interaction_socket_id": "openworld_rpg:r01/socket/alderford/greenwater_remedies/service",
+      "role": "Greenwater Remedies healer/alchemy service interaction socket."
+    },
+    {
+      "id": "openworld_rpg:service/alderford/fordside_stables",
+      "status": "candidate",
+      "structure_id": "openworld_rpg:r01/alderford/fordside_stables",
+      "interaction_socket_id": "openworld_rpg:r01/socket/alderford/fordside_stables/service",
+      "role": "Fordside Stables service interaction socket."
+    },
+    {
+      "id": "openworld_rpg:service/alderford/market",
+      "status": "candidate",
+      "structure_id": "openworld_rpg:r01/alderford/market",
+      "interaction_socket_id": "openworld_rpg:r01/socket/alderford/market/service",
+      "role": "Nessa Bell market/basic merchant interaction socket."
+    },
+    {
+      "id": "openworld_rpg:service/alderford/route_board",
+      "status": "candidate",
+      "structure_id": "openworld_rpg:r01/alderford/route_board",
+      "interaction_socket_id": "openworld_rpg:r01/socket/alderford/route_board/face",
+      "role": "Guild/route board interaction socket."
+    }
+  ],
+  "properties": [
+    {
+      "id": "openworld_rpg:property/alderford/gate_cottage",
+      "status": "candidate",
+      "display_name": "Gate Cottage",
+      "structure_id": "openworld_rpg:r01/alderford/housing/gate_cottage",
+      "tier": "small_cottage",
+      "purchase_price": 2400,
+      "sale_credit_rate": 0.8,
+      "storage_capacity": 54
+    },
+    {
+      "id": "openworld_rpg:property/alderford/paddock_cottage",
+      "status": "candidate",
+      "display_name": "Paddock Cottage",
+      "structure_id": "openworld_rpg:r01/alderford/housing/paddock_cottage",
+      "tier": "small_cottage",
+      "purchase_price": 2400,
+      "sale_credit_rate": 0.8,
+      "storage_capacity": 54
+    },
+    {
+      "id": "openworld_rpg:property/alderford/riverside_cottage",
+      "status": "candidate",
+      "display_name": "Riverside Cottage",
+      "structure_id": "openworld_rpg:r01/alderford/housing/riverside_cottage",
+      "tier": "small_cottage",
+      "purchase_price": 2400,
+      "sale_credit_rate": 0.8,
+      "storage_capacity": 54
+    },
+    {
+      "id": "openworld_rpg:property/alderford/quarry_road_cottage",
+      "status": "candidate",
+      "display_name": "Quarry-Road Cottage",
+      "structure_id": "openworld_rpg:r01/alderford/housing/quarry_road_cottage",
+      "tier": "small_cottage",
+      "purchase_price": 2400,
+      "sale_credit_rate": 0.8,
+      "storage_capacity": 54
+    },
+    {
+      "id": "openworld_rpg:property/alderford/market_house",
+      "status": "candidate",
+      "display_name": "Market House",
+      "structure_id": "openworld_rpg:r01/alderford/housing/market_house",
+      "tier": "town_house",
+      "purchase_price": 9000,
+      "sale_credit_rate": 0.8,
+      "storage_capacity": 72
+    }
+  ]
+}
