@@ -15,13 +15,14 @@ import java.util.Set;
 /**
  * One-time escape from Drehmal's original 1.20.1 setup terminal into TURNBOUND's outdoor first-route topology.
  *
- * <p>The authored map is not edited. A safe surface block is selected at runtime between the source-backed Stasis
- * Facility and Primal Caverns anchors, preferring existing path/road blocks. Players who are already elsewhere are
- * never moved.</p>
+ * <p>The authored map is not edited. The map-backed Capital Valley roadhead chooses the intended route zone, then
+ * the live Minecraft 26.2 terrain chooses a nearby safe standing block. Players who are already elsewhere are never
+ * moved.</p>
  */
 final class DrehmalStartArrival {
-    static final String ARRIVAL_FLAG = "DREHMAL_NEW_DRABYEL_ENTRY_V2";
+    static final String ARRIVAL_FLAG = "DREHMAL_FIRST_ROUTE_ENTRY_V3";
     static final String PRIMAL_CAVERNS = "turnbound:landmark/primal_caverns";
+    private static final String ROADHEAD_SITE = "turnbound:site/capital_valley/roadhead";
     private static final double LEGACY_SETUP_X = 26520.0;
     private static final double LEGACY_SETUP_Z = -136.0;
     private static final double LEGACY_SETUP_RADIUS_SQR = 220.0 * 220.0;
@@ -35,18 +36,28 @@ final class DrehmalStartArrival {
         // The original bootstrap can move the host back after TURNBOUND already recorded an arrival.
         if (!legacySetupZone(player.getX(), player.getY(), player.getZ())) return false;
 
-        BlockPos hub = DrehmalWorldBinding.hubSeed();
-        BlockPos region = DrehmalWorldBinding.firstRegionSeed();
-
         ServerLevel level = (ServerLevel) player.level();
-        BlockPos destination = findSafeHubArrival(level, hub, 36);
-        if (destination == null) {
-            Turnbound.LOGGER.warn("TURNBOUND could not find a safe New Drabyel arrival near {}, {}, {}", hub.getX(), hub.getY(), hub.getZ());
+        DrehmalMapPlacementCatalog.Placement roadhead = DrehmalMapPlacementCatalog.placement(ROADHEAD_SITE);
+        if (roadhead == null || roadhead.siteSeeds().isEmpty()) {
+            Turnbound.LOGGER.error("TURNBOUND first-route roadhead placement is missing");
             return false;
         }
 
-        double dx = region.getX() + 0.5D - (destination.getX() + 0.5D);
-        double dz = region.getZ() + 0.5D - (destination.getZ() + 0.5D);
+        DrehmalMapPlacementCatalog.Seed seed = roadhead.siteSeeds().getFirst();
+        int seedY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, seed.x(), seed.z());
+        BlockPos destination = findSafeArrival(level, new BlockPos(seed.x(), seedY, seed.z()),
+                Math.max(6, roadhead.searchRadius()));
+        if (destination == null) {
+            Turnbound.LOGGER.warn("TURNBOUND could not find a safe Capital Valley roadhead near {}, {}",
+                    seed.x(), seed.z());
+            return false;
+        }
+
+        DrehmalMapPlacementCatalog.Seed facingSeed = roadhead.siteSeeds().size() >= 2
+                ? roadhead.siteSeeds().get(1)
+                : seed;
+        double dx = facingSeed.x() + 0.5D - (destination.getX() + 0.5D);
+        double dz = facingSeed.z() + 0.5D - (destination.getZ() + 0.5D);
         float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
         boolean teleported = player.teleportTo(
                 level,
@@ -66,7 +77,7 @@ final class DrehmalStartArrival {
         player.setOnGround(true);
         saved.markOnboardingFlag(player.getUUID(), ARRIVAL_FLAG);
         Turnbound.LOGGER.info(
-                "TURNBOUND moved {} from the legacy Drehmal setup terminal to New Drabyel arrival {}, {}, {}",
+                "TURNBOUND moved {} from the legacy Drehmal setup terminal to the Capital Valley roadhead {}, {}, {}",
                 player.getUUID(), destination.getX(), destination.getY(), destination.getZ());
         return true;
     }
@@ -77,11 +88,11 @@ final class DrehmalStartArrival {
         return y >= 120.0 && dx * dx + dz * dz <= LEGACY_SETUP_RADIUS_SQR;
     }
 
-    private static BlockPos findSafeHubArrival(ServerLevel level, BlockPos seed, int radius) {
+    private static BlockPos findSafeArrival(ServerLevel level, BlockPos seed, int radius) {
         BlockPos best = null;
         long bestScore = Long.MAX_VALUE;
 
-        // Prefer the authored hub's street-level neighborhood instead of a heightmap roof or a distant surface.
+        // Prefer an authored road/path surface around the map-backed routehead seed.
         for (int dz = -radius; dz <= radius; dz++) {
             for (int dx = -radius; dx <= radius; dx++) {
                 int distanceSq = dx * dx + dz * dz;
@@ -100,7 +111,7 @@ final class DrehmalStartArrival {
         }
         if (best != null) return best;
 
-        // Fallback only when the integration seed's local vertical band is obstructed after migration.
+        // Fallback only when the seed's local vertical band is obstructed after migration.
         for (int dz = -radius; dz <= radius; dz++) {
             for (int dx = -radius; dx <= radius; dx++) {
                 int distanceSq = dx * dx + dz * dz;
