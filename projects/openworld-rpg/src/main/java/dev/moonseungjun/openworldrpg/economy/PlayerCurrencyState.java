@@ -16,7 +16,8 @@ import java.util.Set;
 public record PlayerCurrencyState(
         int schemaVersion,
         long gold,
-        Set<String> appliedCreditTransactionIds
+        Set<String> appliedCreditTransactionIds,
+        Set<String> appliedDebitTransactionIds
 ) {
     public static final int CURRENT_SCHEMA_VERSION = 1;
 
@@ -33,7 +34,10 @@ public record PlayerCurrencyState(
                     Codec.LONG.fieldOf("gold").forGetter(PlayerCurrencyState::gold),
                     STRING_SET_CODEC
                             .fieldOf("applied_credit_transaction_ids")
-                            .forGetter(PlayerCurrencyState::appliedCreditTransactionIds)
+                            .forGetter(PlayerCurrencyState::appliedCreditTransactionIds),
+                    STRING_SET_CODEC
+                            .optionalFieldOf("applied_debit_transaction_ids", Set.of())
+                            .forGetter(PlayerCurrencyState::appliedDebitTransactionIds)
             ).apply(instance, PlayerCurrencyState::new)
     );
 
@@ -55,10 +59,31 @@ public record PlayerCurrencyState(
         appliedCreditTransactionIds.forEach(
                 value -> requireTransactionId(value, "appliedCreditTransactionId")
         );
+        appliedDebitTransactionIds = Set.copyOf(
+                Objects.requireNonNull(
+                        appliedDebitTransactionIds,
+                        "appliedDebitTransactionIds"
+                )
+        );
+        appliedDebitTransactionIds.forEach(
+                value -> requireTransactionId(value, "appliedDebitTransactionId")
+        );
+        Set<String> overlap = new HashSet<>(appliedCreditTransactionIds);
+        overlap.retainAll(appliedDebitTransactionIds);
+        if (!overlap.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Currency transaction id cannot be both credit and debit: " + overlap
+            );
+        }
     }
 
     public static PlayerCurrencyState initial() {
-        return new PlayerCurrencyState(CURRENT_SCHEMA_VERSION, 0L, Set.of());
+        return new PlayerCurrencyState(
+                CURRENT_SCHEMA_VERSION,
+                0L,
+                Set.of(),
+                Set.of()
+        );
     }
 
     public PlayerCurrencyState creditOnce(String transactionId, long amount) {
@@ -76,7 +101,33 @@ public record PlayerCurrencyState(
         return new PlayerCurrencyState(
                 schemaVersion,
                 nextGold,
-                Set.copyOf(nextTransactions)
+                Set.copyOf(nextTransactions),
+                appliedDebitTransactionIds
+        );
+    }
+
+    public DebitResult debitOnce(String transactionId, long amount) {
+        requireTransactionId(transactionId, "transactionId");
+        if (amount <= 0L) {
+            throw new IllegalArgumentException("Debit amount must be positive.");
+        }
+        if (appliedDebitTransactionIds.contains(transactionId)) {
+            return new DebitResult(this, DebitStatus.ALREADY_APPLIED);
+        }
+        if (gold < amount) {
+            return new DebitResult(this, DebitStatus.INSUFFICIENT_GOLD);
+        }
+
+        Set<String> nextTransactions = new HashSet<>(appliedDebitTransactionIds);
+        nextTransactions.add(transactionId);
+        return new DebitResult(
+                new PlayerCurrencyState(
+                        schemaVersion,
+                        gold - amount,
+                        appliedCreditTransactionIds,
+                        Set.copyOf(nextTransactions)
+                ),
+                DebitStatus.APPLIED
         );
     }
 
@@ -90,13 +141,43 @@ public record PlayerCurrencyState(
         return new PlayerCurrencyState(
                 schemaVersion,
                 gold,
-                Set.copyOf(next)
+                Set.copyOf(next),
+                appliedDebitTransactionIds
         );
     }
 
     public boolean hasAppliedCredit(String transactionId) {
         requireTransactionId(transactionId, "transactionId");
         return appliedCreditTransactionIds.contains(transactionId);
+    }
+
+    public boolean hasAppliedDebit(String transactionId) {
+        requireTransactionId(transactionId, "transactionId");
+        return appliedDebitTransactionIds.contains(transactionId);
+    }
+
+    public enum DebitStatus {
+        APPLIED,
+        ALREADY_APPLIED,
+        INSUFFICIENT_GOLD
+    }
+
+    public record DebitResult(
+            PlayerCurrencyState state,
+            DebitStatus status
+    ) {
+        public DebitResult {
+            Objects.requireNonNull(state, "state");
+            Objects.requireNonNull(status, "status");
+        }
+
+        public boolean success() {
+            return status != DebitStatus.INSUFFICIENT_GOLD;
+        }
+
+        public boolean newlyApplied() {
+            return status == DebitStatus.APPLIED;
+        }
     }
 
     private static void requireTransactionId(String value, String name) {
