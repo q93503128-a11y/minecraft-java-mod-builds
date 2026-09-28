@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.integration.verify;
 
+import dev.moonseungjun.openworldrpg.equipment.OrdinaryEquipmentAffixCatalogRegistry;
 import dev.moonseungjun.openworldrpg.fishing.R01FishingSpatialRegistry;
 import dev.moonseungjun.openworldrpg.world.spatial.R01QuarrySpatialBindingRegistry;
 import dev.moonseungjun.openworldrpg.world.spatial.R01SpatialBindingRegistry;
@@ -47,8 +48,9 @@ public final class R01PlayerVerificationBootstrap {
 
         var spatial = R01SpatialBindingRegistry.data();
         var structures = R01StructureBindingLoader.loadBundled();
+        var affixes = OrdinaryEquipmentAffixCatalogRegistry.data();
         logger.info(
-                "OPENWORLD_RPG_R01_VERIFICATION_CONTRACT_PASS mapBuild={} anchors={} areas={} volumes={} routes={} structures={} services={} properties={} fishingSpots={} spatialProductionReady={} structureProductionReady={} alderfordRuntimeProductionReady={} quarryRuntimeProductionReady={} fishingProductionReady={}",
+                "OPENWORLD_RPG_R01_VERIFICATION_CONTRACT_PASS mapBuild={} anchors={} areas={} volumes={} routes={} structures={} services={} properties={} fishingSpots={} staticAffixes={} runtimeAffixes={} spatialProductionReady={} structureProductionReady={} alderfordRuntimeProductionReady={} quarryRuntimeProductionReady={} fishingProductionReady={}",
                 spatial.mapBuild(),
                 spatial.anchors().size(),
                 spatial.areas().size(),
@@ -58,6 +60,8 @@ public final class R01PlayerVerificationBootstrap {
                 structures.services().size(),
                 structures.properties().size(),
                 R01FishingSpatialRegistry.allAuthoredSpots().size(),
+                affixes.affixes().size(),
+                affixes.implementedDefinitions().size(),
                 spatial.productionReady(),
                 structures.productionReady(),
                 R01AlderfordRuntimeBindingRegistry.productionReady(),
