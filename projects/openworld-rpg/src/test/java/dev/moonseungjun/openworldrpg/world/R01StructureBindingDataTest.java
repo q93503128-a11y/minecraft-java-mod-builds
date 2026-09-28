@@ -40,6 +40,13 @@ class R01StructureBindingDataTest {
         assertTrue(data.properties().stream().allMatch(property ->
                 data.productionProperty(property.id()).isEmpty()
         ));
+
+        Set<String> terrainAnchorIds = data.structures().stream()
+                .map(R01StructureBindingData.StructureBinding::spatialAnchorId)
+                .collect(Collectors.toSet());
+        assertTrue(data.services().stream().noneMatch(service ->
+                terrainAnchorIds.contains(service.interactionSocketId())
+        ));
     }
 
     @Test
