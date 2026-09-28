@@ -83,6 +83,19 @@ public final class R01NessaMarketService {
             );
         }
 
+        var materialization =
+                R01NessaEquipmentMaterialization.resolve(
+                        cycle.item(slotIndex)
+                );
+        if (materialization.status()
+                == R01NessaEquipmentMaterialization.ResolutionStatus
+                        .RUNTIME_AFFIX_BLOCKED) {
+            return new PurchaseResult(
+                    PurchaseStatus.AFFIX_RUNTIME_INCOMPLETE,
+                    Optional.empty()
+            );
+        }
+
         return new PurchaseResult(
                 PurchaseStatus.READY_FOR_ITEM_MATERIALIZATION,
                 state(player).purchasePlan(
@@ -148,7 +161,8 @@ public final class R01NessaMarketService {
         SERVICE_NOT_PRODUCTION,
         SHRINE_NOT_ACTIVATED,
         STALE_CYCLE,
-        SOLD
+        SOLD,
+        AFFIX_RUNTIME_INCOMPLETE
     }
 
     public record PurchaseResult(
