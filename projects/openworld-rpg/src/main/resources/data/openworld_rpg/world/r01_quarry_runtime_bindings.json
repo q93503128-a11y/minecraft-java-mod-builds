@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "id": "openworld_rpg:r01/quarry_runtime_bindings",
+  "map_build": "AzariNEW4252026",
+  "rooms": [
+    {
+      "id": "openworld_rpg:r01/quarry/upper_gallery",
+      "status": "candidate",
+      "room": "upper_gallery",
+      "source_review_volume_id": "openworld_rpg:r01/quarry/upper_gallery_review",
+      "runtime_volume_id": "openworld_rpg:r01/quarry/upper_gallery/runtime_volume",
+      "spawn_socket_ids": [
+        "openworld_rpg:r01/quarry/upper_gallery/entry_pair_left",
+        "openworld_rpg:r01/quarry/upper_gallery/entry_pair_right",
+        "openworld_rpg:r01/quarry/upper_gallery/deeper_1",
+        "openworld_rpg:r01/quarry/upper_gallery/deeper_2",
+        "openworld_rpg:r01/quarry/upper_gallery/deeper_3",
+        "openworld_rpg:r01/quarry/upper_gallery/deeper_4",
+        "openworld_rpg:r01/quarry/upper_gallery/deeper_5"
+      ],
+      "second_wave_trigger_volume_id": "openworld_rpg:r01/quarry/upper_gallery/deeper_gallery_threshold"
+    },
+    {
+      "id": "openworld_rpg:r01/quarry/collapsed_hoist",
+      "status": "candidate",
+      "room": "collapsed_hoist",
+      "source_review_volume_id": "openworld_rpg:r01/quarry/collapsed_hoist_review",
+      "runtime_volume_id": "openworld_rpg:r01/quarry/collapsed_hoist/runtime_volume",
+      "spawn_socket_ids": [
+        "openworld_rpg:r01/quarry/collapsed_hoist/wall_1",
+        "openworld_rpg:r01/quarry/collapsed_hoist/wall_2",
+        "openworld_rpg:r01/quarry/collapsed_hoist/ceiling_1",
+        "openworld_rpg:r01/quarry/collapsed_hoist/added_1",
+        "openworld_rpg:r01/quarry/collapsed_hoist/added_2",
+        "openworld_rpg:r01/quarry/collapsed_hoist/added_3"
+      ],
+      "second_wave_trigger_volume_id": null
+    },
+    {
+      "id": "openworld_rpg:r01/quarry/root_breached",
+      "status": "candidate",
+      "room": "root_breached",
+      "source_review_volume_id": "openworld_rpg:r01/quarry/root_breached_review",
+      "runtime_volume_id": "openworld_rpg:r01/quarry/root_breached/runtime_volume",
+      "spawn_socket_ids": [
+        "openworld_rpg:r01/quarry/root_breached/nature_spirit_elite"
+      ],
+      "second_wave_trigger_volume_id": null
+    }
+  ],
+  "relay": {
+    "id": "openworld_rpg:r01/quarry/relay_gallery",
+    "status": "candidate",
+    "source_review_volume_id": "openworld_rpg:r01/quarry/relay_gallery_review",
+    "runtime_volume_id": "openworld_rpg:r01/quarry/relay_gallery/runtime_volume",
+    "role": "Final authored Relay Gallery transition volume. The Pass-3 transition probe is source evidence only."
+  },
+  "earthloong_arena": {
+    "id": "openworld_rpg:r01/quarry/earthloong_arena",
+    "status": "candidate",
+    "source_review_volume_id": "openworld_rpg:r01/quarry/earthloong_chamber_review",
+    "runtime_volume_id": "openworld_rpg:r01/quarry/earthloong/runtime_arena",
+    "role": "Final authored Earthloong arena volume. The 32x12x32 Pass-3 solid carve probe is never the arena size contract."
+  }
+}

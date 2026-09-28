@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.integration.verify;
 
+import dev.moonseungjun.openworldrpg.world.spatial.R01QuarrySpatialBindingRegistry;
 import dev.moonseungjun.openworldrpg.world.spatial.R01SpatialBindingRegistry;
 import dev.moonseungjun.openworldrpg.world.structure.R01StructureBindingLoader;
 import java.util.Objects;
@@ -45,7 +46,7 @@ public final class R01PlayerVerificationBootstrap {
         var spatial = R01SpatialBindingRegistry.data();
         var structures = R01StructureBindingLoader.loadBundled();
         logger.info(
-                "OPENWORLD_RPG_R01_VERIFICATION_CONTRACT_PASS mapBuild={} anchors={} areas={} volumes={} routes={} structures={} services={} properties={} spatialProductionReady={} structureProductionReady={}",
+                "OPENWORLD_RPG_R01_VERIFICATION_CONTRACT_PASS mapBuild={} anchors={} areas={} volumes={} routes={} structures={} services={} properties={} spatialProductionReady={} structureProductionReady={} quarryRuntimeProductionReady={}",
                 spatial.mapBuild(),
                 spatial.anchors().size(),
                 spatial.areas().size(),
@@ -55,7 +56,8 @@ public final class R01PlayerVerificationBootstrap {
                 structures.services().size(),
                 structures.properties().size(),
                 spatial.productionReady(),
-                structures.productionReady()
+                structures.productionReady(),
+                R01QuarrySpatialBindingRegistry.productionReady()
         );
     }
 

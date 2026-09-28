@@ -40,6 +40,7 @@ import dev.moonseungjun.openworldrpg.recovery.RecoveryUseRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.R01EarthloongMythicRuntime;
 import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeAttachments;
 import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeService;
+import dev.moonseungjun.openworldrpg.world.spatial.R01QuarrySpatialBindingRegistry;
 import dev.moonseungjun.openworldrpg.world.spatial.R01SpatialBindingRegistry;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -72,6 +73,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         PlayerActiveWorldTimeAttachments.initialize();
         PlayerVitalsRuntime.initialize();
         R01SpatialBindingRegistry.initialize(LOGGER);
+        R01QuarrySpatialBindingRegistry.initialize(LOGGER);
         R01PlayerVerificationBootstrap.verifyStaticContracts(LOGGER);
         IntegrationBootstrap.bootstrap(profile, LOGGER);
         M0PlayerVerificationBootstrap.registerCommands();
