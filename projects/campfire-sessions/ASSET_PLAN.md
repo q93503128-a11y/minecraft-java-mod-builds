@@ -125,7 +125,7 @@ Needed categories:
 - museum.
 - café.
 - clothing shop.
-- clinic if retained.
+- small clinic/medical building.
 - pier/harbor.
 - player house tiers/variants.
 - resident house variants.
@@ -154,6 +154,7 @@ Need strong external interior references for:
 - museum wings.
 - store.
 - café.
+- small clinic.
 - wardrobe/clothing area.
 - public-service interior.
 
@@ -321,10 +322,43 @@ Display storage:
 - Better Fishtanks supports Minecraft 26.2 / NeoForge and is a candidate for home/museum aquarium presentation.
 - this is a display-system candidate, not a substitute for portable fish storage.
 
+### Photography candidates
+Photography is now a supported gameplay direction because viable 26.2 candidates exist.
+
+**Camera Mod by henkelmax**
+- Minecraft 26.2.
+- NeoForge.
+- client + server.
+- captures actual rendered game images.
+- creates usable picture items.
+- supports albums.
+- supports resizable in-world image frames.
+- supports copying photos.
+- records photographer/date metadata.
+- multiplayer compatible.
+- saves images with the world.
+- license is restrictive/ARR on Modrinth, so packaging/distribution implications must be checked even though the current project target is private play.
+
+**Camerapture**
+- Minecraft 26.2.
+- NeoForge among supported platforms.
+- client + server.
+- working in-game camera.
+- shareable pictures.
+- wall display.
+- album support.
+- MIT licensed.
+- strong candidate to compare directly against Camera Mod.
+
+Selection rule:
+- test one at a time with the current NeoForge 26.2 project.
+- prefer the option with cleaner runtime behavior, multiplayer sync, save behavior, UI fit and acceptable licensing.
+- do not build a custom photo renderer/storage system unless both practical external options fail.
+- do not install both merely for feature count.
+
 ### Other candidate systems
 Potential roles:
 - external player-model/clothing system such as Customizable Player Models if integration fits.
-- external camera/photo system if 26.2 compatibility remains stable.
 
 Do not add dependencies just because they exist.
 Each must materially improve final quality/UX.
