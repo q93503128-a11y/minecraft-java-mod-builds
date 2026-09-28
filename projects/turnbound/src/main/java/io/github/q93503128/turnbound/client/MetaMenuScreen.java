@@ -445,8 +445,8 @@ public final class MetaMenuScreen extends Screen {
         addRenderableWidget(new BattleHudButton(x,y,bw,CONTROL_H,Component.literal("역할 · "+roleLabel(roleFilter)),MUTED,ignored->cycleRole()));
 
         List<ClientMetaState.CharacterRow> rows=filteredCharacters();
-        int gridTop=y+27,cols=panelWidth>=860?4:panelWidth>=640?3:2,rowH=50,cardGap=4;
-        int visibleRows=UiPaging.rowsThatFit(gridTop,contentBottom(),rowH+4,2),per=cols*visibleRows;
+        int gridTop=y+27,gridBottom=contentBottom()-28,cols=panelWidth>=860?4:panelWidth>=640?3:2,rowH=46,cardGap=4;
+        int visibleRows=UiPaging.rowsThatFit(gridTop,gridBottom,rowH+4,2),per=cols*visibleRows;
         setPaging(rows.size(),per);
         int start=page*per,end=Math.min(rows.size(),start+per),cardW=(panelWidth-32-cardGap*(cols-1))/cols;
         for(int i=start;i<end;i++){
@@ -870,7 +870,7 @@ public final class MetaMenuScreen extends Screen {
     private void drawCodex(GuiGraphicsExtractor g){
         if("CHARACTERS".equals(codexCategory))return;
         List<ClientMetaState.CodexRow> rows=ClientMetaState.snapshot().codex().stream().filter(r->r.category().equals(codexCategory)).toList();
-        int start=page*currentPerPage,end=Math.min(rows.size(),start+currentPerPage),gridTop=contentTop()+27,cols=panelWidth>=860?4:panelWidth>=640?3:2,rowH=36,gap=4,cardW=(panelWidth-32-gap*(cols-1))/cols;
+        int start=page*currentPerPage,end=Math.min(rows.size(),start+currentPerPage),gridTop=contentTop()+27,cols=panelWidth>=860?4:panelWidth>=640?3:2,rowH=34,gap=4,cardW=(panelWidth-32-gap*(cols-1))/cols;
         for(int i=start;i<end;i++){
             var r=rows.get(i);
             int local=i-start,x=left+16+(local%cols)*(cardW+gap),y=gridTop+(local/cols)*(rowH+4);

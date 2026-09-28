@@ -98,8 +98,9 @@ class DrehmalContextualOnboardingTest {
                 Set.of(DrehmalContentUnlocks.DRABYEL_ROAD),
                 Set.of(DrehmalContextualOnboarding.HUB_MENU_VIEWED),
                 Set.of("MARKET"));
-        assertTrue(unavailableForge.objective().contains("상인"));
-        assertFalse(unavailableForge.objective().contains("대장간"));
+        assertTrue(unavailableForge.objective().contains("다음 길"));
+        assertTrue(unavailableForge.hint().contains("시장"));
+        assertFalse(unavailableForge.hint().contains("대장간"));
     }
 
     @Test
