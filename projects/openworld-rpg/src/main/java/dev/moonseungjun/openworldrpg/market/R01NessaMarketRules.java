@@ -490,12 +490,12 @@ public final class R01NessaMarketRules {
                         "Nessa R01 stock cannot be Exalted/Mythic."
                 );
             }
-            if (itemLevel != itemLevel(grade)) {
+            if (itemLevel != R01NessaMarketRules.itemLevel(grade)) {
                 throw new IllegalArgumentException(
                         "Nessa item level does not match grade."
                 );
             }
-            if (priceGold != priceGold(category, grade)) {
+            if (priceGold != R01NessaMarketRules.priceGold(category, grade)) {
                 throw new IllegalArgumentException(
                         "Nessa price does not match category/grade."
                 );
