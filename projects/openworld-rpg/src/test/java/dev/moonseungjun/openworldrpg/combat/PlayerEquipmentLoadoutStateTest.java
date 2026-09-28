@@ -402,6 +402,64 @@ class PlayerEquipmentLoadoutStateTest {
     }
 
     @Test
+    void resourceAffixesAggregateAcrossSlotsAndManaCostReductionCapsAtTwentyPercent() {
+        var loadout = new PlayerEquipmentLoadoutState(List.of(
+                EquippedCombatItem.weapon(
+                        "openworld_rpg:initiate_staff",
+                        8,
+                        ProjectWeaponFamily.STAFF,
+                        List.of(
+                                EquipmentCombatAffix.flat(
+                                        EquipmentCombatAffixKind.MAX_HP,
+                                        0.07
+                                ),
+                                EquipmentCombatAffix.flat(
+                                        EquipmentCombatAffixKind.MAX_MANA,
+                                        0.09
+                                ),
+                                EquipmentCombatAffix.flat(
+                                        EquipmentCombatAffixKind.MANA_RECOVERY,
+                                        0.12
+                                ),
+                                EquipmentCombatAffix.flat(
+                                        EquipmentCombatAffixKind.MANA_COST_REDUCTION,
+                                        0.06
+                                )
+                        )
+                ),
+                EquippedCombatItem.gear(
+                        "openworld_rpg:greenwater_pendant",
+                        ProjectEquipmentSlot.NECKLACE,
+                        8,
+                        List.of(
+                                EquipmentCombatAffix.flat(
+                                        EquipmentCombatAffixKind.MAX_STAMINA,
+                                        0.09
+                                ),
+                                EquipmentCombatAffix.flat(
+                                        EquipmentCombatAffixKind.STAMINA_RECOVERY,
+                                        0.12
+                                ),
+                                EquipmentCombatAffix.flat(
+                                        EquipmentCombatAffixKind.MANA_COST_REDUCTION,
+                                        0.18
+                                )
+                        )
+                )
+        ));
+
+        var resource = loadout.aggregateResourceModifiers();
+
+        assertEquals(0.07, resource.maxHealthBonus(), 0.0001);
+        assertEquals(0.09, resource.maxManaBonus(), 0.0001);
+        assertEquals(0.09, resource.maxStaminaBonus(), 0.0001);
+        assertEquals(0.12, resource.manaRecoveryBonus(), 0.0001);
+        assertEquals(0.12, resource.staminaRecoveryBonus(), 0.0001);
+        assertEquals(0.20, resource.manaCostReduction(), 0.0001);
+    }
+
+
+    @Test
     void partialArmorPublishesCanonicalPlayerPoiseContributionAndResistanceCap() {
         var loadout = new PlayerEquipmentLoadoutState(List.of(
                 EquippedCombatItem.armor(
