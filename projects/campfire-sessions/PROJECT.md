@@ -1,30 +1,132 @@
 # Campfire Sessions
 
-Status: ALPHA.6 PLAYLIST / LOCAL MUSIC / PERFORMANCE PASS
+Status: ALPHA.6 MUSIC FOUNDATION / ISLAND-LIFE DESIGN PHASE
 
 - Mod ID: campfiresessions
 - Version: 0.6.0-alpha.1
 - Minecraft: 26.2
 - Java: 25
 - Loader: NeoForge 26.2.0.87
-- Goal: a compact Minecraft-native campfire music experience with a polished song-selection rail, believable guitar performance feedback, and a safe path for private local music.
+- Distribution target: private/personal play
+- Current product direction: Cozy Multiplayer Island Life Sim
+- Canonical game design: `GAME_DESIGN.md`
+- External asset/dependency planning: `ASSET_PLAN.md`
+- Actually adopted third-party assets: `THIRD_PARTY_ASSETS.md`
 
-## Alpha.6 acceptance
-1. Acoustic Guitar retains the Minecraft-native Musical Instruments Pack model and does not regress first-person presentation.
-2. Wooden Chair retains its Minecraft-native Voxelized Furniture model, facing, and seating behavior.
-3. Bundled playlist contains 15 verified CC0 tracks spanning cozy, jazz, synth/neon, ocean/ambient, desert, rough, night, playful and fantasy moods.
-4. OGG duration and BPM metadata are generated at build time and verified by CI for every bundled track.
-5. Song selection remains an inertial rail/carousel: continuous wheel input adds momentum, movement eases, and the selected central card snaps into focus without a scrollbar.
-6. Kenney CC0 panel/card/button art remains the actual UI surface; text and functional indicators must not hide the external artwork.
-7. PREV, PLAY/STOP, NEXT and REPEAT/AUTO controls are visually distinct; elapsed/total time, progress, BPM and repeat state are visible.
-8. `B`, `N`, and `R` remain rebindable Minecraft key mappings and work while the guitar is held with the screen closed.
-9. Note feedback follows song BPM with calmer slow-song density and more energetic fast-song density without excessive particles.
-10. Third-person guitar performance uses a dedicated NeoForge custom arm pose with one arm over the guitar body, the other toward the neck, and a small BPM-driven strum. First-person transforms are left untouched.
-11. `config/campfiresessions/music/` accepts up to 32 user-supplied local OGG/Vorbis tracks plus optional same-name metadata JSON. Local audio is never committed or packaged into the mod JAR.
-12. Missing or invalid local music must not prevent the 15 bundled CC0 tracks from loading.
-13. Local custom tracks participate in the same playlist, repeat-one, auto-next, progress, BPM feedback, key controls, and guitar pose flow.
+## Current foundation
+
+Alpha.6 remains the current implemented foundation:
+1. Acoustic Guitar with external Minecraft-native model.
+2. Wooden Chair with external furniture model and seating behavior.
+3. 15 verified CC0 bundled tracks.
+4. build-generated real OGG duration/BPM metadata.
+5. inertial song-selection carousel.
+6. Kenney external UI artwork.
+7. PREV / PLAY-STOP / NEXT / REPEAT-AUTO controls.
+8. outside-UI B/N/R key mappings.
+9. BPM-driven note feedback.
+10. dedicated third-person guitar performance pose.
+11. up to 32 local custom OGG tracks through `config/campfiresessions/music/`.
+12. repeat-one and auto-next.
+13. Build Campfire Sessions CI success and produced 0.6.0-alpha.1 JAR.
+
+## Product pivot
+
+Campfire Sessions is no longer planned as only a compact music-and-rest mod.
+
+The existing music system becomes one lifestyle pillar inside a larger island-life game:
+- persistent island village.
+- animal residents.
+- multiplayer households.
+- fixed authored buildings.
+- housing debt and expansion.
+- shops and catalog.
+- museum and collecting.
+- fishing, bugs, sea life, fossils, flora and mushrooms.
+- cooking.
+- seasons/weather/calendar.
+- pier-based travel.
+- exploration and limited combat.
+- resident relationships, moving, gifts, mail and visits.
+- contests, birthdays, seasonal events and a multi-day major festival.
+
+The complete accepted direction is maintained in `GAME_DESIGN.md`.
+Do not re-design these systems from scratch in future chats without an explicit user change.
+
+## Visual production rule
+
+Final player-facing design must be driven by high-quality external assets/reference implementations.
+Do not default to improvised AI-authored:
+- UI.
+- buildings.
+- furniture.
+- resident appearance.
+- tools.
+- boats.
+- clothing.
+- festival props.
+
+Use `ASSET_PLAN.md` for candidate tracking and `THIRD_PARTY_ASSETS.md` for adopted assets.
+
+## World rule
+
+The final island map must be directly obtainable and inspected as an actual world before it becomes canonical.
+The user should not need to manually download/install a map or schematics.
+
+Major building exterior positions are fixed and managed by the game.
+Players decorate permitted interiors/yards/public decoration zones but do not freely destroy or rebuild critical village structures.
+
+## Multiplayer authority
+
+Server-authoritative state includes at minimum:
+- money.
+- loans.
+- household membership.
+- collection encyclopedia.
+- houses.
+- residents and moves.
+- donations.
+- shop state.
+- public projects.
+- calendar/seasons/weather.
+- event state.
+- protected-world state.
+
+Do not claim multiplayer success until actually tested.
 
 ## Scope boundary
-- Campfire Sessions does not download copyrighted commercial music or bundle user local tracks.
-- Local custom playback is client-local. Multiplayer synchronized positional performances remain future work.
-- Visual acceptance of the custom guitar pose, carousel spacing, and themed UI still requires an in-game client playtest after build verification.
+
+- No public-release assumption.
+- No bypass of paid access/DRM/access restrictions.
+- No player-facing debug/test/prototype/TODO/developer residue.
+- No test resources masquerading as final game content.
+- No unnecessary duplicate systems or throwaway code.
+- No spontaneous AI visual design replacing available external quality assets.
+
+## Current validation state
+
+Implemented alpha.6 music foundation:
+- CODE REVIEWED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- PLAYTESTED: NO
+- CLIENT VISUAL TESTED: NO
+- MULTIPLAYER TESTED: NO
+
+Island-life expansion:
+- DESIGN IN PROGRESS
+- IMPLEMENTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
+## Next planning rule
+
+Continue planning in batches of roughly eight genuinely new decisions.
+Already-decided topics should be referenced briefly when needed, not recycled merely to fill the batch.
+Before implementation, finish the major unresolved items listed in `GAME_DESIGN.md`, especially:
+- final directly obtainable map and real-world inspection.
+- building/house prefab set.
+- resident model/rig set.
+- furniture/UI/tool/boat asset selections.
+- economy numbers.
+- save schema and Household edge cases.
