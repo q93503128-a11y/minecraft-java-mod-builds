@@ -30,6 +30,10 @@ public record OrdinaryEquipmentAffixCatalogData(
             "openworld_rpg:affix/stamina_recovery",
             "openworld_rpg:affix/skill_mana_cost_reduction"
     );
+    private static final Set<String> LIVE_CRITICAL_AFFIX_IDS = Set.of(
+            "openworld_rpg:affix/critical_chance",
+            "openworld_rpg:affix/critical_damage"
+    );
 
     public OrdinaryEquipmentAffixCatalogData {
         primaryCurve = Objects.requireNonNull(primaryCurve, "primaryCurve");
@@ -84,6 +88,13 @@ public record OrdinaryEquipmentAffixCatalogData(
 
     public boolean resourceAuthorityReady() {
         return LIVE_RESOURCE_AFFIX_IDS.stream().allMatch(
+                this::runtimeImplemented
+        );
+    }
+
+
+    public boolean criticalAuthorityReady() {
+        return LIVE_CRITICAL_AFFIX_IDS.stream().allMatch(
                 this::runtimeImplemented
         );
     }
