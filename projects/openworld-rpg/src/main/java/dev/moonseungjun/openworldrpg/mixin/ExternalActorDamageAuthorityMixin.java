@@ -7,6 +7,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.ProjectRangedProjectileConte
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.ProjectWeaponFamily;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
+import dev.moonseungjun.openworldrpg.multiplayer.MultiplayerCombatRules;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
@@ -34,6 +35,14 @@ public abstract class ExternalActorDamageAuthorityMixin {
             CallbackInfoReturnable<Boolean> cir
     ) {
         LivingEntity self = (LivingEntity) (Object) this;
+
+        if (!MultiplayerCombatRules.DIRECT_PLAYER_PVP_ENABLED
+                && self instanceof Player victim
+                && source.getEntity() instanceof Player attacker
+                && attacker != victim) {
+            cir.setReturnValue(false);
+            return;
+        }
 
         if (ExternalActorBindingRuntime.ownsDamageAuthority(self)) {
             if (ProjectDamageApplicationContext.consumeIfAuthorized(self)) {
