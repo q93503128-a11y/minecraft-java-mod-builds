@@ -2,6 +2,7 @@ package dev.moonseungjun.openworldrpg.progression.r01;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
+import dev.moonseungjun.openworldrpg.multiplayer.MultiplayerCombatRules;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -97,12 +98,12 @@ public final class R01QuarryRoomEncounterRules {
 
     public static double authoredEliteHpScale(int engagedPlayers) {
         validatePartySize(engagedPlayers);
-        return 1.0 + 0.65 * (engagedPlayers - 1);
+        return MultiplayerCombatRules.bossHpScale(engagedPlayers);
     }
 
     public static double authoredElitePoiseScale(int engagedPlayers) {
         validatePartySize(engagedPlayers);
-        return 1.0 + 0.40 * (engagedPlayers - 1);
+        return MultiplayerCombatRules.bossPoiseScale(engagedPlayers);
     }
 
     private static void validatePartySize(int engagedPlayers) {
