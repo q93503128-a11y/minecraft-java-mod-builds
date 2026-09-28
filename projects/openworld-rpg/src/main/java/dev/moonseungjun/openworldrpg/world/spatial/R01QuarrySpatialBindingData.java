@@ -153,7 +153,7 @@ public record R01QuarrySpatialBindingData(
     public record RoomBinding(
             String id,
             String status,
-            String room,
+            @SerializedName("room") String roomId,
             @SerializedName("source_review_volume_id") String sourceReviewVolumeId,
             @SerializedName("runtime_volume_id") String runtimeVolumeId,
             @SerializedName("spawn_socket_ids") List<String> spawnSocketIds,
@@ -163,7 +163,7 @@ public record R01QuarrySpatialBindingData(
         public RoomBinding {
             Objects.requireNonNull(id, "id");
             Objects.requireNonNull(status, "status");
-            Objects.requireNonNull(room, "room");
+            Objects.requireNonNull(roomId, "roomId");
             Objects.requireNonNull(sourceReviewVolumeId, "sourceReviewVolumeId");
             Objects.requireNonNull(runtimeVolumeId, "runtimeVolumeId");
             spawnSocketIds = List.copyOf(
@@ -172,7 +172,7 @@ public record R01QuarrySpatialBindingData(
         }
 
         public RoomId room() {
-            return RoomId.valueOf(room.trim().toUpperCase(Locale.ROOT));
+            return RoomId.valueOf(roomId.trim().toUpperCase(Locale.ROOT));
         }
 
         public boolean production() {
@@ -263,7 +263,7 @@ public record R01QuarrySpatialBindingData(
                 room = binding.room();
             } catch (IllegalArgumentException exception) {
                 throw new IllegalArgumentException(
-                        "Unknown R01 Quarry room binding: " + binding.room(),
+                        "Unknown R01 Quarry room binding: " + binding.roomId(),
                         exception
                 );
             }
