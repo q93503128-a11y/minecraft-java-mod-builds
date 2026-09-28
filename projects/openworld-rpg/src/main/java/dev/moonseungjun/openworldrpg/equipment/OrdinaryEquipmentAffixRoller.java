@@ -420,11 +420,11 @@ public final class OrdinaryEquipmentAffixRoller {
                     + perLevelScale * (itemLevel - 1);
             double min = Math.max(
                     1.0,
-                    Math.round(minMultiplier * scale)
+                    Math.rint(minMultiplier * scale)
             );
             double max = Math.max(
                     min + 1.0,
-                    Math.round(maxMultiplier * scale)
+                    Math.rint(maxMultiplier * scale)
             );
             return new RawRange(min, max);
         }
