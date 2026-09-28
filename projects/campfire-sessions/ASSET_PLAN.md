@@ -281,6 +281,22 @@ Required screens:
 - museum info.
 - resident interaction.
 - route/pier UI.
+- village notice-board schedule/detail UI.
+
+### Village notice-board candidates / references
+Current search found no clean drop-in **Minecraft 26.2 NeoForge** notice-board mod that already matches the required civic schedule system.
+
+Useful references:
+- **Bulletin Board** by IUnnamedUserI: MIT, physical wall board with visible note slots and click-to-open note UI. Strong physical-board/interaction reference, but current published builds are Fabric 1.20.1/1.21.1, so it is NOT a direct Campfire dependency.
+- **The Board** by AkorpuzZ: NeoForge shared visual posting/feed concept with text/images, but current published game version is 1.21.1 rather than 26.2. Reference only.
+- **Welcome Board** supports 26.2 NeoForge but is a first-join welcome screen, not a persistent in-world civic schedule board; reject it as the schedule-system solution.
+- **EaseGUI** supports 26.2 NeoForge and provides configurable GUI animation/polish. It may be evaluated as optional presentation polish, but it does not replace Campfire's schedule/event data model.
+
+Preferred direction:
+- source a strong external physical notice-board block/model/build or adapt a compatible asset.
+- keep the schedule/event data and category/detail behavior Campfire-specific.
+- render that UI using the chosen coherent external UI design language rather than copying vanilla book/sign screens.
+- use Bulletin Board-style physical note readability as a reference without porting an incompatible Fabric mod wholesale.
 
 Do not mix many incompatible UI styles.
 Choose a coherent system and use it consistently.
