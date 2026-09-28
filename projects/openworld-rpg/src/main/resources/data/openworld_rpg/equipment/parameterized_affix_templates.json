@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "id": "openworld_rpg:equipment/parameterized_affix_templates",
+  "weapon_family_power": {
+    "min": 4,
+    "max": 10,
+    "runtime_state": "implemented",
+    "allowed_families": [
+      "dagger",
+      "dual_blades",
+      "sword",
+      "greatsword",
+      "spear",
+      "axe",
+      "hammer_mace",
+      "bow",
+      "crossbow",
+      "black_powder_pistol",
+      "musket_hand_cannon",
+      "staff",
+      "wand"
+    ]
+  }
+}
