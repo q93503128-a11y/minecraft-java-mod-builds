@@ -90,11 +90,11 @@ class OrdinaryEquipmentMaterializerTest {
                 catalog,
                 "openworld_rpg:affix/physical_power"
         );
-        var criticalChance = definition(
+        var attackSpeed = definition(
                 catalog,
-                "openworld_rpg:affix/critical_chance"
+                "openworld_rpg:affix/attack_speed"
         );
-        assertFalse(catalog.runtimeImplemented(criticalChance.id()));
+        assertFalse(catalog.runtimeImplemented(attackSpeed.id()));
 
         assertThrows(
                 IllegalStateException.class,
@@ -106,7 +106,7 @@ class OrdinaryEquipmentMaterializerTest {
                                 ),
                                 ProjectItemGrade.REFINED,
                                 4,
-                                List.of(physical, criticalChance),
+                                List.of(physical, attackSpeed),
                                 1L,
                                 60L
                         ),
