@@ -156,14 +156,6 @@ public final class OrdinaryEquipmentAffixRoller {
         };
     }
 
-    public static RawRange rawPrimaryRange(int itemLevel) {
-        requireItemLevel(itemLevel);
-        double scale = 1.0 + 0.045 * (itemLevel - 1);
-        double min = Math.max(1.0, Math.round(scale));
-        double max = Math.max(min + 1.0, Math.round(2.5 * scale));
-        return new RawRange(min, max);
-    }
-
     private static AffixCategory chooseCategory(
             ItemFamily family,
             Set<AffixCategory> available,
@@ -231,7 +223,7 @@ public final class OrdinaryEquipmentAffixRoller {
     ) {
         requireItemLevel(itemLevel);
         RawRange range = definition.valueRule() == ValueRule.PRIMARY_FLAT
-                ? rawPrimaryRange(itemLevel)
+                ? definition.primaryCurve().orElseThrow().range(itemLevel)
                 : definition.rawRange();
 
         double percentile = floor
@@ -329,7 +321,8 @@ public final class OrdinaryEquipmentAffixRoller {
             AffixCategory category,
             ValueRule valueRule,
             RawRange rawRange,
-            String runtimePayload
+            String runtimePayload,
+            java.util.Optional<PrimaryCurve> primaryCurve
     ) {
         public AffixDefinition {
             requireStableId(id);
@@ -337,30 +330,45 @@ public final class OrdinaryEquipmentAffixRoller {
             Objects.requireNonNull(valueRule, "valueRule");
             Objects.requireNonNull(rawRange, "rawRange");
             requireStableId(runtimePayload);
-            if (valueRule == ValueRule.PRIMARY_FLAT
-                    && (rawRange.min() != 0.0 || rawRange.max() != 0.0)) {
-                throw new IllegalArgumentException(
-                        "Primary affix range is derived from Item Lv and must use 0/0 sentinel."
-                );
-            }
-            if (valueRule != ValueRule.PRIMARY_FLAT
-                    && rawRange.max() <= rawRange.min()) {
-                throw new IllegalArgumentException(
-                        "Percentage affix requires a positive raw range."
-                );
+            primaryCurve = Objects.requireNonNull(
+                    primaryCurve,
+                    "primaryCurve"
+            );
+            if (valueRule == ValueRule.PRIMARY_FLAT) {
+                if (primaryCurve.isEmpty()
+                        || rawRange.min() != 0.0
+                        || rawRange.max() != 0.0) {
+                    throw new IllegalArgumentException(
+                            "Primary affix requires a data-owned primary curve and 0/0 raw-range sentinel."
+                    );
+                }
+            } else {
+                if (primaryCurve.isPresent()
+                        || rawRange.max() <= rawRange.min()) {
+                    throw new IllegalArgumentException(
+                            "Percentage affix requires only a positive raw range."
+                    );
+                }
             }
         }
 
         public static AffixDefinition primary(
                 String id,
-                String runtimePayload
+                String runtimePayload,
+                PrimaryCurve primaryCurve
         ) {
             return new AffixDefinition(
                     id,
                     AffixCategory.PRIMARY,
                     ValueRule.PRIMARY_FLAT,
                     new RawRange(0.0, 0.0),
-                    runtimePayload
+                    runtimePayload,
+                    java.util.Optional.of(
+                            Objects.requireNonNull(
+                                    primaryCurve,
+                                    "primaryCurve"
+                            )
+                    )
             );
         }
 
@@ -379,8 +387,46 @@ public final class OrdinaryEquipmentAffixRoller {
                             ? ValueRule.PERCENT_TENTH
                             : ValueRule.PERCENT_HALF,
                     new RawRange(min, max),
-                    runtimePayload
+                    runtimePayload,
+                    java.util.Optional.empty()
             );
+        }
+    }
+
+    public record PrimaryCurve(
+            double baseScale,
+            double perLevelScale,
+            double minMultiplier,
+            double maxMultiplier
+    ) {
+        public PrimaryCurve {
+            if (!Double.isFinite(baseScale)
+                    || !Double.isFinite(perLevelScale)
+                    || !Double.isFinite(minMultiplier)
+                    || !Double.isFinite(maxMultiplier)
+                    || baseScale <= 0.0
+                    || perLevelScale < 0.0
+                    || minMultiplier <= 0.0
+                    || maxMultiplier <= minMultiplier) {
+                throw new IllegalArgumentException(
+                        "Invalid data-owned primary-affix curve."
+                );
+            }
+        }
+
+        public RawRange range(int itemLevel) {
+            requireItemLevel(itemLevel);
+            double scale = baseScale
+                    + perLevelScale * (itemLevel - 1);
+            double min = Math.max(
+                    1.0,
+                    Math.round(minMultiplier * scale)
+            );
+            double max = Math.max(
+                    min + 1.0,
+                    Math.round(maxMultiplier * scale)
+            );
+            return new RawRange(min, max);
         }
     }
 
