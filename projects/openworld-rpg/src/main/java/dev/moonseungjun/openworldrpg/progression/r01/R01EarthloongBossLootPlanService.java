@@ -7,9 +7,11 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * Server RNG boundary for Earthloong first-clear boss loot.
  *
- * <p>Once first-clear state exists, the six-family normal source roll and 15% Mythic roll are
- * persisted exactly once. Final item materialization stays gated on unresolved generic equipment
- * generation canon instead of silently inventing armor slot or Superior/Exalted distribution.</p>
+ * <p>The six-family normal source roll, exact guaranteed-Superior+ grade, armor slot when the
+ * Ironbound Guard family is selected, and the 15% Mythic result are persisted exactly once.
+ * Older persisted plans created before the armor-slot rule closed keep their original base/grade/
+ * signature result and receive only the missing armor slot once. Final generic affix/item
+ * materialization remains a separate equipment-generation connection.</p>
  */
 public final class R01EarthloongBossLootPlanService {
     private R01EarthloongBossLootPlanService() {
@@ -32,11 +34,34 @@ public final class R01EarthloongBossLootPlanService {
 
         R01EarthloongBossLootPlanState current = state(player);
         if (current.firstClearPlan().isPresent()) {
-            return current.firstClearPlan();
+            var plan = current.firstClearPlan().orElseThrow();
+            if (plan.requiresArmorSlotResolution()) {
+                int slotIndex = player.getRandom().nextInt(
+                        R01EarthloongBossLootRules.ARMOR_SLOTS.size()
+                );
+                plan = plan.withNormalArmorSlot(
+                        R01EarthloongBossLootRules.ARMOR_SLOTS.get(slotIndex)
+                );
+                current = new R01EarthloongBossLootPlanState(
+                        current.schemaVersion(),
+                        Optional.of(plan)
+                );
+                player.setAttached(
+                        R01EarthloongBossLootPlanAttachments.EARTHLOONG_BOSS_LOOT,
+                        current
+                );
+            }
+            return Optional.of(plan);
         }
 
         int normalIndex = player.getRandom().nextInt(
                 R01EarthloongBossLootRules.NORMAL_BASE_POOL.size()
+        );
+        int superiorPlusGradeRoll = player.getRandom().nextInt(
+                R01EarthloongBossLootRules.SUPERIOR_PLUS_WEIGHT_TOTAL
+        );
+        int armorSlotIndex = player.getRandom().nextInt(
+                R01EarthloongBossLootRules.ARMOR_SLOTS.size()
         );
         int signatureRoll = player.getRandom().nextInt(100);
         int mythicIndex = player.getRandom().nextInt(
@@ -46,6 +71,8 @@ public final class R01EarthloongBossLootPlanService {
         R01EarthloongBossLootPlanState.FirstClearPlan plan =
                 R01EarthloongBossLootRules.createPlan(
                         normalIndex,
+                        superiorPlusGradeRoll,
+                        armorSlotIndex,
                         signatureRoll,
                         mythicIndex
                 );

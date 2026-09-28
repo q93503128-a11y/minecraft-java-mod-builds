@@ -198,6 +198,45 @@ jobs:
 
           sha256sum "$PLAYTEST_JAR" | tee "$PLAYTEST_JAR.sha256"
 
+      - name: Build non-mutating R01 integration playtest JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          NORMAL_JAR="build/libs/openworld-rpg-0.1.0-alpha.1.jar"
+          R01_JAR="build/libs/openworld-rpg-0.1.0-alpha.1-r01-playtest.jar"
+          R01_MARKER="data/openworld_rpg/integration/r01_player_verification.enabled"
+          M0_MARKER="data/openworld_rpg/integration/m0_player_verification.enabled"
+          R01_JAR_ABS="$PWD/$R01_JAR"
+          MARKER_ROOT="$PWD/build/r01-playtest-marker"
+
+          test -s "$NORMAL_JAR"
+          if jar tf "$NORMAL_JAR" | grep -Eq "^($R01_MARKER|$M0_MARKER)$"; then
+            echo 'Normal Openworld RPG JAR unexpectedly contains a verification marker.'
+            exit 1
+          fi
+
+          rm -rf "$MARKER_ROOT"
+          mkdir -p "$MARKER_ROOT/$(dirname "$R01_MARKER")"
+          printf 'enabled\n' > "$MARKER_ROOT/$R01_MARKER"
+
+          cp "$NORMAL_JAR" "$R01_JAR"
+          (
+            cd "$MARKER_ROOT"
+            jar uf "$R01_JAR_ABS" "$R01_MARKER"
+          )
+
+          jar tf "$R01_JAR" | grep -q "^$R01_MARKER$"
+          if jar tf "$R01_JAR" | grep -q "^$M0_MARKER$"; then
+            echo 'R01 integration playtest JAR must not contain the M0 auto-profile marker.'
+            exit 1
+          fi
+          if jar tf "$NORMAL_JAR" | grep -Eq "^($R01_MARKER|$M0_MARKER)$"; then
+            echo 'Normal Openworld RPG JAR was modified while producing the R01 playtest artifact.'
+            exit 1
+          fi
+
+          sha256sum "$R01_JAR" | tee "$R01_JAR.sha256"
+
       - name: Package importable M0 Modrinth playtest pack
         shell: bash
         run: |
@@ -382,7 +421,7 @@ jobs:
           - gameplay-profile client startup/render-thread smoke: PASS
           - client world join: NOT RUN
           - R01 Earthloong registry/profile binding: STARTUP VERIFIED
-          - Earthloong donor XP/loot suppression: IMPLEMENTED; project reward transaction NOT IMPLEMENTED
+          - Earthloong donor XP/loot suppression: IMPLEMENTED; first-clear choice/scales/reward transaction + persistent normal/signature loot plan IMPLEMENTED; final normal boss-item materialization remains gated
           - Earthloong authored spawn utility: IMPLEMENTED + 40-TICK FORCED-CHUNK SERVER SURVIVAL VERIFIED; Phase-1 Claw/Quarry/Lightning Furrow/Root Breaker project-owned scheduling/contact runtime IMPLEMENTED; existing Claw/Quarry donor bridge remains technical-only pending animation-first redesign; Tail final production presentation UNBOUND/runtime-gated; Forked Heaven/Earthline Surge backend remains preserved but production presentation gates stay CLOSED; M0 fixture now reviews raw pinned donor SkillNumber 1..4 motions without project attack VFX/hit geometry
           - Better Combat bound-actor canonical melee authority: IMPLEMENTED + UNIT/RUNTIME BRIDGE VERIFIED (donor damage ignored; exact real-player Better Combat network hit NOT TESTED)
           - Ranged Weapon API crossbow -> project bound-actor authority: IMPLEMENTED + UNIT TESTED; fired crossbow projectile is treated as a hit candidate only, donor/vanilla projectile damage magnitude is ignored; real joined-player bolt NOT TESTED; bow draw-fraction authority remains gated
@@ -402,11 +441,12 @@ jobs:
           - external actor non-project HP damage: FAIL-CLOSED by one-shot project damage authorization in both directions; bound external actors cannot apply donor-origin HP damage directly to players
           - Earthloong runtime boss poise: IMPLEMENTED + UNIT/RUNTIME HARNESS VERIFIED (4.25 poise Arc Bolt fixture, break +15% damage window, recovery/protection math)
           - persistent combat progression: IMPLEMENTED + UNIT/BUILD VERIFIED
-          - JVM-free joined-player sword/crossbow/Arc Bolt playtest profiles: BUILT + MARKER VERIFIED
+          - JVM-free joined-player sword/crossbow/Arc Bolt playtest profiles: BUILT + M0 MARKER VERIFIED
+          - non-mutating R01 integration playtest JAR: BUILT + MARKER ISOLATION VERIFIED; normal opening/progression remains active and manual M0 probes stay available
           - importable M0 Modrinth playtest pack: BUILT from pinned original-source downloads
-          - real joined-player Spell Engine impact: NOT TESTED
-          - full backpack/loot-generation/equipment UI: NOT IMPLEMENTED
-          - player-facing R01 content: NOT IMPLEMENTED
+          - real joined-player Spell Engine impact: NOT RUN BY THIS CI; previous narrow manual M0 world-join evidence is tracked in project canon
+          - Backpack/Personal Storage/Material Pouch/Vault authority: IMPLEMENTED; generic loot materialization and equipment UI remain incomplete
+          - player-facing integrated R01 content: NOT IMPLEMENTED
           - playtest: NOT RUN
           - multiplayer test: NOT RUN
           - SHA-256: $SHA

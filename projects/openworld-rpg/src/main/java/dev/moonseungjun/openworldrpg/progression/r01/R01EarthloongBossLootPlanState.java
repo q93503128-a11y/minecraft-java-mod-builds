@@ -2,18 +2,13 @@ package dev.moonseungjun.openworldrpg.progression.r01;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import dev.moonseungjun.openworldrpg.combat.state.ProjectArmorArchetype;
+import dev.moonseungjun.openworldrpg.combat.state.ProjectEquipmentSlot;
 import dev.moonseungjun.openworldrpg.inventory.ProjectItemGrade;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * Persistent first-clear Earthloong boss-loot RNG plan.
- *
- * <p>The plan intentionally stores canonical source identity before final item materialization.
- * Current canon fixes the six equal-weight normal base families and the 15% equal-weight Mythic
- * pool, but does not yet close a Superior-vs-Exalted floor distribution or the Ironbound Guard
- * armor slot. Those missing rules are not invented here.</p>
- */
+/** Persistent first-clear Earthloong boss-loot RNG plan. */
 public record R01EarthloongBossLootPlanState(
         int schemaVersion,
         Optional<FirstClearPlan> firstClearPlan
@@ -70,6 +65,8 @@ public record R01EarthloongBossLootPlanState(
     public record FirstClearPlan(
             R01EarthloongBossLootRules.NormalBase normalBase,
             ProjectItemGrade minimumNormalGrade,
+            ProjectItemGrade resolvedNormalGrade,
+            Optional<ProjectEquipmentSlot> normalArmorSlot,
             int signatureRollPercent,
             Optional<R01EarthloongBossLootRules.MythicBase> mythicDrop
     ) {
@@ -81,6 +78,15 @@ public record R01EarthloongBossLootPlanState(
                         ProjectItemGrade.CODEC
                                 .fieldOf("minimum_normal_grade")
                                 .forGetter(FirstClearPlan::minimumNormalGrade),
+                        ProjectItemGrade.CODEC
+                                .optionalFieldOf(
+                                        "resolved_normal_grade",
+                                        ProjectItemGrade.SUPERIOR
+                                )
+                                .forGetter(FirstClearPlan::resolvedNormalGrade),
+                        ProjectEquipmentSlot.CODEC
+                                .optionalFieldOf("normal_armor_slot")
+                                .forGetter(FirstClearPlan::normalArmorSlot),
                         Codec.intRange(0, 99)
                                 .fieldOf("signature_roll_percent")
                                 .forGetter(FirstClearPlan::signatureRollPercent),
@@ -92,13 +98,41 @@ public record R01EarthloongBossLootPlanState(
         public FirstClearPlan {
             Objects.requireNonNull(normalBase, "normalBase");
             Objects.requireNonNull(minimumNormalGrade, "minimumNormalGrade");
+            Objects.requireNonNull(resolvedNormalGrade, "resolvedNormalGrade");
+            normalArmorSlot = Objects.requireNonNull(
+                    normalArmorSlot,
+                    "normalArmorSlot"
+            );
             mythicDrop = Objects.requireNonNull(mythicDrop, "mythicDrop");
 
             if (minimumNormalGrade != ProjectItemGrade.SUPERIOR) {
                 throw new IllegalArgumentException(
-                        "R01 first-clear boss gear currently owns a Superior minimum floor only."
+                        "R01 first-clear boss gear owns a Superior minimum floor."
                 );
             }
+            if (resolvedNormalGrade != ProjectItemGrade.SUPERIOR
+                    && resolvedNormalGrade != ProjectItemGrade.EXALTED) {
+                throw new IllegalArgumentException(
+                        "R01 first-clear Superior+ gear must resolve to Superior or Exalted."
+                );
+            }
+
+            if (normalArmorSlot.isPresent()) {
+                if (normalBase
+                        != R01EarthloongBossLootRules.NormalBase.IRONBOUND_GUARD) {
+                    throw new IllegalArgumentException(
+                            "Only the Ironbound Guard family may carry an armor-slot roll."
+                    );
+                }
+                if (!ProjectArmorArchetype.isArmorSlot(
+                        normalArmorSlot.orElseThrow()
+                )) {
+                    throw new IllegalArgumentException(
+                            "Ironbound Guard must resolve to Head/Chest/Legs/Gloves/Boots."
+                    );
+                }
+            }
+
             boolean signatureHit =
                     signatureRollPercent
                             < R01EarthloongBossLootRules.SIGNATURE_DROP_PERCENT;
@@ -107,6 +141,29 @@ public record R01EarthloongBossLootPlanState(
                         "Persisted Earthloong signature roll/result mismatch."
                 );
             }
+        }
+
+        public boolean requiresArmorSlotResolution() {
+            return normalBase
+                    == R01EarthloongBossLootRules.NormalBase.IRONBOUND_GUARD
+                    && normalArmorSlot.isEmpty();
+        }
+
+        public FirstClearPlan withNormalArmorSlot(ProjectEquipmentSlot slot) {
+            Objects.requireNonNull(slot, "slot");
+            if (!requiresArmorSlotResolution()) {
+                throw new IllegalStateException(
+                        "Earthloong plan does not require an armor-slot resolution."
+                );
+            }
+            return new FirstClearPlan(
+                    normalBase,
+                    minimumNormalGrade,
+                    resolvedNormalGrade,
+                    Optional.of(slot),
+                    signatureRollPercent,
+                    mythicDrop
+            );
         }
     }
 }

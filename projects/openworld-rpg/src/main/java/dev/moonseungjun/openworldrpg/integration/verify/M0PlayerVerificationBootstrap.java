@@ -51,7 +51,7 @@ public final class M0PlayerVerificationBootstrap {
     }
 
     public static void registerCommands() {
-        if (!enabled()) {
+        if (!enabled() && !R01PlayerVerificationBootstrap.enabled()) {
             return;
         }
         CommandRegistrationCallback.EVENT.register((dispatcher, buildContext, selection) -> {

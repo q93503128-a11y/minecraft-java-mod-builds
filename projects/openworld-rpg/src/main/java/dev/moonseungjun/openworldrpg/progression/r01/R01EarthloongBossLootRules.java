@@ -2,14 +2,28 @@ package dev.moonseungjun.openworldrpg.progression.r01;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
+import dev.moonseungjun.openworldrpg.combat.state.ProjectEquipmentSlot;
 import dev.moonseungjun.openworldrpg.inventory.ProjectItemGrade;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 
-/** Canon-locked Earthloong first-clear boss-loot pool identities. */
+/** Canon-locked Earthloong first-clear boss-loot pool identities and resolution rules. */
 public final class R01EarthloongBossLootRules {
     public static final int SIGNATURE_DROP_PERCENT = 15;
+    public static final int SUPERIOR_PLUS_SUPERIOR_WEIGHT = 45;
+    public static final int SUPERIOR_PLUS_EXALTED_WEIGHT = 20;
+    public static final int SUPERIOR_PLUS_WEIGHT_TOTAL =
+            SUPERIOR_PLUS_SUPERIOR_WEIGHT + SUPERIOR_PLUS_EXALTED_WEIGHT;
+
+    public static final List<ProjectEquipmentSlot> ARMOR_SLOTS = List.of(
+            ProjectEquipmentSlot.HEAD,
+            ProjectEquipmentSlot.CHEST,
+            ProjectEquipmentSlot.LEGS,
+            ProjectEquipmentSlot.GLOVES,
+            ProjectEquipmentSlot.BOOTS
+    );
 
     public static final List<NormalBase> NORMAL_BASE_POOL = List.of(
             NormalBase.QUARRY_MAUL,
@@ -30,11 +44,25 @@ public final class R01EarthloongBossLootRules {
 
     public static R01EarthloongBossLootPlanState.FirstClearPlan createPlan(
             int normalPoolIndex,
+            int superiorPlusGradeRoll,
+            int armorSlotIndex,
             int signatureRollPercent,
             int mythicPoolIndex
     ) {
         if (normalPoolIndex < 0 || normalPoolIndex >= NORMAL_BASE_POOL.size()) {
             throw new IllegalArgumentException("normalPoolIndex outside Earthloong pool.");
+        }
+        if (superiorPlusGradeRoll < 0
+                || superiorPlusGradeRoll >= SUPERIOR_PLUS_WEIGHT_TOTAL) {
+            throw new IllegalArgumentException(
+                    "superiorPlusGradeRoll must be inside 0.."
+                            + (SUPERIOR_PLUS_WEIGHT_TOTAL - 1) + "."
+            );
+        }
+        if (armorSlotIndex < 0 || armorSlotIndex >= ARMOR_SLOTS.size()) {
+            throw new IllegalArgumentException(
+                    "armorSlotIndex outside canonical five-slot armor pool."
+            );
         }
         if (signatureRollPercent < 0 || signatureRollPercent >= 100) {
             throw new IllegalArgumentException("signatureRollPercent must be inside 0..99.");
@@ -43,14 +71,26 @@ public final class R01EarthloongBossLootRules {
             throw new IllegalArgumentException("mythicPoolIndex outside Earthloong Mythic pool.");
         }
 
+        NormalBase normalBase = NORMAL_BASE_POOL.get(normalPoolIndex);
+        ProjectItemGrade resolvedGrade =
+                superiorPlusGradeRoll < SUPERIOR_PLUS_SUPERIOR_WEIGHT
+                        ? ProjectItemGrade.SUPERIOR
+                        : ProjectItemGrade.EXALTED;
+        Optional<ProjectEquipmentSlot> armorSlot =
+                normalBase == NormalBase.IRONBOUND_GUARD
+                        ? Optional.of(ARMOR_SLOTS.get(armorSlotIndex))
+                        : Optional.empty();
         MythicBase mythic = signatureRollPercent < SIGNATURE_DROP_PERCENT
                 ? MYTHIC_POOL.get(mythicPoolIndex)
                 : null;
+
         return new R01EarthloongBossLootPlanState.FirstClearPlan(
-                NORMAL_BASE_POOL.get(normalPoolIndex),
+                normalBase,
                 ProjectItemGrade.SUPERIOR,
+                resolvedGrade,
+                armorSlot,
                 signatureRollPercent,
-                java.util.Optional.ofNullable(mythic)
+                Optional.ofNullable(mythic)
         );
     }
 

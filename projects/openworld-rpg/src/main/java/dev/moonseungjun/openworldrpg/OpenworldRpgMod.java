@@ -9,6 +9,7 @@ import dev.moonseungjun.openworldrpg.economy.PlayerCurrencyAttachments;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.IntegrationBootstrap;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import dev.moonseungjun.openworldrpg.integration.verify.M0PlayerVerificationBootstrap;
+import dev.moonseungjun.openworldrpg.integration.verify.R01PlayerVerificationBootstrap;
 import dev.moonseungjun.openworldrpg.gathering.R01GatheringAttachments;
 import dev.moonseungjun.openworldrpg.gathering.R01GatheringService;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryAttachments;
@@ -71,6 +72,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         PlayerActiveWorldTimeAttachments.initialize();
         PlayerVitalsRuntime.initialize();
         R01SpatialBindingRegistry.initialize(LOGGER);
+        R01PlayerVerificationBootstrap.verifyStaticContracts(LOGGER);
         IntegrationBootstrap.bootstrap(profile, LOGGER);
         M0PlayerVerificationBootstrap.registerCommands();
         ServerTickEvents.END_SERVER_TICK.register(server -> {
@@ -107,6 +109,7 @@ public final class OpenworldRpgMod implements ModInitializer {
                 R01MainQuestService.reconcileCommittedRewards(handler.getPlayer());
             }
             PlayerCombatBuildPublisher.refresh(handler.getPlayer());
+            R01PlayerVerificationBootstrap.prepare(handler.getPlayer(), LOGGER);
             M0PlayerVerificationBootstrap.prepare(handler.getPlayer(), LOGGER);
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
