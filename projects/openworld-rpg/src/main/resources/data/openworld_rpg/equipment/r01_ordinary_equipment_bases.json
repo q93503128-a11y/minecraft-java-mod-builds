@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "id": "openworld_rpg:r01/ordinary_equipment_bases",
+  "bases": [
+    {
+      "id": "openworld_rpg:heartland_arming_sword",
+      "kind": "WEAPON",
+      "weapon_family": "sword"
+    },
+    {
+      "id": "openworld_rpg:wayfarer_daggers",
+      "kind": "WEAPON",
+      "weapon_family": "dual_blades"
+    },
+    {
+      "id": "openworld_rpg:quarry_maul",
+      "kind": "WEAPON",
+      "weapon_family": "hammer_mace"
+    },
+    {
+      "id": "openworld_rpg:river_pike",
+      "kind": "WEAPON",
+      "weapon_family": "spear"
+    },
+    {
+      "id": "openworld_rpg:riverwood_bow",
+      "kind": "WEAPON",
+      "weapon_family": "bow"
+    },
+    {
+      "id": "openworld_rpg:initiate_staff",
+      "kind": "WEAPON",
+      "weapon_family": "staff"
+    },
+    {
+      "id": "openworld_rpg:initiate_wand",
+      "kind": "WEAPON",
+      "weapon_family": "wand"
+    },
+    {
+      "id": "openworld_rpg:watch_buckler",
+      "kind": "SHIELD",
+      "shield_family": "buckler"
+    },
+    {
+      "id": "openworld_rpg:apprentice_focus",
+      "kind": "FOCUS"
+    },
+    {
+      "id": "openworld_rpg:river_scholar_garb",
+      "kind": "ARMOR",
+      "armor_archetype": "light"
+    },
+    {
+      "id": "openworld_rpg:wayfarer_leathers",
+      "kind": "ARMOR",
+      "armor_archetype": "medium"
+    },
+    {
+      "id": "openworld_rpg:ironbound_guard",
+      "kind": "ARMOR",
+      "armor_archetype": "heavy"
+    },
+    {
+      "id": "openworld_rpg:greenwater_pendant",
+      "kind": "ACCESSORY",
+      "fixed_slot": "necklace"
+    },
+    {
+      "id": "openworld_rpg:roadworn_band",
+      "kind": "ACCESSORY",
+      "fixed_slot": "ring_1"
+    },
+    {
+      "id": "openworld_rpg:wayfarers_token",
+      "kind": "ACCESSORY",
+      "fixed_slot": "charm"
+    },
+    {
+      "id": "openworld_rpg:quarry_seal",
+      "kind": "ACCESSORY",
+      "fixed_slot": "relic"
+    }
+  ]
+}
