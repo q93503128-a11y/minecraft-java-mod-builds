@@ -141,7 +141,7 @@
       "min": 2.5,
       "max": 7,
       "runtime_payload": "openworld_rpg:runtime_affix/max_hp",
-      "runtime_state": "stored_only"
+      "runtime_state": "implemented"
     },
     {
       "id": "openworld_rpg:affix/guard_strength",
@@ -168,7 +168,7 @@
       "min": 3,
       "max": 9,
       "runtime_payload": "openworld_rpg:runtime_affix/max_mana",
-      "runtime_state": "stored_only"
+      "runtime_state": "implemented"
     },
     {
       "id": "openworld_rpg:affix/max_stamina",
@@ -177,7 +177,7 @@
       "min": 3,
       "max": 9,
       "runtime_payload": "openworld_rpg:runtime_affix/max_stamina",
-      "runtime_state": "stored_only"
+      "runtime_state": "implemented"
     },
     {
       "id": "openworld_rpg:affix/mana_recovery",
@@ -186,7 +186,7 @@
       "min": 4,
       "max": 12,
       "runtime_payload": "openworld_rpg:runtime_affix/mana_recovery",
-      "runtime_state": "stored_only"
+      "runtime_state": "implemented"
     },
     {
       "id": "openworld_rpg:affix/stamina_recovery",
@@ -195,7 +195,7 @@
       "min": 4,
       "max": 12,
       "runtime_payload": "openworld_rpg:runtime_affix/stamina_recovery",
-      "runtime_state": "stored_only"
+      "runtime_state": "implemented"
     },
     {
       "id": "openworld_rpg:affix/skill_mana_cost_reduction",
@@ -204,7 +204,7 @@
       "min": 2,
       "max": 6,
       "runtime_payload": "openworld_rpg:runtime_affix/skill_mana_cost_reduction",
-      "runtime_state": "stored_only"
+      "runtime_state": "implemented"
     },
     {
       "id": "openworld_rpg:affix/dodge_sprint_stamina_cost_reduction",
