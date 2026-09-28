@@ -22,6 +22,11 @@ public final class PlayerCombatState {
     private double mana;
     private int endurance;
     private double stamina;
+    private double maxManaBonus;
+    private double maxStaminaBonus;
+    private double manaRecoveryBonus;
+    private double staminaRecoveryBonus;
+    private double manaCostReduction;
     private long lastRefreshTick;
     private long lastManaSpendTick = Long.MIN_VALUE / 4;
     private long lastCombatActivityTick = Long.MIN_VALUE / 4;
@@ -48,7 +53,7 @@ public final class PlayerCombatState {
     }
 
     public int maxMana() {
-        return maxManaForWill(will);
+        return maxManaForWill(will, maxManaBonus);
     }
 
     public double mana(long nowTick) {
@@ -67,9 +72,9 @@ public final class PlayerCombatState {
             throw new IllegalArgumentException("WIL must be non-negative.");
         }
         refresh(nowTick);
-        int oldMax = maxManaForWill(will);
+        int oldMax = maxMana();
         this.will = newWill;
-        int newMax = maxManaForWill(newWill);
+        int newMax = maxMana();
         if (oldMax <= 0) {
             mana = newMax;
         } else {
@@ -82,7 +87,7 @@ public final class PlayerCombatState {
     }
 
     public int maxStamina() {
-        return maxStaminaForEndurance(endurance);
+        return maxStaminaForEndurance(endurance, maxStaminaBonus);
     }
 
     public double stamina(long nowTick) {
@@ -95,14 +100,60 @@ public final class PlayerCombatState {
             throw new IllegalArgumentException("END must be non-negative.");
         }
         refresh(nowTick);
-        int oldMax = maxStaminaForEndurance(endurance);
+        int oldMax = maxStamina();
         this.endurance = newEndurance;
-        int newMax = maxStaminaForEndurance(newEndurance);
+        int newMax = maxStamina();
         if (oldMax <= 0) {
             stamina = newMax;
         } else {
             stamina = Math.min(newMax, stamina * newMax / oldMax);
         }
+    }
+
+
+    /**
+     * Synchronizes equipped resource modifiers while preserving current Mana/Stamina percentages.
+     */
+    public void synchronizeResourceModifiers(
+            EquipmentResourceModifiers modifiers,
+            long nowTick
+    ) {
+        Objects.requireNonNull(modifiers, "modifiers");
+        refresh(nowTick);
+
+        int oldMaxMana = maxMana();
+        int oldMaxStamina = maxStamina();
+        double manaFraction = oldMaxMana > 0
+                ? Math.max(0.0, Math.min(1.0, mana / oldMaxMana))
+                : 1.0;
+        double staminaFraction = oldMaxStamina > 0
+                ? Math.max(0.0, Math.min(1.0, stamina / oldMaxStamina))
+                : 1.0;
+
+        maxManaBonus = modifiers.maxManaBonus();
+        maxStaminaBonus = modifiers.maxStaminaBonus();
+        manaRecoveryBonus = modifiers.manaRecoveryBonus();
+        staminaRecoveryBonus = modifiers.staminaRecoveryBonus();
+        manaCostReduction = modifiers.manaCostReduction();
+
+        mana = Math.min(maxMana(), maxMana() * manaFraction);
+        stamina = Math.min(maxStamina(), maxStamina() * staminaFraction);
+    }
+
+    public EquipmentResourceModifiers resourceModifiers() {
+        return new EquipmentResourceModifiers(
+                0.0,
+                maxManaBonus,
+                maxStaminaBonus,
+                manaRecoveryBonus,
+                staminaRecoveryBonus,
+                manaCostReduction
+        );
+    }
+
+    public double effectiveManaCost(double authoredCost) {
+        validateManaAmount(authoredCost);
+        return authoredCost * (1.0 - manaCostReduction);
     }
 
     public boolean canSpendStamina(double amount, long nowTick) {
@@ -179,18 +230,18 @@ public final class PlayerCombatState {
     }
 
     public boolean canSpendMana(double amount, long nowTick) {
-        validateManaAmount(amount);
+        double effectiveCost = effectiveManaCost(amount);
         refresh(nowTick);
-        return mana + 1.0e-9 >= amount;
+        return mana + 1.0e-9 >= effectiveCost;
     }
 
     public boolean spendMana(double amount, long nowTick) {
-        validateManaAmount(amount);
+        double effectiveCost = effectiveManaCost(amount);
         refresh(nowTick);
-        if (mana + 1.0e-9 < amount) {
+        if (mana + 1.0e-9 < effectiveCost) {
             return false;
         }
-        mana = Math.max(0.0, mana - amount);
+        mana = Math.max(0.0, mana - effectiveCost);
         lastManaSpendTick = nowTick;
         markCombatActivity(nowTick);
         return true;
@@ -326,7 +377,9 @@ public final class PlayerCombatState {
                 long normalTicks = Math.max(0L, normalEnd - regenStart);
                 long bonusTicks = Math.max(0L, end - Math.max(regenStart, outOfCombatAt));
 
-                double perTick = baseManaRegenPerSecondForWill(will) / 20.0;
+                double perTick = baseManaRegenPerSecondForWill(will)
+                        * (1.0 + manaRecoveryBonus)
+                        / 20.0;
                 mana += normalTicks * perTick;
                 mana += bonusTicks * perTick * 2.0;
                 mana = Math.min(maxMana(), mana);
@@ -339,6 +392,7 @@ public final class PlayerCombatState {
                 long regenTicks = end - regenStart;
                 stamina += regenTicks
                         * baseStaminaRegenPerSecondForEndurance(endurance)
+                        * (1.0 + staminaRecoveryBonus)
                         / 20.0;
                 stamina = Math.min(maxStamina(), stamina);
             }
@@ -348,12 +402,20 @@ public final class PlayerCombatState {
     }
 
     public static int maxManaForWill(int will) {
+        return maxManaForWill(will, 0.0);
+    }
+
+    public static int maxManaForWill(int will, double maxManaBonus) {
+        if (will < 0) {
+            throw new IllegalArgumentException("WIL must be non-negative.");
+        }
+        requirePercentBonus("maxManaBonus", maxManaBonus);
         int x = Math.max(0, will - 5);
         double value = 100.0
                 + 2.5 * Math.min(x, 25)
                 + 1.5 * Math.min(Math.max(x - 25, 0), 30)
                 + 0.75 * Math.max(x - 55, 0);
-        return (int) Math.round(value);
+        return (int) Math.round(value * (1.0 + maxManaBonus));
     }
 
     public static double baseManaRegenPerSecondForWill(int will) {
@@ -362,12 +424,23 @@ public final class PlayerCombatState {
     }
 
     public static int maxStaminaForEndurance(int endurance) {
+        return maxStaminaForEndurance(endurance, 0.0);
+    }
+
+    public static int maxStaminaForEndurance(
+            int endurance,
+            double maxStaminaBonus
+    ) {
+        if (endurance < 0) {
+            throw new IllegalArgumentException("END must be non-negative.");
+        }
+        requirePercentBonus("maxStaminaBonus", maxStaminaBonus);
         int x = Math.max(0, endurance - 5);
         double value = 100.0
                 + 1.2 * Math.min(x, 25)
                 + 0.8 * Math.min(Math.max(x - 25, 0), 30)
                 + 0.4 * Math.max(x - 55, 0);
-        return (int) Math.round(value);
+        return (int) Math.round(value * (1.0 + maxStaminaBonus));
     }
 
     public static double baseStaminaRegenPerSecondForEndurance(int endurance) {
@@ -386,6 +459,14 @@ public final class PlayerCombatState {
     private static void validateManaAmount(double amount) {
         if (!Double.isFinite(amount) || amount < 0.0) {
             throw new IllegalArgumentException("Mana amount must be finite and non-negative.");
+        }
+    }
+
+    private static void requirePercentBonus(String name, double value) {
+        if (!Double.isFinite(value) || value < 0.0) {
+            throw new IllegalArgumentException(
+                    name + " must be finite and non-negative."
+            );
         }
     }
 }
