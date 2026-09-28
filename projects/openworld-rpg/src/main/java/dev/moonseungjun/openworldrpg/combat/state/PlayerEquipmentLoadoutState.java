@@ -314,6 +314,7 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
                 magicPower,
                 familyPower,
                 poiseOutput,
+                aggregateResourceModifiers().maxHealthBonus(),
                 supplementalMagicWeaponPower
         ));
     }
