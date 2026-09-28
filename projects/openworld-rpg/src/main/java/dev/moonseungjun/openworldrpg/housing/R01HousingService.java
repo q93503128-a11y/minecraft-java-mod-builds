@@ -269,6 +269,77 @@ public final class R01HousingService {
         );
     }
 
+    public static R01HousingWorldState.PropertyRole roleFor(
+            MinecraftServer server,
+            String propertyId,
+            String playerUuid
+    ) {
+        return worldState(server).roleFor(propertyId, playerUuid);
+    }
+
+    public static boolean canFurnish(
+            MinecraftServer server,
+            String propertyId,
+            String playerUuid
+    ) {
+        return worldState(server).canFurnish(propertyId, playerUuid);
+    }
+
+    public static boolean canAccessPrivateStorage(
+            MinecraftServer server,
+            String propertyId,
+            String playerUuid
+    ) {
+        return worldState(server)
+                .canAccessPrivateStorage(propertyId, playerUuid);
+    }
+
+    public static void setTrustedDecorator(
+            ServerPlayer owner,
+            String targetPlayerUuid,
+            boolean trusted
+    ) {
+        Objects.requireNonNull(owner, "owner");
+        String propertyId = playerState(owner)
+                .residencePropertyId()
+                .orElseThrow(() -> new IllegalStateException(
+                        "Player does not own a residence."
+                ));
+        MinecraftServer server = requireServer(owner);
+        replaceWorld(
+                server,
+                worldState(server).setTrustedDecorator(
+                        propertyId,
+                        owner.getUUID().toString(),
+                        targetPlayerUuid,
+                        trusted
+                )
+        );
+    }
+
+    public static void setPrivateStorageAccess(
+            ServerPlayer owner,
+            String targetPlayerUuid,
+            boolean allowed
+    ) {
+        Objects.requireNonNull(owner, "owner");
+        String propertyId = playerState(owner)
+                .residencePropertyId()
+                .orElseThrow(() -> new IllegalStateException(
+                        "Player does not own a residence."
+                ));
+        MinecraftServer server = requireServer(owner);
+        replaceWorld(
+                server,
+                worldState(server).setPrivateStorageAccess(
+                        propertyId,
+                        owner.getUUID().toString(),
+                        targetPlayerUuid,
+                        allowed
+                )
+        );
+    }
+
     public static Optional<String> owner(
             MinecraftServer server,
             String propertyId
