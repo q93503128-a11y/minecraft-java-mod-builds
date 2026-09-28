@@ -27,6 +27,30 @@ public final class R01GatheringService {
         );
     }
 
+    /**
+     * Live-world entry point. Candidate/client-verified anchors fail closed until promoted.
+     */
+    public static HarvestResult tryHarvestBoundNode(
+            ServerPlayer player,
+            String nodeId,
+            R01GatheringAuthority.GatherContext context
+    ) {
+        Objects.requireNonNull(player, "player");
+        Objects.requireNonNull(nodeId, "nodeId");
+        Objects.requireNonNull(context, "context");
+
+        var binding = R01GatheringSpatialRegistry.productionNode(nodeId);
+        if (binding.isEmpty()) {
+            return new HarvestResult(HarvestStatus.NODE_NOT_PRODUCTION, 0);
+        }
+        return tryHarvest(
+                player,
+                nodeId,
+                binding.orElseThrow().resourceId(),
+                context
+        );
+    }
+
     public static HarvestResult tryHarvest(
             ServerPlayer player,
             String nodeId,
@@ -160,6 +184,7 @@ public final class R01GatheringService {
 
     public enum HarvestStatus {
         HARVESTED,
+        NODE_NOT_PRODUCTION,
         INVALID_RESOURCE,
         ACTION_BLOCKED,
         NODE_COOLDOWN,
