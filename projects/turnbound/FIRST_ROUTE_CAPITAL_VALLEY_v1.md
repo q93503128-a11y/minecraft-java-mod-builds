@@ -493,3 +493,29 @@ Drabyel safety buffer
 - 멀티플레이에서 16 regular allies가 화면상 과밀하지 않은지
 
 따라서 survey command는 **후보 수집 도구**이며 `verifiedIn26_2` 또는 `productionEnabled`를 자동 변경하지 않는다.
+
+
+## 22. Map-backed zone placement
+
+첫 route는 단일 좌표 목록이 아니라 **연속 corridor + 역할 구역**으로 관리한다.
+
+Reviewed reference:
+- `zachaa/DrehmalMap`
+- revision `72d82180cbe3f950f068cf2d8e8668c6b09d5c58`
+- `data/paths.geojson`, `data/locations.json`, `data/towers.json`
+
+구역:
+1. 프라이멀 길머리 — 안전한 world reveal, 전투 없음.
+2. 옛 사원 → 탑 접근로 — 첫 common 조우.
+3. 탑 / 경고 동굴 갈림길 — Tower breathing + optional Elite.
+4. 탑 남쪽 → Explorer camp — 낮은 전투 밀도의 breathing corridor.
+5. Explorer camp → Drabyel 북쪽 길 — 이동형 road patrol.
+6. New Drabyel — hostile-free hub.
+
+소스 지도는 구역과 X/Z seed만 정한다. 실제 Minecraft 26.2 runtime이 ground, fluid, headroom,
+local slope, 최대 4-player shared formation, battle camera corridor, safety-zone 침범을 검사해서 exact block을 고른다.
+
+한 구역의 후보가 실패하면 가까운 **같은 구역** 안에서만 탐색한다. 다른 구역으로 멀리 튀어 encounter를 억지 생성하지 않는다.
+두 개 이상의 co-op-safe arena를 확보하지 못하면 그 encounter는 해당 세션에서 fail-closed 한다.
+
+따라서 배치 자동화는 지형을 무시한 랜덤 스폰이 아니라 **지도상 의미 있는 구역 선택 → 26.2 실지형 안전 검사** 순서다.

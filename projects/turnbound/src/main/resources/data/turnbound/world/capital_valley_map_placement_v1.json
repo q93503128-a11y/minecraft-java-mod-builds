@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "routeId": "turnbound:route/capital_valley_to_drabyel",
+  "source": {
+    "repository": "zachaa/DrehmalMap",
+    "commit": "72d82180cbe3f950f068cf2d8e8668c6b09d5c58",
+    "paths": "data/paths.geojson",
+    "locations": "data/locations.json",
+    "towers": "data/towers.json"
+  },
+  "zones": [
+    {"id":"roadhead_reveal","label":"프라이멀 길머리","role":"SAFE_REVEAL","corridor":[{"x":867,"z":530},{"x":676,"z":599},{"x":616,"z":697},{"x":583,"z":803}]},
+    {"id":"temple_tower_approach","label":"옛 사원에서 탑으로","role":"FIRST_COMBAT","corridor":[{"x":583,"z":803},{"x":594,"z":898},{"x":579,"z":999},{"x":582,"z":1079},{"x":593,"z":1155}]},
+    {"id":"tower_cave_choice","label":"탑과 경고 동굴 갈림길","role":"CHOICE_ELITE","corridor":[{"x":593,"z":1155},{"x":557,"z":1176},{"x":611,"z":1238},{"x":438,"z":1269},{"x":453,"z":1253}]},
+    {"id":"camp_transition","label":"탑 남쪽 야영길","role":"BREATHING","corridor":[{"x":611,"z":1238},{"x":579,"z":1319},{"x":585,"z":1442},{"x":580,"z":1498}]},
+    {"id":"drabyel_approach","label":"뉴 드라비엘 진입로","role":"ROAD_PATROL","corridor":[{"x":580,"z":1498},{"x":509,"z":1501},{"x":508,"z":1550},{"x":535,"z":1600},{"x":546,"z":1648},{"x":521,"z":1697},{"x":499,"z":1756},{"x":502,"z":1801}]},
+    {"id":"drabyel_hub","label":"뉴 드라비엘","role":"SAFE_HUB","corridor":[{"x":502,"z":1801},{"x":515,"z":1850},{"x":530,"z":1848}]}
+  ],
+  "placements": [
+    {"siteLocator":"turnbound:site/capital_valley/roadhead","zoneId":"roadhead_reveal","strictSite":false,"searchRadius":8,
+     "siteSeeds":[{"x":676,"z":599},{"x":646,"z":648},{"x":616,"z":697}],"arenaSeeds":[],"patrolSeeds":[]},
+    {"siteLocator":"turnbound:site/capital_valley/first_common","zoneId":"temple_tower_approach","strictSite":true,"searchRadius":7,
+     "siteSeeds":[{"x":596,"z":1030},{"x":565,"z":1045},{"x":598,"z":1080}],
+     "arenaSeeds":[{"x":616,"z":1035,"yaw":90},{"x":616,"z":1035,"yaw":270},{"x":548,"z":1040,"yaw":90},{"x":548,"z":1040,"yaw":270},{"x":615,"z":1080,"yaw":90},{"x":548,"z":1090,"yaw":270}],"patrolSeeds":[]},
+    {"siteLocator":"turnbound:site/capital_valley/tower","zoneId":"tower_cave_choice","strictSite":false,"searchRadius":0,
+     "siteSeeds":[{"x":557,"z":1176}],"arenaSeeds":[],"patrolSeeds":[]},
+    {"siteLocator":"turnbound:site/capital_valley/warning_cave","zoneId":"tower_cave_choice","strictSite":true,"searchRadius":7,
+     "siteSeeds":[{"x":438,"z":1272},{"x":430,"z":1278},{"x":445,"z":1282}],
+     "arenaSeeds":[{"x":418,"z":1286,"yaw":45},{"x":418,"z":1286,"yaw":225},{"x":470,"z":1282,"yaw":135},{"x":470,"z":1282,"yaw":315},{"x":425,"z":1302,"yaw":45},{"x":474,"z":1300,"yaw":315}],"patrolSeeds":[]},
+    {"siteLocator":"turnbound:site/capital_valley/explorer_camp","zoneId":"camp_transition","strictSite":false,"searchRadius":4,
+     "siteSeeds":[{"x":580,"z":1498},{"x":574,"z":1488}],"arenaSeeds":[],"patrolSeeds":[]},
+    {"siteLocator":"turnbound:site/capital_valley/drabyel_approach","zoneId":"drabyel_approach","strictSite":true,"searchRadius":7,
+     "siteSeeds":[{"x":555,"z":1650},{"x":535,"z":1680},{"x":510,"z":1710}],
+     "arenaSeeds":[{"x":575,"z":1650,"yaw":90},{"x":575,"z":1650,"yaw":270},{"x":515,"z":1650,"yaw":90},{"x":515,"z":1650,"yaw":270},{"x":560,"z":1700,"yaw":90},{"x":490,"z":1705,"yaw":270},{"x":540,"z":1735,"yaw":90},{"x":485,"z":1735,"yaw":270}],
+     "patrolSeeds":[{"x":553,"z":1635},{"x":550,"z":1660},{"x":535,"z":1685},{"x":517,"z":1710},{"x":506,"z":1735}]},
+    {"siteLocator":"turnbound:site/capital_valley/new_drabyel","zoneId":"drabyel_hub","strictSite":false,"searchRadius":0,
+     "siteSeeds":[{"x":530,"z":1848},{"x":531,"z":1839},{"x":502,"z":1801}],"arenaSeeds":[],"patrolSeeds":[]}
+  ]
+}

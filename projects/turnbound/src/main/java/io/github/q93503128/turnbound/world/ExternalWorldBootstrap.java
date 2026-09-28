@@ -159,6 +159,7 @@ public final class ExternalWorldBootstrap {
 
     public static void clear() {
         DrehmalVisibleEncounterService.clear();
+        DrehmalAdaptiveRoutePlacement.clear();
         DrabyelHubServiceRuntime.clear();
         ACTIVE.clear();
         LAST_LOCATION.clear();

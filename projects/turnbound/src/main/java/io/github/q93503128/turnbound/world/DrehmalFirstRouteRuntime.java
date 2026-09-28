@@ -17,7 +17,7 @@ public final class DrehmalFirstRouteRuntime {
         if (player == null) return null;
         DrehmalFirstRouteCatalog.Site nearest = null;
         double nearestDistance = Double.MAX_VALUE;
-        for (DrehmalFirstRouteCatalog.Site site : DrehmalFirstRouteCatalog.productionSites()) {
+        for (DrehmalFirstRouteCatalog.Site site : DrehmalAdaptiveRoutePlacement.productionSites(player)) {
             DrehmalFirstRouteCatalog.Position position = site.runtimePosition();
             if (position == null) continue;
             double distance = player.distanceToSqr(
@@ -37,12 +37,12 @@ public final class DrehmalFirstRouteRuntime {
     }
 
     static boolean insideSafetyZone(double x, double z) {
-        return DrehmalRouteZoneRules.insideSafetyZone(DrehmalFirstRouteCatalog.productionSites(), x, z);
+        return DrehmalRouteZoneRules.insideSafetyZone(DrehmalAdaptiveRoutePlacement.productionSites(player), x, z);
     }
 
     public static DrehmalFirstRouteCatalog.EncounterSlot encounterAt(ServerPlayer player) {
         if (player == null) return null;
-        for (DrehmalFirstRouteCatalog.EncounterSlot encounter : DrehmalFirstRouteCatalog.productionEncounters()) {
+        for (DrehmalFirstRouteCatalog.EncounterSlot encounter : DrehmalAdaptiveRoutePlacement.productionEncounters(player)) {
             DrehmalFirstRouteCatalog.Site site = DrehmalFirstRouteCatalog.site(encounter.siteLocator());
             if (site == null || site.runtimePosition() == null || site.encounterRadius() <= 0) continue;
             double radius = site.encounterRadius();
@@ -144,13 +144,13 @@ public final class DrehmalFirstRouteRuntime {
         }
         var clears = CampaignProgressStore.snapshot(player.getUUID()).clearedEncounters();
         return DrehmalRouteNavigationRules.target(
-                DrehmalFirstRouteCatalog.productionSites(), player.getX(), player.getZ(), flags, clears);
+                DrehmalAdaptiveRoutePlacement.productionSites(player), player.getX(), player.getZ(), flags, clears);
     }
 
     private static DrehmalFirstRouteCatalog.Site locationSite(ServerPlayer player) {
         if (player == null) return null;
         return DrehmalLocationBannerRules.current(
-                DrehmalFirstRouteCatalog.productionSites(), player.getX(), player.getZ());
+                DrehmalAdaptiveRoutePlacement.productionSites(player), player.getX(), player.getZ());
     }
 
     private static DrehmalContextualOnboarding.Guidance guidance(

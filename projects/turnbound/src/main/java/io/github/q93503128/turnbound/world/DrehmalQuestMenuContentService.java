@@ -16,7 +16,7 @@ final class DrehmalQuestMenuContentService {
                 ? Set.of()
                 : ExternalWorldSavedData.get(server).onboardingFlags(player.getUUID());
         Set<String> clears = CampaignProgressStore.snapshot(player.getUUID()).clearedEncounters();
-        Set<String> productionEncounters = DrehmalFirstRouteCatalog.productionEncounters().stream()
+        Set<String> productionEncounters = DrehmalAdaptiveRoutePlacement.productionEncounters(player).stream()
                 .map(DrehmalFirstRouteCatalog.EncounterSlot::combatEncounterId)
                 .filter(id -> id != null && !id.isBlank())
                 .collect(Collectors.toUnmodifiableSet());

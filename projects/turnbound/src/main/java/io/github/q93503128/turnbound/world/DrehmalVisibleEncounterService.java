@@ -54,7 +54,7 @@ final class DrehmalVisibleEncounterService {
         if (lastTick == gameTime) return;
         lastTick = gameTime;
 
-        syncCatalog(level);
+        syncCatalog(level, caller);
         for (SharedEncounter encounter : List.copyOf(ENCOUNTERS.values())) encounter.tick(level);
     }
 
@@ -92,12 +92,17 @@ final class DrehmalVisibleEncounterService {
         boundLevel = level;
     }
 
-    private static void syncCatalog(ServerLevel level) {
+    private static void syncCatalog(ServerLevel level, ServerPlayer resolverPlayer) {
         Set<String> active = new HashSet<>();
-        for (DrehmalFirstRouteCatalog.EncounterSlot slot : DrehmalFirstRouteCatalog.productionEncounters()) {
-            if (!DrehmalEncounterActivationRules.ready(slot)) continue;
+        for (DrehmalFirstRouteCatalog.EncounterSlot slot : DrehmalAdaptiveRoutePlacement.productionEncounters(resolverPlayer)) {
+            DrehmalFirstRouteCatalog.Site site = DrehmalAdaptiveRoutePlacement.site(resolverPlayer, slot.siteLocator());
+            DrehmalFirstRouteCatalog.Footprint footprint = DrehmalAdaptiveRoutePlacement.footprint(resolverPlayer, slot.footprintLocator());
+            DrehmalFirstRouteCatalog.Patrol patrol = slot.patrolLocator().isBlank()
+                    ? null
+                    : DrehmalAdaptiveRoutePlacement.patrol(resolverPlayer, slot.patrolLocator());
+            if (!DrehmalEncounterActivationRules.ready(slot, site, footprint, patrol)) continue;
             active.add(slot.locator());
-            ENCOUNTERS.computeIfAbsent(slot.locator(), ignored -> new SharedEncounter(slot));
+            ENCOUNTERS.computeIfAbsent(slot.locator(), ignored -> new SharedEncounter(slot, site, footprint, patrol));
         }
 
         for (String locator : List.copyOf(ENCOUNTERS.keySet())) {
@@ -136,11 +141,16 @@ final class DrehmalVisibleEncounterService {
         private boolean blockedArenaWarned;
         private boolean missingVisualWarned;
 
-        private SharedEncounter(DrehmalFirstRouteCatalog.EncounterSlot slot) {
+        private SharedEncounter(
+                DrehmalFirstRouteCatalog.EncounterSlot slot,
+                DrehmalFirstRouteCatalog.Site site,
+                DrehmalFirstRouteCatalog.Footprint footprint,
+                DrehmalFirstRouteCatalog.Patrol patrol
+        ) {
             this.slot = slot;
-            this.site = requiredSite(slot.siteLocator());
-            this.footprint = requiredFootprint(slot.footprintLocator());
-            this.patrol = slot.patrolLocator().isBlank() ? null : requiredPatrol(slot.patrolLocator());
+            this.site = site;
+            this.footprint = footprint;
+            this.patrol = patrol;
             this.spec = CampaignEncounterCatalog.spec(slot.combatEncounterId());
             this.fieldPolicy = DrehmalFieldEncounterPolicy.forEncounter(slot, site);
             this.pivot = vec(site.runtimePosition());
