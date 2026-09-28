@@ -35,6 +35,21 @@ Search external sources first for:
 
 If an external asset needs technical conversion, adapt it to Minecraft 26.2 while preserving the quality/design language.
 
+This rule also applies to **systems**, not only texture/model files.
+Before building a major custom substitute, search for a high-quality compatible external implementation/mod/library where it could materially improve:
+- cooking/kitchen interaction.
+- furniture behavior.
+- camera/photography.
+- player clothing/model presentation.
+- inventory/tool-belt convenience.
+- plants/crops/mushrooms.
+- swimming/diving presentation.
+- UI framework/components.
+- resident animation/rig support.
+
+External-first does not mean dependency-maximal.
+Adopt a system only when its real 26.2 NeoForge compatibility, visual fit, multiplayer/runtime behavior, maintenance state, performance and overlap with existing systems are acceptable.
+
 ## 2. Private-use boundary
 
 The project is for private play rather than public distribution.
@@ -186,6 +201,12 @@ Previously discussed reference candidate:
 - Kenney Cube Pets as a CC0 stylistic/model starting point/reference.
 
 Actual final resident pack/rig remains unresolved.
+
+Resident identity rule:
+- one approved external appearance/model/variant maps to one fixed authored resident.
+- do not randomly assign different names/personalities to the same appearance on different saves.
+- final name, birthday, personality traits, hobbies, home theme and dialogue identity are assigned after the actual model roster is selected.
+- the art/model is therefore inspected first, then the character identity is authored to fit it.
 
 Animation should support:
 - idle.
