@@ -17,6 +17,7 @@ import java.util.Optional;
  */
 public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
     private static final double WEAPON_FAMILY_POWER_GEAR_CAP = 0.60;
+    private static final double CRITICAL_CHANCE_GEAR_CAP = 0.30;
     private static final double GUARD_STRENGTH_GEAR_CAP = 0.50;
     private static final double POISE_STAGGER_RESISTANCE_GEAR_CAP = 0.50;
 
@@ -265,6 +266,8 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
         double magicPower = 0.0;
         double familyPower = 0.0;
         double poiseOutput = 0.0;
+        double criticalChance = 0.0;
+        double criticalDamage = 0.0;
 
         for (EquippedCombatItem item : equipped) {
             for (EquipmentCombatAffix affix : item.affixes()) {
@@ -280,8 +283,10 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
                         }
                     }
                     case POISE_OUTPUT -> poiseOutput += affix.value();
-                    case CRITICAL_CHANCE, ATTACK_SPEED -> {
-                        // Preserved in the item payload; dedicated crit/cadence publishers own runtime use.
+                    case CRITICAL_CHANCE -> criticalChance += affix.value();
+                    case CRITICAL_DAMAGE -> criticalDamage += affix.value();
+                    case ATTACK_SPEED -> {
+                        // Preserved in the item payload; dedicated cadence publisher owns runtime use.
                     }
                     case MAX_HP, MAX_MANA, MAX_STAMINA, MANA_RECOVERY,
                             STAMINA_RECOVERY, MANA_COST_REDUCTION -> {
@@ -296,6 +301,10 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
         }
 
         familyPower = Math.min(familyPower, WEAPON_FAMILY_POWER_GEAR_CAP);
+        criticalChance = Math.min(
+                criticalChance,
+                CRITICAL_CHANCE_GEAR_CAP
+        );
 
         double supplementalMagicWeaponPower = 0.0;
         EquippedCombatItem offhand = item(ProjectEquipmentSlot.OFF_HAND).orElse(null);
@@ -314,6 +323,8 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
                 magicPower,
                 familyPower,
                 poiseOutput,
+                criticalChance,
+                criticalDamage,
                 aggregateResourceModifiers().maxHealthBonus(),
                 supplementalMagicWeaponPower
         ));
