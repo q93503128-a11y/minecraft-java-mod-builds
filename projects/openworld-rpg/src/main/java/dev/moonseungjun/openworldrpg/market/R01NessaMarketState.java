@@ -148,7 +148,10 @@ public record R01NessaMarketState(
             Set<Integer> soldSlots
     ) {
         private static final Codec<Set<Integer>> SOLD_CODEC =
-                Codec.INT.listOf().xmap(Set::copyOf, Set::stream().sorted().toList());
+                Codec.INT.listOf().xmap(
+                        Set::copyOf,
+                        value -> value.stream().sorted().toList()
+                );
 
         public static final Codec<Cycle> CODEC =
                 RecordCodecBuilder.create(instance -> instance.group(
