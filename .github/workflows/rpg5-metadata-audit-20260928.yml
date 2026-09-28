@@ -1,0 +1,65 @@
+name: RPG5 temporary metadata audit
+on:
+  push:
+    paths:
+      - .github/workflows/rpg5-metadata-audit-20260928.yml
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Download and hash Modrinth files
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/rpg5_urls.tsv <<'EOF'
+          mods/skill_tree-fabric-1.6.0+1.21.1.jar	https://cdn.modrinth.com/data/PjDhruSC/versions/YEQ7tOIL/skill_tree-fabric-1.6.0%2B1.21.1.jar
+          mods/wizards-fabric-3.1.2+1.21.1.jar	https://cdn.modrinth.com/data/NkGaQMDA/versions/nqeQTdGL/wizards-fabric-3.1.2%2B1.21.1.jar
+          mods/archers-fabric-3.1.1+1.21.1.jar	https://cdn.modrinth.com/data/QgooUXAJ/versions/iCXv3o0K/archers-fabric-3.1.1%2B1.21.1.jar
+          mods/rogues-fabric-3.1.1+1.21.1.jar	https://cdn.modrinth.com/data/3MKqoGuP/versions/JWfPsL1j/rogues-fabric-3.1.1%2B1.21.1.jar
+          mods/paladins-fabric-3.1.1+1.21.1.jar	https://cdn.modrinth.com/data/FxXkHaLe/versions/AXerZMvH/paladins-fabric-3.1.1%2B1.21.1.jar
+          mods/jewelry-fabric-2.4.0+1.21.1.jar	https://cdn.modrinth.com/data/sNJAIjUm/versions/XXizhMNZ/jewelry-fabric-2.4.0%2B1.21.1.jar
+          mods/relics-fabric-1.4.0+1.21.1.jar	https://cdn.modrinth.com/data/BDQucwF0/versions/N9LYLPCa/relics-fabric-1.4.0%2B1.21.1.jar
+          mods/bettercombat-fabric-2.4.0+1.21.1.jar	https://cdn.modrinth.com/data/5sy6g3kz/versions/JJQpBecL/bettercombat-fabric-2.4.0%2B1.21.1.jar
+          mods/combat_roll-fabric-2.0.2+1.21.1.jar	https://cdn.modrinth.com/data/wGKYL7st/versions/NNRViwFU/combat_roll-fabric-2.0.2%2B1.21.1.jar
+          mods/DungeonsArise-1.21.1-2.1.68-fabric-release.jar	https://cdn.modrinth.com/data/8DfbfASn/versions/g8oglmT0/DungeonsArise-1.21.1-2.1.68-fabric-release.jar
+          mods/BOMD-1.10.2-1.21.1.jar	https://cdn.modrinth.com/data/du3UfiLL/versions/aSCbUUL1/BOMD-1.10.2-1.21.1.jar
+          mods/adventurez-1.5.0.jar	https://cdn.modrinth.com/data/defK2XM3/versions/gDZXNqOx/adventurez-1.5.0.jar
+          mods/inmis-2.8.2-1.21.1.jar	https://cdn.modrinth.com/data/I0UYcPa0/versions/iE11BIfP/inmis-2.8.2-1.21.1.jar
+          mods/emi-1.1.24+1.21.1+fabric.jar	https://cdn.modrinth.com/data/fRiHVvU7/versions/on5GT1qh/emi-1.1.24%2B1.21.1%2Bfabric.jar
+          mods/lambdynamiclights-4.8.8+1.21.1.jar	https://cdn.modrinth.com/data/yBW8D80W/versions/IQcvNDtF/lambdynamiclights-4.8.8%2B1.21.1.jar
+          mods/sodium-fabric-0.8.12+mc1.21.1.jar	https://cdn.modrinth.com/data/AANobbMI/versions/KIRFiWG4/sodium-fabric-0.8.12%2Bmc1.21.1.jar
+          mods/lithium-fabric-0.15.1+mc1.21.1.jar	https://cdn.modrinth.com/data/gvQqBUqZ/versions/E5eJVp4O/lithium-fabric-0.15.1%2Bmc1.21.1.jar
+          mods/modernfix-fabric-5.25.0+mc1.21.1.jar	https://cdn.modrinth.com/data/nmDcB62a/versions/ARc7GQfp/modernfix-fabric-5.25.0%2Bmc1.21.1.jar
+          mods/ImmediatelyFast-Fabric-1.6.12+1.21.1.jar	https://cdn.modrinth.com/data/5ZwdcRci/versions/nLX2NbyQ/ImmediatelyFast-Fabric-1.6.12%2B1.21.1.jar
+          mods/entityculling-fabric-1.10.0-mc1.21.1.jar	https://cdn.modrinth.com/data/NNAgCjsB/versions/zzguHbcL/entityculling-fabric-1.10.0-mc1.21.1.jar
+          mods/trinkets-3.10.0.jar	https://cdn.modrinth.com/data/5aaWibi9/versions/JagCscwi/trinkets-3.10.0.jar
+          mods/fabric-api-0.116.7+1.21.1.jar	https://cdn.modrinth.com/data/P7dR8mSH/versions/m6zu1K31/fabric-api-0.116.7%2B1.21.1.jar
+          mods/cloth-config-15.0.130-fabric.jar	https://cdn.modrinth.com/data/9s6osm5g/versions/7jtvrmVP/cloth-config-15.0.130-fabric.jar
+          mods/player-animation-lib-fabric-2.0.4+1.21.1.jar	https://cdn.modrinth.com/data/gedNE4y2/versions/CkedfDp3/player-animation-lib-fabric-2.0.4%2B1.21.1.jar
+          mods/spell_engine-fabric-1.10.1+1.21.1.jar	https://cdn.modrinth.com/data/XvoWJaA2/versions/NrIHWvUh/spell_engine-fabric-1.10.1%2B1.21.1.jar
+          mods/spell_power-fabric-1.6.0+1.21.1.jar	https://cdn.modrinth.com/data/8ooWzSQP/versions/IyVyrKj8/spell_power-fabric-1.6.0%2B1.21.1.jar
+          mods/ranged_weapon_api-fabric-2.3.2+1.21.1.jar	https://cdn.modrinth.com/data/AqaIIO6D/versions/ADVFTrEJ/ranged_weapon_api-fabric-2.3.2%2B1.21.1.jar
+          mods/structure_pool_api-fabric-1.2.1+1.21.1.jar	https://cdn.modrinth.com/data/LrYZi08Q/versions/Y6aBoKEl/structure_pool_api-fabric-1.2.1%2B1.21.1.jar
+          mods/runes-fabric-1.3.2+1.21.1.jar	https://cdn.modrinth.com/data/lP9Yrr1E/versions/MUfjgRc2/runes-fabric-1.3.2%2B1.21.1.jar
+          mods/bundle-api-fabric-1.1.0.jar	https://cdn.modrinth.com/data/n8QN6Z1a/versions/b87XqtPa/bundle-api-fabric-1.1.0.jar
+          mods/puffish_skills-0.16.7-1.21-fabric.jar	https://cdn.modrinth.com/data/hqQqvaa4/versions/Zi97VIwQ/puffish_skills-0.16.7-1.21-fabric.jar
+          mods/architectury-13.0.11-fabric.jar	https://cdn.modrinth.com/data/lhGA9TYQ/versions/Pzc2FP5K/architectury-13.0.11-fabric.jar
+          mods/shield_api-fabric-2.2.0.jar	https://cdn.modrinth.com/data/y9clIFY4/versions/rdcTHSZH/shield_api-fabric-2.2.0.jar
+          mods/geckolib-fabric-1.21.1-4.7.6.jar	https://cdn.modrinth.com/data/8BmcQJ2H/versions/aHSu8jaP/geckolib-fabric-1.21.1-4.7.6.jar
+          mods/cardinal-components-api-6.1.1.jar	https://cdn.modrinth.com/data/K01OU20C/versions/tVPYyTPV/cardinal-components-api-6.1.1.jar
+          mods/armor_model_api-fabric-1.1.0+1.21.1.jar	https://cdn.modrinth.com/data/onz2NN2n/versions/eqjiejBH/armor_model_api-fabric-1.1.0%2B1.21.1.jar
+          mods/critical_strike-fabric-1.0.4+1.21.1.jar	https://cdn.modrinth.com/data/ilvNBzFn/versions/8Ci3W6fL/critical_strike-fabric-1.0.4%2B1.21.1.jar
+          mods/fabric-language-kotlin-1.13.8+kotlin.2.3.0.jar	https://cdn.modrinth.com/data/Ha28R6CL/versions/N6D3uiZF/fabric-language-kotlin-1.13.8%2Bkotlin.2.3.0.jar
+          mods/Essential_1-5-0-1_fabric_1-21-1.jar	https://cdn.modrinth.com/data/k2ZPuTBm/versions/Z9lbcWp2/Essential_1-5-0-1_fabric_1-21-1.jar
+          EOF
+          while IFS=$'\t' read -r path url; do
+            [ -z "$path" ] && continue
+            tmp=$(mktemp)
+            curl --fail --location --retry 4 --retry-delay 2 "$url" -o "$tmp"
+            sha1=$(sha1sum "$tmp" | awk '{print $1}')
+            sha512=$(sha512sum "$tmp" | awk '{print $1}')
+            size=$(stat -c%s "$tmp")
+            printf 'RPGMETA\t%s\t%s\t%s\t%s\n' "$path" "$sha1" "$sha512" "$size"
+            rm -f "$tmp"
+          done < /tmp/rpg5_urls.tsv
