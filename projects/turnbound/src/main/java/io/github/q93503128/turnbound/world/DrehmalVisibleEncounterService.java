@@ -155,7 +155,7 @@ final class DrehmalVisibleEncounterService {
             this.fieldPolicy = DrehmalFieldEncounterPolicy.forEncounter(slot, site);
             this.pivot = vec(site.runtimePosition());
             this.returnTarget = pivot;
-            this.lastSafePivot = DrehmalFirstRouteRuntime.insideSafetyZone(pivot.x, pivot.z) ? null : pivot;
+            this.lastSafePivot = DrehmalFirstRouteRuntime.insideSafetyZone(level, pivot.x, pivot.z) ? null : pivot;
             this.patrolPoints = patrol == null ? List.of() : patrol.points().stream().map(DrehmalVisibleEncounterService::vec).toList();
             this.roamPoints = patrolPoints.stream().map(point -> new FieldRoamPlanner.Point(point.x, point.z)).toList();
             this.roamSequence = slot.locator().hashCode();
@@ -184,7 +184,7 @@ final class DrehmalVisibleEncounterService {
             if (lead == null) return;
 
             pivot = lead.position();
-            if (DrehmalFirstRouteRuntime.insideSafetyZone(pivot.x, pivot.z)) {
+            if (DrehmalFirstRouteRuntime.insideSafetyZone(level, pivot.x, pivot.z)) {
                 if (lastSafePivot != null) {
                     boolean crossedWhilePatrolling = phase == FieldEncounterRules.Phase.PATROL;
                     stopLeadNavigation(level);
@@ -562,7 +562,7 @@ final class DrehmalVisibleEncounterService {
         private void resetToRoute() {
             pivot = vec(site.runtimePosition());
             returnTarget = pivot;
-            lastSafePivot = DrehmalFirstRouteRuntime.insideSafetyZone(pivot.x, pivot.z) ? null : pivot;
+            lastSafePivot = DrehmalFirstRouteRuntime.insideSafetyZone(level, pivot.x, pivot.z) ? null : pivot;
             patrolIndex = 0;
             patrolDwellTicks = patrol == null ? 0 : FieldRoamPlanner.dwellTicks(
                     patrol.dwellMinTicks(), patrol.dwellMaxTicks(), ++roamSequence);

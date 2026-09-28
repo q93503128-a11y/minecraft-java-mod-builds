@@ -37,13 +37,17 @@ public final class DrehmalFirstRouteRuntime {
     }
 
     static boolean insideSafetyZone(double x, double z) {
-        return DrehmalRouteZoneRules.insideSafetyZone(DrehmalAdaptiveRoutePlacement.productionSites(player), x, z);
+        return DrehmalRouteZoneRules.insideSafetyZone(DrehmalFirstRouteCatalog.productionSites(), x, z);
+    }
+
+    static boolean insideSafetyZone(net.minecraft.server.level.ServerLevel level, double x, double z) {
+        return DrehmalRouteZoneRules.insideSafetyZone(DrehmalAdaptiveRoutePlacement.productionSites(level), x, z);
     }
 
     public static DrehmalFirstRouteCatalog.EncounterSlot encounterAt(ServerPlayer player) {
         if (player == null) return null;
         for (DrehmalFirstRouteCatalog.EncounterSlot encounter : DrehmalAdaptiveRoutePlacement.productionEncounters(player)) {
-            DrehmalFirstRouteCatalog.Site site = DrehmalFirstRouteCatalog.site(encounter.siteLocator());
+            DrehmalFirstRouteCatalog.Site site = DrehmalAdaptiveRoutePlacement.site(player, encounter.siteLocator());
             if (site == null || site.runtimePosition() == null || site.encounterRadius() <= 0) continue;
             double radius = site.encounterRadius();
             var position = site.runtimePosition();

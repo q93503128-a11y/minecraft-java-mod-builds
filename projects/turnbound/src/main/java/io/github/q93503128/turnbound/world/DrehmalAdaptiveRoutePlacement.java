@@ -30,6 +30,10 @@ final class DrehmalAdaptiveRoutePlacement {
         return CACHE.computeIfAbsent(level, ignored -> resolve(player, level));
     }
     static List<DrehmalFirstRouteCatalog.Site> productionSites(ServerPlayer p){ return List.copyOf(snapshot(p).sites().values()); }
+    static synchronized List<DrehmalFirstRouteCatalog.Site> productionSites(ServerLevel level){
+        Snapshot snapshot=CACHE.get(level);
+        return snapshot==null?List.of():List.copyOf(snapshot.sites().values());
+    }
     static List<DrehmalFirstRouteCatalog.EncounterSlot> productionEncounters(ServerPlayer p){ return snapshot(p).encounters(); }
     static DrehmalFirstRouteCatalog.Site site(ServerPlayer p,String id){ return snapshot(p).sites().get(id); }
     static DrehmalFirstRouteCatalog.Footprint footprint(ServerPlayer p,String id){ return snapshot(p).footprints().get(id); }
