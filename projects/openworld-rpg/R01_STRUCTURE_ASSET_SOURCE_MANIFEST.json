@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-09-28",
+  "purpose": "R01 structure/prop source acquisition contract; source URLs and published counts are metadata only until actual archive bytes are locally acquired and hashed.",
+  "packs": [
+    {
+      "id": "medieval_village_standard",
+      "player_facing_use": [
+        "Alderford architecture shell family",
+        "Mosswheel Mill architecture candidate"
+      ],
+      "source_page": "https://opengameart.org/content/medieval-village-megakit",
+      "uploader": "quaternius",
+      "license_on_source_page": "CC0",
+      "archive_name": "medieval_village_megakitstandard.zip",
+      "direct_archive_url": "https://opengameart.org/sites/default/files/medieval_village_megakitstandard.zip",
+      "published_standard_model_count": 176,
+      "project_archive_acquired": false,
+      "project_archive_sha256": null,
+      "required_correlated_files": [
+        "glTF/Wall_Plaster_Straight.gltf",
+        "glTF/Wall_Plaster_Window_Wide_Round.gltf",
+        "glTF/Wall_Plaster_Door_Round.gltf",
+        "glTF/Wall_UnevenBrick_Straight.gltf",
+        "glTF/Roof_RoundTiles_6x8.gltf",
+        "glTF/Roof_Front_Brick6.gltf",
+        "glTF/Prop_Chimney.gltf",
+        "glTF/Balcony_Cross_Straight.gltf",
+        "glTF/Prop_Vine1.gltf",
+        "glTF/Prop_Vine4.gltf"
+      ]
+    },
+    {
+      "id": "fantasy_props_standard",
+      "player_facing_use": [
+        "Alderford service/market/storage/alchemy prop family",
+        "Quarry ordinary prop candidate family",
+        "R01 potion candidate family"
+      ],
+      "source_page": "https://opengameart.org/content/fantasy-props-megakit",
+      "uploader": "quaternius",
+      "license_on_source_page": "CC0",
+      "archive_name": "fantasy_props_megakitstandard.zip",
+      "direct_archive_url": "https://opengameart.org/sites/default/files/fantasy_props_megakitstandard.zip",
+      "published_standard_model_count": 94,
+      "project_archive_acquired": false,
+      "project_archive_sha256": null,
+      "required_correlated_basenames": [
+        "Potion_1.gltf",
+        "Potion_2.gltf",
+        "Potion_3.gltf",
+        "Potion_4.gltf"
+      ]
+    }
+  ],
+  "verifier": "tools/r01_structure_asset_intake.py"
+}
