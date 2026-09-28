@@ -128,7 +128,12 @@ public final class ExternalWorldBootstrap {
      * meta-surface interactions, so no legacy relay command is valid here.
      */
     public static void command(ServerPlayer player, String command) {
-        if (!active(player)) return;
+        if (!active(player) || command == null || command.isBlank()) return;
+        String[] parts = command.split("\\|", -1);
+        if (parts.length == 2 && "TRAVEL".equals(parts[0])
+                && DrehmalFastTravelService.handle(player, parts[1])) {
+            return;
+        }
         refreshFieldContext(player);
     }
 

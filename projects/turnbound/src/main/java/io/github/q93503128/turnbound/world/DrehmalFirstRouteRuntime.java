@@ -33,7 +33,8 @@ public final class DrehmalFirstRouteRuntime {
     }
 
     public static boolean insideSafetyZone(ServerPlayer player) {
-        return player != null && insideSafetyZone(player.getX(), player.getZ());
+        return player != null && DrehmalRouteZoneRules.insideSafetyZone(
+                DrehmalAdaptiveRoutePlacement.productionSites(player), player.getX(), player.getZ());
     }
 
     static boolean insideSafetyZone(double x, double z) {
@@ -77,7 +78,7 @@ public final class DrehmalFirstRouteRuntime {
                 guidance.hint(),
                 FieldUiSnapshot.Reward.none(),
                 List.of(),
-                List.of(),
+                DrehmalFastTravelService.travels(player),
                 "",
                 0,
                 location == null ? "" : location.locator(),
@@ -107,6 +108,7 @@ public final class DrehmalFirstRouteRuntime {
         if (server == null) return;
         ExternalWorldSavedData data = ExternalWorldSavedData.get(server);
         DrehmalFirstRouteProgress.record(data, player.getUUID(), locationSite(player));
+        DrehmalFastTravelService.recordDiscovery(player);
         if (insideHubCoordinates(player.getX(), player.getZ())) {
             data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.TOWER_REACHED);
             data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.CAMP_REACHED);

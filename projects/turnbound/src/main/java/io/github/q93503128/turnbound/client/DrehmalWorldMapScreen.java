@@ -1,14 +1,20 @@
 package io.github.q93503128.turnbound.client;
 
+import io.github.q93503128.turnbound.network.FieldCommandPayload;
+import io.github.q93503128.turnbound.world.DrehmalFastTravelCatalog;
 import io.github.q93503128.turnbound.world.DrehmalWorldProfile;
+import io.github.q93503128.turnbound.world.FieldUiSnapshot;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -28,6 +34,7 @@ final class DrehmalWorldMapScreen extends Screen {
 
     private int left, top, panelWidth, panelHeight;
     private double zoom = 1.0;
+    private final List<TravelHit> travelHits = new ArrayList<>();
 
     DrehmalWorldMapScreen() { super(Component.literal("월드 지도")); }
 
@@ -46,6 +53,19 @@ final class DrehmalWorldMapScreen extends Screen {
     @Override public boolean keyPressed(KeyEvent event) {
         if (event.key() == GLFW.GLFW_KEY_M || event.key() == GLFW.GLFW_KEY_ESCAPE) { onClose(); return true; }
         return super.keyPressed(event);
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            for (TravelHit hit : travelHits) {
+                if (!hit.contains(event.x(), event.y()) || hit.travel().current()) continue;
+                ClientPacketDistributor.sendToServer(new FieldCommandPayload("TRAVEL|" + hit.travel().id()));
+                onClose();
+                return true;
+            }
+        }
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
@@ -127,6 +147,17 @@ final class DrehmalWorldMapScreen extends Screen {
             drawObjectiveMarker(graphics, nsx, nsy);
         }
 
+        travelHits.clear();
+        for (FieldUiSnapshot.Travel travel : ClientFieldState.snapshot().travels()) {
+            if (!travel.unlocked()) continue;
+            DrehmalFastTravelCatalog.Node node = DrehmalFastTravelCatalog.node(travel.id());
+            if (node == null || !inside(node.mapX(), node.mapZ(), view)) continue;
+            int tx = mapX + worldToMap(node.mapX(), view.minX, view.span, mapSize);
+            int ty = mapY + worldToMap(node.mapZ(), view.minZ, view.span, mapSize);
+            drawFastTravelMarker(graphics, tx, ty, travel.current());
+            travelHits.add(new TravelHit(travel, tx - 7, ty - 7, tx + 8, ty + 8));
+        }
+
         DrehmalWorldProfile.Anchor focus = hovered != null ? hovered : nearest(anchors, px, pz);
         int infoX = wide ? mapX + mapSize + 10 : mapX;
         int infoY = wide ? mapY : mapY + mapSize + 6;
@@ -156,10 +187,11 @@ final class DrehmalWorldMapScreen extends Screen {
             graphics.text(font, Component.literal("◆ 거점"), infoX + 9, infoY + 92, GOLD, false);
             graphics.text(font, Component.literal("■ 지역"), infoX + 9, infoY + 109, BLUE, false);
             graphics.text(font, Component.literal("● 랜드마크"), infoX + 9, infoY + 126, GREEN, false);
+            graphics.text(font, Component.literal("◇ 빠른 이동"), infoX + 9, infoY + 143, GOLD, false);
         }
-        if (wide && infoH > 190) {
-            String note = "표시는 알려진 장소의 기준점입니다. 전투 위치는 탐험하기 전에는 숨겨집니다.";
-            int noteY = infoY + 153;
+        if (wide && infoH > 207) {
+            String note = "발견한 ◇ 거점을 클릭하면 빠른 이동합니다. 전투 위치는 탐험하기 전에는 숨겨집니다.";
+            int noteY = infoY + 170;
             for (String line : UiTextLayout.wrap(note, infoW - 18, 4)) {
                 if (noteY + font.lineHeight >= infoY + infoH - 6) break;
                 graphics.text(font, Component.literal(line), infoX + 9, noteY, SECONDARY, false);
@@ -335,6 +367,16 @@ final class DrehmalWorldMapScreen extends Screen {
         g.fill(cx - 2, cy - 2, cx + 3, cy + 3, 0xFF24251F);
     }
 
+    private static void drawFastTravelMarker(GuiGraphicsExtractor g, int cx, int cy, boolean current) {
+        int color = current ? GREEN : GOLD;
+        g.fill(cx - 5, cy - 1, cx + 6, cy + 2, color);
+        g.fill(cx - 1, cy - 5, cx + 2, cy + 6, color);
+        g.fill(cx - 3, cy - 3, cx + 4, cy - 2, color);
+        g.fill(cx - 3, cy + 3, cx + 4, cy + 4, color);
+        g.fill(cx - 3, cy - 2, cx - 2, cy + 3, color);
+        g.fill(cx + 3, cy - 2, cx + 4, cy + 3, color);
+    }
+
     private static void drawMapArrow(GuiGraphicsExtractor g, int cx, int cy, float yaw, int color, boolean backdrop) {
         int dir = Math.floorMod(Math.round(yaw / 45.0F), 8);
         int[] vx = {0, -1, -1, -1, 0, 1, 1, 1};
@@ -367,4 +409,7 @@ final class DrehmalWorldMapScreen extends Screen {
 
     private record Bounds(double minX, double minZ, double span) {}
     private record Viewport(double minX, double minZ, double span) {}
+    private record TravelHit(FieldUiSnapshot.Travel travel, int minX, int minY, int maxX, int maxY) {
+        boolean contains(double x, double y) { return x >= minX && x <= maxX && y >= minY && y <= maxY; }
+    }
 }

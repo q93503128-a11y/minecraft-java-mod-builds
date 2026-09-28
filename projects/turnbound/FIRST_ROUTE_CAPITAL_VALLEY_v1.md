@@ -519,3 +519,29 @@ local slope, 최대 4-player shared formation, battle camera corridor, safety-zo
 두 개 이상의 co-op-safe arena를 확보하지 못하면 그 encounter는 해당 세션에서 fail-closed 한다.
 
 따라서 배치 자동화는 지형을 무시한 랜덤 스폰이 아니라 **지도상 의미 있는 구역 선택 → 26.2 실지형 안전 검사** 순서다.
+
+
+## 23. 첫 루트 빠른 이동
+
+Capital Valley의 첫 traversal은 반드시 실제 도로 탐험으로 진행한다.
+빠른 이동은 한 번 방문한 뒤의 왕복 피로만 제거한다.
+
+초기 travel node:
+- **프라이멀 길머리** — 첫 route 동쪽 시작부.
+- **Capital Valley Tower** — 첫 route 중앙 landmark.
+- **New Drabyel** — 첫 hub.
+
+세 노드는 대략 500~700블록 단위로 떨어뜨린다.
+Warning Cave / Explorer Camp / 일반 전투 지점은 빠른 이동 node가 아니다.
+
+동작:
+- node 반경에 직접 진입하면 개인 save에 발견 상태 기록
+- 발견 전 사용 불가
+- 월드맵에는 발견한 node만 빠른 이동 표식 활성
+- 전투 중 또는 필드 적 추격 상태에서는 사용 불가
+- 도착 시 원본 맵을 수정하지 않고 현재 26.2 지형에서 안전한 착지 블록을 서버가 선택
+- Gold 비용 없음
+- 실제 위치가 막혀 있으면 다른 지역으로 순간 이동시키지 않고 해당 node 주변에서만 안전 지점을 찾고, 실패하면 이동 취소
+
+탈것은 이 시스템을 대체하지 않는다.
+탈것은 길 자체를 즐기면서 빠르게 이동하는 수단이고, 빠른 이동은 이미 탐험한 장거리 왕복을 생략하는 수단이다.

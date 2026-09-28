@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "nodes": [
+    {
+      "id": "turnbound:travel/primal_roadhead",
+      "label": "프라이멀 길머리",
+      "siteLocator": "turnbound:site/capital_valley/roadhead",
+      "mapX": 676,
+      "preferredY": 70,
+      "mapZ": 599,
+      "unlockRadius": 42,
+      "arrivalRadius": 18,
+      "yaw": 180.0
+    },
+    {
+      "id": "turnbound:travel/capital_valley_tower",
+      "label": "캐피털 밸리 탑",
+      "siteLocator": "turnbound:site/capital_valley/tower",
+      "mapX": 557,
+      "preferredY": 129,
+      "mapZ": 1176,
+      "unlockRadius": 48,
+      "arrivalRadius": 22,
+      "yaw": 180.0
+    },
+    {
+      "id": "turnbound:travel/new_drabyel",
+      "label": "뉴 드라비엘",
+      "siteLocator": "turnbound:site/capital_valley/new_drabyel",
+      "mapX": 530,
+      "preferredY": 70,
+      "mapZ": 1848,
+      "unlockRadius": 72,
+      "arrivalRadius": 30,
+      "yaw": 0.0
+    }
+  ]
+}

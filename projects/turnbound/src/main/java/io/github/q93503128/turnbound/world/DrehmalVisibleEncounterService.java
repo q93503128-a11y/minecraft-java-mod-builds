@@ -86,6 +86,16 @@ final class DrehmalVisibleEncounterService {
         lastTick = Long.MIN_VALUE;
     }
 
+    static boolean fastTravelBlocked(ServerPlayer player) {
+        if (player == null || boundLevel == null || player.level() != boundLevel) return false;
+        double radiusSq = FieldEncounterRules.DISENGAGE_RADIUS * FieldEncounterRules.DISENGAGE_RADIUS;
+        for (SharedEncounter encounter : ENCOUNTERS.values()) {
+            if (encounter.claimedBy != null || encounter.phase != FieldEncounterRules.Phase.ALERT) continue;
+            if (encounter.pivot.distanceToSqr(player.position()) <= radiusSq) return true;
+        }
+        return false;
+    }
+
     private static void bind(ServerLevel level) {
         if (boundLevel == level) return;
         clear();
