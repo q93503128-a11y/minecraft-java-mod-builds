@@ -49,6 +49,19 @@ public record OrdinaryEquipmentAffixCatalogData(
         return List.copyOf(result);
     }
 
+    public OrdinaryEquipmentAffixRoller.AffixDefinition definition(
+            String affixId
+    ) {
+        Objects.requireNonNull(affixId, "affixId");
+        AffixEntry entry = affixes.stream()
+                .filter(value -> value.id().equals(affixId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Unknown ordinary affix id: " + affixId
+                ));
+        return entry.definition(primaryCurve.toRuntimeCurve());
+    }
+
     public boolean runtimeImplemented(String affixId) {
         Objects.requireNonNull(affixId, "affixId");
         return affixes.stream()
