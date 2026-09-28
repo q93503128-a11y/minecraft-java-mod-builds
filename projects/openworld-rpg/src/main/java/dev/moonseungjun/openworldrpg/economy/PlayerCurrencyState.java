@@ -77,6 +77,19 @@ public record PlayerCurrencyState(
         }
     }
 
+    public PlayerCurrencyState(
+            int schemaVersion,
+            long gold,
+            Set<String> appliedCreditTransactionIds
+    ) {
+        this(
+                schemaVersion,
+                gold,
+                appliedCreditTransactionIds,
+                Set.of()
+        );
+    }
+
     public static PlayerCurrencyState initial() {
         return new PlayerCurrencyState(
                 CURRENT_SCHEMA_VERSION,
