@@ -1,0 +1,273 @@
+{
+  "schema_version": 1,
+  "id": "openworld_rpg:equipment/ordinary_affix_catalog",
+  "primary_curve": {
+    "base_scale": 1,
+    "per_level_scale": 0.045,
+    "min_multiplier": 1,
+    "max_multiplier": 2.5
+  },
+  "affixes": [
+    {
+      "id": "openworld_rpg:affix/vit",
+      "category": "primary",
+      "value_rule": "primary_flat",
+      "min": 0,
+      "max": 0,
+      "runtime_payload": "openworld_rpg:runtime_affix/vit",
+      "runtime_state": "implemented"
+    },
+    {
+      "id": "openworld_rpg:affix/end",
+      "category": "primary",
+      "value_rule": "primary_flat",
+      "min": 0,
+      "max": 0,
+      "runtime_payload": "openworld_rpg:runtime_affix/end",
+      "runtime_state": "implemented"
+    },
+    {
+      "id": "openworld_rpg:affix/str",
+      "category": "primary",
+      "value_rule": "primary_flat",
+      "min": 0,
+      "max": 0,
+      "runtime_payload": "openworld_rpg:runtime_affix/str",
+      "runtime_state": "implemented"
+    },
+    {
+      "id": "openworld_rpg:affix/dex",
+      "category": "primary",
+      "value_rule": "primary_flat",
+      "min": 0,
+      "max": 0,
+      "runtime_payload": "openworld_rpg:runtime_affix/dex",
+      "runtime_state": "implemented"
+    },
+    {
+      "id": "openworld_rpg:affix/int",
+      "category": "primary",
+      "value_rule": "primary_flat",
+      "min": 0,
+      "max": 0,
+      "runtime_payload": "openworld_rpg:runtime_affix/int",
+      "runtime_state": "implemented"
+    },
+    {
+      "id": "openworld_rpg:affix/wil",
+      "category": "primary",
+      "value_rule": "primary_flat",
+      "min": 0,
+      "max": 0,
+      "runtime_payload": "openworld_rpg:runtime_affix/wil",
+      "runtime_state": "implemented"
+    },
+    {
+      "id": "openworld_rpg:affix/physical_power",
+      "category": "offense",
+      "value_rule": "percent_half",
+      "min": 2.5,
+      "max": 7.5,
+      "runtime_payload": "openworld_rpg:runtime_affix/physical_power",
+      "runtime_state": "implemented"
+    },
+    {
+      "id": "openworld_rpg:affix/magic_power",
+      "category": "offense",
+      "value_rule": "percent_half",
+      "min": 2.5,
+      "max": 7.5,
+      "runtime_payload": "openworld_rpg:runtime_affix/magic_power",
+      "runtime_state": "implemented"
+    },
+    {
+      "id": "openworld_rpg:affix/critical_chance",
+      "category": "offense",
+      "value_rule": "percent_tenth",
+      "min": 1,
+      "max": 3.5,
+      "runtime_payload": "openworld_rpg:runtime_affix/critical_chance",
+      "runtime_state": "stored_only"
+    },
+    {
+      "id": "openworld_rpg:affix/critical_damage",
+      "category": "offense",
+      "value_rule": "percent_half",
+      "min": 5,
+      "max": 15,
+      "runtime_payload": "openworld_rpg:runtime_affix/critical_damage",
+      "runtime_state": "stored_only"
+    },
+    {
+      "id": "openworld_rpg:affix/attack_speed",
+      "category": "offense",
+      "value_rule": "percent_half",
+      "min": 2,
+      "max": 6,
+      "runtime_payload": "openworld_rpg:runtime_affix/attack_speed",
+      "runtime_state": "stored_only"
+    },
+    {
+      "id": "openworld_rpg:affix/weak_point_damage",
+      "category": "offense",
+      "value_rule": "percent_half",
+      "min": 5,
+      "max": 15,
+      "runtime_payload": "openworld_rpg:runtime_affix/weak_point_damage",
+      "runtime_state": "stored_only"
+    },
+    {
+      "id": "openworld_rpg:affix/defense",
+      "category": "defense",
+      "value_rule": "percent_half",
+      "min": 3,
+      "max": 9,
+      "runtime_payload": "openworld_rpg:runtime_affix/defense",
+      "runtime_state": "implemented"
+    },
+    {
+      "id": "openworld_rpg:affix/magic_resistance",
+      "category": "defense",
+      "value_rule": "percent_half",
+      "min": 3,
+      "max": 9,
+      "runtime_payload": "openworld_rpg:runtime_affix/magic_resistance",
+      "runtime_state": "implemented"
+    },
+    {
+      "id": "openworld_rpg:affix/max_hp",
+      "category": "defense",
+      "value_rule": "percent_half",
+      "min": 2.5,
+      "max": 7,
+      "runtime_payload": "openworld_rpg:runtime_affix/max_hp",
+      "runtime_state": "stored_only"
+    },
+    {
+      "id": "openworld_rpg:affix/guard_strength",
+      "category": "defense",
+      "value_rule": "percent_half",
+      "min": 5,
+      "max": 15,
+      "runtime_payload": "openworld_rpg:runtime_affix/guard_strength",
+      "runtime_state": "implemented"
+    },
+    {
+      "id": "openworld_rpg:affix/poise_stagger_resistance",
+      "category": "defense",
+      "value_rule": "percent_half",
+      "min": 5,
+      "max": 15,
+      "runtime_payload": "openworld_rpg:runtime_affix/poise_stagger_resistance",
+      "runtime_state": "implemented"
+    },
+    {
+      "id": "openworld_rpg:affix/max_mana",
+      "category": "resource",
+      "value_rule": "percent_half",
+      "min": 3,
+      "max": 9,
+      "runtime_payload": "openworld_rpg:runtime_affix/max_mana",
+      "runtime_state": "stored_only"
+    },
+    {
+      "id": "openworld_rpg:affix/max_stamina",
+      "category": "resource",
+      "value_rule": "percent_half",
+      "min": 3,
+      "max": 9,
+      "runtime_payload": "openworld_rpg:runtime_affix/max_stamina",
+      "runtime_state": "stored_only"
+    },
+    {
+      "id": "openworld_rpg:affix/mana_recovery",
+      "category": "resource",
+      "value_rule": "percent_half",
+      "min": 4,
+      "max": 12,
+      "runtime_payload": "openworld_rpg:runtime_affix/mana_recovery",
+      "runtime_state": "stored_only"
+    },
+    {
+      "id": "openworld_rpg:affix/stamina_recovery",
+      "category": "resource",
+      "value_rule": "percent_half",
+      "min": 4,
+      "max": 12,
+      "runtime_payload": "openworld_rpg:runtime_affix/stamina_recovery",
+      "runtime_state": "stored_only"
+    },
+    {
+      "id": "openworld_rpg:affix/skill_mana_cost_reduction",
+      "category": "resource",
+      "value_rule": "percent_half",
+      "min": 2,
+      "max": 6,
+      "runtime_payload": "openworld_rpg:runtime_affix/skill_mana_cost_reduction",
+      "runtime_state": "stored_only"
+    },
+    {
+      "id": "openworld_rpg:affix/dodge_sprint_stamina_cost_reduction",
+      "category": "resource",
+      "value_rule": "percent_half",
+      "min": 3,
+      "max": 9,
+      "runtime_payload": "openworld_rpg:runtime_affix/dodge_sprint_stamina_cost_reduction",
+      "runtime_state": "stored_only"
+    },
+    {
+      "id": "openworld_rpg:affix/ultimate_charge_gain",
+      "category": "resource",
+      "value_rule": "percent_half",
+      "min": 4,
+      "max": 10,
+      "runtime_payload": "openworld_rpg:runtime_affix/ultimate_charge_gain",
+      "runtime_state": "stored_only"
+    },
+    {
+      "id": "openworld_rpg:affix/movement_speed",
+      "category": "utility",
+      "value_rule": "percent_tenth",
+      "min": 1,
+      "max": 3.5,
+      "runtime_payload": "openworld_rpg:runtime_affix/movement_speed",
+      "runtime_state": "stored_only"
+    },
+    {
+      "id": "openworld_rpg:affix/healing_done",
+      "category": "utility",
+      "value_rule": "percent_half",
+      "min": 4,
+      "max": 12,
+      "runtime_payload": "openworld_rpg:runtime_affix/healing_done",
+      "runtime_state": "stored_only"
+    },
+    {
+      "id": "openworld_rpg:affix/healing_received",
+      "category": "utility",
+      "value_rule": "percent_half",
+      "min": 4,
+      "max": 12,
+      "runtime_payload": "openworld_rpg:runtime_affix/healing_received",
+      "runtime_state": "stored_only"
+    },
+    {
+      "id": "openworld_rpg:affix/negative_status_duration_reduction",
+      "category": "utility",
+      "value_rule": "percent_half",
+      "min": 5,
+      "max": 15,
+      "runtime_payload": "openworld_rpg:runtime_affix/negative_status_duration_reduction",
+      "runtime_state": "stored_only"
+    },
+    {
+      "id": "openworld_rpg:affix/potion_food_effect_strength",
+      "category": "utility",
+      "value_rule": "percent_half",
+      "min": 4,
+      "max": 12,
+      "runtime_payload": "openworld_rpg:runtime_affix/potion_food_effect_strength",
+      "runtime_state": "stored_only"
+    }
+  ]
+}
