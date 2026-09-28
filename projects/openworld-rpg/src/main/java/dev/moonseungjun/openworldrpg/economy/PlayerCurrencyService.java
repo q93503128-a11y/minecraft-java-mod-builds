@@ -31,6 +31,19 @@ public final class PlayerCurrencyService {
         return new CreditResult(next, true);
     }
 
+    public static PlayerCurrencyState.DebitResult debitOnce(
+            ServerPlayer player,
+            String transactionId,
+            long amount
+    ) {
+        PlayerCurrencyState.DebitResult result =
+                state(player).debitOnce(transactionId, amount);
+        if (!state(player).equals(result.state())) {
+            player.setAttached(PlayerCurrencyAttachments.CURRENCY, result.state());
+        }
+        return result;
+    }
+
     public static PlayerCurrencyState forgetCreditTransaction(
             ServerPlayer player,
             String transactionId
