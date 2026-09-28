@@ -19,6 +19,8 @@ public final class PlayerCombatBuildPublisher {
         PlayerProgressionState progression = PlayerProgressionService.state(player);
         PlayerEquipmentLoadoutState loadout = PlayerEquipmentService.state(player);
         EffectiveAttributes gearAttributes = loadout.aggregateFlatAttributeBonuses();
+        EquipmentResourceModifiers resourceModifiers =
+                loadout.aggregateResourceModifiers();
 
         AttributeAllocation allocation = progression.activeClass()
                 .map(progression::allocation)
@@ -31,7 +33,7 @@ public final class PlayerCombatBuildPublisher {
         int maxHealth = ProjectCombatRules.maxPlayerHealth(
                 progression.combatLevel(),
                 effectiveVit,
-                0.0
+                resourceModifiers.maxHealthBonus()
         );
         PlayerVitalsRuntime.synchronizeMaxHealth(player, maxHealth);
         CombatStateServices.states().synchronizeEndurance(
@@ -42,6 +44,11 @@ public final class PlayerCombatBuildPublisher {
         CombatStateServices.states().synchronizeWill(
                 player.getUUID(),
                 (int) Math.round(effectiveWil),
+                gameTick
+        );
+        CombatStateServices.states().synchronizeResourceModifiers(
+                player.getUUID(),
+                resourceModifiers,
                 gameTick
         );
         CombatStateServices.defenseSnapshots().bindAuthoritative(
