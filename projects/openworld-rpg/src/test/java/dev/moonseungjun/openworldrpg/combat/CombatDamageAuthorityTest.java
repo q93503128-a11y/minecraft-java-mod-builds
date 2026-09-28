@@ -178,6 +178,102 @@ class CombatDamageAuthorityTest {
     }
 
     @Test
+    void serverCriticalRollUsesDexGearChanceAndCriticalDamageAffix() {
+        var equipment = new EquipmentCombatState(
+                ProjectWeaponFamily.SWORD,
+                8,
+                new dev.moonseungjun.openworldrpg.combat.state.EffectiveAttributes(
+                        0, 0, 0, 5, 0, 0
+                ),
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.30,
+                0.15,
+                0.0,
+                0.0
+        );
+        var build = new PlayerCombatBuildState(
+                8,
+                RootClass.WARRIOR,
+                new AttributeAllocation(0, 0, 7, 0, 0, 0),
+                equipment
+        );
+
+        var critical = CombatDamageAuthority.authorizeBetterCombatMelee(
+                1.0F,
+                0,
+                build,
+                EARTHLOONG,
+                0.10
+        );
+        var normal = CombatDamageAuthority.authorizeBetterCombatMelee(
+                9999.0F,
+                0,
+                build,
+                EARTHLOONG,
+                0.90
+        );
+
+        assertTrue(critical.accepted());
+        assertTrue(critical.critical());
+        assertTrue(normal.accepted());
+        assertFalse(normal.critical());
+        assertTrue(critical.finalDamage() > normal.finalDamage());
+        assertEquals(
+                normal.poiseDamage(),
+                critical.poiseDamage(),
+                0.0001
+        );
+    }
+
+    @Test
+    void rangedBasicUsesSameServerCriticalAuthority() {
+        var equipment = new EquipmentCombatState(
+                ProjectWeaponFamily.BOW,
+                8,
+                new dev.moonseungjun.openworldrpg.combat.state.EffectiveAttributes(
+                        0, 0, 0, 10, 0, 0
+                ),
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.30,
+                0.15,
+                0.0,
+                0.0
+        );
+        var build = new PlayerCombatBuildState(
+                8,
+                RootClass.HUNTER,
+                new AttributeAllocation(0, 0, 0, 7, 0, 0),
+                equipment
+        );
+
+        var critical = CombatDamageAuthority.authorizeBowProjectileBasic(
+                5.0F,
+                1.0,
+                build,
+                EARTHLOONG,
+                0.10
+        );
+        var normal = CombatDamageAuthority.authorizeBowProjectileBasic(
+                5.0F,
+                1.0,
+                build,
+                EARTHLOONG,
+                0.90
+        );
+
+        assertTrue(critical.critical());
+        assertFalse(normal.critical());
+        assertTrue(critical.finalDamage() > normal.finalDamage());
+    }
+
+
+    @Test
     void rejectsInvalidDonorProposalOrNonMeleeProjectFamily() {
         var sword = new PlayerCombatBuildState(
                 8,
