@@ -17,6 +17,7 @@ import dev.moonseungjun.openworldrpg.gathering.R01GatheringService;
 import dev.moonseungjun.openworldrpg.housing.R01HousingAttachments;
 import dev.moonseungjun.openworldrpg.housing.R01HousingService;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryAttachments;
+import dev.moonseungjun.openworldrpg.market.R01NessaMarketAttachments;
 import dev.moonseungjun.openworldrpg.progression.r01.R01ClassStarterService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01EarthloongBossLootPlanAttachments;
 import dev.moonseungjun.openworldrpg.progression.r01.R01EarthloongBossLootPlanService;
@@ -73,6 +74,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         PlayerCurrencyAttachments.initialize();
         PlayerRewardTransactionAttachments.initialize();
         PlayerInventoryAttachments.initialize();
+        R01NessaMarketAttachments.initialize();
         R01GatheringAttachments.initialize();
         R01FishingAttachments.initialize();
         R01HousingAttachments.initialize();
