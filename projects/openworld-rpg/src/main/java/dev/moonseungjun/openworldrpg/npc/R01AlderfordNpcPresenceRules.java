@@ -148,8 +148,8 @@ public final class R01AlderfordNpcPresenceRules {
 
         boolean hasService = primaryServiceId(context.npcId()).isPresent();
         boolean relevantNow = hasService
-                && context.serviceLegallyAvailable()
-                && (context.playerWithinServiceRadius()
+                && ((context.serviceLegallyAvailable()
+                        && context.playerWithinServiceRadius())
                     || context.questTurnInRelevant());
 
         long releaseAt = previous.releaseAtTick();
