@@ -65,6 +65,36 @@ public final class OrdinaryEquipmentRuntimeAffixAdapter {
                             EquipmentCombatAffixKind.MAGIC_RESISTANCE,
                             affix.value()
                     );
+            case "openworld_rpg:runtime_affix/max_hp" ->
+                    percentage(
+                            EquipmentCombatAffixKind.MAX_HP,
+                            affix.value()
+                    );
+            case "openworld_rpg:runtime_affix/max_mana" ->
+                    percentage(
+                            EquipmentCombatAffixKind.MAX_MANA,
+                            affix.value()
+                    );
+            case "openworld_rpg:runtime_affix/max_stamina" ->
+                    percentage(
+                            EquipmentCombatAffixKind.MAX_STAMINA,
+                            affix.value()
+                    );
+            case "openworld_rpg:runtime_affix/mana_recovery" ->
+                    percentage(
+                            EquipmentCombatAffixKind.MANA_RECOVERY,
+                            affix.value()
+                    );
+            case "openworld_rpg:runtime_affix/stamina_recovery" ->
+                    percentage(
+                            EquipmentCombatAffixKind.STAMINA_RECOVERY,
+                            affix.value()
+                    );
+            case "openworld_rpg:runtime_affix/skill_mana_cost_reduction" ->
+                    percentage(
+                            EquipmentCombatAffixKind.MANA_COST_REDUCTION,
+                            affix.value()
+                    );
             case "openworld_rpg:runtime_affix/guard_strength" ->
                     percentage(
                             EquipmentCombatAffixKind.GUARD_STRENGTH,
