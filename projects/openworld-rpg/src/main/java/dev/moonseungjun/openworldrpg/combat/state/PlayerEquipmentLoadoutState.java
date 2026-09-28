@@ -146,6 +146,45 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
         return Math.min(result, POISE_STAGGER_RESISTANCE_GEAR_CAP);
     }
 
+
+    public EquipmentResourceModifiers aggregateResourceModifiers() {
+        double maxHealth = 0.0;
+        double maxMana = 0.0;
+        double maxStamina = 0.0;
+        double manaRecovery = 0.0;
+        double staminaRecovery = 0.0;
+        double manaCostReduction = 0.0;
+
+        for (EquippedCombatItem item : equipped) {
+            for (EquipmentCombatAffix affix : item.affixes()) {
+                switch (affix.kind()) {
+                    case MAX_HP -> maxHealth += affix.value();
+                    case MAX_MANA -> maxMana += affix.value();
+                    case MAX_STAMINA -> maxStamina += affix.value();
+                    case MANA_RECOVERY -> manaRecovery += affix.value();
+                    case STAMINA_RECOVERY -> staminaRecovery += affix.value();
+                    case MANA_COST_REDUCTION ->
+                            manaCostReduction += affix.value();
+                    default -> {
+                        // Other affix groups are aggregated by their owned publisher.
+                    }
+                }
+            }
+        }
+
+        return new EquipmentResourceModifiers(
+                maxHealth,
+                maxMana,
+                maxStamina,
+                manaRecovery,
+                staminaRecovery,
+                Math.min(
+                        manaCostReduction,
+                        EquipmentResourceModifiers.MAX_MANA_COST_REDUCTION
+                )
+        );
+    }
+
     /**
      * Publishes canonical equipped Defense/MR and shield guard authority even with no main weapon.
      *
@@ -241,8 +280,12 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
                         }
                     }
                     case POISE_OUTPUT -> poiseOutput += affix.value();
-                    case CRITICAL_CHANCE, ATTACK_SPEED, MAX_MANA -> {
-                        // Preserved in the item payload; dedicated crit/cadence/resource publishers own runtime use.
+                    case CRITICAL_CHANCE, ATTACK_SPEED -> {
+                        // Preserved in the item payload; dedicated crit/cadence publishers own runtime use.
+                    }
+                    case MAX_HP, MAX_MANA, MAX_STAMINA, MANA_RECOVERY,
+                            STAMINA_RECOVERY, MANA_COST_REDUCTION -> {
+                        // Published independently by aggregateResourceModifiers().
                     }
                     case DEFENSE, MAGIC_RESISTANCE, GUARD_STRENGTH,
                             POISE_STAGGER_RESISTANCE -> {
