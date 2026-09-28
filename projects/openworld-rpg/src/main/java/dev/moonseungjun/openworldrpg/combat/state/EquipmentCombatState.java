@@ -18,6 +18,8 @@ public record EquipmentCombatState(
         double magicPowerBonus,
         double weaponFamilyPowerBonus,
         double poiseOutputBonus,
+        double criticalChanceBonus,
+        double criticalDamageBonus,
         double maxHealthBonus,
         double supplementalMagicWeaponPower
 ) {
@@ -32,6 +34,18 @@ public record EquipmentCombatState(
         requireBonus("magicPowerBonus", magicPowerBonus);
         requireBonus("weaponFamilyPowerBonus", weaponFamilyPowerBonus);
         requireBonus("poiseOutputBonus", poiseOutputBonus);
+        if (!Double.isFinite(criticalChanceBonus)
+                || criticalChanceBonus < 0.0
+                || criticalChanceBonus > 0.30) {
+            throw new IllegalArgumentException(
+                    "criticalChanceBonus must be inside the canonical gear cap [0, 0.30]."
+            );
+        }
+        if (!Double.isFinite(criticalDamageBonus) || criticalDamageBonus < 0.0) {
+            throw new IllegalArgumentException(
+                    "criticalDamageBonus must be finite and non-negative."
+            );
+        }
         if (!Double.isFinite(maxHealthBonus) || maxHealthBonus < 0.0) {
             throw new IllegalArgumentException(
                     "maxHealthBonus must be finite and non-negative."
@@ -52,6 +66,8 @@ public record EquipmentCombatState(
                 weaponFamily,
                 weaponItemLevel,
                 new EffectiveAttributes(0, 0, 0, 0, 0, 0),
+                0.0,
+                0.0,
                 0.0,
                 0.0,
                 0.0,
