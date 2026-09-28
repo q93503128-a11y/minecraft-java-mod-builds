@@ -89,7 +89,7 @@ class PlayerCombatBuildStateTest {
                 equipment
         );
 
-        assertEquals(0.3556, build.criticalChance(0.0), 0.000001);
+        assertEquals(0.3596, build.criticalChance(0.0), 0.000001);
         assertEquals(1.65, build.criticalMultiplier(0.0), 0.000001);
         assertEquals(0.60, build.criticalChance(0.50), 0.000001);
         assertEquals(2.25, build.criticalMultiplier(1.0), 0.000001);
