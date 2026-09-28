@@ -77,13 +77,15 @@ public abstract class ExternalActorDamageAuthorityMixin {
                             amount,
                             shot.drawPower(),
                             build,
-                            targetSnapshot
+                            targetSnapshot,
+                            shooter.getRandom().nextDouble()
                     );
                 } else {
                     decision = CombatDamageAuthority.authorizeProjectileBasic(
                             amount,
                             build,
-                            targetSnapshot
+                            targetSnapshot,
+                            shooter.getRandom().nextDouble()
                     );
                 }
                 if (!decision.accepted()) {
