@@ -307,6 +307,382 @@
       "y": 76,
       "z": 4296,
       "role": "Root-Split Cairn terrain candidate at the safer eastern edge of Rootshade Grove before deeper optional danger"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/alderford_approach/healing_herb_01",
+      "status": "candidate",
+      "x": -2254,
+      "y": 72,
+      "z": 4122,
+      "role": "healing herb 1/1 alderford approach terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=72; dry approach-road grass shoulder"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/greenwater_ford/hardwood_01",
+      "status": "candidate",
+      "x": -2392,
+      "y": 67,
+      "z": 4098,
+      "role": "hardwood 1/2 greenwater ford terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=67; forest-adjacent dry ground selected near existing tree cover"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/greenwater_ford/hardwood_02",
+      "status": "candidate",
+      "x": -2432,
+      "y": 66,
+      "z": 4010,
+      "role": "hardwood 2/2 greenwater ford terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=66; forest-adjacent dry ground selected near existing tree cover"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/greenwater_ford/healing_herb_01",
+      "status": "candidate",
+      "x": -2448,
+      "y": 66,
+      "z": 4066,
+      "role": "healing herb 1/6 greenwater ford terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=66; river-bank compatible dry grass near the real Greenwater water network"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/greenwater_ford/healing_herb_02",
+      "status": "candidate",
+      "x": -2456,
+      "y": 66,
+      "z": 4042,
+      "role": "healing herb 2/6 greenwater ford terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=66; river-bank compatible dry grass near the real Greenwater water network"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/greenwater_ford/healing_herb_03",
+      "status": "candidate",
+      "x": -2472,
+      "y": 70,
+      "z": 4098,
+      "role": "healing herb 3/6 greenwater ford terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=70; river-bank compatible dry grass near the real Greenwater water network"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/greenwater_ford/healing_herb_04",
+      "status": "candidate",
+      "x": -2456,
+      "y": 69,
+      "z": 4122,
+      "role": "healing herb 4/6 greenwater ford terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=69; river-bank compatible dry grass near the real Greenwater water network"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/greenwater_ford/healing_herb_05",
+      "status": "candidate",
+      "x": -2408,
+      "y": 68,
+      "z": 4122,
+      "role": "healing herb 5/6 greenwater ford terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=68; river-bank compatible dry grass near the real Greenwater water network"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/greenwater_ford/healing_herb_06",
+      "status": "candidate",
+      "x": -2400,
+      "y": 69,
+      "z": 4130,
+      "role": "healing herb 6/6 greenwater ford terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=69; river-bank compatible dry grass near the real Greenwater water network"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/alder_meadow/hardwood_01",
+      "status": "candidate",
+      "x": -2008,
+      "y": 69,
+      "z": 4272,
+      "role": "hardwood 1/2 alder meadow terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=69; open-meadow edge selected near existing tree cover"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/alder_meadow/hardwood_02",
+      "status": "candidate",
+      "x": -2040,
+      "y": 67,
+      "z": 4104,
+      "role": "hardwood 2/2 alder meadow terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=67; open-meadow edge selected near existing tree cover"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/alder_meadow/healing_herb_01",
+      "status": "candidate",
+      "x": -2080,
+      "y": 68,
+      "z": 4240,
+      "role": "healing herb 1/3 alder meadow terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=68; dry meadow/river-edge grass"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/alder_meadow/healing_herb_02",
+      "status": "candidate",
+      "x": -2040,
+      "y": 67,
+      "z": 4216,
+      "role": "healing herb 2/3 alder meadow terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=67; dry meadow/river-edge grass"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/alder_meadow/healing_herb_03",
+      "status": "candidate",
+      "x": -1960,
+      "y": 65,
+      "z": 4208,
+      "role": "healing herb 3/3 alder meadow terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=65; dry meadow/river-edge grass"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/riverwood_edge/hardwood_01",
+      "status": "candidate",
+      "x": -2008,
+      "y": 68,
+      "z": 4116,
+      "role": "hardwood 1/7 riverwood edge terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=68; selected from the denser existing tree-cover strip"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/riverwood_edge/hardwood_02",
+      "status": "candidate",
+      "x": -2008,
+      "y": 69,
+      "z": 4300,
+      "role": "hardwood 2/7 riverwood edge terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=69; selected from the denser existing tree-cover strip"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/riverwood_edge/hardwood_03",
+      "status": "candidate",
+      "x": -2016,
+      "y": 68,
+      "z": 4084,
+      "role": "hardwood 3/7 riverwood edge terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=68; selected from the denser existing tree-cover strip"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/riverwood_edge/hardwood_04",
+      "status": "candidate",
+      "x": -2040,
+      "y": 66,
+      "z": 4196,
+      "role": "hardwood 4/7 riverwood edge terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=66; selected from the denser existing tree-cover strip"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/riverwood_edge/hardwood_05",
+      "status": "candidate",
+      "x": -2000,
+      "y": 69,
+      "z": 4252,
+      "role": "hardwood 5/7 riverwood edge terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=69; selected from the denser existing tree-cover strip"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/riverwood_edge/hardwood_06",
+      "status": "candidate",
+      "x": -1968,
+      "y": 66,
+      "z": 4148,
+      "role": "hardwood 6/7 riverwood edge terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=66; selected from the denser existing tree-cover strip"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/riverwood_edge/hardwood_07",
+      "status": "candidate",
+      "x": -2032,
+      "y": 68,
+      "z": 4308,
+      "role": "hardwood 7/7 riverwood edge terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=68; selected from the denser existing tree-cover strip"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/riverwood_edge/healing_herb_01",
+      "status": "candidate",
+      "x": -1952,
+      "y": 64,
+      "z": 4228,
+      "role": "healing herb 1/3 riverwood edge terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=64; dry river-edge grass near the upper branch"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/riverwood_edge/healing_herb_02",
+      "status": "candidate",
+      "x": -1984,
+      "y": 66,
+      "z": 4236,
+      "role": "healing herb 2/3 riverwood edge terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=66; dry river-edge grass near the upper branch"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/riverwood_edge/healing_herb_03",
+      "status": "candidate",
+      "x": -2040,
+      "y": 67,
+      "z": 4212,
+      "role": "healing herb 3/3 riverwood edge terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=67; dry river-edge grass near the upper branch"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/old_quarry_road/iron_ore_01",
+      "status": "candidate",
+      "x": -2452,
+      "y": 73,
+      "z": 4268,
+      "role": "iron ore 1/3 old quarry road terrain candidate; direct Anvil ground at this coordinate is calcite at Y=73; existing exposed rock face candidate inside the Quarry Road evidence belt"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/old_quarry_road/iron_ore_02",
+      "status": "candidate",
+      "x": -2436,
+      "y": 72,
+      "z": 4528,
+      "role": "iron ore 2/3 old quarry road terrain candidate; direct Anvil ground at this coordinate is andesite at Y=72; existing exposed rock face candidate inside the Quarry Road evidence belt"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/old_quarry_road/iron_ore_03",
+      "status": "candidate",
+      "x": -2400,
+      "y": 71,
+      "z": 4512,
+      "role": "iron ore 3/3 old quarry road terrain candidate; direct Anvil ground at this coordinate is andesite at Y=71; existing exposed rock face candidate inside the Quarry Road evidence belt"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/old_quarry_road/hardwood_01",
+      "status": "candidate",
+      "x": -2504,
+      "y": 71,
+      "z": 4352,
+      "role": "hardwood 1/2 old quarry road terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=71; dry road-side tree-cover candidate"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/old_quarry_road/hardwood_02",
+      "status": "candidate",
+      "x": -2400,
+      "y": 74,
+      "z": 4456,
+      "role": "hardwood 2/2 old quarry road terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=74; dry road-side tree-cover candidate"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/old_quarry_road/healing_herb_01",
+      "status": "candidate",
+      "x": -2384,
+      "y": 65,
+      "z": 4544,
+      "role": "healing herb 1/1 old quarry road terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=65; late-road dry grass shoulder near the southern water edge"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/rootshade_grove/hardwood_01",
+      "status": "candidate",
+      "x": -2712,
+      "y": 66,
+      "z": 4296,
+      "role": "hardwood 1/3 rootshade grove terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=66; denser Rootshade tree-cover candidate"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/rootshade_grove/hardwood_02",
+      "status": "candidate",
+      "x": -2696,
+      "y": 65,
+      "z": 4192,
+      "role": "hardwood 2/3 rootshade grove terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=65; denser Rootshade tree-cover candidate"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/rootshade_grove/hardwood_03",
+      "status": "candidate",
+      "x": -2672,
+      "y": 66,
+      "z": 4176,
+      "role": "hardwood 3/3 rootshade grove terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=66; denser Rootshade tree-cover candidate"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/rootshade_grove/healing_herb_01",
+      "status": "candidate",
+      "x": -2744,
+      "y": 63,
+      "z": 4184,
+      "role": "healing herb 1/2 rootshade grove terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=63; low dry grass near the grove water edge"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/rootshade_grove/healing_herb_02",
+      "status": "candidate",
+      "x": -2728,
+      "y": 63,
+      "z": 4208,
+      "role": "healing herb 2/2 rootshade grove terrain candidate; direct Anvil ground at this coordinate is grass_block at Y=63; low dry grass near the grove water edge"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/rootshade_grove/verdant_crystal_01",
+      "status": "candidate",
+      "x": -2624,
+      "y": 72,
+      "z": 4232,
+      "role": "verdant crystal 1/2 rootshade grove terrain candidate; direct Anvil ground at this coordinate is calcite at Y=72; real exposed rocky eastern Rootshade outcrop suitable for the two optional crystal nodes"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/rootshade_grove/verdant_crystal_02",
+      "status": "candidate",
+      "x": -2624,
+      "y": 72,
+      "z": 4252,
+      "role": "verdant crystal 2/2 rootshade grove terrain candidate; direct Anvil ground at this coordinate is andesite at Y=72; real exposed rocky eastern Rootshade outcrop suitable for the two optional crystal nodes"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/quarry_surface_works/iron_ore_01",
+      "status": "candidate",
+      "x": -2560,
+      "y": 67,
+      "z": 4712,
+      "role": "iron ore 1/4 quarry surface works terrain candidate; direct Anvil ground at this coordinate is calcite at Y=67; real exposed calcite face within the Quarry Surface Works candidate"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/quarry_surface_works/iron_ore_02",
+      "status": "candidate",
+      "x": -2584,
+      "y": 71,
+      "z": 4728,
+      "role": "iron ore 2/4 quarry surface works terrain candidate; direct Anvil ground at this coordinate is calcite at Y=71; real exposed calcite face within the Quarry Surface Works candidate"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/quarry_surface_works/iron_ore_03",
+      "status": "candidate",
+      "x": -2644,
+      "y": 71,
+      "z": 4764,
+      "role": "iron ore 3/4 quarry surface works terrain candidate; direct Anvil ground at this coordinate is calcite at Y=71; real exposed calcite face within the Quarry Surface Works candidate"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/quarry_surface_works/iron_ore_04",
+      "status": "candidate",
+      "x": -2688,
+      "y": 73,
+      "z": 4796,
+      "role": "iron ore 4/4 quarry surface works terrain candidate; direct Anvil ground at this coordinate is calcite at Y=73; real exposed calcite face within the Quarry Surface Works candidate"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/quarry_dungeon/iron_ore_01",
+      "status": "candidate",
+      "x": -2568,
+      "y": 40,
+      "z": 4730,
+      "role": "iron ore 1/4 Quarry dungeon authored-wall candidate in Upper Mining Gallery review shell; original Azari block at the candidate is stone, so the resource can be exposed when the reviewed solid rock is excavated"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/quarry_dungeon/iron_ore_02",
+      "status": "candidate",
+      "x": -2598,
+      "y": 32,
+      "z": 4786,
+      "role": "iron ore 2/4 Quarry dungeon authored-wall candidate in Collapsed Hoist review shell; original Azari block at the candidate is stone, so the resource can be exposed when the reviewed solid rock is excavated"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/quarry_dungeon/iron_ore_03",
+      "status": "candidate",
+      "x": -2628,
+      "y": 30,
+      "z": 4810,
+      "role": "iron ore 3/4 Quarry dungeon authored-wall candidate in Root-Breached review shell; original Azari block at the candidate is stone, so the resource can be exposed when the reviewed solid rock is excavated"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/quarry_dungeon/iron_ore_04",
+      "status": "candidate",
+      "x": -2588,
+      "y": 28,
+      "z": 4824,
+      "role": "iron ore 4/4 Quarry dungeon authored-wall candidate in Relay Gallery review shell; original Azari block at the candidate is stone, so the resource can be exposed when the reviewed solid rock is excavated"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/quarry_dungeon/verdant_crystal_01",
+      "status": "candidate",
+      "x": -2624,
+      "y": 30,
+      "z": 4816,
+      "role": "verdant crystal 1/2 Quarry dungeon authored-wall candidate in Root-Breached review shell; original Azari block at the candidate is stone, so the resource can be exposed when the reviewed solid rock is excavated"
+    },
+    {
+      "id": "openworld_rpg:r01/gathering/quarry_dungeon/verdant_crystal_02",
+      "status": "candidate",
+      "x": -2608,
+      "y": 28,
+      "z": 4832,
+      "role": "verdant crystal 2/2 Quarry dungeon authored-wall candidate in Root-Breached review shell; original Azari block at the candidate is stone, so the resource can be exposed when the reviewed solid rock is excavated"
     }
   ],
   "areas": [

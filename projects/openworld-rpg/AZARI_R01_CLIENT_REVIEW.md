@@ -4,7 +4,7 @@
 >
 > Date: 2026-09-28
 >
-> Spatial evidence: `AZARI_R01_SPATIAL_PASS2.md`, `AZARI_R01_QUARRY_INTERIOR_PASS3.md`, `AZARI_R01_SURFACE_SPATIAL_PASS4.md`, `AZARI_R01_FIELD_SPATIAL_PASS5.md`, `AZARI_R01_ALDERFORD_LANDMARK_PASS6.md`
+> Spatial evidence: `AZARI_R01_SPATIAL_PASS2.md`, `AZARI_R01_QUARRY_INTERIOR_PASS3.md`, `AZARI_R01_SURFACE_SPATIAL_PASS4.md`, `AZARI_R01_FIELD_SPATIAL_PASS5.md`, `AZARI_R01_ALDERFORD_LANDMARK_PASS6.md`, `AZARI_R01_GATHERING_SPATIAL_PASS7.md`
 >
 > Rule: this is developer-only inspection workflow. Nothing in this file promotes a candidate coordinate to gameplay authority.
 
