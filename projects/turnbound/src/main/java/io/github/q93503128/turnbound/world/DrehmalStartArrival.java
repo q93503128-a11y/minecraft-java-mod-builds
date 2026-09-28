@@ -21,6 +21,7 @@ import java.util.Set;
  */
 final class DrehmalStartArrival {
     static final String ARRIVAL_FLAG = "DREHMAL_FIRST_ROUTE_ENTRY_V3";
+    static final String LEGACY_DIRECT_HUB_FLAG = "DREHMAL_NEW_DRABYEL_ENTRY_V2";
     static final String PRIMAL_CAVERNS = "turnbound:landmark/primal_caverns";
     private static final String ROADHEAD_SITE = "turnbound:site/capital_valley/roadhead";
     private static final double LEGACY_SETUP_X = 26520.0;
@@ -33,8 +34,14 @@ final class DrehmalStartArrival {
         if (player == null || saved == null) return false;
 
         // Physical presence in Drehmal's setup terminal is stronger evidence than a previous arrival flag.
-        // The original bootstrap can move the host back after TURNBOUND already recorded an arrival.
-        if (!legacySetupZone(player.getX(), player.getY(), player.getZ())) return false;
+        // Older TURNBOUND builds sent some test saves directly to New Drabyel; migrate that state once.
+        boolean setupTerminal = legacySetupZone(player.getX(), player.getY(), player.getZ());
+        boolean legacyHubArrival = shouldMigrateLegacyHubArrival(
+                saved.onboardingFlag(player.getUUID(), ARRIVAL_FLAG),
+                saved.onboardingFlag(player.getUUID(), LEGACY_DIRECT_HUB_FLAG)
+                        || saved.onboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.HUB_REACHED),
+                legacyHubZone(player.getX(), player.getZ()));
+        if (!setupTerminal && !legacyHubArrival) return false;
 
         ServerLevel level = (ServerLevel) player.level();
         DrehmalMapPlacementCatalog.Placement roadhead = DrehmalMapPlacementCatalog.placement(ROADHEAD_SITE);
@@ -75,11 +82,31 @@ final class DrehmalStartArrival {
 
         player.setDeltaMovement(Vec3.ZERO);
         player.setOnGround(true);
+        if (legacyHubArrival) {
+            saved.clearOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.TOWER_REACHED);
+            saved.clearOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.CAMP_REACHED);
+            saved.clearOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.APPROACH_REACHED);
+            saved.clearOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.HUB_REACHED);
+            saved.clearOnboardingFlag(player.getUUID(), DrehmalContextualOnboarding.HUB_MENU_VIEWED);
+            saved.clearOnboardingFlag(player.getUUID(), DrehmalContextualOnboarding.HUB_ROUTE_REVIEWED);
+        }
         saved.markOnboardingFlag(player.getUUID(), ARRIVAL_FLAG);
         Turnbound.LOGGER.info(
-                "TURNBOUND moved {} from the legacy Drehmal setup terminal to the Capital Valley roadhead {}, {}, {}",
+                "TURNBOUND moved {} into the Capital Valley first-route roadhead {}, {}, {}",
                 player.getUUID(), destination.getX(), destination.getY(), destination.getZ());
         return true;
+    }
+
+    static boolean shouldMigrateLegacyHubArrival(boolean hasCurrentArrival, boolean hasLegacyHubEvidence, boolean insideHub) {
+        return !hasCurrentArrival && hasLegacyHubEvidence && insideHub;
+    }
+
+    private static boolean legacyHubZone(double x, double z) {
+        var hub = DrehmalWorldProfile.enabled(DrehmalWorldProfile.HUB_LOCATOR);
+        if (hub == null) return false;
+        double dx = x - (hub.x() + 0.5D);
+        double dz = z - (hub.z() + 0.5D);
+        return dx * dx + dz * dz <= 96.0D * 96.0D;
     }
 
     static boolean legacySetupZone(double x, double y, double z) {

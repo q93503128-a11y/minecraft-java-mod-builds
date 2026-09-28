@@ -100,40 +100,30 @@ final class DrehmalContextualOnboarding {
     }
 
     private static Guidance hubGuidance(Set<String> clears, Set<String> flags, Set<String> roles) {
+        String objective = "뉴 드라비엘에서 준비를 마치고 다음 길을 확인하십시오.";
         if (!flags.contains(HUB_MENU_VIEWED)) {
-            return new Guidance(
-                    "파티와 장비를 한 번 확인하십시오.",
-                    "E 메뉴에서 현재 파티를 바로 확인할 수 있습니다.");
+            return new Guidance(objective, "E 메뉴에서 파티와 장비를 확인할 수 있습니다.");
         }
         if (roles.isEmpty()) {
-            if (flags.contains(HUB_ROUTE_REVIEWED)) return new Guidance("", "");
             return new Guidance(
-                    "뉴 드라비엘에서 파티와 장비를 정리하고 다음 길을 확인하십시오.",
-                    "E 메뉴에서 필요한 정리를 마친 뒤 M 지도를 열어 다음 경로를 확인하십시오.");
+                    objective,
+                    flags.contains(HUB_ROUTE_REVIEWED)
+                            ? ""
+                            : "M 지도를 열어 발견한 길과 다음 이동 방향을 확인하십시오.");
         }
         if (needs("BLACKSMITH", flags, roles)) {
-            return new Guidance(
-                    "뉴 드라비엘의 대장간에서 장비를 점검하십시오.",
-                    "새 장비를 얻었다면 여기서 바로 손볼 수 있습니다.");
+            return new Guidance(objective, "장비를 손볼 필요가 있다면 대장간을 이용할 수 있습니다.");
         }
         if (needs("MARKET", flags, roles)) {
-            return new Guidance(
-                    "시장 쪽 장비 상인에게 들러 보십시오.",
-                    "먼 길을 나서기 전에 필요한 장비를 확인해 두십시오.");
+            return new Guidance(objective, "시장에서는 다음 여정에 필요한 장비를 확인할 수 있습니다.");
         }
         if (needs("TRAVEL", flags, roles)) {
-            return new Guidance(
-                    "마구간에서 다음 길과 지도를 확인하십시오.",
-                    "확인된 길과 표식만 지도에 이어집니다.");
+            return new Guidance(objective, "마구간과 지도에서 발견한 이동 거점을 확인할 수 있습니다.");
         }
         if (DrehmalContentUnlocks.summonUnlocked(clears) && needs("SUMMON", flags, roles)) {
-            return new Guidance(
-                    "마을 안에서 반응하는 정령의 흔적을 찾아보십시오.",
-                    "캐피털 밸리의 강적을 넘긴 뒤 흔적이 깨어났습니다.");
+            return new Guidance(objective, "캐피털 밸리의 강적을 넘겼다면 정령의 흔적이 반응합니다.");
         }
-        return new Guidance(
-                "뉴 드라비엘에서 준비를 마치고 다음 길을 확인하십시오.",
-                "필요한 일만 마친 뒤 다시 길 위로 나가면 됩니다.");
+        return new Guidance(objective, "");
     }
 
     private static boolean needs(String role, Set<String> flags, Set<String> roles) {

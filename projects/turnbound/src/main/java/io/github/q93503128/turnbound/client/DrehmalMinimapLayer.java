@@ -156,7 +156,7 @@ public final class DrehmalMinimapLayer implements GuiLayer {
             int mapX, int mapY, double playerX, double playerZ, double radius) {
         double clampRadius = Math.max(STEP, radius - STEP * 3.0);
         for (ClientMultiplayerPartyState.Member member : ClientMultiplayerPartyState.snapshot().members()) {
-            if (!member.online() || !member.sameLevel()) continue;
+            if (member.self() || !member.online() || !member.sameLevel()) continue;
             double dx = member.x() - playerX;
             double dz = member.z() - playerZ;
             double maxAxis = Math.max(Math.abs(dx), Math.abs(dz));

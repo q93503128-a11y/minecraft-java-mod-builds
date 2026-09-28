@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DrehmalContextualOnboardingTest {
     @Test
-    void hubTeachesOneUsefulSurfaceAtATime() {
+    void hubKeepsWorldObjectiveStableWhileHintsTeachOptionalSurfaces() {
         Set<String> roles = Set.of("BLACKSMITH", "MARKET", "TRAVEL", "SUMMON");
 
         var menu = DrehmalContextualOnboarding.resolve(
@@ -17,15 +17,16 @@ class DrehmalContextualOnboardingTest {
                 Set.of(DrehmalContentUnlocks.DRABYEL_ROAD),
                 Set.of(),
                 roles);
-        assertTrue(menu.objective().contains("파티"));
+        assertTrue(menu.objective().contains("다음 길"));
+        assertTrue(menu.hint().contains("E 메뉴"));
 
         var forge = DrehmalContextualOnboarding.resolve(
                 "HUB_SAFE",
                 Set.of(DrehmalContentUnlocks.DRABYEL_ROAD),
                 Set.of(DrehmalContextualOnboarding.HUB_MENU_VIEWED),
                 roles);
-        assertTrue(forge.objective().contains("대장간"));
-        assertFalse(forge.objective().contains("상인"));
+        assertTrue(forge.objective().contains("다음 길"));
+        assertTrue(forge.hint().contains("대장간"));
 
         var market = DrehmalContextualOnboarding.resolve(
                 "HUB_SAFE",
@@ -34,7 +35,8 @@ class DrehmalContextualOnboardingTest {
                         DrehmalContextualOnboarding.HUB_MENU_VIEWED,
                         DrehmalContextualOnboarding.serviceFlag("BLACKSMITH")),
                 roles);
-        assertTrue(market.objective().contains("상인"));
+        assertTrue(market.objective().contains("다음 길"));
+        assertTrue(market.hint().contains("시장"));
 
         var travel = DrehmalContextualOnboarding.resolve(
                 "HUB_SAFE",
@@ -44,7 +46,8 @@ class DrehmalContextualOnboardingTest {
                         DrehmalContextualOnboarding.serviceFlag("BLACKSMITH"),
                         DrehmalContextualOnboarding.serviceFlag("MARKET")),
                 roles);
-        assertTrue(travel.objective().contains("마구간"));
+        assertTrue(travel.objective().contains("다음 길"));
+        assertTrue(travel.hint().contains("마구간"));
 
         var summon = DrehmalContextualOnboarding.resolve(
                 "HUB_SAFE",
@@ -55,7 +58,8 @@ class DrehmalContextualOnboardingTest {
                         DrehmalContextualOnboarding.serviceFlag("MARKET"),
                         DrehmalContextualOnboarding.serviceFlag("TRAVEL")),
                 roles);
-        assertTrue(summon.objective().contains("정령의 흔적"));
+        assertTrue(summon.objective().contains("다음 길"));
+        assertTrue(summon.hint().contains("정령의 흔적"));
     }
 
     @Test
@@ -65,7 +69,7 @@ class DrehmalContextualOnboardingTest {
                 Set.of(),
                 Set.of(DrehmalFirstRouteProgress.HUB_REACHED),
                 Set.of());
-        assertTrue(guidance.objective().contains("파티"));
+        assertTrue(guidance.objective().contains("다음 길"));
         assertFalse(guidance.objective().contains("길을 따라"));
     }
 

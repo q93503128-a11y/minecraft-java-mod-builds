@@ -40,10 +40,7 @@ public final class ClientMetaNetwork {
             }
             if (minecraft.gui.screen() instanceof FacilityMarketScreen market) market.refreshSnapshot();
             else if (minecraft.gui.screen() instanceof MetaMenuScreen screen) screen.refreshSnapshot();
-            else if (!(minecraft.gui.screen() instanceof EndgameBriefingScreen)) {
-                FacilityUiAccess.clear();
-                minecraft.gui.setScreen(new MetaMenuScreen(MetaMenuScreen.Tab.HOME));
-            }
+            // Passive snapshot updates never open a new screen. Explicit O| hints own navigation.
         });
     }
 
@@ -72,6 +69,7 @@ public final class ClientMetaNetwork {
 
     private static MetaMenuScreen.Tab tab(String hint) {
         return switch (hint) {
+            case "HOME" -> MetaMenuScreen.Tab.HOME;
             case "PARTY", "RELAY" -> MetaMenuScreen.Tab.PARTY;
             case "CHARACTERS", "MEMORIAL", "CLOCK", "BARRACKS" -> MetaMenuScreen.Tab.CHARACTERS;
             case "EQUIPMENT", "FORGE" -> MetaMenuScreen.Tab.EQUIPMENT;

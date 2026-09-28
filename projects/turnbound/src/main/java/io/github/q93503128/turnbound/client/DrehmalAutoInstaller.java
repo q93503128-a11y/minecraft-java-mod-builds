@@ -84,7 +84,7 @@ public final class DrehmalAutoInstaller {
     public static void repairExistingWorldBeforeResourceLoad() {
         try {
             Path gameDir = FMLPaths.GAMEDIR.get();
-            for (Path world : findInstalledWorlds(gameDir)) {
+            for (Path world : DrehmalResourceRepairDiscovery.find(gameDir)) {
                 Path pack = world.resolve("resources.zip");
                 if (!Files.isRegularFile(pack) || !DrehmalInstallFiles.validResourcePack(pack)) continue;
                 if (Drehmal26_2ResourcePackMigrator.isCurrent(world)) continue;

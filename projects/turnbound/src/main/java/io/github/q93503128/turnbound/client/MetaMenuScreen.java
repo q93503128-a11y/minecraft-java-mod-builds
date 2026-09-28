@@ -136,8 +136,8 @@ public final class MetaMenuScreen extends Screen {
         int menuAreaW=pw-leftW-22;
         int orbGap=6;
         int rowGap=6;
-        Tab[] destinations={Tab.PARTY,Tab.COOP,Tab.EQUIPMENT,Tab.QUESTS,Tab.ARCHIVE,Tab.CODEX,Tab.SYSTEM};
-        String[] labels={"편성","협동","장비","퀘스트","소환","도감","설정"};
+        Tab[] destinations={Tab.PARTY,Tab.EQUIPMENT,Tab.QUESTS,Tab.ARCHIVE,Tab.CODEX,Tab.SYSTEM};
+        String[] labels={"편성","장비","퀘스트","소환","도감","설정"};
         int menuRows=(destinations.length+1)/2;
         int orbSize=Math.max(32,Math.min(54,Math.min((menuAreaW-orbGap)/2,(ph-66-rowGap*(menuRows-1))/menuRows)));
         int menuHeight=orbSize*menuRows+rowGap*(menuRows-1);
@@ -161,7 +161,11 @@ public final class MetaMenuScreen extends Screen {
 
     private void buildParty(){
         var owned=ClientMetaState.snapshot().characters().stream().filter(ClientMetaState.CharacterRow::owned).toList();
-        int gridTop=contentTop()+24,gap=4;
+        int coopW=92;
+        addRenderableWidget(new BattleHudButton(
+                left+panelWidth-16-coopW,contentTop(),coopW,20,
+                Component.literal("협동 파티"),BLUE,ignored->switchTab(Tab.COOP)));
+        int gridTop=contentTop()+28,gap=4;
         int cols=panelWidth>=500?4:panelWidth>=360?3:2;
         int cardH=34;
         int footerTop=top+panelHeight-82;
@@ -259,8 +263,8 @@ public final class MetaMenuScreen extends Screen {
         addRenderableWidget(new BattleHudButton(x,y,bw,CONTROL_H,Component.literal("역할 · "+roleLabel(roleFilter)),MUTED,ignored->cycleRole()));
 
         List<ClientMetaState.CharacterRow> rows=filteredCharacters();
-        int gridTop=y+27,cols=panelWidth>=860?4:panelWidth>=640?3:2,rowH=50,cardGap=4;
-        int visibleRows=UiPaging.rowsThatFit(gridTop,contentBottom(),rowH+4,2),per=cols*visibleRows;
+        int gridTop=y+27,gridBottom=contentBottom()-28,cols=panelWidth>=860?4:panelWidth>=640?3:2,rowH=46,cardGap=4;
+        int visibleRows=UiPaging.rowsThatFit(gridTop,gridBottom,rowH+4,2),per=cols*visibleRows;
         setPaging(rows.size(),per);
         int start=page*per,end=Math.min(rows.size(),start+per),cardW=(panelWidth-32-cardGap*(cols-1))/cols;
         for(int i=start;i<end;i++){
@@ -279,8 +283,7 @@ public final class MetaMenuScreen extends Screen {
         var row=character(selectedCharacterId);
         if(row==null){selectedCharacterId="";return;}
         int y=contentTop(),x=left+16;
-        addRenderableWidget(new BattleHudButton(x,y,68,CONTROL_H,Component.literal("← 목록"),MUTED,ignored->closeCharacter()));
-        int gap=3,available=panelWidth-106,tabW=(available-gap*(DetailTab.values().length-1))/DetailTab.values().length,tx=x+76;
+        int gap=3,available=panelWidth-32,tabW=(available-gap*(DetailTab.values().length-1))/DetailTab.values().length,tx=x;
         for(DetailTab value:DetailTab.values()){
             addRenderableWidget(new BattleHudButton(tx,y,tabW,CONTROL_H,Component.literal(detailLabel(value)),value==detailTab?BLUE:MUTED,ignored->switchDetail(value)));
             tx+=tabW+gap;
@@ -421,8 +424,8 @@ public final class MetaMenuScreen extends Screen {
             return;
         }
         List<ClientMetaState.CodexRow> rows=ClientMetaState.snapshot().codex().stream().filter(r->r.category().equals(codexCategory)).toList();
-        int gridTop=y+27,cols=panelWidth>=860?4:panelWidth>=640?3:2,rowH=36,cardGap=4;
-        int visible=UiPaging.rowsThatFit(gridTop,contentBottom(),rowH+4,2),per=cols*visible;
+        int gridTop=y+27,gridBottom=contentBottom()-28,cols=panelWidth>=860?4:panelWidth>=640?3:2,rowH=34,cardGap=4;
+        int visible=UiPaging.rowsThatFit(gridTop,gridBottom,rowH+4,2),per=cols*visible;
         setPaging(rows.size(),per);
         int start=page*per,end=Math.min(rows.size(),start+per),cardW=(panelWidth-32-cardGap*(cols-1))/cols;
         for(int i=start;i<end;i++){
@@ -616,7 +619,7 @@ public final class MetaMenuScreen extends Screen {
         String hint="최대 4인 · 전투 참가 100% 경험치 · 대기 보유 캐릭터 20%";
         int x=left+16,y=contentTop()+3,w=panelWidth-32;
         TurnboundUiSkin.inset(g,x,y,w,17);
-        g.text(font,Component.literal(UiTextLayout.fit(hint,w-12)),x+6,y+5,SECONDARY,false);
+        g.text(font,Component.literal(UiTextLayout.fit(hint,Math.max(80,w-112))),x+6,y+5,SECONDARY,false);
     }
 
 
@@ -716,36 +719,38 @@ public final class MetaMenuScreen extends Screen {
                 if(skills.isEmpty())break;
                 int index=Math.max(0,Math.min(selectedSkillIndex,skills.size()-1));
                 var skill=skills.get(index);
-                int panelY=y+56;
-                int panelH=Math.max(72,contentBottom()-panelY-3);
-                TurnboundUiSkin.inset(g,x,panelY,w,panelH);
-
+                int detailY=y+58;
                 String type=skill.isBasic()?"기본 공격":"액티브";
-                String metaLine=type+"  ·  "+(skill.cooldown()<=0?"쿨타임 없음":"쿨타임 "+skill.cooldown()+"턴");
-                g.text(font,Component.literal(skill.name()),x+8,panelY+6,skill.isBasic()?GREEN:GOLD,true);
-                g.text(font,Component.literal(UiTextLayout.fit(metaLine,w-16)),x+8,panelY+19,SECONDARY,false);
+                String metaLine=type+" · "+(skill.cooldown()<=0?"쿨타임 없음":"쿨타임 "+skill.cooldown()+"턴");
+                g.text(font,Component.literal(skill.name()),x,detailY,skill.isBasic()?GREEN:GOLD,true);
+                g.text(font,Component.literal(UiTextLayout.fit(metaLine,w)),x,detailY+13,SECONDARY,false);
 
-                List<String> lines=new ArrayList<>(UiTextLayout.wrap(skill.description(),w-16,128));
+                int cursor=detailY+28;
+                List<String> skillLines=UiTextLayout.wrap(skill.description(),w,96);
+                int skillLimit=Math.min(3,skillLines.size());
+                for(int i=0;i<skillLimit;i++){
+                    g.text(font,Component.literal(skillLines.get(i)),x,cursor,TEXT,false);
+                    cursor+=10;
+                }
+
                 var passives=CharacterPassiveCatalog.forOwner(r.id());
-                for(var passive:passives){
-                    lines.add("");
-                    lines.add("패시브 · "+passive.name());
-                    lines.addAll(UiTextLayout.wrap(passive.description(),w-16,128));
-                }
-                int lineY=panelY+33;
-                int maxLines=Math.max(1,(panelH-45)/10);
-                int maxScroll=Math.max(0,lines.size()-maxLines);
-                skillDescriptionScroll=Math.max(0,Math.min(skillDescriptionScroll,maxScroll));
-                int end=Math.min(lines.size(),skillDescriptionScroll+maxLines);
-                for(int i=skillDescriptionScroll;i<end;i++){
-                    String line=lines.get(i);
-                    int lineColor=line.startsWith("패시브 · ")?GOLD:TEXT;
-                    g.text(font,Component.literal(line),x+8,lineY,lineColor,false);
-                    lineY+=10;
-                }
-                if(maxScroll>0){
-                    String scroll=(skillDescriptionScroll+1)+"-"+end+" / "+lines.size()+" · 휠";
-                    g.text(font,Component.literal(scroll),x+w-8-font.width(scroll),panelY+panelH-11,MUTED,false);
+                if(!passives.isEmpty()&&cursor+22<contentBottom()){
+                    cursor+=5;
+                    TurnboundFrameStyle.divider(g,x,cursor,w);
+                    cursor+=8;
+                    g.text(font,Component.literal("패시브"),x,cursor,GOLD,true);
+                    cursor+=13;
+                    for(var passive:passives){
+                        if(cursor+10>=contentBottom())break;
+                        g.text(font,Component.literal(passive.name()),x,cursor,GOLD,false);
+                        cursor+=11;
+                        for(String line:UiTextLayout.wrap(passive.description(),w,96)){
+                            if(cursor+10>=contentBottom())break;
+                            g.text(font,Component.literal(line),x,cursor,SECONDARY,false);
+                            cursor+=10;
+                        }
+                        cursor+=3;
+                    }
                 }
             }
             case EQUIPMENT->{
@@ -812,28 +817,26 @@ public final class MetaMenuScreen extends Screen {
             return;
         }
 
-        int y=contentTop()+36;
+        int y=contentTop()+34;
         String pity="★5 천장 "+s.fiveStarPity()+" / "+GachaCatalog.HARD_PITY
-                +" · Soft Pity "+GachaCatalog.SOFT_PITY_START+"회부터";
-        g.text(font,Component.literal(pity),left+16,y-8,GOLD,false);
+                +" · 확률 상승 "+GachaCatalog.SOFT_PITY_START+"회부터";
+        g.text(font,Component.literal(pity),left+16,y-7,GOLD,false);
 
-        int boxX=left+16,boxY=y+14,boxW=Math.min(420,panelWidth-32),boxH=108;
+        int boxX=left+16,boxY=y+12,boxW=Math.min(310,panelWidth-32),boxH=82;
         TurnboundUiSkin.inset(g,boxX,boxY,boxW,boxH);
-        g.text(font,Component.literal("Standard Archive 확률"),boxX+10,boxY+9,TEXT,true);
-        g.text(font,Component.literal("★5  2%"),boxX+10,boxY+29,GOLD,false);
-        g.text(font,Component.literal("★4  15%"),boxX+10,boxY+47,BLUE,false);
-        g.text(font,Component.literal("★3  83%"),boxX+10,boxY+65,SECONDARY,false);
-        g.text(font,Component.literal("10회 소환 · 최소 ★4 이상 1명 보장"),boxX+10,boxY+86,GREEN,false);
+        g.text(font,Component.literal("소환 확률"),boxX+10,boxY+8,TEXT,true);
+        g.text(font,Component.literal("★5  2%     ★4  15%     ★3  83%"),boxX+10,boxY+27,GOLD,false);
+        g.text(font,Component.literal("정식 희귀도 ★3~5 · ★1~2 없음"),boxX+10,boxY+45,SECONDARY,false);
+        g.text(font,Component.literal("10회 소환 · 최소 ★4 이상 1명 보장"),boxX+10,boxY+63,GREEN,false);
 
-        int infoX=boxX+boxW+16;
+        int infoX=boxX+boxW+12;
         int infoW=left+panelWidth-16-infoX;
-        if(infoW>120){
+        if(infoW>150){
             TurnboundUiSkin.inset(g,infoX,boxY,infoW,boxH);
-            g.text(font,Component.literal("소환 규칙"),infoX+10,boxY+9,TEXT,true);
-            g.text(font,Component.literal("1회 300 Crystal"),infoX+10,boxY+29,SECONDARY,false);
-            g.text(font,Component.literal("10회 3000 Crystal"),infoX+10,boxY+47,SECONDARY,false);
-            g.text(font,Component.literal("중복 → Star Essence"),infoX+10,boxY+65,SECONDARY,false);
-            g.text(font,Component.literal("기간 한정 배너 없음"),infoX+10,boxY+83,MUTED,false);
+            g.text(font,Component.literal("소환 규칙"),infoX+10,boxY+8,TEXT,true);
+            g.text(font,Component.literal("1회 300 · 10회 3000 크리스탈"),infoX+10,boxY+27,SECONDARY,false);
+            g.text(font,Component.literal("중복 캐릭터 → 별의 정수"),infoX+10,boxY+45,SECONDARY,false);
+            g.text(font,Component.literal("기간 한정 배너 없음"),infoX+10,boxY+63,MUTED,false);
         }
     }
 

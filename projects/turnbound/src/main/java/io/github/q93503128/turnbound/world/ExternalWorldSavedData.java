@@ -70,4 +70,8 @@ public final class ExternalWorldSavedData extends SavedData {
     public void markOnboardingFlag(UUID playerId, String flag) {
         if (DrehmalOnboardingFlags.add(onboardingEntries, playerId, flag)) setDirty();
     }
+
+    public void clearOnboardingFlag(UUID playerId, String flag) {
+        if (DrehmalOnboardingFlags.remove(onboardingEntries, playerId, flag)) setDirty();
+    }
 }

@@ -50,6 +50,12 @@ final class DrehmalOnboardingFlags {
                 && entries.add(entry(playerId, clean));
     }
 
+    static boolean remove(Set<String> entries, UUID playerId, String flag) {
+        String clean = clean(flag);
+        return entries != null && playerId != null && !clean.isBlank()
+                && entries.remove(entry(playerId, clean));
+    }
+
     private static String entry(UUID playerId, String flag) {
         return playerId + "|" + flag;
     }
