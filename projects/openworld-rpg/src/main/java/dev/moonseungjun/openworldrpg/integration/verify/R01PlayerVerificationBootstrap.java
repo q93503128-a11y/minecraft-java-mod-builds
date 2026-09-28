@@ -50,7 +50,7 @@ public final class R01PlayerVerificationBootstrap {
         var structures = R01StructureBindingLoader.loadBundled();
         var affixes = OrdinaryEquipmentAffixCatalogRegistry.data();
         logger.info(
-                "OPENWORLD_RPG_R01_VERIFICATION_CONTRACT_PASS mapBuild={} anchors={} areas={} volumes={} routes={} structures={} services={} properties={} fishingSpots={} staticAffixes={} runtimeAffixes={} resourceAffixAuthorityReady={} spatialProductionReady={} structureProductionReady={} alderfordRuntimeProductionReady={} quarryRuntimeProductionReady={} fishingProductionReady={}",
+                "OPENWORLD_RPG_R01_VERIFICATION_CONTRACT_PASS mapBuild={} anchors={} areas={} volumes={} routes={} structures={} services={} properties={} fishingSpots={} staticAffixes={} runtimeAffixes={} resourceAffixAuthorityReady={} criticalAffixAuthorityReady={} spatialProductionReady={} structureProductionReady={} alderfordRuntimeProductionReady={} quarryRuntimeProductionReady={} fishingProductionReady={}",
                 spatial.mapBuild(),
                 spatial.anchors().size(),
                 spatial.areas().size(),
@@ -63,6 +63,7 @@ public final class R01PlayerVerificationBootstrap {
                 affixes.affixes().size(),
                 affixes.implementedDefinitions().size(),
                 affixes.resourceAuthorityReady(),
+                affixes.criticalAuthorityReady(),
                 spatial.productionReady(),
                 structures.productionReady(),
                 R01AlderfordRuntimeBindingRegistry.productionReady(),
