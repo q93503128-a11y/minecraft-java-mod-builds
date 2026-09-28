@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.integration.verify;
 
+import dev.moonseungjun.openworldrpg.fishing.R01FishingSpatialRegistry;
 import dev.moonseungjun.openworldrpg.world.spatial.R01QuarrySpatialBindingRegistry;
 import dev.moonseungjun.openworldrpg.world.spatial.R01SpatialBindingRegistry;
 import dev.moonseungjun.openworldrpg.world.structure.R01StructureBindingLoader;
@@ -46,7 +47,7 @@ public final class R01PlayerVerificationBootstrap {
         var spatial = R01SpatialBindingRegistry.data();
         var structures = R01StructureBindingLoader.loadBundled();
         logger.info(
-                "OPENWORLD_RPG_R01_VERIFICATION_CONTRACT_PASS mapBuild={} anchors={} areas={} volumes={} routes={} structures={} services={} properties={} spatialProductionReady={} structureProductionReady={} quarryRuntimeProductionReady={}",
+                "OPENWORLD_RPG_R01_VERIFICATION_CONTRACT_PASS mapBuild={} anchors={} areas={} volumes={} routes={} structures={} services={} properties={} fishingSpots={} spatialProductionReady={} structureProductionReady={} quarryRuntimeProductionReady={} fishingProductionReady={}",
                 spatial.mapBuild(),
                 spatial.anchors().size(),
                 spatial.areas().size(),
@@ -55,9 +56,11 @@ public final class R01PlayerVerificationBootstrap {
                 structures.structures().size(),
                 structures.services().size(),
                 structures.properties().size(),
+                R01FishingSpatialRegistry.allAuthoredSpots().size(),
                 spatial.productionReady(),
                 structures.productionReady(),
-                R01QuarrySpatialBindingRegistry.productionReady()
+                R01QuarrySpatialBindingRegistry.productionReady(),
+                R01FishingSpatialRegistry.productionReady()
         );
     }
 
