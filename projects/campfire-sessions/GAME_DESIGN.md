@@ -197,7 +197,35 @@ small shop
 
 The same fixed anchor is used; exterior prefab is swapped.
 
-## 6. Housing and debt
+## 6. First-day arrival and onboarding
+
+The first session should begin with a short authored arrival/departure presentation rather than dropping the player into a menu-heavy tutorial.
+
+Baseline flow:
+arrival at the island/pier
+→ brief welcome/context
+→ resident services introduction
+→ receive/access the basic lifestyle tools needed to start
+→ freely walk around the village
+→ inspect homes/plots in-world
+→ choose a home
+→ continue normal island life.
+
+Avoid a long mandatory tutorial quest chain.
+Fishing, shops, museum, residents and other systems should be discovered primarily through actual play, world layout, dialogue and lightweight prompts.
+
+### Resident arrival/recruitment
+New residents should normally be encountered before they permanently occupy a house.
+Preferred sources include:
+- visitors/camp-style stays.
+- other-island exploration encounters.
+- pier/travel encounters.
+- special visitor/event contexts.
+
+The player can invite an encountered resident when housing rules allow.
+Do not silently populate an empty house with a completely unknown resident without any encounter/presentation, except for narrowly justified world-initialization cases.
+
+## 7. Housing and debt
 
 ### Shared housing pool
 Player homes and animal resident homes use the same physical housing pool.
@@ -257,7 +285,7 @@ House growth can unlock:
 - more exterior variants.
 - more decoration capacity.
 
-## 7. Household cohabitation
+## 8. Household cohabitation
 
 Players may choose to live together as one Household.
 
@@ -282,7 +310,7 @@ The existing house and its loan remain attached to the Household/home until chan
 
 The design intention is that cohabitation feels like genuinely sharing one island home/economy, not merely sharing build permission.
 
-## 8. Player-building restrictions and protection
+## 9. Player-building restrictions and protection
 
 Minecraft freedom is retained where it helps the life-sim and constrained where it can break the authored village.
 
@@ -313,7 +341,7 @@ Wilderness:
 
 Players cannot destroy core buildings, roads, plazas, stores, museum structures, the pier, or other critical authored content.
 
-## 9. Residents
+## 10. Residents
 
 ### Visual direction
 Do not use vanilla villagers as the core cast.
@@ -339,9 +367,17 @@ Provisional target:
 - long-term roster: ~30–40.
 - active village residents: roughly 10–12 depending on player occupancy.
 
-### Character data
-Each resident should have data-driven:
+### Character identity and data
+Each approved resident appearance/model is bound to one fixed authored resident identity.
+Do not procedurally reroll a model into a different named character between saves.
+
+After the external resident model/rig set is selected, each resident entry binds:
+- stable resident ID.
+- one fixed appearance/model/variant.
+- one fixed name.
+- birthday.
 - personality.
+- individual traits.
 - speech tendencies.
 - hobbies.
 - favorite colors.
@@ -351,6 +387,8 @@ Each resident should have data-driven:
 - home interior theme.
 - clothing preference.
 - special dialogue/events.
+
+Names and final identities should be assigned after the actual external resident visuals are selected so the character concept can fit the appearance rather than forcing art to match a prewritten name.
 
 ### Personality
 Use six broad personality families as the baseline, combined with individual traits so same-personality residents do not become clones.
@@ -385,7 +423,7 @@ Schedules react to:
 - hobbies.
 - current events.
 
-## 10. Resident relationships and moving
+## 11. Resident relationships and moving
 
 ### Player relationship
 Do not expose raw 0–100 friendship as the main UI.
@@ -405,6 +443,11 @@ Higher relationship can unlock:
 - gifts.
 - photos/keepsakes.
 - personal favors.
+
+Friendship does not decay merely because the real-world player was offline.
+Absence reactions such as "long time no see" are based on elapsed **in-game world/calendar time since the last meaningful interaction**, not wall-clock time or login/logout duration.
+If the player disconnects and returns before even one meaningful in-game day has passed, residents should not act as though a long absence occurred.
+Offline/server-paused time does not advance these absence reactions.
 
 ### Resident-to-resident relationships
 Residents also relate to each other.
@@ -432,7 +475,7 @@ for ordinary voluntary moving, if any player explicitly asks the resident to sta
 
 Residents who leave should not be treated as erased forever; later cameos/visits/letters are desirable.
 
-## 11. Resident favors
+## 12. Resident favors
 
 Do not build a giant RPG quest log around everyday resident requests.
 
@@ -458,7 +501,7 @@ Rewards may include:
 
 Resident favors should match personality/hobbies where possible.
 
-## 12. Resident homes
+## 13. Resident homes
 
 Resident interiors should express character.
 
@@ -473,7 +516,7 @@ Residents may display selected player gifts.
 Do not allow uncontrolled AI furniture replacement that gradually ruins authored interiors.
 Use approved slots/style constraints.
 
-## 13. Economy and shop
+## 14. Economy and shop
 
 ### Currency
 Prefer one primary money currency.
@@ -530,11 +573,14 @@ The shop can feature around 2–4 premium-buy categories/items for the day.
 This should encourage variety without randomly devaluing rare catches.
 
 ### Catalog
-Ordinary furniture that has been acquired once can register in a catalog and later be reordered for money, with delivery through mail.
+Ordinary furniture that has been acquired once can register in a catalog and later be reordered for money.
+Catalog orders are delivered through the mailbox on the **next in-game day** rather than appearing instantly.
+
+Basic items that may be needed immediately should remain available through ordinary shops/services instead of turning catalog delivery into friction.
 
 Special event items, resident photos, unique trophies, etc. may be non-reorderable.
 
-## 14. Tools
+## 15. Tools
 
 Lifestyle tools have infinite durability.
 Do not create a repeated break-and-remake annoyance loop.
@@ -562,7 +608,7 @@ Tool upgrades should improve action quality, for example:
 
 Do not turn tool tiers into an RPG damage-stat ladder.
 
-## 15. Inventory and storage
+## 16. Inventory and storage
 
 Keep Minecraft inventory as a base rather than replacing everything with an incompatible custom inventory.
 
@@ -579,7 +625,7 @@ House storage:
 - unified/searchable storage is preferable to forcing dozens of vanilla chests.
 - shared for members of the same Household.
 
-## 16. Calendar, time and sleep
+## 17. Calendar, time and sleep
 
 ### Time scale
 Do not use strict real-world 1:1 time.
@@ -610,7 +656,7 @@ Display:
 - resident birthdays.
 - scheduled events/festivals.
 
-## 17. Seasons and weather
+## 18. Seasons and weather
 
 ### Season length
 Each season lasts **7 in-game days**.
@@ -663,7 +709,16 @@ snow melt
 → shoots
 → more flowers.
 
-## 18. Plants, farming and mushrooms
+## 19. Plants, farming and mushrooms
+
+Expand flora significantly using external mods/assets.
+
+### Farming interaction
+Daily watering may exist as an early lifestyle interaction, but it must not become permanent click-heavy maintenance.
+- rain satisfies normal watering needs.
+- upgraded watering tools cover wider areas and reduce repeated actions.
+- later progression should make routine crop care faster rather than requiring the same number of clicks forever.
+- farming remains useful but should not become an industrial automation-first economy.
 
 Expand flora significantly using external mods/assets.
 
@@ -682,9 +737,21 @@ Weather and season should matter.
 Rain can support crops.
 Large automated farms should not become the dominant money exploit.
 
-## 19. Cooking
+## 20. Cooking
 
 Cooking quality should come from proven external mods/assets rather than a low-quality custom substitute.
+
+### Recipe discovery
+Recipes should come from several understandable lifestyle sources rather than one shop or opaque random drops:
+- residents.
+- message bottles/beach finds.
+- café interactions.
+- seasonal events/festivals.
+- visiting NPCs.
+- discovering/using notable ingredients.
+- exploration discoveries.
+
+Recipe acquisition itself is collection/progression content because hunger/stamina pressure is not the purpose of cooking.
 
 Current leading external candidates:
 - Croptopia.
@@ -703,7 +770,7 @@ Food is for:
 - light lifestyle buffs.
 - selling when balanced.
 
-## 20. Fishing
+## 21. Fishing
 
 Do not leave fishing as vanilla bobber RNG.
 
@@ -730,7 +797,7 @@ Fish data may include:
 
 Record personal/household best sizes.
 
-## 21. Bugs and life cycles
+## 22. Bugs and life cycles
 
 Bug catching should rely on movement/behavior rather than right-click collection.
 
@@ -750,7 +817,7 @@ egg
 
 Life-cycle timing and activity should fit seasons.
 
-## 22. Sea activities
+## 23. Sea activities
 
 The ocean is active content, not just shoreline decoration.
 
@@ -765,7 +832,7 @@ Include:
 Diving can use visible shadows/movement to create pursuit gameplay.
 Use external swimming/diving presentation assets where possible.
 
-## 23. Fossils
+## 24. Fossils
 
 Fossils are a collection system with multipart skeleton completion.
 
@@ -785,7 +852,7 @@ Small species may need 1–2 pieces; large dinosaurs can need roughly 4–6 piec
 
 Dinosaur/fossil models should be external high-quality assets.
 
-## 24. Museum
+## 25. Museum
 
 The museum is a major shared village facility.
 
@@ -808,7 +875,7 @@ Donation state is shared at village level.
 Collection encyclopedia state is personal per player.
 Players can still help each other by transferring valid specimens/items, which can register to the recipient's encyclopedia.
 
-## 25. Personal displays
+## 26. Personal displays
 
 Players may display collected life in their homes:
 - aquariums.
@@ -818,7 +885,7 @@ Players may display collected life in their homes:
 
 Use external display models and furniture.
 
-## 26. Rare species and variants
+## 27. Rare species and variants
 
 Two rarity layers exist.
 
@@ -857,7 +924,7 @@ Useful hints should exist from the beginning somewhere in the world and be disco
 
 The player finds/uses clues rather than waiting for pity help.
 
-## 27. Collection encyclopedia
+## 28. Collection encyclopedia
 
 One unified lifestyle encyclopedia with sections such as:
 - fish.
@@ -880,7 +947,7 @@ Players may trade/gift valid specimens to help another player's personal encyclo
 
 Rare variants are desirable collection records but should not be required for ordinary 100% completion unless later explicitly decided.
 
-## 28. Art and antiques
+## 29. Art and antiques
 
 A visiting vendor may sell:
 - paintings.
@@ -893,7 +960,7 @@ Do not force blind guessing.
 
 External artwork/models are required; do not create throwaway custom art.
 
-## 29. Pier, routes and boats
+## 30. Pier, routes and boats
 
 Travel to other islands goes through the pier/harbor.
 
@@ -925,7 +992,7 @@ Better boats can provide:
 
 Actual boat models must come from external assets.
 
-## 30. Exploration and combat
+## 31. Exploration and combat
 
 Main village is peaceful.
 Hostile natural spawns should not ruin resident areas.
@@ -956,7 +1023,7 @@ Combat rewards feed back into island life:
 - collection pieces.
 - special materials.
 
-## 31. Death
+## 32. Death
 
 Avoid vanilla full inventory-drop punishment.
 
@@ -967,7 +1034,7 @@ On death:
 
 Exact penalty remains to be balanced.
 
-## 32. Natural resource recovery
+## 33. Natural resource recovery
 
 Multiplayer must not permanently strip the island.
 
@@ -980,7 +1047,14 @@ Natural zones can restore:
 
 Player yards should not be overwritten by automatic natural regeneration.
 
-## 33. Mail and player gifting
+Outer/exploration islands use a hybrid persistence model:
+- terrain, landmarks, authored secrets and important structures persist.
+- ordinary natural resources and selected repeatable exploration content regenerate after appropriate in-game intervals.
+- regeneration timing follows world/game time rather than real-world offline time where the server is paused.
+
+This preserves a memorable sense of place without allowing a few visits to permanently exhaust shared exploration areas.
+
+## 34. Mail and player gifting
 
 Each player/household has a mailbox.
 
@@ -1002,7 +1076,7 @@ Players can also:
 
 Do not add a global auction house/economy.
 
-## 34. Gifts
+## 35. Gifts
 
 Residents have preferences such as:
 - color.
@@ -1018,7 +1092,7 @@ Gift spam should not be the only path to maximum friendship.
 
 Residents may wear gifted clothing or display approved furniture.
 
-## 35. Clothing and appearance
+## 36. Clothing and appearance
 
 Collectible clothing is meaningful lifestyle content.
 
@@ -1035,7 +1109,7 @@ A mirror can open appearance/clothing functionality.
 
 External 26.2-compatible player-model systems may be used if stable, but avoid exposing a raw editor if a curated game-like wardrobe provides better UX.
 
-## 36. Café
+## 37. Café
 
 The café should be functional content rather than scenery.
 
@@ -1051,7 +1125,7 @@ Possible interactions:
 
 Use the existing music foundation for café ambience/performance.
 
-## 37. Photography
+## 38. Photography
 
 A 26.2-compatible external camera/photo system is preferred over writing a low-quality substitute.
 
@@ -1062,7 +1136,7 @@ Use cases:
 - multiplayer memories.
 - home decoration/photo albums.
 
-## 38. Visitors and beach finds
+## 39. Visitors and beach finds
 
 Visiting NPC types may include:
 - art dealer.
@@ -1083,7 +1157,7 @@ Beach finds can include:
 - treasure maps.
 - rare furniture clues.
 
-## 39. Treasure maps and secrets
+## 40. Treasure maps and secrets
 
 Do not reduce treasure hunts to raw coordinate text.
 
@@ -1103,7 +1177,7 @@ Potential secret sites depend on the final map:
 
 Do not finalize them until the actual map is inspected.
 
-## 40. Village decoration and public projects
+## 41. Village decoration and public projects
 
 There is NO village rating/star-score system.
 Do not penalize creative freedom with a cleanliness/beauty score.
@@ -1128,7 +1202,7 @@ Single-player funds it alone.
 Multiplayer players contribute voluntarily.
 Do not give governance power based on who paid the most.
 
-## 41. Furniture
+## 42. Furniture
 
 Furniture should primarily come from external high-quality packs/mods.
 
@@ -1146,7 +1220,7 @@ Functional furniture where appropriate:
 
 Do not force functionality onto every decorative object.
 
-## 42. Resident contests
+## 43. Resident contests
 
 Fishing/bug contests and similar events are village events.
 
@@ -1184,9 +1258,12 @@ Rewards favor collectible items:
 
 Top placement should feel worthwhile, but a single missed contest should not permanently lock the player out of core progression.
 
-## 43. Birthdays and seasonal events
+## 44. Birthdays and seasonal events
 
-Residents have birthdays.
+Residents have fixed authored birthdays on the 28-day four-season calendar.
+Birthday dates should be distributed across the roster so the full cast is not excessively clustered into a few days.
+Multiple residents may share a birthday; this is allowed and can create lively days rather than being forbidden.
+
 Birthdays can include:
 - small parties.
 - gifts.
@@ -1201,7 +1278,7 @@ Seasonal events can include major themed days such as:
 
 Final event list should use external event decoration sets rather than improvised visuals.
 
-## 44. Major multi-day festival
+## 45. Major multi-day festival
 
 The game has no hard ending, but it can have a major milestone festival.
 
@@ -1239,7 +1316,7 @@ The final day can have a large performance/finale using the Campfire Sessions mu
 
 After the festival, the game continues normally.
 
-## 45. Competition, rarity and collectability philosophy
+## 46. Competition, rarity and collectability philosophy
 
 The game should include genuinely hard-to-obtain content.
 Collection desire comes from:
@@ -1255,7 +1332,7 @@ Collection desire comes from:
 Avoid pure opaque grind.
 Difficult targets should usually be understandable through world clues and conditions.
 
-## 46. Multiplayer authority and save ownership
+## 47. Multiplayer authority and save ownership
 
 Important gameplay state is server-authoritative:
 - money.
@@ -1307,7 +1384,7 @@ Client responsibilities are presentation/input/UI, not final authority.
 
 Do not claim multiplayer correctness until actual multiplayer testing occurs.
 
-## 47. External UI requirement
+## 48. External UI requirement
 
 Core UI must use selected external UI design assets.
 Do not improvise the final visual language.
@@ -1325,7 +1402,7 @@ Screens likely include:
 
 Keep one coherent external design language rather than mixing unrelated asset styles.
 
-## 48. Open decisions / unresolved work
+## 49. Open decisions / unresolved work
 
 These are intentionally not yet canonical:
 - final island map.
@@ -1341,7 +1418,7 @@ These are intentionally not yet canonical:
 - exact public-project list.
 - exact combat enemies/boss count.
 - exact camera/player-model/inventory dependencies.
-- exact resident name/identity mapping after the resident asset roster is selected.
+- exact resident name/identity/birthday assignments after the resident asset roster is selected.
 - concrete save serialization/class layout.
 - exact numeric thresholds/content inside each required festival progression pillar.
 
