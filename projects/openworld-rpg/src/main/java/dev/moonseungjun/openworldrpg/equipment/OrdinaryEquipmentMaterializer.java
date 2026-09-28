@@ -27,15 +27,32 @@ public final class OrdinaryEquipmentMaterializer {
         Objects.requireNonNull(request, "request");
         Objects.requireNonNull(catalog, "catalog");
 
+        OrdinaryEquipmentParameterizedAffixData parameterized =
+                OrdinaryEquipmentParameterizedAffixLoader.loadBundled();
+
         for (var definition : request.eligibleAffixes()) {
-            var canonical = catalog.definition(definition.id());
-            if (!canonical.equals(definition)) {
+            boolean staticCanonical = false;
+            boolean staticImplemented = false;
+            try {
+                var canonical = catalog.definition(definition.id());
+                staticCanonical = canonical.equals(definition);
+                staticImplemented = catalog.runtimeImplemented(
+                        definition.id()
+                );
+            } catch (IllegalArgumentException ignored) {
+                // May be a canonical parameterized affix instead.
+            }
+
+            boolean parameterizedCanonical =
+                    parameterized.matchesCanonical(definition);
+
+            if (!staticCanonical && !parameterizedCanonical) {
                 throw new IllegalStateException(
-                        "Equipment pool attempted to override canonical affix definition: "
+                        "Equipment pool attempted to override or invent affix definition: "
                                 + definition.id()
                 );
             }
-            if (!catalog.runtimeImplemented(definition.id())) {
+            if (staticCanonical && !staticImplemented) {
                 throw new IllegalStateException(
                         "Equipment pool contains affix without live runtime adapter: "
                                 + definition.id()
