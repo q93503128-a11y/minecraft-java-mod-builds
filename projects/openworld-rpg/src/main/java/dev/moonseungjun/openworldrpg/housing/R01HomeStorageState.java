@@ -40,7 +40,12 @@ public record R01HomeStorageState(
             ).apply(instance, R01HomeStorageState::new));
 
     public R01HomeStorageState {
-        occupied = occupied.stream()
+        if (capacity < MIN_CAPACITY || capacity > MAX_CAPACITY) {
+            throw new IllegalArgumentException(
+                    "Home Storage capacity outside supported housing range."
+            );
+        }
+        occupied = Objects.requireNonNull(occupied, "occupied").stream()
                 .sorted(Comparator.comparingInt(ProjectBackpackState.SlotEntry::slot))
                 .toList();
         moving = List.copyOf(Objects.requireNonNull(moving, "moving"));
