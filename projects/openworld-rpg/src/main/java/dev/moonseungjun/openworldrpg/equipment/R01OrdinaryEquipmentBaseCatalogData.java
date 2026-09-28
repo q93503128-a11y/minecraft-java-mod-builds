@@ -188,30 +188,15 @@ public record R01OrdinaryEquipmentBaseCatalogData(
     public record BaseEntry(
             String id,
             Kind kind,
-            @SerializedName("weapon_family") Optional<String> weaponFamilyName,
-            @SerializedName("shield_family") Optional<String> shieldFamilyName,
-            @SerializedName("armor_archetype") Optional<String> armorArchetypeName,
-            @SerializedName("fixed_slot") Optional<String> fixedSlotName
+            @SerializedName("weapon_family") String weaponFamilyName,
+            @SerializedName("shield_family") String shieldFamilyName,
+            @SerializedName("armor_archetype") String armorArchetypeName,
+            @SerializedName("fixed_slot") String fixedSlotName
     ) {
         public BaseEntry {
             Objects.requireNonNull(id, "id");
             Objects.requireNonNull(kind, "kind");
-            weaponFamilyName = Objects.requireNonNull(
-                    weaponFamilyName,
-                    "weaponFamilyName"
-            );
-            shieldFamilyName = Objects.requireNonNull(
-                    shieldFamilyName,
-                    "shieldFamilyName"
-            );
-            armorArchetypeName = Objects.requireNonNull(
-                    armorArchetypeName,
-                    "armorArchetypeName"
-            );
-            fixedSlotName = Objects.requireNonNull(
-                    fixedSlotName,
-                    "fixedSlotName"
-            );
+            // Nullable identity fields are intentional JSON unions by equipment kind.
         }
 
         void validate() {
@@ -219,9 +204,9 @@ public record R01OrdinaryEquipmentBaseCatalogData(
             switch (kind) {
                 case WEAPON -> {
                     if (weaponFamily().isEmpty()
-                            || shieldFamilyName.isPresent()
-                            || armorArchetypeName.isPresent()
-                            || fixedSlotName.isPresent()) {
+                            || shieldFamilyName != null
+                            || armorArchetypeName != null
+                            || fixedSlotName != null) {
                         throw new IllegalArgumentException(
                                 "R01 weapon base shape mismatch: " + id
                         );
@@ -229,19 +214,19 @@ public record R01OrdinaryEquipmentBaseCatalogData(
                 }
                 case SHIELD -> {
                     if (shieldFamily().isEmpty()
-                            || weaponFamilyName.isPresent()
-                            || armorArchetypeName.isPresent()
-                            || fixedSlotName.isPresent()) {
+                            || weaponFamilyName != null
+                            || armorArchetypeName != null
+                            || fixedSlotName != null) {
                         throw new IllegalArgumentException(
                                 "R01 shield base shape mismatch: " + id
                         );
                     }
                 }
                 case FOCUS -> {
-                    if (weaponFamilyName.isPresent()
-                            || shieldFamilyName.isPresent()
-                            || armorArchetypeName.isPresent()
-                            || fixedSlotName.isPresent()) {
+                    if (weaponFamilyName != null
+                            || shieldFamilyName != null
+                            || armorArchetypeName != null
+                            || fixedSlotName != null) {
                         throw new IllegalArgumentException(
                                 "R01 focus base shape mismatch: " + id
                         );
@@ -249,9 +234,9 @@ public record R01OrdinaryEquipmentBaseCatalogData(
                 }
                 case ARMOR -> {
                     if (armorArchetype().isEmpty()
-                            || weaponFamilyName.isPresent()
-                            || shieldFamilyName.isPresent()
-                            || fixedSlotName.isPresent()) {
+                            || weaponFamilyName != null
+                            || shieldFamilyName != null
+                            || fixedSlotName != null) {
                         throw new IllegalArgumentException(
                                 "R01 armor base shape mismatch: " + id
                         );
@@ -259,9 +244,9 @@ public record R01OrdinaryEquipmentBaseCatalogData(
                 }
                 case ACCESSORY -> {
                     if (fixedSlot().isEmpty()
-                            || weaponFamilyName.isPresent()
-                            || shieldFamilyName.isPresent()
-                            || armorArchetypeName.isPresent()) {
+                            || weaponFamilyName != null
+                            || shieldFamilyName != null
+                            || armorArchetypeName != null) {
                         throw new IllegalArgumentException(
                                 "R01 accessory base shape mismatch: " + id
                         );
@@ -271,7 +256,7 @@ public record R01OrdinaryEquipmentBaseCatalogData(
         }
 
         public Optional<ProjectWeaponFamily> weaponFamily() {
-            return weaponFamilyName.map(value ->
+            return Optional.ofNullable(weaponFamilyName).map(value ->
                     ProjectWeaponFamily.valueOf(
                             value.toUpperCase(Locale.ROOT)
                     )
@@ -279,7 +264,7 @@ public record R01OrdinaryEquipmentBaseCatalogData(
         }
 
         public Optional<ProjectShieldFamily> shieldFamily() {
-            return shieldFamilyName.map(value ->
+            return Optional.ofNullable(shieldFamilyName).map(value ->
                     ProjectShieldFamily.valueOf(
                             value.toUpperCase(Locale.ROOT)
                     )
@@ -287,7 +272,7 @@ public record R01OrdinaryEquipmentBaseCatalogData(
         }
 
         public Optional<ProjectArmorArchetype> armorArchetype() {
-            return armorArchetypeName.map(value ->
+            return Optional.ofNullable(armorArchetypeName).map(value ->
                     ProjectArmorArchetype.valueOf(
                             value.toUpperCase(Locale.ROOT)
                     )
@@ -295,7 +280,7 @@ public record R01OrdinaryEquipmentBaseCatalogData(
         }
 
         public Optional<ProjectEquipmentSlot> fixedSlot() {
-            return fixedSlotName.map(value ->
+            return Optional.ofNullable(fixedSlotName).map(value ->
                     ProjectEquipmentSlot.valueOf(
                             value.toUpperCase(Locale.ROOT)
                     )
