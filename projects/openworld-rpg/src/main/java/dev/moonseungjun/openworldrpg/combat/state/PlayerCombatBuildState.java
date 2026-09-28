@@ -49,6 +49,22 @@ public record PlayerCombatBuildState(
         );
     }
 
+
+    public double criticalChance(double authoredBonus) {
+        return ProjectCombatRules.normalCriticalChance(
+                effectiveAttributes().dex(),
+                equipment.criticalChanceBonus(),
+                authoredBonus
+        );
+    }
+
+    public double criticalMultiplier(double authoredBonus) {
+        return ProjectCombatRules.normalCriticalMultiplier(
+                equipment.criticalDamageBonus(),
+                authoredBonus
+        );
+    }
+
     public ProjectImpactTransaction.DamageSourceSnapshot damageSource(
             ProjectImpactTransaction.DamageSchool school
     ) {
