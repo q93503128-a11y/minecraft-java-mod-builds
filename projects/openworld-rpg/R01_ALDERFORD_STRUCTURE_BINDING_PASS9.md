@@ -116,13 +116,13 @@ Pre-commit checks completed before repository integration:
 ```text
 JSON syntax/contract check: PASS
 Java main/test source syntax check with minimal compile stubs: PASS
-real project Gradle unit tests: PENDING REPOSITORY WORKFLOW
-real project build: PENDING REPOSITORY WORKFLOW
+real project Gradle unit tests: NOT VERIFIED IN THIS SESSION
+real project build: NOT VERIFIED IN THIS SESSION
 Minecraft client: NOT RUN
 multiplayer: NOT RUN
 ```
 
-Only the repository workflow or a real project checkout may upgrade the Gradle/build labels.
+The available GitHub connector does not expose push-triggered Actions runs for this commit, and the local container cannot resolve github.com for a git checkout. Therefore the Gradle/build labels remain unverified rather than being inferred from the local syntax checks.
 
 ## 8. State after Pass 9
 
