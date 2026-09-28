@@ -263,16 +263,23 @@ Players may choose to live together as one Household.
 
 Household-shared state:
 - money.
-- collection encyclopedia progress.
 - housing loan.
 - house.
 - home storage.
 
-Separate households keep those states separate.
+Collection encyclopedia progress is NOT shared by Household.
+Each player maintains their own encyclopedia.
+
+A valid collectible can be handed, mailed or otherwise transferred to another player regardless of Household membership.
+Receiving/owning that specimen can register it to the recipient's personal encyclopedia, so players may deliberately help each other complete collections.
+
+Separate households keep their shared housing/economy states separate.
 
 Household join/leave operations are managed through resident services.
+Do not build a complicated automatic divorce/split settlement system for this private friends-focused multiplayer project.
+Players coordinate the split themselves and manually move transferable money, furniture and items before/after leaving.
+The existing house and its loan remain attached to the Household/home until changed through the normal housing/move flow.
 
-Detailed split/leave rules must be finalized alongside save-data design to avoid exploits or lost state.
 The design intention is that cohabitation feels like genuinely sharing one island home/economy, not merely sharing build permission.
 
 ## 8. Player-building restrictions and protection
@@ -346,7 +353,16 @@ Each resident should have data-driven:
 - special dialogue/events.
 
 ### Personality
-Use a manageable set of broad personality families plus individual traits so same-personality residents do not become clones.
+Use six broad personality families as the baseline, combined with individual traits so same-personality residents do not become clones.
+
+Each authored resident should combine:
+- one broad personality family.
+- two or more individual traits.
+- one or two hobbies.
+- likes/dislikes and style preferences.
+- resident-specific dialogue/events where worthwhile.
+
+The combination is an authoring tool for character variety, not a reason to procedurally randomize personalities every save.
 
 ### Resident life
 Residents actually use the village.
@@ -485,6 +501,17 @@ Income:
 
 No single repetitive activity should dominate all income.
 
+Economy balancing should be benchmarked against proven cozy/life-sim economies such as Animal Crossing and Stardew Valley rather than invented in isolation.
+Do not copy their raw prices directly; use them to establish useful ratios between:
+- ordinary daily purchases.
+- normal furniture.
+- house upgrades.
+- public projects.
+- premium services.
+- rare/high-end furniture.
+
+Luxury/designer/high-end items should be meaningfully expensive and remain aspirational even after ordinary daily purchases become easy.
+
 ### Shop rotation
 Use:
 - seasonal persistent stock.
@@ -567,7 +594,8 @@ When nobody is online, village time should pause.
 
 ### Sleep
 One player cannot unilaterally skip the night while others are hunting night species.
-Night skip requires a multiplayer vote/majority threshold.
+Because this is private friends-focused multiplayer, do not over-engineer public-server governance or voting systems.
+Night may only be skipped when the currently active players have mutually agreed through the normal sleep flow; no player gets a unilateral force-skip action.
 
 ### Calendar UI
 Provide a calendar/weather screen using external UI assets.
@@ -583,6 +611,11 @@ Display:
 - scheduled events/festivals.
 
 ## 17. Seasons and weather
+
+### Season length
+Each season lasts **7 in-game days**.
+At the current target of about 48 real minutes per in-game day, one season is about 5 hours 36 minutes of active world time and a full four-season year is about 22 hours 24 minutes.
+Offline/server-paused time does not consume these days.
 
 Season is not a label; it changes the world.
 
@@ -772,7 +805,8 @@ Displays are physical/3D:
 Museum has a dedicated curator NPC.
 
 Donation state is shared at village level.
-Collection encyclopedia state follows player/Household rules.
+Collection encyclopedia state is personal per player.
+Players can still help each other by transferring valid specimens/items, which can register to the recipient's encyclopedia.
 
 ## 25. Personal displays
 
@@ -841,7 +875,8 @@ Possible recorded facts:
 - largest size.
 - first discovered date.
 
-Household members share encyclopedia progress.
+Encyclopedia progress is personal, including in a shared Household.
+Players may trade/gift valid specimens to help another player's personal encyclopedia.
 
 Rare variants are desirable collection records but should not be required for ordinary 100% completion unless later explicitly decided.
 
@@ -1128,16 +1163,26 @@ Multiplayer mixes players and residents in the same event.
 NPCs have differing competence.
 Do not pre-script a fake winner.
 
-Contest goals may include:
-- largest fish.
+Baseline schedule:
+- roughly one main fishing/bug-style contest per 7-day season.
+- fishing and bug-focused contests rotate so neither activity monopolizes the calendar.
+- announce the contest at least 1–2 in-game days ahead through the calendar/notice-board/resident dialogue.
+- occasional special seasonal contests may exist, but ordinary weeks should not be saturated with competitions.
+
+Contest rules can rotate between:
+- largest catch.
 - target species.
 - catch count.
+- weighted total score.
 
 Rewards favor collectible items:
+- participation keepsakes.
 - event furniture.
 - trophies.
 - clothing.
 - decorations.
+
+Top placement should feel worthwhile, but a single missed contest should not permanently lock the player out of core progression.
 
 ## 43. Birthdays and seasonal events
 
@@ -1160,13 +1205,21 @@ Final event list should use external event decoration sets rather than improvise
 
 The game has no hard ending, but it can have a major milestone festival.
 
-Trigger concept:
-sufficient progress across major village systems such as:
-- museum.
-- home expansion.
-- core facilities.
-- sea routes.
-- resident relationships.
+Trigger rule:
+the major festival is a completion-style milestone and requires **all required major progression pillars** to be completed, rather than a points system or "5 of 6" shortcut.
+
+Required pillar categories include:
+- the required museum progression.
+- the required home expansion milestone.
+- the required core-facility progression.
+- the required sea-route progression.
+- the required resident-relationship/community progression.
+- the required public-project progression.
+
+Exact numeric thresholds/content for each pillar can be finalized with the relevant systems, but every required pillar must be satisfied before the festival becomes available.
+The festival is optional in the sense that normal island life does not end if the player ignores it.
+
+Its finale may function like an ending-credits milestone for players who have effectively reached the game's major long-term goals, while still allowing continued play afterward.
 
 The festival is NOT a single cutscene.
 It lasts multiple in-game days and is playable.
@@ -1202,13 +1255,13 @@ Collection desire comes from:
 Avoid pure opaque grind.
 Difficult targets should usually be understandable through world clues and conditions.
 
-## 46. Multiplayer authority
+## 46. Multiplayer authority and save ownership
 
 Important gameplay state is server-authoritative:
 - money.
 - loans.
 - household membership.
-- encyclopedia progress.
+- personal encyclopedia progress.
 - donations.
 - houses.
 - residents.
@@ -1219,6 +1272,36 @@ Important gameplay state is server-authoritative:
 - weather/season.
 - event state.
 - protected-world state.
+
+Logical save ownership is split by responsibility rather than stored as one monolithic blob:
+
+VillageState:
+- residents and move state.
+- museum donations.
+- facility/building progression.
+- public projects and other village-wide progress.
+
+HouseholdState:
+- shared money.
+- house/home identity.
+- housing loan.
+- shared home storage.
+
+PlayerProfile:
+- personal encyclopedia.
+- resident relationships.
+- owned/worn clothing and personal appearance state.
+- personal records/history that should follow that player.
+
+WorldEcologyState:
+- persistent ecological/resource-restoration state that must survive restart.
+
+EventState:
+- active/scheduled event and contest state.
+
+Use stable IDs/UUIDs rather than display names for persisted identity.
+Persist a schema version and support explicit save migration when the format changes.
+Concrete class/file/codec layout remains an implementation detail as long as this ownership boundary is preserved.
 
 Client responsibilities are presentation/input/UI, not final authority.
 
@@ -1254,14 +1337,13 @@ These are intentionally not yet canonical:
 - exact tool art set and tier names/count.
 - exact house loan prices.
 - exact shop economy numbers.
-- exact season length.
-- exact contest schedule/reward tables.
+- exact contest reward tables.
 - exact public-project list.
 - exact combat enemies/boss count.
 - exact camera/player-model/inventory dependencies.
-- household split/leave edge cases.
-- exact save schema.
-- detailed festival unlock requirements.
+- exact resident name/identity mapping after the resident asset roster is selected.
+- concrete save serialization/class layout.
+- exact numeric thresholds/content inside each required festival progression pillar.
 
 Continue planning in batches of roughly eight genuinely new decisions.
 Do not recycle already-decided topics merely to fill the count.
