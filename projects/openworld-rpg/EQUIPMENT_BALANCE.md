@@ -598,6 +598,18 @@ Use Quaternius `Modular Character Outfits - Fantasy` as the editable CC0 base fa
 
 Each family supplies Head / Chest / Legs / Gloves / Boots pieces while keeping the pack's coherent outfit language.
 
+When an authored ordinary-equipment source pool names an **armor family** without naming a specific armor slot, resolve the dropped piece by choosing exactly one of:
+
+```text
+Head
+Chest
+Legs
+Gloves
+Boots
+```
+
+at equal 1/5 weight unless that source explicitly defines a different slot rule. The selected slot is part of the persisted item plan and cannot reroll on reconnect. A source that names a specific armor piece bypasses this family-slot roll.
+
 Implementation must adapt the source silhouettes to the chosen Minecraft armor rendering backend without replacing them with generic vanilla armor textures. The M0 audit decides the safest AzureLib/armor-model path; it does not reopen the visual family.
 
 ## 11.3 Accessories

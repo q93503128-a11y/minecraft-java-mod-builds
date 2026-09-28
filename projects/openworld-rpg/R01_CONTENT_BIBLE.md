@@ -439,6 +439,16 @@ The separate Hartcrown Spear signature roll is unchanged.
 
 The separate Rootquake Maul / Earthscale Ward signature pool and deterministic first-clear choice remain unchanged.
 
+For Earthloong's `Ironbound Guard` family result, the actual piece is Head / Chest / Legs / Gloves / Boots at equal 1/5 weight under the global armor-family rule in `EQUIPMENT_BALANCE.md`.
+
+Earthloong's first eligible dungeon-boss normal equipment roll is guaranteed `Superior+`. Its exact resolved grade uses the baseline dungeon-boss Superior:Exalted weights after removing Standard/Refined:
+
+```text
+Superior : Exalted = 45 : 20 = 9 : 4
+```
+
+The chosen base family, armor slot when applicable, resolved grade and signature-roll result are persisted before delivery so reconnect cannot reroll any of them.
+
 No source falls back to a global bag containing every R01 item.
 
 For every R01 ordinary equipment roll, **eligible base families inside the source pool are equal-weight by default**. Grade/category/affix selection then follows the global loot/equipment rules. A future unequal base-family weight must be written into canon/data explicitly; implementation does not invent one.

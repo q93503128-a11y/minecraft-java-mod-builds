@@ -326,6 +326,28 @@ For an ordinary 15–25 minute dungeon:
 - direct Mythic/signature roll: 15%;
 - other chests/materials follow their own tables but should not push a normal first clear into an inventory-cleanup event.
 
+### Guaranteed `Superior+` grade resolution
+
+When a source promises a guaranteed `Superior+` normal equipment roll and does not define a source-specific grade override:
+
+1. start from that source's ordinary grade table;
+2. remove Standard and Refined outcomes;
+3. preserve the remaining Superior:Exalted relative weights;
+4. renormalize those weights;
+5. persist the resolved grade before item delivery so reconnect cannot reroll it.
+
+For the baseline dungeon-boss table this is exactly:
+
+```text
+Superior : Exalted = 45 : 20 = 9 : 4
+Superior probability = 45 / 65
+Exalted probability  = 20 / 65
+```
+
+For the baseline field/world-boss table it is `40 : 15 = 8 : 3`.
+
+This closes the meaning of `Superior+`; implementation must not silently make every guaranteed roll Superior or invent a new first-clear rarity table.
+
 ## Dungeon repeat clear
 
 - completion: one guaranteed normal dungeon equipment roll;
