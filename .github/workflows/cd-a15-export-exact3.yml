@@ -1,4 +1,4 @@
-name: RPG6 locator compatibility probe
+name: RPG6 Player Locator Plus probe
 on:
   push:
     branches: [main]
@@ -7,19 +7,12 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Probe LocatorBar releases
+      - name: Probe Player Locator Plus
         shell: bash
         run: |
           set -euo pipefail
-          while IFS=$'\t' read -r ver url; do
-            f=$(mktemp --suffix=.jar)
-            curl --fail --location --retry 3 "$url" -o "$f"
-            echo "LOCATOR $ver $(sha1sum "$f"|awk '{print $1}') $(sha512sum "$f"|awk '{print $1}') $(stat -c%s "$f")"
-            unzip -p "$f" fabric.mod.json
-            rm -f "$f"
-          done <<'EOF'
-          1.2.1	https://cdn.modrinth.com/data/BD7N7OcY/versions/uV1wuVPV/LocatorBar-fabric-1.2.1%2B1.21.1.jar
-          1.1.2	https://cdn.modrinth.com/data/BD7N7OcY/versions/AelByFS6/LocatorBar-fabric-1.1.2%2B1.21.1.jar
-          1.1.1	https://cdn.modrinth.com/data/BD7N7OcY/versions/mtLlD9e5/LocatorBar-fabric-1.1.1%2B1.21.1.jar
-          1.1.0	https://cdn.modrinth.com/data/BD7N7OcY/versions/Tk7JNGyd/LocatorBar-fabric-1.1.0%2B1.21.1.jar
-          EOF
+          f=$(mktemp --suffix=.jar)
+          url='https://cdn.modrinth.com/data/e0Yt2i7Q/versions/qmk5gUzE/player-locator-plus-2.4.0.jar'
+          curl --fail --location --retry 3 "$url" -o "$f"
+          echo "PLP_META $(sha1sum "$f"|awk '{print $1}') $(sha512sum "$f"|awk '{print $1}') $(stat -c%s "$f")"
+          unzip -p "$f" fabric.mod.json
