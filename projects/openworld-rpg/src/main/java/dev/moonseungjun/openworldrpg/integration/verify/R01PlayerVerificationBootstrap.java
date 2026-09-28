@@ -1,6 +1,8 @@
 package dev.moonseungjun.openworldrpg.integration.verify;
 
 import dev.moonseungjun.openworldrpg.equipment.OrdinaryEquipmentAffixCatalogRegistry;
+import dev.moonseungjun.openworldrpg.equipment.OrdinaryEquipmentParameterizedAffixLoader;
+import dev.moonseungjun.openworldrpg.equipment.R01OrdinaryEquipmentBaseCatalogLoader;
 import dev.moonseungjun.openworldrpg.fishing.R01FishingSpatialRegistry;
 import dev.moonseungjun.openworldrpg.world.spatial.R01QuarrySpatialBindingRegistry;
 import dev.moonseungjun.openworldrpg.world.spatial.R01SpatialBindingRegistry;
@@ -49,8 +51,17 @@ public final class R01PlayerVerificationBootstrap {
         var spatial = R01SpatialBindingRegistry.data();
         var structures = R01StructureBindingLoader.loadBundled();
         var affixes = OrdinaryEquipmentAffixCatalogRegistry.data();
+        var parameterized =
+                OrdinaryEquipmentParameterizedAffixLoader.loadBundled();
+        var equipmentBases =
+                R01OrdinaryEquipmentBaseCatalogLoader.loadBundled();
+        int nessaRuntimeBlockers = equipmentBases.runtimeBlockers(
+                "openworld_rpg:riverwood_bow",
+                affixes,
+                parameterized
+        ).size();
         logger.info(
-                "OPENWORLD_RPG_R01_VERIFICATION_CONTRACT_PASS mapBuild={} anchors={} areas={} volumes={} routes={} structures={} services={} properties={} fishingSpots={} staticAffixes={} runtimeAffixes={} resourceAffixAuthorityReady={} criticalAffixAuthorityReady={} spatialProductionReady={} structureProductionReady={} alderfordRuntimeProductionReady={} quarryRuntimeProductionReady={} fishingProductionReady={}",
+                "OPENWORLD_RPG_R01_VERIFICATION_CONTRACT_PASS mapBuild={} anchors={} areas={} volumes={} routes={} structures={} services={} properties={} fishingSpots={} staticAffixes={} runtimeAffixes={} r01EquipmentBases={} nessaRuntimeBlockers={} resourceAffixAuthorityReady={} criticalAffixAuthorityReady={} spatialProductionReady={} structureProductionReady={} alderfordRuntimeProductionReady={} quarryRuntimeProductionReady={} fishingProductionReady={}",
                 spatial.mapBuild(),
                 spatial.anchors().size(),
                 spatial.areas().size(),
@@ -62,6 +73,8 @@ public final class R01PlayerVerificationBootstrap {
                 R01FishingSpatialRegistry.allAuthoredSpots().size(),
                 affixes.affixes().size(),
                 affixes.implementedDefinitions().size(),
+                equipmentBases.bases().size(),
+                nessaRuntimeBlockers,
                 affixes.resourceAuthorityReady(),
                 affixes.criticalAuthorityReady(),
                 spatial.productionReady(),
