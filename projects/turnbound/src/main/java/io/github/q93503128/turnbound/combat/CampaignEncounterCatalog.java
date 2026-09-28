@@ -53,7 +53,10 @@ public final class CampaignEncounterCatalog {
         hpScale = switch (encounter.id()) {
             // Capital Valley is the player's first authored overworld route. Keep enemy offense/mechanics intact,
             // but resolve its battles before repetition replaces decision-making.
-            case "CV_FIRST_COMMON" -> 0.25;
+            case "CV_FIRST_COMMON", "CV_TEMPLE_WILDLIFE" -> 0.25;
+            case "CV_TOWER_ROAD" -> 0.28;
+            case "CV_CAMP_WILDLIFE" -> 0.23;
+            case "CV_DRABYEL_NORTH" -> 0.30;
             case "CV_DRABYEL_ROAD" -> 0.38;
             case "CV_WARNING_CAVE_ELITE" -> 0.42;
             default -> {

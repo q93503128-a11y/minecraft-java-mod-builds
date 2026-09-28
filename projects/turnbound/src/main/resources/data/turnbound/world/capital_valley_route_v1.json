@@ -82,6 +82,66 @@
       "encounterRadius": 0,
       "verifiedIn26_2": false,
       "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:site/capital_valley/temple_wildlife",
+      "kind": "ENCOUNTER_ZONE",
+      "surveySeedAnchor": "turnbound:landmark/capital_valley_tower",
+      "playerLabel": "옛 사원 북쪽 길",
+      "safetyRadius": 0,
+      "encounterRadius": 24,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:site/capital_valley/tower_road",
+      "kind": "ENCOUNTER_ZONE",
+      "surveySeedAnchor": "turnbound:landmark/capital_valley_tower",
+      "playerLabel": "캐피털 밸리 탑 남쪽 길",
+      "safetyRadius": 0,
+      "encounterRadius": 24,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:site/capital_valley/tower_watch",
+      "kind": "NPC_ZONE",
+      "surveySeedAnchor": "turnbound:landmark/capital_valley_tower",
+      "playerLabel": "탑 감시 지점",
+      "safetyRadius": 20,
+      "encounterRadius": 0,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:site/capital_valley/camp_road",
+      "kind": "ENCOUNTER_ZONE",
+      "surveySeedAnchor": "turnbound:landmark/explorers_guide_camp",
+      "playerLabel": "탐험가 야영지 북쪽 길",
+      "safetyRadius": 0,
+      "encounterRadius": 24,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:site/capital_valley/camp_explorer",
+      "kind": "NPC_ZONE",
+      "surveySeedAnchor": "turnbound:landmark/explorers_guide_camp",
+      "playerLabel": "야영지 탐험가",
+      "safetyRadius": 18,
+      "encounterRadius": 0,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:site/capital_valley/drabyel_north_watch",
+      "kind": "ENCOUNTER_ZONE",
+      "surveySeedAnchor": "turnbound:hub/new_drabyel",
+      "playerLabel": "뉴 드라비엘 북부 도로",
+      "safetyRadius": 0,
+      "encounterRadius": 24,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
     }
   ],
   "footprints": [
@@ -111,6 +171,46 @@
       "radius": 14,
       "allySlots": 4,
       "enemySlots": 3,
+      "verifiedIn26_2": false,
+      "productionEnabled": false,
+      "candidates": []
+    },
+    {
+      "locator": "turnbound:footprint/capital_valley/temple_wildlife",
+      "siteLocator": "turnbound:site/capital_valley/temple_wildlife",
+      "radius": 14,
+      "allySlots": 4,
+      "enemySlots": 2,
+      "verifiedIn26_2": false,
+      "productionEnabled": false,
+      "candidates": []
+    },
+    {
+      "locator": "turnbound:footprint/capital_valley/tower_road",
+      "siteLocator": "turnbound:site/capital_valley/tower_road",
+      "radius": 14,
+      "allySlots": 4,
+      "enemySlots": 2,
+      "verifiedIn26_2": false,
+      "productionEnabled": false,
+      "candidates": []
+    },
+    {
+      "locator": "turnbound:footprint/capital_valley/camp_road",
+      "siteLocator": "turnbound:site/capital_valley/camp_road",
+      "radius": 14,
+      "allySlots": 4,
+      "enemySlots": 3,
+      "verifiedIn26_2": false,
+      "productionEnabled": false,
+      "candidates": []
+    },
+    {
+      "locator": "turnbound:footprint/capital_valley/drabyel_north_watch",
+      "siteLocator": "turnbound:site/capital_valley/drabyel_north_watch",
+      "radius": 14,
+      "allySlots": 4,
+      "enemySlots": 2,
       "verifiedIn26_2": false,
       "productionEnabled": false,
       "candidates": []
@@ -162,6 +262,50 @@
       "productionEnabled": false,
       "combatEncounterId": "CV_DRABYEL_ROAD",
       "fieldVisibleCount": 1
+    },
+    {
+      "locator": "turnbound:encounter/capital_valley/temple_wildlife",
+      "siteLocator": "turnbound:site/capital_valley/temple_wildlife",
+      "tier": "COMMON",
+      "footprintLocator": "turnbound:footprint/capital_valley/temple_wildlife",
+      "playerLabel": "옛 사원 길의 멧돼지 무리",
+      "verifiedIn26_2": false,
+      "productionEnabled": false,
+      "combatEncounterId": "CV_TEMPLE_WILDLIFE",
+      "fieldVisibleCount": 1
+    },
+    {
+      "locator": "turnbound:encounter/capital_valley/tower_road",
+      "siteLocator": "turnbound:site/capital_valley/tower_road",
+      "tier": "COMMON",
+      "footprintLocator": "turnbound:footprint/capital_valley/tower_road",
+      "playerLabel": "탑 남쪽 길목 약탈자",
+      "verifiedIn26_2": false,
+      "productionEnabled": false,
+      "combatEncounterId": "CV_TOWER_ROAD",
+      "fieldVisibleCount": 2
+    },
+    {
+      "locator": "turnbound:encounter/capital_valley/camp_road",
+      "siteLocator": "turnbound:site/capital_valley/camp_road",
+      "tier": "COMMON",
+      "footprintLocator": "turnbound:footprint/capital_valley/camp_road",
+      "playerLabel": "야영지 북쪽의 이끼등 무리",
+      "verifiedIn26_2": false,
+      "productionEnabled": false,
+      "combatEncounterId": "CV_CAMP_WILDLIFE",
+      "fieldVisibleCount": 2
+    },
+    {
+      "locator": "turnbound:encounter/capital_valley/drabyel_north_watch",
+      "siteLocator": "turnbound:site/capital_valley/drabyel_north_watch",
+      "tier": "COMMON",
+      "footprintLocator": "turnbound:footprint/capital_valley/drabyel_north_watch",
+      "playerLabel": "뉴 드라비엘 북부 정찰대",
+      "verifiedIn26_2": false,
+      "productionEnabled": false,
+      "combatEncounterId": "CV_DRABYEL_NORTH",
+      "fieldVisibleCount": 2
     }
   ]
 }
