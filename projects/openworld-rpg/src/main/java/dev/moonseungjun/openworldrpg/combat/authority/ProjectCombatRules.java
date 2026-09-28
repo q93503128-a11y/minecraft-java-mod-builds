@@ -8,6 +8,10 @@ public final class ProjectCombatRules {
     public static final int MAX_CONTENT_LEVEL = 80;
     public static final double MAX_NORMAL_DEFENSE_MITIGATION = 0.70;
     public static final double MAX_ROUTINE_TOTAL_MITIGATION = 0.80;
+    public static final double BASE_CRITICAL_CHANCE = 0.05;
+    public static final double MAX_NORMAL_CRITICAL_CHANCE = 0.60;
+    public static final double BASE_CRITICAL_MULTIPLIER = 1.50;
+    public static final double MAX_NORMAL_CRITICAL_MULTIPLIER = 2.25;
 
     private ProjectCombatRules() {
     }
@@ -129,6 +133,70 @@ public final class ProjectCombatRules {
                 + 0.008 * Math.min(Math.max(x - 25.0, 0.0), 30.0)
                 + 0.004 * Math.max(x - 55.0, 0.0);
         return Math.max(0.70, multiplier);
+    }
+
+
+    public static double dexCriticalChanceBonus(double dexterity) {
+        requireFiniteNonNegative("dexterity", dexterity);
+        return Math.min(
+                0.06,
+                Math.max(0.0, dexterity - 5.0) * 0.0008
+        );
+    }
+
+    public static double normalCriticalChance(
+            double dexterity,
+            double gearBonus,
+            double authoredBonus
+    ) {
+        requireFiniteNonNegative("gearBonus", gearBonus);
+        requireFinite("authoredBonus", authoredBonus);
+        return Math.max(
+                0.0,
+                Math.min(
+                        MAX_NORMAL_CRITICAL_CHANCE,
+                        BASE_CRITICAL_CHANCE
+                                + dexCriticalChanceBonus(dexterity)
+                                + gearBonus
+                                + authoredBonus
+                )
+        );
+    }
+
+    public static double normalCriticalMultiplier(
+            double gearBonus,
+            double authoredBonus
+    ) {
+        requireFiniteNonNegative("gearBonus", gearBonus);
+        requireFinite("authoredBonus", authoredBonus);
+        return Math.max(
+                1.0,
+                Math.min(
+                        MAX_NORMAL_CRITICAL_MULTIPLIER,
+                        BASE_CRITICAL_MULTIPLIER
+                                + gearBonus
+                                + authoredBonus
+                )
+        );
+    }
+
+    public static boolean criticalRollSucceeds(
+            double criticalChance,
+            double serverRoll
+    ) {
+        requireFiniteNonNegative("criticalChance", criticalChance);
+        requireFinite("serverRoll", serverRoll);
+        if (criticalChance > 1.0) {
+            throw new IllegalArgumentException(
+                    "criticalChance cannot exceed 1.0."
+            );
+        }
+        if (serverRoll < 0.0 || serverRoll >= 1.0) {
+            throw new IllegalArgumentException(
+                    "serverRoll must be inside [0, 1)."
+            );
+        }
+        return serverRoll < criticalChance;
     }
 
     public static double defenseTakenMultiplier(int attackerLevel, double effectiveDefense) {
