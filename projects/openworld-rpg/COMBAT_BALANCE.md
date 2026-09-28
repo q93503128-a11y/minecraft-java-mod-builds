@@ -491,6 +491,7 @@ Caps for ordinary persistent states:
 - normal total Critical Chance cap: **60%**;
 - guaranteed-crit skills may explicitly override the cap for their own hit;
 - normal total Critical Damage cap: **2.25x**;
+- ordinary `Critical Damage +N%` equipment affixes are additive deltas to the critical multiplier: for example `+10% Critical Damage` means `1.50x → 1.60x` before other authored crit-multiplier bonuses and the 2.25x cap;
 - a specific authored skill/Mythic may exceed that only for its defined event.
 
 Default authored weak-point multiplier when an enemy has a real readable weak point:
