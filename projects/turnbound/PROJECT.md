@@ -7,6 +7,15 @@
 - Package: `io.github.q93503128.turnbound`
 - Version: `0.1.0-alpha.17`
 
+### Project isolation
+
+**TURNBOUND and TURNBOUND: RE are different projects.**
+
+- Current project canon/runtime/source: `projects/turnbound/`
+- `projects/turnbound-re/` is not a dependency, migration source, design authority, or fallback canon for TURNBOUND.
+- TURNBOUND: RE documents, code, balance, roster decisions, UI assumptions, and save rules must never be imported into TURNBOUND unless the user explicitly requests a specific transfer.
+- Similar names, shared character IDs, or old conversation context are not sufficient evidence for cross-project reuse.
+
 ## Toolchain
 - Minecraft Java 26.2
 - NeoForge 26.2.0.62
@@ -28,9 +37,13 @@
 10. `MULTIPLAYER_DESIGN_v1.md`
 11. `OVERHAUL_ROADMAP_v1.md`
 12. current source/resources
+13. preserved TURNBOUND v0.4 system canon in Git history / archived design files, only where it was explicitly reaffirmed and not later superseded by the user
 
-Old v0.4 Aster March physical-world canon and alpha-by-alpha deltas are superseded.
-Git history is the archive.
+The old **Aster March physical-world layout** is superseded by the Drehmal production world.
+That world replacement does **not** automatically invalidate unrelated TURNBOUND system canon such as rarity, roster identity, or economy rules.
+
+A newer document is not allowed to override a later explicit user decision merely because its filename says `v1`.
+If current docs/source conflict with a later user decision, classify the current state as stale/regressed and repair the docs before treating it as canon.
 
 ## Current identity
 
@@ -73,12 +86,44 @@ Required:
 
 ## Characters
 
-- ★3~★5 only for formal roster
-- no fodder character design
-- one readable signature mechanic
+- native rarity range is **★1~★5**
+- P01~P08 remain the core hero roster
+- F01/F02 are ★1 low-rarity material-type characters
+- F03/F04 are ★2 low-rarity material-type characters
+- ★1~★2 are not deleted, legacy-only, or automatically promoted to ★3
+- ★3+ characters carry the stronger role/signature-mechanic expectation; ★1~★2 may be simpler and intentionally lower power
 - duplicate copies never required for core kit
 - models/animations/VFX/SFX are part of completion
 - portrait uses final model when quality permits
+
+Confirmed Standard Archive baseline restored on 2026-09-26:
+- ★5 3%: P02 / P05 / P06
+- ★4 12%: P01 / P03 / P04 / P07
+- ★3 35%: P08
+- ★2 30%: F03 / F04
+- ★1 20%: F01 / F02
+
+Do not revert this table to a ★3~★5-only pool without a new explicit user decision.
+
+## Canon reconciliation hold — 2026-09-28
+
+A separate Codex audit is pending for broader v0.4 → v1 regressions.
+
+Already confirmed and therefore **not pending**:
+- TURNBOUND is separate from TURNBOUND: RE.
+- ★1~★2 remain part of TURNBOUND.
+- F01/F02 remain ★1.
+- F03/F04 remain ★2.
+- P05 remains ★5.
+- the five-tier Standard Archive table above is the restored baseline.
+- commit `93a0c9d02b25fd8e46643ba10f1009165b7a2780` reintroduced a stale ★3~★5-only assumption after the 2026-09-26 restoration.
+
+Still pending audit before further canon edits:
+- `nativeStar` / `currentStar` progression details
+- promotion / ★6 / Awakening relationship
+- any other v0.4 system removed during the v1 overhaul without a later explicit user decision
+
+Until that audit is reviewed, do not infer that omitted v0.4 systems are either restored or deleted.
 
 ## Economy
 
@@ -136,7 +181,7 @@ When replacement completes:
 - obsolete Aster builders/routers/maps removed
 - dead UI removed
 - duplicate helpers consolidated
-- old filler character data removed
+- obsolete duplicate/placeholder character data removed, while canonical F01~F04 low-rarity characters are retained
 - superseded global Awakening Core path removed/migrated
 - compatibility code kept only for real save/network reason
 

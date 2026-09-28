@@ -15,12 +15,15 @@
 - 모델/무기/animation으로 역할이 읽힘
 - 다른 캐릭터의 단순 상위호환이 아님
 
-정식 희귀도:
+태생 희귀도:
+- ★1~★2: 소재형/저성능. 단순 kit와 낮은 ceiling을 허용하지만 실제 캐릭터이며 소환/보유 가능.
 - ★3: 단순/전문
 - ★4: 완성된 signature loop
 - ★5: 더 높은 선택지/ceiling
 
-★1~2 fodder 체계는 폐기.
+★1~★2를 legacy-only, NPC-only, 또는 삭제 대상으로 취급하지 않는다.
+핵심 영웅 P01~P08의 높은 presentation 기준을 저희귀도 F01~F04에 그대로 강제하지는 않지만,
+플레이어-facing 캐릭터로서 기본 모델/애니메이션/정보 표시는 갖춘다.
 
 ---
 
@@ -262,7 +265,7 @@ Signature: **Sanctuary Mark**
 
 **한 문장:** 한 적을 Sightline으로 지정하고 동료의 공격을 자신의 사격 기회로 바꾸는 follow-up DPS.
 
-Rarity: ★4  
+Rarity: ★5  
 Role: Follow-up / Single DPS / Team synergy  
 SPD target: 108  
 Signature: **Sightline + Shot**
@@ -529,26 +532,35 @@ Signature: **Fury 0~100**
 
 ---
 
-## 10. F01~F04 처리
+## 10. F01~F04 저희귀도 로스터
 
-### F01 민병 견습생
-- 가챠 filler에서 제거
-- 튜토리얼/지역 NPC companion 후보
-- 정식 캐릭터 승격 시 이름/외형/signature mechanic 새 설계 필요
+F01~F04는 제거된 filler가 아니라 TURNBOUND의 저희귀도 플레이어블 캐릭터다.
+핵심 영웅보다 단순하고 약한 설계를 허용하며, v0.1 기준 개인 퀘스트/Signature를 요구하지 않는다.
 
-### F02 야전 견습생
-- 동일
-- 단순 Basic healer를 정식 roster에 남기지 않음
+### F01 민병 견습생 — ★1
+- Standard Archive ★1 pool
+- 천 모자 + 목검 계열 실루엣
+- 필드 NPC 모델 일부 공유 가능
+- 플레이어블 variant는 식별 가능한 차이를 둔다
 
-### F03 변경 사냥꾼
-- ★3 정식 field recruit 후보
-- 역할: 첫타/정찰/약점 표식 전문
-- P05의 하위호환이 되지 않게 별도 niche 필요
+### F02 야전 견습생 — ★1
+- Standard Archive ★1 pool
+- 소형 치료가방을 사용하는 단순 지원형 저희귀도 캐릭터
+- 핵심 영웅 힐러의 signature loop를 복제하지 않는다
 
-### F04 방패 용병
-- ★3 정식 field recruit 후보
-- 자기 방어 + 1회 ally protection specialist
-- P03처럼 장기 Guard resource를 사용하지 않음
+### F03 변경 사냥꾼 — ★2
+- Standard Archive ★2 pool
+- Prologue/스토리 지급 여부는 현재 Drehmal 진행 정본과 함께 별도 확인
+- 짧은 활을 사용하는 단순 원거리 저희귀도 캐릭터
+- P05의 Sightline/follow-up 정체성을 복제하지 않는다
+
+### F04 방패 용병 — ★2
+- Standard Archive ★2 pool
+- 둥근 중형 방패 + 곤봉 계열
+- P03보다 단순하고 가벼운 보호 역할
+- P03의 Guard 장기 자원 루프를 복제하지 않는다
+
+정확한 F01~F04 스탯/스킬/각성/성급 성장 규칙은 2026-09-28 독립 정본 감사 후 현재 Drehmal 정본에 맞춰 확정한다.
 
 ---
 
