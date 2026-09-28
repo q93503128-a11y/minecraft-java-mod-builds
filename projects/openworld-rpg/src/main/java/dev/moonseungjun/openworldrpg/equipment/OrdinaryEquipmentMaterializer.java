@@ -28,6 +28,13 @@ public final class OrdinaryEquipmentMaterializer {
         Objects.requireNonNull(catalog, "catalog");
 
         for (var definition : request.eligibleAffixes()) {
+            var canonical = catalog.definition(definition.id());
+            if (!canonical.equals(definition)) {
+                throw new IllegalStateException(
+                        "Equipment pool attempted to override canonical affix definition: "
+                                + definition.id()
+                );
+            }
             if (!catalog.runtimeImplemented(definition.id())) {
                 throw new IllegalStateException(
                         "Equipment pool contains affix without live runtime adapter: "
