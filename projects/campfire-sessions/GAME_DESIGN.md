@@ -471,10 +471,23 @@ Moving is normal life-sim content, not only a multiplayer vacancy mechanism.
 A resident can consider leaving.
 Players can ask them to stay.
 
+Moving consideration should be relatively rare so residents have time to become familiar characters:
+- as a baseline, the village should see roughly one voluntary move consideration every 1–2 in-game seasons rather than constant weekly churn.
+- recently arrived residents are protected from immediately becoming move candidates.
+- exact weighting can account for roster size and player count, but frequent turnover is not the goal.
+
 Multiplayer rule:
 for ordinary voluntary moving, if any player explicitly asks the resident to stay, the move is canceled.
 
-Residents who leave should not be treated as erased forever; later cameos/visits/letters are desirable.
+Residents who leave are not erased.
+They retain their identity and prior relationship history and may later:
+- send letters.
+- appear as visitors.
+- be encountered again on travel/exploration.
+- attend suitable festivals/special events.
+- be invited back when housing allows.
+
+A returning resident should recognize the player and prior relationship rather than behaving like a fresh clone.
 
 ## 12. Resident favors
 
@@ -624,6 +637,13 @@ Tool upgrades should improve action quality, for example:
 - access to certain rare interactions.
 - collection usability.
 
+Acquisition should not be money-only for every tier.
+Baseline structure:
+- basic tools are readily purchased/obtained early.
+- higher tiers generally combine money with a lightweight lifestyle-progress condition, suitable material, craft/service unlock or relevant resident/artisan service.
+- requirements should connect to the activity without becoming a large RPG crafting tree.
+- final requirements/names follow the selected external tool-art set and its believable progression.
+
 Do not turn tool tiers into an RPG damage-stat ladder.
 
 ## 16. Inventory and storage
@@ -756,16 +776,34 @@ Watering exists as a light lifestyle interaction, not a daily chore that consume
 - exact moisture duration is finalized after the crop/tool asset and system choices are known.
 - farming remains useful but should not become an industrial automation-first economy.
 
+### Seasonal crop expiry and player warning
+Seasonal crops may stop growing and eventually wither after their valid season, but the game must not expect the player to memorize exact crop calendars to avoid a large accidental loss.
+
+Use overlapping warning channels:
+- crop visuals visibly change before withering rather than going from healthy to dead without warning.
+- seed/item tooltip and shop information show the crop's valid season in simple terms.
+- planting too late for the crop to reasonably mature before seasonal expiry produces a clear warning rather than silently accepting a doomed planting with no feedback.
+- the calendar/season UI can indicate that sensitive crops are approaching the end of their growing window.
+- residents/shopkeepers/tutorial text may provide lightweight seasonal reminders.
+- when a crop is already mature, the warning presentation should make it obvious that it should be harvested soon.
+
+The player does not need to know an exact hidden death tick.
+The goal is that attentive ordinary play gives enough notice to harvest in time.
+
+Perennial/woody plants such as suitable fruit trees may enter dormancy instead of dying when out of season.
+
 Expand flora significantly using external mods/assets.
 
 Desired systems:
 - seasonal flowers.
-- flower breeding/rare colors.
 - fruit trees.
 - berries/crops.
 - mushrooms.
 - unusual/rare mushrooms.
 - decorative plants.
+
+A dedicated flower-breeding/genetics system is NOT required.
+Flower variety can come from species, seasonal availability and authored color variants without adding a separate breeding-combination subsystem.
 
 Farming is a lifestyle activity, not an industrial automation economy.
 
@@ -1025,6 +1063,17 @@ select available route
 → transition/load
 → destination.
 
+Multiplayer travel is player-controlled rather than server-wide:
+- one player's departure never force-teleports every online player.
+- players heading to the same destination may optionally form a temporary travel group at the pier and depart together.
+- travel groups are independent from Household membership.
+- each player/group pays and departs according to the route rules.
+
+Return travel is also voluntary:
+- players may return independently even if they originally departed together.
+- one player cannot force-return companions from an exploration island.
+- only explicitly authored special-instance content such as a boss encounter may impose a shared party-return rule, and that rule must be clear before entry.
+
 Do not make players physically sail for several real minutes merely to hide loading.
 
 Routes unlock through life-sim progress such as:
@@ -1123,6 +1172,15 @@ Mail may contain:
 - event notices.
 - player-to-player letters.
 - attached items.
+
+Mailbox/mail history is stored as managed save data rather than represented by unlimited physical entities.
+Give it a generous practical capacity and organization/archive behavior.
+
+Rules:
+- unread mail with an unclaimed attachment must not be silently auto-deleted.
+- catalog deliveries and valuable resident/player gifts must remain recoverable until claimed.
+- low-value system/event notices may be archived/condensed after a long in-game period rather than expanding the active inbox forever.
+- multiplayer mail delivery must not depend on both players being online simultaneously.
 
 Moved-away residents may occasionally send letters.
 
