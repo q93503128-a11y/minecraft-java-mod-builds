@@ -100,7 +100,14 @@ public final class OrdinaryEquipmentMaterializer {
                     shieldFamily,
                     "shieldFamily"
             );
-            validateShape();
+            validateShape(
+                    slot,
+                    affixFamily,
+                    weaponFamily,
+                    magicalFocus,
+                    armorArchetype,
+                    shieldFamily
+            );
         }
 
         public static BaseProfile weapon(
@@ -232,7 +239,14 @@ public final class OrdinaryEquipmentMaterializer {
             );
         }
 
-        private void validateShape() {
+        private static void validateShape(
+                ProjectEquipmentSlot slot,
+                OrdinaryEquipmentAffixRoller.ItemFamily affixFamily,
+                Optional<ProjectWeaponFamily> weaponFamily,
+                boolean magicalFocus,
+                Optional<ProjectArmorArchetype> armorArchetype,
+                Optional<ProjectShieldFamily> shieldFamily
+        ) {
             if (slot == ProjectEquipmentSlot.MAIN_WEAPON) {
                 if (weaponFamily.isEmpty()
                         || magicalFocus
