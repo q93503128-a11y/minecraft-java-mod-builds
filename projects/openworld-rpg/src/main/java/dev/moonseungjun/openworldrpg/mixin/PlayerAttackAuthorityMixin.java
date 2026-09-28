@@ -65,7 +65,8 @@ public abstract class PlayerAttackAuthorityMixin {
                         proposedDamage,
                         context.comboCount(),
                         build,
-                        targetSnapshot
+                        targetSnapshot,
+                        attacker.getRandom().nextDouble()
                 );
         if (!decision.accepted()) {
             return false;
