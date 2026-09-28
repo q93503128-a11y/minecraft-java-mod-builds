@@ -102,7 +102,7 @@ final class DrehmalVisibleEncounterService {
                     : DrehmalAdaptiveRoutePlacement.patrol(resolverPlayer, slot.patrolLocator());
             if (!DrehmalEncounterActivationRules.ready(slot, site, footprint, patrol)) continue;
             active.add(slot.locator());
-            ENCOUNTERS.computeIfAbsent(slot.locator(), ignored -> new SharedEncounter(slot, site, footprint, patrol));
+            ENCOUNTERS.computeIfAbsent(slot.locator(), ignored -> new SharedEncounter(level, slot, site, footprint, patrol));
         }
 
         for (String locator : List.copyOf(ENCOUNTERS.keySet())) {
@@ -113,6 +113,7 @@ final class DrehmalVisibleEncounterService {
     }
 
     private static final class SharedEncounter {
+        private final ServerLevel level;
         private final DrehmalFirstRouteCatalog.EncounterSlot slot;
         private final DrehmalFirstRouteCatalog.Site site;
         private final DrehmalFirstRouteCatalog.Footprint footprint;
@@ -142,11 +143,13 @@ final class DrehmalVisibleEncounterService {
         private boolean missingVisualWarned;
 
         private SharedEncounter(
+                ServerLevel level,
                 DrehmalFirstRouteCatalog.EncounterSlot slot,
                 DrehmalFirstRouteCatalog.Site site,
                 DrehmalFirstRouteCatalog.Footprint footprint,
                 DrehmalFirstRouteCatalog.Patrol patrol
         ) {
+            this.level = level;
             this.slot = slot;
             this.site = site;
             this.footprint = footprint;
