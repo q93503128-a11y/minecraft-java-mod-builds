@@ -8,6 +8,8 @@
 >
 > Rule: this pass is based on the actual extracted Azari world bytes, not the public overview render. It may narrow or reject coordinates. It does **not** claim gameplay-FOV sightline or travel-time acceptance until the slice is opened in a real client.
 
+> **2026-09-28 surface supersession:** the Pass-2 Alderford gate, road-evidence and route-skeleton coordinates are historical candidates. Their current terrain-refined replacements are defined by `AZARI_R01_SURFACE_SPATIAL_PASS4.md` and the bundled spatial JSON. Pass-3 Quarry interior volumes remain unchanged.
+
 ## 1. Actual-world evidence
 
 The inspected source was extracted from the creator-downloaded file:

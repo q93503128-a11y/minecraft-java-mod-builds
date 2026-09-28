@@ -15,34 +15,34 @@
     {
       "id": "openworld_rpg:r01/alderford_gate_probe",
       "status": "candidate",
-      "x": -2280,
-      "y": 69,
-      "z": 4080,
-      "role": "southwestern gate / first-shrine review probe"
+      "x": -2240,
+      "y": 67,
+      "z": 4048,
+      "role": "Alderford gate / first-shrine terrain candidate; direct Anvil review places it about 57.7 horizontal blocks from the center on a dry, low-relief grass shoulder"
     },
     {
       "id": "openworld_rpg:r01/broken_road_marker_probe",
       "status": "candidate",
-      "x": -2380,
-      "y": null,
-      "z": 4300,
-      "role": "Old Quarry Road first-disturbance review probe"
+      "x": -2404,
+      "y": 71,
+      "z": 4312,
+      "role": "Old Quarry Road first-disturbance terrain candidate on a cleaner dry grass shoulder than the earlier locally irregular probe"
     },
     {
       "id": "openworld_rpg:r01/roadside_trouble_probe",
       "status": "candidate",
-      "x": -2440,
-      "y": null,
-      "z": 4400,
-      "role": "Roadside Trouble volume-center review probe"
+      "x": -2472,
+      "y": 71,
+      "z": 4388,
+      "role": "Roadside Trouble scene-center candidate; direct Anvil sampling shows a broad dry grass scene suitable for wagon interactions and the capped threat pack"
     },
     {
       "id": "openworld_rpg:r01/lost_cargo_probe",
       "status": "candidate",
-      "x": -2500,
-      "y": null,
-      "z": 4500,
-      "role": "late-road cargo evidence review probe"
+      "x": -2520,
+      "y": 73,
+      "z": 4480,
+      "role": "late-road Lost Cargo evidence candidate on dry grass terrain between Roadside Trouble and the Quarry approach"
     },
     {
       "id": "openworld_rpg:r01/quarry_waystone_probe",
@@ -96,6 +96,15 @@
       "min_z": 4624,
       "max_z": 4832,
       "role": "Quarry Waystone / overlook / lower-entrance terrain review box"
+    },
+    {
+      "id": "openworld_rpg:r01/roadside_trouble_scene_candidate",
+      "status": "candidate",
+      "min_x": -2492,
+      "max_x": -2452,
+      "min_z": 4368,
+      "max_z": 4408,
+      "role": "40x40 Roadside Trouble scene candidate around the wagon/event center; direct Anvil sampling is dry and predominantly grass with low local relief"
     }
   ],
   "volumes": [
@@ -164,35 +173,27 @@
     {
       "id": "openworld_rpg:r01/alderford_to_quarry_surface_candidate",
       "status": "candidate",
-      "role": "raw-terrain Old Quarry Road skeleton; not a final road spline",
+      "role": "direct-Anvil-refined dry Old Quarry Road skeleton through the accepted semantic evidence order; still a candidate route rather than a final authored road spline",
       "points": [
         {
           "x": -2208,
           "z": 4000
         },
         {
-          "x": -2260,
-          "z": 4100
+          "x": -2240,
+          "z": 4048
         },
         {
-          "x": -2320,
-          "z": 4200
+          "x": -2404,
+          "z": 4312
         },
         {
-          "x": -2380,
-          "z": 4300
+          "x": -2472,
+          "z": 4388
         },
         {
-          "x": -2440,
-          "z": 4400
-        },
-        {
-          "x": -2500,
-          "z": 4500
-        },
-        {
-          "x": -2560,
-          "z": 4600
+          "x": -2520,
+          "z": 4480
         },
         {
           "x": -2560,

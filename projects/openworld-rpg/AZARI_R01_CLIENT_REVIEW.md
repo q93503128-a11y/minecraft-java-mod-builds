@@ -1,16 +1,18 @@
 # Open-World RPG — Azari R01 Client Review
 
-> Status: **LOCAL REVIEW SAVE PREPARED BY TOOLING / REAL MINECRAFT CLIENT REVIEW STILL REQUIRED**
+> Status: **DIRECT NBT SURFACE REVIEW COMPLETE FOR CURRENT CANDIDATES / FINAL CLIENT VISUAL ACCEPTANCE DEFERRED TO INTEGRATED R01 FIRST-COMPLETE TEST**
 >
 > Date: 2026-09-27
 >
-> Spatial evidence: `AZARI_R01_SPATIAL_PASS2.md`, `AZARI_R01_QUARRY_INTERIOR_PASS3.md`
+> Spatial evidence: `AZARI_R01_SPATIAL_PASS2.md`, `AZARI_R01_QUARRY_INTERIOR_PASS3.md`, `AZARI_R01_SURFACE_SPATIAL_PASS4.md`
 >
 > Rule: this is developer-only inspection workflow. Nothing in this file promotes a candidate coordinate to gameplay authority.
 
 ## 1. Purpose
 
 The creator-acquired Azari archive remains local-only. Do not commit, upload, redistribute or modify the original archive.
+
+**This is not a current user test task.** Pass 4 reopened the four persisted R01 slice archives and resolved the current surface Y/topography questions directly from Anvil data. Keep this workflow for the later integrated visual/feel acceptance after the authored R01 world content exists.
 
 The review workflow creates a fresh Minecraft save containing only the already-inspected R01 overworld slice:
 
@@ -88,52 +90,56 @@ Keep normal gameplay code disconnected from all candidate coordinates during thi
 
 ## 4. Surface review order
 
-Surface teleports deliberately use `Y=160` as an **inspection altitude**, not as a spatial binding. Descend in spectator mode, stand at the real terrain surface, and record the observed ground/standing Y from the client.
+Pass 4 already resolved raw terrain Y/topography from the actual Anvil bytes. The later client pass is for **visual composition and gameplay feel**, not for discovering coordinates that tooling can read directly.
+
+Surface teleports may still use `Y=160` as an inspection altitude.
 
 ### Alderford
 
 ```mcfunction
 /tp @s -2208 160 4000
-/tp @s -2280 160 4080
+/tp @s -2240 160 4048
 ```
 
-Inspect:
+Direct-NBT candidate facts:
 
-- whether the candidate core can support the locked settlement topology without flattening signature terrain;
-- whether a gate → first shrine reveal is readable;
-- whether the shrine can be visible immediately after the gate reveal;
-- whether a roughly 25–35 block central square and 45–60 block gate-to-market relationship remain plausible;
-- service circulation, stable visibility and future-route sightlines.
+```text
+Alderford center:                (-2208, 67, 4000)
+gate / first-shrine candidate:   (-2240, 67, 4048)
+horizontal separation:           ~57.7 blocks
+```
 
-Do not lock exact service/building coordinates yet.
+Later integrated review checks:
+
+- authored gate → shrine reveal;
+- shrine visibility immediately after the gate reveal;
+- central square and service silhouettes at gameplay FOV;
+- stable visibility toward the outward road;
+- first/third-person circulation after the real structures exist.
 
 ### Old Quarry Road
 
-Review the route in order:
+Use the refined semantic route:
 
 ```mcfunction
 /tp @s -2208 160 4000
-/tp @s -2260 160 4100
-/tp @s -2320 160 4200
-/tp @s -2380 160 4300
-/tp @s -2440 160 4400
-/tp @s -2500 160 4500
-/tp @s -2560 160 4600
+/tp @s -2240 160 4048
+/tp @s -2404 160 4312
+/tp @s -2472 160 4388
+/tp @s -2520 160 4480
 /tp @s -2560 160 4660
 /tp @s -2600 160 4700
 ```
 
-The three evidence probes intentionally have no accepted Y yet:
+Direct-NBT surface candidates are already known:
 
 ```text
-Broken Road Marker  ≈ (-2380, ?, 4300)
-Roadside Trouble    ≈ (-2440, ?, 4400)
-Lost Cargo          ≈ (-2500, ?, 4500)
+Broken Road Marker  ≈ (-2404, 71, 4312)
+Roadside Trouble    ≈ (-2472, 71, 4388)
+Lost Cargo          ≈ (-2520, 73, 4480)
 ```
 
-Record the real terrain Y in-client. Do not copy a guessed `67` or another nearby surface value into spatial data.
-
-Review whether each evidence beat is physically legible from the intended road and whether the sequence feels like a route rather than three disconnected pins.
+The later client pass judges whether authored evidence, wagon, props and road dressing are visible/readable in the intended sequence. It does not need to rediscover the terrain Y values.
 
 ### Quarry exterior
 
@@ -143,35 +149,43 @@ Review whether each evidence beat is physically legible from the intended road a
 /tp @s -2600 160 4700
 ```
 
-Inspect:
+Direct-NBT candidates remain:
 
-- Waystone placement space;
-- overlook reveal and gameplay-FOV sightline;
-- lower-entrance face/orientation;
-- support/cart/hoist structure footprint;
-- whether the exterior can lead into the authored interior without a long dead tunnel.
+```text
+Quarry Waystone:       (-2560, 67, 4660)
+Quarry overlook:       (-2628, 96, 4764)
+lower entrance:        (-2600, 64, 4700)
+```
+
+The Waystone ↔ lower-entrance horizontal separation is about 56.6 blocks, inside the canonical 35–70 block rule.
+
+The integrated visual pass still checks entrance facing, overlook composition, supports/carts/hoist and the authored transition into the dungeon.
 
 ## 5. Travel-time review
 
-The Pass-2 polyline is approximately 812 horizontal blocks, but that number is not accepted travel time.
+Pass 4 verifies distance and dry-terrain plausibility, **not real travel time**.
 
-After identifying a plausible walkable line:
-
-1. return to the intended Alderford outward-road start;
-2. use the normal intended player movement state, not spectator/creative flight;
-3. follow the candidate route to the Quarry entrance;
-4. record elapsed time and any forced detours;
-5. repeat later with the accepted Trail Stag implementation when that presentation/runtime gate is available.
-
-Current spatial targets from the project canon remain:
+Current refined semantic route:
 
 ```text
-major POI → next meaningful route decision/POI: roughly 1–3.5 min
-first-visit dungeon approach from practical service/shrine: roughly 2–5 min
-repeat route after shortcut/shrine: materially shorter
+Alderford center → lower entrance ≈ 815.2 horizontal blocks
+Alderford center → Roadside Trouble ≈ 470.5 horizontal blocks
+Quarry Waystone → lower entrance ≈ 56.6 horizontal blocks
 ```
 
-A raw distance matching a target is not sufficient if the route contains dead travel or unreadable turns.
+Do not interrupt R01 implementation for a partial timing test. Measure normal on-foot and Trail Stag timings during the integrated R01 first-complete client acceptance, after the authored road, props, encounters and movement presentation exist.
+
+Current spatial targets remain:
+
+```text
+Alderford gate → square: 20–35 s
+square → Greenwater Ford activity edge: 45–75 s
+square → first Alder Meadow meaningful interaction: 45–90 s
+square → Old Quarry Road disturbance belt: 90–150 s
+nearest practical R01 checkpoint → quarry entrance after discovery: 60–120 s
+```
+
+The separate Quarry Waystone placement rule remains 35–70 blocks of legal travel from the lower entrance.
 
 ## 6. Quarry interior review order
 
