@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import dev.moonseungjun.openworldrpg.combat.state.EquipmentResourceModifiers;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatState;
 import org.junit.jupiter.api.Test;
 
@@ -105,6 +106,86 @@ class PlayerCombatStateTest {
         state.synchronizeEndurance(5, 0);
         assertEquals(50.0, state.stamina(0), 0.0001);
     }
+
+    @Test
+    void maxResourceAffixesPreserveCurrentPercentInsteadOfRefilling() {
+        PlayerCombatState state = new PlayerCombatState(5, 0);
+        assertTrue(state.spendMana(50.0, 0));
+        assertTrue(state.spendStamina(50.0, 12, 0));
+
+        state.synchronizeResourceModifiers(
+                new EquipmentResourceModifiers(
+                        0.07,
+                        0.09,
+                        0.09,
+                        0.0,
+                        0.0,
+                        0.0
+                ),
+                0
+        );
+
+        assertEquals(109, state.maxMana());
+        assertEquals(109, state.maxStamina());
+        assertEquals(54.5, state.mana(0), 0.0001);
+        assertEquals(54.5, state.stamina(0), 0.0001);
+
+        state.synchronizeResourceModifiers(
+                EquipmentResourceModifiers.none(),
+                0
+        );
+        assertEquals(100, state.maxMana());
+        assertEquals(100, state.maxStamina());
+        assertEquals(50.0, state.mana(0), 0.0001);
+        assertEquals(50.0, state.stamina(0), 0.0001);
+    }
+
+    @Test
+    void resourceRecoveryAffixesMultiplyCanonicalBaseRegeneration() {
+        PlayerCombatState state = new PlayerCombatState(5, 0);
+        state.synchronizeResourceModifiers(
+                new EquipmentResourceModifiers(
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.12,
+                        0.12,
+                        0.0
+                ),
+                0
+        );
+
+        assertTrue(state.spendMana(50.0, 0));
+        assertTrue(state.spendStamina(50.0, 0, 0));
+
+        assertEquals(54.48, state.mana(40), 0.0001);
+        assertEquals(100.0, state.stamina(40), 0.0001);
+    }
+
+    @Test
+    void manaCostReductionAppliesToChecksAndSpendWithCanonicalTwentyPercentCap() {
+        PlayerCombatState state = new PlayerCombatState(5, 0);
+        state.synchronizeResourceModifiers(
+                new EquipmentResourceModifiers(
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.20
+                ),
+                0
+        );
+
+        assertEquals(40.0, state.effectiveManaCost(50.0), 0.0001);
+        assertTrue(state.spendMana(50.0, 0));
+        assertEquals(60.0, state.mana(0), 0.0001);
+        assertTrue(state.canSpendMana(75.0, 0));
+        assertTrue(state.spendMana(75.0, 0));
+        assertEquals(0.0, state.mana(0), 0.0001);
+        assertFalse(state.canSpendMana(1.0, 0));
+    }
+
 
     @Test
     void hostileHpActivityBlocksNaturalRecoveryForExactlyEightSeconds() {
