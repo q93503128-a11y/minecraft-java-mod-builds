@@ -2,9 +2,9 @@
 
 > Status: **DIRECT NBT SURFACE REVIEW COMPLETE FOR CURRENT CANDIDATES / FINAL CLIENT VISUAL ACCEPTANCE DEFERRED TO INTEGRATED R01 FIRST-COMPLETE TEST**
 >
-> Date: 2026-09-27
+> Date: 2026-09-28
 >
-> Spatial evidence: `AZARI_R01_SPATIAL_PASS2.md`, `AZARI_R01_QUARRY_INTERIOR_PASS3.md`, `AZARI_R01_SURFACE_SPATIAL_PASS4.md`
+> Spatial evidence: `AZARI_R01_SPATIAL_PASS2.md`, `AZARI_R01_QUARRY_INTERIOR_PASS3.md`, `AZARI_R01_SURFACE_SPATIAL_PASS4.md`, `AZARI_R01_FIELD_SPATIAL_PASS5.md`, `AZARI_R01_ALDERFORD_LANDMARK_PASS6.md`
 >
 > Rule: this is developer-only inspection workflow. Nothing in this file promotes a candidate coordinate to gameplay authority.
 
@@ -108,6 +108,8 @@ Alderford center:                (-2208, 67, 4000)
 gate / first-shrine candidate:   (-2240, 67, 4048)
 horizontal separation:           ~57.7 blocks
 ```
+
+Pass 6 also binds terrain-level shell centers for the locked Alderford service roster and all five launch housing shells. Those centers are implementation candidates only; exact prefab footprint/orientation still follows accepted asset bounds.
 
 Later integrated review checks:
 
