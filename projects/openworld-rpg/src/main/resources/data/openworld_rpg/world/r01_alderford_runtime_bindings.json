@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "id": "openworld_rpg:r01/alderford_runtime_bindings",
+  "map_build": "AzariNEW4252026",
+  "services": [
+    {
+      "service_id": "openworld_rpg:service/alderford/gate_shrine",
+      "status": "candidate",
+      "socket_anchor_id": "openworld_rpg:r01/socket/alderford/gate_shrine/checkpoint"
+    },
+    {
+      "service_id": "openworld_rpg:service/alderford/copper_kettle",
+      "status": "candidate",
+      "socket_anchor_id": "openworld_rpg:r01/socket/alderford/copper_kettle/service"
+    },
+    {
+      "service_id": "openworld_rpg:service/alderford/wayfarers_hall",
+      "status": "candidate",
+      "socket_anchor_id": "openworld_rpg:r01/socket/alderford/wayfarers_hall/service"
+    },
+    {
+      "service_id": "openworld_rpg:service/alderford/holt_forge",
+      "status": "candidate",
+      "socket_anchor_id": "openworld_rpg:r01/socket/alderford/holt_forge/service"
+    },
+    {
+      "service_id": "openworld_rpg:service/alderford/alderford_vault",
+      "status": "candidate",
+      "socket_anchor_id": "openworld_rpg:r01/socket/alderford/alderford_vault/service"
+    },
+    {
+      "service_id": "openworld_rpg:service/alderford/greenwater_remedies",
+      "status": "candidate",
+      "socket_anchor_id": "openworld_rpg:r01/socket/alderford/greenwater_remedies/service"
+    },
+    {
+      "service_id": "openworld_rpg:service/alderford/fordside_stables",
+      "status": "candidate",
+      "socket_anchor_id": "openworld_rpg:r01/socket/alderford/fordside_stables/service"
+    },
+    {
+      "service_id": "openworld_rpg:service/alderford/market",
+      "status": "candidate",
+      "socket_anchor_id": "openworld_rpg:r01/socket/alderford/market/service"
+    },
+    {
+      "service_id": "openworld_rpg:service/alderford/route_board",
+      "status": "candidate",
+      "socket_anchor_id": "openworld_rpg:r01/socket/alderford/route_board/face"
+    }
+  ],
+  "properties": [
+    {
+      "property_id": "openworld_rpg:property/alderford/gate_cottage",
+      "status": "candidate",
+      "protected_volume_id": "openworld_rpg:r01/property/alderford/gate_cottage/protected",
+      "interior_volume_id": "openworld_rpg:r01/property/alderford/gate_cottage/interior",
+      "furnishing_volume_id": "openworld_rpg:r01/property/alderford/gate_cottage/furnishing",
+      "clearance_volume_ids": []
+    },
+    {
+      "property_id": "openworld_rpg:property/alderford/paddock_cottage",
+      "status": "candidate",
+      "protected_volume_id": "openworld_rpg:r01/property/alderford/paddock_cottage/protected",
+      "interior_volume_id": "openworld_rpg:r01/property/alderford/paddock_cottage/interior",
+      "furnishing_volume_id": "openworld_rpg:r01/property/alderford/paddock_cottage/furnishing",
+      "clearance_volume_ids": []
+    },
+    {
+      "property_id": "openworld_rpg:property/alderford/riverside_cottage",
+      "status": "candidate",
+      "protected_volume_id": "openworld_rpg:r01/property/alderford/riverside_cottage/protected",
+      "interior_volume_id": "openworld_rpg:r01/property/alderford/riverside_cottage/interior",
+      "furnishing_volume_id": "openworld_rpg:r01/property/alderford/riverside_cottage/furnishing",
+      "clearance_volume_ids": []
+    },
+    {
+      "property_id": "openworld_rpg:property/alderford/quarry_road_cottage",
+      "status": "candidate",
+      "protected_volume_id": "openworld_rpg:r01/property/alderford/quarry_road_cottage/protected",
+      "interior_volume_id": "openworld_rpg:r01/property/alderford/quarry_road_cottage/interior",
+      "furnishing_volume_id": "openworld_rpg:r01/property/alderford/quarry_road_cottage/furnishing",
+      "clearance_volume_ids": []
+    },
+    {
+      "property_id": "openworld_rpg:property/alderford/market_house",
+      "status": "candidate",
+      "protected_volume_id": "openworld_rpg:r01/property/alderford/market_house/protected",
+      "interior_volume_id": "openworld_rpg:r01/property/alderford/market_house/interior",
+      "furnishing_volume_id": "openworld_rpg:r01/property/alderford/market_house/furnishing",
+      "clearance_volume_ids": []
+    }
+  ]
+}
