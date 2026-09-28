@@ -120,6 +120,11 @@ public final class OrdinaryEquipmentRuntimeAffixAdapter {
                             EquipmentCombatAffixKind.MANA_COST_REDUCTION,
                             affix.value()
                     );
+            case "openworld_rpg:runtime_affix/movement_speed" ->
+                    percentage(
+                            EquipmentCombatAffixKind.MOVEMENT_SPEED,
+                            affix.value()
+                    );
             case "openworld_rpg:runtime_affix/guard_strength" ->
                     percentage(
                             EquipmentCombatAffixKind.GUARD_STRENGTH,

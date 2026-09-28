@@ -18,6 +18,7 @@ import java.util.Optional;
 public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
     private static final double WEAPON_FAMILY_POWER_GEAR_CAP = 0.60;
     private static final double CRITICAL_CHANCE_GEAR_CAP = 0.30;
+    public static final double MOVEMENT_SPEED_GEAR_CAP = 0.15;
     private static final double GUARD_STRENGTH_GEAR_CAP = 0.50;
     private static final double POISE_STAGGER_RESISTANCE_GEAR_CAP = 0.50;
 
@@ -145,6 +146,22 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
             }
         }
         return Math.min(result, POISE_STAGGER_RESISTANCE_GEAR_CAP);
+    }
+
+    /**
+     * Aggregates the canonical equipment-only movement bonus independently of weapon authority.
+     * Heavy armor has no implicit movement penalty; only explicit Movement Speed affixes contribute.
+     */
+    public double aggregateMovementSpeedBonus() {
+        double result = 0.0;
+        for (EquippedCombatItem item : equipped) {
+            for (EquipmentCombatAffix affix : item.affixes()) {
+                if (affix.kind() == EquipmentCombatAffixKind.MOVEMENT_SPEED) {
+                    result += affix.value();
+                }
+            }
+        }
+        return Math.min(result, MOVEMENT_SPEED_GEAR_CAP);
     }
 
 
@@ -287,6 +304,9 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
                     case CRITICAL_DAMAGE -> criticalDamage += affix.value();
                     case ATTACK_SPEED -> {
                         // Preserved in the item payload; dedicated cadence publisher owns runtime use.
+                    }
+                    case MOVEMENT_SPEED -> {
+                        // Published independently by the server-owned movement runtime.
                     }
                     case MAX_HP, MAX_MANA, MAX_STAMINA, MANA_RECOVERY,
                             STAMINA_RECOVERY, MANA_COST_REDUCTION -> {

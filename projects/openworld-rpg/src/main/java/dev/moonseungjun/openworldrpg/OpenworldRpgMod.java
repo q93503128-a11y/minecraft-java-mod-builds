@@ -50,6 +50,7 @@ import dev.moonseungjun.openworldrpg.world.spatial.R01QuarrySpatialBindingRegist
 import dev.moonseungjun.openworldrpg.world.spatial.R01SpatialBindingRegistry;
 import dev.moonseungjun.openworldrpg.world.structure.R01AlderfordRuntimeBindingRegistry;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import org.slf4j.Logger;
@@ -128,6 +129,9 @@ public final class OpenworldRpgMod implements ModInitializer {
             R01PlayerVerificationBootstrap.prepare(handler.getPlayer(), LOGGER);
             M0PlayerVerificationBootstrap.prepare(handler.getPlayer(), LOGGER);
         });
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) ->
+                PlayerCombatBuildPublisher.refresh(newPlayer)
+        );
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             var playerId = handler.getPlayer().getUUID();
             RecoveryUseRuntime.disconnect(playerId);

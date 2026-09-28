@@ -56,6 +56,40 @@ class OrdinaryEquipmentMaterializerTest {
     }
 
     @Test
+    void movementSpeedPercentageProjectsToDedicatedRuntimeAffix() {
+        var catalog = OrdinaryEquipmentAffixCatalogLoader.loadBundled();
+        var movement = definition(
+                catalog,
+                "openworld_rpg:affix/movement_speed"
+        );
+
+        var result = OrdinaryEquipmentMaterializer.materialize(
+                new OrdinaryEquipmentMaterializer.MaterializationRequest(
+                        OrdinaryEquipmentMaterializer.BaseProfile.accessory(
+                                "openworld_rpg:trail_charm",
+                                ProjectEquipmentSlot.NECKLACE
+                        ),
+                        ProjectItemGrade.STANDARD,
+                        4,
+                        List.of(movement),
+                        2468L,
+                        40L
+                ),
+                catalog
+        );
+
+        var affix = result.inventoryItem()
+                .equipmentProjection().orElseThrow()
+                .affixes().getFirst();
+        assertEquals(EquipmentCombatAffixKind.MOVEMENT_SPEED, affix.kind());
+        assertEquals(
+                result.rolledAffixes().getFirst().value() / 100.0,
+                affix.value(),
+                0.000001
+        );
+    }
+
+    @Test
     void primaryValuesRemainWholeRuntimePoints() {
         var catalog = OrdinaryEquipmentAffixCatalogLoader.loadBundled();
         var strength = definition(catalog, "openworld_rpg:affix/str");

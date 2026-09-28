@@ -16,9 +16,10 @@ class OrdinaryEquipmentAffixCatalogTest {
                 data.id()
         );
         assertEquals(29, data.affixes().size());
-        assertEquals(20, data.implementedDefinitions().size());
+        assertEquals(21, data.implementedDefinitions().size());
         assertTrue(data.resourceAuthorityReady());
         assertTrue(data.criticalAuthorityReady());
+        assertTrue(data.movementAuthorityReady());
 
         var physical = data.affixes().stream()
                 .filter(value -> value.id().equals(
@@ -71,7 +72,7 @@ class OrdinaryEquipmentAffixCatalogTest {
                 .orElseThrow();
         assertEquals(1.0, moveSpeed.min(), 0.000001);
         assertEquals(3.5, moveSpeed.max(), 0.000001);
-        assertFalse(moveSpeed.runtimeImplemented());
+        assertTrue(moveSpeed.runtimeImplemented());
     }
 
     @Test

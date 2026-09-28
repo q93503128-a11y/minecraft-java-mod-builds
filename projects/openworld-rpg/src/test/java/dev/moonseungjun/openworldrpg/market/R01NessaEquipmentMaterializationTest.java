@@ -36,11 +36,11 @@ class R01NessaEquipmentMaterializationTest {
         assertTrue(resolution.blockers().contains(
                 "openworld_rpg:affix/weak_point_damage"
         ));
-        assertTrue(resolution.blockers().contains(
+        assertFalse(resolution.blockers().contains(
                 "openworld_rpg:affix/movement_speed"
         ));
 
-        // Matching weapon-family power is live and therefore must not be a blocker.
+        // Matching weapon-family power and Movement Speed are live and therefore must not block.
         assertFalse(resolution.blockers().contains(
                 "openworld_rpg:affix/weapon_family/bow_power"
         ));

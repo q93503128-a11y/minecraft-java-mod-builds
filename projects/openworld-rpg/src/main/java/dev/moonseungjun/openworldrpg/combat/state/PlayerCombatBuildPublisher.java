@@ -36,6 +36,10 @@ public final class PlayerCombatBuildPublisher {
                 resourceModifiers.maxHealthBonus()
         );
         PlayerVitalsRuntime.synchronizeMaxHealth(player, maxHealth);
+        PlayerMovementRuntime.synchronize(
+                player,
+                loadout.aggregateMovementSpeedBonus()
+        );
         CombatStateServices.states().synchronizeEndurance(
                 player.getUUID(),
                 (int) Math.round(effectiveEnd),
