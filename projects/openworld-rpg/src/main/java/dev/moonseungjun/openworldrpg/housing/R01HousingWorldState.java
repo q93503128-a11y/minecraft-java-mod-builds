@@ -2,19 +2,27 @@ package dev.moonseungjun.openworldrpg.housing;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-/** Shared Overworld ownership/reservation authority for physical authored properties. */
+/** Shared Overworld ownership/reservation/permission authority for physical authored properties. */
 public record R01HousingWorldState(
         int schemaVersion,
         Map<String, String> propertyOwners,
         Map<String, Reservation> reservations,
-        Map<String, TransferReceipt> completedTransfers
+        Map<String, TransferReceipt> completedTransfers,
+        Map<String, List<String>> trustedDecorators,
+        Map<String, List<String>> privateStorageAccess
 ) {
     public static final int CURRENT_SCHEMA_VERSION = 1;
+
+    private static final Codec<Map<String, List<String>>> PERMISSION_MAP_CODEC =
+            Codec.unboundedMap(Codec.STRING, Codec.STRING.listOf());
 
     public static final Codec<R01HousingWorldState> CODEC =
             RecordCodecBuilder.create(instance -> instance.group(
@@ -29,7 +37,13 @@ public record R01HousingWorldState(
                             .forGetter(R01HousingWorldState::reservations),
                     Codec.unboundedMap(Codec.STRING, TransferReceipt.CODEC)
                             .fieldOf("completed_transfers")
-                            .forGetter(R01HousingWorldState::completedTransfers)
+                            .forGetter(R01HousingWorldState::completedTransfers),
+                    PERMISSION_MAP_CODEC
+                            .optionalFieldOf("trusted_decorators", Map.of())
+                            .forGetter(R01HousingWorldState::trustedDecorators),
+                    PERMISSION_MAP_CODEC
+                            .optionalFieldOf("private_storage_access", Map.of())
+                            .forGetter(R01HousingWorldState::privateStorageAccess)
             ).apply(instance, R01HousingWorldState::new));
 
     public R01HousingWorldState {
@@ -47,6 +61,15 @@ public record R01HousingWorldState(
         completedTransfers = Map.copyOf(
                 Objects.requireNonNull(completedTransfers, "completedTransfers")
         );
+        trustedDecorators = immutablePermissionMap(
+                trustedDecorators,
+                "trustedDecorators"
+        );
+        privateStorageAccess = immutablePermissionMap(
+                privateStorageAccess,
+                "privateStorageAccess"
+        );
+
         propertyOwners.forEach((propertyId, playerUuid) -> {
             requireStableId(propertyId);
             requireUuid(playerUuid);
@@ -69,11 +92,54 @@ public record R01HousingWorldState(
                 );
             }
         });
+        validatePermissionMap(
+                trustedDecorators,
+                propertyOwners,
+                "trusted decorator"
+        );
+        validatePermissionMap(
+                privateStorageAccess,
+                propertyOwners,
+                "private storage"
+        );
+        for (Map.Entry<String, List<String>> entry
+                : privateStorageAccess.entrySet()) {
+            List<String> decorators = trustedDecorators.getOrDefault(
+                    entry.getKey(),
+                    List.of()
+            );
+            for (String playerUuid : entry.getValue()) {
+                if (!decorators.contains(playerUuid)) {
+                    throw new IllegalArgumentException(
+                            "Private Home Storage access requires Trusted Decorator role."
+                    );
+                }
+            }
+        }
+    }
+
+    /** Backward-compatible constructor for the pre-permission schema shape. */
+    public R01HousingWorldState(
+            int schemaVersion,
+            Map<String, String> propertyOwners,
+            Map<String, Reservation> reservations,
+            Map<String, TransferReceipt> completedTransfers
+    ) {
+        this(
+                schemaVersion,
+                propertyOwners,
+                reservations,
+                completedTransfers,
+                Map.of(),
+                Map.of()
+        );
     }
 
     public static R01HousingWorldState initial() {
         return new R01HousingWorldState(
                 CURRENT_SCHEMA_VERSION,
+                Map.of(),
+                Map.of(),
                 Map.of(),
                 Map.of(),
                 Map.of()
@@ -93,6 +159,141 @@ public record R01HousingWorldState(
     public Optional<TransferReceipt> completedTransfer(String transactionId) {
         requireStableId(transactionId);
         return Optional.ofNullable(completedTransfers.get(transactionId));
+    }
+
+    public PropertyRole roleFor(String propertyId, String playerUuid) {
+        requireStableId(propertyId);
+        requireUuid(playerUuid);
+        String owner = propertyOwners.get(propertyId);
+        if (playerUuid.equals(owner)) {
+            return PropertyRole.OWNER;
+        }
+        if (trustedDecorators
+                .getOrDefault(propertyId, List.of())
+                .contains(playerUuid)) {
+            return PropertyRole.TRUSTED_DECORATOR;
+        }
+        return PropertyRole.GUEST;
+    }
+
+    public boolean canFurnish(String propertyId, String playerUuid) {
+        PropertyRole role = roleFor(propertyId, playerUuid);
+        return role == PropertyRole.OWNER
+                || role == PropertyRole.TRUSTED_DECORATOR;
+    }
+
+    public boolean canAccessPrivateStorage(
+            String propertyId,
+            String playerUuid
+    ) {
+        PropertyRole role = roleFor(propertyId, playerUuid);
+        if (role == PropertyRole.OWNER) {
+            return true;
+        }
+        return privateStorageAccess
+                .getOrDefault(propertyId, List.of())
+                .contains(playerUuid);
+    }
+
+    public boolean canUseNonPrivateFurniture(
+            String propertyId,
+            String playerUuid
+    ) {
+        requireStableId(propertyId);
+        requireUuid(playerUuid);
+        return propertyOwners.containsKey(propertyId);
+    }
+
+    public R01HousingWorldState setTrustedDecorator(
+            String propertyId,
+            String ownerUuid,
+            String targetUuid,
+            boolean trusted
+    ) {
+        requireOwnedBy(propertyId, ownerUuid);
+        requireUuid(targetUuid);
+        if (ownerUuid.equals(targetUuid)) {
+            throw new IllegalArgumentException(
+                    "Property owner already has furnishing authority."
+            );
+        }
+
+        Map<String, List<String>> nextDecorators =
+                new HashMap<>(trustedDecorators);
+        List<String> current = new ArrayList<>(
+                nextDecorators.getOrDefault(propertyId, List.of())
+        );
+        if (trusted) {
+            if (!current.contains(targetUuid)) {
+                current.add(targetUuid);
+            }
+        } else {
+            current.remove(targetUuid);
+        }
+        setPermissionList(nextDecorators, propertyId, current);
+
+        Map<String, List<String>> nextStorage =
+                new HashMap<>(privateStorageAccess);
+        if (!trusted) {
+            List<String> storage = new ArrayList<>(
+                    nextStorage.getOrDefault(propertyId, List.of())
+            );
+            storage.remove(targetUuid);
+            setPermissionList(nextStorage, propertyId, storage);
+        }
+
+        return copy(
+                propertyOwners,
+                reservations,
+                completedTransfers,
+                Map.copyOf(nextDecorators),
+                Map.copyOf(nextStorage)
+        );
+    }
+
+    public R01HousingWorldState setPrivateStorageAccess(
+            String propertyId,
+            String ownerUuid,
+            String targetUuid,
+            boolean allowed
+    ) {
+        requireOwnedBy(propertyId, ownerUuid);
+        requireUuid(targetUuid);
+        if (ownerUuid.equals(targetUuid)) {
+            throw new IllegalArgumentException(
+                    "Property owner already has private storage authority."
+            );
+        }
+        if (allowed
+                && !trustedDecorators
+                        .getOrDefault(propertyId, List.of())
+                        .contains(targetUuid)) {
+            throw new IllegalStateException(
+                    "Private storage access requires Trusted Decorator role."
+            );
+        }
+
+        Map<String, List<String>> nextStorage =
+                new HashMap<>(privateStorageAccess);
+        List<String> current = new ArrayList<>(
+                nextStorage.getOrDefault(propertyId, List.of())
+        );
+        if (allowed) {
+            if (!current.contains(targetUuid)) {
+                current.add(targetUuid);
+            }
+        } else {
+            current.remove(targetUuid);
+        }
+        setPermissionList(nextStorage, propertyId, current);
+
+        return copy(
+                propertyOwners,
+                reservations,
+                completedTransfers,
+                trustedDecorators,
+                Map.copyOf(nextStorage)
+        );
     }
 
     public ReserveResult reserve(
@@ -127,7 +328,13 @@ public record R01HousingWorldState(
                 new Reservation(propertyId, playerUuid, transactionId)
         );
         return new ReserveResult(
-                copy(propertyOwners, Map.copyOf(next), completedTransfers),
+                copy(
+                        propertyOwners,
+                        Map.copyOf(next),
+                        completedTransfers,
+                        trustedDecorators,
+                        privateStorageAccess
+                ),
                 ReserveStatus.RESERVED_NOW
         );
     }
@@ -152,7 +359,13 @@ public record R01HousingWorldState(
         }
         Map<String, Reservation> next = new HashMap<>(reservations);
         next.remove(propertyId);
-        return copy(propertyOwners, Map.copyOf(next), completedTransfers);
+        return copy(
+                propertyOwners,
+                Map.copyOf(next),
+                completedTransfers,
+                trustedDecorators,
+                privateStorageAccess
+        );
     }
 
     public R01HousingWorldState transferReserved(
@@ -224,24 +437,117 @@ public record R01HousingWorldState(
                 )
         );
 
+        Map<String, List<String>> nextDecorators =
+                new HashMap<>(trustedDecorators);
+        Map<String, List<String>> nextStorage =
+                new HashMap<>(privateStorageAccess);
+        pending.oldPropertyId().ifPresent(oldPropertyId -> {
+            nextDecorators.remove(oldPropertyId);
+            nextStorage.remove(oldPropertyId);
+        });
+        /*
+         * A vacant target must start from the authored empty/default permission state even if a
+         * stale save once contained permissions for it.
+         */
+        nextDecorators.remove(pending.newPropertyId());
+        nextStorage.remove(pending.newPropertyId());
+
         return copy(
                 Map.copyOf(nextOwners),
                 Map.copyOf(nextReservations),
-                Map.copyOf(nextReceipts)
+                Map.copyOf(nextReceipts),
+                Map.copyOf(nextDecorators),
+                Map.copyOf(nextStorage)
         );
     }
 
     private R01HousingWorldState copy(
             Map<String, String> owners,
             Map<String, Reservation> nextReservations,
-            Map<String, TransferReceipt> receipts
+            Map<String, TransferReceipt> receipts,
+            Map<String, List<String>> decorators,
+            Map<String, List<String>> storageAccess
     ) {
         return new R01HousingWorldState(
                 schemaVersion,
                 owners,
                 nextReservations,
-                receipts
+                receipts,
+                decorators,
+                storageAccess
         );
+    }
+
+    private void requireOwnedBy(String propertyId, String ownerUuid) {
+        requireStableId(propertyId);
+        requireUuid(ownerUuid);
+        String actualOwner = propertyOwners.get(propertyId);
+        if (!ownerUuid.equals(actualOwner)) {
+            throw new IllegalStateException(
+                    "Housing permission mutation requires property owner."
+            );
+        }
+    }
+
+    private static Map<String, List<String>> immutablePermissionMap(
+            Map<String, List<String>> source,
+            String name
+    ) {
+        Objects.requireNonNull(source, name);
+        Map<String, List<String>> result = new HashMap<>();
+        source.forEach((propertyId, players) -> {
+            requireStableId(propertyId);
+            Objects.requireNonNull(players, name + " player list");
+            LinkedHashSet<String> unique = new LinkedHashSet<>();
+            for (String playerUuid : players) {
+                requireUuid(playerUuid);
+                unique.add(playerUuid);
+            }
+            if (!unique.isEmpty()) {
+                result.put(propertyId, List.copyOf(unique));
+            }
+        });
+        return Map.copyOf(result);
+    }
+
+    private static void validatePermissionMap(
+            Map<String, List<String>> permissions,
+            Map<String, String> owners,
+            String label
+    ) {
+        for (Map.Entry<String, List<String>> entry : permissions.entrySet()) {
+            String owner = owners.get(entry.getKey());
+            if (owner == null) {
+                throw new IllegalArgumentException(
+                        label + " permissions require an owned property."
+                );
+            }
+            if (entry.getValue().contains(owner)) {
+                throw new IllegalArgumentException(
+                        "Property owner must not be duplicated in " + label
+                                + " permissions."
+                );
+            }
+        }
+    }
+
+    private static void setPermissionList(
+            Map<String, List<String>> map,
+            String propertyId,
+            List<String> values
+    ) {
+        LinkedHashSet<String> unique = new LinkedHashSet<>(values);
+        if (unique.isEmpty()) {
+            map.remove(propertyId);
+        } else {
+            map.put(propertyId, List.copyOf(unique));
+        }
+    }
+
+    public enum PropertyRole {
+        OWNER,
+        TRUSTED_DECORATOR,
+        GUEST
     }
 
     public enum ReserveStatus {
