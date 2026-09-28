@@ -26,6 +26,16 @@ public final class PlayerCombatStateStore {
         getOrCreate(playerId, nowTick).synchronizeEndurance(endurance, nowTick);
     }
 
+
+    public void synchronizeResourceModifiers(
+            UUID playerId,
+            EquipmentResourceModifiers modifiers,
+            long nowTick
+    ) {
+        getOrCreate(playerId, nowTick)
+                .synchronizeResourceModifiers(modifiers, nowTick);
+    }
+
     public void remove(UUID playerId) {
         states.remove(playerId);
     }
