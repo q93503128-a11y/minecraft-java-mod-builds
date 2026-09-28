@@ -2,6 +2,7 @@ package dev.moonseungjun.openworldrpg.equipment;
 
 import dev.moonseungjun.openworldrpg.combat.state.EquipmentCombatAffix;
 import dev.moonseungjun.openworldrpg.combat.state.EquipmentCombatAffixKind;
+import dev.moonseungjun.openworldrpg.combat.state.ProjectWeaponFamily;
 import java.util.Objects;
 
 /** Maps only actually implemented ordinary-affix payloads into combat authority. */
@@ -14,6 +15,20 @@ public final class OrdinaryEquipmentRuntimeAffixAdapter {
     ) {
         Objects.requireNonNull(affix, "affix");
         String payload = affix.runtimePayload();
+
+        String familyPrefix =
+                "openworld_rpg:runtime_affix/weapon_family_power/";
+        if (payload.startsWith(familyPrefix)) {
+            String slug = payload.substring(familyPrefix.length());
+            ProjectWeaponFamily family = ProjectWeaponFamily.valueOf(
+                    slug.toUpperCase(java.util.Locale.ROOT)
+            );
+            return EquipmentCombatAffix.familyPower(
+                    family,
+                    affix.value() / 100.0
+            );
+        }
+
         return switch (payload) {
             case "openworld_rpg:runtime_affix/vit" ->
                     EquipmentCombatAffix.flat(
