@@ -43,6 +43,7 @@ class PlayerCombatBuildStateTest {
                 0.075,
                 0.10,
                 0.20,
+                0.0,
                 0.0
         );
         var build = new PlayerCombatBuildState(
@@ -85,6 +86,7 @@ class PlayerCombatBuildStateTest {
                 0.0,
                 0.0,
                 0.0,
+                0.0,
                 0.0
         );
         var build = new PlayerCombatBuildState(
@@ -96,6 +98,35 @@ class PlayerCombatBuildStateTest {
 
         assertEquals(151, build.maxHealth());
     }
+
+    @Test
+    void buildMaxHealthIncludesCanonicalMaxHpPercentAffix() {
+        var equipment = new EquipmentCombatState(
+                ProjectWeaponFamily.SWORD,
+                8,
+                new dev.moonseungjun.openworldrpg.combat.state.EffectiveAttributes(
+                        0, 0, 0, 0, 0, 0
+                ),
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.07,
+                0.0
+        );
+        var build = new PlayerCombatBuildState(
+                8,
+                RootClass.WARRIOR,
+                new AttributeAllocation(2, 0, 5, 0, 0, 0),
+                equipment
+        );
+
+        assertEquals(
+                ProjectCombatRules.maxPlayerHealth(8, 7, 0.07),
+                build.maxHealth()
+        );
+    }
+
 
     @Test
     void attributeOverspendFailsClosed() {
