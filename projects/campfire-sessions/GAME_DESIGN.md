@@ -74,6 +74,40 @@ Player animation priorities include:
 
 Do not leave major visible actions as a character merely standing still while an item/effect performs the action.
 
+### Player emotes
+Provide a lightweight emote/reaction wheel using the selected player-animation stack.
+Useful reactions include:
+- wave/greeting.
+- clap.
+- happy/celebrate.
+- sad/disappointed.
+- laugh.
+- surprised.
+- sit/relax where appropriate.
+- simple dance.
+
+Residents may react contextually to nearby player emotes.
+This is social expression, not a monetized emote catalogue or complex MMO communication system.
+
+### Resident voice texture
+Resident dialogue should not be visually silent if a suitable external sound direction can be sourced.
+Use short non-verbal/fictional speech chirps or vocal textures rather than full spoken-language voice acting.
+
+Direction:
+- personality/species may influence pitch, cadence or timbre.
+- keep dialogue text fully readable.
+- avoid copying another game's exact speech synthesis/sound identity.
+- external licensed/CC0 sound assets or a reusable sound system are preferred before authoring a large custom voice library.
+
+### Catch presentation
+Successful fish/bug/sea-life catches should have a brief readable presentation:
+- short hold-up/show pose.
+- species/item name.
+- special cue for first discoveries and rare variants.
+- no long unskippable interruption after every ordinary catch.
+
+The catch pose should reuse the player animation framework rather than being a disconnected camera cutscene.
+
 The current guitar implementation's arm-only pose is a prototype, not the final presentation.
 Final guitar performance should position the instrument against the torso and use a full-body performance animation:
 - fretting hand on the neck.
@@ -399,6 +433,17 @@ The existing house and its loan remain attached to the Household/home until chan
 
 The design intention is that cohabitation feels like genuinely sharing one island home/economy, not merely sharing build permission.
 
+### Personal rooms inside a shared Household
+A shared Household may designate one or more interior rooms as personal rooms when the final house layout supports it.
+
+Personal-room intent:
+- give cohabiting players an area they can decorate independently.
+- allow personal storage/privacy without splitting the Household economy.
+- preserve shared kitchens/living rooms/common storage as genuinely shared space.
+
+Do not require every room to have its own permission matrix.
+A simple room designation plus owner/Household/guest access state is enough.
+
 ### Guest permissions for other households
 A player/Household controls what friends from other homes may do inside its house and yard.
 
@@ -427,7 +472,68 @@ Guest permissions never grant:
 
 The owner/Household can change or revoke a guest's permissions without needing that guest online.
 
+Permission UI has two layers:
+
+**Preset / broad permission level**
+- Visit Only.
+- Social Use.
+- Shared Living.
+- Decorator.
+- Full Trust.
+
+These presets apply a sensible bundle of permissions in one action.
+
+**Granular overrides**
+After choosing a preset, the owner can individually allow/deny specific capabilities such as:
+- enter while owner is away.
+- use chairs/instruments/social furniture.
+- harvest crops.
+- replant crops.
+- collect ordinary yard resources.
+- open selected storage.
+- place furniture/decor.
+- move furniture/decor.
+- remove furniture/decor.
+- use kitchen/crafting-style lifestyle stations.
+- interact with pets/display containers if such systems are added.
+
+The UI should clearly show when a granular override differs from the selected preset.
+Changing the preset may offer to reset overrides or preserve them, but must never silently broaden access beyond what the owner expects.
+
 ## 9. Player-building restrictions and protection
+
+### Vanilla-survival boundary
+Campfire Sessions is a life-sim game built on the Minecraft engine, not a vanilla-survival progression pack.
+
+Keep useful Minecraft foundations:
+- character movement/camera.
+- block-based world geometry.
+- inventory/container fundamentals.
+- server/client entity simulation.
+- basic combat physics where useful.
+- rendering/resource-pack/mod interoperability.
+
+Replace, suppress or heavily constrain vanilla-survival loops that conflict with the authored island-life game.
+
+On the main village/island and authored life-sim spaces:
+- no normal hostile-mob night-spawn loop.
+- no hunger/stamina survival pressure.
+- no repeated tool-break durability loop for lifestyle tools.
+- no unrestricted tunneling beneath protected/authored village spaces.
+- no strip-mining as the main progression economy.
+- no requirement to place vanilla torches everywhere merely to make authored areas usable.
+- no arbitrary destruction of roads, facilities, houses, museum, harbor or authored terrain.
+- no Nether/End progression dependency for the core island-life game.
+- no vanilla fishing as the final fishing system.
+- no vanilla villager economy/cast as the main social system.
+
+Lighting should primarily come from authored environmental lighting and appropriate lifestyle/exploration equipment.
+Portable lantern/flashlight-style tools may exist where exploration benefits from them, but ordinary play should not become torch-spam management.
+
+Mining/exploration uses authored caves, renewable nodes/pockets and controlled resource areas.
+Free block breaking may still exist in explicitly designated wilderness/resource areas when it improves Minecraft tactile play without damaging the authored world.
+
+Combat can retain familiar Minecraft movement/attack foundations, but enemy placement, rewards, difficulty, safe zones and progression follow Campfire rules rather than vanilla survival progression.
 
 Minecraft freedom is retained where it helps the life-sim and constrained where it can break the authored village.
 
@@ -683,6 +789,29 @@ Use external interior/furniture designs.
 Residents may display selected player gifts.
 Do not allow uncontrolled AI furniture replacement that gradually ruins authored interiors.
 Use approved slots/style constraints.
+
+### Resident outfits and seasonal presentation
+Where the selected resident model/rig supports it, residents can switch authored clothing/accessory variants for:
+- rain/umbrellas/rainwear.
+- winter/cold-weather clothing.
+- birthdays.
+- festivals/contests.
+- café/work roles.
+- special musician/performance states.
+
+Do not require dozens of unique outfits per resident.
+Use a manageable shared wardrobe system plus a smaller number of character-specific signature variants.
+
+### Resident-to-resident physical interactions
+Residents should sometimes physically acknowledge each other rather than only firing dialogue:
+- face each other while talking.
+- sit together.
+- wave/greet.
+- clap/cheer.
+- brief disagreement/reconciliation gestures.
+- participate together in hobbies/events.
+
+These interactions should be schedule/context driven and lightweight enough not to create pathfinding deadlocks.
 
 ## 14. Economy and shop
 
@@ -1597,6 +1726,16 @@ Use cases:
 
 Photography should remain optional lifestyle content, not a mandatory progression gate.
 
+### Photo posing
+Photography should integrate with player/resident animation:
+- player pose/emote selection near a camera.
+- wave/peace/cheer/sit-type social poses where supported.
+- residents may turn toward the camera or use authored photo reactions.
+- birthdays/festivals can offer simple group-photo positioning anchors.
+
+Do not over-automate players into rigid cutscenes.
+Photo posing should help compose memories while preserving normal multiplayer spontaneity.
+
 ## 39. Visitors and beach finds
 
 Baseline visitor cadence is roughly **2–3 visiting-NPC appearances per 7-day season**, with room for special seasonal/event visits.
@@ -1683,6 +1822,17 @@ Where supported by the final external builds/assets:
 - event/festival lighting overrides or extends the normal night presentation.
 
 Use external lighting/build assets where possible and keep updates event/time-driven rather than running expensive global scans every tick.
+
+### Environmental soundscapes
+Weather and location should also change sound presentation:
+- rain/storm audio is strong outdoors.
+- indoor spaces hear appropriately softened/muffled exterior rain.
+- café, museum, homes and civic interiors can have subtle room ambience/reverb-like presentation.
+- shoreline/harbor areas emphasize water/wind.
+- night can have calmer natural ambience where seasonally appropriate.
+
+Prefer external high-quality ambient sound assets/systems where compatible.
+Do not stack so many ambient loops that the audio mix becomes muddy.
 
 Public projects use a shared funding model.
 
