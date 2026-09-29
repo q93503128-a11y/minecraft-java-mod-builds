@@ -81,6 +81,7 @@ public final class MetaNetwork {
         boolean external = ExternalWorldBootstrap.active(player);
         String encoded = (external
                 ? DrehmalQuestMenuContentService.encode(player)
+                        + SignatureTrialMenuContentService.encodeAwakeningProjection(player.getUUID())
                 : QuestMenuContentService.encode(player.getUUID()) + SignatureTrialMenuContentService.encode(player.getUUID()))
                 + MetaUiCodec.encode(MetaMenuService.snapshot(player));
         String feedback = FEEDBACK.remove(player.getUUID());
