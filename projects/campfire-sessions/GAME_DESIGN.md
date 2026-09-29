@@ -47,6 +47,44 @@ Baseline direction:
 
 Music can appear in campfires, cafés, birthdays, plaza performances, seasonal events and the major festival.
 
+### Animation and performance standard
+Important residents and player-facing lifestyle actions should use real contextual animation wherever it materially improves the feeling of a living village.
+
+Resident animation priorities include:
+- expressive idle/talk reactions.
+- walk/run.
+- sit/stand.
+- eat/drink.
+- fish.
+- catch bugs where appropriate.
+- gardening/watering.
+- shop/work actions.
+- sleep/wake.
+- clap/cheer.
+- sing/dance/play music.
+- festival-specific actions.
+
+Player animation priorities include:
+- guitar performance.
+- fishing.
+- bug net use.
+- watering/gardening.
+- sitting/eating/drinking.
+- selected social/photo/festival actions.
+
+Do not leave major visible actions as a character merely standing still while an item/effect performs the action.
+
+The current guitar implementation's arm-only pose is a prototype, not the final presentation.
+Final guitar performance should position the instrument against the torso and use a full-body performance animation:
+- fretting hand on the neck.
+- strumming/picking hand on the strings.
+- torso/head rhythm and believable stance.
+- seated and standing variants where practical.
+- BPM-aware subtle motion without exaggerated looping.
+- synchronized third-person presentation for other multiplayer clients.
+
+Prefer a proven external player-animation library compatible with Minecraft 26.2 NeoForge rather than accumulating fragile hand-written renderer hacks.
+
 ### Recurring musician
 Add one original recurring animal musician/singer-guitarist as a fixed special character.
 This character is inspired by the role of a recurring live performer in life-sim games, but must have an original identity, visual design, dialogue and presentation rather than copying an existing copyrighted character.
@@ -62,6 +100,20 @@ Direction:
 - public-server-style monetization or music progression is not the goal.
 
 Local Custom Music remains a player-side/custom feature and should not automatically become the canonical NPC performance catalogue unless multiplayer availability/sync is explicitly solved.
+
+### Lightweight multiplayer jam sessions
+Players who own guitars may join the same bundled-track performance session.
+
+Baseline:
+- one player starts/hosts a bundled song session.
+- nearby players with a compatible instrument can join.
+- the track timeline is shared rather than each client independently drifting.
+- participants use synchronized performance animations.
+- the same song should not become several overlapping copies of the audio merely because several players joined.
+- leaving the session does not stop it for everyone unless the remaining session has no valid host/source.
+
+This is social performance, not a rhythm-score minigame.
+Do not require note-by-note input or accuracy grading unless a later separate minigame explicitly justifies it.
 
 ## 2. Non-negotiable production rules
 
@@ -346,6 +398,34 @@ Players coordinate the split themselves and manually move transferable money, fu
 The existing house and its loan remain attached to the Household/home until changed through the normal housing/move flow.
 
 The design intention is that cohabitation feels like genuinely sharing one island home/economy, not merely sharing build permission.
+
+### Guest permissions for other households
+A player/Household controls what friends from other homes may do inside its house and yard.
+
+Do not build a public-server ACL administration system with dozens of technical permissions.
+Use a small set of understandable guest capabilities that can be configured per invited player, with simple presets plus optional individual toggles.
+
+Useful capability groups:
+- enter the house/yard when guest access is enabled.
+- use non-destructive furniture and social objects such as chairs, instruments and games.
+- harvest/replant crops or collect ordinary yard produce.
+- access specifically guest-enabled containers/storage.
+- place decorations/furniture.
+- move/remove decorations/furniture.
+
+Safe defaults:
+- ordinary visitors can enter and use non-destructive social furniture.
+- harvesting, storage access and editing the house/yard require explicit permission.
+- Household members retain full normal Household access.
+
+Guest permissions never grant:
+- Household money/loan authority.
+- house ownership transfer.
+- structural house upgrades.
+- resident-services authority on behalf of the Household.
+- access to protected private storage that was not explicitly shared.
+
+The owner/Household can change or revoke a guest's permissions without needing that guest online.
 
 ## 9. Player-building restrictions and protection
 
@@ -644,7 +724,7 @@ Do not copy their raw prices directly; use them to establish useful ratios betwe
 Luxury/designer/high-end items should be meaningfully expensive and remain aspirational even after ordinary daily purchases become easy.
 
 ### Shop hours
-The general store and comparable staffed shops stay open through most of the day and evening and close only during the **late-night/deep-night period**.
+The general store and comparable staffed shops use **07:00–23:00 in-game time** as the baseline staffed opening window.
 
 When a shop is closed:
 - no buying.
@@ -652,7 +732,8 @@ When a shop is closed:
 - no after-hours kiosk that bypasses the closure.
 - no shop-based catalog ordering.
 
-Exact clock hours can be finalized with the 48-minute day pacing, but closure should be limited enough that ordinary play is not dominated by schedule frustration.
+Special event/facility schedules may differ when clearly announced, but the ordinary general-store schedule is 07:00–23:00.
+The 24-hour player-facing clock makes this schedule explicit rather than presenting it as a vague daypart.
 
 ### Shop rotation
 Use:
@@ -713,6 +794,18 @@ Baseline structure:
 - final requirements/names follow the selected external tool-art set and its believable progression.
 
 Do not turn tool tiers into an RPG damage-stat ladder.
+
+### Fishing bait
+Basic fishing never requires consumable bait.
+
+Optional bait can be used to make deliberate collection hunting more convenient, for example:
+- attract a habitat/species group.
+- improve the chance that a wanted size/rarity class approaches when the environmental conditions are already valid.
+- reduce unwanted catches for a short period.
+- support a small number of special fishing interactions.
+
+Bait must not bypass core season/time/weather/location requirements for rare species unless a specific authored bait is explicitly designed to do so.
+Do not make routine fishing depend on repeatedly farming bait.
 
 ## 16. Inventory and storage
 
@@ -788,6 +881,9 @@ Display:
 - next-day weather.
 - resident birthdays.
 - scheduled events/festivals.
+
+Significant forecast events such as strong storms should also generate a clear notice-board/weather warning in advance when the forecast system knows about them.
+This allows players to plan rare-species hunts, travel and outdoor activities without surprise punishment.
 
 ## 18. Seasons and weather
 
@@ -1451,6 +1547,23 @@ Possible effects include:
 
 Use the existing music foundation for café ambience/performance.
 
+### Unlockable recordings and home music
+The bundled music catalogue should connect performances to collection/decorating.
+
+A player can unlock a reusable recording/album entry for bundled tracks through suitable music interactions, especially recurring musician performances/song requests.
+Do not repeatedly award duplicate progression for hearing the same track.
+
+Unlocked bundled tracks can be played through external-quality home music furniture such as:
+- record players.
+- radios.
+- speakers/stereos.
+- other coherent music furniture chosen from the final asset set.
+
+Home playback should use the existing Campfire music/audio foundation rather than maintaining a second unrelated playback stack.
+For multiplayer, bundled-track playback should synchronize the selected track/state cleanly for nearby players where practical.
+
+Local Custom Music remains personal/custom content and is not automatically treated as a globally unlocked village recording.
+
 ## 38. Photography
 
 Photography is retained as real in-game lifestyle content because current external 26.2-compatible systems can already create persistent in-world photographs.
@@ -1515,6 +1628,10 @@ Beach finds can include:
 - recipes.
 - treasure maps.
 - rare furniture clues.
+
+Ordinary beach finds refresh modestly on an in-game-day cadence.
+Do not cover the entire coastline with mandatory daily pickups or make a full beach sweep an optimal chore.
+A small changing set of finds is enough to make shoreline walks worthwhile.
 
 ## 40. Treasure maps and secrets
 
@@ -1658,6 +1775,11 @@ Top placement should feel worthwhile, but a single missed contest should not per
 
 ### Village notice board / schedule
 The village has a physical notice board / community-board interaction point near the civic core.
+
+When important unread/new board content exists, the physical board should have a subtle visual cue so players do not need to open it constantly.
+Possible cues include a small ribbon, marker, lamp, pinned-note accent or other externally sourced/readable presentation.
+Do not copy another game's exact mascot/board indicator asset.
+The cue clears/changes after the relevant new notices have been viewed.
 
 The content model should borrow the useful breadth of life-sim town boards rather than acting as an event list only.
 Possible board content:
