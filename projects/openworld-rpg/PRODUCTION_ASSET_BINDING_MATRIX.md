@@ -325,7 +325,7 @@ Cleric `Sanctuary` reuses the accepted Kenney `light_03.png` / `magic_03.png` su
 
 The server ward is fixed at the accepted cast origin for 8 seconds. Its production pulse binding is eight one-second pulses; those pulses partition the locked total `HealCoefficient 0.55` and total enemy magic `ActionCoefficient 2.00` without changing the design totals. The initial `BarrierCoefficient 0.25` uses the shared project Barrier authority and the ordinary 6-second Barrier duration. The vertical inclusion envelope (`-1.25 / +3.50` blocks around the cast origin) is explicitly a playtest-tunable production binding, not a new design coefficient.
 
-State: `RUNTIME_BOUND / BUILD_AND_MINECRAFT_VISUAL_ACCEPTANCE_PENDING`.
+State: `RUNTIME_BOUND / MINECRAFT_VISUAL_ACCEPTANCE_PENDING`. Build Openworld RPG run `36532672636` at code state `52884b22b1d59a06dc1c8c60209bd4a5895f6485` passes unit tests/build, server smoke, gameplay client startup, playtest-JAR packaging and artifact upload; this does not substitute for in-world visual/terrain/audio/feel acceptance.
 
 Audio currently uses the admitted Spell Engine healing-release support sound for the cast event. It is not marked final-audio accepted until in-game audition. The visible ward, boundary readability, terrain clipping, vertical envelope and combat feel still require manual Minecraft playtest.
 
