@@ -12,7 +12,7 @@ public final class DrehmalMapPlacementCatalog {
 
     public record Seed(int x, int z) {}
     public record ArenaSeed(int x, int z, float yaw) {}
-    public record Source(String repository, String commit, String paths, String locations, String towers) {}
+    public record Source(String repository, String commit, String paths, String locations, String towers, String entities) {}
     public record Zone(String id, String label, String role, List<Seed> corridor) {
         public Zone { corridor = List.copyOf(corridor); }
     }
@@ -46,7 +46,10 @@ public final class DrehmalMapPlacementCatalog {
     public static List<String> validate() {
         List<String> errors = new ArrayList<>();
         if (!DrehmalFirstRouteCatalog.ROUTE_ID.equals(PLAN.routeId())) errors.add("map placement route mismatch");
-        if (PLAN.source().repository().isBlank() || PLAN.source().commit().length() < 7) errors.add("map placement source incomplete");
+        if (PLAN.source().repository().isBlank() || PLAN.source().commit().length() < 7
+                || PLAN.source().paths().isBlank() || PLAN.source().entities().isBlank()) {
+            errors.add("map placement source incomplete");
+        }
         Map<String, Zone> zones = new LinkedHashMap<>();
         for (Zone z : PLAN.zones()) {
             if (z.id().isBlank() || zones.put(z.id(), z) != null) errors.add("duplicate/blank placement zone " + z.id());
@@ -91,7 +94,9 @@ public final class DrehmalMapPlacementCatalog {
             JsonObject root = JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
             if (root.get("schemaVersion").getAsInt() != SCHEMA_VERSION) throw new IllegalStateException("Unsupported map placement schema");
             JsonObject s = root.getAsJsonObject("source");
-            Source source = new Source(str(s,"repository"),str(s,"commit"),str(s,"paths"),str(s,"locations"),str(s,"towers"));
+            Source source = new Source(
+                    str(s,"repository"),str(s,"commit"),str(s,"paths"),
+                    str(s,"locations"),str(s,"towers"),str(s,"entities"));
             List<Zone> zones = new ArrayList<>();
             for (JsonElement e : root.getAsJsonArray("zones")) {
                 JsonObject z=e.getAsJsonObject();
