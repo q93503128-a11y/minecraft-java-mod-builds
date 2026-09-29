@@ -135,6 +135,9 @@ class R01OrdinaryEquipmentBaseCatalogTest {
                 "openworld_rpg:affix/movement_speed"
         ));
         assertFalse(weaponBlockers.contains(
+                "openworld_rpg:affix/dodge_sprint_stamina_cost_reduction"
+        ));
+        assertFalse(weaponBlockers.contains(
                 "openworld_rpg:affix/critical_chance"
         ));
         assertFalse(weaponBlockers.contains(

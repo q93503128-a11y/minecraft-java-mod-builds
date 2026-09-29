@@ -90,6 +90,43 @@ class OrdinaryEquipmentMaterializerTest {
     }
 
     @Test
+    void dodgeSprintCostReductionProjectsToDedicatedRuntimeAffix() {
+        var catalog = OrdinaryEquipmentAffixCatalogLoader.loadBundled();
+        var reduction = definition(
+                catalog,
+                "openworld_rpg:affix/dodge_sprint_stamina_cost_reduction"
+        );
+
+        var result = OrdinaryEquipmentMaterializer.materialize(
+                new OrdinaryEquipmentMaterializer.MaterializationRequest(
+                        OrdinaryEquipmentMaterializer.BaseProfile.accessory(
+                                "openworld_rpg:trail_charm",
+                                ProjectEquipmentSlot.NECKLACE
+                        ),
+                        ProjectItemGrade.STANDARD,
+                        4,
+                        List.of(reduction),
+                        8642L,
+                        40L
+                ),
+                catalog
+        );
+
+        var affix = result.inventoryItem()
+                .equipmentProjection().orElseThrow()
+                .affixes().getFirst();
+        assertEquals(
+                EquipmentCombatAffixKind.DODGE_SPRINT_STAMINA_COST_REDUCTION,
+                affix.kind()
+        );
+        assertEquals(
+                result.rolledAffixes().getFirst().value() / 100.0,
+                affix.value(),
+                0.000001
+        );
+    }
+
+    @Test
     void primaryValuesRemainWholeRuntimePoints() {
         var catalog = OrdinaryEquipmentAffixCatalogLoader.loadBundled();
         var strength = definition(catalog, "openworld_rpg:affix/str");

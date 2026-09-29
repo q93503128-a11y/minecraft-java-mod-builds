@@ -125,6 +125,12 @@ public final class OrdinaryEquipmentRuntimeAffixAdapter {
                             EquipmentCombatAffixKind.MANA_COST_REDUCTION,
                             affix.value()
                     );
+            case "openworld_rpg:runtime_affix/dodge_sprint_stamina_cost_reduction" ->
+                    percentage(
+                            EquipmentCombatAffixKind
+                                    .DODGE_SPRINT_STAMINA_COST_REDUCTION,
+                            affix.value()
+                    );
             case "openworld_rpg:runtime_affix/movement_speed" ->
                     percentage(
                             EquipmentCombatAffixKind.MOVEMENT_SPEED,

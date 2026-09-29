@@ -27,6 +27,7 @@ public final class PlayerCombatState {
     private double manaRecoveryBonus;
     private double staminaRecoveryBonus;
     private double manaCostReduction;
+    private double dodgeSprintStaminaCostReduction;
     private long lastRefreshTick;
     private long lastManaSpendTick = Long.MIN_VALUE / 4;
     private long lastCombatActivityTick = Long.MIN_VALUE / 4;
@@ -135,6 +136,8 @@ public final class PlayerCombatState {
         manaRecoveryBonus = modifiers.manaRecoveryBonus();
         staminaRecoveryBonus = modifiers.staminaRecoveryBonus();
         manaCostReduction = modifiers.manaCostReduction();
+        dodgeSprintStaminaCostReduction =
+                modifiers.dodgeSprintStaminaCostReduction();
 
         mana = Math.min(maxMana(), maxMana() * manaFraction);
         stamina = Math.min(maxStamina(), maxStamina() * staminaFraction);
@@ -147,7 +150,8 @@ public final class PlayerCombatState {
                 maxStaminaBonus,
                 manaRecoveryBonus,
                 staminaRecoveryBonus,
-                manaCostReduction
+                manaCostReduction,
+                dodgeSprintStaminaCostReduction
         );
     }
 
@@ -216,6 +220,11 @@ public final class PlayerCombatState {
         return authoredCost * (1.0 - manaCostReduction);
     }
 
+    public double effectiveDodgeSprintStaminaCost(double authoredCost) {
+        validateStaminaAmount(authoredCost);
+        return authoredCost * (1.0 - dodgeSprintStaminaCostReduction);
+    }
+
     public boolean canSpendStamina(double amount, long nowTick) {
         validateStaminaAmount(amount);
         refresh(nowTick);
@@ -270,7 +279,9 @@ public final class PlayerCombatState {
         }
 
         sprintingLastTick = true;
-        double perTick = SPRINT_STAMINA_PER_SECOND / 20.0;
+        double perTick = effectiveDodgeSprintStaminaCost(
+                SPRINT_STAMINA_PER_SECOND
+        ) / 20.0;
         if (stamina + 1.0e-9 < perTick) {
             stamina = Math.max(0.0, stamina);
             staminaRegenBlockedUntilTick = Math.max(

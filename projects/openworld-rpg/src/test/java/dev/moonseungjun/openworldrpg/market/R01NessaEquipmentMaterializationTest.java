@@ -39,6 +39,9 @@ class R01NessaEquipmentMaterializationTest {
         assertFalse(resolution.blockers().contains(
                 "openworld_rpg:affix/movement_speed"
         ));
+        assertFalse(resolution.blockers().contains(
+                "openworld_rpg:affix/dodge_sprint_stamina_cost_reduction"
+        ));
 
         // Matching weapon-family power, Attack Speed and Movement Speed are live and must not block.
         assertFalse(resolution.blockers().contains(

@@ -191,6 +191,7 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
         double manaRecovery = 0.0;
         double staminaRecovery = 0.0;
         double manaCostReduction = 0.0;
+        double dodgeSprintStaminaCostReduction = 0.0;
 
         for (EquippedCombatItem item : equipped) {
             for (EquipmentCombatAffix affix : item.affixes()) {
@@ -202,6 +203,8 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
                     case STAMINA_RECOVERY -> staminaRecovery += affix.value();
                     case MANA_COST_REDUCTION ->
                             manaCostReduction += affix.value();
+                    case DODGE_SPRINT_STAMINA_COST_REDUCTION ->
+                            dodgeSprintStaminaCostReduction += affix.value();
                     default -> {
                         // Other affix groups are aggregated by their owned publisher.
                     }
@@ -218,6 +221,11 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
                 Math.min(
                         manaCostReduction,
                         EquipmentResourceModifiers.MAX_MANA_COST_REDUCTION
+                ),
+                Math.min(
+                        dodgeSprintStaminaCostReduction,
+                        EquipmentResourceModifiers
+                                .MAX_DODGE_SPRINT_STAMINA_COST_REDUCTION
                 )
         );
     }
@@ -328,7 +336,8 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
                         // Published independently by the server-owned movement runtime.
                     }
                     case MAX_HP, MAX_MANA, MAX_STAMINA, MANA_RECOVERY,
-                            STAMINA_RECOVERY, MANA_COST_REDUCTION -> {
+                            STAMINA_RECOVERY, MANA_COST_REDUCTION,
+                            DODGE_SPRINT_STAMINA_COST_REDUCTION -> {
                         // Published independently by aggregateResourceModifiers().
                     }
                     case DEFENSE, MAGIC_RESISTANCE, GUARD_STRENGTH,

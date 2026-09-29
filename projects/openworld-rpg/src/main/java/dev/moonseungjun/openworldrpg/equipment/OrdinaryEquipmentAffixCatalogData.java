@@ -28,7 +28,8 @@ public record OrdinaryEquipmentAffixCatalogData(
             "openworld_rpg:affix/max_stamina",
             "openworld_rpg:affix/mana_recovery",
             "openworld_rpg:affix/stamina_recovery",
-            "openworld_rpg:affix/skill_mana_cost_reduction"
+            "openworld_rpg:affix/skill_mana_cost_reduction",
+            "openworld_rpg:affix/dodge_sprint_stamina_cost_reduction"
     );
     private static final Set<String> LIVE_CRITICAL_AFFIX_IDS = Set.of(
             "openworld_rpg:affix/critical_chance",

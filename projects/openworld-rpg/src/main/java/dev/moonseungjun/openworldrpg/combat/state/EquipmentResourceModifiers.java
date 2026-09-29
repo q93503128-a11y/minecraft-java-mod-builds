@@ -7,9 +7,11 @@ public record EquipmentResourceModifiers(
         double maxStaminaBonus,
         double manaRecoveryBonus,
         double staminaRecoveryBonus,
-        double manaCostReduction
+        double manaCostReduction,
+        double dodgeSprintStaminaCostReduction
 ) {
     public static final double MAX_MANA_COST_REDUCTION = 0.20;
+    public static final double MAX_DODGE_SPRINT_STAMINA_COST_REDUCTION = 0.25;
 
     public EquipmentResourceModifiers {
         requireNonNegative("maxHealthBonus", maxHealthBonus);
@@ -18,15 +20,26 @@ public record EquipmentResourceModifiers(
         requireNonNegative("manaRecoveryBonus", manaRecoveryBonus);
         requireNonNegative("staminaRecoveryBonus", staminaRecoveryBonus);
         requireNonNegative("manaCostReduction", manaCostReduction);
+        requireNonNegative(
+                "dodgeSprintStaminaCostReduction",
+                dodgeSprintStaminaCostReduction
+        );
         if (manaCostReduction > MAX_MANA_COST_REDUCTION) {
             throw new IllegalArgumentException(
                     "Mana-cost reduction exceeds canonical +20% gear cap."
+            );
+        }
+        if (dodgeSprintStaminaCostReduction
+                > MAX_DODGE_SPRINT_STAMINA_COST_REDUCTION) {
+            throw new IllegalArgumentException(
+                    "Dodge/sprint Stamina-cost reduction exceeds canonical +25% gear cap."
             );
         }
     }
 
     public static EquipmentResourceModifiers none() {
         return new EquipmentResourceModifiers(
+                0.0,
                 0.0,
                 0.0,
                 0.0,

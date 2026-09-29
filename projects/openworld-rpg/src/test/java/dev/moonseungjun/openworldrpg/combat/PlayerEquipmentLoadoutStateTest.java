@@ -479,6 +479,11 @@ class PlayerEquipmentLoadoutStateTest {
                                 EquipmentCombatAffix.flat(
                                         EquipmentCombatAffixKind.MANA_COST_REDUCTION,
                                         0.06
+                                ),
+                                EquipmentCombatAffix.flat(
+                                        EquipmentCombatAffixKind
+                                                .DODGE_SPRINT_STAMINA_COST_REDUCTION,
+                                        0.12
                                 )
                         )
                 ),
@@ -498,6 +503,11 @@ class PlayerEquipmentLoadoutStateTest {
                                 EquipmentCombatAffix.flat(
                                         EquipmentCombatAffixKind.MANA_COST_REDUCTION,
                                         0.18
+                                ),
+                                EquipmentCombatAffix.flat(
+                                        EquipmentCombatAffixKind
+                                                .DODGE_SPRINT_STAMINA_COST_REDUCTION,
+                                        0.18
                                 )
                         )
                 )
@@ -511,6 +521,11 @@ class PlayerEquipmentLoadoutStateTest {
         assertEquals(0.12, resource.manaRecoveryBonus(), 0.0001);
         assertEquals(0.12, resource.staminaRecoveryBonus(), 0.0001);
         assertEquals(0.20, resource.manaCostReduction(), 0.0001);
+        assertEquals(
+                0.25,
+                resource.dodgeSprintStaminaCostReduction(),
+                0.0001
+        );
     }
 
 

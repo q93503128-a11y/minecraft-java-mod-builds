@@ -60,6 +60,48 @@ class PlayerDefenseRuntimeStateTest {
     }
 
     @Test
+    void dodgeSprintReductionLowersDodgeCostButDoesNotDiscountGuardPressure() {
+        PlayerCombatState reduced = new PlayerCombatState(5, 0);
+        reduced.synchronizeResourceModifiers(
+                new dev.moonseungjun.openworldrpg.combat.state.EquipmentResourceModifiers(
+                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25
+                ),
+                0
+        );
+        PlayerDefenseRuntimeState dodge = new PlayerDefenseRuntimeState();
+
+        assertTrue(dodge.tryBeginDodge(reduced, 0, false));
+        assertEquals(77.5, reduced.stamina(0), EPSILON);
+
+        PlayerCombatState guardResources = new PlayerCombatState(5, 0);
+        guardResources.synchronizeResourceModifiers(
+                new dev.moonseungjun.openworldrpg.combat.state.EquipmentResourceModifiers(
+                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25
+                ),
+                0
+        );
+        PlayerDefenseRuntimeState guard = new PlayerDefenseRuntimeState();
+        var snapshot = PlayerDefenseAuthority.DefenseSnapshot.guarded(
+                35.0,
+                18.0,
+                28.0,
+                PlayerDefenseAuthority.GuardType.STANDARD_SHIELD
+        );
+        assertTrue(guard.pressGuard(0).accepted());
+        var result = guard.resolveIncoming(
+                guardResources,
+                snapshot,
+                physicalHit(
+                        100.0,
+                        8,
+                        PlayerDefenseAuthority.GuardPressureBand.MEDIUM
+                ),
+                4
+        );
+        assertEquals(13.4092335276, result.staminaSpent(), EPSILON);
+    }
+
+    @Test
     void perfectGuardUsesFourTickWindowAndQuarterGuardCostWithoutHpDamage() {
         PlayerCombatState resources = new PlayerCombatState(5, 0);
         PlayerDefenseRuntimeState active = new PlayerDefenseRuntimeState();

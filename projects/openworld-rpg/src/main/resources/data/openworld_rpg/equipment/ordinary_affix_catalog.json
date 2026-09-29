@@ -213,7 +213,7 @@
       "min": 3,
       "max": 9,
       "runtime_payload": "openworld_rpg:runtime_affix/dodge_sprint_stamina_cost_reduction",
-      "runtime_state": "stored_only"
+      "runtime_state": "implemented"
     },
     {
       "id": "openworld_rpg:affix/ultimate_charge_gain",

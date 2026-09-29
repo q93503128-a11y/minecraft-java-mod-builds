@@ -46,8 +46,10 @@ public final class PlayerDefenseRuntimeState {
                 || nowTick < guardRestartAllowedTick) {
             return false;
         }
+        double effectiveDodgeCost =
+                resources.effectiveDodgeSprintStaminaCost(DODGE_STAMINA_COST);
         if (!resources.spendStamina(
-                DODGE_STAMINA_COST,
+                effectiveDodgeCost,
                 DODGE_REGEN_DELAY_TICKS,
                 nowTick
         )) {

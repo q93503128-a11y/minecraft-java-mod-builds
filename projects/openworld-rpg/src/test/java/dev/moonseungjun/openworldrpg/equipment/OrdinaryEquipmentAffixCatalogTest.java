@@ -16,7 +16,7 @@ class OrdinaryEquipmentAffixCatalogTest {
                 data.id()
         );
         assertEquals(29, data.affixes().size());
-        assertEquals(22, data.implementedDefinitions().size());
+        assertEquals(23, data.implementedDefinitions().size());
         assertTrue(data.resourceAuthorityReady());
         assertTrue(data.criticalAuthorityReady());
         assertTrue(data.attackSpeedAuthorityReady());
@@ -74,6 +74,16 @@ class OrdinaryEquipmentAffixCatalogTest {
         assertEquals(2.0, attackSpeed.min(), 0.000001);
         assertEquals(6.0, attackSpeed.max(), 0.000001);
         assertTrue(attackSpeed.runtimeImplemented());
+
+        var dodgeSprintCost = data.affixes().stream()
+                .filter(value -> value.id().equals(
+                        "openworld_rpg:affix/dodge_sprint_stamina_cost_reduction"
+                ))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(3.0, dodgeSprintCost.min(), 0.000001);
+        assertEquals(9.0, dodgeSprintCost.max(), 0.000001);
+        assertTrue(dodgeSprintCost.runtimeImplemented());
 
         var moveSpeed = data.affixes().stream()
                 .filter(value -> value.id().equals(

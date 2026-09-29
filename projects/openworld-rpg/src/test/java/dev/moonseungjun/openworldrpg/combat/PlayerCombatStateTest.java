@@ -163,6 +163,33 @@ class PlayerCombatStateTest {
     }
 
     @Test
+    void dodgeSprintCostReductionAffectsOnlyThoseMovementCosts() {
+        PlayerCombatState state = new PlayerCombatState(5, 0);
+        state.synchronizeResourceModifiers(
+                new EquipmentResourceModifiers(
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.25
+                ),
+                0
+        );
+
+        assertEquals(
+                22.5,
+                state.effectiveDodgeSprintStaminaCost(30.0),
+                0.0001
+        );
+        for (int tick = 0; tick < 20; tick++) {
+            assertTrue(state.updateSprinting(true, tick));
+        }
+        assertEquals(96.25, state.stamina(19), 0.0001);
+    }
+
+    @Test
     void manaCostReductionAppliesToChecksAndSpendWithCanonicalTwentyPercentCap() {
         PlayerCombatState state = new PlayerCombatState(5, 0);
         state.synchronizeResourceModifiers(
