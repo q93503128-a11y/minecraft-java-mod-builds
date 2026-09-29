@@ -47,7 +47,7 @@ final class DrabyelHubAutoPlacement {
     private static final Map<ServerLevel, Map<String, Long>> RETRY_AT =
             java.util.Collections.synchronizedMap(new WeakHashMap<>());
     private static final long FAILED_SCAN_RETRY_TICKS = 200L;
-    private static final double MIN_SERVICE_SPACING_SQ = 3.5D * 3.5D;
+    private static final double MIN_SERVICE_SPACING_SQ = 2.5D * 2.5D;
 
     private DrabyelHubAutoPlacement() {}
 
@@ -123,12 +123,12 @@ final class DrabyelHubAutoPlacement {
                 if (DrabyelMapPlacementCatalog.excluded(placement, x, z)) continue;
 
                 int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-                if (Math.abs(y - placement.expectedY()) > 3) continue;
+                if (Math.abs(y - placement.expectedY()) > 4) continue;
                 if (!safeStandingBlock(level, x, y, z)) continue;
                 if (nearResolvedService(alreadyResolved, base.locator(), x, z)) continue;
 
                 double roadDistance = Math.sqrt(roadDistanceSq(x + 0.5D, z + 0.5D));
-                if (roadDistance < 2.0D) continue;
+                if (roadDistance < 1.25D) continue;
                 double seedDistanceSq = offset[0] * offset[0] + offset[1] * offset[1];
                 double roadPenalty = Math.abs(roadDistance - placement.preferredRoadDistance()) * 6.0D;
                 double heightPenalty = Math.abs(y - placement.expectedY()) * 2.0D;
@@ -179,20 +179,18 @@ final class DrabyelHubAutoPlacement {
                 max = Math.max(max, nearby);
             }
         }
-        if (max - min > 1) return false;
+        if (max - min > 2) return false;
 
-        // Preserve authored interactions around signs, chests, lecterns, caches and other block entities.
-        for (int dx = -2; dx <= 2; dx++) {
-            for (int dy = -1; dy <= 2; dy++) {
-                for (int dz = -2; dz <= 2; dz++) {
-                    if (level.getBlockEntity(feet.offset(dx, dy, dz)) != null) return false;
-                }
-            }
+        // Explicit source exclusions already protect signs, traders, caches and map displays. Reject only
+        // block entities in the actor's own standing column here; the former 5x5 blanket made real town frontage
+        // unusable and caused service roles to fail closed during the first client playtest.
+        for (int dy = -1; dy <= 2; dy++) {
+            if (level.getBlockEntity(feet.offset(0, dy, 0)) != null) return false;
         }
 
         AABB crowd = new AABB(
-                x - 2.25D, y - 1.0D, z - 2.25D,
-                x + 3.25D, y + 3.0D, z + 3.25D);
+                x - 1.25D, y - 1.0D, z - 1.25D,
+                x + 2.25D, y + 3.0D, z + 2.25D);
         if (!level.getEntitiesOfClass(AbstractVillager.class, crowd).isEmpty()) return false;
         return true;
     }

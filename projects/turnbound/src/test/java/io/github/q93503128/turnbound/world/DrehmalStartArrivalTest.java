@@ -13,4 +13,11 @@ class DrehmalStartArrivalTest {
                 "normal HUB_REACHED progress is not legacy direct-arrival provenance");
         assertFalse(DrehmalStartMigrationRules.shouldMigrateLegacyHubArrival(false,true,false));
     }
+
+    @Test
+    void missingCurrentArrivalFlagRepairsBuggyHubBootstrapWithoutUsingHubReachedFlag() {
+        assertTrue(DrehmalStartMigrationRules.shouldRepairMissingRouteArrival(false, true));
+        assertFalse(DrehmalStartMigrationRules.shouldRepairMissingRouteArrival(true, true));
+        assertFalse(DrehmalStartMigrationRules.shouldRepairMissingRouteArrival(false, false));
+    }
 }

@@ -57,8 +57,7 @@ final class DrehmalFieldNpcRuntime {
         double radius=npc.interactionRadius()+1.0D;
         if(player.position().distanceToSqr(pos)>radius*radius)return false;
         if(target instanceof BattleActorEntity actor){face(actor,player);actor.playServiceGreeting();}
-        player.sendSystemMessage(Component.literal(npc.playerLabel()+": ").withStyle(ChatFormatting.GOLD)
-                .append(Component.literal(npc.dialogue()).withStyle(ChatFormatting.WHITE)));
+        FieldNetwork.showDialogue(player, npc.playerLabel(), npc.dialogue());
         return true;
     }
 

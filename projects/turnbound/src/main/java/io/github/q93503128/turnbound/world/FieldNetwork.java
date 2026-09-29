@@ -2,6 +2,7 @@ package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.network.FieldCommandPayload;
 import io.github.q93503128.turnbound.network.FieldSnapshotPayload;
+import io.github.q93503128.turnbound.network.NpcDialoguePayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -15,6 +16,7 @@ public final class FieldNetwork {
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL);
         registrar.playToClient(FieldSnapshotPayload.TYPE, FieldSnapshotPayload.STREAM_CODEC);
+        registrar.playToClient(NpcDialoguePayload.TYPE, NpcDialoguePayload.STREAM_CODEC);
         registrar.playToServer(
                 FieldCommandPayload.TYPE,
                 FieldCommandPayload.STREAM_CODEC,
@@ -38,6 +40,13 @@ public final class FieldNetwork {
     /** Short ownership handoff: field HUD yields before the first battle snapshot arrives. */
     public static void suspendForBattle(ServerPlayer player) {
         syncExternal(player, FieldUiSnapshot.battleTransition());
+    }
+
+    public static void showDialogue(ServerPlayer player, String speaker, String dialogue) {
+        if (player == null) return;
+        String cleanSpeaker = speaker == null ? "" : speaker.replace('\n', ' ').replace('\r', ' ');
+        String cleanDialogue = dialogue == null ? "" : dialogue.replace('\r', ' ');
+        PacketDistributor.sendToPlayer(player, new NpcDialoguePayload(cleanSpeaker + "\n" + cleanDialogue));
     }
 
     public static void close(ServerPlayer player) {

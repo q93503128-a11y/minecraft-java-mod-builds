@@ -11,4 +11,8 @@ final class DrehmalStartMigrationRules {
     ) {
         return !hasCurrentArrival && hasLegacyDirectHubArrival && insideHub;
     }
+
+    static boolean shouldRepairMissingRouteArrival(boolean hasCurrentArrival, boolean insideHub) {
+        return !hasCurrentArrival && insideHub;
+    }
 }

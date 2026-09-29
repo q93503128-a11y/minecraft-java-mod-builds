@@ -77,8 +77,8 @@ final class DrabyelHubServiceRuntime {
         if(player.position().distanceToSqr(pos)>radius*radius)return false;
 
         if("SUMMON".equals(service.role())&&!DrehmalContentUnlocks.summonUnlocked(player.getUUID())){
-            player.sendSystemMessage(Component.literal("정령의 흔적은 아직 잠잠합니다. Capital Valley의 강적을 넘고 다시 찾아오세요.")
-                    .withStyle(ChatFormatting.GRAY));
+            FieldNetwork.showDialogue(player, service.playerLabel(),
+                    "아직 정령의 흔적이 잠잠합니다. 캐피털 밸리의 경고 동굴에 자리 잡은 강적을 넘고 다시 찾아오세요.");
             return true;
         }
 
@@ -89,8 +89,18 @@ final class DrabyelHubServiceRuntime {
                     DrehmalContextualOnboarding.serviceFlag(service.role()));
         }
         if(target instanceof BattleActorEntity actor)actor.playServiceGreeting();
+        if ("GREETER".equals(service.role())) {
+            FieldNetwork.showDialogue(player, service.playerLabel(),
+                    "뉴 드라비엘에 잘 왔어요. 대장간과 시장에서 장비를 정비하고, 마구간에서 길을 확인해 보세요. 준비가 끝나면 서쪽 길이 다음 여정으로 이어집니다.");
+            return true;
+        }
+        if ("STORY".equals(service.role())) {
+            FieldNetwork.showDialogue(player, service.playerLabel(),
+                    "캐피털 밸리 길목에는 아직 지나치기 쉬운 위험과 오래된 흔적이 남아 있습니다. 서두르지 말고 마을에서 준비한 뒤 움직이세요.");
+            return true;
+        }
         String hint=service.facilityHint();
-        if(hint==null||hint.isBlank())hint="QUESTS";
+        if(hint==null||hint.isBlank())return true;
         MetaNetwork.open(player,hint);
         return true;
     }

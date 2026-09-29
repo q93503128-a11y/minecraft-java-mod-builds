@@ -110,7 +110,7 @@ public final class MetaMenuScreen extends Screen {
     private void buildHome(){
         var snapshot=ClientMetaState.snapshot();
         int px=homePanelX(),py=homePanelY(),pw=homePanelW(),ph=homePanelH();
-        int leftW=Math.max(185,pw*57/100);
+        int leftW=Math.max(185,pw*54/100);
         int partyX=px+18,partyY=py+38;
         int partyAreaW=leftW-26;
         int cardGap=8;
@@ -141,13 +141,16 @@ public final class MetaMenuScreen extends Screen {
         int rowGap=6;
         Tab[] destinations={Tab.PARTY,Tab.EQUIPMENT,Tab.QUESTS,Tab.ARCHIVE,Tab.CODEX,Tab.SYSTEM};
         String[] labels={"편성","장비","퀘스트","소환","도감","설정"};
-        int menuRows=(destinations.length+1)/2;
-        int orbSize=Math.max(32,Math.min(54,Math.min((menuAreaW-orbGap)/2,(ph-66-rowGap*(menuRows-1))/menuRows)));
+        int menuCols=3;
+        int menuRows=(destinations.length+menuCols-1)/menuCols;
+        int orbSize=Math.max(30,Math.min(46,Math.min(
+                (menuAreaW-orbGap*(menuCols-1))/menuCols,
+                (ph-70-rowGap*(menuRows-1))/menuRows)));
         int menuHeight=orbSize*menuRows+rowGap*(menuRows-1);
-        int menuY=py+Math.max(31,(ph-menuHeight)/2);
+        int menuY=py+Math.max(34,(ph-menuHeight)/2);
         for(int i=0;i<destinations.length;i++){
             final Tab destination=destinations[i];
-            int col=i%2,row=i/2;
+            int col=i%menuCols,row=i/menuCols;
             addRenderableWidget(new FoozleOrbButton(
                     menuX+col*(orbSize+orbGap),
                     menuY+row*(orbSize+rowGap),
@@ -164,14 +167,10 @@ public final class MetaMenuScreen extends Screen {
 
     private void buildParty(){
         var owned=ClientMetaState.snapshot().characters().stream().filter(ClientMetaState.CharacterRow::owned).toList();
-        int coopW=92;
-        addRenderableWidget(new BattleHudButton(
-                left+panelWidth-16-coopW,contentTop(),coopW,20,
-                Component.literal("협동 파티"),BLUE,ignored->switchTab(Tab.COOP)));
-        int gridTop=contentTop()+28,gap=4;
-        int cols=panelWidth>=500?4:panelWidth>=360?3:2;
-        int cardH=34;
-        int footerTop=top+panelHeight-82;
+        int gridTop=contentTop()+4,gap=4;
+        int cols=panelWidth>=820?6:panelWidth>=620?5:panelWidth>=430?4:3;
+        int cardH=42;
+        int footerTop=top+panelHeight-52;
         int rows=UiPaging.rowsThatFit(gridTop,footerTop-6,cardH+4,2),per=cols*rows;
         setPaging(owned.size(),per);
         int start=page*per,end=Math.min(owned.size(),start+per),cardW=(panelWidth-32-gap*(cols-1))/cols;
@@ -185,24 +184,29 @@ public final class MetaMenuScreen extends Screen {
                     ignored->toggleParty(row.id())));
         }
 
-        int gapFooter=4;
-        int savePartyW=Math.min(110,Math.max(88,panelWidth/5));
-        int available=panelWidth-32-savePartyW-gapFooter;
-        int presetW=Math.max(58,(available-gapFooter*2)/3);
-        int row1=footerTop,row2=footerTop+22;
+        int footerX=left+16,footerW=panelWidth-32,footerGap=4,coopW=66,applyW=104;
+        int controlsW=footerW-coopW-applyW-footerGap*2;
+        int presetW=Math.max(44,(controlsW-footerGap*5)/6);
+        int cursor=footerX;
         for(int slot=1;slot<=3;slot++){
             final int s=slot;
-            int x=left+16+(slot-1)*(presetW+gapFooter);
             var preset=ClientMetaState.snapshot().partyPresets().size()>=slot?ClientMetaState.snapshot().partyPresets().get(slot-1):List.<String>of();
-            String loadLabel=preset.isEmpty()?"프리셋 "+slot+" 없음":"프리셋 "+slot+" 불러오기";
-            var load=new BattleHudButton(x,row1,presetW,18,Component.literal(loadLabel),preset.isEmpty()?MUTED:BLUE,ignored->send("PRESET_LOAD|"+s));
+            var load=new BattleHudButton(cursor,footerTop,presetW,18,
+                    Component.literal(preset.isEmpty()?"P"+slot+" -":"P"+slot+" 불러오기"),
+                    preset.isEmpty()?MUTED:BLUE,ignored->send("PRESET_LOAD|"+s));
             load.active=!preset.isEmpty();
             addRenderableWidget(load);
-            addRenderableWidget(new BattleHudButton(x,row2,presetW,18,Component.literal("프리셋 "+slot+" 저장"),GREEN,ignored->send("PRESET_SAVE|"+s)));
+            cursor+=presetW+footerGap;
+            addRenderableWidget(new BattleHudButton(cursor,footerTop,presetW,18,
+                    Component.literal("P"+slot+" 저장"),GREEN,ignored->send("PRESET_SAVE|"+s)));
+            cursor+=presetW+footerGap;
         }
         addRenderableWidget(new BattleHudButton(
-                left+panelWidth-16-savePartyW,row1,savePartyW,40,
-                Component.literal("편성 적용 "+draftParty.size()+"/4"),GREEN,ignored->saveParty()));
+                footerX+footerW-coopW-applyW-footerGap,footerTop,coopW,18,
+                Component.literal("협동"),BLUE,ignored->switchTab(Tab.COOP)));
+        addRenderableWidget(new BattleHudButton(
+                footerX+footerW-applyW,footerTop,applyW,18,
+                Component.literal("적용 "+draftParty.size()+"/4"),GREEN,ignored->saveParty()));
         buildPager();
     }
 
@@ -266,7 +270,7 @@ public final class MetaMenuScreen extends Screen {
         addRenderableWidget(new BattleHudButton(x,y,bw,CONTROL_H,Component.literal("역할 · "+roleLabel(roleFilter)),MUTED,ignored->cycleRole()));
 
         List<ClientMetaState.CharacterRow> rows=filteredCharacters();
-        int gridTop=y+27,gridBottom=contentBottom()-28,cols=panelWidth>=860?4:panelWidth>=640?3:2,rowH=46,cardGap=4;
+        int gridTop=y+27,gridBottom=contentBottom()-28,cols=panelWidth>=860?6:panelWidth>=640?5:panelWidth>=440?4:3,rowH=42,cardGap=4;
         int visibleRows=UiPaging.rowsThatFit(gridTop,gridBottom,rowH+4,2),per=cols*visibleRows;
         setPaging(rows.size(),per);
         int start=page*per,end=Math.min(rows.size(),start+per),cardW=(panelWidth-32-cardGap*(cols-1))/cols;
@@ -500,7 +504,7 @@ public final class MetaMenuScreen extends Screen {
             return;
         }
         List<ClientMetaState.CodexRow> rows=ClientMetaState.snapshot().codex().stream().filter(r->r.category().equals(codexCategory)).toList();
-        int gridTop=y+27,gridBottom=contentBottom()-28,cols=panelWidth>=860?4:panelWidth>=640?3:2,rowH=34,cardGap=4;
+        int gridTop=y+27,gridBottom=contentBottom()-28,cols=panelWidth>=860?6:panelWidth>=640?5:panelWidth>=440?4:3,rowH=32,cardGap=4;
         int visible=UiPaging.rowsThatFit(gridTop,gridBottom,rowH+4,2),per=cols*visible;
         setPaging(rows.size(),per);
         int start=page*per,end=Math.min(rows.size(),start+per),cardW=(panelWidth-32-cardGap*(cols-1))/cols;
@@ -521,7 +525,7 @@ public final class MetaMenuScreen extends Screen {
         addRenderableWidget(new BattleHudButton(x,y,bw,CONTROL_H,Component.literal("역할 · "+roleLabel(roleFilter)),MUTED,ignored->cycleRole()));
 
         List<ClientMetaState.CharacterRow> rows=filteredCharacters();
-        int gridTop=y+27,gridBottom=contentBottom()-28,cols=panelWidth>=860?4:panelWidth>=640?3:2,rowH=46,cardGap=4;
+        int gridTop=y+27,gridBottom=contentBottom()-28,cols=panelWidth>=860?6:panelWidth>=640?5:panelWidth>=440?4:3,rowH=42,cardGap=4;
         int visibleRows=UiPaging.rowsThatFit(gridTop,gridBottom,rowH+4,2),per=cols*visibleRows;
         setPaging(rows.size(),per);
         int start=page*per,end=Math.min(rows.size(),start+per),cardW=(panelWidth-32-cardGap*(cols-1))/cols;
@@ -581,7 +585,7 @@ public final class MetaMenuScreen extends Screen {
             archiveLogScroll=Math.max(0,Math.min(max,archiveLogScroll+(scrollY>0?-1:1)));
             return true;
         }
-        if(!selectedCharacterId.isBlank()&&detailTab==DetailTab.SKILLS&&scrollY!=0){
+        if(compactLayout&&!selectedCharacterId.isBlank()&&detailTab==DetailTab.SKILLS&&scrollY!=0){
             skillDescriptionScroll=Math.max(0,skillDescriptionScroll+(scrollY>0?-1:1));
             return true;
         }
@@ -694,10 +698,7 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void drawParty(GuiGraphicsExtractor g){
-        String hint="최대 4인 · 전투 참가 100% 경험치 · 대기 보유 캐릭터 20%";
-        int x=left+16,y=contentTop()+3,w=panelWidth-32;
-        TurnboundUiSkin.inset(g,x,y,w,17);
-        g.text(font,Component.literal(UiTextLayout.fit(hint,Math.max(80,w-112))),x+6,y+5,SECONDARY,false);
+        // The roster is the information surface; preset/XP policy text does not consume a row.
     }
 
 
@@ -808,22 +809,55 @@ public final class MetaMenuScreen extends Screen {
                 var skill=skills.get(index);
                 int detailY=compactSkills?contentTop()+66:y+58;
                 String type=skill.isBasic()?"기본 공격":"액티브";
-                List<DetailLine> details=skillDetailLines(r.id(),skill.description(),w);
-                int bodyY=detailY+28;
-                int visible=Math.max(1,(contentBottom()-bodyY)/10);
-                int maxScroll=Math.max(0,details.size()-visible);
-                skillDescriptionScroll=Math.max(0,Math.min(skillDescriptionScroll,maxScroll));
-                String scroll=maxScroll>0?" · 휠 "+(skillDescriptionScroll+1)+"/"+(maxScroll+1):"";
-                String metaLine=type+" · "+(skill.cooldown()<=0?"쿨타임 없음":"쿨타임 "+skill.cooldown()+"턴")+scroll;
-                g.text(font,Component.literal(UiTextLayout.fit(skill.name(),w)),x,detailY,skill.isBasic()?GREEN:GOLD,true);
-                g.text(font,Component.literal(UiTextLayout.fit(metaLine,w)),x,detailY+13,SECONDARY,false);
-
-                int end=Math.min(details.size(),skillDescriptionScroll+visible);
-                int cursor=bodyY;
-                for(int i=skillDescriptionScroll;i<end;i++){
-                    DetailLine line=details.get(i);
-                    g.text(font,Component.literal(line.text()),x,cursor,line.color(),false);
-                    cursor+=10;
+                if(!compactSkills&&w>=360){
+                    int columnGap=12,skillW=Math.max(190,(w-columnGap)*58/100);
+                    int passiveX=x+skillW+columnGap,passiveW=Math.max(130,w-skillW-columnGap);
+                    int boxH=Math.max(66,contentBottom()-detailY-3);
+                    TurnboundUiSkin.inset(g,x,detailY,skillW,boxH);
+                    TurnboundUiSkin.inset(g,passiveX,detailY,passiveW,boxH);
+                    g.text(font,Component.literal(UiTextLayout.fit(skill.name(),skillW-16)),x+8,detailY+8,skill.isBasic()?GREEN:GOLD,true);
+                    String metaLine=type+" · "+(skill.cooldown()<=0?"쿨타임 없음":"쿨타임 "+skill.cooldown()+"턴");
+                    g.text(font,Component.literal(UiTextLayout.fit(metaLine,skillW-16)),x+8,detailY+22,SECONDARY,false);
+                    int cursor=detailY+40;
+                    for(String line:UiTextLayout.wrap(skill.description(),skillW-16,96)){
+                        if(cursor+9>=detailY+boxH-6)break;
+                        g.text(font,Component.literal(line),x+8,cursor,TEXT,false);
+                        cursor+=11;
+                    }
+                    g.text(font,Component.literal("패시브"),passiveX+8,detailY+8,GOLD,true);
+                    int passiveY=detailY+24;
+                    var passives=CharacterPassiveCatalog.forOwner(r.id());
+                    if(passives.isEmpty()){
+                        g.text(font,Component.literal("고유 패시브 없음"),passiveX+8,passiveY,MUTED,false);
+                    }else{
+                        for(var passive:passives){
+                            if(passiveY+10>=detailY+boxH-5)break;
+                            g.text(font,Component.literal(UiTextLayout.fit(passive.name(),passiveW-16)),passiveX+8,passiveY,GOLD,true);
+                            passiveY+=12;
+                            for(String line:UiTextLayout.wrap(passive.description(),passiveW-16,96)){
+                                if(passiveY+9>=detailY+boxH-5)break;
+                                g.text(font,Component.literal(line),passiveX+8,passiveY,SECONDARY,false);
+                                passiveY+=10;
+                            }
+                            passiveY+=5;
+                        }
+                    }
+                }else{
+                    List<DetailLine> details=skillDetailLines(r.id(),skill.description(),w);
+                    int bodyY=detailY+28;
+                    int visible=Math.max(1,(contentBottom()-bodyY)/10);
+                    int maxScroll=Math.max(0,details.size()-visible);
+                    skillDescriptionScroll=Math.max(0,Math.min(skillDescriptionScroll,maxScroll));
+                    String scroll=maxScroll>0?" · 휠 "+(skillDescriptionScroll+1)+"/"+(maxScroll+1):"";
+                    String metaLine=type+" · "+(skill.cooldown()<=0?"쿨타임 없음":"쿨타임 "+skill.cooldown()+"턴")+scroll;
+                    g.text(font,Component.literal(UiTextLayout.fit(skill.name(),w)),x,detailY,skill.isBasic()?GREEN:GOLD,true);
+                    g.text(font,Component.literal(UiTextLayout.fit(metaLine,w)),x,detailY+13,SECONDARY,false);
+                    int end=Math.min(details.size(),skillDescriptionScroll+visible),cursor=bodyY;
+                    for(int i=skillDescriptionScroll;i<end;i++){
+                        DetailLine line=details.get(i);
+                        g.text(font,Component.literal(line.text()),x,cursor,line.color(),false);
+                        cursor+=10;
+                    }
                 }
             }
             case EQUIPMENT->{

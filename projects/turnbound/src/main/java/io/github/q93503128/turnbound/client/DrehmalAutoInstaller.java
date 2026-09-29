@@ -188,7 +188,7 @@ public final class DrehmalAutoInstaller {
         Path pack = world.resolve("resources.zip");
         return Files.isRegularFile(pack)
                 && DrehmalInstallFiles.validResourcePack(pack)
-                && Drehmal26_2ResourcePackMigrator.hasCurrentMarker(world);
+                && Drehmal26_2ResourcePackMigrator.isCurrent(world);
     }
 
     private static void repairExistingWorld(Path gameDir, Path world, boolean allowDownload) {

@@ -86,6 +86,7 @@ public final class ExternalWorldBootstrap {
             DrehmalStartArrival.moveOutOfLegacySetupIfNeeded(player, ExternalWorldSavedData.get(server));
         }
 
+        if (player.tickCount % 20 == 0) DrehmalHubEntityPolicy.sweep(player);
         DrehmalVisibleEncounterService.tick(player);
         DrehmalFieldNpcRuntime.tick(player);
         DrabyelHubServiceRuntime.tick(player);

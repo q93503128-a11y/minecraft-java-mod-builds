@@ -1,5 +1,6 @@
 package io.github.q93503128.turnbound.client;
 
+import io.github.q93503128.turnbound.world.DrehmalFastTravelCatalog;
 import io.github.q93503128.turnbound.world.FieldUiSnapshot;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -25,9 +26,9 @@ public final class DrehmalMinimapLayer implements GuiLayer {
     private static final int MUTED = TurnboundUiTokens.TEXT_SECONDARY;
     private static final int TARGET = TurnboundUiTokens.ACCENT;
 
-    private static final int GRID = 40;
+    private static final int GRID = 52;
     private static final int CELL = 2;
-    private static final int STEP = 4;
+    private static final int STEP = 3;
     private static final int MAP_SIZE = GRID * CELL;
     private static final int[][] TERRAIN = new int[GRID][GRID];
     private static boolean visible = true;
@@ -48,7 +49,7 @@ public final class DrehmalMinimapLayer implements GuiLayer {
         if (!field.active() || field.mode() == FieldUiSnapshot.Mode.LOADING) return;
 
         int panelW = MAP_SIZE + 22;
-        int panelH = MAP_SIZE + 46;
+        int panelH = MAP_SIZE + 58;
         int x = TurnboundUiTokens.S;
         int y = TurnboundUiTokens.S;
         TurnboundUiSkin.panel(graphics, x, y, panelW, panelH);
@@ -81,6 +82,7 @@ public final class DrehmalMinimapLayer implements GuiLayer {
             }
         }
 
+        drawDiscoveredTravel(graphics, field, mapX, mapY, px, pz, radius);
         drawPartyMembers(graphics, minecraft, mapX, mapY, px, pz, radius);
         drawArrow(graphics, mapX + MAP_SIZE / 2, mapY + MAP_SIZE / 2, minecraft.player.getYRot(), 0xFFFFFFFF, true);
         graphics.text(minecraft.font, Component.literal("N"), mapX + MAP_SIZE - 9, mapY + 3, 0xEFFFFFFF, true);
@@ -101,7 +103,10 @@ public final class DrehmalMinimapLayer implements GuiLayer {
             footer = "주변 탐색";
         }
         graphics.text(minecraft.font, Component.literal(fit(minecraft, footer, panelW - 14)),
-                x + 7, y + panelH - 11, MUTED, false);
+                x + 7, y + panelH - 22, MUTED, false);
+        String place = field.locationTitle().isBlank() ? "현재 위치" : field.locationTitle();
+        graphics.text(minecraft.font, Component.literal(fit(minecraft, place, panelW - 14)),
+                x + 7, y + panelH - 11, TEXT, false);
     }
 
     private static void refreshTerrain(Minecraft minecraft) {
@@ -149,6 +154,26 @@ public final class DrehmalMinimapLayer implements GuiLayer {
         int g = Math.max(0, Math.min(255, ((color >>> 8) & 0xFF) + delta));
         int b = Math.max(0, Math.min(255, (color & 0xFF) + delta));
         return 0xFF000000 | (r << 16) | (g << 8) | b;
+    }
+
+    private static void drawDiscoveredTravel(
+            GuiGraphicsExtractor graphics, FieldUiSnapshot field,
+            int mapX, int mapY, double playerX, double playerZ, double radius) {
+        double clampRadius = Math.max(STEP, radius - STEP * 3.0);
+        for (FieldUiSnapshot.Travel travel : field.travels()) {
+            if (!travel.unlocked()) continue;
+            DrehmalFastTravelCatalog.Node node = DrehmalFastTravelCatalog.node(travel.id());
+            if (node == null) continue;
+            double dx = node.mapX() - playerX;
+            double dz = node.mapZ() - playerZ;
+            double maxAxis = Math.max(Math.abs(dx), Math.abs(dz));
+            if (maxAxis > clampRadius) continue;
+            int sx = mapX + MAP_SIZE / 2 + (int)Math.round(dx / STEP * CELL);
+            int sy = mapY + MAP_SIZE / 2 + (int)Math.round(dz / STEP * CELL);
+            int color = travel.current() ? 0xFF62D39A : 0xFFFFC857;
+            graphics.fill(sx - 2, sy, sx + 3, sy + 1, color);
+            graphics.fill(sx, sy - 2, sx + 1, sy + 3, color);
+        }
     }
 
     private static void drawPartyMembers(

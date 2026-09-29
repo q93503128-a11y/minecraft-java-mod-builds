@@ -111,30 +111,44 @@ final class DrehmalContextualOnboarding {
     }
 
     private static Guidance hubGuidance(Set<String> clears, Set<String> flags, Set<String> roles) {
-        String objective = "뉴 드라비엘에서 준비를 마치고 다음 길을 확인하십시오.";
-        if (!flags.contains(HUB_MENU_VIEWED)) {
-            return new Guidance(objective, "E 메뉴에서 파티와 장비를 확인할 수 있습니다.");
-        }
-        if (roles.isEmpty()) {
+        if (needs("GREETER", flags, roles)) {
             return new Guidance(
-                    objective,
-                    flags.contains(HUB_ROUTE_REVIEWED)
-                            ? ""
-                            : "M 지도를 열어 발견한 길과 다음 이동 방향을 확인하십시오.");
+                    "마을 입구 안내와 대화해 뉴 드라비엘의 시설과 다음 길을 확인하십시오.",
+                    "입구 안내 앞에서 오른쪽 버튼을 눌러 대화하십시오.");
+        }
+        if (!flags.contains(HUB_MENU_VIEWED)) {
+            return new Guidance(
+                    "E 메뉴를 열어 현재 파티와 장비 상태를 확인하십시오.",
+                    "필요한 정비를 끝낸 뒤 마을 시설을 둘러보면 됩니다.");
         }
         if (needs("BLACKSMITH", flags, roles)) {
-            return new Guidance(objective, "장비를 손볼 필요가 있다면 대장간을 이용할 수 있습니다.");
+            return new Guidance(
+                    "대장장이를 찾아 장비를 확인하거나 강화하십시오.",
+                    "대장간은 마을 안쪽의 대장장이 앞에서 이용할 수 있습니다.");
         }
         if (needs("MARKET", flags, roles)) {
-            return new Guidance(objective, "시장에서는 다음 여정에 필요한 장비를 확인할 수 있습니다.");
+            return new Guidance(
+                    "장비 상인을 찾아 다음 여정에 필요한 장비를 확인하십시오.",
+                    "구매가 필요 없다면 확인만 하고 지나가도 됩니다.");
         }
         if (needs("TRAVEL", flags, roles)) {
-            return new Guidance(objective, "마구간과 지도에서 발견한 이동 거점을 확인할 수 있습니다.");
+            return new Guidance(
+                    "마구간을 찾아 이동 거점과 길의 방향을 확인하십시오.",
+                    "마구간에서 지도를 열어 발견한 이동 거점을 확인할 수 있습니다.");
         }
         if (DrehmalContentUnlocks.summonUnlocked(clears) && needs("SUMMON", flags, roles)) {
-            return new Guidance(objective, "캐피털 밸리의 강적을 넘겼다면 정령의 흔적이 반응합니다.");
+            return new Guidance(
+                    "정령의 흔적을 찾아 새 동료를 부를 수 있는지 확인하십시오.",
+                    "캐피털 밸리의 강적을 넘겼다면 소환이 열려 있습니다.");
         }
-        return new Guidance(objective, "");
+        if (!flags.contains(HUB_ROUTE_REVIEWED)) {
+            return new Guidance(
+                    "M 지도를 열어 뉴 드라비엘 서쪽의 다음 길을 확인하십시오.",
+                    "지도에는 현재 위치, 목적지, 발견한 이동 거점이 표시됩니다.");
+        }
+        return new Guidance(
+                "준비가 끝났다면 뉴 드라비엘 서쪽 출구에서 아브살 방향의 길을 따라가십시오.",
+                "마을을 나서기 전 장비와 파티를 다시 확인해도 됩니다.");
     }
 
     private static boolean needs(String role, Set<String> flags, Set<String> roles) {

@@ -103,7 +103,7 @@ final class DrehmalWorldMapScreen extends Screen {
         boolean wide = panelWidth >= 320 && panelHeight >= 190;
         int mapY = top + (showSubtitle ? 43 : 30);
         int mapX = left + 12;
-        int infoReserve = wide ? Math.min(190, Math.max(150, panelWidth / 3)) : 0;
+        int infoReserve = wide ? Math.min(210, Math.max(150, panelWidth / 4)) : 0;
         int bottomReserve = wide ? 12 : compact ? 68 : 108;
         int availableW = panelWidth - 24 - infoReserve - (wide ? 10 : 0);
         int availableH = top + panelHeight - bottomReserve - mapY;
@@ -122,8 +122,9 @@ final class DrehmalWorldMapScreen extends Screen {
             int sx = mapX + worldToMap(anchor.x(), view.minX, view.span, mapSize);
             int sy = mapY + worldToMap(anchor.z(), view.minZ, view.span, mapSize);
             drawMarker(graphics, sx, sy, anchor.kind());
-            if (mapSize >= 220 && ("HUB".equals(anchor.kind()) || "REGION".equals(anchor.kind()))) {
-                String shortLabel = UiTextLayout.fit(label(anchor), 82);
+            if (mapSize >= 180) {
+                int labelW = "LANDMARK".equals(anchor.kind()) ? 72 : 92;
+                String shortLabel = UiTextLayout.fit(label(anchor), labelW);
                 graphics.text(font, Component.literal(shortLabel), sx + 7, sy - 4, markerColor(anchor.kind()), false);
             }
             double dx = mouseX - sx, dy = mouseY - sy, distance = dx * dx + dy * dy;
@@ -168,30 +169,39 @@ final class DrehmalWorldMapScreen extends Screen {
         String coordinates = "현재  X " + (int)Math.round(px) + " · Z " + (int)Math.round(pz);
         graphics.text(font, Component.literal(UiTextLayout.fit(coordinates, infoW - 14)),
                 infoX + 7, infoY + 7, TEXT, true);
-        if (focus != null && infoH >= 38) {
+        int infoCursor = infoY + 24;
+        if (navigation != null && navigation.active() && infoH >= 64) {
+            int objectiveDistance = (int)Math.round(Math.hypot(navigation.x() - px, navigation.z() - pz));
+            graphics.text(font, Component.literal("현재 목표"), infoX + 7, infoCursor, GOLD, true);
+            infoCursor += 15;
+            graphics.text(font, Component.literal(UiTextLayout.fit(navigation.label() + " · " + objectiveDistance + "m", infoW - 14)),
+                    infoX + 7, infoCursor, TEXT, false);
+            infoCursor += 20;
+        }
+        if (focus != null && infoCursor + 44 < infoY + infoH) {
             graphics.text(font, Component.literal(UiTextLayout.fit(label(focus), infoW - 14)),
-                    infoX + 7, infoY + 23, markerColor(focus.kind()), true);
-            if (infoH >= 55) {
-                graphics.text(font, Component.literal(UiTextLayout.fit(description(focus), infoW - 14)),
-                        infoX + 7, infoY + 39, SECONDARY, false);
-            }
-            if (infoH >= 72) {
-                int distance = (int)Math.round(Math.hypot(focus.x() - px, focus.z() - pz));
-                String distanceLine = "약 " + distance + "m · " + kindLabel(focus.kind());
-                graphics.text(font, Component.literal(UiTextLayout.fit(distanceLine, infoW - 14)),
-                        infoX + 7, infoY + 55, MUTED, false);
-            }
+                    infoX + 7, infoCursor, markerColor(focus.kind()), true);
+            infoCursor += 16;
+            graphics.text(font, Component.literal(UiTextLayout.fit(description(focus), infoW - 14)),
+                    infoX + 7, infoCursor, SECONDARY, false);
+            infoCursor += 16;
+            int distance = (int)Math.round(Math.hypot(focus.x() - px, focus.z() - pz));
+            String distanceLine = "약 " + distance + "m · " + kindLabel(focus.kind());
+            graphics.text(font, Component.literal(UiTextLayout.fit(distanceLine, infoW - 14)),
+                    infoX + 7, infoCursor, MUTED, false);
+            infoCursor += 23;
         }
 
-        if (wide && infoH > 145) {
-            graphics.text(font, Component.literal("◆ 거점"), infoX + 9, infoY + 92, GOLD, false);
-            graphics.text(font, Component.literal("■ 지역"), infoX + 9, infoY + 109, BLUE, false);
-            graphics.text(font, Component.literal("● 랜드마크"), infoX + 9, infoY + 126, GREEN, false);
-            graphics.text(font, Component.literal("◇ 빠른 이동"), infoX + 9, infoY + 143, GOLD, false);
+        if (wide && infoCursor + 66 < infoY + infoH) {
+            graphics.text(font, Component.literal("◆ 거점"), infoX + 9, infoCursor, GOLD, false);
+            graphics.text(font, Component.literal("■ 지역"), infoX + 9, infoCursor + 17, BLUE, false);
+            graphics.text(font, Component.literal("● 랜드마크"), infoX + 9, infoCursor + 34, GREEN, false);
+            graphics.text(font, Component.literal("◇ 빠른 이동"), infoX + 9, infoCursor + 51, GOLD, false);
+            infoCursor += 76;
         }
-        if (wide && infoH > 207) {
+        if (wide && infoCursor + 30 < infoY + infoH) {
             String note = "발견한 ◇ 거점을 클릭하면 빠른 이동합니다. 전투 위치는 탐험하기 전에는 숨겨집니다.";
-            int noteY = infoY + 170;
+            int noteY = infoCursor;
             for (String line : UiTextLayout.wrap(note, infoW - 18, 4)) {
                 if (noteY + font.lineHeight >= infoY + infoH - 6) break;
                 graphics.text(font, Component.literal(line), infoX + 9, noteY, SECONDARY, false);
@@ -352,6 +362,7 @@ final class DrehmalWorldMapScreen extends Screen {
             double t = i / (double)steps;
             int x = (int)Math.round(x0 + (x1 - x0) * t);
             int y = (int)Math.round(y0 + (y1 - y0) * t);
+            g.fill(x - 1, y - 1, x + 3, y + 3, 0x55201D18);
             g.fill(x, y, x + 2, y + 2, color);
         }
     }

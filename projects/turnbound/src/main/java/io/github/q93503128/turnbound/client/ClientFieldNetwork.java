@@ -1,6 +1,7 @@
 package io.github.q93503128.turnbound.client;
 
 import io.github.q93503128.turnbound.network.FieldSnapshotPayload;
+import io.github.q93503128.turnbound.network.NpcDialoguePayload;
 import io.github.q93503128.turnbound.world.FieldUiSnapshot;
 import net.minecraft.client.Minecraft;
 import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;
@@ -11,6 +12,17 @@ public final class ClientFieldNetwork {
 
     public static void register(RegisterClientPayloadHandlersEvent event) {
         event.register(FieldSnapshotPayload.TYPE, ClientFieldNetwork::handle);
+        event.register(NpcDialoguePayload.TYPE, ClientFieldNetwork::handleDialogue);
+    }
+
+    private static void handleDialogue(NpcDialoguePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.gui.screen() instanceof BattleScreen
+                    || minecraft.gui.screen() instanceof BattleResultScreen
+                    || minecraft.gui.screen() instanceof GachaPresentationScreen) return;
+            minecraft.gui.setScreen(NpcDialogueScreen.decode(payload.dialogue()));
+        });
     }
 
     private static void handle(FieldSnapshotPayload payload, IPayloadContext context) {
