@@ -105,10 +105,12 @@ final class SharedBattleSessionManager {
 
     static void clearAll(Iterable<ServerPlayer> players){
         for(SharedBattleSession s:List.copyOf(SESSIONS)){
-            ServerPlayer initiator=s.online(s.initiatorId());
-            if(s.finished()&&s.allParticipantsOnline()&&initiator!=null){
-                for(UUID id:s.participantIds())s.markReadyToExit(id);
-                if(requestResultExit(s,initiator,true))continue;
+            if(s.finished()){
+                if(settleFinished(s,true)){
+                    finishAndRestoreField(s);
+                    continue;
+                }
+                Turnbound.LOGGER.error("TURNBOUND could not durably settle every shared-battle owner before server shutdown");
             }
             try{s.cleanupAllOnline();}catch(RuntimeException ex){Turnbound.LOGGER.error("TURNBOUND failed to clean shared battle during server stop",ex);}
             for(ServerPlayer p:s.onlineParticipants())BattleNetwork.close(p);
@@ -121,38 +123,50 @@ final class SharedBattleSessionManager {
     private static boolean requestResultExit(SharedBattleSession s,ServerPlayer requester,boolean lifecycle){
         if(!s.finished())return false;
         s.markReadyToExit(requester.getUUID());
-        if(!lifecycle&&(!s.allReadyToExit()||!s.allParticipantsOnline())){
-            requester.sendSystemMessage(Component.literal("동료의 전투 결과 확인을 기다리고 있습니다."));
+        if(!lifecycle&&!s.allOnlineReadyToExit()){
+            requester.sendSystemMessage(Component.literal("접속 중인 동료의 전투 결과 확인을 기다리고 있습니다."));
             s.syncAll();
             return false;
         }
-        if(!s.allParticipantsOnline())return false;
-
-        if(s.state().outcome()==BattleOutcome.ALLY_VICTORY&&!s.encounterId().isBlank()){
-            for(ServerPlayer p:s.onlineParticipants()){
-                UUID owner=p.getUUID();
-                if(s.settled(owner))continue;
-                try{
-                    RewardGrantService.commitAndSave(p,s.rewardTransactionId(owner),s.encounterId(),s.state(),s.state().outcome());
-                    CampaignPersistence.saveIfDirty(p);
-                    s.markSettled(owner);
-                }catch(RewardGrantService.SettlementException ex){
-                    if(lifecycle&&ex.recoverableFromJournal()){
-                        s.markSettled(owner);
-                        Turnbound.LOGGER.warn("TURNBOUND deferred shared reward transaction {} for {} to durable journal",s.rewardTransactionId(owner),owner);
-                        continue;
-                    }
-                    return settlementFailed(s,p,ex);
-                }catch(RuntimeException ex){return settlementFailed(s,p,ex);}
-            }
-        }else for(ServerPlayer p:s.onlineParticipants())CampaignPersistence.saveIfDirty(p);
-
+        if(!settleFinished(s,lifecycle))return false;
         finishAndRestoreField(s);
         return true;
     }
 
-    private static boolean settlementFailed(SharedBattleSession s,ServerPlayer failed,RuntimeException ex){
-        Turnbound.LOGGER.error("TURNBOUND failed to settle shared reward transaction {} for {}",s.rewardTransactionId(failed.getUUID()),failed.getUUID(),ex);
+    private static boolean settleFinished(SharedBattleSession s,boolean lifecycle){
+        if(!s.finished())return false;
+        if(s.state().outcome()==BattleOutcome.ALLY_VICTORY&&!s.encounterId().isBlank()){
+            for(UUID owner:s.participantIds()){
+                if(s.settled(owner))continue;
+                ServerPlayer online=s.online(owner);
+                try{
+                    if(online!=null){
+                        RewardGrantService.commitAndSave(online,s.rewardTransactionId(owner),s.encounterId(),s.state(),s.state().outcome());
+                        CampaignPersistence.saveIfDirty(online);
+                    }else{
+                        RewardGrantService.commitDeferred(
+                                s.level().getServer(),owner,s.rewardTransactionId(owner),s.encounterId(),s.state(),s.state().outcome());
+                    }
+                    s.markSettled(owner);
+                }catch(RewardGrantService.SettlementException ex){
+                    if(lifecycle&&ex.recoverableFromJournal()){
+                        s.markSettled(owner);
+                        Turnbound.LOGGER.warn("TURNBOUND deferred shared reward transaction {} for {} to durable journal",
+                                s.rewardTransactionId(owner),owner);
+                        continue;
+                    }
+                    return settlementFailed(s,owner,ex);
+                }catch(RuntimeException ex){return settlementFailed(s,owner,ex);}
+            }
+        }else{
+            for(ServerPlayer p:s.onlineParticipants())CampaignPersistence.saveIfDirty(p);
+        }
+        return true;
+    }
+
+    private static boolean settlementFailed(SharedBattleSession s,UUID failedOwner,RuntimeException ex){
+        Turnbound.LOGGER.error("TURNBOUND failed to settle shared reward transaction {} for {}",
+                s.rewardTransactionId(failedOwner),failedOwner,ex);
         for(ServerPlayer p:s.onlineParticipants()){
             p.sendSystemMessage(Component.literal("TURNBOUND 전투 보상을 안전하게 저장하지 못했습니다. 결과 화면에서 다시 복귀를 시도해 주세요."));
             BattleNetwork.sync(p,s);
@@ -167,9 +181,14 @@ final class SharedBattleSessionManager {
         String encounterId=s.encounterId();
         try{s.cleanupAllOnline();}catch(RuntimeException ex){Turnbound.LOGGER.error("TURNBOUND failed to clean shared battle after settlement",ex);}
         removeSession(s);
-        if(initiator!=null&&!encounterId.isBlank()){
-            try{if(!ExternalWorldBootstrap.onBattleEnded(initiator,encounterId,outcome))WorldSessionRouter.onBattleEnded(initiator,encounterId,outcome);}
-            catch(RuntimeException ex){Turnbound.LOGGER.error("TURNBOUND failed to restore shared field encounter {}",encounterId,ex);}
+        if(!encounterId.isBlank()){
+            try{
+                boolean released=ExternalWorldBootstrap.onSharedBattleEnded(s.level(),s.initiatorId(),encounterId,outcome);
+                if(!released){
+                    ServerPlayer legacyOwner=initiator!=null?initiator:(participants.isEmpty()?null:participants.getFirst());
+                    if(legacyOwner!=null)WorldSessionRouter.onBattleEnded(legacyOwner,encounterId,outcome);
+                }
+            }catch(RuntimeException ex){Turnbound.LOGGER.error("TURNBOUND failed to restore shared field encounter {}",encounterId,ex);}
         }
         for(ServerPlayer p:participants){
             BattleNetwork.close(p);
