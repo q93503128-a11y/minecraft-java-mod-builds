@@ -31,8 +31,8 @@ class DrehmalRoutePlacementRulesTest {
                         new DrehmalMapPlacementCatalog.Seed(0, 0),
                         new DrehmalMapPlacementCatalog.Seed(0, 20)));
 
-        assertEquals(4.5D, DrehmalAdaptiveRoutePlacement.corridorDistance(zone, 5.0D, 10.5D), 0.0001D);
-        assertEquals(0.0D, DrehmalAdaptiveRoutePlacement.corridorDistance(zone, 0.5D, 10.5D), 0.0001D);
+        assertEquals(4.5D, DrehmalRoutePlacementRules.corridorDistance(zone, 5.0D, 10.5D), 0.0001D);
+        assertEquals(0.0D, DrehmalRoutePlacementRules.corridorDistance(zone, 0.5D, 10.5D), 0.0001D);
     }
 
     @Test
