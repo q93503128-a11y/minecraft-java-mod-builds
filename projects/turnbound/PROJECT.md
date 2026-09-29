@@ -320,6 +320,22 @@ This checkpoint requests one fresh branch build of the corrected integrated stat
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
 
+## Unit-test classpath repair — 2026-09-29
+
+Build TURNBOUND #36516550042 compiled production and test sources successfully, then failed only in two JVM unit tests with `NoClassDefFoundError: net/minecraft/world/level/BlockGetter`.
+
+Root cause:
+- pure route-geometry/source-plan assertions referenced runtime classes (`DrehmalAdaptiveRoutePlacement` / `DrabyelHubAutoPlacement`)
+- loading those runtime classes on the plain unit-test JVM pulled Minecraft world types that are not present on that test runtime classpath
+
+Correction:
+- corridor-segment geometry moved into the existing Minecraft-free `DrehmalRoutePlacementRules`
+- route geometry test now targets that pure helper
+- hub source-plan coverage test derives its six roles from the data-only placement/service catalogs instead of loading the live-world auto-placement class
+- production placement behavior is unchanged
+
+This checkpoint requests one fresh build after the test-boundary repair.
+
 ## Economy
 
 Long-term core currencies:
