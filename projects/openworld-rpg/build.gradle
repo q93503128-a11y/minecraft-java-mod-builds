@@ -104,6 +104,13 @@ configurations {
         visible = false
         description = 'Pinned curated creature dependency artifacts; inspected without admitting them to core runtime.'
     }
+
+    acroWieldReference {
+        canBeConsumed = false
+        canBeResolved = true
+        visible = false
+        description = 'Temporary exact-file inspection of the MIT AcroWield 26.2 dodge reference; never a runtime dependency.'
+    }
 }
 
 dependencies {
@@ -151,6 +158,10 @@ dependencies {
         transitive = false
     }
     creatureFoundation("curse.maven:${project.threateningly_mobs_curse_project}:${project.threateningly_mobs_curse_file}") {
+        transitive = false
+    }
+
+    acroWieldReference("maven.modrinth:2HNn1tqB:JDJnVrbE") {
         transitive = false
     }
 
@@ -376,6 +387,62 @@ tasks.register('inspectCreatureFoundationDependencies') {
     }
 }
 
+
+tasks.register('inspectAcroWieldDodgeReference') {
+    group = 'verification'
+    description = 'Inspects the exact MIT AcroWield 1.8.1 MC26.2 JAR for reusable dodge presentation resources.'
+
+    doLast {
+        def resolved = configurations.acroWieldReference.resolve().toList()
+        if (resolved.size() != 1) {
+            throw new GradleException("Expected one AcroWield reference artifact, got " + resolved.collect { it.name })
+        }
+        def file = resolved[0]
+        def output = layout.buildDirectory.file('reports/reference/acrowield-dodge.txt').get().asFile
+        output.parentFile.mkdirs()
+        def sha = sha256Of(file)
+        output.text = "file=" + file.name + "\nbytes=" + file.length() + "\nsha256=" + sha + "\n"
+
+        def zip = new java.util.zip.ZipFile(file)
+        try {
+            def entries = java.util.Collections.list(zip.entries())
+                    .findAll { !it.isDirectory() }
+                    .sort { a, c -> a.name <=> c.name }
+            def matching = entries.findAll {
+                def n = it.name.toLowerCase(java.util.Locale.ROOT)
+                n.contains('dodge')
+                        || n.contains('roll')
+                        || n.contains('dash')
+                        || n.contains('player_animations')
+                        || n.contains('animation')
+                        || n.endsWith('license')
+                        || n.endsWith('license.txt')
+            }
+            output << "\n[matching-entries]\n"
+            matching.each { entry ->
+                output << entry.name << "\t" << entry.size << System.lineSeparator()
+                def lower = entry.name.toLowerCase(java.util.Locale.ROOT)
+                if (entry.size >= 0 && entry.size <= 65536
+                        && (lower.endsWith('.json')
+                            || lower.endsWith('.txt')
+                            || lower.endsWith('license')
+                            || lower.endsWith('.mcmeta'))) {
+                    zip.getInputStream(entry).withCloseable { input ->
+                        output << "--- " << entry.name << " ---\n"
+                        output << input.getText('UTF-8')
+                        output << "\n--- end ---\n"
+                    }
+                }
+            }
+            if (matching.isEmpty()) {
+                output << "(none)\n"
+            }
+        } finally {
+            zip.close()
+        }
+        println "ACROWIELD_DODGE_REFERENCE_READY report=" + output + " sha256=" + sha
+    }
+}
 
 tasks.register('inspectEarthloongDependencySurface') {
     group = 'verification'

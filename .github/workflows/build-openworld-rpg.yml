@@ -50,6 +50,13 @@ jobs:
       - name: Verify pinned creature dependency metadata
         run: ./gradlew --no-daemon inspectCreatureFoundationDependencies --stacktrace
 
+      - name: Inspect exact AcroWield dodge reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon inspectAcroWieldDodgeReference --stacktrace
+          cat build/reports/reference/acrowield-dodge.txt
+
       - name: Test and build M0 core
         run: ./gradlew --no-daemon clean test build --stacktrace
 
