@@ -34,12 +34,12 @@ final class DrehmalStartArrival {
         if (player == null || saved == null) return false;
 
         // Physical presence in Drehmal's setup terminal is stronger evidence than a previous arrival flag.
-        // Older TURNBOUND builds sent some test saves directly to New Drabyel; migrate that state once.
+        // Older TURNBOUND builds sent some test saves directly to New Drabyel. Only the explicit V2
+        // direct-arrival flag is migration provenance; normal HUB_REACHED progress must never move a player backward.
         boolean setupTerminal = legacySetupZone(player.getX(), player.getY(), player.getZ());
         boolean legacyHubArrival = DrehmalStartMigrationRules.shouldMigrateLegacyHubArrival(
                 saved.onboardingFlag(player.getUUID(), ARRIVAL_FLAG),
-                saved.onboardingFlag(player.getUUID(), LEGACY_DIRECT_HUB_FLAG)
-                        || saved.onboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.HUB_REACHED),
+                saved.onboardingFlag(player.getUUID(), LEGACY_DIRECT_HUB_FLAG),
                 legacyHubZone(player.getX(), player.getZ()));
         if (!setupTerminal && !legacyHubArrival) return false;
 
