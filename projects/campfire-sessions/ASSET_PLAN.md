@@ -19,18 +19,22 @@ Search external sources first for:
 - interiors.
 - cute animal residents.
 - resident rigs/animations.
+- player animation/emote foundations.
 - furniture.
 - kitchen/cooking assets.
 - plants/flowers/mushrooms.
 - tools.
 - boats.
 - clothing/accessories.
+- resident seasonal/weather outfit variants.
 - UI panels/buttons/icons.
 - museum displays.
 - fossil/dinosaur models.
 - aquariums/terrariums.
 - festival decoration/stages.
 - photography/camera presentation.
+- ambient/weather/interior sound assets.
+- non-verbal resident voice/chirp assets or reusable speech-sound systems.
 - contest props.
 
 If an external asset needs technical conversion, adapt it to Minecraft 26.2 while preserving the quality/design language.
@@ -261,7 +265,8 @@ GeckoLib remains a likely animation foundation where technically appropriate.
 
 Resident animation is a high-priority presentation requirement, not optional polish.
 The selected resident visual base should support enough rig/bone control for expressive lifestyle actions such as talk, sit, eat, fish, garden, clap, dance and play music.
-Prefer acquiring/using existing animation sets where compatible, then author only the missing project-specific actions.
+It should also support practical outfit/accessory switching for rainwear, umbrellas, winter clothing and festival/performance states where possible.
+Prefer acquiring/using existing animation and outfit sets where compatible, then author only the missing project-specific actions.
 
 ## 11. Tools
 
@@ -483,7 +488,28 @@ Need external assets for:
 
 Multipart fossil completion should visually build the exhibit rather than remain an inventory checklist.
 
-## 16. Festival and event art
+## 16. Audio / ambience / resident voice candidates
+
+The life-sim should not rely only on vanilla ambient audio.
+
+External-first research should cover:
+- rain/storm ambience.
+- softened indoor rain/window ambience.
+- shoreline/harbor wind and water.
+- café/interior room tone.
+- seasonal night/nature ambience.
+- short non-verbal resident vocal chirps.
+
+Requirements:
+- no copyrighted game voice clips or direct imitation of another game's speech-sound identity.
+- prefer CC0/permissive sound libraries or compatible mods/assets with clear private-use rights.
+- resident speech sounds must remain short and subordinate to readable text.
+- pitch/timbre variation may be data-driven by resident identity/personality.
+- avoid excessive simultaneous loops and large always-loaded sound banks.
+
+If a strong existing ambience mod/system supports 26.2 NeoForge and can be scoped/configured to the authored world, evaluate it before implementing a parallel system.
+
+## 17. Festival and event art
 
 The multi-day festival needs external:
 - stalls.
@@ -496,7 +522,7 @@ The multi-day festival needs external:
 
 Festival presentation must not be temporary programmer art.
 
-## 17. Selection protocol
+## 18. Selection protocol
 
 Before adopting any candidate:
 1. verify current Minecraft 26.2 / NeoForge compatibility where relevant.
