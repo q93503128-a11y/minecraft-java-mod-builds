@@ -31,9 +31,9 @@ public final class GachaPresentationScreen extends Screen {
 
     public record Pull(
             String characterId, int stars, boolean newlyOwned, int essence, int pityAfter,
-            int bonusLevelGranted, int bonusLevelAfter) {
+            int bonusLevelGranted, int bonusLevelAfter, boolean spotlight) {
         public Pull(String characterId, int stars, boolean newlyOwned, int essence, int pityAfter) {
-            this(characterId, stars, newlyOwned, essence, pityAfter, 0, 0);
+            this(characterId, stars, newlyOwned, essence, pityAfter, 0, 0, false);
         }
     }
     public record Batch(String action, int crystalSpent, List<Pull> pulls) {
@@ -50,10 +50,23 @@ public final class GachaPresentationScreen extends Screen {
     public GachaPresentationScreen(Batch batch) {
         super(Component.literal("정령의 기록"));
         this.batch = batch == null ? new Batch("", 0, List.of()) : batch;
-        List<Pull> newlyOwned = this.batch.pulls().stream().filter(Pull::newlyOwned).toList();
-        if (!newlyOwned.isEmpty()) this.revealPulls = newlyOwned;
-        else this.revealPulls = this.batch.pulls().stream()
-                .max(Comparator.comparingInt(Pull::stars)).map(List::of).orElseGet(List::of);
+        List<Pull> authored = this.batch.pulls().stream().filter(Pull::spotlight).toList();
+        if (!authored.isEmpty()) {
+            this.revealPulls = authored;
+        } else if (this.batch.pulls().isEmpty()) {
+            this.revealPulls = List.of();
+        } else {
+            // Backward-compatible fallback for an older server payload.
+            List<Pull> highlights = this.batch.pulls().stream()
+                    .filter(pull -> pull.newlyOwned() || pull.stars() >= 4)
+                    .toList();
+            if (!highlights.isEmpty()) this.revealPulls = highlights;
+            else {
+                Pull best = this.batch.pulls().getFirst();
+                for (Pull pull : this.batch.pulls()) if (pull.stars() > best.stars()) best = pull;
+                this.revealPulls = List.of(best);
+            }
+        }
     }
 
     public static Batch decode(String raw) {
@@ -70,7 +83,8 @@ public final class GachaPresentationScreen extends Screen {
                     case "P" -> pulls.add(new Pull(p[1], Integer.parseInt(p[2]), "1".equals(p[3]),
                             Integer.parseInt(p[4]), Integer.parseInt(p[5]),
                             p.length > 6 ? Integer.parseInt(p[6]) : 0,
-                            p.length > 7 ? Integer.parseInt(p[7]) : 0));
+                            p.length > 7 ? Integer.parseInt(p[7]) : 0,
+                            p.length > 8 && "1".equals(p[8])));
                     default -> { }
                 }
             } catch (RuntimeException ignored) { }
