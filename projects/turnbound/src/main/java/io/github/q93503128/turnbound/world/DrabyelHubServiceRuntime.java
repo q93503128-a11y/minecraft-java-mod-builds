@@ -21,8 +21,9 @@ import java.util.UUID;
 /**
  * Shared physical service-NPC runtime for New Drabyel.
  *
- * <p>The runtime is completely dormant until a service entry has an exact 26.2-surveyed position and yaw.
- * It never teleports the player into a service menu: the player walks to the NPC and right-clicks it.</p>
+ * <p>Static surveyed coordinates remain supported, but unpromoted services can also be placed automatically from
+ * source-backed New Drabyel anchors after the bound 26.2 world passes live collision/content checks. The runtime
+ * never edits terrain and never teleports the player into a service menu.</p>
  */
 final class DrabyelHubServiceRuntime {
     private static final String COMMON_TAG="turnbound_drabyel_service";
@@ -42,8 +43,13 @@ final class DrabyelHubServiceRuntime {
         if(lastTick==gameTime)return;
         lastTick=gameTime;
 
+        if(!hubDemanded(level)){
+            for(String locator:List.copyOf(ACTORS.keySet()))discard(level,locator);
+            return;
+        }
+
         Set<String> active=new HashSet<>();
-        for(var service:DrabyelHubServiceCatalog.productionServices()){
+        for(var service:DrabyelHubAutoPlacement.runtimeServices(level)){
             if(!DrabyelServiceActors.supports(service.visualAsset()))continue;
             active.add(service.locator());
             if(!demanded(level,service)){
@@ -63,8 +69,9 @@ final class DrabyelHubServiceRuntime {
         if(player==null||target==null)return false;
         String locator=serviceLocator(target);
         if(locator==null)return false;
-        var service=DrabyelHubServiceCatalog.service(locator);
-        if(service==null||!service.productionEnabled()||!service.verifiedIn26_2()||service.runtimePosition()==null)return false;
+        if(!(player.level() instanceof ServerLevel level))return false;
+        var service=DrabyelHubAutoPlacement.runtimeService(level,locator);
+        if(service==null||service.runtimePosition()==null)return false;
         double radius=service.interactionRadius()+1.0D;
         Vec3 pos=vec(service.runtimePosition());
         if(player.position().distanceToSqr(pos)>radius*radius)return false;
@@ -90,7 +97,8 @@ final class DrabyelHubServiceRuntime {
 
     static boolean nearFacility(ServerPlayer player,String facilityHint){
         if(player==null||facilityHint==null||facilityHint.isBlank())return false;
-        for(var service:DrabyelHubServiceCatalog.productionServices()){
+        if(!(player.level() instanceof ServerLevel level))return false;
+        for(var service:DrabyelHubAutoPlacement.runtimeServices(level)){
             if(!facilityHint.equals(service.facilityHint())||service.runtimePosition()==null)continue;
             double radius=service.interactionRadius()+1.5D;
             if(player.position().distanceToSqr(vec(service.runtimePosition()))<=radius*radius)return true;
@@ -108,15 +116,17 @@ final class DrabyelHubServiceRuntime {
 
     static DrabyelInteractionPromptRules.Prompt prompt(ServerPlayer player){
         if(player==null||BattleSessionManager.exists(player)||player.isSpectator())return DrabyelInteractionPromptRules.none();
+        if(!(player.level() instanceof ServerLevel level))return DrabyelInteractionPromptRules.none();
         return DrabyelInteractionPromptRules.nearest(
-                DrabyelHubServiceCatalog.productionServices(),
+                DrabyelHubAutoPlacement.runtimeServices(level),
                 player.getX(),player.getY(),player.getZ(),
                 DrabyelServiceActors::supports);
     }
 
-    static Set<String> availableRoles(){
+    static Set<String> availableRoles(ServerPlayer player){
+        if(player==null||!(player.level() instanceof ServerLevel level))return Set.of();
         Set<String> roles=new HashSet<>();
-        for(var service:DrabyelHubServiceCatalog.productionServices()){
+        for(var service:DrabyelHubAutoPlacement.runtimeServices(level)){
             if(DrabyelServiceActors.supports(service.visualAsset()))roles.add(service.role());
         }
         return Set.copyOf(roles);
@@ -127,6 +137,7 @@ final class DrabyelHubServiceRuntime {
             for(String locator:List.copyOf(ACTORS.keySet()))discard(boundLevel,locator);
         }
         ACTORS.clear();
+        DrabyelHubAutoPlacement.clear();
         boundLevel=null;
         lastTick=Long.MIN_VALUE;
     }
@@ -135,6 +146,18 @@ final class DrabyelHubServiceRuntime {
         if(boundLevel==level)return;
         clear();
         boundLevel=level;
+    }
+
+    private static boolean hubDemanded(ServerLevel level){
+        var hub=DrehmalWorldProfile.enabled(DrehmalWorldProfile.HUB_LOCATOR);
+        if(hub==null)return false;
+        double radiusSq=160.0D*160.0D;
+        for(ServerPlayer player:level.players()){
+            if(!ExternalWorldBootstrap.active(player)||BattleSessionManager.exists(player)||player.isSpectator())continue;
+            double dx=player.getX()-(hub.x()+0.5D),dz=player.getZ()-(hub.z()+0.5D);
+            if(dx*dx+dz*dz<=radiusSq)return true;
+        }
+        return false;
     }
 
     private static boolean demanded(ServerLevel level,DrabyelHubServiceCatalog.Service service){
