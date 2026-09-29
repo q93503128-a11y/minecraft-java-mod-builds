@@ -357,6 +357,52 @@ Validation state:
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
 
+## Summon presentation production pass — 2026-09-29
+
+The Standard Archive presentation now follows one synchronized server/client reveal timeline instead of opening directly on the result card.
+
+Implemented flow:
+- rarity pre-signal before the character identity is shown
+- short silhouette/anticipation beat using the production 3D character model
+- player-private in-world GeckoLib actor appears in front of the player
+- reveal actor starts in ready body language, then plays the character's authored victory pose
+- owner-private world particles scale by rarity and new-character status
+- rarity changes color/effect/audio intensity rather than simply making high-rarity pulls wait longer
+- name / rarity / new-vs-duplicate result is delayed until the reveal beat
+- duplicate result still reports the exact Star Essence conversion
+- 10-pull summary remains the final readable overview
+- SKIP is available from the start
+
+Highlight policy:
+- every newly owned character receives a 3D spotlight
+- every ★4/★5 pull receives a spotlight even when it is a duplicate
+- therefore a new low-rarity character can no longer hide a duplicate ★5 reveal
+- if a batch has no new character and no ★4+, its highest-rarity result receives one focus reveal
+
+Audio:
+- the existing production CC0 summon/spawn layer is used for the anticipation cue
+- P01~P08 reuse their authored hero timbre at model reveal
+- F01~F04 use the generic production skill/reveal layer
+- no new unlicensed audio asset was introduced
+
+The 3D actor, client overlay and audio consume the same pure timeline contract so the signal, appearance, pose and name beats cannot silently drift to different frame counts.
+
+Required remaining validation for this block is visual/client-side:
+- world actor framing against real New Drabyel terrain
+- silhouette readability
+- 1★/2★/3★/4★/5★ differentiation
+- 10-pull pacing when several new/high-rarity characters appear
+- skip cleanup
+- actual audio balance
+
+Until actual client observation:
+- CODE REVIEWED: YES
+- TESTED: pending branch workflow
+- BUILD VERIFIED: pending branch workflow
+- JAR PRODUCED: pending branch workflow
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+
 ## Economy
 
 Long-term core currencies:
