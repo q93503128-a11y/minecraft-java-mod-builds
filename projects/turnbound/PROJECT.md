@@ -336,6 +336,27 @@ Correction:
 
 This checkpoint requests one fresh build after the test-boundary repair.
 
+Build TURNBOUND #927 / run `36516751921` completed successfully for commit
+`6c3cdf2711f7994a1e98a6f499628eaadabdbfc8`.
+
+Verified:
+- Gradle test/build/one-click pack: PASS
+- NeoForge dedicated-server smoke: PASS — `Done (5.798s)`
+- JAR verification: PASS
+- one-click Modrinth pack verification: PASS
+- artifact upload: PASS — `turnbound-v04-workbranch`, artifact id `11011003401`
+- JAR SHA-256: `1b14b4a618d8e229845b4ba6e01a07600bb254c729a1cd610c43a0da213d7de6`
+- MRPACK SHA-256: `2cd30fad3d82508de5bce3c9b0c676414db0581be0bf0a8eebe8a9b70c60733e`
+
+Validation state:
+- CODE REVIEWED: YES
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
 ## Economy
 
 Long-term core currencies:
