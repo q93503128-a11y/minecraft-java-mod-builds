@@ -882,3 +882,47 @@ Validation:
 - CLIENT RUNTIME TESTED: NO for this gate-start build
 - PLAYTESTED: NO for this gate-start build
 - MULTIPLAYER TESTED: NO
+
+
+## Client corrective pass — dialogue / passive / navigation / tutorial materialization — 2026-09-29
+
+Client evidence from the first Drabyel-gate walkthrough established:
+- physical NPC dialogue chrome was acceptable, but the body was too shallow and silently clipped overflow
+- Home 2×3 quick-menu orbs had been reduced too far
+- Party preset footer labels disappeared because the controls were compressed below useful text width
+- Codex character browsing spent too much height on filters and exposed level information that belongs in character management
+- playable characters have a current roster contract of 3 combat skills (basic + 2 actives) plus a separate passive slot; P06 may show multiple passive entries inside that slot
+- HUD objective could request the north-road patrol while navigation had no patrol target when generic live placement failed
+- the player reached the authored patrol seed around 509/1733 without visible enemies, proving that target copy without a materialized encounter is not acceptable
+
+Implemented contract:
+- NPC dialogue uses a larger compact panel, tighter speaker/body spacing, wrapped multi-line text and mouse-wheel scrolling with a visible scroll indicator
+- Home quick-menu orbs return to readable click-target size
+- Party presets use three readable columns across two rows; co-op/apply use their own full-width action column
+- Codex character filters are Ownership / Rarity / Role only; character cards do not show level
+- Character management retains level information
+- Skill detail exposes an explicit fourth Passive selector; active skill text and passive text use the same scrollable detail surface
+- first tutorial navigation falls back to the source-backed Drabyel approach seed if the runtime site cannot be promoted, so objective text and navigation do not diverge
+- first tutorial encounter activation no longer depends on optional roam-patrol resolution
+- the Drabyel approach receives a source-seed site fallback and a locally surveyed two-enemy battle-footprint fallback when generic source-aware placement fails
+- minimap always renders a target-direction arrow near the player when a navigation target exists
+
+Build TURNBOUND #941 / run `36561739850` verified commit
+`5e9758f55a3d79f741c524092d7cdfa11fa1651d`:
+
+- Gradle test/build: PASS
+- NeoForge dedicated-server smoke: PASS
+- built JAR verification: PASS
+- one-click Modrinth pack verification: PASS
+- artifact upload: PASS — artifact id `11030790900`
+- JAR SHA-256: `f929e78ee00a6868cd33a10cf4dec1f265e46609a3b4c40fb2e6139e5d7dff19`
+- MRPACK SHA-256: `130de852e957484482e512ce5b096898b1383dbc60ce1a68e216d2b37c3f86d6`
+
+Validation:
+- CODE REVIEWED: YES
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- CLIENT RUNTIME TESTED: NO for the #941 repair
+- PLAYTESTED: NO for the #941 repair
+- MULTIPLAYER TESTED: NO

@@ -470,3 +470,14 @@ compile이 UI 완료가 아니다.
 - camera/HUD collision
 - minimap density
 - controller/keyboard/mouse 입력
+
+
+### Client readability corrections — 2026-09-29
+
+- Physical NPC dialogue keeps the Foozle-styled world-preserving panel, but must support multi-line wrapping and wheel scrolling instead of clipping long dialogue.
+- Speaker heading/divider spacing is compact; usable dialogue body space takes priority over decorative empty space.
+- Home quick-menu click targets must remain comfortably readable even when the outer management panel is compact.
+- Party preset controls must never become unlabeled iconless bars. Use readable 3-column load/save rows rather than six ultra-narrow buttons.
+- Codex character cards are discovery/reference cards: show name, ownership, rarity/awakening and role; do not show level.
+- Character management may show level because it is a progression surface.
+- Current playable-character detail presents four conceptual combat slots: basic attack, active 1, active 2, passive. A passive slot may contain multiple authored passive effects.

@@ -734,3 +734,17 @@ Midboss/Boss:
 가 연결되어야 완료다.
 
 “몹 spawn 좌표가 있다”는 완료가 아니다.
+
+
+### Drabyel opening materialization reliability — 2026-09-29
+
+The first north-gate tutorial may not fail closed into an impossible objective.
+
+For `CV_DRABYEL_ROAD`:
+- objective navigation uses the promoted live site when available
+- if generic strict-site promotion fails, navigation may use the same pinned source-backed approach seed as a target
+- runtime placement has a dedicated safe-standing site fallback around that seed
+- battle footprint resolution first uses authored arena seeds, then locally surveys open positions around the resolved tutorial site
+- encounter activation does not depend on optional ROAM patrol-path promotion
+- footprint enemy slots match the current 2-enemy CV-B + CV-C composition
+- the encounter is incomplete if the player can stand at the target seed and no visible field actors exist
