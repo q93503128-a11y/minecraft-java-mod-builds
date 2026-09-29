@@ -1,6 +1,8 @@
 package dev.moonseungjun.openworldrpg.combat.authority;
 
+import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import java.util.Objects;
+import java.util.Optional;
 
 public record ProjectSpellSpec(
         String id,
@@ -10,6 +12,10 @@ public record ProjectSpellSpec(
         double poiseCoefficient,
         int reentryWindowTicks
 ) {
+    public static final String ARC_BOLT_ID = "openworld_rpg:arc_bolt";
+    public static final String MEND_ID = "openworld_rpg:mend";
+    public static final double MEND_HEAL_COEFFICIENT = 0.30;
+
     public ProjectSpellSpec {
         Objects.requireNonNull(id, "id");
         if (!id.startsWith("openworld_rpg:")) {
@@ -26,12 +32,32 @@ public record ProjectSpellSpec(
 
     public static ProjectSpellSpec arcBolt() {
         return new ProjectSpellSpec(
-                "openworld_rpg:arc_bolt",
+                ARC_BOLT_ID,
                 12.0,
                 60,
                 1.20,
                 0.50,
                 1
         );
+    }
+
+    public static ProjectSpellSpec mend() {
+        return new ProjectSpellSpec(
+                MEND_ID,
+                22.0,
+                160,
+                0.0,
+                0.0,
+                1
+        );
+    }
+
+    public static Optional<RootClass> requiredRootClass(String spellId) {
+        Objects.requireNonNull(spellId, "spellId");
+        return switch (spellId) {
+            case ARC_BOLT_ID -> Optional.of(RootClass.MAGE);
+            case MEND_ID -> Optional.of(RootClass.CLERIC);
+            default -> Optional.empty();
+        };
     }
 }

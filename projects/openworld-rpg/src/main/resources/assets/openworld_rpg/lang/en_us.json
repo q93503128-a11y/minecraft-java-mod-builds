@@ -1,4 +1,6 @@
 {
   "spell.openworld_rpg.arc_bolt.name": "Arc Bolt",
-  "spell.openworld_rpg.arc_bolt.description": "Launches a focused arcane bolt at the aimed enemy."
+  "spell.openworld_rpg.arc_bolt.description": "Launches a focused arcane bolt at the aimed enemy.",
+  "spell.openworld_rpg.mend.name": "Mend",
+  "spell.openworld_rpg.mend.description": "Restores health to the aimed ally or yourself."
 }

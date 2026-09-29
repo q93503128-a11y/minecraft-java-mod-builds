@@ -1,0 +1,75 @@
+{
+  "school": "spell_power:healing",
+  "range": 12.0,
+  "tier": 1,
+  "group": "cleric_holy",
+  "active": {
+    "cast": {
+      "duration": 0.45,
+      "animation": { "id": "spell_engine:one_handed_healing_charge" },
+      "sound": { "id": "spell_engine:generic_healing_casting", "randomness": 0.0 },
+      "particles": [
+        {
+          "id": "spell_engine:magic_spark",
+          "appearance": { "color": 4294954239, "motion": "FLOAT" },
+          "batch": {
+            "count": 1.0,
+            "shape": "PIPE",
+            "anchor": "ENTITY",
+            "vertical_origin": 0.1,
+            "min_speed": 0.05,
+            "max_speed": 0.1,
+            "width_factor": 2.0
+          }
+        }
+      ]
+    }
+  },
+  "release": {
+    "animation": { "id": "spell_engine:one_handed_healing_release" },
+    "sound": { "id": "spell_engine:generic_healing_release", "randomness": 0.0 }
+  },
+  "target": {
+    "type": "AIM",
+    "aim": { "sticky": true, "use_caster_as_fallback": true }
+  },
+  "deliver": { "type": "DIRECT" },
+  "impacts": [
+    {
+      "action": {
+        "type": "CUSTOM",
+        "custom": {
+          "intent": "HELPFUL",
+          "handler": "openworld_rpg:project_impact"
+        }
+      },
+      "visuals": {
+        "particles": [
+          {
+            "id": "spell_engine:magic_heal",
+            "appearance": { "color": 1728014079, "motion": "ASCEND" },
+            "batch": {
+              "count": 20.0,
+              "shape": "PILLAR",
+              "anchor": "ENTITY",
+              "vertical_origin": 0.1,
+              "min_speed": 0.02,
+              "max_speed": 0.15
+            }
+          }
+        ]
+      },
+      "sound": { "id": "spell_engine:generic_healing_impact_1" }
+    }
+  ],
+  "cost": {
+    "batching": false,
+    "exhaust": 0.0,
+    "durability": 0,
+    "cooldown": {
+      "attempt_duration": 0.0,
+      "duration": 0.0,
+      "hosting_item": false
+    }
+  }
+}

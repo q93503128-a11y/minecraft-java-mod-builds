@@ -4,9 +4,11 @@ import dev.moonseungjun.openworldrpg.OpenworldRpgMod;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellSpec;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellTransactionPolicy;
 import dev.moonseungjun.openworldrpg.combat.authority.SpellCastAuthority;
+import dev.moonseungjun.openworldrpg.combat.runtime.ProjectHealingRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatStateStore;
+import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionService;
 import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
@@ -19,6 +21,7 @@ import java.lang.reflect.Proxy;
 import java.util.Map;
 import java.util.Optional;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -173,6 +176,16 @@ public final class SpellEngineAuthorityAdapter {
                         ProjectSpellTransactionPolicy.SpellImpactPort.directMagic()
                 )
         );
+
+        ProjectSpellSpec mend = ProjectSpellSpec.mend();
+        AUTHORITY.registerPolicy(
+                mend.id(),
+                new ProjectSpellTransactionPolicy(
+                        mend,
+                        COMBAT_STATES,
+                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                )
+        );
         canonicalPoliciesRegistered = true;
     }
 
@@ -198,7 +211,9 @@ public final class SpellEngineAuthorityAdapter {
 
         Object spellEntry = invokeAccessor(eventArgs, "spell");
         String spellId = spellId(spellEntry);
-        if (AUTHORITY.owns(spellId) && !readDonorCostContract(spellEntry).isNeutralForProjectAuthority()) {
+        if (AUTHORITY.owns(spellId)
+                && (!readDonorCostContract(spellEntry).isNeutralForProjectAuthority()
+                || !isClassAuthorizedForSpell(player, spellId))) {
             return invokeStatic(attemptNone);
         }
 
@@ -212,6 +227,14 @@ public final class SpellEngineAuthorityAdapter {
             case PASS_THROUGH, ALLOW -> null;
             case BLOCK -> invokeStatic(attemptNone);
         };
+    }
+
+    private static boolean isClassAuthorizedForSpell(Player player, String spellId) {
+        Optional<RootClass> requiredClass = ProjectSpellSpec.requiredRootClass(spellId);
+        if (requiredClass.isEmpty()) {
+            return false;
+        }
+        return PlayerProgressionService.state(player).activeClass().equals(requiredClass);
     }
 
     private static boolean isEngineContinuation(Player player, String spellId)
@@ -405,8 +428,22 @@ public final class SpellEngineAuthorityAdapter {
         }
 
         String spellId = spellId(spellEntry);
-        if (!AUTHORITY.owns(spellId)) {
+        if (!AUTHORITY.owns(spellId) || !isClassAuthorizedForSpell(player, spellId)) {
             return impactResultConstructor.newInstance(false, false);
+        }
+
+        if (ProjectSpellSpec.MEND_ID.equals(spellId)) {
+            if (!(player instanceof ServerPlayer serverCaster)
+                    || !(target instanceof ServerPlayer serverTarget)
+                    || serverTarget.level() != serverCaster.level()) {
+                return impactResultConstructor.newInstance(false, false);
+            }
+            var healing = ProjectHealingRuntime.applySkillHeal(
+                    serverCaster,
+                    serverTarget,
+                    ProjectSpellSpec.MEND_HEAL_COEFFICIENT
+            );
+            return impactResultConstructor.newInstance(healing.accepted(), false);
         }
 
         Object powerValue = invokeAccessor(spellPower, "baseValue");
@@ -427,7 +464,7 @@ public final class SpellEngineAuthorityAdapter {
         var build = CombatStateServices.combatBuilds()
                 .build(player.getUUID())
                 .orElse(null);
-        if (build == null || build.activeClass() != RootClass.MAGE) {
+        if (build == null) {
             return impactResultConstructor.newInstance(false, false);
         }
         var sourceSnapshot = build.damageSource(ProjectImpactTransaction.DamageSchool.MAGIC);
