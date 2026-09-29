@@ -202,7 +202,7 @@ final class DrehmalAdaptiveRoutePlacement {
         return max-min<=2;
     }
 
-    private static boolean sourceContentClear(ServerLevel level,int x,int y,int z,double horizontalRadius){
+    static boolean sourceContentClear(ServerLevel level,int x,int y,int z,double horizontalRadius){
         BlockPos feet=new BlockPos(x,y,z);
         int radius=Math.max(1,(int)Math.ceil(horizontalRadius));
         for(int dx=-radius;dx<=radius;dx++)for(int dz=-radius;dz<=radius;dz++){
