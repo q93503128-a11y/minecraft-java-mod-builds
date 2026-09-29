@@ -24,6 +24,18 @@ class DrehmalRoutePlacementRulesTest {
     }
 
     @Test
+    void corridorDistanceUsesSegmentsNotOnlySparseWaypoints() {
+        var zone = new DrehmalMapPlacementCatalog.Zone(
+                "test", "test", "ROAD",
+                java.util.List.of(
+                        new DrehmalMapPlacementCatalog.Seed(0, 0),
+                        new DrehmalMapPlacementCatalog.Seed(0, 20)));
+
+        assertEquals(4.5D, DrehmalAdaptiveRoutePlacement.corridorDistance(zone, 5.0D, 10.5D), 0.0001D);
+        assertEquals(0.0D, DrehmalAdaptiveRoutePlacement.corridorDistance(zone, 0.5D, 10.5D), 0.0001D);
+    }
+
+    @Test
     void landmarkSitesKeepSeedDistanceOnly() {
         assertFalse(DrehmalRoutePlacementRules.roadAware("BREATHING_ZONE"));
         assertEquals(9.0D, DrehmalRoutePlacementRules.score("BREATHING_ZONE", 9.0D, 99.0D));
