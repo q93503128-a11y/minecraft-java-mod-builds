@@ -2,8 +2,7 @@ package io.github.q93503128.turnbound.world;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.npc.Villager;
-import net.minecraft.world.entity.npc.WanderingTrader;
+import net.minecraft.world.entity.npc.villager.AbstractVillager;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 
@@ -194,8 +193,7 @@ final class DrabyelHubAutoPlacement {
         AABB crowd = new AABB(
                 x - 2.25D, y - 1.0D, z - 2.25D,
                 x + 3.25D, y + 3.0D, z + 3.25D);
-        if (!level.getEntitiesOfClass(Villager.class, crowd).isEmpty()) return false;
-        if (!level.getEntitiesOfClass(WanderingTrader.class, crowd).isEmpty()) return false;
+        if (!level.getEntitiesOfClass(AbstractVillager.class, crowd).isEmpty()) return false;
         return true;
     }
 
