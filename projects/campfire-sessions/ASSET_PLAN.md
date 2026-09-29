@@ -486,6 +486,58 @@ Selection rule:
 - do not build a custom photo renderer/storage system unless both practical external options fail.
 - do not install both merely for feature count.
 
+### First-run character / appearance candidates
+The desired UX is a **Campfire-specific first-time character creator**, not a raw mod editor.
+
+Target flow:
+display name
+→ curated base appearance
+→ hair/face/skin options supported by the chosen external appearance backend
+→ starter outfit
+→ birthday/profile confirmation
+→ island arrival.
+
+Candidate backends / references:
+
+**Customizable Player Models (CPM)**
+- current Minecraft 26.2 NeoForge release exists.
+- client + server.
+- MIT licensed.
+- source is published.
+- strong candidate for player-model/avatar rendering and preset model support.
+- its full editor is more technical than the desired Campfire first-run UX, so do not expose the raw editor as the default onboarding screen.
+- evaluate whether curated predefined models/layers can be selected by Campfire while CPM handles rendering/sync.
+- must be tested with Player Animation Library, cosmetic armor/clothing and guitar/fishing/photo animations.
+
+**NCL Skins**
+- current Minecraft 26.2 NeoForge release exists.
+- client + server.
+- GPLv3.
+- supports saved complete looks, preview/editor flow, skin/model/cape/outer-layer combinations and look switching.
+- useful reference/candidate for wardrobe/look management after onboarding.
+- do not copy GPL code into Campfire without deliberately accepting the resulting licensing obligations; using it as a separate dependency is a different integration decision.
+
+**Avatar Editor (A)**
+- current Minecraft 26.2 NeoForge support exists.
+- client + server.
+- provides in-game wardrobe/skin creation and live switching.
+- ARR licensed, so treat as a dependency/reference only; do not copy its code/assets.
+- powerful editor, but likely too editor-heavy for the simple first-arrival experience unless wrapped/limited.
+
+**Simple Nicknames**
+- current Minecraft 26.2 NeoForge release exists.
+- client + server.
+- generic configurable nickname system.
+- ARR licensed.
+- useful compatibility/reference candidate for rendered display names, but Campfire should own the actual player display-name field in PlayerProfile so resident dialogue, mail, museum records and permissions remain game-state aware.
+
+Preferred direction:
+- Campfire owns the first-run UX and server-authoritative profile/display-name data.
+- external appearance systems provide high-quality model/skin/look rendering where they fit.
+- use curated presets/layers rather than asking ordinary players to pixel-edit a Minecraft skin before they can play.
+- retain later wardrobe/mirror access for appearance changes.
+- do not add multiple overlapping skin/model mods unless each has a clearly separate role.
+
 ### Player animation candidate
 **Player Animation Library by ZigyTheBird**
 - Minecraft 26.2 release 1.2.6 supports both Fabric and NeoForge in one merged JAR.
