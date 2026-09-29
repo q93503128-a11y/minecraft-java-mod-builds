@@ -79,6 +79,11 @@ public final class DrehmalFirstRouteCatalog {
         }
     }
 
+    /**
+     * Encounter binding. {@code fieldVisibleCount} is retained in schema v1 for compatibility, but the production
+     * field contract is one authoritative representative entity per encounter. Battle composition remains entirely
+     * owned by the combat encounter and may expand to multiple enemies after contact.
+     */
     public record EncounterSlot(
             String locator,
             String siteLocator,
@@ -91,7 +96,7 @@ public final class DrehmalFirstRouteCatalog {
             boolean verifiedIn26_2,
             boolean productionEnabled
     ) {
-        /** Compatibility constructor: one field representative was the historical implicit default. */
+        /** Compatibility constructor: one field representative is the canonical default. */
         public EncounterSlot(String locator, String siteLocator, String tier, String footprintLocator,
                              String patrolLocator, String combatEncounterId, String playerLabel,
                              boolean verifiedIn26_2, boolean productionEnabled) {
@@ -258,8 +263,8 @@ public final class DrehmalFirstRouteCatalog {
                 errors.add("encounter references unknown patrol " + encounter.locator());
             }
             if (encounter.playerLabel().isBlank()) errors.add("blank encounter label " + encounter.locator());
-            if (encounter.fieldVisibleCount() < 1 || encounter.fieldVisibleCount() > 3) {
-                errors.add("invalid field visible count " + encounter.locator());
+            if (encounter.fieldVisibleCount() != 1) {
+                errors.add("field encounter must use exactly one representative " + encounter.locator());
             }
             if (encounter.productionEnabled() && encounter.combatEncounterId().isBlank()) {
                 errors.add("production encounter has no combat binding " + encounter.locator());
