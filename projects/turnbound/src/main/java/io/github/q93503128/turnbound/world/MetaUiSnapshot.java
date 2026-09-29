@@ -40,7 +40,15 @@ public record MetaUiSnapshot(
     public record CharacterRow(
             String id, String name, boolean owned, int nativeStar, int level, int bonusLevel, int star, boolean awakened,
             int cp, boolean active, String role, String primaryRole, String difficulty, boolean profileUnlocked,
-            int hp, int attack, int defense, int speed) {}
+            int hp, int attack, int defense, int speed) {
+        public CharacterRow(
+                String id, String name, boolean owned, int nativeStar, int level, int star, boolean awakened,
+                int cp, boolean active, String role, String primaryRole, String difficulty, boolean profileUnlocked,
+                int hp, int attack, int defense, int speed) {
+            this(id, name, owned, nativeStar, level, 0, star, awakened, cp, active,
+                    role, primaryRole, difficulty, profileUnlocked, hp, attack, defense, speed);
+        }
+    }
 
     public record EquipmentRow(
             String instanceId, String itemId, String name, String tier, String slot, int enhancement,
