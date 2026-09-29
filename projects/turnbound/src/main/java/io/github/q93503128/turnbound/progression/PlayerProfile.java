@@ -10,7 +10,13 @@ public final class PlayerProfile {
     public static final int PARTY_PRESET_COUNT = 3;
     public enum Currency { GOLD, SUMMON_CRYSTAL, STAR_ESSENCE, AWAKENING_CORE }
     public record Acquisition(String characterId, int nativeStars, boolean newlyOwned, int starEssenceGranted) {}
-    public record SummonHistory(String characterId, int nativeStars, boolean newlyOwned, int starEssenceGranted, int pityAfter) {}
+    public record SummonHistory(
+            String characterId, int nativeStars, boolean newlyOwned, int starEssenceGranted, int pityAfter,
+            int bonusLevelGranted, int bonusLevelAfter) {
+        public SummonHistory(String characterId, int nativeStars, boolean newlyOwned, int starEssenceGranted, int pityAfter) {
+            this(characterId, nativeStars, newlyOwned, starEssenceGranted, pityAfter, 0, 0);
+        }
+    }
 
     public record Snapshot(
             long gold, long summonCrystal, long starEssence, long awakeningCore,
@@ -88,6 +94,22 @@ public final class PlayerProfile {
     void recordSummonHistory(Acquisition acquisition) {
         summonHistory.add(new SummonHistory(acquisition.characterId(), acquisition.nativeStars(), acquisition.newlyOwned(), acquisition.starEssenceGranted(), fiveStarPity));
         while (summonHistory.size() > GachaCatalog.HISTORY_LIMIT) summonHistory.removeFirst();
+    }
+
+    public void annotateRecentSummonBonuses(List<GachaService.PullResult> pulls) {
+        if (pulls == null || pulls.isEmpty()) return;
+        int start = summonHistory.size() - pulls.size();
+        if (start < 0) throw new IllegalStateException("Summon history is shorter than the resolved batch");
+        for (int i = 0; i < pulls.size(); i++) {
+            GachaService.PullResult pull = pulls.get(i);
+            SummonHistory old = summonHistory.get(start + i);
+            if (!old.characterId().equals(pull.characterId())) {
+                throw new IllegalStateException("Summon history/result order mismatch");
+            }
+            summonHistory.set(start + i, new SummonHistory(
+                    old.characterId(), old.nativeStars(), old.newlyOwned(), old.starEssenceGranted(), old.pityAfter(),
+                    pull.bonusLevelGranted(), pull.bonusLevelAfter()));
+        }
     }
 
     public List<List<String>> partyPresets() { return List.copyOf(partyPresets); }
