@@ -12,6 +12,10 @@ final class DrabyelOpeningTutorial {
 
     private DrabyelOpeningTutorial() {}
 
+    static boolean shouldTargetGreeter(Set<String> flags) {
+        return flags != null && !flags.contains(GREETER_FLAG);
+    }
+
     static boolean introReady(Set<String> flags) {
         return flags != null
                 && flags.contains(GREETER_FLAG)

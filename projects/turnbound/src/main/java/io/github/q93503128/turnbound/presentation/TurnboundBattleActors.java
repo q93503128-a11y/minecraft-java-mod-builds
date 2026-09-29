@@ -272,7 +272,7 @@ public final class TurnboundBattleActors {
                     var model = new DefaultedEntityGeoModel<BattleActorEntity>(modelRoot(id))
                             .withAltAnimations(animationRoot(id)).withAltTexture(textureRoot(id));
                     if ("CV_B".equals(id) || "CV_C".equals(id)) {
-                        return new BattleActorHeldItemRenderer(context, model, renderScale(id));
+                        return new BattleActorHeldItemRenderer<>(context, model, renderScale(id));
                     }
                     return new GeoEntityRenderer<>(context, model).withScale(renderScale(id));
                 });

@@ -137,6 +137,14 @@ final class DrabyelHubServiceRuntime {
                 DrabyelServiceActors::supports);
     }
 
+    static DrabyelHubServiceCatalog.Service serviceByRole(ServerPlayer player,String role){
+        if(player==null||role==null||role.isBlank()||!(player.level() instanceof ServerLevel level))return null;
+        for(var service:DrabyelHubAutoPlacement.runtimeServices(level)){
+            if(role.equals(service.role())&&service.runtimePosition()!=null)return service;
+        }
+        return null;
+    }
+
     static Set<String> availableRoles(ServerPlayer player){
         if(player==null||!nearHub(player,160.0D)||!(player.level() instanceof ServerLevel level))return Set.of();
         Set<String> roles=new HashSet<>();

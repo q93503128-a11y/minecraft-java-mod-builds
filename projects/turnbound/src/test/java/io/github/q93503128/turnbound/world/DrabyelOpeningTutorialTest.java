@@ -8,6 +8,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class DrabyelOpeningTutorialTest {
     @Test
+    void greeterIsTheOnlyPositionalTargetBeforeFirstConversation() {
+        assertTrue(DrabyelOpeningTutorial.shouldTargetGreeter(Set.of()));
+        assertFalse(DrabyelOpeningTutorial.shouldTargetGreeter(
+                Set.of(DrabyelOpeningTutorial.GREETER_FLAG)));
+    }
+
+    @Test
     void patrolStartsOnlyAfterGreeterAndPartyCheck() {
         assertFalse(DrabyelOpeningTutorial.shouldSendOut(Set.of(), Set.of()));
         assertFalse(DrabyelOpeningTutorial.shouldSendOut(

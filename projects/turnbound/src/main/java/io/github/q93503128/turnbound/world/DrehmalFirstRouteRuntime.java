@@ -140,6 +140,19 @@ public final class DrehmalFirstRouteRuntime {
         boolean inHub = insideHub(player);
 
         if (hubReached) {
+            if (DrabyelOpeningTutorial.shouldTargetGreeter(flags)) {
+                var greeter=DrabyelHubServiceRuntime.serviceByRole(player,"GREETER");
+                if(greeter!=null&&greeter.runtimePosition()!=null){
+                    var pos=greeter.runtimePosition();
+                    return new FieldUiSnapshot.Navigation(
+                            greeter.locator(),greeter.playerLabel(),pos.x()+0.5D,pos.z()+0.5D);
+                }
+                var hub=DrehmalWorldProfile.enabled(DrehmalWorldProfile.HUB_LOCATOR);
+                if(hub!=null){
+                    return new FieldUiSnapshot.Navigation(
+                            hub.locator(),"마을 입구 안내",hub.x()+0.5D,hub.z()+0.5D);
+                }
+            }
             if (DrabyelOpeningTutorial.shouldSendOut(flags, clears)) {
                 return openingPatrolNavigation(player);
             }
