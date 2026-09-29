@@ -108,6 +108,27 @@ Confirmed Standard Archive baseline restored on 2026-09-26:
 
 Do not revert this table to a ★3~★5-only pool without a new explicit user decision.
 
+## Duplicate +Level canon — 2026-09-29
+
+Latest explicit user decision:
+- a duplicate character keeps its existing rarity-based Star Essence reward
+- the same duplicate also grants that character **+Level +1**
+- +Level is independent from battle/quest XP and the base Lv60 cap
+- +Level caps at +10
+- effective combat level = base XP level + duplicate +Level
+- therefore the maximum effective level is Lv70
+- a duplicate after +10 still grants Star Essence but no additional +Level
+- +Level extends HP/ATK/DEF through the existing level curve; SPD does not scale
+- Lv60 gates for Awakening/Signature progression continue to refer to the base XP level, so a lower base level cannot bypass them with duplicates
+- this system does not decide the still-unresolved nativeStar/currentStar/promotion/★6/Awakening relationship
+
+Star Essence permanent exchange is part of the same collection loop:
+- 150 Essence → 300 Crystal
+- 450 Essence → eligible ★4 selector
+- 1,200 Essence → eligible ★5 selector
+- current selector UI is spoiler-safe and shows owned matching-rarity characters until an explicit story-exposure flag exists
+- selector copies use the same duplicate reward path: Essence refund + +Level where below +10
+
 ## Canon reconciliation status — 2026-09-29
 
 The independent TURNBOUND canon/regression audit has been reviewed against the current workbranch.
