@@ -193,6 +193,9 @@ Final selection requires:
 
 Furniture should be interactive only when the interaction improves life-sim play.
 
+Furniture candidates should be evaluated for stable rotation/orientation support.
+Prefer reusing a mod's proven placement/rotation behavior when it correctly rotates collision, seats and interaction anchors instead of rebuilding a second transform system.
+
 ## 8. Cooking / crops
 
 Leading candidates:
@@ -255,6 +258,10 @@ Animation should support:
 - sleep.
 
 GeckoLib remains a likely animation foundation where technically appropriate.
+
+Resident animation is a high-priority presentation requirement, not optional polish.
+The selected resident visual base should support enough rig/bone control for expressive lifestyle actions such as talk, sit, eat, fish, garden, clap, dance and play music.
+Prefer acquiring/using existing animation sets where compatible, then author only the missing project-specific actions.
 
 ## 11. Tools
 
@@ -429,6 +436,33 @@ Selection rule:
 - prefer the option with cleaner runtime behavior, multiplayer sync, save behavior, UI fit and acceptable licensing.
 - do not build a custom photo renderer/storage system unless both practical external options fail.
 - do not install both merely for feature count.
+
+### Player animation candidate
+**Player Animation Library by ZigyTheBird**
+- Minecraft 26.2 release 1.2.6 supports both Fabric and NeoForge in one merged JAR.
+- NeoForge integration is explicitly supported.
+- client + server.
+- MIT licensed.
+- designed as a library for mods to animate players without conflicting animation stacks.
+- supports animation data from Blender/Blockbench JSON, including GeckoLib and Bedrock-style formats.
+- supports custom pivot points/bones and layered animation behavior.
+- strong leading candidate for replacing the current guitar arm-only presentation with full-body guitar performance and for selected player lifestyle animations.
+- final adoption requires direct compatibility testing against Campfire Sessions, NeoForge 26.2.0.87 and the final player-model/clothing stack.
+
+Current guitar limitation:
+- Campfire's existing GuitarArmPoseParams only transforms the two humanoid arms.
+- CampfireClientSetup currently applies that pose only when the rendered entity is the local Minecraft player and local music playback is active.
+- the guitar remains rendered as a hand-held item transform, which explains why the current presentation can still look like one-handed holding rather than a body-mounted performance.
+- this is an implementation prototype, not the target final animation.
+
+Target guitar animation:
+- full-body keyframed stance.
+- left/fretting hand aligned to the neck.
+- right/strumming hand aligned to the strings.
+- torso/head motion.
+- standing and seated performance variants where feasible.
+- synchronized remote-player state in multiplayer.
+- instrument render transform/attachment aligned to the animation rather than relying only on vanilla hand attachment.
 
 ### Other candidate systems
 Potential roles:
