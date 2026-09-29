@@ -3,6 +3,7 @@ package io.github.q93503128.turnbound.client;
 import io.github.q93503128.turnbound.content.CanonicalData;
 import io.github.q93503128.turnbound.network.MetaCommandPayload;
 import io.github.q93503128.turnbound.progression.GachaCatalog;
+import io.github.q93503128.turnbound.world.GachaPresentationTimeline;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
@@ -36,7 +37,8 @@ public final class GachaPresentationScreen extends Screen {
     private final Batch batch;
     private final List<Pull> revealPulls;
     private int ticks;
-    private boolean audioQueued;
+    private int lastAudioRevealIndex = -1;
+    private GachaPresentationTimeline.Phase lastAudioPhase;
     private boolean finishing;
 
     public GachaPresentationScreen(Batch batch) {
@@ -73,23 +75,18 @@ public final class GachaPresentationScreen extends Screen {
         super.init();
         addRenderableWidget(new BattleHudButton(width - 98, 16, 80, 22,
                 Component.literal("건너뛰기"), MUTED, ignored -> finish()));
-        if (!audioQueued) {
-            audioQueued = true;
-            int priority = batch.pulls().stream().anyMatch(p -> p.stars() >= 5) ? 3 : 2;
-            ClientAudioDirector.acceptBatch("spawn|SYSTEM|" + priority + "||||0");
-        }
     }
 
     @Override
     public void tick() {
         super.tick();
         ticks++;
+        queuePhaseAudio();
         if (ticks >= totalDurationTicks()) finish();
     }
 
     private int totalDurationTicks() {
-        int reveal = Math.max(1, revealPulls.size()) * 30;
-        return reveal + (batch.pulls().size() <= 1 ? 38 : 86);
+        return GachaPresentationTimeline.totalTicks(revealPulls.size(), batch.pulls().size());
     }
 
     private void finish() {
@@ -108,7 +105,7 @@ public final class GachaPresentationScreen extends Screen {
                 18, 34, SECONDARY, false);
 
         Pull focus = currentReveal();
-        if (focus != null) drawWorldRevealOverlay(graphics, focus);
+        if (focus != null) drawWorldRevealOverlay(graphics, focus, currentPhase());
         else if (batch.pulls().size() <= 1) drawSingleSummary(graphics);
         else drawTenSummary(graphics);
 
@@ -117,34 +114,115 @@ public final class GachaPresentationScreen extends Screen {
 
     private Pull currentReveal() {
         if (revealPulls.isEmpty()) return null;
-        int index = ticks / 30;
+        int index = revealIndex();
         return index >= 0 && index < revealPulls.size() ? revealPulls.get(index) : null;
     }
 
-    private void drawWorldRevealOverlay(GuiGraphicsExtractor graphics, Pull pull) {
+    private int revealIndex() {
+        return ticks / GachaPresentationTimeline.SLOT_TICKS;
+    }
+
+    private int slotTick() {
+        return ticks % GachaPresentationTimeline.SLOT_TICKS;
+    }
+
+    private GachaPresentationTimeline.Phase currentPhase() {
+        return GachaPresentationTimeline.phase(slotTick());
+    }
+
+    private void drawWorldRevealOverlay(
+            GuiGraphicsExtractor graphics, Pull pull, GachaPresentationTimeline.Phase phase) {
+        int accent = starColor(pull.stars());
+        int intensity = GachaPresentationTimeline.intensity(pull.stars());
+        drawRaritySignal(graphics, accent, intensity, phase);
+
+        int modelSize = Math.min(230, Math.max(132, Math.min(width / 3, height / 2)));
+        int modelCx = width / 2;
+        int modelTop = Math.max(28, height / 2 - modelSize / 2 - 30);
+
+        if (phase == GachaPresentationTimeline.Phase.SILHOUETTE) {
+            TurnboundPortraitRenderer.extractSilhouette(
+                    graphics, pull.characterId(),
+                    modelCx - modelSize / 2, modelTop,
+                    modelCx + modelSize / 2, modelTop + modelSize);
+            return;
+        }
+
+        if (phase == GachaPresentationTimeline.Phase.REVEAL || phase == GachaPresentationTimeline.Phase.NAME) {
+            TurnboundPortraitRenderer.extractBust(
+                    graphics, pull.characterId(),
+                    modelCx - modelSize / 2, modelTop,
+                    modelCx + modelSize / 2, modelTop + modelSize,
+                    false);
+        }
+
+        if (phase != GachaPresentationTimeline.Phase.NAME) return;
+
         int w = Math.min(410, width - 44);
         int h = 76;
         int x = (width - w) / 2;
-        int y = Math.max(62, height - h - 34);
-        int accent = starColor(pull.stars());
-
-        // The reveal is an actual production GeckoLib actor rendered live in 3D. Keep it unmistakably visible
-        // even when the world-space reveal actor is partly hidden by terrain or the player's previous camera angle.
-        int modelSize=Math.min(220,Math.max(138,Math.min(width/4,height/3)));
-        int modelCx=width/2;
-        int modelTop=Math.max(24,height/2-modelSize/2-34);
-        TurnboundPortraitRenderer.extractBust(
-                graphics,pull.characterId(),
-                modelCx-modelSize/2,modelTop,
-                modelCx+modelSize/2,modelTop+modelSize,
-                false);
-
+        int y = Math.max(62, height - h - 28);
         TurnboundFrameStyle.frame(graphics, x, y, w, h, accent);
         graphics.text(font, Component.literal(stars(pull.stars())), x + 18, y + 15, accent, true);
         graphics.text(font, Component.literal(name(pull.characterId())), x + 18, y + 35, TEXT, true);
         String result = pull.newlyOwned() ? "새로운 동료" : "별의 정수 +" + pull.essence();
         graphics.text(font, Component.literal(result), x + 18, y + 54, pull.newlyOwned() ? GREEN : PURPLE, false);
         if (pull.stars() >= 5) graphics.text(font, Component.literal("★5"), x + w - 48, y + 15, GOLD, true);
+    }
+
+    private void drawRaritySignal(
+            GuiGraphicsExtractor graphics, int accent, int intensity, GachaPresentationTimeline.Phase phase) {
+        int thickness = 2 + Math.max(0, intensity);
+        int alpha = phase == GachaPresentationTimeline.Phase.SIGNAL ? 0xAA : 0x76;
+        int signal = withAlpha(accent, alpha);
+        graphics.fill(0, 0, width, thickness, signal);
+        graphics.fill(0, height - thickness, width, height, signal);
+
+        int inset = 12 + intensity * 7;
+        graphics.fill(inset, 10 + intensity * 2, Math.max(inset + 1, width - inset), 12 + intensity * 2, signal);
+        if (phase == GachaPresentationTimeline.Phase.SIGNAL) {
+            String cue = intensity >= 4 ? "강한 공명이 느껴집니다"
+                    : intensity >= 3 ? "선명한 공명이 이어집니다"
+                    : "정령의 기록이 반응합니다";
+            int tx = (width - font.width(cue)) / 2;
+            graphics.text(font, Component.literal(cue), tx, Math.max(46, height / 2 - 10), accent, true);
+        }
+    }
+
+    private void queuePhaseAudio() {
+        Pull pull = currentReveal();
+        if (pull == null) return;
+        int index = revealIndex();
+        GachaPresentationTimeline.Phase phase = currentPhase();
+        if (index == lastAudioRevealIndex && phase == lastAudioPhase) return;
+        lastAudioRevealIndex = index;
+        lastAudioPhase = phase;
+
+        int priority = pull.stars() >= 5 ? 3 : pull.stars() >= 4 ? 2 : 1;
+        if (phase == GachaPresentationTimeline.Phase.SIGNAL) {
+            ClientAudioDirector.acceptBatch("spawn|SYSTEM|" + priority + "||||" + pull.stars());
+        } else if (phase == GachaPresentationTimeline.Phase.REVEAL) {
+            ClientAudioDirector.acceptBatch(revealCue(pull) + "|SKILL|" + priority
+                    + "|" + pull.characterId() + "||summon|" + pull.stars());
+        }
+    }
+
+    private static String revealCue(Pull pull) {
+        return switch (pull.characterId()) {
+            case "P01" -> "hero_kyren";
+            case "P02" -> "hero_lumea";
+            case "P03" -> "hero_bram";
+            case "P04" -> "hero_elysia";
+            case "P05" -> "hero_lynette";
+            case "P06" -> "hero_morwen";
+            case "P07" -> "hero_marion";
+            case "P08" -> "hero_raze";
+            default -> "skill";
+        };
+    }
+
+    private static int withAlpha(int argb, int alpha) {
+        return (Math.max(0, Math.min(255, alpha)) << 24) | (argb & 0x00FFFFFF);
     }
 
     private void drawSingleSummary(GuiGraphicsExtractor graphics) {
@@ -172,7 +250,7 @@ public final class GachaPresentationScreen extends Screen {
         int cardH = Math.min(108, Math.max(74, (height - 116 - gap) / 2));
         int startX = (width - totalW) / 2;
         int startY = Math.max(62, (height - (cardH * 2 + gap)) / 2 + 14);
-        int summaryTicks = Math.max(0, ticks - Math.max(1, revealPulls.size()) * 30);
+        int summaryTicks = Math.max(0, ticks - Math.max(1, revealPulls.size()) * GachaPresentationTimeline.SLOT_TICKS);
         int visible = Math.min(batch.pulls().size(), Math.max(1, summaryTicks / 4 + 1));
 
         for (int i = 0; i < batch.pulls().size() && i < 10; i++) {
@@ -205,7 +283,13 @@ public final class GachaPresentationScreen extends Screen {
 
     private static String stars(int count) { return "★".repeat(Math.max(1, Math.min(5, count))); }
     private static int starColor(int stars) {
-        return switch (stars) { case 5 -> GOLD; case 4 -> PURPLE; case 3 -> BLUE; default -> SECONDARY; };
+        return switch (stars) {
+            case 5 -> GOLD;
+            case 4 -> PURPLE;
+            case 3 -> BLUE;
+            case 2 -> GREEN;
+            default -> SECONDARY;
+        };
     }
     private static String shorten(String value, int max) { return value.length() <= max ? value : value.substring(0, max - 1) + "…"; }
 
