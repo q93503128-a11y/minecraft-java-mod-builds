@@ -117,7 +117,6 @@ public final class OpenworldRpgMod implements ModInitializer {
             if (!M0PlayerVerificationBootstrap.enabled()) {
                 R01OpeningBootstrapService.ensureOpeningLoadout(handler.getPlayer());
                 R01ClassStarterService.reconcileInterruptedGrant(handler.getPlayer());
-                PlayerClassSwitchService.reconcilePending(handler.getPlayer());
             }
             PlayerRewardTransactionService.resumePending(handler.getPlayer());
             if (!M0PlayerVerificationBootstrap.enabled()) {
@@ -144,6 +143,9 @@ public final class OpenworldRpgMod implements ModInitializer {
             }
             PlayerCombatBuildPublisher.refresh(handler.getPlayer());
             CombatStateServices.restoreRuntime(handler.getPlayer());
+            if (!M0PlayerVerificationBootstrap.enabled()) {
+                PlayerClassSwitchService.reconcilePending(handler.getPlayer());
+            }
             R01PlayerVerificationBootstrap.prepare(handler.getPlayer(), LOGGER);
             M0PlayerVerificationBootstrap.prepare(handler.getPlayer(), LOGGER);
             SpellEngineProjectSkillAccess.refreshPublishedSkills(
