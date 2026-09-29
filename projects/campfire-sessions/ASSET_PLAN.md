@@ -183,6 +183,16 @@ Need strong external interior references for:
 - wardrobe/clothing area.
 - public-service interior.
 
+Store interiors should support **physical merchandise display** rather than only menu-driven shopping.
+Search external assets/builds for:
+- furniture display platforms/floor arrangements.
+- clothing racks/mannequins.
+- premium/seasonal display stands.
+- readable price/sign props.
+- coherent shelving and checkout/service counters.
+
+The shop layout must leave enough circulation space for multiple players and still make displayed items easy to inspect.
+
 ## 7. Furniture
 
 Candidate external sources/mods previously discussed:
@@ -305,6 +315,17 @@ Boat progression is money-purchase based, not an RPG upgrade tree.
 ## 13. UI
 
 Existing Kenney UI assets establish a precedent.
+
+For shop-item inspection, a secondary 3D preview/character try-on panel may be added if the chosen rendering/UI framework supports it cleanly.
+This is **supplemental** to physical in-store display, not a replacement.
+
+Useful preview cases:
+- rotate furniture.
+- inspect color/material variants.
+- preview clothing on the current player appearance.
+- inspect catalog-only/reorder items.
+
+Do not build a custom 3D preview renderer if an external framework already provides a stable equivalent and the implementation cost would be disproportionate.
 
 Potential external families:
 - Kenney UI Pack.
