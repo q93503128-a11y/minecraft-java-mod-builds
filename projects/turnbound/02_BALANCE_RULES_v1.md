@@ -16,7 +16,7 @@
 | Basic CD | 0 |
 | 공통 MP/AP | 없음 |
 | 전투 중 파티 교체 | 기본 불가 |
-| 플레이어블 희귀도 | ★3~★5 |
+| 플레이어블 희귀도 | ★1~★5 |
 | 레벨 상한 | 60 |
 | 전투 속도 | 1x / 2x presentation only |
 
@@ -135,7 +135,7 @@ Reaction은 무료 행동이므로:
 | P02 루메아 | Tempo Support | ★5 | 114 | Turn Order |
 | P03 브람 | Redirect/Counter Tank | ★4 | 84 | Guard 0~100 |
 | P04 엘리시아 | Rescue Healer | ★4 | 96 | Sanctuary |
-| P05 리네트 | Follow-up DPS | ★4 | 108 | Sightline / Shot |
+| P05 리네트 | Follow-up DPS | ★5 | 108 | Sightline / Shot |
 | P06 모르웬 | Event/Execute | ★5 | 98 | Records 0~5 |
 | P07 마리온 | Partner Summoner | ★4 | 100 | Bond 0~100 |
 | P08 라제 | Risk/Fury DPS | ★3 | 103 | Fury 0~100 |
