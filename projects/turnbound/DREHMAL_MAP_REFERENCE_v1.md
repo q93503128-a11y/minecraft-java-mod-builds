@@ -96,7 +96,34 @@ TURNBOUND zoning consequence:
 - story/party beat belongs around the central landmark space;
 - summon access should use a suitable existing interior only after visual survey.
 
-Do not activate these source coordinates directly. They are survey seeds.
+### 5.1 Source-backed micro layout
+
+The current official wiki gives enough detail to narrow the in-client survey substantially:
+
+| Feature | Source detail | TURNBOUND use |
+|---|---|---|
+| Town reference | approx. 502,67,1801 | approach/entry search origin only |
+| Stables | immediately right on entry | TRAVEL service candidate zone; preserve horse access |
+| Adventuring Merchant | 516,67,1851 | primary MARKET context; orange/red awning |
+| Runic Blacksmith | 526,65,1841 | primary FORGE context; Goibhniu's Smithy / blue awning |
+| Oak Merchant | 530,67,1833 | central market-booth context |
+| Coal Merchant | 532,67,1838 | central market-booth context |
+| Wheat Merchant | 541,67,1830 | central market-booth context |
+| Drehmal statue | in front of the farmhouse | STORY landmark candidate |
+| Church of the Split Deities | south side of town | source-content preservation zone |
+| Nature's Rest Inn | east of Runic Blacksmith | rest/ambient context; do not displace source villagers |
+| Drabyel Bookstore | far east side | lore-content preservation zone |
+| Farmhouse basement Cat Map | 516,65,1861 | explicit conflict/exclusion reference, not a default summon room |
+
+Placement implications:
+- `MARKET` should be surveyed first around the Adventuring Merchant frontage, then compared with the central booth cluster for readability.
+- `BLACKSMITH` should stay visually tied to Goibhniu's Smithy rather than being moved to a generic central plaza.
+- `TRAVEL` should read immediately from the entrance/stables without blocking the horses or entry path.
+- `STORY` can use the statue/farmhouse/church-side landmark space, but must not cover signs, graves, lore containers or original interaction points.
+- `SUMMON` still has no source-backed exact room. The known farmhouse basement at 516,65,1861 already contains original collectible content and is therefore a **conflict marker**, not a placement recommendation.
+- church, bookstore, inn guest rooms and other authored interiors must be inspected for original loot/lore before any TURNBOUND service occupies them.
+
+Do not activate these source coordinates directly. They remain survey seeds until the migrated 26.2 client confirms geometry, source-content conflicts, sightlines and player flow.
 
 ## 6. Av'Sal spatial read
 
