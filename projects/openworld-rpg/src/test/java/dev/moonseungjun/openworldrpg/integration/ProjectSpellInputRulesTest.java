@@ -59,6 +59,18 @@ class ProjectSpellInputRulesTest {
         );
         assertFalse(
                 ProjectSpellInputRules.suppressHeldRepeat(
+                        "openworld_rpg:sanctuary",
+                        true
+                )
+        );
+        assertTrue(
+                ProjectSpellInputRules.suppressHeldRepeat(
+                        "openworld_rpg:sanctuary",
+                        false
+                )
+        );
+        assertFalse(
+                ProjectSpellInputRules.suppressHeldRepeat(
                         "other_mod:spell",
                         false
                 )
