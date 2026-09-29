@@ -29,7 +29,13 @@ public final class GachaPresentationScreen extends Screen {
     private static final int GOLD = 0xFFFFC857;
     private static final int PURPLE = 0xFFC794FF;
 
-    public record Pull(String characterId, int stars, boolean newlyOwned, int essence, int pityAfter) {}
+    public record Pull(
+            String characterId, int stars, boolean newlyOwned, int essence, int pityAfter,
+            int bonusLevelGranted, int bonusLevelAfter) {
+        public Pull(String characterId, int stars, boolean newlyOwned, int essence, int pityAfter) {
+            this(characterId, stars, newlyOwned, essence, pityAfter, 0, 0);
+        }
+    }
     public record Batch(String action, int crystalSpent, List<Pull> pulls) {
         public Batch { pulls = List.copyOf(pulls == null ? List.of() : pulls); }
     }
@@ -62,7 +68,9 @@ public final class GachaPresentationScreen extends Screen {
                 switch (p[0]) {
                     case "H" -> { action = p[1]; spent = Integer.parseInt(p[3]); }
                     case "P" -> pulls.add(new Pull(p[1], Integer.parseInt(p[2]), "1".equals(p[3]),
-                            Integer.parseInt(p[4]), Integer.parseInt(p[5])));
+                            Integer.parseInt(p[4]), Integer.parseInt(p[5]),
+                            p.length > 6 ? Integer.parseInt(p[6]) : 0,
+                            p.length > 7 ? Integer.parseInt(p[7]) : 0));
                     default -> { }
                 }
             } catch (RuntimeException ignored) { }
@@ -165,7 +173,7 @@ public final class GachaPresentationScreen extends Screen {
         TurnboundFrameStyle.frame(graphics, x, y, w, h, accent);
         graphics.text(font, Component.literal(stars(pull.stars())), x + 18, y + 15, accent, true);
         graphics.text(font, Component.literal(name(pull.characterId())), x + 18, y + 35, TEXT, true);
-        String result = pull.newlyOwned() ? "새로운 동료" : "별의 정수 +" + pull.essence();
+        String result = pull.newlyOwned() ? "새로운 동료" : duplicateResult(pull);
         graphics.text(font, Component.literal(result), x + 18, y + 54, pull.newlyOwned() ? GREEN : PURPLE, false);
         if (pull.stars() >= 5) graphics.text(font, Component.literal("★5"), x + w - 48, y + 15, GOLD, true);
     }
@@ -237,7 +245,7 @@ public final class GachaPresentationScreen extends Screen {
         int tx = x + portrait + 18;
         graphics.text(font, Component.literal("소환 결과"), tx, y + 14, TEXT, true);
         graphics.text(font, Component.literal(stars(pull.stars()) + " · " + name(pull.characterId())), tx, y + 38, accent, true);
-        graphics.text(font, Component.literal(pull.newlyOwned() ? "새로운 동료" : "별의 정수 +" + pull.essence()),
+        graphics.text(font, Component.literal(pull.newlyOwned() ? "새로운 동료" : duplicateResult(pull)),
                 tx, y + 62, pull.newlyOwned() ? GREEN : PURPLE, false);
         graphics.text(font, Component.literal("★5 천장 " + pull.pityAfter() + " / " + GachaCatalog.HARD_PITY),
                 tx, y + 84, SECONDARY, false);
@@ -268,12 +276,24 @@ public final class GachaPresentationScreen extends Screen {
             int portraitBottom = Math.max(portraitTop + 24, y + cardH - 35);
             TurnboundPortraitRenderer.extract(graphics, pull.characterId(), x + 4, portraitTop, x + cardW - 4, portraitBottom, false);
             graphics.text(font, Component.literal(shorten(name(pull.characterId()), 15)), x + 7, y + cardH - 31, TEXT, true);
-            String result = pull.newlyOwned() ? "신규" : "정수 +" + pull.essence();
+            String result = pull.newlyOwned() ? "신규" : compactDuplicateResult(pull);
             graphics.text(font, Component.literal(result), x + 7, y + cardH - 18,
                     pull.newlyOwned() ? GREEN : PURPLE, false);
             graphics.text(font, Component.literal("천장 " + pull.pityAfter()), x + cardW - font.width("천장 " + pull.pityAfter()) - 6,
                     y + cardH - 18, SECONDARY, false);
         }
+    }
+
+    private static String duplicateResult(Pull pull) {
+        String level = pull.bonusLevelGranted() > 0
+                ? " · +레벨 +1 (+" + pull.bonusLevelAfter() + ")"
+                : " · +레벨 MAX";
+        return "별의 정수 +" + pull.essence() + level;
+    }
+
+    private static String compactDuplicateResult(Pull pull) {
+        if (pull.bonusLevelGranted() > 0) return "정수 +" + pull.essence() + " · +" + pull.bonusLevelAfter();
+        return "정수 +" + pull.essence() + " · MAX";
     }
 
     private static String name(String id) {
