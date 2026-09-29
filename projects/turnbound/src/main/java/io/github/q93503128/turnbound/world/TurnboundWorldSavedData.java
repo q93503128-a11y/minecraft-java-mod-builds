@@ -56,7 +56,6 @@ public final class TurnboundWorldSavedData extends SavedData {
 
     private final Set<String> clearedBosses = new LinkedHashSet<>();
     private final Set<String> unlockedRegions = new LinkedHashSet<>();
-    private static final String ENCOUNTER_CLEAR_CLAIM_PREFIX = "ENCOUNTER_CLEAR:";
     private final Set<String> claimedWorldRewards = new LinkedHashSet<>();
 
     public TurnboundWorldSavedData() {
@@ -81,10 +80,10 @@ public final class TurnboundWorldSavedData extends SavedData {
     public boolean encounterCleared(String encounterId) {
         if (encounterId == null) return false;
         String canonicalId = CampaignProgressStore.canonicalEncounterId(encounterId);
-        String legacyBoss = legacyBossForEncounter(canonicalId);
+        String legacyBoss = WorldEncounterClearPolicy.legacyBossId(canonicalId);
         return legacyBoss != null
                 ? clearedBosses.contains(legacyBoss)
-                : claimedWorldRewards.contains(encounterClearClaim(canonicalId));
+                : claimedWorldRewards.contains(WorldEncounterClearPolicy.claimKey(canonicalId));
     }
     public Set<String> clearedBosses() { return Set.copyOf(clearedBosses); }
     public Set<String> unlockedRegions() { return Set.copyOf(unlockedRegions); }
@@ -96,9 +95,9 @@ public final class TurnboundWorldSavedData extends SavedData {
         var encounter = CampaignEncounterCatalog.spec(canonicalId);
         if (!encounter.boss() || encounter.enemies().isEmpty()) return;
 
-        String legacyBoss = legacyBossForEncounter(canonicalId);
+        String legacyBoss = WorldEncounterClearPolicy.legacyBossId(canonicalId);
         if (legacyBoss == null) {
-            if (claimedWorldRewards.add(encounterClearClaim(canonicalId))) setDirty();
+            if (claimedWorldRewards.add(WorldEncounterClearPolicy.claimKey(canonicalId))) setDirty();
             return;
         }
 
@@ -112,21 +111,6 @@ public final class TurnboundWorldSavedData extends SavedData {
             default -> false;
         };
         if (changed) setDirty();
-    }
-
-    private static String legacyBossForEncounter(String encounterId) {
-        return switch (encounterId == null ? "" : encounterId) {
-            case "BATTLE_B01" -> "B01";
-            case "BATTLE_B02" -> "B02";
-            case "BATTLE_B03" -> "B03";
-            case "BATTLE_B04" -> "B04";
-            case "BATTLE_B05" -> "B05";
-            default -> null;
-        };
-    }
-
-    private static String encounterClearClaim(String encounterId) {
-        return ENCOUNTER_CLEAR_CLAIM_PREFIX + encounterId;
     }
 
     /**

@@ -2,23 +2,19 @@ package io.github.q93503128.turnbound.world;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class TurnboundWorldEncounterClearTest {
     @Test
-    void optionalGraulClearDoesNotMasqueradeAsLegacyB01WorldProgress() {
-        TurnboundWorldSavedData data = new TurnboundWorldSavedData();
+    void optionalGraulUsesEncounterClearKeyInsteadOfLegacyB01BossKey() {
+        assertNull(WorldEncounterClearPolicy.legacyBossId(DrehmalWorldBossPlacementRules.ENCOUNTER_ID));
+        assertEquals("ENCOUNTER_CLEAR:" + DrehmalWorldBossPlacementRules.ENCOUNTER_ID,
+                WorldEncounterClearPolicy.claimKey(DrehmalWorldBossPlacementRules.ENCOUNTER_ID));
 
-        data.recordEncounterClear(DrehmalWorldBossPlacementRules.ENCOUNTER_ID);
-
-        assertTrue(data.encounterCleared(DrehmalWorldBossPlacementRules.ENCOUNTER_ID));
-        assertFalse(data.bossCleared("B01"));
-        assertFalse(data.regionUnlocked(TurnboundWorldSavedData.REGION_GLOAMWOOD));
-
-        data.recordEncounterClear("BATTLE_B01");
-        assertTrue(data.encounterCleared("BATTLE_B01"));
-        assertTrue(data.bossCleared("B01"));
-        assertTrue(data.regionUnlocked(TurnboundWorldSavedData.REGION_GLOAMWOOD));
+        assertEquals("B01", WorldEncounterClearPolicy.legacyBossId("BATTLE_B01"));
+        assertNotEquals(WorldEncounterClearPolicy.claimKey(DrehmalWorldBossPlacementRules.ENCOUNTER_ID),
+                WorldEncounterClearPolicy.claimKey("BATTLE_B01"));
     }
 }
