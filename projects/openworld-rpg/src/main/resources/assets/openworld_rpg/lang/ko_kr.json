@@ -7,6 +7,8 @@
   "spell.openworld_rpg.mend.description": "조준한 아군 또는 자신을 회복합니다.",
   "spell.openworld_rpg.rebuke.name": "질책",
   "spell.openworld_rpg.rebuke.description": "전방에 성스러운 충격을 일으켜 적에게 피해와 경직 압력을 주고 직접 피해를 약화합니다.",
+  "spell.openworld_rpg.sanctuary.name": "성역",
+  "spell.openworld_rpg.sanctuary.description": "성스러운 결계를 펼쳐 범위 안의 아군을 보호하고 회복시키며 적에게 피해를 줍니다.",
   "key.category.openworld_rpg.combat": "Open-World RPG 전투",
   "key.openworld_rpg.active_skill_1": "액티브 스킬 1",
   "key.openworld_rpg.active_skill_2": "액티브 스킬 2",
