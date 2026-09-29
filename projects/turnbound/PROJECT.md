@@ -297,6 +297,29 @@ This is the only correction made in response to Build TURNBOUND #36515077187 bef
 
 Build TURNBOUND #36515501797 then reached the next compile error: a reassigned local patrol candidate was captured by a stream lambda. That single compile issue was replaced with an explicit duplicate loop; no gameplay rule changed.
 
+## Capital Valley post-compile revalidation — 2026-09-29
+
+The source-aware first-route implementation is complete for this work unit:
+- 6 Common encounters + 1 optional Warning Cave Elite
+- 3 physical non-service field NPCs (길잡이 세라 / 순찰대원 로엔 / 탐험가 미라)
+- source-aware road-shoulder site selection
+- live 26.2 collision/source-content checks
+- source-safe arena selection and materialization-time revalidation
+- manual per-NPC/per-encounter coordinate authoring is not required
+
+The two compile-only issues found by Build TURNBOUND #36515077187 and #36515501797 have both been corrected:
+- Minecraft 26.2 villager package/API import
+- non-effectively-final patrol candidate captured by a stream lambda
+
+This checkpoint requests one fresh branch build of the corrected integrated state. Until that workflow result is directly observed:
+- CODE REVIEWED: YES
+- TESTED: NOT YET CONFIRMED FOR THIS HEAD
+- BUILD VERIFIED: NO
+- JAR PRODUCED: NO
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
 ## Economy
 
 Long-term core currencies:
