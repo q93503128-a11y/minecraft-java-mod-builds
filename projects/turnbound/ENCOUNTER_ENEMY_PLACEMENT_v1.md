@@ -748,3 +748,16 @@ For `CV_DRABYEL_ROAD`:
 - encounter activation does not depend on optional ROAM patrol-path promotion
 - footprint enemy slots match the current 2-enemy CV-B + CV-C composition
 - the encounter is incomplete if the player can stand at the target seed and no visible field actors exist
+
+
+### Opening patrol live-target correction — 2026-09-29
+
+The New Drabyel north-road patrol is a moving physical encounter. Objective navigation therefore tracks the shared encounter runtime pivot, not the static authored patrol-zone site.
+
+The source-seed fallback is production-eligible only when the live world passes all of:
+- valid standing/headroom
+- source-content clearance for the visible actor footprint
+- outside route safety zones
+- acceptable distance from the pinned source road corridor
+
+If no candidate passes, the patrol remains dormant. A navigation marker without physical actors is not an acceptable fallback.

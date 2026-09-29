@@ -489,3 +489,22 @@ compile이 UI 완료가 아니다.
 - If the current task is “talk to NPC X”, navigation points to that NPC's resolved runtime service position, not merely the surrounding hub/region.
 - Non-positional tasks such as “open E and inspect party” should not fabricate a world marker.
 - Fast-travel/discovery markers must be visually distinct from the active objective marker. Blue is reserved for ordinary travel/reference markers; the active objective keeps the stronger accent treatment.
+
+
+### Ownership cards and client settings — 2026-09-29
+
+Compact roster/codex cards must not spend their information line on a full ownership word when the same state can be communicated visually.
+
+- unowned: desaturated portrait + muted name + small lock badge
+- detail line remains available for star / role / level information
+- full textual ownership state may still appear on a dedicated detail screen where width is not constrained
+
+The root `설정` destination is reserved for TURNBOUND-specific client preferences. Base Minecraft controls should not be duplicated merely to make the menu look fuller.
+
+Current TURNBOUND settings:
+- music enabled + game-music volume
+- SFX enabled + game-SFX volume
+- impact camera feedback
+- exploration minimap visibility
+
+Endgame/challenge selection remains a separate `도전` destination.

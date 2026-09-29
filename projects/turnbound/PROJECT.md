@@ -962,3 +962,46 @@ Validation:
 - CLIENT RUNTIME TESTED: NO for the #943 correction
 - PLAYTESTED: NO for the #943 correction
 - MULTIPLAYER TESTED: NO
+
+
+## Client roster/settings + opening patrol visibility correction — 2026-09-29
+
+Build #943 client playtest exposed three presentation/runtime issues:
+
+- unowned character cards spent scarce compact-card width on the literal `미보유` label, truncating star/role information
+- the New Drabyel opening objective tracked the patrol's authored home site instead of the roaming physical actors
+- the opening-site fallback could promote a standing position that the visible-enemy runtime would later reject because source-content clearance was never checked during fallback selection
+
+Corrections:
+
+- unowned roster/codex cards keep their star + role line intact; ownership is communicated by desaturated/muted presentation plus a small portrait lock badge
+- opening-patrol navigation follows the shared encounter runtime pivot while the patrol exists, with the authored site retained only as a fallback before materialization
+- opening fallback now scans source-backed site + patrol seeds at a wider radius and requires standing clearance, source-content clearance, route-distance acceptance, and safety-zone exclusion before promotion
+- if no valid site exists, the encounter remains dormant instead of exposing a marker with no physical enemies
+
+Client settings were also separated from endgame content:
+
+- the root menu now exposes distinct `도전` and `설정` destinations
+- TURNBOUND-specific settings persist under `config/turnbound-client.properties`
+- current game-specific controls: TURNBOUND music on/off + volume, TURNBOUND SFX on/off + volume, impact-camera feedback on/off, minimap on/off
+- Minecraft video/input/master-audio options are intentionally not duplicated
+
+Build TURNBOUND #944 / run `36566779865` verified commit
+`2f76a57d52a98ad8acf3014e59ddd2474eec2b64`:
+
+- Gradle test/build: PASS
+- NeoForge dedicated-server smoke: PASS
+- built JAR verification: PASS
+- one-click Modrinth pack verification: PASS
+- artifact upload: PASS — artifact id `11032003009`
+- JAR SHA-256: `e016a714f0ee768eeb356792e54ba8a20e0d11249021ef1025ba41c97d3c9812`
+- MRPACK SHA-256: `e45c85272dd575112ffa84901fd89a913e2b8b5e63c5cd900e9e82d52d63c2d8`
+
+Validation:
+- CODE REVIEWED: YES
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- CLIENT RUNTIME TESTED: NO for Build #944
+- PLAYTESTED: NO for Build #944
+- MULTIPLAYER TESTED: NO
