@@ -19,7 +19,8 @@
     "SpellEngineDonorHotbarInputMixin",
     "SpellEngineDonorHotbarHudMixin",
     "SpellEngineRadiantLanceRendererMixin",
-    "SpellEngineRebukeBurstRendererMixin"
+    "SpellEngineRebukeBurstRendererMixin",
+    "SpellEngineSanctuaryWardRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1
