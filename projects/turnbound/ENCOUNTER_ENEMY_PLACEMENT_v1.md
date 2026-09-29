@@ -647,6 +647,28 @@ Ambush만 예외적으로 짧은 warning.
 
 terrain flatten으로 해결하지 않는다.
 
+## 18.1 Capital Valley automatic placement
+
+The first Capital Valley production pass does not require manual per-encounter coordinates.
+
+Coverage:
+- 6 Common field groups
+- 1 optional Warning Cave Elite
+- 3 non-service field NPCs
+
+Resolver order:
+1. choose the source-backed semantic zone and authored seed set;
+2. score strict encounter/NPC sites toward a readable road shoulder rather than the road center;
+3. resolve the actual bound 26.2 surface height;
+4. reject blocked headroom, liquid and unstable local ground;
+5. reject nearby source block entities and original villagers/traders/item frames/armor stands;
+6. find at least two 4-player-safe battle candidates inside the same semantic zone;
+7. recheck source-content clearance when the enemy/NPC actually materializes and again before a battle candidate is used.
+
+If these checks fail, that site fails closed. Do not move the encounter into another landmark merely to satisfy encounter count.
+
+The source map is only spatial reference. Runtime world checks remain authoritative, and final client playtest evaluates silhouette, pathfinding, camera and pacing rather than asking the player to author coordinates.
+
 ## 19. Original hostile entities
 
 Drehmal 원본 적과 TURNBOUND 적을 같은 자리에서 겹쳐 두지 않는다.
