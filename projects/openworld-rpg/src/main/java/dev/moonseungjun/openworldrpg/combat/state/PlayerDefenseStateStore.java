@@ -9,7 +9,10 @@ public final class PlayerDefenseStateStore {
             new ConcurrentHashMap<>();
 
     public PlayerDefenseRuntimeState getOrCreate(UUID playerId) {
-        return states.computeIfAbsent(playerId, ignored -> new PlayerDefenseRuntimeState());
+        return states.computeIfAbsent(
+                playerId,
+                id -> new PlayerDefenseRuntimeState(id)
+        );
     }
 
     public void remove(UUID playerId) {

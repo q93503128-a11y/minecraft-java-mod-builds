@@ -124,6 +124,36 @@ class WarriorSpellResourceTest {
                 WarriorSkillRuntime.EARTHSHATTER_HYPERARMOR_MULTIPLIER,
                 0.0001
         );
+        assertEquals(
+                14,
+                WarriorSkillRuntime.DRIVING_SLASH_ACTION_TICKS
+        );
+        assertEquals(
+                17,
+                WarriorSkillRuntime.IRON_COUNTER_ACTION_TICKS
+        );
+        assertEquals(
+                13,
+                WarriorSkillRuntime.CYCLONE_CUT_ACTION_TICKS
+        );
+        assertEquals(
+                29,
+                WarriorSkillRuntime.BREAKER_SLAM_ACTION_TICKS
+        );
+        assertEquals(
+                40,
+                WarriorSkillRuntime.EARTHSHATTER_ACTION_TICKS
+        );
+        assertEquals(
+                0.75,
+                WarriorSkillRuntime.CYCLONE_CUT_MOVEMENT_MULTIPLIER,
+                0.0001
+        );
+        assertEquals(
+                0.60,
+                WarriorSkillRuntime.CYCLONE_PULL_BLOCKS,
+                0.0001
+        );
     }
 
     @Test

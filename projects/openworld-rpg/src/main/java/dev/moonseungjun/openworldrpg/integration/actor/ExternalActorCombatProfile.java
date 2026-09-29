@@ -10,11 +10,16 @@ public record ExternalActorCombatProfile(
         double defense,
         double magicResistance,
         double poiseMax,
-        CombatRank combatRank
+        CombatRank combatRank,
+        ExternalActorReactionCapabilities reactionCapabilities
 ) {
     public ExternalActorCombatProfile {
         Objects.requireNonNull(entityId, "entityId");
         Objects.requireNonNull(combatRank, "combatRank");
+        Objects.requireNonNull(
+                reactionCapabilities,
+                "reactionCapabilities"
+        );
         if (entityId.isBlank()
                 || contentLevel < 1
                 || !Float.isFinite(maxHealth)
@@ -44,7 +49,29 @@ public record ExternalActorCombatProfile(
                 defense,
                 magicResistance,
                 poiseMax,
-                CombatRank.NORMAL_ELITE
+                CombatRank.NORMAL_ELITE,
+                ExternalActorReactionCapabilities.none()
+        );
+    }
+
+    public ExternalActorCombatProfile(
+            String entityId,
+            int contentLevel,
+            float maxHealth,
+            double defense,
+            double magicResistance,
+            double poiseMax,
+            CombatRank combatRank
+    ) {
+        this(
+                entityId,
+                contentLevel,
+                maxHealth,
+                defense,
+                magicResistance,
+                poiseMax,
+                combatRank,
+                ExternalActorReactionCapabilities.none()
         );
     }
 
@@ -77,7 +104,8 @@ public record ExternalActorCombatProfile(
                 45.0,
                 35.0,
                 190.0,
-                CombatRank.MINIBOSS_BOSS
+                CombatRank.MINIBOSS_BOSS,
+                ExternalActorReactionCapabilities.none()
         );
     }
 }

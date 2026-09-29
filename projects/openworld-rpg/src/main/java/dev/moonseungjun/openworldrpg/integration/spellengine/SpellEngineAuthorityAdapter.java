@@ -8,6 +8,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.ClericMendRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ClericSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ConsecratedGroundRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
+import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.RadiantLanceRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.RebukeRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.SanctuaryRuntime;
@@ -312,10 +313,21 @@ public final class SpellEngineAuthorityAdapter {
                 && !ConsecratedGroundRuntime.canActivate(serverPlayer)) {
             return invokeStatic(attemptNone);
         }
+        if (AUTHORITY.owns(spellId)
+                && player instanceof ServerPlayer serverPlayer
+                && !engineContinuation
+                && (!acceptedStage || firstAcceptedCast)
+                && ProjectPlayerActionRuntime.hardReactionActive(
+                        serverPlayer.getUUID(),
+                        gameTick
+                )) {
+            return invokeStatic(attemptNone);
+        }
         if (ProjectSpellSpec.requiredRootClass(spellId)
                 .filter(RootClass.WARRIOR::equals)
                 .isPresent()
                 && player instanceof ServerPlayer serverPlayer
+                && !engineContinuation
                 && (!acceptedStage || firstAcceptedCast)
                 && !WarriorSkillRuntime.canActivate(
                         serverPlayer,

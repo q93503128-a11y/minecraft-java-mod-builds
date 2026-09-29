@@ -26,9 +26,24 @@ public final class ProjectPlayerIncomingDamageRuntime {
             ServerPlayer target,
             PlayerDefenseAuthority.IncomingHit hit
     ) {
+        return applyProjectOwnedActorHit(
+                attacker,
+                target,
+                hit,
+                ProjectPlayerReactionRuntime.ReactionSpec.none()
+        );
+    }
+
+    public static IncomingApplication applyProjectOwnedActorHit(
+            LivingEntity attacker,
+            ServerPlayer target,
+            PlayerDefenseAuthority.IncomingHit hit,
+            ProjectPlayerReactionRuntime.ReactionSpec reaction
+    ) {
         Objects.requireNonNull(attacker, "attacker");
         Objects.requireNonNull(target, "target");
         Objects.requireNonNull(hit, "hit");
+        Objects.requireNonNull(reaction, "reaction");
 
         if (target == attacker
                 || target.level().isClientSide()
@@ -119,6 +134,13 @@ public final class ProjectPlayerIncomingDamageRuntime {
                     gameTick
             );
         }
+        if (resolution.guardBroken()) {
+            ProjectPlayerReactionRuntime.applyGuardBreak(
+                    target,
+                    PlayerDefenseRuntimeState
+                            .GUARD_BREAK_REACTION_TICKS
+            );
+        }
 
         if (resolution.finalDamage() <= 0.0) {
             return IncomingApplication.accepted(false, resolution);
@@ -138,6 +160,12 @@ public final class ProjectPlayerIncomingDamageRuntime {
         };
         if (applied) {
             resources.markHostileHpActivity(gameTick);
+            if (!resolution.guarded()) {
+                ProjectPlayerReactionRuntime.apply(
+                        target,
+                        reaction
+                );
+            }
         }
 
         return IncomingApplication.accepted(applied, resolution);

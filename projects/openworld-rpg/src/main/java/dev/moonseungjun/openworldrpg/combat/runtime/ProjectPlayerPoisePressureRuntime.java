@@ -10,8 +10,24 @@ public final class ProjectPlayerPoisePressureRuntime {
     private ProjectPlayerPoisePressureRuntime() {
     }
 
-    public static Application applyAuthoredPressure(ServerPlayer target, double pressure) {
+    public static Application applyAuthoredPressure(
+            ServerPlayer target,
+            double pressure
+    ) {
+        return applyAuthoredPressure(
+                target,
+                pressure,
+                ProjectPlayerReactionRuntime.ReactionSpec.none()
+        );
+    }
+
+    public static Application applyAuthoredPressure(
+            ServerPlayer target,
+            double pressure,
+            ProjectPlayerReactionRuntime.ReactionSpec breakReaction
+    ) {
         Objects.requireNonNull(target, "target");
+        Objects.requireNonNull(breakReaction, "breakReaction");
         if (!Double.isFinite(pressure) || pressure < 0.0) {
             throw new IllegalArgumentException("Player poise pressure must be finite and non-negative.");
         }
@@ -35,6 +51,10 @@ public final class ProjectPlayerPoisePressureRuntime {
         );
         if (result.breakTriggered()) {
             RecoveryUseRuntime.cancelPreResolution(target, gameTick);
+            ProjectPlayerReactionRuntime.apply(
+                    target,
+                    breakReaction
+            );
         }
         return new Application(
                 true,

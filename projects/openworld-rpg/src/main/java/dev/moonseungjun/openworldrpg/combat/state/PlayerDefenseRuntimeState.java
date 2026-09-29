@@ -2,6 +2,8 @@ package dev.moonseungjun.openworldrpg.combat.state;
 
 import dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules;
+import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
+import java.util.UUID;
 import java.util.Objects;
 
 /**
@@ -25,6 +27,7 @@ public final class PlayerDefenseRuntimeState {
     public static final long GUARD_BREAK_REACTION_TICKS = 17L;
     public static final long GUARD_BREAK_DEFENSE_LOCK_TICKS = 9L;
 
+    private final UUID ownerPlayerId;
     private long dodgeInvulnerableUntilTick = Long.MIN_VALUE / 4;
     private long dodgeActionUntilTick = Long.MIN_VALUE / 4;
     private long nextDodgeAllowedTick = Long.MIN_VALUE / 4;
@@ -35,6 +38,14 @@ public final class PlayerDefenseRuntimeState {
     private long guardBreakReactionUntilTick = Long.MIN_VALUE / 4;
     private long guardRestartAllowedTick = Long.MIN_VALUE / 4;
 
+    public PlayerDefenseRuntimeState() {
+        this(null);
+    }
+
+    public PlayerDefenseRuntimeState(UUID ownerPlayerId) {
+        this.ownerPlayerId = ownerPlayerId;
+    }
+
     public boolean tryBeginDodge(
             PlayerCombatState resources,
             long nowTick,
@@ -43,17 +54,35 @@ public final class PlayerDefenseRuntimeState {
         Objects.requireNonNull(resources, "resources");
         if (rootedHardStaggeredOrDowned
                 || nowTick < nextDodgeAllowedTick
-                || nowTick < guardRestartAllowedTick) {
+                || nowTick < guardRestartAllowedTick
+                || (ownerPlayerId != null
+                        && !ProjectPlayerActionRuntime
+                                .canDodgeCancel(
+                                        ownerPlayerId,
+                                        nowTick
+                                ))) {
             return false;
         }
         double effectiveDodgeCost =
                 resources.effectiveDodgeSprintStaminaCost(DODGE_STAMINA_COST);
-        if (!resources.spendStamina(
+        if (!resources.canSpendStamina(
+                effectiveDodgeCost,
+                nowTick
+        ) || !resources.spendStamina(
                 effectiveDodgeCost,
                 DODGE_REGEN_DELAY_TICKS,
                 nowTick
         )) {
             return false;
+        }
+        if (ownerPlayerId != null
+                && !ProjectPlayerActionRuntime.commitDodgeCancel(
+                        ownerPlayerId,
+                        nowTick
+                )) {
+            throw new IllegalStateException(
+                    "Action dodge-cancel eligibility changed inside one server transaction."
+            );
         }
 
         dodgeInvulnerableUntilTick = nowTick + DODGE_INVULNERABILITY_TICKS;
@@ -63,7 +92,13 @@ public final class PlayerDefenseRuntimeState {
     }
 
     public GuardPressResult pressGuard(long nowTick) {
-        if (nowTick < guardRestartAllowedTick) {
+        if (nowTick < guardRestartAllowedTick
+                || (ownerPlayerId != null
+                        && !ProjectPlayerActionRuntime
+                                .guardStartAllowed(
+                                        ownerPlayerId,
+                                        nowTick
+                                ))) {
             return new GuardPressResult(false, false);
         }
         if (guardHeld) {

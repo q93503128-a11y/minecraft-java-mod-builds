@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.moonseungjun.openworldrpg.combat.authority.CombatDamageAuthority;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBasicAttackCadenceRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
+import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.R01EarthloongMythicRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.WarriorSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
@@ -45,6 +46,15 @@ public abstract class PlayerAttackAuthorityMixin {
             return original.call(target, source, proposedDamage);
         }
 
+        long gameTick = attacker.level().getGameTime();
+        if (attacker instanceof ServerPlayer serverPlayer
+                && !ProjectPlayerActionRuntime.basicAttackAllowed(
+                        serverPlayer.getUUID(),
+                        gameTick
+                )) {
+            return false;
+        }
+
         /*
          * Until a creature has a project combat binding, Better Combat/vanilla remains the
          * compatibility fallback. A project-owned actor may never fall back to donor damage.
@@ -53,8 +63,6 @@ public abstract class PlayerAttackAuthorityMixin {
                 || !ExternalActorBindingRuntime.ownsDamageAuthority(livingTarget)) {
             return original.call(target, source, proposedDamage);
         }
-
-        long gameTick = attacker.level().getGameTime();
         var build = CombatStateServices.combatBuilds().build(attacker.getUUID()).orElse(null);
         var targetSnapshot = ExternalActorBindingRuntime
                 .projectTargetSnapshot(livingTarget, gameTick)

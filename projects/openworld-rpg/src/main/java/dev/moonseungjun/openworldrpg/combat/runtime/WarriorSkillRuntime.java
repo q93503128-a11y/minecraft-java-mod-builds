@@ -48,6 +48,13 @@ public final class WarriorSkillRuntime {
     public static final long EARTHSHATTER_HYPERARMOR_TICKS = 24L;
     public static final double BREAKER_HYPERARMOR_MULTIPLIER = 1.60;
     public static final double EARTHSHATTER_HYPERARMOR_MULTIPLIER = 2.00;
+    public static final int DRIVING_SLASH_ACTION_TICKS = 14;
+    public static final int IRON_COUNTER_ACTION_TICKS = 17;
+    public static final int CYCLONE_CUT_ACTION_TICKS = 13;
+    public static final int BREAKER_SLAM_ACTION_TICKS = 29;
+    public static final int EARTHSHATTER_ACTION_TICKS = 40;
+    public static final double CYCLONE_CUT_MOVEMENT_MULTIPLIER = 0.75;
+    public static final double CYCLONE_PULL_BLOCKS = 0.60;
     private static final long ACCEPTED_CAST_STALE_TICKS = 80L;
 
     private static final ConcurrentHashMap<UUID, WarriorMomentumRuntimeState>
@@ -83,12 +90,16 @@ public final class WarriorSkillRuntime {
             return false;
         }
 
+        if (!isWarriorSpell(spellId)
+                || !ProjectPlayerActionRuntime.canStartAction(player)) {
+            return false;
+        }
         if (ProjectSpellSpec.WARRIOR_EARTHSHATTER_ID.equals(spellId)) {
             return ProjectUltimateChargeRuntime.canActivateUltimate(
                     player
             );
         }
-        return isWarriorSpell(spellId);
+        return true;
     }
 
     public static AcceptedCastResult onAcceptedCast(
@@ -106,6 +117,17 @@ public final class WarriorSkillRuntime {
         boolean spender = isMomentumSpender(spellId);
         boolean empowered = spender
                 && momentum.consumeSpenderIfFull(nowTick);
+
+        var action = ProjectPlayerActionRuntime.beginAction(
+                player,
+                actionSpec(spellId)
+        );
+        if (!action.accepted()) {
+            throw new IllegalStateException(
+                    "Warrior action commitment changed after accepted-cast preflight: "
+                            + spellId
+            );
+        }
 
         if (ProjectSpellSpec.WARRIOR_IRON_COUNTER_ID.equals(spellId)) {
             momentum.beginCounter(
@@ -154,7 +176,8 @@ public final class WarriorSkillRuntime {
                 || PlayerProgressionService.state(player)
                         .activeClass()
                         .filter(RootClass.WARRIOR::equals)
-                        .isEmpty()) {
+                        .isEmpty()
+                || !ownsActiveAction(player, spellId)) {
             return ReleaseResult.rejected();
         }
 
@@ -197,6 +220,12 @@ public final class WarriorSkillRuntime {
             }
 
             long nowTick = pending.level().getGameTime();
+            if (!ownsActiveAction(
+                    player,
+                    ProjectSpellSpec.WARRIOR_CYCLONE_CUT_ID
+            )) {
+                return true;
+            }
             if (nowTick < pending.resolveAtTick()) {
                 return false;
             }
@@ -464,16 +493,28 @@ public final class WarriorSkillRuntime {
                 false,
                 true
         );
+        var action = ProjectPlayerActionRuntime.snapshot(
+                player.getUUID(),
+                nowTick
+        );
+        long latestResolveTick = Math.max(
+                nowTick + 1L,
+                action.dodgeCancelAtTick() - 1L
+        );
+        long resolveAtTick = Math.min(
+                Math.addExact(
+                        nowTick,
+                        CYCLONE_SECOND_HIT_DELAY_TICKS
+                ),
+                latestResolveTick
+        );
         PENDING_CYCLONE.put(
                 player.getUUID(),
                 new PendingCycloneSecondHit(
                         (ServerLevel) player.level(),
                         origin,
                         cast.empowered(),
-                        Math.addExact(
-                                nowTick,
-                                CYCLONE_SECOND_HIT_DELAY_TICKS
-                        )
+                        resolveAtTick
                 )
         );
         return first.asRelease(cast.empowered());
@@ -727,20 +768,11 @@ public final class WarriorSkillRuntime {
             }
 
             if (pullNormalTargets) {
-                var profile = ExternalActorBindingRuntime
-                        .combatProfile(target)
-                        .orElse(null);
-                /*
-                 * Current actor rank data merges normal and elite into one value. Pulling that
-                 * merged bucket would incorrectly displace elites, so the normal-only empowered
-                 * pull stays fail-closed until those ranks are separated.
-                 */
-                if (profile != null
-                        && profile.combatRank()
-                                != ExternalActorCombatProfile
-                                        .CombatRank.MINIBOSS_BOSS) {
-                    // Deliberately no displacement until NORMAL vs ELITE is authoritative.
-                }
+                ProjectHostileReactionRuntime.pullToward(
+                        target,
+                        player.position(),
+                        CYCLONE_PULL_BLOCKS
+                );
             }
         }
 
@@ -797,6 +829,78 @@ public final class WarriorSkillRuntime {
                 .activeClass()
                 .filter(RootClass.WARRIOR::equals)
                 .isPresent();
+    }
+
+    private static boolean ownsActiveAction(
+            ServerPlayer player,
+            String spellId
+    ) {
+        var snapshot = ProjectPlayerActionRuntime.snapshot(
+                player.getUUID(),
+                player.level().getGameTime()
+        );
+        return snapshot.active()
+                && snapshot.kind()
+                        == dev.moonseungjun.openworldrpg.combat.state
+                                .PlayerActionRuntimeState.WindowKind.ACTION
+                && spellId.equals(snapshot.actionId());
+    }
+
+    private static ProjectPlayerActionRuntime.ActionSpec actionSpec(
+            String spellId
+    ) {
+        return switch (spellId) {
+            case ProjectSpellSpec.WARRIOR_DRIVING_SLASH_ID ->
+                    new ProjectPlayerActionRuntime.ActionSpec(
+                            spellId,
+                            DRIVING_SLASH_ACTION_TICKS,
+                            ProjectPlayerActionRuntime.ActionSpec
+                                    .cancelOffset(
+                                            DRIVING_SLASH_ACTION_TICKS,
+                                            0.70
+                                    ),
+                            1.0
+                    );
+            case ProjectSpellSpec.WARRIOR_IRON_COUNTER_ID ->
+                    new ProjectPlayerActionRuntime.ActionSpec(
+                            spellId,
+                            IRON_COUNTER_ACTION_TICKS,
+                            IRON_COUNTER_ACTION_TICKS,
+                            1.0
+                    );
+            case ProjectSpellSpec.WARRIOR_CYCLONE_CUT_ID ->
+                    new ProjectPlayerActionRuntime.ActionSpec(
+                            spellId,
+                            CYCLONE_CUT_ACTION_TICKS,
+                            ProjectPlayerActionRuntime.ActionSpec
+                                    .cancelOffset(
+                                            CYCLONE_CUT_ACTION_TICKS,
+                                            0.72
+                                    ),
+                            CYCLONE_CUT_MOVEMENT_MULTIPLIER
+                    );
+            case ProjectSpellSpec.WARRIOR_BREAKER_SLAM_ID ->
+                    new ProjectPlayerActionRuntime.ActionSpec(
+                            spellId,
+                            BREAKER_SLAM_ACTION_TICKS,
+                            ProjectPlayerActionRuntime.ActionSpec
+                                    .cancelOffset(
+                                            BREAKER_SLAM_ACTION_TICKS,
+                                            0.82
+                                    ),
+                            1.0
+                    );
+            case ProjectSpellSpec.WARRIOR_EARTHSHATTER_ID ->
+                    new ProjectPlayerActionRuntime.ActionSpec(
+                            spellId,
+                            EARTHSHATTER_ACTION_TICKS,
+                            EARTHSHATTER_ACTION_TICKS,
+                            1.0
+                    );
+            default -> throw new IllegalArgumentException(
+                    "Not a Warrior root skill: " + spellId
+            );
+        };
     }
 
     private static boolean isWarriorSpell(String spellId) {

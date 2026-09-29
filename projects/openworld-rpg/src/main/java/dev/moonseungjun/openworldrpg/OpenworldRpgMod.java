@@ -51,6 +51,7 @@ import dev.moonseungjun.openworldrpg.recovery.RecoveryEffectRuntime;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryUseRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ConsecratedGroundRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBasicAttackCadenceRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.R01EarthloongMythicRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.SanctuaryRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.WarriorSkillRuntime;
@@ -103,6 +104,9 @@ public final class OpenworldRpgMod implements ModInitializer {
         R01PlayerVerificationBootstrap.verifyStaticContracts(LOGGER);
         IntegrationBootstrap.bootstrap(profile, LOGGER);
         M0PlayerVerificationBootstrap.registerCommands();
+        ServerTickEvents.START_SERVER_TICK.register(
+                ProjectPlayerActionRuntime::tick
+        );
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             PlayerActiveWorldTimeService.tickLoadedPlayers(server);
             RecoveryEffectRuntime.tick(server);
@@ -162,6 +166,8 @@ public final class OpenworldRpgMod implements ModInitializer {
             if (!alive && !M0PlayerVerificationBootstrap.enabled()) {
                 PlayerDeathPenaltyService.applyAfterDeathRespawn(newPlayer);
             }
+            WarriorSkillRuntime.reset(newPlayer.getUUID());
+            ProjectPlayerActionRuntime.reset(newPlayer);
             PlayerCombatBuildPublisher.refresh(newPlayer);
             SpellEngineProjectSkillAccess.refreshPublishedSkills(newPlayer);
         });
@@ -174,6 +180,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             ConsecratedGroundRuntime.disconnect(playerId);
             SanctuaryRuntime.disconnect(playerId);
             WarriorSkillRuntime.disconnect(playerId);
+            ProjectPlayerActionRuntime.disconnect(playerId);
             ProjectBasicAttackCadenceRuntime.disconnect(playerId);
             CombatStateServices.disconnect(playerId);
         });

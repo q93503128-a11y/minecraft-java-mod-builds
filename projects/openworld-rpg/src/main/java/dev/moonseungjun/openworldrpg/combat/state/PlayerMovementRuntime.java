@@ -19,6 +19,11 @@ public final class PlayerMovementRuntime {
                     OpenworldRpgMod.MOD_ID,
                     "equipment_movement_speed"
             );
+    static final Identifier ACTION_MOVEMENT_SPEED_MODIFIER_ID =
+            Identifier.fromNamespaceAndPath(
+                    OpenworldRpgMod.MOD_ID,
+                    "action_movement_speed"
+            );
 
     private PlayerMovementRuntime() {
     }
@@ -56,6 +61,48 @@ public final class PlayerMovementRuntime {
                             EQUIPMENT_MOVEMENT_SPEED_MODIFIER_ID,
                             equipmentMovementSpeedBonus,
                             AttributeModifier.Operation.ADD_MULTIPLIED_BASE
+                    )
+            );
+        }
+    }
+
+    public static void synchronizeActionMovementMultiplier(
+            Player player,
+            double multiplier
+    ) {
+        Objects.requireNonNull(player, "player");
+        if (player.level().isClientSide()) {
+            throw new IllegalStateException(
+                    "Project action movement authority is server-only."
+            );
+        }
+        if (!Double.isFinite(multiplier)
+                || multiplier <= 0.0
+                || multiplier > 1.0) {
+            throw new IllegalArgumentException(
+                    "Action movement multiplier must be inside (0, 1]."
+            );
+        }
+
+        var movementSpeed = player.getAttribute(
+                Attributes.MOVEMENT_SPEED
+        );
+        if (movementSpeed == null) {
+            throw new IllegalStateException(
+                    "Server player has no MOVEMENT_SPEED attribute."
+            );
+        }
+
+        movementSpeed.removeModifier(
+                ACTION_MOVEMENT_SPEED_MODIFIER_ID
+        );
+        if (multiplier < 1.0) {
+            movementSpeed.addOrUpdateTransientModifier(
+                    new AttributeModifier(
+                            ACTION_MOVEMENT_SPEED_MODIFIER_ID,
+                            multiplier - 1.0,
+                            AttributeModifier.Operation
+                                    .ADD_MULTIPLIED_TOTAL
                     )
             );
         }
