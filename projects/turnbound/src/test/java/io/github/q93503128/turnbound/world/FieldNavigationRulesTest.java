@@ -47,4 +47,27 @@ class FieldNavigationRulesTest {
         assertFalse(FieldNavigationRules.shouldSkipBlockedPatrolTarget(
                 FieldEncounterRules.Phase.PATROL, 200, FieldNavigationRules.NEVER, true, 9.0D));
     }
+
+    @Test
+    void activePathWithoutPhysicalProgressStillRecovers() {
+        assertFalse(FieldNavigationRules.shouldRecoverStalledNavigation(
+                FieldEncounterRules.Phase.ALERT, 129, 100, 9.0D));
+        assertTrue(FieldNavigationRules.shouldRecoverStalledNavigation(
+                FieldEncounterRules.Phase.ALERT, 130, 100, 9.0D));
+        assertTrue(FieldNavigationRules.shouldRecoverStalledNavigation(
+                FieldEncounterRules.Phase.RETURN, 140, 100, 9.0D));
+        assertTrue(FieldNavigationRules.shouldRecoverStalledNavigation(
+                FieldEncounterRules.Phase.PATROL, 160, 100, 9.0D));
+    }
+
+    @Test
+    void walkingPresentationRequiresRecentCoordinateProgress() {
+        assertFalse(FieldNavigationRules.madePhysicalProgress(0.000001D));
+        assertTrue(FieldNavigationRules.madePhysicalProgress(0.0001D));
+        assertFalse(FieldNavigationRules.walkingFromRecentProgress(
+                100, FieldNavigationRules.NEVER, false));
+        assertTrue(FieldNavigationRules.walkingFromRecentProgress(102, 100, false));
+        assertFalse(FieldNavigationRules.walkingFromRecentProgress(103, 100, false));
+        assertFalse(FieldNavigationRules.walkingFromRecentProgress(101, 100, true));
+    }
 }
