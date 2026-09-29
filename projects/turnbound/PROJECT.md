@@ -236,6 +236,33 @@ Current verification state for this block:
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
 
+## Capital Valley automatic placement — 2026-09-29
+
+The first-route placement path is now source-aware and does not require manual per-NPC/per-encounter coordinate entry.
+
+Current scope:
+- all 7 first-route combat slots are covered: 6 Common + 1 optional Warning Cave Elite
+- all 3 field NPCs are covered: 길잡이 세라 / 순찰대원 로엔 / 탐험가 미라
+- the pinned Drehmal map source now records roads, locations, towers and `data/all_entity_data.json`
+- strict encounter/NPC sites are scored toward readable road shoulders rather than the authored road center
+- live 26.2 placement rejects blocked headroom, fluid, unstable ground and nearby authored block/entity content
+- battle arena candidates use a wider source-content clearance check
+- field NPC/enemy materialization rechecks source-content clearance when the player actually approaches
+- the first roadhead arrival also rejects authored-content collisions
+- the first guide's stale `roadhead_reveal` zone assignment was corrected to the actual Temple → Tower road corridor
+- same-zone failure remains fail-closed; no encounter is silently moved to a different landmark
+
+The admin survey commands remain optional diagnostics. Required user validation is a normal first-route playthrough, not manual coordinate authoring.
+
+Validation for this block:
+- CODE REVIEWED: YES
+- TESTED: pending branch workflow
+- BUILD VERIFIED: pending branch workflow
+- JAR PRODUCED: pending branch workflow
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
 ## Economy
 
 Long-term core currencies:
