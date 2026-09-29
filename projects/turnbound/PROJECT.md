@@ -198,7 +198,7 @@ New Drabyel service placement no longer requires the user to walk to six locatio
 
 Reference stage:
 - structured Drehmal 2.2.2 map data supplies exact nearby roads, signs, traders, containers and named/source objects
-- only small derived semantic anchors/road points are stored; upstream JSON/images remain reference-only
+- only small derived semantic anchors, road points and source-content exclusion zones are stored in TURNBOUND; upstream JSON/images remain reference-only
 
 Live 26.2 stage:
 - service resolution runs only when an active player is within 160 blocks of New Drabyel
@@ -207,7 +207,7 @@ Live 26.2 stage:
 - nearby block entities are exclusion zones, preserving signs/chests/lecterns/caches and other authored interactions
 - existing villagers/wandering traders are exclusion zones
 - actors are kept off the extracted authored road centerline
-- the selected point is deterministic and actors face the nearest road
+- the selected point is deterministic and actors face the authored service/road approach target
 - if no safe point exists, that role stays absent rather than modifying terrain or guessing through a wall
 
 The six admin `/turnbound survey ...` commands remain debugging/forensics tools only. They are not a normal placement workflow and the user is not expected to execute them one by one.
@@ -228,14 +228,14 @@ Official/source-backed town detail now narrows the physical service survey:
 - Drabyel Bookstore: far east — preserve original lore content
 - farmhouse basement Cat Map: 516,65,1861 — explicit conflict/exclusion reference, not a default SUMMON room
 
-These remain source survey seeds, not 26.2 production coordinates. `verifiedIn26_2` and `productionEnabled` stay false until actual client inspection confirms the migrated world's block geometry, original-content conflicts, sightlines and service flow.
+These remain source survey seeds, not fixed 26.2 production coordinates. The static catalog keeps `verifiedIn26_2=false` and `productionEnabled=false`; the runtime may create a transient derived service only after the live migrated world passes collision, height, fluid, source-content and NPC-conflict checks. Client playtest is still required for final visual/readability acceptance, not for manual coordinate authoring.
 ## Automatic New Drabyel placement checkpoint — 2026-09-29
 
 The manual per-NPC survey workflow has been replaced by source-assisted automatic placement.
 
 Reference input:
 - structured Drehmal 2.2.2 map extraction for roads, signs, traders, storage and named/source objects
-- 73 relevant New Drabyel source objects inspected automatically
+- 76 nearby New Drabyel source records were inspected from the pinned extraction; only the small subset needed for semantic anchors/exclusions is retained
 - raw third-party map JSON/images are not vendored; only small derived semantic anchors/road points are retained
 
 Runtime behavior:
@@ -243,7 +243,7 @@ Runtime behavior:
 - final standing blocks come from the actual bound Minecraft 26.2 world, not the 1.20.1 source coordinates
 - candidates reject blocked headroom, fluids, unstable local ground, source-height drift, nearby block entities and existing villagers/traders
 - authored road centerlines are kept clear
-- safe points are selected deterministically and cached
+- safe points are selected deterministically from data-driven candidate seeds/exclusion zones and cached
 - failed scans back off for 200 ticks instead of rescanning every tick
 - no terrain is modified and unresolved roles fail closed
 
