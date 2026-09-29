@@ -8,8 +8,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.decoration.ItemFrame;
-import net.minecraft.world.entity.npc.Villager;
-import net.minecraft.world.entity.npc.WanderingTrader;
+import net.minecraft.world.entity.npc.villager.AbstractVillager;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -206,8 +205,7 @@ final class DrehmalAdaptiveRoutePlacement {
         AABB area=new AABB(
                 x-horizontalRadius,y-2.0D,z-horizontalRadius,
                 x+1.0D+horizontalRadius,y+4.0D,z+1.0D+horizontalRadius);
-        if(!level.getEntitiesOfClass(Villager.class,area).isEmpty())return false;
-        if(!level.getEntitiesOfClass(WanderingTrader.class,area).isEmpty())return false;
+        if (!level.getEntitiesOfClass(AbstractVillager.class, area).isEmpty()) return false;
         if(!level.getEntitiesOfClass(ItemFrame.class,area).isEmpty())return false;
         if(!level.getEntitiesOfClass(ArmorStand.class,area).isEmpty())return false;
         return true;
