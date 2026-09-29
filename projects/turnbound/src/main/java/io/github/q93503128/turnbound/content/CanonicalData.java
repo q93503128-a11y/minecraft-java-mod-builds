@@ -42,7 +42,8 @@ public final class CanonicalData {
         JsonObject stats = raw.getAsJsonObject("stats");
         int nativeStars = integer(raw, "nativeStars", 0);
         String rank = string(raw, "rank", nativeStars > 0 ? "PLAYABLE" : "NORMAL");
-        int safeLevel = Math.max(1, Math.min(GrowthRulesV1.maxLevel(), level));
+        int levelLimit = nativeStars > 0 ? GrowthRulesV1.effectiveMaxLevel() : GrowthRulesV1.maxLevel();
+        int safeLevel = Math.max(1, Math.min(levelLimit, level));
         // v1 formal roster rarity is identity, not a repeat-promotion stat axis. Legacy currentStars is ignored.
         int safeStars = nativeStars == 0 ? 0 : nativeStars;
 
