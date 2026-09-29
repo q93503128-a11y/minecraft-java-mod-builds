@@ -7,6 +7,8 @@
   "spell.openworld_rpg.mend.description": "Restores health to the aimed ally or yourself.",
   "spell.openworld_rpg.rebuke.name": "Rebuke",
   "spell.openworld_rpg.rebuke.description": "Unleashes a frontal holy burst that damages, staggers, and weakens enemy direct damage.",
+  "spell.openworld_rpg.sanctuary.name": "Sanctuary",
+  "spell.openworld_rpg.sanctuary.description": "Raises a holy ward that shields allies, restores health, and scorches enemies within its boundary.",
   "key.category.openworld_rpg.combat": "Open-World RPG Combat",
   "key.openworld_rpg.active_skill_1": "Active Skill 1",
   "key.openworld_rpg.active_skill_2": "Active Skill 2",
