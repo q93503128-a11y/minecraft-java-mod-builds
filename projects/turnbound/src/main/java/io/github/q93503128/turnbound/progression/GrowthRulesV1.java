@@ -17,6 +17,7 @@ import java.util.Map;
 public final class GrowthRulesV1 {
     private static final JsonObject RAW = load();
     private static final int MAX_LEVEL = RAW.get("maxLevel").getAsInt();
+    private static final int DUPLICATE_BONUS_MAX = RAW.get("duplicateBonusMax").getAsInt();
     private static final double LEVEL_60_MULTIPLIER = RAW.get("level60Multiplier").getAsDouble();
     private static final double LEVEL_CURVE_EXPONENT = RAW.get("levelCurveExponent").getAsDouble();
     private static final int AWAKENING_GOLD_COST = RAW.get("awakeningGoldCost").getAsInt();
@@ -27,11 +28,13 @@ public final class GrowthRulesV1 {
     private GrowthRulesV1() {}
 
     public static int maxLevel() { return MAX_LEVEL; }
+    public static int duplicateBonusMax() { return DUPLICATE_BONUS_MAX; }
+    public static int effectiveMaxLevel() { return MAX_LEVEL + DUPLICATE_BONUS_MAX; }
     public static int maxEnhancement() { return MAX_ENHANCEMENT; }
     public static int awakeningGoldCost() { return AWAKENING_GOLD_COST; }
 
     public static double characterLevelMultiplier(int level) {
-        int safe = Math.max(1, Math.min(MAX_LEVEL, level));
+        int safe = Math.max(1, Math.min(effectiveMaxLevel(), level));
         if (safe == 1) return 1.0;
         double t = (safe - 1.0) / (MAX_LEVEL - 1.0);
         return 1.0 + (LEVEL_60_MULTIPLIER - 1.0) * Math.pow(t, LEVEL_CURVE_EXPONENT);
