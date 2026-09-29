@@ -43,6 +43,14 @@ class PlayerCombatSessionStateTest {
                                 ),
                                 200L
                         )
+                ),
+                Optional.of(
+                        new PlayerCombatSessionState.UltimateSnapshot(
+                                74.0,
+                                760L,
+                                3.0,
+                                100L
+                        )
                 )
         );
 
@@ -72,6 +80,7 @@ class PlayerCombatSessionStateTest {
                 Map.of(),
                 Optional.empty(),
                 Optional.empty(),
+                Optional.empty(),
                 Optional.empty()
         );
 
@@ -86,5 +95,6 @@ class PlayerCombatSessionStateTest {
         assertTrue(decoded.poise().isEmpty());
         assertTrue(decoded.shock().isEmpty());
         assertTrue(decoded.negativeStatuses().isEmpty());
+        assertTrue(decoded.ultimate().isEmpty());
     }
 }

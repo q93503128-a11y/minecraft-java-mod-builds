@@ -9,6 +9,7 @@ import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionService;
 import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import java.util.Objects;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
 
 /** Server-owned application boundary for all project player barriers. */
 public final class ProjectBarrierRuntime {
@@ -114,6 +115,20 @@ public final class ProjectBarrierRuntime {
             double incomingDamage,
             long nowTick
     ) {
+        return absorbHostileDamage(
+                null,
+                target,
+                incomingDamage,
+                nowTick
+        );
+    }
+
+    public static AbsorptionApplication absorbHostileDamage(
+            LivingEntity hostileSource,
+            ServerPlayer target,
+            double incomingDamage,
+            long nowTick
+    ) {
         Objects.requireNonNull(target, "target");
         PlayerBarrierRuntimeState.Absorption result =
                 CombatStateServices.barrierStates()
@@ -126,9 +141,14 @@ public final class ProjectBarrierRuntime {
 
         int gracePipsGranted = 0;
         for (var consumption : result.sourceConsumptions()) {
-            if (!consumption.clericGraceThresholdReached()) {
+            boolean graceQualified =
+                    consumption.clericGraceThresholdReached();
+            boolean ultimateQualified =
+                    consumption.clericUltimateChargeStepsReached() > 0;
+            if (!graceQualified && !ultimateQualified) {
                 continue;
             }
+
             ServerPlayer sourcePlayer = target.level()
                     .getServer()
                     .getPlayerList()
@@ -145,22 +165,35 @@ public final class ProjectBarrierRuntime {
 
             long sourceTick = sourcePlayer.level()
                     .getGameTime();
-            var combat = CombatStateServices.states()
-                    .getOrCreate(
-                            sourcePlayer.getUUID(),
-                            sourceTick
-                    );
-            var gain = CombatStateServices.clericGraceStates()
-                    .getOrCreate(sourcePlayer.getUUID())
-                    .recordConsumedBarrier(
-                            target.getUUID(),
-                            consumption.consumedSinceGrant(),
-                            target.getMaxHealth(),
-                            sourceTick,
-                            combat.lastCombatActivityTick()
-                    );
-            if (gain.pipAdded()) {
-                gracePipsGranted++;
+            if (graceQualified) {
+                var combat = CombatStateServices.states()
+                        .getOrCreate(
+                                sourcePlayer.getUUID(),
+                                sourceTick
+                        );
+                var gain = CombatStateServices.clericGraceStates()
+                        .getOrCreate(sourcePlayer.getUUID())
+                        .recordConsumedBarrier(
+                                target.getUUID(),
+                                consumption.consumedSinceGrant(),
+                                target.getMaxHealth(),
+                                sourceTick,
+                                combat.lastCombatActivityTick()
+                        );
+                if (gain.pipAdded()) {
+                    gracePipsGranted++;
+                }
+            }
+
+            if (ultimateQualified && hostileSource != null) {
+                ProjectUltimateChargeRuntime
+                        .recordClericBarrierConsumption(
+                                sourcePlayer,
+                                target,
+                                consumption
+                                        .clericUltimateChargeStepsReached(),
+                                hostileSource
+                        );
             }
         }
 

@@ -262,4 +262,101 @@ class PlayerCombatStateTest {
         assertEquals(1, state.cooldownRemainingTicks("openworld_rpg:arc_bolt", 69));
         assertFalse(state.isCoolingDown("openworld_rpg:arc_bolt", 70));
     }
+    @Test
+    void ultimateGainUsesSameTickGlobalCapAndRefillsByServerTime() {
+        PlayerCombatState state = new PlayerCombatState(5, 0);
+
+        var first = state.gainUltimateCharge(
+                8.0,
+                0.0,
+                1.0,
+                0L
+        );
+        var second = state.gainUltimateCharge(
+                8.0,
+                0.0,
+                1.0,
+                0L
+        );
+
+        assertEquals(8.0, first.grantedCharge(), 0.0001);
+        assertEquals(4.0, second.grantedCharge(), 0.0001);
+        assertEquals(12.0, state.ultimateCharge(0L), 0.0001);
+
+        var refilled = state.gainUltimateCharge(
+                12.0,
+                0.0,
+                1.0,
+                20L
+        );
+        assertEquals(12.0, refilled.grantedCharge(), 0.0001);
+        assertEquals(24.0, state.ultimateCharge(20L), 0.0001);
+    }
+
+    @Test
+    void ultimateGainAppliesGearAndEncounterMultipliersBeforeCap() {
+        PlayerCombatState state = new PlayerCombatState(5, 0);
+        var gain = state.gainUltimateCharge(
+                5.0,
+                0.30,
+                1.20,
+                0L
+        );
+
+        assertEquals(7.8, gain.requestedCharge(), 0.0001);
+        assertEquals(7.8, gain.grantedCharge(), 0.0001);
+    }
+
+    @Test
+    void ultimateDecaysOnlyAfterFortyFiveSecondsOutOfCombatAtFivePerSecond() {
+        PlayerCombatState state = new PlayerCombatState(5, 0);
+        state.gainUltimateCharge(10.0, 0.0, 1.0, 0L);
+
+        assertEquals(10.0, state.ultimateCharge(899L), 0.0001);
+        assertEquals(10.0, state.ultimateCharge(900L), 0.0001);
+        assertEquals(5.0, state.ultimateCharge(920L), 0.0001);
+        assertEquals(0.0, state.ultimateCharge(940L), 0.0001);
+    }
+
+    @Test
+    void ultimateUseResetsChargeAndThirtyFiveSecondLockoutBlocksReactivation() {
+        PlayerCombatState state = new PlayerCombatState(5, 0);
+        for (int i = 0; i < 9; i++) {
+            state.gainUltimateCharge(
+                    12.0,
+                    0.0,
+                    1.0,
+                    i * 20L
+            );
+        }
+        assertEquals(100.0, state.ultimateCharge(160L), 0.0001);
+        assertTrue(state.spendUltimate(160L));
+        assertEquals(0.0, state.ultimateCharge(160L), 0.0001);
+        assertEquals(700L, state.ultimateLockoutRemainingTicks(160L));
+
+        for (int i = 1; i <= 9; i++) {
+            state.gainUltimateCharge(
+                    12.0,
+                    0.0,
+                    1.0,
+                    160L + i * 20L
+            );
+        }
+        assertEquals(100.0, state.ultimateCharge(340L), 0.0001);
+        assertFalse(state.canActivateUltimate(859L));
+        assertTrue(state.canActivateUltimate(860L));
+    }
+
+    @Test
+    void ultimateStateSurvivesReconnectSnapshot() {
+        PlayerCombatState original = new PlayerCombatState(5, 0);
+        original.gainUltimateCharge(12.0, 0.0, 1.0, 0L);
+        var snapshot = original.persistentSnapshot(10L);
+
+        PlayerCombatState restored = new PlayerCombatState(5, 20L);
+        restored.restorePersistent(snapshot, 20L);
+
+        assertEquals(12.0, restored.ultimateCharge(20L), 0.0001);
+    }
+
 }

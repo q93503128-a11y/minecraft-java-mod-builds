@@ -78,6 +78,19 @@ public final class ClericMendRuntime {
                 nowTick,
                 combat.lastCombatActivityTick()
         );
+        ProjectUltimateChargeRuntime
+                .recordClericEffectiveHealing(
+                        caster,
+                        target,
+                        healing.effectiveHealing()
+                );
+        if (cleansed > 0) {
+            ProjectUltimateChargeRuntime.recordClericCleanse(
+                    caster,
+                    target,
+                    cleansed
+            );
+        }
 
         return new Application(
                 true,

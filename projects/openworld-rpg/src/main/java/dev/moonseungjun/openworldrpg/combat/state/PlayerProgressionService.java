@@ -41,6 +41,10 @@ public final class PlayerProgressionService {
                     .reset(player.getUUID());
             CombatStateServices.clericSkillCastStates()
                     .reset(player.getUUID());
+            long nowTick = player.level().getGameTime();
+            CombatStateServices.states()
+                    .getOrCreate(player.getUUID(), nowTick)
+                    .resetUltimateCharge(nowTick);
         }
         SpellEngineProjectSkillAccess.refreshPublishedSkills(player);
         return next;

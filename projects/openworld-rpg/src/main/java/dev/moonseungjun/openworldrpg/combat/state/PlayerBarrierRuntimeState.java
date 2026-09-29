@@ -18,6 +18,8 @@ import java.util.UUID;
  */
 public final class PlayerBarrierRuntimeState {
     private static final double EPSILON = 1.0e-9;
+    private static final double ULTIMATE_STEP_MAX_HP_FRACTION = 0.05;
+    private static final int MAX_ULTIMATE_SUPPORT_STEPS = 3;
     private final Map<String, Layer> layers = new HashMap<>();
 
     public GrantResult grant(
@@ -85,7 +87,8 @@ public final class PlayerBarrierRuntimeState {
                         expiresAtTick,
                         clericGraceSource,
                         0.0,
-                        false
+                        false,
+                        0
                 )
         );
         double effectiveGranted = Math.max(
@@ -168,6 +171,24 @@ public final class PlayerBarrierRuntimeState {
             boolean graceEventEmitted =
                     layer.graceEventEmitted()
                             || graceThresholdReached;
+            int qualifiedUltimateSteps = layer.clericGraceSource()
+                    ? Math.min(
+                            MAX_ULTIMATE_SUPPORT_STEPS,
+                            (int) Math.floor(
+                                    (consumedSinceGrant + EPSILON)
+                                            / (recipientMaxHp
+                                            * ULTIMATE_STEP_MAX_HP_FRACTION)
+                            )
+                    )
+                    : 0;
+            int newUltimateChargeSteps = Math.max(
+                    0,
+                    qualifiedUltimateSteps
+                            - layer.ultimateChargeStepsEmitted()
+            );
+            int ultimateChargeStepsEmitted =
+                    layer.ultimateChargeStepsEmitted()
+                            + newUltimateChargeSteps;
 
             if (amountAfter <= EPSILON) {
                 layers.remove(layer.sourceId());
@@ -181,7 +202,8 @@ public final class PlayerBarrierRuntimeState {
                                 layer.expiresAtTick(),
                                 layer.clericGraceSource(),
                                 consumedSinceGrant,
-                                graceEventEmitted
+                                graceEventEmitted,
+                                ultimateChargeStepsEmitted
                         )
                 );
             }
@@ -192,7 +214,8 @@ public final class PlayerBarrierRuntimeState {
                             layer.sourcePlayerId(),
                             absorbed,
                             consumedSinceGrant,
-                            graceThresholdReached
+                            graceThresholdReached,
+                            newUltimateChargeSteps
                     )
             );
             remaining -= absorbed;
@@ -287,7 +310,8 @@ public final class PlayerBarrierRuntimeState {
                                 layer.expiresAtTick(),
                                 layer.clericGraceSource(),
                                 layer.consumedSinceGrant(),
-                                layer.graceEventEmitted()
+                                layer.graceEventEmitted(),
+                                layer.ultimateChargeStepsEmitted()
                         )
                 );
             }
@@ -343,7 +367,8 @@ public final class PlayerBarrierRuntimeState {
             long expiresAtTick,
             boolean clericGraceSource,
             double consumedSinceGrant,
-            boolean graceEventEmitted
+            boolean graceEventEmitted,
+            int ultimateChargeStepsEmitted
     ) {
         private Layer {
             requireStableId(sourceId);
@@ -361,6 +386,13 @@ public final class PlayerBarrierRuntimeState {
                     "consumedSinceGrant",
                     consumedSinceGrant
             );
+            if (ultimateChargeStepsEmitted < 0
+                    || ultimateChargeStepsEmitted
+                    > MAX_ULTIMATE_SUPPORT_STEPS) {
+                throw new IllegalArgumentException(
+                        "Invalid barrier Ultimate-charge step count."
+                );
+            }
         }
     }
 
@@ -406,7 +438,8 @@ public final class PlayerBarrierRuntimeState {
             UUID sourcePlayerId,
             double absorbedDamage,
             double consumedSinceGrant,
-            boolean clericGraceThresholdReached
+            boolean clericGraceThresholdReached,
+            int clericUltimateChargeStepsReached
     ) {
         public SourceConsumption {
             requireStableId(sourceId);
@@ -422,6 +455,13 @@ public final class PlayerBarrierRuntimeState {
                     "consumedSinceGrant",
                     consumedSinceGrant
             );
+            if (clericUltimateChargeStepsReached < 0
+                    || clericUltimateChargeStepsReached
+                    > MAX_ULTIMATE_SUPPORT_STEPS) {
+                throw new IllegalArgumentException(
+                        "Invalid barrier Ultimate-charge step delta."
+                );
+            }
         }
     }
 

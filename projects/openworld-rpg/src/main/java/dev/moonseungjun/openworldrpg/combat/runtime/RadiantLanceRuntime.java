@@ -110,6 +110,10 @@ public final class RadiantLanceRuntime {
                     nowTick
             );
         }
+        ProjectUltimateChargeRuntime.recordClericDamagingActive(
+                caster,
+                primaryTarget
+        );
 
         var combat = CombatStateServices.states()
                 .getOrCreate(caster.getUUID(), nowTick);
@@ -190,6 +194,12 @@ public final class RadiantLanceRuntime {
                                 nowTick,
                                 combat.lastCombatActivityTick()
                         );
+                        ProjectUltimateChargeRuntime
+                                .recordClericEffectiveHealing(
+                                        caster,
+                                        recipient,
+                                        fallbackEffectiveHealing
+                                );
                     }
                 }
             }

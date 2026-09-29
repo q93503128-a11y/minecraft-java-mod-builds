@@ -16,13 +16,14 @@ class OrdinaryEquipmentAffixCatalogTest {
                 data.id()
         );
         assertEquals(29, data.affixes().size());
-        assertEquals(25, data.implementedDefinitions().size());
+        assertEquals(26, data.implementedDefinitions().size());
         assertTrue(data.resourceAuthorityReady());
         assertTrue(data.criticalAuthorityReady());
         assertTrue(data.attackSpeedAuthorityReady());
         assertTrue(data.movementAuthorityReady());
         assertTrue(data.healingDoneAuthorityReady());
         assertTrue(data.healingReceivedAuthorityReady());
+        assertTrue(data.ultimateChargeAuthorityReady());
 
         var physical = data.affixes().stream()
                 .filter(value -> value.id().equals(
@@ -106,6 +107,16 @@ class OrdinaryEquipmentAffixCatalogTest {
         assertEquals(4.0, healingReceived.min(), 0.000001);
         assertEquals(12.0, healingReceived.max(), 0.000001);
         assertTrue(healingReceived.runtimeImplemented());
+
+        var ultimateCharge = data.affixes().stream()
+                .filter(value -> value.id().equals(
+                        "openworld_rpg:affix/ultimate_charge_gain"
+                ))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(4.0, ultimateCharge.min(), 0.000001);
+        assertEquals(10.0, ultimateCharge.max(), 0.000001);
+        assertTrue(ultimateCharge.runtimeImplemented());
 
         var moveSpeed = data.affixes().stream()
                 .filter(value -> value.id().equals(

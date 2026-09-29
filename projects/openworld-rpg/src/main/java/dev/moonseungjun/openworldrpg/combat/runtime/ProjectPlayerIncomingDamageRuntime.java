@@ -75,6 +75,7 @@ public final class ProjectPlayerIncomingDamageRuntime {
         resources.markCombatActivity(gameTick);
 
         var barrier = ProjectBarrierRuntime.absorbHostileDamage(
+                attacker,
                 target,
                 resolution.finalDamage(),
                 gameTick

@@ -22,6 +22,7 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
     public static final double MOVEMENT_SPEED_GEAR_CAP = 0.15;
     public static final double HEALING_DONE_GEAR_CAP = 0.40;
     public static final double HEALING_RECEIVED_GEAR_CAP = 0.40;
+    public static final double ULTIMATE_CHARGE_GAIN_GEAR_CAP = 0.30;
     private static final double GUARD_STRENGTH_GEAR_CAP = 0.50;
     private static final double POISE_STAGGER_RESISTANCE_GEAR_CAP = 0.50;
 
@@ -207,6 +208,25 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
     }
 
     /**
+     * Aggregates equipment-only Ultimate charge gain and applies the canonical +30% gear cap.
+     */
+    public double aggregateUltimateChargeGainBonus() {
+        double result = 0.0;
+        for (EquippedCombatItem item : equipped) {
+            for (EquipmentCombatAffix affix : item.affixes()) {
+                if (affix.kind()
+                        == EquipmentCombatAffixKind.ULTIMATE_CHARGE_GAIN) {
+                    result += affix.value();
+                }
+            }
+        }
+        return Math.min(
+                result,
+                ULTIMATE_CHARGE_GAIN_GEAR_CAP
+        );
+    }
+
+    /**
      * Aggregates the canonical equipment-only movement bonus independently of weapon authority.
      * Heavy armor has no implicit movement penalty; only explicit Movement Speed affixes contribute.
      */
@@ -379,6 +399,9 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
                     }
                     case HEALING_RECEIVED -> {
                         // Published independently by aggregateHealingReceivedBonus().
+                    }
+                    case ULTIMATE_CHARGE_GAIN -> {
+                        // Published independently by aggregateUltimateChargeGainBonus().
                     }
                     case MAX_HP, MAX_MANA, MAX_STAMINA, MANA_RECOVERY,
                             STAMINA_RECOVERY, MANA_COST_REDUCTION,

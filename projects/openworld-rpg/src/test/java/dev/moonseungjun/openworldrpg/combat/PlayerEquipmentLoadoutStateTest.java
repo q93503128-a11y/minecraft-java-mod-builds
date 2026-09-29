@@ -249,6 +249,37 @@ class PlayerEquipmentLoadoutStateTest {
     }
 
     @Test
+    void ultimateChargeGainAggregatesWithoutWeaponAndCapsAtThirtyPercent() {
+        var loadout = new PlayerEquipmentLoadoutState(List.of(
+                EquippedCombatItem.gear(
+                        "openworld_rpg:charged_band",
+                        ProjectEquipmentSlot.RING_1,
+                        8,
+                        List.of(EquipmentCombatAffix.flat(
+                                EquipmentCombatAffixKind.ULTIMATE_CHARGE_GAIN,
+                                0.18
+                        ))
+                ),
+                EquippedCombatItem.gear(
+                        "openworld_rpg:charged_pendant",
+                        ProjectEquipmentSlot.NECKLACE,
+                        8,
+                        List.of(EquipmentCombatAffix.flat(
+                                EquipmentCombatAffixKind.ULTIMATE_CHARGE_GAIN,
+                                0.18
+                        ))
+                )
+        ));
+
+        assertEquals(
+                0.30,
+                loadout.aggregateUltimateChargeGainBonus(),
+                0.0001
+        );
+        assertTrue(loadout.aggregateCombatState().isEmpty());
+    }
+
+    @Test
     void missingMainWeaponProducesNoCombatEquipmentAuthority() {
         var loadout = new PlayerEquipmentLoadoutState(List.of(
                 EquippedCombatItem.gear(

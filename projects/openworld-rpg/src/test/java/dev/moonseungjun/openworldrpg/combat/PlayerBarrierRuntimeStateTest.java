@@ -131,6 +131,12 @@ class PlayerBarrierRuntimeStateTest {
                         .getFirst()
                         .clericGraceThresholdReached()
         );
+        assertEquals(
+                1,
+                first.sourceConsumptions()
+                        .getFirst()
+                        .clericUltimateChargeStepsReached()
+        );
 
         var second = state.absorbHostileDamage(
                 1.0,
@@ -142,9 +148,15 @@ class PlayerBarrierRuntimeStateTest {
                         .getFirst()
                         .clericGraceThresholdReached()
         );
+        assertEquals(
+                0,
+                second.sourceConsumptions()
+                        .getFirst()
+                        .clericUltimateChargeStepsReached()
+        );
 
         var third = state.absorbHostileDamage(
-                2.0,
+                4.0,
                 100.0,
                 3L
         );
@@ -152,6 +164,36 @@ class PlayerBarrierRuntimeStateTest {
                 third.sourceConsumptions()
                         .getFirst()
                         .clericGraceThresholdReached()
+        );
+        assertEquals(
+                1,
+                third.sourceConsumptions()
+                        .getFirst()
+                        .clericUltimateChargeStepsReached()
+        );
+
+        var fourth = state.absorbHostileDamage(
+                5.0,
+                100.0,
+                4L
+        );
+        assertEquals(
+                1,
+                fourth.sourceConsumptions()
+                        .getFirst()
+                        .clericUltimateChargeStepsReached()
+        );
+
+        var capped = state.absorbHostileDamage(
+                2.0,
+                100.0,
+                5L
+        );
+        assertEquals(
+                0,
+                capped.sourceConsumptions()
+                        .getFirst()
+                        .clericUltimateChargeStepsReached()
         );
     }
 

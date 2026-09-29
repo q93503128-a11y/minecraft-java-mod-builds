@@ -222,7 +222,7 @@
       "min": 4,
       "max": 10,
       "runtime_payload": "openworld_rpg:runtime_affix/ultimate_charge_gain",
-      "runtime_state": "stored_only"
+      "runtime_state": "implemented"
     },
     {
       "id": "openworld_rpg:affix/movement_speed",

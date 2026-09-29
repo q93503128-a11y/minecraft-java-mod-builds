@@ -17,6 +17,11 @@ public final class PlayerCombatState {
     public static final long NATURAL_HP_RECOVERY_DELAY_TICKS = 160L;
     public static final long SPRINT_STOP_REGEN_DELAY_TICKS = 7L;
     public static final double SPRINT_STAMINA_PER_SECOND = 5.0;
+    public static final double MAX_ULTIMATE_CHARGE = 100.0;
+    public static final double ULTIMATE_GAIN_CAP_PER_SECOND = 12.0;
+    public static final long ULTIMATE_LOCKOUT_TICKS = 700L;
+    public static final long ULTIMATE_DECAY_DELAY_TICKS = 900L;
+    public static final double ULTIMATE_DECAY_PER_SECOND = 5.0;
 
     private int will;
     private double mana;
@@ -33,6 +38,10 @@ public final class PlayerCombatState {
     private long lastCombatActivityTick = Long.MIN_VALUE / 4;
     private long lastHostileHpActivityTick = Long.MIN_VALUE / 4;
     private long staminaRegenBlockedUntilTick = Long.MIN_VALUE / 4;
+    private double ultimateCharge;
+    private long ultimateLockoutUntilTick = Long.MIN_VALUE / 4;
+    private double ultimateGainBudget = ULTIMATE_GAIN_CAP_PER_SECOND;
+    private long ultimateGainBudgetRefreshTick;
     private boolean sprintingLastTick;
     private String acceptedSpellId;
     private long acceptedSpellReentryUntilTick = Long.MIN_VALUE;
@@ -47,6 +56,7 @@ public final class PlayerCombatState {
         this.endurance = 5;
         this.stamina = maxStaminaForEndurance(endurance);
         this.lastRefreshTick = nowTick;
+        this.ultimateGainBudgetRefreshTick = nowTick;
     }
 
     public int will() {
@@ -165,6 +175,7 @@ public final class PlayerCombatState {
         });
         return new PlayerCombatSessionState(
                 PlayerCombatSessionState.CURRENT_SCHEMA_VERSION,
+                true,
                 mana,
                 stamina,
                 nowTick,
@@ -172,7 +183,18 @@ public final class PlayerCombatState {
                 lastCombatActivityTick,
                 lastHostileHpActivityTick,
                 staminaRegenBlockedUntilTick,
-                Map.copyOf(activeCooldowns)
+                Map.copyOf(activeCooldowns),
+                java.util.Optional.empty(),
+                java.util.Optional.empty(),
+                java.util.Optional.empty(),
+                java.util.Optional.of(
+                        new PlayerCombatSessionState.UltimateSnapshot(
+                                ultimateCharge,
+                                ultimateLockoutUntilTick,
+                                ultimateGainBudget,
+                                ultimateGainBudgetRefreshTick
+                        )
+                )
         );
     }
 
@@ -209,6 +231,35 @@ public final class PlayerCombatState {
             }
         });
 
+        snapshot.ultimate().ifPresentOrElse(ultimate -> {
+            ultimateCharge = Math.min(
+                    MAX_ULTIMATE_CHARGE,
+                    ultimate.charge()
+            );
+            ultimateLockoutUntilTick = rebaseTick(
+                    ultimate.lockoutUntilTick(),
+                    rebase
+            );
+            ultimateGainBudget = Math.max(
+                    0.0,
+                    Math.min(
+                            ULTIMATE_GAIN_CAP_PER_SECOND,
+                            ultimate.gainBudget()
+                    )
+            );
+            ultimateGainBudgetRefreshTick = Math.min(
+                    nowTick,
+                    rebaseTick(
+                            ultimate.gainBudgetRefreshTick(),
+                            rebase
+                    )
+            );
+        }, () -> {
+            ultimateCharge = 0.0;
+            ultimateLockoutUntilTick = Long.MIN_VALUE / 4;
+            ultimateGainBudget = ULTIMATE_GAIN_CAP_PER_SECOND;
+            ultimateGainBudgetRefreshTick = nowTick;
+        });
         sprintingLastTick = false;
         acceptedSpellId = null;
         acceptedSpellReentryUntilTick = Long.MIN_VALUE;
@@ -334,6 +385,89 @@ public final class PlayerCombatState {
         return lastCombatActivityTick;
     }
 
+    public double ultimateCharge(long nowTick) {
+        refresh(nowTick);
+        return ultimateCharge;
+    }
+
+    public long ultimateLockoutRemainingTicks(long nowTick) {
+        refresh(nowTick);
+        return Math.max(
+                0L,
+                ultimateLockoutUntilTick - nowTick
+        );
+    }
+
+    public boolean canActivateUltimate(long nowTick) {
+        refresh(nowTick);
+        return ultimateCharge + 1.0e-9
+                        >= MAX_ULTIMATE_CHARGE
+                && nowTick >= ultimateLockoutUntilTick;
+    }
+
+    public boolean spendUltimate(long nowTick) {
+        if (!canActivateUltimate(nowTick)) {
+            return false;
+        }
+        ultimateCharge = 0.0;
+        ultimateLockoutUntilTick = Math.addExact(
+                nowTick,
+                ULTIMATE_LOCKOUT_TICKS
+        );
+        markCombatActivity(nowTick);
+        return true;
+    }
+
+    public void resetUltimateCharge(long nowTick) {
+        refresh(nowTick);
+        ultimateCharge = 0.0;
+    }
+
+    public UltimateGainResult gainUltimateCharge(
+            double authoredCharge,
+            double gearGainBonus,
+            double encounterLevelMultiplier,
+            long nowTick
+    ) {
+        if (!Double.isFinite(authoredCharge)
+                || authoredCharge < 0.0
+                || !Double.isFinite(gearGainBonus)
+                || gearGainBonus < 0.0
+                || !Double.isFinite(encounterLevelMultiplier)
+                || encounterLevelMultiplier < 0.0) {
+            throw new IllegalArgumentException(
+                    "Ultimate gain inputs must be finite and non-negative."
+            );
+        }
+        refresh(nowTick);
+
+        double requested = authoredCharge
+                * (1.0 + gearGainBonus)
+                * encounterLevelMultiplier;
+        double granted = Math.min(
+                requested,
+                Math.min(
+                        ultimateGainBudget,
+                        MAX_ULTIMATE_CHARGE - ultimateCharge
+                )
+        );
+        granted = Math.max(0.0, granted);
+        ultimateCharge += granted;
+        ultimateGainBudget = Math.max(
+                0.0,
+                ultimateGainBudget - granted
+        );
+        if (granted > 0.0) {
+            markCombatActivity(nowTick);
+        }
+        return new UltimateGainResult(
+                requested,
+                granted,
+                ultimateCharge,
+                ultimateGainBudget
+        );
+    }
+
     /**
      * Marks hostile HP interaction by this player, either dealing or receiving it.
      *
@@ -435,14 +569,38 @@ public final class PlayerCombatState {
         if (nowTick < lastRefreshTick) {
             throw new IllegalArgumentException("Server combat time must be monotonic.");
         }
+
+        refreshUltimateGainBudget(nowTick);
         if (nowTick == lastRefreshTick) {
             mana = Math.min(mana, maxMana());
             stamina = Math.min(stamina, maxStamina());
+            ultimateCharge = Math.min(
+                    MAX_ULTIMATE_CHARGE,
+                    ultimateCharge
+            );
             return;
         }
 
         long start = lastRefreshTick;
         long end = nowTick;
+
+        if (ultimateCharge > 0.0
+                && lastCombatActivityTick > Long.MIN_VALUE / 8) {
+            long decayStart = Math.addExact(
+                    lastCombatActivityTick,
+                    ULTIMATE_DECAY_DELAY_TICKS
+            );
+            long activeDecayStart = Math.max(start, decayStart);
+            if (activeDecayStart < end) {
+                ultimateCharge = Math.max(
+                        0.0,
+                        ultimateCharge
+                                - (end - activeDecayStart)
+                                * ULTIMATE_DECAY_PER_SECOND
+                                / 20.0
+                );
+            }
+        }
 
         if (mana < maxMana()) {
             long regenStart = Math.max(start, lastManaSpendTick + MANA_REGEN_LOCK_TICKS);
@@ -474,6 +632,51 @@ public final class PlayerCombatState {
         }
 
         lastRefreshTick = nowTick;
+    }
+
+    private void refreshUltimateGainBudget(long nowTick) {
+        if (nowTick < ultimateGainBudgetRefreshTick) {
+            throw new IllegalArgumentException(
+                    "Ultimate gain-budget time must be monotonic."
+            );
+        }
+        if (nowTick == ultimateGainBudgetRefreshTick) {
+            return;
+        }
+        long elapsed = nowTick - ultimateGainBudgetRefreshTick;
+        ultimateGainBudget = Math.min(
+                ULTIMATE_GAIN_CAP_PER_SECOND,
+                ultimateGainBudget
+                        + elapsed
+                        * ULTIMATE_GAIN_CAP_PER_SECOND
+                        / 20.0
+        );
+        ultimateGainBudgetRefreshTick = nowTick;
+    }
+
+    public record UltimateGainResult(
+            double requestedCharge,
+            double grantedCharge,
+            double chargeAfter,
+            double gainBudgetAfter
+    ) {
+        public UltimateGainResult {
+            if (!Double.isFinite(requestedCharge)
+                    || requestedCharge < 0.0
+                    || !Double.isFinite(grantedCharge)
+                    || grantedCharge < 0.0
+                    || !Double.isFinite(chargeAfter)
+                    || chargeAfter < 0.0
+                    || chargeAfter > MAX_ULTIMATE_CHARGE + 1.0e-9
+                    || !Double.isFinite(gainBudgetAfter)
+                    || gainBudgetAfter < 0.0
+                    || gainBudgetAfter
+                            > ULTIMATE_GAIN_CAP_PER_SECOND + 1.0e-9) {
+                throw new IllegalArgumentException(
+                        "Invalid Ultimate Gauge gain result."
+                );
+            }
+        }
     }
 
     public static int maxManaForWill(int will) {

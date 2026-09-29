@@ -18,6 +18,34 @@ public final class ProjectProgressionRules {
         return roundToTen(raw);
     }
 
+    public static double combatRewardLevelMultiplier(
+            int encounterLevel,
+            int playerLevel
+    ) {
+        if (encounterLevel < 1 || playerLevel < 1) {
+            throw new IllegalArgumentException(
+                    "Encounter/player levels must be positive."
+            );
+        }
+        int delta = encounterLevel - playerLevel;
+        if (delta >= 6) {
+            return 1.20;
+        }
+        if (delta >= 3) {
+            return 1.10;
+        }
+        if (delta >= -2) {
+            return 1.00;
+        }
+        if (delta >= -5) {
+            return 0.75;
+        }
+        if (delta >= -10) {
+            return 0.40;
+        }
+        return 0.10;
+    }
+
     public static long classXpToNext(int rank) {
         if (rank < 1 || rank >= MAX_CLASS_RANK) {
             throw new IllegalArgumentException(

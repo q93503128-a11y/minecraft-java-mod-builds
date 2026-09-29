@@ -29,4 +29,38 @@ class ProjectProgressionRulesTest {
                 () -> ProjectProgressionRules.classXpToNext(50)
         );
     }
+    @Test
+    void combatRewardLevelMultiplierMatchesCanonicalAntiFarmCurve() {
+        assertEquals(
+                1.20,
+                ProjectProgressionRules.combatRewardLevelMultiplier(16, 10),
+                0.0001
+        );
+        assertEquals(
+                1.10,
+                ProjectProgressionRules.combatRewardLevelMultiplier(13, 10),
+                0.0001
+        );
+        assertEquals(
+                1.00,
+                ProjectProgressionRules.combatRewardLevelMultiplier(8, 10),
+                0.0001
+        );
+        assertEquals(
+                0.75,
+                ProjectProgressionRules.combatRewardLevelMultiplier(7, 10),
+                0.0001
+        );
+        assertEquals(
+                0.40,
+                ProjectProgressionRules.combatRewardLevelMultiplier(4, 10),
+                0.0001
+        );
+        assertEquals(
+                0.10,
+                ProjectProgressionRules.combatRewardLevelMultiplier(1, 12),
+                0.0001
+        );
+    }
+
 }

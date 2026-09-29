@@ -47,6 +47,9 @@ public record OrdinaryEquipmentAffixCatalogData(
     private static final Set<String> LIVE_HEALING_RECEIVED_AFFIX_IDS = Set.of(
             "openworld_rpg:affix/healing_received"
     );
+    private static final Set<String> LIVE_ULTIMATE_CHARGE_AFFIX_IDS = Set.of(
+            "openworld_rpg:affix/ultimate_charge_gain"
+    );
 
     public OrdinaryEquipmentAffixCatalogData {
         primaryCurve = Objects.requireNonNull(primaryCurve, "primaryCurve");
@@ -132,6 +135,12 @@ public record OrdinaryEquipmentAffixCatalogData(
 
     public boolean healingReceivedAuthorityReady() {
         return LIVE_HEALING_RECEIVED_AFFIX_IDS.stream().allMatch(
+                this::runtimeImplemented
+        );
+    }
+
+    public boolean ultimateChargeAuthorityReady() {
+        return LIVE_ULTIMATE_CHARGE_AFFIX_IDS.stream().allMatch(
                 this::runtimeImplemented
         );
     }

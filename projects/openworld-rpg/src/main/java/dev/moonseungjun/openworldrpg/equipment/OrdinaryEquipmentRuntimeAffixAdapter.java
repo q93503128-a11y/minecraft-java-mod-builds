@@ -131,6 +131,11 @@ public final class OrdinaryEquipmentRuntimeAffixAdapter {
                                     .DODGE_SPRINT_STAMINA_COST_REDUCTION,
                             affix.value()
                     );
+            case "openworld_rpg:runtime_affix/ultimate_charge_gain" ->
+                    percentage(
+                            EquipmentCombatAffixKind.ULTIMATE_CHARGE_GAIN,
+                            affix.value()
+                    );
             case "openworld_rpg:runtime_affix/movement_speed" ->
                     percentage(
                             EquipmentCombatAffixKind.MOVEMENT_SPEED,

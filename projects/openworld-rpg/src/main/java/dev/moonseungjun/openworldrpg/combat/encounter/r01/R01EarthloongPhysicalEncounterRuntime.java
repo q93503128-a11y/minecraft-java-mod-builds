@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -108,6 +109,35 @@ public final class R01EarthloongPhysicalEncounterRuntime {
 
     public static void clearPlayer(UUID playerId) {
         for (ActorState state : STATES.values()) state.threat.remove(playerId);
+    }
+
+    /**
+     * Returns the content level of a live authored Earthloong encounter that currently has this
+     * player in its threat-engagement table. Verification fixtures are excluded.
+     */
+    public static OptionalInt activeEncounterLevelFor(
+            ServerPlayer player
+    ) {
+        Objects.requireNonNull(player, "player");
+        int level = 0;
+        for (ActorState state : STATES.values()) {
+            if (state.verificationFixture
+                    || state.actor.isRemoved()
+                    || !state.actor.isAlive()
+                    || state.actor.level() != player.level()
+                    || !state.threat.contains(player.getUUID())) {
+                continue;
+            }
+            var profile = ExternalActorBindingRuntime
+                    .combatProfile(state.actor)
+                    .orElse(null);
+            if (profile != null) {
+                level = Math.max(level, profile.contentLevel());
+            }
+        }
+        return level > 0
+                ? OptionalInt.of(level)
+                : OptionalInt.empty();
     }
 
     public static double incomingDamageMultiplier(LivingEntity target) {

@@ -27,9 +27,10 @@ public record PlayerCombatSessionState(
         Map<String, Long> cooldownEndTicks,
         Optional<PoiseSnapshot> poise,
         Optional<ShockSnapshot> shock,
-        Optional<NegativeStatusesSnapshot> negativeStatuses
+        Optional<NegativeStatusesSnapshot> negativeStatuses,
+        Optional<UltimateSnapshot> ultimate
 ) {
-    public static final int CURRENT_SCHEMA_VERSION = 2;
+    public static final int CURRENT_SCHEMA_VERSION = 3;
 
     private static final Codec<Set<String>> STRING_SET_CODEC =
             Codec.STRING.listOf().xmap(
@@ -66,7 +67,9 @@ public record PlayerCombatSessionState(
                     ShockSnapshot.CODEC.optionalFieldOf("shock")
                             .forGetter(PlayerCombatSessionState::shock),
                     NegativeStatusesSnapshot.CODEC.optionalFieldOf("negative_statuses")
-                            .forGetter(PlayerCombatSessionState::negativeStatuses)
+                            .forGetter(PlayerCombatSessionState::negativeStatuses),
+                    UltimateSnapshot.CODEC.optionalFieldOf("ultimate")
+                            .forGetter(PlayerCombatSessionState::ultimate)
             ).apply(instance, PlayerCombatSessionState::new));
 
     public PlayerCombatSessionState {
@@ -101,6 +104,7 @@ public record PlayerCombatSessionState(
                 negativeStatuses,
                 "negativeStatuses"
         );
+        ultimate = Objects.requireNonNull(ultimate, "ultimate");
     }
 
     /** Resource-only constructor retained for existing callers and legacy tests. */
@@ -128,6 +132,7 @@ public record PlayerCombatSessionState(
                 cooldownEndTicks,
                 Optional.empty(),
                 Optional.empty(),
+                Optional.empty(),
                 Optional.empty()
         );
     }
@@ -150,7 +155,8 @@ public record PlayerCombatSessionState(
                 cooldownEndTicks,
                 Objects.requireNonNull(poise, "poise"),
                 Objects.requireNonNull(shock, "shock"),
-                Objects.requireNonNull(negativeStatuses, "negativeStatuses")
+                Objects.requireNonNull(negativeStatuses, "negativeStatuses"),
+                ultimate
         );
     }
 
@@ -168,8 +174,42 @@ public record PlayerCombatSessionState(
                 Map.of(),
                 Optional.empty(),
                 Optional.empty(),
+                Optional.empty(),
                 Optional.empty()
         );
+    }
+
+    public record UltimateSnapshot(
+            double charge,
+            long lockoutUntilTick,
+            double gainBudget,
+            long gainBudgetRefreshTick
+    ) {
+        public static final Codec<UltimateSnapshot> CODEC =
+                RecordCodecBuilder.create(instance -> instance.group(
+                        Codec.DOUBLE.fieldOf("charge")
+                                .forGetter(UltimateSnapshot::charge),
+                        Codec.LONG.fieldOf("lockout_until_tick")
+                                .forGetter(UltimateSnapshot::lockoutUntilTick),
+                        Codec.DOUBLE.fieldOf("gain_budget")
+                                .forGetter(UltimateSnapshot::gainBudget),
+                        Codec.LONG.fieldOf("gain_budget_refresh_tick")
+                                .forGetter(UltimateSnapshot::gainBudgetRefreshTick)
+                ).apply(instance, UltimateSnapshot::new));
+
+        public UltimateSnapshot {
+            if (!Double.isFinite(charge)
+                    || charge < 0.0
+                    || charge > 100.0
+                    || !Double.isFinite(gainBudget)
+                    || gainBudget < 0.0
+                    || gainBudget > 12.0
+                    || gainBudgetRefreshTick < 0L) {
+                throw new IllegalArgumentException(
+                        "Invalid persisted Ultimate Gauge snapshot."
+                );
+            }
+        }
     }
 
     public record PoiseSnapshot(

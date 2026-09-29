@@ -85,6 +85,7 @@ public final class RebukeRuntime {
         int rebukedTargets = 0;
         double totalDamage = 0.0;
         double totalPoiseDamage = 0.0;
+        LivingEntity ultimateChargePrimary = null;
 
         for (LivingEntity target : targets) {
             var targetSnapshot = ExternalActorBindingRuntime
@@ -139,6 +140,9 @@ public final class RebukeRuntime {
             }
 
             appliedTargets++;
+            if (ultimateChargePrimary == null) {
+                ultimateChargePrimary = target;
+            }
             totalDamage += damage;
             if (poiseDamage > 0.0) {
                 ExternalActorBindingRuntime.applyProjectPoiseDamage(
@@ -171,6 +175,13 @@ public final class RebukeRuntime {
                     nowTick,
                     combat.lastCombatActivityTick()
             );
+            if (ultimateChargePrimary != null) {
+                ProjectUltimateChargeRuntime
+                        .recordClericDamagingActive(
+                                caster,
+                                ultimateChargePrimary
+                        );
+            }
         }
 
         return new Application(
