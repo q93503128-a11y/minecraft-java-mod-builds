@@ -13,11 +13,13 @@ public final class GachaPresentationPlan {
 
     public static List<Reveal> reveals(GachaService.BatchResult result) {
         if (result == null || result.pulls().isEmpty()) return List.of();
-        List<Reveal> newlyOwned = new ArrayList<>();
+        List<Reveal> highlights = new ArrayList<>();
         for (GachaService.PullResult pull : result.pulls()) {
-            if (pull.newlyOwned()) newlyOwned.add(new Reveal(pull.characterId(), pull.nativeStars(), true));
+            if (pull.newlyOwned() || pull.nativeStars() >= 4) {
+                highlights.add(new Reveal(pull.characterId(), pull.nativeStars(), pull.newlyOwned()));
+            }
         }
-        if (!newlyOwned.isEmpty()) return List.copyOf(newlyOwned);
+        if (!highlights.isEmpty()) return List.copyOf(highlights);
 
         GachaService.PullResult best = null;
         for (GachaService.PullResult pull : result.pulls()) {
