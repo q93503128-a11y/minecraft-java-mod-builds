@@ -89,7 +89,8 @@ public final class CampaignProgressStore {
         List<BattleResultSummary.PartyXp> party = progress.activeParty.stream().map(characterId -> {
             CharacterProgression.Gain gain = gain(progress, characterId, xp);
             return new BattleResultSummary.PartyXp(characterId, CanonicalData.definition(characterId).name(),
-                    gain.before().level(), gain.before().xp(), gain.after().level(), gain.after().xp(), gain.xpToNextAfter());
+                    gain.before().level(), gain.before().xp(), gain.after().level(), gain.after().xp(),
+                    gain.xpToNextAfter(), gain.after().bonusLevel());
         }).toList();
         return new BattleResultSummary(xp, gold, firstClear, party);
     }
