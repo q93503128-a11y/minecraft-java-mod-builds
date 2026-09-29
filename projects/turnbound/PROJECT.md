@@ -192,29 +192,27 @@ A branch build is requested by this checkpoint commit. Until its workflow result
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
 
-## New Drabyel service survey bridge — 2026-09-29
+## New Drabyel automatic placement bridge — 2026-09-29
 
-Physical service NPC placement remains fail-closed until the actual migrated Minecraft 26.2 town is inspected.
+New Drabyel service placement no longer requires the user to walk to six locations and enter survey commands.
 
-The operator survey path now supports:
-- `/turnbound survey hub` — lists all six New Drabyel service roles, intended town zones, current gate state and source-backed survey hints
-- `/turnbound survey service greeter`
-- `/turnbound survey service travel`
-- `/turnbound survey service market`
-- `/turnbound survey service blacksmith`
-- `/turnbound survey service story`
-- `/turnbound survey service summon`
+Reference stage:
+- structured Drehmal 2.2.2 map data supplies exact nearby roads, signs, traders, containers and named/source objects
+- only small derived semantic anchors/road points are stored; upstream JSON/images remain reference-only
 
-Each service survey records the standing block/yaw, checks local 3×3 stability/headroom/fluid/cliff risk, checks that the candidate remains within the hub survey radius, and emits a catalog-ready position fragment.
+Live 26.2 stage:
+- service resolution runs only when an active player is within 160 blocks of New Drabyel
+- the actual bound world is scanned around each source-backed semantic anchor
+- candidates require stable ground, three-block headroom, no fluids and source-height consistency
+- nearby block entities are exclusion zones, preserving signs/chests/lecterns/caches and other authored interactions
+- existing villagers/wandering traders are exclusion zones
+- actors are kept off the extracted authored road centerline
+- the selected point is deterministic and actors face the nearest road
+- if no safe point exists, that role stays absent rather than modifying terrain or guessing through a wall
 
-The emitted fragment deliberately keeps `verifiedIn26_2=false` and `productionEnabled=false`. Automatic geometry checks are not allowed to replace human verification of:
-- entrance/door obstruction
-- original Drehmal NPC or interaction conflicts
-- town sightline/readability
-- natural service placement
-- the summon interior's visual suitability
+The six admin `/turnbound survey ...` commands remain debugging/forensics tools only. They are not a normal placement workflow and the user is not expected to execute them one by one.
 
-Only after that screen-level inspection may exact coordinates be promoted into `new_drabyel_services_v1.json`.
+Actual client playtest is still required to judge visual composition and feel, but it is a **single review of the automatically placed hub**, not manual authoring of every coordinate.
 
 ## New Drabyel source micro-layout — 2026-09-29
 
