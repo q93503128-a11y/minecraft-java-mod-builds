@@ -97,4 +97,42 @@ class PlayerNegativeStatusRuntimeStateTest {
         assertEquals(1, state.activeStatusCount(100L));
     }
 
+    @Test
+    void sanctuaryStyleDurationModifierAffectsOnlyStatusesAppliedInsideWindow() {
+        var state = new PlayerNegativeStatusRuntimeState();
+        state.applyNegativeStatusDurationMultiplier(
+                0.80,
+                2L,
+                100L
+        );
+        assertEquals(
+                0.80,
+                state.negativeStatusDurationMultiplier(100L),
+                0.0001
+        );
+
+        state.applyStatusForDuration(
+                "openworld_rpg:inside_mark",
+                Set.of("minor_dispellable"),
+                100L,
+                100L
+        );
+        assertTrue(state.hasStatus("openworld_rpg:inside_mark", 179L));
+        assertFalse(state.hasStatus("openworld_rpg:inside_mark", 180L));
+
+        assertEquals(
+                1.0,
+                state.negativeStatusDurationMultiplier(102L),
+                0.0001
+        );
+        state.applyStatusForDuration(
+                "openworld_rpg:outside_mark",
+                Set.of("minor_dispellable"),
+                100L,
+                102L
+        );
+        assertTrue(state.hasStatus("openworld_rpg:outside_mark", 201L));
+        assertFalse(state.hasStatus("openworld_rpg:outside_mark", 202L));
+    }
+
 }
