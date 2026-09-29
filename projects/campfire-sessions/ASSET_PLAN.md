@@ -198,6 +198,14 @@ Final selection requires:
 
 Furniture should be interactive only when the interaction improves life-sim play.
 
+Furniture candidates should also be evaluated for:
+- pre-placement preview/ghost support.
+- non-destructive rotation before confirmation.
+- safe reposition/undo behavior.
+- stable multiplayer placement synchronization.
+
+If a strong candidate already implements these well, reuse/adapt it before writing a parallel furniture-placement layer.
+
 Furniture candidates should be evaluated for stable rotation/orientation support.
 Prefer reusing a mod's proven placement/rotation behavior when it correctly rotates collision, seats and interaction anchors instead of rebuilding a second transform system.
 
@@ -303,6 +311,12 @@ Potential external families:
 - Kenney Fantasy UI Borders.
 - other coherent external UI packs if they better fit the final island-life tone.
 
+**Kenney UI Pack**
+- 430 UI assets.
+- CC0.
+- already consistent with Campfire's existing use of Kenney assets.
+- strong visual-component source for panels/buttons/icons, but the final navigation hierarchy still needs to be based on coherent reference screens rather than assembling arbitrary large buttons from the pack.
+
 Required screens:
 - calendar/weather.
 - shop.
@@ -315,6 +329,60 @@ Required screens:
 - resident interaction.
 - route/pier UI.
 - village notice-board schedule/detail UI.
+
+### Unified M-menu / UI framework candidates
+
+The M-key menu is a Campfire life-information hub, not a remote replacement for physical village interactions.
+
+**FancyMenu**
+- current Minecraft 26.2 NeoForge release exists.
+- client + server.
+- supports custom GUI screens built from scratch.
+- supports reusable/universal layouts across screens.
+- provides developer integration paths.
+- custom license: treat as a dependency/integration candidate, not code/assets to copy casually.
+- strong prototype/implementation candidate for testing external-reference-driven menu layouts without hardcoding every screen immediately.
+- must not expose FancyMenu's editor/menu bar to ordinary players as part of the final game UX.
+
+**UI Lib by DAQEM**
+- current Minecraft 26.2 NeoForge release exists.
+- client + server.
+- Apache-2.0 licensed.
+- small UI framework/library with published source/wiki.
+- candidate for a cleaner code-native Campfire UI implementation if it provides the widgets/layout behavior needed.
+- evaluate against FancyMenu before adopting both; avoid redundant UI frameworks.
+
+**Modern UI unofficial port**
+- a current 26.2 NeoForge community port exists.
+- powerful view/text/render framework, but it is an unofficial port with a larger rendering/UI footprint.
+- evaluate only if Campfire actually needs its text/layout capabilities; do not add it merely for visual novelty.
+
+Navigation-design rule:
+- first select strong external life-sim/menu references.
+- derive information hierarchy, control density, icon/tab behavior, spacing and screen proportions from those references.
+- then choose the implementation framework.
+- do not let the chosen framework dictate a generic Minecraft/mod-config aesthetic.
+
+Scale/density rule:
+- do not invent giant button/card dimensions simply to fill available screen space.
+- preserve the selected external asset/reference proportions.
+- validate at multiple real Minecraft resolutions and GUI scales before considering the UI complete.
+- prioritize readable information density over empty decorative chrome.
+
+Physical-interaction systems such as mailbox, notice board, shop transactions, museum donation, resident-services administration and Lost & Found must remain separate world interactions even if the same UI asset family is used.
+
+### Island map candidates / references
+**Xaero's World Map**
+- current Minecraft 26.2 NeoForge release exists.
+- client + server.
+- mature fullscreen explored-world map implementation.
+- All Rights Reserved.
+- candidate as a dependency/reference for map rendering/technical behavior only; do not copy code/assets.
+- its default technical exploration-map presentation is not automatically the desired Campfire visual style.
+- if adopted, Campfire still needs an authored life-sim presentation focused on facilities, homes and landmarks rather than debug-like coordinate/waypoint density.
+
+A permanent minimap is not currently required.
+The main requirement is an authored map page inside the M-menu.
 
 ### Village notice-board candidates / references
 Current search found no clean drop-in **Minecraft 26.2 NeoForge** notice-board mod that already matches the required civic schedule system.
