@@ -457,10 +457,15 @@ public final class MetaMenuScreen extends Screen {
         int cardGap=4;
         int cardW=Math.max(70,(innerW-cardGap*(cols-1))/cols);
         int rowY=y+48;
-        for(int i=0;i<choices.size();i++){
+        int visibleRows=UiPaging.rowsThatFit(rowY,contentBottom()-28,24,1);
+        int per=Math.max(1,cols*visibleRows);
+        setPaging(choices.size(),per);
+        int start=page*per,end=Math.min(choices.size(),start+per);
+        for(int i=start;i<end;i++){
             var row=choices.get(i);
+            int local=i-start;
             int cost=StarEssenceExchangeRules.choiceCost(row.nativeStar());
-            int xx=x+(i%cols)*(cardW+cardGap),yy=rowY+(i/cols)*24;
+            int xx=x+(local%cols)*(cardW+cardGap),yy=rowY+(local/cols)*24;
             String label="★"+row.nativeStar()+" "+row.name()+" · "+cost;
             var button=new BattleHudButton(xx,yy,cardW,20,Component.literal(UiTextLayout.fit(label,cardW-8)),
                     snapshot.essence()>=cost?(row.nativeStar()==5?GOLD:PURPLE):MUTED,
@@ -468,7 +473,7 @@ public final class MetaMenuScreen extends Screen {
             button.active=FacilityUiAccess.archive()&&snapshot.essence()>=cost;
             addRenderableWidget(button);
         }
-        currentTotal=0;currentPerPage=1;
+        buildPager();
     }
 
     private void buildQuests(){
