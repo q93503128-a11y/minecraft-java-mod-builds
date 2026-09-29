@@ -7,7 +7,13 @@ import java.util.random.RandomGenerator;
 
 /** Server-side v0.4 Standard/Starter Archive resolver. */
 public final class GachaService {
-    public record PullResult(String characterId, int nativeStars, boolean newlyOwned, int starEssenceGranted, int pityAfter) {}
+    public record PullResult(
+            String characterId, int nativeStars, boolean newlyOwned, int starEssenceGranted, int pityAfter,
+            int bonusLevelGranted, int bonusLevelAfter) {
+        public PullResult(String characterId, int nativeStars, boolean newlyOwned, int starEssenceGranted, int pityAfter) {
+            this(characterId, nativeStars, newlyOwned, starEssenceGranted, pityAfter, 0, 0);
+        }
+    }
     public record BatchResult(List<PullResult> pulls, int crystalSpent) {
         public BatchResult { pulls = List.copyOf(pulls); }
     }
