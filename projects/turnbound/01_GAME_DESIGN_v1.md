@@ -333,10 +333,20 @@ P01~P08은 핵심 영웅 로스터이며, F01~F04를 legacy-only/NPC-only로 밀
 ## 13. 성장
 
 주 성장축:
-- Level 1~60
+- 기본 XP Level 1~60
+- 중복 전용 +Level 0~10 — 기본 레벨과 합산해 실질 최대 Lv70
 - Equipment 3 slots
 - Signature 1 slot
 - Awakening 1회
+
++Level 규칙:
+- 같은 캐릭터 중복 1회당 +1
+- 기본 레벨이 60이 아니어도 즉시 적용
+- 전투/퀘스트 XP와 별도
+- 최대 +10
+- 중복 Star Essence 보상과 동시에 지급
+- +10 이후에도 Essence 보상은 유지
+- 수치 성장축이며 스킬/패시브/별 승급을 중복에 잠그지 않음
 
 삭제/비채택:
 - 별도 스킬 레벨업 재료
