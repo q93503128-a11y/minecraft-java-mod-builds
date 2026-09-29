@@ -45,7 +45,8 @@ public final class BattleSnapshotCodec {
         BattleResultPreview.View preview=playerId==null?new BattleResultPreview.View(session.resultSummary(),java.util.List.of()):BattleResultPreview.enrich(playerId,session.rewardTransactionId(),session.encounterId(),state,session.resultSummary());
         BattleResultSummary result=preview.summary();out.append("R|").append(result.xp()).append('|').append(result.gold()).append('|').append(result.firstClear()?1:0).append('|').append(result.crystal()).append('|').append(result.starEssence()).append('|').append(safe(String.join(",",result.equipmentRewards()))).append('\n');
         for(BattleResultPreview.Notice notice:preview.notices())out.append("N|").append(safe(notice.code())).append('|').append(safe(notice.text())).append('\n');
-        for(BattleResultSummary.PartyXp member:result.party())out.append("P|").append(safe(member.characterId())).append('|').append(safe(member.name())).append('|').append(member.levelBefore()).append('|').append(member.xpBefore()).append('|').append(member.levelAfter()).append('|').append(member.xpAfter()).append('|').append(member.xpToNextAfter()).append('\n');
+        for(BattleResultSummary.PartyXp member:result.party())out.append("P|").append(safe(member.characterId())).append('|').append(safe(member.name())).append('|').append(member.levelBefore()).append('|').append(member.xpBefore()).append('|').append(member.levelAfter()).append('|').append(member.xpAfter()).append('|').append(member.xpToNextAfter()).append('|')
+                .append(member.bonusLevel()).append('\n');
         return out.toString();
     }
 
