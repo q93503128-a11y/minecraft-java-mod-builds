@@ -779,7 +779,7 @@ public final class MetaMenuScreen extends Screen {
                 String status=r.awakened()?"각성 완료":trial!=null&&trial.awakeningReady()?"각성 가능":"선행 조건 진행 중";
                 TurnboundUiSkin.inset(g,x,y+32,w,76);
                 g.text(font,Component.literal("레벨 · "+r.level()+" / "+GrowthRulesV1.maxLevel()),x+8,y+40,TEXT,true);
-                g.text(font,Component.literal("전투 경험치로 성장 · 성급 승급 없음"),x+8,y+56,SECONDARY,false);
+                g.text(font,Component.literal("전투 경험치로 레벨 성장"),x+8,y+56,SECONDARY,false);
                 g.text(font,Component.literal("각성 · "+status),x+8,y+74,r.awakened()?GREEN:GOLD,true);
                 g.text(font,Component.literal(UiTextLayout.fit("Lv60 + 개인 퀘스트 + "+GrowthRulesV1.awakeningGoldCost()+" Gold",w-16)),x+8,y+90,SECONDARY,false);
                 if(trial!=null&&!trial.title().isBlank()&&!trial.objective().isBlank())
