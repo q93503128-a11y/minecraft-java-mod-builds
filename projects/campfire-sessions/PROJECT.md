@@ -25,7 +25,7 @@ Alpha.6 remains the current implemented foundation:
 7. PREV / PLAY-STOP / NEXT / REPEAT-AUTO controls.
 8. outside-UI B/N/R key mappings.
 9. BPM-driven note feedback.
-10. dedicated third-person guitar performance pose.
+10. local-player third-person guitar arm-pose prototype; final full-body instrument performance animation and multiplayer sync are NOT implemented yet.
 11. up to 32 local custom OGG tracks through `config/campfiresessions/music/`.
 12. repeat-one and auto-next.
 13. Build Campfire Sessions CI success and produced 0.6.0-alpha.1 JAR.
@@ -128,5 +128,6 @@ Before implementation, finish the major unresolved items listed in `GAME_DESIGN.
 - building/house prefab set.
 - resident model/rig set.
 - furniture/UI/tool/boat asset selections.
+- player/resident animation stack validation, including the Player Animation Library candidate and final full-body guitar performance.
 - economy numbers.
 - concrete save serialization details and remaining Household implementation edge cases.
