@@ -84,6 +84,9 @@ public final class MetaMenuService {
             case"SUMMON1"->mutate(player,"1회 소환 실패",()->CampaignProgressStore.summonStandard(player.getUUID(),1));
             case"SUMMON10"->mutate(player,"10회 소환 실패",()->CampaignProgressStore.summonStandard(player.getUUID(),10));
             case"STARTER"->mutate(player,"초기 소환 실패",()->CampaignProgressStore.summonStarter(player.getUUID()));
+            case"ESSENCE_CRYSTAL"->mutate(player,"별의 정수 교환 실패",()->CampaignProgressStore.exchangeEssenceForCrystal(player.getUUID()));
+            case"ESSENCE_PICK4"->{if(parts.length<2)return;mutate(player,"★4 선택 교환 실패",()->CampaignProgressStore.exchangeEssenceCharacter(player.getUUID(),4,parts[1]));}
+            case"ESSENCE_PICK5"->{if(parts.length<2)return;mutate(player,"★5 선택 교환 실패",()->CampaignProgressStore.exchangeEssenceCharacter(player.getUUID(),5,parts[1]));}
             case"BUY"->{if(parts.length<2)return;mutate(player,"구매 실패",()->CampaignProgressStore.buyEquipment(player.getUUID(),parts[1]));}
             case"SELL"->{if(parts.length<2)return;cleanupMutate(player,"판매 실패",()->CampaignProgressStore.sellEquipment(player.getUUID(),parts[1]));}
             case"REWARD_CLAIM"->{if(parts.length<2)return;cleanupMutate(player,"장비 보상 수령 실패",()->CampaignProgressStore.claimPendingEquipment(player.getUUID(),parts[1]));}
@@ -108,6 +111,6 @@ public final class MetaMenuService {
     private static int currentShopChapter(Set<String> completed){int completedChapter=0;for(int chapter=1;chapter<=5;chapter++)if(QuestCatalog.chapterComplete(chapter,completed))completedChapter=chapter;return Math.max(1,completedChapter+1);}
     private static String successLabel(String failureLabel){return failureLabel.endsWith(" 실패")?failureLabel.substring(0,failureLabel.length()-3)+" 완료":failureLabel+" 완료";}
     private static void error(ServerPlayer player,String label,RuntimeException ex){MetaNetwork.feedback(player,label+" · "+localize(ex.getMessage()));}
-    private static String localize(String raw){if(raw==null||raw.isBlank())return"조건을 확인하세요.";return raw.replace("Not enough Gold for Awakening","각성에 필요한 Gold가 부족합니다.").replace("Awakening requires Lv60 and character quest completion","각성하려면 Lv60과 개인 퀘스트 완료가 필요합니다.").replace("Signature Trial requires Lv60","전용 장비 시련은 Lv60이 필요합니다.").replace("Accessory slot unlocks after B02","장신구 슬롯은 B02 격파 후 개방됩니다.").replace("Signature slot unlocks after B05","전용 장비 슬롯은 B05 격파 후 개방됩니다.").replace(" is empty","이 비어 있습니다.");}
+    private static String localize(String raw){if(raw==null||raw.isBlank())return"조건을 확인하세요.";return raw.replace("Not enough Star Essence","별의 정수가 부족합니다.").replace("Character is not eligible for this Essence selector","이 선택권으로 교환할 수 없는 캐릭터입니다.").replace("Not enough Gold for Awakening","각성에 필요한 Gold가 부족합니다.").replace("Awakening requires Lv60 and character quest completion","각성하려면 Lv60과 개인 퀘스트 완료가 필요합니다.").replace("Signature Trial requires Lv60","전용 장비 시련은 Lv60이 필요합니다.").replace("Accessory slot unlocks after B02","장신구 슬롯은 B02 격파 후 개방됩니다.").replace("Signature slot unlocks after B05","전용 장비 슬롯은 B05 격파 후 개방됩니다.").replace(" is empty","이 비어 있습니다.");}
     private static boolean inRadia(ServerPlayer player){return player.getX()>=-128&&player.getX()<=128&&player.getZ()>=-112&&player.getZ()<=128;}
 }
