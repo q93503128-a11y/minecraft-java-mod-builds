@@ -358,6 +358,19 @@ Rules:
 - personally causes elite/miniboss/boss poise break: +10;
 - global 12/s cap still applies.
 
+### Warrior production precision binding
+
+- the five root slots are published through the shared project Spell Engine slot authority; donor spell costs, impacts and cooldowns stay neutral while project Mana/Stamina/Ultimate state remains authoritative;
+- `Iron Counter`'s 18 Stamina is checked and spent atomically with the shared accepted-cast transaction. Its current counter admission boundary is a project-owned incoming hit marked `perfect_guardable`; the present R01 authored attack contract does not yet carry a richer melee/ranged semantic tag, so future perfect-guardable ranged attacks must add that tag before they can be safely distinguished here;
+- Momentum basic-cycle gain and the +2 Ultimate event publish once per qualifying attack cycle even when one Better Combat swing hits multiple targets;
+- a Warrior active publishes its +3 Ultimate event at most once per cast. For `Cyclone Cut`, the first visible hit owns that event and the delayed second hit cannot publish a second +3; `Earthshatter` is an Ultimate and does not publish the ordinary-active +3 event;
+- `Cyclone Cut` resolves the locked whole-action PoiseCoefficient proportionally across its two visible hits. Empowered Cyclone uses `0.90 + 1.40 = 2.30` and the second hit resolves five ticks after the first;
+- empowered Cyclone's normal-enemy-only 0.6-block pull remains fail-closed because the current external-actor rank surface combines normal and elite as `NORMAL_ELITE`. The pull must not be enabled until normal and elite are authoritative distinct ranks;
+- Breaker Slam and Earthshatter hyperarmor are bound at the shared player-poise-pressure boundary by dividing incoming poise pressure by `1.60` / `2.00` during their committed windows; this does not grant HP damage reduction or guard-break immunity;
+- Combat Temper exposes the locked `0.90` ordinary hit-stagger-duration multiplier while Momentum is active, but the project does not yet own a shared ordinary hit-stagger reaction-duration consumer. The passive must not be claimed player-visible until that common reaction path exists;
+- the canonical Cyclone movement multiplier, skill-specific dodge-cancel starts, ordinary-enemy stagger/knockdown/launch reactions and final action-recovery feel remain shared action/reaction-system binding work rather than per-skill ad-hoc movement locks;
+- Driving Slash uses collision-resolved forward movement at release, capped at 2.2 blocks or 2.6 empowered. Driving Slash, Breaker Slam and Earthshatter share their server range constants with the authored client geometry; all three also require server line-of-sight so the visible sector cannot legitimize hits through solid walls.
+
 ---
 
 # 4. Warrior first specialization branches

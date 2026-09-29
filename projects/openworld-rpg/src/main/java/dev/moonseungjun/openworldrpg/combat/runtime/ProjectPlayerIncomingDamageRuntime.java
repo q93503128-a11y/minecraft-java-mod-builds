@@ -66,6 +66,25 @@ public final class ProjectPlayerIncomingDamageRuntime {
         var activeDefense = CombatStateServices.defenseStates()
                 .getOrCreate(target.getUUID());
 
+        var counter = WarriorSkillRuntime.tryResolveIronCounter(
+                attacker,
+                target,
+                effectiveHit,
+                defenseSnapshot.orElseThrow(),
+                gameTick
+        );
+        if (counter.isPresent()) {
+            resources.markCombatActivity(gameTick);
+            R01EarthloongMythicRuntime.onPerfectGuard(
+                    target,
+                    gameTick
+            );
+            return IncomingApplication.accepted(
+                    false,
+                    counter.orElseThrow()
+            );
+        }
+
         var resolution = activeDefense.resolveIncoming(
                 resources,
                 defenseSnapshot.orElseThrow(),
@@ -94,6 +113,11 @@ public final class ProjectPlayerIncomingDamageRuntime {
 
         if (resolution.perfectGuarded()) {
             R01EarthloongMythicRuntime.onPerfectGuard(target, gameTick);
+            WarriorSkillRuntime.onSuccessfulPerfectGuard(
+                    target,
+                    attacker,
+                    gameTick
+            );
         }
 
         if (resolution.finalDamage() <= 0.0) {

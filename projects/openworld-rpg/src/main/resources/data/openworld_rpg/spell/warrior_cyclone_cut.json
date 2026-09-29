@@ -1,0 +1,71 @@
+{
+  "school": "spell_power:generic",
+  "range": 3.3,
+  "tier": 1,
+  "group": "warrior_martial",
+  "active": {
+    "cast": {
+      "duration": 0.2
+    }
+  },
+  "release": {
+    "animation": {
+      "id": "spell_engine:one_handed_area_release_air_wave",
+      "speed": 1
+    },
+    "visuals": {
+      "models": [
+        {
+          "model_id": "openworld_rpg:spell_effect/warrior_cyclone_cut",
+          "light_emission": "GLOW_TRANSLUCENT",
+          "scale": 1,
+          "duration": 12,
+          "positioning": {
+            "vertical": 0.05
+          }
+        }
+      ],
+      "particles": [
+        {
+          "id": "spell_engine:magic_spark",
+          "appearance": {
+            "color": 4293447744,
+            "motion": "BURST"
+          },
+          "batch": {
+            "count": 4,
+            "shape": "CIRCLE",
+            "anchor": "ENTITY",
+            "alignment": "LOOK",
+            "angle": 28,
+            "vertical_origin": 0.2,
+            "min_speed": 0.02,
+            "max_speed": 0.1,
+            "width_factor": 1
+          }
+        }
+      ]
+    },
+    "sound": {
+      "id": "minecraft:entity.player.attack.sweep",
+      "randomness": 0.04
+    }
+  },
+  "target": {
+    "type": "NONE"
+  },
+  "deliver": {
+    "type": "DIRECT"
+  },
+  "impacts": [],
+  "cost": {
+    "batching": false,
+    "exhaust": 0,
+    "durability": 0,
+    "cooldown": {
+      "attempt_duration": 0,
+      "duration": 0,
+      "hosting_item": false
+    }
+  }
+}

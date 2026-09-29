@@ -14,5 +14,17 @@
   "key.openworld_rpg.active_skill_2": "Active Skill 2",
   "key.openworld_rpg.active_skill_3": "Active Skill 3",
   "key.openworld_rpg.active_skill_4": "Active Skill 4",
-  "key.openworld_rpg.ultimate": "Ultimate"
+  "key.openworld_rpg.ultimate": "Ultimate",
+  "spell.openworld_rpg.warrior_driving_slash.name": "Driving Slash",
+  "spell.openworld_rpg.warrior_driving_slash.description": "Drive forward with a heavy slash. Full Momentum empowers the strike.",
+  "spell.openworld_rpg.warrior_iron_counter.name": "Iron Counter",
+  "spell.openworld_rpg.warrior_iron_counter.description": "Brace briefly and counter the first valid committed melee hit.",
+  "spell.openworld_rpg.warrior_cyclone_cut.name": "Cyclone Cut",
+  "spell.openworld_rpg.warrior_cyclone_cut.description": "Spin through two visible cuts around you. Full Momentum empowers the second hit.",
+  "spell.openworld_rpg.warrior_breaker_slam.name": "Breaker Slam",
+  "spell.openworld_rpg.warrior_breaker_slam.description": "Commit to a poise-heavy frontal slam with temporary hyperarmor.",
+  "spell.openworld_rpg.warrior_earthshatter.name": "Earthshatter",
+  "spell.openworld_rpg.warrior_earthshatter.description": "Rupture the ground ahead with overwhelming damage and poise pressure.",
+  "spell.openworld_rpg.consecrated_ground.name": "Consecrated Ground",
+  "spell.openworld_rpg.consecrated_ground.description": "Consecrate the ground around you, restoring allies and damaging enemies within the field."
 }

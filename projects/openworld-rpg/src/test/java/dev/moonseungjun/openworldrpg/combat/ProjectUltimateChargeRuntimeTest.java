@@ -7,6 +7,34 @@ import org.junit.jupiter.api.Test;
 
 class ProjectUltimateChargeRuntimeTest {
     @Test
+    void warriorChargeEventsMatchRootCanon() {
+        assertEquals(
+                2.0,
+                ProjectUltimateChargeRuntime
+                        .WARRIOR_BASIC_CYCLE_CHARGE,
+                0.0001
+        );
+        assertEquals(
+                3.0,
+                ProjectUltimateChargeRuntime
+                        .WARRIOR_ACTIVE_HIT_CHARGE,
+                0.0001
+        );
+        assertEquals(
+                5.0,
+                ProjectUltimateChargeRuntime
+                        .WARRIOR_PERFECT_GUARD_CHARGE,
+                0.0001
+        );
+        assertEquals(
+                10.0,
+                ProjectUltimateChargeRuntime
+                        .WARRIOR_POISE_BREAK_CHARGE,
+                0.0001
+        );
+    }
+
+    @Test
     void supportStepsUseFivePercentAndCapAtSixChargeWorth() {
         assertEquals(
                 0,

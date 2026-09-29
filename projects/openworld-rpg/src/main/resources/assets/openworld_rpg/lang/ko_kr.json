@@ -14,5 +14,17 @@
   "key.openworld_rpg.active_skill_2": "액티브 스킬 2",
   "key.openworld_rpg.active_skill_3": "액티브 스킬 3",
   "key.openworld_rpg.active_skill_4": "액티브 스킬 4",
-  "key.openworld_rpg.ultimate": "궁극기"
+  "key.openworld_rpg.ultimate": "궁극기",
+  "spell.openworld_rpg.warrior_driving_slash.name": "돌진 베기",
+  "spell.openworld_rpg.warrior_driving_slash.description": "전진하며 강하게 베어냅니다. 기세가 가득 차면 공격이 강화됩니다.",
+  "spell.openworld_rpg.warrior_iron_counter.name": "철벽 반격",
+  "spell.openworld_rpg.warrior_iron_counter.description": "짧게 자세를 잡아 처음 들어오는 유효한 근접 공격을 받아치고 반격합니다.",
+  "spell.openworld_rpg.warrior_cyclone_cut.name": "선풍참",
+  "spell.openworld_rpg.warrior_cyclone_cut.description": "주위를 두 차례 연속으로 베어냅니다. 기세가 가득 차면 두 번째 타격이 강화됩니다.",
+  "spell.openworld_rpg.warrior_breaker_slam.name": "파쇄 강타",
+  "spell.openworld_rpg.warrior_breaker_slam.description": "경직 저항을 유지하며 전방을 강타해 큰 포이즈 압력을 줍니다.",
+  "spell.openworld_rpg.warrior_earthshatter.name": "대지 분쇄",
+  "spell.openworld_rpg.warrior_earthshatter.description": "전방의 지면을 갈라 막대한 피해와 포이즈 압력을 줍니다.",
+  "spell.openworld_rpg.consecrated_ground.name": "축성지",
+  "spell.openworld_rpg.consecrated_ground.description": "주변 지면을 축성해 범위 안의 아군을 회복시키고 적에게 피해를 줍니다."
 }

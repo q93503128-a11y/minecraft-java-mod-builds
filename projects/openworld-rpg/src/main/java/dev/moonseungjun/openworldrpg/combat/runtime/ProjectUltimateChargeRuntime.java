@@ -18,6 +18,10 @@ public final class ProjectUltimateChargeRuntime {
     public static final double CLERIC_DAMAGING_ACTIVE_CHARGE = 2.0;
     public static final double CLERIC_SUPPORT_STEP_CHARGE = 2.0;
     public static final double CLERIC_CLEANSE_CHARGE = 3.0;
+    public static final double WARRIOR_BASIC_CYCLE_CHARGE = 2.0;
+    public static final double WARRIOR_ACTIVE_HIT_CHARGE = 3.0;
+    public static final double WARRIOR_PERFECT_GUARD_CHARGE = 5.0;
+    public static final double WARRIOR_POISE_BREAK_CHARGE = 10.0;
     public static final double SUPPORT_STEP_MAX_HP_FRACTION = 0.05;
     public static final int MAX_SUPPORT_STEPS_PER_SOURCE_RECIPIENT = 3;
 
@@ -194,6 +198,73 @@ public final class ProjectUltimateChargeRuntime {
         );
     }
 
+    public static GainApplication recordWarriorBasicCycle(
+            ServerPlayer warrior,
+            LivingEntity hostile
+    ) {
+        return recordWarriorHostileEvent(
+                warrior,
+                hostile,
+                WARRIOR_BASIC_CYCLE_CHARGE
+        );
+    }
+
+    public static GainApplication recordWarriorActiveHit(
+            ServerPlayer warrior,
+            LivingEntity hostile
+    ) {
+        return recordWarriorHostileEvent(
+                warrior,
+                hostile,
+                WARRIOR_ACTIVE_HIT_CHARGE
+        );
+    }
+
+    public static GainApplication recordWarriorPerfectGuard(
+            ServerPlayer warrior,
+            LivingEntity hostile
+    ) {
+        return recordWarriorHostileEvent(
+                warrior,
+                hostile,
+                WARRIOR_PERFECT_GUARD_CHARGE
+        );
+    }
+
+    public static GainApplication recordWarriorPoiseBreak(
+            ServerPlayer warrior,
+            LivingEntity hostile
+    ) {
+        return recordWarriorHostileEvent(
+                warrior,
+                hostile,
+                WARRIOR_POISE_BREAK_CHARGE
+        );
+    }
+
+    private static GainApplication recordWarriorHostileEvent(
+            ServerPlayer warrior,
+            LivingEntity hostile,
+            double authoredCharge
+    ) {
+        Objects.requireNonNull(warrior, "warrior");
+        Objects.requireNonNull(hostile, "hostile");
+        if (!isWarrior(warrior)) {
+            return GainApplication.rejected();
+        }
+        var profile = ExternalActorBindingRuntime
+                .combatProfile(hostile)
+                .orElse(null);
+        if (profile == null) {
+            return GainApplication.rejected();
+        }
+        return recordClassEvent(
+                warrior,
+                authoredCharge,
+                profile.contentLevel()
+        );
+    }
+
     public static double charge(ServerPlayer player) {
         Objects.requireNonNull(player, "player");
         long nowTick = player.level().getGameTime();
@@ -255,6 +326,13 @@ public final class ProjectUltimateChargeRuntime {
                 MAX_SUPPORT_STEPS_PER_SOURCE_RECIPIENT,
                 Math.max(0, steps)
         );
+    }
+
+    private static boolean isWarrior(ServerPlayer player) {
+        return PlayerProgressionService.state(player)
+                .activeClass()
+                .filter(RootClass.WARRIOR::equals)
+                .isPresent();
     }
 
     private static boolean isCleric(ServerPlayer player) {

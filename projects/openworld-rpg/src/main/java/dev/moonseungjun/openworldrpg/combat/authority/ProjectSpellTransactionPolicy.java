@@ -40,7 +40,11 @@ public final class ProjectSpellTransactionPolicy implements SpellCastAuthority.P
                 return false;
             }
             return !state.isCoolingDown(spec.id(), context.gameTick())
-                    && state.canSpendMana(spec.manaCost(), context.gameTick());
+                    && state.canSpendMana(spec.manaCost(), context.gameTick())
+                    && state.canSpendStamina(
+                            spec.staminaCost(),
+                            context.gameTick()
+                    );
         }
     }
 
@@ -58,8 +62,35 @@ public final class ProjectSpellTransactionPolicy implements SpellCastAuthority.P
                 return false;
             }
             if (state.isCoolingDown(spec.id(), context.gameTick())
-                    || !state.spendMana(spec.manaCost(), context.gameTick())) {
+                    || !state.canSpendMana(
+                            spec.manaCost(),
+                            context.gameTick()
+                    )
+                    || !state.canSpendStamina(
+                            spec.staminaCost(),
+                            context.gameTick()
+                    )) {
                 return false;
+            }
+
+            if (spec.manaCost() > 0.0
+                    && !state.spendMana(
+                            spec.manaCost(),
+                            context.gameTick()
+                    )) {
+                throw new IllegalStateException(
+                        "Mana changed inside synchronized spell transaction."
+                );
+            }
+            if (spec.staminaCost() > 0.0
+                    && !state.spendStamina(
+                            spec.staminaCost(),
+                            0L,
+                            context.gameTick()
+                    )) {
+                throw new IllegalStateException(
+                        "Stamina changed inside synchronized spell transaction."
+                );
             }
 
             state.startCooldown(spec.id(), spec.cooldownTicks(), context.gameTick());

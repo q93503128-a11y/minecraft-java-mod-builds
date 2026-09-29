@@ -1,6 +1,6 @@
-# Kenney Particle Pack — Rebuke support textures
+# Kenney Particle Pack — project combat support textures
 
-Player-facing use: Cleric `Rebuke` short-lived 3D holy fan support material.
+Player-facing use: Cleric `Rebuke` support material and Warrior root-skill slash support material.
 
 Authoritative source page: https://kenney.nl/assets/particle-pack
 
@@ -22,10 +22,16 @@ Exact byte corroboration source used for the committed PNGs:
 - `2d/Particle Pack/PNG (Transparent)/magic_03.png`
   - Git blob: `65f69d649a290e5c4e292efb288f457f8323d6b3`
   - SHA-256 previously recorded by the project's Phase-F audit: `c2ef5fe86cd2fd08e5b9768389ab6580b346c391db3c7c09fc9b0a63e00ec4ce`
+- `2d/Particle Pack/PNG (Transparent)/slash_01.png`
+  - Git blob: `c04fa2d3938827da63105172748851db86735aa6`
+  - fetched as exact base64 bytes from the same pinned corroboration commit for the Warrior root-skill binding
 
 Runtime outputs:
 
 - `assets/openworld_rpg/textures/spell/rebuke_light_kenney.png`
 - `assets/openworld_rpg/textures/spell/rebuke_magic_kenney.png`
+- `assets/openworld_rpg/textures/spell/warrior_slash_kenney.png`
 
 The PNGs are used as texture/support layers only. Rebuke's attack identity is the project-authored 3D fan volume whose length/width constants are shared with the server hit geometry. These generic Kenney inputs are not promoted as a reusable signature-boss VFX family.
+
+Warrior skills use `slash_01.png` as a support material on project-authored 3D slash/sector geometry. The texture does not define gameplay range; `WarriorSkillShape` remains the shared server/client geometry authority. Final in-Minecraft color, opacity and timing acceptance remains playtest work.

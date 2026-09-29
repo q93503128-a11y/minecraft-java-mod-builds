@@ -7,11 +7,17 @@ import java.util.Optional;
 public record ProjectSpellSpec(
         String id,
         double manaCost,
+        double staminaCost,
         int cooldownTicks,
         double actionCoefficient,
         double poiseCoefficient,
         int reentryWindowTicks
 ) {
+    public static final String WARRIOR_DRIVING_SLASH_ID = "openworld_rpg:warrior_driving_slash";
+    public static final String WARRIOR_IRON_COUNTER_ID = "openworld_rpg:warrior_iron_counter";
+    public static final String WARRIOR_CYCLONE_CUT_ID = "openworld_rpg:warrior_cyclone_cut";
+    public static final String WARRIOR_BREAKER_SLAM_ID = "openworld_rpg:warrior_breaker_slam";
+    public static final String WARRIOR_EARTHSHATTER_ID = "openworld_rpg:warrior_earthshatter";
     public static final String ARC_BOLT_ID = "openworld_rpg:arc_bolt";
     public static final String RADIANT_LANCE_ID = "openworld_rpg:radiant_lance";
     public static final String MEND_ID = "openworld_rpg:mend";
@@ -36,10 +42,88 @@ public record ProjectSpellSpec(
         if (!Double.isFinite(manaCost) || manaCost < 0) {
             throw new IllegalArgumentException("Mana cost must be finite and non-negative.");
         }
+        if (!Double.isFinite(staminaCost) || staminaCost < 0) {
+            throw new IllegalArgumentException("Stamina cost must be finite and non-negative.");
+        }
         if (cooldownTicks < 0 || !Double.isFinite(actionCoefficient) || actionCoefficient < 0
                 || !Double.isFinite(poiseCoefficient) || poiseCoefficient < 0 || reentryWindowTicks < 0) {
             throw new IllegalArgumentException("Invalid project spell numeric contract: " + id);
         }
+    }
+
+    public ProjectSpellSpec(
+            String id,
+            double manaCost,
+            int cooldownTicks,
+            double actionCoefficient,
+            double poiseCoefficient,
+            int reentryWindowTicks
+    ) {
+        this(
+                id,
+                manaCost,
+                0.0,
+                cooldownTicks,
+                actionCoefficient,
+                poiseCoefficient,
+                reentryWindowTicks
+        );
+    }
+
+    public static ProjectSpellSpec warriorDrivingSlash() {
+        return new ProjectSpellSpec(
+                WARRIOR_DRIVING_SLASH_ID,
+                20.0,
+                120,
+                0.0,
+                0.0,
+                1
+        );
+    }
+
+    public static ProjectSpellSpec warriorIronCounter() {
+        return new ProjectSpellSpec(
+                WARRIOR_IRON_COUNTER_ID,
+                0.0,
+                18.0,
+                200,
+                0.0,
+                0.0,
+                1
+        );
+    }
+
+    public static ProjectSpellSpec warriorCycloneCut() {
+        return new ProjectSpellSpec(
+                WARRIOR_CYCLONE_CUT_ID,
+                28.0,
+                220,
+                0.0,
+                0.0,
+                1
+        );
+    }
+
+    public static ProjectSpellSpec warriorBreakerSlam() {
+        return new ProjectSpellSpec(
+                WARRIOR_BREAKER_SLAM_ID,
+                36.0,
+                300,
+                0.0,
+                0.0,
+                1
+        );
+    }
+
+    public static ProjectSpellSpec warriorEarthshatter() {
+        return new ProjectSpellSpec(
+                WARRIOR_EARTHSHATTER_ID,
+                0.0,
+                0,
+                0.0,
+                0.0,
+                1
+        );
     }
 
     public static ProjectSpellSpec arcBolt() {
@@ -111,6 +195,7 @@ public record ProjectSpellSpec(
     public static Optional<RootClass> requiredRootClass(String spellId) {
         Objects.requireNonNull(spellId, "spellId");
         return switch (spellId) {
+            case WARRIOR_DRIVING_SLASH_ID, WARRIOR_IRON_COUNTER_ID, WARRIOR_CYCLONE_CUT_ID, WARRIOR_BREAKER_SLAM_ID, WARRIOR_EARTHSHATTER_ID -> Optional.of(RootClass.WARRIOR);
             case ARC_BOLT_ID -> Optional.of(RootClass.MAGE);
             case RADIANT_LANCE_ID, MEND_ID, CONSECRATED_GROUND_ID, REBUKE_ID, SANCTUARY_ID ->
                     Optional.of(RootClass.CLERIC);

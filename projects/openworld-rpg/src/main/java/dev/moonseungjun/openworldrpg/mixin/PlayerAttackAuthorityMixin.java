@@ -6,6 +6,7 @@ import dev.moonseungjun.openworldrpg.combat.authority.CombatDamageAuthority;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBasicAttackCadenceRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
 import dev.moonseungjun.openworldrpg.combat.runtime.R01EarthloongMythicRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.WarriorSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentService;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
@@ -96,14 +97,27 @@ public abstract class PlayerAttackAuthorityMixin {
             return false;
         }
 
+        boolean poiseBreakTriggered = false;
         if (decision.poiseDamage() > 0.0) {
-            var poiseApplication = ExternalActorBindingRuntime.applyProjectPoiseDamage(
-                    livingTarget,
-                    decision.poiseDamage(),
-                    gameTick
-            );
-            if (poiseApplication.isPresent()
-                    && poiseApplication.orElseThrow().breakTriggered()
+            double warriorPoiseMultiplier =
+                    attacker instanceof ServerPlayer serverPlayer
+                            ? WarriorSkillRuntime
+                                    .momentumPoiseOutputMultiplier(
+                                            serverPlayer,
+                                            gameTick
+                                    )
+                            : 1.0;
+            var poiseApplication =
+                    ExternalActorBindingRuntime.applyProjectPoiseDamage(
+                            livingTarget,
+                            decision.poiseDamage()
+                                    * warriorPoiseMultiplier,
+                            gameTick
+                    );
+            poiseBreakTriggered = poiseApplication.isPresent()
+                    && poiseApplication.orElseThrow()
+                            .breakTriggered();
+            if (poiseBreakTriggered
                     && attacker instanceof ServerPlayer serverPlayer) {
                 R01EarthloongMythicRuntime.onPersonalEliteBossPoiseBreak(
                         serverPlayer,
@@ -112,6 +126,15 @@ public abstract class PlayerAttackAuthorityMixin {
                         gameTick
                 );
             }
+        }
+        if (attacker instanceof ServerPlayer serverPlayer) {
+            WarriorSkillRuntime.onMeleeBasicHit(
+                    serverPlayer,
+                    livingTarget,
+                    decision.cycleFinisher(),
+                    poiseBreakTriggered,
+                    gameTick
+            );
         }
         CombatStateServices.markCombatActivity(attacker.getUUID(), gameTick);
         return true;

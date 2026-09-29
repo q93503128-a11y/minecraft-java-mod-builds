@@ -11,6 +11,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplic
 import dev.moonseungjun.openworldrpg.combat.runtime.RadiantLanceRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.RebukeRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.SanctuaryRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.WarriorSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatStateStore;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionService;
@@ -172,6 +173,23 @@ public final class SpellEngineAuthorityAdapter {
             return;
         }
 
+        for (ProjectSpellSpec warrior : new ProjectSpellSpec[]{
+                ProjectSpellSpec.warriorDrivingSlash(),
+                ProjectSpellSpec.warriorIronCounter(),
+                ProjectSpellSpec.warriorCycloneCut(),
+                ProjectSpellSpec.warriorBreakerSlam(),
+                ProjectSpellSpec.warriorEarthshatter()
+        }) {
+            AUTHORITY.registerPolicy(
+                    warrior.id(),
+                    new ProjectSpellTransactionPolicy(
+                            warrior,
+                            COMBAT_STATES,
+                            ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                    )
+            );
+        }
+
         ProjectSpellSpec arcBolt = ProjectSpellSpec.arcBolt();
         AUTHORITY.registerPolicy(
                 arcBolt.id(),
@@ -294,6 +312,17 @@ public final class SpellEngineAuthorityAdapter {
                 && !ConsecratedGroundRuntime.canActivate(serverPlayer)) {
             return invokeStatic(attemptNone);
         }
+        if (ProjectSpellSpec.requiredRootClass(spellId)
+                .filter(RootClass.WARRIOR::equals)
+                .isPresent()
+                && player instanceof ServerPlayer serverPlayer
+                && (!acceptedStage || firstAcceptedCast)
+                && !WarriorSkillRuntime.canActivate(
+                        serverPlayer,
+                        spellId
+                )) {
+            return invokeStatic(attemptNone);
+        }
 
         SpellCastAuthority.AttemptDecision decision = acceptedStage
                 ? AUTHORITY.commitAcceptedCast(
@@ -315,6 +344,15 @@ public final class SpellEngineAuthorityAdapter {
                 && player instanceof ServerPlayer serverPlayer) {
             if (ProjectSpellSpec.SANCTUARY_ID.equals(spellId)) {
                 if (!SanctuaryRuntime.activate(serverPlayer).accepted()) {
+                    return invokeStatic(attemptNone);
+                }
+            } else if (ProjectSpellSpec.requiredRootClass(spellId)
+                    .filter(RootClass.WARRIOR::equals)
+                    .isPresent()) {
+                if (!WarriorSkillRuntime.onAcceptedCast(
+                        serverPlayer,
+                        spellId
+                ).accepted()) {
                     return invokeStatic(attemptNone);
                 }
             } else {
@@ -430,6 +468,14 @@ public final class SpellEngineAuthorityAdapter {
                 if (ProjectSpellSpec.REBUKE_ID.equals(spellId)
                         && player instanceof ServerPlayer serverPlayer) {
                     RebukeRuntime.release(serverPlayer);
+                } else if (ProjectSpellSpec.requiredRootClass(spellId)
+                        .filter(RootClass.WARRIOR::equals)
+                        .isPresent()
+                        && player instanceof ServerPlayer serverPlayer) {
+                    WarriorSkillRuntime.release(
+                            serverPlayer,
+                            spellId
+                    );
                 }
                 mirrorRemainingProjectCooldown(player, spellEntry, spellId, gameTick);
             }

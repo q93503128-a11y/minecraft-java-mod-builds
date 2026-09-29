@@ -22,7 +22,17 @@ public final class ProjectPlayerPoisePressureRuntime {
         }
 
         long gameTick = target.level().getGameTime();
-        var result = state.orElseThrow().apply(pressure, gameTick);
+        double hyperarmorMultiplier =
+                WarriorSkillRuntime.hyperarmorMultiplier(
+                        target,
+                        gameTick
+                );
+        double effectivePressure = pressure
+                / Math.max(1.0, hyperarmorMultiplier);
+        var result = state.orElseThrow().apply(
+                effectivePressure,
+                gameTick
+        );
         if (result.breakTriggered()) {
             RecoveryUseRuntime.cancelPreResolution(target, gameTick);
         }

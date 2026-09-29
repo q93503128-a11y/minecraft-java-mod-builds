@@ -37,7 +37,15 @@ public final class ProjectClassSkillLoadout {
                 case 4 -> Optional.of(ProjectSpellSpec.SANCTUARY_ID);
                 default -> Optional.empty();
             };
-            case WARRIOR, HUNTER, GUARDIAN -> Optional.empty();
+            case WARRIOR -> switch (slotIndex) {
+                case 0 -> Optional.of(ProjectSpellSpec.WARRIOR_DRIVING_SLASH_ID);
+                case 1 -> Optional.of(ProjectSpellSpec.WARRIOR_IRON_COUNTER_ID);
+                case 2 -> Optional.of(ProjectSpellSpec.WARRIOR_CYCLONE_CUT_ID);
+                case 3 -> Optional.of(ProjectSpellSpec.WARRIOR_BREAKER_SLAM_ID);
+                case 4 -> Optional.of(ProjectSpellSpec.WARRIOR_EARTHSHATTER_ID);
+                default -> Optional.empty();
+            };
+            case HUNTER, GUARDIAN -> Optional.empty();
         };
     }
 

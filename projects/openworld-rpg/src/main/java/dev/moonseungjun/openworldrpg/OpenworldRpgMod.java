@@ -53,6 +53,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.ConsecratedGroundRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBasicAttackCadenceRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.R01EarthloongMythicRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.SanctuaryRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.WarriorSkillRuntime;
 import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeAttachments;
 import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeService;
 import dev.moonseungjun.openworldrpg.world.spatial.R01QuarrySpatialBindingRegistry;
@@ -108,6 +109,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             RecoveryUseRuntime.tick(server);
             ConsecratedGroundRuntime.tick(server);
             SanctuaryRuntime.tick(server);
+            WarriorSkillRuntime.tick(server);
             R01RoadsideTroubleController.tickActiveWorld(server);
             if (Math.floorMod(server.getTickCount(), 20) == 0) {
                 for (var player : server.getPlayerList().getPlayers()) {
@@ -171,6 +173,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             R01EarthloongMythicRuntime.disconnect(playerId);
             ConsecratedGroundRuntime.disconnect(playerId);
             SanctuaryRuntime.disconnect(playerId);
+            WarriorSkillRuntime.disconnect(playerId);
             ProjectBasicAttackCadenceRuntime.disconnect(playerId);
             CombatStateServices.disconnect(playerId);
         });

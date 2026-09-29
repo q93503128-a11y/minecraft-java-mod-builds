@@ -12,6 +12,36 @@ class ProjectClassSkillLoadoutTest {
     @Test
     void implementedSpellsKeepTheirCanonicalRootSlots() {
         assertEquals(
+                ProjectSpellSpec.WARRIOR_DRIVING_SLASH_ID,
+                ProjectClassSkillLoadout
+                        .spellId(RootClass.WARRIOR, 0)
+                        .orElseThrow()
+        );
+        assertEquals(
+                ProjectSpellSpec.WARRIOR_IRON_COUNTER_ID,
+                ProjectClassSkillLoadout
+                        .spellId(RootClass.WARRIOR, 1)
+                        .orElseThrow()
+        );
+        assertEquals(
+                ProjectSpellSpec.WARRIOR_CYCLONE_CUT_ID,
+                ProjectClassSkillLoadout
+                        .spellId(RootClass.WARRIOR, 2)
+                        .orElseThrow()
+        );
+        assertEquals(
+                ProjectSpellSpec.WARRIOR_BREAKER_SLAM_ID,
+                ProjectClassSkillLoadout
+                        .spellId(RootClass.WARRIOR, 3)
+                        .orElseThrow()
+        );
+        assertEquals(
+                ProjectSpellSpec.WARRIOR_EARTHSHATTER_ID,
+                ProjectClassSkillLoadout
+                        .spellId(RootClass.WARRIOR, 4)
+                        .orElseThrow()
+        );
+        assertEquals(
                 ProjectSpellSpec.ARC_BOLT_ID,
                 ProjectClassSkillLoadout
                         .spellId(RootClass.MAGE, 0)
@@ -59,10 +89,11 @@ class ProjectClassSkillLoadoutTest {
                         .implementedSlots(RootClass.CLERIC)
                         .size()
         );
-        assertTrue(
+        assertEquals(
+                5,
                 ProjectClassSkillLoadout
                         .implementedSlots(RootClass.WARRIOR)
-                        .isEmpty()
+                        .size()
         );
     }
 

@@ -21,8 +21,14 @@ public final class ProjectSpellInputRules {
         return (ProjectSpellSpec.ARC_BOLT_ID.equals(spellId)
                 || ProjectSpellSpec.RADIANT_LANCE_ID.equals(spellId)
                 || ProjectSpellSpec.MEND_ID.equals(spellId)
+                || ProjectSpellSpec.CONSECRATED_GROUND_ID.equals(spellId)
                 || ProjectSpellSpec.REBUKE_ID.equals(spellId)
-                || ProjectSpellSpec.SANCTUARY_ID.equals(spellId))
+                || ProjectSpellSpec.SANCTUARY_ID.equals(spellId)
+                || ProjectSpellSpec.WARRIOR_DRIVING_SLASH_ID.equals(spellId)
+                || ProjectSpellSpec.WARRIOR_IRON_COUNTER_ID.equals(spellId)
+                || ProjectSpellSpec.WARRIOR_CYCLONE_CUT_ID.equals(spellId)
+                || ProjectSpellSpec.WARRIOR_BREAKER_SLAM_ID.equals(spellId)
+                || ProjectSpellSpec.WARRIOR_EARTHSHATTER_ID.equals(spellId))
                 && !freshPress;
     }
 }

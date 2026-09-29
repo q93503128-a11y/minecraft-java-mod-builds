@@ -311,6 +311,16 @@ The already-approved Kenney source families now have a small exact-file shortlis
 
 Direct candidate hashes, dimensions and durations are in `R01_ASSET_PHASE_F_KENNEY_EXACT_SHORTLIST_2026-09-18.md`.
 
+### Warrior root runtime binding delta — 2026-09-29
+
+Warrior root skills use the already Phase-F-shortlisted Kenney Particle Pack `slash_01.png` as a support material inside project-authored 3D slash/sector geometry. Exact committed bytes are taken from pinned corroboration repository `shorepine/kenney` commit `3694c6879e487c108f55677be7dd2ca75b07cc3b`, Git blob `c04fa2d3938827da63105172748851db86735aa6`, and are recorded under `external-assets/kenney-particle-pack/SOURCE.md`.
+
+Driving Slash, Breaker Slam and Earthshatter read the same `WarriorSkillShape` range constants used by server hit acceptance. Cyclone owns a distinct rotating 3D slash silhouette rather than generic particle fog; Iron Counter owns a short defensive slash-plane cue. Generic Spell Engine sparks and currently-selected release sounds are subordinate support/readability layers only and are not considered final audio acceptance.
+
+State: `RUNTIME_BOUND / BUILD_AND_MINECRAFT_VISUAL_ACCEPTANCE_PENDING`.
+
+Open production gaps remain explicit: final melee animation/recovery/dodge-cancel coupling is not yet owned by a shared action layer; Combat Temper has no shared ordinary hit-stagger-duration consumer; normal-only Cyclone pull is blocked until actor rank distinguishes normal from elite. These are runtime-system gaps, not reasons to substitute particle-only presentation.
+
 ### Rebuke runtime binding delta — 2026-09-29
 
 Cleric `Rebuke` now uses the already-shortlisted Kenney Particle Pack `light_03.png` and `magic_03.png` as support textures inside a project-authored full-bright 3D frontal fan. Exact committed-byte provenance is recorded in `external-assets/kenney-particle-pack/SOURCE.md`; the authoritative Kenney Particle Pack page remains the license authority and currently states CC0. The effect geometry is not a generic sprite-only substitute: its locked 4.5-block reach and playtest-tunable fan envelope are shared with the server `RebukeBurstShape` hit calculation so presentation and authoritative hit volume stay coupled.

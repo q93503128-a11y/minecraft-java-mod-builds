@@ -3,6 +3,7 @@ package dev.moonseungjun.openworldrpg.mixin;
 import com.mojang.blaze3d.vertex.PoseStack;
 import dev.moonseungjun.openworldrpg.client.ConsecratedGroundRenderer;
 import dev.moonseungjun.openworldrpg.client.SanctuaryWardRenderer;
+import dev.moonseungjun.openworldrpg.client.WarriorSkillRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import org.spongepowered.asm.mixin.Mixin;
@@ -12,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Replaces project-owned Cleric holy-ground model effects with authored 3D ground wards.
+ * Replaces project-owned Cleric/Warrior model effects with authored 3D geometry.
  */
 @Mixin(
         targets = "net.spell_engine.client.render.SpellModelEffectRenderer",
@@ -32,7 +33,11 @@ public abstract class SpellEngineSanctuaryWardRendererMixin {
             CameraRenderState cameraState,
             CallbackInfo ci
     ) {
-        if (ConsecratedGroundRenderer.renderIfOwned(
+        if (WarriorSkillRenderer.renderIfOwned(
+                state,
+                matrices,
+                queue
+        ) || ConsecratedGroundRenderer.renderIfOwned(
                 state,
                 matrices,
                 queue
