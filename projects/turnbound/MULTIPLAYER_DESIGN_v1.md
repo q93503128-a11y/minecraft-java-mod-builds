@@ -50,8 +50,8 @@ VFX는 겹친 전투의 노이즈를 막기 위해 처음부터 전부 공유하
 
 ## 5. Co-op PvE
 
-현재 single-owner `BattleSession`을 다중 입력으로 땜질하지 않는다.
-별도 `SharedBattleSession` 계열이 필요하다.
+single-owner `BattleSession`을 다중 입력으로 땜질하지 않는다.
+별도 `SharedBattleSession` 계열을 사용한다. 현재 정적 구현은 존재하지만 실제 멀티플레이 검증 전에는 완료로 판정하지 않는다.
 
 확정:
 - 1인 전투는 기존처럼 아군이 한 줄로 선다.
@@ -62,13 +62,21 @@ VFX는 겹친 전투의 노이즈를 막기 위해 처음부터 전부 공유하
 - HP 외 ATK/DEF/SPD는 이 인원 배율로 올리지 않는다.
 - 같은 캐릭터를 서로 다른 플레이어가 가져올 수 있으므로 actor instance는 owner별로 분리한다.
 
-남은 확정/구현:
-- 행동 owner와 client input routing
-- AUTO의 owner별/파티장 제어 규칙
-- disconnect/rejoin
-- reward/quest credit
-- wipe/flee
-- boss phase/world clear
+현재 정적 구현:
+- 행동 owner별 client input routing
+- owner별 AUTO, 파티장 speed/flee 권한
+- 같은 서버 메모리 기반 disconnect/rejoin
+- 참가자별 reward/quest credit 및 transaction id
+- 온라인 참가자 결과 확인과 오프라인 참가자 WAL 기반 지연 정산
+- 참가 인원별 적 HP 배율, owner별 2×2 진형
+- 승리 후 shared field encounter/world clear 복귀
+
+남은 검증/보강:
+- 실제 2/3/4인 동시 입력과 owner 권한 검증
+- 전투 중/결과 화면 중 disconnect/rejoin 실검증
+- 오프라인 참가자가 있는 상태의 서버 종료 및 WAL 복구 실검증
+- wipe/flee/보스 phase/field return의 실제 멀티 흐름
+- 중복 보상·저장 실패 재시도·카메라/귀환 위치 검증
 
 ## 6. PvP
 
@@ -91,26 +99,31 @@ VFX는 겹친 전투의 노이즈를 막기 위해 처음부터 전부 공유하
 - battle actor spectator visibility
 - owner-only helper marker isolation
 
-구현 기반:
+구현:
+- 파티 관리 UI가 관리 메뉴의 파티 화면 안에 통합됨
 - shared battle capacity: 최대 16 regular allies + 플레이어별 summon
 - shared encounter roster blueprint / actor owner map
 - player-count enemy HP scaling
 - 2x2 owner block battle formation
 - co-op 폭에 맞춘 battle camera framing 범위 확대
+- SharedBattleSession owner input/AUTO/speed/flee lifecycle
+- field encounter → nearby eligible party shared-battle start
+- 같은 서버 재접속 resume
+- 참가자별 보상 transaction + 오프라인 WAL 정산
+- initiator 로그아웃 상태에서도 claimant UUID로 Drehmal field encounter 종료
 
-아직 미구현:
-- full party management UI
-- SharedBattleSession input/reward lifecycle
-- field encounter → nearby party shared-battle start 연결
+아직 미구현/미검증:
 - duel battle
 - ranked
-- multiplayer playtest
+- 실제 multiplayer playtest
+- 2~4인 최대 구성에서의 카메라/귀환/저장 실패/재접속 edge case 실검증
 
 
 ## 8. 현재 검증 상태
 
-- CODE REVIEWED: 부분 정적 검토
-- BUILD VERIFIED: 이번 작업에서는 실행하지 않음
+- CODE REVIEWED: YES — shared session/owner routing/offline settlement 경로 정적 검토
+- TESTED: 회귀 테스트 추가, 최신 branch 실행 결과는 별도 build checkpoint에서 확인
+- BUILD VERIFIED: 최신 shared-settlement 수정 기준 아직 미확인
 - CLIENT RUNTIME TESTED: NO
 - MULTIPLAYER TESTED: NO
 
