@@ -27,6 +27,7 @@ public final class MetaMenuScreen extends Screen {
     private enum OwnershipFilter { ALL, OWNED, UNOWNED }
     private enum RoleFilter { ALL, DPS, SUPPORT, TANK, SUMMON }
     private enum EquipSort { TIER, LEVEL, STAT }
+    private record DetailLine(String text, int color) {}
 
     private static final int TEXT=0xFFF4F0E6, SECONDARY=0xFFAEB7C6, MUTED=0xFF707987;
     private static final int BLUE=0xFF6DC6FF, GREEN=0xFF62D39A, GOLD=0xFFFFC857, DANGER=0xFFFF6B6B;
@@ -154,8 +155,8 @@ public final class MetaMenuScreen extends Screen {
         }
     }
 
-    private int homePanelW(){return Math.min(620,Math.max(320,width-16));}
-    private int homePanelH(){return Math.min(330,Math.max(210,height-12));}
+    private int homePanelW(){return Math.min(620,Math.max(1,width-16));}
+    private int homePanelH(){return Math.min(330,Math.max(1,height-12));}
     private int homePanelX(){return (width-homePanelW())/2;}
     private int homePanelY(){return (height-homePanelH())/2;}
 
@@ -294,11 +295,11 @@ public final class MetaMenuScreen extends Screen {
             selectedSkillIndex=Math.max(0,Math.min(selectedSkillIndex,skills.size()-1));
             if(!skills.isEmpty()){
                 int portraitSize=Math.min(116,Math.max(76,Math.min(panelWidth/5,contentBottom()-(contentTop()+27)-6)));
-                int sx=left+18+portraitSize+14;
-                int sw=Math.max(80,left+panelWidth-18-sx);
+                int sx=compactLayout?left+16:left+18+portraitSize+14;
+                int sw=compactLayout?Math.max(80,panelWidth-32):Math.max(80,left+panelWidth-18-sx);
                 int gapSkill=3;
                 int bw=Math.max(42,(sw-gapSkill*(skills.size()-1))/Math.max(1,skills.size()));
-                int by=contentTop()+58;
+                int by=compactLayout?contentTop()+43:contentTop()+58;
                 for(int i=0;i<skills.size();i++){
                     final int index=i;
                     var skill=skills.get(i);
@@ -388,15 +389,31 @@ public final class MetaMenuScreen extends Screen {
             return;
         }
         boolean canSummon=FacilityUiAccess.archive();
-        var one=new BattleHudButton(left+16,y,120,22,Component.literal("1회 소환 · 300"),canSummon?BLUE:MUTED,ignored->send("SUMMON1"));
-        one.active=canSummon&&s.crystal()>=GachaCatalog.SINGLE_COST;addRenderableWidget(one);
-        var ten=new BattleHudButton(left+142,y,136,22,Component.literal("10회 소환 · 3000"),canSummon?GOLD:MUTED,ignored->send("SUMMON10"));
-        ten.active=canSummon&&s.crystal()>=GachaCatalog.TEN_COST;addRenderableWidget(ten);
-        int recordX=left+panelWidth-126;
-        addRenderableWidget(new BattleHudButton(recordX,y,110,22,Component.literal("소환 기록"),MUTED,ignored->openArchiveLog()));
-        if(s.starterArchiveAvailable()){
-            var starter=new BattleHudButton(left+284,y,154,22,Component.literal("초기 10회 · 3000"),canSummon?GREEN:MUTED,ignored->send("STARTER"));
-            starter.active=canSummon&&s.crystal()>=GachaCatalog.TEN_COST;addRenderableWidget(starter);
+        if(compactLayout){
+            int x=left+16,innerW=Math.max(1,panelWidth-32),gap=4,half=Math.max(1,(innerW-gap)/2);
+            var one=new BattleHudButton(x,y,half,22,Component.literal("1회 · 300"),canSummon?BLUE:MUTED,ignored->send("SUMMON1"));
+            one.active=canSummon&&s.crystal()>=GachaCatalog.SINGLE_COST;addRenderableWidget(one);
+            var ten=new BattleHudButton(x+half+gap,y,innerW-half-gap,22,Component.literal("10회 · 3000"),canSummon?GOLD:MUTED,ignored->send("SUMMON10"));
+            ten.active=canSummon&&s.crystal()>=GachaCatalog.TEN_COST;addRenderableWidget(ten);
+
+            int row2=y+26;
+            int recordW=s.starterArchiveAvailable()?half:innerW;
+            addRenderableWidget(new BattleHudButton(x,row2,recordW,22,Component.literal("소환 기록"),MUTED,ignored->openArchiveLog()));
+            if(s.starterArchiveAvailable()){
+                var starter=new BattleHudButton(x+half+gap,row2,innerW-half-gap,22,Component.literal("초기 10회"),canSummon?GREEN:MUTED,ignored->send("STARTER"));
+                starter.active=canSummon&&s.crystal()>=GachaCatalog.TEN_COST;addRenderableWidget(starter);
+            }
+        }else{
+            var one=new BattleHudButton(left+16,y,120,22,Component.literal("1회 소환 · 300"),canSummon?BLUE:MUTED,ignored->send("SUMMON1"));
+            one.active=canSummon&&s.crystal()>=GachaCatalog.SINGLE_COST;addRenderableWidget(one);
+            var ten=new BattleHudButton(left+142,y,136,22,Component.literal("10회 소환 · 3000"),canSummon?GOLD:MUTED,ignored->send("SUMMON10"));
+            ten.active=canSummon&&s.crystal()>=GachaCatalog.TEN_COST;addRenderableWidget(ten);
+            int recordX=left+panelWidth-126;
+            addRenderableWidget(new BattleHudButton(recordX,y,110,22,Component.literal("소환 기록"),MUTED,ignored->openArchiveLog()));
+            if(s.starterArchiveAvailable()){
+                var starter=new BattleHudButton(left+284,y,154,22,Component.literal("초기 10회 · 3000"),canSummon?GREEN:MUTED,ignored->send("STARTER"));
+                starter.active=canSummon&&s.crystal()>=GachaCatalog.TEN_COST;addRenderableWidget(starter);
+            }
         }
         currentTotal=0;currentPerPage=1;
     }
@@ -695,19 +712,28 @@ public final class MetaMenuScreen extends Screen {
     private void drawCharacters(GuiGraphicsExtractor g){
         if(selectedCharacterId.isBlank()) return;
         var r=character(selectedCharacterId);if(r==null)return;
-        int portraitX=left+18,portraitY=contentTop()+27;
-        int portraitSize=Math.min(116,Math.max(76,Math.min(panelWidth/5,contentBottom()-portraitY-6)));
-        TurnboundUiSkin.orbBase(g,portraitX,portraitY,portraitSize);
-        int portraitInset=Math.max(8,portraitSize/8);
-        TurnboundPortraitRenderer.extractBust(
-                g,r.id(),
-                portraitX+portraitInset,portraitY+portraitInset,
-                portraitX+portraitSize-portraitInset,portraitY+portraitSize-portraitInset,
-                !r.owned());
-        TurnboundUiSkin.orbOverlay(g,portraitX,portraitY,portraitSize,r.owned(),false,false);
-        int x=portraitX+portraitSize+14,y=contentTop()+30,w=Math.max(80,left+panelWidth-18-x);
-        g.text(font,Component.literal(UiTextLayout.fit(r.name()+" · "+(r.owned()?(r.awakened()?"각성 · ":"")+"★"+r.nativeStar()+" Lv."+r.level():"미보유 · ★"+r.nativeStar()),w)),x,y,r.owned()?TEXT:MUTED,true);
-        g.text(font,Component.literal(UiTextLayout.fit(r.role(),w)),x,y+14,SECONDARY,false);
+        boolean compactSkills=compactLayout&&detailTab==DetailTab.SKILLS;
+        int x,y,w;
+        if(compactSkills){
+            x=left+16;y=contentTop()+27;w=Math.max(80,panelWidth-32);
+            String header=r.name()+" · "+(r.owned()?(r.awakened()?"각성 · ":"")+"★"+r.nativeStar()+" Lv."+r.level():"미보유 · ★"+r.nativeStar())
+                    +" · "+primaryRoleLabel(r.primaryRole());
+            g.text(font,Component.literal(UiTextLayout.fit(header,w)),x,y,r.owned()?TEXT:MUTED,true);
+        }else{
+            int portraitX=left+18,portraitY=contentTop()+27;
+            int portraitSize=Math.min(116,Math.max(76,Math.min(panelWidth/5,contentBottom()-portraitY-6)));
+            TurnboundUiSkin.orbBase(g,portraitX,portraitY,portraitSize);
+            int portraitInset=Math.max(8,portraitSize/8);
+            TurnboundPortraitRenderer.extractBust(
+                    g,r.id(),
+                    portraitX+portraitInset,portraitY+portraitInset,
+                    portraitX+portraitSize-portraitInset,portraitY+portraitSize-portraitInset,
+                    !r.owned());
+            TurnboundUiSkin.orbOverlay(g,portraitX,portraitY,portraitSize,r.owned(),false,false);
+            x=portraitX+portraitSize+14;y=contentTop()+30;w=Math.max(80,left+panelWidth-18-x);
+            g.text(font,Component.literal(UiTextLayout.fit(r.name()+" · "+(r.owned()?(r.awakened()?"각성 · ":"")+"★"+r.nativeStar()+" Lv."+r.level():"미보유 · ★"+r.nativeStar()),w)),x,y,r.owned()?TEXT:MUTED,true);
+            g.text(font,Component.literal(UiTextLayout.fit(r.role(),w)),x,y+14,SECONDARY,false);
+        }
         switch(detailTab){
             case OVERVIEW->{
                 g.text(font,Component.literal("HP "+r.hp()+"   ATK "+r.attack()+"   DEF "+r.defense()+"   SPD "+r.speed()),x,y+34,GREEN,false);
@@ -719,38 +745,24 @@ public final class MetaMenuScreen extends Screen {
                 if(skills.isEmpty())break;
                 int index=Math.max(0,Math.min(selectedSkillIndex,skills.size()-1));
                 var skill=skills.get(index);
-                int detailY=y+58;
+                int detailY=compactSkills?contentTop()+66:y+58;
                 String type=skill.isBasic()?"기본 공격":"액티브";
-                String metaLine=type+" · "+(skill.cooldown()<=0?"쿨타임 없음":"쿨타임 "+skill.cooldown()+"턴");
-                g.text(font,Component.literal(skill.name()),x,detailY,skill.isBasic()?GREEN:GOLD,true);
+                List<DetailLine> details=skillDetailLines(r.id(),skill.description(),w);
+                int bodyY=detailY+28;
+                int visible=Math.max(1,(contentBottom()-bodyY)/10);
+                int maxScroll=Math.max(0,details.size()-visible);
+                skillDescriptionScroll=Math.max(0,Math.min(skillDescriptionScroll,maxScroll));
+                String scroll=maxScroll>0?" · 휠 "+(skillDescriptionScroll+1)+"/"+(maxScroll+1):"";
+                String metaLine=type+" · "+(skill.cooldown()<=0?"쿨타임 없음":"쿨타임 "+skill.cooldown()+"턴")+scroll;
+                g.text(font,Component.literal(UiTextLayout.fit(skill.name(),w)),x,detailY,skill.isBasic()?GREEN:GOLD,true);
                 g.text(font,Component.literal(UiTextLayout.fit(metaLine,w)),x,detailY+13,SECONDARY,false);
 
-                int cursor=detailY+28;
-                List<String> skillLines=UiTextLayout.wrap(skill.description(),w,96);
-                int skillLimit=Math.min(3,skillLines.size());
-                for(int i=0;i<skillLimit;i++){
-                    g.text(font,Component.literal(skillLines.get(i)),x,cursor,TEXT,false);
+                int end=Math.min(details.size(),skillDescriptionScroll+visible);
+                int cursor=bodyY;
+                for(int i=skillDescriptionScroll;i<end;i++){
+                    DetailLine line=details.get(i);
+                    g.text(font,Component.literal(line.text()),x,cursor,line.color(),false);
                     cursor+=10;
-                }
-
-                var passives=CharacterPassiveCatalog.forOwner(r.id());
-                if(!passives.isEmpty()&&cursor+22<contentBottom()){
-                    cursor+=5;
-                    TurnboundFrameStyle.divider(g,x,cursor,w);
-                    cursor+=8;
-                    g.text(font,Component.literal("패시브"),x,cursor,GOLD,true);
-                    cursor+=13;
-                    for(var passive:passives){
-                        if(cursor+10>=contentBottom())break;
-                        g.text(font,Component.literal(passive.name()),x,cursor,GOLD,false);
-                        cursor+=11;
-                        for(String line:UiTextLayout.wrap(passive.description(),w,96)){
-                            if(cursor+10>=contentBottom())break;
-                            g.text(font,Component.literal(line),x,cursor,SECONDARY,false);
-                            cursor+=10;
-                        }
-                        cursor+=3;
-                    }
                 }
             }
             case EQUIPMENT->{
@@ -818,18 +830,29 @@ public final class MetaMenuScreen extends Screen {
             return;
         }
 
-        int y=contentTop()+34;
         String pity="★5 천장 "+s.fiveStarPity()+" / "+GachaCatalog.HARD_PITY
                 +" · 확률 상승 "+GachaCatalog.SOFT_PITY_START+"회부터";
+        String upperRates=String.format(Locale.ROOT,"★5 %.0f%%   ★4 %.0f%%   ★3 %.0f%%",
+                GachaCatalog.BASE_FIVE_STAR_RATE*100.0,GachaCatalog.FOUR_STAR_RATE*100.0,GachaCatalog.THREE_STAR_RATE*100.0);
+        String lowerRates=String.format(Locale.ROOT,"★2 %.0f%%   ★1 %.0f%%",
+                GachaCatalog.TWO_STAR_RATE*100.0,GachaCatalog.ONE_STAR_RATE*100.0);
+
+        if(compactLayout){
+            int x=left+16,w=Math.max(1,panelWidth-32),y=contentTop()+57;
+            g.text(font,Component.literal(UiTextLayout.fit(pity,w)),x,y,GOLD,false);
+            g.text(font,Component.literal("소환 확률"),x,y+13,TEXT,true);
+            g.text(font,Component.literal(UiTextLayout.fit(upperRates,w)),x,y+26,GOLD,false);
+            g.text(font,Component.literal(UiTextLayout.fit(lowerRates,w)),x,y+39,SECONDARY,false);
+            g.text(font,Component.literal(UiTextLayout.fit("10회 소환 · 최소 ★4 이상 1명 보장",w)),x,y+52,GREEN,false);
+            return;
+        }
+
+        int y=contentTop()+34;
         g.text(font,Component.literal(pity),left+16,y-7,GOLD,false);
 
         int boxX=left+16,boxY=y+12,boxW=Math.min(310,panelWidth-32),boxH=82;
         TurnboundUiSkin.inset(g,boxX,boxY,boxW,boxH);
         g.text(font,Component.literal("소환 확률"),boxX+10,boxY+8,TEXT,true);
-        String upperRates=String.format(Locale.ROOT,"★5 %.0f%%   ★4 %.0f%%   ★3 %.0f%%",
-                GachaCatalog.BASE_FIVE_STAR_RATE*100.0,GachaCatalog.FOUR_STAR_RATE*100.0,GachaCatalog.THREE_STAR_RATE*100.0);
-        String lowerRates=String.format(Locale.ROOT,"★2 %.0f%%   ★1 %.0f%%",
-                GachaCatalog.TWO_STAR_RATE*100.0,GachaCatalog.ONE_STAR_RATE*100.0);
         g.text(font,Component.literal(upperRates),boxX+10,boxY+27,GOLD,false);
         g.text(font,Component.literal(lowerRates),boxX+10,boxY+45,SECONDARY,false);
         g.text(font,Component.literal("10회 소환 · 최소 ★4 이상 1명 보장"),boxX+10,boxY+63,GREEN,false);
@@ -889,6 +912,20 @@ public final class MetaMenuScreen extends Screen {
         int y=contentBottom()-24;
         String s=(selected.cleared()?"클리어 · ":"")+selected.label()+" · Lv."+selected.level();
         g.text(font,Component.literal(UiTextLayout.fit(s,panelWidth-200)),left+16,y,selected.cleared()?GREEN:TEXT,false);
+    }
+
+    private List<DetailLine> skillDetailLines(String characterId,String skillDescription,int width){
+        List<DetailLine> out=new ArrayList<>();
+        for(String line:UiTextLayout.wrap(skillDescription,width,96))out.add(new DetailLine(line,TEXT));
+        var passives=CharacterPassiveCatalog.forOwner(characterId);
+        if(!passives.isEmpty()){
+            out.add(new DetailLine("패시브",GOLD));
+            for(var passive:passives){
+                out.add(new DetailLine(passive.name(),GOLD));
+                for(String line:UiTextLayout.wrap(passive.description(),width,96))out.add(new DetailLine(line,SECONDARY));
+            }
+        }
+        return List.copyOf(out);
     }
 
     private List<ClientMetaState.CharacterRow> filteredCharacters(){
