@@ -44,6 +44,15 @@ class DrehmalMapPlacementCatalogTest {
         }
     }
 
+    @Test void fieldNpcsStayOnTheirSemanticRoadSections() {
+        assertEquals("temple_tower_approach",
+                DrehmalMapPlacementCatalog.placement("turnbound:site/capital_valley/first_guide").zoneId());
+        assertEquals("tower_cave_choice",
+                DrehmalMapPlacementCatalog.placement("turnbound:site/capital_valley/tower_watch").zoneId());
+        assertEquals("camp_transition",
+                DrehmalMapPlacementCatalog.placement("turnbound:site/capital_valley/camp_explorer").zoneId());
+    }
+
     @Test void sourceRevisionIsPinned() {
         assertEquals("zachaa/DrehmalMap",DrehmalMapPlacementCatalog.plan().source().repository());
         assertEquals("72d82180cbe3f950f068cf2d8e8668c6b09d5c58",DrehmalMapPlacementCatalog.plan().source().commit());
