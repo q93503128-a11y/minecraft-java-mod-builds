@@ -438,7 +438,7 @@
     },
     {
       "siteLocator": "turnbound:site/capital_valley/first_guide",
-      "zoneId": "roadhead_reveal",
+      "zoneId": "temple_tower_approach",
       "strictSite": true,
       "searchRadius": 7,
       "siteSeeds": [
