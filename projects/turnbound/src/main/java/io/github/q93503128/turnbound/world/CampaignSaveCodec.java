@@ -22,7 +22,7 @@ import java.util.Set;
 
 /** Versioned campaign save codec with explicit v0.4 -> v1 compatibility migration. */
 public final class CampaignSaveCodec {
-    public static final int SCHEMA_VERSION = 5;
+    public static final int SCHEMA_VERSION = 6;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final List<String> DEFAULT_PARTY = List.of("P01", "P03", "P04", "P08");
 
@@ -46,7 +46,7 @@ public final class CampaignSaveCodec {
     public static CampaignProgressStore.Snapshot decode(String json) {
         JsonObject root = JsonParser.parseString(json).getAsJsonObject();
         int schema = root.has("schemaVersion") ? root.get("schemaVersion").getAsInt() : 1;
-        if (schema != 1 && schema != 4 && schema != SCHEMA_VERSION) {
+        if (schema != 1 && schema != 4 && schema != 5 && schema != SCHEMA_VERSION) {
             throw new IllegalStateException("Unsupported TURNBOUND campaign save schema " + schema);
         }
 
@@ -64,7 +64,7 @@ public final class CampaignSaveCodec {
         }
 
         EquipmentDecode equipmentDecode = schema >= 4 && root.has("equipment")
-                ? decodeEquipment(root.getAsJsonObject("equipment"), orphanedEquipment, schema < SCHEMA_VERSION)
+                ? decodeEquipment(root.getAsJsonObject("equipment"), orphanedEquipment, schema < 5)
                 : new EquipmentDecode(EquipmentInventory.Snapshot.empty(), 0);
         if (equipmentDecode.goldRefund() > 0) profile = withGoldRefund(profile, equipmentDecode.goldRefund());
         EquipmentInventory.Snapshot equipment = equipmentDecode.snapshot();
@@ -97,6 +97,8 @@ public final class CampaignSaveCodec {
             item.addProperty("newlyOwned", row.newlyOwned());
             item.addProperty("starEssenceGranted", row.starEssenceGranted());
             item.addProperty("pityAfter", row.pityAfter());
+            item.addProperty("bonusLevelGranted", row.bonusLevelGranted());
+            item.addProperty("bonusLevelAfter", row.bonusLevelAfter());
             history.add(item);
         }
         out.add("summonHistory", history);
@@ -122,7 +124,10 @@ public final class CampaignSaveCodec {
             int pityAfter = Math.max(0, Math.min(GachaCatalog.HARD_PITY - 1, optionalInt(row, "pityAfter", 0)));
             history.add(new PlayerProfile.SummonHistory(characterId, stars,
                     optionalBoolean(row, "newlyOwned", false),
-                    Math.max(0, optionalInt(row, "starEssenceGranted", 0)), pityAfter));
+                    Math.max(0, optionalInt(row, "starEssenceGranted", 0)), pityAfter,
+                    Math.max(0, Math.min(1, optionalInt(row, "bonusLevelGranted", 0))),
+                    Math.max(0, Math.min(io.github.q93503128.turnbound.progression.GrowthRulesV1.duplicateBonusMax(),
+                            optionalInt(row, "bonusLevelAfter", 0)))));
         }
         if (history.size() > GachaCatalog.HISTORY_LIMIT) history = history.subList(history.size() - GachaCatalog.HISTORY_LIMIT, history.size());
         List<List<String>> presets = new ArrayList<>();
@@ -168,6 +173,7 @@ public final class CampaignSaveCodec {
             JsonObject state = new JsonObject();
             state.addProperty("level", entry.getValue().level());
             state.addProperty("xp", entry.getValue().xp());
+            state.addProperty("bonusLevel", entry.getValue().bonusLevel());
             out.add(entry.getKey(), state);
         });
         return out;
@@ -178,7 +184,11 @@ public final class CampaignSaveCodec {
         for (var entry : raw.entrySet()) {
             if (!GachaCatalog.isKnownCharacter(entry.getKey())) { orphaned.add(entry.getKey()); continue; }
             JsonObject state = entry.getValue().getAsJsonObject();
-            out.put(entry.getKey(), new CharacterProgression.State(optionalInt(state, "level", 1), optionalInt(state, "xp", 0)));
+            out.put(entry.getKey(), new CharacterProgression.State(
+                    optionalInt(state, "level", 1),
+                    optionalInt(state, "xp", 0),
+                    Math.max(0, Math.min(io.github.q93503128.turnbound.progression.GrowthRulesV1.duplicateBonusMax(),
+                            optionalInt(state, "bonusLevel", 0)))));
         }
         return out;
     }
