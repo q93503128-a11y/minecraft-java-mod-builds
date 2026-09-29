@@ -105,25 +105,28 @@ Confirmed Standard Archive baseline restored on 2026-09-26:
 
 Do not revert this table to a ★3~★5-only pool without a new explicit user decision.
 
-## Canon reconciliation hold — 2026-09-28
+## Canon reconciliation status — 2026-09-29
 
-A separate Codex audit is pending for broader v0.4 → v1 regressions.
+The independent TURNBOUND canon/regression audit has been reviewed against the current workbranch.
 
-Already confirmed and therefore **not pending**:
+Confirmed:
 - TURNBOUND is separate from TURNBOUND: RE.
 - ★1~★2 remain part of TURNBOUND.
 - F01/F02 remain ★1.
 - F03/F04 remain ★2.
 - P05 remains ★5.
 - the five-tier Standard Archive table above is the restored baseline.
-- commit `93a0c9d02b25fd8e46643ba10f1009165b7a2780` reintroduced a stale ★3~★5-only assumption after the 2026-09-26 restoration.
+- commit `93a0c9d02b25fd8e46643ba10f1009165b7a2780` reintroduced a stale ★3~★5-only summon assumption after the 2026-09-26 restoration.
+- the current P01~P08 v1 kits, Drehmal world transition, Lv1~60 XP growth, equipment structure, and removal of the global Awakening Core spending path are intentional overhaul work and must not be reverted as collateral damage.
 
-Still pending audit before further canon edits:
-- `nativeStar` / `currentStar` progression details
+Still unresolved and requiring an explicit user decision before implementation changes:
+- exact `nativeStar` / `currentStar` progression semantics
 - promotion / ★6 / Awakening relationship
-- any other v0.4 system removed during the v1 overhaul without a later explicit user decision
+- low-rarity material usage semantics
+- F03 initial story grant/composition
+- any other historical v0.4 system not individually classified as regression or intentional overhaul
 
-Until that audit is reviewed, do not infer that omitted v0.4 systems are either restored or deleted.
+Do not infer a restore/delete decision for those unresolved systems from historical implementation alone.
 
 ## Economy
 
@@ -208,7 +211,7 @@ Validation labels stay distinct:
 - PLAYTESTED
 - MULTIPLAYER TESTED
 
-## Last verified implementation checkpoint
+## Historical verified implementation checkpoint
 
 - CODE REVIEWED: YES
 - TESTED: YES — fixed-point scheduler + P01~P08 v1 combat runtime + Drehmal first-route binding + battle-center camera + CV-A/B/C production enemies + Warning Cave Cavehorn Elite asset/AI/reward contract + Drabyel-road Hill Marksman two-step aim telegraph/retarget contract + shallow RPG quick-menu navigation + source-backed Drehmal world-map replacement + New Drabyel physical service NPC runtime/facility gating + R_PG-derived single-representative field encounters + deterministic roam/dwell pacing + Minecraft terrain-aware PathfinderMob navigation with blocked-route recovery + horizontal Tower/camp/Drabyel safety-ring aggro exclusion and visible-enemy return behavior + R_PG-derived short in-world alert prelude + survey-gated transient location banners + close-range server-authored service prompts + server-authored Drehmal first-route navigation + authoritative pre-battle return view and immediate field-context resync after battle + external-vs-legacy field-command authority isolation + Drehmal-specific first-hub facility/summon gating + Drehmal world-map/minimap routing + external-world meta-surface isolation + legacy world-writer fail-closed guards + external-runtime eviction of retained legacy sessions + admin-only direct summon commands + explicit battle-transition field handoff + unified client presentation ownership + field HUD/shortcut suppression during handoff + short post-outro result reveal + progression-first contextual first-route guidance + persistent one-step New Drabyel onboarding + complete six-role FableCraft New Drabyel service visual family + v1 summon economy/roster migration + private world-first 3D summon reveal + v1 level/equipment/Awakening growth migration + schema-5 legacy-save conversion + P01~P08 v1 signature-resource/target presentation binding + P01~P08 role-prop asset contract + distinct two-layer core-hero action audio + shared live-3D portrait binding across battle/meta/summon/result UI + persistent live-3D signature body-language states for P01/P03/P05/P06/P07+Toto/P08 including P08 Overheat + dedicated 3D relation sigils for P01 Duel/P05 Sightline/P04 Sanctuary/P07 partner protection that follow the actual target actor + duplicate-safe animated Turn Order rail shifts so P02/Gauge manipulation is read as movement rather than a snapped list + authoritative signature payoff beats for P01/P03/P04/P05/P06/P07+Toto/P08, including Morwen Last Page and Signature Toto authored-animation parity + first Capital Valley battle contextual onboarding that teaches Basic → Turn Order → Active/CD in the existing action header without a modal tutorial + durable Tower → Explorer camp → Drabyel approach → hub route milestones so navigation/objectives never rewind when the player backtracks + opt-in one-click test-pack bootstrap that downloads/verifies official Drehmal 2.2.2f only on first install and retains the world for later JAR-only TURNBOUND updates
