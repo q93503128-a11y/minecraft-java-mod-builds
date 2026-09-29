@@ -210,6 +210,14 @@ public final class ProjectUltimateChargeRuntime {
                 .ultimateLockoutRemainingTicks(nowTick);
     }
 
+    public static boolean canActivateUltimate(ServerPlayer player) {
+        Objects.requireNonNull(player, "player");
+        long nowTick = player.level().getGameTime();
+        return CombatStateServices.states()
+                .getOrCreate(player.getUUID(), nowTick)
+                .canActivateUltimate(nowTick);
+    }
+
     public static boolean tryActivateUltimate(ServerPlayer player) {
         Objects.requireNonNull(player, "player");
         long nowTick = player.level().getGameTime();
