@@ -59,12 +59,17 @@ final class DrehmalVisibleEncounterService {
     }
 
     static boolean onBattleEnded(ServerPlayer player, String combatEncounterId, BattleOutcome outcome) {
-        if (player == null || combatEncounterId == null || combatEncounterId.isBlank()) return false;
+        if (player == null || !(player.level() instanceof ServerLevel level)) return false;
+        return onBattleEnded(level, player.getUUID(), combatEncounterId, outcome);
+    }
+
+    static boolean onBattleEnded(ServerLevel level, UUID claimantId, String combatEncounterId, BattleOutcome outcome) {
+        if (level == null || claimantId == null || combatEncounterId == null || combatEncounterId.isBlank()) return false;
         DrehmalFirstRouteCatalog.EncounterSlot slot = DrehmalFirstRouteCatalog.encounterByCombatId(combatEncounterId);
         if (slot == null) return false;
 
         SharedEncounter runtime = ENCOUNTERS.get(slot.locator());
-        if (runtime != null) runtime.resolve(player, outcome);
+        if (runtime != null) runtime.resolve(claimantId, level.getGameTime(), outcome);
         return true;
     }
 
@@ -416,11 +421,11 @@ final class DrehmalVisibleEncounterService {
             return List.copyOf(out);
         }
 
-        private void resolve(ServerPlayer player, BattleOutcome outcome) {
-            if (player == null) return;
-            if (claimedBy != null && !claimedBy.equals(player.getUUID())) return;
+        private void resolve(UUID claimantId, long gameTime, BattleOutcome outcome) {
+            if (claimantId == null) return;
+            if (claimedBy != null && !claimedBy.equals(claimantId)) return;
             claimedBy = null;
-            availableAt = player.level().getGameTime()
+            availableAt = gameTime
                     + DrehmalEncounterActivationRules.respawnTicks(spec.respawnSeconds(), outcome);
             blockedArenaWarned = false;
             resetToRoute();
