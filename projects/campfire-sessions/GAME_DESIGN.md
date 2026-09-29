@@ -2339,7 +2339,12 @@ HouseholdState:
 - shared home storage.
 
 PlayerProfile:
+- player UUID-backed identity.
+- Campfire display name.
+- birthday/profile setup state.
+- personal appearance / selected base look.
 - personal encyclopedia.
+- learned recipe book.
 - resident relationships.
 - owned/worn clothing and personal appearance state.
 - personal records/history that should follow that player.
@@ -2364,6 +2369,7 @@ Core UI must use selected external UI design assets.
 Do not improvise the final visual language.
 
 Screens likely include:
+- first-run character creator/profile setup.
 - calendar/weather.
 - shop.
 - loans/housing.
@@ -2373,6 +2379,7 @@ Screens likely include:
 - catalog.
 - wardrobe.
 - museum information.
+- Lost & Found.
 
 Keep one coherent external design language rather than mixing unrelated asset styles.
 
