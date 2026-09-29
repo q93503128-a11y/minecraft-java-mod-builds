@@ -54,6 +54,9 @@ final class DrabyelHubAutoPlacement {
 
     private static final Map<ServerLevel, Map<String, DrabyelHubServiceCatalog.Service>> CACHE =
             java.util.Collections.synchronizedMap(new WeakHashMap<>());
+    private static final Map<ServerLevel, Map<String, Long>> RETRY_AT =
+            java.util.Collections.synchronizedMap(new WeakHashMap<>());
+    private static final long FAILED_SCAN_RETRY_TICKS = 200L;
 
     private DrabyelHubAutoPlacement() {}
 
@@ -62,6 +65,8 @@ final class DrabyelHubAutoPlacement {
 
         Map<String, DrabyelHubServiceCatalog.Service> cache =
                 CACHE.computeIfAbsent(level, ignored -> new LinkedHashMap<>());
+        Map<String, Long> retryAt = RETRY_AT.computeIfAbsent(level, ignored -> new LinkedHashMap<>());
+        long gameTime = level.getGameTime();
         List<DrabyelHubServiceCatalog.Service> out = new ArrayList<>();
         for (var base : DrabyelHubServiceCatalog.hub().services()) {
             DrabyelHubServiceCatalog.Service staticService = staticProduction(base);
@@ -70,9 +75,14 @@ final class DrabyelHubAutoPlacement {
                 continue;
             }
             DrabyelHubServiceCatalog.Service resolved = cache.get(base.locator());
-            if (resolved == null) {
+            if (resolved == null && gameTime >= retryAt.getOrDefault(base.locator(), Long.MIN_VALUE)) {
                 resolved = resolve(level, base);
-                if (resolved != null) cache.put(base.locator(), resolved);
+                if (resolved != null) {
+                    cache.put(base.locator(), resolved);
+                    retryAt.remove(base.locator());
+                } else {
+                    retryAt.put(base.locator(), gameTime + FAILED_SCAN_RETRY_TICKS);
+                }
             }
             if (resolved != null) out.add(resolved);
         }
@@ -91,6 +101,7 @@ final class DrabyelHubAutoPlacement {
 
     static void clear() {
         CACHE.clear();
+        RETRY_AT.clear();
     }
 
     private static DrabyelHubServiceCatalog.Service staticProduction(DrabyelHubServiceCatalog.Service base) {
