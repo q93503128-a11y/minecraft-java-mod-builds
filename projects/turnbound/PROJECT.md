@@ -143,6 +143,20 @@ The unresolved growth/★6/Awakening decisions listed above are intentionally un
 
 Validation for this repair must be recorded separately after the branch build. Client runtime/playtest/multiplayer remain unverified until actually run.
 
+## P1 regression repair checkpoint — 2026-09-29
+
+The first post-audit runtime repair block now also includes:
+- normal `HUB_REACHED` progress no longer qualifies as legacy direct-arrival migration provenance
+- Drehmal meta snapshots carry server-authoritative Awakening readiness without reviving retired Aster/B05 Signature Trial copy
+- compact collection paging no longer forces rows outside available vertical space
+- compact Archive controls use two bounded rows and the five-tier probability text fits the compact content area
+- skill descriptions and every passive line remain reachable through wheel scrolling instead of being truncated to three lines
+- pending promotion/★6 canon is no longer presented to players as a settled "no promotion" rule
+
+Static 320×240 GUI math now yields one safe codex character row, non-overlapping Archive controls, and a scrollable two-line skill-detail viewport. Actual rendering still requires client playtest.
+
+Shared-battle offline settlement, New Drabyel physical service placement, resource-pack edge cases, and remaining production-world field validation are separate follow-up units.
+
 ## Economy
 
 Long-term core currencies:
