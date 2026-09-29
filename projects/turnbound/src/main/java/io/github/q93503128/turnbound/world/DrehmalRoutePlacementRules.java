@@ -30,4 +30,38 @@ final class DrehmalRoutePlacementRules {
         double roadError = roadDistance - preferred;
         return base + roadError * roadError * 8.0D;
     }
+    static double corridorDistance(DrehmalMapPlacementCatalog.Zone zone, double x, double z) {
+        if (zone == null || zone.corridor().isEmpty()) return Double.POSITIVE_INFINITY;
+        if (zone.corridor().size() == 1) {
+            var point = zone.corridor().getFirst();
+            return Math.sqrt(distanceSq(x, z, point.x() + 0.5D, point.z() + 0.5D));
+        }
+        double best = Double.POSITIVE_INFINITY;
+        for (int i = 1; i < zone.corridor().size(); i++) {
+            var a = zone.corridor().get(i - 1);
+            var b = zone.corridor().get(i);
+            best = Math.min(best, distanceToSegment(
+                    x, z, a.x() + 0.5D, a.z() + 0.5D, b.x() + 0.5D, b.z() + 0.5D));
+        }
+        return best;
+    }
+
+    private static double distanceToSegment(double px, double pz, double ax, double az, double bx, double bz) {
+        double vx = bx - ax;
+        double vz = bz - az;
+        double lengthSq = vx * vx + vz * vz;
+        if (lengthSq <= 0.000001D) return Math.sqrt(distanceSq(px, pz, ax, az));
+        double t = ((px - ax) * vx + (pz - az) * vz) / lengthSq;
+        t = Math.max(0.0D, Math.min(1.0D, t));
+        double qx = ax + t * vx;
+        double qz = az + t * vz;
+        return Math.sqrt(distanceSq(px, pz, qx, qz));
+    }
+
+    private static double distanceSq(double ax, double az, double bx, double bz) {
+        double dx = ax - bx;
+        double dz = az - bz;
+        return dx * dx + dz * dz;
+    }
+
 }
