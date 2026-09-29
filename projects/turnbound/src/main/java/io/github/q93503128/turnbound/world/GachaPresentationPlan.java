@@ -28,6 +28,22 @@ public final class GachaPresentationPlan {
         return best == null ? List.of() : List.of(new Reveal(best.characterId(), best.nativeStars(), false));
     }
 
+    public static List<Integer> spotlightIndices(GachaService.BatchResult result) {
+        if (result == null || result.pulls().isEmpty()) return List.of();
+        List<Integer> indices = new ArrayList<>();
+        for (int i = 0; i < result.pulls().size(); i++) {
+            GachaService.PullResult pull = result.pulls().get(i);
+            if (pull.newlyOwned() || pull.nativeStars() >= 4) indices.add(i);
+        }
+        if (!indices.isEmpty()) return List.copyOf(indices);
+
+        int bestIndex = 0;
+        for (int i = 1; i < result.pulls().size(); i++) {
+            if (result.pulls().get(i).nativeStars() > result.pulls().get(bestIndex).nativeStars()) bestIndex = i;
+        }
+        return List.of(bestIndex);
+    }
+
     public static List<String> revealCharacterIds(GachaService.BatchResult result) {
         return reveals(result).stream().map(Reveal::characterId).toList();
     }
