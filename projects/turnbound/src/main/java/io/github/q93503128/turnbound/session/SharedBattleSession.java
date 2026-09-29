@@ -114,6 +114,7 @@ final class SharedBattleSession {
     }
 
     BattleState state(){return engine.state();}
+    ServerLevel level(){return level;}
     String encounterId(){return encounterId;}
     UUID initiatorId(){return initiatorId;}
     List<UUID> participantIds(){return participantIds;}
@@ -131,6 +132,10 @@ final class SharedBattleSession {
     void markSettled(UUID id){if(participant(id))settledOwners.add(id);}
     void markReadyToExit(UUID id){if(participant(id))readyToExit.add(id);}
     boolean allReadyToExit(){return readyToExit.containsAll(participantIds);}
+    boolean allOnlineReadyToExit(){
+        List<ServerPlayer> online=onlineParticipants();
+        return !online.isEmpty()&&online.stream().allMatch(p->readyToExit.contains(p.getUUID()));
+    }
     String rewardTransactionId(UUID id){return rewardTransactionIds.getOrDefault(id,"");}
     BattleResultSummary resultSummary(UUID id){return resultSummaries.getOrDefault(id,BattleResultSummary.none());}
 
