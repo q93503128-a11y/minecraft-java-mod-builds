@@ -926,3 +926,39 @@ Validation:
 - CLIENT RUNTIME TESTED: NO for the #941 repair
 - PLAYTESTED: NO for the #941 repair
 - MULTIPLAYER TESTED: NO
+
+
+## Opening target + Gecko field-actor crash correction — 2026-09-29
+
+Client playtest on Build #941 established two separate issues:
+- while the active objective was to speak to the New Drabyel entrance guide, minimap navigation had no matching positional target and fell back to nearby exploration/travel presentation
+- approaching the first visible CV-B/C field actors could crash the client inside GeckoLib render-state extraction with a null `ANIMATABLE_MANAGER`
+
+Corrections:
+- before the GREETER onboarding flag is set, navigation now targets the actual runtime GREETER service position; only if that service cannot be resolved does it fall back to the New Drabyel hub anchor
+- after the greeter conversation, the non-positional E-menu instruction does not invent a world target
+- discovered fast-travel markers no longer share the objective target's yellow cross presentation; they use the normal blue primary marker
+- CV-B/C keep their visible held weapons, but `BattleActorHeldItemRenderer` no longer owns a parallel custom GeoRenderState data map
+- held-item actors now use GeckoLib's normal LivingEntityRenderState/GeoRenderState path, preventing the render-state manager from being split across two stores
+
+Build TURNBOUND #942 failed only because the minimap change referenced a nonexistent `BLUE` token. This was corrected to the existing `PRIMARY` token without changing behavior.
+
+Build TURNBOUND #943 / run `36563883597` verified commit
+`fe765605017312593e908fc8da49a43ff9c8d474`:
+
+- Gradle test/build: PASS
+- NeoForge dedicated-server smoke: PASS
+- built JAR verification: PASS
+- one-click Modrinth pack verification: PASS
+- artifact upload: PASS — artifact id `11031345777`
+- JAR SHA-256: `f699e8467643408e39d32dd128faa63deb39456089704a5ecb1afd2adaa25fde`
+- MRPACK SHA-256: `ae702179eced490c7d0c8a7e48097200b1d3dc8714347573db4681a43cb4dc8f`
+
+Validation:
+- CODE REVIEWED: YES
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- CLIENT RUNTIME TESTED: NO for the #943 correction
+- PLAYTESTED: NO for the #943 correction
+- MULTIPLAYER TESTED: NO

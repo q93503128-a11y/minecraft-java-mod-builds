@@ -481,3 +481,11 @@ compile이 UI 완료가 아니다.
 - Codex character cards are discovery/reference cards: show name, ownership, rarity/awakening and role; do not show level.
 - Character management may show level because it is a progression surface.
 - Current playable-character detail presents four conceptual combat slots: basic attack, active 1, active 2, passive. A passive slot may contain multiple authored passive effects.
+
+
+### Positional objective identity — 2026-09-29
+
+- A world-space objective and the minimap/world-map target must refer to the same runtime object or coordinate source.
+- If the current task is “talk to NPC X”, navigation points to that NPC's resolved runtime service position, not merely the surrounding hub/region.
+- Non-positional tasks such as “open E and inspect party” should not fabricate a world marker.
+- Fast-travel/discovery markers must be visually distinct from the active objective marker. Blue is reserved for ordinary travel/reference markers; the active objective keeps the stronger accent treatment.
