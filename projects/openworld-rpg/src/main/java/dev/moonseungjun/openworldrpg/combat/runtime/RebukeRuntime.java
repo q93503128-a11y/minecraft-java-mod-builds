@@ -72,7 +72,8 @@ public final class RebukeRuntime {
                 .sorted(
                         Comparator
                                 .comparingDouble(
-                                        caster::distanceToSqr
+                                        (LivingEntity target) ->
+                                                caster.distanceToSqr(target)
                                 )
                                 .thenComparingInt(
                                         LivingEntity::getId
