@@ -526,6 +526,22 @@ Current validation:
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
 
+## Summon spotlight synchronization repair — 2026-09-29
+
+During final review of the duplicate +Level integration, one presentation desynchronization was found:
+- the server-side 3D actor plan correctly spotlights every newly owned character and every ★4/★5 pull
+- the client overlay still had the older rule that preferred only newly owned characters when any new pull existed
+- a batch such as new ★1 + duplicate ★5 could therefore show a server-side ★5 actor without a matching client reveal slot
+
+Correction:
+- the server now computes authoritative spotlight indices from the same pure `GachaPresentationPlan`
+- each summon result row carries its spotlight flag to the client
+- the client follows those flags directly
+- an older-payload fallback keeps the same new-or-★4/★5 policy
+- a regression test pins the exact spotlight indices for new-low-rarity + duplicate-★5 batches
+
+This checkpoint requests one final integrated build after the synchronization repair.
+
 ## Economy
 
 Long-term core currencies:
