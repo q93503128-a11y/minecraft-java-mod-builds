@@ -47,5 +47,6 @@ class DrehmalMapPlacementCatalogTest {
     @Test void sourceRevisionIsPinned() {
         assertEquals("zachaa/DrehmalMap",DrehmalMapPlacementCatalog.plan().source().repository());
         assertEquals("72d82180cbe3f950f068cf2d8e8668c6b09d5c58",DrehmalMapPlacementCatalog.plan().source().commit());
+        assertEquals("data/all_entity_data.json",DrehmalMapPlacementCatalog.plan().source().entities());
     }
 }
