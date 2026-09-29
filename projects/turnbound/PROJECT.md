@@ -501,6 +501,31 @@ Validation before that result:
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
 
+## Duplicate +Level / Essence loop build verification — 2026-09-29
+
+Build TURNBOUND #930 / run `36522072236` completed successfully for commit
+`244814829f2a25d4aefdd46ff48b6010e9928abc`.
+
+Verified:
+- Gradle test/build: PASS
+- NeoForge dedicated-server smoke: PASS — `Done (4.734s)`
+- JAR verification: PASS
+- one-click Modrinth pack verification: PASS
+- artifact upload: PASS — `turnbound-v04-workbranch`, artifact id `11013472356`
+- JAR SHA-256: `df68b83e2b81cbc88ebec2d36ee5a8fac82d977b2b4e9c9bf61051cae8f3388c`
+- MRPACK SHA-256: `06baa291f37ceb38d84e297bded72bd1d31478b4899a4e255fb210a6c0ad95b6`
+
+Build #929 is not the verification baseline. It compiled successfully but one newly added test used insufficient XP and incorrectly expected Lv20→60; the test input was corrected without changing the production growth curve.
+
+Current validation:
+- CODE REVIEWED: YES
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
 ## Economy
 
 Long-term core currencies:
