@@ -60,7 +60,7 @@ Operator diagnostics:
 
 ## Validation
 
-Latest verified checkpoint:
+Historical verified checkpoint (not a verification of the current workbranch):
 - Build TURNBOUND #847
 - code commit: `dc566d62a2db420a99f8cb7147df6059f8abd850`
 - Gradle tests/build: PASS
