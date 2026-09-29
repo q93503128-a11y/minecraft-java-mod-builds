@@ -319,6 +319,16 @@ State: `RUNTIME_BOUND / MINECRAFT_VISUAL_ACCEPTANCE_PENDING`.
 
 This does **not** promote the whole Phase-F Kenney shortlist to production, close signature-boss VFX, or claim final audio/SFX acceptance. Build/startup proof is recorded in `PROJECT.md`; actual in-world visual/range/impact-feel review remains required.
 
+### Sanctuary runtime binding delta — 2026-09-29
+
+Cleric `Sanctuary` reuses the accepted Kenney `light_03.png` / `magic_03.png` support texture family and the already-proven Spell Engine model-effect hook, but its silhouette is a new project-authored ground ward rather than a particle-only effect. The outer floor ring is tied directly to the authoritative `SanctuaryZoneShape.RADIUS_BLOCKS = 7.0`; inner seals, radial spokes, twelve vertical light ribs and the central light cross provide readable volume without changing the server footprint.
+
+The server ward is fixed at the accepted cast origin for 8 seconds. Its production pulse binding is eight one-second pulses; those pulses partition the locked total `HealCoefficient 0.55` and total enemy magic `ActionCoefficient 2.00` without changing the design totals. The initial `BarrierCoefficient 0.25` uses the shared project Barrier authority and the ordinary 6-second Barrier duration. The vertical inclusion envelope (`-1.25 / +3.50` blocks around the cast origin) is explicitly a playtest-tunable production binding, not a new design coefficient.
+
+State: `RUNTIME_BOUND / BUILD_AND_MINECRAFT_VISUAL_ACCEPTANCE_PENDING`.
+
+Audio currently uses the admitted Spell Engine healing-release support sound for the cast event. It is not marked final-audio accepted until in-game audition. The visible ward, boundary readability, terrain clipping, vertical envelope and combat feel still require manual Minecraft playtest.
+
 
 Important boundary: a Kenney filename can close ordinary baseline discovery, but **Earthloong / boss / shaped-status presentation is not allowed to collapse into one generic Kenney sprite or one generic impact sound**.
 
