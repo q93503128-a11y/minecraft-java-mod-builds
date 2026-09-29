@@ -137,8 +137,10 @@ public final class ProjectPlayerIncomingDamageRuntime {
         if (resolution.guardBroken()) {
             ProjectPlayerReactionRuntime.applyGuardBreak(
                     target,
-                    PlayerDefenseRuntimeState
-                            .GUARD_BREAK_REACTION_TICKS
+                    Math.toIntExact(
+                            PlayerDefenseRuntimeState
+                                    .GUARD_BREAK_REACTION_TICKS
+                    )
             );
         }
 
