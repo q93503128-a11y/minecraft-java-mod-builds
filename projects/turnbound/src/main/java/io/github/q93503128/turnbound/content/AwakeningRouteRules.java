@@ -4,7 +4,8 @@ package io.github.q93503128.turnbound.content;
  * v1 Awakening route classifier.
  *
  * <p>P01~P08 awaken through their personal character progression. Signature Equipment Trials are separate.
- * F01~F04 are legacy save-compatible identities and remain unavailable until promoted into fully authored v1 roles.</p>
+ * F01~F04 are canonical low-rarity playable characters, but their exact Awakening route is still unresolved.
+ * They remain blocked here until that route is explicitly decided rather than inheriting a made-up progression rule.</p>
  */
 public final class AwakeningRouteRules {
     public enum Route { PERSONAL_QUEST, LEGACY_UNAVAILABLE }
