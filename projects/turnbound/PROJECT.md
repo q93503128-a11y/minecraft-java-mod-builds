@@ -682,3 +682,60 @@ Validation labels stay distinct:
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
+
+
+## First client playtest corrective pass — 2026-09-29
+
+The first real #933 client walkthrough exposed production-facing problems that static tests could not establish:
+
+- the Home quick menu spent too much area on a 2-column orb layout
+- Party presets/apply/status controls consumed too much space relative to the roster
+- Character/Codex grids showed too few entries per page
+- character Skill detail hid passives below a narrow shared scroll surface
+- New Drabyel objective text described a state instead of naming the next concrete action
+- the physical entrance greeter incorrectly routed directly into the Quest menu instead of speaking
+- a fresh/affected one-click save could be recognized in New Drabyel before the Capital Valley roadhead arrival was recorded, effectively skipping the first-route encounter/NPC pass
+- only part of the six-role New Drabyel service set was easy to resolve because live-town collision rejection was too broad
+- vanilla hostile monsters could still exist outside the hub safety radius
+- minimap/world-map information density was too low
+- the migrated Drehmal resource pack still emitted legacy `minecraft:item/spawn_egg_2D` model errors on the client
+
+Corrective implementation:
+- Home quick entries now use a smaller 3-column × 2-row layout
+- Party roster density scales up to six columns; three preset load/save pairs, co-op entry and Apply share one compact footer row; the fixed policy/status strip was removed
+- Character/Codex grids scale up to six columns on wide layouts
+- wide Character Skill detail uses separate skill and always-visible passive panels; wheel scrolling remains only for compact layouts that actually need it
+- hub guidance now names the next physical action/service instead of repeating the generic "prepare and check the next road" sentence
+- physical greeter/story/field NPC interactions use a dedicated small dialogue surface; they no longer fall through to the Quest menu
+- missing first-route arrival provenance while physically in New Drabyel is repaired by returning the player to the source-backed Capital Valley roadhead; ordinary `HUB_REACHED` alone is still not legacy-direct-arrival provenance
+- New Drabyel service placement keeps explicit source exclusion zones but no longer rejects a 5×5 block-entity neighborhood or overly flat town ground; all six authored service roles remain the target
+- every vanilla `Monster` is rejected in the bound Drehmal overworld and already-loaded hostile monsters around active players are swept; villagers, animals, iron golems and non-hostile authored ambience remain
+- minimap terrain sampling is larger/denser and shows discovered travel points; world map allocates more area to the route, labels landmarks more aggressively and surfaces the current navigation target/distance
+- Drehmal resource compatibility version advanced to 5 and readiness now validates the live archive rather than trusting a marker alone, forcing repair of the observed uppercase spawn-egg parent path
+
+Expected first-slice physical content after the repair:
+- 3 Capital Valley field NPCs: 길잡이 세라 / 순찰대원 로엔 / 탐험가 미라
+- 6 New Drabyel service roles: entrance greeter / travel / market / blacksmith / story / summon
+- 8 authored Capital Valley encounter records: 6 Common + Warning Cave Elite + optional Graul World Boss
+
+Build TURNBOUND #934 / run `36529914501` compiled production successfully and ran 431 tests; only two newly changed onboarding assertions still expected the old wording. No production compile/API regression was present. Those assertions were corrected without changing gameplay behavior.
+
+Build TURNBOUND #935 / run `36530083914` then verified commit
+`1c7355ad00e276a2150adc3ee0add27d81b72283`:
+
+- Gradle test/build: PASS
+- NeoForge dedicated-server smoke: PASS
+- built JAR verification: PASS
+- one-click Modrinth pack verification: PASS
+- artifact upload: PASS — `turnbound-v04-workbranch`, artifact id `11016401800`
+- JAR SHA-256: `de76ef8b74c169e4f0716991f00b0c65b6774e1d8bd7f8e579472acdb8b87c7b`
+- MRPACK SHA-256: `e01b8be2b1d111fd95e177009e075b1fa8cb3ab61b937e5ea6dd866746e38408`
+
+Current validation for this corrective pass:
+- CODE REVIEWED: YES
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- CLIENT RUNTIME TESTED: NO — #933 supplied the failure evidence; the #935 repair still requires a fresh client check
+- PLAYTESTED: NO for the repaired #935 state
+- MULTIPLAYER TESTED: NO
