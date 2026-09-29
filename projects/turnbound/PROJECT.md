@@ -1005,3 +1005,46 @@ Validation:
 - CLIENT RUNTIME TESTED: NO for Build #944
 - PLAYTESTED: NO for Build #944
 - MULTIPLAYER TESTED: NO
+
+## Opening patrol physical locomotion + battle view correction — 2026-09-29
+
+Build #944 client playtest established two separate runtime failures while the encounter/session itself remained alive:
+
+- the New Drabyel north-road actors materialized, alerted and played GeckoLib walk clips, but their world coordinates did not actually advance
+- contact still entered combat and battle UI state synchronized, but the 3D battlefield view was displaced into an almost sky-only composition
+
+The original client log from that playtest is no longer available. This correction is therefore based on the supplied screenshots plus direct source tracing; no missing log evidence is being inferred.
+
+Field-locomotion root causes found in source:
+
+- PathNavigation.moveTo(..., speedModifier) was fed values such as 0.035, 0.075 and 0.095 as though they were direct blocks-per-tick speeds; they are navigation speed modifiers, leaving the field actor effectively crawling
+- a successful path request immediately enabled the walk animation even before entity coordinates changed
+- physical-progress detection compared the actor against pivot after pivot had already been overwritten with that same current actor position in the same tick, so real displacement could not be measured reliably
+- ALERT path targets reused the lead actor's Y instead of the player's live Y, making slope/step pursuit unnecessarily fragile
+- stalled recovery only handled completed patrol navigation; an active path that made no physical progress could remain in a false walking state
+- follower placement reused the lead Y without grounding its local formation point
+
+Corrections:
+
+- PATROL / RETURN / ALERT now use ordinary navigation speed modifiers (0.72 / 0.90 / 1.05)
+- world-coordinate delta is captured before replacing the runtime pivot and is the authority for locomotion presentation
+- walk/idle state is driven by recent physical coordinate progress, not by path-request acceptance
+- ALERT targets the player's live position while engagement distance remains horizontal
+- patrol, return and alert all receive bounded no-progress recovery; blocked patrol points are skipped after the recovery window
+- follower formation points are grounded to nearby live terrain when the elevation difference remains locally plausible
+
+Battle staging/view corrections:
+
+- a surveyed fixed arena is re-grounded from its X/Z against the live world's current motion-blocking surface immediately before battle acceptance
+- the client-local detached camera anchor now synchronizes its previous transform with every authored transform; because that anchor is intentionally not part of the client level entity tick list, leaving its previous position stale can make camera interpolation sample a distant origin rather than the battle pivot
+
+Narrow regression coverage was added for physical-progress thresholds, walk-animation truth, and active-navigation stall recovery.
+
+Validation at implementation checkpoint:
+- CODE REVIEWED: YES
+- TESTED: PENDING Build TURNBOUND
+- BUILD VERIFIED: PENDING Build TURNBOUND
+- JAR PRODUCED: PENDING Build TURNBOUND
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
