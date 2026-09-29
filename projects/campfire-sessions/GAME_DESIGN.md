@@ -1060,6 +1060,19 @@ Very special items may be village-wide limited.
 The shop can feature around 2–4 premium-buy categories/items for the day.
 This should encourage variety without randomly devaluing rare catches.
 
+### Selling flow
+Selling remains a physical shop interaction during staffed hours, but should not require one dialogue transaction per item.
+
+Shop selling UX:
+- open the shop interaction.
+- select multiple sellable inventory items into a sale basket.
+- show per-item and total value clearly.
+- confirm once.
+- complete the server-authoritative transaction atomically.
+
+Do not add an after-hours drop box or remote M-menu selling shortcut.
+Rare/important/locked items should be clearly protected from accidental inclusion where appropriate.
+
 ### Catalog
 Ordinary furniture that has been acquired once can register in a catalog and later be reordered for money.
 Catalog orders are delivered through the mailbox on the **next in-game day** rather than appearing instantly.
@@ -1581,6 +1594,18 @@ First-donor credit:
 
 Collection encyclopedia state is personal per player.
 Players can still help each other by transferring valid specimens/items, which can register to the recipient's encyclopedia.
+
+### Batch appraisal and donation
+Museum interaction should support efficient multi-item handling.
+
+A curator interaction may allow:
+- selecting multiple unidentified fossils for appraisal.
+- revealing the appraisal results together.
+- selecting multiple newly valid donation items.
+- confirming the donation set once.
+
+Do not force one full dialogue loop per fossil/specimen.
+First-ever donations, major skeleton completions and other meaningful collection milestones may still trigger a brief special curator reaction/presentation.
 
 ### Duplicate donations
 Once the museum has accepted the required specimen/part for an exhibit entry, it does not need infinite duplicate donations.
@@ -2105,6 +2130,17 @@ Secret content mixes permanent discovery with renewable reasons to return:
 
 Do not finalize exact locations until the actual map is inspected.
 
+### Exploration-island structure remains map-dependent
+Do not pre-commit the project to procedural/randomized exploration islands or a fixed special-island cadence before the final world/archipelago is directly obtained and inspected.
+
+After map inspection, decide:
+- which existing islands are permanent repeat-visit destinations.
+- which destinations should have route/season/weather/event access conditions.
+- whether any additional separate exploration-space instance is actually needed.
+- how renewable resources and persistent landmarks fit each destination.
+
+Prefer using the strengths of the real acquired map over adding a generic random-island system by default.
+
 ## 41. Village decoration and public projects
 
 There is NO village rating/star-score system.
@@ -2157,6 +2193,28 @@ The project pool should mix functional and decorative changes, for example:
 
 Only a limited subset should be mandatory progression.
 Most public projects should remain elective village-development goals so the game does not become one long linear infrastructure checklist.
+
+### Active project and contribution history
+Resident services can present the currently available public-project options.
+The village may designate one **active funding project** at a time so contributions are easy to understand and the village does not scatter money across many half-funded projects.
+
+Players contribute voluntarily.
+The project interface should show:
+- total required funding.
+- current total.
+- remaining amount.
+- each player's contributed amount for that project.
+- completed contribution history where useful.
+
+Contribution records are informational/community history only.
+Contributing more money grants no extra:
+- voting power.
+- ownership.
+- priority access.
+- naming rights by default.
+- governance authority.
+
+If the active project is changed before completion, already contributed money must not simply disappear; preserve or return/transfer it through a clear rule rather than silently destroying player funds.
 
 Single-player funds it alone.
 Multiplayer players contribute voluntarily.
@@ -2443,6 +2501,17 @@ Use stable IDs/UUIDs rather than display names for persisted identity.
 Persist a schema version and support explicit save migration when the format changes.
 Concrete class/file/codec layout remains an implementation detail as long as this ownership boundary is preserved.
 
+### Logout / reconnect location recovery
+A normal logout should preserve the player's logical location rather than always sending them home.
+
+On reconnect:
+- return to the saved valid location when the destination/world state still exists and is safe.
+- if that location became invalid because of construction, route closure, map migration or other world change, move the player to the nearest appropriate authored safe anchor.
+- managed interiors should restore to the corresponding interior/entry-safe state rather than invalid coordinates.
+
+Do not use logout/reconnect as an easy way to bypass combat/death/exploration consequences.
+If a player disconnects during an explicitly dangerous active encounter, resolve that state with a simple server-authoritative rule appropriate to the final combat system.
+
 ### Autosave and recovery
 The persistent village needs explicit save-safety beyond relying on players to exit cleanly.
 
@@ -2463,6 +2532,35 @@ Do not claim multiplayer correctness until actual multiplayer testing occurs.
 
 Core UI must use selected external UI design assets/references.
 Do not improvise the final visual language, navigation density, button scale or spacing from scratch.
+
+### Resident dialogue presentation
+Resident conversation should use a life-sim-style dialogue presentation built from the chosen external UI language.
+
+Priorities:
+- resident name is immediately readable.
+- dialogue text gets most of the visual emphasis.
+- portrait/face/body expression or visible in-world animation supports the line where the final character pipeline allows it.
+- choice buttons appear only when there is a real decision.
+- ordinary chatter does not fill half the screen with giant cards/options.
+- dialogue progression is quick and responsive.
+
+Do not use generic black translucent rectangles and default Minecraft buttons as the final dialogue presentation.
+
+### Accessibility and comfort
+Accessibility options should be part of the real UI system from the beginning, not added only at the end.
+
+Support where technically applicable:
+- adjustable dialogue/text speed.
+- instant full-text display.
+- readable UI scale options that preserve layout rather than only magnifying giant controls.
+- reduced camera shake/motion.
+- reduced flashing/high-intensity effects.
+- subtitles/captions for important non-speech audio cues.
+- status/rarity information not communicated by color alone.
+- clear keyboard/controller focus and selected-state feedback if controller support is adopted.
+- audio-category controls that keep music, ambience and important cues distinguishable.
+
+Accessibility settings must not bypass location-based gameplay boundaries or convert physical village services into remote menu actions.
 
 ### M-key life menu
 **M** opens the unified Campfire life-information menu.
