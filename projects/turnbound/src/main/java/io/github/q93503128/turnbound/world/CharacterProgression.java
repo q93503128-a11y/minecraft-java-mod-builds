@@ -19,9 +19,7 @@ public final class CharacterProgression {
                     || bonusLevel < 0 || bonusLevel > GrowthRulesV1.duplicateBonusMax()) {
                 throw new IllegalArgumentException("Invalid character progression");
             }
-            if (level >= GrowthRulesV1.maxLevel() && xp != 0) {
-                throw new IllegalArgumentException("Base max level cannot retain XP");
-            }
+            if (level >= GrowthRulesV1.maxLevel()) xp = 0;
         }
 
         public int effectiveLevel() {
