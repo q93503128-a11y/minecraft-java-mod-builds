@@ -15,7 +15,7 @@ public record ProjectSpellSpec(
     public static final String ARC_BOLT_ID = "openworld_rpg:arc_bolt";
     public static final String RADIANT_LANCE_ID = "openworld_rpg:radiant_lance";
     public static final String MEND_ID = "openworld_rpg:mend";
-    public static final String REBUKE_ID = "openworld_rpg:rebuke";
+    public static final String REBUKE_ID = "openworld_rpg:rebuke";\n    public static final String SANCTUARY_ID = "openworld_rpg:sanctuary";
     public static final double RADIANT_LANCE_ACTION_COEFFICIENT = 1.35;
     public static final double RADIANT_LANCE_POISE_COEFFICIENT = 0.60;
     public static final double RADIANT_LANCE_CHAIN_ACTION_COEFFICIENT = 0.55;
@@ -84,11 +84,22 @@ public record ProjectSpellSpec(
         );
     }
 
+    public static ProjectSpellSpec sanctuary() {
+        return new ProjectSpellSpec(
+                SANCTUARY_ID,
+                0.0,
+                0,
+                0.0,
+                0.0,
+                1
+        );
+    }
+
     public static Optional<RootClass> requiredRootClass(String spellId) {
         Objects.requireNonNull(spellId, "spellId");
         return switch (spellId) {
             case ARC_BOLT_ID -> Optional.of(RootClass.MAGE);
-            case RADIANT_LANCE_ID, MEND_ID, REBUKE_ID ->
+            case RADIANT_LANCE_ID, MEND_ID, REBUKE_ID, SANCTUARY_ID ->
                     Optional.of(RootClass.CLERIC);
             default -> Optional.empty();
         };
