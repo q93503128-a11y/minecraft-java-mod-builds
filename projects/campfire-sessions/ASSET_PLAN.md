@@ -45,6 +45,7 @@ Before building a major custom substitute, search for a high-quality compatible 
 - furniture behavior.
 - camera/photography.
 - player clothing/model presentation.
+- cosmetic-vs-functional armor separation.
 - inventory/tool-belt convenience.
 - plants/crops/mushrooms.
 - swimming/diving presentation.
@@ -407,6 +408,49 @@ Dedicated portable fish/insect storage:
 Display storage:
 - Better Fishtanks supports Minecraft 26.2 / NeoForge and is a candidate for home/museum aquarium presentation.
 - this is a display-system candidate, not a substitute for portable fish storage.
+
+### Clothing / armor presentation candidates
+Campfire should not rely on vanilla iron/diamond/netherite visuals as the normal player look.
+
+External-asset-first targets:
+- everyday clothing sets.
+- hats/accessories.
+- rainwear.
+- winter outfits.
+- festival/work outfits.
+- diving suits/accessories.
+- cave/exploration protection.
+- light adventure/combat gear.
+
+Actual clothing/armor art may come from compatible mods, model/resource packs or directly reusable/licensed model sets, but must fit:
+- the final player rig.
+- full-body player animations.
+- sitting.
+- fishing/net/watering.
+- guitar performance.
+- photography poses.
+- multiplayer rendering.
+
+**Armor Cosmetic**
+- current Minecraft 26.2 NeoForge build exists.
+- client + server.
+- separates functional armor from a separately rendered cosmetic armor set.
+- per-slot visibility toggles.
+- useful framework candidate for keeping life-sim clothing visible while retaining hidden/secondary exploration protection.
+- current project page identifies the fork as MMPL-licensed and publishes source alongside releases.
+- this is a presentation/slot framework candidate, NOT a source of the actual final outfit art.
+- must be tested against Player Animation Library, the chosen clothing/model assets and Campfire inventory UX before adoption.
+
+**Tepox Cosmetic Armor**
+- Minecraft 26.2 NeoForge candidate with separate cosmetic armor slots.
+- smaller/newer alternative.
+- custom license; licensing/source/integration must be inspected before any reuse.
+- compare only if it offers a real advantage over Armor Cosmetic.
+
+Selection principle:
+- prefer curated Campfire wardrobe UX over exposing a generic technical cosmetic-armor screen as the final player-facing experience.
+- if an external cosmetic-slot system is adopted, Campfire may wrap/integrate its functionality into the wardrobe/mirror flow.
+- actual outfit art should be external high-quality assets, not recolored vanilla armor placeholders.
 
 ### Photography candidates
 Photography is now a supported gameplay direction because viable 26.2 candidates exist.
