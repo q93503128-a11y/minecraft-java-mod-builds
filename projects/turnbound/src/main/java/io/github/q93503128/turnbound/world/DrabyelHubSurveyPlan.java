@@ -3,6 +3,7 @@ package io.github.q93503128.turnbound.world;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 
 /**
  * Source-backed New Drabyel service survey hints.
@@ -37,6 +38,6 @@ public final class DrabyelHubSurveyPlan {
     }
 
     public static String sourceHint(String role) {
-        return SOURCE_HINTS.getOrDefault(role == null ? "" : role.trim().toUpperCase(), "no source hint");
+        return SOURCE_HINTS.getOrDefault(role == null ? "" : role.trim().toUpperCase(Locale.ROOT), "no source hint");
     }
 }
