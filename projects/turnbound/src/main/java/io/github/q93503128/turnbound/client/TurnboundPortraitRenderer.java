@@ -28,17 +28,22 @@ public final class TurnboundPortraitRenderer {
 
     public static boolean extract(GuiGraphicsExtractor graphics, String combatantId,
                                   int x0, int y0, int x1, int y1, boolean unavailable) {
-        return extractInternal(graphics, combatantId, x0, y0, x1, y1, unavailable, false);
+        return extractInternal(graphics, combatantId, x0, y0, x1, y1, unavailable, false, false);
     }
 
     public static boolean extractBust(GuiGraphicsExtractor graphics, String combatantId,
                                       int x0, int y0, int x1, int y1, boolean unavailable) {
-        return extractInternal(graphics, combatantId, x0, y0, x1, y1, unavailable, true);
+        return extractInternal(graphics, combatantId, x0, y0, x1, y1, unavailable, true, false);
+    }
+
+    public static boolean extractSilhouette(GuiGraphicsExtractor graphics, String combatantId,
+                                            int x0, int y0, int x1, int y1) {
+        return extractInternal(graphics, combatantId, x0, y0, x1, y1, false, true, true);
     }
 
     private static boolean extractInternal(GuiGraphicsExtractor graphics, String combatantId,
                                            int x0, int y0, int x1, int y1,
-                                           boolean unavailable, boolean bust) {
+                                           boolean unavailable, boolean bust, boolean silhouette) {
         if (graphics == null || combatantId == null || combatantId.isBlank() || x1 <= x0 || y1 <= y0) return false;
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
@@ -71,6 +76,9 @@ public final class TurnboundPortraitRenderer {
         InventoryScreen.renderEntityInInventoryFollowsAngle(
                 graphics, x0, y0, x1, y1, size, camera.offsetY(), camera.xAngle(), camera.yAngle(), actor);
 
+        if (silhouette) {
+            graphics.fill(x0, y0, x1, y1, 0xA8101318);
+        }
         if (unavailable) {
             graphics.fill(x0, y0, x1, y1, 0x9A101318);
             int cx = (x0 + x1) / 2;
