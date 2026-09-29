@@ -161,7 +161,14 @@ final class DrehmalAdaptiveRoutePlacement {
                 break;
             }
             if(point==null||DrehmalRouteZoneRules.insideSafetyZone(sites,point.x()+0.5D,point.z()+0.5D)) continue;
-            if(out.stream().noneMatch(e->e.x()==point.x()&&e.z()==point.z())) out.add(point);
+            boolean duplicate=false;
+            for(var existing:out){
+                if(existing.x()==point.x()&&existing.z()==point.z()){
+                    duplicate=true;
+                    break;
+                }
+            }
+            if(!duplicate)out.add(point);
         }
         return List.copyOf(out);
     }
