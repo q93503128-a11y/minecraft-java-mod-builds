@@ -775,3 +775,31 @@ Client-playtest correction:
 - current fast-travel nodes are no longer drawn as a second green marker on top of the player arrow
 - resource-pack compatibility discovery also recognizes the exact legacy `minecraft:item/spawn_egg_2D` signature, so
   older reused instances without the newer TURNBOUND marker are repaired before world resource load
+
+
+### Verification — repeated-playtest / physical-facility pass
+
+Build TURNBOUND #936 / run `36532538930` reached production compile and ran 433 tests. One static
+`DrabyelHubServiceCatalog` validation test rejected the newly introduced `TRAVEL` and `SUMMON` facility hints.
+The runtime implementation was not rolled back; the catalog contract was corrected to include the two dedicated physical
+service routes.
+
+Build TURNBOUND #937 / run `36532792176` verified commit
+`b9ec578abfaa6922b44b2be48c8d719a7a8403dd`:
+
+- Gradle test/build: PASS
+- NeoForge dedicated-server smoke: PASS
+- built JAR verification: PASS
+- one-click Modrinth pack verification: PASS
+- artifact upload: PASS — `turnbound-v04-workbranch`, artifact id `11017141553`
+- JAR SHA-256: `4cc66479415c0619fb22f656f40ac7e9fd29bbc865225d86cc8288768518c6c6`
+- MRPACK SHA-256: `190e5c3e1d761c01a24bbfb251e6bb1f1ced1b71e4561eebab49e3677dcb9a3d`
+
+Validation state:
+- CODE REVIEWED: YES
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- CLIENT RUNTIME TESTED: NO — this #937 state still requires the next repeated-instance client pass
+- PLAYTESTED: NO for #937
+- MULTIPLAYER TESTED: NO
