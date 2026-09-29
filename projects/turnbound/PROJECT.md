@@ -229,6 +229,35 @@ Official/source-backed town detail now narrows the physical service survey:
 - farmhouse basement Cat Map: 516,65,1861 — explicit conflict/exclusion reference, not a default SUMMON room
 
 These remain source survey seeds, not 26.2 production coordinates. `verifiedIn26_2` and `productionEnabled` stay false until actual client inspection confirms the migrated world's block geometry, original-content conflicts, sightlines and service flow.
+## Automatic New Drabyel placement checkpoint — 2026-09-29
+
+The manual per-NPC survey workflow has been replaced by source-assisted automatic placement.
+
+Reference input:
+- structured Drehmal 2.2.2 map extraction for roads, signs, traders, storage and named/source objects
+- 73 relevant New Drabyel source objects inspected automatically
+- raw third-party map JSON/images are not vendored; only small derived semantic anchors/road points are retained
+
+Runtime behavior:
+- placement scans run only when an active player is within 160 blocks of New Drabyel
+- final standing blocks come from the actual bound Minecraft 26.2 world, not the 1.20.1 source coordinates
+- candidates reject blocked headroom, fluids, unstable local ground, source-height drift, nearby block entities and existing villagers/traders
+- authored road centerlines are kept clear
+- safe points are selected deterministically and cached
+- failed scans back off for 200 ticks instead of rescanning every tick
+- no terrain is modified and unresolved roles fail closed
+
+Admin survey commands remain optional diagnostics only. The expected user validation is one normal hub playtest of the automatically placed services, not manual coordinate authoring.
+
+Validation requested by this checkpoint:
+- CODE REVIEWED: YES
+- TESTED: pending branch workflow
+- BUILD VERIFIED: pending branch workflow
+- JAR PRODUCED: pending branch workflow
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
 ## Economy
 
 Long-term core currencies:
