@@ -15,6 +15,10 @@ class GachaPresentationPlanTest {
                 new GachaService.PullResult("P08",3,true,0,3),
                 new GachaService.PullResult("P06",5,true,0,0)), 3000);
         assertEquals(List.of("P08","P06"), GachaPresentationPlan.revealCharacterIds(result));
+        assertEquals(List.of(
+                new GachaPresentationPlan.Reveal("P08",3,true),
+                new GachaPresentationPlan.Reveal("P06",5,true)),
+                GachaPresentationPlan.reveals(result));
     }
 
     @Test
