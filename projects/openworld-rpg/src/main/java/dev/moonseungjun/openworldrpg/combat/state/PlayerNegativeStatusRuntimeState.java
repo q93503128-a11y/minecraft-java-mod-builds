@@ -36,6 +36,53 @@ public final class PlayerNegativeStatusRuntimeState {
         );
     }
 
+    public PlayerCombatSessionState.NegativeStatusesSnapshot
+    persistentSnapshot(long nowTick) {
+        expire(nowTick);
+        Map<String, PlayerCombatSessionState.ActiveNegativeStatusSnapshot>
+                statuses = new HashMap<>();
+        activeStatuses.forEach((id, status) -> statuses.put(
+                id,
+                new PlayerCombatSessionState.ActiveNegativeStatusSnapshot(
+                        status.tags(),
+                        status.expiresAtTick()
+                )
+        ));
+        return new PlayerCombatSessionState.NegativeStatusesSnapshot(
+                nowTick,
+                Map.copyOf(statuses),
+                negativeBuildupResistanceUntilTick
+        );
+    }
+
+    public void restorePersistent(
+            PlayerCombatSessionState.NegativeStatusesSnapshot snapshot,
+            long nowTick
+    ) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        if (nowTick < 0L) {
+            throw new IllegalArgumentException("nowTick must be non-negative.");
+        }
+
+        long rebase = nowTick < snapshot.savedAtTick()
+                ? nowTick - snapshot.savedAtTick()
+                : 0L;
+        activeStatuses.clear();
+        snapshot.activeStatuses().forEach((id, status) -> {
+            long expiresAtTick = rebaseTick(status.expiresAtTick(), rebase);
+            if (expiresAtTick > nowTick) {
+                activeStatuses.put(
+                        id,
+                        new ActiveStatus(status.tags(), expiresAtTick)
+                );
+            }
+        });
+        negativeBuildupResistanceUntilTick = rebaseTick(
+                snapshot.negativeBuildupResistanceUntilTick(),
+                rebase
+        );
+    }
+
     public int cleanseTagged(String tag, long nowTick) {
         requireStableTag(tag);
         expire(nowTick);
@@ -89,6 +136,13 @@ public final class PlayerNegativeStatusRuntimeState {
         activeStatuses.entrySet().removeIf(
                 entry -> nowTick >= entry.getValue().expiresAtTick()
         );
+    }
+
+    private static long rebaseTick(long tick, long delta) {
+        if (delta == 0L || tick <= Long.MIN_VALUE / 8) {
+            return tick;
+        }
+        return Math.addExact(tick, delta);
     }
 
     private static void requireStableId(String value) {

@@ -28,6 +28,45 @@ public final class PlayerShockRuntimeState {
         buildup = Math.max(0.0, Math.min(threshold, threshold * fraction));
     }
 
+    public PlayerCombatSessionState.ShockSnapshot persistentSnapshot(
+            long nowTick
+    ) {
+        refresh(nowTick);
+        return new PlayerCombatSessionState.ShockSnapshot(
+                threshold,
+                buildup,
+                nowTick,
+                lastBuildupTick,
+                conductiveUntilTick
+        );
+    }
+
+    public void restorePersistent(
+            PlayerCombatSessionState.ShockSnapshot snapshot,
+            long nowTick
+    ) {
+        if (snapshot == null) {
+            throw new IllegalArgumentException("snapshot must not be null.");
+        }
+        if (nowTick < 0L) {
+            throw new IllegalArgumentException("nowTick must be non-negative.");
+        }
+
+        long rebase = nowTick < snapshot.savedAtTick()
+                ? nowTick - snapshot.savedAtTick()
+                : 0L;
+        double fraction =
+                snapshot.buildup() / snapshot.thresholdAtCapture();
+        buildup = Math.max(0.0, Math.min(threshold, threshold * fraction));
+        lastBuildupTick = rebaseTick(snapshot.lastBuildupTick(), rebase);
+        conductiveUntilTick = rebaseTick(
+                snapshot.conductiveUntilTick(),
+                rebase
+        );
+        lastRefreshTick = Math.min(snapshot.savedAtTick(), nowTick);
+        refresh(nowTick);
+    }
+
     public Application apply(double amount, long nowTick) {
         if (!Double.isFinite(amount) || amount < 0.0) {
             throw new IllegalArgumentException("Shock buildup must be finite and non-negative.");
@@ -65,6 +104,13 @@ public final class PlayerShockRuntimeState {
             }
         }
         lastRefreshTick = nowTick;
+    }
+
+    private static long rebaseTick(long tick, long delta) {
+        if (delta == 0L || tick <= Long.MIN_VALUE / 8) {
+            return tick;
+        }
+        return Math.addExact(tick, delta);
     }
 
     private static void requirePositive(double value) {

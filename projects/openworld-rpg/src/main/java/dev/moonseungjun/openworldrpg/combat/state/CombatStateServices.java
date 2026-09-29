@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.combat.state;
 
+import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -57,9 +58,18 @@ public final class CombatStateServices {
         UUID playerId = player.getUUID();
         long gameTick = player.level().getGameTime();
         PlayerCombatState runtime = STATES.getOrCreate(playerId, gameTick);
+        PlayerCombatSessionState snapshot = runtime.persistentSnapshot(gameTick)
+                .withRuntimeSnapshots(
+                        PLAYER_POISE_STATES.state(playerId)
+                                .map(state -> state.persistentSnapshot(gameTick)),
+                        SHOCK_STATES.state(playerId)
+                                .map(state -> state.persistentSnapshot(gameTick)),
+                        NEGATIVE_STATUS_STATES.state(playerId)
+                                .map(state -> state.persistentSnapshot(gameTick))
+                );
         player.setAttached(
                 PlayerCombatSessionAttachments.COMBAT_SESSION,
-                runtime.persistentSnapshot(gameTick)
+                snapshot
         );
     }
 
@@ -72,8 +82,30 @@ public final class CombatStateServices {
             return;
         }
         long gameTick = player.level().getGameTime();
-        STATES.getOrCreate(player.getUUID(), gameTick)
+        UUID playerId = player.getUUID();
+        STATES.getOrCreate(playerId, gameTick)
                 .restorePersistent(snapshot, gameTick);
+
+        snapshot.poise().ifPresent(poise -> {
+            PlayerPoiseRuntimeState state = PLAYER_POISE_STATES.state(playerId)
+                    .orElseGet(() -> PLAYER_POISE_STATES.synchronize(
+                            playerId,
+                            poise.maxPoiseAtCapture(),
+                            gameTick
+                    ));
+            state.restorePersistent(poise, gameTick);
+        });
+        snapshot.shock().ifPresent(shock ->
+                SHOCK_STATES.synchronize(
+                        playerId,
+                        shock.thresholdAtCapture(),
+                        gameTick
+                ).restorePersistent(shock, gameTick)
+        );
+        snapshot.negativeStatuses().ifPresent(statuses ->
+                NEGATIVE_STATUS_STATES.getOrCreate(playerId)
+                        .restorePersistent(statuses, gameTick)
+        );
     }
 
     public static void markCombatActivity(UUID playerId, long gameTick) {

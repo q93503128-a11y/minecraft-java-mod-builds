@@ -18,6 +18,18 @@ class PlayerShockRuntimeStateTest {
     }
 
     @Test
+    void reconnectSnapshotPreservesShockAndAppliesElapsedDecay() {
+        var original = new PlayerShockRuntimeState(100.0, 0);
+        original.apply(35.0, 0);
+        var snapshot = original.persistentSnapshot(20);
+
+        var restored = new PlayerShockRuntimeState(100.0, 70);
+        restored.restorePersistent(snapshot, 70);
+
+        assertEquals(25.0, restored.snapshot(70).buildup(), 0.0001);
+    }
+
+    @Test
     void thresholdProcResetsMeterAndStartsFourSecondConductive() {
         var state = new PlayerShockRuntimeState(100.0, 0);
         state.apply(70.0, 0);

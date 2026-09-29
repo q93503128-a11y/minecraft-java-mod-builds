@@ -12,6 +12,31 @@ import org.junit.jupiter.api.Test;
 
 class PlayerNegativeStatusRuntimeStateTest {
     @Test
+    void reconnectSnapshotKeepsOnlyUnexpiredStatusState() {
+        var original = new PlayerNegativeStatusRuntimeState();
+        original.applyStatus(
+                "openworld_rpg:poison",
+                Set.of(RecoveryEffectAuthority.MINOR_DISPELLABLE_TAG),
+                500L
+        );
+        original.applyNegativeBuildupResistance(200, 100L);
+        var snapshot = original.persistentSnapshot(100L);
+
+        var restored = new PlayerNegativeStatusRuntimeState();
+        restored.restorePersistent(snapshot, 300L);
+        assertTrue(restored.hasStatus("openworld_rpg:poison", 300L));
+        assertEquals(
+                1.0,
+                restored.negativeBuildupReceivedMultiplier(300L),
+                0.0001
+        );
+
+        var expired = new PlayerNegativeStatusRuntimeState();
+        expired.restorePersistent(snapshot, 600L);
+        assertFalse(expired.hasStatus("openworld_rpg:poison", 600L));
+    }
+
+    @Test
     void cleansingRemovesOnlyMinorDispellableAndAppliesTenSecondResistance() {
         var state = new PlayerNegativeStatusRuntimeState();
         state.applyStatus(

@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.combat.state;
 
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -20,6 +21,10 @@ public final class PlayerShockStateStore {
             existing.synchronizeThreshold(threshold, gameTick);
             return existing;
         });
+    }
+
+    public Optional<PlayerShockRuntimeState> state(UUID playerId) {
+        return Optional.ofNullable(states.get(playerId));
     }
 
     public void remove(UUID playerId) {

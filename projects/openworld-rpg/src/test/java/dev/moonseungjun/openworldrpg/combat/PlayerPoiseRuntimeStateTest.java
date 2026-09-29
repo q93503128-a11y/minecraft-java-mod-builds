@@ -18,6 +18,18 @@ class PlayerPoiseRuntimeStateTest {
     }
 
     @Test
+    void reconnectSnapshotPreservesPoiseFractionAndElapsedRecovery() {
+        var original = new PlayerPoiseRuntimeState(80.0, 0);
+        original.apply(40.0, 0);
+        var snapshot = original.persistentSnapshot(10);
+
+        var restored = new PlayerPoiseRuntimeState(100.0, 30);
+        restored.restorePersistent(snapshot, 30);
+
+        assertEquals(72.5, restored.snapshot(30).currentPoise(), 0.0001);
+    }
+
+    @Test
     void breakRefillsAndGrantsSevenTickPressureImmunity() {
         var state = new PlayerPoiseRuntimeState(60.0, 0);
         var broken = state.apply(75.0, 0);

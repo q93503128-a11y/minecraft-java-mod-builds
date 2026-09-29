@@ -29,6 +29,43 @@ public final class PlayerPoiseRuntimeState {
         currentPoise = Math.max(0.0, Math.min(maxPoise, maxPoise * fraction));
     }
 
+    public PlayerCombatSessionState.PoiseSnapshot persistentSnapshot(long nowTick) {
+        refresh(nowTick);
+        return new PlayerCombatSessionState.PoiseSnapshot(
+                maxPoise,
+                currentPoise,
+                nowTick,
+                lastPressureTick,
+                immunityUntilTick
+        );
+    }
+
+    public void restorePersistent(
+            PlayerCombatSessionState.PoiseSnapshot snapshot,
+            long nowTick
+    ) {
+        if (snapshot == null) {
+            throw new IllegalArgumentException("snapshot must not be null.");
+        }
+        if (nowTick < 0L) {
+            throw new IllegalArgumentException("nowTick must be non-negative.");
+        }
+
+        long rebase = nowTick < snapshot.savedAtTick()
+                ? nowTick - snapshot.savedAtTick()
+                : 0L;
+        double fraction =
+                snapshot.currentPoise() / snapshot.maxPoiseAtCapture();
+        currentPoise = Math.max(
+                0.0,
+                Math.min(maxPoise, maxPoise * fraction)
+        );
+        lastPressureTick = rebaseTick(snapshot.lastPressureTick(), rebase);
+        immunityUntilTick = rebaseTick(snapshot.immunityUntilTick(), rebase);
+        lastRefreshTick = Math.min(snapshot.savedAtTick(), nowTick);
+        refresh(nowTick);
+    }
+
     public Snapshot snapshot(long nowTick) {
         refresh(nowTick);
         return new Snapshot(
@@ -82,6 +119,13 @@ public final class PlayerPoiseRuntimeState {
             }
         }
         lastRefreshTick = nowTick;
+    }
+
+    private static long rebaseTick(long tick, long delta) {
+        if (delta == 0L || tick <= Long.MIN_VALUE / 8) {
+            return tick;
+        }
+        return Math.addExact(tick, delta);
     }
 
     private static void requirePositive(double value) {
