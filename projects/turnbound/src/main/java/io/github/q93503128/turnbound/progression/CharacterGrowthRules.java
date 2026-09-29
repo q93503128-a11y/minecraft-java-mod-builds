@@ -3,9 +3,12 @@ package io.github.q93503128.turnbound.progression;
 /**
  * TURNBOUND v1 character-growth state.
  *
+ * <p>Battle/quest XP owns the base level axis from Lv1..60. Duplicate acquisition owns a separate +0..+10 bonus
+ * level axis, allowing an effective combat level of 70 without changing the base XP cap.</p>
+ *
  * <p>{@code currentStar} is preserved because the historical native/current-star progression contract is still
- * under explicit canon review. The current runtime does not expose a promotion action; that temporary runtime state
- * must not be interpreted as a decision to delete {@code currentStar}, restore v0.4 promotion, or define ★6/Awakening.</p>
+ * under explicit canon review. Duplicate bonus levels are independent from rarity promotion and do not decide,
+ * restore or remove any pending ★6/Awakening rule.</p>
  */
 public final class CharacterGrowthRules {
     public record State(
