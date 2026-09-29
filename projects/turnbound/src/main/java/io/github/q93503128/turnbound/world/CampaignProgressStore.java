@@ -9,6 +9,7 @@ import io.github.q93503128.turnbound.content.V04Catalogs;
 import io.github.q93503128.turnbound.progression.CharacterGrowthRules;
 import io.github.q93503128.turnbound.progression.EquipmentInventory;
 import io.github.q93503128.turnbound.progression.EquipmentRules;
+import io.github.q93503128.turnbound.progression.GachaCatalog;
 import io.github.q93503128.turnbound.progression.GachaService;
 import io.github.q93503128.turnbound.progression.GrowthRulesV1;
 import io.github.q93503128.turnbound.progression.PlayerProfile;
