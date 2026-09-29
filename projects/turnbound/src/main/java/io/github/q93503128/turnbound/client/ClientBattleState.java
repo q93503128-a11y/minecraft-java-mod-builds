@@ -41,8 +41,17 @@ public final class ClientBattleState {
             int xpBefore,
             int levelAfter,
             int xpAfter,
-            int xpToNextAfter
-    ) {}
+            int xpToNextAfter,
+            int bonusLevel
+    ) {
+        public PartyXp(
+                String characterId, String name, int levelBefore, int xpBefore,
+                int levelAfter, int xpAfter, int xpToNextAfter) {
+            this(characterId, name, levelBefore, xpBefore, levelAfter, xpAfter, xpToNextAfter, 0);
+        }
+        public int effectiveLevelBefore() { return levelBefore + bonusLevel; }
+        public int effectiveLevelAfter() { return levelAfter + bonusLevel; }
+    }
 
     public record ResultNotice(String code, String text) {
         public ResultNotice {
@@ -208,7 +217,8 @@ public final class ClientBattleState {
                     }
                     case "P" -> {
                         if (p.length >= 8) partyXp.add(new PartyXp(p[1], p[2], Integer.parseInt(p[3]), Integer.parseInt(p[4]),
-                                Integer.parseInt(p[5]), Integer.parseInt(p[6]), Integer.parseInt(p[7])));
+                                Integer.parseInt(p[5]), Integer.parseInt(p[6]), Integer.parseInt(p[7]),
+                                p.length > 8 ? Integer.parseInt(p[8]) : 0));
                     }
                     default -> { }
                 }
