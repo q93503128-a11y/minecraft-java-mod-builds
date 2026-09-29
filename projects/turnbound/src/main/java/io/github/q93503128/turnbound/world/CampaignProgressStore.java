@@ -13,6 +13,7 @@ import io.github.q93503128.turnbound.progression.GachaService;
 import io.github.q93503128.turnbound.progression.GrowthRulesV1;
 import io.github.q93503128.turnbound.progression.PlayerProfile;
 import io.github.q93503128.turnbound.progression.QuestProgress;
+import io.github.q93503128.turnbound.progression.StarEssenceExchangeRules;
 import io.github.q93503128.turnbound.session.BattleResultSummary;
 
 import java.util.ArrayList;
@@ -188,6 +189,49 @@ public final class CampaignProgressStore {
         result = applySummonProgression(progress, result);
         progress.dirty = true;
         return result;
+    }
+
+    public record EssenceExchangeResult(
+            String kind, String characterId, int nativeStars, int essenceSpent, int essenceRefunded,
+            int crystalGranted, int bonusLevelGranted, int bonusLevelAfter) {}
+
+    public static EssenceExchangeResult exchangeEssenceForCrystal(UUID playerId) {
+        PlayerProgress progress = player(playerId);
+        if (!progress.profile.spend(PlayerProfile.Currency.STAR_ESSENCE, StarEssenceExchangeRules.CRYSTAL_COST)) {
+            throw new IllegalStateException("Not enough Star Essence");
+        }
+        progress.profile.grant(PlayerProfile.Currency.SUMMON_CRYSTAL, StarEssenceExchangeRules.CRYSTAL_REWARD);
+        progress.dirty = true;
+        return new EssenceExchangeResult("CRYSTAL", "", 0, StarEssenceExchangeRules.CRYSTAL_COST, 0,
+                StarEssenceExchangeRules.CRYSTAL_REWARD, 0, 0);
+    }
+
+    public static EssenceExchangeResult exchangeEssenceCharacter(UUID playerId, int nativeStars, String characterId) {
+        PlayerProgress progress = player(playerId);
+        if (nativeStars != 4 && nativeStars != 5) {
+            throw new IllegalArgumentException("Essence selector supports only ★4 or ★5");
+        }
+        if (characterId == null || !progress.profile.owns(characterId)
+                || GachaCatalog.nativeStars(characterId) != nativeStars) {
+            throw new IllegalStateException("Character is not eligible for this Essence selector");
+        }
+        int cost = StarEssenceExchangeRules.choiceCost(nativeStars);
+        if (!progress.profile.spend(PlayerProfile.Currency.STAR_ESSENCE, cost)) {
+            throw new IllegalStateException("Not enough Star Essence");
+        }
+
+        PlayerProfile.Acquisition acquisition = progress.profile.acquireCharacter(characterId);
+        if (acquisition.newlyOwned()) {
+            throw new IllegalStateException("Essence selector exposed an unowned character without a story unlock");
+        }
+        DuplicateBonus bonus = grantDuplicateBonus(progress, characterId);
+        progress.dirty = true;
+        return new EssenceExchangeResult("CHARACTER", characterId, nativeStars, cost,
+                acquisition.starEssenceGranted(), 0, bonus.granted(), bonus.after());
+    }
+
+    public static List<String> essenceChoiceCharacters(UUID playerId, int nativeStars) {
+        return StarEssenceExchangeRules.eligibleOwnedChoices(player(playerId).profile, nativeStars);
     }
 
     public static void trackQuest(UUID playerId, String questId) {
@@ -459,17 +503,23 @@ public final class CampaignProgressStore {
             }
 
             initializeCharacter(progress, pull.characterId());
-            CharacterProgression.State before = requireCharacter(progress, pull.characterId());
-            CharacterProgression.State after = before.grantDuplicateBonus();
-            progress.characters.put(pull.characterId(), after);
-            int granted = after.bonusLevel() > before.bonusLevel() ? 1 : 0;
+            DuplicateBonus bonus = grantDuplicateBonus(progress, pull.characterId());
             resolved.add(new GachaService.PullResult(
                     pull.characterId(), pull.nativeStars(), false, pull.starEssenceGranted(), pull.pityAfter(),
-                    granted, after.bonusLevel()));
+                    bonus.granted(), bonus.after()));
         }
         GachaService.BatchResult enriched = new GachaService.BatchResult(resolved, result.crystalSpent());
         progress.profile.annotateRecentSummonBonuses(enriched.pulls());
         return enriched;
+    }
+
+    private record DuplicateBonus(int granted, int after) {}
+
+    private static DuplicateBonus grantDuplicateBonus(PlayerProgress progress, String characterId) {
+        CharacterProgression.State before = requireCharacter(progress, characterId);
+        CharacterProgression.State after = before.grantDuplicateBonus();
+        progress.characters.put(characterId, after);
+        return new DuplicateBonus(after.bonusLevel() > before.bonusLevel() ? 1 : 0, after.bonusLevel());
     }
 
     private static void initializeCharacter(PlayerProgress progress, String characterId) {
