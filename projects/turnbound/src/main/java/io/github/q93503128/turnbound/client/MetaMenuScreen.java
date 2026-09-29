@@ -456,7 +456,7 @@ public final class MetaMenuScreen extends Screen {
         int cols=innerW>=270?3:2;
         int cardGap=4;
         int cardW=Math.max(70,(innerW-cardGap*(cols-1))/cols);
-        int rowY=y+48;
+        int rowY=y+62;
         int visibleRows=UiPaging.rowsThatFit(rowY,contentBottom()-28,24,1);
         int per=Math.max(1,cols*visibleRows);
         setPaging(choices.size(),per);
@@ -466,7 +466,8 @@ public final class MetaMenuScreen extends Screen {
             int local=i-start;
             int cost=StarEssenceExchangeRules.choiceCost(row.nativeStar());
             int xx=x+(local%cols)*(cardW+cardGap),yy=rowY+(local/cols)*24;
-            String label="★"+row.nativeStar()+" "+row.name()+" · "+cost;
+            String bonus=row.bonusLevel()>=GrowthRulesV1.duplicateBonusMax()?"MAX":"+"+row.bonusLevel();
+            String label="★"+row.nativeStar()+" "+row.name()+" · "+bonus+" · "+cost;
             var button=new BattleHudButton(xx,yy,cardW,20,Component.literal(UiTextLayout.fit(label,cardW-8)),
                     snapshot.essence()>=cost?(row.nativeStar()==5?GOLD:PURPLE):MUTED,
                     ignored->send("ESSENCE_PICK"+row.nativeStar()+"|"+row.id()));
@@ -895,9 +896,9 @@ public final class MetaMenuScreen extends Screen {
 
         if(essenceExchangeOpen){
             int y=contentTop()+31;
-            g.text(font,Component.literal("별의 정수 영구 교환소"),left+16,y,GOLD,true);
-            g.text(font,Component.literal("중복 획득: 별의 정수 + 캐릭터 +레벨 1 · 최대 +10"),left+16,y+15,SECONDARY,false);
-            g.text(font,Component.literal("★4/★5 선택은 현재 보유 캐릭터만 표시 · 스토리 미등장 캐릭터 선공개 없음"),left+16,y+30,MUTED,false);
+            int w=Math.max(1,panelWidth-32);
+            g.text(font,Component.literal("별의 정수 영구 교환소 · 보유 정수 "+s.essence()),left+16,y,GOLD,true);
+            g.text(font,Component.literal(UiTextLayout.fit("선택 복사본도 중복 보상 적용 · ★4 정수 100 / ★5 정수 250 환원 · +레벨 최대 +10",w)),left+16,y+14,SECONDARY,false);
             return;
         }
 
