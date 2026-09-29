@@ -6,7 +6,8 @@
     "commit": "72d82180cbe3f950f068cf2d8e8668c6b09d5c58",
     "paths": "data/paths.geojson",
     "locations": "data/locations.json",
-    "towers": "data/towers.json"
+    "towers": "data/towers.json",
+    "entities": "data/all_entity_data.json"
   },
   "zones": [
     {
