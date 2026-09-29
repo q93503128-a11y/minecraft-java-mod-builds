@@ -47,15 +47,18 @@ final class BattleArenaLocator {
 
     static Arena fixedIfOpen(ServerPlayer player, Vec3 center, float yaw) {
         ServerLevel level = (ServerLevel) player.level();
-        return score(level, center, yaw) == 0 ? new Arena(center, yaw) : null;
+        Vec3 groundedCenter = groundCenter(level, center.x, center.z);
+        return score(level, groundedCenter, yaw) == 0 ? new Arena(groundedCenter, yaw) : null;
     }
 
     static Arena fixedIfOpen(ServerPlayer player, Vec3 center, float yaw, int playerCount) {
         if (playerCount <= 1) return fixedIfOpen(player, center, yaw);
         if (playerCount > 4) return null;
         ServerLevel level = (ServerLevel) player.level();
-        return score(level, center, yaw) + sharedFormationPenalty(level, center, yaw, playerCount) == 0
-                ? new Arena(center, yaw) : null;
+        Vec3 groundedCenter = groundCenter(level, center.x, center.z);
+        return score(level, groundedCenter, yaw)
+                        + sharedFormationPenalty(level, groundedCenter, yaw, playerCount) == 0
+                ? new Arena(groundedCenter, yaw) : null;
     }
 
     static Vec3 forward(float yaw) {
