@@ -3,8 +3,9 @@ package io.github.q93503128.turnbound.progression;
 /**
  * TURNBOUND v1 character-growth state.
  *
- * <p>{@code currentStar} is retained only for save compatibility with v0.4. Formal roster rarity no longer
- * promotes repeatedly and gameplay always uses native rarity; Level 1..60 and one Awakening are the growth axes.</p>
+ * <p>{@code currentStar} is preserved because the historical native/current-star progression contract is still
+ * under explicit canon review. The current runtime does not expose a promotion action; that temporary runtime state
+ * must not be interpreted as a decision to delete {@code currentStar}, restore v0.4 promotion, or define ★6/Awakening.</p>
  */
 public final class CharacterGrowthRules {
     public record State(
@@ -13,13 +14,13 @@ public final class CharacterGrowthRules {
             boolean characterQuestComplete,
             boolean signatureTrialCleared) {
         public State {
-            if (currentStar < 1 || currentStar > 6) throw new IllegalArgumentException("legacy currentStar must be 1..6");
+            if (currentStar < 1 || currentStar > 6) throw new IllegalArgumentException("stored currentStar must be 1..6");
             if (signatureTrialCleared && !characterQuestComplete) {
                 throw new IllegalArgumentException("Signature Trial cannot precede character quest completion");
             }
         }
 
-        /** Save-compatibility helper only; no production action promotes rarity in v1. */
+        /** Stored-state helper retained while the promotion/★6 contract is unresolved. */
         public State withStar(int star) {
             return new State(star, awakened, characterQuestComplete, signatureTrialCleared);
         }
@@ -43,19 +44,19 @@ public final class CharacterGrowthRules {
         return new State(GachaCatalog.nativeStars(characterId), false, false, false);
     }
 
-    /** Legacy API retained for source compatibility; production has no repeat-rarity promotion action. */
+    /** Compatibility API; the current runtime exposes no promotion action while canon is unresolved. */
     @Deprecated
     public static int promotionCost(int legacyCurrentStar) {
         throw new UnsupportedOperationException("Repeated rarity promotion is not a TURNBOUND v1 growth system");
     }
 
-    /** Legacy API retained for stat callers; rarity promotion contributes no v1 stat multiplier. */
+    /** Compatibility API; current runtime stats do not apply a promotion multiplier while canon is unresolved. */
     @Deprecated
     public static double promotionMultiplier(int nativeStar, int legacyCurrentStar) {
         return 1.0;
     }
 
-    /** Rarity no longer gates levels; every formal v1 character uses Level 1..60. */
+    /** Current v1 level runtime uses Level 1..60 independently from the unresolved star-growth contract. */
     public static int levelCap(int ignoredLegacyCurrentStar) {
         return GrowthRulesV1.maxLevel();
     }
