@@ -295,6 +295,8 @@ The first source-aware Capital Valley build failed before tests because Minecraf
 
 This is the only correction made in response to Build TURNBOUND #36515077187 before requesting a new build.
 
+Build TURNBOUND #36515501797 then reached the next compile error: a reassigned local patrol candidate was captured by a stream lambda. That single compile issue was replaced with an explicit duplicate loop; no gameplay rule changed.
+
 ## Economy
 
 Long-term core currencies:
