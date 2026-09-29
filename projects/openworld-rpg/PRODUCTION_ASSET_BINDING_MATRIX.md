@@ -311,6 +311,15 @@ The already-approved Kenney source families now have a small exact-file shortlis
 
 Direct candidate hashes, dimensions and durations are in `R01_ASSET_PHASE_F_KENNEY_EXACT_SHORTLIST_2026-09-18.md`.
 
+### Rebuke runtime binding delta — 2026-09-29
+
+Cleric `Rebuke` now uses the already-shortlisted Kenney Particle Pack `light_03.png` and `magic_03.png` as support textures inside a project-authored full-bright 3D frontal fan. Exact committed-byte provenance is recorded in `external-assets/kenney-particle-pack/SOURCE.md`; the authoritative Kenney Particle Pack page remains the license authority and currently states CC0. The effect geometry is not a generic sprite-only substitute: its locked 4.5-block reach and playtest-tunable fan envelope are shared with the server `RebukeBurstShape` hit calculation so presentation and authoritative hit volume stay coupled.
+
+State: `RUNTIME_BOUND / MINECRAFT_VISUAL_ACCEPTANCE_PENDING`.
+
+This does **not** promote the whole Phase-F Kenney shortlist to production, close signature-boss VFX, or claim final audio/SFX acceptance. Build/startup proof is recorded in `PROJECT.md`; actual in-world visual/range/impact-feel review remains required.
+
+
 Important boundary: a Kenney filename can close ordinary baseline discovery, but **Earthloong / boss / shaped-status presentation is not allowed to collapse into one generic Kenney sprite or one generic impact sound**.
 
 # 9. Verification state
