@@ -542,6 +542,26 @@ Correction:
 
 This checkpoint requests one final integrated build after the synchronization repair.
 
+## Duplicate +Level / summon integration verification — 2026-09-29
+
+Build TURNBOUND #931 / run 36522629646 succeeded for commit c60317aa935cc6150ff4491df49bcafbb9a9947b.
+
+- Gradle test/build: PASS
+- dedicated-server smoke: PASS
+- JAR / one-click pack verification: PASS
+- artifact: turnbound-v04-workbranch, id 11013640375
+- JAR SHA-256: 0e9eaa2ce3981d441778d19a2b8dfd5055c6f3db4efad3cbd61d62ea4f859ff1
+- MRPACK SHA-256: 1b030d0136e17c9b685b8afe3b0f533bb78a34a834233c4035e7be54090ffb0b
+- CODE REVIEWED: YES
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
+This supersedes #930 as the latest verification baseline because it includes the authoritative summon spotlight synchronization repair.
+
 ## Economy
 
 Long-term core currencies:
