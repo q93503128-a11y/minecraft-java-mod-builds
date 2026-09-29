@@ -14,6 +14,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -38,6 +39,9 @@ final class DrehmalVisibleEncounterService {
     private static final String ENCOUNTER_TAG_PREFIX = "turnbound_drehmal_encounter:";
     private static final String SLOT_TAG_PREFIX = "turnbound_drehmal_slot:";
     private static final double MATERIALIZE_RADIUS = 72.0D;
+    private static final double PATROL_SPEED_MODIFIER = 0.72D;
+    private static final double RETURN_SPEED_MODIFIER = 0.90D;
+    private static final double ALERT_SPEED_MODIFIER = 1.05D;
     /** Party members farther than the encounter leash remain in field state; nobody is teleported in from afar. */
     private static final double SHARED_PARTICIPANT_RADIUS = FieldEncounterRules.HOME_LEASH_RADIUS;
     private static final Map<String, SharedEncounter> ENCOUNTERS = new LinkedHashMap<>();
@@ -157,6 +161,7 @@ final class DrehmalVisibleEncounterService {
         private long lastMoveCommandTick = FieldNavigationRules.NEVER;
         private Vec3 lastMoveTarget;
         private long navigationStalledSinceTick = FieldNavigationRules.NEVER;
+        private long lastPhysicalProgressTick = FieldNavigationRules.NEVER;
         private int graceTicks = 40;
         private int alertPreludeTicks;
         private long availableAt;
@@ -209,7 +214,9 @@ final class DrehmalVisibleEncounterService {
             Entity lead = lead(level);
             if (lead == null) return;
 
+            Vec3 previousPivot = pivot;
             pivot = lead.position();
+            Vec3 physicalMovement = pivot.subtract(previousPivot);
             if (DrehmalFirstRouteRuntime.insideSafetyZone(level, pivot.x, pivot.z)) {
                 if (lastSafePivot != null) {
                     boolean crossedWhilePatrolling = phase == FieldEncounterRules.Phase.PATROL;
@@ -224,10 +231,10 @@ final class DrehmalVisibleEncounterService {
 
             ServerPlayer nearest = nearestThreat(observers);
             if (graceTicks > 0) graceTicks--;
-            Vec3 flatPlayer = nearest == null ? pivot : new Vec3(nearest.getX(), pivot.y, nearest.getZ());
+            Vec3 playerTarget = nearest == null ? pivot : nearest.position();
             double playerDistance = nearest == null
                     ? FieldEncounterRules.DISENGAGE_RADIUS + 1.0D
-                    : flatPlayer.distanceTo(pivot);
+                    : Math.hypot(nearest.getX() - pivot.x, nearest.getZ() - pivot.z);
             // A patrol may be much longer than the combat leash. The return anchor is the exact place where this
             // group was patrolling when aggro began, not the first point of the whole route.
             if (phase == FieldEncounterRules.Phase.PATROL) returnTarget = pivot;
@@ -263,14 +270,14 @@ final class DrehmalVisibleEncounterService {
             if (patrolPaused) patrolDwellTicks--;
 
             Vec3 target = switch (phase) {
-                case ALERT -> alertPrelude ? pivot : flatPlayer;
+                case ALERT -> alertPrelude ? pivot : playerTarget;
                 case RETURN -> returnTarget;
                 case PATROL -> patrolPaused ? pivot : patrolTarget();
             };
             double speed = switch (phase) {
-                case ALERT -> alertPrelude ? 0.0D : 0.095D;
-                case RETURN -> 0.075D;
-                case PATROL -> !patrolPaused && patrolPoints.size() >= 2 ? 0.035D : 0.0D;
+                case ALERT -> alertPrelude ? 0.0D : ALERT_SPEED_MODIFIER;
+                case RETURN -> RETURN_SPEED_MODIFIER;
+                case PATROL -> !patrolPaused && patrolPoints.size() >= 2 ? PATROL_SPEED_MODIFIER : 0.0D;
             };
 
             Vec3 delta = target.subtract(pivot);
@@ -282,7 +289,7 @@ final class DrehmalVisibleEncounterService {
                 patrolDwellTicks = patrol == null ? 0 : FieldRoamPlanner.dwellTicks(
                         patrol.dwellMinTicks(), patrol.dwellMaxTicks(), ++roamSequence);
             } else if (delta.lengthSqr() > 0.01D && speed > 0.0D) {
-                walking = driveLeadNavigation(level, target, speed);
+                walking = driveLeadNavigation(level, target, speed, physicalMovement);
             } else {
                 stopLeadNavigation(level);
             }
@@ -343,7 +350,7 @@ final class DrehmalVisibleEncounterService {
 
             for (int i = 0; i < fieldIds.size(); i++) {
                 String defId = fieldIds.get(i);
-                Vec3 pos = formation(i, facing);
+                Vec3 pos = groundedFormation(level, i, facing);
                 BattleActorEntity actor = TurnboundBattleActors.spawn(level, defId, pos, yawFor(facing));
                 if (actor == null) {
                     discardActors(level);
@@ -481,8 +488,12 @@ final class DrehmalVisibleEncounterService {
                 Entity raw = level.getEntity(actors.get(i));
                 if (!(raw instanceof BattleActorEntity actor)) continue;
                 if (i > 0) {
-                    Vec3 pos = formation(i, facing);
+                    Vec3 pos = groundedFormation(level, i, facing);
                     actor.setPos(pos.x, pos.y, pos.z);
+                    actor.setYRot(yaw);
+                    actor.setYHeadRot(yaw);
+                    actor.setYBodyRot(yaw);
+                } else if (walking) {
                     actor.setYRot(yaw);
                     actor.setYHeadRot(yaw);
                     actor.setYBodyRot(yaw);
@@ -507,37 +518,56 @@ final class DrehmalVisibleEncounterService {
             return pivot.subtract(forward.scale(1.15D * row)).add(right.scale(1.15D * side));
         }
 
-        private boolean driveLeadNavigation(ServerLevel level, Vec3 target, double speedModifier) {
+        private Vec3 groundedFormation(ServerLevel level, int index, Vec3 forward) {
+            Vec3 desired = formation(index, forward);
+            if (index == 0) return desired;
+            int x = (int)Math.floor(desired.x);
+            int z = (int)Math.floor(desired.z);
+            int groundY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+            double y = Math.abs(groundY - pivot.y) <= 2.5D ? groundY : pivot.y;
+            return new Vec3(desired.x, y, desired.z);
+        }
+
+        private boolean driveLeadNavigation(
+                ServerLevel level,
+                Vec3 target,
+                double speedModifier,
+                Vec3 actualMovement
+        ) {
             Entity raw = lead(level);
             if (!(raw instanceof BattleActorEntity actor)) return false;
 
-            Vec3 before = pivot;
-            pivot = actor.position();
-            Vec3 actualMovement = pivot.subtract(before);
-            boolean madeProgress = actualMovement.horizontalDistanceSqr() > 0.0004D;
+            long now = level.getGameTime();
+            boolean madeProgress = FieldNavigationRules.madePhysicalProgress(actualMovement.horizontalDistanceSqr());
             if (madeProgress) {
                 facing = horizontalDirection(actualMovement, facing);
+                lastPhysicalProgressTick = now;
+                navigationStalledSinceTick = FieldNavigationRules.NEVER;
             }
 
             double targetShiftSq = lastMoveTarget == null
                     ? Double.POSITIVE_INFINITY
                     : target.distanceToSqr(lastMoveTarget);
-            long now = level.getGameTime();
             boolean navigationDone = actor.fieldNavigationDone();
             double targetDistanceSq = pivot.distanceToSqr(target);
 
-            if (madeProgress || targetShiftSq > 0.25D || targetDistanceSq <= FieldNavigationRules.ARRIVAL_DISTANCE_SQ) {
+            if (targetDistanceSq <= FieldNavigationRules.ARRIVAL_DISTANCE_SQ) {
                 navigationStalledSinceTick = FieldNavigationRules.NEVER;
-            } else if (navigationDone && navigationStalledSinceTick == FieldNavigationRules.NEVER) {
+            } else if (!madeProgress
+                    && lastMoveCommandTick != FieldNavigationRules.NEVER
+                    && navigationStalledSinceTick == FieldNavigationRules.NEVER) {
                 navigationStalledSinceTick = now;
             }
 
-            if (FieldNavigationRules.shouldSkipBlockedPatrolTarget(
-                    phase, now, navigationStalledSinceTick, navigationDone, targetDistanceSq)) {
+            if (FieldNavigationRules.shouldRecoverStalledNavigation(
+                    phase, now, navigationStalledSinceTick, targetDistanceSq)) {
+                boolean blockedPatrol = phase == FieldEncounterRules.Phase.PATROL;
                 stopLeadNavigation(level);
-                advancePatrolPoint();
-                patrolDwellTicks = patrol == null ? 0 : FieldRoamPlanner.dwellTicks(
-                        patrol.dwellMinTicks(), patrol.dwellMaxTicks(), ++roamSequence);
+                if (blockedPatrol) {
+                    advancePatrolPoint();
+                    patrolDwellTicks = patrol == null ? 0 : FieldRoamPlanner.dwellTicks(
+                            patrol.dwellMinTicks(), patrol.dwellMaxTicks(), ++roamSequence);
+                }
                 return false;
             }
 
@@ -549,8 +579,10 @@ final class DrehmalVisibleEncounterService {
                 if (!accepted && navigationStalledSinceTick == FieldNavigationRules.NEVER) {
                     navigationStalledSinceTick = now;
                 }
+                navigationDone = actor.fieldNavigationDone();
             }
-            return !actor.fieldNavigationDone();
+            return FieldNavigationRules.walkingFromRecentProgress(
+                    now, lastPhysicalProgressTick, navigationDone);
         }
 
         private void stopLeadNavigation(ServerLevel level) {
@@ -562,6 +594,7 @@ final class DrehmalVisibleEncounterService {
             lastMoveTarget = null;
             lastMoveCommandTick = FieldNavigationRules.NEVER;
             navigationStalledSinceTick = FieldNavigationRules.NEVER;
+            lastPhysicalProgressTick = FieldNavigationRules.NEVER;
         }
 
         private boolean actorsAlive(ServerLevel level) {
@@ -604,6 +637,7 @@ final class DrehmalVisibleEncounterService {
             lastMoveTarget = null;
             lastMoveCommandTick = FieldNavigationRules.NEVER;
             navigationStalledSinceTick = FieldNavigationRules.NEVER;
+            lastPhysicalProgressTick = FieldNavigationRules.NEVER;
             facing = patrolPoints.size() >= 2
                     ? horizontalDirection(patrolPoints.get(1).subtract(patrolPoints.get(0)), new Vec3(0, 0, -1))
                     : new Vec3(0.0D, 0.0D, -1.0D);
