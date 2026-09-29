@@ -95,6 +95,9 @@ Required:
 - duplicate copies never required for core kit
 - models/animations/VFX/SFX are part of completion
 - portrait uses final model when quality permits
+- the current 12 playable characters (P01~P08 + F01~F04) are the **initial production baseline, not a permanent roster cap**
+- after the first route/core combat/runtime is stable, add new playable characters in later content updates
+- roster expansion must add genuinely different combat choices and complete model/animation/VFX/SFX/acquisition/codex integration; do not inflate the roster with minor stat variants
 
 Confirmed Standard Archive baseline restored on 2026-09-26:
 - ★5 3%: P02 / P05 / P06
