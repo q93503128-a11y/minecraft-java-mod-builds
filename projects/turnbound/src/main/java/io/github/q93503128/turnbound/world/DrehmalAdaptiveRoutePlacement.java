@@ -6,12 +6,18 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.decoration.ItemFrame;
+import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.npc.WanderingTrader;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import java.util.*;
 
 final class DrehmalAdaptiveRoutePlacement {
     private static final Map<ServerLevel, Snapshot> CACHE = new IdentityHashMap<>();
+    private record ScoredPosition(DrehmalFirstRouteCatalog.Position position, double score) {}
 
     record Snapshot(Map<String,DrehmalFirstRouteCatalog.Site> sites,
                     Map<String,DrehmalFirstRouteCatalog.Footprint> footprints,
@@ -97,14 +103,38 @@ final class DrehmalAdaptiveRoutePlacement {
 
     private static DrehmalFirstRouteCatalog.Position resolveSite(ServerLevel level,DrehmalMapPlacementCatalog.Placement p){
         if(!p.strictSite()){
-            var s=p.siteSeeds().getFirst();
-            return new DrehmalFirstRouteCatalog.Position(s.x(),level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,s.x(),s.z()),s.z());
+            var seed=p.siteSeeds().getFirst();
+            return new DrehmalFirstRouteCatalog.Position(
+                    seed.x(),
+                    level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,seed.x(),seed.z()),
+                    seed.z());
         }
-        for(var s:p.siteSeeds()){
-            var r=nearestStanding(level,s.x(),s.z(),p.searchRadius());
-            if(r!=null) return r;
+
+        var authored=DrehmalFirstRouteCatalog.site(p.siteLocator());
+        if(authored==null)return null;
+        var zone=DrehmalMapPlacementCatalog.zone(p.zoneId());
+        ScoredPosition best=null;
+
+        for(var seed:p.siteSeeds()){
+            for(int[] offset:offsets(p.searchRadius())){
+                int x=seed.x()+offset[0],z=seed.z()+offset[1];
+                int y=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);
+                BlockPos feet=new BlockPos(x,y,z);
+                if(!standing(level,feet)||!sourceContentClear(level,x,y,z,2.75D))continue;
+
+                double roadDistance=corridorDistance(zone,x+0.5D,z+0.5D);
+                if(!DrehmalRoutePlacementRules.acceptableRoadDistance(authored.kind(),roadDistance))continue;
+
+                double seedDistanceSq=offset[0]*offset[0]+offset[1]*offset[1];
+                double score=DrehmalRoutePlacementRules.score(authored.kind(),seedDistanceSq,roadDistance);
+                var candidate=new ScoredPosition(new DrehmalFirstRouteCatalog.Position(x,y,z),score);
+                if(best==null||candidate.score()<best.score()
+                        ||(candidate.score()==best.score()&&positionTieBreak(candidate.position(),best.position())<0)){
+                    best=candidate;
+                }
+            }
         }
-        return null;
+        return best==null?null:best.position();
     }
 
     private static List<DrehmalFirstRouteCatalog.ArenaCandidate> resolveArenas(ServerPlayer player,ServerLevel level,DrehmalMapPlacementCatalog.Placement p){
@@ -121,8 +151,16 @@ final class DrehmalAdaptiveRoutePlacement {
 
     private static List<DrehmalFirstRouteCatalog.Position> resolvePatrol(ServerLevel level,DrehmalMapPlacementCatalog.Placement p,List<DrehmalFirstRouteCatalog.Site> sites){
         List<DrehmalFirstRouteCatalog.Position> out=new ArrayList<>();
-        for(var s:p.patrolSeeds()){
-            var point=nearestStanding(level,s.x(),s.z(),Math.min(4,p.searchRadius()));
+        for(var seed:p.patrolSeeds()){
+            DrehmalFirstRouteCatalog.Position point=null;
+            for(int[] offset:offsets(Math.min(4,p.searchRadius()))){
+                int x=seed.x()+offset[0],z=seed.z()+offset[1];
+                int y=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);
+                BlockPos feet=new BlockPos(x,y,z);
+                if(!standing(level,feet)||!sourceContentClear(level,x,y,z,2.5D))continue;
+                point=new DrehmalFirstRouteCatalog.Position(x,y,z);
+                break;
+            }
             if(point==null||DrehmalRouteZoneRules.insideSafetyZone(sites,point.x()+0.5D,point.z()+0.5D)) continue;
             if(out.stream().noneMatch(e->e.x()==point.x()&&e.z()==point.z())) out.add(point);
         }
@@ -132,6 +170,7 @@ final class DrehmalAdaptiveRoutePlacement {
     private static DrehmalFirstRouteCatalog.ArenaCandidate nearestArena(ServerPlayer player,ServerLevel level,DrehmalMapPlacementCatalog.ArenaSeed seed,int radius){
         for(int[] o:offsets(radius)){
             int x=seed.x()+o[0],z=seed.z()+o[1],y=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);
+            if(!sourceContentClear(level,x,y,z,5.5D))continue;
             Vec3 center=new Vec3(x+0.5D,y,z+0.5D);
             if(BattleSessionManager.surveyArenaOpen(player,center,seed.yaw(),4))
                 return new DrehmalFirstRouteCatalog.ArenaCandidate(new DrehmalFirstRouteCatalog.Position(x,y,z),seed.yaw());
@@ -161,6 +200,64 @@ final class DrehmalAdaptiveRoutePlacement {
             min=Math.min(min,y);max=Math.max(max,y);
         }
         return max-min<=2;
+    }
+
+    private static boolean sourceContentClear(ServerLevel level,int x,int y,int z,double horizontalRadius){
+        BlockPos feet=new BlockPos(x,y,z);
+        int radius=Math.max(1,(int)Math.ceil(horizontalRadius));
+        for(int dx=-radius;dx<=radius;dx++)for(int dz=-radius;dz<=radius;dz++){
+            if(dx*dx+dz*dz>horizontalRadius*horizontalRadius)continue;
+            for(int dy=-2;dy<=3;dy++){
+                if(level.getBlockEntity(feet.offset(dx,dy,dz))!=null)return false;
+            }
+        }
+
+        AABB area=new AABB(
+                x-horizontalRadius,y-2.0D,z-horizontalRadius,
+                x+1.0D+horizontalRadius,y+4.0D,z+1.0D+horizontalRadius);
+        if(!level.getEntitiesOfClass(Villager.class,area).isEmpty())return false;
+        if(!level.getEntitiesOfClass(WanderingTrader.class,area).isEmpty())return false;
+        if(!level.getEntitiesOfClass(ItemFrame.class,area).isEmpty())return false;
+        if(!level.getEntitiesOfClass(ArmorStand.class,area).isEmpty())return false;
+        return true;
+    }
+
+    static double corridorDistance(DrehmalMapPlacementCatalog.Zone zone,double x,double z){
+        if(zone==null||zone.corridor().isEmpty())return Double.POSITIVE_INFINITY;
+        if(zone.corridor().size()==1){
+            var point=zone.corridor().getFirst();
+            return Math.sqrt(distanceSq(x,z,point.x()+0.5D,point.z()+0.5D));
+        }
+        double best=Double.POSITIVE_INFINITY;
+        for(int i=1;i<zone.corridor().size();i++){
+            var a=zone.corridor().get(i-1);
+            var b=zone.corridor().get(i);
+            best=Math.min(best,distanceToSegment(
+                    x,z,a.x()+0.5D,a.z()+0.5D,b.x()+0.5D,b.z()+0.5D));
+        }
+        return best;
+    }
+
+    private static double distanceToSegment(double px,double pz,double ax,double az,double bx,double bz){
+        double vx=bx-ax,vz=bz-az;
+        double lengthSq=vx*vx+vz*vz;
+        if(lengthSq<=0.000001D)return Math.sqrt(distanceSq(px,pz,ax,az));
+        double t=((px-ax)*vx+(pz-az)*vz)/lengthSq;
+        t=Math.max(0.0D,Math.min(1.0D,t));
+        double qx=ax+t*vx,qz=az+t*vz;
+        return Math.sqrt(distanceSq(px,pz,qx,qz));
+    }
+
+    private static double distanceSq(double ax,double az,double bx,double bz){
+        double dx=ax-bx,dz=az-bz;
+        return dx*dx+dz*dz;
+    }
+
+    private static int positionTieBreak(DrehmalFirstRouteCatalog.Position left,DrehmalFirstRouteCatalog.Position right){
+        int x=Integer.compare(left.x(),right.x());
+        if(x!=0)return x;
+        int z=Integer.compare(left.z(),right.z());
+        return z!=0?z:Integer.compare(left.y(),right.y());
     }
 
     private static List<int[]> offsets(int radius){
