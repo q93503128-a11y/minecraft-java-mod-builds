@@ -786,7 +786,7 @@ public final class MetaMenuScreen extends Screen {
                     !r.owned());
             TurnboundUiSkin.orbOverlay(g,portraitX,portraitY,portraitSize,r.owned(),false,false);
             x=portraitX+portraitSize+14;y=contentTop()+30;w=Math.max(80,left+panelWidth-18-x);
-            g.text(font,Component.literal(UiTextLayout.fit(r.name()+" · "+(r.owned()?(r.awakened()?"각성 · ":"")+"★"+r.nativeStar()+" Lv."+r.level():"미보유 · ★"+r.nativeStar()),w)),x,y,r.owned()?TEXT:MUTED,true);
+            g.text(font,Component.literal(UiTextLayout.fit(r.name()+" · "+(r.owned()?(r.awakened()?"각성 · ":"")+"★"+r.nativeStar()+" "+levelLabel(r):"미보유 · ★"+r.nativeStar()),w)),x,y,r.owned()?TEXT:MUTED,true);
             g.text(font,Component.literal(UiTextLayout.fit(r.role(),w)),x,y+14,SECONDARY,false);
         }
         switch(detailTab){
