@@ -317,7 +317,7 @@ Warrior root skills use the already Phase-F-shortlisted Kenney Particle Pack `sl
 
 Driving Slash, Breaker Slam and Earthshatter read the same `WarriorSkillShape` range constants used by server hit acceptance. Cyclone owns a distinct rotating 3D slash silhouette rather than generic particle fog; Iron Counter owns a short defensive slash-plane cue. Generic Spell Engine sparks and currently-selected release sounds are subordinate support/readability layers only and are not considered final audio acceptance.
 
-State: `RUNTIME_BOUND / BUILD_AND_MINECRAFT_VISUAL_ACCEPTANCE_PENDING`.
+State: `RUNTIME_BOUND / MINECRAFT_VISUAL_ACCEPTANCE_PENDING`. Build Openworld RPG run `36562682972` at code state `a5d50e7fe97e50b1cc6624fcd9fb27144ff5f782` passes unit tests/build, server smoke, gameplay client startup, playtest-JAR builds, pack packaging and artifact upload; this does not substitute for in-world visual/range/timing/audio acceptance.
 
 Open production gaps remain explicit: final melee animation/recovery/dodge-cancel coupling is not yet owned by a shared action layer; Combat Temper has no shared ordinary hit-stagger-duration consumer; normal-only Cyclone pull is blocked until actor rank distinguishes normal from elite. These are runtime-system gaps, not reasons to substitute particle-only presentation.
 
