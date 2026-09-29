@@ -21,8 +21,8 @@ public final class DrabyelMapPlacementCatalog {
     public record Seed(int x, int z) {}
     public record Exclusion(int x, int z, double radius, String reason) {}
     public record Source(String repository, String commit, String paths, String usage) {}
-    public record Placement(String serviceLocator, int searchRadius, Seed faceTarget,
-                            List<Seed> seeds, List<Exclusion> exclusions) {
+    public record Placement(String serviceLocator, int searchRadius, int expectedY, double preferredRoadDistance,
+                            Seed faceTarget, List<Seed> seeds, List<Exclusion> exclusions) {
         public Placement {
             seeds = List.copyOf(seeds);
             exclusions = List.copyOf(exclusions);
@@ -64,6 +64,12 @@ public final class DrabyelMapPlacementCatalog {
             }
             if (placement.searchRadius() < 0 || placement.searchRadius() > 8) {
                 errors.add("invalid Drabyel placement radius " + placement.serviceLocator());
+            }
+            if (placement.expectedY() < 1 || placement.expectedY() > 320) {
+                errors.add("invalid Drabyel placement expected Y " + placement.serviceLocator());
+            }
+            if (placement.preferredRoadDistance() < 2.0D || placement.preferredRoadDistance() > 12.0D) {
+                errors.add("invalid Drabyel placement road distance " + placement.serviceLocator());
             }
             if (placement.faceTarget() == null) {
                 errors.add("missing Drabyel placement face target " + placement.serviceLocator());
@@ -132,6 +138,8 @@ public final class DrabyelMapPlacementCatalog {
                 placements.add(new Placement(
                         string(raw, "serviceLocator"),
                         raw.get("searchRadius").getAsInt(),
+                        raw.get("expectedY").getAsInt(),
+                        raw.get("preferredRoadDistance").getAsDouble(),
                         target,
                         seeds,
                         exclusions));
