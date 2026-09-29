@@ -19,6 +19,8 @@ public final class PlayerNegativeStatusRuntimeState {
 
     private final Map<String, ActiveStatus> activeStatuses = new HashMap<>();
     private long negativeBuildupResistanceUntilTick = Long.MIN_VALUE / 4;
+    private double negativeStatusDurationMultiplier = 1.0;
+    private long negativeStatusDurationMultiplierUntilTick = Long.MIN_VALUE / 4;
 
     public void applyStatus(String statusId, Set<String> tags, long expiresAtTick) {
         requireStableId(statusId);
@@ -35,6 +37,70 @@ public final class PlayerNegativeStatusRuntimeState {
                 statusId,
                 new ActiveStatus(Set.copyOf(normalizedTags), expiresAtTick)
         );
+    }
+
+    /**
+     * Applies an authored negative status from a duration so transient duration modifiers such as
+     * Sanctuary can be resolved at the server-owned application boundary.
+     */
+    public void applyStatusForDuration(
+            String statusId,
+            Set<String> tags,
+            long durationTicks,
+            long nowTick
+    ) {
+        if (durationTicks <= 0L || nowTick < 0L) {
+            throw new IllegalArgumentException(
+                    "Status duration must be positive and time non-negative."
+            );
+        }
+        double multiplier = negativeStatusDurationMultiplier(nowTick);
+        long adjustedDuration = Math.max(
+                1L,
+                (long) Math.ceil(durationTicks * multiplier - 1.0e-9)
+        );
+        applyStatus(
+                statusId,
+                tags,
+                Math.addExact(nowTick, adjustedDuration)
+        );
+    }
+
+    /**
+     * Applies a temporary multiplier only to negative statuses created while this window is active.
+     * Existing statuses are intentionally not shortened retroactively.
+     */
+    public void applyNegativeStatusDurationMultiplier(
+            double multiplier,
+            long durationTicks,
+            long nowTick
+    ) {
+        if (!Double.isFinite(multiplier)
+                || multiplier <= 0.0
+                || multiplier > 1.0
+                || durationTicks <= 0L
+                || nowTick < 0L) {
+            throw new IllegalArgumentException(
+                    "Negative-status duration modifier is invalid."
+            );
+        }
+        refreshNegativeStatusDurationMultiplier(nowTick);
+        negativeStatusDurationMultiplier = Math.min(
+                negativeStatusDurationMultiplier,
+                multiplier
+        );
+        negativeStatusDurationMultiplierUntilTick = Math.max(
+                negativeStatusDurationMultiplierUntilTick,
+                Math.addExact(nowTick, durationTicks)
+        );
+    }
+
+    public double negativeStatusDurationMultiplier(long nowTick) {
+        if (nowTick < 0L) {
+            throw new IllegalArgumentException("nowTick must be non-negative.");
+        }
+        refreshNegativeStatusDurationMultiplier(nowTick);
+        return negativeStatusDurationMultiplier;
     }
 
     public PlayerCombatSessionState.NegativeStatusesSnapshot
@@ -82,6 +148,9 @@ public final class PlayerNegativeStatusRuntimeState {
                 snapshot.negativeBuildupResistanceUntilTick(),
                 rebase
         );
+        // Sanctuary and similar area protection is transient world state, not reconnect state.
+        negativeStatusDurationMultiplier = 1.0;
+        negativeStatusDurationMultiplierUntilTick = Long.MIN_VALUE / 4;
     }
 
     public int cleanseTagged(String tag, long nowTick) {
@@ -151,6 +220,13 @@ public final class PlayerNegativeStatusRuntimeState {
     public int activeStatusCount(long nowTick) {
         expire(nowTick);
         return activeStatuses.size();
+    }
+
+    private void refreshNegativeStatusDurationMultiplier(long nowTick) {
+        if (nowTick >= negativeStatusDurationMultiplierUntilTick) {
+            negativeStatusDurationMultiplier = 1.0;
+            negativeStatusDurationMultiplierUntilTick = Long.MIN_VALUE / 4;
+        }
     }
 
     private void expire(long nowTick) {
