@@ -6,9 +6,9 @@ final class DrehmalStartMigrationRules {
 
     static boolean shouldMigrateLegacyHubArrival(
             boolean hasCurrentArrival,
-            boolean hasLegacyHubEvidence,
+            boolean hasLegacyDirectHubArrival,
             boolean insideHub
     ) {
-        return !hasCurrentArrival && hasLegacyHubEvidence && insideHub;
+        return !hasCurrentArrival && hasLegacyDirectHubArrival && insideHub;
     }
 }
