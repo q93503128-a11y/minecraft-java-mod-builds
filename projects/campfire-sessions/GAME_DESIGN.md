@@ -38,7 +38,30 @@ The existing music work is preserved and becomes one lifestyle pillar:
 - BPM feedback.
 - third-person guitar performance pose.
 
+The Acoustic Guitar is a normal lifestyle item sold through the village economy rather than a development/test item or mandatory starter tool.
+Baseline direction:
+- purchasable from the general store once ordinary shopping is available.
+- reasonably affordable compared with luxury furniture.
+- catalog-reorderable after acquisition.
+- additional external guitar visual variants may appear later through premium stock, events or the musician, but should not create a stat ladder unless a meaningful music-system difference exists.
+
 Music can appear in campfires, cafés, birthdays, plaza performances, seasonal events and the major festival.
+
+### Recurring musician
+Add one original recurring animal musician/singer-guitarist as a fixed special character.
+This character is inspired by the role of a recurring live performer in life-sim games, but must have an original identity, visual design, dialogue and presentation rather than copying an existing copyrighted character.
+
+Direction:
+- uses the selected external resident/special-character visual pipeline.
+- appears on a predictable recurring schedule roughly once per 7-day season.
+- spends part of the visit casually practicing/being present before the main performance window.
+- performs bundled Campfire tracks in the plaza/café/campfire/performance area depending on context.
+- may accept player song requests from the bundled set during the performance period.
+- can appear in birthdays/special events where appropriate.
+- becomes a major performer in the multi-day festival finale.
+- public-server-style monetization or music progression is not the goal.
+
+Local Custom Music remains a player-side/custom feature and should not automatically become the canonical NPC performance catalogue unless multiplayer availability/sync is explicitly solved.
 
 ## 2. Non-negotiable production rules
 
@@ -345,6 +368,10 @@ Player yard:
 - fencing.
 - landscaping items.
 - approved decoration.
+
+Yard area may expand modestly with selected housing progression stages when the actual map/house spacing supports it.
+Expansion must be capped by real anchor/parcel boundaries so one player's yard never grows into a neighbor's home, civic space, road or protected landscape.
+The exact yard sizes are chosen only after the final map and housing anchors are inspected.
 
 Player interior:
 - free interior decoration within the managed shell.
@@ -727,7 +754,19 @@ Do not use strict real-world 1:1 time.
 Current design direction:
 about 48 real minutes per in-game day.
 
-This is provisional and can be tuned after playtesting.
+The player-facing clock still represents a normal 24-hour day with **hour:minute** time, preferably 24-hour notation such as:
+- 06:37.
+- 14:05.
+- 23:48.
+
+At exactly 48 real minutes per 24-hour in-game day:
+- 1 in-game hour = 2 real minutes.
+- 1 in-game minute = 2 real seconds.
+
+Internally, schedule/event systems should use in-game clock time rather than exposing real-time compression math.
+Player-facing schedules, shop hours, resident appointments and events can therefore display exact in-game start/end times such as 18:00–22:00.
+
+This is provisional and can be tuned after playtesting; if the day duration changes, the in-game 24-hour clock representation remains the same.
 
 ### Offline/server time
 When nobody is online, village time should pause.
@@ -824,6 +863,9 @@ Expand flora significantly using external mods/assets.
 
 ### Farming interaction
 Watering exists as a light lifestyle interaction, not a daily chore that consumes a large part of play.
+
+Do not add a generic star/quality-grade ladder to normal crops/harvests.
+Collection/economy variety should come from species, season, rarity, authored variants and relevant specimen traits rather than multiplying every ordinary crop into several quality tiers.
 - base crops should not demand excessive watering frequency.
 - rain satisfies normal watering needs.
 - upgraded watering tools increase area/range.
@@ -1047,6 +1089,20 @@ First-donor credit:
 
 Collection encyclopedia state is personal per player.
 Players can still help each other by transferring valid specimens/items, which can register to the recipient's encyclopedia.
+
+### Duplicate donations
+Once the museum has accepted the required specimen/part for an exhibit entry, it does not need infinite duplicate donations.
+
+Duplicates remain useful for:
+- selling.
+- gifting.
+- home display.
+- contests.
+- photography.
+- trading with other players.
+
+Fossils are accepted per required species/part until that physical skeleton/exhibit is complete.
+Do not turn duplicate donation into a hidden grind sink.
 
 ## 26. Personal displays
 
@@ -1336,6 +1392,13 @@ Gift spam should not be the only path to maximum friendship.
 
 Residents may wear gifted clothing or display approved furniture.
 
+Gift display should remain curated:
+- resident homes use authored display/furniture slots.
+- gifts that strongly fit the resident's style/preferences may replace or rotate through suitable slots.
+- residents do not endlessly stack every received object into the room.
+- older/non-displayed gifts may remain remembered in data without physically cluttering the interior.
+- player gifts should never silently destroy irreplaceable authored furniture or make the home unusable.
+
 ## 36. Clothing and appearance
 
 Collectible clothing is meaningful lifestyle content.
@@ -1436,7 +1499,8 @@ This availability smoothing must not be reused as a hidden "play long enough and
 Visiting NPC types may include:
 - art dealer.
 - rare plant seller.
-- traveling musician.
+- recurring special musician/performer.
+- other traveling musician(s) if worthwhile.
 - fishing specialist.
 - bug specialist.
 - antique dealer.
@@ -1470,7 +1534,12 @@ Potential secret sites depend on the final map:
 - isolated groves.
 - hidden coastal spaces.
 
-Do not finalize them until the actual map is inspected.
+Secret content mixes permanent discovery with renewable reasons to return:
+- discovering a hidden location/landmark can be a permanent one-time record.
+- ordinary resources, mushrooms, shells, ore pockets, rare seasonal spawns or selected treasure-like finds inside/near that location may regenerate or vary by season/weather.
+- do not make every secret a one-time chest that becomes permanently irrelevant after the first visit.
+
+Do not finalize exact locations until the actual map is inspected.
 
 ## 41. Village decoration and public projects
 
@@ -1486,6 +1555,17 @@ Players may decorate approved public areas with externally sourced props such as
 - fences.
 - sculptures.
 - picnic areas.
+
+### Night lighting
+Night is a real playable period, so the authored village should visibly transition rather than only becoming dark.
+Where supported by the final external builds/assets:
+- street lights turn on.
+- house windows/interior lamps reflect occupancy/sleep state.
+- shops and civic buildings change lighting around closing time.
+- harbor/pier lights activate.
+- event/festival lighting overrides or extends the normal night presentation.
+
+Use external lighting/build assets where possible and keep updates event/time-driven rather than running expensive global scans every tick.
 
 Public projects use a shared funding model.
 
@@ -1512,6 +1592,17 @@ Do not give governance power based on who paid the most.
 Furniture should primarily come from external high-quality packs/mods.
 
 Candidate categories include furniture mods such as Skniro's Furniture / BetterDeco if they remain technically suitable.
+
+### Placement and rotation
+Keep Minecraft's understandable grid/block placement as the baseline.
+Where the chosen external furniture system already supports stable orientation/rotation or finer placement, reuse/adapt that behavior rather than rebuilding it from scratch.
+
+Prefer:
+- ordinary cardinal rotation at minimum.
+- additional 8-direction/finer rotation only when the adopted external system handles collision, multiplayer sync, interaction anchors and save state reliably.
+- furniture interaction hitboxes and sit/use points must rotate correctly with the model.
+
+Do not add a free-transform editor merely because it looks flexible if it creates unstable placement or mismatched collision.
 
 Functional furniture where appropriate:
 - chairs → sit.
@@ -1568,15 +1659,35 @@ Top placement should feel worthwhile, but a single missed contest should not per
 ### Village notice board / schedule
 The village has a physical notice board / community-board interaction point near the civic core.
 
-Do not plaster every full event description onto the board surface.
-The physical board's at-a-glance presentation shows only concise notices such as:
+The content model should borrow the useful breadth of life-sim town boards rather than acting as an event list only.
+Possible board content:
+- scheduled events and contests.
+- resident/player birthdays.
+- weather warnings or unusual seasonal conditions.
+- store/facility openings, closures, upgrades and special-sale notices.
+- contest results/community achievements.
+- resident/community flavor notes.
+- player-written multiplayer notes.
+- treasure-hunt/community activity notices when such content is active.
+
+Do not plaster every full message onto the physical board surface.
+The physical board's at-a-glance presentation shows only concise recent/important notices such as:
 - an upcoming event exists.
-- event name/category.
+- event/notice name or category.
 - approximate date or urgency.
 - a small visual marker/icon where useful.
 
-Interacting with the board opens categorized information.
-A dedicated **Schedule** category shows upcoming dates for a useful forward window.
+Interacting with the board opens organized information.
+Use lightweight categories when the final UI supports them cleanly, with a baseline such as:
+- Schedule.
+- Village News.
+- Residents.
+- Shops & Facilities.
+- Player Notes.
+
+If categorization makes the chosen external UI worse or overly menu-heavy, merge categories rather than preserving them dogmatically.
+
+The dedicated **Schedule** view shows upcoming dates for a useful forward window.
 Selecting a specific date/event reveals:
 - exact start time.
 - exact end time.
@@ -1585,10 +1696,17 @@ Selecting a specific date/event reveals:
 - participation notes/rules when relevant.
 - special closure or service changes, if any.
 
+Player Notes remain separate from official system notices so friend messages cannot obscure important event information.
+Because this is private friend multiplayer, do not build heavy public-server moderation tooling around player notes.
+
 Events do not need to last all day.
 Their true start/end times must be visible here so a player can plan around the 48-minute in-game day without memorizing hidden schedules.
 
 The board/calendar UI should use the project's external-UI-first rule, and the physical board model/build should also prefer an external asset/reference if a fitting one can be obtained.
+
+An MIT-licensed external bulletin-board implementation may be ported/adapted as a technical base if its actual source is legitimately obtainable and the port remains cleaner than a small native implementation.
+A Fabric 1.21.1 implementation cannot simply be dropped into NeoForge 26.2; registry, networking, screen/container and rendering integration must be properly ported.
+Preserve all required third-party copyright/license notices for reused code.
 
 Residents have fixed authored birthdays on the 28-day four-season calendar.
 Birthday overlap is explicitly allowed; multiple residents may share the same date.
