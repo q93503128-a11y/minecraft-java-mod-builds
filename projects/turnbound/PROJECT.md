@@ -168,6 +168,27 @@ Post-audit multiplayer reliability work now:
 
 This is **CODE REVIEWED**, not multiplayer-playtested. 2/3/4-player disconnect/reconnect, server-stop recovery, camera, return-position, and duplicate-reward scenarios remain required real multiplayer tests.
 
+## Post-audit integration validation checkpoint — 2026-09-29
+
+The current branch now contains one integrated post-audit repair set covering:
+- five-tier summon/codex/economy canon restoration
+- P05 native ★5 without reverting the current kit
+- normal-hub vs legacy-direct-arrival save provenance
+- external Drehmal Awakening readiness projection
+- compact 320×240 collection/archive layout and scrollable skill/passive details
+- offline shared-battle reward WAL settlement and claimant-safe field encounter release
+
+Targeted regression tests were added/restored for the summon contract, compact paging, external Awakening projection, legacy-arrival provenance, and offline reward-journal recovery.
+
+A branch build is requested by this checkpoint commit. Until its workflow result is directly observed, validation remains:
+- CODE REVIEWED: YES
+- TESTED: NOT YET CONFIRMED FOR THIS HEAD
+- BUILD VERIFIED: NO
+- JAR PRODUCED: NO
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
 ## Economy
 
 Long-term core currencies:
