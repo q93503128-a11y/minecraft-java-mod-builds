@@ -21,7 +21,8 @@ public final class ProjectSpellInputRules {
         return (ProjectSpellSpec.ARC_BOLT_ID.equals(spellId)
                 || ProjectSpellSpec.RADIANT_LANCE_ID.equals(spellId)
                 || ProjectSpellSpec.MEND_ID.equals(spellId)
-                || ProjectSpellSpec.REBUKE_ID.equals(spellId))
+                || ProjectSpellSpec.REBUKE_ID.equals(spellId)
+                || ProjectSpellSpec.SANCTUARY_ID.equals(spellId))
                 && !freshPress;
     }
 }
