@@ -178,15 +178,6 @@ final class DrehmalAdaptiveRoutePlacement {
         return null;
     }
 
-    private static DrehmalFirstRouteCatalog.Position nearestStanding(ServerLevel level,int sx,int sz,int radius){
-        for(int[] o:offsets(radius)){
-            int x=sx+o[0],z=sz+o[1],y=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);
-            BlockPos feet=new BlockPos(x,y,z);
-            if(standing(level,feet)) return new DrehmalFirstRouteCatalog.Position(x,y,z);
-        }
-        return null;
-    }
-
     private static boolean standing(ServerLevel level,BlockPos feet){
         BlockPos below=feet.below();
         if(level.getBlockState(below).isAir()||level.getBlockState(below).is(BlockTags.LEAVES)||!level.getFluidState(below).isEmpty()) return false;
