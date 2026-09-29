@@ -8,8 +8,8 @@ import java.util.UUID;
 /**
  * Durable first-route landmarks. These are presentation/navigation milestones, not hard quest gates.
  *
- * <p>Recording is cumulative so a reconnect, admin relocation, or later map migration can never make the HUD point
- * a progressed player backward along Capital Valley.</p>
+ * <p>Landmarks are independent discovery facts. New Drabyel is now the opening anchor, so reaching the town must
+ * never falsely mark the older Tower/camp route as explored.</p>
  */
 final class DrehmalFirstRouteProgress {
     static final String TOWER_REACHED = "ROUTE_TOWER_REACHED";
@@ -29,21 +29,9 @@ final class DrehmalFirstRouteProgress {
         List<String> out = new ArrayList<>();
         switch (site.locator()) {
             case TOWER -> out.add(TOWER_REACHED);
-            case CAMP -> {
-                out.add(TOWER_REACHED);
-                out.add(CAMP_REACHED);
-            }
-            case APPROACH -> {
-                out.add(TOWER_REACHED);
-                out.add(CAMP_REACHED);
-                out.add(APPROACH_REACHED);
-            }
-            case HUB -> {
-                out.add(TOWER_REACHED);
-                out.add(CAMP_REACHED);
-                out.add(APPROACH_REACHED);
-                out.add(HUB_REACHED);
-            }
+            case CAMP -> out.add(CAMP_REACHED);
+            case APPROACH -> out.add(APPROACH_REACHED);
+            case HUB -> out.add(HUB_REACHED);
             default -> { }
         }
         return List.copyOf(out);

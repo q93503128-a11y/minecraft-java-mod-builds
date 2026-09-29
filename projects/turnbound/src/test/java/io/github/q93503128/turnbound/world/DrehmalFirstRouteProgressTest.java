@@ -5,11 +5,10 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DrehmalFirstRouteProgressTest {
     @Test
-    void laterLandmarksImplyEarlierRouteMilestones() {
+    void optionalLandmarksRemainIndependentFromTheTownOpening() {
         var tower = site("turnbound:site/capital_valley/tower", "BREATHING_ZONE");
         var camp = site("turnbound:site/capital_valley/explorer_camp", "REST_ZONE");
         var approach = site("turnbound:site/capital_valley/drabyel_approach", "PATROL_ZONE");
@@ -17,17 +16,11 @@ class DrehmalFirstRouteProgressTest {
 
         assertEquals(List.of(DrehmalFirstRouteProgress.TOWER_REACHED),
                 DrehmalFirstRouteProgress.milestonesFor(tower));
-        assertEquals(List.of(
-                        DrehmalFirstRouteProgress.TOWER_REACHED,
-                        DrehmalFirstRouteProgress.CAMP_REACHED),
+        assertEquals(List.of(DrehmalFirstRouteProgress.CAMP_REACHED),
                 DrehmalFirstRouteProgress.milestonesFor(camp));
-        assertTrue(DrehmalFirstRouteProgress.milestonesFor(approach)
-                .contains(DrehmalFirstRouteProgress.APPROACH_REACHED));
-        assertEquals(List.of(
-                        DrehmalFirstRouteProgress.TOWER_REACHED,
-                        DrehmalFirstRouteProgress.CAMP_REACHED,
-                        DrehmalFirstRouteProgress.APPROACH_REACHED,
-                        DrehmalFirstRouteProgress.HUB_REACHED),
+        assertEquals(List.of(DrehmalFirstRouteProgress.APPROACH_REACHED),
+                DrehmalFirstRouteProgress.milestonesFor(approach));
+        assertEquals(List.of(DrehmalFirstRouteProgress.HUB_REACHED),
                 DrehmalFirstRouteProgress.milestonesFor(hub));
     }
 

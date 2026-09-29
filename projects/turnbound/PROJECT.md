@@ -757,9 +757,9 @@ While enabled, every login:
 **Release gate:** this automatic login reset MUST be disabled/removed before completion/release. Persistent progression is
 the production behavior; this switch exists only so repeated alpha client checks behave like first contact.
 
-The first playable entry no longer starts at the Primal roadhead ~1.2 km from New Drabyel. It starts at the source-backed
-explorer-camp transition, keeping the first-town walk under 450 m while the older Capital Valley roadhead/tower/cave remain
-normal explorable regional content.
+The first playable entry no longer starts at the Primal roadhead or Explorer camp. It starts at New Drabyel's
+source-backed north entrance. The first combat is a short excursion outside the gate rather than a long walk to earn
+the town; older Capital Valley camp/tower/cave/roadhead content remains normal optional regional exploration.
 
 Physical New Drabyel NPC facilities are not aliases for global E-menu categories:
 - equipment merchant: dedicated buy/sell screen
@@ -810,12 +810,12 @@ Validation state:
 Latest explicit client-playtest decision:
 
 Opening:
-- current fresh-session entry is the Explorer's Guide camp transition, with New Drabyel roughly 350 m away in straight-line map distance
-- this distance is acceptable only if the route contains meaningful gameplay beats; empty walking is not acceptable
-- current intended forward beats are: Mira/camp interaction → CV_DRABYEL_NORTH → CV_DRABYEL_ROAD → New Drabyel
-- the camp itself must gain at least one useful non-dialogue interaction (rest/heal, small loot/equipment comparison decision, or route information) before the opening is considered complete
-- Tower / Warning Cave / Primal roadhead remain optional/backward Capital Valley exploration, not mandatory opening padding
-- actual pacing remains CLIENT RUNTIME / PLAYTEST pending
+- current fresh-session entry is New Drabyel's north entrance, using the source-backed town-approach area rather than the town center
+- opening loop: entrance guide → E-menu party check → short CV_DRABYEL_ROAD excursion → return to town → hub services
+- CV_DRABYEL_ROAD is the first tutorial battle and uses CV-B + CV-C with its approach seed kept under 100 m from the entry seed
+- the town is the story anchor from the start; outdoor combat still happens immediately, but distance itself is never treated as content
+- Explorer camp / Tower / Warning Cave / Primal roadhead remain optional Capital Valley exploration and starting in town does not auto-mark them discovered
+- actual sightline, patrol readability and travel feel remain CLIENT RUNTIME / PLAYTEST pending
 
 NPC/facility UI:
 - do not design final NPC chrome from scratch
@@ -829,5 +829,12 @@ NPC/facility UI:
 Implementation hygiene:
 - do not keep placeholder/no-op APIs, commented-out systems, deleted tests, or duplicated economy authority merely to pass builds
 - temporary pre-release reset is explicit technical debt with a release-removal gate; it must not silently become production persistence behavior
-- new facility screens currently share repeated lifecycle/chrome behavior; before expanding the NPC UI family further, consolidate common facility-screen plumbing instead of copy/pasting more screens
+- physical facility screens share the common FacilityScreen shell; new NPC facilities must extend that shell instead of copying lifecycle/chrome/close logic
 - when an external asset already solves the visual primitive, reuse it rather than creating another bespoke visual language
+
+
+Implementation checkpoint:
+- FacilityScreen now centralizes Foozle-skinned frame, compact sizing, refresh, close keys and world-preserving behavior for merchant/forge/stable/summon screens.
+- The four physical service screens retain only task-specific controls and use smaller default panels.
+- First-route landmark flags are independent; HUB_REACHED no longer implies Tower/camp/approach discovery.
+- PreReleaseSessionReset remains temporary and must still be disabled/removed before release completion.

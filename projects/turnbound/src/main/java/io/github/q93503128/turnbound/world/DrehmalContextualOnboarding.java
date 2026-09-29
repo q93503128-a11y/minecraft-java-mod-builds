@@ -46,7 +46,22 @@ final class DrehmalContextualOnboarding {
                     "선택 전투입니다. 몸을 낮추는 예고 동작 뒤의 돌진 방향을 보고 피하십시오.");
         }
 
-        if ("HUB_SAFE".equals(kind) || DrehmalFirstRouteProgress.reached(flags, DrehmalFirstRouteProgress.HUB_REACHED)) {
+        boolean hubReached = DrehmalFirstRouteProgress.reached(flags, DrehmalFirstRouteProgress.HUB_REACHED);
+        if (hubReached && !"HUB_SAFE".equals(kind)) {
+            if (!DrabyelOpeningTutorial.introReady(flags)) {
+                return new Guidance(
+                        "뉴 드라비엘 입구로 돌아가 안내와 대화하십시오.",
+                        "첫 여정은 마을 입구에서 시작합니다.");
+            }
+            if (!DrabyelOpeningTutorial.patrolCleared(clears)) {
+                return openingPatrolGuidance();
+            }
+            return new Guidance(
+                    "뉴 드라비엘로 돌아가 대장간과 시장을 둘러보십시오.",
+                    "첫 순찰을 마쳤습니다. 마을 입구로 돌아가면 됩니다.");
+        }
+
+        if ("HUB_SAFE".equals(kind) || hubReached) {
             return hubGuidance(clears, flags, roles);
         }
 
@@ -119,7 +134,10 @@ final class DrehmalContextualOnboarding {
         if (!flags.contains(HUB_MENU_VIEWED)) {
             return new Guidance(
                     "E 메뉴를 열어 현재 파티와 장비 상태를 확인하십시오.",
-                    "필요한 정비를 끝낸 뒤 마을 시설을 둘러보면 됩니다.");
+                    "파티를 확인하면 입구 북쪽의 짧은 순찰을 시작합니다.");
+        }
+        if (!DrabyelOpeningTutorial.patrolCleared(clears)) {
+            return openingPatrolGuidance();
         }
         if (needs("BLACKSMITH", flags, roles)) {
             return new Guidance(
@@ -149,6 +167,12 @@ final class DrehmalContextualOnboarding {
         return new Guidance(
                 "준비가 끝났다면 뉴 드라비엘 서쪽 출구에서 아브살 방향의 길을 따라가십시오.",
                 "마을을 나서기 전 장비와 파티를 다시 확인해도 됩니다.");
+    }
+
+    private static Guidance openingPatrolGuidance() {
+        return new Guidance(
+                "뉴 드라비엘 북쪽 길의 순찰대를 정리하고 마을로 돌아오십시오.",
+                "입구에서 멀지 않은 길목입니다. 적을 먼저 보고 전투를 시작할 수 있습니다.");
     }
 
     private static boolean needs(String role, Set<String> flags, Set<String> roles) {

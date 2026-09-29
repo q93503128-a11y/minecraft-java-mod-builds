@@ -239,69 +239,55 @@ old E005 support role 후보.
 첫 tutorial 전투에는 등장하지 않는다.
 Drabyel 이후부터 사용.
 
-## 7. Current opening encounter beats — Explorer Camp → New Drabyel
+## 7. Current opening encounter beats — New Drabyel gate loop
 
-Latest opening decision starts the player at the Explorer's Guide camp transition. The older roadhead → chapel → Tower → Warning Cave sequence remains Capital Valley exploration content but is no longer the mandatory first-login route.
+Latest opening decision begins at New Drabyel's north entrance. The first combat is a short field excursion from a safe narrative anchor, not a long tutorial road.
 
-### Zone 0 — Explorer's Guide camp entry
+### Zone 0 — New Drabyel north gate
 
 Enemy:
-- 없음 inside the 20–30 block camp breathing ring
+- 없음 inside the hub safety ring
 
-Required immediate content:
-- 탐험가 미라 dialogue
-- at least one useful non-dialogue camp interaction: rest/heal, a small loot/equipment comparison decision, or route/world information
-- readable road direction toward New Drabyel
+Required:
+- entrance guide is the first NPC interaction
+- one E-menu party check
+- the road outside the north gate is visually readable
+- no shop/forge/summon menu is forced before the player understands the immediate task
 
-This beat is incomplete if the player only clicks one line of dialogue and then walks hundreds of blocks.
-
-### Zone 1 — Drabyel north road
-
-Current production encounter:
-- CV_DRABYEL_NORTH
-- CV-B ×1 + CV-C ×1
-
-Purpose:
-- visible threat within roughly the first ~100 m of forward travel
-- melee + ranged target-priority lesson
-- avoidable/readable before aggro when terrain permits
-
-### Zone 2 — Drabyel approach patrol
+### Zone 1 — short north-road patrol
 
 Current production encounter:
 - CV_DRABYEL_ROAD
-- CV-B ×2 + CV-C ×1
+- CV-B ×1 + CV-C ×1
+- authored approach seed under 100 m from the gate entry seed
 
 Purpose:
-- moving patrol / road-pressure beat
-- one step more complex than the north-road encounter
-- should not sit directly on top of the town safety ring
+- first visible enemy contact
+- melee + ranged target-priority lesson
+- short enough that walking never dominates the tutorial
+- enemy must be visible/readable before aggro when terrain permits
 
-### Zone 3 — New Drabyel reveal / safety ring
+After victory:
+- navigation points back to New Drabyel
+- the road milestone can unlock the first summon introduction
+- hub blacksmith/market/stable onboarding follows
 
-Enemy:
-- 없음
+### Optional Capital Valley exploration
 
-Requirements:
-- town silhouette/entrance should become the visual reward after the road encounters
-- hostile patrol must stop outside the hub safety buffer
-- service NPCs become the next interaction loop
-
-### Optional backward Capital Valley exploration
-
-The following remain valid regional content:
-- Tower breathing landmark
-- Warning Cave optional Elite / Cavehorn Ravager
-- chapel / earlier road encounters
+The following remain valid non-mandatory regional content:
+- Explorer's Guide camp / Mira
+- Capital Valley Tower
+- Warning Cave Elite / Cavehorn Ravager
+- chapel / older road encounters
 - Primal roadhead
-- optional off-road encounters and Graul world boss
+- off-road optional encounters and Graul world boss
 
-They must not be used merely to stretch the mandatory tutorial travel time.
+Starting at New Drabyel does not mark these places as discovered.
 
 Pacing rule:
-- distance alone does not validate the route
-- a 300–400 m route with empty walking is still a failure
-- if client playtest shows long dead air between the current beats, move/add a meaningful event inside the same source-backed corridor rather than padding with more UI prompts.
+- the opening is not validated by meters traveled
+- target is roughly 3–10 minutes from first dialogue through first battle and return
+- if client playtest shows dead walking, move the encounter within the same source-backed approach corridor rather than adding filler prompts or extra trash fights.
 
 ## 8. Capital Valley optional field encounters
 

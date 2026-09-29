@@ -15,15 +15,16 @@ import java.util.Set;
 /**
  * Safe entry into TURNBOUND's authored Capital Valley opening.
  *
- * <p>The old Primal roadhead was more than 1.2 km from New Drabyel and made the tutorial walk dominate the opening.
- * The production entry now begins at the source-backed explorer-camp transition, keeping the first town roughly
- * 350 m away while the older Capital Valley roadhead/tower/cave remain explorable world content.</p>
+ * <p>The old roadhead and later explorer-camp starts still made travel dominate the tutorial. The production entry
+ * now begins at New Drabyel's source-backed north entrance. The first outdoor combat is a short excursion outside
+ * the gate; older Capital Valley roadhead/tower/cave/camp content remains optional regional exploration.</p>
  */
 final class DrehmalStartArrival {
-    static final String ARRIVAL_FLAG = "DREHMAL_FIRST_ROUTE_ENTRY_V3";
+    static final String ARRIVAL_FLAG = "DREHMAL_FIRST_ROUTE_ENTRY_V4";
     static final String LEGACY_DIRECT_HUB_FLAG = "DREHMAL_NEW_DRABYEL_ENTRY_V2";
     static final String PRIMAL_CAVERNS = "turnbound:landmark/primal_caverns";
-    static final String ENTRY_SITE = "turnbound:site/capital_valley/explorer_camp";
+    static final String ENTRY_SITE = "turnbound:site/capital_valley/new_drabyel";
+    static final int ENTRY_SEED_INDEX = 2;
     private static final double LEGACY_SETUP_X = 26520.0;
     private static final double LEGACY_SETUP_Z = -136.0;
     private static final double LEGACY_SETUP_RADIUS_SQR = 220.0 * 220.0;
@@ -58,7 +59,8 @@ final class DrehmalStartArrival {
             return false;
         }
 
-        DrehmalMapPlacementCatalog.Seed seed = entry.siteSeeds().getFirst();
+        int seedIndex = Math.min(ENTRY_SEED_INDEX, entry.siteSeeds().size() - 1);
+        DrehmalMapPlacementCatalog.Seed seed = entry.siteSeeds().get(seedIndex);
         int seedY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, seed.x(), seed.z());
         BlockPos destination = findSafeArrival(level, new BlockPos(seed.x(), seedY, seed.z()),
                 Math.max(6, entry.searchRadius()));
@@ -67,7 +69,8 @@ final class DrehmalStartArrival {
             return false;
         }
 
-        DrehmalMapPlacementCatalog.Seed facingSeed = entry.siteSeeds().size() >= 2 ? entry.siteSeeds().get(1) : seed;
+        // Face from the entrance toward the town rather than away into the old tutorial road.
+        DrehmalMapPlacementCatalog.Seed facingSeed = entry.siteSeeds().getFirst();
         double dx = facingSeed.x() + 0.5D - (destination.getX() + 0.5D);
         double dz = facingSeed.z() + 0.5D - (destination.getZ() + 0.5D);
         float yaw = (float)Math.toDegrees(Math.atan2(-dx, dz));

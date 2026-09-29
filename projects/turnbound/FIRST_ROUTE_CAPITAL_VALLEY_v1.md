@@ -6,18 +6,18 @@
 
 ## 0. Current opening override — 2026-09-29
 
-Latest client-playtest decision supersedes the older roadhead-as-spawn assumption below.
+Latest client-playtest decision supersedes both the original Primal-roadhead spawn and the temporary Explorer-camp spawn.
 
-- TURNBOUND's current first-login entry is the **Explorer's Guide camp transition** near the source-backed camp around 581,81,1501.
-- New Drabyel is roughly 350 m away in straight-line map distance, not the former ~1.2 km opening walk.
-- The older Primal roadhead → chapel → Tower → Warning Cave corridor remains explorable Capital Valley content; it is no longer the mandatory opening tutorial path.
-- A 350 m route is acceptable only when it contains meaningful beats. An empty walk is a failure even if the numerical distance is shorter.
-- The opening camp must provide an immediate non-combat interaction before the player leaves: Mira dialogue plus at least one useful camp action such as rest/heal, a small loot/equipment comparison decision, or route/world information. Do not turn this into a tutorial kiosk.
-- Forward pacing target from the camp: immediate camp interaction → visible north-road threat around the first ~100 m → Drabyel-approach patrol/road event → town reveal/safety.
-- The current production candidates are CV_DRABYEL_NORTH and CV_DRABYEL_ROAD; actual distances/visibility remain subject to client playtest.
-- If the automatic placement fails or those beats are not naturally visible/readable, the route is not considered complete merely because the data entries exist.
+- Fresh TURNBOUND play now begins at the **north entrance of New Drabyel**, using the source-backed town-approach point around 502,1801 rather than the town center.
+- The village is the narrative anchor from the first minute: the player arrives at its gate, speaks to the entrance guide and checks the current party.
+- The first outdoor tutorial is a **short excursion**, not a journey to earn the town.
+- After greeter dialogue + one E-menu party check, the objective points to CV_DRABYEL_ROAD outside the north gate.
+- The approach encounter is moved close enough that its authored seed is under 100 m from the entrance seed, while remaining outside the hub safety ring.
+- CV_DRABYEL_ROAD is a 2-enemy melee+ranged lesson (CV-B + CV-C). After victory the objective points back to New Drabyel and normal hub services continue.
+- The older Explorer camp, Tower, Warning Cave, chapel and Primal roadhead remain real Capital Valley exploration content. They are optional/backward exploration and are never marked explored merely because the player started in New Drabyel.
+- Travel distance is not a content goal. If the first combat cannot be seen/reached quickly in client playtest, move the beat within the same source-backed approach corridor rather than padding the route.
 
-This override must be kept consistent with ENCOUNTER_ENEMY_PLACEMENT_v1.md, UI_DESIGN_SYSTEM.md, and PROJECT.md.
+This override must stay consistent with ENCOUNTER_ENEMY_PLACEMENT_v1.md, UI_DESIGN_SYSTEM.md and PROJECT.md.
 
 ## 1. Source-backed geography
 
@@ -51,7 +51,7 @@ These are not automatically safe spawn/battle/NPC blocks.
 
 ### Chosen topology
 
-**Start at the existing Explorer's Guide camp transition on the Capital Valley → New Drabyel road.**
+**Start at New Drabyel's source-backed north entrance, just outside/at the pedestrian gate rather than in the town center.**
 
 Do not start:
 - inside a random original Stasis pod,
@@ -82,15 +82,15 @@ Starting inside the first hub removes:
 
 Drabyel should feel like the first earned safe hub, not a menu room the player spawns inside.
 
-### Why the camp transition works
+### Why the New Drabyel gate works
 
 It provides:
-- immediate authored campsite context instead of an empty spawn marker,
-- a safe place for the first interaction and one useful camp action,
-- an obvious existing road toward New Drabyel,
-- two forward encounter beats before the hub without forcing a kilometer-scale tutorial walk,
-- a clear wilderness → town contrast,
-- backward exploration access to the older Tower/Warning Cave/Primal route without making that detour mandatory.
+- an immediately understandable story anchor: a traveler arriving at the first settlement,
+- the entrance guide as a natural first speaker instead of a tutorial kiosk,
+- a safe place to check the party before combat,
+- a short north-road excursion that teaches visible field enemies and turn combat without a long walk,
+- a meaningful return-to-safety beat after the fight,
+- backward exploration access to the camp/Tower/Warning Cave/Primal route without making that detour mandatory.
 
 ## 3. Exact spawn criteria
 
@@ -121,16 +121,16 @@ Preferred spawn behavior:
 ## 4. First-route macro flow
 
 ```text
-Explorer's Guide camp entry
-→ 탐험가 미라 / camp interaction
-→ road readability + first visible north-road threat
-→ Drabyel approach patrol / road event
-→ Drabyel entrance reveal
-→ first hub onboarding
-→ route choice toward Av'Sal / another surveyed Capital Valley branch
+New Drabyel north gate arrival
+→ entrance guide dialogue
+→ E menu: current party check
+→ short north-road patrol (CV_DRABYEL_ROAD)
+→ return to New Drabyel
+→ blacksmith / market / stable onboarding
+→ next-route choice toward Av'Sal
 
-Optional/backward exploration:
-camp → Capital Valley Tower → Warning Cave → chapel/Primal roadhead
+Optional Capital Valley exploration:
+New Drabyel → Explorer camp → Tower / Warning Cave → chapel / Primal roadhead
 ```
 
 The route should teach the game without feeling like a tutorial corridor.
@@ -364,28 +364,26 @@ If none exist, move the encounter beat, not the terrain.
 
 Approximate experience target, not stopwatch requirement:
 
-### 0–5
-- camp reveal
-- Mira / camp interaction
-- optional rest or one small equipment/loot decision
-- road/minimap readability
+### 0–3
+- New Drabyel gate arrival
+- entrance guide dialogue
+- current party check
 
-### 5–15
-- first visible north-road encounter
+### 3–10
+- short north-road excursion
+- first visible melee+ranged encounter
 - Turn Order / target-priority understanding
 - first meaningful reward
 
-### 15–25
-- Drabyel approach patrol or road event
-- town silhouette/reveal
+### 10–20
+- return to New Drabyel
+- blacksmith / market / stable
+- optional summon introduction after the road milestone
 
-### 25–40
-- hub services
-- party/equipment management
-- next-route objective
-- optional summon-unlock setup
+### 20+
+- next-route objective or optional Capital Valley exploration
 
-The old Tower/Warning Cave/Primal corridor is optional regional exploration and must not be required to pad the opening runtime.
+The camp/Tower/Warning Cave/Primal corridor is optional regional exploration and must not be required to pad the opening runtime.
 
 If real travel time differs, adjust beats around geography instead of moving landmarks arbitrarily.
 

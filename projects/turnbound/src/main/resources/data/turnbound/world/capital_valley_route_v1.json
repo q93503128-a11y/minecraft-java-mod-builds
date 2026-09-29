@@ -288,11 +288,11 @@
       "tier": "COMMON",
       "footprintLocator": "turnbound:footprint/capital_valley/drabyel_approach",
       "patrolLocator": "turnbound:patrol/capital_valley/drabyel_approach",
-      "playerLabel": "뉴 드라비엘 진입로 순찰대",
+      "playerLabel": "뉴 드라비엘 북문 순찰대",
       "verifiedIn26_2": false,
       "productionEnabled": false,
       "combatEncounterId": "CV_DRABYEL_ROAD",
-      "fieldVisibleCount": 1
+      "fieldVisibleCount": 2
     },
     {
       "locator": "turnbound:encounter/capital_valley/temple_wildlife",

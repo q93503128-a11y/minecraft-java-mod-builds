@@ -75,11 +75,10 @@
     },
     {
       "id": "CV_DRABYEL_ROAD",
-      "label": "New Drabyel 진입로 순찰대",
+      "label": "뉴 드라비엘 북문 순찰대",
       "region": "CAPITAL_VALLEY",
       "level": 2,
       "enemies": [
-        "CV_B",
         "CV_B",
         "CV_C"
       ],

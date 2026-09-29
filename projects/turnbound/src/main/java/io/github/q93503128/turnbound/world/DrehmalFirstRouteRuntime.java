@@ -110,9 +110,6 @@ public final class DrehmalFirstRouteRuntime {
         DrehmalFirstRouteProgress.record(data, player.getUUID(), locationSite(player));
         DrehmalFastTravelService.recordDiscovery(player);
         if (insideHubCoordinates(player.getX(), player.getZ())) {
-            data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.TOWER_REACHED);
-            data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.CAMP_REACHED);
-            data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.APPROACH_REACHED);
             data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.HUB_REACHED);
         }
     }
@@ -138,19 +135,43 @@ public final class DrehmalFirstRouteRuntime {
         var flags = server == null
                 ? java.util.Set.<String>of()
                 : ExternalWorldSavedData.get(server).onboardingFlags(player.getUUID());
-        if (!DrehmalFirstRouteProgress.reached(flags, DrehmalFirstRouteProgress.HUB_REACHED)) {
-            var hub = DrehmalWorldProfile.enabled(DrehmalWorldProfile.HUB_LOCATOR);
-            if (hub != null) {
-                return new FieldUiSnapshot.Navigation(
-                        hub.locator(),
-                        "뉴 드라비엘",
-                        hub.x() + 0.5D,
-                        hub.z() + 0.5D);
-            }
-        }
         var clears = CampaignProgressStore.snapshot(player.getUUID()).clearedEncounters();
+        boolean hubReached = DrehmalFirstRouteProgress.reached(flags, DrehmalFirstRouteProgress.HUB_REACHED);
+        boolean inHub = insideHub(player);
+
+        if (hubReached) {
+            if (DrabyelOpeningTutorial.shouldSendOut(flags, clears)) {
+                var patrol = DrehmalAdaptiveRoutePlacement.site(player, DrabyelOpeningTutorial.ENCOUNTER_SITE);
+                if (patrol != null && patrol.runtimePosition() != null) {
+                    return navigationTo(patrol.locator(), "북쪽 길 순찰대", patrol.runtimePosition());
+                }
+            }
+            if (!inHub && (!DrabyelOpeningTutorial.introReady(flags)
+                    || DrabyelOpeningTutorial.shouldReturnToHub(false, clears))) {
+                var hub = DrehmalWorldProfile.enabled(DrehmalWorldProfile.HUB_LOCATOR);
+                if (hub != null) {
+                    return new FieldUiSnapshot.Navigation(
+                            hub.locator(), "뉴 드라비엘", hub.x() + 0.5D, hub.z() + 0.5D);
+                }
+            }
+            return FieldUiSnapshot.Navigation.none();
+        }
+
+        var hub = DrehmalWorldProfile.enabled(DrehmalWorldProfile.HUB_LOCATOR);
+        if (hub != null) {
+            return new FieldUiSnapshot.Navigation(
+                    hub.locator(), "뉴 드라비엘", hub.x() + 0.5D, hub.z() + 0.5D);
+        }
         return DrehmalRouteNavigationRules.target(
                 DrehmalAdaptiveRoutePlacement.productionSites(player), player.getX(), player.getZ(), flags, clears);
+    }
+
+    private static FieldUiSnapshot.Navigation navigationTo(
+            String id,
+            String label,
+            DrehmalFirstRouteCatalog.Position position
+    ) {
+        return new FieldUiSnapshot.Navigation(id, label, position.x() + 0.5D, position.z() + 0.5D);
     }
 
     private static DrehmalFirstRouteCatalog.Site locationSite(ServerPlayer player) {

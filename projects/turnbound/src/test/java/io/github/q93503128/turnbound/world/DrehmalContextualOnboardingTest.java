@@ -48,8 +48,36 @@ class DrehmalContextualOnboardingTest {
                 Set.of(),
                 Set.of(DrehmalContextualOnboarding.HUB_MENU_VIEWED),
                 Set.of());
-        assertTrue(completed.objective().contains("M 지도"));
-        assertTrue(completed.hint().contains("지도"));
+        assertTrue(completed.objective().contains("북쪽 길"));
+        assertTrue(completed.hint().contains("입구"));
+    }
+
+    @Test
+    void townOpeningSendsThePlayerOutOnlyAfterGreeterAndPartyCheck() {
+        Set<String> roles = Set.of("GREETER", "BLACKSMITH", "MARKET");
+        var beforeMenu = DrehmalContextualOnboarding.resolve(
+                "HUB_SAFE",
+                Set.of(),
+                Set.of(DrehmalContextualOnboarding.serviceFlag("GREETER")),
+                roles);
+        assertTrue(beforeMenu.objective().contains("E 메뉴"));
+
+        var patrol = DrehmalContextualOnboarding.resolve(
+                "HUB_SAFE",
+                Set.of(),
+                Set.of(DrehmalContextualOnboarding.serviceFlag("GREETER"),
+                        DrehmalContextualOnboarding.HUB_MENU_VIEWED),
+                roles);
+        assertTrue(patrol.objective().contains("북쪽 길"));
+
+        var returning = DrehmalContextualOnboarding.resolve(
+                "PATROL_ZONE",
+                Set.of(DrehmalContentUnlocks.DRABYEL_ROAD),
+                Set.of(DrehmalFirstRouteProgress.HUB_REACHED,
+                        DrehmalContextualOnboarding.serviceFlag("GREETER"),
+                        DrehmalContextualOnboarding.HUB_MENU_VIEWED),
+                roles);
+        assertTrue(returning.objective().contains("돌아가"));
     }
 
     @Test

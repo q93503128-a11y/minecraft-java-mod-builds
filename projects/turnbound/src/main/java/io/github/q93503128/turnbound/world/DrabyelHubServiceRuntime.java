@@ -90,8 +90,12 @@ final class DrabyelHubServiceRuntime {
         }
         if(target instanceof BattleActorEntity actor)actor.playServiceGreeting();
         if ("GREETER".equals(service.role())) {
+            boolean roadClear = CampaignProgressStore.snapshot(player.getUUID()).clearedEncounters()
+                    .contains(DrabyelOpeningTutorial.ENCOUNTER_ID);
             FieldNetwork.showDialogue(player, service.playerLabel(),
-                    "뉴 드라비엘에 잘 왔어요. 대장간과 시장에서 장비를 정비하고, 마구간에서 길을 확인해 보세요. 준비가 끝나면 서쪽 길이 다음 여정으로 이어집니다.");
+                    roadClear
+                            ? "북쪽 길이 다시 조용해졌네요. 수고했어요. 이제 대장간과 시장에서 정비하고 다음 길을 준비해도 됩니다."
+                            : "뉴 드라비엘에 잘 왔어요. 북쪽 길에 약탈자들이 보여 순찰이 멈췄어요. 먼저 파티를 확인하고 입구 밖 가까운 길목을 정리해 주세요.");
             return true;
         }
         if ("STORY".equals(service.role())) {

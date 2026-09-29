@@ -15,14 +15,20 @@ class DrehmalStartArrivalTest {
     }
 
     @Test
-    void openingEntryKeepsFirstTownWithinAReasonableTutorialWalk() {
-        var placement = DrehmalMapPlacementCatalog.placement(DrehmalStartArrival.ENTRY_SITE);
+    void openingStartsAtTheTownGateAndFirstCombatIsClose() {
+        var entry = DrehmalMapPlacementCatalog.placement(DrehmalStartArrival.ENTRY_SITE);
+        var patrol = DrehmalMapPlacementCatalog.placement(DrabyelOpeningTutorial.ENCOUNTER_SITE);
         var hub = DrehmalWorldProfile.enabled(DrehmalWorldProfile.HUB_LOCATOR);
-        assertNotNull(placement);
+        assertNotNull(entry);
+        assertNotNull(patrol);
         assertNotNull(hub);
-        var seed = placement.siteSeeds().getFirst();
-        double distance = Math.hypot(seed.x() - hub.x(), seed.z() - hub.z());
-        assertTrue(distance <= 450.0, "opening-to-town walk must stay under 450m, got " + distance);
+        var seed = entry.siteSeeds().get(DrehmalStartArrival.ENTRY_SEED_INDEX);
+        double hubDistance = Math.hypot(seed.x() - hub.x(), seed.z() - hub.z());
+        double patrolDistance = Math.hypot(
+                seed.x() - patrol.siteSeeds().getFirst().x(),
+                seed.z() - patrol.siteSeeds().getFirst().z());
+        assertTrue(hubDistance <= 80.0, "opening must start at New Drabyel's entrance, got " + hubDistance);
+        assertTrue(patrolDistance <= 100.0, "first outdoor combat must be within 100m, got " + patrolDistance);
     }
 
     @Test
