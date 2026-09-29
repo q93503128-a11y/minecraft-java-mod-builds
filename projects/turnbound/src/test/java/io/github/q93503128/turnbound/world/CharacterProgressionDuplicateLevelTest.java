@@ -20,7 +20,7 @@ class CharacterProgressionDuplicateLevelTest {
     @Test
     void xpGrowthPreservesDuplicateBonusAndStopsBaseAtSixty() {
         CharacterProgression.State state = new CharacterProgression.State(20, 0, 3);
-        CharacterProgression.Gain gain = CharacterProgression.gain(state, 999_999, 60);
+        CharacterProgression.Gain gain = CharacterProgression.gain(state, 5_000_000, 60);
 
         assertEquals(60, gain.after().level());
         assertEquals(3, gain.after().bonusLevel());
