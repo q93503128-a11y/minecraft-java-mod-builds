@@ -192,6 +192,30 @@ A branch build is requested by this checkpoint commit. Until its workflow result
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
 
+## New Drabyel service survey bridge — 2026-09-29
+
+Physical service NPC placement remains fail-closed until the actual migrated Minecraft 26.2 town is inspected.
+
+The operator survey path now supports:
+- `/turnbound survey hub` — lists all six New Drabyel service roles, intended town zones, current gate state and source-backed survey hints
+- `/turnbound survey service greeter`
+- `/turnbound survey service travel`
+- `/turnbound survey service market`
+- `/turnbound survey service blacksmith`
+- `/turnbound survey service story`
+- `/turnbound survey service summon`
+
+Each service survey records the standing block/yaw, checks local 3×3 stability/headroom/fluid/cliff risk, checks that the candidate remains within the hub survey radius, and emits a catalog-ready position fragment.
+
+The emitted fragment deliberately keeps `verifiedIn26_2=false` and `productionEnabled=false`. Automatic geometry checks are not allowed to replace human verification of:
+- entrance/door obstruction
+- original Drehmal NPC or interaction conflicts
+- town sightline/readability
+- natural service placement
+- the summon interior's visual suitability
+
+Only after that screen-level inspection may exact coordinates be promoted into `new_drabyel_services_v1.json`.
+
 ## Economy
 
 Long-term core currencies:
