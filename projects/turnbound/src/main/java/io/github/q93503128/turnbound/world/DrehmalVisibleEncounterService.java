@@ -309,13 +309,14 @@ final class DrehmalVisibleEncounterService {
         }
 
         private boolean ensureActors(ServerLevel level) {
-            if (actorsAlive(level)) return true;
-            discardActors(level);
             var sitePosition=site.runtimePosition();
             if(sitePosition==null||!DrehmalAdaptiveRoutePlacement.sourceContentClear(
                     level,sitePosition.x(),sitePosition.y(),sitePosition.z(),3.5D)){
+                discardActors(level);
                 return false;
             }
+            if (actorsAlive(level)) return true;
+            discardActors(level);
             if (adoptTagged(level)) {
                 updateActors(level, false);
                 return true;
