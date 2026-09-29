@@ -32,6 +32,8 @@ public final class R01EarthloongMythicRuntime {
             R01EarthloongBossLootRules.MythicBase.ROOTQUAKE_MAUL.itemId();
     private static final String EARTHSCALE_WARD_ITEM_ID =
             R01EarthloongBossLootRules.MythicBase.EARTHSCALE_WARD.itemId();
+    private static final String EARTHEN_REPRIEVE_BARRIER_SOURCE_ID =
+            "openworld_rpg:earthscale_ward/earthen_reprieve";
 
     private static final ConcurrentHashMap<UUID, R01EarthloongMythicEffectState> STATES =
             new ConcurrentHashMap<>();
@@ -118,19 +120,22 @@ public final class R01EarthloongMythicRuntime {
             );
         }
 
-        return state(player.getUUID()).tryEarthenReprieve(
+        var trigger = state(player.getUUID()).tryEarthenReprieve(
                 player.getMaxHealth(),
                 gameTick
         );
-    }
-
-    public static R01EarthloongMythicEffectState.BarrierApplication absorbBarrier(
-            ServerPlayer player,
-            double incomingDamage,
-            long gameTick
-    ) {
-        Objects.requireNonNull(player, "player");
-        return state(player.getUUID()).absorb(incomingDamage, gameTick);
+        if (trigger.triggered()) {
+            ProjectBarrierRuntime.applyFixedBarrier(
+                    player,
+                    player,
+                    EARTHEN_REPRIEVE_BARRIER_SOURCE_ID,
+                    trigger.barrierAmount(),
+                    R01EarthloongMythicEffectState
+                            .EARTHEN_REPRIEVE_DURATION_TICKS,
+                    false
+            );
+        }
+        return trigger;
     }
 
     public static void disconnect(UUID playerId) {

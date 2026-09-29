@@ -29,7 +29,7 @@ class R01EarthloongMythicEffectStateTest {
     }
 
     @Test
-    void earthenReprieveCreatesEightPercentBarrierForFourSecondsWithTenSecondIcd() {
+    void earthenReprieveAuthorsEightPercentForFourSecondsWithTenSecondIcd() {
         var state = new R01EarthloongMythicEffectState();
 
         var first = state.tryEarthenReprieve(250.0, 20L);
@@ -38,34 +38,13 @@ class R01EarthloongMythicEffectStateTest {
         assertEquals(100L, first.barrierUntilTick());
         assertEquals(220L, first.nextReadyTick());
 
-        var absorbed = state.absorb(7.0, 21L);
-        assertEquals(0.0, absorbed.remainingDamage(), EPSILON);
-        assertEquals(7.0, absorbed.absorbedDamage(), EPSILON);
-        assertEquals(13.0, absorbed.remainingBarrier(), EPSILON);
-
-        var partial = state.absorb(20.0, 22L);
-        assertEquals(7.0, partial.remainingDamage(), EPSILON);
-        assertEquals(13.0, partial.absorbedDamage(), EPSILON);
-        assertEquals(0.0, partial.remainingBarrier(), EPSILON);
-
         var blocked = state.tryEarthenReprieve(500.0, 219L);
         assertFalse(blocked.triggered());
+        assertEquals(0.0, blocked.barrierAmount(), EPSILON);
 
         var ready = state.tryEarthenReprieve(500.0, 220L);
         assertTrue(ready.triggered());
         assertEquals(40.0, ready.barrierAmount(), EPSILON);
-    }
-
-    @Test
-    void reprieveBarrierExpiresAtExactFourSecondBoundary() {
-        var state = new R01EarthloongMythicEffectState();
-        state.tryEarthenReprieve(200.0, 0L);
-
-        assertEquals(16.0, state.barrierAmount(79L), EPSILON);
-        assertEquals(0.0, state.barrierAmount(80L), EPSILON);
-
-        var afterExpiry = state.absorb(10.0, 80L);
-        assertEquals(10.0, afterExpiry.remainingDamage(), EPSILON);
-        assertEquals(0.0, afterExpiry.absorbedDamage(), EPSILON);
+        assertEquals(300L, ready.barrierUntilTick());
     }
 }

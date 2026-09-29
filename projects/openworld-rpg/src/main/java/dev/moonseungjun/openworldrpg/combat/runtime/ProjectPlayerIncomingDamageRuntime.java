@@ -63,7 +63,7 @@ public final class ProjectPlayerIncomingDamageRuntime {
         );
         resources.markCombatActivity(gameTick);
 
-        var barrier = R01EarthloongMythicRuntime.absorbBarrier(
+        var barrier = ProjectBarrierRuntime.absorbHostileDamage(
                 target,
                 resolution.finalDamage(),
                 gameTick

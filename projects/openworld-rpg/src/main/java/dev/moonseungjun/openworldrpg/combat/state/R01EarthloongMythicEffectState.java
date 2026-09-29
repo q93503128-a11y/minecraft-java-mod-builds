@@ -3,23 +3,20 @@ package dev.moonseungjun.openworldrpg.combat.state;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules;
 
 /**
- * Server-owned transient state for the two R01 Earthloong Mythic unique powers.
+ * Server-owned transient trigger/cooldown state for the two R01 Earthloong Mythic unique powers.
  *
- * <p>Visual presentation is deliberately outside this state. It owns only the canon-locked
- * trigger, cooldown, barrier and numeric effect rules so reconnect/client presentation cannot
- * become damage or protection authority.</p>
+ * <p>Earthen Reprieve's barrier amount is authored here, but the actual barrier layer is granted
+ * through the shared project Barrier authority so it cannot bypass the global stacking cap.</p>
  */
 public final class R01EarthloongMythicEffectState {
     public static final double ROOTQUAKE_WEAPON_POWER_FRACTION = 0.40;
     public static final long ROOTQUAKE_COOLDOWN_TICKS = 160L;
     public static final double EARTHEN_REPRIEVE_MAX_HP_FRACTION = 0.08;
-    public static final long EARTHEN_REPRIEVE_DURATION_TICKS = 80L;
+    public static final int EARTHEN_REPRIEVE_DURATION_TICKS = 80;
     public static final long EARTHEN_REPRIEVE_COOLDOWN_TICKS = 200L;
 
     private long rootquakeReadyTick = Long.MIN_VALUE / 4;
     private long reprieveReadyTick = Long.MIN_VALUE / 4;
-    private double barrierAmount;
-    private long barrierUntilTick = Long.MIN_VALUE / 4;
 
     public RootquakeTrigger tryRootquake(double weaponPower, long nowTick) {
         requireFiniteNonNegative("weaponPower", weaponPower);
@@ -36,45 +33,22 @@ public final class R01EarthloongMythicEffectState {
 
     public ReprieveTrigger tryEarthenReprieve(double maxHealth, long nowTick) {
         requireFinitePositive("maxHealth", maxHealth);
-        refreshBarrier(nowTick);
         if (nowTick < reprieveReadyTick) {
-            return ReprieveTrigger.rejected(
-                    barrierAmount,
-                    barrierUntilTick,
-                    reprieveReadyTick
-            );
+            return ReprieveTrigger.rejected(reprieveReadyTick);
         }
 
-        barrierAmount = maxHealth * EARTHEN_REPRIEVE_MAX_HP_FRACTION;
-        barrierUntilTick = nowTick + EARTHEN_REPRIEVE_DURATION_TICKS;
-        reprieveReadyTick = nowTick + EARTHEN_REPRIEVE_COOLDOWN_TICKS;
+        double authoredBarrier = maxHealth
+                * EARTHEN_REPRIEVE_MAX_HP_FRACTION;
+        long barrierUntilTick = nowTick
+                + EARTHEN_REPRIEVE_DURATION_TICKS;
+        reprieveReadyTick = nowTick
+                + EARTHEN_REPRIEVE_COOLDOWN_TICKS;
         return new ReprieveTrigger(
                 true,
-                barrierAmount,
+                authoredBarrier,
                 barrierUntilTick,
                 reprieveReadyTick
         );
-    }
-
-    public BarrierApplication absorb(double incomingDamage, long nowTick) {
-        requireFiniteNonNegative("incomingDamage", incomingDamage);
-        refreshBarrier(nowTick);
-        if (incomingDamage <= 0.0 || barrierAmount <= 0.0) {
-            return new BarrierApplication(incomingDamage, 0.0, barrierAmount);
-        }
-
-        double absorbed = Math.min(barrierAmount, incomingDamage);
-        barrierAmount -= absorbed;
-        return new BarrierApplication(
-                incomingDamage - absorbed,
-                absorbed,
-                barrierAmount
-        );
-    }
-
-    public double barrierAmount(long nowTick) {
-        refreshBarrier(nowTick);
-        return barrierAmount;
     }
 
     public long rootquakeReadyTick() {
@@ -83,13 +57,6 @@ public final class R01EarthloongMythicEffectState {
 
     public long reprieveReadyTick() {
         return reprieveReadyTick;
-    }
-
-    private void refreshBarrier(long nowTick) {
-        if (barrierAmount > 0.0 && nowTick >= barrierUntilTick) {
-            barrierAmount = 0.0;
-            barrierUntilTick = Long.MIN_VALUE / 4;
-        }
     }
 
     private static void requireFiniteNonNegative(String name, double value) {
@@ -120,24 +87,13 @@ public final class R01EarthloongMythicEffectState {
             long barrierUntilTick,
             long nextReadyTick
     ) {
-        private static ReprieveTrigger rejected(
-                double barrierAmount,
-                long barrierUntilTick,
-                long nextReadyTick
-        ) {
+        private static ReprieveTrigger rejected(long nextReadyTick) {
             return new ReprieveTrigger(
                     false,
-                    barrierAmount,
-                    barrierUntilTick,
+                    0.0,
+                    Long.MIN_VALUE / 4,
                     nextReadyTick
             );
         }
-    }
-
-    public record BarrierApplication(
-            double remainingDamage,
-            double absorbedDamage,
-            double remainingBarrier
-    ) {
     }
 }
