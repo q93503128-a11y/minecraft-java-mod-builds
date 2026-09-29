@@ -28,12 +28,12 @@ final class DrabyelHubAutoPlacement {
     private record Candidate(int x, int y, int z, double score) {}
 
     private static final Map<String, Anchor> ANCHORS = Map.of(
-            "GREETER", new Anchor("GREETER", 502, 70, 1804, 8, 3.5D),
-            "TRAVEL", new Anchor("TRAVEL", 506, 68, 1836, 9, 3.5D),
+            "GREETER", new Anchor("GREETER", 502, 69, 1804, 8, 3.5D),
+            "TRAVEL", new Anchor("TRAVEL", 506, 67, 1836, 9, 3.5D),
             "MARKET", new Anchor("MARKET", 536, 67, 1834, 10, 4.0D),
             "BLACKSMITH", new Anchor("BLACKSMITH", 526, 65, 1839, 8, 4.0D),
-            "STORY", new Anchor("STORY", 520, 68, 1823, 9, 4.0D),
-            "SUMMON", new Anchor("SUMMON", 511, 67, 1850, 8, 5.0D)
+            "STORY", new Anchor("STORY", 520, 67, 1823, 9, 4.0D),
+            "SUMMON", new Anchor("SUMMON", 511, 66, 1850, 8, 5.0D)
     );
 
     /**
@@ -112,7 +112,7 @@ final class DrabyelHubAutoPlacement {
                 int x = anchor.x() + dx;
                 int z = anchor.z() + dz;
                 int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-                if (Math.abs(y - anchor.y()) > 6) continue;
+                if (Math.abs(y - anchor.y()) > 2) continue;
                 if (!safeStandingBlock(level, x, y, z)) continue;
 
                 double roadDistance = Math.sqrt(roadDistanceSq(x + 0.5D, z + 0.5D));
