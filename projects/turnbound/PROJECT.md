@@ -194,66 +194,44 @@ A branch build is requested by this checkpoint commit. Until its workflow result
 
 ## New Drabyel automatic placement bridge — 2026-09-29
 
-New Drabyel service placement no longer requires the user to walk to six locations and enter survey commands.
+New Drabyel service placement does **not** require the user to author six coordinates or repeatedly enter survey commands.
 
-Reference stage:
-- structured Drehmal 2.2.2 map data supplies exact nearby roads, signs, traders, containers and named/source objects
-- only small derived semantic anchors, road points and source-content exclusion zones are stored in TURNBOUND; upstream JSON/images remain reference-only
+Source analysis:
+- pinned public reference: `zachaa/DrehmalMap@72d82180cbe3f950f068cf2d8e8668c6b09d5c58`
+- inspected `data/paths.geojson`, `data/all_entity_data.json` and `data/locations.json`
+- 76 nearby New Drabyel source records were inspected; TURNBOUND retains only small derived semantic anchors, road points and exclusion zones
+- source landmarks include the town-entry sign, Verdant Saddle, Adventuring Merchant, Goibhniu's Smithy / Runic Blacksmith, church, graveyard, map displays, Primal Cache and farmhouse Cat Map
+- external map JSON/images are reference-only and are not vendored as TURNBOUND assets
 
-Live 26.2 stage:
-- service resolution runs only when an active player is within 160 blocks of New Drabyel
-- the actual bound world is scanned around each source-backed semantic anchor
-- candidates require stable ground, three-block headroom, no fluids and source-height consistency
-- nearby block entities are exclusion zones, preserving signs/chests/lecterns/caches and other authored interactions
-- existing villagers/wandering traders are exclusion zones
-- actors are kept off the extracted authored road centerline
-- the selected point is deterministic and actors face the authored service/road approach target
-- if no safe point exists, that role stays absent rather than modifying terrain or guessing through a wall
+Runtime placement:
+- runs only in a bound Drehmal world and only when New Drabyel is relevant
+- each of the six services has multiple data-driven search seeds, expected elevation, preferred roadside distance, facing target and protected source-content exclusions
+- the live 26.2 world supplies the final Y and exact adjacent standing block
+- candidates reject blocked headroom, fluids, unstable local ground, excessive source-height drift, authored road centers, nearby block entities and existing villagers/traders
+- services keep minimum spacing from one another
+- safe candidates are selected deterministically and cached
+- failed scans retry after 200 ticks instead of rescanning every tick
+- no terrain or source entity is rewritten; a role with no safe candidate stays absent
 
-The six admin `/turnbound survey ...` commands remain debugging/forensics tools only. They are not a normal placement workflow and the user is not expected to execute them one by one.
+The static `new_drabyel_services_v1.json` remains fail-closed. Runtime placement creates transient derived service positions rather than pretending the 1.20.1 coordinates are already verified 26.2 blocks.
 
-Actual client playtest is still required to judge visual composition and feel, but it is a **single review of the automatically placed hub**, not manual authoring of every coordinate.
+The six admin `/turnbound survey ...` commands are optional diagnostics/forensics only. Normal testing is one walkthrough of the automatically populated hub; the user is not expected to place NPCs one by one.
 
-## New Drabyel source micro-layout — 2026-09-29
+Source-backed micro-layout used by the resolver:
+- town approach reference: about 502,67,1801
+- stables / Verdant Saddle: entrance-right area around 506,68,1836
+- Adventuring Merchant: 516,67,1854
+- Runic Blacksmith: 526,65,1839; Goibhniu's Smithy sign around 527,67,1844
+- central booths: Oak around 530,67,1830 / Coal around 535,67,1838 / Wheat around 541,67,1833
+- church entrance: around 527,68,1854
+- graveyard: east/southeast of the church, protected from service placement
+- farmhouse basement Cat Map: 516,65,1861, explicitly protected as original content
 
-Official/source-backed town detail now narrows the physical service survey:
-- New Drabyel town reference: about 502,67,1801
-- stables: immediately right on town entry
-- Adventuring Merchant: 516,67,1851 — primary MARKET context
-- Runic Blacksmith / Goibhniu's Smithy: 526,65,1841 — primary FORGE context
-- central booths: Oak 530,67,1833 / Coal 532,67,1838 / Wheat 541,67,1830
-- Drehmal statue: in front of the farmhouse — STORY landmark candidate
-- Church of the Split Deities: south side — preserve original signs/artifact/graveyard
-- Nature's Rest Inn: east of the Runic Blacksmith — preserve original villagers/rooms/loot
-- Drabyel Bookstore: far east — preserve original lore content
-- farmhouse basement Cat Map: 516,65,1861 — explicit conflict/exclusion reference, not a default SUMMON room
-
-These remain source survey seeds, not fixed 26.2 production coordinates. The static catalog keeps `verifiedIn26_2=false` and `productionEnabled=false`; the runtime may create a transient derived service only after the live migrated world passes collision, height, fluid, source-content and NPC-conflict checks. Client playtest is still required for final visual/readability acceptance, not for manual coordinate authoring.
-## Automatic New Drabyel placement checkpoint — 2026-09-29
-
-The manual per-NPC survey workflow has been replaced by source-assisted automatic placement.
-
-Reference input:
-- structured Drehmal 2.2.2 map extraction for roads, signs, traders, storage and named/source objects
-- 76 nearby New Drabyel source records were inspected from the pinned extraction; only the small subset needed for semantic anchors/exclusions is retained
-- raw third-party map JSON/images are not vendored; only small derived semantic anchors/road points are retained
-
-Runtime behavior:
-- placement scans run only when an active player is within 160 blocks of New Drabyel
-- final standing blocks come from the actual bound Minecraft 26.2 world, not the 1.20.1 source coordinates
-- candidates reject blocked headroom, fluids, unstable local ground, source-height drift, nearby block entities and existing villagers/traders
-- authored road centerlines are kept clear
-- safe points are selected deterministically from data-driven candidate seeds/exclusion zones and cached
-- failed scans back off for 200 ticks instead of rescanning every tick
-- no terrain is modified and unresolved roles fail closed
-
-Admin survey commands remain optional diagnostics only. The expected user validation is one normal hub playtest of the automatically placed services, not manual coordinate authoring.
-
-Validation requested by this checkpoint:
+Current verification state for this block:
 - CODE REVIEWED: YES
-- TESTED: pending branch workflow
-- BUILD VERIFIED: pending branch workflow
-- JAR PRODUCED: pending branch workflow
+- TESTED: requested by the branch workflow
+- BUILD VERIFIED: pending workflow result
+- JAR PRODUCED: pending workflow result
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
