@@ -55,8 +55,10 @@ class DrehmalFirstRouteCatalogTest {
                 assertTrue(CampaignEncounterCatalog.contains(encounter.combatEncounterId()),
                         encounter.locator() + " -> " + encounter.combatEncounterId());
                 int combatSize = CampaignEncounterCatalog.spec(encounter.combatEncounterId()).enemies().size();
-                assertTrue(encounter.fieldVisibleCount() >= 1 && encounter.fieldVisibleCount() <= combatSize,
-                        encounter.locator() + " visible=" + encounter.fieldVisibleCount() + " combat=" + combatSize);
+                assertTrue(encounter.fieldVisibleCount() == 1,
+                        encounter.locator() + " must use one field representative, combat=" + combatSize);
+                assertTrue(combatSize >= 1,
+                        encounter.locator() + " combat encounter must still contain at least one real enemy");
             }
         }
         var first = DrehmalFirstRouteCatalog.route().encounters().stream()
@@ -81,8 +83,10 @@ class DrehmalFirstRouteCatalogTest {
         var roadFootprint = DrehmalFirstRouteCatalog.route().footprints().stream()
                 .filter(footprint -> footprint.locator().equals(DrabyelOpeningTutorial.FOOTPRINT_ID))
                 .findFirst().orElseThrow();
+        assertTrue(road.fieldVisibleCount() == 1,
+                "opening patrol must use one world representative even though combat expands to two enemies");
         assertTrue(roadFootprint.enemySlots() == 2,
-                "opening tutorial footprint must match the two-enemy battle");
+                "opening tutorial footprint must still match the two-enemy battle");
 
 
         var worldBoss = DrehmalFirstRouteCatalog.encounterByCombatId(DrehmalWorldBossPlacementRules.ENCOUNTER_ID);
