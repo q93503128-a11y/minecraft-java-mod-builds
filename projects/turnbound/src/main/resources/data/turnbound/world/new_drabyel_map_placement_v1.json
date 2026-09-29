@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "hubLocator": "turnbound:hub/new_drabyel",
+  "source": {
+    "repository": "zachaa/DrehmalMap",
+    "commit": "72d82180cbe3f950f068cf2d8e8668c6b09d5c58",
+    "paths": "data/paths.geojson;data/all_entity_data.json;data/locations.json",
+    "usage": "reference-only; no external code or image asset is bundled"
+  },
+  "placements": [
+    {
+      "serviceLocator": "turnbound:service/new_drabyel/entrance_greeter",
+      "searchRadius": 3,
+      "faceTarget": {"x": 503, "z": 1808},
+      "seeds": [
+        {"x": 497, "z": 1811},
+        {"x": 508, "z": 1811},
+        {"x": 498, "z": 1817},
+        {"x": 511, "z": 1817}
+      ],
+      "exclusions": [
+        {"x": 502, "z": 1804, "radius": 2.5, "reason": "Welcome to NEW DRABYEL source sign"}
+      ]
+    },
+    {
+      "serviceLocator": "turnbound:service/new_drabyel/stables",
+      "searchRadius": 3,
+      "faceTarget": {"x": 508, "z": 1837},
+      "seeds": [
+        {"x": 502, "z": 1836},
+        {"x": 502, "z": 1840},
+        {"x": 503, "z": 1832},
+        {"x": 511, "z": 1838}
+      ],
+      "exclusions": [
+        {"x": 506, "z": 1836, "radius": 2.5, "reason": "The Verdant Saddle source sign"},
+        {"x": 504, "z": 1841, "radius": 2.0, "reason": "source stable chest"}
+      ]
+    },
+    {
+      "serviceLocator": "turnbound:service/new_drabyel/market",
+      "searchRadius": 3,
+      "faceTarget": {"x": 515, "z": 1850},
+      "seeds": [
+        {"x": 512, "z": 1855},
+        {"x": 513, "z": 1858},
+        {"x": 520, "z": 1858},
+        {"x": 509, "z": 1856}
+      ],
+      "exclusions": [
+        {"x": 516, "z": 1854, "radius": 3.0, "reason": "Adventuring Merchant source trader"},
+        {"x": 522, "z": 1853, "radius": 2.5, "reason": "source map display frames"},
+        {"x": 511, "z": 1850, "radius": 2.0, "reason": "Drehmal offering/source sign"}
+      ]
+    },
+    {
+      "serviceLocator": "turnbound:service/new_drabyel/blacksmith",
+      "searchRadius": 3,
+      "faceTarget": {"x": 532, "z": 1846},
+      "seeds": [
+        {"x": 523, "z": 1844},
+        {"x": 529, "z": 1846},
+        {"x": 530, "z": 1841},
+        {"x": 522, "z": 1838}
+      ],
+      "exclusions": [
+        {"x": 526, "z": 1839, "radius": 3.0, "reason": "Runic Blacksmith source trader"},
+        {"x": 527, "z": 1844, "radius": 2.0, "reason": "Goibhniu's Smithy source sign"}
+      ]
+    },
+    {
+      "serviceLocator": "turnbound:service/new_drabyel/story_square",
+      "searchRadius": 3,
+      "faceTarget": {"x": 515, "z": 1850},
+      "seeds": [
+        {"x": 507, "z": 1855},
+        {"x": 508, "z": 1859},
+        {"x": 512, "z": 1860},
+        {"x": 505, "z": 1861}
+      ],
+      "exclusions": [
+        {"x": 511, "z": 1850, "radius": 2.5, "reason": "Drehmal offering/source sign"},
+        {"x": 516, "z": 1861, "radius": 2.5, "reason": "farmhouse basement Cat Map source content"}
+      ]
+    },
+    {
+      "serviceLocator": "turnbound:service/new_drabyel/summon",
+      "searchRadius": 3,
+      "faceTarget": {"x": 535, "z": 1852},
+      "seeds": [
+        {"x": 532, "z": 1857},
+        {"x": 535, "z": 1858},
+        {"x": 529, "z": 1858},
+        {"x": 536, "z": 1855}
+      ],
+      "exclusions": [
+        {"x": 527, "z": 1854, "radius": 3.0, "reason": "Church of the Split Deities source entrance/sign"},
+        {"x": 525, "z": 1854, "radius": 2.5, "reason": "source Primal Cache"},
+        {"x": 543, "z": 1858, "radius": 4.0, "reason": "Drabyel graveyard source zone"},
+        {"x": 516, "z": 1861, "radius": 3.0, "reason": "farmhouse basement Cat Map source content"}
+      ]
+    }
+  ]
+}
