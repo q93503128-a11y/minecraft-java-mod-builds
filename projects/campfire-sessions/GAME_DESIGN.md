@@ -251,6 +251,22 @@ They will be assigned after the actual world is inspected.
 Avoid turning every island into a single-resource gimmick.
 One island may have a main theme but should still contain multiple useful activities.
 
+### Island map
+Players should not need raw coordinates to navigate ordinary village life.
+
+Provide an authored/game-like island map that can show:
+- discovered major facilities.
+- player home/Household home locations.
+- harbor and unlocked route points.
+- discovered landmarks/secrets when appropriate.
+- major public projects that materially change navigation.
+
+The default map should emphasize places and readable village geography rather than behaving like a technical chunk/debug map.
+Do not put a permanent minimap/GPS overlay on the HUD by default.
+Live player/NPC tracking is not assumed; only add selective location indicators where they improve a specific social/travel feature without turning the island into a tracking screen.
+
+External map/UI implementations may be used as rendering/reference foundations if they fit the final authored presentation.
+
 ## 4. Fixed buildings and interiors
 
 ### Fixed exterior locations
@@ -301,6 +317,19 @@ This is especially important for:
 
 The interior-space system must work in multiplayer and keep entry/exit anchors deterministic.
 
+### Building entry/exit transition
+Entering managed interiors may use a short door/transition presentation so exterior→interior coordinate changes do not feel like an abrupt teleport.
+
+Target:
+- prefer a fast transition when the actual world/interior streaming allows it naturally.
+- roughly 0.2–0.5 seconds is acceptable only if it looks clean.
+- if asset loading, camera continuity or multiplayer state requires longer, use a slightly longer polished transition rather than forcing an obviously broken instant cut.
+- keep it short enough that repeated shop/home visits are not annoying.
+- door sound/animation and a brief fade/mask may be used.
+- transitions are per-player; one player's entry never interrupts another player's screen.
+
+Do not hide seconds of avoidable loading behind a decorative animation merely because a transition exists.
+
 ## 5. Initial village facilities
 
 The village starts as an actual village, not an empty construction site.
@@ -323,6 +352,23 @@ Handles:
 ### Store NPC
 Separate from the administration NPC.
 Handles buying/selling and store-specific progression.
+
+### Concurrent service interactions
+Routine service NPCs must not become multiplayer bottlenecks.
+
+For ordinary services such as:
+- general store.
+- museum donation/info.
+- resident-services menus.
+- café ordering.
+- clothing shop.
+- clinic services.
+
+multiple players may open/use their own interaction UI with the same NPC at the same time.
+Server-side transactions still validate stock, money and shared state authoritatively.
+
+Only authored social scenes or resident-specific interactions that genuinely require physical exclusivity may briefly reserve an NPC.
+Do not make friends stand in an artificial queue merely because another player has a shop screen open.
 
 ### Store progression
 The store exists from the beginning and may later grow:
@@ -1057,6 +1103,18 @@ Baseline structure:
 
 Do not turn tool tiers into an RPG damage-stat ladder.
 
+### Lifestyle tool quick-select
+Frequently swapped lifestyle tools should have a dedicated quick-select interaction instead of requiring constant inventory rearrangement.
+
+Direction:
+- one compact radial/tool-wheel input opens the tool selector.
+- fishing rod, net, watering tool, shovel/dig tool and other approved lifestyle tools can appear when owned/equipped for the wheel.
+- selecting a tool should be fast and return directly to play.
+- the ordinary Minecraft hotbar remains usable for normal carried items.
+
+Prefer integrating/adapting a proven external 26.2 tool-belt/radial implementation if its UX and visuals fit.
+Do not create a huge persistent tool HUD.
+
 ### Fishing bait
 Basic fishing never requires consumable bait.
 
@@ -1100,6 +1158,21 @@ House storage:
 - grows with house progression.
 - unified/searchable storage is preferable to forcing dozens of vanilla chests.
 - shared for members of the same Household.
+
+### House storage UX
+House storage should feel like a life-sim wardrobe/storage system rather than one giant vanilla chest.
+
+Desired functions:
+- text search.
+- useful categories/filters.
+- stable sorting.
+- favorite/pinned items.
+- quick deposit of matching/appropriate items from the player's inventory.
+- clear distinction between shared Household storage and personal/private storage.
+- crafting/cooking stations inside the same home may reference eligible ingredients from Household storage without requiring manual stack shuffling, when permissions allow.
+
+Do not provide unrestricted remote access to house storage from anywhere on the world map/menu.
+Physical home/storage presence remains meaningful.
 
 ### Dropped items and lost-and-found
 Do not use vanilla short despawn behavior for important lifestyle possessions.
@@ -2095,7 +2168,18 @@ Furniture should primarily come from external high-quality packs/mods.
 
 Candidate categories include furniture mods such as Skniro's Furniture / BetterDeco if they remain technically suitable.
 
-### Placement and rotation
+### Placement preview, undo and rotation
+Furniture placement should not require repeatedly breaking/replacing expensive objects just to test orientation.
+
+Before final placement, where the selected furniture implementation allows it:
+- show a clear preview/ghost/outline.
+- allow rotation/orientation changes.
+- indicate invalid placement without consuming/moving the item.
+- confirm to place.
+
+Provide a short, safe undo/reposition affordance for a just-placed decoration when it has not been meaningfully interacted with or modified.
+This is a decorating convenience, not a general world rollback system.
+
 Keep Minecraft's understandable grid/block placement as the baseline.
 Where the chosen external furniture system already supports stable orientation/rotation or finer placement, reuse/adapt that behavior rather than rebuilding it from scratch.
 
@@ -2359,27 +2443,110 @@ Use stable IDs/UUIDs rather than display names for persisted identity.
 Persist a schema version and support explicit save migration when the format changes.
 Concrete class/file/codec layout remains an implementation detail as long as this ownership boundary is preserved.
 
+### Autosave and recovery
+The persistent village needs explicit save-safety beyond relying on players to exit cleanly.
+
+Use:
+- normal periodic server autosave without blocking every client's screen.
+- prompt persistence/dirty-state flush after high-value state changes such as major purchases, house upgrades, museum donations, Household changes and important profile progression.
+- a small rotating set of recent recoverable backups/snapshots suitable for private-world recovery.
+- atomic/safe write patterns where practical so an interrupted write does not replace the only good copy.
+
+Do not present intrusive 'saving...' interruptions during ordinary play unless a real failure/recovery state requires attention.
+Backup/recovery tooling is operational safety, not a player progression system.
+
 Client responsibilities are presentation/input/UI, not final authority.
 
 Do not claim multiplayer correctness until actual multiplayer testing occurs.
 
 ## 48. External UI requirement
 
-Core UI must use selected external UI design assets.
-Do not improvise the final visual language.
+Core UI must use selected external UI design assets/references.
+Do not improvise the final visual language, navigation density, button scale or spacing from scratch.
 
-Screens likely include:
+### M-key life menu
+**M** opens the unified Campfire life-information menu.
+
+The M menu is a hub for information/functions that make sense to access anywhere, such as:
+- island map.
+- calendar / weather / event overview.
+- personal encyclopedia.
+- personal recipe book.
+- resident directory / relationship overview.
+- player profile / records.
+- settings/help shortcuts where appropriate.
+
+This list defines functional domains, NOT the final visual navigation layout.
+The final tab/icon/sidebar/page hierarchy should be derived from a strong external life-sim/menu reference and the selected external UI system rather than invented ad hoc.
+
+### Physical-interaction boundary
+Do **not** put world-location gameplay into the M menu merely for convenience.
+
+These remain tied to their physical interaction points:
+- mailbox / reading and claiming mail.
+- village notice board / player notes / full board notices.
+- buying/selling in shops.
+- museum donation.
+- resident-services loan repayment, house expansion and Household administration.
+- Lost & Found.
+- café ordering.
+- clothing purchases.
+- clinic services.
+- harbor departure/route purchase.
+- furniture/storage access.
+- other services whose location/NPC is part of the game loop.
+
+The M menu may show limited informational summaries when appropriate (for example an event date already known from the calendar), but it must not become a remote terminal that bypasses the actual village.
+
+### Menu density and scale
+Do not default to oversized Minecraft-style buttons, giant empty cards or arbitrary screen-filling panels.
+
+Before implementation:
+- select one or more strong external reference screens/assets.
+- derive relative control size, spacing, navigation depth, icon density and information hierarchy from those references.
+- preserve the external asset's intended proportions where practical.
+- then validate inside Minecraft at realistic GUI scales/resolutions.
+
+Avoid:
+- buttons made huge merely because there is empty space.
+- a grid of giant cards for every feature.
+- deep navigation created only to look 'designed'.
+- tiny text used to compensate for oversized chrome.
+- every screen using a different panel width or spacing rule.
+
+The UI should expose more information per screen when that improves usability while keeping primary actions obvious.
+
+### Minimal contextual HUD
+Normal play should not look like an RPG dashboard.
+
+Persistent HUD should be minimal and use the selected external UI language.
+A compact presentation may expose only the small set of always-useful life information such as:
+- in-game time/date.
+- weather/season cue.
+- money when useful.
+
+Contextual UI appears only while relevant:
+- fishing interaction.
+- contest/event state.
+- active tool interaction.
+- short social/action prompts.
+- temporary navigation/interaction cues.
+
+Do not permanently show vanilla-style hunger/XP/debug coordinates/quest trackers when those systems are not part of the game.
+
+### Screen inventory
+Separate physical screens still include:
 - first-run character creator/profile setup.
-- calendar/weather.
 - shop.
 - loans/housing.
-- encyclopedia.
 - mail.
 - resident interactions.
-- catalog.
-- wardrobe.
-- museum information.
+- catalog/order interfaces where physically justified.
+- wardrobe/mirror.
+- museum donation/info.
 - Lost & Found.
+- notice board.
+- storage/furniture placement.
 
 Keep one coherent external design language rather than mixing unrelated asset styles.
 
