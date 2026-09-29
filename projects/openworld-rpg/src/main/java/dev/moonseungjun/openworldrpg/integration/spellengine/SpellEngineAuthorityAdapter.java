@@ -8,6 +8,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.ClericMendRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ClericSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
 import dev.moonseungjun.openworldrpg.combat.runtime.RadiantLanceRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.RebukeRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatStateStore;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionService;
@@ -184,6 +185,16 @@ public final class SpellEngineAuthorityAdapter {
                 radiantLance.id(),
                 new ProjectSpellTransactionPolicy(
                         radiantLance,
+                        COMBAT_STATES,
+                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                )
+        );
+
+        ProjectSpellSpec rebuke = ProjectSpellSpec.rebuke();
+        AUTHORITY.registerPolicy(
+                rebuke.id(),
+                new ProjectSpellTransactionPolicy(
+                        rebuke,
                         COMBAT_STATES,
                         ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
                 )
@@ -371,6 +382,10 @@ public final class SpellEngineAuthorityAdapter {
                         String.valueOf(action),
                         progress.floatValue()
                 );
+                if (ProjectSpellSpec.REBUKE_ID.equals(spellId)
+                        && player instanceof ServerPlayer serverPlayer) {
+                    RebukeRuntime.release(serverPlayer);
+                }
                 mirrorRemainingProjectCooldown(player, spellEntry, spellId, gameTick);
             }
         }

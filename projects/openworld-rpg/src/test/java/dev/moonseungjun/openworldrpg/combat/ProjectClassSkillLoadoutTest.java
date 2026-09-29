@@ -29,6 +29,12 @@ class ProjectClassSkillLoadoutTest {
                         .spellId(RootClass.CLERIC, 1)
                         .orElseThrow()
         );
+        assertEquals(
+                ProjectSpellSpec.REBUKE_ID,
+                ProjectClassSkillLoadout
+                        .spellId(RootClass.CLERIC, 3)
+                        .orElseThrow()
+        );
 
         assertTrue(
                 ProjectClassSkillLoadout

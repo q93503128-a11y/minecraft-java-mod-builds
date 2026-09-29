@@ -20,7 +20,8 @@ public final class ProjectSpellInputRules {
     public static boolean suppressHeldRepeat(String spellId, boolean freshPress) {
         return (ProjectSpellSpec.ARC_BOLT_ID.equals(spellId)
                 || ProjectSpellSpec.RADIANT_LANCE_ID.equals(spellId)
-                || ProjectSpellSpec.MEND_ID.equals(spellId))
+                || ProjectSpellSpec.MEND_ID.equals(spellId)
+                || ProjectSpellSpec.REBUKE_ID.equals(spellId))
                 && !freshPress;
     }
 }

@@ -32,6 +32,7 @@ public final class ProjectClassSkillLoadout {
             case CLERIC -> switch (slotIndex) {
                 case 0 -> Optional.of(ProjectSpellSpec.RADIANT_LANCE_ID);
                 case 1 -> Optional.of(ProjectSpellSpec.MEND_ID);
+                case 3 -> Optional.of(ProjectSpellSpec.REBUKE_ID);
                 default -> Optional.empty();
             };
             case WARRIOR, HUNTER, GUARDIAN -> Optional.empty();

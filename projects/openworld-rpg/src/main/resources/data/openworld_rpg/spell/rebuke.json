@@ -1,0 +1,70 @@
+{
+  "school": "spell_power:generic",
+  "range": 4.5,
+  "tier": 1,
+  "group": "cleric_holy",
+  "active": {
+    "cast": {
+      "duration": 0.0
+    }
+  },
+  "release": {
+    "animation": {
+      "id": "spell_engine:one_handed_area_release_air_wave",
+      "speed": 1.0
+    },
+    "visuals": {
+      "models": [
+        {
+          "model_id": "openworld_rpg:spell_effect/rebuke_burst",
+          "light_emission": "GLOW_TRANSLUCENT",
+          "scale": 1.0,
+          "duration": 8,
+          "positioning": {
+            "vertical": 0.15
+          }
+        }
+      ],
+      "particles": [
+        {
+          "id": "spell_engine:magic_spark",
+          "appearance": {
+            "color": 4294953375,
+            "motion": "BURST"
+          },
+          "batch": {
+            "count": 6.0,
+            "shape": "CONE",
+            "anchor": "ENTITY",
+            "alignment": "LOOK",
+            "angle": 28.0,
+            "vertical_origin": 0.45,
+            "min_speed": 0.05,
+            "max_speed": 0.16
+          }
+        }
+      ]
+    },
+    "sound": {
+      "id": "spell_engine:generic_healing_release",
+      "randomness": 0.04
+    }
+  },
+  "target": {
+    "type": "NONE"
+  },
+  "deliver": {
+    "type": "DIRECT"
+  },
+  "impacts": [],
+  "cost": {
+    "batching": false,
+    "exhaust": 0.0,
+    "durability": 0,
+    "cooldown": {
+      "attempt_duration": 0.0,
+      "duration": 0.0,
+      "hosting_item": false
+    }
+  }
+}

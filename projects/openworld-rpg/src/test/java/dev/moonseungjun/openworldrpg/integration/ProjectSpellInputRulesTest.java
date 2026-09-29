@@ -47,6 +47,18 @@ class ProjectSpellInputRulesTest {
         );
         assertFalse(
                 ProjectSpellInputRules.suppressHeldRepeat(
+                        "openworld_rpg:rebuke",
+                        true
+                )
+        );
+        assertTrue(
+                ProjectSpellInputRules.suppressHeldRepeat(
+                        "openworld_rpg:rebuke",
+                        false
+                )
+        );
+        assertFalse(
+                ProjectSpellInputRules.suppressHeldRepeat(
                         "other_mod:spell",
                         false
                 )

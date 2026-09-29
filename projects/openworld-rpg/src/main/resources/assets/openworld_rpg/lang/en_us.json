@@ -5,6 +5,8 @@
   "spell.openworld_rpg.radiant_lance.description": "Hurls a radiant lance at an enemy. Full Grace empowers its follow-up effect.",
   "spell.openworld_rpg.mend.name": "Mend",
   "spell.openworld_rpg.mend.description": "Restores health to the aimed ally or yourself.",
+  "spell.openworld_rpg.rebuke.name": "Rebuke",
+  "spell.openworld_rpg.rebuke.description": "Unleashes a frontal holy burst that damages, staggers, and weakens enemy direct damage.",
   "key.category.openworld_rpg.combat": "Open-World RPG Combat",
   "key.openworld_rpg.active_skill_1": "Active Skill 1",
   "key.openworld_rpg.active_skill_2": "Active Skill 2",

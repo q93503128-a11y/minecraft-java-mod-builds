@@ -50,6 +50,17 @@ public final class ProjectPlayerIncomingDamageRuntime {
         }
 
         long gameTick = target.level().getGameTime();
+        double outgoingDirectDamageMultiplier =
+                ProjectHostileStatusRuntime.outgoingDirectDamageMultiplier(
+                        attacker,
+                        gameTick
+                );
+        PlayerDefenseAuthority.IncomingHit effectiveHit =
+                scaleDirectDamage(
+                        hit,
+                        outgoingDirectDamageMultiplier
+                );
+
         var resources = CombatStateServices.states()
                 .getOrCreate(target.getUUID(), gameTick);
         var activeDefense = CombatStateServices.defenseStates()
@@ -58,7 +69,7 @@ public final class ProjectPlayerIncomingDamageRuntime {
         var resolution = activeDefense.resolveIncoming(
                 resources,
                 defenseSnapshot.orElseThrow(),
-                hit,
+                effectiveHit,
                 gameTick
         );
         resources.markCombatActivity(gameTick);
@@ -105,6 +116,34 @@ public final class ProjectPlayerIncomingDamageRuntime {
         }
 
         return IncomingApplication.accepted(applied, resolution);
+    }
+
+    static PlayerDefenseAuthority.IncomingHit scaleDirectDamage(
+            PlayerDefenseAuthority.IncomingHit hit,
+            double multiplier
+    ) {
+        Objects.requireNonNull(hit, "hit");
+        if (!Double.isFinite(multiplier)
+                || multiplier <= 0.0
+                || multiplier > 1.0) {
+            throw new IllegalArgumentException(
+                    "Outgoing direct-damage multiplier must be inside (0, 1]."
+            );
+        }
+        if (multiplier == 1.0) {
+            return hit;
+        }
+        return new PlayerDefenseAuthority.IncomingHit(
+                hit.rawDamage() * multiplier,
+                hit.school(),
+                hit.attackerLevel(),
+                hit.guardPressure(),
+                hit.dodgeable(),
+                hit.guardable(),
+                hit.perfectGuardable(),
+                hit.authoredDamageTakenMultiplier(),
+                hit.authoredDamageReduction()
+        );
     }
 
     public record IncomingApplication(

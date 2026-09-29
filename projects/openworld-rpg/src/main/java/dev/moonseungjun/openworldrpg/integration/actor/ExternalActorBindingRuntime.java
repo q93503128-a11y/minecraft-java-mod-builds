@@ -1,6 +1,7 @@
 package dev.moonseungjun.openworldrpg.integration.actor;
 
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction;
+import dev.moonseungjun.openworldrpg.combat.runtime.ProjectHostileStatusRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.ProjectHealthRuntimeState;
 import dev.moonseungjun.openworldrpg.combat.state.ProjectPoiseRuntimeState;
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongEncounterDataLoader;
@@ -106,6 +107,7 @@ public final class ExternalActorBindingRuntime {
         ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) -> {
             HEALTH_STATES.remove(entity.getUUID());
             POISE_STATES.remove(entity.getUUID());
+            ProjectHostileStatusRuntime.clear(entity.getUUID());
         });
 
         initialized = true;

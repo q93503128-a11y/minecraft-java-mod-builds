@@ -5,6 +5,8 @@
   "spell.openworld_rpg.radiant_lance.description": "적에게 광휘의 창을 던집니다. 은총이 가득 차면 후속 효과가 강화됩니다.",
   "spell.openworld_rpg.mend.name": "치유",
   "spell.openworld_rpg.mend.description": "조준한 아군 또는 자신을 회복합니다.",
+  "spell.openworld_rpg.rebuke.name": "질책",
+  "spell.openworld_rpg.rebuke.description": "전방에 성스러운 충격을 일으켜 적에게 피해와 경직 압력을 주고 직접 피해를 약화합니다.",
   "key.category.openworld_rpg.combat": "Open-World RPG 전투",
   "key.openworld_rpg.active_skill_1": "액티브 스킬 1",
   "key.openworld_rpg.active_skill_2": "액티브 스킬 2",

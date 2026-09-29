@@ -9,10 +9,12 @@ public record ExternalActorCombatProfile(
         float maxHealth,
         double defense,
         double magicResistance,
-        double poiseMax
+        double poiseMax,
+        CombatRank combatRank
 ) {
     public ExternalActorCombatProfile {
         Objects.requireNonNull(entityId, "entityId");
+        Objects.requireNonNull(combatRank, "combatRank");
         if (entityId.isBlank()
                 || contentLevel < 1
                 || !Float.isFinite(maxHealth)
@@ -25,6 +27,30 @@ public record ExternalActorCombatProfile(
                 || poiseMax < 0.0) {
             throw new IllegalArgumentException("Invalid external actor combat profile: " + entityId);
         }
+    }
+
+    public ExternalActorCombatProfile(
+            String entityId,
+            int contentLevel,
+            float maxHealth,
+            double defense,
+            double magicResistance,
+            double poiseMax
+    ) {
+        this(
+                entityId,
+                contentLevel,
+                maxHealth,
+                defense,
+                magicResistance,
+                poiseMax,
+                CombatRank.NORMAL_ELITE
+        );
+    }
+
+    public enum CombatRank {
+        NORMAL_ELITE,
+        MINIBOSS_BOSS
     }
 
     public ProjectImpactTransaction.DamageTargetSnapshot projectTargetSnapshot() {
@@ -50,7 +76,8 @@ public record ExternalActorCombatProfile(
                 4900.0F,
                 45.0,
                 35.0,
-                190.0
+                190.0,
+                CombatRank.MINIBOSS_BOSS
         );
     }
 }

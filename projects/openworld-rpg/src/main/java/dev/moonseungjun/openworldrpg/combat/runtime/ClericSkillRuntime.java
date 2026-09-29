@@ -29,9 +29,9 @@ public final class ClericSkillRuntime {
             return;
         }
 
-        boolean damaging = ProjectSpellSpec.RADIANT_LANCE_ID.equals(
-                spellId
-        );
+        boolean damaging =
+                ProjectSpellSpec.RADIANT_LANCE_ID.equals(spellId)
+                || ProjectSpellSpec.REBUKE_ID.equals(spellId);
         boolean healingProtection = ProjectSpellSpec.MEND_ID.equals(
                 spellId
         );
