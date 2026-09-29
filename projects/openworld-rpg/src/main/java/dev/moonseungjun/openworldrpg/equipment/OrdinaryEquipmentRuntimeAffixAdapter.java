@@ -80,6 +80,11 @@ public final class OrdinaryEquipmentRuntimeAffixAdapter {
                             EquipmentCombatAffixKind.CRITICAL_DAMAGE,
                             affix.value()
                     );
+            case "openworld_rpg:runtime_affix/attack_speed" ->
+                    percentage(
+                            EquipmentCombatAffixKind.ATTACK_SPEED,
+                            affix.value()
+                    );
             case "openworld_rpg:runtime_affix/defense" ->
                     percentage(
                             EquipmentCombatAffixKind.DEFENSE,

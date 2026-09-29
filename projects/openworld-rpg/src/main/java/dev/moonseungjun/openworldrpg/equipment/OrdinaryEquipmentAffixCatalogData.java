@@ -34,6 +34,9 @@ public record OrdinaryEquipmentAffixCatalogData(
             "openworld_rpg:affix/critical_chance",
             "openworld_rpg:affix/critical_damage"
     );
+    private static final Set<String> LIVE_ATTACK_SPEED_AFFIX_IDS = Set.of(
+            "openworld_rpg:affix/attack_speed"
+    );
     private static final Set<String> LIVE_MOVEMENT_AFFIX_IDS = Set.of(
             "openworld_rpg:affix/movement_speed"
     );
@@ -98,6 +101,12 @@ public record OrdinaryEquipmentAffixCatalogData(
 
     public boolean criticalAuthorityReady() {
         return LIVE_CRITICAL_AFFIX_IDS.stream().allMatch(
+                this::runtimeImplemented
+        );
+    }
+
+    public boolean attackSpeedAuthorityReady() {
+        return LIVE_ATTACK_SPEED_AFFIX_IDS.stream().allMatch(
                 this::runtimeImplemented
         );
     }

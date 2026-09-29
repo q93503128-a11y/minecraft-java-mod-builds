@@ -69,6 +69,24 @@ public enum ProjectWeaponFamily {
         return basicCadence;
     }
 
+    /**
+     * Server attack-event rate used by Better Combat validation/presentation.
+     *
+     * <p>Dual blades author one canonical two-hit cycle, so their event rate is twice the
+     * cycle cadence. Other currently-bound families emit one attack event per basic cycle.</p>
+     */
+    public double basicAttackEventsPerSecond() {
+        return this == DUAL_BLADES ? basicCadence * 2.0 : basicCadence;
+    }
+
+    public boolean usesRangedDrawCadence() {
+        return this == BOW || this == CROSSBOW;
+    }
+
+    public boolean hasR01AttackSpeedRuntime() {
+        return this != BLACK_POWDER_PISTOL && this != MUSKET_HAND_CANNON;
+    }
+
     public double poiseMultiplier() {
         return poiseMultiplier;
     }

@@ -44,6 +44,7 @@ import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionS
 import dev.moonseungjun.openworldrpg.recovery.RecoveryBeltAttachments;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryEffectRuntime;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryUseRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBasicAttackCadenceRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.R01EarthloongMythicRuntime;
 import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeAttachments;
 import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeService;
@@ -146,6 +147,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             RecoveryUseRuntime.disconnect(playerId);
             RecoveryEffectRuntime.disconnect(playerId);
             R01EarthloongMythicRuntime.disconnect(playerId);
+            ProjectBasicAttackCadenceRuntime.disconnect(playerId);
             CombatStateServices.disconnect(playerId);
         });
 

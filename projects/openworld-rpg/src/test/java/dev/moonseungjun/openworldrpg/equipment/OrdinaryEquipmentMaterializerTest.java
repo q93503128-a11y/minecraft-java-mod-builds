@@ -118,7 +118,7 @@ class OrdinaryEquipmentMaterializerTest {
     }
 
     @Test
-    void unsupportedCanonicalAffixFailsClosedInsteadOfChangingPoolOdds() {
+    void attackSpeedProjectsToRuntimeWhileUnsupportedCanonicalAffixStillFailsClosed() {
         var catalog = OrdinaryEquipmentAffixCatalogLoader.loadBundled();
         var physical = definition(
                 catalog,
@@ -128,7 +128,34 @@ class OrdinaryEquipmentMaterializerTest {
                 catalog,
                 "openworld_rpg:affix/attack_speed"
         );
-        assertFalse(catalog.runtimeImplemented(attackSpeed.id()));
+        assertTrue(catalog.runtimeImplemented(attackSpeed.id()));
+
+        var attackSpeedResult = OrdinaryEquipmentMaterializer.materialize(
+                new OrdinaryEquipmentMaterializer.MaterializationRequest(
+                        OrdinaryEquipmentMaterializer.BaseProfile.weapon(
+                                "openworld_rpg:heartland_arming_sword",
+                                ProjectWeaponFamily.SWORD
+                        ),
+                        ProjectItemGrade.STANDARD,
+                        4,
+                        List.of(attackSpeed),
+                        2L,
+                        60L
+                ),
+                catalog
+        );
+        assertEquals(
+                EquipmentCombatAffixKind.ATTACK_SPEED,
+                attackSpeedResult.inventoryItem()
+                        .equipmentProjection().orElseThrow()
+                        .affixes().getFirst().kind()
+        );
+
+        var weakPoint = definition(
+                catalog,
+                "openworld_rpg:affix/weak_point_damage"
+        );
+        assertFalse(catalog.runtimeImplemented(weakPoint.id()));
 
         assertThrows(
                 IllegalStateException.class,
@@ -140,7 +167,7 @@ class OrdinaryEquipmentMaterializerTest {
                                 ),
                                 ProjectItemGrade.REFINED,
                                 4,
-                                List.of(physical, attackSpeed),
+                                List.of(physical, weakPoint),
                                 1L,
                                 60L
                         ),

@@ -61,7 +61,7 @@ public final class R01PlayerVerificationBootstrap {
                 parameterized
         ).size();
         logger.info(
-                "OPENWORLD_RPG_R01_VERIFICATION_CONTRACT_PASS mapBuild={} anchors={} areas={} volumes={} routes={} structures={} services={} properties={} fishingSpots={} staticAffixes={} runtimeAffixes={} parameterizedWeaponFamilies={} r01EquipmentBases={} nessaRuntimeBlockers={} resourceAffixAuthorityReady={} criticalAffixAuthorityReady={} movementAffixAuthorityReady={} spatialProductionReady={} structureProductionReady={} alderfordRuntimeProductionReady={} quarryRuntimeProductionReady={} fishingProductionReady={}",
+                "OPENWORLD_RPG_R01_VERIFICATION_CONTRACT_PASS mapBuild={} anchors={} areas={} volumes={} routes={} structures={} services={} properties={} fishingSpots={} staticAffixes={} runtimeAffixes={} parameterizedWeaponFamilies={} r01EquipmentBases={} nessaRuntimeBlockers={} resourceAffixAuthorityReady={} criticalAffixAuthorityReady={} attackSpeedAffixAuthorityReady={} movementAffixAuthorityReady={} spatialProductionReady={} structureProductionReady={} alderfordRuntimeProductionReady={} quarryRuntimeProductionReady={} fishingProductionReady={}",
                 spatial.mapBuild(),
                 spatial.anchors().size(),
                 spatial.areas().size(),
@@ -78,6 +78,7 @@ public final class R01PlayerVerificationBootstrap {
                 nessaRuntimeBlockers,
                 affixes.resourceAuthorityReady(),
                 affixes.criticalAuthorityReady(),
+                affixes.attackSpeedAuthorityReady(),
                 affixes.movementAuthorityReady(),
                 spatial.productionReady(),
                 structures.productionReady(),

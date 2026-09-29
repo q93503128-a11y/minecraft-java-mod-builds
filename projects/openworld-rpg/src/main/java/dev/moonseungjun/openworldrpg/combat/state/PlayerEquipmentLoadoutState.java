@@ -18,6 +18,7 @@ import java.util.Optional;
 public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
     private static final double WEAPON_FAMILY_POWER_GEAR_CAP = 0.60;
     private static final double CRITICAL_CHANCE_GEAR_CAP = 0.30;
+    public static final double ATTACK_SPEED_GEAR_CAP = 0.35;
     public static final double MOVEMENT_SPEED_GEAR_CAP = 0.15;
     private static final double GUARD_STRENGTH_GEAR_CAP = 0.50;
     private static final double POISE_STAGGER_RESISTANCE_GEAR_CAP = 0.50;
@@ -146,6 +147,24 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
             }
         }
         return Math.min(result, POISE_STAGGER_RESISTANCE_GEAR_CAP);
+    }
+
+    /**
+     * Aggregates the canonical equipment-only Attack Speed bonus across all equipped slots.
+     *
+     * <p>The active weapon family decides whether this projects to Minecraft melee/basic-cast
+     * cadence or Ranged Weapon API draw haste. The +35% cap is applied after summation.</p>
+     */
+    public double aggregateAttackSpeedBonus() {
+        double result = 0.0;
+        for (EquippedCombatItem item : equipped) {
+            for (EquipmentCombatAffix affix : item.affixes()) {
+                if (affix.kind() == EquipmentCombatAffixKind.ATTACK_SPEED) {
+                    result += affix.value();
+                }
+            }
+        }
+        return Math.min(result, ATTACK_SPEED_GEAR_CAP);
     }
 
     /**

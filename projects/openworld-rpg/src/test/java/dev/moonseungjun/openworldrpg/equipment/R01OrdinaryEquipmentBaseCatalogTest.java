@@ -125,7 +125,7 @@ class R01OrdinaryEquipmentBaseCatalogTest {
                 staticCatalog,
                 parameterized
         );
-        assertTrue(weaponBlockers.contains(
+        assertFalse(weaponBlockers.contains(
                 "openworld_rpg:affix/attack_speed"
         ));
         assertTrue(weaponBlockers.contains(

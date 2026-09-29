@@ -40,6 +40,12 @@ public final class PlayerCombatBuildPublisher {
                 player,
                 loadout.aggregateMovementSpeedBonus()
         );
+        PlayerAttackSpeedRuntime.synchronize(
+                player,
+                loadout.item(ProjectEquipmentSlot.MAIN_WEAPON)
+                        .flatMap(EquippedCombatItem::weaponFamily),
+                loadout.aggregateAttackSpeedBonus()
+        );
         CombatStateServices.states().synchronizeEndurance(
                 player.getUUID(),
                 (int) Math.round(effectiveEnd),

@@ -30,7 +30,7 @@ class R01NessaEquipmentMaterializationTest {
                 resolution.status()
         );
         assertTrue(resolution.item().isEmpty());
-        assertTrue(resolution.blockers().contains(
+        assertFalse(resolution.blockers().contains(
                 "openworld_rpg:affix/attack_speed"
         ));
         assertTrue(resolution.blockers().contains(
@@ -40,7 +40,7 @@ class R01NessaEquipmentMaterializationTest {
                 "openworld_rpg:affix/movement_speed"
         ));
 
-        // Matching weapon-family power and Movement Speed are live and therefore must not block.
+        // Matching weapon-family power, Attack Speed and Movement Speed are live and must not block.
         assertFalse(resolution.blockers().contains(
                 "openworld_rpg:affix/weapon_family/bow_power"
         ));
@@ -66,7 +66,7 @@ class R01NessaEquipmentMaterializationTest {
                         .RUNTIME_AFFIX_BLOCKED,
                 resolution.status()
         );
-        assertTrue(resolution.blockers().contains(
+        assertFalse(resolution.blockers().contains(
                 "openworld_rpg:affix/attack_speed"
         ));
         assertTrue(resolution.blockers().contains(

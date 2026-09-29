@@ -128,6 +128,34 @@ class PlayerEquipmentLoadoutStateTest {
     }
 
     @Test
+    void attackSpeedAggregatesAcrossSlotsAndCapsAtThirtyFivePercent() {
+        var loadout = new PlayerEquipmentLoadoutState(List.of(
+                EquippedCombatItem.weapon(
+                        "openworld_rpg:swift_sword",
+                        8,
+                        ProjectWeaponFamily.SWORD,
+                        List.of(EquipmentCombatAffix.flat(
+                                EquipmentCombatAffixKind.ATTACK_SPEED,
+                                0.20
+                        ))
+                ),
+                EquippedCombatItem.gear(
+                        "openworld_rpg:rapid_band",
+                        ProjectEquipmentSlot.RING_1,
+                        8,
+                        List.of(EquipmentCombatAffix.flat(
+                                EquipmentCombatAffixKind.ATTACK_SPEED,
+                                0.20
+                        ))
+                )
+        ));
+
+        assertEquals(0.35, loadout.aggregateAttackSpeedBonus(), 0.0001);
+        assertEquals(1.25, ProjectWeaponFamily.SWORD.basicAttackEventsPerSecond(), 0.0001);
+        assertEquals(2.70, ProjectWeaponFamily.DUAL_BLADES.basicAttackEventsPerSecond(), 0.0001);
+    }
+
+    @Test
     void movementSpeedAggregatesWithoutWeaponAndCapsAtFifteenPercent() {
         var loadout = new PlayerEquipmentLoadoutState(List.of(
                 EquippedCombatItem.gear(

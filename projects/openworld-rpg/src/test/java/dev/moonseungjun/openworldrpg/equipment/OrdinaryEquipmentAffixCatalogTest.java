@@ -16,9 +16,10 @@ class OrdinaryEquipmentAffixCatalogTest {
                 data.id()
         );
         assertEquals(29, data.affixes().size());
-        assertEquals(21, data.implementedDefinitions().size());
+        assertEquals(22, data.implementedDefinitions().size());
         assertTrue(data.resourceAuthorityReady());
         assertTrue(data.criticalAuthorityReady());
+        assertTrue(data.attackSpeedAuthorityReady());
         assertTrue(data.movementAuthorityReady());
 
         var physical = data.affixes().stream()
@@ -63,6 +64,16 @@ class OrdinaryEquipmentAffixCatalogTest {
                 .findFirst()
                 .orElseThrow();
         assertTrue(manaCost.runtimeImplemented());
+
+        var attackSpeed = data.affixes().stream()
+                .filter(value -> value.id().equals(
+                        "openworld_rpg:affix/attack_speed"
+                ))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(2.0, attackSpeed.min(), 0.000001);
+        assertEquals(6.0, attackSpeed.max(), 0.000001);
+        assertTrue(attackSpeed.runtimeImplemented());
 
         var moveSpeed = data.affixes().stream()
                 .filter(value -> value.id().equals(

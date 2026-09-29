@@ -105,7 +105,7 @@
       "min": 2,
       "max": 6,
       "runtime_payload": "openworld_rpg:runtime_affix/attack_speed",
-      "runtime_state": "stored_only"
+      "runtime_state": "implemented"
     },
     {
       "id": "openworld_rpg:affix/weak_point_damage",

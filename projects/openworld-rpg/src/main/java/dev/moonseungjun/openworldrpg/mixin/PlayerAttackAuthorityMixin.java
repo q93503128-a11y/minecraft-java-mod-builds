@@ -3,9 +3,11 @@ package dev.moonseungjun.openworldrpg.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.moonseungjun.openworldrpg.combat.authority.CombatDamageAuthority;
+import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBasicAttackCadenceRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
 import dev.moonseungjun.openworldrpg.combat.runtime.R01EarthloongMythicRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
+import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentService;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.integration.bettercombat.BetterCombatAuthorityAdapter;
 import net.minecraft.world.damagesource.DamageSource;
@@ -69,6 +71,19 @@ public abstract class PlayerAttackAuthorityMixin {
                         attacker.getRandom().nextDouble()
                 );
         if (!decision.accepted()) {
+            return false;
+        }
+
+        double attackSpeedBonus = PlayerEquipmentService.state(attacker)
+                .aggregateAttackSpeedBonus();
+        if (!ProjectBasicAttackCadenceRuntime.authorize(
+                attacker.getUUID(),
+                build.equipment().weaponFamily(),
+                attackSpeedBonus,
+                context.comboCount(),
+                livingTarget.getId(),
+                gameTick
+        )) {
             return false;
         }
 
