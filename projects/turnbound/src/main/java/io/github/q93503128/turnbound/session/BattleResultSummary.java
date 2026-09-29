@@ -19,8 +19,15 @@ public record BattleResultSummary(
             int xpBefore,
             int levelAfter,
             int xpAfter,
-            int xpToNextAfter
-    ) {}
+            int xpToNextAfter,
+            int bonusLevel
+    ) {
+        public PartyXp(
+                String characterId, String name, int levelBefore, int xpBefore,
+                int levelAfter, int xpAfter, int xpToNextAfter) {
+            this(characterId, name, levelBefore, xpBefore, levelAfter, xpAfter, xpToNextAfter, 0);
+        }
+    }
 
     public BattleResultSummary(int xp, int gold, boolean firstClear, List<PartyXp> party) {
         this(xp, gold, 0, 0, List.of(), firstClear, party);
