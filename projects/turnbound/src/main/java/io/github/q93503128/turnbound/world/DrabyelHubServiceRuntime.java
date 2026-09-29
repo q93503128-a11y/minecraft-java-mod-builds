@@ -96,7 +96,7 @@ final class DrabyelHubServiceRuntime {
     }
 
     static boolean nearFacility(ServerPlayer player,String facilityHint){
-        if(player==null||facilityHint==null||facilityHint.isBlank())return false;
+        if(player==null||facilityHint==null||facilityHint.isBlank()||!nearHub(player,160.0D))return false;
         if(!(player.level() instanceof ServerLevel level))return false;
         for(var service:DrabyelHubAutoPlacement.runtimeServices(level)){
             if(!facilityHint.equals(service.facilityHint())||service.runtimePosition()==null)continue;
@@ -115,7 +115,7 @@ final class DrabyelHubServiceRuntime {
     }
 
     static DrabyelInteractionPromptRules.Prompt prompt(ServerPlayer player){
-        if(player==null||BattleSessionManager.exists(player)||player.isSpectator())return DrabyelInteractionPromptRules.none();
+        if(player==null||BattleSessionManager.exists(player)||player.isSpectator()||!nearHub(player,160.0D))return DrabyelInteractionPromptRules.none();
         if(!(player.level() instanceof ServerLevel level))return DrabyelInteractionPromptRules.none();
         return DrabyelInteractionPromptRules.nearest(
                 DrabyelHubAutoPlacement.runtimeServices(level),
@@ -124,7 +124,7 @@ final class DrabyelHubServiceRuntime {
     }
 
     static Set<String> availableRoles(ServerPlayer player){
-        if(player==null||!(player.level() instanceof ServerLevel level))return Set.of();
+        if(player==null||!nearHub(player,160.0D)||!(player.level() instanceof ServerLevel level))return Set.of();
         Set<String> roles=new HashSet<>();
         for(var service:DrabyelHubAutoPlacement.runtimeServices(level)){
             if(DrabyelServiceActors.supports(service.visualAsset()))roles.add(service.role());
@@ -146,6 +146,13 @@ final class DrabyelHubServiceRuntime {
         if(boundLevel==level)return;
         clear();
         boundLevel=level;
+    }
+
+    private static boolean nearHub(ServerPlayer player,double radius){
+        var hub=DrehmalWorldProfile.enabled(DrehmalWorldProfile.HUB_LOCATOR);
+        if(player==null||hub==null)return false;
+        double dx=player.getX()-(hub.x()+0.5D),dz=player.getZ()-(hub.z()+0.5D);
+        return dx*dx+dz*dz<=radius*radius;
     }
 
     private static boolean hubDemanded(ServerLevel level){
