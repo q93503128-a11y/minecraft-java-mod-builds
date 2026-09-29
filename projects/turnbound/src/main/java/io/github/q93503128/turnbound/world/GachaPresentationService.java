@@ -41,7 +41,8 @@ public final class GachaPresentationService {
         for (GachaService.PullResult pull : result.pulls()) {
             out.append("P|").append(pull.characterId()).append('|').append(pull.nativeStars()).append('|')
                     .append(pull.newlyOwned() ? 1 : 0).append('|').append(pull.starEssenceGranted()).append('|')
-                    .append(pull.pityAfter()).append('\n');
+                    .append(pull.pityAfter()).append('|').append(pull.bonusLevelGranted()).append('|')
+                    .append(pull.bonusLevelAfter()).append('\n');
         }
         return out.toString();
     }
