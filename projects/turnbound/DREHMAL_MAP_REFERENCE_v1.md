@@ -123,7 +123,7 @@ Placement implications:
 - `SUMMON` still has no source-backed exact room. The known farmhouse basement at 516,65,1861 already contains original collectible content and is therefore a **conflict marker**, not a placement recommendation.
 - church, bookstore, inn guest rooms and other authored interiors must be inspected for original loot/lore before any TURNBOUND service occupies them.
 
-Do not activate these source coordinates directly. They remain survey seeds until the migrated 26.2 client confirms geometry, source-content conflicts, sightlines and player flow.
+Do not use these source coordinates as fixed NPC blocks. TURNBOUND may use them as search origins for the live-world auto-resolver, which chooses a nearby standable block while rejecting road centers, block-entity/source-content conflicts and existing villagers/traders. Static coordinates remain unpromoted; client playtest is the final visual/readability check rather than a manual placement workflow.
 
 ## 6. Av'Sal spatial read
 
