@@ -10,7 +10,7 @@
   "placements": [
     {
       "serviceLocator": "turnbound:service/new_drabyel/entrance_greeter",
-      "searchRadius": 3,
+      "searchRadius": 6,
       "faceTarget": {
         "x": 503,
         "z": 1808
@@ -46,7 +46,7 @@
     },
     {
       "serviceLocator": "turnbound:service/new_drabyel/stables",
-      "searchRadius": 3,
+      "searchRadius": 7,
       "faceTarget": {
         "x": 508,
         "z": 1837
@@ -88,7 +88,7 @@
     },
     {
       "serviceLocator": "turnbound:service/new_drabyel/market",
-      "searchRadius": 3,
+      "searchRadius": 8,
       "faceTarget": {
         "x": 515,
         "z": 1850
@@ -136,7 +136,7 @@
     },
     {
       "serviceLocator": "turnbound:service/new_drabyel/blacksmith",
-      "searchRadius": 3,
+      "searchRadius": 6,
       "faceTarget": {
         "x": 532,
         "z": 1846
@@ -178,7 +178,7 @@
     },
     {
       "serviceLocator": "turnbound:service/new_drabyel/story_square",
-      "searchRadius": 3,
+      "searchRadius": 7,
       "faceTarget": {
         "x": 515,
         "z": 1850
@@ -220,7 +220,7 @@
     },
     {
       "serviceLocator": "turnbound:service/new_drabyel/summon",
-      "searchRadius": 3,
+      "searchRadius": 7,
       "faceTarget": {
         "x": 535,
         "z": 1852
