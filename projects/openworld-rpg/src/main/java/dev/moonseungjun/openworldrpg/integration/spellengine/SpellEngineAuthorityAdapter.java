@@ -5,7 +5,9 @@ import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellSpec;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellTransactionPolicy;
 import dev.moonseungjun.openworldrpg.combat.authority.SpellCastAuthority;
 import dev.moonseungjun.openworldrpg.combat.runtime.ClericMendRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.ClericSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
+import dev.moonseungjun.openworldrpg.combat.runtime.RadiantLanceRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatStateStore;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionService;
@@ -177,6 +179,16 @@ public final class SpellEngineAuthorityAdapter {
                 )
         );
 
+        ProjectSpellSpec radiantLance = ProjectSpellSpec.radiantLance();
+        AUTHORITY.registerPolicy(
+                radiantLance.id(),
+                new ProjectSpellTransactionPolicy(
+                        radiantLance,
+                        COMBAT_STATES,
+                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                )
+        );
+
         ProjectSpellSpec mend = ProjectSpellSpec.mend();
         AUTHORITY.registerPolicy(
                 mend.id(),
@@ -219,9 +231,48 @@ public final class SpellEngineAuthorityAdapter {
 
         long gameTick = player.level().getGameTime();
         boolean engineContinuation = isEngineContinuation(player, spellId);
+        boolean firstAcceptedCast = false;
+        if (acceptedStage && AUTHORITY.owns(spellId)) {
+            var combatState = COMBAT_STATES.getOrCreate(
+                    player.getUUID(),
+                    gameTick
+            );
+            firstAcceptedCast =
+                    !combatState.isAcceptedCastReentry(
+                            spellId,
+                            gameTick
+                    )
+                    && !(engineContinuation
+                            && combatState
+                                    .isAcceptedCastContinuation(
+                                            spellId
+                                    ));
+        }
+
         SpellCastAuthority.AttemptDecision decision = acceptedStage
-                ? AUTHORITY.commitAcceptedCast(player.getUUID(), spellId, gameTick, engineContinuation)
-                : AUTHORITY.preflightAttempt(player.getUUID(), spellId, gameTick, engineContinuation);
+                ? AUTHORITY.commitAcceptedCast(
+                        player.getUUID(),
+                        spellId,
+                        gameTick,
+                        engineContinuation
+                )
+                : AUTHORITY.preflightAttempt(
+                        player.getUUID(),
+                        spellId,
+                        gameTick,
+                        engineContinuation
+                );
+
+        if (acceptedStage
+                && firstAcceptedCast
+                && decision == SpellCastAuthority.AttemptDecision.ALLOW
+                && player instanceof ServerPlayer serverPlayer) {
+            ClericSkillRuntime.onAcceptedCast(
+                    serverPlayer,
+                    spellId,
+                    gameTick
+            );
+        }
 
         return switch (decision) {
             case PASS_THROUGH, ALLOW -> null;
@@ -443,6 +494,22 @@ public final class SpellEngineAuthorityAdapter {
                     serverTarget
             );
             return impactResultConstructor.newInstance(mend.accepted(), false);
+        }
+
+        if (ProjectSpellSpec.RADIANT_LANCE_ID.equals(spellId)) {
+            if (!(player instanceof ServerPlayer serverCaster)
+                    || !(target instanceof LivingEntity livingTarget)
+                    || livingTarget.level() != serverCaster.level()) {
+                return impactResultConstructor.newInstance(false, false);
+            }
+            var lance = RadiantLanceRuntime.apply(
+                    serverCaster,
+                    livingTarget
+            );
+            return impactResultConstructor.newInstance(
+                    lance.accepted(),
+                    false
+            );
         }
 
         Object powerValue = invokeAccessor(spellPower, "baseValue");

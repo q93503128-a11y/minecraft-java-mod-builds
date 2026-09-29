@@ -22,6 +22,10 @@ public final class CombatStateServices {
             new ClericGraceStateStore();
     private static final PlayerBarrierStateStore BARRIER_STATES =
             new PlayerBarrierStateStore();
+    private static final ClericDoctrineStateStore CLERIC_DOCTRINE_STATES =
+            new ClericDoctrineStateStore();
+    private static final ClericSkillCastStateStore CLERIC_SKILL_CAST_STATES =
+            new ClericSkillCastStateStore();
 
     private CombatStateServices() {
     }
@@ -64,6 +68,14 @@ public final class CombatStateServices {
 
     public static PlayerBarrierStateStore barrierStates() {
         return BARRIER_STATES;
+    }
+
+    public static ClericDoctrineStateStore clericDoctrineStates() {
+        return CLERIC_DOCTRINE_STATES;
+    }
+
+    public static ClericSkillCastStateStore clericSkillCastStates() {
+        return CLERIC_SKILL_CAST_STATES;
     }
 
     public static void persistRuntime(ServerPlayer player) {
@@ -139,5 +151,7 @@ public final class CombatStateServices {
         NEGATIVE_STATUS_STATES.remove(playerId);
         CLERIC_GRACE_STATES.remove(playerId);
         BARRIER_STATES.remove(playerId);
+        CLERIC_DOCTRINE_STATES.remove(playerId);
+        CLERIC_SKILL_CAST_STATES.remove(playerId);
     }
 }

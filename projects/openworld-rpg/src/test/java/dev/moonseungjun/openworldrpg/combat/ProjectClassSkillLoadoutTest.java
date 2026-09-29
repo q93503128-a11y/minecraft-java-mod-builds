@@ -18,6 +18,12 @@ class ProjectClassSkillLoadoutTest {
                         .orElseThrow()
         );
         assertEquals(
+                ProjectSpellSpec.RADIANT_LANCE_ID,
+                ProjectClassSkillLoadout
+                        .spellId(RootClass.CLERIC, 0)
+                        .orElseThrow()
+        );
+        assertEquals(
                 ProjectSpellSpec.MEND_ID,
                 ProjectClassSkillLoadout
                         .spellId(RootClass.CLERIC, 1)
@@ -31,7 +37,7 @@ class ProjectClassSkillLoadoutTest {
         );
         assertTrue(
                 ProjectClassSkillLoadout
-                        .spellId(RootClass.CLERIC, 0)
+                        .spellId(RootClass.CLERIC, 2)
                         .isEmpty()
         );
         assertTrue(

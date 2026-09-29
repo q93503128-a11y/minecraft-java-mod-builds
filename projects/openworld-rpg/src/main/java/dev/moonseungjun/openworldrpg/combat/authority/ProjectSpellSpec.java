@@ -13,7 +13,12 @@ public record ProjectSpellSpec(
         int reentryWindowTicks
 ) {
     public static final String ARC_BOLT_ID = "openworld_rpg:arc_bolt";
+    public static final String RADIANT_LANCE_ID = "openworld_rpg:radiant_lance";
     public static final String MEND_ID = "openworld_rpg:mend";
+    public static final double RADIANT_LANCE_ACTION_COEFFICIENT = 1.35;
+    public static final double RADIANT_LANCE_POISE_COEFFICIENT = 0.60;
+    public static final double RADIANT_LANCE_CHAIN_ACTION_COEFFICIENT = 0.55;
+    public static final double RADIANT_LANCE_FALLBACK_HEAL_COEFFICIENT = 0.08;
     public static final double MEND_HEAL_COEFFICIENT = 0.30;
     public static final double MEND_EMPOWERED_HEAL_COEFFICIENT = 0.40;
 
@@ -42,6 +47,17 @@ public record ProjectSpellSpec(
         );
     }
 
+    public static ProjectSpellSpec radiantLance() {
+        return new ProjectSpellSpec(
+                RADIANT_LANCE_ID,
+                14.0,
+                80,
+                RADIANT_LANCE_ACTION_COEFFICIENT,
+                RADIANT_LANCE_POISE_COEFFICIENT,
+                1
+        );
+    }
+
     public static ProjectSpellSpec mend() {
         return new ProjectSpellSpec(
                 MEND_ID,
@@ -57,7 +73,7 @@ public record ProjectSpellSpec(
         Objects.requireNonNull(spellId, "spellId");
         return switch (spellId) {
             case ARC_BOLT_ID -> Optional.of(RootClass.MAGE);
-            case MEND_ID -> Optional.of(RootClass.CLERIC);
+            case RADIANT_LANCE_ID, MEND_ID -> Optional.of(RootClass.CLERIC);
             default -> Optional.empty();
         };
     }

@@ -32,15 +32,19 @@ public final class ClericMendRuntime {
         }
 
         long nowTick = caster.level().getGameTime();
+        var cast = ClericSkillRuntime.consumeAcceptedCast(
+                caster,
+                ProjectSpellSpec.MEND_ID
+        );
+        if (cast == null) {
+            return Application.rejected();
+        }
         var combat = CombatStateServices.states()
                 .getOrCreate(caster.getUUID(), nowTick);
         var grace = CombatStateServices.clericGraceStates()
                 .getOrCreate(caster.getUUID());
 
-        boolean empowered = grace.consumeForSpender(
-                nowTick,
-                combat.lastCombatActivityTick()
-        );
+        boolean empowered = cast.graceEmpowered();
         double coefficient = empowered
                 ? ProjectSpellSpec.MEND_EMPOWERED_HEAL_COEFFICIENT
                 : ProjectSpellSpec.MEND_HEAL_COEFFICIENT;
@@ -49,7 +53,8 @@ public final class ClericMendRuntime {
                 ProjectHealingRuntime.applySkillHeal(
                         caster,
                         target,
-                        coefficient
+                        coefficient,
+                        cast.outputMultiplier()
                 );
         if (!healing.accepted()) {
             return Application.rejected();
@@ -78,6 +83,7 @@ public final class ClericMendRuntime {
                 true,
                 empowered,
                 coefficient,
+                cast.outputMultiplier(),
                 healing.requestedHealing(),
                 healing.effectiveHealing(),
                 cleansed,
@@ -89,6 +95,7 @@ public final class ClericMendRuntime {
             boolean accepted,
             boolean empowered,
             double healCoefficient,
+            double doctrineOutputMultiplier,
             double requestedHealing,
             double effectiveHealing,
             int cleansedStatuses,
@@ -96,6 +103,7 @@ public final class ClericMendRuntime {
     ) {
         public Application {
             if (healCoefficient < 0.0
+                    || doctrineOutputMultiplier < 0.0
                     || requestedHealing < 0.0
                     || effectiveHealing < 0.0
                     || cleansedStatuses < 0
@@ -109,6 +117,7 @@ public final class ClericMendRuntime {
             if (!accepted
                     && (empowered
                     || healCoefficient != 0.0
+                    || doctrineOutputMultiplier != 0.0
                     || requestedHealing != 0.0
                     || effectiveHealing != 0.0
                     || cleansedStatuses != 0
@@ -123,6 +132,7 @@ public final class ClericMendRuntime {
             return new Application(
                     false,
                     false,
+                    0.0,
                     0.0,
                     0.0,
                     0.0,

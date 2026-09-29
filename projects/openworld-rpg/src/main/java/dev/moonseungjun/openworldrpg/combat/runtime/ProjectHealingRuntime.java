@@ -27,7 +27,27 @@ public final class ProjectHealingRuntime {
             ServerPlayer target,
             double healCoefficient
     ) {
-        return apply(caster, target, healCoefficient, null);
+        return applySkillHeal(
+                caster,
+                target,
+                healCoefficient,
+                1.0
+        );
+    }
+
+    public static Application applySkillHeal(
+            ServerPlayer caster,
+            ServerPlayer target,
+            double healCoefficient,
+            double outputMultiplier
+    ) {
+        return apply(
+                caster,
+                target,
+                healCoefficient,
+                outputMultiplier,
+                null
+        );
     }
 
     /**
@@ -45,13 +65,14 @@ public final class ProjectHealingRuntime {
             double healCoefficient
     ) {
         Objects.requireNonNull(earthloong, "earthloong");
-        return apply(caster, target, healCoefficient, earthloong);
+        return apply(caster, target, healCoefficient, 1.0, earthloong);
     }
 
     private static Application apply(
             ServerPlayer caster,
             ServerPlayer target,
             double healCoefficient,
+            double outputMultiplier,
             LivingEntity earthloong
     ) {
         Objects.requireNonNull(caster, "caster");
@@ -59,6 +80,12 @@ public final class ProjectHealingRuntime {
         if (!Double.isFinite(healCoefficient) || healCoefficient <= 0.0) {
             throw new IllegalArgumentException(
                     "healCoefficient must be finite and positive."
+            );
+        }
+        if (!Double.isFinite(outputMultiplier)
+                || outputMultiplier < 1.0) {
+            throw new IllegalArgumentException(
+                    "outputMultiplier must be finite and >= 1."
             );
         }
         if (caster.level() != target.level() || !target.isAlive()) {
@@ -85,12 +112,13 @@ public final class ProjectHealingRuntime {
                 effectiveWill,
                 effectiveIntelligence
         );
-        double requestedHealing = PlayerHealingAuthority.skillHealingAmount(
-                healingReference,
-                healCoefficient,
-                casterLoadout.aggregateHealingDoneBonus(),
-                targetLoadout.aggregateHealingReceivedBonus()
-        );
+        double requestedHealing =
+                PlayerHealingAuthority.skillHealingAmount(
+                        healingReference,
+                        healCoefficient,
+                        casterLoadout.aggregateHealingDoneBonus(),
+                        targetLoadout.aggregateHealingReceivedBonus()
+                ) * outputMultiplier;
 
         float before = target.getHealth();
         target.heal((float) requestedHealing);

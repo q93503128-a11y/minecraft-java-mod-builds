@@ -29,9 +29,11 @@ public final class ProjectClassSkillLoadout {
             case MAGE -> slotIndex == 0
                     ? Optional.of(ProjectSpellSpec.ARC_BOLT_ID)
                     : Optional.empty();
-            case CLERIC -> slotIndex == 1
-                    ? Optional.of(ProjectSpellSpec.MEND_ID)
-                    : Optional.empty();
+            case CLERIC -> switch (slotIndex) {
+                case 0 -> Optional.of(ProjectSpellSpec.RADIANT_LANCE_ID);
+                case 1 -> Optional.of(ProjectSpellSpec.MEND_ID);
+                default -> Optional.empty();
+            };
             case WARRIOR, HUNTER, GUARDIAN -> Optional.empty();
         };
     }

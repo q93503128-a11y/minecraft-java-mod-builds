@@ -23,6 +23,18 @@ class ProjectSpellInputRulesTest {
         );
         assertFalse(
                 ProjectSpellInputRules.suppressHeldRepeat(
+                        "openworld_rpg:radiant_lance",
+                        true
+                )
+        );
+        assertTrue(
+                ProjectSpellInputRules.suppressHeldRepeat(
+                        "openworld_rpg:radiant_lance",
+                        false
+                )
+        );
+        assertFalse(
+                ProjectSpellInputRules.suppressHeldRepeat(
                         "openworld_rpg:mend",
                         true
                 )

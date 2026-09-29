@@ -37,6 +37,10 @@ public final class PlayerProgressionService {
         if (changed && !player.level().isClientSide()) {
             CombatStateServices.clericGraceStates()
                     .reset(player.getUUID());
+            CombatStateServices.clericDoctrineStates()
+                    .reset(player.getUUID());
+            CombatStateServices.clericSkillCastStates()
+                    .reset(player.getUUID());
         }
         SpellEngineProjectSkillAccess.refreshPublishedSkills(player);
         return next;
