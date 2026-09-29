@@ -141,7 +141,7 @@ Confirmed:
 - P05 remains ★5.
 - the five-tier Standard Archive table above is the restored baseline.
 - commit `93a0c9d02b25fd8e46643ba10f1009165b7a2780` reintroduced a stale ★3~★5-only summon assumption after the 2026-09-26 restoration.
-- the current P01~P08 v1 kits, Drehmal world transition, Lv1~60 XP growth, equipment structure, and removal of the global Awakening Core spending path are intentional overhaul work and must not be reverted as collateral damage.
+- the current P01~P08 v1 kits, Drehmal world transition, base Lv1~60 XP growth, duplicate +0~+10 bonus-level axis, equipment structure, and removal of the global Awakening Core spending path are intentional overhaul work and must not be reverted as collateral damage.
 
 Still unresolved and requiring an explicit user decision before implementation changes:
 - exact `nativeStar` / `currentStar` progression semantics
@@ -163,7 +163,7 @@ This workbranch now restores the confirmed five-tier Standard Archive runtime co
 - all 12 registered playable characters projected to character/codex UI
 - ★1~★5 rarity filtering and five-tier Archive probability display
 
-The unresolved growth/★6/Awakening decisions listed above are intentionally untouched.
+The unresolved nativeStar/currentStar/promotion/★6/Awakening relationship listed above remains intentionally untouched. Duplicate +Level is a separately confirmed growth axis.
 
 Validation for this repair must be recorded separately after the branch build. Client runtime/playtest/multiplayer remain unverified until actually run.
 
@@ -433,6 +433,48 @@ Until actual client observation:
 - TESTED: YES
 - BUILD VERIFIED: YES
 - JAR PRODUCED: YES
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
+## Duplicate +Level / Essence loop implementation checkpoint — 2026-09-29
+
+The latest duplicate-growth decision is now wired through the authoritative campaign path.
+
+Implemented:
+- base battle/quest XP remains Lv1..60
+- every duplicate summon grants its existing rarity-based Star Essence **and** +Level +1 for that character
+- +Level is independent from base XP and caps at +10
+- effective combat level = base level + +Level, up to Lv70
+- HP/ATK/DEF consume effective level through the existing level curve; SPD remains fixed
+- base-Lv60 requirements for Awakening/Signature remain base-level checks and cannot be bypassed by +Level
+- further duplicates at +10 continue to grant Star Essence
+- summon history/result presentation shows the Essence reward and +Level gain/MAX state
+- party/character/codex/growth/battle-result UI projects +Level instead of hiding it
+- campaign save schema 6 persists character +Level and summon-history bonus metadata; schemas 1/4/5 remain readable with missing bonus fields defaulting safely
+- the permanent Archive exchange now supports 150 Essence → 300 Crystal
+- owned ★4 and ★5 characters can be selected at 450 / 1,200 Essence respectively without exposing unseen characters
+- selector copies use the same duplicate path, including rarity Essence refund and +Level where below +10
+- Archive facility proximity remains server-authoritative for all exchange actions
+- compact Essence selector lists are paged instead of overflowing 320×240-class layouts
+
+This does **not** settle nativeStar/currentStar promotion, ★6, or the exact Awakening/★6 relationship.
+
+Regression coverage was added for:
+- +10 duplicate cap and effective Lv70
+- XP preserving +Level while base level stops at 60
+- Lv70 HP/ATK/DEF scaling with unchanged SPD
+- permanent Crystal exchange
+- ★4 selector duplicate reward/+Level behavior and +10 cap
+- unowned-character spoiler-safe selector rejection
+- schema 5 → schema 6 missing-+Level migration
+- schema 6 full round-trip
+
+Validation requested by this checkpoint:
+- CODE REVIEWED: YES
+- TESTED: pending branch workflow
+- BUILD VERIFIED: NO
+- JAR PRODUCED: NO
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
