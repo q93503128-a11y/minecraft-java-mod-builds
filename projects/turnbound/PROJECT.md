@@ -216,6 +216,21 @@ The emitted fragment deliberately keeps `verifiedIn26_2=false` and `productionEn
 
 Only after that screen-level inspection may exact coordinates be promoted into `new_drabyel_services_v1.json`.
 
+## New Drabyel source micro-layout — 2026-09-29
+
+Official/source-backed town detail now narrows the physical service survey:
+- New Drabyel town reference: about 502,67,1801
+- stables: immediately right on town entry
+- Adventuring Merchant: 516,67,1851 — primary MARKET context
+- Runic Blacksmith / Goibhniu's Smithy: 526,65,1841 — primary FORGE context
+- central booths: Oak 530,67,1833 / Coal 532,67,1838 / Wheat 541,67,1830
+- Drehmal statue: in front of the farmhouse — STORY landmark candidate
+- Church of the Split Deities: south side — preserve original signs/artifact/graveyard
+- Nature's Rest Inn: east of the Runic Blacksmith — preserve original villagers/rooms/loot
+- Drabyel Bookstore: far east — preserve original lore content
+- farmhouse basement Cat Map: 516,65,1861 — explicit conflict/exclusion reference, not a default SUMMON room
+
+These remain source survey seeds, not 26.2 production coordinates. `verifiedIn26_2` and `productionEnabled` stay false until actual client inspection confirms the migrated world's block geometry, original-content conflicts, sightlines and service flow.
 ## Economy
 
 Long-term core currencies:
