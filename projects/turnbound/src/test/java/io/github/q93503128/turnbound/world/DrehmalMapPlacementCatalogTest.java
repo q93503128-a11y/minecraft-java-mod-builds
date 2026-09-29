@@ -26,6 +26,24 @@ class DrehmalMapPlacementCatalogTest {
         assertTrue(first.arenaSeeds().size()>=4);assertTrue(cave.arenaSeeds().size()>=4);assertTrue(road.arenaSeeds().size()>=4);
         assertTrue(road.patrolSeeds().size()>=4);
     }
+    @Test void everyEncounterAndFieldNpcHasAutomaticPlacementData() {
+        assertEquals(7, DrehmalFirstRouteCatalog.route().encounters().size());
+        for (var encounter : DrehmalFirstRouteCatalog.route().encounters()) {
+            var placement = DrehmalMapPlacementCatalog.placement(encounter.siteLocator());
+            assertNotNull(placement, encounter.locator());
+            assertTrue(placement.strictSite(), encounter.locator());
+            assertTrue(placement.arenaSeeds().size() >= 2, encounter.locator());
+        }
+
+        assertEquals(3, DrehmalFieldNpcCatalog.all().size());
+        for (var npc : DrehmalFieldNpcCatalog.all()) {
+            var placement = DrehmalMapPlacementCatalog.placement(npc.siteLocator());
+            assertNotNull(placement, npc.locator());
+            assertTrue(placement.strictSite(), npc.locator());
+            assertFalse(placement.siteSeeds().isEmpty(), npc.locator());
+        }
+    }
+
     @Test void sourceRevisionIsPinned() {
         assertEquals("zachaa/DrehmalMap",DrehmalMapPlacementCatalog.plan().source().repository());
         assertEquals("72d82180cbe3f950f068cf2d8e8668c6b09d5c58",DrehmalMapPlacementCatalog.plan().source().commit());
