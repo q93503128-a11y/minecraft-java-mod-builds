@@ -241,9 +241,9 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
             var speed = getAttribute(Attributes.MOVEMENT_SPEED);
             if (speed != null) speed.setBaseValue(0.23D);
         }
-        boolean accepted = getNavigation().moveTo(x, y, z, Math.max(0.05D, speedModifier));
-        setFieldWalking(accepted);
-        return accepted;
+        // PathNavigation's final argument is a speed modifier, not a blocks-per-tick velocity.
+        // The encounter runtime owns the locomotion clip and only enables it after coordinates really change.
+        return getNavigation().moveTo(x, y, z, Math.max(0.05D, speedModifier));
     }
 
     public void stopFieldNavigation() {
