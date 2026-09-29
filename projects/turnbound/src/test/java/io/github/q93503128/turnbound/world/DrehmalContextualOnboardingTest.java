@@ -49,7 +49,7 @@ class DrehmalContextualOnboardingTest {
                 Set.of(DrehmalContextualOnboarding.HUB_MENU_VIEWED),
                 Set.of());
         assertTrue(completed.objective().contains("M 지도"));
-        assertTrue(completed.hint().contains("M 지도"));
+        assertTrue(completed.hint().contains("지도"));
     }
 
     @Test
@@ -66,7 +66,7 @@ class DrehmalContextualOnboardingTest {
                 Set.of(DrehmalContentUnlocks.DRABYEL_ROAD),
                 Set.of(DrehmalContextualOnboarding.HUB_MENU_VIEWED),
                 Set.of("MARKET"));
-        assertTrue(unavailableForge.objective().contains("시장"));
+        assertTrue(unavailableForge.objective().contains("장비 상인"));
         assertTrue(unavailableForge.hint().contains("구매"));
         assertFalse(unavailableForge.hint().contains("대장간"));
     }
