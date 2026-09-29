@@ -7,6 +7,7 @@ import io.github.q93503128.turnbound.combat.CampaignEncounterCatalog;
 import io.github.q93503128.turnbound.combat.EndgameEncounterCatalog;
 import io.github.q93503128.turnbound.progression.QuestProgress;
 import io.github.q93503128.turnbound.session.BattleResultSummary;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.io.IOException;
@@ -79,6 +80,35 @@ public final class RewardGrantService {
             TurnboundWorldSavedData.get(player.level().getServer()).recordEncounterClear(encounterId);
         }
         return result;
+    }
+
+    /**
+     * Settles a finished shared-battle owner who is currently offline.
+     *
+     * <p>The full post-reward campaign snapshot is written to the same WAL used by online settlement before this
+     * method returns. The canonical player attachment is intentionally not fabricated while the player is offline;
+     * same-server reconnect uses the retained runtime, while a later cold load replays the WAL.</p>
+     */
+    public static Result commitDeferred(MinecraftServer server, UUID playerId, String transactionId,
+                                        String encounterId, BattleState state, BattleOutcome outcome) {
+        if (server == null) throw new IllegalArgumentException("Missing server");
+        if (playerId == null || !CampaignProgressStore.hasRuntime(playerId)) {
+            throw new IllegalStateException("Missing retained campaign runtime for offline shared-battle owner " + playerId);
+        }
+        Path primary = CampaignPersistence.playerFile(server, playerId);
+        Result result = commitToJournal(playerId, primary, transactionId, encounterId, state, outcome);
+        if (!result.duplicate() && outcome == BattleOutcome.ALLY_VICTORY && CampaignEncounterCatalog.contains(encounterId)) {
+            TurnboundWorldSavedData.get(server).recordEncounterClear(encounterId);
+        }
+        return result;
+    }
+
+    static Result commitToJournal(UUID playerId, Path primary, String transactionId, String encounterId,
+                                  BattleState state, BattleOutcome outcome) {
+        return commit(playerId, transactionId, encounterId, state, outcome,
+                snapshot -> RewardTransactionJournal.prepare(primary, transactionId, snapshot),
+                () -> { },
+                () -> { });
     }
 
     static Result commit(UUID playerId, String transactionId, String encounterId,
