@@ -319,6 +319,16 @@ State: `RUNTIME_BOUND / MINECRAFT_VISUAL_ACCEPTANCE_PENDING`.
 
 This does **not** promote the whole Phase-F Kenney shortlist to production, close signature-boss VFX, or claim final audio/SFX acceptance. Build/startup proof is recorded in `PROJECT.md`; actual in-world visual/range/impact-feel review remains required.
 
+### Consecrated Ground runtime binding delta — 2026-09-29
+
+Cleric `Consecrated Ground` reuses the already-admitted Kenney `light_03.png` / `magic_03.png` support texture family and the proven Spell Engine model-effect hook, but has its own project-authored 5-block ground geometry rather than reusing the 7-block Sanctuary silhouette. The authoritative server footprint and client outer boundary share the same `ConsecratedGroundZoneShape.RADIUS_BLOCKS = 5.0` constant.
+
+The production precision binding is fixed at the accepted caster position for 5 seconds and resolves five one-second pulses, preserving the locked total `HealCoefficient 0.30` and enemy magic `ActionCoefficient 1.35`. Three-Grace empowerment adds the authored initial `BarrierCoefficient 0.12`; `Balanced Doctrine` treats the skill as healing/protection, so its +10% support snapshot applies to healing/barrier output but not the damage half. The `-1.25 / +3.50` vertical envelope is playtest-tunable terrain binding only.
+
+State: `RUNTIME_BOUND / BUILD_AND_MINECRAFT_VISUAL_ACCEPTANCE_PENDING`.
+
+The cast currently uses the admitted Spell Engine healing-release support sound as a non-final audio layer. In-world boundary readability, terrain clipping, pulse feel and audio audition remain manual acceptance work.
+
 ### Sanctuary runtime binding delta — 2026-09-29
 
 Cleric `Sanctuary` reuses the accepted Kenney `light_03.png` / `magic_03.png` support texture family and the already-proven Spell Engine model-effect hook, but its silhouette is a new project-authored ground ward rather than a particle-only effect. The outer floor ring is tied directly to the authoritative `SanctuaryZoneShape.RADIUS_BLOCKS = 7.0`; inner seals, radial spokes, twelve vertical light ribs and the central light cross provide readable volume without changing the server footprint.

@@ -908,6 +908,14 @@ Empowered:
 - allies/self in area receive an initial barrier with `BarrierCoefficient 0.12`;
 - barrier follows normal 6 s duration/cap rules.
 
+Production precision binding:
+
+- the field is fixed at the caster's server-accepted position; there is no separate ground-target reticle at root baseline;
+- the five-second field resolves as **five one-second pulses including the release pulse**; the locked total `HealCoefficient 0.30` and enemy `ActionCoefficient 1.35` are divided evenly across those pulses;
+- for `Balanced Doctrine`, Consecrated Ground is classified as a **healing/protection active**. A primed support bonus multiplies its healing and the empowered initial barrier, but does not also multiply the damage side;
+- its damage side may publish at most one damaging-active Grace/Ultimate event per cast; healing and actual barrier consumption keep the normal per-recipient support rules;
+- the initial production vertical inclusion envelope is `-1.25 / +3.50` blocks around the cast origin and may be tuned only from real terrain/play evidence without changing the locked 5-block horizontal radius.
+
 ## 7.7 Active 4 — Rebuke
 
 ```text

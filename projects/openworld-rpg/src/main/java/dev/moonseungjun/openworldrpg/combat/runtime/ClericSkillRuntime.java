@@ -34,7 +34,7 @@ public final class ClericSkillRuntime {
                 || ProjectSpellSpec.REBUKE_ID.equals(spellId);
         boolean healingProtection = ProjectSpellSpec.MEND_ID.equals(
                 spellId
-        );
+        ) || ProjectSpellSpec.CONSECRATED_GROUND_ID.equals(spellId);
         if (!damaging && !healingProtection) {
             return;
         }

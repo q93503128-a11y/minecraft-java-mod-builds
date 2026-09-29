@@ -30,6 +30,12 @@ class ProjectClassSkillLoadoutTest {
                         .orElseThrow()
         );
         assertEquals(
+                ProjectSpellSpec.CONSECRATED_GROUND_ID,
+                ProjectClassSkillLoadout
+                        .spellId(RootClass.CLERIC, 2)
+                        .orElseThrow()
+        );
+        assertEquals(
                 ProjectSpellSpec.REBUKE_ID,
                 ProjectClassSkillLoadout
                         .spellId(RootClass.CLERIC, 3)
@@ -47,10 +53,11 @@ class ProjectClassSkillLoadoutTest {
                         .spellId(RootClass.MAGE, 1)
                         .isEmpty()
         );
-        assertTrue(
+        assertEquals(
+                5,
                 ProjectClassSkillLoadout
-                        .spellId(RootClass.CLERIC, 2)
-                        .isEmpty()
+                        .implementedSlots(RootClass.CLERIC)
+                        .size()
         );
         assertTrue(
                 ProjectClassSkillLoadout

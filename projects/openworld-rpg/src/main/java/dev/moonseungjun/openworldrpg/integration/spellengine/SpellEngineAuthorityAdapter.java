@@ -6,6 +6,7 @@ import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellTransactionPol
 import dev.moonseungjun.openworldrpg.combat.authority.SpellCastAuthority;
 import dev.moonseungjun.openworldrpg.combat.runtime.ClericMendRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ClericSkillRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.ConsecratedGroundRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
 import dev.moonseungjun.openworldrpg.combat.runtime.RadiantLanceRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.RebukeRuntime;
@@ -191,6 +192,16 @@ public final class SpellEngineAuthorityAdapter {
                 )
         );
 
+        ProjectSpellSpec consecratedGround = ProjectSpellSpec.consecratedGround();
+        AUTHORITY.registerPolicy(
+                consecratedGround.id(),
+                new ProjectSpellTransactionPolicy(
+                        consecratedGround,
+                        COMBAT_STATES,
+                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                )
+        );
+
         ProjectSpellSpec rebuke = ProjectSpellSpec.rebuke();
         AUTHORITY.registerPolicy(
                 rebuke.id(),
@@ -277,6 +288,12 @@ public final class SpellEngineAuthorityAdapter {
                 && !SanctuaryRuntime.canActivate(serverPlayer)) {
             return invokeStatic(attemptNone);
         }
+        if (ProjectSpellSpec.CONSECRATED_GROUND_ID.equals(spellId)
+                && player instanceof ServerPlayer serverPlayer
+                && (!acceptedStage || firstAcceptedCast)
+                && !ConsecratedGroundRuntime.canActivate(serverPlayer)) {
+            return invokeStatic(attemptNone);
+        }
 
         SpellCastAuthority.AttemptDecision decision = acceptedStage
                 ? AUTHORITY.commitAcceptedCast(
@@ -306,6 +323,10 @@ public final class SpellEngineAuthorityAdapter {
                         spellId,
                         gameTick
                 );
+                if (ProjectSpellSpec.CONSECRATED_GROUND_ID.equals(spellId)
+                        && !ConsecratedGroundRuntime.activate(serverPlayer).accepted()) {
+                    return invokeStatic(attemptNone);
+                }
             }
         }
 
