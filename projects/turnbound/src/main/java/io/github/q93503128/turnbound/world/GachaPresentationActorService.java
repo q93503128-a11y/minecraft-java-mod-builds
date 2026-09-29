@@ -5,6 +5,7 @@ import io.github.q93503128.turnbound.presentation.BattleActorEntity;
 import io.github.q93503128.turnbound.presentation.PersonalPresentationIsolation;
 import io.github.q93503128.turnbound.progression.GachaService;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,34 +23,35 @@ import java.util.UUID;
  * it owns only temporary presentation actors and never mutates progression.
  */
 public final class GachaPresentationActorService {
-    private static final int REVEAL_TICKS = 30;
     private static final Map<UUID, Active> ACTIVE = new LinkedHashMap<>();
 
     private static final class Active {
         final ServerLevel level;
-        final List<String> revealIds;
+        final List<GachaPresentationPlan.Reveal> reveals;
         int index;
-        int ticksToNext = REVEAL_TICKS;
+        int slotTick;
         int ttl;
         UUID actorId;
 
-        Active(ServerLevel level, List<String> revealIds) {
+        Active(ServerLevel level, List<GachaPresentationPlan.Reveal> reveals, int pullCount) {
             this.level = level;
-            this.revealIds = revealIds;
-            this.ttl = Math.max(100, revealIds.size() * REVEAL_TICKS + 100);
+            this.reveals = reveals;
+            this.ttl = GachaPresentationTimeline.totalTicks(reveals.size(), pullCount) + 80;
+        }
+
+        GachaPresentationPlan.Reveal current() {
+            return index >= 0 && index < reveals.size() ? reveals.get(index) : null;
         }
     }
 
     private GachaPresentationActorService() {}
 
     public static void begin(ServerPlayer player, GachaService.BatchResult result) {
-        if (player == null || !(player.level() instanceof ServerLevel level)) return;
+        if (player == null || result == null || !(player.level() instanceof ServerLevel level)) return;
         finish(player);
-        List<String> revealIds = GachaPresentationPlan.revealCharacterIds(result);
-        if (revealIds.isEmpty()) return;
-        Active active = new Active(level, revealIds);
-        ACTIVE.put(player.getUUID(), active);
-        spawnCurrent(player, active);
+        List<GachaPresentationPlan.Reveal> reveals = GachaPresentationPlan.reveals(result);
+        if (reveals.isEmpty()) return;
+        ACTIVE.put(player.getUUID(), new Active(level, reveals, result.pulls().size()));
     }
 
     public static void tick(ServerPlayer player) {
@@ -60,11 +62,18 @@ public final class GachaPresentationActorService {
             finish(player);
             return;
         }
-        if (active.index + 1 < active.revealIds.size() && --active.ticksToNext <= 0) {
+
+        active.slotTick++;
+        if (active.slotTick == GachaPresentationTimeline.REVEAL_TICK) {
+            spawnCurrent(player, active);
+        }
+        if (active.slotTick == GachaPresentationTimeline.NAME_TICK) {
+            playRevealPose(player, active);
+        }
+        if (active.slotTick >= GachaPresentationTimeline.SLOT_TICKS) {
             removeActor(active);
             active.index++;
-            active.ticksToNext = REVEAL_TICKS;
-            spawnCurrent(player, active);
+            active.slotTick = 0;
         }
     }
 
@@ -80,18 +89,46 @@ public final class GachaPresentationActorService {
     }
 
     private static void spawnCurrent(ServerPlayer player, Active active) {
-        if (active.index < 0 || active.index >= active.revealIds.size()) return;
-        String characterId = active.revealIds.get(active.index);
+        GachaPresentationPlan.Reveal reveal = active.current();
+        if (reveal == null) return;
         Vec3 position = safeRevealPosition(active.level, player);
         if (position == null) return;
+
         float yaw = faceYaw(position, player.position());
         BattleActorEntity actor = PersonalPresentationIsolation.spawnPrivateActor(
-                active.level, characterId, position, yaw, player.getUUID());
+                active.level, reveal.characterId(), position, yaw, player.getUUID());
         if (actor == null) return;
-        actor.setCustomName(Component.literal(CanonicalData.definition(characterId).name()));
+        actor.setCustomName(Component.literal(CanonicalData.definition(reveal.characterId()).name()));
         actor.setCustomNameVisible(false);
-        actor.playVictory();
+        actor.playReady();
         active.actorId = actor.getUUID();
+        revealBurst(player, position, reveal, false);
+    }
+
+    private static void playRevealPose(ServerPlayer player, Active active) {
+        GachaPresentationPlan.Reveal reveal = active.current();
+        if (reveal == null || active.actorId == null) return;
+        Entity entity = active.level.getEntity(active.actorId);
+        if (!(entity instanceof BattleActorEntity actor)) return;
+        actor.playVictory();
+        revealBurst(player, actor.position().add(0.0D, Math.max(0.8D, actor.getBbHeight() * 0.5D), 0.0D), reveal, true);
+    }
+
+    private static void revealBurst(
+            ServerPlayer player, Vec3 position, GachaPresentationPlan.Reveal reveal, boolean payoff) {
+        int intensity = GachaPresentationTimeline.intensity(reveal.stars());
+        int enchant = (payoff ? 10 : 6) + intensity * (payoff ? 6 : 4);
+        PersonalPresentationIsolation.particles(
+                (ServerLevel)player.level(), player, ParticleTypes.ENCHANT,
+                position.x, position.y + 0.7D, position.z,
+                enchant, 0.6D + intensity * 0.08D, 0.9D, 0.6D + intensity * 0.08D, 0.05D);
+        if (reveal.stars() >= 3 || reveal.newlyOwned()) {
+            int rods = 3 + intensity * (payoff ? 3 : 2) + (reveal.newlyOwned() ? 2 : 0);
+            PersonalPresentationIsolation.particles(
+                    (ServerLevel)player.level(), player, ParticleTypes.END_ROD,
+                    position.x, position.y + 0.85D, position.z,
+                    rods, 0.45D, 0.7D, 0.45D, 0.035D);
+        }
     }
 
     private static void removeActor(Active active) {
