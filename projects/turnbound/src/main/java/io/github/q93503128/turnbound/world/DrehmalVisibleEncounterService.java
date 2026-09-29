@@ -311,6 +311,11 @@ final class DrehmalVisibleEncounterService {
         private boolean ensureActors(ServerLevel level) {
             if (actorsAlive(level)) return true;
             discardActors(level);
+            var sitePosition=site.runtimePosition();
+            if(sitePosition==null||!DrehmalAdaptiveRoutePlacement.sourceContentClear(
+                    level,sitePosition.x(),sitePosition.y(),sitePosition.z(),3.5D)){
+                return false;
+            }
             if (adoptTagged(level)) {
                 updateActors(level, false);
                 return true;
@@ -384,7 +389,10 @@ final class DrehmalVisibleEncounterService {
         private boolean startBattle(ServerLevel level, ServerPlayer player) {
             List<ServerPlayer> participants = sharedParticipants(level, player);
             for (DrehmalFirstRouteCatalog.ArenaCandidate candidate : footprint.candidates()) {
-                Vec3 center = vec(candidate.center());
+                var arenaPosition=candidate.center();
+                if(!DrehmalAdaptiveRoutePlacement.sourceContentClear(
+                        level,arenaPosition.x(),arenaPosition.y(),arenaPosition.z(),5.5D))continue;
+                Vec3 center = vec(arenaPosition);
                 boolean started = participants.size() > 1
                         ? BattleSessionManager.startSharedEncounterAt(
                                 participants, player.getUUID(), slot.combatEncounterId(), false, false,
