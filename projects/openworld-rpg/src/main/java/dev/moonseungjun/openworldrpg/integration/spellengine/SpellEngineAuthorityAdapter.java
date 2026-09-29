@@ -9,6 +9,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.ClericSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
 import dev.moonseungjun.openworldrpg.combat.runtime.RadiantLanceRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.RebukeRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.SanctuaryRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatStateStore;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionService;
@@ -200,6 +201,16 @@ public final class SpellEngineAuthorityAdapter {
                 )
         );
 
+        ProjectSpellSpec sanctuary = ProjectSpellSpec.sanctuary();
+        AUTHORITY.registerPolicy(
+                sanctuary.id(),
+                new ProjectSpellTransactionPolicy(
+                        sanctuary,
+                        COMBAT_STATES,
+                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                )
+        );
+
         ProjectSpellSpec mend = ProjectSpellSpec.mend();
         AUTHORITY.registerPolicy(
                 mend.id(),
@@ -260,6 +271,13 @@ public final class SpellEngineAuthorityAdapter {
                                     ));
         }
 
+        if (ProjectSpellSpec.SANCTUARY_ID.equals(spellId)
+                && player instanceof ServerPlayer serverPlayer
+                && (!acceptedStage || firstAcceptedCast)
+                && !SanctuaryRuntime.canActivate(serverPlayer)) {
+            return invokeStatic(attemptNone);
+        }
+
         SpellCastAuthority.AttemptDecision decision = acceptedStage
                 ? AUTHORITY.commitAcceptedCast(
                         player.getUUID(),
@@ -278,11 +296,17 @@ public final class SpellEngineAuthorityAdapter {
                 && firstAcceptedCast
                 && decision == SpellCastAuthority.AttemptDecision.ALLOW
                 && player instanceof ServerPlayer serverPlayer) {
-            ClericSkillRuntime.onAcceptedCast(
-                    serverPlayer,
-                    spellId,
-                    gameTick
-            );
+            if (ProjectSpellSpec.SANCTUARY_ID.equals(spellId)) {
+                if (!SanctuaryRuntime.activate(serverPlayer).accepted()) {
+                    return invokeStatic(attemptNone);
+                }
+            } else {
+                ClericSkillRuntime.onAcceptedCast(
+                        serverPlayer,
+                        spellId,
+                        gameTick
+                );
+            }
         }
 
         return switch (decision) {
