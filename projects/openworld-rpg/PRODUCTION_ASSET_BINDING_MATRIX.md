@@ -325,7 +325,7 @@ Cleric `Consecrated Ground` reuses the already-admitted Kenney `light_03.png` / 
 
 The production precision binding is fixed at the accepted caster position for 5 seconds and resolves five one-second pulses, preserving the locked total `HealCoefficient 0.30` and enemy magic `ActionCoefficient 1.35`. Three-Grace empowerment adds the authored initial `BarrierCoefficient 0.12`; `Balanced Doctrine` treats the skill as healing/protection, so its +10% support snapshot applies to healing/barrier output but not the damage half. The `-1.25 / +3.50` vertical envelope is playtest-tunable terrain binding only.
 
-State: `RUNTIME_BOUND / BUILD_AND_MINECRAFT_VISUAL_ACCEPTANCE_PENDING`.
+State: `RUNTIME_BOUND / MINECRAFT_VISUAL_ACCEPTANCE_PENDING`. Build Openworld RPG run `36537843755` at code state `e5d5b4a782a577f35e429ce7425fd4b5785601ca` passes unit tests/build, server smoke, gameplay client startup, playtest-JAR packaging and pack packaging; this does not substitute for in-world visual/terrain/audio/feel acceptance.
 
 The cast currently uses the admitted Spell Engine healing-release support sound as a non-final audio layer. In-world boundary readability, terrain clipping, pulse feel and audio audition remain manual acceptance work.
 

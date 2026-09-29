@@ -46,6 +46,18 @@ public final class ProjectProgressionRules {
         return 0.10;
     }
 
+    public static long classSwitchGoldCost(int combatLevel) {
+        if (combatLevel < 1 || combatLevel > MAX_COMBAT_LEVEL) {
+            throw new IllegalArgumentException(
+                    "Class-switch cost requires combat Lv 1..80."
+            );
+        }
+        double raw = 50.0
+                + 15.0 * combatLevel
+                + 0.4 * combatLevel * combatLevel;
+        return Math.round(Math.min(2500.0, raw) / 10.0) * 10L;
+    }
+
     public static long classXpToNext(int rank) {
         if (rank < 1 || rank >= MAX_CLASS_RANK) {
             throw new IllegalArgumentException(

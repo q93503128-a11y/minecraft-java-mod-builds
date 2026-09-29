@@ -21,6 +21,8 @@ import dev.moonseungjun.openworldrpg.housing.R01HousingAttachments;
 import dev.moonseungjun.openworldrpg.housing.R01HousingService;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryAttachments;
 import dev.moonseungjun.openworldrpg.market.R01NessaMarketAttachments;
+import dev.moonseungjun.openworldrpg.progression.PlayerClassSwitchAttachments;
+import dev.moonseungjun.openworldrpg.progression.PlayerClassSwitchService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01ClassStarterService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01EarthloongBossLootPlanAttachments;
 import dev.moonseungjun.openworldrpg.progression.r01.R01EarthloongBossLootPlanService;
@@ -80,6 +82,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         R01QuarryRunAttributionAttachments.initialize();
         R01QuarryRoomEncounterAttachments.initialize();
         PlayerCurrencyAttachments.initialize();
+        PlayerClassSwitchAttachments.initialize();
         OrdinaryEquipmentAffixCatalogRegistry.initialize(LOGGER);
         PlayerRewardTransactionAttachments.initialize();
         PlayerInventoryAttachments.initialize();
@@ -114,6 +117,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             if (!M0PlayerVerificationBootstrap.enabled()) {
                 R01OpeningBootstrapService.ensureOpeningLoadout(handler.getPlayer());
                 R01ClassStarterService.reconcileInterruptedGrant(handler.getPlayer());
+                PlayerClassSwitchService.reconcilePending(handler.getPlayer());
             }
             PlayerRewardTransactionService.resumePending(handler.getPlayer());
             if (!M0PlayerVerificationBootstrap.enabled()) {
