@@ -120,6 +120,7 @@ class PlayerCombatStateTest {
                         0.09,
                         0.0,
                         0.0,
+                        0.0,
                         0.0
                 ),
                 0
@@ -150,6 +151,7 @@ class PlayerCombatStateTest {
                         0.0,
                         0.12,
                         0.12,
+                        0.0,
                         0.0
                 ),
                 0
@@ -199,7 +201,8 @@ class PlayerCombatStateTest {
                         0.0,
                         0.0,
                         0.0,
-                        0.20
+                        0.20,
+                        0.0
                 ),
                 0
         );
