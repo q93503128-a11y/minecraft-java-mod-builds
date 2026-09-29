@@ -323,6 +323,27 @@ arrival at the island/pier
 Avoid a long mandatory tutorial quest chain.
 Fishing, shops, museum, residents and other systems should be discovered primarily through actual play, world layout, dialogue and lightweight prompts.
 
+### Late-joining players
+A player joining an already-progressed multiplayer village should enter the **current shared village state**, not replay village-wide progression from zero.
+
+Shared progress remains shared:
+- museum/facility progression.
+- public projects.
+- unlocked village routes.
+- resident roster and village history.
+- current calendar/season/weather.
+
+The new player starts their own personal progression where appropriate:
+- personal encyclopedia.
+- resident relationships.
+- clothing/appearance ownership.
+- personal photos/records.
+- birthday/profile state.
+- personal house/Household membership choice.
+
+Give late joiners the basic lifestyle tools/onboarding information needed to participate quickly.
+Do not force them to repeat already-completed facility construction or village milestones merely for parity.
+
 ### Resident arrival/recruitment
 New residents should normally be encountered before they permanently occupy a house.
 Preferred sources include:
@@ -536,6 +557,49 @@ Free block breaking may still exist in explicitly designated wilderness/resource
 Combat can retain familiar Minecraft movement/attack foundations, but enemy placement, rewards, difficulty, safe zones and progression follow Campfire rules rather than vanilla survival progression.
 
 Minecraft freedom is retained where it helps the life-sim and constrained where it can break the authored village.
+
+### Crafting and recipe UX
+Do not make memorizing vanilla 2×2/3×3 crafting recipes a central progression skill.
+
+Core lifestyle crafting should use understandable themed stations/UI such as:
+- kitchen/cooking.
+- workbench/utility crafting.
+- furniture/woodworking where needed.
+- clothing/sewing/customization where supported.
+- exploration-equipment preparation.
+
+When a recipe is known, show required ingredients and the result directly.
+Use external high-quality crafting/kitchen/UI systems where suitable before writing a parallel custom system.
+
+Vanilla crafting may remain for a small number of low-level utility interactions if harmless, but the main game should not feel like a recipe-book survival mod.
+
+### Building and landscaping freedom
+In core village/home areas, prefer curated life-sim placement over unrestricted survival building.
+
+Player interior/yard freedom should focus on:
+- furniture.
+- decoration.
+- plants.
+- fences.
+- paths.
+- approved landscaping objects.
+- house customization options.
+
+Do not encourage:
+- dirt/cobblestone towers.
+- arbitrary walling-off of roads.
+- giant improvised block structures inside protected residential parcels.
+- destructive terrain edits that erase the authored village.
+
+Provide a dedicated landscaping layer/tool for approved yard changes such as:
+- grass/dirt/sand surface variants.
+- paths.
+- small pond/water features where technically safe.
+- modest terrain height/edge adjustments.
+- garden beds and decorative ground treatment.
+
+Large-scale cliff removal, river rerouting or unrestricted terraforming is not part of ordinary residential play.
+Broader normal Minecraft block placement/breaking can remain in specifically designated wilderness/resource zones when it benefits tactile play.
 
 Area types:
 - public/civic area.
@@ -785,6 +849,13 @@ Examples:
 - plants → planters/greenery.
 
 Use external interior/furniture designs.
+
+### Pet direction
+Do not add ordinary vanilla-style cats/dogs as a default household-pet system while the core resident cast is itself made of anthropomorphic animal characters.
+That creates an awkward world-rule contrast.
+
+Aquariums, terrariums and specimen displays already provide living home decoration.
+Small non-anthropomorphic companion creatures may be reconsidered later only if a strong external model/behavior set fits the final world style.
 
 Residents may display selected player gifts.
 Do not allow uncontrolled AI furniture replacement that gradually ruins authored interiors.
@@ -1502,6 +1573,19 @@ Combat progression is limited:
 - food buffs.
 - exploration equipment.
 
+### Exploration gear vs clothing
+Do not make visible vanilla iron/diamond/netherite armor the normal end-state appearance of island residents/players.
+
+Separate **visual lifestyle outfit** from **functional exploration protection** where practical.
+Preferred direction:
+- players keep curated clothing/appearance during ordinary village life.
+- functional protection can use dedicated exploration slots, hidden-under-outfit logic, cosmetic override slots, or purpose-built visible accessories/gear.
+- diving gear, cave lighting gear and dangerous-area protection should look like coherent lifestyle/adventure equipment rather than vanilla progression armor.
+- external clothing/armor models and compatible cosmetic-slot systems are preferred over improvised recolored vanilla armor.
+
+Do not create a large RPG defense-tier ladder just because armor exists.
+Protection progression remains shallow and tied to access/convenience/safety in dangerous exploration content.
+
 Combat rewards feed back into island life:
 - rare furniture.
 - artifacts.
@@ -1591,6 +1675,21 @@ Rules:
 - low-value system/event notices may be archived/condensed after a long in-game period rather than expanding the active inbox forever.
 - multiplayer mail delivery must not depend on both players being online simultaneously.
 
+### Offline personal-content handling
+The shared village continues to advance while other players are online; an absent player does not freeze the server calendar.
+
+Protect player-specific persistent content:
+- personal catalog deliveries.
+- important gifts/rewards.
+- claimed-but-not-collected personal rewards.
+- birthday make-up handling already defined elsewhere.
+- personal mail with attachments.
+- other explicit one-time personal entitlements.
+
+Do not create universal catch-up copies of every missed shared seasonal event.
+Ordinary fish/bugs/weather/events continue to follow the shared village calendar.
+This preserves the feeling of one living shared world while preventing important personal items from silently disappearing because the player was offline.
+
 Moved-away residents may occasionally send letters.
 
 Players can also:
@@ -1640,6 +1739,19 @@ A wardrobe manages owned clothing.
 A mirror can open appearance/clothing functionality.
 
 External 26.2-compatible player-model systems may be used if stable, but avoid exposing a raw editor if a curated game-like wardrobe provides better UX.
+
+Clothing and visible exploration gear should be **external-asset-first**:
+- everyday outfits.
+- hats/accessories.
+- rainwear.
+- winter clothing.
+- festival outfits.
+- café/work outfits.
+- diving/exploration gear.
+- light protective/adventure gear.
+
+Prefer a system that can separate visible outfit from functional protection so players do not have to choose between stats and the intended life-sim look.
+The actual adopted outfit/armor models must fit the final player-animation stack and not break guitar, sitting, fishing or photo poses.
 
 ## 37. Café
 
