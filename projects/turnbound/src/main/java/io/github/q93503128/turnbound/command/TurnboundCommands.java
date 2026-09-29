@@ -134,6 +134,9 @@ public final class TurnboundCommands {
             var candidate = DrabyelHubSurveyService.inspect(player, role);
             source.sendSuccess(() -> Component.literal("서비스 후보 · " + candidate.summary()), false);
             source.sendSuccess(() -> Component.literal("source hint · " + DrabyelHubSurveyPlan.sourceHint(role)), false);
+            for (String line : DrabyelHubSurveyPlan.sourceSeedLines(role)) {
+                source.sendSuccess(() -> Component.literal("source seed · " + line), false);
+            }
             source.sendSuccess(() -> Component.literal("catalog candidate · " + candidate.catalogPatchJson()), false);
             if (!candidate.candidateGeometryPass()) {
                 source.sendFailure(Component.literal(
