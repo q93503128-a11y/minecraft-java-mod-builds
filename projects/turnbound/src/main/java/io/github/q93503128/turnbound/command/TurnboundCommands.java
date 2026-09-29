@@ -12,6 +12,8 @@ import io.github.q93503128.turnbound.session.MultiplayerPartyService;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import io.github.q93503128.turnbound.world.DrehmalWorldBinding;
+import io.github.q93503128.turnbound.world.DrabyelHubSurveyPlan;
+import io.github.q93503128.turnbound.world.DrabyelHubSurveyService;
 import io.github.q93503128.turnbound.world.DrehmalRouteSurveyPlan;
 import io.github.q93503128.turnbound.world.DrehmalRouteSurveyService;
 import io.github.q93503128.turnbound.world.ExternalWorldBootstrap;
@@ -48,6 +50,14 @@ public final class TurnboundCommands {
                 .then(Commands.literal("survey")
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.literal("route").executes(context -> surveyRoute(context.getSource())))
+                        .then(Commands.literal("hub").executes(context -> surveyHub(context.getSource())))
+                        .then(Commands.literal("service")
+                                .then(Commands.literal("greeter").executes(context -> surveyService(context.getSource(), "GREETER")))
+                                .then(Commands.literal("travel").executes(context -> surveyService(context.getSource(), "TRAVEL")))
+                                .then(Commands.literal("market").executes(context -> surveyService(context.getSource(), "MARKET")))
+                                .then(Commands.literal("blacksmith").executes(context -> surveyService(context.getSource(), "BLACKSMITH")))
+                                .then(Commands.literal("story").executes(context -> surveyService(context.getSource(), "STORY")))
+                                .then(Commands.literal("summon").executes(context -> surveyService(context.getSource(), "SUMMON"))))
                         .then(Commands.literal("here").executes(context -> surveyHere(context.getSource()))))
                 .then(Commands.literal("profile").executes(context -> profile(context.getSource())))
                 .then(Commands.literal("party")
@@ -106,6 +116,39 @@ public final class TurnboundCommands {
             source.sendSuccess(() -> Component.literal(line), false);
         }
         return Command.SINGLE_SUCCESS;
+    }
+
+    private static int surveyHub(CommandSourceStack source) {
+        source.sendSuccess(() -> Component.literal("New Drabyel 서비스 조사 항목"), false);
+        for (String line : DrabyelHubSurveyPlan.serviceSeedLines()) {
+            source.sendSuccess(() -> Component.literal(line), false);
+        }
+        source.sendSuccess(() -> Component.literal(
+                "후보 지점에 서서 /turnbound survey service <role> 을 실행하십시오. 결과는 자동으로 production에 반영되지 않습니다."), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int surveyService(CommandSourceStack source, String role) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        try {
+            var candidate = DrabyelHubSurveyService.inspect(player, role);
+            source.sendSuccess(() -> Component.literal("서비스 후보 · " + candidate.summary()), false);
+            source.sendSuccess(() -> Component.literal("source hint · " + DrabyelHubSurveyPlan.sourceHint(role)), false);
+            source.sendSuccess(() -> Component.literal("catalog candidate · " + candidate.catalogPatchJson()), false);
+            if (!candidate.candidateGeometryPass()) {
+                source.sendFailure(Component.literal(
+                        "이 지점은 서비스 NPC 후보 지형 검사에 실패했습니다. 주변의 안정된 지점을 다시 확인하십시오."));
+            } else {
+                source.sendSuccess(() -> Component.literal(
+                        "지형 검사는 통과했습니다. 출입구 방해, 원본 NPC/상호작용 충돌, 시야와 동선을 화면에서 확인한 뒤에만 production으로 승격하십시오."), false);
+            }
+            return candidate.candidateGeometryPass() ? Command.SINGLE_SUCCESS : 0;
+        } catch (RuntimeException exception) {
+            source.sendFailure(Component.literal(exception.getMessage() == null
+                    ? "서비스 후보를 조사할 수 없습니다."
+                    : exception.getMessage()));
+            return 0;
+        }
     }
 
     private static int surveyHere(CommandSourceStack source) throws CommandSyntaxException {
