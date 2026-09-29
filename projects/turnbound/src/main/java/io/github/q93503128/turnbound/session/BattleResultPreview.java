@@ -109,10 +109,10 @@ public final class BattleResultPreview {
         for (BattleResultSummary.PartyXp member : baseParty) {
             int cap = CharacterGrowthRules.levelCap(CampaignProgressStore.growth(playerId, member.characterId()).currentStar());
             CharacterProgression.Gain gain = CharacterProgression.gain(
-                    new CharacterProgression.State(member.levelBefore(), member.xpBefore()), totalXp, cap);
+                    new CharacterProgression.State(member.levelBefore(), member.xpBefore(), member.bonusLevel()), totalXp, cap);
             out.add(new BattleResultSummary.PartyXp(
                     member.characterId(), member.name(), gain.before().level(), gain.before().xp(),
-                    gain.after().level(), gain.after().xp(), gain.xpToNextAfter()));
+                    gain.after().level(), gain.after().xp(), gain.xpToNextAfter(), gain.after().bonusLevel()));
         }
         return List.copyOf(out);
     }
