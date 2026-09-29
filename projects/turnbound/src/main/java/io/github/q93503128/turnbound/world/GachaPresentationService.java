@@ -38,11 +38,13 @@ public final class GachaPresentationService {
     private static String encode(String action, GachaService.BatchResult result) {
         StringBuilder out = new StringBuilder();
         out.append("H|").append(action).append('|').append(result.pulls().size()).append('|').append(result.crystalSpent()).append('\n');
-        for (GachaService.PullResult pull : result.pulls()) {
+        java.util.Set<Integer> spotlight = java.util.Set.copyOf(GachaPresentationPlan.spotlightIndices(result));
+        for (int i = 0; i < result.pulls().size(); i++) {
+            GachaService.PullResult pull = result.pulls().get(i);
             out.append("P|").append(pull.characterId()).append('|').append(pull.nativeStars()).append('|')
                     .append(pull.newlyOwned() ? 1 : 0).append('|').append(pull.starEssenceGranted()).append('|')
                     .append(pull.pityAfter()).append('|').append(pull.bonusLevelGranted()).append('|')
-                    .append(pull.bonusLevelAfter()).append('\n');
+                    .append(pull.bonusLevelAfter()).append('|').append(spotlight.contains(i) ? 1 : 0).append('\n');
         }
         return out.toString();
     }
