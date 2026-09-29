@@ -1,0 +1,69 @@
+{
+  "school": "spell_power:healing",
+  "range": 7.0,
+  "tier": 1,
+  "group": "cleric_holy",
+  "active": {
+    "cast": {
+      "duration": 0.0
+    }
+  },
+  "release": {
+    "animation": {
+      "id": "spell_engine:one_handed_area_release_air_wave",
+      "speed": 0.85
+    },
+    "visuals": {
+      "models": [
+        {
+          "model_id": "openworld_rpg:spell_effect/sanctuary_ward",
+          "light_emission": "GLOW_TRANSLUCENT",
+          "scale": 1.0,
+          "duration": 160,
+          "positioning": {
+            "vertical": 0.02
+          }
+        }
+      ],
+      "particles": [
+        {
+          "id": "spell_engine:magic_heal",
+          "appearance": {
+            "color": 4294954239,
+            "motion": "ASCEND"
+          },
+          "batch": {
+            "count": 10.0,
+            "shape": "CIRCLE",
+            "anchor": "ENTITY",
+            "vertical_origin": 0.05,
+            "min_speed": 0.02,
+            "max_speed": 0.10,
+            "width_factor": 2.0
+          }
+        }
+      ]
+    },
+    "sound": {
+      "id": "spell_engine:generic_healing_release",
+      "randomness": 0.03
+    }
+  },
+  "target": {
+    "type": "NONE"
+  },
+  "deliver": {
+    "type": "DIRECT"
+  },
+  "impacts": [],
+  "cost": {
+    "batching": false,
+    "exhaust": 0.0,
+    "durability": 0,
+    "cooldown": {
+      "attempt_duration": 0.0,
+      "duration": 0.0,
+      "hosting_item": false
+    }
+  }
+}
