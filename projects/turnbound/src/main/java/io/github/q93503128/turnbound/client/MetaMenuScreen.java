@@ -31,7 +31,7 @@ public final class MetaMenuScreen extends Screen {
     private record DetailLine(String text, int color) {}
 
     private static final int TEXT=0xFFF4F0E6, SECONDARY=0xFFAEB7C6, MUTED=0xFF707987;
-    private static final int BLUE=0xFF6DC6FF, GREEN=0xFF62D39A, GOLD=0xFFFFC857, DANGER=0xFFFF6B6B;
+    private static final int BLUE=0xFF6DC6FF, GREEN=0xFF62D39A, GOLD=0xFFFFC857, PURPLE=0xFFC794FF, DANGER=0xFFFF6B6B;
     private static final int CONTENT_OFFSET=88, FOOTER_OFFSET=42, CONTROL_H=20;
     private static final int COMPACT_CONTENT_OFFSET=82, COMPACT_FOOTER_OFFSET=30;
 
@@ -771,7 +771,7 @@ public final class MetaMenuScreen extends Screen {
         int x,y,w;
         if(compactSkills){
             x=left+16;y=contentTop()+27;w=Math.max(80,panelWidth-32);
-            String header=r.name()+" · "+(r.owned()?(r.awakened()?"각성 · ":"")+"★"+r.nativeStar()+" Lv."+r.level():"미보유 · ★"+r.nativeStar())
+            String header=r.name()+" · "+(r.owned()?(r.awakened()?"각성 · ":"")+"★"+r.nativeStar()+" "+levelLabel(r):"미보유 · ★"+r.nativeStar())
                     +" · "+primaryRoleLabel(r.primaryRole());
             g.text(font,Component.literal(UiTextLayout.fit(header,w)),x,y,r.owned()?TEXT:MUTED,true);
         }else{
