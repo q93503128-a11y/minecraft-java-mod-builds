@@ -35,6 +35,11 @@ final class DrehmalFieldNpcRuntime {
             active.add(npc.locator());
             Vec3 pos=vec(site.runtimePosition());
             if(!demanded(level,pos)){discard(level,npc.locator());continue;}
+            if(!DrehmalAdaptiveRoutePlacement.sourceContentClear(
+                    level,site.runtimePosition().x(),site.runtimePosition().y(),site.runtimePosition().z(),2.75D)){
+                discard(level,npc.locator());
+                continue;
+            }
             BattleActorEntity actor=ensure(level,npc,pos);
             if(actor!=null)present(level,npc,actor);
         }
