@@ -2,6 +2,9 @@ package dev.moonseungjun.openworldrpg.gathering;
 
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryService;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryState;
+import dev.moonseungjun.openworldrpg.progression.r01.R01MainQuestService;
+import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerState;
+import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerStateService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01WorldActionService;
 import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeService;
 import java.util.ArrayList;
@@ -146,7 +149,11 @@ public final class R01GatheringService {
 
         R01GatheringRules.ResourceDefinition definition =
                 R01GatheringRules.requireResource(pending.resourceId());
-        if (definition.dustQuestCredit()) {
+        if (definition.dustQuestCredit()
+                && R01MainQuestService.canCreditQuarryRoadAction(
+                        R01PlayerStateService.state(player),
+                        R01PlayerState.QuarryRoadAction.R01_GATHERING_NODE
+                )) {
             R01WorldActionService.recordValidGather(player, pending.resourceId());
         }
 

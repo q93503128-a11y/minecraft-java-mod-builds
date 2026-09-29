@@ -5,7 +5,6 @@ import dev.moonseungjun.openworldrpg.combat.runtime.ProjectDamageApplicationCont
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectRangedProjectileContext;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
-import dev.moonseungjun.openworldrpg.combat.state.ProjectWeaponFamily;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.multiplayer.MultiplayerCombatRules;
 import net.minecraft.server.level.ServerLevel;
@@ -52,42 +51,35 @@ public abstract class ExternalActorDamageAuthorityMixin {
             if (source.getEntity() instanceof Player shooter
                     && source.getDirectEntity() instanceof AbstractArrow) {
                 long gameTick = level.getGameTime();
-                var build = CombatStateServices.combatBuilds()
-                        .build(shooter.getUUID())
-                        .orElse(null);
+                var shot = ProjectRangedProjectileContext.shot(
+                        (AbstractArrow) source.getDirectEntity(),
+                        shooter
+                ).orElse(null);
                 var targetSnapshot = ExternalActorBindingRuntime
                         .projectTargetSnapshot(self, gameTick)
                         .orElse(null);
-                if (build == null || targetSnapshot == null) {
+                if (shot == null || targetSnapshot == null) {
                     cir.setReturnValue(false);
                     return;
                 }
 
-                CombatDamageAuthority.RangedDamageDecision decision;
-                if (build.equipment().weaponFamily() == ProjectWeaponFamily.BOW) {
-                    var shot = ProjectRangedProjectileContext.bowShot(
-                            (AbstractArrow) source.getDirectEntity(),
-                            shooter
-                    ).orElse(null);
-                    if (shot == null) {
-                        cir.setReturnValue(false);
-                        return;
-                    }
-                    decision = CombatDamageAuthority.authorizeBowProjectileBasic(
-                            amount,
-                            shot.drawPower(),
-                            build,
-                            targetSnapshot,
-                            shooter.getRandom().nextDouble()
-                    );
-                } else {
-                    decision = CombatDamageAuthority.authorizeProjectileBasic(
-                            amount,
-                            build,
-                            targetSnapshot,
-                            shooter.getRandom().nextDouble()
-                    );
-                }
+                CombatDamageAuthority.RangedDamageDecision decision =
+                        switch (shot.weaponFamily()) {
+                            case BOW -> CombatDamageAuthority.authorizeBowProjectileBasic(
+                                    amount,
+                                    shot.drawPower(),
+                                    shot.build(),
+                                    targetSnapshot,
+                                    shooter.getRandom().nextDouble()
+                            );
+                            case CROSSBOW -> CombatDamageAuthority.authorizeProjectileBasic(
+                                    amount,
+                                    shot.build(),
+                                    targetSnapshot,
+                                    shooter.getRandom().nextDouble()
+                            );
+                            default -> CombatDamageAuthority.RangedDamageDecision.rejected();
+                        };
                 if (!decision.accepted()) {
                     cir.setReturnValue(false);
                     return;

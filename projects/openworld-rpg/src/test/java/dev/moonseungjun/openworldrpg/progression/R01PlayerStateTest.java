@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.mojang.serialization.JsonOps;
+import dev.moonseungjun.openworldrpg.progression.r01.R01MainQuestService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01MainStage;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerState;
 import org.junit.jupiter.api.Test;
@@ -72,6 +73,47 @@ class R01PlayerStateTest {
                 () -> R01PlayerState.initial().recordQuarryRoadAction(
                         R01PlayerState.QuarryRoadAction.LOST_CARGO,
                         1
+                )
+        );
+    }
+
+    @Test
+    void quarryRoadCreditWindowRejectsPreActivationDuplicatesAndPostCompletionActions() {
+        var inactive = R01PlayerState.initial();
+        assertFalse(R01MainQuestService.canCreditQuarryRoadAction(
+                inactive,
+                R01PlayerState.QuarryRoadAction.R01_GATHERING_NODE
+        ));
+
+        var active = inactive
+                .markFirstRootClassSelected(1)
+                .markStarterPackageClaimed(2);
+        assertTrue(R01MainQuestService.canCreditQuarryRoadAction(
+                active,
+                R01PlayerState.QuarryRoadAction.R01_GATHERING_NODE
+        ));
+
+        var once = active.recordQuarryRoadAction(
+                R01PlayerState.QuarryRoadAction.R01_GATHERING_NODE,
+                3
+        );
+        assertFalse(R01MainQuestService.canCreditQuarryRoadAction(
+                once,
+                R01PlayerState.QuarryRoadAction.R01_GATHERING_NODE
+        ));
+
+        var completed = once
+                .recordQuarryRoadAction(R01PlayerState.QuarryRoadAction.LOST_CARGO, 4)
+                .recordQuarryRoadAction(R01PlayerState.QuarryRoadAction.BROKEN_ROAD_MARKER, 5);
+        assertFalse(R01MainQuestService.canCreditQuarryRoadAction(
+                completed,
+                R01PlayerState.QuarryRoadAction.MEADOW_VIPER
+        ));
+        assertEquals(
+                completed,
+                completed.recordQuarryRoadAction(
+                        R01PlayerState.QuarryRoadAction.MEADOW_VIPER,
+                        6
                 )
         );
     }

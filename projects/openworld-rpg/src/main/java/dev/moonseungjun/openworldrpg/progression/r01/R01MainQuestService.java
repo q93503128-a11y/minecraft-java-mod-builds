@@ -21,6 +21,15 @@ public final class R01MainQuestService {
         Objects.requireNonNull(action, "action");
 
         R01PlayerState before = R01PlayerStateService.state(player);
+        if (!before.opening().mainStage().isAtLeast(R01MainStage.QUARRY_ROAD_ACTIVE)) {
+            throw new IllegalStateException(
+                    "Dust on the Quarry Road action credit requires the active main objective."
+            );
+        }
+        if (before.opening().mainStage().isAtLeast(R01MainStage.QUARRY_ROAD_COMPLETE)) {
+            return new QuarryRoadActionResult(before, false);
+        }
+
         boolean wasComplete = dustCompleted(before);
         boolean actionAlreadyCredited =
                 (before.opening().quarryRoadActionBits() & action.mask()) != 0;
@@ -47,6 +56,17 @@ public final class R01MainQuestService {
         }
 
         return new QuarryRoadActionResult(after, newlyCompleted);
+    }
+
+    public static boolean canCreditQuarryRoadAction(
+            R01PlayerState state,
+            R01PlayerState.QuarryRoadAction action
+    ) {
+        Objects.requireNonNull(state, "state");
+        Objects.requireNonNull(action, "action");
+        return state.opening().mainStage().isAtLeast(R01MainStage.QUARRY_ROAD_ACTIVE)
+                && !state.opening().mainStage().isAtLeast(R01MainStage.QUARRY_ROAD_COMPLETE)
+                && (state.opening().quarryRoadActionBits() & action.mask()) == 0;
     }
 
     /**

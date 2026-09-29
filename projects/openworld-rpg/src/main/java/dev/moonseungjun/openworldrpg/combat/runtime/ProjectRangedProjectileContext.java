@@ -1,9 +1,11 @@
 package dev.moonseungjun.openworldrpg.combat.runtime;
 
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
+import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatBuildState;
 import dev.moonseungjun.openworldrpg.combat.state.ProjectWeaponFamily;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.WeakHashMap;
@@ -13,14 +15,14 @@ import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 
 /**
- * Server-side launch metadata that donor projectile damage cannot reconstruct safely at impact.
+ * Server-side immutable launch metadata for project-owned ranged basics.
  *
- * <p>BowItem receives the final launch power after Ranged Weapon API has applied its authoritative
- * pull-time handling. We preserve that value on the projectile boundary and use it only as a
- * project basic-attack coefficient input. Donor projectile damage remains non-authoritative.</p>
+ * <p>The projectile captures the complete canonical combat build at release. Impact authority must
+ * use this snapshot rather than the shooter's then-current equipment/class, so swapping gear while
+ * an arrow or bolt is in flight cannot alter damage, critical affixes, weapon family or poise.</p>
  */
 public final class ProjectRangedProjectileContext {
-    private static final Map<AbstractArrow, BowShot> BOW_SHOTS =
+    private static final Map<AbstractArrow, RangedShot> SHOTS =
             Collections.synchronizedMap(new WeakHashMap<>());
 
     private ProjectRangedProjectileContext() {
@@ -31,6 +33,23 @@ public final class ProjectRangedProjectileContext {
             Projectile projectile,
             float drawPower
     ) {
+        recordShot(shooter, projectile, ProjectWeaponFamily.BOW, drawPower);
+    }
+
+    public static void recordCrossbowShot(
+            LivingEntity shooter,
+            Projectile projectile
+    ) {
+        recordShot(shooter, projectile, ProjectWeaponFamily.CROSSBOW, 1.0F);
+    }
+
+    private static void recordShot(
+            LivingEntity shooter,
+            Projectile projectile,
+            ProjectWeaponFamily expectedFamily,
+            float drawPower
+    ) {
+        Objects.requireNonNull(expectedFamily, "expectedFamily");
         if (shooter.level().isClientSide()
                 || !(shooter instanceof Player player)
                 || !(projectile instanceof AbstractArrow arrow)
@@ -40,35 +59,65 @@ public final class ProjectRangedProjectileContext {
             return;
         }
 
-        var build = CombatStateServices.combatBuilds().build(player.getUUID()).orElse(null);
-        if (build == null || build.equipment().weaponFamily() != ProjectWeaponFamily.BOW) {
+        PlayerCombatBuildState build = CombatStateServices.combatBuilds()
+                .build(player.getUUID())
+                .orElse(null);
+        if (build == null || build.equipment().weaponFamily() != expectedFamily) {
             return;
         }
 
-        BOW_SHOTS.put(
+        SHOTS.put(
                 arrow,
-                new BowShot(player.getUUID(), drawPower)
+                new RangedShot(
+                        player.getUUID(),
+                        expectedFamily,
+                        build,
+                        drawPower
+                )
         );
     }
 
-    public static Optional<BowShot> bowShot(
+    public static Optional<RangedShot> shot(
             AbstractArrow arrow,
             Player expectedShooter
     ) {
-        BowShot shot = BOW_SHOTS.get(arrow);
+        RangedShot shot = SHOTS.get(arrow);
         if (shot == null || !shot.shooterId().equals(expectedShooter.getUUID())) {
             return Optional.empty();
         }
         return Optional.of(shot);
     }
 
-    public record BowShot(UUID shooterId, double drawPower) {
-        public BowShot {
-            if (shooterId == null) {
-                throw new IllegalArgumentException("shooterId must not be null.");
+    public record RangedShot(
+            UUID shooterId,
+            ProjectWeaponFamily weaponFamily,
+            PlayerCombatBuildState build,
+            double drawPower
+    ) {
+        public RangedShot {
+            Objects.requireNonNull(shooterId, "shooterId");
+            Objects.requireNonNull(weaponFamily, "weaponFamily");
+            Objects.requireNonNull(build, "build");
+            if (weaponFamily != ProjectWeaponFamily.BOW
+                    && weaponFamily != ProjectWeaponFamily.CROSSBOW) {
+                throw new IllegalArgumentException(
+                        "Ranged projectile snapshot supports only Bow/Crossbow basics."
+                );
+            }
+            if (build.equipment().weaponFamily() != weaponFamily) {
+                throw new IllegalArgumentException(
+                        "Ranged projectile build family must match launch family."
+                );
             }
             if (!Double.isFinite(drawPower) || drawPower <= 0.0 || drawPower > 1.0) {
-                throw new IllegalArgumentException("drawPower must be finite and inside (0, 1].");
+                throw new IllegalArgumentException(
+                        "drawPower must be finite and inside (0, 1]."
+                );
+            }
+            if (weaponFamily == ProjectWeaponFamily.CROSSBOW && drawPower != 1.0) {
+                throw new IllegalArgumentException(
+                        "Crossbow projectile snapshots are committed full shots."
+                );
             }
         }
     }

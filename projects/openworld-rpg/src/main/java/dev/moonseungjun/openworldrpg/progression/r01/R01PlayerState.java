@@ -177,6 +177,9 @@ public record R01PlayerState(
                     "Dust on the Quarry Road action credit requires the active main objective."
             );
         }
+        if (opening.mainStage().isAtLeast(R01MainStage.QUARRY_ROAD_COMPLETE)) {
+            return this;
+        }
 
         int nextBits = opening.quarryRoadActionBits() | action.mask();
         if (nextBits == opening.quarryRoadActionBits()) {
