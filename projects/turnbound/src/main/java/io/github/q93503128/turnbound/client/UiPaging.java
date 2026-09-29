@@ -4,9 +4,11 @@ package io.github.q93503128.turnbound.client;
 final class UiPaging {
     private UiPaging() {}
 
-    static int rowsThatFit(int top, int bottomExclusive, int rowHeight, int minimum) {
+    static int rowsThatFit(int top, int bottomExclusive, int rowHeight, int preferredMinimum) {
         int available = Math.max(0, bottomExclusive - top);
-        return Math.max(minimum, Math.max(1, available / Math.max(1, rowHeight)));
+        int fit = available / Math.max(1, rowHeight);
+        // A preferred row count is only a density hint. It must never create controls outside the viewport.
+        return Math.max(1, fit);
     }
 
     static int pageCount(int total, int perPage) {
