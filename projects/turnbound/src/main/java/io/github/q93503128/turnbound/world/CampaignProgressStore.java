@@ -103,7 +103,9 @@ public final class CampaignProgressStore {
 
         progress.profile.grant(PlayerProfile.Currency.GOLD, preview.gold());
         for (BattleResultSummary.PartyXp member : preview.party()) {
-            progress.characters.put(member.characterId(), new CharacterProgression.State(member.levelAfter(), member.xpAfter()));
+            CharacterProgression.State current = requireCharacter(progress, member.characterId());
+            progress.characters.put(member.characterId(),
+                    new CharacterProgression.State(member.levelAfter(), member.xpAfter(), current.bonusLevel()));
         }
         grantReserveXp(progress, preview.xp());
 
@@ -175,7 +177,7 @@ public final class CampaignProgressStore {
             case 10 -> GACHA.summonStandardTen(progress.profile);
             default -> throw new IllegalArgumentException("Standard Archive supports only 1 or 10 pulls");
         };
-        registerNewCharacters(progress, result);
+        result = applySummonProgression(progress, result);
         progress.dirty = true;
         return result;
     }
@@ -183,7 +185,7 @@ public final class CampaignProgressStore {
     public static GachaService.BatchResult summonStarter(UUID playerId) {
         PlayerProgress progress = player(playerId);
         GachaService.BatchResult result = GACHA.summonStarterTen(progress.profile);
-        registerNewCharacters(progress, result);
+        result = applySummonProgression(progress, result);
         progress.dirty = true;
         return result;
     }
@@ -315,7 +317,7 @@ public final class CampaignProgressStore {
         PlayerProgress progress = player(playerId);
         CharacterProgression.State level = requireCharacter(progress, characterId);
         CharacterGrowthRules.State growth = requireGrowth(progress, characterId);
-        BattleStats base = CanonicalData.definition(characterId, level.level(), growth.currentStar(), growth.awakened()).stats();
+        BattleStats base = CanonicalData.definition(characterId, level.effectiveLevel(), growth.currentStar(), growth.awakened()).stats();
         EquipmentInventory.StatTotals gear = progress.equipment.statTotals(characterId);
         int hp = Math.max(1, (int)Math.floor(base.maxHp() * (1.0 + gear.value("HP_PCT"))));
         int atk = Math.max(0, (int)Math.floor(base.attack() * (1.0 + gear.value("ATK_PCT"))));
@@ -446,8 +448,28 @@ public final class CampaignProgressStore {
         return CharacterProgression.gain(before, xp, cap);
     }
 
-    private static void registerNewCharacters(PlayerProgress progress, GachaService.BatchResult result) {
-        for (GachaService.PullResult pull : result.pulls()) if (pull.newlyOwned()) initializeCharacter(progress, pull.characterId());
+    private static GachaService.BatchResult applySummonProgression(PlayerProgress progress, GachaService.BatchResult result) {
+        List<GachaService.PullResult> resolved = new ArrayList<>(result.pulls().size());
+        for (GachaService.PullResult pull : result.pulls()) {
+            if (pull.newlyOwned()) {
+                initializeCharacter(progress, pull.characterId());
+                resolved.add(new GachaService.PullResult(
+                        pull.characterId(), pull.nativeStars(), true, pull.starEssenceGranted(), pull.pityAfter(), 0, 0));
+                continue;
+            }
+
+            initializeCharacter(progress, pull.characterId());
+            CharacterProgression.State before = requireCharacter(progress, pull.characterId());
+            CharacterProgression.State after = before.grantDuplicateBonus();
+            progress.characters.put(pull.characterId(), after);
+            int granted = after.bonusLevel() > before.bonusLevel() ? 1 : 0;
+            resolved.add(new GachaService.PullResult(
+                    pull.characterId(), pull.nativeStars(), false, pull.starEssenceGranted(), pull.pityAfter(),
+                    granted, after.bonusLevel()));
+        }
+        GachaService.BatchResult enriched = new GachaService.BatchResult(resolved, result.crystalSpent());
+        progress.profile.annotateRecentSummonBonuses(enriched.pulls());
+        return enriched;
     }
 
     private static void initializeCharacter(PlayerProgress progress, String characterId) {
