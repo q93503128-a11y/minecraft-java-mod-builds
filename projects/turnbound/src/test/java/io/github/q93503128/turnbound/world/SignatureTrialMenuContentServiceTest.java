@@ -37,7 +37,7 @@ class SignatureTrialMenuContentServiceTest {
     }
 
     @Test
-    void legacyMaterialCharactersRemainUnavailableWithoutDeveloperFacingCopy() {
+    void unresolvedLowRarityAwakeningRoutesStayBlockedWithoutDeveloperFacingCopy() {
         UUID playerId = UUID.randomUUID();
         try {
             List<String> rows = SignatureTrialMenuContentService.encode(playerId).lines()
@@ -52,6 +52,31 @@ class SignatureTrialMenuContentServiceTest {
                 assertFalse(p[16].contains("CANON GAP"));
                 assertTrue(p[16].contains("열려 있지 않습니다"));
             }
+        } finally {
+            CampaignProgressStore.resetForTests(playerId);
+        }
+    }
+
+    @Test
+    void externalProjectionCarriesAwakeningReadinessWithoutLegacyTrialCopy() {
+        UUID playerId = UUID.randomUUID();
+        try {
+            CampaignProgressStore.restore(playerId, new CampaignProgressStore.Snapshot(
+                    new PlayerProfile.Snapshot(GrowthRulesV1.awakeningGoldCost(), 0, 0, 0,
+                            Set.of("P01"), 0, false, false),
+                    Map.of("P01", new CharacterProgression.State(60, 0)),
+                    Map.of("P01", new CharacterGrowthRules.State(4, false, true, false)),
+                    EquipmentInventory.Snapshot.empty(), QuestProgress.Snapshot.empty(),
+                    Set.of(), Set.of(), Set.of()));
+
+            String[] row = SignatureTrialMenuContentService.encodeAwakeningProjection(playerId).lines()
+                    .filter(line -> line.startsWith("T|P01|"))
+                    .findFirst().orElseThrow().split("\\|", -1);
+
+            assertEquals(17, row.length);
+            assertEquals("", row[2], "external projection must not revive a legacy Signature Trial title");
+            assertEquals("1", row[14], "Awakening readiness still reaches the client");
+            assertEquals("", row[15], "external projection must not revive a legacy trial objective");
         } finally {
             CampaignProgressStore.resetForTests(playerId);
         }
