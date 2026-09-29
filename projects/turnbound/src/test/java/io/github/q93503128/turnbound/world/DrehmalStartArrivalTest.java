@@ -6,10 +6,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class DrehmalStartArrivalTest {
     @Test
-    void onlyLegacyHubStateMigratesToTheFirstRoute() {
+    void onlyExplicitLegacyDirectHubStateMigratesToTheFirstRoute() {
         assertTrue(DrehmalStartMigrationRules.shouldMigrateLegacyHubArrival(false,true,true));
         assertFalse(DrehmalStartMigrationRules.shouldMigrateLegacyHubArrival(true,true,true));
-        assertFalse(DrehmalStartMigrationRules.shouldMigrateLegacyHubArrival(false,false,true));
+        assertFalse(DrehmalStartMigrationRules.shouldMigrateLegacyHubArrival(false,false,true),
+                "normal HUB_REACHED progress is not legacy direct-arrival provenance");
         assertFalse(DrehmalStartMigrationRules.shouldMigrateLegacyHubArrival(false,true,false));
     }
 }
