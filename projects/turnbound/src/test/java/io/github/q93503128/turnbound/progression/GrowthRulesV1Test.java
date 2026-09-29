@@ -16,6 +16,14 @@ class GrowthRulesV1Test {
     }
 
     @Test
+    void duplicateBonusExtendsEffectiveLevelWithoutChangingXpCap() {
+        assertEquals(60, GrowthRulesV1.maxLevel());
+        assertEquals(10, GrowthRulesV1.duplicateBonusMax());
+        assertEquals(70, GrowthRulesV1.effectiveMaxLevel());
+        assertTrue(GrowthRulesV1.characterLevelMultiplier(70) > GrowthRulesV1.characterLevelMultiplier(60));
+    }
+
+    @Test
     void levelCurveIsEarlyFastLaterFlatterAndEndsInsideV1TargetBand() {
         double lv10 = GrowthRulesV1.characterLevelMultiplier(10);
         double lv30 = GrowthRulesV1.characterLevelMultiplier(30);
