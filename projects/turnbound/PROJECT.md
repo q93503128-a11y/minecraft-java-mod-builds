@@ -395,13 +395,26 @@ Required remaining validation for this block is visual/client-side:
 - skip cleanup
 - actual audio balance
 
+Build TURNBOUND #928 / run `36518239813` completed successfully for commit
+`3f16733edb6507085426cc9bb91ff06b33b27d55`.
+
+Verified:
+- Gradle test/build: PASS
+- NeoForge dedicated-server smoke: PASS — `Done (3.231s)`
+- JAR verification: PASS
+- one-click Modrinth pack verification: PASS
+- artifact upload: PASS — `turnbound-v04-workbranch`, artifact id `11011891955`
+- JAR SHA-256: `cfd3764b3ada1eb5a0c356f3e60da3807c03802d9e3aac3ebdf170cce32fc4ff`
+- MRPACK SHA-256: `8db85f1a66e7b293d36a71ed150d28f6282d4e7b7dcfe7e211ed0358bf5671a2`
+
 Until actual client observation:
 - CODE REVIEWED: YES
-- TESTED: pending branch workflow
-- BUILD VERIFIED: pending branch workflow
-- JAR PRODUCED: pending branch workflow
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
 
 ## Economy
 
