@@ -75,7 +75,7 @@ class SanctuarySpellResourceTest {
                         .get("type")
                         .getAsString()
         );
-        assertTrue(root.getAsJsonArray("impacts").isEmpty());
+        assertEquals(0, root.getAsJsonArray("impacts").size());
 
         JsonObject model = root
                 .getAsJsonObject("release")
