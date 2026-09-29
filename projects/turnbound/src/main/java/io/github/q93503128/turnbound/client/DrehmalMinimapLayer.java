@@ -178,7 +178,7 @@ public final class DrehmalMinimapLayer implements GuiLayer {
             if (maxAxis > clampRadius) continue;
             int sx = mapX + MAP_SIZE / 2 + (int)Math.round(dx / STEP * CELL);
             int sy = mapY + MAP_SIZE / 2 + (int)Math.round(dz / STEP * CELL);
-            int color = TurnboundUiTokens.BLUE;
+            int color = TurnboundUiTokens.PRIMARY;
             graphics.fill(sx - 2, sy - 2, sx + 3, sy + 3, 0xAA111317);
             graphics.fill(sx - 1, sy - 1, sx + 2, sy + 2, color);
         }
