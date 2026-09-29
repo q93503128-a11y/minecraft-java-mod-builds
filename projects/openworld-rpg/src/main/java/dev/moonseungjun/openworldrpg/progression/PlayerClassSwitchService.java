@@ -221,9 +221,9 @@ public final class PlayerClassSwitchService {
     ) {
         public SwitchResult {
             Objects.requireNonNull(status, "status");
-            if (goldCost < 0L || goldAfter < 0L) {
+            if (goldCost < 0L) {
                 throw new IllegalArgumentException(
-                        "Class-switch Gold values must be non-negative."
+                        "Class-switch cost must be non-negative."
                 );
             }
             if (status == SwitchStatus.SWITCHED) {

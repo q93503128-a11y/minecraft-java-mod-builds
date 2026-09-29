@@ -47,9 +47,6 @@ public record PlayerCurrencyState(
                     "Unsupported currency schema version: " + schemaVersion
             );
         }
-        if (gold < 0L) {
-            throw new IllegalArgumentException("Gold must be non-negative.");
-        }
         appliedCreditTransactionIds = Set.copyOf(
                 Objects.requireNonNull(
                         appliedCreditTransactionIds,
@@ -137,6 +134,36 @@ public record PlayerCurrencyState(
                 new PlayerCurrencyState(
                         schemaVersion,
                         gold - amount,
+                        appliedCreditTransactionIds,
+                        Set.copyOf(nextTransactions)
+                ),
+                DebitStatus.APPLIED
+        );
+    }
+
+    /**
+     * Death-penalty-only debit that may take Gold below zero.
+     *
+     * <p>Ordinary purchases/services must continue using {@link #debitOnce(String, long)}, which
+     * rejects insufficient spendable Gold. Negative balances are therefore debt, not extra
+     * purchasing power.</p>
+     */
+    public DebitResult debitIntoDebtOnce(String transactionId, long amount) {
+        requireTransactionId(transactionId, "transactionId");
+        if (amount <= 0L) {
+            throw new IllegalArgumentException("Debit amount must be positive.");
+        }
+        if (appliedDebitTransactionIds.contains(transactionId)) {
+            return new DebitResult(this, DebitStatus.ALREADY_APPLIED);
+        }
+
+        long nextGold = Math.subtractExact(gold, amount);
+        Set<String> nextTransactions = new HashSet<>(appliedDebitTransactionIds);
+        nextTransactions.add(transactionId);
+        return new DebitResult(
+                new PlayerCurrencyState(
+                        schemaVersion,
+                        nextGold,
                         appliedCreditTransactionIds,
                         Set.copyOf(nextTransactions)
                 ),

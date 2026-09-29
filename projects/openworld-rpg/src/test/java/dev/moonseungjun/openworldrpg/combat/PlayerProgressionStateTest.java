@@ -150,6 +150,27 @@ class PlayerProgressionStateTest {
     }
 
     @Test
+    void currentLevelXpMayBeReducedWithoutLosingLevel() {
+        var state = PlayerProgressionState.initial()
+                .grantCombatXpOnce(
+                        "openworld_rpg:test/death_xp_seed",
+                        100
+                );
+        var reduced = state.withCurrentCombatXp(94);
+
+        assertEquals(1, reduced.combatLevel());
+        assertEquals(94L, reduced.combatXp());
+        assertEquals(
+                state.appliedCombatXpTransactionIds(),
+                reduced.appliedCombatXpTransactionIds()
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> reduced.withCurrentCombatXp(-1)
+        );
+    }
+
+    @Test
     void loweringLevelBelowExistingAllocationFailsClosed() {
         var state = PlayerProgressionState.initial()
                 .withCombatLevel(8)

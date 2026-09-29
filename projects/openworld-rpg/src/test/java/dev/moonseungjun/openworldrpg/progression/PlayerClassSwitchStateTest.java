@@ -94,6 +94,18 @@ class PlayerClassSwitchStateTest {
     }
 
     @Test
+    void insufficientGoldResultMayReportCanonicalDeathDebt() {
+        var result = PlayerClassSwitchService.SwitchResult.rejected(
+                PlayerClassSwitchService.SwitchStatus.INSUFFICIENT_GOLD,
+                RootClass.MAGE,
+                200,
+                -80
+        );
+
+        assertEquals(-80L, result.goldAfter());
+    }
+
+    @Test
     void stateSurvivesCodecRoundTrip() {
         var original = PlayerClassSwitchState.initial().prepare(
                 RootClass.GUARDIAN,

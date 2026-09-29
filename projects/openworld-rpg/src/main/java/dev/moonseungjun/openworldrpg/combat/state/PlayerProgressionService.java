@@ -24,6 +24,40 @@ public final class PlayerProgressionService {
         return replace(player, state(player).withCombatLevel(combatLevel));
     }
 
+    /**
+     * Exact current-Lv EXP loss bridge used by the automatic death penalty.
+     *
+     * <p>The caller persists the expected before/after values before invoking this method. Replays
+     * therefore accept the already-applied value but fail closed if another mutation diverged.</p>
+     */
+    public static boolean applyCurrentLevelXpLoss(
+            Player player,
+            long expectedBefore,
+            long expectedAfter
+    ) {
+        if (expectedBefore < 0L
+                || expectedAfter < 0L
+                || expectedAfter > expectedBefore) {
+            throw new IllegalArgumentException(
+                    "Invalid current-Lv EXP loss bounds."
+            );
+        }
+        PlayerProgressionState current = state(player);
+        if (current.combatXp() == expectedAfter) {
+            return false;
+        }
+        if (current.combatXp() != expectedBefore) {
+            throw new IllegalStateException(
+                    "Current-Lv EXP diverged from prepared death penalty."
+            );
+        }
+        replace(
+                player,
+                current.withCurrentCombatXp(expectedAfter)
+        );
+        return true;
+    }
+
     public static PlayerProgressionState selectClass(Player player, RootClass rootClass) {
         Objects.requireNonNull(rootClass, "rootClass");
         PlayerProgressionState current = state(player);

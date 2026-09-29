@@ -57,6 +57,65 @@ class PlayerCurrencyStateTest {
     }
 
     @Test
+    void deathDebitMayCreateDebtWithoutGrantingPurchasePower() {
+        var funded = PlayerCurrencyState.initial()
+                .creditOnce("openworld_rpg:test/start", 20);
+        var death = funded.debitIntoDebtOnce(
+                "openworld_rpg:death_penalty/1/gold",
+                100
+        );
+        var retry = death.state().debitIntoDebtOnce(
+                "openworld_rpg:death_penalty/1/gold",
+                100
+        );
+        var purchase = death.state().debitOnce(
+                "openworld_rpg:test/purchase",
+                1
+        );
+
+        assertEquals(-80L, death.state().gold());
+        assertEquals(
+                PlayerCurrencyState.DebitStatus.APPLIED,
+                death.status()
+        );
+        assertEquals(
+                PlayerCurrencyState.DebitStatus.ALREADY_APPLIED,
+                retry.status()
+        );
+        assertEquals(-80L, retry.state().gold());
+        assertEquals(
+                PlayerCurrencyState.DebitStatus.INSUFFICIENT_GOLD,
+                purchase.status()
+        );
+
+        var paidDown = death.state().creditOnce(
+                "openworld_rpg:test/income",
+                100
+        );
+        assertEquals(20L, paidDown.gold());
+    }
+
+    @Test
+    void negativeGoldSurvivesCodecRoundTrip() {
+        var original = PlayerCurrencyState.initial()
+                .debitIntoDebtOnce(
+                        "openworld_rpg:death_penalty/1/gold",
+                        40
+                )
+                .state();
+
+        var encoded = PlayerCurrencyState.CODEC
+                .encodeStart(JsonOps.INSTANCE, original)
+                .getOrThrow();
+        var decoded = PlayerCurrencyState.CODEC
+                .parse(JsonOps.INSTANCE, encoded)
+                .getOrThrow();
+
+        assertEquals(original, decoded);
+        assertEquals(-40L, decoded.gold());
+    }
+
+    @Test
     void repeatableReceiptCleanupKeepsCreditedGold() {
         var credited = PlayerCurrencyState.initial()
                 .creditOnce("openworld_rpg:r01/roadside_trouble/reward/3/gold", 20);

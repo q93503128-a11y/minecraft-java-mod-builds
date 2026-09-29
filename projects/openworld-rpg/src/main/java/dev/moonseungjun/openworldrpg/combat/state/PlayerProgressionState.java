@@ -188,6 +188,45 @@ public record PlayerProgressionState(
         );
     }
 
+    public PlayerProgressionState withCurrentCombatXp(long nextCombatXp) {
+        if (nextCombatXp < 0L) {
+            throw new IllegalArgumentException(
+                    "Current-Lv combat XP cannot be negative."
+            );
+        }
+        if (combatLevel == ProjectProgressionRules.MAX_COMBAT_LEVEL) {
+            if (nextCombatXp != 0L) {
+                throw new IllegalArgumentException(
+                        "Lv 80 cannot store current-Lv combat XP."
+                );
+            }
+        } else if (nextCombatXp >= ProjectProgressionRules.combatXpToNext(combatLevel)) {
+            throw new IllegalArgumentException(
+                    "Current-Lv combat XP must remain below next-Lv requirement."
+            );
+        }
+        if (nextCombatXp == combatXp) {
+            return this;
+        }
+        return copy(
+                combatLevel,
+                nextCombatXp,
+                activeClass,
+                warrior,
+                hunter,
+                cleric,
+                mage,
+                guardian,
+                warriorProgress,
+                hunterProgress,
+                clericProgress,
+                mageProgress,
+                guardianProgress,
+                appliedCombatXpTransactionIds,
+                appliedClassXpTransactionIds
+        );
+    }
+
     public PlayerProgressionState withActiveClass(RootClass rootClass) {
         Optional<RootClass> next = Optional.of(Objects.requireNonNull(rootClass, "rootClass"));
         if (activeClass.equals(next)) {

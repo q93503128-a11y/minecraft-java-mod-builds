@@ -7,6 +7,8 @@ import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentAttachments;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionAttachments;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerVitalsRuntime;
 import dev.moonseungjun.openworldrpg.economy.PlayerCurrencyAttachments;
+import dev.moonseungjun.openworldrpg.death.PlayerDeathPenaltyAttachments;
+import dev.moonseungjun.openworldrpg.death.PlayerDeathPenaltyService;
 import dev.moonseungjun.openworldrpg.equipment.OrdinaryEquipmentAffixCatalogRegistry;
 import dev.moonseungjun.openworldrpg.fishing.R01FishingAttachments;
 import dev.moonseungjun.openworldrpg.fishing.R01FishingService;
@@ -82,6 +84,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         R01QuarryRunAttributionAttachments.initialize();
         R01QuarryRoomEncounterAttachments.initialize();
         PlayerCurrencyAttachments.initialize();
+        PlayerDeathPenaltyAttachments.initialize();
         PlayerClassSwitchAttachments.initialize();
         OrdinaryEquipmentAffixCatalogRegistry.initialize(LOGGER);
         PlayerRewardTransactionAttachments.initialize();
@@ -117,6 +120,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             if (!M0PlayerVerificationBootstrap.enabled()) {
                 R01OpeningBootstrapService.ensureOpeningLoadout(handler.getPlayer());
                 R01ClassStarterService.reconcileInterruptedGrant(handler.getPlayer());
+                PlayerDeathPenaltyService.reconcilePending(handler.getPlayer());
             }
             PlayerRewardTransactionService.resumePending(handler.getPlayer());
             if (!M0PlayerVerificationBootstrap.enabled()) {
@@ -153,6 +157,9 @@ public final class OpenworldRpgMod implements ModInitializer {
             );
         });
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+            if (!alive && !M0PlayerVerificationBootstrap.enabled()) {
+                PlayerDeathPenaltyService.applyAfterDeathRespawn(newPlayer);
+            }
             PlayerCombatBuildPublisher.refresh(newPlayer);
             SpellEngineProjectSkillAccess.refreshPublishedSkills(newPlayer);
         });
