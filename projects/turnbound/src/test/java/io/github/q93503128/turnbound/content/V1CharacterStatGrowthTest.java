@@ -10,12 +10,16 @@ class V1CharacterStatGrowthTest {
     void formalHeroLevelGrowthHitsDataDrivenV1TargetAndIgnoresLegacyPromotedStars() {
         var levelOne = CanonicalData.definition("P01", 1, 4, false).stats();
         var levelSixty = CanonicalData.definition("P01", 60, 4, false).stats();
+        var levelSeventy = CanonicalData.definition("P01", 70, 4, false).stats();
         var legacyStarSix = CanonicalData.definition("P01", 60, 6, false).stats();
 
         assertEquals((int)Math.floor(levelOne.maxHp() * GrowthRulesV1.characterLevelMultiplier(60)), levelSixty.maxHp());
         assertEquals((int)Math.floor(levelOne.attack() * GrowthRulesV1.characterLevelMultiplier(60)), levelSixty.attack());
         assertEquals((int)Math.floor(levelOne.defense() * GrowthRulesV1.characterLevelMultiplier(60)), levelSixty.defense());
         assertEquals(levelSixty, legacyStarSix);
+        assertEquals((int)Math.floor(levelOne.attack() * GrowthRulesV1.characterLevelMultiplier(70)), levelSeventy.attack());
+        org.junit.jupiter.api.Assertions.assertTrue(levelSeventy.attack() > levelSixty.attack());
         assertEquals(levelOne.speed(), levelSixty.speed(), "SPD must not grow with level");
+        assertEquals(levelSixty.speed(), levelSeventy.speed(), "duplicate bonus levels must not increase SPD");
     }
 }
