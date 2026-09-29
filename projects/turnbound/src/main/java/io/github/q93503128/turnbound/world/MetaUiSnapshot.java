@@ -38,7 +38,7 @@ public record MetaUiSnapshot(
     }
 
     public record CharacterRow(
-            String id, String name, boolean owned, int nativeStar, int level, int star, boolean awakened,
+            String id, String name, boolean owned, int nativeStar, int level, int bonusLevel, int star, boolean awakened,
             int cp, boolean active, String role, String primaryRole, String difficulty, boolean profileUnlocked,
             int hp, int attack, int defense, int speed) {}
 
@@ -54,7 +54,13 @@ public record MetaUiSnapshot(
     public record EndgameRow(String id, String kind, String label, boolean unlocked, boolean cleared, int level, boolean hardPattern) {}
     public record ChallengeRow(String id, int ordinal, String label, boolean completed, boolean autoEvaluable, String unresolvedReason) {}
     public record RegionQuestRow(String id, String region, boolean objectiveSpecified, boolean completed, String chestRule) {}
-    public record ArchiveRow(String characterId, String name, int nativeStars, boolean newlyOwned, int essenceGranted, int pityAfter) {}
+    public record ArchiveRow(
+            String characterId, String name, int nativeStars, boolean newlyOwned, int essenceGranted, int pityAfter,
+            int bonusLevelGranted, int bonusLevelAfter) {
+        public ArchiveRow(String characterId, String name, int nativeStars, boolean newlyOwned, int essenceGranted, int pityAfter) {
+            this(characterId, name, nativeStars, newlyOwned, essenceGranted, pityAfter, 0, 0);
+        }
+    }
     public record ShopRow(String itemId, String name, String tier, String slot, int price, boolean unlocked) {}
     public record CodexRow(String category, String id, String name, boolean discovered, boolean detailUnlocked, String summary) {}
 }
