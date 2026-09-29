@@ -479,6 +479,28 @@ Validation requested by this checkpoint:
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
 
+## Duplicate +Level final validation checkpoint — 2026-09-29
+
+Build TURNBOUND #929 reached the unit-test phase with production/test compilation successful, then failed one newly added assertion because the test supplied only 999,999 XP from Lv20 and incorrectly assumed that amount reached Lv60. The actual curve correctly reached Lv52. No production growth value was changed; the cap test now supplies enough XP to exercise the intended Lv60 clamp.
+
+Post-#929 cleanup also:
+- preserves +Level in battle-result projection and shows Lv60 +10 / effective level instead of hiding bonus growth
+- keeps legacy meta character rows readable
+- pages Essence selector cards on compact GUI
+- avoids overlapping Essence explanatory text and selector buttons
+- preserves old constructor shapes used by existing tests/callers
+
+This commit requests the final integrated branch build for the +Level / Essence work unit.
+
+Validation before that result:
+- CODE REVIEWED: YES
+- TESTED: previous run reached tests; final result pending
+- BUILD VERIFIED: NO
+- JAR PRODUCED: NO
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
 ## Economy
 
 Long-term core currencies:
