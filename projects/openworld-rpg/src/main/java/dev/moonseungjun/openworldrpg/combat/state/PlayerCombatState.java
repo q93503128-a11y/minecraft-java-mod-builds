@@ -151,6 +151,66 @@ public final class PlayerCombatState {
         );
     }
 
+    public PlayerCombatSessionState persistentSnapshot(long nowTick) {
+        refresh(nowTick);
+        Map<String, Long> activeCooldowns = new HashMap<>();
+        cooldownEndTick.forEach((id, endTick) -> {
+            if (endTick > nowTick) {
+                activeCooldowns.put(id, endTick);
+            }
+        });
+        return new PlayerCombatSessionState(
+                PlayerCombatSessionState.CURRENT_SCHEMA_VERSION,
+                mana,
+                stamina,
+                nowTick,
+                lastManaSpendTick,
+                lastCombatActivityTick,
+                lastHostileHpActivityTick,
+                staminaRegenBlockedUntilTick,
+                Map.copyOf(activeCooldowns)
+        );
+    }
+
+    public void restorePersistent(
+            PlayerCombatSessionState snapshot,
+            long nowTick
+    ) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        if (nowTick < 0L) {
+            throw new IllegalArgumentException("nowTick must be non-negative.");
+        }
+
+        long rebase = nowTick < snapshot.savedAtTick()
+                ? nowTick - snapshot.savedAtTick()
+                : 0L;
+        mana = Math.min(maxMana(), snapshot.mana());
+        stamina = Math.min(maxStamina(), snapshot.stamina());
+        lastRefreshTick = Math.min(snapshot.savedAtTick(), nowTick);
+        lastManaSpendTick = rebaseTick(snapshot.lastManaSpendTick(), rebase);
+        lastCombatActivityTick = rebaseTick(snapshot.lastCombatActivityTick(), rebase);
+        lastHostileHpActivityTick = rebaseTick(
+                snapshot.lastHostileHpActivityTick(),
+                rebase
+        );
+        staminaRegenBlockedUntilTick = rebaseTick(
+                snapshot.staminaRegenBlockedUntilTick(),
+                rebase
+        );
+        cooldownEndTick.clear();
+        snapshot.cooldownEndTicks().forEach((id, endTick) -> {
+            long rebased = rebaseTick(endTick, rebase);
+            if (rebased > nowTick) {
+                cooldownEndTick.put(id, rebased);
+            }
+        });
+
+        sprintingLastTick = false;
+        acceptedSpellId = null;
+        acceptedSpellReentryUntilTick = Long.MIN_VALUE;
+        refresh(nowTick);
+    }
+
     public double effectiveManaCost(double authoredCost) {
         validateManaAmount(authoredCost);
         return authoredCost * (1.0 - manaCostReduction);
@@ -460,6 +520,13 @@ public final class PlayerCombatState {
         if (!Double.isFinite(amount) || amount < 0.0) {
             throw new IllegalArgumentException("Mana amount must be finite and non-negative.");
         }
+    }
+
+    private static long rebaseTick(long tick, long delta) {
+        if (delta == 0L || tick <= Long.MIN_VALUE / 8) {
+            return tick;
+        }
+        return Math.addExact(tick, delta);
     }
 
     private static void requirePercentBonus(String name, double value) {

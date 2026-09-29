@@ -2,6 +2,7 @@ package dev.moonseungjun.openworldrpg;
 
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatBuildPublisher;
+import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatSessionAttachments;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentAttachments;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionAttachments;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerVitalsRuntime;
@@ -64,6 +65,7 @@ public final class OpenworldRpgMod implements ModInitializer {
     public void onInitialize() {
         RuntimeProfile profile = RuntimeProfile.current();
         PlayerProgressionAttachments.initialize();
+        PlayerCombatSessionAttachments.initialize();
         PlayerEquipmentAttachments.initialize();
         R01PlayerStateAttachments.initialize();
         R01SharedWorldAttachments.initialize();
@@ -95,6 +97,11 @@ public final class OpenworldRpgMod implements ModInitializer {
             RecoveryEffectRuntime.tick(server);
             RecoveryUseRuntime.tick(server);
             R01RoadsideTroubleController.tickActiveWorld(server);
+            if (Math.floorMod(server.getTickCount(), 20) == 0) {
+                for (var player : server.getPlayerList().getPlayers()) {
+                    CombatStateServices.persistRuntime(player);
+                }
+            }
         });
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
@@ -126,6 +133,7 @@ public final class OpenworldRpgMod implements ModInitializer {
                 R01MainQuestService.reconcileCommittedRewards(handler.getPlayer());
             }
             PlayerCombatBuildPublisher.refresh(handler.getPlayer());
+            CombatStateServices.restoreRuntime(handler.getPlayer());
             R01PlayerVerificationBootstrap.prepare(handler.getPlayer(), LOGGER);
             M0PlayerVerificationBootstrap.prepare(handler.getPlayer(), LOGGER);
         });
@@ -133,6 +141,7 @@ public final class OpenworldRpgMod implements ModInitializer {
                 PlayerCombatBuildPublisher.refresh(newPlayer)
         );
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            CombatStateServices.persistRuntime(handler.getPlayer());
             var playerId = handler.getPlayer().getUUID();
             RecoveryUseRuntime.disconnect(playerId);
             RecoveryEffectRuntime.disconnect(playerId);

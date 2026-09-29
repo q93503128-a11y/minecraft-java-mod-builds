@@ -1,6 +1,7 @@
 package dev.moonseungjun.openworldrpg.combat.state;
 
 import java.util.UUID;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * One server-owned access point for transient combat state.
@@ -50,6 +51,29 @@ public final class CombatStateServices {
 
     public static PlayerNegativeStatusStateStore negativeStatusStates() {
         return NEGATIVE_STATUS_STATES;
+    }
+
+    public static void persistRuntime(ServerPlayer player) {
+        UUID playerId = player.getUUID();
+        long gameTick = player.level().getGameTime();
+        PlayerCombatState runtime = STATES.getOrCreate(playerId, gameTick);
+        player.setAttached(
+                PlayerCombatSessionAttachments.COMBAT_SESSION,
+                runtime.persistentSnapshot(gameTick)
+        );
+    }
+
+    public static void restoreRuntime(ServerPlayer player) {
+        PlayerCombatSessionState snapshot = player.getAttachedOrSet(
+                PlayerCombatSessionAttachments.COMBAT_SESSION,
+                PlayerCombatSessionState.empty()
+        );
+        if (!snapshot.captured()) {
+            return;
+        }
+        long gameTick = player.level().getGameTime();
+        STATES.getOrCreate(player.getUUID(), gameTick)
+                .restorePersistent(snapshot, gameTick);
     }
 
     public static void markCombatActivity(UUID playerId, long gameTick) {

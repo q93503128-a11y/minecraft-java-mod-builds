@@ -207,6 +207,23 @@ class PlayerCombatStateTest {
     }
 
     @Test
+    void persistentSnapshotPreservesSpentResourcesAndCooldownAcrossReconnect() {
+        PlayerCombatState original = new PlayerCombatState(5, 0);
+        assertTrue(original.spendMana(50.0, 10));
+        assertTrue(original.spendStamina(40.0, 12, 10));
+        original.startCooldown("openworld_rpg:arc_bolt", 60, 10);
+
+        var snapshot = original.persistentSnapshot(10);
+        PlayerCombatState restored = new PlayerCombatState(5, 20);
+        restored.restorePersistent(snapshot, 20);
+
+        assertEquals(50.0, restored.mana(20), 0.0001);
+        assertEquals(60.0, restored.stamina(20), 0.0001);
+        assertTrue(restored.isCoolingDown("openworld_rpg:arc_bolt", 20));
+        assertEquals(50L, restored.cooldownRemainingTicks("openworld_rpg:arc_bolt", 20));
+    }
+
+    @Test
     void cooldownUsesServerTicks() {
         PlayerCombatState state = new PlayerCombatState(5, 10);
         state.startCooldown("openworld_rpg:arc_bolt", 60, 10);
