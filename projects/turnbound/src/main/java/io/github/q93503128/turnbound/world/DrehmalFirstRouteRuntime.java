@@ -177,6 +177,11 @@ public final class DrehmalFirstRouteRuntime {
     }
 
     private static FieldUiSnapshot.Navigation openingPatrolNavigation(ServerPlayer player) {
+        var live=DrehmalVisibleEncounterService.navigationPosition(DrabyelOpeningTutorial.ENCOUNTER_SLOT);
+        if(live!=null){
+            return new FieldUiSnapshot.Navigation(
+                    DrabyelOpeningTutorial.ENCOUNTER_SLOT,"북쪽 길 순찰대",live.x,live.z);
+        }
         var patrol=DrehmalAdaptiveRoutePlacement.site(player,DrabyelOpeningTutorial.ENCOUNTER_SITE);
         if(patrol!=null&&patrol.runtimePosition()!=null){
             return navigationTo(patrol.locator(),"북쪽 길 순찰대",patrol.runtimePosition());

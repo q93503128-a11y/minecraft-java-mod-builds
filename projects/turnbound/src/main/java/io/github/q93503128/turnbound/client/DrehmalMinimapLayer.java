@@ -31,18 +31,17 @@ public final class DrehmalMinimapLayer implements GuiLayer {
     private static final int STEP = 3;
     private static final int MAP_SIZE = GRID * CELL;
     private static final int[][] TERRAIN = new int[GRID][GRID];
-    private static boolean visible = true;
     private static int cachedCenterX = Integer.MIN_VALUE;
     private static int cachedCenterZ = Integer.MIN_VALUE;
     private static int cachedTick = Integer.MIN_VALUE;
 
-    public static void toggleVisible() { visible = !visible; }
-    public static boolean visible() { return visible; }
+    public static void toggleVisible() { TurnboundClientSettings.toggleMinimap(); }
+    public static boolean visible() { return TurnboundClientSettings.minimapEnabled(); }
 
     @Override
     public void render(@NotNull GuiGraphicsExtractor graphics, DeltaTracker tracker) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (!visible || minecraft.player == null || minecraft.level == null || minecraft.gui.screen() != null) return;
+        if (!visible() || minecraft.player == null || minecraft.level == null || minecraft.gui.screen() != null) return;
         if (ClientPresentationTransition.fieldPresentationSuppressed()) return;
 
         FieldUiSnapshot field = ClientFieldState.snapshot();

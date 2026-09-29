@@ -91,6 +91,12 @@ final class DrehmalVisibleEncounterService {
         lastTick = Long.MIN_VALUE;
     }
 
+    static Vec3 navigationPosition(String encounterLocator) {
+        if (encounterLocator == null || encounterLocator.isBlank()) return null;
+        SharedEncounter encounter = ENCOUNTERS.get(encounterLocator);
+        return encounter == null ? null : encounter.pivot;
+    }
+
     static boolean fastTravelBlocked(ServerPlayer player) {
         if (player == null || boundLevel == null || player.level() != boundLevel) return false;
         double radiusSq = FieldEncounterRules.DISENGAGE_RADIUS * FieldEncounterRules.DISENGAGE_RADIUS;

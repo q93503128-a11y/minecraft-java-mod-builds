@@ -250,6 +250,7 @@ public final class BattleCameraController {
     }
 
     private static void impact(float damageRatio, int targets, boolean knockDown, boolean bossImpact) {
+        if (!TurnboundClientSettings.impactCameraEnabled()) return;
         float strength = 0.44F + Mth.clamp(damageRatio, 0.0F, 0.60F) * 2.7F;
         if (targets > 1) strength += Math.min(0.40F, (targets - 1) * 0.11F);
         if (knockDown) strength += 0.50F;
@@ -264,6 +265,7 @@ public final class BattleCameraController {
     }
 
     private static void revivePulse() {
+        if (!TurnboundClientSettings.impactCameraEnabled()) return;
         impactDistance = Math.min(impactDistance, -0.15F);
         impactFov = Math.min(impactFov, -0.55F);
         impactRoll = Math.max(impactRoll, 0.06F);

@@ -23,7 +23,7 @@ import java.util.Locale;
 
 /** Responsive management screen. Dense collections are paged and PC layouts favor information density. */
 public final class MetaMenuScreen extends Screen {
-    public enum Tab { HOME, PARTY, COOP, CHARACTERS, EQUIPMENT, ARCHIVE, QUESTS, CODEX, SYSTEM }
+    public enum Tab { HOME, PARTY, COOP, CHARACTERS, EQUIPMENT, ARCHIVE, QUESTS, CODEX, CHALLENGES, SYSTEM }
     private enum DetailTab { OVERVIEW, SKILLS, EQUIPMENT, GROWTH }
     private enum OwnershipFilter { ALL, OWNED, UNOWNED }
     private enum RoleFilter { ALL, DPS, SUPPORT, TANK, SUMMON }
@@ -95,6 +95,7 @@ public final class MetaMenuScreen extends Screen {
             case ARCHIVE->buildArchive();
             case QUESTS->buildQuests();
             case CODEX->buildCodex();
+            case CHALLENGES->buildChallenges();
             case SYSTEM->buildSystem();
         }
     }
@@ -139,8 +140,8 @@ public final class MetaMenuScreen extends Screen {
         int menuAreaW=pw-leftW-22;
         int orbGap=6;
         int rowGap=6;
-        Tab[] destinations={Tab.PARTY,Tab.EQUIPMENT,Tab.QUESTS,Tab.ARCHIVE,Tab.CODEX,Tab.SYSTEM};
-        String[] labels={"편성","장비","퀘스트","기록","도감","설정"};
+        Tab[] destinations={Tab.PARTY,Tab.EQUIPMENT,Tab.QUESTS,Tab.ARCHIVE,Tab.CODEX,Tab.CHALLENGES,Tab.SYSTEM};
+        String[] labels={"편성","장비","퀘스트","기록","도감","도전","설정"};
         int menuCols=3;
         int menuRows=(destinations.length+menuCols-1)/menuCols;
         int orbSize=Math.max(36,Math.min(48,Math.min(
@@ -274,7 +275,7 @@ public final class MetaMenuScreen extends Screen {
             var row=rows.get(i);
             int local=i-start,xx=left+16+(local%cols)*(cardW+cardGap),yy=gridTop+(local/cols)*(rowH+4);
             String detail=row.owned()?(row.awakened()?"각성":"★"+row.nativeStar())+" · "+levelLabel(row)+" · "+primaryRoleLabel(row.primaryRole())
-                    :"미보유 · ★"+row.nativeStar()+" · "+primaryRoleLabel(row.primaryRole());
+                    :"★"+row.nativeStar()+" · "+primaryRoleLabel(row.primaryRole());
             addRenderableWidget(new FoozlePortraitButton(
                     xx,yy,cardW,rowH,row.id(),row.name(),detail,!row.owned(),
                     ignored->openCharacter(row.id())));
@@ -480,8 +481,7 @@ public final class MetaMenuScreen extends Screen {
         for(int i=start;i<end;i++){
             var row=rows.get(i);
             int local=i-start,xx=left+16+(local%cols)*(cardW+cardGap),yy=gridTop+(local/cols)*(rowH+4);
-            String detail=row.owned()?(row.awakened()?"각성 · ":"")+"★"+row.nativeStar()+" · "+primaryRoleLabel(row.primaryRole())
-                    :"미보유 · ★"+row.nativeStar()+" · "+primaryRoleLabel(row.primaryRole());
+            String detail=(row.awakened()&&row.owned()?"각성 · ":"")+"★"+row.nativeStar()+" · "+primaryRoleLabel(row.primaryRole());
             addRenderableWidget(new FoozlePortraitButton(
                     xx,yy,cardW,rowH,row.id(),row.name(),detail,!row.owned(),
                     ignored->openCharacter(row.id())));
@@ -490,6 +490,39 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void buildSystem(){
+        int x=left+16,y=contentTop()+4,w=panelWidth-32,gap=4;
+        int half=(w-gap)/2;
+        boolean music=TurnboundClientSettings.musicEnabled();
+        boolean sfx=TurnboundClientSettings.sfxEnabled();
+        boolean camera=TurnboundClientSettings.impactCameraEnabled();
+        boolean minimap=TurnboundClientSettings.minimapEnabled();
+
+        addRenderableWidget(new BattleHudButton(
+                x,y,half,22,Component.literal("음악 · "+(music?"켬":"끔")),music?GREEN:MUTED,
+                ignored->{TurnboundClientSettings.toggleMusic();rebuild();}));
+        addRenderableWidget(new BattleHudButton(
+                x+half+gap,y,half,22,Component.literal("음악 음량 · "+TurnboundClientSettings.musicPercent()+"%"),
+                music?BLUE:MUTED,ignored->{TurnboundClientSettings.cycleMusicVolume();rebuild();}));
+
+        y+=28;
+        addRenderableWidget(new BattleHudButton(
+                x,y,half,22,Component.literal("효과음 · "+(sfx?"켬":"끔")),sfx?GREEN:MUTED,
+                ignored->{TurnboundClientSettings.toggleSfx();rebuild();}));
+        addRenderableWidget(new BattleHudButton(
+                x+half+gap,y,half,22,Component.literal("효과음 음량 · "+TurnboundClientSettings.sfxPercent()+"%"),
+                sfx?BLUE:MUTED,ignored->{TurnboundClientSettings.cycleSfxVolume();rebuild();}));
+
+        y+=28;
+        addRenderableWidget(new BattleHudButton(
+                x,y,half,22,Component.literal("타격 카메라 · "+(camera?"켬":"끔")),camera?GOLD:MUTED,
+                ignored->{TurnboundClientSettings.toggleImpactCamera();rebuild();}));
+        addRenderableWidget(new BattleHudButton(
+                x+half+gap,y,half,22,Component.literal("미니맵 · "+(minimap?"켬":"끔")),minimap?BLUE:MUTED,
+                ignored->{TurnboundClientSettings.toggleMinimap();rebuild();}));
+        setPaging(0,1);
+    }
+
+    private void buildChallenges(){
         var rows=ClientMetaState.snapshot().endgame();
         if(selectedEndgameId.isBlank()||endgame(selectedEndgameId)==null)selectedEndgameId=rows.stream().filter(ClientMetaState.EndgameRow::unlocked).map(ClientMetaState.EndgameRow::id).findFirst().orElse("");
         int y=contentTop()+2,listW=Math.min(250,panelWidth/3),rowH=24;
@@ -618,6 +651,7 @@ public final class MetaMenuScreen extends Screen {
             case ARCHIVE->drawArchive(graphics);
             case QUESTS->drawQuests(graphics);
             case CODEX->drawCodex(graphics);
+            case CHALLENGES->drawChallenges(graphics);
             case SYSTEM->drawSystem(graphics);
         }
         int pages=UiPaging.pageCount(currentTotal,currentPerPage);
@@ -958,6 +992,16 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void drawSystem(GuiGraphicsExtractor g){
+        int x=left+16,y=contentTop()+96,w=panelWidth-32;
+        TurnboundUiSkin.inset(g,x,y,w,58);
+        g.text(font,Component.literal("TURNBOUND 전용 설정"),x+8,y+8,TEXT,true);
+        g.text(font,Component.literal(UiTextLayout.fit(
+                "Minecraft의 그래픽·키·전체 음량은 ESC 설정을 그대로 사용합니다.",w-16)),x+8,y+23,SECONDARY,false);
+        g.text(font,Component.literal(UiTextLayout.fit(
+                "여기서는 게임 음악/효과음, 전투 타격 카메라, 탐색 미니맵만 조정합니다.",w-16)),x+8,y+37,MUTED,false);
+    }
+
+    private void drawChallenges(GuiGraphicsExtractor g){
         var selected=endgame(selectedEndgameId);if(selected==null)return;
         int y=contentBottom()-24;
         String s=(selected.cleared()?"클리어 · ":"")+selected.label()+" · Lv."+selected.level();
@@ -1000,8 +1044,8 @@ public final class MetaMenuScreen extends Screen {
     private String ownershipLabel(){return switch(ownershipFilter){case ALL->"전체";case OWNED->"보유";case UNOWNED->"미보유";};}
     private static String roleLabel(RoleFilter r){return switch(r){case ALL->"전체";case DPS->"공격";case SUPPORT->"지원";case TANK->"수호";case SUMMON->"소환";};}
     private static String sortLabel(EquipSort s){return switch(s){case TIER->"등급";case LEVEL->"강화";case STAT->"능력치";};}
-    private static String label(Tab t){return switch(t){case HOME->"빠른 메뉴";case PARTY->"편성";case COOP->"협동";case CHARACTERS->"캐릭터";case EQUIPMENT->"장비";case ARCHIVE->"기록";case QUESTS->"퀘스트";case CODEX->"도감";case SYSTEM->"도전";};}
-    private static String title(Tab t){return switch(t){case HOME->"빠른 메뉴";case PARTY->"전투 파티 편성";case COOP->"협동 파티";case CHARACTERS->"캐릭터";case EQUIPMENT->"장비";case ARCHIVE->"소환 기록";case QUESTS->"퀘스트";case CODEX->"도감";case SYSTEM->"도전 콘텐츠";};}
+    private static String label(Tab t){return switch(t){case HOME->"빠른 메뉴";case PARTY->"편성";case COOP->"협동";case CHARACTERS->"캐릭터";case EQUIPMENT->"장비";case ARCHIVE->"기록";case QUESTS->"퀘스트";case CODEX->"도감";case CHALLENGES->"도전";case SYSTEM->"설정";};}
+    private static String title(Tab t){return switch(t){case HOME->"빠른 메뉴";case PARTY->"전투 파티 편성";case COOP->"협동 파티";case CHARACTERS->"캐릭터";case EQUIPMENT->"장비";case ARCHIVE->"소환 기록";case QUESTS->"퀘스트";case CODEX->"도감";case CHALLENGES->"도전 콘텐츠";case SYSTEM->"설정";};}
     private static String detailLabel(DetailTab d){return switch(d){case OVERVIEW->"개요";case SKILLS->"스킬";case EQUIPMENT->"장비";case GROWTH->"성장";};}
     private static String levelLabel(ClientMetaState.CharacterRow row){
         if(row==null)return"Lv.0";

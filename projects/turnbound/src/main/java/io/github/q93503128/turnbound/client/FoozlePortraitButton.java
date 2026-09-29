@@ -68,6 +68,7 @@ final class FoozlePortraitButton extends Button {
                     TurnboundUiTokens.TEXT_PRIMARY, true);
         }
         TurnboundUiSkin.orbOverlay(graphics, ox, oy, orb, active, isHoveredOrFocused(), selected);
+        if (unavailable) drawLockBadge(graphics, ox + orb - 11, oy + 3);
 
         if (compact) {
             int tx = ox + orb + 5;
@@ -94,5 +95,16 @@ final class FoozlePortraitButton extends Button {
                     getX() + (getWidth() - font.width(detailFit)) / 2,
                     nameY + 11, TurnboundUiTokens.TEXT_SECONDARY, false);
         }
+    }
+
+    private static void drawLockBadge(GuiGraphicsExtractor graphics, int x, int y) {
+        int back = 0xDD111317;
+        int lock = TurnboundUiTokens.TEXT_MUTED;
+        graphics.fill(x - 2, y - 2, x + 9, y + 9, back);
+        graphics.fill(x + 1, y + 3, x + 7, y + 8, lock);
+        graphics.fill(x + 2, y + 1, x + 3, y + 4, lock);
+        graphics.fill(x + 5, y + 1, x + 6, y + 4, lock);
+        graphics.fill(x + 3, y, x + 5, y + 1, lock);
+        graphics.fill(x + 3, y + 5, x + 5, y + 7, back);
     }
 }

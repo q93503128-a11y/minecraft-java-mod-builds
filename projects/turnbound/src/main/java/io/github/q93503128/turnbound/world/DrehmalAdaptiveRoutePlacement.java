@@ -119,21 +119,28 @@ final class DrehmalAdaptiveRoutePlacement {
         var authored=DrehmalFirstRouteCatalog.site(DrabyelOpeningTutorial.ENCOUNTER_SITE);
         var placement=DrehmalMapPlacementCatalog.placement(DrabyelOpeningTutorial.ENCOUNTER_SITE);
         if(authored==null||placement==null)return;
-        for(var seed:placement.siteSeeds()){
-            for(int[] offset:offsets(Math.min(5,Math.max(2,placement.searchRadius())))){
+        var zone=DrehmalMapPlacementCatalog.zone(placement.zoneId());
+        List<DrehmalMapPlacementCatalog.Seed> seeds=new ArrayList<>(placement.siteSeeds());
+        seeds.addAll(placement.patrolSeeds());
+        int searchRadius=Math.max(12,placement.searchRadius()+6);
+        for(var seed:seeds){
+            for(int[] offset:offsets(searchRadius)){
                 int x=seed.x()+offset[0],z=seed.z()+offset[1];
                 int y=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);
                 BlockPos feet=new BlockPos(x,y,z);
-                if(!standing(level,feet))continue;
+                if(!standing(level,feet)||!sourceContentClear(level,x,y,z,3.5D))continue;
                 if(DrehmalRouteZoneRules.insideSafetyZone(List.copyOf(sites.values()),x+0.5D,z+0.5D))continue;
+                double roadDistance=DrehmalRoutePlacementRules.corridorDistance(zone,x+0.5D,z+0.5D);
+                if(!DrehmalRoutePlacementRules.acceptableRoadDistance(authored.kind(),roadDistance))continue;
                 var position=new DrehmalFirstRouteCatalog.Position(x,y,z);
                 sites.put(authored.locator(),new DrehmalFirstRouteCatalog.Site(
                         authored.locator(),authored.kind(),authored.surveySeedAnchor(),authored.playerLabel(),
                         position,authored.safetyRadius(),authored.encounterRadius(),true,true));
-                Turnbound.LOGGER.info("TURNBOUND opening patrol used source-seed site fallback at {}, {}, {}",x,y,z);
+                Turnbound.LOGGER.info("TURNBOUND opening patrol used safe source-route fallback at {}, {}, {}",x,y,z);
                 return;
             }
         }
+        Turnbound.LOGGER.warn("TURNBOUND opening patrol remained dormant: no safe visible-actor site passed live checks");
     }
 
     private static void ensureOpeningTutorialFootprint(

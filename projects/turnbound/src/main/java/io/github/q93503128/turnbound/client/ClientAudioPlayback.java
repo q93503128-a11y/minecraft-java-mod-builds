@@ -69,8 +69,12 @@ public final class ClientAudioPlayback {
         ClientAudioDirector.MusicMix mix = ClientAudioDirector.musicMix();
         ClientAudioDirector.MusicSlot desired = mix.incoming();
 
+        if (!TurnboundClientSettings.musicEnabled() || TurnboundClientSettings.musicPercent() <= 0) {
+            stopMusic(manager);
+            return;
+        }
         if (desired == ClientAudioDirector.MusicSlot.NONE) {
-            stopAll(manager);
+            stopMusic(manager);
             return;
         }
 
@@ -102,7 +106,7 @@ public final class ClientAudioPlayback {
     }
 
     private static void playCues(Minecraft minecraft, List<ClientAudioDirector.Cue> cues) {
-        if (cues.isEmpty()) return;
+        if (cues.isEmpty() || !TurnboundClientSettings.sfxEnabled() || TurnboundClientSettings.sfxPercent() <= 0) return;
         ClientBattleState.Snapshot snapshot = ClientBattleState.snapshot();
         for (ClientAudioDirector.Cue cue : cues) {
             Supplier<SoundEvent> supplier = SFX.get(cue.id());
@@ -121,7 +125,8 @@ public final class ClientAudioPlayback {
             double x = unit != null ? unit.x() : minecraft.player.getX();
             double y = unit != null ? unit.y() : minecraft.player.getY();
             double z = unit != null ? unit.z() : minecraft.player.getZ();
-            minecraft.level.playLocalSound(x, y, z, supplier.get(), SoundSource.PLAYERS, volume, pitch, false);
+            minecraft.level.playLocalSound(x, y, z, supplier.get(), SoundSource.PLAYERS,
+                    volume * TurnboundClientSettings.sfxGain(), pitch, false);
         }
     }
 
@@ -155,9 +160,13 @@ public final class ClientAudioPlayback {
         return BASE_MUSIC_GAIN * roleMultiplier;
     }
 
-    private static void stopAll(SoundManager manager) {
+    private static void stopMusic(SoundManager manager) {
         for (MusicLoop music : ACTIVE_MUSIC.values()) manager.stop(music);
         ACTIVE_MUSIC.clear();
+    }
+
+    private static void stopAll(SoundManager manager) {
+        stopMusic(manager);
         ClientAudioDirector.drainAcceptedCues();
     }
 
@@ -187,7 +196,8 @@ public final class ClientAudioPlayback {
                 stop();
                 return;
             }
-            this.volume = Math.max(0.0F, Math.min(1.0F, gain)) * musicGain(slot);
+            this.volume = Math.max(0.0F, Math.min(1.0F, gain))
+                    * musicGain(slot) * TurnboundClientSettings.musicGain();
         }
     }
 }
