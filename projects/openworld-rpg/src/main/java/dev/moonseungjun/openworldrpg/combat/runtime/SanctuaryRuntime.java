@@ -3,7 +3,6 @@ package dev.moonseungjun.openworldrpg.combat.runtime;
 import dev.moonseungjun.openworldrpg.combat.authority.PlayerBarrierAuthority;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
-import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentService;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionService;
 import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
@@ -86,8 +85,9 @@ public final class SanctuaryRuntime {
         List<ServerPlayer> allies = playersInside(server, zone);
         applyStatusProtection(allies, nowTick);
 
-        double barrierOutputBonus = PlayerEquipmentService.state(caster)
-                .aggregateHealingDoneBonus();
+        // Healing Done is not Barrier output. Until a dedicated live barrier-output modifier is
+        // admitted, the authored Sanctuary barrier uses only its canonical coefficient.
+        double barrierOutputBonus = 0.0;
         int barrierRecipients = 0;
         for (ServerPlayer ally : allies) {
             var barrier = ProjectBarrierRuntime.applySkillBarrier(
