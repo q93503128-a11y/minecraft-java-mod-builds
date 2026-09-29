@@ -136,6 +136,11 @@ public final class OrdinaryEquipmentRuntimeAffixAdapter {
                             EquipmentCombatAffixKind.MOVEMENT_SPEED,
                             affix.value()
                     );
+            case "openworld_rpg:runtime_affix/healing_done" ->
+                    percentage(
+                            EquipmentCombatAffixKind.HEALING_DONE,
+                            affix.value()
+                    );
             case "openworld_rpg:runtime_affix/healing_received" ->
                     percentage(
                             EquipmentCombatAffixKind.HEALING_RECEIVED,

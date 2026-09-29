@@ -7,6 +7,58 @@ public final class PlayerHealingAuthority {
     private PlayerHealingAuthority() {
     }
 
+    public static double healingReference(
+            int casterLevel,
+            double effectiveWill,
+            double effectiveIntelligence
+    ) {
+        if (!Double.isFinite(effectiveWill) || effectiveWill < 0.0
+                || !Double.isFinite(effectiveIntelligence)
+                || effectiveIntelligence < 0.0) {
+            throw new IllegalArgumentException(
+                    "Healing stats must be finite and non-negative."
+            );
+        }
+        double weightedStat = 0.80 * effectiveWill
+                + 0.20 * effectiveIntelligence;
+        return ProjectCombatRules.baseHp(casterLevel)
+                * ProjectCombatRules.attributeDamageMultiplier(weightedStat);
+    }
+
+    /**
+     * Canonical project skill-healing order:
+     * HealingReference × HealCoefficient × Healing Done × target Healing Received.
+     */
+    public static double skillHealingAmount(
+            double healingReference,
+            double healCoefficient,
+            double healingDoneBonus,
+            double healingReceivedBonus
+    ) {
+        if (!Double.isFinite(healingReference) || healingReference < 0.0) {
+            throw new IllegalArgumentException(
+                    "healingReference must be finite and non-negative."
+            );
+        }
+        if (!Double.isFinite(healCoefficient) || healCoefficient <= 0.0) {
+            throw new IllegalArgumentException(
+                    "healCoefficient must be finite and positive."
+            );
+        }
+        if (!Double.isFinite(healingDoneBonus)
+                || healingDoneBonus < 0.0
+                || healingDoneBonus
+                        > PlayerEquipmentLoadoutState.HEALING_DONE_GEAR_CAP) {
+            throw new IllegalArgumentException(
+                    "healingDoneBonus must stay inside canonical [0, 0.40]."
+            );
+        }
+        double outgoing = healingReference
+                * healCoefficient
+                * (1.0 + healingDoneBonus);
+        return receivedHealingAmount(outgoing, healingReceivedBonus);
+    }
+
     /**
      * Applies Healing Received only after the healing source has authored its base amount.
      *

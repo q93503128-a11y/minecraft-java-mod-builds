@@ -127,6 +127,40 @@ class OrdinaryEquipmentMaterializerTest {
     }
 
     @Test
+    void healingDoneProjectsToOutgoingSkillHealingRuntimeAffix() {
+        var catalog = OrdinaryEquipmentAffixCatalogLoader.loadBundled();
+        var healingDone = definition(
+                catalog,
+                "openworld_rpg:affix/healing_done"
+        );
+
+        var result = OrdinaryEquipmentMaterializer.materialize(
+                new OrdinaryEquipmentMaterializer.MaterializationRequest(
+                        OrdinaryEquipmentMaterializer.BaseProfile.accessory(
+                                "openworld_rpg:healers_band",
+                                ProjectEquipmentSlot.RING_1
+                        ),
+                        ProjectItemGrade.STANDARD,
+                        4,
+                        List.of(healingDone),
+                        4411L,
+                        40L
+                ),
+                catalog
+        );
+
+        var affix = result.inventoryItem()
+                .equipmentProjection().orElseThrow()
+                .affixes().getFirst();
+        assertEquals(EquipmentCombatAffixKind.HEALING_DONE, affix.kind());
+        assertEquals(
+                result.rolledAffixes().getFirst().value() / 100.0,
+                affix.value(),
+                0.000001
+        );
+    }
+
+    @Test
     void healingReceivedProjectsToIncomingHealingRuntimeAffix() {
         var catalog = OrdinaryEquipmentAffixCatalogLoader.loadBundled();
         var healingReceived = definition(

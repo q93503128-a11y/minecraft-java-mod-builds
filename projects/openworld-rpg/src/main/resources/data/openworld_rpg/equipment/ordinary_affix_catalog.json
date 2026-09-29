@@ -240,7 +240,7 @@
       "min": 4,
       "max": 12,
       "runtime_payload": "openworld_rpg:runtime_affix/healing_done",
-      "runtime_state": "stored_only"
+      "runtime_state": "implemented"
     },
     {
       "id": "openworld_rpg:affix/healing_received",

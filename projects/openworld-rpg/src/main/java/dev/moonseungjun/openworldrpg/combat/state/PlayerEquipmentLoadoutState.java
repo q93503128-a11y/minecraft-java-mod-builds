@@ -20,6 +20,7 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
     private static final double CRITICAL_CHANCE_GEAR_CAP = 0.30;
     public static final double ATTACK_SPEED_GEAR_CAP = 0.35;
     public static final double MOVEMENT_SPEED_GEAR_CAP = 0.15;
+    public static final double HEALING_DONE_GEAR_CAP = 0.40;
     public static final double HEALING_RECEIVED_GEAR_CAP = 0.40;
     private static final double GUARD_STRENGTH_GEAR_CAP = 0.50;
     private static final double POISE_STAGGER_RESISTANCE_GEAR_CAP = 0.50;
@@ -166,6 +167,25 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
             }
         }
         return Math.min(result, ATTACK_SPEED_GEAR_CAP);
+    }
+
+    /**
+     * Aggregates the canonical outgoing skill-healing bonus across equipped gear.
+     *
+     * <p>This never modifies consumable self-recovery. Project skill healing consumes it only
+     * after HealingReference and HealCoefficient have been resolved. The +40% aggregate cap is
+     * canonical.</p>
+     */
+    public double aggregateHealingDoneBonus() {
+        double result = 0.0;
+        for (EquippedCombatItem item : equipped) {
+            for (EquipmentCombatAffix affix : item.affixes()) {
+                if (affix.kind() == EquipmentCombatAffixKind.HEALING_DONE) {
+                    result += affix.value();
+                }
+            }
+        }
+        return Math.min(result, HEALING_DONE_GEAR_CAP);
     }
 
     /**
@@ -353,6 +373,9 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
                     }
                     case MOVEMENT_SPEED -> {
                         // Published independently by the server-owned movement runtime.
+                    }
+                    case HEALING_DONE -> {
+                        // Published independently by aggregateHealingDoneBonus().
                     }
                     case HEALING_RECEIVED -> {
                         // Published independently by aggregateHealingReceivedBonus().

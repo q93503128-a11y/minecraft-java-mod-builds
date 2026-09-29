@@ -183,6 +183,45 @@ class PlayerEquipmentLoadoutStateTest {
     }
 
     @Test
+    void healingDoneAndReceivedAggregateIndependentlyAtFortyPercent() {
+        var loadout = new PlayerEquipmentLoadoutState(List.of(
+                EquippedCombatItem.gear(
+                        "openworld_rpg:healers_band",
+                        ProjectEquipmentSlot.RING_1,
+                        8,
+                        List.of(
+                                EquipmentCombatAffix.flat(
+                                        EquipmentCombatAffixKind.HEALING_DONE,
+                                        0.25
+                                ),
+                                EquipmentCombatAffix.flat(
+                                        EquipmentCombatAffixKind.HEALING_RECEIVED,
+                                        0.15
+                                )
+                        )
+                ),
+                EquippedCombatItem.gear(
+                        "openworld_rpg:greenwater_pendant",
+                        ProjectEquipmentSlot.NECKLACE,
+                        8,
+                        List.of(
+                                EquipmentCombatAffix.flat(
+                                        EquipmentCombatAffixKind.HEALING_DONE,
+                                        0.25
+                                ),
+                                EquipmentCombatAffix.flat(
+                                        EquipmentCombatAffixKind.HEALING_RECEIVED,
+                                        0.30
+                                )
+                        )
+                )
+        ));
+
+        assertEquals(0.40, loadout.aggregateHealingDoneBonus(), 0.0001);
+        assertEquals(0.40, loadout.aggregateHealingReceivedBonus(), 0.0001);
+    }
+
+    @Test
     void movementSpeedAggregatesWithoutWeaponAndCapsAtFifteenPercent() {
         var loadout = new PlayerEquipmentLoadoutState(List.of(
                 EquippedCombatItem.gear(
