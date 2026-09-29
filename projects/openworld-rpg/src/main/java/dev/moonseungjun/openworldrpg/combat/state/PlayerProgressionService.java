@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.combat.state;
 
+import dev.moonseungjun.openworldrpg.integration.spellengine.SpellEngineProjectSkillAccess;
 import java.util.Objects;
 import java.util.Optional;
 import net.minecraft.world.entity.player.Player;
@@ -24,7 +25,12 @@ public final class PlayerProgressionService {
     }
 
     public static PlayerProgressionState selectClass(Player player, RootClass rootClass) {
-        return replace(player, state(player).withActiveClass(rootClass));
+        PlayerProgressionState next = replace(
+                player,
+                state(player).withActiveClass(rootClass)
+        );
+        SpellEngineProjectSkillAccess.refreshPublishedSkills(player);
+        return next;
     }
 
     public static PlayerProgressionState setAllocation(

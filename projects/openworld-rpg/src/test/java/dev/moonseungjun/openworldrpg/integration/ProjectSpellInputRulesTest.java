@@ -8,9 +8,36 @@ import org.junit.jupiter.api.Test;
 
 class ProjectSpellInputRulesTest {
     @Test
-    void arcBoltRequiresReleaseBeforeAnotherPhysicalPressCanCast() {
-        assertFalse(ProjectSpellInputRules.suppressHeldRepeat("openworld_rpg:arc_bolt", true));
-        assertTrue(ProjectSpellInputRules.suppressHeldRepeat("openworld_rpg:arc_bolt", false));
-        assertFalse(ProjectSpellInputRules.suppressHeldRepeat("other_mod:spell", false));
+    void projectTapSpellsRequireReleaseBeforeAnotherPhysicalPressCanCast() {
+        assertFalse(
+                ProjectSpellInputRules.suppressHeldRepeat(
+                        "openworld_rpg:arc_bolt",
+                        true
+                )
+        );
+        assertTrue(
+                ProjectSpellInputRules.suppressHeldRepeat(
+                        "openworld_rpg:arc_bolt",
+                        false
+                )
+        );
+        assertFalse(
+                ProjectSpellInputRules.suppressHeldRepeat(
+                        "openworld_rpg:mend",
+                        true
+                )
+        );
+        assertTrue(
+                ProjectSpellInputRules.suppressHeldRepeat(
+                        "openworld_rpg:mend",
+                        false
+                )
+        );
+        assertFalse(
+                ProjectSpellInputRules.suppressHeldRepeat(
+                        "other_mod:spell",
+                        false
+                )
+        );
     }
 }

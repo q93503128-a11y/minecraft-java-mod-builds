@@ -2,5 +2,11 @@
   "spell.openworld_rpg.arc_bolt.name": "Arc Bolt",
   "spell.openworld_rpg.arc_bolt.description": "Launches a focused arcane bolt at the aimed enemy.",
   "spell.openworld_rpg.mend.name": "Mend",
-  "spell.openworld_rpg.mend.description": "Restores health to the aimed ally or yourself."
+  "spell.openworld_rpg.mend.description": "Restores health to the aimed ally or yourself.",
+  "key.category.openworld_rpg.combat": "Open-World RPG Combat",
+  "key.openworld_rpg.active_skill_1": "Active Skill 1",
+  "key.openworld_rpg.active_skill_2": "Active Skill 2",
+  "key.openworld_rpg.active_skill_3": "Active Skill 3",
+  "key.openworld_rpg.active_skill_4": "Active Skill 4",
+  "key.openworld_rpg.ultimate": "Ultimate"
 }

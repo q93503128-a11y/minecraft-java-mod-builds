@@ -2,5 +2,11 @@
   "spell.openworld_rpg.arc_bolt.name": "비전 화살",
   "spell.openworld_rpg.arc_bolt.description": "조준한 적에게 응축된 비전 화살을 발사합니다.",
   "spell.openworld_rpg.mend.name": "치유",
-  "spell.openworld_rpg.mend.description": "조준한 아군 또는 자신을 회복합니다."
+  "spell.openworld_rpg.mend.description": "조준한 아군 또는 자신을 회복합니다.",
+  "key.category.openworld_rpg.combat": "Open-World RPG 전투",
+  "key.openworld_rpg.active_skill_1": "액티브 스킬 1",
+  "key.openworld_rpg.active_skill_2": "액티브 스킬 2",
+  "key.openworld_rpg.active_skill_3": "액티브 스킬 3",
+  "key.openworld_rpg.active_skill_4": "액티브 스킬 4",
+  "key.openworld_rpg.ultimate": "궁극기"
 }

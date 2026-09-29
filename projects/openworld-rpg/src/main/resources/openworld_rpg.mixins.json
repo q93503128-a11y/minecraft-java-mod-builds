@@ -11,10 +11,13 @@
     "ExternalActorProgressionMixin",
     "ExternalActorDamageAuthorityMixin",
     "PlayerAttackAuthorityMixin",
-    "PlayerFoodSystemSuppressionMixin"
+    "PlayerFoodSystemSuppressionMixin",
+    "SpellEngineProjectSkillExposureMixin"
   ],
   "client": [
-    "SpellEngineSinglePressMixin"
+    "SpellEngineSinglePressMixin",
+    "SpellEngineDonorHotbarInputMixin",
+    "SpellEngineDonorHotbarHudMixin"
   ],
   "injectors": {
     "defaultRequire": 1

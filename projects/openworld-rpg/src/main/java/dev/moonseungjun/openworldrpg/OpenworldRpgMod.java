@@ -12,6 +12,7 @@ import dev.moonseungjun.openworldrpg.fishing.R01FishingAttachments;
 import dev.moonseungjun.openworldrpg.fishing.R01FishingService;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.IntegrationBootstrap;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
+import dev.moonseungjun.openworldrpg.integration.spellengine.SpellEngineProjectSkillAccess;
 import dev.moonseungjun.openworldrpg.integration.verify.M0PlayerVerificationBootstrap;
 import dev.moonseungjun.openworldrpg.integration.verify.R01PlayerVerificationBootstrap;
 import dev.moonseungjun.openworldrpg.gathering.R01GatheringAttachments;
@@ -137,10 +138,14 @@ public final class OpenworldRpgMod implements ModInitializer {
             CombatStateServices.restoreRuntime(handler.getPlayer());
             R01PlayerVerificationBootstrap.prepare(handler.getPlayer(), LOGGER);
             M0PlayerVerificationBootstrap.prepare(handler.getPlayer(), LOGGER);
+            SpellEngineProjectSkillAccess.refreshPublishedSkills(
+                    handler.getPlayer()
+            );
         });
-        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) ->
-                PlayerCombatBuildPublisher.refresh(newPlayer)
-        );
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+            PlayerCombatBuildPublisher.refresh(newPlayer);
+            SpellEngineProjectSkillAccess.refreshPublishedSkills(newPlayer);
+        });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             CombatStateServices.persistRuntime(handler.getPlayer());
             var playerId = handler.getPlayer().getUUID();
