@@ -154,8 +154,14 @@ public final class CampaignPersistence {
     /** Legacy path used only for one-time import and the crash-recovery reward journal. */
     public static Path playerFile(ServerPlayer player) {
         MinecraftServer server = Objects.requireNonNull(player.level().getServer(), "TURNBOUND player has no logical server");
+        return playerFile(server, player.getUUID());
+    }
+
+    public static Path playerFile(MinecraftServer server, UUID playerId) {
+        Objects.requireNonNull(server, "TURNBOUND server");
+        Objects.requireNonNull(playerId, "TURNBOUND player id");
         return server.getWorldPath(TURNBOUND_DATA)
                 .resolve("playerdata")
-                .resolve(player.getUUID() + ".json");
+                .resolve(playerId + ".json");
     }
 }
