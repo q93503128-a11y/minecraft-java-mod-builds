@@ -14,8 +14,8 @@ public final class MetaUiCodec {
             out.append("PP|").append(i + 1).append('|').append(String.join(",", snapshot.partyPresets().get(i))).append('\n');
         }
         for (var row : snapshot.characters()) out.append("C|").append(row.id()).append('|').append(safe(row.name())).append('|')
-                .append(row.owned()?1:0).append('|').append(row.nativeStar()).append('|').append(row.level()).append('|').append(row.star()).append('|')
-                .append(row.awakened()?1:0).append('|').append(row.cp()).append('|').append(row.active()?1:0).append('|')
+                .append(row.owned()?1:0).append('|').append(row.nativeStar()).append('|').append(row.level()).append('|')
+                .append(row.bonusLevel()).append('|').append(row.star()).append('|').append(row.awakened()?1:0).append('|').append(row.cp()).append('|').append(row.active()?1:0).append('|')
                 .append(safe(row.role())).append('|').append(safe(row.primaryRole())).append('|').append(safe(row.difficulty())).append('|')
                 .append(row.profileUnlocked()?1:0).append('|').append(row.hp()).append('|').append(row.attack()).append('|')
                 .append(row.defense()).append('|').append(row.speed()).append('\n');
@@ -38,7 +38,8 @@ public final class MetaUiCodec {
                 .append(safe(row.region())).append('|').append(row.objectiveSpecified()?1:0).append('|')
                 .append(row.completed()?1:0).append('|').append(safe(row.chestRule())).append('\n');
         for (var row : snapshot.archiveHistory()) out.append("A|").append(row.characterId()).append('|').append(safe(row.name())).append('|')
-                .append(row.nativeStars()).append('|').append(row.newlyOwned()?1:0).append('|').append(row.essenceGranted()).append('|').append(row.pityAfter()).append('\n');
+                .append(row.nativeStars()).append('|').append(row.newlyOwned()?1:0).append('|').append(row.essenceGranted()).append('|')
+                .append(row.pityAfter()).append('|').append(row.bonusLevelGranted()).append('|').append(row.bonusLevelAfter()).append('\n');
         for (var row : snapshot.shopItems()) out.append("S|").append(row.itemId()).append('|').append(safe(row.name())).append('|')
                 .append(row.tier()).append('|').append(row.slot()).append('|').append(row.price()).append('|').append(row.unlocked()?1:0).append('\n');
         for (var row : snapshot.codex()) out.append("D|").append(row.category()).append('|').append(row.id()).append('|').append(safe(row.name())).append('|')
