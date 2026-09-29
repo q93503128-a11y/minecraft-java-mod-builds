@@ -14,7 +14,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -31,7 +30,7 @@ import java.util.UUID;
  * Shared visible-enemy runtime for the surveyed Drehmal route.
  *
  * <p>This service is deliberately dormant while route entries remain unverified. Once survey data is promoted,
- * one physical actor group is shared by all players; the server owns encounter claims and starts either the normal
+ * one physical representative actor is shared by all players; the server owns encounter claims and starts either the normal
  * solo session or one authoritative nearby-party shared battle through an authored camera-safe arena candidate.</p>
  */
 final class DrehmalVisibleEncounterService {
@@ -337,7 +336,7 @@ final class DrehmalVisibleEncounterService {
                 return true;
             }
 
-            List<String> fieldIds = fieldEnemyIds();
+            List<String> fieldIds = fieldRepresentativeIds();
             for (String defId : fieldIds) {
                 if (TurnboundBattleActors.contains(defId)) continue;
                 if (!missingVisualWarned) {
@@ -350,8 +349,7 @@ final class DrehmalVisibleEncounterService {
 
             for (int i = 0; i < fieldIds.size(); i++) {
                 String defId = fieldIds.get(i);
-                Vec3 pos = groundedFormation(level, i, facing);
-                BattleActorEntity actor = TurnboundBattleActors.spawn(level, defId, pos, yawFor(facing));
+                BattleActorEntity actor = TurnboundBattleActors.spawn(level, defId, pivot, yawFor(facing));
                 if (actor == null) {
                     discardActors(level);
                     return false;
@@ -381,7 +379,7 @@ final class DrehmalVisibleEncounterService {
                 int index = slot(actor);
                 if (index < 0 || bySlot.putIfAbsent(index, actor) != null) actor.discard();
             }
-            List<String> fieldIds = fieldEnemyIds();
+            List<String> fieldIds = fieldRepresentativeIds();
             if (bySlot.size() != fieldIds.size()) {
                 for (BattleActorEntity actor : bySlot.values()) actor.discard();
                 return false;
@@ -477,55 +475,32 @@ final class DrehmalVisibleEncounterService {
             }
         }
 
-        private List<String> fieldEnemyIds() {
+        private List<String> fieldRepresentativeIds() {
+            // Schema v1 keeps a count field for compatibility, but production validation pins it to one.
+            // The world silhouette is a contact proxy; the full combat encounter expands independently after contact.
             int count = Math.max(1, Math.min(slot.fieldVisibleCount(), spec.enemies().size()));
             return spec.enemies().subList(0, count);
         }
 
         private void updateActors(ServerLevel level, boolean walking) {
+            Entity raw = lead(level);
+            if (!(raw instanceof BattleActorEntity actor)) return;
             float yaw = yawFor(facing);
-            for (int i = 0; i < actors.size(); i++) {
-                Entity raw = level.getEntity(actors.get(i));
-                if (!(raw instanceof BattleActorEntity actor)) continue;
-                if (i > 0) {
-                    Vec3 pos = groundedFormation(level, i, facing);
-                    actor.setPos(pos.x, pos.y, pos.z);
-                    actor.setYRot(yaw);
-                    actor.setYHeadRot(yaw);
-                    actor.setYBodyRot(yaw);
-                } else if (walking) {
-                    actor.setYRot(yaw);
-                    actor.setYHeadRot(yaw);
-                    actor.setYBodyRot(yaw);
-                }
-                actor.setFieldWalking(walking);
-                if (i == 0 && phase == FieldEncounterRules.Phase.ALERT && alertPreludeTicks > 0) {
-                    actor.setCustomName(Component.literal("!").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
-                    actor.setCustomNameVisible(true);
-                } else {
-                    actor.setCustomName(Component.literal(CanonicalData.definition(
-                            fieldEnemyIds().get(i), spec.level(), 0, false).name()));
-                    if (TurnboundBattleActors.fieldThreatTier(actor.getType()) < 2) actor.setCustomNameVisible(false);
-                }
+            if (walking) {
+                actor.setYRot(yaw);
+                actor.setYHeadRot(yaw);
+                actor.setYBodyRot(yaw);
             }
-        }
-
-        private Vec3 formation(int index, Vec3 forward) {
-            if (index == 0) return pivot;
-            Vec3 right = new Vec3(-forward.z, 0.0D, forward.x);
-            int row = (index + 1) / 2;
-            double side = index % 2 == 0 ? 1.0D : -1.0D;
-            return pivot.subtract(forward.scale(1.15D * row)).add(right.scale(1.15D * side));
-        }
-
-        private Vec3 groundedFormation(ServerLevel level, int index, Vec3 forward) {
-            Vec3 desired = formation(index, forward);
-            if (index == 0) return desired;
-            int x = (int)Math.floor(desired.x);
-            int z = (int)Math.floor(desired.z);
-            int groundY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-            double y = Math.abs(groundY - pivot.y) <= 2.5D ? groundY : pivot.y;
-            return new Vec3(desired.x, y, desired.z);
+            actor.setFieldWalking(walking);
+            if (phase == FieldEncounterRules.Phase.ALERT && alertPreludeTicks > 0) {
+                actor.setCustomName(Component.literal("!").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
+                actor.setCustomNameVisible(true);
+            } else {
+                String representativeId = fieldRepresentativeIds().getFirst();
+                actor.setCustomName(Component.literal(CanonicalData.definition(
+                        representativeId, spec.level(), 0, false).name()));
+                if (TurnboundBattleActors.fieldThreatTier(actor.getType()) < 2) actor.setCustomNameVisible(false);
+            }
         }
 
         private boolean driveLeadNavigation(
@@ -598,7 +573,7 @@ final class DrehmalVisibleEncounterService {
         }
 
         private boolean actorsAlive(ServerLevel level) {
-            if (actors.size() != fieldEnemyIds().size()) return false;
+            if (actors.size() != fieldRepresentativeIds().size()) return false;
             for (UUID id : actors) if (!(level.getEntity(id) instanceof BattleActorEntity)) return false;
             return true;
         }
