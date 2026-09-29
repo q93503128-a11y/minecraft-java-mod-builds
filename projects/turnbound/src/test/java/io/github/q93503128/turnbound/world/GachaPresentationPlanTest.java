@@ -22,12 +22,25 @@ class GachaPresentationPlanTest {
     }
 
     @Test
+    void highRarityDuplicateIsNotBuriedByNewLowRarityPull() {
+        var result = new GachaService.BatchResult(List.of(
+                new GachaService.PullResult("F01",1,true,0,3),
+                new GachaService.PullResult("P06",5,false,250,0),
+                new GachaService.PullResult("P08",3,false,40,1)), 3000);
+
+        assertEquals(List.of(
+                new GachaPresentationPlan.Reveal("F01",1,true),
+                new GachaPresentationPlan.Reveal("P06",5,false)),
+                GachaPresentationPlan.reveals(result));
+    }
+
+    @Test
     void duplicateOnlyBatchStillGetsOneHighestRarityThreeDimensionalFocus() {
         var result = new GachaService.BatchResult(List.of(
                 new GachaService.PullResult("P08",3,false,15,8),
                 new GachaService.PullResult("P01",4,false,60,9),
                 new GachaService.PullResult("P06",5,false,250,0),
                 new GachaService.PullResult("P02",5,false,250,0)), 3000);
-        assertEquals(List.of("P06"), GachaPresentationPlan.revealCharacterIds(result));
+        assertEquals(List.of("P01","P06","P02"), GachaPresentationPlan.revealCharacterIds(result));
     }
 }
