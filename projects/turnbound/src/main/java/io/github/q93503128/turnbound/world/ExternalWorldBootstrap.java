@@ -3,6 +3,7 @@ package io.github.q93503128.turnbound.world;
 import io.github.q93503128.turnbound.Turnbound;
 import io.github.q93503128.turnbound.combat.BattleOutcome;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
@@ -153,6 +154,16 @@ public final class ExternalWorldBootstrap {
     public static boolean onBattleEnded(ServerPlayer player, String encounterId, BattleOutcome outcome) {
         if (!active(player)) return false;
         return DrehmalVisibleEncounterService.onBattleEnded(player, encounterId, outcome);
+    }
+
+    /**
+     * Shared-battle completion does not require the original claimant to still be online.
+     */
+    public static boolean onSharedBattleEnded(ServerLevel level, UUID claimantId, String encounterId, BattleOutcome outcome) {
+        if (level == null || claimantId == null) return false;
+        MinecraftServer server = level.getServer();
+        if (server == null || !DrehmalWorldBinding.isBound(server)) return false;
+        return DrehmalVisibleEncounterService.onBattleEnded(level, claimantId, encounterId, outcome);
     }
 
     public static void remove(ServerPlayer player) {
