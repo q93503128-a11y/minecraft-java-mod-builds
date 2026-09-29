@@ -35,6 +35,7 @@ public final class DrehmalWorldBinding {
         List<String> errors = new ArrayList<>(DrehmalWorldProfile.validate());
         errors.addAll(DrehmalFirstRouteCatalog.validate());
         errors.addAll(DrabyelHubServiceCatalog.validate());
+        errors.addAll(DrabyelMapPlacementCatalog.validate());
         return List.copyOf(errors);
     }
 
