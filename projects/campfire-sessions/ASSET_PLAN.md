@@ -74,6 +74,26 @@ Already used in the existing alpha.6 music foundation:
 
 These remain valid unless later replaced intentionally.
 
+### Music/guitar integration
+The existing Tchongas Acoustic Guitar remains the baseline purchasable guitar visual.
+Do not replace the working Campfire guitar/music system merely because other instrument mods exist.
+
+Additional guitar/instrument assets may be sourced later for:
+- premium cosmetic guitar variants.
+- the recurring special musician.
+- café/plaza/festival staging.
+- resident-home music decor.
+
+The recurring musician requires:
+- one fixed original special-character visual identity using the selected external animal/character pipeline.
+- reliable seated/standing guitar performance poses.
+- idle/practice/performance animation states.
+- suitable stool/chair/stage props.
+- optional microphone/amp/lighting props only when they fit the acoustic/island-life presentation.
+
+Do not imitate K.K. Slider's exact species, model, clothing, name, dialogue, songs or visual presentation.
+Use the life-sim role as structural inspiration only.
+
 ## 4. Map
 
 ### Requirements
@@ -286,17 +306,55 @@ Required screens:
 ### Village notice-board candidates / references
 Current search found no clean drop-in **Minecraft 26.2 NeoForge** notice-board mod that already matches the required civic schedule system.
 
-Useful references:
-- **Bulletin Board** by IUnnamedUserI: MIT, physical wall board with visible note slots and click-to-open note UI. Strong physical-board/interaction reference, but current published builds are Fabric 1.20.1/1.21.1, so it is NOT a direct Campfire dependency.
-- **The Board** by AkorpuzZ: NeoForge shared visual posting/feed concept with text/images, but current published game version is 1.21.1 rather than 26.2. Reference only.
-- **Welcome Board** supports 26.2 NeoForge but is a first-join welcome screen, not a persistent in-world civic schedule board; reject it as the schedule-system solution.
-- **EaseGUI** supports 26.2 NeoForge and provides configurable GUI animation/polish. It may be evaluated as optional presentation polish, but it does not replace Campfire's schedule/event data model.
+Useful references / code-base candidates:
+
+**Bulletin Board by IUnnamedUserI**
+- MIT licensed.
+- client + server.
+- published for Fabric 1.20.1/1.21.1.
+- physical wall board with visible note slots.
+- full/small note slots.
+- note editor/view UI.
+- authored/anonymous player notes.
+- hover/interaction highlighting.
+- persistent/sealed-note concepts.
+- current project roadmap mentions a future Forge port, but no current 26.2 NeoForge build exists.
+- because the license is MIT, legitimately obtained source code may be used, modified and ported with the copyright/license notice preserved.
+- this would be a real Fabric→NeoForge and 1.21.1→26.2 port, not a version-number edit; registry, networking, GUI/container and rendering APIs must be rewritten as required.
+- current public project pages did not expose a source-repository link during this planning pass. Do not make the project depend on unavailable source. If clean source is obtained later, evaluate reuse versus a smaller native Campfire implementation.
+- even if code is reused, Campfire's schedule/categories/event data remain project-specific rather than inheriting the mod's generic note model blindly.
+
+**The Board by AkorpuzZ**
+- NeoForge shared visual posting/feed concept with text/images.
+- current published game version is 1.21.1 rather than 26.2.
+- reference only unless a suitable update/source path appears.
+
+**Welcome Board**
+- supports 26.2 NeoForge.
+- first-join welcome screen, not a persistent in-world civic schedule board.
+- reject as the schedule-system solution.
+
+**EaseGUI**
+- supports 26.2 NeoForge.
+- configurable GUI animation/polish.
+- may be evaluated as optional presentation polish.
+- does not replace Campfire's schedule/event data model.
+
+Design references from Animal Crossing-style town boards:
+- event notices.
+- birthdays.
+- weather warnings.
+- shop/facility notices.
+- competition results.
+- villager/community flavor messages.
+- player-written messages.
 
 Preferred direction:
 - source a strong external physical notice-board block/model/build or adapt a compatible asset.
-- keep the schedule/event data and category/detail behavior Campfire-specific.
-- render that UI using the chosen coherent external UI design language rather than copying vanilla book/sign screens.
-- use Bulletin Board-style physical note readability as a reference without porting an incompatible Fabric mod wholesale.
+- if usable MIT source for Bulletin Board is obtained, inspect it before deciding whether porting saves real work.
+- keep schedule/event/category data Campfire-specific.
+- render the UI using the chosen coherent external UI design language rather than copying vanilla book/sign screens.
+- reuse interaction/design ideas where useful without cloning another game's board art.
 
 Do not mix many incompatible UI styles.
 Choose a coherent system and use it consistently.
