@@ -56,6 +56,7 @@ public final class TurnboundWorldSavedData extends SavedData {
 
     private final Set<String> clearedBosses = new LinkedHashSet<>();
     private final Set<String> unlockedRegions = new LinkedHashSet<>();
+    private static final String ENCOUNTER_CLEAR_CLAIM_PREFIX = "ENCOUNTER_CLEAR:";
     private final Set<String> claimedWorldRewards = new LinkedHashSet<>();
 
     public TurnboundWorldSavedData() {
@@ -77,24 +78,55 @@ public final class TurnboundWorldSavedData extends SavedData {
     public boolean bossCleared(String bossId) { return clearedBosses.contains(bossId); }
     public boolean regionUnlocked(String regionId) { return unlockedRegions.contains(regionId); }
     public boolean worldRewardClaimed(String claimId) { return claimedWorldRewards.contains(claimId); }
+    public boolean encounterCleared(String encounterId) {
+        if (encounterId == null) return false;
+        String canonicalId = CampaignProgressStore.canonicalEncounterId(encounterId);
+        String legacyBoss = legacyBossForEncounter(canonicalId);
+        return legacyBoss != null
+                ? clearedBosses.contains(legacyBoss)
+                : claimedWorldRewards.contains(encounterClearClaim(canonicalId));
+    }
     public Set<String> clearedBosses() { return Set.copyOf(clearedBosses); }
     public Set<String> unlockedRegions() { return Set.copyOf(unlockedRegions); }
 
     public void recordEncounterClear(String encounterId) {
-        if (encounterId == null || !CampaignEncounterCatalog.contains(encounterId)) return;
-        var encounter = CampaignEncounterCatalog.spec(encounterId);
+        if (encounterId == null) return;
+        String canonicalId = CampaignProgressStore.canonicalEncounterId(encounterId);
+        if (!CampaignEncounterCatalog.contains(canonicalId)) return;
+        var encounter = CampaignEncounterCatalog.spec(canonicalId);
         if (!encounter.boss() || encounter.enemies().isEmpty()) return;
-        String boss = encounter.enemies().getFirst();
-        boolean changed = clearedBosses.add(boss);
-        changed |= switch (boss) {
-            case "B01" -> unlockedRegions.add(REGION_GLOAMWOOD);
-            case "B02" -> unlockedRegions.add(REGION_BROKEN_AQUEDUCT);
-            case "B03" -> unlockedRegions.add(REGION_EMBER_QUARRY);
+
+        String legacyBoss = legacyBossForEncounter(canonicalId);
+        if (legacyBoss == null) {
+            if (claimedWorldRewards.add(encounterClearClaim(canonicalId))) setDirty();
+            return;
+        }
+
+        boolean changed = clearedBosses.add(legacyBoss);
+        changed |= switch (canonicalId) {
+            case "BATTLE_B01" -> unlockedRegions.add(REGION_GLOAMWOOD);
+            case "BATTLE_B02" -> unlockedRegions.add(REGION_BROKEN_AQUEDUCT);
+            case "BATTLE_B03" -> unlockedRegions.add(REGION_EMBER_QUARRY);
             // B04 only enables the Chapter 5 relay-fragment phase. The physical east road opens after MQ_C05_01.
             // B05 alone also does not open endgame; MQ_C05_03 / ENDGAME is the canonical boundary.
             default -> false;
         };
         if (changed) setDirty();
+    }
+
+    private static String legacyBossForEncounter(String encounterId) {
+        return switch (encounterId == null ? "" : encounterId) {
+            case "BATTLE_B01" -> "B01";
+            case "BATTLE_B02" -> "B02";
+            case "BATTLE_B03" -> "B03";
+            case "BATTLE_B04" -> "B04";
+            case "BATTLE_B05" -> "B05";
+            default -> null;
+        };
+    }
+
+    private static String encounterClearClaim(String encounterId) {
+        return ENCOUNTER_CLEAR_CLAIM_PREFIX + encounterId;
     }
 
     /**

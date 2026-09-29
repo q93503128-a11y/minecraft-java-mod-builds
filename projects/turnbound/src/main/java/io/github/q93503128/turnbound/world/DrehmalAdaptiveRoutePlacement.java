@@ -17,6 +17,9 @@ import java.util.*;
 final class DrehmalAdaptiveRoutePlacement {
     private static final Map<ServerLevel, Snapshot> CACHE = new IdentityHashMap<>();
     private record ScoredPosition(DrehmalFirstRouteCatalog.Position position, double score) {}
+    private record WorldBossResolution(
+            DrehmalFirstRouteCatalog.Site site,
+            DrehmalFirstRouteCatalog.Footprint footprint) {}
 
     record Snapshot(Map<String,DrehmalFirstRouteCatalog.Site> sites,
                     Map<String,DrehmalFirstRouteCatalog.Footprint> footprints,
@@ -71,6 +74,12 @@ final class DrehmalAdaptiveRoutePlacement {
             if(candidates.size()<2) continue;
             footprints.put(authored.locator(),new DrehmalFirstRouteCatalog.Footprint(authored.locator(),authored.siteLocator(),
                     authored.radius(),authored.allySlots(),authored.enemySlots(),candidates,true,true));
+        }
+
+        WorldBossResolution worldBoss = resolveOptionalWorldBoss(player, level, List.copyOf(sites.values()));
+        if (worldBoss != null) {
+            sites.put(worldBoss.site().locator(), worldBoss.site());
+            footprints.put(worldBoss.footprint().locator(), worldBoss.footprint());
         }
 
         for(var authored:DrehmalFirstRouteCatalog.route().patrols()){
@@ -169,6 +178,187 @@ final class DrehmalAdaptiveRoutePlacement {
                 }
             }
             if(!duplicate)out.add(point);
+        }
+        return List.copyOf(out);
+    }
+
+    private static WorldBossResolution resolveOptionalWorldBoss(
+            ServerPlayer player,
+            ServerLevel level,
+            List<DrehmalFirstRouteCatalog.Site> activeSites
+    ) {
+        if (player == null || level == null || level.getServer() == null) return null;
+        if (TurnboundWorldSavedData.get(level.getServer()).encounterCleared(DrehmalWorldBossPlacementRules.ENCOUNTER_ID)) {
+            return null;
+        }
+
+        var authoredSite = DrehmalFirstRouteCatalog.site(DrehmalWorldBossPlacementRules.SITE_LOCATOR);
+        var authoredFootprint = DrehmalFirstRouteCatalog.footprint(DrehmalWorldBossPlacementRules.FOOTPRINT_LOCATOR);
+        if (authoredSite == null || authoredFootprint == null) return null;
+        var tower = DrehmalWorldProfile.enabled(authoredSite.surveySeedAnchor());
+        var hub = DrehmalWorldProfile.enabled(DrehmalWorldProfile.HUB_LOCATOR);
+        if (tower == null || hub == null) return null;
+
+        List<ScoredPosition> shortlist = new ArrayList<>();
+        Set<Long> visited = new HashSet<>();
+        for (var seed : worldBossSeeds()) {
+            for (int[] offset : spacedOffsets(
+                    DrehmalWorldBossPlacementRules.LOCAL_SEARCH_RADIUS,
+                    DrehmalWorldBossPlacementRules.LOCAL_SEARCH_STEP)) {
+                int x = seed.x() + offset[0];
+                int z = seed.z() + offset[1];
+                long key = (((long)x) << 32) ^ (z & 0xffffffffL);
+                if (!visited.add(key)) continue;
+
+                double towerDistance = Math.hypot(x + 0.5D - tower.x(), z + 0.5D - tower.z());
+                double routeDistance = worldBossRouteDistance(x + 0.5D, z + 0.5D);
+                double hubDistance = Math.hypot(x + 0.5D - hub.x(), z + 0.5D - hub.z());
+                boolean safetyZone = DrehmalRouteZoneRules.insideSafetyZone(activeSites, x + 0.5D, z + 0.5D);
+                int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+                BlockPos feet = new BlockPos(x, y, z);
+                if (!standing(level, feet)) continue;
+
+                int spread = localHeightSpread(level, x, z, 8, 4);
+                if (!DrehmalWorldBossPlacementRules.candidate(
+                        towerDistance, routeDistance, hubDistance, spread, safetyZone)) continue;
+                shortlist.add(new ScoredPosition(
+                        new DrehmalFirstRouteCatalog.Position(x, y, z),
+                        DrehmalWorldBossPlacementRules.score(towerDistance, routeDistance, spread)));
+            }
+        }
+
+        shortlist.sort(Comparator
+                .comparingDouble(ScoredPosition::score)
+                .thenComparingInt(candidate -> candidate.position().x())
+                .thenComparingInt(candidate -> candidate.position().z()));
+
+        int limit = Math.min(DrehmalWorldBossPlacementRules.MAX_SHORTLIST, shortlist.size());
+        for (int i = 0; i < limit; i++) {
+            var position = shortlist.get(i).position();
+            if (!sourceContentClear(level, position.x(), position.y(), position.z(), 8.5D)) continue;
+            List<DrehmalFirstRouteCatalog.ArenaCandidate> arenas = worldBossArenas(player, level, position);
+            if (arenas.size() < 2) continue;
+
+            var site = new DrehmalFirstRouteCatalog.Site(
+                    authoredSite.locator(),
+                    authoredSite.kind(),
+                    authoredSite.surveySeedAnchor(),
+                    authoredSite.playerLabel(),
+                    position,
+                    authoredSite.safetyRadius(),
+                    authoredSite.encounterRadius(),
+                    true,
+                    true);
+            var footprint = new DrehmalFirstRouteCatalog.Footprint(
+                    authoredFootprint.locator(),
+                    authoredFootprint.siteLocator(),
+                    authoredFootprint.radius(),
+                    authoredFootprint.allySlots(),
+                    authoredFootprint.enemySlots(),
+                    arenas,
+                    true,
+                    true);
+            Turnbound.LOGGER.info(
+                    "TURNBOUND resolved optional Graul world-boss meadow at {},{},{} with {} battle footprints",
+                    position.x(), position.y(), position.z(), arenas.size());
+            return new WorldBossResolution(site, footprint);
+        }
+
+        Turnbound.LOGGER.warn("TURNBOUND left optional Graul world boss dormant: no safe off-road meadow passed live-world checks");
+        return null;
+    }
+
+    /**
+     * Derives coarse meadow probes from the pinned Capital Valley source-route geometry rather than hard-coding a
+     * new boss coordinate. The final location is always selected against the live 26.2 world.
+     */
+    private static List<DrehmalMapPlacementCatalog.Seed> worldBossSeeds() {
+        Map<Long, DrehmalMapPlacementCatalog.Seed> out = new LinkedHashMap<>();
+        Set<String> roles = Set.of("FIRST_COMBAT", "CHOICE_ELITE", "BREATHING");
+        int[] lateralOffsets = {72, 96, 120};
+        for (var zone : DrehmalMapPlacementCatalog.plan().zones()) {
+            if (!roles.contains(zone.role())) continue;
+            for (int i = 1; i < zone.corridor().size(); i++) {
+                var a = zone.corridor().get(i - 1);
+                var b = zone.corridor().get(i);
+                double dx = b.x() - a.x();
+                double dz = b.z() - a.z();
+                double length = Math.hypot(dx, dz);
+                if (length < 1.0D) continue;
+                double mx = (a.x() + b.x()) * 0.5D;
+                double mz = (a.z() + b.z()) * 0.5D;
+                double nx = -dz / length;
+                double nz = dx / length;
+                for (int lateral : lateralOffsets) {
+                    addWorldBossSeed(out, (int)Math.round(mx + nx * lateral), (int)Math.round(mz + nz * lateral));
+                    addWorldBossSeed(out, (int)Math.round(mx - nx * lateral), (int)Math.round(mz - nz * lateral));
+                }
+            }
+        }
+        return List.copyOf(out.values());
+    }
+
+    private static void addWorldBossSeed(Map<Long, DrehmalMapPlacementCatalog.Seed> out, int x, int z) {
+        long key = (((long)x) << 32) ^ (z & 0xffffffffL);
+        out.putIfAbsent(key, new DrehmalMapPlacementCatalog.Seed(x, z));
+    }
+
+    private static double worldBossRouteDistance(double x, double z) {
+        double best = Double.POSITIVE_INFINITY;
+        for (var zone : DrehmalMapPlacementCatalog.plan().zones()) {
+            if (!Set.of("FIRST_COMBAT", "CHOICE_ELITE", "BREATHING").contains(zone.role())) continue;
+            best = Math.min(best, DrehmalRoutePlacementRules.corridorDistance(zone, x, z));
+        }
+        return best;
+    }
+
+    private static int localHeightSpread(ServerLevel level, int x, int z, int radius, int step) {
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        for (int dz = -radius; dz <= radius; dz += step) {
+            for (int dx = -radius; dx <= radius; dx += step) {
+                int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x + dx, z + dz);
+                min = Math.min(min, y);
+                max = Math.max(max, y);
+            }
+        }
+        return max - min;
+    }
+
+    private static List<int[]> spacedOffsets(int radius, int step) {
+        List<int[]> out = new ArrayList<>();
+        for (int dz = -radius; dz <= radius; dz += step) {
+            for (int dx = -radius; dx <= radius; dx += step) {
+                if (dx * dx + dz * dz <= radius * radius) out.add(new int[]{dx, dz});
+            }
+        }
+        out.sort(Comparator.comparingInt(value -> value[0] * value[0] + value[1] * value[1]));
+        return out;
+    }
+
+    private static List<DrehmalFirstRouteCatalog.ArenaCandidate> worldBossArenas(
+            ServerPlayer player,
+            ServerLevel level,
+            DrehmalFirstRouteCatalog.Position home
+    ) {
+        List<DrehmalFirstRouteCatalog.ArenaCandidate> out = new ArrayList<>();
+        int[][] offsets = {{0,0},{8,0},{-8,0},{0,8},{0,-8},{8,8},{-8,8},{8,-8},{-8,-8}};
+        float[] yaws = {0.0F, 90.0F, 180.0F, 270.0F};
+        for (int[] offset : offsets) {
+            int x = home.x() + offset[0];
+            int z = home.z() + offset[1];
+            int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+            BlockPos feet = new BlockPos(x, y, z);
+            if (!standing(level, feet) || localHeightSpread(level, x, z, 6, 3) > 3) continue;
+            if (!sourceContentClear(level, x, y, z, 6.5D)) continue;
+            Vec3 center = new Vec3(x + 0.5D, y, z + 0.5D);
+            for (float yaw : yaws) {
+                if (!BattleSessionManager.surveyArenaOpen(player, center, yaw, 4)) continue;
+                out.add(new DrehmalFirstRouteCatalog.ArenaCandidate(
+                        new DrehmalFirstRouteCatalog.Position(x, y, z), yaw));
+                break;
+            }
+            if (out.size() >= 4) break;
         }
         return List.copyOf(out);
     }

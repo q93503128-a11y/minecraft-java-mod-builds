@@ -56,6 +56,32 @@ class CampaignSupplementalRewardServiceTest {
     }
 
     @Test
+    void optionalGraulUsesBossRewardWithoutRetiredStoryUnlocks() {
+        UUID id = player();
+        assertFalse(CampaignProgressStore.snapshot(id).profile().starterArchiveUnlocked());
+
+        BattleResultSummary first = CampaignProgressStore.commit(
+                id, DrehmalWorldBossPlacementRules.ENCOUNTER_ID, BattleOutcome.ALLY_VICTORY);
+        assertTrue(first.firstClear());
+        assertEquals(60, CampaignProgressStore.currency(id, PlayerProfile.Currency.STAR_ESSENCE));
+        assertEquals(0, CampaignProgressStore.currency(id, PlayerProfile.Currency.SUMMON_CRYSTAL));
+        assertFalse(CampaignProgressStore.snapshot(id).profile().starterArchiveUnlocked());
+        assertEquals(0, CampaignProgressStore.equipment(id).choiceTokens().getOrDefault("T2", 0));
+
+        CampaignSupplementalRewardService.apply(id, DrehmalWorldBossPlacementRules.ENCOUNTER_ID, first);
+        assertEquals(1_200, CampaignProgressStore.currency(id, PlayerProfile.Currency.SUMMON_CRYSTAL));
+        assertEquals(1, CampaignProgressStore.equipment(id).choiceTokens().getOrDefault("T2", 0));
+        assertFalse(CampaignProgressStore.snapshot(id).profile().starterArchiveUnlocked());
+
+        BattleResultSummary repeat = CampaignProgressStore.commit(
+                id, DrehmalWorldBossPlacementRules.ENCOUNTER_ID, BattleOutcome.ALLY_VICTORY);
+        assertFalse(repeat.firstClear());
+        CampaignSupplementalRewardService.apply(id, DrehmalWorldBossPlacementRules.ENCOUNTER_ID, repeat);
+        assertEquals(1_200, CampaignProgressStore.currency(id, PlayerProfile.Currency.SUMMON_CRYSTAL));
+        assertEquals(1, CampaignProgressStore.equipment(id).choiceTokens().getOrDefault("T2", 0));
+    }
+
+    @Test
     void repeatClearDoesNotRepeatCrystalOrChoiceToken() {
         UUID id = player();
         BattleResultSummary first = CampaignProgressStore.commit(id, "BATTLE_B03", BattleOutcome.ALLY_VICTORY);

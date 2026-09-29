@@ -28,6 +28,13 @@ class DrehmalLocationBannerRulesTest {
     }
 
     @Test
+    void worldBossTerritoryCanDriveAReadableLocationTitle() {
+        var boss = site("boss", DrehmalWorldBossPlacementRules.SITE_KIND, "캐피털 밸리 외곽 들판",
+                0, 34, true, true, 0, 0);
+        assertEquals(boss, DrehmalLocationBannerRules.current(List.of(boss), 30, 0));
+    }
+
+    @Test
     void currentCatalogNeverPromotesCandidateCopyAsAPlayerLocationTitle() {
         for (var site : DrehmalFirstRouteCatalog.route().sites()) {
             if (!DrehmalLocationBannerRules.eligible(site)) continue;

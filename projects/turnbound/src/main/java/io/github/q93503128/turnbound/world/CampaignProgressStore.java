@@ -115,13 +115,15 @@ public final class CampaignProgressStore {
         if (firstClear && encounter.boss()) {
             String bossId = encounter.enemies().getFirst();
             progress.profile.grant(PlayerProfile.Currency.STAR_ESSENCE, V04Catalogs.bossFirstClearEssence(bossId));
-            if ("B01".equals(bossId)) applyB01FirstClear(progress);
+            if ("BATTLE_B01".equals(canonicalId) && "B01".equals(bossId)) applyB01FirstClear(progress);
         }
         if (firstClear && "TUTORIAL_1".equals(canonicalId)) grantStoryRecruit(progress, "P03");
         if (firstClear && "TUTORIAL_2".equals(canonicalId)) grantStoryRecruit(progress, "P04");
 
         recordQuestEvent(progress, QuestProgress.Event.battleWin(canonicalId, Set.copyOf(encounter.enemies())));
-        if (encounter.boss()) recordQuestEvent(progress, QuestProgress.Event.bossWin(encounter.enemies().getFirst()));
+        if (encounter.boss() && legacyBossQuestEncounter(canonicalId)) {
+            recordQuestEvent(progress, QuestProgress.Event.bossWin(encounter.enemies().getFirst()));
+        }
         progress.dirty = true;
         return new BattleResultSummary(preview.xp(), preview.gold(), firstClear, preview.party());
     }
@@ -393,6 +395,13 @@ public final class CampaignProgressStore {
             case "southgate_enc_m05" -> "ENC_M05";
             case "southgate_b01_graul" -> "BATTLE_B01";
             default -> encounterId;
+        };
+    }
+
+    private static boolean legacyBossQuestEncounter(String encounterId) {
+        return switch (encounterId) {
+            case "BATTLE_B01", "BATTLE_B02", "BATTLE_B03", "BATTLE_B04", "BATTLE_B05" -> true;
+            default -> false;
         };
     }
 

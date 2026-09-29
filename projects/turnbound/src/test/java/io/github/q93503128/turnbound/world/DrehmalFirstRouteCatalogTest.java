@@ -76,6 +76,11 @@ class DrehmalFirstRouteCatalogTest {
                 .findFirst().orElseThrow();
         assertTrue(road.combatEncounterId().equals("CV_DRABYEL_ROAD"));
         assertFalse(road.productionEnabled(), "Drabyel road must also remain survey-gated");
+
+        var worldBoss = DrehmalFirstRouteCatalog.encounterByCombatId(DrehmalWorldBossPlacementRules.ENCOUNTER_ID);
+        assertNotNull(worldBoss);
+        assertTrue(DrehmalWorldBossPlacementRules.isGraul(worldBoss));
+        assertFalse(worldBoss.productionEnabled(), "Graul's exact meadow remains live-world resolved");
     }
 
     @Test
@@ -87,6 +92,7 @@ class DrehmalFirstRouteCatalogTest {
         assertTrue(kinds.contains("ENCOUNTER_ZONE"));
         assertTrue(kinds.contains("BREATHING_ZONE"));
         assertTrue(kinds.contains("ELITE_ZONE"));
+        assertTrue(kinds.contains(DrehmalWorldBossPlacementRules.SITE_KIND));
         assertTrue(kinds.contains("REST_ZONE"));
         assertTrue(kinds.contains("PATROL_ZONE"));
         assertTrue(kinds.contains("HUB_SAFE"));

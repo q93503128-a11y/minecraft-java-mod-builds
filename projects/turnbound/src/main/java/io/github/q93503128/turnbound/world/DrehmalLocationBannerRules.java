@@ -9,6 +9,7 @@ final class DrehmalLocationBannerRules {
             "START_CANDIDATE",
             "BREATHING_ZONE",
             "ELITE_ZONE",
+            DrehmalWorldBossPlacementRules.SITE_KIND,
             "REST_ZONE",
             "PATROL_ZONE",
             "HUB_SAFE");

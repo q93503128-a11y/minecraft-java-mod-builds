@@ -126,7 +126,7 @@ survey된 장소부터:
 첫 production survey 우선순위:
 1. Capital Valley roadhead → Drabyel
 2. Warning Cave Elite footprint
-3. Capital Valley optional world-boss meadow 후보
+3. Capital Valley optional world-boss meadow 후보 — **implemented as source-route-derived live 26.2 Graul meadow binding; client playtest pending**
 4. Drabyel → Av'Sal road patrol anchors
 5. Av'Sal outer-ring Elite
 6. north-dock Midboss footprint

@@ -397,6 +397,17 @@
       "boss": false
     },
     {
+      "id": "CV_WORLD_BOSS_GRAUL",
+      "label": "들이받는 왕 그라울",
+      "region": "CAPITAL_VALLEY",
+      "level": 6,
+      "enemies": [
+        "B01"
+      ],
+      "respawnSeconds": 0,
+      "boss": true
+    },
+    {
       "id": "BATTLE_B01",
       "label": "Graul",
       "region": "MEADOW",

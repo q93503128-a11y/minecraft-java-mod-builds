@@ -358,7 +358,16 @@ Battle identity:
 - 고정 4v1만 고집하지 않고 phase add 여부 검토
 - visible charge와 hit area 일치
 
-정확한 장소는 Capital Valley 26.2 meadow survey 후 결정.
+Production binding (2026-09-29):
+- encounter id: `CV_WORLD_BOSS_GRAUL`
+- 고정 좌표를 새로 쓰지 않고 Capital Valley Tower 주변의 pinned source-route geometry에서 off-road seed를 파생한다.
+- 실제 26.2 world에서 평탄도, main-route 거리, Drabyel 거리, safety zone, 원본 block/entity 충돌을 검사한 뒤에만 meadow를 활성화한다.
+- 4인 기준 camera-safe battle footprint가 2개 이상 나오지 않으면 fail-closed로 비활성화한다.
+- 필드에서는 기존 production Graul 3D actor/telegraph를 사용하며 일반 road patrol에 섞지 않는다.
+- 첫 승리는 encounter-specific world clear로 저장하고 자연 respawn하지 않는다. 반복전은 필요 시 별도 challenge interaction으로만 추가한다.
+- old `BATTLE_B01`의 retired story unlock/quest/legacy-region 진행은 공유하지 않는다.
+
+즉, "정확한 장소"는 하나의 하드코딩 좌표가 아니라 source-backed 후보군 + live-world survey가 선택한 runtime meadow다.
 
 ## 10. Drabyel → Av'Sal road
 

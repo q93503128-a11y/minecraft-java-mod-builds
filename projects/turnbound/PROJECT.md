@@ -275,6 +275,19 @@ Current scope:
 
 The admin survey commands remain optional diagnostics. Required user validation is a normal first-route playthrough, not manual coordinate authoring.
 
+### Optional Graul world-boss binding
+
+The Capital Valley optional world-boss candidate is now bound as `CV_WORLD_BOSS_GRAUL` without restoring the retired Aster March chapter flow.
+
+- placement is derived from the pinned Capital Valley route geometry around the Tower and then resolved against live 26.2 terrain; no new fixed boss coordinate is authored
+- the resolver requires an off-road, low-slope meadow outside route safety zones and at least two camera-safe 4-player battle footprints
+- original Drehmal block/entity content is rechecked before activation; failure is fail-closed and leaves the optional boss dormant
+- the field actor uses the existing production Graul model/texture/boss animation set and the boss-specific in-world telegraph behavior
+- the boss remains optional and never becomes a main-route navigation target
+- first victory is persisted as an encounter-specific world clear, so Graul does not naturally respawn while walking the route; any future replay must be an explicit challenge interaction
+- the new encounter reuses the existing B01 combat reward basis (12,000 Gold / 5,000 XP / 60 Essence) plus the separated boss-side first-clear package (1,200 Crystal + one T2 choice)
+- `CV_WORLD_BOSS_GRAUL` cannot trigger retired `BATTLE_B01` Archive/P08/story quest/legacy-region progression even though both encounters use the Graul combatant
+
 Validation for this block:
 - CODE REVIEWED: YES
 - TESTED: pending branch workflow

@@ -142,6 +142,26 @@ class DrehmalContextualOnboardingTest {
     }
 
     @Test
+    void worldBossGuidanceStaysOptionalEvenAfterHubProgress() {
+        var active = DrehmalContextualOnboarding.resolve(
+                DrehmalWorldBossPlacementRules.SITE_KIND,
+                Set.of("CV_FIRST_COMMON"),
+                Set.of(DrehmalFirstRouteProgress.HUB_REACHED),
+                Set.of());
+        assertTrue(active.objective().contains("그라울"));
+        assertTrue(active.objective().contains("거나"));
+        assertTrue(active.hint().contains("선택"));
+
+        var cleared = DrehmalContextualOnboarding.resolve(
+                DrehmalWorldBossPlacementRules.SITE_KIND,
+                Set.of(DrehmalWorldBossPlacementRules.ENCOUNTER_ID),
+                Set.of(DrehmalFirstRouteProgress.HUB_REACHED),
+                Set.of());
+        assertTrue(cleared.objective().contains("위협은 사라"));
+        assertTrue(cleared.hint().contains("다시 나타나지"));
+    }
+
+    @Test
     void warningCaveStaysOptionalAndRouteProgressDoesNotRewind() {
         var cave = DrehmalContextualOnboarding.resolve(
                 "ELITE_ZONE",

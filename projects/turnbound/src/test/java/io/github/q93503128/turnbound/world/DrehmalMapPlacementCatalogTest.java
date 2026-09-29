@@ -27,9 +27,13 @@ class DrehmalMapPlacementCatalogTest {
         assertTrue(road.patrolSeeds().size()>=4);
     }
     @Test void everyEncounterAndFieldNpcHasAutomaticPlacementData() {
-        assertEquals(7, DrehmalFirstRouteCatalog.route().encounters().size());
+        assertEquals(8, DrehmalFirstRouteCatalog.route().encounters().size());
         for (var encounter : DrehmalFirstRouteCatalog.route().encounters()) {
             var placement = DrehmalMapPlacementCatalog.placement(encounter.siteLocator());
+            if (DrehmalWorldBossPlacementRules.isGraul(encounter)) {
+                assertNull(placement, "Graul derives its meadow from source-route geometry plus live 26.2 terrain");
+                continue;
+            }
             assertNotNull(placement, encounter.locator());
             assertTrue(placement.strictSite(), encounter.locator());
             assertTrue(placement.arenaSeeds().size() >= 2, encounter.locator());

@@ -35,6 +35,17 @@ final class DrehmalContextualOnboarding {
         Set<String> flags = onboardingFlags == null ? Set.of() : onboardingFlags;
         Set<String> roles = availableHubRoles == null ? Set.of() : availableHubRoles;
 
+        if (DrehmalWorldBossPlacementRules.SITE_KIND.equals(kind)) {
+            if (clears.contains(DrehmalWorldBossPlacementRules.ENCOUNTER_ID)) {
+                return new Guidance(
+                        "들판의 위협은 사라졌습니다. 뉴 드라비엘로 향하거나 다음 길을 살피십시오.",
+                        "그라울은 쓰러진 뒤 필드에서 다시 나타나지 않습니다.");
+            }
+            return new Guidance(
+                    "들이받는 왕 그라울과 맞서거나 길을 따라 뉴 드라비엘로 향하십시오.",
+                    "선택 전투입니다. 몸을 낮추는 예고 동작 뒤의 돌진 방향을 보고 피하십시오.");
+        }
+
         if ("HUB_SAFE".equals(kind) || DrehmalFirstRouteProgress.reached(flags, DrehmalFirstRouteProgress.HUB_REACHED)) {
             return hubGuidance(clears, flags, roles);
         }

@@ -54,6 +54,16 @@
       "productionEnabled": false
     },
     {
+      "locator": "turnbound:site/capital_valley/graul_meadow",
+      "kind": "WORLD_BOSS_ZONE",
+      "surveySeedAnchor": "turnbound:landmark/capital_valley_tower",
+      "playerLabel": "캐피털 밸리 외곽 들판",
+      "safetyRadius": 0,
+      "encounterRadius": 34,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
       "locator": "turnbound:site/capital_valley/explorer_camp",
       "kind": "REST_ZONE",
       "surveySeedAnchor": "turnbound:landmark/explorers_guide_camp",
@@ -166,6 +176,16 @@
       "candidates": []
     },
     {
+      "locator": "turnbound:footprint/capital_valley/graul_meadow",
+      "siteLocator": "turnbound:site/capital_valley/graul_meadow",
+      "radius": 18,
+      "allySlots": 4,
+      "enemySlots": 1,
+      "verifiedIn26_2": false,
+      "productionEnabled": false,
+      "candidates": []
+    },
+    {
       "locator": "turnbound:footprint/capital_valley/drabyel_approach",
       "siteLocator": "turnbound:site/capital_valley/drabyel_approach",
       "radius": 14,
@@ -249,6 +269,17 @@
       "verifiedIn26_2": false,
       "productionEnabled": false,
       "combatEncounterId": "CV_WARNING_CAVE_ELITE",
+      "fieldVisibleCount": 1
+    },
+    {
+      "locator": "turnbound:encounter/capital_valley/graul_world_boss",
+      "siteLocator": "turnbound:site/capital_valley/graul_meadow",
+      "tier": "WORLD_BOSS",
+      "footprintLocator": "turnbound:footprint/capital_valley/graul_meadow",
+      "playerLabel": "들이받는 왕 그라울",
+      "verifiedIn26_2": false,
+      "productionEnabled": false,
+      "combatEncounterId": "CV_WORLD_BOSS_GRAUL",
       "fieldVisibleCount": 1
     },
     {

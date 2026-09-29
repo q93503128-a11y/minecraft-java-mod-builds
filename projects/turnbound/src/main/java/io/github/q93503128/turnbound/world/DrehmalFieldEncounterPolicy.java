@@ -8,7 +8,7 @@ package io.github.q93503128.turnbound.world;
  * how long that readable beat lasts; combat composition remains owned by the encounter catalog.</p>
  */
 final class DrehmalFieldEncounterPolicy {
-    enum Archetype { ROADSIDE_THREAT, OPTIONAL_DANGER, PATROL }
+    enum Archetype { ROADSIDE_THREAT, OPTIONAL_DANGER, PATROL, WORLD_BOSS }
 
     record Policy(Archetype archetype, int alertPreludeTicks) {}
 
@@ -20,6 +20,10 @@ final class DrehmalFieldEncounterPolicy {
     ) {
         if (encounter == null || site == null) {
             return new Policy(Archetype.ROADSIDE_THREAT, 12);
+        }
+        if ("WORLD_BOSS".equals(encounter.tier())
+                || DrehmalWorldBossPlacementRules.SITE_KIND.equals(site.kind())) {
+            return new Policy(Archetype.WORLD_BOSS, 30);
         }
         if ("ELITE_ZONE".equals(site.kind()) || "ELITE".equals(encounter.tier())) {
             return new Policy(Archetype.OPTIONAL_DANGER, 18);

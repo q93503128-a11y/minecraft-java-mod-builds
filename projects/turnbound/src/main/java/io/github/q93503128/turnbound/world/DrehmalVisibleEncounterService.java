@@ -109,7 +109,9 @@ final class DrehmalVisibleEncounterService {
 
     private static void syncCatalog(ServerLevel level, ServerPlayer resolverPlayer) {
         Set<String> active = new HashSet<>();
+        TurnboundWorldSavedData worldState = TurnboundWorldSavedData.get(level.getServer());
         for (DrehmalFirstRouteCatalog.EncounterSlot slot : DrehmalAdaptiveRoutePlacement.productionEncounters(resolverPlayer)) {
+            if ("WORLD_BOSS".equals(slot.tier()) && worldState.encounterCleared(slot.combatEncounterId())) continue;
             DrehmalFirstRouteCatalog.Site site = DrehmalAdaptiveRoutePlacement.site(resolverPlayer, slot.siteLocator());
             DrehmalFirstRouteCatalog.Footprint footprint = DrehmalAdaptiveRoutePlacement.footprint(resolverPlayer, slot.footprintLocator());
             DrehmalFirstRouteCatalog.Patrol patrol = slot.patrolLocator().isBlank()
@@ -486,7 +488,7 @@ final class DrehmalVisibleEncounterService {
                 } else {
                     actor.setCustomName(Component.literal(CanonicalData.definition(
                             fieldEnemyIds().get(i), spec.level(), 0, false).name()));
-                    actor.setCustomNameVisible(false);
+                    if (TurnboundBattleActors.fieldThreatTier(actor.getType()) < 2) actor.setCustomNameVisible(false);
                 }
             }
         }
