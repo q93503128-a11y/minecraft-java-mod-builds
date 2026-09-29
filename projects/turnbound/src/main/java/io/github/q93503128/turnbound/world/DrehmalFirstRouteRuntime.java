@@ -174,6 +174,6 @@ public final class DrehmalFirstRouteRuntime {
                 location == null ? "" : location.kind(),
                 CampaignProgressStore.snapshot(player.getUUID()).clearedEncounters(),
                 flags,
-                DrabyelHubServiceRuntime.availableRoles());
+                DrabyelHubServiceRuntime.availableRoles(player));
     }
 }
