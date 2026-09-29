@@ -36,6 +36,16 @@ class GachaPresentationPlanTest {
     }
 
     @Test
+    void spotlightIndicesMatchServerRevealOrder() {
+        var result = new GachaService.BatchResult(List.of(
+                new GachaService.PullResult("F01",1,true,0,3),
+                new GachaService.PullResult("P06",5,false,250,0),
+                new GachaService.PullResult("P08",3,false,40,1)), 3000);
+
+        assertEquals(List.of(0,1), GachaPresentationPlan.spotlightIndices(result));
+    }
+
+    @Test
     void duplicateOnlyBatchSpotlightsEveryFourAndFiveStarPull() {
         var result = new GachaService.BatchResult(List.of(
                 new GachaService.PullResult("P08",3,false,40,8),
