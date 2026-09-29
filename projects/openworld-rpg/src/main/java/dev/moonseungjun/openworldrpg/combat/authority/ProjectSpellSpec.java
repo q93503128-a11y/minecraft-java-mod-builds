@@ -15,7 +15,8 @@ public record ProjectSpellSpec(
     public static final String ARC_BOLT_ID = "openworld_rpg:arc_bolt";
     public static final String RADIANT_LANCE_ID = "openworld_rpg:radiant_lance";
     public static final String MEND_ID = "openworld_rpg:mend";
-    public static final String REBUKE_ID = "openworld_rpg:rebuke";\n    public static final String SANCTUARY_ID = "openworld_rpg:sanctuary";
+    public static final String REBUKE_ID = "openworld_rpg:rebuke";
+    public static final String SANCTUARY_ID = "openworld_rpg:sanctuary";
     public static final double RADIANT_LANCE_ACTION_COEFFICIENT = 1.35;
     public static final double RADIANT_LANCE_POISE_COEFFICIENT = 0.60;
     public static final double RADIANT_LANCE_CHAIN_ACTION_COEFFICIENT = 0.55;
