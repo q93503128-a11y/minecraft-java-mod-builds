@@ -37,6 +37,12 @@ public final class DrehmalMapPlacementCatalog {
         return null;
     }
 
+    public static Zone zone(String zoneId) {
+        if (zoneId == null) return null;
+        for (Zone zone : PLAN.zones()) if (zoneId.equals(zone.id())) return zone;
+        return null;
+    }
+
     public static List<String> validate() {
         List<String> errors = new ArrayList<>();
         if (!DrehmalFirstRouteCatalog.ROUTE_ID.equals(PLAN.routeId())) errors.add("map placement route mismatch");
