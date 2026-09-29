@@ -82,6 +82,53 @@ public final class SignatureTrialMenuContentService {
         return out.toString();
     }
 
+    /**
+     * External Drehmal projection for the Growth tab.
+     *
+     * <p>This deliberately carries only server-authoritative Awakening readiness. It does not expose the retired
+     * Aster/B05 Signature Trial route, titles or objectives while those quests are being rebound to Drehmal.</p>
+     */
+    public static String encodeAwakeningProjection(UUID playerId) {
+        if (playerId == null) return "";
+        var campaign = CampaignProgressStore.snapshot(playerId);
+        StringBuilder out = new StringBuilder();
+
+        for (CharacterMenuCatalog.Profile profile : CharacterMenuCatalog.all()) {
+            String characterId = profile.id();
+            boolean owned = campaign.profile().ownedCharacters().contains(characterId);
+            var levelState = campaign.characters().get(characterId);
+            var growthState = campaign.growth().get(characterId);
+            int level = owned && levelState != null ? levelState.level() : 0;
+            int currentStar = owned && growthState != null ? growthState.currentStar() : 0;
+            boolean questComplete = owned && growthState != null && growthState.characterQuestComplete();
+            boolean awakened = owned && growthState != null && growthState.awakened();
+            boolean canonGap = AwakeningRouteRules.canonGap(characterId);
+            boolean awakeningReady = owned && !canonGap && !awakened
+                    && level == GrowthRulesV1.maxLevel()
+                    && questComplete
+                    && campaign.profile().gold() >= GrowthRulesV1.awakeningGoldCost();
+
+            append(out,
+                    characterId,
+                    "",
+                    owned,
+                    false,
+                    level,
+                    currentStar,
+                    questComplete,
+                    false,
+                    false,
+                    false,
+                    false,
+                    0L,
+                    awakened,
+                    awakeningReady,
+                    "",
+                    canonGap ? AwakeningRouteRules.blockReason(characterId) : "");
+        }
+        return out.toString();
+    }
+
     private static void append(
             StringBuilder out,
             String characterId,
