@@ -30,8 +30,8 @@ class CampaignSaveCodecTest {
             characters.put(id, new CharacterProgression.State(1, 0));
             growth.put(id, CharacterGrowthRules.initial(id));
         }
-        characters.put("P01", new CharacterProgression.State(8, 33));
-        characters.put("P08", new CharacterProgression.State(3, 77));
+        characters.put("P01", new CharacterProgression.State(8, 33, 4));
+        characters.put("P08", new CharacterProgression.State(3, 77, 2));
         growth.put("P05", new CharacterGrowthRules.State(5, false, true, false));
         QuestProgress.Snapshot quests = new QuestProgress.Snapshot(
                 Set.of("MQ_P00_01_arrival"),
@@ -42,8 +42,8 @@ class CampaignSaveCodecTest {
                 Map.of("MQ_C01_01_patrol", Set.of("ENC_M01")));
 
         List<PlayerProfile.SummonHistory> history = List.of(
-                new PlayerProfile.SummonHistory("P05", 4, true, 0, 0),
-                new PlayerProfile.SummonHistory("P01", 4, false, 60, 1));
+                new PlayerProfile.SummonHistory("P05", 5, true, 0, 0, 0, 0),
+                new PlayerProfile.SummonHistory("P01", 4, false, 100, 1, 1, 4));
         List<List<String>> presets = List.of(
                 List.of("P01", "P03", "P04", "F03"),
                 List.of("P05", "P08", "P03"),
@@ -92,6 +92,36 @@ class CampaignSaveCodecTest {
     }
 
     @Test
+    void schemaFiveDefaultsMissingDuplicateBonusToZero() {
+        String legacy = """
+                {
+                  "schemaVersion": 5,
+                  "profile": {
+                    "gold": 5000,
+                    "summonCrystal": 0,
+                    "starEssence": 100,
+                    "awakeningCore": 0,
+                    "ownedCharacters": ["P01"],
+                    "fiveStarPity": 0,
+                    "starterArchiveUnlocked": false,
+                    "starterArchiveUsed": false,
+                    "summonHistory": [{"characterId":"P01","nativeStars":4,"newlyOwned":false,"starEssenceGranted":100,"pityAfter":1}]
+                  },
+                  "characters": {"P01":{"level":60,"xp":0}},
+                  "growth": {"P01":{"currentStar":4,"awakened":false,"characterQuestComplete":false,"signatureTrialCleared":false}},
+                  "equipment": {},
+                  "quests": {},
+                  "clearedEncounters": []
+                }
+                """;
+
+        CampaignProgressStore.Snapshot migrated = CampaignSaveCodec.decode(legacy);
+        assertEquals(0, migrated.characters().get("P01").bonusLevel());
+        assertEquals(0, migrated.profile().summonHistory().getFirst().bonusLevelGranted());
+        assertEquals(0, migrated.profile().summonHistory().getFirst().bonusLevelAfter());
+    }
+
+    @Test
     void schemaFourPlusTwentyEquipmentMigratesToPlusTenAndRefundsRetiredSpend() {
         String legacy = """
                 {
@@ -135,6 +165,6 @@ class CampaignSaveCodecTest {
                 Map.of("P01", CharacterGrowthRules.initial("P01")), EquipmentInventory.Snapshot.empty(), QuestProgress.Snapshot.empty(),
                 Set.of(), Set.of(), Set.of()));
         assertThrows(IllegalStateException.class,
-                () -> CampaignSaveCodec.decode(json.replace("\"schemaVersion\": 5", "\"schemaVersion\": 999")));
+                () -> CampaignSaveCodec.decode(json.replace("\"schemaVersion\": 6", "\"schemaVersion\": 999")));
     }
 }
