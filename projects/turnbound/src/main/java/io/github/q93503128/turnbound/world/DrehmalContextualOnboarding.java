@@ -47,7 +47,7 @@ final class DrehmalContextualOnboarding {
         }
 
         boolean hubReached = DrehmalFirstRouteProgress.reached(flags, DrehmalFirstRouteProgress.HUB_REACHED);
-        if (hubReached && !"HUB_SAFE".equals(kind)) {
+        if (hubReached && !kind.isBlank() && !"HUB_SAFE".equals(kind)) {
             if (!DrabyelOpeningTutorial.introReady(flags)) {
                 return new Guidance(
                         "뉴 드라비엘 입구로 돌아가 안내와 대화하십시오.",

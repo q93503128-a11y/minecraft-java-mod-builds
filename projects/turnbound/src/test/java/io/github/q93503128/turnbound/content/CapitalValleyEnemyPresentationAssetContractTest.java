@@ -70,12 +70,12 @@ class CapitalValleyEnemyPresentationAssetContractTest {
     }
 
     @Test
-    void drabyelRoadEncounterUsesTwoCutthroatsAndOneMarksman() {
+    void drabyelRoadTutorialUsesOneCutthroatAndOneMarksman() {
         assertTrue(CanonicalData.contains("CV_B"));
         assertTrue(CanonicalData.contains("CV_C"));
         var encounter = CampaignEncounterCatalog.spec("CV_DRABYEL_ROAD");
         assertEquals(2, encounter.level());
-        assertEquals(List.of("CV_B", "CV_B", "CV_C"), encounter.enemies());
+        assertEquals(List.of("CV_B", "CV_C"), encounter.enemies());
         assertTrue(!encounter.boss());
     }
 
