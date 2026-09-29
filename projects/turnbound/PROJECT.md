@@ -263,6 +263,32 @@ Validation for this block:
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
 
+## Source-aware first-route validation checkpoint — 2026-09-29
+
+The integrated Capital Valley placement pass now covers the complete initial route density without manual coordinate authoring:
+- 6 Common encounter sites
+- 1 optional Elite site
+- 3 non-service field NPC sites
+- roadhead arrival protection
+- source-content-safe arena selection
+- materialization-time source-content revalidation
+
+Targeted tests now cover:
+- road-shoulder scoring
+- sparse corridor segment distance
+- complete encounter/NPC placement coverage
+- semantic field-NPC zone assignment
+- pinned structured-map entity provenance
+
+This checkpoint requests the branch `Build TURNBOUND` workflow. Until its result is directly observed:
+- CODE REVIEWED: YES
+- TESTED: NOT YET CONFIRMED FOR THIS HEAD
+- BUILD VERIFIED: NO
+- JAR PRODUCED: NO
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
 ## Economy
 
 Long-term core currencies:
