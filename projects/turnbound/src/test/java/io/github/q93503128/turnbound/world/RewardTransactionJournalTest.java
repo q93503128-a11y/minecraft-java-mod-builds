@@ -85,6 +85,40 @@ class RewardTransactionJournalTest {
     }
 
     @Test
+    void offlineSharedOwnerCanBeSettledDurablyWithoutImmediateAttachmentSave() throws Exception {
+        UUID playerId = UUID.randomUUID();
+        Path primary = tempDir.resolve("offline-shared.json");
+        try {
+            CampaignProgressStore.ensureNewGame(playerId);
+            CampaignProgressStore.markClean(playerId);
+            CampaignProgressStore.Snapshot before = CampaignProgressStore.snapshot(playerId);
+            CampaignSaveFiles.save(primary, before);
+            long goldBefore = CampaignProgressStore.currency(playerId, PlayerProfile.Currency.GOLD);
+
+            RewardGrantService.Result result = RewardGrantService.commitToJournal(
+                    playerId, primary, "tx-offline-shared", "ENC_M01",
+                    TrainingBattleFactory.create(), BattleOutcome.ALLY_VICTORY);
+
+            assertFalse(result.duplicate());
+            assertTrue(Files.exists(RewardTransactionJournal.journalPath(primary)));
+            assertTrue(RewardGrantService.transactionCommitted(
+                    CampaignProgressStore.snapshot(playerId), "tx-offline-shared"));
+            assertTrue(CampaignProgressStore.currency(playerId, PlayerProfile.Currency.GOLD) > goldBefore);
+
+            CampaignProgressStore.removeRuntime(playerId);
+            CampaignProgressStore.restore(playerId, before);
+            assertEquals(RewardTransactionJournal.Recovery.APPLIED,
+                    RewardTransactionJournal.recover(primary, playerId));
+            assertTrue(RewardGrantService.transactionCommitted(
+                    CampaignProgressStore.snapshot(playerId), "tx-offline-shared"));
+            assertTrue(CampaignProgressStore.currency(playerId, PlayerProfile.Currency.GOLD) > goldBefore);
+        } finally {
+            RewardGrantService.resetForTests();
+            CampaignProgressStore.resetForTests(playerId);
+        }
+    }
+
+    @Test
     void staleJournalIsDroppedWhenCanonicalSaveAlreadyContainsTransaction() throws Exception {
         UUID playerId = UUID.randomUUID();
         Path primary = tempDir.resolve("stale.json");
