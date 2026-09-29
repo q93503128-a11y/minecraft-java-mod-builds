@@ -1068,3 +1068,33 @@ Validation after Build #945:
 - CLIENT RUNTIME TESTED: NO for Build #945
 - PLAYTESTED: NO for Build #945
 - MULTIPLAYER TESTED: NO
+
+## Single field encounter representative — 2026-09-30
+
+Design correction after the Build #945 patrol discussion:
+
+- a field encounter is a world-space contact proxy, not a literal rendering of every combatant that will appear after battle transition
+- production field encounters now use exactly one authoritative physical representative entity regardless of combat enemy count
+- `fieldVisibleCount` remains in route schema v1 only for compatibility, but production validation requires the value to be exactly `1`
+- all current Capital Valley / New Drabyel route entries were normalized to one field representative
+- `DrehmalVisibleEncounterService` now treats the field object explicitly as a representative and no longer maintains follower formation movement for decorative second actors
+- persisted older multi-actor field groups fail adoption against the new one-representative contract and are rebuilt as a single proxy
+- contact still resolves the unchanged authored battle encounter, so the New Drabyel opening remains the two-enemy `CV_DRABYEL_ROAD` fight
+
+Presentation decision:
+
+- ordinary patrols and wildlife groups use one readable representative silhouette in the world
+- group identity is communicated through encounter/objective naming and context rather than extra pathfinding entities
+- do not fake a crowd with multiple independently moving field entities solely for decoration
+- if a later high-importance encounter needs multiple silhouettes, use one authored composite model/animation controlled by one entity; that is a presentation asset decision, not extra combat/navigation authority
+
+This supersedes the Build #945 follower-grounding work for ordinary field encounters. The #945 lead navigation, physical-progress locomotion truth, stall recovery, arena grounding and client camera-anchor fixes remain active.
+
+Validation at implementation checkpoint:
+- CODE REVIEWED: YES
+- TESTED: PENDING Build TURNBOUND
+- BUILD VERIFIED: PENDING Build TURNBOUND
+- JAR PRODUCED: PENDING Build TURNBOUND
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
