@@ -123,6 +123,8 @@ final class DrehmalStartArrival {
                 for (int dy = -10; dy <= 10; dy++) {
                     BlockPos feet = new BlockPos(seed.getX() + dx, seed.getY() + dy, seed.getZ() + dz);
                     if (!safeStandingColumn(level, feet)) continue;
+                    if (!DrehmalAdaptiveRoutePlacement.sourceContentClear(
+                            level, feet.getX(), feet.getY(), feet.getZ(), 3.0D)) continue;
                     int priority = surfacePriority(level.getBlockState(feet.below()));
                     long score = priority * 1_000_000L + Math.abs(dy) * 4_000L + distanceSq;
                     if (score < bestScore) {
@@ -144,6 +146,7 @@ final class DrehmalStartArrival {
                 int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
                 BlockPos feet = new BlockPos(x, y, z);
                 if (!safeStandingColumn(level, feet)) continue;
+                if (!DrehmalAdaptiveRoutePlacement.sourceContentClear(level, x, y, z, 3.0D)) continue;
                 long score = surfacePriority(level.getBlockState(feet.below())) * 1_000_000L + distanceSq;
                 if (score < bestScore) {
                     bestScore = score;
