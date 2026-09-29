@@ -22,7 +22,16 @@ class DrabyelHubSurveyPlanTest {
 
         for (String role : roles) {
             assertFalse(DrabyelHubSurveyPlan.sourceHint(role).isBlank(), role);
+            assertFalse(DrabyelHubSurveyPlan.sourceSeeds(role).isEmpty(), role);
         }
+
+        assertTrue(DrabyelHubSurveyPlan.sourceSeedLines("MARKET").stream()
+                .anyMatch(line -> line.contains("516 67 1851")));
+        assertTrue(DrabyelHubSurveyPlan.sourceSeedLines("BLACKSMITH").stream()
+                .anyMatch(line -> line.contains("526 65 1841")));
+        assertTrue(DrabyelHubSurveyPlan.sourceSeedLines("SUMMON").stream()
+                .anyMatch(line -> line.contains("516 65 1861") && line.contains("conflict")));
+
         assertTrue(DrabyelHubServiceCatalog.productionServices().isEmpty(),
                 "survey hints must not promote runtime service coordinates");
     }
