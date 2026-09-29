@@ -2,7 +2,7 @@
 
 > 목적: TURNBOUND의 첫 30~60분을 Drehmal의 실제 초반 지형에 묶는 production planning 문서.
 > 이 문서는 공식 Drehmal 위치 자료와 TURNBOUND 설계 판단을 구분한다.
-> 정확한 NPC/적 좌표와 battle footprint는 Minecraft 26.2 migrated world에서 직접 확인한 뒤 확정한다.
+> 원본 Drehmal 구조화 지도는 route/landmark/road 의미를 제공하고, 정확한 NPC·적·battle 위치는 bound Minecraft 26.2 월드에서 runtime이 자동 안전검사해 파생한다. 최종 client 검수는 좌표를 사람이 찍는 단계가 아니라 배치가 자연스러운지 확인하는 단계다.
 
 ## 1. Source-backed geography
 
@@ -382,22 +382,26 @@ If real travel time differs, adjust beats around geography instead of moving lan
 
 ## 17. Verification still required
 
-Source research is sufficient to freeze **route topology**, not exact production coordinates.
+Source research is sufficient to freeze **route topology and automatic search zones**, not visual playtest acceptance.
 
-Need actual 26.2 client survey for:
-- exact roadhead spawn block
-- chapel location and approach
-- safe Tower-side battle footprint
-- warning cave dimensions
-- camp line-of-sight
-- Drabyel pedestrian entrance
-- service NPC exact spots
-- original merchant/NPC behavior
-- mob/pathfinding collision
-- camera fallback views
-- multiplayer spawn offsets
+The player is **not** expected to author exact NPC/enemy coordinates. Runtime placement derives them from:
+- pinned road/path data and semantic site seeds;
+- actual 26.2 ground height/headroom/fluid/slope;
+- existing block entities such as signs/chests/lecterns/caches;
+- existing villagers/traders/item frames/armor stands;
+- safe road-shoulder distance;
+- 4-player battle-footprint checks.
 
-Until then exact positions remain `verifiedIn26_2=false`.
+Actual 26.2 client playtest still verifies:
+- roadhead reveal and route readability;
+- chapel/Tower/Warning Cave/camp sightlines;
+- enemy silhouette before aggro;
+- patrol/pathfinding feel;
+- battle camera fallback views;
+- original source-content coexistence;
+- multiplayer density and return positions.
+
+Static route JSON may remain `verifiedIn26_2=false`; a transient runtime placement is allowed only after the bound live world itself passes the automatic safety gates.
 
 
 ## 18. Road enemy binding
@@ -464,14 +468,14 @@ Drabyel safety buffer
 - New Drabyel 도달 후 첫-route waypoint는 종료되고 hub onboarding으로 넘어간다.
 - 이 checkpoint는 **route pacing/state 구현**이며 좌표 검증 완료를 의미하지 않는다.
 
-다음 production gate는 그대로 실제 Minecraft 26.2 client survey다. roadhead, Tower, Warning Cave, camp, Drabyel approach/entrance 및 service spot의 스크린샷·동선·battle camera 검증 없이는 `verifiedIn26_2`와 `productionEnabled`를 true로 올리지 않는다.
+다음 production gate는 실제 Minecraft 26.2 **통합 플레이 검수**다. 좌표를 하나씩 입력하는 작업은 요구하지 않는다. 자동 배치된 roadhead, Tower, Warning Cave, camp, Drabyel approach/entrance, field NPC와 service NPC의 동선·시야·battle camera를 한 번의 정상 플레이 흐름에서 확인한다.
 
 
-## 21. Minecraft 26.2 survey helper
+## 21. Minecraft 26.2 diagnostics
 
-정확한 좌표를 외부 지도만 보고 production으로 승격하지 않는다.
+외부 지도 좌표를 그대로 production block으로 고정하지 않는다.
 
-게임 내 운영자용 조사 명령:
+다음 명령은 자동 배치가 실패했을 때 원인을 추적하는 **운영자 진단 도구**다. 정상 플레이/배치 작업에서는 사용할 필요가 없다.
 
 - `/turnbound survey route`
   - 첫 route의 각 semantic site와 source-backed survey seed 좌표를 출력한다.
@@ -492,7 +496,7 @@ Drabyel safety buffer
 - 나무/풀/건물에 의한 체감 시야 방해
 - 멀티플레이에서 16 regular allies가 화면상 과밀하지 않은지
 
-따라서 survey command는 **후보 수집 도구**이며 `verifiedIn26_2` 또는 `productionEnabled`를 자동 변경하지 않는다.
+따라서 survey command는 **fallback diagnostics**다. 실제 first-route 배치는 구조화 지도 + live-world safety resolver가 담당하며 사용자가 NPC/조우별 좌표를 수동 수집하지 않는다.
 
 
 ## 22. Map-backed zone placement
@@ -502,7 +506,7 @@ Drabyel safety buffer
 Reviewed reference:
 - `zachaa/DrehmalMap`
 - revision `72d82180cbe3f950f068cf2d8e8668c6b09d5c58`
-- `data/paths.geojson`, `data/locations.json`, `data/towers.json`
+- `data/paths.geojson`, `data/locations.json`, `data/towers.json`, `data/all_entity_data.json`
 
 구역:
 1. 프라이멀 길머리 — 안전한 world reveal, 전투 없음.
@@ -512,8 +516,9 @@ Reviewed reference:
 5. Explorer camp → Drabyel 북쪽 길 — 이동형 road patrol.
 6. New Drabyel — hostile-free hub.
 
-소스 지도는 구역과 X/Z seed만 정한다. 실제 Minecraft 26.2 runtime이 ground, fluid, headroom,
-local slope, 최대 4-player shared formation, battle camera corridor, safety-zone 침범을 검사해서 exact block을 고른다.
+소스 지도는 구역, road corridor, landmark와 source-content 위치를 정한다. 실제 Minecraft 26.2 runtime이 ground, fluid, headroom,
+local slope, 기존 sign/chest/lectern/cache, villager/trader/item-frame/armor-stand 충돌, road-shoulder 거리,
+최대 4-player shared formation, battle camera corridor, safety-zone 침범을 검사해서 exact block을 고른다.
 
 한 구역의 후보가 실패하면 가까운 **같은 구역** 안에서만 탐색한다. 다른 구역으로 멀리 튀어 encounter를 억지 생성하지 않는다.
 두 개 이상의 co-op-safe arena를 확보하지 못하면 그 encounter는 해당 세션에서 fail-closed 한다.
