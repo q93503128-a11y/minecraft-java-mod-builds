@@ -15,6 +15,7 @@ public record ProjectSpellSpec(
     public static final String ARC_BOLT_ID = "openworld_rpg:arc_bolt";
     public static final String MEND_ID = "openworld_rpg:mend";
     public static final double MEND_HEAL_COEFFICIENT = 0.30;
+    public static final double MEND_EMPOWERED_HEAL_COEFFICIENT = 0.40;
 
     public ProjectSpellSpec {
         Objects.requireNonNull(id, "id");

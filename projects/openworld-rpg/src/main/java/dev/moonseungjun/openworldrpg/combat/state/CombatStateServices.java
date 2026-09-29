@@ -18,6 +18,8 @@ public final class CombatStateServices {
     private static final PlayerShockStateStore SHOCK_STATES = new PlayerShockStateStore();
     private static final PlayerNegativeStatusStateStore NEGATIVE_STATUS_STATES =
             new PlayerNegativeStatusStateStore();
+    private static final ClericGraceStateStore CLERIC_GRACE_STATES =
+            new ClericGraceStateStore();
 
     private CombatStateServices() {
     }
@@ -52,6 +54,10 @@ public final class CombatStateServices {
 
     public static PlayerNegativeStatusStateStore negativeStatusStates() {
         return NEGATIVE_STATUS_STATES;
+    }
+
+    public static ClericGraceStateStore clericGraceStates() {
+        return CLERIC_GRACE_STATES;
     }
 
     public static void persistRuntime(ServerPlayer player) {
@@ -125,5 +131,6 @@ public final class CombatStateServices {
         PLAYER_POISE_STATES.remove(playerId);
         SHOCK_STATES.remove(playerId);
         NEGATIVE_STATUS_STATES.remove(playerId);
+        CLERIC_GRACE_STATES.remove(playerId);
     }
 }

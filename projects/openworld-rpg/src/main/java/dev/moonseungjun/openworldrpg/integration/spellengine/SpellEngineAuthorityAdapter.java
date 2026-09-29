@@ -4,7 +4,7 @@ import dev.moonseungjun.openworldrpg.OpenworldRpgMod;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellSpec;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellTransactionPolicy;
 import dev.moonseungjun.openworldrpg.combat.authority.SpellCastAuthority;
-import dev.moonseungjun.openworldrpg.combat.runtime.ProjectHealingRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.ClericMendRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatStateStore;
@@ -438,12 +438,11 @@ public final class SpellEngineAuthorityAdapter {
                     || serverTarget.level() != serverCaster.level()) {
                 return impactResultConstructor.newInstance(false, false);
             }
-            var healing = ProjectHealingRuntime.applySkillHeal(
+            var mend = ClericMendRuntime.apply(
                     serverCaster,
-                    serverTarget,
-                    ProjectSpellSpec.MEND_HEAL_COEFFICIENT
+                    serverTarget
             );
-            return impactResultConstructor.newInstance(healing.accepted(), false);
+            return impactResultConstructor.newInstance(mend.accepted(), false);
         }
 
         Object powerValue = invokeAccessor(spellPower, "baseValue");

@@ -25,10 +25,19 @@ public final class PlayerProgressionService {
     }
 
     public static PlayerProgressionState selectClass(Player player, RootClass rootClass) {
+        Objects.requireNonNull(rootClass, "rootClass");
+        PlayerProgressionState current = state(player);
+        boolean changed = !current.activeClass().equals(
+                Optional.of(rootClass)
+        );
         PlayerProgressionState next = replace(
                 player,
-                state(player).withActiveClass(rootClass)
+                current.withActiveClass(rootClass)
         );
+        if (changed && !player.level().isClientSide()) {
+            CombatStateServices.clericGraceStates()
+                    .reset(player.getUUID());
+        }
         SpellEngineProjectSkillAccess.refreshPublishedSkills(player);
         return next;
     }

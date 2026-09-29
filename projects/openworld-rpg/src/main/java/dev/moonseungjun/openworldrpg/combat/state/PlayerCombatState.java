@@ -330,6 +330,10 @@ public final class PlayerCombatState {
         }
     }
 
+    public long lastCombatActivityTick() {
+        return lastCombatActivityTick;
+    }
+
     /**
      * Marks hostile HP interaction by this player, either dealing or receiving it.
      *

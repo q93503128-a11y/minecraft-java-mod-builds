@@ -14,6 +14,7 @@ import java.util.Set;
  * The same boundary owns the tonic's temporary negative-buildup multiplier.</p>
  */
 public final class PlayerNegativeStatusRuntimeState {
+    public static final String MINOR_DISPELLABLE_TAG = "minor_dispellable";
     public static final double CLEANSING_BUILDUP_RECEIVED_MULTIPLIER = 0.80;
 
     private final Map<String, ActiveStatus> activeStatuses = new HashMap<>();
@@ -91,6 +92,29 @@ public final class PlayerNegativeStatusRuntimeState {
                 entry -> entry.getValue().tags().contains(tag)
         );
         return before - activeStatuses.size();
+    }
+
+    /**
+     * Removes exactly one matching status using stable status-id ordering.
+     *
+     * <p>The canon requires Mend to cleanse one minor-dispellable status but does not define a
+     * gameplay priority between several eligible statuses. Stable ID ordering is therefore only a
+     * deterministic tie-breaker; it does not invent a hidden severity ranking.</p>
+     */
+    public int cleanseOneTagged(String tag, long nowTick) {
+        requireStableTag(tag);
+        expire(nowTick);
+        String selected = activeStatuses.entrySet().stream()
+                .filter(entry -> entry.getValue().tags().contains(tag))
+                .map(Map.Entry::getKey)
+                .sorted()
+                .findFirst()
+                .orElse(null);
+        if (selected == null) {
+            return 0;
+        }
+        activeStatuses.remove(selected);
+        return 1;
     }
 
     public boolean hasStatus(String statusId, long nowTick) {

@@ -67,4 +67,34 @@ class PlayerNegativeStatusRuntimeStateTest {
         assertEquals(0.80, state.negativeBuildupReceivedMultiplier(299L), 0.0001);
         assertEquals(1.0, state.negativeBuildupReceivedMultiplier(300L), 0.0001);
     }
+    @Test
+    void singleCleanseRemovesExactlyOneEligibleStatusDeterministically() {
+        var state = new PlayerNegativeStatusRuntimeState();
+        state.applyStatus(
+                "openworld_rpg:zeta_poison",
+                Set.of(RecoveryEffectAuthority.MINOR_DISPELLABLE_TAG),
+                500L
+        );
+        state.applyStatus(
+                "openworld_rpg:alpha_burn",
+                Set.of(RecoveryEffectAuthority.MINOR_DISPELLABLE_TAG),
+                500L
+        );
+
+        assertEquals(
+                1,
+                state.cleanseOneTagged(
+                        RecoveryEffectAuthority.MINOR_DISPELLABLE_TAG,
+                        100L
+                )
+        );
+        assertFalse(
+                state.hasStatus("openworld_rpg:alpha_burn", 100L)
+        );
+        assertTrue(
+                state.hasStatus("openworld_rpg:zeta_poison", 100L)
+        );
+        assertEquals(1, state.activeStatusCount(100L));
+    }
+
 }

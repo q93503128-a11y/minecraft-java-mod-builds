@@ -1,10 +1,12 @@
 package dev.moonseungjun.openworldrpg.recovery;
 
+import dev.moonseungjun.openworldrpg.combat.state.PlayerNegativeStatusRuntimeState;
 import java.util.Objects;
 
 /** Pure server-authority resolution contract for the three R01 quick recovery consumables. */
 public final class RecoveryEffectAuthority {
-    public static final String MINOR_DISPELLABLE_TAG = "minor_dispellable";
+    public static final String MINOR_DISPELLABLE_TAG =
+            PlayerNegativeStatusRuntimeState.MINOR_DISPELLABLE_TAG;
 
     private RecoveryEffectAuthority() {
     }

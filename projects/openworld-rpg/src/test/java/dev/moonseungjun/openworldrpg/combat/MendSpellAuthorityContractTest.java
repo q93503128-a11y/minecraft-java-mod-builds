@@ -22,6 +22,11 @@ class MendSpellAuthorityContractTest {
         assertEquals(160, spec.cooldownTicks());
         assertEquals(0.30, ProjectSpellSpec.MEND_HEAL_COEFFICIENT, 0.0001);
         assertEquals(
+                0.40,
+                ProjectSpellSpec.MEND_EMPOWERED_HEAL_COEFFICIENT,
+                0.0001
+        );
+        assertEquals(
                 RootClass.CLERIC,
                 ProjectSpellSpec.requiredRootClass(spec.id()).orElseThrow()
         );
