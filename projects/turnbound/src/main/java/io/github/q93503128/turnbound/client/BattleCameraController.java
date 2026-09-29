@@ -331,6 +331,10 @@ public final class BattleCameraController {
             cameraAnchor.setYHeadRot(currentYaw);
             cameraAnchor.setYBodyRot(currentYaw);
             cameraAnchor.setXRot(currentPitch);
+            // This anchor is deliberately client-local and is never inserted into the level entity tick list.
+            // Keep its previous transform synchronized or Camera interpolation can sample a stale origin and
+            // place the detached view hundreds of blocks away from the battle.
+            cameraAnchor.setOldPosAndRot();
             return;
         }
         if (minecraft.player == null) return;
