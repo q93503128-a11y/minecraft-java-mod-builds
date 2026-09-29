@@ -291,7 +291,7 @@
       "verifiedIn26_2": false,
       "productionEnabled": false,
       "combatEncounterId": "CV_DRABYEL_ROAD",
-      "fieldVisibleCount": 2
+      "fieldVisibleCount": 1
     },
     {
       "locator": "turnbound:encounter/capital_valley/temple_wildlife",
@@ -313,7 +313,7 @@
       "verifiedIn26_2": false,
       "productionEnabled": false,
       "combatEncounterId": "CV_TOWER_ROAD",
-      "fieldVisibleCount": 2
+      "fieldVisibleCount": 1
     },
     {
       "locator": "turnbound:encounter/capital_valley/camp_road",
@@ -324,7 +324,7 @@
       "verifiedIn26_2": false,
       "productionEnabled": false,
       "combatEncounterId": "CV_CAMP_WILDLIFE",
-      "fieldVisibleCount": 2
+      "fieldVisibleCount": 1
     },
     {
       "locator": "turnbound:encounter/capital_valley/drabyel_north_watch",
@@ -335,7 +335,7 @@
       "verifiedIn26_2": false,
       "productionEnabled": false,
       "combatEncounterId": "CV_DRABYEL_NORTH",
-      "fieldVisibleCount": 2
+      "fieldVisibleCount": 1
     }
   ]
 }
