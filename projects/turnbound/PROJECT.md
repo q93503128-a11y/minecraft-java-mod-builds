@@ -838,3 +838,47 @@ Implementation checkpoint:
 - The four physical service screens retain only task-specific controls and use smaller default panels.
 - First-route landmark flags are independent; HUB_REACHED no longer implies Tower/camp/approach discovery.
 - PreReleaseSessionReset remains temporary and must still be disabled/removed before release completion.
+
+
+## Drabyel-gate opening + facility-shell validation — 2026-09-29
+
+Implemented opening topology:
+- fresh pre-release sessions start at New Drabyel's source-backed north entrance rather than the Primal roadhead or Explorer camp
+- the entrance guide establishes the immediate story problem
+- after one E-menu party check, the main objective/navigation points to the nearby CV_DRABYEL_ROAD encounter
+- the approach placement seed is under 100 m from the entrance seed and remains outside the town safety ring
+- CV_DRABYEL_ROAD is now CV-B + CV-C, keeping the first outdoor fight readable and short
+- victory points the player back to New Drabyel; blacksmith/market/stable/summon onboarding continues from the physical hub
+- HUB_REACHED no longer auto-marks Tower/camp/approach discovery; the older Capital Valley route remains optional exploration
+
+Facility UI structure:
+- merchant / forge / stable / summon now extend shared `FacilityScreen`
+- shared shell owns compact panel sizing, Foozle production skin, refresh, close keys and world-preserving background behavior
+- concrete screens own only task-specific controls/data
+- new physical facilities must reuse this shell rather than duplicating screen lifecycle/chrome code
+
+Build TURNBOUND #939 / run `36537666943` compiled production successfully but failed two stale assertions:
+- the old 3-enemy CV_DRABYEL_ROAD composition contract
+- a hub-guidance edge case where `HUB_REACHED` existed before a runtime hub site was promoted
+
+The composition contract was intentionally updated to the new 2-enemy tutorial, while the hub edge case was fixed in runtime guidance rather than weakening the test.
+
+Build TURNBOUND #940 / run `36537913723` verified commit
+`12b44c003071ceceb1358d13cca5bdeb8e036635`:
+
+- Gradle test/build: PASS
+- NeoForge dedicated-server smoke: PASS
+- built JAR verification: PASS
+- one-click Modrinth pack verification: PASS
+- artifact upload: PASS — `turnbound-v04-workbranch`, artifact id `11018834810`
+- JAR SHA-256: `5b1f0db7bd4d4f1f6a8d068da8a52e7163a58b6f4f1c7fa6c5fb638f062f4c1e`
+- MRPACK SHA-256: `6d00f616ef55fcc08f386cf847c470780b40e5b73c47cc357e3018aa2cd3e672`
+
+Validation:
+- CODE REVIEWED: YES
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- CLIENT RUNTIME TESTED: NO for this gate-start build
+- PLAYTESTED: NO for this gate-start build
+- MULTIPLAYER TESTED: NO
