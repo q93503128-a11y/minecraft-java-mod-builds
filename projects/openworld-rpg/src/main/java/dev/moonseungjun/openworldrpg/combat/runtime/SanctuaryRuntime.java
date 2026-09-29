@@ -59,8 +59,7 @@ public final class SanctuaryRuntime {
                         .isEmpty()) {
             return false;
         }
-        return ProjectUltimateChargeRuntime.charge(caster) >= 100.0 - 1.0e-9
-                && ProjectUltimateChargeRuntime.lockoutRemainingTicks(caster) == 0L;
+        return ProjectUltimateChargeRuntime.canActivateUltimate(caster);
     }
 
     public static Activation activate(ServerPlayer caster) {
