@@ -288,11 +288,23 @@ The Capital Valley optional world-boss candidate is now bound as `CV_WORLD_BOSS_
 - the new encounter reuses the existing B01 combat reward basis (12,000 Gold / 5,000 XP / 60 Essence) plus the separated boss-side first-clear package (1,200 Crystal + one T2 choice)
 - `CV_WORLD_BOSS_GRAUL` cannot trigger retired `BATTLE_B01` Archive/P08/story quest/legacy-region progression even though both encounters use the Graul combatant
 
+Build TURNBOUND #932 failed at `compileTestJava` because the first regression test directly instantiated `TurnboundWorldSavedData`, crossing the intentionally narrow plain-JVM test classpath boundary for Minecraft `SavedData`. Production sources had already compiled. The test was repaired by extracting the clear-key decision into the pure `WorldEncounterClearPolicy`; production persistence delegates to that same policy instead of widening the test runtime or removing the regression check.
+
+Build TURNBOUND #933 (run `36524938895`) then verified commit `ade00b325a78cb87f38c3164db69329ef70615f4`:
+- Gradle test/build: PASS
+- NeoForge dedicated-server smoke: PASS
+- built JAR verification: PASS
+- one-click mrpack verification: PASS
+- artifact upload: PASS
+- artifact: `turnbound-v04-workbranch` (ID `11014151809`)
+- JAR SHA-256: `366957e80d61a01ac8d59d643a71a69e68ec5b371337c01ca03a1372533c79c5`
+- MRPACK SHA-256: `1d08e86bb8c1d0b532fdf1289e2d0f0ba29a69a4e43593b34006cb8eae9f9328`
+
 Validation for this block:
 - CODE REVIEWED: YES
-- TESTED: pending branch workflow
-- BUILD VERIFIED: pending branch workflow
-- JAR PRODUCED: pending branch workflow
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
