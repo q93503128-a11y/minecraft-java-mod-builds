@@ -262,6 +262,13 @@ Provide an authored/game-like island map that can show:
 - major public projects that materially change navigation.
 
 The default map should emphasize places and readable village geography rather than behaving like a technical chunk/debug map.
+
+Map discovery rules:
+- core village facilities and the player's own home can appear from the start once relevant.
+- hidden caves, secret beaches, ruins, special gathering areas and other exploration discoveries remain unmarked until the player actually finds/learns them.
+- discovered landmarks then persist on that player's map/records unless the landmark itself is intentionally temporary.
+- map hints from residents/treasure clues may reveal a rough area without automatically marking the exact final location.
+
 Do not put a permanent minimap/GPS overlay on the HUD by default.
 Live player/NPC tracking is not assumed; only add selective location indicators where they improve a specific social/travel feature without turning the island into a tracking screen.
 
@@ -983,6 +990,11 @@ These interactions should be schedule/context driven and lightweight enough not 
 Prefer one primary money currency.
 Avoid stacking coins/miles/tokens merely to create complexity.
 
+Money is stored as server-authoritative player/Household account state rather than physical coin-item stacks.
+It should not consume inventory slots or spill into the world on death.
+
+Player-to-player money transfer may exist through appropriate social/resident-services interactions, but do not turn currency into a freely dropped physical item that can be duplicated/lost through ordinary entity behavior.
+
 Money sinks:
 - housing debt.
 - house expansion.
@@ -1047,6 +1059,26 @@ Exact special-event exceptions must be visible in the board/calendar schedule.
 Use:
 - seasonal persistent stock.
 - daily rotating items.
+
+### Physical merchandise display
+For furniture, clothing and other visually important goods, the preferred shopping experience is **physical in-store display** rather than selecting everything from a text/grid catalog.
+
+Players should be able to walk around the shop and see real displayed merchandise where the final building/interior layout supports it:
+- furniture placed on display stands/floor spots.
+- clothing shown on mannequins, racks or authored display props.
+- seasonal/premium goods given visually distinctive placement.
+- rotating stock changes should be reflected physically in the shop.
+
+Selecting/interacting with a displayed item can show price and basic details, then purchase it.
+
+A secondary 3D/character preview may be used **in parallel** when it is technically clean and useful:
+- rotate/inspect furniture more closely.
+- preview color/material variants that cannot all fit physically on the shop floor.
+- preview clothing on the player's character before purchase.
+- inspect catalog-only/reorder items.
+
+Do not replace the physical shop fantasy with a remote catalog screen merely because preview UI exists.
+If 3D preview adds disproportionate implementation complexity or visual inconsistency, physical display remains the baseline and is sufficient.
 
 Furniture display stock:
 generally purchasable per player rather than letting one multiplayer user permanently deny others.
@@ -1875,6 +1907,21 @@ Outer/exploration islands use a hybrid persistence model:
 
 This preserves a memorable sense of place without allowing a few visits to permanently exhaust shared exploration areas.
 
+### Shared resource competition
+Ordinary world resources are generally **shared physical resources**, not separately duplicated once for every online player.
+
+Examples:
+- fruit on a tree.
+- beach finds.
+- ordinary renewable ore/resource nodes.
+- flowers/mushrooms/gathering spots where appropriate.
+
+If one player takes a shared resource, that world instance is consumed until it regenerates.
+However, regeneration density/timing and available node counts should scale sensibly with expected multiplayer population so one active player cannot make the rest of the group effectively unable to participate for long stretches.
+
+Do not use per-player invisible duplicate copies as the default solution merely to eliminate all competition.
+Explicit personal rewards/progression items remain personal where already defined.
+
 ## 34. Mail and player gifting
 
 Each player/household has a mailbox.
@@ -1934,6 +1981,32 @@ Gift reactions should reflect preferences.
 Birthdays can increase gift significance.
 
 Gift spam should not be the only path to maximum friendship.
+
+### Gift relationship cadence
+Players may hand residents additional items when context allows, but only a limited number of gifts per resident/player pair in an in-game day should grant the full meaningful relationship gain.
+
+Direction:
+- the first appropriate daily gift provides the normal friendship-value opportunity.
+- additional same-day gifts can still receive contextual dialogue/reactions but give little or no repeated relationship progression.
+- birthdays and authored special-gift moments are separate exceptions.
+- do not expose this as a grindy visible 'daily gift counter' unless UI testing shows it is genuinely useful.
+
+### Wrapped player gifts
+Players can wrap eligible items for social gifting.
+
+Use cases:
+- hand directly to another player.
+- attach to player mail.
+- resident birthday/special presentation where appropriate.
+
+Wrapping:
+- hides the contained item until opened.
+- can use seasonal/event paper/ribbon variants.
+- does not alter the underlying item's identity/data.
+- must preserve photographs, specimen data, furniture variants and other item metadata.
+- cannot be exploited to bypass inventory/permission/transfer restrictions.
+
+Gift wrap should be sold/obtained through ordinary village shops/events rather than becoming another currency.
 
 Residents may wear gifted clothing or display approved furniture.
 
@@ -2166,6 +2239,20 @@ Where supported by the final external builds/assets:
 - event/festival lighting overrides or extends the normal night presentation.
 
 Use external lighting/build assets where possible and keep updates event/time-driven rather than running expensive global scans every tick.
+
+### Automatic civic seasonal decoration
+Authored public/civic spaces may automatically swap/add curated external decoration sets as seasons and major events change.
+
+Examples:
+- seasonal plaza accents.
+- banners/flowers/leaf/snow presentation.
+- festival lighting and stalls.
+- shop/café civic exterior accents.
+
+This automation applies to authored public presentation, not player homes/yards.
+Player-owned decorations remain as placed unless the player changes them.
+
+Seasonal civic decoration should layer onto the village cleanly and restore the normal authored state afterward without deleting player-owned items.
 
 ### Environmental soundscapes
 Weather and location should also change sound presentation:
@@ -2562,7 +2649,22 @@ Support where technically applicable:
 
 Accessibility settings must not bypass location-based gameplay boundaries or convert physical village services into remote menu actions.
 
-### M-key life menu
+### Contextual help / tutorials
+Avoid a long mandatory tutorial chain.
+
+When a player first encounters an unfamiliar system, show a short contextual explanation only when needed.
+Examples:
+- first fish shadow/cast interaction.
+- first museum donation.
+- first catalog order.
+- first public-project contribution.
+- first landscaping/furniture placement mode.
+
+Once dismissed/understood, do not repeatedly interrupt normal play.
+
+The M-menu may include a **Help / Guide** area that reopens explanations, control references and discovered-system guidance.
+This is informational only.
+It must not remotely execute mailbox, notice-board, shop, resident-services, museum or other location-based interactions.
 **M** opens the unified Campfire life-information menu.
 
 The M menu is a hub for information/functions that make sense to access anywhere, such as:
