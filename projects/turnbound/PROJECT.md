@@ -157,6 +157,17 @@ Static 320×240 GUI math now yields one safe codex character row, non-overlappin
 
 Shared-battle offline settlement, New Drabyel physical service placement, resource-pack edge cases, and remaining production-world field validation are separate follow-up units.
 
+## Shared-battle settlement repair — 2026-09-29
+
+Post-audit multiplayer reliability work now:
+- lets remaining online participants leave a finished shared battle without waiting indefinitely for disconnected owners
+- settles an offline owner's victory into the existing durable reward WAL before the shared session is removed
+- keeps transaction ids/idempotence so a cold reload can replay the WAL without duplicate rewards
+- resolves a claimed Drehmal field encounter by the original claimant UUID even when that initiator is offline
+- preserves same-server reconnect behavior and server authority
+
+This is **CODE REVIEWED**, not multiplayer-playtested. 2/3/4-player disconnect/reconnect, server-stop recovery, camera, return-position, and duplicate-reward scenarios remain required real multiplayer tests.
+
 ## Economy
 
 Long-term core currencies:
