@@ -761,3 +761,17 @@ The source-seed fallback is production-eligible only when the live world passes 
 - acceptable distance from the pinned source road corridor
 
 If no candidate passes, the patrol remains dormant. A navigation marker without physical actors is not an acceptable fallback.
+
+### Single field-representative contract — 2026-09-30
+
+Field presence is a contact/navigation representation of an encounter, not a literal copy of the battle party.
+
+- one active field encounter owns exactly one server-authoritative physical representative entity
+- the representative patrols, alerts, pursues, disengages and supplies the live objective position
+- touching that representative starts the authored combat encounter; the field proxy is removed and combat expands to the full enemy composition
+- battle enemy count, battle formation slots and combat rewards remain unchanged by the single-proxy rule
+- common groups do not spawn follower pathfinding entities merely to advertise that the battle contains multiple enemies
+- if a future encounter genuinely needs to read as a crowd in the world, prefer one authored composite model/animation driven by one entity; do not multiply navigation authorities for decorative silhouettes
+- important bosses and named single enemies naturally use their own representative appearance
+
+For the New Drabyel opening patrol, the world therefore shows one moving representative while `CV_DRABYEL_ROAD` still expands to its two-enemy battle after contact. The HUD label/objective communicates that this is a patrol encounter; a second independently moving field actor is not required.
