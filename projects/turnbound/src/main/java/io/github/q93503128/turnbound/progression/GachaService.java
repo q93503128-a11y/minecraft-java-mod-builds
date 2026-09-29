@@ -75,10 +75,20 @@ public final class GachaService {
         if (fiveRate >= 1.0) return 5;
         double roll = random.nextDouble();
         if (roll < fiveRate) return 5;
+
+        // Soft pity increases only ★5. The remaining ★1~★4 table keeps the canonical relative weights.
         double nonFive = (roll - fiveRate) / (1.0 - fiveRate);
-        double total = 1.0 - GachaCatalog.BASE_FIVE_STAR_RATE;
-        if (nonFive < GachaCatalog.FOUR_STAR_RATE / total) return 4;
-        return 3;
+        double nonFiveBase = GachaCatalog.FOUR_STAR_RATE
+                + GachaCatalog.THREE_STAR_RATE
+                + GachaCatalog.TWO_STAR_RATE
+                + GachaCatalog.ONE_STAR_RATE;
+        double cursor = GachaCatalog.FOUR_STAR_RATE / nonFiveBase;
+        if (nonFive < cursor) return 4;
+        cursor += GachaCatalog.THREE_STAR_RATE / nonFiveBase;
+        if (nonFive < cursor) return 3;
+        cursor += GachaCatalog.TWO_STAR_RATE / nonFiveBase;
+        if (nonFive < cursor) return 2;
+        return 1;
     }
 
     private int rollFourPlus(int pityBeforePull) {
