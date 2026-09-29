@@ -142,6 +142,57 @@ TURNBOUND consequence:
 - use the central island as a high-density destination, not as random common-spawn territory;
 - never flatten the ruin into a dedicated arena if a camera-safe nearby footprint exists.
 
+## 6.5 Structured world-derived reference
+
+A public community map project, `zachaa/DrehmalMap`, has already extracted structured data from the Drehmal 2.2.2 world for:
+- roads/path GeoJSON
+- signs with text
+- traders and trades
+- storage/block entities
+- item frames / armor stands
+- named entities and locations
+
+TURNBOUND uses this as **reference-only** because no redistributable license was identified. Raw upstream JSON/map tiles are not copied into the project.
+
+For the New Drabyel micro-area, an automated query of the upstream structured data found 73 relevant source objects in the surveyed town window:
+- 33 signs
+- 21 storage entries
+- 5 traders
+- 11 item frames
+- 2 Primal Cache/block-entity entries
+- 1 armor stand
+
+Useful exact source evidence includes:
+- welcome sign: 502,70,1804
+- Verdant Saddle sign: 506,68,1836
+- Drabyel Guardhouse sign: 520,68,1823
+- Runic Blacksmith trader: 526,65,1839
+- Goibhniu's Smithy sign: 527,67,1844
+- Oak / Coal / Wheat traders: 530,67,1830 / 535,67,1838 / 541,67,1833
+- Adventuring Merchant: 516,67,1854
+- church sign: 527,68,1854
+- Nature's Rest sign: 538,69,1844
+- bookstore sign: 561,68,1844
+- shrine/offerings sign: 511,67,1850
+- farmhouse basement map frame: 516,65,1861
+- nearby Primal Caches: 525,67,1854 and 550,70,1841
+
+This is detailed enough to stop treating hub placement as a manual coordinate hunt.
+
+### Runtime placement rule
+
+For New Drabyel services the preferred workflow is now:
+1. use the extracted sign/trader/road data to define the semantic service zone;
+2. when a player actually approaches New Drabyel in the bound 26.2 world, scan the live blocks around that source anchor;
+3. reject liquid, blocked headroom, unstable 3×3 ground, roof-height drift, source block entities and existing villagers/traders;
+4. reject the authored road centerline and prefer a nearby readable shoulder;
+5. choose the lowest-scoring valid point deterministically and face the actor toward the nearest road;
+6. spawn no service for a role if no safe point exists.
+
+The admin survey commands remain diagnostics only. Normal development/playtesting must not require the user to type one command per NPC.
+
+Source/provenance: `THIRD_PARTY/drehmal-map-reference/SOURCE.md`.
+
 ## 7. Map-analysis workflow
 
 For every new region:
