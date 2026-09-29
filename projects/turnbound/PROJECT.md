@@ -289,6 +289,12 @@ This checkpoint requests the branch `Build TURNBOUND` workflow. Until its result
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
 
+## 26.2 compile repair checkpoint — 2026-09-29
+
+The first source-aware Capital Valley build failed before tests because Minecraft 26.2 moved villager classes under the villager package. Both hub and first-route collision guards now depend on the stable 26.2 `AbstractVillager` base type, which still excludes normal villagers and wandering traders without duplicating concrete class imports.
+
+This is the only correction made in response to Build TURNBOUND #36515077187 before requesting a new build.
+
 ## Economy
 
 Long-term core currencies:
