@@ -193,6 +193,23 @@ The admin survey commands remain diagnostics only. Normal development/playtestin
 
 Source/provenance: `THIRD_PARTY/drehmal-map-reference/SOURCE.md`.
 
+### 6.6 Capital Valley route extraction
+
+The same structured source is now used beyond the hub. The first-route corridor query covers the Stasis/Primal side through Temple Ruins, Capital Valley Tower, Warning Cave branch, Explorer's Campsite and the New Drabyel approach.
+
+The extracted route window contains source-authored signs, storage, item frames, armor stands, named entities/traders and the road GeoJSON. Important preservation examples include:
+- Drabyel direction sign near 581,66,831;
+- Temple Ruins lore signs around 559,65~69,820~822;
+- Capital Valley Tower title signs around 556~558,131,1175~1177;
+- Warning Cave source storage including Bryde's Warning around 454,73,1252;
+- Explorer's Guide camp storage around 581,81,1501;
+- Drabyel/Av'Sal crossroads signs around 585~586,82~83,1437~1443;
+- Village of Drabyel direction signs around 484,70~71,1537.
+
+Runtime route placement therefore does not choose the first merely-flat block. Encounter and non-service NPC sites are scored toward readable road shoulders, source block/entity conflicts are rejected, battle candidates receive a wider source-content clearance check, and materialization repeats the source-content check when the player actually approaches the area.
+
+This covers all **7 first-route combat groups** (6 Common + 1 optional Elite) and all **3 field NPCs**. If a site or arena cannot satisfy the same-zone safety rules, it remains absent instead of being moved to a semantically unrelated location.
+
 ## 7. Map-analysis workflow
 
 For every new region:
@@ -200,7 +217,8 @@ For every new region:
 2. read official wiki settlement + POI pages;
 3. record source coordinates as survey seeds;
 4. classify spaces: safe hub / road / landmark / optional danger / dungeon / boss-sized clearing;
-5. inspect the actual migrated 26.2 client world;
-6. only then promote exact runtime positions, patrol paths and battle footprints.
+5. let the bound 26.2 runtime derive safe exact positions from those semantic zones and reject source-content conflicts;
+6. inspect the resulting route in normal client play for sightline, camera, pathfinding and visual feel;
+7. freeze a static coordinate only when there is a concrete reason to replace the adaptive resolver.
 
-This keeps world understanding detailed without pretending a web coordinate is already a verified gameplay coordinate.
+This keeps world understanding detailed without pretending a web coordinate is already a verified gameplay coordinate, while also avoiding manual coordinate authoring.
