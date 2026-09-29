@@ -156,6 +156,33 @@ class PlayerEquipmentLoadoutStateTest {
     }
 
     @Test
+    void healingReceivedAggregatesWithoutWeaponAndCapsAtFortyPercent() {
+        var loadout = new PlayerEquipmentLoadoutState(List.of(
+                EquippedCombatItem.gear(
+                        "openworld_rpg:healers_band",
+                        ProjectEquipmentSlot.RING_1,
+                        8,
+                        List.of(EquipmentCombatAffix.flat(
+                                EquipmentCombatAffixKind.HEALING_RECEIVED,
+                                0.25
+                        ))
+                ),
+                EquippedCombatItem.gear(
+                        "openworld_rpg:restorative_pendant",
+                        ProjectEquipmentSlot.NECKLACE,
+                        8,
+                        List.of(EquipmentCombatAffix.flat(
+                                EquipmentCombatAffixKind.HEALING_RECEIVED,
+                                0.25
+                        ))
+                )
+        ));
+
+        assertEquals(0.40, loadout.aggregateHealingReceivedBonus(), 0.0001);
+        assertTrue(loadout.aggregateCombatState().isEmpty());
+    }
+
+    @Test
     void movementSpeedAggregatesWithoutWeaponAndCapsAtFifteenPercent() {
         var loadout = new PlayerEquipmentLoadoutState(List.of(
                 EquippedCombatItem.gear(

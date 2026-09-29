@@ -72,7 +72,7 @@ class R01NessaEquipmentMaterializationTest {
         assertFalse(resolution.blockers().contains(
                 "openworld_rpg:affix/attack_speed"
         ));
-        assertTrue(resolution.blockers().contains(
+        assertFalse(resolution.blockers().contains(
                 "openworld_rpg:affix/healing_received"
         ));
         assertFalse(resolution.blockers().contains(

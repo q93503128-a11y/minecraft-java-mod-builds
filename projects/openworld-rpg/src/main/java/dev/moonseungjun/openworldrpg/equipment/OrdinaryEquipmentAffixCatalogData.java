@@ -41,6 +41,9 @@ public record OrdinaryEquipmentAffixCatalogData(
     private static final Set<String> LIVE_MOVEMENT_AFFIX_IDS = Set.of(
             "openworld_rpg:affix/movement_speed"
     );
+    private static final Set<String> LIVE_HEALING_RECEIVED_AFFIX_IDS = Set.of(
+            "openworld_rpg:affix/healing_received"
+    );
 
     public OrdinaryEquipmentAffixCatalogData {
         primaryCurve = Objects.requireNonNull(primaryCurve, "primaryCurve");
@@ -114,6 +117,12 @@ public record OrdinaryEquipmentAffixCatalogData(
 
     public boolean movementAuthorityReady() {
         return LIVE_MOVEMENT_AFFIX_IDS.stream().allMatch(
+                this::runtimeImplemented
+        );
+    }
+
+    public boolean healingReceivedAuthorityReady() {
+        return LIVE_HEALING_RECEIVED_AFFIX_IDS.stream().allMatch(
                 this::runtimeImplemented
         );
     }

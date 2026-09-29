@@ -20,6 +20,7 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
     private static final double CRITICAL_CHANCE_GEAR_CAP = 0.30;
     public static final double ATTACK_SPEED_GEAR_CAP = 0.35;
     public static final double MOVEMENT_SPEED_GEAR_CAP = 0.15;
+    public static final double HEALING_RECEIVED_GEAR_CAP = 0.40;
     private static final double GUARD_STRENGTH_GEAR_CAP = 0.50;
     private static final double POISE_STAGGER_RESISTANCE_GEAR_CAP = 0.50;
 
@@ -165,6 +166,24 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
             }
         }
         return Math.min(result, ATTACK_SPEED_GEAR_CAP);
+    }
+
+    /**
+     * Aggregates the canonical incoming-healing bonus across equipped gear.
+     *
+     * <p>Healing Potion and future project-owned heals apply this only after computing their
+     * authored base amount. The +40% aggregate gear cap is canonical.</p>
+     */
+    public double aggregateHealingReceivedBonus() {
+        double result = 0.0;
+        for (EquippedCombatItem item : equipped) {
+            for (EquipmentCombatAffix affix : item.affixes()) {
+                if (affix.kind() == EquipmentCombatAffixKind.HEALING_RECEIVED) {
+                    result += affix.value();
+                }
+            }
+        }
+        return Math.min(result, HEALING_RECEIVED_GEAR_CAP);
     }
 
     /**
@@ -334,6 +353,9 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
                     }
                     case MOVEMENT_SPEED -> {
                         // Published independently by the server-owned movement runtime.
+                    }
+                    case HEALING_RECEIVED -> {
+                        // Published independently by aggregateHealingReceivedBonus().
                     }
                     case MAX_HP, MAX_MANA, MAX_STAMINA, MANA_RECOVERY,
                             STAMINA_RECOVERY, MANA_COST_REDUCTION,

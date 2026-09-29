@@ -249,7 +249,7 @@
       "min": 4,
       "max": 12,
       "runtime_payload": "openworld_rpg:runtime_affix/healing_received",
-      "runtime_state": "stored_only"
+      "runtime_state": "implemented"
     },
     {
       "id": "openworld_rpg:affix/negative_status_duration_reduction",

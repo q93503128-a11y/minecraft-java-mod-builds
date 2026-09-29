@@ -1,6 +1,8 @@
 package dev.moonseungjun.openworldrpg.recovery;
 
+import dev.moonseungjun.openworldrpg.combat.authority.PlayerHealingAuthority;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
+import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentService;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,7 +38,13 @@ public final class RecoveryEffectRuntime {
 
         float healthBefore = player.getHealth();
         if (effect.hpRestore() > 0.0) {
-            player.heal((float) effect.hpRestore());
+            double receivedBonus = PlayerEquipmentService.state(player)
+                    .aggregateHealingReceivedBonus();
+            double requestedHealing = PlayerHealingAuthority.receivedHealingAmount(
+                    effect.hpRestore(),
+                    receivedBonus
+            );
+            player.heal((float) requestedHealing);
         }
         double hpRestored = player.getHealth() - healthBefore;
 

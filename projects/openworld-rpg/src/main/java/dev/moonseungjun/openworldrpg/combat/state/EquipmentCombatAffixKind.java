@@ -20,6 +20,7 @@ public enum EquipmentCombatAffixKind {
     CRITICAL_DAMAGE,
     ATTACK_SPEED,
     MOVEMENT_SPEED,
+    HEALING_RECEIVED,
     MAX_HP,
     MAX_MANA,
     MAX_STAMINA,
