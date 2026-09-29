@@ -14,6 +14,7 @@ public final class NpcDialogueScreen extends Screen {
     private final String speaker;
     private final String dialogue;
     private int panelLeft, panelTop, panelWidth, panelHeight;
+    private int scrollLine;
 
     public NpcDialogueScreen(String speaker, String dialogue) {
         super(Component.literal(speaker == null || speaker.isBlank() ? "대화" : speaker));
@@ -31,13 +32,14 @@ public final class NpcDialogueScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        panelWidth = Math.min(520, Math.max(260, width - 36));
-        List<String> lines = UiTextLayout.wrap(dialogue, panelWidth - 40, 96);
-        panelHeight = Math.min(150, Math.max(82, 50 + lines.size() * 12));
+        panelWidth = Math.min(620, Math.max(300, width - 28));
+        List<String> lines = wrappedLines();
+        panelHeight = Math.min(200, Math.max(104, 58 + Math.min(lines.size(), 9) * 12));
         panelLeft = (width - panelWidth) / 2;
-        panelTop = height - panelHeight - 34;
+        panelTop = height - panelHeight - 24;
+        scrollLine = Math.max(0, Math.min(scrollLine, maxScroll(lines)));
         addRenderableWidget(new BattleHudButton(
-                panelLeft + panelWidth - 72, panelTop + panelHeight - 26, 58, 18,
+                panelLeft + panelWidth - 68, panelTop + panelHeight - 23, 54, 16,
                 Component.literal("닫기"), TurnboundUiTokens.PRIMARY, ignored -> onClose()));
     }
 
@@ -47,15 +49,51 @@ public final class NpcDialogueScreen extends Screen {
     public void extractRenderState(@NotNull GuiGraphicsExtractor graphics,int mouseX,int mouseY,float partialTick) {
         TurnboundUiSkin.panel(graphics, panelLeft, panelTop, panelWidth, panelHeight);
         graphics.text(font, Component.literal(speaker.isBlank() ? "대화" : speaker),
-                panelLeft + 16, panelTop + 13, TurnboundUiTokens.ACCENT, true);
-        TurnboundFrameStyle.divider(graphics, panelLeft + 16, panelTop + 29, panelWidth - 32);
-        int y = panelTop + 39;
-        for (String line : UiTextLayout.wrap(dialogue, panelWidth - 40, 96)) {
-            if (y + font.lineHeight >= panelTop + panelHeight - 30) break;
-            graphics.text(font, Component.literal(line), panelLeft + 20, y, TurnboundUiTokens.TEXT_PRIMARY, false);
+                panelLeft + 14, panelTop + 9, TurnboundUiTokens.ACCENT, true);
+        TurnboundFrameStyle.divider(graphics, panelLeft + 14, panelTop + 23, panelWidth - 28);
+        List<String> lines = wrappedLines();
+        int visible = visibleLines();
+        int end = Math.min(lines.size(), scrollLine + visible);
+        int y = panelTop + 30;
+        for (int i = scrollLine; i < end; i++) {
+            graphics.text(font, Component.literal(lines.get(i)), panelLeft + 16, y, TurnboundUiTokens.TEXT_PRIMARY, false);
             y += 12;
         }
+        int max = maxScroll(lines);
+        if (max > 0) {
+            int trackX = panelLeft + panelWidth - 11;
+            int trackTop = panelTop + 30;
+            int trackBottom = panelTop + panelHeight - 30;
+            graphics.fill(trackX, trackTop, trackX + 2, trackBottom, 0x553A3A3A);
+            int trackH = Math.max(1, trackBottom - trackTop);
+            int thumbH = Math.max(10, trackH * visible / Math.max(visible, lines.size()));
+            int thumbY = trackTop + (trackH - thumbH) * scrollLine / max;
+            graphics.fill(trackX, thumbY, trackX + 2, thumbY + thumbH, TurnboundUiTokens.ACCENT);
+        }
         super.extractRenderState(graphics,mouseX,mouseY,partialTick);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX,double mouseY,double scrollX,double scrollY) {
+        List<String> lines = wrappedLines();
+        int max = maxScroll(lines);
+        if (max > 0 && scrollY != 0) {
+            scrollLine = Math.max(0, Math.min(max, scrollLine + (scrollY > 0 ? -1 : 1)));
+            return true;
+        }
+        return super.mouseScrolled(mouseX,mouseY,scrollX,scrollY);
+    }
+
+    private List<String> wrappedLines() {
+        return UiTextLayout.wrap(dialogue, Math.max(80, panelWidth - 42), 96);
+    }
+
+    private int visibleLines() {
+        return Math.max(2, (panelHeight - 62) / 12);
+    }
+
+    private int maxScroll(List<String> lines) {
+        return Math.max(0, lines.size() - visibleLines());
     }
 
     @Override public boolean keyPressed(KeyEvent event) {

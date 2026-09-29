@@ -65,6 +65,7 @@ final class DrehmalAdaptiveRoutePlacement {
             sites.put(authored.locator(),new DrehmalFirstRouteCatalog.Site(authored.locator(),authored.kind(),authored.surveySeedAnchor(),
                     authored.playerLabel(),pos,authored.safetyRadius(),authored.encounterRadius(),true,true));
         }
+        ensureOpeningTutorialSite(level,sites);
 
         for(var authored:DrehmalFirstRouteCatalog.route().footprints()){
             if(footprints.containsKey(authored.locator())) continue;
@@ -75,6 +76,7 @@ final class DrehmalAdaptiveRoutePlacement {
             footprints.put(authored.locator(),new DrehmalFirstRouteCatalog.Footprint(authored.locator(),authored.siteLocator(),
                     authored.radius(),authored.allySlots(),authored.enemySlots(),candidates,true,true));
         }
+        ensureOpeningTutorialFootprint(player,level,sites,footprints);
 
         WorldBossResolution worldBoss = resolveOptionalWorldBoss(player, level, List.copyOf(sites.values()));
         if (worldBoss != null) {
@@ -107,6 +109,95 @@ final class DrehmalAdaptiveRoutePlacement {
         Turnbound.LOGGER.info("TURNBOUND resolved Capital Valley map zones: {} sites, {} footprints, {} patrols, {} encounters",
                 sites.size(),footprints.size(),patrols.size(),encounters.size());
         return new Snapshot(sites,footprints,patrols,encounters);
+    }
+
+    private static void ensureOpeningTutorialSite(
+            ServerLevel level,
+            Map<String,DrehmalFirstRouteCatalog.Site> sites
+    ){
+        if(sites.containsKey(DrabyelOpeningTutorial.ENCOUNTER_SITE))return;
+        var authored=DrehmalFirstRouteCatalog.site(DrabyelOpeningTutorial.ENCOUNTER_SITE);
+        var placement=DrehmalMapPlacementCatalog.placement(DrabyelOpeningTutorial.ENCOUNTER_SITE);
+        if(authored==null||placement==null)return;
+        for(var seed:placement.siteSeeds()){
+            for(int[] offset:offsets(Math.min(5,Math.max(2,placement.searchRadius())))){
+                int x=seed.x()+offset[0],z=seed.z()+offset[1];
+                int y=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);
+                BlockPos feet=new BlockPos(x,y,z);
+                if(!standing(level,feet))continue;
+                if(DrehmalRouteZoneRules.insideSafetyZone(List.copyOf(sites.values()),x+0.5D,z+0.5D))continue;
+                var position=new DrehmalFirstRouteCatalog.Position(x,y,z);
+                sites.put(authored.locator(),new DrehmalFirstRouteCatalog.Site(
+                        authored.locator(),authored.kind(),authored.surveySeedAnchor(),authored.playerLabel(),
+                        position,authored.safetyRadius(),authored.encounterRadius(),true,true));
+                Turnbound.LOGGER.info("TURNBOUND opening patrol used source-seed site fallback at {}, {}, {}",x,y,z);
+                return;
+            }
+        }
+    }
+
+    private static void ensureOpeningTutorialFootprint(
+            ServerPlayer player,
+            ServerLevel level,
+            Map<String,DrehmalFirstRouteCatalog.Site> sites,
+            Map<String,DrehmalFirstRouteCatalog.Footprint> footprints
+    ){
+        if(footprints.containsKey(DrabyelOpeningTutorial.FOOTPRINT_ID))return;
+        var authored=DrehmalFirstRouteCatalog.footprint(DrabyelOpeningTutorial.FOOTPRINT_ID);
+        var site=sites.get(DrabyelOpeningTutorial.ENCOUNTER_SITE);
+        var placement=DrehmalMapPlacementCatalog.placement(DrabyelOpeningTutorial.ENCOUNTER_SITE);
+        if(authored==null||site==null||site.runtimePosition()==null||placement==null)return;
+
+        List<DrehmalFirstRouteCatalog.ArenaCandidate> candidates=new ArrayList<>();
+        for(var seed:placement.arenaSeeds()){
+            var candidate=openingArena(player,level,seed.x(),seed.z(),seed.yaw());
+            if(candidate==null)continue;
+            boolean duplicate=candidates.stream().anyMatch(existing->
+                    existing.center().x()==candidate.center().x()
+                            && existing.center().z()==candidate.center().z());
+            if(!duplicate)candidates.add(candidate);
+            if(candidates.size()>=4)break;
+        }
+
+        if(candidates.size()<2){
+            var home=site.runtimePosition();
+            int[][] offsets={{20,0},{-20,0},{0,20},{0,-20},{16,16},{-16,16},{16,-16},{-16,-16}};
+            float[] yaws={0.0F,90.0F,180.0F,270.0F};
+            for(int i=0;i<offsets.length&&candidates.size()<4;i++){
+                var candidate=openingArena(player,level,home.x()+offsets[i][0],home.z()+offsets[i][1],yaws[i%yaws.length]);
+                if(candidate==null)continue;
+                boolean duplicate=candidates.stream().anyMatch(existing->
+                        existing.center().x()==candidate.center().x()
+                                && existing.center().z()==candidate.center().z());
+                if(!duplicate)candidates.add(candidate);
+            }
+        }
+
+        if(candidates.size()<2){
+            Turnbound.LOGGER.warn("TURNBOUND opening patrol footprint fallback still found only {} arena(s)",candidates.size());
+            return;
+        }
+        footprints.put(authored.locator(),new DrehmalFirstRouteCatalog.Footprint(
+                authored.locator(),authored.siteLocator(),authored.radius(),
+                authored.allySlots(),2,List.copyOf(candidates),true,true));
+        Turnbound.LOGGER.info("TURNBOUND opening patrol used {} fallback battle arenas",candidates.size());
+    }
+
+    private static DrehmalFirstRouteCatalog.ArenaCandidate openingArena(
+            ServerPlayer player,ServerLevel level,int seedX,int seedZ,float yaw
+    ){
+        for(int[] offset:offsets(5)){
+            int x=seedX+offset[0],z=seedZ+offset[1];
+            int y=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);
+            BlockPos feet=new BlockPos(x,y,z);
+            if(!standing(level,feet)||localHeightSpread(level,x,z,5,2)>3)continue;
+            if(!sourceContentClear(level,x,y,z,3.25D))continue;
+            Vec3 center=new Vec3(x+0.5D,y,z+0.5D);
+            if(!BattleSessionManager.surveyArenaOpen(player,center,yaw,4))continue;
+            return new DrehmalFirstRouteCatalog.ArenaCandidate(
+                    new DrehmalFirstRouteCatalog.Position(x,y,z),yaw);
+        }
+        return null;
     }
 
     private static DrehmalFirstRouteCatalog.Position resolveSite(ServerLevel level,DrehmalMapPlacementCatalog.Placement p){

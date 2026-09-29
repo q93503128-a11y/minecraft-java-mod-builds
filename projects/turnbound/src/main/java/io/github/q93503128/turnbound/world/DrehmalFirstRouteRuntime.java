@@ -141,10 +141,7 @@ public final class DrehmalFirstRouteRuntime {
 
         if (hubReached) {
             if (DrabyelOpeningTutorial.shouldSendOut(flags, clears)) {
-                var patrol = DrehmalAdaptiveRoutePlacement.site(player, DrabyelOpeningTutorial.ENCOUNTER_SITE);
-                if (patrol != null && patrol.runtimePosition() != null) {
-                    return navigationTo(patrol.locator(), "북쪽 길 순찰대", patrol.runtimePosition());
-                }
+                return openingPatrolNavigation(player);
             }
             if (!inHub && (!DrabyelOpeningTutorial.introReady(flags)
                     || DrabyelOpeningTutorial.shouldReturnToHub(false, clears))) {
@@ -164,6 +161,20 @@ public final class DrehmalFirstRouteRuntime {
         }
         return DrehmalRouteNavigationRules.target(
                 DrehmalAdaptiveRoutePlacement.productionSites(player), player.getX(), player.getZ(), flags, clears);
+    }
+
+    private static FieldUiSnapshot.Navigation openingPatrolNavigation(ServerPlayer player) {
+        var patrol=DrehmalAdaptiveRoutePlacement.site(player,DrabyelOpeningTutorial.ENCOUNTER_SITE);
+        if(patrol!=null&&patrol.runtimePosition()!=null){
+            return navigationTo(patrol.locator(),"북쪽 길 순찰대",patrol.runtimePosition());
+        }
+        var placement=DrehmalMapPlacementCatalog.placement(DrabyelOpeningTutorial.ENCOUNTER_SITE);
+        if(placement!=null&&!placement.siteSeeds().isEmpty()){
+            var seed=placement.siteSeeds().getFirst();
+            return new FieldUiSnapshot.Navigation(
+                    DrabyelOpeningTutorial.ENCOUNTER_SITE,"북쪽 길 순찰대",seed.x()+0.5D,seed.z()+0.5D);
+        }
+        return FieldUiSnapshot.Navigation.none();
     }
 
     private static FieldUiSnapshot.Navigation navigationTo(

@@ -6,6 +6,8 @@ import java.util.Set;
 final class DrabyelOpeningTutorial {
     static final String ENCOUNTER_ID = DrehmalContentUnlocks.DRABYEL_ROAD;
     static final String ENCOUNTER_SITE = "turnbound:site/capital_valley/drabyel_approach";
+    static final String FOOTPRINT_ID = "turnbound:footprint/capital_valley/drabyel_approach";
+    static final String ENCOUNTER_SLOT = "turnbound:encounter/capital_valley/drabyel_approach_patrol";
     static final String GREETER_FLAG = "HUB_SERVICE_GREETER";
 
     private DrabyelOpeningTutorial() {}

@@ -190,7 +190,7 @@
       "siteLocator": "turnbound:site/capital_valley/drabyel_approach",
       "radius": 14,
       "allySlots": 4,
-      "enemySlots": 3,
+      "enemySlots": 2,
       "verifiedIn26_2": false,
       "productionEnabled": false,
       "candidates": []
@@ -287,7 +287,6 @@
       "siteLocator": "turnbound:site/capital_valley/drabyel_approach",
       "tier": "COMMON",
       "footprintLocator": "turnbound:footprint/capital_valley/drabyel_approach",
-      "patrolLocator": "turnbound:patrol/capital_valley/drabyel_approach",
       "playerLabel": "뉴 드라비엘 북문 순찰대",
       "verifiedIn26_2": false,
       "productionEnabled": false,

@@ -76,6 +76,14 @@ class DrehmalFirstRouteCatalogTest {
                 .findFirst().orElseThrow();
         assertTrue(road.combatEncounterId().equals("CV_DRABYEL_ROAD"));
         assertFalse(road.productionEnabled(), "Drabyel road must also remain survey-gated");
+        assertTrue(road.patrolLocator().isBlank(),
+                "opening tutorial materialization must not depend on optional roam-path resolution");
+        var roadFootprint = DrehmalFirstRouteCatalog.route().footprints().stream()
+                .filter(footprint -> footprint.locator().equals(DrabyelOpeningTutorial.FOOTPRINT_ID))
+                .findFirst().orElseThrow();
+        assertTrue(roadFootprint.enemySlots() == 2,
+                "opening tutorial footprint must match the two-enemy battle");
+
 
         var worldBoss = DrehmalFirstRouteCatalog.encounterByCombatId(DrehmalWorldBossPlacementRules.ENCOUNTER_ID);
         assertNotNull(worldBoss);

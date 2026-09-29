@@ -74,11 +74,15 @@ public final class DrehmalMinimapLayer implements GuiLayer {
         if (target != null) {
             int sx = mapX + MAP_SIZE / 2 + (int)Math.round(target.dx() / STEP * CELL);
             int sy = mapY + MAP_SIZE / 2 + (int)Math.round(target.dz() / STEP * CELL);
-            if (target.clamped()) {
-                float targetYaw = (float)Math.toDegrees(Math.atan2(-target.dx(), target.dz()));
-                drawArrow(graphics, sx, sy, targetYaw, TARGET, false);
-            } else {
-                drawTarget(graphics, sx, sy);
+            float targetYaw = (float)Math.toDegrees(Math.atan2(-target.dx(), target.dz()));
+            if (target.clamped()) drawArrow(graphics, sx, sy, targetYaw, TARGET, false);
+            else drawTarget(graphics, sx, sy);
+
+            double length=Math.hypot(target.dx(),target.dz());
+            if(length>0.001D){
+                int cueX=mapX+MAP_SIZE/2+(int)Math.round(target.dx()/length*12.0D);
+                int cueY=mapY+MAP_SIZE/2+(int)Math.round(target.dz()/length*12.0D);
+                drawArrow(graphics,cueX,cueY,targetYaw,TARGET,false);
             }
         }
 
@@ -88,8 +92,12 @@ public final class DrehmalMinimapLayer implements GuiLayer {
         graphics.text(minecraft.font, Component.literal("N"), mapX + MAP_SIZE - 9, mapY + 3, 0xEFFFFFFF, true);
 
         int legendY = mapY + MAP_SIZE + 4;
-        drawTarget(graphics, mapX + 3, legendY + 4);
-        graphics.text(minecraft.font, Component.literal("추적 목표"), mapX + 10, legendY, MUTED, false);
+        if(target!=null){
+            drawTarget(graphics, mapX + 3, legendY + 4);
+            graphics.text(minecraft.font, Component.literal("추적 목표"), mapX + 10, legendY, MUTED, false);
+        }else{
+            graphics.text(minecraft.font, Component.literal("주변 탐색"), mapX + 3, legendY, MUTED, false);
+        }
 
         String footer;
         if (target != null) {

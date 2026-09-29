@@ -143,7 +143,7 @@ public final class MetaMenuScreen extends Screen {
         String[] labels={"편성","장비","퀘스트","기록","도감","설정"};
         int menuCols=3;
         int menuRows=(destinations.length+menuCols-1)/menuCols;
-        int orbSize=Math.max(28,Math.min(38,Math.min(
+        int orbSize=Math.max(36,Math.min(48,Math.min(
                 (menuAreaW-orbGap*(menuCols-1))/menuCols,
                 (ph-70-rowGap*(menuRows-1))/menuRows)));
         int menuHeight=orbSize*menuRows+rowGap*(menuRows-1);
@@ -170,7 +170,7 @@ public final class MetaMenuScreen extends Screen {
         int gridTop=contentTop()+2,gap=4;
         int cols=panelWidth>=700?5:panelWidth>=520?4:3;
         int cardH=36;
-        int footerTop=top+panelHeight-30;
+        int footerTop=top+panelHeight-47;
         int rows=UiPaging.rowsThatFit(gridTop,footerTop-5,cardH+4,2),per=cols*rows;
         setPaging(owned.size(),per);
         int start=page*per,end=Math.min(owned.size(),start+per),cardW=(panelWidth-24-gap*(cols-1))/cols;
@@ -184,25 +184,25 @@ public final class MetaMenuScreen extends Screen {
                     ignored->toggleParty(row.id())));
         }
 
-        int footerX=left+12,footerW=panelWidth-24,footerGap=3,coopW=48,applyW=72;
-        int fixed=coopW+applyW+footerGap*7;
-        int presetW=Math.max(42,(footerW-fixed)/6);
-        int cursor=footerX;
+        int footerX=left+12,footerW=panelWidth-24,footerGap=4;
+        int actionW=Math.min(104,Math.max(82,footerW/6));
+        int presetAreaW=footerW-actionW-footerGap;
+        int presetW=(presetAreaW-footerGap*2)/3;
+        int row1=top+panelHeight-43,row2=row1+20;
         for(int slot=1;slot<=3;slot++){
             final int s=slot;
+            int xx=footerX+(slot-1)*(presetW+footerGap);
             var preset=ClientMetaState.snapshot().partyPresets().size()>=slot?ClientMetaState.snapshot().partyPresets().get(slot-1):List.<String>of();
-            var load=new BattleHudButton(cursor,footerTop,presetW,16,
-                    Component.literal("P"+slot+" 불러"),preset.isEmpty()?SECONDARY:BLUE,ignored->send("PRESET_LOAD|"+s));
+            var load=new BattleHudButton(xx,row1,presetW,17,
+                    Component.literal("프리셋 "+slot+" 불러오기"),preset.isEmpty()?SECONDARY:BLUE,ignored->send("PRESET_LOAD|"+s));
             load.active=!preset.isEmpty();addRenderableWidget(load);
-            cursor+=presetW+footerGap;
-            addRenderableWidget(new BattleHudButton(cursor,footerTop,presetW,16,
-                    Component.literal("P"+slot+" 저장"),GREEN,ignored->send("PRESET_SAVE|"+s)));
-            cursor+=presetW+footerGap;
+            addRenderableWidget(new BattleHudButton(xx,row2,presetW,17,
+                    Component.literal("프리셋 "+slot+" 저장"),GREEN,ignored->send("PRESET_SAVE|"+s)));
         }
-        addRenderableWidget(new BattleHudButton(cursor,footerTop,coopW,16,Component.literal("협동"),BLUE,ignored->switchTab(Tab.COOP)));
-        cursor+=coopW+footerGap;
-        addRenderableWidget(new BattleHudButton(cursor,footerTop,Math.max(56,footerX+footerW-cursor),16,
-                Component.literal("적용 "+draftParty.size()+"/4"),GREEN,ignored->saveParty()));
+        int actionX=footerX+presetAreaW+footerGap;
+        addRenderableWidget(new BattleHudButton(actionX,row1,actionW,17,Component.literal("협동 파티"),BLUE,ignored->switchTab(Tab.COOP)));
+        addRenderableWidget(new BattleHudButton(actionX,row2,actionW,17,
+                Component.literal("편성 적용 "+draftParty.size()+"/4"),GREEN,ignored->saveParty()));
         buildPager();
     }
 
@@ -294,13 +294,15 @@ public final class MetaMenuScreen extends Screen {
         if(detailTab==DetailTab.SKILLS){
             var definition=CanonicalData.definition(row.id(),Math.max(1,row.effectiveLevel()),Math.max(1,row.star()),row.awakened());
             var skills=definition.skills();
-            selectedSkillIndex=Math.max(0,Math.min(selectedSkillIndex,skills.size()-1));
-            if(!skills.isEmpty()){
+            var passives=CharacterPassiveCatalog.forOwner(row.id());
+            int slotCount=skills.size()+(passives.isEmpty()?0:1);
+            selectedSkillIndex=Math.max(0,Math.min(selectedSkillIndex,Math.max(0,slotCount-1)));
+            if(slotCount>0){
                 int portraitSize=Math.min(116,Math.max(76,Math.min(panelWidth/5,contentBottom()-(contentTop()+27)-6)));
                 int sx=compactLayout?left+16:left+18+portraitSize+14;
                 int sw=compactLayout?Math.max(80,panelWidth-32):Math.max(80,left+panelWidth-18-sx);
                 int gapSkill=3;
-                int bw=Math.max(42,(sw-gapSkill*(skills.size()-1))/Math.max(1,skills.size()));
+                int bw=Math.max(42,(sw-gapSkill*(slotCount-1))/slotCount);
                 int by=compactLayout?contentTop()+43:contentTop()+58;
                 for(int i=0;i<skills.size();i++){
                     final int index=i;
@@ -309,6 +311,14 @@ public final class MetaMenuScreen extends Screen {
                             sx+i*(bw+gapSkill),by,bw,18,
                             Component.literal(skill.name()),
                             i==selectedSkillIndex?(skill.isBasic()?GREEN:GOLD):MUTED,
+                            ignored->{selectedSkillIndex=index;skillDescriptionScroll=0;rebuild();}));
+                }
+                if(!passives.isEmpty()){
+                    int index=skills.size();
+                    addRenderableWidget(new BattleHudButton(
+                            sx+index*(bw+gapSkill),by,bw,18,
+                            Component.literal("패시브"),
+                            selectedSkillIndex==index?PURPLE:MUTED,
                             ignored->{selectedSkillIndex=index;skillDescriptionScroll=0;rebuild();}));
                 }
             }
@@ -433,13 +443,13 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void buildCodex(){
-        int x=left+16,y=contentTop(),gap=4,count=5,w=(panelWidth-32-gap*(count-1))/count;
+        int x=left+16,y=contentTop(),gap=3,count=5,w=(panelWidth-32-gap*(count-1))/count;
         for(String category:List.of("CHARACTERS","ENEMIES","BOSSES","EQUIPMENT","TUTORIAL")){
-            addRenderableWidget(new BattleHudButton(x,y,w,CONTROL_H,Component.literal(codexLabel(category)),category.equals(codexCategory)?BLUE:MUTED,ignored->selectCodex(category)));
+            addRenderableWidget(new BattleHudButton(x,y,w,15,Component.literal(codexLabel(category)),category.equals(codexCategory)?BLUE:MUTED,ignored->selectCodex(category)));
             x+=w+gap;
         }
         if("CHARACTERS".equals(codexCategory)){
-            buildCodexCharacters(y+27);
+            buildCodexCharacters(y+18);
             return;
         }
         List<ClientMetaState.CodexRow> rows=ClientMetaState.snapshot().codex().stream().filter(r->r.category().equals(codexCategory)).toList();
@@ -457,21 +467,20 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void buildCodexCharacters(int y){
-        int gap=4,bw=(panelWidth-32-gap*3)/4,x=left+16;
-        addRenderableWidget(new BattleHudButton(x,y,bw,CONTROL_H,Component.literal("보유 · "+ownershipLabel()),BLUE,ignored->cycleOwnership()));x+=bw+gap;
-        addRenderableWidget(new BattleHudButton(x,y,bw,CONTROL_H,Component.literal("성급 · "+(starFilter==0?"전체":"★"+starFilter)),GOLD,ignored->cycleStar()));x+=bw+gap;
-        addRenderableWidget(new BattleHudButton(x,y,bw,CONTROL_H,Component.literal("레벨 · "+(minimumLevel==0?"전체":minimumLevel+"+")),GREEN,ignored->cycleLevel()));x+=bw+gap;
-        addRenderableWidget(new BattleHudButton(x,y,bw,CONTROL_H,Component.literal("역할 · "+roleLabel(roleFilter)),MUTED,ignored->cycleRole()));
+        int gap=4,bw=(panelWidth-32-gap*2)/3,x=left+16;
+        addRenderableWidget(new BattleHudButton(x,y,bw,15,Component.literal("보유 · "+ownershipLabel()),BLUE,ignored->cycleOwnership()));x+=bw+gap;
+        addRenderableWidget(new BattleHudButton(x,y,bw,15,Component.literal("성급 · "+(starFilter==0?"전체":"★"+starFilter)),GOLD,ignored->cycleStar()));x+=bw+gap;
+        addRenderableWidget(new BattleHudButton(x,y,bw,15,Component.literal("역할 · "+roleLabel(roleFilter)),MUTED,ignored->cycleRole()));
 
-        List<ClientMetaState.CharacterRow> rows=filteredCharacters();
-        int gridTop=y+21,gridBottom=contentBottom()-22,cols=panelWidth>=600?6:panelWidth>=500?5:4,rowH=34,cardGap=3;
+        List<ClientMetaState.CharacterRow> rows=filteredCodexCharacters();
+        int gridTop=y+18,gridBottom=contentBottom()-22,cols=panelWidth>=600?6:panelWidth>=500?5:4,rowH=31,cardGap=3;
         int visibleRows=UiPaging.rowsThatFit(gridTop,gridBottom,rowH+4,2),per=cols*visibleRows;
         setPaging(rows.size(),per);
         int start=page*per,end=Math.min(rows.size(),start+per),cardW=(panelWidth-32-cardGap*(cols-1))/cols;
         for(int i=start;i<end;i++){
             var row=rows.get(i);
             int local=i-start,xx=left+16+(local%cols)*(cardW+cardGap),yy=gridTop+(local/cols)*(rowH+4);
-            String detail=row.owned()?(row.awakened()?"각성":"★"+row.nativeStar())+" · "+levelLabel(row)+" · "+primaryRoleLabel(row.primaryRole())
+            String detail=row.owned()?(row.awakened()?"각성 · ":"")+"★"+row.nativeStar()+" · "+primaryRoleLabel(row.primaryRole())
                     :"미보유 · ★"+row.nativeStar()+" · "+primaryRoleLabel(row.primaryRole());
             addRenderableWidget(new FoozlePortraitButton(
                     xx,yy,cardW,rowH,row.id(),row.name(),detail,!row.owned(),
@@ -524,7 +533,7 @@ public final class MetaMenuScreen extends Screen {
             archiveLogScroll=Math.max(0,Math.min(max,archiveLogScroll+(scrollY>0?-1:1)));
             return true;
         }
-        if(compactLayout&&!selectedCharacterId.isBlank()&&detailTab==DetailTab.SKILLS&&scrollY!=0){
+        if(!selectedCharacterId.isBlank()&&detailTab==DetailTab.SKILLS&&scrollY!=0){
             skillDescriptionScroll=Math.max(0,skillDescriptionScroll+(scrollY>0?-1:1));
             return true;
         }
@@ -743,60 +752,56 @@ public final class MetaMenuScreen extends Screen {
             case SKILLS->{
                 var d=CanonicalData.definition(r.id(),Math.max(1,r.effectiveLevel()),Math.max(1,r.star()),r.awakened());
                 var skills=d.skills();
-                if(skills.isEmpty())break;
-                int index=Math.max(0,Math.min(selectedSkillIndex,skills.size()-1));
-                var skill=skills.get(index);
+                var passives=CharacterPassiveCatalog.forOwner(r.id());
+                int slotCount=skills.size()+(passives.isEmpty()?0:1);
+                if(slotCount<=0)break;
+                int index=Math.max(0,Math.min(selectedSkillIndex,slotCount-1));
+                boolean passiveSelected=index>=skills.size();
                 int detailY=compactSkills?contentTop()+66:y+58;
-                String type=skill.isBasic()?"기본 공격":"액티브";
-                if(!compactSkills&&w>=360){
-                    int columnGap=12,skillW=Math.max(190,(w-columnGap)*58/100);
-                    int passiveX=x+skillW+columnGap,passiveW=Math.max(130,w-skillW-columnGap);
-                    int boxH=Math.max(66,contentBottom()-detailY-3);
-                    TurnboundUiSkin.inset(g,x,detailY,skillW,boxH);
-                    TurnboundUiSkin.inset(g,passiveX,detailY,passiveW,boxH);
-                    g.text(font,Component.literal(UiTextLayout.fit(skill.name(),skillW-16)),x+8,detailY+8,skill.isBasic()?GREEN:GOLD,true);
-                    String metaLine=type+" · "+(skill.cooldown()<=0?"쿨타임 없음":"쿨타임 "+skill.cooldown()+"턴");
-                    g.text(font,Component.literal(UiTextLayout.fit(metaLine,skillW-16)),x+8,detailY+22,SECONDARY,false);
-                    int cursor=detailY+40;
-                    for(String line:UiTextLayout.wrap(skill.description(),skillW-16,96)){
-                        if(cursor+9>=detailY+boxH-6)break;
-                        g.text(font,Component.literal(line),x+8,cursor,TEXT,false);
-                        cursor+=11;
-                    }
-                    g.text(font,Component.literal("패시브"),passiveX+8,detailY+8,GOLD,true);
-                    int passiveY=detailY+24;
-                    var passives=CharacterPassiveCatalog.forOwner(r.id());
+                int boxH=Math.max(66,contentBottom()-detailY-3);
+                TurnboundUiSkin.inset(g,x,detailY,w,boxH);
+
+                List<DetailLine> details=new ArrayList<>();
+                String title;
+                String metaLine;
+                int titleColor;
+                if(passiveSelected){
+                    title="패시브";
+                    metaLine="고유 지속 효과";
+                    titleColor=PURPLE;
                     if(passives.isEmpty()){
-                        g.text(font,Component.literal("고유 패시브 없음"),passiveX+8,passiveY,MUTED,false);
+                        details.add(new DetailLine("고유 패시브 없음",MUTED));
                     }else{
                         for(var passive:passives){
-                            if(passiveY+10>=detailY+boxH-5)break;
-                            g.text(font,Component.literal(UiTextLayout.fit(passive.name(),passiveW-16)),passiveX+8,passiveY,GOLD,true);
-                            passiveY+=12;
-                            for(String line:UiTextLayout.wrap(passive.description(),passiveW-16,96)){
-                                if(passiveY+9>=detailY+boxH-5)break;
-                                g.text(font,Component.literal(line),passiveX+8,passiveY,SECONDARY,false);
-                                passiveY+=10;
+                            details.add(new DetailLine(passive.name(),GOLD));
+                            for(String line:UiTextLayout.wrap(passive.description(),Math.max(80,w-16),96)){
+                                details.add(new DetailLine(line,SECONDARY));
                             }
-                            passiveY+=5;
                         }
                     }
                 }else{
-                    List<DetailLine> details=skillDetailLines(r.id(),skill.description(),w);
-                    int bodyY=detailY+28;
-                    int visible=Math.max(1,(contentBottom()-bodyY)/10);
-                    int maxScroll=Math.max(0,details.size()-visible);
-                    skillDescriptionScroll=Math.max(0,Math.min(skillDescriptionScroll,maxScroll));
-                    String scroll=maxScroll>0?" · 휠 "+(skillDescriptionScroll+1)+"/"+(maxScroll+1):"";
-                    String metaLine=type+" · "+(skill.cooldown()<=0?"쿨타임 없음":"쿨타임 "+skill.cooldown()+"턴")+scroll;
-                    g.text(font,Component.literal(UiTextLayout.fit(skill.name(),w)),x,detailY,skill.isBasic()?GREEN:GOLD,true);
-                    g.text(font,Component.literal(UiTextLayout.fit(metaLine,w)),x,detailY+13,SECONDARY,false);
-                    int end=Math.min(details.size(),skillDescriptionScroll+visible),cursor=bodyY;
-                    for(int i=skillDescriptionScroll;i<end;i++){
-                        DetailLine line=details.get(i);
-                        g.text(font,Component.literal(line.text()),x,cursor,line.color(),false);
-                        cursor+=10;
+                    var skill=skills.get(index);
+                    title=skill.name();
+                    metaLine=(skill.isBasic()?"기본 공격":"액티브")+" · "
+                            +(skill.cooldown()<=0?"쿨타임 없음":"쿨타임 "+skill.cooldown()+"턴");
+                    titleColor=skill.isBasic()?GREEN:GOLD;
+                    for(String line:UiTextLayout.wrap(skill.description(),Math.max(80,w-16),96)){
+                        details.add(new DetailLine(line,TEXT));
                     }
+                }
+
+                int bodyY=detailY+35;
+                int visible=Math.max(1,(detailY+boxH-bodyY-6)/10);
+                int maxScroll=Math.max(0,details.size()-visible);
+                skillDescriptionScroll=Math.max(0,Math.min(skillDescriptionScroll,maxScroll));
+                String scroll=maxScroll>0?" · 휠 "+(skillDescriptionScroll+1)+"/"+(maxScroll+1):"";
+                g.text(font,Component.literal(UiTextLayout.fit(title,w-16)),x+8,detailY+7,titleColor,true);
+                g.text(font,Component.literal(UiTextLayout.fit(metaLine+scroll,w-16)),x+8,detailY+20,SECONDARY,false);
+                int end=Math.min(details.size(),skillDescriptionScroll+visible),cursor=bodyY;
+                for(int i=skillDescriptionScroll;i<end;i++){
+                    DetailLine line=details.get(i);
+                    g.text(font,Component.literal(UiTextLayout.fit(line.text(),w-16)),x+8,cursor,line.color(),false);
+                    cursor+=10;
                 }
             }
             case EQUIPMENT->{
@@ -959,18 +964,14 @@ public final class MetaMenuScreen extends Screen {
         g.text(font,Component.literal(UiTextLayout.fit(s,panelWidth-200)),left+16,y,selected.cleared()?GREEN:TEXT,false);
     }
 
-    private List<DetailLine> skillDetailLines(String characterId,String skillDescription,int width){
-        List<DetailLine> out=new ArrayList<>();
-        for(String line:UiTextLayout.wrap(skillDescription,width,96))out.add(new DetailLine(line,TEXT));
-        var passives=CharacterPassiveCatalog.forOwner(characterId);
-        if(!passives.isEmpty()){
-            out.add(new DetailLine("패시브",GOLD));
-            for(var passive:passives){
-                out.add(new DetailLine(passive.name(),GOLD));
-                for(String line:UiTextLayout.wrap(passive.description(),width,96))out.add(new DetailLine(line,SECONDARY));
-            }
-        }
-        return List.copyOf(out);
+    private List<ClientMetaState.CharacterRow> filteredCodexCharacters(){
+        Comparator<ClientMetaState.CharacterRow> c=Comparator.comparingInt(ClientMetaState.CharacterRow::nativeStar)
+                .reversed().thenComparing(ClientMetaState.CharacterRow::id);
+        return ClientMetaState.snapshot().characters().stream()
+                .filter(r->ownershipFilter==OwnershipFilter.ALL||(ownershipFilter==OwnershipFilter.OWNED)==r.owned())
+                .filter(r->starFilter==0||r.nativeStar()==starFilter)
+                .filter(r->roleFilter==RoleFilter.ALL||r.primaryRole().equals(roleFilter.name()))
+                .sorted(c).toList();
     }
 
     private List<ClientMetaState.CharacterRow> filteredCharacters(){
