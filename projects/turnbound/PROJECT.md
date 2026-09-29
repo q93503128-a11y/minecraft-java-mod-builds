@@ -128,6 +128,21 @@ Still unresolved and requiring an explicit user decision before implementation c
 
 Do not infer a restore/delete decision for those unresolved systems from historical implementation alone.
 
+## Current canon repair implementation — 2026-09-29
+
+This workbranch now restores the confirmed five-tier Standard Archive runtime contract:
+- ★1~★5 production summon pool
+- F01~F04 production summon eligibility
+- P05 native ★5 while preserving the current Sightline/Shot kit
+- soft pity 65 / hard pity 80
+- duplicate Star Essence 5 / 15 / 40 / 100 / 250
+- all 12 registered playable characters projected to character/codex UI
+- ★1~★5 rarity filtering and five-tier Archive probability display
+
+The unresolved growth/★6/Awakening decisions listed above are intentionally untouched.
+
+Validation for this repair must be recorded separately after the branch build. Client runtime/playtest/multiplayer remain unverified until actually run.
+
 ## Economy
 
 Long-term core currencies:
