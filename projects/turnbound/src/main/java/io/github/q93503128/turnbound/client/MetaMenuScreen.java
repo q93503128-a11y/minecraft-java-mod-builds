@@ -535,7 +535,7 @@ public final class MetaMenuScreen extends Screen {
     private void closeCharacter(){tab=Tab.CODEX;codexCategory="CHARACTERS";selectedCharacterId="";skillDescriptionScroll=0;page=0;rebuild();}
     private void switchDetail(DetailTab d){detailTab=d;skillDescriptionScroll=0;if(d==DetailTab.SKILLS)selectedSkillIndex=0;rebuild();}
     private void cycleOwnership(){ownershipFilter=OwnershipFilter.values()[(ownershipFilter.ordinal()+1)%OwnershipFilter.values().length];page=0;rebuild();}
-    private void cycleStar(){starFilter=switch(starFilter){case 0->3;case 3->4;case 4->5;default->0;};page=0;rebuild();}
+    private void cycleStar(){starFilter=switch(starFilter){case 0->1;case 1->2;case 2->3;case 3->4;case 4->5;default->0;};page=0;rebuild();}
     private void cycleLevel(){minimumLevel=minimumLevel==0?10:minimumLevel>=60?0:minimumLevel+10;page=0;rebuild();}
     private void cycleRole(){roleFilter=RoleFilter.values()[(roleFilter.ordinal()+1)%RoleFilter.values().length];page=0;rebuild();}
     private void cycleEquipSlot(){List<String>v=List.of("ALL","WEAPON","ARMOR","ACCESSORY","SIGNATURE");equipSlotFilter=v.get((v.indexOf(equipSlotFilter)+1)%v.size());page=0;rebuild();}
@@ -825,8 +825,12 @@ public final class MetaMenuScreen extends Screen {
         int boxX=left+16,boxY=y+12,boxW=Math.min(310,panelWidth-32),boxH=82;
         TurnboundUiSkin.inset(g,boxX,boxY,boxW,boxH);
         g.text(font,Component.literal("소환 확률"),boxX+10,boxY+8,TEXT,true);
-        g.text(font,Component.literal("★5  2%     ★4  15%     ★3  83%"),boxX+10,boxY+27,GOLD,false);
-        g.text(font,Component.literal("정식 희귀도 ★3~5 · ★1~2 없음"),boxX+10,boxY+45,SECONDARY,false);
+        String upperRates=String.format(Locale.ROOT,"★5 %.0f%%   ★4 %.0f%%   ★3 %.0f%%",
+                GachaCatalog.BASE_FIVE_STAR_RATE*100.0,GachaCatalog.FOUR_STAR_RATE*100.0,GachaCatalog.THREE_STAR_RATE*100.0);
+        String lowerRates=String.format(Locale.ROOT,"★2 %.0f%%   ★1 %.0f%%",
+                GachaCatalog.TWO_STAR_RATE*100.0,GachaCatalog.ONE_STAR_RATE*100.0);
+        g.text(font,Component.literal(upperRates),boxX+10,boxY+27,GOLD,false);
+        g.text(font,Component.literal(lowerRates),boxX+10,boxY+45,SECONDARY,false);
         g.text(font,Component.literal("10회 소환 · 최소 ★4 이상 1명 보장"),boxX+10,boxY+63,GREEN,false);
 
         int infoX=boxX+boxW+12;
