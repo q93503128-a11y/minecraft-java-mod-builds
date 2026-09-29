@@ -7,10 +7,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CharacterGrowthRulesTest {
     @Test
-    void v1UsesOneToSixtyLevelAxisWithoutRepeatRarityPromotion() {
+    void v1UsesBaseOneToSixtyPlusDuplicateBonusWithoutRarityPromotion() {
         assertEquals(60, CharacterGrowthRules.levelCap(3));
         assertEquals(60, CharacterGrowthRules.levelCap(4));
         assertEquals(60, CharacterGrowthRules.levelCap(5));
+        assertEquals(10, GrowthRulesV1.duplicateBonusMax());
+        assertEquals(70, GrowthRulesV1.effectiveMaxLevel());
         assertEquals(5, CharacterGrowthRules.initial("P02").currentStar());
         assertEquals(2, CharacterGrowthRules.initial("F03").currentStar());
         assertEquals(1.0, CharacterGrowthRules.promotionMultiplier(4, 6), 0.000001);
