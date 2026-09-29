@@ -21,7 +21,7 @@ import java.util.zip.ZipOutputStream;
  * lowercasing that resource path (and its model entry when present) in the installed copy only.</p>
  */
 final class Drehmal26_2ResourcePackMigrator {
-    static final int COMPAT_VERSION = 5;
+    static final int COMPAT_VERSION = 6;
     static final String TARGET_VERSION = "26.2";
     static final String RESOURCE_PACK_RELATIVE = "resources.zip";
     static final String MARKER_FILE = ".turnbound_drehmal_resources_26_2_compat";
@@ -81,6 +81,28 @@ final class Drehmal26_2ResourcePackMigrator {
             if (line.startsWith(prefix)) return line.substring(prefix.length()).trim();
         }
         return "";
+    }
+
+    static boolean hasLegacySignature(Path world) {
+        if (world == null) return false;
+        Path archive = world.resolve(RESOURCE_PACK_RELATIVE);
+        if (!Files.isRegularFile(archive)) return false;
+        try (ZipFile zip = new ZipFile(archive.toFile())) {
+            if (zip.getEntry(LEGACY_SPAWN_EGG_MODEL) != null) return true;
+            var entries = zip.entries();
+            while (entries.hasMoreElements()) {
+                ZipEntry entry = entries.nextElement();
+                if (entry.isDirectory() || !entry.getName().endsWith(".json")) continue;
+                try (InputStream stream = zip.getInputStream(entry)) {
+                    if (new String(stream.readAllBytes(), StandardCharsets.UTF_8).contains(LEGACY_SPAWN_EGG_PARENT)) {
+                        return true;
+                    }
+                }
+            }
+        } catch (IOException ignored) {
+            return false;
+        }
+        return false;
     }
 
     static Report migrate(Path world) throws IOException {

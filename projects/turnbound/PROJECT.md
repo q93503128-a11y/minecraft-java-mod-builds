@@ -739,3 +739,39 @@ Current validation for this corrective pass:
 - CLIENT RUNTIME TESTED: NO — #933 supplied the failure evidence; the #935 repair still requires a fresh client check
 - PLAYTESTED: NO for the repaired #935 state
 - MULTIPLAYER TESTED: NO
+
+
+## Repeated client playtest reset and physical-facility boundary — 2026-09-29
+
+Until the first playable route is visually/gameplay-complete, the current local playtest workflow intentionally reuses one
+Minecraft instance. To prevent stale player position/progression from invalidating each client pass, the bound Drehmal
+runtime temporarily enables `PreReleaseSessionReset.ENABLED`.
+
+While enabled, every login:
+- restores a fresh TURNBOUND campaign profile
+- clears that player's Drehmal onboarding / route / fast-travel discovery
+- clears temporary shared encounter/world-clear state in the single-instance test world
+- places the player at the current opening entry
+- immediately rewrites the canonical player attachment with that fresh state
+
+**Release gate:** this automatic login reset MUST be disabled/removed before completion/release. Persistent progression is
+the production behavior; this switch exists only so repeated alpha client checks behave like first contact.
+
+The first playable entry no longer starts at the Primal roadhead ~1.2 km from New Drabyel. It starts at the source-backed
+explorer-camp transition, keeping the first-town walk under 450 m while the older Capital Valley roadhead/tower/cave remain
+normal explorable regional content.
+
+Physical New Drabyel NPC facilities are not aliases for global E-menu categories:
+- equipment merchant: dedicated buy/sell screen
+- blacksmith: dedicated enhancement screen
+- stable: dedicated discovered-waypoint travel screen
+- spirit trace: dedicated summon / Star Essence exchange screen
+- greeter / story NPC: dialogue surfaces
+
+The global E menu owns player management only. Equipment there means inspect/equip; it does not buy, sell or enhance.
+The summon history category is record-only and does not perform summons. Server facility gates remain authoritative.
+
+Client-playtest correction:
+- current fast-travel nodes are no longer drawn as a second green marker on top of the player arrow
+- resource-pack compatibility discovery also recognizes the exact legacy `minecraft:item/spawn_egg_2D` signature, so
+  older reused instances without the newer TURNBOUND marker are repaired before world resource load

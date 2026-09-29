@@ -32,13 +32,21 @@ public final class ClientMetaNetwork {
             if (!hint.isBlank()) {
                 FacilityUiAccess.applyHint(hint);
                 if ("MARKET".equals(hint)) minecraft.gui.setScreen(new FacilityMarketScreen());
+                else if ("FORGE".equals(hint)) minecraft.gui.setScreen(new FacilityForgeScreen());
+                else if ("TRAVEL".equals(hint)) minecraft.gui.setScreen(new FacilityTravelScreen());
+                else if ("SUMMON".equals(hint)) minecraft.gui.setScreen(new FacilitySummonScreen());
                 else if ("MAP".equals(hint)) {
                     FacilityUiAccess.clear();
                     minecraft.gui.setScreen(new DrehmalWorldMapScreen());
-                } else minecraft.gui.setScreen(new MetaMenuScreen(tab(hint)));
+                } else {
+                    FacilityUiAccess.clear();
+                    minecraft.gui.setScreen(new MetaMenuScreen(tab(hint)));
+                }
                 return;
             }
             if (minecraft.gui.screen() instanceof FacilityMarketScreen market) market.refreshSnapshot();
+            else if (minecraft.gui.screen() instanceof FacilityForgeScreen forge) forge.refreshSnapshot();
+            else if (minecraft.gui.screen() instanceof FacilitySummonScreen summon) summon.refreshSnapshot();
             else if (minecraft.gui.screen() instanceof MetaMenuScreen screen) screen.refreshSnapshot();
             // Passive snapshot updates never open a new screen. Explicit O| hints own navigation.
         });

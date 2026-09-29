@@ -15,6 +15,17 @@ class DrehmalStartArrivalTest {
     }
 
     @Test
+    void openingEntryKeepsFirstTownWithinAReasonableTutorialWalk() {
+        var placement = DrehmalMapPlacementCatalog.placement(DrehmalStartArrival.ENTRY_SITE);
+        var hub = DrehmalWorldProfile.enabled(DrehmalWorldProfile.HUB_LOCATOR);
+        assertNotNull(placement);
+        assertNotNull(hub);
+        var seed = placement.siteSeeds().getFirst();
+        double distance = Math.hypot(seed.x() - hub.x(), seed.z() - hub.z());
+        assertTrue(distance <= 450.0, "opening-to-town walk must stay under 450m, got " + distance);
+    }
+
+    @Test
     void missingCurrentArrivalFlagRepairsBuggyHubBootstrapWithoutUsingHubReachedFlag() {
         assertTrue(DrehmalStartMigrationRules.shouldRepairMissingRouteArrival(false, true));
         assertFalse(DrehmalStartMigrationRules.shouldRepairMissingRouteArrival(true, true));

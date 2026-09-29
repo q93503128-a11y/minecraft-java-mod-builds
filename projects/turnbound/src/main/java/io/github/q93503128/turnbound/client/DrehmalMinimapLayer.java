@@ -161,7 +161,7 @@ public final class DrehmalMinimapLayer implements GuiLayer {
             int mapX, int mapY, double playerX, double playerZ, double radius) {
         double clampRadius = Math.max(STEP, radius - STEP * 3.0);
         for (FieldUiSnapshot.Travel travel : field.travels()) {
-            if (!travel.unlocked()) continue;
+            if (!travel.unlocked() || travel.current()) continue;
             DrehmalFastTravelCatalog.Node node = DrehmalFastTravelCatalog.node(travel.id());
             if (node == null) continue;
             double dx = node.mapX() - playerX;

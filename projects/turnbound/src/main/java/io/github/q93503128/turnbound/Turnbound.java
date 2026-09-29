@@ -20,6 +20,7 @@ import io.github.q93503128.turnbound.world.FieldNetwork;
 import io.github.q93503128.turnbound.world.GachaPresentationActorService;
 import io.github.q93503128.turnbound.world.MetaNetwork;
 import io.github.q93503128.turnbound.world.PlayerShellRules;
+import io.github.q93503128.turnbound.world.PreReleaseSessionReset;
 import io.github.q93503128.turnbound.world.TurnboundAttachments;
 import io.github.q93503128.turnbound.world.WorldSessionRouter;
 import net.minecraft.server.level.ServerPlayer;
@@ -87,6 +88,18 @@ public final class Turnbound {
 
     private void login(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+
+        // Temporary alpha workflow: the same local instance is repeatedly used as a fresh-play client test bed.
+        // Do not resume retained progression while this switch is enabled.
+        if (PreReleaseSessionReset.enabled(player)) {
+            if (BattleSessionManager.exists(player)) BattleSessionManager.end(player);
+            CampaignProgressStore.removeRuntime(player.getUUID());
+            CampaignPersistence.load(player);
+            if (!CampaignPersistence.blocked(player)) PreReleaseSessionReset.apply(player);
+            ExternalWorldBootstrap.initialize(player);
+            return;
+        }
+
         if (CampaignProgressStore.hasRuntime(player.getUUID())) {
             if (BattleSessionManager.resumeIfPresent(player)) {
                 LOGGER.warn("TURNBOUND resumed retained in-memory battle state for {} after a failed lifecycle flush", player.getUUID());

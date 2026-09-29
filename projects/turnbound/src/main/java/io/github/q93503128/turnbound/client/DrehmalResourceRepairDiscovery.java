@@ -36,6 +36,7 @@ final class DrehmalResourceRepairDiscovery {
             return false;
         }
         return Files.isRegularFile(world.resolve(PROFILE_MARKER))
-                || Files.isRegularFile(world.resolve(DREHMAL_DATAPACK));
+                || Files.isRegularFile(world.resolve(DREHMAL_DATAPACK))
+                || Drehmal26_2ResourcePackMigrator.hasLegacySignature(world);
     }
 }

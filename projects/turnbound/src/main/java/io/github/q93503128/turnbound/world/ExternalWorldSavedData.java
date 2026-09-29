@@ -74,4 +74,13 @@ public final class ExternalWorldSavedData extends SavedData {
     public void clearOnboardingFlag(UUID playerId, String flag) {
         if (DrehmalOnboardingFlags.remove(onboardingEntries, playerId, flag)) setDirty();
     }
+
+    /** Temporary pre-release test reset; clears only this player's external-world discovery/progression. */
+    public void resetPlayer(UUID playerId) {
+        if (playerId == null) return;
+        boolean changed = initializedPlayers.remove(playerId);
+        String prefix = playerId + "|";
+        changed |= onboardingEntries.removeIf(value -> value != null && value.startsWith(prefix));
+        if (changed) setDirty();
+    }
 }

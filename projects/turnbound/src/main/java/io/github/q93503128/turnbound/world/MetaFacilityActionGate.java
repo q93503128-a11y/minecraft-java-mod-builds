@@ -11,11 +11,11 @@ public final class MetaFacilityActionGate {
         String action = rawCommand.split("\\|", -1)[0];
         return switch (action) {
             case "SUMMON1", "SUMMON10", "STARTER", "ESSENCE_CRYSTAL", "ESSENCE_PICK4", "ESSENCE_PICK5" ->
-                    nearDrabyel(player, "ARCHIVE") || nearLegacy(player, -56.0, 8.0, 22.0)
+                    nearDrabyel(player, "SUMMON") || nearLegacy(player, -56.0, 8.0, 22.0)
                             ? "" : "소환은 정령 소환 시설에서만 이용할 수 있습니다.";
-            case "BUY" ->
+            case "BUY", "SELL" ->
                     nearDrabyel(player, "MARKET") || nearLegacy(player, -57.0, 55.0, 24.0)
-                            ? "" : "구매는 장비 상인과 대화 중일 때만 이용할 수 있습니다.";
+                            ? "" : "구매와 판매는 장비 상인과 대화 중일 때만 이용할 수 있습니다.";
             case "ENHANCE" ->
                     nearDrabyel(player, "FORGE") || nearLegacy(player, 56.0, 8.0, 22.0)
                             ? "" : "장비 강화는 대장장이와 대화 중일 때만 이용할 수 있습니다.";

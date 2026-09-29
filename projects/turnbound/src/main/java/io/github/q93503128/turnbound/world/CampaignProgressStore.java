@@ -378,6 +378,12 @@ public final class CampaignProgressStore {
     public static List<String> equipmentRules(UUID playerId, String characterId) { return player(playerId).equipment.fixedRules(characterId); }
 
     public static void ensureNewGame(UUID playerId) { player(playerId); }
+
+    /** Temporary pre-release session reset hook. Remove its caller before release completion. */
+    public static void resetToNewGame(UUID playerId) {
+        if (playerId == null) throw new IllegalArgumentException("Missing player id");
+        PLAYERS.put(playerId, new PlayerProgress());
+    }
     public static boolean hasRuntime(UUID playerId) { return playerId != null && PLAYERS.containsKey(playerId); }
     public static boolean isDirty(UUID playerId) { PlayerProgress progress = PLAYERS.get(playerId); return progress != null && progress.dirty; }
     public static void markClean(UUID playerId) { PlayerProgress progress = PLAYERS.get(playerId); if (progress != null) progress.dirty = false; }

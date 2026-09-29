@@ -13,17 +13,17 @@ import net.minecraft.world.phys.Vec3;
 import java.util.Set;
 
 /**
- * One-time escape from Drehmal's original 1.20.1 setup terminal into TURNBOUND's outdoor first-route topology.
+ * Safe entry into TURNBOUND's authored Capital Valley opening.
  *
- * <p>The authored map is not edited. The map-backed Capital Valley roadhead chooses the intended route zone, then
- * the live Minecraft 26.2 terrain chooses a nearby safe standing block. Players who are already elsewhere are never
- * moved.</p>
+ * <p>The old Primal roadhead was more than 1.2 km from New Drabyel and made the tutorial walk dominate the opening.
+ * The production entry now begins at the source-backed explorer-camp transition, keeping the first town roughly
+ * 350 m away while the older Capital Valley roadhead/tower/cave remain explorable world content.</p>
  */
 final class DrehmalStartArrival {
     static final String ARRIVAL_FLAG = "DREHMAL_FIRST_ROUTE_ENTRY_V3";
     static final String LEGACY_DIRECT_HUB_FLAG = "DREHMAL_NEW_DRABYEL_ENTRY_V2";
     static final String PRIMAL_CAVERNS = "turnbound:landmark/primal_caverns";
-    private static final String ROADHEAD_SITE = "turnbound:site/capital_valley/roadhead";
+    static final String ENTRY_SITE = "turnbound:site/capital_valley/explorer_camp";
     private static final double LEGACY_SETUP_X = 26520.0;
     private static final double LEGACY_SETUP_Z = -136.0;
     private static final double LEGACY_SETUP_RADIUS_SQR = 220.0 * 220.0;
@@ -33,9 +33,6 @@ final class DrehmalStartArrival {
     static boolean moveOutOfLegacySetupIfNeeded(ServerPlayer player, ExternalWorldSavedData saved) {
         if (player == null || saved == null) return false;
 
-        // Physical presence in Drehmal's setup terminal is stronger evidence than a previous arrival flag.
-        // Older TURNBOUND builds sent some test saves directly to New Drabyel. Only the explicit V2
-        // direct-arrival flag is migration provenance; normal HUB_REACHED progress must never move a player backward.
         boolean setupTerminal = legacySetupZone(player.getX(), player.getY(), player.getZ());
         boolean currentArrival = saved.onboardingFlag(player.getUUID(), ARRIVAL_FLAG);
         boolean insideHub = legacyHubZone(player.getX(), player.getZ());
@@ -45,30 +42,35 @@ final class DrehmalStartArrival {
                 insideHub);
         boolean missingRouteArrival = DrehmalStartMigrationRules.shouldRepairMissingRouteArrival(currentArrival, insideHub);
         if (!setupTerminal && !legacyHubArrival && !missingRouteArrival) return false;
+        return moveToEntry(player, saved, legacyHubArrival || missingRouteArrival);
+    }
 
-        ServerLevel level = (ServerLevel) player.level();
-        DrehmalMapPlacementCatalog.Placement roadhead = DrehmalMapPlacementCatalog.placement(ROADHEAD_SITE);
-        if (roadhead == null || roadhead.siteSeeds().isEmpty()) {
-            Turnbound.LOGGER.error("TURNBOUND first-route roadhead placement is missing");
+    static boolean forceFreshEntry(ServerPlayer player, ExternalWorldSavedData saved) {
+        if (player == null || saved == null) return false;
+        return moveToEntry(player, saved, true);
+    }
+
+    private static boolean moveToEntry(ServerPlayer player, ExternalWorldSavedData saved, boolean clearProgress) {
+        if (!(player.level() instanceof ServerLevel level)) return false;
+        DrehmalMapPlacementCatalog.Placement entry = DrehmalMapPlacementCatalog.placement(ENTRY_SITE);
+        if (entry == null || entry.siteSeeds().isEmpty()) {
+            Turnbound.LOGGER.error("TURNBOUND opening entry placement is missing: {}", ENTRY_SITE);
             return false;
         }
 
-        DrehmalMapPlacementCatalog.Seed seed = roadhead.siteSeeds().getFirst();
+        DrehmalMapPlacementCatalog.Seed seed = entry.siteSeeds().getFirst();
         int seedY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, seed.x(), seed.z());
         BlockPos destination = findSafeArrival(level, new BlockPos(seed.x(), seedY, seed.z()),
-                Math.max(6, roadhead.searchRadius()));
+                Math.max(6, entry.searchRadius()));
         if (destination == null) {
-            Turnbound.LOGGER.warn("TURNBOUND could not find a safe Capital Valley roadhead near {}, {}",
-                    seed.x(), seed.z());
+            Turnbound.LOGGER.warn("TURNBOUND could not find a safe opening entry near {}, {}", seed.x(), seed.z());
             return false;
         }
 
-        DrehmalMapPlacementCatalog.Seed facingSeed = roadhead.siteSeeds().size() >= 2
-                ? roadhead.siteSeeds().get(1)
-                : seed;
+        DrehmalMapPlacementCatalog.Seed facingSeed = entry.siteSeeds().size() >= 2 ? entry.siteSeeds().get(1) : seed;
         double dx = facingSeed.x() + 0.5D - (destination.getX() + 0.5D);
         double dz = facingSeed.z() + 0.5D - (destination.getZ() + 0.5D);
-        float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+        float yaw = (float)Math.toDegrees(Math.atan2(-dx, dz));
         boolean teleported = player.teleportTo(
                 level,
                 destination.getX() + 0.5D,
@@ -78,24 +80,25 @@ final class DrehmalStartArrival {
                 yaw,
                 0.0F,
                 true);
-        if (!teleported) {
-            Turnbound.LOGGER.warn("TURNBOUND failed to move player from Drehmal's legacy setup terminal");
-            return false;
-        }
+        if (!teleported) return false;
 
         player.setDeltaMovement(Vec3.ZERO);
         player.setOnGround(true);
-        if (legacyHubArrival || missingRouteArrival) {
-            saved.clearOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.TOWER_REACHED);
-            saved.clearOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.CAMP_REACHED);
-            saved.clearOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.APPROACH_REACHED);
-            saved.clearOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.HUB_REACHED);
-            saved.clearOnboardingFlag(player.getUUID(), DrehmalContextualOnboarding.HUB_MENU_VIEWED);
-            saved.clearOnboardingFlag(player.getUUID(), DrehmalContextualOnboarding.HUB_ROUTE_REVIEWED);
+        if (clearProgress) {
+            for (String flag : Set.of(
+                    DrehmalFirstRouteProgress.TOWER_REACHED,
+                    DrehmalFirstRouteProgress.CAMP_REACHED,
+                    DrehmalFirstRouteProgress.APPROACH_REACHED,
+                    DrehmalFirstRouteProgress.HUB_REACHED,
+                    DrehmalContextualOnboarding.HUB_MENU_VIEWED,
+                    DrehmalContextualOnboarding.HUB_ROUTE_REVIEWED,
+                    ARRIVAL_FLAG,
+                    LEGACY_DIRECT_HUB_FLAG)) {
+                saved.clearOnboardingFlag(player.getUUID(), flag);
+            }
         }
         saved.markOnboardingFlag(player.getUUID(), ARRIVAL_FLAG);
-        Turnbound.LOGGER.info(
-                "TURNBOUND moved {} into the Capital Valley first-route roadhead {}, {}, {}",
+        Turnbound.LOGGER.info("TURNBOUND moved {} to opening entry {}, {}, {}",
                 player.getUUID(), destination.getX(), destination.getY(), destination.getZ());
         return true;
     }
@@ -117,8 +120,6 @@ final class DrehmalStartArrival {
     private static BlockPos findSafeArrival(ServerLevel level, BlockPos seed, int radius) {
         BlockPos best = null;
         long bestScore = Long.MAX_VALUE;
-
-        // Prefer an authored road/path surface around the map-backed routehead seed.
         for (int dz = -radius; dz <= radius; dz++) {
             for (int dx = -radius; dx <= radius; dx++) {
                 int distanceSq = dx * dx + dz * dz;
@@ -139,7 +140,6 @@ final class DrehmalStartArrival {
         }
         if (best != null) return best;
 
-        // Fallback only when the seed's local vertical band is obstructed after migration.
         for (int dz = -radius; dz <= radius; dz++) {
             for (int dx = -radius; dx <= radius; dx++) {
                 int distanceSq = dx * dx + dz * dz;

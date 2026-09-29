@@ -5,6 +5,9 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,6 +30,23 @@ class DrehmalResourceRepairDiscoveryTest {
         assertTrue(DrehmalResourceRepairDiscovery.looksLikeDrehmal(drehmal));
         assertFalse(DrehmalResourceRepairDiscovery.looksLikeDrehmal(ordinary));
         assertEquals(java.util.List.of(drehmal),DrehmalResourceRepairDiscovery.find(temp));
+    }
+
+    @Test
+    void legacySpawnEggSignatureRepairsOldInstanceEvenWithoutTurnboundMarker() throws Exception {
+        Path world=temp.resolve("legacy-instance");
+        Files.createDirectories(world);
+        Files.write(world.resolve("level.dat"),new byte[]{1});
+        try(ZipOutputStream zip=new ZipOutputStream(Files.newOutputStream(world.resolve("resources.zip")), StandardCharsets.UTF_8)){
+            zip.putNextEntry(new ZipEntry("pack.mcmeta"));
+            zip.write("{\"pack\":{\"pack_format\":15,\"description\":\"legacy\"}}".getBytes(StandardCharsets.UTF_8));
+            zip.closeEntry();
+            zip.putNextEntry(new ZipEntry("assets/minecraft/models/item/cat_spawn_egg.json"));
+            zip.write(("{\"parent\":\""+Drehmal26_2ResourcePackMigrator.LEGACY_SPAWN_EGG_PARENT+"\"}")
+                    .getBytes(StandardCharsets.UTF_8));
+            zip.closeEntry();
+        }
+        assertTrue(DrehmalResourceRepairDiscovery.looksLikeDrehmal(world));
     }
 
     @Test

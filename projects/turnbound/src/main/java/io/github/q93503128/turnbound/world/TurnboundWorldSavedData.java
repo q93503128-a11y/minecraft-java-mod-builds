@@ -174,4 +174,13 @@ public final class TurnboundWorldSavedData extends SavedData {
         if (regionId == null || regionId.isBlank()) throw new IllegalArgumentException("Missing region id");
         if (unlockedRegions.add(regionId)) setDirty();
     }
+
+    /** Temporary pre-release single-instance playtest reset. Remove before release completion. */
+    public void resetForPreReleaseSession() {
+        clearedBosses.clear();
+        unlockedRegions.clear();
+        unlockedRegions.add(REGION_RADIA);
+        claimedWorldRewards.clear();
+        setDirty();
+    }
 }
