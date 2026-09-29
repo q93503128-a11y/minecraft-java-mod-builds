@@ -230,6 +230,21 @@ Preference:
 A previously discussed candidate was “4K Flat Islands Map for Creative” because of its flat terrain and ~4000×4000 scale, but it is NOT canonical until the actual world file is directly obtained and inspected.
 If it cannot be directly obtained, replace it with another directly obtainable flat archipelago map.
 
+### Island identity and naming
+When the village/world is first established, the creating player chooses the island/village display name before normal arrival play begins.
+
+The chosen name is village-wide state and can appear naturally in:
+- resident-services signage.
+- notice-board headers.
+- mail and event notices.
+- museum/history text.
+- harbor/route presentation.
+- festival presentation.
+- selected dialogue.
+
+Do not use the folder/save filename as the player-facing village identity.
+If renaming is supported later, it should be a deliberate resident-services action rather than a casual per-session setting.
+
 ### Island roles
 Island roles are not fixed yet.
 They will be assigned after the actual world is inspected.
@@ -261,6 +276,17 @@ requirement met
 → upgraded prefab.
 
 Construction-site art should also use external assets.
+
+### Home access during expansion
+Housing expansion should not lock the player out of their home/storage for an entire in-game construction period.
+
+During an upgrade:
+- exterior construction presentation may appear.
+- the existing interior and storage remain accessible.
+- the new room/space becomes available when construction completes.
+- if an exterior doorway/footprint is temporarily obstructed, route entry through a safe temporary interaction/transition rather than making the home unusable.
+
+Construction is progression presentation, not a punishment that suspends the normal life loop.
 
 ### Exterior vs interior size
 Exterior footprint does not limit interior size.
@@ -308,10 +334,31 @@ The same fixed anchor is used; exterior prefab is swapped.
 
 ## 6. First-day arrival and onboarding
 
-The first session should begin with a short authored arrival/departure presentation rather than dropping the player into a menu-heavy tutorial.
+### First-time character creation
+Before a player's first arrival presentation, show a compact game-like character setup flow.
+
+Core steps:
+display name
+→ base appearance
+→ hair/face/skin options supported by the selected external appearance system
+→ starter outfit
+→ birthday
+→ confirm
+→ arrival at the island.
+
+The player-facing **display name** is separate from the Minecraft account/profile name.
+Persist identity by player UUID; the display name is presentation data used by residents, mail, museum history, permissions and social UI.
+Require village-local uniqueness for display names to avoid ambiguity in mail, permissions and multiplayer UI.
+Later appearance changes happen through the wardrobe/mirror system; changing account name must not break player save ownership.
+
+Do not expose a raw technical model/skin editor as the normal first-run UX.
+Use curated presets/layers/assets in a Campfire-specific character creator while allowing a compatible external avatar/skin system to provide the underlying rendering/look application when it materially improves quality.
+
+The first session should then begin with a short authored arrival/departure presentation rather than dropping the player into a menu-heavy tutorial.
 
 Baseline flow:
-arrival at the island/pier
+first-time character creation
+→ arrival at the island/pier
 → brief welcome/context
 → resident services introduction
 → receive/access the basic lifestyle tools needed to start
@@ -935,6 +982,21 @@ When a shop is closed:
 Special event/facility schedules may differ when clearly announced, but the ordinary general-store schedule is 07:00–23:00.
 The 24-hour player-facing clock makes this schedule explicit rather than presenting it as a vague daypart.
 
+### Other facility access / staffed hours
+Facilities do not all need the same schedule.
+
+Baseline:
+- resident services: staffed 06:00–24:00.
+- museum galleries: accessible 24 hours; curator/donation service normally 07:00–23:00.
+- café: 07:00–24:00.
+- clothing shop: 09:00–21:00.
+- clinic: recovery/emergency access remains available at all times; staffed optional services normally 07:00–23:00.
+- notice board: always accessible.
+- harbor/pier: the physical area is always accessible; individual routes may have authored schedules only when that improves the route/event design.
+
+When a staffed service is closed, do not silently replace it with a generic kiosk unless that facility specifically has a justified self-service function.
+Exact special-event exceptions must be visible in the board/calendar schedule.
+
 ### Shop rotation
 Use:
 - seasonal persistent stock.
@@ -1039,6 +1101,29 @@ House storage:
 - unified/searchable storage is preferable to forcing dozens of vanilla chests.
 - shared for members of the same Household.
 
+### Dropped items and lost-and-found
+Do not use vanilla short despawn behavior for important lifestyle possessions.
+
+Protected/recoverable categories include:
+- furniture.
+- clothing.
+- photographs.
+- unique/event items.
+- important collectibles.
+- rare specimen items.
+- progression/key items.
+- other items explicitly marked recoverable.
+
+If such an item is left unattended in the protected village/home area long enough to require cleanup, move it into a **Lost & Found** service at resident services rather than deleting it.
+
+Lost & Found may also receive:
+- decorations displaced by building upgrades/construction.
+- recoverable items moved out of invalid protected placements.
+- selected items recovered from safe system cleanup.
+
+Ordinary low-value materials/resources may still use normal cleanup/despawn rules after a reasonable grace period so the world cannot accumulate infinite dropped entities.
+Lost & Found is data-backed and should not be exploitable as infinite deliberate storage; repeated junk abuse can be rejected/condensed while important items remain recoverable.
+
 ## 17. Calendar, time and sleep
 
 ### Time scale
@@ -1084,6 +1169,25 @@ Display:
 
 Significant forecast events such as strong storms should also generate a clear notice-board/weather warning in advance when the forecast system knows about them.
 This allows players to plan rare-species hunts, travel and outdoor activities without surprise punishment.
+
+### Day rollover
+Midnight/date change is a server-authoritative calendar event, not a forced global cutscene.
+
+At the day boundary:
+- date/weekday advance naturally.
+- daily shop rotation becomes the new day's stock.
+- ordinary beach finds/resource refresh timers may advance.
+- mail/catalog deliveries scheduled for that day become available.
+- resident/event schedules move to the new date.
+- relevant weather/season transition state advances.
+
+Do not:
+- force all players to sleep.
+- teleport everyone home.
+- fade every client to black.
+- interrupt an active fishing/combat/photo session solely because the clock reached 00:00.
+
+Open transactional UIs should validate against the current server day when an action is committed so midnight cannot create stale-stock duplication or desync.
 
 ## 18. Seasons and weather
 
@@ -1220,6 +1324,25 @@ Recipes should come from several understandable lifestyle sources rather than on
 - exploration discoveries.
 
 Recipe acquisition itself is collection/progression content because hunger/stamina pressure is not the purpose of cooking.
+
+### Personal recipe book
+Learned recipes are permanently recorded in that player's recipe book/profile.
+
+The recipe book shows:
+- discovered recipe.
+- required ingredients.
+- station/context needed.
+- useful category/filter information.
+- undiscovered entries only as silhouettes/hints when that improves collection motivation without spoiling the answer.
+
+Recipe sources remain lifestyle discoveries such as residents, message bottles, café interactions, events, visitors, ingredients and exploration.
+
+When a reward source would grant a recipe the player already knows:
+- prefer another unknown recipe from the same appropriate pool when available.
+- otherwise convert the duplicate into a small sensible fallback such as ingredients, food or ordinary money.
+- do not create a separate recipe-token currency merely to solve duplicates.
+
+Players may intentionally share/trade recipe items only where that specific recipe source is designed to be transferable; learning remains personal progression.
 
 Current leading external candidates:
 - Croptopia.
