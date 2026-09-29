@@ -35,6 +35,21 @@ Secondary/reference only:
 - SOURCE/LICENSE 기록
 - texture path를 Java 화면마다 하드코딩하지 않음
 
+### 2.1 Physical NPC / facility UI rule — 2026-09-29
+
+New Drabyel and field NPC interfaces must use the adopted **external Foozle RPG UI Set 1** artwork as the visible production chrome. Do not invent a second AI-authored visual language for merchant/blacksmith/stable/summon/dialogue screens.
+
+Rules:
+- Foozle panel/button/orb/frame primitives are the primary visual source.
+- Kenney remains secondary/reference-only and must not be mixed into the same screen unless a specific missing primitive requires it and the result is visually reviewed.
+- hand-drawn flat rectangles, arbitrary gradients/glows and Minecraft default button stacks are not acceptable final facility UI.
+- layout can be adapted to TURNBOUND data, but visual framing, ornament language and control surfaces should come from the external pack.
+- reduce chrome/padding before reducing text readability. Do not solve density by making labels illegibly small.
+- facility screens should normally occupy only the space their task needs; do not default to near-fullscreen panels.
+- merchant/blacksmith/stable/summon are **physical NPC services**, not aliases that open the global management category.
+- dialogue is a compact speaker surface with 2–4 readable lines, not a full-screen menu.
+- actual completion requires client screenshots at multiple GUI scales; compile success does not approve the layout.
+
 ## 3. Typography
 
 - 한국어 가독성 최우선
@@ -72,11 +87,13 @@ TURNBOUND의 메뉴 이동은 화면 수를 늘리는 방식이 아니라 **자�
 필드에서 RPG 메뉴를 열면 첫 화면은 복잡한 대시보드가 아니라 다음 두 영역만 가진다.
 
 - 좌측: 현재 파티 4명 portrait + HP/레벨/역할의 최소 정보
-- 우측: 자주 쓰는 4개 관리 진입점
+- 우측: 자주 쓰는 **플레이어 관리** 진입점
   - Party
   - Equipment
   - Quests
-  - Summon
+  - Codex / Records 등 비경제 정보
+
+실제 Summon은 New Drabyel의 정령 시설 같은 **물리 서비스**에서만 수행한다. Root menu의 기록/도감 화면은 소환 기록을 볼 수 있어도 소환 버튼을 제공하지 않는다.
 - Map은 필드의 `M` 직접 단축키가 정본이다. Root menu에 중복 버튼을 두지 않는다.
 
 현재 파티 portrait를 선택하면 바로 해당 캐릭터 상세로 간다.
@@ -117,7 +134,8 @@ Awakening도 별도 관리 메뉴로 분리하지 않는다.
 - Weapon / Armor / Accessory / Signature를 한 화면에서 전환한다.
 - item highlight 시 현재 수치 → 장착 후 수치 delta를 즉시 표시한다.
 - 장착은 확인창 없이 적용 가능하다.
-- Gold를 실제 소비하는 강화만 최종 확인을 사용한다.
+- 장착/비교는 전역 Equipment에서 처리한다.
+- Gold를 소비하는 **강화는 물리 대장장이 UI**에서 처리하며 전역 Equipment 메뉴에 중복 구현하지 않는다.
 
 캐릭터 → 장비 → 슬롯 → 아이템 → 뒤로 → 스탯 확인 → 다시 장비 같은 왕복 흐름은 실패로 본다.
 
@@ -150,7 +168,7 @@ Quest를 보기 위해 Map을 닫고 또 다른 3단계 메뉴를 거치는 구�
 | 캐릭터 간 전환 | 1 |
 | 파티원 한 명 교체 | 3 |
 | 장비 슬롯 확인/교체 | 3 |
-| 장비 강화 진입 | 3 |
+| 대장장이와 대화해 장비 강화 | 2 |
 | 활성 퀘스트 위치를 지도에서 보기 | 2 |
 | 소환 화면 진입 | 1 |
 
@@ -297,12 +315,16 @@ single target skill은 첫 대상을 자동 확정하지 않는다.
 
 ## 12. Summon UI
 
-### 메타 화면
+### 물리 소환 시설 화면
+- New Drabyel의 정령 시설/NPC와 상호작용해야 진입
 - 보유 Crystal
 - 1회 / 10회
 - pity progress
 - 현재 unlock pool
 - 확률 상세
+- 별의 정수 교환
+
+전역 E 메뉴는 소환 실행을 제공하지 않는다. 필요하면 소환 기록/도감만 제공한다.
 
 ### 3D reveal
 - 월드와 분리된 안전한 presentation layer 또는 별도 staging

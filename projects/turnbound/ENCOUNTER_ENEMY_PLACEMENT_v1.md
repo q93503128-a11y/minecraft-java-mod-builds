@@ -239,87 +239,69 @@ old E005 support role 후보.
 첫 tutorial 전투에는 등장하지 않는다.
 Drabyel 이후부터 사용.
 
-## 7. First route exact encounter beats
+## 7. Current opening encounter beats — Explorer Camp → New Drabyel
 
-### Zone 0 — TURNBOUND roadhead
+Latest opening decision starts the player at the Explorer's Guide camp transition. The older roadhead → chapel → Tower → Warning Cave sequence remains Capital Valley exploration content but is no longer the mandatory first-login route.
+
+### Zone 0 — Explorer's Guide camp entry
+
+Enemy:
+- 없음 inside the 20–30 block camp breathing ring
+
+Required immediate content:
+- 탐험가 미라 dialogue
+- at least one useful non-dialogue camp interaction: rest/heal, a small loot/equipment comparison decision, or route/world information
+- readable road direction toward New Drabyel
+
+This beat is incomplete if the player only clicks one line of dialogue and then walks hundreds of blocks.
+
+### Zone 1 — Drabyel north road
+
+Current production encounter:
+- CV_DRABYEL_NORTH
+- CV-B ×1 + CV-C ×1
+
+Purpose:
+- visible threat within roughly the first ~100 m of forward travel
+- melee + ranged target-priority lesson
+- avoidable/readable before aggro when terrain permits
+
+### Zone 2 — Drabyel approach patrol
+
+Current production encounter:
+- CV_DRABYEL_ROAD
+- CV-B ×2 + CV-C ×1
+
+Purpose:
+- moving patrol / road-pressure beat
+- one step more complex than the north-road encounter
+- should not sit directly on top of the town safety ring
+
+### Zone 3 — New Drabyel reveal / safety ring
+
 Enemy:
 - 없음
 
-목적:
-- world reveal
-- movement
-- first NPC
-- landmark reading
+Requirements:
+- town silhouette/entrance should become the visual reward after the road encounters
+- hostile patrol must stop outside the hub safety buffer
+- service NPCs become the next interaction loop
 
-### Zone 1 — chapel 이후 road/meadow opening
-First mandatory visible encounter.
+### Optional backward Capital Valley exploration
 
-Composition:
-- CV-A ×2
-or
-- terrain/visual quality가 더 좋은 경우 동일 archetype 2마리
+The following remain valid regional content:
+- Tower breathing landmark
+- Warning Cave optional Elite / Cavehorn Ravager
+- chapel / earlier road encounters
+- Primal roadhead
+- optional off-road encounters and Graul world boss
 
-규칙:
-- 멀리서 보임
-- bypass는 가능해도 tutorial objective 때문에 접근 유도 가능
-- 4v2 footprint
-- no support/ranged/DoT/revive
+They must not be used merely to stretch the mandatory tutorial travel time.
 
-### Zone 2 — Capital Valley Tower approach
-Enemy:
-- 없음
-
-Tower 자체는 breathing landmark로 유지.
-
-### Zone 3 — Warning Cave
-Optional Elite site.
-
-Candidate Elite:
-**Cavehorn Ravager**
-
-Mechanic:
-- heavy single hit telegraph
-- charge
-- repeated same-target pressure
-- second pattern under 50% HP
-
-배치:
-- cave interior가 camera에 충분하면 interior
-- 아니면 cave mouth/exterior clearing
-
-보상:
-- guaranteed early Heroic-equivalent equipment candidate
-- Gold
-- Crystal first-clear
-- discovery marker
-
-main progression 필수 아님.
-
-### Zone 4 — Explorer's Guide camp
-Enemy:
-- 없음
-
-휴식/정보/장비 decision beat.
-
-### Zone 5 — camp → Drabyel road
-Second authored road encounter.
-
-Composition baseline:
-- CV-B ×2
-- CV-C ×1
-
-목적:
-- melee + ranged target priority
-- 첫 encounter보다 한 단계 복잡
-
-variation:
-- 나중 repeat spawn에서는 2~3 unit pool variation 허용
-
-### Zone 6 — Drabyel safety ring
-Enemy:
-- 없음
-
-Town entrance가 전투 trigger와 겹치지 않음.
+Pacing rule:
+- distance alone does not validate the route
+- a 300–400 m route with empty walking is still a failure
+- if client playtest shows long dead air between the current beats, move/add a meaningful event inside the same source-backed corridor rather than padding with more UI prompts.
 
 ## 8. Capital Valley optional field encounters
 

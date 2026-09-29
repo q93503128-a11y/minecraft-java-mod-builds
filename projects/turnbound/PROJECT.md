@@ -803,3 +803,31 @@ Validation state:
 - CLIENT RUNTIME TESTED: NO — this #937 state still requires the next repeated-instance client pass
 - PLAYTESTED: NO for #937
 - MULTIPLAYER TESTED: NO
+
+
+## Opening density / external NPC UI / cleanup contract — 2026-09-29
+
+Latest explicit client-playtest decision:
+
+Opening:
+- current fresh-session entry is the Explorer's Guide camp transition, with New Drabyel roughly 350 m away in straight-line map distance
+- this distance is acceptable only if the route contains meaningful gameplay beats; empty walking is not acceptable
+- current intended forward beats are: Mira/camp interaction → CV_DRABYEL_NORTH → CV_DRABYEL_ROAD → New Drabyel
+- the camp itself must gain at least one useful non-dialogue interaction (rest/heal, small loot/equipment comparison decision, or route information) before the opening is considered complete
+- Tower / Warning Cave / Primal roadhead remain optional/backward Capital Valley exploration, not mandatory opening padding
+- actual pacing remains CLIENT RUNTIME / PLAYTEST pending
+
+NPC/facility UI:
+- do not design final NPC chrome from scratch
+- use the adopted external **Foozle RPG UI Set 1 (CC0)** as the primary visual skin; keep source/license records
+- merchant / blacksmith / stable / summon are separate physical service surfaces, not shortcuts into global E-menu categories
+- global Equipment is inspect/equip management only; purchase/sale/enhancement stay with physical NPC services
+- global summon/history area may show records but cannot execute summon actions
+- reduce wasted panel space and padding before shrinking readable text
+- compile/build does not approve UI; client screenshots at multiple GUI scales are required
+
+Implementation hygiene:
+- do not keep placeholder/no-op APIs, commented-out systems, deleted tests, or duplicated economy authority merely to pass builds
+- temporary pre-release reset is explicit technical debt with a release-removal gate; it must not silently become production persistence behavior
+- new facility screens currently share repeated lifecycle/chrome behavior; before expanding the NPC UI family further, consolidate common facility-screen plumbing instead of copy/pasting more screens
+- when an external asset already solves the visual primitive, reuse it rather than creating another bespoke visual language
