@@ -125,6 +125,34 @@ final class CharacterOverhaulRuntimeTest {
         assertEquals(20, marion.counter("bond"));
     }
 
+
+    @Test
+    void immediateOneTimeSelfReviveReturnsReadyInsideTheLethalAction() {
+        SkillDefinition basic = new SkillDefinition(
+                "reviver_basic", "기본", TargetRule.ENEMY_SINGLE, 0,
+                List.of(new SkillEffect(EffectType.DAMAGE, 1.0, 0, 0, "")), List.of(), java.util.Map.of());
+        CombatantDefinition reviverDefinition = new CombatantDefinition(
+                "TEST_REVIVER", "복귀자", new BattleStats(100, 20, 0, 100),
+                "reviver_basic", List.of(basic), 4,
+                List.of("AUTO_REVIVE_ONCE", "REVIVE_IMMEDIATE_TURN"),
+                java.util.Map.of("autoReviveHp", 0.35));
+        CombatantState reviver = new CombatantState("reviver", reviverDefinition, CombatantSide.ALLY, 0);
+        CombatantState foe = enemy("foe", 9999, 500, 0, 90, 1);
+        BattleState state = new BattleState(List.of(reviver, foe));
+        BattleEngine engine = new BattleEngine(state);
+
+        foe.setGauge(1000);
+        engine.nextReady();
+        engine.useSkill("foe", "foe_basic", "reviver");
+
+        assertFalse(reviver.downed());
+        assertEquals(35, reviver.hp());
+        assertTrue(reviver.gauge() >= TurnScheduler.TURN_THRESHOLD);
+        assertTrue(reviver.flag("auto_revive_used"));
+        assertTrue(state.events().stream().anyMatch(e -> "SELF_REVIVE".equals(e.type())
+                && "reviver".equals(e.targetId())));
+    }
+
     @Test
     void razeFuryControlsOverheatAndAwakeningSurvival() {
         CombatantState raze = new CombatantState("raze", CanonicalData.definition("P08", 1, 3, true), CombatantSide.ALLY, 0);
