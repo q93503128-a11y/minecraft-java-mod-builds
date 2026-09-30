@@ -293,6 +293,7 @@ final class BattlePresentation {
                     else if(event.value()<0)playDebuffFor(level,state,event.targetId(),debuffPlayed);
                 }
                 case "RESOURCE","RECORD" -> presentSignatureResource(level,state,event.sourceId());
+                case "SELF_REVIVE" -> presentImmediateSelfRevive(level,event.targetId());
                 case "SUMMON_DOWN" -> presentSummonDown(level,state,event.sourceId());
                 default -> { }
             }
@@ -348,6 +349,16 @@ final class BattlePresentation {
         HeroSignaturePresentationState.Resource resource=HeroSignaturePresentationState.resource(source);
         Vec3 home=homes.get(sourceId);
         if(resource!=null&&home!=null)BattleVfx.resource(level,source.definition().id(),home,resource.value(),resource.max());
+    }
+
+    private void presentImmediateSelfRevive(ServerLevel level,String id){
+        // A true instant self-revive can go down and return inside one authoritative action, so syncStates
+        // never observes an intermediate downed snapshot. Delayed/manual revives are still handled there.
+        if(Boolean.TRUE.equals(downed.get(id)))return;
+        Entity actor=entity(level,id);Vec3 home=homes.get(id);
+        if(actor!=null)actor.setInvisible(false);
+        if(actor instanceof BattleActorEntity animated)animated.playRevive();
+        if(home!=null)BattleVfx.revive(level,home);
     }
 
     private void presentSummonDown(ServerLevel level,BattleState state,String summonId){
@@ -519,7 +530,7 @@ final class BattlePresentation {
             int left=pendingDownMarkerTicks.getOrDefault(id,0)-1;
             if(left>0){pendingDownMarkerTicks.put(id,left);continue;}
             pendingDownMarkerTicks.remove(id);
-            if(!Boolean.TRUE.equals(downed.get(id))||sides.get(id)!=CombatantSide.ALLY)continue;
+            if(!Boolean.TRUE.equals(downed.get(id)))continue;
             Entity actor=entity(level,id);
             if(actor!=null)actor.setInvisible(true);
             spawnDownMarker(level,id);
@@ -543,7 +554,8 @@ final class BattlePresentation {
         ArmorStand marker=new ArmorStand(level,home.x,home.y-.72D,home.z);
         marker.setInvisible(true);marker.setInvulnerable(true);marker.setNoGravity(true);setSmall(marker);
         marker.setItemSlot(EquipmentSlot.HEAD,Items.CHISELED_STONE_BRICKS.getDefaultInstance());
-        marker.setCustomName(Component.literal("전투불능 · ").append(actorName).withStyle(ChatFormatting.GRAY));
+        ChatFormatting markerColor=sides.get(id)==CombatantSide.ENEMY?ChatFormatting.RED:ChatFormatting.GRAY;
+        marker.setCustomName(Component.literal("전투불능 · ").append(actorName).withStyle(markerColor));
         marker.setCustomNameVisible(true);
         Float yaw=homeYaws.get(id);if(yaw!=null)marker.setYRot(yaw);
         if(level.addFreshEntity(marker))downMarkers.put(id,marker.getUUID());
