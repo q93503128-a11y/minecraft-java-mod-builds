@@ -1,0 +1,96 @@
+{
+  "school": "spell_power:physical_ranged",
+  "range": 24.0,
+  "tier": 1,
+  "group": "hunter_ranged",
+  "active": {
+    "cast": {
+      "duration": 0.0
+    }
+  },
+  "release": {
+    "animation": {
+      "id": "spell_engine:archery_release",
+      "speed": 1.0
+    },
+    "sound": {
+      "id": "minecraft:entity.arrow.shoot",
+      "randomness": 0.04
+    }
+  },
+  "target": {
+    "type": "AIM",
+    "aim": {}
+  },
+  "deliver": {
+    "type": "PROJECTILE",
+    "projectile": {
+      "direction_offsets": [
+        {
+          "yaw": -4.0
+        },
+        {},
+        {
+          "yaw": 4.0
+        }
+      ],
+      "launch_properties": {
+        "velocity": 2.0,
+        "extra_launch_count": 2,
+        "extra_launch_delay": 1
+      },
+      "projectile": {
+        "homing_angle": 0.0,
+        "hitbox": {
+          "width": 0.22,
+          "height": 0.22,
+          "length": 1.15
+        },
+        "perks": {
+          "pierce": 0
+        },
+        "client_data": {
+          "composite_model": {
+            "models": [
+              {
+                "orientation": "ALONG_MOTION",
+                "rotate_degrees_per_tick": 0.0,
+                "rotate_degrees_offset": 0.0,
+                "fx": {
+                  "model_id": "openworld_rpg:spell_projectile/hunter_quickstep_arrow",
+                  "light_emission": "NONE",
+                  "scale": 1.0
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "impacts": [
+    {
+      "action": {
+        "type": "CUSTOM",
+        "custom": {
+          "intent": "HARMFUL",
+          "handler": "openworld_rpg:project_impact"
+        }
+      },
+      "sound": {
+        "id": "minecraft:entity.arrow.hit",
+        "randomness": 0.04
+      }
+    }
+  ],
+  "cost": {
+    "batching": false,
+    "exhaust": 0.0,
+    "durability": 0,
+    "cooldown": {
+      "attempt_duration": 0.0,
+      "duration": 0.0,
+      "hosting_item": false
+    }
+  }
+}
