@@ -80,6 +80,10 @@ class DrehmalFirstRouteCatalogTest {
         assertFalse(road.productionEnabled(), "Drabyel road must also remain survey-gated");
         assertTrue(road.patrolLocator().isBlank(),
                 "opening tutorial materialization must not depend on optional roam-path resolution");
+        var roadPlacement = DrehmalMapPlacementCatalog.placement(DrabyelOpeningTutorial.ENCOUNTER_SITE);
+        assertNotNull(roadPlacement);
+        assertTrue(roadPlacement.patrolSeeds().size() >= 2,
+                "opening proxy needs source-backed presentation patrol seeds even without a formal Patrol binding");
         var roadFootprint = DrehmalFirstRouteCatalog.route().footprints().stream()
                 .filter(footprint -> footprint.locator().equals(DrabyelOpeningTutorial.FOOTPRINT_ID))
                 .findFirst().orElseThrow();
