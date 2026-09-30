@@ -113,16 +113,62 @@ Final map must:
 - survive conversion/loading in Minecraft 26.2.
 
 ### Candidate status
-4K Flat Islands Map for Creative:
-- attractive on paper due to flatness and scale.
-- not yet canonical.
-- actual world file still needs direct acquisition and inspection.
-- if direct acquisition is blocked, replace it rather than asking the user to download it.
+
+**4K Flat Islands Map for Creative — current leading candidate**
+Source/visual inspection pass completed from the creator's current Planet Minecraft page and screenshots.
+
+Creator-stated properties:
+- roughly 4000×4000 total map.
+- three large bare islands plus smaller islands/islets and a lake.
+- broad river/channel around 100 blocks wide.
+- terrain height varies only from about 26 to 32: roughly six blocks of vertical variation across the authored land.
+- water depth around 6–15 blocks.
+- endless ocean biome outside the custom map.
+- WorldPainter-made, basic-block fresh export.
+- creator describes it as a coastal-city base and says the player spawns roughly in the middle of the bottom-left island.
+- current page again exposes a download entry; a 2024 creator reply says the old link was fixed.
+- creator explicitly allowed another user to use the map for a city, preferring credit if published.
+
+Visual-read conclusions from the published overview/close aerial images:
+- southwest/bottom-left landmass appears to be the strongest **provisional main-village candidate** because it is very large, contiguous, mostly level and already contains the documented spawn region.
+- east landmass is another very large buildable surface.
+- northwest landmass is also substantial and mostly flat.
+- the central Y-like water channel creates natural harbor/bridge/coastal-walk opportunities.
+- the small inland lake/islets are useful landmark material without consuming much civic build area.
+- the scale is much larger than needed for the 10–12 house village itself, so the civic/residential core should be deliberately clustered rather than spread across the whole 4k map.
+- the extremely flat terrain is excellent for external building prefabs and controlled parcel/road layouts.
+- current surface art is stone-heavy/bare in large areas; final Campfire use would need an authored vegetation/grass/path/environment pass rather than leaving it as a grey creative canvas.
+- the map does not appear to provide the rich cliffs/caves/ecology required by the full Campfire design on its own. Those must come from selected authored additions, managed cave/exploration spaces, or carefully modified secondary areas.
+- the ~100-block water channel is too wide to treat casually as a tiny creek; bridges, ferries/boats or route design must respect that scale.
+
+Important limitation:
+- the actual world ZIP/region data has **not** yet been obtained inside the current development tool environment.
+- the Planet Minecraft binary download endpoint could not be materialized here, so this remains screenshot/source-description analysis rather than level.dat / region-chunk inspection.
+- therefore exact island area, real heightmap, cave data, biome data, coordinates and Minecraft 26.2 conversion safety are still NOT VERIFIED.
+- do not mark the candidate canonical until the binary world is directly obtained and loaded/inspected.
+
+**Worldpainter 4000×4000 island for cities (FishyLava, 2025)**
+- explicitly advertises a flat main island for city building plus two smaller islands.
+- visually/conceptually matches the flat-main-island requirement very well.
+- however the current page does not expose a downloadable map, and a later commenter explicitly asked the creator to make it downloadable.
+- keep as a geometry/layout reference, not a production candidate unless a direct legal download appears.
+
+**Wullestor (McMeddon, 4096×4096)**
+- directly downloadable/source-file-backed archipelago with caves, ores, biomes and exploration content.
+- explicitly includes high/flat archipelago terrain among its features.
+- much richer exploration baseline than 4K Flat Islands.
+- however it is substantially more vertical/terrain-heavy and less ideal for a clean large prefab village core.
+- retain as fallback/reference if the leading flat map cannot be acquired or if exploration terrain becomes more important than civic flatness.
 
 Previous 1024×1024 7-island candidate:
 - useful reference.
 - not final.
-- may be too small or not flat enough for the new scope.
+- likely too small and/or not flat enough for the current scope.
+
+Current preference:
+1. attempt direct acquisition + real chunk inspection of 4K Flat Islands first.
+2. if it passes 26.2 conversion and exact-area checks, use it as the base and author the missing ecology/exploration layer around its strong flat civic geography.
+3. if direct acquisition fails, move to another actually downloadable flat archipelago rather than asking the user to install a map manually.
 
 No island roles are final until a real world file is inspected.
 
@@ -350,6 +396,83 @@ Required screens:
 - resident interaction.
 - route/pier UI.
 - village notice-board schedule/detail UI.
+
+### Animal Crossing: New Horizons UI reference study
+
+Animal Crossing: New Horizons is a **visual/interaction reference**, not an asset source.
+Do not copy Nintendo textures, icons, exact screen layouts, branding, sounds or proprietary artwork.
+
+Observed reusable design principles from inventory, NookPhone, map, wardrobe/fitting and dialogue screens:
+
+**1. Organic container silhouettes**
+- primary panels are soft cream/off-white shapes with heavily rounded or organic edges.
+- the inventory does not read as a dark rectangular Minecraft chest.
+- screen background/game world often remains visible around the panel, preserving place/context.
+
+**2. Slots are implied rather than boxed aggressively**
+- inventory objects sit over subtle circular/dot positions instead of thick square cell borders.
+- item art receives more attention than chrome.
+- quantity numbers stay compact and close to the item.
+- selected items gain a clean highlight rather than a heavy neon outline.
+
+**3. Small contextual controls instead of permanent button walls**
+- money/status can live in small rounded pills.
+- secondary actions appear near the active item/context.
+- choice menus use a small rounded list/pill close to the dialogue rather than huge full-width buttons.
+- Campfire's catch-overflow organize/swap/safe-hold UI should follow this compact contextual pattern.
+
+**4. Clear visual hierarchy with restrained information density**
+- one main task dominates each screen.
+- secondary information is visibly subordinate.
+- empty space supports readability, but controls are not inflated merely to fill space.
+- Campfire should copy the hierarchy principle, not the exact spacing.
+
+**5. Pastel category color + warm neutral text**
+- soft cream, mint/teal, yellow, peach and muted category colors communicate a relaxed tone.
+- main text is dark warm gray/brown rather than pure black where contrast remains sufficient.
+- color is supportive, never the only state indicator.
+
+**6. Rounded icon-first navigation**
+- NookPhone-style app navigation uses compact rounded icon tiles and direct labels.
+- icons are highly legible silhouettes with limited detail.
+- selection is reinforced by movement/highlight and pointer feedback.
+- Campfire M-menu may borrow the principle of shallow icon-first top-level navigation, but must keep location-bound systems out of the menu.
+
+**7. Central avatar/product preview**
+- fitting-room/wardrobe screens keep the character large enough to inspect while item categories remain around the edges/top.
+- this is a strong reference for Campfire clothing preview and possibly shop try-on.
+- the preview does not require making every surrounding control huge.
+
+**8. Map is a destination/identity screen, not a debug map**
+- stylized terrain occupies most of the screen.
+- important facilities/residents use simple symbols/portraits.
+- technical coordinate information is subtle.
+- this reinforces Campfire's no-debug-map/no-permanent-minimap direction.
+
+**9. Dialogue remains part of the world**
+- large cream dialogue bubble sits at the bottom/foreground while character/world stays visible.
+- the speaker identity has a small colored name treatment.
+- choices appear only when needed and stay visually close to the conversation.
+- Campfire should preserve the same world-visible principle with its own external asset family.
+
+**10. Motion is part of the UI feel**
+- selection has soft bounce/scale/spring-like response.
+- transitions feel weighted rather than instant hard swaps.
+- use restrained motion for Campfire icon selection, page change, toast entry and compact choice prompts.
+- avoid excessive glow, screen shake or long ornamental animation.
+
+**11. Physical-world actions remain physical**
+- a useful UX lesson from New Horizons is that some interactions are intentionally tied to places rather than available from a global menu.
+- Campfire already follows this for mailbox, notice board, shops, museum donation, resident services, wardrobe/storage and harbor travel.
+- do not erase the village loop in the name of menu convenience.
+
+Known UX friction to avoid copying:
+- repetitive dialogue before routine transactions.
+- unnecessary multi-step museum/shop flows.
+- shallow search/filtering in large catalogs.
+- forcing repeated confirmations for batch actions.
+
+Campfire should keep the visual softness and clear hierarchy while improving batch donation/selling, filtering, search and repeated-action efficiency.
 
 ### Rounded/cozy GUI resource candidates
 
