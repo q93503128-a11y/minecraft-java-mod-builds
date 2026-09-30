@@ -1118,3 +1118,35 @@ Validation after Build #946:
 - CLIENT RUNTIME TESTED: NO for Build #946
 - PLAYTESTED: NO for Build #946
 - MULTIPLAYER TESTED: NO
+
+## Build #946 client regression: objective present but field proxy absent — 2026-09-30
+
+Client evidence:
+- the HUD/minimap still resolved the New Drabyel north-road patrol objective at roughly 19 m
+- no visible field representative was present in the world view
+- the supplied error-only log did not contain TURNBOUND runtime/materialization lines; it contained an early Minecraft framerate-tracker input NPE and repeated invalid vanilla spawn-egg model identifiers (`minecraft:item/spawn_egg_2D`), so those entries are not used as the cause of the missing TURNBOUND proxy
+
+Source tracing found a materialization lifecycle weakness independent from the single-proxy design:
+- `DrehmalAdaptiveRoutePlacement` caches the route snapshot once per ServerLevel
+- the field service rechecked `sourceContentClear` against that cached survey origin on every tick before accepting an existing actor
+- source-map decoration/entity loading can complete after the snapshot is resolved; a later conflict at the cached origin could therefore make the service silently discard/refuse the representative while navigation still retained the encounter position
+- the opening combat slot intentionally has no formal Patrol binding, so the proxy also had no normal patrol points even though source-backed presentation patrol seeds exist
+- `TurnboundBattleActors.spawn` previously ignored the boolean result of `ServerLevel.addFreshEntity`, so a failed insertion had no direct materialization signal
+
+Correction:
+- keep an already-live/adopted TURNBOUND representative authoritative instead of rechecking and deleting it against the old survey origin every tick
+- when no representative exists, resolve a fresh live-ground materialization point; if the cached origin is blocked, search nearby source-backed site/patrol seeds with terrain, safety-zone, route-corridor and source-content checks
+- move the encounter pivot/HUD authority to the recovered proxy position
+- derive presentation-only patrol points from source-backed map placement seeds when no formal Patrol is bound; this preserves encounter activation independence while allowing the opening proxy to actually stroll
+- observer materialization now follows the live proxy pivot instead of remaining centered only on the original site
+- verify `addFreshEntity` success and emit one-shot TURNBOUND warnings for no-safe-point or insertion failure instead of silently presenting an empty objective
+- single-proxy battle separation remains unchanged: the world uses one representative; `CV_DRABYEL_ROAD` still expands to two real enemies in combat
+
+Validation at implementation checkpoint:
+- CODE REVIEWED: YES
+- TESTED: PENDING Build TURNBOUND
+- BUILD VERIFIED: PENDING Build TURNBOUND
+- JAR PRODUCED: PENDING Build TURNBOUND
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
