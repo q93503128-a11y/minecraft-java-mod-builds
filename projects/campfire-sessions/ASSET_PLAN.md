@@ -304,12 +304,35 @@ Current visual direction from these measured families:
 - do not mix every biome style in one village.
 - aim for one coherent main-village architecture family, with secondary-island structures allowed to diverge more.
 
-**kogtyv-Towny and Village**
-- current Minecraft 26.2 NeoForge build exists.
-- MIT licensed with source linked.
-- expands village generation toward larger town/city structures.
-- useful additional permissive structure pool/reference if Villageria/SY Village do not provide a suitable civic/house shell.
-- not automatically preferred: generated-city scale may be too large or visually busy for Campfire's compact island village.
+**kogtyv-Towny and Village — primary permissive village-building pool**
+- current Minecraft 26.2 NeoForge 1.7 release, CurseForge file ID 8762244.
+- actual distributed 26.2 JAR inspected in Campfire CI.
+- packaged JAR LICENSE is **MIT**, explicitly permitting use, modification and redistribution with the MIT notice retained.
+- current source repository observed at commit `913cb02cf01d226981d29c2c4289b6a91ec70da1`.
+- CI parsed the combined external pool successfully; with this mod included, **4,175 structures with explicit size** were inspected.
+- the **Greece village** family is the best direct Campfire fit found so far: bright birch/oak/calcite/tuff language, small stalls, compact homes and civic centers.
+- the Europe-city family contains useful shop/market construction techniques but is denser/taller and should be secondary reference rather than the default island-village language.
+
+Measured Greece shells:
+- `small_1..8`: **5×5** footprint.
+- `medium_1..6`: **7×6**.
+- `big_1..4`: **9×7**.
+- `triple_1`: **13×7**.
+- `shop_small_1..5`: **5×7**.
+- `shop_medium_1..3`: **7×8**.
+- `shop_triple_1..3`: **13×8**.
+- `ratush_1`: **21×16** civic shell.
+- other Greece civic-center variants are roughly 24×16.
+
+Representative real palettes from the packaged JAR:
+- small house: tuff foundation + birch planks + oak planks/slabs, with small spruce/mangrove details.
+- medium/big houses: same birch/oak/tuff base with restrained glass, lantern, bookshelf and trim.
+- shop medium: tuff + birch + oak slabs/logs, wool awning/color accents and small stone/gravel details.
+- `ratush_1`: birch/oak civic shell with polished diorite, stripped spruce, lanterns and glass.
+- `triple_1`: tuff + calcite + spruce, useful as a visibly richer/later house stage after palette harmonization.
+
+This family is therefore suitable for **direct extraction/editing as an external base** rather than merely visual reference.
+Do not ship the full worldgen mod just to obtain the buildings; select/pin the required NBTs and preserve the MIT notice.
 
 **High-quality downloadable build/schematic packs**
 - may be used as reference/editable base/direct asset only when redistribution rights are explicit enough for the Modrinth-pack workflow.
@@ -349,30 +372,65 @@ Do not lock coordinates until the real map chunks and exact structure bounds are
 
 ### First exterior-role shortlist
 
-**Directly usable / modifiable permissive candidates**
-- Resident services: Villageria `town_hall.nbt` — 11×11, MIT.
-- General store: Villageria `shop.nbt` — 11×11, MIT.
-- Clinic: Villageria `hospital.nbt` — 11×11, MIT.
-- These three remain the strongest current direct civic candidates.
+The main village now has a coherent **directly modifiable external structure direction**.
 
-**Towns & Towers role references — NOT extractable**
-The following exact structures remain useful for footprint and silhouette reference only because the packaged T&T license is CC BY-NC-ND 4.0:
-- café reference: `med_library_1.nbt` — 10×10.
-- clothing-shop reference: `med_leatherworker_1.nbt` — 10×10.
-- museum reference: `iberian_temple_1.nbt` — 15×11.
-- harbor references: `beach_outdoor_shack_1.nbt` — 7×9 and `beach_main_house_1.nbt` — 9×14.
-- house progression reference: Mediterranean 5×5 → 5×10/10×10 → Iberian 14×12 → 16×14/17×15.
+**Architecture language**
+- primary: Kogtyv Greece village — birch/oak/calcite/tuff, bright and compact.
+- secondary coastal props: search permissive harbor/pier assets that can be palette-matched to Greece.
+- Towns & Towers Mediterranean/Beach/Iberian remains visual/footprint reference only due its packaged CC BY-NC-ND 4.0 license.
+- do not mix unrelated biome-village styles just because their NBTs are available.
 
-Do not commit those T&T NBT files into Campfire.
+**Resident services**
+- base geometry: Villageria `town_hall.nbt`, 11×11, MIT.
+- harmonize roof/trim/foundation toward the selected Greece palette while preserving the external authored geometry.
+- reason: purpose-built compact civic silhouette and very low footprint.
 
-**Next permissive structure pool: kogtyv-Towny and Village**
-- Minecraft 26.2 NeoForge 1.7 release.
-- MIT licensed.
-- source linked publicly.
-- current CurseForge file ID: 8762244.
-- added to the analysis-only CI structure probe.
-- purpose: find directly reusable house/shop/civic shells to replace the T&T reference-only candidates.
-- accept only structures that visually fit the coastal/cozy village and are not oversized city/high-rise pieces.
+**General store**
+- base geometry: Villageria `shop.nbt`, 11×11, MIT.
+- palette-harmonize with Greece and use the Campfire physical merchandise-display interior separately.
+
+**Clinic**
+- base geometry: Villageria `hospital.nbt`, 11×11, MIT.
+- palette-harmonize with the same civic family.
+
+**Café**
+- primary: Kogtyv Greece `shop_medium_1.nbt`, **7×8**.
+- fallback for a more prominent café: `shop_triple_1.nbt`, **13×8**.
+- use exterior seating/planters/awning to increase café presence rather than inflating the shell merely because the managed interior is larger.
+
+**Clothing shop**
+- primary: Kogtyv Greece `shop_medium_2.nbt`, **7×8**.
+- use a distinct authored awning/sign/display-window treatment while retaining the common village architecture.
+
+**Museum**
+- primary: Kogtyv Greece `center/ratush_1.nbt`, **21×16**.
+- this is intentionally larger than ordinary shops so the museum reads as a civic landmark.
+- keep the major collection halls in managed interior space; the exterior size is for silhouette/forecourt, not room-by-room matching.
+
+**Player-house exterior progression — first direct candidate ladder**
+1. Greece `small_1.nbt` family — **5×5**.
+2. Greece `medium_1.nbt` family — **7×6**.
+3. Greece `big_1.nbt` family — **9×7**.
+4. Greece `triple_1.nbt` / selected larger variant — **13×7**.
+
+This gives four clear exterior-size stages without manufacturing meaningless debt tiers.
+Variants `small_1..8`, `medium_1..6`, `big_1..4` can provide shell diversity after visual review.
+Stage transitions may adjust roof/trim/palette/porch while preserving one recognizable home identity.
+
+**Resident houses**
+- use the same Greece small/medium/big variant pool.
+- resident individuality comes from selected shell variant, palette accent, door/roof detail, yard planting, signage/props and interior theme.
+- do not require 30–40 unique building geometries.
+
+**Harbor service building**
+- Greece `shop_small_1.nbt`, **5×7**, is a good temporary direct shell candidate for ticket/harbor service.
+- the actual pier/dock geometry remains unresolved and should come from a permissive external dock/pier build or a directly reusable structure source.
+- Peterwolf provides the watercraft, not the final civic pier architecture.
+
+**License boundary**
+- Villageria and Kogtyv selected structures are modifiable permissive sources.
+- Towns & Towers NBT files must not be copied into Campfire.
+- keep exact source path, source version/commit or file ID, modification notes and license notice for every structure eventually packaged.
 
 ### First main-village X/Z layout draft
 
@@ -403,8 +461,10 @@ Visual reference result:
 - **Resident services:** Villageria Town Hall — exact 11×11 footprint verified.
 - **General store:** Villageria Village Shop — exact 11×11 footprint verified.
 - **Clinic:** Villageria Mini Hospital — exact 11×11 footprint verified.
-- **Player/resident houses:** still unresolved. SY Village was directly probed and does not provide the expected custom house NBT pool. Towns & Towers is reference-only due its no-derivatives license. kogtyv-Towny and Village is now the next permissive probe.
-- **Café / clothing shop / museum shell:** still unresolved. Use T&T only as footprint/style reference; select actual packable shells from Villageria/kogtyv or another permissive source.
+- **Player/resident houses:** first packable external progression pool selected from Kogtyv Greece: 5×5 → 7×6 → 9×7 → 13×7; final individual variants still require in-client visual inspection.
+- **Café:** Kogtyv Greece shop_medium_1 (7×8) is the primary packable shell candidate.
+- **Clothing shop:** Kogtyv Greece shop_medium_2 (7×8) is the primary packable shell candidate.
+- **Museum:** Kogtyv Greece ratush_1 (21×16) is the primary packable civic shell candidate.
 - **Harbor/pier:** Peterwolf's boat mod is entering direct runtime build validation; Campfire still needs its own authored main-harbor structure/anchor plan.
 - current measured civic shells are small enough that the earlier 160×160 village test envelope is deliberately conservative, not evidence that the 7-island map is cramped.
 - do not declare the building set complete until actual structure bounds and screenshots/models are inspected together for one coherent village language.
