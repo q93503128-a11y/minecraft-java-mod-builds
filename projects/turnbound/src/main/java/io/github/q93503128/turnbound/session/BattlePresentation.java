@@ -160,10 +160,10 @@ final class BattlePresentation {
                         BattleVfx.down(level,home);
                         EnemyDefeatVfx.play(level,visualIds.getOrDefault(id,unit.definition().id()),home);
                     }
-                    if(unit.side()==CombatantSide.ENEMY || unit.definition().summon()){
-                        pendingRemovalTicks.put(id, defeatRemovalTicks(unit));
-                    }else{
-                        pendingDownMarkerTicks.put(id, allyDownMarkerDelayTicks(unit));
+                    if(BattleDownPresentationRules.retiresVisual(unit.side(),unit.definition().summon())){
+                        pendingRemovalTicks.put(id,BattleDownPresentationRules.removalTicks(unit.definition().summon(),unit.definition().boss()));
+                    }else if(BattleDownPresentationRules.usesRecoveryMarker(unit.side(),unit.definition().summon())){
+                        pendingDownMarkerTicks.put(id,BattleDownPresentationRules.recoveryMarkerDelayTicks(unit.definition().id()));
                     }
                 }else{
                     pendingRemovalTicks.remove(id);
@@ -552,18 +552,6 @@ final class BattlePresentation {
     private void clearDownMarker(ServerLevel level,String id){
         UUID markerId=downMarkers.remove(id);if(markerId==null)return;
         Entity marker=level.getEntity(markerId);if(marker!=null)marker.discard();
-    }
-
-    private static int defeatRemovalTicks(CombatantState unit){
-        if(unit.definition().summon())return 12;
-        return unit.definition().boss()?28:20;
-    }
-
-    private static int allyDownMarkerDelayTicks(CombatantState unit){
-        return switch(unit.definition().id()){
-            case "P01","P03","P06","P08" -> 28;
-            default -> 26;
-        };
     }
 
     void cleanup(ServerLevel level){clearFocus(level);clearDanger(level);cleanupActors(level);finishPlayed=false;}
