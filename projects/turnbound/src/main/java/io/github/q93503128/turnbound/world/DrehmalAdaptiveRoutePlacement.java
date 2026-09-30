@@ -580,9 +580,10 @@ final class DrehmalAdaptiveRoutePlacement {
                 break;
             }
             if (point == null) continue;
+            var resolvedPoint = point;
             boolean duplicate = out.stream().anyMatch(existing ->
-                    existing.x() == point.x() && existing.z() == point.z());
-            if (!duplicate) out.add(point);
+                    existing.x() == resolvedPoint.x() && existing.z() == resolvedPoint.z());
+            if (!duplicate) out.add(resolvedPoint);
         }
         return out.size() >= 2 ? List.copyOf(out) : List.of();
     }
