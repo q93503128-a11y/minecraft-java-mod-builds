@@ -88,6 +88,53 @@ public final class HunterSkillRuntime {
         );
     }
 
+    public static SkillHitResult onRangedSkillHit(
+            ServerPlayer hunter,
+            LivingEntity target,
+            double shotDistanceBlocks,
+            boolean weakPointHit,
+            boolean poiseBreakTriggered,
+            long nowTick
+    ) {
+        Objects.requireNonNull(hunter, "hunter");
+        Objects.requireNonNull(target, "target");
+        if (!isHunter(hunter)
+                || hunter.level().isClientSide()
+                || hunter.level() != target.level()
+                || ExternalActorBindingRuntime.combatProfile(target).isEmpty()) {
+            return SkillHitResult.rejected();
+        }
+
+        var combatState = CombatStateServices.states()
+                .getOrCreate(hunter.getUUID(), nowTick);
+        HunterQuarryFocusRuntimeState.HitApplication stateResult =
+                state(hunter).recordRangedHit(
+                        target.getUUID(),
+                        shotDistanceBlocks,
+                        weakPointHit,
+                        nowTick,
+                        combatState.lastCombatActivityTick()
+                );
+
+        if (stateResult.weakPointUltimatePublicationClaimed()) {
+            ProjectUltimateChargeRuntime.recordHunterWeakPointHit(hunter, target);
+        }
+        if (poiseBreakTriggered) {
+            ProjectUltimateChargeRuntime.recordHunterRangedPoiseBreak(hunter, target);
+        }
+
+        return new SkillHitResult(
+                true,
+                stateResult.newlyMarked(),
+                stateResult.replacedPreviousQuarry(),
+                stateResult.focusBefore(),
+                stateResult.focusAfter(),
+                stateResult.longRangeFocusGranted(),
+                stateResult.weakPointFocusGranted(),
+                poiseBreakTriggered
+        );
+    }
+
     public static HunterQuarryFocusRuntimeState.FocusLoss
     onDirectHpDamage(
             ServerPlayer hunter,
@@ -197,6 +244,39 @@ public final class HunterSkillRuntime {
                 .activeClass()
                 .filter(RootClass.HUNTER::equals)
                 .isPresent();
+    }
+
+    public record SkillHitResult(
+            boolean accepted,
+            boolean newlyMarked,
+            boolean replacedPreviousQuarry,
+            int focusBefore,
+            int focusAfter,
+            boolean longRangeFocusGranted,
+            boolean weakPointFocusGranted,
+            boolean poiseBreakTriggered
+    ) {
+        public SkillHitResult {
+            if (!accepted
+                    && (newlyMarked
+                            || replacedPreviousQuarry
+                            || focusBefore != 0
+                            || focusAfter != 0
+                            || longRangeFocusGranted
+                            || weakPointFocusGranted
+                            || poiseBreakTriggered)) {
+                throw new IllegalArgumentException(
+                        "Rejected Hunter ranged skill hits cannot mutate state."
+                );
+            }
+        }
+
+        public static SkillHitResult rejected() {
+            return new SkillHitResult(
+                    false, false, false, 0, 0,
+                    false, false, false
+            );
+        }
     }
 
     public record RangedHitResult(

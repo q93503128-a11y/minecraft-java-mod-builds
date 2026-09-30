@@ -45,7 +45,10 @@ public final class ProjectClassSkillLoadout {
                 case 4 -> Optional.of(ProjectSpellSpec.WARRIOR_EARTHSHATTER_ID);
                 default -> Optional.empty();
             };
-            case HUNTER, GUARDIAN -> Optional.empty();
+            case HUNTER -> slotIndex == 0
+                    ? Optional.of(ProjectSpellSpec.HUNTER_QUICKSTEP_VOLLEY_ID)
+                    : Optional.empty();
+            case GUARDIAN -> Optional.empty();
         };
     }
 

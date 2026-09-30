@@ -9,10 +9,20 @@ package dev.moonseungjun.openworldrpg.integration.actor;
 public record ExternalActorReactionCapabilities(
         boolean pullToward,
         boolean knockdown,
-        boolean launch
+        boolean launch,
+        boolean hunterQuickstepPierceable
 ) {
+    public ExternalActorReactionCapabilities(
+            boolean pullToward,
+            boolean knockdown,
+            boolean launch
+    ) {
+        this(pullToward, knockdown, launch, false);
+    }
+
     public static ExternalActorReactionCapabilities none() {
         return new ExternalActorReactionCapabilities(
+                false,
                 false,
                 false,
                 false
@@ -21,6 +31,7 @@ public record ExternalActorReactionCapabilities(
 
     public static ExternalActorReactionCapabilities normalBaseline() {
         return new ExternalActorReactionCapabilities(
+                true,
                 true,
                 true,
                 true

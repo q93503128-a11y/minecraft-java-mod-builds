@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.network;
 
+import dev.moonseungjun.openworldrpg.combat.runtime.HunterQuickstepVolleyRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectDodgeRuntime;
 import java.util.HashSet;
 import java.util.Objects;
@@ -20,6 +21,10 @@ public final class ProjectCombatNetworking {
                 DodgeRequestPayload.TYPE,
                 DodgeRequestPayload.CODEC
         );
+        PayloadTypeRegistry.serverboundPlay().register(
+                HunterQuickstepIntentPayload.TYPE,
+                HunterQuickstepIntentPayload.CODEC
+        );
         PayloadTypeRegistry.clientboundPlay().register(
                 DodgeAcceptedPayload.TYPE,
                 DodgeAcceptedPayload.CODEC
@@ -29,6 +34,16 @@ public final class ProjectCombatNetworking {
                 DodgeRequestPayload.TYPE,
                 (payload, context) ->
                         ProjectDodgeRuntime.request(
+                                context.player(),
+                                payload.forwardIntent(),
+                                payload.strafeIntent(),
+                                payload.sequence()
+                        )
+        );
+        ServerPlayNetworking.registerGlobalReceiver(
+                HunterQuickstepIntentPayload.TYPE,
+                (payload, context) ->
+                        HunterQuickstepVolleyRuntime.recordMovementIntent(
                                 context.player(),
                                 payload.forwardIntent(),
                                 payload.strafeIntent(),

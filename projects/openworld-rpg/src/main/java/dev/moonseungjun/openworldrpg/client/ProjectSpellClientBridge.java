@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.client;
 
+import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellSpec;
 import dev.moonseungjun.openworldrpg.integration.spellengine.SpellEngineProjectSkillAccess;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -67,6 +68,10 @@ public final class ProjectSpellClientBridge {
             }
             if (selected == null) {
                 return false;
+            }
+
+            if (ProjectSpellSpec.HUNTER_QUICKSTEP_VOLLEY_ID.equals(spellId)) {
+                HunterQuickstepClientBridge.publishMovementIntent(player);
             }
 
             Method keyHeld = controller.getClass().getMethod(

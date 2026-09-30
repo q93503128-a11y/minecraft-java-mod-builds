@@ -26,6 +26,7 @@ public final class ProjectUltimateChargeRuntime {
     public static final double HUNTER_LONG_RANGE_BONUS_CHARGE = 1.0;
     public static final double HUNTER_WEAK_POINT_HIT_CHARGE = 3.0;
     public static final double HUNTER_RANGED_POISE_BREAK_CHARGE = 6.0;
+    public static final double HUNTER_ACTIVE_QUARRY_HIT_CHARGE = 3.0;
     public static final double SUPPORT_STEP_MAX_HP_FRACTION = 0.05;
     public static final int MAX_SUPPORT_STEPS_PER_SOURCE_RECIPIENT = 3;
 
@@ -287,6 +288,17 @@ public final class ProjectUltimateChargeRuntime {
                 hunter,
                 hostile,
                 HUNTER_RANGED_POISE_BREAK_CHARGE
+        );
+    }
+
+    public static GainApplication recordHunterActiveQuarryHit(
+            ServerPlayer hunter,
+            LivingEntity hostile
+    ) {
+        return recordHunterHostileEvent(
+                hunter,
+                hostile,
+                HUNTER_ACTIVE_QUARRY_HIT_CHARGE
         );
     }
 
