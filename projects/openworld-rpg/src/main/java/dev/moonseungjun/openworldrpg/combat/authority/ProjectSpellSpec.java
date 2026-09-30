@@ -1,6 +1,5 @@
 package dev.moonseungjun.openworldrpg.combat.authority;
 
-import dev.moonseungjun.openworldrpg.combat.runtime.HunterQuickstepVolleyRules;
 import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import java.util.Objects;
 import java.util.Optional;

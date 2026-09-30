@@ -1,4 +1,4 @@
-package dev.moonseungjun.openworldrpg.combat.runtime;
+package dev.moonseungjun.openworldrpg.combat.authority;
 
 import dev.moonseungjun.openworldrpg.combat.state.ProjectWeaponFamily;
 import java.util.Objects;

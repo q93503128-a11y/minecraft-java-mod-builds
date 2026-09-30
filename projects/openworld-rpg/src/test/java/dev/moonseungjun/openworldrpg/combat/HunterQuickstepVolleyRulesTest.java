@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellSpec;
-import dev.moonseungjun.openworldrpg.combat.runtime.HunterQuickstepVolleyRules;
+import dev.moonseungjun.openworldrpg.combat.authority.HunterQuickstepVolleyRules;
 import dev.moonseungjun.openworldrpg.combat.state.ProjectWeaponFamily;
 import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import org.junit.jupiter.api.Test;
