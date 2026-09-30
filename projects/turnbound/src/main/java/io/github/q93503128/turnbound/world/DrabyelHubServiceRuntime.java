@@ -99,8 +99,7 @@ final class DrabyelHubServiceRuntime {
             return true;
         }
         if ("STORY".equals(service.role())) {
-            FieldNetwork.showDialogue(player, service.playerLabel(),
-                    "캐피털 밸리 길목에는 아직 지나치기 쉬운 위험과 오래된 흔적이 남아 있습니다. 서두르지 말고 마을에서 준비한 뒤 움직이세요.");
+            FieldNetwork.showDialogue(player, service.playerLabel(), AvsalExpansionRuntime.storyDialogue(player));
             return true;
         }
         String hint=service.facilityHint();

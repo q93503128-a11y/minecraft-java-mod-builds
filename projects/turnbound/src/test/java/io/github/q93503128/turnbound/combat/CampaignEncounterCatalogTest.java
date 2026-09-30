@@ -22,6 +22,8 @@ class CampaignEncounterCatalogTest {
         assertTrue(CampaignEncounterCatalog.contains("CV_FIRST_COMMON"));
         assertTrue(CampaignEncounterCatalog.contains("CV_DRABYEL_ROAD"));
         assertTrue(CampaignEncounterCatalog.contains("CV_WARNING_CAVE_ELITE"));
+        assertTrue(CampaignEncounterCatalog.contains("AV_ROAD_PATROL"));
+        assertTrue(CampaignEncounterCatalog.contains("AV_ROAD_ELITE"));
         int activeAllies = CampaignProgressStore.activeParty(playerId).size();
         assertTrue(activeAllies >= 1 && activeAllies <= 4);
         for (var encounter : CampaignEncounterCatalog.all()) {

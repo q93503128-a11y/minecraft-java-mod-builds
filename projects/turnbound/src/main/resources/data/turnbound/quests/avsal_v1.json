@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "quests": [
+    {
+      "id": "MQ_AV01",
+      "kind": "MAIN",
+      "title": "무너진 길의 끝",
+      "regionLabel": "Av'Sal",
+      "objective": "뉴 드라비엘에서 서쪽 가도를 따라 아브살 외곽까지 이동하십시오.",
+      "activationFlag": "AVSAL_MQ_AV01_BRIEFED",
+      "completionFlag": "AVSAL_MQ_AV01_COMPLETE",
+      "encounterId": ""
+    },
+    {
+      "id": "MQ_AV02",
+      "kind": "MAIN",
+      "title": "폐허를 쓰는 사람들",
+      "regionLabel": "Av'Sal",
+      "objective": "아브살 외곽에서 쓸 만한 기록과 생존 흔적을 조사하십시오.",
+      "activationFlag": "AVSAL_MQ_AV01_COMPLETE",
+      "completionFlag": "",
+      "encounterId": ""
+    },
+    {
+      "id": "SQ_AV01_ELITE",
+      "kind": "SIDE",
+      "title": "길을 벗어난 위험",
+      "regionLabel": "Av'Sal",
+      "objective": "가도 바깥의 강한 적을 상대할지 결정하십시오.",
+      "activationFlag": "AVSAL_ROADSIDE_ECHO_SEEN",
+      "completionFlag": "",
+      "encounterId": "AV_ROAD_ELITE"
+    }
+  ]
+}

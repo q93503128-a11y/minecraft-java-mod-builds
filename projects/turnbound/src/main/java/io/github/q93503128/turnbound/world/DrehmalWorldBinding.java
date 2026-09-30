@@ -36,6 +36,8 @@ public final class DrehmalWorldBinding {
         errors.addAll(DrehmalFirstRouteCatalog.validate());
         errors.addAll(DrabyelHubServiceCatalog.validate());
         errors.addAll(DrabyelMapPlacementCatalog.validate());
+        errors.addAll(AvsalExpansionCatalog.validate());
+        errors.addAll(AvsalQuestCatalog.validate());
         return List.copyOf(errors);
     }
 

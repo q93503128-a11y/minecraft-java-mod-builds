@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "routeId": "turnbound:route/new_drabyel_to_avsal_outskirts",
+  "source": {
+    "repository": "zachaa/DrehmalMap",
+    "commit": "72d82180cbe3f950f068cf2d8e8668c6b09d5c58",
+    "paths": "data/paths.geojson; data/locations.json",
+    "startLandmark": "New Drabyel (530,70,1848)",
+    "destinationLandmark": "Av'Sal Scavengers House (-162,86,1413)"
+  },
+  "corridor": [
+    {
+      "x": 532,
+      "z": 1846
+    },
+    {
+      "x": 502,
+      "z": 1791
+    },
+    {
+      "x": 507,
+      "z": 1710
+    },
+    {
+      "x": 547,
+      "z": 1641
+    },
+    {
+      "x": 508,
+      "z": 1565
+    },
+    {
+      "x": 458,
+      "z": 1560
+    },
+    {
+      "x": 379,
+      "z": 1577
+    },
+    {
+      "x": 317,
+      "z": 1524
+    },
+    {
+      "x": 241,
+      "z": 1522
+    },
+    {
+      "x": 164,
+      "z": 1520
+    },
+    {
+      "x": 97,
+      "z": 1549
+    },
+    {
+      "x": 67,
+      "z": 1495
+    },
+    {
+      "x": 33,
+      "z": 1518
+    },
+    {
+      "x": -13,
+      "z": 1566
+    },
+    {
+      "x": -36,
+      "z": 1492
+    },
+    {
+      "x": -76,
+      "z": 1470
+    },
+    {
+      "x": -154,
+      "z": 1467
+    },
+    {
+      "x": -161,
+      "z": 1423
+    }
+  ],
+  "sites": [
+    {
+      "locator": "turnbound:site/avsal/roadside_echo",
+      "kind": "EVENT_ZONE",
+      "playerLabel": "끊긴 가도",
+      "seed": {
+        "x": 379,
+        "z": 1577
+      },
+      "searchRadius": 8,
+      "safetyRadius": 0,
+      "encounterRadius": 0,
+      "detectionRadius": 30,
+      "encounterLocator": "",
+      "combatEncounterId": "",
+      "tier": "",
+      "patrolSeeds": []
+    },
+    {
+      "locator": "turnbound:site/avsal/road_patrol",
+      "kind": "PATROL_ZONE",
+      "playerLabel": "아브살 가도",
+      "seed": {
+        "x": 241,
+        "z": 1522
+      },
+      "searchRadius": 14,
+      "safetyRadius": 0,
+      "encounterRadius": 26,
+      "detectionRadius": 38,
+      "encounterLocator": "turnbound:encounter/avsal/road_patrol",
+      "combatEncounterId": "AV_ROAD_PATROL",
+      "tier": "COMMON",
+      "patrolSeeds": [
+        {
+          "x": 317,
+          "z": 1524
+        },
+        {
+          "x": 241,
+          "z": 1522
+        },
+        {
+          "x": 164,
+          "z": 1520
+        }
+      ]
+    },
+    {
+      "locator": "turnbound:site/avsal/road_elite",
+      "kind": "ELITE_ZONE",
+      "playerLabel": "폐허길의 강적",
+      "seed": {
+        "x": 31,
+        "z": 1454
+      },
+      "searchRadius": 18,
+      "safetyRadius": 0,
+      "encounterRadius": 28,
+      "detectionRadius": 34,
+      "encounterLocator": "turnbound:encounter/avsal/road_elite",
+      "combatEncounterId": "AV_ROAD_ELITE",
+      "tier": "ELITE",
+      "patrolSeeds": [
+        {
+          "x": 50,
+          "z": 1458
+        },
+        {
+          "x": 25,
+          "z": 1444
+        },
+        {
+          "x": 4,
+          "z": 1462
+        }
+      ]
+    },
+    {
+      "locator": "turnbound:site/avsal/outskirts",
+      "kind": "REST_ZONE",
+      "playerLabel": "아브살 외곽",
+      "seed": {
+        "x": -162,
+        "z": 1413
+      },
+      "searchRadius": 8,
+      "safetyRadius": 42,
+      "encounterRadius": 0,
+      "detectionRadius": 64,
+      "encounterLocator": "",
+      "combatEncounterId": "",
+      "tier": "",
+      "patrolSeeds": []
+    }
+  ]
+}

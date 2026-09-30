@@ -180,6 +180,7 @@ public final class ExternalWorldBootstrap {
         DrehmalVisibleEncounterService.clear();
         DrehmalFieldNpcRuntime.clear();
         DrehmalAdaptiveRoutePlacement.clear();
+        AvsalExpansionRuntime.clear();
         DrabyelHubServiceRuntime.clear();
         ACTIVE.clear();
         LAST_LOCATION.clear();

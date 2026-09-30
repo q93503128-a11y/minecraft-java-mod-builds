@@ -33,8 +33,11 @@ public final class DrehmalFirstRouteRuntime {
     }
 
     public static boolean insideSafetyZone(ServerPlayer player) {
-        return player != null && DrehmalRouteZoneRules.insideSafetyZone(
+        if (player == null) return false;
+        boolean firstRoute = DrehmalRouteZoneRules.insideSafetyZone(
                 DrehmalAdaptiveRoutePlacement.productionSites(player), player.getX(), player.getZ());
+        return firstRoute || (player.level() instanceof net.minecraft.server.level.ServerLevel level
+                && AvsalExpansionRuntime.insideSafetyZone(level, player.getX(), player.getZ()));
     }
 
     static boolean insideSafetyZone(double x, double z) {
@@ -42,7 +45,8 @@ public final class DrehmalFirstRouteRuntime {
     }
 
     static boolean insideSafetyZone(net.minecraft.server.level.ServerLevel level, double x, double z) {
-        return DrehmalRouteZoneRules.insideSafetyZone(DrehmalAdaptiveRoutePlacement.productionSites(level), x, z);
+        return DrehmalRouteZoneRules.insideSafetyZone(DrehmalAdaptiveRoutePlacement.productionSites(level), x, z)
+                || AvsalExpansionRuntime.insideSafetyZone(level, x, z);
     }
 
     public static DrehmalFirstRouteCatalog.EncounterSlot encounterAt(ServerPlayer player) {
@@ -61,7 +65,7 @@ public final class DrehmalFirstRouteRuntime {
     }
 
     public static FieldUiSnapshot explorationSnapshot(ServerPlayer player) {
-        DrehmalFirstRouteCatalog.Site location = locationSite(player);
+        DrehmalFirstRouteCatalog.Site location = combinedLocationSite(player);
         DrehmalContextualOnboarding.Guidance guidance = guidance(player, location);
         DrabyelInteractionPromptRules.Prompt interaction = DrabyelHubServiceRuntime.prompt(player);
         FieldUiSnapshot.Navigation navigation = navigation(player);
@@ -90,7 +94,7 @@ public final class DrehmalFirstRouteRuntime {
     }
 
     static String locationId(ServerPlayer player) {
-        DrehmalFirstRouteCatalog.Site location = locationSite(player);
+        DrehmalFirstRouteCatalog.Site location = combinedLocationSite(player);
         return location == null ? "" : location.locator();
     }
 
@@ -109,6 +113,7 @@ public final class DrehmalFirstRouteRuntime {
         ExternalWorldSavedData data = ExternalWorldSavedData.get(server);
         DrehmalFirstRouteProgress.record(data, player.getUUID(), locationSite(player));
         DrehmalFastTravelService.recordDiscovery(player);
+        AvsalExpansionRuntime.recordProgress(player);
         if (insideHubCoordinates(player.getX(), player.getZ())) {
             data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.HUB_REACHED);
         }
@@ -131,6 +136,8 @@ public final class DrehmalFirstRouteRuntime {
 
     private static FieldUiSnapshot.Navigation navigation(ServerPlayer player) {
         if (player == null) return FieldUiSnapshot.Navigation.none();
+        FieldUiSnapshot.Navigation avsalNavigation = AvsalExpansionRuntime.navigation(player);
+        if (avsalNavigation.active()) return avsalNavigation;
         var server = player.level().getServer();
         var flags = server == null
                 ? java.util.Set.<String>of()
@@ -209,10 +216,17 @@ public final class DrehmalFirstRouteRuntime {
                 DrehmalAdaptiveRoutePlacement.productionSites(player), player.getX(), player.getZ());
     }
 
+    private static DrehmalFirstRouteCatalog.Site combinedLocationSite(ServerPlayer player) {
+        DrehmalFirstRouteCatalog.Site avsal = AvsalExpansionRuntime.locationSite(player);
+        return avsal != null ? avsal : locationSite(player);
+    }
+
     private static DrehmalContextualOnboarding.Guidance guidance(
             ServerPlayer player,
             DrehmalFirstRouteCatalog.Site location
     ) {
+        DrehmalContextualOnboarding.Guidance avsal = AvsalExpansionRuntime.guidance(player);
+        if (avsal != null) return avsal;
         if (player == null) {
             return DrehmalContextualOnboarding.resolve("", java.util.Set.of(), java.util.Set.of(), java.util.Set.of());
         }

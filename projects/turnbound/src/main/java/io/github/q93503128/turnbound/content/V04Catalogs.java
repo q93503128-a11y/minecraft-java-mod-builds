@@ -85,6 +85,8 @@ public final class V04Catalogs {
             case "CV_FIRST_COMMON" -> 120;
             case "CV_DRABYEL_ROAD" -> 160;
             case "CV_WARNING_CAVE_ELITE" -> 600;
+            case "AV_ROAD_PATROL" -> 220;
+            case "AV_ROAD_ELITE" -> 700;
             default -> -1;
         };
         if (firstRoute >= 0) return firstRoute;
@@ -99,6 +101,12 @@ public final class V04Catalogs {
 
     public static int battleXp(Encounter encounter) {
         if (tutorialBridge(encounter.id())) return 0;
+        int authoredRoute = switch (encounter.id()) {
+            case "AV_ROAD_PATROL" -> 420;
+            case "AV_ROAD_ELITE" -> 1_200;
+            default -> -1;
+        };
+        if (authoredRoute >= 0) return authoredRoute;
         if (encounter.boss()) return switch (encounter.enemies().getFirst()) {
             case "B01" -> 5_000; case "B02" -> 8_000; case "B03" -> 12_000; case "B04" -> 18_000; case "B05" -> 28_000; default -> 0;
         };

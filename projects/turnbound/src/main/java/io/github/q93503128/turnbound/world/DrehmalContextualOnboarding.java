@@ -164,6 +164,11 @@ final class DrehmalContextualOnboarding {
                     "M 지도를 열어 뉴 드라비엘 서쪽의 다음 길을 확인하십시오.",
                     "지도에는 현재 위치, 목적지, 발견한 이동 거점이 표시됩니다.");
         }
+        if (AvsalExpansionProgress.briefingReady(clears, flags)) {
+            return new Guidance(
+                    "마을 중심의 이야기꾼에게 아브살로 향하는 길의 소식을 확인하십시오.",
+                    "서쪽 가도로 나가기 전 최근 폐허에서 생긴 일을 들을 수 있습니다.");
+        }
         return new Guidance(
                 "준비가 끝났다면 뉴 드라비엘 서쪽 출구에서 아브살 방향의 길을 따라가십시오.",
                 "마을을 나서기 전 장비와 파티를 다시 확인해도 됩니다.");

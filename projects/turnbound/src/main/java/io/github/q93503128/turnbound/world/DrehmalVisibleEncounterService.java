@@ -75,6 +75,7 @@ final class DrehmalVisibleEncounterService {
     static boolean onBattleEnded(ServerLevel level, UUID claimantId, String combatEncounterId, BattleOutcome outcome) {
         if (level == null || claimantId == null || combatEncounterId == null || combatEncounterId.isBlank()) return false;
         DrehmalFirstRouteCatalog.EncounterSlot slot = DrehmalFirstRouteCatalog.encounterByCombatId(combatEncounterId);
+        if (slot == null) slot = AvsalExpansionRuntime.encounterByCombatId(level, combatEncounterId);
         if (slot == null) return false;
 
         SharedEncounter runtime = ENCOUNTERS.get(slot.locator());
@@ -132,9 +133,21 @@ final class DrehmalVisibleEncounterService {
             DrehmalFirstRouteCatalog.Patrol patrol = slot.patrolLocator().isBlank()
                     ? null
                     : DrehmalAdaptiveRoutePlacement.patrol(resolverPlayer, slot.patrolLocator());
-            if (!DrehmalEncounterActivationRules.ready(slot, site, footprint, patrol)) continue;
-            active.add(slot.locator());
-            ENCOUNTERS.computeIfAbsent(slot.locator(), ignored -> new SharedEncounter(level, slot, site, footprint, patrol));
+            registerRuntime(level, active, slot, site, footprint, patrol);
+        }
+        ServerPlayer avsalResolver = level.players().stream()
+                .filter(ExternalWorldBootstrap::active)
+                .filter(AvsalExpansionRuntime::active)
+                .findFirst().orElse(null);
+        if (avsalResolver != null) {
+            for (DrehmalFirstRouteCatalog.EncounterSlot slot : AvsalExpansionRuntime.productionEncounters(avsalResolver)) {
+                DrehmalFirstRouteCatalog.Site site = AvsalExpansionRuntime.site(avsalResolver, slot.siteLocator());
+                DrehmalFirstRouteCatalog.Footprint footprint = AvsalExpansionRuntime.footprint(avsalResolver, slot.footprintLocator());
+                DrehmalFirstRouteCatalog.Patrol patrol = slot.patrolLocator().isBlank()
+                        ? null
+                        : AvsalExpansionRuntime.patrol(avsalResolver, slot.patrolLocator());
+                registerRuntime(level, active, slot, site, footprint, patrol);
+            }
         }
 
         for (String locator : List.copyOf(ENCOUNTERS.keySet())) {
@@ -142,6 +155,19 @@ final class DrehmalVisibleEncounterService {
             SharedEncounter removed = ENCOUNTERS.remove(locator);
             if (removed != null) removed.discardActors(level);
         }
+    }
+
+    private static void registerRuntime(
+            ServerLevel level,
+            Set<String> active,
+            DrehmalFirstRouteCatalog.EncounterSlot slot,
+            DrehmalFirstRouteCatalog.Site site,
+            DrehmalFirstRouteCatalog.Footprint footprint,
+            DrehmalFirstRouteCatalog.Patrol patrol
+    ) {
+        if (!DrehmalEncounterActivationRules.ready(slot, site, footprint, patrol)) return;
+        active.add(slot.locator());
+        ENCOUNTERS.computeIfAbsent(slot.locator(), ignored -> new SharedEncounter(level, slot, site, footprint, patrol));
     }
 
     private static final class SharedEncounter {
@@ -311,6 +337,7 @@ final class DrehmalVisibleEncounterService {
             Vec3 center = pivot;
             for (ServerPlayer player : level.players()) {
                 if (!ExternalWorldBootstrap.active(player) || BattleSessionManager.exists(player) || player.isSpectator()) continue;
+                if (AvsalExpansionRuntime.ownsSite(slot.siteLocator()) && !AvsalExpansionRuntime.active(player)) continue;
                 if (player.position().distanceToSqr(center) > radiusSq) continue;
                 out.add(player);
             }
@@ -358,7 +385,9 @@ final class DrehmalVisibleEncounterService {
                 return true;
             }
 
-            var spawnPosition = DrehmalAdaptiveRoutePlacement.visibleActorPosition(level, site);
+            var spawnPosition = AvsalExpansionRuntime.ownsSite(site.locator())
+                    ? AvsalExpansionRuntime.visibleActorPosition(level, site)
+                    : DrehmalAdaptiveRoutePlacement.visibleActorPosition(level, site);
             if (spawnPosition == null) {
                 if (!blockedMaterializationWarned) {
                     Turnbound.LOGGER.error(
@@ -502,6 +531,7 @@ final class DrehmalVisibleEncounterService {
                 ServerPlayer member = level.getServer().getPlayerList().getPlayer(memberId);
                 if (member == null || member.level() != level || member.isSpectator()) continue;
                 if (!ExternalWorldBootstrap.active(member) || BattleSessionManager.exists(member)) continue;
+                if (AvsalExpansionRuntime.ownsSite(slot.siteLocator()) && !AvsalExpansionRuntime.active(member)) continue;
                 if (member.position().distanceToSqr(trigger.position()) > radiusSq) continue;
                 out.add(member);
             }
