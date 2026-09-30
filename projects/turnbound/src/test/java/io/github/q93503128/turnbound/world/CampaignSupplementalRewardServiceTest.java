@@ -40,6 +40,36 @@ class CampaignSupplementalRewardServiceTest {
     }
 
     @Test
+    void drabyelRoadFirstClearFundsTheOpeningTenPullExactlyOnce() {
+        UUID id = player();
+        BattleResultSummary first = CampaignProgressStore.commit(id, "CV_DRABYEL_ROAD", BattleOutcome.ALLY_VICTORY);
+        assertTrue(first.firstClear());
+        CampaignSupplementalRewardService.apply(id, "CV_DRABYEL_ROAD", first);
+        assertEquals(3_000, CampaignProgressStore.currency(id, PlayerProfile.Currency.SUMMON_CRYSTAL));
+
+        BattleResultSummary repeat = CampaignProgressStore.commit(id, "CV_DRABYEL_ROAD", BattleOutcome.ALLY_VICTORY);
+        assertFalse(repeat.firstClear());
+        CampaignSupplementalRewardService.apply(id, "CV_DRABYEL_ROAD", repeat);
+        assertEquals(3_000, CampaignProgressStore.currency(id, PlayerProfile.Currency.SUMMON_CRYSTAL));
+    }
+
+    @Test
+    void avsalOptionalElitePaysExplorationCrystalAndT2ChoiceOnce() {
+        UUID id = player();
+        BattleResultSummary first = CampaignProgressStore.commit(id, "AV_ROAD_ELITE", BattleOutcome.ALLY_VICTORY);
+        assertTrue(first.firstClear());
+        CampaignSupplementalRewardService.apply(id, "AV_ROAD_ELITE", first);
+        assertEquals(300, CampaignProgressStore.currency(id, PlayerProfile.Currency.SUMMON_CRYSTAL));
+        assertEquals(1, CampaignProgressStore.equipment(id).choiceTokens().getOrDefault("T2", 0));
+
+        BattleResultSummary repeat = CampaignProgressStore.commit(id, "AV_ROAD_ELITE", BattleOutcome.ALLY_VICTORY);
+        assertFalse(repeat.firstClear());
+        CampaignSupplementalRewardService.apply(id, "AV_ROAD_ELITE", repeat);
+        assertEquals(300, CampaignProgressStore.currency(id, PlayerProfile.Currency.SUMMON_CRYSTAL));
+        assertEquals(1, CampaignProgressStore.equipment(id).choiceTokens().getOrDefault("T2", 0));
+    }
+
+    @Test
     void warningCaveFirstClearGrantsOnePullAndOneEarlyHeroicEquivalentChoice() {
         UUID id = player();
         BattleResultSummary first = CampaignProgressStore.commit(id, "CV_WARNING_CAVE_ELITE", BattleOutcome.ALLY_VICTORY);
