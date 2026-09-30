@@ -1418,3 +1418,24 @@ Validation requested:
 - CLIENT RUNTIME TESTED: NO for this correction
 - PLAYTESTED: Build #950 screenshot reviewed; corrected runtime NOT YET
 - MULTIPLAYER TESTED: NO
+
+
+Build TURNBOUND #952 / run `36664175020` verified final lifecycle commit
+`ed9a349805d7b27f7f17f1db1da7f5d1500a7713`:
+
+- Gradle test/build: PASS
+- NeoForge dedicated-server smoke: PASS
+- built JAR verification: PASS
+- one-click Modrinth pack verification: PASS
+- artifact upload: PASS — artifact id `11075761772`
+- JAR SHA-256: `2d295243d33fa7c75dbf656f81ad8c5c0541a9f91b68f2217b4603009544aaa3`
+- MRPACK SHA-256: `2cfd6e7750f93525814746be3d1a0b31cf83973884f39642d5506cb691484855`
+
+Validation after Build #952:
+- CODE REVIEWED: YES
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- CLIENT RUNTIME TESTED: NO for Build #952
+- PLAYTESTED: NO for Build #952
+- MULTIPLAYER TESTED: NO
