@@ -141,7 +141,7 @@ public final class MetaMenuScreen extends Screen {
         int orbGap=6;
         int rowGap=6;
         Tab[] destinations={Tab.PARTY,Tab.EQUIPMENT,Tab.QUESTS,Tab.ARCHIVE,Tab.CODEX,Tab.CHALLENGES,Tab.SYSTEM};
-        String[] labels={"편성","장비","퀘스트","기록","도감","도전","설정"};
+        String[] labels={"편성","장비","퀘스트","기록","도감","고난도","설정"};
         int menuCols=3;
         int menuRows=(destinations.length+menuCols-1)/menuCols;
         int orbSize=Math.max(36,Math.min(48,Math.min(
@@ -962,7 +962,7 @@ public final class MetaMenuScreen extends Screen {
         var s=ClientMetaState.snapshot();
         int y=contentTop()+4,paneGap=12,paneW=(panelWidth-44-paneGap)/2,leftX=left+16,rightX=leftX+paneW+paneGap;
         g.text(font,Component.literal("퀘스트"),leftX,y,TEXT,true);
-        g.text(font,Component.literal("도전"),rightX,y,TEXT,true);
+        g.text(font,Component.literal("업적"),rightX,y,TEXT,true);
         boolean detailed=s.regionQuests().stream().anyMatch(q->q.objectiveSpecified()&&!q.chestRule().isBlank());
         int questStep=detailed?32:19;
         int start=page*currentPerPage,yy=y+20;
@@ -1050,8 +1050,8 @@ public final class MetaMenuScreen extends Screen {
     private String ownershipLabel(){return switch(ownershipFilter){case ALL->"전체";case OWNED->"보유";case UNOWNED->"미보유";};}
     private static String roleLabel(RoleFilter r){return switch(r){case ALL->"전체";case DPS->"공격";case SUPPORT->"지원";case TANK->"수호";case SUMMON->"소환";};}
     private static String sortLabel(EquipSort s){return switch(s){case TIER->"등급";case LEVEL->"강화";case STAT->"능력치";};}
-    private static String label(Tab t){return switch(t){case HOME->"빠른 메뉴";case PARTY->"편성";case COOP->"협동";case CHARACTERS->"캐릭터";case EQUIPMENT->"장비";case ARCHIVE->"기록";case QUESTS->"퀘스트";case CODEX->"도감";case CHALLENGES->"도전";case SYSTEM->"설정";};}
-    private static String title(Tab t){return switch(t){case HOME->"빠른 메뉴";case PARTY->"전투 파티 편성";case COOP->"협동 파티";case CHARACTERS->"캐릭터";case EQUIPMENT->"장비";case ARCHIVE->"소환 기록";case QUESTS->"퀘스트";case CODEX->"도감";case CHALLENGES->"도전 콘텐츠";case SYSTEM->"설정";};}
+    private static String label(Tab t){return switch(t){case HOME->"빠른 메뉴";case PARTY->"편성";case COOP->"협동";case CHARACTERS->"캐릭터";case EQUIPMENT->"장비";case ARCHIVE->"기록";case QUESTS->"퀘스트";case CODEX->"도감";case CHALLENGES->"고난도";case SYSTEM->"설정";};}
+    private static String title(Tab t){return switch(t){case HOME->"빠른 메뉴";case PARTY->"전투 파티 편성";case COOP->"협동 파티";case CHARACTERS->"캐릭터";case EQUIPMENT->"장비";case ARCHIVE->"소환 기록";case QUESTS->"퀘스트";case CODEX->"도감";case CHALLENGES->"고난도 콘텐츠";case SYSTEM->"설정";};}
     private static String detailLabel(DetailTab d){return switch(d){case OVERVIEW->"개요";case SKILLS->"스킬";case EQUIPMENT->"장비";case GROWTH->"성장";};}
     private static String levelLabel(ClientMetaState.CharacterRow row){
         if(row==null)return"Lv.0";
