@@ -20,6 +20,20 @@ class ClientBattleStateGuidanceTest {
     }
 
     @Test
+    void battleUnitSnapshotCarriesEffectiveSpeedAndSchedulerParticipation() {
+        ClientBattleState.update(
+                "H|1|0|1|RUNNING|ally_p01|0|1|1|1\n" +
+                "U|ally_p01|P01|ALLY|카이렌|900|900|0|420|0|0|0|0||108|1\n" +
+                "U|toto|P07_SUMMON|ALLY|토토|300|300|0|0|0|0|0|0||100|0\n" +
+                "T|ally_p01\n"
+        );
+
+        assertEquals(108, ClientBattleState.snapshot().units().get(0).speed());
+        assertEquals(true, ClientBattleState.snapshot().units().get(0).scheduled());
+        assertEquals(false, ClientBattleState.snapshot().units().get(1).scheduled());
+    }
+
+    @Test
     void olderSnapshotsWithoutMessageRemainCompatible() {
         ClientBattleState.update("H|1|0|1|RUNNING|ally_p01|0|1|1|1\nC|CV_DRABYEL_ROAD\n");
         assertEquals("", ClientBattleState.snapshot().message());
