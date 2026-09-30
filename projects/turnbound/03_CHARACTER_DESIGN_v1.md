@@ -584,6 +584,28 @@ F01~F04의 현재 저희귀도 정체성과 플레이어블 기본 데이터는 
 
 단순히 기존 kit의 수치만 바꾼 캐릭터나 상위호환을 인원수 확보 목적으로 추가하지 않는다.
 
+### 11.1 Av'Sal expansion roster — P09~P12
+
+상세 정본은 `AVSAL_EXPANSION_v1.md`.
+
+이번 추가 로스터는 **외형을 먼저 외부 asset에서 선택한 뒤** 이름/성격/kit을 최종 고정한다.
+AI가 새 costume/face를 임의 디자인한 뒤 모델을 맞추는 순서는 사용하지 않는다.
+
+- P09: Channel / Delayed Cast — 현재 행동을 미래 자동 해결에 투자
+- P10: Linked Targets — 적 두 명의 single-target pressure를 연결
+- P11: Ordered Reagents — 같은 두 mark도 적용 순서에 따라 다른 reaction
+- P12: Alternating Form — regular action마다 두 Form이 자동 교대
+
+이 네 mechanic은 현재 P01~P08의 Focus / Gauge control / Guard / Sanctuary / Sightline / Records / Partner / Fury를 복제하지 않는다.
+
+외부 visual base 우선 pool:
+- Quaternius RPG Character Pack — CC0
+- Quaternius Ultimate Modular Women Pack — CC0
+- Quaternius Ultimate Modular Men Pack — CC0
+- Kenney Blocky Characters — CC0, 특히 저희귀/NPC/적 variant 후보
+
+최종 이름, 성별/외형, 무기, 희귀도는 실제 asset preview와 animation 적합성을 확인한 뒤 확정한다.
+
 ---
 
 ## 12. Party synergy 예시
