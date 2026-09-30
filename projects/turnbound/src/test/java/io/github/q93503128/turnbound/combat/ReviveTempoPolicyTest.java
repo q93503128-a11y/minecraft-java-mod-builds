@@ -21,7 +21,7 @@ class ReviveTempoPolicyTest {
     void immediateSelfReviveStartsReady() {
         SkillDefinition basic = new SkillDefinition(
                 "basic", "기본", TargetRule.ENEMY_SINGLE, 0,
-                List.of(new SkillEffect(EffectType.DAMAGE, 1.0, 0, 0, "")), List.of(), Map.of());
+                List.of(new SkillEffect(EffectType.DAMAGE, 1.0, 0, 0, "")));
         CombatantDefinition definition = new CombatantDefinition(
                 "TEST_REVIVER", "복귀자", new BattleStats(100, 20, 10, 100),
                 "basic", List.of(basic), 4,
