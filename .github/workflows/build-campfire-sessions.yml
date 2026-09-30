@@ -34,6 +34,12 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee build.log
+      - name: Probe external building structure bounds
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon copyExternalStructureProbe
+          python3 tools/inspect_structure_jars.py build/externalStructureProbe | tee build/external-structure-footprints.txt
       - name: Verify alpha6 packaged assets and contracts
         shell: bash
         run: |
@@ -145,7 +151,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: campfire-sessions-alpha6-logs
-          path: projects/campfire-sessions/build.log
+          path: |
+            projects/campfire-sessions/build.log
+            projects/campfire-sessions/build/external-structure-footprints.txt
           if-no-files-found: warn
       - name: Upload alpha6
         if: success()

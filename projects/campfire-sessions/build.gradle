@@ -18,12 +18,30 @@ repositories {
         }
         filter { includeGroup 'maven.modrinth' }
     }
+    maven {
+        name = 'CurseMaven'
+        url = 'https://www.cursemaven.com'
+        content { includeGroup 'curse.maven' }
+    }
+}
+
+configurations {
+    externalStructureProbe
 }
 
 dependencies {
     // First controlled external runtime trial: Skniro's Furniture 1.5.2 for Minecraft 26.2 / NeoForge.
     // Modrinth project pezpt98N, version jXQfWgcX.
     implementation 'maven.modrinth:pezpt98N:jXQfWgcX'
+
+    // Analysis-only candidates. These are resolved for structure-footprint inspection and are NOT runtime dependencies.
+    externalStructureProbe 'curse.maven:villageria-1646907:8620392'
+    externalStructureProbe 'curse.maven:syvillage-1696659:8946351'
+}
+
+tasks.register('copyExternalStructureProbe', Copy) {
+    from configurations.externalStructureProbe
+    into layout.buildDirectory.dir('externalStructureProbe')
 }
 
 def licensedAssetsOutput = layout.buildDirectory.dir('generated/licensedAssets')
