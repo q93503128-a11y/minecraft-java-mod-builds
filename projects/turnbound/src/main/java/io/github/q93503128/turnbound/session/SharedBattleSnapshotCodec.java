@@ -40,7 +40,8 @@ final class SharedBattleSnapshotCodec {
             String statuses=BattleSnapshotCodec.presentationStates(state,unit).stream().collect(Collectors.joining(","));
             out.append("U|").append(unit.instanceId()).append('|').append(unit.definition().id()).append('|').append(unit.side()).append('|').append(safe(unit.definition().name())).append('|')
                     .append(unit.hp()).append('|').append(unit.maxHp()).append('|').append(unit.barrier()).append('|').append(unit.gauge()).append('|').append(unit.downed()?1:0).append('|')
-                    .append(number(pos.x)).append('|').append(number(pos.y)).append('|').append(number(pos.z)).append('|').append(statuses).append('\n');
+                    .append(number(pos.x)).append('|').append(number(pos.y)).append('|').append(number(pos.z)).append('|').append(statuses).append('|')
+                    .append(unit.speed()).append('|').append(unit.definition().summon()?0:1).append('\n');
             UUID owner=session.ownerOf(unit.instanceId());
             if(owner!=null)out.append("O|").append(unit.instanceId()).append('|').append(owner).append('|').append(owner.equals(playerId)?1:0).append('\n');
         }
