@@ -240,7 +240,7 @@ Signature: **Sanctuary Mark**
 **Active B · 되돌아온 숨**
 - CD5
 - 전투불능 아군 1명 MaxHP 30%로 부활
-- Gauge +150
+- 대상 고유 복귀 Gauge에 +150
 - Sanctuary Mark 부여
 
 **Passive · 미리 남긴 빛**
@@ -383,12 +383,13 @@ Signature: **Records 0~5**
 **Passive · 마지막 페이지**
 - 전투당 1회
 - 모르웬 전투불능 후 다른 unit regular action 2회가 끝나면 MaxHP 35%로 자가 부활
+- 기본 복귀 Gauge 500
 - Records 유지
 
 **Awakening · 다시 쓰는 결말**
 - 자가 부활 시:
   - Record +2
-  - Gauge +350
+  - 복귀 Gauge +350 (기본 500 위에 더해 총 850)
   - 다음 Active는 Record를 소비하지 않고 보너스만 계산
 - 전투당 1회
 
