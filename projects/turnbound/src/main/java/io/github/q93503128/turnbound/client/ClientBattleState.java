@@ -11,17 +11,29 @@ public final class ClientBattleState {
     public record Unit(
             String id, String defId, String side, String name,
             int hp, int maxHp, int barrier, long gauge, boolean downed,
-            double x, double y, double z, List<String> statuses
+            double x, double y, double z, List<String> statuses,
+            int speed, boolean scheduled
     ) {
-        public Unit { statuses = List.copyOf(statuses == null ? List.of() : statuses); }
+        public Unit {
+            statuses = List.copyOf(statuses == null ? List.of() : statuses);
+            speed = Math.max(0, speed);
+        }
         public Unit(String id, String defId, String side, String name,
                     int hp, int maxHp, int barrier, long gauge, boolean downed) {
-            this(id, defId, side, name, hp, maxHp, barrier, gauge, downed, 0.0, 0.0, 0.0, List.of());
+            this(id, defId, side, name, hp, maxHp, barrier, gauge, downed,
+                    0.0, 0.0, 0.0, List.of(), 0, true);
         }
         public Unit(String id, String defId, String side, String name,
                     int hp, int maxHp, int barrier, long gauge, boolean downed,
                     double x, double y, double z) {
-            this(id, defId, side, name, hp, maxHp, barrier, gauge, downed, x, y, z, List.of());
+            this(id, defId, side, name, hp, maxHp, barrier, gauge, downed,
+                    x, y, z, List.of(), 0, true);
+        }
+        public Unit(String id, String defId, String side, String name,
+                    int hp, int maxHp, int barrier, long gauge, boolean downed,
+                    double x, double y, double z, List<String> statuses) {
+            this(id, defId, side, name, hp, maxHp, barrier, gauge, downed,
+                    x, y, z, statuses, 0, true);
         }
         public boolean hasStatus(String id) { return statuses.contains(id); }
     }
@@ -186,11 +198,13 @@ public final class ClientBattleState {
                     }
                     case "U" -> {
                         List<String> statuses = p.length > 13 && !p[13].isBlank() ? Arrays.asList(p[13].split(",")) : List.of();
+                        int unitSpeed = p.length > 14 ? Integer.parseInt(p[14]) : 0;
+                        boolean scheduled = p.length <= 15 || "1".equals(p[15]);
                         units.add(new Unit(p[1], p[2], p[3], p[4], Integer.parseInt(p[5]), Integer.parseInt(p[6]),
                                 Integer.parseInt(p[7]), Long.parseLong(p[8]), "1".equals(p[9]),
                                 p.length > 12 ? Double.parseDouble(p[10]) : 0.0,
                                 p.length > 12 ? Double.parseDouble(p[11]) : 0.0,
-                                p.length > 12 ? Double.parseDouble(p[12]) : 0.0, statuses));
+                                p.length > 12 ? Double.parseDouble(p[12]) : 0.0, statuses, unitSpeed, scheduled));
                     }
                     case "O" -> {
                         if (p.length >= 4 && !p[1].isBlank() && !p[2].isBlank()) {
