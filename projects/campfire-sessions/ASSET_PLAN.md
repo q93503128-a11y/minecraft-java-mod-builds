@@ -273,27 +273,36 @@ Current external structure candidates:
 - current Minecraft 26.2 NeoForge build exists.
 - MIT licensed.
 - provides a dedicated Town Hall, Village Shop and Mini Hospital.
-- buildings intentionally use compact vanilla-village-compatible footprints.
+- CI downloaded the actual 26.2 NeoForge JAR and parsed its packaged structure NBT successfully.
+- exact packaged bounds:
+  - Town Hall: **11×9×11**, ground footprint 11×11.
+  - Village Shop: **11×9×11**, ground footprint 11×11.
+  - Mini Hospital: **11×9×11**, ground footprint 11×11.
+  - spruce variants use the same 11×9×11 bounds.
+- these are substantially smaller than the previous conservative civic-building envelope and strongly support the separate-large-interior approach.
 - strong first extraction/reference candidate for **resident services, general store and clinic exterior envelopes**.
 - do not adopt the rest of Villageria's villager/combat/economy gameplay; only inspect/reuse permitted structure assets or treat the mod as an asset source when technically cleaner.
-- exact structure bounds must be measured from the real 26.2 assets before placement decisions.
 
 **SY Village**
 - current Minecraft 26.2 NeoForge latest release observed during the follow-up pass: `syvillage-1.0.0.jar`.
 - earlier 0.3.0 remains in its file history; do not treat it as latest.
 - MIT licensed.
-- blueprint/structure-oriented system and editable structure-block/NBT workflow.
-- useful technical reference/source for compact village houses and structure-template placement.
-- visual quality must be inspected before any building becomes final; compatibility alone is not a reason to adopt its aesthetic.
+- CI downloaded and inspected the actual 1.0.0 JAR.
+- packaged custom structure NBT found in that JAR:
+  - gatehouse: **25×10×9**, ground footprint 25×9.
+  - tower: **17×10×17**, ground footprint 17×17.
+  - rampart: **2×6×5**, ground footprint 2×5.
+- this means SY Village is **not currently a useful direct house-prefab source** despite its broader blueprint gameplay description; the packaged custom NBT is defensive infrastructure.
+- retain it as a technical blueprint/structure-placement reference, not the primary player/resident housing-art source.
 
 **Towns and Towers**
 - current Minecraft 26.2 release 1.13.11 supports NeoForge/Fabric/Quilt.
-- contains dozens of village structures and several coastal/biome architectural families, including beach/mediterranean-style references.
-- **license metadata is currently conflicting across public distribution pages**: CurseForge presents Creative Commons 4.0 wording while the current Modrinth version metadata identifies CC-BY-NC-SA-4.0.
-- until the upstream LICENSE file is directly verified, treat the **stricter CC-BY-NC-SA-4.0 interpretation as the safe assumption** for any extraction/adaptation.
-- therefore use it as a visual/layout reference for now; do not package extracted structures into Campfire yet.
-- useful reference pool for **café, clothing shop, museum-like civic shell, houses and harbor/coastal structures** when a specific structure visually fits.
-- do not import the entire worldgen system merely to obtain one building.
+- exact current 26.2 CurseForge file: `t_and_t-fabric-neoforge-1.13.11.jar`, file ID 7886369.
+- contains dozens of village structures and several coastal/biome architectural families, including a dedicated beach/fishing-village style.
+- current CurseForge license page explicitly publishes the project under **CC BY 4.0**.
+- attribution and modification notice are required for any extracted/adapted structures.
+- added to the analysis-only CI structure probe so actual packaged NBT footprints can be measured before selecting café, clothing-shop, museum-like civic shells, houses or harbor structures.
+- do not import the entire worldgen system merely to obtain one building if a small credited structure subset can cleanly satisfy the role.
 
 **kogtyv-Towny and Village**
 - current Minecraft 26.2 NeoForge build exists.
@@ -339,12 +348,13 @@ Use a walkable clustered layout rather than spreading facilities across the whol
 Do not lock coordinates until the real map chunks and exact structure bounds are available.
 
 ### Building acquisition status after current research pass
-- **Resident services:** Villageria Town Hall is the first compact permissive candidate to measure.
-- **General store:** Villageria Village Shop is the first compact permissive candidate to measure.
-- **Clinic:** Villageria Mini Hospital is the first compact permissive candidate to measure.
-- **Player/resident houses:** SY Village structure/blueprint pool is a permissive first source; visual inspection still required.
-- **Café / clothing shop / museum shell:** still unresolved. Towns and Towers/CTOV/Structory may be visual references, but their licensing or version constraints make them weaker extraction paths. Continue searching for directly packable permissive builds before settling.
-- **Harbor/pier:** Peterwolf's boat mod includes shore settlements/ports that are useful layout/model reference material, but Campfire still needs its own authored main-harbor structure/anchor plan.
+- **Resident services:** Villageria Town Hall — exact 11×11 footprint verified.
+- **General store:** Villageria Village Shop — exact 11×11 footprint verified.
+- **Clinic:** Villageria Mini Hospital — exact 11×11 footprint verified.
+- **Player/resident houses:** still unresolved. SY Village was directly probed and does not provide the expected custom house NBT pool; continue with Towns and Towers and other legally extractable house sets.
+- **Café / clothing shop / museum shell:** still unresolved; Towns and Towers is now the strongest current structure-pool probe because its 26.2 JAR and CC BY 4.0 distribution terms are both available.
+- **Harbor/pier:** Peterwolf's boat mod is entering direct runtime build validation; Campfire still needs its own authored main-harbor structure/anchor plan.
+- current measured civic shells are small enough that the earlier 160×160 village test envelope is deliberately conservative, not evidence that the 7-island map is cramped.
 - do not declare the building set complete until actual structure bounds and screenshots/models are inspected together for one coherent village language.
 
 ## 6. Interior assets
@@ -656,7 +666,9 @@ Finalize the number/names of tool tiers after the actual coherent external art s
 This is now the strongest current 26.2 boat candidate.
 
 Verified:
-- Minecraft 26.2 NeoForge release.
+- Minecraft 26.2 NeoForge release **1.0.19**, CurseForge file ID **8752063**.
+- no required external dependency is listed for the 26.2 NeoForge file.
+- added as the second controlled Campfire runtime/build trial after Skniro's Furniture.
 - client + server.
 - MPL-2.0.
 - custom 3D wooden watercraft.

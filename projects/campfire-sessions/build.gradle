@@ -34,9 +34,13 @@ dependencies {
     // Modrinth project pezpt98N, version jXQfWgcX.
     implementation 'maven.modrinth:pezpt98N:jXQfWgcX'
 
+    // Second controlled runtime trial: Peterwolf's Boats & Ships 1.0.19 for Minecraft 26.2 / NeoForge.
+    implementation 'curse.maven:peterwolfs-boats-ships-1649679:8752063'
+
     // Analysis-only candidates. These are resolved for structure-footprint inspection and are NOT runtime dependencies.
     externalStructureProbe 'curse.maven:villageria-1646907:8620392'
     externalStructureProbe 'curse.maven:syvillage-1696659:8946351'
+    externalStructureProbe 'curse.maven:towns-and-towers-626761:7886369'
 }
 
 tasks.register('copyExternalStructureProbe', Copy) {
