@@ -59,6 +59,35 @@ SPD는 action economy이므로 ATK +10%와 동일한 값으로 평가하지 않�
 - 높은 random roll 없음
 - 한 캐릭터가 장비만으로 역할을 바꿀 정도의 SPD 폭증 금지
 
+### 3.1 SPD / Gauge runtime audit — 2026-09-30
+
+현재 runtime 원칙을 다시 점검한 결과:
+
+- SPD와 Gauge는 같은 값이 아니다.
+  - Gauge = 현재까지 쌓인 행동 진행도
+  - SPD = 이후 Gauge가 차는 속도
+- 다음 행동자는 `(1000 - currentGauge) / effectiveSPD`의 단순 UI 근사값으로 추측하지 않고, fixed-point `TurnScheduler`가 직접 결정한다.
+- runtime actor 선택 / HUD 미래 순서 / AUTO는 같은 scheduler를 사용한다.
+- SPD buff/debuff는 이미 쌓인 Gauge를 다시 계산하지 않고 **앞으로 차는 속도만** 바꾼다.
+- 행동 시 Gauge 1000만 차감하며 1000을 넘긴 overflow는 보존한다.
+- 따라서 더 낮은 Gauge라도 SPD가 충분히 높으면 더 높은 Gauge의 느린 unit보다 먼저 행동할 수 있다.
+- 플레이어 선택 중에는 논리 Gauge 시간이 진행하지 않는다.
+- summon처럼 regular scheduler actor가 아닌 unit은 Gauge 순서에 참여하지 않는다.
+- down 상태는 scheduler에서 제외되고 revive 시 캐릭터별 복귀 Gauge 정책을 적용한다.
+
+수치 검토:
+- 핵심 P01~P08은 SPD 84~114로 기존 intended band 안에 있다.
+- F04의 SPD 78은 저희귀 방패 용병의 명시적 초저속 예외로 유지한다.
+- E007 118, E012 122, EL02 128 같은 적의 117+ SPD는 플레이어 baseline을 깨는 오류로 일괄 하향하지 않는다. 빠른 디버퍼/게이지 추격/elite pressure처럼 적 mechanic이 실제로 tempo를 필요로 하는 경우의 예외다.
+- 장비의 flat SPD는 최종 base SPD에 합산된 뒤 전투 중 percent SPD modifier가 적용된다. 현재 modifier 합은 ±50% cap, effective SPD 최소 30이다.
+
+이번 감사에서 정상 장비의 Gauge trait 문자열이 전투 정의에는 전달되지만 runtime 소비가 빠져 있던 공백을 수정했다.
+- `START_GAUGE_N`: 전투 시작 1회, 여러 부위가 있으면 합산
+- `DIRECT_HIT_GAUGE_N`: 적의 direct action에 실제로 맞고 생존했을 때 해당 action당 1회
+- `ALLY_GAUGE_GRANT_PLUS_N`: 다른 아군에게 주는 양의 Gauge grant에 flat 추가
+
+Signature 장비의 과거 v0.4 전용 rule 문자열은 현재 v1 Signature 상세 정본이 확정되지 않은 항목까지 임의 해석해서 활성화하지 않는다. 현재 문서로 의미가 확정된 일반 장비 tempo trait만 이번 감사 범위에서 runtime에 연결한다.
+
 ## 4. Gauge 조작 budget
 
 초기 범위:
