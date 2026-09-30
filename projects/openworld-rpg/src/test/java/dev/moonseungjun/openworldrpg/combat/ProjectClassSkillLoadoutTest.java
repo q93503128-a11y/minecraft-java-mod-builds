@@ -108,7 +108,13 @@ class ProjectClassSkillLoadoutTest {
                         .orElseThrow()
         );
         assertEquals(
-                4,
+                ProjectSpellSpec.HUNTER_SKYFALL_ID,
+                ProjectClassSkillLoadout
+                        .spellId(RootClass.HUNTER, 4)
+                        .orElseThrow()
+        );
+        assertEquals(
+                5,
                 ProjectClassSkillLoadout
                         .implementedSlots(RootClass.HUNTER)
                         .size()

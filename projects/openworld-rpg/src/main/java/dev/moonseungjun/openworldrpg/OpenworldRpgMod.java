@@ -54,6 +54,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.ConsecratedGroundRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterFanOfArrowsRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterPinningShotRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterPowerShotRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkyfallRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterQuickstepVolleyRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBasicAttackCadenceRuntime;
@@ -120,6 +121,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             HunterPinningShotRuntime.tick(server);
             HunterFanOfArrowsRuntime.tick(server);
             HunterPowerShotRuntime.tick(server);
+            HunterSkyfallRuntime.tick(server);
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             PlayerActiveWorldTimeService.tickLoadedPlayers(server);
@@ -187,6 +189,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             HunterPinningShotRuntime.reset(newPlayer.getUUID());
             HunterFanOfArrowsRuntime.reset(newPlayer.getUUID());
             HunterPowerShotRuntime.reset(newPlayer.getUUID());
+            HunterSkyfallRuntime.reset(newPlayer.getUUID());
             HunterSkillRuntime.reset(newPlayer.getUUID());
             ProjectPlayerActionRuntime.reset(newPlayer);
             ProjectDodgeRuntime.reset(newPlayer);
@@ -206,6 +209,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             HunterPinningShotRuntime.disconnect(playerId);
             HunterFanOfArrowsRuntime.disconnect(playerId);
             HunterPowerShotRuntime.disconnect(playerId);
+            HunterSkyfallRuntime.disconnect(playerId);
             HunterSkillRuntime.disconnect(playerId);
             ProjectPlayerActionRuntime.disconnect(playerId);
             ProjectDodgeRuntime.disconnect(playerId);

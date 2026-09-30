@@ -11,6 +11,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.HunterQuickstepVolleyRuntime
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterFanOfArrowsRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterPinningShotRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterPowerShotRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkyfallRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.RadiantLanceRuntime;
@@ -139,6 +140,7 @@ public final class SpellEngineAuthorityAdapter {
             Object costConsumeEvent = spellEvents.getField("COST_CONSUME").get(null);
             Object spellCastEvent = spellEvents.getField("SPELL_CAST").get(null);
             Object projectileShootEvent = spellEvents.getField("PROJECTILE_SHOOT").get(null);
+            Object projectileFallEvent = spellEvents.getField("PROJECTILE_FALL").get(null);
 
             registerListener(
                     preAttemptEvent,
@@ -165,12 +167,17 @@ public final class SpellEngineAuthorityAdapter {
                     projectileLaunchListener,
                     SpellEngineAuthorityAdapter::handleProjectileLaunch
             );
+            registerListener(
+                    projectileFallEvent,
+                    projectileLaunchListener,
+                    SpellEngineAuthorityAdapter::handleProjectileFall
+            );
             registerCustomImpact(spellHandlers, customImpact, impactResultConstructor);
 
             initialized = true;
             logger.info(
                     "Openworld RPG Spell Engine authority gate armed for profile {} using CASTING_ATTEMPT.PRE/POST, "
-                            + "cast-process continuation identity, COST_CONSUME, SPELL_CAST, PROJECTILE_SHOOT and custom impact {}.",
+                            + "cast-process continuation identity, COST_CONSUME, SPELL_CAST, PROJECTILE_SHOOT, PROJECTILE_FALL and custom impact {}.",
                     profile.id(),
                     PROJECT_IMPACT_HANDLER
             );
@@ -241,6 +248,16 @@ public final class SpellEngineAuthorityAdapter {
                 hunterPowerShot.id(),
                 new ProjectSpellTransactionPolicy(
                         hunterPowerShot,
+                        COMBAT_STATES,
+                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                )
+        );
+        ProjectSpellSpec hunterSkyfall =
+                ProjectSpellSpec.hunterSkyfall();
+        AUTHORITY.registerPolicy(
+                hunterSkyfall.id(),
+                new ProjectSpellTransactionPolicy(
+                        hunterSkyfall,
                         COMBAT_STATES,
                         ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
                 )
@@ -405,6 +422,13 @@ public final class SpellEngineAuthorityAdapter {
                 && !HunterPowerShotRuntime.canActivate(serverPlayer)) {
             return invokeStatic(attemptNone);
         }
+        if (ProjectSpellSpec.HUNTER_SKYFALL_ID.equals(spellId)
+                && player instanceof ServerPlayer serverPlayer
+                && !engineContinuation
+                && (!acceptedStage || firstAcceptedCast)
+                && !HunterSkyfallRuntime.canActivate(serverPlayer)) {
+            return invokeStatic(attemptNone);
+        }
         if (ProjectSpellSpec.requiredRootClass(spellId)
                 .filter(RootClass.WARRIOR::equals)
                 .isPresent()
@@ -454,6 +478,10 @@ public final class SpellEngineAuthorityAdapter {
                 }
             } else if (ProjectSpellSpec.HUNTER_POWER_SHOT_ID.equals(spellId)) {
                 if (!HunterPowerShotRuntime.onAcceptedCast(serverPlayer).accepted()) {
+                    return invokeStatic(attemptNone);
+                }
+            } else if (ProjectSpellSpec.HUNTER_SKYFALL_ID.equals(spellId)) {
+                if (!HunterSkyfallRuntime.onAcceptedCast(serverPlayer)) {
                     return invokeStatic(attemptNone);
                 }
             } else if (ProjectSpellSpec.requiredRootClass(spellId)
@@ -598,6 +626,76 @@ public final class SpellEngineAuthorityAdapter {
         launchProperties.getClass()
                 .getField("extra_launch_count")
                 .setInt(launchProperties, projectileCount - 1);
+        return null;
+    }
+
+    private static Object handleProjectileFall(
+            Object proxy,
+            Method method,
+            Object[] args
+    ) throws ReflectiveOperationException {
+        if (isObjectMethod(method)) {
+            return objectMethod(proxy, method, args);
+        }
+        if (!"onProjectileLaunch".equals(method.getName())) {
+            throw new IllegalStateException(
+                    "Unexpected Spell Engine falling-projectile listener method: " + method
+            );
+        }
+
+        Object eventArgs = onlyArgument(method, args);
+        LivingEntity caster = requireLiving(
+                invokeAccessor(eventArgs, "caster")
+        );
+        if (!(caster instanceof ServerPlayer serverPlayer)
+                || caster.level().isClientSide()) {
+            return null;
+        }
+
+        Object spellEntry = invokeAccessor(eventArgs, "spellEntry");
+        String spellId = spellId(spellEntry);
+        if (!ProjectSpellSpec.HUNTER_SKYFALL_ID.equals(spellId)) {
+            return null;
+        }
+
+        Object sequenceValue = invokeAccessor(eventArgs, "sequenceIndex");
+        if (!(sequenceValue instanceof Number sequence)) {
+            throw new IllegalStateException(
+                    "Spell Engine falling-projectile sequence index is not numeric: "
+                            + sequenceValue
+            );
+        }
+        Object projectileValue = invokeAccessor(eventArgs, "projectile");
+        if (!(projectileValue instanceof Entity projectile)) {
+            throw new IllegalStateException(
+                    "Spell Engine falling-projectile event did not expose an Entity."
+            );
+        }
+
+        var placement = HunterSkyfallRuntime.onMeteorLaunch(
+                serverPlayer,
+                projectile.position(),
+                sequence.intValue()
+        );
+        if (!placement.accepted()) {
+            if (sequence.intValue() == 0) {
+                Object launchProperties = invokeAccessor(
+                        eventArgs,
+                        "mutableLaunchProperties"
+                );
+                launchProperties.getClass()
+                        .getField("extra_launch_count")
+                        .setInt(launchProperties, 0);
+            }
+            projectile.discard();
+            return null;
+        }
+
+        projectile.setPos(
+                placement.launchPosition().x,
+                placement.launchPosition().y,
+                placement.launchPosition().z
+        );
         return null;
     }
 
@@ -751,6 +849,10 @@ public final class SpellEngineAuthorityAdapter {
         String spellId = spellId(spellEntry);
         if (!AUTHORITY.owns(spellId) || !isClassAuthorizedForSpell(player, spellId)) {
             return impactResultConstructor.newInstance(false, false);
+        }
+
+        if (ProjectSpellSpec.HUNTER_SKYFALL_ID.equals(spellId)) {
+            return impactResultConstructor.newInstance(true, false);
         }
 
         if (ProjectSpellSpec.HUNTER_QUICKSTEP_VOLLEY_ID.equals(spellId)) {

@@ -36,5 +36,7 @@
   "spell.openworld_rpg.hunter_fan_of_arrows.name": "Fan of Arrows",
   "spell.openworld_rpg.hunter_fan_of_arrows.description": "Loose five arrows in a readable cone. Full Focus fires seven in a wider fan while keeping the same target hit cap.",
   "spell.openworld_rpg.hunter_power_shot.name": "Power Shot",
-  "spell.openworld_rpg.hunter_power_shot.description": "Commit to a heavy draw, then loose a high-speed arrow. Authored weak points amplify the hit; full Focus strengthens both the shot and its weak-point multiplier."
+  "spell.openworld_rpg.hunter_power_shot.description": "Commit to a heavy draw, then loose a high-speed arrow. Authored weak points amplify the hit; full Focus strengthens both the shot and its weak-point multiplier.",
+  "spell.openworld_rpg.hunter_skyfall.name": "Skyfall",
+  "spell.openworld_rpg.hunter_skyfall.description": "Mark the ground for a sustained arrow storm. Enemies remaining in the exposed field are slowed and take repeated physical and poise pressure."
 }

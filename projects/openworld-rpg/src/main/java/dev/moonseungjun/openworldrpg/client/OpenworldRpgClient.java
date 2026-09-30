@@ -17,7 +17,7 @@ public final class OpenworldRpgClient implements ClientModInitializer {
     private static final KeyMapping DODGE_KEY =
             key(
                     "key.openworld_rpg.dodge",
-                    GLFW.GLFW_KEY_LEFT_ALT
+                    GLFW.GLFW_KEY_Q
             );
 
     private static final List<KeyMapping> SKILL_KEYS =
@@ -36,6 +36,20 @@ public final class OpenworldRpgClient implements ClientModInitializer {
         }
         KeyMappingHelper.registerKeyMapping(DODGE_KEY);
         ProjectDodgeClientBridge.initialize();
+
+        ClientTickEvents.START_CLIENT_TICK.register(client -> {
+            if (client.player == null || client.gui.screen() != null) {
+                return;
+            }
+            suppressVanillaQuickActionConflict(
+                    client.options.keyDrop,
+                    DODGE_KEY
+            );
+            suppressVanillaQuickActionConflict(
+                    client.options.keySwapOffhand,
+                    SKILL_KEYS.get(0)
+            );
+        });
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null || client.gui.screen() != null) {
@@ -57,6 +71,18 @@ public final class OpenworldRpgClient implements ClientModInitializer {
                 );
             }
         });
+    }
+
+    private static void suppressVanillaQuickActionConflict(
+            KeyMapping vanilla,
+            KeyMapping project
+    ) {
+        if (!vanilla.same(project)) {
+            return;
+        }
+        while (vanilla.consumeClick()) {
+            // Project combat action owns this physical key for this tick.
+        }
     }
 
     private static KeyMapping key(

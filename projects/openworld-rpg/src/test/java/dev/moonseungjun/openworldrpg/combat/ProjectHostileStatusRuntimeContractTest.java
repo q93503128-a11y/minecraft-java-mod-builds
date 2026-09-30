@@ -33,6 +33,26 @@ class ProjectHostileStatusRuntimeContractTest {
     }
 
     @Test
+    void skyfallSlowUsesLockedNormalAndConservativeBossLikeBands() {
+        assertEquals(
+                0.75,
+                ProjectHostileStatusRuntime
+                        .SKYFALL_STANDARD_MOVEMENT_MULTIPLIER,
+                0.0001
+        );
+        assertEquals(
+                0.90,
+                ProjectHostileStatusRuntime
+                        .SKYFALL_BOSS_LIKE_MOVEMENT_MULTIPLIER,
+                0.0001
+        );
+        assertEquals(
+                2L,
+                ProjectHostileStatusRuntime.SKYFALL_REFRESH_TICKS
+        );
+    }
+
+    @Test
     void snaredNumbersMatchHunterCanon() {
         assertEquals(
                 0.65,

@@ -32,16 +32,27 @@ public final class ProjectHostileStatusRuntime {
     public static final long SNARED_EMPOWERED_NON_BOSS_BONUS_TICKS = 30L;
     public static final long SNARED_EMPOWERED_BOSS_BONUS_TICKS = 10L;
 
+    public static final double SKYFALL_STANDARD_MOVEMENT_MULTIPLIER = 0.75;
+    public static final double SKYFALL_BOSS_LIKE_MOVEMENT_MULTIPLIER = 0.90;
+    public static final long SKYFALL_REFRESH_TICKS = 2L;
+
     private static final Identifier SNARED_MOVEMENT_MODIFIER_ID =
             Identifier.fromNamespaceAndPath(
                     OpenworldRpgMod.MOD_ID,
                     "hostile_snared"
+            );
+    private static final Identifier SKYFALL_MOVEMENT_MODIFIER_ID =
+            Identifier.fromNamespaceAndPath(
+                    OpenworldRpgMod.MOD_ID,
+                    "hostile_skyfall_slow"
             );
 
     private static final ConcurrentHashMap<UUID, RebukedRuntimeState>
             REBUKED = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<UUID, SnaredEntry>
             SNARED = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<UUID, SkyfallSlowEntry>
+            SKYFALL_SLOW = new ConcurrentHashMap<>();
 
     private ProjectHostileStatusRuntime() {
     }
@@ -157,6 +168,7 @@ public final class ProjectHostileStatusRuntime {
                 duration,
                 nowTick
         );
+        removeSkyfallModifier(target);
         synchronizeSnaredModifier(
                 target,
                 applied.movementMultiplier()
@@ -167,6 +179,55 @@ public final class ProjectHostileStatusRuntime {
                         applied.movementMultiplier(),
                         duration,
                         applied.expiresAtTick(),
+                        profile.combatRank()
+                )
+        );
+    }
+
+    public static Optional<SkyfallSlowApplication> applySkyfallSlow(
+            LivingEntity target,
+            long nowTick
+    ) {
+        if (target.level().isClientSide()
+                || ExternalActorBindingRuntime.combatProfile(target).isEmpty()
+                || target.getAttribute(Attributes.MOVEMENT_SPEED) == null
+                || !(target.level() instanceof ServerLevel level)) {
+            return Optional.empty();
+        }
+
+        var profile = ExternalActorBindingRuntime
+                .combatProfile(target)
+                .orElseThrow();
+        double multiplier = profile.combatRank()
+                == ExternalActorCombatProfile.CombatRank.NORMAL_ELITE
+                ? SKYFALL_STANDARD_MOVEMENT_MULTIPLIER
+                : SKYFALL_BOSS_LIKE_MOVEMENT_MULTIPLIER;
+
+        long expiresAtTick = Math.addExact(
+                nowTick,
+                SKYFALL_REFRESH_TICKS
+        );
+        SKYFALL_SLOW.put(
+                target.getUUID(),
+                new SkyfallSlowEntry(
+                        level,
+                        multiplier,
+                        expiresAtTick
+                )
+        );
+
+        boolean strongerSnareActive =
+                snaredSnapshot(target, nowTick).isPresent();
+        if (strongerSnareActive) {
+            removeSkyfallModifier(target);
+        } else {
+            synchronizeSkyfallModifier(target, multiplier);
+        }
+        return Optional.of(
+                new SkyfallSlowApplication(
+                        multiplier,
+                        expiresAtTick,
+                        strongerSnareActive,
                         profile.combatRank()
                 )
         );
@@ -234,9 +295,32 @@ public final class ProjectHostileStatusRuntime {
                 removeSnaredModifier(living);
                 return true;
             }
+            removeSkyfallModifier(living);
             synchronizeSnaredModifier(
                     living,
                     snapshot.movementMultiplier()
+            );
+            return false;
+        });
+
+        SKYFALL_SLOW.entrySet().removeIf(entry -> {
+            SkyfallSlowEntry slow = entry.getValue();
+            var entity = slow.level().getEntity(entry.getKey());
+            if (!(entity instanceof LivingEntity living)) {
+                return true;
+            }
+            long nowTick = slow.level().getGameTime();
+            if (nowTick >= slow.expiresAtTick()) {
+                removeSkyfallModifier(living);
+                return true;
+            }
+            if (snaredSnapshot(living, nowTick).isPresent()) {
+                removeSkyfallModifier(living);
+                return false;
+            }
+            synchronizeSkyfallModifier(
+                    living,
+                    slow.movementMultiplier()
             );
             return false;
         });
@@ -245,10 +329,15 @@ public final class ProjectHostileStatusRuntime {
     public static void clear(UUID entityId) {
         REBUKED.remove(entityId);
         SnaredEntry entry = SNARED.remove(entityId);
-        if (entry != null) {
-            var entity = entry.level().getEntity(entityId);
+        SkyfallSlowEntry skyfall = SKYFALL_SLOW.remove(entityId);
+        ServerLevel level = entry != null
+                ? entry.level()
+                : skyfall != null ? skyfall.level() : null;
+        if (level != null) {
+            var entity = level.getEntity(entityId);
             if (entity instanceof LivingEntity living) {
                 removeSnaredModifier(living);
+                removeSkyfallModifier(living);
             }
         }
     }
@@ -290,6 +379,35 @@ public final class ProjectHostileStatusRuntime {
         }
     }
 
+    private static void synchronizeSkyfallModifier(
+            LivingEntity target,
+            double multiplier
+    ) {
+        var movement = target.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (movement == null) {
+            throw new IllegalStateException(
+                    "Skyfall target lost MOVEMENT_SPEED attribute."
+            );
+        }
+        movement.removeModifier(SKYFALL_MOVEMENT_MODIFIER_ID);
+        movement.addOrUpdateTransientModifier(
+                new AttributeModifier(
+                        SKYFALL_MOVEMENT_MODIFIER_ID,
+                        multiplier - 1.0,
+                        AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
+                )
+        );
+    }
+
+    private static void removeSkyfallModifier(
+            LivingEntity target
+    ) {
+        var movement = target.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (movement != null) {
+            movement.removeModifier(SKYFALL_MOVEMENT_MODIFIER_ID);
+        }
+    }
+
     public record Application(
             double multiplier,
             long durationTicks,
@@ -306,9 +424,24 @@ public final class ProjectHostileStatusRuntime {
     ) {
     }
 
+    public record SkyfallSlowApplication(
+            double movementMultiplier,
+            long expiresAtTick,
+            boolean suppressedByStrongerSnare,
+            ExternalActorCombatProfile.CombatRank combatRank
+    ) {
+    }
+
     private record SnaredEntry(
             ServerLevel level,
             SnaredRuntimeState state
+    ) {
+    }
+
+    private record SkyfallSlowEntry(
+            ServerLevel level,
+            double movementMultiplier,
+            long expiresAtTick
     ) {
     }
 }
