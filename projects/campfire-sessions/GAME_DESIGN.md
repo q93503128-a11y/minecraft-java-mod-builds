@@ -428,19 +428,54 @@ Do not reject a map merely because the museum/café/home interior content is lar
 
 The interior-space system must work in multiplayer and keep entry/exit anchors deterministic.
 
-### Map acceptance follows real exterior-layout testing
-Do not finalize or reject the current 7-island candidate from rough intuition alone.
+### Main-village terrain and first placement plan
+The 7-island base world is accepted.
+The main village should **not** be flattened into one featureless city slab.
 
-Required sequence:
-1. select/acquire the essential external building exteriors.
-2. read/measure their real structure bounds.
-3. create a first main-village placement plan including roads, plaza, house parcels, public greenery and harbor approach.
-4. test the plan against the central/main island's actual flat usable area.
-5. if the layout fits with healthy breathing room, the map may advance toward canonical selection.
-6. if the village is visibly cramped even after sensible compact placement, search for a larger redistributable multi-island map.
+Use the verified flatter west-side part of the main landmass as the starting zone:
+- strict-flat probe cluster roughly spans X **-336 to -257**, Z **-96 to 31**.
+- treat these numbers as the current layout working area, not player-facing coordinates.
 
-The target is **compact and walkable, not packed tightly**.
-Do not waste land by treating large managed interiors as equally large exterior shells.
+Terrain direction:
+- preserve the natural coastline and broader hill silhouette.
+- create 2–3 gentle village terraces rather than one flat plane.
+- keep most adjacent elevation changes in the village small enough to read as landscaping rather than cliffs.
+- connect terraces with broad steps, short ramps/paths and planted retaining edges.
+- use larger terrain height outside the village for visual backdrop and exploration.
+- never flatten the whole main island merely to simplify prefab placement.
+
+Relative village levels:
+1. **Waterfront level** — harbor/pier, arrival, shoreline props.
+2. **Civic/commercial level** — plaza, resident services, general store, café, clothing shop, clinic.
+3. **Upper/residential level** — most homes, museum garden/forecourt and selected public green space.
+
+Exact Y values are derived from the real terrain during template authoring.
+Do not force predetermined Y numbers that require excessive fill/cut.
+
+### First X/Z anchor draft
+These anchors are layout targets for the edited world template and may shift by several blocks during visual placement.
+They are not final save-contract coordinates yet.
+
+- harbor arrival / pier head: around **(-336, -48)**, extending west toward water.
+- central plaza: around **(-300, -30)**.
+- resident services: around **(-306, -15)**, facing the plaza.
+- general store: around **(-284, -42)**.
+- café: around **(-280, -24)**.
+- clothing shop: around **(-280, -7)**.
+- clinic: around **(-318, -8)**.
+- museum: around **(-262, -24)** on a slightly higher/landscaped edge with more forecourt space.
+- community garden/public green: around **(-322, 12)**.
+- housing cluster A: southwest/south of the plaza.
+- housing cluster B: southeast of the plaza.
+- housing cluster C: north/northeast of the plaza.
+
+House clusters should each contain only a few homes so the village feels grown rather than plotted as one rectangular suburb.
+
+### Arrival spawn
+The original downloaded world spawn at approximately **(334, 71, -86)** is not used as the normal Campfire first-arrival point because it lies on a secondary island.
+
+Campfire first arrival uses the authored **main-island harbor** instead.
+The original spawn island remains part of the world and may later receive its own travel/exploration role.
 
 ### Building entry/exit transition
 Entering managed interiors may use a short door/transition presentation so exterior→interior coordinate changes do not feel like an abrupt teleport.
@@ -3237,19 +3272,18 @@ Keep one coherent external design language rather than mixing unrelated asset st
 ## 49. Open decisions / unresolved work
 
 These are intentionally not yet canonical:
-- final island map.
-- exact island role assignment.
-- exact house count after world inspection.
+- exact secondary-island role assignment.
+- exact house count after the first real village-layout pass.
 - exact resident asset pack and final species roster.
-- exact building prefab set and anchors.
-- exact furniture pack combination.
+- final building-prefab visual acceptance and exact production anchors/Y values.
+- exact furniture pack combination after client visual/performance testing.
 - exact tool art set and tier names/count.
 - exact house loan prices.
 - exact shop economy numbers.
 - exact contest reward tables.
 - exact public-project list.
 - exact combat enemies/boss count.
-- exact camera/player-model/inventory dependencies.
+- final camera/player-model/inventory dependency choices after runtime/client testing.
 - exact resident name/identity/birthday assignments after the resident asset roster is selected.
 - concrete save serialization/class layout.
 - exact numeric thresholds/content inside each required festival progression pillar.

@@ -271,8 +271,9 @@ Current external structure candidates:
 - current Minecraft 26.2 release 1.13.11 supports NeoForge/Fabric/Quilt.
 - exact current 26.2 CurseForge file: `t_and_t-fabric-neoforge-1.13.11.jar`, file ID 7886369.
 - contains dozens of village structures and several coastal/biome architectural families, including a dedicated beach/fishing-village style.
-- current CurseForge license page explicitly publishes the project under **CC BY 4.0**.
-- attribution and modification notice are required for any extracted/adapted structures.
+- public license metadata is inconsistent across distributors: CurseForge shows generic Creative Commons wording while Modrinth explicitly identifies **CC-BY-NC-SA-4.0**.
+- use the **stricter CC-BY-NC-SA-4.0 interpretation** for any extracted/adapted structure assets unless the packaged upstream LICENSE proves otherwise.
+- Campfire's current private/noncommercial distribution can comply, but attribution, modification notice and share-alike handling for adapted structure files are required.
 - added to the analysis-only CI structure probe so actual packaged NBT footprints can be measured before selecting café, clothing-shop, museum-like civic shells, houses or harbor structures.
 - do not import the entire worldgen system merely to obtain one building if a small credited structure subset can cleanly satisfy the role.
 
@@ -344,6 +345,89 @@ Use a walkable clustered layout rather than spreading facilities across the whol
 - community garden/public green sits between civic and residential activity if the actual terrain supports it.
 
 Do not lock coordinates until the real map chunks and exact structure bounds are available.
+
+### First exterior-role shortlist
+
+This is the first concrete visual/footprint shortlist for the accepted main-village layout.
+
+**Resident services**
+- source: Villageria `town_hall.nbt`.
+- footprint: 11×11.
+- status: strongest current direct candidate.
+- reason: dedicated civic silhouette, compact footprint, MIT.
+
+**General store**
+- source: Villageria `shop.nbt`.
+- footprint: 11×11.
+- status: strongest current direct candidate.
+- keep the physical merchandise-display interior concept separate from the exterior shell.
+
+**Clinic**
+- source: Villageria `hospital.nbt`.
+- footprint: 11×11.
+- status: strongest current direct candidate.
+
+**Café**
+- primary shell candidate: Towns and Towers `med_library_1.nbt`.
+- footprint: 10×10.
+- alternative smaller shell: `med_butcher_1.nbt` or `med_cartographer_1.nbt`, each 10×5.
+- preference: use the 10×10 shell if visual inspection supports a warm two-story/cozy café presence.
+
+**Clothing shop**
+- primary shell candidate: Towns and Towers `med_leatherworker_1.nbt`.
+- footprint: 10×10.
+- reason: size and existing craft/cloth-like building identity fit a clothing store conversion.
+
+**Museum**
+- primary shell candidate: Towns and Towers `iberian_temple_1.nbt`.
+- footprint: 15×11, height 16.
+- reason: stronger vertical civic silhouette without consuming the huge 25×23 town-center footprint.
+- alternative grand shell/reference: `med_meeting_point_1.nbt` at 25×23 if the museum needs a much larger exterior after visual testing.
+- the museum interior still remains a much larger managed interior space.
+
+**Harbor**
+- `beach_outdoor_shack_1.nbt` — 7×9 for harbor service/storage kiosk.
+- `beach_main_house_1.nbt` — 9×14 for a larger harbor/visitor building if needed.
+- pair with Peterwolf boat entities after real client/physics validation.
+- avoid using the 25×29 beach meeting point as the default harbor because it would dominate the shoreline unnecessarily.
+
+**Player-house exterior progression — first candidate ladder**
+1. Mediterranean small house: ~5×5.
+2. Mediterranean medium/large house: ~5×10 or 10×10.
+3. Iberian medium house: roughly 11×9 to 14×12.
+4. Iberian large house: 16×14 or 17×15.
+
+This gives four visually meaningful exterior stages without inventing arbitrary debt tiers.
+Before final adoption, harmonize block palette/roof/trim where needed so the stage change reads as a larger version of one island architecture language rather than teleporting between unrelated villages.
+
+**Resident houses**
+- primarily use Mediterranean 5×5 / 5×10 / 10×10 shells with authored exterior decoration, color/palette and yard differences.
+- resident identity should come from house dressing, vegetation, signage, props and interior theme rather than requiring every resident to have a completely unique building geometry.
+
+### First main-village X/Z layout draft
+
+Working area: verified strict-flat west-side cluster around X -336…-257 / Z -96…31, plus small targeted grading around its edge.
+
+Suggested first-pass placement:
+- harbor/pier: west edge around (-336, -48).
+- plaza center: around (-300, -30).
+- resident services 11×11: around (-306, -15).
+- general store 11×11: around (-284, -42).
+- café 10×10: around (-280, -24).
+- clothing shop 10×10: around (-280, -7).
+- clinic 11×11: around (-318, -8).
+- museum 15×11: around (-262, -24), with a larger planted forecourt/terrace.
+- community garden/public green: around (-322, 12).
+- housing: three small clusters around the south, southeast and north/northeast edges of the civic core.
+
+Do not lock Y or exact rotation until each structure is physically previewed against the edited terrain.
+Aim for a 2–3-level landscaped village rather than one flat plate.
+
+Visual reference result:
+- Towns and Towers' current gallery describes its beach set as a **small fishing community on the beach** and a warmer-biome village as **picturesque**, which matches the desired coastal/cozy direction.
+- use Mediterranean as the main village language.
+- use Beach details mostly at the harbor/coast.
+- use selected Iberian shells mainly for larger/upgraded housing or the museum, with palette harmonization where required.
 
 ### Building acquisition status after current research pass
 - **Resident services:** Villageria Town Hall — exact 11×11 footprint verified.
