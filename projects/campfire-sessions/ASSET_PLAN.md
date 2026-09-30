@@ -663,6 +663,38 @@ Need an external cute-animal visual base with:
 
 Current external resident/model source pool:
 
+**Plumberry Plains Vol. 1 + Vol. 2 — strongest current resident-set candidate**
+- Source: ChibiPup on itch.io.
+- Vol. 1: https://chibipup.itch.io/plumberry-plains-free-3d-cozy-game-animal-characters
+- Vol. 2: https://chibipup.itch.io/plumberry-plains-vol-2-even-more-free-animal-friends-for-your-village
+- the two packs together provide **20 authored cute animal characters**, which matches Campfire's provisional initial roster scale unusually well.
+- all characters use the same **GTB cozy critter skeleton** with the same documented bone hierarchy, so one resident animation/controller pipeline can serve the whole set.
+- each character includes **26 everyday animation clips**: walk, run, sit, sit-talk, interact, idle, talk, dance, pickup, jump, no, yes, pain, fall-over, wave, cheer, crying, celebrate, axe-chop, hammer, fish-cast, fish-reel, stick-swing, paint, uppercut and shadow-box.
+- built-in prop sockets exist for both hands, head, back and chest. This directly supports tools, food, lanterns, hats, bags/capes and badges without inventing a separate attachment convention.
+- the published characters are roughly 0.95 m tall; representative Vol. 1 models are about 13k–14k triangles.
+- formats include GLB/glTF, FBX and OBJ, with baked flat-color textures and in-place clips.
+- the visual target is explicitly cozy/chibi animal-villager style rather than natural quadrupeds.
+- Vol. 2's public license summary explicitly allows unlimited personal/commercial projects, modification/adaptation and shipping the assets **embedded in builds**, while forbidding resale/repackaging of the raw asset files.
+- **license gate before packaging:** download both packs and preserve/inspect each included `TERMS.md`. Do not put the original FBX/GLB/OBJ source bundles into the Campfire JAR or Modrinth pack. Only ship the converted/integrated runtime assets if the full terms confirm that Campfire's embedded converted representation is permitted.
+- itch.io currently marks the character packs as AI-assisted graphics; record that provenance but judge adoption on final visual/runtime quality and license compatibility.
+- current missing area: no matching modular clothing/rainwear/winterwear set has been verified yet. The sockets solve hats/back/chest props, but full body outfit swapping still needs a separate test or authored overlay/mesh layer.
+- **status: PROVISIONAL ADOPT FOR PROTOTYPE**, not final production acceptance until license-file inspection + Minecraft conversion + in-client visual test pass.
+
+Companion same-style asset:
+- **Plumberry Plains Tools Set Vol. 1** includes a fishing pole, watering can, garden shovel, axe, hammer, cooking knife and paint brush with grip-point origins designed for the resident hand sockets.
+- this is unusually valuable because it can keep resident tools and resident body art in one visual language.
+- its downloadable package terms still need the same license-file inspection before Campfire packages converted derivatives.
+
+Minecraft-native comparison:
+
+**Wagi's Furry Villager 2.1.3**
+- current Minecraft **26.2** resource pack.
+- transforms villagers/wandering traders into cute animal models and already fits Minecraft's visual scale.
+- the author explicitly says the resource pack may be included in and published with a modpack.
+- license is **CC-BY-NC 4.0** and it requires ETF + EMF.
+- useful as a Minecraft-native visual/reference fallback, but not the primary resident pipeline because it is built around the villager/CEM resource-pack stack rather than Campfire's fixed-identity custom social-entity rig, and the NC license is less flexible than the Plumberry commercial-use terms.
+- do not silently copy its models into Campfire; use it only under its license/packaging terms if selected.
+
 **Kenney Cube Pets**
 - CC0.
 - current Kenney page exposes 24 package files/assets metadata, while the downloadable OpenGameArt package description identifies **16 actual cubic pet models**; do not mistake file count for resident-species count.
@@ -695,12 +727,20 @@ Current external resident/model source pool:
 - useful as a rig/topology reference if a cute animal head/body system needs a stable humanoid animation base.
 
 Current conclusion:
-- **no coherent external pack found yet that already supplies 20–40 cute anthropomorphic villagers with one consistent biped rig and the required lifestyle animation support.**
-- do not prematurely lock residents to a mediocre/inconsistent pack.
-- continue searching before authoring a large resident conversion pipeline.
-- if no complete pack exists, the preferred fallback is one coherent permissive animal style source + one stable shared rig, not mixing random animal models resident-by-resident.
+- the earlier "no coherent external pack found" conclusion is now stale: **Plumberry Plains Vol. 1 + 2 is the first source found that directly covers the initial ~20-character target with one shared cute-animal rig and a surprisingly complete lifestyle animation set.**
+- do not start a custom 20–40 resident modeling pipeline before testing this candidate.
+- the next acceptance gate is concrete rather than more broad searching:
+  1. obtain Vol. 1 + Vol. 2 and inspect both included `TERMS.md` files;
+  2. inventory the exact 20 characters/species/files and record source hashes;
+  3. convert two representative residents to the chosen Minecraft runtime model/animation format without shipping raw source files;
+  4. verify idle/walk/run/talk/sit/sit-talk/fish/dance plus one hand-held tool attachment in-client;
+  5. check scale/readability beside the player, furniture, doors and paths;
+  6. test 8–12 active residents for animation/render cost before scaling the roster;
+  7. determine the clothing solution separately, because full-body outfit swapping is not yet proven.
+- Kenney/Quaternius remain useful CC0 fallback/reference sources if the Plumberry license or conversion quality fails.
+- Wagi's Furry Villager remains a Minecraft-native reference/fallback, not the current primary pipeline.
 
-Actual final resident pack/rig remains unresolved.
+Actual final resident pack/rig is **not yet production-accepted**, but the project now has a clear primary prototype candidate instead of an unresolved broad search.
 
 Resident identity rule:
 - one approved external appearance/model/variant maps to one fixed authored resident.
