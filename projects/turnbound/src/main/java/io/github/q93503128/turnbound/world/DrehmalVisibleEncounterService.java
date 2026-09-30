@@ -55,6 +55,9 @@ final class DrehmalVisibleEncounterService {
 
     static void tick(ServerPlayer caller) {
         if (caller == null || !(caller.level() instanceof ServerLevel level)) return;
+        // Only the bound external overworld owns this service. A player changing dimensions must never rebind the
+        // singleton runtime and clear another dimension's field representatives.
+        if (!ExternalWorldBootstrap.active(caller)) return;
         bind(level);
         long gameTime = level.getGameTime();
         if (lastTick == gameTime) return;
