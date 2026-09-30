@@ -16,6 +16,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RewardGrantServiceTest {
     @Test
+    void equipmentDropIsIncludedInBattleResultPresentationPayload() {
+        var base = new io.github.q93503128.turnbound.session.BattleResultSummary(
+                100, 200, 0, 0, java.util.List.of(), false, java.util.List.of());
+        var direct = RewardGrantService.withEquipmentDrop(
+                base, new EquipmentDropService.Drop("W05", "T3", "결투자의 문장", false));
+        var queued = RewardGrantService.withEquipmentDrop(
+                base, new EquipmentDropService.Drop("W05", "T3", "결투자의 문장", true));
+
+        assertEquals(java.util.List.of("결투자의 문장"), direct.equipmentRewards());
+        assertEquals(java.util.List.of("결투자의 문장 · 보상 대기"), queued.equipmentRewards());
+    }
+
+    @Test
     void sameTransactionDoesNotDoubleGrantAfterSaveRoundTrip() {
         UUID playerId = UUID.randomUUID();
         try {
