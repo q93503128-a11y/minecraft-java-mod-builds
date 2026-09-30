@@ -3,28 +3,28 @@ package io.github.q93503128.turnbound.progression;
 import io.github.q93503128.turnbound.combat.BattleStats;
 import io.github.q93503128.turnbound.content.V04Catalogs;
 
-/** Canonical v0.4 equipment economy and reference CP calculations. */
+/** Canonical v1 equipment economy and reference CP calculations. */
 public final class EquipmentRules {
     private EquipmentRules() {}
 
     public static int shopPrice(String tier) {
         return switch (tier) {
-            case "T1" -> 4_000;
-            case "T2" -> 12_000;
-            default -> throw new IllegalArgumentException("Only T1/T2 are sold in the normal v0.4 shop");
+            case "T1" -> 1_200;
+            case "T2" -> 4_000;
+            default -> throw new IllegalArgumentException("Only T1/T2 are sold in the normal v1 shop");
         };
     }
 
     /**
-     * v0.4 numeric wiki §99 duplicate-equipment sale values.
+     * v1 resale keeps equipment drops meaningful without letting shop resale create Gold.
      * Signature equipment intentionally has no sale price because canon does not define one.
      */
     public static int salePrice(String tier) {
         return switch (tier) {
-            case "T1" -> 2_000;
-            case "T2" -> 6_000;
-            case "T3" -> 15_000;
-            case "T4" -> 30_000;
+            case "T1" -> 600;
+            case "T2" -> 2_000;
+            case "T3" -> 6_000;
+            case "T4" -> 12_000;
             default -> throw new IllegalArgumentException("No canonical sale price for equipment tier " + tier);
         };
     }

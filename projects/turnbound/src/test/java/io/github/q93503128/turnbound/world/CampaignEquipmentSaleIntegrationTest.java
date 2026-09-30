@@ -17,8 +17,8 @@ class CampaignEquipmentSaleIntegrationTest {
             var item = CampaignProgressStore.grantEquipment(playerId, "W05");
             CampaignProgressStore.markClean(playerId);
 
-            assertEquals(15_000, CampaignProgressStore.sellEquipment(playerId, item.instanceId()));
-            assertEquals(beforeGold + 15_000, CampaignProgressStore.currency(playerId, PlayerProfile.Currency.GOLD));
+            assertEquals(6_000, CampaignProgressStore.sellEquipment(playerId, item.instanceId()));
+            assertEquals(beforeGold + 6_000, CampaignProgressStore.currency(playerId, PlayerProfile.Currency.GOLD));
             assertFalse(CampaignProgressStore.equipment(playerId).items().containsKey(item.instanceId()));
             assertTrue(CampaignProgressStore.isDirty(playerId));
         } finally {

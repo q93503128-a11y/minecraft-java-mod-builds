@@ -99,6 +99,18 @@ public final class V04Catalogs {
         return result;
     }
 
+    public static int firstClearGoldBonus(String encounterId) {
+        return switch (encounterId) {
+            case "CV_FIRST_COMMON", "CV_TEMPLE_WILDLIFE" -> 120;
+            case "CV_TOWER_ROAD", "CV_CAMP_WILDLIFE" -> 180;
+            case "CV_DRABYEL_NORTH", "CV_DRABYEL_ROAD" -> 240;
+            case "CV_WARNING_CAVE_ELITE" -> 600;
+            case "AV_ROAD_PATROL" -> 300;
+            case "AV_ROAD_ELITE" -> 700;
+            default -> 0;
+        };
+    }
+
     public static int battleXp(Encounter encounter) {
         if (tutorialBridge(encounter.id())) return 0;
         int authoredRoute = switch (encounter.id()) {

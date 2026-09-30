@@ -85,7 +85,8 @@ public final class CampaignProgressStore {
         V04Catalogs.Encounter encounter = V04Catalogs.encounter(canonicalId);
         boolean firstClear = !progress.clearedEncounters.contains(canonicalId);
         int xp = V04Catalogs.battleXp(encounter);
-        int gold = V04Catalogs.battleGold(encounter);
+        int gold = V04Catalogs.battleGold(encounter)
+                + (firstClear ? V04Catalogs.firstClearGoldBonus(canonicalId) : 0);
         List<BattleResultSummary.PartyXp> party = progress.activeParty.stream().map(characterId -> {
             CharacterProgression.Gain gain = gain(progress, characterId, xp);
             return new BattleResultSummary.PartyXp(characterId, CanonicalData.definition(characterId).name(),

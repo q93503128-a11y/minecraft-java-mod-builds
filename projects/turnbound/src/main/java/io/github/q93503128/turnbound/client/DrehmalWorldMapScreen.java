@@ -32,8 +32,17 @@ final class DrehmalWorldMapScreen extends Screen {
     private static final int GOLD = TurnboundUiTokens.ACCENT;
     private static final int GREEN = TurnboundUiTokens.SUCCESS;
 
+    private static final double MIN_ZOOM = 0.35D;
+    private static final double MAX_ZOOM = 256.0D;
+    private static final double ZOOM_STEP = 1.35D;
+
     private int left, top, panelWidth, panelHeight;
-    private double zoom = 1.0;
+    private int mapViewX, mapViewY, mapViewSize;
+    private double zoom = 1.0D;
+    private double viewCenterX = Double.NaN;
+    private double viewCenterZ = Double.NaN;
+    private Bounds activeBounds;
+    private Viewport activeViewport;
     private final List<TravelHit> travelHits = new ArrayList<>();
 
     DrehmalWorldMapScreen() { super(Component.literal("월드 지도")); }
@@ -68,9 +77,44 @@ final class DrehmalWorldMapScreen extends Screen {
         return super.mouseClicked(event, doubleClick);
     }
 
-    @Override public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (scrollY == 0.0) return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
-        zoom = Math.max(1.0, Math.min(4.0, zoom + (scrollY > 0 ? 0.35 : -0.35)));
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (scrollY == 0.0D) return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+
+        double nextZoom = clamp(zoom * (scrollY > 0.0D ? ZOOM_STEP : 1.0D / ZOOM_STEP), MIN_ZOOM, MAX_ZOOM);
+        if (Math.abs(nextZoom - zoom) < 0.000001D) return true;
+
+        if (activeBounds != null && activeViewport != null && mapViewSize > 0 && insideMap(mouseX, mouseY)) {
+            double nx = clamp((mouseX - mapViewX) / mapViewSize, 0.0D, 1.0D);
+            double nz = clamp((mouseY - mapViewY) / mapViewSize, 0.0D, 1.0D);
+            double worldX = activeViewport.minX + nx * activeViewport.span;
+            double worldZ = activeViewport.minZ + nz * activeViewport.span;
+            zoom = nextZoom;
+            double nextSpan = activeBounds.span / zoom;
+            if (zoom <= 1.0D) {
+                viewCenterX = activeBounds.minX + activeBounds.span * 0.5D;
+                viewCenterZ = activeBounds.minZ + activeBounds.span * 0.5D;
+            } else {
+                viewCenterX = worldX - (nx - 0.5D) * nextSpan;
+                viewCenterZ = worldZ - (nz - 0.5D) * nextSpan;
+                clampCenter(activeBounds, nextSpan);
+            }
+        } else {
+            zoom = nextZoom;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent event, double deltaX, double deltaY) {
+        if (event.button() != GLFW.GLFW_MOUSE_BUTTON_LEFT || zoom <= 1.0D
+                || activeBounds == null || activeViewport == null || mapViewSize <= 0 || !insideMap(event.x(), event.y())) {
+            return super.mouseDragged(event, deltaX, deltaY);
+        }
+        double worldPerPixel = activeViewport.span / mapViewSize;
+        viewCenterX -= deltaX * worldPerPixel;
+        viewCenterZ -= deltaY * worldPerPixel;
+        clampCenter(activeBounds, activeViewport.span);
         return true;
     }
 
@@ -89,15 +133,15 @@ final class DrehmalWorldMapScreen extends Screen {
         boolean compact = panelHeight < 300 || panelWidth < 520;
         graphics.text(font, Component.literal("월드 지도"), left + 12, top + 11, TEXT, true);
         String help = compact
-                ? String.format(java.util.Locale.ROOT, "×%.1f · M/ESC", zoom)
-                : "휠 확대/축소 · " + String.format(java.util.Locale.ROOT, "×%.1f", zoom) + " · M 또는 ESC 닫기";
+                ? scaleLabel() + " · 휠/드래그"
+                : "휠: 광역 개요 ↔ 블록 단위 · 드래그: 지도 이동 · " + scaleLabel() + " · M/ESC 닫기";
         int helpX = left + panelWidth - 12 - font.width(help);
         if (helpX > left + 90) {
             graphics.text(font, Component.literal(help), helpX, top + 11, SECONDARY, false);
         }
         boolean showSubtitle = !compact || panelHeight >= 285;
         if (showSubtitle) {
-            graphics.text(font, Component.literal("알려진 거점과 랜드마크 · 세부 길은 탐험하며 확인"), left + 12, top + 27, SECONDARY, false);
+            graphics.text(font, Component.literal("축소하면 지역 관계를, 확대하면 블록 격자와 세부 위치를 확인할 수 있습니다."), left + 12, top + 27, SECONDARY, false);
         }
 
         boolean wide = panelWidth >= 320 && panelHeight >= 190;
@@ -108,11 +152,17 @@ final class DrehmalWorldMapScreen extends Screen {
         int availableW = panelWidth - 24 - infoReserve - (wide ? 10 : 0);
         int availableH = top + panelHeight - bottomReserve - mapY;
         int mapSize = Math.max(64, Math.min(availableW, availableH));
+        mapViewX = mapX;
+        mapViewY = mapY;
+        mapViewSize = mapSize;
 
         drawMapSurface(graphics, mapX, mapY, mapSize);
 
         Bounds bounds = bounds(anchors, px, pz);
         Viewport view = viewport(bounds, px, pz);
+        activeBounds = bounds;
+        activeViewport = view;
+        drawBlockGrid(graphics, mapX, mapY, mapSize, view);
         drawRouteNetwork(graphics, mapX, mapY, mapSize, view, anchors);
 
         DrehmalWorldProfile.Anchor hovered = null;
@@ -170,11 +220,18 @@ final class DrehmalWorldMapScreen extends Screen {
         graphics.text(font, Component.literal(UiTextLayout.fit(coordinates, infoW - 14)),
                 infoX + 7, infoY + 7, TEXT, true);
         int infoCursor = infoY + 24;
+        if (infoH >= 70) {
+            int visibleBlocks = Math.max(1, (int)Math.round(view.span));
+            String scale = "보기 · " + scaleLabel() + " · 화면 폭 약 " + visibleBlocks + "블록";
+            graphics.text(font, Component.literal(UiTextLayout.fit(scale, infoW - 14)),
+                    infoX + 7, infoCursor, MUTED, false);
+            infoCursor += 16;
+        }
         if (navigation != null && navigation.active() && infoH >= 64) {
             int objectiveDistance = (int)Math.round(Math.hypot(navigation.x() - px, navigation.z() - pz));
             graphics.text(font, Component.literal("현재 목표"), infoX + 7, infoCursor, GOLD, true);
             infoCursor += 15;
-            graphics.text(font, Component.literal(UiTextLayout.fit(navigation.label() + " · " + objectiveDistance + "m", infoW - 14)),
+            graphics.text(font, Component.literal(UiTextLayout.fit(navigation.label() + " · " + objectiveDistance + "블록", infoW - 14)),
                     infoX + 7, infoCursor, TEXT, false);
             infoCursor += 20;
         }
@@ -186,7 +243,7 @@ final class DrehmalWorldMapScreen extends Screen {
                     infoX + 7, infoCursor, SECONDARY, false);
             infoCursor += 16;
             int distance = (int)Math.round(Math.hypot(focus.x() - px, focus.z() - pz));
-            String distanceLine = "약 " + distance + "m · " + kindLabel(focus.kind());
+            String distanceLine = "약 " + distance + "블록 · " + kindLabel(focus.kind());
             graphics.text(font, Component.literal(UiTextLayout.fit(distanceLine, infoW - 14)),
                     infoX + 7, infoCursor, MUTED, false);
             infoCursor += 23;
@@ -200,7 +257,7 @@ final class DrehmalWorldMapScreen extends Screen {
             infoCursor += 76;
         }
         if (wide && infoCursor + 30 < infoY + infoH) {
-            String note = "발견한 ◇ 거점을 클릭하면 빠른 이동합니다. 전투 위치는 탐험하기 전에는 숨겨집니다.";
+            String note = "발견한 ◇ 거점을 클릭하면 빠르게 이동합니다. 노선은 지역 단계에서 대략 표시되며, 블록 단계에서는 좌표와 격자를 기준으로 세부 위치를 확인합니다.";
             int noteY = infoCursor;
             for (String line : UiTextLayout.wrap(note, infoW - 18, 4)) {
                 if (noteY + font.lineHeight >= infoY + infoH - 6) break;
@@ -240,10 +297,47 @@ final class DrehmalWorldMapScreen extends Screen {
 
     private Viewport viewport(Bounds full, double px, double pz) {
         double span = full.span / zoom;
-        if (zoom <= 1.001) return new Viewport(full.minX, full.minZ, span);
-        double minX = clamp(px - span * 0.5, full.minX, full.minX + full.span - span);
-        double minZ = clamp(pz - span * 0.5, full.minZ, full.minZ + full.span - span);
-        return new Viewport(minX, minZ, span);
+        double fullCenterX = full.minX + full.span * 0.5D;
+        double fullCenterZ = full.minZ + full.span * 0.5D;
+
+        if (Double.isNaN(viewCenterX) || Double.isNaN(viewCenterZ)) {
+            boolean playerNearMap = px >= full.minX && px <= full.minX + full.span
+                    && pz >= full.minZ && pz <= full.minZ + full.span;
+            viewCenterX = playerNearMap ? px : fullCenterX;
+            viewCenterZ = playerNearMap ? pz : fullCenterZ;
+        }
+
+        if (zoom <= 1.0D) {
+            viewCenterX = fullCenterX;
+            viewCenterZ = fullCenterZ;
+            return new Viewport(fullCenterX - span * 0.5D, fullCenterZ - span * 0.5D, span);
+        }
+
+        clampCenter(full, span);
+        return new Viewport(viewCenterX - span * 0.5D, viewCenterZ - span * 0.5D, span);
+    }
+
+    private void clampCenter(Bounds full, double span) {
+        double half = span * 0.5D;
+        if (span >= full.span) {
+            viewCenterX = full.minX + full.span * 0.5D;
+            viewCenterZ = full.minZ + full.span * 0.5D;
+            return;
+        }
+        viewCenterX = clamp(viewCenterX, full.minX + half, full.minX + full.span - half);
+        viewCenterZ = clamp(viewCenterZ, full.minZ + half, full.minZ + full.span - half);
+    }
+
+    private boolean insideMap(double x, double y) {
+        return mapViewSize > 0 && x >= mapViewX && x <= mapViewX + mapViewSize
+                && y >= mapViewY && y <= mapViewY + mapViewSize;
+    }
+
+    private String scaleLabel() {
+        if (zoom < 0.75D) return "광역 개요";
+        if (zoom < 2.5D) return "지역";
+        if (zoom < 18.0D) return "세부";
+        return "블록 단위";
     }
 
     private static DrehmalWorldProfile.Anchor nearest(List<DrehmalWorldProfile.Anchor> anchors, double x, double z) {
@@ -294,13 +388,13 @@ final class DrehmalWorldMapScreen extends Screen {
 
     private static String description(DrehmalWorldProfile.Anchor anchor) {
         return switch (anchor.locator()) {
-            case "turnbound:hub/new_drabyel" -> "캐피털 밸리의 첫 안전 거점";
-            case "turnbound:region/stasis_facility" -> "Capital Valley 동쪽의 오래된 시설";
-            case "turnbound:landmark/primal_caverns" -> "첫 여정의 지형 기준점";
-            case "turnbound:landmark/capital_valley_tower" -> "Drabyel로 향하는 길의 큰 랜드마크";
-            case "turnbound:landmark/warning_cave" -> "길에서 벗어난 위험한 동굴";
-            case "turnbound:landmark/explorers_guide_camp" -> "Drabyel 전 마지막 휴식 지점";
-            case "turnbound:region/avsal" -> "Drabyel 이후 이어지는 거대한 폐허";
+            case "turnbound:hub/new_drabyel" -> "캐피털 밸리 북쪽의 안전 거점. 정비와 다음 여정 준비를 할 수 있습니다.";
+            case "turnbound:region/stasis_facility" -> "캐피털 밸리 동쪽에 남은 오래된 시설 지대입니다.";
+            case "turnbound:landmark/primal_caverns" -> "캐피털 밸리 동부의 큰 동굴 지형으로, 길을 잡는 기준점이 됩니다.";
+            case "turnbound:landmark/capital_valley_tower" -> "뉴 드라비엘로 향하는 길과 주변 계곡을 굽어보는 높은 탑입니다.";
+            case "turnbound:landmark/warning_cave" -> "주요 길에서 벗어난 위험 지역입니다. 강한 적의 흔적이 남아 있습니다.";
+            case "turnbound:landmark/explorers_guide_camp" -> "뉴 드라비엘에 닿기 전 쉬어 갈 수 있는 탐험가 야영지입니다.";
+            case "turnbound:region/avsal" -> "뉴 드라비엘 서쪽에 펼쳐진 대도시 폐허. 외곽부터 조사할 수 있습니다.";
             default -> "지도에 기록된 장소";
         };
     }
@@ -317,6 +411,26 @@ final class DrehmalWorldMapScreen extends Screen {
         g.fill(x + size - 18, y + 8, x + size - 11, y + 9, 0xFFB6AA8B);
     }
 
+    private static void drawBlockGrid(GuiGraphicsExtractor g, int mapX, int mapY, int mapSize, Viewport view) {
+        double pixelsPerBlock = mapSize / view.span;
+        if (pixelsPerBlock < 2.0D) return;
+
+        int minX = (int)Math.ceil(view.minX);
+        int maxX = (int)Math.floor(view.minX + view.span);
+        int minZ = (int)Math.ceil(view.minZ);
+        int maxZ = (int)Math.floor(view.minZ + view.span);
+        for (int x = minX; x <= maxX; x++) {
+            int sx = mapX + worldToMap(x, view.minX, view.span, mapSize);
+            int color = Math.floorMod(x, 16) == 0 ? 0x665F604F : 0x333F4037;
+            g.fill(sx, mapY, sx + 1, mapY + mapSize, color);
+        }
+        for (int z = minZ; z <= maxZ; z++) {
+            int sy = mapY + worldToMap(z, view.minZ, view.span, mapSize);
+            int color = Math.floorMod(z, 16) == 0 ? 0x665F604F : 0x333F4037;
+            g.fill(mapX, sy, mapX + mapSize, sy + 1, color);
+        }
+    }
+
     private static void drawRouteNetwork(
             GuiGraphicsExtractor g,
             int mapX,
@@ -325,6 +439,9 @@ final class DrehmalWorldMapScreen extends Screen {
             Viewport view,
             List<DrehmalWorldProfile.Anchor> anchors
     ) {
+        // The route overlay is intentionally schematic. At block scale, hiding it avoids implying
+        // one-block road precision that the source-backed overview does not claim.
+        if (view.span < 64.0D) return;
         drawRoute(g, mapX, mapY, mapSize, view, anchors,
                 "turnbound:region/stasis_facility", "turnbound:landmark/primal_caverns", 0x887F745A);
         drawRoute(g, mapX, mapY, mapSize, view, anchors,

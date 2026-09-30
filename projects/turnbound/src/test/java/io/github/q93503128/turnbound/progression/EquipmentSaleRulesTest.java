@@ -10,11 +10,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EquipmentSaleRulesTest {
     @Test
-    void canonicalTierSalePricesMatchV04NumericWiki() {
-        assertEquals(2_000, EquipmentRules.salePrice("T1"));
-        assertEquals(6_000, EquipmentRules.salePrice("T2"));
-        assertEquals(15_000, EquipmentRules.salePrice("T3"));
-        assertEquals(30_000, EquipmentRules.salePrice("T4"));
+    void canonicalTierSalePricesMatchV1Economy() {
+        assertEquals(600, EquipmentRules.salePrice("T1"));
+        assertEquals(2_000, EquipmentRules.salePrice("T2"));
+        assertEquals(6_000, EquipmentRules.salePrice("T3"));
+        assertEquals(12_000, EquipmentRules.salePrice("T4"));
         assertThrows(IllegalArgumentException.class, () -> EquipmentRules.salePrice("SIGNATURE"));
     }
 
@@ -25,8 +25,8 @@ class EquipmentSaleRulesTest {
         EquipmentInventory.Item t3 = inventory.grant("W05");
         PlayerProfile profile = profileWithGold(100);
 
-        assertEquals(15_000, inventory.sell(t3.instanceId(), profile));
-        assertEquals(15_100, profile.currency(PlayerProfile.Currency.GOLD));
+        assertEquals(6_000, inventory.sell(t3.instanceId(), profile));
+        assertEquals(6_100, profile.currency(PlayerProfile.Currency.GOLD));
         assertEquals(1, inventory.size());
         assertEquals("W01", inventory.item(t1.instanceId()).itemId());
         assertThrows(IllegalArgumentException.class, () -> inventory.item(t3.instanceId()));
@@ -58,10 +58,10 @@ class EquipmentSaleRulesTest {
         assertEquals(0, inventory.freeSlots());
 
         PlayerProfile profile = profileWithGold(0);
-        assertEquals(2_000, inventory.sell(first, profile));
+        assertEquals(600, inventory.sell(first, profile));
         assertEquals(1, inventory.freeSlots());
         assertTrue(inventory.hasFreeSlot());
-        assertEquals(2_000, profile.currency(PlayerProfile.Currency.GOLD));
+        assertEquals(600, profile.currency(PlayerProfile.Currency.GOLD));
     }
 
     private static PlayerProfile profileWithGold(long gold) {
