@@ -247,3 +247,38 @@ Av'Sal expansion을 “콘텐츠 추가 완료”라고 부르려면:
 가 연결되어야 한다.
 
 문서/데이터만 추가한 상태는 완료가 아니다.
+
+
+## 10. First production slice binding — 2026-09-30
+
+The first runtime slice is now implemented as:
+
+```text
+New Drabyel story briefing
+→ source-backed west-road navigation
+→ roadside echo observation
+→ visible common patrol
+→ optional off-route Elite
+→ Av'Sal outskirts reveal
+→ MQ_AV01 complete
+→ MQ_AV02 active
+```
+
+Route source:
+- `zachaa/DrehmalMap@72d82180cbe3f950f068cf2d8e8668c6b09d5c58`
+- `data/paths.geojson`
+- `data/locations.json`
+- reference landmarks: New Drabyel and Av'Sal Scavengers House
+- source X/Z values are route seeds only; the live 26.2 world decides Y, collision safety, source-content clearance and battle footprint acceptance
+
+Encounter direction:
+- the common patrol uses existing production visuals but a new mixed tactical composition: opportunist frontliner + telegraphed marksman + field support
+- the optional Elite is not a main-quest gate
+- one field encounter still uses one physical representative
+- no final P09~P12 visual was invented; character production remains external-asset-first
+
+Build TURNBOUND #954 verified code commit `bf228f7de380896c8cc9c070d8c996a236f021bc`:
+- tests/build: PASS
+- dedicated-server smoke: PASS
+- JAR/mrpack verification: PASS
+- client runtime/playtest/multiplayer: NOT TESTED

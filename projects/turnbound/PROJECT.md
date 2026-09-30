@@ -1500,3 +1500,41 @@ Latest explicit direction:
 - preferred directly usable/editable sources are clearly licensed assets such as CC0 Quaternius/Kenney packs
 - choose the visual base first, then finalize name/personality/weapon/kit around what the asset actually supports
 - the next major world/content slice is `AVSAL_EXPANSION_v1.md`
+
+
+## Av'Sal first production slice — Build TURNBOUND #954 — 2026-09-30
+
+Code commit:
+- `bf228f7de380896c8cc9c070d8c996a236f021bc`
+- commit: `feat(turnbound): build Av'Sal first production route`
+
+Implemented:
+- New Drabyel story briefing after the opening patrol and map review
+- source-backed west-road X/Z seeds from `zachaa/DrehmalMap@72d82180cbe3f950f068cf2d8e8668c6b09d5c58`
+- live 26.2 Y / collision / source-content / battle-footprint checks
+- MQ_AV01 roadside echo milestone, visible road patrol, optional Elite, Av'Sal outskirts arrival
+- MQ_AV01 completion persisted through existing external-world SavedData
+- MQ_AV02 becomes the active journal objective at the outskirts
+- common patrol battle pattern = opportunist frontliner + telegraphed marksman + field support
+- field presentation remains one physical representative; battle composition expands only after contact
+- multiplayer encounter visibility/participation is gated to players who have actually started the Av'Sal chapter
+
+Build TURNBOUND #954:
+- GitHub Actions run: `36676970799`
+- Gradle clean/test/build/oneClickPack: PASS
+- NeoForge dedicated-server smoke: PASS
+- JAR verification: PASS
+- one-click mrpack verification: PASS
+- artifact upload: PASS
+
+Validation:
+- CODE REVIEWED: YES
+- TESTED: YES (automated tests in Build #954)
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- DEDICATED SERVER SMOKE: YES
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
+The next production unit is Av'Sal outskirts investigation -> north dock Midboss. MQ_AV02 is intentionally started but not claimed complete by this slice.
