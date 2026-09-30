@@ -560,3 +560,15 @@ Current TURNBOUND settings:
 - exploration minimap visibility
 
 Endgame/challenge selection remains a separate `도전` destination.
+
+
+## Quest journal naming — 2026-09-30
+
+E 메뉴의 `퀘스트`는 장기 진행 기록의 중심 화면이다.
+
+- 퀘스트 화면: 메인 / 지역 / 캐릭터 / 업적
+- 업적: No Death, 제한 행동 수, 특정 mechanic 달성처럼 조건형 기록
+- 홈의 별도 `고난도`: Hard Boss / Rift처럼 실제 출전하는 반복 combat content
+
+`업적`과 `고난도`를 둘 다 “도전”이라고 부르지 않는다.
+새로운 story/quest category 때문에 홈 메뉴를 계속 늘리지 않고 퀘스트 화면 내부 category로 통합한다.
