@@ -59,6 +59,23 @@ final class CharacterOverhaulRuntimeTest {
     }
 
     @Test
+    void elysiaReviveAddsHerBonusOnTopOfTheTargetsOwnReturnTempo() {
+        CombatantState elysia = new CombatantState("elysia", CanonicalData.definition("P04", 1, 4, false), CombatantSide.ALLY, 0);
+        CombatantState lumea = new CombatantState("lumea", CanonicalData.definition("P02", 1, 5, false), CombatantSide.ALLY, 1);
+        CombatantState foe = enemy("foe", 9999, 1, 0, 80, 2);
+        lumea.forceDown();
+        BattleEngine engine = new BattleEngine(new BattleState(List.of(elysia, lumea, foe)));
+
+        elysia.setGauge(1000);
+        engine.nextReady();
+        engine.useSkill("elysia", "p04_returned_breath", "lumea");
+
+        assertFalse(lumea.downed());
+        assertEquals((int)Math.floor(lumea.maxHp() * 0.30), lumea.hp());
+        assertEquals(490, lumea.gauge());
+    }
+
+    @Test
     void lynetteUsesSightlineShotsAndCrossShotWithoutIndependentTurn() {
         CombatantState lynette = new CombatantState("lynette", CanonicalData.definition("P05", 1, 4, false), CombatantSide.ALLY, 0);
         CombatantState ally = new CombatantState("ally", PrototypeRoster.kyren(), CombatantSide.ALLY, 1);
