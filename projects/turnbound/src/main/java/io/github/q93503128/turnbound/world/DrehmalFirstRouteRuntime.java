@@ -117,6 +117,7 @@ public final class DrehmalFirstRouteRuntime {
         if (insideHubCoordinates(player.getX(), player.getZ())) {
             data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.HUB_REACHED);
         }
+        OpenworldQuestRewardService.reconcile(player);
     }
 
     static boolean insideHub(ServerPlayer player) {

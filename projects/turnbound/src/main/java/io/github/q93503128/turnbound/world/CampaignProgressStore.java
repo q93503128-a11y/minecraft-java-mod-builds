@@ -129,6 +129,39 @@ public final class CampaignProgressStore {
         return new BattleResultSummary(preview.xp(), preview.gold(), firstClear, preview.party());
     }
 
+    private static final String WORLD_REWARD_MARK_KEY = "__turnbound_world_rewards";
+
+    /**
+     * Grants a durable one-time reward for authored-world quests/discoveries.
+     * The reward id is stored inside the campaign attachment so reconnects and repeated proximity checks cannot pay twice.
+     */
+    public static boolean grantOneTimeWorldReward(UUID playerId, String rewardId, int crystal, int gold, int xp) {
+        if (playerId == null || rewardId == null || rewardId.isBlank()) throw new IllegalArgumentException("Missing world reward id");
+        if (crystal < 0 || gold < 0 || xp < 0) throw new IllegalArgumentException("Negative world reward");
+        PlayerProgress progress = player(playerId);
+
+        QuestProgress.Snapshot before = progress.quests.snapshot();
+        Set<String> rewarded = new LinkedHashSet<>(before.marks().getOrDefault(WORLD_REWARD_MARK_KEY, Set.of()));
+        if (!rewarded.add(rewardId)) return false;
+
+        if (crystal > 0) progress.profile.grant(PlayerProfile.Currency.SUMMON_CRYSTAL, crystal);
+        if (gold > 0) progress.profile.grant(PlayerProfile.Currency.GOLD, gold);
+        if (xp > 0) grantPartyAndReserveXp(progress, xp);
+
+        Map<String, Set<String>> marks = new LinkedHashMap<>();
+        before.marks().forEach((key, values) -> marks.put(key, new LinkedHashSet<>(values)));
+        marks.put(WORLD_REWARD_MARK_KEY, rewarded);
+        progress.quests = QuestProgress.restore(new QuestProgress.Snapshot(
+                before.completed(), before.tracked(), before.unlockFlags(), before.rewardTokens(), before.counters(), marks));
+        progress.dirty = true;
+        return true;
+    }
+
+    public static boolean worldRewardClaimed(UUID playerId, String rewardId) {
+        if (playerId == null || rewardId == null || rewardId.isBlank()) return false;
+        return player(playerId).quests.marks(WORLD_REWARD_MARK_KEY).contains(rewardId);
+    }
+
     public static int gold(UUID playerId) { return Math.toIntExact(player(playerId).profile.currency(PlayerProfile.Currency.GOLD)); }
     public static long currency(UUID playerId, PlayerProfile.Currency currency) { return player(playerId).profile.currency(currency); }
     public static Set<String> ownedCharacters(UUID playerId) { return player(playerId).profile.ownedCharacters(); }

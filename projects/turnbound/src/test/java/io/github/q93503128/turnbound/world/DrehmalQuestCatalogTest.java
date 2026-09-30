@@ -20,5 +20,7 @@ class DrehmalQuestCatalogTest {
         assertTrue(DrehmalQuestCatalog.all().stream()
                 .filter(quest -> quest.kind() == DrehmalQuestCatalog.Kind.SIDE)
                 .allMatch(DrehmalQuestCatalog.Quest::requiresProductionEncounter));
+        assertTrue(DrehmalQuestCatalog.all().stream()
+                .allMatch(quest -> quest.rewardCrystal() > 0 && quest.rewardGold() > 0));
     }
 }

@@ -31,6 +31,18 @@ class CampaignProgressStoreProfileTest {
     }
 
     @Test
+    void oneTimeWorldRewardCannotBeFarmedByRepeatedReconciliation() {
+        assertTrue(CampaignProgressStore.grantOneTimeWorldReward(playerId, "quest:test", 600, 5_000, 800));
+        long crystal = CampaignProgressStore.currency(playerId, PlayerProfile.Currency.SUMMON_CRYSTAL);
+        long gold = CampaignProgressStore.currency(playerId, PlayerProfile.Currency.GOLD);
+        assertTrue(CampaignProgressStore.worldRewardClaimed(playerId, "quest:test"));
+
+        assertFalse(CampaignProgressStore.grantOneTimeWorldReward(playerId, "quest:test", 600, 5_000, 800));
+        assertEquals(crystal, CampaignProgressStore.currency(playerId, PlayerProfile.Currency.SUMMON_CRYSTAL));
+        assertEquals(gold, CampaignProgressStore.currency(playerId, PlayerProfile.Currency.GOLD));
+    }
+
+    @Test
     void retiredTutorialRecruitHooksDoNotCreateDuplicateEssence() {
         CampaignProgressStore.commit(playerId, "TUTORIAL_1", BattleOutcome.ALLY_VICTORY);
         CampaignProgressStore.commit(playerId, "TUTORIAL_2", BattleOutcome.ALLY_VICTORY);

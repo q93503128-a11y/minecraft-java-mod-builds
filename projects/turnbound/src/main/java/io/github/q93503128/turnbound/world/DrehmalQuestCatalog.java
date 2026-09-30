@@ -43,7 +43,10 @@ public final class DrehmalQuestCatalog {
             String activationFlag,
             String completionFlag,
             String encounterId,
-            boolean requiresProductionEncounter
+            boolean requiresProductionEncounter,
+            int rewardCrystal,
+            int rewardGold,
+            int rewardXp
     ) {}
 
     private DrehmalQuestCatalog() {}
@@ -88,6 +91,9 @@ public final class DrehmalQuestCatalog {
             if (quest.completionFlag().isBlank() && quest.encounterId().isBlank()) {
                 errors.add("Drehmal quest has no completion condition " + quest.id());
             }
+            if (quest.rewardCrystal() <= 0 && quest.rewardGold() <= 0 && quest.rewardXp() <= 0) {
+                errors.add("Drehmal quest has no completion reward " + quest.id());
+            }
         }
         if (mainCount != 1) errors.add("Drehmal first route must expose exactly one main quest");
         return List.copyOf(errors);
@@ -114,7 +120,10 @@ public final class DrehmalQuestCatalog {
                         optional(raw, "activationFlag"),
                         optional(raw, "completionFlag"),
                         optional(raw, "encounterId"),
-                        bool(raw, "requiresProductionEncounter", false)));
+                        bool(raw, "requiresProductionEncounter", false),
+                        integer(raw, "rewardCrystal", 0),
+                        integer(raw, "rewardGold", 0),
+                        integer(raw, "rewardXp", 0)));
             }
             return List.copyOf(out);
         } catch (Exception exception) {
@@ -132,6 +141,12 @@ public final class DrehmalQuestCatalog {
     private static String optional(JsonObject raw, String key) {
         if (raw == null || !raw.has(key) || !raw.get(key).isJsonPrimitive()) return "";
         return raw.get(key).getAsString().trim();
+    }
+
+    private static int integer(JsonObject raw, String key, int fallback) {
+        return raw != null && raw.has(key) && raw.get(key).isJsonPrimitive()
+                ? Math.max(0, raw.get(key).getAsInt())
+                : fallback;
     }
 
     private static boolean bool(JsonObject raw, String key, boolean fallback) {

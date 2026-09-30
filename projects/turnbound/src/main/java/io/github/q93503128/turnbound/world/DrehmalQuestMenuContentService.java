@@ -38,14 +38,30 @@ final class DrehmalQuestMenuContentService {
             boolean completed = DrehmalQuestCatalog.completed(quest, flags, clearedEncounters);
             String objective = quest.kind() == DrehmalQuestCatalog.Kind.MAIN && !completed
                     && mainObjective != null && !mainObjective.isBlank() ? mainObjective : quest.objective();
-            append(out, quest.title(), quest.kind().label() + " · " + quest.regionLabel(), completed, objective);
+            append(out, quest.title(), quest.kind().label() + " · " + quest.regionLabel(), completed,
+                    objective + " · " + rewardText(quest.rewardCrystal(), quest.rewardGold(), quest.rewardXp()));
         }
         for (AvsalQuestCatalog.Quest quest : AvsalQuestCatalog.all()) {
             if (!AvsalQuestCatalog.visible(quest, flags, productionEncounterIds)) continue;
             boolean completed = AvsalQuestCatalog.completed(quest, flags, clearedEncounters);
             String objective = quest.kind() == AvsalQuestCatalog.Kind.MAIN && !completed
                     && mainObjective != null && !mainObjective.isBlank() ? mainObjective : quest.objective();
-            append(out, quest.title(), quest.kind().label() + " · " + quest.regionLabel(), completed, objective);
+            append(out, quest.title(), quest.kind().label() + " · " + quest.regionLabel(), completed,
+                    objective + " · " + rewardText(quest.rewardCrystal(), quest.rewardGold(), quest.rewardXp()));
+        }
+        return out.toString();
+    }
+
+    private static String rewardText(int crystal, int gold, int xp) {
+        StringBuilder out = new StringBuilder("보상 ");
+        if (crystal > 0) out.append(crystal).append(" Crystal");
+        if (gold > 0) {
+            if (out.length() > 3) out.append(" / ");
+            out.append(String.format(java.util.Locale.ROOT, "%,d", gold)).append(" Gold");
+        }
+        if (xp > 0) {
+            if (out.length() > 3) out.append(" / ");
+            out.append("파티 XP ").append(xp);
         }
         return out.toString();
     }

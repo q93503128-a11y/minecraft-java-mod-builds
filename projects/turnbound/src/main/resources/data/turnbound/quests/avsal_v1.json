@@ -9,7 +9,10 @@
       "objective": "뉴 드라비엘에서 서쪽 가도를 따라 아브살 외곽까지 이동하십시오.",
       "activationFlag": "AVSAL_MQ_AV01_BRIEFED",
       "completionFlag": "AVSAL_MQ_AV01_COMPLETE",
-      "encounterId": ""
+      "encounterId": "",
+      "rewardCrystal": 800,
+      "rewardGold": 6000,
+      "rewardXp": 1800
     },
     {
       "id": "MQ_AV02",
@@ -19,7 +22,10 @@
       "objective": "아브살 외곽에서 쓸 만한 기록과 생존 흔적을 조사하십시오.",
       "activationFlag": "AVSAL_MQ_AV01_COMPLETE",
       "completionFlag": "",
-      "encounterId": ""
+      "encounterId": "",
+      "rewardCrystal": 1000,
+      "rewardGold": 8000,
+      "rewardXp": 2400
     },
     {
       "id": "SQ_AV01_ELITE",
@@ -29,7 +35,10 @@
       "objective": "가도 바깥의 강한 적을 상대할지 결정하십시오.",
       "activationFlag": "AVSAL_ROADSIDE_ECHO_SEEN",
       "completionFlag": "",
-      "encounterId": "AV_ROAD_ELITE"
+      "encounterId": "AV_ROAD_ELITE",
+      "rewardCrystal": 400,
+      "rewardGold": 4000,
+      "rewardXp": 1000
     }
   ]
 }

@@ -26,7 +26,8 @@ final class AvsalQuestCatalog {
     }
 
     record Quest(String id, Kind kind, String title, String regionLabel, String objective,
-                 String activationFlag, String completionFlag, String encounterId) {}
+                 String activationFlag, String completionFlag, String encounterId,
+                 int rewardCrystal, int rewardGold, int rewardXp) {}
 
     private static final List<Quest> ALL = load();
     private AvsalQuestCatalog() {}
@@ -60,6 +61,9 @@ final class AvsalQuestCatalog {
             if (!quest.encounterId().isBlank() && !CampaignEncounterCatalog.contains(quest.encounterId())) {
                 errors.add("unknown Av'Sal quest encounter " + quest.id() + " -> " + quest.encounterId());
             }
+            if (quest.rewardCrystal() <= 0 && quest.rewardGold() <= 0 && quest.rewardXp() <= 0) {
+                errors.add("Av'Sal quest has no completion reward " + quest.id());
+            }
         }
         if (ALL.stream().noneMatch(q -> "MQ_AV01".equals(q.id()))) errors.add("missing MQ_AV01");
         if (ALL.stream().noneMatch(q -> "MQ_AV02".equals(q.id()))) errors.add("missing MQ_AV02");
@@ -78,7 +82,8 @@ final class AvsalQuestCatalog {
                 out.add(new Quest(
                         required(raw, "id"), Kind.valueOf(required(raw, "kind")), required(raw, "title"),
                         required(raw, "regionLabel"), required(raw, "objective"), optional(raw, "activationFlag"),
-                        optional(raw, "completionFlag"), optional(raw, "encounterId")));
+                        optional(raw, "completionFlag"), optional(raw, "encounterId"),
+                        integer(raw, "rewardCrystal", 0), integer(raw, "rewardGold", 0), integer(raw, "rewardXp", 0)));
             }
             return List.copyOf(out);
         } catch (Exception ex) {
@@ -91,6 +96,10 @@ final class AvsalQuestCatalog {
         String value = optional(raw, key);
         if (value.isBlank()) throw new IllegalStateException("Missing Av'Sal quest field " + key);
         return value;
+    }
+
+    private static int integer(JsonObject raw, String key, int fallback) {
+        return raw.has(key) && raw.get(key).isJsonPrimitive() ? Math.max(0, raw.get(key).getAsInt()) : fallback;
     }
 
     private static String optional(JsonObject raw, String key) {

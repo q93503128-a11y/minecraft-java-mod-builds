@@ -7,7 +7,10 @@
       "title": "뉴 드라비엘로 가는 길",
       "regionLabel": "Capital Valley",
       "objective": "캐피털 밸리의 길을 따라 뉴 드라비엘에 도착하십시오.",
-      "completionFlag": "ROUTE_DRABYEL_REACHED"
+      "completionFlag": "ROUTE_DRABYEL_REACHED",
+      "rewardCrystal": 600,
+      "rewardGold": 5000,
+      "rewardXp": 1200
     },
     {
       "id": "turnbound:quest/drehmal/warning_cave_elite",
@@ -17,7 +20,10 @@
       "objective": "경고 동굴 안의 강적을 조사하고 쓰러뜨리십시오.",
       "activationFlag": "ROUTE_TOWER_REACHED",
       "encounterId": "CV_WARNING_CAVE_ELITE",
-      "requiresProductionEncounter": true
+      "requiresProductionEncounter": true,
+      "rewardCrystal": 400,
+      "rewardGold": 4000,
+      "rewardXp": 900
     },
     {
       "id": "turnbound:quest/drehmal/drabyel_approach_patrol",
@@ -27,7 +33,10 @@
       "objective": "뉴 드라비엘 진입로의 순찰대를 정리하십시오.",
       "activationFlag": "ROUTE_CAMP_REACHED",
       "encounterId": "CV_DRABYEL_ROAD",
-      "requiresProductionEncounter": true
+      "requiresProductionEncounter": true,
+      "rewardCrystal": 300,
+      "rewardGold": 3000,
+      "rewardXp": 700
     }
   ]
 }

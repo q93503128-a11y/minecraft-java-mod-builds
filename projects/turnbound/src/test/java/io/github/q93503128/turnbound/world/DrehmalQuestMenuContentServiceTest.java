@@ -12,14 +12,14 @@ class DrehmalQuestMenuContentServiceTest {
     @Test
     void emitsOnePlayerFacingFirstRouteQuestWithoutLegacyQuestIds() {
         assertEquals(
-                "Q|뉴 드라비엘로 가는 길|메인 · Capital Valley|1|0|길을 따라 뉴 드라비엘을 찾으십시오.\n",
+                "Q|뉴 드라비엘로 가는 길|메인 · Capital Valley|1|0|길을 따라 뉴 드라비엘을 찾으십시오. · 보상 600 Crystal / 5,000 Gold / 파티 XP 1200\n",
                 DrehmalQuestMenuContentService.encodeObjective("길을 따라 뉴 드라비엘을 찾으십시오."));
     }
 
     @Test
     void sanitizesWireDelimitersAndNewlines() {
         assertEquals(
-                "Q|뉴 드라비엘로 가는 길|메인 · Capital Valley|1|0|야영지 / 길 확인\n",
+                "Q|뉴 드라비엘로 가는 길|메인 · Capital Valley|1|0|야영지 / 길 확인 · 보상 600 Crystal / 5,000 Gold / 파티 XP 1200\n",
                 DrehmalQuestMenuContentService.encodeObjective("야영지 | 길 확인\n"));
     }
 
@@ -42,7 +42,7 @@ class DrehmalQuestMenuContentServiceTest {
                 Set.of("CV_WARNING_CAVE_ELITE"),
                 Set.of("CV_WARNING_CAVE_ELITE", "CV_DRABYEL_ROAD"),
                 "뉴 드라비엘로 향하십시오.");
-        assertTrue(encoded.contains("Q|경고 동굴의 강적|서브 목표 · Capital Valley|1|1|경고 동굴 안의 강적을 조사하고 쓰러뜨리십시오."));
-        assertTrue(encoded.contains("Q|진입로 안전 확보|서브 목표 · New Drabyel|1|0|뉴 드라비엘 진입로의 순찰대를 정리하십시오."));
+        assertTrue(encoded.contains("Q|경고 동굴의 강적|서브 목표 · Capital Valley|1|1|경고 동굴 안의 강적을 조사하고 쓰러뜨리십시오. · 보상 400 Crystal / 4,000 Gold / 파티 XP 900"));
+        assertTrue(encoded.contains("Q|진입로 안전 확보|서브 목표 · New Drabyel|1|0|뉴 드라비엘 진입로의 순찰대를 정리하십시오. · 보상 300 Crystal / 3,000 Gold / 파티 XP 700"));
     }
 }
