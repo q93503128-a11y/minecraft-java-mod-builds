@@ -1242,7 +1242,7 @@ The frequent-action key map, accessibility/difficulty contract and current globa
 
 # 25. Runtime implementation status — 2026-09-30
 
-The first specialization/branch-authority slice is now implemented without changing the canon above.
+The progression backend now covers specialization identity, branch milestones/doctrines, Passive Point allocation authority, authored Insight identity/reward ownership and paid passive respec. This section records runtime status only; it does not change the canon above.
 
 Implemented:
 
@@ -1254,33 +1254,51 @@ Implemented:
 - canonical branch-switch Gold formula `round_to_10(max(150, min(1500, 0.60 * SwitchCost(L))))`;
 - server-side branch switching requires an already-unlocked sibling, the matching active root, an approved class-facility context and out-of-combat acceptance;
 - branch-switch Gold debit is idempotent and the pending transaction is persisted/reconciled across reconnect;
-- codec round-trip and branch-state invariants are unit tested;
-- join reconciliation is registered in the normal runtime.
+- persistent Rank-20 technique, Rank-32 doctrine and Rank-44 ascendant completion per specialization;
+- milestone order is fail-closed: Rank 32 requires completed Rank 20, and Rank 44 requires completed Rank 32;
+- exactly two canonical doctrine identities per specialization, with only one active at a time;
+- doctrine switching is available outside combat only after that branch's Rank-32 milestone is complete;
+- bundled data-driven passive catalog generated from the locked tables above: 115 root/branch nodes total, 7 root nodes / 17 max root ranks per class, 8 branch nodes / 18 max branch ranks per specialization;
+- Passive Point availability is computed as one point per even Class Rank plus the first five of eight completed Insights, capped at 30;
+- inactive-branch allocation does not consume the active branch's spend budget, so each branch preserves its own saved allocation while root points remain shared;
+- allocation gates implement the exact Branch I / II / III / Capstone rank, milestone and prior-investment requirements;
+- all 40 authored Class Insight identities are persistent and personal; first five completions per root class increase the spendable Passive Point budget;
+- Insight reward application uses the existing reconnect-safe reward coordinator and grants the canonical 8% of the current Class Rank requirement as Class XP;
+- canonical full-respec cost `round_to_10(max(50, min(500, 0.20 * SwitchCost(L))))`;
+- passive respec requires approved shrine/trainer context + out-of-combat acceptance, clears root + active-branch allocation while preserving the inactive sibling allocation, and uses a persisted idempotent Gold debit;
+- codec/catalog shape/invariant tests cover specialization, milestones, doctrine mapping, 115-node catalog shape, Insight counts, point caps, tier gates and persisted respec state;
+- normal join reconciliation resumes interrupted branch switches, Insight rewards and paid passive respec transactions.
 
 Verification:
 
 ```text
-CODE STATE: 18634fb28d8fdb2af308a00f43af5fc60f28ff06
-BUILD OPENWORLD RPG RUN: 36678731893
+CODE STATE: 1d4198aeb2485fc9528b4a19e0c0ffb7243b4901
+BUILD OPENWORLD RPG RUN: 36681079981
 UNIT TESTS: PASS
 CLEAN BUILD: PASS
 JAR VERIFY: PASS
 CORE SERVER SMOKE: PASS
 GAMEPLAY DEPENDENCY SERVER SMOKE: PASS
 GAMEPLAY CLIENT STARTUP: PASS
-JAR/PLAYTEST ARTIFACT PACKAGING: PASS
+JOINED-PLAYER ARC-BOLT VERIFICATION JAR: PRODUCED
+R01 INTEGRATION VERIFICATION JAR: PRODUCED
+MODRINTH PLAYTEST PACK: PRODUCED
+ARTIFACT: openworld-rpg-m0-1d4198aeb2485fc9528b4a19e0c0ffb7243b4901
+ARTIFACT SHA-256: 81a445b3421564679fcdc8955c468b8d678d143c87b414f24f225e18c8426fb7
 PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
 ```
 
 Still separate implementation work:
 
-- Rank-20 technique milestone state and branch-active runtime;
-- Rank-32 doctrine unlock/selection and effects;
-- Rank-44 ascendant mechanic/ultimate-augment state and effects;
-- Rank-50 Deep Mastery completion;
-- Passive Point / Insight / allocation / respec authority and passive runtime consumers;
-- specialization/class-screen UI and final icon/animation/VFX bindings.
+- actual Rank-20 branch technique skill/mechanic runtime effects;
+- actual Rank-32 doctrine combat/runtime effects;
+- Rank-44 ascendant mechanic and ultimate-augment choice/effects;
+- Rank-50 Deep Mastery challenge completion and its authored world binding;
+- encounter-specific Class Insight success detectors, including the five exact R01 challenge conditions in §19.1;
+- actual passive combat-effect consumers for the 115 catalog nodes;
+- Hidden Technique discovery/runtime binding;
+- late-class catch-up multiplier integration into eligible Class-XP reward pipelines;
+- specialization/class/passive screen UI and final icon/animation/VFX bindings.
 
-Do not treat the persistent branch state above as evidence that those later progression layers are already implemented.
-
+Do not treat stored milestone/passive state as evidence that the corresponding visible skills, mechanics, challenge detectors or passive effects are already player-facing.
