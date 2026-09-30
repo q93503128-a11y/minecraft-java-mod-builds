@@ -45,7 +45,7 @@ final class SharedBattleSnapshotCodec {
             UUID owner=session.ownerOf(unit.instanceId());
             if(owner!=null)out.append("O|").append(unit.instanceId()).append('|').append(owner).append('|').append(owner.equals(playerId)?1:0).append('\n');
         }
-        out.append("T|").append(state.timelinePreview(8).stream().map(CombatantState::instanceId).collect(Collectors.joining(","))).append('\n');
+        out.append("T|").append(state.timelinePreview(12).stream().map(CombatantState::instanceId).collect(Collectors.joining(","))).append('\n');
 
         if(running&&state.currentActorId()!=null&&session.canControlActor(playerId,state.currentActorId())){
             CombatantState current=state.combatant(state.currentActorId());
