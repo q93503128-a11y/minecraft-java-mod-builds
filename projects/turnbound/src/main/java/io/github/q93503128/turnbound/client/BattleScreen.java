@@ -87,9 +87,9 @@ public final class BattleScreen extends Screen {
     private void refresh() {
         seen = ClientBattleState.revision();
         var snapshot = ClientBattleState.snapshot();
-        List<String> nextTimeline = List.copyOf(snapshot.timeline().subList(0, Math.min(7, snapshot.timeline().size())));
+        List<String> nextTimeline = List.copyOf(snapshot.timeline().subList(0, Math.min(9, snapshot.timeline().size())));
         if (!lastTimeline.isEmpty() && !lastTimeline.equals(nextTimeline)) {
-            timelineMotion = TurnOrderMotion.plan(lastTimeline, nextTimeline, 7);
+            timelineMotion = TurnOrderMotion.plan(lastTimeline, nextTimeline, 9);
             timelineMotionStartedAt = System.currentTimeMillis();
         } else if (lastTimeline.isEmpty()) {
             timelineMotion = List.of();
