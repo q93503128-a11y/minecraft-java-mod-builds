@@ -279,16 +279,16 @@ Current external structure candidates:
 - exact structure bounds must be measured from the real 26.2 assets before placement decisions.
 
 **SY Village**
-- current Minecraft 26.2 NeoForge build exists.
+- current Minecraft 26.2 NeoForge release is 1.0.0.
 - MIT licensed.
 - blueprint/structure-oriented system and editable structure-block/NBT workflow.
 - useful technical reference/source for compact village houses and structure-template placement.
 - visual quality must be inspected before any building becomes final; compatibility alone is not a reason to adopt its aesthetic.
 
 **Towns and Towers**
-- current Minecraft 26.2 support exists.
+- current Minecraft 26.2 release 1.13.11 supports NeoForge/Fabric/Quilt.
 - contains dozens of village structures and several coastal/biome architectural families, including beach/mediterranean-style references.
-- CC-BY-NC-SA-4.0, so any extracted/adapted structure asset used in this noncommercial project requires correct attribution and share-alike handling for that adapted asset.
+- current CurseForge license page states **CC BY 4.0**; extracted/adapted structure use therefore requires attribution and modification notice as applicable, but not the previously recorded NC-SA restriction.
 - useful candidate pool for **café, clothing shop, museum-like civic shell, houses and harbor/coastal structures** when a specific structure visually fits.
 - do not import the entire worldgen system just to obtain one building if selected structure templates can be cleanly packaged instead.
 
