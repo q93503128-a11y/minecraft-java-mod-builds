@@ -1538,3 +1538,21 @@ Validation:
 - MULTIPLAYER TESTED: NO
 
 The next production unit is Av'Sal outskirts investigation -> north dock Midboss. MQ_AV02 is intentionally started but not claimed complete by this slice.
+
+
+## Open-world objective / navigation expansion — 2026-09-30
+
+Current production direction:
+- quest rewards scale upward with meaning, danger and discovery value; hidden or high-difficulty objectives may pay above ordinary side objectives
+- no daily/weekly/login chore economy; rewards come from exploration, quests, encounters, secrets, bosses and authored repeatable regional activity
+- New Drabyel service NPCs and field NPCs use the existing licensed external-model pipeline; future playable characters, NPCs and enemies remain external-asset-first
+- creature identity is intentionally unconstrained: humanoids, animals, constructs, spirits, animated objects, plants/fungi, tiny creatures, massive creatures and other silhouettes are valid when gameplay identity supports them
+- content expansion favors distinct mechanics/silhouettes over simply adding recolored humans or generic beasts
+- multiple objectives may coexist; the legacy tracker capacity is 5 and the authored-world map can project several active quest targets at once
+- exact server-resolved NPC/service positions are projected to the world map/minimap with small readable names
+- current navigation points directly at the next required hub NPC when that NPC has a verified runtime position
+- field NPCs can reveal hidden quests by conversation; hidden quests remain invisible before discovery
+- New Drabyel's former player-facing "마구간" service is now **역참**. It is a discovered-waypoint fast-travel service, not a mount-grant system.
+- a future mount system, if adopted, is separate content and must use a vetted external model/animation rather than pretending the current waystation already grants mounts
+- avoid travel padding: first-time traversal may establish scale, but repeated routes receive discovered waypoints/shortcuts; long roads should contain meaningful encounters, NPCs, discoveries or route choices instead of empty walking
+- the New Drabyel → Av'Sal road gains return waypoints at 끊긴 가도 and 아브살 외곽 so the long first journey does not become repeated commuting

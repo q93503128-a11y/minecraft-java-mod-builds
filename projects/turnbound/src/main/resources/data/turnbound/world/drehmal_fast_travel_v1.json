@@ -10,7 +10,7 @@
       "mapZ": 599,
       "unlockRadius": 42,
       "arrivalRadius": 18,
-      "yaw": 180.0
+      "yaw": 180
     },
     {
       "id": "turnbound:travel/capital_valley_tower",
@@ -21,7 +21,7 @@
       "mapZ": 1176,
       "unlockRadius": 48,
       "arrivalRadius": 22,
-      "yaw": 180.0
+      "yaw": 180
     },
     {
       "id": "turnbound:travel/new_drabyel",
@@ -32,7 +32,29 @@
       "mapZ": 1848,
       "unlockRadius": 72,
       "arrivalRadius": 30,
-      "yaw": 0.0
+      "yaw": 0
+    },
+    {
+      "id": "turnbound:travel/broken_west_road",
+      "label": "끊긴 가도",
+      "siteLocator": "turnbound:site/avsal/roadside_echo",
+      "mapX": 379,
+      "preferredY": 76,
+      "mapZ": 1577,
+      "unlockRadius": 44,
+      "arrivalRadius": 18,
+      "yaw": -90
+    },
+    {
+      "id": "turnbound:travel/avsal_outskirts",
+      "label": "아브살 외곽",
+      "siteLocator": "turnbound:site/avsal/outskirts",
+      "mapX": -162,
+      "preferredY": 86,
+      "mapZ": 1413,
+      "unlockRadius": 64,
+      "arrivalRadius": 28,
+      "yaw": -90
     }
   ]
 }

@@ -27,7 +27,8 @@ public final class DrehmalQuestCatalog {
 
     public enum Kind {
         MAIN("메인"),
-        SIDE("서브 목표");
+        SIDE("서브 목표"),
+        HIDDEN("숨은 의뢰");
 
         private final String label;
         Kind(String label) { this.label = label; }

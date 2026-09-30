@@ -139,25 +139,18 @@ final class DrehmalContextualOnboarding {
         if (!DrabyelOpeningTutorial.patrolCleared(clears)) {
             return openingPatrolGuidance();
         }
-        if (needs("BLACKSMITH", flags, roles)) {
-            return new Guidance(
-                    "대장장이를 찾아 장비를 확인하거나 강화하십시오.",
-                    "대장간은 마을 안쪽의 대장장이 앞에서 이용할 수 있습니다.");
+        String nextService = nextHubServiceRole(clears, flags, roles);
+        if ("BLACKSMITH".equals(nextService)) {
+            return new Guidance("대장장이를 찾아 장비를 확인하거나 강화하십시오.", "M 지도에는 마을 NPC 위치와 이름이 표시됩니다.");
         }
-        if (needs("MARKET", flags, roles)) {
-            return new Guidance(
-                    "장비 상인을 찾아 다음 여정에 필요한 장비를 확인하십시오.",
-                    "구매가 필요 없다면 확인만 하고 지나가도 됩니다.");
+        if ("MARKET".equals(nextService)) {
+            return new Guidance("장비 상인을 찾아 다음 여정에 필요한 장비를 확인하십시오.", "구매가 필요 없다면 확인만 하고 지나가도 됩니다. M 지도에서 상인의 위치를 확인할 수 있습니다.");
         }
-        if (needs("TRAVEL", flags, roles)) {
-            return new Guidance(
-                    "마구간을 찾아 이동 거점과 길의 방향을 확인하십시오.",
-                    "마구간에서 지도를 열어 발견한 이동 거점을 확인할 수 있습니다.");
+        if ("TRAVEL".equals(nextService)) {
+            return new Guidance("역참지기를 찾아 발견한 이동 거점을 확인하십시오.", "역참은 탈것 지급소가 아니라, 이미 발견한 거점으로 빠르게 이동하는 시설입니다.");
         }
-        if (DrehmalContentUnlocks.summonUnlocked(clears) && needs("SUMMON", flags, roles)) {
-            return new Guidance(
-                    "정령의 흔적을 찾아 새 동료를 부를 수 있는지 확인하십시오.",
-                    "캐피털 밸리의 강적을 넘겼다면 소환이 열려 있습니다.");
+        if ("SUMMON".equals(nextService)) {
+            return new Guidance("정령술사를 찾아 새 동료를 부를 수 있는지 확인하십시오.", "캐피털 밸리의 강적을 넘겼다면 소환이 열려 있습니다.");
         }
         if (!flags.contains(HUB_ROUTE_REVIEWED)) {
             return new Guidance(
@@ -172,6 +165,14 @@ final class DrehmalContextualOnboarding {
         return new Guidance(
                 "준비가 끝났다면 뉴 드라비엘 서쪽 출구에서 아브살 방향의 길을 따라가십시오.",
                 "마을을 나서기 전 장비와 파티를 다시 확인해도 됩니다.");
+    }
+
+    static String nextHubServiceRole(Set<String> clears, Set<String> flags, Set<String> roles) {
+        if (needs("BLACKSMITH", flags, roles)) return "BLACKSMITH";
+        if (needs("MARKET", flags, roles)) return "MARKET";
+        if (needs("TRAVEL", flags, roles)) return "TRAVEL";
+        if (DrehmalContentUnlocks.summonUnlocked(clears) && needs("SUMMON", flags, roles)) return "SUMMON";
+        return "";
     }
 
     private static Guidance openingPatrolGuidance() {

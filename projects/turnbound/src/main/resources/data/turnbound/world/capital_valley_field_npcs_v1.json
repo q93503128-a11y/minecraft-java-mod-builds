@@ -7,7 +7,10 @@
       "playerLabel": "길잡이 세라",
       "visualAsset": "DRABYEL_GREETER",
       "dialogue": "탑까지는 큰길을 따라가면 돼. 길가의 짐승과 약탈자는 멀리서도 보이니, 싸우기 싫다면 길 가장자리로 돌아가.",
-      "interactionRadius": 4
+      "interactionRadius": 4,
+      "questOfferFlag": "HIDDEN_CV_SERA_OFFERED",
+      "questOfferId": "turnbound:quest/drehmal/hidden_old_waymark",
+      "questOfferDialogue": "그런데 탑 아래쪽 돌기둥에 오래된 길표식이 하나 있어. 그냥 지나치기 쉬운데, 아직 남아 있다면 확인해 줄래? 제대로 읽히면 이 길을 다시 쓰는 데 도움이 될 거야."
     },
     {
       "locator": "turnbound:npc/capital_valley/tower_watch",
@@ -23,7 +26,10 @@
       "playerLabel": "탐험가 미라",
       "visualAsset": "DRABYEL_STORYKEEPER",
       "dialogue": "여기서부터 마을까지는 순찰대가 자주 보여. 캠프 남쪽 길은 넓지만, 먼저 적의 움직임을 보고 지나가는 편이 좋아.",
-      "interactionRadius": 4
+      "interactionRadius": 4,
+      "questOfferFlag": "HIDDEN_CV_MIRA_OFFERED",
+      "questOfferId": "turnbound:quest/drehmal/hidden_camp_night",
+      "questOfferDialogue": "밤마다 북쪽 길의 이끼등 무리가 야영지까지 내려와. 지나가는 길이면 한 번 흩어 줘. 다음 탐험대가 훨씬 편해질 거야."
     }
   ]
 }

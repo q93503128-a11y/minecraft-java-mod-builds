@@ -93,6 +93,7 @@ public final class DrehmalMinimapLayer implements GuiLayer {
         }
 
         drawDiscoveredTravel(graphics, field, mapX, mapY, px, pz, radius);
+        drawMapPoints(graphics, minecraft, field, mapX, mapY, px, pz, radius);
         drawPartyMembers(graphics, minecraft, mapX, mapY, px, pz, radius);
         drawArrow(graphics, mapX + MAP_SIZE / 2, mapY + MAP_SIZE / 2, minecraft.player.getYRot(), 0xFFFFFFFF, true);
         graphics.text(minecraft.font, Component.literal("N"), mapX + MAP_SIZE - 9, mapY + 3, 0xEFFFFFFF, true);
@@ -188,6 +189,23 @@ public final class DrehmalMinimapLayer implements GuiLayer {
             int color = TurnboundUiTokens.PRIMARY;
             graphics.fill(sx - 2, sy - 2, sx + 3, sy + 3, 0xAA111317);
             graphics.fill(sx - 1, sy - 1, sx + 2, sy + 2, color);
+        }
+    }
+
+    private static void drawMapPoints(
+            GuiGraphicsExtractor graphics, Minecraft minecraft, FieldUiSnapshot field,
+            int mapX, int mapY, double playerX, double playerZ, double radius) {
+        double clampRadius = Math.max(STEP, radius - STEP * 3.0);
+        for (FieldUiSnapshot.MapPoint point : field.mapPoints()) {
+            if (!point.active()) continue;
+            double dx = point.x() - playerX, dz = point.z() - playerZ;
+            if (Math.max(Math.abs(dx), Math.abs(dz)) > clampRadius) continue;
+            int sx = mapX + MAP_SIZE / 2 + (int)Math.round(dx / STEP * CELL);
+            int sy = mapY + MAP_SIZE / 2 + (int)Math.round(dz / STEP * CELL);
+            int color = switch (point.kind()) { case "QUEST", "SECRET" -> TARGET; case "SERVICE" -> TurnboundUiTokens.PRIMARY; default -> TurnboundUiTokens.SUCCESS; };
+            if (point.objective() || "QUEST".equals(point.kind()) || "SECRET".equals(point.kind())) drawTarget(graphics, sx, sy);
+            else { graphics.fill(sx - 2, sy - 2, sx + 3, sy + 3, 0xCC111317); graphics.fill(sx - 1, sy - 1, sx + 2, sy + 2, color); }
+            if (Math.max(Math.abs(dx), Math.abs(dz)) <= 42.0D) graphics.text(minecraft.font, Component.literal(fit(minecraft, point.label(), 72)), sx + 4, sy - 4, color, false);
         }
     }
 

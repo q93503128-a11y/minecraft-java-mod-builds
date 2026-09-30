@@ -593,3 +593,14 @@ NPC 역할:
 - NPC는 서비스 메뉴 버튼이 아니라 실제 3D actor로 존재하고, 가까워질 때만 이름/반응이 읽힌다.
 
 목표는 전투 횟수를 채우는 것이 아니라 45~90초 이동마다 지형, 적, NPC, 갈림길, 전망 중 하나가 읽히는 리듬이다.
+
+
+## Objective visibility / hidden requests / waystation
+
+- New Drabyel service NPC runtime coordinates are authoritative map points; the world map and nearby minimap label them by name.
+- Contextual onboarding navigates to the exact next service NPC instead of only telling the player to search the town.
+- The travel facility is player-facing **역참**. It provides fast travel to personally discovered nodes; it does not currently grant a rideable mount.
+- Quest NPC examples begin with 길잡이 세라 and 탐험가 미라. Their first conversation can reveal hidden requests that do not exist in the journal beforehand.
+- Hidden requests are server-authoritative one-time quests once discovered and receive the same durable reward protection as other authored-world quests.
+- The old three-objective tracking assumption is raised to five simultaneous tracked objectives. Authored-world active quests may also coexist on the map.
+- Empty walking is not content. Return travel nodes and future shortcuts remove repeated long commuting while keeping the first exploration pass readable.

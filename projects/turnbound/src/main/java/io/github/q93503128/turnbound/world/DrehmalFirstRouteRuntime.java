@@ -90,7 +90,8 @@ public final class DrehmalFirstRouteRuntime {
                 interaction.id(),
                 interaction.label(),
                 interaction.action(),
-                navigation);
+                navigation,
+                OpenworldMapPointService.points(player));
     }
 
     static String locationId(ServerPlayer player) {
@@ -167,9 +168,16 @@ public final class DrehmalFirstRouteRuntime {
             if (!inHub && (!DrabyelOpeningTutorial.introReady(flags)
                     || DrabyelOpeningTutorial.shouldReturnToHub(false, clears))) {
                 var hub = DrehmalWorldProfile.enabled(DrehmalWorldProfile.HUB_LOCATOR);
-                if (hub != null) {
-                    return new FieldUiSnapshot.Navigation(
-                            hub.locator(), "뉴 드라비엘", hub.x() + 0.5D, hub.z() + 0.5D);
+                if (hub != null) return new FieldUiSnapshot.Navigation(hub.locator(), "뉴 드라비엘", hub.x() + 0.5D, hub.z() + 0.5D);
+            }
+            if (inHub) {
+                String role = DrehmalContextualOnboarding.nextHubServiceRole(clears, flags, DrabyelHubServiceRuntime.availableRoles(player));
+                if (!role.isBlank()) {
+                    var service = DrabyelHubServiceRuntime.serviceByRole(player, role);
+                    if (service != null && service.runtimePosition() != null) {
+                        var pos = service.runtimePosition();
+                        return new FieldUiSnapshot.Navigation(service.locator(), service.playerLabel(), pos.x() + 0.5D, pos.z() + 0.5D);
+                    }
                 }
             }
             return FieldUiSnapshot.Navigation.none();

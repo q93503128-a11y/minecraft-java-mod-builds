@@ -184,6 +184,16 @@ final class DrehmalWorldMapScreen extends Screen {
             }
         }
 
+        for (FieldUiSnapshot.MapPoint point : ClientFieldState.snapshot().mapPoints()) {
+            if (!point.active() || !inside(point.x(), point.z(), view)) continue;
+            int sx = mapX + worldToMap(point.x(), view.minX, view.span, mapSize);
+            int sy = mapY + worldToMap(point.z(), view.minZ, view.span, mapSize);
+            drawMapPoint(graphics, sx, sy, point.kind(), point.objective());
+            if (point.objective() || view.span <= 720.0D) {
+                graphics.text(font, Component.literal(UiTextLayout.fit(point.label(), point.objective() ? 112 : 88)), sx + 6, sy - 4, mapPointColor(point.kind()), false);
+            }
+        }
+
         if (inside(px, pz, view)) {
             int psx = mapX + worldToMap(px, view.minX, view.span, mapSize);
             int psy = mapY + worldToMap(pz, view.minZ, view.span, mapSize);
@@ -196,6 +206,7 @@ final class DrehmalWorldMapScreen extends Screen {
             int nsx = mapX + worldToMap(navigation.x(), view.minX, view.span, mapSize);
             int nsy = mapY + worldToMap(navigation.z(), view.minZ, view.span, mapSize);
             drawObjectiveMarker(graphics, nsx, nsy);
+            if (mapSize >= 150) graphics.text(font, Component.literal(UiTextLayout.fit(navigation.label(), 112)), nsx + 8, nsy - 4, GOLD, false);
         }
 
         travelHits.clear();
@@ -487,6 +498,21 @@ final class DrehmalWorldMapScreen extends Screen {
     private static DrehmalWorldProfile.Anchor anchor(List<DrehmalWorldProfile.Anchor> anchors, String locator) {
         for (DrehmalWorldProfile.Anchor anchor : anchors) if (locator.equals(anchor.locator())) return anchor;
         return null;
+    }
+
+    private static void drawMapPoint(GuiGraphicsExtractor g, int cx, int cy, String kind, boolean objective) {
+        int color = mapPointColor(kind);
+        if (objective || "QUEST".equals(kind) || "SECRET".equals(kind)) {
+            g.fill(cx - 4, cy - 1, cx + 5, cy + 2, 0xDD111317);
+            g.fill(cx - 1, cy - 4, cx + 2, cy + 5, color);
+            return;
+        }
+        g.fill(cx - 3, cy - 3, cx + 4, cy + 4, 0xBB111317);
+        g.fill(cx - 1, cy - 1, cx + 2, cy + 2, color);
+    }
+
+    private static int mapPointColor(String kind) {
+        return switch (kind) { case "QUEST", "SECRET" -> GOLD; case "SERVICE" -> BLUE; default -> GREEN; };
     }
 
     private static void drawObjectiveMarker(GuiGraphicsExtractor g, int cx, int cy) {

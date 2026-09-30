@@ -1,1 +1,72 @@
-{"schemaVersion":1,"hubLocator":"turnbound:hub/new_drabyel","services":[{"locator":"turnbound:service/new_drabyel/entrance_greeter","role":"GREETER","playerLabel":"마을 입구 안내","facilityHint":"","zone":"ENTRANCE","visualAsset":"DRABYEL_GREETER","interactionRadius":4,"verifiedIn26_2":false,"productionEnabled":false},{"locator":"turnbound:service/new_drabyel/stables","role":"TRAVEL","playerLabel":"마구간","facilityHint":"TRAVEL","zone":"STABLES","visualAsset":"DRABYEL_STABLEMASTER","interactionRadius":5,"verifiedIn26_2":false,"productionEnabled":false},{"locator":"turnbound:service/new_drabyel/market","role":"MARKET","playerLabel":"장비 상인","facilityHint":"MARKET","zone":"MARKET_FRONTAGE","visualAsset":"DRABYEL_MERCHANT","interactionRadius":5,"verifiedIn26_2":false,"productionEnabled":false},{"locator":"turnbound:service/new_drabyel/blacksmith","role":"BLACKSMITH","playerLabel":"대장장이","facilityHint":"FORGE","zone":"BLACKSMITH","visualAsset":"DRABYEL_BLACKSMITH","interactionRadius":5,"verifiedIn26_2":false,"productionEnabled":false},{"locator":"turnbound:service/new_drabyel/story_square","role":"STORY","playerLabel":"마을 중심","facilityHint":"","zone":"CENTRAL_SQUARE","visualAsset":"DRABYEL_STORYKEEPER","interactionRadius":5,"verifiedIn26_2":false,"productionEnabled":false},{"locator":"turnbound:service/new_drabyel/summon","role":"SUMMON","playerLabel":"정령의 흔적","facilityHint":"SUMMON","zone":"INTERIOR_CANDIDATE","visualAsset":"DRABYEL_SUMMONER","interactionRadius":4,"verifiedIn26_2":false,"productionEnabled":false}]}
+{
+  "schemaVersion": 1,
+  "hubLocator": "turnbound:hub/new_drabyel",
+  "services": [
+    {
+      "locator": "turnbound:service/new_drabyel/entrance_greeter",
+      "role": "GREETER",
+      "playerLabel": "문지기 라나",
+      "facilityHint": "",
+      "zone": "ENTRANCE",
+      "visualAsset": "DRABYEL_GREETER",
+      "interactionRadius": 4,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:service/new_drabyel/stables",
+      "role": "TRAVEL",
+      "playerLabel": "역참지기 바렌",
+      "facilityHint": "TRAVEL",
+      "zone": "STABLES",
+      "visualAsset": "DRABYEL_STABLEMASTER",
+      "interactionRadius": 5,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:service/new_drabyel/market",
+      "role": "MARKET",
+      "playerLabel": "장비 상인 에다",
+      "facilityHint": "MARKET",
+      "zone": "MARKET_FRONTAGE",
+      "visualAsset": "DRABYEL_MERCHANT",
+      "interactionRadius": 5,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:service/new_drabyel/blacksmith",
+      "role": "BLACKSMITH",
+      "playerLabel": "대장장이 도른",
+      "facilityHint": "FORGE",
+      "zone": "BLACKSMITH",
+      "visualAsset": "DRABYEL_BLACKSMITH",
+      "interactionRadius": 5,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:service/new_drabyel/story_square",
+      "role": "STORY",
+      "playerLabel": "기록관 세린",
+      "facilityHint": "",
+      "zone": "CENTRAL_SQUARE",
+      "visualAsset": "DRABYEL_STORYKEEPER",
+      "interactionRadius": 5,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:service/new_drabyel/summon",
+      "role": "SUMMON",
+      "playerLabel": "정령술사 루미",
+      "facilityHint": "SUMMON",
+      "zone": "INTERIOR_CANDIDATE",
+      "visualAsset": "DRABYEL_SUMMONER",
+      "interactionRadius": 4,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    }
+  ]
+}

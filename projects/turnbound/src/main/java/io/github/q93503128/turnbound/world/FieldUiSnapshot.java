@@ -8,6 +8,7 @@ import io.github.q93503128.turnbound.progression.EquipmentRules;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /** Shared server/client view model for field UI and world bootstrap state. */
 public record FieldUiSnapshot(
@@ -31,7 +32,8 @@ public record FieldUiSnapshot(
         String interactionId,
         String interactionLabel,
         String interactionAction,
-        Navigation navigation
+        Navigation navigation,
+        List<MapPoint> mapPoints
 ) {
     public enum Mode { NONE, LOADING, BATTLE_TRANSITION, QUEST, RESULT, TRAVEL }
 
@@ -97,6 +99,22 @@ public record FieldUiSnapshot(
 
     public record Travel(String id, String label, boolean unlocked, boolean current) {}
 
+    public record MapPoint(String id, String label, String kind, double x, double z, boolean objective) {
+        public MapPoint {
+            id = id == null ? "" : id.trim();
+            label = playerFacingText(label == null ? "" : label);
+            kind = kind == null ? "NPC" : kind.trim().toUpperCase(java.util.Locale.ROOT);
+            if (!Set.of("NPC", "SERVICE", "QUEST", "SECRET").contains(kind)) kind = "NPC";
+            if (!Double.isFinite(x) || !Double.isFinite(z) || id.isBlank() || label.isBlank()) {
+                id = "";
+                label = "";
+                x = 0.0D;
+                z = 0.0D;
+            }
+        }
+        public boolean active() { return !id.isBlank() && !label.isBlank(); }
+    }
+
     public record Navigation(String id, String label, double x, double z) {
         public Navigation {
             id = id == null ? "" : id.trim();
@@ -128,6 +146,36 @@ public record FieldUiSnapshot(
         interactionLabel = playerFacingText(interactionLabel == null ? "" : interactionLabel);
         interactionAction = playerFacingText(interactionAction == null ? "" : interactionAction);
         navigation = navigation == null ? Navigation.none() : navigation;
+        mapPoints = List.copyOf(mapPoints == null ? List.of() : mapPoints.stream().filter(MapPoint::active).toList());
+    }
+
+    /** Compatibility constructor matching the pre-map-point full snapshot shape. */
+    public FieldUiSnapshot(
+            boolean active,
+            Mode mode,
+            int patrolsCleared,
+            int patrolGoal,
+            boolean bossUnlocked,
+            boolean chapterCleared,
+            int earnedXp,
+            int earnedGold,
+            String objective,
+            String dialogue,
+            Reward reward,
+            List<Encounter> encounters,
+            List<Travel> travels,
+            String loadingStage,
+            int loadingPercent,
+            String locationId,
+            String locationTitle,
+            String interactionId,
+            String interactionLabel,
+            String interactionAction,
+            Navigation navigation
+    ) {
+        this(active, mode, patrolsCleared, patrolGoal, bossUnlocked, chapterCleared, earnedXp, earnedGold,
+                objective, dialogue, reward, encounters, travels, loadingStage, loadingPercent,
+                locationId, locationTitle, interactionId, interactionLabel, interactionAction, navigation, List.of());
     }
 
     /** Final UI-boundary defense. Internal identifiers remain valid in logic/save data but not in authored copy. */

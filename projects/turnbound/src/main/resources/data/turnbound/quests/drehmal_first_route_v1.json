@@ -37,6 +37,31 @@
       "rewardCrystal": 300,
       "rewardGold": 3000,
       "rewardXp": 700
+    },
+    {
+      "id": "turnbound:quest/drehmal/hidden_old_waymark",
+      "kind": "HIDDEN",
+      "title": "돌에 새겨진 길",
+      "regionLabel": "Capital Valley",
+      "objective": "길잡이 세라가 말한 캐피털 밸리 탑의 오래된 길표식을 확인하십시오.",
+      "activationFlag": "HIDDEN_CV_SERA_OFFERED",
+      "completionFlag": "ROUTE_TOWER_REACHED",
+      "rewardCrystal": 450,
+      "rewardGold": 4500,
+      "rewardXp": 900
+    },
+    {
+      "id": "turnbound:quest/drehmal/hidden_camp_night",
+      "kind": "HIDDEN",
+      "title": "야영지의 밤손님",
+      "regionLabel": "Capital Valley",
+      "objective": "탐험가 미라의 부탁대로 야영지 북쪽의 이끼등 무리를 정리하십시오.",
+      "activationFlag": "HIDDEN_CV_MIRA_OFFERED",
+      "encounterId": "CV_CAMP_WILDLIFE",
+      "requiresProductionEncounter": true,
+      "rewardCrystal": 350,
+      "rewardGold": 3500,
+      "rewardXp": 800
     }
   ]
 }

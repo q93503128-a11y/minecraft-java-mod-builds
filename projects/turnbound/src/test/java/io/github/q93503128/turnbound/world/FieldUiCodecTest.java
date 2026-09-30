@@ -124,6 +124,20 @@ class FieldUiCodecTest {
     }
 
     @Test
+    void roundTripsServerAuthoredMapPoints() {
+        FieldUiSnapshot source = new FieldUiSnapshot(
+                true, FieldUiSnapshot.Mode.NONE, 0, 0, false, false, 0, 0,
+                "여러 목표를 확인하십시오.", "", FieldUiSnapshot.Reward.none(), List.of(), List.of(),
+                "", 0, "", "", "", "", "", FieldUiSnapshot.Navigation.none(),
+                List.of(
+                        new FieldUiSnapshot.MapPoint("npc:sera", "길잡이 세라", "NPC", 600.5D, 900.5D, false),
+                        new FieldUiSnapshot.MapPoint("quest:tower", "돌에 새겨진 길", "QUEST", 557.5D, 1176.5D, true)));
+        FieldUiSnapshot decoded = FieldUiCodec.decode(FieldUiCodec.encode(source));
+        assertEquals(source.mapPoints(), decoded.mapPoints());
+        assertEquals(2, decoded.mapPoints().size());
+    }
+
+    @Test
     void roundTripsBattleTransitionOwnershipState() {
         FieldUiSnapshot decoded = FieldUiCodec.decode(FieldUiCodec.encode(FieldUiSnapshot.battleTransition()));
         assertTrue(decoded.active());

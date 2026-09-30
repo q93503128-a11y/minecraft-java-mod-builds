@@ -11,7 +11,8 @@ public final class DrehmalFieldNpcCatalog {
     private static final Set<String> VISUALS=Set.of("DRABYEL_GREETER","DRABYEL_STABLEMASTER","DRABYEL_STORYKEEPER");
     private static final List<Npc> NPCS=load();
 
-    public record Npc(String locator,String siteLocator,String playerLabel,String visualAsset,String dialogue,int interactionRadius){}
+    public record Npc(String locator,String siteLocator,String playerLabel,String visualAsset,String dialogue,int interactionRadius,
+                      String questOfferFlag,String questOfferId,String questOfferDialogue){}
 
     private DrehmalFieldNpcCatalog(){}
     public static List<Npc> all(){return NPCS;}
@@ -25,6 +26,7 @@ public final class DrehmalFieldNpcCatalog {
             if(npc.playerLabel().isBlank()||npc.dialogue().isBlank())errors.add("blank field npc copy "+npc.locator());
             if(!VISUALS.contains(npc.visualAsset()))errors.add("unsupported field npc visual "+npc.visualAsset());
             if(npc.interactionRadius()<2||npc.interactionRadius()>6)errors.add("invalid field npc radius "+npc.locator());
+            if(!npc.questOfferFlag().isBlank()&&(npc.questOfferId().isBlank()||npc.questOfferDialogue().isBlank()))errors.add("incomplete field npc quest offer "+npc.locator());
         }
         return List.copyOf(errors);
     }
@@ -37,7 +39,8 @@ public final class DrehmalFieldNpcCatalog {
             List<Npc> out=new ArrayList<>();
             for(JsonElement element:root.getAsJsonArray("npcs")){
                 JsonObject raw=element.getAsJsonObject();
-                out.add(new Npc(str(raw,"locator"),str(raw,"siteLocator"),str(raw,"playerLabel"),str(raw,"visualAsset"),str(raw,"dialogue"),raw.get("interactionRadius").getAsInt()));
+                out.add(new Npc(str(raw,"locator"),str(raw,"siteLocator"),str(raw,"playerLabel"),str(raw,"visualAsset"),str(raw,"dialogue"),
+                        raw.get("interactionRadius").getAsInt(),optional(raw,"questOfferFlag"),optional(raw,"questOfferId"),optional(raw,"questOfferDialogue")));
             }
             return List.copyOf(out);
         }catch(Exception ex){
@@ -45,6 +48,7 @@ public final class DrehmalFieldNpcCatalog {
             throw new IllegalStateException("Failed loading Capital Valley field NPC catalog",ex);
         }
     }
+    private static String optional(JsonObject raw,String key){return raw!=null&&raw.has(key)&&raw.get(key).isJsonPrimitive()?raw.get(key).getAsString().trim():"";}
     private static String str(JsonObject raw,String key){
         String value=raw.get(key).getAsString().trim();if(value.isBlank())throw new IllegalStateException("Blank field NPC field "+key);return value;
     }

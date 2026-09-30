@@ -57,7 +57,15 @@ final class DrehmalFieldNpcRuntime {
         double radius=npc.interactionRadius()+1.0D;
         if(player.position().distanceToSqr(pos)>radius*radius)return false;
         if(target instanceof BattleActorEntity actor){face(actor,player);actor.playServiceGreeting();}
-        FieldNetwork.showDialogue(player, npc.playerLabel(), npc.dialogue());
+        String dialogue=npc.dialogue();
+        var server=player.level().getServer();
+        if(server!=null&&!npc.questOfferFlag().isBlank()){
+            ExternalWorldSavedData data=ExternalWorldSavedData.get(server);
+            boolean first=!data.onboardingFlag(player.getUUID(),npc.questOfferFlag());
+            if(first){data.markOnboardingFlag(player.getUUID(),npc.questOfferFlag());dialogue=dialogue+"\n\n"+npc.questOfferDialogue();}
+        }
+        FieldNetwork.showDialogue(player, npc.playerLabel(), dialogue);
+        ExternalWorldBootstrap.refreshFieldContext(player);
         return true;
     }
 

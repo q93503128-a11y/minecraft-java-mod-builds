@@ -6,15 +6,15 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.jetbrains.annotations.NotNull;
 
-/** Physical stable/waystation UI. Fast travel remains a world service rather than a global menu category. */
+/** Physical waystation UI. Fast travel remains a world service rather than a global menu category. */
 final class FacilityTravelScreen extends FacilityScreen {
     FacilityTravelScreen() {
-        super("마구간", 0xFF6DC6FF, 350, 205, 300, 188);
+        super("역참", 0xFF6DC6FF, 350, 205, 300, 188);
     }
 
     @Override
     protected String subtitle() {
-        return "직접 발견한 거점으로 이동";
+        return "직접 발견한 거점으로 빠르게 이동";
     }
 
     @Override

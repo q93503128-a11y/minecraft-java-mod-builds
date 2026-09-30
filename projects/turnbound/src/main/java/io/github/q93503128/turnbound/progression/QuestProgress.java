@@ -11,7 +11,7 @@ import java.util.Set;
 
 /** Persistent v0.4 quest journal and objective progress. */
 public final class QuestProgress {
-    public static final int TRACK_LIMIT = 3;
+    public static final int TRACK_LIMIT = 5;
 
     public enum EventType { INTERACT, PARTY_CONFIRM, BATTLE_WIN, BOSS_WIN, INVENTORY_FLAG, KILL, LOOT }
 

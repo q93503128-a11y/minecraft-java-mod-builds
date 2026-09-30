@@ -29,7 +29,7 @@ public final class DrehmalFastTravelCatalog {
             if(!ids.add(node.id()))errors.add("duplicate fast travel id "+node.id());
             if(!sites.add(node.siteLocator()))errors.add("duplicate fast travel site "+node.siteLocator());
             if(node.label().isBlank())errors.add("blank fast travel label "+node.id());
-            if(DrehmalFirstRouteCatalog.site(node.siteLocator())==null)errors.add("unknown fast travel site "+node.siteLocator());
+            if(DrehmalFirstRouteCatalog.site(node.siteLocator())==null&&AvsalExpansionCatalog.site(node.siteLocator())==null)errors.add("unknown fast travel site "+node.siteLocator());
             if(node.unlockRadius()<16||node.unlockRadius()>128)errors.add("invalid unlock radius "+node.id());
             if(node.arrivalRadius()<8||node.arrivalRadius()>48)errors.add("invalid arrival radius "+node.id());
             if(node.yaw()<-180.0F||node.yaw()>180.0F)errors.add("invalid travel yaw "+node.id());

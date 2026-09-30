@@ -53,11 +53,13 @@ class QuestProgressTest {
     }
 
     @Test
-    void trackerHonorsCanonicalThreeQuestLimit() {
+    void trackerSupportsFiveSimultaneousObjectives() {
         QuestProgress progress = QuestProgress.empty();
         progress.track("RQ_M01_broken_cart");
         progress.track("RQ_M02_missing_scout");
         progress.track("RQ_M03_fuse_nest");
-        assertThrows(IllegalStateException.class, () -> progress.track("RQ_G01_lost_lantern"));
+        progress.track("RQ_G01_lost_lantern");
+        progress.track("RQ_G02_moss_path");
+        assertThrows(IllegalStateException.class, () -> progress.track("RQ_G03_root_sample"));
     }
 }

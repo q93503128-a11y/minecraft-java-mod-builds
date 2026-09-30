@@ -30,6 +30,14 @@ public final class FieldUiCodec {
                 .append('|').append(text(navigation.label()))
                 .append('|').append(navigation.x())
                 .append('|').append(navigation.z()).append('\n');
+        for (FieldUiSnapshot.MapPoint point : snapshot.mapPoints()) {
+            out.append("P|").append(text(point.id()))
+                    .append('|').append(text(point.label()))
+                    .append('|').append(text(point.kind()))
+                    .append('|').append(point.x())
+                    .append('|').append(point.z())
+                    .append('|').append(bit(point.objective())).append('\n');
+        }
         FieldUiSnapshot.Reward reward = snapshot.reward();
         out.append("R|").append(text(reward.encounterLabel()))
                 .append('|').append(reward.xp())
@@ -72,6 +80,7 @@ public final class FieldUiCodec {
         String interactionLabel = "";
         String interactionAction = "";
         FieldUiSnapshot.Navigation navigation = FieldUiSnapshot.Navigation.none();
+        List<FieldUiSnapshot.MapPoint> mapPoints = new ArrayList<>();
         FieldUiSnapshot.Reward reward = FieldUiSnapshot.Reward.none();
         List<FieldUiSnapshot.Encounter> encounters = new ArrayList<>();
         List<FieldUiSnapshot.Travel> travels = new ArrayList<>();
@@ -120,6 +129,11 @@ public final class FieldUiCodec {
                                     Double.parseDouble(parts[3]), Double.parseDouble(parts[4]));
                         }
                     }
+                    case "P" -> {
+                        if (parts.length >= 7) mapPoints.add(new FieldUiSnapshot.MapPoint(
+                                read(parts[1]), read(parts[2]), read(parts[3]),
+                                Double.parseDouble(parts[4]), Double.parseDouble(parts[5]), bool(parts[6])));
+                    }
                     case "R" -> {
                         if (parts.length >= 6) reward = new FieldUiSnapshot.Reward(
                                 read(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3]),
@@ -141,7 +155,7 @@ public final class FieldUiCodec {
         }
         return new FieldUiSnapshot(active, mode, patrols, goal, bossUnlocked, chapterCleared, xp, gold,
                 objective, dialogue, reward, encounters, travels, loadingStage, loadingPercent,
-                locationId, locationTitle, interactionId, interactionLabel, interactionAction, navigation);
+                locationId, locationTitle, interactionId, interactionLabel, interactionAction, navigation, mapPoints);
     }
 
     private static int bit(boolean value) { return value ? 1 : 0; }

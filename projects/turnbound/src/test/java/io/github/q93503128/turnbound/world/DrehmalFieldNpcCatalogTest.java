@@ -4,13 +4,17 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class DrehmalFieldNpcCatalogTest {
-    @Test void fieldNpcCatalogIsValid(){
-        assertTrue(DrehmalFieldNpcCatalog.validate().isEmpty(),()->String.join("; ",DrehmalFieldNpcCatalog.validate()));
-    }
-    @Test void firstRouteHasThreePurposefulFieldNpcs(){
-        assertEquals(3,DrehmalFieldNpcCatalog.all().size());
-        assertTrue(DrehmalFieldNpcCatalog.all().stream().anyMatch(n->n.siteLocator().endsWith("/first_guide")));
-        assertTrue(DrehmalFieldNpcCatalog.all().stream().anyMatch(n->n.siteLocator().endsWith("/tower_watch")));
-        assertTrue(DrehmalFieldNpcCatalog.all().stream().anyMatch(n->n.siteLocator().endsWith("/camp_explorer")));
+    @Test
+    void fieldNpcCatalogCarriesDiscoverableHiddenQuestOffers() {
+        assertTrue(DrehmalFieldNpcCatalog.validate().isEmpty(),
+                () -> String.join("; ", DrehmalFieldNpcCatalog.validate()));
+        long offers = DrehmalFieldNpcCatalog.all().stream().filter(npc -> !npc.questOfferFlag().isBlank()).count();
+        assertEquals(2, offers);
+        for (var npc : DrehmalFieldNpcCatalog.all()) {
+            if (npc.questOfferFlag().isBlank()) continue;
+            assertTrue(npc.questOfferFlag().startsWith("HIDDEN_"));
+            assertTrue(npc.questOfferId().startsWith("turnbound:quest/drehmal/hidden_"));
+            assertFalse(npc.questOfferDialogue().isBlank());
+        }
     }
 }

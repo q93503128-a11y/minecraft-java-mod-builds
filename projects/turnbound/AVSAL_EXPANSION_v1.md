@@ -282,3 +282,12 @@ Build TURNBOUND #954 verified code commit `bf228f7de380896c8cc9c070d8c996a236f02
 - dedicated-server smoke: PASS
 - JAR/mrpack verification: PASS
 - client runtime/playtest/multiplayer: NOT TESTED
+
+
+## Travel pacing and map readability
+
+- New Drabyel → Av'Sal is a first-time journey, not a route the player should be forced to walk end-to-end repeatedly.
+- Discovery adds a return waypoint at 끊긴 가도 and another at 아브살 외곽.
+- Active Av'Sal quests may coexist with Capital Valley/hidden objectives and project their exact known target zones onto the map.
+- MQ_AV02 remains an outskirts investigation objective until its individual clue interactions are implemented; do not invent false exact clue coordinates before live-world placement.
+- Future Av'Sal NPCs, enemies, midbosses and playable additions remain external-model-first and should broaden silhouettes/species rather than defaulting to humanoid-only or giant-monster-only content.

@@ -21,6 +21,9 @@ class DrabyelHubServiceCatalogTest {
    assertNotEquals("NONE",service.visualAsset(),service.role());
    assertFalse(service.productionEnabled(),service.role());
   }
+  var travel=DrabyelHubServiceCatalog.hub().services().stream().filter(s->s.role().equals("TRAVEL")).findFirst().orElseThrow();
+  assertTrue(travel.playerLabel().contains("역참"),travel.playerLabel());
+  assertFalse(travel.playerLabel().equals("마구간"));
   var market=DrabyelHubServiceCatalog.hub().services().stream().filter(s->s.role().equals("MARKET")).findFirst().orElseThrow();
   var smith=DrabyelHubServiceCatalog.hub().services().stream().filter(s->s.role().equals("BLACKSMITH")).findFirst().orElseThrow();
   assertEquals("MARKET",market.facilityHint());
