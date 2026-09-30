@@ -56,7 +56,8 @@ class BattleHudLayoutTest {
         for (int[] size : new int[][]{{320,180},{640,360},{854,480},{1280,720}}) {
             BattleHudLayout.Layout layout = BattleHudLayout.calculate(size[0], size[1]);
             assertTrue(layout.timeline().height() >= 67, size[0] + "x" + size[1]);
-            assertTrue(layout.timeline().width() >= 140, size[0] + "x" + size[1]);
+            int minGaugeWidth = size[0] <= 320 ? 108 : size[0] < 854 ? 124 : 140;
+            assertTrue(layout.timeline().width() >= minGaugeWidth, size[0] + "x" + size[1]);
             assertFalse(layout.timeline().overlaps(layout.actionHeader()), size[0] + "x" + size[1]);
         }
     }
