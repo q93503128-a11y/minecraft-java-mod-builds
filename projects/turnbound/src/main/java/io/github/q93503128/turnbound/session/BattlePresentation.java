@@ -48,6 +48,9 @@ final class BattlePresentation {
     private final Map<String, String> heroSignatureStates = new LinkedHashMap<>();
     private final Map<String, RelationMarker> relationMarkers = new LinkedHashMap<>();
     private final Map<String, Integer> pendingRemovalTicks = new LinkedHashMap<>();
+    private final Map<String, Integer> pendingDownMarkerTicks = new LinkedHashMap<>();
+    private final Map<String, UUID> downMarkers = new LinkedHashMap<>();
+    private final Set<String> retiredDownedVisuals = new HashSet<>();
     /** Multiple actors may still be returning at 2x speed; never strand the previous attacker. */
     private final Map<String, Integer> returnTimers = new LinkedHashMap<>();
     private UUID focusMarker;
@@ -71,6 +74,7 @@ final class BattlePresentation {
             boolean ally = combatant.side()==CombatantSide.ALLY;
             int index=ally?allyIndex++:enemyIndex++;
             if (actors.containsKey(combatant.instanceId())) continue;
+            if (combatant.downed() && retiredDownedVisuals.contains(combatant.instanceId())) continue;
             BattleFormationLayout.Local local=ally
                     ? BattleFormationLayout.ally(combatant,index,allyCount,playerGroups)
                     : BattleFormationLayout.enemy(index,enemyCount);
@@ -79,6 +83,7 @@ final class BattlePresentation {
         }
         for (CombatantState combatant : units) {
             if (!combatant.definition().summon() || actors.containsKey(combatant.instanceId())) continue;
+            if (combatant.downed() && retiredDownedVisuals.contains(combatant.instanceId())) continue;
             String ownerId=combatant.ref("ownerId");
             Vec3 ownerHome=homes.get(ownerId); if(ownerHome==null) ownerHome=center;
             Iterable<String> visualRules=combatant.definition().rules();
@@ -107,6 +112,8 @@ final class BattlePresentation {
             stand.setCustomNameVisible(false);stand.setInvulnerable(true);stand.setNoGravity(true);stand.setShowArms(true);stand.setYRot(yaw);
             equipStandIn(stand,combatant);level.addFreshEntity(stand);actor=stand;visualId=baseVisualId;
         }
+        clearDownMarker(level, combatant.instanceId());
+        retiredDownedVisuals.remove(combatant.instanceId());
         actors.put(combatant.instanceId(),actor.getUUID()); homes.put(combatant.instanceId(),pos); homeYaws.put(combatant.instanceId(),yaw);
         sides.put(combatant.instanceId(),combatant.side()); summons.put(combatant.instanceId(),combatant.definition().summon());
         visualIds.put(combatant.instanceId(),visualId); downed.put(combatant.instanceId(),combatant.downed()); barriers.put(combatant.instanceId(),combatant.barrier());
@@ -116,11 +123,13 @@ final class BattlePresentation {
     private void removeMissing(ServerLevel level,List<CombatantState> units){
         Set<String> liveIds=new HashSet<>();for(CombatantState unit:units)liveIds.add(unit.instanceId());
         for(String id:List.copyOf(actors.keySet())){if(liveIds.contains(id)||pendingRemovalTicks.containsKey(id))continue;removeActor(level,id);}
+        retiredDownedVisuals.removeIf(id -> !liveIds.contains(id));
     }
 
     private void removeActor(ServerLevel level,String id){
         UUID uuid=actors.remove(id);Entity entity=uuid==null?null:level.getEntity(uuid);if(entity!=null)entity.discard();
-        homes.remove(id);homeYaws.remove(id);sides.remove(id);summons.remove(id);visualIds.remove(id);downed.remove(id);barriers.remove(id);bossPhases.remove(id);heroSignatureStates.remove(id);pendingRemovalTicks.remove(id);returnTimers.remove(id);
+        clearDownMarker(level,id);
+        homes.remove(id);homeYaws.remove(id);sides.remove(id);summons.remove(id);visualIds.remove(id);downed.remove(id);barriers.remove(id);bossPhases.remove(id);heroSignatureStates.remove(id);pendingRemovalTicks.remove(id);pendingDownMarkerTicks.remove(id);returnTimers.remove(id);
     }
 
     private static Vec3 localToWorld(Vec3 center,Vec3 right,Vec3 forward,double x,double z){return center.add(right.scale(x)).subtract(forward.scale(z));}
@@ -148,7 +157,17 @@ final class BattlePresentation {
                         BattleVfx.down(level,home);
                         EnemyDefeatVfx.play(level,visualIds.getOrDefault(id,unit.definition().id()),home);
                     }
+                    if(unit.side()==CombatantSide.ENEMY || unit.definition().summon()){
+                        pendingRemovalTicks.put(id, defeatRemovalTicks(unit));
+                    }else{
+                        pendingDownMarkerTicks.put(id, allyDownMarkerDelayTicks(unit));
+                    }
                 }else{
+                    pendingRemovalTicks.remove(id);
+                    pendingDownMarkerTicks.remove(id);
+                    retiredDownedVisuals.remove(id);
+                    clearDownMarker(level,id);
+                    if(entity!=null)entity.setInvisible(false);
                     if(entity instanceof BattleActorEntity a)a.playRevive();
                     if(home!=null)BattleVfx.revive(level,home);
                 }
@@ -468,7 +487,7 @@ final class BattlePresentation {
     void lunge(ServerLevel level,String actorId,String visualId,String skillId,String targetId){performSkill(level,actorId,visualId,skillId,targetId,true);}
 
     void tick(ServerLevel level){
-        tickPendingRemovals(level);tickReturns(level);tickRelationMarkers(level);
+        tickPendingDownMarkers(level);tickPendingRemovals(level);tickReturns(level);tickRelationMarkers(level);
     }
 
     private void tickRelationMarkers(ServerLevel level){
@@ -492,18 +511,64 @@ final class BattlePresentation {
         }
     }
 
+    private void tickPendingDownMarkers(ServerLevel level){
+        for(String id:List.copyOf(pendingDownMarkerTicks.keySet())){
+            int left=pendingDownMarkerTicks.getOrDefault(id,0)-1;
+            if(left>0){pendingDownMarkerTicks.put(id,left);continue;}
+            pendingDownMarkerTicks.remove(id);
+            if(!Boolean.TRUE.equals(downed.get(id))||sides.get(id)!=CombatantSide.ALLY)continue;
+            Entity actor=entity(level,id);
+            if(actor!=null)actor.setInvisible(true);
+            spawnDownMarker(level,id);
+        }
+    }
+
     private void tickPendingRemovals(ServerLevel level){
         for(String id:List.copyOf(pendingRemovalTicks.keySet())){
             int left=pendingRemovalTicks.getOrDefault(id,0)-1;
-            if(left<=0)removeActor(level,id);else pendingRemovalTicks.put(id,left);
+            if(left>0){pendingRemovalTicks.put(id,left);continue;}
+            if(Boolean.TRUE.equals(downed.get(id)))retiredDownedVisuals.add(id);
+            removeActor(level,id);
         }
+    }
+
+    private void spawnDownMarker(ServerLevel level,String id){
+        if(downMarkers.containsKey(id))return;
+        Vec3 home=homes.get(id);if(home==null)return;
+        Entity actor=entity(level,id);
+        Component actorName=actor!=null&&actor.getCustomName()!=null?actor.getCustomName():Component.literal("아군");
+        ArmorStand marker=new ArmorStand(level,home.x,home.y-.72D,home.z);
+        marker.setInvisible(true);marker.setInvulnerable(true);marker.setNoGravity(true);setSmall(marker);
+        marker.setItemSlot(EquipmentSlot.HEAD,Items.CHISELED_STONE_BRICKS.getDefaultInstance());
+        marker.setCustomName(Component.literal("전투불능 · ").append(actorName).withStyle(ChatFormatting.GRAY));
+        marker.setCustomNameVisible(true);
+        Float yaw=homeYaws.get(id);if(yaw!=null)marker.setYRot(yaw);
+        if(level.addFreshEntity(marker))downMarkers.put(id,marker.getUUID());
+    }
+
+    private void clearDownMarker(ServerLevel level,String id){
+        UUID markerId=downMarkers.remove(id);if(markerId==null)return;
+        Entity marker=level.getEntity(markerId);if(marker!=null)marker.discard();
+    }
+
+    private static int defeatRemovalTicks(CombatantState unit){
+        if(unit.definition().summon())return 12;
+        return unit.definition().boss()?28:20;
+    }
+
+    private static int allyDownMarkerDelayTicks(CombatantState unit){
+        return switch(unit.definition().id()){
+            case "P01","P03","P06","P08" -> 28;
+            default -> 26;
+        };
     }
 
     void cleanup(ServerLevel level){clearFocus(level);clearDanger(level);cleanupActors(level);finishPlayed=false;}
     private void cleanupActors(ServerLevel level){
         for(UUID id:actors.values()){Entity entity=level.getEntity(id);if(entity!=null)entity.discard();}
         for(RelationMarker marker:relationMarkers.values()){Entity entity=level.getEntity(marker.markerId());if(entity!=null)entity.discard();}
-        actors.clear();homes.clear();homeYaws.clear();sides.clear();summons.clear();visualIds.clear();downed.clear();barriers.clear();bossPhases.clear();heroSignatureStates.clear();relationMarkers.clear();pendingRemovalTicks.clear();returnTimers.clear();
+        for(UUID markerId:downMarkers.values()){Entity entity=level.getEntity(markerId);if(entity!=null)entity.discard();}
+        actors.clear();homes.clear();homeYaws.clear();sides.clear();summons.clear();visualIds.clear();downed.clear();barriers.clear();bossPhases.clear();heroSignatureStates.clear();relationMarkers.clear();pendingRemovalTicks.clear();pendingDownMarkerTicks.clear();downMarkers.clear();retiredDownedVisuals.clear();returnTimers.clear();
     }
     private Entity entity(ServerLevel level,String id){UUID uuid=actors.get(id);return uuid==null?null:level.getEntity(uuid);}
 
