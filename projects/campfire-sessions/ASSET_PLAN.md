@@ -685,6 +685,13 @@ Current external resident/model source pool:
   - GeckoLib **5.5.6 / NeoForge 26.2** is entering the combined Campfire build trial as the resident entity animation/rendering foundation.
   - raw Plumberry FBX/GLB/OBJ assets are deliberately **not** committed or bundled at this stage.
   - itch.io's free download is session/form-gated; do not bypass that access flow. Full local TERMS inspection and real two-resident conversion remain the next gate.
+  - rendering-path investigation against GeckoLib 5's real `26.2` source found that Bedrock `poly_mesh` and `texture_meshes` are parsed but explicitly **not rendered**; forcing Plumberry into ordinary `.geo.json` would therefore lose the source mesh.
+  - however, GeckoLib's runtime `GeoBone` is an abstract renderable node and `BakedGeoModel` accepts arbitrary `GeoBone` implementations. Campfire now uses this supported shape to prototype a **custom triangle ResidentMeshBone** while retaining GeckoLib's entity render lifecycle and bone hierarchy.
+  - `ResidentMeshBone` emits each source triangle as one degenerate quad (ABC+C) through the standard entity vertex consumer, preserving arbitrary triangle surfaces without voxel/cuboid remeshing.
+  - `ResidentMeshGeoModel` supplies a programmatic `BakedGeoModel`, so no fake Bedrock cuboid model is required.
+  - the GLB inspector now checks the assumptions needed by this path: no skin weights, no morph targets, TRIANGLES primitives, POSITION/NORMAL/TEXCOORD_0 on every primitive, transform-only animation targets, and no Draco/meshopt decoder requirement.
+  - public Plumberry specs already describe rigid transform-node animation with no skin weights; the **actual downloaded GLBs must still pass the new probe before this render path is production-accepted**.
+  - final animation application will sample the glTF transform tracks per render frame and feed local T/R/S into GeckoLib bone snapshots. Rotation must be sampled as quaternion first and only converted at the final pose-application step, rather than interpolating Euler keyframes.
 
 Companion same-style asset:
 - **Plumberry Plains Tools Set Vol. 1** includes a fishing pole, watering can, garden shovel, axe, hammer, cooking knife and paint brush with grip-point origins designed for the resident hand sockets.

@@ -157,6 +157,111 @@ def animation_names(document: dict) -> set[str]:
     return values
 
 
+def gltf_render_profile(document: dict) -> dict:
+    """Summarize whether a GLB fits Campfire's rigid-node triangle runtime path."""
+    meshes = document.get("meshes", [])
+    nodes = document.get("nodes", [])
+    animations = document.get("animations", [])
+    primitive_modes: dict[str, int] = {}
+    attribute_counts: dict[str, int] = {}
+    interpolation_counts: dict[str, int] = {}
+    animation_target_paths: dict[str, int] = {}
+    mesh_nodes = []
+    morph_primitive_count = 0
+    primitive_count = 0
+
+    for node_index, node in enumerate(nodes):
+        if isinstance(node, dict) and isinstance(node.get("mesh"), int):
+            mesh_nodes.append({
+                "node": node_index,
+                "name": node.get("name"),
+                "mesh": node["mesh"],
+            })
+
+    for mesh in meshes:
+        if not isinstance(mesh, dict):
+            continue
+        for primitive in mesh.get("primitives", []):
+            if not isinstance(primitive, dict):
+                continue
+            primitive_count += 1
+            mode = str(primitive.get("mode", 4))
+            primitive_modes[mode] = primitive_modes.get(mode, 0) + 1
+            for attribute in primitive.get("attributes", {}):
+                attribute_counts[attribute] = attribute_counts.get(attribute, 0) + 1
+            if primitive.get("targets"):
+                morph_primitive_count += 1
+
+    for animation in animations:
+        if not isinstance(animation, dict):
+            continue
+        samplers = animation.get("samplers", [])
+        for sampler in samplers:
+            if isinstance(sampler, dict):
+                interpolation = sampler.get("interpolation", "LINEAR")
+                interpolation_counts[interpolation] = interpolation_counts.get(interpolation, 0) + 1
+        for channel in animation.get("channels", []):
+            if not isinstance(channel, dict):
+                continue
+            target = channel.get("target", {})
+            if isinstance(target, dict):
+                path = target.get("path", "UNKNOWN")
+                animation_target_paths[path] = animation_target_paths.get(path, 0) + 1
+
+    extensions_required = list(document.get("extensionsRequired", []))
+    decoder_extensions = [
+        ext for ext in extensions_required
+        if ext in {"KHR_draco_mesh_compression", "EXT_meshopt_compression"}
+    ]
+
+    blockers = []
+    skin_count = len(document.get("skins", []))
+    if skin_count:
+        blockers.append(f"uses {skin_count} glTF skin(s); rigid-node renderer assumption fails")
+    if any(key.startswith("JOINTS_") or key.startswith("WEIGHTS_") for key in attribute_counts):
+        blockers.append("mesh attributes contain JOINTS/WEIGHTS skinning data")
+    if morph_primitive_count:
+        blockers.append(f"uses morph targets on {morph_primitive_count} primitive(s)")
+    non_triangles = sum(count for mode, count in primitive_modes.items() if mode != "4")
+    if non_triangles:
+        blockers.append(f"contains {non_triangles} non-TRIANGLES primitive(s)")
+    if animation_target_paths.get("weights", 0):
+        blockers.append("animation targets morph weights")
+    if decoder_extensions:
+        blockers.append("requires compressed mesh decoder(s): " + ", ".join(decoder_extensions))
+
+    missing_core_attributes = []
+    for required in ("POSITION", "NORMAL", "TEXCOORD_0"):
+        if primitive_count and attribute_counts.get(required, 0) != primitive_count:
+            missing_core_attributes.append(required)
+    if missing_core_attributes:
+        blockers.append("not every primitive has: " + ", ".join(missing_core_attributes))
+
+    image_types = []
+    for image in document.get("images", []):
+        if not isinstance(image, dict):
+            continue
+        image_types.append(image.get("mimeType") or pathlib.PurePosixPath(image.get("uri", "")).suffix.lower() or "embedded/unknown")
+
+    return {
+        "skin_count": skin_count,
+        "primitive_count": primitive_count,
+        "primitive_modes": primitive_modes,
+        "attribute_counts": attribute_counts,
+        "mesh_nodes": mesh_nodes,
+        "material_count": len(document.get("materials", [])),
+        "image_count": len(document.get("images", [])),
+        "image_types": image_types,
+        "morph_primitive_count": morph_primitive_count,
+        "animation_target_paths": animation_target_paths,
+        "interpolation_counts": interpolation_counts,
+        "extensions_used": list(document.get("extensionsUsed", [])),
+        "extensions_required": extensions_required,
+        "blockers": blockers,
+        "candidate": not blockers,
+    }
+
+
 def find_docs(names: Iterable[str]) -> dict[str, list[str]]:
     result = {"terms.md": [], "readme.md": [], "contents.md": []}
     for name in names:
@@ -228,6 +333,7 @@ def inspect(path: pathlib.Path, contract: dict) -> dict:
                         a for a in contract["required_animations"]
                         if normalize(a).replace("-", "_") not in animations
                     ],
+                    "render_profile": gltf_render_profile(document),
                 })
             except Exception as exc:
                 glb_reports.append({"path": name, "error": f"{type(exc).__name__}: {exc}"})
@@ -247,6 +353,13 @@ def inspect(path: pathlib.Path, contract: dict) -> dict:
         ]
         if broken:
             failures.append(f"{len(broken)} GLB file(s) fail rig/socket/animation contract")
+
+        render_blocked = [
+            row["path"] for row in glb_reports
+            if row.get("render_profile", {}).get("blockers")
+        ]
+        if render_blocked:
+            failures.append(f"{len(render_blocked)} GLB file(s) fail rigid triangle render profile")
 
         return {
             "input": str(path),
@@ -288,6 +401,20 @@ def print_report(report: dict) -> None:
         print(f"CONTENTS={item['documents']['contents.md'] or 'MISSING'}")
         if item["license_signals"]:
             print("license_signals=" + json.dumps(item["license_signals"], sort_keys=True))
+        profiles = [
+            row["render_profile"] for row in item["glb"]
+            if isinstance(row, dict) and "render_profile" in row
+        ]
+        if profiles:
+            compatible = sum(profile["candidate"] for profile in profiles)
+            print(f"rigid_triangle_render_candidate={compatible}/{len(profiles)}")
+            blocker_examples = []
+            for row in item["glb"]:
+                blockers = row.get("render_profile", {}).get("blockers", [])
+                if blockers:
+                    blocker_examples.append((row["path"], blockers))
+            for path, blockers in blocker_examples[:5]:
+                print(f"  RENDER_BLOCKER {path}: {'; '.join(blockers)}")
         if item["failures"]:
             for failure in item["failures"]:
                 print(f"FAIL {failure}")
