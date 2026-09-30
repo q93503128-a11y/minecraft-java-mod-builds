@@ -52,6 +52,16 @@ public enum ClassSpecialization {
         return id;
     }
 
+    public static java.util.Optional<ClassSpecialization> byId(String id) {
+        if (id == null) {
+            return java.util.Optional.empty();
+        }
+        String normalized = id.trim().toLowerCase(Locale.ROOT);
+        return Arrays.stream(values())
+                .filter(specialization -> specialization.id.equals(normalized))
+                .findFirst();
+    }
+
     public static List<ClassSpecialization> forRoot(RootClass rootClass) {
         Objects.requireNonNull(rootClass, "rootClass");
         return Arrays.stream(values())
