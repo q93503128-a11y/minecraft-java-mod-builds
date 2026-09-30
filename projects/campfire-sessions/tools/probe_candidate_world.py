@@ -66,7 +66,8 @@ class NbtReader:
                 child = self.read("B")
                 if child == 0:
                     return out
-                out[self.string()] = self.payload(child)
+                name = self.string()
+                out[name] = self.payload(child)
         if tag == 11:
             n = self.read("i")
             return [self.read("i") for _ in range(n)]
