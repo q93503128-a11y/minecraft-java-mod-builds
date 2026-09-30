@@ -1,0 +1,108 @@
+name: Probe Campfire Candidate World
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/probe-campfire-world.yml'
+      - 'projects/campfire-sessions/tools/probe_candidate_world.py'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: projects/campfire-sessions
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Download Geming400 7-island candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/world-probe
+          OUT=build/world-probe/island.zip
+          urls=(
+            'https://mediafilez.forgecdn.net/files/6229/422/Island%20-%20No%20WorldBorder.zip'
+            'https://www.curseforge.com/api/v1/mods/1206982/files/6229422/download'
+            'https://www.curseforge.com/minecraft/worlds/island-map-1-19-1024x1024/download/6229422/file'
+          )
+          ok=0
+          for url in "${urls[@]}"; do
+            rm -f "$OUT"
+            if curl -fL --retry 2 --connect-timeout 20 --max-time 180 -A 'CampfireSessionsWorldProbe/1.0' "$url" -o "$OUT"; then
+              if unzip -tq "$OUT" >/dev/null 2>&1; then
+                ok=1
+                echo "downloaded candidate world from: $url"
+                break
+              fi
+            fi
+          done
+          test "$ok" = 1
+          sha256sum "$OUT" | tee build/world-probe/world.sha256
+          unzip -q "$OUT" -d build/world-probe/unpacked
+          find build/world-probe/unpacked -maxdepth 3 -type f -name level.dat -print
+
+      - name: Analyze real world regions
+        shell: bash
+        run: |
+          set -euo pipefail
+          WORLD_ROOT="$(find build/world-probe/unpacked -type f -name level.dat -printf '%h\n' | head -n 1)"
+          test -n "$WORLD_ROOT"
+          python3 tools/probe_candidate_world.py "$WORLD_ROOT" | tee build/world-probe/probe.log
+          cp "$(dirname "$WORLD_ROOT")/campfire-world-probe.json" build/world-probe/campfire-world-probe.json
+
+      - name: Test Minecraft 26.2 server world load
+        shell: bash
+        run: |
+          set -euo pipefail
+          WORLD_ROOT="$(find build/world-probe/unpacked -type f -name level.dat -printf '%h\n' | head -n 1)"
+          rm -rf run/world
+          mkdir -p run/world
+          cp -a "$WORLD_ROOT"/. run/world/
+          mkdir -p run
+          printf 'eula=true\n' > run/eula.txt
+          cat > run/server.properties <<'EOF'
+          level-name=world
+          online-mode=false
+          allow-flight=true
+          max-tick-time=120000
+          view-distance=4
+          simulation-distance=4
+          spawn-protection=0
+          EOF
+          set +e
+          timeout 150s ./gradlew --no-daemon runServer > build/world-probe/server-load.log 2>&1
+          code=$?
+          set -e
+          if grep -Eq 'Done \([0-9.]+s\)!|Done \(' build/world-probe/server-load.log; then
+            echo 'WORLD_LOAD_26_2=SUCCESS' | tee build/world-probe/world-load-status.txt
+          else
+            echo "WORLD_LOAD_26_2=FAIL exit=$code" | tee build/world-probe/world-load-status.txt
+            tail -n 200 build/world-probe/server-load.log
+            exit 1
+          fi
+
+      - name: Upload world probe report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: campfire-world-probe
+          path: |
+            projects/campfire-sessions/build/world-probe/campfire-world-probe.json
+            projects/campfire-sessions/build/world-probe/probe.log
+            projects/campfire-sessions/build/world-probe/world.sha256
+            projects/campfire-sessions/build/world-probe/world-load-status.txt
+            projects/campfire-sessions/build/world-probe/server-load.log
+          if-no-files-found: warn
