@@ -218,14 +218,23 @@ Important shared state is server-authoritative.
 ## 3. World and map
 
 ### World delivery
-The user should not manually download a world ZIP, copy a save, or install schematics.
+The final player distribution target is a **Modrinth .mrpack experience with the approved world/template already included**.
+The user should not manually download a world ZIP, extract it, copy a save, install schematics or hunt for matching map versions.
 
 Target flow:
-1. Install the mod/modpack.
-2. Create/select the island-life world preset.
-3. The game prepares the approved world template automatically.
+1. Install/update the Campfire Sessions Modrinth modpack.
+2. Launch the game.
+3. Campfire provisions the approved island template automatically.
+4. Start/continue the island without any separate map-install step.
 
-The final island map must therefore be directly obtainable during development and legally usable for this private-use project.
+Packaging rules:
+- the selected map must permit redistribution inside the Modrinth pack, not merely personal use or server use.
+- preserve required license/copyright/attribution files.
+- package the canonical source world as a **template**, then copy/provision a playable save only when needed; do not let routine modpack updates overwrite an already-progressed player world.
+- if dedicated-server packaging is later used, provide the corresponding server-side world/template configuration in the pack workflow rather than asking the user to upload a save manually.
+- Modrinth's pack override mechanism may be used for template/config files, while Campfire owns the safe first-run provisioning logic.
+
+The final island map must therefore be directly obtainable during development, inspectable as a real world, legally redistributable for this pack workflow and compatible with Minecraft 26.2.
 
 ### Map requirements
 The final map must be inspected as an actual world file before roles are assigned.
@@ -245,12 +254,30 @@ Required inspection:
 
 Preference:
 - archipelago shape.
-- broad, relatively flat central/buildable areas.
-- additional islands with enough flat land for selected facilities.
+- **one strong, broad, relatively flat main-village landmass** for the residential/civic core.
+- several additional meaningful islands/landmasses so pier travel, discovery and collection can feel like real destination changes.
+- as a planning target, roughly **6–10 meaningful island destinations** is preferable to only 2–3 giant landmasses, provided those islands are large/varied enough to support real activities.
+- raw island count is not a goal: twenty tiny empty rocks are worse than seven useful islands.
+- secondary islands may each carry a stronger activity/environment identity, but should still avoid becoming one-resource gimmicks.
 - ocean boundaries.
 - terrain large enough for multiplayer without becoming tedious to traverse.
 
-The current leading visual/source candidate is “4K Flat Islands Map for Creative” because:
+Two different criteria now matter separately: **world-layout quality** and **zero-manual-setup Modrinth packaging eligibility**.
+
+The previous Geming400 **“Island map | 1024×1024”** has been recovered as an active candidate:
+- 1024×1024 ocean world.
+- 7 islands total: one large central island plus six smaller surrounding islands.
+- WorldPainter.
+- caves and caverns included.
+- ores included.
+- palm/other trees and bushes included.
+- current No-WorldBorder release is directly downloadable.
+- MIT licensed, making redistribution inside the Campfire Modrinth pack substantially cleaner than candidates with unclear redistribution rights.
+
+Its island count/travel structure matches Campfire better than a map with only a few giant landmasses.
+Its remaining risks are **main-island usable flat area, total build capacity and 26.2 conversion**, which must be verified from the actual world ZIP before selection.
+
+“4K Flat Islands Map for Creative” remains the strongest **flat-building geometry reference/candidate** because:
 - the creator states the whole map is roughly 4000×4000.
 - three major bare islands plus smaller islets/lake are present.
 - terrain height is stated to vary only from about 26 to 32, making it exceptionally suitable for external building prefabs and controlled civic parcels.
@@ -266,7 +293,14 @@ If the candidate passes real-file inspection:
 - replace/refine the large bare stone-heavy surfaces with a coherent Campfire vegetation/grass/path/environment pass.
 - add or author missing cave/cliff/exploration content rather than assuming the base map already provides the full game.
 
-If it cannot be directly obtained, replace it with another directly obtainable flat archipelago map rather than asking the user to install it manually.
+Even if it can be directly downloaded, it cannot become the final Modrinth-pack world unless redistribution permission for bundling the world files is also established.
+If that permission cannot be established, keep it as a geometry/reference source and select a legally packable alternative rather than asking the user to install it manually.
+
+Current selection order:
+1. obtain and inspect Geming400's 7-island MIT world first because it already satisfies the island-count and redistribution requirements.
+2. verify whether its central island has enough flat buildable area for the full village/prefab plan.
+3. compare it against any larger **redistributable** flat-archipelago candidate found during the same pass.
+4. use 4K Flat Islands only if both real-file inspection and Modrinth-pack redistribution rights are satisfied.
 
 ### Island identity and naming
 When the village/world is first established, the creating player chooses the island/village display name before normal arrival play begins.
