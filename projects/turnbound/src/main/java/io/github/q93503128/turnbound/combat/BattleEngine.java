@@ -214,6 +214,7 @@ public final class BattleEngine {
             case REVIVE -> {
                 CombatantState target = targets.getFirst();
                 int hp = target.revive(effect.magnitude());
+                target.setGauge(ReviveTempoPolicy.manualStartGauge(target));
                 target.setCounter("p06_return_wait", 0);
                 target.clearFlag("p06_return_wait_new");
                 if (actor.definition().id().equals("P04")) {
@@ -467,6 +468,7 @@ public final class BattleEngine {
                 state.addEvent(new BattleEvent("PASSIVE_GAUGE", el01.instanceId(), el01.instanceId(), gauge, "EL01_SUBORDINATE_DEATH"));
             }
         }
+        if (triggerImmediateSelfRevive(target)) return;
         if (target.definition().id().equals("P06") && !target.flag("p06_return_used")) {
             target.setFlag("p06_return_used");
             target.setFlag("p06_return_wait_new");
@@ -484,6 +486,18 @@ public final class BattleEngine {
             state.removeCombatant(target.instanceId());
         }
         if (target.definition().id().equals("P07")) dismissP07Summon(target, false);
+    }
+
+    private boolean triggerImmediateSelfRevive(CombatantState target) {
+        if (target.definition().summon()
+                || !target.definition().hasRule("AUTO_REVIVE_ONCE")
+                || target.flag("auto_revive_used")) return false;
+        target.setFlag("auto_revive_used");
+        int hp = target.revive(target.definition().param("autoReviveHp", 0.35));
+        target.setGauge(ReviveTempoPolicy.selfReviveStartGauge(target));
+        recordMorwenRevive(target);
+        state.addEvent(new BattleEvent("SELF_REVIVE", target.instanceId(), target.instanceId(), hp, "AUTO_REVIVE_ONCE"));
+        return true;
     }
 
     private void recordMorwenDown(CombatantState deceased) {
@@ -911,6 +925,7 @@ public final class BattleEngine {
             morwen.setCounter("p06_return_wait", wait - 1);
             if (morwen.counter("p06_return_wait") > 0) continue;
             int hp = morwen.revive(morwen.definition().param("returnHp", 0.35));
+            morwen.setGauge(ReviveTempoPolicy.selfReviveStartGauge(morwen));
             if (morwen.definition().hasRule("AWAKENED")) {
                 morwen.incrementCounter("records", morwen.definition().intParam("awakenReturnRecords", 2),
                         morwen.definition().intParam("recordMax", 5));
