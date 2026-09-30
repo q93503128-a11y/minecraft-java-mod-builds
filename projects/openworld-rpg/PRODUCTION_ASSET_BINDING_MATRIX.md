@@ -398,6 +398,32 @@ The first CI run `36663757089` exposed a single integration compile error: the n
 
 State: `RUNTIME_BOUND / PLAYER_SLOT_OPEN / BUILD_VERIFIED / PLAYTEST_PENDING`.
 
+### Hunter Fan of Arrows runtime/presentation binding — 2026-09-30
+
+Hunter `Fan of Arrows` is now player-slot published as Active Skill 3 / V with server-owned multi-projectile budgeting and dependency-backed ranged presentation.
+
+Locked gameplay contract:
+
+- 26 Mana / 10.0 s cooldown;
+- ranged-weapon gate currently admitted for Bow/Crossbow;
+- ordinary 5 projectiles; three-Focus empowered 7 projectiles;
+- maximum 2 accepted arrows per target per cast;
+- ordinary same-target ActionCoefficient cap 1.90; empowered cap 2.15;
+- whole-action PoiseCoefficient 1.00;
+- Focus spender: yes.
+
+The project resolves the two-hit cap explicitly. Ordinary arrows use 0.95 ActionCoefficient each and empowered arrows use 1.075 each, so a third impact on the same target is rejected rather than creating point-blank shotgun scaling. The 1.00 whole-action Poise budget is divided by actual visible projectile count: 0.20 per ordinary arrow and 1/7 per empowered arrow.
+
+Pinned Spell Engine 26.2 branch inspection at upstream commit `d3cba71b726c6fcfb129969f7eeb679faa5ee8ed` confirmed that `ProjectileLauncher` copies authored launch properties, invokes `SpellEvents.PROJECTILE_SHOOT`, then uses the mutable `extra_launch_count` to schedule the remaining sequence. Openworld therefore uses the public event contract through its existing reflection isolation rather than copying GPL source. The JSON authors `extra_launch_count: 4` for five ordinary projectiles; sequence-zero launch handling raises that mutable value to 6 only when the already server-accepted cast consumed three Focus, producing seven real Spell Engine projectiles.
+
+Seven deterministic direction offsets are authored in sequence order: `0, -4, +4, -8, +8, -12, +12` degrees. The ordinary five-shot cast consumes only the first five offsets, while empowered adds the outer +/-12-degree pair. This creates an initial +/-8-degree cone and a modest empowered widening to +/-12 degrees. Current 1-tick launch spacing, 24-block range, 2.0 velocity, 0.22 x 0.22 x 1.15 hitbox and 10-tick action window are precision/playtest bindings, not class-canon additions.
+
+Presentation reuses the accepted neutral KayKit Character Pack: Adventures arrow geometry/texture already bound for Quickstep and the pinned Spell Engine `spell_engine:archery_release` animation. No separate temporary model or generic particle cone is introduced; the real five/seven projectile geometry is the readable attack body.
+
+Build Openworld RPG run `36665723551` at code state `68a738de298ab3f313c47550b7ff2aa411a26e4f` passes unit tests/clean build, bootstrap JAR verification, core-profile dedicated server smoke, gameplay dependency server smoke including `PROJECTILE_SHOOT` event resolution, gameplay client startup, both playtest-JAR builds, Modrinth pack packaging and artifact upload.
+
+State: `RUNTIME_BOUND / PLAYER_SLOT_OPEN / BUILD_VERIFIED / PLAYTEST_PENDING`.
+
 ### Warrior root runtime binding delta — 2026-09-29
 
 Warrior root skills use the already Phase-F-shortlisted Kenney Particle Pack `slash_01.png` as a support material inside project-authored 3D slash/sector geometry. Exact committed bytes are taken from pinned corroboration repository `shorepine/kenney` commit `3694c6879e487c108f55677be7dd2ca75b07cc3b`, Git blob `c04fa2d3938827da63105172748851db86735aa6`, and are recorded under `external-assets/kenney-particle-pack/SOURCE.md`.
