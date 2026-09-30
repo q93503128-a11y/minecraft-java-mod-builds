@@ -775,3 +775,12 @@ Field presence is a contact/navigation representation of an encounter, not a lit
 - important bosses and named single enemies naturally use their own representative appearance
 
 For the New Drabyel opening patrol, the world therefore shows one moving representative while `CV_DRABYEL_ROAD` still expands to its two-enemy battle after contact. The HUD label/objective communicates that this is a patrol encounter; a second independently moving field actor is not required.
+
+### Field representative live materialization resilience — 2026-09-30
+
+- the cached route survey position is not treated as permanently spawn-safe after first resolution
+- source-map villagers, item frames, armor stands, or block entities can finish loading after the route snapshot; this must not leave an objective pointing at an empty field
+- if no TURNBOUND representative already exists, materialization rechecks live ground/content and searches nearby source-backed site/patrol seeds for a safe replacement
+- once the TURNBOUND representative exists, the cached survey origin is not revalidated every tick; a late-loading decoration at the old origin must not delete a valid roaming proxy
+- opening encounters may derive presentation-only roam points from map placement patrol seeds even when combat activation intentionally has no formal Patrol dependency
+- entity insertion success must be checked; a failed server insertion is not considered a materialized encounter
