@@ -19,12 +19,16 @@ public record ProjectSpellSpec(
     public static final String WARRIOR_BREAKER_SLAM_ID = "openworld_rpg:warrior_breaker_slam";
     public static final String WARRIOR_EARTHSHATTER_ID = "openworld_rpg:warrior_earthshatter";
     public static final String HUNTER_QUICKSTEP_VOLLEY_ID = "openworld_rpg:hunter_quickstep_volley";
+    public static final String HUNTER_PINNING_SHOT_ID = "openworld_rpg:hunter_pinning_shot";
     public static final String ARC_BOLT_ID = "openworld_rpg:arc_bolt";
     public static final String RADIANT_LANCE_ID = "openworld_rpg:radiant_lance";
     public static final String MEND_ID = "openworld_rpg:mend";
     public static final String CONSECRATED_GROUND_ID = "openworld_rpg:consecrated_ground";
     public static final String REBUKE_ID = "openworld_rpg:rebuke";
     public static final String SANCTUARY_ID = "openworld_rpg:sanctuary";
+    public static final double HUNTER_PINNING_ACTION_COEFFICIENT = 1.55;
+    public static final double HUNTER_PINNING_POISE_COEFFICIENT = 1.00;
+    public static final double HUNTER_PINNING_EMPOWERED_POISE_COEFFICIENT = 1.50;
     public static final double RADIANT_LANCE_ACTION_COEFFICIENT = 1.35;
     public static final double RADIANT_LANCE_POISE_COEFFICIENT = 0.60;
     public static final double RADIANT_LANCE_CHAIN_ACTION_COEFFICIENT = 0.55;
@@ -138,6 +142,17 @@ public record ProjectSpellSpec(
         );
     }
 
+    public static ProjectSpellSpec hunterPinningShot() {
+        return new ProjectSpellSpec(
+                HUNTER_PINNING_SHOT_ID,
+                18.0,
+                160,
+                HUNTER_PINNING_ACTION_COEFFICIENT,
+                HUNTER_PINNING_POISE_COEFFICIENT,
+                1
+        );
+    }
+
     public static ProjectSpellSpec arcBolt() {
         return new ProjectSpellSpec(
                 ARC_BOLT_ID,
@@ -208,7 +223,7 @@ public record ProjectSpellSpec(
         Objects.requireNonNull(spellId, "spellId");
         return switch (spellId) {
             case WARRIOR_DRIVING_SLASH_ID, WARRIOR_IRON_COUNTER_ID, WARRIOR_CYCLONE_CUT_ID, WARRIOR_BREAKER_SLAM_ID, WARRIOR_EARTHSHATTER_ID -> Optional.of(RootClass.WARRIOR);
-            case HUNTER_QUICKSTEP_VOLLEY_ID -> Optional.of(RootClass.HUNTER);
+            case HUNTER_QUICKSTEP_VOLLEY_ID, HUNTER_PINNING_SHOT_ID -> Optional.of(RootClass.HUNTER);
             case ARC_BOLT_ID -> Optional.of(RootClass.MAGE);
             case RADIANT_LANCE_ID, MEND_ID, CONSECRATED_GROUND_ID, REBUKE_ID, SANCTUARY_ID ->
                     Optional.of(RootClass.CLERIC);

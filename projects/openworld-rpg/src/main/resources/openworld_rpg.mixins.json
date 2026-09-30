@@ -22,7 +22,8 @@
     "SpellEngineRadiantLanceRendererMixin",
     "SpellEngineRebukeBurstRendererMixin",
     "SpellEngineSanctuaryWardRendererMixin",
-    "SpellEngineHunterQuickstepRendererMixin"
+    "SpellEngineHunterQuickstepRendererMixin",
+    "SpellEngineHunterPinningRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

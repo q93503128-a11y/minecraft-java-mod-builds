@@ -77,7 +77,8 @@ public record ExternalActorCombatProfile(
 
     public enum CombatRank {
         NORMAL_ELITE,
-        MINIBOSS_BOSS
+        MINIBOSS,
+        BOSS
     }
 
     public ProjectImpactTransaction.DamageTargetSnapshot projectTargetSnapshot() {
@@ -104,7 +105,7 @@ public record ExternalActorCombatProfile(
                 45.0,
                 35.0,
                 190.0,
-                CombatRank.MINIBOSS_BOSS,
+                CombatRank.BOSS,
                 ExternalActorReactionCapabilities.none()
         );
     }

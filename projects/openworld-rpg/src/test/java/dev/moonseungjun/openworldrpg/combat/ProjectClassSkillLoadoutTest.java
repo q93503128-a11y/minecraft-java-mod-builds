@@ -90,7 +90,13 @@ class ProjectClassSkillLoadoutTest {
                         .orElseThrow()
         );
         assertEquals(
-                1,
+                ProjectSpellSpec.HUNTER_PINNING_SHOT_ID,
+                ProjectClassSkillLoadout
+                        .spellId(RootClass.HUNTER, 1)
+                        .orElseThrow()
+        );
+        assertEquals(
+                2,
                 ProjectClassSkillLoadout
                         .implementedSlots(RootClass.HUNTER)
                         .size()

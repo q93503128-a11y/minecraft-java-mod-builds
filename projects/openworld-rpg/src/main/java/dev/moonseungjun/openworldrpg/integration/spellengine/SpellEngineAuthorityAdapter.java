@@ -8,6 +8,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.ClericMendRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ClericSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ConsecratedGroundRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterQuickstepVolleyRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.HunterPinningShotRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.RadiantLanceRuntime;
@@ -203,6 +204,16 @@ public final class SpellEngineAuthorityAdapter {
                         ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
                 )
         );
+        ProjectSpellSpec hunterPinningShot =
+                ProjectSpellSpec.hunterPinningShot();
+        AUTHORITY.registerPolicy(
+                hunterPinningShot.id(),
+                new ProjectSpellTransactionPolicy(
+                        hunterPinningShot,
+                        COMBAT_STATES,
+                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                )
+        );
 
         ProjectSpellSpec arcBolt = ProjectSpellSpec.arcBolt();
         AUTHORITY.registerPolicy(
@@ -342,6 +353,13 @@ public final class SpellEngineAuthorityAdapter {
                 && !HunterQuickstepVolleyRuntime.canActivate(serverPlayer)) {
             return invokeStatic(attemptNone);
         }
+        if (ProjectSpellSpec.HUNTER_PINNING_SHOT_ID.equals(spellId)
+                && player instanceof ServerPlayer serverPlayer
+                && !engineContinuation
+                && (!acceptedStage || firstAcceptedCast)
+                && !HunterPinningShotRuntime.canActivate(serverPlayer)) {
+            return invokeStatic(attemptNone);
+        }
         if (ProjectSpellSpec.requiredRootClass(spellId)
                 .filter(RootClass.WARRIOR::equals)
                 .isPresent()
@@ -379,6 +397,10 @@ public final class SpellEngineAuthorityAdapter {
                 }
             } else if (ProjectSpellSpec.HUNTER_QUICKSTEP_VOLLEY_ID.equals(spellId)) {
                 if (!HunterQuickstepVolleyRuntime.onAcceptedCast(serverPlayer).accepted()) {
+                    return invokeStatic(attemptNone);
+                }
+            } else if (ProjectSpellSpec.HUNTER_PINNING_SHOT_ID.equals(spellId)) {
+                if (!HunterPinningShotRuntime.onAcceptedCast(serverPlayer).accepted()) {
                     return invokeStatic(attemptNone);
                 }
             } else if (ProjectSpellSpec.requiredRootClass(spellId)
@@ -635,6 +657,24 @@ public final class SpellEngineAuthorityAdapter {
                     ? vec
                     : livingTarget.position();
             var hit = HunterQuickstepVolleyRuntime.applyProjectileHit(
+                    serverCaster,
+                    livingTarget,
+                    hitPosition
+            );
+            return impactResultConstructor.newInstance(hit.accepted(), false);
+        }
+
+        if (ProjectSpellSpec.HUNTER_PINNING_SHOT_ID.equals(spellId)) {
+            if (!(player instanceof ServerPlayer serverCaster)
+                    || !(target instanceof LivingEntity livingTarget)
+                    || livingTarget.level() != serverCaster.level()) {
+                return impactResultConstructor.newInstance(false, false);
+            }
+            Object rawPosition = invokeAccessor(impactContext, "position");
+            Vec3 hitPosition = rawPosition instanceof Vec3 vec
+                    ? vec
+                    : livingTarget.position();
+            var hit = HunterPinningShotRuntime.applyProjectileHit(
                     serverCaster,
                     livingTarget,
                     hitPosition

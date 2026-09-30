@@ -29,7 +29,8 @@ public final class ProjectSpellInputRules {
                 || ProjectSpellSpec.WARRIOR_CYCLONE_CUT_ID.equals(spellId)
                 || ProjectSpellSpec.WARRIOR_BREAKER_SLAM_ID.equals(spellId)
                 || ProjectSpellSpec.WARRIOR_EARTHSHATTER_ID.equals(spellId)
-                || ProjectSpellSpec.HUNTER_QUICKSTEP_VOLLEY_ID.equals(spellId))
+                || ProjectSpellSpec.HUNTER_QUICKSTEP_VOLLEY_ID.equals(spellId)
+                || ProjectSpellSpec.HUNTER_PINNING_SHOT_ID.equals(spellId))
                 && !freshPress;
     }
 }

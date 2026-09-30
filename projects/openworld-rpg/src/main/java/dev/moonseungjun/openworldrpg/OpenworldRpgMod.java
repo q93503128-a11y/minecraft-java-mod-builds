@@ -51,6 +51,7 @@ import dev.moonseungjun.openworldrpg.recovery.RecoveryBeltAttachments;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryEffectRuntime;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryUseRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ConsecratedGroundRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.HunterPinningShotRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterQuickstepVolleyRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBasicAttackCadenceRuntime;
@@ -113,6 +114,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             ProjectPlayerActionRuntime.tick(server);
             ProjectDodgeRuntime.tick(server);
             HunterQuickstepVolleyRuntime.tick(server);
+            HunterPinningShotRuntime.tick(server);
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             PlayerActiveWorldTimeService.tickLoadedPlayers(server);
@@ -121,6 +123,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             ConsecratedGroundRuntime.tick(server);
             SanctuaryRuntime.tick(server);
             WarriorSkillRuntime.tick(server);
+            ProjectHostileStatusRuntime.tick(server);
             R01RoadsideTroubleController.tickActiveWorld(server);
             ProjectCombatNetworking.flushDodgeAccepted(server);
             if (Math.floorMod(server.getTickCount(), 20) == 0) {
@@ -176,6 +179,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             }
             WarriorSkillRuntime.reset(newPlayer.getUUID());
             HunterQuickstepVolleyRuntime.reset(newPlayer.getUUID());
+            HunterPinningShotRuntime.reset(newPlayer.getUUID());
             HunterSkillRuntime.reset(newPlayer.getUUID());
             ProjectPlayerActionRuntime.reset(newPlayer);
             ProjectDodgeRuntime.reset(newPlayer);
@@ -192,6 +196,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             SanctuaryRuntime.disconnect(playerId);
             WarriorSkillRuntime.disconnect(playerId);
             HunterQuickstepVolleyRuntime.disconnect(playerId);
+            HunterPinningShotRuntime.disconnect(playerId);
             HunterSkillRuntime.disconnect(playerId);
             ProjectPlayerActionRuntime.disconnect(playerId);
             ProjectDodgeRuntime.disconnect(playerId);

@@ -35,6 +35,10 @@ class ExternalActorReactionCapabilitiesTest {
                 earthloong.reactionCapabilities()
                         .hunterQuickstepPierceable()
         );
+        assertTrue(
+                earthloong.combatRank()
+                        == ExternalActorCombatProfile.CombatRank.BOSS
+        );
     }
 
     @Test

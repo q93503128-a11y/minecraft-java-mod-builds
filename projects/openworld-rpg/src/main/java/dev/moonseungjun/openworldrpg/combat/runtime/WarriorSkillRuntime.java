@@ -374,8 +374,8 @@ public final class WarriorSkillRuntime {
                 .orElse(null);
         if (profile == null
                 || profile.combatRank()
-                        != ExternalActorCombatProfile.CombatRank
-                                .MINIBOSS_BOSS) {
+                        == ExternalActorCombatProfile.CombatRank
+                                .NORMAL_ELITE) {
             return;
         }
 
