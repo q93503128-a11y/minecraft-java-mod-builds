@@ -7,7 +7,7 @@ Status: ALPHA.6 MUSIC FOUNDATION / ISLAND-LIFE DESIGN PHASE
 - Minecraft: 26.2
 - Java: 25
 - Loader: NeoForge 26.2.0.87
-- Distribution target: private/personal play
+- Distribution target: private/personal play via Modrinth .mrpack with all required gameplay assets/config/world template provisioned; no manual map install
 - Current product direction: Cozy Multiplayer Island Life Sim
 - Canonical game design: `GAME_DESIGN.md`
 - External asset/dependency planning: `ASSET_PLAN.md`
@@ -71,7 +71,19 @@ Use `ASSET_PLAN.md` for candidate tracking and `THIRD_PARTY_ASSETS.md` for adopt
 ## World rule
 
 The final island map must be directly obtainable and inspected as an actual world before it becomes canonical.
-The user should not need to manually download/install a map or schematics.
+It must also be legally redistributable inside the Campfire Sessions Modrinth modpack.
+
+The user should not need to manually:
+- download a separate map ZIP.
+- extract/copy a world into `saves/`.
+- install schematics.
+- repair version/loader-specific world files.
+
+The modpack ships the canonical world as a protected template/config asset and Campfire provisions the playable save automatically without overwriting an existing progressed world during pack updates.
+
+Map-layout preference:
+- one broad/flat main-village landmass.
+- several additional meaningful island destinations; roughly 6–10 useful destinations is preferred when the actual map quality supports it.
 
 Major building exterior positions are fixed and managed by the game.
 Players decorate permitted interiors/yards/public decoration zones but do not freely destroy or rebuild critical village structures.
