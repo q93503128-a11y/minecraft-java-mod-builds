@@ -147,7 +147,7 @@ final class CharacterOverhaulRuntimeTest {
     void immediateOneTimeSelfReviveReturnsReadyInsideTheLethalAction() {
         SkillDefinition basic = new SkillDefinition(
                 "reviver_basic", "기본", TargetRule.ENEMY_SINGLE, 0,
-                List.of(new SkillEffect(EffectType.DAMAGE, 1.0, 0, 0, "")), List.of(), java.util.Map.of());
+                List.of(new SkillEffect(EffectType.DAMAGE, 1.0, 0, 0, "")));
         CombatantDefinition reviverDefinition = new CombatantDefinition(
                 "TEST_REVIVER", "복귀자", new BattleStats(100, 20, 0, 100),
                 "reviver_basic", List.of(basic), 4,
