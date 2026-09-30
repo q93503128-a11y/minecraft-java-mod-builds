@@ -51,6 +51,15 @@ class BattleHudLayoutTest {
     }
 
     @Test
+    void turnOrderRailReservesPortraitAndNameRows() {
+        for (int[] size : new int[][]{{320,180},{640,360},{854,480},{1280,720}}) {
+            BattleHudLayout.Layout layout = BattleHudLayout.calculate(size[0], size[1]);
+            assertTrue(layout.timeline().height() >= 23, size[0] + "x" + size[1]);
+            assertTrue(layout.timeline().bottom() < layout.actionHeader().bottom(), size[0] + "x" + size[1]);
+        }
+    }
+
+    @Test
     void utilityControlsReserveEnoughWidthForKoreanStateLabels() {
         for (int[] size : new int[][]{{320,180},{640,360},{854,480},{1280,720}}) {
             BattleHudLayout.Layout layout = BattleHudLayout.calculate(size[0], size[1]);
