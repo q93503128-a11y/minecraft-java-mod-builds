@@ -3,6 +3,7 @@ package dev.moonseungjun.openworldrpg.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.moonseungjun.openworldrpg.combat.authority.CombatDamageAuthority;
+import dev.moonseungjun.openworldrpg.combat.runtime.HunterRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBasicAttackCadenceRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
@@ -77,7 +78,15 @@ public abstract class PlayerAttackAuthorityMixin {
                         context.comboCount(),
                         build,
                         targetSnapshot,
-                        attacker.getRandom().nextDouble()
+                        attacker.getRandom().nextDouble(),
+                        attacker instanceof ServerPlayer serverPlayer
+                                ? HunterRootPassiveEffects
+                                        .criticalChanceBonus(
+                                                serverPlayer
+                                        )
+                                : 0.0,
+                        1.0,
+                        1.0
                 );
         if (!decision.accepted()) {
             return false;

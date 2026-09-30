@@ -36,6 +36,18 @@ public final class PlayerCombatStateStore {
                 .synchronizeResourceModifiers(modifiers, nowTick);
     }
 
+    public void synchronizeClassSkillManaCostMultiplier(
+            UUID playerId,
+            double multiplier,
+            long nowTick
+    ) {
+        getOrCreate(playerId, nowTick)
+                .synchronizeClassSkillManaCostMultiplier(
+                        multiplier,
+                        nowTick
+                );
+    }
+
     public void remove(UUID playerId) {
         states.remove(playerId);
     }

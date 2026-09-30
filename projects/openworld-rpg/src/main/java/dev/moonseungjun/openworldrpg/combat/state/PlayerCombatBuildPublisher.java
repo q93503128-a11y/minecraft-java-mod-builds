@@ -1,7 +1,9 @@
 package dev.moonseungjun.openworldrpg.combat.state;
 
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules;
+import dev.moonseungjun.openworldrpg.combat.runtime.HunterRootPassiveEffects;
 import java.util.Optional;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
 /**
@@ -40,6 +42,19 @@ public final class PlayerCombatBuildPublisher {
                 player,
                 loadout.aggregateMovementSpeedBonus()
         );
+        ProjectWeaponFamily mainWeaponFamily = loadout
+                .item(ProjectEquipmentSlot.MAIN_WEAPON)
+                .flatMap(EquippedCombatItem::weaponFamily)
+                .orElse(null);
+        PlayerMovementRuntime.synchronizeClassMovementSpeedBonus(
+                player,
+                player instanceof ServerPlayer serverPlayer
+                        ? HunterRootPassiveEffects.movementSpeedBonus(
+                                serverPlayer,
+                                mainWeaponFamily
+                        )
+                        : 0.0
+        );
         PlayerAttackSpeedRuntime.synchronize(
                 player,
                 loadout.item(ProjectEquipmentSlot.MAIN_WEAPON)
@@ -61,6 +76,17 @@ public final class PlayerCombatBuildPublisher {
                 resourceModifiers,
                 gameTick
         );
+        CombatStateServices.states()
+                .synchronizeClassSkillManaCostMultiplier(
+                        player.getUUID(),
+                        player instanceof ServerPlayer serverPlayer
+                                ? HunterRootPassiveEffects
+                                        .skillManaCostMultiplier(
+                                                serverPlayer
+                                        )
+                                : 1.0,
+                        gameTick
+                );
         CombatStateServices.defenseSnapshots().bindAuthoritative(
                 player.getUUID(),
                 loadout.aggregateDefenseSnapshot()

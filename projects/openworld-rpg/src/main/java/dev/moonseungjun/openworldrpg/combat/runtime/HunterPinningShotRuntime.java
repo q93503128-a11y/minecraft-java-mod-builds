@@ -125,6 +125,17 @@ public final class HunterPinningShotRuntime {
             return HitResult.rejected();
         }
 
+        boolean weakPointHit =
+                ExternalActorBindingRuntime.isAuthoredWeakPointHit(
+                        target,
+                        hitPosition
+                );
+        double weakPointMultiplier =
+                HunterRootPassiveEffects.weakPointMultiplier(
+                        hunter,
+                        weakPointHit
+                );
+
         var source = build.damageSource(
                 ProjectImpactTransaction.DamageSchool.PHYSICAL
         );
@@ -137,7 +148,7 @@ public final class HunterPinningShotRuntime {
                                         .DamageSchool.PHYSICAL,
                                 ProjectSpellSpec
                                         .HUNTER_PINNING_ACTION_COEFFICIENT,
-                                1.0,
+                                weakPointMultiplier,
                                 1.0
                         )
                 ).finalDamage();
@@ -188,7 +199,7 @@ public final class HunterPinningShotRuntime {
                 hunter,
                 target,
                 distance,
-                false,
+                weakPointHit,
                 poiseBreak,
                 nowTick
         );

@@ -24,6 +24,11 @@ public final class PlayerMovementRuntime {
                     OpenworldRpgMod.MOD_ID,
                     "action_movement_speed"
             );
+    static final Identifier CLASS_MOVEMENT_SPEED_MODIFIER_ID =
+            Identifier.fromNamespaceAndPath(
+                    OpenworldRpgMod.MOD_ID,
+                    "class_movement_speed"
+            );
 
     private PlayerMovementRuntime() {
     }
@@ -60,6 +65,41 @@ public final class PlayerMovementRuntime {
                     new AttributeModifier(
                             EQUIPMENT_MOVEMENT_SPEED_MODIFIER_ID,
                             equipmentMovementSpeedBonus,
+                            AttributeModifier.Operation.ADD_MULTIPLIED_BASE
+                    )
+            );
+        }
+    }
+
+    public static void synchronizeClassMovementSpeedBonus(
+            Player player,
+            double classMovementSpeedBonus
+    ) {
+        Objects.requireNonNull(player, "player");
+        if (player.level().isClientSide()) {
+            throw new IllegalStateException(
+                    "Project movement authority is server-only."
+            );
+        }
+        if (!Double.isFinite(classMovementSpeedBonus)
+                || classMovementSpeedBonus < 0.0
+                || classMovementSpeedBonus > 1.0) {
+            throw new IllegalArgumentException(
+                    "Class movement-speed bonus must be inside [0, 1]."
+            );
+        }
+        var movementSpeed = player.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (movementSpeed == null) {
+            throw new IllegalStateException(
+                    "Server player has no MOVEMENT_SPEED attribute."
+            );
+        }
+        movementSpeed.removeModifier(CLASS_MOVEMENT_SPEED_MODIFIER_ID);
+        if (classMovementSpeedBonus > 0.0) {
+            movementSpeed.addOrUpdateTransientModifier(
+                    new AttributeModifier(
+                            CLASS_MOVEMENT_SPEED_MODIFIER_ID,
+                            classMovementSpeedBonus,
                             AttributeModifier.Operation.ADD_MULTIPLIED_BASE
                     )
             );

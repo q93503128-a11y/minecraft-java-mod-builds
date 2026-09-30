@@ -37,6 +37,28 @@ public final class CombatDamageAuthority {
             ProjectImpactTransaction.DamageTargetSnapshot target,
             double serverCriticalRoll
     ) {
+        return authorizeBetterCombatMelee(
+                donorProposedDamage,
+                comboCount,
+                build,
+                target,
+                serverCriticalRoll,
+                0.0,
+                1.0,
+                1.0
+        );
+    }
+
+    public static MeleeDamageDecision authorizeBetterCombatMelee(
+            float donorProposedDamage,
+            int comboCount,
+            PlayerCombatBuildState build,
+            ProjectImpactTransaction.DamageTargetSnapshot target,
+            double serverCriticalRoll,
+            double authoredCriticalChanceBonus,
+            double weakPointMultiplier,
+            double directDamageMultiplier
+    ) {
         Objects.requireNonNull(build, "build");
         Objects.requireNonNull(target, "target");
 
@@ -53,7 +75,8 @@ public final class CombatDamageAuthority {
                 build.damageSource(ProjectImpactTransaction.DamageSchool.PHYSICAL);
         CriticalResult critical = resolveNormalCritical(
                 build,
-                serverCriticalRoll
+                serverCriticalRoll,
+                authoredCriticalChanceBonus
         );
 
         ProjectImpactTransaction.DirectDamageResult damage =
@@ -62,8 +85,9 @@ public final class CombatDamageAuthority {
                                 source,
                                 target,
                                 ProjectImpactTransaction.DamageSchool.PHYSICAL,
-                                hit.damageActionCoefficient(),
-                                1.0,
+                                hit.damageActionCoefficient()
+                                        * directDamageMultiplier,
+                                weakPointMultiplier,
                                 critical.multiplier()
                         )
                 );
@@ -114,6 +138,26 @@ public final class CombatDamageAuthority {
             ProjectImpactTransaction.DamageTargetSnapshot target,
             double serverCriticalRoll
     ) {
+        return authorizeProjectileBasic(
+                donorProposedDamage,
+                build,
+                target,
+                serverCriticalRoll,
+                0.0,
+                1.0,
+                1.0
+        );
+    }
+
+    public static RangedDamageDecision authorizeProjectileBasic(
+            float donorProposedDamage,
+            PlayerCombatBuildState build,
+            ProjectImpactTransaction.DamageTargetSnapshot target,
+            double serverCriticalRoll,
+            double authoredCriticalChanceBonus,
+            double weakPointMultiplier,
+            double directDamageMultiplier
+    ) {
         Objects.requireNonNull(build, "build");
         Objects.requireNonNull(target, "target");
 
@@ -133,7 +177,8 @@ public final class CombatDamageAuthority {
                 build.damageSource(ProjectImpactTransaction.DamageSchool.PHYSICAL);
         CriticalResult critical = resolveNormalCritical(
                 build,
-                serverCriticalRoll
+                serverCriticalRoll,
+                authoredCriticalChanceBonus
         );
 
         ProjectImpactTransaction.DirectDamageResult resolvedDamage =
@@ -142,8 +187,9 @@ public final class CombatDamageAuthority {
                                 source,
                                 target,
                                 ProjectImpactTransaction.DamageSchool.PHYSICAL,
-                                hit.damageActionCoefficient(),
-                                1.0,
+                                hit.damageActionCoefficient()
+                                        * directDamageMultiplier,
+                                weakPointMultiplier,
                                 critical.multiplier()
                         )
                 );
@@ -196,6 +242,28 @@ public final class CombatDamageAuthority {
             ProjectImpactTransaction.DamageTargetSnapshot target,
             double serverCriticalRoll
     ) {
+        return authorizeBowProjectileBasic(
+                donorProposedDamage,
+                drawPower,
+                build,
+                target,
+                serverCriticalRoll,
+                0.0,
+                1.0,
+                1.0
+        );
+    }
+
+    public static RangedDamageDecision authorizeBowProjectileBasic(
+            float donorProposedDamage,
+            double drawPower,
+            PlayerCombatBuildState build,
+            ProjectImpactTransaction.DamageTargetSnapshot target,
+            double serverCriticalRoll,
+            double authoredCriticalChanceBonus,
+            double weakPointMultiplier,
+            double directDamageMultiplier
+    ) {
         Objects.requireNonNull(build, "build");
         Objects.requireNonNull(target, "target");
 
@@ -214,7 +282,8 @@ public final class CombatDamageAuthority {
                 build.damageSource(ProjectImpactTransaction.DamageSchool.PHYSICAL);
         CriticalResult critical = resolveNormalCritical(
                 build,
-                serverCriticalRoll
+                serverCriticalRoll,
+                authoredCriticalChanceBonus
         );
 
         ProjectImpactTransaction.DirectDamageResult resolvedDamage =
@@ -223,8 +292,9 @@ public final class CombatDamageAuthority {
                                 source,
                                 target,
                                 ProjectImpactTransaction.DamageSchool.PHYSICAL,
-                                hit.damageActionCoefficient(),
-                                1.0,
+                                hit.damageActionCoefficient()
+                                        * directDamageMultiplier,
+                                weakPointMultiplier,
                                 critical.multiplier()
                         )
                 );
@@ -263,9 +333,12 @@ public final class CombatDamageAuthority {
 
     private static CriticalResult resolveNormalCritical(
             PlayerCombatBuildState build,
-            double serverCriticalRoll
+            double serverCriticalRoll,
+            double authoredCriticalChanceBonus
     ) {
-        double chance = build.criticalChance(0.0);
+        double chance = build.criticalChance(
+                authoredCriticalChanceBonus
+        );
         boolean critical = ProjectCombatRules.criticalRollSucceeds(
                 chance,
                 serverCriticalRoll

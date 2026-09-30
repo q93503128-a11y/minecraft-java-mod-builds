@@ -49,7 +49,22 @@ public final class ProjectMinecraftDamageApplicator {
             LivingEntity target,
             double finalDamage
     ) {
-        return applyResolved(attacker, target, finalDamage, PROJECT_DIRECT_PHYSICAL);
+        if (attacker instanceof ServerPlayer hunter) {
+            finalDamage *= HunterRootPassiveEffects
+                    .quarryDirectDamageMultiplier(
+                            hunter,
+                            HunterSkillRuntime.isCurrentQuarry(
+                                    hunter,
+                                    target
+                            )
+                    );
+        }
+        return applyResolved(
+                attacker,
+                target,
+                finalDamage,
+                PROJECT_DIRECT_PHYSICAL
+        );
     }
 
     private static boolean applyResolved(

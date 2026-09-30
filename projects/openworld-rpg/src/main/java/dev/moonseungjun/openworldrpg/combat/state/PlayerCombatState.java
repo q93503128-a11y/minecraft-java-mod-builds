@@ -32,6 +32,7 @@ public final class PlayerCombatState {
     private double manaRecoveryBonus;
     private double staminaRecoveryBonus;
     private double manaCostReduction;
+    private double classSkillManaCostMultiplier = 1.0;
     private double dodgeSprintStaminaCostReduction;
     private long lastRefreshTick;
     private long lastManaSpendTick = Long.MIN_VALUE / 4;
@@ -266,9 +267,26 @@ public final class PlayerCombatState {
         refresh(nowTick);
     }
 
+    public void synchronizeClassSkillManaCostMultiplier(
+            double multiplier,
+            long nowTick
+    ) {
+        if (!Double.isFinite(multiplier)
+                || multiplier <= 0.0
+                || multiplier > 1.0) {
+            throw new IllegalArgumentException(
+                    "Class skill Mana-cost multiplier must be inside (0, 1]."
+            );
+        }
+        refresh(nowTick);
+        classSkillManaCostMultiplier = multiplier;
+    }
+
     public double effectiveManaCost(double authoredCost) {
         validateManaAmount(authoredCost);
-        return authoredCost * (1.0 - manaCostReduction);
+        return authoredCost
+                * classSkillManaCostMultiplier
+                * (1.0 - manaCostReduction);
     }
 
     public double effectiveDodgeSprintStaminaCost(double authoredCost) {

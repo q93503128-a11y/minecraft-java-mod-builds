@@ -114,8 +114,12 @@ public final class HunterPowerShotRuntime {
         double actionCoefficient =
                 HunterPowerShotRules.actionCoefficient(cast.empowered());
         double weakPointMultiplier =
-                HunterPowerShotRules.weakPointMultiplier(
-                        cast.empowered(),
+                HunterRootPassiveEffects.augmentWeakPointMultiplier(
+                        hunter,
+                        HunterPowerShotRules.weakPointMultiplier(
+                                cast.empowered(),
+                                weakPointHit
+                        ),
                         weakPointHit
                 );
 

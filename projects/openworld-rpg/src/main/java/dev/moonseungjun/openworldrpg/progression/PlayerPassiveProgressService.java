@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.progression;
 
+import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatBuildPublisher;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionService;
 import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import dev.moonseungjun.openworldrpg.economy.PlayerCurrencyService;
@@ -286,8 +287,17 @@ public final class PlayerPassiveProgressService {
 
     private static void replace(ServerPlayer player, PlayerPassiveProgressState next) {
         next.validateAgainst(CATALOG);
-        if (!state(player).equals(next)) {
-            player.setAttached(PlayerPassiveProgressAttachments.PASSIVE_PROGRESS, next);
+        PlayerPassiveProgressState current = state(player);
+        if (!current.equals(next)) {
+            boolean allocationChanged = !current.allocationRanks()
+                    .equals(next.allocationRanks());
+            player.setAttached(
+                    PlayerPassiveProgressAttachments.PASSIVE_PROGRESS,
+                    next
+            );
+            if (allocationChanged) {
+                PlayerCombatBuildPublisher.refresh(player);
+            }
         }
     }
 

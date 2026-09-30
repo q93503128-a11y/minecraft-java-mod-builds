@@ -130,6 +130,17 @@ public final class HunterFanOfArrowsRuntime {
             return HitResult.rejected();
         }
 
+        boolean weakPointHit =
+                ExternalActorBindingRuntime.isAuthoredWeakPointHit(
+                        target,
+                        hitPosition
+                );
+        double weakPointMultiplier =
+                HunterRootPassiveEffects.weakPointMultiplier(
+                        hunter,
+                        weakPointHit
+                );
+
         var source = build.damageSource(ProjectImpactTransaction.DamageSchool.PHYSICAL);
         double actionCoefficient =
                 HunterFanOfArrowsRules.perProjectileActionCoefficient(cast.empowered());
@@ -177,7 +188,7 @@ public final class HunterFanOfArrowsRuntime {
                 hunter,
                 target,
                 distance,
-                false,
+                weakPointHit,
                 poiseBreak,
                 nowTick
         );

@@ -1,5 +1,7 @@
 package dev.moonseungjun.openworldrpg.combat.runtime;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,6 +20,7 @@ public final class HunterQuarryFocusRuntimeState {
     public static final long LONG_RANGE_FOCUS_ICD_TICKS = 15L;
     public static final long WEAK_POINT_FOCUS_ICD_TICKS = 30L;
     public static final long WEAK_POINT_ULTIMATE_ICD_TICKS = 20L;
+    public static final long TRAIL_SENSE_TARGET_ICD_TICKS = 400L;
 
     private static final long UNSET_TICK = Long.MIN_VALUE / 4;
     private static final double RANGE_EPSILON = 1.0e-9;
@@ -29,6 +32,10 @@ public final class HunterQuarryFocusRuntimeState {
     private long weakPointFocusReadyAtTick = UNSET_TICK;
     private long weakPointUltimateReadyAtTick = UNSET_TICK;
     private long lastObservedTick = UNSET_TICK;
+    private long outOfCombatFocusClearTicks =
+            OUT_OF_COMBAT_FOCUS_CLEAR_TICKS;
+    private final Map<UUID, Long> trailSenseReadyAtTick =
+            new HashMap<>();
 
     public HitApplication recordRangedHit(
             UUID targetId,
@@ -37,7 +44,32 @@ public final class HunterQuarryFocusRuntimeState {
             long nowTick,
             long lastCombatActivityTick
     ) {
+        return recordRangedHit(
+                targetId,
+                shotDistanceBlocks,
+                weakPointHit,
+                nowTick,
+                lastCombatActivityTick,
+                0L,
+                false
+        );
+    }
+
+    public HitApplication recordRangedHit(
+            UUID targetId,
+            double shotDistanceBlocks,
+            boolean weakPointHit,
+            long nowTick,
+            long lastCombatActivityTick,
+            long focusExpiryBonusTicks,
+            boolean trailSenseEnabled
+    ) {
         Objects.requireNonNull(targetId, "targetId");
+        if (focusExpiryBonusTicks < 0L) {
+            throw new IllegalArgumentException(
+                    "Focus expiry bonus cannot be negative."
+            );
+        }
         if (!Double.isFinite(shotDistanceBlocks)
                 || shotDistanceBlocks < 0.0) {
             throw new IllegalArgumentException(
@@ -50,12 +82,41 @@ public final class HunterQuarryFocusRuntimeState {
         boolean replaced = quarryId != null
                 && !quarryId.equals(targetId);
         quarryId = targetId;
+        long retentionTicks = Math.addExact(
+                QUARRY_DURATION_TICKS,
+                focusExpiryBonusTicks
+        );
         quarryExpiresAtTick = Math.addExact(
                 nowTick,
-                QUARRY_DURATION_TICKS
+                retentionTicks
+        );
+        outOfCombatFocusClearTicks = Math.addExact(
+                OUT_OF_COMBAT_FOCUS_CLEAR_TICKS,
+                focusExpiryBonusTicks
         );
 
         int focusBefore = focus;
+        trailSenseReadyAtTick.entrySet().removeIf(
+                entry -> entry.getValue() <= nowTick
+        );
+        boolean trailSenseFocusGranted = false;
+        if (trailSenseEnabled
+                && (newlyMarked || replaced)
+                && nowTick >= trailSenseReadyAtTick.getOrDefault(
+                        targetId,
+                        UNSET_TICK
+                )
+                && focus < MAX_FOCUS) {
+            focus++;
+            trailSenseFocusGranted = true;
+            trailSenseReadyAtTick.put(
+                    targetId,
+                    Math.addExact(
+                            nowTick,
+                            TRAIL_SENSE_TARGET_ICD_TICKS
+                    )
+            );
+        }
         boolean longRangeEligible =
                 shotDistanceBlocks + RANGE_EPSILON
                         >= LONG_RANGE_MIN_BLOCKS;
@@ -96,6 +157,7 @@ public final class HunterQuarryFocusRuntimeState {
         return new HitApplication(
                 newlyMarked,
                 replaced,
+                trailSenseFocusGranted,
                 longRangeEligible,
                 longRangeFocusGranted,
                 weakPointFocusGranted,
@@ -163,6 +225,9 @@ public final class HunterQuarryFocusRuntimeState {
         weakPointFocusReadyAtTick = UNSET_TICK;
         weakPointUltimateReadyAtTick = UNSET_TICK;
         lastObservedTick = UNSET_TICK;
+        outOfCombatFocusClearTicks =
+                OUT_OF_COMBAT_FOCUS_CLEAR_TICKS;
+        trailSenseReadyAtTick.clear();
     }
 
     private void refresh(
@@ -186,7 +251,7 @@ public final class HunterQuarryFocusRuntimeState {
                 && lastCombatActivityTick > UNSET_TICK
                 && nowTick >= Math.addExact(
                         lastCombatActivityTick,
-                        OUT_OF_COMBAT_FOCUS_CLEAR_TICKS
+                        outOfCombatFocusClearTicks
                 )) {
             focus = 0;
         }
@@ -195,6 +260,7 @@ public final class HunterQuarryFocusRuntimeState {
     public record HitApplication(
             boolean newlyMarked,
             boolean replacedPreviousQuarry,
+            boolean trailSenseFocusGranted,
             boolean longRangeEligible,
             boolean longRangeFocusGranted,
             boolean weakPointFocusGranted,

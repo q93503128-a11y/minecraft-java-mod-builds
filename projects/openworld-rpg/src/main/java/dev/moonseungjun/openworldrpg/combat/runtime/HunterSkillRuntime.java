@@ -50,7 +50,11 @@ public final class HunterSkillRuntime {
                         shotDistanceBlocks,
                         weakPointHit,
                         nowTick,
-                        combatState.lastCombatActivityTick()
+                        combatState.lastCombatActivityTick(),
+                        HunterRootPassiveEffects
+                                .focusExpiryBonusTicks(hunter),
+                        HunterRootPassiveEffects
+                                .trailSenseEnabled(hunter)
                 );
 
         ProjectUltimateChargeRuntime.recordHunterRangedQuarryHit(
@@ -113,7 +117,11 @@ public final class HunterSkillRuntime {
                         shotDistanceBlocks,
                         weakPointHit,
                         nowTick,
-                        combatState.lastCombatActivityTick()
+                        combatState.lastCombatActivityTick(),
+                        HunterRootPassiveEffects
+                                .focusExpiryBonusTicks(hunter),
+                        HunterRootPassiveEffects
+                                .trailSenseEnabled(hunter)
                 );
 
         if (stateResult.weakPointUltimatePublicationClaimed()) {

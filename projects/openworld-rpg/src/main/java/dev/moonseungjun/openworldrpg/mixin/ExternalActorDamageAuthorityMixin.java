@@ -1,6 +1,7 @@
 package dev.moonseungjun.openworldrpg.mixin;
 
 import dev.moonseungjun.openworldrpg.combat.authority.CombatDamageAuthority;
+import dev.moonseungjun.openworldrpg.combat.runtime.HunterRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectDamageApplicationContext;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
@@ -65,6 +66,35 @@ public abstract class ExternalActorDamageAuthorityMixin {
                     return;
                 }
 
+                ServerPlayer serverShooter =
+                        shooter instanceof ServerPlayer value
+                                ? value
+                                : null;
+                boolean weakPointHit =
+                        ExternalActorBindingRuntime
+                                .isAuthoredWeakPointHit(
+                                        self,
+                                        arrow.position()
+                                );
+                double criticalChanceBonus =
+                        serverShooter != null
+                                ? HunterRootPassiveEffects
+                                        .criticalChanceBonus(
+                                                serverShooter
+                                        )
+                                : 0.0;
+                double weakPointMultiplier =
+                        serverShooter != null
+                                ? HunterRootPassiveEffects
+                                        .weakPointMultiplier(
+                                                serverShooter,
+                                                weakPointHit
+                                        )
+                                : weakPointHit
+                                        ? HunterRootPassiveEffects
+                                                .DEFAULT_AUTHORED_WEAK_POINT_MULTIPLIER
+                                        : 1.0;
+
                 CombatDamageAuthority.RangedDamageDecision decision =
                         switch (shot.weaponFamily()) {
                             case BOW -> CombatDamageAuthority.authorizeBowProjectileBasic(
@@ -72,13 +102,19 @@ public abstract class ExternalActorDamageAuthorityMixin {
                                     shot.drawPower(),
                                     shot.build(),
                                     targetSnapshot,
-                                    shooter.getRandom().nextDouble()
+                                    shooter.getRandom().nextDouble(),
+                                    criticalChanceBonus,
+                                    weakPointMultiplier,
+                                    1.0
                             );
                             case CROSSBOW -> CombatDamageAuthority.authorizeProjectileBasic(
                                     amount,
                                     shot.build(),
                                     targetSnapshot,
-                                    shooter.getRandom().nextDouble()
+                                    shooter.getRandom().nextDouble(),
+                                    criticalChanceBonus,
+                                    weakPointMultiplier,
+                                    1.0
                             );
                             default -> CombatDamageAuthority.RangedDamageDecision.rejected();
                         };
@@ -112,7 +148,7 @@ public abstract class ExternalActorDamageAuthorityMixin {
                                 shot.launchPosition().distanceTo(
                                         arrow.position()
                                 ),
-                                false,
+                                weakPointHit,
                                 poiseApplication != null
                                         && poiseApplication.breakTriggered(),
                                 gameTick

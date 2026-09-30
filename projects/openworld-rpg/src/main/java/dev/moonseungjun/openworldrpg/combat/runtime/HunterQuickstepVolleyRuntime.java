@@ -168,6 +168,17 @@ public final class HunterQuickstepVolleyRuntime {
             return HitResult.rejected();
         }
 
+        boolean weakPointHit =
+                ExternalActorBindingRuntime.isAuthoredWeakPointHit(
+                        target,
+                        hitPosition
+                );
+        double weakPointMultiplier =
+                HunterRootPassiveEffects.weakPointMultiplier(
+                        hunter,
+                        weakPointHit
+                );
+
         var source = build.damageSource(ProjectImpactTransaction.DamageSchool.PHYSICAL);
         double damage = ProjectImpactTransaction.resolveDirectDamage(
                 new ProjectImpactTransaction.DirectDamageRequest(
@@ -212,7 +223,7 @@ public final class HunterQuickstepVolleyRuntime {
                 hunter,
                 target,
                 distance,
-                false,
+                weakPointHit,
                 poiseBreak,
                 nowTick
         );
