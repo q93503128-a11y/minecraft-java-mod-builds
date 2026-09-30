@@ -396,6 +396,8 @@ Inventory-specific rule:
 - keep slot boundaries readable and selection/favorite/locked states unambiguous.
 - do not enlarge slots excessively just to emphasize roundness.
 - inventory capacity and information density remain practical.
+- the full-inventory catch-resolution prompt should reuse the same rounded slot/button/icon family rather than falling back to vanilla confirmation buttons.
+- compare external life-sim reference layouts for compact "keep/swap/manage" decisions; do not invent three giant centered buttons simply because three actions exist.
 
 ### Unified M-menu / UI framework candidates
 
@@ -539,6 +541,9 @@ Dedicated portable fish/insect storage:
 - no sufficiently convincing 26.2 NeoForge external solution has been selected yet.
 - continue searching before writing a custom system.
 - if none is suitable, prefer the chosen external general-backpack framework plus a small Campfire-specific category/filter container layer over a complete custom inventory replacement.
+- the final container stack must support or allow Campfire to implement **automatic catch routing**: fish → fish container, bugs → insect container, sea-life → suitable specimen container, then general backpack, then normal inventory.
+- routing must preserve specimen NBT/components/data exactly and never merge distinct variants incorrectly.
+- evaluate whether the external container API/filter system can accept items programmatically without opening a screen; if not, this materially weakens the candidate for Campfire.
 
 Display storage:
 - Better Fishtanks supports Minecraft 26.2 / NeoForge and is a candidate for home/museum aquarium presentation.
