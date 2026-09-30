@@ -336,36 +336,43 @@ State: `RUNTIME_AND_ASSET_BOUND / MINECRAFT_VISUAL_ACCEPTANCE_PENDING`. Build Op
 Final third-person silhouette, armor/cape clipping, first-person camera feel, terrain shortening and
 network-latency feel require joined-player playtest.
 
-### Hunter Quickstep Volley presentation intake — 2026-09-30
+### Hunter Quickstep Volley runtime/presentation binding — 2026-09-30
 
-Hunter `Quickstep Volley` now has a project-owned backend contract, but its player-facing presentation remains deliberately closed.
+Hunter `Quickstep Volley` is now player-slot published as Active Skill 1 / F with server-owned gameplay and dependency-backed ranged presentation.
 
-Canonical backend already locked in source:
+Gameplay authority remains project-owned:
 
 - 18 Mana / 7.0 s cooldown;
-- 3.0-block ordinary dash / 4.0-block empowered dash;
-- **0 i-frame ticks** — this action is mobility, not a hidden second dodge;
-- three projectiles, 0.55 ActionCoefficient each, 1.65 same-target cap;
-- whole-action PoiseCoefficient 0.70;
-- three-Focus empowerment may pierce one normal enemy per projectile without increasing the same-target coefficient cap;
-- current production weapon gate is Bow/Crossbow only.
+- Bow/Crossbow production gate;
+- 3.0-block ordinary dash / 4.0-block three-Focus empowered dash;
+- **0 i-frame ticks** — Quickstep is mobility while attacking, not a second dodge;
+- client transmits only current directional key intent; zero input creates no fallback movement;
+- collision-resolved server movement uses six slices within a 10-tick action window;
+- three physical projectiles at 0.55 ActionCoefficient each, 1.65 same-target cap;
+- whole-action PoiseCoefficient 0.70 is partitioned across the three projectile hits;
+- full Focus is consumed only on the accepted cast;
+- empowered continuation is at most one explicitly admitted normal enemy per projectile and never derives normal/elite/boss status from donor identity.
 
-Presentation-source direction remains Quaternius **Universal Animation Library 2 Standard**. The current official pack is CC0 and includes movement/parkour-oriented animation coverage. Public byte-locator corroboration exists in `agentkaerf/FreeModels` at commit `db3df04d1e4714298a09510b26fb6de6645138a2`:
+Presentation now uses the pinned Spell Engine 26.2 `spell_engine:archery_release` dependency animation. Its upstream resource identifies it as a ranged-weapon release by Daedelus and carries the bow-oriented torso/arm release sequence through tick 6 with a 10-tick stop. This was selected over forcing Quaternius UAL2 `Slide_*`/dash motion onto the shot: UAL2 Standard remains CC0 and useful elsewhere, but a full-body slide risks breaking the actual bow/crossbow silhouette and is therefore **not** the accepted Quickstep motion.
 
-- `Universal Animation Library 2[Standard]/Unreal-Godot/UAL2_Standard.glb`
-  - Git blob: `dc684c2a664927964307e8eb7b27b0000ebf6a18`
-  - size: 8,061,600 bytes;
-- `Universal Animation Library 2[Standard]/License.txt`
-  - Git blob: `233f759611a4467aefaa5b4e21d68b389fea33f7`
-  - text explicitly identifies CC0 1.0 Universal / Public Domain Dedication and Quaternius.
+Projectile transport uses Spell Engine's verified 26.2 `direction_offsets` + `extra_launch_count` path:
 
-This is **not** exact animation acceptance. The current connector can locate the binary GLB but cannot return/decode its non-UTF8 animation bytes, so clip curves, duration, root-motion behavior, bow/crossbow arm overlap, PAL retarget quality and Minecraft third-person readability have not been inspected. Free-Standard catalog references such as the Slide family remain candidates only until the exact track is byte-inspected and played in Minecraft.
+- three fixed launch directions at the initial playtest binding of -4 / 0 / +4 degrees yaw;
+- launch velocity 2.0;
+- one-tick extra-launch spacing;
+- 24-block delivery range;
+- no homing;
+- project custom impact authority, with donor damage/cooldown costs neutralized.
 
-Do not reuse the admitted Kelvin dodge roll automatically for Quickstep merely because both move the player. Quickstep must read as an aimed ranged reposition with no i-frames, not as another evasive roll. Archers RPG Series remains ARR dependency/local-only/reference material for ranged presentation; its source/assets are not copied into this public repository.
+Those spread/range/velocity/timing values are production precision bindings for playtest, not newly invented class-design canon.
 
-State: `BACKEND_CONTRACT_BOUND / PRESENTATION_ASSET_PENDING / PLAYER_SLOT_CLOSED`.
+The visible projectile reuses the exact already-admitted KayKit Character Pack: Adventures `arrow.gltf` geometry and original texture bytes recorded under `external-assets/kaykit-adventures/`. Unlike Radiant Lance, Quickstep renders the mesh with neutral tint and ordinary scene light; it does not inherit holy glow or magic particles. This gives the three arrows a real physical body without creating a second temporary projectile asset.
 
-Build Openworld RPG run `36658587908` at code state `fde4dd1bb9ce474b3d1c11d676c2f135acf26487` passes unit tests/clean build, bootstrap JAR verification, core server, gameplay dependency server, gameplay client startup, both playtest-JAR builds, Modrinth pack packaging and artifact upload. This does not substitute for a real Quickstep animation/projectile/terrain/latency playtest.
+Empowered pierce is target-sensitive. The JSON starts at `pierce: 0`; immediately before an impact, a Spell Engine compatibility mixin may grant one continuation only if the current accepted Quickstep was empowered and the target's explicit reaction capability is `hunterQuickstepPierceable`. `normalBaseline()` admits it; legacy/default/boss profiles fail closed. The per-projectile grant is spent after the first admitted continuation so the same arrow cannot chain through multiple enemies.
+
+State: `RUNTIME_AND_PRESENTATION_BOUND / PLAYER_SLOT_OPEN / MINECRAFT_VISUAL_ACCEPTANCE_PENDING`.
+
+Build Openworld RPG run `36662209318` at code state `5d0490b5906b898c3e2e7607f2b54f8cede384fa` passes unit tests/clean build, bootstrap JAR verification, core server, gameplay dependency server, gameplay client startup, both playtest-JAR builds, Modrinth pack packaging and artifact upload. This proves compile/startup/mixin integration, not in-world visual or feel acceptance. Manual review must still verify 3/4-block terrain shortening, visible spread, bow/crossbow posture, arrow scale/lighting, impact/SFX feel, latency and empowered normal-enemy pierce.
 
 ### Warrior root runtime binding delta — 2026-09-29
 
