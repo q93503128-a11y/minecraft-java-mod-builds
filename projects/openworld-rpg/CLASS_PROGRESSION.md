@@ -1267,13 +1267,17 @@ Implemented:
 - canonical full-respec cost `round_to_10(max(50, min(500, 0.20 * SwitchCost(L))))`;
 - passive respec requires approved shrine/trainer context + out-of-combat acceptance, clears root + active-branch allocation while preserving the inactive sibling allocation, and uses a persisted idempotent Gold debit;
 - codec/catalog shape/invariant tests cover specialization, milestones, doctrine mapping, 115-node catalog shape, Insight counts, point caps, tier gates and persisted respec state;
-- normal join reconciliation resumes interrupted branch switches, Insight rewards and paid passive respec transactions.
+- normal join reconciliation resumes interrupted branch switches, Insight rewards and paid passive respec transactions;
+- late-class Class-XP catch-up is runtime-owned: expected Class Rank derives deterministically from combat Lv, the locked gap bands resolve to x1.00 / x1.30 / x1.75 / x2.25, and reconnect-safe reward plans persist the already-resolved amount instead of recalculating it after reconnect or Rank changes;
+- the R01 Earthloong first-boss reward now resolves its content-level reward modifier before late-class catch-up and snapshots the resulting Combat XP / Class XP / Gold plan before application;
+- all seven Hunter root passive nodes now have server-side runtime consumers: Keen Eye, Light Step, Efficient Draw, Quarry Pressure, Focus Retention, Weakpoint Study and Trail Sense. Authored weak points are accepted only through explicit actor-local weak-point zones; no anatomy is inferred from a generic hitbox;
+- all seven Warrior root passive nodes now have server-side runtime consumers: Steel Nerve, Tireless Combatant, Weapon Rhythm, Crushing Intent, Held Momentum, Counterforce and Battle Temper. Weapon Rhythm updates both the projected attack-speed attribute and the project-owned server basic-attack cadence gate, so visible cadence and damage authority use the same class bonus.
 
 Verification:
 
 ```text
-CODE STATE: 1d4198aeb2485fc9528b4a19e0c0ffb7243b4901
-BUILD OPENWORLD RPG RUN: 36681079981
+CODE STATE: b831cb2656b4037b4eb7d59d30ec1f0665f166f8
+BUILD OPENWORLD RPG RUN: 36706950621
 UNIT TESTS: PASS
 CLEAN BUILD: PASS
 JAR VERIFY: PASS
@@ -1283,8 +1287,8 @@ GAMEPLAY CLIENT STARTUP: PASS
 JOINED-PLAYER ARC-BOLT VERIFICATION JAR: PRODUCED
 R01 INTEGRATION VERIFICATION JAR: PRODUCED
 MODRINTH PLAYTEST PACK: PRODUCED
-ARTIFACT: openworld-rpg-m0-1d4198aeb2485fc9528b4a19e0c0ffb7243b4901
-ARTIFACT SHA-256: 81a445b3421564679fcdc8955c468b8d678d143c87b414f24f225e18c8426fb7
+ARTIFACT: openworld-rpg-m0-b831cb2656b4037b4eb7d59d30ec1f0665f166f8
+ARTIFACT SHA-256: 9d72443442e3e732e3aa4c8681c185cc32282276a95ca39b063b38f762c8b19d
 PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
 ```
@@ -1296,9 +1300,9 @@ Still separate implementation work:
 - Rank-44 ascendant mechanic and ultimate-augment choice/effects;
 - Rank-50 Deep Mastery challenge completion and its authored world binding;
 - encounter-specific Class Insight success detectors, including the five exact R01 challenge conditions in §19.1;
-- actual passive combat-effect consumers for the 115 catalog nodes;
+- passive combat-effect consumers for the remaining 101 catalog nodes: Cleric/Mage/Guardian root nodes plus every specialization branch node; Hunter and Warrior root nodes are runtime-bound;
 - Hidden Technique discovery/runtime binding;
-- late-class catch-up multiplier integration into eligible Class-XP reward pipelines;
+- broader late-class catch-up integration across eligible quest/dungeon/encounter reward pipelines where the content-level anti-farm owner is defined; the shared math/planner and Earthloong first-boss path are already bound;
 - specialization/class/passive screen UI and final icon/animation/VFX bindings.
 
 Do not treat stored milestone/passive state as evidence that the corresponding visible skills, mechanics, challenge detectors or passive effects are already player-facing.
