@@ -1228,3 +1228,46 @@ Validation after Build #948:
 - CLIENT RUNTIME TESTED: NO for Build #948
 - PLAYTESTED: NO for Build #948
 - MULTIPLAYER TESTED: NO
+
+
+## Build #948 follow-up: revive/UI density/reference pass — 2026-09-30
+
+Real-client feedback from the Build #948 playtest established four presentation problems and one reward-clarity gap:
+- enemy downed visuals also need a persistent logical recovery target because future enemy revive kits are allowed
+- character Skill detail used too much height for navigation and too little for the actual description
+- the field minimap and objective panel covered too much of the authored world
+- Turn Order portraits were harder to identify without names
+- battle equipment drops were committed server-side but the drop was not being appended to the result-summary equipment list, so the existing `획득 · ...` result line could remain empty
+
+Reference review for the Skill screen:
+- Honkai: Star Rail character/skill surfaces keep category/selection navigation separate from a large selected-detail reading area
+- Reverse: 1999 character Details/Skills surfaces likewise prioritize the current kit text rather than compressing it into a short bottom strip
+- TURNBOUND therefore keeps the existing Foozle visual language but changes information architecture: vertical skill rail on the left, full-height selected skill/passive reading pane on the right
+
+Implemented:
+- every non-summon combatant, ally or enemy, now transitions from authored down animation to a low in-world `전투불능 · 이름` marker instead of deleting enemy recovery state
+- summons may still retire visually while down
+- true same-action `AUTO_REVIVE_ONCE` passives can use `REVIVE_IMMEDIATE_TURN`; their revive animation/VFX is presented even though no intermediate downed snapshot reaches the client
+- normal revive Turn Gauge is target-specific and data-driven through `reviveStartGauge`
+- current v1 playable baseline ranges from 90 to 340; P06 Last Page uses 500 after its two-action delay; P04 Returned Breath adds its existing +150 on top of the target's own return value
+- Skill tab now uses a vertical Basic/Active/Passive rail and a much larger right-side description pane with scroll support
+- minimap and objective panel are rendered at 80% of their previous visual scale, including text/padding/markers
+- objective width remains viewport/state-driven, not text-length-driven; scaling is anchored to the upper-right so longer copy cannot expand left into the centered navigation cue
+- Turn Order reserves a second line and renders a small character name below every portrait
+- battle equipment drops are appended to the authoritative result summary; the existing result screen now renders `획득 · <장비명>`, or marks it as `보상 대기` when inventory overflow queued it
+
+Equipment canon reconfirmed:
+- normal equipment sources are **battle drops + merchant + quests + bosses**, not merchant-only
+- normal merchant sells T1/T2; higher-tier sources are progression/combat rewards
+- equipment remains a streamlined turn-RPG system: Weapon/Armor/Accessory + Signature, predictable main/sub stats, at most one clear fixed trait, +0..+10 Gold enhancement, no fail/break and no random multi-line substat reroll loop
+
+The supplied client log was reviewed separately. It contains repeated Minecraft model-parser failures caused by the invalid resource identifier `minecraft:item/spawn_egg_2D` and no TURNBOUND package/stack entries. That resource issue is not used as the cause of these gameplay/UI symptoms.
+
+Validation requested by this checkpoint:
+- CODE REVIEWED: YES
+- TESTED: PENDING Build TURNBOUND
+- BUILD VERIFIED: PENDING Build TURNBOUND
+- JAR PRODUCED: PENDING Build TURNBOUND
+- CLIENT RUNTIME TESTED: NO for this follow-up
+- PLAYTESTED: Build #948 screenshots/log reviewed; new follow-up NOT YET
+- MULTIPLAYER TESTED: NO
