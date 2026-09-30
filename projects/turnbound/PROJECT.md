@@ -1370,3 +1370,48 @@ Validation after Build #950:
 - CLIENT RUNTIME TESTED: NO for Build #950
 - PLAYTESTED: NO for Build #950
 - MULTIPLAYER TESTED: NO
+
+
+## Build #950 client regression: intermittent missing field representative — 2026-09-30
+
+Observed:
+- the opening objective/minimap still resolved the north-road patrol at about 5 m, but no enemy representative was visible
+- the same encounter has appeared in some previous client runs and disappeared in others, indicating lifecycle/materialization instability rather than a permanently missing model
+- Build #950 itself did **not** touch any `world/` placement/runtime file; the #949→#950 diff only changed battle HUD, combat Gauge runtime, snapshot codecs, tests and docs
+
+The supplied error-only log contains no `TURNBOUND`, Drabyel, or field-representative line. It consists of repeated Minecraft model-load failures for the invalid identifier `minecraft:item/spawn_egg_2D`; therefore it does not establish the cause of the missing patrol.
+
+Source audit found three independent instability paths in the existing field runtime:
+
+1. **observer-gap deletion**
+   - every tick with no eligible observer within 72 blocks called `discardActors()` and `resetToRoute()`
+   - this contradicted `setPersistenceRequired()` and turned a persistent encounter object into repeated delete/recreate churn
+
+2. **load-timing-sensitive placement**
+   - respawn/materialization reused `sourceContentClear`, the broad arena/content-protection rule
+   - a villager, item frame, armor stand, or nearby decorative block entity several blocks away could invalidate a single roaming proxy
+   - because those source entities can finish loading at different times, an identical save could select/accept the proxy on one run and reject it on another
+   - the opening logical site and presentation patrol points used the same overly broad rule
+
+3. **temporary chunk absence treated as actor loss**
+   - `actorsAlive()` sees an unloaded UUID as absent
+   - recovery could clear the tracked UUID and attempt reconstruction without first proving the pivot chunk was loaded
+   - tagged adoption was also limited to an 80-block box even though the opening patrol span can exceed that distance
+
+Correction:
+- no-observer state now pauses navigation/alert state but retains the representative and its physical pivot
+- true cooldown/battle claim still removes the proxy as intended
+- actor recovery waits while the pivot chunk is unloaded; a missing actor in a loaded pivot chunk is now logged as an ERROR and recovered
+- adoption radius is widened to 128 blocks
+- a dedicated narrow `fieldProxyContentClear` rule replaces arena-style broad clearance for opening-site, field materialization and patrol-waypoint decisions
+- broad `sourceContentClear` remains intact for battle arenas/source-content-sensitive placement
+- materialization and insertion failures are ERROR-level one-shot diagnostics so the user's error log will contain the relevant TURNBOUND reason if this invariant fails again
+
+Validation requested:
+- CODE REVIEWED: YES
+- TESTED: PENDING Build TURNBOUND
+- BUILD VERIFIED: PENDING Build TURNBOUND
+- JAR PRODUCED: PENDING Build TURNBOUND
+- CLIENT RUNTIME TESTED: NO for this correction
+- PLAYTESTED: Build #950 screenshot reviewed; corrected runtime NOT YET
+- MULTIPLAYER TESTED: NO
