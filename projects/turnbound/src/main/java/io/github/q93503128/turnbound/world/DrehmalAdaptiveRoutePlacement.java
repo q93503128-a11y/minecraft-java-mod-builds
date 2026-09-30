@@ -128,7 +128,7 @@ final class DrehmalAdaptiveRoutePlacement {
                 int x=seed.x()+offset[0],z=seed.z()+offset[1];
                 int y=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);
                 BlockPos feet=new BlockPos(x,y,z);
-                if(!standing(level,feet)||!sourceContentClear(level,x,y,z,3.5D))continue;
+                if(!standing(level,feet)||!fieldProxyContentClear(level,x,y,z))continue;
                 if(DrehmalRouteZoneRules.insideSafetyZone(List.copyOf(sites.values()),x+0.5D,z+0.5D))continue;
                 double roadDistance=DrehmalRoutePlacementRules.corridorDistance(zone,x+0.5D,z+0.5D);
                 if(!DrehmalRoutePlacementRules.acceptableRoadDistance(authored.kind(),roadDistance))continue;
@@ -263,7 +263,7 @@ final class DrehmalAdaptiveRoutePlacement {
                 int x=seed.x()+offset[0],z=seed.z()+offset[1];
                 int y=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);
                 BlockPos feet=new BlockPos(x,y,z);
-                if(!standing(level,feet)||!sourceContentClear(level,x,y,z,2.5D))continue;
+                if(!standing(level,feet)||!fieldProxyContentClear(level,x,y,z))continue;
                 point=new DrehmalFirstRouteCatalog.Position(x,y,z);
                 break;
             }
@@ -507,6 +507,24 @@ final class DrehmalAdaptiveRoutePlacement {
     }
 
     /**
+     * Moving field proxies only need their own standing footprint clear.
+     *
+     * <p>Using the arena/source-content radius here made placement depend on whether nearby villagers, frames,
+     * armor stands or decorative block entities had finished loading. That was appropriate for a battle arena,
+     * but far too conservative for one 0.7-block-wide roaming actor and made the opening patrol intermittent.</p>
+     */
+    static boolean fieldProxyContentClear(ServerLevel level, int x, int y, int z) {
+        double cx = x + 0.5D;
+        double cz = z + 0.5D;
+        double half = 0.80D;
+        AABB area = new AABB(cx - half, y - 0.25D, cz - half, cx + half, y + 2.5D, cz + half);
+        if (!level.getEntitiesOfClass(AbstractVillager.class, area).isEmpty()) return false;
+        if (!level.getEntitiesOfClass(ItemFrame.class, area).isEmpty()) return false;
+        if (!level.getEntitiesOfClass(ArmorStand.class, area).isEmpty()) return false;
+        return true;
+    }
+
+    /**
      * Revalidates a field representative against fully loaded live-world content.
      *
      * <p>The route snapshot can be resolved before every source-map entity in a nearby chunk is present. A later
@@ -522,7 +540,7 @@ final class DrehmalAdaptiveRoutePlacement {
         var home = site.runtimePosition();
         int homeY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, home.x(), home.z());
         BlockPos homeFeet = new BlockPos(home.x(), homeY, home.z());
-        if (standing(level, homeFeet) && sourceContentClear(level, home.x(), homeY, home.z(), 3.5D)) {
+        if (standing(level, homeFeet) && fieldProxyContentClear(level, home.x(), homeY, home.z())) {
             return new DrehmalFirstRouteCatalog.Position(home.x(), homeY, home.z());
         }
 
@@ -540,7 +558,7 @@ final class DrehmalAdaptiveRoutePlacement {
                 int z = seed.z() + offset[1];
                 int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
                 BlockPos feet = new BlockPos(x, y, z);
-                if (!standing(level, feet) || !sourceContentClear(level, x, y, z, 3.5D)) continue;
+                if (!standing(level, feet) || !fieldProxyContentClear(level, x, y, z)) continue;
                 if (DrehmalRouteZoneRules.insideSafetyZone(activeSites, x + 0.5D, z + 0.5D)) continue;
                 if (zone != null) {
                     double roadDistance = DrehmalRoutePlacementRules.corridorDistance(zone, x + 0.5D, z + 0.5D);
@@ -574,7 +592,7 @@ final class DrehmalAdaptiveRoutePlacement {
                 int z = seed.z() + offset[1];
                 int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
                 BlockPos feet = new BlockPos(x, y, z);
-                if (!standing(level, feet) || !sourceContentClear(level, x, y, z, 2.5D)) continue;
+                if (!standing(level, feet) || !fieldProxyContentClear(level, x, y, z)) continue;
                 if (DrehmalRouteZoneRules.insideSafetyZone(activeSites, x + 0.5D, z + 0.5D)) continue;
                 point = new DrehmalFirstRouteCatalog.Position(x, y, z);
                 break;
