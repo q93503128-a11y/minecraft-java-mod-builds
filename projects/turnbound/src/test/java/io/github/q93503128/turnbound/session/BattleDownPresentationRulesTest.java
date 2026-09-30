@@ -7,11 +7,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class BattleDownPresentationRulesTest {
     @Test
-    void defeatedEnemiesRetireInsteadOfOccupyingArenaForever() {
-        assertTrue(BattleDownPresentationRules.retiresVisual(CombatantSide.ENEMY, false));
-        assertFalse(BattleDownPresentationRules.usesRecoveryMarker(CombatantSide.ENEMY, false));
-        assertEquals(20, BattleDownPresentationRules.removalTicks(false, false));
-        assertEquals(28, BattleDownPresentationRules.removalTicks(false, true));
+    void defeatedEnemiesKeepRecoveryTargetsForFutureReviveSkills() {
+        assertFalse(BattleDownPresentationRules.retiresVisual(CombatantSide.ENEMY, false));
+        assertTrue(BattleDownPresentationRules.usesRecoveryMarker(CombatantSide.ENEMY, false));
     }
 
     @Test
