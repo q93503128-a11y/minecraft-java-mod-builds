@@ -447,16 +447,18 @@ public final class BattleScreen extends Screen {
             }
             if (actor) graphics.fill(x + 1, panel.y() + 1, x + tokenWidth - 1, panel.bottom() - 1, 0xA02A3442);
 
-            int portrait = Math.max(9, Math.min(panel.height() - 3, tokenWidth - 4));
+            int labelH=current.compact()?7:8;
+            int portrait = Math.max(9, Math.min(panel.height() - labelH - 3, tokenWidth - 4));
             int px = x + Math.max(2, (tokenWidth - portrait) / 2);
             int py = panel.y() + 1;
             boolean rendered = TurnboundPortraitRenderer.extract(
                     graphics, unit.defId(), px, py, px + portrait, py + portrait, unit.downed());
             if (!rendered) {
-                String name = abbreviate(unit.name(), current.compact() ? 1 : 2);
-                graphics.text(font, Component.literal(name),
-                        x + Math.max(2, (tokenWidth - font.width(name)) / 2), panel.y() + 4, TEXT, true);
+                String fallback = abbreviate(unit.name(), current.compact() ? 1 : 2);
+                graphics.text(font, Component.literal(fallback),
+                        x + Math.max(2, (tokenWidth - font.width(fallback)) / 2), panel.y() + 4, TEXT, true);
             }
+            drawTurnOrderName(graphics,unit.name(),x,py+portrait+1,tokenWidth,current.compact(),unit.downed()?MUTED:TEXT);
             graphics.fill(x + 1, panel.bottom() - 2, x + tokenWidth - 1, panel.bottom(), color);
             if (actor) {
                 graphics.fill(x + 1, panel.y(), x + tokenWidth - 1, panel.y() + 1, GOLD);
@@ -464,6 +466,19 @@ public final class BattleScreen extends Screen {
                 graphics.fill(x + tokenWidth - 2, panel.y(), x + tokenWidth - 1, panel.bottom(), GOLD);
             }
         }
+    }
+
+    private void drawTurnOrderName(GuiGraphicsExtractor graphics,String raw,int x,int y,int width,boolean compact,int color){
+        float scale=compact?0.58F:0.66F;
+        String name=raw==null?"":raw;
+        int logicalW=Math.max(8,(int)Math.floor((width-2)/scale));
+        name=UiTextLayout.fit(name,logicalW);
+        float drawW=font.width(name)*scale;
+        graphics.pose().pushMatrix();
+        graphics.pose().translate(x+(width-drawW)/2.0F,y);
+        graphics.pose().scale(scale,scale);
+        graphics.text(font,Component.literal(name),0,0,color,false);
+        graphics.pose().popMatrix();
     }
 
     private void drawParty(GuiGraphicsExtractor graphics, BattleHudLayout.Layout current, ClientBattleState.Snapshot snapshot) {
