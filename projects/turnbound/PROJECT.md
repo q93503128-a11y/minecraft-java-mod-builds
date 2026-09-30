@@ -1150,3 +1150,23 @@ Validation at implementation checkpoint:
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
+
+Build TURNBOUND #947 / run `36649740807` verified commit
+`da253f6cfd5c95808662648c37d731e29246971d`:
+
+- Gradle test/build: PASS
+- NeoForge dedicated-server smoke: PASS
+- built JAR verification: PASS
+- one-click Modrinth pack verification: PASS
+- artifact upload: PASS — artifact id `11070022864`
+- JAR SHA-256: `17a9dcbcb18b1b6965f44ca9450cce9b44ad39b33e0d36c97a4aadc0e37ed62f`
+- MRPACK SHA-256: `3362f77d7d57dd42f0867182725f8d838d27550ea952398f8578fc111737712b`
+
+Validation after Build #947:
+- CODE REVIEWED: YES
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- CLIENT RUNTIME TESTED: NO for Build #947
+- PLAYTESTED: NO for Build #947
+- MULTIPLAYER TESTED: NO
