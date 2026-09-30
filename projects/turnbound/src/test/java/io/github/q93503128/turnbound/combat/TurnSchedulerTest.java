@@ -51,6 +51,41 @@ final class TurnSchedulerTest {
     }
 
     @Test
+    void higherSpeedCanBeatAUnitWithMoreCurrentGauge() {
+        var slowAhead = new CombatantState("slow", unit("SLOW", 80), CombatantSide.ALLY, 0);
+        var fastBehind = new CombatantState("fast", unit("FAST", 120), CombatantSide.ENEMY, 1);
+        slowAhead.setGauge(500);
+        fastBehind.setGauge(300);
+        var state = new BattleState(List.of(slowAhead, fastBehind));
+
+        assertEquals("fast", state.timelinePreview(1).getFirst().instanceId());
+        assertEquals("fast", TurnScheduler.nextReady(state).instanceId());
+    }
+
+    @Test
+    void speedModifierChangesFutureFillRateWithoutRewritingAccumulatedGauge() {
+        var normal = new CombatantState("normal", unit("NORMAL", 100), CombatantSide.ALLY, 0);
+        var boosted = new CombatantState("boosted", unit("BOOSTED", 100), CombatantSide.ENEMY, 1);
+        normal.setGauge(400);
+        boosted.setGauge(400);
+        long before = boosted.gaugeMicro();
+
+        boosted.putStatus(new StatusInstance("speed_multiplier", "source", 2, 0.20));
+        var state = new BattleState(List.of(normal, boosted));
+
+        assertEquals(before, boosted.gaugeMicro(), "SPD changes rate, not already accumulated Gauge");
+        assertEquals("boosted", state.timelinePreview(1).getFirst().instanceId());
+    }
+
+    @Test
+    void overflowAboveReadyThresholdSurvivesTheActionCost() {
+        var actor = new CombatantState("actor", unit("ACTOR", 100), CombatantSide.ALLY, 0);
+        actor.setGauge(1_260);
+        actor.spendTurnGauge();
+        assertEquals(260, actor.gauge());
+    }
+
+    @Test
     void finalSpeedModifiersFeedTheSharedScheduler() {
         var first = new CombatantState("first", unit("FIRST", 100), CombatantSide.ALLY, 0);
         var boosted = new CombatantState("boosted", unit("BOOSTED", 100), CombatantSide.ENEMY, 1);
