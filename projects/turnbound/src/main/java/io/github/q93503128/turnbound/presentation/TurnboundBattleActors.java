@@ -175,8 +175,7 @@ public final class TurnboundBattleActors {
         } else if ("CV_C".equals(combatantId)) {
             actor.setItemSlot(EquipmentSlot.MAINHAND, TurnboundVisualItems.CV_C_OAK_LONGBOW.get().getDefaultInstance());
         }
-        level.addFreshEntity(actor);
-        return actor;
+        return level.addFreshEntity(actor) ? actor : null;
     }
 
     private static void attributes(EntityAttributeCreationEvent event) {
