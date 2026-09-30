@@ -279,7 +279,7 @@ Current external structure candidates:
 - exact structure bounds must be measured from the real 26.2 assets before placement decisions.
 
 **SY Village**
-- current Minecraft 26.2 NeoForge release is 1.0.0.
+- current Minecraft 26.2 NeoForge release observed during this pass: `syvillage-0.3.0.jar`.
 - MIT licensed.
 - blueprint/structure-oriented system and editable structure-block/NBT workflow.
 - useful technical reference/source for compact village houses and structure-template placement.
@@ -288,9 +288,11 @@ Current external structure candidates:
 **Towns and Towers**
 - current Minecraft 26.2 release 1.13.11 supports NeoForge/Fabric/Quilt.
 - contains dozens of village structures and several coastal/biome architectural families, including beach/mediterranean-style references.
-- current CurseForge license page states **CC BY 4.0**; extracted/adapted structure use therefore requires attribution and modification notice as applicable, but not the previously recorded NC-SA restriction.
-- useful candidate pool for **café, clothing shop, museum-like civic shell, houses and harbor/coastal structures** when a specific structure visually fits.
-- do not import the entire worldgen system just to obtain one building if selected structure templates can be cleanly packaged instead.
+- **license metadata is currently conflicting across public distribution pages**: CurseForge presents Creative Commons 4.0 wording while the current Modrinth version metadata identifies CC-BY-NC-SA-4.0.
+- until the upstream LICENSE file is directly verified, treat the **stricter CC-BY-NC-SA-4.0 interpretation as the safe assumption** for any extraction/adaptation.
+- therefore use it as a visual/layout reference for now; do not package extracted structures into Campfire yet.
+- useful reference pool for **café, clothing shop, museum-like civic shell, houses and harbor/coastal structures** when a specific structure visually fits.
+- do not import the entire worldgen system merely to obtain one building.
 
 **High-quality downloadable build/schematic packs**
 - may be used as reference/editable base/direct asset only when redistribution rights are explicit enough for the Modrinth-pack workflow.
@@ -356,9 +358,53 @@ The shop layout must leave enough circulation space for multiple players and sti
 
 ## 7. Furniture
 
-Candidate external sources/mods previously discussed:
-- Skniro's Furniture.
-- BetterDeco.
+### Current leading candidate: Skniro's Furniture
+Skniro's Furniture is now the strongest primary furniture candidate found in the current pass.
+
+Verified:
+- Minecraft 26.2 NeoForge support.
+- client + server.
+- MIT licensed.
+- public source with a maintained `26.2` branch.
+- source-inspected 26.2 branch commit during this pass: `00fd0eba1805ded3c16546ef51366c5ad138ec7c`.
+- broad Minecraft-native style rather than a separate high-poly aesthetic.
+
+Source inspection confirms real interactive systems rather than decoration-only blocks:
+- ChairBlock creates a server-side ChairEntity and mounts the player for actual sitting.
+- SofaBlock similarly supports sitting and connected sofa pieces.
+- dedicated block entities/classes exist for cabinets, drawers, bedside/desk/kitchen/wall cabinets, kitchen sink, oven, TV and TV stand.
+- lamps and functional beds are implemented as real blocks/systems.
+
+The 26.2 source contains a very large variant/model set. Filename-level inventory inspection found, among others:
+- 251 chair-related block models.
+- 103 table-related models.
+- 68 sofa-related models.
+- 271 cabinet-related models.
+- 99 desk-related models.
+- 41 sink variants.
+- 41 oven variants.
+- 107 TV/stand variants.
+- 66 lamp variants.
+- 51 fridge parts/variants.
+- 17 bookshelf variants.
+- 249 window-related models.
+- many wood/color bed/cushion/door variants.
+
+The enormous raw count includes generated color/wood/part variants, so it is **not** the same as thousands of unique furniture designs.
+Nevertheless, breadth is clearly sufficient for homes, café/shop furnishing and ordinary resident interiors.
+
+Adoption gate:
+- visually inspect the actual 26.2 NeoForge build in Campfire.
+- verify collision, rotation, seating anchors and multiplayer sync.
+- measure performance with multiple furnished interiors.
+- decide whether Campfire wraps its storage/kitchen behavior or uses the mod UI directly.
+- verify whether furniture placement preview/undo needs a thin Campfire layer.
+- if adopted, avoid duplicating the same furniture categories with another large mod.
+
+### Supplement candidate: BetterDeco
+BetterDeco retains a current 26.2 NeoForge build and permissive MIT licensing.
+Use it only when it fills a meaningful visual/category gap that Skniro does not cover well.
+Do not stack two full furniture ecosystems merely for item count.
 
 Final selection requires:
 - Minecraft 26.2 NeoForge compatibility.
@@ -419,8 +465,43 @@ Need an external cute-animal visual base with:
 - consistent rig.
 - compatible animation pipeline.
 
-Previously discussed reference candidate:
-- Kenney Cube Pets as a CC0 stylistic/model starting point/reference.
+Current external resident/model source pool:
+
+**Kenney Cube Pets**
+- CC0.
+- 24 downloadable files on the current pack page.
+- animated.
+- version 2.0 is described as a complete remake with added animals and animations.
+- strongest current **style/model source** for the cute cubic resident direction.
+- important limitation: these are pet-style animals, not already-finished biped villagers with Campfire's full social animation set.
+- use as a possible species/head/proportion base only if conversion to the final resident rig remains visually strong.
+
+**Quaternius Cube World Kit**
+- CC0.
+- 108 models.
+- animated/textured.
+- includes cube-world characters, animals, enemies and environmental models in FBX/OBJ/Blend/glTF.
+- useful broader model/reference source when Kenney lacks a species or prop style.
+- inspect carefully for style consistency before mixing with Kenney-derived residents.
+
+**Quaternius Ultimate Animated Animal Pack**
+- CC0.
+- 12 animals with more than 12 animations each.
+- useful animation/model reference and possible editable base for animal motion.
+- animals are natural quadrupeds rather than ready-made anthropomorphic residents.
+
+**Quaternius Universal Base Characters**
+- CC0.
+- six game-ready humanoid base models with a retargetable Humanoid rig and 20 hairstyles.
+- average around 13k triangles.
+- not a resident visual candidate by itself because the default art is human.
+- useful as a rig/topology reference if a cute animal head/body system needs a stable humanoid animation base.
+
+Current conclusion:
+- **no coherent external pack found yet that already supplies 20–40 cute anthropomorphic villagers with one consistent biped rig and the required lifestyle animation support.**
+- do not prematurely lock residents to a mediocre/inconsistent pack.
+- continue searching before authoring a large resident conversion pipeline.
+- if no complete pack exists, the preferred fallback is one coherent permissive animal style source + one stable shared rig, not mixing random animal models resident-by-resident.
 
 Actual final resident pack/rig remains unresolved.
 
@@ -458,18 +539,62 @@ Desired properties:
 - high-quality first- and third-person appearance.
 - no disposable durability loop.
 
-Previously researched references:
-- Hardware Reforged-style coherent tool visuals.
-- 3D fishing-rod resource packs with multiple material variants.
+Current tool-art candidates / references:
 
-These are references/candidates, not automatically adopted assets.
+**Glowing 3D Tools**
+- current Minecraft 26.2 resource-pack support.
+- 3D models for ordinary tools plus misc items including the brush and fishing rod.
+- ARR, but the author explicitly permits use in Modrinth and CurseForge modpacks.
+- strong pack-level visual candidate if its style fits Campfire after in-game inspection.
+- not an editable asset source for custom watering can/net tiers unless separate permission exists.
+
+**3D Vanilla Items**
+- current 26.2-compatible MIT resource/model source exists for a broad set of vanilla items.
+- useful permissive source for selected 3D held-item treatment, but does not by itself solve the full lifestyle-tool set.
+
+Still unresolved:
+- one coherent external watering-can model family.
+- one coherent bug-net model family.
+- enough visually meaningful tier variants for all key lifestyle tools.
+- first/third-person transforms and player-animation fit.
+
+Do not manufacture arbitrary material recolors only to reach a tier count.
+Finalize the number/names of tool tiers after the actual coherent external art set is selected.
 
 ## 12. Boats
 
-Need external boat models suitable for:
-- starter boat.
-- improved purchased boat(s).
-- potentially special/festival/long-route variants.
+### Current leading candidate: Peterwolf's Boats & Ships
+This is now the strongest current 26.2 boat candidate.
+
+Verified:
+- Minecraft 26.2 NeoForge release.
+- client + server.
+- MPL-2.0.
+- custom 3D wooden watercraft.
+- current 26.2 NeoForge line remains available while the project also continues to newer Minecraft versions.
+
+The mod's three-boat progression maps unusually well onto Campfire's planned lifestyle progression:
+- **River Skiff**: small 2-seat starter/social boat with oar animation.
+- **Explorer Sloop**: 4 passengers, 9-slot cargo, sail/lantern/helm presentation — strong improved Household/exploration boat candidate.
+- **Merchant Schooner**: 6 passengers, 27-slot cargo, dual-mast/cabin presentation — strong premium/far-route/community boat candidate.
+
+Reported system features include:
+- walkable decks.
+- steerable helm.
+- server-authoritative movement/physics.
+- animated/furlable sails.
+- cargo.
+- multiple passengers.
+
+Campfire adoption direction:
+- evaluate the boat entities/models/physics as the useful dependency.
+- do **not** automatically adopt its unrelated settlement/waterman/economy content.
+- test collision, passenger sync, dismount behavior, shoreline docking, performance and compatibility with Campfire's registered Household boat ownership.
+- if integration is clean, this may close most of the custom boat-model problem without authoring a parallel vehicle system.
+
+Other references:
+- Small Ships remains a strong visual reference but currently lacks a 26.2 release and is not the leading adoption path.
+- larger floating-base boat mods are not preferred because Campfire wants lifestyle travel assets, not mobile bases.
 
 Boat progression is money-purchase based, not an RPG upgrade tree.
 
@@ -810,14 +935,31 @@ Actual clothing/armor art may come from compatible mods, model/resource packs or
 - multiplayer rendering.
 
 **Armor Cosmetic**
-- current Minecraft 26.2 NeoForge build exists.
+- current Minecraft 26.2 NeoForge build exists; latest observed 26.2 release in this pass is 1.2.0.
 - client + server.
 - separates functional armor from a separately rendered cosmetic armor set.
 - per-slot visibility toggles.
 - useful framework candidate for keeping life-sim clothing visible while retaining hidden/secondary exploration protection.
-- current project page identifies the fork as MMPL-licensed and publishes source alongside releases.
+- current project page identifies the fork under Minecraft Mod Public License/custom licensing and publishes source alongside releases.
 - this is a presentation/slot framework candidate, NOT a source of the actual final outfit art.
+- its stock inventory GUI is technical/vanilla-like; Campfire should not expose it as the final wardrobe experience if the system can be integrated behind the curated wardrobe UI.
 - must be tested against Player Animation Library, the chosen clothing/model assets and Campfire inventory UX before adoption.
+
+**SimpleHats-Lite**
+- current Minecraft 26.2 NeoForge release exists; latest observed 26.2 NeoForge file in this pass is 0.3.0.
+- MIT licensed.
+- client + server.
+- Curios-based lightweight cosmetic-hat system with source published.
+- strong candidate for external hat/accessory models and/or accessory-slot behavior if the actual art quality fits Campfire.
+- very new project, so test multiplayer rendering, animation clipping and content consistency before adoption.
+
+**Quaternius Universal Base Characters + Modular Character Outfits - Fantasy**
+- both CC0 source-asset families.
+- Universal Base Characters provides a retargetable humanoid base.
+- Modular Character Outfits provides 12 outfits built from 62 modular parts with three texture variants and compatible humanoid rigging.
+- not Minecraft-native art and not automatically final clothing.
+- useful permissive editable-base/reference option if no coherent Minecraft-native clothing set covers rain/winter/festival/work/exploration categories.
+- any conversion must be visually adapted to the final Campfire player proportions rather than dropped in as mismatched high-detail models.
 
 **Tepox Cosmetic Armor**
 - Minecraft 26.2 NeoForge candidate with separate cosmetic armor slots.
@@ -959,6 +1101,33 @@ Need external assets for:
 - terrariums.
 - exhibit props.
 - art/antique displays.
+
+### Fossil / archaeology candidates
+
+**Better Archeology — leading permissive mechanics/reference candidate**
+- current Minecraft 26.2 NeoForge release exists.
+- client + server.
+- MIT licensed.
+- public source; current 26.2.x branch inspected during this pass.
+- source contains fossil blocks/items for multiple Minecraft creatures with separate head/body/full forms, archaeology table/content, fossiliferous blocks and excavation-related systems.
+- useful external base/reference for excavation, identification and multipart-display implementation.
+- limitation: its fossils are Minecraft-mob fossils, not the large prehistoric dinosaur skeleton collection required for the Campfire museum.
+- do not adopt its whole worldgen/progression blindly; reuse/integrate only pieces that materially save work and fit Campfire.
+
+**The Fossils Mod — visual/content reference only for now**
+- its museum concept closely matches Campfire's target: many physical fossil skeleton/slab displays and multipart exhibit presentation.
+- current public release target remains old Minecraft 1.20.1 and licensing is restrictive/ARR.
+- therefore do not make it a 26.2 dependency or copy assets.
+- use only as a quality/reference benchmark unless a compatible licensed path appears.
+
+**Public-domain / CC0 real fossil scans**
+- museum/Smithsonian-style public-domain scans can be authoritative shape references for a small number of centerpiece fossils.
+- raw scan meshes are often far too high-poly for Minecraft.
+- if used, rebuild/decimate into a deliberate Minecraft-friendly model rather than shipping the scan mesh directly.
+
+Current conclusion:
+- archaeology mechanics/reference coverage is strong.
+- **high-quality, coherent, Minecraft-friendly prehistoric skeleton art is still unresolved** and remains an active external-asset search task.
 
 Multipart fossil completion should visually build the exhibit rather than remain an inventory checklist.
 
