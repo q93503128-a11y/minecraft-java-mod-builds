@@ -414,70 +414,95 @@ public final class BattleScreen extends Screen {
     }
 
     /**
-     * Turn-order tokens use the same production actor portrait as the rest of the UI.
-     * Gauge manipulation is shown as actual rail motion; large slot jumps get a short blue destination accent.
+     * Action Gauge combines the two pieces the player actually needs:
+     * exact server-authored upcoming order and each combatant's current Gauge/effective SPD.
+     * The left-edge list keeps the 3D battlefield center open while making tempo manipulation readable.
      */
     private void drawTimeline(GuiGraphicsExtractor graphics, BattleHudLayout.Layout current, ClientBattleState.Snapshot snapshot) {
         var panel = current.timeline();
-        int count = Math.min(7, snapshot.timeline().size());
-        if (count == 0) return;
-        graphics.fill(panel.x(), panel.y() + 1, panel.right(), panel.bottom(), 0x50080A0E);
-        int tokenWidth = Math.max(10, panel.width() / count);
+        int maxRows = height < 200 ? 5 : current.compact() ? 7 : 9;
+        List<BattleTurnGaugeModel.Row> rows = BattleTurnGaugeModel.rows(snapshot, maxRows);
+        if (rows.isEmpty()) return;
+
+        int total = BattleTurnGaugeModel.scheduledLivingCount(snapshot);
+        int hidden = Math.max(0, total - rows.size());
+        graphics.fill(panel.x(), panel.y(), panel.right(), panel.bottom(), 0x70080A0E);
+        TurnboundFrameStyle.frame(graphics, panel.x(), panel.y(), panel.width(), panel.height(), 0x884B5668);
+
+        String title = "행동 게이지" + (hidden > 0 ? " · +" + hidden : "");
+        graphics.text(font, Component.literal(title), panel.x() + 6, panel.y() + 4, TEXT, true);
+        drawScaledText(graphics, "Gauge / SPD", panel.right() - 6, panel.y() + 5, 0.58F, SECONDARY, true);
+
+        int rowH = height < 200 ? 11 : current.compact() ? 12 : 13;
+        int y = panel.y() + (height < 200 ? 13 : 15);
         long elapsed = Math.max(0L, System.currentTimeMillis() - timelineMotionStartedAt);
-        double progress = TurnOrderMotion.easedProgress(elapsed, TIMELINE_MOTION_MS);
-        boolean moving = elapsed < TIMELINE_MOTION_MS && !timelineMotion.isEmpty();
+        boolean motionActive = elapsed < TIMELINE_MOTION_MS && !timelineMotion.isEmpty();
 
-        for (int i = 0; i < count; i++) {
-            ClientBattleState.Unit unit = findUnit(snapshot, snapshot.timeline().get(i));
-            if (unit == null) continue;
-
-            TurnOrderMotion.Move move = moving ? TurnOrderMotion.moveAt(timelineMotion, i) : null;
-            double slot = i;
-            if (move != null) slot = move.fromIndex() + (move.toIndex() - move.fromIndex()) * progress;
-            int x = panel.x() + (int)Math.round(slot * tokenWidth);
-            x = Math.max(panel.x(), Math.min(panel.right() - tokenWidth, x));
-
-            int color = "ALLY".equals(unit.side()) ? GAUGE : DANGER;
+        for (BattleTurnGaugeModel.Row row : rows) {
+            ClientBattleState.Unit unit = row.unit();
             boolean actor = unit.id().equals(snapshot.actorId());
-            if (move != null && move.tempoJump()) {
-                int destinationX = panel.x() + i * tokenWidth;
-                graphics.fill(destinationX + 2, panel.y() + 1,
-                        Math.min(panel.right() - 1, destinationX + tokenWidth - 2), panel.y() + 3,
-                        (GAUGE & 0x00FFFFFF) | 0x70000000);
-            }
-            if (actor) graphics.fill(x + 1, panel.y() + 1, x + tokenWidth - 1, panel.bottom() - 1, 0xA02A3442);
+            boolean tempoJump = motionActive && timelineMotion.stream()
+                    .anyMatch(move -> move.unitId().equals(unit.id()) && move.tempoJump());
+            int sideColor = "ALLY".equals(unit.side()) ? GAUGE : DANGER;
+            int rowBg = actor ? 0xA02A3442 : tempoJump ? 0x60304B63 : 0x30080A0E;
 
-            int labelH=current.compact()?7:8;
-            int portrait = Math.max(9, Math.min(panel.height() - labelH - 3, tokenWidth - 4));
-            int px = x + Math.max(2, (tokenWidth - portrait) / 2);
-            int py = panel.y() + 1;
+            graphics.fill(panel.x() + 3, y, panel.right() - 3, y + rowH - 1, rowBg);
+            graphics.fill(panel.x() + 3, y, panel.x() + 5, y + rowH - 1, actor ? GOLD : sideColor);
+
+            int orderW = height < 200 ? 15 : 19;
+            float orderScale = height < 200 ? 0.52F : 0.60F;
+            drawScaledText(graphics, row.orderLabel(), panel.x() + 6 + orderW, y + 2, orderScale,
+                    actor ? GOLD : SECONDARY, true);
+
+            int portrait = Math.max(8, rowH - 2);
+            int portraitX = panel.x() + 7 + orderW;
+            int portraitY = y + 1;
             boolean rendered = TurnboundPortraitRenderer.extract(
-                    graphics, unit.defId(), px, py, px + portrait, py + portrait, unit.downed());
+                    graphics, unit.defId(), portraitX, portraitY,
+                    portraitX + portrait, portraitY + portrait, unit.downed());
             if (!rendered) {
-                String fallback = abbreviate(unit.name(), current.compact() ? 1 : 2);
-                graphics.text(font, Component.literal(fallback),
-                        x + Math.max(2, (tokenWidth - font.width(fallback)) / 2), panel.y() + 4, TEXT, true);
+                String fallback = abbreviate(unit.name(), 1);
+                drawScaledText(graphics, fallback, portraitX + portrait / 2, portraitY + 2,
+                        0.62F, TEXT, true);
             }
-            drawTurnOrderName(graphics,unit.name(),x,py+portrait+1,tokenWidth,current.compact(),unit.downed()?MUTED:TEXT);
-            graphics.fill(x + 1, panel.bottom() - 2, x + tokenWidth - 1, panel.bottom(), color);
-            if (actor) {
-                graphics.fill(x + 1, panel.y(), x + tokenWidth - 1, panel.y() + 1, GOLD);
-                graphics.fill(x + 1, panel.y(), x + 2, panel.bottom(), GOLD);
-                graphics.fill(x + tokenWidth - 2, panel.y(), x + tokenWidth - 1, panel.bottom(), GOLD);
-            }
+
+            int textX = portraitX + portrait + 4;
+            int right = panel.right() - 6;
+            String meta = BattleTurnGaugeModel.gaugeLabel(unit)
+                    + (unit.speed() > 0 ? " / " + unit.speed() : "");
+            int metaLogicalWidth = Math.max(34, (int)Math.floor((right - textX) * 0.42));
+            float metaScale = current.compact() ? 0.56F : 0.62F;
+            String fittedMeta = UiTextLayout.fit(meta, Math.max(18, (int)Math.floor(metaLogicalWidth / metaScale)));
+            float metaPx = font.width(fittedMeta) * metaScale;
+            int metaX = Math.max(textX + 26, (int)Math.floor(right - metaPx));
+            int nameMax = Math.max(18, metaX - textX - 4);
+            String name = UiTextLayout.fit(unit.name(), nameMax);
+            graphics.text(font, Component.literal(name), textX, y + 1, actor ? GOLD : TEXT, true);
+            drawScaledText(graphics, fittedMeta, right, y + 2, metaScale, actor ? GOLD : SECONDARY, true);
+
+            int barX = textX;
+            int barRight = right;
+            int barY = y + rowH - 3;
+            int barW = Math.max(4, barRight - barX);
+            graphics.fill(barX, barY, barRight, barY + 2, 0xD0080A0E);
+            int fill = (int)Math.round(barW * BattleTurnGaugeModel.gaugeRatio(unit));
+            if (fill > 0) graphics.fill(barX, barY, barX + Math.min(barW, fill), barY + 2, actor ? GOLD : sideColor);
+            if (tempoJump) graphics.fill(barX, barY - 1, barRight, barY, 0xAA6DC6FF);
+
+            y += rowH;
+            if (y + rowH > panel.bottom() - 2) break;
         }
     }
 
-    private void drawTurnOrderName(GuiGraphicsExtractor graphics,String raw,int x,int y,int width,boolean compact,int color){
-        float scale=compact?0.58F:0.66F;
-        String name=raw==null?"":raw;
-        int logicalW=Math.max(8,(int)Math.floor((width-2)/scale));
-        name=UiTextLayout.fit(name,logicalW);
-        float drawW=font.width(name)*scale;
+    /** Right-aligned when requested; otherwise x is treated as the left edge. */
+    private void drawScaledText(GuiGraphicsExtractor graphics, String text, float x, float y,
+                                float scale, int color, boolean rightAligned) {
+        if (text == null || text.isBlank()) return;
+        float drawX = rightAligned ? x - font.width(text) * scale : x;
         graphics.pose().pushMatrix();
-        graphics.pose().translate(x+(width-drawW)/2.0F,y);
-        graphics.pose().scale(scale,scale);
-        graphics.text(font,Component.literal(name),0,0,color,false);
+        graphics.pose().translate(drawX, y);
+        graphics.pose().scale(scale, scale);
+        graphics.text(font, Component.literal(text), 0, 0, color, false);
         graphics.pose().popMatrix();
     }
 
