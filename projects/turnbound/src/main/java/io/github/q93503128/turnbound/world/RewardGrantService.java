@@ -144,7 +144,9 @@ public final class RewardGrantService {
                     : CampaignProgressStore.commit(playerId, encounterId, outcome);
             if (!EndgameEncounterCatalog.contains(encounterId)) {
                 CampaignSupplementalRewardService.apply(playerId, encounterId, reward);
-                EquipmentDropService.commit(playerId, transactionId, CampaignProgressStore.canonicalEncounterId(encounterId), reward);
+                EquipmentDropService.Drop equipmentDrop = EquipmentDropService.commit(
+                        playerId, transactionId, CampaignProgressStore.canonicalEncounterId(encounterId), reward);
+                reward = withEquipmentDrop(reward, equipmentDrop);
             }
             List<String> challenges = ChallengeService.evaluateAndCommit(playerId, encounterId, state, outcome);
             markCommitted(playerId, transactionId);
@@ -169,6 +171,16 @@ public final class RewardGrantService {
             Turnbound.LOGGER.warn("TURNBOUND left a stale reward journal after committed transaction {}", transactionId, cleanupFailure);
         }
         return result;
+    }
+
+    static BattleResultSummary withEquipmentDrop(BattleResultSummary reward, EquipmentDropService.Drop drop) {
+        if (reward == null) reward = BattleResultSummary.none();
+        if (drop == null || !drop.present()) return reward;
+        List<String> equipment = new java.util.ArrayList<>(reward.equipmentRewards());
+        equipment.add(drop.name() + (drop.queued() ? " · 보상 대기" : ""));
+        return new BattleResultSummary(
+                reward.xp(), reward.gold(), reward.crystal(), reward.starEssence(),
+                equipment, reward.firstClear(), reward.party());
     }
 
     static boolean transactionCommitted(CampaignProgressStore.Snapshot snapshot, String transactionId) {
