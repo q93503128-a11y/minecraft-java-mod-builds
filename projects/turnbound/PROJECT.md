@@ -1292,3 +1292,60 @@ Validation after Build #949:
 - CLIENT RUNTIME TESTED: NO for Build #949
 - PLAYTESTED: NO for Build #949
 - MULTIPLAYER TESTED: NO
+
+
+## Action Gauge + SPD/Gauge audit — 2026-09-30
+
+Post-Build-949 battle UI/system pass requested before the next client playtest.
+
+Reference finding:
+- modern turn RPGs commonly expose more than a flat portrait queue: Honkai: Star Rail exposes portrait order with optional action-value information, while Epic Seven exposes a Combat Readiness gauge whose movement is distinct from Speed
+- TURNBOUND keeps its own visual language and combines the useful information: authoritative future order + current Gauge + effective SPD
+
+Implemented:
+- the old top-center portrait-only Turn Order rail is replaced by a left-edge **행동 게이지** panel
+- each regular scheduler combatant row shows portrait, name, current Gauge, current effective SPD and authoritative upcoming order slot(s)
+- repeated future actions are visible as repeated slot numbers instead of requiring the player to infer them from raw Gauge
+- Gauge >= 1000 is READY; overflow is shown as `READY+N` because overflow survives the action cost
+- downed units and P07-style non-scheduler summons do not occupy the action gauge
+- standard solo 4v5 can display all 9 regular combatants; shared battles compact the visible set and disclose hidden row count
+- server snapshot now carries effective SPD plus scheduler participation, and the future-order preview horizon was extended from 8 to 12
+- Gauge manipulation still uses the previous short movement/accent feedback instead of snapping invisibly
+
+SPD/Gauge audit:
+- fixed-point TurnScheduler remains the single authority for runtime actor selection and HUD preview
+- SPD changes future Gauge fill rate; it does not rewrite Gauge already accumulated
+- action cost remains exactly 1000 Gauge and overflow is preserved
+- lower current Gauge can correctly act before a higher-Gauge unit when its effective SPD makes its time-to-ready shorter
+- player-choice time still pauses logical Gauge progression
+- P01-P08 base SPD remains 84..114; F04=78 is retained as the explicit ultra-slow low-rarity shield exception
+- enemy 117+ SPD entries remain only where the enemy role is intentionally tempo-heavy rather than being blanket-clamped to player bands
+- equipment flat SPD already reaches final battle stats correctly
+
+A real runtime gap was found and repaired:
+normal-equipment Gauge traits were being copied into CombatantDefinition rules but had no combat consumer.
+The authoritative engine now consumes:
+- `START_GAUGE_N` once at battle creation and stacks different equipped sources
+- `DIRECT_HIT_GAUGE_N` once per hostile direct action when the wearer survives
+- `ALLY_GAUGE_GRANT_PLUS_N` on positive Gauge grants to another ally
+
+Past v0.4 Signature rule strings are not automatically reinterpreted here because current v1 Signature mechanical details are not fully specified by the present v1 design docs. This pass deliberately fixes only semantics that are explicit in the current normal-equipment data.
+
+Regression coverage added for:
+- lower-Gauge/faster actor ordering
+- SPD modifier changing future fill rate without rewriting accumulated Gauge
+- >1000 overflow retention
+- Action Gauge row/order/READY overflow projection
+- scheduler exclusion of downed/non-regular summons
+- client snapshot effective-SPD/scheduler fields
+- normal equipment start-Gauge, direct-hit Gauge and ally-grant Gauge traits
+- left Action Gauge geometry across small/standard viewports
+
+Validation requested:
+- CODE REVIEWED: YES
+- TESTED: PENDING Build TURNBOUND
+- BUILD VERIFIED: PENDING Build TURNBOUND
+- JAR PRODUCED: PENDING Build TURNBOUND
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO for this pass
+- MULTIPLAYER TESTED: NO
