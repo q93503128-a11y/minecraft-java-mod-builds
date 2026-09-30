@@ -80,7 +80,7 @@ final class BattleHudLayout {
 
         // Restrained top-center turn queue, slightly narrower than the previous playtest pass.
         int timelineW = Math.min(compact ? 164 : 214, Math.max(1, width - margin * 2));
-        int timelineH = tiny ? 15 : compact ? 19 : 22;
+        int timelineH = tiny ? 23 : compact ? 27 : 30;
         Rect timeline = inside(width, height, (width - timelineW) / 2, margin, timelineW, timelineH);
 
         // Current actor actions use one vertical scan path and leave more world visible than the older wide dock.
