@@ -201,10 +201,13 @@ UI 파일/클래스 구조보다 **플레이어가 몇 번 눌러야 원하는 �
 
 ### 상단 — Turn Order
 - portrait token
+- portrait 아래 작은 캐릭터 이름 label
 - 다음 6~10 행동
 - 현재 actor 강조
 - 연속 행동 portrait 반복
 - Gauge 변화 즉시 재정렬
+
+아이콘만 보고 캐릭터를 외우게 만들지 않는다. 이름 label은 portrait보다 약한 시각 우선순위로 두되 항상 판독 가능해야 한다.
 
 ### 하단 좌측 — Party
 각 캐릭터:
@@ -307,6 +310,32 @@ single target skill은 첫 대상을 자동 확정하지 않는다.
 - passive
 - awakening
 - lore
+
+### 10.1 Skill detail layout — 2026-09-30
+
+실제 상용 RPG UI 검토 후 skill 화면은 “작은 설명 상자 + 가로 버튼 줄”을 사용하지 않는다.
+
+참고 구조:
+- Honkai: Star Rail character/skill UI처럼 선택 항목 navigation과 상세 읽기 영역을 분리
+- Reverse: 1999의 Details/Skills처럼 긴 kit 설명을 별도 넓은 읽기 영역에서 유지
+
+TURNBOUND 적용:
+- 상단에는 캐릭터 identity 한 줄만 유지
+- 왼쪽에 Basic / Active / Passive 선택 rail
+- 오른쪽 대부분을 선택된 기술의 이름, cooldown, 효과 설명에 사용
+- 설명은 panel 하단의 좁은 strip이 아니라 세로 공간 대부분을 사용
+- 긴 passive/skill은 휠로 스크롤하되 첫 화면에서 핵심 효과를 읽을 수 있어야 함
+- Overview/Equipment/Growth의 portrait 중심 구조를 Skill 탭에 억지로 유지하지 않음
+
+## 10.2 Field HUD density — 2026-09-30
+
+첫 실플레이 기준 미니맵/목표 panel이 월드를 과도하게 가렸다.
+
+- 미니맵 전체 chrome/map/text/marker를 기존 대비 약 80% visual scale로 축소
+- 목표 panel도 chrome/text/padding을 함께 약 80% scale로 축소
+- 목표 문장이 길어져도 panel width 자체를 텍스트 길이에 따라 계속 확장하지 않음
+- 중앙 navigation cue와 목표 panel은 서로 가리지 않게 우측 anchor를 유지한 채 footprint를 줄임
+- 상세 정보가 더 필요하면 J 상세를 사용하고, 평상시 HUD가 문서처럼 커지지 않게 함
 
 ## 11. Equipment
 
