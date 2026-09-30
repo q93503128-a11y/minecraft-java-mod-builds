@@ -250,6 +250,84 @@ The implementation should store:
 - interaction anchors.
 - replacement/upgrade prefab ID.
 
+### Essential exterior acquisition / layout gate
+
+Before deciding whether the 7-island map is too small, acquire or extract the **actual exterior structures** used for the first layout pass.
+
+Required first-pass exteriors:
+- resident services / administration.
+- general store.
+- museum shell.
+- café shell.
+- clothing shop shell.
+- clinic shell.
+- harbor/pier service shell.
+- player house shell(s) and resident house shell(s), including at least the likely early/mid-size exterior footprints.
+- notice-board/plaza props only insofar as they affect real public-space clearance.
+
+The interiors may be much larger managed cells and therefore do **not** count toward main-island ground area.
+
+Current external structure candidates:
+
+**Villageria**
+- current Minecraft 26.2 NeoForge build exists.
+- MIT licensed.
+- provides a dedicated Town Hall, Village Shop and Mini Hospital.
+- buildings intentionally use compact vanilla-village-compatible footprints.
+- strong first extraction/reference candidate for **resident services, general store and clinic exterior envelopes**.
+- do not adopt the rest of Villageria's villager/combat/economy gameplay; only inspect/reuse permitted structure assets or treat the mod as an asset source when technically cleaner.
+- exact structure bounds must be measured from the real 26.2 assets before placement decisions.
+
+**SY Village**
+- current Minecraft 26.2 NeoForge build exists.
+- MIT licensed.
+- blueprint/structure-oriented system and editable structure-block/NBT workflow.
+- useful technical reference/source for compact village houses and structure-template placement.
+- visual quality must be inspected before any building becomes final; compatibility alone is not a reason to adopt its aesthetic.
+
+**Towns and Towers**
+- current Minecraft 26.2 support exists.
+- contains dozens of village structures and several coastal/biome architectural families, including beach/mediterranean-style references.
+- CC-BY-NC-SA-4.0, so any extracted/adapted structure asset used in this noncommercial project requires correct attribution and share-alike handling for that adapted asset.
+- useful candidate pool for **café, clothing shop, museum-like civic shell, houses and harbor/coastal structures** when a specific structure visually fits.
+- do not import the entire worldgen system just to obtain one building if selected structure templates can be cleanly packaged instead.
+
+**High-quality downloadable build/schematic packs**
+- may be used as reference/editable base/direct asset only when redistribution rights are explicit enough for the Modrinth-pack workflow.
+- a downloadable schematic with unclear license is NOT automatically packable.
+- Animal Crossing recreation builds are reference-only; do not ship copied Nintendo building art/layouts.
+
+### Provisional layout envelope
+
+Until exact NBT bounds are measured, use only a **planning envelope**, not final dimensions.
+
+Because interiors are separate, the expected village ground requirement is modest:
+- civic/public buildings should generally target compact exterior shells, roughly village-building scale rather than giant interior-scale shells.
+- 10–12 homes should be arranged as several small residential clusters rather than one huge suburban grid.
+- roads should stay walkable and readable, typically narrow village streets with selected wider plaza approaches.
+- harbor/pier consumes coastline more than inland build area.
+
+For the first map-fit test, reserve a contiguous mostly-flat village planning zone of roughly **160×160 blocks**, with **~180×180 preferred** if the real island offers it naturally.
+This is a conservative planning envelope that includes roads, plaza, 10–12 house parcels, civic buildings and greenery.
+It is NOT a requirement to fill the whole square or a claim that current external buildings have those exact sizes.
+
+If the actual selected exteriors produce a comfortable layout in less space, keep the compact layout.
+If they require substantially more space, measure why before rejecting the map.
+
+### First placement concept
+
+Use a walkable clustered layout rather than spreading facilities across the whole main island:
+- harbor/pier at the most natural accessible coast.
+- main path from harbor into the civic core.
+- resident services faces or anchors the central plaza.
+- general store, café and clothing shop form a small commercial walk around/near the plaza rather than isolated compounds.
+- museum sits slightly off the highest-traffic commercial edge so its exterior can have landscape breathing room without needing a huge shell.
+- clinic stays near the civic/residential core.
+- homes form 2–3 compact neighborhoods with short paths back to the plaza.
+- community garden/public green sits between civic and residential activity if the actual terrain supports it.
+
+Do not lock coordinates until the real map chunks and exact structure bounds are available.
+
 ## 6. Interior assets
 
 Prefer external interior builds/furniture sets.
