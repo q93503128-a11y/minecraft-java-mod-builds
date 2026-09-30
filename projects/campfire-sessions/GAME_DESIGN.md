@@ -651,6 +651,16 @@ Baseline states:
 The exact naming can follow the final UI language, but keep this separate from the detailed permission matrix.
 Changing the door state must be quick at the home's physical entrance/interior control point and should not require opening the M-menu.
 
+### Doorbell / knock
+A visitor who cannot currently enter may interact with the physical front door/doorbell to send a small non-blocking knock notification to the owner/Household members who are online.
+
+The receiving player can:
+- ignore it.
+- acknowledge/respond.
+- grant a one-time entry/temporary invitation when appropriate.
+
+This does not remotely expose the full permission editor and does not change the permanent guest preset unless the owner explicitly opens the proper home-permission interaction.
+
 ## 9. Player-building restrictions and protection
 
 ### Vanilla-survival boundary
@@ -685,6 +695,27 @@ Mining/exploration uses authored caves, renewable nodes/pockets and controlled r
 Free block breaking may still exist in explicitly designated wilderness/resource areas when it improves Minecraft tactile play without damaging the authored world.
 
 Combat can retain familiar Minecraft movement/attack foundations, but enemy placement, rewards, difficulty, safe zones and progression follow Campfire rules rather than vanilla survival progression.
+
+### Player-vs-player safety
+PvP damage is OFF by default across Campfire Sessions, including dangerous exploration regions.
+
+Rules:
+- ordinary melee/projectile attacks from players do zero health damage to other players.
+- PvP cannot be enabled accidentally by entering a cave/outer island.
+- friendly-fire from exploration weapons should not create death/loot-loss situations.
+- harmless social/emote/lifestyle-tool interactions may still exist where explicitly authored, but they are not combat damage.
+
+Do not build competitive PvP progression unless the project direction changes explicitly later.
+
+### Environmental safety by area
+Main village, homes, civic facilities and ordinary lifestyle zones should soften or suppress accidental survival deaths from:
+- short/medium falls.
+- brief fire/campfire contact.
+- cactus/similar incidental vanilla hazards where present.
+- other environmental damage that exists only because Minecraft normally expects survival play.
+
+Dangerous exploration areas may retain meaningful environmental hazards when they are deliberately authored and readable.
+The distinction should come from area/content design, not arbitrary hidden immunity changes.
 
 Minecraft freedom is retained where it helps the life-sim and constrained where it can break the authored village.
 
@@ -1192,6 +1223,18 @@ Catalog orders are delivered through the mailbox on the **next in-game day** rat
 Basic items that may be needed immediately should remain available through ordinary shops/services instead of turning catalog delivery into friction.
 
 Special event items, resident photos, unique trophies, etc. may be non-reorderable.
+
+### Catalog/shop wishlist
+Players may mark known furniture/clothing/catalog entries as favorites/wishlist items.
+
+Wishlist behavior:
+- informational/personal only.
+- if a wished item appears in current physical shop rotation, a small non-blocking notification may surface.
+- no automatic purchase.
+- no remote M-menu purchase.
+- the player still visits the actual shop and buys through the physical shopping flow.
+
+This feature is meant to reduce memory friction, not turn the catalog into an always-available online store.
 
 ## 15. Tools
 
@@ -2082,6 +2125,23 @@ Players can also:
 - send furniture.
 - send some money.
 
+### Safe direct player trade
+For valuable or data-rich items, nearby players may use a small two-sided trade interaction.
+
+Flow:
+both players accept trade
+→ each places offered items
+→ both see the exact offered contents/data summary
+→ both confirm
+→ server atomically swaps the items.
+
+Requirements:
+- preserve specimen traits, furniture variants, photographs and other meaningful item data.
+- either side changing the offer clears confirmation.
+- disconnect/cancel returns all items safely.
+- protected/favorited items are excluded unless explicitly unlocked first.
+- this does not replace ordinary gifts, wrapped gifts or mail.
+
 Do not add a global auction house/economy.
 
 ## 35. Gifts
@@ -2162,6 +2222,23 @@ Clothing and visible exploration gear should be **external-asset-first**:
 
 Prefer a system that can separate visible outfit from functional protection so players do not have to choose between stats and the intended life-sim look.
 The actual adopted outfit/armor models must fit the final player-animation stack and not break guitar, sitting, fishing or photo poses.
+
+### Saved outfit presets
+The wardrobe may store a small set of player-created outfit presets for quick changing.
+
+Examples:
+- everyday.
+- rain.
+- winter.
+- festival.
+- diving.
+- exploration.
+- custom named outfit.
+
+A preset stores the chosen visual clothing/accessory combination and compatible cosmetic/gear visibility choices.
+It does not duplicate the clothing items or bypass ownership requirements.
+
+Changing outfits remains tied to the wardrobe/mirror/home clothing interaction unless a specific equipped exploration set has a justified quick-change rule.
 
 ## 37. Café
 
@@ -2247,6 +2324,20 @@ Use cases:
 - selected optional photography challenges.
 
 Photography should remain optional lifestyle content, not a mandatory progression gate.
+
+### Photo library and storage control
+Actual captured-image systems can grow world-save size significantly, so the selected camera dependency must be inspected for real storage behavior before final limits are chosen.
+
+Required photo-management direction:
+- albums/folders or equivalent organization.
+- favorites/protection.
+- delete/archive controls.
+- visible metadata where useful.
+- framed/displayed/gift-attached/otherwise referenced photos cannot be silently deleted in a way that breaks those objects.
+- warn clearly before destructive deletion.
+
+Do not allow unlimited unmanaged full-resolution captures to grow the world save indefinitely.
+Use the selected camera system's actual file/storage architecture to choose practical retention/size controls rather than inventing arbitrary limits before testing.
 
 ### Photo posing
 Photography should integrate with player/resident animation:
@@ -2551,6 +2642,19 @@ Selecting a specific date/event reveals:
 Player Notes remain separate from official system notices so friend messages cannot obscure important event information.
 Because this is private friend multiplayer, do not build heavy public-server moderation tooling around player notes.
 
+### Board retention and archive
+The active board should not accumulate years of expired notices.
+
+Lifecycle:
+- event notices move out of the active view after the event ends.
+- weather/shop/facility notices expire or archive when no longer relevant.
+- contest results/community milestones can move into a village-history/archive view where worthwhile.
+- player notes remain until the author removes/archives them, subject to a generous practical cap.
+- important historical milestones may persist separately without crowding the live board.
+
+Archiving changes presentation, not authoritative history data.
+Do not silently delete meaningful player-authored notes or major village-history records merely because the active board is full.
+
 Events do not need to last all day.
 Their true start/end times must be visible here so a player can plan around the 48-minute in-game day without memorizing hidden schedules.
 
@@ -2735,6 +2839,22 @@ Do not claim multiplayer correctness until actual multiplayer testing occurs.
 
 Core UI must use selected external UI design assets/references.
 Do not improvise the final visual language, navigation density, button scale or spacing from scratch.
+
+### Cozy rounded visual direction
+The preferred presentation is a polished cozy life-sim interface with:
+- rounded inventory slots.
+- rounded panels/cards only where the chosen external reference uses them effectively.
+- soft, readable borders.
+- friendly iconography.
+- compact controls rather than oversized Minecraft buttons.
+- visually distinct but restrained selection/highlight states.
+- enough item density that inventory/storage remains practical.
+
+Animal Crossing-style softness/clarity is a valid **reference direction**, but do not copy Nintendo artwork, icons, exact layout or branded visual identity.
+
+The final visual system must come from/adapt real external UI assets/resource packs/frameworks.
+A compatible rounded GUI resource pack may provide the baseline inventory/container chrome while Campfire-specific screens use the same or a deliberately matched external asset family.
+Do not draw an unrelated custom UI from scratch merely to imitate the reference.
 
 ### Notification hierarchy
 Do not interrupt play with large center-screen banners for every routine event.
