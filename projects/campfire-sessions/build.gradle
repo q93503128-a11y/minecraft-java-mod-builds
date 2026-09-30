@@ -8,6 +8,24 @@ group = mod_group_id
 base { archivesName = mod_id }
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Modrinth'
+                url = 'https://api.modrinth.com/maven'
+            }
+        }
+        filter { includeGroup 'maven.modrinth' }
+    }
+}
+
+dependencies {
+    // First controlled external runtime trial: Skniro's Furniture 1.5.2 for Minecraft 26.2 / NeoForge.
+    // Modrinth project pezpt98N, version jXQfWgcX.
+    implementation 'maven.modrinth:pezpt98N:jXQfWgcX'
+}
+
 def licensedAssetsOutput = layout.buildDirectory.dir('generated/licensedAssets')
 def pythonCommand = System.getProperty('os.name').startsWith('Windows') ? 'python' : 'python3'
 def prepareLicensedAssets = tasks.register('prepareLicensedAssets', Exec) {
