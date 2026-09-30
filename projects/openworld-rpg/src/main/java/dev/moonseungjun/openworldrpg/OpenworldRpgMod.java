@@ -23,6 +23,7 @@ import dev.moonseungjun.openworldrpg.housing.R01HousingAttachments;
 import dev.moonseungjun.openworldrpg.housing.R01HousingService;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryAttachments;
 import dev.moonseungjun.openworldrpg.market.R01NessaMarketAttachments;
+import dev.moonseungjun.openworldrpg.network.ProjectCombatNetworking;
 import dev.moonseungjun.openworldrpg.progression.PlayerClassSwitchAttachments;
 import dev.moonseungjun.openworldrpg.progression.PlayerClassSwitchService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01ClassStarterService;
@@ -52,6 +53,7 @@ import dev.moonseungjun.openworldrpg.recovery.RecoveryUseRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ConsecratedGroundRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBasicAttackCadenceRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.ProjectDodgeRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.R01EarthloongMythicRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.SanctuaryRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.WarriorSkillRuntime;
@@ -88,6 +90,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         PlayerCurrencyAttachments.initialize();
         PlayerDeathPenaltyAttachments.initialize();
         PlayerClassSwitchAttachments.initialize();
+        ProjectCombatNetworking.initialize();
         OrdinaryEquipmentAffixCatalogRegistry.initialize(LOGGER);
         PlayerRewardTransactionAttachments.initialize();
         PlayerInventoryAttachments.initialize();
@@ -104,9 +107,10 @@ public final class OpenworldRpgMod implements ModInitializer {
         R01PlayerVerificationBootstrap.verifyStaticContracts(LOGGER);
         IntegrationBootstrap.bootstrap(profile, LOGGER);
         M0PlayerVerificationBootstrap.registerCommands();
-        ServerTickEvents.START_SERVER_TICK.register(
-                ProjectPlayerActionRuntime::tick
-        );
+        ServerTickEvents.START_SERVER_TICK.register(server -> {
+            ProjectPlayerActionRuntime.tick(server);
+            ProjectDodgeRuntime.tick(server);
+        });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             PlayerActiveWorldTimeService.tickLoadedPlayers(server);
             RecoveryEffectRuntime.tick(server);
@@ -115,6 +119,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             SanctuaryRuntime.tick(server);
             WarriorSkillRuntime.tick(server);
             R01RoadsideTroubleController.tickActiveWorld(server);
+            ProjectCombatNetworking.flushDodgeAccepted(server);
             if (Math.floorMod(server.getTickCount(), 20) == 0) {
                 for (var player : server.getPlayerList().getPlayers()) {
                     CombatStateServices.persistRuntime(player);
@@ -168,6 +173,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             }
             WarriorSkillRuntime.reset(newPlayer.getUUID());
             ProjectPlayerActionRuntime.reset(newPlayer);
+            ProjectDodgeRuntime.reset(newPlayer);
             PlayerCombatBuildPublisher.refresh(newPlayer);
             SpellEngineProjectSkillAccess.refreshPublishedSkills(newPlayer);
         });
@@ -181,6 +187,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             SanctuaryRuntime.disconnect(playerId);
             WarriorSkillRuntime.disconnect(playerId);
             ProjectPlayerActionRuntime.disconnect(playerId);
+            ProjectDodgeRuntime.disconnect(playerId);
             ProjectBasicAttackCadenceRuntime.disconnect(playerId);
             CombatStateServices.disconnect(playerId);
         });

@@ -50,13 +50,6 @@ jobs:
       - name: Verify pinned creature dependency metadata
         run: ./gradlew --no-daemon inspectCreatureFoundationDependencies --stacktrace
 
-      - name: Inspect exact AcroWield dodge reference
-        shell: bash
-        run: |
-          set -euo pipefail
-          ./gradlew --no-daemon inspectAcroWieldDodgeReference --stacktrace
-          cat build/reports/reference/acrowield-dodge.txt
-
       - name: Test and build M0 core
         run: ./gradlew --no-daemon clean test build --stacktrace
 
@@ -436,7 +429,7 @@ jobs:
           - Spell Engine resource/cooldown continuation transaction: IMPLEMENTED + UNIT/SERVER STARTUP VERIFIED
           - project cooldown client/HUD projection after completed cast: IMPLEMENTED + CLIENT STARTUP VERIFIED
           - project impact transaction core (damage/heal/status/poise + Defense/MR caps): IMPLEMENTED + UNIT TESTED
-          - player active-defense authority (dodge/guard/perfect-guard/guard-break + Stamina): IMPLEMENTED + UNIT TESTED; perfect-guard-only committed attacks supported; player-facing input/animation adapter NOT IMPLEMENTED
+          - player active-defense authority (dodge/guard/perfect-guard/guard-break + Stamina): IMPLEMENTED + UNIT TESTED; perfect-guard-only committed attacks supported; dodge C2S input/server movement/i-frame/action-buffer authority + accepted-action PAL presentation adapter IMPLEMENTED; joined-player feel NOT TESTED
           - normalized player incoming Defense/MR authority: IMPLEMENTED + UNIT TESTED; explicit project-hit runtime bridge IMPLEMENTED; Earthloong Phase-1 impact/runtime binding IMPLEMENTED for Claw/Quarry/Lightning Furrow/Root Breaker; Tail canonical impact/geometry exists but production presentation remains gated; Forked Heaven/Earthline Surge preview impact runtime IMPLEMENTED pending accepted production presentation
           - project direct-magic runtime bridge: IMPLEMENTED + UNIT/BUILD/STARTUP VERIFIED
           - player combat build snapshot producer: IMPLEMENTED + UNIT/RUNTIME HARNESS VERIFIED

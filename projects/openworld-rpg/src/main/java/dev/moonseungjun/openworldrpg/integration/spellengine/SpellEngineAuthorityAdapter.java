@@ -317,9 +317,8 @@ public final class SpellEngineAuthorityAdapter {
                 && player instanceof ServerPlayer serverPlayer
                 && !engineContinuation
                 && (!acceptedStage || firstAcceptedCast)
-                && ProjectPlayerActionRuntime.hardReactionActive(
-                        serverPlayer.getUUID(),
-                        gameTick
+                && !ProjectPlayerActionRuntime.canStartAction(
+                        serverPlayer
                 )) {
             return invokeStatic(attemptNone);
         }

@@ -26,5 +26,7 @@
   "spell.openworld_rpg.warrior_earthshatter.name": "Earthshatter",
   "spell.openworld_rpg.warrior_earthshatter.description": "Rupture the ground ahead with overwhelming damage and poise pressure.",
   "spell.openworld_rpg.consecrated_ground.name": "Consecrated Ground",
-  "spell.openworld_rpg.consecrated_ground.description": "Consecrate the ground around you, restoring allies and damaging enemies within the field."
+  "spell.openworld_rpg.consecrated_ground.description": "Consecrate the ground around you, restoring allies and damaging enemies within the field.",
+  "key.openworld_rpg.dodge": "Dodge / Roll",
+  "key.categories.openworld_rpg.combat": "Openworld RPG Combat"
 }

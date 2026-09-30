@@ -467,6 +467,25 @@ Hybrid attacks split physical/magical portions and mitigate each portion separat
 
 Slash/pierce/impact remain identity/poise/status hooks at baseline rather than adding three more mandatory armor-resistance spreadsheets. A special enemy/item may care about one type explicitly.
 
+## Dodge production precision binding — 2026-09-30
+
+The canonical shared dodge is now bound as a server-authoritative nine-tick action:
+
+- default project input is **Left Alt** and remains fully remappable through Minecraft key settings;
+- the client sends only directional intent plus a monotonic request sequence; it never sends distance, i-frame length, Stamina cost or acceptance;
+- the server owns the locked 30 Stamina cost, 12-tick Stamina-regeneration delay, first-six-tick i-frame, nine-tick action/movement duration and 11-tick re-entry floor;
+- directional movement is normalized before use, so diagonal input does not exceed the locked **3.2-block level-ground travel target**;
+- no directional input uses an initial **2.0-block backward evade** production binding. The design canon only says "short backward evade", so this distance is explicitly playtest-tunable without changing the directional 3.2-block lock;
+- accepted movement is split across nine collision-resolved server `MoverType.SELF` steps. Solid geometry may shorten real travel; the server never teleports through collision to force the nominal distance;
+- an accepted dodge drops held guard and immediately claims its own nine-tick shared action window, preventing basic attacks, project skills and a new guard from overlapping the roll;
+- the shared two-tick pre-cancel input buffer is consumed end-to-end. A buffered request spends no Stamina until the first legal server tick and is discarded if a hard reaction or replacement action invalidates it;
+- current concrete mobility lock covers the shared hard-reaction state. Dedicated project `rooted` / `downed` states do not yet exist and therefore are not fabricated as hidden booleans here;
+- presentation uses an MIT rolling animation from Kelvin285/Kevin Merrill as editable base. Its 0.375 s keyframe timing is scaled exactly 1.2x to the canonical 0.45 s action, with forward/back/left/right variants selected only after server acceptance;
+- player-facing dodge input fails closed if the admitted Player Animation Library resource/API is unavailable, so gameplay cannot silently degrade into an invisible code-only dash.
+
+This is a production binding of already-locked dodge rules plus the explicitly marked no-input distance/key choice. Final camera feel, armor clipping, terrain travel and latency feel remain joined-player playtest work.
+
+
 ---
 
 # 10. Critical hits and weak points

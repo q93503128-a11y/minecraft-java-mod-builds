@@ -311,6 +311,31 @@ The already-approved Kenney source families now have a small exact-file shortlis
 
 Direct candidate hashes, dimensions and durations are in `R01_ASSET_PHASE_F_KENNEY_EXACT_SHORTLIST_2026-09-18.md`.
 
+### Player Dodge/Roll runtime binding delta — 2026-09-30
+
+The final shared dodge presentation uses `Kelvin285/KelvinsBetterPlayerAnimations`
+`src/main/resources/assets/betteranimations/player_animation/rolling.json` at pinned commit
+`e0dda1ff2874756490d3b422db524ea67fad3448` as an **MIT editable base**. Exact source
+Git blob: `404f547cf00434cf5d538ee5b9de25bb11e6ca1b`. Copyright and MIT permission text
+are preserved in `external-assets/kelvins-better-player-animations/SOURCE.md`.
+
+The upstream 0.375-second roll is retimed uniformly by 1.2x to the locked 0.45-second / nine-tick
+project dodge. Four PAL IDs (`dodge_forward/backward/left/right`) share the admitted roll motion,
+with local body-yaw variants so visible direction follows the server-authoritative movement intent.
+No animation curve owns gameplay displacement: the server separately owns the 3.2-block directional
+target, collision, Stamina, i-frames, action lock and re-entry.
+
+The exact AcroWield 1.8.1-MC26.2 reference artifact (`2HNn1tqB:JDJnVrbE`, SHA-256
+`6d0576405a380681b6e1d301a66fc4c58c4e3cce93779689ebf2c983590e2397`) was inspected only
+as a reference. The inspected JAR exposed dodge payload/code and license material but no directly
+reusable roll animation resource in the targeted animation/resource surface; no AcroWield runtime
+dependency or raw code/assets are admitted.
+
+State: `RUNTIME_AND_ASSET_BOUND / MINECRAFT_VISUAL_ACCEPTANCE_PENDING`.
+
+Final third-person silhouette, armor/cape clipping, first-person camera feel, terrain shortening and
+network-latency feel require joined-player playtest.
+
 ### Warrior root runtime binding delta — 2026-09-29
 
 Warrior root skills use the already Phase-F-shortlisted Kenney Particle Pack `slash_01.png` as a support material inside project-authored 3D slash/sector geometry. Exact committed bytes are taken from pinned corroboration repository `shorepine/kenney` commit `3694c6879e487c108f55677be7dd2ca75b07cc3b`, Git blob `c04fa2d3938827da63105172748851db86735aa6`, and are recorded under `external-assets/kenney-particle-pack/SOURCE.md`.
@@ -319,7 +344,7 @@ Driving Slash, Breaker Slam and Earthshatter read the same `WarriorSkillShape` r
 
 State: `RUNTIME_BOUND / MINECRAFT_VISUAL_ACCEPTANCE_PENDING`. Build Openworld RPG run `36562682972` at code state `a5d50e7fe97e50b1cc6624fcd9fb27144ff5f782` passes unit tests/build, server smoke, gameplay client startup, playtest-JAR builds, pack packaging and artifact upload; this does not substitute for in-world visual/range/timing/audio acceptance.
 
-Open production gaps remain explicit: final melee animation/recovery/dodge-cancel coupling is not yet owned by a shared action layer; Combat Temper has no shared ordinary hit-stagger-duration consumer; normal-only Cyclone pull is blocked until actor rank distinguishes normal from elite. These are runtime-system gaps, not reasons to substitute particle-only presentation.
+Shared action/reaction authority now owns Warrior recovery, movement multiplier and dodge-cancel legality, and Combat Temper has a common ordinary non-launch stagger-duration consumer. Empowered Cyclone pull is no longer inferred from coarse rank; it is accepted only for actor bindings that explicitly admit forced movement. Remaining Warrior presentation work is joined-player timing/animation/impact acceptance plus future normal-enemy knockdown/launch bindings where a concrete actor animation capability exists.
 
 ### Rebuke runtime binding delta — 2026-09-29
 

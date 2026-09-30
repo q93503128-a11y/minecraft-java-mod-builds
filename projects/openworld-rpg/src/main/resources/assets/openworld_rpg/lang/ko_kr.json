@@ -26,5 +26,7 @@
   "spell.openworld_rpg.warrior_earthshatter.name": "대지 분쇄",
   "spell.openworld_rpg.warrior_earthshatter.description": "전방의 지면을 갈라 막대한 피해와 포이즈 압력을 줍니다.",
   "spell.openworld_rpg.consecrated_ground.name": "축성지",
-  "spell.openworld_rpg.consecrated_ground.description": "주변 지면을 축성해 범위 안의 아군을 회복시키고 적에게 피해를 줍니다."
+  "spell.openworld_rpg.consecrated_ground.description": "주변 지면을 축성해 범위 안의 아군을 회복시키고 적에게 피해를 줍니다.",
+  "key.openworld_rpg.dodge": "회피 / 구르기",
+  "key.categories.openworld_rpg.combat": "Openworld RPG 전투"
 }

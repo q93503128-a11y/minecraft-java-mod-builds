@@ -14,6 +14,12 @@ import org.lwjgl.glfw.GLFW;
  * Project-owned frequent combat inputs. Spell Engine remains a casting backend, not the input UI.
  */
 public final class OpenworldRpgClient implements ClientModInitializer {
+    private static final KeyMapping DODGE_KEY =
+            key(
+                    "key.openworld_rpg.dodge",
+                    GLFW.GLFW_KEY_LEFT_ALT
+            );
+
     private static final List<KeyMapping> SKILL_KEYS =
             List.of(
                     key("key.openworld_rpg.active_skill_1", GLFW.GLFW_KEY_F),
@@ -28,6 +34,8 @@ public final class OpenworldRpgClient implements ClientModInitializer {
         for (KeyMapping key : SKILL_KEYS) {
             KeyMappingHelper.registerKeyMapping(key);
         }
+        KeyMappingHelper.registerKeyMapping(DODGE_KEY);
+        ProjectDodgeClientBridge.initialize();
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null || client.gui.screen() != null) {
@@ -42,6 +50,11 @@ public final class OpenworldRpgClient implements ClientModInitializer {
                             slot
                     );
                 }
+            }
+            while (DODGE_KEY.consumeClick()) {
+                ProjectDodgeClientBridge.request(
+                        client.player
+                );
             }
         });
     }
