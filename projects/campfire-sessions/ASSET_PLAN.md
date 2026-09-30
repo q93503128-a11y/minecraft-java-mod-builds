@@ -437,19 +437,25 @@ Stage transitions may adjust roof/trim/palette/porch while preserving one recogn
 Working area: verified strict-flat west-side cluster around X -336…-257 / Z -96…31, plus small targeted grading around its edge.
 
 Suggested first-pass placement:
-- harbor/pier: west edge around (-336, -48).
-- plaza center: around (-300, -30).
-- resident services 11×11: around (-306, -15).
-- general store 11×11: around (-284, -42).
-- café 10×10: around (-280, -24).
-- clothing shop 10×10: around (-280, -7).
-- clinic 11×11: around (-318, -8).
-- museum 15×11: around (-262, -24), with a larger planted forecourt/terrace.
-- community garden/public green: around (-322, 12).
+- harbor/pier: west edge around (-336, -48), natural median Y≈64.
+- plaza center: around (-300, -30), median Y≈71–72.
+- resident services 11×11: around (-306, -15), median Y≈71.
+- general store 11×11: around (-284, -42), median Y≈72.
+- café 7×8 Greece shell: around (-284, -24), median Y≈74, compact local spread≈2.
+- clothing shop 7×8 Greece shell: around (-288, -7), median Y≈74, compact local spread≈2.
+- clinic 11×11: around (-318, -8), median Y≈67.
+- museum 21×16 Greece ratush shell: around (-266, -28), median Y≈78, compact local spread≈5.
+- community garden/public green: around (-322, 12), median Y≈63.
 - housing: three small clusters around the south, southeast and north/northeast edges of the civic core.
 
-Do not lock Y or exact rotation until each structure is physically previewed against the edited terrain.
-Aim for a 2–3-level landscaped village rather than one flat plate.
+Do not lock exact final block Y/rotation until each structure is physically previewed against the edited terrain.
+The measured natural levels already provide the intended composition:
+- harbor/green low level: ~63–67.
+- civic/commercial middle level: ~71–74.
+- museum landmark upper level: ~78.
+
+Preserve that stepped composition.
+Only grade each building parcel and connecting path enough to make movement/placement clean; do not flatten the entire working zone.
 
 Visual reference result:
 - Towns and Towers' current gallery describes its beach set as a **small fishing community on the beach** and a warmer-biome village as **picturesque**, which matches the desired coastal/cozy direction.

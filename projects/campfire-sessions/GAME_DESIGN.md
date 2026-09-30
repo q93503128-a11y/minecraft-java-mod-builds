@@ -452,19 +452,34 @@ Relative village levels:
 Exact Y values are derived from the real terrain during template authoring.
 Do not force predetermined Y numbers that require excessive fill/cut.
 
+The real-world anchor probe confirms that the selected west-side village zone naturally supports a readable vertical progression:
+- waterfront: ~Y64.
+- lower green/clinic/residential pockets: ~Y63–68.
+- plaza/civic core: ~Y71–72.
+- café/clothing/commercial upper edge: ~Y74.
+- museum landmark terrace: ~Y78.
+
+Keep these differences.
+Do not normalize the village into one plane.
+Connect them with short landscaped climbs, broad stairs/ramps and planted transition zones.
+Avoid nuisance one-block step spam on primary paths; elevation should read as authored terrain, not movement friction.
+
+Anchor-terrain + nearby-flat-patch validation: `Probe Campfire Candidate World` run **36678414739**.
+Minecraft 26.2 server-load revalidation in that run: SUCCESS.
+
 ### First X/Z anchor draft
 These anchors are layout targets for the edited world template and may shift by several blocks during visual placement.
 They are not final save-contract coordinates yet.
 
-- harbor arrival / pier head: around **(-336, -48)**, extending west toward water.
-- central plaza: around **(-300, -30)**.
-- resident services: around **(-306, -15)**, facing the plaza.
-- general store: around **(-284, -42)**.
-- café: around **(-280, -24)**.
-- clothing shop: around **(-280, -7)**.
-- clinic: around **(-318, -8)**.
-- museum: around **(-262, -24)** on a slightly higher/landscaped edge with more forecourt space.
-- community garden/public green: around **(-322, 12)**.
+- harbor arrival / pier head: around **(-336, -48)**, natural local median Y≈64, extending west toward water.
+- central plaza: around **(-300, -30)**, local median Y≈71–72.
+- resident services: around **(-306, -15)**, local median Y≈71, facing the plaza.
+- general store: around **(-284, -42)**, local median Y≈72.
+- café: around **(-284, -24)**, compact patch median Y≈74 with ~2 blocks p10→p90 spread.
+- clothing shop: around **(-288, -7)**, compact patch median Y≈74 with ~2 blocks spread.
+- clinic: around **(-318, -8)**, local median Y≈67.
+- museum: around **(-266, -28)**, compact patch median Y≈78 with ~5 blocks spread; intentionally read as an upper landmark terrace.
+- community garden/public green: around **(-322, 12)**, local median Y≈63.
 - housing cluster A: southwest/south of the plaza.
 - housing cluster B: southeast of the plaza.
 - housing cluster C: north/northeast of the plaza.
