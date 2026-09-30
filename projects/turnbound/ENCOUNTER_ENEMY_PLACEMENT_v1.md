@@ -784,3 +784,22 @@ For the New Drabyel opening patrol, the world therefore shows one moving represe
 - once the TURNBOUND representative exists, the cached survey origin is not revalidated every tick; a late-loading decoration at the old origin must not delete a valid roaming proxy
 - opening encounters may derive presentation-only roam points from map placement patrol seeds even when combat activation intentionally has no formal Patrol dependency
 - entity insertion success must be checked; a failed server insertion is not considered a materialized encounter
+
+
+### Field-proxy lifecycle stability — 2026-09-30
+
+The roaming encounter representative is now treated as a persistent encounter object, not a disposable proximity effect.
+
+- leaving the 72-block observer radius pauses field navigation but does **not** delete the representative
+- the same actor/pivot is reused when an observer returns; the runtime does not reset the encounter back to its survey origin just because nobody was nearby
+- if the actor UUID is temporarily unavailable while its pivot chunk is not loaded, recovery waits for that chunk instead of immediately racing a duplicate spawn
+- if a tracked actor is genuinely missing while the pivot chunk is loaded, the runtime emits a one-shot ERROR and performs recovery
+- tagged-adoption radius covers the full authored patrol span, not only the original 80-block site neighborhood
+
+Field-proxy placement also uses a different clearance rule from battle arenas:
+- battle arenas still require broad source-content clearance
+- a 0.7-block roaming proxy only requires a valid standing footprint and a narrow local check for villagers/item frames/armor stands
+- nearby decorative block entities or a villager several blocks away no longer make the proxy appear/disappear depending on chunk/entity load timing
+- the New Drabyel opening logical site and presentation patrol points use this narrow proxy rule for the same reason
+
+The player-facing invariant is: while an encounter is available and an eligible observer is near its live objective, the objective must not point at an empty location.
