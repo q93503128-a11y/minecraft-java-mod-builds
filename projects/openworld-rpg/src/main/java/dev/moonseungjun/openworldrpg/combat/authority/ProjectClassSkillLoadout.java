@@ -52,6 +52,9 @@ public final class ProjectClassSkillLoadout {
                 case 1 -> Optional.of(
                         ProjectSpellSpec.HUNTER_PINNING_SHOT_ID
                 );
+                case 2 -> Optional.of(
+                        ProjectSpellSpec.HUNTER_FAN_OF_ARROWS_ID
+                );
                 default -> Optional.empty();
             };
             case GUARDIAN -> Optional.empty();

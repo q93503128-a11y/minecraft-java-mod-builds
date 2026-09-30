@@ -51,6 +51,7 @@ import dev.moonseungjun.openworldrpg.recovery.RecoveryBeltAttachments;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryEffectRuntime;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryUseRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ConsecratedGroundRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.HunterFanOfArrowsRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterPinningShotRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterQuickstepVolleyRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkillRuntime;
@@ -116,6 +117,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             ProjectDodgeRuntime.tick(server);
             HunterQuickstepVolleyRuntime.tick(server);
             HunterPinningShotRuntime.tick(server);
+            HunterFanOfArrowsRuntime.tick(server);
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             PlayerActiveWorldTimeService.tickLoadedPlayers(server);
@@ -181,6 +183,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             WarriorSkillRuntime.reset(newPlayer.getUUID());
             HunterQuickstepVolleyRuntime.reset(newPlayer.getUUID());
             HunterPinningShotRuntime.reset(newPlayer.getUUID());
+            HunterFanOfArrowsRuntime.reset(newPlayer.getUUID());
             HunterSkillRuntime.reset(newPlayer.getUUID());
             ProjectPlayerActionRuntime.reset(newPlayer);
             ProjectDodgeRuntime.reset(newPlayer);
@@ -198,6 +201,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             WarriorSkillRuntime.disconnect(playerId);
             HunterQuickstepVolleyRuntime.disconnect(playerId);
             HunterPinningShotRuntime.disconnect(playerId);
+            HunterFanOfArrowsRuntime.disconnect(playerId);
             HunterSkillRuntime.disconnect(playerId);
             ProjectPlayerActionRuntime.disconnect(playerId);
             ProjectDodgeRuntime.disconnect(playerId);

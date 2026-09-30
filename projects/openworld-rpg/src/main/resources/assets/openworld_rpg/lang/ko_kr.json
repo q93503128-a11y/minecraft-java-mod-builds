@@ -32,5 +32,7 @@
   "spell.openworld_rpg.hunter_quickstep_volley.name": "질주 연사",
   "spell.openworld_rpg.hunter_quickstep_volley.description": "이동 방향으로 빠르게 내딛으며 화살 세 발을 쏩니다. 집중이 가득 차면 이동 거리가 늘고 각 화살이 일반 적 하나를 관통합니다.",
   "spell.openworld_rpg.hunter_pinning_shot.name": "속박 사격",
-  "spell.openworld_rpg.hunter_pinning_shot.description": "강한 화살을 쏴 적의 이동을 둔화합니다. 집중이 가득 차면 속박 시간이 늘고 포이즈 압력이 강해집니다."
+  "spell.openworld_rpg.hunter_pinning_shot.description": "강한 화살을 쏴 적의 이동을 둔화합니다. 집중이 가득 차면 속박 시간이 늘고 포이즈 압력이 강해집니다.",
+  "spell.openworld_rpg.hunter_fan_of_arrows.name": "부채꼴 사격",
+  "spell.openworld_rpg.hunter_fan_of_arrows.description": "읽기 쉬운 부채꼴로 화살 다섯 발을 쏩니다. 집중이 가득 차면 같은 대상의 피격 상한은 유지한 채 일곱 발로 넓어집니다."
 }

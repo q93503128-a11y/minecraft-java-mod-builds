@@ -20,6 +20,7 @@ public record ProjectSpellSpec(
     public static final String WARRIOR_EARTHSHATTER_ID = "openworld_rpg:warrior_earthshatter";
     public static final String HUNTER_QUICKSTEP_VOLLEY_ID = "openworld_rpg:hunter_quickstep_volley";
     public static final String HUNTER_PINNING_SHOT_ID = "openworld_rpg:hunter_pinning_shot";
+    public static final String HUNTER_FAN_OF_ARROWS_ID = "openworld_rpg:hunter_fan_of_arrows";
     public static final String ARC_BOLT_ID = "openworld_rpg:arc_bolt";
     public static final String RADIANT_LANCE_ID = "openworld_rpg:radiant_lance";
     public static final String MEND_ID = "openworld_rpg:mend";
@@ -29,6 +30,9 @@ public record ProjectSpellSpec(
     public static final double HUNTER_PINNING_ACTION_COEFFICIENT = 1.55;
     public static final double HUNTER_PINNING_POISE_COEFFICIENT = 1.00;
     public static final double HUNTER_PINNING_EMPOWERED_POISE_COEFFICIENT = 1.50;
+    public static final double HUNTER_FAN_ACTION_COEFFICIENT_CAP = 1.90;
+    public static final double HUNTER_FAN_EMPOWERED_ACTION_COEFFICIENT_CAP = 2.15;
+    public static final double HUNTER_FAN_WHOLE_ACTION_POISE_COEFFICIENT = 1.00;
     public static final double RADIANT_LANCE_ACTION_COEFFICIENT = 1.35;
     public static final double RADIANT_LANCE_POISE_COEFFICIENT = 0.60;
     public static final double RADIANT_LANCE_CHAIN_ACTION_COEFFICIENT = 0.55;
@@ -153,6 +157,17 @@ public record ProjectSpellSpec(
         );
     }
 
+    public static ProjectSpellSpec hunterFanOfArrows() {
+        return new ProjectSpellSpec(
+                HUNTER_FAN_OF_ARROWS_ID,
+                26.0,
+                200,
+                HUNTER_FAN_ACTION_COEFFICIENT_CAP,
+                HUNTER_FAN_WHOLE_ACTION_POISE_COEFFICIENT,
+                1
+        );
+    }
+
     public static ProjectSpellSpec arcBolt() {
         return new ProjectSpellSpec(
                 ARC_BOLT_ID,
@@ -223,7 +238,7 @@ public record ProjectSpellSpec(
         Objects.requireNonNull(spellId, "spellId");
         return switch (spellId) {
             case WARRIOR_DRIVING_SLASH_ID, WARRIOR_IRON_COUNTER_ID, WARRIOR_CYCLONE_CUT_ID, WARRIOR_BREAKER_SLAM_ID, WARRIOR_EARTHSHATTER_ID -> Optional.of(RootClass.WARRIOR);
-            case HUNTER_QUICKSTEP_VOLLEY_ID, HUNTER_PINNING_SHOT_ID -> Optional.of(RootClass.HUNTER);
+            case HUNTER_QUICKSTEP_VOLLEY_ID, HUNTER_PINNING_SHOT_ID, HUNTER_FAN_OF_ARROWS_ID -> Optional.of(RootClass.HUNTER);
             case ARC_BOLT_ID -> Optional.of(RootClass.MAGE);
             case RADIANT_LANCE_ID, MEND_ID, CONSECRATED_GROUND_ID, REBUKE_ID, SANCTUARY_ID ->
                     Optional.of(RootClass.CLERIC);

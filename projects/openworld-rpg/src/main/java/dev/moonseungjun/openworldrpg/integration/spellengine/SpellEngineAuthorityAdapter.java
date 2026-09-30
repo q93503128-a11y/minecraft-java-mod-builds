@@ -8,6 +8,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.ClericMendRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ClericSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ConsecratedGroundRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterQuickstepVolleyRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.HunterFanOfArrowsRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterPinningShotRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
@@ -50,6 +51,8 @@ public final class SpellEngineAuthorityAdapter {
             "net.spell_engine.api.spell.event.SpellEvents$SpellCostConsumeEvent";
     private static final String SPELL_CAST_LISTENER =
             "net.spell_engine.api.spell.event.SpellEvents$SpellCastEvent";
+    private static final String PROJECTILE_LAUNCH_LISTENER =
+            "net.spell_engine.api.spell.event.SpellEvents$ProjectileLaunch";
     private static final String CUSTOM_IMPACT =
             "net.spell_engine.api.spell.event.SpellHandlers$CustomImpact";
     private static final String IMPACT_RESULT =
@@ -106,6 +109,7 @@ public final class SpellEngineAuthorityAdapter {
             Class<?> castingAttemptListener = Class.forName(CASTING_ATTEMPT_LISTENER, false, loader);
             Class<?> costConsumeListener = Class.forName(COST_CONSUME_LISTENER, false, loader);
             Class<?> spellCastListener = Class.forName(SPELL_CAST_LISTENER, false, loader);
+            Class<?> projectileLaunchListener = Class.forName(PROJECTILE_LAUNCH_LISTENER, false, loader);
             Class<?> spellCastAttempt = Class.forName(SPELL_CAST_ATTEMPT, false, loader);
             Class<?> spellHandlers = Class.forName(SPELL_HANDLERS, false, loader);
             Class<?> customImpact = Class.forName(CUSTOM_IMPACT, false, loader);
@@ -133,6 +137,7 @@ public final class SpellEngineAuthorityAdapter {
             Object postAttemptEvent = stagedAttempt.getClass().getField("POST").get(stagedAttempt);
             Object costConsumeEvent = spellEvents.getField("COST_CONSUME").get(null);
             Object spellCastEvent = spellEvents.getField("SPELL_CAST").get(null);
+            Object projectileShootEvent = spellEvents.getField("PROJECTILE_SHOOT").get(null);
 
             registerListener(
                     preAttemptEvent,
@@ -154,12 +159,17 @@ public final class SpellEngineAuthorityAdapter {
                     spellCastListener,
                     SpellEngineAuthorityAdapter::handleSpellCast
             );
+            registerListener(
+                    projectileShootEvent,
+                    projectileLaunchListener,
+                    SpellEngineAuthorityAdapter::handleProjectileLaunch
+            );
             registerCustomImpact(spellHandlers, customImpact, impactResultConstructor);
 
             initialized = true;
             logger.info(
                     "Openworld RPG Spell Engine authority gate armed for profile {} using CASTING_ATTEMPT.PRE/POST, "
-                            + "cast-process continuation identity, COST_CONSUME, SPELL_CAST and custom impact {}.",
+                            + "cast-process continuation identity, COST_CONSUME, SPELL_CAST, PROJECTILE_SHOOT and custom impact {}.",
                     profile.id(),
                     PROJECT_IMPACT_HANDLER
             );
@@ -210,6 +220,16 @@ public final class SpellEngineAuthorityAdapter {
                 hunterPinningShot.id(),
                 new ProjectSpellTransactionPolicy(
                         hunterPinningShot,
+                        COMBAT_STATES,
+                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                )
+        );
+        ProjectSpellSpec hunterFanOfArrows =
+                ProjectSpellSpec.hunterFanOfArrows();
+        AUTHORITY.registerPolicy(
+                hunterFanOfArrows.id(),
+                new ProjectSpellTransactionPolicy(
+                        hunterFanOfArrows,
                         COMBAT_STATES,
                         ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
                 )
@@ -360,6 +380,13 @@ public final class SpellEngineAuthorityAdapter {
                 && !HunterPinningShotRuntime.canActivate(serverPlayer)) {
             return invokeStatic(attemptNone);
         }
+        if (ProjectSpellSpec.HUNTER_FAN_OF_ARROWS_ID.equals(spellId)
+                && player instanceof ServerPlayer serverPlayer
+                && !engineContinuation
+                && (!acceptedStage || firstAcceptedCast)
+                && !HunterFanOfArrowsRuntime.canActivate(serverPlayer)) {
+            return invokeStatic(attemptNone);
+        }
         if (ProjectSpellSpec.requiredRootClass(spellId)
                 .filter(RootClass.WARRIOR::equals)
                 .isPresent()
@@ -401,6 +428,10 @@ public final class SpellEngineAuthorityAdapter {
                 }
             } else if (ProjectSpellSpec.HUNTER_PINNING_SHOT_ID.equals(spellId)) {
                 if (!HunterPinningShotRuntime.onAcceptedCast(serverPlayer).accepted()) {
+                    return invokeStatic(attemptNone);
+                }
+            } else if (ProjectSpellSpec.HUNTER_FAN_OF_ARROWS_ID.equals(spellId)) {
+                if (!HunterFanOfArrowsRuntime.onAcceptedCast(serverPlayer).accepted()) {
                     return invokeStatic(attemptNone);
                 }
             } else if (ProjectSpellSpec.requiredRootClass(spellId)
@@ -491,6 +522,60 @@ public final class SpellEngineAuthorityAdapter {
                 AUTHORITY.onEngineCostConsumed(player.getUUID(), spellId, player.level().getGameTime());
             }
         }
+        return null;
+    }
+
+    private static Object handleProjectileLaunch(
+            Object proxy,
+            Method method,
+            Object[] args
+    ) throws ReflectiveOperationException {
+        if (isObjectMethod(method)) {
+            return objectMethod(proxy, method, args);
+        }
+        if (!"onProjectileLaunch".equals(method.getName())) {
+            throw new IllegalStateException(
+                    "Unexpected Spell Engine projectile listener method: " + method
+            );
+        }
+
+        Object eventArgs = onlyArgument(method, args);
+        LivingEntity caster = requireLiving(
+                invokeAccessor(eventArgs, "caster")
+        );
+        if (!(caster instanceof ServerPlayer serverPlayer)
+                || caster.level().isClientSide()) {
+            return null;
+        }
+
+        Object spellEntry = invokeAccessor(eventArgs, "spellEntry");
+        String spellId = spellId(spellEntry);
+        if (!ProjectSpellSpec.HUNTER_FAN_OF_ARROWS_ID.equals(spellId)) {
+            return null;
+        }
+
+        Object sequenceValue = invokeAccessor(eventArgs, "sequenceIndex");
+        if (!(sequenceValue instanceof Number sequence)) {
+            throw new IllegalStateException(
+                    "Spell Engine projectile sequence index is not numeric: "
+                            + sequenceValue
+            );
+        }
+        if (sequence.intValue() != 0) {
+            return null;
+        }
+
+        Object launchProperties = invokeAccessor(
+                eventArgs,
+                "mutableLaunchProperties"
+        );
+        int projectileCount =
+                HunterFanOfArrowsRuntime.projectileCountForLaunch(
+                        serverPlayer
+                );
+        launchProperties.getClass()
+                .getField("extra_launch_count")
+                .setInt(launchProperties, projectileCount - 1);
         return null;
     }
 
@@ -675,6 +760,24 @@ public final class SpellEngineAuthorityAdapter {
                     ? vec
                     : livingTarget.position();
             var hit = HunterPinningShotRuntime.applyProjectileHit(
+                    serverCaster,
+                    livingTarget,
+                    hitPosition
+            );
+            return impactResultConstructor.newInstance(hit.accepted(), false);
+        }
+
+        if (ProjectSpellSpec.HUNTER_FAN_OF_ARROWS_ID.equals(spellId)) {
+            if (!(player instanceof ServerPlayer serverCaster)
+                    || !(target instanceof LivingEntity livingTarget)
+                    || livingTarget.level() != serverCaster.level()) {
+                return impactResultConstructor.newInstance(false, false);
+            }
+            Object rawPosition = invokeAccessor(impactContext, "position");
+            Vec3 hitPosition = rawPosition instanceof Vec3 vec
+                    ? vec
+                    : livingTarget.position();
+            var hit = HunterFanOfArrowsRuntime.applyProjectileHit(
                     serverCaster,
                     livingTarget,
                     hitPosition

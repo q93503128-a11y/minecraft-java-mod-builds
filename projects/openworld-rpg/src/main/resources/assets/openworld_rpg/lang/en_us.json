@@ -32,5 +32,7 @@
   "spell.openworld_rpg.hunter_quickstep_volley.name": "Quickstep Volley",
   "spell.openworld_rpg.hunter_quickstep_volley.description": "Dash with your movement and loose three arrows. Full Focus lengthens the step and lets each arrow pierce one normal enemy.",
   "spell.openworld_rpg.hunter_pinning_shot.name": "Pinning Shot",
-  "spell.openworld_rpg.hunter_pinning_shot.description": "Fire a heavy arrow that snares its target. Full Focus extends the snare and increases poise pressure."
+  "spell.openworld_rpg.hunter_pinning_shot.description": "Fire a heavy arrow that snares its target. Full Focus extends the snare and increases poise pressure.",
+  "spell.openworld_rpg.hunter_fan_of_arrows.name": "Fan of Arrows",
+  "spell.openworld_rpg.hunter_fan_of_arrows.description": "Loose five arrows in a readable cone. Full Focus fires seven in a wider fan while keeping the same target hit cap."
 }
