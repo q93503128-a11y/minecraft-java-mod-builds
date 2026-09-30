@@ -1501,8 +1501,16 @@ Latest external-structure packaging checkpoint:
 - approved external structures in JAR: **31**.
 - approved packaged structure source: **kogtyv_tav only**.
 
+Resident mesh-renderer checkpoint:
+- commit: `acc70ca336f8e8a86b40d80f233b2a9e5fa9a7d0`.
+- Build Campfire Sessions run: **33** / run ID **36708574390**.
+- clean build with GeckoLib 5.5.6 + custom triangle `ResidentMeshBone`: SUCCESS.
+- Plumberry asset contract step: SUCCESS.
+- existing external-structure probe + packaged-asset contracts: SUCCESS.
+- this verifies API/build compatibility only; no real Plumberry GLB has been converted or rendered in Minecraft yet.
+
 Validation boundary:
-- **BUILD VERIFIED:** YES for the dependency stack above.
+- **BUILD VERIFIED:** YES for the dependency stack and resident mesh-renderer scaffold above.
 - **CLIENT VISUAL TESTED:** NO.
 - **DEPENDENCY GAMEPLAY TESTED:** NO.
 - **PLAYTESTED:** NO.
