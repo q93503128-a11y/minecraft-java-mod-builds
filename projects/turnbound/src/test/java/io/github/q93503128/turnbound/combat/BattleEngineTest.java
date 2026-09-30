@@ -23,6 +23,50 @@ final class BattleEngineTest {
         var bram=new CombatantState("b",PrototypeRoster.bram(),CombatantSide.ALLY,0);enemy=new CombatantState("e",unit("E",99999,1,999,1),CombatantSide.ENEMY,1);bram.setGauge(1000);enemy.setGauge(400);var pressure=new BattleEngine(new BattleState(List.of(bram,enemy)));pressure.nextReady();pressure.useSkill("b","p03_shield_pressure","e");assertEquals(300L,enemy.gauge(),"Base vibration shield applies -100 until Guard 50 empowers it");
     }
 
+    @Test
+    void equipmentTempoRulesActuallyReachTheAuthoritativeGaugeRuntime() {
+        SkillDefinition strike = new SkillDefinition(
+                "strike", "Strike", TargetRule.ENEMY_SINGLE, 0,
+                List.of(SkillEffect.damage(1.0)));
+        SkillDefinition grant = new SkillDefinition(
+                "grant", "Grant", TargetRule.ALLY_SINGLE, 0,
+                List.of(SkillEffect.gaugeAdd(120)));
+
+        CombatantDefinition giverDef = new CombatantDefinition(
+                "GIVER", "Giver", new BattleStats(1000, 100, 50, 100),
+                "grant", List.of(grant), 4,
+                List.of("START_GAUGE_30", "START_GAUGE_50", "ALLY_GAUGE_GRANT_PLUS_20"),
+                java.util.Map.of());
+        CombatantDefinition allyDef = new CombatantDefinition(
+                "ALLY", "Ally", new BattleStats(1000, 100, 50, 90),
+                "strike", List.of(strike), 4, List.of(), java.util.Map.of());
+        CombatantDefinition targetDef = new CombatantDefinition(
+                "TARGET", "Target", new BattleStats(1000, 100, 50, 80),
+                "strike", List.of(strike), 0,
+                List.of("DIRECT_HIT_GAUGE_20"), java.util.Map.of());
+
+        CombatantState giver = new CombatantState("giver", giverDef, CombatantSide.ALLY, 0);
+        CombatantState ally = new CombatantState("ally", allyDef, CombatantSide.ALLY, 1);
+        CombatantState target = new CombatantState("target", targetDef, CombatantSide.ENEMY, 2);
+        BattleEngine engine = new BattleEngine(new BattleState(List.of(giver, ally, target)));
+
+        assertEquals(80, giver.gauge(), "equipped start-Gauge traits stack once at battle creation");
+
+        giver.setGauge(1000);
+        engine.nextReady();
+        engine.useSkill("giver", "grant", "ally");
+        assertEquals(140, ally.gauge(), "ally Gauge grants include the equipped +20 trait");
+
+        target.setGauge(1000);
+        engine.nextReady();
+        engine.useSkill("target", "strike", "giver");
+        // Giver has no direct-hit armor trait; target's own trait should be checked when target is hit below.
+        ally.setGauge(1000);
+        engine.nextReady();
+        engine.useSkill("ally", "strike", "target");
+        assertEquals(20, target.gauge(), "direct enemy hit grants the equipped +20 Gauge once");
+    }
+
     @Test void timelinePreviewDoesNotMutate(){BattleState s=TrainingBattleFactory.create();long[] before=s.combatants().stream().mapToLong(CombatantState::gauge).toArray();assertEquals(8,s.timelinePreview(8).size());assertArrayEquals(before,s.combatants().stream().mapToLong(CombatantState::gauge).toArray());}
     @Test void deterministicAutoControllerTerminatesTrainingBattle(){
         BattleState state=TrainingBattleFactory.create();
