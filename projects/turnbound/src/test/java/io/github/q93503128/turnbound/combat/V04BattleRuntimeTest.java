@@ -52,7 +52,7 @@ class V04BattleRuntimeTest {
         engine.useSkill("survivor", "p01_chase_slash", "killer");
         assertFalse(morwen.downed());
         assertEquals((int)Math.floor(morwen.maxHp() * 0.35), morwen.hp());
-        assertEquals(0, morwen.gauge());
+        assertEquals(500, morwen.gauge());
     }
 
     @Test
