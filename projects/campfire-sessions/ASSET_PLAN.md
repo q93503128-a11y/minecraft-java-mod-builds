@@ -445,23 +445,63 @@ Prefer reusing a mod's proven placement/rotation behavior when it correctly rota
 
 ## 8. Cooking / crops
 
-Leading candidates:
-- Croptopia.
-- Cooking for Blockheads.
+### Croptopia — leading crop/food-content candidate
+Verified current direction:
+- Minecraft 26.2 NeoForge.
+- client + server.
+- MIT licensed.
+- current public description advertises 250+ foods, 58 crops and 26 fruit trees.
+- strong external base for Campfire's crop/fruit/food breadth.
 
-Why:
-- broad food/crop variety.
-- real kitchen presentation and recipe UX.
-- avoids a shallow custom cooking system.
+Adoption intent:
+- use the crop/fruit/food catalogue where its art fits.
+- Campfire still owns season availability, watering cadence, economy and collection rules.
+- do not expose irrelevant survival/advancement progression merely because the dependency includes it.
 
-Farmer’s Delight-style options may be reconsidered if a stable 26.2 NeoForge version is verified later.
+### Cooking for Blockheads — leading kitchen interaction candidate
+Verified:
+- Minecraft 26.2 NeoForge.
+- client + server.
+- mature multiblock kitchen.
+- shows recipes available from ingredients the player currently has.
+- provides real kitchen blocks such as counters, fridges, oven/cooking table/tool rack/spice-rack-style pieces.
+- current distribution license is ARR/custom; use as a dependency when permitted, not as a model/code extraction source.
+
+Potential role split:
+- **Skniro's Furniture** supplies broad home/furniture language.
+- **Cooking for Blockheads** supplies cooking-specific station UX and recipe interaction if integration tests prove worthwhile.
+- overlapping decorative kitchen blocks should be hidden/disabled/de-emphasized where practical so the player does not see two redundant kitchen ecosystems.
+- Croptopia supplies the broad crop/food content.
+
+This stack is stronger than writing a shallow custom kitchen from scratch, but direct runtime compatibility and recipe integration must be tested before final adoption.
+
+Farmer's Delight-style options may be revisited only if they provide a clearer benefit than the above stack on 26.2.
 
 ## 9. Flora / mushrooms
 
-Previously discussed candidate/reference sources:
-- Flora Expansion.
-- Shroomcraft/Shroomcrafted-style mushroom expansion.
-- CC0 plant/mushroom asset packs from public asset libraries.
+### Flora Expansion — leading general flora supplement
+Verified:
+- current Minecraft 26.2 NeoForge build.
+- client + server.
+- MIT licensed with source linked.
+- adds plants, crops, blocks and mechanics.
+- useful permissive supplement for decorative/seasonal vegetation beyond Croptopia's food focus.
+
+### Shroomcraft / Shroomcrafted — leading mushroom-theme candidate
+Verified:
+- current Minecraft 26.2 NeoForge build.
+- client + server.
+- MPL-2.0.
+- adds orange/purple/blue mushrooms, multiple growth scales, matching shroomwood/building/decorative families and mushroom-themed creatures.
+- visually much richer than simply recoloring vanilla mushrooms.
+- evaluate whether its creature/worldgen content fits Campfire; mushroom flora/building assets may be the main useful role.
+
+### Tiny Flowers
+- current Minecraft 26.2 NeoForge build.
+- MPL-2.0.
+- adds small/petal-like variants of vanilla/modded flowers.
+- useful low-impact visual-density supplement if Flora Expansion alone leaves gardens too coarse.
+- optional; do not stack plant mods purely for item count.
 
 Final selection should emphasize:
 - seasonal appearance.
@@ -470,6 +510,13 @@ Final selection should emphasize:
 - fruit/crops.
 - decorative variety.
 - consistent Minecraft-friendly art.
+- avoid uncontrolled worldgen that would overwrite the authored island template; prefer configured placement/Campfire-controlled ecology where needed.
+
+Current likely division:
+- Croptopia → crop/fruit/food breadth.
+- Flora Expansion → general decorative/seasonal flora.
+- Shroomcraft → richer mushrooms/mushroom decor if its visuals pass.
+- Tiny Flowers → optional fine-detail garden layer only if needed.
 
 ## 10. Residents
 
@@ -1181,6 +1228,32 @@ The multi-day festival needs external:
 - contest props/trophies.
 
 Festival presentation must not be temporary programmer art.
+
+## 17.5 Current model/asset search status
+
+This research pass has narrowed several categories enough to justify direct runtime/visual trials:
+
+**Strong leading trials**
+- Furniture: Skniro's Furniture.
+- Boats: Peterwolf's Boats & Ships.
+- Crops/food: Croptopia.
+- Cooking interaction: Cooking for Blockheads.
+- General flora: Flora Expansion.
+- Mushrooms: Shroomcraft.
+- Cosmetic armor separation: Armor Cosmetic.
+- Player full-body animation: Player Animation Library.
+- Fossil/excavation mechanics/reference: Better Archeology.
+
+**Still materially unresolved**
+- final coherent resident biped animal roster/rig.
+- final museum dinosaur/prehistory skeleton art.
+- coherent full lifestyle-tool family including watering can + bug net + fishing tiers.
+- final house/building set for café, clothing shop, museum and housing progression.
+- final coherent clothing art set beyond hats/accessory/backend candidates.
+- festival/event prop set.
+
+Do not compensate for unresolved art by creating placeholder final visuals.
+Continue external search or adapt one permissive coherent source only after visual tests prove it is strong enough.
 
 ## 18. Selection protocol
 
