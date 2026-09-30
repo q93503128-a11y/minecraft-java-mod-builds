@@ -331,7 +331,7 @@ as a reference. The inspected JAR exposed dodge payload/code and license materia
 reusable roll animation resource in the targeted animation/resource surface; no AcroWield runtime
 dependency or raw code/assets are admitted.
 
-State: `RUNTIME_AND_ASSET_BOUND / MINECRAFT_VISUAL_ACCEPTANCE_PENDING`.
+State: `RUNTIME_AND_ASSET_BOUND / MINECRAFT_VISUAL_ACCEPTANCE_PENDING`. Build Openworld RPG run `36648657612` at code state `717cddcc286e80c5bc7e2d26e8dc19274dfdcec4` passes unit tests/build, server smoke, gameplay client startup, playtest-JAR builds, pack packaging and artifact upload; this does not substitute for joined-player visual/camera/terrain/network-feel acceptance.
 
 Final third-person silhouette, armor/cape clipping, first-person camera feel, terrain shortening and
 network-latency feel require joined-player playtest.
