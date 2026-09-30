@@ -21,11 +21,19 @@ class ExternalActorReactionCapabilitiesTest {
         assertFalse(legacy.reactionCapabilities().pullToward());
         assertFalse(legacy.reactionCapabilities().knockdown());
         assertFalse(legacy.reactionCapabilities().launch());
+        assertFalse(
+                legacy.reactionCapabilities()
+                        .hunterQuickstepPierceable()
+        );
 
         var earthloong =
                 ExternalActorCombatProfile.r01Earthloong();
         assertFalse(
                 earthloong.reactionCapabilities().pullToward()
+        );
+        assertFalse(
+                earthloong.reactionCapabilities()
+                        .hunterQuickstepPierceable()
         );
     }
 
@@ -36,5 +44,6 @@ class ExternalActorReactionCapabilitiesTest {
         assertTrue(capabilities.pullToward());
         assertTrue(capabilities.knockdown());
         assertTrue(capabilities.launch());
+        assertTrue(capabilities.hunterQuickstepPierceable());
     }
 }

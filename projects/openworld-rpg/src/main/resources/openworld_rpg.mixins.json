@@ -12,7 +12,8 @@
     "ExternalActorDamageAuthorityMixin",
     "PlayerAttackAuthorityMixin",
     "PlayerFoodSystemSuppressionMixin",
-    "SpellEngineProjectSkillExposureMixin"
+    "SpellEngineProjectSkillExposureMixin",
+    "SpellEngineHunterQuickstepPierceMixin"
   ],
   "client": [
     "SpellEngineSinglePressMixin",
@@ -20,7 +21,8 @@
     "SpellEngineDonorHotbarHudMixin",
     "SpellEngineRadiantLanceRendererMixin",
     "SpellEngineRebukeBurstRendererMixin",
-    "SpellEngineSanctuaryWardRendererMixin"
+    "SpellEngineSanctuaryWardRendererMixin",
+    "SpellEngineHunterQuickstepRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

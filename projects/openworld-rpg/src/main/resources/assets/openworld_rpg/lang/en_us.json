@@ -28,5 +28,7 @@
   "spell.openworld_rpg.consecrated_ground.name": "Consecrated Ground",
   "spell.openworld_rpg.consecrated_ground.description": "Consecrate the ground around you, restoring allies and damaging enemies within the field.",
   "key.openworld_rpg.dodge": "Dodge / Roll",
-  "key.categories.openworld_rpg.combat": "Openworld RPG Combat"
+  "key.categories.openworld_rpg.combat": "Openworld RPG Combat",
+  "spell.openworld_rpg.hunter_quickstep_volley.name": "Quickstep Volley",
+  "spell.openworld_rpg.hunter_quickstep_volley.description": "Dash with your movement and loose three arrows. Full Focus lengthens the step and lets each arrow pierce one normal enemy."
 }

@@ -60,6 +60,12 @@ class ProjectUltimateChargeRuntimeTest {
                         .HUNTER_RANGED_POISE_BREAK_CHARGE,
                 0.0001
         );
+        assertEquals(
+                3.0,
+                ProjectUltimateChargeRuntime
+                        .HUNTER_ACTIVE_QUARRY_HIT_CHARGE,
+                0.0001
+        );
     }
 
     @Test

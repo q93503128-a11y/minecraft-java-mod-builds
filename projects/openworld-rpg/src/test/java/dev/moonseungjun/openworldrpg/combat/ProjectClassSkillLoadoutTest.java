@@ -83,10 +83,17 @@ class ProjectClassSkillLoadoutTest {
                         .spellId(RootClass.MAGE, 1)
                         .isEmpty()
         );
-        assertTrue(
+        assertEquals(
+                ProjectSpellSpec.HUNTER_QUICKSTEP_VOLLEY_ID,
+                ProjectClassSkillLoadout
+                        .spellId(RootClass.HUNTER, 0)
+                        .orElseThrow()
+        );
+        assertEquals(
+                1,
                 ProjectClassSkillLoadout
                         .implementedSlots(RootClass.HUNTER)
-                        .isEmpty()
+                        .size()
         );
         assertEquals(
                 5,
