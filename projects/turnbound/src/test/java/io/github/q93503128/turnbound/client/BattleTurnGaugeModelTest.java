@@ -46,7 +46,7 @@ class BattleTurnGaugeModelTest {
         var negativeSafe = unit("zero", "ENEMY", 0, 100, true);
 
         assertEquals(1.0, BattleTurnGaugeModel.gaugeRatio(over), 0.0001);
-        assertEquals("READY", BattleTurnGaugeModel.gaugeLabel(over));
+        assertEquals("READY+250", BattleTurnGaugeModel.gaugeLabel(over));
         assertEquals(0.0, BattleTurnGaugeModel.gaugeRatio(negativeSafe), 0.0001);
         assertFalse(BattleTurnGaugeModel.gaugeLabel(negativeSafe).isBlank());
     }
