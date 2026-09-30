@@ -78,6 +78,8 @@ public final class ProjectPlayerIncomingDamageRuntime {
 
         var resources = CombatStateServices.states()
                 .getOrCreate(target.getUUID(), gameTick);
+        long combatActivityBeforeHit =
+                resources.lastCombatActivityTick();
         var activeDefense = CombatStateServices.defenseStates()
                 .getOrCreate(target.getUUID());
 
@@ -161,6 +163,11 @@ public final class ProjectPlayerIncomingDamageRuntime {
             );
         };
         if (applied) {
+            HunterSkillRuntime.onDirectHpDamage(
+                    target,
+                    gameTick,
+                    combatActivityBeforeHit
+            );
             resources.markHostileHpActivity(gameTick);
             if (!resolution.guarded()) {
                 ProjectPlayerReactionRuntime.apply(

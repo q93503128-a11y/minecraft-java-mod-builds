@@ -13,6 +13,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Server-side immutable launch metadata for project-owned ranged basics.
@@ -72,7 +73,8 @@ public final class ProjectRangedProjectileContext {
                         player.getUUID(),
                         expectedFamily,
                         build,
-                        drawPower
+                        drawPower,
+                        shooter.position()
                 )
         );
     }
@@ -92,12 +94,14 @@ public final class ProjectRangedProjectileContext {
             UUID shooterId,
             ProjectWeaponFamily weaponFamily,
             PlayerCombatBuildState build,
-            double drawPower
+            double drawPower,
+            Vec3 launchPosition
     ) {
         public RangedShot {
             Objects.requireNonNull(shooterId, "shooterId");
             Objects.requireNonNull(weaponFamily, "weaponFamily");
             Objects.requireNonNull(build, "build");
+            Objects.requireNonNull(launchPosition, "launchPosition");
             if (weaponFamily != ProjectWeaponFamily.BOW
                     && weaponFamily != ProjectWeaponFamily.CROSSBOW) {
                 throw new IllegalArgumentException(

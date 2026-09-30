@@ -35,6 +35,34 @@ class ProjectUltimateChargeRuntimeTest {
     }
 
     @Test
+    void hunterChargeEventsMatchRootCanon() {
+        assertEquals(
+                2.0,
+                ProjectUltimateChargeRuntime
+                        .HUNTER_RANGED_QUARRY_HIT_CHARGE,
+                0.0001
+        );
+        assertEquals(
+                1.0,
+                ProjectUltimateChargeRuntime
+                        .HUNTER_LONG_RANGE_BONUS_CHARGE,
+                0.0001
+        );
+        assertEquals(
+                3.0,
+                ProjectUltimateChargeRuntime
+                        .HUNTER_WEAK_POINT_HIT_CHARGE,
+                0.0001
+        );
+        assertEquals(
+                6.0,
+                ProjectUltimateChargeRuntime
+                        .HUNTER_RANGED_POISE_BREAK_CHARGE,
+                0.0001
+        );
+    }
+
+    @Test
     void supportStepsUseFivePercentAndCapAtSixChargeWorth() {
         assertEquals(
                 0,

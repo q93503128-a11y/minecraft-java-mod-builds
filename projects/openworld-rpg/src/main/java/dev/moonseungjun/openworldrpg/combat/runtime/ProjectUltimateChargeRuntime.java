@@ -22,6 +22,10 @@ public final class ProjectUltimateChargeRuntime {
     public static final double WARRIOR_ACTIVE_HIT_CHARGE = 3.0;
     public static final double WARRIOR_PERFECT_GUARD_CHARGE = 5.0;
     public static final double WARRIOR_POISE_BREAK_CHARGE = 10.0;
+    public static final double HUNTER_RANGED_QUARRY_HIT_CHARGE = 2.0;
+    public static final double HUNTER_LONG_RANGE_BONUS_CHARGE = 1.0;
+    public static final double HUNTER_WEAK_POINT_HIT_CHARGE = 3.0;
+    public static final double HUNTER_RANGED_POISE_BREAK_CHARGE = 6.0;
     public static final double SUPPORT_STEP_MAX_HP_FRACTION = 0.05;
     public static final int MAX_SUPPORT_STEPS_PER_SOURCE_RECIPIENT = 3;
 
@@ -242,6 +246,50 @@ public final class ProjectUltimateChargeRuntime {
         );
     }
 
+    public static GainApplication recordHunterRangedQuarryHit(
+            ServerPlayer hunter,
+            LivingEntity hostile
+    ) {
+        return recordHunterHostileEvent(
+                hunter,
+                hostile,
+                HUNTER_RANGED_QUARRY_HIT_CHARGE
+        );
+    }
+
+    public static GainApplication recordHunterLongRangeBonus(
+            ServerPlayer hunter,
+            LivingEntity hostile
+    ) {
+        return recordHunterHostileEvent(
+                hunter,
+                hostile,
+                HUNTER_LONG_RANGE_BONUS_CHARGE
+        );
+    }
+
+    public static GainApplication recordHunterWeakPointHit(
+            ServerPlayer hunter,
+            LivingEntity hostile
+    ) {
+        return recordHunterHostileEvent(
+                hunter,
+                hostile,
+                HUNTER_WEAK_POINT_HIT_CHARGE
+        );
+    }
+
+    public static GainApplication recordHunterRangedPoiseBreak(
+            ServerPlayer hunter,
+            LivingEntity hostile
+    ) {
+        return recordHunterHostileEvent(
+                hunter,
+                hostile,
+                HUNTER_RANGED_POISE_BREAK_CHARGE
+        );
+    }
+
     private static GainApplication recordWarriorHostileEvent(
             ServerPlayer warrior,
             LivingEntity hostile,
@@ -260,6 +308,29 @@ public final class ProjectUltimateChargeRuntime {
         }
         return recordClassEvent(
                 warrior,
+                authoredCharge,
+                profile.contentLevel()
+        );
+    }
+
+    private static GainApplication recordHunterHostileEvent(
+            ServerPlayer hunter,
+            LivingEntity hostile,
+            double authoredCharge
+    ) {
+        Objects.requireNonNull(hunter, "hunter");
+        Objects.requireNonNull(hostile, "hostile");
+        if (!isHunter(hunter)) {
+            return GainApplication.rejected();
+        }
+        var profile = ExternalActorBindingRuntime
+                .combatProfile(hostile)
+                .orElse(null);
+        if (profile == null) {
+            return GainApplication.rejected();
+        }
+        return recordClassEvent(
+                hunter,
                 authoredCharge,
                 profile.contentLevel()
         );
@@ -332,6 +403,13 @@ public final class ProjectUltimateChargeRuntime {
         return PlayerProgressionService.state(player)
                 .activeClass()
                 .filter(RootClass.WARRIOR::equals)
+                .isPresent();
+    }
+
+    private static boolean isHunter(ServerPlayer player) {
+        return PlayerProgressionService.state(player)
+                .activeClass()
+                .filter(RootClass.HUNTER::equals)
                 .isPresent();
     }
 

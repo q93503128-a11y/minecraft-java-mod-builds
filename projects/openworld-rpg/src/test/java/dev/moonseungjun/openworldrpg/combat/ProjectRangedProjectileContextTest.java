@@ -12,6 +12,7 @@ import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatBuildState;
 import dev.moonseungjun.openworldrpg.combat.state.ProjectWeaponFamily;
 import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import java.util.UUID;
+import net.minecraft.world.phys.Vec3;
 import org.junit.jupiter.api.Test;
 
 class ProjectRangedProjectileContextTest {
@@ -34,12 +35,17 @@ class ProjectRangedProjectileContextTest {
                 UUID.randomUUID(),
                 ProjectWeaponFamily.BOW,
                 bowBuild,
-                0.75
+                0.75,
+                new Vec3(1.0, 2.0, 3.0)
         );
 
         assertSame(bowBuild, shot.build());
         assertEquals(ProjectWeaponFamily.BOW, shot.weaponFamily());
         assertEquals(0.75, shot.drawPower(), 0.0001);
+        assertEquals(
+                new Vec3(1.0, 2.0, 3.0),
+                shot.launchPosition()
+        );
         assertNotEquals(laterCrossbowBuild, shot.build());
     }
 
@@ -64,7 +70,8 @@ class ProjectRangedProjectileContextTest {
                         UUID.randomUUID(),
                         ProjectWeaponFamily.CROSSBOW,
                         crossbowBuild,
-                        1.0
+                        1.0,
+                        Vec3.ZERO
                 ).drawPower(),
                 0.0001
         );
@@ -74,7 +81,8 @@ class ProjectRangedProjectileContextTest {
                         UUID.randomUUID(),
                         ProjectWeaponFamily.CROSSBOW,
                         crossbowBuild,
-                        0.5
+                        0.5,
+                        Vec3.ZERO
                 )
         );
         assertThrows(
@@ -83,7 +91,8 @@ class ProjectRangedProjectileContextTest {
                         UUID.randomUUID(),
                         ProjectWeaponFamily.CROSSBOW,
                         bowBuild,
-                        1.0
+                        1.0,
+                        Vec3.ZERO
                 )
         );
     }

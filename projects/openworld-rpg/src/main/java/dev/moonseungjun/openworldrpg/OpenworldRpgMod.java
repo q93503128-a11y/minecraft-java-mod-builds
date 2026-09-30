@@ -51,6 +51,7 @@ import dev.moonseungjun.openworldrpg.recovery.RecoveryBeltAttachments;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryEffectRuntime;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryUseRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ConsecratedGroundRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBasicAttackCadenceRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectDodgeRuntime;
@@ -172,6 +173,7 @@ public final class OpenworldRpgMod implements ModInitializer {
                 PlayerDeathPenaltyService.applyAfterDeathRespawn(newPlayer);
             }
             WarriorSkillRuntime.reset(newPlayer.getUUID());
+            HunterSkillRuntime.reset(newPlayer.getUUID());
             ProjectPlayerActionRuntime.reset(newPlayer);
             ProjectDodgeRuntime.reset(newPlayer);
             PlayerCombatBuildPublisher.refresh(newPlayer);
@@ -186,6 +188,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             ConsecratedGroundRuntime.disconnect(playerId);
             SanctuaryRuntime.disconnect(playerId);
             WarriorSkillRuntime.disconnect(playerId);
+            HunterSkillRuntime.disconnect(playerId);
             ProjectPlayerActionRuntime.disconnect(playerId);
             ProjectDodgeRuntime.disconnect(playerId);
             ProjectBasicAttackCadenceRuntime.disconnect(playerId);

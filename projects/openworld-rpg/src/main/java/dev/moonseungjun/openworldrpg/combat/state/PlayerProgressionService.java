@@ -77,6 +77,8 @@ public final class PlayerProgressionService {
                     .reset(player.getUUID());
             dev.moonseungjun.openworldrpg.combat.runtime.WarriorSkillRuntime
                     .reset(player.getUUID());
+            dev.moonseungjun.openworldrpg.combat.runtime.HunterSkillRuntime
+                    .reset(player.getUUID());
             if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
                 dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime
                         .reset(serverPlayer);
