@@ -2,6 +2,20 @@
 
 Campfire Sessions uses Minecraft-native open-source models, CC0 music, and CC0 UI assets.
 
+## Canonical world template
+- Project: **Island map | 1024×1024** — Geming400
+- Distribution file: **Island - No WorldBorder.zip**
+- Source page: https://www.curseforge.com/minecraft/worlds/island-map-1-19-1024x1024
+- CurseForge file ID: `6229422`
+- License: MIT
+- Downloaded archive SHA-256: `7a3d98ff75feb26913e2d4c32ca7339448d3c660c14f986ce9f5e4ff340d3d3b`
+- Actual stored world DataVersion: `3105`
+- Real-file validation: 16 region files / 9,216 chunks parsed
+- Minecraft 26.2 NeoForge server-load validation: SUCCESS
+- Validation workflow: `Probe Campfire Candidate World` run `36675999301`
+- Use here: canonical Campfire base world. The project will preserve the island/shoreline identity while adding the authored village, selective terrain grading, vegetation, paths, facilities, exploration content and other Campfire-specific world changes.
+- Packaging: keep the original MIT notice/attribution with the packaged template. The Modrinth pack provisions a playable copy and does not overwrite progressed saves on updates.
+
 ## Guitar model
 - Project: **Musical Instruments Pack** — Tchongas
 - Source repository: https://github.com/Tchongas/datapacks

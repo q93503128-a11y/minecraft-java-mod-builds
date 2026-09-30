@@ -262,45 +262,56 @@ Preference:
 - ocean boundaries.
 - terrain large enough for multiplayer without becoming tedious to traverse.
 
-Two different criteria now matter separately: **world-layout quality** and **zero-manual-setup Modrinth packaging eligibility**.
+### Canonical base world — accepted
 
-The previous Geming400 **“Island map | 1024×1024”** has been recovered as an active candidate:
-- 1024×1024 ocean world.
-- 7 islands total: one large central island plus six smaller surrounding islands.
-- WorldPainter.
-- caves and caverns included.
-- ores included.
-- palm/other trees and bushes included.
-- current No-WorldBorder release is directly downloadable.
-- MIT licensed, making redistribution inside the Campfire Modrinth pack substantially cleaner than candidates with unclear redistribution rights.
+The canonical Campfire Sessions base world is **Geming400 — “Island map | 1024×1024” / “Island - No WorldBorder.zip”**.
 
-Its island count/travel structure matches Campfire better than a map with only a few giant landmasses.
-Its remaining risks are **main-island usable flat area, total build capacity and 26.2 conversion**, which must be verified from the actual world ZIP before selection.
+Acceptance evidence from the actual downloaded world:
+- redistribution license: MIT.
+- archive SHA-256: `7a3d98ff75feb26913e2d4c32ca7339448d3c660c14f986ce9f5e4ff340d3d3b`.
+- `level.dat` and all 16 region files were inspected from the real archive.
+- 9,216 chunks were parsed successfully from the region files.
+- the map has one dominant main landmass plus multiple meaningful secondary islands, matching the intended pier/travel structure.
+- the largest sampled land component is about **111,472 surface blocks**, with an approximate 552×332 bounding area.
+- several secondary land components are substantial enough to act as separate destinations rather than decorative rocks.
+- Minecraft 26.2 NeoForge server load/conversion test: **SUCCESS**.
+- world-probe workflow: run **36675999301**.
 
-“4K Flat Islands Map for Creative” remains the strongest **flat-building geometry reference/candidate** because:
-- the creator states the whole map is roughly 4000×4000.
-- three major bare islands plus smaller islets/lake are present.
-- terrain height is stated to vary only from about 26 to 32, making it exceptionally suitable for external building prefabs and controlled civic parcels.
-- the bottom-left/southwest landmass is the provisional main-village candidate based on its large contiguous flat area and documented spawn region.
-- a broad central water channel creates natural harbor/bridge/coastal-route opportunities.
+The map is therefore no longer a candidate.
+Do not restart map selection unless a later real placement/playtest exposes a material problem.
 
-However, this is still NOT canonical until the actual world file is directly obtained and inspected.
-Screenshot/source analysis is not a substitute for level.dat/region/chunk inspection and Minecraft 26.2 conversion testing.
+### Main-village terrain treatment
 
-If the candidate passes real-file inspection:
-- keep the main civic/residential village deliberately clustered rather than spreading buildings over the full 4k map.
-- use the excess land/water for natural space, later facilities, routes, exploration and authored environmental content.
-- replace/refine the large bare stone-heavy surfaces with a coherent Campfire vegetation/grass/path/environment pass.
-- add or author missing cave/cliff/exploration content rather than assuming the base map already provides the full game.
+The original central island is not one giant perfectly flat 160×160 lawn.
+A deliberately strict probe found:
+- 150 highly-flat 16×16 tiles across the authored world.
+- largest connected strict-flat cluster: **25 tiles**, roughly 6,400 block area.
+- that cluster spans roughly **80×128 blocks**.
+- the best 160×160 search window contains 34 strict-flat tiles under the conservative probe definition.
 
-Even if it can be directly downloaded, it cannot become the final Modrinth-pack world unless redistribution permission for bundling the world files is also established.
-If that permission cannot be established, keep it as a geometry/reference source and select a legally packable alternative rather than asking the user to install it manually.
+This is acceptable because the adopted exterior shells are compact and building interiors live in managed interior spaces.
 
-Current selection order:
-1. obtain and inspect Geming400's 7-island MIT world first because it already satisfies the island-count and redistribution requirements.
-2. verify whether its central island has enough flat buildable area for the full village/prefab plan.
-3. compare it against any larger **redistributable** flat-archipelago candidate found during the same pass.
-4. use 4K Flat Islands only if both real-file inspection and Modrinth-pack redistribution rights are satisfied.
+Direction:
+- preserve the overall island silhouette, coastline, mountains and natural identity.
+- use the existing flatter central-island area as the civic/residential base.
+- perform **targeted terrain grading/landscaping** around the village footprint to create clean building parcels, paths and plaza transitions.
+- do not flatten the entire main island into a featureless plane.
+- roads and neighborhood clusters may step gently with the terrain where that improves visual quality.
+- the authored village should feel intentionally landscaped, not pasted onto raw WorldPainter terrain.
+
+Measured exterior evidence already supports this:
+- Villageria Town Hall: 11×11 ground footprint.
+- Villageria Village Shop: 11×11.
+- Villageria Mini Hospital: 11×11.
+- Towns & Towers Mediterranean homes commonly range from roughly 5×5 to 10×10.
+- larger house-stage candidates remain generally below ~17×15.
+
+The earlier 160×160 planning envelope remains a generous layout envelope, not a requirement for 160×160 of untouched natural flat terrain.
+
+### Alternative-map status
+
+“4K Flat Islands Map for Creative” remains useful only as a flat-terrain/layout reference.
+It is no longer the active Campfire base-world candidate because the selected MIT 7-island world has now passed real-file and 26.2 loading validation while providing a stronger multi-island travel structure.
 
 ### Island identity and naming
 When the village/world is first established, the creating player chooses the island/village display name before normal arrival play begins.
@@ -318,10 +329,11 @@ Do not use the folder/save filename as the player-facing village identity.
 If renaming is supported later, it should be a deliberate resident-services action rather than a casual per-session setting.
 
 ### Island roles
-Island roles are not fixed yet.
-They will be assigned after the actual world is inspected.
+The base world is now fixed, but exact secondary-island roles still follow the first authored route/layout pass.
+Use the real measured islands rather than inventing new procedural destinations by default.
+
 Avoid turning every island into a single-resource gimmick.
-One island may have a main theme but should still contain multiple useful activities.
+One island may have a stronger theme, but should still contain multiple useful activities and reasons to revisit it.
 
 ### Island map
 Players should not need raw coordinates to navigate ordinary village life.

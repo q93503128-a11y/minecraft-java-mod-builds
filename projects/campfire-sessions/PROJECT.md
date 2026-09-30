@@ -70,8 +70,11 @@ Use `ASSET_PLAN.md` for candidate tracking and `THIRD_PARTY_ASSETS.md` for adopt
 
 ## World rule
 
-The final island map must be directly obtainable and inspected as an actual world before it becomes canonical.
-It must also be legally redistributable inside the Campfire Sessions Modrinth modpack.
+Canonical base world: **Geming400 — Island map | 1024×1024 / Island - No WorldBorder.zip**.
+
+Status: **SELECTED / REAL WORLD INSPECTED / 26.2 SERVER LOAD VERIFIED**.
+
+The selected world is MIT licensed, directly obtainable, inspected from its actual region files and legally suitable for bundling in the Campfire Sessions Modrinth modpack.
 
 The user should not need to manually:
 - download a separate map ZIP.
@@ -81,9 +84,11 @@ The user should not need to manually:
 
 The modpack ships the canonical world as a protected template/config asset and Campfire provisions the playable save automatically without overwriting an existing progressed world during pack updates.
 
-Map-layout preference:
-- one broad/flat main-village landmass.
-- several additional meaningful island destinations; roughly 6–10 useful destinations is preferred when the actual map quality supports it.
+Map-layout direction:
+- the selected world provides one dominant main landmass and multiple meaningful secondary islands.
+- the main village uses the existing flatter central area plus targeted authored terrain grading.
+- do not flatten the whole island; preserve coastlines, hills and natural identity.
+- secondary islands remain available for travel, collection, exploration and event content.
 
 Major building exterior positions are fixed and managed by the game.
 Players decorate permitted interiors/yards/public decoration zones but do not freely destroy or rebuild critical village structures.
@@ -127,6 +132,9 @@ Implemented alpha.6 music foundation:
 
 Island-life expansion:
 - DESIGN IN PROGRESS
+- CANONICAL BASE WORLD SELECTED: YES
+- WORLD REGION DATA INSPECTED: YES
+- WORLD LOAD VERIFIED ON MINECRAFT 26.2: YES
 - IMPLEMENTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO

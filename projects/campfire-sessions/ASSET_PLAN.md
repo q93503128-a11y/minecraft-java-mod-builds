@@ -115,99 +115,71 @@ Final map must:
 - survive conversion/loading in Minecraft 26.2.
 - be provisionable from a packaged template without modpack updates overwriting a progressed save.
 
-### Candidate status
+### Canonical world selection — ACCEPTED
 
-**Geming400 — Island map | 1024×1024 — current leading packable candidate**
-Recovered from the earlier Campfire planning pass and re-verified against the current CurseForge/Planet Minecraft listing.
+**Geming400 — Island map | 1024×1024 / Island - No WorldBorder.zip**
 
-Current verified source facts:
+Status: **ADOPTED AS CAMPFIRE BASE WORLD**
+
+Verified package/source facts:
 - creator: Geming400.
-- world size: 1024×1024.
-- 7 islands total: one large central island + six smaller surrounding islands.
-- WorldPainter.
-- caves: yes.
-- caverns: yes.
-- chasms: no.
-- ores: yes.
-- palm trees, other trees and bushes.
-- current release: `Island - No WorldBorder.zip`.
-- file size: about 51.2 MB.
-- source version: Minecraft 1.21.4.
 - license: MIT.
+- direct downloadable archive obtained successfully by CI.
+- archive SHA-256: `7a3d98ff75feb26913e2d4c32ca7339448d3c660c14f986ce9f5e4ff340d3d3b`.
+- actual archive size: about 51.2 MB.
+- `level.dat` world name: `1024x1024 | Island map`.
+- actual stored DataVersion: **3105**.
+- region files: **16**.
+- parsed chunks: **9,216**.
+- actual 26.2 NeoForge server load/conversion: **SUCCESS**.
+- validation workflow run: **36675999301**.
 
-Why it is now strategically strong:
-- the 7-island structure better supports repeated pier travel and destination identity than only 2–3 giant landmasses.
-- MIT explicitly resolves the Modrinth-pack redistribution problem as long as license/copyright notices are preserved.
-- current direct download remains available.
-- 51.2 MB is practical for a bundled world template.
+Real-terrain probe:
+- surface probe read block-state data directly because the WorldPainter chunks contain empty Heightmaps compounds.
+- sample spacing: 4 blocks.
+- dominant main landmass estimated surface area: **~111,472 blocks**.
+- dominant landmass approximate bounds: **552×332**.
+- meaningful secondary land components include approximate sampled areas of ~8.3k, ~8.2k, ~7.8k, ~4.6k, ~4.0k, ~2.8k and ~2.3k blocks, plus smaller islets.
+- this is consistent with the intended main-island + several destination-island structure.
 
-Unknowns that still block canonical selection:
-- exact central-island flat/buildable acreage.
-- whether 10–12 houses + civic buildings + roads/plaza/yard spacing fit without crowding.
-- exact island-to-island distances and travel feel.
-- actual biome/height distribution from chunks.
-- Minecraft 26.2 conversion correctness.
-- whether the 1024×1024 overall scale feels rich enough after multiplayer and long-term content are placed.
+Strict flatness probe:
+- highly-flat 16×16 tiles: **150** world-wide.
+- largest connected strict-flat cluster: **25 tiles / ~6,400 blocks**, about **80×128** bounding size.
+- best 128×128 window: 27 strict-flat tiles.
+- best 160×160 window: 34 strict-flat tiles.
+- best 192×192 window: 40 strict-flat tiles.
 
-Required next action:
-- obtain the actual ZIP.
-- inspect level.dat/region data and load it in a controlled conversion copy.
-- measure usable flat area and produce a first anchor/parcel sketch.
-- reject it if the main island cannot comfortably support the village, even though the license/island count are attractive.
+Interpretation:
+- the main island is large enough.
+- it is not naturally a completely flat city canvas.
+- the selected compact external building shells make the available flatter zone usable.
+- Campfire will author a **limited landscaped/graded village plateau and path network** instead of rejecting the 7-island travel structure for a flatter but less useful map.
+- preserve coastlines, broad terrain character and non-village natural areas.
 
-**4K Flat Islands Map for Creative — current leading candidate**
-Source/visual inspection pass completed from the creator's current Planet Minecraft page and screenshots.
+Packaging direction:
+- preserve the original MIT license/credit.
+- store the approved edited Campfire version as a protected world template in the Modrinth-pack workflow.
+- provision a playable copy on first use.
+- never overwrite an existing progressed save during pack updates.
+- no user-side world ZIP installation.
 
-Creator-stated properties:
-- roughly 4000×4000 total map.
-- three large bare islands plus smaller islands/islets and a lake.
-- broad river/channel around 100 blocks wide.
-- terrain height varies only from about 26 to 32: roughly six blocks of vertical variation across the authored land.
-- water depth around 6–15 blocks.
-- endless ocean biome outside the custom map.
-- WorldPainter-made, basic-block fresh export.
-- creator describes it as a coastal-city base and says the player spawns roughly in the middle of the bottom-left island.
-- current page again exposes a download entry; a 2024 creator reply says the old link was fixed.
-- creator explicitly allowed another user to use the map for a city, preferring credit if published.
+### Rejected / reference-only alternatives
 
-Visual-read conclusions from the published overview/close aerial images:
-- southwest/bottom-left landmass appears to be the strongest **provisional main-village candidate** because it is very large, contiguous, mostly level and already contains the documented spawn region.
-- east landmass is another very large buildable surface.
-- northwest landmass is also substantial and mostly flat.
-- the central Y-like water channel creates natural harbor/bridge/coastal-walk opportunities.
-- the small inland lake/islets are useful landmark material without consuming much civic build area.
-- the scale is much larger than needed for the 10–12 house village itself, so the civic/residential core should be deliberately clustered rather than spread across the whole 4k map.
-- the extremely flat terrain is excellent for external building prefabs and controlled parcel/road layouts.
-- current surface art is stone-heavy/bare in large areas; final Campfire use would need an authored vegetation/grass/path/environment pass rather than leaving it as a grey creative canvas.
-- the map does not appear to provide the rich cliffs/caves/ecology required by the full Campfire design on its own. Those must come from selected authored additions, managed cave/exploration spaces, or carefully modified secondary areas.
-- the ~100-block water channel is too wide to treat casually as a tiny creek; bridges, ferries/boats or route design must respect that scale.
+**4K Flat Islands Map for Creative**
+- useful extreme-flatness reference.
+- only a few major landmasses and less attractive for Campfire's repeated island-travel structure.
+- redistribution status is less straightforward than the selected MIT map.
+- no longer an active base-world candidate.
 
-Important limitation:
-- the actual world ZIP/region data has **not** yet been obtained inside the current development tool environment.
-- the Planet Minecraft binary download endpoint could not be materialized here, so this remains screenshot/source-description analysis rather than level.dat / region-chunk inspection.
-- therefore exact island area, real heightmap, cave data, biome data, coordinates and Minecraft 26.2 conversion safety are still NOT VERIFIED.
-- do not mark the candidate canonical until the binary world is directly obtained and loaded/inspected.
+**Worldpainter 4000×4000 island for cities**
+- useful flat-main-island geometry reference.
+- not currently a directly packable production candidate.
 
-**Worldpainter 4000×4000 island for cities (FishyLava, 2025)**
-- explicitly advertises a flat main island for city building plus two smaller islands.
-- visually/conceptually matches the flat-main-island requirement very well.
-- however the current page does not expose a downloadable map, and a later commenter explicitly asked the creator to make it downloadable.
-- keep as a geometry/layout reference, not a production candidate unless a direct legal download appears.
+**Wullestor**
+- rich exploration/archipelago reference with caves and stronger terrain.
+- more vertical and less suitable for the compact authored civic core than the selected base.
 
-**Wullestor (McMeddon, 4096×4096)**
-- directly downloadable/source-file-backed archipelago with caves, ores, biomes and exploration content.
-- explicitly includes high/flat archipelago terrain among its features.
-- much richer exploration baseline than 4K Flat Islands.
-- however it is substantially more vertical/terrain-heavy and less ideal for a clean large prefab village core.
-- retain as fallback/reference if the leading flat map cannot be acquired or if exploration terrain becomes more important than civic flatness.
-
-### Current map-selection priority
-1. **Geming400 7-island MIT world** — inspect first because it combines useful island count, direct availability and clear redistribution rights.
-2. search/compare any larger redistributable archipelago that still offers a genuinely flat main-village island.
-3. **4K Flat Islands** — retain as the strongest extreme-flatness candidate/reference, but do not package it without explicit redistribution rights.
-4. reject visually excellent ARR/no-redistribution maps if they would force manual user installation; that violates the project delivery requirement.
-
-No island roles are final until a real world file is inspected.
+Map selection is now closed unless later real placement/playtest reveals a blocking issue.
 
 ## 5. Buildings
 
