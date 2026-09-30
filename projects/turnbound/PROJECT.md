@@ -1439,3 +1439,30 @@ Validation after Build #952:
 - CLIENT RUNTIME TESTED: NO for Build #952
 - PLAYTESTED: NO for Build #952
 - MULTIPLAYER TESTED: NO
+
+
+## Action Gauge simplification before playtest — 2026-09-30
+
+User direction:
+- the action gauge only needs roughly Epic Seven-level readability
+- adding raw SPD, raw Gauge numbers and repeated future-slot telemetry to every row made the HUD harder to scan
+
+Correction:
+- keep the authoritative server TurnScheduler ordering from the previous pass
+- keep one thin Gauge readiness bar per combatant
+- keep portrait + small name + current actor emphasis
+- remove always-visible raw Gauge numbers, SPD numbers and repeated future-slot strings from the battle HUD
+- narrow the action-gauge panel from the telemetry-heavy 222/184/148 px design to 142/124/108 px by viewport class
+- row position/order itself communicates turn sequence; the thin bar communicates current readiness
+- speed/Gauge combat rules and snapshot data remain intact internally; this is a presentation simplification, not a scheduler rollback
+
+The design system now explicitly treats detailed SPD/Gauge telemetry as secondary information rather than permanent combat-HUD chrome.
+
+Validation requested:
+- CODE REVIEWED: YES
+- TESTED: PENDING Build TURNBOUND
+- BUILD VERIFIED: PENDING Build TURNBOUND
+- JAR PRODUCED: PENDING Build TURNBOUND
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO for this simplification
+- MULTIPLAYER TESTED: NO
