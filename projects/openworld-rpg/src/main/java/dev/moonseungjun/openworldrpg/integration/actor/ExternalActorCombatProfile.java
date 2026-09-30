@@ -11,7 +11,8 @@ public record ExternalActorCombatProfile(
         double magicResistance,
         double poiseMax,
         CombatRank combatRank,
-        ExternalActorReactionCapabilities reactionCapabilities
+        ExternalActorReactionCapabilities reactionCapabilities,
+        ExternalActorWeakPointProfile weakPointProfile
 ) {
     public ExternalActorCombatProfile {
         Objects.requireNonNull(entityId, "entityId");
@@ -19,6 +20,10 @@ public record ExternalActorCombatProfile(
         Objects.requireNonNull(
                 reactionCapabilities,
                 "reactionCapabilities"
+        );
+        Objects.requireNonNull(
+                weakPointProfile,
+                "weakPointProfile"
         );
         if (entityId.isBlank()
                 || contentLevel < 1
@@ -50,7 +55,8 @@ public record ExternalActorCombatProfile(
                 magicResistance,
                 poiseMax,
                 CombatRank.NORMAL_ELITE,
-                ExternalActorReactionCapabilities.none()
+                ExternalActorReactionCapabilities.none(),
+                ExternalActorWeakPointProfile.none()
         );
     }
 
@@ -71,7 +77,31 @@ public record ExternalActorCombatProfile(
                 magicResistance,
                 poiseMax,
                 combatRank,
-                ExternalActorReactionCapabilities.none()
+                ExternalActorReactionCapabilities.none(),
+                ExternalActorWeakPointProfile.none()
+        );
+    }
+
+    public ExternalActorCombatProfile(
+            String entityId,
+            int contentLevel,
+            float maxHealth,
+            double defense,
+            double magicResistance,
+            double poiseMax,
+            CombatRank combatRank,
+            ExternalActorReactionCapabilities reactionCapabilities
+    ) {
+        this(
+                entityId,
+                contentLevel,
+                maxHealth,
+                defense,
+                magicResistance,
+                poiseMax,
+                combatRank,
+                reactionCapabilities,
+                ExternalActorWeakPointProfile.none()
         );
     }
 

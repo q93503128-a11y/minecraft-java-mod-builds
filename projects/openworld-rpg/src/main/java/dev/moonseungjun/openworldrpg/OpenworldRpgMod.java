@@ -53,6 +53,7 @@ import dev.moonseungjun.openworldrpg.recovery.RecoveryUseRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ConsecratedGroundRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterFanOfArrowsRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterPinningShotRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.HunterPowerShotRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterQuickstepVolleyRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBasicAttackCadenceRuntime;
@@ -118,6 +119,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             HunterQuickstepVolleyRuntime.tick(server);
             HunterPinningShotRuntime.tick(server);
             HunterFanOfArrowsRuntime.tick(server);
+            HunterPowerShotRuntime.tick(server);
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             PlayerActiveWorldTimeService.tickLoadedPlayers(server);
@@ -184,6 +186,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             HunterQuickstepVolleyRuntime.reset(newPlayer.getUUID());
             HunterPinningShotRuntime.reset(newPlayer.getUUID());
             HunterFanOfArrowsRuntime.reset(newPlayer.getUUID());
+            HunterPowerShotRuntime.reset(newPlayer.getUUID());
             HunterSkillRuntime.reset(newPlayer.getUUID());
             ProjectPlayerActionRuntime.reset(newPlayer);
             ProjectDodgeRuntime.reset(newPlayer);
@@ -202,6 +205,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             HunterQuickstepVolleyRuntime.disconnect(playerId);
             HunterPinningShotRuntime.disconnect(playerId);
             HunterFanOfArrowsRuntime.disconnect(playerId);
+            HunterPowerShotRuntime.disconnect(playerId);
             HunterSkillRuntime.disconnect(playerId);
             ProjectPlayerActionRuntime.disconnect(playerId);
             ProjectDodgeRuntime.disconnect(playerId);

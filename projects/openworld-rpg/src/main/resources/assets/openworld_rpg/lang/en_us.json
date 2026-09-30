@@ -34,5 +34,7 @@
   "spell.openworld_rpg.hunter_pinning_shot.name": "Pinning Shot",
   "spell.openworld_rpg.hunter_pinning_shot.description": "Fire a heavy arrow that snares its target. Full Focus extends the snare and increases poise pressure.",
   "spell.openworld_rpg.hunter_fan_of_arrows.name": "Fan of Arrows",
-  "spell.openworld_rpg.hunter_fan_of_arrows.description": "Loose five arrows in a readable cone. Full Focus fires seven in a wider fan while keeping the same target hit cap."
+  "spell.openworld_rpg.hunter_fan_of_arrows.description": "Loose five arrows in a readable cone. Full Focus fires seven in a wider fan while keeping the same target hit cap.",
+  "spell.openworld_rpg.hunter_power_shot.name": "Power Shot",
+  "spell.openworld_rpg.hunter_power_shot.description": "Commit to a heavy draw, then loose a high-speed arrow. Authored weak points amplify the hit; full Focus strengthens both the shot and its weak-point multiplier."
 }

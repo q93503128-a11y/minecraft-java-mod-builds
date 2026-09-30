@@ -34,5 +34,7 @@
   "spell.openworld_rpg.hunter_pinning_shot.name": "속박 사격",
   "spell.openworld_rpg.hunter_pinning_shot.description": "강한 화살을 쏴 적의 이동을 둔화합니다. 집중이 가득 차면 속박 시간이 늘고 포이즈 압력이 강해집니다.",
   "spell.openworld_rpg.hunter_fan_of_arrows.name": "부채꼴 사격",
-  "spell.openworld_rpg.hunter_fan_of_arrows.description": "읽기 쉬운 부채꼴로 화살 다섯 발을 쏩니다. 집중이 가득 차면 같은 대상의 피격 상한은 유지한 채 일곱 발로 넓어집니다."
+  "spell.openworld_rpg.hunter_fan_of_arrows.description": "읽기 쉬운 부채꼴로 화살 다섯 발을 쏩니다. 집중이 가득 차면 같은 대상의 피격 상한은 유지한 채 일곱 발로 넓어집니다.",
+  "spell.openworld_rpg.hunter_power_shot.name": "강궁 사격",
+  "spell.openworld_rpg.hunter_power_shot.description": "강하게 활시위를 당긴 뒤 고속 화살을 발사합니다. 명시된 약점을 맞히면 피해가 증폭되며, 집중이 가득 차면 사격과 약점 배율이 함께 강화됩니다."
 }

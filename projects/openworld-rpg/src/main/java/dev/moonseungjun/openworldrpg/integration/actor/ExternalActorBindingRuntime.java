@@ -29,6 +29,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
 public final class ExternalActorBindingRuntime {
@@ -137,6 +138,20 @@ public final class ExternalActorBindingRuntime {
 
     public static boolean captureForbidden(Entity entity) {
         return combatProfile(entity).isPresent() || entity.entityTags().contains(NO_CAPTURE_TAG);
+    }
+
+    public static boolean isAuthoredWeakPointHit(
+            LivingEntity target,
+            Vec3 hitPosition
+    ) {
+        if (target == null || hitPosition == null) {
+            return false;
+        }
+        return combatProfile(target)
+                .map(ExternalActorCombatProfile::weakPointProfile)
+                .filter(profile -> !profile.isEmpty())
+                .map(profile -> profile.contains(target, hitPosition))
+                .orElse(false);
     }
 
     public static Optional<ProjectHealthRuntimeState.Snapshot> canonicalHealthSnapshot(

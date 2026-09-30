@@ -23,7 +23,8 @@
     "SpellEngineRebukeBurstRendererMixin",
     "SpellEngineSanctuaryWardRendererMixin",
     "SpellEngineHunterQuickstepRendererMixin",
-    "SpellEngineHunterPinningRendererMixin"
+    "SpellEngineHunterPinningRendererMixin",
+    "SpellEngineHunterPowerRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

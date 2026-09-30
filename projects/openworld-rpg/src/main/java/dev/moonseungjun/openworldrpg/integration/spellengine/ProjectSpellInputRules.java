@@ -31,7 +31,8 @@ public final class ProjectSpellInputRules {
                 || ProjectSpellSpec.WARRIOR_EARTHSHATTER_ID.equals(spellId)
                 || ProjectSpellSpec.HUNTER_QUICKSTEP_VOLLEY_ID.equals(spellId)
                 || ProjectSpellSpec.HUNTER_PINNING_SHOT_ID.equals(spellId)
-                || ProjectSpellSpec.HUNTER_FAN_OF_ARROWS_ID.equals(spellId))
+                || ProjectSpellSpec.HUNTER_FAN_OF_ARROWS_ID.equals(spellId)
+                || ProjectSpellSpec.HUNTER_POWER_SHOT_ID.equals(spellId))
                 && !freshPress;
     }
 }

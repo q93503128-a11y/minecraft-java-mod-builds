@@ -39,6 +39,7 @@ class ExternalActorReactionCapabilitiesTest {
                 earthloong.combatRank()
                         == ExternalActorCombatProfile.CombatRank.BOSS
         );
+        assertTrue(earthloong.weakPointProfile().isEmpty());
     }
 
     @Test
