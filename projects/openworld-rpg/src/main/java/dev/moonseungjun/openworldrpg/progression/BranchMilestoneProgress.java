@@ -76,12 +76,7 @@ public record BranchMilestoneProgress(
             );
         }
         if (rank32DoctrineComplete) {
-            if (activeDoctrine.equals(Optional.of(initialDoctrine))) {
-                return this;
-            }
-            throw new IllegalStateException(
-                    "Rank-32 doctrine milestone is already complete."
-            );
+            return this;
         }
         return new BranchMilestoneProgress(
                 true,

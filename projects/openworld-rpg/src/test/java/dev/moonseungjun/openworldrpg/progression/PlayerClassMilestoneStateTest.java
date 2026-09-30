@@ -15,10 +15,11 @@ class PlayerClassMilestoneStateTest {
                 ClassSpecialization.HUNTER_RANGER;
         var state = PlayerClassMilestoneState.initial();
         var progress = state.progress(specialization);
+        var beforeRank20 = progress;
 
         assertThrows(
                 IllegalStateException.class,
-                () -> progress.completeRank32Doctrine(
+                () -> beforeRank20.completeRank32Doctrine(
                         ClassDoctrine.RANGER_SKIRMISHER
                 )
         );
@@ -33,6 +34,14 @@ class PlayerClassMilestoneStateTest {
         assertEquals(
                 ClassDoctrine.RANGER_SKIRMISHER,
                 progress.activeDoctrine().orElseThrow()
+        );
+
+        var completedRank32 = progress;
+        assertEquals(
+                completedRank32,
+                completedRank32.completeRank32Doctrine(
+                        ClassDoctrine.RANGER_FIELD_CONTROLLER
+                )
         );
 
         progress = progress.selectDoctrine(
