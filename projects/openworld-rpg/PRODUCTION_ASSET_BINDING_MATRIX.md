@@ -374,6 +374,30 @@ State: `RUNTIME_AND_PRESENTATION_BOUND / PLAYER_SLOT_OPEN / MINECRAFT_VISUAL_ACC
 
 Build Openworld RPG run `36662209318` at code state `5d0490b5906b898c3e2e7607f2b54f8cede384fa` passes unit tests/clean build, bootstrap JAR verification, core server, gameplay dependency server, gameplay client startup, both playtest-JAR builds, Modrinth pack packaging and artifact upload. This proves compile/startup/mixin integration, not in-world visual or feel acceptance. Manual review must still verify 3/4-block terrain shortening, visible spread, bow/crossbow posture, arrow scale/lighting, impact/SFX feel, latency and empowered normal-enemy pierce.
 
+### Hunter Pinning Shot runtime/presentation binding — 2026-09-30
+
+Hunter `Pinning Shot` is now player-slot published as Active Skill 2 / G with server-owned physical damage, poise and movement-control authority.
+
+Locked gameplay contract:
+
+- 18 Mana / 8.0 s cooldown;
+- ranged-weapon gate currently admitted for Bow/Crossbow;
+- physical ActionCoefficient 1.55;
+- PoiseCoefficient 1.00, or 1.50 after consuming three Focus;
+- `Snared` movement: normal/elite x0.65 for 3.0 s, miniboss x0.80 for 2.5 s, boss x0.88 for 2.0 s;
+- empowered duration bonus: +1.5 s non-boss, +0.5 s boss;
+- no full-root behavior is introduced for bosses.
+
+The former two-state hostile rank was insufficient for this authored control rule, so project actor authority now distinguishes `NORMAL_ELITE`, `MINIBOSS` and `BOSS`. Earthloong is explicitly `BOSS`. Existing systems whose canon groups miniboss+boss together continue to do so.
+
+`SnaredRuntimeState` is non-stacking: reapplication preserves the stronger active movement reduction and later expiry. Runtime projection uses one stable transient `MOVEMENT_SPEED` modifier with `ADD_MULTIPLIED_TOTAL`; the server re-synchronizes it while active and removes it at expiry/clear. No vanilla potion/status effect is trusted as authority.
+
+Presentation uses the pinned Spell Engine 26.2 `spell_engine:archery_release` animation and the exact already-admitted KayKit Character Pack: Adventures arrow geometry/texture. Pinning has its own projectile model ID and neutral hunter tint, so it is visually distinct from both holy Radiant Lance and ordinary Quickstep arrows without inventing another temporary mesh. Current delivery precision bindings are 24 blocks, velocity 2.0 and a 0.24 x 0.24 x 1.15 projectile hitbox; these remain playtest-tunable bindings rather than new gameplay canon.
+
+The first CI run `36663757089` exposed a single integration compile error: the new hostile-status tick call lacked its `ProjectHostileStatusRuntime` import. Commit `d18dae843a3b0f5c79bfed838209a39852dfc870` adds that import only. Final Build Openworld RPG run `36663889208` passes unit tests/clean build, bootstrap JAR verification, core-profile dedicated server smoke, gameplay dependency server smoke, gameplay client startup including the Pinning renderer mixin, both playtest-JAR builds, Modrinth packaging and artifact upload.
+
+State: `RUNTIME_BOUND / PLAYER_SLOT_OPEN / BUILD_VERIFIED / PLAYTEST_PENDING`.
+
 ### Warrior root runtime binding delta — 2026-09-29
 
 Warrior root skills use the already Phase-F-shortlisted Kenney Particle Pack `slash_01.png` as a support material inside project-authored 3D slash/sector geometry. Exact committed bytes are taken from pinned corroboration repository `shorepine/kenney` commit `3694c6879e487c108f55677be7dd2ca75b07cc3b`, Git blob `c04fa2d3938827da63105172748851db86735aa6`, and are recorded under `external-assets/kenney-particle-pack/SOURCE.md`.
