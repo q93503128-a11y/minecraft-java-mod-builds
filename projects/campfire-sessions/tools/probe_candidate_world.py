@@ -456,6 +456,52 @@ def main() -> int:
     summary["best_160x160_window"] = best_window(good_tiles, 10)
     summary["best_192x192_window"] = best_window(good_tiles, 12)
 
+    # Terrain samples around the current Campfire village-layout working anchors.
+    anchors = {
+        "harbor": (-336, -48),
+        "plaza": (-300, -30),
+        "resident_services": (-306, -15),
+        "general_store": (-284, -42),
+        "cafe": (-280, -24),
+        "clothing_shop": (-280, -7),
+        "clinic": (-318, -8),
+        "museum": (-262, -24),
+        "community_garden": (-322, 12),
+        "housing_southwest": (-320, -62),
+        "housing_southeast": (-280, -58),
+        "housing_north": (-292, 10),
+    }
+    anchor_terrain = {}
+    sample_radius = 12
+    for name, (ax, az) in anchors.items():
+        nearby = []
+        land_nearby = []
+        for (x, z), y in surface_y.items():
+            if abs(x - ax) <= sample_radius and abs(z - az) <= sample_radius:
+                nearby.append(y)
+                if (x, z) in land:
+                    land_nearby.append(y)
+        vals = land_nearby or nearby
+        if not vals:
+            anchor_terrain[name] = {
+                "x": ax, "z": az, "samples": 0, "land_samples": 0
+            }
+            continue
+        med = statistics.median(vals)
+        anchor_terrain[name] = {
+            "x": ax,
+            "z": az,
+            "samples": len(nearby),
+            "land_samples": len(land_nearby),
+            "median_y": med,
+            "p10_y": percentile(vals, 0.10),
+            "p90_y": percentile(vals, 0.90),
+            "min_y": min(vals),
+            "max_y": max(vals),
+            "p90_minus_p10": percentile(vals, 0.90) - percentile(vals, 0.10),
+        }
+    summary["anchor_terrain_12block_radius"] = anchor_terrain
+
     out = root.parent / "campfire-world-probe.json"
     out.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False, indent=2))
