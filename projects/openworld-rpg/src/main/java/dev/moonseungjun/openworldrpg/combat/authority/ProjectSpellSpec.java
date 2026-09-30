@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.combat.authority;
 
+import dev.moonseungjun.openworldrpg.combat.runtime.HunterQuickstepVolleyRules;
 import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import java.util.Objects;
 import java.util.Optional;
@@ -18,6 +19,7 @@ public record ProjectSpellSpec(
     public static final String WARRIOR_CYCLONE_CUT_ID = "openworld_rpg:warrior_cyclone_cut";
     public static final String WARRIOR_BREAKER_SLAM_ID = "openworld_rpg:warrior_breaker_slam";
     public static final String WARRIOR_EARTHSHATTER_ID = "openworld_rpg:warrior_earthshatter";
+    public static final String HUNTER_QUICKSTEP_VOLLEY_ID = "openworld_rpg:hunter_quickstep_volley";
     public static final String ARC_BOLT_ID = "openworld_rpg:arc_bolt";
     public static final String RADIANT_LANCE_ID = "openworld_rpg:radiant_lance";
     public static final String MEND_ID = "openworld_rpg:mend";
@@ -126,6 +128,17 @@ public record ProjectSpellSpec(
         );
     }
 
+    public static ProjectSpellSpec hunterQuickstepVolley() {
+        return new ProjectSpellSpec(
+                HUNTER_QUICKSTEP_VOLLEY_ID,
+                18.0,
+                140,
+                HunterQuickstepVolleyRules.SAME_TARGET_ACTION_COEFFICIENT_CAP,
+                HunterQuickstepVolleyRules.WHOLE_ACTION_POISE_COEFFICIENT,
+                1
+        );
+    }
+
     public static ProjectSpellSpec arcBolt() {
         return new ProjectSpellSpec(
                 ARC_BOLT_ID,
@@ -196,6 +209,7 @@ public record ProjectSpellSpec(
         Objects.requireNonNull(spellId, "spellId");
         return switch (spellId) {
             case WARRIOR_DRIVING_SLASH_ID, WARRIOR_IRON_COUNTER_ID, WARRIOR_CYCLONE_CUT_ID, WARRIOR_BREAKER_SLAM_ID, WARRIOR_EARTHSHATTER_ID -> Optional.of(RootClass.WARRIOR);
+            case HUNTER_QUICKSTEP_VOLLEY_ID -> Optional.of(RootClass.HUNTER);
             case ARC_BOLT_ID -> Optional.of(RootClass.MAGE);
             case RADIANT_LANCE_ID, MEND_ID, CONSECRATED_GROUND_ID, REBUKE_ID, SANCTUARY_ID ->
                     Optional.of(RootClass.CLERIC);

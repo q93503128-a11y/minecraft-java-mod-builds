@@ -83,6 +83,11 @@ class ProjectClassSkillLoadoutTest {
                         .spellId(RootClass.MAGE, 1)
                         .isEmpty()
         );
+        assertTrue(
+                ProjectClassSkillLoadout
+                        .implementedSlots(RootClass.HUNTER)
+                        .isEmpty()
+        );
         assertEquals(
                 5,
                 ProjectClassSkillLoadout

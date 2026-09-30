@@ -191,6 +191,17 @@ public final class SpellEngineAuthorityAdapter {
             );
         }
 
+        ProjectSpellSpec hunterQuickstepVolley =
+                ProjectSpellSpec.hunterQuickstepVolley();
+        AUTHORITY.registerPolicy(
+                hunterQuickstepVolley.id(),
+                new ProjectSpellTransactionPolicy(
+                        hunterQuickstepVolley,
+                        COMBAT_STATES,
+                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                )
+        );
+
         ProjectSpellSpec arcBolt = ProjectSpellSpec.arcBolt();
         AUTHORITY.registerPolicy(
                 arcBolt.id(),
