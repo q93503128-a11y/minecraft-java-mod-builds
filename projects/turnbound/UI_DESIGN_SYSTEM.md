@@ -199,15 +199,28 @@ UI 파일/클래스 구조보다 **플레이어가 몇 번 눌러야 원하는 �
 
 ## 6. Battle HUD
 
-### 상단 — Turn Order
-- portrait token
-- portrait 아래 작은 캐릭터 이름 label
-- 다음 6~10 행동
-- 현재 actor 강조
-- 연속 행동 portrait 반복
-- Gauge 변화 즉시 재정렬
+### 좌측 — Action Gauge / Turn Order
+단순한 “다음 순서 portrait 줄” 대신 **현재 Gauge와 정확한 미래 행동 순서를 동시에 읽는 Action Gauge**를 사용한다.
 
-아이콘만 보고 캐릭터를 외우게 만들지 않는다. 이름 label은 portrait보다 약한 시각 우선순위로 두되 항상 판독 가능해야 한다.
+각 scheduler 전투원 행:
+- production portrait
+- 캐릭터 이름
+- 현재 Gauge 0~1000
+- 현재 effective SPD
+- 서버가 계산한 다음 행동 순번
+- 연속 행동이면 같은 캐릭터의 미래 순번도 함께 표시
+- 현재 actor 강조
+- Gauge 조작으로 순번이 크게 바뀌면 짧은 이동/accent
+
+중요:
+- raw Gauge가 더 높다고 항상 먼저 행동하는 것은 아니다. SPD가 Gauge 증가 속도를 결정하므로 **HUD 정렬은 반드시 서버 TurnScheduler preview를 정본으로 사용**한다.
+- Gauge bar는 현재 누적량을 보여주고, SPD 숫자는 충전 속도를 설명하며, 순번 숫자는 둘을 합친 실제 결과를 보여준다.
+- Gauge 1000 이상은 READY로 표시하고 overflow가 있으면 `READY+N`으로 남은 Gauge도 숨기지 않는다.
+- 소환수처럼 별도 regular turn을 갖지 않는 unit은 Action Gauge에 넣지 않는다.
+- 쓰러진 unit은 부활 전까지 Action Gauge에서 제외한다.
+- 4v5 기준 전원을 한 화면에서 읽는 것을 우선하고, 대규모 shared battle에서는 우선순위 높은 행만 보이되 숨은 수를 표시한다.
+
+참고한 상용 구조는 Honkai: Star Rail의 portrait/action-value 기반 행동 순서와 Epic Seven의 Combat Readiness bar이다. 아트나 레이아웃을 복제하지 않고, “현재 진행도 + 실제 미래 순서가 동시에 읽힌다”는 정보 원칙만 가져온다.
 
 ### 하단 좌측 — Party
 각 캐릭터:
