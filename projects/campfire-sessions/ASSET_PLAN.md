@@ -1511,11 +1511,14 @@ Resident mesh-renderer checkpoint:
 - this verifies API/build compatibility only; no real Plumberry GLB has been converted or rendered in Minecraft yet.
 
 Resident material/animation checkpoint:
-- implementation commits: `d7a6869f7d5a4c14e14d49fa9c3a8a903cc933fc`, fix `d56b71fea33ed67a77d866fb3023cdef7413b943`.
-- Build Campfire Sessions run: **35** / run ID **36793338245**.
+- implementation commits: `d7a6869f7d5a4c14e14d49fa9c3a8a903cc933fc`, fix `d56b71fea33ed67a77d866fb3023cdef7413b943`, acceptance hardening `0a1a8e68674952a6f67aabfd5bac7a21b97d342c`.
+- Build Campfire Sessions run: **36** / run ID **36793642642**.
 - clean build with per-material texture render passes: SUCCESS.
 - STEP/LINEAR/CUBICSPLINE + quaternion animation sampler core: BUILD VERIFIED.
 - resident render-state type boundary: FIXED with explicit `ResidentEntityRenderState`.
+- synthetic GLB material/animation render-profile self-test: SUCCESS.
+- strict glTF time/CUBICSPLINE contract: VERIFIED in build.
+- existing external-structure probe + packaged-asset contracts: SUCCESS.
 - actual Plumberry material inventory, source textures and animation accessors: **NOT YET INSPECTED** because source ZIPs are not locally available.
 
 Validation boundary:
