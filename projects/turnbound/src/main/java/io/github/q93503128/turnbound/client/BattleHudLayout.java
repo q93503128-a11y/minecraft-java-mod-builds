@@ -78,12 +78,12 @@ final class BattleHudLayout {
             enemies.add(inside(width, height, width - margin - 1, margin + i, 1, 1));
         }
 
-        // Readiness panel follows the left-edge action-gauge pattern used by modern turn RPGs.
-        // It carries actual Gauge + effective SPD, so it needs more vertical room than the old portrait-only rail.
+        // Compact CR-style action gauge: order + portrait/name + one thin readiness bar.
+        // Raw Gauge/SPD numbers stay out of the main battle view.
         int timelineRows = tiny ? 5 : compact ? 7 : 9;
         int timelineRowH = tiny ? 11 : compact ? 12 : 13;
-        int timelineHeaderH = tiny ? 12 : 14;
-        int timelineW = Math.min(tiny ? 148 : compact ? 184 : 222, Math.max(1, width - margin * 2));
+        int timelineHeaderH = tiny ? 11 : 13;
+        int timelineW = Math.min(tiny ? 108 : compact ? 124 : 142, Math.max(1, width - margin * 2));
         int timelineH = timelineHeaderH + timelineRows * timelineRowH + 4;
         Rect timeline = inside(width, height, margin, margin, timelineW, timelineH);
 
